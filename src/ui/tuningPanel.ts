@@ -193,6 +193,7 @@ export class TuningPanel {
           g.prefs.unlocked = ['knight'];
           g.prefs.stakes = {};
           g.prefs.stakeSel = 0;
+          g.prefs.act3 = false;
           g.savePrefs();
         }),
       ),

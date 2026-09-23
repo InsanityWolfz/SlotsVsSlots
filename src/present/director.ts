@@ -33,6 +33,9 @@ const EFFECT_WORD: Record<SymbolId, string> = {
   mimicSym: 'COPYCAT',
   ground: 'GROUNDING',
   fake: 'FAKES',
+  card: 'MARKED CARDS',
+  gavel: 'CONFISCATION',
+  rake: 'RAKE',
 };
 
 /** What each FULL SET does, for its banner (playtest ITERATION_5). */
@@ -151,6 +154,25 @@ export class Director {
         return this.fakeTick(e);
       case 'earth':
         return this.earth(e);
+      case 'mark':
+        return this.markCells(e);
+      case 'markedHit':
+        return this.markedHit(e);
+      case 'confiscate':
+        return this.confiscate(e);
+      case 'rake':
+        return this.rake(e);
+      case 'dealNext':
+        this.s.gutter.nextDeal = e.card;
+        return Promise.resolve();
+      case 'shuffle':
+        return this.shuffle(e);
+      case 'cut':
+        return this.cut(e);
+      case 'raise':
+        return this.raise(e);
+      case 'houseRules':
+        return this.houseRules(e);
     }
   }
 
@@ -519,6 +541,7 @@ export class Director {
 
   private async attack(e: Ev<'attack'>): Promise<void> {
     this.noteDamage(e.from, e.amount, e.note);
+    if (e.from === 'enemy' && this.s.gutter.raised) this.s.gutter.raised = false;
     if (e.note === 'reflect') {
       this.s.gutter.reflect = 0;
       this.s.gutter.turnDamage = 0;
@@ -929,6 +952,12 @@ export class Director {
 
   private async thaw(e: Ev<'thaw'>): Promise<void> {
     const m = this.s.machines[e.side];
+    if (e.status === 'raked') {
+      const c = this.machineCenter(e.side);
+      this.bg(this.popText('RAKE LIFTED', c.x, MACHINE_TOP - 30, 2, '#7dff7a', 16, 0.3));
+      await this.c.wait(0.05);
+      return;
+    }
     if (e.status === 'hexed') {
       for (const r of e.reels) {
         m.hexed[r] = 0;
@@ -1040,7 +1069,8 @@ export class Director {
     this.shake(4, 0.25);
     m.payline.alpha = 0;
     this.bg(this.c.tween({ from: 0.8, to: 0, dur: 0.5, onUpdate: (v) => (m.flash = v * 0.5) }));
-    await this.banner(`${ABILITY_UI[e.kind].label}!`, '#ff6a5a', 1.35, 0.25);
+    const dealt = e.kind === 'deal' ? this.s.gutter.nextDeal : undefined;
+    await this.banner(dealt ? `THE DEAL: ${dealt.toUpperCase()}!` : `${ABILITY_UI[e.kind].label}!`, '#ff6a5a', 1.35, 0.25);
   }
 
   private potPos() {
@@ -1350,6 +1380,126 @@ export class Director {
     await this.c.to(h, 'energy', e.total, 0.3, sineIn);
     const p0 = h.pipPos(0);
     await this.popText(e.amount ? `-${e.amount} ENERGY` : 'NO ENERGY', p0.x + 40, p0.y - 22, 2, '#e0a070', 16, 0.3);
+  }
+
+  // ---- act 3 -----------------------------------------------------------------------------
+
+  /** The Card Sharp flicks marked cards onto your cells. */
+  private async markCells(e: Ev<'mark'>): Promise<void> {
+    const to = this.s.machines[e.to];
+    if (e.reels.length) await this.activate(e.from, e.reels, '#ff5a7a');
+    const flicks = e.cells.map(async (ref, i) => {
+      await this.c.wait(i * 0.08);
+      const src = this.srcPoint(e.from, e.reels, i);
+      const row = this.rowOf(e.to, ref);
+      const dst = cellCenter(e.to, ref.reel, Math.max(0, row));
+      const p = this.s.fx.add(new Projectile(artId('card'), src.x, src.y, 3, false, '#ffffff'));
+      this.bg(this.c.tween({ from: 0, to: Math.PI * 6, dur: 0.35, onUpdate: (v) => (p.rot = v) }));
+      await this.arc(p, dst.x, dst.y, 0.35, 100, sineIn);
+      this.s.fx.remove(p);
+      to.reels[ref.reel].cells[ref.index].carded = true;
+      this.s.sounds.click();
+    });
+    await Promise.all(flicks);
+    const c = this.machineCenter(e.to);
+    this.bg(this.popText(`MARKED x${e.cells.length}: THEY BITE ON YOUR PAYLINE`, c.x, MACHINE_TOP - 30, 2, '#ff8aa0', 16, 0.5));
+    if (e.reels.length) this.settle(e.from, e.reels);
+    await this.c.wait(0.1);
+  }
+
+  private async markedHit(e: Ev<'markedHit'>): Promise<void> {
+    const c = this.machineCenter(e.side);
+    this.s.sounds.hit(e.amount);
+    this.shake(4, 0.2);
+    this.flashMachine(e.side, 0.6, 0.15);
+    for (const ref of e.cells) {
+      const p = cellCenter(e.side, ref.reel, 1);
+      this.s.particles.burst({ x: p.x, y: p.y, count: 14, colors: ['#ff5a7a', '#ffffff'], speed: [80, 260], kind: 'spark', gravity: 300, life: [0.2, 0.4], size: [2, 4] });
+    }
+    this.damageHud(e.side, e.targetHp, e.targetShield, e.hpDamage);
+    await this.popText(e.hpDamage > 0 ? `MARKED! -${e.hpDamage}` : 'MARKED! BLOCKED', c.x, MACHINE_TOP + 40, 3, '#ff8aa0', 30, 0.3);
+  }
+
+  /** The Pit Boss bangs the gavel: gilds are taken for the fight. */
+  private async confiscate(e: Ev<'confiscate'>): Promise<void> {
+    const to = this.s.machines[e.to];
+    if (e.reels.length) await this.activate(e.from, e.reels, '#c9a27a');
+    this.s.sounds.rockThud();
+    this.shake(5, 0.2);
+    for (const ref of e.cells) {
+      const cell = to.reels[ref.reel].cells[ref.index];
+      cell.confiscated = cell.enh;
+      delete cell.enh;
+      delete cell.tier;
+    }
+    const c = this.machineCenter(e.to);
+    this.bg(this.popText(`CONFISCATED: ${e.enhs.map((x) => x.toUpperCase()).join(' + ')}`, c.x, MACHINE_TOP - 30, 2, '#e0c090', 16, 0.6));
+    if (e.reels.length) this.settle(e.from, e.reels);
+    await this.c.wait(0.3);
+  }
+
+  private async rake(e: Ev<'rake'>): Promise<void> {
+    if (e.reels.length) await this.activate(e.from, e.reels, '#c87a3a');
+    this.s.sounds.coin(1);
+    const c = this.machineCenter(e.to);
+    await this.popText(`RAKED: GROUPS PAY -${e.cut} FOR ${e.turns} TURN${e.turns > 1 ? 'S' : ''}`, c.x, MACHINE_TOP - 30, 2, '#e0a070', 16, 0.5);
+    if (e.reels.length) this.settle(e.from, e.reels);
+  }
+
+  /** SHUFFLE: cells trade places between two of your reels. */
+  private async shuffle(e: Ev<'shuffle'>): Promise<void> {
+    const m = this.s.machines[e.to];
+    const [a, b] = e.reels;
+    this.s.sounds.whoosh();
+    this.shake(4, 0.3);
+    const pa = cellCenter(e.to, a, 1);
+    const pb = cellCenter(e.to, b, 1);
+    const cardsFx = [0, 1, 2].map(async (k) => {
+      const p = this.s.fx.add(new Projectile(artId('dealShuffle'), pa.x, pa.y - 60 + k * 40, 3));
+      await this.arc(p, pb.x, pb.y - 60 + k * 40, 0.3, 60, sineInOut);
+      this.s.fx.remove(p);
+    });
+    await Promise.all(cardsFx);
+    for (const [x, y] of e.swaps) {
+      const tmp = m.reels[a].cells[x];
+      m.reels[a].cells[x] = m.reels[b].cells[y];
+      m.reels[b].cells[y] = tmp;
+    }
+    const c = this.machineCenter(e.to);
+    await this.popText(`SHUFFLED REELS ${a + 1} + ${b + 1}`, c.x, MACHINE_TOP - 30, 3, '#c8f0ff', 16, 0.4);
+  }
+
+  /** CUT: a cell of your commonest symbol leaves each reel. */
+  private async cut(e: Ev<'cut'>): Promise<void> {
+    const m = this.s.machines[e.to];
+    this.s.sounds.shatter();
+    for (const ref of e.cells) {
+      const col = stripMapColumn(ref.reel);
+      this.s.particles.burst({ x: col.x, y: col.y, count: 10, colors: ['#ffffff', '#c8f0ff'], speed: [60, 200], gravity: 300, life: [0.2, 0.4], size: [2, 4] });
+      m.removeCell(ref.reel, ref.index);
+    }
+    const c = this.machineCenter(e.to);
+    await this.popText(`THE CUT: -${e.cells.length} CELL${e.cells.length === 1 ? '' : 'S'}`, c.x, MACHINE_TOP - 30, 3, '#ffffff', 16, 0.4);
+  }
+
+  private async raise(e: Ev<'raise'>): Promise<void> {
+    this.s.gutter.raised = true;
+    this.s.sounds.coin(9);
+    this.s.sounds.stingerMedium();
+    await this.banner('RAISE!', '#ffd23f', 1.3, 0.4, 'ITS NEXT HIT AND YOUR NEXT JACKPOT PAY X2', BANNER_Y, 4);
+    void e;
+  }
+
+  private async houseRules(e: Ev<'houseRules'>): Promise<void> {
+    const hud = this.s.huds[e.side];
+    if (hud.ability) {
+      hud.ability = { ...hud.ability, every: e.every };
+      hud.charge = Math.min(hud.charge, e.every - 1);
+    }
+    this.s.gutter.houseRules = true;
+    this.s.sounds.abilityFire();
+    this.s.camera.chromaPulse(0.6);
+    await this.banner('HOUSE RULES!', '#ff6a5a', 1.3, 0.5, `IT DEALS EVERY ${e.every} TURNS`, BANNER_Y, 4);
   }
 
   /** The Mirror cracks at half HP. */

@@ -17,6 +17,10 @@ export interface StripCell {
   grounded?: boolean;
   /** The Counterfeiter's fake coin: this cell's gild counts as plain for this many of your turns. */
   faked?: number;
+  /** The Card Sharp marked this cell: it's a dead CARD for the fight, and it bites when it lands on your payline. */
+  carded?: boolean;
+  /** The Pit Boss confiscated this cell's gild for the fight. */
+  confiscated?: Enh;
 }
 
 export interface Reel {
@@ -55,11 +59,11 @@ export function wrap(i: number, len: number): number {
 }
 
 export function effectiveSymbol(cell: StripCell): SymbolId {
-  return cell.stolen ? 'empty' : cell.slimed ? 'slime' : cell.symbol;
+  return cell.stolen ? 'empty' : cell.carded ? 'card' : cell.slimed ? 'slime' : cell.symbol;
 }
 
 /** Symbols that do nothing on the player's own payline (WILD is very much alive). */
-export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'lock', 'ice', 'claw', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake']);
+export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'lock', 'ice', 'claw', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake']);
 
 /** How much the player would miss losing this symbol (enemy targeting). */
 export function symbolValue(s: SymbolId): number {

@@ -1,8 +1,8 @@
 import { Sounds } from './audio/sounds';
 import { Synth } from './audio/synth';
 import { mergeConfig, type GameConfig, type SideId } from './core/config';
-import { RUN_FIGHTS } from './core/enemies';
-import { MAX_STAKE, STAKES } from './core/stakes';
+import { actLength, RUN_FIGHTS } from './core/enemies';
+import { MAX_STAKE, STAKE, STAKES } from './core/stakes';
 import { Fight } from './core/fight';
 import { turnRow, type TurnRow } from './core/log';
 import { REFLECT_MIN, RELICS } from './core/relics';
@@ -41,7 +41,7 @@ import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
 import { drawStripMap } from './present/stripMap';
 import { Background } from './render/background';
-import { drawSprite, type SpriteId } from './render/sprites';
+import { drawSprite, type SpriteId, artId } from './render/sprites';
 import { drawText } from './render/text';
 import { Button } from './ui/button';
 import { Recap } from './ui/recap';
@@ -63,6 +63,8 @@ interface Prefs {
   /** HIGH STAKES: best unlocked stake per cabinet, and the stake picked on the cabinet screen. */
   stakes: Partial<Record<CabinetId, number>>;
   stakeSel: number;
+  /** THE DEALER unlocked: a run was won at GREEN or higher. */
+  act3: boolean;
 }
 
 function load<T>(key: string): T | null {
@@ -148,6 +150,7 @@ export class Game {
       unlockAll: p.unlockAll ?? false,
       stakes: p.stakes ?? {},
       stakeSel: p.stakeSel ?? 0,
+      act3: p.act3 ?? false,
     };
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
     this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {
@@ -274,6 +277,12 @@ export class Game {
         got.push(id);
       }
     }
+    // Winning at GREEN or higher opens THE DEALER (act 3) for GREEN+ runs.
+    const dealerNow = run.won && run.stake >= STAKE.act3 && !this.prefs.act3;
+    if (dealerNow) {
+      this.prefs.act3 = true;
+      this.savePrefs();
+    }
     // HIGH STAKES: winning at your best stake unlocks the next one for this cabinet.
     let stakeText = '';
     const best = this.prefs.stakes[run.cabinet] ?? 0;
@@ -282,13 +291,14 @@ export class Game {
       const next = STAKES[run.stake + 1];
       stakeText = `STAKE ${next.level} ${next.name} UNLOCKED FOR ${CABINETS[run.cabinet].name}: ${next.rule}`;
     }
+    if (dealerNow) stakeText = (stakeText ? `${stakeText}. ` : '') + 'ACT 3 UNLOCKED: FROM NOW ON, GREEN+ RUNS FACE THE DEALER';
     this.screens.setStakeUnlockedNow(stakeText);
     if (got.length || stakeText) this.savePrefs();
     return got;
   }
 
   startRun(seed?: number, cabinet: CabinetId = 'knight', stake = 0): void {
-    this.run = createRun(this.cfg, seed, cabinet, stake);
+    this.run = createRun(this.cfg, seed, cabinet, stake, this.prefs.act3 || this.prefs.unlockAll);
     this.token++;
     this.synth.stopLoops();
     this.recap.hide();
@@ -455,7 +465,7 @@ export class Game {
         pulse: 0,
         pot: this.fight.pot,
         potPunch: 1,
-        fightLabel: this.run && inRun ? (this.run.depth >= RUN_FIGHTS ? 'BOSS' : `ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${RUN_FIGHTS}`) : 'SANDBOX',
+        fightLabel: this.run && inRun ? (this.run.depth >= actLength(this.run.act) ? 'BOSS' : `ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}`) : 'SANDBOX',
         allIn: false,
         reflect: 0,
         turnDamage: 0,
@@ -782,6 +792,7 @@ export class Game {
       }
     }
     if (this.fight.isBoss) this.drawPot(ctx, cx, cy + 118, t);
+    else if (this.fight.isDealer) this.drawDeal(ctx, cx, cy + 118, t);
     else if (this.fight.isMirror) {
       this.drawReflection(ctx, cx, cy + 118, t);
       // GREEN stake: the relic it copied from you.
@@ -833,6 +844,31 @@ export class Game {
       drawSprite(ctx, 'potSkim', x - 70, y + 64, 2);
       drawText(ctx, `NEXT SKIM ${cashOut}`, x - 52, y + 64, 2, lethal ? '#ff6a5a' : COLORS.textDim, { align: 'left' });
     }
+  }
+
+  /** The Dealer's face-up next card and when it lands (HOUSE RULES / RAISE shown too). */
+  private drawDeal(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+    const e = this.fight.sides.enemy;
+    const ab = e.ability;
+    const g = this.stage.gutter;
+    if (!ab || this.stage.huds.enemy.hp <= 0) return;
+    const left = Math.max(1, ab.every - this.stage.huds.enemy.charge);
+    const soon = left <= 1;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 110, y - 56, 220, 112);
+    ctx.fillStyle = soon ? '#ff6a5a' : '#2a6a3a';
+    ctx.fillRect(x - 106, y - 52, 212, 104);
+    ctx.fillStyle = '#0e2a18';
+    ctx.fillRect(x - 101, y - 47, 202, 94);
+    drawText(ctx, soon ? 'DEALS NEXT TURN!' : `NEXT DEAL IN ${left}`, x, y - 32, 2, soon ? '#ff6a5a' : '#c8f0c8', { punch: soon ? 1 + 0.08 * Math.sin(t * 12) : 1 });
+    const card = g.nextDeal ?? 'shuffle';
+    const sprite = card === 'shuffle' ? 'dealShuffle' : card === 'cut' ? 'dealCut' : 'dealRaise';
+    drawSprite(ctx, artId(sprite), x - 58, y + 12, 2.5);
+    drawText(ctx, card.toUpperCase(), x + 20, y + 2, 3, '#ffffff');
+    const what = card === 'shuffle' ? 'SWAPS 3 CELLS' : card === 'cut' ? 'CUTS A CELL/REEL' : 'X2 HIT, X2 JACKPOT';
+    drawText(ctx, what, x + 20, y + 26, 1.5, COLORS.textDim);
+    if (g.raised) drawText(ctx, 'RAISED: ITS NEXT HIT X2', x, y + 72, 2, '#ffd23f');
+    else if (g.houseRules) drawText(ctx, 'HOUSE RULES', x, y + 72, 2, '#ff6a5a');
   }
 
   /** The Mirror's next Reflection: what your last spin would bounce back, and when. */

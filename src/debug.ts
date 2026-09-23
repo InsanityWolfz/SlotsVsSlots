@@ -1,5 +1,5 @@
 import type { RelicId, SideId, SymbolId } from './core/config';
-import { ARCHETYPES, BOSS, makeEnemy, MIRROR } from './core/enemies';
+import { ARCHETYPES, BOSS, DEALER, makeEnemy, MIRROR } from './core/enemies';
 import { Rng } from './core/rng';
 import type { CombatEvent } from './core/events';
 import type { Game } from './game';
@@ -62,7 +62,10 @@ export function installDebug(game: Game): void {
       return res.text();
     },
     /** Start a new run (optionally seeded). */
-    run: (seed?: number, cabinet?: import('./core/cabinets').CabinetId, stake = 0) => game.startRun(seed, cabinet, stake),
+    run: (seed?: number, cabinet?: import('./core/cabinets').CabinetId, stake = 0, act3 = false) => {
+      if (act3) game.prefs.act3 = true;
+      game.startRun(seed, cabinet, stake);
+    },
     /** Make the current fight end in a win on the player's next spin (for walking run screens). */
     forceWin() {
       game.fight.sides.enemy.hp = 1;
@@ -71,10 +74,10 @@ export function installDebug(game: Game): void {
     },
     /** Start a paused sandbox fight against an archetype ('slime', 'frost', 'thief', 'golem', 'gremlin', 'brute', 'house'). */
     vs(id: string, player?: SymbolId[], enemy?: SymbolId[], relics: RelicId[] = []) {
-      const a = id === 'house' ? BOSS : id === 'mirror' ? MIRROR : ARCHETYPES.find((x) => x.id === id);
+      const a = id === 'house' ? BOSS : id === 'mirror' ? MIRROR : id === 'dealer' ? DEALER : ARCHETYPES.find((x) => x.id === id);
       if (!a) throw new Error(`no archetype ${id}`);
-      const boss = id === 'house' || id === 'mirror';
-      const e = makeEnemy(a, 2, new Rng(1), boss, a.acts?.includes(2) ? 2 : 1);
+      const boss = id === 'house' || id === 'mirror' || id === 'dealer';
+      const e = makeEnemy(a, 2, new Rng(1), boss, a.acts?.includes(3) ? 3 : a.acts?.includes(2) ? 2 : 1);
       const cfg = structuredClone(game.cfg);
       cfg.enemy = { hp: e.hp, strips: e.strips, name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
       if (id === 'mirror') {

@@ -6,6 +6,9 @@ import type { CellRef } from './strip';
  * Everything that happens in a fight, in order. The presentation layer plays these back;
  * the combat log and recap stats are derived from them. Values are post-event state.
  */
+/** The Dealer's face-up cards. */
+export type DealCard = 'shuffle' | 'cut' | 'raise';
+
 export type CombatEvent =
   | { type: 'turnStart'; turn: number; side: SideId }
   | { type: 'shieldReset'; side: SideId; lost: number }
@@ -63,7 +66,25 @@ export type CombatEvent =
   | { type: 'freeze'; from: SideId; to: SideId; reels: number[]; targets: number[]; turns: number; stops: number[] }
   | { type: 'lock'; from: SideId; to: SideId; reels: number[]; targets: number[]; turns: number }
   /** A status ran out on these reels. */
-  | { type: 'thaw'; side: SideId; reels: number[]; status: 'frozen' | 'locked' | 'hexed' }
+  | { type: 'thaw'; side: SideId; reels: number[]; status: 'frozen' | 'locked' | 'hexed' | 'raked' }
+  /** The Card Sharp marked cells (dead CARDs for the fight). */
+  | { type: 'mark'; from: SideId; to: SideId; reels: number[]; cells: CellRef[] }
+  /** A marked card landed on the payline and bit. */
+  | { type: 'markedHit'; side: SideId; cells: CellRef[]; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number }
+  /** The Pit Boss confiscated gilds (cells lose their gild for the fight). */
+  | { type: 'confiscate'; from: SideId; to: SideId; reels: number[]; cells: CellRef[]; enhs: Enh[] }
+  /** The Croupier rakes your winnings: your groups pay less for `turns` of your turns. */
+  | { type: 'rake'; from: SideId; to: SideId; reels: number[]; turns: number; cut: number }
+  /** The Dealer shows the card it will deal next (telegraph). */
+  | { type: 'dealNext'; side: SideId; card: DealCard }
+  /** SHUFFLE: cells swapped between two of the target's reels (index pairs: [in reel a, in reel b]). */
+  | { type: 'shuffle'; from: SideId; to: SideId; reels: [number, number]; swaps: [number, number][] }
+  /** CUT: cells removed from the target's reels (one per reel, indexes before removal). */
+  | { type: 'cut'; from: SideId; to: SideId; cells: CellRef[] }
+  /** RAISE: the Dealer's next hit and your next jackpot are doubled. */
+  | { type: 'raise'; from: SideId }
+  /** The Dealer at half HP: HOUSE RULES (deals faster). */
+  | { type: 'houseRules'; side: SideId; every: number }
   /** Hexed reels pay half for `turns` of their owner's turns. */
   | { type: 'hex'; from: SideId; to: SideId; reels: number[]; targets: number[]; turns: number }
   /** Bombs stuck onto the target's cells. */

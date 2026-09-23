@@ -181,6 +181,9 @@ const ABBR: Record<SymbolId, string> = {
   mimicSym: 'MIM',
   ground: 'GND',
   fake: 'FAK',
+  card: 'CRD',
+  gavel: 'GVL',
+  rake: 'RAK',
 };
 
 export function formatRow(r: TurnRow): string {

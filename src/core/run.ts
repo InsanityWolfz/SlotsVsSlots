@@ -1,5 +1,5 @@
 import { cloneConfig, defaultConfig, type Enh, type GameConfig, type Gild, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACTS, ARCHETYPES, generateRunPaths, makeEnemy, RUN_FIGHTS, TUNE, type EnemyDef } from './enemies';
+import { ACTS, actLength, ARCHETYPES, generateRunPaths, makeEnemy, TUNE, type EnemyDef } from './enemies';
 import { MAX_STAKE, MIRROR_COPYABLE, mirrorCanUse, STAKE } from './stakes';
 import type { Fight } from './fight';
 import {
@@ -174,9 +174,11 @@ export interface RunState {
   actIntro: boolean;
   /** HIGH STAKES level (0 = base game). */
   stake: number;
+  /** THE DEALER is unlocked (someone has beaten GREEN): runs at GREEN+ continue into act 3. */
+  act3: boolean;
 }
 
-export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0): RunState {
+export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false): RunState {
   const rng = new Rng(seed);
   const paths = generateRunPaths(rng);
   const cab = CABINETS[cabinet];
@@ -204,13 +206,18 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
     pendingLegend: null,
     actIntro: false,
     stake: Math.max(0, Math.min(MAX_STAKE, stake)),
+    act3,
   };
 }
 
-/** Total fights in a full run (all acts, bosses included). */
-export const TOTAL_FIGHTS = ACTS * (RUN_FIGHTS + 1);
+/** Acts in this run: GREEN stake and up adds act 3 (THE DEALER). */
+export const runActs = (run: RunState) => (run.act3 && run.stake >= STAKE.act3 ? 3 : ACTS);
+/** Fights in the base run (2 acts, bosses included) — the most fights any act 1-2 run can have. */
+export const TOTAL_FIGHTS = ACTS * (actLength(1) + 1);
+/** Fights in this run, bosses included. */
+export const totalFights = (run: RunState) => Array.from({ length: runActs(run) }, (_, i) => actLength(i + 1) + 1).reduce((a, b) => a + b, 0);
 /** 1-based fight number across the whole run. */
-export const fightNumber = (run: RunState) => (run.act - 1) * (RUN_FIGHTS + 1) + run.depth + 1;
+export const fightNumber = (run: RunState) => Array.from({ length: run.act - 1 }, (_, i) => actLength(i + 1) + 1).reduce((a, b) => a + b, 0) + run.depth + 1;
 
 /** The act's boss fell: a new map, a full heal, and a legendary pick. */
 function startNextAct(run: RunState): void {
@@ -223,10 +230,12 @@ function startNextAct(run: RunState): void {
   run.enemies = run.paths.map((opts) => opts[0]);
   run.chosen = run.paths.map((opts) => opts.length === 1);
   run.player.hp = run.player.maxHp;
+  run.actIntro = true;
+  // Act 3 (THE DEALER): a full heal and the Cashier only — the legendary pick stays act 2's decision.
+  if (run.act > 2) return;
   applySignature(run);
   const pool = [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
   run.pendingLegend = rng.shuffle(pool).slice(0, RUN.legendPick);
-  run.actIntro = true;
 }
 
 /** Each cabinet's act 2 signature (shown on its card and on the act transition screen). */
@@ -296,7 +305,7 @@ export function takeLegend(run: RunState, relic: RelicId): void {
 }
 
 export const currentEnemy = (run: RunState): EnemyDef => run.enemies[Math.min(run.depth, run.enemies.length - 1)];
-export const isBossNext = (run: RunState) => run.depth >= RUN_FIGHTS;
+export const isBossNext = (run: RunState) => run.depth >= actLength(run.act);
 /** The next fight is a fork the player hasn't chosen yet. */
 export const needsChoice = (run: RunState) => !run.over && !run.chosen[run.depth];
 
@@ -336,6 +345,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   cfg.enemy.act = run.act;
   // BLACK stake: the House plants bombs (even on your payline).
   if (e.boss === 'house' && run.stake >= STAKE.houseDirty) cfg.enemy.strips = cfg.enemy.strips.map((s) => ({ ...s, bomb: (s.bomb ?? 0) + STAKE.houseBombsPerReel }));
+  if (e.boss === 'dealer') cfg.player.stackShield = Math.min(MIRROR_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
   // GREEN stake: the Mirror copies one of your relics.
   if (e.boss === 'mirror' && run.stake >= STAKE.mirrorRelic) {
     const copy = mirrorCopy(run);
@@ -353,6 +363,7 @@ export function enemyHp(run: RunState, e: EnemyDef): number {
   if (!e.isBoss) return run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? Math.round(e.hp * FRAGILE_OPENER_MUL) : e.hp;
   // The Mirror grows with your machine and (like the House) with every relic you carry in.
   if (e.boss === 'mirror') return Math.round(TUNE.mirrorPower * machinePower(run)) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length;
+  if (e.boss === 'dealer') return Math.round(TUNE.dealerPower * machinePower(run)) + TUNE.dealerFlat + TUNE.mirrorPerRelic * run.player.relics.length;
   return e.hp + BOSS_HP_PER_RELIC * run.player.relics.length;
 }
 
@@ -463,8 +474,8 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   if (run.player.relics.includes('bandage')) hp += BANDAGE_HEAL;
   run.player.hp = Math.min(run.player.maxHp, hp);
   run.depth++;
-  if (run.depth > RUN_FIGHTS) {
-    if (run.act < ACTS) startNextAct(run);
+  if (run.depth > actLength(run.act)) {
+    if (run.act < runActs(run)) startNextAct(run);
     else {
       run.over = true;
       run.won = true;
@@ -757,7 +768,7 @@ export function shopOffers(run: RunState): ShopItem[] {
   if (ups.length && rng.next() < 0.5) add(rng.pick(ups), P.tierUp);
   else add(extend.length ? rng.pick(extend) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
   add(gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
-  const lastShop = run.act === ACTS && run.depth >= RUN.shopAfter[RUN.shopAfter.length - 1];
+  const lastShop = run.act === runActs(run) && run.depth >= Math.min(actLength(run.act), RUN.shopAfter[RUN.shopAfter.length - 1]);
   const relics = (Object.keys(RELICS) as RelicId[]).filter(
     (r) => !p.relics.includes(r) && !COUNTER_RELICS.has(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && !(lastShop && r === 'bandage') && !LEGENDARY.has(r),
   );

@@ -24,7 +24,11 @@ export type SymbolId =
   | 'mimicSym'
   // Act 2 counter-enemies
   | 'ground'
-  | 'fake';
+  | 'fake'
+  // Act 3
+  | 'card'
+  | 'gavel'
+  | 'rake';
 
 /**
  * Gilded cells (enhancements that persist for the run):
@@ -66,7 +70,12 @@ export type AbilityKind =
   | 'gulp'
   | 'reflect'
   | 'earth'
-  | 'launder';
+  | 'launder'
+  // Act 3
+  | 'mark'
+  | 'penalty'
+  | 'houseTake'
+  | 'deal';
 export interface AbilityDef {
   kind: AbilityKind;
   /** Enemy turns per charge. */
@@ -110,7 +119,7 @@ export interface SideConfig {
   portrait?: string;
   ability?: AbilityDef | null;
   /** Boss rule set, if any. */
-  boss?: 'house' | 'mirror' | null;
+  boss?: 'house' | 'mirror' | 'dealer' | null;
   /** Enhanced cells, applied to matching symbols on each reel at fight start. */
   gilded?: Gild[];
   /** Boss fight: chips carried in grant this much shield at the start of each House turn. */
@@ -151,7 +160,7 @@ export function defaultConfig(): GameConfig {
     player: { hp: 20, strips: reels3({ sword: 4, shield: 4, bolt: 4 }) },
     // Tuned from playtest/PLAYTEST_REPORT.md: ~65% player wins, ~24 turns, cleanse in ~half of fights.
     enemy: { hp: 30, strips: reels3({ sword: 5, shield: 2, slime: 5 }), name: 'SLIME KING', portrait: 'enemyPortrait' },
-    base: { sword: 1, shield: 1, bolt: 1, slime: 1, ice: 1, claw: 1, rock: 1, lock: 1, coin: 1, seven: 2, empty: 0, wild: 1, bomb: 1, hex: 1, fangs: 1, mimicSym: 1, ground: 1, fake: 1 },
+    base: { sword: 1, shield: 1, bolt: 1, slime: 1, ice: 1, claw: 1, rock: 1, lock: 1, coin: 1, seven: 2, empty: 0, wild: 1, bomb: 1, hex: 1, fangs: 1, mimicSym: 1, ground: 1, fake: 1, card: 1, gavel: 1, rake: 1 },
     pairMult: 2,
     tripleMult: 3,
     pairRule: 'inOrder',
