@@ -273,7 +273,7 @@ export function drawCell(
     const shimmer = 0.85 + 0.15 * Math.sin(time * 4 + x * 0.05 + y * 0.03);
     drawSprite(ctx, ENH_SPRITE[cell.enh], x, y, ART_SCALE, { sx: sx * pop, sy: sy * pop, alpha: alpha * (1 - stolen) * shimmer, dim });
     if (cell.tier === 2 && hasSprite('tier2Frame')) drawSprite(ctx, artId('tier2Frame'), x, y, ART_SCALE, { sx: sx * pop, sy: sy * pop, alpha: alpha * (1 - stolen), dim });
-    if (cell.tier === 2) {
+    if (cell.tier === 2 && !hasSprite('tier2Frame')) {
       ctx.fillStyle = COLORS.outline;
       ctx.fillRect(x + 12, y - 34, 22, 16);
       drawText(ctx, 'II', x + 23, y - 26, 1.5, COLORS.goldLight, { alpha });

@@ -613,13 +613,29 @@ S.relicBattery = lit(16, 16, [
 ]);
 {
   const g = grid(16, 16);
-  shape(g, 1, discSpans(6.5, 5.5, 5.2, 1, 10), (x, y, has) => {
-    const d = Math.hypot((x - 6.5) , (y - 5.5));
-    if (d > 3.6) return x + y <= 10 ? 'L' : x + y >= 14 ? 'D' : 'S';
-    return x + y >= 14 ? 'U' : 'A';
-  });
-  [[5, 3], [4, 4], [3, 5], [7, 3], [6, 4]].forEach(([x, y]) => put(g, x, y, 'W'));
-  [[9, 11, 'S'], [10, 11, 'D'], [10, 12, 'S'], [11, 12, 'D'], [11, 13, 'S'], [12, 13, 'D'], [12, 14, 'G'], [13, 14, 'g'], [13, 13, 'G']].forEach(([x, y, c]) => put(g, x, y, c));
+  // TWIN REELS: two steel-framed reel windows showing the same red 7, joined by a gold chain link
+  const reel = (x0) => stamp(g, x0, 3, [
+    'LLLLLS',
+    'LttttD',
+    'LTTTtD',
+    'LRRRrD',
+    'LTTRrD',
+    'LTRrTD',
+    'LTRrTD',
+    'LTrrTD',
+    'LTTTtD',
+    'LttttD',
+    'SDDDDD',
+  ]);
+  reel(1); reel(9);
+  put(g, 2, 4, 'W'); put(g, 10, 4, 'W');
+  // gold link bridging the frames
+  stamp(g, 6, 7, [
+    'YGGg',
+    'W  g',
+    'G  g',
+    'Gggg',
+  ]);
   S.relicMirror = toRows(outline(g));
 }
 S.relicFang = lit(16, 16, [
@@ -2412,16 +2428,44 @@ S.mimicSym = lit(16, 16, [
 ]);
 
 // ---------------------------------------------------------------- act 2 cell overlays (16x16, centre untouched)
-// bombOverlay: small lit bomb stuck in the bottom-right corner
+// bombOverlay: big round black bomb (~60% of the cell), centred right/down, lit fuse top-right.
+// The top-left 6x6 stays fully transparent: the fuse-number badge is drawn there in code.
 {
   const g = grid(16, 16);
-  boulder(g, 12, 12, 3.2, 3.2, ['l', 'k', 'P']);
-  plot(g, [[11, 10, 'W'], [10, 11, 'L']]);
-  stamp(g, 13, 8, ['S']);
-  plot(g, [[12, 7, 'w'], [12, 6, 'B']]);
+  const cx = 9.5, cy = 9.5, r = 4.75;
+  shape(g, 5, discSpans(cx, cy, r, 5, 14), (x, y) => {
+    const nx = (x - cx) / r, ny = (y - cy) / r;
+    return nx + ny < -0.7 ? 'l' : nx + ny > 0.6 || ny > 0.75 ? 'P' : 'k';
+  });
+  plot(g, [[7, 7, 'W'], [6, 8, 'W'], [8, 7, 'L'], [6, 9, 'L']]);                  // gloss
+  plot(g, [[12, 5, 'L'], [13, 5, 'S'], [13, 6, 'D'], [12, 6, 'S']]);              // steel collar
+  plot(g, [[13, 4, 'w'], [14, 3, 'B']]);                                          // fuse
+  plot(g, [[14, 2, 'O'], [14, 1, 'W'], [13, 1, 'Y'], [15, 1, 'Y'], [14, 0, 'Y']]); // spark
   outline(g);
-  fuseSpark(g, 11, 5); put(g, 13, 5, 'O');
+  plot(g, [[12, 0, 'Y'], [15, 3, 'O']]);                                          // flying embers
   S.bombOverlay = toRows(g);
+}
+// tier2Frame: tier II gild marker — gold/violet corner brackets + a 2-pip "II" mark bottom-centre, centre clear
+{
+  const g = grid(16, 16);
+  const arm = 4;
+  const rot = ([x, y]) => [15 - y, x];
+  // top-left bracket authored once (outer stroke gold, inner stroke violet), then rotated to all corners
+  let pts = [];
+  for (let i = 1; i <= arm; i++) {
+    pts.push([i, 1, i === 1 ? 'W' : 'Y'], [1, i, i === 1 ? 'W' : 'Y']);
+    if (i >= 2) pts.push([i, 2, 'V'], [2, i, 'V']);
+  }
+  pts.push([2, 2, 'J']);
+  const shades = [['Y', 'V', 'J', 'W'], ['G', 'V', 'J', 'Y'], ['G', 'v', 'V', 'G'], ['Y', 'V', 'J', 'Y']];
+  for (let r = 0; r < 4; r++) {
+    const [gold, vio, vioHi, tip] = shades[r];
+    pts.forEach(([x, y, c]) => put(g, x, y, c === 'W' ? tip : c === 'Y' ? gold : c === 'V' ? vio : vioHi));
+    pts = pts.map(([x, y, c]) => [...rot([x, y]), c]);
+  }
+  // "II" pips, bottom centre
+  plot(g, [[6, 13, 'Y'], [6, 14, 'G'], [9, 13, 'Y'], [9, 14, 'G']]);
+  S.tier2Frame = toRows(outline(g));
 }
 // hexOverlay: thin magenta rune ring round the cell edge, a glyph plate in each corner
 {
@@ -2649,7 +2693,7 @@ const DIMS = {
   cabinetKnight: { w: 48, h: 64 }, cabinetMidas: { w: 48, h: 64 }, cabinetThorn: { w: 48, h: 64 },
   cabinetTesla: { w: 48, h: 64 }, cabinetJoker: { w: 48, h: 64 }, cabinetLocked: { w: 48, h: 64 },
   enemyBomber: 24, enemyHexer: 24, enemyVampire: 24, enemyMimic: 24, enemyMirror: 24,
-  bomb: 16, hex: 16, fangs: 16, mimicSym: 16, bombOverlay: 16, hexOverlay: 16,
+  bomb: 16, hex: 16, fangs: 16, mimicSym: 16, bombOverlay: 16, hexOverlay: 16, tier2Frame: 16,
   enhVamp: 16, enhLucky: 16, enhBlaze: 16,
   relicTicket: 16, relicBell: 16, relicPhoenix: 16, relicOvercharge: 16, relicKey: 16, relicSandglass: 16,
   icoBomb: 8, icoHex: 8, icoDrain: 8, icoGulp: 8, icoReflect: 8,
@@ -2734,7 +2778,7 @@ export type SpriteId =
   | 'enemyBomber' | 'enemyHexer' | 'enemyVampire'  // act 2 enemy portraits, 24x24
   | 'enemyMimic' | 'enemyMirror'                   // (enemyMirror = act 2 final boss)
   | 'bomb' | 'hex' | 'fangs' | 'mimicSym'          // act 2 enemy reel symbols, 16x16
-  | 'bombOverlay' | 'hexOverlay'                   // act 2 cell overlays, 16x16 (mostly transparent)
+  | 'bombOverlay' | 'hexOverlay' | 'tier2Frame'    // act 2 cell overlays / tier II gild marker, 16x16 (mostly transparent)
   | 'enhVamp' | 'enhLucky' | 'enhBlaze'            // act 2 upgrade overlays, 16x16 (mostly transparent)
   | 'relicTicket' | 'relicBell' | 'relicPhoenix'   // legendary relics, 16x16
   | 'relicOvercharge' | 'relicKey' | 'relicSandglass'
