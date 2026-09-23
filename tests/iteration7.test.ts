@@ -17,7 +17,7 @@ function fight(mut: (c: GameConfig) => void, seed = 7): Fight {
 const gold3 = (tier?: 2) => [0, 1, 2].map((reel) => ({ reel, symbol: 'sword' as SymbolId, enh: 'gold' as const, ...(tier ? { tier } : {}) }));
 
 describe('gild levels (tier II, full sets, hexes)', () => {
-  it('GOLD: x2 plain, x3 tier II, x3 set, x4 tier II + set', () => {
+  it('GOLD: x2 plain, x3 tier II; one multiplier per group (1 + levels)', () => {
     const single = (gilded: ReturnType<typeof gold3>) => {
       const f = fight((c) => {
         c.player.strips = [{ sword: 12 }, { shield: 12 }, { bolt: 12 }];
@@ -38,8 +38,9 @@ describe('gild levels (tier II, full sets, hexes)', () => {
     f.sides.player.hexed[2] = 2;
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const g = ofType(f.step().events, 'spin')[0].score.groups[0];
-    // 9 x2 x2 (reels 1-2, plain gold now) with reel 3 dark, then halved.
-    expect(g.notes).toEqual(['X2', 'X2', 'HALF']);
+    // 9 x(1+1+1) (reels 1-2, plain gold now; GOLD is one multiplier per group) with reel 3 dark, then halved.
+    expect(g.notes).toEqual(['X3', 'HALF']);
+    expect(g.amount).toBe(13);
     expect(g.fullSet).toBeFalsy();
   });
 

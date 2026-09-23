@@ -3,6 +3,7 @@ import { ACTS, generateRunPaths, RUN_FIGHTS, TUNE, type EnemyDef } from './enemi
 import type { Fight } from './fight';
 import {
   BANDAGE_HEAL,
+  BATTERY_ENERGY,
   BELL_MULT,
   BLAZE_BONUS,
   KEY_MULT,
@@ -16,8 +17,14 @@ import {
   KEEN_BONUS,
   LEGENDARY,
   LUCKY_CHANCE,
+  OVERCHARGE_ECHO,
+  REFLECT_CAP,
+  REFLECT_MIN,
   RELICS,
+  ROD_SPECIAL_COST,
+  ROD_SPECIAL_DAMAGE,
   SPIKED_DAMAGE,
+  VAMP_CAP,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
 import { Rng } from './rng';
@@ -75,7 +82,7 @@ export const CHIPS = {
   stackPer: 8,
   /** Every run starts with a little float so shop 1 is a real visit. */
   start: 4,
-  prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 5, legend: 20, tierUp: 12 },
+  prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 5, legend: 20, tierUp: 10 },
   /** First reroll per visit costs 1, then +1 each time. */
   rerollBase: 1,
 };
@@ -203,6 +210,10 @@ function startNextAct(run: RunState): void {
   run.enemies = run.paths.map((opts) => opts[0]);
   run.chosen = run.paths.map((opts) => opts.length === 1);
   run.player.hp = run.player.maxHp;
+  if (CABINETS[run.cabinet].act2Tier) {
+    const sig = new Set(CABINETS[run.cabinet].gilded.map((g) => g.enh));
+    for (const g of run.player.gilded) if (sig.has(g.enh)) g.tier = 2;
+  }
   const pool = [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
   run.pendingLegend = rng.shuffle(pool).slice(0, RUN.legendPick);
   run.actIntro = true;
@@ -237,7 +248,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     startHp: run.player.hp,
     strips: run.player.strips.map((s) => ({ ...s })),
     gilded: run.player.gilded.map((g) => ({ ...g })),
-    stackShield: e.boss === 'house' ? Math.floor(run.player.chips / CHIPS.stackPer) : 0,
+    stackShield: e.isBoss ? Math.floor(run.player.chips / CHIPS.stackPer) : 0,
   };
   const hp = enemyHp(run, e);
   cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
@@ -246,6 +257,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.enemy.strips = run.player.strips.map((s) => ({ ...s }));
     // It copies what you hit with: never your spikes.
     cfg.enemy.gilded = run.player.gilded.filter((g) => g.enh !== 'spiked').map((g) => ({ ...g }));
+    // REFLECTION is capped relative to you: two from full HP kill you.
+    if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, power: Math.max(REFLECT_MIN, Math.round(run.player.maxHp * REFLECT_CAP)) };
   }
   cfg.relics = [...run.player.relics];
   cfg.cabinet = run.cabinet;
@@ -263,15 +276,24 @@ export function enemyHp(run: RunState, e: EnemyDef): number {
   return e.hp + BOSS_HP_PER_RELIC * run.player.relics.length;
 }
 
-/** Your machine's expected damage per spin: swords plus energy turned into specials. */
+/**
+ * Your machine's damage on a TYPICAL spin: swords (each spin capped at 20, so rare gold jackpots
+ * don't inflate it) plus energy turned into specials, counting Rod, Battery and Overcharge.
+ */
 export function machinePower(run: RunState): number {
   const base = defaultConfig();
   const cab = CABINETS[run.cabinet];
-  const s = stripStats(run.player.strips, base, run.player.relics, run.player.gilded);
-  const cost = cab.specialCost ?? base.specialCost;
-  const dmg = (cab.specialDamage ?? base.specialDamage) + s.specialBonus;
-  return s.damage + (s.energy / cost) * dmg;
+  const { relics, gilded } = run.player;
+  const s = stripStats(run.player.strips, base, relics, gilded, POWER_CAP);
+  const rod = relics.includes('rod') && gilded.some((g) => g.enh === 'charged');
+  const cost = rod ? ROD_SPECIAL_COST : cab.specialCost ?? base.specialCost;
+  let dmg = Math.max(cab.specialDamage ?? base.specialDamage, rod ? ROD_SPECIAL_DAMAGE : 0) + s.specialBonus;
+  if (relics.includes('overcharge')) dmg += Math.ceil(dmg * OVERCHARGE_ECHO);
+  // Battery: a head start worth about one extra special over a Mirror fight (~8 of your spins).
+  const energy = s.energy + (relics.includes('battery') ? BATTERY_ENERGY / 8 : 0);
+  return s.damage + (energy / cost) * Math.min(POWER_CAP, dmg);
 }
+const POWER_CAP = 20;
 
 const rocksIn = (s: StripCounts[]) => s.reduce((a, x) => a + (x.rock ?? 0), 0);
 
@@ -368,7 +390,7 @@ export interface StripStats {
   specialBonus: number;
 }
 
-export function stripStats(strips: StripCounts[], base: GameConfig, relics: RelicId[] = [], gilded: Gild[] = []): StripStats {
+export function stripStats(strips: StripCounts[], base: GameConfig, relics: RelicId[] = [], gilded: Gild[] = [], damageCap = Infinity): StripStats {
   const gildOf = (reel: number, sym: SymbolId) => gilded.find((g) => g.reel === reel && g.symbol === sym);
   const enhOf = (reel: number, sym: SymbolId) => gildOf(reel, sym)?.enh;
   const sets = fullSets(gilded, relics);
@@ -409,7 +431,8 @@ export function stripStats(strips: StripCounts[], base: GameConfig, relics: Reli
             if (enh === 'keen' && g.symbol === 'sword') g.amount += KEEN_BONUS * lvl + (relics.includes('hone') ? HONE_BONUS : 0);
             if (enh === 'charged' && g.symbol === 'bolt') g.amount += lvl;
           }
-          for (const r of g.reels) if (enhOf(r, own[r]) === 'gold') g.amount *= lvlOf(r, own[r]) + 1;
+          const goldLevels = g.reels.filter((r) => enhOf(r, own[r]) === 'gold').reduce((a, r) => a + lvlOf(r, own[r]), 0);
+          if (goldLevels) g.amount *= 1 + goldLevels;
           if (relics.includes('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) g.amount *= 2;
           if (relics.includes('key') && g.matched && g.reels.length === 2) g.amount = Math.ceil(g.amount * KEY_MULT);
           if (relics.includes('bell') && g.matched && g.reels.length === 3) g.amount *= BELL_MULT;
@@ -417,7 +440,7 @@ export function stripStats(strips: StripCounts[], base: GameConfig, relics: Reli
         }
         sc.totals = {};
         for (const g of sc.groups) sc.totals[g.symbol] = (sc.totals[g.symbol] ?? 0) + g.amount;
-        out.damage += p * ((sc.totals.sword ?? 0) + (relics.includes('pickaxe') ? sc.totals.rock ?? 0 : 0));
+        out.damage += p * Math.min(damageCap, (sc.totals.sword ?? 0) + (relics.includes('pickaxe') ? sc.totals.rock ?? 0 : 0));
         out.energy += p * (sc.totals.bolt ?? 0);
         out.shield += p * (sc.totals.shield ?? 0);
         if (sc.tier === 'pair') out.pairPct += p * 100;
@@ -561,8 +584,8 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
       break;
     case 'gild': {
       const own = p.gilded.find((g) => g.reel === o.reel && g.symbol === o.symbol && g.enh === o.enh);
-      if (own && o.tier) own.tier = 2;
-      else if (!own) p.gilded.push({ reel: o.reel, symbol: o.symbol, enh: o.enh, ...(o.tier ? { tier: o.tier } : {}) });
+      if (o.tier) for (const g of p.gilded) if (g.enh === o.enh) g.tier = 2;
+      if (!own) p.gilded.push({ reel: o.reel, symbol: o.symbol, enh: o.enh, ...(o.tier ? { tier: o.tier } : {}) });
       break;
     }
     case 'remove': {
@@ -722,14 +745,22 @@ export function leaveShop(run: RunState): void {
 /** Act 2: TIER II upgrades for gilds you own. */
 export function tierUps(run: RunState): DraftOption[] {
   if (run.act < 2) return [];
-  return run.player.gilded.filter((g) => !g.tier).map((g) => ({ kind: 'gild', enh: g.enh, symbol: g.symbol, reel: g.reel, tier: 2 }));
+  // One offer per gild type: TIER II upgrades every reel that carries it.
+  const seen = new Set<Enh>();
+  const out: DraftOption[] = [];
+  for (const g of run.player.gilded) {
+    if (g.tier || seen.has(g.enh)) continue;
+    seen.add(g.enh);
+    out.push({ kind: 'gild', enh: g.enh, symbol: g.symbol, reel: g.reel, tier: 2 });
+  }
+  return out;
 }
 
 /** Gilds after taking a card. */
 export function gildsAfter(run: RunState, o: DraftOption): Gild[] {
   if (o.kind !== 'gild') return run.player.gilded;
   const own = run.player.gilded.find((g) => g.reel === o.reel && g.symbol === o.symbol && g.enh === o.enh);
-  if (own) return run.player.gilded.map((g) => (g === own && o.tier ? { ...g, tier: 2 as const } : g));
+  if (own) return run.player.gilded.map((g) => (g.enh === o.enh && o.tier ? { ...g, tier: 2 as const } : g));
   return [...run.player.gilded, { reel: o.reel, symbol: o.symbol, enh: o.enh }];
 }
 
@@ -763,6 +794,33 @@ const TIER_TEXT: Record<Enh, (s: string, reel: number) => string> = {
   lucky: (s, r) => `${s}S ON REEL ${r}: 50% CHANCE TO LAND AS A WILD`,
   blaze: (_s, r) => `BLAZE REEL ${r}: YOUR SPECIAL DEALS +4`,
 };
+/** What a gild card's cell will really do, at the level it will have after you take it. */
+function levelText(run: RunState, o: Extract<DraftOption, { kind: 'gild' }>): string {
+  const after = gildsAfter(run, o);
+  const g = after.find((x) => x.reel === o.reel && x.symbol === o.symbol && x.enh === o.enh);
+  const sets = fullSets(after, run.player.relics);
+  const setStep = sets.has(o.enh) ? (run.player.relics.includes('ticket') ? 2 : 1) : 0;
+  const lvl = 1 + (g?.tier ? 1 : 0) + setStep;
+  const set = setStep ? ' (SET)' : '';
+  const spikeBase = run.player.relics.includes('cactus') ? CACTUS_DAMAGE : SPIKED_DAMAGE;
+  switch (o.enh) {
+    case 'gold':
+      return `PAY X${1 + lvl}${set}`;
+    case 'keen':
+      return `+${KEEN_BONUS * lvl + (run.player.relics.includes('hone') ? HONE_BONUS : 0)} DAMAGE AND PIERCE${set}`;
+    case 'charged':
+      return `+${lvl} ENERGY${set}`;
+    case 'spiked':
+      return `HIT BACK FOR ${spikeBase + 2 * (lvl - 1)}${setStep ? ' OR YOUR SHIELD' : ''}${set}`;
+    case 'vamp':
+      return `HEAL ${Math.min(VAMP_CAP, lvl)} WHEN THEY HIT${set}`;
+    case 'lucky':
+      return `${Math.round(100 * Math.min(0.8, LUCKY_CHANCE.each + LUCKY_CHANCE.step * (lvl - 1)))}% TO LAND AS A WILD${set}`;
+    case 'blaze':
+      return `YOUR SPECIAL DEALS +${BLAZE_BONUS.each + lvl - 1}${set}`;
+  }
+}
+
 const plural = (s: SymbolId, n: number) => `${NAME[s] ?? s.toUpperCase()}${n > 1 ? 'S' : ''}`;
 
 export function describeOption(o: DraftOption, run?: RunState): { title: string; text: string } {
@@ -784,7 +842,12 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'gild': {
       let text = ENH_TEXT[o.enh](NAME[o.symbol] ?? '', o.reel + 1);
       if (o.enh === 'spiked' && run?.player.relics.includes('cactus')) text = text.replace(`FOR ${SPIKED_DAMAGE}`, `FOR ${CACTUS_DAMAGE}`);
-      if (o.tier) return { title: `${o.enh.toUpperCase()} II ${NAME[o.symbol]}S`, text: `UPGRADE: ${TIER_TEXT[o.enh](NAME[o.symbol] ?? '', o.reel + 1)}` };
+      if (run) {
+        const live = levelText(run, o);
+        if (o.tier) return { title: `${o.enh.toUpperCase()} II`, text: `EVERY ${o.enh.toUpperCase()} GILD: ${live}` };
+        return { title: `${o.enh.toUpperCase()} ${NAME[o.symbol]}S`, text: `${NAME[o.symbol]}S ON REEL ${o.reel + 1}: ${live}` };
+      }
+      if (o.tier) return { title: `${o.enh.toUpperCase()} II`, text: `UPGRADE: ${TIER_TEXT[o.enh](NAME[o.symbol] ?? '', o.reel + 1)}` };
       return { title: `${o.enh.toUpperCase()} ${NAME[o.symbol]}S`, text };
     }
     case 'remove':

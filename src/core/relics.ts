@@ -12,7 +12,7 @@ export interface RelicDef {
 export const RELICS: Record<RelicId, RelicDef> = {
   clover: { id: 'clover', name: 'LUCKY CLOVER', text: '30% CHANCE A NEAR-MISS BECOMES A JACKPOT', sprite: 'relicClover' },
   battery: { id: 'battery', name: 'BATTERY', text: 'START EACH FIGHT WITH 3 ENERGY', sprite: 'relicBattery' },
-  mirror: { id: 'mirror', name: 'MIRROR', text: 'ANY TWO MATCHING REELS PAY AS A DOUBLE', sprite: 'relicMirror' },
+  mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS PAY AS A DOUBLE', sprite: 'relicMirror' },
   fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR SPECIAL HEALS 3 HP', sprite: 'relicFang' },
   bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 6 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
   mittens: { id: 'mittens', name: 'MITTENS', text: 'FREEZES LAST 1 TURN LESS', sprite: 'relicMittens' },
@@ -46,6 +46,10 @@ export const LUCKY_CHANCE = { each: 0.35, step: 0.15 };
 export const BLAZE_BONUS = { each: 3 };
 /** OVERCHARGE: the echo deals this fraction of the special. */
 export const OVERCHARGE_ECHO = 1 / 3;
+/** VAMP heals at most this much per sword group (a VAMP FULL SET was the strongest thing measured). */
+export const VAMP_CAP = 3;
+/** The Mirror's REFLECTION is capped at this share of your max HP (two from full kill you). */
+export const REFLECT_CAP = 0.6;
 /** Bomber bombs: fuse in the victim's turns, damage when it runs out (shield blocks). */
 export const BOMB = { fuse: 3, damage: 3 };
 /** The Mirror's Reflection: never less than this. */

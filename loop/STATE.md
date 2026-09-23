@@ -148,3 +148,17 @@ Implemented:
 - Tests: 106 (8 new in iteration7.test.ts).
 Sim (2000 runs): greedy 19.5% / relic 17.3% / random 12.8%. Act 1 clear 46.5%; House 76%; Mirror 63% (greedy). Cabinets greedy: knight 19.5, midas 21.3, thorn 14.9, tesla 20.6, joker 17.9 (was 12–30).
 Open: THORN still lowest (sim greedy ignores builds; check under commit play); act 2 regular fights 2–4% deaths each; greedy vs random gap in act 2 is small (sim policy doesn't value act 2 choices); HIGH STAKES still pending.
+
+### Iteration 8 — 2026-09-23 (playtest/ITERATION_7.md → Package O: build for the Mirror, not against it)
+Playtest verdict on I7: the Mirror is a real climax now (REFLECTION 60% of its damage, 48% of kills, honest AT LEAST telegraph), but act 2 had no skill gap (random ≈ commit), the Mirror taxed building (MIDAS faced 330 HP; +8 max HP beat a tier II), tier II was a trap (notier +6.7), act 2 elites +11, F1 stale HUD cadence after CRACKED + 13 other bugs.
+Implemented:
+- REFLECTION capped at 60% of your max HP (min 3) instead of 20: two from full kill you, HP stops being the only answer.
+- Mirror HP = 4 × your machine's TYPICAL spin (per-spin damage capped at 20; Rod, Battery, Overcharge, Blaze counted) + 52.
+- GOLD no longer compounds per cell: one multiplier per group = 1 + the levels of its gold cells (a gold-set jackpot was x27; now x7). Holds MIDAS without the Mirror tax.
+- Act 2 elites x1.5 HP (act 1 unchanged). Hexer HP x1.05.
+- TIER II upgrades EVERY reel carrying that gild, 10 chips; card text is generated from the level you'll really have (set/Ticket/Cactus/Hone aware).
+- THORN: its spiked gilds go TIER II at the act transition. VAMP heal capped at 3 per group. Saved chips shield you on Mirror turns too (1 per 8) — the act 2 Cashier says so.
+- Bugs: F1 HUD cadence follows CRACKED; F2 Mirror/ability text from live numbers (Hourglass-aware, cap shown); F3 Hexer text; F5 banner widens/shrinks for long maths; F6 bomb callout ('+N BOMBS: BOOM IN 3'); F7 compact recap lists spoils, pick and buys; F9 elite relic renamed TWIN REELS; F10 panel hidden after the fight; F11 footer; F12 Cashier mentions tier II. Optional 'tier2Frame' art hook (hasSprite).
+- Tests: 106.
+Sim (official, 2000): greedy 17.9% / relic 16.6% / random 11.4%; act 1 clear 45.4%; House 74%; Mirror 59%. Cabinets greedy 16.6–19.9 (knight 17.9, midas 19.1, thorn 16.9, tesla 19.9, joker 16.6). Playtester's it7_skill harness (B1 snapshots, before the +52 bump): commit 50.2 ≥ notier 49.7, tierfirst 50.0, randomDraft 44.6, randomAll 37.0; elite2 − safe2 = −0.7; commit Mirror win 72% (→ flat raised 45→52).
+Open: TESLA strongest act 2 cabinet under commit (63.5 vs knight 41.4 on snapshots); KEEN has no act 2 form; HIGH STAKES; legendary picks could be build-aware.

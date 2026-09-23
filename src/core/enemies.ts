@@ -103,7 +103,7 @@ export const ARCHETYPES: Archetype[] = [
     name: 'HEXER',
     portrait: 'enemyHexer',
     strip: { sword: 5, shield: 3, hex: 4 },
-    hpMul: 0.95,
+    hpMul: 1.05,
     ability: { kind: 'curse', every: 4, power: 1 },
     minDepth: 0,
     blurb: 'HEXES YOUR REELS: HALF PAY, GILDS GO DARK',
@@ -173,7 +173,7 @@ export const DEPTH_HP = [21, 26, 31, 34, 37];
 export const DEPTH_HP_2 = [52, 62, 73, 85, 97];
 /** Mutable so balance sweeps can tune it. */
 /** mirrorPower/mirrorFlat: the Mirror's HP = power × your expected damage per spin + flat (ITERATION_6 Package N). */
-export const TUNE = { bossHp: 74, act2Mul: 1, act2Swords: 2, mirrorPower: 3, mirrorFlat: 55 };
+export const TUNE = { bossHp: 74, act2Mul: 1, act2Swords: 2, mirrorPower: 4, mirrorFlat: 52 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
@@ -205,6 +205,7 @@ export const DANGER: Record<string, number> = {
   mirror: 45,
 };
 export const ELITE_HP_MUL = 1.25;
+export const ELITE_HP_MUL_2 = 1.5;
 
 function jitter(strip: StripCounts, rng: Rng): StripCounts {
   // Move one symbol between two kinds so no two enemies of an archetype are identical.
@@ -275,7 +276,8 @@ export function generateRunPaths(rng: Rng, act = 1): EnemyDef[][] {
       const elite = opts.reduce((a, b) => ((DANGER[b.archetype] ?? 0) > (DANGER[a.archetype] ?? 0) ? b : a));
       elite.elite = true;
       // The elite thief is already the deadliest node: a lighter bump.
-      elite.hp = Math.round(elite.hp * (elite.archetype === 'thief' ? 1.15 : ELITE_HP_MUL));
+      // Act 2 elites are much tougher (they pay spoils and chips; ITERATION_7: always-elite was +11).
+      elite.hp = Math.round(elite.hp * (act > 1 ? ELITE_HP_MUL_2 : elite.archetype === 'thief' ? 1.15 : ELITE_HP_MUL));
       elite.name = `ELITE ${elite.name}`.replace(/^ELITE (\w+) /, 'ELITE ');
     }
     out.push(opts);

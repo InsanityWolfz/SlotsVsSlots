@@ -7,6 +7,8 @@ const cache = new Map<string, HTMLCanvasElement>();
 
 /** Refer to art that may not be generated yet (it falls back to a placeholder until it is). */
 export const artId = (id: string): SpriteId => id as SpriteId;
+/** Whether a sprite has been generated (for optional art that has no sensible placeholder). */
+export const hasSprite = (id: string): boolean => id in SPRITES;
 
 function build(id: SpriteId, variant: SpriteVariant): HTMLCanvasElement {
   // Missing art (not generated yet) draws as a placeholder rather than crashing.

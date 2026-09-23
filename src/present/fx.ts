@@ -93,7 +93,8 @@ export class Banner implements FxItem {
     ctx.translate(this.x, this.y);
     ctx.scale(this.scale, this.scale);
     const tw = textWidth(this.text, this.textScale);
-    const pw = tw + 60;
+    const subScale = this.sub && textWidth(this.sub, 3) > 520 ? 2 : 3;
+    const pw = Math.max(tw, this.sub ? textWidth(this.sub, subScale) : 0) + 60;
     const ph = this.textScale * 7 + (this.sub ? 50 : 36);
     // Solid dark panel + border frame that scales with it (juice §3.6).
     ctx.fillStyle = COLORS.outline;
@@ -105,7 +106,7 @@ export class Banner implements FxItem {
     ctx.fillStyle = 'rgba(255,255,255,0.06)';
     ctx.fillRect(-pw / 2, -ph / 2, pw, ph / 2);
     drawText(ctx, this.text, 0, this.sub ? -12 : 0, this.textScale, this.color);
-    if (this.sub) drawText(ctx, this.sub, 0, ph / 2 - 20, 3, COLORS.text);
+    if (this.sub) drawText(ctx, this.sub, 0, ph / 2 - 20, subScale, COLORS.text);
     ctx.restore();
   }
 }

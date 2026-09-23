@@ -27,6 +27,8 @@ export interface Cabinet {
   specialDamage?: number;
   /** A WILD anywhere on the line lets any two matching reels pay as a double. */
   jokerWilds?: boolean;
+  /** At the start of act 2, this cabinet's starting gilds become TIER II. */
+  act2Tier?: boolean;
 }
 
 const r3 = (c: StripCounts): StripCounts[] => [{ ...c }, { ...c }, { ...c }];
@@ -66,7 +68,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     strips: r3({ sword: 4, shield: 4, bolt: 4 }),
     gilded: [{ reel: 0, symbol: 'shield', enh: 'spiked' }],
     favors: 'spiked',
-    rule: 'SPIKED SHIELDS ON REEL 1. SPIKED OFFERS MORE OFTEN. 28 HP.',
+    rule: 'SPIKED SHIELDS ON REEL 1. SPIKED OFFERS MORE OFTEN. SPIKES GO TIER II IN ACT 2. 28 HP.',
+    act2Tier: true,
     unlock: 'BEAT AN ELITE',
   },
   tesla: {

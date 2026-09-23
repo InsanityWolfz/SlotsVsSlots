@@ -678,7 +678,7 @@ export class Game {
       const eaten = this.phase === 'fighting' ? (this.stage.gutter.chipsEaten ?? 0) : 0;
       drawText(ctx, `${Math.max(0, this.run.player.chips - eaten)}`, 48, 30, 3, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
       drawText(ctx, CABINETS[this.run.cabinet].name, 30, 58, 1, COLORS.textDim, { align: 'left' });
-      if (this.fight.isBoss) {
+      if (this.fight.isBoss || this.fight.isMirror) {
         drawSprite(ctx, 'chipShield', 120, 30, 2);
         drawText(ctx, `+${Math.floor(this.run.player.chips / CHIPS.stackPer)} SH/TURN`, 138, 30, 2, '#9fd0ff', { align: 'left' });
       }
@@ -803,7 +803,7 @@ export class Game {
   private drawReflection(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
     const e = this.fight.sides.enemy;
     const ab = e.ability;
-    if (!ab) return;
+    if (!ab || this.fight.over) return;
     const hud = this.stage.huds.enemy;
     const g = this.stage.gutter;
     const dmg = Math.max(REFLECT_MIN, Math.min(ab.power, Math.max(g.reflect ?? 0, g.turnDamage ?? 0)));
@@ -826,7 +826,7 @@ export class Game {
     drawText(ctx, soon ? 'REFLECTS NEXT!' : `REFLECTION IN ${left}`, x, y - 32, 2, soon ? '#ff6a5a' : '#c8f0ff');
     drawText(ctx, 'AT LEAST', x - 48, y + 10, 1.5, COLORS.textDim);
     drawText(ctx, String(dmg), x + 38, y + 10, 6, soon ? '#ff6a5a' : '#c8f0ff');
-    drawText(ctx, 'YOUR BEST HIT SINCE', x, y + 36, 1.5, COLORS.textDim);
+    drawText(ctx, 'YOUR BEST HIT SO FAR', x, y + 36, 1.5, COLORS.textDim);
   }
 
   private arrow(ctx: CanvasRenderingContext2D, x: number, y: number, dir: number, s: number): void {

@@ -1185,7 +1185,7 @@ export class Director {
     });
     await Promise.all(tosses);
     const c = this.machineCenter(e.to);
-    this.bg(this.popText(`BOMB${e.cells.length > 1 ? 'S' : ''}! LAND TO DEFUSE`, c.x, MACHINE_TOP - 4, 2, '#ffb070', 16, 0.5));
+    this.bg(this.popText(`+${e.cells.length} BOMB${e.cells.length > 1 ? 'S' : ''}: BOOM IN ${BOMB.fuse}`, c.x, MACHINE_TOP - 30, 2, '#ffb070', 16, 0.5));
     if (e.reels.length) this.settle(e.from, e.reels);
     await this.c.wait(0.15);
   }
@@ -1277,6 +1277,12 @@ export class Director {
     this.s.particles.burst({ x: c.x, y: c.y, count: 90, colors: ['#c8f0ff', '#ffffff', '#7aa8c8'], speed: [150, 600], kind: 'spark', gravity: 500, life: [0.4, 0.9], size: [2, 6] });
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.6, onUpdate: (v) => (m.flash = v * 0.7) }));
     m.cracked = true;
+    // The HUD countdown follows the new cadence.
+    const hud = this.s.huds[e.side];
+    if (hud.ability) {
+      hud.ability = { ...hud.ability, every: e.every };
+      hud.charge = Math.min(hud.charge, e.every - 1);
+    }
     await this.banner('CRACKED!', '#c8f0ff', 1.3, 0.5, `REFLECTS EVERY ${e.every} TURNS`, BANNER_Y, 4);
   }
 

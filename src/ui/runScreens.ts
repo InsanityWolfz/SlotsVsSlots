@@ -1,7 +1,7 @@
 import type { Sounds } from '../audio/sounds';
 import type { Enh, GameConfig, StripCounts, SymbolId } from '../core/config';
 import { ACTS, RUN_FIGHTS, type EnemyDef } from '../core/enemies';
-import { LEGENDARY, REFLECT_MIN, RELICS } from '../core/relics';
+import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, SANDGLASS_SLOW } from '../core/relics';
 import {
   chipShield,
   CHIPS,
@@ -83,9 +83,10 @@ export const BADGE: Record<string, SpriteId> = {
 
 const rounds = (turns: number) => { const n = Math.ceil(turns / 2); return `${n} ROUND${n === 1 ? '' : 'S'}`; };
 
-function abilityText(e: EnemyDef, every: number): string {
+function abilityText(e: EnemyDef, every: number, run?: RunState): string {
   if (!e.ability) return '';
   const ui = ABILITY_UI[e.ability.kind];
+  const cap = run ? Math.max(REFLECT_MIN, Math.round(run.player.maxHp * REFLECT_CAP)) : e.ability.power;
   const what: Record<string, string> = {
     flood: `SLIMES ${e.ability.power} OF YOUR SYMBOLS`,
     smash: `HITS FOR ${e.ability.power}`,
@@ -96,10 +97,10 @@ function abilityText(e: EnemyDef, every: number): string {
     jam: `JAMS A REEL FOR ${e.ability.power} TURNS`,
     jackpot: 'SKIMS HALF THE POT AT YOU',
     carpet: `STICKS ${e.ability.power} BOMBS ON YOUR CELLS`,
-    curse: `HEXES ${e.ability.power} REELS FOR 2 TURNS`,
+    curse: `HEXES ${e.ability.power} REEL${e.ability.power > 1 ? 'S' : ''} FOR 3 TURNS`,
     bloodmoon: `HEALS ${e.ability.power} HP`,
     gulp: `EATS ${e.ability.power} OF YOUR CHIPS`,
-    reflect: `HITS YOU WITH YOUR LAST SPIN'S DAMAGE (MIN ${REFLECT_MIN}, MAX ${e.ability.power})`,
+    reflect: `THROWS YOUR BEST HIT SINCE THE LAST ONE BACK (${REFLECT_MIN} TO ${cap})`,
   };
   return `${ui.label} EVERY ${every} TURNS: ${what[e.ability.kind]}`;
 }
@@ -591,9 +592,10 @@ export class RunScreens {
     }
     if (e.elite) drawText(ctx, 'ELITE: +25% HP. PICK 1 OF 2 RELICS, +2 CHIPS', tx + 90, y + 104, 1, '#ff9a3a', { align: 'left' });
     if (e.ability) {
-      const every = e.ability.every;
+      // The Golden Hourglass slows every enemy ability.
+      const every = e.ability.every + (this.run!.player.relics.includes('sandglass') ? SANDGLASS_SLOW : 0);
       drawSprite(ctx, ABILITY_UI[e.ability.kind].icon, x + 24, y + 146, 2);
-      wrap(abilityText(e, every), Math.floor((w - 60) / 12)).forEach((l, k) => drawText(ctx, l, x + 40, y + 146 + k * 18, 2, '#ff9a3a', { align: 'left' }));
+      wrap(abilityText(e, every, this.run ?? undefined), Math.floor((w - 60) / 12)).forEach((l, k) => drawText(ctx, l, x + 40, y + 146 + k * 18, 2, '#ff9a3a', { align: 'left' }));
     }
     const mirror = e.boss === 'mirror';
     drawText(ctx, mirror ? 'THEIR REELS: A COPY OF YOURS (REEL 1)' : 'THEIR REELS', x + 16, y + 200, 2, mirror ? '#c8f0ff' : COLORS.textDim, { align: 'left' });
@@ -606,13 +608,13 @@ export class RunScreens {
     }
     const bossText =
       e.boss === 'mirror'
-        ? 'A COPY OF YOUR MACHINE (NO RELICS, NO SPECIALS), AS TOUGH AS YOUR BUILD HITS. EVERY 3 TURNS IT THROWS YOUR BEST HIT SINCE THE LAST ONE BACK AT YOU. CRACKED AT HALF HP: EVERY 2.'
+        ? `A COPY OF YOUR MACHINE (NO RELICS, NO SPECIALS), AS TOUGH AS YOUR BUILD HITS. REFLECTIONS CAP AT ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKED AT HALF HP: 1 TURN FASTER. YOUR CHIPS SHIELD YOU (1 PER ${CHIPS.stackPer}).`
         : `COINS + A CUT EACH TURN FILL THE POT. EVERY 4 TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +1 SHIELD EACH HOUSE TURN.`;
     if (e.isBoss)
       {
         const sc = e.boss === 'mirror' ? 1.5 : 1;
         wrap(bossText, Math.floor((w - 32) / (6 * sc))).forEach((l, k) =>
-          drawText(ctx, l, x + 16, y + 258 + k * 12 * sc, sc, e.boss === 'mirror' ? '#c8f0ff' : COLORS.goldLight, { align: 'left' }),
+          drawText(ctx, l, x + 16, y + 254 + k * 12 * sc, sc, e.boss === 'mirror' ? '#c8f0ff' : COLORS.goldLight, { align: 'left' }),
         );
       }
   }
@@ -695,7 +697,11 @@ export class RunScreens {
     if (run.act === 1) {
       drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
       drawText(ctx, `KEEP CHIPS FOR THE HOUSE: RIGHT NOW +${sh} SHIELD EACH HOUSE TURN (1 PER ${CHIPS.stackPer})`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
-    } else drawText(ctx, 'ACT 2: LEGENDARY RELICS ON THE TOP SHELF. NEW GILDS: VAMP, LUCKY, BLAZE.', W / 2, 150, 2, COLORS.goldLight);
+    } else {
+      drawText(ctx, 'ACT 2: A LEGENDARY ON THE SHELF. TIER II UPGRADES A WHOLE GILD.', W / 2, 118, 2, COLORS.goldLight);
+      drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
+      drawText(ctx, `KEEP CHIPS FOR THE MIRROR: RIGHT NOW +${sh} SHIELD EACH MIRROR TURN (1 PER ${CHIPS.stackPer})`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
+    }
     drawText(ctx, 'HP', W - 360, 80, 2, COLORS.textDim, { align: 'left' });
     this.drawHp(ctx, W - 330, 80, 190);
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
@@ -841,8 +847,9 @@ export class RunScreens {
       drawText(ctx, `${Math.ceil(r.turns / 2)}`, 560, y, 2, COLORS.text);
       drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 680, y, 2, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
       if (compact) {
-        const what = r.eliteRelic ? RELICS[r.eliteRelic].name : r.pick ? describeOption(r.pick).title : r.won ? '' : 'DEFEATED';
-        drawText(ctx, what, 790, y, 2, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
+        const parts = [r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
+        const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
+        drawText(ctx, what.length > 30 ? `${what.slice(0, 29)}...` : what, 790, y, what.length > 22 ? 1.5 : 2, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
         return;
       }
       if (r.pick) drawText(ctx, describeOption(r.pick).title, 790, y - 6, 2, '#c9a0ff', { align: 'left' });

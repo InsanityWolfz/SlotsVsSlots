@@ -8,6 +8,7 @@ import {
   BOMB,
   KEY_MULT,
   OVERCHARGE_ECHO,
+  VAMP_CAP,
   LUCKY_CHANCE,
   SANDGLASS_SLOW,
   CACTUS_DAMAGE,
@@ -209,13 +210,17 @@ export class Fight {
     events.push({ type: 'turnStart', turn: this.turn, side });
 
     if (this.cfg.shieldReset === 'ownTurnStart') this.resetShield(me, events);
-    if (side === 'enemy' && this.isBoss) {
+    // Saved chips shield you at the start of each boss turn (the House and the Mirror).
+    if (side === 'enemy' && (this.isBoss || this.isMirror)) {
       const p = this.sides.player;
       const stack = this.cfg.player.stackShield ?? 0;
       if (stack > 0) {
         p.shield += stack;
         events.push({ type: 'shieldGain', side: 'player', reels: [], amount: stack, total: p.shield });
       }
+    }
+    if (side === 'enemy' && this.isBoss) {
+      const p = this.sides.player;
       if (this.cashPending && me.ability) {
         this.cashPending = false;
         me.charge = 0;
@@ -328,9 +333,10 @@ export class Fight {
         }
         if (set && ((enh === 'spiked' && g.symbol === 'shield') || (enh === 'vamp' && g.symbol === 'sword') || enh === 'lucky')) g.fullSet = true;
       }
-      for (const r of g.reels) {
-        if (this.paylineEnh(me, r) !== 'gold') continue;
-        const mult = this.level(me, r) + 1;
+      // GOLD: one multiplier per group, 1 + the levels of its gold cells (x2 for one plain gold cell).
+      const goldLevels = g.reels.filter((r) => this.paylineEnh(me, r) === 'gold').reduce((a, r) => a + this.level(me, r), 0);
+      if (goldLevels) {
+        const mult = 1 + goldLevels;
         g.amount *= mult;
         notes.push(`X${mult}`);
         if (this.setActive(me, 'gold')) g.fullSet = true;
@@ -428,7 +434,7 @@ export class Fight {
         {
           // VAMP: vamp swords in the group heal you.
           const vamp = g.reels.filter((r) => this.paylineEnh(me, r) === 'vamp').reduce((a, r) => a + this.level(me, r), 0);
-          if (vamp && !this.over && g.amount > 0) this.heal(me, vamp, 'vamp', events);
+          if (vamp && !this.over && g.amount > 0) this.heal(me, Math.min(VAMP_CAP, vamp), 'vamp', events);
         }
         return;
       case 'seven':
