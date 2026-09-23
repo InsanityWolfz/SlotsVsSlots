@@ -210,6 +210,8 @@ export interface EnemyDef extends SideConfig {
   /** The harder option at a fork: x1.25 HP, drops a free relic when beaten. */
   elite?: boolean;
   act?: number;
+  /** HIGH STAKES BLUE: this fork option was placed as the counter to your build. */
+  counter?: boolean;
 }
 
 /** Rough single-fight danger per archetype (playtest ITERATION_2), used to pick the elite at a fork. */

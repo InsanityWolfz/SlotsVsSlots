@@ -157,7 +157,10 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
   const relicRuns: Record<string, [number, number]> = {};
 
   for (let i = 0; i < runs; i++) {
-    const run = createRun(base, seeds.int(0xffffffff), cabinet, stake);
+    const runSeed = seeds.int(0xffffffff);
+    const run = createRun(base, runSeed, cabinet, stake);
+    // Fights draw from their own per-run stream, so a change in one run never desyncs the next (paired ladders).
+    const fightSeeds = new Rng((runSeed ^ 0x5f3759df) >>> 0);
     while (!run.over) {
       if (needsChoice(run)) chooseEnemy(run, pickEnemy(run, policy, pick));
       if (run.depth === RUN_FIGHTS && run.act === 1) {
@@ -170,7 +173,7 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
       }
       const arch = run.enemies[run.depth].archetype;
       faced[arch] = (faced[arch] ?? 0) + 1;
-      const fight = new Fight(fightConfig(run, base), seeds.int(0xffffffff));
+      const fight = new Fight(fightConfig(run, base), fightSeeds.int(0xffffffff));
       while (!fight.over && fight.turn < 2000) fight.step();
       fights++;
       turns += fight.turn;

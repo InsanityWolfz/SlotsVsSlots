@@ -117,7 +117,7 @@ export interface SideConfig {
   stackShield?: number;
   /** Which act this side comes from (enemy). */
   act?: number;
-  /** Relics this side carries (the Mirror copies one at BLACK stake). */
+  /** Relics this side carries (the Mirror copies one at GREEN stake). */
   relics?: RelicId[];
 }
 

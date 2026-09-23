@@ -11,7 +11,6 @@ import {
   TIER_STEP,
   VAMP_CAP,
   LUCKY_CHANCE,
-  SANDGLASS_SLOW,
   CACTUS_DAMAGE,
   CLOVER_CHANCE,
   FANG_HEAL,
@@ -27,7 +26,7 @@ import {
   SPIKED_DAMAGE,
 } from './relics';
 import { Rng } from './rng';
-import { STAKE } from './stakes';
+import { effectiveAbility, STAKE } from './stakes';
 import { isNearMiss, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {
   buildReel,
@@ -43,6 +42,9 @@ import {
 } from './strip';
 
 /** Symbols that act on the opponent when they're native to the caster's strips. */
+/** Counterfeit coins last this many of your turns. */
+const FAKE_TURNS = 3;
+
 const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake']);
 
 export interface Combatant {
@@ -163,8 +165,7 @@ export class Fight {
     const e = this.sides.enemy;
     const flat: ReadonlySet<string> = new Set(['jackpot', 'reflect', 'bloodmoon']);
     if (minus && e.ability && !flat.has(e.ability.kind)) e.ability = { ...e.ability, power: Math.max(1, e.ability.power - minus) };
-    // Golden Hourglass: every enemy ability charges slower.
-    if (p.relics.has('sandglass') && e.ability) e.ability = { ...e.ability, every: e.ability.every + SANDGLASS_SLOW };
+
     // FULL SET: an enhancement present on every reel (Golden Ticket: on any two).
     const perReel = p.reels.map((r) => new Set(r.cells.map((c) => c.enh).filter((x): x is Enh => !!x)));
     const need = p.relics.has('ticket') ? 2 : 3;
@@ -180,11 +181,8 @@ export class Fight {
     // The Mirror plays your machine but never your junk (and fires no specials).
     if (this.isMirror) e.casts.clear();
     if (this.isBoss) this.pot = POT.seed;
-    // HIGH STAKES: BLACK - the House skims more often; BLUE/GOLD - enemy abilities charge a turn faster.
-    const stake = this.cfg.stake ?? 0;
-    if (e.ability?.kind === 'jackpot' && stake >= STAKE.houseDirty) e.ability = { ...e.ability, every: STAKE.houseSkimEvery };
-    const faster = stake >= STAKE.fasterAll || (stake >= STAKE.fasterAct2 && (this.cfg.enemy.act ?? 1) > 1);
-    if (faster && e.ability && e.ability.kind !== 'jackpot') e.ability = { ...e.ability, every: Math.max(2, e.ability.every - 1) };
+    // The Golden Hourglass and HIGH STAKES change enemy cadence (the same helper feeds the cards).
+    if (e.ability) e.ability = effectiveAbility(e.ability, { stake: this.cfg.stake ?? 0, act: this.cfg.enemy.act ?? 1, sandglass: p.relics.has('sandglass') });
   }
 
   get seed(): number {
@@ -366,6 +364,11 @@ export class Fight {
       if (me.relics.has('bell') && g.matched && g.reels.length === 3) {
         g.amount *= BELL_MULT;
         notes.push(`X${BELL_MULT}`);
+      }
+      // COUNTERFEIT: a group with a faked cell on the payline pays half.
+      if (g.reels.some((r) => (me.reels[r].cells[me.reels[r].stop]?.faked ?? 0) > 0)) {
+        g.amount = Math.floor(g.amount / 2);
+        notes.push('FAKE');
       }
       // HEX: a group touching a hexed reel pays half.
       if (g.reels.some((r) => me.hexed[r] > 0)) {
@@ -636,7 +639,7 @@ export class Fight {
         return this.plantGround(me, foe, statusSize(amount) + 1, reels, events);
       case 'fake':
         // 1 cell, a double 2, a jackpot 3 (gilded cells, visible first), plain for 2 turns.
-        return this.fakeGilds(me, foe, statusSize(amount), 2, reels, events);
+        return this.fakeGilds(me, foe, statusSize(amount), FAKE_TURNS, reels, events);
       case 'mimicSym': {
         // The Mimic copies your last spin's biggest group (half on a single, double on a jackpot).
         const best = this.last[foe.side].best;
@@ -654,7 +657,9 @@ export class Fight {
     const free = this.rng.shuffle(
       visibleCells(foe.reels).filter((ref) => {
         const c = foe.reels[ref.reel].cells[ref.index];
-        return !c.bomb && !c.stolen && ref.index !== foe.reels[ref.reel].stop;
+        // Never on the payline itself... unless the House cheats (BLACK stake).
+        const cheat = this.isBoss && (this.cfg.stake ?? 0) >= STAKE.houseDirty;
+        return !c.bomb && !c.stolen && (cheat || ref.index !== foe.reels[ref.reel].stop);
       }),
     );
     // Never on the payline itself: it would look defused without being so.
@@ -681,6 +686,9 @@ export class Fight {
     const vis = new Set(visibleCells(foe.reels).map((r) => `${r.reel}:${r.index}`));
     const all: CellRef[] = [];
     foe.reels.forEach((reel, r) => reel.cells.forEach((c, i) => c.enh && !(c.faked && c.faked > 0) && !c.stolen && all.push({ reel: r, index: i })));
+    // It goes for your FULL SET first.
+    const inSet = (x: CellRef) => this.fullSet.has(foe.reels[x.reel].cells[x.index].enh!);
+    all.sort((a, b) => Number(inSet(b)) - Number(inSet(a)));
     const pool = [...this.rng.shuffle(all.filter((x) => vis.has(`${x.reel}:${x.index}`))), ...this.rng.shuffle(all.filter((x) => !vis.has(`${x.reel}:${x.index}`)))];
     const cells = pool.slice(0, count);
     if (!cells.length) return this.fizzle(me, 'fake', reels, events);

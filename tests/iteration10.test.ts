@@ -4,7 +4,7 @@ import { generateRunPaths, RUN_FIGHTS } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
 import { POT } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
-import { counterFor, createRun, fightConfig, finishFight, takeLegend } from '../src/core/run';
+import { counterFor, createRun, fightConfig, finishFight, mirrorCopy, scarReel, takeLegend } from '../src/core/run';
 import { MAX_STAKE, STAKE, STAKES } from '../src/core/stakes';
 
 const base = defaultConfig();
@@ -28,14 +28,29 @@ describe('HIGH STAKES', () => {
     expect(fightConfig(run, base).stake).toBe(2);
   });
 
-  it('RED: every act 2 fork offers the counter to your build', () => {
+  it('BLUE: one act 2 fork (fight 3) is your counter, marked', () => {
     for (let seed = 1; seed < 12; seed++) {
       const run = toAct2('tesla', STAKE.counterForks, seed);
       expect(counterFor(run)).toBe('grounder');
-      for (const opts of run.paths) if (opts.length > 1) expect(opts.some((e) => e.archetype === 'grounder')).toBe(true);
+      const fork = run.paths[2];
+      const c = fork.find((e) => e.archetype === 'grounder');
+      expect(c?.counter).toBe(true);
+      expect(run.paths.flat().filter((e) => e.counter).length).toBe(1);
     }
-    const base0 = toAct2('tesla', 0, 5);
-    expect(base0.paths.filter((o) => o.length > 1).every((o) => o.some((e) => e.archetype === 'grounder'))).toBe(false);
+  });
+
+  it('RED (SCARS): every 3rd win leaves a permanent rock (reel 3 first)', () => {
+    const run = createRun(base, 4, 'midas', STAKE.scars);
+    const rocks = () => run.player.strips.reduce((a, x) => a + (x.rock ?? 0), 0);
+    for (let i = 0; i < 3; i++) {
+      const f = new Fight(fightConfig(run, base), i + 1);
+      f.winner = 'player';
+      finishFight(run, f);
+    }
+    expect(rocks()).toBe(1);
+    expect(run.player.strips[2].rock).toBe(1);
+    expect(run.records[2].scar).toBe(2);
+    expect(scarReel(run)).toBe(1);
   });
 
   it('BLACK: the House carries bombs and skims every 3 turns', () => {
@@ -56,6 +71,11 @@ describe('HIGH STAKES', () => {
     run.paths = generateRunPaths(new Rng(1), 2);
     run.enemies = run.paths.map((o) => o[0]);
     expect(fightConfig(run, base).enemy.relics).toEqual(['key']);
+    // Your legendary comes first when the Mirror can use it (over ordinary relics).
+    run.player.relics = ['prism', 'phoenix'];
+    expect(mirrorCopy(run)).toBe('phoenix');
+    run.player.relics = ['prism', 'overcharge'];
+    expect(mirrorCopy(run)).toBe('prism');
 
     const c = defaultConfig();
     c.enemy = { hp: 99, strips: reels3({ shield: 12 }), ability: { kind: 'smash', every: 3, power: 4 } };

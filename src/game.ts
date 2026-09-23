@@ -705,7 +705,7 @@ export class Game {
       const eaten = this.phase === 'fighting' ? (this.stage.gutter.chipsEaten ?? 0) : 0;
       drawText(ctx, `${Math.max(0, this.run.player.chips - eaten)}`, 56, 30, 3, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
       drawText(ctx, CABINETS[this.run.cabinet].name, 30, 58, 1, COLORS.textDim, { align: 'left' });
-      if (this.run.stake > 0) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 72, 1, STAKES[this.run.stake].color, { align: 'left' });
+      if (this.run.stake > 0) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 78, 2, STAKES[this.run.stake].color, { align: 'left' });
       if (this.fight.isBoss || this.fight.isMirror) {
         drawSprite(ctx, 'chipShield', 120, 30, 2);
         drawText(ctx, `+${this.fight.cfg.player.stackShield ?? 0} SH/TURN`, 138, 30, 2, '#9fd0ff', { align: 'left' });
@@ -782,7 +782,15 @@ export class Game {
       }
     }
     if (this.fight.isBoss) this.drawPot(ctx, cx, cy + 118, t);
-    else if (this.fight.isMirror) this.drawReflection(ctx, cx, cy + 118, t);
+    else if (this.fight.isMirror) {
+      this.drawReflection(ctx, cx, cy + 118, t);
+      // GREEN stake: the relic it copied from you.
+      const copied = [...this.fight.sides.enemy.relics][0];
+      if (copied) {
+        drawSprite(ctx, RELICS[copied].sprite as SpriteId, cx - 70, cy + 196, 2);
+        drawText(ctx, `COPIED ${RELICS[copied].name}`, cx - 50, cy + 196, 1.5, '#c8f0ff', { align: 'left' });
+      }
+    }
     else drawText(ctx, 'VS', cx, cy + 70, 6, '#ff6a5a', { alpha: 0.35 + 0.1 * Math.sin(t * 2) });
     if (this.prefs.speed > 1) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss || this.fight.isMirror ? cy - 136 : cy + 172, 2, COLORS.textDim);
   }
