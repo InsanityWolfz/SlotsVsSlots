@@ -139,10 +139,6 @@ describe('enemy abilities (telegraphed)', () => {
     expect(fired).toBe(1);
   });
 
-  it('hourglass slows the charge by one', () => {
-    const f = vs({ sword: 1, shield: 11 }, { ability: { kind: 'smash', every: 3, power: 5 }, relics: ['hourglass'] });
-    expect(f.sides.enemy.ability!.every).toBe(4);
-  });
 });
 
 describe('relics', () => {
@@ -158,29 +154,11 @@ describe('relics', () => {
     expect(spin.score.totals.sword).toBe(4);
   });
 
-  it('whetstone adds +3 to sword doubles', () => {
-    const f = vs({ shield: 12 }, { relics: ['whetstone'] });
-    f.forceNext('player', ['sword', 'sword', 'bolt']);
-    const [atk] = ofType(f.step().events, 'attack');
-    expect(atk.amount).toBe(7);
-  });
-
   it('fang heals when the special fires', () => {
     const f = vs({ sword: 12 }, { relics: ['fang'], mut: (c) => (c.player.startHp = 10) });
     f.forceNext('player', ['bolt', 'bolt', 'bolt']);
     const [h] = ofType(f.step().events, 'heal');
     expect(h).toMatchObject({ amount: 3, hp: 13, source: 'fang' });
-  });
-
-  it('magnet turns rocks on your payline into energy', () => {
-    const c = defaultConfig();
-    c.player.strips = reels3({ sword: 4, rock: 8 });
-    c.enemy = { hp: 60, strips: reels3({ shield: 12 }) };
-    c.relics = ['magnet'];
-    const f = new Fight(c, 5);
-    f.forceNext('player', ['rock', 'rock', 'sword']);
-    const [en] = ofType(f.step().events, 'energyGain');
-    expect(en.amount).toBe(4);
   });
 
   it('clover sometimes converts a near-miss into a jackpot (and only then)', () => {
@@ -203,37 +181,11 @@ describe('relics', () => {
     expect(lucky / trials).toBeLessThan(0.4);
   });
 
-  it('soap lets a slime double cleanse', () => {
-    const f = vs({ shield: 12 }, { relics: ['soap'] });
-    f.sides.player.reels.forEach((r) => r.cells.forEach((c, i) => (c.slimed = i < 6)));
-    f.forceNext('player', ['slime', 'slime', 'sword']);
-    expect(ofType(f.step().events, 'cleanse')).toHaveLength(1);
-  });
 });
 
 describe('boss: the progressive pot', () => {
   const boss = (mut?: (c: GameConfig) => void) =>
     vs({ sword: 2, coin: 10 }, { ability: { kind: 'jackpot', every: 2, power: 1 }, mut: (c) => ((c.enemy.boss = 'house'), mut?.(c)) });
-
-  it('the pot is seeded, grows with coins and the house cut, and is cashed out at you', () => {
-    const f = boss();
-    expect(f.pot).toBe(5);
-    f.forceNext('player', ['shield', 'bolt', 'sword']);
-    f.step();
-    f.forceNext('enemy', ['coin', 'coin', 'coin']);
-    const pots = ofType(f.step().events, 'pot');
-    expect(pots[0].total).toBe(14); // 5 seed + 9 coins
-    expect(pots.at(-1)!.total).toBe(15); // + the house's cut
-    f.forceNext('player', ['bolt', 'shield', 'bolt']);
-    f.step();
-    const before = f.pot;
-    f.forceNext('enemy', ['sword', 'sword', 'sword']);
-    const [cash] = ofType(f.step().events, 'potWin');
-    expect(cash.from).toBe('enemy');
-    // The House skims half (rounded up) and leaves the rest growing.
-    expect(cash.amount).toBe(Math.ceil((before + 1) / 2));
-    expect(f.pot).toBe(before + 1 - cash.amount);
-  });
 
   it('a player jackpot steals the pot, ignoring shield; crown steals on doubles', () => {
     const f = boss();
@@ -293,7 +245,7 @@ describe('counter relics', () => {
     expect(snaps / 300).toBeGreaterThan(0.2);
   });
 
-  it('pickaxe: rocks on your payline hit; dice: jackpots pay x4', () => {
+  it('pickaxe: rocks on your payline hit', () => {
     const c = defaultConfig();
     c.player.strips = reels3({ sword: 4, rock: 8 });
     c.enemy = { hp: 60, strips: reels3({ bolt: 12 }) };
@@ -302,8 +254,6 @@ describe('counter relics', () => {
     f.forceNext('player', ['rock', 'rock', 'sword']);
     expect(ofType(f.step().events, 'attack').map((e) => e.amount)).toEqual([4, 1]);
 
-    const d = vs({ shield: 12 }, { relics: ['dice'] });
-    d.forceNext('player', ['bolt', 'bolt', 'bolt']);
-    expect(ofType(d.step().events, 'energyGain')[0].amount).toBe(12);
+
   });
 });

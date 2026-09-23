@@ -95,8 +95,9 @@ export const BOSS: Archetype = {
 const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'GILDED', 'CURSED', 'HUNGRY', 'SPITEFUL', 'ANCIENT', 'WILD', 'GREEDY'];
 
 /** HP for a regular fight at each depth (0-based), before the archetype multiplier. */
-export const DEPTH_HP = [16, 20, 23, 26, 28];
-export const BOSS_HP = 48;
+export const DEPTH_HP = [19, 24, 28, 31, 34];
+/** Mutable so balance sweeps can tune it. */
+export const TUNE = { bossHp: 66 };
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
 export const RUN_FIGHTS = 5;
@@ -111,7 +112,7 @@ export interface EnemyDef extends SideConfig {
 }
 
 /** Rough single-fight danger per archetype (playtest ITERATION_2), used to pick the elite at a fork. */
-export const DANGER: Record<string, number> = { slime: 5, frost: 8, golem: 4, gremlin: 6, thief: 33, brute: 16, house: 40 };
+export const DANGER: Record<string, number> = { slime: 5, frost: 8, golem: 4, gremlin: 12, thief: 13, brute: 20, house: 40 };
 export const ELITE_HP_MUL = 1.25;
 
 function jitter(strip: StripCounts, rng: Rng): StripCounts {
@@ -129,7 +130,7 @@ function jitter(strip: StripCounts, rng: Rng): StripCounts {
 }
 
 export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false): EnemyDef {
-  const hp = isBoss ? BOSS_HP : Math.round(DEPTH_HP[Math.min(depth, DEPTH_HP.length - 1)] * a.hpMul * (depth === 0 ? OPENER_HP_MUL : 1));
+  const hp = isBoss ? TUNE.bossHp : Math.round(DEPTH_HP[Math.min(depth, DEPTH_HP.length - 1)] * a.hpMul * (depth === 0 ? OPENER_HP_MUL : 1));
   const every = a.ability.every;
   return {
     archetype: a.id,

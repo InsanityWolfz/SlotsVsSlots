@@ -66,7 +66,7 @@ export type CombatEvent =
   | { type: 'ability'; side: SideId; kind: AbilityKind; power: number }
   | { type: 'pot'; side: SideId; reels: number[]; amount: number; total: number }
   /** Someone takes the progressive pot as damage. */
-  | { type: 'potWin'; from: SideId; to: SideId; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number }
+  | { type: 'potWin'; from: SideId; to: SideId; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number; potLeft: number }
   /** A relic shrugged off an enemy effect. */
   | { type: 'resist'; side: SideId; relic: RelicId; what: 'freeze' | 'jam' | 'steal' }
   /** Boss phase 2 at half HP: the House goes ALL IN and doubles the pot. */

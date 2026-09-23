@@ -1,6 +1,19 @@
 import { cloneConfig, type AbilityDef, type GameConfig, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
 import type { CombatEvent } from './events';
-import { SPIKED_DAMAGE, BATTERY_ENERGY, CLOVER_CHANCE, FANG_HEAL, LOCKPICK_CHANCE, MOUSETRAP_CHANCE, MOUSETRAP_DAMAGE, POT, WHETSTONE_BONUS } from './relics';
+import {
+  BATTERY_ENERGY,
+  CACTUS_DAMAGE,
+  CLOVER_CHANCE,
+  FANG_HEAL,
+  HONE_BONUS,
+  KEEN_BONUS,
+  LOCKPICK_CHANCE,
+  MOUSETRAP_CHANCE,
+  MOUSETRAP_DAMAGE,
+  POT,
+  ROD_SPECIAL_COST,
+  SPIKED_DAMAGE,
+} from './relics';
 import { Rng } from './rng';
 import { isNearMiss, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {
@@ -85,6 +98,11 @@ export class Fight {
   pot = 0;
   /** Boss went ALL IN (phase 2). */
   allIn = false;
+  /** The House's cash-out fires at the start of its next turn (so LETHAL is always accurate). */
+  cashPending = false;
+  /** Run economy inputs: player jackpots landed and the overkill of the killing blow. */
+  playerJackpots = 0;
+  overkill = 0;
   private forced: Partial<Record<SideId, SymbolId[]>> = {};
 
   constructor(cfg: GameConfig, seed: number = cfg.seed ?? Rng.randomSeed()) {
@@ -96,8 +114,8 @@ export class Fight {
     };
     const p = this.sides.player;
     if (p.relics.has('battery')) p.energy = Math.min(this.cfg.specialCost - 1, p.energy + BATTERY_ENERGY);
-    const e = this.sides.enemy;
-    if (e.ability && p.relics.has('hourglass')) e.ability = { ...e.ability, every: e.ability.every + 1 };
+    // Lightning Rod: a charged-bolt build makes the special cheaper.
+    if (p.relics.has('rod') && p.reels.some((r) => r.cells.some((c) => c.enh === 'charged'))) this.cfg.specialCost = ROD_SPECIAL_COST;
     if (this.isBoss) this.pot = POT.seed;
   }
 
@@ -127,6 +145,25 @@ export class Fight {
     events.push({ type: 'turnStart', turn: this.turn, side });
 
     if (this.cfg.shieldReset === 'ownTurnStart') this.resetShield(me, events);
+    if (side === 'enemy' && this.isBoss) {
+      const p = this.sides.player;
+      const stack = this.cfg.player.stackShield ?? 0;
+      if (stack > 0) {
+        p.shield += stack;
+        events.push({ type: 'shieldGain', side: 'player', reels: [], amount: stack, total: p.shield });
+      }
+      if (this.cashPending && me.ability) {
+        this.cashPending = false;
+        me.charge = 0;
+        events.push({ type: 'ability', side: me.side, kind: me.ability.kind, power: me.ability.power });
+        this.cashPot(me, p, events);
+        if (this.over) {
+          this.next = other(side);
+          return { turn: this.turn, side, events };
+        }
+        events.push({ type: 'abilityCharge', side: me.side, charge: 0, every: me.ability.every, kind: me.ability.kind });
+      }
+    }
 
     const frozen = me.frozen.map((t) => t > 0);
     const locked = me.locked.map((t) => t > 0);
@@ -139,9 +176,15 @@ export class Fight {
     const nearMiss = isNearMiss(line) && (me.casts.has(line[0]) || line[0] === 'slime' || !DEAD.has(line[0]));
     events.push({ type: 'spin', side, stops, score, nearMiss, frozen, locked, lucky });
 
+    if (side === 'player' && score.tier === 'triple') this.playerJackpots++;
     for (const group of score.groups) {
       this.resolveGroup(me, group, score, events);
       if (this.over) break;
+    }
+    // Midas: gold cells on the payline also give energy.
+    if (!this.over && me.relics.has('midas')) {
+      const gold = me.reels.map((_, r) => r).filter((r) => this.paylineEnh(me, r) === 'gold');
+      if (gold.length) this.gainEnergy(me, gold.length, gold, events);
     }
     const steals = score.tier === 'triple' || (score.tier === 'pair' && me.relics.has('crown'));
     if (!this.over && side === 'player' && this.isBoss && steals) this.winPot(me, events, score.tier === 'triple' ? 1 : 0.5);
@@ -165,15 +208,33 @@ export class Fight {
 
   private score(me: Combatant, line: SymbolId[]): LineScore {
     const pairRule = me.relics.has('mirror') ? 'anyTwo' : this.cfg.pairRule;
-    const tripleMult = me.relics.has('dice') ? this.cfg.tripleMult + 1 : this.cfg.tripleMult;
-    const s = scoreLine(line, { ...this.cfg, pairRule, tripleMult });
-    if (me.relics.has('whetstone')) for (const g of s.groups) if (g.matched && g.symbol === 'sword') g.amount += WHETSTONE_BONUS;
+    const s = scoreLine(line, { ...this.cfg, pairRule });
     for (const g of s.groups) {
+      g.base = g.amount;
+      const notes: string[] = [];
       for (const r of g.reels) {
         const enh = this.paylineEnh(me, r);
-        if (enh === 'gold') g.amount *= 2;
-        if (enh === 'charged' && g.symbol === 'bolt') g.amount += 1;
+        if (enh === 'keen' && g.symbol === 'sword') {
+          const bonus = KEEN_BONUS + (me.relics.has('hone') ? HONE_BONUS : 0);
+          g.amount += bonus;
+          notes.push(`+${bonus}`);
+        }
+        if (enh === 'charged' && g.symbol === 'bolt') {
+          g.amount += 1;
+          notes.push('+1');
+        }
       }
+      for (const r of g.reels) {
+        if (this.paylineEnh(me, r) !== 'gold') continue;
+        g.amount *= 2;
+        notes.push('X2');
+      }
+      // Prism: a match that used a WILD pays double.
+      if (me.relics.has('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) {
+        g.amount *= 2;
+        notes.push('X2');
+      }
+      if (notes.length) g.notes = notes;
     }
     s.totals = {};
     for (const g of s.groups) s.totals[g.symbol] = (s.totals[g.symbol] ?? 0) + g.amount;
@@ -207,9 +268,11 @@ export class Fight {
     let lucky: RelicId | null = null;
     if (c.relics.has('clover') && stops.length >= 3 && !frozen[2] && !c.locked.some((t) => t > 0)) {
       const sym = stops.map((s, r) => effectiveSymbol(c.reels[r].cells[s]));
-      if (sym[0] === sym[1] && sym[2] !== sym[0] && !DEAD.has(sym[0])) {
+      const head = sym[0] === 'wild' ? (sym[1] === 'wild' ? 'bolt' : sym[1]) : sym[0];
+      const firstTwo = (sym[0] === head || sym[0] === 'wild') && (sym[1] === head || sym[1] === 'wild');
+      if (firstTwo && sym[2] !== head && sym[2] !== 'wild' && !DEAD.has(head)) {
         const roll = this.rng.next();
-        const hits = c.reels[2].cells.flatMap((cell, i) => (effectiveSymbol(cell) === sym[0] ? [i] : []));
+        const hits = c.reels[2].cells.flatMap((cell, i) => (effectiveSymbol(cell) === head || effectiveSymbol(cell) === 'wild' ? [i] : []));
         if (roll < CLOVER_CHANCE && hits.length) {
           stops[2] = this.rng.pick(hits);
           lucky = 'clover';
@@ -242,7 +305,7 @@ export class Fight {
       this.write(me, foe, g.symbol, g.amount, g.reels, events);
       return;
     }
-    if (g.symbol === 'slime' && g.matched && this.cfg.cleanseOnSlimeTriple && (g.reels.length >= 3 || me.relics.has('soap'))) {
+    if (g.symbol === 'slime' && g.matched && this.cfg.cleanseOnSlimeTriple && g.reels.length >= 3) {
       this.cleanse(me, g.reels, events);
       return;
     }
@@ -250,22 +313,20 @@ export class Fight {
       this.hit(me, foe, g.amount, g.reels, events);
       return;
     }
-    if (g.symbol === 'rock' && me.relics.has('magnet')) {
-      this.gainEnergy(me, g.amount, g.reels, events);
-      return;
-    }
     void score;
     events.push({ type: 'fizzle', side: me.side, reels: g.reels, symbol: g.symbol });
   }
 
   private hit(me: Combatant, foe: Combatant, amount: number, reels: number[], events: CombatEvent[], pierce = false, note?: 'snap'): void {
+    const pierced = pierce && foe.shield > 0;
     const h = this.damage(foe, amount, pierce);
-    events.push({ type: 'attack', from: me.side, to: foe.side, reels, amount, ...h, ...(pierce ? { note: 'pierce' as const } : note ? { note } : {}) });
+    events.push({ type: 'attack', from: me.side, to: foe.side, reels, amount, ...h, ...(pierced ? { note: 'pierce' as const } : note ? { note } : {}) });
     this.checkDeath(foe, events);
-    // SPIKED: a spiked shield on the victim's payline hits back for 2 (once per hit).
+    // SPIKED: a spiked shield on the victim's payline hits back (once per hit).
     if (!this.over && amount > 0 && foe.reels.some((_, r) => this.paylineEnh(foe, r) === 'spiked')) {
-      const back = this.damage(me, SPIKED_DAMAGE, false);
-      events.push({ type: 'attack', from: foe.side, to: me.side, reels: [], amount: SPIKED_DAMAGE, ...back, note: 'spiked' });
+      const dmg = foe.relics.has('cactus') ? CACTUS_DAMAGE : SPIKED_DAMAGE;
+      const back = this.damage(me, dmg, false);
+      events.push({ type: 'attack', from: foe.side, to: me.side, reels: [], amount: dmg, ...back, note: 'spiked' });
       this.checkDeath(me, events);
     }
   }
@@ -295,6 +356,7 @@ export class Fight {
     target.shield -= blocked;
     const hpDamage = Math.min(target.hp, amount - blocked);
     target.hp -= hpDamage;
+    if (target.hp <= 0 && target.side === 'enemy') this.overkill = amount - blocked - hpDamage;
     return { blocked, hpDamage, targetHp: target.hp, targetShield: target.shield };
   }
 
@@ -491,6 +553,12 @@ export class Fight {
   private chargeAbility(me: Combatant, events: CombatEvent[]): void {
     const ab = me.ability!;
     me.charge++;
+    if (ab.kind === 'jackpot' && me.charge >= ab.every) {
+      me.charge = ab.every;
+      this.cashPending = true;
+      events.push({ type: 'abilityCharge', side: me.side, charge: ab.every, every: ab.every, kind: ab.kind });
+      return;
+    }
     if (me.charge >= ab.every) {
       me.charge = 0;
       events.push({ type: 'abilityCharge', side: me.side, charge: ab.every, every: ab.every, kind: ab.kind });
@@ -532,7 +600,7 @@ export class Fight {
     const amount = Math.ceil(this.pot * POT.skim);
     this.pot -= amount;
     const h = this.damage(foe, amount, false);
-    events.push({ type: 'potWin', from: me.side, to: foe.side, amount, ...h });
+    events.push({ type: 'potWin', from: me.side, to: foe.side, amount, ...h, potLeft: this.pot });
     this.checkDeath(foe, events);
   }
 
@@ -543,7 +611,7 @@ export class Fight {
     const amount = Math.ceil(this.pot * share);
     this.pot -= amount;
     const h = this.damage(foe, amount, true);
-    events.push({ type: 'potWin', from: me.side, to: foe.side, amount, ...h });
+    events.push({ type: 'potWin', from: me.side, to: foe.side, amount, ...h, potLeft: this.pot });
     this.checkDeath(foe, events);
   }
 }

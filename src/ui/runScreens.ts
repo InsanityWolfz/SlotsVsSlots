@@ -2,7 +2,8 @@ import type { Sounds } from '../audio/sounds';
 import type { GameConfig, StripCounts, SymbolId } from '../core/config';
 import { RUN_FIGHTS, type EnemyDef } from '../core/enemies';
 import { RELICS } from '../core/relics';
-import { describeOption, isRelicDraft, needsChoice, optionDeltas, type DraftOption, type FightRecord, type RunState } from '../core/run';
+import { describeOption, isRelicDraft, needsChoice, optionDeltas, rerollCost, type DraftOption, type FightRecord, type RunState, type ShopItem } from '../core/run';
+import type { RelicId } from '../core/config';
 import { COUNTER_RELICS } from '../core/relics';
 import { DANGER } from '../core/enemies';
 import type { Clock } from '../present/clock';
@@ -13,7 +14,7 @@ import { COLORS, H, W } from '../present/layout';
 import { drawSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 
-export type ScreenMode = 'none' | 'draft' | 'next' | 'over';
+export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop';
 
 /** Greedy word wrap for the pixel font. */
 export function wrap(text: string, maxChars: number): string[] {
@@ -44,7 +45,7 @@ interface Hit {
 
 type Btn = Hit & { label: string };
 
-const SYMBOLS: SymbolId[] = ['sword', 'shield', 'bolt', 'rock'];
+const SYMBOLS: SymbolId[] = ['sword', 'shield', 'bolt', 'wild', 'rock'];
 
 /** What each enemy writes on your machine, as a map badge. */
 export const BADGE: Record<string, SpriteId> = {
@@ -87,12 +88,25 @@ export class RunScreens {
   private fade = 0;
   private picked = -1;
   private lastRecord: FightRecord | null = null;
+  /** 'spoils' = an elite's relic choice (1 of 2) shown with the draft layout. */
+  private draftKind: 'draft' | 'spoils' = 'draft';
+  private shopItems: ShopItem[] = [];
+  private shopHits: Hit[] = [];
+  private chipPulse = 1;
 
   constructor(
     private ui: Clock,
     private sounds: Sounds,
     private base: () => GameConfig,
-    private cb: { onPick: (o: DraftOption) => void; onFight: (option: number) => void; onNewRun: () => void },
+    private cb: {
+      onPick: (o: DraftOption) => void;
+      onSpoils: (relic: RelicId) => void;
+      onFight: (option: number) => void;
+      onNewRun: () => void;
+      onBuy: (index: number) => void;
+      onReroll: () => void;
+      onLeave: () => void;
+    },
   ) {}
 
   get active(): boolean {
@@ -103,6 +117,7 @@ export class RunScreens {
     this.mode = mode;
     this.cards = [];
     this.buttons = [];
+    this.shopHits = [];
     this.picked = -1;
     void this.ui.tween({ from: 0, to: 1, dur: 0.3, ease: sineOut, onUpdate: (v) => (this.fade = v) });
   }
@@ -115,14 +130,20 @@ export class RunScreens {
     return { ...this.hit(x, y, w, h, onClick), label, scale: 1 };
   }
 
-  showDraft(run: RunState, offers: DraftOption[], last: FightRecord | null): void {
+  showSpoils(run: RunState, relics: RelicId[], last: FightRecord | null): void {
+    this.showDraft(run, relics.map((relic) => ({ kind: 'relic', relic }) as DraftOption), last, 'spoils');
+  }
+
+  showDraft(run: RunState, offers: DraftOption[], last: FightRecord | null, kind: 'draft' | 'spoils' = 'draft'): void {
+    this.draftKind = kind;
     this.run = run;
     this.offers = offers;
     this.deltas = offers.map((o) => optionDeltas(run, o, this.base()));
     this.lastRecord = last;
     this.open('draft');
+    const n = offers.length;
     this.cards = offers.map((o, i) =>
-      this.hit(W / 2 + (i - 1) * 300, 372, 270, 222, () => {
+      this.hit(W / 2 + (i - (n - 1) / 2) * 300, 372, 270, 222, () => {
         if (this.picked >= 0) return;
         this.picked = i;
         this.sounds.stingerMedium();
@@ -130,7 +151,7 @@ export class RunScreens {
         void this.ui
           .tween({ from: 1.08, to: 1.18, dur: 0.15, ease: backOut(2), onUpdate: (v) => (card.scale = v) })
           .then(() => this.ui.wait(0.35))
-          .then(() => this.cb.onPick(o));
+          .then(() => (kind === 'spoils' && o.kind === 'relic' ? this.cb.onSpoils(o.relic) : this.cb.onPick(o)));
       }),
     );
     // Deal the cards in.
@@ -153,6 +174,33 @@ export class RunScreens {
     }
   }
 
+  /** The Cashier: four priced slots, a reroll and a way out. */
+  showShop(run: RunState, items: ShopItem[], reopen = false): void {
+    this.run = run;
+    this.shopItems = items;
+    if (!reopen) this.open('shop');
+    this.buttons = [
+      this.btn(`REROLL - ${rerollCost(run)}`, W / 2 - 170, 654, 250, 56, () => this.cb.onReroll()),
+      this.btn('LEAVE', W / 2 + 170, 654, 250, 56, () => this.cb.onLeave()),
+    ];
+    this.shopHits = items.map((_, i) => {
+      const h = this.hit(W / 2 + (i - (items.length - 1) / 2) * 250, 380, 226, 296, () => this.cb.onBuy(i));
+      h.scale = reopen ? 1 : 0;
+      return h;
+    });
+    if (!reopen)
+      this.shopHits.forEach(
+        (c, i) =>
+          void this.ui.wait(0.1 + i * 0.07).then(() => this.ui.tween({ from: 0, to: 1, dur: 0.28, ease: backOut(2), onUpdate: (v) => (c.scale = v) })),
+      );
+  }
+
+  /** Called after a purchase: bounce the chip counter and refresh the shelf. */
+  bought(): void {
+    void this.ui.tween({ from: 1.6, to: 1, dur: 0.3, ease: backOut(3), onUpdate: (v) => (this.chipPulse = v) });
+    if (this.run) this.showShop(this.run, this.shopItems, true);
+  }
+
   showOver(run: RunState): void {
     this.run = run;
     this.open('over');
@@ -166,7 +214,7 @@ export class RunScreens {
   // ---- input -------------------------------------------------------------------------
 
   private all(): Hit[] {
-    return [...this.cards, ...this.buttons];
+    return [...this.cards, ...this.buttons, ...this.shopHits.filter((_, i) => !this.shopItems[i]?.sold)];
   }
 
   private inside(h: Hit, x: number, y: number): boolean {
@@ -217,7 +265,9 @@ export class RunScreens {
     ctx.globalAlpha = this.fade;
     if (this.mode === 'draft') this.drawDraft(ctx, time);
     else if (this.mode === 'next') this.drawNext(ctx, time);
+    else if (this.mode === 'shop') this.drawShop(ctx, time);
     else this.drawOver(ctx);
+    if (this.mode !== 'over') this.drawChips(ctx, W - 40, 28);
     ctx.restore();
   }
 
@@ -275,9 +325,11 @@ export class RunScreens {
       let cx = x + 28;
       for (const sym of SYMBOLS) {
         const n = s[sym] ?? 0;
-        if (!n && sym === 'rock') continue;
+        if (!n && (sym === 'rock' || sym === 'wild')) continue;
         drawSprite(ctx, sym as SpriteId, cx, ry, 1.5, { alpha: n ? 1 : 0.3 });
-        drawText(ctx, `${n}`, cx + 20, ry, 2, n ? COLORS.text : '#4a4058', { align: 'left' });
+        const gild = this.run?.player.gilded.find((g) => g.reel === r && g.symbol === sym);
+        if (gild && n) drawSprite(ctx, ENH_SPRITE[gild.enh], cx, ry, 1.5);
+        drawText(ctx, `${n}`, cx + 20, ry, 2, gild ? '#ffd23f' : n ? COLORS.text : '#4a4058', { align: 'left' });
         cx += 56;
       }
     });
@@ -307,16 +359,14 @@ export class RunScreens {
     drawText(ctx, last ? `${last.enemy} DEFEATED!` : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight);
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
-      drawText(ctx, `${Math.ceil(last.turns / 2)} ROUNDS  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}${rocks}`, W / 2, 60, 2, COLORS.textDim);
-    }
-    if (last?.eliteRelic) {
-      const r = RELICS[last.eliteRelic];
-      drawSprite(ctx, r.sprite as SpriteId, W / 2 - 150, 84, 2);
-      drawText(ctx, `ELITE BONUS: ${r.name}!`, W / 2 - 128, 84, 2, '#ff9a3a', { align: 'left' });
+      const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
+      drawText(ctx, `${Math.ceil(last.turns / 2)} ROUNDS  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}${chips}${rocks}`, W / 2, 60, 2, COLORS.textDim);
     }
     this.drawMap(ctx, 158, time);
-    const relicDraft = isRelicDraft(this.run!);
-    drawText(ctx, relicDraft ? 'RELIC DRAFT - CHOOSE ONE' : 'CHOOSE ONE', W / 2, 244, 3, relicDraft ? '#c9a0ff' : COLORS.text);
+    const spoils = this.draftKind === 'spoils';
+    const relicDraft = !spoils && isRelicDraft(this.run!);
+    const heading = spoils ? 'ELITE SPOILS - CHOOSE A RELIC' : relicDraft ? 'RELIC DRAFT - CHOOSE ONE' : 'CHOOSE ONE';
+    drawText(ctx, heading, W / 2, 244, 3, spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
     this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], this.deltas[i], i, time));
     this.panel(ctx, 110, 500, 1060, 134);
     this.drawStrips(ctx, 130, 516, this.run!.player.strips);
@@ -395,14 +445,12 @@ export class RunScreens {
       ctx.fillRect(-w / 2 + 8, ly - 11, w - 16, 21);
       drawText(ctx, t, 0, ly, 2, col);
     });
-    if (lines.length) drawText(ctx, 'PER SPIN', w / 2 - 12, h / 2 - 16 - lines.length * 22 + 2, 1, COLORS.textDim, { align: 'right' });
+
     ctx.restore();
   }
 
   /** One enemy's scouting report. */
   private drawEnemyPanel(ctx: CanvasRenderingContext2D, e: EnemyDef, x: number, y: number, w: number, time: number): void {
-    const run = this.run!;
-    const hourglass = run.player.relics.includes('hourglass') ? 1 : 0;
     this.panel(ctx, x, y, w, 300, e.isBoss || e.elite ? '#ff6a5a' : COLORS.gold);
     // Danger rating: 1-3 skulls from the archetype's single-fight danger (x1.25 for elites).
     const danger = (DANGER[e.archetype] ?? 8) * (e.elite ? 1.25 : 1);
@@ -419,7 +467,7 @@ export class RunScreens {
     drawText(ctx, `HP ${e.hp}`, tx, y + 104, 2, COLORS.hp, { align: 'left' });
     if (e.elite) drawText(ctx, 'ELITE: +25% HP, DROPS A RELIC', tx + 90, y + 104, 2, '#ff9a3a', { align: 'left' });
     if (e.ability) {
-      const every = e.ability.every + hourglass;
+      const every = e.ability.every;
       drawSprite(ctx, ABILITY_UI[e.ability.kind].icon, x + 24, y + 146, 2);
       wrap(abilityText(e, every), Math.floor((w - 60) / 12)).forEach((l, k) => drawText(ctx, l, x + 40, y + 146 + k * 18, 2, '#ff9a3a', { align: 'left' }));
     }
@@ -431,7 +479,7 @@ export class RunScreens {
       cx += 72;
     }
     if (e.isBoss)
-      wrap('COINS AND A CUT EACH TURN FILL THE POT. IT CASHES OUT AT YOU... BUT ANY JACKPOT YOU HIT STEALS IT! AT HALF HP IT GOES ALL IN.', Math.floor((w - 32) / 6)).forEach((l, k) =>
+      wrap('COINS + A CUT EACH TURN FILL THE POT. EVERY 4 TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY 5 CHIPS YOU KEEP GIVES +1 SHIELD EACH HOUSE TURN.', Math.floor((w - 32) / 6)).forEach((l, k) =>
         drawText(ctx, l, x + 16, y + 262 + k * 12, 1, COLORS.goldLight, { align: 'left' }),
       );
   }
@@ -455,6 +503,94 @@ export class RunScreens {
       this.drawRelics(ctx, W / 2 + 40, 540);
     }
     for (const b of this.buttons) this.drawButton(ctx, b, time);
+  }
+
+  private drawChips(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+    const chips = this.run?.player.chips ?? 0;
+    drawText(ctx, `${chips}`, x, y, 3, COLORS.energy, { align: 'right', punch: this.chipPulse });
+    drawSprite(ctx, 'chip', x - 14 - String(chips).length * 18 - 8, y, 2.5);
+  }
+
+  private drawShop(ctx: CanvasRenderingContext2D, time: number): void {
+    const run = this.run!;
+    ctx.fillStyle = COLORS.panelLight;
+    ctx.fillRect(40, 20, 96, 96);
+    drawSprite(ctx, 'cashierPortrait', 88, 68 + Math.sin(time * 2) * 2, 3.5);
+    drawText(ctx, 'THE CASHIER', 160, 44, 4, COLORS.goldLight, { align: 'left' });
+    const quips = ['PLACE YOUR BETS.', 'EVERYTHING HAS A PRICE, FRIEND.', 'THE HOUSE WILL HEAR ABOUT THIS.', 'CHIPS ARE FOR SPENDING... OR ARE THEY?'];
+    drawText(ctx, quips[(run.depth + run.shopRerolls) % quips.length], 160, 80, 2, COLORS.textDim, { align: 'left' });
+    drawText(ctx, 'KEEP CHIPS FOR THE FINAL FIGHT: EVERY 5 GIVES +1 SHIELD EACH HOUSE TURN', W / 2, 150, 2, '#9fd0ff');
+    this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
+    this.panel(ctx, 110, 556, 1060, 44);
+    this.drawStripsRow(ctx, 130, 578);
+    for (const b of this.buttons) this.drawButton(ctx, b, time);
+  }
+
+  private drawStripsRow(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+    const run = this.run!;
+    run.player.strips.forEach((s, r) => {
+      let cx = x + r * 340;
+      drawText(ctx, `REEL ${r + 1}`, cx, y, 2, COLORS.textDim, { align: 'left' });
+      cx += 90;
+      for (const sym of SYMBOLS) {
+        const n = s[sym] ?? 0;
+        if (!n) continue;
+        drawSprite(ctx, sym as SpriteId, cx, y, 1.3);
+        const gild = run.player.gilded.find((g) => g.reel === r && g.symbol === sym);
+        if (gild) drawSprite(ctx, ENH_SPRITE[gild.enh], cx, y, 1.3);
+        drawText(ctx, `${n}`, cx + 16, y, 2, gild ? '#ffd23f' : COLORS.text, { align: 'left' });
+        cx += 48;
+      }
+    });
+  }
+
+  private drawShopItem(ctx: CanvasRenderingContext2D, h: Hit, item: ShopItem, time: number): void {
+    if (!h || h.scale <= 0.01) return;
+    const o = item.option;
+    const { title, text } = describeOption(o);
+    const afford = (this.run?.player.chips ?? 0) >= item.price;
+    ctx.save();
+    ctx.globalAlpha *= item.sold ? 0.35 : 1;
+    ctx.translate(h.x, h.y + h.lift);
+    ctx.scale(h.scale, h.scale);
+    const hover = h.hover && !item.sold && afford;
+    if (hover) {
+      ctx.save();
+      ctx.shadowColor = COLORS.energy;
+      ctx.shadowBlur = 22;
+      ctx.globalAlpha *= 0.4 + 0.2 * Math.sin(time * 6);
+      ctx.fillStyle = COLORS.energy;
+      ctx.fillRect(-h.w / 2, -h.h / 2, h.w, h.h);
+      ctx.restore();
+    }
+    this.panel(ctx, -h.w / 2, -h.h / 2, h.w, h.h, hover ? COLORS.energy : COLORS.gold);
+    drawSprite(ctx, 'shopSlot', 0, -h.h / 2 + 64, 4);
+    const iy = -h.h / 2 + 50;
+    if (o.kind === 'relic') drawSprite(ctx, RELICS[o.relic].sprite as SpriteId, 0, iy, 3.5);
+    else if (o.kind === 'gild') {
+      drawSprite(ctx, o.symbol as SpriteId, 0, iy, 3.5);
+      drawSprite(ctx, ENH_SPRITE[o.enh], 0, iy, 3.5);
+    } else if (o.kind === 'swap') {
+      drawSprite(ctx, o.from as SpriteId, -34, iy, 2.5);
+      drawSprite(ctx, 'arrowRight', 0, iy, 2.5);
+      drawSprite(ctx, o.to as SpriteId, 34, iy, 2.5);
+    } else if (o.kind === 'remove') {
+      drawSprite(ctx, o.symbol as SpriteId, 0, iy, 3.5);
+      drawSprite(ctx, 'minusBadge', 28, iy + 20, 3);
+    } else drawSprite(ctx, 'heart', 0, iy, 4.5);
+    drawText(ctx, title, 0, 22, title.length > 12 ? 2 : 3, o.kind === 'gild' ? '#ffd23f' : o.kind === 'relic' ? '#c9a0ff' : COLORS.text);
+    wrap(text, 17).slice(0, 4).forEach((line, k) => drawText(ctx, line, 0, 48 + k * 18, 2, COLORS.text));
+    // Price tag.
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(-52, h.h / 2 - 34, 104, 28);
+    ctx.fillStyle = item.sold ? '#3a2e52' : afford ? '#3a2a14' : '#3a1414';
+    ctx.fillRect(-50, h.h / 2 - 32, 100, 24);
+    if (item.sold) drawText(ctx, 'SOLD', 0, h.h / 2 - 20, 2, COLORS.textDim);
+    else {
+      drawSprite(ctx, 'chip', -22, h.h / 2 - 20, 1.6);
+      drawText(ctx, String(item.price), 12, h.h / 2 - 20, 2, afford ? COLORS.energy : '#ff8a7a');
+    }
+    ctx.restore();
   }
 
   private drawRelicsRow(ctx: CanvasRenderingContext2D, x: number, y: number): void {
@@ -499,7 +635,8 @@ export class RunScreens {
       drawText(ctx, r.enemy, 176, y, 2, r.won ? COLORS.text : COLORS.danger, { align: 'left' });
       drawText(ctx, `${Math.ceil(r.turns / 2)}`, 560, y, 2, COLORS.text);
       drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 680, y, 2, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
-      if (r.pick) drawText(ctx, describeOption(r.pick).title, 790, y, 2, '#c9a0ff', { align: 'left' });
+      const extra = [r.eliteRelic ? `+${RELICS[r.eliteRelic].name}` : '', r.bought?.length ? `+${r.bought.length} BOUGHT` : ''].filter(Boolean).join(' ');
+      if (r.pick) drawText(ctx, describeOption(r.pick).title + (extra ? `  ${extra}` : ''), 790, y, 2, '#c9a0ff', { align: 'left' });
       else if (!r.won) drawText(ctx, 'DEFEATED', 790, y, 2, COLORS.danger, { align: 'left' });
       if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCKS`, 1150, y, 2, '#c9bba8', { align: 'right' });
     });

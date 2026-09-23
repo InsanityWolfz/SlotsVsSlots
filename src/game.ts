@@ -5,7 +5,27 @@ import { RUN_FIGHTS } from './core/enemies';
 import { Fight } from './core/fight';
 import { turnRow, type TurnRow } from './core/log';
 import { RELICS } from './core/relics';
-import { applyOption, chooseEnemy, createRun, draftOffers, fightConfig, finishFight, needsChoice, type DraftOption, type RunState } from './core/run';
+import {
+  applyOption,
+  buy,
+  chooseEnemy,
+  CHIPS,
+  createRun,
+  draftOffers,
+  fightConfig,
+  finishFight,
+  isShopNow,
+  leaveShop,
+  needsChoice,
+  reroll,
+  shopOffers,
+  takeSpoils,
+  type DraftOption,
+  type FightRecord,
+  type RunState,
+  type ShopItem,
+} from './core/run';
+import type { RelicId } from './core/config';
 import { StatsTracker } from './core/stats';
 import { Camera } from './present/camera';
 import { Clock } from './present/clock';
@@ -110,8 +130,12 @@ export class Game {
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
     this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {
       onPick: (o) => this.pickReward(o),
+      onSpoils: (r) => this.pickSpoils(r),
       onFight: (i) => this.beginRunFight(i),
       onNewRun: () => this.startRun(),
+      onBuy: (i) => this.buyItem(i),
+      onReroll: () => this.rerollShop(),
+      onLeave: () => this.leaveCashier(),
     });
     this.buildButtons();
     this.applyJuice();
@@ -206,23 +230,69 @@ export class Game {
     this.newFight(true, null, fightConfig(this.run, this.cfg), true);
   }
 
+  private lastRecord: FightRecord | null = null;
+  private shelf: ShopItem[] = [];
+
   private afterRunFight(): void {
     const run = this.run!;
     const record = finishFight(run, this.fight);
+    this.lastRecord = record;
     this.phase = run.over ? 'over' : 'between';
     if (run.over) this.screens.showOver(run);
+    else if (run.pendingSpoils) this.screens.showSpoils(run, run.pendingSpoils, record);
     else this.screens.showDraft(run, draftOffers(run), record);
+    this.syncButtons();
+  }
+
+  private pickSpoils(relic: RelicId): void {
+    if (!this.run) return;
+    takeSpoils(this.run, relic);
+    this.screens.showDraft(this.run, draftOffers(this.run), this.lastRecord);
+  }
+
+  private buyItem(i: number): void {
+    const item = this.shelf[i];
+    if (!this.run || !item) return;
+    if (buy(this.run, item)) {
+      this.sounds.coin(4);
+      this.sounds.coin(9);
+      this.screens.bought();
+    } else this.sounds.fizzle();
+  }
+
+  private rerollShop(): void {
+    if (!this.run) return;
+    const next = reroll(this.run);
+    if (!next) return this.sounds.fizzle();
+    this.sounds.coin(2);
+    this.shelf = next;
+    this.screens.showShop(this.run, this.shelf, true);
+  }
+
+  private leaveCashier(): void {
+    if (!this.run) return;
+    leaveShop(this.run);
+    this.showNextFight();
+  }
+
+  private showNextFight(): void {
+    if (!this.run) return;
+    // Rebuild the (idle) machines for the next opponent so the preview is accurate.
+    this.newFight(false, null, fightConfig(this.run, this.cfg), true);
+    this.phase = 'between';
+    this.screens.showNext(this.run);
     this.syncButtons();
   }
 
   private pickReward(o: DraftOption): void {
     if (!this.run) return;
     applyOption(this.run, o);
-    // Rebuild the (idle) machines for the next opponent so the preview is accurate.
-    this.newFight(false, null, fightConfig(this.run, this.cfg), true);
-    this.phase = 'between';
-    this.screens.showNext(this.run);
-    this.syncButtons();
+    if (isShopNow(this.run)) {
+      this.shelf = shopOffers(this.run);
+      this.screens.showShop(this.run, this.shelf);
+      return;
+    }
+    this.showNextFight();
   }
 
   // ---- fight flow --------------------------------------------------------------------
@@ -514,6 +584,11 @@ export class Game {
   }
 
   private drawRelics(ctx: CanvasRenderingContext2D): void {
+    if (this.run && this.phase !== 'title') {
+      drawSprite(ctx, 'chip', RELIC_X + 18, 252, 2);
+      drawText(ctx, `${this.run.player.chips}`, RELIC_X + 36, 252, 2, COLORS.energy, { align: 'left' });
+      if (this.fight.isBoss) drawText(ctx, `+${Math.floor(this.run.player.chips / CHIPS.stackPer)} SH/TURN`, RELIC_X + 70, 252, 1, '#9fd0ff', { align: 'left' });
+    }
     const relics = this.relicList();
     if (!relics.length) return;
     drawText(ctx, 'RELICS', RELIC_X + 60, RELIC_Y - 22, 2, COLORS.textDim);
@@ -622,6 +697,10 @@ export class Game {
     const sprite = tier === 4 ? 'potTier4' : tier === 3 ? 'potTier3' : tier === 2 ? 'potTier2' : 'potTier1';
     drawSprite(ctx, sprite, x - 52, y + 12, tier === 1 ? 3 : 2.5, { flash: glow * 0.5 });
     drawText(ctx, String(pot), x + 34, y + 12, 6, tier >= 3 ? '#ff6a5a' : COLORS.energy, { punch: g.potPunch });
+    if (pot > 0) {
+      drawSprite(ctx, 'potSkim', x - 70, y + 64, 2);
+      drawText(ctx, `NEXT SKIM ${cashOut}`, x - 52, y + 64, 2, lethal ? '#ff6a5a' : COLORS.textDim, { align: 'left' });
+    }
   }
 
   private arrow(ctx: CanvasRenderingContext2D, x: number, y: number, dir: number, s: number): void {

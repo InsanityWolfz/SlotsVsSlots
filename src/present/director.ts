@@ -320,6 +320,7 @@ export class Director {
       e.frozen,
     );
     if (e.lucky) await this.luckyPop(e.side);
+    this.stampGilds(e.side, e.score);
     if (near && e.score.tier !== 'triple') this.missedTriple(e.side, e.score.line[0]);
     await this.winPresentation(e.side, e.score);
   }
@@ -341,6 +342,31 @@ export class Director {
       this.bg(this.popText('SO CLOSE!', p.x - 20, row === 0 ? p.y - 30 : p.y + 30, 2, '#ff8a7a', 10, 0.4));
       this.s.sounds.nearMissAww();
       return;
+    }
+  }
+
+  /** Gilded cells that paid this spin get a stamp: X2 for gold, +N for keen/charged. */
+  private stampGilds(side: SideId, score: LineScore): void {
+    const m = this.s.machines[side];
+    for (const g of score.groups) {
+      if (!g.notes?.length) continue;
+      for (const r of g.reels) {
+        const cell = m.reels[r].cellAtRow(1);
+        if (!cell.enh || cell.slimed || (cell.stolen ?? 0) > 0 || m.locked[r] > 0) continue;
+        const p = cellCenter(side, r, 1);
+        if (cell.enh === 'gold') {
+          const stamp = this.s.fx.add(new Projectile('stampX2', p.x + 24, p.y - 30, 0));
+          this.bg(
+            this.c
+              .tween({ from: 0, to: 3.5, dur: 0.2, ease: backOut(3), onUpdate: (v) => (stamp.scale = v) })
+              .then(() => this.c.wait(0.5))
+              .then(() => this.c.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => ((stamp.alpha = v), (stamp.y -= 0.6)) }))
+              .then(() => this.s.fx.remove(stamp)),
+          );
+          this.s.sounds.coin(r * 3);
+        } else if (cell.enh === 'keen' && g.symbol === 'sword') this.bg(this.popText(g.notes.find((n) => n.startsWith('+')) ?? '+1', p.x + 26, p.y - 30, 3, '#bff4ff', 16, 0.3));
+        else if (cell.enh === 'charged' && g.symbol === 'bolt') this.bg(this.popText('+1', p.x + 26, p.y - 30, 3, '#fff27a', 16, 0.3));
+      }
     }
   }
 
@@ -382,7 +408,9 @@ export class Director {
 
     const sym = matched!.symbol;
     const slimeCleanse = sym === 'slime' && side === 'player';
-    const sub = slimeCleanse ? 'CLEANSE!' : `${matched!.amount} ${EFFECT_WORD[sym]}`;
+    // Spell out the maths when gilds/relics changed the payout: "9 X2 = 18 ENERGY".
+    const maths = matched!.notes?.length ? `${matched!.base} ${matched!.notes.join(' ')} = ` : '';
+    const sub = slimeCleanse ? 'CLEANSE!' : `${maths}${matched!.amount} ${EFFECT_WORD[sym]}`;
     if (tier === 'pair') {
       this.s.sounds.stingerMedium();
       this.shake(3, 0.15);
@@ -457,10 +485,10 @@ export class Director {
       this.bg(this.popText(`BLOCK ${e.blocked}`, sb.x + sb.w - 60, sb.y + sb.h / 2, 3, '#9fd0ff', 16, 0.3));
     }
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
-    if (e.note === 'pierce') this.bg(this.popText('PIERCE!', target.x, MACHINE_TOP + 8, 3, '#bff4ff', 24, 0.3));
+    if (e.note === 'pierce') this.bg(this.popText('PIERCE!', target.x + 90, MACHINE_TOP - 22, 2, '#bff4ff', 14, 0.35));
     if (e.note === 'spiked') {
       this.s.sounds.block();
-      this.bg(this.popText('SPIKED!', target.x, MACHINE_TOP + 8, 3, '#c9d0dc', 24, 0.3));
+      this.bg(this.popText('SPIKED!', target.x - 90, MACHINE_TOP - 22, 2, '#c9d0dc', 14, 0.35));
     }
     if (e.hpDamage > 0) this.bg(this.popText(`-${e.hpDamage}`, target.x, MACHINE_TOP + 40, this.tierScale(), color, 60));
     else this.bg(this.popText('BLOCKED!', target.x, MACHINE_TOP + 40, 4, '#9fd0ff', 40));
@@ -930,7 +958,7 @@ export class Director {
       await this.popText('POT EMPTY', src.x, src.y - 30, 2, COLORS.textDim, 16, 0.2);
       return;
     }
-    g.pot = e.amount;
+    g.pot = e.amount + e.potLeft;
     const big = Math.min(1, e.amount / 15);
     if (e.amount >= 8 || playerWins) this.s.sounds.fanfareJackpot();
     else this.s.sounds.stingerMedium();
@@ -943,7 +971,7 @@ export class Director {
       this.s.fx.remove(p);
       if (i % 3 === 0) this.s.sounds.coin(i % 12);
     });
-    this.bg(this.c.to(g, 'pot', 0, 0.6));
+    this.bg(this.c.to(g, 'pot', e.potLeft, 0.6));
     await Promise.all(coins);
     this.hitstop(Math.round(1 + 3 * big));
     this.shake(3 + 6 * big, 0.25 + 0.3 * big);

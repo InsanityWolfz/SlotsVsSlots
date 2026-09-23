@@ -38,20 +38,20 @@ export interface AbilityDef {
 
 export type RelicId =
   | 'clover'
-  | 'whetstone'
-  | 'soap'
   | 'battery'
   | 'mirror'
   | 'fang'
   | 'bandage'
-  | 'hourglass'
-  | 'magnet'
   | 'mittens'
   | 'lockpick'
   | 'mousetrap'
   | 'pickaxe'
-  | 'dice'
-  | 'crown';
+  | 'crown'
+  | 'midas'
+  | 'rod'
+  | 'cactus'
+  | 'prism'
+  | 'hone';
 
 export interface SideConfig {
   hp: number;
@@ -68,6 +68,8 @@ export interface SideConfig {
   boss?: 'house' | null;
   /** Enhanced cells, applied to matching symbols on each reel at fight start. */
   gilded?: Gild[];
+  /** Boss fight: chips carried in grant this much shield at the start of each House turn. */
+  stackShield?: number;
 }
 
 export interface GameConfig {

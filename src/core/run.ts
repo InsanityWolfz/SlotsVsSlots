@@ -1,7 +1,7 @@
 import { cloneConfig, type Enh, type GameConfig, type Gild, type RelicId, type StripCounts, type SymbolId } from './config';
 import { generateRunPaths, RUN_FIGHTS, type EnemyDef } from './enemies';
 import type { Fight } from './fight';
-import { BANDAGE_HEAL, COUNTER_RELICS, COUNTERS, RELICS } from './relics';
+import { BANDAGE_HEAL, BOSS_HP_PER_RELIC, COUNTER_RELICS, COUNTERS, ELITE_ONLY, HONE_BONUS, KEEN_BONUS, RELICS } from './relics';
 import { Rng } from './rng';
 import { scoreLine } from './scoring';
 import { stripCounts } from './strip';
@@ -22,6 +22,25 @@ export const RUN = {
   relicDraftsAfter: [2, 4],
   swapCount: 3,
   addCount: 2,
+  wildCount: 2,
+  /** The Cashier opens after these fights (1-based), after the draft. */
+  shopAfter: [1, 3, 5],
+};
+
+/** Chip economy (earning is passive, spending happens only at the Cashier). */
+export const CHIPS = {
+  win: 2,
+  eliteBonus: 2,
+  perJackpot: 1,
+  /** +1 chip per this much overkill on the killing blow. */
+  overkillPer: 5,
+  /** +1 interest per this many banked chips, capped. */
+  interestPer: 5,
+  interestCap: 3,
+  /** Boss fight: every this many unspent chips = +1 shield at the start of each House turn. */
+  stackPer: 5,
+  prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 4 },
+  rerollBase: 2,
 };
 
 export type DraftOption =
@@ -31,7 +50,14 @@ export type DraftOption =
   | { kind: 'relic'; relic: RelicId }
   | { kind: 'heal'; amount: number }
   | { kind: 'maxHp'; amount: number }
-  | { kind: 'gild'; enh: Enh; symbol: SymbolId; reel: number };
+  | { kind: 'gild'; enh: Enh; symbol: SymbolId; reel: number }
+  | { kind: 'remove'; symbol: SymbolId; reel: number };
+
+export interface ShopItem {
+  option: DraftOption;
+  price: number;
+  sold: boolean;
+}
 
 export interface RunPlayer {
   hp: number;
@@ -40,6 +66,8 @@ export interface RunPlayer {
   relics: RelicId[];
   /** Gilded symbols per reel (every cell of that symbol on that reel): persist for the run. */
   gilded: Gild[];
+  /** Casino chips: earned by winning, spent at the Cashier, and a shield stack vs the House. */
+  chips: number;
 }
 
 export interface FightRecord {
@@ -52,9 +80,13 @@ export interface FightRecord {
   hpAfter: number;
   rocksAdded: number;
   rocksCrumbled: number;
-  /** Relic dropped by an elite. */
+  /** Relic taken from an elite's spoils. */
   eliteRelic?: RelicId;
+  /** Chips earned from this fight (including interest). */
+  chips?: number;
   pick?: DraftOption;
+  /** What was bought at the Cashier after this fight. */
+  bought?: DraftOption[];
 }
 
 export interface RunState {
@@ -71,6 +103,10 @@ export interface RunState {
   records: FightRecord[];
   over: boolean;
   won: boolean;
+  /** An elite was beaten: choose 1 of these relics before the draft. */
+  pendingSpoils: RelicId[] | null;
+  /** Rerolls used at the current Cashier visit. */
+  shopRerolls: number;
 }
 
 export function createRun(base: GameConfig, seed = Rng.randomSeed()): RunState {
@@ -82,10 +118,12 @@ export function createRun(base: GameConfig, seed = Rng.randomSeed()): RunState {
     paths,
     enemies: paths.map((opts) => opts[0]),
     chosen: paths.map((opts) => opts.length === 1),
-    player: { hp: RUN.startHp, maxHp: RUN.startHp, strips: base.player.strips.map((s) => ({ ...s })), relics: [], gilded: [] },
+    player: { hp: RUN.startHp, maxHp: RUN.startHp, strips: base.player.strips.map((s) => ({ ...s })), relics: [], gilded: [], chips: 0 },
     records: [],
     over: false,
     won: false,
+    pendingSpoils: null,
+    shopRerolls: 0,
   };
 }
 
@@ -110,8 +148,11 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     startHp: run.player.hp,
     strips: run.player.strips.map((s) => ({ ...s })),
     gilded: run.player.gilded.map((g) => ({ ...g })),
+    stackShield: e.isBoss ? Math.floor(run.player.chips / CHIPS.stackPer) : 0,
   };
-  cfg.enemy = { hp: e.hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
+  // The House grows with the relics you bring in.
+  const hp = e.isBoss ? e.hp + BOSS_HP_PER_RELIC * run.player.relics.length : e.hp;
+  cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
   cfg.relics = [...run.player.relics];
   cfg.seed = null;
   return cfg;
@@ -154,15 +195,18 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     run.over = true;
     return record;
   }
-  // Elites drop a free relic.
+  // Chips: interest on what you banked, then the win, elite bonus, jackpots and overkill.
   const beaten = currentEnemy(run);
+  const interest = Math.min(CHIPS.interestCap, Math.floor(run.player.chips / CHIPS.interestPer));
+  const earned = interest + CHIPS.win + (beaten.elite ? CHIPS.eliteBonus : 0) + fight.playerJackpots * CHIPS.perJackpot + Math.floor(fight.overkill / CHIPS.overkillPer);
+  run.player.chips += earned;
+  record.chips = earned;
+  // Elites offer their spoils: choose 1 of 2 relics.
   if (beaten.elite) {
     const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && !COUNTER_RELICS.has(r));
-    if (pool.length) {
-      const relic = new Rng((run.seed ^ Math.imul(run.depth + 7, 0x85ebca6b)) >>> 0).pick(pool);
-      run.player.relics.push(relic);
-      record.eliteRelic = relic;
-    }
+    const rng = new Rng((run.seed ^ Math.imul(run.depth + 7, 0x85ebca6b)) >>> 0);
+    const spoils = rng.shuffle(pool).slice(0, 2);
+    if (spoils.length) run.pendingSpoils = spoils;
   }
   let hp = p.hp + Math.round(run.player.maxHp * RUN.postFightHeal);
   if (run.player.relics.includes('bandage')) hp += BANDAGE_HEAL;
@@ -202,16 +246,19 @@ export function stripStats(strips: StripCounts[], base: GameConfig, relics: Reli
         const p = pa * pb * pc;
         const line = [a, b, c];
         const sc = scoreLine(line, cfg);
-        for (const g of sc.groups)
+        for (const g of sc.groups) {
           for (const r of g.reels) {
             const enh = enhOf(r, line[r]);
-            if (enh === 'gold') g.amount *= 2;
+            if (enh === 'keen' && g.symbol === 'sword') g.amount += KEEN_BONUS + (relics.includes('hone') ? HONE_BONUS : 0);
             if (enh === 'charged' && g.symbol === 'bolt') g.amount += 1;
           }
+          for (const r of g.reels) if (enhOf(r, line[r]) === 'gold') g.amount *= 2;
+          if (relics.includes('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) g.amount *= 2;
+        }
         sc.totals = {};
         for (const g of sc.groups) sc.totals[g.symbol] = (sc.totals[g.symbol] ?? 0) + g.amount;
         out.damage += p * ((sc.totals.sword ?? 0) + (relics.includes('pickaxe') ? sc.totals.rock ?? 0 : 0));
-        out.energy += p * ((sc.totals.bolt ?? 0) + (relics.includes('magnet') ? sc.totals.rock ?? 0 : 0));
+        out.energy += p * (sc.totals.bolt ?? 0);
         out.shield += p * (sc.totals.shield ?? 0);
         if (sc.tier === 'pair') out.pairPct += p * 100;
         if (sc.tier === 'triple') out.jackpotPct += p * 100;
@@ -246,7 +293,7 @@ export function draftOffers(run: RunState): DraftOption[] {
       for (const from of ['rock', 'shield'] as SymbolId[]) {
         const n = s[from] ?? 0;
         if (n <= 0 || (from === 'shield' && n < 2)) continue;
-        for (const to of ['bolt', 'sword'] as SymbolId[]) options.push({ kind: 'swap', from, to, count: Math.min(RUN.swapCount, n), reel });
+        options.push({ kind: 'swap', from, to: 'bolt', count: Math.min(RUN.swapCount, n), reel });
       }
     });
     // Rocks-to-something first when you're carrying junk.
@@ -262,6 +309,13 @@ export function draftOffers(run: RunState): DraftOption[] {
   const addCard = (): DraftOption => ({ kind: 'add', symbol: 'bolt', reel: rng.int(3), count: RUN.addCount });
   /** GILD: enhance one cell (GOLD any symbol, KEEN sword, CHARGED bolt, SPIKED shield). */
   const gildCard = (): DraftOption | null => {
+    // EXTEND: half the time, offer the same gild you already own on another reel (builds!).
+    if (p.gilded.length && rng.next() < 0.5) {
+      const own = rng.pick(p.gilded);
+      const reels = [0, 1, 2].filter((r) => r !== own.reel && (p.strips[r][own.symbol] ?? 0) > 0 && !p.gilded.some((g) => g.reel === r && g.symbol === own.symbol));
+      const pickable = reels.filter((r) => !out.some((o) => o.kind === 'gild' && o.reel === r && o.symbol === own.symbol));
+      if (pickable.length) return { kind: 'gild', enh: own.enh, symbol: own.symbol, reel: rng.pick(pickable) };
+    }
     const enh = rng.pick(['gold', 'keen', 'charged', 'spiked'] as Enh[]);
     const symbols: SymbolId[] = enh === 'keen' ? ['sword'] : enh === 'charged' ? ['bolt'] : enh === 'spiked' ? ['shield'] : ['sword', 'bolt', 'shield'];
     const options: DraftOption[] = [];
@@ -277,14 +331,14 @@ export function draftOffers(run: RunState): DraftOption[] {
   const wildCard = (): DraftOption | null => {
     const options: DraftOption[] = [];
     p.strips.forEach((s, reel) => {
-      if ((s.rock ?? 0) > 0) options.push({ kind: 'swap', from: 'rock', to: 'wild', count: 1, reel });
-      else if ((s.shield ?? 0) > 1) options.push({ kind: 'swap', from: 'shield', to: 'wild', count: 1, reel });
+      if ((s.rock ?? 0) > 0) options.push({ kind: 'swap', from: 'rock', to: 'wild', count: Math.min(RUN.wildCount, s.rock ?? 0), reel });
+      else if ((s.shield ?? 0) > RUN.wildCount) options.push({ kind: 'swap', from: 'shield', to: 'wild', count: RUN.wildCount, reel });
     });
     return options.length ? rng.pick(options) : null;
   };
   const hpCard = (): DraftOption => (p.hp < p.maxHp * 0.75 ? { kind: 'heal', amount: RUN.healCard } : { kind: 'maxHp', amount: RUN.maxHpCard });
   const relicCard = (): DraftOption | null => {
-    const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !p.relics.includes(r) && !COUNTER_RELICS.has(r) && !out.some((o) => o.kind === 'relic' && o.relic === r));
+    const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !p.relics.includes(r) && !COUNTER_RELICS.has(r) && !ELITE_ONLY.has(r) && !out.some((o) => o.kind === 'relic' && o.relic === r));
     return pool.length ? { kind: 'relic', relic: rng.pick(pool) } : null;
   };
   /** PREP: a counter relic for an enemy on the very next fight/fork. */
@@ -301,7 +355,7 @@ export function draftOffers(run: RunState): DraftOption[] {
   } else {
     push(gildCard() ?? swapCard());
     const r = rng.next();
-    push((r < 0.35 ? wildCard() : r < 0.7 ? swapCard() : null) ?? clearCard() ?? addCard());
+    push((r < 0.35 ? wildCard() : r < 0.65 ? swapCard() : null) ?? clearCard() ?? gildCard() ?? addCard());
     push((rng.next() < 0.6 ? prepCard() : null) ?? hpCard());
   }
   let guard = 0;
@@ -309,7 +363,7 @@ export function draftOffers(run: RunState): DraftOption[] {
   return out;
 }
 
-export function applyOption(run: RunState, o: DraftOption): void {
+export function applyOption(run: RunState, o: DraftOption, asPick = true): void {
   const p = run.player;
   switch (o.kind) {
     case 'add':
@@ -331,6 +385,11 @@ export function applyOption(run: RunState, o: DraftOption): void {
     case 'gild':
       p.gilded.push({ reel: o.reel, symbol: o.symbol, enh: o.enh });
       break;
+    case 'remove': {
+      const n = p.strips[o.reel][o.symbol] ?? 0;
+      if (n > 0) p.strips[o.reel][o.symbol] = n - 1;
+      break;
+    }
     case 'heal':
       p.hp = Math.min(p.maxHp, p.hp + o.amount);
       break;
@@ -342,7 +401,79 @@ export function applyOption(run: RunState, o: DraftOption): void {
   // A gild lasts while its symbol is on the reel.
   p.gilded = p.gilded.filter((g) => (p.strips[g.reel][g.symbol] ?? 0) > 0);
   const last = run.records.at(-1);
-  if (last) last.pick = o;
+  if (last && asPick) last.pick = o;
+}
+
+// ---- elite spoils & the Cashier --------------------------------------------------------
+
+export function takeSpoils(run: RunState, relic: RelicId): void {
+  if (!run.pendingSpoils?.includes(relic)) return;
+  if (!run.player.relics.includes(relic)) run.player.relics.push(relic);
+  const last = run.records.at(-1);
+  if (last) last.eliteRelic = relic;
+  run.pendingSpoils = null;
+}
+
+export const isShopNow = (run: RunState) => !run.over && RUN.shopAfter.includes(run.depth);
+export const rerollCost = (run: RunState) => CHIPS.rerollBase + run.shopRerolls;
+
+/**
+ * The Cashier's four slots: two targeted gilds, a relic, and a utility (WILDs, remove a symbol,
+ * or a heal). Deterministic per run seed + depth + rerolls.
+ */
+export function shopOffers(run: RunState): ShopItem[] {
+  const rng = new Rng((run.seed ^ Math.imul(run.depth + 31, 0x27d4eb2f) ^ Math.imul(run.shopRerolls + 1, 0x165667b1)) >>> 0);
+  const p = run.player;
+  const items: ShopItem[] = [];
+  const P = CHIPS.prices;
+  const add = (option: DraftOption | null, price: number) => {
+    if (option && !items.some((i) => JSON.stringify(i.option) === JSON.stringify(option))) items.push({ option, price, sold: false });
+  };
+  const gildOptions: DraftOption[] = [];
+  p.strips.forEach((s, reel) => {
+    for (const [enh, syms] of [['gold', ['sword', 'bolt', 'shield']], ['keen', ['sword']], ['charged', ['bolt']], ['spiked', ['shield']]] as [Enh, SymbolId[]][])
+      for (const symbol of syms)
+        if ((s[symbol] ?? 0) > 0 && !p.gilded.some((g) => g.reel === reel && g.symbol === symbol)) gildOptions.push({ kind: 'gild', enh, symbol, reel });
+  });
+  // Prefer extending what you already own, so builds can be finished on purpose.
+  const extend = gildOptions.filter((o) => o.kind === 'gild' && p.gilded.some((g) => g.enh === o.enh && g.symbol === o.symbol));
+  add(extend.length ? rng.pick(extend) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
+  add(gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
+  const relics = (Object.keys(RELICS) as RelicId[]).filter((r) => !p.relics.includes(r) && !COUNTER_RELICS.has(r) && !ELITE_ONLY.has(r));
+  add(relics.length ? { kind: 'relic', relic: rng.pick(relics) } : null, P.relic);
+  const u = rng.next();
+  if (u < 0.35) {
+    const reels = p.strips.map((s, reel) => ({ s, reel })).filter(({ s }) => (s.shield ?? 0) > RUN.wildCount);
+    add(reels.length ? { kind: 'swap', from: 'shield', to: 'wild', count: RUN.wildCount, reel: rng.pick(reels).reel } : null, P.wild);
+  } else if (u < 0.7) {
+    const junk = p.strips.flatMap((s, reel) => (['rock', 'shield'] as SymbolId[]).filter((sym) => (s[sym] ?? 0) > 0).map((symbol) => ({ kind: 'remove' as const, symbol, reel })));
+    add(junk.length ? (junk.find((j) => j.symbol === 'rock') ?? rng.pick(junk)) : null, P.remove);
+  }
+  if (items.length < 4) add({ kind: 'heal', amount: RUN.healCard }, P.heal);
+  return items.slice(0, 4);
+}
+
+export function buy(run: RunState, item: ShopItem): boolean {
+  if (item.sold || run.player.chips < item.price) return false;
+  run.player.chips -= item.price;
+  applyOption(run, item.option, false);
+  item.sold = true;
+  const last = run.records.at(-1);
+  if (last) (last.bought ??= []).push(item.option);
+  return true;
+}
+
+/** Spend chips to reroll the Cashier's shelf. Returns the new offers, or null if too poor. */
+export function reroll(run: RunState): ShopItem[] | null {
+  const cost = rerollCost(run);
+  if (run.player.chips < cost) return null;
+  run.player.chips -= cost;
+  run.shopRerolls++;
+  return shopOffers(run);
+}
+
+export function leaveShop(run: RunState): void {
+  run.shopRerolls = 0;
 }
 
 /** Gilds after taking a card. */
@@ -354,7 +485,7 @@ export function gildsAfter(run: RunState, o: DraftOption): Gild[] {
 export function stripsAfter(run: RunState, o: DraftOption): StripCounts[] {
   const copy: RunState = {
     ...run,
-    player: { ...run.player, strips: run.player.strips.map((s) => ({ ...s })), relics: [...run.player.relics], gilded: [...run.player.gilded] },
+    player: { ...run.player, strips: run.player.strips.map((s) => ({ ...s })), relics: [...run.player.relics], gilded: [...run.player.gilded], chips: run.player.chips },
     records: [],
   };
   applyOption(copy, o);
@@ -364,7 +495,7 @@ export function stripsAfter(run: RunState, o: DraftOption): StripCounts[] {
 const NAME: Partial<Record<SymbolId, string>> = { sword: 'SWORD', shield: 'SHIELD', bolt: 'BOLT', rock: 'ROCK', wild: 'WILD' };
 const ENH_TEXT: Record<Enh, (s: string, reel: number) => string> = {
   gold: (s, r) => `${s}S ON REEL ${r} PAY X2`,
-  keen: (s, r) => `${s}S ON REEL ${r} PIERCE SHIELDS`,
+  keen: (s, r) => `${s}S ON REEL ${r} DEAL +1 AND PIERCE SHIELDS`,
   charged: (s, r) => `${s}S ON REEL ${r} GIVE +1 ENERGY`,
   spiked: (s, r) => `${s}S ON REEL ${r} HIT BACK FOR 2 WHEN YOU ARE HIT`,
 };
@@ -388,12 +519,14 @@ export function describeOption(o: DraftOption): { title: string; text: string } 
       return { title: `+${o.amount} MAX HP`, text: `GAIN ${o.amount} MAX HP (AND HEAL IT)` };
     case 'gild':
       return { title: `${o.enh.toUpperCase()} ${NAME[o.symbol]}S`, text: ENH_TEXT[o.enh](NAME[o.symbol] ?? '', o.reel + 1) };
+    case 'remove':
+      return { title: `-1 ${NAME[o.symbol]}`, text: `REMOVE A ${NAME[o.symbol]} FROM REEL ${o.reel + 1}` };
   }
 }
 
 /** Up to two "before TO after" lines for strip cards: the biggest gain, then the biggest cost. */
 export function optionDeltas(run: RunState, o: DraftOption, base: GameConfig): { gain: string; loss: string } {
-  if (o.kind !== 'add' && o.kind !== 'swap' && o.kind !== 'clear' && o.kind !== 'gild') return { gain: '', loss: '' };
+  if (o.kind !== 'add' && o.kind !== 'swap' && o.kind !== 'clear' && o.kind !== 'gild' && o.kind !== 'remove') return { gain: '', loss: '' };
   const a = stripStats(run.player.strips, base, run.player.relics, run.player.gilded);
   const b = stripStats(stripsAfter(run, o), base, run.player.relics, gildsAfter(run, o));
   const rows: [string, number, number][] = [

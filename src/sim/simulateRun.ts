@@ -2,30 +2,54 @@ import type { GameConfig, RelicId } from '../core/config';
 import { RUN_FIGHTS } from '../core/enemies';
 import { Fight } from '../core/fight';
 import { Rng } from '../core/rng';
-import { applyOption, chooseEnemy, createRun, draftOffers, finishFight, fightConfig, needsChoice, type DraftOption, type RunState } from '../core/run';
+import {
+  applyOption,
+  buy,
+  chooseEnemy,
+  CHIPS,
+  createRun,
+  draftOffers,
+  finishFight,
+  fightConfig,
+  isShopNow,
+  leaveShop,
+  needsChoice,
+  shopOffers,
+  takeSpoils,
+  type DraftOption,
+  type RunState,
+} from '../core/run';
 
 export type DraftPolicy = 'greedy' | 'random' | 'relic';
 
 const RELIC_VALUE: Record<RelicId, number> = {
   mirror: 10,
-  battery: 9.5,
+  battery: 9,
   fang: 9,
-  whetstone: 8,
+  crown: 8,
   clover: 7.5,
-  dice: 7,
-  hourglass: 6.5,
   bandage: 6,
-  soap: 5,
-  mittens: 5,
-  lockpick: 5,
-  mousetrap: 5,
-  magnet: 3,
-  pickaxe: 3,
-  crown: 9,
+  mittens: 2,
+  lockpick: 2,
+  mousetrap: 2,
+  pickaxe: 2,
+  // Build relics are worth a lot more once you own the gild they amplify.
+  midas: 4,
+  rod: 4,
+  cactus: 3,
+  prism: 3,
+  hone: 3,
+};
+const BUILD: Partial<Record<RelicId, (run: RunState) => boolean>> = {
+  midas: (r) => r.player.gilded.some((g) => g.enh === 'gold'),
+  rod: (r) => r.player.gilded.some((g) => g.enh === 'charged'),
+  cactus: (r) => r.player.gilded.some((g) => g.enh === 'spiked'),
+  prism: (r) => r.player.strips.some((s) => (s.wild ?? 0) > 0),
+  hone: (r) => r.player.gilded.some((g) => g.enh === 'keen'),
 };
 
 /** Rough per-archetype danger for picking at forks (playtest ITERATION_1 kill rates). */
-const DANGER: Record<string, number> = { slime: 3, frost: 6, golem: 5, thief: 11, gremlin: 15, brute: 15 };
+const DANGER: Record<string, number> = { slime: 5, frost: 8, golem: 4, thief: 13, gremlin: 12, brute: 20 };
 const COUNTER: Record<string, RelicId> = { frost: 'mittens', gremlin: 'lockpick', thief: 'mousetrap', golem: 'pickaxe' };
 
 /** A reasonable human-ish drafter, tuned against rollout values from playtest ITERATION_1. */
@@ -34,7 +58,8 @@ export function greedyValue(run: RunState, o: DraftOption): number {
   const rocks = p.strips.reduce((a, s) => a + (s.rock ?? 0), 0);
   switch (o.kind) {
     case 'relic': {
-      if ((o.relic === 'magnet' || o.relic === 'pickaxe') && rocks > 0) return 7 + rocks * 0.3;
+      if (o.relic === 'pickaxe' && rocks > 0) return 5 + rocks * 0.3;
+      if (BUILD[o.relic]?.(run)) return 10;
       const countered = Object.entries(COUNTER).find(([, r]) => r === o.relic)?.[0];
       if (countered) return (run.paths[run.depth] ?? []).some((e) => e.archetype === countered) ? 7 : 2;
       return RELIC_VALUE[o.relic];
@@ -51,7 +76,9 @@ export function greedyValue(run: RunState, o: DraftOption): number {
     case 'clear':
       return 3 + (p.strips[o.reel].rock ?? 0) * 2;
     case 'add':
-      return o.symbol === 'bolt' ? 6 : 2;
+      return o.symbol === 'bolt' ? 4 : 2;
+    case 'remove':
+      return o.symbol === 'rock' ? 5 : o.symbol === 'shield' ? 3 : 0;
   }
 }
 
@@ -66,6 +93,19 @@ function pickEnemy(run: RunState, policy: DraftPolicy, rng: Rng): number {
     return (DANGER[a] ?? 8) * (countered ? 0.4 : 1) * (opts[i].elite ? 1.25 : 1) + eliteBonus;
   };
   return opts.map((_, i) => i).reduce((best, i) => (score(i) < score(best) ? i : best), 0);
+}
+
+/** Cashier policy: greedy buys the best value-per-chip items, keeping a reserve before the boss. */
+function shop(run: RunState, policy: DraftPolicy, rng: Rng): void {
+  const items = shopOffers(run);
+  if (policy === 'random') {
+    for (const it of items) if (rng.next() < 0.5) buy(run, it);
+  } else {
+    const reserve = run.depth >= RUN_FIGHTS ? CHIPS.stackPer * 2 : 0;
+    const sorted = [...items].sort((a, b) => greedyValue(run, b.option) / b.price - greedyValue(run, a.option) / a.price);
+    for (const it of sorted) if (greedyValue(run, it.option) >= 5 && run.player.chips - it.price >= reserve) buy(run, it);
+  }
+  leaveShop(run);
 }
 
 export interface RunSummary {
@@ -119,6 +159,10 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
         killed[arch] = (killed[arch] ?? 0) + 1;
       }
       if (run.won) bossWins++;
+      if (!run.over && run.pendingSpoils) {
+        const sp = run.pendingSpoils;
+        takeSpoils(run, policy === 'random' ? pick.pick(sp) : sp.reduce((a, b) => (greedyValue(run, { kind: 'relic', relic: b }) > greedyValue(run, { kind: 'relic', relic: a }) ? b : a)));
+      }
       if (!run.over) {
         const offers = draftOffers(run);
         const relic = offers.find((x) => x.kind === 'relic');
@@ -129,6 +173,7 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
               ? relic
               : offers.reduce((a, b) => (greedyValue(run, b) > greedyValue(run, a) ? b : a));
         applyOption(run, o);
+        if (isShopNow(run)) shop(run, policy, pick);
       }
     }
     if (run.won) wins++;

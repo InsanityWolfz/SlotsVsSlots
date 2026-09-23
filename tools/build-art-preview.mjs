@@ -47,7 +47,7 @@ const SPRITES = ${JSON.stringify(art.SPRITES)};
 const FONT_W = ${font.FONT_W}, FONT_H = ${font.FONT_H};
 const GLYPHS = ${JSON.stringify(font.GLYPHS)};
 
-const W = 1400, H = 3000;
+const W = 1400, H = 3700;
 const cv = document.getElementById('c'); cv.width = W; cv.height = H;
 const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
 const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#29123d'); bg.addColorStop(1, '#0d0519');
@@ -77,12 +77,13 @@ function label(t, x, y) { ctx.fillStyle = '#9a8fb0'; ctx.font = '12px monospace'
 
 // Close-up review helper for the devtools console: zoomView(['sword','shield'], 40)
 window.zoomView = (ids, s) => {
-  ctx.fillStyle = '#1f0c2e'; ctx.fillRect(0, 0, W, H); let zx = 10, zy = 10;
+  ctx.fillStyle = '#1f0c2e'; ctx.fillRect(0, 0, W, H); let zx = 10, zy = 10, rowH = 0;
   for (const id of ids) {
     const w = SPRITES[id][0].length, h = SPRITES[id].length;
-    if (zx + w * s > W) { zx = 10; zy += (h + 1) * s; }
+    if (zx + w * s > W) { zx = 10; zy += rowH + s; rowH = 0; }
+    rowH = Math.max(rowH, h * s);
     if (id === 'goo') spr('sword', zx, zy, s, 0.2);
-    if (id === 'frozenOverlay' || id === 'lockOverlay' || id.startsWith('enh')) spr('sword', zx, zy, s);
+    if (id === 'frozenOverlay' || id === 'lockOverlay' || id.startsWith('enh')) spr(id === 'enhCharged' ? 'bolt' : 'sword', zx, zy, s);
     spr(id, zx, zy, s); zx += (w + 1) * s;
   }
 };
@@ -156,10 +157,14 @@ ry += 150;
 // relics on a dark card panel
 label('relics on card panel (4x)', 20, ry - 10);
 const relics = Object.keys(SPRITES).filter((k) => k.startsWith('relic'));
-ctx.fillStyle = UI_COLORS.gold; ctx.fillRect(12, ry - 8, relics.length * 84 + 16, 100);
-ctx.fillStyle = UI_COLORS.panel; ctx.fillRect(16, ry - 4, relics.length * 84 + 8, 92);
-relics.forEach((id, i) => { ctx.fillStyle = UI_COLORS.panelLight; ctx.fillRect(24 + i * 84, ry + 4, 76, 76); spr(id, 30 + i * 84, ry + 10, 4); });
-ry += 130;
+for (let r0 = 0; r0 < relics.length; r0 += 14) {
+  const row = relics.slice(r0, r0 + 14);
+  ctx.fillStyle = UI_COLORS.gold; ctx.fillRect(12, ry - 8, row.length * 84 + 16, 100);
+  ctx.fillStyle = UI_COLORS.panel; ctx.fillRect(16, ry - 4, row.length * 84 + 8, 92);
+  row.forEach((id, i) => { ctx.fillStyle = UI_COLORS.panelLight; ctx.fillRect(24 + i * 84, ry + 4, 76, 76); spr(id, 30 + i * 84, ry + 10, 4); });
+  ry += 110;
+}
+ry += 20;
 // portraits line-up at 4x on a dark panel
 label('enemy roster (4x)', 20, ry - 10);
 ['playerPortrait','enemyPortrait','enemyBrute','enemyFrost','enemyThief','enemyGolem','enemyGremlin','enemyBoss'].forEach((id, i) => {
@@ -199,6 +204,46 @@ ctx.fillStyle = UI_COLORS.panelLight; ctx.fillRect(460, ry, 160, 110);
 spr('cardPrep', 470, ry + 20, 4); spr('cardGild', 545, ry + 20, 4);
 // 2x readability strip
 ['potTier4', 'mapBadgeElite', 'dangerPip', 'cardPrep', 'wild', 'cardGild'].forEach((id, i) => spr(id, 660 + i * 60, ry + 20, 2));
+ry += 150;
+// gild readability: X2 stamp popping off gilded cells, strip-map ticks (1x / 2x / 4x)
+label('X2 stamp over gilded cells (5x) + strip-map ticks (1x, 2x, 4x, 6x)', 20, ry - 10);
+['sword', 'bolt', 'shield'].forEach((a, i) => {
+  const cx = 20 + i * 102; cellBg(cx, ry); spr(a, cx + 8, ry + 8, 5); spr('enhGold', cx + 8, ry + 8, 5); spr('stampX2', cx + 18, ry - 4 + i * 6, 5);
+});
+spr('stampX2', 340, ry + 10, 1); spr('stampX2', 360, ry + 10, 2); spr('stampX2', 400, ry + 10, 3);
+const ticks = ['tickGold', 'tickKeen', 'tickCharged', 'tickSpiked'];
+ctx.fillStyle = UI_COLORS.panel; ctx.fillRect(480, ry, 420, 96);
+let tx = 490; [1, 2, 4, 6].forEach((s) => { ticks.forEach((id) => { spr(id, tx, ry + 10, s); tx += s * 5 + 4; }); tx += 16; });
+// mini strip map: 3 reels x 8 cells with ticks beside symbols (2x)
+ctx.fillStyle = UI_COLORS.panel; ctx.fillRect(920, ry, 380, 96);
+const strip = ['sword', 'bolt', 'shield', 'sword', 'bolt', 'wild', 'shield', 'sword'];
+strip.forEach((id, i) => {
+  const sx = 930 + i * 44; spr(id, sx, ry + 10, 2);
+  const t = [0, 2, -1, 1, 3, -1, 0, 1][i]; if (t >= 0) { spr(ticks[t], sx + 11, ry + 48, 2); spr(ticks[t], sx + 13, ry + 70, 1); }
+});
+ry += 140;
+// redrawn keen / charged overlays over every player symbol (5x)
+label('redrawn enhKeen / enhCharged over sword / shield / bolt / wild (5x)', 20, ry - 10);
+['enhKeen', 'enhCharged'].forEach((o, j) => ['sword', 'shield', 'bolt', 'wild'].forEach((a, i) => {
+  const cx = 20 + (j * 4 + i) * 102 + j * 24; cellBg(cx, ry); spr(a, cx + 8, ry + 8, 5); spr(o, cx + 8, ry + 8, 5);
+}));
+ry += 130;
+// the cashier's shop: portrait, pot skim, chip economy, items on display cushions (4x)
+label('THE CASHIER: portrait, skim, chips, shop slots with relics (4x)', 20, ry - 10);
+ctx.fillStyle = UI_COLORS.gold; ctx.fillRect(12, ry - 8, 1240, 132);
+ctx.fillStyle = UI_COLORS.panel; ctx.fillRect(16, ry - 4, 1232, 124);
+spr('cashierPortrait', 26, ry + 6, 4); spr('playerPortrait', 136, ry + 6, 4);
+spr('potSkim', 250, ry + 10, 4); text('SKIM 22', 306, ry + 22, 3, UI_COLORS.gold);
+spr('chip', 250, ry + 66, 4); text('x 137', 306, ry + 78, 3, UI_COLORS.text);
+['relicMidas', 'relicRod', 'relicCactus', 'relicPrism', 'relicHone', 'cardGild'].forEach((id, i) => {
+  const sx = 470 + i * 128; spr('shopSlot', sx, ry + 16, 4); spr(id, sx + 16, ry + 0, 4);
+  spr('chip', sx + 20, ry + 102, 2); text(String(20 + i * 15), sx + 42, ry + 104, 2, UI_COLORS.gold);
+});
+ry += 150;
+// 1x / 2x readability strip for all new sprites
+label('new sprites at 1x and 2x', 20, ry - 10);
+['relicMidas', 'relicRod', 'relicCactus', 'relicPrism', 'relicHone', 'stampX2', 'tickGold', 'tickKeen', 'tickCharged', 'tickSpiked', 'potSkim', 'chip', 'cashierPortrait', 'shopSlot', 'enhKeen', 'enhCharged']
+  .forEach((id, i) => { spr(id, 20 + i * 70, ry, 1); spr(id, 20 + i * 70 + 26, ry, 2); });
 };
 drawAll();
 </script></body></html>

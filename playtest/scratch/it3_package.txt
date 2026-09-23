@@ -1,0 +1,36 @@
+current                                      greedy/sim 46.0  greedy/safe 37.4  greedy/elite 49.9  greedy/eliteIfHealthy 47.5  hpFirst/sim 43.3  gildFirst/sim 41.7  random/random 29.4
+    sim: deaths 0.3/7.1/7.4/11.1/9.2/18.9; boss win by relics-in 0:44%(16) 1:54%(185) 2:62%(584) 3:74%(605) 4:85%(369) 5:83%(149) 6:85%(39); pot deaths warned by LETHAL 52% of 326
+    elite: deaths 0.3/15.6/13.2/11.2/2.7/7.1; boss win by relics-in 3:75%(28) 4:84%(301) 5:88%(1111) 6:90%(269); pot deaths warned by LETHAL 48% of 122
+recal                                        greedy/sim 44.3  greedy/safe 41.1  greedy/elite 45.8  greedy/eliteIfHealthy 46.7  hpFirst/sim 41.0  gildFirst/sim 39.7  random/random 27.7
+    sim: deaths 0.3/4.4/7.0/10.5/10.0/23.5; boss win by relics-in 0:33%(36) 1:48%(348) 2:64%(866) 3:75%(540) 4:77%(190) 5:85%(47) 6:60%(5); pot deaths warned by LETHAL 53% of 403
+    elite: deaths 0.4/16.4/15.2/12.5/3.3/6.4; boss win by relics-in 3:67%(24) 4:87%(314) 5:88%(1011) 6:89%(218); pot deaths warned by LETHAL 35% of 115
+recal+x1.4                                   greedy/sim 42.4  greedy/safe 41.1  greedy/elite 36.0  greedy/eliteIfHealthy 39.8  hpFirst/sim 41.0  gildFirst/sim 37.7  random/random 25.0
+    sim: deaths 0.4/4.5/8.0/11.1/9.7/23.9; boss win by relics-in 0:38%(26) 1:49%(330) 2:61%(881) 3:74%(511) 4:76%(188) 5:78%(40) 6:82%(11); pot deaths warned by LETHAL 55% of 412
+    elite: deaths 0.3/19.6/20.8/14.9/3.2/5.1; boss win by relics-in 3:78%(27) 4:80%(236) 5:90%(813) 6:90%(158); pot deaths warned by LETHAL 42% of 83
+recal+noHeal                                 greedy/sim 40.2  greedy/safe 41.1  greedy/elite 21.8  greedy/eliteIfHealthy 31.7  hpFirst/sim 39.2  gildFirst/sim 36.2  random/random 18.8
+    sim: deaths 0.3/4.3/6.7/12.4/11.7/24.5; boss win by relics-in 0:42%(36) 1:55%(339) 2:61%(907) 3:68%(490) 4:65%(142) 5:100%(24) 6:100%(2); pot deaths warned by LETHAL 55% of 397
+    elite: deaths 0.2/15.8/26.2/22.7/7.5/5.8; boss win by relics-in 3:57%(46) 4:72%(273) 5:85%(426) 6:83%(84); pot deaths warned by LETHAL 45% of 101
+recal+noHeal+x1.4                            greedy/sim 40.3  greedy/safe 41.1  greedy/elite 16.8  greedy/eliteIfHealthy 28.8  hpFirst/sim 36.0  gildFirst/sim 36.1  random/random 16.2
+    sim: deaths 0.4/5.1/7.6/12.4/10.2/24.1; boss win by relics-in 0:50%(30) 1:50%(350) 2:63%(909) 3:71%(487) 4:69%(134) 5:60%(20) 6:50%(2); pot deaths warned by LETHAL 50% of 399
+    elite: deaths 0.2/19.6/30.8/22.9/5.8/3.9; boss win by relics-in 3:76%(34) 4:79%(216) 5:83%(320) 6:81%(53); pot deaths warned by LETHAL 45% of 67
+cashFirst                                    greedy/sim 47.8  greedy/safe 40.0  greedy/elite 50.7  greedy/eliteIfHealthy 48.6  hpFirst/sim 45.2  gildFirst/sim 43.5  random/random 30.6
+    sim: deaths 0.3/7.1/7.4/11.1/9.2/17.1; boss win by relics-in 0:50%(16) 1:56%(185) 2:66%(584) 3:76%(605) 4:87%(369) 5:86%(149) 6:90%(39); pot deaths warned by LETHAL 100% of 206
+    elite: deaths 0.3/15.6/13.2/11.2/2.7/6.3; boss win by relics-in 3:75%(28) 4:86%(301) 5:89%(1111) 6:93%(269); pot deaths warned by LETHAL 100% of 73
+boss+2/relic                                 greedy/sim 43.2  greedy/safe 34.9  greedy/elite 47.1  greedy/eliteIfHealthy 44.4  hpFirst/sim 40.7  gildFirst/sim 39.2  random/random 26.3
+    sim: deaths 0.3/7.1/7.4/11.1/9.2/21.7; boss win by relics-in 0:44%(16) 1:52%(185) 2:56%(584) 3:69%(605) 4:80%(369) 5:83%(149) 6:77%(39); pot deaths warned by LETHAL 50% of 363
+    elite: deaths 0.3/15.6/13.2/11.2/2.7/9.9; boss win by relics-in 3:68%(28) 4:77%(301) 5:85%(1111) 6:82%(269); pot deaths warned by LETHAL 43% of 153
+I: recal+noHeal+cashFirst+boss2/relic        greedy/sim 39.7  greedy/safe 41.0  greedy/elite 20.7  greedy/eliteIfHealthy 30.6  hpFirst/sim 39.4  gildFirst/sim 35.8  random/random 18.3
+    sim: deaths 0.3/4.3/6.7/12.4/11.7/25.0; boss win by relics-in 0:44%(36) 1:57%(339) 2:60%(907) 3:66%(490) 4:61%(142) 5:96%(24) 6:100%(2); pot deaths warned by LETHAL 100% of 333
+    elite: deaths 0.2/15.8/26.2/22.7/7.5/6.9; boss win by relics-in 3:48%(46) 4:70%(273) 5:81%(426) 6:76%(84); pot deaths warned by LETHAL 100% of 79
+I2: recal+x1.4+noHeal+cashFirst+boss2/relic  greedy/sim 39.5  greedy/safe 41.0  greedy/elite 16.2  greedy/eliteIfHealthy 28.4  hpFirst/sim 36.4  gildFirst/sim 35.6  random/random 15.5
+    sim: deaths 0.4/5.1/7.6/12.4/10.2/24.9; boss win by relics-in 0:53%(30) 1:52%(350) 2:61%(909) 3:67%(487) 4:68%(134) 5:60%(20) 6:50%(2); pot deaths warned by LETHAL 100% of 308
+    elite: deaths 0.2/19.6/30.8/22.9/5.8/4.5; boss win by relics-in 3:71%(34) 4:75%(216) 5:82%(320) 6:77%(53); pot deaths warned by LETHAL 100% of 55
+J: recal+cashFirst+boss3/relic               greedy/sim 41.8  greedy/safe 40.0  greedy/elite 42.8  greedy/eliteIfHealthy 44.3  hpFirst/sim 40.0  gildFirst/sim 38.6  random/random 25.6
+    sim: deaths 0.3/4.4/7.0/10.5/10.0/25.9; boss win by relics-in 0:44%(36) 1:45%(348) 2:61%(866) 3:70%(540) 4:72%(190) 5:79%(47) 6:80%(5); pot deaths warned by LETHAL 100% of 318
+    elite: deaths 0.4/16.4/15.2/12.5/3.3/9.4; boss win by relics-in 3:67%(24) 4:82%(314) 5:83%(1011) 6:80%(218); pot deaths warned by LETHAL 100% of 88
+J2: recal+x1.3+cashFirst+boss3/relic         greedy/sim 42.2  greedy/safe 40.0  greedy/elite 39.7  greedy/eliteIfHealthy 42.0  hpFirst/sim 39.8  gildFirst/sim 37.5  random/random 25.7
+    sim: deaths 0.4/4.6/6.9/10.2/9.5/26.3; boss win by relics-in 0:39%(38) 1:49%(336) 2:59%(922) 3:70%(517) 4:71%(192) 5:83%(42) 6:83%(6); pot deaths warned by LETHAL 100% of 321
+    elite: deaths 0.2/16.1/17.5/13.8/3.6/9.1; boss win by relics-in 3:69%(32) 4:77%(285) 5:84%(952) 6:75%(195); pot deaths warned by LETHAL 100% of 94
+J3: recal+cashFirst+boss2/relic              greedy/sim 43.3  greedy/safe 41.0  greedy/elite 44.2  greedy/eliteIfHealthy 46.0  hpFirst/sim 40.7  gildFirst/sim 39.6  random/random 26.6
+    sim: deaths 0.3/4.4/7.0/10.5/10.0/24.4; boss win by relics-in 0:44%(36) 1:47%(348) 2:63%(866) 3:72%(540) 4:73%(190) 5:81%(47) 6:80%(5); pot deaths warned by LETHAL 100% of 312
+    elite: deaths 0.4/16.4/15.2/12.5/3.3/8.0; boss win by relics-in 3:71%(24) 4:82%(314) 5:86%(1011) 6:85%(218); pot deaths warned by LETHAL 100% of 78

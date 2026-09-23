@@ -86,3 +86,16 @@ Implemented:
 - NEW FEATURE — WILDs & gilding: WILD symbol (completes runs, lone wild pays as a bolt); GILD cards enhance every cell of a symbol on a reel: GOLD (x2), KEEN swords (pierce), CHARGED bolts (+1 energy), SPIKED shields (hit back 2). Thief/slime target gilded cells first, freeze clunks away from them. Overlays on reels + strip-map ticks; PIERCE!/SPIKED! callouts.
 - Art: 10 sprites (potTier4, elite badge, danger pip, prep card, wild, 4 enhancement overlays, gild card) + art build now fails if a sprite is missing from the SpriteId union.
 Sim (3000 runs): greedy 45%, always-relic 38%, random 30% — 15pt skill gap, deaths spread 0/8/7/9/9/22%. Gild-first beats plain greedy (whole-reel gilds are build-defining).
+
+### Iteration 4 — 2026-09-23 (playtest/ITERATION_3.md → Package J + build relics + THE CASHIER)
+Playtest verdict on I3: HP-first fixed, boss no longer a one-shot lottery (burst deaths 53%→11%), but 'always fight the elite' dominated (49.9% vs 37.4% safe) because DANGER was stale and elite relics snowballed; LETHAL warned before only 52% of pot deaths; gilds strong but no builds; WILD/KEEN cards were traps; 10 bugs.
+Implemented:
+- Package J: DANGER recalibrated (brute 20, thief 13, gremlin 12, frost 8, slime 5, golem 4); boss +3 HP per relic held; the House cashes out at the START of its turn (LETHAL now always precedes pot deaths); potWin carries potLeft (pot widget no longer drops to 0); NEXT SKIM readout on the pot.
+- Elites: choose 1 of 2 relics (ELITE SPOILS screen) instead of a random drop. Mirror is elite-only.
+- Cards: no more shields→swords swaps; WILD card = 2 shields → 2 WILDs; KEEN = +1 damage AND pierce; +2 BOLTS fallback replaced by a second gild; half of gild offers EXTEND a gild you own onto another reel.
+- Build relics replace dead ones (soap, magnet, dice, hourglass, whetstone removed): MIDAS (gold cells +1 energy), LIGHTNING ROD (charged build → special costs 4), CACTUS (spikes hit back 4), PRISM (WILD matches x2), HONE (keen +2).
+- Gild readability: X2 stamps on scoring gold cells, +N callouts for keen/charged, banner maths ('9 X2 = 18 ENERGY'); YOUR REELS panel shows WILDs + gild overlays; distinct strip-map tick sprites; PIERCE only when a shield was pierced; label placement fixes; boss preview explains the skim + chip shield.
+- NEW FEATURE — THE CASHIER: chips (+2 per win, +2 elite, +1 per jackpot, +1 per 5 overkill, interest +1 per 5 banked up to +3); shop after fights 1/3/5 (after the draft): 2 targeted gilds (10), a relic (12), a utility (2 WILDs 6 / remove a symbol 4 / heal 4), reroll (2, +1 each); unspent chips become +1 shield per 5 at the start of each House turn in the final fight. Chip counter on run screens + in fights.
+- Balance after the shop (first pass had greedy 73%): depth HP [19,24,28,31,34], boss 66 base HP, 2 chips/win, gild 10 / relic 12.
+- Art: 16 sprites (5 build relics, X2 stamp, 4 ticks, chip, cashier portrait, shop cushion, skim hand) + keen/charged overlays redrawn; art build supports non-square sprites.
+Sim (3000 runs, before final shop tuning pass sweeps at 1500): greedy ~45%, random ~23%; deaths ~1/9/10/11/11/13%.

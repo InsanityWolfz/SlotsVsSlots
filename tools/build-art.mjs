@@ -55,6 +55,8 @@ const PALETTE = {
   // --- map / relic / card additions
   a: '#ffb070', // apricot (gremlin skin light)
   w: '#c98f58', // light wood (trap / handles top face)
+  // --- shop additions
+  d: '#561530', // deep velvet red (shop cushion shadow)
 };
 
 const UI_COLORS = {
@@ -1347,44 +1349,47 @@ S.dangerPip = lit(8, 8, ['', '..WWWL', '.WWWWWL', '.WKWWKL', '.WWWWWL', '..WLWL'
   put(g, 7, 1, 'W'); put(g, 8, 1, 'W'); put(g, 1, 7, 'W'); put(g, 1, 8, 'W');
   S.enhGold = toRows(g);
 }
-// keen: tapered white/cyan glint slashing the upper-right corner + a star sparkle
+// keen: bright cyan glint running up the blade diagonal (bottom-left -> top-right) ending in an arrowhead tip
 {
   const g = grid(16, 16);
-  for (let x = 6; x <= 15; x++) {
-    const y = x - 7, t = Math.min(x - 6, 15 - x); // taper toward both ends
-    if (y < 0) continue;
-    put(g, x, y, t >= 1 ? 'W' : 'C');
-    if (t >= 1) { put(g, x - 1, y, 'C'); put(g, x, y + 1, 'c'); }
-    if (t >= 3) { put(g, x - 2, y, 'A'); put(g, x + 1, y + 2, 'N'); put(g, x, y + 2, 'c'); put(g, x - 1, y + 1, 'W'); }
+  // glint core on x+y=15, tapering A -> C -> W toward the middle; deep-cyan flank below-right for contrast
+  for (let x = 2; x <= 12; x++) {
+    const y = 15 - x, t = Math.min(x - 2, 12 - x);
+    put(g, x, y, t === 0 ? 'A' : t <= 2 ? 'C' : 'W');
+    if (t >= 1) put(g, x + 1, y, 'c');
   }
-  // thin secondary streak
-  [[12, 1, 'C'], [13, 2, 'W'], [14, 3, 'C']].forEach(([x, y, c]) => put(g, x, y, c));
-  // 4-point star sparkle, lower left of the streak
-  stamp(g, 2, 2, ['  A', '  C', 'ACWCA', '  C', '  A']);
+  // solid arrowhead in the top-right corner (hypotenuse from (10,1) to (14,5))
+  stamp(g, 10, 1, [
+    'ACCWW',
+    ' CWWW',
+    '  WWc',
+    '   cc',
+    '    A',
+  ]);
+  // tiny twinkle at the tail end
+  put(g, 1, 14, 'A');
   S.enhKeen = toRows(g);
 }
-// charged: yellow zig-zag arcs hugging the edges + spark dots (outlined so they read over the bolt)
+// charged: short crackling arcs tucked into the four corners only (centre untouched so the symbol reads)
 {
   const g = grid(16, 16);
-  const line = (x0, y0, x1, y1) => {
-    const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
-    let px = x0, py = y0;
-    for (let i = 0; i <= n; i++) {
-      const nx = Math.round(x0 + (x1 - x0) * i / n), ny = Math.round(y0 + (y1 - y0) * i / n);
-      if (nx !== px && ny !== py) put(g, nx, py, 'Y'); // keep the arc 4-connected (reads as a solid bolt)
-      put(g, nx, ny, 'Y'); px = nx; py = ny;
-    }
-  };
-  const arc = (pts) => { for (let i = 1; i < pts.length; i++) line(...pts[i - 1], ...pts[i]); pts.forEach(([x, y]) => put(g, x, y, 'W')); };
-  arc([[1, 8], [2, 6], [1, 5], [3, 3], [4, 4], [6, 1]]);
-  arc([[14, 4], [13, 6], [14, 7], [13, 9], [14, 11]]);
-  arc([[5, 14], [7, 13], [8, 14], [10, 13], [12, 14]]);
-  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if (g[y][x] === 'Y' && x + y >= 23) g[y][x] = 'O';
-  stamp(g, 10, 1, [' Y', 'YWY', ' Y']);
-  put(g, 2, 12, 'Y'); put(g, 12, 11, 'W');
-  // drop shadow (down-right) instead of a full outline, so the centre stays clean
+  const arcs = [
+    // top-left: legs along both edges
+    [[0, 0, 'W'], [1, 1, 'Y'], [2, 1, 'Y'], [3, 0, 'Y'], [4, 1, 'Y'], [5, 1, 'W'], [1, 2, 'Y'], [0, 3, 'Y'], [1, 4, 'Y'], [1, 5, 'W']],
+    // top-right: runs down the right edge (the bolt / sword tip own the top edge here)
+    [[15, 0, 'W'], [15, 1, 'Y'], [14, 2, 'Y'], [15, 3, 'Y'], [14, 4, 'Y'], [14, 5, 'W']],
+    // bottom-left: runs up the left edge (the bolt's tail owns the bottom edge here)
+    [[0, 15, 'W'], [1, 14, 'Y'], [0, 13, 'Y'], [1, 12, 'Y'], [0, 11, 'Y'], [1, 10, 'W']],
+    // bottom-right: both legs, in the shadowed orange
+    [[15, 15, 'W'], [14, 14, 'O'], [13, 14, 'O'], [12, 15, 'O'], [11, 14, 'O'], [10, 14, 'W'], [14, 13, 'O'], [15, 12, 'O'], [14, 11, 'O'], [14, 10, 'W']],
+  ];
+  arcs.flat().forEach(([x, y, c]) => put(g, x, y, c));
+  // dark-orange drop shadow (down-right), only in the outer 3px ring so nothing reaches the middle
   const sh = [];
-  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if (g[y][x] === '.' && 'YWO'.includes(get(g, x - 1, y - 1)) ) sh.push([x, y]);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const ring = Math.min(x, y, 15 - x, 15 - y) <= 2;
+    if (ring && g[y][x] === '.' && 'YWO'.includes(get(g, x - 1, y - 1))) sh.push([x, y]);
+  }
   sh.forEach(([x, y]) => put(g, x, y, 'o'));
   S.enhCharged = toRows(g);
 }
@@ -1425,6 +1430,242 @@ S.cardGild = lit(16, 16, [
   '....SSSSSSSSDD..',
 ]);
 
+// ================================================================ BUILD RELICS / GILD READABILITY / CASHIER (batch 5)
+// ---------------------------------------------------------------- build relics (16x16)
+// midas: golden open hand in a royal red cuff, sparkle at the index fingertip
+S.relicMidas = lit(16, 16, [
+  '................',
+  '..Y.............',
+  '.YWY...YG.......',
+  '..Y....YG.......',
+  '....WG.YG.YG....',
+  '....YG.YG.YG....',
+  '....YG.YG.YG.Gg.',
+  '....YG.YG.YG.Gg.',
+  '.YG.YG.YG.YG.Gg.',
+  '.YGGYWGYWGYGGGg.',
+  '..YGGGGGGGGGGGg.',
+  '..YYGGGGgGGGGGg.',
+  '...YGGGGGgGGGg..',
+  '....YGGGGGGGgg..',
+  '.....RMRRRRRr...',
+  '.....rrrrrrrr...',
+]);
+// lightning rod: copper spike on a steel base, a small bolt striking the tip
+S.relicRod = lit(16, 16, [
+  '................',
+  '...........WY...',
+  '..........WY....',
+  '.........WYYY...',
+  '..........YO....',
+  '.......Y.Y...Y..',
+  '.........W......',
+  '........aOo.....',
+  '........aOo.....',
+  '........aOo.....',
+  '........aOo.....',
+  '........aOo.....',
+  '.......LLSSD....',
+  '.....WLLSSSSD...',
+  '....SSSSSSSSSDD.',
+]);
+// cactus: spiky green cactus in a terracotta pot, tiny pink flower on top
+S.relicCactus = lit(16, 16, [
+  '................',
+  '.......MM.......',
+  '......MWMm......',
+  '.......Mm.......',
+  '......EeeQ......',
+  '......TeeQ......',
+  '..EQ..EeeT...EQ.',
+  '..TQ..EeeQ...eT.',
+  '..EeeeEeTQ...eQ.',
+  '...QQQEeeQeeeeQ.',
+  '......TeeQQQQQ..',
+  '......EeeQ......',
+  '....aOOOOOOo....',
+  '....oooooooo....',
+  '.....aOOOOo.....',
+  '.....OOOOoo.....',
+]);
+// prism: glass triangle splitting a white ray (left) into a rainbow fan (right)
+{
+  const g = grid(16, 16);
+  // rainbow fan first (the prism is painted over it)
+  const bands = ['R', 'O', 'Y', 'E', 'A', 'V'];
+  for (let x = 9; x <= 15; x++) {
+    const t = x - 9, s = 0.75 + t * 0.2, cy = 8 + t * 0.35;
+    for (let y = 0; y < 16; y++) {
+      const i = Math.floor((y - cy) / s + 3);
+      if (i >= 0 && i < 6) put(g, x, y, bands[i]);
+    }
+  }
+  // incoming white ray
+  hline(g, 0, 4, 8, 'W');
+  const spans = [[7, 7], [6, 8], [6, 8], [5, 9], [5, 9], [4, 10], [4, 10], [3, 11], [3, 11], [2, 12], [2, 12]];
+  shape(g, 2, spans, (x, y, has) => {
+    if (y === 12) return 'c';
+    if (!has(x - 1, y)) return 'W';
+    if (!has(x + 1, y)) return 'c';
+    return x + y <= 12 ? 'C' : 'A';
+  });
+  // the ray's path through the glass, bending up toward the exit face
+  [[5, 8], [6, 8], [7, 8], [8, 7], [9, 7]].forEach(([x, y]) => put(g, x, y, 'W'));
+  S.relicPrism = toRows(outline(g));
+}
+// hone: chunky blue whetstone slab on the diagonal (lit top face, dark side face), sharp white glint off its top end
+{
+  const g = grid(16, 16);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const sum = x + y, d = x - y;
+    if (sum < 12 || sum > 17 || Math.abs(d) > 6) continue;
+    const side = sum >= 16;
+    let c = side ? 'N' : sum === 12 ? 'A' : 'U';
+    if (!side && d === 6) c = 'A';        // lit end face
+    if (side && d === -6) c = 'N';
+    put(g, x, y, c);
+  }
+  [[4, 8], [5, 7], [6, 6]].forEach(([x, y]) => put(g, x, y, 'C'));        // gloss along the lit top edge
+  [[5, 9], [8, 6], [7, 8], [10, 5]].forEach(([x, y]) => put(g, x, y, 'N')); // grain specks on the top face
+  [[6, 10], [9, 7]].forEach(([x, y]) => put(g, x, y, 'A'));
+  [[5, 11], [9, 8]].forEach(([x, y]) => put(g, x, y, 'U'));                 // speckle on the side face
+  // sharp 4-point glint
+  stamp(g, 11, 0, [
+    '  W  ',
+    '  W  ',
+    'CWWWC',
+    '  W  ',
+    '  C  ',
+  ]);
+  S.relicHone = toRows(outline(g));
+}
+
+// ---------------------------------------------------------------- gild readability
+// X2 stamp (12x8): chunky gold glyphs, auto-outlined
+S.stampX2 = lit(12, 8, [
+  '............',
+  '.WY.YG.WYYG.',
+  '..YYG....YG.',
+  '..YGG...YGg.',
+  '..YGg..YGg..',
+  '.YG.Gg.YG...',
+  '.Gg.gg.GGgg.',
+  '............',
+]);
+// strip-map ticks (5x5): distinct silhouettes
+S.tickGold = [
+  'KKKKK',
+  'KWYGK',
+  'KYGgK',
+  'KGggK',
+  'KKKKK',
+];
+S.tickKeen = [
+  '...KW',
+  '..KCK',
+  '.KCK.',
+  'KcK..',
+  'cK...',
+];
+S.tickCharged = [
+  '..KWK',
+  '.KYK.',
+  'KYYYK',
+  '.KYK.',
+  'KOK..',
+];
+S.tickSpiked = [
+  '.KLK.',
+  'KKLKK',
+  'LLWSD',
+  'KKSKK',
+  '.KDK.',
+];
+
+// ---------------------------------------------------------------- cashier / shop
+// skim (12x12): purple-gloved fist closing around a gold coin
+S.potSkim = lit(12, 12, [
+  '............',
+  '...YYG......',
+  '..YWYGg.....',
+  '.YYGgGg.....',
+  '.JVVVVVv....',
+  '..vvJVVVVbbB',
+  '.JVVVVVVVbBB',
+  '..vvJVVVVbbB',
+  '.JVVVVVv....',
+  '.GYGgGgg....',
+  '..Gggg......',
+  '............',
+]);
+// chip (12x12): red casino chip, white edge inserts at N/E/S/W, inner groove ring, gold star centre
+S.chip = lit(12, 12, [
+  '............',
+  '....RWWR....',
+  '..RRRWWRRr..',
+  '.RRrrrrrrrr.',
+  '.RRrRYGRrrr.',
+  '.WWrYWYGrtt.',
+  '.WWrRYGRrtt.',
+  '.RRrYRRgrrr.',
+  '.RRrrrrrrrr.',
+  '..Rrrttrrr..',
+  '....rttr....',
+]);
+// cashier portrait (24x24): slick croupier — green eyeshade, pencil moustache, gold-tooth smirk, bow tie
+S.cashierPortrait = lit(24, 24, [
+  '........................',
+  '........................',
+  '.........UAAUUN.........',
+  '.......UAUNNNNNNN.......',
+  '......UUNNNNNNNNNN......',
+  '.....UNNNNNNNNNNNNN.....',
+  '....WWEEEEEEEEEEEEee....',
+  '...EEeeeeeeeeeeeeeeeQ...',
+  '..EeeeeeeeeeeeeeeeeeQQ..',
+  '...qQQQQQQQQQQQQQQQQq...',
+  '.....NNzzzzzzzzzzNN.....',
+  '.....FNKKKKFFKKKKNf.....',
+  '.....FFTTKfFFTTKfFf.....',
+  '.....fFFFFFFfFFFFFf.....',
+  '......FNFFFffFFFFN......',
+  '......FFNNNFFNNKFf......',
+  '......FFFKKKKYKFFf......',
+  '.......FFFFFFFFff.......',
+  '........TffffffT........',
+  '...JVVVTMRTTTTRrTvvvv...',
+  '..JVVVVTRRRrrRRrTvvvvv..',
+  '.JVVVVVTRrTTTTRrTvvvvvv.',
+  '.JVTMVVVVTTTTTTvvvvvvvv.',
+  '.VVVVVVVVGTTTTGvvvvvvvv.',
+]);
+// shop slot (24x24): tufted velvet cushion with gold piping + tassels on a small gold pedestal
+S.shopSlot = lit(24, 24, [
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '.....MMRRRRRRRRRRRRr....',
+  '...MMRRRRRRRRRRRRRRRRr..',
+  '..MRRRGRRRRRRRRRRGRRRr..',
+  '..MRRRRrrrrrrrrrrRRRRr..',
+  '..RRRRRrrrrrrrrrrRRRrr..',
+  '..YYGGGGGGGGGGGGGGGGGg..',
+  '.GRRRrrrrGrrrrrGrrrrrdG.',
+  '.YRrrrrrrrrrrrrrrrrrddg.',
+  'YGgrrrdddddddddddddddgYg',
+  'Gg.GGGGGGGGGGGGGGGGgg.Gg',
+  'g......YGGGGGGGGGg....g.',
+  '........YGGGGGGgg.......',
+  '.....YYYGGGGGGGGGGgg....',
+  '.....gggggggggggggggg...',
+]);
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -1443,14 +1684,19 @@ const DIMS = {
   mapBadgeSlime: 8, mapBadgeIce: 8, mapBadgeClaw: 8, mapBadgeRock: 8, mapBadgeLock: 8, mapBadgeFist: 8, mapBadgeCoin: 8,
   potTier4: 24, mapBadgeElite: 8, dangerPip: 8, cardPrep: 16,
   wild: 16, enhGold: 16, enhKeen: 16, enhCharged: 16, enhSpiked: 16, cardGild: 16,
+  relicMidas: 16, relicRod: 16, relicCactus: 16, relicPrism: 16, relicHone: 16,
+  stampX2: { w: 12, h: 8 }, tickGold: 5, tickKeen: 5, tickCharged: 5, tickSpiked: 5,
+  potSkim: 12, chip: 12, cashierPortrait: 24, shopSlot: 24,
 };
 const errors = [];
-for (const [id, n] of Object.entries(DIMS)) {
+// DIMS entries: a number for square sprites, or { w, h } for non-square ones
+for (const [id, dim] of Object.entries(DIMS)) {
+  const { w, h } = typeof dim === 'number' ? { w: dim, h: dim } : dim;
   const rows = S[id];
   if (!rows) { errors.push(`${id}: missing`); continue; }
-  if (rows.length !== n) errors.push(`${id}: ${rows.length} rows, want ${n}`);
+  if (rows.length !== h) errors.push(`${id}: ${rows.length} rows, want ${h}`);
   rows.forEach((r, i) => {
-    if (r.length !== n) errors.push(`${id} row ${i}: len ${r.length}, want ${n}`);
+    if (r.length !== w) errors.push(`${id} row ${i}: len ${r.length}, want ${w}`);
     for (const c of r) if (c !== '.' && !(c in PALETTE)) errors.push(`${id} row ${i}: bad char '${c}'`);
   });
 }
@@ -1505,7 +1751,13 @@ export type SpriteId =
   | 'cardPrep'                                     // card icon, 16x16
   | 'wild'                                         // WILD reel symbol, 16x16
   | 'enhGold' | 'enhKeen' | 'enhCharged' | 'enhSpiked' // enhanced-cell overlays, 16x16 (mostly transparent)
-  | 'cardGild';                                    // card icon, 16x16
+  | 'cardGild'                                     // card icon, 16x16
+  | 'relicMidas' | 'relicRod' | 'relicCactus'      // build relics, 16x16
+  | 'relicPrism' | 'relicHone'
+  | 'stampX2'                                      // gilded-score pop stamp, 12x8 (non-square)
+  | 'tickGold' | 'tickKeen' | 'tickCharged' | 'tickSpiked' // strip-map enhancement ticks, 5x5
+  | 'potSkim' | 'chip'                             // pot skim hand / chip currency, 12x12
+  | 'cashierPortrait' | 'shopSlot';                // cashier NPC / shop display cushion, 24x24
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

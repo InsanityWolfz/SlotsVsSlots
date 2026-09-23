@@ -49,9 +49,9 @@ export function drawStripMap(ctx: CanvasRenderingContext2D, m: MachineView, time
         }
       }
       if (cell.enh && stolen < 1) {
-        // Gilded: a gold tick on the cell.
-        ctx.fillStyle = cell.enh === 'gold' ? '#ffd23f' : cell.enh === 'keen' ? '#bff4ff' : cell.enh === 'charged' ? '#fff27a' : '#c9d0dc';
-        ctx.fillRect(cx + 11, y - cellH / 2 + 2, 4, 4);
+        // Gilded: a distinct tick shape per enhancement.
+        const tick = cell.enh === 'gold' ? 'tickGold' : cell.enh === 'keen' ? 'tickKeen' : cell.enh === 'charged' ? 'tickCharged' : 'tickSpiked';
+        drawSprite(ctx, tick, cx + 13, y - cellH / 2 + 5, 1.4);
       }
       if (m.frozen[r] > 0 && visible) {
         ctx.globalAlpha = 0.35 + 0.1 * Math.sin(time * 3);

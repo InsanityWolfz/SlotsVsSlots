@@ -3,7 +3,7 @@ import { defaultConfig, reels3 } from '../src/core/config';
 import { ELITE_HP_MUL } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
 import { COUNTER_RELICS, COUNTERS } from '../src/core/relics';
-import { applyOption, createRun, draftOffers, fightConfig, finishFight, RUN } from '../src/core/run';
+import { applyOption, createRun, draftOffers, RUN } from '../src/core/run';
 import { effectiveSymbol } from '../src/core/strip';
 
 const base = defaultConfig();
@@ -19,20 +19,6 @@ describe('package H', () => {
       }
     }
     expect(ELITE_HP_MUL).toBeGreaterThan(1);
-  });
-
-  it('beating an elite drops a (non-counter) relic', () => {
-    const run = createRun(base, 3);
-    run.depth = 1;
-    const elite = run.paths[1].find((e) => e.elite)!;
-    run.enemies[1] = elite;
-    run.chosen[1] = true;
-    const f = new Fight(fightConfig(run, base), 1);
-    f.winner = 'player';
-    const rec = finishFight(run, f);
-    expect(rec.eliteRelic).toBeDefined();
-    expect(COUNTER_RELICS.has(rec.eliteRelic!)).toBe(false);
-    expect(run.player.relics).toContain(rec.eliteRelic);
   });
 
   it('counter relics only ever appear as PREP for an enemy on the next fight', () => {
@@ -95,7 +81,7 @@ describe('wilds and gilds', () => {
     f.forceNext('player', ['sword', 'bolt', 'bolt']);
     const e1 = f.step().events;
     const atk = e1.find((e) => e.type === 'attack')!;
-    expect(atk.type === 'attack' && atk.amount).toBe(2); // gold single sword x2
+    expect(atk.type === 'attack' && atk.amount).toBe(2); // gold single sword x2 (keen is on reel 3)
     const en = e1.find((e) => e.type === 'energyGain')!;
     expect(en.type === 'energyGain' && en.amount).toBe(2); // bolt + charged(+1) on reel 2... reel 3 bolt plain
 

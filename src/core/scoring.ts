@@ -9,6 +9,9 @@ export interface ScoreGroup {
   reels: number[];
   amount: number;
   matched: boolean;
+  /** Amount before gilds/relics touched it, and the notes that explain the difference. */
+  base?: number;
+  notes?: string[];
 }
 
 export interface LineScore {
