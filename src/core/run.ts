@@ -1,5 +1,6 @@
 import { cloneConfig, defaultConfig, type Enh, type GameConfig, type Gild, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACTS, generateRunPaths, RUN_FIGHTS, TUNE, type EnemyDef } from './enemies';
+import { ACTS, ARCHETYPES, generateRunPaths, makeEnemy, RUN_FIGHTS, TUNE, type EnemyDef } from './enemies';
+import { MAX_STAKE, MIRROR_COPYABLE, STAKE } from './stakes';
 import type { Fight } from './fight';
 import {
   BANDAGE_HEAL,
@@ -169,9 +170,11 @@ export interface RunState {
   pendingLegend: RelicId[] | null;
   /** A new act just began: the Cashier opens before its first fight. */
   actIntro: boolean;
+  /** HIGH STAKES level (0 = base game). */
+  stake: number;
 }
 
-export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight'): RunState {
+export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0): RunState {
   const rng = new Rng(seed);
   const paths = generateRunPaths(rng);
   const cab = CABINETS[cabinet];
@@ -198,6 +201,7 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
     act: 1,
     pendingLegend: null,
     actIntro: false,
+    stake: Math.max(0, Math.min(MAX_STAKE, stake)),
   };
 }
 
@@ -212,6 +216,8 @@ function startNextAct(run: RunState): void {
   run.depth = 0;
   const rng = new Rng((run.seed ^ Math.imul(run.act, 0x3c6ef372)) >>> 0);
   run.paths = generateRunPaths(rng, run.act);
+  // RED stake: every act 2 fork offers the counter to your build.
+  if (run.stake >= STAKE.counterForks) offerCounters(run, rng);
   run.enemies = run.paths.map((opts) => opts[0]);
   run.chosen = run.paths.map((opts) => opts.length === 1);
   run.player.hp = run.player.maxHp;
@@ -239,6 +245,28 @@ export function applySignature(run: RunState): void {
     s.shield = (s.shield ?? 0) - n;
     s.wild = (s.wild ?? 0) + n;
   }
+}
+
+/** What answers your build: specials → the Grounder; a gild build → the Counterfeiter. */
+export function counterFor(run: RunState): string | null {
+  const g = run.player.gilded;
+  const specials = run.cabinet === 'tesla' || g.some((x) => x.enh === 'charged' || x.enh === 'blaze') || run.player.relics.includes('rod');
+  if (specials) return 'grounder';
+  return g.length >= 2 ? 'counterfeiter' : null;
+}
+
+/** RED stake: put your counter on every fork (replacing the non-elite option when it's missing). */
+function offerCounters(run: RunState, rng: Rng): void {
+  const id = counterFor(run);
+  const arch = id ? ARCHETYPES.find((a) => a.id === id) : undefined;
+  if (!arch) return;
+  run.paths.forEach((opts, depth) => {
+    if (opts.length < 2 || opts.some((e) => e.archetype === id)) return;
+    const i = opts.findIndex((e) => !e.elite);
+    if (i < 0) return;
+    opts[i] = makeEnemy(arch, depth, rng, false, run.act);
+  });
+  run.enemies = run.paths.map((opts) => opts[0]);
 }
 
 export function takeLegend(run: RunState, relic: RelicId): void {
@@ -286,6 +314,15 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   }
   cfg.relics = [...run.player.relics];
   cfg.cabinet = run.cabinet;
+  cfg.stake = run.stake;
+  cfg.enemy.act = run.act;
+  // GOLD stake: the House plants bombs.
+  if (e.boss === 'house' && run.stake >= STAKE.houseDirty) cfg.enemy.strips = cfg.enemy.strips.map((s) => ({ ...s, bomb: (s.bomb ?? 0) + STAKE.houseBombsPerReel }));
+  // BLACK stake: the Mirror copies one of your relics.
+  if (e.boss === 'mirror' && run.stake >= STAKE.mirrorRelic) {
+    const copy = MIRROR_COPYABLE.find((r) => run.player.relics.includes(r));
+    if (copy) cfg.enemy.relics = [copy];
+  }
   cfg.seed = null;
   return cfg;
 }
@@ -396,7 +433,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     const spoils = rng.shuffle(pool).slice(0, 2);
     if (spoils.length) run.pendingSpoils = spoils;
   }
-  let hp = p.hp + Math.round(run.player.maxHp * RUN.postFightHeal);
+  let hp = p.hp + Math.round(run.player.maxHp * RUN.postFightHeal * (run.stake >= STAKE.halfHeal ? 0.5 : 1));
   if (run.player.relics.includes('bandage')) hp += BANDAGE_HEAL;
   run.player.hp = Math.min(run.player.maxHp, hp);
   run.depth++;

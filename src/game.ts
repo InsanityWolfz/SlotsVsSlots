@@ -2,6 +2,7 @@ import { Sounds } from './audio/sounds';
 import { Synth } from './audio/synth';
 import { mergeConfig, type GameConfig, type SideId } from './core/config';
 import { RUN_FIGHTS } from './core/enemies';
+import { MAX_STAKE, STAKES } from './core/stakes';
 import { Fight } from './core/fight';
 import { turnRow, type TurnRow } from './core/log';
 import { REFLECT_MIN, RELICS } from './core/relics';
@@ -59,6 +60,9 @@ interface Prefs {
   unlocked: CabinetId[];
   /** Dev: every cabinet available regardless of unlocks. */
   unlockAll: boolean;
+  /** HIGH STAKES: best unlocked stake per cabinet, and the stake picked on the cabinet screen. */
+  stakes: Partial<Record<CabinetId, number>>;
+  stakeSel: number;
 }
 
 function load<T>(key: string): T | null {
@@ -142,6 +146,8 @@ export class Game {
       muted: p.muted ?? false,
       unlocked: p.unlocked ?? ['knight'],
       unlockAll: p.unlockAll ?? false,
+      stakes: p.stakes ?? {},
+      stakeSel: p.stakeSel ?? 0,
     };
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
     this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {
@@ -153,7 +159,11 @@ export class Game {
       onBuy: (i) => this.buyItem(i),
       onReroll: () => this.rerollShop(),
       onLeave: () => this.leaveCashier(),
-      onCabinet: (id) => this.startRun(undefined, id),
+      onCabinet: (id) => this.startRun(undefined, id, Math.min(this.prefs.stakeSel, this.stakesNow()[id] ?? 0)),
+      onStake: (level) => {
+        this.prefs.stakeSel = level;
+        this.savePrefs();
+      },
     });
     this.buildButtons();
     this.applyJuice();
@@ -204,6 +214,8 @@ export class Game {
     const overlay = this.screens.active || this.phase === 'recap';
     for (const b of [this.spinBtn, this.autoBtn, this.startBtn, ...this.speedBtns]) b.visible = !overlay;
     for (const b of this.recapBtns) b.visible = this.phase === 'recap';
+    for (const b of this.buttons) if (b.label === 'TUNE' || b.label === 'LOG') b.visible = this.screens.mode !== 'cabinet';
+    this.muteBtn.visible = this.screens.mode !== 'cabinet';
   }
 
   applyJuice(): void {
@@ -224,6 +236,11 @@ export class Game {
 
   // ---- run flow ----------------------------------------------------------------------
 
+  /** Best stake per cabinet (dev "unlock all" opens every stake). */
+  stakesNow(): Partial<Record<CabinetId, number>> {
+    return this.prefs.unlockAll ? Object.fromEntries(CABINET_ORDER.map((c) => [c, MAX_STAKE])) : this.prefs.stakes;
+  }
+
   unlockedCabinets(): Set<CabinetId> {
     return new Set(this.prefs.unlockAll ? CABINET_ORDER : this.prefs.unlocked);
   }
@@ -234,7 +251,7 @@ export class Game {
     this.synth.stopLoops();
     this.recap.hide();
     this.phase = 'between';
-    this.screens.showCabinets(this.unlockedCabinets());
+    this.screens.showCabinets(this.unlockedCabinets(), this.stakesNow(), this.prefs.stakeSel);
     this.syncButtons();
   }
 
@@ -257,12 +274,21 @@ export class Game {
         got.push(id);
       }
     }
-    if (got.length) this.savePrefs();
+    // HIGH STAKES: winning at your best stake unlocks the next one for this cabinet.
+    let stakeText = '';
+    const best = this.prefs.stakes[run.cabinet] ?? 0;
+    if (run.won && run.stake >= best && run.stake < MAX_STAKE) {
+      this.prefs.stakes[run.cabinet] = run.stake + 1;
+      const next = STAKES[run.stake + 1];
+      stakeText = `STAKE ${next.level} ${next.name} UNLOCKED FOR ${CABINETS[run.cabinet].name}: ${next.rule}`;
+    }
+    this.screens.setStakeUnlockedNow(stakeText);
+    if (got.length || stakeText) this.savePrefs();
     return got;
   }
 
-  startRun(seed?: number, cabinet: CabinetId = 'knight'): void {
-    this.run = createRun(this.cfg, seed, cabinet);
+  startRun(seed?: number, cabinet: CabinetId = 'knight', stake = 0): void {
+    this.run = createRun(this.cfg, seed, cabinet, stake);
     this.token++;
     this.synth.stopLoops();
     this.recap.hide();
@@ -679,6 +705,7 @@ export class Game {
       const eaten = this.phase === 'fighting' ? (this.stage.gutter.chipsEaten ?? 0) : 0;
       drawText(ctx, `${Math.max(0, this.run.player.chips - eaten)}`, 56, 30, 3, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
       drawText(ctx, CABINETS[this.run.cabinet].name, 30, 58, 1, COLORS.textDim, { align: 'left' });
+      if (this.run.stake > 0) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 72, 1, STAKES[this.run.stake].color, { align: 'left' });
       if (this.fight.isBoss || this.fight.isMirror) {
         drawSprite(ctx, 'chipShield', 120, 30, 2);
         drawText(ctx, `+${this.fight.cfg.player.stackShield ?? 0} SH/TURN`, 138, 30, 2, '#9fd0ff', { align: 'left' });

@@ -191,6 +191,8 @@ export class TuningPanel {
         }),
         this.button('RESET UNLOCKS', () => {
           g.prefs.unlocked = ['knight'];
+          g.prefs.stakes = {};
+          g.prefs.stakeSel = 0;
           g.savePrefs();
         }),
       ),

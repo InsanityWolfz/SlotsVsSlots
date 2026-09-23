@@ -5,6 +5,7 @@ import { defaultConfig, type GameConfig } from '../core/config';
 import { formatSummary, simulate } from './simulate';
 import { formatRunSummary, simulateRuns } from './simulateRun';
 import { CABINET_ORDER } from '../core/cabinets';
+import { MAX_STAKE, STAKES } from '../core/stakes';
 
 function arg(name: string, fallback: number): number {
   const i = process.argv.indexOf(`--${name}`);
@@ -16,6 +17,11 @@ if (runs > 0) {
   for (const policy of ['greedy', 'relic', 'random'] as const) {
     console.log(`\n=== ${runs} runs, ${policy} drafting ===`);
     console.log(formatRunSummary(simulateRuns(defaultConfig(), runs, policy, 4242)));
+  }
+  console.log('\n=== HIGH STAKES ladder (knight, greedy) ===');
+  for (let s = 0; s <= MAX_STAKE; s++) {
+    const g = simulateRuns(defaultConfig(), runs, 'greedy', 4242, 'knight', s);
+    console.log(`stake ${s} ${STAKES[s].name.padEnd(6)} win ${g.winPct.toFixed(1)}%  act1 ${g.act1Pct.toFixed(1)}%  House ${g.bossWinPct.toFixed(0)}%  Mirror ${g.mirrorWinPct.toFixed(0)}%`);
   }
   console.log('\n=== cabinets (greedy / random) ===');
   for (const cab of CABINET_ORDER) {

@@ -27,6 +27,7 @@ import {
   SPIKED_DAMAGE,
 } from './relics';
 import { Rng } from './rng';
+import { STAKE } from './stakes';
 import { isNearMiss, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {
   buildReel,
@@ -94,7 +95,7 @@ function makeCombatant(side: SideId, sc: SideConfig, rng: Rng, relics: RelicId[]
     hexed: reels.map(() => 0),
     ability: sc.ability ?? null,
     charge: 0,
-    relics: new Set(side === 'player' ? relics : []),
+    relics: new Set(relics),
   };
 }
 
@@ -145,7 +146,7 @@ export class Fight {
     this.rng = new Rng(seed);
     this.sides = {
       player: makeCombatant('player', this.cfg.player, this.rng, this.cfg.relics),
-      enemy: makeCombatant('enemy', this.cfg.enemy, this.rng, []),
+      enemy: makeCombatant('enemy', this.cfg.enemy, this.rng, this.cfg.enemy.relics ?? []),
     };
     const p = this.sides.player;
     if (p.relics.has('battery')) p.energy = Math.min(this.cfg.specialCost - 1, p.energy + BATTERY_ENERGY);
@@ -179,6 +180,11 @@ export class Fight {
     // The Mirror plays your machine but never your junk (and fires no specials).
     if (this.isMirror) e.casts.clear();
     if (this.isBoss) this.pot = POT.seed;
+    // HIGH STAKES: BLACK - the House skims more often; BLUE/GOLD - enemy abilities charge a turn faster.
+    const stake = this.cfg.stake ?? 0;
+    if (e.ability?.kind === 'jackpot' && stake >= STAKE.houseDirty) e.ability = { ...e.ability, every: STAKE.houseSkimEvery };
+    const faster = stake >= STAKE.fasterAll || (stake >= STAKE.fasterAct2 && (this.cfg.enemy.act ?? 1) > 1);
+    if (faster && e.ability && e.ability.kind !== 'jackpot') e.ability = { ...e.ability, every: Math.max(2, e.ability.every - 1) };
   }
 
   get seed(): number {
