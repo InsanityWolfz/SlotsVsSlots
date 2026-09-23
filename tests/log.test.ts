@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
 import { Fight } from '../src/core/fight';
-import { formatRow, rowsToCsv, turnRow } from '../src/core/log';
+import { formatRow, rowsToCsv, turnRow, type TurnRow } from '../src/core/log';
 import { StatsTracker } from '../src/core/stats';
 
 describe('combat log + stats', () => {
@@ -16,7 +16,7 @@ describe('combat log + stats', () => {
   it('stats totals agree with the log over a whole fight', () => {
     const f = new Fight(defaultConfig(), 99);
     const tracker = new StatsTracker(f);
-    const rows = [];
+    const rows: TurnRow[] = [];
     let n = 0;
     while (!f.over) {
       const r = f.step();
