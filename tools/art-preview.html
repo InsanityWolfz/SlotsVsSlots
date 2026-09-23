@@ -1,0 +1,109 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Slot vs Slot art preview</title>
+<style>
+  body { margin: 0; background: #0d0519; color: #f4eee0; font: 13px monospace; }
+  canvas { display: block; image-rendering: pixelated; }
+</style></head>
+<body><canvas id="c"></canvas>
+<script>
+const PALETTE = {"K":"#140c1c","W":"#ffffff","L":"#d3dde8","S":"#8b9bb4","D":"#4f5b74","Y":"#ffe45c","G":"#d9a640","g":"#8f5a1f","O":"#f07c1c","o":"#a8401a","B":"#9a5a30","b":"#5a311c","A":"#7cc4ff","U":"#3474e0","N":"#1d3a8c","E":"#b8f25a","e":"#4cc234","Q":"#1f7d3c","q":"#0f4128","R":"#e8374b","r":"#8e1f3a","F":"#f4c09a","f":"#c07a5c","P":"#1a1426","p":"#3a2d52","T":"#f4eee0","t":"#9a8fb0"};
+const UI_COLORS = {"hp":"#e8374b","hpGhost":"#f4eee0","shield":"#3474e0","energy":"#ffe45c","gold":"#d9a640","panel":"#1a1426","panelLight":"#3a2d52","text":"#f4eee0","textDim":"#9a8fb0","slime":"#4cc234","danger":"#8e1f3a"};
+const SPRITES = {"sword":["..............K.","...........KKKLK","..........KWLSSK",".........KWLSDK.","........KLLSDK..","..KK...KLLSDK...",".KgYK.KLLSDK....","..KGYKLLSDK.....","...KGYSSDK......","....KGYDK.......","...KBbGYK.......","..KBbKKGGK......",".KBbK..KggK.....","KYGK....KK......","KGgK............",".KK............."],"shield":["................",".KKKKKKKKKKKKKK.",".KWWLLLLLLLLLSK.",".KWAAAAYGUUUUSK.",".KLAAAAYGUUUUSK.",".KLAAAAYGUUUUSK.",".KLYYYYYGGGGGSK.",".KLGGGGGGGGGgSK.",".KLUUUUYGUUUNSK.",".KLUUUUYGUUNNSK.","..KSUUUYGUNNSK..","...KSUUYGNNSK...","....KSUYGNSK....",".....KSggSK.....","......KSSK......",".......KK......."],"bolt":[".........KKKKK..","........KWWYYOK.",".......KYYYWOK..","......KYYYWOK...",".....KYYYWOK....","...KKYYYWOKKK...","..KOYYYWWWYYOK..","...KOOOYYYYOK...","....KKKYWYOK....",".....KYWYOK.....",".....KYWOK......","....KYYoK.......","....KYoK........","...KYoK.........","...KoK..........","....K..........."],"slime":["................","................","......KKKK......","....KKEEEQKK....","...KEWeeeeeQK...","..KEWeeeeeeeQK..",".KEeeeeeeeeeeQK.",".KEeKKeeeeKKeQK.","KEeeWKKeeKWKeeQK","KEeeKKeeeeKKeeQK","KEeeKKeeeeKKeQQK","KeeeeeeeeeeeQQQK","KeeeeeKKKKeQQQQK","KQQQQQQWQQQQQQQK","KqqqqqqqqqqqqqqK",".KKKKKKKKKKKKKK."],"goo":[".KKEEEEEEEEEEKK.","KEEeeeeeeeeeeEEK","EeeWWeeeeeeeeeeE","eeWeeeeeeEEeeeee","eeeeeeeeeEqeeeee","eeeeeeeeeeeeeeee","eeeeeEeeeeeeeeee","eeeeeeeeeeeeeeee","QeeQQeeQQQeeQQeQ","QeeQQeeQQQeeQQeQ","KeeKKQQKKKeeKKQK","KeeKKQQK.KeeKKQK","KQQK.KK..KeeK.K.","KQQK.....KQQK...",".KK......KQQK...","..........KK...."],"heart":[".KK..KK.","KWRKKRRK","KRRRRRrK","KRRRRRrK",".KRRRrK.","..KRrK..","...KK...","........"],"shieldIcon":["KKKKKKKK","KWLLLLSK","KLAAUUSK","KLAUUNSK","KSUUUNSK",".KSUNSK.","..KSSK..","...KK..."],"boltIcon":["....KKK.","...KWYOK","..KWYOK.",".KYYYYOK","..KKYOK.","..KYoK..",".KYoK...","..KK...."],"pipFull":["...KK...","..KWYK..",".KWYYYK.","KYYYYYOK","KYYYYOOK",".KYYOoK.","..KOoK..","...KK..."],"pipEmpty":["...KK...","..KKPK..",".KKPPpK.","KKPPPppK","KPPPpppK",".KPpppK.","..KppK..","...KK..."],"swordProjectile":["............","....K.......","...KYK......",".KKKYKKKKK..","KGBBGWWLLLK.","KYbBGSSSSSLK","KgBbgDDDDDK.",".KKKgKKKKK..","...KgK......","....K.......","............","............"],"slimeBlob":["..KKKK..",".KWEeeK.","KWEeeeQK","KEeeeeQK","KeeeeQQK",".KeQQqK.","..KKKK..","........"],"spark":["..W..",".YWY.","WWWWW",".YWY.","..W.."],"playerPortrait":["..........KKKK..........",".........KRRRRK.........","........KRWRRrrK........","........KRRRRrrK........","........KKRRrrKK........",".......KWWLLLLSSK.......","......KWLLLLLLSSDK......",".....KLLLLLLLLLSSDK.....","....KLLLLLLLLLLSSSDK....","....KLLLLLLLLLLSSSDK....","...KYGGGGGGGGGGGGGGgK...","....KLSSfffLSfffSSDK....","....KLSSFKFLSFKfSSDK....","....KLSSFKFLSFKfSSDK....","....KLSSFFFLSFFfSSDK....","....KSSSFFFFFFFfSSDK....","....KSSSFFbbbbFfSSDK....","....KSSSSFFFFFFSSSDK....",".....KSSSSffffSSSDK.....","...KKKKDSSSSSSSSDKKKK...","..KWLLLSAUUGGUUNSSSSDK..",".KLLLLSSAUGGGGUNSSSSDDK.",".KLLLSSSAUUGGUUNSSSDDDK.",".KLLSSSSAUUUUUUNSSSDDDK."],"enemyPortrait":["......K....KK....K......",".....KYK..KYYK..KYK.....",".....KYGKKYGGgKKGgK.....",".....KYGGYGRRGgGGgK.....",".....KYGGGGRrGGGGgK.....","...KKEGGGGGGGGGGggQKK...","..KEEeggggggggggggeEQK..",".KEWWeeeeeeeeeeeeeeeQQK.","KEeWeeeeeeeeeeeeeeeeQQQK","KEeeeeeeeeeeeeeeeeeeQQQK","KEeeqqeeeeeeeeeeeeqqQQQK","KEeeeeqqeeeeeeeeqqeeQQQK","KEeeeWWqqeeeeeeqqWWeQQQK","KEeeeWKKKeeeeeeKKKWeQQQK","KEeeeWKRKeeeeeeKRKWeQQQK","KEeeeeKKeeeeeeeeKKeeQQQK","KEeeeeeeeeeeeeeeeeeeQQQK","KEeeeeKWWKKKKKKWWKeQQQQK","KEeeeeeKWKKrrKKWKeeQQQQK","KEeeeeeeKKKKKKKKeeQQQQQK","KEeeeeeeeeeeeeeeeQQQQQQK","KeeeQQQQQQQQQQQQQQQQQQQK","KeeeQQQQQQQQQQQQQQQQQQQK","KeeeQQQQQQQQQQQQQQQQQQQK"]};
+const FONT_W = 5, FONT_H = 7;
+const GLYPHS = {"0":[".###.","##.##","##.##","##.##","##.##","##.##",".###."],"1":[".##..","###..",".##..",".##..",".##..",".##..","####."],"2":[".###.","##.##","...##","..##.",".##..","##...","#####"],"3":["####.","...##","...##",".###.","...##","...##","####."],"4":["##.##","##.##","##.##","#####","...##","...##","...##"],"5":["#####","##...","####.","...##","...##","##.##",".###."],"6":[".###.","##...","##...","####.","##.##","##.##",".###."],"7":["#####","...##","...##","..##.",".##..",".##..",".##.."],"8":[".###.","##.##","##.##",".###.","##.##","##.##",".###."],"9":[".###.","##.##","##.##",".####","...##","...##",".###."],"A":[".###.","##.##","##.##","#####","##.##","##.##","##.##"],"B":["####.","##.##","##.##","####.","##.##","##.##","####."],"C":[".###.","##.##","##...","##...","##...","##.##",".###."],"D":["####.","##.##","##.##","##.##","##.##","##.##","####."],"E":["#####","##...","##...","####.","##...","##...","#####"],"F":["#####","##...","##...","####.","##...","##...","##..."],"G":[".###.","##.##","##...","##.##","##.##","##.##",".####"],"H":["##.##","##.##","##.##","#####","##.##","##.##","##.##"],"I":["####.",".##..",".##..",".##..",".##..",".##..","####."],"J":["..###","...##","...##","...##","##.##","##.##",".###."],"K":["##.##","##.##","####.","###..","####.","##.##","##.##"],"L":["##...","##...","##...","##...","##...","##...","#####"],"M":["#...#","##.##","#####","#####","##.##","##.##","##.##"],"N":["##.##","###.#","#####","#####","##.##","##.##","##.##"],"O":[".###.","##.##","##.##","##.##","##.##","##.##",".###."],"P":["####.","##.##","##.##","####.","##...","##...","##..."],"Q":[".###.","##.##","##.##","##.##","##.##","##.#.",".##.#"],"R":["####.","##.##","##.##","####.","####.","##.##","##.##"],"S":[".####","##...","##...",".###.","...##","...##","####."],"T":["#####",".##..",".##..",".##..",".##..",".##..",".##.."],"U":["##.##","##.##","##.##","##.##","##.##","##.##",".###."],"V":["##.##","##.##","##.##","##.##","##.##",".###.","..#.."],"W":["##.##","##.##","##.##","#####","#####","##.##","#...#"],"X":["##.##","##.##",".###.","..#..",".###.","##.##","##.##"],"Y":["##.##","##.##","##.##",".###.",".##..",".##..",".##.."],"Z":["#####","...##","..##.",".##..","##...","##...","#####"]," ":[".....",".....",".....",".....",".....",".....","....."],"!":[".##..",".##..",".##..",".##..",".##..",".....",".##.."],"?":[".###.","##.##","...##","..##.",".##..",".....",".##.."],".":[".....",".....",".....",".....",".....",".....",".##.."],",":[".....",".....",".....",".....",".....",".##..","##..."],":":[".....",".##..",".##..",".....",".##..",".##..","....."],"-":[".....",".....",".....","####.",".....",".....","....."],"+":[".....",".##..",".##..","####.",".##..",".##..","....."],"/":["...##","...##","..##.",".##..","##...","##...","....."],"%":["##..#","##.##","..##.",".##..","##.##","#..##","....."],"x":[".....",".....","##.##",".###.",".###.","##.##","....."],"(":["..##.",".##..","##...","##...","##...",".##..","..##."],")":[".##..","..##.","...##","...##","...##","..##.",".##.."],"'":[".##..",".##..",".#...",".....",".....",".....","....."],"×":[".....","##.##",".###.","..#..",".###.","##.##","....."]};
+
+const W = 1400, H = 1180;
+const cv = document.getElementById('c'); cv.width = W; cv.height = H;
+const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#29123d'); bg.addColorStop(1, '#0d0519');
+ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+function spr(id, x, y, s, alpha = 1, flip = false) {
+  const rows = SPRITES[id]; ctx.globalAlpha = alpha;
+  rows.forEach((r, j) => [...r].forEach((c, i) => {
+    if (c === '.') return; ctx.fillStyle = PALETTE[c];
+    const xx = flip ? x + (r.length - 1 - i) * s : x + i * s;
+    ctx.fillRect(xx, y + j * s, s, s);
+  }));
+  ctx.globalAlpha = 1;
+}
+function text(str, x, y, s, color = UI_COLORS.text) {
+  // outline pass then ink pass
+  for (const [ox, oy, col] of [[-1,0,'#140c1c'],[1,0,'#140c1c'],[0,-1,'#140c1c'],[0,1,'#140c1c'],[1,1,'#140c1c'],[-1,-1,'#140c1c'],[1,-1,'#140c1c'],[-1,1,'#140c1c'],[0,0,color]]) {
+    ctx.fillStyle = col; let cx = x;
+    for (const ch of str) {
+      const g = GLYPHS[ch] || GLYPHS[ch.toUpperCase()] || GLYPHS['?'];
+      g.forEach((r, j) => [...r].forEach((c, i) => { if (c === '#') ctx.fillRect(cx + (i + ox) * s, y + (j + oy) * s, s, s); }));
+      cx += (FONT_W + 1) * s;
+    }
+  }
+}
+function label(t, x, y) { ctx.fillStyle = '#9a8fb0'; ctx.font = '12px monospace'; ctx.fillText(t, x, y); }
+
+// Close-up review helper for the devtools console: zoomView(['sword','shield'], 40)
+window.zoomView = (ids, s) => {
+  ctx.fillStyle = '#1f0c2e'; ctx.fillRect(0, 0, W, H); let zx = 10, zy = 10;
+  for (const id of ids) {
+    const w = SPRITES[id][0].length, h = SPRITES[id].length;
+    if (zx + w * s > W) { zx = 10; zy += (h + 1) * s; }
+    if (id === 'goo') spr('sword', zx, zy, s, 0.2);
+    spr(id, zx, zy, s); zx += (w + 1) * s;
+  }
+};
+window.drawAll = () => {
+ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+// 1) every sprite at 1x, 3x, 5x
+let x = 20, y = 30, rowH = 0;
+for (const id of Object.keys(SPRITES)) {
+  const w = SPRITES[id][0].length, h = SPRITES[id].length;
+  const cellW = 10 + w + 8 + w * 3 + 8 + w * 5 + 16;
+  if (x + cellW > W - 10) { x = 20; y += rowH + 30; rowH = 0; }
+  label(id, x, y - 8);
+  spr(id, x, y, 1); spr(id, x + w + 8, y, 3); spr(id, x + w * 4 + 16, y, 5);
+  x += cellW; rowH = Math.max(rowH, h * 5);
+}
+y += rowH + 40;
+
+// 2) font
+text('SLOT VS SLOT 0123456789 JACKPOT! DOUBLE! BLOCK +4 -10', 20, y, 3); y += 32;
+text("ABCDEFGHIJKLMNOPQRSTUVWXYZ ! ? . , : - + / % x ( ) ' ×", 20, y, 3, UI_COLORS.energy); y += 32;
+text('CLEANSED ×14!', 20, y, 5, UI_COLORS.gold); text('SLIMED!', 460, y, 5, UI_COLORS.slime); text('-10', 760, y, 6, UI_COLORS.hp);
+y += 64;
+
+// 3) mock 3x3 reel grid at 5x (96px cells), one slimed sword
+const grid = [['sword','bolt','shield'],['shield','sword','sword'],['bolt','shield','bolt']];
+const gx = 20, gy = y;
+ctx.fillStyle = UI_COLORS.gold; ctx.fillRect(gx - 8, gy - 8, 96 * 3 + 16, 96 * 3 + 16);
+ctx.fillStyle = UI_COLORS.panel; ctx.fillRect(gx - 4, gy - 4, 96 * 3 + 8, 96 * 3 + 8);
+const g2 = ctx.createLinearGradient(0, gy, 0, gy + 288); g2.addColorStop(0, '#29123d'); g2.addColorStop(1, '#0d0519');
+ctx.fillStyle = g2; ctx.fillRect(gx, gy, 288, 288);
+grid.forEach((row, j) => row.forEach((id, i) => {
+  const cx = gx + i * 96 + 8, cy = gy + j * 96 + 8;
+  if (i === 0 && j === 0) { spr(id, cx, cy, 5, 0.2); spr('goo', cx, cy, 5); }
+  else spr(id, cx, cy, 5);
+}));
+// enemy grid
+const ex = 360;
+const egrid = [['slime','sword','shield'],['sword','slime','slime'],['shield','sword','slime']];
+ctx.fillStyle = UI_COLORS.gold; ctx.fillRect(ex - 8, gy - 8, 96 * 3 + 16, 96 * 3 + 16);
+ctx.fillStyle = g2; ctx.fillRect(ex, gy, 288, 288);
+egrid.forEach((row, j) => row.forEach((id, i) => spr(id, ex + i * 96 + 8, gy + j * 96 + 8, 5)));
+
+// HUD mock
+let hx = 700, hy = gy;
+spr('playerPortrait', hx, hy, 4); spr('enemyPortrait', hx + 110, hy, 4);
+hy += 110;
+spr('heart', hx, hy, 4); ctx.fillStyle = UI_COLORS.panel; ctx.fillRect(hx + 40, hy + 4, 240, 24);
+ctx.fillStyle = UI_COLORS.hpGhost; ctx.fillRect(hx + 40, hy + 4, 180, 24); ctx.fillStyle = UI_COLORS.hp; ctx.fillRect(hx + 40, hy + 4, 140, 24);
+hy += 40;
+spr('shieldIcon', hx, hy, 4); ctx.fillStyle = UI_COLORS.panel; ctx.fillRect(hx + 40, hy + 4, 240, 24);
+ctx.fillStyle = UI_COLORS.shield; ctx.fillRect(hx + 40, hy + 4, 90, 24);
+hy += 40;
+spr('boltIcon', hx, hy, 4);
+for (let i = 0; i < 5; i++) spr(i < 3 ? 'pipFull' : 'pipEmpty', hx + 40 + i * 40, hy, 4);
+hy += 50;
+spr('swordProjectile', hx, hy, 5); spr('swordProjectile', hx + 80, hy, 5, 1, true);
+spr('slimeBlob', hx + 170, hy + 10, 5); spr('spark', hx + 230, hy + 10, 6); spr('spark', hx + 270, hy + 20, 3);
+};
+drawAll();
+</script></body></html>

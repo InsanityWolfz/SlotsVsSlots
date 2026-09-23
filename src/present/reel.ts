@@ -1,0 +1,236 @@
+import type { SymbolId } from '../core/config';
+import { wrap } from '../core/strip';
+import { drawSprite } from '../render/sprites';
+import type { Clock } from './clock';
+import { backOut, linear, sineIn, sineOut } from './ease';
+import { ART_SCALE, PITCH } from './layout';
+
+/** Display-side copy of a strip cell. Diverges from game state until the animation catches up. */
+export interface CellView {
+  symbol: SymbolId;
+  slimed: boolean;
+  /** 0..1 visual goo coverage (drips in on splat, evaporates on cleanse). */
+  goo: number;
+  /** Per-cell white flash (cleanse reveal). */
+  flash: number;
+}
+
+/** Per visible-row cosmetic state (row 0 = top). */
+export interface RowFx {
+  punch: number;
+  glow: number;
+  glowColor: string;
+  dim: number;
+  flash: number;
+  /** Vertical offset in px (lift before launching as a projectile). */
+  lift: number;
+  wobble: number;
+  alpha: number;
+}
+
+export const newRowFx = (): RowFx => ({ punch: 1, glow: 0, glowColor: '#ffe08a', dim: 0, flash: 0, lift: 0, wobble: 0, alpha: 1 });
+
+export interface SpinPlan {
+  target: number;
+  windup: boolean;
+  /** Seconds after spin start when deceleration begins. */
+  decelAt: number;
+  decelDur: number;
+}
+
+export const SPIN = {
+  windup: 0.08,
+  accel: 0.18,
+  decel: 0.3,
+  nearMissDecel: 0.7,
+  minSpin: 0.45,
+  stagger: 0.18,
+  /** Cells per second at full speed (1150 px/s at a 96px pitch ≈ juice doc 2400px/s @ 200px). */
+  maxSpeed: 1150 / PITCH,
+  overshoot: 6,
+};
+
+export class ReelView {
+  stop: number;
+  /** Scroll position in cells; content moves down as q grows. */
+  q = 0;
+  spinning = false;
+  blur = 0;
+  squash = 1;
+  bounce = 0;
+  rows: RowFx[] = [newRowFx(), newRowFx(), newRowFx()];
+  private tape: (k: number) => CellView;
+
+  constructor(
+    readonly cells: CellView[],
+    stop: number,
+  ) {
+    this.stop = stop;
+    this.tape = this.staticTape();
+  }
+
+  private staticTape(): (k: number) => CellView {
+    return (k) => this.cells[wrap(this.stop - k, this.cells.length)];
+  }
+
+  /** The display cell on a visible row while idle. */
+  cellAtRow(row: number): CellView {
+    return this.cells[wrap(this.stop + row - 1, this.cells.length)];
+  }
+
+  indexAtRow(row: number): number {
+    return wrap(this.stop + row - 1, this.cells.length);
+  }
+
+  /** Runs the 6-phase spin. Resolves the instant the reel reaches rest (before the bounce). */
+  spin(plan: SpinPlan, clock: Clock, onStop: () => void): Promise<void> {
+    const len = this.cells.length;
+    const start = this.stop;
+    const tw = plan.windup ? SPIN.windup : 0;
+    const Ta = SPIN.accel;
+    const Td = plan.decelDur;
+    const Tc = Math.max(0.05, plan.decelAt - tw - Ta);
+    // Distance is derived from timing, then rounded to a whole number of cells so the
+    // reveal lands exactly on a pitch boundary; speed is nudged to fit (juice §1).
+    const n = Math.max(6, Math.round(SPIN.maxSpeed * (Ta / 3 + Tc + Td / 3)));
+    const v = n / (Ta / 3 + Tc + Td / 3);
+    const Da = (v * Ta) / 3;
+    const Dc = v * Tc;
+    const Dd = (v * Td) / 3;
+    const fillers = Array.from({ length: n + 4 }, () => this.cells[Math.floor(Math.random() * len)]);
+    this.tape = (k) => {
+      if (k <= 1) return this.cells[wrap(start - k, len)];
+      if (k >= n - 1) return this.cells[wrap(plan.target - (k - n), len)];
+      return fillers[k];
+    };
+    this.spinning = true;
+    this.q = 0;
+    for (const r of this.rows) Object.assign(r, newRowFx());
+
+    const total = tw + Ta + Tc + Td;
+    let t = 0;
+    return new Promise((resolve) => {
+      const land = () => {
+        this.q = 0;
+        this.blur = 0;
+        this.squash = 1;
+        this.stop = plan.target;
+        this.tape = this.staticTape();
+        this.spinning = false;
+        onStop();
+        this.landingJuice(clock);
+        resolve();
+      };
+      clock.add({
+        update: (dt) => {
+          t += dt;
+          if (t < tw) {
+            const u = t / tw;
+            this.squash = u < 0.5 ? 1 - 0.04 * sineOut(u * 2) : 0.96 + 0.04 * sineIn((u - 0.5) * 2);
+            return false;
+          }
+          this.squash = 1;
+          const ta = t - tw;
+          if (ta < Ta) {
+            const u = ta / Ta;
+            this.q = Da * u * u * u;
+            this.blur = u;
+          } else if (ta < Ta + Tc) {
+            this.q = Da + v * (ta - Ta);
+            this.blur = 1;
+          } else if (t < total) {
+            const u = (ta - Ta - Tc) / Td;
+            this.q = Da + Dc + Dd * (1 - (1 - u) ** 3);
+            this.blur = Math.max(0, 1 - u * 2.5);
+          } else {
+            land();
+            return true;
+          }
+          return false;
+        },
+        finish: land,
+      });
+    });
+  }
+
+  /** Cosmetic tail: 6px overshoot + back-out settle, and a per-symbol punch (never the strip). */
+  private landingJuice(clock: Clock): void {
+    void clock
+      .tween({ from: 0, to: SPIN.overshoot, dur: 0.03, ease: linear, onUpdate: (v) => (this.bounce = v) })
+      .then(() => clock.tween({ from: SPIN.overshoot, to: 0, dur: 0.15, ease: backOut(2.2), onUpdate: (v) => (this.bounce = v) }));
+    for (const r of this.rows) {
+      void clock
+        .tween({ from: 1, to: 1.04, dur: 0.05, ease: sineOut, onUpdate: (v) => (r.punch = v) })
+        .then(() => clock.tween({ from: 1.04, to: 1, dur: 0.06, ease: sineIn, onUpdate: (v) => (r.punch = v) }));
+    }
+  }
+
+  /** Draw into a clip rect already set by the machine; x = reel center, midY = middle-row center. */
+  draw(ctx: CanvasRenderingContext2D, x: number, midY: number, time: number): void {
+    const q = this.q;
+    const k0 = Math.floor(q) - 2;
+    const k1 = Math.ceil(q) + 2;
+    for (let k = k0; k <= k1; k++) {
+      const y = midY + (q - k) * PITCH + this.bounce;
+      if (y < midY - PITCH * 2 || y > midY + PITCH * 2) continue;
+      const cell = this.tape(k);
+      const row = this.spinning ? -1 : 1 - k;
+      const fx = row >= 0 && row < 3 ? this.rows[row] : null;
+      drawCell(ctx, cell, x, y + (fx?.lift ?? 0), fx, this.blur, this.squash, time);
+    }
+  }
+}
+
+export function drawCell(
+  ctx: CanvasRenderingContext2D,
+  cell: CellView,
+  x: number,
+  y: number,
+  fx: RowFx | null,
+  blur: number,
+  squash: number,
+  time: number,
+): void {
+  const punch = fx?.punch ?? 1;
+  const alpha = (fx?.alpha ?? 1) * (1 - 0.3 * blur);
+  const sy = squash * (1 + 0.35 * blur) * punch;
+  const sx = punch * (1 + (fx?.wobble ?? 0) * Math.sin(time * 40) * 0.08);
+
+  // Soft drop shadow: symbols float on the background, no tiles (juice §7).
+  if (blur < 0.5 && alpha > 0.05) {
+    ctx.globalAlpha = 0.35 * alpha;
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.ellipse(x + 4, y + 36 * punch, 30 * punch, 7 * punch, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  if (fx && fx.glow > 0) {
+    ctx.save();
+    ctx.globalAlpha = fx.glow;
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(x, y, 8, x, y, 52 * punch);
+    g.addColorStop(0, fx.glowColor);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - 60, y - 60, 120, 120);
+    ctx.restore();
+  }
+
+  const slimed = cell.slimed || cell.goo > 0;
+  const dim = Math.min(1, (fx?.dim ?? 0) + (cell.goo > 0 ? 0.45 * cell.goo : 0));
+  const flash = Math.max(fx?.flash ?? 0, cell.flash);
+  drawSprite(ctx, cell.symbol, x, y, ART_SCALE, { sx, sy, alpha, dim, flash });
+
+  if (slimed && cell.goo > 0) {
+    // Goo drips in from the top: clip its height by coverage.
+    const h = 16 * ART_SCALE * sy;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x - 50, y - h / 2 - 4, 100, (h + 8) * cell.goo);
+    ctx.clip();
+    drawSprite(ctx, 'goo', x, y, ART_SCALE, { sx, sy, alpha, dim: fx?.dim ?? 0, flash });
+    ctx.restore();
+  }
+}
