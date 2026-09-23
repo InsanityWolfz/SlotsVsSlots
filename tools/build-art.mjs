@@ -2668,6 +2668,192 @@ S.mapBadgeMirror = lit(8, 8, ['', '..YGGg', '.YCnWg', '.GnWng', '.GWnNg', '.gNNc
   S.actBadge2 = toRows(outline(g));
 }
 
+// ================================================================ ACT 2 (batch 8): grounder + counterfeiter
+// ---------------------------------------------------------------- enemy portraits (24x24)
+// grounder: stocky dwarf lineworker — copper hard hat, ruddy nose, big brown beard, green work jacket with
+// copper suspenders, raising a copper-banded mallet
+S.enemyGrounder = lit(24, 24, [
+  '........................',
+  '.......aaOOOo.....awwwwO',
+  '.....aWaaOOOOOo...aWwwBo',
+  '....aaaaaYGOOOoo..OwBBBo',
+  '....aaaaaGgOOooo..OBBBbo',
+  '..aaaOOOOOOOOOooo.obbbbo',
+  '....bffffffffffb....wB..',
+  '....bFbbbFFbbbfb....wB..',
+  '....bFWKFFFFWKfb....wB..',
+  '....BFFFFMRFFffB....wB..',
+  '....BwBBMRRrBBbb...FFFf.',
+  '....wwBBBbBBBBbb...fFff.',
+  '....BBBBKrrKBBBb..aOOo..',
+  '..eQwBBBbKKbBBbbQQeQQq..',
+  '.eeQQBBwBBBBBbbQQQeQQq..',
+  'EeeQQBBBwBBBbbbQQqeQQq..',
+  'EeeQOQBBBBBbbbQOQqeQQq..',
+  'EeeQOQQBBBbbbQQOQqQQQq..',
+  'EeeQOQQQBaObQQQOQQQQQq..',
+  'EeeQOQQQQQQQQQQOQQQQqq..',
+  'EeeQOQQQQqqQQQQOQQQQqq..',
+  'wwwBaBBBBYGBBBBaBBBBbb..',
+  'QQQqqqqqqqqqqqqqqqqqqq..',
+  'QQqqqqqqqqqqqqqqqqqqqq..',
+]);
+// counterfeiter: shifty forger — green eyeshade, black loupe magnifying one eye, pencil moustache,
+// olive coat over a grey vest, holding a dull brass coin up for inspection
+S.enemyCounterfeiter = lit(24, 24, [
+  '........................',
+  '......IIHHHHh...........',
+  '.....IHHHHHHhh..........',
+  '....qqqqqqqqqqq.........',
+  '...EEEEEEeeeeeeQ..YGGg..',
+  '...QQQQQQQQQQQQq.YWGGGg.',
+  '....hZZZZZZlkk...GGggGg.',
+  '....hFWKFFlCWWk..GGgGGg.',
+  '....hFFFFflWKKk..gGGGgg.',
+  '....hFFFffkAKKP..FggggF.',
+  '.....FbbbbFkPP...FFfFFf.',
+  '......FFKKKff....FFFFf..',
+  '.......fffff.....XZZZz..',
+  '..XXZZWTTtTTWZzz.XZZZz..',
+  '.XZZZZzHIkHhzZZZzXZZZz..',
+  '.XZZZzHIIkHhhzZZzXZZZz..',
+  'XXZZZzHIGkHhhzZZzXZZZz..',
+  'XZZZZzHIIkHhhzZZZZZZZz..',
+  'XZZZZzHIGkHhhzZZZZZZzz..',
+  'XZZZzzHIIkHGhzzZZZZZzz..',
+  'XZZZzHIIIkHhGhzZZZZzzz..',
+  'XZZZzHIGIkHhhhzZZZZzzz..',
+  'XZZzzHIIIkHhhhzzZZzzzz..',
+  'ZZzzzHIIIkHhhhzzzzzzzz..',
+]);
+
+// ---------------------------------------------------------------- reel symbols (16x16)
+// ground: the earth sign itself — a copper grounding rod with a steel clamp, driven into three copper bars
+S.ground = lit(16, 16, [
+  '................',
+  '......aWOo......',
+  '.......ao.......',
+  '......LLSD......',
+  '......SSDD......',
+  '.......ao.......',
+  '.......ao.......',
+  '.aaaaaaaaOOOOOO.',
+  '.OOOOOOOOOOOOoo.',
+  '................',
+  '....aaaaOOOO....',
+  '....OOOOOOoo....',
+  '................',
+  '......aOOo......',
+  '......OOoo......',
+]);
+// fake: dull grey lead coin, crude "$" stamp, chipped at the top-right with a crack
+{
+  const g = grid(16, 16);
+  const spans = [[5, 10], [3, 12], [2, 13], [2, 13], [1, 14], [1, 14], [1, 14], [1, 14], [1, 14], [1, 14], [2, 13], [2, 13], [3, 12], [5, 10]];
+  shape(g, 1, spans, (x, y, has) => {
+    const rim = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].some(([dx, dy]) => !has(x + dx, y + dy));
+    if (rim) return x + y >= 16 ? 'h' : 'I';
+    return x + y >= 19 ? 'h' : 'H';
+  });
+  // chip bitten out of the top-right rim
+  [[9, 1], [10, 1], [10, 2], [11, 2], [12, 2], [11, 3], [12, 3], [13, 3], [12, 4], [13, 4]].forEach(([x, y]) => put(g, x, y, '.'));
+  plot(g, [[9, 2, 'h'], [10, 3, 'h'], [11, 4, 'h'], [12, 5, 'h'], [13, 5, 'h']]);
+  // crude, lopsided "$"
+  stamp(g, 5, 4, [
+    '  k  ',
+    ' kkkk',
+    'kk   ',
+    ' kkk ',
+    '   kk',
+    'kkkk ',
+    '  k  ',
+  ]);
+  plot(g, [[3, 11, 'k'], [4, 12, 'k'], [4, 13, 'h']]); // hairline crack
+  plot(g, [[3, 3, 'L'], [4, 3, 'L'], [3, 4, 'L']]);  // dull sheen
+  S.fake = toRows(outline(g));
+}
+
+// ---------------------------------------------------------------- cell overlays (16x16, centre clear)
+// groundOverlay: copper rod driven in diagonally from the top-right (steel clamp), small earth sign bottom-right
+{
+  const g = grid(16, 16);
+  for (let t = 0; t <= 5; t++) { put(g, 15 - t, t, 'a'); put(g, 16 - t, t, 'o'); }
+  put(g, 10, 6, 'o'); // point
+  plot(g, [[12, 1, 'L'], [13, 2, 'S'], [14, 3, 'D'], [13, 1, 'S'], [14, 2, 'D'], [15, 3, 'D']]); // clamp
+  // earth sign: stem, then three shrinking bars
+  plot(g, [[11, 8, 'a'], [12, 8, 'o'], [11, 9, 'a'], [12, 9, 'o']]);
+  hline(g, 9, 14, 10, 'O'); hline(g, 9, 11, 10, 'a');
+  hline(g, 10, 13, 12, 'O'); put(g, 10, 12, 'a');
+  hline(g, 11, 12, 14, 'o'); put(g, 11, 14, 'O');
+  outline(g);
+  S.groundOverlay = toRows(g);
+}
+// fakeOverlay: lead tarnish smudged diagonally over each corner of the gild frame, small grey coin bottom-left
+{
+  const g = grid(16, 16);
+  // small grey coin first, so it alone gets the K outline
+  stamp(g, 1, 10, [
+    ' IHH ',
+    'IHkkh',
+    'IHkHh',
+    'HkkHh',
+    ' hhh ',
+  ]);
+  outline(g);
+  // tarnish: solid wash in the corner, fading diagonal streaks
+  const corners = [[0, 0, 1, 1], [15, 0, -1, 1], [15, 15, -1, -1]];
+  corners.forEach(([cx, cy, sx, sy]) => {
+    for (let v = 0; v < 7; v++) for (let u = 0; u < 7; u++) {
+      const s = u + v, x = cx + sx * u, y = cy + sy * v;
+      if (s <= 2) put(g, x, y, s === 0 ? 'h' : 'H');
+      else if (s === 3) put(g, x, y, (u + v * 2) % 3 ? 'H' : 'h');
+      else if (s === 5 && u >= 1 && v >= 1) put(g, x, y, u % 2 ? 'h' : 'I');
+      else if (s === 7 && u >= 2 && v >= 2 && u % 2) put(g, x, y, 'h');
+    }
+  });
+  // a couple of stray drips along the edges
+  plot(g, [[7, 0, 'H'], [8, 0, 'h'], [15, 7, 'H'], [15, 8, 'h'], [8, 15, 'h']]);
+  S.fakeOverlay = toRows(g);
+}
+
+// ---------------------------------------------------------------- ability icons (8x8)
+S.icoEarth = lit(8, 8, ['', '...aO', '.aaaOOo', '', '..aOOo', '', '...Oo']);
+S.icoLaunder = lit(8, 8, ['', '..YGGg', '.YCCCCg', '.GGGGcg', '.GCcGcg', '.gccccg', '..gggg']);
+
+// ---------------------------------------------------------------- map badges (8x8)
+S.mapBadgeGround = lit(8, 8, ['', '..aWOo', '...ao', '...ao', '...ao', '.EeaoeQ', '.bbbbbb']);
+S.mapBadgeFake = lit(8, 8, ['', '..IIHh', '.IHHkkh', '.IHHkhh', '.HHkkhh', '..hhhh']);
+
+// ---------------------------------------------------------------- set ribbon (44x9): big "SET!" on a gold ribbon
+// ("COMPLETES SET" needs ~55px of 3x5 text + ends, so the fallback is used for legibility)
+{
+  const g = grid(44, 9);
+  // swallow-tail ends, tucked behind the band
+  const tail = [1, 2, 3, 3, 2, 1];
+  tail.forEach((x0, i) => {
+    const y = 2 + i;
+    hline(g, x0, 6, y, y === 2 ? 'G' : y === 7 ? 'o' : 'g');
+    hline(g, 37, 43 - x0, y, y === 2 ? 'G' : y === 7 ? 'o' : 'g');
+  });
+  // main band, lit from the top-left
+  for (let y = 1; y <= 7; y++) for (let x = 6; x <= 37; x++)
+    put(g, x, y, y === 1 ? (x < 20 ? 'W' : 'Y') : y === 7 ? 'g' : x === 6 ? 'Y' : x === 37 ? 'g' : 'G');
+  // fold seams between band and tails
+  for (let y = 2; y <= 7; y++) { put(g, 5, y, 'K'); put(g, 38, y, 'K'); }
+  // "SET!" in chunky 2px strokes, cream with a dark drop shadow
+  const ink = [
+    '.SSSS.EEEE.TTTTTT.!!',
+    'SS....EE.....TT...!!',
+    '.SSS..EEE....TT...!!',
+    '...SS.EE.....TT.....',
+    'SSSS..EEEE...TT...!!',
+  ];
+  const x0 = 12, y0 = 2;
+  ink.forEach((r, dy) => [...r].forEach((c, dx) => { if (c !== '.') put(g, x0 + dx + 1, y0 + dy + 1, 'b'); }));
+  ink.forEach((r, dy) => [...r].forEach((c, dx) => { if (c !== '.') put(g, x0 + dx, y0 + dy, dy === 0 ? 'W' : 'T'); }));
+  S.setRibbon = toRows(outline(g));
+}
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -2699,6 +2885,8 @@ const DIMS = {
   icoBomb: 8, icoHex: 8, icoDrain: 8, icoGulp: 8, icoReflect: 8,
   mapBadgeBomb: 8, mapBadgeHex: 8, mapBadgeFang: 8, mapBadgeMimic: 8, mapBadgeMirror: 8,
   actBadge2: { w: 24, h: 12 },
+  enemyGrounder: 24, enemyCounterfeiter: 24, ground: 16, fake: 16, groundOverlay: 16, fakeOverlay: 16,
+  icoEarth: 8, icoLaunder: 8, mapBadgeGround: 8, mapBadgeFake: 8, setRibbon: { w: 44, h: 9 },
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -2785,7 +2973,13 @@ export type SpriteId =
   | 'icoBomb' | 'icoHex' | 'icoDrain' | 'icoGulp' | 'icoReflect' // act 2 intent icons, 8x8
   | 'mapBadgeBomb' | 'mapBadgeHex' | 'mapBadgeFang' // act 2 map badges, 8x8
   | 'mapBadgeMimic' | 'mapBadgeMirror'
-  | 'actBadge2';                                   // act 2 map header plaque, 24x12 (non-square)
+  | 'actBadge2'                                    // act 2 map header plaque, 24x12 (non-square)
+  | 'enemyGrounder' | 'enemyCounterfeiter'         // act 2 enemy portraits (batch 8), 24x24
+  | 'ground' | 'fake'                              // their reel symbols, 16x16
+  | 'groundOverlay' | 'fakeOverlay'                // their cell overlays, 16x16 (mostly transparent)
+  | 'icoEarth' | 'icoLaunder'                      // their ability icons, 8x8
+  | 'mapBadgeGround' | 'mapBadgeFake'              // their map badges, 8x8
+  | 'setRibbon';                                   // 'SET!' completes-set ribbon, 44x9 (non-square)
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

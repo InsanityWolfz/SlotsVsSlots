@@ -549,7 +549,7 @@ export class RunScreens {
     if (hasSprite('setRibbon')) {
       ctx.fillStyle = COLORS.outline;
       ctx.fillRect(x, y, 134, 18);
-      drawSprite(ctx, artId('setRibbon'), x + 67, y + 9, 2.5);
+      drawSprite(ctx, artId('setRibbon'), x + 67, y + 9, 2);
       return;
     }
     ctx.fillStyle = '#5a3a0a';
