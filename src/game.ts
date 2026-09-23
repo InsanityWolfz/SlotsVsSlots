@@ -803,7 +803,7 @@ export class Game {
       }
     }
     else drawText(ctx, 'VS', cx, cy + 70, 6, '#ff6a5a', { alpha: 0.35 + 0.1 * Math.sin(t * 2) });
-    if (this.prefs.speed > 1) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss || this.fight.isMirror ? cy - 136 : cy + 172, 2, COLORS.textDim);
+    if (this.prefs.speed > 1) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss || this.fight.isMirror || this.fight.isDealer ? cy - 136 : cy + 172, 2, COLORS.textDim);
   }
 
   /** The House's progressive pot, front and centre: grows (and glows) with the stakes. */
