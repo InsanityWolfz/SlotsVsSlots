@@ -18,8 +18,8 @@ import { drawText } from './render/text';
 import { Button } from './ui/button';
 import { Recap } from './ui/recap';
 
-const CFG_KEY = 'slotvslot.config.v1';
-const PREFS_KEY = 'slotvslot.prefs.v1';
+const CFG_KEY = 'slotvslot.config.v2';
+const PREFS_KEY = 'slotvslot.prefs.v2';
 const AUTO_DELAY = 0.35;
 
 interface Prefs {
@@ -369,6 +369,7 @@ export class Game {
   draw(ctx: CanvasRenderingContext2D): void {
     const t = this.time;
     const s = this.stage;
+    this.syncOoze();
     ctx.save();
     this.camera.apply(ctx);
     this.background.draw(ctx, t);
@@ -399,12 +400,29 @@ export class Game {
     if (this.phase === 'ready') this.drawHint(ctx, t);
   }
 
+  /** Mirror the slime on the player's displayed strips into the HUD counter. */
+  private syncOoze(): void {
+    const hud = this.stage.huds.player;
+    let n = 0;
+    let total = 0;
+    for (const reel of this.stage.machines.player.reels) {
+      total += reel.cells.length;
+      for (const c of reel.cells) if (c.slimed) n++;
+    }
+    if (n !== hud.ooze) hud.oozePunch = 1.5;
+    hud.oozePunch += (1 - hud.oozePunch) * 0.15;
+    hud.ooze = n;
+    hud.oozeTotal = total;
+  }
+
   private drawGutter(ctx: CanvasRenderingContext2D, t: number): void {
     const g = this.stage.gutter;
     const cx = W / 2;
     const cy = MACHINE_TOP + MACHINE_H / 2;
     if (g.turn > 0) {
-      drawText(ctx, `ROUND ${Math.ceil(g.turn / 2)}`, cx, cy - 70, 3, COLORS.textDim, { punch: 1 + g.pulse * 0.3 });
+      drawText(ctx, `ROUND ${Math.ceil(g.turn / 2)}`, cx, cy - 78, 3, COLORS.textDim, { punch: 1 + g.pulse * 0.3 });
+      if (g.side)
+        drawText(ctx, g.side === 'player' ? "HERO'S TURN" : "SLIME'S TURN", cx, cy - 46, 2, g.side === 'player' ? COLORS.goldLight : COLORS.slime, { punch: 1 + g.pulse * 0.5 });
       if (g.side) {
         const dir = g.side === 'player' ? -1 : 1;
         const bob = Math.sin(t * 6) * 6;

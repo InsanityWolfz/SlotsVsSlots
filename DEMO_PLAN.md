@@ -395,3 +395,13 @@ what's unreadable. Tune defaults. Then write down the verdict on the core loop.
   speed, and audio stays in sync.
 - **Juice fatigue.** At 4× the jackpot-tier effects repeat often. The per-layer toggles exist
   to test this.
+
+---
+
+## 15. Changes after the first playtest (see playtest/PLAYTEST_REPORT.md)
+
+- **Balance:** enemy HP 40 → **30**, enemy strip 4/4/4 → **5 sword / 2 shield / 5 slime**. Sim result: 65% player wins, ~24 turns (p90 ~36), cleanse in ~half of fights, half as many dead-turn streaks.
+- **Pacing:** on a no-match line, the single-symbol effects resolve in one simultaneous beat ("losses fast, wins linger"). The DOUBLE banner no longer blocks. Turn cards are off by default and replaced by a "HERO'S TURN" label in the gutter (still toggleable). Roughly 2.7 → 1.4 min per fight at 1×.
+- **Near-miss:** the slow reel-3 tease stays on 1+2 pairs. The "aww" only plays when the triple symbol lands one stop off on reel 3 ("SO CLOSE!"), never on every double.
+- **Readability:** banners moved to the top gutter, off the reels. Reels 2+3 matching now shows "NO PAIR". Slime blobs are bigger, and there's an **OOZE n/36** counter on the hero HUD so the persistent slime is visible.
+- **Not done yet (next iteration):** a Slime King intent/telegraph, a strip mini-map, and turning the special into a choice.

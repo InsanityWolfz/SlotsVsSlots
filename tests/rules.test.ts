@@ -69,7 +69,7 @@ describe('fight resolution', () => {
     const { events } = f.step();
     const [atk] = ofType(events, 'attack');
     expect(atk.amount).toBe(4);
-    expect(f.sides.enemy.hp).toBe(36);
+    expect(f.sides.enemy.hp).toBe(26);
     expect(f.sides.player.shield).toBe(1);
   });
 
@@ -121,7 +121,7 @@ describe('fight resolution', () => {
     expect(fires).toHaveLength(1);
     expect(fires[0].amount).toBe(10);
     expect(f.sides.player.energy).toBe(4);
-    expect(f.sides.enemy.hp).toBe(30);
+    expect(f.sides.enemy.hp).toBe(20);
   });
 
   it('special can fire multiple times from carried energy', () => {

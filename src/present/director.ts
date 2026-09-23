@@ -12,6 +12,11 @@ type Ev<T extends CombatEvent['type']> = Extract<CombatEvent, { type: T }>;
 
 const EFFECT_WORD: Record<SymbolId, string> = { sword: 'DAMAGE', shield: 'SHIELD', bolt: 'ENERGY', slime: 'SLIME' };
 
+const BATCHABLE = new Set<CombatEvent['type']>(['attack', 'shieldGain', 'energyGain', 'fizzle', 'slime']);
+
+/** Banners sit in the top gutter between the HUD panels, never over the reels. */
+const BANNER_Y = 172;
+
 /**
  * Turns a TurnResult's event list into choreographed, skippable presentation. Owns the
  * mapping from rules → juice; knows nothing about how the rules work.
@@ -22,7 +27,17 @@ export class Director {
   constructor(private s: Stage) {}
 
   async playTurn(result: TurnResult): Promise<void> {
-    for (const e of result.events) await this.play(e);
+    const evs = result.events;
+    for (let i = 0; i < evs.length; i++) {
+      // Losses fast, wins linger: on a no-match line, consecutive single-symbol resolves
+      // play as one simultaneous beat instead of one after another.
+      if (this.lastScore?.tier === 'none' && BATCHABLE.has(evs[i].type)) {
+        const batch: CombatEvent[] = [];
+        while (i < evs.length && BATCHABLE.has(evs[i].type)) batch.push(evs[i++]);
+        i--;
+        await Promise.all(batch.map((e) => this.play(e)));
+      } else await this.play(evs[i]);
+    }
     await this.endTurn(result.side);
   }
 
@@ -111,7 +126,7 @@ export class Director {
       .then(() => this.s.fx.remove(t));
   }
 
-  private async banner(text: string, color: string, overshoot: number, hold: number, sub = '', y = H / 2 - 40, textScale = 7): Promise<void> {
+  private async banner(text: string, color: string, overshoot: number, hold: number, sub = '', y = BANNER_Y, textScale = 4): Promise<void> {
     if (!this.s.juice.banners) return;
     const b = this.s.fx.add(new Banner(text, color, W / 2, y, textScale));
     b.sub = sub;
@@ -216,7 +231,7 @@ export class Director {
     if (!this.s.juice.turnCards) return;
     const player = e.side === 'player';
     this.s.sounds.turnCard(player);
-    const card = this.s.fx.add(new TurnCard(player ? 'PLAYER TURN' : 'ENEMY TURN', player ? COLORS.goldLight : COLORS.slime, MACHINE_TOP - 4 + MACHINE_H / 2));
+    const card = this.s.fx.add(new TurnCard(player ? 'PLAYER TURN' : 'ENEMY TURN', player ? COLORS.goldLight : COLORS.slime, BANNER_Y));
     card.x = player ? -W : W;
     await this.c.tween({ from: card.x, to: 0, dur: 0.18, ease: cubicOut, onUpdate: (v) => (card.x = v) });
     this.bg(
@@ -248,8 +263,28 @@ export class Director {
         this.s.camera.punchZoom(0.015, 0.9);
       },
     });
-    if (near && e.score.tier !== 'triple') this.s.sounds.nearMissAww();
+    if (near && e.score.tier !== 'triple') this.missedTriple(e.side, e.score.line[0]);
     await this.winPresentation(e.side, e.score);
+  }
+
+  /**
+   * Reels 1+2 matched, the slow reel 3 missed: if the triple symbol is sitting one stop off,
+   * point at it and groan. Otherwise the tease just ends as a normal double.
+   */
+  private missedTriple(side: SideId, want: SymbolId): void {
+    const reel = this.s.machines[side].reels[2];
+    for (const row of [0, 2]) {
+      const cell = reel.cellAtRow(row);
+      if ((cell.slimed ? 'slime' : cell.symbol) !== want) continue;
+      const fx = reel.rows[row];
+      fx.glowColor = '#ff5a4a';
+      this.bg(this.c.tween({ from: 0.9, to: 0, dur: 0.7, onUpdate: (v) => (fx.glow = v) }));
+      this.bg(this.c.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (fx.wobble = v) }));
+      const p = cellCenter(side, 2, row);
+      this.bg(this.popText('SO CLOSE!', p.x - 20, row === 0 ? p.y - 30 : p.y + 30, 2, '#ff8a7a', 10, 0.4));
+      this.s.sounds.nearMissAww();
+      return;
+    }
   }
 
   /** Juice §3, mapped to tiers: none → small, pair → medium, triple → jackpot. */
@@ -264,6 +299,12 @@ export class Director {
 
     if (tier === 'none') {
       this.s.sounds.stingerSmall();
+      // Reels 2+3 matching looks like a double but isn't (in-order rule) — say so.
+      const [a, b, c] = score.line;
+      if (b === c && a !== b) {
+        const p = cellCenter(side, 1.5, 0);
+        this.bg(this.popText('NO PAIR', p.x, p.y - 20, 2, COLORS.textDim, 12, 0.3));
+      }
       await this.c.wait(0.08);
       return;
     }
@@ -289,7 +330,9 @@ export class Director {
       this.s.sounds.stingerMedium();
       this.shake(3, 0.15);
       this.s.camera.chromaPulse(0.15);
-      await this.banner('DOUBLE!', COLORS.pair, 1.15, 0.25, sub, H / 2 - 40, 6);
+      // Non-blocking: the effects start while the banner is still up.
+      this.bg(this.banner('DOUBLE!', COLORS.pair, 1.15, 0.2, sub));
+      await this.c.wait(0.3);
     } else {
       this.s.sounds.fanfareJackpot();
       this.hitstop(4);
@@ -312,7 +355,7 @@ export class Director {
         size: [5, 9],
         kind: 'confetti',
       });
-      await this.banner('JACKPOT!', COLORS.triple, 1.5, 0.6, sub);
+      await this.banner('JACKPOT!', COLORS.triple, 1.5, 0.6, sub, BANNER_Y, 5);
       this.s.camera.dimTarget = 0;
     }
   }
@@ -499,7 +542,7 @@ export class Director {
       const row = this.rowOf(e.to, ref);
       const src = cellCenter(e.from, e.reels[i % e.reels.length], 1);
       const dst = cellCenter(e.to, ref.reel, Math.max(0, row));
-      const p = this.s.fx.add(new Projectile('slimeBlob', src.x, src.y, 4, false, COLORS.slime));
+      const p = this.s.fx.add(new Projectile('slimeBlob', src.x, src.y, 6, false, COLORS.slime));
       this.bg(this.c.tween({ from: 0, to: Math.PI * 4, dur: 0.45, onUpdate: (v) => (p.rot = v) }));
       await this.arc(p, dst.x, dst.y, 0.45, 150, sineInOut);
       this.s.fx.remove(p);
@@ -548,7 +591,7 @@ export class Director {
       this.s.particles.burst({ x: pos.x, y: pos.y, count: 12, colors: ['#ffffff', '#fff6c8', COLORS.slime], speed: [60, 220], gravity: -300, life: [0.4, 0.8], size: [2, 4] });
       await this.c.wait(0.05);
     }
-    await this.banner(`CLEANSED x${e.cells.length}!`, COLORS.goldLight, 1.3, 0.4, '', H / 2 - 40, 5);
+    await this.banner(`CLEANSED x${e.cells.length}!`, COLORS.goldLight, 1.3, 0.4, '', BANNER_Y, 3);
   }
 
   private async fizzle(e: Ev<'fizzle'>): Promise<void> {

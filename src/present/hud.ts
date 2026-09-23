@@ -23,6 +23,10 @@ export class HudView {
   pipPunch: number[];
   portraitFlash = 0;
   portraitShake = 0;
+  /** Slimed cells on this side's strips (display state) — the persistent debuff made visible. */
+  ooze = 0;
+  oozeTotal = 0;
+  oozePunch = 1;
 
   constructor(
     readonly side: SideId,
@@ -77,6 +81,13 @@ export class HudView {
     drawText(ctx, this.side === 'player' ? 'HERO' : 'SLIME KING', x + 4, y + 12, 2, this.side === 'player' ? COLORS.goldLight : COLORS.slime, {
       align: 'left',
     });
+    if (this.ooze > 0) {
+      const pct = this.ooze / Math.max(1, this.oozeTotal);
+      drawText(ctx, `OOZE ${this.ooze}/${this.oozeTotal}`, x + HUD_W - 4, y + 12, 2, pct >= 0.5 && Math.sin(time * 8) > 0 ? '#b6ff9a' : COLORS.slime, {
+        align: 'right',
+        punch: this.oozePunch,
+      });
+    }
 
     // HP bar with trailing ghost.
     const hb = this.hpBar();

@@ -35,7 +35,8 @@ const reels3 = (c: StripCounts): StripCounts[] => [{ ...c }, { ...c }, { ...c }]
 export function defaultConfig(): GameConfig {
   return {
     player: { hp: 20, strips: reels3({ sword: 4, shield: 4, bolt: 4 }) },
-    enemy: { hp: 40, strips: reels3({ sword: 4, shield: 4, slime: 4 }) },
+    // Tuned from playtest/PLAYTEST_REPORT.md: ~65% player wins, ~24 turns, cleanse in ~half of fights.
+    enemy: { hp: 30, strips: reels3({ sword: 5, shield: 2, slime: 5 }) },
     base: { sword: 1, shield: 1, bolt: 1, slime: 1 },
     pairMult: 2,
     tripleMult: 3,

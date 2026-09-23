@@ -31,7 +31,7 @@ export const defaultJuice = (): JuiceToggles => ({
   particles: true,
   banners: true,
   nearMiss: true,
-  turnCards: true,
+  turnCards: false,
   audio: true,
 });
 
