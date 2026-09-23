@@ -1666,6 +1666,469 @@ S.shopSlot = lit(24, 24, [
   '.....gggggggggggggggg...',
 ]);
 
+// ================================================================ ECONOMY UI / CABINETS / FULL SET (batch 6)
+// ---------------------------------------------------------------- chip shield (12x12): chip stack + blue shield front-right
+{
+  const g = grid(12, 12);
+  // stacked red chips: elliptical top face (white inserts at the rim), then striped edges split by dark seams
+  stamp(g, 0, 1, [
+    '..MRWRr..',
+    '.MRrrrRr.',
+    '.WRrrrRW.',
+    '.MRRWRRr.',
+    '.ddddddd.',
+    '.WWRrWWr.',
+    '.ddddddd.',
+    '.WWRrWWr.',
+    '.ddddddd.',
+  ]);
+  // shield overlapping the front-right, with its own dark rim so it separates from the stack
+  stamp(g, 5, 5, [
+    'KKKKKKK',
+    'KWLLLSK',
+    'KAAYUNK',
+    'KUYYYNK',
+    '.KUYNK.',
+    '..KNK..',
+    '...K...',
+  ]);
+  S.chipShield = toRows(outline(g));
+}
+// ---------------------------------------------------------------- build tag (20x7): green ribbon "FITS", notched right end
+{
+  const g = grid(20, 7);
+  shape(g, 1, [[1, 18], [1, 17], [1, 16], [1, 17], [1, 18]], (x, y) => (y === 1 ? 'E' : y === 5 ? 'Q' : 'e'));
+  put(g, 18, 1, 'e'); put(g, 18, 5, 'q');
+  // 3x5 letters, bright top row
+  const ink = [
+    'WWW.W.WWW..WW',
+    'W...W..W..W..',
+    'WW..W..W...W.',
+    'W...W..W....W',
+    'W...W..W..WW.',
+  ];
+  ink.forEach((r, dy) => [...r].forEach((c, dx) => { if (c === 'W') put(g, 3 + dx, 1 + dy, dy === 0 ? 'W' : 'T'); }));
+  S.tagBuild = toRows(outline(g));
+}
+// ---------------------------------------------------------------- shop heal (16x16): white first-aid tin, red lid, red cross
+S.shopHeal = lit(16, 16, [
+  '................',
+  '................',
+  '......LLSD......',
+  '.....L....D.....',
+  '..MMMRRRRRRRRr..',
+  '..MRRRRRRRRRrr..',
+  '..rrrrrYGrrrrr..',
+  '..WWTTTggTTTTI..',
+  '..WTTTTRRTTTTI..',
+  '..TTTTTRRTTTTI..',
+  '..TTTRRRRRRtTI..',
+  '..TTTRRrrrrtTI..',
+  '..TTTTTRrtTTTI..',
+  '..TTTTTRrtTTTI..',
+  '..IIIIIIIIIIIH..',
+]);
+// ---------------------------------------------------------------- full set (16x16): bold gold star with an outlined white "3"
+{
+  const g = grid(16, 16);
+  const cx = 7.5, cy = 8.6, R = 8.2, r = 4.3;
+  const verts = [];
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5, rad = i % 2 ? r : R;
+    verts.push([cx + rad * Math.cos(a), cy + rad * Math.sin(a)]);
+  }
+  const inside = (px, py) => {
+    let c = false;
+    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+      const [xi, yi] = verts[i], [xj, yj] = verts[j];
+      if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  const mask = new Set();
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if (inside(x, y)) mask.add(`${x},${y}`);
+  const has = (x, y) => mask.has(`${x},${y}`);
+  for (const k of mask) {
+    const [x, y] = k.split(',').map(Number);
+    const lo = !has(x + 1, y) || !has(x, y + 1), hi = !has(x - 1, y) || !has(x, y - 1);
+    put(g, x, y, lo ? (x + y >= 15 ? 'g' : 'G') : hi ? 'Y' : (x + y >= 17 ? 'G' : 'Y'));
+  }
+  put(g, 7, 1, 'W'); put(g, 7, 2, 'W'); put(g, 2, 6, 'W'); put(g, 3, 6, 'W');
+  // "3" badge: white glyph with a dark rim
+  stamp(g, 5, 5, [
+    'KKKKK ',
+    'KWWWKK',
+    'KKKWWK',
+    ' KWWWK',
+    'KKKWWK',
+    'KWWWKK',
+    'KKKKK ',
+  ]);
+  S.setStar = toRows(outline(g));
+}
+
+// ---------------------------------------------------------------- cabinets (48x64): run-select slot machine portraits
+/** Mini reel symbols (7x7, space = transparent); outlined into 9x9 reel cells. */
+const MINI = {
+  sword: [
+    '      W',
+    '     LS',
+    '    LS ',
+    ' Y LS  ',
+    '  GS   ',
+    ' B g   ',
+    'G      ',
+  ],
+  shield: [
+    'WLLLLLS',
+    'LAAYUUS',
+    'LYYYGGS',
+    'LUUYNNS',
+    ' SUYNS ',
+    '  SGS  ',
+    '   S   ',
+  ],
+  bolt: [
+    '    WYO',
+    '   WYO ',
+    '  WYO  ',
+    ' YYYYYO',
+    '   YYo ',
+    '  YOo  ',
+    ' Yo    ',
+  ],
+  spiky: [
+    ' W L S ',
+    ' LLLLS ',
+    'LLAUNSD',
+    ' LAUNS ',
+    'SSUUNSD',
+    '  SNS  ',
+    '   D   ',
+  ],
+  wild: [
+    '   Y   ',
+    '  YWG  ',
+    'RRRWEEe',
+    ' RWWWe ',
+    ' JJWCc ',
+    ' JV Cc ',
+    ' V   c ',
+  ],
+  what: [
+    ' tttt ',
+    'tt  tt',
+    '    tt',
+    '   tt ',
+    '  tt  ',
+    '      ',
+    '  tt  ',
+  ],
+};
+/** One step darker per colour (reel cylinder falloff for the half-visible symbols above/below the payline). */
+const DARKER = { W: 'L', L: 'S', S: 'D', D: 'N', Y: 'G', G: 'g', g: 'b', O: 'o', o: 'r', a: 'O', A: 'U', U: 'N', N: 'v', B: 'b', b: 'K',
+  E: 'e', e: 'Q', Q: 'q', q: 'K', C: 'c', c: 'N', R: 'r', r: 'd', d: 'K', J: 'V', V: 'v', v: 'K', M: 'm', m: 'r', T: 't', t: 'p', K: 'K' };
+function miniCell(id) { const g = grid(9, 9); stamp(g, 1, 1, MINI[id]); return outline(g); }
+/** Copy rows [r0..r1] of a 9x9 cell to (x0,y0) (transparent skipped), optionally darkened. */
+function blitCell(g, cell, x0, y0, r0, r1, dark) {
+  for (let r = r0; r <= r1; r++) cell[r].forEach((c, i) => { if (c !== '.') put(g, x0 + i, y0 + r - r0, dark ? (DARKER[c] || c) : c); });
+}
+/** Stamp with its own 1px K rim (so an emblem separates from what it overlaps). */
+function stampRimmed(g, x0, y0, rows) {
+  rows.forEach((r, dy) => [...r].forEach((c, dx) => {
+    if (c === ' ') return;
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([ox, oy]) => {
+      const rr = rows[dy + oy], cc = rr ? rr[dx + ox] : undefined;
+      if (cc === undefined || cc === ' ') put(g, x0 + dx + ox, y0 + dy + oy, 'K');
+    });
+  }));
+  stamp(g, x0, y0, rows);
+}
+const REEL_X = [8, 18, 28];
+/**
+ * Build a cabinet: marquee (y8..18) over a body (x4..40, y19..58) holding a 3-reel window (y20..40),
+ * a button deck (y41..45), a belly panel (y46..51), a coin tray (y52..58) and a plinth (y59..62); lever on the right.
+ * t.body = [hi, mid, lo, dk]; t.trim/rim/panel/knob = [hi, mid, lo]; t.reels = [above, middle, below] symbol ids per reel.
+ */
+function cabinet(t) {
+  const g = grid(48, 64);
+  const [bh, bm, bl, bd] = t.body, [th, tm, tl] = t.trim, [rh, rm, rl] = t.rim || t.trim, [ph, pm, pl] = t.panel;
+  // body, lit from the left; the marquee overhang casts a shadow on the top row
+  for (let y = 19; y <= 58; y++) for (let x = 4; x <= 40; x++) {
+    let c = x === 4 ? bh : x >= 39 ? (x === 40 ? bd : bl) : bm;
+    if (t.bodyFx) c = t.bodyFx(x, y, c);
+    if (y === 19 && x > 4) c = bd;
+    put(g, x, y, c);
+  }
+  // marquee: rounded frame with chase bulbs, recessed glowing panel
+  for (let y = 8; y <= 18; y++) for (let x = 2; x <= 42; x++) {
+    if ((x === 2 || x === 42) && (y === 8 || y === 18)) continue;
+    const ring = x === 2 || x === 42 || y === 8 || y === 18;
+    const inset = !ring && (x === 3 || x === 41 || y === 9 || y === 17);
+    let c;
+    if (ring) c = (y === 8 || x === 2) ? rh : (y === 18 || x === 42) ? rl : rm;
+    else if (inset) c = (y === 9 || x === 3) ? 'K' : pl;
+    else c = t.panelFx ? t.panelFx(x, y) : y === 10 ? ph : y === 16 ? pl : pm;
+    put(g, x, y, c);
+  }
+  const [bOn, bOff] = t.bulbs;
+  for (let x = 4, i = 0; x <= 40; x += 3, i++) { put(g, x, 8, i % 2 ? bOff : bOn); put(g, x, 18, i % 2 ? bOn : bOff); }
+  for (const y of [11, 14]) { put(g, 2, y, bOn); put(g, 42, y, bOff); }
+  // reel window: 2px bevelled frame, recessed dark reels, payline arrows
+  for (let y = 20; y <= 40; y++) for (let x = 6; x <= 38; x++) {
+    const outer = x === 6 || x === 38 || y === 20 || y === 40;
+    const inner = !outer && (x === 7 || x === 37 || y === 21 || y === 39);
+    if (outer) put(g, x, y, (y === 20 || x === 6) ? th : tl);
+    else if (inner) put(g, x, y, (y === 21 || x === 7) ? 'K' : tm);
+    else if (x === 17 || x === 27) put(g, x, y, 'K');
+    else put(g, x, y, (y <= 23 || y >= 37) ? 'P' : 'p');
+  }
+  REEL_X.forEach((x0, i) => {
+    const [a, m, b] = t.reels[i];
+    if (a) blitCell(g, miniCell(a), x0, 22, 6, 8, true);
+    if (m) blitCell(g, miniCell(m), x0, 26, 0, 8, false);
+    if (b) blitCell(g, miniCell(b), x0, 36, 0, 2, true);
+    if (t.cellFx) t.cellFx(g, x0, 26, i);
+  });
+  const [ah, am] = t.dead ? ['p', 'p'] : ['M', 'R'];
+  put(g, 6, 29, am); put(g, 6, 30, am); put(g, 6, 31, am); put(g, 7, 30, ah);
+  put(g, 38, 29, am); put(g, 38, 30, am); put(g, 38, 31, am); put(g, 37, 30, t.dead ? 'P' : 'r');
+  // button deck: lit top lip, three buttons (big SPIN in the middle)
+  for (let x = 3; x <= 41; x++) {
+    put(g, x, 41, th);
+    for (let y = 42; y <= 44; y++) put(g, x, y, x === 3 ? th : x >= 40 ? tl : tm);
+    put(g, x, 45, tl);
+  }
+  if (!t.dead) {
+    stamp(g, 9, 42, ['MR', 'Rr']);
+    stamp(g, 18, 42, ['WYYYYYYG', 'YGGGGGGg']);
+    stamp(g, 34, 42, ['AU', 'UN']);
+  } else stamp(g, 18, 42, ['pppppppp', 'PPPPPPPP']);
+  // belly panel
+  for (let y = 46; y <= 51; y++) for (let x = 7; x <= 37; x++) {
+    const edge = x === 7 || x === 37 || y === 46 || y === 51;
+    put(g, x, y, edge ? ((y === 46 || x === 7) ? 'K' : bh) : (y === 47 ? ph : y === 50 ? pl : pm));
+  }
+  if (t.belly) t.belly(g);
+  // coin tray: dark mouth, tray floor, rounded lip
+  for (let x = 10; x <= 34; x++) { put(g, x, 52, 'K'); put(g, x, 53, 'K'); put(g, x, 54, 'P'); put(g, x, 55, tl); }
+  for (let x = 8; x <= 36; x++) { put(g, x, 56, th); put(g, x, 57, x === 8 ? th : tm); put(g, x, 58, tl); }
+  if (!t.dead) { put(g, 8, 56, 'W'); put(g, 9, 56, 'W'); }
+  if (t.tray) t.tray(g);
+  // plinth
+  for (let x = 3; x <= 41; x++) for (let y = 59; y <= 62; y++) put(g, x, y, y === 59 || x === 3 ? bl : bd);
+  // lever: pivot housing on the body side, steel shaft, glossy ball knob
+  for (let y = 33; y <= 38; y++) for (let x = 41; x <= 44; x++) put(g, x, y, y === 33 ? th : y === 38 || x === 44 ? tl : tm);
+  const [sh, sm] = t.shaft || ['L', 'S'];
+  for (let y = 25; y <= 32; y++) { put(g, 43, y, sh); put(g, 44, y, sm); }
+  const [kh, km, kl] = t.knob;
+  for (let y = 20; y <= 25; y++) for (let x = 41; x <= 46; x++)
+    if ((x - 43.5) ** 2 + (y - 22.5) ** 2 <= 7.3) put(g, x, y, x + y <= 64 ? kh : x + y >= 68 ? kl : km);
+  if (!t.dead) put(g, 43, 21, 'W');
+  if (t.deco) t.deco(g);
+  outline(g);
+  if (t.post) t.post(g);
+  return toRows(g);
+}
+/** Hand-plotted pixels (no outline): list of [x, y, colour]. */
+/** Draw into a fresh 48x64 layer, outline it, then lay it over g (keeps a K rim against what it covers). */
+function layer(g, fn) {
+  const h = grid(48, 64); fn(h); outline(h);
+  h.forEach((r, y) => r.forEach((c, x) => { if (c !== '.') put(g, x, y, c); }));
+}
+const plot = (g, pts) => pts.forEach(([x, y, c]) => put(g, x, y, c));
+
+// knight: royal-blue body, steel trim, heraldic crest breaking the marquee top
+S.cabinetKnight = cabinet({
+  body: ['A', 'U', 'N', 'N'], trim: ['L', 'S', 'D'], panel: ['U', 'N', 'N'], bulbs: ['Y', 'g'], knob: ['M', 'R', 'r'],
+  reels: [['bolt', 'sword', 'shield'], ['sword', 'shield', 'bolt'], ['shield', 'bolt', 'sword']],
+  belly(g) {
+    stamp(g, 11, 47, [
+      '   Y                  ',
+      'GBBGWLLLLLLLLLLLLLLLLW',
+      'gbbGSSSSSSSSSSSSSSSSD ',
+      '   g                  ',
+    ]);
+  },
+  deco(g) {
+    stampRimmed(g, 17, 3, [
+      'WLLLLLLLLLS',
+      'LAAAAYUUUUS',
+      'LAAAAYUUUUS',
+      'LAAAAYUUUUS',
+      'LYYYYYGGGGS',
+      'LUUUUYNNNNS',
+      'SUUUUYNNNND',
+      ' SUUUYNNND ',
+      '  SUUYNND  ',
+      '   SUYND   ',
+      '    SGD    ',
+      '     D     ',
+    ]);
+  },
+});
+
+// midas: all gold, red velvet trim, a crown on the marquee, gold-framed bolts, coins spilling in the tray
+S.cabinetMidas = cabinet({
+  body: ['Y', 'G', 'g', 'b'], trim: ['R', 'r', 'd'], rim: ['Y', 'G', 'g'], panel: ['R', 'r', 'd'], bulbs: ['W', 'Y'], knob: ['M', 'R', 'r'],
+  reels: [['bolt', 'bolt', 'bolt'], ['bolt', 'bolt', 'bolt'], ['bolt', 'bolt', 'bolt']],
+  cellFx(g, x0, y0) {
+    for (let y = y0 - 1; y <= y0 + 9; y++) for (let x = x0; x <= x0 + 8; x++) {
+      if (x !== x0 && x !== x0 + 8 && y !== y0 - 1 && y !== y0 + 9) continue;
+      put(g, x, y, (x === x0 || y === y0 - 1) ? 'Y' : 'g');
+    }
+    put(g, x0, y0 - 1, 'W'); put(g, x0 + 8, y0 + 9, 'G');
+  },
+  belly(g) { for (let x = 9; x <= 35; x += 4) { put(g, x, 48, 'Y'); put(g, x + 1, 49, 'G'); } },
+  tray(g) { stamp(g, 12, 53, [' YG  WYG', 'GYYg YYGg']); stamp(g, 25, 53, ['  YG', 'YGYYg']); stamp(g, 31, 54, ['YG']); },
+  deco(g) {
+    stampRimmed(g, 15, 1, [
+      'W     W     W',
+      'YG   YWG   YG',
+      'YGG YGGGg YGg',
+      'YGGYGRRGgYGGg',
+      'YGGGGRrGGGGGg',
+      'YMRYGGGGGAUGg',
+      'ggggggggggggg',
+    ]);
+    stampRimmed(g, 19, 10, [' YYYG ', 'YWYYGg', 'YYgYGg', 'YYgYGg', 'GYYGgg', ' Gggg ']);
+  },
+});
+
+// thorn: dark green wood, brambles wrapping the body, a rose on the marquee, spiked shields
+{
+  const vine = [];
+  // left + right brambles snaking up the sides, one strand across the marquee
+  for (let y = 57; y >= 20; y--) vine.push([5 + Math.round(1.2 * Math.sin(y / 2.6)), y], [39 - Math.round(1.2 * Math.sin(y / 2.6 + 1.5)), y]);
+  for (let x = 3; x <= 41; x++) vine.push([x, 8 + Math.round(1.1 * Math.sin(x / 2.2))]);
+  S.cabinetThorn = cabinet({
+    body: ['Q', 'q', 'q', 'K'], trim: ['w', 'B', 'b'], panel: ['Q', 'q', 'q'], bulbs: ['E', 'Q'], knob: ['M', 'R', 'r'],
+    bodyFx: (x, y, c) => (c === 'q' && (x * 7 + Math.floor(y / 5) * 3) % 11 === 0 ? 'Q' : c),
+    reels: [['spiky', 'spiky', 'spiky'], ['spiky', 'spiky', 'spiky'], ['spiky', 'spiky', 'spiky']],
+    deco(g) {
+      vine.forEach(([x, y], i) => put(g, x, y, i % 5 === 0 ? 'E' : 'e'));
+      vine.forEach(([x, y], i) => { if (i % 7 === 3) put(g, x + (x < 22 ? -1 : 1), y, 'T'); if (i % 9 === 6) put(g, x + (x < 22 ? 1 : -1), y - 1, 'E'); });
+      stampRimmed(g, 17, 7, [
+        '   rRRr   ',
+        '  rRMMRr  ',
+        ' rRMWMRRr ',
+        ' RMRRrRRr ',
+        ' rRRMRrRr ',
+        '  rRRrrr  ',
+        'EQ rrrr eE',
+        'eEeQ  QeEQ',
+        ' QQ Q  QQ ',
+      ]);
+      // bramble strand across the belly panel
+      for (let x = 8; x <= 36; x++) {
+        const y = 48 + Math.round(Math.sin(x / 1.9));
+        put(g, x, y, x % 4 === 0 ? 'E' : 'e');
+        if (x % 5 === 2) put(g, x, y - 1 - (y > 48 ? 0 : 0), 'T');
+      }
+    },
+  });
+}
+
+// tesla: copper body, cyan trim, twin tesla coils sparking yellow, charged bolts
+S.cabinetTesla = cabinet({
+  body: ['a', 'O', 'o', 'r'], trim: ['C', 'c', 'N'], panel: ['c', 'N', 'N'], bulbs: ['Y', 'c'], knob: ['W', 'C', 'c'],
+  reels: [['bolt', 'bolt', 'bolt'], ['bolt', 'bolt', 'bolt'], ['bolt', 'bolt', 'bolt']],
+  cellFx(g, x0, y0) {
+    plot(g, [[x0, y0, 'W'], [x0 + 1, y0, 'C'], [x0, y0 + 1, 'C'], [x0 + 8, y0 + 8, 'W'], [x0 + 7, y0 + 8, 'C'], [x0 + 8, y0 + 7, 'C']]);
+  },
+  belly(g) { for (let x = 9; x <= 35; x += 2) put(g, x, 48, x % 4 === 1 ? 'C' : 'c'); },
+  deco(g) {
+    for (const x0 of [3, 35]) stampRimmed(g, x0, 0, [
+      '  CCc  ',
+      ' CWCCc ',
+      'CCCCccN',
+      ' ccNNN ',
+      ' aOOOo ',
+      ' ooooo ',
+      ' aOOOo ',
+      'LLSSSSD',
+    ]);
+    blitCell(g, miniCell('bolt'), 18, 9, 0, 8, false);
+  },
+  post(g) {
+    // arc jumping between the coil spheres
+    plot(g, [[11, 2, 'Y'], [12, 1, 'W'], [13, 2, 'Y'], [14, 3, 'Y'], [15, 2, 'W'], [16, 1, 'Y'], [17, 1, 'Y'], [18, 2, 'W'],
+      [19, 3, 'Y'], [20, 2, 'Y'], [21, 1, 'W'], [22, 1, 'Y'], [23, 2, 'Y'], [24, 3, 'W'], [25, 2, 'Y'], [26, 1, 'Y'], [27, 2, 'W'],
+      [28, 3, 'Y'], [29, 2, 'Y'], [30, 1, 'W'], [31, 2, 'Y'], [32, 2, 'Y'], [33, 1, 'W'],
+      [1, 5, 'Y'], [0, 6, 'W'], [44, 5, 'Y'], [45, 4, 'W'], [46, 6, 'Y']]);
+  },
+});
+
+// joker: purple harlequin body, gold trim, jester hat with bells, rainbow wild stars
+S.cabinetJoker = cabinet({
+  body: ['J', 'V', 'v', 'K'], trim: ['Y', 'G', 'g'], panel: ['M', 'm', 'v'], bulbs: ['Y', 'M'], knob: ['Y', 'G', 'g'],
+  bodyFx: (x, y, c) => {
+    if (c !== 'V') return c;
+    const u = Math.floor((x + y) / 4), v = Math.floor((x - y + 64) / 4);
+    return (u + v) % 2 ? 'v' : 'V';
+  },
+  reels: [['wild', 'wild', 'wild'], ['wild', 'wild', 'wild'], ['wild', 'wild', 'wild']],
+  belly(g) { for (let x = 9; x <= 35; x += 3) { put(g, x, 48, 'Y'); put(g, x + 1, 49, 'M'); } },
+  panelFx: (x, y) => {
+    const k = (((x - 1) % 6) + 6) % 6, inD = Math.abs(k - 2.5) / 3 + Math.abs(y - 13) / 3.6 <= 1;
+    return inD ? (y <= 12 ? 'M' : 'm') : (y <= 12 ? 'V' : 'v');
+  },
+  belly(g) {
+    for (let y = 47; y <= 50; y++) for (let x = 8; x <= 36; x++) {
+      const k = (((x - 8) % 4) + 4) % 4, inD = Math.abs(k - 1.5) / 2 + Math.abs(y - 48.5) / 2 <= 1;
+      put(g, x, y, inD ? (y <= 48 ? 'M' : 'm') : (y <= 48 ? 'V' : 'v'));
+    }
+  },
+  deco(g) {
+    // jester hat: three floppy horns (purple / pink / purple) on a gold band, a bell on each tip
+    layer(g, (h) => {
+      const horn = (p0, p1, p2, w0, cols) => {
+        for (let i = 0; i <= 40; i++) {
+          const t = i / 40, u = 1 - t;
+          const x = u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0], y = u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1];
+          const r = w0 * (1 - t) + 0.6 * t;
+          for (let yy = Math.floor(y - r); yy <= Math.ceil(y + r); yy++) for (let xx = Math.floor(x - r); xx <= Math.ceil(x + r); xx++)
+            if ((xx - x) ** 2 + (yy - y) ** 2 <= r * r) put(h, xx, yy, cols[0]);
+        }
+      };
+      horn([17, 7], [7, -4], [3, 5], 3.3, 'V');
+      horn([27, 7], [37, -4], [41, 5], 3.3, 'V');
+      horn([22, 7], [20, -3], [27, 1], 3.3, 'M');
+      // shade each horn: lit top-left edge, dark bottom-right edge
+      const src = h.map((r) => r.slice());
+      for (let y = 0; y < 10; y++) for (let x = 0; x < 48; x++) {
+        const c = src[y][x]; if (c === '.') continue;
+        const e = (dx, dy) => (src[y + dy] || [])[x + dx] !== c;
+        const [hi, lo] = c === 'V' ? ['J', 'v'] : ['W', 'm'];
+        if (e(1, 0) || e(0, 1)) h[y][x] = lo; else if (e(-1, 0) || e(0, -1)) h[y][x] = c === 'M' ? 'M' : hi;
+      }
+      stamp(h, 12, 7, ['GYYYWYYYYYYYYWYYYYGg', 'gGGGGGGGGGGGGGGGGGgg']);
+      stamp(h, 16, 7, ['M']); stamp(h, 22, 7, ['R']); stamp(h, 28, 7, ['M']);
+      for (const [x, y] of [[3, 6], [41, 6], [28, 1]]) stamp(h, x - 1, y - 1, [' Y ', 'YWG', 'GGg']);
+    });
+  },
+});
+
+// locked: dark silhouette, dead bulbs, padlock on the marquee, question marks on the reels
+S.cabinetLocked = cabinet({
+  body: ['p', 'P', 'P', 'K'], trim: ['p', 'P', 'K'], panel: ['P', 'P', 'K'], bulbs: ['p', 'P'], knob: ['p', 'P', 'K'], shaft: ['p', 'P'],
+  dead: true,
+  reels: [[null, 'what', null], [null, 'what', null], [null, 'what', null]],
+  deco(g) {
+    stampRimmed(g, 17, 4, [
+      '   SSSD   ',
+      '  S   D   ',
+      '  S   D   ',
+      ' YYYYYYYo ',
+      ' YOOOOOOo ',
+      ' OOOKKOOo ',
+      ' OOOKKOoo ',
+      ' OOOOKOoo ',
+      ' ooooooo  ',
+    ]);
+  },
+});
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -1687,6 +2150,9 @@ const DIMS = {
   relicMidas: 16, relicRod: 16, relicCactus: 16, relicPrism: 16, relicHone: 16,
   stampX2: { w: 12, h: 8 }, tickGold: 5, tickKeen: 5, tickCharged: 5, tickSpiked: 5,
   potSkim: 12, chip: 12, cashierPortrait: 24, shopSlot: 24,
+  chipShield: 12, tagBuild: { w: 20, h: 7 }, shopHeal: 16, setStar: 16,
+  cabinetKnight: { w: 48, h: 64 }, cabinetMidas: { w: 48, h: 64 }, cabinetThorn: { w: 48, h: 64 },
+  cabinetTesla: { w: 48, h: 64 }, cabinetJoker: { w: 48, h: 64 }, cabinetLocked: { w: 48, h: 64 },
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -1757,7 +2223,12 @@ export type SpriteId =
   | 'stampX2'                                      // gilded-score pop stamp, 12x8 (non-square)
   | 'tickGold' | 'tickKeen' | 'tickCharged' | 'tickSpiked' // strip-map enhancement ticks, 5x5
   | 'potSkim' | 'chip'                             // pot skim hand / chip currency, 12x12
-  | 'cashierPortrait' | 'shopSlot';                // cashier NPC / shop display cushion, 24x24
+  | 'cashierPortrait' | 'shopSlot'                 // cashier NPC / shop display cushion, 24x24
+  | 'chipShield'                                   // saved chips -> shield vs the House, 12x12
+  | 'tagBuild'                                     // green "FITS" build tag, 20x7 (non-square)
+  | 'shopHeal' | 'setStar'                         // cashier first-aid tin / full-set bonus star, 16x16
+  | 'cabinetKnight' | 'cabinetMidas' | 'cabinetThorn' // run-select slot cabinets, 48x64 (non-square)
+  | 'cabinetTesla' | 'cabinetJoker' | 'cabinetLocked';
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

@@ -99,3 +99,17 @@ Implemented:
 - Balance after the shop (first pass had greedy 73%): depth HP [19,24,28,31,34], boss 66 base HP, 2 chips/win, gild 10 / relic 12.
 - Art: 16 sprites (5 build relics, X2 stamp, 4 ticks, chip, cashier portrait, shop cushion, skim hand) + keen/charged overlays redrawn; art build supports non-square sprites.
 Sim (3000 runs, before final shop tuning pass sweeps at 1500): greedy ~45%, random ~23%; deaths ~1/9/10/11/11/13%.
+
+### Iteration 5 — 2026-09-23 (playtest/ITERATION_4.md → Package K + CABINETS + FULL SET)
+Playtest verdict on I4: forks balanced (elite-safe = 0.0 pts), LETHAL precedes 100% of pot deaths, but the Cashier was a piggy bank (hoarding for the boss chip-shield beat spending; shop 1 unaffordable 100%), commitment didn't beat spreading, 12 UI/text bugs.
+Implemented:
+- Package K: chip shield 1 per 8 (was 5), runs start with 4 chips, boss 74 HP (HP ramp [21,26,31,34,37] after cabinet tuning).
+- Build-aware offers: build relics only offered once you own their enabler (drafts, shop, spoils); 'FITS' tag on matching cards/items; no Bandage at the last shop; WILD offers never eat gilded shields.
+- HEAL is a permanent 5-chip Cashier service slot (hidden at full HP); first reroll per visit costs 1; stat lines on shop items; shop shows HP + live '+N SHIELD EACH HOUSE TURN'; unaffordable items shake.
+- Rod buffed (cost 4 AND 12 dmg). Frost HP x1.0 from fight 3; elite thief only x1.15.
+- Chip legibility: chip counter top-left (+ cabinet name, + SH/TURN in the boss fight); 'CHIPS +N SHIELD' callout each House turn; LETHAL counts the chip shield; boss preview shows real HP (+3/relic) and your chip shield; skim wording.
+- Text fixes: elite fork 'PICK 1 OF 2 RELICS, +2 CHIPS'; Cactus-aware SPIKED text; recap lists spoils/buys/chips without overprint; no 'GILDED'/'WILD' enemy adjectives; draft header overlap.
+- NEW FEATURE — CABINETS: pick your starting machine (KNIGHT 32HP; MIDAS gold swords r1, +1 chip/win, 22HP; THORN spiked shields r1, 28HP; TESLA charged bolts r1, special cost 4 dmg 7, 26HP; JOKER 2 wilds r2 + any-two pairs with a wild on the line, 26HP). Each biases gild offers to its enhancement. Unlocks persist (meta progression): reach the House / beat an elite / win a run / win with wilds. Tuning panel has 'Unlock all cabinets (dev)'.
+- NEW — FULL SET: the same gild on all 3 reels boosts it (GOLD x3, KEEN +2, CHARGED +2, SPIKED +2) with a FULL SET! banner.
+- Art: 5 cabinet portraits + locked cabinet, chip shield, FITS tag, shop heal tin, set star.
+Sim (2000 runs, greedy/random): knight 46.6/31.9, midas 47.9/27.3, thorn 45.0/37.0, tesla 47.5/29.9, joker 42.6/28.9 — all cabinets within ±4 of knight; boss win 75%.

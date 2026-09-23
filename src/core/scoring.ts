@@ -12,6 +12,8 @@ export interface ScoreGroup {
   /** Amount before gilds/relics touched it, and the notes that explain the difference. */
   base?: number;
   notes?: string[];
+  /** A FULL SET gild (same enhancement on all 3 reels) boosted this group. */
+  fullSet?: boolean;
 }
 
 export interface LineScore {

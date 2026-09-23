@@ -1,4 +1,5 @@
-import { cloneConfig, type AbilityDef, type GameConfig, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
+import { cloneConfig, type AbilityDef, type Enh, type GameConfig, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
+import { CABINETS, type Cabinet } from './cabinets';
 import type { CombatEvent } from './events';
 import {
   BATTERY_ENERGY,
@@ -12,6 +13,7 @@ import {
   MOUSETRAP_DAMAGE,
   POT,
   ROD_SPECIAL_COST,
+  ROD_SPECIAL_DAMAGE,
   SPIKED_DAMAGE,
 } from './relics';
 import { Rng } from './rng';
@@ -103,6 +105,10 @@ export class Fight {
   /** Run economy inputs: player jackpots landed and the overkill of the killing blow. */
   playerJackpots = 0;
   overkill = 0;
+  /** The run's starting machine rules. */
+  readonly cabinet: Cabinet | null;
+  /** Enhancements present on all 3 of the player's reels: their effect is boosted. */
+  readonly fullSet: ReadonlySet<Enh>;
   private forced: Partial<Record<SideId, SymbolId[]>> = {};
 
   constructor(cfg: GameConfig, seed: number = cfg.seed ?? Rng.randomSeed()) {
@@ -114,8 +120,21 @@ export class Fight {
     };
     const p = this.sides.player;
     if (p.relics.has('battery')) p.energy = Math.min(this.cfg.specialCost - 1, p.energy + BATTERY_ENERGY);
-    // Lightning Rod: a charged-bolt build makes the special cheaper.
-    if (p.relics.has('rod') && p.reels.some((r) => r.cells.some((c) => c.enh === 'charged'))) this.cfg.specialCost = ROD_SPECIAL_COST;
+    this.cabinet = this.cfg.cabinet ? CABINETS[this.cfg.cabinet] : null;
+    if (this.cabinet?.specialCost) this.cfg.specialCost = this.cabinet.specialCost;
+    if (this.cabinet?.specialDamage) this.cfg.specialDamage = this.cabinet.specialDamage;
+    // Lightning Rod: a charged-bolt build makes the special cheaper and harder-hitting.
+    if (p.relics.has('rod') && p.reels.some((r) => r.cells.some((c) => c.enh === 'charged'))) {
+      this.cfg.specialCost = ROD_SPECIAL_COST;
+      this.cfg.specialDamage = Math.max(this.cfg.specialDamage, ROD_SPECIAL_DAMAGE);
+    }
+    // Thorn: enemy specials hit one weaker (the House's skim is untouched).
+    const minus = this.cabinet?.enemyAbilityMinus ?? 0;
+    const e = this.sides.enemy;
+    if (minus && e.ability && e.ability.kind !== 'jackpot') e.ability = { ...e.ability, power: Math.max(1, e.ability.power - minus) };
+    // FULL SET: an enhancement present on every reel.
+    const perReel = p.reels.map((r) => new Set(r.cells.map((c) => c.enh).filter((x): x is Enh => !!x)));
+    this.fullSet = new Set([...perReel[0]].filter((enh) => perReel.every((s) => s.has(enh))));
     if (this.isBoss) this.pot = POT.seed;
   }
 
@@ -174,7 +193,8 @@ export class Fight {
     const score = this.score(me, line);
     // Dead symbols lining up isn't a tease — except slime, which can cleanse.
     const nearMiss = isNearMiss(line) && (me.casts.has(line[0]) || line[0] === 'slime' || !DEAD.has(line[0]));
-    events.push({ type: 'spin', side, stops, score, nearMiss, frozen, locked, lucky });
+    const fullSet = score.groups.some((g) => g.fullSet);
+    events.push({ type: 'spin', side, stops, score, nearMiss, frozen, locked, lucky, ...(fullSet ? { fullSet } : {}) });
 
     if (side === 'player' && score.tier === 'triple') this.playerJackpots++;
     for (const group of score.groups) {
@@ -207,27 +227,34 @@ export class Fight {
   }
 
   private score(me: Combatant, line: SymbolId[]): LineScore {
-    const pairRule = me.relics.has('mirror') ? 'anyTwo' : this.cfg.pairRule;
+    const joker = me.side === 'player' && this.cabinet?.jokerWilds && line.includes('wild');
+    const pairRule = me.relics.has('mirror') || joker ? 'anyTwo' : this.cfg.pairRule;
     const s = scoreLine(line, { ...this.cfg, pairRule });
     for (const g of s.groups) {
       g.base = g.amount;
       const notes: string[] = [];
+      const set = me.side === 'player' ? this.fullSet : new Set<Enh>();
       for (const r of g.reels) {
         const enh = this.paylineEnh(me, r);
         if (enh === 'keen' && g.symbol === 'sword') {
-          const bonus = KEEN_BONUS + (me.relics.has('hone') ? HONE_BONUS : 0);
+          const bonus = (set.has('keen') ? 2 : KEEN_BONUS) + (me.relics.has('hone') ? HONE_BONUS : 0);
           g.amount += bonus;
           notes.push(`+${bonus}`);
+          if (set.has('keen')) g.fullSet = true;
         }
         if (enh === 'charged' && g.symbol === 'bolt') {
-          g.amount += 1;
-          notes.push('+1');
+          const bonus = set.has('charged') ? 2 : 1;
+          g.amount += bonus;
+          notes.push(`+${bonus}`);
+          if (set.has('charged')) g.fullSet = true;
         }
       }
       for (const r of g.reels) {
         if (this.paylineEnh(me, r) !== 'gold') continue;
-        g.amount *= 2;
-        notes.push('X2');
+        const mult = set.has('gold') ? 3 : 2;
+        g.amount *= mult;
+        notes.push(`X${mult}`);
+        if (set.has('gold')) g.fullSet = true;
       }
       // Prism: a match that used a WILD pays double.
       if (me.relics.has('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) {
@@ -324,7 +351,7 @@ export class Fight {
     this.checkDeath(foe, events);
     // SPIKED: a spiked shield on the victim's payline hits back (once per hit).
     if (!this.over && amount > 0 && foe.reels.some((_, r) => this.paylineEnh(foe, r) === 'spiked')) {
-      const dmg = foe.relics.has('cactus') ? CACTUS_DAMAGE : SPIKED_DAMAGE;
+      const dmg = (foe.relics.has('cactus') ? CACTUS_DAMAGE : SPIKED_DAMAGE) + (foe.side === 'player' && this.fullSet.has('spiked') ? 2 : 0);
       const back = this.damage(me, dmg, false);
       events.push({ type: 'attack', from: foe.side, to: me.side, reels: [], amount: dmg, ...back, note: 'spiked' });
       this.checkDeath(me, events);

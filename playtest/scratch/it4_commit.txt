@@ -1,0 +1,14 @@
+current                greedy/smart           win 43.8%  boss 79%  gilds 2.07  maxSameEnh@boss 2.14  3-of-a-kind 34%  buildRelics/run 0.40
+current                commit/commitSmart     win 42.9%  boss 77%  gilds 2.48  maxSameEnh@boss 2.69  3-of-a-kind 69%  buildRelics/run 0.42
+current                spread/spreadSmart     win 43.3%  boss 79%  gilds 1.77  maxSameEnh@boss 1.00  3-of-a-kind 0%  buildRelics/run 0.50
+current                commit/smart           win 43.4%  boss 78%  gilds 2.51  maxSameEnh@boss 2.54  3-of-a-kind 55%  buildRelics/run 0.47
+current                spread/smart           win 41.7%  boss 77%  gilds 1.92  maxSameEnh@boss 1.37  3-of-a-kind 0%  buildRelics/run 0.49
+current                gildFirst/smart        win 42.5%  boss 76%  gilds 2.71  maxSameEnh@boss 2.51  3-of-a-kind 51%  buildRelics/run 0.47
+current                neverGild/smart        win 43.7%  boss 83%  gilds 0.48  maxSameEnh@boss 0.66  3-of-a-kind 0%  buildRelics/run 0.30
+E stackPer 8, start 4  greedy/smart           win 48.6%  boss 77%  gilds 2.22  maxSameEnh@boss 2.17  3-of-a-kind 36%  buildRelics/run 0.56
+E stackPer 8, start 4  commit/commitSmart     win 46.7%  boss 75%  gilds 2.63  maxSameEnh@boss 2.71  3-of-a-kind 70%  buildRelics/run 0.56
+E stackPer 8, start 4  spread/spreadSmart     win 43.8%  boss 76%  gilds 1.86  maxSameEnh@boss 1.00  3-of-a-kind 0%  buildRelics/run 0.65
+E stackPer 8, start 4  commit/smart           win 46.4%  boss 75%  gilds 2.63  maxSameEnh@boss 2.56  3-of-a-kind 57%  buildRelics/run 0.60
+E stackPer 8, start 4  spread/smart           win 45.0%  boss 75%  gilds 1.96  maxSameEnh@boss 1.37  3-of-a-kind 1%  buildRelics/run 0.64
+E stackPer 8, start 4  gildFirst/smart        win 45.5%  boss 74%  gilds 2.83  maxSameEnh@boss 2.52  3-of-a-kind 52%  buildRelics/run 0.62
+E stackPer 8, start 4  neverGild/smart        win 47.8%  boss 79%  gilds 0.59  maxSameEnh@boss 0.69  3-of-a-kind 0%  buildRelics/run 0.44

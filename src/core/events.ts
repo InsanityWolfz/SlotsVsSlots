@@ -21,6 +21,8 @@ export type CombatEvent =
       locked: boolean[];
       /** A relic turned a near-miss into a jackpot. */
       lucky: RelicId | null;
+      /** A FULL SET bonus paid on this spin. */
+      fullSet?: boolean;
     }
   | {
       type: 'attack';

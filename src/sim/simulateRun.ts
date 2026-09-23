@@ -1,4 +1,5 @@
 import type { GameConfig, RelicId } from '../core/config';
+import type { CabinetId } from '../core/cabinets';
 import { RUN_FIGHTS } from '../core/enemies';
 import { Fight } from '../core/fight';
 import { Rng } from '../core/rng';
@@ -123,7 +124,7 @@ export interface RunSummary {
   avgRocksAtEnd: number;
 }
 
-export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy, seed = Rng.randomSeed()): RunSummary {
+export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight'): RunSummary {
   const seeds = new Rng(seed);
   const pick = new Rng(seed ^ 0x5eed);
   let wins = 0;
@@ -139,7 +140,7 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
   const relicRuns: Record<string, [number, number]> = {};
 
   for (let i = 0; i < runs; i++) {
-    const run = createRun(base, seeds.int(0xffffffff));
+    const run = createRun(base, seeds.int(0xffffffff), cabinet);
     while (!run.over) {
       if (needsChoice(run)) chooseEnemy(run, pickEnemy(run, policy, pick));
       if (run.depth === RUN_FIGHTS) {

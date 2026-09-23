@@ -41,6 +41,7 @@ const BANNER_Y = 172;
 export class Director {
   private lastScore: LineScore | null = null;
   private lastSpin: Partial<Record<SideId, { frozen: boolean[]; locked: boolean[] }>> = {};
+  private fullSetShown = false;
 
   constructor(private s: Stage) {}
 
@@ -321,6 +322,20 @@ export class Director {
     );
     if (e.lucky) await this.luckyPop(e.side);
     this.stampGilds(e.side, e.score);
+    if (e.fullSet && !this.fullSetShown) {
+      this.fullSetShown = true;
+      const c = this.machineCenter(e.side);
+      this.s.sounds.lucky();
+      const star = this.s.fx.add(new Projectile('setStar', c.x, c.y - 170, 0));
+      this.bg(
+        this.c
+          .tween({ from: 0, to: 4, dur: 0.25, ease: backOut(3), onUpdate: (v) => (star.scale = v) })
+          .then(() => this.c.wait(0.7))
+          .then(() => this.c.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (star.alpha = v) }))
+          .then(() => this.s.fx.remove(star)),
+      );
+      await this.banner('FULL SET!', '#ffd23f', 1.3, 0.35, 'SAME GILD ON ALL 3 REELS', BANNER_Y, 4);
+    }
     if (near && e.score.tier !== 'triple') this.missedTriple(e.side, e.score.line[0]);
     await this.winPresentation(e.side, e.score);
   }
@@ -497,6 +512,20 @@ export class Director {
   }
 
   private async shieldGain(e: Ev<'shieldGain'>): Promise<void> {
+    if (e.side === 'player' && !e.reels.length) {
+      // Saved chips paying out as shield vs the House.
+      const h = this.s.huds.player;
+      const sb = h.shieldBar();
+      const chip = this.s.fx.add(new Projectile('chipShield', sb.x + 20, sb.y - 30, 0));
+      this.s.sounds.coin(5);
+      this.s.sounds.shieldGain(e.amount);
+      await this.c.tween({ from: 0, to: 3, dur: 0.2, ease: backOut(3), onUpdate: (v) => (chip.scale = v) });
+      this.bg(this.popText(`CHIPS +${e.amount} SHIELD`, sb.x + sb.w / 2 + 20, sb.y - 30, 2, '#9fd0ff', 12, 0.4));
+      this.decay(h, 'shieldFlash', 1, 0.3);
+      await this.c.to(h, 'shield', e.total, 0.25, sineOut);
+      this.bg(this.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (chip.alpha = v) }).then(() => this.s.fx.remove(chip)));
+      return;
+    }
     await this.activate(e.side, e.reels, COLORS.shield);
     const h = this.s.huds[e.side];
     const sb = h.shieldBar();

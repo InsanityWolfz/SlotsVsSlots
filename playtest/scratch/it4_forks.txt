@@ -1,0 +1,13 @@
+forks n=501 (R=300): elite - safe avg 0.0 pts; elite better 48%; |diff|<2pts 11%; avg |diff| 11.5
+  HP [0,0.5) n=49 elite-safe -3.1
+  HP [0.5,0.7) n=98 elite-safe -3.1
+  HP [0.7,0.9) n=156 elite-safe 0.1
+  HP [0.9,1.01) n=198 elite-safe 2.3
+  fork F2 n=188 elite-safe -0.8, better 45%
+  fork F3 n=167 elite-safe 2.5, better 57%
+  fork F4 n=146 elite-safe -1.8, better 43%
+  by elite archetype: brute* -3.9 (n=206), gremlin* 7.0 (n=70), thief* 0.3 (n=150), frost* -0.1 (n=44), slime* 9.0 (n=31)
+spoils n=55: avg spread 9.7 pts; trivial(<2) 24%
+  spoils relic best%: fang 88%(8) mirror 75%(8) crown 75%(8) clover 71%(7) midas 67%(18) rod 67%(12) bandage 44%(9) battery 40%(10) prism 11%(9) hone 10%(10) cactus 9%(11)
+
+[exited with code 0]

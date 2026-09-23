@@ -26,6 +26,7 @@ import {
   type ShopItem,
 } from './core/run';
 import type { RelicId } from './core/config';
+import { CABINETS, CABINET_ORDER, type CabinetId } from './core/cabinets';
 import { StatsTracker } from './core/stats';
 import { Camera } from './present/camera';
 import { Clock } from './present/clock';
@@ -53,6 +54,10 @@ interface Prefs {
   auto: boolean;
   juice: JuiceToggles;
   muted: boolean;
+  /** Meta progression: cabinets unlocked across runs. */
+  unlocked: CabinetId[];
+  /** Dev: every cabinet available regardless of unlocks. */
+  unlockAll: boolean;
 }
 
 function load<T>(key: string): T | null {
@@ -126,16 +131,24 @@ export class Game {
   constructor() {
     this.cfg = mergeConfig(load(CFG_KEY));
     const p = load<Partial<Prefs>>(PREFS_KEY) ?? {};
-    this.prefs = { speed: p.speed ?? 1, auto: p.auto ?? true, juice: { ...defaultJuice(), ...(p.juice ?? {}) }, muted: p.muted ?? false };
+    this.prefs = {
+      speed: p.speed ?? 1,
+      auto: p.auto ?? true,
+      juice: { ...defaultJuice(), ...(p.juice ?? {}) },
+      muted: p.muted ?? false,
+      unlocked: p.unlocked ?? ['knight'],
+      unlockAll: p.unlockAll ?? false,
+    };
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
     this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {
       onPick: (o) => this.pickReward(o),
       onSpoils: (r) => this.pickSpoils(r),
       onFight: (i) => this.beginRunFight(i),
-      onNewRun: () => this.startRun(),
+      onNewRun: () => this.chooseCabinet(),
       onBuy: (i) => this.buyItem(i),
       onReroll: () => this.rerollShop(),
       onLeave: () => this.leaveCashier(),
+      onCabinet: (id) => this.startRun(undefined, id),
     });
     this.buildButtons();
     this.applyJuice();
@@ -161,7 +174,7 @@ export class Game {
     });
     this.autoBtn = this.btn('AUTO', px - 116, by, 84, 44, () => this.setAuto(!this.prefs.auto));
     [1, 2, 4].forEach((s, i) => this.speedBtns.push(this.btn(`${s}X`, px + 90 + i * 48, by, 42, 44, () => this.setSpeed(s))));
-    this.startBtn = this.btn('START RUN', W / 2 + 10, by, 196, 56, () => this.startRun(), { idlePulse: true, textScale: 3 });
+    this.startBtn = this.btn('START RUN', W / 2 + 10, by, 196, 56, () => this.chooseCabinet(), { idlePulse: true, textScale: 3 });
     const ex = MACHINE_CX.enemy;
     const tune = this.btn('TUNE', ex - 110, by, 90, 44, () => {});
     const log = this.btn('LOG', ex, by, 90, 44, () => {});
@@ -169,7 +182,7 @@ export class Game {
     this.toolButtons = { tune, log };
     this.recapBtns = [
       this.btn('REMATCH', W / 2 - 230, 0, 190, 50, () => this.newFight(true, this.lastSeed)),
-      this.btn('NEW RUN', W / 2, 0, 190, 50, () => this.startRun()),
+      this.btn('NEW RUN', W / 2, 0, 190, 50, () => this.chooseCabinet()),
       this.btn('COPY LOG', W / 2 + 230, 0, 190, 50, () => void this.copyLog()),
     ];
     this.syncButtons();
@@ -206,8 +219,44 @@ export class Game {
 
   // ---- run flow ----------------------------------------------------------------------
 
-  startRun(seed?: number): void {
-    this.run = createRun(this.cfg, seed);
+  unlockedCabinets(): Set<CabinetId> {
+    return new Set(this.prefs.unlockAll ? CABINET_ORDER : this.prefs.unlocked);
+  }
+
+  /** START RUN: pick a starting machine first. */
+  chooseCabinet(): void {
+    this.token++;
+    this.synth.stopLoops();
+    this.recap.hide();
+    this.phase = 'between';
+    this.screens.showCabinets(this.unlockedCabinets());
+    this.syncButtons();
+  }
+
+  /** Meta progression: check the finished run against each cabinet's unlock condition. */
+  private checkUnlocks(run: RunState): CabinetId[] {
+    const got: CabinetId[] = [];
+    const reachedBoss = run.records.length >= RUN_FIGHTS + 1 || run.won;
+    const beatElite = run.records.some((r) => r.won && run.enemies[r.depth]?.elite);
+    const cond: Record<CabinetId, boolean> = {
+      knight: true,
+      midas: reachedBoss,
+      thorn: beatElite,
+      tesla: run.won,
+      joker: run.won && run.player.strips.some((s) => (s.wild ?? 0) > 0),
+    };
+    for (const id of CABINET_ORDER) {
+      if (cond[id] && !this.prefs.unlocked.includes(id)) {
+        this.prefs.unlocked.push(id);
+        got.push(id);
+      }
+    }
+    if (got.length) this.savePrefs();
+    return got;
+  }
+
+  startRun(seed?: number, cabinet: CabinetId = 'knight'): void {
+    this.run = createRun(this.cfg, seed, cabinet);
     this.token++;
     this.synth.stopLoops();
     this.recap.hide();
@@ -238,7 +287,10 @@ export class Game {
     const record = finishFight(run, this.fight);
     this.lastRecord = record;
     this.phase = run.over ? 'over' : 'between';
-    if (run.over) this.screens.showOver(run);
+    if (run.over) {
+      this.screens.setUnlockedNow(this.checkUnlocks(run));
+      this.screens.showOver(run);
+    }
     else if (run.pendingSpoils) this.screens.showSpoils(run, run.pendingSpoils, record);
     else this.screens.showDraft(run, draftOffers(run), record);
     this.syncButtons();
@@ -257,7 +309,10 @@ export class Game {
       this.sounds.coin(4);
       this.sounds.coin(9);
       this.screens.bought();
-    } else this.sounds.fizzle();
+    } else {
+      this.sounds.fizzle();
+      this.screens.deny(i);
+    }
   }
 
   private rerollShop(): void {
@@ -500,7 +555,7 @@ export class Game {
     this.startAudio();
     switch (k) {
       case ' ':
-        if (this.phase === 'title') this.startRun();
+        if (this.phase === 'title') this.chooseCabinet();
         else if (this.awaitingSpin) this.requestSpin();
         else this.skip();
         return true;
@@ -517,7 +572,7 @@ export class Game {
         this.setAuto(!this.prefs.auto);
         return true;
       case 'r':
-        this.startRun();
+        this.chooseCabinet();
         return true;
       case 'm':
         this.setMuted(!this.prefs.muted);
@@ -585,9 +640,13 @@ export class Game {
 
   private drawRelics(ctx: CanvasRenderingContext2D): void {
     if (this.run && this.phase !== 'title') {
-      drawSprite(ctx, 'chip', RELIC_X + 18, 252, 2);
-      drawText(ctx, `${this.run.player.chips}`, RELIC_X + 36, 252, 2, COLORS.energy, { align: 'left' });
-      if (this.fight.isBoss) drawText(ctx, `+${Math.floor(this.run.player.chips / CHIPS.stackPer)} SH/TURN`, RELIC_X + 70, 252, 1, '#9fd0ff', { align: 'left' });
+      drawSprite(ctx, 'chip', 30, 30, 2);
+      drawText(ctx, `${this.run.player.chips}`, 48, 30, 3, COLORS.energy, { align: 'left' });
+      drawText(ctx, CABINETS[this.run.cabinet].name, 30, 58, 1, COLORS.textDim, { align: 'left' });
+      if (this.fight.isBoss) {
+        drawSprite(ctx, 'chipShield', 120, 30, 2);
+        drawText(ctx, `+${Math.floor(this.run.player.chips / CHIPS.stackPer)} SH/TURN`, 138, 30, 2, '#9fd0ff', { align: 'left' });
+      }
     }
     const relics = this.relicList();
     if (!relics.length) return;
@@ -671,7 +730,8 @@ export class Game {
     const pot = Math.round(g.pot);
     const hud = this.stage.huds.player;
     const cashOut = Math.ceil(pot / 2);
-    const lethal = pot > 0 && cashOut >= hud.hp + hud.shield;
+    const stack = this.fight.cfg.player.stackShield ?? 0;
+    const lethal = pot > 0 && cashOut >= hud.hp + hud.shield + stack;
     this.stage.huds.enemy.alarm = lethal;
     const tier = lethal ? 4 : pot >= 12 ? 3 : pot >= 6 ? 2 : 1;
     const glow = tier >= 3 ? 0.5 + 0.3 * Math.sin(t * (lethal ? 14 : 8)) : tier === 2 ? 0.25 + 0.1 * Math.sin(t * 4) : 0;
@@ -718,6 +778,7 @@ export class Game {
 
   private drawHint(ctx: CanvasRenderingContext2D, t: number): void {
     drawText(ctx, 'PRESS START RUN', W / 2, MACHINE_TOP + MACHINE_H / 2 - 20, 2, COLORS.text, { alpha: 0.5 + 0.5 * Math.sin(t * 4) });
+    drawText(ctx, `${this.unlockedCabinets().size}/${CABINET_ORDER.length} CABINETS`, W / 2, MACHINE_TOP + MACHINE_H / 2 + 100, 2, COLORS.goldLight);
     drawText(ctx, '5 FIGHTS + A BOSS', W / 2, MACHINE_TOP + MACHINE_H / 2 + 30, 2, COLORS.textDim);
     drawText(ctx, 'PICK A REWARD', W / 2, MACHINE_TOP + MACHINE_H / 2 + 56, 2, COLORS.textDim);
     drawText(ctx, 'AFTER EACH WIN', W / 2, MACHINE_TOP + MACHINE_H / 2 + 76, 2, COLORS.textDim);

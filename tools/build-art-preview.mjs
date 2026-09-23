@@ -47,7 +47,7 @@ const SPRITES = ${JSON.stringify(art.SPRITES)};
 const FONT_W = ${font.FONT_W}, FONT_H = ${font.FONT_H};
 const GLYPHS = ${JSON.stringify(font.GLYPHS)};
 
-const W = 1400, H = 3700;
+const W = 1400, H = 5400;
 const cv = document.getElementById('c'); cv.width = W; cv.height = H;
 const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
 const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#29123d'); bg.addColorStop(1, '#0d0519');
@@ -244,6 +244,33 @@ ry += 150;
 label('new sprites at 1x and 2x', 20, ry - 10);
 ['relicMidas', 'relicRod', 'relicCactus', 'relicPrism', 'relicHone', 'stampX2', 'tickGold', 'tickKeen', 'tickCharged', 'tickSpiked', 'potSkim', 'chip', 'cashierPortrait', 'shopSlot', 'enhKeen', 'enhCharged']
   .forEach((id, i) => { spr(id, 20 + i * 70, ry, 1); spr(id, 20 + i * 70 + 26, ry, 2); });
+ry += 80;
+// run-select: the cabinets in a row at 3x on the dark UI panel
+label('CABINETS: run-select row (3x) on #1a1426', 20, ry - 10);
+const cabs = ['cabinetKnight', 'cabinetMidas', 'cabinetThorn', 'cabinetTesla', 'cabinetJoker', 'cabinetLocked'];
+ctx.fillStyle = UI_COLORS.gold; ctx.fillRect(12, ry - 8, 6 * 164 + 24, 64 * 3 + 64);
+ctx.fillStyle = UI_COLORS.panel; ctx.fillRect(16, ry - 4, 6 * 164 + 16, 64 * 3 + 56);
+cabs.forEach((id, i) => {
+  const cx = 28 + i * 164;
+  if (i === 0) { ctx.fillStyle = UI_COLORS.panelLight; ctx.fillRect(cx - 6, ry + 2, 156, 64 * 3 + 12); }
+  spr(id, cx, ry + 8, 3);
+  text(['KNIGHT', 'MIDAS', 'THORN', 'TESLA', 'JOKER', '???'][i], cx + 8, ry + 64 * 3 + 20, 2, i === 5 ? UI_COLORS.textDim : UI_COLORS.gold);
+});
+// 1x / 2x readability of the cabinets
+cabs.forEach((id, i) => spr(id, 1034 + (i % 3) * 54, ry + 8 + (i < 3 ? 0 : 72), 1));
+spr('cabinetKnight', 1200, ry + 8, 2); // 1x strip + 2x knight
+ry += 64 * 3 + 80;
+// economy / shop UI: chip shield, FITS tag on a shop item, cashier heal tin, full-set star (4x) + 1x/2x strip
+label('ECONOMY / FULL SET: chipShield, tagBuild over a shop slot, shopHeal, setStar (4x, 2x, 1x)', 20, ry - 10);
+ctx.fillStyle = UI_COLORS.panel; ctx.fillRect(16, ry - 4, 1232, 130);
+spr('chipShield', 30, ry + 10, 4); text('x 42', 88, ry + 22, 3, UI_COLORS.text);
+spr('shopSlot', 230, ry + 16, 4); spr('relicHone', 246, ry + 0, 4); spr('tagBuild', 300, ry + 6, 3);
+spr('shopSlot', 370, ry + 16, 4); spr('shopHeal', 386, ry + 0, 4); spr('chip', 390, ry + 104, 2); text('15', 412, ry + 106, 2, UI_COLORS.gold);
+spr('setStar', 520, ry + 10, 4); text('FULL SET', 590, ry + 26, 3, UI_COLORS.gold);
+['sword', 'bolt', 'shield'].forEach((a, i) => { const cx = 780 + i * 102; cellBg(cx, ry + 10); spr(a, cx + 8, ry + 18, 5); spr('enhGold', cx + 8, ry + 18, 5); });
+spr('setStar', 1076, ry - 2, 3);
+ry += 150;
+['chipShield', 'tagBuild', 'shopHeal', 'setStar'].forEach((id, i) => { spr(id, 20 + i * 110, ry, 1); spr(id, 20 + i * 110 + 30, ry, 2); });
 };
 drawAll();
 </script></body></html>

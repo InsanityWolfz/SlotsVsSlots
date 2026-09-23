@@ -87,6 +87,8 @@ export interface GameConfig {
   cleanseOnSlimeTriple: boolean;
   /** Player relics active this fight. */
   relics: RelicId[];
+  /** The run's starting machine (its rules apply in every fight). */
+  cabinet?: import('./cabinets').CabinetId;
   /** null = new random seed each fight. */
   seed: number | null;
 }

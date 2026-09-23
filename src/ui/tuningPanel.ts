@@ -181,6 +181,21 @@ export class TuningPanel {
       ),
     );
 
+    // Meta progression (dev).
+    this.body.append(
+      this.section(
+        'Cabinets',
+        this.check('Unlock all cabinets (dev)', () => g.prefs.unlockAll, (v) => {
+          g.prefs.unlockAll = v;
+          g.savePrefs();
+        }),
+        this.button('RESET UNLOCKS', () => {
+          g.prefs.unlocked = ['knight'];
+          g.savePrefs();
+        }),
+      ),
+    );
+
     // Juice toggles: apply immediately.
     const j = g.prefs.juice;
     const keys = Object.keys(j) as (keyof JuiceToggles)[];

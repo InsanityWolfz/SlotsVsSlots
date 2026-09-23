@@ -1,0 +1,24 @@
+current                          greedy/sim/smart             win  43.8  deaths 0.9/10.4/13.1/10.3/10.0/11.5  boss 79.2  chipsIn 10.1 buys 0.88
+current                          greedy/sim/never             win  41.9  deaths 0.8/9.4/13.2/15.7/13.5/5.4  boss 88.5  chipsIn 22.9 buys 0.00
+current                          greedy/sim/healOnly          win  45.1  deaths 0.7/9.8/12.7/12.9/12.9/6.0  boss 88.3  chipsIn 20.8 buys 0.28
+current                          greedy/sim/spendAll          win  37.1  deaths 0.7/9.9/12.6/10.6/10.5/18.6  boss 66.5  chipsIn 2.9 buys 1.28
+current                          greedy/sim/simGreedy         win  44.3  deaths 0.8/9.3/13.7/11.1/10.6/10.2  boss 81.2  chipsIn 11.6 buys 0.93
+current                          greedy/safe/smart            win  43.1  deaths 0.7/9.4/10.7/10.2/12.4/13.5  boss 76.1  chipsIn 10.1 buys 0.90
+current                          greedy/elite/smart           win  40.2  deaths 0.9/29.3/19.8/7.2/1.8/0.8  boss 98.0  chipsIn 14.0 buys 0.72
+current                          greedy/eliteIfHealthy/smart  win  42.8  deaths 0.8/22.7/13.9/9.7/5.4/4.8  boss 90.0  chipsIn 12.0 buys 0.84
+current                          commit/sim/commitSmart       win  42.9  deaths 0.7/10.8/12.6/10.8/9.6/12.5  boss 77.4  chipsIn 10.9 buys 0.86
+current                          spread/sim/spreadSmart       win  43.3  deaths 0.6/10.4/12.7/10.2/11.3/11.5  boss 79.0  chipsIn 11.9 buys 0.82
+current                          hpFirst/sim/smart            win  42.1  deaths 0.9/10.6/12.7/11.2/11.3/11.2  boss 78.9  chipsIn 10.8 buys 0.81
+current                          random/random/random         win  25.1  deaths 0.6/19.5/21.1/14.7/8.5/10.5  boss 70.4  chipsIn 4.7 buys 1.04
+K: stackPer 8, start 4, boss 70  greedy/sim/smart             win  47.4  deaths 0.8/7.5/11.7/8.8/8.3/15.4  boss 75.5  chipsIn 11.4 buys 1.52
+K: stackPer 8, start 4, boss 70  greedy/sim/never             win  40.0  deaths 0.8/9.4/13.2/15.7/13.5/7.4  boss 84.4  chipsIn 30.1 buys 0.00
+K: stackPer 8, start 4, boss 70  greedy/sim/healOnly          win  42.0  deaths 0.8/8.6/12.9/13.9/12.9/8.9  boss 82.4  chipsIn 27.9 buys 0.32
+K: stackPer 8, start 4, boss 70  greedy/sim/spendAll          win  41.4  deaths 0.9/7.2/12.0/9.8/9.3/19.4  boss 68.1  chipsIn 3.0 buys 2.03
+K: stackPer 8, start 4, boss 70  greedy/sim/simGreedy         win  45.5  deaths 0.6/8.1/11.3/8.7/10.0/15.8  boss 74.2  chipsIn 13.1 buys 1.43
+K: stackPer 8, start 4, boss 70  greedy/safe/smart            win  45.3  deaths 0.8/8.1/9.0/8.1/10.5/18.1  boss 71.4  chipsIn 10.8 buys 1.55
+K: stackPer 8, start 4, boss 70  greedy/elite/smart           win  45.7  deaths 0.6/23.5/20.1/6.9/1.4/1.8  boss 96.2  chipsIn 13.7 buys 1.34
+K: stackPer 8, start 4, boss 70  greedy/eliteIfHealthy/smart  win  47.4  deaths 0.7/19.4/13.5/6.8/4.9/7.4  boss 86.5  chipsIn 11.9 buys 1.49
+K: stackPer 8, start 4, boss 70  commit/sim/commitSmart       win  45.9  deaths 0.7/8.0/11.1/9.4/8.9/16.1  boss 74.1  chipsIn 11.7 buys 1.52
+K: stackPer 8, start 4, boss 70  spread/sim/spreadSmart       win  42.1  deaths 0.6/8.3/11.5/10.3/11.9/15.2  boss 73.4  chipsIn 12.9 buys 1.43
+K: stackPer 8, start 4, boss 70  hpFirst/sim/smart            win  46.9  deaths 0.9/8.6/12.0/8.4/8.4/14.8  boss 76.0  chipsIn 12.0 buys 1.41
+K: stackPer 8, start 4, boss 70  random/random/random         win  29.5  deaths 0.7/17.0/18.6/13.3/7.3/13.6  boss 68.4  chipsIn 5.7 buys 1.71

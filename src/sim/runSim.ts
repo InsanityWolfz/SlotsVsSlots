@@ -4,6 +4,7 @@
 import { defaultConfig, type GameConfig } from '../core/config';
 import { formatSummary, simulate } from './simulate';
 import { formatRunSummary, simulateRuns } from './simulateRun';
+import { CABINET_ORDER } from '../core/cabinets';
 
 function arg(name: string, fallback: number): number {
   const i = process.argv.indexOf(`--${name}`);
@@ -15,6 +16,12 @@ if (runs > 0) {
   for (const policy of ['greedy', 'relic', 'random'] as const) {
     console.log(`\n=== ${runs} runs, ${policy} drafting ===`);
     console.log(formatRunSummary(simulateRuns(defaultConfig(), runs, policy, 4242)));
+  }
+  console.log('\n=== cabinets (greedy / random) ===');
+  for (const cab of CABINET_ORDER) {
+    const g = simulateRuns(defaultConfig(), runs, 'greedy', 4242, cab);
+    const r = simulateRuns(defaultConfig(), runs, 'random', 4242, cab);
+    console.log(`${cab.padEnd(8)} greedy ${g.winPct.toFixed(1)}%  random ${r.winPct.toFixed(1)}%  boss win ${g.bossWinPct.toFixed(0)}%`);
   }
 } else {
   const n = arg('n', 20000);

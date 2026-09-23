@@ -1,0 +1,7 @@
+variant                                never simGreedy  spendAll     smart  healOnly    commit    random   spread(best-never)
+A current                               41.5      44.8      37.0      43.5      45.4      35.9      35.4   3.8
+B stackPer 10                           34.8      38.5      35.5      37.5      37.0      30.4      32.3   3.7
+C stackPer 10, start 4                  37.8      44.3      42.1      47.5      40.6      35.6      37.9   9.7
+D stackPer 10, start 4, win 3           39.6      49.0      44.2      49.0      42.5      37.6      38.9   9.4
+E stackPer 8, start 4                   39.9      46.9      42.5      48.6      42.6      36.3      39.1   8.8
+F stack10 start4 boss60                 38.8      46.1      43.7      48.6      41.8      37.2      39.5   9.9

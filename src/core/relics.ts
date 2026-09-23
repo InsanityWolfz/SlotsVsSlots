@@ -44,6 +44,16 @@ export const ROD_SPECIAL_COST = 4;
 /** Counter relics are offered as PREP cards when their enemy is on the next fork, never in relic drafts. */
 export const COUNTERS: Partial<Record<string, RelicId>> = { frost: 'mittens', gremlin: 'lockpick', thief: 'mousetrap', golem: 'pickaxe' };
 export const COUNTER_RELICS: ReadonlySet<RelicId> = new Set(Object.values(COUNTERS) as RelicId[]);
+/** What each build relic needs you to own before it's offered (playtest ITERATION_4). */
+export const BUILD_ENABLER: Partial<Record<RelicId, 'gold' | 'keen' | 'charged' | 'spiked' | 'wild'>> = {
+  midas: 'gold',
+  rod: 'charged',
+  cactus: 'spiked',
+  hone: 'keen',
+  prism: 'wild',
+};
+export const ROD_SPECIAL_DAMAGE = 12;
+
 /** Too strong for drafts (best pick 92% of the time): only elites drop it. */
 export const ELITE_ONLY: ReadonlySet<RelicId> = new Set<RelicId>(['mirror']);
 

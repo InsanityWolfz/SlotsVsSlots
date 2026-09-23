@@ -92,12 +92,13 @@ export const BOSS: Archetype = {
   blurb: 'THE HOUSE ALWAYS WINS... RIGHT?',
 };
 
-const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'GILDED', 'CURSED', 'HUNGRY', 'SPITEFUL', 'ANCIENT', 'WILD', 'GREEDY'];
+// (No 'GILDED' or 'WILD': those are mechanic names.)
+const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'MANGY', 'CURSED', 'HUNGRY', 'SPITEFUL', 'ANCIENT', 'BITTER', 'GREEDY'];
 
 /** HP for a regular fight at each depth (0-based), before the archetype multiplier. */
-export const DEPTH_HP = [19, 24, 28, 31, 34];
+export const DEPTH_HP = [21, 26, 31, 34, 37];
 /** Mutable so balance sweeps can tune it. */
-export const TUNE = { bossHp: 66 };
+export const TUNE = { bossHp: 74 };
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
 export const RUN_FIGHTS = 5;
@@ -130,7 +131,9 @@ function jitter(strip: StripCounts, rng: Rng): StripCounts {
 }
 
 export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false): EnemyDef {
-  const hp = isBoss ? TUNE.bossHp : Math.round(DEPTH_HP[Math.min(depth, DEPTH_HP.length - 1)] * a.hpMul * (depth === 0 ? OPENER_HP_MUL : 1));
+  // Frost scales badly late (its freezes stack up with longer fights): plain HP from fight 3.
+  const hpMul = a.id === 'frost' && depth >= 2 ? 1 : a.hpMul;
+  const hp = isBoss ? TUNE.bossHp : Math.round(DEPTH_HP[Math.min(depth, DEPTH_HP.length - 1)] * hpMul * (depth === 0 ? OPENER_HP_MUL : 1));
   const every = a.ability.every;
   return {
     archetype: a.id,
@@ -167,7 +170,8 @@ export function generateRunPaths(rng: Rng): EnemyDef[][] {
       // The more dangerous option is the ELITE: tougher, but it pays a relic.
       const elite = opts.reduce((a, b) => ((DANGER[b.archetype] ?? 0) > (DANGER[a.archetype] ?? 0) ? b : a));
       elite.elite = true;
-      elite.hp = Math.round(elite.hp * ELITE_HP_MUL);
+      // The elite thief is already the deadliest node: a lighter bump.
+      elite.hp = Math.round(elite.hp * (elite.archetype === 'thief' ? 1.15 : ELITE_HP_MUL));
       elite.name = `ELITE ${elite.name}`.replace(/^ELITE (\w+) /, 'ELITE ');
     }
     out.push(opts);
