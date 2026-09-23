@@ -1,4 +1,4 @@
-import type { SideId, SymbolId } from '../core/config';
+import type { SideId, SymbolId, Enh } from '../core/config';
 import type { CombatEvent } from '../core/events';
 import { other, type TurnResult } from '../core/fight';
 import type { LineScore } from '../core/scoring';
@@ -9,8 +9,8 @@ import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, W } from './
 import type { Stage } from './stage';
 import { ABILITY_UI } from './hud';
 import { stripMapColumn } from './stripMap';
-import type { SpriteId } from '../render/sprites';
-import { RELICS } from '../core/relics';
+import { artId, type SpriteId } from '../render/sprites';
+import { BOMB, RELICS } from '../core/relics';
 
 type Ev<T extends CombatEvent['type']> = Extract<CombatEvent, { type: T }>;
 
@@ -27,9 +27,24 @@ const EFFECT_WORD: Record<SymbolId, string> = {
   seven: 'DAMAGE',
   empty: 'NOTHING',
   wild: 'WILD',
+  bomb: 'BOMBS',
+  hex: 'HEX',
+  fangs: 'DRAIN',
+  mimicSym: 'COPYCAT',
 };
 
-const BATCHABLE = new Set<CombatEvent['type']>(['attack', 'shieldGain', 'energyGain', 'fizzle', 'slime', 'freeze', 'lock', 'steal', 'pot', 'heal']);
+/** What each FULL SET does, for its banner (playtest ITERATION_5). */
+const SET_TEXT: Record<Enh, string> = {
+  gold: 'GOLD PAYS X3',
+  keen: 'KEEN SWORDS +2',
+  charged: 'CHARGED BOLTS +2',
+  spiked: 'SPIKES HIT BACK +2',
+  vamp: 'VAMP SWORDS HEAL 2',
+  lucky: 'LUCKY: 40% WILD',
+  blaze: 'BLAZE SPECIAL +4 PER REEL',
+};
+
+const BATCHABLE = new Set<CombatEvent['type']>(['attack', 'shieldGain', 'energyGain', 'fizzle', 'slime', 'freeze', 'lock', 'steal', 'pot', 'heal', 'bomb', 'hex']);
 
 /** Banners sit in the top gutter between the HUD panels, never over the reels. */
 const BANNER_Y = 172;
@@ -40,7 +55,7 @@ const BANNER_Y = 172;
  */
 export class Director {
   private lastScore: LineScore | null = null;
-  private lastSpin: Partial<Record<SideId, { frozen: boolean[]; locked: boolean[] }>> = {};
+  private lastSpin: Partial<Record<SideId, { frozen: boolean[]; locked: boolean[]; hexed: boolean[] }>> = {};
   private fullSetShown = false;
 
   constructor(private s: Stage) {}
@@ -110,6 +125,22 @@ export class Director {
         return this.resist(e);
       case 'phase':
         return this.phase(e);
+      case 'hex':
+        return this.hex(e);
+      case 'bomb':
+        return this.bomb(e);
+      case 'fuse':
+        return this.fuse(e);
+      case 'defuse':
+        return this.defuse(e);
+      case 'blast':
+        return this.blast(e);
+      case 'gulp':
+        return this.gulp(e);
+      case 'phoenix':
+        return this.phoenix(e);
+      case 'shatter':
+        return this.shatter(e);
     }
   }
 
@@ -307,7 +338,7 @@ export class Director {
     this.lastScore = e.score;
     m.clearRowFx();
     const near = e.nearMiss && this.s.juice.nearMiss;
-    this.lastSpin[e.side] = { frozen: e.frozen, locked: e.locked };
+    this.lastSpin[e.side] = { frozen: e.frozen, locked: e.locked, hexed: e.hexed ?? [] };
     await m.spin(
       e.stops,
       near,
@@ -321,6 +352,7 @@ export class Director {
       e.frozen,
     );
     if (e.lucky) await this.luckyPop(e.side);
+    if (e.luckyWilds?.length) await this.luckyWilds(e.side, e.luckyWilds);
     this.stampGilds(e.side, e.score);
     if (e.fullSet && !this.fullSetShown) {
       this.fullSetShown = true;
@@ -334,7 +366,9 @@ export class Director {
           .then(() => this.c.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (star.alpha = v) }))
           .then(() => this.s.fx.remove(star)),
       );
-      await this.banner('FULL SET!', '#ffd23f', 1.3, 0.35, 'SAME GILD ON ALL 3 REELS', BANNER_Y, 4);
+      const setGroup = e.score.groups.find((g) => g.fullSet);
+      const enh = setGroup ? this.s.machines[e.side].reels[setGroup.reels[0]].cellAtRow(1).enh : undefined;
+      await this.banner('FULL SET!', '#ffd23f', 1.3, 0.35, enh ? SET_TEXT[enh] : 'SAME GILD ON ALL 3 REELS', BANNER_Y, 4);
     }
     if (near && e.score.tier !== 'triple') this.missedTriple(e.side, e.score.line[0]);
     await this.winPresentation(e.side, e.score);
@@ -380,7 +414,7 @@ export class Director {
           );
           this.s.sounds.coin(r * 3);
         } else if (cell.enh === 'keen' && g.symbol === 'sword') this.bg(this.popText(g.notes.find((n) => n.startsWith('+')) ?? '+1', p.x + 26, p.y - 30, 3, '#bff4ff', 16, 0.3));
-        else if (cell.enh === 'charged' && g.symbol === 'bolt') this.bg(this.popText('+1', p.x + 26, p.y - 30, 3, '#fff27a', 16, 0.3));
+        else if (cell.enh === 'charged' && g.symbol === 'bolt') this.bg(this.popText(g.notes.find((n) => n.startsWith('+')) ?? '+1', p.x + 26, p.y - 30, 3, '#fff27a', 16, 0.3));
       }
     }
   }
@@ -501,6 +535,12 @@ export class Director {
     }
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
     if (e.note === 'pierce') this.bg(this.popText('PIERCE!', target.x + 90, MACHINE_TOP - 22, 2, '#bff4ff', 14, 0.35));
+    if (e.note === 'drain') this.bg(this.popText('DRAIN!', target.x - 90, MACHINE_TOP - 22, 2, '#ff5a7a', 14, 0.35));
+    if (e.note === 'mimic') this.bg(this.popText('COPYCAT!', target.x - 90, MACHINE_TOP - 22, 2, '#ffb0ff', 14, 0.35));
+    if (e.note === 'reflect') {
+      this.s.camera.flashScreen(0.35, '#c8f0ff');
+      this.bg(this.popText('YOUR OWN HIT!', target.x, MACHINE_TOP - 22, 2, '#c8f0ff', 14, 0.5));
+    }
     if (e.note === 'spiked') {
       this.s.sounds.block();
       this.bg(this.popText('SPIKED!', target.x - 90, MACHINE_TOP - 22, 2, '#c9d0dc', 14, 0.35));
@@ -851,6 +891,16 @@ export class Director {
 
   private async thaw(e: Ev<'thaw'>): Promise<void> {
     const m = this.s.machines[e.side];
+    if (e.status === 'hexed') {
+      for (const r of e.reels) {
+        m.hexed[r] = 0;
+        this.bg(this.c.tween({ from: m.hexedFx[r], to: 0, dur: 0.4, onUpdate: (v) => (m.hexedFx[r] = v) }));
+        const p = cellCenter(e.side, r, 1);
+        this.s.particles.burst({ x: p.x, y: p.y, count: 12, colors: ['#e0a0ff', '#ffffff'], speed: [40, 160], gravity: -200, life: [0.3, 0.6], size: [2, 4] });
+      }
+      await this.c.wait(0.1);
+      return;
+    }
     const ice = e.status === 'frozen';
     if (ice) this.s.sounds.shatter();
     else this.s.sounds.unchain();
@@ -1048,6 +1098,167 @@ export class Director {
     await this.c.wait(0.3);
   }
 
+  // ---- act 2 -----------------------------------------------------------------------------
+
+  /** LUCKY gilds that turned WILD on this spin. */
+  private async luckyWilds(side: SideId, reels: number[]): Promise<void> {
+    const m = this.s.machines[side];
+    this.s.sounds.lucky();
+    for (const r of reels) {
+      const p = cellCenter(side, r, 1);
+      const fx = m.reels[r].rows[1];
+      fx.glowColor = '#7dff7a';
+      this.bg(this.c.tween({ from: 1, to: 0, dur: 0.8, onUpdate: (v) => (fx.glow = v) }));
+      const w = this.s.fx.add(new Projectile('wild', p.x, p.y, 0));
+      this.bg(
+        this.c
+          .tween({ from: 0, to: 6, dur: 0.2, ease: backOut(3), onUpdate: (v) => (w.scale = v) })
+          .then(() => this.c.wait(0.35))
+          .then(() => this.c.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (w.alpha = v) }))
+          .then(() => this.s.fx.remove(w)),
+      );
+      this.s.particles.burst({ x: p.x, y: p.y, count: 20, colors: ['#7dff7a', '#ffffff', '#ffd23f'], speed: [80, 260], gravity: -100, life: [0.3, 0.6], size: [2, 4] });
+      this.bg(this.popText('LUCKY WILD!', p.x, p.y - 60, 2, '#7dff7a', 16, 0.4));
+    }
+    await this.c.wait(0.45);
+  }
+
+  private async hex(e: Ev<'hex'>): Promise<void> {
+    const to = this.s.machines[e.to];
+    if (e.reels.length) await this.activate(e.from, e.reels, '#b04ae8');
+    const flights = e.targets.map(async (r, i) => {
+      await this.c.wait(i * 0.1);
+      const src = this.srcPoint(e.from, e.reels, i);
+      const dst = cellCenter(e.to, r, 1);
+      const p = this.s.fx.add(new Projectile(artId('hex'), src.x, src.y, 3, false, '#b04ae8'));
+      this.bg(this.c.tween({ from: 0, to: Math.PI * 2, dur: 0.4, onUpdate: (v) => (p.rot = v) }));
+      await this.arc(p, dst.x, dst.y, 0.4, 110, sineInOut);
+      this.s.fx.remove(p);
+      to.hexed[r] = Math.max(to.hexed[r], e.turns);
+      this.bg(this.c.tween({ from: to.hexedFx[r], to: 1, dur: 0.3, ease: cubicOut, onUpdate: (v) => (to.hexedFx[r] = v) }));
+      this.s.sounds.chains();
+      this.s.particles.burst({ x: dst.x, y: dst.y, count: 24, colors: ['#b04ae8', '#e0a0ff', '#2a1040'], speed: [60, 260], gravity: -60, life: [0.3, 0.7], size: [2, 5] });
+    });
+    await Promise.all(flights);
+    const c = this.machineCenter(e.to);
+    this.bg(this.popText(`HEXED ${e.turns} TURN${e.turns > 1 ? 'S' : ''}: HALF PAY`, c.x, MACHINE_TOP - 4, 2, '#e0a0ff', 16, 0.5));
+    if (e.reels.length) this.settle(e.from, e.reels);
+    await this.c.wait(0.2);
+  }
+
+  private async bomb(e: Ev<'bomb'>): Promise<void> {
+    const to = this.s.machines[e.to];
+    if (e.reels.length) await this.activate(e.from, e.reels, '#ff8a3a');
+    const tosses = e.cells.map(async (ref, i) => {
+      await this.c.wait(i * 0.1);
+      const src = this.srcPoint(e.from, e.reels, i);
+      const row = this.rowOf(e.to, ref);
+      const dst = cellCenter(e.to, ref.reel, Math.max(0, row));
+      const p = this.s.fx.add(new Projectile(artId('bomb'), src.x, src.y, 3.5, false, '#ff8a3a'));
+      this.bg(this.c.tween({ from: 0, to: Math.PI * 3, dur: 0.4, onUpdate: (v) => (p.rot = v) }));
+      await this.arc(p, dst.x, dst.y, 0.4, 130, sineIn);
+      this.s.fx.remove(p);
+      const cell = to.reels[ref.reel].cells[ref.index];
+      cell.bomb = BOMB.fuse;
+      this.bg(this.c.tween({ from: 0, to: 1, dur: 0.25, ease: backOut(3), onUpdate: (v) => (cell.bombPop = v) }));
+      this.s.sounds.rockThud();
+      this.s.particles.burst({ x: dst.x, y: dst.y, count: 10, colors: ['#ff8a3a', '#ffd23f', '#3a2a20'], speed: [60, 200], gravity: 500, life: [0.2, 0.4], size: [2, 4] });
+    });
+    await Promise.all(tosses);
+    const c = this.machineCenter(e.to);
+    this.bg(this.popText(`BOMB${e.cells.length > 1 ? 'S' : ''}! LAND TO DEFUSE`, c.x, MACHINE_TOP - 4, 2, '#ffb070', 16, 0.5));
+    if (e.reels.length) this.settle(e.from, e.reels);
+    await this.c.wait(0.15);
+  }
+
+  private async fuse(e: Ev<'fuse'>): Promise<void> {
+    const m = this.s.machines[e.side];
+    e.cells.forEach((ref, i) => {
+      const cell = m.reels[ref.reel].cells[ref.index];
+      cell.bomb = e.fuses[i];
+    });
+    if (e.fuses.some((f) => f <= 1)) this.s.sounds.abilityTick();
+    await this.c.wait(0.1);
+  }
+
+  private async defuse(e: Ev<'defuse'>): Promise<void> {
+    const m = this.s.machines[e.side];
+    this.s.sounds.unchain();
+    for (const ref of e.cells) {
+      const cell = m.reels[ref.reel].cells[ref.index];
+      this.bg(this.c.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (cell.bombPop = v) }).then(() => (cell.bomb = 0)));
+      const p = cellCenter(e.side, ref.reel, 1);
+      this.s.particles.burst({ x: p.x, y: p.y, count: 12, colors: ['#7dff7a', '#ffffff'], speed: [60, 200], gravity: -150, life: [0.3, 0.5], size: [2, 4] });
+    }
+    const c = this.machineCenter(e.side);
+    await this.popText(`DEFUSED${e.cells.length > 1 ? ` x${e.cells.length}` : ''}!`, c.x, MACHINE_TOP - 4, 3, '#7dff7a', 16, 0.3);
+  }
+
+  private async blast(e: Ev<'blast'>): Promise<void> {
+    const m = this.s.machines[e.side];
+    const cell = m.reels[e.cell.reel].cells[e.cell.index];
+    cell.bomb = 0;
+    const row = this.rowOf(e.side, e.cell);
+    const p = row >= 0 ? cellCenter(e.side, e.cell.reel, row) : stripMapColumn(e.cell.reel);
+    this.s.sounds.hit(6);
+    this.s.sounds.rockThud();
+    this.hitstop(2);
+    this.shake(6, 0.3);
+    this.s.camera.flashScreen(0.3, '#ffb070');
+    this.flashMachine(e.side, 0.8, 0.2);
+    this.knockback(e.side, 10);
+    this.s.particles.burst({ x: p.x, y: p.y, count: 40, colors: ['#ff5a2a', '#ffd23f', '#ffffff', '#3a2a20'], speed: [150, 550], kind: 'spark', gravity: 400, life: [0.25, 0.6], size: [3, 6] });
+    this.damageHud(e.side, e.targetHp, e.targetShield, e.hpDamage);
+    const c = this.machineCenter(e.side);
+    if (e.blocked > 0) this.bg(this.popText(`BLOCK ${e.blocked}`, c.x + 80, MACHINE_TOP + 70, 2, '#9fd0ff', 16, 0.3));
+    this.bg(this.popText(e.hpDamage > 0 ? `BOOM -${e.hpDamage}` : 'BOOM!', c.x, MACHINE_TOP + 40, 4, '#ff8a3a', 50));
+    await this.c.wait(0.35);
+  }
+
+  private async gulp(e: Ev<'gulp'>): Promise<void> {
+    const c = this.machineCenter(e.from);
+    this.s.sounds.coin(1);
+    const chips = Array.from({ length: e.chips }, async (_, i) => {
+      await this.c.wait(i * 0.1);
+      const p = this.s.fx.add(new Projectile('chip', 40, 30, 3));
+      await this.arc(p, c.x, c.y, 0.45, 120, sineIn);
+      this.s.fx.remove(p);
+      this.s.sounds.coin(6 + i);
+    });
+    await Promise.all(chips);
+    await this.popText(`ATE ${e.chips} CHIP${e.chips > 1 ? 'S' : ''}!`, c.x, MACHINE_TOP - 4, 3, '#ffd23f', 16, 0.3);
+  }
+
+  private async phoenix(e: Ev<'phoenix'>): Promise<void> {
+    const h = this.s.huds[e.side];
+    const c = this.machineCenter(e.side);
+    this.s.sounds.fanfareJackpot();
+    this.hitstop(6);
+    this.s.camera.flashScreen(0.7, '#ffb040');
+    const icon = this.s.fx.add(new Projectile(RELICS.phoenix.sprite as SpriteId, c.x, c.y, 0));
+    this.bg(this.c.tween({ from: 0, to: 6, dur: 0.3, ease: backOut(3), onUpdate: (v) => (icon.scale = v) }));
+    this.s.particles.burst({ x: c.x, y: c.y, count: 80, colors: ['#ff6a2a', '#ffd23f', '#ffffff'], speed: [150, 500], angle: -Math.PI / 2, spread: Math.PI, gravity: -250, life: [0.5, 1.1], size: [3, 6] });
+    this.bg(this.c.to(h, 'hp', e.hp, 0.3));
+    this.bg(this.c.to(h, 'ghost', e.hp, 0.3));
+    await this.banner('PHOENIX!', '#ff8a3a', 1.4, 0.5, 'BACK FROM THE BRINK AT 1 HP', BANNER_Y, 4);
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (icon.alpha = v) }).then(() => this.s.fx.remove(icon)));
+  }
+
+  /** The Mirror cracks at half HP. */
+  private async shatter(e: Ev<'shatter'>): Promise<void> {
+    const m = this.s.machines[e.side];
+    this.s.sounds.shatter();
+    this.s.sounds.abilityFire();
+    this.hitstop(4);
+    this.shake(8, 0.5);
+    this.s.camera.chromaPulse(0.9);
+    this.s.camera.flashScreen(0.5, '#c8f0ff');
+    const c = this.machineCenter(e.side);
+    this.s.particles.burst({ x: c.x, y: c.y, count: 90, colors: ['#c8f0ff', '#ffffff', '#7aa8c8'], speed: [150, 600], kind: 'spark', gravity: 500, life: [0.4, 0.9], size: [2, 6] });
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.6, onUpdate: (v) => (m.flash = v * 0.7) }));
+    await this.banner('CRACKED!', '#c8f0ff', 1.3, 0.5, `REFLECTION EVERY ${e.every} TURNS`, BANNER_Y, 4);
+  }
+
   private async endTurn(side: SideId): Promise<void> {
     const m = this.s.machines[side];
     // Statuses tick down after the affected side's own spin.
@@ -1055,6 +1266,7 @@ export class Director {
     if (ls) {
       ls.frozen.forEach((f, r) => f && m.frozen[r] > 0 && m.frozen[r]--);
       ls.locked.forEach((f, r) => f && m.locked[r] > 0 && m.locked[r]--);
+      ls.hexed.forEach((f, r) => f && m.hexed[r] > 0 && m.hexed[r]--);
       delete this.lastSpin[side];
     }
     this.bg(this.c.to(m.payline, 'alpha', 0, 0.2));

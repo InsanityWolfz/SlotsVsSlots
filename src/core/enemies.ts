@@ -16,6 +16,8 @@ export interface Archetype {
   minDepth: number;
   /** One-line description for the intent/telegraph tooltip and the run map. */
   blurb: string;
+  /** Which acts it shows up in (default: act 1 only). */
+  acts?: number[];
 }
 
 export const ARCHETYPES: Archetype[] = [
@@ -38,6 +40,7 @@ export const ARCHETYPES: Archetype[] = [
     ability: { kind: 'smash', every: 3, power: 4 },
     minDepth: 1,
     blurb: 'HITS HARD',
+    acts: [1, 2],
   },
   {
     id: 'frost',
@@ -48,6 +51,7 @@ export const ARCHETYPES: Archetype[] = [
     ability: { kind: 'blizzard', every: 4, power: 2 },
     minDepth: 0,
     blurb: 'FREEZES YOUR REELS',
+    acts: [1, 2],
   },
   {
     id: 'thief',
@@ -58,6 +62,7 @@ export const ARCHETYPES: Archetype[] = [
     ability: { kind: 'pilfer', every: 3, power: 1 },
     minDepth: 1,
     blurb: 'STEALS YOUR BEST SYMBOLS',
+    acts: [1, 2],
   },
   {
     id: 'golem',
@@ -68,6 +73,7 @@ export const ARCHETYPES: Archetype[] = [
     ability: { kind: 'quake', every: 4, power: 2 },
     minDepth: 2,
     blurb: 'CLUTTERS YOUR STRIP WITH ROCKS (PERMANENT)',
+    acts: [1, 2],
   },
   {
     id: 'gremlin',
@@ -78,8 +84,57 @@ export const ARCHETYPES: Archetype[] = [
     ability: { kind: 'jam', every: 4, power: 2 },
     minDepth: 2,
     blurb: 'JAMS YOUR REELS',
+    acts: [1, 2],
+  },
+  // ---- act 2 ----
+  {
+    id: 'bomber',
+    name: 'BOMBER',
+    portrait: 'enemyBomber',
+    strip: { sword: 4, shield: 3, bomb: 5 },
+    hpMul: 1,
+    ability: { kind: 'carpet', every: 4, power: 2 },
+    minDepth: 0,
+    blurb: 'STICKS BOMBS ON YOUR CELLS. LAND THEM TO DEFUSE',
+    acts: [2],
+  },
+  {
+    id: 'hexer',
+    name: 'HEXER',
+    portrait: 'enemyHexer',
+    strip: { sword: 5, shield: 3, hex: 4 },
+    hpMul: 0.85,
+    ability: { kind: 'curse', every: 4, power: 2 },
+    minDepth: 0,
+    blurb: 'HEXES YOUR REELS: HALF PAY, GILDS GO DARK',
+    acts: [2],
+  },
+  {
+    id: 'vampire',
+    name: 'VAMPIRE',
+    portrait: 'enemyVampire',
+    strip: { sword: 4, shield: 3, fangs: 5 },
+    hpMul: 0.95,
+    ability: { kind: 'bloodmoon', every: 4, power: 8 },
+    minDepth: 1,
+    blurb: 'DRAINS YOUR HP TO HEAL ITSELF',
+    acts: [2],
+  },
+  {
+    id: 'mimic',
+    name: 'MIMIC',
+    portrait: 'enemyMimic',
+    strip: { sword: 4, shield: 4, mimicSym: 4 },
+    hpMul: 1.05,
+    ability: { kind: 'gulp', every: 3, power: 2 },
+    minDepth: 1,
+    blurb: 'COPIES YOUR BEST HIT. EATS YOUR CHIPS',
+    acts: [2],
   },
 ];
+
+export const ACT2_NEW: ReadonlySet<string> = new Set(['bomber', 'hexer', 'vampire', 'mimic']);
+export const actsOf = (a: Archetype) => a.acts ?? [1];
 
 export const BOSS: Archetype = {
   id: 'house',
@@ -92,13 +147,33 @@ export const BOSS: Archetype = {
   blurb: 'THE HOUSE ALWAYS WINS... RIGHT?',
 };
 
+/**
+ * Act 2 boss. It plays a copy of YOUR machine (strips and gilds, but none of your relics) and every
+ * few turns throws your last spin's damage back at you. At half HP it cracks and reflects faster.
+ */
+export const MIRROR: Archetype = {
+  id: 'mirror',
+  name: 'THE MIRROR',
+  portrait: 'enemyMirror',
+  strip: { sword: 4, shield: 4, bolt: 4 },
+  hpMul: 1,
+  ability: { kind: 'reflect', every: 4, power: 20 },
+  minDepth: 5,
+  blurb: 'PLAYS YOUR OWN MACHINE. REFLECTS YOUR BEST HITS',
+  acts: [2],
+};
+export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: MIRROR };
+
 // (No 'GILDED' or 'WILD': those are mechanic names.)
 const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'MANGY', 'CURSED', 'HUNGRY', 'SPITEFUL', 'ANCIENT', 'BITTER', 'GREEDY'];
 
 /** HP for a regular fight at each depth (0-based), before the archetype multiplier. */
 export const DEPTH_HP = [21, 26, 31, 34, 37];
+/** Act 2 curve: you arrive with a built machine and a legendary. */
+export const DEPTH_HP_2 = [57, 62, 68, 73, 78];
 /** Mutable so balance sweeps can tune it. */
-export const TUNE = { bossHp: 74 };
+export const TUNE = { bossHp: 74, mirrorHp: 85, act2Mul: 1, act2Swords: 2, mirrorPerMaxHp: 1.9 };
+export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
 export const RUN_FIGHTS = 5;
@@ -110,10 +185,24 @@ export interface EnemyDef extends SideConfig {
   isBoss: boolean;
   /** The harder option at a fork: x1.25 HP, drops a free relic when beaten. */
   elite?: boolean;
+  act?: number;
 }
 
 /** Rough single-fight danger per archetype (playtest ITERATION_2), used to pick the elite at a fork. */
-export const DANGER: Record<string, number> = { slime: 5, frost: 8, golem: 4, gremlin: 12, thief: 13, brute: 20, house: 40 };
+export const DANGER: Record<string, number> = {
+  slime: 5,
+  frost: 8,
+  golem: 4,
+  gremlin: 12,
+  thief: 13,
+  brute: 20,
+  house: 40,
+  bomber: 14,
+  hexer: 12,
+  vampire: 16,
+  mimic: 15,
+  mirror: 45,
+};
 export const ELITE_HP_MUL = 1.25;
 
 function jitter(strip: StripCounts, rng: Rng): StripCounts {
@@ -130,10 +219,13 @@ function jitter(strip: StripCounts, rng: Rng): StripCounts {
   return out;
 }
 
-export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false): EnemyDef {
+export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false, act = 1): EnemyDef {
   // Frost scales badly late (its freezes stack up with longer fights): plain HP from fight 3.
-  const hpMul = a.id === 'frost' && depth >= 2 ? 1 : a.hpMul;
-  const hp = isBoss ? TUNE.bossHp : Math.round(DEPTH_HP[Math.min(depth, DEPTH_HP.length - 1)] * hpMul * (depth === 0 ? OPENER_HP_MUL : 1));
+  const hpMul = a.id === 'frost' && (depth >= 2 || act > 1) ? 1 : a.hpMul;
+  const curve = act > 1 ? DEPTH_HP_2.map((h) => h * TUNE.act2Mul) : DEPTH_HP;
+  const opener = depth === 0 && act === 1 ? OPENER_HP_MUL : 1;
+  const bossHp = a.id === 'mirror' ? TUNE.mirrorHp : TUNE.bossHp;
+  const hp = isBoss ? bossHp : Math.round(curve[Math.min(depth, curve.length - 1)] * hpMul * opener);
   const every = a.ability.every;
   return {
     archetype: a.id,
@@ -143,9 +235,13 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false)
     name: isBoss ? a.name : `${rng.pick(ADJECTIVES)} ${a.name}`,
     portrait: a.portrait,
     hp,
-    strips: isBoss ? [{ ...a.strip }, { ...a.strip }, { ...a.strip }] : [0, 1, 2].map(() => jitter(a.strip, rng)),
+    strips: (isBoss ? [{ ...a.strip }, { ...a.strip }, { ...a.strip }] : [0, 1, 2].map(() => jitter(a.strip, rng))).map((st) =>
+      // Act 2 enemies hit harder.
+      act > 1 && !isBoss ? { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords } : st,
+    ),
     ability: { ...a.ability, every },
-    boss: isBoss ? 'house' : null,
+    boss: isBoss ? (a.id === 'mirror' ? 'mirror' : 'house') : null,
+    act,
   };
 }
 
@@ -156,16 +252,22 @@ export const BRANCH_DEPTHS = new Set([1, 2, 3]);
  * The run's map: per depth, the enemy options (1, or 2 at a fork), then the boss. Options at a
  * depth never repeat an archetype offered at the previous depth; the opener is always gentle.
  */
-export function generateRunPaths(rng: Rng): EnemyDef[][] {
+export function generateRunPaths(rng: Rng, act = 1): EnemyDef[][] {
   const out: EnemyDef[][] = [];
   let prev = new Set<string>();
+  const inAct = ARCHETYPES.filter((a) => actsOf(a).includes(act));
   for (let depth = 0; depth < RUN_FIGHTS; depth++) {
-    let pool = ARCHETYPES.filter((a) => a.minDepth <= depth && !prev.has(a.id));
-    if (depth === 0) pool = ARCHETYPES.filter((a) => a.id === 'slime' || a.id === 'frost');
-    if (pool.length === 0) pool = ARCHETYPES.filter((a) => a.minDepth <= depth);
+    let pool = inAct.filter((a) => a.minDepth <= depth && !prev.has(a.id));
+    if (depth === 0) pool = act === 1 ? inAct.filter((a) => a.id === 'slime' || a.id === 'frost') : inAct.filter((a) => ACT2_NEW.has(a.id) && a.minDepth === 0);
+    if (pool.length === 0) pool = inAct.filter((a) => a.minDepth <= depth);
     const n = BRANCH_DEPTHS.has(depth) ? Math.min(2, pool.length) : 1;
-    const picks = rng.shuffle([...pool]).slice(0, n);
-    const opts = picks.map((a) => makeEnemy(a, depth, rng));
+    let picks = rng.shuffle([...pool]).slice(0, n);
+    // Act 2 forks always show at least one of the new faces.
+    if (act > 1 && !picks.some((a) => ACT2_NEW.has(a.id))) {
+      const fresh = pool.filter((a) => ACT2_NEW.has(a.id));
+      if (fresh.length) picks = [rng.pick(fresh), ...picks].slice(0, n);
+    }
+    const opts = picks.map((a) => makeEnemy(a, depth, rng, false, act));
     if (opts.length > 1) {
       // The more dangerous option is the ELITE: tougher, but it pays a relic.
       const elite = opts.reduce((a, b) => ((DANGER[b.archetype] ?? 0) > (DANGER[a.archetype] ?? 0) ? b : a));
@@ -177,6 +279,6 @@ export function generateRunPaths(rng: Rng): EnemyDef[][] {
     out.push(opts);
     prev = new Set(picks.map((a) => a.id));
   }
-  out.push([makeEnemy(BOSS, RUN_FIGHTS, rng, true)]);
+  out.push([makeEnemy(BOSSES[act] ?? BOSS, RUN_FIGHTS, rng, true, act)]);
   return out;
 }

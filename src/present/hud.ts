@@ -1,5 +1,5 @@
 import type { AbilityDef, AbilityKind, SideId } from '../core/config';
-import { drawSprite, type SpriteId } from '../render/sprites';
+import { artId, drawSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 import { COLORS, HUD_TOP, MACHINE_CX } from './layout';
 
@@ -15,6 +15,11 @@ export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> 
   quake: { icon: 'icoRock', label: 'QUAKE' },
   jam: { icon: 'icoLock', label: 'JAM' },
   jackpot: { icon: 'icoCoin', label: 'CASH OUT' },
+  carpet: { icon: artId('icoBomb'), label: 'CARPET BOMB' },
+  curse: { icon: artId('icoHex'), label: 'CURSE' },
+  bloodmoon: { icon: artId('icoDrain'), label: 'BLOOD MOON' },
+  gulp: { icon: artId('icoGulp'), label: 'GULP' },
+  reflect: { icon: artId('icoReflect'), label: 'REFLECTION' },
 };
 
 /** Displayed (tweened) values for one side's bars — never read from game state mid-animation. */

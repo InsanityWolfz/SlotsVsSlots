@@ -5,7 +5,7 @@ import type { Clock } from './clock';
 import { sineInOut } from './ease';
 import { COLORS, MACHINE_H, MACHINE_W, PITCH, REELS, reelWindow } from './layout';
 import { ReelView, SPIN, type CellView } from './reel';
-import { drawSprite } from '../render/sprites';
+import { drawSprite, artId, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 
 export interface SpinCallbacks {
@@ -36,6 +36,8 @@ export class MachineView {
   locked: number[];
   frozenFx: number[];
   lockedFx: number[];
+  hexed: number[];
+  hexedFx: number[];
   private spun = false;
 
   constructor(
@@ -46,7 +48,7 @@ export class MachineView {
     this.reels = combatant.reels.map(
       (r) =>
         new ReelView(
-          r.cells.map((c): CellView => ({ symbol: c.symbol, slimed: c.slimed, goo: c.slimed ? 1 : 0, flash: 0, stolen: c.stolen ? 1 : 0, enh: c.enh })),
+          r.cells.map((c): CellView => ({ symbol: c.symbol, slimed: c.slimed, goo: c.slimed ? 1 : 0, flash: 0, stolen: c.stolen ? 1 : 0, enh: c.enh, bomb: c.bomb })),
           r.stop,
         ),
     );
@@ -54,6 +56,8 @@ export class MachineView {
     this.locked = combatant.locked.slice();
     this.frozenFx = this.frozen.map((t) => (t > 0 ? 1 : 0));
     this.lockedFx = this.locked.map((t) => (t > 0 ? 1 : 0));
+    this.hexed = combatant.hexed.slice();
+    this.hexedFx = this.hexed.map((t) => (t > 0 ? 1 : 0));
   }
 
   /** Mirror an engine insert (same index + stop rule as core/strip insertOffscreen). */
@@ -256,8 +260,24 @@ export class MachineView {
         ctx.restore();
         drawSprite(ctx, 'lockOverlay', cx, PITCH * 1.5, 5.6, { alpha: lk });
       }
-      const badge = this.frozen[r] > 0 ? { n: this.frozen[r], c: '#9fe8ff', icon: 'icoFreeze' as const } : this.locked[r] > 0 ? { n: this.locked[r], c: '#ffb070', icon: 'icoLock' as const } : null;
-      if (badge && Math.max(fz, lk) > 0.5) {
+      const hx = this.hexedFx[r];
+      if (hx > 0) {
+        ctx.save();
+        ctx.globalAlpha = (0.22 + 0.06 * Math.sin(time * 2.5 + r)) * hx;
+        ctx.fillStyle = '#b04ae8';
+        ctx.fillRect(PITCH * r + 2, 0, PITCH - 4, MACHINE_H);
+        ctx.restore();
+        drawSprite(ctx, artId('hexOverlay'), cx, PITCH * 1.5, 5.6, { alpha: hx * (0.8 + 0.2 * Math.sin(time * 4 + r)) });
+      }
+      const badge =
+        this.frozen[r] > 0
+          ? { n: this.frozen[r], c: '#9fe8ff', icon: 'icoFreeze' as SpriteId }
+          : this.locked[r] > 0
+            ? { n: this.locked[r], c: '#ffb070', icon: 'icoLock' as SpriteId }
+            : this.hexed[r] > 0
+              ? { n: this.hexed[r], c: '#e0a0ff', icon: artId('icoHex') }
+              : null;
+      if (badge && Math.max(fz, lk, hx) > 0.5) {
         ctx.fillStyle = COLORS.outline;
         ctx.fillRect(cx - 22, -12, 44, 22);
         drawSprite(ctx, badge.icon, cx - 10, -1, 2);

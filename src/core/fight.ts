@@ -3,6 +3,12 @@ import { CABINETS, type Cabinet } from './cabinets';
 import type { CombatEvent } from './events';
 import {
   BATTERY_ENERGY,
+  BELL_MULT,
+  BLAZE_BONUS,
+  BOMB,
+  KEY_MULT,
+  LUCKY_CHANCE,
+  SANDGLASS_SLOW,
   CACTUS_DAMAGE,
   CLOVER_CHANCE,
   FANG_HEAL,
@@ -13,6 +19,7 @@ import {
   MOUSETRAP_DAMAGE,
   POT,
   ROD_SPECIAL_COST,
+  REFLECT_MIN,
   ROD_SPECIAL_DAMAGE,
   SPIKED_DAMAGE,
 } from './relics';
@@ -32,7 +39,7 @@ import {
 } from './strip';
 
 /** Symbols that act on the opponent when they're native to the caster's strips. */
-const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin']);
+const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym']);
 
 export interface Combatant {
   side: SideId;
@@ -47,6 +54,8 @@ export interface Combatant {
   frozen: number[];
   /** Remaining own-turns each reel is jammed (scores nothing). */
   locked: number[];
+  /** Remaining own-turns each reel is hexed (pays half, gilds are dead). */
+  hexed: number[];
   ability: AbilityDef | null;
   charge: number;
   relics: Set<RelicId>;
@@ -79,6 +88,7 @@ function makeCombatant(side: SideId, sc: SideConfig, rng: Rng, relics: RelicId[]
     casts,
     frozen: reels.map(() => 0),
     locked: reels.map(() => 0),
+    hexed: reels.map(() => 0),
     ability: sc.ability ?? null,
     charge: 0,
     relics: new Set(side === 'player' ? relics : []),
@@ -109,6 +119,16 @@ export class Fight {
   readonly cabinet: Cabinet | null;
   /** Enhancements present on all 3 of the player's reels: their effect is boosted. */
   readonly fullSet: ReadonlySet<Enh>;
+  /** Chips the Mimic ate this fight (taken from the run's purse afterwards). */
+  chipsEaten = 0;
+  /** Phoenix Feather already burned this fight. */
+  phoenixUsed = false;
+  /** The Mirror cracked (phase 2). */
+  shattered = false;
+  /** What each side did on its last spin: biggest group, and total damage sent (for Mimic / Reflection). */
+  readonly last: Record<SideId, { best: number; damage: number }> = { player: { best: 0, damage: 0 }, enemy: { best: 0, damage: 0 } };
+  /** BLAZE: extra special damage from blaze-gilded reels. */
+  readonly blaze: number;
   private forced: Partial<Record<SideId, SymbolId[]>> = {};
 
   constructor(cfg: GameConfig, seed: number = cfg.seed ?? Rng.randomSeed()) {
@@ -131,10 +151,17 @@ export class Fight {
     // Thorn: enemy specials hit one weaker (the House's skim is untouched).
     const minus = this.cabinet?.enemyAbilityMinus ?? 0;
     const e = this.sides.enemy;
-    if (minus && e.ability && e.ability.kind !== 'jackpot') e.ability = { ...e.ability, power: Math.max(1, e.ability.power - minus) };
-    // FULL SET: an enhancement present on every reel.
+    const flat: ReadonlySet<string> = new Set(['jackpot', 'reflect', 'bloodmoon']);
+    if (minus && e.ability && !flat.has(e.ability.kind)) e.ability = { ...e.ability, power: Math.max(1, e.ability.power - minus) };
+    // Golden Hourglass: every enemy ability charges slower.
+    if (p.relics.has('sandglass') && e.ability) e.ability = { ...e.ability, every: e.ability.every + SANDGLASS_SLOW };
+    // FULL SET: an enhancement present on every reel (Golden Ticket: on any two).
     const perReel = p.reels.map((r) => new Set(r.cells.map((c) => c.enh).filter((x): x is Enh => !!x)));
-    this.fullSet = new Set([...perReel[0]].filter((enh) => perReel.every((s) => s.has(enh))));
+    const need = p.relics.has('ticket') ? 2 : 3;
+    const all = new Set(perReel.flatMap((s) => [...s]));
+    this.fullSet = new Set([...all].filter((enh) => perReel.filter((s) => s.has(enh)).length >= need));
+    const blazeReels = perReel.filter((s) => s.has('blaze')).length;
+    this.blaze = blazeReels * (this.fullSet.has('blaze') ? BLAZE_BONUS.full : BLAZE_BONUS.each);
     if (this.isBoss) this.pot = POT.seed;
   }
 
@@ -146,8 +173,14 @@ export class Fight {
     return this.winner !== null;
   }
 
+  /** The House (act 1 boss): the pot rules apply. */
   get isBoss(): boolean {
     return this.cfg.enemy.boss === 'house';
+  }
+
+  /** The Mirror (act 2 boss). */
+  get isMirror(): boolean {
+    return this.cfg.enemy.boss === 'mirror';
   }
 
   /** Debug: make the next spin of `side` land these payline symbols where the strip allows. */
@@ -190,11 +223,34 @@ export class Fight {
     delete this.forced[side];
     me.reels.forEach((reel, i) => (reel.stop = stops[i]));
     const line = paylineSymbols(me.reels).map((s, i) => (locked[i] ? 'lock' : s));
+    // LUCKY: a lucky cell on the payline sometimes turns WILD.
+    const luckyWilds: number[] = [];
+    const luckChance = this.fullSet.has('lucky') && me.side === 'player' ? LUCKY_CHANCE.full : LUCKY_CHANCE.each;
+    me.reels.forEach((_, r) => {
+      if (line[r] !== 'wild' && this.paylineEnh(me, r) === 'lucky' && this.rng.next() < luckChance) {
+        line[r] = 'wild';
+        luckyWilds.push(r);
+      }
+    });
+    const hexed = me.hexed.map((t) => t > 0);
     const score = this.score(me, line);
     // Dead symbols lining up isn't a tease — except slime, which can cleanse.
     const nearMiss = isNearMiss(line) && (me.casts.has(line[0]) || line[0] === 'slime' || !DEAD.has(line[0]));
     const fullSet = score.groups.some((g) => g.fullSet);
-    events.push({ type: 'spin', side, stops, score, nearMiss, frozen, locked, lucky, ...(fullSet ? { fullSet } : {}) });
+    events.push({
+      type: 'spin',
+      side,
+      stops,
+      score,
+      nearMiss,
+      frozen,
+      locked,
+      lucky,
+      ...(fullSet ? { fullSet } : {}),
+      ...(luckyWilds.length ? { luckyWilds } : {}),
+      ...(hexed.some(Boolean) ? { hexed } : {}),
+    });
+    const sentBefore = events.length;
 
     if (side === 'player' && score.tier === 'triple') this.playerJackpots++;
     for (const group of score.groups) {
@@ -214,6 +270,13 @@ export class Fight {
       events.push({ type: 'pot', side, reels: [], amount: POT.houseCut, total: this.pot });
     }
 
+    // What this spin did (the Mimic and the Mirror copy it).
+    this.last[side] = {
+      best: Math.max(0, ...score.groups.filter((g) => g.matched || !DEAD.has(g.symbol)).map((g) => g.amount)),
+      damage: events.slice(sentBefore).reduce((a, e) => a + ((e.type === 'attack' || e.type === 'specialFire') && e.from === side && !(e.type === 'attack' && e.note === 'spiked') ? e.amount : 0), 0),
+    };
+    if (!this.over) this.defuse(me, events);
+    if (!this.over) this.burnFuses(me, events);
     if (!this.over) this.tickStatuses(me, events);
     if (!this.over && me.ability) this.chargeAbility(me, events);
 
@@ -242,6 +305,11 @@ export class Fight {
           notes.push(`+${bonus}`);
           if (set.has('keen')) g.fullSet = true;
         }
+        if (enh === 'spiked' && g.symbol === 'shield' && set.has('spiked') && !g.fullSet) {
+          g.fullSet = true;
+          notes.push('SPIKES +2');
+        }
+        if (enh === 'vamp' && g.symbol === 'sword' && set.has('vamp')) g.fullSet = true;
         if (enh === 'charged' && g.symbol === 'bolt') {
           const bonus = set.has('charged') ? 2 : 1;
           g.amount += bonus;
@@ -261,6 +329,20 @@ export class Fight {
         g.amount *= 2;
         notes.push('X2');
       }
+      // Legendaries: Skeleton Key (doubles) and Jackpot Bell (jackpots).
+      if (me.relics.has('key') && g.matched && g.reels.length === 2) {
+        g.amount = Math.ceil(g.amount * KEY_MULT);
+        notes.push('X1.5');
+      }
+      if (me.relics.has('bell') && g.matched && g.reels.length === 3) {
+        g.amount *= BELL_MULT;
+        notes.push(`X${BELL_MULT}`);
+      }
+      // HEX: a group touching a hexed reel pays half.
+      if (g.reels.some((r) => me.hexed[r] > 0)) {
+        g.amount = Math.floor(g.amount / 2);
+        notes.push('HALF');
+      }
       if (notes.length) g.notes = notes;
     }
     s.totals = {};
@@ -271,7 +353,7 @@ export class Fight {
   /** The enhancement on a reel's payline cell, if it's live (not stolen, slimed or jammed). */
   private paylineEnh(c: Combatant, r: number) {
     const cell = c.reels[r].cells[c.reels[r].stop];
-    if (!cell?.enh || cell.stolen || cell.slimed || c.locked[r] > 0) return undefined;
+    if (!cell?.enh || cell.stolen || cell.slimed || c.locked[r] > 0 || c.hexed[r] > 0) return undefined;
     return cell.enh;
   }
 
@@ -315,6 +397,11 @@ export class Fight {
       case 'sword':
         // KEEN: a keen sword in the group pierces shields.
         this.hit(me, foe, g.amount, g.reels, events, g.reels.some((r) => this.paylineEnh(me, r) === 'keen'));
+        {
+          // VAMP: vamp swords in the group heal you.
+          const vamp = g.reels.filter((r) => this.paylineEnh(me, r) === 'vamp').length;
+          if (vamp && !this.over && g.amount > 0) this.heal(me, vamp * (me.side === 'player' && this.fullSet.has('vamp') ? 2 : 1), 'vamp', events);
+        }
         return;
       case 'seven':
         // Sevens are the House's heavy hitters.
@@ -344,7 +431,15 @@ export class Fight {
     events.push({ type: 'fizzle', side: me.side, reels: g.reels, symbol: g.symbol });
   }
 
-  private hit(me: Combatant, foe: Combatant, amount: number, reels: number[], events: CombatEvent[], pierce = false, note?: 'snap'): void {
+  private hit(
+    me: Combatant,
+    foe: Combatant,
+    amount: number,
+    reels: number[],
+    events: CombatEvent[],
+    pierce = false,
+    note?: 'snap' | 'drain' | 'mimic' | 'reflect',
+  ): number {
     const pierced = pierce && foe.shield > 0;
     const h = this.damage(foe, amount, pierce);
     events.push({ type: 'attack', from: me.side, to: foe.side, reels, amount, ...h, ...(pierced ? { note: 'pierce' as const } : note ? { note } : {}) });
@@ -356,6 +451,7 @@ export class Fight {
       events.push({ type: 'attack', from: foe.side, to: me.side, reels: [], amount: dmg, ...back, note: 'spiked' });
       this.checkDeath(me, events);
     }
+    return h.hpDamage;
   }
 
   private gainEnergy(me: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
@@ -364,14 +460,22 @@ export class Fight {
     events.push({ type: 'energyGain', side: me.side, reels, amount, total: me.energy });
     while (me.energy >= this.cfg.specialCost && !this.over) {
       me.energy -= this.cfg.specialCost;
-      const h = this.damage(foe, this.cfg.specialDamage, this.cfg.specialIgnoresShield);
-      events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: this.cfg.specialDamage, ...h, energyLeft: me.energy });
+      const dmg = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
+      const h = this.damage(foe, dmg, this.cfg.specialIgnoresShield);
+      events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy });
       this.checkDeath(foe, events);
+      // Overcharge: the special echoes at half damage.
+      if (!this.over && me.relics.has('overcharge')) {
+        const echo = Math.ceil(dmg / 2);
+        const h2 = this.damage(foe, echo, this.cfg.specialIgnoresShield);
+        events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: echo, ...h2, energyLeft: me.energy });
+        this.checkDeath(foe, events);
+      }
       if (!this.over && me.relics.has('fang')) this.heal(me, FANG_HEAL, 'fang', events);
     }
   }
 
-  private heal(me: Combatant, amount: number, source: RelicId | 'special', events: CombatEvent[]): void {
+  private heal(me: Combatant, amount: number, source: RelicId | 'special' | 'vamp' | 'drain' | 'ability', events: CombatEvent[]): void {
     const n = Math.min(amount, me.maxHp - me.hp);
     if (n <= 0) return;
     me.hp += n;
@@ -396,6 +500,20 @@ export class Fight {
         this.pot = Math.max(this.pot * 2, this.pot + POT.allInMin);
         events.push({ type: 'phase', side: c.side, pot: this.pot });
       }
+      // The Mirror cracks at half HP: its Reflection charges faster.
+      if (c.side === 'enemy' && this.isMirror && !this.shattered && c.hp <= c.maxHp / 2 && c.ability) {
+        this.shattered = true;
+        c.ability = { ...c.ability, every: Math.max(2, c.ability.every - 1) };
+        c.charge = Math.min(c.charge, c.ability.every - 1);
+        events.push({ type: 'shatter', side: c.side, every: c.ability.every });
+      }
+      return;
+    }
+    // Phoenix Feather: once per fight, a lethal hit leaves you at 1 HP.
+    if (c.relics.has('phoenix') && !this.phoenixUsed) {
+      this.phoenixUsed = true;
+      c.hp = 1;
+      events.push({ type: 'phoenix', side: c.side, hp: 1 });
       return;
     }
     this.winner = other(c.side);
@@ -431,7 +549,93 @@ export class Fight {
         this.pot += amount;
         events.push({ type: 'pot', side: me.side, reels, amount, total: this.pot });
         return;
+      case 'bomb':
+        // 1 bomb, a double 2, a jackpot 3.
+        return this.plantBombs(me, foe, statusSize(amount), reels, events);
+      case 'hex':
+        // 1 reel × 1 turn, a double 1 × 2, a jackpot 2 × 2.
+        return this.hex(me, foe, amount >= 9 ? 2 : 1, amount >= 4 ? 2 : 1, reels, events);
+      case 'fangs': {
+        // Drain: hurts you and heals the vampire by what got through.
+        const dmg = amount >= 9 ? 7 : amount >= 4 ? 4 : 2;
+        const got = this.hit(me, foe, dmg, reels, events, false, 'drain');
+        if (!this.over && got > 0) this.heal(me, got, 'drain', events);
+        return;
+      }
+      case 'mimicSym': {
+        // The Mimic copies your last spin's biggest group (half on a single, double on a jackpot).
+        const best = this.last[foe.side].best;
+        const dmg = Math.min(12, Math.max(1, amount >= 9 ? best * 2 : amount >= 4 ? best : Math.ceil(best / 2)));
+        this.hit(me, foe, dmg, reels, events, false, 'mimic');
+        return;
+      }
     }
+  }
+
+  // ---- act 2 writers --------------------------------------------------------------------
+
+  /** Stick bombs on the foe's visible cells. Each burns a fuse on its owner's turns. */
+  private plantBombs(me: Combatant, foe: Combatant, count: number, reels: number[], events: CombatEvent[]): void {
+    const free = this.rng.shuffle(
+      visibleCells(foe.reels).filter((ref) => {
+        const c = foe.reels[ref.reel].cells[ref.index];
+        return !c.bomb && !c.stolen;
+      }),
+    );
+    // Never on the payline itself (it would defuse on the very next spin... or not: keep it readable).
+    const cells = free.slice(0, count);
+    for (const ref of cells) foe.reels[ref.reel].cells[ref.index].bomb = BOMB.fuse;
+    if (cells.length) events.push({ type: 'bomb', from: me.side, to: foe.side, reels, cells });
+    else this.fizzle(me, 'bomb', reels, events);
+  }
+
+  /** Bombs that land on your payline are defused. */
+  private defuse(me: Combatant, events: CombatEvent[]): void {
+    const cells: CellRef[] = [];
+    me.reels.forEach((reel, r) => {
+      const cell = reel.cells[reel.stop];
+      if (cell.bomb) {
+        delete cell.bomb;
+        cells.push({ reel: r, index: reel.stop });
+      }
+    });
+    if (cells.length) events.push({ type: 'defuse', side: me.side, cells });
+  }
+
+  /** At the end of your turn every bomb on your strips burns a turn; the ones at 0 go off (shield blocks). */
+  private burnFuses(me: Combatant, events: CombatEvent[]): void {
+    const live: CellRef[] = [];
+    const fuses: number[] = [];
+    const boom: CellRef[] = [];
+    me.reels.forEach((reel, r) =>
+      reel.cells.forEach((cell, i) => {
+        if (!cell.bomb) return;
+        cell.bomb -= 1;
+        live.push({ reel: r, index: i });
+        fuses.push(cell.bomb);
+        if (cell.bomb <= 0) {
+          delete cell.bomb;
+          boom.push({ reel: r, index: i });
+        }
+      }),
+    );
+    if (!live.length) return;
+    events.push({ type: 'fuse', side: me.side, cells: live, fuses });
+    for (const cell of boom) {
+      const h = this.damage(me, BOMB.damage, false);
+      events.push({ type: 'blast', side: me.side, cell, amount: BOMB.damage, ...h });
+      this.checkDeath(me, events);
+      if (this.over) return;
+    }
+  }
+
+  /** Hex the foe's most valuable reels (most gilded cells first): they pay half and gilds go dark. */
+  private hex(me: Combatant, foe: Combatant, count: number, turns: number, reels: number[], events: CombatEvent[]): void {
+    const worth = (r: number) => foe.reels[r].cells.filter((c) => c.enh).length * 10 + (foe.hexed[r] > 0 ? -100 : 0);
+    const order = this.rng.shuffle(foe.reels.map((_, r) => r)).sort((a, b) => worth(b) - worth(a));
+    const targets = order.slice(0, count).sort((a, b) => a - b);
+    for (const r of targets) foe.hexed[r] = Math.max(foe.hexed[r], turns);
+    events.push({ type: 'hex', from: me.side, to: foe.side, reels, targets, turns });
   }
 
   private applySlime(me: Combatant, foe: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
@@ -512,7 +716,7 @@ export class Fight {
   }
 
   private tickStatuses(me: Combatant, events: CombatEvent[]): void {
-    for (const status of ['frozen', 'locked'] as const) {
+    for (const status of ['frozen', 'locked', 'hexed'] as const) {
       const ended: number[] = [];
       me[status].forEach((t, r) => {
         if (t <= 0) return;
@@ -602,7 +806,8 @@ export class Fight {
       case 'flood':
         return this.applySlime(me, foe, ab.power, [], events);
       case 'smash':
-        return this.hit(me, foe, ab.power, [], events);
+        this.hit(me, foe, ab.power, [], events);
+        return;
       case 'fortify':
         me.shield += ab.power;
         events.push({ type: 'shieldGain', side: me.side, reels: [], amount: ab.power, total: me.shield });
@@ -617,6 +822,22 @@ export class Fight {
         return this.junk(me, foe, ab.power, [], events);
       case 'jackpot':
         return this.cashPot(me, foe, events);
+      case 'carpet':
+        return this.plantBombs(me, foe, ab.power, [], events);
+      case 'curse':
+        return this.hex(me, foe, ab.power, 2, [], events);
+      case 'bloodmoon':
+        return this.heal(me, ab.power, 'ability', events);
+      case 'gulp':
+        this.chipsEaten += ab.power;
+        events.push({ type: 'gulp', from: me.side, chips: ab.power });
+        return;
+      case 'reflect': {
+        // The Mirror throws your last spin back at you (at least a little).
+        const dmg = Math.max(REFLECT_MIN, Math.min(ab.power, this.last[foe.side].damage));
+        this.hit(me, foe, dmg, [], events, false, 'reflect');
+        return;
+      }
     }
   }
 

@@ -1,9 +1,10 @@
+import { drawText } from '../render/text';
 import type { Enh, SymbolId } from '../core/config';
 import { wrap } from '../core/strip';
-import { drawSprite, type SpriteId } from '../render/sprites';
+import { drawSprite, type SpriteId, artId } from '../render/sprites';
 import type { Clock } from './clock';
 import { backOut, linear, sineIn, sineOut } from './ease';
-import { ART_SCALE, PITCH } from './layout';
+import { ART_SCALE, COLORS, PITCH } from './layout';
 
 /** Display-side copy of a strip cell. Diverges from game state until the animation catches up. */
 export interface CellView {
@@ -19,9 +20,21 @@ export interface CellView {
   pop?: number;
   /** Gilded for the run. */
   enh?: Enh;
+  /** A Bomber's bomb: turns left on the fuse (0/undefined = none). */
+  bomb?: number;
+  /** 0..1 bomb pop-in. */
+  bombPop?: number;
 }
 
-export const ENH_SPRITE: Record<Enh, SpriteId> = { gold: 'enhGold', keen: 'enhKeen', charged: 'enhCharged', spiked: 'enhSpiked' };
+export const ENH_SPRITE: Record<Enh, SpriteId> = {
+  gold: 'enhGold',
+  keen: 'enhKeen',
+  charged: 'enhCharged',
+  spiked: 'enhSpiked',
+  vamp: artId('enhVamp'),
+  lucky: artId('enhLucky'),
+  blaze: artId('enhBlaze'),
+};
 
 /** Per visible-row cosmetic state (row 0 = top). */
 export interface RowFx {
@@ -257,6 +270,19 @@ export function drawCell(
   if (cell.enh && !cell.slimed) {
     const shimmer = 0.85 + 0.15 * Math.sin(time * 4 + x * 0.05 + y * 0.03);
     drawSprite(ctx, ENH_SPRITE[cell.enh], x, y, ART_SCALE, { sx: sx * pop, sy: sy * pop, alpha: alpha * (1 - stolen) * shimmer, dim });
+  }
+
+  // Bombs sit on top of the symbol with their fuse count ticking in the corner.
+  if (cell.bomb && cell.bomb > 0) {
+    const bp = cell.bombPop ?? 1;
+    const urgent = cell.bomb <= 1;
+    const pulse = urgent ? 1 + 0.12 * Math.sin(time * 18) : 1;
+    drawSprite(ctx, artId('bombOverlay'), x, y, ART_SCALE, { sx: sx * bp * pulse, sy: sy * bp * pulse, alpha });
+    if (bp >= 1) {
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(x + 12, y + 12, 22, 22);
+      drawText(ctx, String(cell.bomb), x + 23, y + 23, 2, urgent ? '#ff5a4a' : '#ffd23f');
+    }
   }
 
   if (slimed && cell.goo > 0) {

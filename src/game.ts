@@ -4,7 +4,7 @@ import { mergeConfig, type GameConfig, type SideId } from './core/config';
 import { RUN_FIGHTS } from './core/enemies';
 import { Fight } from './core/fight';
 import { turnRow, type TurnRow } from './core/log';
-import { RELICS } from './core/relics';
+import { REFLECT_MIN, RELICS } from './core/relics';
 import {
   applyOption,
   buy,
@@ -15,6 +15,8 @@ import {
   fightConfig,
   finishFight,
   isShopNow,
+  completesSet,
+  takeLegend,
   leaveShop,
   needsChoice,
   reroll,
@@ -39,7 +41,7 @@ import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
 import { drawStripMap } from './present/stripMap';
 import { Background } from './render/background';
-import { drawSprite, type SpriteId } from './render/sprites';
+import { drawSprite, type SpriteId, artId } from './render/sprites';
 import { drawText } from './render/text';
 import { Button } from './ui/button';
 import { Recap } from './ui/recap';
@@ -143,6 +145,7 @@ export class Game {
     this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {
       onPick: (o) => this.pickReward(o),
       onSpoils: (r) => this.pickSpoils(r),
+      onLegend: (r) => this.pickLegend(r),
       onFight: (i) => this.beginRunFight(i),
       onNewRun: () => this.chooseCabinet(),
       onBuy: (i) => this.buyItem(i),
@@ -237,13 +240,14 @@ export class Game {
   private checkUnlocks(run: RunState): CabinetId[] {
     const got: CabinetId[] = [];
     const reachedBoss = run.records.length >= RUN_FIGHTS + 1 || run.won;
+    const beatHouse = run.act > 1 || run.won;
     const beatElite = run.records.some((r) => r.won && run.enemies[r.depth]?.elite);
     const cond: Record<CabinetId, boolean> = {
       knight: true,
       midas: reachedBoss,
       thorn: beatElite,
-      tesla: run.won,
-      joker: run.won && run.player.strips.some((s) => (s.wild ?? 0) > 0),
+      tesla: beatHouse,
+      joker: beatHouse && run.player.strips.some((s) => (s.wild ?? 0) > 0),
     };
     for (const id of CABINET_ORDER) {
       if (cond[id] && !this.prefs.unlocked.includes(id)) {
@@ -291,9 +295,22 @@ export class Game {
       this.screens.setUnlockedNow(this.checkUnlocks(run));
       this.screens.showOver(run);
     }
+    else if (run.pendingLegend) this.screens.showLegend(run, run.pendingLegend, record);
     else if (run.pendingSpoils) this.screens.showSpoils(run, run.pendingSpoils, record);
     else this.screens.showDraft(run, draftOffers(run), record);
     this.syncButtons();
+  }
+
+  /** An act's boss fell: take the legendary, then the new act's Cashier opens. */
+  private pickLegend(relic: RelicId): void {
+    if (!this.run) return;
+    takeLegend(this.run, relic);
+    if (isShopNow(this.run)) {
+      this.shelf = shopOffers(this.run);
+      this.screens.showShop(this.run, this.shelf);
+      return;
+    }
+    this.showNextFight();
   }
 
   private pickSpoils(relic: RelicId): void {
@@ -305,7 +322,12 @@ export class Game {
   private buyItem(i: number): void {
     const item = this.shelf[i];
     if (!this.run || !item) return;
+    const finishesSet = completesSet(this.run, item.option);
     if (buy(this.run, item)) {
+      if (finishesSet) {
+        this.sounds.lucky();
+        this.sounds.fanfareJackpot();
+      }
       this.sounds.coin(4);
       this.sounds.coin(9);
       this.screens.bought();
@@ -400,7 +422,7 @@ export class Game {
         pulse: 0,
         pot: this.fight.pot,
         potPunch: 1,
-        fightLabel: this.run && inRun ? (this.run.depth >= RUN_FIGHTS ? 'BOSS' : `FIGHT ${this.run.depth + 1}/${RUN_FIGHTS}`) : 'SANDBOX',
+        fightLabel: this.run && inRun ? (this.run.depth >= RUN_FIGHTS ? 'BOSS' : `ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${RUN_FIGHTS}`) : 'SANDBOX',
         allIn: false,
       },
     };
@@ -719,6 +741,7 @@ export class Game {
       }
     }
     if (this.fight.isBoss) this.drawPot(ctx, cx, cy + 118, t);
+    else if (this.fight.isMirror) this.drawReflection(ctx, cx, cy + 118, t);
     else drawText(ctx, 'VS', cx, cy + 70, 6, '#ff6a5a', { alpha: 0.35 + 0.1 * Math.sin(t * 2) });
     if (this.prefs.speed > 1) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss ? cy - 136 : cy + 172, 2, COLORS.textDim);
   }
@@ -761,6 +784,35 @@ export class Game {
       drawSprite(ctx, 'potSkim', x - 70, y + 64, 2);
       drawText(ctx, `NEXT SKIM ${cashOut}`, x - 52, y + 64, 2, lethal ? '#ff6a5a' : COLORS.textDim, { align: 'left' });
     }
+  }
+
+  /** The Mirror's next Reflection: what your last spin would bounce back, and when. */
+  private drawReflection(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+    const e = this.fight.sides.enemy;
+    const ab = e.ability;
+    if (!ab) return;
+    const hud = this.stage.huds.enemy;
+    const dmg = Math.max(REFLECT_MIN, Math.min(ab.power, this.fight.last.player.damage));
+    const left = Math.max(1, ab.every - hud.charge);
+    const soon = left <= 1;
+    const glow = soon ? 0.4 + 0.3 * Math.sin(t * 10) : 0.15;
+    ctx.save();
+    ctx.globalAlpha = glow;
+    ctx.shadowColor = '#c8f0ff';
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = '#c8f0ff';
+    ctx.fillRect(x - 110, y - 56, 220, 112);
+    ctx.restore();
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 110, y - 56, 220, 112);
+    ctx.fillStyle = '#7aa8c8';
+    ctx.fillRect(x - 106, y - 52, 212, 104);
+    ctx.fillStyle = '#10202e';
+    ctx.fillRect(x - 101, y - 47, 202, 94);
+    drawText(ctx, soon ? 'REFLECTS NEXT TURN!' : `REFLECTION IN ${left}`, x, y - 32, 2, soon ? '#ff6a5a' : '#c8f0ff');
+    drawSprite(ctx, artId('icoReflect'), x - 52, y + 10, 3);
+    drawText(ctx, String(dmg), x + 30, y + 10, 6, soon ? '#ff6a5a' : '#c8f0ff');
+    drawText(ctx, 'YOUR LAST SPIN', x, y + 40, 1.5, COLORS.textDim);
   }
 
   private arrow(ctx: CanvasRenderingContext2D, x: number, y: number, dir: number, s: number): void {

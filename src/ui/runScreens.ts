@@ -1,22 +1,26 @@
 import type { Sounds } from '../audio/sounds';
-import type { GameConfig, StripCounts, SymbolId } from '../core/config';
-import { RUN_FIGHTS, type EnemyDef } from '../core/enemies';
-import { RELICS } from '../core/relics';
+import type { Enh, GameConfig, StripCounts, SymbolId } from '../core/config';
+import { ACTS, RUN_FIGHTS, type EnemyDef } from '../core/enemies';
+import { LEGENDARY, REFLECT_MIN, RELICS } from '../core/relics';
 import {
   chipShield,
+  CHIPS,
+  completesSet,
   describeOption,
+  enemyHp,
   fitsBuild,
   isRelicDraft,
   needsChoice,
   optionDeltas,
   rerollCost,
+  setProgress,
+  TOTAL_FIGHTS,
   type DraftOption,
   type FightRecord,
   type RunState,
   type ShopItem,
 } from '../core/run';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
-import { BOSS_HP_PER_RELIC } from '../core/relics';
 import type { RelicId } from '../core/config';
 import { COUNTER_RELICS } from '../core/relics';
 import { DANGER } from '../core/enemies';
@@ -25,7 +29,7 @@ import { backOut, sineOut } from '../present/ease';
 import { ABILITY_UI } from '../present/hud';
 import { ENH_SPRITE } from '../present/reel';
 import { COLORS, H, W } from '../present/layout';
-import { drawSprite, type SpriteId } from '../render/sprites';
+import { artId, drawSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet';
@@ -70,6 +74,11 @@ export const BADGE: Record<string, SpriteId> = {
   gremlin: 'mapBadgeLock',
   brute: 'mapBadgeFist',
   house: 'mapBadgeCoin',
+  bomber: artId('mapBadgeBomb'),
+  hexer: artId('mapBadgeHex'),
+  vampire: artId('mapBadgeFang'),
+  mimic: artId('mapBadgeMimic'),
+  mirror: artId('mapBadgeMirror'),
 };
 
 function abilityText(e: EnemyDef, every: number): string {
@@ -84,6 +93,11 @@ function abilityText(e: EnemyDef, every: number): string {
     quake: `ADDS ${e.ability.power} ROCKS TO YOUR STRIPS`,
     jam: `JAMS A REEL FOR ${e.ability.power} TURNS`,
     jackpot: 'SKIMS HALF THE POT AT YOU',
+    carpet: `STICKS ${e.ability.power} BOMBS ON YOUR CELLS`,
+    curse: `HEXES ${e.ability.power} REELS FOR 2 TURNS`,
+    bloodmoon: `HEALS ${e.ability.power} HP`,
+    gulp: `EATS ${e.ability.power} OF YOUR CHIPS`,
+    reflect: `HITS YOU WITH YOUR LAST SPIN'S DAMAGE (MIN ${REFLECT_MIN}, MAX ${e.ability.power})`,
   };
   return `${ui.label} EVERY ${every} TURNS: ${what[e.ability.kind]}`;
 }
@@ -103,7 +117,7 @@ export class RunScreens {
   private picked = -1;
   private lastRecord: FightRecord | null = null;
   /** 'spoils' = an elite's relic choice (1 of 2) shown with the draft layout. */
-  private draftKind: 'draft' | 'spoils' = 'draft';
+  private draftKind: 'draft' | 'spoils' | 'legend' = 'draft';
   private shopItems: ShopItem[] = [];
   private shopHits: Hit[] = [];
   private chipPulse = 1;
@@ -117,6 +131,7 @@ export class RunScreens {
     private cb: {
       onPick: (o: DraftOption) => void;
       onSpoils: (relic: RelicId) => void;
+      onLegend: (relic: RelicId) => void;
       onFight: (option: number) => void;
       onNewRun: () => void;
       onBuy: (index: number) => void;
@@ -184,7 +199,13 @@ export class RunScreens {
     this.showDraft(run, relics.map((relic) => ({ kind: 'relic', relic }) as DraftOption), last, 'spoils');
   }
 
-  showDraft(run: RunState, offers: DraftOption[], last: FightRecord | null, kind: 'draft' | 'spoils' = 'draft'): void {
+  /** An act's boss fell: pick 1 of 3 legendary relics. */
+  showLegend(run: RunState, relics: RelicId[], last: FightRecord | null): void {
+    this.showDraft(run, relics.map((relic) => ({ kind: 'relic', relic }) as DraftOption), last, 'legend');
+    this.sounds.fanfareJackpot();
+  }
+
+  showDraft(run: RunState, offers: DraftOption[], last: FightRecord | null, kind: 'draft' | 'spoils' | 'legend' = 'draft'): void {
     this.draftKind = kind;
     this.run = run;
     this.offers = offers;
@@ -201,7 +222,9 @@ export class RunScreens {
         void this.ui
           .tween({ from: 1.08, to: 1.18, dur: 0.15, ease: backOut(2), onUpdate: (v) => (card.scale = v) })
           .then(() => this.ui.wait(0.35))
-          .then(() => (kind === 'spoils' && o.kind === 'relic' ? this.cb.onSpoils(o.relic) : this.cb.onPick(o)));
+          .then(() =>
+            kind === 'legend' && o.kind === 'relic' ? this.cb.onLegend(o.relic) : kind === 'spoils' && o.kind === 'relic' ? this.cb.onSpoils(o.relic) : this.cb.onPick(o),
+          );
       }),
     );
     // Deal the cards in.
@@ -220,7 +243,8 @@ export class RunScreens {
     if (needsChoice(run)) {
       this.buttons = run.paths[run.depth].map((_, i) => this.btn('FIGHT THIS ONE', W / 2 + (i === 0 ? -310 : 310), 580, 260, 56, () => this.cb.onFight(i)));
     } else {
-      this.buttons = [this.btn(run.depth >= RUN_FIGHTS ? 'FACE THE HOUSE' : 'FIGHT!', W / 2, 640, 260, 64, () => this.cb.onFight(0))];
+      const boss = run.depth >= RUN_FIGHTS ? (run.act > 1 ? 'FACE THE MIRROR' : 'FACE THE HOUSE') : 'FIGHT!';
+      this.buttons = [this.btn(boss, W / 2, 640, 290, 64, () => this.cb.onFight(0))];
     }
   }
 
@@ -416,15 +440,16 @@ export class RunScreens {
     }
     this.drawMap(ctx, 158, time);
     const spoils = this.draftKind === 'spoils';
-    const relicDraft = !spoils && isRelicDraft(this.run!);
-    const heading = spoils ? 'ELITE SPOILS - CHOOSE A RELIC' : relicDraft ? 'RELIC DRAFT - CHOOSE ONE' : 'CHOOSE ONE';
-    drawText(ctx, heading, W / 2, 244, 3, spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
+    const legend = this.draftKind === 'legend';
+    const relicDraft = !spoils && !legend && isRelicDraft(this.run!);
+    const heading = legend ? 'ACT 2 BEGINS - FULLY HEALED - CHOOSE A LEGENDARY RELIC' : spoils ? 'ELITE SPOILS - CHOOSE A RELIC' : relicDraft ? 'RELIC DRAFT - CHOOSE ONE' : 'CHOOSE ONE';
+    drawText(ctx, heading, W / 2, 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
     this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], this.deltas[i], i, time));
-    this.panel(ctx, 110, 500, 1060, 134);
-    this.drawStrips(ctx, 130, 516, this.run!.player.strips);
-    this.drawRelics(ctx, 560, 516);
-    drawText(ctx, 'HP', 900, 516, 2, COLORS.textDim, { align: 'left' });
-    this.drawHp(ctx, 900, 556, 220);
+    this.panel(ctx, 110, 530, 1060, 134);
+    this.drawStrips(ctx, 130, 546, this.run!.player.strips);
+    this.drawRelics(ctx, 560, 546);
+    drawText(ctx, 'HP', 900, 546, 2, COLORS.textDim, { align: 'left' });
+    this.drawHp(ctx, 900, 586, 220);
   }
 
   private drawCard(ctx: CanvasRenderingContext2D, c: Hit, o: DraftOption, delta: { gain: string; loss: string }, i: number, time: number): void {
@@ -489,7 +514,10 @@ export class RunScreens {
     }
     drawText(ctx, title, 0, 2, title.length > 13 ? 2 : 3, accent);
     wrap(text, 20).forEach((line, k) => drawText(ctx, line, 0, 32 + k * 20, 2, COLORS.text));
-    if (this.run && fitsBuild(this.run, o)) drawSprite(ctx, 'tagBuild', -w / 2 + 36, -h / 2 + 14, 2.5);
+    if (this.run && completesSet(this.run, o)) this.setTag(ctx, -w / 2 + 8, -h / 2 + 6, time);
+    else if (this.run && fitsBuild(this.run, o)) drawSprite(ctx, 'tagBuild', -w / 2 + 36, -h / 2 + 14, 2.5);
+    if (this.run && o.kind === 'gild') this.setPips(ctx, w / 2 - 12, -h / 2 + 14, o.enh);
+    if (o.kind === 'relic' && LEGENDARY.has(o.relic)) drawText(ctx, 'LEGENDARY', 0, -h / 2 - 10, 2, COLORS.goldLight);
     // Gain in green, cost in red, per spin.
     const lines = [delta.gain && [delta.gain, '#b6ff9a'], delta.loss && [delta.loss, '#ff8a7a']].filter(Boolean) as [string, string][];
     lines.forEach(([t, col], k) => {
@@ -500,6 +528,32 @@ export class RunScreens {
     });
 
     ctx.restore();
+  }
+
+  /** Gold "COMPLETES SET" ribbon (playtest ITERATION_5: finishing a set is the best buy in the game). */
+  private setTag(ctx: CanvasRenderingContext2D, x: number, y: number, time: number): void {
+    const glow = 0.75 + 0.25 * Math.sin(time * 6);
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x, y, 134, 18);
+    ctx.fillStyle = COLORS.gold;
+    ctx.globalAlpha = glow;
+    ctx.fillRect(x + 2, y + 2, 130, 14);
+    ctx.globalAlpha = 1;
+    drawText(ctx, 'COMPLETES SET', x + 67, y + 9, 1.5, COLORS.outline);
+  }
+
+  /** Set progress pips: one per reel that already carries this gild. */
+  private setPips(ctx: CanvasRenderingContext2D, x: number, y: number, enh: Enh): void {
+    const run = this.run!;
+    const need = run.player.relics.includes('ticket') ? 2 : 3;
+    const have = setProgress(run, enh);
+    for (let k = 0; k < need; k++) {
+      const px = x - (need - 1 - k) * 12;
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(px - 5, y - 5, 10, 10);
+      ctx.fillStyle = k < have ? COLORS.goldLight : k === have ? '#8a6a2a' : '#2a2238';
+      ctx.fillRect(px - 3, y - 3, 6, 6);
+    }
   }
 
   /** One enemy's scouting report. */
@@ -517,9 +571,9 @@ export class RunScreens {
     const tx = x + 136;
     drawText(ctx, e.name ?? 'ENEMY', tx, y + 30, e.name && e.name.length > 18 ? 2 : 3, e.isBoss ? '#ff6a5a' : COLORS.slime, { align: 'left' });
     wrap(e.blurb, Math.floor((w - 150) / 12)).forEach((l, k) => drawText(ctx, l, tx, y + 60 + k * 18, 2, COLORS.text, { align: 'left' }));
-    const hp = e.isBoss ? e.hp + BOSS_HP_PER_RELIC * this.run!.player.relics.length : e.hp;
+    const hp = enemyHp(this.run!, e);
     drawText(ctx, `HP ${hp}`, tx, y + 104, 2, COLORS.hp, { align: 'left' });
-    if (e.isBoss) {
+    if (e.boss === 'house') {
       const sh = chipShield(this.run!.player.chips);
       drawSprite(ctx, 'chipShield', tx + 110, y + 104, 2);
       drawText(ctx, `YOUR ${this.run!.player.chips} CHIPS: +${sh} SHIELD EACH HOUSE TURN`, tx + 128, y + 104, 1, '#9fd0ff', { align: 'left' });
@@ -530,15 +584,21 @@ export class RunScreens {
       drawSprite(ctx, ABILITY_UI[e.ability.kind].icon, x + 24, y + 146, 2);
       wrap(abilityText(e, every), Math.floor((w - 60) / 12)).forEach((l, k) => drawText(ctx, l, x + 40, y + 146 + k * 18, 2, '#ff9a3a', { align: 'left' }));
     }
-    drawText(ctx, 'THEIR REELS', x + 16, y + 200, 2, COLORS.textDim, { align: 'left' });
+    const mirror = e.boss === 'mirror';
+    drawText(ctx, mirror ? 'THEIR REELS: A COPY OF YOURS (REEL 1)' : 'THEIR REELS', x + 16, y + 200, 2, mirror ? '#c8f0ff' : COLORS.textDim, { align: 'left' });
     let cx = x + 36;
-    for (const [sym, n] of Object.entries(e.strips[0]) as [SymbolId, number][]) {
+    const shown = mirror ? this.run!.player.strips[0] : e.strips[0];
+    for (const [sym, n] of (Object.entries(shown) as [SymbolId, number][]).filter(([, n]) => n > 0)) {
       drawSprite(ctx, sym as SpriteId, cx, y + 232, 2);
       drawText(ctx, `${n}`, cx + 24, y + 232, 2, COLORS.text, { align: 'left' });
       cx += 72;
     }
+    const bossText =
+      e.boss === 'mirror'
+        ? 'IT PLAYS A COPY OF YOUR MACHINE: YOUR STRIPS AND YOUR GILDS, BUT NONE OF YOUR RELICS. ITS HP IS SIZED TO YOURS. EVERY 4 TURNS IT THROWS YOUR LAST SPIN BACK AT YOU. AT HALF HP IT CRACKS AND REFLECTS EVERY 3 TURNS.'
+        : `COINS + A CUT EACH TURN FILL THE POT. EVERY 4 TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +1 SHIELD EACH HOUSE TURN.`;
     if (e.isBoss)
-      wrap('COINS + A CUT EACH TURN FILL THE POT. EVERY 4 TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY 5 CHIPS YOU KEEP GIVES +1 SHIELD EACH HOUSE TURN.', Math.floor((w - 32) / 6)).forEach((l, k) =>
+      wrap(bossText, Math.floor((w - 32) / 6)).forEach((l, k) =>
         drawText(ctx, l, x + 16, y + 262 + k * 12, 1, COLORS.goldLight, { align: 'left' }),
       );
   }
@@ -548,7 +608,9 @@ export class RunScreens {
     const opts = run.paths[run.depth];
     const fork = needsChoice(run);
     const e = run.enemies[run.depth];
-    drawText(ctx, e.isBoss ? 'FINAL FIGHT' : fork ? `FIGHT ${run.depth + 1} OF ${RUN_FIGHTS} - CHOOSE YOUR PATH` : `FIGHT ${run.depth + 1} OF ${RUN_FIGHTS}`, W / 2, 26, 3, fork ? COLORS.goldLight : COLORS.textDim);
+    const act = `ACT ${run.act} - `;
+    const title = e.isBoss ? (run.act >= ACTS ? 'FINAL FIGHT' : `${act}BOSS FIGHT`) : fork ? `${act}FIGHT ${run.depth + 1} OF ${RUN_FIGHTS} - CHOOSE YOUR PATH` : `${act}FIGHT ${run.depth + 1} OF ${RUN_FIGHTS}`;
+    drawText(ctx, title, W / 2, 26, 3, fork ? COLORS.goldLight : run.act > 1 ? '#c8f0ff' : COLORS.textDim);
     this.drawMap(ctx, 128, time);
     if (fork) {
       opts.forEach((o, i) => this.drawEnemyPanel(ctx, o, i === 0 ? 40 : W / 2 + 20, 222, W / 2 - 60, time));
@@ -616,8 +678,10 @@ export class RunScreens {
     const quips = ['PLACE YOUR BETS.', 'EVERYTHING HAS A PRICE, FRIEND.', 'THE HOUSE WILL HEAR ABOUT THIS.', 'CHIPS ARE FOR SPENDING... OR ARE THEY?'];
     drawText(ctx, quips[(run.depth + run.shopRerolls) % quips.length], 160, 80, 2, COLORS.textDim, { align: 'left' });
     const sh = chipShield(run.player.chips);
-    drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
-    drawText(ctx, `KEEP CHIPS FOR THE HOUSE: RIGHT NOW +${sh} SHIELD EACH HOUSE TURN (1 PER ${8})`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
+    if (run.act === 1) {
+      drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
+      drawText(ctx, `KEEP CHIPS FOR THE HOUSE: RIGHT NOW +${sh} SHIELD EACH HOUSE TURN (1 PER ${CHIPS.stackPer})`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
+    } else drawText(ctx, 'ACT 2: LEGENDARY RELICS ON THE TOP SHELF. NEW GILDS: VAMP, LUCKY, BLAZE.', W / 2, 150, 2, COLORS.goldLight);
     drawText(ctx, 'HP', W - 360, 80, 2, COLORS.textDim, { align: 'left' });
     this.drawHp(ctx, W - 330, 80, 190);
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
@@ -681,7 +745,10 @@ export class RunScreens {
     drawText(ctx, title, 0, 22, title.length > 12 ? 2 : 3, o.kind === 'gild' ? '#ffd23f' : o.kind === 'relic' ? '#c9a0ff' : COLORS.text);
     const lines = wrap(text, 16).slice(0, 3);
     lines.forEach((line, k) => drawText(ctx, line, 0, 46 + k * 17, 2, COLORS.text));
-    if (this.run && fitsBuild(this.run, o)) drawSprite(ctx, 'tagBuild', -h.w / 2 + 34, -h.h / 2 + 14, 2.5);
+    if (this.run && completesSet(this.run, o)) this.setTag(ctx, -h.w / 2 + 6, -h.h / 2 + 6, time);
+    else if (this.run && fitsBuild(this.run, o)) drawSprite(ctx, 'tagBuild', -h.w / 2 + 34, -h.h / 2 + 14, 2.5);
+    if (this.run && o.kind === 'gild') this.setPips(ctx, h.w / 2 - 12, -h.h / 2 + 14, o.enh);
+    if (o.kind === 'relic' && LEGENDARY.has(o.relic)) drawText(ctx, 'LEGENDARY', 0, -h.h / 2 - 10, 2, COLORS.goldLight);
     if (this.run && !item.sold) {
       const d = optionDeltas(this.run, o, this.base());
       if (d.gain) drawText(ctx, d.gain, 0, 46 + lines.length * 17 + 6, 1, '#b6ff9a');
@@ -722,8 +789,8 @@ export class RunScreens {
 
   private drawOver(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
-    drawText(ctx, run.won ? 'THE HOUSE FALLS!' : 'RUN OVER', W / 2, 44, 6, run.won ? COLORS.goldLight : COLORS.danger);
-    const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? 'BEAT ALL 6 FIGHTS' : `FELL AT FIGHT ${run.records.length} OF ${RUN_FIGHTS + 1}`}`;
+    drawText(ctx, run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, 6, run.won ? COLORS.goldLight : COLORS.danger);
+    const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${TOTAL_FIGHTS} FIGHTS` : `FELL AT FIGHT ${run.records.length} OF ${TOTAL_FIGHTS} (ACT ${run.act})`}`;
     if (this.unlockedNow.length)
       drawText(ctx, `NEW CABINET UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, W / 2, 110, 2, COLORS.goldLight);
     drawText(ctx, reached, W / 2, 88, 2, COLORS.textDim);
@@ -732,17 +799,28 @@ export class RunScreens {
     drawText(ctx, 'ROUNDS', 560, 142, 2, COLORS.textDim);
     drawText(ctx, 'HP', 680, 142, 2, COLORS.textDim);
     drawText(ctx, 'THEN PICKED', 790, 142, 2, COLORS.textDim, { align: 'left' });
+    // Up to 12 fights: rows shrink (and drop the detail line) once they stop fitting.
+    const rowH = Math.min(42, Math.floor(290 / Math.max(1, run.records.length)));
+    const compact = rowH < 40;
     run.records.forEach((r, i) => {
-      const y = 176 + i * 42;
+      const y = 170 + i * rowH + (compact ? 0 : 6);
       if (i % 2 === 0) {
         ctx.fillStyle = 'rgba(255,255,255,0.04)';
-        ctx.fillRect(122, y - 18, 1036, 38);
+        ctx.fillRect(122, y - rowH / 2, 1036, rowH - 2);
       }
-      const e = run.enemies[r.depth];
-      drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, 150, y, 1.4);
+      if (compact && r.act && r.act > 1 && run.records[i - 1]?.act === 1) {
+        ctx.fillStyle = '#c8f0ff';
+        ctx.fillRect(122, y - rowH / 2 - 1, 1036, 2);
+      }
+      drawSprite(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 150, y, compact ? 0.9 : 1.4);
       drawText(ctx, r.enemy, 176, y, 2, r.won ? COLORS.text : COLORS.danger, { align: 'left' });
       drawText(ctx, `${Math.ceil(r.turns / 2)}`, 560, y, 2, COLORS.text);
       drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 680, y, 2, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
+      if (compact) {
+        const what = r.eliteRelic ? RELICS[r.eliteRelic].name : r.pick ? describeOption(r.pick).title : r.won ? '' : 'DEFEATED';
+        drawText(ctx, what, 790, y, 2, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
+        return;
+      }
       if (r.pick) drawText(ctx, describeOption(r.pick).title, 790, y - 6, 2, '#c9a0ff', { align: 'left' });
       const extra = [
         r.eliteRelic ? `SPOILS: ${RELICS[r.eliteRelic].name}` : '',

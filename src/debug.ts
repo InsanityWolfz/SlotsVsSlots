@@ -1,5 +1,5 @@
 import type { RelicId, SideId, SymbolId } from './core/config';
-import { ARCHETYPES, BOSS, makeEnemy } from './core/enemies';
+import { ARCHETYPES, BOSS, makeEnemy, MIRROR } from './core/enemies';
 import { Rng } from './core/rng';
 import type { CombatEvent } from './core/events';
 import type { Game } from './game';
@@ -71,11 +71,16 @@ export function installDebug(game: Game): void {
     },
     /** Start a paused sandbox fight against an archetype ('slime', 'frost', 'thief', 'golem', 'gremlin', 'brute', 'house'). */
     vs(id: string, player?: SymbolId[], enemy?: SymbolId[], relics: RelicId[] = []) {
-      const a = id === 'house' ? BOSS : ARCHETYPES.find((x) => x.id === id);
+      const a = id === 'house' ? BOSS : id === 'mirror' ? MIRROR : ARCHETYPES.find((x) => x.id === id);
       if (!a) throw new Error(`no archetype ${id}`);
-      const e = makeEnemy(a, 2, new Rng(1), id === 'house');
+      const boss = id === 'house' || id === 'mirror';
+      const e = makeEnemy(a, 2, new Rng(1), boss, a.acts?.includes(2) ? 2 : 1);
       const cfg = structuredClone(game.cfg);
       cfg.enemy = { hp: e.hp, strips: e.strips, name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
+      if (id === 'mirror') {
+        cfg.enemy.strips = cfg.player.strips.map((x) => ({ ...x }));
+        cfg.enemy.gilded = (cfg.player.gilded ?? []).map((g) => ({ ...g }));
+      }
       cfg.relics = relics;
       game.newFight(true, null, cfg);
       pause();

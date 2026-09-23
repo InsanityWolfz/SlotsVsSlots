@@ -5,8 +5,12 @@ export type { SpriteId };
 
 const cache = new Map<string, HTMLCanvasElement>();
 
+/** Refer to art that may not be generated yet (it falls back to a placeholder until it is). */
+export const artId = (id: string): SpriteId => id as SpriteId;
+
 function build(id: SpriteId, variant: SpriteVariant): HTMLCanvasElement {
-  const rows = SPRITES[id];
+  // Missing art (not generated yet) draws as a placeholder rather than crashing.
+  const rows = SPRITES[id] ?? SPRITES.skull;
   const h = rows.length;
   const w = rows[0].length;
   const c = document.createElement('canvas');

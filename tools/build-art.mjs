@@ -57,6 +57,15 @@ const PALETTE = {
   w: '#c98f58', // light wood (trap / handles top face)
   // --- shop additions
   d: '#561530', // deep velvet red (shop cushion shadow)
+  // --- act 2 additions
+  k: '#3b3347', // soot / bomb charcoal
+  l: '#6d6482', // charcoal light (bomb sheen, slick hair shine)
+  i: '#4fe0bf', // teal light (hex glow)
+  j: '#1b8a7d', // teal (hexer hood)
+  n: '#0c4047', // deep teal
+  x: '#ff4fe0', // hex magenta
+  s: '#9e1f93', // hex magenta dark
+  u: '#c8bddb', // pale skin shadow (vampire)
 };
 
 const UI_COLORS = {
@@ -2129,6 +2138,492 @@ S.cabinetLocked = cabinet({
   },
 });
 
+// ================================================================ ACT 2 (batch 7)
+/** Legendary sparkle: white core with white inner / gold outer arms (small: gold arms only). */
+function legend(g, x, y, big = true) {
+  put(g, x, y, 'W');
+  [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => put(g, x + dx, y + dy, big ? 'W' : 'Y'));
+  if (big) [[2, 0], [-2, 0], [0, 2], [0, -2]].forEach(([dx, dy]) => put(g, x + dx, y + dy, 'Y'));
+}
+/** Lit fuse spark centred at (x,y): white core, yellow cross, orange tail below. */
+function fuseSpark(g, x, y) {
+  put(g, x, y, 'W');
+  [[1, 0], [-1, 0], [0, -1]].forEach(([dx, dy]) => put(g, x + dx, y + dy, 'Y'));
+  put(g, x, y + 1, 'O');
+}
+
+// ---------------------------------------------------------------- act 2 enemy portraits (24x24)
+// bomber: goblin sapper — leather cap, welding goggles pushed up, soot smudges, lit bomb held up by the face
+{
+  const g = grid(24, 24);
+  shape(g, 0, [[7, 11], [5, 13], [3, 14], [2, 15], [2, 15]], edgeShade('a', 'O', 'o'));
+  shape(g, 5, [[2, 14], [2, 14], [2, 14], [2, 14], [2, 14], [2, 14], [2, 14], [3, 13], [3, 13], [4, 12], [4, 12], [5, 11], [6, 10]], edgeShade('X', 'Z', 'z'));
+  stamp(g, 0, 6, ['X', 'XX', 'XzZ', ' Xz', '  z']);   // long left ear
+  stamp(g, 14, 5, ['  Z', ' Zz', 'Zzz']);                // right ear tip peeking over the bomb
+  // goggles pushed up on the cap, strap round the sides
+  stamp(g, 3, 2, ['YGGg  YGGg', 'GWAgbbGWAg', 'GAUgbbGAUg', 'gggg  gggg']);
+  put(g, 2, 3, 'b'); put(g, 13, 3, 'b'); put(g, 14, 3, 'b'); put(g, 15, 3, 'b');
+  // angry brows + big yellow eyes
+  stamp(g, 3, 6, [
+    'zz       zz',
+    ' zzz   zzz ',
+    ' WYK   KYY ',
+    ' YOK   KOY ',
+  ]);
+  plot(g, [[8, 9, 'X'], [7, 10, 'X'], [8, 10, 'Z'], [9, 10, 'z'], [8, 11, 'z'], [9, 11, 'z']]); // hooked nose
+  plot(g, [[3, 11, 'k'], [4, 11, 'l'], [4, 12, 'k'], [12, 10, 'k'], [12, 11, 'l'], [6, 5, 'l'], [7, 5, 'k']]); // soot
+  stamp(g, 4, 12, ['K       K', ' KWKWWKK ', '  KrrrK  ']);  // snaggle grin
+  // orange sapper vest over a sooty shirt, bandolier
+  shape(g, 18, [[4, 12], [2, 15], [1, 17], [0, 18], [0, 18], [0, 18]], edgeShade('a', 'O', 'o'));
+  stamp(g, 6, 18, ['kkkkk', ' kkk ', '  k  ']);
+  for (let i = 0; i < 5; i++) { put(g, 2 + i, 19 + i, 'B'); put(g, 3 + i, 19 + i, 'b'); }
+  // the bomb
+  boulder(g, 18.5, 12.5, 5.3, 5.3, ['l', 'k', 'P']);
+  plot(g, [[16, 9, 'W'], [15, 10, 'W'], [17, 9, 'L'], [15, 11, 'L'], [21, 10, 'o']]);
+  stamp(g, 18, 6, ['LSD', 'SDD']);
+  plot(g, [[19, 5, 'w'], [20, 4, 'B'], [20, 3, 'w'], [21, 2, 'B']]);
+  // green hand cupping the bomb from below (thumb up its left side, fingertips curling over the right)
+  stamp(g, 13, 15, [
+    '        Xz',
+    ' X      Zz',
+    ' XZ   KXZz',
+    '  XZZZZZZz',
+    '   zZZZzz ',
+    '    aOo   ',
+    '   aOOo   ',
+  ]);
+  outline(g);
+  fuseSpark(g, 22, 1); put(g, 20, 0, 'O'); put(g, 23, 3, 'Y');
+  S.enemyBomber = toRows(g);
+}
+// hexer: hex witch — deep teal hood, green face in shadow, glowing magenta eyes, floating sigil
+{
+  const g = grid(24, 24);
+  const hood = [[9, 10], [8, 11], [7, 12], [6, 13], [5, 14], [4, 15], [4, 15], [3, 16], [3, 16], [3, 16], [3, 16], [3, 16], [3, 16], [3, 16], [3, 16],
+    [2, 17], [2, 17], [1, 18], [0, 19], [0, 19], [0, 19], [0, 19], [0, 19], [0, 19]];
+  shape(g, 0, hood, (x, y, has) => (!has(x + 1, y) || x - y * 0.25 >= 12) ? 'n' : (!has(x - 1, y) || !has(x, y - 1)) ? 'i' : 'j');
+  shape(g, 5, [[8, 11], [7, 12], [6, 13], [6, 13], [6, 13], [6, 13], [6, 13], [6, 13], [7, 12], [8, 11]], (x, y) => (y <= 6 ? 'K' : 'n'));
+  shape(g, 9, [[7, 12], [7, 12], [7, 12], [8, 11], [8, 11], [9, 10]], edgeShade('X', 'Z', 'z'));
+  plot(g, [[7, 7, 'x'], [8, 7, 'W'], [11, 7, 'W'], [12, 7, 'x'], [7, 8, 's'], [8, 8, 'x'], [11, 8, 'x'], [12, 8, 's']]); // glowing eyes
+  plot(g, [[10, 10, 'Z'], [11, 11, 'z'], [8, 11, 'E'], [9, 12, 'K'], [10, 12, 'K'], [8, 12, 'z'], [11, 12, 'z']]); // hooked nose, wart, thin mouth
+  plot(g, [[6, 9, 'I'], [6, 10, 'H'], [6, 11, 'I'], [6, 12, 'H'], [13, 10, 'H'], [13, 11, 'h'], [13, 12, 'H']]); // grey hair wisps
+  plot(g, [[9, 16, 'x'], [10, 16, 's'], [9, 17, 's'], [10, 17, 'x'], [9, 15, 'W']]); // clasp
+  for (let y = 19; y <= 23; y++) { put(g, 5, y, 'n'); put(g, 14, y, 'n'); }
+  // floating sigil: magenta ring, teal diamond core
+  for (let y = 0; y < 24; y++) for (let x = 17; x < 24; x++) {
+    const d = Math.hypot(x - 20.5, y - 8.5);
+    if (d >= 2.4 && d <= 3.4) put(g, x, y, x + y <= 27 ? 'M' : x + y >= 31 ? 's' : 'x');
+  }
+  plot(g, [[20, 7, 'i'], [21, 8, 'i'], [20, 9, 'j'], [19, 8, 'i'], [20, 8, 'W'], [21, 9, 'j']]);
+  // bony green hand raised from the robe, conjuring the sigil
+  stamp(g, 17, 13, ['X X', 'XZX', ' Zz', ' zz']);
+  put(g, 19, 12, 'X');
+  outline(g);
+  plot(g, [[20, 12, 's'], [19, 11, 'x']]); // spell thread
+  plot(g, [[17, 3, 'x'], [22, 14, 'M'], [18, 13, 's'], [23, 4, 'M']]);
+  S.enemyHexer = toRows(g);
+}
+// vampire: pale noble — slicked black hair + widow's peak, red eyes, fangs, high red-lined cape collar
+S.enemyVampire = lit(24, 24, [
+  '........................',
+  '.........kllkkk.........',
+  '.......kllkkkkkk........',
+  '......klkkkkkkkkkP......',
+  '.k....lkkkkkkkkkkP....k.',
+  '.kM...lkTTkkkkTukP...rk.',
+  '.kMR..lTTTTkkTTTuP..rrk.',
+  '.kMRR.kTkkTTTTkkuP.rrrk.',
+  '.kMRRdkTTTkTTkTTuPdrrrk.',
+  '.kMRRdkTkRRTTRRkuPdrrrk.',
+  '.kMRRRdTTttTTttTudrrrrk.',
+  '.kMRRRdTTTTTuTTTudrrrrk.',
+  '.kMRRRRdTTTuuTKudrrrrrk.',
+  '.kMRRRRdTuKKKKuudrrrrrk.',
+  '.kMRRRRduuWuuWuudrrrrrk.',
+  '.kMRRRRRdtWuuWtdrrrrrrk.',
+  '.kMRRRRRRdtuutdrrrrrrrk.',
+  '.kMRRRRRRRdttdrrrrrrrrk.',
+  '.kMRRRRRRkWTTTtkrrrrrrk.',
+  'kkMRRRRRkkTTRrtkkrrrrrkk',
+  'kMRRRRRkkkTTTttkkkrrrrrk',
+  'kMRRRRkkkkkTTtkkkkkrrrrk',
+  'kMRRRkkkkkkkTtkkkkkkrrrk',
+  'kMRRkkkkkkkkktkkkkkkkrrk',
+]);
+// mimic: treasure chest monster — lid open as a toothy mouth, long tongue, one eye in the keyhole
+{
+  const g = grid(24, 24);
+  stamp(g, 0, 1, [
+    '   YGwwwwwwwwwwwwwwGg   ',
+    '  YGBBBBBBBBBBBBBBBBGg  ',
+    '  YGbBBBBBbBBBBBbBBBGg  ',
+    ' YYGGGGGGGGGGGGGGGGGGgg ',
+  ]);
+  for (let y = 5; y <= 10; y++) for (let x = 2; x <= 21; x++) put(g, x, y, y <= 6 ? 'K' : y <= 8 ? 'd' : 'r');
+  for (let t = 0; t < 5; t++) { const x = 2 + t * 4; stamp(g, x, 5, ['WTt', ' Tt', ' T']); }
+  for (let t = 0; t < 4; t++) { const x = 4 + t * 4; stamp(g, x, 8, [' T', 'WTt', 'WTt']); }
+  hline(g, 1, 22, 11, 'G'); put(g, 1, 11, 'Y'); put(g, 2, 11, 'Y'); put(g, 22, 11, 'g');
+  for (let y = 12; y <= 21; y++) for (let x = 1; x <= 22; x++) {
+    let c = y === 12 ? 'w' : (y === 16 || y === 21) ? 'b' : 'B';
+    if (x === 1 && y !== 21) c = 'w';
+    if (x >= 21) c = 'b';
+    put(g, x, y, c);
+  }
+  hline(g, 1, 22, 22, 'b');
+  for (let y = 11; y <= 22; y++) { put(g, 3, y, 'Y'); put(g, 4, y, 'G'); put(g, 19, y, 'G'); put(g, 20, y, 'g'); }
+  plot(g, [[3, 13, 'W'], [3, 19, 'W'], [19, 13, 'Y'], [19, 19, 'Y']]);
+  stamp(g, 9, 13, [
+    ' YGGg ',
+    'YGGGGg',
+    'GWTTtg',
+    'GTRKtg',
+    'GtTTtg',
+    'GGKKGg',
+    'gGKKgg',
+    ' gggg ',
+  ]);
+  // long tongue lolling out over the rim and down the front
+  const tongue = [[9, 8, 'MRRRr'], [8, 9, 'MRRr'], [7, 10, 'MRRr'], [6, 11, 'MRRr'], [5, 12, 'MRRr'], [5, 13, 'MRr'], [5, 14, 'MRr'], [5, 15, 'MRr'], [5, 16, 'RRr'], [5, 17, 'rRr'], [6, 18, 'r']];
+  tongue.forEach(([x, y, s]) => [...s].forEach((c, i) => put(g, x + i, y, c)));
+  S.enemyMimic = toRows(outline(g));
+}
+// mirror: FINAL BOSS — ornate gold/silver oval, cracked glass holding the hero's ghostly, flipped, cyan reflection
+{
+  const g = grid(24, 24);
+  const cx = 11.5, cy = 11.5;
+  const ell = (x, y, rx, ry) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
+  for (let y = 0; y < 24; y++) for (let x = 0; x < 24; x++) {
+    if (!ell(x, y, 9.4, 11)) continue;
+    const s = (x - cx) / 9.4 + (y - cy) / 11;
+    if (ell(x, y, 6.9, 8.6)) put(g, x, y, s > 0.8 ? 'N' : 'n');
+    else if (ell(x, y, 7.9, 9.6)) put(g, x, y, s < -0.5 ? 'L' : s > 0.5 ? 'D' : 'S');
+    else put(g, x, y, s < -0.55 ? 'Y' : s > 0.55 ? 'g' : 'G');
+  }
+  // the hero, drawn in hero colours then recoloured to a ghost and flipped left-right
+  const hero = [
+    '     RR     ',
+    '    RWRr    ',
+    '     Rr     ',
+    '   WLLLSS   ',
+    '  WLLLLLSSD ',
+    '  LLLLLLSSD ',
+    ' YGGGGGGGGg ',
+    '  LSFFFFSSD ',
+    '  LSKFFKfSD ',
+    '  LSFFFFfSD ',
+    '  SSFbbFfSD ',
+    '  SSSFFfSSD ',
+    '   SSSSSSD  ',
+    ' LLSAUGUNSD ',
+    'LLSSAGGGUNSD',
+  ];
+  // ghost palette: steel -> cyan (lit side now on the RIGHT), face -> hollow navy, eyes -> burning red
+  const GHOST = { R: 'A', r: 'c', W: 'W', L: 'C', S: 'A', D: 'c', Y: 'W', G: 'C', g: 'c', F: 'N', f: 'n', K: 'R', b: 'c', A: 'C', U: 'c', N: 'N' };
+  stamp(g, 6, 4, hero.map((r) => [...r].reverse().map((c) => (c === ' ' ? ' ' : GHOST[c])).join('')));
+  // cracks: impact star high on the right of the glass, fractures running down its edge and across the lower-left
+  const upper = [[16, 6], [15, 7], [14, 8], [13, 8], [12, 9], [16, 7], [17, 8], [17, 9], [16, 10], [16, 11]];
+  const lower = [[6, 14], [7, 15], [7, 16], [8, 17], [9, 17], [9, 18], [10, 19]];
+  [...upper, ...lower].forEach(([x, y]) => put(g, x, y, 'W'));
+  lower.forEach(([x, y]) => { if (ell(x, y + 1, 6.9, 8.6) && get(g, x, y + 1) !== 'W') put(g, x, y + 1, 'K'); });
+  plot(g, [[17, 5, 'C'], [15, 5, 'C'], [17, 6, 'W'], [15, 6, 'K'], [13, 9, 'K'], [5, 13, 'C'], [8, 16, 'C']]);
+  // crest: gold fleur with a blood-red gem breaking the top of the frame
+  stamp(g, 8, 0, [
+    '  YGGg  ',
+    ' YGRRgg ',
+    'YGRWRrGg',
+    ' gGRrGg ',
+  ]);
+  // side flourishes
+  stamp(g, 0, 9, [' Y', 'YGG', 'Gg', ' g']);
+  stamp(g, 21, 9, [' Gg', 'GGg', ' gg', ' g']);
+  stamp(g, 10, 21, ['GRRg', ' rr ']); // drop gem at the foot of the frame
+  outline(g);
+  // eerie cyan glow hugging the frame
+  for (let y = 0; y < 24; y++) for (let x = 0; x < 24; x++)
+    if (g[y][x] === '.' && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => get(g, x + dx, y + dy) === 'K')) g[y][x] = (x + y) % 3 ? 'c' : 'N';
+  S.enemyMirror = toRows(g);
+}
+
+// ---------------------------------------------------------------- act 2 enemy reel symbols (16x16)
+// bomb: round charcoal bomb, steel collar, lit sparking fuse
+{
+  const g = grid(16, 16);
+  boulder(g, 7, 9, 5.5, 5.5, ['l', 'k', 'P']);
+  plot(g, [[4, 6, 'W'], [5, 5, 'W'], [4, 7, 'L'], [6, 5, 'L'], [11, 7, 'o']]);
+  stamp(g, 10, 3, ['LS', 'SD']);
+  plot(g, [[12, 2, 'w'], [12, 1, 'B']]);
+  outline(g);
+  fuseSpark(g, 14, 1); put(g, 15, 3, 'O'); put(g, 12, 0, 'Y');
+  S.bomb = toRows(g);
+}
+// hex: magenta sigil ring, teal glowing eye inside, runes on the ring
+{
+  const g = grid(16, 16);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const d = Math.hypot(x - 7.5, y - 7.5);
+    if (d >= 5.9 && d <= 7.4) put(g, x, y, x + y <= 11 ? 'M' : x + y >= 19 ? 's' : 'x');
+  }
+  plot(g, [[7, 1, 'i'], [8, 1, 'W'], [1, 7, 'W'], [1, 8, 'i'], [14, 7, 'i'], [14, 8, 'j'], [7, 14, 'j'], [8, 14, 'i']]);
+  stamp(g, 3, 5, [
+    '   jjjj   ',
+    ' jjiiiijj ',
+    'jiiixxiiij',
+    'jiixWKxiij',
+    ' jjixxijj ',
+    '   jjjj   ',
+  ]);
+  S.hex = toRows(outline(g));
+}
+// fangs: red gum, two long fangs, a drop of blood falling from the right one
+S.fangs = lit(16, 16, [
+  '................',
+  '...MRRRRRRRRr...',
+  '..MRRRRRRRRRRr..',
+  '.MRRrrrrrrrrRRr.',
+  '.rWTTtTtTtWTTtr.',
+  '..WTTt....WTTt..',
+  '...WTt....WTt...',
+  '...WTt....WTr...',
+  '....Tt.....Tr...',
+  '....T......T....',
+  '....t......R....',
+  '................',
+  '...........R....',
+  '..........MRr...',
+  '..........Rrr...',
+]);
+// mimicSym: tiny chest, lid cracked open on a row of teeth, eye in the keyhole
+S.mimicSym = lit(16, 16, [
+  '................',
+  '....wwwwwwww....',
+  '..YGwwwwwwwwGg..',
+  '..YGBBBBBBBBGg..',
+  '.YYGGGGGGGGGGgg.',
+  '..WTdWTdWTdWTd..',
+  '..WRRWddWddWdd..',
+  '..dWTdWTdWTdWT..',
+  '.YYGGGGGGGGGGgg.',
+  '.YGwwwYGGgwwwGg.',
+  '.YGBBBGTRgBBBGg.',
+  '.YGBBBGKKgBBBGg.',
+  '.YGbbbggggbbbGg.',
+  '.GgBBBBBBBBBBgg.',
+  '.gggbbbbbbbbggg.',
+]);
+
+// ---------------------------------------------------------------- act 2 cell overlays (16x16, centre untouched)
+// bombOverlay: small lit bomb stuck in the bottom-right corner
+{
+  const g = grid(16, 16);
+  boulder(g, 12, 12, 3.2, 3.2, ['l', 'k', 'P']);
+  plot(g, [[11, 10, 'W'], [10, 11, 'L']]);
+  stamp(g, 13, 8, ['S']);
+  plot(g, [[12, 7, 'w'], [12, 6, 'B']]);
+  outline(g);
+  fuseSpark(g, 11, 5); put(g, 13, 5, 'O');
+  S.bombOverlay = toRows(g);
+}
+// hexOverlay: thin magenta rune ring round the cell edge, a glyph plate in each corner
+{
+  const g = grid(16, 16);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const d = Math.min(x, y, 15 - x, 15 - y);
+    if (d === 0) put(g, x, y, 's');
+    else if (d === 1) put(g, x, y, (x === 1 || y === 1) && x + y < 28 ? 'x' : 's');
+  }
+  const glyphs = [['xWx', 'W.W', 'xWx'], ['WWW', '.x.', '.W.'], ['.W.', 'WxW', '.W.'], ['W..', 'xWx', '..W']];
+  [[0, 0], [11, 0], [0, 11], [11, 11]].forEach(([x0, y0], i) => {
+    for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) put(g, x0 + x, y0 + y, (x === 0 || y === 0 || x === 4 || y === 4) ? 'K' : 's');
+    stamp(g, x0 + 1, y0 + 1, glyphs[i].map((r) => r.replace(/\./g, ' ')));
+  });
+  // rune ticks mid-edge
+  plot(g, [[7, 1, 'W'], [8, 1, 'M'], [1, 7, 'W'], [1, 8, 'M'], [7, 14, 'M'], [8, 14, 'x'], [14, 7, 'M'], [14, 8, 'x']]);
+  S.hexOverlay = toRows(g);
+}
+
+// ---------------------------------------------------------------- act 2 upgrade overlays (16x16)
+// vamp: blood dripping from the top edge, tiny heart in the bottom-right corner
+{
+  const g = grid(16, 16);
+  hline(g, 0, 15, 0, 'R');
+  const drips = [[1, 2], [2, 3], [5, 1], [8, 4], [9, 2], [12, 1], [14, 3]];
+  drips.forEach(([x, len]) => { for (let y = 1; y <= len; y++) put(g, x, y, 'R'); put(g, x, len + 1, 'r'); });
+  plot(g, [[2, 0, 'M'], [3, 0, 'M'], [8, 1, 'M']]);
+  stamp(g, 10, 11, ['MR Rr', 'RRRrr', ' Rrr ', '  r  ']);
+  put(g, 10, 11, 'W');
+  S.enhVamp = toRows(outline(g));
+}
+// lucky: four-leaf clover in the top-left, green + gold sparkles
+{
+  const g = grid(16, 16);
+  stamp(g, 0, 0, [
+    ' EE Ee ',
+    'EWEeeeQ',
+    'EEeQeQQ',
+    ' eQqQQ ',
+    'EeeQeeQ',
+    'EeQQQQQ',
+    ' QQ QQ ',
+  ]);
+  plot(g, [[6, 6, 'Q'], [7, 7, 'Q'], [7, 8, 'q']]);
+  outline(g);
+  legend(g, 13, 2, false); plot(g, [[12, 2, 'E'], [14, 2, 'E'], [13, 1, 'E'], [13, 3, 'E']]);
+  legend(g, 2, 13, false);
+  plot(g, [[13, 13, 'W'], [12, 13, 'E'], [14, 13, 'E'], [13, 12, 'E'], [13, 14, 'E']]);
+  S.enhLucky = toRows(g);
+}
+// blaze: flames licking up the bottom edge
+{
+  const g = grid(16, 16);
+  const heights = [3, 5, 4, 2, 3, 6, 4, 3, 2, 4, 5, 3, 2, 4, 6, 3];
+  heights.forEach((h, x) => {
+    for (let i = 0; i < h; i++) {
+      const y = 15 - i;
+      put(g, x, y, i >= h - 1 ? 'o' : i >= h - 2 ? 'O' : i <= 1 && h >= 4 ? 'Y' : 'O');
+    }
+  });
+  plot(g, [[5, 14, 'W'], [14, 14, 'W'], [10, 15, 'W'], [1, 15, 'Y'], [2, 14, 'Y']]);
+  S.enhBlaze = toRows(outline(g));
+}
+
+// ---------------------------------------------------------------- legendary relics (16x16)
+S.relicTicket = lit(16, 16, [
+  '................',
+  '................',
+  '................',
+  '..WYYYYYYYYYYg..',
+  '.YYGGGGGGGGgYGg.',
+  '.YGgggggggggYGg.',
+  '..YGGRRGGGGgGg..',
+  '..YGRWRrGGGgGg..',
+  '..YGGRrGGGGgGg..',
+  '.YGgggggggggYGg.',
+  '.YGGGGGGGGGGgGg.',
+  '..ggggggggggggg.',
+]);
+S.relicBell = lit(16, 16, [
+  '................',
+  '.......RR.......',
+  '......RMRr......',
+  '.......YG.......',
+  '......YGGg......',
+  '.....YWGGGg.....',
+  '....YWYGGGgg....',
+  '....YYGGGGgg....',
+  '....YGGGGGgg....',
+  '...YYGGGGGGgg...',
+  '..YYGGGGGGGGgg..',
+  '.YWYYYYYYYYYYGg.',
+  '.gggggggggggggg.',
+  '.......SD.......',
+  '.......DD.......',
+]);
+S.relicPhoenix = lit(16, 16, [
+  '..............Y.',
+  '...........YOYW.',
+  '..........YOOYY.',
+  '.........ROYYO..',
+  '........RROYO...',
+  '.......RRROYO...',
+  '......rRRROO....',
+  '.....rrRRROo....',
+  '....rrRRRRo.....',
+  '...rrRRRRo......',
+  '...rRRROo.......',
+  '....RRoo........',
+  '...Tt...........',
+  '..Tt............',
+  '.Tt.............',
+]);
+S.relicOvercharge = lit(16, 16, [
+  '..Y.....W....Y..',
+  '...YW..YY...W...',
+  '....Y.YWY..Y....',
+  '......LLSD......',
+  '....WLLLLLLS....',
+  '....LSDDDDDN....',
+  '..YYLSYYYYDNYY..',
+  '...WLSYWYYDNY...',
+  '....LSYYYYDN....',
+  '....LSYYYYDN....',
+  '..YYLSYYYYDN....',
+  '....LSYYYYDNYY..',
+  '....YYYYYYOO....',
+  '....YWYYYYOo....',
+  '....OOOOOOoo....',
+]);
+S.relicKey = lit(16, 16, [
+  '................',
+  '..YYYGg.........',
+  '.YWGGGGg........',
+  '.YGgRgGg........',
+  '.YGRWRGg........',
+  '.YGgRgGg........',
+  '..GGGGg.........',
+  '....YGg.........',
+  '.....YGg........',
+  '......YGg.......',
+  '.......YGg......',
+  '........YGgGg...',
+  '.........YGgg...',
+  '..........YGGg..',
+  '...........Ggg..',
+]);
+S.relicSandglass = lit(16, 16, [
+  '................',
+  '..YWYYYYYYYYYg..',
+  '..ggggRRgggggg..',
+  '...Y.CCCCCC.g...',
+  '...G.CYWYYC.g...',
+  '...Y..CYYC..g...',
+  '...G...CO...g...',
+  '...Y...W....g...',
+  '...G...CY...g...',
+  '...Y..C.YC..g...',
+  '...G.C.WYYC.g...',
+  '...Y.CYYYOC.g...',
+  '..YWYYYYYYYYYg..',
+  '..ggggggggggggg.',
+]);
+
+// ---------------------------------------------------------------- act 2 intent icons (8x8)
+S.icoBomb = lit(8, 8, ['', '.....YW', '....B', '..llkk', '.lWkkkP', '.lkkkPP', '..kPPP']);
+S.icoHex = lit(8, 8, ['', '..xxxx', '.xjiijs', '.xiWKis', '.xjiijs', '..ssss']);
+S.icoDrain = lit(8, 8, ['', '...R', '..MRr', '.MRRRr', '.RWRRr', '.RRRrr', '..rrr']);
+S.icoGulp = lit(8, 8, ['', '..MWR..R', '.MRrR', '.WrYr', '.RrYrRr', '.RRrrrr', '..rWWr']);
+S.icoReflect = lit(8, 8, ['', '.Y...Cc', '..Y..Cc', '...YYCc', '..YY.Cc', '.Y...Cc']);
+
+// ---------------------------------------------------------------- act 2 map badges (8x8)
+S.mapBadgeBomb = lit(8, 8, ['', '....YW', '...B', '..lkkk', '.lWkkkP', '.lkkkPP', '..kPPP']);
+S.mapBadgeHex = lit(8, 8, ['', '..Mxxs', '.Mx..xs', '.x.i..s', '.x..ixs', '..xsss']);
+S.mapBadgeFang = lit(8, 8, ['', '.MRRRRr', '.WTrrWT', '.WT..WT', '..T...T', '..t...t']);
+S.mapBadgeMimic = lit(8, 8, ['', '.wwwwwB', '.GGGGGg', '.WdWdWd', '.GGYGGg', '.BBKBBb', '.bbbbbb']);
+S.mapBadgeMirror = lit(8, 8, ['', '..YGGg', '.YCnWg', '.GnWng', '.GWnNg', '.gNNcg', '..ggg']);
+
+// ---------------------------------------------------------------- act 2 header badge (24x12)
+{
+  const g = grid(24, 12);
+  // swallow-tail ribbon ends behind the plaque
+  stamp(g, 0, 4, ['rrrr', ' rrr', 'rrrr', 'dddd']);
+  stamp(g, 20, 4, ['rrrr', 'rrr ', 'rrrr', 'dddd']);
+  // plaque: gold rim, velvet red face
+  for (let y = 1; y <= 10; y++) for (let x = 3; x <= 20; x++) {
+    const rim = y === 1 || y === 10 || x === 3 || x === 20;
+    put(g, x, y, rim ? ((y === 1 || x === 3) ? 'Y' : 'g') : y === 2 ? 'M' : y === 9 ? 'r' : 'R');
+  }
+  put(g, 20, 1, 'G'); put(g, 3, 10, 'G');
+  // "II": roman numerals with serif bars
+  stamp(g, 8, 3, [
+    'WYYYYYYG',
+    ' YG  YG ',
+    ' YG  YG ',
+    ' YG  YG ',
+    ' YG  YG ',
+    'YGGggGGg',
+  ]);
+  S.actBadge2 = toRows(outline(g));
+}
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -2153,6 +2648,13 @@ const DIMS = {
   chipShield: 12, tagBuild: { w: 20, h: 7 }, shopHeal: 16, setStar: 16,
   cabinetKnight: { w: 48, h: 64 }, cabinetMidas: { w: 48, h: 64 }, cabinetThorn: { w: 48, h: 64 },
   cabinetTesla: { w: 48, h: 64 }, cabinetJoker: { w: 48, h: 64 }, cabinetLocked: { w: 48, h: 64 },
+  enemyBomber: 24, enemyHexer: 24, enemyVampire: 24, enemyMimic: 24, enemyMirror: 24,
+  bomb: 16, hex: 16, fangs: 16, mimicSym: 16, bombOverlay: 16, hexOverlay: 16,
+  enhVamp: 16, enhLucky: 16, enhBlaze: 16,
+  relicTicket: 16, relicBell: 16, relicPhoenix: 16, relicOvercharge: 16, relicKey: 16, relicSandglass: 16,
+  icoBomb: 8, icoHex: 8, icoDrain: 8, icoGulp: 8, icoReflect: 8,
+  mapBadgeBomb: 8, mapBadgeHex: 8, mapBadgeFang: 8, mapBadgeMimic: 8, mapBadgeMirror: 8,
+  actBadge2: { w: 24, h: 12 },
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -2228,7 +2730,18 @@ export type SpriteId =
   | 'tagBuild'                                     // green "FITS" build tag, 20x7 (non-square)
   | 'shopHeal' | 'setStar'                         // cashier first-aid tin / full-set bonus star, 16x16
   | 'cabinetKnight' | 'cabinetMidas' | 'cabinetThorn' // run-select slot cabinets, 48x64 (non-square)
-  | 'cabinetTesla' | 'cabinetJoker' | 'cabinetLocked';
+  | 'cabinetTesla' | 'cabinetJoker' | 'cabinetLocked'
+  | 'enemyBomber' | 'enemyHexer' | 'enemyVampire'  // act 2 enemy portraits, 24x24
+  | 'enemyMimic' | 'enemyMirror'                   // (enemyMirror = act 2 final boss)
+  | 'bomb' | 'hex' | 'fangs' | 'mimicSym'          // act 2 enemy reel symbols, 16x16
+  | 'bombOverlay' | 'hexOverlay'                   // act 2 cell overlays, 16x16 (mostly transparent)
+  | 'enhVamp' | 'enhLucky' | 'enhBlaze'            // act 2 upgrade overlays, 16x16 (mostly transparent)
+  | 'relicTicket' | 'relicBell' | 'relicPhoenix'   // legendary relics, 16x16
+  | 'relicOvercharge' | 'relicKey' | 'relicSandglass'
+  | 'icoBomb' | 'icoHex' | 'icoDrain' | 'icoGulp' | 'icoReflect' // act 2 intent icons, 8x8
+  | 'mapBadgeBomb' | 'mapBadgeHex' | 'mapBadgeFang' // act 2 map badges, 8x8
+  | 'mapBadgeMimic' | 'mapBadgeMirror'
+  | 'actBadge2';                                   // act 2 map header plaque, 24x12 (non-square)
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

@@ -9,6 +9,8 @@ export interface StripCell {
   stolen?: boolean;
   /** Gilded for the run. */
   enh?: Enh;
+  /** A Bomber's bomb: turns left on its fuse. Landing it on your payline defuses it. */
+  bomb?: number;
 }
 
 export interface Reel {
@@ -46,7 +48,7 @@ export function effectiveSymbol(cell: StripCell): SymbolId {
 }
 
 /** Symbols that do nothing on the player's own payline (WILD is very much alive). */
-export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'lock', 'ice', 'claw']);
+export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'lock', 'ice', 'claw', 'bomb', 'hex', 'fangs', 'mimicSym']);
 
 /** How much the player would miss losing this symbol (enemy targeting). */
 export function symbolValue(s: SymbolId): number {

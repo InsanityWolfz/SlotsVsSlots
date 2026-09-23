@@ -1,7 +1,22 @@
 import { cloneConfig, type Enh, type GameConfig, type Gild, type RelicId, type StripCounts, type SymbolId } from './config';
-import { generateRunPaths, RUN_FIGHTS, type EnemyDef } from './enemies';
+import { ACTS, generateRunPaths, RUN_FIGHTS, TUNE, type EnemyDef } from './enemies';
 import type { Fight } from './fight';
-import { BANDAGE_HEAL, BOSS_HP_PER_RELIC, BUILD_ENABLER, CACTUS_DAMAGE, COUNTER_RELICS, COUNTERS, ELITE_ONLY, HONE_BONUS, KEEN_BONUS, RELICS, SPIKED_DAMAGE } from './relics';
+import {
+  BANDAGE_HEAL,
+  BLAZE_BONUS,
+  BOSS_HP_PER_RELIC,
+  BUILD_ENABLER,
+  CACTUS_DAMAGE,
+  COUNTER_RELICS,
+  COUNTERS,
+  ELITE_ONLY,
+  HONE_BONUS,
+  KEEN_BONUS,
+  LEGENDARY,
+  LUCKY_CHANCE,
+  RELICS,
+  SPIKED_DAMAGE,
+} from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
 import { Rng } from './rng';
 import { scoreLine } from './scoring';
@@ -26,7 +41,23 @@ export const RUN = {
   wildCount: 2,
   /** The Cashier opens after these fights (1-based), after the draft. */
   shopAfter: [1, 3, 5],
+  /** Legendary relics offered when an act's boss falls. */
+  legendPick: 3,
 };
+
+/** Which gild goes on which symbols (act 2 unlocks VAMP, LUCKY and BLAZE). */
+export const GILD_SYMBOLS: Record<Enh, SymbolId[]> = {
+  gold: ['sword', 'bolt', 'shield'],
+  keen: ['sword'],
+  charged: ['bolt'],
+  spiked: ['shield'],
+  vamp: ['sword'],
+  lucky: ['shield', 'bolt'],
+  blaze: ['bolt'],
+};
+export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'charged', 'spiked'];
+export const ACT2_GILDS: Enh[] = ['vamp', 'lucky', 'blaze'];
+export const gildsFor = (run: RunState): Enh[] => (run.act > 1 ? [...ACT1_GILDS, ...ACT2_GILDS] : ACT1_GILDS);
 
 /** Chip economy (earning is passive, spending happens only at the Cashier). */
 export const CHIPS = {
@@ -42,7 +73,7 @@ export const CHIPS = {
   stackPer: 8,
   /** Every run starts with a little float so shop 1 is a real visit. */
   start: 4,
-  prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 5 },
+  prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 5, legend: 20 },
   /** First reroll per visit costs 1, then +1 each time. */
   rerollBase: 1,
 };
@@ -82,6 +113,11 @@ export interface FightRecord {
   turns: number;
   hpBefore: number;
   hpAfter: number;
+  portrait?: string;
+  /** Which act this fight was in. */
+  act?: number;
+  /** Chips the Mimic ate. */
+  chipsEaten?: number;
   rocksAdded: number;
   rocksCrumbled: number;
   /** Relic taken from an elite's spoils. */
@@ -113,6 +149,12 @@ export interface RunState {
   shopRerolls: number;
   /** The starting machine. */
   cabinet: CabinetId;
+  /** Current act (1 = the House, 2 = the Mirror). */
+  act: number;
+  /** An act's boss fell: choose 1 of these legendary relics. */
+  pendingLegend: RelicId[] | null;
+  /** A new act just began: the Cashier opens before its first fight. */
+  actIntro: boolean;
 }
 
 export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight'): RunState {
@@ -139,7 +181,37 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
     pendingSpoils: null,
     shopRerolls: 0,
     cabinet,
+    act: 1,
+    pendingLegend: null,
+    actIntro: false,
   };
+}
+
+/** Total fights in a full run (all acts, bosses included). */
+export const TOTAL_FIGHTS = ACTS * (RUN_FIGHTS + 1);
+/** 1-based fight number across the whole run. */
+export const fightNumber = (run: RunState) => (run.act - 1) * (RUN_FIGHTS + 1) + run.depth + 1;
+
+/** The act's boss fell: a new map, a full heal, and a legendary pick. */
+function startNextAct(run: RunState): void {
+  run.act++;
+  run.depth = 0;
+  const rng = new Rng((run.seed ^ Math.imul(run.act, 0x3c6ef372)) >>> 0);
+  run.paths = generateRunPaths(rng, run.act);
+  run.enemies = run.paths.map((opts) => opts[0]);
+  run.chosen = run.paths.map((opts) => opts.length === 1);
+  run.player.hp = run.player.maxHp;
+  const pool = [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
+  run.pendingLegend = rng.shuffle(pool).slice(0, RUN.legendPick);
+  run.actIntro = true;
+}
+
+export function takeLegend(run: RunState, relic: RelicId): void {
+  if (!run.pendingLegend?.includes(relic)) return;
+  if (!run.player.relics.includes(relic)) run.player.relics.push(relic);
+  const last = run.records.at(-1);
+  if (last) last.eliteRelic = relic;
+  run.pendingLegend = null;
 }
 
 export const currentEnemy = (run: RunState): EnemyDef => run.enemies[Math.min(run.depth, run.enemies.length - 1)];
@@ -163,15 +235,29 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     startHp: run.player.hp,
     strips: run.player.strips.map((s) => ({ ...s })),
     gilded: run.player.gilded.map((g) => ({ ...g })),
-    stackShield: e.isBoss ? Math.floor(run.player.chips / CHIPS.stackPer) : 0,
+    stackShield: e.boss === 'house' ? Math.floor(run.player.chips / CHIPS.stackPer) : 0,
   };
-  // The House grows with the relics you bring in.
-  const hp = e.isBoss ? e.hp + BOSS_HP_PER_RELIC * run.player.relics.length : e.hp;
+  const hp = enemyHp(run, e);
   cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
+  // The Mirror plays a copy of your machine: your strips and gilds (not your relics).
+  if (e.boss === 'mirror') {
+    cfg.enemy.strips = run.player.strips.map((s) => ({ ...s }));
+    cfg.enemy.gilded = run.player.gilded.map((g) => ({ ...g }));
+  }
   cfg.relics = [...run.player.relics];
   cfg.cabinet = run.cabinet;
   cfg.seed = null;
   return cfg;
+}
+
+/**
+ * An enemy's real HP for this run. Bosses grow with the relics you bring in; the Mirror is sized to
+ * you (a mirror match needs your relics to win).
+ */
+export function enemyHp(run: RunState, e: EnemyDef): number {
+  if (!e.isBoss) return e.hp;
+  const base = e.boss === 'mirror' ? Math.round(run.player.maxHp * TUNE.mirrorPerMaxHp) : e.hp;
+  return base + BOSS_HP_PER_RELIC * run.player.relics.length;
 }
 
 const rocksIn = (s: StripCounts[]) => s.reduce((a, x) => a + (x.rock ?? 0), 0);
@@ -202,6 +288,8 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     turns: fight.turn,
     hpBefore: before,
     hpAfter: p.hp,
+    portrait: currentEnemy(run).portrait,
+    act: run.act,
     rocksAdded: Math.max(0, rocksIn(next) - rocksIn(old)),
     rocksCrumbled: crumbled,
   };
@@ -223,10 +311,15 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     Math.floor(fight.overkill / CHIPS.overkillPer);
   run.player.chips += earned;
   record.chips = earned;
+  if (fight.chipsEaten) {
+    const eaten = Math.min(run.player.chips, fight.chipsEaten);
+    run.player.chips -= eaten;
+    record.chipsEaten = eaten;
+  }
   // Elites offer their spoils: choose 1 of 2 relics.
   if (beaten.elite) {
-    const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && !COUNTER_RELICS.has(r) && relicFits(run, r));
-    const rng = new Rng((run.seed ^ Math.imul(run.depth + 7, 0x85ebca6b)) >>> 0);
+    const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && !COUNTER_RELICS.has(r) && relicFits(run, r) && (run.act > 1 || !LEGENDARY.has(r)));
+    const rng = new Rng((run.seed ^ Math.imul(run.depth + 7 + run.act * 100, 0x85ebca6b)) >>> 0);
     const spoils = rng.shuffle(pool).slice(0, 2);
     if (spoils.length) run.pendingSpoils = spoils;
   }
@@ -235,8 +328,11 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   run.player.hp = Math.min(run.player.maxHp, hp);
   run.depth++;
   if (run.depth > RUN_FIGHTS) {
-    run.over = true;
-    run.won = true;
+    if (run.act < ACTS) startNextAct(run);
+    else {
+      run.over = true;
+      run.won = true;
+    }
   }
   return record;
 }
@@ -261,6 +357,7 @@ export function stripStats(strips: StripCounts[], base: GameConfig, relics: Reli
     return (Object.entries(s) as [SymbolId, number][]).filter(([, n]) => n > 0).map(([sym, n]) => [sym, n / total] as const);
   });
   const cfg = { ...base, pairRule: relics.includes('mirror') ? ('anyTwo' as const) : base.pairRule };
+  const sets = fullSets(gilded, relics);
   const out = { damage: 0, energy: 0, shield: 0, pairPct: 0, jackpotPct: 0, spinsPerSpecial: 0 };
   for (const [a, pa] of probs[0])
     for (const [b, pb] of probs[1])
@@ -271,10 +368,10 @@ export function stripStats(strips: StripCounts[], base: GameConfig, relics: Reli
         for (const g of sc.groups) {
           for (const r of g.reels) {
             const enh = enhOf(r, line[r]);
-            if (enh === 'keen' && g.symbol === 'sword') g.amount += KEEN_BONUS + (relics.includes('hone') ? HONE_BONUS : 0);
-            if (enh === 'charged' && g.symbol === 'bolt') g.amount += 1;
+            if (enh === 'keen' && g.symbol === 'sword') g.amount += (sets.has('keen') ? 2 : KEEN_BONUS) + (relics.includes('hone') ? HONE_BONUS : 0);
+            if (enh === 'charged' && g.symbol === 'bolt') g.amount += sets.has('charged') ? 2 : 1;
           }
-          for (const r of g.reels) if (enhOf(r, line[r]) === 'gold') g.amount *= 2;
+          for (const r of g.reels) if (enhOf(r, line[r]) === 'gold') g.amount *= sets.has('gold') ? 3 : 2;
           if (relics.includes('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) g.amount *= 2;
         }
         sc.totals = {};
@@ -302,7 +399,7 @@ export const isRelicDraft = (run: RunState) => RUN.relicDraftsAfter.includes(run
  * other, so relic-vs-relic is the choice; the rest are strip/HP decisions. Deterministic.
  */
 export function draftOffers(run: RunState): DraftOption[] {
-  const rng = new Rng((run.seed ^ Math.imul(run.depth + 1, 0x9e3779b1)) >>> 0);
+  const rng = new Rng((run.seed ^ Math.imul(run.depth + 1 + (run.act - 1) * 50, 0x9e3779b1)) >>> 0);
   const p = run.player;
   const out: DraftOption[] = [];
   const push = (o: DraftOption | null) => {
@@ -339,8 +436,9 @@ export function draftOffers(run: RunState): DraftOption[] {
       if (pickable.length) return { kind: 'gild', enh: own.enh, symbol: own.symbol, reel: rng.pick(pickable) };
     }
     const favored = CABINETS[run.cabinet].favors;
-    const enh = favored && rng.next() < 0.5 ? favored : rng.pick(['gold', 'keen', 'charged', 'spiked'] as Enh[]);
-    const symbols: SymbolId[] = enh === 'keen' ? ['sword'] : enh === 'charged' ? ['bolt'] : enh === 'spiked' ? ['shield'] : ['sword', 'bolt', 'shield'];
+    // Act 2: the new gilds show up half the time.
+    const enh = favored && rng.next() < 0.5 ? favored : run.act > 1 && rng.next() < 0.5 ? rng.pick(ACT2_GILDS) : rng.pick(ACT1_GILDS);
+    const symbols = GILD_SYMBOLS[enh];
     const options: DraftOption[] = [];
     p.strips.forEach((s, reel) => {
       for (const symbol of symbols) {
@@ -363,8 +461,17 @@ export function draftOffers(run: RunState): DraftOption[] {
   const hpCard = (): DraftOption => (p.hp < p.maxHp * 0.75 ? { kind: 'heal', amount: RUN.healCard } : { kind: 'maxHp', amount: RUN.maxHpCard });
   const relicCard = (): DraftOption | null => {
     const pool = (Object.keys(RELICS) as RelicId[]).filter(
-      (r) => !p.relics.includes(r) && !COUNTER_RELICS.has(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && !out.some((o) => o.kind === 'relic' && o.relic === r),
+      (r) =>
+        !p.relics.includes(r) &&
+        !COUNTER_RELICS.has(r) &&
+        !ELITE_ONLY.has(r) &&
+        relicFits(run, r) &&
+        (run.act > 1 || !LEGENDARY.has(r)) &&
+        !out.some((o) => o.kind === 'relic' && o.relic === r),
     );
+    // Act 2 relic drafts lean legendary.
+    const legends = pool.filter((r) => LEGENDARY.has(r));
+    if (legends.length && rng.next() < 0.4) return { kind: 'relic', relic: rng.pick(legends) };
     return pool.length ? { kind: 'relic', relic: rng.pick(pool) } : null;
   };
   /** PREP: a counter relic for an enemy on the very next fight/fork. */
@@ -440,7 +547,7 @@ export function takeSpoils(run: RunState, relic: RelicId): void {
   run.pendingSpoils = null;
 }
 
-export const isShopNow = (run: RunState) => !run.over && RUN.shopAfter.includes(run.depth);
+export const isShopNow = (run: RunState) => !run.over && (RUN.shopAfter.includes(run.depth) || run.actIntro);
 export const rerollCost = (run: RunState) => CHIPS.rerollBase + run.shopRerolls;
 /** Shield per House turn your current chips would give in the final fight. */
 export const chipShield = (chips: number) => Math.floor(chips / CHIPS.stackPer);
@@ -450,7 +557,7 @@ export const chipShield = (chips: number) => Math.floor(chips / CHIPS.stackPer);
  * or a heal). Deterministic per run seed + depth + rerolls.
  */
 export function shopOffers(run: RunState): ShopItem[] {
-  const rng = new Rng((run.seed ^ Math.imul(run.depth + 31, 0x27d4eb2f) ^ Math.imul(run.shopRerolls + 1, 0x165667b1)) >>> 0);
+  const rng = new Rng((run.seed ^ Math.imul(run.depth + 31 + run.act * 64, 0x27d4eb2f) ^ Math.imul(run.shopRerolls + 1, 0x165667b1)) >>> 0);
   const p = run.player;
   const items: ShopItem[] = [];
   const P = CHIPS.prices;
@@ -459,8 +566,8 @@ export function shopOffers(run: RunState): ShopItem[] {
   };
   const gildOptions: DraftOption[] = [];
   p.strips.forEach((s, reel) => {
-    for (const [enh, syms] of [['gold', ['sword', 'bolt', 'shield']], ['keen', ['sword']], ['charged', ['bolt']], ['spiked', ['shield']]] as [Enh, SymbolId[]][])
-      for (const symbol of syms)
+    for (const enh of gildsFor(run))
+      for (const symbol of GILD_SYMBOLS[enh])
         if ((s[symbol] ?? 0) > 0 && !p.gilded.some((g) => g.reel === reel && g.symbol === symbol)) gildOptions.push({ kind: 'gild', enh, symbol, reel });
   });
   // Prefer extending what you already own, so builds can be finished on purpose.
@@ -468,11 +575,16 @@ export function shopOffers(run: RunState): ShopItem[] {
   const extend = gildOptions.filter((o) => o.kind === 'gild' && (p.gilded.some((g) => g.enh === o.enh && g.symbol === o.symbol) || o.enh === favored));
   add(extend.length ? rng.pick(extend) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
   add(gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
-  const lastShop = run.depth >= RUN.shopAfter[RUN.shopAfter.length - 1];
+  const lastShop = run.act === ACTS && run.depth >= RUN.shopAfter[RUN.shopAfter.length - 1];
   const relics = (Object.keys(RELICS) as RelicId[]).filter(
-    (r) => !p.relics.includes(r) && !COUNTER_RELICS.has(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && !(lastShop && r === 'bandage'),
+    (r) => !p.relics.includes(r) && !COUNTER_RELICS.has(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && !(lastShop && r === 'bandage') && !LEGENDARY.has(r),
   );
   add(relics.length ? { kind: 'relic', relic: rng.pick(relics) } : null, P.relic);
+  // Act 2: a legendary on the top shelf, priced like one.
+  if (run.act > 1) {
+    const legends = [...LEGENDARY].filter((r) => !p.relics.includes(r) && relicFits(run, r));
+    if (legends.length) add({ kind: 'relic', relic: rng.pick(legends) }, P.legend);
+  }
   const u = rng.next();
   if (u < 0.35) {
     const reels = p.strips
@@ -483,9 +595,19 @@ export function shopOffers(run: RunState): ShopItem[] {
     const junk = p.strips.flatMap((s, reel) => (['rock', 'shield'] as SymbolId[]).filter((sym) => (s[sym] ?? 0) > 0).map((symbol) => ({ kind: 'remove' as const, symbol, reel })));
     add(junk.length ? (junk.find((j) => j.symbol === 'rock') ?? rng.pick(junk)) : null, P.remove);
   }
-  const shelf = items.slice(0, 4);
-  // HEAL is a permanent service slot (hidden at full HP): HP vs power vs hoarding is the choice.
-  if (p.hp < p.maxHp) shelf.push({ option: { kind: 'heal', amount: RUN.healCard }, price: P.heal, sold: false });
+  // Never a thin shelf: top up with gilds, then a rock/shield removal.
+  for (const o of rng.shuffle(gildOptions)) {
+    if (items.length >= 4) break;
+    add(o, P.gild);
+  }
+  if (items.length < 4) {
+    const junk = p.strips.flatMap((s, reel) => (['rock', 'shield'] as SymbolId[]).filter((sym) => (s[sym] ?? 0) > 1).map((symbol) => ({ kind: 'remove' as const, symbol, reel })));
+    if (junk.length) add(rng.pick(junk), P.remove);
+  }
+  const shelf = items.slice(0, run.act > 1 ? 5 : 4);
+  // HEAL is a permanent service slot, sized to what you're missing (hidden when nearly full).
+  const missing = p.maxHp - p.hp;
+  if (missing >= 3) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal, sold: false });
   return shelf;
 }
 
@@ -494,8 +616,27 @@ export function relicFits(run: RunState, r: RelicId): boolean {
   const need = BUILD_ENABLER[r];
   if (!need) return true;
   if (need === 'wild') return run.player.strips.some((s) => (s.wild ?? 0) > 0);
+  if (need === 'full') return run.player.gilded.length > 0;
   return run.player.gilded.some((g) => g.enh === need);
 }
+
+/** Enhancements that count as a FULL SET for these gilds (all 3 reels; any 2 with the Golden Ticket). */
+export function fullSets(gilded: Gild[], relics: RelicId[]): Set<Enh> {
+  const need = relics.includes('ticket') ? 2 : 3;
+  const reels = new Map<Enh, Set<number>>();
+  for (const g of gilded) (reels.get(g.enh) ?? reels.set(g.enh, new Set()).get(g.enh)!).add(g.reel);
+  return new Set([...reels].filter(([, r]) => r.size >= need).map(([e]) => e));
+}
+
+/** This gild card/item would finish a FULL SET. */
+export function completesSet(run: RunState, o: DraftOption): boolean {
+  if (o.kind !== 'gild') return false;
+  const before = fullSets(run.player.gilded, run.player.relics);
+  return !before.has(o.enh) && fullSets(gildsAfter(run, o), run.player.relics).has(o.enh);
+}
+
+/** How many reels already carry this gild (for the set pips). */
+export const setProgress = (run: RunState, enh: Enh) => new Set(run.player.gilded.filter((g) => g.enh === enh).map((g) => g.reel)).size;
 
 /** Card/shop items that extend what you're already building (for the FITS tag). */
 export function fitsBuild(run: RunState, o: DraftOption): boolean {
@@ -528,6 +669,7 @@ export function reroll(run: RunState): ShopItem[] | null {
 
 export function leaveShop(run: RunState): void {
   run.shopRerolls = 0;
+  run.actIntro = false;
 }
 
 /** Gilds after taking a card. */
@@ -552,6 +694,9 @@ const ENH_TEXT: Record<Enh, (s: string, reel: number) => string> = {
   keen: (s, r) => `${s}S ON REEL ${r} DEAL +1 AND PIERCE SHIELDS`,
   charged: (s, r) => `${s}S ON REEL ${r} GIVE +1 ENERGY`,
   spiked: (s, r) => `${s}S ON REEL ${r} HIT BACK FOR 2 WHEN YOU ARE HIT`,
+  vamp: (s, r) => `${s}S ON REEL ${r} HEAL YOU 1 WHEN THEY HIT`,
+  lucky: (s, r) => `${s}S ON REEL ${r}: ${Math.round(LUCKY_CHANCE.each * 100)}% CHANCE TO LAND AS A WILD`,
+  blaze: (_s, r) => `BLAZE REEL ${r}: YOUR SPECIAL DEALS +${BLAZE_BONUS.each}`,
 };
 const plural = (s: SymbolId, n: number) => `${NAME[s] ?? s.toUpperCase()}${n > 1 ? 'S' : ''}`;
 

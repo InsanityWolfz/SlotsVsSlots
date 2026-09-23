@@ -30,7 +30,14 @@ up to a **boss fight with a special slot-machine mechanic** (I pick the mechanic
 4. Commit with a clear message and update this file (iteration log below).
 5. Next iteration.
 
+## User feedback & direction (2026-09-23, after playing I5)
+- "This is amazing. Keep going." Balancing felt good — keep balancing with the same rigor.
+- Wants: MORE ENEMIES, MORE POWERFUL UPGRADES, MORE POWERFUL RELICS, and a SECOND ACT with another cool boss at the end.
+- Keep the loop running (resume after usage limits). Don't edit src while the user is actively playing on :5173 (HMR reloads their page).
+
 ## Roadmap (ordered; revise as playtests teach us)
+- [x] **I6: ACT 2.** After the House: a second act of 5 fights + a new boss with its own special slot mechanic. New act-2 enemy archetypes that write on your machine in new ways (e.g. bombs planted on your cells, hexes that strip gilds, drains). Act transition reward (legendary pick + heal).
+- [~] **I7: power curve.** (first pass in I6: VAMP/LUCKY/BLAZE gilds + 6 legendaries; next: gild tiers, per-act tuning from playtest) Stronger upgrades (new gild types / gild tiers) and legendary relics for act 2; keep sim balance per act and per cabinet.
 - [x] **I1: run structure.** Map of 5 fights + boss; HP carry-over rules; between-fight draft
   (pick 1 of 3: add symbol to a reel / remove symbol / upgrade symbol / relic). Passive enemy
   intent telegraph. Strip mini-map (whole-strip view of slime etc).
@@ -113,3 +120,18 @@ Implemented:
 - NEW — FULL SET: the same gild on all 3 reels boosts it (GOLD x3, KEEN +2, CHARGED +2, SPIKED +2) with a FULL SET! banner.
 - Art: 5 cabinet portraits + locked cabinet, chip shield, FITS tag, shop heal tin, set star.
 Sim (2000 runs, greedy/random): knight 46.6/31.9, midas 47.9/27.3, thorn 45.0/37.0, tesla 47.5/29.9, joker 42.6/28.9 — all cabinets within ±4 of knight; boss win 75%.
+
+### Iteration 6 — 2026-09-23 (playtest/ITERATION_5.md → Package M + ACT 2)
+Playtest verdict on I5: cabinets give identity, commit beats spread, but the House is a victory lap for elite-path runs (98%), THORN strong under build-aware play, SPIKED FULL SET never fires, stat lines ignore sets, set completion silent, 12 bugs.
+Implemented (user direction: more enemies, stronger upgrades/relics, a second act with a new boss):
+- ACT 2: beating the House now starts act 2 (full heal, pick 1 of 3 LEGENDARY relics, then the Cashier). 5 new fights + THE MIRROR. Run = 12 fights. Act 2 HP curve [57,62,68,73,78], act 2 enemies get +2 swords/reel. Veterans (brute/frost/thief/golem/gremlin) join act 2; every act 2 fork shows at least one new face.
+- New enemies: BOMBER (sticks bombs on your visible cells; fuse 3 of your turns, 3 dmg, shield blocks; landing a bomb on your payline DEFUSES it; CARPET BOMB ability), HEXER (hexed reels pay half and their gilds go dark; CURSE), VAMPIRE (drain: hurts you and heals itself; BLOOD MOON heal 8), MIMIC (hits you with your own last spin's best group; GULP eats chips from your purse).
+- THE MIRROR (act 2 boss, special mechanic): plays a copy of YOUR machine (strips + gilds, no relics), HP = 1.9x your max HP + 3/relic, REFLECTION every 4 turns throws your last spin's damage back (min 3, max 20), cracks at half HP (every 3). Gutter panel shows the next reflection's damage + countdown.
+- New gilds (act 2 offers): VAMP swords heal 1 on hit, LUCKY cells 25% land as WILD, BLAZE reels +3 special damage. Full-set versions (heal 2 / 40% / +4).
+- Legendaries: GOLDEN TICKET (2-reel full sets), JACKPOT BELL (jackpots x2), PHOENIX FEATHER (survive lethal at 1 HP once/fight), OVERCHARGE (special echoes at half), SKELETON KEY (doubles x1.5), GOLDEN HOURGLASS (enemy abilities +2 turns). Act transition pick, act 2 relic drafts (40%), act 2 elite spoils, act 2 Cashier top shelf (20 chips).
+- ITERATION_5 fixes: D1 SPIKED set flags its banner; FULL SET banner names what the set does; D2 stat lines count full sets; D3 stamps show real +N; D5 '1 per 8' everywhere; D6 reels panel moved below cards; D7 heal slot sized to missing HP, hidden under 3 missing; D8 COMPLETES SET gold ribbon + set pips on gild cards + sting on purchase; D11 shelf always >= 4 items. TESLA 25 HP, JOKER 27 HP (THORN kept at 28: 27 dropped it to 38% act-1 under greedy).
+- Over screen handles 12 fights (compact rows, act divider, portraits stored per record). dbg.vs supports act 2 archetypes and 'mirror'. Missing sprites fall back to a placeholder instead of crashing.
+- Art: 31 sprites (5 portraits, 4 writer symbols, bomb/hex overlays, 3 gild overlays, 6 legendary relics, 5 ability icons, 5 map badges, act badge). Art agent hit a usage limit after registering everything; self-check OK.
+- Tests: 98 (20 new in iteration6.test.ts).
+Sim (2000 runs, full 12-fight run): greedy 20.4% / relic 15.2% / random 10.7%. Act 1 clear 44.7% (unchanged), House 73%, Mirror 60%; deaths spread A2-A5 6-12%, HOUSE 16%, act 2 fights 1-4% each, MIRROR 13%. Cabinets greedy: knight 20.4, midas 30.4 (strong in act 2: chips + gold), thorn 16.4, tesla 22.4, joker 22.5.
+Open: MIDAS too strong in act 2; act 2 regular fights may be too soft for greedy (1-4% deaths) — needs playtest feel check; HIGH STAKES (boss markers) idea from ITERATION_5 still pending.
