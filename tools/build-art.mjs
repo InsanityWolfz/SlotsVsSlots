@@ -2854,6 +2854,332 @@ S.mapBadgeFake = lit(8, 8, ['', '..IIHh', '.IHHkkh', '.IHHkhh', '.HHkkhh', '..hh
   S.setRibbon = toRows(outline(g));
 }
 
+// ================================================================ ACT 3: THE DEALER (true ending)
+// ---------------------------------------------------------------- portraits (24x24)
+// dealer: FINAL BOSS — croupier in a green eyeshade (eyes glinting red in its shade), pencil moustache,
+// gold-toothed smirk, black vest over a white shirt, gold bow tie + watch chain, fanning three cards
+{
+  const g = grid(24, 24);
+  for (let y = 14; y <= 23; y++) {
+    const [x0, x1] = y === 14 ? [4, 11] : y === 15 ? [1, 14] : [0, 15];
+    const half = y <= 16 ? 3 : 3 - (y - 16) * 0.5;
+    for (let x = x0; x <= x1; x++) {
+      const d = Math.abs(x - 7.5);
+      let c;
+      if (y === 14 || d <= half + 0.01) c = x === x1 ? 't' : (y === 14 && x === x0) ? 'W' : 'T';
+      else if (x <= 1 && y >= 16) c = y === 18 ? (x === 0 ? 'R' : 'r') : x === 0 ? 'T' : 't'; // shirt sleeve + garter
+      else if (d <= half + 1.01) c = x < 7 ? 'l' : 'P';                                         // lapel edge
+      else c = x === 2 ? 'l' : x >= 13 ? 'P' : 'k';
+      put(g, x, y, c);
+    }
+  }
+  plot(g, [[7, 22, 'G'], [8, 22, 'g'], [2, 19, 'G'], [3, 20, 'Y'], [4, 20, 'G'], [5, 19, 'g']]); // button, watch chain
+  stamp(g, 5, 14, ['Y    G', 'YGggGg', 'G    g']);                                                  // gold bow tie
+  stamp(g, 0, 1, [
+    '     kllkkk',
+    '   klkkkkkkkk',
+    '  lkkkkkkkkkkk',
+    '  QEEEEEEEEEeQ',
+    'EEEEEEEEEEEeeeQ',
+    ' QQQQQQQQQQQQq',
+    '   zzzzzzzzzz',
+    '  FzWRzzzzWRzf',
+    '  FFFFFFfFFFff',
+    '   FFFFffFFFf',
+    '   FFkkkkkkFf',
+    '   FFFKKKKYff',
+    '    fFFFFFff',
+  ]);
+  // fan of three cards: back two show only a sliver (lit edge + cast shadow), front card shows a red pip
+  const card = (x0, y0) => { for (let y = 0; y < 7; y++) for (let x = 0; x < 4; x++) put(g, x0 + x, y0 + y, x === 0 ? 'W' : x === 3 || y === 6 ? 't' : 'T'); };
+  card(16, 4); card(18, 3); card(20, 2);
+  plot(g, [[17, 4, 't'], [17, 5, 'R'], [17, 6, 't'], [17, 7, 't'], [17, 8, 't'], [17, 9, 't']]);
+  plot(g, [[19, 3, 't'], [19, 4, 'k'], [19, 5, 't'], [19, 6, 't'], [19, 7, 't'], [19, 8, 't']]);
+  plot(g, [[21, 4, 'R'], [22, 4, 'R'], [21, 5, 'R'], [22, 5, 'r'], [21, 6, 'r']]);
+  stamp(g, 16, 9, [' FFf', 'FFFFf', ' fFf']);                       // hand gripping the fan
+  plot(g, [[17, 12, 'T'], [18, 12, 't'], [16, 13, 'R'], [17, 13, 'r'], [15, 14, 'T'], [16, 14, 't'], [15, 15, 'T'], [16, 15, 't']]);
+  S.enemyDealer = toRows(outline(g));
+}
+// card sharp: slicked pompadour, one brow cocked, side-eye, lopsided grin; purple jacket, black shirt + gold
+// chain, raised fist with an ace sliding out of the cuff
+{
+  const g = grid(24, 24);
+  for (let y = 15; y <= 23; y++) {
+    const [x0, x1] = y === 15 ? [3, 14] : y === 16 ? [1, 16] : [0, 17];
+    const half = Math.max(0.6, 2.5 - (y - 15) * 0.35);
+    for (let x = x0; x <= x1; x++) {
+      const d = Math.abs(x - 8.5);
+      put(g, x, y, d <= half ? (x < 8 ? 'l' : 'k') : d <= half + 1.01 ? 'J' : x <= 1 ? 'J' : x >= 15 ? 'v' : 'V');
+    }
+  }
+  plot(g, [[7, 16, 'Y'], [7, 17, 'G'], [8, 18, 'Y'], [9, 18, 'G'], [10, 17, 'G'], [10, 16, 'g']]); // gold chain
+  stamp(g, 0, 1, [
+    '      kllllk',
+    '    kllWWlllkk',
+    '   klllllllkkkk',
+    '   kFFFFFFkkkkk',
+    '   kFFFFFFFFFFk',
+    '   kFkkkFFFFFFk',
+    '   kFffFFFkkkFk',
+    '   kFWKFFFWKFFk',
+    '   kFFFFffFFFfk',
+    '    FFkkkkkkFf',
+    '    FFFFFFFFKf',
+    '    fFKWWWWKFf',
+    '     fFKKKKff',
+    '       fFFf',
+  ]);
+  stamp(g, 21, 5, ['WTt', 'TRt', 'RRr', 'TrT', 'TTt', 'TTt', 'tTt']); // the ace
+  stamp(g, 17, 8, ['FFFf', 'FFFf', 'fFFf', 'ffff', 'WTTTt']);         // fist + cuff
+  for (let y = 13; y <= 16; y++) stamp(g, 18, y, ['JVVv']);           // raised forearm
+  S.enemySharp = toRows(outline(g));
+}
+// pit boss: huge, crew cut, knitted brows, black shades, frown; dark suit, red tie, gavel raised in one fist
+{
+  const g = grid(24, 24);
+  for (let y = 14; y <= 23; y++) {
+    const [x0, x1] = y === 14 ? [2, 17] : [0, 21];
+    const half = 3 - (y - 14) * 0.5;
+    for (let x = x0; x <= x1; x++) {
+      const d = Math.abs(x - 9.5);
+      let c;
+      if (x === 9 || x === 10) c = y === 14 ? (x === 9 ? 'R' : 'r') : d <= half + 0.01 || y <= 21 ? (x === 9 ? 'R' : 'r') : 'k';
+      else if (d <= half + 0.01) c = x < 9 ? 'T' : 't';
+      else if (d <= half + 1.01) c = 'P';
+      else c = x <= 1 ? 'l' : x >= 18 ? 'P' : 'k';
+      put(g, x, y, c);
+    }
+  }
+  plot(g, [[4, 18, 'l'], [5, 19, 'l'], [4, 17, 'l']]);
+  stamp(g, 0, 1, [
+    '      IIHHHHhh',
+    '    hIHHHHHHHHhh',
+    '    FFFFFFFFFFff',
+    '    FFbbbFFbbbff',
+    '    kkkkkkkkkkkk',
+    '   FkWlPPkkWlPPkf',
+    '   FkPPPPFFPPPPkf',
+    '    FFFFFffFFFff',
+    '    FFFFFFFFFFff',
+    '    FFFFKKKKFFff',
+    '    FFFKFFFFKFff',
+    '    fFFFFFFFFFff',
+    '     ffFFFFFFff',
+  ]);
+  stamp(g, 17, 1, ['wYwwwYB', 'BGBBBGb', 'BGBBBGb', 'bgbbbgb']);   // gavel head
+  for (let y = 5; y <= 9; y++) stamp(g, 19, y, ['wB']);             // handle
+  stamp(g, 18, 10, ['FFFf', 'FFFf', 'fFff', 'TTTt', 'lkkP']);       // fist, cuff, sleeve
+  S.enemyPitBoss = toRows(outline(g));
+}
+// croupier: gaunt, centre-parted hair, thin brows + moustache, bored slit eyes, long neck, black bow tie,
+// red waistcoat with gold buttons, holding a long wooden rake upright
+{
+  const g = grid(24, 24);
+  for (let y = 14; y <= 23; y++) {
+    const [x0, x1] = y === 14 ? [6, 12] : [4, 14];
+    const half = y <= 15 ? 1 : y <= 17 ? 0 : -1;
+    for (let x = x0; x <= x1; x++) {
+      let c;
+      if (Math.abs(x - 9) <= half) c = x < 9 ? 'T' : x === 9 ? 'T' : 't';
+      else if (y >= 15 && (x === 4 || x === 14)) c = x === 4 ? 'T' : 't';
+      else c = x === x0 + (y >= 15 ? 1 : 0) ? 'M' : x >= 12 ? 'r' : 'R';
+      put(g, x, y, c);
+    }
+  }
+  plot(g, [[9, 19, 'G'], [9, 21, 'G'], [9, 23, 'g']]);
+  stamp(g, 0, 1, [
+    '       lkPkl',
+    '      lkkPkkl',
+    '      kkFFFkk',
+    '      kFFFFFk',
+    '      FbbFbbf',
+    '      FKKFKKf',
+    '      FFFfFFf',
+    '      FFFfFFf',
+    '      FkkkkkF',
+    '      FFKKKFf',
+    '       fFFFf',
+    '        fFf',
+    '       WkKkt',
+  ]);
+  for (let y = 3; y <= 23; y++) { const x = 20 - Math.floor((y - 3) / 7); put(g, x, y, 'w'); put(g, x + 1, y, 'B'); }
+  stamp(g, 17, 1, ['wwwwwwB', 'BBBBBBb']);                           // rake blade
+  plot(g, [[20, 3, 'G'], [21, 3, 'g']]);                             // brass ferrule
+  stamp(g, 17, 12, ['FFFf', 'fFff']);                                // hand on the stick
+  plot(g, [[16, 14, 'T'], [17, 14, 't'], [15, 15, 'T'], [16, 15, 't']]);
+  S.enemyCroupier = toRows(outline(g));
+}
+
+// ---------------------------------------------------------------- reel symbols (16x16)
+// card: marked playing card — red index + heart pip, black "X" scratched in the top-right corner
+S.card = lit(16, 16, [
+  '................',
+  '...WTTTTTTTTt...',
+  '...WRTTTKTKTt...',
+  '...WRTTTTKTTt...',
+  '...WTTTTKTKTt...',
+  '...WTTTTTTTTt...',
+  '...TTRRTRRTTt...',
+  '...TRMRRRRrTt...',
+  '...TRRRRRRrTt...',
+  '...TTRRRRrTTt...',
+  '...TTTRRrTTTt...',
+  '...TTTTrTTTTt...',
+  '...TTTTTTTTRt...',
+  '...TTTTTTTTRt...',
+  '...tttttttttt...',
+]);
+// gavel: banded wooden head, turned handle with a knob
+S.gavel = lit(16, 16, [
+  '................',
+  '................',
+  '..wwYwwwwwwYwB..',
+  '.wBBGBBBBBBGBBb.',
+  '.wBBGBBBBBBGBbb.',
+  '.BBBgBBBBBBgBbb.',
+  '..bbgbbbbbbgbb..',
+  '.......wB.......',
+  '.......wB.......',
+  '.......wB.......',
+  '.......wB.......',
+  '.......wB.......',
+  '.......wB.......',
+  '......wBBb......',
+  '......bbbb......',
+]);
+// rake: long stick with a wide, thin flat blade crosswise at the top, brass ferrule, pushing a chip
+S.rake = lit(16, 16, [
+  '................',
+  '.Wwwwwwwwwwwwww.',
+  '.bBBBBBBBBBBBbb.',
+  '.......Gg.......',
+  '.......wB.......',
+  '.......wB.......',
+  '.......wB.......',
+  '.......wB.......',
+  '.......wB.......',
+  '.......wB.......',
+  '.......wB.......',
+  '.......wB.......',
+  '.......wB.......',
+  '.......wB.......',
+  '.......bb.......',
+]);
+
+// ---------------------------------------------------------------- ability icons (8x8)
+S.icoShuffle = lit(8, 8, ['', '.A...YY', '..A..YY', '...AY', '...YA', '..Y..AA', '.Y...AA']);
+S.icoCut = lit(8, 8, ['', '..S..L', '...SL', '...WS', '..R..R', '.R.RR.R', '..R..R']);
+S.icoRaise = lit(8, 8, ['', '...WY', '..YYYG', '...YG', '...YG', '.RWRRWr', '.rrdrrr']);
+S.icoMark = lit(8, 8, ['', '.WTTTt', '.TKTKt', '.TTKTt', '.TKTKt', '.TTTTt', '.ttttt']);
+S.icoGavel = lit(8, 8, ['', '.YwwwwG', '.GBBBBg', '.gbbbbg', '...wB', '...wB', '...wB']);
+S.icoRake = lit(8, 8, ['', '.Wwwwwb', '.bbbbbb', '...Gg', '...wB', '.RR.wB', '.rr.wB']);
+
+// ---------------------------------------------------------------- map badges (8x8)
+S.mapBadgeCard = lit(8, 8, ['', '.WTTTt', '.TTRTt', '.TRRRt', '.TTRTt', '.TTTKt', '.ttttt']);
+S.mapBadgeGavel = lit(8, 8, ['', '.YwwwwG', '.gbbbbg', '...wB', '...wB', '.IIIIIH', '.hhhhhh']);
+S.mapBadgeRake = lit(8, 8, ['', '.Wwwwwb', '.bbbbbb', '...Gg', '...wB', '...wB', '...bb']);
+S.mapBadgeDealer = lit(8, 8, ['', '...WTTt', '.MRTRRt', '.RGTRrt', '.GRTTTt', '.rRtttt', '.dd']);
+
+// ---------------------------------------------------------------- the Dealer's face-up deal cards (16x22)
+function dealCard(back, icon, ix, iy, pip) {
+  const g = grid(16, 22);
+  for (let y = 1; y <= 20; y++) for (let x = 1; x <= 14; x++) {
+    if ((x === 1 || x === 14) && (y === 1 || y === 20)) continue; // rounded corners
+    let c;
+    if (back) {
+      const edge = x === 1 || x === 14 || y === 1 || y === 20;
+      const frame = x === 2 || x === 13 || y === 2 || y === 19;
+      if (edge) c = (x === 1 || y === 1) ? 'R' : 'd';
+      else if (frame) c = (x === 2 || y === 2) ? 'Y' : 'G';
+      else if ((x + y) % 4 === 0 || (x - y + 40) % 4 === 0) c = ((x + y) % 4 === 0 && (x - y + 40) % 4 === 0) ? 'Y' : 'G';
+      else c = 'r';
+    } else c = (y === 1 || x === 1) ? 'W' : (y === 20 || x === 14) ? 't' : 'T';
+    put(g, x, y, c);
+  }
+  if (icon) stamp(g, ix, iy, icon);
+  if (pip) plot(g, [[3, 3, pip], [12, 18, pip]]); // corner indices
+  return toRows(outline(g));
+}
+// dealShuffle: two thick arrows crossing (charcoal one passes under the red one)
+{
+  const g = grid(10, 10);
+  for (let t = 0; t <= 6; t++) if (t < 4 || t > 5) { put(g, t, t, 'l'); put(g, t + 1, t, 'k'); }
+  for (let t = 0; t <= 6; t++) { put(g, t, 9 - t, 'R'); put(g, t + 1, 9 - t, 'r'); }
+  for (let i = 0; i < 4; i++) for (let x = 6 + i; x <= 9; x++) { put(g, x, i, i === 0 ? 'M' : 'R'); put(g, x, 9 - i, i === 0 ? 'k' : 'l'); }
+  put(g, 9, 0, 'r'); put(g, 9, 9, 'k');
+  S.dealShuffle = dealCard(false, g.map((r) => r.join('').replace(/\./g, ' ')), 3, 6, 'R');
+}
+S.dealCut = dealCard(false, [
+  'W        S',
+  'LW      SD',
+  ' LW    SD ',
+  '  LW  SD  ',
+  '   LWSD   ',
+  '    YG    ',
+  '   SDLW   ',
+  '  SD  LW  ',
+  ' RR    RR ',
+  'R  r  R  r',
+  'R  r  R  r',
+  ' rr    rr ',
+], 3, 5, 'k');
+S.dealRaise = dealCard(false, [
+  '    WG    ',
+  '   WYGg   ',
+  '  WYYGGg  ',
+  ' WYYYGGGg ',
+  'WYYYYGGGGg',
+  'gggYYGGggg',
+  '   YYGg   ',
+  '   YYGg   ',
+  '   YYGg   ',
+  '   YYGg   ',
+  '   YYGg   ',
+  '   gggg   ',
+], 3, 5, 'G');
+S.dealBack = dealCard(true);
+
+// ---------------------------------------------------------------- overlays
+// confiscatedOverlay: grey dashed frame round the cell, red wax seal with a tiny gavel top-right, centre clear
+{
+  const g = grid(16, 16);
+  const cx = 12, cy = 3.5;
+  for (let y = 0; y <= 7; y++) for (let x = 8; x <= 15; x++) {
+    const d = Math.hypot(x - cx, y - cy);
+    if (d <= 3.5) put(g, x, y, d > 2.6 ? ((x - cx) + (y - cy) < 0 ? 'R' : 'r') : 'R');
+  }
+  plot(g, [[10, 1, 'M'], [11, 2, 'W'], [12, 2, 'T'], [13, 2, 'T'], [11, 3, 'T'], [12, 3, 'T'], [13, 3, 't'], [12, 4, 'T'], [12, 5, 't']]);
+  outline(g);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const onEdge = x === 0 || y === 0 || x === 15 || y === 15;
+    if (!onEdge || g[y][x] !== '.') continue;
+    const p = y === 0 ? x : x === 15 ? 15 + y : y === 15 ? 45 - x : 60 - y; // perimeter index
+    if (p % 4 < 2) put(g, x, y, (y === 0 || x === 0) ? 'S' : 'D');
+  }
+  S.confiscatedOverlay = toRows(g);
+}
+// actPlaque3: gold-rimmed dark plaque reading "ACT 3" in gold with a dark-gold drop shadow
+{
+  const g = grid(24, 12);
+  for (let y = 1; y <= 10; y++) for (let x = 1; x <= 22; x++) {
+    const rim = y === 1 || y === 10 || x === 1 || x === 22;
+    put(g, x, y, rim ? ((y === 1 || x === 1) ? 'Y' : 'g') : y === 2 ? 'p' : 'P');
+  }
+  put(g, 22, 1, 'G'); put(g, 1, 10, 'G');
+  plot(g, [[2, 2, 'G'], [21, 9, 'g']]);
+  const ink = [
+    '###..##.###..###',
+    '#.#.#....#.....#',
+    '###.#....#....##',
+    '#.#.#....#.....#',
+    '#.#..##..#...###',
+  ];
+  const x0 = 4, y0 = 3;
+  ink.forEach((r, dy) => [...r].forEach((c, dx) => { if (c === '#') put(g, x0 + dx + 1, y0 + dy + 1, 'g'); }));
+  ink.forEach((r, dy) => [...r].forEach((c, dx) => { if (c === '#') put(g, x0 + dx, y0 + dy, dy === 0 ? 'W' : dy <= 2 ? 'Y' : 'G'); }));
+  S.actPlaque3 = toRows(outline(g));
+}
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -2887,6 +3213,11 @@ const DIMS = {
   actBadge2: { w: 24, h: 12 },
   enemyGrounder: 24, enemyCounterfeiter: 24, ground: 16, fake: 16, groundOverlay: 16, fakeOverlay: 16,
   icoEarth: 8, icoLaunder: 8, mapBadgeGround: 8, mapBadgeFake: 8, setRibbon: { w: 44, h: 9 },
+  enemyDealer: 24, enemySharp: 24, enemyPitBoss: 24, enemyCroupier: 24, card: 16, gavel: 16, rake: 16,
+  icoShuffle: 8, icoCut: 8, icoRaise: 8, icoMark: 8, icoGavel: 8, icoRake: 8,
+  mapBadgeCard: 8, mapBadgeGavel: 8, mapBadgeRake: 8, mapBadgeDealer: 8,
+  dealShuffle: { w: 16, h: 22 }, dealCut: { w: 16, h: 22 }, dealRaise: { w: 16, h: 22 }, dealBack: { w: 16, h: 22 },
+  confiscatedOverlay: 16, actPlaque3: { w: 24, h: 12 },
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -2979,7 +3310,16 @@ export type SpriteId =
   | 'groundOverlay' | 'fakeOverlay'                // their cell overlays, 16x16 (mostly transparent)
   | 'icoEarth' | 'icoLaunder'                      // their ability icons, 8x8
   | 'mapBadgeGround' | 'mapBadgeFake'              // their map badges, 8x8
-  | 'setRibbon';                                   // 'SET!' completes-set ribbon, 44x9 (non-square)
+  | 'setRibbon'                                    // 'SET!' completes-set ribbon, 44x9 (non-square)
+  | 'enemySharp' | 'enemyPitBoss' | 'enemyCroupier' // act 3 enemy portraits, 24x24
+  | 'enemyDealer'                                  // (enemyDealer = act 3 final boss)
+  | 'card' | 'gavel' | 'rake'                      // act 3 enemy reel symbols, 16x16
+  | 'icoShuffle' | 'icoCut' | 'icoRaise'           // act 3 ability icons, 8x8
+  | 'icoMark' | 'icoGavel' | 'icoRake'
+  | 'mapBadgeCard' | 'mapBadgeGavel' | 'mapBadgeRake' | 'mapBadgeDealer' // act 3 map badges, 8x8
+  | 'dealShuffle' | 'dealCut' | 'dealRaise' | 'dealBack' // Dealer's face-up deal cards, 16x22 (non-square)
+  | 'confiscatedOverlay'                           // confiscated-gild cell overlay, 16x16 (mostly transparent)
+  | 'actPlaque3';                                  // act 3 map header plaque, 24x12 (non-square)
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;
