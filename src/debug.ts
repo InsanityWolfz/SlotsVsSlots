@@ -62,7 +62,7 @@ export function installDebug(game: Game): void {
       return res.text();
     },
     /** Start a new run (optionally seeded). */
-    run: (seed?: number, cabinet?: import('./core/cabinets').CabinetId) => game.startRun(seed, cabinet),
+    run: (seed?: number, cabinet?: import('./core/cabinets').CabinetId, stake = 0) => game.startRun(seed, cabinet, stake),
     /** Make the current fight end in a win on the player's next spin (for walking run screens). */
     forceWin() {
       game.fight.sides.enemy.hp = 1;

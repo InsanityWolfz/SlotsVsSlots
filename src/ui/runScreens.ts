@@ -6,6 +6,7 @@ import {
   chipShield,
   CHIPS,
   completesSet,
+  MIRROR_CHIP_SHIELD_CAP,
   describeOption,
   enemyHp,
   fitsBuild,
@@ -21,6 +22,7 @@ import {
   type ShopItem,
 } from '../core/run';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
+import { STAKES, stakeOf } from '../core/stakes';
 import type { RelicId } from '../core/config';
 import { COUNTER_RELICS } from '../core/relics';
 import { DANGER } from '../core/enemies';
@@ -83,6 +85,8 @@ export const BADGE: Record<string, SpriteId> = {
   counterfeiter: artId('mapBadgeFake'),
 };
 
+const INPUT_GUARD_MS = 250;
+
 const rounds = (turns: number) => { const n = Math.ceil(turns / 2); return `${n} ROUND${n === 1 ? '' : 'S'}`; };
 
 function abilityText(e: EnemyDef, every: number, run?: RunState): string {
@@ -128,8 +132,13 @@ export class RunScreens {
   private shopItems: ShopItem[] = [];
   private shopHits: Hit[] = [];
   private chipPulse = 1;
+  private openedAt = 0;
   private cabinetUnlocked: Set<CabinetId> = new Set(['knight']);
   private unlockedNow: CabinetId[] = [];
+  /** HIGH STAKES: best unlocked stake per cabinet, the chosen stake, and what the last run unlocked. */
+  private stakes: Partial<Record<CabinetId, number>> = {};
+  private stakeSel = 0;
+  private stakeUnlockedNow = '';
 
   constructor(
     private ui: Clock,
@@ -145,14 +154,30 @@ export class RunScreens {
       onReroll: () => void;
       onLeave: () => void;
       onCabinet: (id: CabinetId) => void;
+      /** The chosen HIGH STAKES level changed (persisted by the game). */
+      onStake: (level: number) => void;
     },
   ) {}
 
   /** Pick your starting machine (pre-run). Locked cabinets show how to unlock them. */
-  showCabinets(unlocked: Set<CabinetId>): void {
+  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0): void {
     this.cabinetUnlocked = unlocked;
+    this.stakes = stakes;
     this.run = null;
     this.open('cabinet');
+    this.stakeSel = Math.min(stakeSel, this.maxStake());
+    // HIGH STAKES picker (only once some cabinet has a stake unlocked).
+    if (this.maxStake() > 0) {
+      const step = (d: number) => {
+        this.stakeSel = Math.max(0, Math.min(this.maxStake(), this.stakeSel + d));
+        this.sounds.click();
+        CABINET_ORDER.forEach((id, i) => {
+          if (this.cards[i]) this.cards[i].enabled = this.cabinetUnlocked.has(id) && this.stakeFor(id) >= this.stakeSel;
+        });
+        this.cb.onStake(this.stakeSel);
+      };
+      this.buttons = [this.btn('LOWER', W / 2 - 330, 640, 110, 40, () => step(-1)), this.btn('HIGHER', W / 2 + 330, 640, 110, 40, () => step(1))];
+    }
     this.cards = CABINET_ORDER.map((id, i) => {
       const h = this.hit(W / 2 + (i - 2) * 240, 380, 220, 420, () => {
         if (!this.cabinetUnlocked.has(id) || this.picked >= 0) return;
@@ -163,10 +188,23 @@ export class RunScreens {
           .then(() => this.ui.wait(0.3))
           .then(() => this.cb.onCabinet(id));
       });
-      h.enabled = unlocked.has(id);
+      h.enabled = unlocked.has(id) && this.stakeFor(id) >= this.stakeSel;
       void this.ui.wait(0.1 + i * 0.08).then(() => this.ui.tween({ from: 0, to: 1, dur: 0.3, ease: backOut(2), onUpdate: (v) => (h.scale = v) }));
       return h;
     });
+  }
+
+  private maxStake(): number {
+    return Math.max(0, ...Object.values(this.stakes).map((n) => n ?? 0));
+  }
+
+  private stakeFor(id: CabinetId): number {
+    return this.stakes[id] ?? 0;
+  }
+
+  /** "STAKE 2 UNLOCKED FOR KNIGHT" (shown on the run-over screen). */
+  setStakeUnlockedNow(text: string): void {
+    this.stakeUnlockedNow = text;
   }
 
   /** Cabinets unlocked by the run that just ended (shown on the run-over screen). */
@@ -187,6 +225,7 @@ export class RunScreens {
 
   private open(mode: ScreenMode): void {
     this.mode = mode;
+    this.openedAt = performance.now();
     this.cards = [];
     this.buttons = [];
     this.shopHits = [];
@@ -316,6 +355,8 @@ export class RunScreens {
   }
 
   pointerDown(x: number, y: number): boolean {
+    // A fresh screen ignores clicks for a moment, so a double-click can't buy on arrival (ITERATION_9 H8).
+    if (performance.now() - this.openedAt < INPUT_GUARD_MS) return this.active;
     const h = this.all().find((h) => this.inside(h, x, y));
     if (!h) return this.active;
     h.pressed = true;
@@ -450,7 +491,9 @@ export class RunScreens {
     const legend = this.draftKind === 'legend';
     const relicDraft = !spoils && !legend && isRelicDraft(this.run!);
     const heading = legend ? 'ACT 2 BEGINS - FULLY HEALED - CHOOSE A LEGENDARY RELIC' : spoils ? 'ELITE SPOILS - CHOOSE A RELIC' : relicDraft ? 'RELIC DRAFT - CHOOSE ONE' : 'CHOOSE ONE';
-    drawText(ctx, heading, W / 2, 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
+    drawText(ctx, heading, W / 2, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
+    const sig = CABINETS[this.run!.cabinet].act2;
+    if (legend && sig) drawText(ctx, `${CABINETS[this.run!.cabinet].name} ACT 2 SIGNATURE: ${sig.text}`, W / 2, 262, 2, '#c8f0ff');
     this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], this.deltas[i], i, time));
     this.panel(ctx, 110, 530, 1060, 134);
     this.drawStrips(ctx, 130, 546, this.run!.player.strips);
@@ -594,7 +637,12 @@ export class RunScreens {
     if (badge) drawSprite(ctx, badge, x + 112, y + 112, 3);
     const tx = x + 136;
     drawText(ctx, e.name ?? 'ENEMY', tx, y + 30, e.name && e.name.length > 18 ? 2 : 3, e.isBoss ? '#ff6a5a' : COLORS.slime, { align: 'left' });
-    wrap(e.blurb, Math.floor((w - 150) / 12)).forEach((l, k) => drawText(ctx, l, tx, y + 60 + k * 18, 2, COLORS.text, { align: 'left' }));
+    {
+      const big = wrap(e.blurb, Math.floor((w - 150) / 12));
+      const small = big.length > 2;
+      const lines = small ? wrap(e.blurb, Math.floor((w - 150) / 9)) : big;
+      lines.slice(0, 3).forEach((l, k) => drawText(ctx, l, tx, y + 58 + k * (small ? 13 : 18), small ? 1.5 : 2, COLORS.text, { align: 'left' }));
+    }
     const hp = enemyHp(this.run!, e);
     drawText(ctx, `HP ${hp}`, tx, y + 104, 2, COLORS.hp, { align: 'left' });
     if (e.boss === 'house') {
@@ -620,7 +668,7 @@ export class RunScreens {
     }
     const bossText =
       e.boss === 'mirror'
-        ? `A COPY OF YOUR MACHINE (NO RELICS, NO SPECIALS, NO SPIKES, NO KEEN EDGE), AS TOUGH AS YOUR BUILD HITS. REFLECTIONS CAP AT ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKED AT HALF HP: 1 TURN FASTER. YOUR CHIPS SHIELD YOU (1 PER ${CHIPS.stackPer}).`
+        ? `YOUR MACHINE WITH PLAIN GILDS (NO RELICS, SPECIALS, SPIKES OR KEEN). REFLECTS UP TO ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKS AT HALF HP AND SNAPS BACK AT ONCE. CHIPS SHIELD YOU (1 PER ${CHIPS.stackPer}, MAX ${MIRROR_CHIP_SHIELD_CAP}).`
         : `COINS + A CUT EACH TURN FILL THE POT. EVERY 4 TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +1 SHIELD EACH HOUSE TURN.`;
     if (e.isBoss)
       {
@@ -657,6 +705,7 @@ export class RunScreens {
   private drawCabinets(ctx: CanvasRenderingContext2D, time: number): void {
     drawText(ctx, 'CHOOSE YOUR MACHINE', W / 2, 60, 5, COLORS.goldLight);
     drawText(ctx, 'EVERY RUN STARTS ON A CABINET. WIN AND UNLOCK MORE.', W / 2, 104, 2, COLORS.textDim);
+    this.drawStakePicker(ctx, time);
     CABINET_ORDER.forEach((id, i) => {
       const h = this.cards[i];
       if (!h || h.scale <= 0.01) return;
@@ -680,6 +729,11 @@ export class RunScreens {
       this.panel(ctx, -h.w / 2, -h.h / 2, h.w, h.h, hover ? COLORS.goldLight : open ? COLORS.gold : '#4a4058');
       drawSprite(ctx, (open ? cab.sprite : 'cabinetLocked') as SpriteId, 0, -h.h / 2 + 100 + (hover ? Math.sin(time * 4) * 3 : 0), 2.6);
       drawText(ctx, open ? cab.name : '???', 0, 8, cab.name.length > 10 ? 2 : 3, open ? COLORS.goldLight : COLORS.textDim);
+      if (open && this.maxStake() > 0) {
+        const best = this.stakeFor(id);
+        this.stakeChip(ctx, h.w / 2 - 26, -h.h / 2 + 26, best, time, 12);
+        if (best < this.stakeSel) drawText(ctx, `NEEDS STAKE ${this.stakeSel}`, 0, h.h / 2 - 22, 2, '#ff8a7a');
+      }
       if (open) {
         drawText(ctx, cab.blurb, 0, 34, 1, COLORS.textDim);
         const lines = wrap(cab.rule, 17).slice(0, 5);
@@ -691,6 +745,41 @@ export class RunScreens {
       }
       ctx.restore();
     });
+  }
+
+  /** HIGH STAKES picker under the cabinets: the chosen stake and every rule it stacks. */
+  private drawStakePicker(ctx: CanvasRenderingContext2D, time: number): void {
+    if (this.maxStake() <= 0) return;
+    const s = stakeOf(this.stakeSel);
+    this.stakeChip(ctx, W / 2 - 234, 640, s.level, time);
+    drawText(ctx, `STAKE ${s.level}: ${s.name}`, W / 2 - 210, 626, 3, s.color, { align: 'left' });
+    const rules = STAKES.slice(1, s.level + 1).map((x) => x.rule);
+    const text = rules.length ? rules[rules.length - 1] + (rules.length > 1 ? ` (+ ${rules.length - 1} EARLIER)` : '') : 'THE BASE GAME. WIN A RUN TO RAISE THE STAKES.';
+    wrap(text, 48).slice(0, 2).forEach((l, k) => drawText(ctx, l, W / 2 - 210, 650 + k * 14, 1.5, COLORS.text, { align: 'left' }));
+    for (const b of this.buttons) this.drawButton(ctx, b, time);
+  }
+
+  /** A casino chip in the stake's colour, with its number. */
+  private stakeChip(ctx: CanvasRenderingContext2D, x: number, y: number, level: number, time: number, r = 16): void {
+    const s = stakeOf(level);
+    ctx.save();
+    ctx.fillStyle = COLORS.outline;
+    ctx.beginPath();
+    ctx.arc(x, y, r + 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = s.color;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineDashOffset = time * 6;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, y, r - 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    drawText(ctx, String(level), x, y, r > 12 ? 2 : 1.5, COLORS.outline);
   }
 
   private drawChips(ctx: CanvasRenderingContext2D, x: number, y: number): void {
@@ -714,7 +803,7 @@ export class RunScreens {
     } else {
       drawText(ctx, 'ACT 2: A LEGENDARY ON THE SHELF. TIER II UPGRADES A WHOLE GILD.', W / 2, 118, 2, COLORS.goldLight);
       drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
-      drawText(ctx, `KEEP CHIPS FOR THE MIRROR: RIGHT NOW +${sh} SHIELD EACH MIRROR TURN (1 PER ${CHIPS.stackPer})`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
+      drawText(ctx, `KEEP CHIPS FOR THE MIRROR: RIGHT NOW +${Math.min(MIRROR_CHIP_SHIELD_CAP, sh)} SHIELD EACH MIRROR TURN (1 PER ${CHIPS.stackPer}, MAX ${MIRROR_CHIP_SHIELD_CAP})`, W / 2 - 330, 150, 2, '#9fd0ff', { align: 'left' });
     }
     drawText(ctx, 'HP', W - 360, 80, 2, COLORS.textDim, { align: 'left' });
     this.drawHp(ctx, W - 330, 80, 190);
@@ -835,7 +924,8 @@ export class RunScreens {
     const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${TOTAL_FIGHTS} FIGHTS` : `FELL AT FIGHT ${run.records.length} OF ${TOTAL_FIGHTS} (ACT ${run.act})`}`;
     if (this.unlockedNow.length)
       drawText(ctx, `NEW CABINET UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, W / 2, 466, 2, COLORS.goldLight);
-    drawText(ctx, reached, W / 2, 88, 2, COLORS.textDim);
+    drawText(ctx, run.stake > 0 ? `${reached}  -  STAKE ${run.stake} ${stakeOf(run.stake).name}` : reached, W / 2, 88, 2, COLORS.textDim);
+    if (this.stakeUnlockedNow) drawText(ctx, this.stakeUnlockedNow, W / 2, 110, 2, stakeOf(run.stake + 1).color);
     this.panel(ctx, 110, 120, 1060, 330);
     drawText(ctx, 'FIGHT', 150, 142, 2, COLORS.textDim, { align: 'left' });
     drawText(ctx, 'ROUNDS', 560, 142, 2, COLORS.textDim);
@@ -861,7 +951,7 @@ export class RunScreens {
       drawText(ctx, `${Math.ceil(r.turns / 2)}`, 560, y, 2, COLORS.text);
       drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 680, y, 2, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
       if (compact) {
-        const parts = [r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
+        const parts = [r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
         const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
         drawText(ctx, what.length > 40 ? `${what.slice(0, 39)}...` : what, 790, y, 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
         return;

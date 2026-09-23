@@ -1,5 +1,6 @@
 import { cloneConfig, defaultConfig, type Enh, type GameConfig, type Gild, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACTS, generateRunPaths, RUN_FIGHTS, TUNE, type EnemyDef } from './enemies';
+import { ACTS, ARCHETYPES, generateRunPaths, makeEnemy, RUN_FIGHTS, TUNE, type EnemyDef } from './enemies';
+import { MAX_STAKE, MIRROR_COPYABLE, STAKE } from './stakes';
 import type { Fight } from './fight';
 import {
   BANDAGE_HEAL,
@@ -130,6 +131,8 @@ export interface FightRecord {
   act?: number;
   /** Chips the Mimic ate. */
   chipsEaten?: number;
+  /** Chips an act 2 elite paid. */
+  eliteChips?: number;
   rocksAdded: number;
   rocksCrumbled: number;
   /** Relic taken from an elite's spoils. */
@@ -167,9 +170,11 @@ export interface RunState {
   pendingLegend: RelicId[] | null;
   /** A new act just began: the Cashier opens before its first fight. */
   actIntro: boolean;
+  /** HIGH STAKES level (0 = base game). */
+  stake: number;
 }
 
-export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight'): RunState {
+export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0): RunState {
   const rng = new Rng(seed);
   const paths = generateRunPaths(rng);
   const cab = CABINETS[cabinet];
@@ -196,6 +201,7 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
     act: 1,
     pendingLegend: null,
     actIntro: false,
+    stake: Math.max(0, Math.min(MAX_STAKE, stake)),
   };
 }
 
@@ -210,6 +216,8 @@ function startNextAct(run: RunState): void {
   run.depth = 0;
   const rng = new Rng((run.seed ^ Math.imul(run.act, 0x3c6ef372)) >>> 0);
   run.paths = generateRunPaths(rng, run.act);
+  // RED stake: every act 2 fork offers the counter to your build.
+  if (run.stake >= STAKE.counterForks) offerCounters(run, rng);
   run.enemies = run.paths.map((opts) => opts[0]);
   run.chosen = run.paths.map((opts) => opts.length === 1);
   run.player.hp = run.player.maxHp;
@@ -237,6 +245,28 @@ export function applySignature(run: RunState): void {
     s.shield = (s.shield ?? 0) - n;
     s.wild = (s.wild ?? 0) + n;
   }
+}
+
+/** What answers your build: specials → the Grounder; a gild build → the Counterfeiter. */
+export function counterFor(run: RunState): string | null {
+  const g = run.player.gilded;
+  const specials = run.cabinet === 'tesla' || g.some((x) => x.enh === 'charged' || x.enh === 'blaze') || run.player.relics.includes('rod');
+  if (specials) return 'grounder';
+  return g.length >= 2 ? 'counterfeiter' : null;
+}
+
+/** RED stake: put your counter on every fork (replacing the non-elite option when it's missing). */
+function offerCounters(run: RunState, rng: Rng): void {
+  const id = counterFor(run);
+  const arch = id ? ARCHETYPES.find((a) => a.id === id) : undefined;
+  if (!arch) return;
+  run.paths.forEach((opts, depth) => {
+    if (opts.length < 2 || opts.some((e) => e.archetype === id)) return;
+    const i = opts.findIndex((e) => !e.elite);
+    if (i < 0) return;
+    opts[i] = makeEnemy(arch, depth, rng, false, run.act);
+  });
+  run.enemies = run.paths.map((opts) => opts[0]);
 }
 
 export function takeLegend(run: RunState, relic: RelicId): void {
@@ -277,13 +307,22 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.enemy.strips = run.player.strips.map((s) => ({ ...s }));
     // It copies what you hit with: never your spikes.
     // It copies what you hit with, but not your spikes and not your edge (KEEN).
-    cfg.enemy.gilded = run.player.gilded.filter((g) => g.enh !== 'spiked' && g.enh !== 'keen').map((g) => ({ ...g }));
+    cfg.enemy.gilded = run.player.gilded.filter((g) => g.enh !== 'spiked' && g.enh !== 'keen').map((g) => ({ reel: g.reel, symbol: g.symbol, enh: g.enh }));
     cfg.player.stackShield = Math.min(MIRROR_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
     // REFLECTION is capped relative to you: two from full HP kill you.
     if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, power: Math.max(REFLECT_MIN, Math.round(run.player.maxHp * REFLECT_CAP)) };
   }
   cfg.relics = [...run.player.relics];
   cfg.cabinet = run.cabinet;
+  cfg.stake = run.stake;
+  cfg.enemy.act = run.act;
+  // GOLD stake: the House plants bombs.
+  if (e.boss === 'house' && run.stake >= STAKE.houseDirty) cfg.enemy.strips = cfg.enemy.strips.map((s) => ({ ...s, bomb: (s.bomb ?? 0) + STAKE.houseBombsPerReel }));
+  // BLACK stake: the Mirror copies one of your relics.
+  if (e.boss === 'mirror' && run.stake >= STAKE.mirrorRelic) {
+    const copy = MIRROR_COPYABLE.find((r) => run.player.relics.includes(r));
+    if (copy) cfg.enemy.relics = [copy];
+  }
   cfg.seed = null;
   return cfg;
 }
@@ -314,7 +353,8 @@ export function machinePower(run: RunState): number {
   if (relics.includes('overcharge')) dmg += Math.ceil(dmg * OVERCHARGE_ECHO);
   // Battery: a head start worth about one extra special over a Mirror fight (~8 of your spins).
   const energy = s.energy + (relics.includes('battery') ? BATTERY_ENERGY / 8 : 0);
-  return s.damage + (energy / cost) * Math.min(POWER_CAP, dmg);
+  // Specials pierce shields and the Mirror has none of its own: they count extra toward its HP.
+  return s.damage + TUNE.mirrorSpecialWeight * (energy / cost) * Math.min(POWER_CAP, dmg);
 }
 const POWER_CAP = 20;
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
@@ -384,6 +424,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   if (beaten.elite && run.act > 1) {
     run.player.chips += CHIPS.act2EliteChips;
     record.chips = (record.chips ?? 0) + CHIPS.act2EliteChips;
+    record.eliteChips = CHIPS.act2EliteChips;
   }
   // Act 1 elites offer their spoils: choose 1 of 2 relics.
   if (beaten.elite && run.act === 1) {
@@ -392,7 +433,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     const spoils = rng.shuffle(pool).slice(0, 2);
     if (spoils.length) run.pendingSpoils = spoils;
   }
-  let hp = p.hp + Math.round(run.player.maxHp * RUN.postFightHeal);
+  let hp = p.hp + Math.round(run.player.maxHp * RUN.postFightHeal * (run.stake >= STAKE.halfHeal ? 0.5 : 1));
   if (run.player.relics.includes('bandage')) hp += BANDAGE_HEAL;
   run.player.hp = Math.min(run.player.maxHp, hp);
   run.depth++;
@@ -756,6 +797,8 @@ export function fitsBuild(run: RunState, o: DraftOption): boolean {
   const p = run.player;
   const favored = CABINETS[run.cabinet].favors;
   if (o.kind === 'gild') return p.gilded.some((g) => g.enh === o.enh) || o.enh === favored;
+  // THORN's act 2 build is HP (ITERATION_9).
+  if (o.kind === 'maxHp') return run.cabinet === 'thorn' && run.act > 1;
   if (o.kind === 'relic') {
     // Legendaries that feed what you're doing.
     const spec = p.gilded.some((g) => g.enh === 'charged' || g.enh === 'blaze') || run.cabinet === 'tesla';

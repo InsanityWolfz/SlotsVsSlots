@@ -136,22 +136,22 @@ export const ARCHETYPES: Archetype[] = [
     id: 'grounder',
     name: 'GROUNDER',
     portrait: 'enemyGrounder',
-    strip: { sword: 4, shield: 5, ground: 3 },
+    strip: { sword: 5, shield: 5, ground: 3 },
     hpMul: 1,
     ability: { kind: 'earth', every: 4, power: 3 },
     minDepth: 1,
-    blurb: 'GROUNDS YOUR BOLTS: WITH A ROD ON YOUR PAYLINE, YOUR SPECIAL HITS SHIELDS',
+    blurb: 'RODS IN YOUR BOLTS: A GROUNDED BOLT GIVES NO ENERGY',
     acts: [2],
   },
   {
     id: 'counterfeiter',
     name: 'COUNTERFEITER',
     portrait: 'enemyCounterfeiter',
-    strip: { sword: 5, shield: 3, fake: 4 },
-    hpMul: 0.95,
+    strip: { sword: 6, shield: 3, fake: 4 },
+    hpMul: 1.1,
     ability: { kind: 'launder', every: 4, power: 2 },
     minDepth: 1,
-    blurb: 'FAKES YOUR GILDED CELLS: THEY PAY PLAIN FOR 2 TURNS',
+    blurb: 'COUNTERFEITS A GILD: ALL OF IT PAYS PLAIN FOR 2 TURNS',
     acts: [2],
   },
 ];
@@ -196,7 +196,7 @@ export const DEPTH_HP = [21, 26, 31, 34, 37];
 export const DEPTH_HP_2 = [52, 62, 73, 85, 97];
 /** Mutable so balance sweeps can tune it. */
 /** mirrorPower/mirrorFlat: the Mirror's HP = power × your expected damage per spin + flat (ITERATION_6 Package N). */
-export const TUNE = { bossHp: 74, act2Mul: 1, act2Swords: 2, mirrorPower: 3, mirrorFlat: 45, mirrorPerRelic: 4 };
+export const TUNE = { bossHp: 74, act2Mul: 1, act2Swords: 2, mirrorPower: 3, mirrorFlat: 45, mirrorPerRelic: 4, mirrorSpecialWeight: 1 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
@@ -230,7 +230,7 @@ export const DANGER: Record<string, number> = {
   counterfeiter: 12,
 };
 export const ELITE_HP_MUL = 1.25;
-export const ELITE_HP_MUL_2 = 1.5;
+export const ELITE_HP_MUL_2 = 1.3;
 
 function jitter(strip: StripCounts, rng: Rng): StripCounts {
   // Move one symbol between two kinds so no two enemies of an archetype are identical.

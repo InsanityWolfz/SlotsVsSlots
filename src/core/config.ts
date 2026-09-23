@@ -115,6 +115,10 @@ export interface SideConfig {
   gilded?: Gild[];
   /** Boss fight: chips carried in grant this much shield at the start of each House turn. */
   stackShield?: number;
+  /** Which act this side comes from (enemy). */
+  act?: number;
+  /** Relics this side carries (the Mirror copies one at BLACK stake). */
+  relics?: RelicId[];
 }
 
 export interface GameConfig {
@@ -134,6 +138,8 @@ export interface GameConfig {
   relics: RelicId[];
   /** The run's starting machine (its rules apply in every fight). */
   cabinet?: import('./cabinets').CabinetId;
+  /** HIGH STAKES level of the run (0 = base game). */
+  stake?: number;
   /** null = new random seed each fight. */
   seed: number | null;
 }
