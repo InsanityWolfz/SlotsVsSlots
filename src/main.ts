@@ -1,5 +1,7 @@
 import { Game } from './game';
 import { H, W } from './present/layout';
+import { CombatLog } from './ui/combatLog';
+import { TuningPanel } from './ui/tuningPanel';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const stage = document.getElementById('stage') as HTMLDivElement;
@@ -27,6 +29,11 @@ resize();
 const game = new Game();
 if (import.meta.env.DEV) void import('./debug').then((m) => m.installDebug(game));
 
+const tuning = new TuningPanel(game);
+const log = new CombatLog(game);
+game.toolButtons!.tune.onClick = () => tuning.toggle();
+game.toolButtons!.log.onClick = () => log.toggle();
+
 function toLogical(e: PointerEvent): [number, number] {
   const r = canvas.getBoundingClientRect();
   return [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H];
@@ -42,7 +49,13 @@ canvas.addEventListener('pointermove', (e) => {
 window.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return;
   if (e.repeat) return;
-  if (game.key(e.key.toLowerCase())) e.preventDefault();
+  const k = e.key.toLowerCase();
+  if (k === '`' || k === 't') tuning.toggle();
+  else if (k === 'l') log.toggle();
+  else if (k === 'escape') {
+    tuning.toggle(false);
+    log.toggle(false);
+  } else if (game.key(k)) e.preventDefault();
 });
 
 let last = performance.now();
