@@ -17,7 +17,7 @@ function fight(mut: (c: GameConfig) => void, seed = 7): Fight {
 const gold3 = (tier?: 2) => [0, 1, 2].map((reel) => ({ reel, symbol: 'sword' as SymbolId, enh: 'gold' as const, ...(tier ? { tier } : {}) }));
 
 describe('gild levels (tier II, full sets, hexes)', () => {
-  it('GOLD: x2 plain, x3 tier II; one multiplier per group (1 + levels)', () => {
+  it('GOLD: x2 plain, x4 tier II; one multiplier per group (1 + levels)', () => {
     const single = (gilded: ReturnType<typeof gold3>) => {
       const f = fight((c) => {
         c.player.strips = [{ sword: 12 }, { shield: 12 }, { bolt: 12 }];
@@ -27,7 +27,7 @@ describe('gild levels (tier II, full sets, hexes)', () => {
       return ofType(f.step().events, 'attack')[0].amount;
     };
     expect(single([gold3()[0]])).toBe(2);
-    expect(single([gold3(2)[0]])).toBe(3);
+    expect(single([gold3(2)[0]])).toBe(4);
   });
 
   it('a hex breaks a FULL SET while it lasts', () => {

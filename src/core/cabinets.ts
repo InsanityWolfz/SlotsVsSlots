@@ -27,8 +27,10 @@ export interface Cabinet {
   specialDamage?: number;
   /** A WILD anywhere on the line lets any two matching reels pay as a double. */
   jokerWilds?: boolean;
-  /** At the start of act 2, this cabinet's starting gilds become TIER II. */
-  act2Tier?: boolean;
+  /** Act 2 signature, applied when the House falls (ITERATION_8 Package P). */
+  act2?: { text: string; tierII?: boolean; maxHp?: number; wilds?: { reel: number; count: number } };
+  /** Lightning Rod special damage for this cabinet (default 12). */
+  rodDamage?: number;
 }
 
 const r3 = (c: StripCounts): StripCounts[] => [{ ...c }, { ...c }, { ...c }];
@@ -44,6 +46,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     gilded: [],
     favors: null,
     rule: 'NO SPECIAL RULES. 32 HP.',
+    act2: { text: '+6 MAX HP', maxHp: 6 },
     unlock: '',
   },
   midas: {
@@ -51,11 +54,11 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'MIDAS MACHINE',
     sprite: 'cabinetMidas',
     blurb: 'EVERYTHING IT TOUCHES...',
-    hp: 22,
+    hp: 23,
     strips: r3({ sword: 4, shield: 4, bolt: 4 }),
     gilded: [{ reel: 0, symbol: 'sword', enh: 'gold' }],
     favors: 'gold',
-    rule: 'GOLD SWORDS ON REEL 1. MORE GOLD OFFERS. +1 CHIP PER WIN. 22 HP.',
+    rule: 'GOLD SWORDS ON REEL 1. MORE GOLD OFFERS. +1 CHIP PER WIN. 23 HP.',
     unlock: 'REACH THE HOUSE',
     chipsPerWin: 1,
   },
@@ -68,8 +71,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     strips: r3({ sword: 4, shield: 4, bolt: 4 }),
     gilded: [{ reel: 0, symbol: 'shield', enh: 'spiked' }],
     favors: 'spiked',
-    rule: 'SPIKED SHIELDS ON REEL 1. SPIKED OFFERS MORE OFTEN. SPIKES GO TIER II IN ACT 2. 28 HP.',
-    act2Tier: true,
+    rule: 'SPIKED SHIELDS ON REEL 1. SPIKED OFFERS MORE OFTEN. 28 HP.',
+    act2: { text: 'SPIKES GO TIER II, +4 MAX HP', tierII: true, maxHp: 4 },
     unlock: 'BEAT AN ELITE',
   },
   tesla: {
@@ -82,6 +85,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     gilded: [{ reel: 0, symbol: 'bolt', enh: 'charged' }],
     favors: 'charged',
     rule: 'CHARGED BOLTS ON REEL 1. SPECIAL COSTS 4 BUT HITS FOR 7. 25 HP.',
+    rodDamage: 10,
     unlock: 'WIN A RUN',
     specialCost: 4,
     specialDamage: 7,
@@ -100,6 +104,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     gilded: [],
     favors: null,
     rule: '2 WILDS ON REEL 2. WITH A WILD ON THE LINE, ANY TWO REELS CAN PAY A DOUBLE. 27 HP.',
+    act2: { text: '2 SHIELDS ON REEL 3 BECOME WILDS', wilds: { reel: 2, count: 2 } },
     unlock: 'WIN A RUN WITH WILDS',
     jokerWilds: true,
   },

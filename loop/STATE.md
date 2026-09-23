@@ -162,3 +162,17 @@ Implemented:
 - Tests: 106.
 Sim (official, 2000): greedy 17.9% / relic 16.6% / random 11.4%; act 1 clear 45.4%; House 74%; Mirror 59%. Cabinets greedy 16.6–19.9 (knight 17.9, midas 19.1, thorn 16.9, tesla 19.9, joker 16.6). Playtester's it7_skill harness (B1 snapshots, before the +52 bump): commit 50.2 ≥ notier 49.7, tierfirst 50.0, randomDraft 44.6, randomAll 37.0; elite2 − safe2 = −0.7; commit Mirror win 72% (→ flat raised 45→52).
 Open: TESLA strongest act 2 cabinet under commit (63.5 vs knight 41.4 on snapshots); KEEN has no act 2 form; HIGH STAKES; legendary picks could be build-aware.
+
+### Iteration 9 — 2026-09-23 (playtest/ITERATION_8.md → Package P: every build meets its match)
+Playtest verdict on I8: act 2 finally rewards skill (commit − random +6) and the Mirror is a climax for slow builds, BUT a critical bug gave every TIER II away for free on preview (G1), TESLA +21 / MIDAS +12 over KNIGHT in act 2 (regular fights, not the Mirror), burst builds skipped REFLECTION, the Mirror copying KEEN made KEEN a trap, 13 bugs.
+Implemented:
+- G1 fixed (previews deep-copy gilds; test that previews never change the run). G2: new cells of a tier II gild come in at tier II.
+- NEW CONTENT — act 2 COUNTER-ENEMIES (minDepth 1, on forks): THE GROUNDER drives rods into your bolt cells (with a rod on your payline your special hits shields; EARTH drains 3 energy). THE COUNTERFEITER slaps fake coins on your gilded cells (they pay plain — no tier, no set — for 2 turns; LAUNDER takes 2 chips and heals 6).
+- Cabinet act 2 signatures (applied when the House falls, shown on the cabinet card): KNIGHT +6 max HP; THORN spikes tier II +4 max HP; JOKER 2 shields → WILDs on reel 3. TESLA's Rod special 10 (was 12). MIDAS 23 HP. Fragile cabinets (<26 HP) face an 0.85x opener.
+- The Mirror: crack gate (the turn it cracks stops at half HP), doesn't copy KEEN (or spikes), HP = 3 × typical-spin power + 45 + 4 per relic you carry. Saved-chip shield at the Mirror capped at +4/turn.
+- TIER II = +2 gild levels (GOLD II x4 alone, KEEN II +3, SPIKED II 6, LUCKY II 65%...). Act 2 elites pay +6 chips instead of a relic (elite relics made the Mirror a walkover). JACKPOT BELL also refills your special.
+- Readability: G3 run screens take clicks before the TUNE/LOG buttons (LEAVE works); G4 legible COMPLETES SET ribbon (setRibbon art hook); G6 REFLECTION panel hides on presented HP; G7 near-duplicate draft cards deduped; G9 footer; G10 Overcharge/Bell/Key FITS; G11 recap font; G12 chip counter/relic grid off the edge, speed label; G13 dbg.vs('mirror') parity. Act-aware elite text.
+- Tests: 115 (9 new in iteration9.test.ts).
+Harness (it8_skill, B1 snapshots, commit): act 2 clear 54.0; commit ≥ notier (53.7) ✓; commit − hpfirst +7.5 ✓; commit − random draft +9.3 ✓; elite2 − safe2 −1.5 ✓; cabinet spread 50.0–60.8 (10.8) ✓; Mirror win 65.2%.
+Official sim (2000): greedy 18.9% / relic 14.8% / random 13.3%; act 1 clear 45.0 (MIDAS 53.2); House 73%; Mirror 48% greedy (greedy doesn't commit).
+Open: art for the counter-enemies in flight; greedy-sim act 2 regular fights are soft (1-2%); legendary offer could be build-aware; HIGH STAKES.

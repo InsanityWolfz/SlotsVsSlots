@@ -31,6 +31,8 @@ const EFFECT_WORD: Record<SymbolId, string> = {
   hex: 'HEX',
   fangs: 'DRAIN',
   mimicSym: 'COPYCAT',
+  ground: 'GROUNDING',
+  fake: 'FAKES',
 };
 
 /** What each FULL SET does, for its banner (playtest ITERATION_5). */
@@ -141,6 +143,14 @@ export class Director {
         return this.phoenix(e);
       case 'shatter':
         return this.shatter(e);
+      case 'ground':
+        return this.ground(e);
+      case 'fake':
+        return this.fake(e);
+      case 'fakeTick':
+        return this.fakeTick(e);
+      case 'earth':
+        return this.earth(e);
     }
   }
 
@@ -649,6 +659,10 @@ export class Director {
 
   private async specialFire(e: Ev<'specialFire'>): Promise<void> {
     this.noteDamage(e.from, e.amount);
+    if (e.grounded) {
+      const c = this.machineCenter(e.from);
+      this.bg(this.popText('GROUNDED: HITS SHIELDS', c.x, MACHINE_TOP - 30, 2, '#e0a070', 16, 0.5));
+    }
     const h = this.s.huds[e.from];
     const cam = this.s.camera;
     // Charge.
@@ -1262,6 +1276,72 @@ export class Director {
     this.bg(this.c.to(h, 'ghost', e.hp, 0.3));
     await this.banner('PHOENIX!', '#ff8a3a', 1.4, 0.5, 'BACK AT 1 HP', BANNER_Y, 4);
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (icon.alpha = v) }).then(() => this.s.fx.remove(icon)));
+  }
+
+  /** The Grounder hammers rods into your bolts. */
+  private async ground(e: Ev<'ground'>): Promise<void> {
+    const to = this.s.machines[e.to];
+    if (e.reels.length) await this.activate(e.from, e.reels, '#c87a3a');
+    const hits = e.cells.map(async (ref, i) => {
+      await this.c.wait(i * 0.1);
+      const src = this.srcPoint(e.from, e.reels, i);
+      const row = this.rowOf(e.to, ref);
+      const dst = row >= 0 ? cellCenter(e.to, ref.reel, row) : stripMapColumn(ref.reel);
+      const p = this.s.fx.add(new Projectile(artId('ground'), src.x, src.y, 3, false, '#c87a3a'));
+      await this.arc(p, dst.x, dst.y, 0.35, 90, sineIn);
+      this.s.fx.remove(p);
+      to.reels[ref.reel].cells[ref.index].grounded = true;
+      this.s.sounds.rockThud();
+      this.s.particles.burst({ x: dst.x, y: dst.y, count: 12, colors: ['#c87a3a', '#ffd23f', '#5a3a20'], speed: [60, 220], gravity: 500, life: [0.2, 0.4], size: [2, 4] });
+    });
+    await Promise.all(hits);
+    const c = this.machineCenter(e.to);
+    this.bg(this.popText(`GROUNDED x${e.cells.length}`, c.x, MACHINE_TOP - 30, 2, '#e0a070', 16, 0.4));
+    if (e.reels.length) this.settle(e.from, e.reels);
+    await this.c.wait(0.15);
+  }
+
+  /** The Counterfeiter slaps fake coins over your gilds. */
+  private async fake(e: Ev<'fake'>): Promise<void> {
+    const to = this.s.machines[e.to];
+    if (e.reels.length) await this.activate(e.from, e.reels, '#9a9a9a');
+    const hits = e.cells.map(async (ref, i) => {
+      await this.c.wait(i * 0.1);
+      const src = this.srcPoint(e.from, e.reels, i);
+      const row = this.rowOf(e.to, ref);
+      const dst = row >= 0 ? cellCenter(e.to, ref.reel, row) : stripMapColumn(ref.reel);
+      const p = this.s.fx.add(new Projectile(artId('fake'), src.x, src.y, 3, false, '#9a9a9a'));
+      this.bg(this.c.tween({ from: 0, to: Math.PI * 4, dur: 0.35, onUpdate: (v) => (p.rot = v) }));
+      await this.arc(p, dst.x, dst.y, 0.35, 90, sineIn);
+      this.s.fx.remove(p);
+      to.reels[ref.reel].cells[ref.index].faked = e.turns;
+      this.s.sounds.coin(2);
+      this.s.particles.burst({ x: dst.x, y: dst.y, count: 12, colors: ['#9a9a9a', '#5a5a5a', '#d0d0d0'], speed: [60, 200], gravity: 400, life: [0.2, 0.4], size: [2, 4] });
+    });
+    await Promise.all(hits);
+    const c = this.machineCenter(e.to);
+    this.bg(this.popText(`FAKED: GILDS PAY PLAIN ${e.turns} TURNS`, c.x, MACHINE_TOP - 30, 2, '#c0c0c0', 16, 0.5));
+    if (e.reels.length) this.settle(e.from, e.reels);
+    await this.c.wait(0.15);
+  }
+
+  private async fakeTick(e: Ev<'fakeTick'>): Promise<void> {
+    const m = this.s.machines[e.side];
+    e.cells.forEach((ref, i) => (m.reels[ref.reel].cells[ref.index].faked = e.left[i]));
+    await this.c.wait(0.02);
+  }
+
+  /** EARTH: your energy drains into the ground. */
+  private async earth(e: Ev<'earth'>): Promise<void> {
+    const h = this.s.huds[e.to];
+    this.s.sounds.shieldFizz();
+    for (let i = 0; i < h.energyMax; i++) {
+      const p = h.pipPos(i);
+      this.s.particles.burst({ x: p.x, y: p.y, count: 4, colors: ['#c87a3a', COLORS.energy], speed: [40, 120], angle: Math.PI / 2, spread: 0.8, gravity: 300, life: [0.3, 0.5], size: [2, 3] });
+    }
+    await this.c.to(h, 'energy', e.total, 0.3, sineIn);
+    const p0 = h.pipPos(0);
+    await this.popText(e.amount ? `-${e.amount} ENERGY` : 'NO ENERGY', p0.x + 40, p0.y - 22, 2, '#e0a070', 16, 0.3);
   }
 
   /** The Mirror cracks at half HP. */

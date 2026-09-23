@@ -179,6 +179,8 @@ const ABBR: Record<SymbolId, string> = {
   hex: 'HEX',
   fangs: 'FNG',
   mimicSym: 'MIM',
+  ground: 'GND',
+  fake: 'FAK',
 };
 
 export function formatRow(r: TurnRow): string {

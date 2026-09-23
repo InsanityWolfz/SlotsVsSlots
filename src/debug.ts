@@ -79,7 +79,8 @@ export function installDebug(game: Game): void {
       cfg.enemy = { hp: e.hp, strips: e.strips, name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
       if (id === 'mirror') {
         cfg.enemy.strips = cfg.player.strips.map((x) => ({ ...x }));
-        cfg.enemy.gilded = (cfg.player.gilded ?? []).map((g) => ({ ...g }));
+        cfg.enemy.gilded = (cfg.player.gilded ?? []).filter((g) => g.enh !== 'spiked' && g.enh !== 'keen').map((g) => ({ ...g }));
+        if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, power: Math.round(cfg.player.hp * 0.6) };
       }
       cfg.relics = relics;
       game.newFight(true, null, cfg);

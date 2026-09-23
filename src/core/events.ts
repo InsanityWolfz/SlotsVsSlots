@@ -53,6 +53,8 @@ export type CombatEvent =
       targetHp: number;
       targetShield: number;
       energyLeft: number;
+      /** A grounded cell on the payline: this special hit shields. */
+      grounded?: boolean;
     }
   | { type: 'heal'; side: SideId; amount: number; hp: number; source: RelicId | 'special' | 'vamp' | 'drain' | 'ability' }
   | { type: 'slime'; from: SideId; to: SideId; reels: number[]; amount: number; cells: CellRef[]; wasted: number }
@@ -72,6 +74,14 @@ export type CombatEvent =
   | { type: 'defuse'; side: SideId; cells: CellRef[] }
   /** Every live bomb on this side's strips burned one turn of fuse. */
   | { type: 'fuse'; side: SideId; cells: CellRef[]; fuses: number[] }
+  /** The Grounder drove rods into bolt cells. */
+  | { type: 'ground'; from: SideId; to: SideId; reels: number[]; cells: CellRef[] }
+  /** The Counterfeiter faked gilded cells (plain for `turns`). */
+  | { type: 'fake'; from: SideId; to: SideId; reels: number[]; cells: CellRef[]; turns: number }
+  /** Faked cells burned a turn; `left` 0 = the fake wore off. */
+  | { type: 'fakeTick'; side: SideId; cells: CellRef[]; left: number[] }
+  /** EARTH: energy drained from the target. */
+  | { type: 'earth'; from: SideId; to: SideId; amount: number; total: number }
   /** The Mimic ate some of your chips. */
   | { type: 'gulp'; from: SideId; chips: number }
   /** Phoenix Feather saved you from a lethal hit. */

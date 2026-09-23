@@ -29,7 +29,7 @@ import { backOut, sineOut } from '../present/ease';
 import { ABILITY_UI } from '../present/hud';
 import { ENH_SPRITE } from '../present/reel';
 import { COLORS, H, W } from '../present/layout';
-import { artId, drawSprite, type SpriteId } from '../render/sprites';
+import { artId, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet';
@@ -79,6 +79,8 @@ export const BADGE: Record<string, SpriteId> = {
   vampire: artId('mapBadgeFang'),
   mimic: artId('mapBadgeMimic'),
   mirror: artId('mapBadgeMirror'),
+  grounder: artId('mapBadgeGround'),
+  counterfeiter: artId('mapBadgeFake'),
 };
 
 const rounds = (turns: number) => { const n = Math.ceil(turns / 2); return `${n} ROUND${n === 1 ? '' : 'S'}`; };
@@ -101,6 +103,8 @@ function abilityText(e: EnemyDef, every: number, run?: RunState): string {
     bloodmoon: `HEALS ${e.ability.power} HP`,
     gulp: `EATS ${e.ability.power} OF YOUR CHIPS`,
     reflect: `THROWS YOUR BEST HIT SINCE THE LAST ONE BACK (${REFLECT_MIN} TO ${cap})`,
+    earth: `DRAINS ${e.ability.power} OF YOUR ENERGY`,
+    launder: `TAKES ${e.ability.power} CHIPS AND HEALS ${e.ability.power * 3}`,
   };
   return `${ui.label} EVERY ${every} TURNS: ${what[e.ability.kind]}`;
 }
@@ -542,7 +546,15 @@ export class RunScreens {
     ctx.globalAlpha = glow;
     ctx.fillRect(x + 2, y + 2, 130, 14);
     ctx.globalAlpha = 1;
-    drawText(ctx, 'COMPLETES SET', x + 67, y + 9, 1.5, COLORS.outline);
+    if (hasSprite('setRibbon')) {
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(x, y, 134, 18);
+      drawSprite(ctx, artId('setRibbon'), x + 67, y + 9, 2.5);
+      return;
+    }
+    ctx.fillStyle = '#5a3a0a';
+    ctx.fillRect(x + 2, y + 2, 130, 14);
+    drawText(ctx, 'COMPLETES SET', x + 67, y + 9, 1.5, '#fff6c8');
   }
 
   /** Violet/gold LEGENDARY ribbon inside the top of a card. */
@@ -590,7 +602,7 @@ export class RunScreens {
       drawSprite(ctx, 'chipShield', tx + 110, y + 104, 2);
       drawText(ctx, `YOUR ${this.run!.player.chips} CHIPS: +${sh} SHIELD EACH HOUSE TURN`, tx + 128, y + 104, 1, '#9fd0ff', { align: 'left' });
     }
-    if (e.elite) drawText(ctx, 'ELITE: +25% HP. PICK 1 OF 2 RELICS, +2 CHIPS', tx + 90, y + 104, 1, '#ff9a3a', { align: 'left' });
+    if (e.elite) drawText(ctx, (e.act ?? 1) > 1 ? 'ELITE: +50% HP. PAYS 8 CHIPS' : 'ELITE: +25% HP. PICK 1 OF 2 RELICS, +2 CHIPS', tx + 90, y + 104, 1, '#ff9a3a', { align: 'left' });
     if (e.ability) {
       // The Golden Hourglass slows every enemy ability.
       const every = e.ability.every + (this.run!.player.relics.includes('sandglass') ? SANDGLASS_SLOW : 0);
@@ -608,7 +620,7 @@ export class RunScreens {
     }
     const bossText =
       e.boss === 'mirror'
-        ? `A COPY OF YOUR MACHINE (NO RELICS, NO SPECIALS), AS TOUGH AS YOUR BUILD HITS. REFLECTIONS CAP AT ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKED AT HALF HP: 1 TURN FASTER. YOUR CHIPS SHIELD YOU (1 PER ${CHIPS.stackPer}).`
+        ? `A COPY OF YOUR MACHINE (NO RELICS, NO SPECIALS, NO SPIKES, NO KEEN EDGE), AS TOUGH AS YOUR BUILD HITS. REFLECTIONS CAP AT ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKED AT HALF HP: 1 TURN FASTER. YOUR CHIPS SHIELD YOU (1 PER ${CHIPS.stackPer}).`
         : `COINS + A CUT EACH TURN FILL THE POT. EVERY 4 TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +1 SHIELD EACH HOUSE TURN.`;
     if (e.isBoss)
       {
@@ -670,7 +682,9 @@ export class RunScreens {
       drawText(ctx, open ? cab.name : '???', 0, 8, cab.name.length > 10 ? 2 : 3, open ? COLORS.goldLight : COLORS.textDim);
       if (open) {
         drawText(ctx, cab.blurb, 0, 34, 1, COLORS.textDim);
-        wrap(cab.rule, 17).slice(0, 5).forEach((l, k) => drawText(ctx, l, 0, 60 + k * 18, 2, COLORS.text));
+        const lines = wrap(cab.rule, 17).slice(0, 5);
+        lines.forEach((l, k) => drawText(ctx, l, 0, 60 + k * 18, 2, COLORS.text));
+        if (cab.act2) wrap(`ACT 2: ${cab.act2.text}`, 22).forEach((l, k) => drawText(ctx, l, 0, 70 + lines.length * 18 + k * 14, 1.5, '#c8f0ff'));
       } else {
         drawText(ctx, 'LOCKED', 0, 40, 2, '#ff8a7a');
         wrap(`UNLOCK: ${cab.unlock}`, 17).forEach((l, k) => drawText(ctx, l, 0, 70 + k * 18, 2, COLORS.textDim));
@@ -849,7 +863,7 @@ export class RunScreens {
       if (compact) {
         const parts = [r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
         const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
-        drawText(ctx, what.length > 30 ? `${what.slice(0, 29)}...` : what, 790, y, what.length > 22 ? 1.5 : 2, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
+        drawText(ctx, what.length > 40 ? `${what.slice(0, 39)}...` : what, 790, y, 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
         return;
       }
       if (r.pick) drawText(ctx, describeOption(r.pick).title, 790, y - 6, 2, '#c9a0ff', { align: 'left' });

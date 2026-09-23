@@ -8,6 +8,7 @@ import {
   BOMB,
   KEY_MULT,
   OVERCHARGE_ECHO,
+  TIER_STEP,
   VAMP_CAP,
   LUCKY_CHANCE,
   SANDGLASS_SLOW,
@@ -41,7 +42,7 @@ import {
 } from './strip';
 
 /** Symbols that act on the opponent when they're native to the caster's strips. */
-const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym']);
+const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake']);
 
 export interface Combatant {
   side: SideId;
@@ -127,6 +128,8 @@ export class Fight {
   phoenixUsed = false;
   /** The Mirror cracked (phase 2). */
   shattered = false;
+  /** The turn the Mirror cracked on: it takes no more HP damage that turn (the crack gate). */
+  private crackTurn = -1;
   /** What each side did on its last spin: biggest group, and total damage sent (for Mimic / Reflection). */
   readonly last: Record<SideId, { best: number; damage: number }> = { player: { best: 0, damage: 0 }, enemy: { best: 0, damage: 0 } };
   /** BLAZE: extra special damage from blaze-gilded reels. */
@@ -152,7 +155,7 @@ export class Fight {
     // Lightning Rod: a charged-bolt build makes the special cheaper and harder-hitting.
     if (p.relics.has('rod') && p.reels.some((r) => r.cells.some((c) => c.enh === 'charged'))) {
       this.cfg.specialCost = ROD_SPECIAL_COST;
-      this.cfg.specialDamage = Math.max(this.cfg.specialDamage, ROD_SPECIAL_DAMAGE);
+      this.cfg.specialDamage = Math.max(this.cfg.specialDamage, this.cabinet?.rodDamage ?? ROD_SPECIAL_DAMAGE);
     }
     // Thorn: enemy specials hit one weaker (the House's skim is untouched).
     const minus = this.cabinet?.enemyAbilityMinus ?? 0;
@@ -171,7 +174,7 @@ export class Fight {
     this.blaze = p.reels.reduce((a, reel) => {
       const cell = reel.cells.find((c) => c.enh === 'blaze');
       if (!cell) return a;
-      return a + BLAZE_BONUS.each + (cell.tier === 2 ? 1 : 0) + (this.fullSet.has('blaze') ? (need === 2 ? 2 : 1) : 0);
+      return a + BLAZE_BONUS.each + (cell.tier === 2 ? TIER_STEP : 0) + (this.fullSet.has('blaze') ? (need === 2 ? 2 : 1) : 0);
     }, 0);
     // The Mirror plays your machine but never your junk (and fires no specials).
     if (this.isMirror) e.casts.clear();
@@ -274,6 +277,8 @@ export class Fight {
       this.resolveGroup(me, group, score, events);
       if (this.over) break;
     }
+    // Jackpot Bell: a jackpot refills your special.
+    if (!this.over && score.tier === 'triple' && me.relics.has('bell')) this.gainEnergy(me, this.cfg.specialCost, [], events);
     // Midas: gold cells on the payline also give energy.
     if (!this.over && me.relics.has('midas')) {
       const gold = me.reels.map((_, r) => r).filter((r) => this.paylineEnh(me, r) === 'gold');
@@ -295,6 +300,7 @@ export class Fight {
     if (side === 'player') this.reflectBank = Math.max(this.reflectBank, this.last.player.damage);
     if (!this.over) this.defuse(me, events);
     if (!this.over) this.burnFuses(me, events);
+    if (!this.over) this.tickFakes(me, events);
     if (!this.over) this.tickStatuses(me, events);
     if (!this.over && me.ability) this.chargeAbility(me, events);
 
@@ -379,7 +385,9 @@ export class Fight {
     const enh = this.paylineEnh(c, r);
     if (!enh) return 0;
     const cell = c.reels[r].cells[c.reels[r].stop];
-    let lvl = 1 + (cell.tier === 2 ? 1 : 0);
+    // A counterfeit coin makes the gild plain: no tier, no set.
+    if (cell.faked && cell.faked > 0) return 1;
+    let lvl = 1 + (cell.tier === 2 ? TIER_STEP : 0);
     if (this.setActive(c, enh)) lvl += c.relics.has('ticket') ? 2 : 1;
     return lvl;
   }
@@ -497,16 +505,19 @@ export class Fight {
     const foe = this.sides[other(me.side)];
     me.energy += amount;
     events.push({ type: 'energyGain', side: me.side, reels, amount, total: me.energy });
+    // The Grounder: a grounded cell on your payline makes your special hit shields.
+    const grounded = me.reels.some((reel) => reel.cells[reel.stop]?.grounded);
+    const pierce = this.cfg.specialIgnoresShield && !grounded;
     while (me.energy >= this.cfg.specialCost && !this.over) {
       me.energy -= this.cfg.specialCost;
       const dmg = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
-      const h = this.damage(foe, dmg, this.cfg.specialIgnoresShield);
-      events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy });
+      const h = this.damage(foe, dmg, pierce);
+      events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
       this.checkDeath(foe, events);
       // Overcharge: the special echoes at half damage.
       if (!this.over && me.relics.has('overcharge')) {
         const echo = Math.ceil(dmg * OVERCHARGE_ECHO);
-        const h2 = this.damage(foe, echo, this.cfg.specialIgnoresShield);
+        const h2 = this.damage(foe, echo, pierce);
         events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: echo, ...h2, energyLeft: me.energy });
         this.checkDeath(foe, events);
       }
@@ -524,7 +535,12 @@ export class Fight {
   private damage(target: Combatant, amount: number, ignoreShield: boolean) {
     const blocked = ignoreShield ? 0 : Math.min(target.shield, amount);
     target.shield -= blocked;
-    const hpDamage = Math.min(target.hp, amount - blocked);
+    let hpDamage = Math.min(target.hp, amount - blocked);
+    // The crack gate: the Mirror's glass holds at half HP for the rest of the turn it cracks on.
+    if (target.side === 'enemy' && this.isMirror) {
+      if (this.crackTurn === this.turn) hpDamage = 0;
+      else if (!this.shattered) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp / 2)));
+    }
     target.hp -= hpDamage;
     if (target.hp <= 0 && target.side === 'enemy') this.overkill = amount - blocked - hpDamage;
     return { blocked, hpDamage, targetHp: target.hp, targetShield: target.shield };
@@ -542,6 +558,7 @@ export class Fight {
       // The Mirror cracks at half HP: its Reflection charges faster.
       if (c.side === 'enemy' && this.isMirror && !this.shattered && c.hp <= c.maxHp / 2 && c.ability) {
         this.shattered = true;
+        this.crackTurn = this.turn;
         c.ability = { ...c.ability, every: Math.max(2, c.ability.every - 1) };
         c.charge = Math.min(c.charge, c.ability.every - 1);
         events.push({ type: 'shatter', side: c.side, every: c.ability.every });
@@ -602,6 +619,12 @@ export class Fight {
         if (!this.over && got > 0) this.heal(me, got, 'drain', events);
         return;
       }
+      case 'ground':
+        // 1 rod, a double 2, a jackpot 3 (onto your bolt cells).
+        return this.plantGround(me, foe, statusSize(amount), reels, events);
+      case 'fake':
+        // 1 cell, a double 2, a jackpot 3 (gilded cells, visible first), plain for 2 turns.
+        return this.fakeGilds(me, foe, statusSize(amount), 2, reels, events);
       case 'mimicSym': {
         // The Mimic copies your last spin's biggest group (half on a single, double on a jackpot).
         const best = this.last[foe.side].best;
@@ -627,6 +650,46 @@ export class Fight {
     for (const ref of cells) foe.reels[ref.reel].cells[ref.index].bomb = BOMB.fuse;
     if (cells.length) events.push({ type: 'bomb', from: me.side, to: foe.side, reels, cells });
     else this.fizzle(me, 'bomb', reels, events);
+  }
+
+  /** Drive grounding rods into the foe's bolt cells (visible first). */
+  private plantGround(me: Combatant, foe: Combatant, count: number, reels: number[], events: CombatEvent[]): void {
+    const vis = new Set(visibleCells(foe.reels).map((r) => `${r.reel}:${r.index}`));
+    const all: CellRef[] = [];
+    foe.reels.forEach((reel, r) => reel.cells.forEach((c, i) => c.symbol === 'bolt' && !c.grounded && !c.stolen && all.push({ reel: r, index: i })));
+    const pool = [...this.rng.shuffle(all.filter((x) => vis.has(`${x.reel}:${x.index}`))), ...this.rng.shuffle(all.filter((x) => !vis.has(`${x.reel}:${x.index}`)))];
+    const cells = pool.slice(0, count);
+    if (!cells.length) return this.fizzle(me, 'ground', reels, events);
+    for (const ref of cells) foe.reels[ref.reel].cells[ref.index].grounded = true;
+    events.push({ type: 'ground', from: me.side, to: foe.side, reels, cells });
+  }
+
+  /** Slap counterfeit coins over the foe's gilded cells (visible first): they pay plain for `turns`. */
+  private fakeGilds(me: Combatant, foe: Combatant, count: number, turns: number, reels: number[], events: CombatEvent[]): void {
+    const vis = new Set(visibleCells(foe.reels).map((r) => `${r.reel}:${r.index}`));
+    const all: CellRef[] = [];
+    foe.reels.forEach((reel, r) => reel.cells.forEach((c, i) => c.enh && !(c.faked && c.faked > 0) && !c.stolen && all.push({ reel: r, index: i })));
+    const pool = [...this.rng.shuffle(all.filter((x) => vis.has(`${x.reel}:${x.index}`))), ...this.rng.shuffle(all.filter((x) => !vis.has(`${x.reel}:${x.index}`)))];
+    const cells = pool.slice(0, count);
+    if (!cells.length) return this.fizzle(me, 'fake', reels, events);
+    for (const ref of cells) foe.reels[ref.reel].cells[ref.index].faked = turns;
+    events.push({ type: 'fake', from: me.side, to: foe.side, reels, cells, turns });
+  }
+
+  /** Counterfeit coins wear off after their owner's turns. */
+  private tickFakes(me: Combatant, events: CombatEvent[]): void {
+    const cells: CellRef[] = [];
+    const left: number[] = [];
+    me.reels.forEach((reel, r) =>
+      reel.cells.forEach((c, i) => {
+        if (!c.faked || c.faked <= 0) return;
+        c.faked -= 1;
+        cells.push({ reel: r, index: i });
+        left.push(c.faked);
+        if (c.faked <= 0) delete c.faked;
+      }),
+    );
+    if (cells.length) events.push({ type: 'fakeTick', side: me.side, cells, left });
   }
 
   /** Bombs that land on your payline are defused. */
@@ -872,6 +935,17 @@ export class Fight {
         this.chipsEaten += ab.power;
         events.push({ type: 'gulp', from: me.side, chips: ab.power });
         return;
+      case 'earth': {
+        const amount = Math.min(foe.energy, ab.power);
+        foe.energy -= amount;
+        events.push({ type: 'earth', from: me.side, to: foe.side, amount, total: foe.energy });
+        return;
+      }
+      case 'launder':
+        // Takes your chips and turns them into its HP (x3).
+        this.chipsEaten += ab.power;
+        events.push({ type: 'gulp', from: me.side, chips: ab.power });
+        return this.heal(me, ab.power * 3, 'ability', events);
       case 'reflect': {
         // The Mirror throws your last spin back at you (at least a little).
         const dmg = Math.max(REFLECT_MIN, Math.min(ab.power, this.reflectBank));

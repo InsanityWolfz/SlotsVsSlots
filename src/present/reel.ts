@@ -22,6 +22,10 @@ export interface CellView {
   enh?: Enh;
   /** Tier II gild. */
   tier?: 2;
+  /** The Grounder's rod. */
+  grounded?: boolean;
+  /** The Counterfeiter's fake coin: turns left. */
+  faked?: number;
   /** A Bomber's bomb: turns left on the fuse (0/undefined = none). */
   bomb?: number;
   /** 0..1 bomb pop-in. */
@@ -280,6 +284,31 @@ export function drawCell(
     }
   }
 
+  // Counterfeit coin: the gild goes grey (plain) while it lasts.
+  if (cell.faked && cell.faked > 0 && stolen < 1) {
+    if (hasSprite('fakeOverlay')) drawSprite(ctx, artId('fakeOverlay'), x, y, ART_SCALE, { sx, sy, alpha });
+    else {
+      ctx.save();
+      ctx.globalAlpha = 0.45 * alpha;
+      ctx.fillStyle = '#8a8a8a';
+      ctx.fillRect(x - 30, y - 30, 60, 60);
+      ctx.restore();
+    }
+  }
+  // Grounding rod driven into the cell.
+  if (cell.grounded && stolen < 1) {
+    if (hasSprite('groundOverlay')) drawSprite(ctx, artId('groundOverlay'), x, y, ART_SCALE, { sx, sy, alpha });
+    else {
+      ctx.save();
+      ctx.strokeStyle = '#c87a3a';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(x + 28, y - 28);
+      ctx.lineTo(x - 6, y + 10);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
   // Bombs sit on top of the symbol with their fuse count ticking in the corner.
   if (cell.bomb && cell.bomb > 0) {
     const bp = cell.bombPop ?? 1;

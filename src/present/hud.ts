@@ -20,6 +20,8 @@ export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> 
   bloodmoon: { icon: artId('icoDrain'), label: 'BLOOD MOON' },
   gulp: { icon: artId('icoGulp'), label: 'GULP' },
   reflect: { icon: artId('icoReflect'), label: 'REFLECTION' },
+  earth: { icon: artId('icoEarth'), label: 'EARTH' },
+  launder: { icon: artId('icoLaunder'), label: 'LAUNDER' },
 };
 
 /** Displayed (tweened) values for one side's bars — never read from game state mid-animation. */

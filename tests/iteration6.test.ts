@@ -274,7 +274,7 @@ describe('act structure', () => {
     expect(cfg.enemy.strips).toEqual(run.player.strips);
     expect(cfg.enemy.gilded).toEqual(run.player.gilded);
     expect(cfg.enemy.hp).toBe(enemyHp(run, run.enemies[RUN_FIGHTS]));
-    expect(cfg.enemy.hp).toBe(Math.round(TUNE.mirrorPower * machinePower(run)) + TUNE.mirrorFlat);
+    expect(cfg.enemy.hp).toBe(Math.round(TUNE.mirrorPower * machinePower(run)) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length);
     expect(cfg.enemy.ability?.kind).toBe(MIRROR.ability.kind);
 
     const f = new Fight(cfg, 9);

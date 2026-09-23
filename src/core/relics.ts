@@ -28,7 +28,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   hone: { id: 'hone', name: 'HONE', text: 'KEEN SWORDS DEAL +2 MORE', sprite: 'relicHone' },
   // Legendary (act 2): big, build-bending effects.
   ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'FULL SETS NEED ONLY 2 REELS AND PAY ONE STEP MORE', sprite: 'relicTicket' },
-  bell: { id: 'bell', name: 'JACKPOT BELL', text: 'YOUR JACKPOTS PAY X2', sprite: 'relicBell' },
+  bell: { id: 'bell', name: 'JACKPOT BELL', text: 'YOUR JACKPOTS PAY X2 AND REFILL YOUR SPECIAL', sprite: 'relicBell' },
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'ONCE PER FIGHT, SURVIVE A LETHAL HIT AT 1 HP', sprite: 'relicPhoenix' },
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR SPECIAL FIRES AGAIN FOR A THIRD OF ITS DAMAGE', sprite: 'relicOvercharge' },
   key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR DOUBLES PAY X2', sprite: 'relicKey' },
@@ -46,6 +46,8 @@ export const LUCKY_CHANCE = { each: 0.35, step: 0.15 };
 export const BLAZE_BONUS = { each: 3 };
 /** OVERCHARGE: the echo deals this fraction of the special. */
 export const OVERCHARGE_ECHO = 1 / 3;
+/** TIER II is worth this many gild levels (ITERATION_8: one level made tier II a trap). */
+export const TIER_STEP = 2;
 /** VAMP heals at most this much per sword group (a VAMP FULL SET was the strongest thing measured). */
 export const VAMP_CAP = 3;
 /** The Mirror's REFLECTION is capped at this share of your max HP (two from full kill you). */

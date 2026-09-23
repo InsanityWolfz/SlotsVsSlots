@@ -131,9 +131,32 @@ export const ARCHETYPES: Archetype[] = [
     blurb: 'COPIES YOUR BEST HIT. EATS YOUR CHIPS',
     acts: [2],
   },
+  // ---- act 2 counter-enemies: each one answers a dominant build ----
+  {
+    id: 'grounder',
+    name: 'GROUNDER',
+    portrait: 'enemyGrounder',
+    strip: { sword: 4, shield: 5, ground: 3 },
+    hpMul: 1,
+    ability: { kind: 'earth', every: 4, power: 3 },
+    minDepth: 1,
+    blurb: 'GROUNDS YOUR BOLTS: WITH A ROD ON YOUR PAYLINE, YOUR SPECIAL HITS SHIELDS',
+    acts: [2],
+  },
+  {
+    id: 'counterfeiter',
+    name: 'COUNTERFEITER',
+    portrait: 'enemyCounterfeiter',
+    strip: { sword: 5, shield: 3, fake: 4 },
+    hpMul: 0.95,
+    ability: { kind: 'launder', every: 4, power: 2 },
+    minDepth: 1,
+    blurb: 'FAKES YOUR GILDED CELLS: THEY PAY PLAIN FOR 2 TURNS',
+    acts: [2],
+  },
 ];
 
-export const ACT2_NEW: ReadonlySet<string> = new Set(['bomber', 'hexer', 'vampire', 'mimic']);
+export const ACT2_NEW: ReadonlySet<string> = new Set(['bomber', 'hexer', 'vampire', 'mimic', 'grounder', 'counterfeiter']);
 export const actsOf = (a: Archetype) => a.acts ?? [1];
 
 export const BOSS: Archetype = {
@@ -173,7 +196,7 @@ export const DEPTH_HP = [21, 26, 31, 34, 37];
 export const DEPTH_HP_2 = [52, 62, 73, 85, 97];
 /** Mutable so balance sweeps can tune it. */
 /** mirrorPower/mirrorFlat: the Mirror's HP = power × your expected damage per spin + flat (ITERATION_6 Package N). */
-export const TUNE = { bossHp: 74, act2Mul: 1, act2Swords: 2, mirrorPower: 4, mirrorFlat: 52 };
+export const TUNE = { bossHp: 74, act2Mul: 1, act2Swords: 2, mirrorPower: 3, mirrorFlat: 45, mirrorPerRelic: 4 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
@@ -203,6 +226,8 @@ export const DANGER: Record<string, number> = {
   vampire: 16,
   mimic: 15,
   mirror: 45,
+  grounder: 12,
+  counterfeiter: 12,
 };
 export const ELITE_HP_MUL = 1.25;
 export const ELITE_HP_MUL_2 = 1.5;

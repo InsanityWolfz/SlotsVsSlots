@@ -13,6 +13,10 @@ export interface StripCell {
   bomb?: number;
   /** Tier II gild. */
   tier?: 2;
+  /** The Grounder's rod: while on your payline, your special can't ignore shields. */
+  grounded?: boolean;
+  /** The Counterfeiter's fake coin: this cell's gild counts as plain for this many of your turns. */
+  faked?: number;
 }
 
 export interface Reel {
@@ -55,7 +59,7 @@ export function effectiveSymbol(cell: StripCell): SymbolId {
 }
 
 /** Symbols that do nothing on the player's own payline (WILD is very much alive). */
-export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'lock', 'ice', 'claw', 'bomb', 'hex', 'fangs', 'mimicSym']);
+export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'lock', 'ice', 'claw', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake']);
 
 /** How much the player would miss losing this symbol (enemy targeting). */
 export function symbolValue(s: SymbolId): number {

@@ -24,6 +24,7 @@ import {
   ROD_SPECIAL_COST,
   ROD_SPECIAL_DAMAGE,
   SPIKED_DAMAGE,
+  TIER_STEP,
   VAMP_CAP,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
@@ -72,6 +73,8 @@ export const gildsFor = (run: RunState): Enh[] => (run.act > 1 ? [...ACT1_GILDS,
 export const CHIPS = {
   win: 2,
   eliteBonus: 2,
+  /** Act 2 elites pay these chips instead of a relic. */
+  act2EliteChips: 6,
   perJackpot: 1,
   /** +1 chip per this much overkill on the killing blow. */
   overkillPer: 5,
@@ -210,13 +213,30 @@ function startNextAct(run: RunState): void {
   run.enemies = run.paths.map((opts) => opts[0]);
   run.chosen = run.paths.map((opts) => opts.length === 1);
   run.player.hp = run.player.maxHp;
-  if (CABINETS[run.cabinet].act2Tier) {
-    const sig = new Set(CABINETS[run.cabinet].gilded.map((g) => g.enh));
-    for (const g of run.player.gilded) if (sig.has(g.enh)) g.tier = 2;
-  }
+  applySignature(run);
   const pool = [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
   run.pendingLegend = rng.shuffle(pool).slice(0, RUN.legendPick);
   run.actIntro = true;
+}
+
+/** Each cabinet's act 2 signature (shown on its card and on the act transition screen). */
+export function applySignature(run: RunState): void {
+  const sig = CABINETS[run.cabinet].act2;
+  if (!sig) return;
+  if (sig.tierII) {
+    const own = new Set(CABINETS[run.cabinet].gilded.map((g) => g.enh));
+    for (const g of run.player.gilded) if (own.has(g.enh)) g.tier = 2;
+  }
+  if (sig.maxHp) {
+    run.player.maxHp += sig.maxHp;
+    run.player.hp = run.player.maxHp;
+  }
+  if (sig.wilds) {
+    const s = run.player.strips[sig.wilds.reel];
+    const n = Math.min(sig.wilds.count, Math.max(0, (s.shield ?? 0) - 1));
+    s.shield = (s.shield ?? 0) - n;
+    s.wild = (s.wild ?? 0) + n;
+  }
 }
 
 export function takeLegend(run: RunState, relic: RelicId): void {
@@ -256,7 +276,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   if (e.boss === 'mirror') {
     cfg.enemy.strips = run.player.strips.map((s) => ({ ...s }));
     // It copies what you hit with: never your spikes.
-    cfg.enemy.gilded = run.player.gilded.filter((g) => g.enh !== 'spiked').map((g) => ({ ...g }));
+    // It copies what you hit with, but not your spikes and not your edge (KEEN).
+    cfg.enemy.gilded = run.player.gilded.filter((g) => g.enh !== 'spiked' && g.enh !== 'keen').map((g) => ({ ...g }));
+    cfg.player.stackShield = Math.min(MIRROR_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
     // REFLECTION is capped relative to you: two from full HP kill you.
     if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, power: Math.max(REFLECT_MIN, Math.round(run.player.maxHp * REFLECT_CAP)) };
   }
@@ -271,8 +293,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
  * you (a mirror match needs your relics to win).
  */
 export function enemyHp(run: RunState, e: EnemyDef): number {
-  if (!e.isBoss) return e.hp;
-  if (e.boss === 'mirror') return Math.round(TUNE.mirrorPower * machinePower(run)) + TUNE.mirrorFlat;
+  if (!e.isBoss) return run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? Math.round(e.hp * FRAGILE_OPENER_MUL) : e.hp;
+  // The Mirror grows with your machine and (like the House) with every relic you carry in.
+  if (e.boss === 'mirror') return Math.round(TUNE.mirrorPower * machinePower(run)) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length;
   return e.hp + BOSS_HP_PER_RELIC * run.player.relics.length;
 }
 
@@ -287,13 +310,18 @@ export function machinePower(run: RunState): number {
   const s = stripStats(run.player.strips, base, relics, gilded, POWER_CAP);
   const rod = relics.includes('rod') && gilded.some((g) => g.enh === 'charged');
   const cost = rod ? ROD_SPECIAL_COST : cab.specialCost ?? base.specialCost;
-  let dmg = Math.max(cab.specialDamage ?? base.specialDamage, rod ? ROD_SPECIAL_DAMAGE : 0) + s.specialBonus;
+  let dmg = Math.max(cab.specialDamage ?? base.specialDamage, rod ? cab.rodDamage ?? ROD_SPECIAL_DAMAGE : 0) + s.specialBonus;
   if (relics.includes('overcharge')) dmg += Math.ceil(dmg * OVERCHARGE_ECHO);
   // Battery: a head start worth about one extra special over a Mirror fight (~8 of your spins).
   const energy = s.energy + (relics.includes('battery') ? BATTERY_ENERGY / 8 : 0);
   return s.damage + (energy / cost) * Math.min(POWER_CAP, dmg);
 }
 const POWER_CAP = 20;
+/** Saved chips shield at most this much per Mirror turn (hoarding guard). */
+export const MIRROR_CHIP_SHIELD_CAP = 4;
+/** Cabinets this fragile face a softer opener (ITERATION_8: 3-5% opener deaths). */
+const FRAGILE_HP = 26;
+const FRAGILE_OPENER_MUL = 0.85;
 
 const rocksIn = (s: StripCounts[]) => s.reduce((a, x) => a + (x.rock ?? 0), 0);
 
@@ -352,8 +380,13 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     Math.floor(fight.overkill / CHIPS.overkillPer);
   run.player.chips += earned;
   record.chips = earned;
-  // Elites offer their spoils: choose 1 of 2 relics.
-  if (beaten.elite) {
+  // Act 2 elites pay chips (more relics made the Mirror a walkover: ITERATION_8).
+  if (beaten.elite && run.act > 1) {
+    run.player.chips += CHIPS.act2EliteChips;
+    record.chips = (record.chips ?? 0) + CHIPS.act2EliteChips;
+  }
+  // Act 1 elites offer their spoils: choose 1 of 2 relics.
+  if (beaten.elite && run.act === 1) {
     const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && !COUNTER_RELICS.has(r) && relicFits(run, r) && !LEGENDARY.has(r));
     const rng = new Rng((run.seed ^ Math.imul(run.depth + 7 + run.act * 100, 0x85ebca6b)) >>> 0);
     const spoils = rng.shuffle(pool).slice(0, 2);
@@ -397,7 +430,7 @@ export function stripStats(strips: StripCounts[], base: GameConfig, relics: Reli
   const setStep = relics.includes('ticket') ? 2 : 1;
   const lvlOf = (reel: number, sym: SymbolId) => {
     const g = gildOf(reel, sym);
-    return g ? 1 + (g.tier ? 1 : 0) + (sets.has(g.enh) ? setStep : 0) : 0;
+    return g ? 1 + (g.tier ? TIER_STEP : 0) + (sets.has(g.enh) ? setStep : 0) : 0;
   };
   // Each line entry: [shown symbol, probability, the cell's own symbol (for its gild)].
   const probs = strips.map((s, reel) => {
@@ -456,6 +489,14 @@ function keyOf(o: DraftOption): string {
   return JSON.stringify(o);
 }
 
+/** Cards that differ only by reel read as the same choice (ITERATION_8 G7). */
+function similarKey(o: DraftOption): string {
+  if (o.kind === 'gild') return `gild:${o.enh}:${o.symbol}:${o.tier ?? 1}`;
+  if (o.kind === 'swap') return `swap:${o.from}:${o.to}`;
+  if (o.kind === 'add') return `add:${o.symbol}`;
+  return keyOf(o);
+}
+
 export const isRelicDraft = (run: RunState) => RUN.relicDraftsAfter.includes(run.depth);
 
 /**
@@ -467,7 +508,7 @@ export function draftOffers(run: RunState): DraftOption[] {
   const p = run.player;
   const out: DraftOption[] = [];
   const push = (o: DraftOption | null) => {
-    if (o && out.length < RUN.draftSize && !out.some((x) => keyOf(x) === keyOf(o))) out.push(o);
+    if (o && out.length < RUN.draftSize && !out.some((x) => keyOf(x) === keyOf(o) || similarKey(x) === similarKey(o))) out.push(o);
   };
 
   const swapCard = (): DraftOption | null => {
@@ -585,7 +626,9 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
     case 'gild': {
       const own = p.gilded.find((g) => g.reel === o.reel && g.symbol === o.symbol && g.enh === o.enh);
       if (o.tier) for (const g of p.gilded) if (g.enh === o.enh) g.tier = 2;
-      if (!own) p.gilded.push({ reel: o.reel, symbol: o.symbol, enh: o.enh, ...(o.tier ? { tier: o.tier } : {}) });
+      // New cells of a gild you've upgraded come in at TIER II too.
+      const tiered = o.tier || p.gilded.some((g) => g.enh === o.enh && g.tier);
+      if (!own) p.gilded.push({ reel: o.reel, symbol: o.symbol, enh: o.enh, ...(tiered ? { tier: 2 as const } : {}) });
       break;
     }
     case 'remove': {
@@ -713,7 +756,13 @@ export function fitsBuild(run: RunState, o: DraftOption): boolean {
   const p = run.player;
   const favored = CABINETS[run.cabinet].favors;
   if (o.kind === 'gild') return p.gilded.some((g) => g.enh === o.enh) || o.enh === favored;
-  if (o.kind === 'relic') return !!BUILD_ENABLER[o.relic] && relicFits(run, o.relic);
+  if (o.kind === 'relic') {
+    // Legendaries that feed what you're doing.
+    const spec = p.gilded.some((g) => g.enh === 'charged' || g.enh === 'blaze') || run.cabinet === 'tesla';
+    if (o.relic === 'overcharge') return spec;
+    if (o.relic === 'bell' || o.relic === 'key') return p.gilded.some((g) => g.enh === 'gold');
+    return !!BUILD_ENABLER[o.relic] && relicFits(run, o.relic);
+  }
   if (o.kind === 'swap' && o.to === 'wild') return p.relics.includes('prism') || (p.strips.some((s) => (s.wild ?? 0) > 0) && run.cabinet === 'joker');
   return false;
 }
@@ -761,14 +810,21 @@ export function gildsAfter(run: RunState, o: DraftOption): Gild[] {
   if (o.kind !== 'gild') return run.player.gilded;
   const own = run.player.gilded.find((g) => g.reel === o.reel && g.symbol === o.symbol && g.enh === o.enh);
   if (own) return run.player.gilded.map((g) => (g.enh === o.enh && o.tier ? { ...g, tier: 2 as const } : g));
-  return [...run.player.gilded, { reel: o.reel, symbol: o.symbol, enh: o.enh }];
+  const tiered = run.player.gilded.some((g) => g.enh === o.enh && g.tier);
+  return [...run.player.gilded, { reel: o.reel, symbol: o.symbol, enh: o.enh, ...(tiered ? { tier: 2 as const } : {}) }];
 }
 
 /** Strips after taking a card (for the before/after stat line). */
 export function stripsAfter(run: RunState, o: DraftOption): StripCounts[] {
   const copy: RunState = {
     ...run,
-    player: { ...run.player, strips: run.player.strips.map((s) => ({ ...s })), relics: [...run.player.relics], gilded: [...run.player.gilded], chips: run.player.chips },
+    player: {
+      ...run.player,
+      strips: run.player.strips.map((s) => ({ ...s })),
+      relics: [...run.player.relics],
+      gilded: run.player.gilded.map((g) => ({ ...g })),
+      chips: run.player.chips,
+    },
     records: [],
   };
   applyOption(copy, o);
@@ -786,13 +842,13 @@ const ENH_TEXT: Record<Enh, (s: string, reel: number) => string> = {
   blaze: (_s, r) => `BLAZE REEL ${r}: YOUR SPECIAL DEALS +${BLAZE_BONUS.each}`,
 };
 const TIER_TEXT: Record<Enh, (s: string, reel: number) => string> = {
-  gold: (s, r) => `${s}S ON REEL ${r} PAY X3`,
-  keen: (s, r) => `${s}S ON REEL ${r} DEAL +2 AND PIERCE`,
-  charged: (s, r) => `${s}S ON REEL ${r} GIVE +2 ENERGY`,
-  spiked: (s, r) => `${s}S ON REEL ${r} HIT BACK FOR 4`,
-  vamp: (s, r) => `${s}S ON REEL ${r} HEAL 2 WHEN THEY HIT`,
-  lucky: (s, r) => `${s}S ON REEL ${r}: 50% CHANCE TO LAND AS A WILD`,
-  blaze: (_s, r) => `BLAZE REEL ${r}: YOUR SPECIAL DEALS +4`,
+  gold: (s, r) => `${s}S ON REEL ${r} PAY X4`,
+  keen: (s, r) => `${s}S ON REEL ${r} DEAL +3 AND PIERCE`,
+  charged: (s, r) => `${s}S ON REEL ${r} GIVE +3 ENERGY`,
+  spiked: (s, r) => `${s}S ON REEL ${r} HIT BACK FOR 6`,
+  vamp: (s, r) => `${s}S ON REEL ${r} HEAL 3 WHEN THEY HIT`,
+  lucky: (s, r) => `${s}S ON REEL ${r}: 65% CHANCE TO LAND AS A WILD`,
+  blaze: (_s, r) => `BLAZE REEL ${r}: YOUR SPECIAL DEALS +5`,
 };
 /** What a gild card's cell will really do, at the level it will have after you take it. */
 function levelText(run: RunState, o: Extract<DraftOption, { kind: 'gild' }>): string {
@@ -800,7 +856,7 @@ function levelText(run: RunState, o: Extract<DraftOption, { kind: 'gild' }>): st
   const g = after.find((x) => x.reel === o.reel && x.symbol === o.symbol && x.enh === o.enh);
   const sets = fullSets(after, run.player.relics);
   const setStep = sets.has(o.enh) ? (run.player.relics.includes('ticket') ? 2 : 1) : 0;
-  const lvl = 1 + (g?.tier ? 1 : 0) + setStep;
+  const lvl = 1 + (g?.tier ? TIER_STEP : 0) + setStep;
   const set = setStep ? ' (SET)' : '';
   const spikeBase = run.player.relics.includes('cactus') ? CACTUS_DAMAGE : SPIKED_DAMAGE;
   switch (o.enh) {
