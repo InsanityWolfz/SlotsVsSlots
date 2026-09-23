@@ -258,6 +258,6 @@ export class TuningPanel {
   private apply(): void {
     this.game.cfg = structuredClone(this.draft);
     this.game.saveConfig();
-    this.game.newFight(true);
+    this.game.restart();
   }
 }

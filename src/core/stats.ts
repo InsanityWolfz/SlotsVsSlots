@@ -22,6 +22,14 @@ export interface SideStats {
   peakSlimePct: number;
   biggestHit: number;
   longestDrySpell: number;
+  reelsFrozen: number;
+  reelsJammed: number;
+  symbolsStolen: number;
+  rocksAdded: number;
+  abilities: number;
+  potWon: number;
+  healed: number;
+  lucky: number;
 }
 
 export interface FightStats {
@@ -50,6 +58,14 @@ const emptySide = (): SideStats => ({
   peakSlimePct: 0,
   biggestHit: 0,
   longestDrySpell: 0,
+  reelsFrozen: 0,
+  reelsJammed: 0,
+  symbolsStolen: 0,
+  rocksAdded: 0,
+  abilities: 0,
+  potWon: 0,
+  healed: 0,
+  lucky: 0,
 });
 
 export class StatsTracker {
@@ -81,6 +97,7 @@ export class StatsTracker {
           s.nearMisses++;
           if (e.score.tier === 'triple') s.nearMissHits++;
         }
+        if (e.lucky) s.lucky++;
         this.dry[e.side] = e.score.tier === 'none' ? this.dry[e.side] + 1 : 0;
         s.longestDrySpell = Math.max(s.longestDrySpell, this.dry[e.side]);
         break;
@@ -110,6 +127,29 @@ export class StatsTracker {
       case 'cleanse':
         S[e.side].cleanses++;
         S[e.side].cellsCleansed += e.cells.length;
+        break;
+      case 'freeze':
+        S[e.from].reelsFrozen += e.targets.length;
+        break;
+      case 'lock':
+        S[e.from].reelsJammed += e.targets.length;
+        break;
+      case 'steal':
+        S[e.from].symbolsStolen += e.cells.length;
+        break;
+      case 'junk':
+        S[e.from].rocksAdded += e.inserts.length;
+        break;
+      case 'ability':
+        S[e.side].abilities++;
+        break;
+      case 'potWin':
+        S[e.from].potWon += e.amount;
+        S[e.from].damageDealt += e.hpDamage;
+        S[e.to].damageBlocked += e.blocked;
+        break;
+      case 'heal':
+        S[e.side].healed += e.amount;
         break;
       case 'fightEnd':
         this.stats.winner = e.winner;

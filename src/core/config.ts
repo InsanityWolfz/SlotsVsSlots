@@ -1,5 +1,10 @@
 export type SideId = 'player' | 'enemy';
-export type SymbolId = 'sword' | 'shield' | 'bolt' | 'slime';
+/**
+ * Every symbol that can sit on a strip. Which symbols "write" on the opponent depends on the
+ * side: an enemy whose strips contain ice freezes you; ice on your own payline is dead.
+ * 'empty' is what a stolen cell scores as.
+ */
+export type SymbolId = 'sword' | 'shield' | 'bolt' | 'slime' | 'ice' | 'claw' | 'rock' | 'lock' | 'coin' | 'seven' | 'empty';
 export type StripCounts = Partial<Record<SymbolId, number>>;
 
 /** When a combatant's shield drops to 0. */
@@ -7,10 +12,33 @@ export type ShieldReset = 'ownTurnStart' | 'roundEnd' | 'never';
 /** inOrder: only a run starting at reel 1 counts (real slot). anyTwo: any 2 matching symbols. */
 export type PairRule = 'inOrder' | 'anyTwo';
 
+/**
+ * Enemy special that charges one pip per enemy turn and fires when full. Always visible on
+ * the enemy HUD as a countdown — a passive telegraph, never an input prompt.
+ */
+export type AbilityKind = 'flood' | 'smash' | 'fortify' | 'blizzard' | 'pilfer' | 'quake' | 'jam' | 'jackpot';
+export interface AbilityDef {
+  kind: AbilityKind;
+  /** Enemy turns per charge. */
+  every: number;
+  power: number;
+}
+
+export type RelicId = 'clover' | 'whetstone' | 'soap' | 'battery' | 'mirror' | 'fang' | 'bandage' | 'hourglass' | 'magnet';
+
 export interface SideConfig {
   hp: number;
   /** One composition per reel, left to right. */
   strips: StripCounts[];
+  /** HP at fight start if below max (run carry-over). */
+  startHp?: number;
+  startEnergy?: number;
+  name?: string;
+  /** Sprite id for the HUD portrait. */
+  portrait?: string;
+  ability?: AbilityDef | null;
+  /** Boss rule set, if any. */
+  boss?: 'house' | null;
 }
 
 export interface GameConfig {
@@ -26,18 +54,20 @@ export interface GameConfig {
   specialIgnoresShield: boolean;
   shieldReset: ShieldReset;
   cleanseOnSlimeTriple: boolean;
+  /** Player relics active this fight. */
+  relics: RelicId[];
   /** null = new random seed each fight. */
   seed: number | null;
 }
 
-const reels3 = (c: StripCounts): StripCounts[] => [{ ...c }, { ...c }, { ...c }];
+export const reels3 = (c: StripCounts): StripCounts[] => [{ ...c }, { ...c }, { ...c }];
 
 export function defaultConfig(): GameConfig {
   return {
     player: { hp: 20, strips: reels3({ sword: 4, shield: 4, bolt: 4 }) },
     // Tuned from playtest/PLAYTEST_REPORT.md: ~65% player wins, ~24 turns, cleanse in ~half of fights.
-    enemy: { hp: 30, strips: reels3({ sword: 5, shield: 2, slime: 5 }) },
-    base: { sword: 1, shield: 1, bolt: 1, slime: 1 },
+    enemy: { hp: 30, strips: reels3({ sword: 5, shield: 2, slime: 5 }), name: 'SLIME KING', portrait: 'enemyPortrait' },
+    base: { sword: 1, shield: 1, bolt: 1, slime: 1, ice: 1, claw: 1, rock: 1, lock: 1, coin: 1, seven: 2, empty: 0 },
     pairMult: 2,
     tripleMult: 3,
     pairRule: 'inOrder',
@@ -46,6 +76,7 @@ export function defaultConfig(): GameConfig {
     specialIgnoresShield: true,
     shieldReset: 'ownTurnStart',
     cleanseOnSlimeTriple: true,
+    relics: [],
     seed: null,
   };
 }
@@ -65,5 +96,6 @@ export function mergeConfig(saved: unknown): GameConfig {
     player: { ...base.player, ...(s.player ?? {}) },
     enemy: { ...base.enemy, ...(s.enemy ?? {}) },
     base: { ...base.base, ...(s.base ?? {}) },
+    relics: s.relics ?? [],
   };
 }

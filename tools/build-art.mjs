@@ -38,6 +38,20 @@ const PALETTE = {
   p: '#3a2d52', // panel light
   T: '#f4eee0', // UI text
   t: '#9a8fb0', // UI text dim
+  // --- roguelike-run additions
+  C: '#b4f4ff', // ice pale cyan
+  c: '#2ea8cc', // ice deep cyan
+  J: '#c795f0', // purple light
+  V: '#8a4fc4', // purple
+  v: '#4c2372', // purple dark
+  M: '#ff9ec8', // pink
+  m: '#c7508e', // pink dark
+  I: '#bdb1a4', // stone light (warm grey)
+  H: '#8a7e76', // stone mid
+  h: '#554a4c', // stone dark
+  X: '#b3c98f', // orc skin light (green-grey)
+  Z: '#7f9a68', // orc skin
+  z: '#4a6046', // orc skin dark
 };
 
 const UI_COLORS = {
@@ -350,11 +364,604 @@ S.spark = [
   S.enemyPortrait = toRows(outline(g));
 }
 
+// ================================================================ ROGUELIKE RUN ADDITIONS
+/** Literal sprite: rows stamped at (0,0) into a w×h grid ('.' / ' ' = transparent), then auto-outlined. */
+function lit(w, h, rows, ol = true) {
+  if (rows.length > h) throw new Error(`lit: ${rows.length} rows > ${h}`);
+  const g = grid(w, h);
+  rows.forEach((r, y) => {
+    if (r.length > w) throw new Error(`lit: row ${y} "${r}" longer than ${w}`);
+    [...r].forEach((c, x) => { if (c !== '.' && c !== ' ') put(g, x, y, c); });
+  });
+  return toRows(ol ? outline(g) : g);
+}
+/** Shade a mask: top/left exposed edge -> hi, bottom/right exposed edge -> lo, else mid. */
+const edgeShade = (hi, mid, lo) => (x, y, has) =>
+  (!has(x + 1, y) || !has(x, y + 1)) ? lo : (!has(x - 1, y) || !has(x, y - 1)) ? hi : mid;
+/** Circle spans (inclusive) for a disc centred at (cx,cy) with radius r. */
+function discSpans(cx, cy, r, y0, y1) {
+  const out = [];
+  for (let y = y0; y <= y1; y++) {
+    let a = null, b = null;
+    for (let x = 0; x < 32; x++) if ((x - cx) ** 2 + (y - cy) ** 2 <= r * r) { if (a === null) a = x; b = x; }
+    out.push(a === null ? null : [a, b]);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- enemy reel symbols (16x16)
+// ice: chunky 8-arm snowflake, cyan-white, lit top-left
+{
+  const g = grid(16, 16);
+  const px = [];
+  for (let i = 1; i <= 14; i++) { px.push([7, i], [8, i], [i, 7], [i, 8]); }            // main arms, 2px
+  for (let i = 0; i < 4; i++) px.push([3 + i, 3 + i], [12 - i, 3 + i], [3 + i, 12 - i], [12 - i, 12 - i]); // diagonals
+  px.push([5, 2], [6, 3], [10, 2], [9, 3], [5, 13], [6, 12], [10, 13], [9, 12]);     // V branches
+  px.push([2, 5], [3, 6], [2, 10], [3, 9], [13, 5], [12, 6], [13, 10], [12, 9]);
+  px.forEach(([x, y]) => put(g, x, y, x + y <= 15 ? 'C' : 'c'));
+  stamp(g, 6, 6, ['WCCC', 'CWWc', 'CWWc', 'Cccc']);          // bright hub
+  put(g, 7, 1, 'W'); put(g, 7, 2, 'W'); put(g, 1, 7, 'W'); put(g, 2, 7, 'W'); // gloss
+  S.ice = toRows(outline(g));
+}
+// claw: dark purple monster hand (sleeve cuff, thumb out, fingers fanning into hooked talons)
+S.claw = lit(16, 16, [
+  '......bBBb......',
+  '......bBBb......',
+  '......JVVv......',
+  '.T...JVVVVv.....',
+  '.JV..JVVVVVv....',
+  '.JVV.JVVVVVVv...',
+  '..JVVVVVVVVVv...',
+  '...JVVVVVVVVVv..',
+  '....JVVvVVvVVv..',
+  '...JVv.JVv.JVVv.',
+  '..JVv..JVv..JVv.',
+  '..JV...JVv...JV.',
+  '.WTt...WTt...Tt.',
+  '.Tt.....Tt....tT',
+  '..t......t.....t',
+]);
+// rock: dull warm-grey cracked boulder + a stray pebble (junk clutter)
+S.rock = lit(16, 16, [
+  '................',
+  '................',
+  '................',
+  '......IIIH......',
+  '....IIIHHHHh....',
+  '...IIHHHHKHHh...',
+  '..IIHHHHKHHHHh..',
+  '..IHHHHHHKHHHhh.',
+  '.IHHHHHHHKKHhhh.',
+  '.IHHhHHHHHKhhhh.',
+  '.HHHHhHHHHhhhhh.',
+  '.HHHHHhhhhhhhhh.',
+  '..hhhhhhhhhhhh..',
+  '.............IH.',
+  '............IHh.',
+]);
+// lock: iron padlock with chain links either side, rust patches
+S.lock = lit(16, 16, [
+  '................',
+  '................',
+  '......LLLS......',
+  '.....LS..SD.....',
+  '.....LS..SD.....',
+  '.....LS..SD.....',
+  '...WLLLLLLLLS...',
+  '...LSSSSSSSSD...',
+  '.SSLSOSKKSSSDSD.',
+  'S.DLSooKKSSSDS.D',
+  '.DDLSSSSKSSODDD.',
+  '...LSSSSKSSoD...',
+  '...SSSSSSSSSD...',
+  '...DDDDoDDDDD...',
+]);
+// coin: big gold coin with a star stamp
+{
+  const g = grid(16, 16);
+  const spans = [[5, 10], [3, 12], [2, 13], [2, 13], [1, 14], [1, 14], [1, 14], [1, 14], [1, 14], [1, 14], [2, 13], [2, 13], [3, 12], [5, 10]];
+  shape(g, 1, spans, (x, y, has) => {
+    const rim = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].some(([dx, dy]) => !has(x + dx, y + dy));
+    if (rim) return x + y >= 16 ? 'g' : 'G';
+    return x + y >= 18 ? 'G' : 'Y';
+  });
+  stamp(g, 4, 4, [
+    '   gg   ',
+    '   gg   ',
+    'ggggggg ',
+    ' gggggg ',
+    '  gggg  ',
+    ' gg  gg ',
+    ' g    g ',
+  ]);
+  put(g, 4, 3, 'W'); put(g, 3, 4, 'W'); put(g, 5, 3, 'W'); // gloss
+  S.coin = toRows(outline(g));
+}
+// seven: classic red 7 with a gold rim
+{
+  const g = grid(16, 16);
+  const spans = [[3, 12], [3, 12], [3, 12], [8, 12], [8, 11], [7, 11], [7, 10], [6, 10], [6, 9], [5, 9], [5, 8]];
+  shape(g, 2, spans, (x, y, has) => (!has(x + 1, y) || !has(x, y + 1)) ? 'r' : 'R');
+  put(g, 4, 2, 'W'); put(g, 5, 2, 'W'); put(g, 4, 3, 'W');
+  // gold rim (a coloured outline), lit top-left
+  const rim = [];
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++)
+    if (g[y][x] === '.' && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => 'RrW'.includes(get(g, x + dx, y + dy)))) rim.push([x, y]);
+  rim.forEach(([x, y]) => put(g, x, y, (y <= 2 || x <= 3 || (x + y <= 13)) ? 'Y' : (x + y >= 17 ? 'g' : 'G')));
+  S.seven = toRows(outline(g));
+}
+
+// ---------------------------------------------------------------- cell overlays (16x16)
+{
+  const g = grid(16, 16);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const d = Math.min(x, y, 15 - x, 15 - y);
+    const corner = Math.min(x, 15 - x) + Math.min(y, 15 - y);
+    if (d === 0) put(g, x, y, 'c');
+    else if (d === 1) put(g, x, y, (x === 1 || y === 1) && x + y < 28 ? 'C' : 'A');
+    else if (d === 2 && ((x + y * 3) % 5 !== 0)) put(g, x, y, x + y < 15 ? 'A' : 'c');
+    else if (corner <= 4 && d >= 2) put(g, x, y, 'C');
+  }
+  // icicles off the top rim
+  [[5, 3, 'C'], [5, 4, 'A'], [6, 3, 'A'], [10, 3, 'C'], [10, 4, 'C'], [10, 5, 'A'], [11, 3, 'A']].forEach(([x, y, c]) => put(g, x, y, c));
+  // glint streaks
+  [[2, 5], [3, 4], [4, 3], [5, 2]].forEach(([x, y]) => put(g, x, y, 'W'));
+  [[11, 13], [12, 12], [13, 11]].forEach(([x, y]) => put(g, x, y, 'W'));
+  put(g, 1, 1, 'W'); put(g, 2, 1, 'W'); put(g, 1, 2, 'W');
+  S.frozenOverlay = toRows(g);
+}
+{
+  const g = grid(16, 16);
+  // two chains crossing corner to corner: 2px band, every third step a dark link joint
+  for (let i = 0; i <= 14; i++) {
+    const joint = i % 3 === 2;
+    put(g, i, i, joint ? 'D' : 'L'); put(g, i + 1, i, joint ? 'D' : 'S');
+    put(g, 15 - i, i, joint ? 'D' : 'L'); put(g, 14 - i, i, joint ? 'D' : 'S');
+  }
+  stamp(g, 5, 8, [
+    ' SDDS ',
+    ' S  D ',
+    'LLLLSD',
+    'LSKSDD',
+    'SSKoDD',
+    'DDDDDD',
+  ]);
+  S.lockOverlay = toRows(outline(g));
+}
+
+// ---------------------------------------------------------------- relics (16x16)
+{
+  // four heart-shaped leaves pointing at the hub, mirrored from one template
+  const g = grid(16, 16);
+  const inLeaf = (x, y) => Math.hypot(x - 4, y - 2.6) <= 1.9 || Math.hypot(x - 2.6, y - 4) <= 1.9 ||
+    (x + y <= 13 && x >= 2 && y >= 2 && x <= 6 && y <= 6);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const lx = x <= 7 ? x : 15 - x, ly = y <= 7 ? y : 15 - y;
+    if (lx <= 6 && ly <= 6 && inLeaf(lx, ly)) put(g, x, y, 'e');
+  }
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if (g[y][x] !== 'e') continue;
+    if (get(g, x + 1, y) === '.' || get(g, x, y + 1) === '.') g[y][x] = 'Q';
+    else if (get(g, x - 1, y) === '.' || get(g, x, y - 1) === '.') g[y][x] = 'E';
+  }
+  stamp(g, 6, 6, [' QQ ', 'QqqQ', 'QqqQ', ' QQ ']);
+  put(g, 3, 2, 'W'); put(g, 2, 3, 'W'); put(g, 4, 2, 'W');
+  put(g, 8, 10, 'Q'); put(g, 8, 11, 'Q'); put(g, 8, 12, 'Q'); put(g, 9, 13, 'Q'); put(g, 10, 14, 'q');
+  S.relicClover = toRows(outline(g));
+}
+S.relicWhetstone = lit(16, 16, [
+  '................',
+  '...........Y....',
+  '...........W....',
+  '.........YWWWY..',
+  '...........W....',
+  '........Y..Y....',
+  '.......W........',
+  '....WLLLLLLLLLS.',
+  '...LLLLLLLLLLSSD',
+  '..SSSSSSSSSSSDD.',
+  '..SSDSSSSDSSSD..',
+  '..SSSSSDSSSSDD..',
+  '..DDDDDDDDDDD...',
+]);
+S.relicSoap = lit(16, 16, [
+  '................',
+  '...........AA...',
+  '..AA......AWAA..',
+  '.AWA......AAAA..',
+  '..A........AA...',
+  '.......AW.......',
+  '.......AA.......',
+  '....WMMMMMMMMM..',
+  '...MMWMMMMMMMMm.',
+  '..MMMMMMMMMMMmm.',
+  '.mmmmmmmmmmmmmm.',
+  '.mmmmmmmmmmmmmr.',
+  '.mmmmmmmmmmmmr..',
+  '.rrrrrrrrrrrr...',
+]);
+S.relicBattery = lit(16, 16, [
+  '................',
+  '......WLS.......',
+  '....LLLLLLSD....',
+  '....LSDDDDDN....',
+  '....LSDDDYDN....',
+  '....LSDDYYDN....',
+  '....LSDYYDDN....',
+  '....LSYWYYDN....',
+  '....LSDDYYDN....',
+  '....LSDDYDDN....',
+  '....LSDYDDDN....',
+  '....YYYYYYOO....',
+  '....YWYYYYOo....',
+  '....YYYYYYOo....',
+  '....OOOOOOoo....',
+]);
+{
+  const g = grid(16, 16);
+  shape(g, 1, discSpans(6.5, 5.5, 5.2, 1, 10), (x, y, has) => {
+    const d = Math.hypot((x - 6.5) , (y - 5.5));
+    if (d > 3.6) return x + y <= 10 ? 'L' : x + y >= 14 ? 'D' : 'S';
+    return x + y >= 14 ? 'U' : 'A';
+  });
+  [[5, 3], [4, 4], [3, 5], [7, 3], [6, 4]].forEach(([x, y]) => put(g, x, y, 'W'));
+  [[9, 11, 'S'], [10, 11, 'D'], [10, 12, 'S'], [11, 12, 'D'], [11, 13, 'S'], [12, 13, 'D'], [12, 14, 'G'], [13, 14, 'g'], [13, 13, 'G']].forEach(([x, y, c]) => put(g, x, y, c));
+  S.relicMirror = toRows(outline(g));
+}
+S.relicFang = lit(16, 16, [
+  '................',
+  '......WTTTt.....',
+  '.....WTTTTTt....',
+  '.....WTTTTTt....',
+  '......WTTTTt....',
+  '.......TTTTt....',
+  '.......TTTTt....',
+  '.......TTTt.....',
+  '.......TTTt.....',
+  '......TTTt......',
+  '......RRr.......',
+  '.....RRr........',
+  '.....Rr.........',
+  '....R.......R...',
+  '...........RRr..',
+  '...........Rr...',
+]);
+S.relicBandage = lit(16, 16, [
+  '................',
+  '................',
+  '...WTTTt........',
+  '..WTTTTTTt......',
+  '.WTTtttTTTt.....',
+  '.TTtTTTtTTt.....',
+  '.TTtTKtTTTt.....',
+  '.TTtTttTTTtTTT..',
+  '.TTTtTTTTttTTTTT',
+  '..TTTTTTttTTRTT.',
+  '...ttttttTTRRRT.',
+  '.........TTTRTT.',
+  '........tTTTTt..',
+  '.........tttt...',
+]);
+S.relicHourglass = lit(16, 16, [
+  '................',
+  '.YYGGGGGGGGGGGg.',
+  '.gggggggggggggg.',
+  '..G.WAAAAAAA.g..',
+  '..G.A......A.g..',
+  '..G..AYYYYA..g..',
+  '..G...AYOA...g..',
+  '..G....YO....g..',
+  '..G....Y.....g..',
+  '..G...AO.A...g..',
+  '..G..A.Y..A..g..',
+  '..G.A.YYOO.A.g..',
+  '..G.AYYYOOOA.g..',
+  '.YYGGGGGGGGGGGg.',
+  '.gggggggggggggg.',
+]);
+S.relicMagnet = lit(16, 16, [
+  '................',
+  '..WLLS....LLLS..',
+  '..LLSD....LLSD..',
+  '..RRRr....RRRr..',
+  '..RWRr....RRRr..',
+  '..RRRr....RRRr..',
+  '..RRRr....RRrr..',
+  '..RRRr....RRrr..',
+  '..RRRRr..rRRrr..',
+  '..RRRRRrrrRRrr..',
+  '...RRRRRRRRrr...',
+  '....rrrrrrrr....',
+]);
+
+// ---------------------------------------------------------------- small icons (8x8)
+S.icoFlood = lit(8, 8, ['', '...e', '..EeQ', '.EWeeQ', '.EeeeQ', '.eeeQQ', '..QQQ']);
+S.icoSmash = [
+  '..KKKK..',
+  '.KFWFFK.',
+  'KFFFFFfK',
+  'KFfKKKKK',
+  'KFFFFFfK',
+  'KFfKKKKK',
+  '.KFFFffK',
+  '..KKKKK.',
+];
+S.icoFreeze = lit(8, 8, ['', '.W.C.c', '..CCc', '.CCWCc', '..Ccc', '.c.c.c']);
+S.icoSteal = lit(8, 8, ['', '..T.T.T', '..J.V.V', '.JJVVVV', '.JVVVVv', '..VVVv', '..vvv']);
+S.icoLock = lit(8, 8, ['', '..SSS', '..S.D', '.LLSSD', '.LSKSD', '.SSKDD', '.DDDDo']);
+S.icoRock = lit(8, 8, ['', '', '...IH', '..IHHh', '.IHHKhh', '.HHhhhh', '..hhhh']);
+S.icoCoin = lit(8, 8, ['', '..GGG', '.GWYYg', '.GYgYg', '.GYgYg', '.GYYYg', '..ggg']);
+S.plusBadge = lit(8, 8, ['', '...EE', '...Ee', '.EEWeee', '.eeeeQQ', '...eQ', '...QQ']);
+S.minusBadge = lit(8, 8, ['', '', '', '.RWRRRr', '.rrrrrr']);
+S.skull = lit(8, 8, ['', '..WTTt', '.WTTTTt', '.TKTTKt', '.TKTTKt', '..TTTt', '..TtTt']);
+
+// ---------------------------------------------------------------- map nodes (12x12)
+{
+  const g = grid(12, 12);
+  [[1, 1, 'W'], [2, 2, 'L'], [3, 3, 'L'], [4, 4, 'L'], [5, 5, 'L'], [6, 6, 'S'],
+   [8, 6, 'G'], [7, 7, 'Y'], [6, 8, 'g'], [8, 8, 'B'], [9, 9, 'b'], [10, 10, 'Y'],
+   [10, 1, 'W'], [9, 2, 'L'], [8, 3, 'L'], [7, 4, 'L'], [6, 5, 'L'], [5, 6, 'S'],
+   [3, 6, 'G'], [4, 7, 'Y'], [5, 8, 'g'], [3, 8, 'B'], [2, 9, 'b'], [1, 10, 'Y']].forEach(([x, y, c]) => put(g, x, y, c));
+  S.nodeFight = toRows(outline(g));
+}
+S.nodeBoss = lit(12, 12, [
+  '', '',
+  '.W...YY...Y',
+  '.YG.YGGg.Gg',
+  '.YGGGGGGGGg',
+  '.YGRGGRrGRg',
+  '.YGGGGGGGGg',
+  '.gggggggggg',
+]);
+{
+  const g = grid(12, 12);
+  shape(g, 1, discSpans(5.5, 5.5, 4.9, 1, 10), edgeShade('E', 'e', 'Q'));
+  [[3, 5], [4, 6], [5, 7], [6, 6], [7, 5], [8, 4], [3, 6], [4, 7], [5, 8], [6, 7], [7, 6], [8, 5]].forEach(([x, y]) => put(g, x, y, 'W'));
+  S.nodeDone = toRows(outline(g));
+}
+S.nodeHere = lit(12, 12, [
+  '',
+  '....YYYg',
+  '....YWYg',
+  '....YYYg',
+  '....YYYg',
+  '.YYYYYYYGgg',
+  '..YYYYYYGg',
+  '...YYYYGg',
+  '....YYGg',
+  '.....Gg',
+]);
+
+// ---------------------------------------------------------------- enemy portraits (24x24)
+/** Paint an elliptical boulder with top-left lighting; where it overlaps earlier fill, a K seam is cut first. */
+function boulder(g, cx, cy, rx, ry, [hi, mid, lo] = ['I', 'H', 'h']) {
+  const inside = (x, y, grow = 0) => ((x - cx) / (rx + grow)) ** 2 + ((y - cy) / (ry + grow)) ** 2 <= 1;
+  for (let y = 0; y < g.length; y++) for (let x = 0; x < g[0].length; x++) {
+    if (!inside(x, y) && inside(x, y, 1) && g[y][x] !== '.') g[y][x] = 'K';
+  }
+  for (let y = 0; y < g.length; y++) for (let x = 0; x < g[0].length; x++) {
+    if (!inside(x, y)) continue;
+    const nx = (x - cx) / rx, ny = (y - cy) / ry;
+    g[y][x] = nx + ny < -0.75 ? hi : (nx + ny > 0.55 || ny > 0.7) ? lo : mid;
+  }
+}
+S.enemyBrute = lit(24, 24, [
+  '........................',
+  '......L.....L.....L.....',
+  '......LS....LS....LS....',
+  '.....LLSD..LLSD..LSSD...',
+  '....LLLSSSSSSSSSSSSSSD..',
+  '...LLLSSSSSSSSSSSSSSSDD.',
+  '...LSSSSSSSSSSSSSSSSSDD.',
+  '..DDDGDDDDDGDDDDDGDDDDD.',
+  '..XXXXXXZZZZZZZZZZZZZzz.',
+  'XXXXKKKKZZZZZZZZKKKKZzzz',
+  '.XXXXZKKKZZZZZZKKKZZZzz.',
+  '..XXXZYRKZZZZZZKRYZZZz..',
+  '..XXZZZZZZZzzZZZZZZZZz..',
+  '..XZZZZZZZKzzKZZZZZZzz..',
+  '..XZZZWZZZZZZZZZZWZZzz..',
+  '..XZZZTKKKKKKKKKKTZZzz..',
+  '..XZZZTWKrrrrrrKWTZzzz..',
+  '...XZZZKKKKKKKKKKZZzz...',
+  '..L.zZZZZZZZZZZZZzzz.D..',
+  '.LLSbBbBbBbBbBbBbBbSSD..',
+  'LLSSSbBBTBBTBBTBBBbSSDDD',
+  'LSSSDbBBBBBBBBBBBBBbSDDD',
+  'LSSDDBbBBBBBBBBBBBbBDDDD',
+  'SSDDDbBBBBBBBBBBBBBbDDDD',
+]);
+{
+  const g = grid(24, 24);
+  // crystalline horns + crest (lit from the left: W edge, C body, c shadow)
+  stamp(g, 0, 0, [
+    '..W..................W..',
+    '..WC................WCc.',
+    '..WCc.....W........WCc..',
+    '...WCc...WCc......WCc...',
+    '....WCCc.WCCc...WCCc....',
+    '.....WCCcWCCCc.WCCc.....',
+  ]);
+  // head
+  const spans = [[7, 16], [5, 18], [4, 19], [4, 19], [4, 19], [4, 19], [4, 19], [4, 19], [5, 18], [5, 18], [6, 17], [7, 16], [8, 15], [10, 13]];
+  shape(g, 5, spans, (x, y, has) => {
+    if (!has(x + 1, y) || !has(x + 2, y) || !has(x, y + 1)) return 'U';
+    if (!has(x - 1, y) || !has(x, y - 1)) return 'C';
+    return 'A';
+  });
+  // pointed ears
+  stamp(g, 0, 8, [
+    'C                      c',
+    'CCA                  UUc',
+    ' CA                  U  ',
+  ]);
+  // glowing eye sockets, sly grin with fangs, frost freckles
+  stamp(g, 5, 8, [
+    'NN          NN',
+    ' NNN      NNN ',
+    ' CWWN    NWWC ',
+    '  CC      CC  ',
+    '      UU      ',
+    '  N        N  ',
+    '   NWNNNNWN   ',
+    '    NNNNNN    ',
+  ]);
+  put(g, 5, 12, 'C'); put(g, 18, 12, 'U');
+  // navy frost cloak with ice collar
+  shape(g, 19, [[6, 17], [3, 20], [1, 22], [0, 23], [0, 23]], (x, y, has) => (!has(x - 1, y) || !has(x, y - 1)) && x < 12 ? 'U' : 'N');
+  stamp(g, 7, 18, [
+    '  C     c  ',
+    ' WCC   Ccc ',
+    'C  WA AU  c',
+  ]);
+  put(g, 10, 19, 'A'); put(g, 11, 19, 'A'); put(g, 12, 19, 'U'); put(g, 13, 19, 'U');
+  S.enemyFrost = toRows(outline(g));
+}
+S.enemyThief = lit(24, 24, [
+  '........................',
+  '..IIH..............IHh..',
+  '.IMMMH............IMMMh.',
+  '.IMmmHh..RRRRRR..IHMmmh.',
+  '.IMmmHRRWRRRRRRRRHMmmh..',
+  '..HMHRRRRRRRRRRRRrrhHh..',
+  '...HhRRRRRRRRRRRRrrrRr..',
+  '....IrrrrrrrrrrrrrrRrRr.',
+  '....IHHHHHHHHHHHHHHh.rR.',
+  '...IHvvvvvvvvvvvvvvvh..r',
+  '...IvWYKvvvvvvvvWYKvh...',
+  '...IHvvvvvvvvvvvvvvhh...',
+  '....IHHHHHHHHHHHHHhh....',
+  '.....IHHHHHIHHHHHhh.....',
+  '.t....IHHHHHHHHHhh....t.',
+  '..tttIIHHHHHHHHhhhttt...',
+  '.t....IIHHHHHHHhh.....t.',
+  '.......IHHHMMHhh........',
+  '........IHMMMMK.........',
+  '........hhKWWKh.........',
+  '....bBBBBbhWWhbBBBBBb...',
+  '..bBBBBBBBbhhbBBBBBBBb..',
+  '.bBBBBBBBBBbbBBBBGBBBBb.',
+  'bBBBBBBBBBBBBBBBGgBBBBBb',
+]);
+{
+  const g = grid(24, 24);
+  boulder(g, 3.5, 17.5, 5, 5);    // left shoulder
+  boulder(g, 20, 17.5, 5, 5);     // right shoulder
+  boulder(g, 11.5, 21, 7.5, 5);   // chest
+  boulder(g, 11.5, 7.5, 7, 6.5);  // head
+  // glowing eye slit (spills a little light)
+  stamp(g, 6, 7, [
+    ' KKKKKKKKKK ',
+    'oOYYWWYYYOOo',
+    ' KKKKKKKKKK ',
+  ]);
+  // cracks
+  stamp(g, 13, 10, ['K', ' K', ' K']);
+  stamp(g, 6, 3, ['K', 'K ', ' K']);
+  // molten core crack in the chest
+  stamp(g, 9, 17, [' K  ', ' OK ', 'KYO ', ' OYK', 'K O ', '   K']);
+  // moss caps
+  stamp(g, 7, 1, ['   QeEE', ' eEEeeeQ', 'EeQ   eQ']);
+  stamp(g, 0, 13, [' EE', 'EeeQ']);
+  stamp(g, 19, 13, ['  EeQ', ' EeeQQ']);
+  S.enemyGolem = toRows(outline(g));
+}
+{
+  const g = grid(24, 24);
+  // head
+  const spans = [[8, 15], [6, 17], [5, 18], [5, 18], [5, 18], [5, 18], [5, 18], [5, 18], [5, 18], [5, 18], [6, 17], [6, 17], [7, 16], [8, 15], [9, 14]];
+  shape(g, 2, spans, (x, y, has) => {
+    if (!has(x + 1, y) || !has(x + 2, y) || !has(x, y + 1)) return 'v';
+    if (!has(x - 1, y) || !has(x, y - 1)) return 'J';
+    return 'V';
+  });
+  // huge bat ears
+  stamp(g, 0, 2, [
+    'J                      v',
+    'JJ                    vv',
+    'JMJ                  vmv',
+    'JMMJ                vmmv',
+    'JMmMJ              vmmVv',
+    ' JMmMJ            vmmMv ',
+    '  JMmJ            vmmv  ',
+    '   JMJ            vmv   ',
+    '    JJ            vv    ',
+  ]);
+  // goggles on a strap
+  stamp(g, 4, 6, [
+    ' bbGGGGbbbbGGGGbb ',
+    ' bGWAAAgbbGWAAAgb ',
+    '  GAAAAgVVGAAAAg  ',
+    '  GAAAUgVVGAAAUg  ',
+    '   ggggVVVVgggg   ',
+  ]);
+  // jagged grin
+  stamp(g, 6, 12, [
+    'K          K',
+    ' KWWKWWKWWK ',
+    ' KrWKrWKrWK ',
+    '  KKKKKKKK  ',
+  ]);
+  // apron body
+  shape(g, 18, [[5, 18], [3, 20], [2, 21], [1, 22], [1, 22], [1, 22]], (x, y, has) => (!has(x - 1, y) || !has(x, y - 1)) ? 'B' : (!has(x + 1, y) ? 'b' : 'B'));
+  stamp(g, 5, 18, ['b            b', ' b          b', ' b   bbbb   b', ' b   bBBb   b', '     bbbb    ']);
+  // big wrench over the right shoulder
+  stamp(g, 11, 11, [
+    '        L  S ',
+    '        LS SD',
+    '        LSSD ',
+    '       LSDD  ',
+    '      LSD    ',
+    '     LSD     ',
+    '    LSD      ',
+    '   LSD       ',
+    '  LSD        ',
+    ' LSD         ',
+    'SSD          ',
+    'DD           ',
+  ]);
+  S.enemyGremlin = toRows(outline(g));
+}
+S.enemyBoss = lit(24, 24, [
+  '...W......W......W......',
+  '...YG....YGG....Gg......',
+  '...YGG..YGRGg..GGg...RR.',
+  '...YGGGGGGrGGGGGGg..RWRr',
+  '...GGGGGGGGGGGGGGg..RRrr',
+  '.GYYYYYYYYYYYYYYYYgg..rr',
+  '.GYrRrWrRrWrRrWrRrgg.SD.',
+  '.GYGKKGGGGGGGGGKKGgg.SD.',
+  '.GYGGKKKGGGGGKKKGGgg.SD.',
+  '.GYGGKKKKKKKKKKKGGgg.SD.',
+  '.GYGGKKKRRRRrKKKKGgg.SD.',
+  '.GYGGKKTTTTRrTKKGGgg.SD.',
+  '.GYGGKWTTTRrTTTKGGgg.SD.',
+  '.GYGGKTTTRrTTTTKGGgg.SD.',
+  '.GYGGKSSSRrSSSSKGGggSSD.',
+  '.GYGGKKKKKKKKKKKGGggDD..',
+  '.GYGGGGGGGGGGGGGGGgg....',
+  '.GYGKKKKKKKKKKKKKGgg....',
+  '.GYGKWYYKWYYKWYYKGgg....',
+  '.GYGKKYKGKYKGKYKKGgg....',
+  '.GYGKKKYYGKYYGKKKGgg....',
+  '.GYGKKKKKKKKKKKKKGgg....',
+  'gYYYYYYYYYYYYYYYYYYGg...',
+  'ggggggggggggggggggggg...',
+]);
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
   heart: 8, shieldIcon: 8, boltIcon: 8, pipFull: 8, pipEmpty: 8,
   swordProjectile: 12, slimeBlob: 8, spark: 5, playerPortrait: 24, enemyPortrait: 24,
+  enemyBrute: 24, enemyFrost: 24, enemyThief: 24, enemyGolem: 24, enemyGremlin: 24, enemyBoss: 24,
+  ice: 16, claw: 16, rock: 16, lock: 16, coin: 16, seven: 16,
+  frozenOverlay: 16, lockOverlay: 16,
+  relicClover: 16, relicWhetstone: 16, relicSoap: 16, relicBattery: 16, relicMirror: 16,
+  relicFang: 16, relicBandage: 16, relicHourglass: 16, relicMagnet: 16,
+  icoFlood: 8, icoSmash: 8, icoFreeze: 8, icoSteal: 8, icoLock: 8, icoRock: 8, icoCoin: 8,
+  plusBadge: 8, minusBadge: 8, skull: 8,
+  nodeFight: 12, nodeBoss: 12, nodeDone: 12, nodeHere: 12,
 };
 const errors = [];
 for (const [id, n] of Object.entries(DIMS)) {
@@ -391,7 +998,19 @@ export type SpriteId =
   | 'swordProjectile'                              // 12x12, points RIGHT
   | 'slimeBlob'                                    // 8x8 flying goo glob
   | 'spark'                                        // 5x5 hit spark
-  | 'playerPortrait' | 'enemyPortrait';            // 24x24
+  | 'playerPortrait' | 'enemyPortrait'             // 24x24
+  | 'enemyBrute' | 'enemyFrost' | 'enemyThief'     // enemy portraits, 24x24
+  | 'enemyGolem' | 'enemyGremlin' | 'enemyBoss'
+  | 'ice' | 'claw' | 'rock' | 'lock'               // enemy reel symbols, 16x16
+  | 'coin' | 'seven'                              // boss reel symbols, 16x16
+  | 'frozenOverlay' | 'lockOverlay'               // cell overlays, 16x16 (mostly transparent)
+  | 'relicClover' | 'relicWhetstone' | 'relicSoap'  // relic icons, 16x16
+  | 'relicBattery' | 'relicMirror' | 'relicFang'
+  | 'relicBandage' | 'relicHourglass' | 'relicMagnet'
+  | 'icoFlood' | 'icoSmash' | 'icoFreeze'        // intent / UI icons, 8x8
+  | 'icoSteal' | 'icoLock' | 'icoRock' | 'icoCoin'
+  | 'plusBadge' | 'minusBadge' | 'skull'
+  | 'nodeFight' | 'nodeBoss' | 'nodeDone' | 'nodeHere'; // map nodes, 12x12
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

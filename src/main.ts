@@ -27,7 +27,7 @@ window.addEventListener('resize', resize);
 resize();
 
 const game = new Game();
-if (import.meta.env.DEV) void import('./debug').then((m) => m.installDebug(game));
+if (import.meta.env.DEV || import.meta.env.VITE_DEBUG === '1') void import('./debug').then((m) => m.installDebug(game));
 
 const tuning = new TuningPanel(game);
 const log = new CombatLog(game);

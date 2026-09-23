@@ -1,8 +1,11 @@
 import { Sounds } from './audio/sounds';
 import { Synth } from './audio/synth';
 import { mergeConfig, type GameConfig, type SideId } from './core/config';
+import { RUN_FIGHTS } from './core/enemies';
 import { Fight } from './core/fight';
 import { turnRow, type TurnRow } from './core/log';
+import { RELICS } from './core/relics';
+import { applyOption, createRun, draftOffers, fightConfig, finishFight, type DraftOption, type RunState } from './core/run';
 import { StatsTracker } from './core/stats';
 import { Camera } from './present/camera';
 import { Clock } from './present/clock';
@@ -13,12 +16,15 @@ import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, W } from './present/layo
 import { MachineView } from './present/machine';
 import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
+import { drawStripMap } from './present/stripMap';
 import { Background } from './render/background';
+import { drawSprite, type SpriteId } from './render/sprites';
 import { drawText } from './render/text';
 import { Button } from './ui/button';
 import { Recap } from './ui/recap';
+import { RunScreens, wrap } from './ui/runScreens';
 
-const CFG_KEY = 'slotvslot.config.v2';
+const CFG_KEY = 'slotvslot.config.v3';
 const PREFS_KEY = 'slotvslot.prefs.v2';
 const AUTO_DELAY = 0.35;
 
@@ -46,7 +52,14 @@ function save(key: string, v: unknown): void {
   }
 }
 
-export type Phase = 'ready' | 'fighting' | 'recap';
+/**
+ * title → between (next-enemy preview) → fighting → between (draft → preview) → … → over.
+ * 'quick' is a standalone sandbox fight (tuning panel / debug), outside any run.
+ */
+export type Phase = 'title' | 'fighting' | 'between' | 'over' | 'quick' | 'recap';
+
+const RELIC_X = 22;
+const RELIC_Y = 118;
 
 export class Game {
   cfg: GameConfig;
@@ -58,17 +71,19 @@ export class Game {
   readonly background = new Background();
   readonly ui = new Clock();
   readonly recap: Recap;
+  readonly screens: RunScreens;
 
   stage!: Stage;
   director!: Director;
   fight!: Fight;
   tracker!: StatsTracker;
-  phase: Phase = 'ready';
+  run: RunState | null = null;
+  phase: Phase = 'title';
   presenting = false;
   awaitingSpin = false;
   rows: TurnRow[] = [];
   fightNo = 0;
-  /** Seed to replay on Rematch. */
+  /** Seed to replay on Rematch (quick fights). */
   lastSeed: number | null = null;
   time = 0;
   /** Listeners for the DOM tooling (combat log / tuning panel). */
@@ -78,6 +93,7 @@ export class Game {
   private token = 0;
   private spinResolve: (() => void) | null = null;
   private audioStarted = false;
+  private mouse = { x: -1, y: -1 };
   buttons: Button[] = [];
   private spinBtn!: Button;
   private autoBtn!: Button;
@@ -92,6 +108,11 @@ export class Game {
     const p = load<Partial<Prefs>>(PREFS_KEY) ?? {};
     this.prefs = { speed: p.speed ?? 1, auto: p.auto ?? true, juice: { ...defaultJuice(), ...(p.juice ?? {}) }, muted: p.muted ?? false };
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
+    this.screens = new RunScreens(this.ui, this.sounds, {
+      onPick: (o) => this.pickReward(o),
+      onFight: () => this.beginRunFight(),
+      onNewRun: () => this.startRun(),
+    });
     this.buildButtons();
     this.applyJuice();
     this.newFight(false);
@@ -116,7 +137,7 @@ export class Game {
     });
     this.autoBtn = this.btn('AUTO', px - 116, by, 84, 44, () => this.setAuto(!this.prefs.auto));
     [1, 2, 4].forEach((s, i) => this.speedBtns.push(this.btn(`${s}X`, px + 90 + i * 48, by, 42, 44, () => this.setSpeed(s))));
-    this.startBtn = this.btn('START FIGHT', W / 2 + 10, by, 196, 56, () => this.startOrRestart(), { idlePulse: true, textScale: 3 });
+    this.startBtn = this.btn('START RUN', W / 2 + 10, by, 196, 56, () => this.startRun(), { idlePulse: true, textScale: 3 });
     const ex = MACHINE_CX.enemy;
     const tune = this.btn('TUNE', ex - 110, by, 90, 44, () => {});
     const log = this.btn('LOG', ex, by, 90, 44, () => {});
@@ -124,7 +145,7 @@ export class Game {
     this.toolButtons = { tune, log };
     this.recapBtns = [
       this.btn('REMATCH', W / 2 - 230, 0, 190, 50, () => this.newFight(true, this.lastSeed)),
-      this.btn('NEW FIGHT', W / 2, 0, 190, 50, () => this.newFight(true)),
+      this.btn('NEW RUN', W / 2, 0, 190, 50, () => this.startRun()),
       this.btn('COPY LOG', W / 2 + 230, 0, 190, 50, () => void this.copyLog()),
     ];
     this.syncButtons();
@@ -134,10 +155,12 @@ export class Game {
     this.autoBtn.toggled = this.prefs.auto;
     this.speedBtns.forEach((b, i) => (b.toggled = [1, 2, 4][i] === this.prefs.speed));
     this.spinBtn.enabled = this.awaitingSpin;
-    this.startBtn.label = this.phase === 'ready' ? 'START FIGHT' : 'RESTART';
-    this.startBtn.opts.idlePulse = this.phase === 'ready';
+    this.startBtn.label = this.phase === 'title' ? 'START RUN' : 'NEW RUN';
+    this.startBtn.opts.idlePulse = this.phase === 'title';
     this.muteBtn.label = this.prefs.muted ? 'MUTED' : 'SOUND';
     this.muteBtn.toggled = this.prefs.muted;
+    const overlay = this.screens.active || this.phase === 'recap';
+    for (const b of [this.spinBtn, this.autoBtn, this.startBtn, ...this.speedBtns]) b.visible = !overlay;
     for (const b of this.recapBtns) b.visible = this.phase === 'recap';
   }
 
@@ -157,9 +180,53 @@ export class Game {
     save(CFG_KEY, this.cfg);
   }
 
+  // ---- run flow ----------------------------------------------------------------------
+
+  startRun(seed?: number): void {
+    this.run = createRun(this.cfg, seed);
+    this.token++;
+    this.synth.stopLoops();
+    this.recap.hide();
+    // Show the first opponent on the machines behind the preview.
+    this.newFight(false, null, fightConfig(this.run, this.cfg), true);
+    this.phase = 'between';
+    this.screens.showNext(this.run);
+    this.syncButtons();
+  }
+
+  /** Tuning panel "apply": restart with the new base config. */
+  restart(): void {
+    this.startRun();
+  }
+
+  private beginRunFight(): void {
+    if (!this.run) return;
+    this.screens.hide();
+    this.newFight(true, null, fightConfig(this.run, this.cfg), true);
+  }
+
+  private afterRunFight(): void {
+    const run = this.run!;
+    const record = finishFight(run, this.fight);
+    this.phase = run.over ? 'over' : 'between';
+    if (run.over) this.screens.showOver(run);
+    else this.screens.showDraft(run, draftOffers(run), record);
+    this.syncButtons();
+  }
+
+  private pickReward(o: DraftOption): void {
+    if (!this.run) return;
+    applyOption(this.run, o);
+    // Rebuild the (idle) machines for the next opponent so the preview is accurate.
+    this.newFight(false, null, fightConfig(this.run, this.cfg), true);
+    this.phase = 'between';
+    this.screens.showNext(this.run);
+    this.syncButtons();
+  }
+
   // ---- fight flow --------------------------------------------------------------------
 
-  newFight(start: boolean, seed: number | null = null): void {
+  newFight(start: boolean, seed: number | null = null, cfg: GameConfig = this.cfg, inRun = false): void {
     this.token++;
     this.recap.hide();
     this.presenting = false;
@@ -170,7 +237,7 @@ export class Game {
     this.synth.stopLoops();
     this.synth.enabled = true;
     this.camera.dimTarget = 0;
-    this.fight = new Fight(this.cfg, seed ?? this.cfg.seed ?? undefined);
+    this.fight = new Fight(cfg, seed ?? cfg.seed ?? undefined);
     this.lastSeed = this.fight.seed;
     this.tracker = new StatsTracker(this.fight);
     const clock = new Clock();
@@ -180,7 +247,15 @@ export class Game {
     const huds = Object.fromEntries(
       sides.map((s) => {
         const c = this.fight.sides[s];
-        return [s, new HudView(s, c.maxHp, s === 'player', this.cfg.specialCost)];
+        const sc = s === 'player' ? cfg.player : cfg.enemy;
+        const hud = new HudView(s, c.maxHp, s === 'player', this.fight.cfg.specialCost, {
+          name: s === 'player' ? 'HERO' : sc.name,
+          portrait: sc.portrait,
+          ability: c.ability,
+          energy: c.energy,
+        });
+        hud.hp = hud.ghost = c.hp;
+        return [s, hud];
       }),
     ) as Stage['huds'];
     this.stage = {
@@ -193,23 +268,29 @@ export class Game {
       machines,
       huds,
       juice: this.prefs.juice,
-      gutter: { turn: 0, side: null, pulse: 0 },
+      gutter: {
+        turn: 0,
+        side: null,
+        pulse: 0,
+        pot: 0,
+        potPunch: 1,
+        fightLabel: this.run ? (this.run.depth >= RUN_FIGHTS ? 'BOSS' : `FIGHT ${this.run.depth + 1}/${RUN_FIGHTS}`) : 'SANDBOX',
+      },
     };
     this.director = new Director(this.stage);
-    this.phase = start ? 'fighting' : 'ready';
+    if (start) {
+      this.phase = inRun ? 'fighting' : 'quick';
+      if (!inRun) this.run = null;
+    }
     this.syncButtons();
     this.onFightChange.forEach((f) => f());
     if (start) {
       this.fightNo++;
-      void this.run(this.token);
+      void this.runFight(this.token);
     }
   }
 
-  private startOrRestart(): void {
-    this.newFight(true);
-  }
-
-  private async run(token: number): Promise<void> {
+  private async runFight(token: number): Promise<void> {
     const clock = this.stage.clock;
     await clock.wait(0.3);
     while (!this.fight.over) {
@@ -238,6 +319,10 @@ export class Game {
       }
     }
     this.synth.stopLoops();
+    if (this.phase === 'fighting' && this.run) {
+      this.afterRunFight();
+      return;
+    }
     this.phase = 'recap';
     this.syncButtons();
     await this.recap.show(this.tracker.stats);
@@ -314,6 +399,7 @@ export class Game {
       b.down();
       return;
     }
+    if (this.screens.active && this.screens.pointerDown(x, y)) return;
     this.skip();
   }
 
@@ -321,14 +407,17 @@ export class Game {
     const b = this.active;
     this.active = null;
     b?.up(b.contains(x, y));
+    if (this.screens.active) this.screens.pointerUp(x, y);
   }
 
   pointerMove(x: number, y: number): boolean {
+    this.mouse = { x, y };
     let any = false;
     for (const b of this.buttons) {
       b.hover = b.visible && b.contains(x, y);
       any ||= b.hover && b.enabled;
     }
+    if (this.screens.active) any = this.screens.pointerMove(x, y) || any;
     return any;
   }
 
@@ -336,7 +425,7 @@ export class Game {
     this.startAudio();
     switch (k) {
       case ' ':
-        if (this.phase === 'ready') this.newFight(true);
+        if (this.phase === 'title') this.startRun();
         else if (this.awaitingSpin) this.requestSpin();
         else this.skip();
         return true;
@@ -353,7 +442,7 @@ export class Game {
         this.setAuto(!this.prefs.auto);
         return true;
       case 'r':
-        this.newFight(true);
+        this.startRun();
         return true;
       case 'm':
         this.setMuted(!this.prefs.muted);
@@ -389,6 +478,8 @@ export class Game {
       ctx.fillRect(-40, -40, W + 80, H + 80);
     }
     this.background.drawMarquee(ctx, t);
+    this.drawRelics(ctx);
+    drawStripMap(ctx, s.machines.player, t);
     s.huds.player.draw(ctx, t);
     s.huds.enemy.draw(ctx, t);
     s.machines.player.draw(ctx, s.clock.time);
@@ -406,9 +497,51 @@ export class Game {
       ctx.globalAlpha = 1;
     }
     for (const b of this.buttons) if (!this.recapBtns.includes(b)) b.draw(ctx, t);
+    this.drawRelicTooltip(ctx);
+    this.screens.draw(ctx, t);
     this.recap.draw(ctx);
     for (const b of this.recapBtns) b.draw(ctx, t);
-    if (this.phase === 'ready') this.drawHint(ctx, t);
+    if (this.phase === 'title') this.drawHint(ctx, t);
+  }
+
+  private relicList() {
+    return this.fight.cfg.relics;
+  }
+
+  private drawRelics(ctx: CanvasRenderingContext2D): void {
+    const relics = this.relicList();
+    if (!relics.length) return;
+    drawText(ctx, 'RELICS', RELIC_X + 60, RELIC_Y - 22, 2, COLORS.textDim);
+    relics.forEach((r, i) => {
+      const x = RELIC_X + 20 + (i % 3) * 42;
+      const y = RELIC_Y + Math.floor(i / 3) * 42;
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(x - 19, y - 19, 38, 38);
+      ctx.fillStyle = COLORS.panel;
+      ctx.fillRect(x - 17, y - 17, 34, 34);
+      drawSprite(ctx, RELICS[r].sprite as SpriteId, x, y, 2);
+    });
+  }
+
+  private drawRelicTooltip(ctx: CanvasRenderingContext2D): void {
+    if (this.screens.active) return;
+    const relics = this.relicList();
+    const i = relics.findIndex((_, i) => {
+      const x = RELIC_X + 20 + (i % 3) * 42;
+      const y = RELIC_Y + Math.floor(i / 3) * 42;
+      return Math.abs(this.mouse.x - x) < 19 && Math.abs(this.mouse.y - y) < 19;
+    });
+    if (i < 0) return;
+    const def = RELICS[relics[i]];
+    const lines = wrap(def.text, 24);
+    const x = RELIC_X + 150;
+    const y = RELIC_Y - 10;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 4, y - 4, 320, 40 + lines.length * 20);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(x, y, 312, 32 + lines.length * 20);
+    drawText(ctx, def.name, x + 10, y + 14, 2, '#c9a0ff', { align: 'left' });
+    lines.forEach((l, k) => drawText(ctx, l, x + 10, y + 38 + k * 20, 2, COLORS.text, { align: 'left' }));
   }
 
   /** Mirror the slime on the player's displayed strips into the HUD counter. */
@@ -430,10 +563,12 @@ export class Game {
     const g = this.stage.gutter;
     const cx = W / 2;
     const cy = MACHINE_TOP + MACHINE_H / 2;
+    if (this.phase === 'title') return;
+    drawText(ctx, g.fightLabel, cx, cy - 112, 2, g.fightLabel === 'BOSS' ? '#ff6a5a' : COLORS.textDim);
     if (g.turn > 0) {
       drawText(ctx, `ROUND ${Math.ceil(g.turn / 2)}`, cx, cy - 78, 3, COLORS.textDim, { punch: 1 + g.pulse * 0.3 });
       if (g.side)
-        drawText(ctx, g.side === 'player' ? "HERO'S TURN" : "SLIME'S TURN", cx, cy - 46, 2, g.side === 'player' ? COLORS.goldLight : COLORS.slime, { punch: 1 + g.pulse * 0.5 });
+        drawText(ctx, g.side === 'player' ? "HERO'S TURN" : 'ENEMY TURN', cx, cy - 46, 2, g.side === 'player' ? COLORS.goldLight : COLORS.slime, { punch: 1 + g.pulse * 0.5 });
       if (g.side) {
         const dir = g.side === 'player' ? -1 : 1;
         const bob = Math.sin(t * 6) * 6;
@@ -444,8 +579,23 @@ export class Game {
         this.arrow(ctx, cx + dir * bob, cy, dir, 26);
       }
     }
-    drawText(ctx, 'VS', cx, cy + 70, 6, '#ff6a5a', { alpha: 0.35 + 0.1 * Math.sin(t * 2) });
-    if (this.prefs.speed > 1) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, cy + 120, 2, COLORS.textDim);
+    if (this.fight.isBoss) this.drawPot(ctx, cx, cy + 110, t);
+    else drawText(ctx, 'VS', cx, cy + 70, 6, '#ff6a5a', { alpha: 0.35 + 0.1 * Math.sin(t * 2) });
+    if (this.prefs.speed > 1) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, cy + 172, 2, COLORS.textDim);
+  }
+
+  /** The House's progressive pot, front and centre. */
+  private drawPot(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+    const g = this.stage.gutter;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 84, y - 42, 168, 84);
+    ctx.fillStyle = COLORS.gold;
+    ctx.fillRect(x - 81, y - 39, 162, 78);
+    ctx.fillStyle = '#3a0f1a';
+    ctx.fillRect(x - 77, y - 35, 154, 70);
+    drawText(ctx, 'THE POT', x, y - 20, 2, COLORS.goldLight);
+    drawSprite(ctx, 'coin', x - 46, y + 10, 2, { flash: g.pot > 0 ? 0.2 + 0.2 * Math.sin(t * 5) : 0 });
+    drawText(ctx, `${Math.round(g.pot)}`, x + 16, y + 10, 4, g.pot >= 10 ? '#ff6a5a' : COLORS.energy, { punch: g.potPunch });
   }
 
   private arrow(ctx: CanvasRenderingContext2D, x: number, y: number, dir: number, s: number): void {
@@ -462,7 +612,10 @@ export class Game {
   }
 
   private drawHint(ctx: CanvasRenderingContext2D, t: number): void {
-    drawText(ctx, 'PRESS START FIGHT', W / 2, MACHINE_TOP + MACHINE_H / 2 - 20, 2, COLORS.text, { alpha: 0.5 + 0.5 * Math.sin(t * 4) });
-    drawText(ctx, 'SPACE: SPIN/SKIP  A: AUTO  1-3: SPEED  R: RESTART', W / 2, H - 14, 2, COLORS.textDim);
+    drawText(ctx, 'PRESS START RUN', W / 2, MACHINE_TOP + MACHINE_H / 2 - 20, 2, COLORS.text, { alpha: 0.5 + 0.5 * Math.sin(t * 4) });
+    drawText(ctx, '5 FIGHTS + A BOSS', W / 2, MACHINE_TOP + MACHINE_H / 2 + 30, 2, COLORS.textDim);
+    drawText(ctx, 'PICK A REWARD', W / 2, MACHINE_TOP + MACHINE_H / 2 + 56, 2, COLORS.textDim);
+    drawText(ctx, 'AFTER EACH WIN', W / 2, MACHINE_TOP + MACHINE_H / 2 + 76, 2, COLORS.textDim);
+    drawText(ctx, 'SPACE: SPIN/SKIP  A: AUTO  1-3: SPEED  R: NEW RUN', W / 2, H - 14, 2, COLORS.textDim);
   }
 }

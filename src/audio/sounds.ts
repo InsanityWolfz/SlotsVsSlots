@@ -170,6 +170,68 @@ export class Sounds {
     this.s.duck(0.8, 3);
   }
 
+  // ---- writers / abilities / boss ----------------------------------------------------
+  iceClink(): void {
+    this.s.tone({ type: 'triangle', freq: 2400, freqEnd: 2200, dur: 0.12, gain: 0.08 });
+    this.s.tone({ type: 'sine', freq: 3600, dur: 0.2, gain: 0.05, at: 0.02 });
+  }
+
+  freeze(): void {
+    [1800, 2400, 3100, 2700].forEach((f, i) => this.s.tone({ type: 'triangle', freq: f, freqEnd: f * 1.2, dur: 0.12, gain: 0.07, at: i * 0.04 }));
+    this.s.noise({ dur: 0.5, filter: 'highpass', freq: 5000, freqEnd: 9000, gain: 0.12, attack: 0.02 });
+  }
+
+  shatter(): void {
+    this.s.noise({ dur: 0.35, filter: 'highpass', freq: 3000, gain: 0.25 });
+    [3200, 2600, 3800, 2900].forEach((f, i) => this.s.tone({ type: 'square', freq: f, dur: 0.05, gain: 0.03, at: i * 0.03 }));
+  }
+
+  chains(): void {
+    for (let i = 0; i < 5; i++) this.s.noise({ dur: 0.05, filter: 'bandpass', freq: 2200 + i * 300, q: 6, gain: 0.2, at: i * 0.045 });
+    this.s.tone({ type: 'square', freq: 110, freqEnd: 70, dur: 0.25, gain: 0.12, at: 0.2 });
+  }
+
+  unchain(): void {
+    for (let i = 0; i < 3; i++) this.s.noise({ dur: 0.05, filter: 'bandpass', freq: 3000 - i * 400, q: 6, gain: 0.15, at: i * 0.05 });
+  }
+
+  steal(): void {
+    this.s.noise({ dur: 0.18, filter: 'bandpass', freq: 1500, freqEnd: 4000, q: 2, gain: 0.2 });
+    this.s.tone({ type: 'square', freq: 900, freqEnd: 1600, dur: 0.1, gain: 0.06, at: 0.12 });
+    this.s.tone({ type: 'square', freq: 1600, freqEnd: 1200, dur: 0.08, gain: 0.05, at: 0.22 });
+  }
+
+  rockThud(): void {
+    this.s.tone({ type: 'sine', freq: 110, freqEnd: 45, dur: 0.25, gain: 0.45 });
+    this.s.noise({ dur: 0.15, filter: 'lowpass', freq: 900, freqEnd: 150, gain: 0.35 });
+  }
+
+  coin(i = 0): void {
+    const f = 1568 * 2 ** (i / 12);
+    this.s.tone({ type: 'square', freq: f, dur: 0.06, gain: 0.05 });
+    this.s.tone({ type: 'square', freq: f * 1.335, dur: 0.18, gain: 0.05, at: 0.06 });
+  }
+
+  abilityTick(): void {
+    this.s.tone({ type: 'triangle', freq: 330, freqEnd: 440, dur: 0.1, gain: 0.08 });
+  }
+
+  abilityFire(): void {
+    this.s.tone({ type: 'sawtooth', freq: 220, freqEnd: 110, dur: 0.5, gain: 0.12 });
+    this.s.tone({ type: 'sawtooth', freq: 233, freqEnd: 116, dur: 0.5, gain: 0.08 });
+    this.s.noise({ dur: 0.4, filter: 'bandpass', freq: 600, freqEnd: 200, q: 1, gain: 0.15 });
+    this.s.duck(0.5, 1.2);
+  }
+
+  heal(): void {
+    [659.25, 783.99, 987.77].forEach((f, i) => this.s.tone({ type: 'sine', freq: f, dur: 0.3, gain: 0.08, at: i * 0.06 }));
+  }
+
+  lucky(): void {
+    [1318.5, 1568, 2093, 2637].forEach((f, i) => this.s.tone({ type: 'triangle', freq: f, dur: 0.25, gain: 0.07, at: i * 0.05 }));
+    this.s.noise({ dur: 0.5, filter: 'highpass', freq: 6000, gain: 0.06 });
+  }
+
   death(): void {
     this.s.tone({ type: 'sawtooth', freq: 300, freqEnd: 30, dur: 1.2, gain: 0.2 });
     this.s.noise({ dur: 1.0, filter: 'lowpass', freq: 2000, freqEnd: 100, gain: 0.4 });

@@ -5,6 +5,8 @@ export interface StripCell {
   symbol: SymbolId;
   /** Covered by enemy slime: scores as 'slime' until cleansed. */
   slimed: boolean;
+  /** Snatched by a thief: an empty hole for the rest of the fight. */
+  stolen?: boolean;
 }
 
 export interface Reel {
@@ -36,7 +38,38 @@ export function wrap(i: number, len: number): number {
 }
 
 export function effectiveSymbol(cell: StripCell): SymbolId {
-  return cell.slimed ? 'slime' : cell.symbol;
+  return cell.stolen ? 'empty' : cell.slimed ? 'slime' : cell.symbol;
+}
+
+/** Symbols that do nothing on the player's own payline. */
+export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'lock', 'ice', 'claw']);
+
+/** How much the player would miss losing this symbol (enemy targeting). */
+export function symbolValue(s: SymbolId): number {
+  return s === 'sword' ? 3 : s === 'bolt' ? 2 : s === 'shield' ? 1 : 0;
+}
+
+export function stripCounts(reel: Reel): StripCounts {
+  const out: StripCounts = {};
+  for (const c of reel.cells) out[c.symbol] = (out[c.symbol] ?? 0) + 1;
+  return out;
+}
+
+/**
+ * Insert a cell without changing what's visible (junk lands off-screen and scrolls in later).
+ * Returns the index it was inserted at.
+ */
+export function insertOffscreen(reel: Reel, cell: StripCell, rng: Rng): number {
+  const len = reel.cells.length;
+  // Positions strictly after the bottom visible row and before the top one keep the window
+  // intact: inserting at p shifts indices >= p up by one, and stop follows.
+  const candidates: number[] = [];
+  for (let k = 2; k <= len - 1; k++) candidates.push(wrap(reel.stop + k, len));
+  const p = candidates.length ? rng.pick(candidates) : len;
+  const pos = p === 0 ? len : p;
+  reel.cells.splice(pos, 0, cell);
+  if (reel.stop >= pos) reel.stop++;
+  return pos;
 }
 
 /** Strip index shown at a visible row (0 = top, 1 = middle, 2 = bottom) for a given stop. */

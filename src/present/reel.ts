@@ -1,6 +1,6 @@
 import type { SymbolId } from '../core/config';
 import { wrap } from '../core/strip';
-import { drawSprite } from '../render/sprites';
+import { drawSprite, type SpriteId } from '../render/sprites';
 import type { Clock } from './clock';
 import { backOut, linear, sineIn, sineOut } from './ease';
 import { ART_SCALE, PITCH } from './layout';
@@ -13,6 +13,10 @@ export interface CellView {
   goo: number;
   /** Per-cell white flash (cleanse reveal). */
   flash: number;
+  /** Stolen by a thief: 0..1 fade from symbol to an empty hole. */
+  stolen?: number;
+  /** Freshly inserted (rock): punch-in 0..1. */
+  pop?: number;
 }
 
 /** Per visible-row cosmetic state (row 0 = top). */
@@ -36,6 +40,7 @@ export interface SpinPlan {
   /** Seconds after spin start when deceleration begins. */
   decelAt: number;
   decelDur: number;
+  frozen?: boolean;
 }
 
 export const SPIN = {
@@ -84,6 +89,13 @@ export class ReelView {
 
   /** Runs the 6-phase spin. Resolves the instant the reel reaches rest (before the bounce). */
   spin(plan: SpinPlan, clock: Clock, onStop: () => void): Promise<void> {
+    if (plan.frozen) {
+      // Frozen solid: the reel doesn't move. It 'lands' when its turn in the stagger comes.
+      return clock.wait(plan.decelAt + plan.decelDur).then(() => {
+        this.stop = plan.target;
+        onStop();
+      });
+    }
     const len = this.cells.length;
     const start = this.stop;
     const tw = plan.windup ? SPIN.windup : 0;
@@ -218,10 +230,25 @@ export function drawCell(
     ctx.restore();
   }
 
+  const stolen = cell.stolen ?? 0;
+  if (stolen > 0) {
+    // An empty hole where a symbol used to be.
+    ctx.save();
+    ctx.globalAlpha = stolen * alpha;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(x - 30, y - 30, 60, 60);
+    ctx.strokeStyle = 'rgba(180,160,220,0.35)';
+    ctx.setLineDash([6, 5]);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x - 30, y - 30, 60, 60);
+    ctx.restore();
+    if (stolen >= 1) return;
+  }
   const slimed = cell.slimed || cell.goo > 0;
   const dim = Math.min(1, (fx?.dim ?? 0) + (cell.goo > 0 ? 0.45 * cell.goo : 0));
   const flash = Math.max(fx?.flash ?? 0, cell.flash);
-  drawSprite(ctx, cell.symbol, x, y, ART_SCALE, { sx, sy, alpha, dim, flash });
+  const pop = cell.pop ?? 1;
+  drawSprite(ctx, cell.symbol as SpriteId, x, y, ART_SCALE, { sx: sx * pop, sy: sy * pop, alpha: alpha * (1 - stolen), dim, flash });
 
   if (slimed && cell.goo > 0) {
     // Goo drips in from the top: clip its height by coverage.

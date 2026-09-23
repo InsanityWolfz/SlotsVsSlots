@@ -5,6 +5,8 @@ import type { Clock } from './clock';
 import { sineInOut } from './ease';
 import { COLORS, MACHINE_H, MACHINE_W, PITCH, REELS, reelWindow } from './layout';
 import { ReelView, SPIN, type CellView } from './reel';
+import { drawSprite } from '../render/sprites';
+import { drawText } from '../render/text';
 
 export interface SpinCallbacks {
   onReelStop?: (reel: number) => void;
@@ -29,6 +31,11 @@ export class MachineView {
   payline = { progress: 0, alpha: 0, color: COLORS.goldLight };
   /** Big green wash for slime floods / gold wipe for cleanse: -1 = off, else 0..1 sweep. */
   wash = { t: -1, color: COLORS.slime };
+  /** Display-side reel statuses: turns left, and 0..1 overlay strength. */
+  frozen: number[];
+  locked: number[];
+  frozenFx: number[];
+  lockedFx: number[];
   private spun = false;
 
   constructor(
@@ -39,10 +46,21 @@ export class MachineView {
     this.reels = combatant.reels.map(
       (r) =>
         new ReelView(
-          r.cells.map((c): CellView => ({ symbol: c.symbol, slimed: c.slimed, goo: c.slimed ? 1 : 0, flash: 0 })),
+          r.cells.map((c): CellView => ({ symbol: c.symbol, slimed: c.slimed, goo: c.slimed ? 1 : 0, flash: 0, stolen: c.stolen ? 1 : 0 })),
           r.stop,
         ),
     );
+    this.frozen = combatant.frozen.slice();
+    this.locked = combatant.locked.slice();
+    this.frozenFx = this.frozen.map((t) => (t > 0 ? 1 : 0));
+    this.lockedFx = this.locked.map((t) => (t > 0 ? 1 : 0));
+  }
+
+  /** Mirror an engine insert (same index + stop rule as core/strip insertOffscreen). */
+  insertCell(reel: number, index: number, cell: CellView): void {
+    const r = this.reels[reel];
+    r.cells.splice(index, 0, cell);
+    if (r.stop >= index) r.stop++;
   }
 
   get pitchMul(): number {
@@ -54,26 +72,28 @@ export class MachineView {
    * Near-miss: first two reels match → the last reel keeps blurring past the others,
    * then does the slow 0.7s decel (juice §2, 3-reel version).
    */
-  async spin(stops: number[], nearMiss: boolean, clock: Clock, cb: SpinCallbacks = {}): Promise<void> {
+  async spin(stops: number[], nearMiss: boolean, clock: Clock, cb: SpinCallbacks = {}, frozen: boolean[] = []): Promise<void> {
     this.payline.alpha = 0;
     this.payline.progress = 0;
     const windup = this.spun;
     this.spun = true;
     const tw = windup ? SPIN.windup : 0;
     const base = tw + SPIN.accel + SPIN.minSpin;
-    const plans = stops.map((target, i) => ({ target, windup, decelAt: base + i * SPIN.stagger, decelDur: SPIN.decel }));
+    const plans = stops.map((target, i) => ({ target, windup, decelAt: base + i * SPIN.stagger, decelDur: SPIN.decel, frozen: !!frozen[i] }));
     const last = REELS - 1;
-    if (nearMiss) {
+    if (nearMiss && !plans[last].frozen) {
       const prevLand = plans[last - 1].decelAt + SPIN.decel;
       plans[last].decelAt = prevLand + 0.35;
       plans[last].decelDur = SPIN.nearMissDecel;
     }
 
-    const stopLoop = clock.skipping ? () => {} : this.sounds.spinLoop(this.pitchMul);
+    const allFrozen = plans.every((p) => p.frozen);
+    const stopLoop = clock.skipping || allFrozen ? () => {} : this.sounds.spinLoop(this.pitchMul);
     await Promise.all(
       this.reels.map((reel, i) =>
         reel.spin(plans[i], clock, () => {
-          this.sounds.reelStop(i, this.pitchMul);
+          if (plans[i].frozen) this.sounds.iceClink();
+          else this.sounds.reelStop(i, this.pitchMul);
           if (i === last) stopLoop();
           if (nearMiss && i === last - 1) {
             for (const r of [0, 1]) {
@@ -146,6 +166,7 @@ export class MachineView {
     ctx.fillStyle = COLORS.gold;
     for (let i = 1; i < REELS; i++) ctx.fillRect(PITCH * i - 1, 4, 2, MACHINE_H - 8);
 
+    this.drawStatuses(ctx, time);
     this.drawPayline(ctx);
 
     if (this.flash > 0) {
@@ -212,6 +233,37 @@ export class MachineView {
       [MACHINE_W + pad - 7, MACHINE_H + pad - 7],
     ])
       ctx.fillRect(x, y, 4, 4);
+  }
+
+  private drawStatuses(ctx: CanvasRenderingContext2D, time: number): void {
+    for (let r = 0; r < REELS; r++) {
+      const fz = this.frozenFx[r];
+      const lk = this.lockedFx[r];
+      const cx = PITCH * (r + 0.5);
+      if (fz > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.28 * fz;
+        ctx.fillStyle = '#9fe8ff';
+        ctx.fillRect(PITCH * r + 2, 0, PITCH - 4, MACHINE_H);
+        ctx.restore();
+        for (let row = 0; row < 3; row++) drawSprite(ctx, 'frozenOverlay', cx, PITCH * (row + 0.5), 5.6, { alpha: fz * (0.85 + 0.15 * Math.sin(time * 3 + row)) });
+      }
+      if (lk > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.35 * lk;
+        ctx.fillStyle = '#1a0f08';
+        ctx.fillRect(PITCH * r + 2, 0, PITCH - 4, MACHINE_H);
+        ctx.restore();
+        drawSprite(ctx, 'lockOverlay', cx, PITCH * 1.5, 5.6, { alpha: lk });
+      }
+      const badge = this.frozen[r] > 0 ? { n: this.frozen[r], c: '#9fe8ff', icon: 'icoFreeze' as const } : this.locked[r] > 0 ? { n: this.locked[r], c: '#ffb070', icon: 'icoLock' as const } : null;
+      if (badge && Math.max(fz, lk) > 0.5) {
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(cx - 22, -12, 44, 22);
+        drawSprite(ctx, badge.icon, cx - 10, -1, 2);
+        drawText(ctx, String(badge.n), cx + 10, -1, 2, badge.c);
+      }
+    }
   }
 
   private drawPayline(ctx: CanvasRenderingContext2D): void {

@@ -7,12 +7,27 @@ import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from 
 import { Banner, Bubble, FloatText, Lightning, Projectile, TurnCard } from './fx';
 import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, W } from './layout';
 import type { Stage } from './stage';
+import { ABILITY_UI } from './hud';
+import { stripMapColumn } from './stripMap';
+import type { SpriteId } from '../render/sprites';
 
 type Ev<T extends CombatEvent['type']> = Extract<CombatEvent, { type: T }>;
 
-const EFFECT_WORD: Record<SymbolId, string> = { sword: 'DAMAGE', shield: 'SHIELD', bolt: 'ENERGY', slime: 'SLIME' };
+const EFFECT_WORD: Record<SymbolId, string> = {
+  sword: 'DAMAGE',
+  shield: 'SHIELD',
+  bolt: 'ENERGY',
+  slime: 'SLIME',
+  ice: 'FREEZE',
+  claw: 'STEAL',
+  rock: 'ROCKS',
+  lock: 'JAM',
+  coin: 'TO THE POT',
+  seven: 'DAMAGE',
+  empty: 'NOTHING',
+};
 
-const BATCHABLE = new Set<CombatEvent['type']>(['attack', 'shieldGain', 'energyGain', 'fizzle', 'slime']);
+const BATCHABLE = new Set<CombatEvent['type']>(['attack', 'shieldGain', 'energyGain', 'fizzle', 'slime', 'freeze', 'lock', 'steal', 'pot', 'heal']);
 
 /** Banners sit in the top gutter between the HUD panels, never over the reels. */
 const BANNER_Y = 172;
@@ -23,6 +38,7 @@ const BANNER_Y = 172;
  */
 export class Director {
   private lastScore: LineScore | null = null;
+  private lastSpin: Partial<Record<SideId, { frozen: boolean[]; locked: boolean[] }>> = {};
 
   constructor(private s: Stage) {}
 
@@ -67,6 +83,26 @@ export class Director {
         return this.death(e);
       case 'fightEnd':
         return this.fightEnd(e);
+      case 'heal':
+        return this.heal(e);
+      case 'freeze':
+        return this.status(e, 'frozen');
+      case 'lock':
+        return this.status(e, 'locked');
+      case 'thaw':
+        return this.thaw(e);
+      case 'steal':
+        return this.steal(e);
+      case 'junk':
+        return this.junk(e);
+      case 'abilityCharge':
+        return this.abilityCharge(e);
+      case 'ability':
+        return this.ability(e);
+      case 'pot':
+        return this.pot(e);
+      case 'potWin':
+        return this.potWin(e);
     }
   }
 
@@ -159,6 +195,13 @@ export class Director {
 
   private machineCenter(side: SideId) {
     return { x: MACHINE_CX[side], y: MACHINE_TOP + MACHINE_H / 2 };
+  }
+
+  /** Launch point for an effect: its reel on the payline, or the machine itself for abilities. */
+  private srcPoint(side: SideId, reels: number[], i: number) {
+    if (reels.length) return cellCenter(side, reels[i % reels.length], 1);
+    const c = this.machineCenter(side);
+    return { x: c.x + (Math.random() * 2 - 1) * 60, y: c.y + (Math.random() * 2 - 1) * 60 };
   }
 
   private rowOf(side: SideId, ref: CellRef): number {
@@ -257,12 +300,20 @@ export class Director {
     this.lastScore = e.score;
     m.clearRowFx();
     const near = e.nearMiss && this.s.juice.nearMiss;
-    await m.spin(e.stops, near, this.c, {
-      onNearMiss: () => {
-        this.s.sounds.nearMissSting();
-        this.s.camera.punchZoom(0.015, 0.9);
+    this.lastSpin[e.side] = { frozen: e.frozen, locked: e.locked };
+    await m.spin(
+      e.stops,
+      near,
+      this.c,
+      {
+        onNearMiss: () => {
+          this.s.sounds.nearMissSting();
+          this.s.camera.punchZoom(0.015, 0.9);
+        },
       },
-    });
+      e.frozen,
+    );
+    if (e.lucky) await this.luckyPop(e.side);
     if (near && e.score.tier !== 'triple') this.missedTriple(e.side, e.score.line[0]);
     await this.winPresentation(e.side, e.score);
   }
@@ -367,10 +418,11 @@ export class Director {
     const dir = e.to === 'enemy' ? 1 : -1;
     const big = this.lastScore?.tier === 'triple';
 
-    const flights = e.reels.map(async (r, i) => {
+    const srcReels = e.reels.length ? e.reels : [-1];
+    const flights = srcReels.map(async (_r, i) => {
       await this.c.wait(i * 0.08);
-      const from = cellCenter(e.from, r, 1);
-      const scale = big && i === e.reels.length - 1 ? 6 : 4;
+      const from = this.srcPoint(e.from, e.reels, i);
+      const scale = (big && i === e.reels.length - 1) || !e.reels.length ? 6 : 4;
       const p = this.s.fx.add(new Projectile('swordProjectile', from.x, from.y - 14, scale, dir < 0, '#dfe6f0'));
       p.rot = dir > 0 ? -0.5 : 0.5;
       this.s.sounds.whoosh();
@@ -540,7 +592,7 @@ export class Director {
     const blobs = e.cells.map(async (ref, i) => {
       await this.c.wait(i * (flood ? 0.04 : 0.07));
       const row = this.rowOf(e.to, ref);
-      const src = cellCenter(e.from, e.reels[i % e.reels.length], 1);
+      const src = this.srcPoint(e.from, e.reels, i);
       const dst = cellCenter(e.to, ref.reel, Math.max(0, row));
       const p = this.s.fx.add(new Projectile('slimeBlob', src.x, src.y, 6, false, COLORS.slime));
       this.bg(this.c.tween({ from: 0, to: Math.PI * 4, dur: 0.45, onUpdate: (v) => (p.rot = v) }));
@@ -649,8 +701,246 @@ export class Director {
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (b.alpha = v) }).then(() => this.s.fx.remove(b)));
   }
 
+  // ---- writers, abilities, boss --------------------------------------------------------
+
+  private async luckyPop(side: SideId): Promise<void> {
+    const m = this.s.machines[side];
+    const p = cellCenter(side, 2, 1);
+    this.s.sounds.lucky();
+    const fx = m.reels[2].rows[1];
+    fx.glowColor = '#7dff7a';
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.8, onUpdate: (v) => (fx.glow = v) }));
+    this.s.particles.burst({ x: p.x, y: p.y, count: 30, colors: ['#7dff7a', '#ffffff', '#3fbf3a'], speed: [80, 300], gravity: -120, life: [0.4, 0.8], size: [3, 5] });
+    const clover = this.s.fx.add(new Projectile('relicClover', p.x, p.y - 50, 4));
+    await this.c.tween({ from: 0, to: 1, dur: 0.2, ease: backOut(3), onUpdate: (v) => (clover.scale = 4 * v) });
+    this.bg(this.popText('LUCKY!', p.x, p.y - 90, 3, '#7dff7a', 20, 0.3));
+    await this.c.wait(0.25);
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (clover.alpha = v) }).then(() => this.s.fx.remove(clover)));
+  }
+
+  private async heal(e: Ev<'heal'>): Promise<void> {
+    const h = this.s.huds[e.side];
+    this.s.sounds.heal();
+    const b = h.hpBar();
+    this.s.particles.burst({ x: b.x + b.w * (e.hp / h.maxHp), y: b.y + b.h / 2, count: 16, colors: ['#7dff7a', '#ffffff'], speed: [40, 160], gravity: -200, life: [0.4, 0.7], size: [2, 4] });
+    this.bg(this.popText(`+${e.amount}`, b.x + b.w - 30, b.y - 4, 3, '#7dff7a', 20, 0.3));
+    this.bg(this.c.to(h, 'ghost', e.hp, 0.3));
+    await this.c.to(h, 'hp', e.hp, 0.3, sineOut);
+  }
+
+  /** Freeze (ice shards) or jam (padlocks) the target reels. */
+  private async status(e: Ev<'freeze'> | Ev<'lock'>, kind: 'frozen' | 'locked'): Promise<void> {
+    const to = this.s.machines[e.to];
+    const ice = kind === 'frozen';
+    if (e.reels.length) await this.activate(e.from, e.reels, ice ? '#9fe8ff' : '#ffb070');
+    const flights = e.targets.map(async (r, i) => {
+      await this.c.wait(i * 0.08);
+      const src = this.srcPoint(e.from, e.reels, i);
+      const dst = cellCenter(e.to, r, 1);
+      const p = this.s.fx.add(new Projectile(ice ? 'ice' : 'lock', src.x, src.y, 3, false, ice ? '#9fe8ff' : '#ffb070'));
+      this.bg(this.c.tween({ from: 0, to: Math.PI * 3, dur: 0.35, onUpdate: (v) => (p.rot = v) }));
+      await this.arc(p, dst.x, dst.y, 0.35, 90, sineIn);
+      this.s.fx.remove(p);
+      if (ice) {
+        to.frozen[r] = Math.max(to.frozen[r], e.turns);
+        this.s.sounds.freeze();
+      } else {
+        to.locked[r] = Math.max(to.locked[r], e.turns);
+        this.s.sounds.chains();
+      }
+      const fxArr = ice ? to.frozenFx : to.lockedFx;
+      this.bg(this.c.tween({ from: fxArr[r], to: 1, dur: 0.25, ease: cubicOut, onUpdate: (v) => (fxArr[r] = v) }));
+      this.s.particles.burst({
+        x: dst.x,
+        y: dst.y,
+        count: 22,
+        colors: ice ? ['#9fe8ff', '#ffffff', '#5ab8e8'] : ['#8a8a96', '#ffb070', '#4a3a2a'],
+        speed: [80, 320],
+        kind: ice ? 'spark' : 'square',
+        gravity: ice ? 100 : 700,
+        life: [0.25, 0.55],
+        size: [2, 5],
+      });
+      this.shake(3, 0.15);
+    });
+    await Promise.all(flights);
+    const c = this.machineCenter(e.to);
+    const label = ice ? `FROZEN ${e.turns} TURN${e.turns > 1 ? 'S' : ''}` : 'JAMMED!';
+    this.bg(this.popText(label, c.x, MACHINE_TOP - 4, 3, ice ? '#9fe8ff' : '#ffb070', 16, 0.4));
+    if (e.reels.length) this.settle(e.from, e.reels);
+    await this.c.wait(0.2);
+  }
+
+  private async thaw(e: Ev<'thaw'>): Promise<void> {
+    const m = this.s.machines[e.side];
+    const ice = e.status === 'frozen';
+    if (ice) this.s.sounds.shatter();
+    else this.s.sounds.unchain();
+    for (const r of e.reels) {
+      if (ice) m.frozen[r] = 0;
+      else m.locked[r] = 0;
+      const arr = ice ? m.frozenFx : m.lockedFx;
+      this.bg(this.c.tween({ from: arr[r], to: 0, dur: 0.3, onUpdate: (v) => (arr[r] = v) }));
+      for (let row = 0; row < 3; row++) {
+        const p = cellCenter(e.side, r, row);
+        if (ice || row === 1)
+          this.s.particles.burst({ x: p.x, y: p.y, count: ice ? 10 : 8, colors: ice ? ['#9fe8ff', '#ffffff'] : ['#8a8a96', '#5a4a3a'], speed: [60, 220], gravity: 600, life: [0.3, 0.6], size: [2, 5] });
+      }
+    }
+    await this.c.wait(0.15);
+  }
+
+  private async steal(e: Ev<'steal'>): Promise<void> {
+    const to = this.s.machines[e.to];
+    if (e.reels.length) await this.activate(e.from, e.reels, '#c9a0ff');
+    if (!e.cells.length) {
+      const c = this.machineCenter(e.to);
+      await this.popText('NOTHING TO STEAL', c.x, MACHINE_TOP - 4, 2, COLORS.textDim, 16, 0.2);
+      return;
+    }
+    const grabs = e.cells.map(async (ref, i) => {
+      await this.c.wait(i * 0.12);
+      const src = this.srcPoint(e.from, e.reels, i);
+      const row = Math.max(0, this.rowOf(e.to, ref));
+      const dst = cellCenter(e.to, ref.reel, row);
+      const claw = this.s.fx.add(new Projectile('claw', src.x, src.y, 4, e.from === 'enemy', '#c9a0ff'));
+      this.s.sounds.steal();
+      await this.arc(claw, dst.x, dst.y, 0.3, 60, cubicIn);
+      const cell = to.reels[ref.reel].cells[ref.index];
+      // Snatch: the symbol rides the claw back to the thief.
+      const loot = this.s.fx.add(new Projectile(e.symbols[i] as SpriteId, dst.x, dst.y, 4));
+      this.bg(this.c.tween({ from: 0, to: 1, dur: 0.2, onUpdate: (v) => (cell.stolen = v) }));
+      this.s.particles.burst({ x: dst.x, y: dst.y, count: 10, colors: ['#c9a0ff', '#ffffff'], speed: [60, 200], gravity: 300, life: [0.2, 0.4], size: [2, 4] });
+      await Promise.all([
+        this.arc(claw, src.x, src.y, 0.35, 40, sineInOut),
+        this.arc(loot, src.x, src.y, 0.35, 40, sineInOut),
+        this.c.tween({ from: 4, to: 2, dur: 0.35, onUpdate: (v) => (loot.scale = v) }),
+      ]);
+      this.s.fx.remove(claw);
+      this.s.fx.remove(loot);
+    });
+    await Promise.all(grabs);
+    const c = this.machineCenter(e.to);
+    this.bg(this.popText(`STOLEN x${e.cells.length}`, c.x, MACHINE_TOP - 4, 3, '#c9a0ff', 16, 0.3));
+    if (e.reels.length) this.settle(e.from, e.reels);
+    await this.c.wait(0.15);
+  }
+
+  private async junk(e: Ev<'junk'>): Promise<void> {
+    const to = this.s.machines[e.to];
+    if (e.reels.length) await this.activate(e.from, e.reels, '#a89a8a');
+    // Rocks land in the strip beyond the window: aim them at the strip map.
+    for (const [i, ins] of e.inserts.entries()) {
+      const src = this.srcPoint(e.from, e.reels, i);
+      const dst = stripMapColumn(ins.reel);
+      const p = this.s.fx.add(new Projectile('rock', src.x, src.y, 3, false, '#8a8070'));
+      this.bg(this.c.tween({ from: 0, to: Math.PI * 2, dur: 0.4, onUpdate: (v) => (p.rot = v) }));
+      await this.arc(p, dst.x, dst.y, i === 0 ? 0.45 : 0.18, 200, sineIn);
+      this.s.fx.remove(p);
+      const cell = { symbol: 'rock' as const, slimed: false, goo: 0, flash: 1, pop: 0 };
+      to.insertCell(ins.reel, ins.index, cell);
+      this.bg(this.c.tween({ from: 0, to: 1, dur: 0.3, ease: backOut(3), onUpdate: (v) => (cell.pop = v) }));
+      this.bg(this.c.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (cell.flash = v) }));
+      this.s.sounds.rockThud();
+      this.s.particles.burst({ x: dst.x, y: dst.y, count: 10, colors: ['#8a8070', '#5a5048', '#c9bba8'], speed: [60, 200], gravity: 800, life: [0.3, 0.5], size: [2, 5] });
+      this.shake(2, 0.1);
+    }
+    if (e.inserts.length) {
+      const col = stripMapColumn(1);
+      this.bg(this.popText(`+${e.inserts.length} ROCK${e.inserts.length > 1 ? 'S' : ''}`, col.x, col.y - 170, 2, '#c9bba8', 14, 0.5));
+    }
+    if (e.reels.length) this.settle(e.from, e.reels);
+    await this.c.wait(0.15);
+  }
+
+  private async abilityCharge(e: Ev<'abilityCharge'>): Promise<void> {
+    const h = this.s.huds[e.side];
+    if (e.charge === h.charge) return;
+    const rising = e.charge > h.charge;
+    h.charge = e.charge;
+    if (rising) {
+      this.s.sounds.abilityTick();
+      this.bg(this.c.tween({ from: 1.6, to: 1, dur: 0.25, ease: backOut(3), onUpdate: (v) => (h.chargePunch = v) }));
+      await this.c.wait(0.12);
+    }
+  }
+
+  /** Telegraph pays off: loud, readable, then its effect events play normally. */
+  private async ability(e: Ev<'ability'>): Promise<void> {
+    const h = this.s.huds[e.side];
+    const m = this.s.machines[e.side];
+    this.s.sounds.abilityFire();
+    this.decay(h, 'abilityFlash', 1, 0.6);
+    this.shake(4, 0.25);
+    m.payline.alpha = 0;
+    this.bg(this.c.tween({ from: 0.8, to: 0, dur: 0.5, onUpdate: (v) => (m.flash = v * 0.5) }));
+    await this.banner(`${ABILITY_UI[e.kind].label}!`, '#ff6a5a', 1.35, 0.25);
+  }
+
+  private potPos() {
+    return { x: W / 2, y: MACHINE_TOP + MACHINE_H / 2 + 110 };
+  }
+
+  private async pot(e: Ev<'pot'>): Promise<void> {
+    const g = this.s.gutter;
+    const dst = this.potPos();
+    const n = Math.min(9, e.amount);
+    const coins = Array.from({ length: n }, async (_, i) => {
+      await this.c.wait(i * 0.05);
+      const src = this.srcPoint(e.side, e.reels, i);
+      const p = this.s.fx.add(new Projectile('coin', src.x, src.y, 2.5, false, COLORS.energy));
+      await this.arc(p, dst.x + (Math.random() * 2 - 1) * 20, dst.y, 0.35, 80, sineIn);
+      this.s.fx.remove(p);
+      this.s.sounds.coin(i);
+      g.pot = Math.min(e.total, g.pot + e.amount / n);
+      this.bg(this.c.tween({ from: 1.5, to: 1, dur: 0.2, ease: backOut(3), onUpdate: (v) => (g.potPunch = v) }));
+    });
+    await Promise.all(coins);
+    g.pot = e.total;
+    if (e.reels.length) this.settle(e.side, e.reels);
+  }
+
+  private async potWin(e: Ev<'potWin'>): Promise<void> {
+    const g = this.s.gutter;
+    const src = this.potPos();
+    const target = this.machineCenter(e.to);
+    const playerWins = e.from === 'player';
+    if (e.amount <= 0) {
+      await this.popText('POT EMPTY', src.x, src.y - 30, 2, COLORS.textDim, 16, 0.2);
+      return;
+    }
+    this.s.sounds.fanfareJackpot();
+    this.bg(this.banner(playerWins ? 'YOU TAKE THE POT!' : 'HOUSE CASHES OUT!', playerWins ? COLORS.goldLight : '#ff6a5a', 1.4, 0.4, `${e.amount} DAMAGE`, BANNER_Y, 3));
+    const n = Math.min(24, 6 + e.amount);
+    const coins = Array.from({ length: n }, async (_, i) => {
+      await this.c.wait(i * 0.03);
+      const p = this.s.fx.add(new Projectile('coin', src.x, src.y, 3, false, COLORS.energy));
+      await this.arc(p, target.x + (Math.random() * 2 - 1) * 100, target.y + (Math.random() * 2 - 1) * 80, 0.4, 120, sineIn);
+      this.s.fx.remove(p);
+      if (i % 3 === 0) this.s.sounds.coin(i % 12);
+    });
+    this.bg(this.c.to(g, 'pot', 0, 0.6));
+    await Promise.all(coins);
+    this.hitstop(4);
+    this.shake(9, 0.5);
+    this.s.camera.chromaPulse(0.7);
+    this.flashMachine(e.to, 1, 0.25);
+    this.knockback(e.to, 14);
+    this.s.sounds.hit(9);
+    this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
+    this.bg(this.popText(`-${e.hpDamage}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
+    await this.c.wait(0.5);
+  }
+
   private async endTurn(side: SideId): Promise<void> {
     const m = this.s.machines[side];
+    // Statuses tick down after the affected side's own spin.
+    const ls = this.lastSpin[side];
+    if (ls) {
+      ls.frozen.forEach((f, r) => f && m.frozen[r] > 0 && m.frozen[r]--);
+      ls.locked.forEach((f, r) => f && m.locked[r] > 0 && m.locked[r]--);
+      delete this.lastSpin[side];
+    }
     this.bg(this.c.to(m.payline, 'alpha', 0, 0.2));
     this.bg(m.focusPayline(this.c, false));
     await this.c.wait(0.05);

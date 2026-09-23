@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "sim": "tsx src/sim/runSim.ts"
+    "sim": "tsx src/sim/runSim.ts",
+    "build:playtest": "vite build --mode playtest --outDir playtest-build --emptyOutDir",
+    "serve:playtest": "vite preview --outDir playtest-build --port 4173 --strictPort"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

@@ -1,10 +1,21 @@
-import type { SideId } from '../core/config';
-import { drawSprite } from '../render/sprites';
+import type { AbilityDef, AbilityKind, SideId } from '../core/config';
+import { drawSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 import { COLORS, HUD_TOP, MACHINE_CX } from './layout';
 
 export const HUD_W = 330;
 export const SHIELD_SOFT_CAP = 20;
+
+export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> = {
+  flood: { icon: 'icoFlood', label: 'FLOOD' },
+  smash: { icon: 'icoSmash', label: 'SMASH' },
+  fortify: { icon: 'shieldIcon', label: 'FORTIFY' },
+  blizzard: { icon: 'icoFreeze', label: 'BLIZZARD' },
+  pilfer: { icon: 'icoSteal', label: 'PILFER' },
+  quake: { icon: 'icoRock', label: 'QUAKE' },
+  jam: { icon: 'icoLock', label: 'JAM' },
+  jackpot: { icon: 'icoCoin', label: 'CASH OUT' },
+};
 
 /** Displayed (tweened) values for one side's bars — never read from game state mid-animation. */
 export class HudView {
@@ -27,13 +38,25 @@ export class HudView {
   ooze = 0;
   oozeTotal = 0;
   oozePunch = 1;
+  /** Enemy ability meter (display). */
+  charge = 0;
+  chargePunch = 1;
+  abilityFlash = 0;
+  name: string;
+  portrait: SpriteId;
+  ability: AbilityDef | null;
 
   constructor(
     readonly side: SideId,
     maxHp: number,
     readonly hasSpecial: boolean,
     energyMax: number,
+    opts: { name?: string; portrait?: string; ability?: AbilityDef | null; energy?: number } = {},
   ) {
+    this.name = opts.name ?? (side === 'player' ? 'HERO' : 'ENEMY');
+    this.portrait = (opts.portrait ?? (side === 'player' ? 'playerPortrait' : 'enemyPortrait')) as SpriteId;
+    this.ability = opts.ability ?? null;
+    this.energy = opts.energy ?? 0;
     this.maxHp = maxHp;
     this.hp = maxHp;
     this.ghost = maxHp;
@@ -63,7 +86,7 @@ export class HudView {
   draw(ctx: CanvasRenderingContext2D, time: number): void {
     const x = this.x;
     const y = HUD_TOP;
-    const h = this.hasSpecial ? 128 : 96;
+    const h = this.hasSpecial || this.ability ? 128 : 96;
 
     // Panel.
     ctx.fillStyle = COLORS.outline;
@@ -77,8 +100,8 @@ export class HudView {
     const ps = this.portraitShake * (Math.random() * 2 - 1);
     ctx.fillStyle = COLORS.panelLight;
     ctx.fillRect(x + 4, y + 30, 52, 52);
-    drawSprite(ctx, this.side === 'player' ? 'playerPortrait' : 'enemyPortrait', x + 30 + ps, y + 56, 2, { flash: this.portraitFlash });
-    drawText(ctx, this.side === 'player' ? 'HERO' : 'SLIME KING', x + 4, y + 12, 2, this.side === 'player' ? COLORS.goldLight : COLORS.slime, {
+    drawSprite(ctx, this.portrait, x + 30 + ps, y + 56, 2, { flash: this.portraitFlash });
+    drawText(ctx, this.name, x + 4, y + 12, 2, this.side === 'player' ? COLORS.goldLight : COLORS.slime, {
       align: 'left',
     });
     if (this.ooze > 0) {
@@ -123,6 +146,26 @@ export class HudView {
       }
       drawText(ctx, 'SPECIAL', x + HUD_W - 4, y + 106, 2, this.energy >= this.energyMax ? COLORS.energy : COLORS.textDim, { align: 'right' });
     }
+    if (this.ability) this.drawAbility(ctx, x, y + 106, time);
+  }
+
+  /** Passive telegraph: what the enemy's special does and how many turns until it fires. */
+  private drawAbility(ctx: CanvasRenderingContext2D, x: number, y: number, time: number): void {
+    const ab = this.ability!;
+    const ui = ABILITY_UI[ab.kind];
+    const left = ab.every - this.charge;
+    const imminent = left <= 1;
+    const pulse = imminent ? 0.5 + 0.5 * Math.sin(time * 10) : 0;
+    drawSprite(ctx, ui.icon, x + 70, y, 2 * this.chargePunch, { flash: Math.max(this.abilityFlash, pulse * 0.6) });
+    for (let i = 0; i < ab.every; i++) {
+      const px = x + 92 + i * 14;
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(px - 6, y - 6, 12, 12);
+      ctx.fillStyle = i < this.charge ? (imminent ? '#ff5a4a' : '#ff9a3a') : '#2a2038';
+      ctx.fillRect(px - 4, y - 4, 8, 8);
+    }
+    const label = imminent ? `${ui.label} NEXT!` : `${ui.label} IN ${left}`;
+    drawText(ctx, label, x + HUD_W - 4, y, 2, imminent ? (pulse > 0.5 ? '#ffffff' : '#ff6a5a') : COLORS.textDim, { align: 'right', punch: 1 + this.abilityFlash * 0.3 });
   }
 
   private bar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, fills: [number, string][], flash: number): void {

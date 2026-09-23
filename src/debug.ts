@@ -1,4 +1,6 @@
-import type { SideId, SymbolId } from './core/config';
+import type { RelicId, SideId, SymbolId } from './core/config';
+import { ARCHETYPES, BOSS, makeEnemy } from './core/enemies';
+import { Rng } from './core/rng';
 import type { CombatEvent } from './core/events';
 import type { Game } from './game';
 
@@ -37,6 +39,27 @@ export function installDebug(game: Game): void {
       return hit;
     },
     force: (side: SideId, line: SymbolId[]) => game.fight.forceNext(side, line),
+    /** Start a new run (optionally seeded). */
+    run: (seed?: number) => game.startRun(seed),
+    /** Make the current fight end in a win on the player's next spin (for walking run screens). */
+    forceWin() {
+      game.fight.sides.enemy.hp = 1;
+      game.fight.sides.enemy.shield = 0;
+      game.fight.forceNext('player', ['sword', 'sword', 'sword']);
+    },
+    /** Start a paused sandbox fight against an archetype ('slime', 'frost', 'thief', 'golem', 'gremlin', 'brute', 'house'). */
+    vs(id: string, player?: SymbolId[], enemy?: SymbolId[], relics: RelicId[] = []) {
+      const a = id === 'house' ? BOSS : ARCHETYPES.find((x) => x.id === id);
+      if (!a) throw new Error(`no archetype ${id}`);
+      const e = makeEnemy(a, 2, new Rng(1), id === 'house');
+      const cfg = structuredClone(game.cfg);
+      cfg.enemy = { hp: e.hp, strips: e.strips, name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
+      cfg.relics = relics;
+      game.newFight(true, null, cfg);
+      pause();
+      if (player) game.fight.forceNext('player', player);
+      if (enemy) game.fight.forceNext('enemy', enemy);
+    },
     /** Start a paused fight with forced opening lines. */
     fight(player?: SymbolId[], enemy?: SymbolId[]) {
       game.newFight(true);

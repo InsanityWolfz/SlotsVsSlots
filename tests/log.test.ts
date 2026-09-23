@@ -41,6 +41,6 @@ describe('combat log + stats', () => {
     const rows = [turnRow(f, f.step(), 1), turnRow(f, f.step(), 1)];
     const csv = rowsToCsv(rows).split('\n');
     expect(csv).toHaveLength(3);
-    expect(csv[0].startsWith('fight,seed,turn,side,line')).toBe(true);
+    expect(csv[0].startsWith('fight,seed,enemy,turn,side,line')).toBe(true);
   });
 });
