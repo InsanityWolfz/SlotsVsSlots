@@ -58,6 +58,8 @@ window.addEventListener('keydown', (e) => {
   } else if (game.key(k)) e.preventDefault();
 });
 
+document.addEventListener('visibilitychange', () => game.setHidden(document.hidden));
+
 let last = performance.now();
 function frame(now: number): void {
   const dt = (now - last) / 1000;

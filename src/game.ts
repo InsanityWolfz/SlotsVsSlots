@@ -165,6 +165,9 @@ export class Game {
     this.presenting = false;
     this.awaitingSpin = false;
     this.spinResolve = null;
+    // The previous fight's clock is abandoned here, so any reel mid-spin never lands to
+    // stop its own loop — cut them explicitly.
+    this.synth.stopLoops();
     this.synth.enabled = true;
     this.camera.dimTarget = 0;
     this.fight = new Fight(this.cfg, seed ?? this.cfg.seed ?? undefined);
@@ -234,6 +237,7 @@ export class Game {
         this.synth.enabled = true;
       }
     }
+    this.synth.stopLoops();
     this.phase = 'recap';
     this.syncButtons();
     await this.recap.show(this.tracker.stats);
@@ -284,6 +288,13 @@ export class Game {
   }
 
   // ---- input -------------------------------------------------------------------------
+
+  /** Rendering (and so the game clock) pauses in a hidden tab; pause audio with it. */
+  setHidden(hidden: boolean): void {
+    if (!this.audioStarted) return;
+    if (hidden) void this.synth.ctx.suspend();
+    else this.synth.resume();
+  }
 
   private startAudio(): void {
     this.synth.resume();

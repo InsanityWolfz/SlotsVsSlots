@@ -121,7 +121,15 @@ export class Synth {
     src.stop(t0 + o.dur + 0.05);
   }
 
-  /** A long-running noise+hum loop; returns a stop function. */
+  /** Stop functions of every loop currently playing. */
+  private activeLoops = new Set<() => void>();
+
+  /** Cut every running loop (fight reset, match end, tab hidden). */
+  stopLoops(): void {
+    for (const stop of [...this.activeLoops]) stop();
+  }
+
+  /** A long-running noise+hum loop; returns an idempotent stop function. */
   loop(filterFreq: number, humFreq: number, gain: number): () => void {
     const t0 = this.now;
     const src = this.ctx.createBufferSource();
@@ -151,13 +159,17 @@ export class Synth {
     src.start();
     hum.start();
     lfo.start();
-    return () => {
+    const stop = () => {
+      if (!this.activeLoops.delete(stop)) return;
       const t = this.now;
       g.gain.cancelScheduledValues(t);
       g.gain.setValueAtTime(g.gain.value, t);
       g.gain.linearRampToValueAtTime(0.0001, t + 0.08);
       for (const n of [src, hum, lfo]) n.stop(t + 0.1);
+      setTimeout(() => g.disconnect(), 200);
     };
+    this.activeLoops.add(stop);
+    return stop;
   }
 
   /** Fire-and-forget music duck (juice §8). */
