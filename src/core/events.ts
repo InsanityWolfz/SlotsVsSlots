@@ -1,4 +1,4 @@
-import type { AbilityKind, RelicId, SideId, SymbolId } from './config';
+import type { AbilityKind, RelicId, SideId, SymbolId, Enh } from './config';
 import type { LineScore } from './scoring';
 import type { CellRef } from './strip';
 
@@ -42,7 +42,7 @@ export type CombatEvent =
       targetShield: number;
     }
   | { type: 'shieldGain'; side: SideId; reels: number[]; amount: number; total: number }
-  | { type: 'energyGain'; side: SideId; reels: number[]; amount: number; total: number }
+  | { type: 'energyGain'; side: SideId; reels: number[]; amount: number; total: number; /** Energy the Grounder's rods earthed away. */ earthed?: number }
   | {
       type: 'specialFire';
       from: SideId;
@@ -77,7 +77,7 @@ export type CombatEvent =
   /** The Grounder drove rods into bolt cells. */
   | { type: 'ground'; from: SideId; to: SideId; reels: number[]; cells: CellRef[] }
   /** The Counterfeiter faked gilded cells (plain for `turns`). */
-  | { type: 'fake'; from: SideId; to: SideId; reels: number[]; cells: CellRef[]; turns: number }
+  | { type: 'fake'; from: SideId; to: SideId; reels: number[]; cells: CellRef[]; turns: number; /** The gild types counterfeited. */ enhs: Enh[] }
   /** Faked cells burned a turn; `left` 0 = the fake wore off. */
   | { type: 'fakeTick'; side: SideId; cells: CellRef[]; left: number[] }
   /** EARTH: energy drained from the target. */

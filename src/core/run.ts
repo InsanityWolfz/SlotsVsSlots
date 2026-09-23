@@ -130,6 +130,8 @@ export interface FightRecord {
   act?: number;
   /** Chips the Mimic ate. */
   chipsEaten?: number;
+  /** Chips an act 2 elite paid. */
+  eliteChips?: number;
   rocksAdded: number;
   rocksCrumbled: number;
   /** Relic taken from an elite's spoils. */
@@ -277,7 +279,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.enemy.strips = run.player.strips.map((s) => ({ ...s }));
     // It copies what you hit with: never your spikes.
     // It copies what you hit with, but not your spikes and not your edge (KEEN).
-    cfg.enemy.gilded = run.player.gilded.filter((g) => g.enh !== 'spiked' && g.enh !== 'keen').map((g) => ({ ...g }));
+    cfg.enemy.gilded = run.player.gilded.filter((g) => g.enh !== 'spiked' && g.enh !== 'keen').map((g) => ({ reel: g.reel, symbol: g.symbol, enh: g.enh }));
     cfg.player.stackShield = Math.min(MIRROR_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
     // REFLECTION is capped relative to you: two from full HP kill you.
     if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, power: Math.max(REFLECT_MIN, Math.round(run.player.maxHp * REFLECT_CAP)) };
@@ -314,7 +316,8 @@ export function machinePower(run: RunState): number {
   if (relics.includes('overcharge')) dmg += Math.ceil(dmg * OVERCHARGE_ECHO);
   // Battery: a head start worth about one extra special over a Mirror fight (~8 of your spins).
   const energy = s.energy + (relics.includes('battery') ? BATTERY_ENERGY / 8 : 0);
-  return s.damage + (energy / cost) * Math.min(POWER_CAP, dmg);
+  // Specials pierce shields and the Mirror has none of its own: they count extra toward its HP.
+  return s.damage + TUNE.mirrorSpecialWeight * (energy / cost) * Math.min(POWER_CAP, dmg);
 }
 const POWER_CAP = 20;
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
@@ -384,6 +387,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   if (beaten.elite && run.act > 1) {
     run.player.chips += CHIPS.act2EliteChips;
     record.chips = (record.chips ?? 0) + CHIPS.act2EliteChips;
+    record.eliteChips = CHIPS.act2EliteChips;
   }
   // Act 1 elites offer their spoils: choose 1 of 2 relics.
   if (beaten.elite && run.act === 1) {
@@ -756,6 +760,8 @@ export function fitsBuild(run: RunState, o: DraftOption): boolean {
   const p = run.player;
   const favored = CABINETS[run.cabinet].favors;
   if (o.kind === 'gild') return p.gilded.some((g) => g.enh === o.enh) || o.enh === favored;
+  // THORN's act 2 build is HP (ITERATION_9).
+  if (o.kind === 'maxHp') return run.cabinet === 'thorn' && run.act > 1;
   if (o.kind === 'relic') {
     // Legendaries that feed what you're doing.
     const spec = p.gilded.some((g) => g.enh === 'charged' || g.enh === 'blaze') || run.cabinet === 'tesla';

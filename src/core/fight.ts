@@ -456,7 +456,12 @@ export class Fight {
       case 'bolt':
         // The Mirror has no special of its own: it only reflects.
         if (me.side === 'enemy' && this.isMirror) break;
-        this.gainEnergy(me, g.amount, g.reels, events);
+        {
+          // The Grounder: a grounded bolt on your payline earths its share of the energy.
+          const grounded = me.side === 'player' ? g.reels.filter((r) => me.reels[r].cells[me.reels[r].stop]?.grounded).length : 0;
+          const earthed = grounded ? Math.ceil((g.amount * grounded) / g.reels.length) : 0;
+          this.gainEnergy(me, Math.max(0, g.amount - earthed), g.reels, events, earthed);
+        }
         return;
     }
     if (me.casts.has(g.symbol)) {
@@ -501,10 +506,10 @@ export class Fight {
     return h.hpDamage;
   }
 
-  private gainEnergy(me: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
+  private gainEnergy(me: Combatant, amount: number, reels: number[], events: CombatEvent[], earthed = 0): void {
     const foe = this.sides[other(me.side)];
     me.energy += amount;
-    events.push({ type: 'energyGain', side: me.side, reels, amount, total: me.energy });
+    events.push({ type: 'energyGain', side: me.side, reels, amount, total: me.energy, ...(earthed ? { earthed } : {}) });
     // The Grounder: a grounded cell on your payline makes your special hit shields.
     const grounded = me.reels.some((reel) => reel.cells[reel.stop]?.grounded);
     const pierce = this.cfg.specialIgnoresShield && !grounded;
@@ -518,7 +523,7 @@ export class Fight {
       if (!this.over && me.relics.has('overcharge')) {
         const echo = Math.ceil(dmg * OVERCHARGE_ECHO);
         const h2 = this.damage(foe, echo, pierce);
-        events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: echo, ...h2, energyLeft: me.energy });
+        events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: echo, ...h2, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
         this.checkDeath(foe, events);
       }
       if (!this.over && me.relics.has('fang')) this.heal(me, FANG_HEAL, 'fang', events);
@@ -560,7 +565,8 @@ export class Fight {
         this.shattered = true;
         this.crackTurn = this.turn;
         c.ability = { ...c.ability, every: Math.max(2, c.ability.every - 1) };
-        c.charge = Math.min(c.charge, c.ability.every - 1);
+        // The crack snaps back: it reflects on its very next turn.
+        c.charge = c.ability.every - 1;
         events.push({ type: 'shatter', side: c.side, every: c.ability.every });
       }
       return;
@@ -621,7 +627,7 @@ export class Fight {
       }
       case 'ground':
         // 1 rod, a double 2, a jackpot 3 (onto your bolt cells).
-        return this.plantGround(me, foe, statusSize(amount), reels, events);
+        return this.plantGround(me, foe, statusSize(amount) + 1, reels, events);
       case 'fake':
         // 1 cell, a double 2, a jackpot 3 (gilded cells, visible first), plain for 2 turns.
         return this.fakeGilds(me, foe, statusSize(amount), 2, reels, events);
@@ -672,8 +678,17 @@ export class Fight {
     const pool = [...this.rng.shuffle(all.filter((x) => vis.has(`${x.reel}:${x.index}`))), ...this.rng.shuffle(all.filter((x) => !vis.has(`${x.reel}:${x.index}`)))];
     const cells = pool.slice(0, count);
     if (!cells.length) return this.fizzle(me, 'fake', reels, events);
-    for (const ref of cells) foe.reels[ref.reel].cells[ref.index].faked = turns;
-    events.push({ type: 'fake', from: me.side, to: foe.side, reels, cells, turns });
+    // It counterfeits the whole gild: every cell of the hit gild types pays plain.
+    const enhs = [...new Set(cells.map((ref) => foe.reels[ref.reel].cells[ref.index].enh!))];
+    const whole: CellRef[] = [];
+    foe.reels.forEach((reel, r) =>
+      reel.cells.forEach((c, i) => {
+        if (!c.enh || !enhs.includes(c.enh)) return;
+        c.faked = turns;
+        whole.push({ reel: r, index: i });
+      }),
+    );
+    events.push({ type: 'fake', from: me.side, to: foe.side, reels, cells: whole, turns, enhs });
   }
 
   /** Counterfeit coins wear off after their owner's turns. */

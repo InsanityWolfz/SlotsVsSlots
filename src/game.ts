@@ -9,7 +9,6 @@ import {
   applyOption,
   buy,
   chooseEnemy,
-  CHIPS,
   createRun,
   draftOffers,
   fightConfig,
@@ -682,7 +681,7 @@ export class Game {
       drawText(ctx, CABINETS[this.run.cabinet].name, 30, 58, 1, COLORS.textDim, { align: 'left' });
       if (this.fight.isBoss || this.fight.isMirror) {
         drawSprite(ctx, 'chipShield', 120, 30, 2);
-        drawText(ctx, `+${Math.floor(this.run.player.chips / CHIPS.stackPer)} SH/TURN`, 138, 30, 2, '#9fd0ff', { align: 'left' });
+        drawText(ctx, `+${this.fight.cfg.player.stackShield ?? 0} SH/TURN`, 138, 30, 2, '#9fd0ff', { align: 'left' });
       }
     }
     const relics = this.relicList();

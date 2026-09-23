@@ -28,7 +28,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   hone: { id: 'hone', name: 'HONE', text: 'KEEN SWORDS DEAL +2 MORE', sprite: 'relicHone' },
   // Legendary (act 2): big, build-bending effects.
   ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'FULL SETS NEED ONLY 2 REELS AND PAY ONE STEP MORE', sprite: 'relicTicket' },
-  bell: { id: 'bell', name: 'JACKPOT BELL', text: 'YOUR JACKPOTS PAY X2 AND REFILL YOUR SPECIAL', sprite: 'relicBell' },
+  bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND REFILL YOUR SPECIAL', sprite: 'relicBell' },
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'ONCE PER FIGHT, SURVIVE A LETHAL HIT AT 1 HP', sprite: 'relicPhoenix' },
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR SPECIAL FIRES AGAIN FOR A THIRD OF ITS DAMAGE', sprite: 'relicOvercharge' },
   key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR DOUBLES PAY X2', sprite: 'relicKey' },

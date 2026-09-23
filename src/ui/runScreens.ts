@@ -6,6 +6,7 @@ import {
   chipShield,
   CHIPS,
   completesSet,
+  MIRROR_CHIP_SHIELD_CAP,
   describeOption,
   enemyHp,
   fitsBuild,
@@ -83,6 +84,8 @@ export const BADGE: Record<string, SpriteId> = {
   counterfeiter: artId('mapBadgeFake'),
 };
 
+const INPUT_GUARD_MS = 250;
+
 const rounds = (turns: number) => { const n = Math.ceil(turns / 2); return `${n} ROUND${n === 1 ? '' : 'S'}`; };
 
 function abilityText(e: EnemyDef, every: number, run?: RunState): string {
@@ -128,6 +131,7 @@ export class RunScreens {
   private shopItems: ShopItem[] = [];
   private shopHits: Hit[] = [];
   private chipPulse = 1;
+  private openedAt = 0;
   private cabinetUnlocked: Set<CabinetId> = new Set(['knight']);
   private unlockedNow: CabinetId[] = [];
 
@@ -187,6 +191,7 @@ export class RunScreens {
 
   private open(mode: ScreenMode): void {
     this.mode = mode;
+    this.openedAt = performance.now();
     this.cards = [];
     this.buttons = [];
     this.shopHits = [];
@@ -316,6 +321,8 @@ export class RunScreens {
   }
 
   pointerDown(x: number, y: number): boolean {
+    // A fresh screen ignores clicks for a moment, so a double-click can't buy on arrival (ITERATION_9 H8).
+    if (performance.now() - this.openedAt < INPUT_GUARD_MS) return this.active;
     const h = this.all().find((h) => this.inside(h, x, y));
     if (!h) return this.active;
     h.pressed = true;
@@ -450,7 +457,9 @@ export class RunScreens {
     const legend = this.draftKind === 'legend';
     const relicDraft = !spoils && !legend && isRelicDraft(this.run!);
     const heading = legend ? 'ACT 2 BEGINS - FULLY HEALED - CHOOSE A LEGENDARY RELIC' : spoils ? 'ELITE SPOILS - CHOOSE A RELIC' : relicDraft ? 'RELIC DRAFT - CHOOSE ONE' : 'CHOOSE ONE';
-    drawText(ctx, heading, W / 2, 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
+    drawText(ctx, heading, W / 2, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
+    const sig = CABINETS[this.run!.cabinet].act2;
+    if (legend && sig) drawText(ctx, `${CABINETS[this.run!.cabinet].name} ACT 2 SIGNATURE: ${sig.text}`, W / 2, 262, 2, '#c8f0ff');
     this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], this.deltas[i], i, time));
     this.panel(ctx, 110, 530, 1060, 134);
     this.drawStrips(ctx, 130, 546, this.run!.player.strips);
@@ -594,7 +603,12 @@ export class RunScreens {
     if (badge) drawSprite(ctx, badge, x + 112, y + 112, 3);
     const tx = x + 136;
     drawText(ctx, e.name ?? 'ENEMY', tx, y + 30, e.name && e.name.length > 18 ? 2 : 3, e.isBoss ? '#ff6a5a' : COLORS.slime, { align: 'left' });
-    wrap(e.blurb, Math.floor((w - 150) / 12)).forEach((l, k) => drawText(ctx, l, tx, y + 60 + k * 18, 2, COLORS.text, { align: 'left' }));
+    {
+      const big = wrap(e.blurb, Math.floor((w - 150) / 12));
+      const small = big.length > 2;
+      const lines = small ? wrap(e.blurb, Math.floor((w - 150) / 9)) : big;
+      lines.slice(0, 3).forEach((l, k) => drawText(ctx, l, tx, y + 58 + k * (small ? 13 : 18), small ? 1.5 : 2, COLORS.text, { align: 'left' }));
+    }
     const hp = enemyHp(this.run!, e);
     drawText(ctx, `HP ${hp}`, tx, y + 104, 2, COLORS.hp, { align: 'left' });
     if (e.boss === 'house') {
@@ -620,7 +634,7 @@ export class RunScreens {
     }
     const bossText =
       e.boss === 'mirror'
-        ? `A COPY OF YOUR MACHINE (NO RELICS, NO SPECIALS, NO SPIKES, NO KEEN EDGE), AS TOUGH AS YOUR BUILD HITS. REFLECTIONS CAP AT ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKED AT HALF HP: 1 TURN FASTER. YOUR CHIPS SHIELD YOU (1 PER ${CHIPS.stackPer}).`
+        ? `YOUR MACHINE WITH PLAIN GILDS (NO RELICS, SPECIALS, SPIKES OR KEEN). REFLECTS UP TO ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKS AT HALF HP AND SNAPS BACK AT ONCE. CHIPS SHIELD YOU (1 PER ${CHIPS.stackPer}, MAX ${MIRROR_CHIP_SHIELD_CAP}).`
         : `COINS + A CUT EACH TURN FILL THE POT. EVERY 4 TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +1 SHIELD EACH HOUSE TURN.`;
     if (e.isBoss)
       {
@@ -714,7 +728,7 @@ export class RunScreens {
     } else {
       drawText(ctx, 'ACT 2: A LEGENDARY ON THE SHELF. TIER II UPGRADES A WHOLE GILD.', W / 2, 118, 2, COLORS.goldLight);
       drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
-      drawText(ctx, `KEEP CHIPS FOR THE MIRROR: RIGHT NOW +${sh} SHIELD EACH MIRROR TURN (1 PER ${CHIPS.stackPer})`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
+      drawText(ctx, `KEEP CHIPS FOR THE MIRROR: RIGHT NOW +${Math.min(MIRROR_CHIP_SHIELD_CAP, sh)} SHIELD EACH MIRROR TURN (1 PER ${CHIPS.stackPer}, MAX ${MIRROR_CHIP_SHIELD_CAP})`, W / 2 - 330, 150, 2, '#9fd0ff', { align: 'left' });
     }
     drawText(ctx, 'HP', W - 360, 80, 2, COLORS.textDim, { align: 'left' });
     this.drawHp(ctx, W - 330, 80, 190);
@@ -861,7 +875,7 @@ export class RunScreens {
       drawText(ctx, `${Math.ceil(r.turns / 2)}`, 560, y, 2, COLORS.text);
       drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 680, y, 2, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
       if (compact) {
-        const parts = [r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
+        const parts = [r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
         const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
         drawText(ctx, what.length > 40 ? `${what.slice(0, 39)}...` : what, 790, y, 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
         return;

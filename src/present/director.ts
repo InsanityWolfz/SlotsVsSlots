@@ -629,6 +629,11 @@ export class Director {
   }
 
   private async energyGain(e: Ev<'energyGain'>): Promise<void> {
+    if (e.earthed) {
+      const c = this.machineCenter(e.side);
+      this.s.sounds.shieldFizz();
+      this.bg(this.popText(`EARTHED -${e.earthed}`, c.x, MACHINE_TOP - 30, 2, '#e0a070', 16, 0.5));
+    }
     await this.activate(e.side, e.reels, COLORS.energy);
     const h = this.s.huds[e.side];
     const before = e.total - e.amount;
@@ -1305,11 +1310,14 @@ export class Director {
   private async fake(e: Ev<'fake'>): Promise<void> {
     const to = this.s.machines[e.to];
     if (e.reels.length) await this.activate(e.from, e.reels, '#9a9a9a');
-    const hits = e.cells.map(async (ref, i) => {
-      await this.c.wait(i * 0.1);
+    // The whole gild is counterfeited: coins fly to the cells you can see, the rest go grey at once.
+    const seen = e.cells.filter((ref) => this.rowOf(e.to, ref) >= 0);
+    for (const ref of e.cells) if (!seen.includes(ref)) to.reels[ref.reel].cells[ref.index].faked = e.turns;
+    const hits = seen.map(async (ref, i) => {
+      await this.c.wait(i * 0.08);
       const src = this.srcPoint(e.from, e.reels, i);
       const row = this.rowOf(e.to, ref);
-      const dst = row >= 0 ? cellCenter(e.to, ref.reel, row) : stripMapColumn(ref.reel);
+      const dst = cellCenter(e.to, ref.reel, row);
       const p = this.s.fx.add(new Projectile(artId('fake'), src.x, src.y, 3, false, '#9a9a9a'));
       this.bg(this.c.tween({ from: 0, to: Math.PI * 4, dur: 0.35, onUpdate: (v) => (p.rot = v) }));
       await this.arc(p, dst.x, dst.y, 0.35, 90, sineIn);
@@ -1320,7 +1328,7 @@ export class Director {
     });
     await Promise.all(hits);
     const c = this.machineCenter(e.to);
-    this.bg(this.popText(`FAKED: GILDS PAY PLAIN ${e.turns} TURNS`, c.x, MACHINE_TOP - 30, 2, '#c0c0c0', 16, 0.5));
+    this.bg(this.popText(`FAKED: ALL YOUR ${e.enhs.map((x) => x.toUpperCase()).join(' + ')} PAYS PLAIN ${e.turns} TURNS`, c.x, MACHINE_TOP - 30, 2, '#c0c0c0', 16, 0.6));
     if (e.reels.length) this.settle(e.from, e.reels);
     await this.c.wait(0.15);
   }
