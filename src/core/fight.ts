@@ -1,6 +1,6 @@
 import { cloneConfig, type AbilityDef, type Enh, type GameConfig, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
 import { CABINETS, type Cabinet } from './cabinets';
-import type { CombatEvent } from './events';
+import type { CombatEvent, DealCard } from './events';
 import {
   BATTERY_ENERGY,
   BELL_MULT,
@@ -42,10 +42,16 @@ import {
 } from './strip';
 
 /** Symbols that act on the opponent when they're native to the caster's strips. */
+/** Act 3: marked-card bite, the Croupier's rake, and the Dealer's shuffle size. */
+const MARK_DAMAGE = 2;
+const RAKE_CUT = 1;
+const SHUFFLE_SWAPS = 3;
+const DEALS: DealCard[] = ['shuffle', 'cut', 'raise'];
+
 /** Counterfeit coins last this many of your turns. */
 const FAKE_TURNS = 3;
 
-const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake']);
+const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake']);
 
 export interface Combatant {
   side: SideId;
@@ -62,6 +68,8 @@ export interface Combatant {
   locked: number[];
   /** Remaining own-turns each reel is hexed (pays half, gilds are dead). */
   hexed: number[];
+  /** The Croupier's rake: remaining own-turns your groups pay less. */
+  raked: number;
   ability: AbilityDef | null;
   charge: number;
   relics: Set<RelicId>;
@@ -95,6 +103,7 @@ function makeCombatant(side: SideId, sc: SideConfig, rng: Rng, relics: RelicId[]
     frozen: reels.map(() => 0),
     locked: reels.map(() => 0),
     hexed: reels.map(() => 0),
+    raked: 0,
     ability: sc.ability ?? null,
     charge: 0,
     relics: new Set(relics),
@@ -141,6 +150,12 @@ export class Fight {
   private readonly enhReels: Partial<Record<Enh, number[]>> = {};
   /** The Mirror's Reflection: your best spin since its last one. */
   reflectBank = 0;
+  /** The Dealer: the card it will deal next, whether it has dealt yet, HOUSE RULES, and RAISE flags. */
+  nextDeal: DealCard = 'shuffle';
+  dealt = false;
+  houseRules = false;
+  raiseEnemy = false;
+  raisePlayer = false;
   private forced: Partial<Record<SideId, SymbolId[]>> = {};
 
   constructor(cfg: GameConfig, seed: number = cfg.seed ?? Rng.randomSeed()) {
@@ -181,6 +196,7 @@ export class Fight {
     // The Mirror plays your machine but never your junk (and fires no specials).
     if (this.isMirror) e.casts.clear();
     if (this.isBoss) this.pot = POT.seed;
+    if (this.isDealer) this.nextDeal = this.rng.pick(DEALS);
     // The Golden Hourglass and HIGH STAKES change enemy cadence (the same helper feeds the cards).
     if (e.ability) e.ability = effectiveAbility(e.ability, { stake: this.cfg.stake ?? 0, act: this.cfg.enemy.act ?? 1, sandglass: p.relics.has('sandglass') });
   }
@@ -203,6 +219,11 @@ export class Fight {
     return this.cfg.enemy.boss === 'mirror';
   }
 
+  /** The Dealer (act 3 boss). */
+  get isDealer(): boolean {
+    return this.cfg.enemy.boss === 'dealer';
+  }
+
   /** Debug: make the next spin of `side` land these payline symbols where the strip allows. */
   forceNext(side: SideId, line: SymbolId[]): void {
     this.forced[side] = line;
@@ -215,10 +236,11 @@ export class Fight {
     const events: CombatEvent[] = [];
     this.turn++;
     events.push({ type: 'turnStart', turn: this.turn, side });
+    if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
     if (this.cfg.shieldReset === 'ownTurnStart') this.resetShield(me, events);
     // Saved chips shield you at the start of each boss turn (the House and the Mirror).
-    if (side === 'enemy' && (this.isBoss || this.isMirror)) {
+    if (side === 'enemy' && (this.isBoss || this.isMirror || this.isDealer)) {
       const p = this.sides.player;
       const stack = this.cfg.player.stackShield ?? 0;
       if (stack > 0) {
@@ -303,6 +325,8 @@ export class Fight {
     };
     if (side === 'player') this.reflectBank = Math.max(this.reflectBank, this.last.player.damage);
     if (!this.over) this.defuse(me, events);
+    if (!this.over && side === 'player') this.markedCards(me, events);
+    if (!this.over && side === 'player' && score.tier === 'triple') this.raisePlayer = false;
     if (!this.over) this.burnFuses(me, events);
     if (!this.over) this.tickFakes(me, events);
     if (!this.over) this.tickStatuses(me, events);
@@ -364,6 +388,16 @@ export class Fight {
       if (me.relics.has('bell') && g.matched && g.reels.length === 3) {
         g.amount *= BELL_MULT;
         notes.push(`X${BELL_MULT}`);
+      }
+      // RAISE: the Dealer raised the stakes, and your next jackpot pays double.
+      if (me.side === 'player' && this.raisePlayer && g.matched && g.reels.length === 3) {
+        g.amount *= 2;
+        notes.push('RAISE X2');
+      }
+      // RAKE: the Croupier takes a cut of each group.
+      if (me.raked > 0 && g.amount > 0) {
+        g.amount = Math.max(0, g.amount - RAKE_CUT);
+        notes.push(`-${RAKE_CUT}`);
       }
       // COUNTERFEIT: a group with a faked cell on the payline pays half.
       if (g.reels.some((r) => (me.reels[r].cells[me.reels[r].stop]?.faked ?? 0) > 0)) {
@@ -498,6 +532,11 @@ export class Fight {
     pierce = false,
     note?: 'snap' | 'drain' | 'mimic' | 'reflect',
   ): number {
+    // RAISE: the Dealer's next hit pays double.
+    if (me.side === 'enemy' && this.raiseEnemy && amount > 0 && note !== 'reflect') {
+      amount *= 2;
+      this.raiseEnemy = false;
+    }
     const pierced = pierce && foe.shield > 0;
     const h = this.damage(foe, amount, pierce);
     events.push({ type: 'attack', from: me.side, to: foe.side, reels, amount, ...h, ...(pierced ? { note: 'pierce' as const } : note ? { note } : {}) });
@@ -551,6 +590,7 @@ export class Fight {
     target.shield -= blocked;
     let hpDamage = Math.min(target.hp, amount - blocked);
     // The crack gate: the Mirror's glass holds at half HP for the rest of the turn it cracks on.
+    if (target.side === 'enemy' && this.isDealer && !this.dealt) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp / 2)));
     if (target.side === 'enemy' && this.isMirror) {
       if (this.crackTurn === this.turn) hpDamage = 0;
       else if (!this.shattered) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp / 2)));
@@ -568,6 +608,13 @@ export class Fight {
         this.allIn = true;
         this.pot = Math.max(this.pot * 2, this.pot + POT.allInMin);
         events.push({ type: 'phase', side: c.side, pot: this.pot });
+      }
+      // The Dealer at half HP (after its first deal): HOUSE RULES — it deals faster.
+      if (c.side === 'enemy' && this.isDealer && this.dealt && !this.houseRules && c.hp <= c.maxHp / 2 && c.ability) {
+        this.houseRules = true;
+        c.ability = { ...c.ability, every: Math.max(2, c.ability.every - 1) };
+        c.charge = Math.min(c.charge, c.ability.every - 1);
+        events.push({ type: 'houseRules', side: c.side, every: c.ability.every });
       }
       // The Mirror cracks at half HP: its Reflection charges faster.
       if (c.side === 'enemy' && this.isMirror && !this.shattered && c.hp <= c.maxHp / 2 && c.ability) {
@@ -634,6 +681,16 @@ export class Fight {
         if (!this.over && got > 0) this.heal(me, got, 'drain', events);
         return;
       }
+      case 'card':
+        // Mark 1 / 2 / 3 of your visible cells.
+        return this.markCells(me, foe, statusSize(amount), reels, events);
+      case 'gavel':
+        // Singles fizzle; a double confiscates 1 gild, a jackpot 2 (for the fight).
+        if (amount < 4) return this.fizzle(me, 'gavel', reels, events);
+        return this.confiscate(me, foe, amount >= 9 ? 2 : 1, reels, events);
+      case 'rake':
+        // 1 turn, a double 2, a jackpot 3.
+        return this.applyRake(me, foe, statusSize(amount), reels, events);
       case 'ground':
         // 1 rod, a double 2, a jackpot 3 (onto your bolt cells).
         return this.plantGround(me, foe, statusSize(amount) + 1, reels, events);
@@ -667,6 +724,116 @@ export class Fight {
     for (const ref of cells) foe.reels[ref.reel].cells[ref.index].bomb = BOMB.fuse;
     if (cells.length) events.push({ type: 'bomb', from: me.side, to: foe.side, reels, cells });
     else this.fizzle(me, 'bomb', reels, events);
+  }
+
+  // ---- act 3 writers --------------------------------------------------------------------
+
+  /** Mark visible cells as dead CARDs for the fight. */
+  private markCells(me: Combatant, foe: Combatant, count: number, reels: number[], events: CombatEvent[]): void {
+    const pool = this.rng.shuffle(
+      visibleCells(foe.reels).filter((ref) => {
+        const c = foe.reels[ref.reel].cells[ref.index];
+        return !c.carded && !c.stolen && symbolValue(c.symbol) > 0;
+      }),
+    );
+    pool.sort((a, b) => cellValue(foe.reels[b.reel].cells[b.index]) - cellValue(foe.reels[a.reel].cells[a.index]));
+    const cells = pool.slice(0, count);
+    if (!cells.length) return this.fizzle(me, 'card', reels, events);
+    for (const ref of cells) foe.reels[ref.reel].cells[ref.index].carded = true;
+    events.push({ type: 'mark', from: me.side, to: foe.side, reels, cells });
+  }
+
+  /** Marked cards on your payline bite for MARK_DAMAGE each (shield blocks). */
+  private markedCards(me: Combatant, events: CombatEvent[]): void {
+    const cells: CellRef[] = [];
+    me.reels.forEach((reel, r) => reel.cells[reel.stop]?.carded && cells.push({ reel: r, index: reel.stop }));
+    if (!cells.length) return;
+    const amount = MARK_DAMAGE * cells.length;
+    const h = this.damage(me, amount, false);
+    events.push({ type: 'markedHit', side: me.side, cells, amount, ...h });
+    this.checkDeath(me, events);
+  }
+
+  /** The Pit Boss takes `count` of your gilds (one reel's gild each, your set first) for the fight. */
+  private confiscate(me: Combatant, foe: Combatant, count: number, reels: number[], events: CombatEvent[]): void {
+    const owned: { reel: number; enh: Enh }[] = [];
+    foe.reels.forEach((reel, r) => {
+      for (const enh of new Set(reel.cells.map((c) => c.enh).filter((x): x is Enh => !!x))) owned.push({ reel: r, enh });
+    });
+    if (!owned.length) return this.fizzle(me, 'gavel', reels, events);
+    const pick = this.rng.shuffle(owned).sort((a, b) => Number(this.fullSet.has(b.enh)) - Number(this.fullSet.has(a.enh))).slice(0, count);
+    const cells: CellRef[] = [];
+    for (const { reel, enh } of pick) {
+      foe.reels[reel].cells.forEach((c, i) => {
+        if (c.enh !== enh) return;
+        c.confiscated = enh;
+        delete c.enh;
+        delete c.tier;
+        cells.push({ reel, index: i });
+      });
+      // That reel no longer carries the gild (a set can break).
+      this.enhReels[enh] = (this.enhReels[enh] ?? []).filter((r) => r !== reel);
+    }
+    events.push({ type: 'confiscate', from: me.side, to: foe.side, reels, cells, enhs: [...new Set(pick.map((p) => p.enh))] });
+  }
+
+  /** The Croupier's rake: your groups pay RAKE_CUT less for `turns` of your turns. */
+  private applyRake(me: Combatant, foe: Combatant, turns: number, reels: number[], events: CombatEvent[]): void {
+    foe.raked = Math.max(foe.raked, turns);
+    events.push({ type: 'rake', from: me.side, to: foe.side, reels, turns: foe.raked, cut: RAKE_CUT });
+  }
+
+  // ---- the Dealer's cards ---------------------------------------------------------------
+
+  private deal(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
+    const card = this.nextDeal;
+    this.dealt = true;
+    if (card === 'shuffle') this.shuffleReels(me, foe, events);
+    else if (card === 'cut') this.cutReels(me, foe, events);
+    else {
+      this.raiseEnemy = true;
+      this.raisePlayer = true;
+      events.push({ type: 'raise', from: me.side });
+    }
+    this.nextDeal = this.rng.pick(DEALS);
+    events.push({ type: 'dealNext', side: me.side, card: this.nextDeal });
+  }
+
+  /** SHUFFLE: swap up to 3 cells between two of the foe's reels. Cells of a live FULL SET gild are immune. */
+  private shuffleReels(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
+    const [a, b] = this.rng.shuffle([0, 1, 2]).slice(0, 2).sort((x, y) => x - y) as [number, number];
+    const movable = (r: number) =>
+      this.rng.shuffle(foe.reels[r].cells.map((c, i) => ({ c, i })).filter(({ c }) => !(c.enh && this.setActive(foe, c.enh)))).map(({ i }) => i);
+    const ia = movable(a);
+    const ib = movable(b);
+    const swaps: [number, number][] = [];
+    for (let k = 0; k < Math.min(SHUFFLE_SWAPS, ia.length, ib.length); k++) {
+      const x = ia[k];
+      const y = ib[k];
+      const tmp = foe.reels[a].cells[x];
+      foe.reels[a].cells[x] = foe.reels[b].cells[y];
+      foe.reels[b].cells[y] = tmp;
+      swaps.push([x, y]);
+    }
+    events.push({ type: 'shuffle', from: me.side, to: foe.side, reels: [a, b], swaps });
+  }
+
+  /** CUT: remove one cell of your commonest symbol from each reel (never below 6 cells). */
+  private cutReels(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
+    const cells: CellRef[] = [];
+    foe.reels.forEach((reel, r) => {
+      if (reel.cells.length <= 6) return;
+      const counts = new Map<SymbolId, number>();
+      for (const c of reel.cells) if (!c.stolen) counts.set(c.symbol, (counts.get(c.symbol) ?? 0) + 1);
+      const top = [...counts].sort((x, y) => y[1] - x[1])[0]?.[0];
+      // Take one that isn't on the payline, so the display doesn't jump.
+      const i = reel.cells.findIndex((c, k) => c.symbol === top && k !== reel.stop);
+      if (i < 0) return;
+      reel.cells.splice(i, 1);
+      if (i < reel.stop) reel.stop -= 1;
+      cells.push({ reel: r, index: i });
+    });
+    events.push({ type: 'cut', from: me.side, to: foe.side, cells });
   }
 
   /** Drive grounding rods into the foe's bolt cells (visible first). */
@@ -857,6 +1024,10 @@ export class Fight {
       });
       if (ended.length) events.push({ type: 'thaw', side: me.side, reels: ended, status });
     }
+    if (me.raked > 0) {
+      me.raked -= 1;
+      if (me.raked === 0) events.push({ type: 'thaw', side: me.side, reels: [], status: 'raked' });
+    }
   }
 
   private steal(me: Combatant, foe: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
@@ -964,6 +1135,15 @@ export class Fight {
         this.chipsEaten += ab.power;
         events.push({ type: 'gulp', from: me.side, chips: ab.power });
         return;
+      case 'mark':
+        return this.markCells(me, foe, ab.power, [], events);
+      case 'penalty':
+        this.hit(me, foe, ab.power, [], events);
+        return;
+      case 'houseTake':
+        return this.applyRake(me, foe, ab.power, [], events);
+      case 'deal':
+        return this.deal(me, foe, events);
       case 'earth': {
         const amount = Math.min(foe.energy, ab.power);
         foe.energy -= amount;

@@ -36,6 +36,8 @@ export const STAKE = {
   houseSkimEvery: 3,
   fasterAct2: 4,
   fasterAll: 5,
+  /** ACT 3 (THE DEALER): runs at GREEN or higher continue after the Mirror. */
+  act3: 2,
   /** Tried and rejected (ITERATION_10 sweep): pot +8 helped the player; halved healing was -7.4 alone. */
   halfHeal: 99,
 };

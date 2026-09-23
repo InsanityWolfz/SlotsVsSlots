@@ -22,6 +22,10 @@ export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> 
   reflect: { icon: artId('icoReflect'), label: 'REFLECTION' },
   earth: { icon: artId('icoEarth'), label: 'EARTH' },
   launder: { icon: artId('icoLaunder'), label: 'LAUNDER' },
+  mark: { icon: artId('icoMark'), label: 'STACKED DECK' },
+  penalty: { icon: artId('icoGavel'), label: 'PENALTY' },
+  houseTake: { icon: artId('icoRake'), label: "HOUSE'S TAKE" },
+  deal: { icon: artId('icoShuffle'), label: 'THE DEAL' },
 };
 
 /** Displayed (tweened) values for one side's bars — never read from game state mid-animation. */

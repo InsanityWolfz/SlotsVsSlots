@@ -50,7 +50,7 @@ export class MachineView {
     this.reels = combatant.reels.map(
       (r) =>
         new ReelView(
-          r.cells.map((c): CellView => ({ symbol: c.symbol, slimed: c.slimed, goo: c.slimed ? 1 : 0, flash: 0, stolen: c.stolen ? 1 : 0, enh: c.enh, tier: c.tier, bomb: c.bomb, grounded: c.grounded, faked: c.faked })),
+          r.cells.map((c): CellView => ({ symbol: c.symbol, slimed: c.slimed, goo: c.slimed ? 1 : 0, flash: 0, stolen: c.stolen ? 1 : 0, enh: c.enh, tier: c.tier, bomb: c.bomb, grounded: c.grounded, faked: c.faked, carded: c.carded, confiscated: c.confiscated })),
           r.stop,
         ),
     );
@@ -67,6 +67,13 @@ export class MachineView {
     const r = this.reels[reel];
     r.cells.splice(index, 0, cell);
     if (r.stop >= index) r.stop++;
+  }
+
+  /** Mirror an engine removal (the Dealer's CUT: same index + stop rule as fight.cutReels). */
+  removeCell(reel: number, index: number): void {
+    const r = this.reels[reel];
+    r.cells.splice(index, 1);
+    if (index < r.stop) r.stop--;
   }
 
   get pitchMul(): number {

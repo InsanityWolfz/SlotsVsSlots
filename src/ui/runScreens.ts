@@ -1,6 +1,6 @@
 import type { Sounds } from '../audio/sounds';
 import type { Enh, GameConfig, StripCounts, SymbolId } from '../core/config';
-import { ACTS, ELITE_HP_MUL, ELITE_HP_MUL_2, RUN_FIGHTS, type EnemyDef } from '../core/enemies';
+import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
 import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS } from '../core/relics';
 import {
   chipShield,
@@ -16,7 +16,8 @@ import {
   optionDeltas,
   rerollCost,
   setProgress,
-  TOTAL_FIGHTS,
+  runActs,
+  totalFights,
   type DraftOption,
   type FightRecord,
   type RunState,
@@ -84,6 +85,10 @@ export const BADGE: Record<string, SpriteId> = {
   mirror: artId('mapBadgeMirror'),
   grounder: artId('mapBadgeGround'),
   counterfeiter: artId('mapBadgeFake'),
+  sharp: artId('mapBadgeCard'),
+  pitboss: artId('mapBadgeGavel'),
+  croupier: artId('mapBadgeRake'),
+  dealer: artId('mapBadgeDealer'),
 };
 
 const INPUT_GUARD_MS = 250;
@@ -110,6 +115,10 @@ function abilityText(e: EnemyDef, every: number, run?: RunState): string {
     reflect: `THROWS YOUR BEST HIT SINCE THE LAST ONE BACK (${REFLECT_MIN} TO ${cap})`,
     earth: `DRAINS ${e.ability.power} OF YOUR ENERGY`,
     launder: `TAKES ${e.ability.power} CHIPS AND HEALS ${e.ability.power * 3}`,
+    mark: `MARKS ${e.ability.power} OF YOUR CELLS`,
+    penalty: `HITS FOR ${e.ability.power}`,
+    houseTake: `RAKES YOUR GROUPS FOR ${e.ability.power} TURNS`,
+    deal: 'DEALS A FACE-UP CARD: SHUFFLE, CUT OR RAISE',
   };
   return `${ui.label} EVERY ${every} TURNS: ${what[e.ability.kind]}`;
 }
@@ -296,7 +305,7 @@ export class RunScreens {
     if (needsChoice(run)) {
       this.buttons = run.paths[run.depth].map((_, i) => this.btn('FIGHT THIS ONE', W / 2 + (i === 0 ? -310 : 310), 580, 260, 56, () => this.cb.onFight(i)));
     } else {
-      const boss = run.depth >= RUN_FIGHTS ? (run.act > 1 ? 'FACE THE MIRROR' : 'FACE THE HOUSE') : 'FIGHT!';
+      const boss = run.depth >= actLength(run.act) ? (run.act > 2 ? 'FACE THE DEALER' : run.act > 1 ? 'FACE THE MIRROR' : 'FACE THE HOUSE') : 'FIGHT!';
       this.buttons = [this.btn(boss, W / 2, 640, 290, 64, () => this.cb.onFight(0))];
     }
   }
@@ -694,7 +703,9 @@ export class RunScreens {
       cx += 72;
     }
     const bossText =
-      e.boss === 'mirror'
+      e.boss === 'dealer'
+        ? 'A FACE-UP DEAL EVERY FEW TURNS, SHOWN A TURN AHEAD. SHUFFLE SWAPS CELLS BETWEEN TWO REELS (FULL SETS ARE IMMUNE). CUT TAKES A CELL OF YOUR COMMONEST SYMBOL. RAISE DOUBLES ITS NEXT HIT AND YOUR NEXT JACKPOT. NO KILLING IT BEFORE ITS FIRST DEAL. HOUSE RULES AT HALF HP.'
+        : e.boss === 'mirror'
         ? `YOUR MACHINE WITH PLAIN GILDS (NO RELICS, SPECIALS, SPIKES OR KEEN). REFLECTS UP TO ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKS AT HALF HP AND SNAPS BACK AT ONCE. CHIPS SHIELD YOU (1 PER ${CHIPS.stackPer}, MAX ${MIRROR_CHIP_SHIELD_CAP}).`
         : `COINS + A CUT EACH TURN FILL THE POT. EVERY ${this.houseEvery()} TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +1 SHIELD EACH HOUSE TURN.${dirty ? ' BLACK: IT BOMBS YOUR CELLS, EVEN THE PAYLINE.' : ''}`;
     // GREEN: say which relic the Mirror will copy.
@@ -705,7 +716,7 @@ export class RunScreens {
     }
     if (e.isBoss)
       {
-        const sc = e.boss === 'mirror' ? 1.5 : 1;
+        const sc = e.boss === 'mirror' || e.boss === 'dealer' ? 1.5 : 1;
         wrap(bossText, Math.floor((w - 32) / (6 * sc))).forEach((l, k) =>
           drawText(ctx, l, x + 16, y + 254 + k * 12 * sc, sc, e.boss === 'mirror' ? '#c8f0ff' : COLORS.goldLight, { align: 'left' }),
         );
@@ -718,7 +729,8 @@ export class RunScreens {
     const fork = needsChoice(run);
     const e = run.enemies[run.depth];
     const act = `ACT ${run.act} - `;
-    const title = e.isBoss ? (run.act >= ACTS ? 'FINAL FIGHT' : `${act}BOSS FIGHT`) : fork ? `${act}FIGHT ${run.depth + 1} OF ${RUN_FIGHTS} - CHOOSE YOUR PATH` : `${act}FIGHT ${run.depth + 1} OF ${RUN_FIGHTS}`;
+    const len = actLength(run.act);
+    const title = e.isBoss ? (run.act >= runActs(run) ? 'FINAL FIGHT' : `${act}BOSS FIGHT`) : fork ? `${act}FIGHT ${run.depth + 1} OF ${len} - CHOOSE YOUR PATH` : `${act}FIGHT ${run.depth + 1} OF ${len}`;
     drawText(ctx, title, W / 2, 26, 3, fork ? COLORS.goldLight : run.act > 1 ? '#c8f0ff' : COLORS.textDim);
     this.drawMap(ctx, 128, time);
     if (fork) {
@@ -972,8 +984,9 @@ export class RunScreens {
 
   private drawOver(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
-    drawText(ctx, run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, 6, run.won ? COLORS.goldLight : COLORS.danger);
-    const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${TOTAL_FIGHTS} FIGHTS` : `FELL AT FIGHT ${run.records.length} OF ${TOTAL_FIGHTS} (ACT ${run.act})`}`;
+    const trueEnding = run.won && run.act >= 3;
+    drawText(ctx, trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, 6, run.won ? COLORS.goldLight : COLORS.danger);
+    const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     if (this.unlockedNow.length)
       drawText(ctx, `NEW CABINET UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, W / 2, 466, 2, COLORS.goldLight);
     drawText(ctx, run.stake > 0 ? `${reached}  -  STAKE ${run.stake} ${stakeOf(run.stake).name}` : reached, W / 2, 88, 2, COLORS.textDim);

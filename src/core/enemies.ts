@@ -156,8 +156,48 @@ export const ARCHETYPES: Archetype[] = [
   },
 ];
 
+// ---- act 3 (a short true ending, GREEN stake and up) ----
+ARCHETYPES.push(
+  {
+    id: 'sharp',
+    name: 'CARD SHARP',
+    portrait: 'enemySharp',
+    strip: { sword: 5, shield: 3, card: 4 },
+    hpMul: 1,
+    ability: { kind: 'mark', every: 4, power: 3 },
+    minDepth: 0,
+    blurb: 'MARKS YOUR CELLS: A MARKED CARD ON YOUR PAYLINE HITS YOU FOR 2',
+    acts: [3],
+  },
+  {
+    id: 'pitboss',
+    name: 'PIT BOSS',
+    portrait: 'enemyPitBoss',
+    strip: { sword: 5, shield: 4, gavel: 3 },
+    hpMul: 1.1,
+    ability: { kind: 'penalty', every: 4, power: 7 },
+    minDepth: 0,
+    blurb: 'CONFISCATES YOUR GILDS FOR THE FIGHT',
+    acts: [3],
+  },
+  {
+    id: 'croupier',
+    name: 'CROUPIER',
+    portrait: 'enemyCroupier',
+    strip: { sword: 5, shield: 3, rake: 4 },
+    hpMul: 0.95,
+    ability: { kind: 'houseTake', every: 4, power: 3 },
+    minDepth: 0,
+    blurb: 'RAKES YOUR WINNINGS: YOUR GROUPS PAY LESS FOR A FEW TURNS',
+    acts: [3],
+  },
+);
+
 export const ACT2_NEW: ReadonlySet<string> = new Set(['bomber', 'hexer', 'vampire', 'mimic', 'grounder', 'counterfeiter']);
-export const actsOf = (a: Archetype) => a.acts ?? [1];
+export const ACT3_NEW: ReadonlySet<string> = new Set(['sharp', 'pitboss', 'croupier']);
+/** Act 2's own enemies come back in act 3. */
+const ACT3_VETERANS: ReadonlySet<string> = new Set(['bomber', 'vampire', 'hexer', 'mimic']);
+export const actsOf = (a: Archetype) => (ACT3_VETERANS.has(a.id) ? [...(a.acts ?? [1]), 3] : a.acts ?? [1]);
 
 export const BOSS: Archetype = {
   id: 'house',
@@ -185,7 +225,25 @@ export const MIRROR: Archetype = {
   blurb: 'PLAYS YOUR OWN MACHINE. THROWS YOUR BEST HIT BACK AT YOU',
   acts: [2],
 };
-export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: MIRROR };
+/**
+ * Act 3 boss. THE HOUSE's partner: every few turns it deals a face-up card (shown a turn ahead) —
+ * SHUFFLE your reels, CUT your commonest symbol, or RAISE the stakes (its next hit and your next
+ * jackpot pay double). It can't fall below half HP until it has dealt once; at half HP it plays
+ * HOUSE RULES and deals faster.
+ */
+export const DEALER: Archetype = {
+  id: 'dealer',
+  name: 'THE DEALER',
+  portrait: 'enemyDealer',
+  // The House's heavy hitters: sevens.
+  strip: { seven: 9, sword: 2, shield: 2, card: 2 },
+  hpMul: 1,
+  ability: { kind: 'deal', every: 3, power: 0 },
+  minDepth: 3,
+  blurb: 'DEALS FACE-UP CARDS: SHUFFLE, CUT OR RAISE. THE HOUSE HAS A PARTNER',
+  acts: [3],
+};
+export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: MIRROR, 3: DEALER };
 
 // (No 'GILDED' or 'WILD': those are mechanic names.)
 const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'MANGY', 'CURSED', 'HUNGRY', 'SPITEFUL', 'ANCIENT', 'BITTER', 'GREEDY'];
@@ -196,7 +254,12 @@ export const DEPTH_HP = [21, 26, 31, 34, 37];
 export const DEPTH_HP_2 = [52, 62, 73, 85, 97];
 /** Mutable so balance sweeps can tune it. */
 /** mirrorPower/mirrorFlat: the Mirror's HP = power × your expected damage per spin + flat (ITERATION_6 Package N). */
-export const TUNE = { bossHp: 74, act2Mul: 1, act2Swords: 2, mirrorPower: 3, mirrorFlat: 45, mirrorPerRelic: 4, mirrorSpecialWeight: 1 };
+/** Act 3: 3 fights, then the Dealer. */
+export const DEPTH_HP_3 = [120, 140, 160];
+export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 3 };
+export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
+/** Act 3 (ITERATION_12 sweep, GREEN stake greedy): Dealer HP = 5 x typical-spin power + 170 (+4/relic) -> 53-70% Dealer win. */
+export const TUNE = { dealerPower: 5, dealerFlat: 170, act3Swords: 3, act3Sevens: 3, bossHp: 74, act2Mul: 1, act2Swords: 2, mirrorPower: 3, mirrorFlat: 45, mirrorPerRelic: 4, mirrorSpecialWeight: 1 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
@@ -228,6 +291,10 @@ export const DANGER: Record<string, number> = {
   vampire: 16,
   mimic: 15,
   mirror: 45,
+  sharp: 14,
+  pitboss: 14,
+  croupier: 13,
+  dealer: 50,
   grounder: 12,
   counterfeiter: 12,
 };
@@ -251,7 +318,7 @@ function jitter(strip: StripCounts, rng: Rng): StripCounts {
 export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false, act = 1): EnemyDef {
   // Frost scales badly late (its freezes stack up with longer fights): plain HP from fight 3.
   const hpMul = a.id === 'frost' && (depth >= 2 || act > 1) ? 1 : a.hpMul;
-  const curve = act > 1 ? DEPTH_HP_2.map((h) => h * TUNE.act2Mul) : DEPTH_HP;
+  const curve = act > 2 ? DEPTH_HP_3 : act > 1 ? DEPTH_HP_2.map((h) => h * TUNE.act2Mul) : DEPTH_HP;
   const opener = depth === 0 && act === 1 ? OPENER_HP_MUL : 1;
   // (The Mirror's real HP is sized to your machine in run.enemyHp.)
   const bossHp = a.id === 'mirror' ? 100 : TUNE.bossHp;
@@ -267,10 +334,10 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
     hp,
     strips: (isBoss ? [{ ...a.strip }, { ...a.strip }, { ...a.strip }] : [0, 1, 2].map(() => jitter(a.strip, rng))).map((st) =>
       // Act 2 enemies hit harder.
-      act > 1 && !isBoss ? { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords } : st,
+      act > 1 && !isBoss ? (act > 2 ? { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords, seven: (st.seven ?? 0) + TUNE.act3Sevens } : { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords }) : st,
     ),
     ability: { ...a.ability, every },
-    boss: isBoss ? (a.id === 'mirror' ? 'mirror' : 'house') : null,
+    boss: isBoss ? (a.id === 'mirror' ? 'mirror' : a.id === 'dealer' ? 'dealer' : 'house') : null,
     act,
   };
 }
@@ -286,14 +353,17 @@ export function generateRunPaths(rng: Rng, act = 1): EnemyDef[][] {
   const out: EnemyDef[][] = [];
   let prev = new Set<string>();
   const inAct = ARCHETYPES.filter((a) => actsOf(a).includes(act));
-  for (let depth = 0; depth < RUN_FIGHTS; depth++) {
+  const len = actLength(act);
+  for (let depth = 0; depth < len; depth++) {
     let pool = inAct.filter((a) => a.minDepth <= depth && !prev.has(a.id));
-    if (depth === 0) pool = act === 1 ? inAct.filter((a) => a.id === 'slime' || a.id === 'frost') : inAct.filter((a) => ACT2_NEW.has(a.id) && a.minDepth === 0);
+    if (depth === 0) pool = act === 1 ? inAct.filter((a) => a.id === 'slime' || a.id === 'frost') : act === 2 ? inAct.filter((a) => ACT2_NEW.has(a.id) && a.minDepth === 0) : inAct.filter((a) => ACT3_NEW.has(a.id));
     if (pool.length === 0) pool = inAct.filter((a) => a.minDepth <= depth);
-    const n = BRANCH_DEPTHS.has(depth) ? Math.min(2, pool.length) : 1;
+    // Act 3 is short: its only fork is the middle fight.
+    const branch = act > 2 ? depth === 1 : BRANCH_DEPTHS.has(depth);
+    const n = branch ? Math.min(2, pool.length) : 1;
     let picks = rng.shuffle([...pool]).slice(0, n);
     // Act 2 forks always show at least one of the new faces.
-    if (act > 1 && !picks.some((a) => ACT2_NEW.has(a.id))) {
+    if (act === 2 && !picks.some((a) => ACT2_NEW.has(a.id))) {
       const fresh = pool.filter((a) => ACT2_NEW.has(a.id));
       if (fresh.length) picks = [rng.pick(fresh), ...picks].slice(0, n);
     }
@@ -310,6 +380,6 @@ export function generateRunPaths(rng: Rng, act = 1): EnemyDef[][] {
     out.push(opts);
     prev = new Set(picks.map((a) => a.id));
   }
-  out.push([makeEnemy(BOSSES[act] ?? BOSS, RUN_FIGHTS, rng, true, act)]);
+  out.push([makeEnemy(BOSSES[act] ?? BOSS, len, rng, true, act)]);
   return out;
 }

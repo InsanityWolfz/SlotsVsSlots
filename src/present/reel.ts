@@ -24,6 +24,10 @@ export interface CellView {
   tier?: 2;
   /** The Grounder's rod. */
   grounded?: boolean;
+  /** The Card Sharp's marked card. */
+  carded?: boolean;
+  /** The Pit Boss confiscated this cell's gild. */
+  confiscated?: string;
   /** The Counterfeiter's fake coin: turns left. */
   faked?: number;
   /** A Bomber's bomb: turns left on the fuse (0/undefined = none). */
@@ -284,6 +288,12 @@ export function drawCell(
     }
   }
 
+  // A marked card sits over the symbol: it's dead, and it bites on your payline.
+  if (cell.carded && stolen < 1) {
+    drawSprite(ctx, artId('card'), x, y, ART_SCALE * 0.9, { sx, sy, alpha });
+  }
+  // Confiscated gild: a gavel seal where the gild used to be.
+  if (cell.confiscated && stolen < 1 && hasSprite('confiscatedOverlay')) drawSprite(ctx, artId('confiscatedOverlay'), x, y, ART_SCALE, { sx, sy, alpha });
   // Counterfeit coin: the gild goes grey (plain) while it lasts.
   if (cell.faked && cell.faked > 0 && stolen < 1) {
     if (hasSprite('fakeOverlay')) drawSprite(ctx, artId('fakeOverlay'), x, y, ART_SCALE, { sx, sy, alpha });

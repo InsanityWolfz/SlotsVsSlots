@@ -1,6 +1,6 @@
 import type { GameConfig, RelicId } from '../core/config';
 import type { CabinetId } from '../core/cabinets';
-import { DANGER, RUN_FIGHTS } from '../core/enemies';
+import { actLength, DANGER } from '../core/enemies';
 import { Fight } from '../core/fight';
 import { Rng } from '../core/rng';
 import {
@@ -14,7 +14,6 @@ import {
   fightConfig,
   fightNumber,
   takeLegend,
-  TOTAL_FIGHTS,
   isShopNow,
   leaveShop,
   needsChoice,
@@ -110,7 +109,7 @@ function shop(run: RunState, policy: DraftPolicy, rng: Rng): void {
   if (policy === 'random') {
     for (const it of items) if (rng.next() < 0.5) buy(run, it);
   } else {
-    const reserve = run.act === 1 && run.depth >= RUN_FIGHTS ? CHIPS.stackPer * 2 : 0;
+    const reserve = run.depth >= actLength(run.act) ? CHIPS.stackPer * 2 : 0;
     const sorted = [...items].sort((a, b) => greedyValue(run, b.option) / b.price - greedyValue(run, a.option) / a.price);
     for (const it of sorted) if (greedyValue(run, it.option) >= 5 && run.player.chips - it.price >= reserve) buy(run, it);
   }
@@ -127,6 +126,8 @@ export interface RunSummary {
   reachedMirrorPct: number;
   mirrorWinPct: number;
   avgHpIntoMirror: number;
+  dealerWinPct: number;
+  reachedDealerPct: number;
   /** Deaths per archetype / fights against that archetype. */
   killRate: Record<string, string>;
   avgTurnsPerFight: number;
@@ -137,11 +138,13 @@ export interface RunSummary {
   avgRocksAtEnd: number;
 }
 
-export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0): RunSummary {
+export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false): RunSummary {
   const seeds = new Rng(seed);
   const pick = new Rng(seed ^ 0x5eed);
   let wins = 0;
-  const deaths = Array(TOTAL_FIGHTS).fill(0);
+  const deaths = Array(16).fill(0);
+  let reachedDealer = 0;
+  let dealerWins = 0;
   let act1 = 0;
   let reachedMirror = 0;
   let mirrorHp = 0;
@@ -158,16 +161,17 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
 
   for (let i = 0; i < runs; i++) {
     const runSeed = seeds.int(0xffffffff);
-    const run = createRun(base, runSeed, cabinet, stake);
+    const run = createRun(base, runSeed, cabinet, stake, act3);
     // Fights draw from their own per-run stream, so a change in one run never desyncs the next (paired ladders).
     const fightSeeds = new Rng((runSeed ^ 0x5f3759df) >>> 0);
     while (!run.over) {
       if (needsChoice(run)) chooseEnemy(run, pickEnemy(run, policy, pick));
-      if (run.depth === RUN_FIGHTS && run.act === 1) {
+      if (run.depth === actLength(3) && run.act === 3) reachedDealer++;
+      if (run.depth === actLength(1) && run.act === 1) {
         reachedBoss++;
         bossHp += run.player.hp;
       }
-      if (run.depth === RUN_FIGHTS && run.act === 2) {
+      if (run.depth === actLength(2) && run.act === 2) {
         reachedMirror++;
         mirrorHp += run.player.hp;
       }
@@ -184,11 +188,13 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
         deaths[depth]++;
         killed[arch] = (killed[arch] ?? 0) + 1;
       }
-      if (run.act > act) {
+      if (act === 1 && run.act > act) {
         bossWins++;
         act1++;
       }
-      if (run.won) mirrorWins++;
+      if (run.act === 3 && act === 2) mirrorWins++;
+      else if (run.won && act === 2) mirrorWins++;
+      if (run.won && act === 3) dealerWins++;
       if (!run.over && run.pendingLegend) {
         const lg = run.pendingLegend;
         if (lg.length) takeLegend(run, policy === 'random' ? pick.pick(lg) : lg.reduce((a, b) => (RELIC_VALUE[b] > RELIC_VALUE[a] ? b : a)));
@@ -231,6 +237,8 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
     reachedMirrorPct: (100 * reachedMirror) / runs,
     mirrorWinPct: reachedMirror ? (100 * mirrorWins) / reachedMirror : 0,
     avgHpIntoMirror: reachedMirror ? mirrorHp / reachedMirror : 0,
+    dealerWinPct: reachedDealer ? (100 * dealerWins) / reachedDealer : 0,
+    reachedDealerPct: (100 * reachedDealer) / runs,
     killRate: Object.fromEntries(Object.keys(faced).map((k) => [k, `${pct(killed[k] ?? 0, faced[k])} of ${faced[k]}`])),
     avgTurnsPerFight: turns / fights,
     avgHpIntoBoss: reachedBoss ? bossHp / reachedBoss : 0,
@@ -244,9 +252,9 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
 export function formatRunSummary(s: RunSummary): string {
   return [
     `run win ${s.winPct.toFixed(1)}%  | ACT 1: reached House ${s.reachedBossPct.toFixed(0)}%  House win ${s.bossWinPct.toFixed(0)}%  hp in ${s.avgHpIntoBoss.toFixed(1)}  cleared ${s.act1Pct.toFixed(1)}%`,
-    `ACT 2: reached Mirror ${s.reachedMirrorPct.toFixed(0)}%  Mirror win ${s.mirrorWinPct.toFixed(0)}%  hp in ${s.avgHpIntoMirror.toFixed(1)}`,
+    `ACT 2: reached Mirror ${s.reachedMirrorPct.toFixed(0)}%  Mirror win ${s.mirrorWinPct.toFixed(0)}%  hp in ${s.avgHpIntoMirror.toFixed(1)}${s.reachedDealerPct ? `  | ACT 3: reached Dealer ${s.reachedDealerPct.toFixed(0)}%  Dealer win ${s.dealerWinPct.toFixed(0)}%` : ''}`,
     `turns/fight ${s.avgTurnsPerFight.toFixed(1)}  rocks at end ${s.avgRocksAtEnd.toFixed(1)}`,
-    `deaths by fight: ${s.deathsAtDepth.map((d, i) => `${i === 5 ? 'HOUSE' : i === 11 ? 'MIRROR' : `${i < 6 ? 'A' : 'B'}${(i % 6) + 1}`} ${d.toFixed(0)}%`).join(' ')}`,
+    `deaths by fight: ${s.deathsAtDepth.map((d, i) => `${i === 5 ? 'HOUSE' : i === 11 ? 'MIRROR' : i === 15 ? 'DEALER' : i < 6 ? `A${i + 1}` : i < 12 ? `B${i - 5}` : `C${i - 11}`} ${d.toFixed(0)}%`).filter((_, i) => i < 12 || s.reachedDealerPct > 0).join(' ')}`,
     `kill rate by enemy: ${Object.entries(s.killRate).map(([k, v]) => `${k} ${v}`).join(' | ')}`,
     `relics: ${Object.entries(s.relicWin).map(([k, v]) => `${k} ${v}`).join(' | ')}`,
   ].join('\n');

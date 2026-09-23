@@ -64,5 +64,9 @@ export interface Stage {
     chipsEaten?: number;
     /** Bombs presented on the player's strips. */
     bombs?: number;
+    /** The Dealer's face-up next card, and RAISE in play. */
+    nextDeal?: 'shuffle' | 'cut' | 'raise';
+    raised?: boolean;
+    houseRules?: boolean;
   };
 }
