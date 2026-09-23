@@ -7,6 +7,7 @@ import {
   BLAZE_BONUS,
   BOMB,
   KEY_MULT,
+  OVERCHARGE_ECHO,
   LUCKY_CHANCE,
   SANDGLASS_SLOW,
   CACTUS_DAMAGE,
@@ -129,6 +130,10 @@ export class Fight {
   readonly last: Record<SideId, { best: number; damage: number }> = { player: { best: 0, damage: 0 }, enemy: { best: 0, damage: 0 } };
   /** BLAZE: extra special damage from blaze-gilded reels. */
   readonly blaze: number;
+  /** The player's reels carrying each enhancement (for FULL SETs, which a hex can break). */
+  private readonly enhReels: Partial<Record<Enh, number[]>> = {};
+  /** The Mirror's Reflection: your best spin since its last one. */
+  reflectBank = 0;
   private forced: Partial<Record<SideId, SymbolId[]>> = {};
 
   constructor(cfg: GameConfig, seed: number = cfg.seed ?? Rng.randomSeed()) {
@@ -160,8 +165,15 @@ export class Fight {
     const need = p.relics.has('ticket') ? 2 : 3;
     const all = new Set(perReel.flatMap((s) => [...s]));
     this.fullSet = new Set([...all].filter((enh) => perReel.filter((s) => s.has(enh)).length >= need));
-    const blazeReels = perReel.filter((s) => s.has('blaze')).length;
-    this.blaze = blazeReels * (this.fullSet.has('blaze') ? BLAZE_BONUS.full : BLAZE_BONUS.each);
+    perReel.forEach((s, r) => s.forEach((enh) => (this.enhReels[enh] ??= []).push(r)));
+    // BLAZE: every blaze reel adds to your special (more for tier II and a full set).
+    this.blaze = p.reels.reduce((a, reel) => {
+      const cell = reel.cells.find((c) => c.enh === 'blaze');
+      if (!cell) return a;
+      return a + BLAZE_BONUS.each + (cell.tier === 2 ? 1 : 0) + (this.fullSet.has('blaze') ? (need === 2 ? 2 : 1) : 0);
+    }, 0);
+    // The Mirror plays your machine but never your junk (and fires no specials).
+    if (this.isMirror) e.casts.clear();
     if (this.isBoss) this.pot = POT.seed;
   }
 
@@ -225,8 +237,8 @@ export class Fight {
     const line = paylineSymbols(me.reels).map((s, i) => (locked[i] ? 'lock' : s));
     // LUCKY: a lucky cell on the payline sometimes turns WILD.
     const luckyWilds: number[] = [];
-    const luckChance = this.fullSet.has('lucky') && me.side === 'player' ? LUCKY_CHANCE.full : LUCKY_CHANCE.each;
     me.reels.forEach((_, r) => {
+      const luckChance = Math.min(0.8, LUCKY_CHANCE.each + LUCKY_CHANCE.step * (this.level(me, r) - 1));
       if (line[r] !== 'wild' && this.paylineEnh(me, r) === 'lucky' && this.rng.next() < luckChance) {
         line[r] = 'wild';
         luckyWilds.push(r);
@@ -275,6 +287,7 @@ export class Fight {
       best: Math.max(0, ...score.groups.filter((g) => g.matched || !DEAD.has(g.symbol)).map((g) => g.amount)),
       damage: events.slice(sentBefore).reduce((a, e) => a + ((e.type === 'attack' || e.type === 'specialFire') && e.from === side && !(e.type === 'attack' && e.note === 'spiked') ? e.amount : 0), 0),
     };
+    if (side === 'player') this.reflectBank = Math.max(this.reflectBank, this.last.player.damage);
     if (!this.over) this.defuse(me, events);
     if (!this.over) this.burnFuses(me, events);
     if (!this.over) this.tickStatuses(me, events);
@@ -296,33 +309,31 @@ export class Fight {
     for (const g of s.groups) {
       g.base = g.amount;
       const notes: string[] = [];
-      const set = me.side === 'player' ? this.fullSet : new Set<Enh>();
       for (const r of g.reels) {
         const enh = this.paylineEnh(me, r);
+        if (!enh) continue;
+        // Level: 1 plain, +1 tier II, +1 full set (+2 with the Golden Ticket).
+        const lvl = this.level(me, r);
+        const set = this.setActive(me, enh);
         if (enh === 'keen' && g.symbol === 'sword') {
-          const bonus = (set.has('keen') ? 2 : KEEN_BONUS) + (me.relics.has('hone') ? HONE_BONUS : 0);
+          const bonus = KEEN_BONUS * lvl + (me.relics.has('hone') ? HONE_BONUS : 0);
           g.amount += bonus;
           notes.push(`+${bonus}`);
-          if (set.has('keen')) g.fullSet = true;
+          if (set) g.fullSet = true;
         }
-        if (enh === 'spiked' && g.symbol === 'shield' && set.has('spiked') && !g.fullSet) {
-          g.fullSet = true;
-          notes.push('SPIKES +2');
-        }
-        if (enh === 'vamp' && g.symbol === 'sword' && set.has('vamp')) g.fullSet = true;
         if (enh === 'charged' && g.symbol === 'bolt') {
-          const bonus = set.has('charged') ? 2 : 1;
-          g.amount += bonus;
-          notes.push(`+${bonus}`);
-          if (set.has('charged')) g.fullSet = true;
+          g.amount += lvl;
+          notes.push(`+${lvl}`);
+          if (set) g.fullSet = true;
         }
+        if (set && ((enh === 'spiked' && g.symbol === 'shield') || (enh === 'vamp' && g.symbol === 'sword') || enh === 'lucky')) g.fullSet = true;
       }
       for (const r of g.reels) {
         if (this.paylineEnh(me, r) !== 'gold') continue;
-        const mult = set.has('gold') ? 3 : 2;
+        const mult = this.level(me, r) + 1;
         g.amount *= mult;
         notes.push(`X${mult}`);
-        if (set.has('gold')) g.fullSet = true;
+        if (this.setActive(me, 'gold')) g.fullSet = true;
       }
       // Prism: a match that used a WILD pays double.
       if (me.relics.has('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) {
@@ -332,7 +343,7 @@ export class Fight {
       // Legendaries: Skeleton Key (doubles) and Jackpot Bell (jackpots).
       if (me.relics.has('key') && g.matched && g.reels.length === 2) {
         g.amount = Math.ceil(g.amount * KEY_MULT);
-        notes.push('X1.5');
+        notes.push(`X${KEY_MULT}`);
       }
       if (me.relics.has('bell') && g.matched && g.reels.length === 3) {
         g.amount *= BELL_MULT;
@@ -348,6 +359,23 @@ export class Fight {
     s.totals = {};
     for (const g of s.groups) s.totals[g.symbol] = (s.totals[g.symbol] ?? 0) + g.amount;
     return s;
+  }
+
+  /** A FULL SET is live: enough of the player's reels carry it and aren't hexed. */
+  private setActive(me: Combatant, enh: Enh): boolean {
+    if (me.side !== 'player' || !this.fullSet.has(enh)) return false;
+    const need = me.relics.has('ticket') ? 2 : 3;
+    return (this.enhReels[enh] ?? []).filter((r) => me.hexed[r] <= 0).length >= need;
+  }
+
+  /** How strong the live gild on a reel's payline cell is: 0 none, 1 plain, +1 tier II, +1 set (+2 with the Ticket). */
+  private level(c: Combatant, r: number): number {
+    const enh = this.paylineEnh(c, r);
+    if (!enh) return 0;
+    const cell = c.reels[r].cells[c.reels[r].stop];
+    let lvl = 1 + (cell.tier === 2 ? 1 : 0);
+    if (this.setActive(c, enh)) lvl += c.relics.has('ticket') ? 2 : 1;
+    return lvl;
   }
 
   /** The enhancement on a reel's payline cell, if it's live (not stolen, slimed or jammed). */
@@ -399,8 +427,8 @@ export class Fight {
         this.hit(me, foe, g.amount, g.reels, events, g.reels.some((r) => this.paylineEnh(me, r) === 'keen'));
         {
           // VAMP: vamp swords in the group heal you.
-          const vamp = g.reels.filter((r) => this.paylineEnh(me, r) === 'vamp').length;
-          if (vamp && !this.over && g.amount > 0) this.heal(me, vamp * (me.side === 'player' && this.fullSet.has('vamp') ? 2 : 1), 'vamp', events);
+          const vamp = g.reels.filter((r) => this.paylineEnh(me, r) === 'vamp').reduce((a, r) => a + this.level(me, r), 0);
+          if (vamp && !this.over && g.amount > 0) this.heal(me, vamp, 'vamp', events);
         }
         return;
       case 'seven':
@@ -412,6 +440,8 @@ export class Fight {
         events.push({ type: 'shieldGain', side: me.side, reels: g.reels, amount: g.amount, total: me.shield });
         return;
       case 'bolt':
+        // The Mirror has no special of its own: it only reflects.
+        if (me.side === 'enemy' && this.isMirror) break;
         this.gainEnergy(me, g.amount, g.reels, events);
         return;
     }
@@ -445,8 +475,11 @@ export class Fight {
     events.push({ type: 'attack', from: me.side, to: foe.side, reels, amount, ...h, ...(pierced ? { note: 'pierce' as const } : note ? { note } : {}) });
     this.checkDeath(foe, events);
     // SPIKED: a spiked shield on the victim's payline hits back (once per hit).
-    if (!this.over && amount > 0 && foe.reels.some((_, r) => this.paylineEnh(foe, r) === 'spiked')) {
-      const dmg = (foe.relics.has('cactus') ? CACTUS_DAMAGE : SPIKED_DAMAGE) + (foe.side === 'player' && this.fullSet.has('spiked') ? 2 : 0);
+    const spikeReel = foe.reels.findIndex((_, r) => this.paylineEnh(foe, r) === 'spiked');
+    if (!this.over && amount > 0 && spikeReel >= 0) {
+      let dmg = (foe.relics.has('cactus') ? CACTUS_DAMAGE : SPIKED_DAMAGE) + 2 * (this.level(foe, spikeReel) - 1);
+      // A SPIKED FULL SET hits back for the shield you had up.
+      if (this.setActive(foe, 'spiked')) dmg = Math.max(dmg, foe.shield + h.blocked);
       const back = this.damage(me, dmg, false);
       events.push({ type: 'attack', from: foe.side, to: me.side, reels: [], amount: dmg, ...back, note: 'spiked' });
       this.checkDeath(me, events);
@@ -466,7 +499,7 @@ export class Fight {
       this.checkDeath(foe, events);
       // Overcharge: the special echoes at half damage.
       if (!this.over && me.relics.has('overcharge')) {
-        const echo = Math.ceil(dmg / 2);
+        const echo = Math.ceil(dmg * OVERCHARGE_ECHO);
         const h2 = this.damage(foe, echo, this.cfg.specialIgnoresShield);
         events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: echo, ...h2, energyLeft: me.energy });
         this.checkDeath(foe, events);
@@ -553,8 +586,9 @@ export class Fight {
         // 1 bomb, a double 2, a jackpot 3.
         return this.plantBombs(me, foe, statusSize(amount), reels, events);
       case 'hex':
-        // 1 reel × 1 turn, a double 1 × 2, a jackpot 2 × 2.
-        return this.hex(me, foe, amount >= 9 ? 2 : 1, amount >= 4 ? 2 : 1, reels, events);
+        // Single hexes fizzle; a double hexes 1 reel × 2 turns, a jackpot 2 × 2.
+        if (amount < 4) return this.fizzle(me, 'hex', reels, events);
+        return this.hex(me, foe, amount >= 9 ? 2 : 1, 2, reels, events);
       case 'fangs': {
         // Drain: hurts you and heals the vampire by what got through.
         const dmg = amount >= 9 ? 7 : amount >= 4 ? 4 : 2;
@@ -579,10 +613,10 @@ export class Fight {
     const free = this.rng.shuffle(
       visibleCells(foe.reels).filter((ref) => {
         const c = foe.reels[ref.reel].cells[ref.index];
-        return !c.bomb && !c.stolen;
+        return !c.bomb && !c.stolen && ref.index !== foe.reels[ref.reel].stop;
       }),
     );
-    // Never on the payline itself (it would defuse on the very next spin... or not: keep it readable).
+    // Never on the payline itself: it would look defused without being so.
     const cells = free.slice(0, count);
     for (const ref of cells) foe.reels[ref.reel].cells[ref.index].bomb = BOMB.fuse;
     if (cells.length) events.push({ type: 'bomb', from: me.side, to: foe.side, reels, cells });
@@ -825,7 +859,7 @@ export class Fight {
       case 'carpet':
         return this.plantBombs(me, foe, ab.power, [], events);
       case 'curse':
-        return this.hex(me, foe, ab.power, 2, [], events);
+        return this.hex(me, foe, ab.power, 3, [], events);
       case 'bloodmoon':
         return this.heal(me, ab.power, 'ability', events);
       case 'gulp':
@@ -834,7 +868,8 @@ export class Fight {
         return;
       case 'reflect': {
         // The Mirror throws your last spin back at you (at least a little).
-        const dmg = Math.max(REFLECT_MIN, Math.min(ab.power, this.last[foe.side].damage));
+        const dmg = Math.max(REFLECT_MIN, Math.min(ab.power, this.reflectBank));
+        this.reflectBank = 0;
         this.hit(me, foe, dmg, [], events, false, 'reflect');
         return;
       }

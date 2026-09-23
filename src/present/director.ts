@@ -302,6 +302,7 @@ export class Director {
 
   private async turnStart(e: Ev<'turnStart'>): Promise<void> {
     const { machines, gutter } = this.s;
+    if (e.side === 'player') gutter.turnDamage = 0;
     gutter.turn = e.turn;
     gutter.side = e.side;
     this.decay(gutter, 'pulse', 1, 0.4);
@@ -401,9 +402,13 @@ export class Director {
       if (!g.notes?.length) continue;
       for (const r of g.reels) {
         const cell = m.reels[r].cellAtRow(1);
-        if (!cell.enh || cell.slimed || (cell.stolen ?? 0) > 0 || m.locked[r] > 0) continue;
+        if (!cell.enh || cell.slimed || (cell.stolen ?? 0) > 0 || m.locked[r] > 0 || m.hexed[r] > 0) continue;
         const p = cellCenter(side, r, 1);
-        if (cell.enh === 'gold') {
+        const gm = g.notes.find((n) => /^X[3-9]$/.test(n));
+        if (cell.enh === 'gold' && gm) {
+          this.bg(this.popText(gm, p.x + 26, p.y - 30, 4, COLORS.goldLight, 16, 0.4));
+          this.s.sounds.coin(r * 3);
+        } else if (cell.enh === 'gold') {
           const stamp = this.s.fx.add(new Projectile('stampX2', p.x + 24, p.y - 30, 0));
           this.bg(
             this.c
@@ -494,7 +499,20 @@ export class Director {
     }
   }
 
+  /** The Mirror remembers your best presented spin (the REFLECTION panel reads this, never the engine). */
+  private noteDamage(from: SideId, amount: number, note?: string): void {
+    const g = this.s.gutter;
+    if (from !== 'player' || note === 'spiked') return;
+    g.turnDamage = (g.turnDamage ?? 0) + amount;
+    g.reflect = Math.max(g.reflect ?? 0, g.turnDamage);
+  }
+
   private async attack(e: Ev<'attack'>): Promise<void> {
+    this.noteDamage(e.from, e.amount, e.note);
+    if (e.note === 'reflect') {
+      this.s.gutter.reflect = 0;
+      this.s.gutter.turnDamage = 0;
+    }
     const color = this.tierColor();
     await this.activate(e.from, e.reels, '#ffffff');
     const target = this.machineCenter(e.to);
@@ -630,6 +648,7 @@ export class Director {
   }
 
   private async specialFire(e: Ev<'specialFire'>): Promise<void> {
+    this.noteDamage(e.from, e.amount);
     const h = this.s.huds[e.from];
     const cam = this.s.camera;
     // Charge.
@@ -802,7 +821,7 @@ export class Director {
         kind: 'confetti',
       });
     const b = this.s.fx.add(new Banner(win ? 'VICTORY!' : 'DEFEAT', win ? COLORS.goldLight : COLORS.danger, W / 2, H / 2 - 40, 9));
-    b.sub = `${Math.ceil(e.turns / 2)} ROUNDS`;
+    b.sub = `${Math.ceil(e.turns / 2)} ROUND${Math.ceil(e.turns / 2) === 1 ? '' : 'S'}`;
     await this.c.tween({ from: 0, to: 1.4, dur: 0.3, ease: backOut(2), onUpdate: (v) => (b.scale = v) });
     await this.c.tween({ from: 1.4, to: 1, dur: 0.2, ease: sineIn, onUpdate: (v) => (b.scale = v) });
     await this.c.wait(1.6);
@@ -1226,6 +1245,7 @@ export class Director {
       this.s.sounds.coin(6 + i);
     });
     await Promise.all(chips);
+    this.s.gutter.chipsEaten = (this.s.gutter.chipsEaten ?? 0) + e.chips;
     await this.popText(`ATE ${e.chips} CHIP${e.chips > 1 ? 'S' : ''}!`, c.x, MACHINE_TOP - 4, 3, '#ffd23f', 16, 0.3);
   }
 
@@ -1240,7 +1260,7 @@ export class Director {
     this.s.particles.burst({ x: c.x, y: c.y, count: 80, colors: ['#ff6a2a', '#ffd23f', '#ffffff'], speed: [150, 500], angle: -Math.PI / 2, spread: Math.PI, gravity: -250, life: [0.5, 1.1], size: [3, 6] });
     this.bg(this.c.to(h, 'hp', e.hp, 0.3));
     this.bg(this.c.to(h, 'ghost', e.hp, 0.3));
-    await this.banner('PHOENIX!', '#ff8a3a', 1.4, 0.5, 'BACK FROM THE BRINK AT 1 HP', BANNER_Y, 4);
+    await this.banner('PHOENIX!', '#ff8a3a', 1.4, 0.5, 'BACK AT 1 HP', BANNER_Y, 4);
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (icon.alpha = v) }).then(() => this.s.fx.remove(icon)));
   }
 
@@ -1256,7 +1276,8 @@ export class Director {
     const c = this.machineCenter(e.side);
     this.s.particles.burst({ x: c.x, y: c.y, count: 90, colors: ['#c8f0ff', '#ffffff', '#7aa8c8'], speed: [150, 600], kind: 'spark', gravity: 500, life: [0.4, 0.9], size: [2, 6] });
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.6, onUpdate: (v) => (m.flash = v * 0.7) }));
-    await this.banner('CRACKED!', '#c8f0ff', 1.3, 0.5, `REFLECTION EVERY ${e.every} TURNS`, BANNER_Y, 4);
+    m.cracked = true;
+    await this.banner('CRACKED!', '#c8f0ff', 1.3, 0.5, `REFLECTS EVERY ${e.every} TURNS`, BANNER_Y, 4);
   }
 
   private async endTurn(side: SideId): Promise<void> {

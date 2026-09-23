@@ -81,6 +81,8 @@ export const BADGE: Record<string, SpriteId> = {
   mirror: artId('mapBadgeMirror'),
 };
 
+const rounds = (turns: number) => { const n = Math.ceil(turns / 2); return `${n} ROUND${n === 1 ? '' : 'S'}`; };
+
 function abilityText(e: EnemyDef, every: number): string {
   if (!e.ability) return '';
   const ui = ABILITY_UI[e.ability.kind];
@@ -415,7 +417,7 @@ export class RunScreens {
     const relics = this.run!.player.relics;
     drawText(ctx, 'RELICS', x, y, 2, COLORS.textDim, { align: 'left' });
     if (!relics.length) drawText(ctx, 'NONE YET', x, y + 26, 2, '#4a4058', { align: 'left' });
-    relics.forEach((r, i) => drawSprite(ctx, RELICS[r].sprite as SpriteId, x + 16 + (i % 8) * 38, y + 30 + Math.floor(i / 8) * 36, 2));
+    relics.forEach((r, i) => drawSprite(ctx, RELICS[r].sprite as SpriteId, x + 16 + (i % 10) * 32, y + 30 + Math.floor(i / 10) * 32, 1.75));
   }
 
   private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
@@ -436,7 +438,7 @@ export class RunScreens {
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
-      drawText(ctx, `${Math.ceil(last.turns / 2)} ROUNDS  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}${chips}${rocks}`, W / 2, 60, 2, COLORS.textDim);
+      drawText(ctx, `${rounds(last.turns)}  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}${chips}${rocks}`, W / 2, 60, 2, COLORS.textDim);
     }
     this.drawMap(ctx, 158, time);
     const spoils = this.draftKind === 'spoils';
@@ -517,7 +519,7 @@ export class RunScreens {
     if (this.run && completesSet(this.run, o)) this.setTag(ctx, -w / 2 + 8, -h / 2 + 6, time);
     else if (this.run && fitsBuild(this.run, o)) drawSprite(ctx, 'tagBuild', -w / 2 + 36, -h / 2 + 14, 2.5);
     if (this.run && o.kind === 'gild') this.setPips(ctx, w / 2 - 12, -h / 2 + 14, o.enh);
-    if (o.kind === 'relic' && LEGENDARY.has(o.relic)) drawText(ctx, 'LEGENDARY', 0, -h / 2 - 10, 2, COLORS.goldLight);
+    if (o.kind === 'relic' && LEGENDARY.has(o.relic)) this.legendTag(ctx, 0, -h / 2 + 14, time);
     // Gain in green, cost in red, per spin.
     const lines = [delta.gain && [delta.gain, '#b6ff9a'], delta.loss && [delta.loss, '#ff8a7a']].filter(Boolean) as [string, string][];
     lines.forEach(([t, col], k) => {
@@ -540,6 +542,15 @@ export class RunScreens {
     ctx.fillRect(x + 2, y + 2, 130, 14);
     ctx.globalAlpha = 1;
     drawText(ctx, 'COMPLETES SET', x + 67, y + 9, 1.5, COLORS.outline);
+  }
+
+  /** Violet/gold LEGENDARY ribbon inside the top of a card. */
+  private legendTag(ctx: CanvasRenderingContext2D, x: number, y: number, time: number): void {
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 58, y - 9, 116, 18);
+    ctx.fillStyle = '#6a2aa0';
+    ctx.fillRect(x - 56, y - 7, 112, 14);
+    drawText(ctx, 'LEGENDARY', x, y, 1.5, COLORS.goldLight, { alpha: 0.8 + 0.2 * Math.sin(time * 5) });
   }
 
   /** Set progress pips: one per reel that already carries this gild. */
@@ -595,12 +606,15 @@ export class RunScreens {
     }
     const bossText =
       e.boss === 'mirror'
-        ? 'IT PLAYS A COPY OF YOUR MACHINE: YOUR STRIPS AND YOUR GILDS, BUT NONE OF YOUR RELICS. ITS HP IS SIZED TO YOURS. EVERY 4 TURNS IT THROWS YOUR LAST SPIN BACK AT YOU. AT HALF HP IT CRACKS AND REFLECTS EVERY 3 TURNS.'
+        ? 'A COPY OF YOUR MACHINE (NO RELICS, NO SPECIALS), AS TOUGH AS YOUR BUILD HITS. EVERY 3 TURNS IT THROWS YOUR BEST HIT SINCE THE LAST ONE BACK AT YOU. CRACKED AT HALF HP: EVERY 2.'
         : `COINS + A CUT EACH TURN FILL THE POT. EVERY 4 TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +1 SHIELD EACH HOUSE TURN.`;
     if (e.isBoss)
-      wrap(bossText, Math.floor((w - 32) / 6)).forEach((l, k) =>
-        drawText(ctx, l, x + 16, y + 262 + k * 12, 1, COLORS.goldLight, { align: 'left' }),
-      );
+      {
+        const sc = e.boss === 'mirror' ? 1.5 : 1;
+        wrap(bossText, Math.floor((w - 32) / (6 * sc))).forEach((l, k) =>
+          drawText(ctx, l, x + 16, y + 258 + k * 12 * sc, sc, e.boss === 'mirror' ? '#c8f0ff' : COLORS.goldLight, { align: 'left' }),
+        );
+      }
   }
 
   private drawNext(ctx: CanvasRenderingContext2D, time: number): void {
@@ -748,7 +762,7 @@ export class RunScreens {
     if (this.run && completesSet(this.run, o)) this.setTag(ctx, -h.w / 2 + 6, -h.h / 2 + 6, time);
     else if (this.run && fitsBuild(this.run, o)) drawSprite(ctx, 'tagBuild', -h.w / 2 + 34, -h.h / 2 + 14, 2.5);
     if (this.run && o.kind === 'gild') this.setPips(ctx, h.w / 2 - 12, -h.h / 2 + 14, o.enh);
-    if (o.kind === 'relic' && LEGENDARY.has(o.relic)) drawText(ctx, 'LEGENDARY', 0, -h.h / 2 - 10, 2, COLORS.goldLight);
+    if (o.kind === 'relic' && LEGENDARY.has(o.relic)) this.legendTag(ctx, 0, -h.h / 2 + 14, time);
     if (this.run && !item.sold) {
       const d = optionDeltas(this.run, o, this.base());
       if (d.gain) drawText(ctx, d.gain, 0, 46 + lines.length * 17 + 6, 1, '#b6ff9a');
@@ -787,12 +801,20 @@ export class RunScreens {
     ctx.restore();
   }
 
+  private actPlaque(ctx: CanvasRenderingContext2D, x: number, y: number, label: string, color: string): void {
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 40, y - 8, 44, 16);
+    ctx.fillStyle = '#1a1428';
+    ctx.fillRect(x - 38, y - 6, 40, 12);
+    drawText(ctx, label, x - 18, y, 1, color);
+  }
+
   private drawOver(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
     drawText(ctx, run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, 6, run.won ? COLORS.goldLight : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${TOTAL_FIGHTS} FIGHTS` : `FELL AT FIGHT ${run.records.length} OF ${TOTAL_FIGHTS} (ACT ${run.act})`}`;
     if (this.unlockedNow.length)
-      drawText(ctx, `NEW CABINET UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, W / 2, 110, 2, COLORS.goldLight);
+      drawText(ctx, `NEW CABINET UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, W / 2, 466, 2, COLORS.goldLight);
     drawText(ctx, reached, W / 2, 88, 2, COLORS.textDim);
     this.panel(ctx, 110, 120, 1060, 330);
     drawText(ctx, 'FIGHT', 150, 142, 2, COLORS.textDim, { align: 'left' });
@@ -811,7 +833,9 @@ export class RunScreens {
       if (compact && r.act && r.act > 1 && run.records[i - 1]?.act === 1) {
         ctx.fillStyle = '#c8f0ff';
         ctx.fillRect(122, y - rowH / 2 - 1, 1036, 2);
+        this.actPlaque(ctx, 1150, y - rowH / 2, 'ACT 2', '#c8f0ff');
       }
+      if (compact && i === 0) this.actPlaque(ctx, 1150, y - rowH / 2, 'ACT 1', COLORS.goldLight);
       drawSprite(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 150, y, compact ? 0.9 : 1.4);
       drawText(ctx, r.enemy, 176, y, 2, r.won ? COLORS.text : COLORS.danger, { align: 'left' });
       drawText(ctx, `${Math.ceil(r.turns / 2)}`, 560, y, 2, COLORS.text);

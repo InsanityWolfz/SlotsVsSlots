@@ -38,6 +38,8 @@ export class MachineView {
   lockedFx: number[];
   hexed: number[];
   hexedFx: number[];
+  /** The Mirror cracked at half HP. */
+  cracked = false;
   private spun = false;
 
   constructor(
@@ -48,7 +50,7 @@ export class MachineView {
     this.reels = combatant.reels.map(
       (r) =>
         new ReelView(
-          r.cells.map((c): CellView => ({ symbol: c.symbol, slimed: c.slimed, goo: c.slimed ? 1 : 0, flash: 0, stolen: c.stolen ? 1 : 0, enh: c.enh, bomb: c.bomb })),
+          r.cells.map((c): CellView => ({ symbol: c.symbol, slimed: c.slimed, goo: c.slimed ? 1 : 0, flash: 0, stolen: c.stolen ? 1 : 0, enh: c.enh, tier: c.tier, bomb: c.bomb })),
           r.stop,
         ),
     );
@@ -239,7 +241,28 @@ export class MachineView {
       ctx.fillRect(x, y, 4, 4);
   }
 
+  /** Jagged cracks across the glass once the Mirror is at half HP. */
+  private drawCracks(ctx: CanvasRenderingContext2D): void {
+    if (!this.cracked) return;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(220,245,255,0.75)';
+    ctx.lineWidth = 3;
+    const paths = [
+      [[0.52, 0.0], [0.47, 0.18], [0.56, 0.3], [0.44, 0.52], [0.58, 0.7], [0.5, 1.0]],
+      [[0.44, 0.52], [0.25, 0.46], [0.12, 0.6], [0.0, 0.57]],
+      [[0.56, 0.3], [0.76, 0.24], [0.88, 0.36], [1.0, 0.31]],
+      [[0.58, 0.7], [0.74, 0.82], [0.7, 1.0]],
+    ];
+    for (const path of paths) {
+      ctx.beginPath();
+      path.forEach(([x, y], i) => (i ? ctx.lineTo(x * MACHINE_W, y * MACHINE_H) : ctx.moveTo(x * MACHINE_W, y * MACHINE_H)));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   private drawStatuses(ctx: CanvasRenderingContext2D, time: number): void {
+    this.drawCracks(ctx);
     for (let r = 0; r < REELS; r++) {
       const fz = this.frozenFx[r];
       const lk = this.lockedFx[r];

@@ -81,7 +81,7 @@ export function greedyValue(run: RunState, o: DraftOption): number {
       if (o.to === 'wild') return 6;
       return (o.to === 'bolt' ? 8 : 6) + (o.from === 'rock' ? 2 : 0);
     case 'gild':
-      return { gold: 9, charged: 8.5, spiked: 7.5, keen: 6, vamp: 7, lucky: 7.5, blaze: 8.5 }[o.enh];
+      return { gold: 9, charged: 8.5, spiked: 7.5, keen: 6, vamp: 7, lucky: 7.5, blaze: 8.5 }[o.enh] + (o.tier ? 1 : 0);
     case 'clear':
       return 3 + (p.strips[o.reel].rock ?? 0) * 2;
     case 'add':

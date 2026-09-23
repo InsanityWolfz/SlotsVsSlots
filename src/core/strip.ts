@@ -11,6 +11,8 @@ export interface StripCell {
   enh?: Enh;
   /** A Bomber's bomb: turns left on its fuse. Landing it on your payline defuses it. */
   bomb?: number;
+  /** Tier II gild. */
+  tier?: 2;
 }
 
 export interface Reel {
@@ -35,7 +37,12 @@ export function buildReel(counts: StripCounts, rng: Rng, gilds: Gild[] = []): Re
   if (cells.length === 0) throw new Error('Reel strip is empty');
   rng.shuffle(cells);
   // A gild enhances EVERY cell of its symbol on this reel.
-  for (const g of gilds) for (const c of cells) if (c.symbol === g.symbol) c.enh = g.enh;
+  for (const g of gilds)
+    for (const c of cells)
+      if (c.symbol === g.symbol) {
+        c.enh = g.enh;
+        if (g.tier) c.tier = g.tier;
+      }
   return { cells, stop: rng.int(cells.length) };
 }
 

@@ -50,8 +50,14 @@ export function drawStripMap(ctx: CanvasRenderingContext2D, m: MachineView, time
       }
       if (cell.enh && stolen < 1) {
         // Gilded: a distinct tick shape per enhancement.
-        const tick = cell.enh === 'gold' ? 'tickGold' : cell.enh === 'keen' ? 'tickKeen' : cell.enh === 'charged' ? 'tickCharged' : 'tickSpiked';
+        const tick = cell.enh === 'gold' || cell.enh === 'lucky' ? 'tickGold' : cell.enh === 'keen' || cell.enh === 'vamp' ? 'tickKeen' : cell.enh === 'charged' || cell.enh === 'blaze' ? 'tickCharged' : 'tickSpiked';
         drawSprite(ctx, tick, cx + 13, y - cellH / 2 + 5, 1.4);
+      }
+      if (cell.bomb && cell.bomb > 0) {
+        // Live bombs show on the strip map with their fuse, so an off-screen BOOM is never a surprise.
+        ctx.fillStyle = cell.bomb <= 1 ? '#ff3a2e' : '#ff9a3a';
+        ctx.fillRect(cx - 19, y - cellH / 2 + 1, 5, cellH - 2);
+        drawText(ctx, String(cell.bomb), cx - 12, y, 1, cell.bomb <= 1 ? '#ff5a4a' : '#ffd23f');
       }
       if (m.frozen[r] > 0 && visible) {
         ctx.globalAlpha = 0.35 + 0.1 * Math.sin(time * 3);

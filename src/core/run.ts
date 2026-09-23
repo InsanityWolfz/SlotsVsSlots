@@ -1,9 +1,11 @@
-import { cloneConfig, type Enh, type GameConfig, type Gild, type RelicId, type StripCounts, type SymbolId } from './config';
+import { cloneConfig, defaultConfig, type Enh, type GameConfig, type Gild, type RelicId, type StripCounts, type SymbolId } from './config';
 import { ACTS, generateRunPaths, RUN_FIGHTS, TUNE, type EnemyDef } from './enemies';
 import type { Fight } from './fight';
 import {
   BANDAGE_HEAL,
+  BELL_MULT,
   BLAZE_BONUS,
+  KEY_MULT,
   BOSS_HP_PER_RELIC,
   BUILD_ENABLER,
   CACTUS_DAMAGE,
@@ -73,7 +75,7 @@ export const CHIPS = {
   stackPer: 8,
   /** Every run starts with a little float so shop 1 is a real visit. */
   start: 4,
-  prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 5, legend: 20 },
+  prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 5, legend: 20, tierUp: 12 },
   /** First reroll per visit costs 1, then +1 each time. */
   rerollBase: 1,
 };
@@ -85,7 +87,7 @@ export type DraftOption =
   | { kind: 'relic'; relic: RelicId }
   | { kind: 'heal'; amount: number }
   | { kind: 'maxHp'; amount: number }
-  | { kind: 'gild'; enh: Enh; symbol: SymbolId; reel: number }
+  | { kind: 'gild'; enh: Enh; symbol: SymbolId; reel: number; tier?: 2 }
   | { kind: 'remove'; symbol: SymbolId; reel: number };
 
 export interface ShopItem {
@@ -242,7 +244,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // The Mirror plays a copy of your machine: your strips and gilds (not your relics).
   if (e.boss === 'mirror') {
     cfg.enemy.strips = run.player.strips.map((s) => ({ ...s }));
-    cfg.enemy.gilded = run.player.gilded.map((g) => ({ ...g }));
+    // It copies what you hit with: never your spikes.
+    cfg.enemy.gilded = run.player.gilded.filter((g) => g.enh !== 'spiked').map((g) => ({ ...g }));
   }
   cfg.relics = [...run.player.relics];
   cfg.cabinet = run.cabinet;
@@ -256,8 +259,18 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
  */
 export function enemyHp(run: RunState, e: EnemyDef): number {
   if (!e.isBoss) return e.hp;
-  const base = e.boss === 'mirror' ? Math.round(run.player.maxHp * TUNE.mirrorPerMaxHp) : e.hp;
-  return base + BOSS_HP_PER_RELIC * run.player.relics.length;
+  if (e.boss === 'mirror') return Math.round(TUNE.mirrorPower * machinePower(run)) + TUNE.mirrorFlat;
+  return e.hp + BOSS_HP_PER_RELIC * run.player.relics.length;
+}
+
+/** Your machine's expected damage per spin: swords plus energy turned into specials. */
+export function machinePower(run: RunState): number {
+  const base = defaultConfig();
+  const cab = CABINETS[run.cabinet];
+  const s = stripStats(run.player.strips, base, run.player.relics, run.player.gilded);
+  const cost = cab.specialCost ?? base.specialCost;
+  const dmg = (cab.specialDamage ?? base.specialDamage) + s.specialBonus;
+  return s.damage + (s.energy / cost) * dmg;
 }
 
 const rocksIn = (s: StripCounts[]) => s.reduce((a, x) => a + (x.rock ?? 0), 0);
@@ -299,6 +312,12 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     run.over = true;
     return record;
   }
+  // The Mimic's gulps come out first (so the "+N chips" line is honest).
+  if (fight.chipsEaten) {
+    const eaten = Math.min(run.player.chips, fight.chipsEaten);
+    run.player.chips -= eaten;
+    record.chipsEaten = eaten;
+  }
   // Chips: interest on what you banked, then the win, elite bonus, jackpots and overkill.
   const beaten = currentEnemy(run);
   const interest = Math.min(CHIPS.interestCap, Math.floor(run.player.chips / CHIPS.interestPer));
@@ -311,14 +330,9 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     Math.floor(fight.overkill / CHIPS.overkillPer);
   run.player.chips += earned;
   record.chips = earned;
-  if (fight.chipsEaten) {
-    const eaten = Math.min(run.player.chips, fight.chipsEaten);
-    run.player.chips -= eaten;
-    record.chipsEaten = eaten;
-  }
   // Elites offer their spoils: choose 1 of 2 relics.
   if (beaten.elite) {
-    const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && !COUNTER_RELICS.has(r) && relicFits(run, r) && (run.act > 1 || !LEGENDARY.has(r)));
+    const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && !COUNTER_RELICS.has(r) && relicFits(run, r) && !LEGENDARY.has(r));
     const rng = new Rng((run.seed ^ Math.imul(run.depth + 7 + run.act * 100, 0x85ebca6b)) >>> 0);
     const spoils = rng.shuffle(pool).slice(0, 2);
     if (spoils.length) run.pendingSpoils = spoils;
@@ -348,31 +362,58 @@ export interface StripStats {
   jackpotPct: number;
   /** Spins per special on average. */
   spinsPerSpecial: number;
+  /** VAMP healing per spin. */
+  heal: number;
+  /** BLAZE: extra damage on each special. */
+  specialBonus: number;
 }
 
 export function stripStats(strips: StripCounts[], base: GameConfig, relics: RelicId[] = [], gilded: Gild[] = []): StripStats {
-  const enhOf = (reel: number, sym: SymbolId) => gilded.find((g) => g.reel === reel && g.symbol === sym)?.enh;
-  const probs = strips.map((s) => {
+  const gildOf = (reel: number, sym: SymbolId) => gilded.find((g) => g.reel === reel && g.symbol === sym);
+  const enhOf = (reel: number, sym: SymbolId) => gildOf(reel, sym)?.enh;
+  const sets = fullSets(gilded, relics);
+  const setStep = relics.includes('ticket') ? 2 : 1;
+  const lvlOf = (reel: number, sym: SymbolId) => {
+    const g = gildOf(reel, sym);
+    return g ? 1 + (g.tier ? 1 : 0) + (sets.has(g.enh) ? setStep : 0) : 0;
+  };
+  // Each line entry: [shown symbol, probability, the cell's own symbol (for its gild)].
+  const probs = strips.map((s, reel) => {
     const total = Object.values(s).reduce((a, n) => a + (n ?? 0), 0) || 1;
-    return (Object.entries(s) as [SymbolId, number][]).filter(([, n]) => n > 0).map(([sym, n]) => [sym, n / total] as const);
+    return (Object.entries(s) as [SymbolId, number][])
+      .filter(([, n]) => n > 0)
+      .flatMap(([sym, n]) => {
+        const p = n / total;
+        if (enhOf(reel, sym) !== 'lucky') return [[sym, p, sym] as const];
+        const c = Math.min(0.8, LUCKY_CHANCE.each + LUCKY_CHANCE.step * (lvlOf(reel, sym) - 1));
+        return [[sym, p * (1 - c), sym] as const, ['wild' as SymbolId, p * c, sym] as const];
+      });
   });
   const cfg = { ...base, pairRule: relics.includes('mirror') ? ('anyTwo' as const) : base.pairRule };
-  const sets = fullSets(gilded, relics);
-  const out = { damage: 0, energy: 0, shield: 0, pairPct: 0, jackpotPct: 0, spinsPerSpecial: 0 };
-  for (const [a, pa] of probs[0])
-    for (const [b, pb] of probs[1])
-      for (const [c, pc] of probs[2]) {
+  const out = { damage: 0, energy: 0, shield: 0, pairPct: 0, jackpotPct: 0, spinsPerSpecial: 0, heal: 0, specialBonus: 0 };
+  strips.forEach((s, reel) => {
+    const sym = (Object.keys(s) as SymbolId[]).find((k) => enhOf(reel, k) === 'blaze' && (s[k] ?? 0) > 0);
+    if (sym) out.specialBonus += BLAZE_BONUS.each + lvlOf(reel, sym) - 1;
+  });
+  for (const [a, pa, oa] of probs[0])
+    for (const [b, pb, ob] of probs[1])
+      for (const [c, pc, oc] of probs[2]) {
         const p = pa * pb * pc;
         const line = [a, b, c];
+        const own = [oa, ob, oc];
         const sc = scoreLine(line, cfg);
         for (const g of sc.groups) {
           for (const r of g.reels) {
-            const enh = enhOf(r, line[r]);
-            if (enh === 'keen' && g.symbol === 'sword') g.amount += (sets.has('keen') ? 2 : KEEN_BONUS) + (relics.includes('hone') ? HONE_BONUS : 0);
-            if (enh === 'charged' && g.symbol === 'bolt') g.amount += sets.has('charged') ? 2 : 1;
+            const enh = enhOf(r, own[r]);
+            const lvl = lvlOf(r, own[r]);
+            if (enh === 'keen' && g.symbol === 'sword') g.amount += KEEN_BONUS * lvl + (relics.includes('hone') ? HONE_BONUS : 0);
+            if (enh === 'charged' && g.symbol === 'bolt') g.amount += lvl;
           }
-          for (const r of g.reels) if (enhOf(r, line[r]) === 'gold') g.amount *= sets.has('gold') ? 3 : 2;
+          for (const r of g.reels) if (enhOf(r, own[r]) === 'gold') g.amount *= lvlOf(r, own[r]) + 1;
           if (relics.includes('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) g.amount *= 2;
+          if (relics.includes('key') && g.matched && g.reels.length === 2) g.amount = Math.ceil(g.amount * KEY_MULT);
+          if (relics.includes('bell') && g.matched && g.reels.length === 3) g.amount *= BELL_MULT;
+          if (g.symbol === 'sword' && g.amount > 0) for (const r of g.reels) if (enhOf(r, own[r]) === 'vamp') out.heal += p * lvlOf(r, own[r]);
         }
         sc.totals = {};
         for (const g of sc.groups) sc.totals[g.symbol] = (sc.totals[g.symbol] ?? 0) + g.amount;
@@ -428,6 +469,9 @@ export function draftOffers(run: RunState): DraftOption[] {
   const addCard = (): DraftOption => ({ kind: 'add', symbol: 'bolt', reel: rng.int(3), count: RUN.addCount });
   /** GILD: enhance one cell (GOLD any symbol, KEEN sword, CHARGED bolt, SPIKED shield). */
   const gildCard = (): DraftOption | null => {
+    // Act 2: upgrade a gild you own to TIER II.
+    const ups = tierUps(run).filter((u) => !out.some((o) => keyOf(o) === keyOf(u)));
+    if (ups.length && rng.next() < 0.4) return rng.pick(ups);
     // EXTEND: half the time, offer the same gild you already own on another reel (builds!).
     if (p.gilded.length && rng.next() < 0.5) {
       const own = rng.pick(p.gilded);
@@ -515,9 +559,12 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
     case 'relic':
       if (!p.relics.includes(o.relic)) p.relics.push(o.relic);
       break;
-    case 'gild':
-      p.gilded.push({ reel: o.reel, symbol: o.symbol, enh: o.enh });
+    case 'gild': {
+      const own = p.gilded.find((g) => g.reel === o.reel && g.symbol === o.symbol && g.enh === o.enh);
+      if (own && o.tier) own.tier = 2;
+      else if (!own) p.gilded.push({ reel: o.reel, symbol: o.symbol, enh: o.enh, ...(o.tier ? { tier: o.tier } : {}) });
       break;
+    }
     case 'remove': {
       const n = p.strips[o.reel][o.symbol] ?? 0;
       if (n > 0) p.strips[o.reel][o.symbol] = n - 1;
@@ -573,18 +620,18 @@ export function shopOffers(run: RunState): ShopItem[] {
   // Prefer extending what you already own, so builds can be finished on purpose.
   const favored = CABINETS[run.cabinet].favors;
   const extend = gildOptions.filter((o) => o.kind === 'gild' && (p.gilded.some((g) => g.enh === o.enh && g.symbol === o.symbol) || o.enh === favored));
-  add(extend.length ? rng.pick(extend) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
+  const ups = tierUps(run);
+  if (ups.length && rng.next() < 0.5) add(rng.pick(ups), P.tierUp);
+  else add(extend.length ? rng.pick(extend) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
   add(gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
   const lastShop = run.act === ACTS && run.depth >= RUN.shopAfter[RUN.shopAfter.length - 1];
   const relics = (Object.keys(RELICS) as RelicId[]).filter(
     (r) => !p.relics.includes(r) && !COUNTER_RELICS.has(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && !(lastShop && r === 'bandage') && !LEGENDARY.has(r),
   );
-  add(relics.length ? { kind: 'relic', relic: rng.pick(relics) } : null, P.relic);
-  // Act 2: a legendary on the top shelf, priced like one.
-  if (run.act > 1) {
-    const legends = [...LEGENDARY].filter((r) => !p.relics.includes(r) && relicFits(run, r));
-    if (legends.length) add({ kind: 'relic', relic: rng.pick(legends) }, P.legend);
-  }
+  // Act 2: the relic slot holds a legendary, priced like one.
+  const legends = run.act > 1 ? [...LEGENDARY].filter((r) => !p.relics.includes(r) && relicFits(run, r)) : [];
+  if (legends.length) add({ kind: 'relic', relic: rng.pick(legends) }, P.legend);
+  else add(relics.length ? { kind: 'relic', relic: rng.pick(relics) } : null, P.relic);
   const u = rng.next();
   if (u < 0.35) {
     const reels = p.strips
@@ -604,7 +651,7 @@ export function shopOffers(run: RunState): ShopItem[] {
     const junk = p.strips.flatMap((s, reel) => (['rock', 'shield'] as SymbolId[]).filter((sym) => (s[sym] ?? 0) > 1).map((symbol) => ({ kind: 'remove' as const, symbol, reel })));
     if (junk.length) add(rng.pick(junk), P.remove);
   }
-  const shelf = items.slice(0, run.act > 1 ? 5 : 4);
+  const shelf = items.slice(0, 4);
   // HEAL is a permanent service slot, sized to what you're missing (hidden when nearly full).
   const missing = p.maxHp - p.hp;
   if (missing >= 3) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal, sold: false });
@@ -672,9 +719,18 @@ export function leaveShop(run: RunState): void {
   run.actIntro = false;
 }
 
+/** Act 2: TIER II upgrades for gilds you own. */
+export function tierUps(run: RunState): DraftOption[] {
+  if (run.act < 2) return [];
+  return run.player.gilded.filter((g) => !g.tier).map((g) => ({ kind: 'gild', enh: g.enh, symbol: g.symbol, reel: g.reel, tier: 2 }));
+}
+
 /** Gilds after taking a card. */
 export function gildsAfter(run: RunState, o: DraftOption): Gild[] {
-  return o.kind === 'gild' ? [...run.player.gilded, { reel: o.reel, symbol: o.symbol, enh: o.enh }] : run.player.gilded;
+  if (o.kind !== 'gild') return run.player.gilded;
+  const own = run.player.gilded.find((g) => g.reel === o.reel && g.symbol === o.symbol && g.enh === o.enh);
+  if (own) return run.player.gilded.map((g) => (g === own && o.tier ? { ...g, tier: 2 as const } : g));
+  return [...run.player.gilded, { reel: o.reel, symbol: o.symbol, enh: o.enh }];
 }
 
 /** Strips after taking a card (for the before/after stat line). */
@@ -698,6 +754,15 @@ const ENH_TEXT: Record<Enh, (s: string, reel: number) => string> = {
   lucky: (s, r) => `${s}S ON REEL ${r}: ${Math.round(LUCKY_CHANCE.each * 100)}% CHANCE TO LAND AS A WILD`,
   blaze: (_s, r) => `BLAZE REEL ${r}: YOUR SPECIAL DEALS +${BLAZE_BONUS.each}`,
 };
+const TIER_TEXT: Record<Enh, (s: string, reel: number) => string> = {
+  gold: (s, r) => `${s}S ON REEL ${r} PAY X3`,
+  keen: (s, r) => `${s}S ON REEL ${r} DEAL +2 AND PIERCE`,
+  charged: (s, r) => `${s}S ON REEL ${r} GIVE +2 ENERGY`,
+  spiked: (s, r) => `${s}S ON REEL ${r} HIT BACK FOR 4`,
+  vamp: (s, r) => `${s}S ON REEL ${r} HEAL 2 WHEN THEY HIT`,
+  lucky: (s, r) => `${s}S ON REEL ${r}: 50% CHANCE TO LAND AS A WILD`,
+  blaze: (_s, r) => `BLAZE REEL ${r}: YOUR SPECIAL DEALS +4`,
+};
 const plural = (s: SymbolId, n: number) => `${NAME[s] ?? s.toUpperCase()}${n > 1 ? 'S' : ''}`;
 
 export function describeOption(o: DraftOption, run?: RunState): { title: string; text: string } {
@@ -719,6 +784,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'gild': {
       let text = ENH_TEXT[o.enh](NAME[o.symbol] ?? '', o.reel + 1);
       if (o.enh === 'spiked' && run?.player.relics.includes('cactus')) text = text.replace(`FOR ${SPIKED_DAMAGE}`, `FOR ${CACTUS_DAMAGE}`);
+      if (o.tier) return { title: `${o.enh.toUpperCase()} II ${NAME[o.symbol]}S`, text: `UPGRADE: ${TIER_TEXT[o.enh](NAME[o.symbol] ?? '', o.reel + 1)}` };
       return { title: `${o.enh.toUpperCase()} ${NAME[o.symbol]}S`, text };
     }
     case 'remove':
@@ -735,8 +801,11 @@ export function optionDeltas(run: RunState, o: DraftOption, base: GameConfig): {
     ['ENERGY', a.energy, b.energy],
     ['DAMAGE', a.damage, b.damage],
     ['SHIELD', a.shield, b.shield],
+    ['HEAL', a.heal, b.heal],
+    ['SPECIAL DMG', a.specialBonus, b.specialBonus],
   ];
-  const fmt = ([label, from, to]: [string, number, number]) => `${label} ${from.toFixed(2)} TO ${to.toFixed(2)}`;
+  const fmt = ([label, from, to]: [string, number, number]) =>
+    label === 'SPECIAL DMG' ? `SPECIAL +${from} TO +${to}` : `${label} ${from.toFixed(2)} TO ${to.toFixed(2)}`;
   const gains = rows.filter((r) => r[2] - r[1] > 0.005).sort((x, y) => y[2] - y[1] - (x[2] - x[1]));
   const losses = rows.filter((r) => r[1] - r[2] > 0.005).sort((x, y) => y[1] - y[2] - (x[1] - x[2]));
   return { gain: gains[0] ? fmt(gains[0]) : '', loss: losses[0] ? fmt(losses[0]) : '' };

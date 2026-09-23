@@ -33,6 +33,8 @@ export interface Gild {
   reel: number;
   symbol: SymbolId;
   enh: Enh;
+  /** Tier II (act 2 upgrade of a gild you already own). */
+  tier?: 2;
 }
 export type StripCounts = Partial<Record<SymbolId, number>>;
 

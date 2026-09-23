@@ -95,7 +95,7 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 1,
     ability: { kind: 'carpet', every: 4, power: 2 },
     minDepth: 0,
-    blurb: 'STICKS BOMBS ON YOUR CELLS. LAND THEM TO DEFUSE',
+    blurb: 'STICKS TICKING BOMBS ON YOUR CELLS. A BOMB YOUR PAYLINE LANDS ON IS DEFUSED',
     acts: [2],
   },
   {
@@ -103,8 +103,8 @@ export const ARCHETYPES: Archetype[] = [
     name: 'HEXER',
     portrait: 'enemyHexer',
     strip: { sword: 5, shield: 3, hex: 4 },
-    hpMul: 0.85,
-    ability: { kind: 'curse', every: 4, power: 2 },
+    hpMul: 0.95,
+    ability: { kind: 'curse', every: 4, power: 1 },
     minDepth: 0,
     blurb: 'HEXES YOUR REELS: HALF PAY, GILDS GO DARK',
     acts: [2],
@@ -116,7 +116,7 @@ export const ARCHETYPES: Archetype[] = [
     strip: { sword: 4, shield: 3, fangs: 5 },
     hpMul: 0.95,
     ability: { kind: 'bloodmoon', every: 4, power: 8 },
-    minDepth: 1,
+    minDepth: 0,
     blurb: 'DRAINS YOUR HP TO HEAL ITSELF',
     acts: [2],
   },
@@ -127,7 +127,7 @@ export const ARCHETYPES: Archetype[] = [
     strip: { sword: 4, shield: 4, mimicSym: 4 },
     hpMul: 1.05,
     ability: { kind: 'gulp', every: 3, power: 2 },
-    minDepth: 1,
+    minDepth: 0,
     blurb: 'COPIES YOUR BEST HIT. EATS YOUR CHIPS',
     acts: [2],
   },
@@ -157,9 +157,9 @@ export const MIRROR: Archetype = {
   portrait: 'enemyMirror',
   strip: { sword: 4, shield: 4, bolt: 4 },
   hpMul: 1,
-  ability: { kind: 'reflect', every: 4, power: 20 },
+  ability: { kind: 'reflect', every: 3, power: 20 },
   minDepth: 5,
-  blurb: 'PLAYS YOUR OWN MACHINE. REFLECTS YOUR BEST HITS',
+  blurb: 'PLAYS YOUR OWN MACHINE. THROWS YOUR BEST HIT BACK AT YOU',
   acts: [2],
 };
 export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: MIRROR };
@@ -170,9 +170,10 @@ const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'MANGY', 'CUR
 /** HP for a regular fight at each depth (0-based), before the archetype multiplier. */
 export const DEPTH_HP = [21, 26, 31, 34, 37];
 /** Act 2 curve: you arrive with a built machine and a legendary. */
-export const DEPTH_HP_2 = [57, 62, 68, 73, 78];
+export const DEPTH_HP_2 = [52, 62, 73, 85, 97];
 /** Mutable so balance sweeps can tune it. */
-export const TUNE = { bossHp: 74, mirrorHp: 85, act2Mul: 1, act2Swords: 2, mirrorPerMaxHp: 1.9 };
+/** mirrorPower/mirrorFlat: the Mirror's HP = power × your expected damage per spin + flat (ITERATION_6 Package N). */
+export const TUNE = { bossHp: 74, act2Mul: 1, act2Swords: 2, mirrorPower: 3, mirrorFlat: 55 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
@@ -224,7 +225,8 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
   const hpMul = a.id === 'frost' && (depth >= 2 || act > 1) ? 1 : a.hpMul;
   const curve = act > 1 ? DEPTH_HP_2.map((h) => h * TUNE.act2Mul) : DEPTH_HP;
   const opener = depth === 0 && act === 1 ? OPENER_HP_MUL : 1;
-  const bossHp = a.id === 'mirror' ? TUNE.mirrorHp : TUNE.bossHp;
+  // (The Mirror's real HP is sized to your machine in run.enemyHp.)
+  const bossHp = a.id === 'mirror' ? 100 : TUNE.bossHp;
   const hp = isBoss ? bossHp : Math.round(curve[Math.min(depth, curve.length - 1)] * hpMul * opener);
   const every = a.ability.every;
   return {

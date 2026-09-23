@@ -47,5 +47,22 @@ export interface Stage {
   huds: Record<SideId, HudView>;
   juice: JuiceToggles;
   /** Shown in the center gutter. */
-  gutter: { turn: number; side: SideId | null; pulse: number; pot: number; potPunch: number; fightLabel: string; allIn: boolean };
+  gutter: {
+    turn: number;
+    side: SideId | null;
+    pulse: number;
+    pot: number;
+    potPunch: number;
+    fightLabel: string;
+    allIn: boolean;
+    /** The Mirror: your best presented spin since its last Reflection, and this turn's running total. */
+    reflect?: number;
+    turnDamage?: number;
+    /** The Mirror cracked (persistent overlay). */
+    cracked?: boolean;
+    /** Chips the Mimic has eaten so far this fight (presented). */
+    chipsEaten?: number;
+    /** Bombs presented on the player's strips. */
+    bombs?: number;
+  };
 }

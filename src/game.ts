@@ -41,7 +41,7 @@ import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
 import { drawStripMap } from './present/stripMap';
 import { Background } from './render/background';
-import { drawSprite, type SpriteId, artId } from './render/sprites';
+import { drawSprite, type SpriteId } from './render/sprites';
 import { drawText } from './render/text';
 import { Button } from './ui/button';
 import { Recap } from './ui/recap';
@@ -87,6 +87,9 @@ export type Phase = 'title' | 'fighting' | 'between' | 'over' | 'quick' | 'recap
 
 const RELIC_X = 22;
 const RELIC_Y = 118;
+/** 4 wide so act 2's 10-12 relics never slide under the strip map. */
+const RELIC_COLS = 4;
+const RELIC_PITCH = 34;
 
 export class Game {
   cfg: GameConfig;
@@ -295,7 +298,12 @@ export class Game {
       this.screens.setUnlockedNow(this.checkUnlocks(run));
       this.screens.showOver(run);
     }
-    else if (run.pendingLegend) this.screens.showLegend(run, run.pendingLegend, record);
+    else if (run.pendingLegend) {
+      // The House is gone: set up the idle machines for act 2 so its HUD doesn't linger behind.
+      this.newFight(false, null, fightConfig(run, this.cfg), true);
+      this.phase = 'between';
+      this.screens.showLegend(run, run.pendingLegend, record);
+    }
     else if (run.pendingSpoils) this.screens.showSpoils(run, run.pendingSpoils, record);
     else this.screens.showDraft(run, draftOffers(run), record);
     this.syncButtons();
@@ -424,6 +432,10 @@ export class Game {
         potPunch: 1,
         fightLabel: this.run && inRun ? (this.run.depth >= RUN_FIGHTS ? 'BOSS' : `ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${RUN_FIGHTS}`) : 'SANDBOX',
         allIn: false,
+        reflect: 0,
+        turnDamage: 0,
+        cracked: false,
+        chipsEaten: 0,
       },
     };
     this.director = new Director(this.stage);
@@ -663,7 +675,8 @@ export class Game {
   private drawRelics(ctx: CanvasRenderingContext2D): void {
     if (this.run && this.phase !== 'title') {
       drawSprite(ctx, 'chip', 30, 30, 2);
-      drawText(ctx, `${this.run.player.chips}`, 48, 30, 3, COLORS.energy, { align: 'left' });
+      const eaten = this.phase === 'fighting' ? (this.stage.gutter.chipsEaten ?? 0) : 0;
+      drawText(ctx, `${Math.max(0, this.run.player.chips - eaten)}`, 48, 30, 3, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
       drawText(ctx, CABINETS[this.run.cabinet].name, 30, 58, 1, COLORS.textDim, { align: 'left' });
       if (this.fight.isBoss) {
         drawSprite(ctx, 'chipShield', 120, 30, 2);
@@ -674,13 +687,13 @@ export class Game {
     if (!relics.length) return;
     drawText(ctx, 'RELICS', RELIC_X + 60, RELIC_Y - 22, 2, COLORS.textDim);
     relics.forEach((r, i) => {
-      const x = RELIC_X + 20 + (i % 3) * 42;
-      const y = RELIC_Y + Math.floor(i / 3) * 42;
+      const x = RELIC_X + 16 + (i % RELIC_COLS) * RELIC_PITCH;
+      const y = RELIC_Y + Math.floor(i / RELIC_COLS) * RELIC_PITCH;
       ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(x - 19, y - 19, 38, 38);
+      ctx.fillRect(x - 16, y - 16, 32, 32);
       ctx.fillStyle = COLORS.panel;
-      ctx.fillRect(x - 17, y - 17, 34, 34);
-      drawSprite(ctx, RELICS[r].sprite as SpriteId, x, y, 2);
+      ctx.fillRect(x - 14, y - 14, 28, 28);
+      drawSprite(ctx, RELICS[r].sprite as SpriteId, x, y, 1.6);
     });
   }
 
@@ -688,8 +701,8 @@ export class Game {
     if (this.screens.active) return;
     const relics = this.relicList();
     const i = relics.findIndex((_, i) => {
-      const x = RELIC_X + 20 + (i % 3) * 42;
-      const y = RELIC_Y + Math.floor(i / 3) * 42;
+      const x = RELIC_X + 16 + (i % RELIC_COLS) * RELIC_PITCH;
+      const y = RELIC_Y + Math.floor(i / RELIC_COLS) * RELIC_PITCH;
       return Math.abs(this.mouse.x - x) < 19 && Math.abs(this.mouse.y - y) < 19;
     });
     if (i < 0) return;
@@ -792,7 +805,8 @@ export class Game {
     const ab = e.ability;
     if (!ab) return;
     const hud = this.stage.huds.enemy;
-    const dmg = Math.max(REFLECT_MIN, Math.min(ab.power, this.fight.last.player.damage));
+    const g = this.stage.gutter;
+    const dmg = Math.max(REFLECT_MIN, Math.min(ab.power, Math.max(g.reflect ?? 0, g.turnDamage ?? 0)));
     const left = Math.max(1, ab.every - hud.charge);
     const soon = left <= 1;
     const glow = soon ? 0.4 + 0.3 * Math.sin(t * 10) : 0.15;
@@ -809,10 +823,10 @@ export class Game {
     ctx.fillRect(x - 106, y - 52, 212, 104);
     ctx.fillStyle = '#10202e';
     ctx.fillRect(x - 101, y - 47, 202, 94);
-    drawText(ctx, soon ? 'REFLECTS NEXT TURN!' : `REFLECTION IN ${left}`, x, y - 32, 2, soon ? '#ff6a5a' : '#c8f0ff');
-    drawSprite(ctx, artId('icoReflect'), x - 52, y + 10, 3);
-    drawText(ctx, String(dmg), x + 30, y + 10, 6, soon ? '#ff6a5a' : '#c8f0ff');
-    drawText(ctx, 'YOUR LAST SPIN', x, y + 40, 1.5, COLORS.textDim);
+    drawText(ctx, soon ? 'REFLECTS NEXT!' : `REFLECTION IN ${left}`, x, y - 32, 2, soon ? '#ff6a5a' : '#c8f0ff');
+    drawText(ctx, 'AT LEAST', x - 48, y + 10, 1.5, COLORS.textDim);
+    drawText(ctx, String(dmg), x + 38, y + 10, 6, soon ? '#ff6a5a' : '#c8f0ff');
+    drawText(ctx, 'YOUR BEST HIT SINCE', x, y + 36, 1.5, COLORS.textDim);
   }
 
   private arrow(ctx: CanvasRenderingContext2D, x: number, y: number, dir: number, s: number): void {

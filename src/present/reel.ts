@@ -20,6 +20,8 @@ export interface CellView {
   pop?: number;
   /** Gilded for the run. */
   enh?: Enh;
+  /** Tier II gild. */
+  tier?: 2;
   /** A Bomber's bomb: turns left on the fuse (0/undefined = none). */
   bomb?: number;
   /** 0..1 bomb pop-in. */
@@ -270,6 +272,11 @@ export function drawCell(
   if (cell.enh && !cell.slimed) {
     const shimmer = 0.85 + 0.15 * Math.sin(time * 4 + x * 0.05 + y * 0.03);
     drawSprite(ctx, ENH_SPRITE[cell.enh], x, y, ART_SCALE, { sx: sx * pop, sy: sy * pop, alpha: alpha * (1 - stolen) * shimmer, dim });
+    if (cell.tier === 2) {
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(x + 12, y - 34, 22, 16);
+      drawText(ctx, 'II', x + 23, y - 26, 1.5, COLORS.goldLight, { alpha });
+    }
   }
 
   // Bombs sit on top of the symbol with their fuse count ticking in the corner.
@@ -278,10 +285,17 @@ export function drawCell(
     const urgent = cell.bomb <= 1;
     const pulse = urgent ? 1 + 0.12 * Math.sin(time * 18) : 1;
     drawSprite(ctx, artId('bombOverlay'), x, y, ART_SCALE, { sx: sx * bp * pulse, sy: sy * bp * pulse, alpha });
+    if (urgent) {
+      ctx.save();
+      ctx.globalAlpha = (0.25 + 0.15 * Math.sin(time * 18)) * alpha;
+      ctx.fillStyle = '#ff3a2e';
+      ctx.fillRect(x - 32, y - 32, 64, 64);
+      ctx.restore();
+    }
     if (bp >= 1) {
       ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(x + 12, y + 12, 22, 22);
-      drawText(ctx, String(cell.bomb), x + 23, y + 23, 2, urgent ? '#ff5a4a' : '#ffd23f');
+      ctx.fillRect(x - 34, y - 34, 22, 22);
+      drawText(ctx, String(cell.bomb), x - 23, y - 23, 2, urgent ? '#ff5a4a' : '#ffd23f');
     }
   }
 

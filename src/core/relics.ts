@@ -27,21 +27,25 @@ export const RELICS: Record<RelicId, RelicDef> = {
   prism: { id: 'prism', name: 'PRISM', text: 'A MATCH THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
   hone: { id: 'hone', name: 'HONE', text: 'KEEN SWORDS DEAL +2 MORE', sprite: 'relicHone' },
   // Legendary (act 2): big, build-bending effects.
-  ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'A GILD ON ANY 2 REELS COUNTS AS A FULL SET', sprite: 'relicTicket' },
+  ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'FULL SETS NEED ONLY 2 REELS AND PAY ONE STEP MORE', sprite: 'relicTicket' },
   bell: { id: 'bell', name: 'JACKPOT BELL', text: 'YOUR JACKPOTS PAY X2', sprite: 'relicBell' },
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'ONCE PER FIGHT, SURVIVE A LETHAL HIT AT 1 HP', sprite: 'relicPhoenix' },
-  overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR SPECIAL FIRES AGAIN AT HALF DAMAGE', sprite: 'relicOvercharge' },
-  key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR DOUBLES PAY X1.5', sprite: 'relicKey' },
+  overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR SPECIAL FIRES AGAIN FOR A THIRD OF ITS DAMAGE', sprite: 'relicOvercharge' },
+  key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR DOUBLES PAY X2', sprite: 'relicKey' },
   sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: 'ENEMY ABILITIES CHARGE 2 TURNS SLOWER', sprite: 'relicSandglass' },
 };
 
 export const LEGENDARY: ReadonlySet<RelicId> = new Set<RelicId>(['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass']);
 export const BELL_MULT = 2;
-export const KEY_MULT = 1.5;
+export const KEY_MULT = 2;
 export const SANDGLASS_SLOW = 2;
 /** Act 2 gilds. */
-export const LUCKY_CHANCE = { each: 0.25, full: 0.4 };
-export const BLAZE_BONUS = { each: 3, full: 4 };
+/** LUCKY: chance per level (1 = plain, +1 tier II, +1 full set): each + step × (level − 1). */
+export const LUCKY_CHANCE = { each: 0.35, step: 0.15 };
+/** BLAZE: special damage per blaze reel = each + (level − 1). */
+export const BLAZE_BONUS = { each: 3 };
+/** OVERCHARGE: the echo deals this fraction of the special. */
+export const OVERCHARGE_ECHO = 1 / 3;
 /** Bomber bombs: fuse in the victim's turns, damage when it runs out (shield blocks). */
 export const BOMB = { fuse: 3, damage: 3 };
 /** The Mirror's Reflection: never less than this. */

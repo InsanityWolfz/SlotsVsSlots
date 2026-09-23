@@ -14,6 +14,7 @@ import {
   fightConfig,
   finishFight,
   fullSets,
+  machinePower,
   isShopNow,
   leaveShop,
   shopOffers,
@@ -178,21 +179,21 @@ describe('legendary relics', () => {
     expect(f.over).toBe(false);
   });
 
-  it('OVERCHARGE echoes the special; KEY doubles x1.5; BELL jackpots x2; HOURGLASS slows abilities', () => {
+  it('OVERCHARGE echoes the special; KEY doubles x2; BELL jackpots x2; HOURGLASS slows abilities', () => {
     const f = fight((c) => {
       c.relics = ['overcharge'];
       c.player.strips = reels3({ bolt: 12 });
     });
     f.forceNext('player', ['bolt', 'bolt', 'bolt']);
     const fires = ofType(f.step().events, 'specialFire');
-    expect(fires.map((x) => x.amount)).toEqual([base.specialDamage, Math.ceil(base.specialDamage / 2)]);
+    expect(fires.map((x) => x.amount)).toEqual([base.specialDamage, Math.ceil(base.specialDamage / 3)]);
 
     const k = fight((c) => {
       c.relics = ['key'];
       c.player.strips = reels3({ sword: 6, shield: 6 });
     });
     k.forceNext('player', ['sword', 'sword', 'shield']);
-    expect(ofType(k.step().events, 'attack')[0].amount).toBe(6);
+    expect(ofType(k.step().events, 'attack')[0].amount).toBe(8);
 
     const b = fight((c) => {
       c.relics = ['bell'];
@@ -273,7 +274,7 @@ describe('act structure', () => {
     expect(cfg.enemy.strips).toEqual(run.player.strips);
     expect(cfg.enemy.gilded).toEqual(run.player.gilded);
     expect(cfg.enemy.hp).toBe(enemyHp(run, run.enemies[RUN_FIGHTS]));
-    expect(cfg.enemy.hp).toBe(Math.round(run.player.maxHp * TUNE.mirrorPerMaxHp) + 6);
+    expect(cfg.enemy.hp).toBe(Math.round(TUNE.mirrorPower * machinePower(run)) + TUNE.mirrorFlat);
     expect(cfg.enemy.ability?.kind).toBe(MIRROR.ability.kind);
 
     const f = new Fight(cfg, 9);
