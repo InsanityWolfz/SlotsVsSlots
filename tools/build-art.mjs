@@ -52,6 +52,9 @@ const PALETTE = {
   X: '#b3c98f', // orc skin light (green-grey)
   Z: '#7f9a68', // orc skin
   z: '#4a6046', // orc skin dark
+  // --- map / relic / card additions
+  a: '#ffb070', // apricot (gremlin skin light)
+  w: '#c98f58', // light wood (trap / handles top face)
 };
 
 const UI_COLORS = {
@@ -871,29 +874,29 @@ S.enemyThief = lit(24, 24, [
   // head
   const spans = [[8, 15], [6, 17], [5, 18], [5, 18], [5, 18], [5, 18], [5, 18], [5, 18], [5, 18], [5, 18], [6, 17], [6, 17], [7, 16], [8, 15], [9, 14]];
   shape(g, 2, spans, (x, y, has) => {
-    if (!has(x + 1, y) || !has(x + 2, y) || !has(x, y + 1)) return 'v';
-    if (!has(x - 1, y) || !has(x, y - 1)) return 'J';
-    return 'V';
+    if (!has(x + 1, y) || !has(x + 2, y) || !has(x, y + 1)) return 'o';
+    if (!has(x - 1, y) || !has(x, y - 1)) return 'a';
+    return 'O';
   });
   // huge bat ears
   stamp(g, 0, 2, [
-    'J                      v',
-    'JJ                    vv',
-    'JMJ                  vmv',
-    'JMMJ                vmmv',
-    'JMmMJ              vmmVv',
-    ' JMmMJ            vmmMv ',
-    '  JMmJ            vmmv  ',
-    '   JMJ            vmv   ',
-    '    JJ            vv    ',
+    'a                      o',
+    'aa                    oo',
+    'aMa                  omo',
+    'aMMa                ommo',
+    'aMmMa              ommoo',
+    ' aMmMa            ommMo ',
+    '  aMma            ommo  ',
+    '   aMa            omo   ',
+    '    aa            oo    ',
   ]);
   // goggles on a strap
   stamp(g, 4, 6, [
     ' bbGGGGbbbbGGGGbb ',
     ' bGWAAAgbbGWAAAgb ',
-    '  GAAAAgVVGAAAAg  ',
-    '  GAAAUgVVGAAAUg  ',
-    '   ggggVVVVgggg   ',
+    '  GAAAAgooGAAAAg  ',
+    '  GAAAUgooGAAAUg  ',
+    '   ggggoooogggg   ',
   ]);
   // jagged grin
   stamp(g, 6, 12, [
@@ -949,6 +952,261 @@ S.enemyBoss = lit(24, 24, [
   'ggggggggggggggggggggg...',
 ]);
 
+// ================================================================ RELICS / CARDS / MAP BADGES (batch 2)
+// ---------------------------------------------------------------- counter relics (16x16)
+S.relicMittens = lit(16, 16, [
+  '................',
+  '...RRR....RRR...',
+  '..RWRRr..RRRRr..',
+  '..RRRRr..RRRRr..',
+  '..RRRRr..RRRRr..',
+  '..TRTRT..TRTRt..',
+  '.RKTRTr..RTRTKr.',
+  '.RKRRRr..RRRRKr.',
+  '.RRRRRr..RRRRrr.',
+  '..RRRRr..RRRRr..',
+  '..rrrrr..rrrrr..',
+  '..WTTTt..WTTTt..',
+  '..TtTtt..TtTtt..',
+  '..TtTtt..TtTtt..',
+  '..ttttt..ttttt..',
+]);
+{
+  const g = grid(16, 16);
+  // tension wrench: slim L lying behind, bottom-right
+  for (let y = 5; y <= 12; y++) { put(g, 13, y, 'L'); }
+  put(g, 12, 5, 'L'); put(g, 11, 5, 'S');
+  hline(g, 7, 13, 13, 'S'); put(g, 7, 13, 'L');
+  // pick shaft: diagonal 2px band, lit on the upper-left edge
+  for (let i = 0; i <= 6; i++) { put(g, 5 + i, 10 - i, 'L'); put(g, 6 + i, 10 - i, 'S'); }
+  // hooked tip
+  put(g, 11, 3, 'L'); put(g, 12, 3, 'S'); put(g, 12, 2, 'W'); put(g, 13, 2, 'S'); put(g, 12, 1, 'L');
+  // gold handle with a grip notch
+  stamp(g, 1, 9, [
+    '   YG ',
+    '  YGGg',
+    ' YGgGg',
+    'YGgGg ',
+    'GGGg  ',
+    ' gg   ',
+  ]);
+  put(g, 3, 10, 'W');
+  S.relicLockpick = toRows(outline(g));
+}
+S.relicMousetrap = lit(16, 16, [
+  '................',
+  '................',
+  '................',
+  '..WLLLLS........',
+  '..L....D........',
+  '..L....D...YY...',
+  '..L....D.YWYYG..',
+  '..L....DYYYYGGg.',
+  '..L....DYgYYGgg.',
+  '..S....DGGGgGgg.',
+  '.wwLSLSDwwwwwwww',
+  '.wwwwwwwwwwwwwwB',
+  '.BBBBBBBBBBBBBBb',
+  '.bbbbbbbbbbbbbbb',
+]);
+{
+  const g = grid(16, 16);
+  // steel head: thick arc bowed away from the handle, lit on its outer edge
+  const hx = 3.5, hy = 12.5;
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const d = Math.hypot(x - hx, y - hy), a = Math.atan2(y - hy, x - hx) * 180 / Math.PI;
+    if (d >= 9.2 && d <= 11.3 && a >= -100 && a <= 10) {
+      const end = a < -88 || a > -2;
+      put(g, x, y, end ? 'D' : d > 10.4 ? (a < -45 ? 'L' : 'S') : (a < -45 ? 'S' : 'D'));
+    }
+  }
+  // wooden handle along the radius
+  for (let i = 0; i <= 8; i++) { put(g, 2 + i, 13 - i, 'w'); put(g, 3 + i, 13 - i, 'B'); put(g, 3 + i, 14 - i, 'b'); }
+  put(g, 1, 14, 'b'); put(g, 2, 14, 'b');
+  put(g, 6, 2, 'W'); put(g, 7, 2, 'W'); put(g, 8, 2, 'W');
+  // rock chip flying off the tip + a speck
+  stamp(g, 12, 13, ['IH', 'Hh']);
+  put(g, 14, 11, 'I');
+  S.relicPickaxe = toRows(outline(g));
+}
+{
+  const g = grid(16, 16);
+  /** 7x7 red die with rounded corners showing six, lit top-left. */
+  const die = (x0, y0) => {
+    for (let y = 0; y < 7; y++) for (let x = 0; x < 7; x++) {
+      if ((x === 0 || x === 6) && (y === 0 || y === 6)) continue;
+      const c = (x === 6 || y === 6) ? 'r' : (x === 0 || y === 0) ? 'M' : 'R';
+      put(g, x0 + x, y0 + y, c);
+    }
+    [[1, 1], [5, 1], [1, 3], [5, 3], [1, 5], [5, 5]].forEach(([x, y]) => put(g, x0 + x + (x > 3 ? 0 : 1), y0 + y, 'W'));
+    put(g, x0 + 1, y0 + 1, 'M');
+  };
+  die(8, 1); die(1, 8);
+  // tiny luck sparkles in the free corners
+  stamp(g, 2, 2, [' Y ', 'YWY', ' Y ']);
+  put(g, 13, 12, 'Y');
+  S.relicDice = toRows(outline(g));
+}
+S.relicCrown = lit(16, 16, [
+  '................',
+  '................',
+  '..W....WY....Y..',
+  '..Y....YG....G..',
+  '..YG..YGGg..Gg..',
+  '..YGG.YGGg.GGg..',
+  '..YGGGGGGGGGGg..',
+  '..YGGGGRRGGGGg..',
+  '..YGGGRWRrGGGg..',
+  '..YGGGRRrrGGGg..',
+  '..YGGGGrrGGGGg..',
+  '..gggggggggggg..',
+  '..YWYYYYYYYYYG..',
+  '..GRGGGAAGGGRg..',
+  '..gggggggggggg..',
+]);
+
+// ---------------------------------------------------------------- card icons (16x16)
+{
+  const g = grid(16, 16);
+  const c = 7.5, top = new Set(), bot = new Set();
+  const k = (x, y) => `${x},${y}`;
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const d = Math.hypot(x - c, y - c), a = Math.atan2(y - c, x - c) * 180 / Math.PI;
+    if (d < 3.4 || d > 5.6) continue;
+    if (a >= -165 && a <= -22) top.add(k(x, y));
+  }
+  // arrowhead at the clockwise end (right side), pointing down
+  [[10, 14, 6], [11, 13, 7], [12, 12, 8]].forEach(([a, b, y]) => { for (let x = a; x <= b; x++) top.add(k(x, y)); });
+  for (const p of top) { const [x, y] = p.split(',').map(Number); bot.add(k(15 - x, 15 - y)); }
+  const paint = (set, hi, mid, lo) => {
+    const has = (x, y) => set.has(k(x, y));
+    for (const p of set) { const [x, y] = p.split(',').map(Number); put(g, x, y, edgeShade(hi, mid, lo)(x, y, has)); }
+  };
+  paint(top, 'E', 'e', 'Q');
+  paint(bot, 'C', 'A', 'c');
+  put(g, 5, 2, 'W'); put(g, 4, 3, 'W');
+  put(g, 3, 9, 'W');
+  S.cardSwap = toRows(outline(g));
+}
+S.cardClear = lit(16, 16, [
+  '................',
+  '.............wB.',
+  '............wB..',
+  '...........wB...',
+  '..........wB....',
+  '.........wB.....',
+  '........wB......',
+  '......RRr.......',
+  '.....RWRrr......',
+  '....YYGrrG......',
+  '...YYGGGgg......',
+  '..YYGGGgg.....I.',
+  '.YWGGGgGg...I...',
+  '.YGgGgGg...IH.Hh',
+  '..g.g.g...IHh...',
+]);
+S.arrowRight = lit(8, 8, [
+  '........',
+  '....Y...',
+  '....YY..',
+  '.WYYYYY.',
+  '.GGGGGg.',
+  '....Gg..',
+  '....g...',
+]);
+
+// ---------------------------------------------------------------- gold pots
+/** Heap of coins: upper half-ellipse filled with a staggered 4x2 coin-scale pattern, lit top-left. */
+function coinHeap(g, cx, baseY, rx, ry) {
+  const top = baseY - ry;
+  for (let y = Math.ceil(top); y <= baseY; y++) for (let x = 0; x < g[0].length; x++) {
+    if (((x - cx) / rx) ** 2 + ((y - baseY) / ry) ** 2 > 1) continue;
+    const r = y - Math.ceil(top), band = Math.floor(r / 2), v = r % 2;
+    const u = (x + (band % 2) * 2) % 4;
+    const light = (x - cx) / rx * 0.6 + (y - top) / (ry + 1) * 0.8;
+    const lo = light > 0.55, hi = light < 0.1;
+    let col;
+    if (v === 0) col = (u === 1 || u === 2) ? (lo ? 'G' : 'Y') : 'g';
+    else col = u === 3 ? (lo ? 'g' : 'G') : (lo ? 'G' : 'Y');
+    if (hi && v === 0 && u === 1) col = 'W';
+    put(g, x, y, col);
+  }
+}
+/** Small flat coin lying down (4x2). */
+const flatCoin = (g, x, y) => stamp(g, x, y, [' YY ', 'GYYg']);
+S.potTier1 = lit(16, 16, [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '.....WYYYY......',
+  '...YYYGGGGYG....',
+  '...YYYYYYYYg....',
+  '...YGGGGGGGg....',
+  '...gggggggggg...',
+  '....YGGGGGGGg...',
+  '....gggggggggg..',
+  '...YGGGGGGGGg...',
+  '...gggggggggg...',
+]);
+{
+  const g = grid(24, 24);
+  coinHeap(g, 11.5, 20, 10.5, 12);
+  hline(g, 2, 21, 21, 'g');
+  flatCoin(g, 0, 20); flatCoin(g, 19, 20);
+  S.potTier2 = toRows(outline(g));
+}
+{
+  const g = grid(24, 24);
+  coinHeap(g, 11.5, 10, 9.5, 8);
+  // iron pot: rim + belly + feet
+  shape(g, 12, [[3, 20], [2, 21], [2, 21], [2, 21], [2, 21], [3, 20], [3, 20], [4, 19], [6, 17]], (x, y, has) =>
+    (!has(x + 1, y) || !has(x, y + 1) || x >= 17) ? 'N' : (!has(x - 1, y) || x <= 4) ? 'S' : 'D');
+  hline(g, 1, 22, 10, 'L'); hline(g, 1, 22, 11, 'S'); put(g, 1, 10, 'W'); put(g, 2, 10, 'W'); put(g, 22, 11, 'D'); put(g, 22, 10, 'S');
+  put(g, 5, 13, 'L'); put(g, 4, 14, 'L'); put(g, 4, 15, 'L');
+  stamp(g, 5, 21, ['DN', ' N']); stamp(g, 17, 21, ['DN', 'N ']);
+  // coins spilling over the rim and down the side
+  stamp(g, 19, 9, ['YYG', 'GYYg']);
+  stamp(g, 21, 12, ['YG', 'Gg']);
+  stamp(g, 21, 15, ['Y', 'g']);
+  flatCoin(g, 0, 21);
+  // gloss on the heap + sparkles
+  stamp(g, 0, 0, [
+    '  W       ',
+    '  Y       ',
+    'WYWYW     ',
+    '  Y       ',
+    '  W       ',
+  ]);
+  stamp(g, 19, 1, [' W ', 'WYW', ' W ']);
+  S.potTier3 = toRows(outline(g));
+}
+
+// ---------------------------------------------------------------- map fork (12x12)
+S.mapFork = lit(12, 12, [
+  '............',
+  '.WY......YG.',
+  '.YGG....YGg.',
+  '..YGG..YGg..',
+  '...YGGYGg...',
+  '....YGGg....',
+  '.....YG.....',
+  '.....YG.....',
+  '.....YG.....',
+  '.....YG.....',
+  '.....Gg.....',
+]);
+
+// ---------------------------------------------------------------- map writer badges (8x8)
+S.mapBadgeSlime = lit(8, 8, ['', '...Ee', '...Ee', '..EWeQ', '.EeeeeQ', '.eeeeQQ', '..QQQq']);
+S.mapBadgeIce = lit(8, 8, ['', '.C.CC.c', '..CCCc', '.CCWCcc', '.CCccc', '..Cccc', '.c.cc.c']);
+S.mapBadgeClaw = lit(8, 8, ['', '.T.T.T', '.J.J.Jv', '.JVJVJv', '.JVVVVv', '.JVVVvv', '..vvvv']);
+S.mapBadgeRock = lit(8, 8, ['', '', '..IIIH', '.IIHHHh', '.IHHHhh', '.HHhhhh', '..hhhh']);
+S.mapBadgeLock = lit(8, 8, ['', '..LLLS', '..L..D', '.YOOOOo', '.OOKKOo', '.OOOKOo', '.oooooo']);
+S.mapBadgeFist = lit(8, 8, ['', '..WFFF', '.FFFFFf', '.FfFfFf', '.FFFFFf', '.fFFFff', '..ffff']);
+S.mapBadgeCoin = lit(8, 8, ['', '..YYGg', '.YWYYGg', '.YYgYGg', '.YYgYGg', '.GYYGgg', '..Gggg']);
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -962,6 +1220,9 @@ const DIMS = {
   icoFlood: 8, icoSmash: 8, icoFreeze: 8, icoSteal: 8, icoLock: 8, icoRock: 8, icoCoin: 8,
   plusBadge: 8, minusBadge: 8, skull: 8,
   nodeFight: 12, nodeBoss: 12, nodeDone: 12, nodeHere: 12,
+  relicMittens: 16, relicLockpick: 16, relicMousetrap: 16, relicPickaxe: 16, relicDice: 16, relicCrown: 16,
+  cardSwap: 16, cardClear: 16, arrowRight: 8, potTier1: 16, potTier2: 24, potTier3: 24, mapFork: 12,
+  mapBadgeSlime: 8, mapBadgeIce: 8, mapBadgeClaw: 8, mapBadgeRock: 8, mapBadgeLock: 8, mapBadgeFist: 8, mapBadgeCoin: 8,
 };
 const errors = [];
 for (const [id, n] of Object.entries(DIMS)) {
@@ -1010,7 +1271,15 @@ export type SpriteId =
   | 'icoFlood' | 'icoSmash' | 'icoFreeze'        // intent / UI icons, 8x8
   | 'icoSteal' | 'icoLock' | 'icoRock' | 'icoCoin'
   | 'plusBadge' | 'minusBadge' | 'skull'
-  | 'nodeFight' | 'nodeBoss' | 'nodeDone' | 'nodeHere'; // map nodes, 12x12
+  | 'nodeFight' | 'nodeBoss' | 'nodeDone' | 'nodeHere' // map nodes, 12x12
+  | 'relicMittens' | 'relicLockpick' | 'relicMousetrap' // counter relics, 16x16
+  | 'relicPickaxe' | 'relicDice' | 'relicCrown'
+  | 'cardSwap' | 'cardClear' | 'potTier1'          // card / pot icons, 16x16
+  | 'arrowRight'                                   // 8x8
+  | 'potTier2' | 'potTier3'                        // 24x24
+  | 'mapFork'                                      // 12x12
+  | 'mapBadgeSlime' | 'mapBadgeIce' | 'mapBadgeClaw' // map writer badges, 8x8
+  | 'mapBadgeRock' | 'mapBadgeLock' | 'mapBadgeFist' | 'mapBadgeCoin';
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

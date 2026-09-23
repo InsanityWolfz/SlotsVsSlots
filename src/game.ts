@@ -5,7 +5,7 @@ import { RUN_FIGHTS } from './core/enemies';
 import { Fight } from './core/fight';
 import { turnRow, type TurnRow } from './core/log';
 import { RELICS } from './core/relics';
-import { applyOption, createRun, draftOffers, fightConfig, finishFight, type DraftOption, type RunState } from './core/run';
+import { applyOption, chooseEnemy, createRun, draftOffers, fightConfig, finishFight, needsChoice, type DraftOption, type RunState } from './core/run';
 import { StatsTracker } from './core/stats';
 import { Camera } from './present/camera';
 import { Clock } from './present/clock';
@@ -108,9 +108,9 @@ export class Game {
     const p = load<Partial<Prefs>>(PREFS_KEY) ?? {};
     this.prefs = { speed: p.speed ?? 1, auto: p.auto ?? true, juice: { ...defaultJuice(), ...(p.juice ?? {}) }, muted: p.muted ?? false };
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
-    this.screens = new RunScreens(this.ui, this.sounds, {
+    this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {
       onPick: (o) => this.pickReward(o),
-      onFight: () => this.beginRunFight(),
+      onFight: (i) => this.beginRunFight(i),
       onNewRun: () => this.startRun(),
     });
     this.buildButtons();
@@ -199,8 +199,9 @@ export class Game {
     this.startRun();
   }
 
-  private beginRunFight(): void {
+  private beginRunFight(option = 0): void {
     if (!this.run) return;
+    if (needsChoice(this.run)) chooseEnemy(this.run, option);
     this.screens.hide();
     this.newFight(true, null, fightConfig(this.run, this.cfg), true);
   }
@@ -272,7 +273,7 @@ export class Game {
         turn: 0,
         side: null,
         pulse: 0,
-        pot: 0,
+        pot: this.fight.pot,
         potPunch: 1,
         fightLabel: this.run ? (this.run.depth >= RUN_FIGHTS ? 'BOSS' : `FIGHT ${this.run.depth + 1}/${RUN_FIGHTS}`) : 'SANDBOX',
       },
@@ -280,7 +281,10 @@ export class Game {
     this.director = new Director(this.stage);
     if (start) {
       this.phase = inRun ? 'fighting' : 'quick';
-      if (!inRun) this.run = null;
+      if (!inRun) {
+        this.run = null;
+        this.screens.hide();
+      }
     }
     this.syncButtons();
     this.onFightChange.forEach((f) => f());
@@ -579,23 +583,36 @@ export class Game {
         this.arrow(ctx, cx + dir * bob, cy, dir, 26);
       }
     }
-    if (this.fight.isBoss) this.drawPot(ctx, cx, cy + 110, t);
+    if (this.fight.isBoss) this.drawPot(ctx, cx, cy + 118, t);
     else drawText(ctx, 'VS', cx, cy + 70, 6, '#ff6a5a', { alpha: 0.35 + 0.1 * Math.sin(t * 2) });
     if (this.prefs.speed > 1) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, cy + 172, 2, COLORS.textDim);
   }
 
-  /** The House's progressive pot, front and centre. */
+  /** The House's progressive pot, front and centre: grows (and glows) with the stakes. */
   private drawPot(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
     const g = this.stage.gutter;
+    const pot = Math.round(g.pot);
+    const tier = pot >= 12 ? 3 : pot >= 6 ? 2 : 1;
+    const glow = tier === 3 ? 0.5 + 0.3 * Math.sin(t * 8) : tier === 2 ? 0.25 + 0.1 * Math.sin(t * 4) : 0;
+    if (glow > 0) {
+      ctx.save();
+      ctx.globalAlpha = glow;
+      ctx.shadowColor = tier === 3 ? '#ff6a5a' : COLORS.energy;
+      ctx.shadowBlur = 30;
+      ctx.fillStyle = ctx.shadowColor;
+      ctx.fillRect(x - 110, y - 56, 220, 112);
+      ctx.restore();
+    }
     ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(x - 84, y - 42, 168, 84);
+    ctx.fillRect(x - 110, y - 56, 220, 112);
     ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(x - 81, y - 39, 162, 78);
+    ctx.fillRect(x - 106, y - 52, 212, 104);
     ctx.fillStyle = '#3a0f1a';
-    ctx.fillRect(x - 77, y - 35, 154, 70);
-    drawText(ctx, 'THE POT', x, y - 20, 2, COLORS.goldLight);
-    drawSprite(ctx, 'coin', x - 46, y + 10, 2, { flash: g.pot > 0 ? 0.2 + 0.2 * Math.sin(t * 5) : 0 });
-    drawText(ctx, `${Math.round(g.pot)}`, x + 16, y + 10, 4, g.pot >= 10 ? '#ff6a5a' : COLORS.energy, { punch: g.potPunch });
+    ctx.fillRect(x - 101, y - 47, 202, 94);
+    drawText(ctx, this.fight.allIn ? 'ALL IN POT' : 'THE POT', x, y - 32, 2, this.fight.allIn ? '#ff6a5a' : COLORS.goldLight);
+    const sprite = tier === 3 ? 'potTier3' : tier === 2 ? 'potTier2' : 'potTier1';
+    drawSprite(ctx, sprite, x - 52, y + 12, tier === 1 ? 3 : 2.5, { flash: glow * 0.5 });
+    drawText(ctx, String(pot), x + 34, y + 12, 6, tier === 3 ? '#ff6a5a' : COLORS.energy, { punch: g.potPunch });
   }
 
   private arrow(ctx: CanvasRenderingContext2D, x: number, y: number, dir: number, s: number): void {

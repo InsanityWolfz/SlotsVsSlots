@@ -39,6 +39,28 @@ export function installDebug(game: Game): void {
       return hit;
     },
     force: (side: SideId, line: SymbolId[]) => game.fight.forceNext(side, line),
+    /**
+     * Run the whole game loop (UI clock, game clock, camera, particles) for `sec` seconds without
+     * requestAnimationFrame — works even when the browser pane isn't painting.
+     */
+    async tick(sec: number, until?: () => boolean) {
+      for (let i = 0; i < sec * 60 && !until?.(); i++) {
+        game.update(1 / 60);
+        await new Promise((r) => setTimeout(r, 0));
+      }
+    },
+    /** Render the current frame offscreen and POST it to playtest/scratch/snap-server.mjs (:5199). */
+    async snap(name = 'snap', scale = 0.75): Promise<string> {
+      const c = document.createElement('canvas');
+      c.width = Math.round(1280 * scale);
+      c.height = Math.round(720 * scale);
+      const ctx = c.getContext('2d')!;
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      game.draw(ctx);
+      const res = await fetch(`http://localhost:5199/?name=${encodeURIComponent(name)}`, { method: 'POST', body: c.toDataURL('image/png') });
+      return res.text();
+    },
     /** Start a new run (optionally seeded). */
     run: (seed?: number) => game.startRun(seed),
     /** Make the current fight end in a win on the player's next spin (for walking run screens). */

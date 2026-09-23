@@ -2,39 +2,62 @@ import type { GameConfig, RelicId } from '../core/config';
 import { RUN_FIGHTS } from '../core/enemies';
 import { Fight } from '../core/fight';
 import { Rng } from '../core/rng';
-import { applyOption, createRun, draftOffers, finishFight, fightConfig, type DraftOption, type RunState } from '../core/run';
+import { applyOption, chooseEnemy, createRun, draftOffers, finishFight, fightConfig, needsChoice, type DraftOption, type RunState } from '../core/run';
 
-export type DraftPolicy = 'greedy' | 'random';
+export type DraftPolicy = 'greedy' | 'random' | 'relic';
 
 const RELIC_VALUE: Record<RelicId, number> = {
+  mirror: 10,
+  battery: 9.5,
+  fang: 9,
   whetstone: 8,
-  mirror: 8,
-  clover: 7,
-  fang: 6,
-  battery: 6,
+  clover: 7.5,
+  dice: 7,
+  hourglass: 6.5,
   bandage: 6,
-  hourglass: 5,
-  soap: 4,
+  soap: 5,
+  mittens: 5,
+  lockpick: 5,
+  mousetrap: 5,
   magnet: 3,
+  pickaxe: 3,
+  crown: 4,
 };
 
-/** A reasonable human-ish drafter: patch HP when low, dig out rocks, stack swords on reels 1-2. */
+/** Rough per-archetype danger for picking at forks (playtest ITERATION_1 kill rates). */
+const DANGER: Record<string, number> = { slime: 3, frost: 6, golem: 5, thief: 11, gremlin: 15, brute: 15 };
+const COUNTER: Record<string, RelicId> = { frost: 'mittens', gremlin: 'lockpick', thief: 'mousetrap', golem: 'pickaxe' };
+
+/** A reasonable human-ish drafter, tuned against rollout values from playtest ITERATION_1. */
 export function greedyValue(run: RunState, o: DraftOption): number {
   const p = run.player;
+  const rocks = p.strips.reduce((a, s) => a + (s.rock ?? 0), 0);
   switch (o.kind) {
-    case 'relic': {
-      const rocks = p.strips.reduce((a, s) => a + (s.rock ?? 0), 0);
-      return o.relic === 'magnet' && rocks > 0 ? 6 : RELIC_VALUE[o.relic];
-    }
+    case 'relic':
+      if ((o.relic === 'magnet' || o.relic === 'pickaxe') && rocks > 0) return 7 + rocks * 0.3;
+      return RELIC_VALUE[o.relic];
     case 'heal':
-      return (1 - p.hp / p.maxHp) * 16;
+      return (1 - p.hp / p.maxHp) * 20;
     case 'maxHp':
-      return 4;
+      return 5;
+    case 'swap':
+      return (o.to === 'bolt' ? 8 : 6) + (o.from === 'rock' ? 2 : 0);
+    case 'clear':
+      return 3 + (p.strips[o.reel].rock ?? 0) * 2;
     case 'add':
-      return o.symbol === 'sword' ? (o.reel < 2 ? 6 : 4) : o.symbol === 'bolt' ? 5 : 2;
-    case 'remove':
-      return o.symbol === 'rock' ? 9 : o.symbol === 'shield' ? 5 : o.symbol === 'bolt' ? 1 : 0;
+      return o.symbol === 'bolt' ? 6 : 2;
   }
+}
+
+function pickEnemy(run: RunState, policy: DraftPolicy, rng: Rng): number {
+  const opts = run.paths[run.depth];
+  if (policy === 'random') return rng.int(opts.length);
+  const score = (i: number) => {
+    const a = opts[i].archetype;
+    const countered = COUNTER[a] && run.player.relics.includes(COUNTER[a]);
+    return (DANGER[a] ?? 8) * (countered ? 0.4 : 1);
+  };
+  return opts.map((_, i) => i).reduce((best, i) => (score(i) < score(best) ? i : best), 0);
 }
 
 export interface RunSummary {
@@ -70,6 +93,7 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
   for (let i = 0; i < runs; i++) {
     const run = createRun(base, seeds.int(0xffffffff));
     while (!run.over) {
+      if (needsChoice(run)) chooseEnemy(run, pickEnemy(run, policy, pick));
       if (run.depth === RUN_FIGHTS) {
         reachedBoss++;
         bossHp += run.player.hp;
@@ -89,7 +113,13 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
       if (run.won) bossWins++;
       if (!run.over) {
         const offers = draftOffers(run);
-        const o = policy === 'random' ? pick.pick(offers) : offers.reduce((a, b) => (greedyValue(run, b) > greedyValue(run, a) ? b : a));
+        const relic = offers.find((x) => x.kind === 'relic');
+        const o =
+          policy === 'random'
+            ? pick.pick(offers)
+            : policy === 'relic' && relic
+              ? relic
+              : offers.reduce((a, b) => (greedyValue(run, b) > greedyValue(run, a) ? b : a));
         applyOption(run, o);
       }
     }

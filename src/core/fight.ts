@@ -1,6 +1,6 @@
 import { cloneConfig, type AbilityDef, type GameConfig, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
 import type { CombatEvent } from './events';
-import { BATTERY_ENERGY, CLOVER_CHANCE, FANG_HEAL, WHETSTONE_BONUS } from './relics';
+import { BATTERY_ENERGY, CLOVER_CHANCE, FANG_HEAL, LOCKPICK_CHANCE, MOUSETRAP_CHANCE, MOUSETRAP_DAMAGE, POT, WHETSTONE_BONUS } from './relics';
 import { Rng } from './rng';
 import { isNearMiss, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {
@@ -82,6 +82,8 @@ export class Fight {
   winner: SideId | null = null;
   /** The House's progressive pot (boss fight). */
   pot = 0;
+  /** Boss went ALL IN (phase 2). */
+  allIn = false;
   private forced: Partial<Record<SideId, SymbolId[]>> = {};
 
   constructor(cfg: GameConfig, seed: number = cfg.seed ?? Rng.randomSeed()) {
@@ -95,6 +97,7 @@ export class Fight {
     if (p.relics.has('battery')) p.energy = Math.min(this.cfg.specialCost - 1, p.energy + BATTERY_ENERGY);
     const e = this.sides.enemy;
     if (e.ability && p.relics.has('hourglass')) e.ability = { ...e.ability, every: e.ability.every + 1 };
+    if (this.isBoss) this.pot = POT.seed;
   }
 
   get seed(): number {
@@ -139,7 +142,13 @@ export class Fight {
       this.resolveGroup(me, group, score, events);
       if (this.over) break;
     }
-    if (!this.over && side === 'player' && this.isBoss && score.tier === 'triple') this.winPot(me, events);
+    const steals = score.tier === 'triple' || (score.tier === 'pair' && me.relics.has('crown'));
+    if (!this.over && side === 'player' && this.isBoss && steals) this.winPot(me, events);
+    // The house always takes its cut.
+    if (!this.over && side === 'enemy' && this.isBoss) {
+      this.pot += POT.houseCut;
+      events.push({ type: 'pot', side, reels: [], amount: POT.houseCut, total: this.pot });
+    }
 
     if (!this.over) this.tickStatuses(me, events);
     if (!this.over && me.ability) this.chargeAbility(me, events);
@@ -155,7 +164,8 @@ export class Fight {
 
   private score(me: Combatant, line: SymbolId[]): LineScore {
     const pairRule = me.relics.has('mirror') ? 'anyTwo' : this.cfg.pairRule;
-    const s = scoreLine(line, { ...this.cfg, pairRule });
+    const tripleMult = me.relics.has('dice') ? this.cfg.tripleMult + 1 : this.cfg.tripleMult;
+    const s = scoreLine(line, { ...this.cfg, pairRule, tripleMult });
     if (me.relics.has('whetstone')) {
       for (const g of s.groups) if (g.matched && g.symbol === 'sword') g.amount += WHETSTONE_BONUS;
       s.totals = {};
@@ -222,6 +232,10 @@ export class Fight {
       this.cleanse(me, g.reels, events);
       return;
     }
+    if (g.symbol === 'rock' && me.relics.has('pickaxe')) {
+      this.hit(me, foe, g.amount, g.reels, events);
+      return;
+    }
     if (g.symbol === 'rock' && me.relics.has('magnet')) {
       this.gainEnergy(me, g.amount, g.reels, events);
       return;
@@ -265,10 +279,23 @@ export class Fight {
   }
 
   private checkDeath(c: Combatant, events: CombatEvent[]): void {
-    if (c.hp > 0 || this.over) return;
+    if (this.over) return;
+    if (c.hp > 0) {
+      // Boss phase 2: at half HP the House goes ALL IN and doubles the pot.
+      if (c.side === 'enemy' && this.isBoss && !this.allIn && c.hp <= c.maxHp / 2) {
+        this.allIn = true;
+        this.pot = Math.max(this.pot * 2, this.pot + 5);
+        events.push({ type: 'phase', side: c.side, pot: this.pot });
+      }
+      return;
+    }
     this.winner = other(c.side);
     events.push({ type: 'death', side: c.side });
     events.push({ type: 'fightEnd', winner: this.winner, turns: this.turn });
+  }
+
+  private fizzle(me: Combatant, symbol: SymbolId, reels: number[], events: CombatEvent[]): void {
+    events.push({ type: 'fizzle', side: me.side, reels, symbol });
   }
 
   // ---- writers: what an enemy does to your machine ------------------------------------
@@ -278,15 +305,19 @@ export class Fight {
       case 'slime':
         return this.applySlime(me, foe, amount, reels, events);
       case 'ice':
-        return this.applyStatus(me, foe, 'frozen', statusSize(amount), statusSize(amount), reels, events);
+        // 1 reel × 1 turn, a double 2 × 2, a jackpot 2 × 3 (never all three reels).
+        return this.applyStatus(me, foe, 'frozen', amount >= 4 ? 2 : 1, amount >= 9 ? 3 : amount >= 4 ? 2 : 1, reels, events);
       case 'lock':
-        // Jams bite hard (the reel scores nothing), so they only ever last one turn.
+        // Jams bite hard (the reel scores nothing): single locks fizzle, doubles jam 1 reel,
+        // jackpots 2, always for one turn.
+        if (amount < 4) return this.fizzle(me, 'lock', reels, events);
         return this.applyStatus(me, foe, 'locked', amount >= 9 ? 2 : 1, 1, reels, events);
       case 'claw':
         return this.steal(me, foe, statusSize(amount), reels, events);
       case 'rock':
-        // Rocks are permanent for the run, so they come in small doses (1 / 2 / 3).
-        return this.junk(me, foe, statusSize(amount), reels, events);
+        // Rocks are permanent for the run: single rocks fizzle, doubles add 1, jackpots 2.
+        if (amount < 4) return this.fizzle(me, 'rock', reels, events);
+        return this.junk(me, foe, amount >= 9 ? 2 : 1, reels, events);
       case 'coin':
         this.pot += amount;
         events.push({ type: 'pot', side: me.side, reels, amount, total: this.pot });
@@ -305,17 +336,57 @@ export class Fight {
   }
 
   /**
-   * Freeze/jam `count` of the foe's reels for `turns` of their turns. Freeze targets the
-   * reels showing the least useful payline symbol (locks junk in place); jam targets the best.
+   * Freeze/jam `count` of the foe's reels for `turns` of their turns.
+   * Freeze: targets the reels showing the least useful payline symbol, first clunks each one
+   * stop to its least useful visible cell, and never holds a reels 1+2 match (a frozen pair
+   * would be a free double every turn). Jam: targets the most useful reels.
    */
   private applyStatus(me: Combatant, foe: Combatant, status: 'frozen' | 'locked', count: number, turns: number, reels: number[], events: CombatEvent[]): void {
+    const ice = status === 'frozen';
+    if (ice && foe.relics.has('mittens')) turns -= 1;
+    if (turns <= 0) {
+      events.push({ type: 'resist', side: foe.side, relic: 'mittens', what: 'freeze' });
+      return;
+    }
     const arr = foe[status];
-    const value = (r: number) => symbolValue(effectiveSymbol(foe.reels[r].cells[foe.reels[r].stop]));
+    const valueAt = (r: number, stop: number) => symbolValue(effectiveSymbol(foe.reels[r].cells[stop]));
     const order = this.rng.shuffle(foe.reels.map((_, r) => r));
-    order.sort((a, b) => (status === 'frozen' ? value(a) - value(b) : value(b) - value(a)));
-    const targets = order.slice(0, count).sort((a, b) => a - b);
+    order.sort((a, b) => (ice ? valueAt(a, foe.reels[a].stop) - valueAt(b, foe.reels[b].stop) : valueAt(b, foe.reels[b].stop) - valueAt(a, foe.reels[a].stop)));
+    let targets = order.slice(0, count).sort((a, b) => a - b);
+
+    if (!ice) {
+      if (foe.relics.has('lockpick')) {
+        const kept = targets.filter(() => this.rng.next() >= LOCKPICK_CHANCE);
+        if (kept.length < targets.length) events.push({ type: 'resist', side: foe.side, relic: 'lockpick', what: 'jam' });
+        targets = kept;
+      }
+      if (!targets.length) return;
+      for (const r of targets) arr[r] = Math.max(arr[r], turns);
+      events.push({ type: 'lock', from: me.side, to: foe.side, reels, targets, turns });
+      return;
+    }
+
+    const len = (r: number) => foe.reels[r].cells.length;
+    const sym = (r: number) => effectiveSymbol(foe.reels[r].cells[foe.reels[r].stop]);
+    const clunk = (r: number, avoid?: SymbolId) => {
+      const reel = foe.reels[r];
+      const options = [reel.stop, (reel.stop + len(r) - 1) % len(r), (reel.stop + 1) % len(r)];
+      const ok = options.filter((st) => !avoid || effectiveSymbol(reel.cells[st]) !== avoid);
+      const pool = ok.length ? ok : options;
+      let best = pool[0];
+      for (const st of pool) if (valueAt(r, st) < valueAt(r, best)) best = st;
+      reel.stop = best;
+    };
+    for (const r of targets) clunk(r);
+    const frozenAfter = (r: number) => targets.includes(r) || arr[r] > 0;
+    if (frozenAfter(0) && frozenAfter(1) && sym(0) === sym(1)) {
+      const fix = targets.includes(1) ? 1 : targets.includes(0) ? 0 : -1;
+      if (fix >= 0) clunk(fix, sym(fix === 1 ? 0 : 1));
+      if (fix >= 0 && sym(0) === sym(1)) targets = targets.filter((r) => r !== fix);
+    }
+    if (!targets.length) return;
     for (const r of targets) arr[r] = Math.max(arr[r], turns);
-    events.push({ type: status === 'frozen' ? 'freeze' : 'lock', from: me.side, to: foe.side, reels, targets, turns });
+    events.push({ type: 'freeze', from: me.side, to: foe.side, reels, targets, turns, stops: targets.map((r) => foe.reels[r].stop) });
   }
 
   private tickStatuses(me: Combatant, events: CombatEvent[]): void {
@@ -338,10 +409,21 @@ export class Fight {
       }),
     );
     pool.sort((a, b) => symbolValue(foe.reels[b.reel].cells[b.index].symbol) - symbolValue(foe.reels[a.reel].cells[a.index].symbol));
-    const cells = pool.slice(0, amount);
+    let cells = pool.slice(0, amount);
+    // Mousetrap: each grab can get snapped — and the thief pays for it.
+    let snapped = false;
+    if (foe.relics.has('mousetrap')) {
+      const kept = cells.filter(() => this.rng.next() >= MOUSETRAP_CHANCE);
+      snapped = kept.length < cells.length;
+      cells = kept;
+    }
     const symbols = cells.map((ref) => foe.reels[ref.reel].cells[ref.index].symbol);
     for (const ref of cells) foe.reels[ref.reel].cells[ref.index].stolen = true;
-    events.push({ type: 'steal', from: me.side, to: foe.side, reels, cells, symbols, wasted: amount - cells.length });
+    if (cells.length || !snapped) events.push({ type: 'steal', from: me.side, to: foe.side, reels, cells, symbols, wasted: snapped ? 0 : amount - cells.length });
+    if (snapped) {
+      events.push({ type: 'resist', side: foe.side, relic: 'mousetrap', what: 'steal' });
+      this.hit(foe, me, MOUSETRAP_DAMAGE, [], events);
+    }
   }
 
   private junk(me: Combatant, foe: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {

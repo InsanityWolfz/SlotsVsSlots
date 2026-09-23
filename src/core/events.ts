@@ -49,7 +49,8 @@ export type CombatEvent =
   | { type: 'heal'; side: SideId; amount: number; hp: number; source: RelicId | 'special' }
   | { type: 'slime'; from: SideId; to: SideId; reels: number[]; amount: number; cells: CellRef[]; wasted: number }
   | { type: 'cleanse'; side: SideId; reels: number[]; cells: CellRef[] }
-  | { type: 'freeze'; from: SideId; to: SideId; reels: number[]; targets: number[]; turns: number }
+  /** stops[i] = where targets[i] clunked to before freezing (its least useful visible cell). */
+  | { type: 'freeze'; from: SideId; to: SideId; reels: number[]; targets: number[]; turns: number; stops: number[] }
   | { type: 'lock'; from: SideId; to: SideId; reels: number[]; targets: number[]; turns: number }
   /** A status ran out on these reels. */
   | { type: 'thaw'; side: SideId; reels: number[]; status: 'frozen' | 'locked' }
@@ -64,6 +65,10 @@ export type CombatEvent =
   | { type: 'pot'; side: SideId; reels: number[]; amount: number; total: number }
   /** Someone takes the progressive pot as damage. */
   | { type: 'potWin'; from: SideId; to: SideId; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number }
+  /** A relic shrugged off an enemy effect. */
+  | { type: 'resist'; side: SideId; relic: RelicId; what: 'freeze' | 'jam' | 'steal' }
+  /** Boss phase 2 at half HP: the House goes ALL IN and doubles the pot. */
+  | { type: 'phase'; side: SideId; pot: number }
   | { type: 'death'; side: SideId }
   | { type: 'fightEnd'; winner: SideId; turns: number };
 

@@ -2,3 +2,4 @@ node_modules
 dist
 *.log
 playtest-build
+playtest/scratch/snaps/

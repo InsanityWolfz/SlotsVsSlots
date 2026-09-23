@@ -17,7 +17,7 @@ function vs(enemy: StripCounts, opts: { relics?: RelicId[]; ability?: AbilityDef
 }
 
 describe('enemy writers', () => {
-  it('ice freezes the least useful reels; frozen reels do not move next spin', () => {
+  it('ice freezes the least useful reels after clunking them to their worst visible cell', () => {
     const f = vs({ sword: 4, ice: 8 });
     f.forceNext('player', ['sword', 'shield', 'bolt']);
     f.step();
@@ -25,14 +25,32 @@ describe('enemy writers', () => {
     const [fr] = ofType(f.step().events, 'freeze');
     expect(fr.targets).toHaveLength(2);
     expect(fr.turns).toBe(2);
-    // Lowest-value payline symbols get frozen: shield (reel 2) and bolt (reel 3), not the sword.
-    expect(fr.targets).toEqual([1, 2]);
-    const before = f.sides.player.reels.map((r) => r.stop);
+    // Bolt is the most valuable (value 3), so it's never the one frozen in place.
+    expect(fr.targets).not.toContain(2);
     const { events } = f.step();
     const [spin] = ofType(events, 'spin');
-    expect(spin.frozen).toEqual([false, true, true]);
-    expect(spin.stops[1]).toBe(before[1]);
-    expect(spin.stops[2]).toBe(before[2]);
+    fr.targets.forEach((r, i) => {
+      expect(spin.frozen[r]).toBe(true);
+      expect(spin.stops[r]).toBe(fr.stops[i]);
+    });
+  });
+
+  it('freeze never holds a reels 1+2 match (no free doubles) and never all 3 reels', () => {
+    for (let seed = 0; seed < 200; seed++) {
+      const c = defaultConfig();
+      c.enemy = { hp: 60, strips: reels3({ ice: 12 }) };
+      const f = new Fight(c, seed);
+      f.forceNext('player', ['bolt', 'bolt', 'bolt']);
+      f.step();
+      f.forceNext('enemy', ['ice', 'ice', 'ice']);
+      f.step();
+      const pl = f.sides.player;
+      if (pl.frozen[0] > 0 && pl.frozen[1] > 0) {
+        const sym = (r: number) => pl.reels[r].cells[pl.reels[r].stop];
+        expect(sym(0).symbol === sym(1).symbol && !sym(0).slimed).toBe(false);
+      }
+      expect(pl.frozen.filter((t) => t > 0).length).toBeLessThanOrEqual(2);
+    }
   });
 
   it('freeze wears off after its turns and emits thaw', () => {
@@ -48,7 +66,7 @@ describe('enemy writers', () => {
   it('a jammed reel scores nothing for one turn', () => {
     const f = vs({ sword: 4, lock: 8 });
     f.step();
-    f.forceNext('enemy', ['lock', 'sword', 'shield']);
+    f.forceNext('enemy', ['lock', 'lock', 'sword']);
     const [lk] = ofType(f.step().events, 'lock');
     expect(lk.targets).toHaveLength(1);
     const r = lk.targets[0];
@@ -87,9 +105,21 @@ describe('enemy writers', () => {
     f.step();
     f.forceNext('enemy', ['rock', 'rock', 'rock']);
     const [j] = ofType(f.step().events, 'junk');
-    expect(j.inserts.length).toBe(3); // jackpot → 3 rocks
+    expect(j.inserts.length).toBe(2); // jackpot → 2 rocks
     const total = f.sides.player.reels.reduce((a, r) => a + r.cells.length, 0);
-    expect(total).toBe(36 + 3);
+    expect(total).toBe(36 + 2);
+  });
+
+  it('single rocks and single locks fizzle', () => {
+    for (const sym of ['rock', 'lock'] as const) {
+      const f = vs({ sword: 4, [sym]: 8 });
+      f.step();
+      f.forceNext('enemy', [sym, 'sword', 'shield']);
+      const { events } = f.step();
+      expect(ofType(events, 'fizzle').some((e) => e.symbol === sym)).toBe(true);
+      expect(ofType(events, 'junk')).toHaveLength(0);
+      expect(ofType(events, 'lock')).toHaveLength(0);
+    }
   });
 });
 
@@ -185,31 +215,94 @@ describe('boss: the progressive pot', () => {
   const boss = (mut?: (c: GameConfig) => void) =>
     vs({ sword: 2, coin: 10 }, { ability: { kind: 'jackpot', every: 2, power: 1 }, mut: (c) => ((c.enemy.boss = 'house'), mut?.(c)) });
 
-  it('coins grow the pot; the House cashes it out on its ability', () => {
+  it('the pot is seeded, grows with coins and the house cut, and is cashed out at you', () => {
     const f = boss();
+    expect(f.pot).toBe(5);
     f.forceNext('player', ['shield', 'bolt', 'sword']);
     f.step();
     f.forceNext('enemy', ['coin', 'coin', 'coin']);
-    const e1 = f.step().events;
-    expect(ofType(e1, 'pot')[0].total).toBe(9);
+    const pots = ofType(f.step().events, 'pot');
+    expect(pots[0].total).toBe(14); // 5 seed + 9 coins
+    expect(pots.at(-1)!.total).toBe(15); // + the house's cut
     f.forceNext('player', ['bolt', 'shield', 'bolt']);
     f.step();
-    f.forceNext('enemy', ['sword', 'coin', 'sword']);
-    const e2 = f.step().events;
-    const [cash] = ofType(e2, 'potWin');
+    const before = f.pot;
+    f.forceNext('enemy', ['sword', 'sword', 'sword']);
+    const [cash] = ofType(f.step().events, 'potWin');
     expect(cash.from).toBe('enemy');
-    expect(cash.amount).toBe(10);
+    expect(cash.amount).toBe(before + 1);
     expect(f.pot).toBe(0);
   });
 
-  it('a player jackpot steals the pot, ignoring shield', () => {
+  it('a player jackpot steals the pot, ignoring shield; crown steals on doubles', () => {
     const f = boss();
     f.step();
     f.forceNext('enemy', ['coin', 'coin', 'coin']);
     f.step();
     f.forceNext('player', ['shield', 'shield', 'shield']);
     const [win] = ofType(f.step().events, 'potWin');
-    expect(win).toMatchObject({ from: 'player', amount: 9, blocked: 0 });
+    expect(win).toMatchObject({ from: 'player', amount: 15, blocked: 0 });
     expect(f.pot).toBe(0);
+
+    const g = boss((c) => (c.relics = ['crown']));
+    g.forceNext('player', ['shield', 'shield', 'bolt']);
+    expect(ofType(g.step().events, 'potWin')[0]).toMatchObject({ from: 'player', amount: 5 });
+  });
+
+  it('at half HP the House goes ALL IN and doubles the pot', () => {
+    const f = boss((c) => (c.enemy.hp = 18));
+    f.forceNext('player', ['sword', 'sword', 'sword']);
+    const [ph] = ofType(f.step().events, 'phase');
+    expect(f.allIn).toBe(true);
+    expect(ph.pot).toBe(10);
+  });
+});
+
+describe('counter relics', () => {
+  it('mittens: a single ice does nothing', () => {
+    const f = vs({ sword: 4, ice: 8 }, { relics: ['mittens'] });
+    f.step();
+    f.forceNext('enemy', ['ice', 'sword', 'shield']);
+    const { events } = f.step();
+    expect(ofType(events, 'resist')[0]).toMatchObject({ relic: 'mittens' });
+    expect(ofType(events, 'freeze')).toHaveLength(0);
+  });
+
+  it('lockpick and mousetrap each fail roughly half the time; mousetrap snaps the thief', () => {
+    let jams = 0;
+    let steals = 0;
+    let snaps = 0;
+    for (let seed = 0; seed < 300; seed++) {
+      const a = new Fight({ ...defaultConfig(), enemy: { hp: 60, strips: reels3({ lock: 12 }) }, relics: ['lockpick'] }, seed);
+      a.step();
+      a.forceNext('enemy', ['lock', 'lock', 'lock']);
+      jams += ofType(a.step().events, 'lock').reduce((n, e) => n + e.targets.length, 0);
+      const b = new Fight({ ...defaultConfig(), enemy: { hp: 60, strips: reels3({ claw: 12 }) }, relics: ['mousetrap'] }, seed);
+      b.step();
+      b.forceNext('enemy', ['claw', 'sword', 'shield']);
+      const hpBefore = b.sides.enemy.hp;
+      const ev = b.step().events;
+      steals += ofType(ev, 'steal').reduce((n, e) => n + e.cells.length, 0);
+      snaps += ofType(ev, 'resist').length;
+      if (ofType(ev, 'resist').length) expect(b.sides.enemy.hp).toBe(hpBefore - 3);
+    }
+    expect(jams / 600).toBeGreaterThan(0.35);
+    expect(jams / 600).toBeLessThan(0.65);
+    expect(steals / 300).toBeGreaterThan(0.35);
+    expect(snaps / 300).toBeGreaterThan(0.35);
+  });
+
+  it('pickaxe: rocks on your payline hit; dice: jackpots pay x4', () => {
+    const c = defaultConfig();
+    c.player.strips = reels3({ sword: 4, rock: 8 });
+    c.enemy = { hp: 60, strips: reels3({ bolt: 12 }) };
+    c.relics = ['pickaxe'];
+    const f = new Fight(c, 5);
+    f.forceNext('player', ['rock', 'rock', 'sword']);
+    expect(ofType(f.step().events, 'attack').map((e) => e.amount)).toEqual([4, 1]);
+
+    const d = vs({ shield: 12 }, { relics: ['dice'] });
+    d.forceNext('player', ['bolt', 'bolt', 'bolt']);
+    expect(ofType(d.step().events, 'energyGain')[0].amount).toBe(12);
   });
 });

@@ -10,6 +10,7 @@ import type { Stage } from './stage';
 import { ABILITY_UI } from './hud';
 import { stripMapColumn } from './stripMap';
 import type { SpriteId } from '../render/sprites';
+import { RELICS } from '../core/relics';
 
 type Ev<T extends CombatEvent['type']> = Extract<CombatEvent, { type: T }>;
 
@@ -103,6 +104,10 @@ export class Director {
         return this.pot(e);
       case 'potWin':
         return this.potWin(e);
+      case 'resist':
+        return this.resist(e);
+      case 'phase':
+        return this.phase(e);
     }
   }
 
@@ -742,6 +747,16 @@ export class Director {
       await this.arc(p, dst.x, dst.y, 0.35, 90, sineIn);
       this.s.fx.remove(p);
       if (ice) {
+        const stop = (e as Ev<'freeze'>).stops[i];
+        const reel = to.reels[r];
+        if (stop !== undefined && stop !== reel.stop) {
+          // Clunk one stop to the least useful visible cell, then freeze solid.
+          const len = reel.cells.length;
+          const down = (stop - reel.stop + len) % len === len - 1;
+          reel.stop = stop;
+          this.s.sounds.reelStop(r, 1.3);
+          this.bg(this.c.tween({ from: down ? -96 : 96, to: 0, dur: 0.16, ease: backOut(2), onUpdate: (v) => (reel.bounce = v) }));
+        }
         to.frozen[r] = Math.max(to.frozen[r], e.turns);
         this.s.sounds.freeze();
       } else {
@@ -909,8 +924,11 @@ export class Director {
       await this.popText('POT EMPTY', src.x, src.y - 30, 2, COLORS.textDim, 16, 0.2);
       return;
     }
-    this.s.sounds.fanfareJackpot();
-    this.bg(this.banner(playerWins ? 'YOU TAKE THE POT!' : 'HOUSE CASHES OUT!', playerWins ? COLORS.goldLight : '#ff6a5a', 1.4, 0.4, `${e.amount} DAMAGE`, BANNER_Y, 3));
+    g.pot = e.amount;
+    const big = Math.min(1, e.amount / 15);
+    if (e.amount >= 8 || playerWins) this.s.sounds.fanfareJackpot();
+    else this.s.sounds.stingerMedium();
+    this.bg(this.banner(playerWins ? 'POT STOLEN!' : 'CASH OUT!', playerWins ? COLORS.goldLight : '#ff6a5a', 1.2 + 0.3 * big, 0.4, `${e.amount} DAMAGE`, BANNER_Y, 4));
     const n = Math.min(24, 6 + e.amount);
     const coins = Array.from({ length: n }, async (_, i) => {
       await this.c.wait(i * 0.03);
@@ -921,15 +939,49 @@ export class Director {
     });
     this.bg(this.c.to(g, 'pot', 0, 0.6));
     await Promise.all(coins);
-    this.hitstop(4);
-    this.shake(9, 0.5);
-    this.s.camera.chromaPulse(0.7);
-    this.flashMachine(e.to, 1, 0.25);
-    this.knockback(e.to, 14);
-    this.s.sounds.hit(9);
+    this.hitstop(Math.round(1 + 3 * big));
+    this.shake(3 + 6 * big, 0.25 + 0.3 * big);
+    this.s.camera.chromaPulse(0.2 + 0.6 * big);
+    this.flashMachine(e.to, 0.5 + 0.5 * big, 0.25);
+    this.knockback(e.to, 6 + 10 * big);
+    this.s.sounds.hit(e.amount);
+    if (playerWins && e.amount >= 8)
+      this.s.particles.burst({ x: target.x, y: target.y - 40, count: 80, colors: ['#ffd23f', '#ffe08a', '#fff6c8'], speed: [200, 600], angle: -Math.PI / 2, spread: Math.PI, gravity: 900, life: [0.8, 1.4], size: [4, 7], kind: 'confetti' });
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
     this.bg(this.popText(`-${e.hpDamage}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
     await this.c.wait(0.5);
+  }
+
+  /** A relic shrugged an effect off: show which one, loudly. */
+  private async resist(e: Ev<'resist'>): Promise<void> {
+    const words = { freeze: 'MITTENS!', jam: 'LOCKPICKED!', steal: 'SNAP!' } as const;
+    const c = this.machineCenter(e.side);
+    this.s.sounds.block();
+    this.s.sounds.lucky();
+    const icon = this.s.fx.add(new Projectile(RELICS[e.relic].sprite as SpriteId, c.x, c.y - 30, 0));
+    await this.c.tween({ from: 0, to: 4, dur: 0.2, ease: backOut(3), onUpdate: (v) => (icon.scale = v) });
+    this.bg(this.popText(words[e.what], c.x, c.y - 90, 3, '#7dff7a', 20, 0.3));
+    this.s.particles.burst({ x: c.x, y: c.y - 30, count: 20, colors: ['#7dff7a', '#ffffff'], speed: [80, 260], gravity: -100, life: [0.3, 0.6], size: [2, 4] });
+    await this.c.wait(0.3);
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.2, onUpdate: (v) => (icon.alpha = v) }).then(() => this.s.fx.remove(icon)));
+  }
+
+  /** Boss phase 2: the House goes ALL IN and doubles the pot. */
+  private async phase(e: Ev<'phase'>): Promise<void> {
+    const g = this.s.gutter;
+    const m = this.s.machines[e.side];
+    this.s.sounds.abilityFire();
+    this.s.sounds.fanfareJackpot();
+    this.hitstop(4);
+    this.shake(8, 0.5);
+    this.s.camera.chromaPulse(0.8);
+    this.s.camera.flashScreen(0.4, '#ff6a5a');
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.6, onUpdate: (v) => (m.flash = v * 0.6) }));
+    this.bg(this.banner('ALL IN!', '#ff3a2e', 1.5, 0.5, 'THE POT DOUBLES', BANNER_Y, 5));
+    const from = g.pot;
+    await this.c.tween({ from, to: e.pot, dur: 0.8, ease: sineOut, onUpdate: (v) => (g.pot = v) });
+    this.bg(this.c.tween({ from: 1.8, to: 1, dur: 0.3, ease: backOut(3), onUpdate: (v) => (g.potPunch = v) }));
+    await this.c.wait(0.3);
   }
 
   private async endTurn(side: SideId): Promise<void> {

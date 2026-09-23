@@ -1,8 +1,8 @@
 import type { Sounds } from '../audio/sounds';
-import type { StripCounts, SymbolId } from '../core/config';
+import type { GameConfig, StripCounts, SymbolId } from '../core/config';
 import { RUN_FIGHTS, type EnemyDef } from '../core/enemies';
 import { RELICS } from '../core/relics';
-import { describeOption, type DraftOption, type FightRecord, type RunState } from '../core/run';
+import { describeOption, isRelicDraft, needsChoice, optionDelta, type DraftOption, type FightRecord, type RunState } from '../core/run';
 import type { Clock } from '../present/clock';
 import { backOut, sineOut } from '../present/ease';
 import { ABILITY_UI } from '../present/hud';
@@ -39,9 +39,22 @@ interface Hit {
   enabled: boolean;
 }
 
+type Btn = Hit & { label: string };
+
 const SYMBOLS: SymbolId[] = ['sword', 'shield', 'bolt', 'rock'];
 
-function abilityText(e: EnemyDef): string {
+/** What each enemy writes on your machine, as a map badge. */
+export const BADGE: Record<string, SpriteId> = {
+  slime: 'mapBadgeSlime',
+  frost: 'mapBadgeIce',
+  thief: 'mapBadgeClaw',
+  golem: 'mapBadgeRock',
+  gremlin: 'mapBadgeLock',
+  brute: 'mapBadgeFist',
+  house: 'mapBadgeCoin',
+};
+
+function abilityText(e: EnemyDef, every: number): string {
   if (!e.ability) return '';
   const ui = ABILITY_UI[e.ability.kind];
   const what: Record<string, string> = {
@@ -54,19 +67,20 @@ function abilityText(e: EnemyDef): string {
     jam: `JAMS A REEL FOR ${e.ability.power} TURNS`,
     jackpot: 'CASHES OUT THE POT AT YOU',
   };
-  return `${ui.label} EVERY ${e.ability.every} TURNS: ${what[e.ability.kind]}`;
+  return `${ui.label} EVERY ${every} TURNS: ${what[e.ability.kind]}`;
 }
 
 /**
- * Canvas overlays between fights: the draft (pick 1 of 3), the next-enemy preview and the
- * end-of-run summary. The only place the player makes choices.
+ * Canvas overlays between fights: the draft (pick 1 of 3), the next-fight preview (or a fork:
+ * pick 1 of 2 enemies) and the end-of-run summary. The only place the player makes choices.
  */
 export class RunScreens {
   mode: ScreenMode = 'none';
   private run: RunState | null = null;
   private offers: DraftOption[] = [];
+  private deltas: string[] = [];
   private cards: Hit[] = [];
-  private buttons: (Hit & { label: string })[] = [];
+  private buttons: Btn[] = [];
   private fade = 0;
   private picked = -1;
   private lastRecord: FightRecord | null = null;
@@ -74,7 +88,8 @@ export class RunScreens {
   constructor(
     private ui: Clock,
     private sounds: Sounds,
-    private cb: { onPick: (o: DraftOption) => void; onFight: () => void; onNewRun: () => void },
+    private base: () => GameConfig,
+    private cb: { onPick: (o: DraftOption) => void; onFight: (option: number) => void; onNewRun: () => void },
   ) {}
 
   get active(): boolean {
@@ -93,13 +108,18 @@ export class RunScreens {
     return { x, y, w, h, hover: false, pressed: false, scale: 0, lift: 0, onClick, enabled: true };
   }
 
+  private btn(label: string, x: number, y: number, w: number, h: number, onClick: () => void): Btn {
+    return { ...this.hit(x, y, w, h, onClick), label, scale: 1 };
+  }
+
   showDraft(run: RunState, offers: DraftOption[], last: FightRecord | null): void {
     this.run = run;
     this.offers = offers;
+    this.deltas = offers.map((o) => optionDelta(run, o, this.base()));
     this.lastRecord = last;
     this.open('draft');
     this.cards = offers.map((o, i) =>
-      this.hit(W / 2 + (i - 1) * 300, 352, 270, 222, () => {
+      this.hit(W / 2 + (i - 1) * 300, 372, 270, 222, () => {
         if (this.picked >= 0) return;
         this.picked = i;
         this.sounds.stingerMedium();
@@ -111,26 +131,29 @@ export class RunScreens {
       }),
     );
     // Deal the cards in.
-    this.cards.forEach((c, i) => void this.ui.wait(0.12 + i * 0.09).then(() => {
-      this.sounds.click();
-      return this.ui.tween({ from: 0, to: 1, dur: 0.3, ease: backOut(2), onUpdate: (v) => (c.scale = v) });
-    }));
+    this.cards.forEach(
+      (c, i) =>
+        void this.ui.wait(0.12 + i * 0.09).then(() => {
+          this.sounds.click();
+          return this.ui.tween({ from: 0, to: 1, dur: 0.3, ease: backOut(2), onUpdate: (v) => (c.scale = v) });
+        }),
+    );
   }
 
   showNext(run: RunState): void {
     this.run = run;
     this.open('next');
-    const b = { ...this.hit(W / 2, 640, 240, 64, () => this.cb.onFight()), label: run.depth >= RUN_FIGHTS ? 'FACE THE HOUSE' : 'FIGHT!' };
-    b.scale = 1;
-    this.buttons = [b];
+    if (needsChoice(run)) {
+      this.buttons = run.paths[run.depth].map((_, i) => this.btn('FIGHT THIS ONE', W / 2 + (i === 0 ? -310 : 310), 580, 260, 56, () => this.cb.onFight(i)));
+    } else {
+      this.buttons = [this.btn(run.depth >= RUN_FIGHTS ? 'FACE THE HOUSE' : 'FIGHT!', W / 2, 640, 260, 64, () => this.cb.onFight(0))];
+    }
   }
 
   showOver(run: RunState): void {
     this.run = run;
     this.open('over');
-    const b = { ...this.hit(W / 2, 650, 240, 60, () => this.cb.onNewRun()), label: 'NEW RUN' };
-    b.scale = 1;
-    this.buttons = [b];
+    this.buttons = [this.btn('NEW RUN', W / 2, 650, 240, 60, () => this.cb.onNewRun())];
   }
 
   hide(): void {
@@ -185,7 +208,7 @@ export class RunScreens {
 
   draw(ctx: CanvasRenderingContext2D, time: number): void {
     if (!this.active || !this.run) return;
-    ctx.fillStyle = `rgba(6,2,12,${0.93 * this.fade})`;
+    ctx.fillStyle = `rgba(6,2,12,${0.95 * this.fade})`;
     ctx.fillRect(0, 0, W, H);
     ctx.save();
     ctx.globalAlpha = this.fade;
@@ -204,30 +227,39 @@ export class RunScreens {
     ctx.fillRect(x, y, w, h);
   }
 
-  /** The run as a path of 6 nodes with enemy portraits (plan ahead!). */
+  /** The run as a path of nodes (forks stacked) with portraits and writer badges. */
   private drawMap(ctx: CanvasRenderingContext2D, y: number, time: number): void {
     const run = this.run!;
-    const n = run.enemies.length;
+    const n = run.paths.length;
     const gap = 150;
     const x0 = W / 2 - ((n - 1) * gap) / 2;
     ctx.fillStyle = '#3a2e52';
     ctx.fillRect(x0, y - 2, (n - 1) * gap, 4);
     ctx.fillStyle = COLORS.gold;
     ctx.fillRect(x0, y - 2, Math.min(run.depth, n - 1) * gap, 4);
-    run.enemies.forEach((e, i) => {
+    run.paths.forEach((opts, i) => {
       const x = x0 + i * gap;
       const done = i < run.depth;
       const here = i === run.depth;
-      ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(x - 28, y - 28, 56, 56);
-      ctx.fillStyle = e.isBoss ? '#5a1a10' : here ? '#3a2a14' : COLORS.panelLight;
-      ctx.fillRect(x - 25, y - 25, 50, 50);
-      drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, x, y, 2, { dim: done ? 0.6 : 0 });
-      if (done) drawSprite(ctx, 'nodeDone', x + 18, y + 18, 2);
-      if (here) drawSprite(ctx, 'nodeHere', x, y - 44 + Math.sin(time * 6) * 4, 2);
-      if (e.isBoss) drawSprite(ctx, 'nodeBoss', x, y - 36, 2);
-      const label = e.isBoss ? 'BOSS' : `${i + 1}`;
-      drawText(ctx, label, x, y + 40, 2, here ? COLORS.goldLight : done ? '#6a6078' : COLORS.textDim);
+      const fork = opts.length > 1;
+      if (fork) drawSprite(ctx, 'mapFork', x - 44, y, 2);
+      opts.forEach((e, k) => {
+        const ny = fork ? y + (k === 0 ? -30 : 30) : y;
+        const chosen = run.chosen[i] && run.enemies[i] === e;
+        const faded = fork && run.chosen[i] && !chosen;
+        const s = fork ? 22 : 28;
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(x - s, ny - s, s * 2, s * 2);
+        ctx.fillStyle = e.isBoss ? '#5a1a10' : here && !faded ? '#3a2a14' : COLORS.panelLight;
+        ctx.fillRect(x - s + 3, ny - s + 3, s * 2 - 6, s * 2 - 6);
+        drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, x, ny, fork ? 1.5 : 2, { dim: done || faded ? 0.65 : 0 });
+        const badge = BADGE[e.archetype];
+        if (badge) drawSprite(ctx, badge, x + s - 2, ny + s - 4, 2, { alpha: faded ? 0.4 : 1 });
+        if (done && chosen) drawSprite(ctx, 'nodeDone', x - s + 6, ny + s - 6, 2);
+      });
+      if (here) drawSprite(ctx, 'nodeHere', x, y - (fork ? 70 : 44) + Math.sin(time * 6) * 4, 2);
+      if (opts[0].isBoss) drawSprite(ctx, 'nodeBoss', x, y - 38, 2);
+      drawText(ctx, opts[0].isBoss ? 'BOSS' : `${i + 1}`, x, y + (fork ? 64 : 42), 2, here ? COLORS.goldLight : done ? '#6a6078' : COLORS.textDim);
     });
   }
 
@@ -251,7 +283,7 @@ export class RunScreens {
     const relics = this.run!.player.relics;
     drawText(ctx, 'RELICS', x, y, 2, COLORS.textDim, { align: 'left' });
     if (!relics.length) drawText(ctx, 'NONE YET', x, y + 26, 2, '#4a4058', { align: 'left' });
-    relics.forEach((r, i) => drawSprite(ctx, RELICS[r].sprite as SpriteId, x + 16 + i * 38, y + 30, 2));
+    relics.forEach((r, i) => drawSprite(ctx, RELICS[r].sprite as SpriteId, x + 16 + (i % 8) * 38, y + 30 + Math.floor(i / 8) * 36, 2));
   }
 
   private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
@@ -268,24 +300,27 @@ export class RunScreens {
 
   private drawDraft(ctx: CanvasRenderingContext2D, time: number): void {
     const last = this.lastRecord;
-    drawText(ctx, last ? `${last.enemy} DEFEATED!` : 'CHOOSE A REWARD', W / 2, 38, 4, COLORS.goldLight);
-    if (last)
-      drawText(ctx, `${Math.ceil(last.turns / 2)} ROUNDS  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}`, W / 2, 70, 2, COLORS.textDim);
-    this.drawMap(ctx, 140, time);
-    drawText(ctx, 'CHOOSE ONE', W / 2, 204, 3, COLORS.text);
-    this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], i, time));
-    this.panel(ctx, 110, 492, 1060, 140);
-    this.drawStrips(ctx, 130, 510, this.run!.player.strips);
-    this.drawRelics(ctx, 560, 510);
-    drawText(ctx, 'HP', 900, 510, 2, COLORS.textDim, { align: 'left' });
-    this.drawHp(ctx, 900, 550, 220);
+    drawText(ctx, last ? `${last.enemy} DEFEATED!` : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight);
+    if (last) {
+      const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
+      drawText(ctx, `${Math.ceil(last.turns / 2)} ROUNDS  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}${rocks}`, W / 2, 60, 2, COLORS.textDim);
+    }
+    this.drawMap(ctx, 158, time);
+    const relicDraft = isRelicDraft(this.run!);
+    drawText(ctx, relicDraft ? 'RELIC DRAFT - CHOOSE ONE' : 'CHOOSE ONE', W / 2, 244, 3, relicDraft ? '#c9a0ff' : COLORS.text);
+    this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], this.deltas[i], i, time));
+    this.panel(ctx, 110, 500, 1060, 134);
+    this.drawStrips(ctx, 130, 516, this.run!.player.strips);
+    this.drawRelics(ctx, 560, 516);
+    drawText(ctx, 'HP', 900, 516, 2, COLORS.textDim, { align: 'left' });
+    this.drawHp(ctx, 900, 556, 220);
   }
 
-  private drawCard(ctx: CanvasRenderingContext2D, c: Hit, o: DraftOption, i: number, time: number): void {
+  private drawCard(ctx: CanvasRenderingContext2D, c: Hit, o: DraftOption, delta: string, i: number, time: number): void {
     if (c.scale <= 0.01) return;
     const dimmed = this.picked >= 0 && this.picked !== i;
     const { title, text } = describeOption(o);
-    const accent = o.kind === 'relic' ? '#c9a0ff' : o.kind === 'remove' ? '#ff8a7a' : o.kind === 'add' ? '#7dff7a' : '#ff9ab0';
+    const accent = o.kind === 'relic' ? '#c9a0ff' : o.kind === 'clear' ? '#c9bba8' : o.kind === 'swap' || o.kind === 'add' ? '#7dff7a' : '#ff9ab0';
     ctx.save();
     ctx.globalAlpha *= dimmed ? 0.3 : 1;
     ctx.translate(c.x, c.y + c.lift);
@@ -305,62 +340,102 @@ export class RunScreens {
     ctx.fillStyle = 'rgba(255,255,255,0.05)';
     ctx.fillRect(-w / 2, -h / 2, w, 70);
     // Icon.
-    const iy = -h / 2 + 50;
-    if (o.kind === 'relic') drawSprite(ctx, RELICS[o.relic].sprite as SpriteId, 0, iy, 4);
-    else if (o.kind === 'add' || o.kind === 'remove') {
-      drawSprite(ctx, o.symbol as SpriteId, 0, iy, 4);
-      drawSprite(ctx, o.kind === 'add' ? 'plusBadge' : 'minusBadge', 32, iy + 24, 3);
-      // Reel indicator: three slots, the target highlighted.
+    const iy = -h / 2 + 42;
+    const reelMarker = (reel: number) => {
       for (let r = 0; r < 3; r++) {
-        ctx.fillStyle = r === o.reel ? accent : '#3a2e52';
+        ctx.fillStyle = r === reel ? accent : '#3a2e52';
         ctx.fillRect(-w / 2 + 16, iy - 22 + r * 16, 18, 12);
       }
+      drawText(ctx, `REEL ${reel + 1}`, -w / 2 + 25, iy + 34, 1, COLORS.textDim);
+    };
+    if (o.kind === 'relic') drawSprite(ctx, RELICS[o.relic].sprite as SpriteId, 0, iy, 4);
+    else if (o.kind === 'swap') {
+      drawSprite(ctx, o.from as SpriteId, -44, iy, 3);
+      drawSprite(ctx, 'arrowRight', 0, iy, 3);
+      drawSprite(ctx, o.to as SpriteId, 44, iy, 3);
+      reelMarker(o.reel);
+    } else if (o.kind === 'clear') {
+      drawSprite(ctx, 'cardClear', -18, iy, 3.5);
+      drawSprite(ctx, 'rock', 30, iy + 10, 2);
+      reelMarker(o.reel);
+    } else if (o.kind === 'add') {
+      drawSprite(ctx, o.symbol as SpriteId, 0, iy, 4);
+      drawSprite(ctx, 'plusBadge', 32, iy + 24, 3);
+      reelMarker(o.reel);
     } else if (o.kind === 'heal') drawSprite(ctx, 'heart', 0, iy, 5);
     else {
       drawSprite(ctx, 'heart', 0, iy, 5);
       drawSprite(ctx, 'plusBadge', 30, iy + 22, 3);
     }
-    drawText(ctx, title, 0, 6, title.length > 13 ? 2 : 3, accent);
-    wrap(text, 20).forEach((line, k) => drawText(ctx, line, 0, 42 + k * 20, 2, COLORS.text));
+    drawText(ctx, title, 0, 2, title.length > 13 ? 2 : 3, accent);
+    wrap(text, 20).forEach((line, k) => drawText(ctx, line, 0, 32 + k * 20, 2, COLORS.text));
+    if (delta) {
+      ctx.fillStyle = 'rgba(125,255,122,0.08)';
+      ctx.fillRect(-w / 2 + 8, h / 2 - 34, w - 16, 24);
+      drawText(ctx, delta, 0, h / 2 - 22, 2, '#b6ff9a');
+      drawText(ctx, 'PER SPIN', w / 2 - 12, h / 2 - 44, 1, COLORS.textDim, { align: 'right' });
+    }
     ctx.restore();
+  }
+
+  /** One enemy's scouting report. */
+  private drawEnemyPanel(ctx: CanvasRenderingContext2D, e: EnemyDef, x: number, y: number, w: number, time: number): void {
+    const run = this.run!;
+    const hourglass = run.player.relics.includes('hourglass') ? 1 : 0;
+    this.panel(ctx, x, y, w, 300, e.isBoss ? '#ff6a5a' : COLORS.gold);
+    ctx.fillStyle = COLORS.panelLight;
+    ctx.fillRect(x + 16, y + 16, 104, 104);
+    drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, x + 68, y + 68 + Math.sin(time * 2) * 2, 4);
+    const badge = BADGE[e.archetype];
+    if (badge) drawSprite(ctx, badge, x + 112, y + 112, 3);
+    const tx = x + 136;
+    drawText(ctx, e.name ?? 'ENEMY', tx, y + 30, e.name && e.name.length > 18 ? 2 : 3, e.isBoss ? '#ff6a5a' : COLORS.slime, { align: 'left' });
+    wrap(e.blurb, Math.floor((w - 150) / 12)).forEach((l, k) => drawText(ctx, l, tx, y + 60 + k * 18, 2, COLORS.text, { align: 'left' }));
+    drawText(ctx, `HP ${e.hp}`, tx, y + 104, 2, COLORS.hp, { align: 'left' });
+    if (e.ability) {
+      const every = e.ability.every + hourglass;
+      drawSprite(ctx, ABILITY_UI[e.ability.kind].icon, x + 24, y + 146, 2);
+      wrap(abilityText(e, every), Math.floor((w - 60) / 12)).forEach((l, k) => drawText(ctx, l, x + 40, y + 146 + k * 18, 2, '#ff9a3a', { align: 'left' }));
+    }
+    drawText(ctx, 'THEIR REELS', x + 16, y + 200, 2, COLORS.textDim, { align: 'left' });
+    let cx = x + 36;
+    for (const [sym, n] of Object.entries(e.strips[0]) as [SymbolId, number][]) {
+      drawSprite(ctx, sym as SpriteId, cx, y + 232, 2);
+      drawText(ctx, `${n}`, cx + 24, y + 232, 2, COLORS.text, { align: 'left' });
+      cx += 72;
+    }
+    if (e.isBoss)
+      wrap('COINS AND A CUT EACH TURN FILL THE POT. IT CASHES OUT AT YOU... BUT ANY JACKPOT YOU HIT STEALS IT! AT HALF HP IT GOES ALL IN.', Math.floor((w - 32) / 6)).forEach((l, k) =>
+        drawText(ctx, l, x + 16, y + 262 + k * 12, 1, COLORS.goldLight, { align: 'left' }),
+      );
   }
 
   private drawNext(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
+    const opts = run.paths[run.depth];
+    const fork = needsChoice(run);
     const e = run.enemies[run.depth];
-    drawText(ctx, e.isBoss ? 'FINAL FIGHT' : `FIGHT ${run.depth + 1} OF ${RUN_FIGHTS}`, W / 2, 38, 3, COLORS.textDim);
-    this.drawMap(ctx, 120, time);
-    this.panel(ctx, W / 2 - 330, 200, 660, 330, e.isBoss ? '#ff6a5a' : COLORS.gold);
-    ctx.fillStyle = COLORS.panelLight;
-    ctx.fillRect(W / 2 - 310, 220, 120, 120);
-    drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, W / 2 - 250, 280 + Math.sin(time * 2) * 2, 4);
-    drawText(ctx, e.name ?? 'ENEMY', W / 2 - 170, 236, 3, e.isBoss ? '#ff6a5a' : COLORS.slime, { align: 'left' });
-    drawText(ctx, e.blurb, W / 2 - 170, 268, 2, COLORS.text, { align: 'left' });
-    drawText(ctx, `HP ${e.hp}`, W / 2 - 170, 298, 2, COLORS.hp, { align: 'left' });
-    if (e.ability) {
-      drawSprite(ctx, ABILITY_UI[e.ability.kind].icon, W / 2 - 162, 330, 2);
-      wrap(abilityText(e), 40).forEach((l, k) => drawText(ctx, l, W / 2 - 146, 330 + k * 18, 2, '#ff9a3a', { align: 'left' }));
+    drawText(ctx, e.isBoss ? 'FINAL FIGHT' : fork ? `FIGHT ${run.depth + 1} OF ${RUN_FIGHTS} - CHOOSE YOUR PATH` : `FIGHT ${run.depth + 1} OF ${RUN_FIGHTS}`, W / 2, 26, 3, fork ? COLORS.goldLight : COLORS.textDim);
+    this.drawMap(ctx, 128, time);
+    if (fork) {
+      opts.forEach((o, i) => this.drawEnemyPanel(ctx, o, i === 0 ? 40 : W / 2 + 20, 222, W / 2 - 60, time));
+      drawText(ctx, 'OR', W / 2, 372, 4, COLORS.goldLight);
+      this.drawHp(ctx, W / 2 - 130, 640, 220);
+      this.drawRelicsRow(ctx, W / 2 + 140, 640);
+    } else {
+      this.drawEnemyPanel(ctx, e, W / 2 - 330, 206, 660, time);
+      drawText(ctx, 'YOUR HP', W / 2 - 330, 540, 2, COLORS.textDim, { align: 'left' });
+      this.drawHp(ctx, W / 2 - 330, 568, 220);
+      this.drawRelics(ctx, W / 2 + 40, 540);
     }
-    // Their reels.
-    drawText(ctx, 'THEIR REELS', W / 2 - 310, 380, 2, COLORS.textDim, { align: 'left' });
-    const counts = e.strips[0];
-    let cx = W / 2 - 290;
-    for (const [sym, n] of Object.entries(counts) as [SymbolId, number][]) {
-      drawSprite(ctx, sym as SpriteId, cx, 414, 2);
-      drawText(ctx, `${n}`, cx + 24, 414, 2, COLORS.text, { align: 'left' });
-      cx += 76;
-    }
-    if (e.isBoss) {
-      wrap('COINS FILL THE POT. THE HOUSE CASHES IT OUT AT YOU... BUT ANY JACKPOT YOU HIT STEALS THE POT!', 50).forEach((l, k) =>
-        drawText(ctx, l, W / 2, 456 + k * 20, 2, COLORS.goldLight),
-      );
-    } else this.drawRelics(ctx, W / 2 - 310, 460);
-    drawText(ctx, 'YOUR HP', W / 2 + 60, 474, 2, COLORS.textDim, { align: 'left' });
-    this.drawHp(ctx, W / 2 + 40, 506, 220);
     for (const b of this.buttons) this.drawButton(ctx, b, time);
   }
 
-  private drawButton(ctx: CanvasRenderingContext2D, b: Hit & { label: string }, time: number): void {
+  private drawRelicsRow(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+    this.run!.player.relics.forEach((r, i) => drawSprite(ctx, RELICS[r].sprite as SpriteId, x + i * 36, y, 2));
+  }
+
+  private drawButton(ctx: CanvasRenderingContext2D, b: Btn, time: number): void {
     const pulse = 1 + 0.02 + 0.02 * Math.sin((time * Math.PI * 2) / 1.6);
     ctx.save();
     ctx.translate(b.x, b.y);
@@ -373,7 +448,7 @@ export class RunScreens {
     ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, b.h - 8);
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
     ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, (b.h - 8) / 2);
-    drawText(ctx, b.label, 0, 1, 3, '#fff6c8');
+    drawText(ctx, b.label, 0, 1, b.label.length > 10 ? 2 : 3, '#fff6c8');
     ctx.restore();
   }
 

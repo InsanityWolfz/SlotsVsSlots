@@ -24,7 +24,22 @@ export interface AbilityDef {
   power: number;
 }
 
-export type RelicId = 'clover' | 'whetstone' | 'soap' | 'battery' | 'mirror' | 'fang' | 'bandage' | 'hourglass' | 'magnet';
+export type RelicId =
+  | 'clover'
+  | 'whetstone'
+  | 'soap'
+  | 'battery'
+  | 'mirror'
+  | 'fang'
+  | 'bandage'
+  | 'hourglass'
+  | 'magnet'
+  | 'mittens'
+  | 'lockpick'
+  | 'mousetrap'
+  | 'pickaxe'
+  | 'dice'
+  | 'crown';
 
 export interface SideConfig {
   hp: number;

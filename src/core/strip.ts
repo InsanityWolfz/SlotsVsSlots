@@ -46,7 +46,8 @@ export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'l
 
 /** How much the player would miss losing this symbol (enemy targeting). */
 export function symbolValue(s: SymbolId): number {
-  return s === 'sword' ? 3 : s === 'bolt' ? 2 : s === 'shield' ? 1 : 0;
+  // Bolts are worth ~2 shield-piercing damage, swords 1 blockable (playtest ITERATION_1).
+  return s === 'bolt' ? 3 : s === 'sword' ? 2 : s === 'shield' ? 1 : 0;
 }
 
 export function stripCounts(reel: Reel): StripCounts {

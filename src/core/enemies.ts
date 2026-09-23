@@ -1,4 +1,5 @@
 import type { AbilityDef, SideConfig, StripCounts, SymbolId } from './config';
+import { POT } from './relics';
 import type { Rng } from './rng';
 
 /** An enemy template. Every enemy writes something onto the player's machine. */
@@ -35,7 +36,7 @@ export const ARCHETYPES: Archetype[] = [
     strip: { sword: 6, shield: 6 },
     hpMul: 1.1,
     ability: { kind: 'smash', every: 3, power: 4 },
-    minDepth: 0,
+    minDepth: 1,
     blurb: 'HITS HARD',
   },
   {
@@ -43,9 +44,9 @@ export const ARCHETYPES: Archetype[] = [
     name: 'FROST IMP',
     portrait: 'enemyFrost',
     strip: { sword: 5, shield: 2, ice: 5 },
-    hpMul: 0.9,
+    hpMul: 1.1,
     ability: { kind: 'blizzard', every: 4, power: 2 },
-    minDepth: 1,
+    minDepth: 0,
     blurb: 'FREEZES YOUR REELS',
   },
   {
@@ -86,7 +87,7 @@ export const BOSS: Archetype = {
   portrait: 'enemyBoss',
   strip: { sword: 4, shield: 3, coin: 3, seven: 2 },
   hpMul: 1,
-  ability: { kind: 'jackpot', every: 5, power: 1 },
+  ability: { kind: 'jackpot', every: POT.cashEvery, power: 1 },
   minDepth: 5,
   blurb: 'THE HOUSE ALWAYS WINS... RIGHT?',
 };
@@ -95,7 +96,9 @@ const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'GILDED', 'CU
 
 /** HP for a regular fight at each depth (0-based), before the archetype multiplier. */
 export const DEPTH_HP = [16, 20, 23, 26, 28];
-export const BOSS_HP = 50;
+export const BOSS_HP = 44;
+/** The opener is always gentle, and a bit softer. */
+export const OPENER_HP_MUL = 0.85;
 export const RUN_FIGHTS = 5;
 
 export interface EnemyDef extends SideConfig {
@@ -120,7 +123,7 @@ function jitter(strip: StripCounts, rng: Rng): StripCounts {
 }
 
 export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false): EnemyDef {
-  const hp = isBoss ? BOSS_HP : Math.round(DEPTH_HP[Math.min(depth, DEPTH_HP.length - 1)] * a.hpMul);
+  const hp = isBoss ? BOSS_HP : Math.round(DEPTH_HP[Math.min(depth, DEPTH_HP.length - 1)] * a.hpMul * (depth === 0 ? OPENER_HP_MUL : 1));
   const every = a.ability.every;
   return {
     archetype: a.id,
@@ -136,18 +139,25 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false)
   };
 }
 
-/** The run's enemy sequence: 5 procedural fights (no archetype repeats back-to-back), then the boss. */
-export function generateRunEnemies(rng: Rng): EnemyDef[] {
-  const out: EnemyDef[] = [];
-  const used = new Set<string>();
+/** Fights 2–4 offer a fork: pick which of two enemies to face. */
+export const BRANCH_DEPTHS = new Set([1, 2, 3]);
+
+/**
+ * The run's map: per depth, the enemy options (1, or 2 at a fork), then the boss. Options at a
+ * depth never repeat an archetype offered at the previous depth; the opener is always gentle.
+ */
+export function generateRunPaths(rng: Rng): EnemyDef[][] {
+  const out: EnemyDef[][] = [];
+  let prev = new Set<string>();
   for (let depth = 0; depth < RUN_FIGHTS; depth++) {
-    let pool = ARCHETYPES.filter((a) => a.minDepth <= depth && !used.has(a.id));
+    let pool = ARCHETYPES.filter((a) => a.minDepth <= depth && !prev.has(a.id));
+    if (depth === 0) pool = ARCHETYPES.filter((a) => a.id === 'slime' || a.id === 'frost');
     if (pool.length === 0) pool = ARCHETYPES.filter((a) => a.minDepth <= depth);
-    // Ramp in the writer enemies: first fight is always a gentle one.
-    const a = rng.pick(pool);
-    used.add(a.id);
-    out.push(makeEnemy(a, depth, rng));
+    const n = BRANCH_DEPTHS.has(depth) ? Math.min(2, pool.length) : 1;
+    const picks = rng.shuffle([...pool]).slice(0, n);
+    out.push(picks.map((a) => makeEnemy(a, depth, rng)));
+    prev = new Set(picks.map((a) => a.id));
   }
-  out.push(makeEnemy(BOSS, RUN_FIGHTS, rng, true));
+  out.push([makeEnemy(BOSS, RUN_FIGHTS, rng, true)]);
   return out;
 }

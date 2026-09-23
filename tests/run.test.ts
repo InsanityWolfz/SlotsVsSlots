@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
 import { RUN_FIGHTS } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
-import { applyOption, createRun, draftOffers, fightConfig, finishFight, RUN } from '../src/core/run';
+import { applyOption, chooseEnemy, createRun, draftOffers, fightConfig, finishFight, needsChoice, optionDelta, RUN } from '../src/core/run';
 
 const base = defaultConfig();
 
@@ -18,8 +18,9 @@ describe('run', () => {
       const run = createRun(base, s);
       expect(run.enemies).toHaveLength(RUN_FIGHTS + 1);
       expect(run.enemies.at(-1)!.isBoss).toBe(true);
-      expect(['slime', 'brute']).toContain(run.enemies[0].archetype);
-      for (let i = 1; i < RUN_FIGHTS; i++) expect(run.enemies[i].archetype).not.toBe(run.enemies[i - 1].archetype);
+      expect(['slime', 'frost']).toContain(run.enemies[0].archetype);
+      for (let i = 1; i < RUN_FIGHTS; i++) for (const o of run.paths[i]) for (const q of run.paths[i - 1]) expect(o.archetype).not.toBe(q.archetype);
+      for (const d of [1, 2, 3]) expect(run.paths[d]).toHaveLength(2);
     }
   });
 
@@ -62,8 +63,8 @@ describe('run', () => {
     const run = createRun(base, 5);
     applyOption(run, { kind: 'add', symbol: 'sword', reel: 1 });
     expect(run.player.strips[1].sword).toBe(5);
-    applyOption(run, { kind: 'remove', symbol: 'shield', reel: 0 });
-    expect(run.player.strips[0].shield).toBe(3);
+    applyOption(run, { kind: 'swap', from: 'shield', to: 'bolt', count: 2, reel: 0 });
+    expect(run.player.strips[0]).toMatchObject({ shield: 2, bolt: 6 });
     applyOption(run, { kind: 'relic', relic: 'clover' });
     expect(run.player.relics).toEqual(['clover']);
     run.player.hp = 10;
@@ -74,15 +75,44 @@ describe('run', () => {
     expect(run.player.maxHp).toBe(max + 6);
   });
 
-  it('rocks the golem adds persist into the next fight', () => {
+  it('only 2 rocks per fight stay permanently; the rest crumble', () => {
     const run = createRun(base, 8);
     const f = new Fight(fightConfig(run, base), 2);
-    f.sides.player.reels[0].cells.push({ symbol: 'rock', slimed: false });
-    f.sides.enemy.hp = 0;
+    for (let i = 0; i < 5; i++) f.sides.player.reels[i % 3].cells.push({ symbol: 'rock', slimed: false });
     f.winner = 'player';
     const rec = finishFight(run, f);
-    expect(rec.rocksAdded).toBe(1);
-    expect(run.player.strips[0].rock).toBe(1);
-    expect(fightConfig(run, base).player.strips[0].rock).toBe(1);
+    expect(rec.rocksAdded).toBe(2);
+    expect(rec.rocksCrumbled).toBe(3);
+    expect(run.player.strips.reduce((a, s) => a + (s.rock ?? 0), 0)).toBe(2);
+    applyOption(run, { kind: 'clear', symbol: 'rock', reel: run.player.strips.findIndex((s) => (s.rock ?? 0) > 0) });
+    expect(run.player.strips.reduce((a, s) => a + (s.rock ?? 0), 0)).toBeLessThan(2);
+  });
+
+  it('relic cards only appear in the drafts after fights 2 and 4 (two of them)', () => {
+    for (let s = 0; s < 40; s++) {
+      const run = createRun(base, s);
+      for (let d = 1; d <= 5; d++) {
+        run.depth = d;
+        const relics = draftOffers(run).filter((o) => o.kind === 'relic').length;
+        expect(relics).toBe(d === 2 || d === 4 ? 2 : 0);
+      }
+    }
+  });
+
+  it('forks: choosing sets the enemy', () => {
+    const run = createRun(base, 21);
+    run.depth = 1;
+    expect(needsChoice(run)).toBe(true);
+    chooseEnemy(run, 1);
+    expect(run.enemies[1]).toBe(run.paths[1][1]);
+    expect(needsChoice(run)).toBe(false);
+  });
+
+  it('card stat deltas move the right way', () => {
+    const run = createRun(base, 4);
+    const d = optionDelta(run, { kind: 'swap', from: 'shield', to: 'bolt', count: 2, reel: 0 }, base);
+    const [, from, to] = d.match(/([\d.]+) TO ([\d.]+)/)!;
+    expect(d.startsWith('ENERGY')).toBe(true);
+    expect(Number(to)).toBeGreaterThan(Number(from));
   });
 });

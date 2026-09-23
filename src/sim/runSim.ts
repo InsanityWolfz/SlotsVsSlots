@@ -12,7 +12,7 @@ function arg(name: string, fallback: number): number {
 
 const runs = arg('runs', 0);
 if (runs > 0) {
-  for (const policy of ['greedy', 'random'] as const) {
+  for (const policy of ['greedy', 'relic', 'random'] as const) {
     console.log(`\n=== ${runs} runs, ${policy} drafting ===`);
     console.log(formatRunSummary(simulateRuns(defaultConfig(), runs, policy, 4242)));
   }
