@@ -28,6 +28,8 @@ export type CombatEvent =
       to: SideId;
       reels: number[];
       amount: number;
+      /** KEEN: ignored shields. SPIKED: this is a reflected hit. */
+      note?: 'pierce' | 'spiked' | 'snap';
       blocked: number;
       hpDamage: number;
       targetHp: number;

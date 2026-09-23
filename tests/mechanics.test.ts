@@ -230,8 +230,9 @@ describe('boss: the progressive pot', () => {
     f.forceNext('enemy', ['sword', 'sword', 'sword']);
     const [cash] = ofType(f.step().events, 'potWin');
     expect(cash.from).toBe('enemy');
-    expect(cash.amount).toBe(before + 1);
-    expect(f.pot).toBe(0);
+    // The House skims half (rounded up) and leaves the rest growing.
+    expect(cash.amount).toBe(Math.ceil((before + 1) / 2));
+    expect(f.pot).toBe(before + 1 - cash.amount);
   });
 
   it('a player jackpot steals the pot, ignoring shield; crown steals on doubles', () => {
@@ -246,7 +247,7 @@ describe('boss: the progressive pot', () => {
 
     const g = boss((c) => (c.relics = ['crown']));
     g.forceNext('player', ['shield', 'shield', 'bolt']);
-    expect(ofType(g.step().events, 'potWin')[0]).toMatchObject({ from: 'player', amount: 5 });
+    expect(ofType(g.step().events, 'potWin')[0]).toMatchObject({ from: 'player', amount: 3 }); // half of 5, rounded up
   });
 
   it('at half HP the House goes ALL IN and doubles the pot', () => {
@@ -254,7 +255,7 @@ describe('boss: the progressive pot', () => {
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const [ph] = ofType(f.step().events, 'phase');
     expect(f.allIn).toBe(true);
-    expect(ph.pot).toBe(10);
+    expect(ph.pot).toBe(13); // max(5 x 2, 5 + 8)
   });
 });
 
@@ -284,12 +285,12 @@ describe('counter relics', () => {
       const ev = b.step().events;
       steals += ofType(ev, 'steal').reduce((n, e) => n + e.cells.length, 0);
       snaps += ofType(ev, 'resist').length;
-      if (ofType(ev, 'resist').length) expect(b.sides.enemy.hp).toBe(hpBefore - 3);
+      if (ofType(ev, 'resist').length) expect(b.sides.enemy.hp).toBe(hpBefore - 2);
     }
     expect(jams / 600).toBeGreaterThan(0.35);
     expect(jams / 600).toBeLessThan(0.65);
     expect(steals / 300).toBeGreaterThan(0.35);
-    expect(snaps / 300).toBeGreaterThan(0.35);
+    expect(snaps / 300).toBeGreaterThan(0.2);
   });
 
   it('pickaxe: rocks on your payline hit; dice: jackpots pay x4', () => {

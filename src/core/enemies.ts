@@ -33,7 +33,7 @@ export const ARCHETYPES: Archetype[] = [
     id: 'brute',
     name: 'BRUTE',
     portrait: 'enemyBrute',
-    strip: { sword: 6, shield: 6 },
+    strip: { sword: 5, shield: 7 },
     hpMul: 1.1,
     ability: { kind: 'smash', every: 3, power: 4 },
     minDepth: 1,
@@ -43,7 +43,7 @@ export const ARCHETYPES: Archetype[] = [
     id: 'frost',
     name: 'FROST IMP',
     portrait: 'enemyFrost',
-    strip: { sword: 5, shield: 2, ice: 5 },
+    strip: { sword: 6, shield: 2, ice: 4 },
     hpMul: 1.1,
     ability: { kind: 'blizzard', every: 4, power: 2 },
     minDepth: 0,
@@ -53,7 +53,7 @@ export const ARCHETYPES: Archetype[] = [
     id: 'thief',
     name: 'RAT THIEF',
     portrait: 'enemyThief',
-    strip: { sword: 5, shield: 3, claw: 4 },
+    strip: { sword: 5, shield: 4, claw: 3 },
     hpMul: 0.9,
     ability: { kind: 'pilfer', every: 3, power: 1 },
     minDepth: 1,
@@ -64,7 +64,7 @@ export const ARCHETYPES: Archetype[] = [
     name: 'ROCK GOLEM',
     portrait: 'enemyGolem',
     strip: { sword: 4, shield: 4, rock: 4 },
-    hpMul: 1.25,
+    hpMul: 1.56,
     ability: { kind: 'quake', every: 4, power: 2 },
     minDepth: 2,
     blurb: 'CLUTTERS YOUR STRIP WITH ROCKS (PERMANENT)',
@@ -74,7 +74,7 @@ export const ARCHETYPES: Archetype[] = [
     name: 'GREMLIN',
     portrait: 'enemyGremlin',
     strip: { sword: 5, shield: 3, lock: 4 },
-    hpMul: 0.95,
+    hpMul: 1.19,
     ability: { kind: 'jam', every: 4, power: 2 },
     minDepth: 2,
     blurb: 'JAMS YOUR REELS',
@@ -96,7 +96,7 @@ const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'GILDED', 'CU
 
 /** HP for a regular fight at each depth (0-based), before the archetype multiplier. */
 export const DEPTH_HP = [16, 20, 23, 26, 28];
-export const BOSS_HP = 44;
+export const BOSS_HP = 48;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
 export const RUN_FIGHTS = 5;
@@ -106,7 +106,13 @@ export interface EnemyDef extends SideConfig {
   depth: number;
   blurb: string;
   isBoss: boolean;
+  /** The harder option at a fork: x1.25 HP, drops a free relic when beaten. */
+  elite?: boolean;
 }
+
+/** Rough single-fight danger per archetype (playtest ITERATION_2), used to pick the elite at a fork. */
+export const DANGER: Record<string, number> = { slime: 5, frost: 8, golem: 4, gremlin: 6, thief: 33, brute: 16, house: 40 };
+export const ELITE_HP_MUL = 1.25;
 
 function jitter(strip: StripCounts, rng: Rng): StripCounts {
   // Move one symbol between two kinds so no two enemies of an archetype are identical.
@@ -155,7 +161,15 @@ export function generateRunPaths(rng: Rng): EnemyDef[][] {
     if (pool.length === 0) pool = ARCHETYPES.filter((a) => a.minDepth <= depth);
     const n = BRANCH_DEPTHS.has(depth) ? Math.min(2, pool.length) : 1;
     const picks = rng.shuffle([...pool]).slice(0, n);
-    out.push(picks.map((a) => makeEnemy(a, depth, rng)));
+    const opts = picks.map((a) => makeEnemy(a, depth, rng));
+    if (opts.length > 1) {
+      // The more dangerous option is the ELITE: tougher, but it pays a relic.
+      const elite = opts.reduce((a, b) => ((DANGER[b.archetype] ?? 0) > (DANGER[a.archetype] ?? 0) ? b : a));
+      elite.elite = true;
+      elite.hp = Math.round(elite.hp * ELITE_HP_MUL);
+      elite.name = `ELITE ${elite.name}`.replace(/^ELITE (\w+) /, 'ELITE ');
+    }
+    out.push(opts);
     prev = new Set(picks.map((a) => a.id));
   }
   out.push([makeEnemy(BOSS, RUN_FIGHTS, rng, true)]);

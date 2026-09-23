@@ -1,0 +1,48 @@
+cont=greedy; draft points 400, rollouts 300 (SE ~2.9 pts per value)
+DRAFT spread best-worst: avg 11.8, median 11.0, p90 19.7; <5pts 11%
+by depth (after fight N): F1: 11.8 (n91)  F2: 11.4 (n84)  F3: 11.1 (n79)  F4: 12.4 (n76)  F5: 12.2 (n70)
+relic drafts: |relicA-relicB| avg 9.2 median 6.3 (<5pts 41%); best relic minus the 3rd card avg 2.9 (3rd card better 37%)
+policy loss per draft vs oracle (pts): greedy 4.8  hpFirst 2.0  random 6.3  swapFirst 6.5  first 7.3
+offer mix: {"swap":317,"add":195,"maxHp":233,"relic":320,"clear":45,"heal":90}
+type                 offered best%  avgDeltaVsBest
+relic:crown               15    93     -0.3
+relic:fang                23    83     -0.7
+heal                      90    77     -1.2
+relic:mirror              27    78     -1.5
+relic:clover              15    80     -1.6
+maxHp                    233    67     -1.7
+relic:battery             17    47     -2.9
+swap shield->bolt        138    41     -4.2
+relic:bandage             21    43     -4.3
+swap rock->bolt           18    39     -5.1
+relic:whetstone           24    13     -5.5
+relic:dice                26    23     -5.9
+clear rocks               45    11     -9.0
+relic:magnet              25    16     -9.0
+relic:pickaxe             25     4     -9.1
+swap shield->sword       138    10    -10.0
+relic:soap                18    11    -10.1
+swap rock->sword          23     9    -10.4
++bolt                    195     0    -11.1
+relic:mittens             25     0    -11.3
+relic:hourglass           25     4    -11.5
+relic:mousetrap           18     6    -12.8
+relic:lockpick            16     6    -13.9
+
+FORKS n=254: spread avg 9.3 median 7.3 (<3pts 20%); simGreedy loses 2.2/fork, random loses 4.7/fork
+  brute vs thief       n  36  first-named better 31%  avg delta -2.5 pts
+  brute vs frost       n  31  first-named better 0%  avg delta -10.0 pts
+  frost vs thief       n  26  first-named better 96%  avg delta 13.7 pts
+  brute vs slime       n  21  first-named better 0%  avg delta -8.5 pts
+  golem vs gremlin     n  19  first-named better 26%  avg delta -5.6 pts
+  slime vs thief       n  19  first-named better 89%  avg delta 10.6 pts
+  golem vs slime       n  14  first-named better 0%  avg delta -10.2 pts
+  gremlin vs slime     n  13  first-named better 69%  avg delta 2.3 pts
+  gremlin vs thief     n  12  first-named better 83%  avg delta 8.4 pts
+  frost vs golem       n  12  first-named better 75%  avg delta 5.1 pts
+  brute vs gremlin     n  11  first-named better 0%  avg delta -22.8 pts
+  golem vs thief       n  11  first-named better 73%  avg delta 10.3 pts
+  brute vs golem       n  10  first-named better 20%  avg delta -7.5 pts
+  frost vs slime       n  10  first-named better 40%  avg delta 1.5 pts
+  frost vs gremlin     n   9  first-named better 67%  avg delta 1.2 pts
+  counter relic held for one option: n=2, countered option better 100%, avg delta 7.2 pts

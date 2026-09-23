@@ -21,10 +21,10 @@ export const RELICS: Record<RelicId, RelicDef> = {
   magnet: { id: 'magnet', name: 'MAGNET', text: 'ROCKS ON YOUR PAYLINE GIVE ENERGY', sprite: 'relicMagnet' },
   mittens: { id: 'mittens', name: 'MITTENS', text: 'FREEZES LAST 1 TURN LESS', sprite: 'relicMittens' },
   lockpick: { id: 'lockpick', name: 'LOCKPICK', text: 'EACH JAM HAS A 50% CHANCE TO FAIL', sprite: 'relicLockpick' },
-  mousetrap: { id: 'mousetrap', name: 'MOUSETRAP', text: 'STEALS FAIL 50% OF THE TIME. SNAP: 3 DAMAGE', sprite: 'relicMousetrap' },
+  mousetrap: { id: 'mousetrap', name: 'MOUSETRAP', text: 'STEALS FAIL 35% OF THE TIME. SNAP: 2 DAMAGE', sprite: 'relicMousetrap' },
   pickaxe: { id: 'pickaxe', name: 'PICKAXE', text: 'ROCKS ON YOUR PAYLINE HIT LIKE SWORDS', sprite: 'relicPickaxe' },
   dice: { id: 'dice', name: 'LOADED DICE', text: 'YOUR JACKPOTS PAY X4 INSTEAD OF X3', sprite: 'relicDice' },
-  crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR DOUBLES ALSO STEAL THE HOUSE POT', sprite: 'relicCrown' },
+  crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR DOUBLES ALSO STEAL HALF THE HOUSE POT', sprite: 'relicCrown' },
 };
 
 export const CLOVER_CHANCE = 0.3;
@@ -33,8 +33,16 @@ export const BATTERY_ENERGY = 3;
 export const FANG_HEAL = 3;
 export const BANDAGE_HEAL = 6;
 export const LOCKPICK_CHANCE = 0.5;
-export const MOUSETRAP_CHANCE = 0.5;
-export const MOUSETRAP_DAMAGE = 3;
+export const MOUSETRAP_CHANCE = 0.35;
+export const MOUSETRAP_DAMAGE = 2;
+export const SPIKED_DAMAGE = 2;
 
-/** Boss pot rules (playtest ITERATION_1: a real progressive pot). */
-export const POT = { seed: 5, houseCut: 1, cashEvery: 6 };
+/** Counter relics are offered as PREP cards when their enemy is on the next fork, never in relic drafts. */
+export const COUNTERS: Partial<Record<string, RelicId>> = { frost: 'mittens', gremlin: 'lockpick', thief: 'mousetrap', golem: 'pickaxe' };
+export const COUNTER_RELICS: ReadonlySet<RelicId> = new Set(Object.values(COUNTERS) as RelicId[]);
+
+/**
+ * Boss pot rules. The House SKIMS: each cash-out takes half the pot (rounded up) and leaves the
+ * rest growing, so it's many medium swings instead of one lottery one-shot (playtest ITERATION_2).
+ */
+export const POT = { seed: 5, houseCut: 1, cashEvery: 4, skim: 0.5, allInMin: 8 };

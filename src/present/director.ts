@@ -26,6 +26,7 @@ const EFFECT_WORD: Record<SymbolId, string> = {
   coin: 'TO THE POT',
   seven: 'DAMAGE',
   empty: 'NOTHING',
+  wild: 'WILD',
 };
 
 const BATCHABLE = new Set<CombatEvent['type']>(['attack', 'shieldGain', 'energyGain', 'fizzle', 'slime', 'freeze', 'lock', 'steal', 'pot', 'heal']);
@@ -456,6 +457,11 @@ export class Director {
       this.bg(this.popText(`BLOCK ${e.blocked}`, sb.x + sb.w - 60, sb.y + sb.h / 2, 3, '#9fd0ff', 16, 0.3));
     }
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
+    if (e.note === 'pierce') this.bg(this.popText('PIERCE!', target.x, MACHINE_TOP + 8, 3, '#bff4ff', 24, 0.3));
+    if (e.note === 'spiked') {
+      this.s.sounds.block();
+      this.bg(this.popText('SPIKED!', target.x, MACHINE_TOP + 8, 3, '#c9d0dc', 24, 0.3));
+    }
     if (e.hpDamage > 0) this.bg(this.popText(`-${e.hpDamage}`, target.x, MACHINE_TOP + 40, this.tierScale(), color, 60));
     else this.bg(this.popText('BLOCKED!', target.x, MACHINE_TOP + 40, 4, '#9fd0ff', 40));
     this.settle(e.from, e.reels);
@@ -977,7 +983,8 @@ export class Director {
     this.s.camera.chromaPulse(0.8);
     this.s.camera.flashScreen(0.4, '#ff6a5a');
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.6, onUpdate: (v) => (m.flash = v * 0.6) }));
-    this.bg(this.banner('ALL IN!', '#ff3a2e', 1.5, 0.5, 'THE POT DOUBLES', BANNER_Y, 5));
+    g.allIn = true;
+    this.bg(this.banner('ALL IN!', '#ff3a2e', 1.2, 0.5, 'THE POT DOUBLES', BANNER_Y, 4));
     const from = g.pot;
     await this.c.tween({ from, to: e.pot, dur: 0.8, ease: sineOut, onUpdate: (v) => (g.pot = v) });
     this.bg(this.c.tween({ from: 1.8, to: 1, dur: 0.3, ease: backOut(3), onUpdate: (v) => (g.potPunch = v) }));

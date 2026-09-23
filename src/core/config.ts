@@ -4,7 +4,19 @@ export type SideId = 'player' | 'enemy';
  * side: an enemy whose strips contain ice freezes you; ice on your own payline is dead.
  * 'empty' is what a stolen cell scores as.
  */
-export type SymbolId = 'sword' | 'shield' | 'bolt' | 'slime' | 'ice' | 'claw' | 'rock' | 'lock' | 'coin' | 'seven' | 'empty';
+export type SymbolId = 'sword' | 'shield' | 'bolt' | 'slime' | 'ice' | 'claw' | 'rock' | 'lock' | 'coin' | 'seven' | 'empty' | 'wild';
+
+/**
+ * Gilded cells (enhancements that persist for the run):
+ * GOLD pays x2, KEEN swords pierce shields, CHARGED bolts give +1 energy, SPIKED shields on your
+ * payline hit back for 2 when you're struck.
+ */
+export type Enh = 'gold' | 'keen' | 'charged' | 'spiked';
+export interface Gild {
+  reel: number;
+  symbol: SymbolId;
+  enh: Enh;
+}
 export type StripCounts = Partial<Record<SymbolId, number>>;
 
 /** When a combatant's shield drops to 0. */
@@ -54,6 +66,8 @@ export interface SideConfig {
   ability?: AbilityDef | null;
   /** Boss rule set, if any. */
   boss?: 'house' | null;
+  /** Enhanced cells, applied to matching symbols on each reel at fight start. */
+  gilded?: Gild[];
 }
 
 export interface GameConfig {
@@ -82,7 +96,7 @@ export function defaultConfig(): GameConfig {
     player: { hp: 20, strips: reels3({ sword: 4, shield: 4, bolt: 4 }) },
     // Tuned from playtest/PLAYTEST_REPORT.md: ~65% player wins, ~24 turns, cleanse in ~half of fights.
     enemy: { hp: 30, strips: reels3({ sword: 5, shield: 2, slime: 5 }), name: 'SLIME KING', portrait: 'enemyPortrait' },
-    base: { sword: 1, shield: 1, bolt: 1, slime: 1, ice: 1, claw: 1, rock: 1, lock: 1, coin: 1, seven: 2, empty: 0 },
+    base: { sword: 1, shield: 1, bolt: 1, slime: 1, ice: 1, claw: 1, rock: 1, lock: 1, coin: 1, seven: 2, empty: 0, wild: 1 },
     pairMult: 2,
     tripleMult: 3,
     pairRule: 'inOrder',

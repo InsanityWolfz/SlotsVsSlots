@@ -47,5 +47,5 @@ export interface Stage {
   huds: Record<SideId, HudView>;
   juice: JuiceToggles;
   /** Shown in the center gutter. */
-  gutter: { turn: number; side: SideId | null; pulse: number; pot: number; potPunch: number; fightLabel: string };
+  gutter: { turn: number; side: SideId | null; pulse: number; pot: number; potPunch: number; fightLabel: string; allIn: boolean };
 }

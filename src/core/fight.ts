@@ -1,10 +1,11 @@
 import { cloneConfig, type AbilityDef, type GameConfig, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
 import type { CombatEvent } from './events';
-import { BATTERY_ENERGY, CLOVER_CHANCE, FANG_HEAL, LOCKPICK_CHANCE, MOUSETRAP_CHANCE, MOUSETRAP_DAMAGE, POT, WHETSTONE_BONUS } from './relics';
+import { SPIKED_DAMAGE, BATTERY_ENERGY, CLOVER_CHANCE, FANG_HEAL, LOCKPICK_CHANCE, MOUSETRAP_CHANCE, MOUSETRAP_DAMAGE, POT, WHETSTONE_BONUS } from './relics';
 import { Rng } from './rng';
 import { isNearMiss, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {
   buildReel,
+  cellValue,
   DEAD,
   effectiveSymbol,
   insertOffscreen,
@@ -48,7 +49,7 @@ export const other = (s: SideId): SideId => (s === 'player' ? 'enemy' : 'player'
 export const statusSize = (amount: number) => Math.max(1, Math.min(3, Math.round(Math.sqrt(amount))));
 
 function makeCombatant(side: SideId, sc: SideConfig, rng: Rng, relics: RelicId[]): Combatant {
-  const reels = sc.strips.map((counts) => buildReel(counts, rng));
+  const reels = sc.strips.map((counts, r) => buildReel(counts, rng, (sc.gilded ?? []).filter((g) => g.reel === r)));
   const casts = new Set<SymbolId>();
   for (const c of sc.strips) for (const [s, n] of Object.entries(c)) if ((n ?? 0) > 0 && WRITERS.has(s as SymbolId)) casts.add(s as SymbolId);
   // The player's own slime/rock are debuffs, never casts.
@@ -143,7 +144,7 @@ export class Fight {
       if (this.over) break;
     }
     const steals = score.tier === 'triple' || (score.tier === 'pair' && me.relics.has('crown'));
-    if (!this.over && side === 'player' && this.isBoss && steals) this.winPot(me, events);
+    if (!this.over && side === 'player' && this.isBoss && steals) this.winPot(me, events, score.tier === 'triple' ? 1 : 0.5);
     // The house always takes its cut.
     if (!this.over && side === 'enemy' && this.isBoss) {
       this.pot += POT.houseCut;
@@ -166,12 +167,24 @@ export class Fight {
     const pairRule = me.relics.has('mirror') ? 'anyTwo' : this.cfg.pairRule;
     const tripleMult = me.relics.has('dice') ? this.cfg.tripleMult + 1 : this.cfg.tripleMult;
     const s = scoreLine(line, { ...this.cfg, pairRule, tripleMult });
-    if (me.relics.has('whetstone')) {
-      for (const g of s.groups) if (g.matched && g.symbol === 'sword') g.amount += WHETSTONE_BONUS;
-      s.totals = {};
-      for (const g of s.groups) s.totals[g.symbol] = (s.totals[g.symbol] ?? 0) + g.amount;
+    if (me.relics.has('whetstone')) for (const g of s.groups) if (g.matched && g.symbol === 'sword') g.amount += WHETSTONE_BONUS;
+    for (const g of s.groups) {
+      for (const r of g.reels) {
+        const enh = this.paylineEnh(me, r);
+        if (enh === 'gold') g.amount *= 2;
+        if (enh === 'charged' && g.symbol === 'bolt') g.amount += 1;
+      }
     }
+    s.totals = {};
+    for (const g of s.groups) s.totals[g.symbol] = (s.totals[g.symbol] ?? 0) + g.amount;
     return s;
+  }
+
+  /** The enhancement on a reel's payline cell, if it's live (not stolen, slimed or jammed). */
+  private paylineEnh(c: Combatant, r: number) {
+    const cell = c.reels[r].cells[c.reels[r].stop];
+    if (!cell?.enh || cell.stolen || cell.slimed || c.locked[r] > 0) return undefined;
+    return cell.enh;
   }
 
   private resetShield(c: Combatant, events: CombatEvent[]): void {
@@ -210,7 +223,8 @@ export class Fight {
     const foe = this.sides[other(me.side)];
     switch (g.symbol) {
       case 'sword':
-        this.hit(me, foe, g.amount, g.reels, events);
+        // KEEN: a keen sword in the group pierces shields.
+        this.hit(me, foe, g.amount, g.reels, events, g.reels.some((r) => this.paylineEnh(me, r) === 'keen'));
         return;
       case 'seven':
         // Sevens are the House's heavy hitters.
@@ -244,10 +258,16 @@ export class Fight {
     events.push({ type: 'fizzle', side: me.side, reels: g.reels, symbol: g.symbol });
   }
 
-  private hit(me: Combatant, foe: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
-    const h = this.damage(foe, amount, false);
-    events.push({ type: 'attack', from: me.side, to: foe.side, reels, amount, ...h });
+  private hit(me: Combatant, foe: Combatant, amount: number, reels: number[], events: CombatEvent[], pierce = false, note?: 'snap'): void {
+    const h = this.damage(foe, amount, pierce);
+    events.push({ type: 'attack', from: me.side, to: foe.side, reels, amount, ...h, ...(pierce ? { note: 'pierce' as const } : note ? { note } : {}) });
     this.checkDeath(foe, events);
+    // SPIKED: a spiked shield on the victim's payline hits back for 2 (once per hit).
+    if (!this.over && amount > 0 && foe.reels.some((_, r) => this.paylineEnh(foe, r) === 'spiked')) {
+      const back = this.damage(me, SPIKED_DAMAGE, false);
+      events.push({ type: 'attack', from: foe.side, to: me.side, reels: [], amount: SPIKED_DAMAGE, ...back, note: 'spiked' });
+      this.checkDeath(me, events);
+    }
   }
 
   private gainEnergy(me: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
@@ -284,7 +304,7 @@ export class Fight {
       // Boss phase 2: at half HP the House goes ALL IN and doubles the pot.
       if (c.side === 'enemy' && this.isBoss && !this.allIn && c.hp <= c.maxHp / 2) {
         this.allIn = true;
-        this.pot = Math.max(this.pot * 2, this.pot + 5);
+        this.pot = Math.max(this.pot * 2, this.pot + POT.allInMin);
         events.push({ type: 'phase', side: c.side, pot: this.pot });
       }
       return;
@@ -330,7 +350,10 @@ export class Fight {
       const c = foe.reels[ref.reel].cells[ref.index];
       return !c.slimed && !c.stolen;
     });
-    const cells: CellRef[] = this.rng.shuffle(clean).slice(0, amount);
+    // Slime goes for gilded cells first.
+    const gilded = this.rng.shuffle(clean.filter((ref) => foe.reels[ref.reel].cells[ref.index].enh));
+    const plain = this.rng.shuffle(clean.filter((ref) => !foe.reels[ref.reel].cells[ref.index].enh));
+    const cells: CellRef[] = [...gilded, ...plain].slice(0, amount);
     for (const ref of cells) foe.reels[ref.reel].cells[ref.index].slimed = true;
     events.push({ type: 'slime', from: me.side, to: foe.side, reels, amount, cells, wasted: amount - cells.length });
   }
@@ -349,7 +372,10 @@ export class Fight {
       return;
     }
     const arr = foe[status];
-    const valueAt = (r: number, stop: number) => symbolValue(effectiveSymbol(foe.reels[r].cells[stop]));
+    const valueAt = (r: number, stop: number) => {
+      const c = foe.reels[r].cells[stop];
+      return symbolValue(effectiveSymbol(c)) + (c.enh && !c.slimed && !c.stolen ? 3 : 0);
+    };
     const order = this.rng.shuffle(foe.reels.map((_, r) => r));
     order.sort((a, b) => (ice ? valueAt(a, foe.reels[a].stop) - valueAt(b, foe.reels[b].stop) : valueAt(b, foe.reels[b].stop) - valueAt(a, foe.reels[a].stop)));
     let targets = order.slice(0, count).sort((a, b) => a - b);
@@ -368,21 +394,28 @@ export class Fight {
 
     const len = (r: number) => foe.reels[r].cells.length;
     const sym = (r: number) => effectiveSymbol(foe.reels[r].cells[foe.reels[r].stop]);
-    const clunk = (r: number, avoid?: SymbolId) => {
+    const clunk = (r: number, avoid: ReadonlySet<SymbolId> = new Set()) => {
       const reel = foe.reels[r];
       const options = [reel.stop, (reel.stop + len(r) - 1) % len(r), (reel.stop + 1) % len(r)];
-      const ok = options.filter((st) => !avoid || effectiveSymbol(reel.cells[st]) !== avoid);
+      const ok = options.filter((st) => !avoid.has(effectiveSymbol(reel.cells[st])));
       const pool = ok.length ? ok : options;
       let best = pool[0];
       for (const st of pool) if (valueAt(r, st) < valueAt(r, best)) best = st;
       reel.stop = best;
     };
+    // Never more than 2 reels frozen at once (freezes stack across turns).
+    const alreadyFrozen = arr.filter((t, r) => t > 0 && !targets.includes(r)).length;
+    targets = targets.slice(0, Math.max(0, 2 - alreadyFrozen));
+    if (!targets.length) return;
     for (const r of targets) clunk(r);
-    const frozenAfter = (r: number) => targets.includes(r) || arr[r] > 0;
-    if (frozenAfter(0) && frozenAfter(1) && sym(0) === sym(1)) {
-      const fix = targets.includes(1) ? 1 : targets.includes(0) ? 0 : -1;
-      if (fix >= 0) clunk(fix, sym(fix === 1 ? 0 : 1));
-      if (fix >= 0 && sym(0) === sym(1)) targets = targets.filter((r) => r !== fix);
+    // No two frozen reels may show the same payline symbol — a frozen pair or triple would be a
+    // free win every turn. Re-clunk a clashing target away from the others, or drop it.
+    const frozenNow = () => foe.reels.map((_, r) => r).filter((r) => targets.includes(r) || arr[r] > 0);
+    for (const r of [...targets]) {
+      const others = frozenNow().filter((o) => o !== r);
+      if (!others.some((o) => sym(o) === sym(r))) continue;
+      clunk(r, new Set(others.map(sym)));
+      if (others.some((o) => sym(o) === sym(r))) targets = targets.filter((t) => t !== r);
     }
     if (!targets.length) return;
     for (const r of targets) arr[r] = Math.max(arr[r], turns);
@@ -408,7 +441,7 @@ export class Fight {
         return !c.stolen && !c.slimed && symbolValue(c.symbol) > 0;
       }),
     );
-    pool.sort((a, b) => symbolValue(foe.reels[b.reel].cells[b.index].symbol) - symbolValue(foe.reels[a.reel].cells[a.index].symbol));
+    pool.sort((a, b) => cellValue(foe.reels[b.reel].cells[b.index]) - cellValue(foe.reels[a.reel].cells[a.index]));
     let cells = pool.slice(0, amount);
     // Mousetrap: each grab can get snapped — and the thief pays for it.
     let snapped = false;
@@ -419,11 +452,12 @@ export class Fight {
     }
     const symbols = cells.map((ref) => foe.reels[ref.reel].cells[ref.index].symbol);
     for (const ref of cells) foe.reels[ref.reel].cells[ref.index].stolen = true;
-    if (cells.length || !snapped) events.push({ type: 'steal', from: me.side, to: foe.side, reels, cells, symbols, wasted: snapped ? 0 : amount - cells.length });
     if (snapped) {
       events.push({ type: 'resist', side: foe.side, relic: 'mousetrap', what: 'steal' });
-      this.hit(foe, me, MOUSETRAP_DAMAGE, [], events);
+      this.hit(foe, me, MOUSETRAP_DAMAGE, [], events, false, 'snap');
+      if (this.over) return;
     }
+    if (cells.length || !snapped) events.push({ type: 'steal', from: me.side, to: foe.side, reels, cells, symbols, wasted: snapped ? 0 : amount - cells.length });
   }
 
   private junk(me: Combatant, foe: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
@@ -493,21 +527,21 @@ export class Fight {
 
   // ---- boss: the progressive pot ------------------------------------------------------
 
-  /** The House cashes out the pot as damage (shield blocks). */
+  /** The House skims half the pot (rounded up) as damage (shield blocks); the rest keeps growing. */
   private cashPot(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
-    const amount = this.pot;
-    this.pot = 0;
+    const amount = Math.ceil(this.pot * POT.skim);
+    this.pot -= amount;
     const h = this.damage(foe, amount, false);
     events.push({ type: 'potWin', from: me.side, to: foe.side, amount, ...h });
     this.checkDeath(foe, events);
   }
 
-  /** Any player jackpot against the House steals the pot, ignoring shield. */
-  private winPot(me: Combatant, events: CombatEvent[]): void {
+  /** Any player jackpot steals the pot (a High Roller double steals half), ignoring shield. */
+  private winPot(me: Combatant, events: CombatEvent[], share = 1): void {
     if (this.pot <= 0) return;
     const foe = this.sides[other(me.side)];
-    const amount = this.pot;
-    this.pot = 0;
+    const amount = Math.ceil(this.pot * share);
+    this.pot -= amount;
     const h = this.damage(foe, amount, true);
     events.push({ type: 'potWin', from: me.side, to: foe.side, amount, ...h });
     this.checkDeath(foe, events);

@@ -1207,6 +1207,224 @@ S.mapBadgeLock = lit(8, 8, ['', '..LLLS', '..L..D', '.YOOOOo', '.OOKKOo', '.OOOK
 S.mapBadgeFist = lit(8, 8, ['', '..WFFF', '.FFFFFf', '.FfFfFf', '.FFFFFf', '.fFFFff', '..ffff']);
 S.mapBadgeCoin = lit(8, 8, ['', '..YYGg', '.YWYYGg', '.YYgYGg', '.YYgYGg', '.GYYGgg', '..Gggg']);
 
+// ================================================================ RUN / BOSS UI (batch 3)
+// ---------------------------------------------------------------- lethal pot (24x24)
+{
+  const g = grid(24, 24);
+  coinHeap(g, 11.5, 12, 10.5, 8);
+  // hellfire reflection: only the deep shadow side of the heap glows orange
+  for (let y = 0; y < 24; y++) for (let x = 0; x < 24; x++)
+    if (g[y][x] === 'g' && x + y * 0.6 >= 20) g[y][x] = 'o';
+  // cursed iron pot, red-hot: rim + belly + clawed feet
+  shape(g, 14, [[3, 20], [2, 21], [2, 21], [2, 21], [3, 20], [3, 20], [4, 19], [6, 17]], (x, y, has) =>
+    (!has(x + 1, y) || !has(x, y + 1) || x >= 19 || y >= 20) ? 'v' : (!has(x - 1, y) || x <= 4) ? 'R' : 'r');
+  hline(g, 1, 22, 12, 'O'); hline(g, 1, 22, 13, 'R');
+  put(g, 1, 12, 'Y'); put(g, 2, 12, 'Y'); put(g, 22, 13, 'r'); put(g, 21, 13, 'r');
+  put(g, 5, 15, 'O'); put(g, 4, 16, 'O');
+  stamp(g, 8, 16, ['  r', ' rRr', 'rRKRr', ' rRr', '  r']); // glowing rune on the belly
+  put(g, 10, 18, 'Y');
+  // red-hot cracks glowing through the iron
+  [[15, 15], [15, 16], [16, 17], [16, 18], [5, 18], [6, 19]].forEach(([x, y]) => put(g, x, y, 'O'));
+  stamp(g, 5, 22, ['vr', ' r']); stamp(g, 17, 22, ['rv', 'r ']);
+  // coins overflowing both sides and dripping down the belly
+  stamp(g, 0, 11, ['YG', 'GgO']);
+  stamp(g, 20, 10, ['YYG', 'GYYO']);
+  stamp(g, 21, 14, ['YO', 'Go']);
+  stamp(g, 22, 17, ['Y', 'o']);
+  stamp(g, 0, 15, ['Y', 'O']);
+  flatCoin(g, 19, 22);
+  // skull-stamped coin crowning the heap (gold rim, blood-red face, bone skull)
+  shape(g, 1, discSpans(11.5, 5.5, 5.2, 1, 10), (x, y, has) => {
+    const rim = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !has(x + dx, y + dy));
+    if (rim) return x + y >= 18 ? 'g' : (x + y <= 13 ? 'Y' : 'G');
+    return x + y >= 20 ? 'r' : 'R';
+  });
+  stamp(g, 9, 2, [
+    ' TTTt',
+    'TTTTTt',
+    'TKKTKK',
+    'TKKTKK',
+    ' TTTt',
+    ' TtTt',
+  ]);
+  put(g, 10, 2, 'W'); put(g, 9, 3, 'W');
+  put(g, 8, 2, 'M'); // gloss on the red face
+  // red sparks
+  stamp(g, 1, 3, [' R ', 'RYR', ' R ']);
+  stamp(g, 19, 1, [' O ', 'RWR', ' r ']);
+  put(g, 4, 1, 'O'); put(g, 22, 6, 'R');
+  outline(g);
+  // menacing red glow: a dark-red halo hugging the outline above the rim
+  for (let y = 0; y < 13; y++) for (let x = 0; x < 24; x++)
+    if (g[y][x] === '.' && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => get(g, x + dx, y + dy) === 'K') &&
+        !(x <= 5 && y <= 6) && !(x >= 18 && y <= 8)) g[y][x] = 'r';
+  S.potTier4 = toRows(g);
+}
+
+// ---------------------------------------------------------------- elite badge / danger pip (8x8)
+S.mapBadgeElite = lit(8, 8, ['', '.Y.YY.Y', '.YGRGGg', '.WTTTTt', '.TRTTRt', '..TTTt', '..TtTt']);
+S.dangerPip = lit(8, 8, ['', '..WWWL', '.WWWWWL', '.WKWWKL', '.WWWWWL', '..WLWL']);
+
+// ---------------------------------------------------------------- card: prepare (16x16)
+{
+  const g = grid(16, 16);
+  // heater shield, symmetric about x=7
+  const spans = [[1, 13], [1, 13], [1, 13], [1, 13], [1, 13], [1, 13], [1, 13], [1, 13], [2, 12], [3, 11], [4, 10], [5, 9], [6, 8], [7, 7]];
+  shape(g, 1, spans, (x, y, has) => {
+    const ring = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !has(x + dx, y + dy));
+    if (ring) return (y === 1 || x === 1 || x + y <= 9) ? 'L' : (x >= 13 || x + y >= 19 ? 'D' : 'S');
+    return x + y <= 7 ? 'A' : x + y >= 17 ? 'N' : 'U';
+  });
+  put(g, 2, 2, 'W'); put(g, 3, 2, 'W'); put(g, 2, 3, 'W');
+  // red crosshair: ring + 4 ticks with a gap, centre dot
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++)
+    if (Math.round(Math.hypot(x - 7, y - 7)) === 4) put(g, x, y, x + y >= 15 ? 'r' : 'R');
+  [[7, 1], [7, 2], [7, 12], [7, 13], [1, 7], [2, 7], [12, 7], [13, 7]].forEach(([x, y]) => put(g, x, y, x + y >= 15 ? 'r' : 'R'));
+  put(g, 7, 7, 'W');
+  put(g, 5, 4, 'M'); // glint on the ring
+  S.cardPrep = toRows(outline(g));
+}
+
+// ================================================================ WILDS + GILDED CELLS (batch 4)
+// ---------------------------------------------------------------- wild: prismatic 5-point star (16x16)
+{
+  const g = grid(16, 16);
+  const cx = 7.5, cy = 8.4, R = 7.9, r = 3.9;
+  const verts = [];
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5, rad = i % 2 ? r : R;
+    verts.push([cx + rad * Math.cos(a), cy + rad * Math.sin(a)]);
+  }
+  const inside = (px, py) => {
+    let c = false;
+    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+      const [xi, yi] = verts[i], [xj, yj] = verts[j];
+      if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  // arms clockwise from the top: yellow, green, cyan, purple, red (hi facet, lo facet)
+  const hues = [['Y', 'G'], ['E', 'e'], ['C', 'c'], ['J', 'V'], ['R', 'r']];
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const dx = x - cx, dy = y - cy;
+    if (!inside(x, y)) continue;
+    const d = Math.hypot(dx, dy);
+    let ang = Math.atan2(dy, dx) + Math.PI / 2; if (ang < 0) ang += 2 * Math.PI;
+    const arm = Math.round(ang / (2 * Math.PI / 5)) % 5;
+    const aa = -Math.PI / 2 + arm * 2 * Math.PI / 5, ax = Math.cos(aa), ay = Math.sin(aa);
+    const side = dx * -ay + dy * ax;               // which half of the arm (facet)
+    const litSide = (-ay * -1 + ax * -1) > 0 ? 1 : -1; // normal facing the top-left light
+    const [hi, lo] = hues[arm];
+    put(g, x, y, d < 1.3 ? 'W' : (side * litSide > 0 || Math.abs(side) < 0.3 ? hi : lo));
+  }
+  // bright core + gloss along the upper-left arm
+  stamp(g, 6, 7, [' WW', 'WWWW', ' WW']);
+  put(g, 7, 2, 'W'); put(g, 7, 3, 'W'); put(g, 2, 6, 'W'); put(g, 3, 6, 'W');
+  // prismatic twinkles in the empty top corners (makes WILD pop on a busy reel)
+  stamp(g, 1, 1, [' C', 'CWC', ' C']);
+  stamp(g, 12, 1, [' M', 'MWM', ' M']);
+  S.wild = toRows(outline(g));
+}
+
+// ---------------------------------------------------------------- enhancement overlays (16x16, no outline on the centre)
+// gilded: gold frame + corner sparkles, centre fully transparent
+{
+  const g = grid(16, 16);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const d = Math.min(x, y, 15 - x, 15 - y);
+    const corner = Math.min(x, 15 - x) + Math.min(y, 15 - y);
+    if (d === 0) put(g, x, y, 'g');
+    else if (d === 1) put(g, x, y, (x === 1 || y === 1) && !(x === 14 || y === 14) ? 'Y' : 'G');
+    else if (d === 2 && corner <= 5) put(g, x, y, 'g');
+  }
+  const sparkle = (x, y, big) => {
+    put(g, x, y, 'W');
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => put(g, x + dx, y + dy, big ? 'W' : 'Y'));
+    if (big) [[2, 0], [-2, 0], [0, 2], [0, -2]].forEach(([dx, dy]) => put(g, x + dx, y + dy, 'Y'));
+  };
+  sparkle(2, 2, true); sparkle(13, 13, true); sparkle(13, 2, false); sparkle(2, 13, false);
+  // tiny diamond studs mid-edge
+  put(g, 7, 1, 'W'); put(g, 8, 1, 'W'); put(g, 1, 7, 'W'); put(g, 1, 8, 'W');
+  S.enhGold = toRows(g);
+}
+// keen: tapered white/cyan glint slashing the upper-right corner + a star sparkle
+{
+  const g = grid(16, 16);
+  for (let x = 6; x <= 15; x++) {
+    const y = x - 7, t = Math.min(x - 6, 15 - x); // taper toward both ends
+    if (y < 0) continue;
+    put(g, x, y, t >= 1 ? 'W' : 'C');
+    if (t >= 1) { put(g, x - 1, y, 'C'); put(g, x, y + 1, 'c'); }
+    if (t >= 3) { put(g, x - 2, y, 'A'); put(g, x + 1, y + 2, 'N'); put(g, x, y + 2, 'c'); put(g, x - 1, y + 1, 'W'); }
+  }
+  // thin secondary streak
+  [[12, 1, 'C'], [13, 2, 'W'], [14, 3, 'C']].forEach(([x, y, c]) => put(g, x, y, c));
+  // 4-point star sparkle, lower left of the streak
+  stamp(g, 2, 2, ['  A', '  C', 'ACWCA', '  C', '  A']);
+  S.enhKeen = toRows(g);
+}
+// charged: yellow zig-zag arcs hugging the edges + spark dots (outlined so they read over the bolt)
+{
+  const g = grid(16, 16);
+  const line = (x0, y0, x1, y1) => {
+    const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+    let px = x0, py = y0;
+    for (let i = 0; i <= n; i++) {
+      const nx = Math.round(x0 + (x1 - x0) * i / n), ny = Math.round(y0 + (y1 - y0) * i / n);
+      if (nx !== px && ny !== py) put(g, nx, py, 'Y'); // keep the arc 4-connected (reads as a solid bolt)
+      put(g, nx, ny, 'Y'); px = nx; py = ny;
+    }
+  };
+  const arc = (pts) => { for (let i = 1; i < pts.length; i++) line(...pts[i - 1], ...pts[i]); pts.forEach(([x, y]) => put(g, x, y, 'W')); };
+  arc([[1, 8], [2, 6], [1, 5], [3, 3], [4, 4], [6, 1]]);
+  arc([[14, 4], [13, 6], [14, 7], [13, 9], [14, 11]]);
+  arc([[5, 14], [7, 13], [8, 14], [10, 13], [12, 14]]);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if (g[y][x] === 'Y' && x + y >= 23) g[y][x] = 'O';
+  stamp(g, 10, 1, [' Y', 'YWY', ' Y']);
+  put(g, 2, 12, 'Y'); put(g, 12, 11, 'W');
+  // drop shadow (down-right) instead of a full outline, so the centre stays clean
+  const sh = [];
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if (g[y][x] === '.' && 'YWO'.includes(get(g, x - 1, y - 1)) ) sh.push([x, y]);
+  sh.forEach(([x, y]) => put(g, x, y, 'o'));
+  S.enhCharged = toRows(g);
+}
+// spiked: steel spikes poking out of each edge and corner
+{
+  const g = grid(16, 16);
+  const mask = new Set();
+  const k = (x, y) => `${x},${y}`;
+  const edge = [[7, 0], [8, 0], [7, 1], [8, 1], [6, 2], [7, 2], [8, 2], [9, 2]];
+  const corner = [[0, 0], [1, 1], [2, 1], [1, 2], [2, 2], [3, 2], [2, 3], [3, 3]];
+  const rot = ([x, y]) => [15 - y, x];
+  for (const base of [edge, corner]) {
+    let pts = base;
+    for (let r = 0; r < 4; r++) { pts.forEach(([x, y]) => mask.add(k(x, y))); pts = pts.map(rot); }
+  }
+  const has = (x, y) => mask.has(k(x, y));
+  for (const p of mask) { const [x, y] = p.split(',').map(Number); put(g, x, y, edgeShade('L', 'S', 'D')(x, y, has)); }
+  // glints on the lit tips
+  put(g, 7, 0, 'W'); put(g, 0, 7, 'W'); put(g, 0, 0, 'W'); put(g, 1, 1, 'L');
+  S.enhSpiked = toRows(outline(g));
+}
+
+// ---------------------------------------------------------------- card: gild (16x16) — anvil, hammer, gold spark
+S.cardGild = lit(16, 16, [
+  '................',
+  '...........ww...',
+  '.....WLLSwwBB...',
+  '..Y..LLSDBB.....',
+  '.YWY.LSSD.......',
+  '..Y..SDDD..G....',
+  '...........Y....',
+  '..WWLLLLLLLLLS..',
+  '....LSSSSSSSSD..',
+  '......SSSSSD....',
+  '.......SSSD.....',
+  '.......SDDD.....',
+  '.....LSSSSSDD...',
+  '....SSSSSSSSDD..',
+]);
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -1223,6 +1441,8 @@ const DIMS = {
   relicMittens: 16, relicLockpick: 16, relicMousetrap: 16, relicPickaxe: 16, relicDice: 16, relicCrown: 16,
   cardSwap: 16, cardClear: 16, arrowRight: 8, potTier1: 16, potTier2: 24, potTier3: 24, mapFork: 12,
   mapBadgeSlime: 8, mapBadgeIce: 8, mapBadgeClaw: 8, mapBadgeRock: 8, mapBadgeLock: 8, mapBadgeFist: 8, mapBadgeCoin: 8,
+  potTier4: 24, mapBadgeElite: 8, dangerPip: 8, cardPrep: 16,
+  wild: 16, enhGold: 16, enhKeen: 16, enhCharged: 16, enhSpiked: 16, cardGild: 16,
 };
 const errors = [];
 for (const [id, n] of Object.entries(DIMS)) {
@@ -1279,7 +1499,13 @@ export type SpriteId =
   | 'potTier2' | 'potTier3'                        // 24x24
   | 'mapFork'                                      // 12x12
   | 'mapBadgeSlime' | 'mapBadgeIce' | 'mapBadgeClaw' // map writer badges, 8x8
-  | 'mapBadgeRock' | 'mapBadgeLock' | 'mapBadgeFist' | 'mapBadgeCoin';
+  | 'mapBadgeRock' | 'mapBadgeLock' | 'mapBadgeFist' | 'mapBadgeCoin'
+  | 'potTier4'                                     // lethal pot, 24x24
+  | 'mapBadgeElite' | 'dangerPip'                  // elite fork badge / danger rating pip, 8x8
+  | 'cardPrep'                                     // card icon, 16x16
+  | 'wild'                                         // WILD reel symbol, 16x16
+  | 'enhGold' | 'enhKeen' | 'enhCharged' | 'enhSpiked' // enhanced-cell overlays, 16x16 (mostly transparent)
+  | 'cardGild';                                    // card icon, 16x16
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;
@@ -1287,6 +1513,10 @@ for (const id of Object.keys(DIMS)) {
   out += `  ${id}: [\n${S[id].map((r) => `    ${q(r)},`).join('\n')}\n  ],\n`;
 }
 out += '};\n';
+// every sprite must also be listed in the SpriteId union (else SPRITES fails to typecheck)
+const unionSrc = out.slice(out.indexOf('export type SpriteId'), out.indexOf('export const SPRITES'));
+const missingU = Object.keys(DIMS).filter((id) => !unionSrc.includes(`'${id}'`));
+if (missingU.length) { console.error(`not in SpriteId union: ${missingU.join(', ')}`); process.exit(1); }
 writeFileSync(join(ROOT, 'src/render/spriteData.ts'), out);
 console.log('spriteData.ts written, self-check OK');
 if (process.argv.includes('--print')) for (const id of Object.keys(DIMS)) console.log(`\n${id}\n${S[id].join('\n')}`);

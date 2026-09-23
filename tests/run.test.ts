@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
 import { RUN_FIGHTS } from '../src/core/enemies';
+import { COUNTER_RELICS } from '../src/core/relics';
 import { Fight } from '../src/core/fight';
 import { applyOption, chooseEnemy, createRun, draftOffers, fightConfig, finishFight, needsChoice, optionDelta, RUN } from '../src/core/run';
 
@@ -93,7 +94,7 @@ describe('run', () => {
       const run = createRun(base, s);
       for (let d = 1; d <= 5; d++) {
         run.depth = d;
-        const relics = draftOffers(run).filter((o) => o.kind === 'relic').length;
+        const relics = draftOffers(run).filter((o) => o.kind === 'relic' && !COUNTER_RELICS.has(o.relic)).length;
         expect(relics).toBe(d === 2 || d === 4 ? 2 : 0);
       }
     }

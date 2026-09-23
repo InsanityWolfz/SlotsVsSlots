@@ -1,4 +1,4 @@
-import type { StripCounts, SymbolId } from './config';
+import type { Enh, Gild, StripCounts, SymbolId } from './config';
 import type { Rng } from './rng';
 
 export interface StripCell {
@@ -7,6 +7,8 @@ export interface StripCell {
   slimed: boolean;
   /** Snatched by a thief: an empty hole for the rest of the fight. */
   stolen?: boolean;
+  /** Gilded for the run. */
+  enh?: Enh;
 }
 
 export interface Reel {
@@ -23,13 +25,15 @@ export interface CellRef {
 export const VISIBLE_ROWS = 3;
 export const MIDDLE_ROW = 1;
 
-export function buildReel(counts: StripCounts, rng: Rng): Reel {
+export function buildReel(counts: StripCounts, rng: Rng, gilds: Gild[] = []): Reel {
   const cells: StripCell[] = [];
   for (const [symbol, n] of Object.entries(counts) as [SymbolId, number][]) {
     for (let i = 0; i < n; i++) cells.push({ symbol, slimed: false });
   }
   if (cells.length === 0) throw new Error('Reel strip is empty');
   rng.shuffle(cells);
+  // A gild enhances EVERY cell of its symbol on this reel.
+  for (const g of gilds) for (const c of cells) if (c.symbol === g.symbol) c.enh = g.enh;
   return { cells, stop: rng.int(cells.length) };
 }
 
@@ -41,13 +45,18 @@ export function effectiveSymbol(cell: StripCell): SymbolId {
   return cell.stolen ? 'empty' : cell.slimed ? 'slime' : cell.symbol;
 }
 
-/** Symbols that do nothing on the player's own payline. */
+/** Symbols that do nothing on the player's own payline (WILD is very much alive). */
 export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'lock', 'ice', 'claw']);
 
 /** How much the player would miss losing this symbol (enemy targeting). */
 export function symbolValue(s: SymbolId): number {
   // Bolts are worth ~2 shield-piercing damage, swords 1 blockable (playtest ITERATION_1).
-  return s === 'bolt' ? 3 : s === 'sword' ? 2 : s === 'shield' ? 1 : 0;
+  return s === 'wild' ? 4 : s === 'bolt' ? 3 : s === 'sword' ? 2 : s === 'shield' ? 1 : 0;
+}
+
+/** Enemy targeting value of a specific cell: gilded cells are juicier targets. */
+export function cellValue(c: StripCell): number {
+  return symbolValue(c.symbol) + (c.enh ? 3 : 0);
 }
 
 export function stripCounts(reel: Reel): StripCounts {

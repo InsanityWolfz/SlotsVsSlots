@@ -47,7 +47,7 @@ const SPRITES = ${JSON.stringify(art.SPRITES)};
 const FONT_W = ${font.FONT_W}, FONT_H = ${font.FONT_H};
 const GLYPHS = ${JSON.stringify(font.GLYPHS)};
 
-const W = 1400, H = 2560;
+const W = 1400, H = 3000;
 const cv = document.getElementById('c'); cv.width = W; cv.height = H;
 const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
 const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#29123d'); bg.addColorStop(1, '#0d0519');
@@ -82,7 +82,7 @@ window.zoomView = (ids, s) => {
     const w = SPRITES[id][0].length, h = SPRITES[id].length;
     if (zx + w * s > W) { zx = 10; zy += (h + 1) * s; }
     if (id === 'goo') spr('sword', zx, zy, s, 0.2);
-    if (id === 'frozenOverlay' || id === 'lockOverlay') spr('sword', zx, zy, s);
+    if (id === 'frozenOverlay' || id === 'lockOverlay' || id.startsWith('enh')) spr('sword', zx, zy, s);
     spr(id, zx, zy, s); zx += (w + 1) * s;
   }
 };
@@ -175,6 +175,30 @@ const mx = 580, my = ry + 20;
 ctx.fillStyle = UI_COLORS.panelLight; ctx.fillRect(mx, my + 22, 7 * 90, 4);
 ['nodeDone','nodeDone','nodeFight','nodeFight','nodeFight','nodeFight','nodeBoss'].forEach((id, i) => spr(id, mx + i * 90, my, 4));
 spr('nodeHere', mx + 2 * 90, my - 50, 4);
+ry += 120;
+// WILD next to the other reel symbols (5x)
+label('wild among reel symbols (5x)', 20, ry - 10);
+const reelIds = ['sword', 'wild', 'shield', 'bolt', 'slime', 'ice', 'coin', 'seven'];
+ctx.fillStyle = UI_COLORS.gold; ctx.fillRect(12, ry - 8, 96 * reelIds.length + 16, 96 + 16);
+reelIds.forEach((id, i) => { cellBg(20 + i * 96, ry); spr(id, 28 + i * 96, ry + 8, 5); });
+ry += 140;
+// enhancement overlays over sword / shield / bolt (5x)
+label('enhanced-cell overlays over sword / shield / bolt (5x)', 20, ry - 10);
+const enh = ['enhGold', 'enhKeen', 'enhCharged', 'enhSpiked'];
+enh.forEach((o, j) => ['sword', 'shield', 'bolt', 'wild'].forEach((a, i) => {
+  const cx = 20 + ((j % 2) * 4 + i) * 102 + (j % 2) * 24, cy = ry + (j >> 1) * 110; cellBg(cx, cy); spr(a, cx + 8, cy + 8, 5); spr(o, cx + 8, cy + 8, 5);
+}));
+ry += 240;
+// run/boss UI: lethal pot vs tier 3, fork card badges, cards (4x)
+label('pots tier3 / tier4, elite badge + danger pips, cards (4x)', 20, ry - 10);
+ctx.fillStyle = UI_COLORS.panel; ctx.fillRect(20, ry, 420, 110);
+spr('potTier3', 30, ry + 6, 4); spr('potTier4', 140, ry + 6, 4);
+spr('mapBadgeElite', 260, ry + 10, 4); spr('nodeBoss', 300, ry + 6, 4);
+for (let i = 0; i < 3; i++) spr('dangerPip', 260 + i * 36, ry + 60, 4);
+ctx.fillStyle = UI_COLORS.panelLight; ctx.fillRect(460, ry, 160, 110);
+spr('cardPrep', 470, ry + 20, 4); spr('cardGild', 545, ry + 20, 4);
+// 2x readability strip
+['potTier4', 'mapBadgeElite', 'dangerPip', 'cardPrep', 'wild', 'cardGild'].forEach((id, i) => spr(id, 660 + i * 60, ry + 20, 2));
 };
 drawAll();
 </script></body></html>

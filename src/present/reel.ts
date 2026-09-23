@@ -1,4 +1,4 @@
-import type { SymbolId } from '../core/config';
+import type { Enh, SymbolId } from '../core/config';
 import { wrap } from '../core/strip';
 import { drawSprite, type SpriteId } from '../render/sprites';
 import type { Clock } from './clock';
@@ -17,7 +17,11 @@ export interface CellView {
   stolen?: number;
   /** Freshly inserted (rock): punch-in 0..1. */
   pop?: number;
+  /** Gilded for the run. */
+  enh?: Enh;
 }
+
+export const ENH_SPRITE: Record<Enh, SpriteId> = { gold: 'enhGold', keen: 'enhKeen', charged: 'enhCharged', spiked: 'enhSpiked' };
 
 /** Per visible-row cosmetic state (row 0 = top). */
 export interface RowFx {
@@ -249,6 +253,11 @@ export function drawCell(
   const flash = Math.max(fx?.flash ?? 0, cell.flash);
   const pop = cell.pop ?? 1;
   drawSprite(ctx, cell.symbol as SpriteId, x, y, ART_SCALE, { sx: sx * pop, sy: sy * pop, alpha: alpha * (1 - stolen), dim, flash });
+  // Gilded cells wear their enhancement (shimmering gently).
+  if (cell.enh && !cell.slimed) {
+    const shimmer = 0.85 + 0.15 * Math.sin(time * 4 + x * 0.05 + y * 0.03);
+    drawSprite(ctx, ENH_SPRITE[cell.enh], x, y, ART_SCALE, { sx: sx * pop, sy: sy * pop, alpha: alpha * (1 - stolen) * shimmer, dim });
+  }
 
   if (slimed && cell.goo > 0) {
     // Goo drips in from the top: clip its height by coverage.

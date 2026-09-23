@@ -21,7 +21,7 @@ const RELIC_VALUE: Record<RelicId, number> = {
   mousetrap: 5,
   magnet: 3,
   pickaxe: 3,
-  crown: 4,
+  crown: 9,
 };
 
 /** Rough per-archetype danger for picking at forks (playtest ITERATION_1 kill rates). */
@@ -33,15 +33,21 @@ export function greedyValue(run: RunState, o: DraftOption): number {
   const p = run.player;
   const rocks = p.strips.reduce((a, s) => a + (s.rock ?? 0), 0);
   switch (o.kind) {
-    case 'relic':
+    case 'relic': {
       if ((o.relic === 'magnet' || o.relic === 'pickaxe') && rocks > 0) return 7 + rocks * 0.3;
+      const countered = Object.entries(COUNTER).find(([, r]) => r === o.relic)?.[0];
+      if (countered) return (run.paths[run.depth] ?? []).some((e) => e.archetype === countered) ? 7 : 2;
       return RELIC_VALUE[o.relic];
+    }
     case 'heal':
-      return (1 - p.hp / p.maxHp) * 20;
+      return (1 - p.hp / p.maxHp) * 14;
     case 'maxHp':
-      return 5;
+      return 3.5;
     case 'swap':
+      if (o.to === 'wild') return 6;
       return (o.to === 'bolt' ? 8 : 6) + (o.from === 'rock' ? 2 : 0);
+    case 'gild':
+      return o.enh === 'gold' ? 9 : o.enh === 'charged' ? 8.5 : o.enh === 'spiked' ? 7.5 : 6;
     case 'clear':
       return 3 + (p.strips[o.reel].rock ?? 0) * 2;
     case 'add':
@@ -55,7 +61,9 @@ function pickEnemy(run: RunState, policy: DraftPolicy, rng: Rng): number {
   const score = (i: number) => {
     const a = opts[i].archetype;
     const countered = COUNTER[a] && run.player.relics.includes(COUNTER[a]);
-    return (DANGER[a] ?? 8) * (countered ? 0.4 : 1);
+    // Elites are tougher but pay a relic: take them when healthy.
+    const eliteBonus = opts[i].elite ? (run.player.hp / run.player.maxHp > 0.7 ? -4 : 3) : 0;
+    return (DANGER[a] ?? 8) * (countered ? 0.4 : 1) * (opts[i].elite ? 1.25 : 1) + eliteBonus;
   };
   return opts.map((_, i) => i).reduce((best, i) => (score(i) < score(best) ? i : best), 0);
 }

@@ -174,6 +174,7 @@ const ABBR: Record<SymbolId, string> = {
   coin: 'CON',
   seven: '777',
   empty: '___',
+  wild: 'WLD',
 };
 
 export function formatRow(r: TurnRow): string {

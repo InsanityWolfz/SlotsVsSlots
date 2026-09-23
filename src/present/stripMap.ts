@@ -48,6 +48,11 @@ export function drawStripMap(ctx: CanvasRenderingContext2D, m: MachineView, time
           ctx.globalAlpha = 1;
         }
       }
+      if (cell.enh && stolen < 1) {
+        // Gilded: a gold tick on the cell.
+        ctx.fillStyle = cell.enh === 'gold' ? '#ffd23f' : cell.enh === 'keen' ? '#bff4ff' : cell.enh === 'charged' ? '#fff27a' : '#c9d0dc';
+        ctx.fillRect(cx + 11, y - cellH / 2 + 2, 4, 4);
+      }
       if (m.frozen[r] > 0 && visible) {
         ctx.globalAlpha = 0.35 + 0.1 * Math.sin(time * 3);
         ctx.fillStyle = '#9fe8ff';

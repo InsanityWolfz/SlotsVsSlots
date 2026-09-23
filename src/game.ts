@@ -275,7 +275,8 @@ export class Game {
         pulse: 0,
         pot: this.fight.pot,
         potPunch: 1,
-        fightLabel: this.run ? (this.run.depth >= RUN_FIGHTS ? 'BOSS' : `FIGHT ${this.run.depth + 1}/${RUN_FIGHTS}`) : 'SANDBOX',
+        fightLabel: this.run && inRun ? (this.run.depth >= RUN_FIGHTS ? 'BOSS' : `FIGHT ${this.run.depth + 1}/${RUN_FIGHTS}`) : 'SANDBOX',
+        allIn: false,
       },
     };
     this.director = new Director(this.stage);
@@ -585,19 +586,26 @@ export class Game {
     }
     if (this.fight.isBoss) this.drawPot(ctx, cx, cy + 118, t);
     else drawText(ctx, 'VS', cx, cy + 70, 6, '#ff6a5a', { alpha: 0.35 + 0.1 * Math.sin(t * 2) });
-    if (this.prefs.speed > 1) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, cy + 172, 2, COLORS.textDim);
+    if (this.prefs.speed > 1) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss ? cy - 136 : cy + 172, 2, COLORS.textDim);
   }
 
   /** The House's progressive pot, front and centre: grows (and glows) with the stakes. */
   private drawPot(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+    // (x is shifted by the LETHAL shake below.)
     const g = this.stage.gutter;
     const pot = Math.round(g.pot);
-    const tier = pot >= 12 ? 3 : pot >= 6 ? 2 : 1;
-    const glow = tier === 3 ? 0.5 + 0.3 * Math.sin(t * 8) : tier === 2 ? 0.25 + 0.1 * Math.sin(t * 4) : 0;
+    const hud = this.stage.huds.player;
+    const cashOut = Math.ceil(pot / 2);
+    const lethal = pot > 0 && cashOut >= hud.hp + hud.shield;
+    this.stage.huds.enemy.alarm = lethal;
+    const tier = lethal ? 4 : pot >= 12 ? 3 : pot >= 6 ? 2 : 1;
+    const glow = tier >= 3 ? 0.5 + 0.3 * Math.sin(t * (lethal ? 14 : 8)) : tier === 2 ? 0.25 + 0.1 * Math.sin(t * 4) : 0;
+    const shake = lethal ? Math.sin(t * 40) * 2 : 0;
+    x += shake;
     if (glow > 0) {
       ctx.save();
       ctx.globalAlpha = glow;
-      ctx.shadowColor = tier === 3 ? '#ff6a5a' : COLORS.energy;
+      ctx.shadowColor = tier >= 3 ? '#ff6a5a' : COLORS.energy;
       ctx.shadowBlur = 30;
       ctx.fillStyle = ctx.shadowColor;
       ctx.fillRect(x - 110, y - 56, 220, 112);
@@ -609,10 +617,11 @@ export class Game {
     ctx.fillRect(x - 106, y - 52, 212, 104);
     ctx.fillStyle = '#3a0f1a';
     ctx.fillRect(x - 101, y - 47, 202, 94);
-    drawText(ctx, this.fight.allIn ? 'ALL IN POT' : 'THE POT', x, y - 32, 2, this.fight.allIn ? '#ff6a5a' : COLORS.goldLight);
-    const sprite = tier === 3 ? 'potTier3' : tier === 2 ? 'potTier2' : 'potTier1';
+    const label = lethal ? 'LETHAL!' : g.allIn ? 'ALL IN POT' : 'THE POT';
+    drawText(ctx, label, x, y - 32, 2, lethal || g.allIn ? '#ff6a5a' : COLORS.goldLight, { punch: lethal ? 1 + 0.1 * Math.sin(t * 14) : 1 });
+    const sprite = tier === 4 ? 'potTier4' : tier === 3 ? 'potTier3' : tier === 2 ? 'potTier2' : 'potTier1';
     drawSprite(ctx, sprite, x - 52, y + 12, tier === 1 ? 3 : 2.5, { flash: glow * 0.5 });
-    drawText(ctx, String(pot), x + 34, y + 12, 6, tier === 3 ? '#ff6a5a' : COLORS.energy, { punch: g.potPunch });
+    drawText(ctx, String(pot), x + 34, y + 12, 6, tier >= 3 ? '#ff6a5a' : COLORS.energy, { punch: g.potPunch });
   }
 
   private arrow(ctx: CanvasRenderingContext2D, x: number, y: number, dir: number, s: number): void {

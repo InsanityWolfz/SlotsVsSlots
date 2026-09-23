@@ -42,6 +42,8 @@ export class HudView {
   charge = 0;
   chargePunch = 1;
   abilityFlash = 0;
+  /** Next ability would be lethal (boss LETHAL pot): the countdown shakes. */
+  alarm = false;
   name: string;
   portrait: SpriteId;
   ability: AbilityDef | null;
@@ -154,8 +156,9 @@ export class HudView {
     const ab = this.ability!;
     const ui = ABILITY_UI[ab.kind];
     const left = ab.every - this.charge;
-    const imminent = left <= 1;
+    const imminent = left <= 1 || this.alarm;
     const pulse = imminent ? 0.5 + 0.5 * Math.sin(time * 10) : 0;
+    if (this.alarm) x += Math.sin(time * 40) * 2;
     drawSprite(ctx, ui.icon, x + 70, y, 2 * this.chargePunch, { flash: Math.max(this.abilityFlash, pulse * 0.6) });
     for (let i = 0; i < ab.every; i++) {
       const px = x + 92 + i * 14;

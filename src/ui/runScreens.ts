@@ -2,10 +2,13 @@ import type { Sounds } from '../audio/sounds';
 import type { GameConfig, StripCounts, SymbolId } from '../core/config';
 import { RUN_FIGHTS, type EnemyDef } from '../core/enemies';
 import { RELICS } from '../core/relics';
-import { describeOption, isRelicDraft, needsChoice, optionDelta, type DraftOption, type FightRecord, type RunState } from '../core/run';
+import { describeOption, isRelicDraft, needsChoice, optionDeltas, type DraftOption, type FightRecord, type RunState } from '../core/run';
+import { COUNTER_RELICS } from '../core/relics';
+import { DANGER } from '../core/enemies';
 import type { Clock } from '../present/clock';
 import { backOut, sineOut } from '../present/ease';
 import { ABILITY_UI } from '../present/hud';
+import { ENH_SPRITE } from '../present/reel';
 import { COLORS, H, W } from '../present/layout';
 import { drawSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
@@ -78,7 +81,7 @@ export class RunScreens {
   mode: ScreenMode = 'none';
   private run: RunState | null = null;
   private offers: DraftOption[] = [];
-  private deltas: string[] = [];
+  private deltas: { gain: string; loss: string }[] = [];
   private cards: Hit[] = [];
   private buttons: Btn[] = [];
   private fade = 0;
@@ -115,7 +118,7 @@ export class RunScreens {
   showDraft(run: RunState, offers: DraftOption[], last: FightRecord | null): void {
     this.run = run;
     this.offers = offers;
-    this.deltas = offers.map((o) => optionDelta(run, o, this.base()));
+    this.deltas = offers.map((o) => optionDeltas(run, o, this.base()));
     this.lastRecord = last;
     this.open('draft');
     this.cards = offers.map((o, i) =>
@@ -255,6 +258,7 @@ export class RunScreens {
         drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, x, ny, fork ? 1.5 : 2, { dim: done || faded ? 0.65 : 0 });
         const badge = BADGE[e.archetype];
         if (badge) drawSprite(ctx, badge, x + s - 2, ny + s - 4, 2, { alpha: faded ? 0.4 : 1 });
+        if (e.elite) drawSprite(ctx, 'mapBadgeElite', x - s + 4, ny - s + 4, 2, { alpha: faded ? 0.4 : 1 });
         if (done && chosen) drawSprite(ctx, 'nodeDone', x - s + 6, ny + s - 6, 2);
       });
       if (here) drawSprite(ctx, 'nodeHere', x, y - (fork ? 70 : 44) + Math.sin(time * 6) * 4, 2);
@@ -305,6 +309,11 @@ export class RunScreens {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       drawText(ctx, `${Math.ceil(last.turns / 2)} ROUNDS  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}${rocks}`, W / 2, 60, 2, COLORS.textDim);
     }
+    if (last?.eliteRelic) {
+      const r = RELICS[last.eliteRelic];
+      drawSprite(ctx, r.sprite as SpriteId, W / 2 - 150, 84, 2);
+      drawText(ctx, `ELITE BONUS: ${r.name}!`, W / 2 - 128, 84, 2, '#ff9a3a', { align: 'left' });
+    }
     this.drawMap(ctx, 158, time);
     const relicDraft = isRelicDraft(this.run!);
     drawText(ctx, relicDraft ? 'RELIC DRAFT - CHOOSE ONE' : 'CHOOSE ONE', W / 2, 244, 3, relicDraft ? '#c9a0ff' : COLORS.text);
@@ -316,11 +325,12 @@ export class RunScreens {
     this.drawHp(ctx, 900, 556, 220);
   }
 
-  private drawCard(ctx: CanvasRenderingContext2D, c: Hit, o: DraftOption, delta: string, i: number, time: number): void {
+  private drawCard(ctx: CanvasRenderingContext2D, c: Hit, o: DraftOption, delta: { gain: string; loss: string }, i: number, time: number): void {
     if (c.scale <= 0.01) return;
     const dimmed = this.picked >= 0 && this.picked !== i;
     const { title, text } = describeOption(o);
-    const accent = o.kind === 'relic' ? '#c9a0ff' : o.kind === 'clear' ? '#c9bba8' : o.kind === 'swap' || o.kind === 'add' ? '#7dff7a' : '#ff9ab0';
+    const prep = o.kind === 'relic' && COUNTER_RELICS.has(o.relic);
+    const accent = prep ? '#ff9a3a' : o.kind === 'gild' ? '#ffd23f' : o.kind === 'relic' ? '#c9a0ff' : o.kind === 'clear' ? '#c9bba8' : o.kind === 'swap' || o.kind === 'add' ? '#7dff7a' : '#ff9ab0';
     ctx.save();
     ctx.globalAlpha *= dimmed ? 0.3 : 1;
     ctx.translate(c.x, c.y + c.lift);
@@ -348,7 +358,10 @@ export class RunScreens {
       }
       drawText(ctx, `REEL ${reel + 1}`, -w / 2 + 25, iy + 34, 1, COLORS.textDim);
     };
-    if (o.kind === 'relic') drawSprite(ctx, RELICS[o.relic].sprite as SpriteId, 0, iy, 4);
+    if (o.kind === 'relic') {
+      drawSprite(ctx, RELICS[o.relic].sprite as SpriteId, 0, iy, 4);
+      if (prep) drawSprite(ctx, 'cardPrep', w / 2 - 28, iy - 18, 2);
+    }
     else if (o.kind === 'swap') {
       drawSprite(ctx, o.from as SpriteId, -44, iy, 3);
       drawSprite(ctx, 'arrowRight', 0, iy, 3);
@@ -362,6 +375,11 @@ export class RunScreens {
       drawSprite(ctx, o.symbol as SpriteId, 0, iy, 4);
       drawSprite(ctx, 'plusBadge', 32, iy + 24, 3);
       reelMarker(o.reel);
+    } else if (o.kind === 'gild') {
+      drawSprite(ctx, o.symbol as SpriteId, 0, iy, 4);
+      drawSprite(ctx, ENH_SPRITE[o.enh], 0, iy, 4);
+      drawSprite(ctx, 'cardGild', 40, iy + 20, 2);
+      reelMarker(o.reel);
     } else if (o.kind === 'heal') drawSprite(ctx, 'heart', 0, iy, 5);
     else {
       drawSprite(ctx, 'heart', 0, iy, 5);
@@ -369,12 +387,15 @@ export class RunScreens {
     }
     drawText(ctx, title, 0, 2, title.length > 13 ? 2 : 3, accent);
     wrap(text, 20).forEach((line, k) => drawText(ctx, line, 0, 32 + k * 20, 2, COLORS.text));
-    if (delta) {
-      ctx.fillStyle = 'rgba(125,255,122,0.08)';
-      ctx.fillRect(-w / 2 + 8, h / 2 - 34, w - 16, 24);
-      drawText(ctx, delta, 0, h / 2 - 22, 2, '#b6ff9a');
-      drawText(ctx, 'PER SPIN', w / 2 - 12, h / 2 - 44, 1, COLORS.textDim, { align: 'right' });
-    }
+    // Gain in green, cost in red, per spin.
+    const lines = [delta.gain && [delta.gain, '#b6ff9a'], delta.loss && [delta.loss, '#ff8a7a']].filter(Boolean) as [string, string][];
+    lines.forEach(([t, col], k) => {
+      const ly = h / 2 - 16 - (lines.length - 1 - k) * 22;
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillRect(-w / 2 + 8, ly - 11, w - 16, 21);
+      drawText(ctx, t, 0, ly, 2, col);
+    });
+    if (lines.length) drawText(ctx, 'PER SPIN', w / 2 - 12, h / 2 - 16 - lines.length * 22 + 2, 1, COLORS.textDim, { align: 'right' });
     ctx.restore();
   }
 
@@ -382,7 +403,11 @@ export class RunScreens {
   private drawEnemyPanel(ctx: CanvasRenderingContext2D, e: EnemyDef, x: number, y: number, w: number, time: number): void {
     const run = this.run!;
     const hourglass = run.player.relics.includes('hourglass') ? 1 : 0;
-    this.panel(ctx, x, y, w, 300, e.isBoss ? '#ff6a5a' : COLORS.gold);
+    this.panel(ctx, x, y, w, 300, e.isBoss || e.elite ? '#ff6a5a' : COLORS.gold);
+    // Danger rating: 1-3 skulls from the archetype's single-fight danger (x1.25 for elites).
+    const danger = (DANGER[e.archetype] ?? 8) * (e.elite ? 1.25 : 1);
+    const pips = e.isBoss ? 3 : danger >= 20 ? 3 : danger >= 9 ? 2 : 1;
+    for (let k = 0; k < pips; k++) drawSprite(ctx, 'dangerPip', x + w - 20 - k * 20, y + 18, 2);
     ctx.fillStyle = COLORS.panelLight;
     ctx.fillRect(x + 16, y + 16, 104, 104);
     drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, x + 68, y + 68 + Math.sin(time * 2) * 2, 4);
@@ -392,6 +417,7 @@ export class RunScreens {
     drawText(ctx, e.name ?? 'ENEMY', tx, y + 30, e.name && e.name.length > 18 ? 2 : 3, e.isBoss ? '#ff6a5a' : COLORS.slime, { align: 'left' });
     wrap(e.blurb, Math.floor((w - 150) / 12)).forEach((l, k) => drawText(ctx, l, tx, y + 60 + k * 18, 2, COLORS.text, { align: 'left' }));
     drawText(ctx, `HP ${e.hp}`, tx, y + 104, 2, COLORS.hp, { align: 'left' });
+    if (e.elite) drawText(ctx, 'ELITE: +25% HP, DROPS A RELIC', tx + 90, y + 104, 2, '#ff9a3a', { align: 'left' });
     if (e.ability) {
       const every = e.ability.every + hourglass;
       drawSprite(ctx, ABILITY_UI[e.ability.kind].icon, x + 24, y + 146, 2);
