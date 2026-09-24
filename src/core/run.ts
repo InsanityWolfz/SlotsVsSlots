@@ -282,7 +282,8 @@ export function payVoucher(run: RunState, v: { kind: 'wheel' | 'rush'; seed: num
   const order: RelicTier[] = tier === 'common' ? ['common', 'uncommon', 'legendary'] : tier === 'uncommon' ? ['uncommon', 'legendary', 'common'] : ['legendary', 'uncommon', 'common'];
   let relic: RelicId | null = null;
   for (const t of order) {
-    const pool = RELIC_TIER[t].filter((r) => !owned(r) && relicFits(run, r));
+    // High Roller only matters against the House.
+    const pool = RELIC_TIER[t].filter((r) => !owned(r) && relicFits(run, r) && !(r === 'crown' && run.act > 1));
     if (pool.length) {
       relic = rng.pick(pool);
       break;
@@ -413,7 +414,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     strips: run.player.strips.map((s) => ({ ...s })),
     gilded: run.player.gilded.map((g) => ({ ...g })),
     // BLACK stake: the House ignores your chip shield.
-    bonusSymbols: true,
+    // No bonus in the run's final fight: a voucher could never be spent (QA_1 B11).
+    bonusSymbols: !(e.isBoss && run.act >= runActs(run)),
     stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? Math.floor(run.player.chips / CHIPS.stackPer) : 0,
   };
   const hp = enemyHp(run, e);
@@ -538,9 +540,6 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     run.over = true;
     return record;
   }
-  // Bonus vouchers from this fight pay out now that you've won it.
-  run.bonusLog = fight.vouchers.map((v) => payVoucher(run, v));
-  if (run.bonusLog.length) record.bonuses = run.bonusLog.map((b) => b.label);
   // The Mimic's gulps come out first (so the "+N chips" line is honest).
   if (fight.chipsEaten) {
     const eaten = Math.min(run.player.chips, fight.chipsEaten);
@@ -578,6 +577,10 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   run.deckMarks = Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
   if (run.player.relics.includes('bandage')) hp += BANDAGE_HEAL;
   run.player.hp = Math.min(run.player.maxHp, hp);
+  // Bonus vouchers from this fight pay out now that you've won it (after the HP settles, so a
+  // wheel HEAL / MAX HP isn't overwritten — QA_1 B2).
+  run.bonusLog = fight.vouchers.map((v) => payVoucher(run, v));
+  if (run.bonusLog.length) record.bonuses = run.bonusLog.map((b) => b.label);
   run.depth++;
   if (run.depth > actLength(run.act)) {
     if (run.act < runActs(run)) startNextAct(run);

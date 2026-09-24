@@ -773,7 +773,7 @@ export class Fight {
         const c = foe.reels[ref.reel].cells[ref.index];
         // Never on the payline itself... unless the House cheats (BLACK stake).
         const cheat = this.isBoss && (this.cfg.stake ?? 0) >= STAKE.houseDirty;
-        return !c.bomb && !c.stolen && (cheat || ref.index !== foe.reels[ref.reel].stop);
+        return !c.bomb && !c.stolen && !BONUS_SYMBOLS.has(c.symbol) && (cheat || ref.index !== foe.reels[ref.reel].stop);
       }),
     );
     // Never on the payline itself: it would look defused without being so.
@@ -1000,7 +1000,7 @@ export class Fight {
   private applySlime(me: Combatant, foe: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
     const clean = visibleCells(foe.reels).filter((ref) => {
       const c = foe.reels[ref.reel].cells[ref.index];
-      return !c.slimed && !c.stolen;
+      return !c.slimed && !c.stolen && !BONUS_SYMBOLS.has(c.symbol);
     });
     // Slime goes for gilded cells first.
     const gilded = this.rng.shuffle(clean.filter((ref) => foe.reels[ref.reel].cells[ref.index].enh));

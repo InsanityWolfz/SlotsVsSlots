@@ -69,6 +69,31 @@ interface Prefs {
   dealerBeaten: CabinetId[];
 }
 
+const clampStake = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.min(MAX_STAKE, Math.floor(n))) : 0);
+const machineIds = (v: unknown): CabinetId[] => (Array.isArray(v) ? (v.filter((x) => (CABINET_ORDER as string[]).includes(x)) as CabinetId[]) : []);
+
+/** Saved prefs are player-editable: validate everything so a bad save can't lock the game (QA_1 B6). */
+function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
+  const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const unlocked = machineIds(p.unlocked);
+  if (!unlocked.includes('knight')) unlocked.unshift('knight');
+  const stakes: Partial<Record<CabinetId, number>> = {};
+  if (p.stakes && typeof p.stakes === 'object') for (const id of CABINET_ORDER) if (id in (p.stakes as object)) stakes[id] = clampStake((p.stakes as Record<string, unknown>)[id]);
+  const juice = p.juice && typeof p.juice === 'object' ? (p.juice as Partial<JuiceToggles>) : {};
+  return {
+    speed: [1, 2, 4].includes(p.speed as number) ? (p.speed as number) : 1,
+    auto: typeof p.auto === 'boolean' ? p.auto : true,
+    juice: { ...defaultJuice(), ...juice },
+    muted: p.muted === true,
+    unlocked,
+    unlockAll: publicBuild ? false : p.unlockAll === true,
+    stakes,
+    stakeSel: clampStake(p.stakeSel),
+    act3: p.act3 === true,
+    dealerBeaten: machineIds(p.dealerBeaten),
+  };
+}
+
 function load<T>(key: string): T | null {
   try {
     const raw = localStorage.getItem(key);
@@ -143,19 +168,7 @@ export class Game {
   /** publicBuild: no TUNE panel, no saved tuning overrides, no dev unlocks (the hosted playtest). */
   constructor(readonly publicBuild = false) {
     this.cfg = mergeConfig(publicBuild ? undefined : load(CFG_KEY));
-    const p = load<Partial<Prefs>>(PREFS_KEY) ?? {};
-    this.prefs = {
-      speed: p.speed ?? 1,
-      auto: p.auto ?? true,
-      juice: { ...defaultJuice(), ...(p.juice ?? {}) },
-      muted: p.muted ?? false,
-      unlocked: p.unlocked ?? ['knight'],
-      unlockAll: publicBuild ? false : p.unlockAll ?? false,
-      stakes: p.stakes ?? {},
-      stakeSel: p.stakeSel ?? 0,
-      act3: p.act3 ?? false,
-      dealerBeaten: p.dealerBeaten ?? [],
-    };
+    this.prefs = sanitizePrefs(load<Partial<Prefs>>(PREFS_KEY), publicBuild);
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
     this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {
       onPick: (o) => this.pickReward(o),
@@ -196,7 +209,7 @@ export class Game {
     });
     this.autoBtn = this.btn('AUTO', px - 116, by, 84, 44, () => this.setAuto(!this.prefs.auto));
     [1, 2, 4].forEach((s, i) => this.speedBtns.push(this.btn(`${s}X`, px + 90 + i * 48, by, 42, 44, () => this.setSpeed(s))));
-    this.startBtn = this.btn('START RUN', W / 2 + 10, by, 196, 56, () => this.chooseCabinet(), { idlePulse: true, textScale: 3 });
+    this.startBtn = this.btn('START RUN', W / 2 + 10, by, 196, 56, () => this.newRunPressed(), { idlePulse: true, textScale: 3 });
     const ex = MACHINE_CX.enemy;
     const tune = this.btn('TUNE', ex - 110, by, 90, 44, () => {});
     const log = this.btn('LOG', ex, by, 90, 44, () => {});
@@ -214,7 +227,7 @@ export class Game {
     this.autoBtn.toggled = this.prefs.auto;
     this.speedBtns.forEach((b, i) => (b.toggled = [1, 2, 4][i] === this.prefs.speed));
     this.spinBtn.enabled = this.awaitingSpin;
-    this.startBtn.label = this.phase === 'title' ? 'START RUN' : 'NEW RUN';
+    this.startBtn.label = this.phase === 'title' ? 'START RUN' : this.abandonArmed ? 'SURE? AGAIN' : 'NEW RUN';
     this.startBtn.opts.idlePulse = this.phase === 'title';
     this.muteBtn.label = this.prefs.muted ? 'MUTED' : 'SOUND';
     this.muteBtn.toggled = this.prefs.muted;
@@ -250,6 +263,26 @@ export class Game {
 
   unlockedCabinets(): Set<CabinetId> {
     return new Set(this.prefs.unlockAll ? CABINET_ORDER : this.prefs.unlocked);
+  }
+
+  /** NEW RUN mid-run throws the run away: it needs a second press within 2 s (QA_1 B1). */
+  private abandonArmed = false;
+  private abandonTimer: ReturnType<typeof setTimeout> | null = null;
+  private newRunPressed(): void {
+    const midRun = !!this.run && !this.run.over && this.phase !== 'title';
+    if (midRun && !this.abandonArmed) {
+      this.abandonArmed = true;
+      this.sounds.fizzle();
+      if (this.abandonTimer) clearTimeout(this.abandonTimer);
+      this.abandonTimer = setTimeout(() => {
+        this.abandonArmed = false;
+        this.syncButtons();
+      }, 2000);
+      this.syncButtons();
+      return;
+    }
+    this.abandonArmed = false;
+    this.chooseCabinet();
   }
 
   /** START RUN: pick a starting machine first. */
@@ -671,7 +704,7 @@ export class Game {
         this.setAuto(!this.prefs.auto);
         return true;
       case 'r':
-        this.chooseCabinet();
+        this.newRunPressed();
         return true;
       case 'm':
         this.setMuted(!this.prefs.muted);
@@ -756,8 +789,10 @@ export class Game {
       drawText(ctx, CABINETS[this.run.cabinet].name, 30, 58, 1, COLORS.textDim, { align: 'left' });
       if (this.run.stake > 0) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 78, 2, STAKES[this.run.stake].color, { align: 'left' });
       if (this.fight.isBoss || this.fight.isMirror || this.fight.isDealer) {
-        drawSprite(ctx, 'chipShield', 120, 30, 2);
-        drawText(ctx, `+${this.fight.cfg.player.stackShield ?? 0} SH/TURN`, 138, 30, 2, '#9fd0ff', { align: 'left' });
+        // Sits after the chip count, however many digits it has (QA_1 B10).
+        const cx = 56 + String(this.run.player.chips).length * 18 + 22;
+        drawSprite(ctx, 'chipShield', cx, 30, 2);
+        drawText(ctx, `+${this.fight.cfg.player.stackShield ?? 0} SH/TURN`, cx + 18, 30, 2, '#9fd0ff', { align: 'left' });
       }
     }
     const relics = this.relicList();
@@ -801,8 +836,12 @@ export class Game {
     let n = 0;
     let total = 0;
     for (const reel of this.stage.machines.player.reels) {
-      total += reel.cells.length;
-      for (const c of reel.cells) if (c.slimed) n++;
+      // The chase cells aren't really on your strip (QA_1 B13).
+      for (const c of reel.cells) {
+        if (c.symbol === 'bonusSym' || c.symbol === 'relicSym') continue;
+        total++;
+        if (c.slimed) n++;
+      }
     }
     if (n !== hud.ooze) hud.oozePunch = 1.5;
     hud.oozePunch += (1 - hud.oozePunch) * 0.15;
@@ -957,7 +996,7 @@ export class Game {
   private drawHint(ctx: CanvasRenderingContext2D, t: number): void {
     drawText(ctx, 'PRESS START RUN', W / 2, MACHINE_TOP + MACHINE_H / 2 - 20, 2, COLORS.text, { alpha: 0.5 + 0.5 * Math.sin(t * 4) });
     drawText(ctx, `${this.unlockedCabinets().size}/${CABINET_ORDER.length} SLOT MACHINES`, W / 2, MACHINE_TOP + MACHINE_H / 2 + 100, 2, COLORS.goldLight);
-    drawText(ctx, '5 FIGHTS + A BOSS', W / 2, MACHINE_TOP + MACHINE_H / 2 + 30, 2, COLORS.textDim);
+    drawText(ctx, '12 FIGHTS, 2 BOSSES', W / 2, MACHINE_TOP + MACHINE_H / 2 + 30, 2, COLORS.textDim);
     drawText(ctx, 'PICK A REWARD', W / 2, MACHINE_TOP + MACHINE_H / 2 + 56, 2, COLORS.textDim);
     drawText(ctx, 'AFTER EACH WIN', W / 2, MACHINE_TOP + MACHINE_H / 2 + 76, 2, COLORS.textDim);
     drawText(ctx, 'SPACE: SPIN/SKIP  A: AUTO  1-3: SPEED  R: NEW RUN', W / 2, H - 14, 2, COLORS.textDim);

@@ -250,7 +250,7 @@ const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'MANGY', 'CUR
 
 /** HP for a regular fight at each depth (0-based), before the archetype multiplier. */
 /** (+6% in I14 to offset BONUS WHEEL / RELIC RUSH payouts.) */
-export const DEPTH_HP = [22, 28, 33, 36, 39];
+export const DEPTH_HP = [23, 29, 34, 37, 40];
 /** Act 2 curve: you arrive with a built machine and a legendary. */
 export const DEPTH_HP_2 = [52, 62, 73, 85, 97];
 /** Mutable so balance sweeps can tune it. */

@@ -435,7 +435,7 @@ export class RunScreens {
       if (hasSprite(badge)) drawSprite(ctx, artId(badge), W / 2 - 250, 580, 3);
       if (b.relic) {
         drawSprite(ctx, RELICS[b.relic].sprite as SpriteId, W / 2 - 200, 580, 3);
-        drawText(ctx, `${b.tier.toUpperCase()}: ${RELICS[b.relic].name}${b.count >= 15 ? '  +  GRAND!' : ''}`, W / 2 - 170, 568, 2.5, tierColor, { align: 'left' });
+        drawText(ctx, `${b.tier.toUpperCase()}: ${RELICS[b.relic].name}${b.count >= 15 ? `  +  GRAND! +${b.chips} CHIPS` : ''}`, W / 2 - 170, 568, 2.5, tierColor, { align: 'left' });
         drawText(ctx, RELICS[b.relic].text, W / 2 - 170, 596, 1.5, COLORS.text, { align: 'left' });
       } else drawText(ctx, `YOU OWN EVERY RELIC: +${b.chips} CHIPS`, W / 2, 580, 2.5, tierColor);
     }
@@ -900,7 +900,7 @@ export class RunScreens {
     if (e.elite)
       drawText(
         ctx,
-        (e.act ?? 1) > 1 ? `ELITE: +${Math.round((ELITE_HP_MUL_2 - 1) * 100)}% HP. PAYS ${CHIPS.act2EliteChips + CHIPS.eliteBonus} CHIPS` : `ELITE: +${e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP. PICK 1 OF 2 RELICS, +${CHIPS.eliteBonus} CHIPS`,
+        (e.act ?? 1) > 1 ? `ELITE: +${Math.round((ELITE_HP_MUL_2 - 1) * 100)}% HP. PAYS ${CHIPS.act2EliteChips + CHIPS.eliteBonus} CHIPS` : `ELITE: +${e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP, 1 OF 2 RELICS, +${CHIPS.eliteBonus} CHIPS`,
         tx + 90,
         y + 104,
         1.5,
@@ -1040,8 +1040,10 @@ export class RunScreens {
     drawText(ctx, `STAKE ${s.level}: ${s.name}`, W / 2 - 226, 614, 2.5, s.color, { align: 'left' });
     const rules = STAKES.slice(1, s.level + 1);
     if (!rules.length) drawText(ctx, 'THE BASE GAME.', W / 2 - 226, 636, 1.5, COLORS.text, { align: 'left' });
-    if (s.level >= STAKE.act3 && this.act3) drawText(ctx, '+ ACT 3: THE DEALER (16 FIGHTS)', W / 2 + 226, 614, 1.5, '#7dff7a', { align: 'right' });
-    else if (s.level >= STAKE.act3) drawText(ctx, 'WIN AT GREEN+ TO FIND OUT WHO DEALS', W / 2 + 226, 614, 1.25, COLORS.textDim, { align: 'right' });
+    // Its own row, below the rules (QA_1 B4).
+    const act3Y = 634 + Math.max(1, rules.length) * 13 + 4;
+    if (s.level >= STAKE.act3 && this.act3) drawText(ctx, '+ ACT 3: THE DEALER (16 FIGHTS)', W / 2 - 226, act3Y, 1.25, '#7dff7a', { align: 'left' });
+    else if (s.level >= STAKE.act3) drawText(ctx, 'WIN AT GREEN+ TO FIND OUT WHO DEALS', W / 2 - 226, act3Y, 1.25, COLORS.textDim, { align: 'left' });
     rules.forEach((r, k) => {
       const yy = 634 + k * 13;
       ctx.fillStyle = r.color;
@@ -1233,18 +1235,20 @@ export class RunScreens {
     const unlockRow = !!this.stakeUnlockedNow;
     if (unlockRow) {
       this.stakeChip(ctx, 140, 116, run.stake + 1, performance.now() / 1000, 14);
-      wrap(this.stakeUnlockedNow, 90).slice(0, 2).forEach((l, k) => drawText(ctx, l, 164, 110 + k * 14, 1.5, stakeOf(run.stake + 1).color, { align: 'left' }));
+      wrap(this.stakeUnlockedNow, 110).slice(0, 3).forEach((l, k) => drawText(ctx, l, 164, 104 + k * 13, 1.25, stakeOf(run.stake + 1).color, { align: 'left' }));
     }
-    this.panel(ctx, 110, unlockRow ? 140 : 120, 1060, unlockRow ? 310 : 330);
-    drawText(ctx, 'FIGHT', 150, 142, 2, COLORS.textDim, { align: 'left' });
-    drawText(ctx, 'ROUNDS', 560, 142, 2, COLORS.textDim);
-    drawText(ctx, 'HP', 680, 142, 2, COLORS.textDim);
-    drawText(ctx, 'THEN PICKED', 790, 142, 2, COLORS.textDim, { align: 'left' });
-    // Up to 12 fights: rows shrink (and drop the detail line) once they stop fitting.
-    const rowH = Math.min(42, Math.floor(290 / Math.max(1, run.records.length)));
+    // The table moves down under an unlock message (QA_1 B5).
+    const top = unlockRow ? 22 : 0;
+    this.panel(ctx, 110, 120 + top, 1060, 330 - top);
+    drawText(ctx, 'FIGHT', 150, 142 + top, 2, COLORS.textDim, { align: 'left' });
+    drawText(ctx, 'ROUNDS', 560, 142 + top, 2, COLORS.textDim);
+    drawText(ctx, 'HP', 680, 142 + top, 2, COLORS.textDim);
+    drawText(ctx, 'THEN PICKED', 790, 142 + top, 2, COLORS.textDim, { align: 'left' });
+    // Up to 16 fights: rows shrink (and drop the detail line) once they stop fitting.
+    const rowH = Math.min(42, Math.floor((290 - top) / Math.max(1, run.records.length)));
     const compact = rowH < 40;
     run.records.forEach((r, i) => {
-      const y = 170 + i * rowH + (compact ? 0 : 6);
+      const y = 170 + top + i * rowH + (compact ? 0 : 6);
       if (i % 2 === 0) {
         ctx.fillStyle = 'rgba(255,255,255,0.04)';
         ctx.fillRect(122, y - rowH / 2, 1036, rowH - 2);
@@ -1265,13 +1269,14 @@ export class RunScreens {
       drawText(ctx, `${Math.ceil(r.turns / 2)}`, 560, y, 2, COLORS.text);
       drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 680, y, 2, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
       if (compact) {
-        const parts = [r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
+        const parts = [...(r.bonuses ?? []), r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
         const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
         drawText(ctx, what.length > 40 ? `${what.slice(0, 39)}...` : what, 790, y, 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
         return;
       }
       if (r.pick) drawText(ctx, describeOption(r.pick).title, 790, y - 6, 2, '#c9a0ff', { align: 'left' });
       const extra = [
+        ...(r.bonuses ?? []),
         r.eliteRelic ? `SPOILS: ${RELICS[r.eliteRelic].name}` : '',
         ...(r.bought ?? []).map((b) => `BUY: ${describeOption(b).title}`),
         r.chips ? `+${r.chips} CHIPS` : '',

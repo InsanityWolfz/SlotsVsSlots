@@ -250,3 +250,13 @@ Open: Dealer spread 19 (MIDAS gold burst); GOLD/WHITE a bit low; NEXT = the user
 - Public build: npm run build → dist/ with no TUNE panel, no debug, no dev unlock/overrides, relative paths (base './'); HOSTING.md explains itch.io/Netlify/GitHub Pages. Meta progression (unlocks, stakes, act 3, TRUE ENDING, settings) already persists in localStorage.
 - Tests: 133 (bonus.test.ts).
 Numbers (official sim 1500, greedy): knight act1 47.5 / win 25.1, midas 51.7/27.8, thorn 45.2/22.1, tesla 43.8/23.2, joker 44.6/22.5; random knight 33.3/15.4; House 72-84%; Mirror 59-70% (tesla high). Commit harnesses: Dealer 60.2% (52-68 by machine); ladder (commit) knight 28.3/23.5/21.0/18.5/16.8/12.8, GOLD/WHITE 0.35-0.45.
+
+### Iteration 15 — 2026-09-24 overnight (playtest/QA_1.md: bug hunt, no features)
+QA verdict: no crashes/soft-locks (133 tests, 300 top-stake act 3 runs with bonuses forced, every screen clicked through), but 3 real bugs before public: B1 double-clicking FIGHT! lands on NEW RUN and abandons the run (also the R key); B2 wheel HEAL/MAX HP were overwritten by the post-fight HP; B3 slime/bombs landed on chase cells. Plus text overlaps, unvalidated saves, bonus frequency ~25% low, dead counter relics in RELIC RUSH.
+Fixed:
+- B1: NEW RUN / R mid-run needs a second press within 2 s ('SURE? AGAIN').
+- B2: vouchers pay after the fight's HP settles. B3: slime and bombs never target chase cells. B11: no bonus roll in the run's final boss fight.
+- B4/B5: stake picker '+ ACT 3' on its own row; over-screen unlock text wraps 3 lines and the table moves down. B6: prefs sanitised on load (valid slot machine ids, KNIGHT always unlocked, speed 1/2/4, stakes clamped 0-5, booleans coerced). B7: TESLA/JOKER unlock text 'BEAT THE HOUSE…'. B8: title '12 FIGHTS, 2 BOSSES'. B9: elite line. B10: SH/TURN placed after the chip count. B12: recap lists bonus prizes. B13: OOZE total ignores chase cells. B14: GRAND shows its chips.
+- Tuning: BONUS 2.8% wheel / 1.2% rush (won runs: 1.5-2.0 wheels, 0.85-1.2 rushes); RELIC RUSH common pool drops the 4 counter relics, no High Roller after act 1; act 1 HP [23,29,34,37,40]; JOKER 28 HP, TESLA 26 HP.
+Numbers: official sim greedy act1 knight 47.2 / midas 52.1 / thorn 45.5 / tesla 42.3 (before +1 HP) / joker 51.8; full win 23-28%; ladder knight 26.1/23.1/21.3/16.9/12.6/10.0. Commit harness Dealer 62.7% (knight 54, midas 71, thorn 64, tesla 62, joker 62).
+Open: MIDAS's Dealer is the easiest (71%).
