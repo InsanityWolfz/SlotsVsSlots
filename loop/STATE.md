@@ -35,6 +35,15 @@ up to a **boss fight with a special slot-machine mechanic** (I pick the mechanic
 - Wants: MORE ENEMIES, MORE POWERFUL UPGRADES, MORE POWERFUL RELICS, and a SECOND ACT with another cool boss at the end.
 - Keep the loop running (resume after usage limits). Don't edit src while the user is actively playing on :5173 (HMR reloads their page).
 
+## User direction (2026-09-23 night, after I12)
+- NAMING: user-facing text says **Slot Machines** (never cabinets) and **Charms** (never gilds). A FULL SET = the same Charm on all 3 reels. Code identifiers may stay.
+- NEXT: finish act 3 balance (Package S from ITERATION_12), THEN build the user's chase features:
+  - **BONUS WHEEL**: a gold BONUS symbol (1 per reel, untouchable by charms/relics/strip cards; player machine only). Three on the payline → a full-screen wheel of ~15 upgrades from the draft pool lands on one, free.
+  - **RELIC RUSH**: a RELIC symbol (1 per reel). Three → a 5x3 hold-and-spin grid (relic : junk ~1:5 before tuning); relic symbols stick; 3 respins that reset on a new stick; count → relic tier (common / uncommon / legendary; full grid = extra jackpot). Needs relic rarity tiers.
+  - Frequency: ~2 BONUS WHEELs and ~1 RELIC RUSH per run on average, via a separate per-spin trigger roll (~1.5% / ~0.8%) that forces the triple onto the payline (natural triples count too). Keep symbols rare on strips so they don't clutter the payline.
+  - Rewards are VOUCHERS: a Wheel-of-Fortune-style tile appears bottom-left and pays out on the victory screen — only if you win that fight. The trigger spin gets a free respin so it never costs the player's attack.
+  - Watch-only (no input); tune the odds as numbers.
+
 ## Roadmap (ordered; revise as playtests teach us)
 - [x] **I6: ACT 2.** After the House: a second act of 5 fights + a new boss with its own special slot mechanic. New act-2 enemy archetypes that write on your machine in new ways (e.g. bombs planted on your cells, hexes that strip gilds, drains). Act transition reward (legendary pick + heal).
 - [~] **I7: power curve.** (first pass in I6: VAMP/LUCKY/BLAZE gilds + 6 legendaries; next: gild tiers, per-act tuning from playtest) Stronger upgrades (new gild types / gild tiers) and legendary relics for act 2; keep sim balance per act and per cabinet.
