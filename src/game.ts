@@ -140,8 +140,9 @@ export class Game {
   private muteBtn!: Button;
   toolButtons: { tune: Button; log: Button } | null = null;
 
-  constructor() {
-    this.cfg = mergeConfig(load(CFG_KEY));
+  /** publicBuild: no TUNE panel, no saved tuning overrides, no dev unlocks (the hosted playtest). */
+  constructor(readonly publicBuild = false) {
+    this.cfg = mergeConfig(publicBuild ? undefined : load(CFG_KEY));
     const p = load<Partial<Prefs>>(PREFS_KEY) ?? {};
     this.prefs = {
       speed: p.speed ?? 1,
@@ -149,7 +150,7 @@ export class Game {
       juice: { ...defaultJuice(), ...(p.juice ?? {}) },
       muted: p.muted ?? false,
       unlocked: p.unlocked ?? ['knight'],
-      unlockAll: p.unlockAll ?? false,
+      unlockAll: publicBuild ? false : p.unlockAll ?? false,
       stakes: p.stakes ?? {},
       stakeSel: p.stakeSel ?? 0,
       act3: p.act3 ?? false,
@@ -220,7 +221,7 @@ export class Game {
     const overlay = this.screens.active || this.phase === 'recap';
     for (const b of [this.spinBtn, this.autoBtn, this.startBtn, ...this.speedBtns]) b.visible = !overlay;
     for (const b of this.recapBtns) b.visible = this.phase === 'recap';
-    for (const b of this.buttons) if (b.label === 'TUNE' || b.label === 'LOG') b.visible = this.screens.mode !== 'cabinet';
+    for (const b of this.buttons) if (b.label === 'TUNE' || b.label === 'LOG') b.visible = this.screens.mode !== 'cabinet' && !(b.label === 'TUNE' && this.publicBuild);
     this.muteBtn.visible = this.screens.mode !== 'cabinet';
   }
 

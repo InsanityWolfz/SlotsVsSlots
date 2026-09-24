@@ -26,12 +26,15 @@ function resize(): void {
 window.addEventListener('resize', resize);
 resize();
 
-const game = new Game();
-if (import.meta.env.DEV || import.meta.env.VITE_DEBUG === '1') void import('./debug').then((m) => m.installDebug(game));
+/** Dev and playtest builds get the debug helpers and the TUNE panel; the public build doesn't (no cheats). */
+const DEV_TOOLS = import.meta.env.DEV || import.meta.env.VITE_DEBUG === '1';
 
-const tuning = new TuningPanel(game);
+const game = new Game(!DEV_TOOLS);
+if (DEV_TOOLS) void import('./debug').then((m) => m.installDebug(game));
+
+const tuning = DEV_TOOLS ? new TuningPanel(game) : null;
 const log = new CombatLog(game);
-game.toolButtons!.tune.onClick = () => tuning.toggle();
+game.toolButtons!.tune.onClick = () => tuning?.toggle();
 game.toolButtons!.log.onClick = () => log.toggle();
 
 function toLogical(e: PointerEvent): [number, number] {
@@ -50,10 +53,10 @@ window.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return;
   if (e.repeat) return;
   const k = e.key.toLowerCase();
-  if (k === '`' || k === 't') tuning.toggle();
+  if (k === '`' || k === 't') tuning?.toggle();
   else if (k === 'l') log.toggle();
   else if (k === 'escape') {
-    tuning.toggle(false);
+    tuning?.toggle(false);
     log.toggle(false);
   } else if (game.key(k)) e.preventDefault();
 });
