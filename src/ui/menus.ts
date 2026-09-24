@@ -53,6 +53,7 @@ const relicTier = (r: RelicId): keyof typeof TIER_COLOR =>
 export const heroSprite = (id: CabinetId): SpriteId => (hasSprite(CABINETS[id].heroSprite) ? artId(CABINETS[id].heroSprite) : 'playerPortrait');
 
 const LOAD_MIN = 1.3;
+const TOUCH = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches ?? false);
 const ROWS_PER_PAGE = 7;
 
 export class Menus {
@@ -294,7 +295,7 @@ export class Menus {
     ctx.fillRect(bx, 476, bw, 18);
     ctx.fillStyle = COLORS.energy;
     ctx.fillRect(bx, 476, Math.round(bw * p), 18);
-    if (this.ready) drawText(ctx, 'CLICK TO PLAY', W / 2, 560, 3, COLORS.goldLight, { alpha: 0.55 + 0.45 * Math.sin(t * 5) });
+    if (this.ready) drawText(ctx, TOUCH ? 'TAP TO PLAY' : 'CLICK TO PLAY', W / 2, 560, 3, COLORS.goldLight, { alpha: 0.55 + 0.45 * Math.sin(t * 5) });
     else drawText(ctx, `SHUFFLING THE REELS... ${Math.round(p * 100)}%`, W / 2, 530, 2, COLORS.textDim);
     drawText(ctx, 'PLAYTEST BUILD. PROGRESS SAVES IN THIS BROWSER.', W / 2, H - 30, 1.5, COLORS.textDim);
   }
@@ -400,7 +401,7 @@ export class Menus {
     if (shown) {
       drawText(ctx, shown.title, W / 2, py - 20, 2.5, shown.color);
       wrap(shown.text, 64).slice(0, 2).forEach((l, k) => drawText(ctx, l, W / 2, py + 10 + k * 20, 2, COLORS.text));
-    } else drawText(ctx, 'HOVER A TILE TO READ IT', W / 2, py, 2, COLORS.textDim);
+    } else drawText(ctx, 'HOVER OR TAP A TILE TO READ IT', W / 2, py, 2, COLORS.textDim);
   }
 
   private drawHiscores(ctx: CanvasRenderingContext2D, t: number): void {

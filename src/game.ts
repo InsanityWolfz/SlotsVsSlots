@@ -768,7 +768,7 @@ export class Game {
 
   pointerDown(x: number, y: number): void {
     this.startAudio();
-    if (this.coach.active) return this.coach.advance();
+    if (this.coach.active) return this.coach.hitsSkip(x, y) ? this.skipTutorial() : this.coach.advance();
     if (this.menus.isOpen) {
       // The SOUND toggle stays live on the main menu.
       if (this.muteBtn.visible && this.muteBtn.contains(x, y)) {

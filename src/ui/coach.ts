@@ -51,6 +51,14 @@ export class Coach {
   private idx = 0;
   private shownAt = 0;
   private done: (() => void) | null = null;
+  /** Where the SKIP TUTORIAL link was drawn (tap target). */
+  private skipBox: [number, number, number, number] | null = null;
+
+  /** A tap on SKIP TUTORIAL. */
+  hitsSkip(x: number, y: number): boolean {
+    const b = this.skipBox;
+    return !!b && x >= b[0] && x <= b[0] + b[2] && y >= b[1] && y <= b[1] + b[3];
+  }
 
   get active(): boolean {
     return this.idx < this.queue.length;
@@ -105,7 +113,7 @@ export class Coach {
     } else ctx.fillRect(0, 0, W, H);
     // Text box: away from the lit area.
     const lines = wrap(tip.text, 56);
-    const bh = 70 + lines.length * 22;
+    const bh = 82 + lines.length * 22;
     const bw = 700;
     const cy = r ? (r[1] + r[3] / 2 > H / 2 ? 150 : H - 60 - bh / 2) : H / 2;
     const bx = r && r[0] + r[2] / 2 < W / 2 && cy === H / 2 ? W - bw - 40 : W / 2 - bw / 2;
@@ -118,6 +126,16 @@ export class Coach {
     ctx.fillRect(bx, by, bw, bh);
     drawText(ctx, tip.title, bx + bw / 2, by + 22, 3, COLORS.goldLight);
     lines.forEach((l, k) => drawText(ctx, l, bx + bw / 2, by + 52 + k * 22, 2, COLORS.text));
-    drawText(ctx, `CLICK: NEXT (${this.idx + 1}/${this.queue.length})    S: SKIP TUTORIAL`, bx + bw / 2, by + bh - 12, 1.25, COLORS.textDim, { alpha: 0.7 + 0.3 * Math.sin(t * 4) });
+    drawText(ctx, `TAP OR CLICK: NEXT (${this.idx + 1}/${this.queue.length})`, bx + 20, by + bh - 14, 1.5, COLORS.textDim, { align: 'left', alpha: 0.7 + 0.3 * Math.sin(t * 4) });
+    // SKIP: a real button, so touch players can bail out too (S on a keyboard).
+    const sw = 150;
+    const sx = bx + bw - sw - 12;
+    const sy = by + bh - 30;
+    this.skipBox = [sx - 4, sy - 6, sw + 8, 36];
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(sx, sy, sw, 24);
+    ctx.fillStyle = '#3a2d52';
+    ctx.fillRect(sx + 2, sy + 2, sw - 4, 20);
+    drawText(ctx, 'SKIP TUTORIAL', sx + sw / 2, sy + 12, 1.5, COLORS.text);
   }
 }

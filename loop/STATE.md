@@ -283,3 +283,10 @@ User direction (binding): name 'Slots vs. Slots' (tentative). Loading screen + s
 - Engine: new 'relic' event (Battery + Lightning Rod on turn 1, Jackpot Bell refill, Midas energy, High Roller pair steal, Pickaxe, Cactus, Overcharge echo, Hourglass when an enemy ability fires); pay-changing relics (Skeleton Key, Jackpot Bell, Prism, Hone, Twin Reels, Golden Ticket) are listed on the spin's score (score.relics); Clover/Mittens/Lockpick/Mousetrap/Phoenix/Fang ride on their existing events.
 - HUD: the relic's icon grows, hops, wiggles and flashes gold with a coin blip, and its name pops in the RELICS header row (stacked if several fire). Relic column geometry moved to layout.ts (relicSlot).
 - Tests: 141.
+
+### Iteration 19 — 2026-09-24 (user: make it look decent on mobile)
+- Portrait phones get a TURN YOUR PHONE SIDEWAYS screen (CSS, coarse pointer + portrait). Landscape fits the visual viewport (URL bars) and re-fits on rotation.
+- First tap on a touch device requests fullscreen + landscape lock where supported (Android Chrome; iPhone Safari just fits).
+- No pinch/double-tap zoom, pull-to-refresh, text selection, tap flashes or long-press menus over the game.
+- Touch has no hover: a tap now hovers first, so relic tooltips and COLLECTION tiles read on tap. Tutorial has a real SKIP TUTORIAL button; TAP TO PLAY on touch.
+- Checked at 375x812 (rotate prompt) and 844x390 (menu, fight, draft all fit and read).

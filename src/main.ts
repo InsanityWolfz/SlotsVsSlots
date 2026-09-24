@@ -12,7 +12,10 @@ let scale = 1;
 
 function resize(): void {
   const dpr = window.devicePixelRatio || 1;
-  const fit = Math.min(window.innerWidth / W, window.innerHeight / H);
+  // The visual viewport is the real visible area on phones (URL bars come and go).
+  const vw = window.visualViewport?.width ?? window.innerWidth;
+  const vh = window.visualViewport?.height ?? window.innerHeight;
+  const fit = Math.min(vw / W, vh / H);
   const cssW = Math.floor(W * fit);
   const cssH = Math.floor(H * fit);
   stage.style.width = `${cssW}px`;
@@ -24,7 +27,27 @@ function resize(): void {
   scale = canvas.width / W;
 }
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 150));
+window.visualViewport?.addEventListener('resize', resize);
 resize();
+
+/** Phones and tablets: the first tap goes fullscreen and asks for landscape, where supported. */
+const touchDevice = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+let wentFull = false;
+function goFullscreen(): void {
+  if (!touchDevice || wentFull) return;
+  wentFull = true;
+  const el = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
+  try {
+    const p = el.requestFullscreen?.({ navigationUI: 'hide' }) ?? el.webkitRequestFullscreen?.();
+    void Promise.resolve(p)
+      .then(() => (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> }).lock?.('landscape'))
+      .catch(() => {})
+      .finally(() => setTimeout(resize, 200));
+  } catch {
+    /* no fullscreen here (iPhone Safari): the page still fits the screen */
+  }
+}
 
 /** Dev and playtest builds get the debug helpers and the TUNE panel; the public build doesn't (no cheats). */
 const DEV_TOOLS = import.meta.env.DEV || import.meta.env.VITE_DEBUG === '1';
@@ -42,7 +65,10 @@ function toLogical(e: PointerEvent): [number, number] {
   return [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H];
 }
 canvas.addEventListener('pointerdown', (e) => {
+  goFullscreen();
   canvas.setPointerCapture(e.pointerId);
+  // Touch has no hover: a tap first "hovers" where it lands (tooltips, collection tiles).
+  if (e.pointerType !== 'mouse') game.pointerMove(...toLogical(e));
   game.pointerDown(...toLogical(e));
 });
 canvas.addEventListener('pointerup', (e) => game.pointerUp(...toLogical(e)));
@@ -62,6 +88,9 @@ window.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('visibilitychange', () => game.setHidden(document.hidden));
+// No long-press menus or double-tap zoom over the game.
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 
 let last = performance.now();
 function frame(now: number): void {
