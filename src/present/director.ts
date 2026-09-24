@@ -401,7 +401,7 @@ export class Director {
       );
       const setGroup = e.score.groups.find((g) => g.fullSet);
       const enh = setGroup ? this.s.machines[e.side].reels[setGroup.reels[0]].cellAtRow(1).enh : undefined;
-      await this.banner('FULL SET!', '#ffd23f', 1.3, 0.35, enh ? SET_TEXT[enh] : 'SAME GILD ON ALL 3 REELS', BANNER_Y, 4);
+      await this.banner('FULL SET!', '#ffd23f', 1.3, 0.35, enh ? SET_TEXT[enh] : 'SAME CHARM ON ALL 3 REELS', BANNER_Y, 4);
     }
     if (near && e.score.tier !== 'triple') this.missedTriple(e.side, e.score.line[0]);
     await this.winPresentation(e.side, e.score);

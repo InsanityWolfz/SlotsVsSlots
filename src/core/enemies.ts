@@ -106,7 +106,7 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 1.05,
     ability: { kind: 'curse', every: 4, power: 1 },
     minDepth: 0,
-    blurb: 'HEXES YOUR REELS: HALF PAY, GILDS GO DARK',
+    blurb: 'HEXES YOUR REELS: HALF PAY, CHARMS GO DARK',
     acts: [2],
   },
   {
@@ -151,7 +151,7 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 1.1,
     ability: { kind: 'launder', every: 4, power: 2 },
     minDepth: 1,
-    blurb: 'COUNTERFEITS A GILD: ALL OF IT PAYS PLAIN FOR 2 TURNS',
+    blurb: 'COUNTERFEITS A CHARM: IT PAYS PLAIN FOR 3 TURNS',
     acts: [2],
   },
 ];
@@ -177,7 +177,7 @@ ARCHETYPES.push(
     hpMul: 1.1,
     ability: { kind: 'penalty', every: 4, power: 7 },
     minDepth: 0,
-    blurb: 'CONFISCATES YOUR GILDS FOR THE FIGHT',
+    blurb: 'CONFISCATES YOUR CHARMS FOR THE FIGHT',
     acts: [3],
   },
   {

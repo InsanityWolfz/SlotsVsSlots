@@ -980,11 +980,11 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
       if (o.enh === 'spiked' && run?.player.relics.includes('cactus')) text = text.replace(`FOR ${SPIKED_DAMAGE}`, `FOR ${CACTUS_DAMAGE}`);
       if (run) {
         const live = levelText(run, o);
-        if (o.tier) return { title: `${o.enh.toUpperCase()} II`, text: `EVERY ${o.enh.toUpperCase()} GILD: ${live}` };
-        return { title: `${o.enh.toUpperCase()} ${NAME[o.symbol]}S`, text: `${NAME[o.symbol]}S ON REEL ${o.reel + 1}: ${live}` };
+        if (o.tier) return { title: `${o.enh.toUpperCase()} CHARM II`, text: `EVERY ${o.enh.toUpperCase()} CHARM: ${live}` };
+        return { title: `${o.enh.toUpperCase()} CHARM`, text: `${NAME[o.symbol]}S ON REEL ${o.reel + 1}: ${live}` };
       }
-      if (o.tier) return { title: `${o.enh.toUpperCase()} II`, text: `UPGRADE: ${TIER_TEXT[o.enh](NAME[o.symbol] ?? '', o.reel + 1)}` };
-      return { title: `${o.enh.toUpperCase()} ${NAME[o.symbol]}S`, text };
+      if (o.tier) return { title: `${o.enh.toUpperCase()} CHARM II`, text: `UPGRADE: ${TIER_TEXT[o.enh](NAME[o.symbol] ?? '', o.reel + 1)}` };
+      return { title: `${o.enh.toUpperCase()} CHARM`, text };
     }
     case 'remove':
       return { title: `-1 ${NAME[o.symbol]}`, text: `REMOVE A ${NAME[o.symbol]} FROM REEL ${o.reel + 1}` };
