@@ -30,6 +30,7 @@ import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
 import { isNearMiss, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {
+  BONUS_SYMBOLS,
   buildReel,
   cellValue,
   DEAD,
@@ -291,7 +292,7 @@ export class Fight {
     const bonus = side === 'player' && this.cfg.player.bonusSymbols && !forcedLine ? this.bonusTrigger(me, frozen, locked) : null;
     if (bonus) {
       const sym: SymbolId = bonus === 'wheel' ? 'bonusSym' : 'relicSym';
-      const bstops = me.reels.map((reel) => reel.cells.findIndex((c) => c.symbol === sym));
+      const bstops = me.reels.map((reel) => Math.max(0, reel.cells.findIndex((c) => c.symbol === sym)));
       me.reels.forEach((reel, i) => (reel.stop = bstops[i]));
       const bline = paylineSymbols(me.reels);
       events.push({ type: 'spin', side, stops: bstops, score: scoreLine(bline, this.cfg), nearMiss: false, frozen, locked, lucky: null, bonus });
@@ -505,6 +506,12 @@ export class Fight {
       if (want) {
         const hits = reel.cells.flatMap((cell, i) => (effectiveSymbol(cell) === want ? [i] : []));
         if (hits.length) return this.rng.pick(hits);
+      }
+      // The chase symbols only ever land when a bonus triggers: normal spins stop on the real cells,
+      // so the odds are exactly what they would be without them (they still scroll by as teases).
+      if (c.side === 'player' && this.cfg.player.bonusSymbols) {
+        const real = reel.cells.flatMap((cell, i) => (BONUS_SYMBOLS.has(cell.symbol) ? [] : [i]));
+        return this.rng.pick(real);
       }
       return this.rng.int(reel.cells.length);
     });
@@ -854,7 +861,7 @@ export class Fight {
   private shuffleReels(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
     const [a, b] = this.rng.shuffle([0, 1, 2]).slice(0, 2).sort((x, y) => x - y) as [number, number];
     const movable = (r: number) =>
-      this.rng.shuffle(foe.reels[r].cells.map((c, i) => ({ c, i })).filter(({ c }) => !(c.enh && this.setActive(foe, c.enh)))).map(({ i }) => i);
+      this.rng.shuffle(foe.reels[r].cells.map((c, i) => ({ c, i })).filter(({ c }) => !(c.enh && this.setActive(foe, c.enh)) && !BONUS_SYMBOLS.has(c.symbol))).map(({ i }) => i);
     const ia = movable(a);
     const ib = movable(b);
     const swaps: [number, number][] = [];
@@ -879,7 +886,7 @@ export class Fight {
       const top = [...counts].sort((x, y) => y[1] - x[1])[0]?.[0];
       // It cuts your CHARMED cells first (so full-set builds feel it too), else your commonest symbol —
       // never the payline cell, so the display doesn't jump.
-      const charmed = reel.cells.findIndex((c, k) => !!c.enh && k !== reel.stop);
+      const charmed = reel.cells.findIndex((c, k) => !!c.enh && k !== reel.stop && !BONUS_SYMBOLS.has(c.symbol));
       const i = charmed >= 0 ? charmed : reel.cells.findIndex((c, k) => c.symbol === top && k !== reel.stop);
       if (i < 0) return;
       reel.cells.splice(i, 1);
@@ -1041,7 +1048,7 @@ export class Fight {
     const sym = (r: number) => effectiveSymbol(foe.reels[r].cells[foe.reels[r].stop]);
     const clunk = (r: number, avoid: ReadonlySet<SymbolId> = new Set()) => {
       const reel = foe.reels[r];
-      const options = [reel.stop, (reel.stop + len(r) - 1) % len(r), (reel.stop + 1) % len(r)];
+      const options = [reel.stop, (reel.stop + len(r) - 1) % len(r), (reel.stop + 1) % len(r)].filter((st) => !BONUS_SYMBOLS.has(reel.cells[st].symbol));
       const ok = options.filter((st) => !avoid.has(effectiveSymbol(reel.cells[st])));
       const pool = ok.length ? ok : options;
       let best = pool[0];

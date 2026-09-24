@@ -249,7 +249,8 @@ export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: MIRROR, 3: DEALER
 const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'MANGY', 'CURSED', 'HUNGRY', 'SPITEFUL', 'ANCIENT', 'BITTER', 'GREEDY'];
 
 /** HP for a regular fight at each depth (0-based), before the archetype multiplier. */
-export const DEPTH_HP = [21, 26, 31, 34, 37];
+/** (+6% in I14 to offset BONUS WHEEL / RELIC RUSH payouts.) */
+export const DEPTH_HP = [22, 28, 33, 36, 39];
 /** Act 2 curve: you arrive with a built machine and a legendary. */
 export const DEPTH_HP_2 = [52, 62, 73, 85, 97];
 /** Mutable so balance sweeps can tune it. */
@@ -259,7 +260,7 @@ export const DEPTH_HP_3 = [120, 140, 160];
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 3 };
 export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
 /** Act 3 (ITERATION_12 playtest, commit at GREEN): Dealer HP = 7 x typical-spin power + 60 (+4/relic), less bursty strip -> ~62% Dealer win. */
-export const TUNE = { dealerPower: 7, dealerFlat: 60, act3Sevens: 3, bossHp: 74, act2Mul: 1, act2Swords: 2, mirrorPower: 3, mirrorFlat: 45, mirrorPerRelic: 4, mirrorSpecialWeight: 1 };
+export const TUNE = { dealerPower: 7, dealerFlat: 60, act3Sevens: 3, bossHp: 80, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 45, mirrorPerRelic: 4, mirrorSpecialWeight: 1 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
