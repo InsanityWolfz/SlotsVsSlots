@@ -35,6 +35,7 @@ describe('run', () => {
       f = playFight(run, ++seed);
     }
     const hpAfter = f.sides.player.hp;
+    f.vouchers.length = 0; // (a bonus voucher could pay a heal)
     finishFight(run, f);
     expect(run.depth).toBe(1);
     expect(run.player.hp).toBe(Math.min(run.player.maxHp, hpAfter + Math.round(RUN.startHp * RUN.postFightHeal)));

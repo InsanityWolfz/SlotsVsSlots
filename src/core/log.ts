@@ -184,6 +184,8 @@ const ABBR: Record<SymbolId, string> = {
   card: 'CRD',
   gavel: 'GVL',
   rake: 'RAK',
+  bonusSym: 'BNS',
+  relicSym: 'RLC',
 };
 
 export function formatRow(r: TurnRow): string {

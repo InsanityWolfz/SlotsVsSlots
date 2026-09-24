@@ -21,7 +21,9 @@ import {
   OVERCHARGE_ECHO,
   REFLECT_CAP,
   REFLECT_MIN,
+  RELIC_TIER,
   RELICS,
+  RUSH,
   ROD_SPECIAL_COST,
   ROD_SPECIAL_DAMAGE,
   SPIKED_DAMAGE,
@@ -31,7 +33,7 @@ import {
 import { CABINETS, type CabinetId } from './cabinets';
 import { Rng } from './rng';
 import { scoreLine } from './scoring';
-import { stripCounts } from './strip';
+import { BONUS_SYMBOLS, stripCounts } from './strip';
 
 /** Run-level tunables. */
 export const RUN = {
@@ -135,6 +137,8 @@ export interface FightRecord {
   eliteChips?: number;
   /** SCARS (RED stake): the reel that took a permanent rock. */
   scar?: number;
+  /** Bonus prizes won in this fight. */
+  bonuses?: string[];
   rocksAdded: number;
   rocksCrumbled: number;
   /** Relic taken from an elite's spoils. */
@@ -178,6 +182,8 @@ export interface RunState {
   act3: boolean;
   /** THE DECK REMEMBERS: marked cards the Card Sharp placed this act (they follow you to the Dealer). */
   deckMarks?: number;
+  /** Bonus vouchers paid out after the last fight (the screens animate these). */
+  bonusLog?: BonusPayout[];
 }
 
 export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false): RunState {
@@ -210,6 +216,82 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
     stake: Math.max(0, Math.min(MAX_STAKE, stake)),
     act3,
   };
+}
+
+// ---- BONUS WHEEL & RELIC RUSH ------------------------------------------------------------
+
+export type RelicTier = 'common' | 'uncommon' | 'legendary';
+export type BonusPayout =
+  | { kind: 'wheel'; options: DraftOption[]; pick: number; label: string }
+  | { kind: 'rush'; frames: number[][]; count: number; tier: RelicTier; relic: RelicId | null; chips: number; label: string };
+
+/** Up to 15 distinct upgrades for the BONUS WHEEL, from the same pool as drafts. */
+export function wheelOptions(run: RunState, rng: Rng): DraftOption[] {
+  const p = run.player;
+  const out: DraftOption[] = [];
+  const push = (o: DraftOption) => {
+    if (!out.some((x) => similarKey(x) === similarKey(o))) out.push(o);
+  };
+  for (const enh of gildsFor(run))
+    for (const symbol of GILD_SYMBOLS[enh])
+      for (const reel of [0, 1, 2]) if ((p.strips[reel][symbol] ?? 0) > 0 && !p.gilded.some((g) => g.reel === reel && g.symbol === symbol)) push({ kind: 'gild', enh, symbol, reel });
+  tierUps(run).forEach(push);
+  p.strips.forEach((s, reel) => {
+    if ((s.rock ?? 0) > 0) push({ kind: 'clear', symbol: 'rock', reel });
+    if ((s.shield ?? 0) > RUN.wildCount) push({ kind: 'swap', from: 'shield', to: 'wild', count: RUN.wildCount, reel });
+    if ((s.shield ?? 0) >= 2) push({ kind: 'swap', from: 'shield', to: 'bolt', count: Math.min(RUN.swapCount, s.shield ?? 0), reel });
+  });
+  push({ kind: 'add', symbol: 'bolt', reel: rng.int(3), count: RUN.addCount });
+  push({ kind: 'maxHp', amount: RUN.maxHpCard });
+  if (p.hp < p.maxHp) push({ kind: 'heal', amount: RUN.healCard });
+  return rng.shuffle(out).slice(0, 15);
+}
+
+/** RELIC RUSH: 5x3 hold-and-spin. The 3 trigger symbols start stuck; 3 respins, reset by every new stick. */
+export function playRush(rng: Rng): { frames: number[][]; count: number } {
+  const stuck = new Set<number>();
+  const first = rng.shuffle(Array.from({ length: RUSH.cells }, (_, i) => i)).slice(0, RUSH.start);
+  first.forEach((i) => stuck.add(i));
+  const frames: number[][] = [first];
+  let respins = RUSH.respins;
+  while (respins > 0 && stuck.size < RUSH.cells) {
+    const fresh: number[] = [];
+    for (let i = 0; i < RUSH.cells; i++) if (!stuck.has(i) && rng.next() < RUSH.stick) fresh.push(i);
+    fresh.forEach((i) => stuck.add(i));
+    frames.push(fresh);
+    respins = fresh.length ? RUSH.respins : respins - 1;
+  }
+  return { frames, count: stuck.size };
+}
+
+export const rushTier = (count: number): RelicTier => (count <= RUSH.commonMax ? 'common' : count <= RUSH.uncommonMax ? 'uncommon' : 'legendary');
+
+/** Pay a voucher: the prize is decided by its seed and applied to the run right away. */
+export function payVoucher(run: RunState, v: { kind: 'wheel' | 'rush'; seed: number }): BonusPayout {
+  const rng = new Rng(v.seed >>> 0);
+  if (v.kind === 'wheel') {
+    const options = wheelOptions(run, rng);
+    const pick = rng.int(options.length);
+    applyOption(run, options[pick], false);
+    return { kind: 'wheel', options, pick, label: `WHEEL: ${describeOption(options[pick], run).title}` };
+  }
+  const { frames, count } = playRush(rng);
+  const tier = rushTier(count);
+  const owned = (r: RelicId) => run.player.relics.includes(r);
+  // Your tier first; if you own them all, the next tier up, then down.
+  const order: RelicTier[] = tier === 'common' ? ['common', 'uncommon', 'legendary'] : tier === 'uncommon' ? ['uncommon', 'legendary', 'common'] : ['legendary', 'uncommon', 'common'];
+  let relic: RelicId | null = null;
+  for (const t of order) {
+    const pool = RELIC_TIER[t].filter((r) => !owned(r) && relicFits(run, r));
+    if (pool.length) {
+      relic = rng.pick(pool);
+      break;
+    }
+  }
+  if (relic) run.player.relics.push(relic);
+  const chips = (count >= RUSH.cells ? RUSH.grandChips : 0) + (relic ? 0 : 10);
+  run.player.chips += chips;
+  return { kind: 'rush', frames, count, tier, relic, chips, label: relic ? `RUSH: ${RELICS[relic].name}` : `RUSH: +${chips} CHIPS` };
 }
 
 /** The deck can't remember more marks than this. */
@@ -331,6 +413,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     strips: run.player.strips.map((s) => ({ ...s })),
     gilded: run.player.gilded.map((g) => ({ ...g })),
     // BLACK stake: the House ignores your chip shield.
+    bonusSymbols: true,
     stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? Math.floor(run.player.chips / CHIPS.stackPer) : 0,
   };
   const hp = enemyHp(run, e);
@@ -415,6 +498,8 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   const before = run.player.hp;
   const old = run.player.strips;
   const next = p.reels.map((r) => stripCounts(r));
+  // The chase symbols only ride along for the fight.
+  for (const s of next) for (const sym of BONUS_SYMBOLS) delete s[sym];
   // Rocks are real cells, but only a couple per fight stay for good; the rest crumble.
   let extra = rocksIn(next) - rocksIn(old) - RUN.permanentRocksPerFight;
   let crumbled = 0;
@@ -453,6 +538,9 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     run.over = true;
     return record;
   }
+  // Bonus vouchers from this fight pay out now that you've won it.
+  run.bonusLog = fight.vouchers.map((v) => payVoucher(run, v));
+  if (run.bonusLog.length) record.bonuses = run.bonusLog.map((b) => b.label);
   // The Mimic's gulps come out first (so the "+N chips" line is honest).
   if (fight.chipsEaten) {
     const eaten = Math.min(run.player.chips, fight.chipsEaten);

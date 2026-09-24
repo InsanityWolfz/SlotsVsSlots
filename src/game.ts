@@ -32,7 +32,7 @@ import { CABINETS, CABINET_ORDER, type CabinetId } from './core/cabinets';
 import { StatsTracker } from './core/stats';
 import { Camera } from './present/camera';
 import { Clock } from './present/clock';
-import { Director } from './present/director';
+import { Director, VOUCHER_GAP, VOUCHER_X, VOUCHER_Y } from './present/director';
 import { FxLayer } from './present/fx';
 import { HudView } from './present/hud';
 import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, W } from './present/layout';
@@ -341,13 +341,31 @@ export class Game {
       this.screens.setUnlockedNow(this.checkUnlocks(run));
       this.screens.showOver(run);
     }
-    else if (run.pendingLegend) {
+    else if (run.bonusLog?.length) {
+      // Cash the vouchers first: the wheel / the rush play out, then the usual screens.
+      const log = run.bonusLog;
+      run.bonusLog = [];
+      this.screens.showBonus(run, log, () => this.afterBonus(record));
+    } else if (run.pendingLegend) {
       // The House is gone: set up the idle machines for act 2 so its HUD doesn't linger behind.
       this.newFight(false, null, fightConfig(run, this.cfg), true);
       this.phase = 'between';
       this.screens.showLegend(run, run.pendingLegend, record);
     }
     else if (run.pendingSpoils) this.screens.showSpoils(run, run.pendingSpoils, record);
+    else this.screens.showDraft(run, draftOffers(run), record);
+    this.syncButtons();
+  }
+
+  /** After the bonus payouts: the legendary pick, elite spoils or the draft, as usual. */
+  private afterBonus(record: FightRecord): void {
+    const run = this.run;
+    if (!run) return;
+    if (run.pendingLegend) {
+      this.newFight(false, null, fightConfig(run, this.cfg), true);
+      this.phase = 'between';
+      this.screens.showLegend(run, run.pendingLegend, record);
+    } else if (run.pendingSpoils) this.screens.showSpoils(run, run.pendingSpoils, record);
     else this.screens.showDraft(run, draftOffers(run), record);
     this.syncButtons();
   }
@@ -479,6 +497,7 @@ export class Game {
         turnDamage: 0,
         cracked: false,
         chipsEaten: 0,
+        vouchers: [],
       },
     };
     this.director = new Director(this.stage);
@@ -688,6 +707,7 @@ export class Game {
     }
     this.background.drawMarquee(ctx, t);
     this.drawRelics(ctx);
+    if (this.phase === 'fighting') this.drawVouchers(ctx, this.time);
     drawStripMap(ctx, s.machines.player, t);
     s.huds.player.draw(ctx, t);
     s.huds.enemy.draw(ctx, t);
@@ -715,6 +735,16 @@ export class Game {
 
   private relicList() {
     return this.fight.cfg.relics;
+  }
+
+  /** Banked bonus vouchers (bottom-left): they pay out if you win this fight. */
+  private drawVouchers(ctx: CanvasRenderingContext2D, t: number): void {
+    const list = this.stage.gutter.vouchers ?? [];
+    list.forEach((k, i) => {
+      const bob = Math.sin(t * 3 + i) * 2;
+      drawSprite(ctx, artId(k === 'wheel' ? 'voucherBonus' : 'voucherRelic'), VOUCHER_X + i * VOUCHER_GAP, VOUCHER_Y + bob, 2.5);
+    });
+    if (list.length) drawText(ctx, 'VOUCHERS: WIN TO CASH', 14, VOUCHER_Y - 30, 1.25, '#ffd23f', { align: 'left' });
   }
 
   private drawRelics(ctx: CanvasRenderingContext2D): void {

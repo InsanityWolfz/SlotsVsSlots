@@ -1,8 +1,9 @@
 import { cloneConfig, type AbilityDef, type Enh, type GameConfig, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
 import { CABINETS, type Cabinet } from './cabinets';
-import type { CombatEvent, DealCard } from './events';
+import type { CombatEvent, DealCard, VoucherKind } from './events';
 import {
   BATTERY_ENERGY,
+  BONUS,
   BELL_MULT,
   BLAZE_BONUS,
   BOMB,
@@ -158,6 +159,10 @@ export class Fight {
   raisePlayer = false;
   /** Card Sharp marks placed this fight (THE DECK REMEMBERS). */
   marksPlaced = 0;
+  /** Bonus vouchers banked this fight (they pay out if you win). */
+  readonly vouchers: { kind: VoucherKind; seed: number }[] = [];
+  /** Debug/tests: the next player spin triggers this bonus. */
+  forceBonus: VoucherKind | null = null;
   private forced: Partial<Record<SideId, SymbolId[]>> = {};
 
   constructor(cfg: GameConfig, seed: number = cfg.seed ?? Rng.randomSeed()) {
@@ -199,6 +204,10 @@ export class Fight {
     if (this.isMirror) e.casts.clear();
     if (this.isBoss) this.pot = POT.seed;
     if (this.isDealer) this.nextDeal = this.rng.pick(DEALS);
+    // The chase symbols: one BONUS and one RELIC cell per reel, for this fight only.
+    if (this.cfg.player.bonusSymbols)
+      for (const reel of p.reels)
+        for (const symbol of ['bonusSym', 'relicSym'] as SymbolId[]) insertOffscreen(reel, { symbol, slimed: false }, this.rng);
     // THE DECK REMEMBERS: marked cards you carried in from the Card Sharp.
     const carried = this.cfg.player.startMarks ?? 0;
     if (carried > 0) {
@@ -273,9 +282,24 @@ export class Fight {
 
     const frozen = me.frozen.map((t) => t > 0);
     const locked = me.locked.map((t) => t > 0);
-    const { stops, lucky } = this.rollStops(me, frozen, this.forced[side]);
+    const forcedLine = this.forced[side];
+    let { stops, lucky } = this.rollStops(me, frozen, forcedLine);
     delete this.forced[side];
     me.reels.forEach((reel, i) => (reel.stop = stops[i]));
+    // BONUS WHEEL / RELIC RUSH: a natural triple, or the hidden bonus roll, lands three chase symbols.
+    // The voucher is banked and the reels spin again for free, so a bonus never costs your turn.
+    const bonus = side === 'player' && this.cfg.player.bonusSymbols && !forcedLine ? this.bonusTrigger(me, frozen, locked) : null;
+    if (bonus) {
+      const sym: SymbolId = bonus === 'wheel' ? 'bonusSym' : 'relicSym';
+      const bstops = me.reels.map((reel) => reel.cells.findIndex((c) => c.symbol === sym));
+      me.reels.forEach((reel, i) => (reel.stop = bstops[i]));
+      const bline = paylineSymbols(me.reels);
+      events.push({ type: 'spin', side, stops: bstops, score: scoreLine(bline, this.cfg), nearMiss: false, frozen, locked, lucky: null, bonus });
+      this.vouchers.push({ kind: bonus, seed: this.rng.int(0x7fffffff) });
+      events.push({ type: 'voucher', side, kind: bonus });
+      ({ stops, lucky } = this.rollStops(me, frozen));
+      me.reels.forEach((reel, i) => (reel.stop = stops[i]));
+    }
     const line = paylineSymbols(me.reels).map((s, i) => (locked[i] ? 'lock' : s));
     // LUCKY: a lucky cell on the payline sometimes turns WILD.
     const luckyWilds: number[] = [];
@@ -455,6 +479,23 @@ export class Fight {
     if (c.shield <= 0) return;
     events.push({ type: 'shieldReset', side: c.side, lost: c.shield });
     c.shield = 0;
+  }
+
+  /** Did this spin trigger a bonus? A natural triple on the payline, or the hidden roll (reels must be free to move). */
+  private bonusTrigger(me: Combatant, frozen: boolean[], locked: boolean[]): VoucherKind | null {
+    const line = paylineSymbols(me.reels);
+    if (line.every((s) => s === 'bonusSym')) return 'wheel';
+    if (line.every((s) => s === 'relicSym')) return 'rush';
+    if (this.forceBonus) {
+      const k = this.forceBonus;
+      this.forceBonus = null;
+      return k;
+    }
+    if (frozen.some(Boolean) || locked.some(Boolean)) return null;
+    const roll = this.rng.next();
+    if (roll < BONUS.wheel) return 'wheel';
+    if (roll < BONUS.wheel + BONUS.rush) return 'rush';
+    return null;
   }
 
   private rollStops(c: Combatant, frozen: boolean[], forced?: SymbolId[]): { stops: number[]; lucky: RelicId | null } {

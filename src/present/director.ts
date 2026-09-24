@@ -34,9 +34,16 @@ const EFFECT_WORD: Record<SymbolId, string> = {
   ground: 'GROUNDING',
   fake: 'FAKES',
   card: 'MARKED CARDS',
+  bonusSym: 'BONUS WHEEL',
+  relicSym: 'RELIC RUSH',
   gavel: 'CONFISCATION',
   rake: 'RAKE',
 };
+
+/** Where banked vouchers sit (bottom-left, above the SPIN row). */
+export const VOUCHER_X = 52;
+export const VOUCHER_Y = 612;
+export const VOUCHER_GAP = 66;
 
 /** What each FULL SET does, for its banner (playtest ITERATION_5). */
 const SET_TEXT: Record<Enh, string> = {
@@ -173,6 +180,8 @@ export class Director {
         return this.raise(e);
       case 'houseRules':
         return this.houseRules(e);
+      case 'voucher':
+        return this.voucher(e);
     }
   }
 
@@ -384,6 +393,11 @@ export class Director {
       },
       e.frozen,
     );
+    // A bonus spin: the chase symbols lined up. Its celebration plays on the voucher event.
+    if (e.bonus) {
+      this.lastScore = null;
+      return;
+    }
     if (e.lucky) await this.luckyPop(e.side);
     if (e.luckyWilds?.length) await this.luckyWilds(e.side, e.luckyWilds);
     this.stampGilds(e.side, e.score);
@@ -1500,6 +1514,36 @@ export class Director {
     this.s.sounds.abilityFire();
     this.s.camera.chromaPulse(0.6);
     await this.banner('HOUSE RULES!', '#ff6a5a', 1.3, 0.5, `IT DEALS EVERY ${e.every} TURNS`, BANNER_Y, 4);
+  }
+
+  /** BONUS WHEEL / RELIC RUSH: the chase symbols lined up — bank a voucher, then the reels go again for free. */
+  private async voucher(e: Ev<'voucher'>): Promise<void> {
+    const wheel = e.kind === 'wheel';
+    const m = this.s.machines[e.side];
+    const color = wheel ? '#ffd23f' : '#c080ff';
+    this.s.sounds.fanfareJackpot();
+    this.hitstop(6);
+    this.shake(8, 0.5);
+    this.s.camera.chromaPulse(0.8);
+    this.s.camera.flashScreen(0.5, color);
+    for (let r = 0; r < 3; r++) {
+      const fx = m.reels[r].rows[1];
+      fx.glowColor = color;
+      this.bg(this.c.tween({ from: 1, to: 0, dur: 1.2, onUpdate: (v) => (fx.glow = v) }));
+      const p = cellCenter(e.side, r, 1);
+      this.s.particles.burst({ x: p.x, y: p.y, count: 40, colors: [color, '#ffffff', '#fff6c8'], speed: [150, 500], kind: 'confetti', gravity: 500, life: [0.6, 1.2], size: [4, 7] });
+    }
+    await this.banner(wheel ? 'BONUS WHEEL!' : 'RELIC RUSH!', color, 1.5, 0.6, 'WIN THIS FIGHT TO CASH YOUR VOUCHER', BANNER_Y, 5);
+    // The voucher tile flies to the corner.
+    const c = this.machineCenter(e.side);
+    const tile = this.s.fx.add(new Projectile(artId(wheel ? 'voucherBonus' : 'voucherRelic'), c.x, c.y, 5));
+    const g = this.s.gutter;
+    const slot = (g.vouchers ?? []).length;
+    await this.arc(tile, VOUCHER_X + slot * VOUCHER_GAP, VOUCHER_Y, 0.5, 120, sineInOut);
+    this.bg(this.c.tween({ from: 5, to: 3, dur: 0.2, onUpdate: (v) => (tile.scale = v) }).then(() => this.s.fx.remove(tile)));
+    g.vouchers = [...(g.vouchers ?? []), e.kind];
+    this.s.sounds.coin(8);
+    await this.popText('FREE RESPIN!', c.x, MACHINE_TOP + 40, 3, '#7dff7a', 30, 0.3);
   }
 
   /** The Mirror cracks at half HP. */

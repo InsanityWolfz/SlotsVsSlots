@@ -1,7 +1,7 @@
 import type { Sounds } from '../audio/sounds';
 import type { Enh, GameConfig, StripCounts, SymbolId } from '../core/config';
 import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
-import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS } from '../core/relics';
+import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, RUSH } from '../core/relics';
 import {
   chipShield,
   CHIPS,
@@ -18,6 +18,7 @@ import {
   setProgress,
   runActs,
   totalFights,
+  type BonusPayout,
   type DraftOption,
   type FightRecord,
   type RunState,
@@ -36,7 +37,7 @@ import { COLORS, H, W } from '../present/layout';
 import { artId, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 
-export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet';
+export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus';
 
 /** Greedy word wrap for the pixel font. */
 export function wrap(text: string, maxChars: number): string[] {
@@ -228,6 +229,218 @@ export class RunScreens {
     this.stakeUnlockedNow = text;
   }
 
+  // ---- BONUS WHEEL & RELIC RUSH payouts ------------------------------------------------
+
+  private bonusList: BonusPayout[] = [];
+  private bonusIdx = 0;
+  private bonusDone: () => void = () => {};
+  /** Wheel: current angle (radians) and whether it has landed. Rush: stuck cells (pop 0..1), respins left, revealed. */
+  private wheelAngle = 0;
+  private bonusLanded = false;
+  private rushCells: number[] = [];
+  private rushFlicker: number[] = [];
+  private rushRespins = 0;
+
+  /** Cash the vouchers from the fight you just won: each plays out, then `done`. */
+  showBonus(run: RunState, list: BonusPayout[], done: () => void): void {
+    this.run = run;
+    this.bonusList = list;
+    this.bonusIdx = 0;
+    this.bonusDone = done;
+    this.open('bonus');
+    this.playBonus();
+  }
+
+  private playBonus(): void {
+    const b = this.bonusList[this.bonusIdx];
+    this.buttons = [];
+    this.bonusLanded = false;
+    if (!b) return this.bonusDone();
+    if (b.kind === 'wheel') {
+      // Spin several turns and land the picked slice under the pointer (top).
+      const n = b.options.length;
+      const slice = (Math.PI * 2) / n;
+      const target = Math.PI * 2 * 5 - (b.pick + 0.5) * slice;
+      this.wheelAngle = 0;
+      let lastTick = 0;
+      void this.ui
+        .tween({
+          from: 0,
+          to: target,
+          dur: 4.2,
+          ease: (t) => 1 - Math.pow(1 - t, 3),
+          onUpdate: (v) => {
+            this.wheelAngle = v;
+            const tick = Math.floor(v / slice);
+            if (tick !== lastTick) {
+              lastTick = tick;
+              this.sounds.click();
+            }
+          },
+        })
+        .then(() => this.bonusReveal());
+    } else {
+      this.rushCells = Array(15).fill(0);
+      this.rushFlicker = Array(15).fill(0);
+      this.rushRespins = 3;
+      void this.playRushFrames(b);
+    }
+  }
+
+  private async playRushFrames(b: Extract<BonusPayout, { kind: 'rush' }>): Promise<void> {
+    for (const [k, frame] of b.frames.entries()) {
+      if (k > 0) {
+        // Every empty cell flickers, then the new relics slam in.
+        const flick = { v: 0 };
+        await this.ui.tween({
+          from: 0,
+          to: 1,
+          dur: 0.4,
+          onUpdate: (v) => {
+            flick.v = v;
+            this.rushFlicker = this.rushCells.map((c) => (c ? 0 : Math.random() < 0.5 ? 1 : 0));
+          },
+        });
+        this.rushFlicker = Array(15).fill(0);
+      }
+      for (const i of frame) {
+        this.rushCells[i] = 1;
+        this.sounds.coin(4 + (i % 8));
+      }
+      if (k > 0) this.rushRespins = frame.length ? 3 : this.rushRespins - 1;
+      await this.ui.wait(frame.length ? 0.28 : 0.12);
+    }
+    this.bonusReveal();
+  }
+
+  private bonusReveal(): void {
+    this.bonusLanded = true;
+    this.sounds.fanfareJackpot();
+    const last = this.bonusIdx >= this.bonusList.length - 1;
+    this.buttons = [
+      this.btn(last ? 'COLLECT' : 'NEXT VOUCHER', W / 2, 650, 280, 56, () => {
+        this.bonusIdx++;
+        if (this.bonusIdx >= this.bonusList.length) this.bonusDone();
+        else this.playBonus();
+      }),
+    ];
+  }
+
+  private drawBonus(ctx: CanvasRenderingContext2D, time: number): void {
+    const b = this.bonusList[this.bonusIdx];
+    if (!b) return;
+    const wheel = b.kind === 'wheel';
+    drawText(ctx, wheel ? 'BONUS WHEEL' : 'RELIC RUSH', W / 2, 50, 6, wheel ? '#ffd23f' : '#c080ff');
+    drawText(ctx, `VOUCHER ${this.bonusIdx + 1} OF ${this.bonusList.length}`, W / 2, 92, 2, COLORS.textDim);
+    if (b.kind === 'wheel') this.drawWheel(ctx, b, time);
+    else this.drawRush(ctx, b, time);
+    for (const btn of this.buttons) this.drawButton(ctx, btn, time);
+  }
+
+  private optionIcon(o: DraftOption): SpriteId {
+    if (o.kind === 'gild') return ENH_SPRITE[o.enh];
+    if (o.kind === 'swap') return (o.to === 'wild' ? 'wild' : o.to) as SpriteId;
+    if (o.kind === 'clear') return 'cardClear';
+    if (o.kind === 'add') return o.symbol as SpriteId;
+    if (o.kind === 'heal') return 'shopHeal';
+    if (o.kind === 'maxHp') return 'heart';
+    return 'cardSwap';
+  }
+
+  private drawWheel(ctx: CanvasRenderingContext2D, b: Extract<BonusPayout, { kind: 'wheel' }>, time: number): void {
+    const cx = W / 2;
+    const cy = 320;
+    const R = 190;
+    const n = b.options.length;
+    const slice = (Math.PI * 2) / n;
+    ctx.save();
+    ctx.fillStyle = COLORS.outline;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R + 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = COLORS.gold;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R + 6, 0, Math.PI * 2);
+    ctx.fill();
+    for (let i = 0; i < n; i++) {
+      // Slice i spans [a0, a1] measured from the top, clockwise.
+      const a0 = -Math.PI / 2 + this.wheelAngle + i * slice;
+      const won = this.bonusLanded && i === b.pick;
+      ctx.fillStyle = won ? '#ffd23f' : i % 2 ? '#3a2458' : '#5a2a3a';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, R, a0, a0 + slice);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = COLORS.outline;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      const mid = a0 + slice / 2;
+      const ix = cx + Math.cos(mid) * R * 0.72;
+      const iy = cy + Math.sin(mid) * R * 0.72;
+      const o = b.options[i];
+      // A charm shows its symbol wearing the charm.
+      if (o.kind === 'gild') drawSprite(ctx, o.symbol as SpriteId, ix, iy, 2.2);
+      drawSprite(ctx, this.optionIcon(o), ix, iy, 2.2);
+    }
+    ctx.fillStyle = COLORS.outline;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 34, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = COLORS.gold;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // Pointer at the top.
+    if (hasSprite('wheelPointer')) drawSprite(ctx, artId('wheelPointer'), cx, cy - R - 14, 4);
+    else {
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(cx - 14, cy - R - 26);
+      ctx.lineTo(cx + 14, cy - R - 26);
+      ctx.lineTo(cx, cy - R + 4);
+      ctx.fill();
+    }
+    if (this.bonusLanded) {
+      const { title, text } = describeOption(b.options[b.pick], this.run ?? undefined);
+      this.panel(ctx, W / 2 - 320, 540, 640, 64);
+      drawText(ctx, `YOU WIN: ${title}`, W / 2, 560, 3, COLORS.goldLight, { punch: 1 + 0.05 * Math.sin(time * 6) });
+      drawText(ctx, text, W / 2, 588, 1.5, COLORS.text);
+    }
+  }
+
+  private drawRush(ctx: CanvasRenderingContext2D, b: Extract<BonusPayout, { kind: 'rush' }>, time: number): void {
+    const cols = 5;
+    const size = 96;
+    const x0 = W / 2 - (cols * size) / 2 + size / 2;
+    const y0 = 190;
+    this.panel(ctx, W / 2 - (cols * size) / 2 - 10, y0 - size / 2 - 10, cols * size + 20, 3 * size + 20, '#c080ff');
+    for (let i = 0; i < 15; i++) {
+      const x = x0 + (i % cols) * size;
+      const y = y0 + Math.floor(i / cols) * size;
+      ctx.fillStyle = '#140a22';
+      ctx.fillRect(x - size / 2 + 4, y - size / 2 + 4, size - 8, size - 8);
+      if (this.rushCells[i]) drawSprite(ctx, artId('relicSym'), x, y, 4.5, { flash: 0.15 + 0.15 * Math.sin(time * 5 + i) });
+      else if (this.rushFlicker[i]) drawSprite(ctx, artId('relicSym'), x, y, 4, { alpha: 0.35 });
+      else drawSprite(ctx, artId(hasSprite('rushJunk') ? 'rushJunk' : 'rushEmpty'), x, y, 3.5, { alpha: 0.6 });
+    }
+    const count = this.rushCells.filter(Boolean).length;
+    drawText(ctx, `RELICS ${count} / 15`, W / 2 - 120, 500, 3, '#c080ff');
+    drawText(ctx, this.bonusLanded ? 'DONE' : `RESPINS ${this.rushRespins}`, W / 2 + 140, 500, 3, this.rushRespins <= 1 && !this.bonusLanded ? '#ff6a5a' : COLORS.text);
+    drawText(ctx, `UP TO ${RUSH.commonMax} COMMON  -  ${RUSH.commonMax + 1}-${RUSH.uncommonMax} UNCOMMON  -  ${RUSH.uncommonMax + 1}+ LEGENDARY`, W / 2, 530, 1.5, COLORS.textDim);
+    if (this.bonusLanded) {
+      const tierColor = b.tier === 'legendary' ? '#ffd23f' : b.tier === 'uncommon' ? '#5ad8e8' : '#c9c9d9';
+      const badge = b.tier === 'legendary' ? 'tierLegendary' : b.tier === 'uncommon' ? 'tierUncommon' : 'tierCommon';
+      if (hasSprite(badge)) drawSprite(ctx, artId(badge), W / 2 - 250, 580, 3);
+      if (b.relic) {
+        drawSprite(ctx, RELICS[b.relic].sprite as SpriteId, W / 2 - 200, 580, 3);
+        drawText(ctx, `${b.tier.toUpperCase()}: ${RELICS[b.relic].name}${b.count >= 15 ? '  +  GRAND!' : ''}`, W / 2 - 170, 568, 2.5, tierColor, { align: 'left' });
+        drawText(ctx, RELICS[b.relic].text, W / 2 - 170, 596, 1.5, COLORS.text, { align: 'left' });
+      } else drawText(ctx, `YOU OWN EVERY RELIC: +${b.chips} CHIPS`, W / 2, 580, 2.5, tierColor);
+    }
+  }
+
   /** Cabinets unlocked by the run that just ended (shown on the run-over screen). */
   setUnlockedNow(ids: CabinetId[]): void {
     this.unlockedNow = ids;
@@ -411,6 +624,7 @@ export class RunScreens {
     else if (this.mode === 'next') this.drawNext(ctx, time);
     else if (this.mode === 'shop') this.drawShop(ctx, time);
     else if (this.mode === 'cabinet') this.drawCabinets(ctx, time);
+    else if (this.mode === 'bonus') this.drawBonus(ctx, time);
     else this.drawOver(ctx);
     if (this.mode !== 'over' && this.mode !== 'cabinet') this.drawChips(ctx, W - 40, 28);
     ctx.restore();

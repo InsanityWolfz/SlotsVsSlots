@@ -66,6 +66,8 @@ export function installDebug(game: Game): void {
       if (act3) game.prefs.act3 = true;
       game.startRun(seed, cabinet, stake);
     },
+    /** The next player spin in a run fight triggers BONUS WHEEL ('wheel') or RELIC RUSH ('rush'). */
+    bonus: (kind: 'wheel' | 'rush') => (game.fight.forceBonus = kind),
     /** Make the current fight end in a win on the player's next spin (for walking run screens). */
     forceWin() {
       game.fight.sides.enemy.hp = 1;

@@ -64,6 +64,8 @@ export interface Stage {
     chipsEaten?: number;
     /** Bombs presented on the player's strips. */
     bombs?: number;
+    /** Bonus vouchers banked this fight (tiles bottom-left; they pay out if you win). */
+    vouchers?: ('wheel' | 'rush')[];
     /** The Dealer's face-up next card, and RAISE in play. */
     nextDeal?: 'shuffle' | 'cut' | 'raise';
     raised?: boolean;

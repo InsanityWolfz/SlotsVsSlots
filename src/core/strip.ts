@@ -63,7 +63,9 @@ export function effectiveSymbol(cell: StripCell): SymbolId {
 }
 
 /** Symbols that do nothing on the player's own payline (WILD is very much alive). */
-export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'lock', 'ice', 'claw', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake']);
+export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'lock', 'ice', 'claw', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake', 'bonusSym', 'relicSym']);
+/** The chase symbols: added for the fight, never part of your strips. */
+export const BONUS_SYMBOLS: ReadonlySet<SymbolId> = new Set(['bonusSym', 'relicSym']);
 
 /** How much the player would miss losing this symbol (enemy targeting). */
 export function symbolValue(s: SymbolId): number {

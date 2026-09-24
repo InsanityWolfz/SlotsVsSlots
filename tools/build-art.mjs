@@ -3180,6 +3180,157 @@ S.dealBack = dealCard(true);
   S.actPlaque3 = toRows(outline(g));
 }
 
+// ---------------------------------------------------------------- chase symbols / vouchers / RELIC RUSH / tier badges
+// bonusSym (16x16): gold coin with a chasing-lights orange glow rim and a bold red "B"; warm corner twinkles
+{
+  const g = grid(16, 16);
+  const spans = [[5, 10], [3, 12], [2, 13], [2, 13], [1, 14], [1, 14], [1, 14], [1, 14], [1, 14], [1, 14], [2, 13], [2, 13], [3, 12], [5, 10]];
+  shape(g, 1, spans, (x, y, has) => {
+    const rim = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].some(([dx, dy]) => !has(x + dx, y + dy));
+    if (rim) return (x + y) % 2 ? (x + y >= 16 ? 'o' : 'O') : 'Y'; // chasing bulbs
+    return x + y >= 19 ? 'G' : 'Y';
+  });
+  const B = [
+    'RRRRR ',
+    'RR  RR',
+    'RR  RR',
+    'RRRRR ',
+    'RR  RR',
+    'RR  RR',
+    'RRRRR ',
+  ];
+  B.forEach((r, dy) => [...r].forEach((c, dx) => { if (c === 'R') put(g, 5 + dx, 4 + dy, (dx <= 1 || dy === 0 || dy === 3) && dx < 4 ? 'R' : 'r'); }));
+  put(g, 5, 4, 'M');
+  put(g, 4, 3, 'W'); put(g, 3, 4, 'W'); put(g, 5, 2, 'W'); // gloss
+  outline(g);
+  plot(g, [[0, 0, 'Y'], [1, 1, 'W'], [15, 0, 'Y'], [14, 1, 'W'], [0, 15, 'O'], [15, 15, 'O']]); // warm twinkles
+  S.bonusSym = toRows(g);
+}
+// relicSym (16x16): violet treasure chest, gold straps and trim, violet gem lock
+S.relicSym = lit(16, 16, [
+  '................',
+  '....YYYYYYYY....',
+  '...YJJJYGVVVg...',
+  '..YJJJJYGVVVVg..',
+  '..YJVVVYGVVVvg..',
+  '..YVVVGKKGVvvg..',
+  '..YYYGKJWKGGGg..',
+  '..GvvvKJVKvvvg..',
+  '..YVVVGKKGVVvg..',
+  '..YJVVVYGVVVvg..',
+  '..YVVVVYGVVvvg..',
+  '..YVVVVYGVvvvg..',
+  '..GGGGGGGGGGgg..',
+  '..gg........gg..',
+]);
+/** Ticket stub (24x16): notched ends, 1px rim lit top-left, perforation, icon on the left, mark on the stub. */
+function voucher(pal, icon, mark) {
+  const g = grid(24, 16);
+  const cut = (x, y) => (Math.hypot(x - 0.5, y - 7.5) < 2.2) || (Math.hypot(x - 22.5, y - 7.5) < 2.2);
+  const has = (x, y) => x >= 1 && x <= 22 && y >= 2 && y <= 13 && !cut(x, y);
+  for (let y = 2; y <= 13; y++) for (let x = 1; x <= 22; x++) {
+    if (!has(x, y)) continue;
+    const up = !has(x, y - 1) || !has(x - 1, y), dn = !has(x, y + 1) || !has(x + 1, y);
+    put(g, x, y, up ? pal.hi : dn ? pal.lo : y === 12 ? pal.shade : pal.fill);
+  }
+  put(g, 2, 3, 'W'); put(g, 3, 3, 'W');
+  for (let y = 3; y <= 12; y++) if (y % 2) put(g, 16, y, pal.perf);
+  stamp(g, 5, 5, icon);
+  stamp(g, 18, 5, mark);
+  return toRows(outline(g));
+}
+{
+  // tiny prize wheel (7x7): six coloured wedges, dark rim, white hub
+  const wheel = [];
+  const cols = ['R', 'Y', 'U', 'e', 'O', 'V'];
+  for (let y = 0; y < 7; y++) {
+    let r = '';
+    for (let x = 0; x < 7; x++) {
+      const dx = x - 3, dy = y - 3, d = Math.hypot(dx, dy);
+      if (d > 3.4) r += ' ';
+      else if (d > 2.5) r += 'K';
+      else if (d < 0.5) r += 'W';
+      else r += cols[Math.floor(((Math.atan2(dy, dx) + Math.PI) / (2 * Math.PI)) * 6) % 6];
+    }
+    wheel.push(r);
+  }
+  S.voucherBonus = voucher({ hi: 'Y', lo: 'g', fill: 'T', shade: 'I', perf: 'g' }, wheel,
+    [' Y ', 'YWY', ' Y ', '   ', 'ggg', '   ', 'gg ']);
+  const chest = [
+    ' KKKKK ',
+    'KYYYYGK',
+    'KGGJGgK',
+    'KBBVBbK',
+    'KBBBBbK',
+    'KKKKKKK',
+  ];
+  S.voucherRelic = voucher({ hi: 'M', lo: 'v', fill: 'J', shade: 'V', perf: 'v' }, chest,
+    [' W ', 'WJV', ' V ', '   ', 'vvv', '   ', 'vv ']);
+}
+// rushEmpty (16x16): empty dark slot cell, soot frame, inset (shadow top-left, faint lit edge bottom-right)
+{
+  const g = grid(16, 16);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if ((x === 0 || x === 15) && (y === 0 || y === 15)) continue; // rounded corners
+    const ring = x === 0 || y === 0 || x === 15 || y === 15;
+    put(g, x, y, ring ? 'k' : (x === 1 || y === 1) ? 'K' : (x === 14 || y === 14) ? 'p' : 'P');
+  }
+  S.rushEmpty = toRows(g);
+}
+// rushJunk (16x16): dull grey faded casino chip with a dark X scratched across it ("miss")
+{
+  const g = grid(16, 16);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const dx = x - 7.5, dy = y - 7.5, d = Math.hypot(dx, dy);
+    if (d > 6.6) continue;
+    let c;
+    if (d > 4.9) c = (Math.abs(dx) < 1.2 || Math.abs(dy) < 1.2) ? 'I' : (x + y < 15 ? 'H' : 'h');
+    else c = x + y >= 19 ? 'h' : 'H';
+    if (d < 4.2 && (x === y || x === y + 1 || x + y === 15 || x + y === 16)) c = 'k';
+    put(g, x, y, c);
+  }
+  put(g, 4, 4, 'I'); put(g, 5, 3, 'I'); // faint gloss
+  S.rushJunk = toRows(outline(g));
+}
+/** Cut gem badge (12x12); pal maps facet tones a (brightest) .. d (darkest); optional girdle row override. */
+function tierGem(pal, girdle) {
+  const rows = [
+    '............',
+    '............',
+    '...abbbbc...',
+    '..abbccbcd..',
+    '.aabbccccdd.',
+    '.bbbccccddd.',
+    '..bccccddd..',
+    '...cccddd...',
+    '....ccdd....',
+    '.....cd.....',
+  ].map((r) => [...r].map((c) => pal[c] || c).join(''));
+  if (girdle) rows[4] = '.' + girdle + '.';
+  return lit(12, 12, rows);
+}
+S.tierCommon = tierGem({ a: 'W', b: 'L', c: 'S', d: 'D' });
+S.tierUncommon = tierGem({ a: 'W', b: 'i', c: 'c', d: 'N' });
+{
+  const g = tierGem({ a: 'W', b: 'J', c: 'V', d: 'v' }, 'YYYGGGGGGg').map((r) => [...r]);
+  // radiant gold rays in the free corners / above the crown
+  plot(g, [[5, 0, 'Y'], [6, 0, 'Y'], [0, 0, 'Y'], [1, 1, 'G'], [11, 0, 'Y'], [10, 1, 'G'], [0, 11, 'G'], [11, 11, 'G'], [1, 8, 'Y'], [10, 8, 'Y']]);
+  S.tierLegendary = toRows(g);
+}
+// wheelPointer (12x12): downward gold flapper with a steel pivot rivet
+S.wheelPointer = lit(12, 12, [
+  '............',
+  '...YYYYGg...',
+  '..YWWYYGGg..',
+  '..YYYLSGGg..',
+  '..YYYSDGGg..',
+  '...YYYGGg...',
+  '...YYGGGg...',
+  '....YGGg....',
+  '....YGgg....',
+  '.....Gg.....',
+]);
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -3218,6 +3369,8 @@ const DIMS = {
   mapBadgeCard: 8, mapBadgeGavel: 8, mapBadgeRake: 8, mapBadgeDealer: 8,
   dealShuffle: { w: 16, h: 22 }, dealCut: { w: 16, h: 22 }, dealRaise: { w: 16, h: 22 }, dealBack: { w: 16, h: 22 },
   confiscatedOverlay: 16, actPlaque3: { w: 24, h: 12 },
+  bonusSym: 16, relicSym: 16, voucherBonus: { w: 24, h: 16 }, voucherRelic: { w: 24, h: 16 },
+  rushEmpty: 16, rushJunk: 16, tierCommon: 12, tierUncommon: 12, tierLegendary: 12, wheelPointer: 12,
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -3319,7 +3472,12 @@ export type SpriteId =
   | 'mapBadgeCard' | 'mapBadgeGavel' | 'mapBadgeRake' | 'mapBadgeDealer' // act 3 map badges, 8x8
   | 'dealShuffle' | 'dealCut' | 'dealRaise' | 'dealBack' // Dealer's face-up deal cards, 16x22 (non-square)
   | 'confiscatedOverlay'                           // confiscated-gild cell overlay, 16x16 (mostly transparent)
-  | 'actPlaque3';                                  // act 3 map header plaque, 24x12 (non-square)
+  | 'actPlaque3'                                   // act 3 map header plaque, 24x12 (non-square)
+  | 'bonusSym' | 'relicSym'                       // rare chase reel symbols (BONUS / RELIC RUSH), 16x16
+  | 'voucherBonus' | 'voucherRelic'               // prize voucher ticket stubs, 24x16 (non-square)
+  | 'rushEmpty' | 'rushJunk'                      // RELIC RUSH grid cells, 16x16
+  | 'tierCommon' | 'tierUncommon' | 'tierLegendary' // relic tier gem badges, 12x12
+  | 'wheelPointer';                               // prize wheel pointer, 12x12
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;
