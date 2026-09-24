@@ -16,48 +16,6 @@ body {
   -webkit-touch-callout: none;
 }
 
-/* Portrait phones: ask for landscape (the game is 16:9). */
-#rotate {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: #07030d;
-  color: #ffe45c;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  text-align: center;
-  font-weight: bold;
-  letter-spacing: 2px;
-}
-#rotate p {
-  margin: 0;
-  font-size: 20px;
-}
-#rotate small {
-  color: #9a8fb0;
-  font-size: 12px;
-}
-#rotate .phone {
-  width: 48px;
-  height: 80px;
-  border: 5px solid #d9a640;
-  border-radius: 8px;
-  box-shadow: 0 0 0 3px #140c1c;
-  animation: turn 2s ease-in-out infinite;
-}
-@keyframes turn {
-  0%, 25% { transform: rotate(0deg); }
-  60%, 100% { transform: rotate(-90deg); }
-}
-@media (orientation: portrait) and (pointer: coarse) {
-  #rotate {
-    display: flex;
-  }
-}
-
 #stage {
   position: absolute;
   left: 50%;
