@@ -917,7 +917,7 @@ export class Game {
 
   private drawHint(ctx: CanvasRenderingContext2D, t: number): void {
     drawText(ctx, 'PRESS START RUN', W / 2, MACHINE_TOP + MACHINE_H / 2 - 20, 2, COLORS.text, { alpha: 0.5 + 0.5 * Math.sin(t * 4) });
-    drawText(ctx, `${this.unlockedCabinets().size}/${CABINET_ORDER.length} CABINETS`, W / 2, MACHINE_TOP + MACHINE_H / 2 + 100, 2, COLORS.goldLight);
+    drawText(ctx, `${this.unlockedCabinets().size}/${CABINET_ORDER.length} SLOT MACHINES`, W / 2, MACHINE_TOP + MACHINE_H / 2 + 100, 2, COLORS.goldLight);
     drawText(ctx, '5 FIGHTS + A BOSS', W / 2, MACHINE_TOP + MACHINE_H / 2 + 30, 2, COLORS.textDim);
     drawText(ctx, 'PICK A REWARD', W / 2, MACHINE_TOP + MACHINE_H / 2 + 56, 2, COLORS.textDim);
     drawText(ctx, 'AFTER EACH WIN', W / 2, MACHINE_TOP + MACHINE_H / 2 + 76, 2, COLORS.textDim);

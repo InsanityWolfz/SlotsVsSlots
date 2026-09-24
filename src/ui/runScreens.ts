@@ -749,7 +749,7 @@ export class RunScreens {
 
   private drawCabinets(ctx: CanvasRenderingContext2D, time: number): void {
     drawText(ctx, 'CHOOSE YOUR MACHINE', W / 2, 60, 5, COLORS.goldLight);
-    drawText(ctx, 'EVERY RUN STARTS ON A CABINET. WIN AND UNLOCK MORE.', W / 2, 104, 2, COLORS.textDim);
+    drawText(ctx, 'EVERY RUN STARTS ON A SLOT MACHINE. WIN AND UNLOCK MORE.', W / 2, 104, 2, COLORS.textDim);
     this.drawStakePicker(ctx, time);
     CABINET_ORDER.forEach((id, i) => {
       const h = this.cards[i];
@@ -988,7 +988,7 @@ export class RunScreens {
     drawText(ctx, trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, 6, run.won ? COLORS.goldLight : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     if (this.unlockedNow.length)
-      drawText(ctx, `NEW CABINET UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, W / 2, 466, 2, COLORS.goldLight);
+      drawText(ctx, `NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, W / 2, 466, 2, COLORS.goldLight);
     drawText(ctx, run.stake > 0 ? `${reached}  -  STAKE ${run.stake} ${stakeOf(run.stake).name}` : reached, W / 2, 88, 2, COLORS.textDim);
     const unlockRow = !!this.stakeUnlockedNow;
     if (unlockRow) {

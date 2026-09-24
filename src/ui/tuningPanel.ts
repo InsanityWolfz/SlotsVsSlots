@@ -184,8 +184,8 @@ export class TuningPanel {
     // Meta progression (dev).
     this.body.append(
       this.section(
-        'Cabinets',
-        this.check('Unlock all cabinets (dev)', () => g.prefs.unlockAll, (v) => {
+        'Slot machines',
+        this.check('Unlock all slot machines (dev)', () => g.prefs.unlockAll, (v) => {
           g.prefs.unlockAll = v;
           g.savePrefs();
         }),
