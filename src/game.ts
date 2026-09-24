@@ -227,7 +227,7 @@ export class Game {
     this.autoBtn.toggled = this.prefs.auto;
     this.speedBtns.forEach((b, i) => (b.toggled = [1, 2, 4][i] === this.prefs.speed));
     this.spinBtn.enabled = this.awaitingSpin;
-    this.startBtn.label = this.phase === 'title' ? 'START RUN' : this.abandonArmed ? 'SURE? AGAIN' : 'NEW RUN';
+    this.startBtn.label = this.phase === 'title' ? 'START RUN' : this.abandonArmed ? 'SURE?' : 'NEW RUN';
     this.startBtn.opts.idlePulse = this.phase === 'title';
     this.muteBtn.label = this.prefs.muted ? 'MUTED' : 'SOUND';
     this.muteBtn.toggled = this.prefs.muted;
@@ -267,11 +267,15 @@ export class Game {
 
   /** NEW RUN mid-run throws the run away: it needs a second press within 2 s (QA_1 B1). */
   private abandonArmed = false;
+  private abandonArmedAt = 0;
   private abandonTimer: ReturnType<typeof setTimeout> | null = null;
   private newRunPressed(): void {
     const midRun = !!this.run && !this.run.over && this.phase !== 'title';
+    // A spam-clicked FIGHT! button can't confirm: the confirming press must come 0.4 s after arming (QA_2 B17).
+    if (midRun && this.abandonArmed && performance.now() - this.abandonArmedAt < 400) return;
     if (midRun && !this.abandonArmed) {
       this.abandonArmed = true;
+      this.abandonArmedAt = performance.now();
       this.sounds.fizzle();
       if (this.abandonTimer) clearTimeout(this.abandonTimer);
       this.abandonTimer = setTimeout(() => {
@@ -704,6 +708,8 @@ export class Game {
         this.setAuto(!this.prefs.auto);
         return true;
       case 'r':
+        // Not on a between-fight screen mid-run: there's no NEW RUN button there to show the warning (QA_2 B19).
+        if (this.screens.active && this.run && !this.run.over) return true;
         this.newRunPressed();
         return true;
       case 'm':
@@ -787,7 +793,7 @@ export class Game {
       const eaten = this.phase === 'fighting' ? (this.stage.gutter.chipsEaten ?? 0) : 0;
       drawText(ctx, `${Math.max(0, this.run.player.chips - eaten)}`, 56, 30, 3, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
       drawText(ctx, CABINETS[this.run.cabinet].name, 30, 58, 1, COLORS.textDim, { align: 'left' });
-      if (this.run.stake > 0) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 78, 2, STAKES[this.run.stake].color, { align: 'left' });
+      if (this.run.stake > 0) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 74, 1.5, STAKES[this.run.stake].color, { align: 'left' });
       if (this.fight.isBoss || this.fight.isMirror || this.fight.isDealer) {
         // Sits after the chip count, however many digits it has (QA_1 B10).
         const cx = 56 + String(this.run.player.chips).length * 18 + 22;

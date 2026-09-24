@@ -283,7 +283,7 @@ export function payVoucher(run: RunState, v: { kind: 'wheel' | 'rush'; seed: num
   let relic: RelicId | null = null;
   for (const t of order) {
     // High Roller only matters against the House.
-    const pool = RELIC_TIER[t].filter((r) => !owned(r) && relicFits(run, r) && !(r === 'crown' && run.act > 1));
+    const pool = RELIC_TIER[t].filter((r) => !owned(r) && relicFits(run, r) && !(r === 'crown' && (run.act > 1 || run.depth >= actLength(1))));
     if (pool.length) {
       relic = rng.pick(pool);
       break;

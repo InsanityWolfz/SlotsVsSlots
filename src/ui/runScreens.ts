@@ -331,7 +331,7 @@ export class RunScreens {
     if (!b) return;
     const wheel = b.kind === 'wheel';
     drawText(ctx, wheel ? 'BONUS WHEEL' : 'RELIC RUSH', W / 2, 50, 6, wheel ? '#ffd23f' : '#c080ff');
-    drawText(ctx, `VOUCHER ${this.bonusIdx + 1} OF ${this.bonusList.length}`, W / 2, 92, 2, COLORS.textDim);
+    drawText(ctx, `VOUCHER ${this.bonusIdx + 1} OF ${this.bonusList.length}`, W - 40, 60, 2, COLORS.textDim, { align: 'right' });
     if (b.kind === 'wheel') this.drawWheel(ctx, b, time);
     else this.drawRush(ctx, b, time);
     for (const btn of this.buttons) this.drawButton(ctx, btn, time);
@@ -437,7 +437,7 @@ export class RunScreens {
         drawSprite(ctx, RELICS[b.relic].sprite as SpriteId, W / 2 - 200, 580, 3);
         drawText(ctx, `${b.tier.toUpperCase()}: ${RELICS[b.relic].name}${b.count >= 15 ? `  +  GRAND! +${b.chips} CHIPS` : ''}`, W / 2 - 170, 568, 2.5, tierColor, { align: 'left' });
         drawText(ctx, RELICS[b.relic].text, W / 2 - 170, 596, 1.5, COLORS.text, { align: 'left' });
-      } else drawText(ctx, `YOU OWN EVERY RELIC: +${b.chips} CHIPS`, W / 2, 580, 2.5, tierColor);
+      } else drawText(ctx, `NO RELIC LEFT FOR YOU: +${b.chips} CHIPS`, W / 2, 580, 2.5, tierColor);
     }
   }
 
@@ -933,7 +933,7 @@ export class RunScreens {
     }
     const bossText =
       e.boss === 'dealer'
-        ? 'DEALS A FACE-UP CARD EVERY FEW TURNS: SHUFFLE (SWAPS CELLS, FULL SETS IMMUNE), CUT (TAKES A CHARMED CELL), RAISE (ITS NEXT HIT AND YOUR NEXT WIN X2). CAN\'T DIE BEFORE ITS FIRST DEAL. AT HALF HP IT DEALS FASTER.'
+        ? 'FACE-UP DEALS: SHUFFLE (SWAPS CELLS, FULL SETS IMMUNE), CUT (A CHARMED CELL), RAISE (ITS HIT + YOUR WIN X2). NO KILL BEFORE ITS FIRST DEAL.'
         : e.boss === 'mirror'
         ? `YOUR MACHINE WITH PLAIN CHARMS (NO RELICS, SPECIALS, SPIKES OR KEEN). REFLECTS UP TO ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKS AT HALF HP AND SNAPS BACK AT ONCE. CHIPS SHIELD YOU (1 PER ${CHIPS.stackPer}, MAX ${MIRROR_CHIP_SHIELD_CAP}).`
         : `COINS + A CUT EACH TURN FILL THE POT. EVERY ${this.houseEvery()} TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +1 SHIELD EACH HOUSE TURN.${dirty ? ' BLACK: IT BOMBS YOUR CELLS, EVEN THE PAYLINE.' : ''}`;
@@ -1169,7 +1169,7 @@ export class RunScreens {
       drawSprite(ctx, o.symbol as SpriteId, 0, iy, 3.5);
       drawSprite(ctx, 'minusBadge', 28, iy + 20, 3);
     } else drawSprite(ctx, 'heart', 0, iy, 4.5);
-    drawText(ctx, title, 0, 22, title.length > 12 ? 2 : 3, o.kind === 'gild' ? '#ffd23f' : o.kind === 'relic' ? '#c9a0ff' : COLORS.text);
+    drawText(ctx, title, 0, 22, title.length > 10 ? 2 : 3, o.kind === 'gild' ? '#ffd23f' : o.kind === 'relic' ? '#c9a0ff' : COLORS.text);
     const lines = wrap(text, 16).slice(0, 3);
     lines.forEach((line, k) => drawText(ctx, line, 0, 46 + k * 17, 2, COLORS.text));
     if (this.run && completesSet(this.run, o)) this.setTag(ctx, -h.w / 2 + 6, -h.h / 2 + 6, time);
@@ -1271,7 +1271,7 @@ export class RunScreens {
       if (compact) {
         const parts = [...(r.bonuses ?? []), r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
         const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
-        drawText(ctx, what.length > 40 ? `${what.slice(0, 39)}...` : what, 790, y, 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
+        drawText(ctx, what.length > 34 ? `${what.slice(0, 33)}...` : what, 790, y, 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
         return;
       }
       if (r.pick) drawText(ctx, describeOption(r.pick).title, 790, y - 6, 2, '#c9a0ff', { align: 'left' });

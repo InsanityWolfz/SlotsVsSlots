@@ -17,7 +17,7 @@ export const STAKES: Stake[] = [
   { level: 0, name: 'WHITE', color: '#e8e0f0', rule: 'THE BASE GAME' },
   { level: 1, name: 'RED', color: '#e04a3a', rule: 'SCARS: EVERY 4TH FIGHT YOU WIN LEAVES A PERMANENT ROCK ON YOUR MACHINE' },
   { level: 2, name: 'GREEN', color: '#5ed15a', rule: 'THE MIRROR COPIES YOUR LEGENDARY (OR YOUR BEST RELIC IT CAN USE)' },
-  { level: 3, name: 'BLACK', color: '#8a7aa8', rule: 'THE HOUSE CHEATS: SKIMS EVERY 3 TURNS, BOMBS YOUR PAYLINE, IGNORES YOUR CHIP SHIELD' },
+  { level: 3, name: 'BLACK', color: '#8a7aa8', rule: 'THE HOUSE CHEATS: SKIMS EVERY 3, BOMBS YOUR PAYLINE, NO CHIP SHIELD' },
   { level: 4, name: 'BLUE', color: '#3b8ef0', rule: 'ACT 2 ABILITIES CHARGE FASTER. ONE ACT 2 FORK IS YOUR COUNTER' },
   { level: 5, name: 'GOLD', color: '#ffd23f', rule: 'EVERY ENEMY ABILITY CHARGES FASTER. BOSSES HAVE +8% HP' },
 ];
