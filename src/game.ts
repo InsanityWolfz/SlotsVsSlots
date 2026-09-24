@@ -35,7 +35,7 @@ import { Clock } from './present/clock';
 import { Director, VOUCHER_GAP, VOUCHER_X, VOUCHER_Y } from './present/director';
 import { FxLayer } from './present/fx';
 import { HudView } from './present/hud';
-import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, W } from './present/layout';
+import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
 import { MachineView } from './present/machine';
 import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
@@ -124,11 +124,6 @@ function save(key: string, v: unknown): void {
  */
 export type Phase = 'title' | 'fighting' | 'between' | 'over' | 'quick' | 'recap';
 
-const RELIC_X = 30;
-const RELIC_Y = 118;
-/** 4 wide so act 2's 10-12 relics never slide under the strip map. */
-const RELIC_COLS = 4;
-const RELIC_PITCH = 34;
 
 export class Game {
   cfg: GameConfig;
@@ -633,6 +628,8 @@ export class Game {
       machines,
       huds,
       juice: this.prefs.juice,
+      relics: [...cfg.relics],
+      relicPops: {},
       gutter: {
         turn: 0,
         side: null,
@@ -955,15 +952,30 @@ export class Game {
     }
     const relics = this.relicList();
     if (!relics.length) return;
-    drawText(ctx, 'RELICS', RELIC_X + 60, RELIC_Y - 22, 2, COLORS.textDim);
+    // The header steps aside while a relic's name pops up in its place.
+    const popping = Object.values(this.stage.relicPops).some((v) => v > 0.02);
+    if (!popping) drawText(ctx, 'RELICS', RELIC_X + 60, RELIC_Y - 22, 2, COLORS.textDim);
     relics.forEach((r, i) => {
-      const x = RELIC_X + 16 + (i % RELIC_COLS) * RELIC_PITCH;
-      const y = RELIC_Y + Math.floor(i / RELIC_COLS) * RELIC_PITCH;
-      ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(x - 16, y - 16, 32, 32);
+      const { x, y: y0 } = relicSlot(i);
+      // A relic that just fired pops: it grows, hops up, wiggles and flashes gold.
+      const pop = this.stage.relicPops[r] ?? 0;
+      const y = y0 - Math.sin(pop * Math.PI) * 8;
+      const k = 1 + 0.55 * pop;
+      const half = 16 * k;
+      if (pop > 0) {
+        ctx.save();
+        ctx.globalAlpha = pop * 0.8;
+        ctx.shadowColor = COLORS.goldLight;
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = COLORS.goldLight;
+        ctx.fillRect(x - half - 3, y - half - 3, half * 2 + 6, half * 2 + 6);
+        ctx.restore();
+      }
+      ctx.fillStyle = pop > 0.3 ? COLORS.goldLight : COLORS.outline;
+      ctx.fillRect(x - half, y - half, half * 2, half * 2);
       ctx.fillStyle = COLORS.panel;
-      ctx.fillRect(x - 14, y - 14, 28, 28);
-      drawSprite(ctx, RELICS[r].sprite as SpriteId, x, y, 1.6);
+      ctx.fillRect(x - half + 2 * k, y - half + 2 * k, half * 2 - 4 * k, half * 2 - 4 * k);
+      drawSprite(ctx, RELICS[r].sprite as SpriteId, x, y, 1.6 * k, { rot: Math.sin(pop * Math.PI * 3) * 0.25 * pop, flash: pop * 0.6 });
     });
   }
 
@@ -971,8 +983,7 @@ export class Game {
     if (this.screens.active) return;
     const relics = this.relicList();
     const i = relics.findIndex((_, i) => {
-      const x = RELIC_X + 16 + (i % RELIC_COLS) * RELIC_PITCH;
-      const y = RELIC_Y + Math.floor(i / RELIC_COLS) * RELIC_PITCH;
+      const { x, y } = relicSlot(i);
       return Math.abs(this.mouse.x - x) < 19 && Math.abs(this.mouse.y - y) < 19;
     });
     if (i < 0) return;

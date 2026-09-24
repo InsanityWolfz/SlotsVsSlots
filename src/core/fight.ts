@@ -140,6 +140,8 @@ export class Fight {
   chipsEaten = 0;
   /** Phoenix Feather already burned this fight. */
   phoenixUsed = false;
+  /** Relics that act as the fight opens (Battery, Lightning Rod): popped on turn 1. */
+  private openers: RelicId[] = [];
   /** The Mirror cracked (phase 2). */
   shattered = false;
   /** The turn the Mirror cracked on: it takes no more HP damage that turn (the crack gate). */
@@ -174,7 +176,10 @@ export class Fight {
       enemy: makeCombatant('enemy', this.cfg.enemy, this.rng, this.cfg.enemy.relics ?? []),
     };
     const p = this.sides.player;
-    if (p.relics.has('battery')) p.energy = Math.min(this.cfg.specialCost - 1, p.energy + BATTERY_ENERGY);
+    if (p.relics.has('battery')) {
+      p.energy = Math.min(this.cfg.specialCost - 1, p.energy + BATTERY_ENERGY);
+      this.openers.push('battery');
+    }
     this.cabinet = this.cfg.cabinet ? CABINETS[this.cfg.cabinet] : null;
     if (this.cabinet?.specialCost) this.cfg.specialCost = this.cabinet.specialCost;
     if (this.cabinet?.specialDamage) this.cfg.specialDamage = this.cabinet.specialDamage;
@@ -182,6 +187,7 @@ export class Fight {
     if (p.relics.has('rod') && p.reels.some((r) => r.cells.some((c) => c.enh === 'charged'))) {
       this.cfg.specialCost = ROD_SPECIAL_COST;
       this.cfg.specialDamage = Math.max(this.cfg.specialDamage, this.cabinet?.rodDamage ?? ROD_SPECIAL_DAMAGE);
+      this.openers.push('rod');
     }
     // Thorn: enemy specials hit one weaker (the House's skim is untouched).
     const minus = this.cabinet?.enemyAbilityMinus ?? 0;
@@ -254,6 +260,7 @@ export class Fight {
     const events: CombatEvent[] = [];
     this.turn++;
     events.push({ type: 'turnStart', turn: this.turn, side });
+    if (this.turn === 1) for (const relic of this.openers) events.push({ type: 'relic', side: 'player', relic });
     if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
     if (this.cfg.shieldReset === 'ownTurnStart') this.resetShield(me, events);
@@ -337,14 +344,23 @@ export class Fight {
       if (this.over) break;
     }
     // Jackpot Bell: a jackpot refills your special.
-    if (!this.over && score.tier === 'triple' && me.relics.has('bell')) this.gainEnergy(me, this.cfg.specialCost, [], events);
+    if (!this.over && score.tier === 'triple' && me.relics.has('bell')) {
+      events.push({ type: 'relic', side, relic: 'bell' });
+      this.gainEnergy(me, this.cfg.specialCost, [], events);
+    }
     // Midas: gold cells on the payline also give energy.
     if (!this.over && me.relics.has('midas')) {
       const gold = me.reels.map((_, r) => r).filter((r) => this.paylineEnh(me, r) === 'gold');
-      if (gold.length) this.gainEnergy(me, gold.length, gold, events);
+      if (gold.length) {
+        events.push({ type: 'relic', side, relic: 'midas' });
+        this.gainEnergy(me, gold.length, gold, events);
+      }
     }
     const steals = score.tier === 'triple' || (score.tier === 'pair' && me.relics.has('crown'));
-    if (!this.over && side === 'player' && this.isBoss && steals) this.winPot(me, events, score.tier === 'triple' ? 1 : 0.5);
+    if (!this.over && side === 'player' && this.isBoss && steals) {
+      if (score.tier === 'pair' && this.pot > 0) events.push({ type: 'relic', side, relic: 'crown' });
+      this.winPot(me, events, score.tier === 'triple' ? 1 : 0.5);
+    }
     // The house always takes its cut.
     if (!this.over && side === 'enemy' && this.isBoss) {
       this.pot += POT.houseCut;
@@ -377,6 +393,7 @@ export class Fight {
     const joker = me.side === 'player' && this.cabinet?.jokerWilds && line.includes('wild');
     const pairRule = me.relics.has('mirror') || joker ? 'anyTwo' : this.cfg.pairRule;
     const s = scoreLine(line, { ...this.cfg, pairRule });
+    const fired = new Set<RelicId>();
     for (const g of s.groups) {
       g.base = g.amount;
       const notes: string[] = [];
@@ -388,6 +405,7 @@ export class Fight {
         const set = this.setActive(me, enh);
         if (enh === 'keen' && g.symbol === 'sword') {
           const bonus = KEEN_BONUS * lvl + (me.relics.has('hone') ? HONE_BONUS : 0);
+          if (me.relics.has('hone')) fired.add('hone');
           g.amount += bonus;
           notes.push(`+${bonus}`);
           if (set) g.fullSet = true;
@@ -409,15 +427,18 @@ export class Fight {
       }
       // Prism: a match that used a WILD pays double.
       if (me.relics.has('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) {
+        fired.add('prism');
         g.amount *= 2;
         notes.push('X2');
       }
       // Legendaries: Skeleton Key (doubles) and Jackpot Bell (jackpots).
       if (me.relics.has('key') && g.matched && g.reels.length === 2) {
+        fired.add('key');
         g.amount = Math.ceil(g.amount * KEY_MULT);
         notes.push(`X${KEY_MULT}`);
       }
       if (me.relics.has('bell') && g.matched && g.reels.length === 3) {
+        fired.add('bell');
         g.amount *= BELL_MULT;
         notes.push(`X${BELL_MULT}`);
       }
@@ -444,7 +465,11 @@ export class Fight {
         notes.push('HALF');
       }
       if (notes.length) g.notes = notes;
+      // Twin Reels: a pair that only pays because any two reels count.
+      if (me.relics.has('mirror') && g.matched && g.reels.length === 2 && !(g.reels[0] === 0 && g.reels[1] === 1)) fired.add('mirror');
+      if (g.fullSet && me.relics.has('ticket')) fired.add('ticket');
     }
+    if (fired.size) s.relics = [...fired];
     s.totals = {};
     for (const g of s.groups) s.totals[g.symbol] = (s.totals[g.symbol] ?? 0) + g.amount;
     return s;
@@ -573,6 +598,7 @@ export class Fight {
       return;
     }
     if (g.symbol === 'rock' && me.relics.has('pickaxe')) {
+      events.push({ type: 'relic', side: me.side, relic: 'pickaxe' });
       this.hit(me, foe, g.amount, g.reels, events);
       return;
     }
@@ -605,6 +631,7 @@ export class Fight {
       // A SPIKED FULL SET hits back for the shield you had up.
       if (this.setActive(foe, 'spiked')) dmg = Math.max(dmg, foe.shield + h.blocked);
       const back = this.damage(me, dmg, false);
+      if (foe.relics.has('cactus')) events.push({ type: 'relic', side: foe.side, relic: 'cactus' });
       events.push({ type: 'attack', from: foe.side, to: me.side, reels: [], amount: dmg, ...back, note: 'spiked' });
       this.checkDeath(me, events);
     }
@@ -626,6 +653,7 @@ export class Fight {
       this.checkDeath(foe, events);
       // Overcharge: the special echoes at half damage.
       if (!this.over && me.relics.has('overcharge')) {
+        events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
         const echo = Math.ceil(dmg * OVERCHARGE_ECHO);
         const h2 = this.damage(foe, echo, pierce);
         events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: echo, ...h2, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
@@ -1156,6 +1184,8 @@ export class Fight {
     if (me.charge >= ab.every) {
       me.charge = 0;
       events.push({ type: 'abilityCharge', side: me.side, charge: ab.every, every: ab.every, kind: ab.kind });
+      // The Hourglass slowed this one down.
+      if (me.side === 'enemy' && this.sides.player.relics.has('sandglass') && ab.kind !== 'deal') events.push({ type: 'relic', side: 'player', relic: 'sandglass' });
       events.push({ type: 'ability', side: me.side, kind: ab.kind, power: ab.power });
       this.fireAbility(me, ab, events);
       if (this.over) return;

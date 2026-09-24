@@ -1,4 +1,4 @@
-import type { GameConfig, SymbolId } from './config';
+import type { GameConfig, RelicId, SymbolId } from './config';
 
 export type Tier = 'none' | 'pair' | 'triple';
 
@@ -24,6 +24,8 @@ export interface LineScore {
   /** Ordered left to right by first reel — resolution order. */
   groups: ScoreGroup[];
   totals: Partial<Record<SymbolId, number>>;
+  /** Relics that changed this line's pay (the HUD pops their icons). */
+  relics?: RelicId[];
 }
 
 /** What a WILD pays as when it completes nothing (or the whole line is wild). */

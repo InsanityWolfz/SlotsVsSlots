@@ -71,3 +71,20 @@ describe('public playtest shell', () => {
     expect(FLASH_CAP).toBeLessThanOrEqual(0.25);
   });
 });
+
+describe('relic activations are visible', () => {
+  it('opening relics fire on turn 1, and pay-changing relics ride on the score', async () => {
+    const { Fight } = await import('../src/core/fight');
+    const run = createRun(base, 11, 'knight');
+    run.player.relics.push('battery', 'key', 'bell', 'prism');
+    const { fightConfig } = await import('../src/core/run');
+    const f = new Fight(fightConfig(run, base), 3);
+    const first = f.step().events;
+    expect(first.some((e) => e.type === 'relic' && e.relic === 'battery')).toBe(true);
+    let paid = false;
+    for (let i = 0; i < 80 && !f.over; i++) {
+      for (const e of f.step().events) if (e.type === 'spin' && e.side === 'player' && e.score.relics?.length) paid = true;
+    }
+    expect(paid).toBe(true);
+  });
+});

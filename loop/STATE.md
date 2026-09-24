@@ -278,3 +278,8 @@ User direction (binding): name 'Slots vs. Slots' (tentative). Loading screen + s
 - Cleanup: balance harnesses moved to tools/balance (it6-it12p libs, ladder, act 3, bonus rates, QA headless); snap server to tools/; ~140 old scratch scripts, outputs and 115 MB of snapshots deleted; playtest/ keeps the reports. README/HOSTING rewritten; .github/workflows/deploy.yml builds, tests and deploys to Pages.
 - Art (agent): logo, menuBackdrop, 4 menu icons, mysterySlot, hsSkull, trophySmall, coinSpin0-3, tutorialPointer, heroKnight/Midas/Thorn/Tesla/Joker.
 - Tests: 140.
+
+### Iteration 18 — 2026-09-24 (user: relics POP when they activate)
+- Engine: new 'relic' event (Battery + Lightning Rod on turn 1, Jackpot Bell refill, Midas energy, High Roller pair steal, Pickaxe, Cactus, Overcharge echo, Hourglass when an enemy ability fires); pay-changing relics (Skeleton Key, Jackpot Bell, Prism, Hone, Twin Reels, Golden Ticket) are listed on the spin's score (score.relics); Clover/Mittens/Lockpick/Mousetrap/Phoenix/Fang ride on their existing events.
+- HUD: the relic's icon grows, hops, wiggles and flashes gold with a coin blip, and its name pops in the RELICS header row (stacked if several fire). Relic column geometry moved to layout.ts (relicSlot).
+- Tests: 141.

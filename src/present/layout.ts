@@ -30,6 +30,13 @@ export function cellCenter(side: SideId, reel: number, row: number) {
 
 export const HUD_TOP = 96;
 
+/** The player's relic column (top left): 4 wide so 10-12 relics never slide under the strip map. */
+export const RELIC_X = 30;
+export const RELIC_Y = 118;
+export const RELIC_COLS = 4;
+export const RELIC_PITCH = 34;
+export const relicSlot = (i: number) => ({ x: RELIC_X + 16 + (i % RELIC_COLS) * RELIC_PITCH, y: RELIC_Y + Math.floor(i / RELIC_COLS) * RELIC_PITCH });
+
 export const COLORS = {
   bgTop: '#29123d',
   bgBottom: '#0d0519',

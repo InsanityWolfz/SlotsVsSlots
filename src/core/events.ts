@@ -129,6 +129,8 @@ export type CombatEvent =
   | { type: 'potWin'; from: SideId; to: SideId; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number; potLeft: number }
   /** A relic shrugged off an enemy effect. */
   | { type: 'resist'; side: SideId; relic: RelicId; what: 'freeze' | 'jam' | 'steal' }
+  /** A relic did something (the HUD pops its icon). Pay-changing relics ride on the spin's score instead. */
+  | { type: 'relic'; side: SideId; relic: RelicId }
   /** Boss phase 2 at half HP: the House goes ALL IN and doubles the pot. */
   | { type: 'phase'; side: SideId; pot: number }
   | { type: 'death'; side: SideId }
