@@ -39,17 +39,17 @@ describe('HIGH STAKES', () => {
     }
   });
 
-  it('RED (SCARS): every 3rd win leaves a permanent rock (reel 3 first)', () => {
+  it('RED (SCARS): every 4th win leaves a permanent rock (reel 3 first)', () => {
     const run = createRun(base, 4, 'midas', STAKE.scars);
     const rocks = () => run.player.strips.reduce((a, x) => a + (x.rock ?? 0), 0);
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       const f = new Fight(fightConfig(run, base), i + 1);
       f.winner = 'player';
       finishFight(run, f);
     }
     expect(rocks()).toBe(1);
     expect(run.player.strips[2].rock).toBe(1);
-    expect(run.records[2].scar).toBe(2);
+    expect(run.records[3].scar).toBe(2);
     expect(scarReel(run)).toBe(1);
   });
 

@@ -23,7 +23,12 @@ if (runs > 0) {
     const g = simulateRuns(defaultConfig(), runs, 'greedy', 4242, 'knight', s);
     console.log(`stake ${s} ${STAKES[s].name.padEnd(6)} win ${g.winPct.toFixed(1)}%  act1 ${g.act1Pct.toFixed(1)}%  House ${g.bossWinPct.toFixed(0)}%  Mirror ${g.mirrorWinPct.toFixed(0)}%`);
   }
-  console.log('\n=== cabinets (greedy / random) ===');
+  console.log('\n=== ACT 3: THE DEALER (GREEN stake, act 3 unlocked, greedy) ===');
+  for (const cab of CABINET_ORDER) {
+    const d = simulateRuns(defaultConfig(), runs, 'greedy', 4242, cab, 2, true);
+    console.log(`${cab.padEnd(8)} run win ${d.winPct.toFixed(1)}%  reached Dealer ${d.reachedDealerPct.toFixed(0)}%  Dealer win ${d.dealerWinPct.toFixed(0)}%`);
+  }
+  console.log('\n=== slot machines (greedy / random) ===');
   for (const cab of CABINET_ORDER) {
     const g = simulateRuns(defaultConfig(), runs, 'greedy', 4242, cab);
     const r = simulateRuns(defaultConfig(), runs, 'random', 4242, cab);

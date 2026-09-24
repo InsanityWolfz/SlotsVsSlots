@@ -149,6 +149,9 @@ export class RunScreens {
   private stakes: Partial<Record<CabinetId, number>> = {};
   private stakeSel = 0;
   private stakeUnlockedNow = '';
+  /** ACT 3 unlocked, and the slot machines that have beaten the Dealer (TRUE ENDING). */
+  private act3 = false;
+  private dealerBeaten: CabinetId[] = [];
 
   constructor(
     private ui: Clock,
@@ -170,8 +173,10 @@ export class RunScreens {
   ) {}
 
   /** Pick your starting machine (pre-run). Locked cabinets show how to unlock them. */
-  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0): void {
+  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0, act3 = false, dealerBeaten: CabinetId[] = []): void {
     this.cabinetUnlocked = unlocked;
+    this.act3 = act3;
+    this.dealerBeaten = dealerBeaten;
     this.stakes = stakes;
     this.run = null;
     this.open('cabinet');
@@ -506,7 +511,17 @@ export class RunScreens {
     const spoils = this.draftKind === 'spoils';
     const legend = this.draftKind === 'legend';
     const relicDraft = !spoils && !legend && isRelicDraft(this.run!);
-    const heading = legend ? 'ACT 2 BEGINS - FULLY HEALED - CHOOSE A LEGENDARY RELIC' : spoils ? 'ELITE SPOILS - CHOOSE A RELIC' : relicDraft ? 'RELIC DRAFT - CHOOSE ONE' : 'CHOOSE ONE';
+    const act3Arrival = !legend && !spoils && this.run!.act >= 3 && this.run!.depth === 0 && this.run!.actIntro;
+    const heading = act3Arrival
+      ? 'ACT 3 - THE HOUSE HAS A PARTNER - FULLY HEALED - CHOOSE ONE'
+      : legend
+        ? 'ACT 2 BEGINS - FULLY HEALED - CHOOSE A LEGENDARY RELIC'
+        : spoils
+          ? 'ELITE SPOILS - CHOOSE A RELIC'
+          : relicDraft
+            ? 'RELIC DRAFT - CHOOSE ONE'
+            : 'CHOOSE ONE';
+    if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), W / 2, 208, 3);
     drawText(ctx, heading, W / 2, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
     const sig = CABINETS[this.run!.cabinet].act2;
     if (legend && sig) drawText(ctx, `${CABINETS[this.run!.cabinet].name} ACT 2 SIGNATURE: ${sig.text}`, W / 2, 262, 2, '#c8f0ff');
@@ -704,7 +719,7 @@ export class RunScreens {
     }
     const bossText =
       e.boss === 'dealer'
-        ? 'A FACE-UP DEAL EVERY FEW TURNS, SHOWN A TURN AHEAD. SHUFFLE SWAPS CELLS BETWEEN TWO REELS (FULL SETS ARE IMMUNE). CUT TAKES A CELL OF YOUR COMMONEST SYMBOL. RAISE DOUBLES ITS NEXT HIT AND YOUR NEXT JACKPOT. NO KILLING IT BEFORE ITS FIRST DEAL. HOUSE RULES AT HALF HP.'
+        ? 'DEALS A FACE-UP CARD EVERY FEW TURNS: SHUFFLE (SWAPS CELLS, FULL SETS IMMUNE), CUT (TAKES A CHARMED CELL), RAISE (ITS NEXT HIT AND YOUR NEXT WIN X2). CAN\'T DIE BEFORE ITS FIRST DEAL. AT HALF HP IT DEALS FASTER.'
         : e.boss === 'mirror'
         ? `YOUR MACHINE WITH PLAIN CHARMS (NO RELICS, SPECIALS, SPIKES OR KEEN). REFLECTS UP TO ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKS AT HALF HP AND SNAPS BACK AT ONCE. CHIPS SHIELD YOU (1 PER ${CHIPS.stackPer}, MAX ${MIRROR_CHIP_SHIELD_CAP}).`
         : `COINS + A CUT EACH TURN FILL THE POT. EVERY ${this.houseEvery()} TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +1 SHIELD EACH HOUSE TURN.${dirty ? ' BLACK: IT BOMBS YOUR CELLS, EVEN THE PAYLINE.' : ''}`;
@@ -779,6 +794,12 @@ export class RunScreens {
         this.stakeChip(ctx, h.w / 2 - 26, -h.h / 2 + 26, best, time, 14);
         if (best < this.stakeSel) drawText(ctx, `NEEDS STAKE ${this.stakeSel}`, 0, h.h / 2 - 22, 2, '#ff8a7a');
       }
+      if (open && this.dealerBeaten.includes(id)) {
+        ctx.strokeStyle = COLORS.goldLight;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(-h.w / 2 + 6, -h.h / 2 + 6, h.w - 12, h.h - 12);
+        drawText(ctx, 'TRUE ENDING', 0, -h.h / 2 + 22, 1.5, COLORS.goldLight);
+      }
       if (open) {
         drawText(ctx, cab.blurb, 0, 34, 1, COLORS.textDim);
         const lines = wrap(cab.rule, 17).slice(0, 5);
@@ -805,6 +826,8 @@ export class RunScreens {
     drawText(ctx, `STAKE ${s.level}: ${s.name}`, W / 2 - 226, 614, 2.5, s.color, { align: 'left' });
     const rules = STAKES.slice(1, s.level + 1);
     if (!rules.length) drawText(ctx, 'THE BASE GAME.', W / 2 - 226, 636, 1.5, COLORS.text, { align: 'left' });
+    if (s.level >= STAKE.act3 && this.act3) drawText(ctx, '+ ACT 3: THE DEALER (16 FIGHTS)', W / 2 + 226, 614, 1.5, '#7dff7a', { align: 'right' });
+    else if (s.level >= STAKE.act3) drawText(ctx, 'WIN AT GREEN+ TO FIND OUT WHO DEALS', W / 2 + 226, 614, 1.25, COLORS.textDim, { align: 'right' });
     rules.forEach((r, k) => {
       const yy = 634 + k * 13;
       ctx.fillStyle = r.color;
@@ -865,9 +888,10 @@ export class RunScreens {
       drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
       drawText(ctx, `KEEP CHIPS FOR THE HOUSE: RIGHT NOW +${sh} SHIELD EACH HOUSE TURN (1 PER ${CHIPS.stackPer})`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
     } else {
-      drawText(ctx, 'ACT 2: A LEGENDARY ON THE SHELF. TIER II UPGRADES A WHOLE CHARM.', W / 2, 118, 2, COLORS.goldLight);
+      const boss = run.act >= 3 ? 'DEALER' : 'MIRROR';
+      drawText(ctx, run.act >= 3 ? "ACT 3: THE HOUSE DOESN'T COMP. NO HEALING AFTER FIGHTS." : 'ACT 2: A LEGENDARY ON THE SHELF. TIER II UPGRADES A WHOLE CHARM.', W / 2, 118, 2, run.act >= 3 ? '#ff8a7a' : COLORS.goldLight);
       drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
-      drawText(ctx, `KEEP CHIPS FOR THE MIRROR: RIGHT NOW +${Math.min(MIRROR_CHIP_SHIELD_CAP, sh)} SHIELD EACH MIRROR TURN (1 PER ${CHIPS.stackPer}, MAX ${MIRROR_CHIP_SHIELD_CAP})`, W / 2 - 330, 150, 2, '#9fd0ff', { align: 'left' });
+      drawText(ctx, `KEEP CHIPS FOR THE ${boss}: +${Math.min(MIRROR_CHIP_SHIELD_CAP, sh)} SHIELD EACH ${boss} TURN (1 PER ${CHIPS.stackPer}, MAX ${MIRROR_CHIP_SHIELD_CAP})`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
     }
     drawText(ctx, 'HP', W - 360, 80, 2, COLORS.textDim, { align: 'left' });
     this.drawHp(ctx, W - 330, 80, 190);
@@ -936,6 +960,8 @@ export class RunScreens {
     else if (this.run && fitsBuild(this.run, o)) drawSprite(ctx, 'tagBuild', -h.w / 2 + 34, -h.h / 2 + 14, 2.5);
     if (this.run && o.kind === 'gild') this.setPips(ctx, h.w / 2 - 12, -h.h / 2 + 14, o.enh);
     if (o.kind === 'relic' && LEGENDARY.has(o.relic)) this.legendTag(ctx, 0, -h.h / 2 + 14, time);
+    if (o.kind === 'relic' && LEGENDARY.has(o.relic) && this.run && this.run.stake >= STAKE.mirrorRelic && this.run.act === 2)
+      drawText(ctx, mirrorCanUse(o.relic) ? 'MIRROR WILL COPY' : "MIRROR CAN'T USE", 0, -h.h / 2 + 32, 1.25, mirrorCanUse(o.relic) ? '#ff8a7a' : '#7dff7a');
     if (this.run && !item.sold) {
       const d = optionDeltas(this.run, o, this.base());
       if (d.gain) drawText(ctx, d.gain, 0, 46 + lines.length * 17 + 6, 1, '#b6ff9a');
@@ -1013,6 +1039,11 @@ export class RunScreens {
         ctx.fillStyle = '#c8f0ff';
         ctx.fillRect(122, y - rowH / 2 - 1, 1036, 2);
         this.actPlaque(ctx, 1150, y - rowH / 2, 'ACT 2', '#c8f0ff');
+      }
+      if (compact && r.act && r.act > 2 && run.records[i - 1]?.act === 2) {
+        ctx.fillStyle = '#7dff7a';
+        ctx.fillRect(122, y - rowH / 2 - 1, 1036, 2);
+        this.actPlaque(ctx, 1150, y - rowH / 2, 'ACT 3', '#7dff7a');
       }
       if (compact && i === 0) this.actPlaque(ctx, 1150, y - rowH / 2, 'ACT 1', COLORS.goldLight);
       drawSprite(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 150, y, compact ? 0.9 : 1.4);

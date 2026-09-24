@@ -124,6 +124,8 @@ export interface SideConfig {
   gilded?: Gild[];
   /** Boss fight: chips carried in grant this much shield at the start of each House turn. */
   stackShield?: number;
+  /** THE DECK REMEMBERS: marked cards waiting on this side's reels when the fight starts. */
+  startMarks?: number;
   /** Which act this side comes from (enemy). */
   act?: number;
   /** Relics this side carries (the Mirror copies one at GREEN stake). */

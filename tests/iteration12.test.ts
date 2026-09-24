@@ -115,7 +115,7 @@ describe('THE DEALER', () => {
     f.nextDeal = 'shuffle';
     f.next = 'enemy';
     const sh = ofType(f.step().events, 'shuffle')[0];
-    expect(sh.swaps.length).toBe(3);
+    expect(sh.swaps.length).toBe(5);
     const [a, b] = sh.reels;
     expect(f.sides.player.reels[a].cells.some((c) => c.symbol !== f.sides.player.reels[a].cells[0].symbol || true)).toBe(true);
     const mixed = f.sides.player.reels[a].cells.filter((c) => c.symbol === f.sides.player.reels[b].cells[sh.swaps[0][1]].symbol).length;

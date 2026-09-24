@@ -15,11 +15,11 @@ export interface Stake {
 
 export const STAKES: Stake[] = [
   { level: 0, name: 'WHITE', color: '#e8e0f0', rule: 'THE BASE GAME' },
-  { level: 1, name: 'RED', color: '#e04a3a', rule: 'SCARS: EVERY 3RD FIGHT YOU WIN LEAVES A PERMANENT ROCK ON YOUR MACHINE' },
+  { level: 1, name: 'RED', color: '#e04a3a', rule: 'SCARS: EVERY 4TH FIGHT YOU WIN LEAVES A PERMANENT ROCK ON YOUR MACHINE' },
   { level: 2, name: 'GREEN', color: '#5ed15a', rule: 'THE MIRROR COPIES YOUR LEGENDARY (OR YOUR BEST RELIC IT CAN USE)' },
-  { level: 3, name: 'BLACK', color: '#8a7aa8', rule: 'THE HOUSE CHEATS: SKIMS EVERY 3 TURNS, BOMBS EVEN YOUR PAYLINE' },
+  { level: 3, name: 'BLACK', color: '#8a7aa8', rule: 'THE HOUSE CHEATS: SKIMS EVERY 3 TURNS, BOMBS YOUR PAYLINE, IGNORES YOUR CHIP SHIELD' },
   { level: 4, name: 'BLUE', color: '#3b8ef0', rule: 'ACT 2 ABILITIES CHARGE FASTER. ONE ACT 2 FORK IS YOUR COUNTER' },
-  { level: 5, name: 'GOLD', color: '#ffd23f', rule: 'EVERY ENEMY ABILITY CHARGES 1 TURN FASTER' },
+  { level: 5, name: 'GOLD', color: '#ffd23f', rule: 'EVERY ENEMY ABILITY CHARGES FASTER. BOSSES HAVE +8% HP' },
 ];
 export const MAX_STAKE = STAKES.length - 1;
 
@@ -27,7 +27,7 @@ export const MAX_STAKE = STAKES.length - 1;
 export const STAKE = {
   /** RED: permanent scar rocks (ITERATION_10: counter forks on every fork did nothing and got repetitive). */
   scars: 1,
-  scarEvery: 3,
+  scarEvery: 4,
   mirrorRelic: 2,
   houseDirty: 3,
   houseBombsPerReel: 3,
@@ -36,6 +36,8 @@ export const STAKE = {
   houseSkimEvery: 3,
   fasterAct2: 4,
   fasterAll: 5,
+  /** GOLD: bosses have this much more HP. */
+  goldBossHp: 1.08,
   /** ACT 3 (THE DEALER): runs at GREEN or higher continue after the Mirror. */
   act3: 2,
   /** Tried and rejected (ITERATION_10 sweep): pot +8 helped the player; halved healing was -7.4 alone. */
@@ -51,7 +53,8 @@ export const mirrorCanUse = (r: RelicId) => MIRROR_COPYABLE.includes(r);
  * and BLUE/GOLD's faster charge. Shared by the Fight and every card that shows a cadence.
  */
 export function effectiveAbility(ab: AbilityDef, o: { stake: number; act: number; sandglass: boolean }): AbilityDef {
-  let every = ab.every + (o.sandglass ? SANDGLASS_SLOW : 0);
+  // The Dealer's deals ignore the Hourglass (ITERATION_12 L6: it disabled the boss mechanic).
+  let every = ab.every + (o.sandglass && ab.kind !== 'deal' ? SANDGLASS_SLOW : 0);
   if (ab.kind === 'jackpot' && o.stake >= STAKE.houseDirty) every = STAKE.houseSkimEvery + (o.sandglass ? SANDGLASS_SLOW : 0);
   const faster = o.stake >= STAKE.fasterAll || (o.stake >= STAKE.fasterAct2 && o.act > 1);
   if (faster && ab.kind !== 'jackpot') every = Math.max(2, every - 1);

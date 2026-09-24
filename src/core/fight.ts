@@ -45,7 +45,7 @@ import {
 /** Act 3: marked-card bite, the Croupier's rake, and the Dealer's shuffle size. */
 const MARK_DAMAGE = 2;
 const RAKE_CUT = 1;
-const SHUFFLE_SWAPS = 3;
+const SHUFFLE_SWAPS = 5;
 const DEALS: DealCard[] = ['shuffle', 'cut', 'raise'];
 
 /** Counterfeit coins last this many of your turns. */
@@ -156,6 +156,8 @@ export class Fight {
   houseRules = false;
   raiseEnemy = false;
   raisePlayer = false;
+  /** Card Sharp marks placed this fight (THE DECK REMEMBERS). */
+  marksPlaced = 0;
   private forced: Partial<Record<SideId, SymbolId[]>> = {};
 
   constructor(cfg: GameConfig, seed: number = cfg.seed ?? Rng.randomSeed()) {
@@ -197,6 +199,12 @@ export class Fight {
     if (this.isMirror) e.casts.clear();
     if (this.isBoss) this.pot = POT.seed;
     if (this.isDealer) this.nextDeal = this.rng.pick(DEALS);
+    // THE DECK REMEMBERS: marked cards you carried in from the Card Sharp.
+    const carried = this.cfg.player.startMarks ?? 0;
+    if (carried > 0) {
+      const cells = this.rng.shuffle(p.reels.flatMap((reel, r) => reel.cells.map((c, i) => ({ c, r, i })).filter(({ c }) => symbolValue(c.symbol) > 0)));
+      for (const { c } of cells.slice(0, carried)) c.carded = true;
+    }
     // The Golden Hourglass and HIGH STAKES change enemy cadence (the same helper feeds the cards).
     if (e.ability) e.ability = effectiveAbility(e.ability, { stake: this.cfg.stake ?? 0, act: this.cfg.enemy.act ?? 1, sandglass: p.relics.has('sandglass') });
   }
@@ -326,7 +334,6 @@ export class Fight {
     if (side === 'player') this.reflectBank = Math.max(this.reflectBank, this.last.player.damage);
     if (!this.over) this.defuse(me, events);
     if (!this.over && side === 'player') this.markedCards(me, events);
-    if (!this.over && side === 'player' && score.tier === 'triple') this.raisePlayer = false;
     if (!this.over) this.burnFuses(me, events);
     if (!this.over) this.tickFakes(me, events);
     if (!this.over) this.tickStatuses(me, events);
@@ -390,9 +397,11 @@ export class Fight {
         notes.push(`X${BELL_MULT}`);
       }
       // RAISE: the Dealer raised the stakes, and your next jackpot pays double.
-      if (me.side === 'player' && this.raisePlayer && g.matched && g.reels.length === 3) {
+      // RAISE is a fair coin: your next PAYING group pays double too.
+      if (me.side === 'player' && this.raisePlayer && g.amount > 0 && ['sword', 'shield', 'bolt', 'seven'].includes(g.symbol)) {
         g.amount *= 2;
         notes.push('RAISE X2');
+        this.raisePlayer = false;
       }
       // RAKE: the Croupier takes a cut of each group.
       if (me.raked > 0 && g.amount > 0) {
@@ -740,6 +749,7 @@ export class Fight {
     const cells = pool.slice(0, count);
     if (!cells.length) return this.fizzle(me, 'card', reels, events);
     for (const ref of cells) foe.reels[ref.reel].cells[ref.index].carded = true;
+    if (me.side === 'enemy') this.marksPlaced += cells.length;
     events.push({ type: 'mark', from: me.side, to: foe.side, reels, cells });
   }
 
@@ -826,8 +836,10 @@ export class Fight {
       const counts = new Map<SymbolId, number>();
       for (const c of reel.cells) if (!c.stolen) counts.set(c.symbol, (counts.get(c.symbol) ?? 0) + 1);
       const top = [...counts].sort((x, y) => y[1] - x[1])[0]?.[0];
-      // Take one that isn't on the payline, so the display doesn't jump.
-      const i = reel.cells.findIndex((c, k) => c.symbol === top && k !== reel.stop);
+      // It cuts your CHARMED cells first (so full-set builds feel it too), else your commonest symbol —
+      // never the payline cell, so the display doesn't jump.
+      const charmed = reel.cells.findIndex((c, k) => !!c.enh && k !== reel.stop);
+      const i = charmed >= 0 ? charmed : reel.cells.findIndex((c, k) => c.symbol === top && k !== reel.stop);
       if (i < 0) return;
       reel.cells.splice(i, 1);
       if (i < reel.stop) reel.stop -= 1;
@@ -1138,7 +1150,9 @@ export class Fight {
       case 'mark':
         return this.markCells(me, foe, ab.power, [], events);
       case 'penalty':
-        this.hit(me, foe, ab.power, [], events);
+        // AUDIT: confiscates one of your charms, then hits.
+        this.confiscate(me, foe, 1, [], events);
+        if (!this.over) this.hit(me, foe, ab.power, [], events);
         return;
       case 'houseTake':
         return this.applyRake(me, foe, ab.power, [], events);

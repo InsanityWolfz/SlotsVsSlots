@@ -65,6 +65,8 @@ interface Prefs {
   stakeSel: number;
   /** THE DEALER unlocked: a run was won at GREEN or higher. */
   act3: boolean;
+  /** Slot machines that have beaten the Dealer (TRUE ENDING). */
+  dealerBeaten: CabinetId[];
 }
 
 function load<T>(key: string): T | null {
@@ -151,6 +153,7 @@ export class Game {
       stakes: p.stakes ?? {},
       stakeSel: p.stakeSel ?? 0,
       act3: p.act3 ?? false,
+      dealerBeaten: p.dealerBeaten ?? [],
     };
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
     this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {
@@ -254,7 +257,7 @@ export class Game {
     this.synth.stopLoops();
     this.recap.hide();
     this.phase = 'between';
-    this.screens.showCabinets(this.unlockedCabinets(), this.stakesNow(), this.prefs.stakeSel);
+    this.screens.showCabinets(this.unlockedCabinets(), this.stakesNow(), this.prefs.stakeSel, this.prefs.act3 || this.prefs.unlockAll, this.prefs.dealerBeaten);
     this.syncButtons();
   }
 
@@ -279,6 +282,11 @@ export class Game {
     }
     // Winning at GREEN or higher opens THE DEALER (act 3) for GREEN+ runs.
     const dealerNow = run.won && run.stake >= STAKE.act3 && !this.prefs.act3;
+    // TRUE ENDING: this slot machine beat the Dealer.
+    if (run.won && run.act >= 3 && !this.prefs.dealerBeaten.includes(run.cabinet)) {
+      this.prefs.dealerBeaten.push(run.cabinet);
+      this.savePrefs();
+    }
     if (dealerNow) {
       this.prefs.act3 = true;
       this.savePrefs();
@@ -716,7 +724,7 @@ export class Game {
       drawText(ctx, `${Math.max(0, this.run.player.chips - eaten)}`, 56, 30, 3, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
       drawText(ctx, CABINETS[this.run.cabinet].name, 30, 58, 1, COLORS.textDim, { align: 'left' });
       if (this.run.stake > 0) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 78, 2, STAKES[this.run.stake].color, { align: 'left' });
-      if (this.fight.isBoss || this.fight.isMirror) {
+      if (this.fight.isBoss || this.fight.isMirror || this.fight.isDealer) {
         drawSprite(ctx, 'chipShield', 120, 30, 2);
         drawText(ctx, `+${this.fight.cfg.player.stackShield ?? 0} SH/TURN`, 138, 30, 2, '#9fd0ff', { align: 'left' });
       }
@@ -864,11 +872,11 @@ export class Game {
     const card = g.nextDeal ?? 'shuffle';
     const sprite = card === 'shuffle' ? 'dealShuffle' : card === 'cut' ? 'dealCut' : 'dealRaise';
     drawSprite(ctx, artId(sprite), x - 58, y + 12, 2.5);
-    drawText(ctx, card.toUpperCase(), x + 20, y + 2, 3, '#ffffff');
-    const what = card === 'shuffle' ? 'SWAPS 3 CELLS' : card === 'cut' ? 'CUTS A CELL/REEL' : 'X2 HIT, X2 JACKPOT';
-    drawText(ctx, what, x + 20, y + 26, 1.5, COLORS.textDim);
-    if (g.raised) drawText(ctx, 'RAISED: ITS NEXT HIT X2', x, y + 72, 2, '#ffd23f');
-    else if (g.houseRules) drawText(ctx, 'HOUSE RULES', x, y + 72, 2, '#ff6a5a');
+    drawText(ctx, card.toUpperCase(), x + 26, y + 2, 3, '#ffffff');
+    const what = card === 'shuffle' ? ['SWAPS 5 CELLS', 'BETWEEN 2 REELS'] : card === 'cut' ? ['CUTS A CHARMED', 'CELL PER REEL'] : ['ITS NEXT HIT X2', 'YOUR NEXT WIN X2'];
+    what.forEach((l, k) => drawText(ctx, l, x + 26, y + 22 + k * 12, 1.25, COLORS.textDim));
+    if (g.raised) drawText(ctx, 'RAISED!', x, y - 44 - 14, 2, '#ffd23f');
+    else if (g.houseRules) drawText(ctx, 'HOUSE RULES', x, y - 44 - 14, 2, '#ff6a5a');
   }
 
   /** The Mirror's next Reflection: what your last spin would bounce back, and when. */

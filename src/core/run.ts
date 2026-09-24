@@ -176,6 +176,8 @@ export interface RunState {
   stake: number;
   /** THE DEALER is unlocked (someone has beaten GREEN): runs at GREEN+ continue into act 3. */
   act3: boolean;
+  /** THE DECK REMEMBERS: marked cards the Card Sharp placed this act (they follow you to the Dealer). */
+  deckMarks?: number;
 }
 
 export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false): RunState {
@@ -209,6 +211,9 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
     act3,
   };
 }
+
+/** The deck can't remember more marks than this. */
+const DECK_MARKS_CAP = 6;
 
 /** Acts in this run: GREEN stake and up adds act 3 (THE DEALER). */
 export const runActs = (run: RunState) => (run.act3 && run.stake >= STAKE.act3 ? 3 : ACTS);
@@ -325,7 +330,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     startHp: run.player.hp,
     strips: run.player.strips.map((s) => ({ ...s })),
     gilded: run.player.gilded.map((g) => ({ ...g })),
-    stackShield: e.isBoss ? Math.floor(run.player.chips / CHIPS.stackPer) : 0,
+    // BLACK stake: the House ignores your chip shield.
+    stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? Math.floor(run.player.chips / CHIPS.stackPer) : 0,
   };
   const hp = enemyHp(run, e);
   cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
@@ -345,7 +351,10 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   cfg.enemy.act = run.act;
   // BLACK stake: the House plants bombs (even on your payline).
   if (e.boss === 'house' && run.stake >= STAKE.houseDirty) cfg.enemy.strips = cfg.enemy.strips.map((s) => ({ ...s, bomb: (s.bomb ?? 0) + STAKE.houseBombsPerReel }));
-  if (e.boss === 'dealer') cfg.player.stackShield = Math.min(MIRROR_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
+  if (e.boss === 'dealer') {
+    cfg.player.stackShield = Math.min(MIRROR_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
+    cfg.player.startMarks = run.deckMarks ?? 0;
+  }
   // GREEN stake: the Mirror copies one of your relics.
   if (e.boss === 'mirror' && run.stake >= STAKE.mirrorRelic) {
     const copy = mirrorCopy(run);
@@ -360,6 +369,11 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
  * you (a mirror match needs your relics to win).
  */
 export function enemyHp(run: RunState, e: EnemyDef): number {
+  const gold = e.isBoss && run.stake >= STAKE.fasterAll ? STAKE.goldBossHp : 1;
+  return Math.round(baseEnemyHp(run, e) * gold);
+}
+
+function baseEnemyHp(run: RunState, e: EnemyDef): number {
   if (!e.isBoss) return run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? Math.round(e.hp * FRAGILE_OPENER_MUL) : e.hp;
   // The Mirror grows with your machine and (like the House) with every relic you carry in.
   if (e.boss === 'mirror') return Math.round(TUNE.mirrorPower * machinePower(run)) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length;
@@ -470,7 +484,10 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     const spoils = rng.shuffle(pool).slice(0, 2);
     if (spoils.length) run.pendingSpoils = spoils;
   }
-  let hp = p.hp + Math.round(run.player.maxHp * RUN.postFightHeal * (run.stake >= STAKE.halfHeal ? 0.5 : 1));
+  // Act 3: THE HOUSE DOESN'T COMP — no patch-up between fights.
+  let hp = p.hp + Math.round(run.player.maxHp * RUN.postFightHeal * (run.stake >= STAKE.halfHeal ? 0.5 : 1) * (run.act >= 3 ? 0 : 1));
+  // THE DECK REMEMBERS: the Card Sharp's marks carry into the Dealer fight.
+  run.deckMarks = Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
   if (run.player.relics.includes('bandage')) hp += BANDAGE_HEAL;
   run.player.hp = Math.min(run.player.maxHp, hp);
   run.depth++;

@@ -1402,7 +1402,7 @@ export class Director {
     });
     await Promise.all(flicks);
     const c = this.machineCenter(e.to);
-    this.bg(this.popText(`MARKED x${e.cells.length}: THEY BITE ON YOUR PAYLINE`, c.x, MACHINE_TOP - 30, 2, '#ff8aa0', 16, 0.5));
+    this.bg(this.popText(`MARKED x${e.cells.length}: THEY BITE ON YOUR PAYLINE`, c.x, MACHINE_TOP + 24, 2, '#ff8aa0', 16, 0.5));
     if (e.reels.length) this.settle(e.from, e.reels);
     await this.c.wait(0.1);
   }

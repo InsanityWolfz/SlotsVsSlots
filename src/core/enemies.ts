@@ -175,9 +175,9 @@ ARCHETYPES.push(
     portrait: 'enemyPitBoss',
     strip: { sword: 5, shield: 4, gavel: 3 },
     hpMul: 1.1,
-    ability: { kind: 'penalty', every: 4, power: 7 },
+    ability: { kind: 'penalty', every: 4, power: 4 },
     minDepth: 0,
-    blurb: 'CONFISCATES YOUR CHARMS FOR THE FIGHT',
+    blurb: 'CONFISCATES YOUR CHARMS FOR THE FIGHT (ITS AUDIT TAKES ONE EVERY FEW TURNS)',
     acts: [3],
   },
   {
@@ -236,7 +236,7 @@ export const DEALER: Archetype = {
   name: 'THE DEALER',
   portrait: 'enemyDealer',
   // The House's heavy hitters: sevens.
-  strip: { seven: 9, sword: 2, shield: 2, card: 2 },
+  strip: { seven: 6, sword: 3, shield: 2, card: 4 },
   hpMul: 1,
   ability: { kind: 'deal', every: 3, power: 0 },
   minDepth: 3,
@@ -258,8 +258,8 @@ export const DEPTH_HP_2 = [52, 62, 73, 85, 97];
 export const DEPTH_HP_3 = [120, 140, 160];
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 3 };
 export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
-/** Act 3 (ITERATION_12 sweep, GREEN stake greedy): Dealer HP = 5 x typical-spin power + 170 (+4/relic) -> 53-70% Dealer win. */
-export const TUNE = { dealerPower: 5, dealerFlat: 170, act3Swords: 3, act3Sevens: 3, bossHp: 74, act2Mul: 1, act2Swords: 2, mirrorPower: 3, mirrorFlat: 45, mirrorPerRelic: 4, mirrorSpecialWeight: 1 };
+/** Act 3 (ITERATION_12 playtest, commit at GREEN): Dealer HP = 7 x typical-spin power + 60 (+4/relic), less bursty strip -> ~62% Dealer win. */
+export const TUNE = { dealerPower: 7, dealerFlat: 60, act3Sevens: 3, bossHp: 74, act2Mul: 1, act2Swords: 2, mirrorPower: 3, mirrorFlat: 45, mirrorPerRelic: 4, mirrorSpecialWeight: 1 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
@@ -363,8 +363,10 @@ export function generateRunPaths(rng: Rng, act = 1): EnemyDef[][] {
     const n = branch ? Math.min(2, pool.length) : 1;
     let picks = rng.shuffle([...pool]).slice(0, n);
     // Act 2 forks always show at least one of the new faces.
-    if (act === 2 && !picks.some((a) => ACT2_NEW.has(a.id))) {
-      const fresh = pool.filter((a) => ACT2_NEW.has(a.id));
+    // Act 2 and 3 forks always show at least one of the act's new faces.
+    const NEW = act === 3 ? ACT3_NEW : ACT2_NEW;
+    if (act >= 2 && !picks.some((a) => NEW.has(a.id))) {
+      const fresh = pool.filter((a) => NEW.has(a.id));
       if (fresh.length) picks = [rng.pick(fresh), ...picks].slice(0, n);
     }
     const opts = picks.map((a) => makeEnemy(a, depth, rng, false, act));

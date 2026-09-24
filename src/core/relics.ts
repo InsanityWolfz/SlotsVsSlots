@@ -30,7 +30,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'FULL SETS NEED ONLY 2 REELS AND PAY ONE STEP MORE', sprite: 'relicTicket' },
   bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND REFILL YOUR SPECIAL', sprite: 'relicBell' },
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'ONCE PER FIGHT, SURVIVE A LETHAL HIT AT 1 HP', sprite: 'relicPhoenix' },
-  overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR SPECIAL FIRES AGAIN FOR A THIRD OF ITS DAMAGE', sprite: 'relicOvercharge' },
+  overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR SPECIAL ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
   key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR DOUBLES PAY X2', sprite: 'relicKey' },
   sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: 'ENEMY ABILITIES CHARGE 2 TURNS SLOWER', sprite: 'relicSandglass' },
 };

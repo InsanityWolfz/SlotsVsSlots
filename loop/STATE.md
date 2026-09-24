@@ -224,3 +224,15 @@ Open: GOLD spread 5.2 (target ≤4); TESLA still top; THORN HP-first; act 3 (THE
 - Art (in flight): Dealer/Sharp/Pit Boss/Croupier portraits, card/gavel/rake symbols, deal cards, icons, badges, confiscated overlay, ACT 3 plaque.
 - Tests: 128 (8 new in iteration12.test.ts).
 Open: act 3 regular fights barely threaten (consider scaling their HP/damage with your power like the bosses); TESLA's Dealer is hardest (53%) because machinePower counts its specials.
+
+### Iteration 13 — 2026-09-24 (playtest/ITERATION_12.md → Package S: the Dealer earns its seat)
+Playtest verdict on I12 (report cut by a usage limit but complete): act 3 looks great but the Dealer was a sevens slugfest (deals worth 3.6 pts, 96% of its damage was its own swords/sevens), Dealer 49% commit with a 24-pt spread, act 3 regulars toothless (94% HP into the Dealer); stakes truthful but RED overshot (-5 to -8.5), BLACK did nothing to burst builds, GOLD barely moved; 16 bugs (L1-L16).
+Implemented:
+- Dealer: strip 6 sevens / 3 swords / 2 shields / 4 cards; HP 7 x typical-spin power + 60 (+4/relic). Deals: SHUFFLE swaps 5 cells (full set still immune); CUT takes a CHARMED cell per reel first (so full sets feel it); RAISE = its next hit AND your next PAYING group x2 (was your next jackpot: paid 25%, now 98%). Deals ignore the Hourglass (L6).
+- Act 3 teeth: THE HOUSE DOESN'T COMP (no post-fight heal in act 3); THE DECK REMEMBERS (the Card Sharp's marks, up to 6, are waiting on your reels at the Dealer); Pit Boss AUDIT confiscates a charm every 4 turns then hits 4 (L7); act 3 forks always show a new face.
+- Stakes: RED scars every 4th win; BLACK also ignores your chip shield vs the House; GOLD adds bosses +8% HP (+15% was too steep).
+- Truth/ceremony: act 3 Cashier text ('THE HOUSE DOESN'T COMP', chips for the DEALER) (L1); SH/TURN in the Dealer HUD (L2); GREEN warning on the act 2 Cashier's legendary shelf (L3); ACT 3 arrival heading + plaque, recap ACT 3 divider (L4); picker '+ ACT 3: THE DEALER (16 FIGHTS)' and a pre-unlock tease (L5); Dealer footnote fits (L8); deal panel two-line captions, RAISED/HOUSE RULES above the panel (L9); Overcharge text (L10); Sharp callout position (L13); dbg.forceWin opens the gate (L14); act3Swords dead code removed (L15); npm run sim prints an ACT 3 Dealer row per slot machine (L16); per-slot-machine TRUE ENDING frame on the pick screen (L12, prefs.dealerBeaten).
+- Naming (user): 'Slot Machines' not cabinets; 'Charms' not gilds (UI only).
+- Tests: 128.
+Act 3 harness (it12p_act3, GREEN, commit, N 600): Dealer win 54.5% (knight 53, midas 68, thorn 49, tesla 49, joker 57; spread 19), HP into the Dealer 88%, C-fight deaths ~5%, ~3.4 deals per fight, RAISE pays your side 98%. Ladder (it10_ladder, commit, N 500, 12-fight runs): knight 22.2/21.2/18.6/16.8/11.2/8.4; midas 20.8/18.8/15.8/15.0/12.0/10.2; thorn 23.4/25.0/22.2/16.4/11.6/8.2; tesla 24.0/21.8/21.2/19.6/16.8/11.8; joker 19.6/14.8/13.6/14.6/12.4/7.0 (GOLD/WHITE 0.35-0.49).
+Open: Dealer spread 19 (MIDAS gold burst); GOLD/WHITE a bit low; NEXT = the user's BONUS WHEEL + RELIC RUSH vouchers (see User direction).

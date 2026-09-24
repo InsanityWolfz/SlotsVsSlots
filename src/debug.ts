@@ -70,6 +70,7 @@ export function installDebug(game: Game): void {
     forceWin() {
       game.fight.sides.enemy.hp = 1;
       game.fight.sides.enemy.shield = 0;
+      game.fight.dealt = true;
       game.fight.forceNext('player', ['sword', 'sword', 'sword']);
     },
     /** Start a paused sandbox fight against an archetype ('slime', 'frost', 'thief', 'golem', 'gremlin', 'brute', 'house'). */
