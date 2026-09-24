@@ -44,6 +44,12 @@ up to a **boss fight with a special slot-machine mechanic** (I pick the mechanic
   - Rewards are VOUCHERS: a Wheel-of-Fortune-style tile appears bottom-left and pays out on the victory screen — only if you win that fight. The trigger spin gets a free respin so it never costs the player's attack.
   - Watch-only (no input); tune the odds as numbers.
 
+## User direction (2026-09-24 ~00:00, going to bed) — BINDING FOR THIS LOOP
+- Build BONUS WHEEL + RELIC RUSH exactly as designed above (vouchers, ~2 wheels + ~1 rush per run, free respin), then BALANCE EVERYTHING (acts 1-3, Dealer, stakes, slot machines, the new bonuses) and FIX BUGS.
+- NO OTHER NEW FEATURES. Playtest agents are used ONLY to find bugs and verify balance/feel of what exists — they must NOT propose new features/content (tell them so explicitly).
+- Goal: a stable, balanced build the user can HOST for a PUBLIC PLAYTEST. Prep: a public build (dev cheats / TUNE unlock-all hidden), meta progression already persists in localStorage (slot machine unlocks, stakes, act 3, TRUE ENDING, settings) — verify it survives reloads; no mid-run save wanted.
+- User is asleep; don't ask questions; full report in the morning.
+
 ## Roadmap (ordered; revise as playtests teach us)
 - [x] **I6: ACT 2.** After the House: a second act of 5 fights + a new boss with its own special slot mechanic. New act-2 enemy archetypes that write on your machine in new ways (e.g. bombs planted on your cells, hexes that strip gilds, drains). Act transition reward (legendary pick + heal).
 - [~] **I7: power curve.** (first pass in I6: VAMP/LUCKY/BLAZE gilds + 6 legendaries; next: gild tiers, per-act tuning from playtest) Stronger upgrades (new gild types / gild tiers) and legendary relics for act 2; keep sim balance per act and per cabinet.
