@@ -10,10 +10,8 @@ import {
   describeOption,
   enemyHp,
   mirrorCopy,
-  fitsBuild,
   isRelicDraft,
   needsChoice,
-  optionDeltas,
   rerollCost,
   setProgress,
   runActs,
@@ -133,7 +131,6 @@ export class RunScreens {
   mode: ScreenMode = 'none';
   private run: RunState | null = null;
   private offers: DraftOption[] = [];
-  private deltas: { gain: string; loss: string }[] = [];
   private cards: Hit[] = [];
   private buttons: Btn[] = [];
   private fade = 0;
@@ -158,7 +155,7 @@ export class RunScreens {
   constructor(
     private ui: Clock,
     private sounds: Sounds,
-    private base: () => GameConfig,
+    _base: () => GameConfig,
     private cb: {
       onPick: (o: DraftOption) => void;
       onSpoils: (relic: RelicId) => void;
@@ -492,7 +489,6 @@ export class RunScreens {
     this.draftKind = kind;
     this.run = run;
     this.offers = offers;
-    this.deltas = offers.map((o) => optionDeltas(run, o, this.base()));
     this.lastRecord = last;
     this.open('draft');
     const n = offers.length;
@@ -742,7 +738,7 @@ export class RunScreens {
     drawText(ctx, heading, W / 2, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
     const sig = CABINETS[this.run!.cabinet].act2;
     if (legend && sig) drawText(ctx, `${CABINETS[this.run!.cabinet].name} ACT 2 SIGNATURE: ${sig.text}`, W / 2, 262, 2, '#c8f0ff');
-    this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], this.deltas[i], i, time));
+    this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], i, time));
     this.panel(ctx, 110, 530, 1060, 134);
     this.drawStrips(ctx, 130, 546, this.run!.player.strips);
     this.drawRelics(ctx, 560, 546);
@@ -750,7 +746,7 @@ export class RunScreens {
     this.drawHp(ctx, 900, 586, 220);
   }
 
-  private drawCard(ctx: CanvasRenderingContext2D, c: Hit, o: DraftOption, delta: { gain: string; loss: string }, i: number, time: number): void {
+  private drawCard(ctx: CanvasRenderingContext2D, c: Hit, o: DraftOption, i: number, time: number): void {
     if (c.scale <= 0.01) return;
     const dimmed = this.picked >= 0 && this.picked !== i;
     const { title, text } = describeOption(o, this.run ?? undefined);
@@ -813,19 +809,10 @@ export class RunScreens {
     drawText(ctx, title, 0, 2, title.length > 13 ? 2 : 3, accent);
     wrap(text, 20).forEach((line, k) => drawText(ctx, line, 0, 32 + k * 20, 2, COLORS.text));
     if (this.run && completesSet(this.run, o)) this.setTag(ctx, -w / 2 + 8, -h / 2 + 6, time);
-    else if (this.run && fitsBuild(this.run, o)) drawSprite(ctx, 'tagBuild', -w / 2 + 36, -h / 2 + 14, 2.5);
     if (this.run && o.kind === 'gild') this.setPips(ctx, w / 2 - 12, -h / 2 + 14, o.enh);
     if (o.kind === 'relic' && LEGENDARY.has(o.relic)) this.legendTag(ctx, 0, -h / 2 + 14, time);
     if (o.kind === 'relic' && this.run && this.run.stake >= STAKE.mirrorRelic && this.draftKind === 'legend')
       drawText(ctx, mirrorCanUse(o.relic) ? 'THE MIRROR WILL COPY THIS' : 'THE MIRROR CAN\'T USE THIS', 0, h / 2 - 14, 1.5, mirrorCanUse(o.relic) ? '#ff8a7a' : '#7dff7a');
-    // Gain in green, cost in red, per spin.
-    const lines = [delta.gain && [delta.gain, '#b6ff9a'], delta.loss && [delta.loss, '#ff8a7a']].filter(Boolean) as [string, string][];
-    lines.forEach(([t, col], k) => {
-      const ly = h / 2 - 16 - (lines.length - 1 - k) * 22;
-      ctx.fillStyle = 'rgba(255,255,255,0.05)';
-      ctx.fillRect(-w / 2 + 8, ly - 11, w - 16, 21);
-      drawText(ctx, t, 0, ly, 2, col);
-    });
 
     ctx.restore();
   }
@@ -1180,15 +1167,10 @@ export class RunScreens {
     const lines = wrap(text, 16).slice(0, 3);
     lines.forEach((line, k) => drawText(ctx, line, 0, 46 + k * 17, 2, COLORS.text));
     if (this.run && completesSet(this.run, o)) this.setTag(ctx, -h.w / 2 + 6, -h.h / 2 + 6, time);
-    else if (this.run && fitsBuild(this.run, o)) drawSprite(ctx, 'tagBuild', -h.w / 2 + 34, -h.h / 2 + 14, 2.5);
     if (this.run && o.kind === 'gild') this.setPips(ctx, h.w / 2 - 12, -h.h / 2 + 14, o.enh);
     if (o.kind === 'relic' && LEGENDARY.has(o.relic)) this.legendTag(ctx, 0, -h.h / 2 + 14, time);
     if (o.kind === 'relic' && LEGENDARY.has(o.relic) && this.run && this.run.stake >= STAKE.mirrorRelic && this.run.act === 2)
       drawText(ctx, mirrorCanUse(o.relic) ? 'MIRROR WILL COPY' : "MIRROR CAN'T USE", 0, -h.h / 2 + 32, 1.25, mirrorCanUse(o.relic) ? '#ff8a7a' : '#7dff7a');
-    if (this.run && !item.sold) {
-      const d = optionDeltas(this.run, o, this.base());
-      if (d.gain) drawText(ctx, d.gain, 0, 46 + lines.length * 17 + 6, 1, '#b6ff9a');
-    }
     // Price tag.
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(-52, h.h / 2 - 34, 104, 28);

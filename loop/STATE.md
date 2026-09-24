@@ -290,3 +290,6 @@ User direction (binding): name 'Slots vs. Slots' (tentative). Loading screen + s
 - No pinch/double-tap zoom, pull-to-refresh, text selection, tap flashes or long-press menus over the game.
 - Touch has no hover: a tap now hovers first, so relic tooltips and COLLECTION tiles read on tap. Tutorial has a real SKIP TUTORIAL button; TAP TO PLAY on touch.
 - Checked at 375x812 (rotate prompt) and 844x390 (menu, fight, draft all fit and read).
+
+### Iteration 20 — 2026-09-24 (user: no FITS tags or stat deltas on upgrades)
+- User direction (binding): players should use their own intuition. Removed the green FITS ribbon and the per-spin stat lines (e.g. 'ENERGY 1.67 TO 2.30') from draft cards and Cashier items. Kept: card rule text, COMPLETES SET ribbon, set pips, LEGENDARY and Mirror-copy notes.
