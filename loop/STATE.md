@@ -260,3 +260,21 @@ Fixed:
 - Tuning: BONUS 2.8% wheel / 1.2% rush (won runs: 1.5-2.0 wheels, 0.85-1.2 rushes); RELIC RUSH common pool drops the 4 counter relics, no High Roller after act 1; act 1 HP [23,29,34,37,40]; JOKER 28 HP, TESLA 26 HP.
 Numbers: official sim greedy act1 knight 47.2 / midas 52.1 / thorn 45.5 / tesla 42.3 (before +1 HP) / joker 51.8; full win 23-28%; ladder knight 26.1/23.1/21.3/16.9/12.6/10.0. Commit harness Dealer 62.7% (knight 54, midas 71, thorn 64, tesla 62, joker 62).
 Open: MIDAS's Dealer is the easiest (71%).
+
+### Iteration 16 — 2026-09-24 (playtest/QA_2.md fixes)
+- B17: a confirming NEW RUN press within 0.4 s of arming is ignored (a spammed FIGHT! can't abandon). B21: label 'SURE?'.
+- B16: RELIC RUSH never pays High Roller once the House is down. B18: 'NO RELIC LEFT FOR YOU: +N CHIPS'. B19: R does nothing on between-fight screens mid-run.
+- B20: over-screen recap cut at 34 chars. B22: HUD stake label 1.5x at y 74. B4: shorter BLACK rule. B9: Dealer footnote shortened, VOUCHER n OF m moved top-right, charm titles >10 chars at 2x.
+
+### Iteration 17 — 2026-09-24 (user request: the public playtest shell — no loop, just build + test)
+User direction (binding): name 'Slots vs. Slots' (tentative). Loading screen + start menu with art; NEW RUN, optional TUTORIAL (guided first fight), COLLECTION log (discovered charms/relics, grey mystery tiles otherwise), personal HISCORES (build, killer or victory, stake). Stakes unlock one tier at a time per slot machine by winning the full run (incl. act 3 when on). No full-screen white flash (seizure safety). Dev tools hidden. Clean up the repo. GitHub Pages workflow (the user pushes). Each slot machine gets a named hero avatar.
+- src/ui/menus.ts: LOADING (warms every sprite, CLICK TO PLAY unlocks audio), MAIN MENU (logo, heroes, button icons, collection/runs/best line, RESET SAVE with confirm), COLLECTION (7 charms + 21 relics by tier, hover detail), HISCORES (BEST/RECENT, pages, hero, stake, result + killer portrait, relics, charms with II/set marks, score, date). MENU buttons on the machine picker and run-over screen.
+- src/ui/coach.ts + game.ts: TUTORIAL = a KNIGHT run whose first opponent has 75% HP; callouts light up the machine, payline, HUDs, spin controls, first turn, first enemy ability, draft, Cashier and forks, then the run carries on. The fight clock freezes while a callout is open; S skips.
+- src/core/profile.ts: profile save 'slotvslot.profile.v1' (found relics/charms, last 60 runs, never dropping a top-10 score), sanitised on load. Score = 100/fight won, +1000 clear, +1000 Dealer, x(1 + 0.5 x stake).
+- Heroes: SIR REGINALD (KNIGHT), KING AURUM (MIDAS), BRIAR (THORN), DOC VOLTZ (TESLA), JESTER JAX (JOKER) in the player HUD and on the machine cards.
+- Stakes: stakeUnlock() in stakes.ts (tested); the rule was already per-machine + win-at-your-best; with act 3 on, GREEN+ runs are won only by beating the Dealer.
+- Photosensitivity: lightning strike has no screen flash; every full-screen flash capped at 0.2 opacity (FLASH_CAP).
+- Public build verified: no window.dbg, no TuningPanel, no unlock-all in dist; T does nothing.
+- Cleanup: balance harnesses moved to tools/balance (it6-it12p libs, ladder, act 3, bonus rates, QA headless); snap server to tools/; ~140 old scratch scripts, outputs and 115 MB of snapshots deleted; playtest/ keeps the reports. README/HOSTING rewritten; .github/workflows/deploy.yml builds, tests and deploys to Pages.
+- Art (agent): logo, menuBackdrop, 4 menu icons, mysterySlot, hsSkull, trophySmall, coinSpin0-3, tutorialPointer, heroKnight/Midas/Thorn/Tesla/Joker.
+- Tests: 140.

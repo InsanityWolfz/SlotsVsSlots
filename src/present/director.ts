@@ -722,8 +722,8 @@ export class Director {
     const bolt = this.s.fx.add(new Lightning(target.x + (Math.random() * 2 - 1) * 40, -20, target.x, target.y));
     this.s.sounds.thunder();
     this.hitstop(4);
-    cam.flashScreen(0.85, '#fff6c8');
-    cam.chromaPulse(0.85);
+    // No full-screen flash here (photosensitivity): the struck machine flashes instead.
+    cam.chromaPulse(0.5);
     this.shake(9, 0.5);
     cam.punchZoom(0.05, 0.45);
     this.flashMachine(e.to, 1, 0.3);

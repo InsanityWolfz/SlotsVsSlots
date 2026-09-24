@@ -36,6 +36,7 @@ import { ENH_SPRITE } from '../present/reel';
 import { COLORS, H, W } from '../present/layout';
 import { artId, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
+import { heroSprite } from './menus';
 
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus';
 
@@ -164,6 +165,7 @@ export class RunScreens {
       onLegend: (relic: RelicId) => void;
       onFight: (option: number) => void;
       onNewRun: () => void;
+      onMenu: () => void;
       onBuy: (index: number) => void;
       onReroll: () => void;
       onLeave: () => void;
@@ -194,6 +196,7 @@ export class RunScreens {
       };
       this.buttons = [this.btn('LOWER', W / 2 - 430, 640, 110, 40, () => step(-1)), this.btn('HIGHER', W / 2 + 430, 640, 110, 40, () => step(1))];
     }
+    this.buttons.push(this.btn('MENU', 90, 40, 130, 44, () => this.cb.onMenu()));
     this.cards = CABINET_ORDER.map((id, i) => {
       const h = this.hit(W / 2 + (i - 2) * 240, 380, 220, 420, () => {
         if (!this.cabinetUnlocked.has(id) || this.picked >= 0) return;
@@ -559,7 +562,7 @@ export class RunScreens {
   showOver(run: RunState): void {
     this.run = run;
     this.open('over');
-    this.buttons = [this.btn('NEW RUN', W / 2, 650, 240, 60, () => this.cb.onNewRun())];
+    this.buttons = [this.btn('MENU', W / 2 - 140, 650, 240, 60, () => this.cb.onMenu()), this.btn('NEW RUN', W / 2 + 140, 650, 240, 60, () => this.cb.onNewRun())];
   }
 
   hide(): void {
@@ -1015,10 +1018,13 @@ export class RunScreens {
         drawText(ctx, 'TRUE ENDING', 0, -h.h / 2 + 22, 1.5, COLORS.goldLight);
       }
       if (open) {
-        drawText(ctx, cab.blurb, 0, 34, 1, COLORS.textDim);
+        // The hero you play as on this machine.
+        drawSprite(ctx, heroSprite(id), -h.w / 2 + 30, -h.h / 2 + 30, 1.5);
+        drawText(ctx, `PLAY AS ${cab.hero}`, 0, 28, 1.25, '#c9a0ff');
+        drawText(ctx, cab.blurb, 0, 42, 1, COLORS.textDim);
         const lines = wrap(cab.rule, 17).slice(0, 5);
-        lines.forEach((l, k) => drawText(ctx, l, 0, 60 + k * 18, 2, COLORS.text));
-        if (cab.act2) wrap(`ACT 2: ${cab.act2.text}`, 22).forEach((l, k) => drawText(ctx, l, 0, 70 + lines.length * 18 + k * 14, 1.5, '#c8f0ff'));
+        lines.forEach((l, k) => drawText(ctx, l, 0, 64 + k * 18, 2, COLORS.text));
+        if (cab.act2) wrap(`ACT 2: ${cab.act2.text}`, 22).forEach((l, k) => drawText(ctx, l, 0, 74 + lines.length * 18 + k * 14, 1.5, '#c8f0ff'));
       } else {
         drawText(ctx, 'LOCKED', 0, 40, 2, '#ff8a7a');
         wrap(`UNLOCK: ${cab.unlock}`, 17).forEach((l, k) => drawText(ctx, l, 0, 70 + k * 18, 2, COLORS.textDim));
@@ -1033,6 +1039,7 @@ export class RunScreens {
       // New players see the ladder exists.
       STAKES.slice(1).forEach((s, k) => this.stakeChip(ctx, W / 2 - 150 + k * 44, 626, s.level, time, 14, true));
       drawText(ctx, 'HIGH STAKES: WIN A RUN TO RAISE THE STAKES', W / 2, 666, 2, COLORS.textDim);
+      for (const b of this.buttons) this.drawButton(ctx, b, time);
       return;
     }
     const s = stakeOf(this.stakeSel);

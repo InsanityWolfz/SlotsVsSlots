@@ -11,6 +11,9 @@ export interface Cabinet {
   name: string;
   sprite: string;
   blurb: string;
+  /** The player avatar in the HUD frame for runs on this machine. */
+  hero: string;
+  heroSprite: string;
   hp: number;
   strips: StripCounts[];
   gilded: Gild[];
@@ -38,6 +41,8 @@ const r3 = (c: StripCounts): StripCounts[] => [{ ...c }, { ...c }, { ...c }];
 export const CABINETS: Record<CabinetId, Cabinet> = {
   knight: {
     id: 'knight',
+    hero: 'SIR REGINALD',
+    heroSprite: 'heroKnight',
     name: 'KNIGHT',
     sprite: 'cabinetKnight',
     blurb: 'THE DEPENDABLE ONE',
@@ -51,6 +56,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
   },
   midas: {
     id: 'midas',
+    hero: 'KING AURUM',
+    heroSprite: 'heroMidas',
     name: 'MIDAS MACHINE',
     sprite: 'cabinetMidas',
     blurb: 'EVERYTHING IT TOUCHES...',
@@ -65,6 +72,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
   },
   thorn: {
     id: 'thorn',
+    hero: 'BRIAR',
+    heroSprite: 'heroThorn',
     name: 'THORN',
     sprite: 'cabinetThorn',
     blurb: 'TOUCH IT. I DARE YOU.',
@@ -78,6 +87,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
   },
   tesla: {
     id: 'tesla',
+    hero: 'DOC VOLTZ',
+    heroSprite: 'heroTesla',
     name: 'TESLA',
     sprite: 'cabinetTesla',
     blurb: 'IT HUMS WHEN YOU LOOK AT IT',
@@ -94,6 +105,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
   },
   joker: {
     id: 'joker',
+    hero: 'JESTER JAX',
+    heroSprite: 'heroJoker',
     name: 'JOKER',
     sprite: 'cabinetJoker',
     blurb: 'NOTHING IS WHAT IT SEEMS',

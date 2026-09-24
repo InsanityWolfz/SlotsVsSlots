@@ -1,31 +1,48 @@
 # Hosting the public playtest
 
+## GitHub Pages (set up)
+
+`.github/workflows/deploy.yml` tests, builds and publishes the game every time you push to `main` or
+`master`.
+
+1. Create the GitHub repo and push this project to it.
+2. Open the repo's **Settings → Pages → Build and deployment**, and set **Source** to **GitHub Actions**.
+3. Push again, or run the workflow from the **Actions** tab. The game goes live at
+   `https://<your-user>.github.io/<repo-name>/`.
+
+All paths are relative (`base: './'`), so any repo name works.
+
+## Anywhere else
+
 ```
 npm install
 npm run build
 ```
 
-This writes a static site to `dist/` (an `index.html` plus an `assets/` folder, all relative paths).
-Upload the **contents** of `dist/` anywhere that serves static files:
+This writes a static site to `dist/`. Upload the **contents** of `dist/` to anything that serves
+static files:
 
-- **itch.io**: zip the contents of `dist/`, create an HTML project, upload the zip, and tick
-  "This file will be played in the browser". A viewport of 1280×720 is ideal (the game scales to fit).
-- **Netlify / Vercel**: drag and drop the `dist/` folder (or point them at this repo with build command
-  `npm run build` and publish directory `dist`).
-- **GitHub Pages**: push the contents of `dist/` to a `gh-pages` branch (or a `/docs` folder).
+- **itch.io:** zip `dist/`, create an HTML project and tick "played in the browser". A 1280×720
+  viewport is ideal.
+- **Netlify / Vercel:** use build command `npm run build` and publish directory `dist`.
 
 ## What the public build does differently
 
-- There's no TUNE panel and no `window.dbg` helpers, so there are no cheats or balance sliders. Saved
-  tuning overrides and the dev "unlock all" flag are ignored.
-- The LOG (combat log) is still available.
+- No TUNE panel, no `window.dbg` helpers and no debug module. The build contains no cheat code.
+- Saved tuning overrides and the dev "unlock all" flag are ignored.
+- The combat LOG is still available.
 
 ## Saving
 
-Meta progression is saved in the player's own browser (`localStorage`) and survives closing the tab
-or the browser: unlocked slot machines, stake levels per slot machine, the ACT 3 unlock, TRUE ENDING
-frames and settings (speed, sound, auto). There is no mid-run save. Clearing site data, private
-windows, or a different browser/device start fresh.
+Everything is saved in the player's own browser (`localStorage`) and survives closing the tab or
+the browser:
+
+- unlocked slot machines, stake levels per slot machine, the ACT 3 unlock and TRUE ENDING frames;
+- the collection log and hiscores (`slotvslot.profile.v1`);
+- settings (speed, sound, auto).
+
+There is no mid-run save. The main menu has a RESET SAVE button. Clearing site data, a private
+window, or a different browser or device starts fresh.
 
 ## Builds
 

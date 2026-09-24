@@ -2,7 +2,7 @@ import { Sounds } from './audio/sounds';
 import { Synth } from './audio/synth';
 import { mergeConfig, type GameConfig, type SideId } from './core/config';
 import { actLength, RUN_FIGHTS } from './core/enemies';
-import { MAX_STAKE, STAKE, STAKES } from './core/stakes';
+import { MAX_STAKE, STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { Fight } from './core/fight';
 import { turnRow, type TurnRow } from './core/log';
 import { REFLECT_MIN, RELICS } from './core/relics';
@@ -46,9 +46,13 @@ import { drawText } from './render/text';
 import { Button } from './ui/button';
 import { Recap } from './ui/recap';
 import { RunScreens, wrap } from './ui/runScreens';
+import { Coach, TUTORIAL } from './ui/coach';
+import { heroSprite, Menus } from './ui/menus';
+import { discover, emptyProfile, MAX_ENTRIES, runEntry, runScore, sanitizeProfile, type Profile } from './core/profile';
 
 const CFG_KEY = 'slotvslot.config.v3';
 const PREFS_KEY = 'slotvslot.prefs.v2';
+const PROFILE_KEY = 'slotvslot.profile.v1';
 const AUTO_DELAY = 0.35;
 
 interface Prefs {
@@ -67,6 +71,8 @@ interface Prefs {
   act3: boolean;
   /** Slot machines that have beaten the Dealer (TRUE ENDING). */
   dealerBeaten: CabinetId[];
+  /** The TUTORIAL has been started once (the menu stops nudging toward it). */
+  tutorialDone: boolean;
 }
 
 const clampStake = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.min(MAX_STAKE, Math.floor(n))) : 0);
@@ -91,6 +97,7 @@ function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
     stakeSel: clampStake(p.stakeSel),
     act3: p.act3 === true,
     dealerBeaten: machineIds(p.dealerBeaten),
+    tutorialDone: p.tutorialDone === true,
   };
 }
 
@@ -134,6 +141,11 @@ export class Game {
   readonly ui = new Clock();
   readonly recap: Recap;
   readonly screens: RunScreens;
+  readonly menus: Menus;
+  readonly coach = new Coach();
+  profile: Profile;
+  /** TUTORIAL progress: which callouts have been shown (null = not in the tutorial). */
+  private tut: { fight?: boolean; spin?: boolean; ability?: boolean; draft?: boolean; shop?: boolean } | null = null;
 
   stage!: Stage;
   director!: Director;
@@ -169,6 +181,13 @@ export class Game {
   constructor(readonly publicBuild = false) {
     this.cfg = mergeConfig(publicBuild ? undefined : load(CFG_KEY));
     this.prefs = sanitizePrefs(load<Partial<Prefs>>(PREFS_KEY), publicBuild);
+    this.profile = sanitizeProfile(load(PROFILE_KEY));
+    this.menus = new Menus(this.ui, this.sounds, () => this.profile, () => this.unlockedCabinets(), {
+      onNewRun: () => this.chooseCabinet(),
+      onTutorial: () => this.startTutorial(),
+      onReset: () => this.resetSave(),
+      tutorialDone: () => this.prefs.tutorialDone,
+    });
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
     this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {
       onPick: (o) => this.pickReward(o),
@@ -176,6 +195,7 @@ export class Game {
       onLegend: (r) => this.pickLegend(r),
       onFight: (i) => this.beginRunFight(i),
       onNewRun: () => this.chooseCabinet(),
+      onMenu: () => this.showMenu(),
       onBuy: (i) => this.buyItem(i),
       onReroll: () => this.rerollShop(),
       onLeave: () => this.leaveCashier(),
@@ -188,6 +208,8 @@ export class Game {
     this.buildButtons();
     this.applyJuice();
     this.newFight(false);
+    this.menus.showLoading();
+    this.syncButtons();
   }
 
   // ---- setup -------------------------------------------------------------------------
@@ -231,11 +253,13 @@ export class Game {
     this.startBtn.opts.idlePulse = this.phase === 'title';
     this.muteBtn.label = this.prefs.muted ? 'MUTED' : 'SOUND';
     this.muteBtn.toggled = this.prefs.muted;
-    const overlay = this.screens.active || this.phase === 'recap';
+    const overlay = this.screens.active || this.phase === 'recap' || this.menus.isOpen;
     for (const b of [this.spinBtn, this.autoBtn, this.startBtn, ...this.speedBtns]) b.visible = !overlay;
     for (const b of this.recapBtns) b.visible = this.phase === 'recap';
     for (const b of this.buttons) if (b.label === 'TUNE' || b.label === 'LOG') b.visible = this.screens.mode !== 'cabinet' && !(b.label === 'TUNE' && this.publicBuild);
-    this.muteBtn.visible = this.screens.mode !== 'cabinet';
+    this.muteBtn.visible = this.screens.mode !== 'cabinet' && this.menus.mode !== 'loading' && this.menus.mode !== 'collection' && this.menus.mode !== 'hiscores';
+    if (this.menus.isOpen) this.toolButtons!.tune.visible = this.toolButtons!.log.visible = false;
+    this.noteDiscoveries();
   }
 
   applyJuice(): void {
@@ -248,6 +272,74 @@ export class Game {
 
   savePrefs(): void {
     save(PREFS_KEY, this.prefs);
+  }
+
+  saveProfile(): void {
+    save(PROFILE_KEY, this.profile);
+  }
+
+  /** COLLECTION: whatever relics / charms are on the machine now count as discovered. */
+  private noteDiscoveries(): void {
+    if (this.run && discover(this.profile, this.run)) this.saveProfile();
+  }
+
+  /** HISCORES: log the finished run (keeps the newest entries, but never drops a top-10 score). */
+  private recordRun(run: RunState): void {
+    this.profile.runs.push(runEntry(run, Date.now(), !!run.tutorial));
+    while (this.profile.runs.length > MAX_ENTRIES) {
+      const top = new Set([...this.profile.runs].sort((a, b) => runScore(b) - runScore(a)).slice(0, 10));
+      const i = this.profile.runs.findIndex((e) => !top.has(e));
+      this.profile.runs.splice(i < 0 ? 0 : i, 1);
+    }
+    this.saveProfile();
+  }
+
+  /** RESET SAVE (main menu): unlocks, stakes, collection and hiscores. Settings stay. */
+  private resetSave(): void {
+    const { speed, auto, juice, muted } = this.prefs;
+    this.prefs = { ...sanitizePrefs({}, this.publicBuild), speed, auto, juice, muted };
+    this.profile = emptyProfile();
+    this.savePrefs();
+    this.saveProfile();
+  }
+
+  /** Back to the main menu (abandons nothing: only reachable between runs). */
+  showMenu(): void {
+    this.token++;
+    this.synth.stopLoops();
+    this.recap.hide();
+    this.screens.hide();
+    this.coach.skipAll();
+    this.tut = null;
+    this.run = null;
+    this.newFight(false);
+    this.phase = 'title';
+    this.menus.showMain();
+    this.syncButtons();
+  }
+
+  // ---- tutorial ----------------------------------------------------------------------
+
+  /** A guided first fight on the KNIGHT: callouts explain each part, then the run carries on. */
+  private startTutorial(): void {
+    this.prefs.tutorialDone = true;
+    this.savePrefs();
+    this.startRun(undefined, 'knight', 0);
+    if (!this.run) return;
+    this.run.tutorial = true;
+    this.tut = {};
+    this.coach.show(TUTORIAL.preview);
+  }
+
+  private tip(key: 'fight' | 'spin' | 'ability' | 'draft' | 'shop', tips: keyof typeof TUTORIAL, done?: () => void): void {
+    if (!this.tut || this.tut[key]) return;
+    this.tut[key] = true;
+    this.coach.show(TUTORIAL[tips], done);
+  }
+
+  private skipTutorial(): void {
+    this.coach.skipAll();
+    this.tut = null;
   }
 
   saveConfig(): void {
@@ -291,6 +383,8 @@ export class Game {
 
   /** START RUN: pick a starting machine first. */
   chooseCabinet(): void {
+    this.menus.hide();
+    this.skipTutorial();
     this.token++;
     this.synth.stopLoops();
     this.recap.hide();
@@ -332,8 +426,9 @@ export class Game {
     // HIGH STAKES: winning at your best stake unlocks the next one for this cabinet.
     let stakeText = '';
     const best = this.prefs.stakes[run.cabinet] ?? 0;
-    if (run.won && run.stake >= best && run.stake < MAX_STAKE) {
-      this.prefs.stakes[run.cabinet] = run.stake + 1;
+    const unlock = stakeUnlock(best, run);
+    if (unlock !== null) {
+      this.prefs.stakes[run.cabinet] = unlock;
       const next = STAKES[run.stake + 1];
       stakeText = `STAKE ${next.level} ${next.name} UNLOCKED FOR ${CABINETS[run.cabinet].name}: ${next.rule}`;
     }
@@ -344,6 +439,7 @@ export class Game {
   }
 
   startRun(seed?: number, cabinet: CabinetId = 'knight', stake = 0): void {
+    this.menus.hide();
     this.run = createRun(this.cfg, seed, cabinet, stake, this.prefs.act3 || this.prefs.unlockAll);
     this.token++;
     this.synth.stopLoops();
@@ -365,6 +461,7 @@ export class Game {
     if (needsChoice(this.run)) chooseEnemy(this.run, option);
     this.screens.hide();
     this.newFight(true, null, fightConfig(this.run, this.cfg), true);
+    if (this.run.depth === 0 && this.run.act === 1) this.tip('fight', 'fight');
   }
 
   private lastRecord: FightRecord | null = null;
@@ -376,6 +473,9 @@ export class Game {
     this.lastRecord = record;
     this.phase = run.over ? 'over' : 'between';
     if (run.over) {
+      this.noteDiscoveries();
+      this.recordRun(run);
+      this.skipTutorial();
       this.screens.setUnlockedNow(this.checkUnlocks(run));
       this.screens.showOver(run);
     }
@@ -392,6 +492,7 @@ export class Game {
     }
     else if (run.pendingSpoils) this.screens.showSpoils(run, run.pendingSpoils, record);
     else this.screens.showDraft(run, draftOffers(run), record);
+    if (this.screens.mode === 'draft') this.tip('draft', 'draft');
     this.syncButtons();
   }
 
@@ -405,6 +506,7 @@ export class Game {
       this.screens.showLegend(run, run.pendingLegend, record);
     } else if (run.pendingSpoils) this.screens.showSpoils(run, run.pendingSpoils, record);
     else this.screens.showDraft(run, draftOffers(run), record);
+    if (this.screens.mode === 'draft') this.tip('draft', 'draft');
     this.syncButtons();
   }
 
@@ -465,6 +567,11 @@ export class Game {
     this.newFight(false, null, fightConfig(this.run, this.cfg), true);
     this.phase = 'between';
     this.screens.showNext(this.run);
+    // The tutorial's last word, then the run is all yours.
+    if (this.tut && this.run.depth >= 1) {
+      this.coach.show(TUTORIAL.next);
+      this.tut = null;
+    }
     this.syncButtons();
   }
 
@@ -474,6 +581,8 @@ export class Game {
     if (isShopNow(this.run)) {
       this.shelf = shopOffers(this.run);
       this.screens.showShop(this.run, this.shelf);
+      this.tip('shop', 'shop');
+      this.syncButtons();
       return;
     }
     this.showNextFight();
@@ -503,9 +612,10 @@ export class Game {
       sides.map((s) => {
         const c = this.fight.sides[s];
         const sc = s === 'player' ? cfg.player : cfg.enemy;
+        const hero = s === 'player' && this.run && inRun ? this.run.cabinet : null;
         const hud = new HudView(s, c.maxHp, s === 'player', this.fight.cfg.specialCost, {
-          name: s === 'player' ? 'HERO' : sc.name,
-          portrait: sc.portrait,
+          name: s === 'player' ? (hero ? CABINETS[hero].hero : 'HERO') : sc.name,
+          portrait: hero ? heroSprite(hero) : sc.portrait,
           ability: c.ability,
           energy: c.energy,
         });
@@ -576,6 +686,10 @@ export class Game {
       this.presenting = true;
       await this.director.playTurn(result);
       if (token !== this.token) return;
+      if (this.tut && this.run?.depth === 0) {
+        if (result.events.some((e) => e.type === 'ability' && e.side === 'enemy')) this.tip('ability', 'ability');
+        else if (result.events.some((e) => e.type === 'spin' && e.side === 'player')) this.tip('spin', 'firstSpin');
+      }
       this.presenting = false;
       if (clock.skipping) {
         clock.endSkip();
@@ -657,6 +771,19 @@ export class Game {
 
   pointerDown(x: number, y: number): void {
     this.startAudio();
+    if (this.coach.active) return this.coach.advance();
+    if (this.menus.isOpen) {
+      // The SOUND toggle stays live on the main menu.
+      if (this.muteBtn.visible && this.muteBtn.contains(x, y)) {
+        this.active = this.muteBtn;
+        this.muteBtn.down();
+        return;
+      }
+      const was = this.menus.mode;
+      this.menus.pointerDown(x, y);
+      if (was !== this.menus.mode) this.syncButtons();
+      return;
+    }
     // Run screens get first pick: the tool buttons (TUNE/LOG/SOUND) sit under them (ITERATION_8 G3).
     if (this.screens.active && this.screens.pointerDown(x, y)) return;
     const b = this.buttons.find((b) => b.visible && b.contains(x, y));
@@ -673,6 +800,12 @@ export class Game {
     const b = this.active;
     this.active = null;
     b?.up(b.contains(x, y));
+    if (this.menus.isOpen) {
+      const was = this.menus.mode;
+      this.menus.pointerUp(x, y);
+      if (was !== this.menus.mode) this.syncButtons();
+      return;
+    }
     if (this.screens.active) this.screens.pointerUp(x, y);
   }
 
@@ -683,16 +816,27 @@ export class Game {
       b.hover = b.visible && b.contains(x, y);
       any ||= b.hover && b.enabled;
     }
-    if (this.screens.active) any = this.screens.pointerMove(x, y) || any;
+    if (this.menus.isOpen) any = this.menus.pointerMove(x, y) || any;
+    else if (this.screens.active) any = this.screens.pointerMove(x, y) || any;
     return any;
   }
 
   key(k: string): boolean {
     this.startAudio();
+    if (this.coach.active) {
+      if (k === ' ' || k === 'enter') this.coach.advance();
+      else if (k === 's') this.skipTutorial();
+      return true;
+    }
+    if (this.menus.isOpen && k !== 'm') {
+      const was = this.menus.mode;
+      const used = this.menus.key(k);
+      if (was !== this.menus.mode) this.syncButtons();
+      return used;
+    }
     switch (k) {
       case ' ':
-        if (this.phase === 'title') this.chooseCabinet();
-        else if (this.awaitingSpin) this.requestSpin();
+        if (this.awaitingSpin) this.requestSpin();
         else this.skip();
         return true;
       case '1':
@@ -725,7 +869,9 @@ export class Game {
     const dt = Math.min(realDt, 1 / 20);
     this.time += dt;
     this.ui.tick(dt);
-    const gdt = this.stage.clock.tick(dt);
+    this.menus.update(dt);
+    // A tutorial callout freezes the fight where it is.
+    const gdt = this.coach.active ? 0 : this.stage.clock.tick(dt);
     this.camera.update(dt);
     this.particles.update(gdt);
     this.background.update(dt);
@@ -744,6 +890,12 @@ export class Game {
     if (this.camera.dim > 0.001) {
       ctx.fillStyle = `rgba(0,0,0,${this.camera.dim})`;
       ctx.fillRect(-40, -40, W + 80, H + 80);
+    }
+    if (this.menus.isOpen) {
+      ctx.restore();
+      this.menus.draw(ctx, t);
+      if (this.muteBtn.visible) this.muteBtn.draw(ctx, t);
+      return;
     }
     this.background.drawMarquee(ctx, t);
     this.drawRelics(ctx);
@@ -770,7 +922,7 @@ export class Game {
     this.screens.draw(ctx, t);
     this.recap.draw(ctx);
     for (const b of this.recapBtns) b.draw(ctx, t);
-    if (this.phase === 'title') this.drawHint(ctx, t);
+    this.coach.draw(ctx, t);
   }
 
   private relicList() {
@@ -999,12 +1151,4 @@ export class Game {
     ctx.fill();
   }
 
-  private drawHint(ctx: CanvasRenderingContext2D, t: number): void {
-    drawText(ctx, 'PRESS START RUN', W / 2, MACHINE_TOP + MACHINE_H / 2 - 20, 2, COLORS.text, { alpha: 0.5 + 0.5 * Math.sin(t * 4) });
-    drawText(ctx, `${this.unlockedCabinets().size}/${CABINET_ORDER.length} SLOT MACHINES`, W / 2, MACHINE_TOP + MACHINE_H / 2 + 100, 2, COLORS.goldLight);
-    drawText(ctx, '12 FIGHTS, 2 BOSSES', W / 2, MACHINE_TOP + MACHINE_H / 2 + 30, 2, COLORS.textDim);
-    drawText(ctx, 'PICK A REWARD', W / 2, MACHINE_TOP + MACHINE_H / 2 + 56, 2, COLORS.textDim);
-    drawText(ctx, 'AFTER EACH WIN', W / 2, MACHINE_TOP + MACHINE_H / 2 + 76, 2, COLORS.textDim);
-    drawText(ctx, 'SPACE: SPIN/SKIP  A: AUTO  1-3: SPEED  R: NEW RUN', W / 2, H - 14, 2, COLORS.textDim);
-  }
 }

@@ -184,6 +184,8 @@ export interface RunState {
   deckMarks?: number;
   /** Bonus vouchers paid out after the last fight (the screens animate these). */
   bonusLog?: BonusPayout[];
+  /** The TUTORIAL run: its first fight is a little softer. */
+  tutorial?: boolean;
 }
 
 export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false): RunState {
@@ -453,9 +455,13 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
  * An enemy's real HP for this run. Bosses grow with the relics you bring in; the Mirror is sized to
  * you (a mirror match needs your relics to win).
  */
+/** The tutorial's first opponent has this much of its HP (you're reading callouts, not building). */
+export const TUTORIAL_OPENER_MUL = 0.75;
+
 export function enemyHp(run: RunState, e: EnemyDef): number {
   const gold = e.isBoss && run.stake >= STAKE.fasterAll ? STAKE.goldBossHp : 1;
-  return Math.round(baseEnemyHp(run, e) * gold);
+  const tutorial = run.tutorial && run.act === 1 && e.depth === 0 ? TUTORIAL_OPENER_MUL : 1;
+  return Math.round(baseEnemyHp(run, e) * gold * tutorial);
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {

@@ -1,8 +1,0 @@
-arch           F2 norm/elite     F3 norm/elite     F4 norm/elite     F5 norm/elite
-slime     1.6/11hp | 3.7/13hp2.4/12hp | 6.7/15hp4.8/14hp | 12.3/17hp6.9/15hp | 15.6/18hp
-brute     5.7/16hp | 16.2/18hp11.2/18hp | 19.7/19hp16.3/18hp | 31.4/21hp19.9/19hp | 38.4/22hp
-frost     2.3/12hp | 6.2/15hp3.7/14hp | 9.1/16hp6.1/15hp | 13.9/18hp8.0/16hp | 18.8/19hp
-thief     16.0/10hp | 31.9/12hp26.0/11hp | 44.8/14hp31.2/12hp | 55.5/14hp39.8/13hp | 65.5/14hp
-golem            -   |   -  0.9/10hp | 2.4/13hp1.6/11hp | 4.8/14hp2.5/12hp | 7.4/15hp
-gremlin          -   |   -  2.4/13hp | 6.2/15hp4.8/14hp | 11.5/17hp5.3/15hp | 13.2/18hp
-(cells: loss% / avg HP lost when you win)

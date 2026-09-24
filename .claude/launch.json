@@ -1,7 +1,37 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 5173 },
-    { "name": "playtest", "runtimeExecutable": "npm", "runtimeArgs": ["run", "serve:playtest"], "port": 4173 }
+    {
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "playtest",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "serve:playtest"
+      ],
+      "port": 4173
+    },
+    {
+      "name": "public",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--outDir",
+        "dist",
+        "--port",
+        "4174",
+        "--strictPort"
+      ],
+      "port": 4174
+    }
   ]
 }

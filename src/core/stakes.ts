@@ -62,3 +62,12 @@ export function effectiveAbility(ab: AbilityDef, o: { stake: number; act: number
 }
 
 export const stakeOf = (level: number): Stake => STAKES[Math.max(0, Math.min(MAX_STAKE, level))];
+
+/**
+ * HIGH STAKES ladder, per slot machine: only a WON run (the whole run you played, so at GREEN+ with
+ * act 3 on that means beating the Dealer) at this machine's best stake unlocks the next one.
+ * Returns the new best stake, or null if nothing unlocks.
+ */
+export function stakeUnlock(best: number, run: { won: boolean; stake: number }): number | null {
+  return run.won && run.stake >= best && run.stake < MAX_STAKE ? run.stake + 1 : null;
+}

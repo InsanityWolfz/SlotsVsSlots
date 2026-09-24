@@ -104,8 +104,8 @@ export class Background {
       ctx.fillRect(bx - 3, by - 3, 6, 6);
     });
     const wob = Math.sin(time * 3) * 1.5;
-    drawText(ctx, 'SLOT', W / 2 - 118, y + h / 2 + wob, 5, COLORS.goldLight);
-    drawText(ctx, 'VS', W / 2, y + h / 2 - wob, 4, '#ff6a5a');
-    drawText(ctx, 'SLOT', W / 2 + 118, y + h / 2 + wob, 5, COLORS.slime);
+    drawText(ctx, 'SLOTS', W / 2 - 142, y + h / 2 + wob, 4.5, COLORS.goldLight);
+    drawText(ctx, 'VS.', W / 2, y + h / 2 - wob, 4, '#ff6a5a');
+    drawText(ctx, 'SLOTS', W / 2 + 142, y + h / 2 + wob, 4.5, COLORS.slime);
   }
 }

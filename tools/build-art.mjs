@@ -3331,6 +3331,459 @@ S.wheelPointer = lit(12, 12, [
   '.....Gg.....',
 ]);
 
+// ================================================================ FRONT END: title / menu / hiscores / loading / tutorial
+/** Build one w-wide row from [x, 'chars', x, 'chars', ...] segments (' ' in a segment = leave transparent). */
+function segRow(w, ...segs) {
+  const a = Array(w).fill('.');
+  for (let i = 0; i < segs.length; i += 2) [...segs[i + 1]].forEach((c, k) => { if (c !== ' ') a[segs[i] + k] = c; });
+  return a.join('');
+}
+/** Fill-only glyph rows ('X' = ink) -> set of "x,y". */
+const glyphCells = (rows, x0, y0) => {
+  const s = new Set();
+  rows.forEach((r, dy) => [...r].forEach((c, dx) => { if (c === 'X') s.add(`${x0 + dx},${y0 + dy}`); }));
+  return s;
+};
+/** Bevelled block lettering: face lit top-left (hi/top, mid by row band, lo on bottom/right edges),
+ *  an extrusion offset (1,2) in `ext`, then its own K outline -- composited over whatever is below. */
+function blockText(g, cells, { top, hi, upper, lower, lo, ext, split }) {
+  const has = (x, y) => cells.has(`${x},${y}`);
+  const L = grid(g[0].length, g.length);
+  for (const k of cells) { const [x, y] = k.split(',').map(Number); for (const [dx, dy] of [[1, 1], [1, 2], [0, 2]]) put(L, x + dx, y + dy, ext); }
+  for (const k of cells) {
+    const [x, y] = k.split(',').map(Number);
+    const c = !has(x, y - 1) ? top : (!has(x + 1, y) || !has(x, y + 1)) ? lo : !has(x - 1, y) ? hi : y < split ? upper : lower;
+    put(L, x, y, c);
+  }
+  outline(L);
+  L.forEach((r, y) => r.forEach((c, x) => { if (c !== '.') put(g, x, y, c); }));
+}
+
+// logo (160x44): "SLOTS VS. SLOTS" marquee sign -- red lacquered casing ringed with chase bulbs (2 lit / 1 dark),
+// gold inner trim, dark panel; big gold block letters with a brown extrusion, a red "VS." between the words
+{
+  const W = 160, H = 44, g = grid(W, H);
+  // casing: rounded slab 1..158 x 1..42, 6px band, lit top-left
+  for (let y = 1; y <= 42; y++) for (let x = 1; x <= 158; x++) {
+    const cx = Math.min(x - 1, 158 - x), cy = Math.min(y - 1, 42 - y);
+    if (cx + cy < 2) continue; // rounded corners
+    const d = Math.min(cx, cy);
+    let c;
+    if (d === 0) c = (x - 1 === cx && cx <= cy) || (y - 1 === cy && cy <= cx) ? 'R' : 'd';
+    else if (d <= 4) c = 'r';
+    else if (d === 5) c = (x - 1 === cx && cx <= cy) || (y - 1 === cy && cy <= cx) ? 'g' : 'Y'; // inner gold trim, bevel reversed
+    else if (d === 6) c = 'K'; // lip
+    else c = 'P';
+    if (d === 5 && (x === 6 || x === 153) && (y === 6 || y === 37)) c = 'G';
+    put(g, x, y, c);
+  }
+  // top-left sheen along the casing
+  for (let x = 4; x <= 60; x++) if (x % 7) put(g, x, 2, 'R');
+  for (let y = 4; y <= 14; y++) put(g, 2, y, 'R');
+  // chase bulbs (2x2) around the band, walked clockwise so the on/off rhythm is continuous
+  const bulbs = [];
+  for (let x = 3; x <= 155; x += 4) bulbs.push([x, 3]);
+  for (let y = 7; y <= 35; y += 4) bulbs.push([155, y]);
+  for (let x = 155; x >= 3; x -= 4) bulbs.push([x, 39]);
+  for (let y = 35; y >= 7; y -= 4) bulbs.push([3, y]);
+  bulbs.forEach(([x, y], i) => {
+    const on = i % 3 !== 2;
+    stamp(g, x, y, on ? ['WY', 'YG'] : ['Oo', 'oo']);
+    put(g, x + 2, y + 1, 'd'); put(g, x + 1, y + 2, 'd'); // socket shadow
+  });
+  // faint panel twinkles
+  plot(g, [[12, 10, 'p'], [30, 33, 'p'], [68, 11, 'p'], [92, 33, 'p'], [150, 10, 'p'], [124, 33, 'p'], [80, 10, 'p'], [81, 9, 'p'], [79, 10, 'p'], [80, 11, 'p'], [81, 10, 'p']]);
+  plot(g, [[80, 10, 'T']]);
+  // big letters, 9x18, 3px strokes
+  const F = {
+    S: ['.XXXXXXX.', 'XXXXXXXXX', 'XXXXXXXXX', 'XXX...XXX', 'XXX......', 'XXX......', 'XXX......', 'XXXXXXXX.', 'XXXXXXXXX',
+      '.XXXXXXXX', '......XXX', '......XXX', '......XXX', '......XXX', 'XXX...XXX', 'XXXXXXXXX', 'XXXXXXXXX', '.XXXXXXX.'],
+    L: [...Array(15).fill('XXX......'), 'XXXXXXXXX', 'XXXXXXXXX', 'XXXXXXXXX'],
+    O: ['.XXXXXXX.', 'XXXXXXXXX', 'XXXXXXXXX', ...Array(12).fill('XXX...XXX'), 'XXXXXXXXX', 'XXXXXXXXX', '.XXXXXXX.'],
+    T: ['XXXXXXXXX', 'XXXXXXXXX', 'XXXXXXXXX', ...Array(15).fill('...XXX...')],
+  };
+  const big = new Set();
+  const word = (x0) => [...'SLOTS'].forEach((ch, i) => glyphCells(F[ch], x0 + i * 11, 12).forEach((k) => big.add(k)));
+  word(11); word(97);
+  blockText(g, big, { top: 'W', hi: 'Y', upper: 'Y', lower: 'G', lo: 'g', ext: 'b', split: 21 });
+  // "VS." 7x12 in red
+  const V = ['XX...XX', 'XX...XX', 'XX...XX', 'XX...XX', 'XX...XX', 'XXX.XXX', '.XX.XX.', '.XXXXX.', '.XXXXX.', '..XXX..', '..XXX..', '...X...'];
+  const s7 = ['.XXXXX.', 'XXXXXXX', 'XX...XX', 'XX.....', 'XX.....', 'XXXXXX.', '.XXXXXX', '.....XX', '.....XX', 'XX...XX', 'XXXXXXX', '.XXXXX.'];
+  const vs = new Set([...glyphCells(V, 71, 15), ...glyphCells(s7, 80, 15), ...glyphCells(['XXX', 'XXX', 'XXX'], 89, 24)]);
+  blockText(g, vs, { top: 'M', hi: 'R', upper: 'R', lower: 'R', lo: 'r', ext: 'd', split: 99 });
+  plot(g, [[71, 15, 'W'], [81, 15, 'W'], [89, 24, 'W']]);
+  S.logo = toRows(outline(g));
+}
+
+// menuBackdrop (64x40): heap of gold coins flanked by chip stacks, two dice tumbling in front
+{
+  const g = grid(64, 40);
+  /** Side-on chip stack: elliptical top face, 3px chips (2 striped rows + dark seam), lit from the left. */
+  const chipStack = (x0, yTop, n, [hi, mid, lo], stripe = 'W') => {
+    const w = 12, yBody = yTop + 2, yEnd = yBody + n * 3 - 1;
+    for (let y = yBody; y <= yEnd; y++) for (let x = x0; x < x0 + w; x++) {
+      const v = (y - yBody) % 3, u = x - x0;
+      let c = v === 2 ? lo : u === 0 ? hi : u === w - 1 ? lo : (u % 4 === 1) ? stripe : mid;
+      if (v === 2 && u === 0) c = mid;
+      put(g, x, y, c);
+    }
+    // top face
+    stamp(g, x0, yTop, [' ' + hi.repeat(10) + ' ', hi + hi + stripe + mid.repeat(3) + stripe + mid.repeat(3) + lo]);
+    stamp(g, x0 + 4, yTop + 1, [hi === 'W' ? 'SS' : 'WW']); // centre inlay gloss
+    for (let x = x0; x < x0 + w; x++) put(g, x, yTop + 2, x === x0 ? hi : lo); // rim of the top chip
+  };
+  chipStack(2, 17, 6, ['M', 'R', 'r']);          // red, back left
+  chipStack(11, 23, 4, ['A', 'U', 'N']);         // blue, front left
+  chipStack(50, 11, 8, ['l', 'k', 'K'], 'T');   // black high-roller stack, back right
+  chipStack(41, 22, 5, ['E', 'e', 'Q']);         // green, front right
+  // coin heap in the middle, spilling
+  layer(g, (h) => { coinHeap(h, 31, 37, 17, 15); });
+  flatCoin(g, 6, 36); flatCoin(g, 52, 37); flatCoin(g, 23, 37);
+  // dice: red die (showing 3) front-left, white die (showing 5) front-right
+  layer(g, (h) => stamp(h, 14, 30, [
+    'MMMMMMMR',
+    'MWRRRRRr',
+    'MRRRRRRr',
+    'MRRWRRRr',
+    'MRRRRRRr',
+    'MRRRRRWr',
+    'rrrrrrrd',
+  ]));
+  layer(g, (h) => stamp(h, 40, 30, [
+    'WWWWWWWL',
+    'WLLLLLLS',
+    'WLKLLKLS',
+    'WLLKLLLS',
+    'WLKLLKLS',
+    'LSSSSSSD',
+    ' DDDDDD ',
+  ]));
+  S.menuBackdrop = toRows(outline(g));
+}
+
+// ---------------------------------------------------------------- menu icons (16x16)
+// iconNewRun: slot lever mid-pull -- red gloss ball, steel shaft, gold pivot hub, motion ticks
+S.iconNewRun = lit(16, 16, [
+  '................',
+  '...MMR..........',
+  '..MWRRr...Y.....',
+  '..MRRRr....Y....',
+  '..RRRrr.....Y...',
+  '...rrLS.........',
+  '......LS........',
+  '.......LS.......',
+  '........LS......',
+  '.........LS.....',
+  '.........YGGg...',
+  '........YWYGGg..',
+  '........YYGGGg..',
+  '......SSSGGggDD.',
+  '......LLLLLLLSD.',
+  '......DDDDDDDDD.',
+]);
+// iconTutorial: open book, lined left page, big red "?" on the right page, blue cover
+S.iconTutorial = lit(16, 16, [
+  '................',
+  '................',
+  '................',
+  '..WTTT....TTTI..',
+  '.WTTTTTg.TRRRTI.',
+  '.TtttTTgTRRTRRI.',
+  '.TTTTTTgTTTTRRI.',
+  '.TtttTTgTTTRRTI.',
+  '.TTTTTTgTTTRRTI.',
+  '.TttTTTgTTTTTTI.',
+  '.TTTTTTgTTTRRTI.',
+  '.TtttTTgTTTRRTI.',
+  'AUUUUUUgUUUUUUUN',
+  '.NNNNNNgNNNNNNN.',
+  '................',
+]);
+// iconCollection: violet card binder, gold rings on the spine, a card slotted in the window and one peeking out
+S.iconCollection = lit(16, 16, [
+  '................',
+  '.......TTTT.....',
+  '.......TRRt.....',
+  '...JJJJTTTtVV...',
+  '..YvJJJJJJJVVv..',
+  '..GvJJVVVVVVVv..',
+  '...vJTTTTTTVVv..',
+  '...vJTWTTTtVVv..',
+  '..YvJTTYYTtVVv..',
+  '..GvVTYWYGtVVv..',
+  '...vVTTGgTtVVv..',
+  '...vVTttttt Vv..',
+  '..YvVVVVVVVVVv..',
+  '..GvVVVVVVVVvv..',
+  '...vvvvvvvvvvv..',
+  '................',
+]);
+// iconHiscores: gold trophy cup, loop handles, wooden plinth with a gold plate
+S.iconHiscores = lit(16, 16, [
+  '................',
+  '...WYYYYYYYYg...',
+  '.GGYWWYYYYGGgGg.',
+  'G..YWYYYYYGGg..g',
+  'G..YWYYYYYGGg..g',
+  '.G.YYYYYYGGGg.g.',
+  '..GGYYYYYGGggg..',
+  '....YYYYGGgg....',
+  '.....YYGGgg.....',
+  '......YGg.......',
+  '......YGg.......',
+  '.....YYGGg......',
+  '...wwwwwwwwB....',
+  '...BBYYYGgBb....',
+  '...bbbbbbbbb....',
+  '................',
+]);
+
+// mysterySlot (16x16): dim grey card silhouette with a big "?" -- locked collection entry, deliberately low contrast
+{
+  const g = grid(16, 16);
+  for (let y = 1; y <= 14; y++) for (let x = 2; x <= 13; x++) {
+    if ((x === 2 || x === 13) && (y === 1 || y === 14)) continue;
+    put(g, x, y, (x === 2 || y === 1) ? 'H' : (x === 13 || y === 14) ? 'h' : 'D');
+  }
+  const q = ['.XXXX.', 'XXXXXX', 'XX..XX', '....XX', '...XXX', '..XXX.', '..XX..', '......', '..XX..', '..XX..'];
+  q.forEach((r, dy) => [...r].forEach((c, dx) => { if (c === 'X') { put(g, 5 + dx + 1, 3 + dy + 1, 'h'); } }));
+  q.forEach((r, dy) => [...r].forEach((c, dx) => { if (c === 'X') put(g, 5 + dx, 3 + dy, dy === 0 || dx === 0 ? 'H' : 'S'); }));
+  S.mysterySlot = toRows(outline(g));
+}
+
+// ---------------------------------------------------------------- hiscore markers (12x12)
+S.hsSkull = lit(12, 12, [
+  '............',
+  '...WWTTTt...',
+  '..WTTTTTTt..',
+  '.WTTTTTTTTt.',
+  '.TKKKTTKKKt.',
+  '.TKrKTTKrKt.',
+  '.TTTTKKTTtt.',
+  '..tTTTTTtt..',
+  '...TKTKTt...',
+  '...tTtTtt...',
+]);
+S.trophySmall = lit(12, 12, [
+  '............',
+  '...WYYYYg...',
+  '.GGYWYYGGgg.',
+  '.G.YWYYGGg.g',
+  '..GYYYYGgg..',
+  '...YYYGgg...',
+  '....YGg.....',
+  '....YGg.....',
+  '...YYGGg....',
+  '..wwwwwwB...',
+  '..bbbbbbb...',
+]);
+
+// ---------------------------------------------------------------- loading-screen coin spin (16x16 x4)
+// ellipse with horizontal radius rx; raised rim lit top-left, diamond pip stamped in the face (squashes with rx);
+// the narrow frames show a sliver of the reeded edge on the trailing side (side = +1 right / -1 left)
+function coinSpin(rx, side) {
+  const g = grid(16, 16);
+  const cy = 7.5, ry = 6.6, cx = 7.5 - side * (rx < 6 ? 1 : 0);
+  const star = ['..X..', '.XXX.', 'XXXXX', '.XXX.', '..X..']; // diamond pip
+  // edge sliver first (behind the face)
+  if (side) for (let y = 1; y <= 14; y++) {
+    const e = Math.sqrt(Math.max(0, 1 - ((y - cy) / ry) ** 2));
+    if (e < 0.3) continue;
+    const xs = Math.round(cx + side * rx * e);
+    for (let k = 1; k <= 2; k++) put(g, xs + side * k, y, y % 2 ? 'g' : 'G');
+  }
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const u = (x - cx) / Math.max(rx, 0.5), v = (y - cy) / ry, nd = Math.hypot(u, v);
+    if (nd > 1.05) continue;
+    let c;
+    if (nd > 0.78) c = (u + v < -0.45) ? 'Y' : (u + v > 0.45) ? 'g' : 'G';
+    else if (nd > 0.64 && rx >= 3) c = (u + v < -0.3) ? 'g' : 'G';
+    else {
+      c = 'Y';
+      const si = Math.floor((u + 0.4) / 0.8 * 5), sj = Math.floor((v + 0.4) / 0.8 * 5);
+      if (si >= 0 && si < 5 && sj >= 0 && sj < 5 && star[sj][si] === 'X') c = rx >= 3 ? 'G' : 'Y';
+      else if (u < -0.25 && v < -0.25 && u + v > -1.0 && rx >= 3) c = 'W';
+    }
+    put(g, x, y, c);
+  }
+  return toRows(outline(g));
+}
+S.coinSpin0 = coinSpin(6.6, 0);
+S.coinSpin1 = coinSpin(4, 1);
+S.coinSpin2 = lit(16, 16, [
+  '................',
+  '.......Yg.......',
+  '......YWGg......',
+  '......YGYg......',
+  '......YYGg......',
+  '......YGYg......',
+  '......WYGg......',
+  '......YGYg......',
+  '......YYGg......',
+  '......YGYg......',
+  '......YYGg......',
+  '......YGYg......',
+  '......YYGg......',
+  '......YGgg......',
+  '.......gg.......',
+  '................',
+]);
+S.coinSpin3 = coinSpin(4, -1);
+
+// tutorialPointer (12x12): chunky white arrow pointing DOWN, warm yellow bevel
+S.tutorialPointer = lit(12, 12, [
+  '............',
+  '....WWTY....',
+  '....WTTY....',
+  '....WTTY....',
+  '....WTTG....',
+  '.WWWWTTYYYG.',
+  '..WTTTTTYG..',
+  '...WTTTYG...',
+  '....WTYG....',
+  '.....YG.....',
+]);
+
+// ================================================================ HERO PORTRAITS (24x24), facing RIGHT
+// heroKnight: great helm with a slit visor and brass breaths, blue plume streaming back, steel pauldrons, blue tabard
+S.heroKnight = lit(24, 24, [
+  segRow(24),
+  segRow(24, 13, 'AA'),
+  segRow(24, 10, 'AAAUUA'),
+  segRow(24, 7, 'AAAUUUUN'),
+  segRow(24, 5, 'AAUUUN', 11, 'LWWLLS'),
+  segRow(24, 3, 'AUUUNN', 9, 'LLWLLLLLSS'),
+  segRow(24, 2, 'AUUNN', 8, 'LLLLLLLLLSSD'),
+  segRow(24, 2, 'UUNN', 8, 'LLLLLLLLWSSDD'),
+  segRow(24, 2, 'NN', 8, 'LLLLLLLLWSSDD'),
+  segRow(24, 8, 'LLLSWWWWWWWLS'),
+  segRow(24, 8, 'LLSSKKKKKKAKK'),
+  segRow(24, 8, 'LLSSSLLLLWSSD'),
+  segRow(24, 8, 'LLSSSLLLLWSGD'),
+  segRow(24, 8, 'LSSSSLLLLWSSD'),
+  segRow(24, 8, 'LSSSSLLLLWSGD'),
+  segRow(24, 8, 'SSSSSSSSSSSDD'),
+  segRow(24, 8, 'SSSDDSSSSSSDD'),
+  segRow(24, 9, 'DDDDDDDDDDD'),
+  segRow(24, 10, 'SLLSSSSSD'),
+  segRow(24, 1, 'WLLLLLLS', 9, 'DSSSSSSSD', 18, 'WLLLS'),
+  segRow(24, 0, 'LLLLLLLSD', 9, 'GYYYYYYYg', 18, 'LLLSSD'),
+  segRow(24, 0, 'LLLLLSSSD', 9, 'UUUUYUUUN', 18, 'LLSSDD'),
+  segRow(24, 0, 'LSSSSSSDD', 9, 'UUUYGgUUN', 18, 'SSSDDD'),
+  segRow(24, 0, 'SSSSSDDDD', 9, 'AUUUgUUNN', 18, 'SSDDDD'),
+]);
+// heroMidas: smug gold-bearded king -- jewelled crown, heavy-lidded eye, curled moustache, ermine collar on a red robe
+S.heroMidas = lit(24, 24, [
+  segRow(24),
+  segRow(24, 7, 'Y', 12, 'W', 17, 'Y'),
+  segRow(24, 7, 'YY', 11, 'YWY', 16, 'Gg'),
+  segRow(24, 7, 'YYG', 11, 'YRG', 15, 'YGg'),
+  segRow(24, 7, 'YYYGYYYGYGg'),
+  segRow(24, 7, 'WYRYYAYYRGg'),
+  segRow(24, 6, 'gGGGGGGGGGGg'),
+  segRow(24, 5, 'gGYY', 9, 'FFFFFFFFf'),
+  segRow(24, 5, 'gGYG', 9, 'FFFFFGGGg'),
+  segRow(24, 5, 'gGGY', 9, 'FFFFfffKf'),
+  segRow(24, 5, 'gGYG', 9, 'FFfFFfWKF'),
+  segRow(24, 5, 'gGGG', 9, 'FFffFFFFFF'),
+  segRow(24, 5, 'gGYG', 9, 'FfFFFFMFFf', 19, 'Y'),
+  segRow(24, 5, 'gGG', 8, 'YGFFFFYYYYGg'),
+  segRow(24, 6, 'gG', 8, 'YYGFFFGGrrKg'),
+  segRow(24, 7, 'gYYYGGYYYGGg'),
+  segRow(24, 8, 'gYYGYYGYGGg'),
+  segRow(24, 4, 'TWTT', 9, 'gYGYYGGGg', 18, 'TTt'),
+  segRow(24, 2, 'TWKTTT', 10, 'gYGGGgg', 17, 'TKTTt'),
+  segRow(24, 1, 'RTTTKTTR', 11, 'gGGg', 16, 'RTTKTtR'),
+  segRow(24, 0, 'RRRRRRRRRR', 12, 'gg', 15, 'RRRRRRRRr'),
+  segRow(24, 0, 'MRRRRRRRRRRRRRRRRRRRRRrr'),
+  segRow(24, 0, 'RRRRRRRRRYRRRRRRYRRRRrrr'),
+  segRow(24, 0, 'RRRRRRRRRGRRRRRRGRRRrrrr'),
+]);
+// heroThorn: briar ranger -- deep green hood peaked back, a thorned vine wound round it (with a rose),
+// shadowed face with one lime eye glaring right, leaf-mail shoulders
+S.heroThorn = lit(24, 24, [
+  segRow(24),
+  segRow(24, 3, 'w'),
+  segRow(24, 3, 'Qw', 9, 'QQQQQ'),
+  segRow(24, 3, 'QQQ', 7, 'QEQQQQQQq'),
+  segRow(24, 4, 'QQQQEQQQQQQQq', 18, 'w'),
+  segRow(24, 3, 'wQQEQQQQQQQQQqq'),
+  segRow(24, 4, 'QQeeQQQQQQQQQqw'),
+  segRow(24, 4, 'QQQQeeQQqqqqqqq'),
+  segRow(24, 3, 'wQQQQMMeeqqqqqqq'),
+  segRow(24, 4, 'QQQMWMqeefffffq'),
+  segRow(24, 4, 'QQQmMmqffFFFFffq'),
+  segRow(24, 4, 'QQQQQqfFFFFWKFfq'),
+  segRow(24, 3, 'wQQQQqfFFFFFFFFFF'),
+  segRow(24, 4, 'QQQQqfFFFFFFFFFq'),
+  segRow(24, 4, 'QQQQqfFFFFFfFFfq'),
+  segRow(24, 4, 'QeQQqfFFFFKKKffq'),
+  segRow(24, 3, 'wQeQQqqfFFFFffqq', 19, 'w'),
+  segRow(24, 4, 'QQeQQqqffffqqQe'),
+  segRow(24, 3, 'QQQQeeQQqqqqQQeeQ'),
+  segRow(24, 1, 'EEQQQQQQeeQQQQeeQQQQe'),
+  segRow(24, 0, 'EeeEEeQQQQwQQQeeQQeQQQq'),
+  segRow(24, 0, 'eQQeeQQQQQBwQQQQQeeQQqqq'),
+  segRow(24, 0, 'QQQQQQQQeQQBwQQQQQQQQqqq'),
+  segRow(24, 0, 'QQQQQeQQQQQQBwQQQQqqqqqq'),
+]);
+// heroTesla: mad scientist -- wild white hair bursting back, brass goggles with a big cyan lens facing right,
+// manic toothy grin, sparks crackling in the hair, lab coat with an orange collar
+S.heroTesla = lit(24, 24, [
+  segRow(24, 5, 'Y', 12, 'W'),
+  segRow(24, 1, 'W', 6, 'Y', 9, 'W', 12, 'LW', 17, 'Y'),
+  segRow(24, 2, 'WL', 7, 'WWLWLLW', 16, 'W'),
+  segRow(24, 0, 'Y', 2, 'LWWLWLLLWLLLLWL'),
+  segRow(24, 1, 'WLLLSLLLLLLSLLSL'),
+  segRow(24, 0, 'WLLSLLSSLLFFFFSL'),
+  segRow(24, 2, 'LSLLSSFFFFFFFf'),
+  segRow(24, 1, 'WLSSLSFFFFFFFFFf'),
+  segRow(24, 2, 'LSLLS', 7, 'gGGGGGGGgGGg'),
+  segRow(24, 3, 'SLLS', 7, 'GFFFgGCCWCg'),
+  segRow(24, 2, 'YLSS', 7, 'FFFFGCWCCcG'),
+  segRow(24, 3, 'LSS', 7, 'FFFFGCCCccG'),
+  segRow(24, 3, 'SS', 6, 'FFFFFFgGccGg', 18, 'Ff'),
+  segRow(24, 5, 'fFFFFFFFgggFFf'),
+  segRow(24, 6, 'fFFFFFFFFFFFf'),
+  segRow(24, 6, 'fFFFFKKKKKKKf'),
+  segRow(24, 7, 'fFFFKTWTWTKf'),
+  segRow(24, 7, 'fFFFFKKKKKf'),
+  segRow(24, 8, 'ffFFFFFFf'),
+  segRow(24, 3, 'WLLL', 9, 'ffffff', 15, 'LLLS'),
+  segRow(24, 1, 'WLLLLLO', 9, 'OOOOOO', 15, 'OLLLSSD'),
+  segRow(24, 0, 'WLLLLLLLOo', 10, 'TT', 12, 'Oo', 14, 'oOLLSSSD'),
+  segRow(24, 0, 'LLLLLLLLLS', 10, 'TTCC', 14, 'SLLLLSSDD'),
+  segRow(24, 0, 'LLLLLLLLLSS', 11, 'TCc', 14, 'SLLLSSSDD'),
+]);
+// heroJoker: jester -- two-tone cap (violet / pink) flopping back with gold bells, pale face, pink diamond
+// on the cheek, narrowed eye and a sly lopsided grin, pointed ruff collar
+S.heroJoker = lit(24, 24, [
+  segRow(24, 1, 'YY'),
+  segRow(24, 0, 'YWYG', 13, 'YY'),
+  segRow(24, 0, 'GYGg', 5, 'VV', 12, 'YWYG'),
+  segRow(24, 1, 'gg', 3, 'JVVVV', 10, 'MMGYGg'),
+  segRow(24, 3, 'JJVVVVV', 10, 'MMMgg'),
+  segRow(24, 4, 'JVVVVVVMMMMMm'),
+  segRow(24, 4, 'VVVVVVvMMMMMMm'),
+  segRow(24, 3, 'JVVVVVvMMMMMMMmm'),
+  segRow(24, 3, 'YYYGGGGYYYYGGGGgg'),
+  segRow(24, 4, 'VVVV', 8, 'TTTTTTTTTu'),
+  segRow(24, 4, 'VVVv', 8, 'TTTTTTKKKT'),
+  segRow(24, 4, 'VVv', 7, 'TTTTTTTTuKT'),
+  segRow(24, 5, 'Vv', 7, 'TuTTTTMTTTTT'),
+  segRow(24, 5, 'Vv', 7, 'TTTTTMMMTTuu'),
+  segRow(24, 6, 'v', 7, 'TTTTTTMTTTu'),
+  segRow(24, 7, 'uTTTTTTTKK'),
+  segRow(24, 7, 'uTTTKKKKRK'),
+  segRow(24, 8, 'uTTTTTTTu'),
+  segRow(24, 9, 'uuuuuu'),
+  segRow(24, 2, 'M', 5, 'VVVMMM', 11, 'VVVMMM', 18, 'V'),
+  segRow(24, 1, 'MMmVVVVvMMMmVVVvMMMmVV'),
+  segRow(24, 0, 'JVVVVvMMMmmVVVvvMMMmmVVv'),
+  segRow(24, 0, 'VVVVvvMMMMmVVVVvMMMmmVvv'),
+  segRow(24, 0, 'VVVvvvMMMmmVVVvvMMmmmvvv'),
+]);
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -3371,6 +3824,10 @@ const DIMS = {
   confiscatedOverlay: 16, actPlaque3: { w: 24, h: 12 },
   bonusSym: 16, relicSym: 16, voucherBonus: { w: 24, h: 16 }, voucherRelic: { w: 24, h: 16 },
   rushEmpty: 16, rushJunk: 16, tierCommon: 12, tierUncommon: 12, tierLegendary: 12, wheelPointer: 12,
+  logo: { w: 160, h: 44 }, menuBackdrop: { w: 64, h: 40 },
+  iconNewRun: 16, iconTutorial: 16, iconCollection: 16, iconHiscores: 16, mysterySlot: 16,
+  hsSkull: 12, trophySmall: 12, coinSpin0: 16, coinSpin1: 16, coinSpin2: 16, coinSpin3: 16, tutorialPointer: 12,
+  heroKnight: 24, heroMidas: 24, heroThorn: 24, heroTesla: 24, heroJoker: 24,
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -3477,7 +3934,16 @@ export type SpriteId =
   | 'voucherBonus' | 'voucherRelic'               // prize voucher ticket stubs, 24x16 (non-square)
   | 'rushEmpty' | 'rushJunk'                      // RELIC RUSH grid cells, 16x16
   | 'tierCommon' | 'tierUncommon' | 'tierLegendary' // relic tier gem badges, 12x12
-  | 'wheelPointer';                               // prize wheel pointer, 12x12
+  | 'wheelPointer'                                // prize wheel pointer, 12x12
+  | 'logo'                                        // title marquee 'SLOTS VS. SLOTS', 160x44 (non-square)
+  | 'menuBackdrop'                                // chips / coins / dice pile under the menu, 64x40 (non-square)
+  | 'iconNewRun' | 'iconTutorial' | 'iconCollection' | 'iconHiscores' // main-menu button icons, 16x16
+  | 'mysterySlot'                                 // locked collection entry, 16x16
+  | 'hsSkull' | 'trophySmall'                     // hiscore killed-by / victory markers, 12x12
+  | 'coinSpin0' | 'coinSpin1' | 'coinSpin2' | 'coinSpin3' // loading-screen coin spin frames, 16x16
+  | 'tutorialPointer'                             // tutorial callout arrow, points DOWN, 12x12
+  | 'heroKnight' | 'heroMidas' | 'heroThorn'      // player hero portraits (face RIGHT), 24x24
+  | 'heroTesla' | 'heroJoker';
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

@@ -4,6 +4,9 @@ import { W, H } from './layout';
  * One shared screen-juice system (juice §5): trauma shake + punch-zoom + white flash +
  * chroma pulse + background dim. Runs on real time so it keeps shaking through hitstop.
  */
+/** Max opacity of a full-screen flash (photosensitivity safety). */
+export const FLASH_CAP = 0.2;
+
 export class Camera {
   trauma = 0;
   private decay = 2;
@@ -42,7 +45,8 @@ export class Camera {
 
   flashScreen(alpha: number, color = '#ffffff'): void {
     if (!this.enabled.flash) return;
-    this.flash = Math.max(this.flash, alpha);
+    // Photosensitivity: a full-screen flash is only ever a soft tint.
+    this.flash = Math.max(this.flash, Math.min(FLASH_CAP, alpha));
     this.flashColor = color;
   }
 

@@ -49,7 +49,7 @@ export function installDebug(game: Game): void {
         await new Promise((r) => setTimeout(r, 0));
       }
     },
-    /** Render the current frame offscreen and POST it to playtest/scratch/snap-server.mjs (:5199). */
+    /** Render the current frame offscreen and POST it to tools/snap-server.mjs (:5199). */
     async snap(name = 'snap', scale = 0.75): Promise<string> {
       const c = document.createElement('canvas');
       c.width = Math.round(1280 * scale);
