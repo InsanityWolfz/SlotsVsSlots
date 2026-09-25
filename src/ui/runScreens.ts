@@ -148,8 +148,7 @@ export class RunScreens {
   private stakes: Partial<Record<CabinetId, number>> = {};
   private stakeSel = 0;
   private stakeUnlockedNow = '';
-  /** ACT 3 unlocked, and the slot machines that have beaten the Dealer (TRUE ENDING). */
-  private act3 = false;
+  /** The slot machines that have beaten the Dealer (TRUE ENDING). */
   private dealerBeaten: CabinetId[] = [];
 
   constructor(
@@ -173,9 +172,8 @@ export class RunScreens {
   ) {}
 
   /** Pick your starting machine (pre-run). Locked cabinets show how to unlock them. */
-  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0, act3 = false, dealerBeaten: CabinetId[] = []): void {
+  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0, _act3 = false, dealerBeaten: CabinetId[] = []): void {
     this.cabinetUnlocked = unlocked;
-    this.act3 = act3;
     this.dealerBeaten = dealerBeaten;
     this.stakes = stakes;
     this.run = null;
@@ -677,19 +675,20 @@ export class RunScreens {
 
   private drawStrips(ctx: CanvasRenderingContext2D, x: number, y: number, strips: StripCounts[]): void {
     drawText(ctx, 'YOUR REELS', x, y, 2, COLORS.textDim, { align: 'left' });
+    // Laid out like the machine: reels 1 2 3 left to right, each reel's symbols down its column.
+    const rows = SYMBOLS.filter((sym) => !(sym === 'rock' || sym === 'wild') || strips.some((s) => (s[sym] ?? 0) > 0));
+    const colW = 76;
     strips.forEach((s, r) => {
-      const ry = y + 26 + r * 30;
-      drawText(ctx, `${r + 1}`, x, ry, 2, COLORS.textDim, { align: 'left' });
-      let cx = x + 28;
-      for (const sym of SYMBOLS) {
+      const cx = x + 20 + r * colW;
+      drawText(ctx, `${r + 1}`, cx + 10, y + 20, 2, COLORS.goldLight);
+      rows.forEach((sym, k) => {
         const n = s[sym] ?? 0;
-        if (!n && (sym === 'rock' || sym === 'wild')) continue;
-        drawSprite(ctx, sym as SpriteId, cx, ry, 1.5, { alpha: n ? 1 : 0.3 });
+        const ry = y + 40 + k * 19;
+        drawSprite(ctx, sym as SpriteId, cx, ry, 1.2, { alpha: n ? 1 : 0.3 });
         const gild = this.run?.player.gilded.find((g) => g.reel === r && g.symbol === sym);
-        if (gild && n) drawSprite(ctx, ENH_SPRITE[gild.enh], cx, ry, 1.5);
-        drawText(ctx, `${n}`, cx + 20, ry, 2, gild ? '#ffd23f' : n ? COLORS.text : '#4a4058', { align: 'left' });
-        cx += 56;
-      }
+        if (gild && n) drawSprite(ctx, ENH_SPRITE[gild.enh], cx, ry, 1.2);
+        drawText(ctx, `${n}`, cx + 16, ry, 2, gild ? '#ffd23f' : n ? COLORS.text : '#4a4058', { align: 'left' });
+      });
     });
   }
 
@@ -775,9 +774,9 @@ export class RunScreens {
     const reelMarker = (reel: number) => {
       for (let r = 0; r < 3; r++) {
         ctx.fillStyle = r === reel ? accent : '#3a2e52';
-        ctx.fillRect(-w / 2 + 16, iy - 22 + r * 16, 18, 12);
+        ctx.fillRect(-w / 2 + 12 + r * 11, iy - 20, 8, 36);
       }
-      drawText(ctx, `REEL ${reel + 1}`, -w / 2 + 25, iy + 34, 1, COLORS.textDim);
+      drawText(ctx, `REEL ${reel + 1}`, -w / 2 + 27, iy + 30, 1, COLORS.textDim);
     };
     if (o.kind === 'relic') {
       drawSprite(ctx, RELICS[o.relic].sprite as SpriteId, 0, iy, 4);
@@ -1036,8 +1035,7 @@ export class RunScreens {
     if (!rules.length) drawText(ctx, 'THE BASE GAME.', W / 2 - 226, 636, 1.5, COLORS.text, { align: 'left' });
     // Its own row, below the rules (QA_1 B4).
     const act3Y = 634 + Math.max(1, rules.length) * 13 + 4;
-    if (s.level >= STAKE.act3 && this.act3) drawText(ctx, '+ ACT 3: THE DEALER (16 FIGHTS)', W / 2 - 226, act3Y, 1.25, '#7dff7a', { align: 'left' });
-    else if (s.level >= STAKE.act3) drawText(ctx, 'WIN AT GREEN+ TO FIND OUT WHO DEALS', W / 2 - 226, act3Y, 1.25, COLORS.textDim, { align: 'left' });
+    if (s.level >= STAKE.act3) drawText(ctx, '+ ACT 3: THE DEALER (16 FIGHTS)', W / 2 - 226, act3Y, 1.25, '#7dff7a', { align: 'left' });
     rules.forEach((r, k) => {
       const yy = 634 + k * 13;
       ctx.fillStyle = r.color;
@@ -1164,8 +1162,9 @@ export class RunScreens {
       drawSprite(ctx, 'minusBadge', 28, iy + 20, 3);
     } else drawSprite(ctx, 'heart', 0, iy, 4.5);
     drawText(ctx, title, 0, 22, title.length > 10 ? 2 : 3, o.kind === 'gild' ? '#ffd23f' : o.kind === 'relic' ? '#c9a0ff' : COLORS.text);
-    const lines = wrap(text, 16).slice(0, 3);
-    lines.forEach((line, k) => drawText(ctx, line, 0, 46 + k * 17, 2, COLORS.text));
+    const long = wrap(text, 16).length > 3;
+    const lines = long ? wrap(text, 21).slice(0, 5) : wrap(text, 16);
+    lines.forEach((line, k) => drawText(ctx, line, 0, 44 + k * (long ? 13 : 17), long ? 1.5 : 2, COLORS.text));
     if (this.run && completesSet(this.run, o)) this.setTag(ctx, -h.w / 2 + 6, -h.h / 2 + 6, time);
     if (this.run && o.kind === 'gild') this.setPips(ctx, h.w / 2 - 12, -h.h / 2 + 14, o.enh);
     if (o.kind === 'relic' && LEGENDARY.has(o.relic)) this.legendTag(ctx, 0, -h.h / 2 + 14, time);
@@ -1274,7 +1273,7 @@ export class RunScreens {
       else if (!r.won) drawText(ctx, 'DEFEATED', 790, y, 2, COLORS.danger, { align: 'left' });
       if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCKS`, 640, y + 12, 1, '#c9bba8');
     });
-    this.panel(ctx, 110, 480, 1060, 120);
+    this.panel(ctx, 110, 480, 1060, 134);
     this.drawStrips(ctx, 130, 496, run.player.strips);
     this.drawRelics(ctx, 620, 496);
     for (const b of this.buttons) this.drawButton(ctx, b, 0);

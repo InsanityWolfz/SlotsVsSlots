@@ -19,9 +19,9 @@ function fight(mut: (c: GameConfig) => void, seed = 7): Fight {
 const dealerCfg = (c: GameConfig) => (c.enemy = { hp: 100, strips: reels3({ shield: 12 }), ability: { kind: 'deal', every: 1, power: 0 }, boss: 'dealer' });
 
 describe('ACT 3: the run', () => {
-  it('act 3 needs the unlock AND GREEN stake; it has 3 fights, a fork in the middle, and the Dealer', () => {
+  it('act 3 comes with GREEN stake and up; it has 3 fights, a fork in the middle, and the Dealer', () => {
     expect(runActs(createRun(base, 1, 'knight', 1, true))).toBe(2);
-    expect(runActs(createRun(base, 1, 'knight', STAKE.act3, false))).toBe(2);
+    expect(runActs(createRun(base, 1, 'knight', STAKE.act3, false))).toBe(3);
     const run = createRun(base, 1, 'knight', STAKE.act3, true);
     expect(runActs(run)).toBe(3);
     expect(totalFights(run)).toBe(16);

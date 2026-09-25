@@ -2,7 +2,7 @@ import { Sounds } from './audio/sounds';
 import { Synth } from './audio/synth';
 import { mergeConfig, type GameConfig, type SideId } from './core/config';
 import { actLength, RUN_FIGHTS } from './core/enemies';
-import { MAX_STAKE, STAKE, STAKES, stakeUnlock } from './core/stakes';
+import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { Fight } from './core/fight';
 import { turnRow, type TurnRow } from './core/log';
 import { REFLECT_MIN, RELICS } from './core/relics';
@@ -408,14 +408,9 @@ export class Game {
       }
     }
     // Winning at GREEN or higher opens THE DEALER (act 3) for GREEN+ runs.
-    const dealerNow = run.won && run.stake >= STAKE.act3 && !this.prefs.act3;
     // TRUE ENDING: this slot machine beat the Dealer.
     if (run.won && run.act >= 3 && !this.prefs.dealerBeaten.includes(run.cabinet)) {
       this.prefs.dealerBeaten.push(run.cabinet);
-      this.savePrefs();
-    }
-    if (dealerNow) {
-      this.prefs.act3 = true;
       this.savePrefs();
     }
     // HIGH STAKES: winning at your best stake unlocks the next one for this cabinet.
@@ -427,7 +422,6 @@ export class Game {
       const next = STAKES[run.stake + 1];
       stakeText = `STAKE ${next.level} ${next.name} UNLOCKED FOR ${CABINETS[run.cabinet].name}: ${next.rule}`;
     }
-    if (dealerNow) stakeText = (stakeText ? `${stakeText}. ` : '') + 'ACT 3 UNLOCKED: FROM NOW ON, GREEN+ RUNS FACE THE DEALER';
     this.screens.setStakeUnlockedNow(stakeText);
     if (got.length || stakeText) this.savePrefs();
     return got;

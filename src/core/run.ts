@@ -301,7 +301,8 @@ export function payVoucher(run: RunState, v: { kind: 'wheel' | 'rush'; seed: num
 const DECK_MARKS_CAP = 6;
 
 /** Acts in this run: GREEN stake and up adds act 3 (THE DEALER). */
-export const runActs = (run: RunState) => (run.act3 && run.stake >= STAKE.act3 ? 3 : ACTS);
+/** GREEN and up always go on to ACT 3 (the Dealer). */
+export const runActs = (run: RunState) => (run.stake >= STAKE.act3 ? 3 : ACTS);
 /** Fights in the base run (2 acts, bosses included) — the most fights any act 1-2 run can have. */
 export const TOTAL_FIGHTS = ACTS * (actLength(1) + 1);
 /** Fights in this run, bosses included. */

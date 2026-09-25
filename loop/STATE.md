@@ -300,3 +300,10 @@ User direction (binding): a FULL SET is ONLY the same charm on all 3 PAYLINE cel
 - Texts: Golden Ticket, tutorial, collection, Dealer footnote, banner lines ('EVERY GOLD CHARM COUNTS 3X' ...), shop ribbon 'SET READY' (charm on all 3 reels = sets possible), hiscore legend '3: ON ALL 3 REELS'. Card text no longer adds a build set level.
 - Rebalance (official sim 1500 greedy, before → after): knight 26.3→26.6 (act1 46.6→47.9), midas 28.0→29.1 (50.1→50.1), thorn 23.6→24.2 (44.7→46.1), tesla 22.3→20.0 (43.0→42.4), joker 24.1→25.2 (50.6→54.1). Ladder 26.6/21.8/20.1/15.9/12.6/10.1. Dealer (commit harness) 63.6→64.1 (MIDAS 82 easiest). Knobs: act 1 DEPTH_HP [22,28,33,36,39] (-1), TESLA 27 HP (+1), dealerPower 8 (was 7), dealerFlat 70 (was 60), mirrorFlat 48 (was 45).
 - Tests: 141.
+
+### Iteration 22 — 2026-09-25 (user priority fixes; NOT pushed yet)
+- YOUR REELS panels (draft, run-over) laid out like the machine: columns 1 2 3, symbols down each column.
+- Upgrade cards' reel marker: three side-by-side bars (reels), the target lit.
+- Cashier items: long rule text (e.g. LUCKY CLOVER) drops to a smaller font instead of being cut off.
+- GREEN and up always include ACT 3 (the Dealer) from the first try; the 'win at GREEN to unlock act 3' step is gone (prefs.act3 is ignored).
+- Rename to SLOTS VS. BOTS still tabled.

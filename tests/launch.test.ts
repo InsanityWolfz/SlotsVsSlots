@@ -17,10 +17,10 @@ describe('public playtest shell', () => {
     expect(stakeUnlock(MAX_STAKE, { won: true, stake: MAX_STAKE })).toBeNull();
   });
 
-  it('with act 3 on, a GREEN+ run is only won by beating the Dealer', () => {
-    expect(runActs(createRun(base, 1, 'knight', 2, true))).toBe(3);
+  it('GREEN and up always include act 3: those runs are only won by beating the Dealer', () => {
+    expect(runActs(createRun(base, 1, 'knight', 2, false))).toBe(3);
+    expect(runActs(createRun(base, 1, 'knight', 5, false))).toBe(3);
     expect(runActs(createRun(base, 1, 'knight', 1, true))).toBe(2);
-    expect(runActs(createRun(base, 1, 'knight', 2, false))).toBe(2);
   });
 
   it('every slot machine has a named hero', () => {
