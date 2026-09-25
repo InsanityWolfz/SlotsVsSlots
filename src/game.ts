@@ -182,6 +182,11 @@ export class Game {
       onTutorial: () => this.startTutorial(),
       onReset: () => this.resetSave(),
       tutorialDone: () => this.prefs.tutorialDone,
+      softLightning: () => this.prefs.juice.softLightning,
+      setSoftLightning: (on) => {
+        this.prefs.juice.softLightning = on;
+        this.applyJuice();
+      },
     });
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
     this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {

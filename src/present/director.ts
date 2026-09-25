@@ -737,7 +737,8 @@ export class Director {
     const cam = this.s.camera;
     // Charge.
     this.s.sounds.specialCharge();
-    cam.dimTarget = 0.5;
+    const soft = this.s.juice.softLightning;
+    cam.dimTarget = soft ? 0.25 : 0.5;
     this.bg(this.c.tween({ from: 0, to: 1, dur: 0.45, onUpdate: (v) => (h.energyFlash = v * 0.8) }));
     for (let i = 0; i < h.energyMax; i++) {
       const p = h.pipPos(i);
@@ -749,23 +750,27 @@ export class Director {
     const target = this.machineCenter(e.to);
     const bolt = this.s.fx.add(new Lightning(target.x + (Math.random() * 2 - 1) * 40, -20, target.x, target.y));
     this.s.sounds.thunder();
-    this.hitstop(4);
+    this.hitstop(soft ? 2 : 4);
     // No full-screen flash here (photosensitivity): the struck machine flashes instead.
-    cam.chromaPulse(0.5);
-    this.shake(9, 0.5);
-    cam.punchZoom(0.05, 0.45);
-    this.flashMachine(e.to, 1, 0.3);
-    this.knockback(e.to, 16);
-    this.s.particles.burst({ x: target.x, y: target.y, count: 60, colors: [COLORS.energy, '#ffffff', '#fff6c8'], speed: [200, 700], kind: 'spark', gravity: 400, life: [0.2, 0.6], size: [3, 5] });
+    if (!soft) {
+      cam.chromaPulse(0.5);
+      cam.punchZoom(0.05, 0.45);
+    }
+    this.shake(soft ? 3 : 9, soft ? 0.25 : 0.5);
+    this.flashMachine(e.to, soft ? 0.35 : 1, 0.3);
+    this.knockback(e.to, soft ? 6 : 16);
+    this.s.particles.burst({ x: target.x, y: target.y, count: soft ? 18 : 60, colors: [COLORS.energy, '#ffffff', '#fff6c8'], speed: [200, 700], kind: 'spark', gravity: 400, life: [0.2, 0.6], size: [3, 5] });
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
     h.energyFlash = 0;
     this.bg(this.popText(`-${e.hpDamage}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
-    for (let i = 0; i < 3; i++) {
-      await this.c.tween({ from: 1, to: 0.2, dur: 0.08, onUpdate: (v) => (bolt.alpha = v) });
-      bolt.reroll();
-      bolt.alpha = 1;
-    }
-    await this.c.tween({ from: 1, to: 0, dur: 0.15, onUpdate: (v) => (bolt.alpha = v) });
+    // Full: the bolt crackles (re-strikes 3 times). Soft: it just fades out.
+    if (!soft)
+      for (let i = 0; i < 3; i++) {
+        await this.c.tween({ from: 1, to: 0.2, dur: 0.08, onUpdate: (v) => (bolt.alpha = v) });
+        bolt.reroll();
+        bolt.alpha = 1;
+      }
+    await this.c.tween({ from: 1, to: 0, dur: soft ? 0.35 : 0.15, onUpdate: (v) => (bolt.alpha = v) });
     this.s.fx.remove(bolt);
     cam.dimTarget = 0;
 

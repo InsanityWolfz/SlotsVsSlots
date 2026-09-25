@@ -20,9 +20,12 @@ export interface JuiceToggles {
   nearMiss: boolean;
   turnCards: boolean;
   audio: boolean;
+  /** SOFT LIGHTNING (menu option): a calmer special — no strobing bolt, light shake, no colour split. */
+  softLightning: boolean;
 }
 
 export const defaultJuice = (): JuiceToggles => ({
+  softLightning: false,
   shake: true,
   zoom: true,
   chroma: true,

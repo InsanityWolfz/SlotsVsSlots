@@ -78,7 +78,15 @@ export class Menus {
     private sounds: Sounds,
     private profile: () => Profile,
     private unlocked: () => Set<CabinetId>,
-    private cb: { onNewRun: () => void; onTutorial: () => void; onReset: () => void; tutorialDone: () => boolean },
+    private cb: {
+      onNewRun: () => void;
+      onTutorial: () => void;
+      onReset: () => void;
+      tutorialDone: () => boolean;
+      /** SOFT LIGHTNING option. */
+      softLightning: () => boolean;
+      setSoftLightning: (on: boolean) => void;
+    },
   ) {}
 
   get isOpen(): boolean {
@@ -119,6 +127,12 @@ export class Menus {
     this.btn('TUTORIAL', x, 410, 380, 60, () => this.cb.onTutorial(), 3).opts.idlePulse = first;
     this.btn('COLLECTION', x, 484, 380, 60, () => this.showCollection(), 3);
     this.btn('HISCORES', x, 558, 380, 60, () => this.showHiscores(), 3);
+    const light = this.btn(this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL', 150, 36, 260, 40, () => {
+      this.cb.setSoftLightning(!this.cb.softLightning());
+      light.label = this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL';
+      light.toggled = this.cb.softLightning();
+    });
+    light.toggled = this.cb.softLightning();
     this.resetArmed = 0;
     const reset = this.btn('RESET SAVE', W - 110, 36, 190, 40, () => {
       if (performance.now() - this.resetArmed < 400) return;

@@ -13,7 +13,7 @@ Status: [x] done, [ ] to do, [?] needs design talk first.
 - [x] FULL SET only when the same charm is on all 3 payline cells
 
 ## Quick fixes / polish
-- [ ] Turn down the lightning (TESLA special): less intense overall. The full-screen flash was already removed.
+- [x] Turn down the lightning: a LIGHTNING: FULL / SOFT option on the main menu (full stays the default)
 - [ ] Speeds 1x, 2x, 4x, 8x, where the new 1x = half of today's 1x
 - [ ] "PAY" is ambiguous when enemies reduce your pay (Croupier RAKE, Counterfeiter, Hex): clearer wording or visuals
 - [ ] SPIKED CHARM text cut off in the shop. Re-check after the long-text fix; titles may still clip.
