@@ -9,6 +9,11 @@ const ctx = canvas.getContext('2d')!;
 const buffer = document.createElement('canvas');
 const bctx = buffer.getContext('2d')!;
 let scale = 1;
+/**
+ * Render resolution cap: at most 2x the 1280x720 logical size (2560x1440). A 4K screen then
+ * upscales that crisply (pixelated) instead of the game filling ~8 million pixels every frame.
+ */
+const MAX_SCALE = 2;
 
 function resize(): void {
   const dpr = window.devicePixelRatio || 1;
@@ -22,8 +27,9 @@ function resize(): void {
   stage.style.height = `${cssH}px`;
   canvas.style.width = `${cssW}px`;
   canvas.style.height = `${cssH}px`;
-  canvas.width = buffer.width = Math.floor(cssW * dpr);
-  canvas.height = buffer.height = Math.floor(cssH * dpr);
+  const k = Math.min(fit * dpr, MAX_SCALE);
+  canvas.width = buffer.width = Math.floor(W * k);
+  canvas.height = buffer.height = Math.floor(H * k);
   scale = canvas.width / W;
 }
 window.addEventListener('resize', resize);
@@ -98,16 +104,18 @@ function frame(now: number): void {
   last = now;
   game.update(dt);
 
-  bctx.setTransform(scale, 0, 0, scale, 0, 0);
-  bctx.imageSmoothingEnabled = false;
-  game.draw(bctx);
-
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // Draw straight to the screen; the spare buffer is only needed for a chroma pulse.
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(buffer, 0, 0);
+  game.draw(ctx);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   // Chroma pulse: offset additive double-exposure of the frame (cheap aberration).
   const ch = game.camera.chroma;
   if (ch > 0.01) {
+    bctx.setTransform(1, 0, 0, 1, 0, 0);
+    bctx.globalCompositeOperation = 'copy';
+    bctx.drawImage(canvas, 0, 0);
+    bctx.globalCompositeOperation = 'source-over';
     const d = ch * 8 * scale;
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = ch * 0.3;
