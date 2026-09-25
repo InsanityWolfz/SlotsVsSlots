@@ -353,7 +353,7 @@ export class Menus {
     // Charms.
     const nc = p.found.charms.length;
     drawText(ctx, `CHARMS ${nc}/${ALL_CHARMS.length}`, 60, 110, 2.5, COLORS.text, { align: 'left' });
-    drawText(ctx, 'FULL SET: THE SAME CHARM ON ALL 3 REELS', W - 60, 110, 1.5, COLORS.textDim, { align: 'right' });
+    drawText(ctx, 'FULL SET: THE SAME CHARM ALL ACROSS THE PAYLINE', W - 60, 110, 1.5, COLORS.textDim, { align: 'right' });
     ALL_CHARMS.forEach((enh, i) => {
       const x = W / 2 + (i - 3) * 150;
       const y = 176;
@@ -461,6 +461,6 @@ export class Menus {
     });
     const pages = Math.ceil(list.length / ROWS_PER_PAGE);
     if (pages > 1) drawText(ctx, `PAGE ${this.page + 1}/${pages}`, W / 2, H - 36, 2, COLORS.textDim);
-    drawText(ctx, 'II: TIER II   3: FULL SET', 60, H - 30, 1.25, COLORS.textDim, { align: 'left' });
+    drawText(ctx, 'II: TIER II   3: ON ALL 3 REELS', 60, H - 30, 1.25, COLORS.textDim, { align: 'left' });
   }
 }

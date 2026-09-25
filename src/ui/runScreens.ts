@@ -834,7 +834,7 @@ export class RunScreens {
     }
     ctx.fillStyle = '#5a3a0a';
     ctx.fillRect(x + 2, y + 2, 130, 14);
-    drawText(ctx, 'COMPLETES SET', x + 67, y + 9, 1.5, '#fff6c8');
+    drawText(ctx, 'SET READY', x + 67, y + 9, 1.5, '#fff6c8');
   }
 
   /** Violet/gold LEGENDARY ribbon inside the top of a card. */
@@ -923,7 +923,7 @@ export class RunScreens {
     }
     const bossText =
       e.boss === 'dealer'
-        ? 'FACE-UP DEALS: SHUFFLE (SWAPS CELLS, FULL SETS IMMUNE), CUT (A CHARMED CELL), RAISE (ITS HIT + YOUR WIN X2). NO KILL BEFORE ITS FIRST DEAL.'
+        ? 'FACE-UP DEALS: SHUFFLE (SWAPS 5 CELLS), CUT (A CHARMED CELL), RAISE (ITS HIT + YOUR WIN X2). NO KILL BEFORE ITS FIRST DEAL.'
         : e.boss === 'mirror'
         ? `YOUR MACHINE WITH PLAIN CHARMS (NO RELICS, SPECIALS, SPIKES OR KEEN). REFLECTS UP TO ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKS AT HALF HP AND SNAPS BACK AT ONCE. CHIPS SHIELD YOU (1 PER ${CHIPS.stackPer}, MAX ${MIRROR_CHIP_SHIELD_CAP}).`
         : `COINS + A CUT EACH TURN FILL THE POT. EVERY ${this.houseEvery()} TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +1 SHIELD EACH HOUSE TURN.${dirty ? ' BLACK: IT BOMBS YOUR CELLS, EVEN THE PAYLINE.' : ''}`;

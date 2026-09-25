@@ -16,6 +16,7 @@ import {
   CLOVER_CHANCE,
   FANG_HEAL,
   HONE_BONUS,
+  FULL_SET_STEP,
   KEEN_BONUS,
   LOCKPICK_CHANCE,
   MOUSETRAP_CHANCE,
@@ -135,6 +136,10 @@ export class Fight {
   /** The run's starting machine rules. */
   readonly cabinet: Cabinet | null;
   /** Enhancements present on all 3 of the player's reels: their effect is boosted. */
+  /**
+   * Charms spread over enough reels that they CAN line up as a FULL SET (all 3 reels; 2 with the
+   * Golden Ticket). Only enemy targeting uses it — the set itself is decided on the payline.
+   */
   readonly fullSet: ReadonlySet<Enh>;
   /** Chips the Mimic ate this fight (taken from the run's purse afterwards). */
   chipsEaten = 0;
@@ -150,6 +155,7 @@ export class Fight {
   readonly last: Record<SideId, { best: number; damage: number }> = { player: { best: 0, damage: 0 }, enemy: { best: 0, damage: 0 } };
   /** BLAZE: extra special damage from blaze-gilded reels. */
   readonly blaze: number;
+  private readonly blazeReels: number;
   /** The player's reels carrying each enhancement (for FULL SETs, which a hex can break). */
   private readonly enhReels: Partial<Record<Enh, number[]>> = {};
   /** The Mirror's Reflection: your best spin since its last one. */
@@ -201,11 +207,12 @@ export class Fight {
     const all = new Set(perReel.flatMap((s) => [...s]));
     this.fullSet = new Set([...all].filter((enh) => perReel.filter((s) => s.has(enh)).length >= need));
     perReel.forEach((s, r) => s.forEach((enh) => (this.enhReels[enh] ??= []).push(r)));
-    // BLAZE: every blaze reel adds to your special (more for tier II and a full set).
+    // BLAZE: every blaze reel adds to your special (more for tier II; a payline full set adds more when it fires).
+    this.blazeReels = p.reels.filter((reel) => reel.cells.some((c) => c.enh === 'blaze')).length;
     this.blaze = p.reels.reduce((a, reel) => {
       const cell = reel.cells.find((c) => c.enh === 'blaze');
       if (!cell) return a;
-      return a + BLAZE_BONUS.each + (cell.tier === 2 ? TIER_STEP : 0) + (this.fullSet.has('blaze') ? (need === 2 ? 2 : 1) : 0);
+      return a + BLAZE_BONUS.each + (cell.tier === 2 ? TIER_STEP : 0);
     }, 0);
     // The Mirror plays your machine but never your junk (and fires no specials).
     if (this.isMirror) e.casts.clear();
@@ -475,11 +482,30 @@ export class Fight {
     return s;
   }
 
-  /** A FULL SET is live: enough of the player's reels carry it and aren't hexed. */
-  private setActive(me: Combatant, enh: Enh): boolean {
-    if (me.side !== 'player' || !this.fullSet.has(enh)) return false;
+  /**
+   * FULL SET: the same charm on all 3 PAYLINE cells right now (2 with the Golden Ticket). Slimed,
+   * stolen, jammed, hexed or counterfeit cells don't count.
+   */
+  private lineSet(me: Combatant): Enh | null {
+    if (me.side !== 'player') return null;
     const need = me.relics.has('ticket') ? 2 : 3;
-    return (this.enhReels[enh] ?? []).filter((r) => me.hexed[r] <= 0).length >= need;
+    const count = new Map<Enh, number>();
+    me.reels.forEach((reel, r) => {
+      const enh = this.paylineEnh(me, r);
+      if (!enh || (reel.cells[reel.stop].faked ?? 0) > 0) return;
+      count.set(enh, (count.get(enh) ?? 0) + 1);
+    });
+    for (const [enh, n] of count) if (n >= need) return enh;
+    return null;
+  }
+
+  private setActive(me: Combatant, enh: Enh): boolean {
+    return this.lineSet(me) === enh;
+  }
+
+  /** How many levels a FULL SET adds to each of its cells (2 with the Golden Ticket). */
+  private setStep(me: Combatant): number {
+    return FULL_SET_STEP + (me.relics.has('ticket') ? 1 : 0);
   }
 
   /** How strong the live gild on a reel's payline cell is: 0 none, 1 plain, +1 tier II, +1 set (+2 with the Ticket). */
@@ -490,7 +516,7 @@ export class Fight {
     // A counterfeit coin makes the gild plain: no tier, no set.
     if (cell.faked && cell.faked > 0) return 1;
     let lvl = 1 + (cell.tier === 2 ? TIER_STEP : 0);
-    if (this.setActive(c, enh)) lvl += c.relics.has('ticket') ? 2 : 1;
+    if (this.setActive(c, enh)) lvl += this.setStep(c);
     return lvl;
   }
 
@@ -647,7 +673,8 @@ export class Fight {
     const pierce = this.cfg.specialIgnoresShield && !grounded;
     while (me.energy >= this.cfg.specialCost && !this.over) {
       me.energy -= this.cfg.specialCost;
-      const dmg = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
+      const blazeSet = me.side === 'player' && this.lineSet(me) === 'blaze' ? this.blazeReels * this.setStep(me) : 0;
+      const dmg = this.cfg.specialDamage + (me.side === 'player' ? this.blaze + blazeSet : 0);
       const h = this.damage(foe, dmg, pierce);
       events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
       this.checkDeath(foe, events);
@@ -885,11 +912,11 @@ export class Fight {
     events.push({ type: 'dealNext', side: me.side, card: this.nextDeal });
   }
 
-  /** SHUFFLE: swap up to 3 cells between two of the foe's reels. Cells of a live FULL SET gild are immune. */
+  /** SHUFFLE: swap up to 5 cells between two of the foe's reels (never the chase cells). */
   private shuffleReels(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
     const [a, b] = this.rng.shuffle([0, 1, 2]).slice(0, 2).sort((x, y) => x - y) as [number, number];
     const movable = (r: number) =>
-      this.rng.shuffle(foe.reels[r].cells.map((c, i) => ({ c, i })).filter(({ c }) => !(c.enh && this.setActive(foe, c.enh)) && !BONUS_SYMBOLS.has(c.symbol))).map(({ i }) => i);
+      this.rng.shuffle(foe.reels[r].cells.map((c, i) => ({ c, i })).filter(({ c }) => !BONUS_SYMBOLS.has(c.symbol))).map(({ i }) => i);
     const ia = movable(a);
     const ib = movable(b);
     const swaps: [number, number][] = [];

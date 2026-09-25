@@ -293,3 +293,10 @@ User direction (binding): name 'Slots vs. Slots' (tentative). Loading screen + s
 
 ### Iteration 20 — 2026-09-24 (user: no FITS tags or stat deltas on upgrades)
 - User direction (binding): players should use their own intuition. Removed the green FITS ribbon and the per-spin stat lines (e.g. 'ENERGY 1.67 TO 2.30') from draft cards and Cashier items. Kept: card rule text, COMPLETES SET ribbon, set pips, LEGENDARY and Mirror-copy notes.
+
+### Iteration 21 — 2026-09-24 (user: FULL SET only on the payline)
+User direction (binding): a FULL SET is ONLY the same charm on all 3 PAYLINE cells (2 with the Golden Ticket). Singles/doubles of charmed symbols pay the symbol + their charm; all three = the full set bonus on top of the three charms.
+- Engine: lineSet() reads the live payline (slimed/stolen/jammed/hexed/counterfeit cells don't count); a set adds FULL_SET_STEP = 2 levels to each of its cells (+1 more with the Ticket); BLAZE's set bonus applies when the special fires off a blaze line. Build-wide 'charm on all 3 reels' is now only an enemy-targeting hint (Pit Boss / Counterfeiter). SHUFFLE no longer spares set charms. The FULL SET! banner plays every time.
+- Texts: Golden Ticket, tutorial, collection, Dealer footnote, banner lines ('EVERY GOLD CHARM COUNTS 3X' ...), shop ribbon 'SET READY' (charm on all 3 reels = sets possible), hiscore legend '3: ON ALL 3 REELS'. Card text no longer adds a build set level.
+- Rebalance (official sim 1500 greedy, before → after): knight 26.3→26.6 (act1 46.6→47.9), midas 28.0→29.1 (50.1→50.1), thorn 23.6→24.2 (44.7→46.1), tesla 22.3→20.0 (43.0→42.4), joker 24.1→25.2 (50.6→54.1). Ladder 26.6/21.8/20.1/15.9/12.6/10.1. Dealer (commit harness) 63.6→64.1 (MIDAS 82 easiest). Knobs: act 1 DEPTH_HP [22,28,33,36,39] (-1), TESLA 27 HP (+1), dealerPower 8 (was 7), dealerFlat 70 (was 60), mirrorFlat 48 (was 45).
+- Tests: 141.

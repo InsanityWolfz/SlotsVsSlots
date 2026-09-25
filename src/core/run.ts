@@ -622,7 +622,10 @@ export function stripStats(strips: StripCounts[], base: GameConfig, relics: Reli
   const setStep = relics.includes('ticket') ? 2 : 1;
   const lvlOf = (reel: number, sym: SymbolId) => {
     const g = gildOf(reel, sym);
-    return g ? 1 + (g.tier ? TIER_STEP : 0) + (sets.has(g.enh) ? setStep : 0) : 0;
+    // A FULL SET needs all 3 charmed cells on the payline at once: rare enough to leave out of the averages.
+    void sets;
+    void setStep;
+    return g ? 1 + (g.tier ? TIER_STEP : 0) : 0;
   };
   // Each line entry: [shown symbol, probability, the cell's own symbol (for its gild)].
   const probs = strips.map((s, reel) => {
@@ -925,7 +928,7 @@ export function relicFits(run: RunState, r: RelicId): boolean {
   return run.player.gilded.some((g) => g.enh === need);
 }
 
-/** Enhancements that count as a FULL SET for these gilds (all 3 reels; any 2 with the Golden Ticket). */
+/** Charms spread over enough reels to line up as a FULL SET on the payline (all 3 reels; any 2 with the Golden Ticket). */
 export function fullSets(gilded: Gild[], relics: RelicId[]): Set<Enh> {
   const need = relics.includes('ticket') ? 2 : 3;
   const reels = new Map<Enh, Set<number>>();
@@ -933,7 +936,7 @@ export function fullSets(gilded: Gild[], relics: RelicId[]): Set<Enh> {
   return new Set([...reels].filter(([, r]) => r.size >= need).map(([e]) => e));
 }
 
-/** This gild card/item would finish a FULL SET. */
+/** This charm card/item would put the charm on enough reels to hit FULL SETS. */
 export function completesSet(run: RunState, o: DraftOption): boolean {
   if (o.kind !== 'gild') return false;
   const before = fullSets(run.player.gilded, run.player.relics);
@@ -1048,10 +1051,8 @@ const TIER_TEXT: Record<Enh, (s: string, reel: number) => string> = {
 function levelText(run: RunState, o: Extract<DraftOption, { kind: 'gild' }>): string {
   const after = gildsAfter(run, o);
   const g = after.find((x) => x.reel === o.reel && x.symbol === o.symbol && x.enh === o.enh);
-  const sets = fullSets(after, run.player.relics);
-  const setStep = sets.has(o.enh) ? (run.player.relics.includes('ticket') ? 2 : 1) : 0;
-  const lvl = 1 + (g?.tier ? TIER_STEP : 0) + setStep;
-  const set = setStep ? ' (SET)' : '';
+  const lvl = 1 + (g?.tier ? TIER_STEP : 0);
+  const set = '';
   const spikeBase = run.player.relics.includes('cactus') ? CACTUS_DAMAGE : SPIKED_DAMAGE;
   switch (o.enh) {
     case 'gold':
@@ -1061,7 +1062,7 @@ function levelText(run: RunState, o: Extract<DraftOption, { kind: 'gild' }>): st
     case 'charged':
       return `+${lvl} ENERGY${set}`;
     case 'spiked':
-      return `HIT BACK FOR ${spikeBase + 2 * (lvl - 1)}${setStep ? ' OR YOUR SHIELD' : ''}${set}`;
+      return `HIT BACK FOR ${spikeBase + 2 * (lvl - 1)}${set}`;
     case 'vamp':
       return `HEAL ${Math.min(VAMP_CAP, lvl)} WHEN THEY HIT${set}`;
     case 'lucky':

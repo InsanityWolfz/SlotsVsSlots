@@ -48,13 +48,13 @@ export const VOUCHER_GAP = 66;
 
 /** What each FULL SET does, for its banner (playtest ITERATION_5). */
 const SET_TEXT: Record<Enh, string> = {
-  gold: 'GOLD PAYS X3',
-  keen: 'KEEN SWORDS +2',
-  charged: 'CHARGED BOLTS +2',
-  spiked: 'SPIKES HIT BACK +2',
-  vamp: 'VAMP SWORDS HEAL 2',
-  lucky: 'LUCKY: 40% WILD',
-  blaze: 'BLAZE SPECIAL +4 PER REEL',
+  gold: 'EVERY GOLD CHARM COUNTS 3X',
+  keen: 'KEEN SWORDS +2 MORE EACH',
+  charged: 'CHARGED BOLTS +2 MORE EACH',
+  spiked: 'SPIKES HIT BACK +4 MORE',
+  vamp: 'VAMP SWORDS HEAL MORE',
+  lucky: 'LUCKY CHARMS SUPERCHARGED',
+  blaze: 'SPECIAL +2 PER BLAZE REEL',
 };
 
 const BATCHABLE = new Set<CombatEvent['type']>(['attack', 'shieldGain', 'energyGain', 'fizzle', 'slime', 'freeze', 'lock', 'steal', 'pot', 'heal', 'bomb', 'hex']);
@@ -72,7 +72,6 @@ const BANNER_Y = 172;
 export class Director {
   private lastScore: LineScore | null = null;
   private lastSpin: Partial<Record<SideId, { frozen: boolean[]; locked: boolean[]; hexed: boolean[] }>> = {};
-  private fullSetShown = false;
 
   constructor(private s: Stage) {}
 
@@ -431,8 +430,7 @@ export class Director {
     for (const r of e.score.relics ?? []) this.relicPop(e.side, r);
     if (e.luckyWilds?.length) await this.luckyWilds(e.side, e.luckyWilds);
     this.stampGilds(e.side, e.score);
-    if (e.fullSet && !this.fullSetShown) {
-      this.fullSetShown = true;
+    if (e.fullSet) {
       const c = this.machineCenter(e.side);
       this.s.sounds.lucky();
       const star = this.s.fx.add(new Projectile('setStar', c.x, c.y - 170, 0));
@@ -445,7 +443,7 @@ export class Director {
       );
       const setGroup = e.score.groups.find((g) => g.fullSet);
       const enh = setGroup ? this.s.machines[e.side].reels[setGroup.reels[0]].cellAtRow(1).enh : undefined;
-      await this.banner('FULL SET!', '#ffd23f', 1.3, 0.35, enh ? SET_TEXT[enh] : 'SAME CHARM ON ALL 3 REELS', BANNER_Y, 4);
+      await this.banner('FULL SET!', '#ffd23f', 1.3, 0.35, enh ? SET_TEXT[enh] : 'THE SAME CHARM ALL ACROSS THE LINE', BANNER_Y, 4);
     }
     if (near && e.score.tier !== 'triple') this.missedTriple(e.side, e.score.line[0]);
     await this.winPresentation(e.side, e.score);

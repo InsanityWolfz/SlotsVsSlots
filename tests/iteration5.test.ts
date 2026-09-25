@@ -52,19 +52,22 @@ describe('cabinets', () => {
 });
 
 describe('FULL SET', () => {
-  it('the same gild on all 3 reels boosts it (GOLD pays x3)', () => {
+  it('only the same charm on all 3 PAYLINE cells is a full set (it levels every cell up)', () => {
     const c = defaultConfig();
     c.enemy = { hp: 99, strips: reels3({ shield: 12 }) };
     c.player.gilded = [0, 1, 2].map((reel) => ({ reel, symbol: 'bolt' as const, enh: 'gold' as const }));
+    // Gold on every reel, but only one gold bolt on the line: just that charm (x2), no set.
     const f = new Fight(c, 1);
-    expect(f.fullSet.has('gold')).toBe(true);
     f.forceNext('player', ['bolt', 'sword', 'shield']);
-    const { events } = f.step();
-    expect(ofType(events, 'energyGain')[0].amount).toBe(3);
-    expect(ofType(events, 'spin')[0].fullSet).toBe(true);
-
-    const g = new Fight({ ...c, player: { ...c.player, gilded: c.player.gilded!.slice(0, 2) } }, 1);
-    expect(g.fullSet.size).toBe(0);
+    const one = f.step().events;
+    expect(ofType(one, 'energyGain')[0].amount).toBe(2);
+    expect(ofType(one, 'spin')[0].fullSet).toBeFalsy();
+    // Three gold bolts on the line: each charm is level 1 + FULL_SET_STEP (2) = 3, so 1 + 3 + 3 + 3 = x10.
+    const g = new Fight(c, 1);
+    g.forceNext('player', ['bolt', 'bolt', 'bolt']);
+    const three = g.step().events;
+    expect(ofType(three, 'spin')[0].fullSet).toBe(true);
+    expect(ofType(three, 'spin')[0].score.groups[0].notes).toContain('X10');
   });
 });
 

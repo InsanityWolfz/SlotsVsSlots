@@ -76,8 +76,8 @@ describe('counter-enemies', () => {
     for (const cell of f.sides.player.reels[0].cells) cell.faked = 1;
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const { events } = f.step();
-    // Levels: faked reel 1 (plain) + 4 + 4 (tier II +2, set +1) = x10 (not x13).
-    expect(ofType(events, 'spin')[0].score.groups[0].notes).toContain('X10');
+    // Levels: faked reel 1 (plain, and a fake breaks the set) + 3 + 3 (tier II) = x8 (not x13).
+    expect(ofType(events, 'spin')[0].score.groups[0].notes).toContain('X8');
     expect(ofType(events, 'fakeTick')[0].left.every((x) => x === 0)).toBe(true);
     expect(f.sides.player.reels[0].cells.some((c) => c.faked)).toBe(false);
   });

@@ -27,7 +27,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   prism: { id: 'prism', name: 'PRISM', text: 'A MATCH THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
   hone: { id: 'hone', name: 'HONE', text: 'KEEN SWORDS DEAL +2 MORE', sprite: 'relicHone' },
   // Legendary (act 2): big, build-bending effects.
-  ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'FULL SETS NEED ONLY 2 REELS AND PAY ONE STEP MORE', sprite: 'relicTicket' },
+  ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'FULL SETS NEED ONLY 2 MATCHING CHARMS ON THE LINE AND PAY ONE STEP MORE', sprite: 'relicTicket' },
   bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND REFILL YOUR SPECIAL', sprite: 'relicBell' },
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'ONCE PER FIGHT, SURVIVE A LETHAL HIT AT 1 HP', sprite: 'relicPhoenix' },
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR SPECIAL ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
@@ -64,6 +64,8 @@ export const BLAZE_BONUS = { each: 3 };
 export const OVERCHARGE_ECHO = 1 / 3;
 /** TIER II is worth this many gild levels (ITERATION_8: one level made tier II a trap). */
 export const TIER_STEP = 2;
+/** FULL SET (the same charm on all 3 payline cells): levels added to each of those cells (+1 more with the Golden Ticket). */
+export const FULL_SET_STEP = 2;
 /** VAMP heals at most this much per sword group (a VAMP FULL SET was the strongest thing measured). */
 export const VAMP_CAP = 3;
 /** The Mirror's REFLECTION is capped at this share of your max HP (two from full kill you). */
