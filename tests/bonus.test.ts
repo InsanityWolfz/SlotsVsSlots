@@ -76,3 +76,15 @@ describe('BONUS WHEEL & RELIC RUSH', () => {
     if (pay.kind === 'rush' && pay.relic) expect(Object.values(RELIC_TIER).flat()).toContain(pay.relic);
   });
 });
+
+describe('BONUS WHEEL: collect or pass', () => {
+  it('the game can hold the prize for the player; sims collect it', () => {
+    const run = createRun(base, 6);
+    const before = JSON.stringify(run.player);
+    const held = payVoucher(run, { kind: 'wheel', seed: 11 }, false);
+    expect(held.kind).toBe('wheel');
+    expect(JSON.stringify(run.player)).toBe(before);
+    payVoucher(run, { kind: 'wheel', seed: 11 });
+    expect(JSON.stringify(run.player)).not.toBe(before);
+  });
+});

@@ -16,6 +16,7 @@ import {
   setProgress,
   runActs,
   totalFights,
+  rushTier,
   type BonusPayout,
   type DraftOption,
   type FightRecord,
@@ -162,6 +163,8 @@ export class RunScreens {
       onFight: (option: number) => void;
       onNewRun: () => void;
       onMenu: () => void;
+      /** BONUS WHEEL: the player took the prize (PASS just moves on). */
+      onWheelCollect: (o: DraftOption) => void;
       onBuy: (index: number) => void;
       onReroll: () => void;
       onLeave: () => void;
@@ -238,6 +241,12 @@ export class RunScreens {
   private rushCells: number[] = [];
   private rushFlicker: number[] = [];
   private rushRespins = 0;
+  /** RELIC RUSH juice: per-cell landing pop, screen shake, respin counter pulse (+ gold / - red), tier banner. */
+  private rushPop: number[] = [];
+  private rushShake = 0;
+  private rushPulse = 0;
+  private rushPulseGood = true;
+  private rushBanner: { text: string; color: string; t: number } | null = null;
 
   /** Cash the vouchers from the fight you just won: each plays out, then `done`. */
   showBonus(run: RunState, list: BonusPayout[], done: () => void): void {
@@ -280,48 +289,96 @@ export class RunScreens {
     } else {
       this.rushCells = Array(15).fill(0);
       this.rushFlicker = Array(15).fill(0);
+      this.rushPop = Array(15).fill(0);
+      this.rushBanner = null;
       this.rushRespins = 3;
       void this.playRushFrames(b);
     }
   }
 
   private async playRushFrames(b: Extract<BonusPayout, { kind: 'rush' }>): Promise<void> {
+    await this.ui.wait(0.5);
     for (const [k, frame] of b.frames.entries()) {
       if (k > 0) {
-        // Every empty cell flickers, then the new relics slam in.
-        const flick = { v: 0 };
+        if (this.rushRespins === 1) this.flashRushBanner('LAST SPIN!', '#ff6a5a');
+        // The empty cells spin: they tick fast, then slow down as the respin settles.
+        let next = 0;
+        const dur = 1.2;
         await this.ui.tween({
           from: 0,
           to: 1,
-          dur: 0.4,
+          dur,
           onUpdate: (v) => {
-            flick.v = v;
-            this.rushFlicker = this.rushCells.map((c) => (c ? 0 : Math.random() < 0.5 ? 1 : 0));
+            if (v * dur < next) return;
+            next = v * dur + 0.045 + 0.22 * v * v;
+            this.rushFlicker = this.rushCells.map((c) => (c ? 0 : Math.random() < 0.45 ? 1 : 0));
+            this.sounds.click();
           },
         });
         this.rushFlicker = Array(15).fill(0);
+        await this.ui.wait(0.18);
       }
+      // New relics slam in one at a time.
       for (const i of frame) {
+        const before = rushTier(this.rushCells.filter(Boolean).length);
         this.rushCells[i] = 1;
-        this.sounds.coin(4 + (i % 8));
+        const count = this.rushCells.filter(Boolean).length;
+        void this.ui.tween({ from: 1, to: 0, dur: 0.45, onUpdate: (v) => (this.rushPop[i] = v) });
+        void this.ui.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (this.rushShake = v) });
+        this.sounds.coin(Math.min(14, 2 + count));
+        const now = rushTier(count);
+        if (now !== before) {
+          this.sounds.fanfareJackpot();
+          this.flashRushBanner(now === 'legendary' ? 'LEGENDARY!' : 'UNCOMMON!', now === 'legendary' ? '#ffd23f' : '#5ad8e8');
+        } else if (count === RUSH.cells) this.flashRushBanner('GRAND!', '#ffd23f');
+        await this.ui.wait(k === 0 ? 0.18 : 0.32);
       }
-      if (k > 0) this.rushRespins = frame.length ? 3 : this.rushRespins - 1;
-      await this.ui.wait(frame.length ? 0.28 : 0.12);
+      if (k > 0) {
+        // A hit resets the respins (gold); a whiff burns one (red).
+        this.rushPulseGood = frame.length > 0;
+        this.rushRespins = frame.length ? 3 : this.rushRespins - 1;
+        if (frame.length) this.sounds.stingerMedium();
+        else this.sounds.fizzle();
+        void this.ui.tween({ from: 1, to: 0, dur: 0.5, onUpdate: (v) => (this.rushPulse = v) });
+      }
+      await this.ui.wait(0.4);
     }
+    await this.ui.wait(0.4);
     this.bonusReveal();
+  }
+
+  private flashRushBanner(text: string, color: string): void {
+    const banner = { text, color, t: 1 };
+    this.rushBanner = banner;
+    void this.ui.tween({ from: 1, to: 0, dur: 1.1, onUpdate: (v) => (banner.t = v) });
   }
 
   private bonusReveal(): void {
     this.bonusLanded = true;
     this.sounds.fanfareJackpot();
     const last = this.bonusIdx >= this.bonusList.length - 1;
-    this.buttons = [
-      this.btn(last ? 'COLLECT' : 'NEXT VOUCHER', W / 2, 650, 280, 56, () => {
-        this.bonusIdx++;
-        if (this.bonusIdx >= this.bonusList.length) this.bonusDone();
-        else this.playBonus();
-      }),
-    ];
+    const advance = () => {
+      this.bonusIdx++;
+      if (this.bonusIdx >= this.bonusList.length) this.bonusDone();
+      else this.playBonus();
+    };
+    const b = this.bonusList[this.bonusIdx];
+    if (b?.kind === 'wheel') {
+      // The wheel's prize is yours to take or leave.
+      this.buttons = [
+        this.btn('PASS', W / 2 - 160, 660, 260, 56, () => {
+          this.sounds.fizzle();
+          advance();
+        }),
+        this.btn('COLLECT', W / 2 + 160, 660, 260, 56, () => {
+          this.cb.onWheelCollect(b.options[b.pick]);
+          this.sounds.coin(9);
+          advance();
+        }),
+      ];
+      return;
+    }
+    this.buttons = [this.btn(last ? 'COLLECT' : 'NEXT VOUCHER', W / 2, 650, 280, 56, advance)];
   }
 
   private drawBonus(ctx: CanvasRenderingContext2D, time: number): void {
@@ -413,19 +470,33 @@ export class RunScreens {
     const size = 96;
     const x0 = W / 2 - (cols * size) / 2 + size / 2;
     const y0 = 190;
+    ctx.save();
+    if (this.rushShake > 0) ctx.translate((Math.random() * 2 - 1) * 6 * this.rushShake, (Math.random() * 2 - 1) * 6 * this.rushShake);
     this.panel(ctx, W / 2 - (cols * size) / 2 - 10, y0 - size / 2 - 10, cols * size + 20, 3 * size + 20, '#c080ff');
     for (let i = 0; i < 15; i++) {
       const x = x0 + (i % cols) * size;
       const y = y0 + Math.floor(i / cols) * size;
       ctx.fillStyle = '#140a22';
       ctx.fillRect(x - size / 2 + 4, y - size / 2 + 4, size - 8, size - 8);
-      if (this.rushCells[i]) drawSprite(ctx, artId('relicSym'), x, y, 4.5, { flash: 0.15 + 0.15 * Math.sin(time * 5 + i) });
+      const pop = this.rushPop[i] ?? 0;
+      if (pop > 0) {
+        // Landing burst behind the cell.
+        ctx.fillStyle = `rgba(255,210,63,${0.55 * pop})`;
+        ctx.fillRect(x - size / 2 - 6 * pop, y - size / 2 - 6 * pop, size + 12 * pop, size + 12 * pop);
+      }
+      if (this.rushCells[i]) drawSprite(ctx, artId('relicSym'), x, y, 4.5 * (1 + 0.5 * pop), { flash: Math.max(0.15 + 0.15 * Math.sin(time * 5 + i), pop) });
       else if (this.rushFlicker[i]) drawSprite(ctx, artId('relicSym'), x, y, 4, { alpha: 0.35 });
       else drawSprite(ctx, artId(hasSprite('rushJunk') ? 'rushJunk' : 'rushEmpty'), x, y, 3.5, { alpha: 0.6 });
     }
     const count = this.rushCells.filter(Boolean).length;
     drawText(ctx, `RELICS ${count} / 15`, W / 2 - 120, 500, 3, '#c080ff');
-    drawText(ctx, this.bonusLanded ? 'DONE' : `RESPINS ${this.rushRespins}`, W / 2 + 140, 500, 3, this.rushRespins <= 1 && !this.bonusLanded ? '#ff6a5a' : COLORS.text);
+    ctx.restore();
+    const pulseCol = this.rushPulse > 0.05 ? (this.rushPulseGood ? '#ffd23f' : '#ff6a5a') : this.rushRespins <= 1 && !this.bonusLanded ? '#ff6a5a' : COLORS.text;
+    drawText(ctx, this.bonusLanded ? 'DONE' : `RESPINS ${this.rushRespins}`, W / 2 + 140, 500, 3, pulseCol, { punch: 1 + 0.35 * this.rushPulse });
+    if (this.rushBanner && this.rushBanner.t > 0) {
+      const t = this.rushBanner.t;
+      drawText(ctx, this.rushBanner.text, W / 2, 110, 5, this.rushBanner.color, { punch: 1 + 0.4 * Math.max(0, t - 0.7) * 3, alpha: Math.min(1, t * 2.5) });
+    }
     drawText(ctx, `UP TO ${RUSH.commonMax} COMMON  -  ${RUSH.commonMax + 1}-${RUSH.uncommonMax} UNCOMMON  -  ${RUSH.uncommonMax + 1}+ LEGENDARY`, W / 2, 530, 1.5, COLORS.textDim);
     if (this.bonusLanded) {
       const tierColor = b.tier === 'legendary' ? '#ffd23f' : b.tier === 'uncommon' ? '#5ad8e8' : '#c9c9d9';

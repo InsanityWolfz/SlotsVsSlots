@@ -307,3 +307,7 @@ User direction (binding): a FULL SET is ONLY the same charm on all 3 PAYLINE cel
 - Cashier items: long rule text (e.g. LUCKY CLOVER) drops to a smaller font instead of being cut off.
 - GREEN and up always include ACT 3 (the Dealer) from the first try; the 'win at GREEN to unlock act 3' step is gone (prefs.act3 is ignored).
 - Rename to SLOTS VS. BOTS still tabled.
+
+### Iteration 23 — 2026-09-25 (user: RELIC RUSH juice; BONUS WHEEL collect or pass)
+- RELIC RUSH is slower and juicier (~12 s for a big rush, was ~5): each respin ticks fast then slows, relics land one at a time with a scale pop, gold burst, panel shake and rising coin pitch; the RESPINS counter punches gold on a reset / red on a whiff; banners for LAST SPIN!, UNCOMMON!, LEGENDARY!, GRAND!.
+- BONUS WHEEL: the prize is held (finishFight(run, fight, holdWheel=true) in the game); the reveal offers PASS or COLLECT. Sims/tests still collect (default). Test added.

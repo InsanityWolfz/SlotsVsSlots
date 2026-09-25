@@ -269,12 +269,13 @@ export function playRush(rng: Rng): { frames: number[][]; count: number } {
 export const rushTier = (count: number): RelicTier => (count <= RUSH.commonMax ? 'common' : count <= RUSH.uncommonMax ? 'uncommon' : 'legendary');
 
 /** Pay a voucher: the prize is decided by its seed and applied to the run right away. */
-export function payVoucher(run: RunState, v: { kind: 'wheel' | 'rush'; seed: number }): BonusPayout {
+/** collectWheel: apply the wheel's prize now (sims, tests). The game holds it for the player's COLLECT / PASS. */
+export function payVoucher(run: RunState, v: { kind: 'wheel' | 'rush'; seed: number }, collectWheel = true): BonusPayout {
   const rng = new Rng(v.seed >>> 0);
   if (v.kind === 'wheel') {
     const options = wheelOptions(run, rng);
     const pick = rng.int(options.length);
-    applyOption(run, options[pick], false);
+    if (collectWheel) applyOption(run, options[pick], false);
     return { kind: 'wheel', options, pick, label: `WHEEL: ${describeOption(options[pick], run).title}` };
   }
   const { frames, count } = playRush(rng);
@@ -501,7 +502,8 @@ const FRAGILE_OPENER_MUL = 0.85;
 const rocksIn = (s: StripCounts[]) => s.reduce((a, x) => a + (x.rock ?? 0), 0);
 
 /** Fold a finished fight back into the run: HP carry-over, capped permanent rocks, healing. */
-export function finishFight(run: RunState, fight: Fight): FightRecord {
+/** holdWheel: BONUS WHEEL prizes wait for the player to COLLECT or PASS them (the game); sims collect. */
+export function finishFight(run: RunState, fight: Fight, holdWheel = false): FightRecord {
   const p = fight.sides.player;
   const won = fight.winner === 'player';
   const before = run.player.hp;
@@ -586,7 +588,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   run.player.hp = Math.min(run.player.maxHp, hp);
   // Bonus vouchers from this fight pay out now that you've won it (after the HP settles, so a
   // wheel HEAL / MAX HP isn't overwritten — QA_1 B2).
-  run.bonusLog = fight.vouchers.map((v) => payVoucher(run, v));
+  run.bonusLog = fight.vouchers.map((v) => payVoucher(run, v, !holdWheel));
   if (run.bonusLog.length) record.bonuses = run.bonusLog.map((b) => b.label);
   run.depth++;
   if (run.depth > actLength(run.act)) {

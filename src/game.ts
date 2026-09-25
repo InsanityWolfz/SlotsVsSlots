@@ -191,6 +191,11 @@ export class Game {
       onFight: (i) => this.beginRunFight(i),
       onNewRun: () => this.chooseCabinet(),
       onMenu: () => this.showMenu(),
+      onWheelCollect: (o) => {
+        if (!this.run) return;
+        applyOption(this.run, o, false);
+        this.noteDiscoveries();
+      },
       onBuy: (i) => this.buyItem(i),
       onReroll: () => this.rerollShop(),
       onLeave: () => this.leaveCashier(),
@@ -458,7 +463,7 @@ export class Game {
 
   private afterRunFight(): void {
     const run = this.run!;
-    const record = finishFight(run, this.fight);
+    const record = finishFight(run, this.fight, true);
     this.lastRecord = record;
     this.phase = run.over ? 'over' : 'between';
     if (run.over) {
