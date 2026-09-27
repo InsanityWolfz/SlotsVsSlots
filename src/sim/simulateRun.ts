@@ -29,7 +29,7 @@ import {
 export type DraftPolicy = 'greedy' | 'random' | 'relic';
 
 /** Balance probes (tools/balance/builds.ts): start with a relic, draft only one charm, or force a big choice. */
-export const SIM_BIAS: { startRelic?: RelicId; enh?: Enh; choice?: BigChoiceId } = {};
+export const SIM_BIAS: { startRelic?: RelicId; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
 
 const RELIC_VALUE: Record<RelicId, number> = {
   mirror: 10,
@@ -231,6 +231,7 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
         reachedMirror++;
         mirrorHp += run.player.hp;
       }
+      SIM_BIAS.onFight?.(run);
       const arch = run.enemies[run.depth].archetype;
       faced[arch] = (faced[arch] ?? 0) + 1;
       const fight = new Fight(fightConfig(run, base), fightSeeds.int(0xffffffff));

@@ -115,7 +115,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     strips: r3({ sword: 4, shield: 4, thorn: 4 }),
     gilded: [],
     favors: 'vamp',
-    meter: { kind: 'thorns', symbol: 'thorn', cost: 0, heal: UNIT / 2 },
+    meter: { kind: 'thorns', symbol: 'thorn', cost: 0, heal: UNIT },
     symbols: ['sword', 'shield', 'thorn'],
     rule: 'THORNS BANK THEIR PAY. WHEN YOU ARE ATTACKED, THE BANK HITS BACK. 300 HP.',
     act2: { text: '+40 MAX HP', maxHp: 4 * UNIT },

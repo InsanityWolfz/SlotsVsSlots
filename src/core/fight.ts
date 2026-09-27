@@ -15,6 +15,8 @@ import {
   OVERCHARGE_ECHO,
   CLOVER_CHANCE,
   FANG_HEAL,
+  FANG_THORN_HEAL,
+  CROWN_HEAL,
   HONE_BONUS,
   POT,
   ROD_SPECIAL_COST,
@@ -373,9 +375,12 @@ export class Fight {
         else this.fillMeter(me, gold.length * UNIT, gold, events);
       }
     }
+    if (!this.over && side === 'player' && score.tier === 'pair' && me.relics.has('crown')) {
+      events.push({ type: 'relic', side, relic: 'crown' });
+      this.heal(me, CROWN_HEAL, 'crown', events);
+    }
     const steals = score.tier === 'triple' || (score.tier === 'pair' && me.relics.has('crown'));
     if (!this.over && side === 'player' && this.isBoss && steals) {
-      if (score.tier === 'pair' && this.pot > 0) events.push({ type: 'relic', side, relic: 'crown' });
       this.winPot(me, events, score.tier === 'triple' ? 1 : 0.5);
     }
     // The house always takes its cut.
@@ -693,7 +698,7 @@ export class Fight {
     if (me.side !== 'player' || this.over) return;
     const heal = this.meter?.heal ?? 0;
     if (heal > 0) this.heal(me, heal, 'payoff', events);
-    if (!this.over && me.relics.has('fang')) this.heal(me, FANG_HEAL, 'fang', events);
+    if (!this.over && me.relics.has('fang')) this.heal(me, this.meter?.kind === 'thorns' ? FANG_THORN_HEAL : FANG_HEAL, 'fang', events);
   }
 
   /** MIDAS / JAX / BRIAR: fill the signature meter (a full MIDAS / JAX meter locks until it pays off). */
@@ -731,7 +736,7 @@ export class Fight {
       const h2 = this.damage(attacker, echo, true);
       events.push({ type: 'attack', from: victim.side, to: attacker.side, reels: [], amount: echo, ...h2, note: 'echo' });
       this.checkDeath(attacker, events);
-      if (!this.over && victim.relics.has('fang')) this.heal(victim, FANG_HEAL, 'fang', events);
+      if (!this.over && victim.relics.has('fang')) this.heal(victim, FANG_THORN_HEAL, 'fang', events);
     }
   }
 

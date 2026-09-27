@@ -524,13 +524,13 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
   if (!e.isBoss && run.act >= 3) {
     const arch = ARCHETYPES.find((a) => a.id === e.archetype);
     const mul = (ACT3_DEPTH_MUL[Math.min(e.depth, ACT3_DEPTH_MUL.length - 1)] ?? 1) * (arch?.hpMul ?? 1) * (e.elite ? ELITE_HP_MUL_2 : 1);
-    return Math.max(e.hp, unitsRound((TUNE.act3Power * BOSS_MUL[run.cabinet].act3 * machinePower(run) + TUNE.act3Flat) * mul));
+    return Math.max(e.hp, unitsRound((TUNE.act3Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'act3') + TUNE.act3Flat) * mul));
   }
   if (!e.isBoss) return run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? unitsRound(e.hp * FRAGILE_OPENER_MUL) : e.hp;
   // The Mirror grows with your machine and (like the House) with every relic you carry in.
   const cm = BOSS_MUL[run.cabinet];
-  if (e.boss === 'mirror') return unitsRound(TUNE.mirrorPower * cm.mirror * machinePower(run)) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length;
-  if (e.boss === 'dealer') return unitsRound(TUNE.dealerPower * cm.dealer * machinePower(run)) + TUNE.dealerFlat + TUNE.mirrorPerRelic * run.player.relics.length;
+  if (e.boss === 'mirror') return unitsRound(TUNE.mirrorPower * cm.mirror * sizingPower(run, 'mirror')) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length;
+  if (e.boss === 'dealer') return unitsRound(TUNE.dealerPower * cm.dealer * sizingPower(run, 'dealer')) + TUNE.dealerFlat + TUNE.mirrorPerRelic * run.player.relics.length;
   // BLACK+: the House cheats (faster skims, payline bombs, no chip shield) instead of just being tougher.
   const house = run.stake >= STAKE.houseDirty ? Math.sqrt(cm.house) : cm.house;
   return unitsRound(e.hp * house) + BOSS_HP_PER_RELIC * run.player.relics.length;
@@ -568,15 +568,32 @@ export function machinePower(run: RunState): number {
   return power;
 }
 const POWER_SPINS = 40;
+
+/**
+ * Typical measured power at each late point, per slot machine (median greedy GREEN run,
+ * tools/balance/power_ref.ts). Late enemies are sized from REF x (your power / REF)^powerElastic, so
+ * a build twice as strong as usual faces ~1.4x the HP, not 2x: getting stronger pays off.
+ */
+export const POWER_REF: Record<CabinetId, { mirror: number; act3: number; dealer: number }> = {
+  knight: { mirror: 405, act3: 1578, dealer: 2375 },
+  midas: { mirror: 761, act3: 1494, dealer: 1851 },
+  thorn: { mirror: 159, act3: 317, dealer: 695 },
+  tesla: { mirror: 246, act3: 566, dealer: 872 },
+  joker: { mirror: 826, act3: 6465, dealer: 8499 },
+};
+export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): number {
+  const ref = POWER_REF[run.cabinet][at];
+  return ref * Math.pow(Math.max(1, machinePower(run)) / ref, TUNE.powerElastic);
+}
 /**
  * Per slot machine: how much of your measured power the Mirror, the Dealer and act 3 regulars are sized
  * to. Machines race differently (KNIGHT's shields, JAX's rare huge payoffs, BRIAR's thorns that need to
  * be hit), so the same HP formula would give each a different win rate.
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number }> = {
-  knight: { house: 1.7, mirror: 0.45, dealer: 0.55, act3: 0.6 },
-  midas: { house: 2.5, mirror: 4, dealer: 0.13, act3: 0.08 },
-  thorn: { house: 1.2, mirror: 3.5, dealer: 1.3, act3: 1.4 },
+  knight: { house: 3.3, mirror: 0.7, dealer: 0.75, act3: 0.6 },
+  midas: { house: 2.5, mirror: 4, dealer: 0.1, act3: 0.08 },
+  thorn: { house: 2.4, mirror: 5, dealer: 1.3, act3: 1.4 },
   tesla: { house: 1.05, mirror: 2, dealer: 0.7, act3: 0.95 },
   joker: { house: 2.4, mirror: 1.5, dealer: 1.1, act3: 1.2 },
 };
@@ -1189,7 +1206,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'meltDown':
       return { title: 'MELT IT DOWN', rule: 'EVERY CHARM ON YOUR REELS BECOMES GOLD, AT YOUR BEST CHARM LEVEL', cost: 'YOUR OTHER CHARM LEVELS ARE GONE' };
     case 'gildLot':
-      return { title: 'GILD THE LOT', rule: `EVERY REEL GETS ${BIG.gildLotCells} GOLD CHARMS (ON PLAIN SWORDS, SHIELDS OR BOLTS)`, cost: `YOUR SYMBOLS LOSE A LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
+      return { title: 'SOLID GOLD', rule: `EVERY REEL GETS ${BIG.gildLotCells} GOLD CHARMS (ON PLAIN SWORDS, SHIELDS OR BOLTS)`, cost: `YOUR SYMBOLS LOSE A LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
     case 'polish':
       return { title: 'POLISH', rule: `+1 LEVEL TO YOUR ${c.enh!.toUpperCase()} CHARMS`, cost: '' };
     case 'cleanCut':
@@ -1199,7 +1216,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'sweepUp':
       return { title: 'SWEEP UP', rule: `SMASH EVERY ROCK ON YOUR REELS AND HEAL ${BIG.sweepHeal}`, cost: '' };
     case 'glassCannon':
-      return { title: 'GLASS CANNON', rule: `EVERY PAYING GROUP PAYS X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS (COMPS, BANDAGE, CASHIER)' };
+      return { title: 'GLASS CANNON', rule: `EVERY PAYING GROUP PAYS X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS, BANDAGE AND CASHIER INCLUDED' };
     case 'bloodPact':
       return meter
         ? { title: 'BLOOD PACT', rule: 'YOUR METER FILLS TWICE AS FAST', cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` }

@@ -357,3 +357,31 @@ Baseline 9.3% (knight 8.8, midas 9.0, thorn 12.3, tesla 9.0, joker 7.8). Noise i
 - Forced big choice: all within noise (8.9–9.9) except twinReel 11.1 and bloodPact 10.6. Power picks (armsRace, gildLot,
   masterwork) do ~nothing: act 3 and Dealer HP scale with measured machinePower, so damage upgrades get eaten there;
   only healing and survival (fang, bandage, key's burst, secondWind) move the needle.
+
+### Iteration 27 (2026-09-27): partial power scaling, charm/relic buffs and nerfs, big-choice wording
+User-approved after the probe above. Changes:
+- Late HP sizing: the Mirror, act 3 regulars and the Dealer use `sizingPower` = REF x (power/REF)^0.5 (`TUNE.powerElastic`),
+  with REF = the median measured power at that point per machine (`POWER_REF`, from tools/balance/power_ref.ts).
+  A build 4x stronger than usual now faces 2x HP, not 4x.
+- Charms: keen +5/10/15/20 -> +20/30/40/50; vamp 10/15/20/25 -> 20/30/40/50; lucky 35/50/65/80 -> 40/55/70/85.
+- Relics: Fang heals 10 (not 30) on BRIAR's thorn volleys; Hone +20 -> +40; Cactus 10% -> 30%;
+  High Roller (crown) now also heals 5 on every double. BRIAR's payoff heal 5 -> 10.
+- BOSS_MUL: knight house 1.7->3.3, mirror 0.45->0.7, dealer 0.55->0.75; midas dealer 0.13->0.10; thorn house 1.2->2.4, mirror 3.5->5.
+- Wording: GILD THE LOT -> SOLID GOLD; Glass Cannon cost no longer says COMPS.
+
+tuesday.ts 1000 (before -> after):
+| machine | WHITE | GREEN | Dealer |
+| knight | 23.3 -> 27.5 | -> 11.0 | 64.8 -> 61.5 |
+| midas | 24.6 -> 27.1 | -> 10.3 | 47.2 -> 55.7 |
+| thorn | 27.0 -> 30.3 | -> 11.5 | 70.2 -> 54.5 |
+| tesla | 25.5 -> 27.9 | -> 11.3 | 57.5 -> 55.9 |
+| joker | 23.5 -> 25.8 | -> 8.9 | 56.9 -> 61.0 |
+| AVG | 24.8 -> 27.7 | 10.0 -> 10.6 | 59.3 -> 57.7 (spread 23 -> 7 pts) |
+
+builds.ts 400 (baseline 10.6): relics fang 18.7 (thorn 19.3, was 35.5), mirror 20.1, bell 19.7, ticket 18.9, key 17.4,
+phoenix 15.8, prism 15.4, crown 14.7, bandage 14.7, battery 14.6, sandglass 14.6, overcharge 14.8, clover 14.3, chalice 14.1,
+midas 13.6, rod 12.6, cactus 12.2 (thorn 20.0), hone 10.7 (needs keen; greedy rarely has it).
+Charms: gold 13.1, vamp 9.4, lucky 8.4, keen 7.5. On raw engine damage keen now matches gold at level 1 (knight 2/reel:
+gold 29, keen 33); gold wins in drafts because it fits swords, shields and bolts (3x the card offers) and on levels.
+Big choices: still all within noise (8.8-11.4). One late pick doesn't move a run; they need bigger numbers to matter.
+Open: WHITE rose ~3 pts (act 1 regulars are easier for knight/thorn after the buffs).

@@ -17,16 +17,16 @@ function fight(mut: (c: GameConfig) => void, seed = 7): Fight {
 }
 
 describe('build relics & keen', () => {
-  it('KEEN swords add +5 to their group and HONE adds +20 more', () => {
+  it('KEEN swords add +20 to their group and HONE adds +40 more', () => {
     const f = fight((c) => (c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen', n: 4 }]));
     f.forceNext('player', ['sword', 'bolt', 'shield']);
-    expect(ofType(f.step().events, 'attack')[0].amount).toBe(15);
+    expect(ofType(f.step().events, 'attack')[0].amount).toBe(30);
     const g = fight((c) => {
       c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen', n: 4 }];
       c.relics = ['hone'];
     });
     g.forceNext('player', ['sword', 'bolt', 'shield']);
-    expect(ofType(g.step().events, 'attack')[0].amount).toBe(35);
+    expect(ofType(g.step().events, 'attack')[0].amount).toBe(70);
   });
 
   it('MIDAS: gold cells on the payline also fill the meter by 10', () => {
@@ -48,7 +48,7 @@ describe('build relics & keen', () => {
     expect(fight((c) => (c.relics = ['rod'])).cfg.specialCost).toBe(50);
   });
 
-  it('CACTUS: banking thorns also shields you for 10% of them (BRIAR)', () => {
+  it('CACTUS: banking thorns also shields you for 30% of them (BRIAR)', () => {
     const c = defaultConfig();
     c.enemy = { hp: 9999, strips: reels3({ sword: 12 }) };
     c.cabinet = 'thorn';
@@ -59,7 +59,7 @@ describe('build relics & keen', () => {
     const ev = f.step().events;
     const bank = ofType(ev, 'meter')[0];
     expect(bank.amount).toBe(60); // (15 + 15) x2
-    expect(ofType(ev, 'shieldGain').find((e) => e.source === 'cactus')?.amount).toBe(6);
+    expect(ofType(ev, 'shieldGain').find((e) => e.source === 'cactus')?.amount).toBe(18);
   });
 
   it('PRISM doubles a match that used a WILD', () => {

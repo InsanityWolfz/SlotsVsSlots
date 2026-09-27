@@ -16,13 +16,13 @@ export const CHARM_VALUE: Record<Enh, number[]> = {
   /** GOLD: this cell's share of the group multiplier (x2 plain). */
   gold: [0, 2, 3, 4, 5],
   /** KEEN: added to the sword group's BASE (and the group pierces shields). */
-  keen: [0, 5, 10, 15, 20],
+  keen: [0, 20, 30, 40, 50],
   /** CHARGED: added to the bolt group's BASE (TESLA). */
   charged: [0, 5, 10, 15, 20],
   /** VAMP: heal when the sword group hits. */
-  vamp: [0, 10, 15, 20, 25],
+  vamp: [0, 20, 30, 40, 50],
   /** LUCKY: % chance the cell lands as a WILD. */
-  lucky: [0, 35, 50, 65, 80],
+  lucky: [0, 40, 55, 70, 85],
   /** BLAZE: added to TESLA's special for every blaze cell you own. */
   blaze: [0, 10, 15, 20, 25],
   /** Retired. */

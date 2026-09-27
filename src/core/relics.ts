@@ -13,15 +13,15 @@ export const RELICS: Record<RelicId, RelicDef> = {
   clover: { id: 'clover', name: 'LUCKY CLOVER', text: '30% CHANCE A NEAR-MISS BECOMES A JACKPOT', sprite: 'relicClover' },
   battery: { id: 'battery', name: 'BATTERY', text: 'YOUR METER STARTS EACH FIGHT MORE THAN HALF FULL', sprite: 'relicBattery' },
   mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS PAY AS A DOUBLE', sprite: 'relicMirror' },
-  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFF HEALS 30 MORE', sprite: 'relicFang' },
+  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFF HEALS 30 MORE (BRIAR: 10)', sprite: 'relicFang' },
   bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 60 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
-  crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR DOUBLES ALSO STEAL HALF THE HOUSE POT', sprite: 'relicCrown' },
+  crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR DOUBLES HEAL 5 (AND STEAL HALF THE HOUSE POT)', sprite: 'relicCrown' },
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
   midas: { id: 'midas', name: 'MIDAS', text: 'GOLD CELLS ON YOUR PAYLINE ALSO FILL YOUR METER BY 10', sprite: 'relicMidas' },
   rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'IF YOU HAVE CHARGED BOLTS, YOUR SPECIAL COSTS 40', sprite: 'relicRod' },
-  cactus: { id: 'cactus', name: 'CACTUS', text: 'BANKING THORNS ALSO SHIELDS YOU FOR 10% OF THEM', sprite: 'relicCactus' },
+  cactus: { id: 'cactus', name: 'CACTUS', text: 'BANKING THORNS ALSO SHIELDS YOU FOR 30% OF THEM', sprite: 'relicCactus' },
   prism: { id: 'prism', name: 'PRISM', text: 'A MATCH THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
-  hone: { id: 'hone', name: 'HONE', text: 'KEEN SWORDS DEAL +20 MORE', sprite: 'relicHone' },
+  hone: { id: 'hone', name: 'HONE', text: 'KEEN SWORDS DEAL +40 MORE', sprite: 'relicHone' },
   // Legendary (act 2): big, build-bending effects.
   ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'EVERY CHARM IS ONE LEVEL HIGHER (EVEN PAST LEVEL 3)', sprite: 'relicTicket' },
   bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND FILL YOUR METER', sprite: 'relicBell' },
@@ -70,10 +70,14 @@ export const BATTERY_SHARE = 0.6;
 /** MIDAS: a full meter makes your next paying group pay this many times. */
 export const MIDAS_RAISE = 4;
 /** Cactus: banking thorns shields you for this share of what you banked. */
-export const CACTUS_SHARE = 0.1;
+export const CACTUS_SHARE = 0.3;
 export const FANG_HEAL = 3 * UNIT;
+/** BRIAR's thorns fire almost every enemy turn, so its Fang heal is smaller (35% win with 30, probe 2026-09-27). */
+export const FANG_THORN_HEAL = 1 * UNIT;
 export const BANDAGE_HEAL = 6 * UNIT;
-export const HONE_BONUS = 2 * UNIT;
+/** HIGH ROLLER: every double you land heals this much. */
+export const CROWN_HEAL = UNIT / 2;
+export const HONE_BONUS = 4 * UNIT;
 export const ROD_SPECIAL_COST = 4 * UNIT;
 
 /** What each build relic needs you to own before it's offered (playtest ITERATION_4). */

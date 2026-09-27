@@ -14,7 +14,7 @@ import {
   enemyHp,
   fightConfig,
   finishFight,
-  machinePower,
+  sizingPower,
   isShopNow,
   leaveShop,
   shopOffers,
@@ -136,7 +136,7 @@ describe('act 2 gilds', () => {
     });
     f.sides.player.hp = 10;
     f.forceNext('player', ['sword', 'sword', 'sword']);
-    expect(ofType(f.step().events, 'heal')[0]).toMatchObject({ amount: 10, source: 'vamp' });
+    expect(ofType(f.step().events, 'heal')[0]).toMatchObject({ amount: 20, source: 'vamp' });
 
     const g = fight((c) => {
       c.player.strips = reels3({ bolt: 12 });
@@ -270,7 +270,7 @@ describe('act structure', () => {
     expect(cfg.enemy.strips).toEqual(run.player.strips);
     expect(cfg.enemy.gilded).toEqual(run.player.gilded);
     expect(cfg.enemy.hp).toBe(enemyHp(run, run.enemies[RUN_FIGHTS]));
-    expect(cfg.enemy.hp).toBe(Math.round((TUNE.mirrorPower * BOSS_MUL.midas.mirror * machinePower(run)) / 10) * 10 + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length);
+    expect(cfg.enemy.hp).toBe(Math.round((TUNE.mirrorPower * BOSS_MUL.midas.mirror * sizingPower(run, 'mirror')) / 10) * 10 + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length);
     expect(cfg.enemy.ability?.kind).toBe(MIRROR.ability.kind);
 
     const f = new Fight(cfg, 9);
