@@ -74,3 +74,7 @@ Status: discussion only. No code until after the usage reset (Tue 2026-09-29). T
 - **Characters locked:** MIDAS ×4 applies to whatever lands on the payline. BRIAR thorns fire once per enemy turn, then clear (a "keep 10%" relic needs a cap). JAX's meter payoff stands, and the 3-wild rule (a bonus reel picks one of your symbols to pay a jackpot) applies to everyone. KNIGHT has no special; ask the expert for "simple but exciting".
 - **Staging:** the user is confident shipping the changes together is fine. Keep the current live build as a reference anyway.
 - **Art:** stays 8-bit.
+- **Charm cards NAME the symbol:** "2 GOLD CHARMS · REEL 1 · SWORDS". They only target plain (uncharmed) cells and are only offered if enough exist. Charm fit rules stay (keen is swords only, etc.).
+- **Random-charm card** ("3 random charms on reel 2", cheaper): later, once players know the charms.
+- **Levels live on the TYPE, not the cell:** Gold Lvl 2 upgrades every gold charm, including ones added later. Swords Lvl 2 upgrades every sword, including ones added later.
+- **Left panel:** replace the strip-order list with shop-style columns 1 2 3, one row per symbol+charm pair with a count (e.g. ⚔2, gold ⚔2, ⚡4).
