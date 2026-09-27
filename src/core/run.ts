@@ -1,4 +1,4 @@
-import { cloneConfig, defaultConfig, type Enh, type GameConfig, type Gild, type RelicId, type StripCounts, type SymbolId } from './config';
+import { cloneConfig, defaultConfig, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type RelicId, type StripCounts, type SymbolId } from './config';
 import { ACTS, actLength, ARCHETYPES, generateRunPaths, makeEnemy, TUNE, type EnemyDef } from './enemies';
 import { MAX_STAKE, MIRROR_COPYABLE, mirrorCanUse, STAKE } from './stakes';
 import type { Fight } from './fight';
@@ -35,11 +35,11 @@ import { BONUS_SYMBOLS, stripCounts } from './strip';
 
 /** Run-level tunables. */
 export const RUN = {
-  startHp: 32,
+  startHp: 32 * UNIT,
   /** Fraction of max HP restored after every won fight (low, so HP cards matter). */
   postFightHeal: 0.2,
-  healCard: 8,
-  maxHpCard: 4,
+  healCard: 8 * UNIT,
+  maxHpCard: 4 * UNIT,
   /** A strip can't be thinned below this many cells. */
   minStrip: 6,
   draftSize: 3,
@@ -83,7 +83,7 @@ export const CHIPS = {
   act2EliteChips: 6,
   perJackpot: 1,
   /** +1 chip per this much overkill on the killing blow. */
-  overkillPer: 5,
+  overkillPer: 5 * UNIT,
   /** +1 interest per this many banked chips, capped. */
   interestPer: 5,
   interestCap: 3,
@@ -423,7 +423,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // BLACK stake: the House ignores your chip shield.
     // No bonus in the run's final fight: a voucher could never be spent (QA_1 B11).
     bonusSymbols: !(e.isBoss && run.act >= runActs(run)),
-    stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? Math.floor(run.player.chips / CHIPS.stackPer) : 0,
+    stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? chipShield(run.player.chips) : 0,
   };
   const hp = enemyHp(run, e);
   cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
@@ -435,7 +435,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.enemy.gilded = run.player.gilded.filter((g) => g.enh !== 'spiked' && g.enh !== 'keen').map((g) => ({ reel: g.reel, symbol: g.symbol, enh: g.enh }));
     cfg.player.stackShield = Math.min(MIRROR_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
     // REFLECTION is capped relative to you: two from full HP kill you.
-    if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, power: Math.max(REFLECT_MIN, Math.round(run.player.maxHp * REFLECT_CAP)) };
+    if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, power: Math.max(REFLECT_MIN, unitsRound(run.player.maxHp * REFLECT_CAP)) };
   }
   cfg.relics = [...run.player.relics];
   cfg.cabinet = run.cabinet;
@@ -466,14 +466,14 @@ export const TUTORIAL_OPENER_MUL = 0.75;
 export function enemyHp(run: RunState, e: EnemyDef): number {
   const gold = e.isBoss && run.stake >= STAKE.fasterAll ? STAKE.goldBossHp : 1;
   const tutorial = run.tutorial && run.act === 1 && e.depth === 0 ? TUTORIAL_OPENER_MUL : 1;
-  return Math.round(baseEnemyHp(run, e) * gold * tutorial);
+  return unitsRound(baseEnemyHp(run, e) * gold * tutorial);
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {
-  if (!e.isBoss) return run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? Math.round(e.hp * FRAGILE_OPENER_MUL) : e.hp;
+  if (!e.isBoss) return run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? unitsRound(e.hp * FRAGILE_OPENER_MUL) : e.hp;
   // The Mirror grows with your machine and (like the House) with every relic you carry in.
-  if (e.boss === 'mirror') return Math.round(TUNE.mirrorPower * machinePower(run)) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length;
-  if (e.boss === 'dealer') return Math.round(TUNE.dealerPower * machinePower(run)) + TUNE.dealerFlat + TUNE.mirrorPerRelic * run.player.relics.length;
+  if (e.boss === 'mirror') return unitsRound(TUNE.mirrorPower * machinePower(run)) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length;
+  if (e.boss === 'dealer') return unitsRound(TUNE.dealerPower * machinePower(run)) + TUNE.dealerFlat + TUNE.mirrorPerRelic * run.player.relics.length;
   return e.hp + BOSS_HP_PER_RELIC * run.player.relics.length;
 }
 
@@ -489,17 +489,17 @@ export function machinePower(run: RunState): number {
   const rod = relics.includes('rod') && gilded.some((g) => g.enh === 'charged');
   const cost = rod ? ROD_SPECIAL_COST : cab.specialCost ?? base.specialCost;
   let dmg = Math.max(cab.specialDamage ?? base.specialDamage, rod ? cab.rodDamage ?? ROD_SPECIAL_DAMAGE : 0) + s.specialBonus;
-  if (relics.includes('overcharge')) dmg += Math.ceil(dmg * OVERCHARGE_ECHO);
+  if (relics.includes('overcharge')) dmg += Math.ceil((dmg * OVERCHARGE_ECHO) / UNIT) * UNIT;
   // Battery: a head start worth about one extra special over a Mirror fight (~8 of your spins).
   const energy = s.energy + (relics.includes('battery') ? BATTERY_ENERGY / 8 : 0);
   // Specials pierce shields and the Mirror has none of its own: they count extra toward its HP.
   return s.damage + TUNE.mirrorSpecialWeight * (energy / cost) * Math.min(POWER_CAP, dmg);
 }
-const POWER_CAP = 20;
+const POWER_CAP = 20 * UNIT;
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
-export const MIRROR_CHIP_SHIELD_CAP = 4;
+export const MIRROR_CHIP_SHIELD_CAP = 4 * UNIT;
 /** Cabinets this fragile face a softer opener (ITERATION_8: 3-5% opener deaths). */
-const FRAGILE_HP = 26;
+const FRAGILE_HP = 26 * UNIT;
 const FRAGILE_OPENER_MUL = 0.85;
 
 const rocksIn = (s: StripCounts[]) => s.reduce((a, x) => a + (x.rock ?? 0), 0);
@@ -584,7 +584,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     if (spoils.length) run.pendingSpoils = spoils;
   }
   // Act 3: THE HOUSE DOESN'T COMP — no patch-up between fights.
-  let hp = p.hp + Math.round(run.player.maxHp * RUN.postFightHeal * (run.stake >= STAKE.halfHeal ? 0.5 : 1) * (run.act >= 3 ? 0 : 1));
+  let hp = p.hp + unitsRound(run.player.maxHp * RUN.postFightHeal * (run.stake >= STAKE.halfHeal ? 0.5 : 1) * (run.act >= 3 ? 0 : 1));
   // THE DECK REMEMBERS: the Card Sharp's marks carry into the Dealer fight.
   run.deckMarks = Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
   if (run.player.relics.includes('bandage')) hp += BANDAGE_HEAL;
@@ -649,7 +649,7 @@ export function stripStats(strips: StripCounts[], base: GameConfig, relics: Reli
   const out = { damage: 0, energy: 0, shield: 0, pairPct: 0, jackpotPct: 0, spinsPerSpecial: 0, heal: 0, specialBonus: 0 };
   strips.forEach((s, reel) => {
     const sym = (Object.keys(s) as SymbolId[]).find((k) => enhOf(reel, k) === 'blaze' && (s[k] ?? 0) > 0);
-    if (sym) out.specialBonus += BLAZE_BONUS.each + lvlOf(reel, sym) - 1;
+    if (sym) out.specialBonus += BLAZE_BONUS.each + (lvlOf(reel, sym) - 1) * UNIT;
   });
   for (const [a, pa, oa] of probs[0])
     for (const [b, pb, ob] of probs[1])
@@ -663,14 +663,14 @@ export function stripStats(strips: StripCounts[], base: GameConfig, relics: Reli
             const enh = enhOf(r, own[r]);
             const lvl = lvlOf(r, own[r]);
             if (enh === 'keen' && g.symbol === 'sword') g.amount += KEEN_BONUS * lvl + (relics.includes('hone') ? HONE_BONUS : 0);
-            if (enh === 'charged' && g.symbol === 'bolt') g.amount += lvl;
+            if (enh === 'charged' && g.symbol === 'bolt') g.amount += lvl * UNIT;
           }
           const goldLevels = g.reels.filter((r) => enhOf(r, own[r]) === 'gold').reduce((a, r) => a + lvlOf(r, own[r]), 0);
           if (goldLevels) g.amount *= 1 + goldLevels;
           if (relics.includes('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) g.amount *= 2;
           if (relics.includes('key') && g.matched && g.reels.length === 2) g.amount = Math.ceil(g.amount * KEY_MULT);
           if (relics.includes('bell') && g.matched && g.reels.length === 3) g.amount *= BELL_MULT;
-          if (g.symbol === 'sword' && g.amount > 0) for (const r of g.reels) if (enhOf(r, own[r]) === 'vamp') out.heal += p * lvlOf(r, own[r]);
+          if (g.symbol === 'sword' && g.amount > 0) for (const r of g.reels) if (enhOf(r, own[r]) === 'vamp') out.heal += p * lvlOf(r, own[r]) * UNIT;
         }
         sc.totals = {};
         for (const g of sc.groups) sc.totals[g.symbol] = (sc.totals[g.symbol] ?? 0) + g.amount;
@@ -869,7 +869,7 @@ export function takeSpoils(run: RunState, relic: RelicId): void {
 export const isShopNow = (run: RunState) => !run.over && (RUN.shopAfter.includes(run.depth) || run.actIntro);
 export const rerollCost = (run: RunState) => CHIPS.rerollBase + run.shopRerolls;
 /** Shield per House turn your current chips would give in the final fight. */
-export const chipShield = (chips: number) => Math.floor(chips / CHIPS.stackPer);
+export const chipShield = (chips: number) => Math.floor(chips / CHIPS.stackPer) * UNIT;
 
 /**
  * The Cashier's four slots: two targeted gilds, a relic, and a utility (WILDs, remove a symbol,
@@ -926,7 +926,7 @@ export function shopOffers(run: RunState): ShopItem[] {
   const shelf = items.slice(0, 4);
   // HEAL is a permanent service slot, sized to what you're missing (hidden when nearly full).
   const missing = p.maxHp - p.hp;
-  if (missing >= 3) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal, sold: false });
+  if (missing >= 3 * UNIT) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal, sold: false });
   return shelf;
 }
 
@@ -1042,21 +1042,21 @@ export function stripsAfter(run: RunState, o: DraftOption): StripCounts[] {
 const NAME: Partial<Record<SymbolId, string>> = { sword: 'SWORD', shield: 'SHIELD', bolt: 'BOLT', rock: 'ROCK', wild: 'WILD' };
 const ENH_TEXT: Record<Enh, (s: string, reel: number) => string> = {
   gold: (s, r) => `${s}S ON REEL ${r} PAY X2`,
-  keen: (s, r) => `${s}S ON REEL ${r} DEAL +1 AND PIERCE SHIELDS`,
-  charged: (s, r) => `${s}S ON REEL ${r} GIVE +1 ENERGY`,
-  spiked: (s, r) => `${s}S ON REEL ${r} HIT BACK FOR 2 WHEN YOU ARE HIT`,
-  vamp: (s, r) => `${s}S ON REEL ${r} HEAL YOU 1 WHEN THEY HIT`,
+  keen: (s, r) => `${s}S ON REEL ${r} DEAL +10 AND PIERCE SHIELDS`,
+  charged: (s, r) => `${s}S ON REEL ${r} GIVE +10 ENERGY`,
+  spiked: (s, r) => `${s}S ON REEL ${r} HIT BACK FOR 20 WHEN YOU ARE HIT`,
+  vamp: (s, r) => `${s}S ON REEL ${r} HEAL YOU 10 WHEN THEY HIT`,
   lucky: (s, r) => `${s}S ON REEL ${r}: ${Math.round(LUCKY_CHANCE.each * 100)}% CHANCE TO LAND AS A WILD`,
   blaze: (_s, r) => `BLAZE REEL ${r}: YOUR SPECIAL DEALS +${BLAZE_BONUS.each}`,
 };
 const TIER_TEXT: Record<Enh, (s: string, reel: number) => string> = {
   gold: (s, r) => `${s}S ON REEL ${r} PAY X4`,
-  keen: (s, r) => `${s}S ON REEL ${r} DEAL +3 AND PIERCE`,
-  charged: (s, r) => `${s}S ON REEL ${r} GIVE +3 ENERGY`,
-  spiked: (s, r) => `${s}S ON REEL ${r} HIT BACK FOR 6`,
-  vamp: (s, r) => `${s}S ON REEL ${r} HEAL 3 WHEN THEY HIT`,
+  keen: (s, r) => `${s}S ON REEL ${r} DEAL +30 AND PIERCE`,
+  charged: (s, r) => `${s}S ON REEL ${r} GIVE +30 ENERGY`,
+  spiked: (s, r) => `${s}S ON REEL ${r} HIT BACK FOR 60`,
+  vamp: (s, r) => `${s}S ON REEL ${r} HEAL 30 WHEN THEY HIT`,
   lucky: (s, r) => `${s}S ON REEL ${r}: 65% CHANCE TO LAND AS A WILD`,
-  blaze: (_s, r) => `BLAZE REEL ${r}: YOUR SPECIAL DEALS +5`,
+  blaze: (_s, r) => `BLAZE REEL ${r}: YOUR SPECIAL DEALS +50`,
 };
 /** What a gild card's cell will really do, at the level it will have after you take it. */
 function levelText(run: RunState, o: Extract<DraftOption, { kind: 'gild' }>): string {
@@ -1071,15 +1071,15 @@ function levelText(run: RunState, o: Extract<DraftOption, { kind: 'gild' }>): st
     case 'keen':
       return `+${KEEN_BONUS * lvl + (run.player.relics.includes('hone') ? HONE_BONUS : 0)} DAMAGE AND PIERCE${set}`;
     case 'charged':
-      return `+${lvl} ENERGY${set}`;
+      return `+${lvl * UNIT} ENERGY${set}`;
     case 'spiked':
-      return `HIT BACK FOR ${spikeBase + 2 * (lvl - 1)}${set}`;
+      return `HIT BACK FOR ${spikeBase + 2 * UNIT * (lvl - 1)}${set}`;
     case 'vamp':
-      return `HEAL ${Math.min(VAMP_CAP, lvl)} WHEN THEY HIT${set}`;
+      return `HEAL ${Math.min(VAMP_CAP, lvl * UNIT)} WHEN THEY HIT${set}`;
     case 'lucky':
       return `${Math.round(100 * Math.min(0.8, LUCKY_CHANCE.each + LUCKY_CHANCE.step * (lvl - 1)))}% TO LAND AS A WILD${set}`;
     case 'blaze':
-      return `YOUR SPECIAL DEALS +${BLAZE_BONUS.each + lvl - 1}${set}`;
+      return `YOUR SPECIAL DEALS +${BLAZE_BONUS.each + (lvl - 1) * UNIT}${set}`;
   }
 }
 

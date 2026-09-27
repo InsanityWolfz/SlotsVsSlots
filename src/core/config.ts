@@ -156,19 +156,27 @@ export interface GameConfig {
   seed: number | null;
 }
 
+/** Every number in the game is on a x10 scale (a plain symbol pays 10). The presentation divides by this where it counts pips. */
+export const UNIT = 10;
+
+/** Round to whole UNITs (so halves and thirds of x10 numbers stay on the old grid). */
+export const unitsUp = (x: number) => Math.ceil(x / UNIT - 1e-9) * UNIT;
+export const unitsRound = (x: number) => Math.round(x / UNIT) * UNIT;
+export const unitsDown = (x: number) => Math.floor(x / UNIT + 1e-9) * UNIT;
+
 export const reels3 = (c: StripCounts): StripCounts[] => [{ ...c }, { ...c }, { ...c }];
 
 export function defaultConfig(): GameConfig {
   return {
-    player: { hp: 20, strips: reels3({ sword: 4, shield: 4, bolt: 4 }) },
+    player: { hp: 20 * UNIT, strips: reels3({ sword: 4, shield: 4, bolt: 4 }) },
     // Tuned from playtest/PLAYTEST_REPORT.md: ~65% player wins, ~24 turns, cleanse in ~half of fights.
-    enemy: { hp: 30, strips: reels3({ sword: 5, shield: 2, slime: 5 }), name: 'SLIME KING', portrait: 'enemyPortrait' },
-    base: { sword: 1, shield: 1, bolt: 1, slime: 1, ice: 1, claw: 1, rock: 1, lock: 1, coin: 1, seven: 2, empty: 0, wild: 1, bomb: 1, hex: 1, fangs: 1, mimicSym: 1, ground: 1, fake: 1, card: 1, gavel: 1, rake: 1, bonusSym: 0, relicSym: 0 },
+    enemy: { hp: 30 * UNIT, strips: reels3({ sword: 5, shield: 2, slime: 5 }), name: 'SLIME KING', portrait: 'enemyPortrait' },
+    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, ground: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0 },
     pairMult: 2,
     tripleMult: 3,
     pairRule: 'inOrder',
-    specialCost: 5,
-    specialDamage: 10,
+    specialCost: 5 * UNIT,
+    specialDamage: 10 * UNIT,
     specialIgnoresShield: true,
     shieldReset: 'ownTurnStart',
     cleanseOnSlimeTriple: true,

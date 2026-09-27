@@ -1,4 +1,4 @@
-import type { AbilityDef, SideConfig, StripCounts, SymbolId } from './config';
+import { UNIT, unitsRound, type AbilityDef, type SideConfig, type StripCounts, type SymbolId } from './config';
 import { POT } from './relics';
 import type { Rng } from './rng';
 
@@ -37,7 +37,7 @@ export const ARCHETYPES: Archetype[] = [
     portrait: 'enemyBrute',
     strip: { sword: 5, shield: 7 },
     hpMul: 1.1,
-    ability: { kind: 'smash', every: 3, power: 4 },
+    ability: { kind: 'smash', every: 3, power: 4 * UNIT },
     minDepth: 1,
     blurb: 'HITS HARD',
     acts: [1, 2],
@@ -115,7 +115,7 @@ export const ARCHETYPES: Archetype[] = [
     portrait: 'enemyVampire',
     strip: { sword: 4, shield: 3, fangs: 5 },
     hpMul: 0.95,
-    ability: { kind: 'bloodmoon', every: 4, power: 8 },
+    ability: { kind: 'bloodmoon', every: 4, power: 8 * UNIT },
     minDepth: 0,
     blurb: 'DRAINS YOUR HP TO HEAL ITSELF',
     acts: [2],
@@ -138,7 +138,7 @@ export const ARCHETYPES: Archetype[] = [
     portrait: 'enemyGrounder',
     strip: { sword: 5, shield: 5, ground: 3 },
     hpMul: 1,
-    ability: { kind: 'earth', every: 4, power: 3 },
+    ability: { kind: 'earth', every: 4, power: 3 * UNIT },
     minDepth: 1,
     blurb: 'RODS IN YOUR BOLTS: A GROUNDED BOLT GIVES NO ENERGY',
     acts: [2],
@@ -166,7 +166,7 @@ ARCHETYPES.push(
     hpMul: 1,
     ability: { kind: 'mark', every: 4, power: 3 },
     minDepth: 0,
-    blurb: 'MARKS YOUR CELLS: A MARKED CARD ON YOUR PAYLINE HITS YOU FOR 2',
+    blurb: 'MARKS YOUR CELLS: A MARKED CARD ON YOUR PAYLINE HITS YOU FOR 20',
     acts: [3],
   },
   {
@@ -175,7 +175,7 @@ ARCHETYPES.push(
     portrait: 'enemyPitBoss',
     strip: { sword: 5, shield: 4, gavel: 3 },
     hpMul: 1.1,
-    ability: { kind: 'penalty', every: 4, power: 4 },
+    ability: { kind: 'penalty', every: 4, power: 4 * UNIT },
     minDepth: 0,
     blurb: 'CONFISCATES YOUR CHARMS FOR THE FIGHT (ITS AUDIT TAKES ONE EVERY FEW TURNS)',
     acts: [3],
@@ -220,7 +220,7 @@ export const MIRROR: Archetype = {
   portrait: 'enemyMirror',
   strip: { sword: 4, shield: 4, bolt: 4 },
   hpMul: 1,
-  ability: { kind: 'reflect', every: 3, power: 20 },
+  ability: { kind: 'reflect', every: 3, power: 20 * UNIT },
   minDepth: 5,
   blurb: 'PLAYS YOUR OWN MACHINE. THROWS YOUR BEST HIT BACK AT YOU',
   acts: [2],
@@ -250,17 +250,17 @@ const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'MANGY', 'CUR
 
 /** HP for a regular fight at each depth (0-based), before the archetype multiplier. */
 /** (+6% in I14 to offset BONUS WHEEL / RELIC RUSH payouts.) */
-export const DEPTH_HP = [22, 28, 33, 36, 39];
+export const DEPTH_HP = [22, 28, 33, 36, 39].map((h) => h * UNIT);
 /** Act 2 curve: you arrive with a built machine and a legendary. */
-export const DEPTH_HP_2 = [52, 62, 73, 85, 97];
+export const DEPTH_HP_2 = [52, 62, 73, 85, 97].map((h) => h * UNIT);
 /** Mutable so balance sweeps can tune it. */
 /** mirrorPower/mirrorFlat: the Mirror's HP = power × your expected damage per spin + flat (ITERATION_6 Package N). */
 /** Act 3: 3 fights, then the Dealer. */
-export const DEPTH_HP_3 = [120, 140, 160];
+export const DEPTH_HP_3 = [120, 140, 160].map((h) => h * UNIT);
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 3 };
 export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
 /** Act 3 (ITERATION_12 playtest, commit at GREEN): Dealer HP = 7 x typical-spin power + 60 (+4/relic), less bursty strip -> ~62% Dealer win. */
-export const TUNE = { dealerPower: 8, dealerFlat: 70, act3Sevens: 3, bossHp: 80, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 48, mirrorPerRelic: 4, mirrorSpecialWeight: 1 };
+export const TUNE = { dealerPower: 8, dealerFlat: 70 * UNIT, act3Sevens: 3, bossHp: 80 * UNIT, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 48 * UNIT, mirrorPerRelic: 4 * UNIT, mirrorSpecialWeight: 1 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
@@ -322,8 +322,8 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
   const curve = act > 2 ? DEPTH_HP_3 : act > 1 ? DEPTH_HP_2.map((h) => h * TUNE.act2Mul) : DEPTH_HP;
   const opener = depth === 0 && act === 1 ? OPENER_HP_MUL : 1;
   // (The Mirror's real HP is sized to your machine in run.enemyHp.)
-  const bossHp = a.id === 'mirror' ? 100 : TUNE.bossHp;
-  const hp = isBoss ? bossHp : Math.round(curve[Math.min(depth, curve.length - 1)] * hpMul * opener);
+  const bossHp = a.id === 'mirror' ? 100 * UNIT : TUNE.bossHp;
+  const hp = isBoss ? bossHp : unitsRound(curve[Math.min(depth, curve.length - 1)] * hpMul * opener);
   const every = a.ability.every;
   return {
     archetype: a.id,
@@ -377,7 +377,7 @@ export function generateRunPaths(rng: Rng, act = 1): EnemyDef[][] {
       elite.elite = true;
       // The elite thief is already the deadliest node: a lighter bump.
       // Act 2 elites are much tougher (they pay spoils and chips; ITERATION_7: always-elite was +11).
-      elite.hp = Math.round(elite.hp * (act > 1 ? ELITE_HP_MUL_2 : elite.archetype === 'thief' ? 1.15 : ELITE_HP_MUL));
+      elite.hp = unitsRound(elite.hp * (act > 1 ? ELITE_HP_MUL_2 : elite.archetype === 'thief' ? 1.15 : ELITE_HP_MUL));
       elite.name = `ELITE ${elite.name}`.replace(/^ELITE (\w+) /, 'ELITE ');
     }
     out.push(opts);

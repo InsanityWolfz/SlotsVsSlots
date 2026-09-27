@@ -320,3 +320,8 @@ User direction (binding): a FULL SET is ONLY the same charm on all 3 PAYLINE cel
 - Speeds 1X/2X/4X/8X (keys 1-4); the new 1X is half the old 1X. Prefs migrate old 1/2/4 to 2/4/8 (speedV 2); default 2X (= old 1X).
 - New official harness tools/balance/tuesday.ts (greedy sim, per slot machine: WHITE acts 1-2, GREEN act 3 + Dealer, HP into the Dealer, act 3 regular deaths/HP lost/turns). simulateRuns gained hpIntoDealerPct, act3Regular, turnsByAct.
 Numbers (tuesday.ts N 1000, before → after): WHITE win avg 24.9 → 26.5 (knight 26.6→28.3, midas 28.9→29.3, thorn 24.3→25.2, tesla 20.8→25.1, joker 23.7→24.6); GREEN win 13.1 → 14.6; Dealer 69.8 → 72.2; HP into Dealer 90.8 → 90.4%. Rebalanced later with the rework.
+
+### Iteration 25 — 2026-09-27 (Step B1: x10 numbers, no rule change — regression gate)
+- config.UNIT = 10: symbol base 10 (seven 20), HP, damage, shields, heals, energy, special cost/damage, pot, ability powers (smash, bloodmoon, earth, penalty, launder, reflect), relic constants, chip shield (8 chips = 10 shield), overkill chips per 50. Writer tiers are PAIR_PAY 40 / JACKPOT_PAY 90; slime writes 1 cell per 10 pay. Halves, thirds and HP formulas round to whole tens (unitsUp/Down/Round) so every number matches the old grid.
+- Bug caught by the gate: slime's pay was also its cell count (x10 slimed 10 cells); Midas relic energy x10.
+Gate (tuesday.ts N 1000): WHITE identical to Step A on every machine (knight 28.3, midas 29.3, thorn 25.0, tesla 25.1, joker 24.6; avg 26.5); GREEN 14.6 (same), Dealer 72.2 → 72.0 (HP halving rounding). Unit tests are rewritten with the charm rework (B2/C) rather than twice.

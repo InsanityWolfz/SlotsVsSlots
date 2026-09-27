@@ -1,4 +1,4 @@
-import type { RelicId } from './config';
+import { UNIT, type RelicId } from './config';
 
 export interface RelicDef {
   id: RelicId;
@@ -11,17 +11,17 @@ export interface RelicDef {
 /** Passive rule changes. None of them ask for input mid-fight. */
 export const RELICS: Record<RelicId, RelicDef> = {
   clover: { id: 'clover', name: 'LUCKY CLOVER', text: '30% CHANCE A NEAR-MISS BECOMES A JACKPOT', sprite: 'relicClover' },
-  battery: { id: 'battery', name: 'BATTERY', text: 'START EACH FIGHT WITH 3 ENERGY', sprite: 'relicBattery' },
+  battery: { id: 'battery', name: 'BATTERY', text: 'START EACH FIGHT WITH 30 ENERGY', sprite: 'relicBattery' },
   mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS PAY AS A DOUBLE', sprite: 'relicMirror' },
-  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR SPECIAL HEALS 3 HP', sprite: 'relicFang' },
-  bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 6 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
+  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR SPECIAL HEALS 30 HP', sprite: 'relicFang' },
+  bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 60 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
   crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR DOUBLES ALSO STEAL HALF THE HOUSE POT', sprite: 'relicCrown' },
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
-  midas: { id: 'midas', name: 'MIDAS', text: 'GOLD CELLS ON YOUR PAYLINE ALSO GIVE +1 ENERGY', sprite: 'relicMidas' },
-  rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'IF YOU HAVE CHARGED BOLTS, YOUR SPECIAL COSTS 4', sprite: 'relicRod' },
-  cactus: { id: 'cactus', name: 'CACTUS', text: 'SPIKED SHIELDS HIT BACK FOR 4', sprite: 'relicCactus' },
+  midas: { id: 'midas', name: 'MIDAS', text: 'GOLD CELLS ON YOUR PAYLINE ALSO GIVE +10 ENERGY', sprite: 'relicMidas' },
+  rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'IF YOU HAVE CHARGED BOLTS, YOUR SPECIAL COSTS 40', sprite: 'relicRod' },
+  cactus: { id: 'cactus', name: 'CACTUS', text: 'SPIKED SHIELDS HIT BACK FOR 40', sprite: 'relicCactus' },
   prism: { id: 'prism', name: 'PRISM', text: 'A MATCH THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
-  hone: { id: 'hone', name: 'HONE', text: 'KEEN SWORDS DEAL +2 MORE', sprite: 'relicHone' },
+  hone: { id: 'hone', name: 'HONE', text: 'KEEN SWORDS DEAL +20 MORE', sprite: 'relicHone' },
   // Legendary (act 2): big, build-bending effects.
   ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'FULL SETS NEED ONLY 2 MATCHING CHARMS ON THE LINE AND PAY ONE STEP MORE', sprite: 'relicTicket' },
   bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND REFILL YOUR SPECIAL', sprite: 'relicBell' },
@@ -55,7 +55,7 @@ export const SANDGLASS_SLOW = 1;
 /** LUCKY: chance per level (1 = plain, +1 tier II, +1 full set): each + step × (level − 1). */
 export const LUCKY_CHANCE = { each: 0.35, step: 0.15 };
 /** BLAZE: special damage per blaze reel = each + (level − 1). */
-export const BLAZE_BONUS = { each: 3 };
+export const BLAZE_BONUS = { each: 3 * UNIT };
 /** OVERCHARGE: the echo deals this fraction of the special. */
 export const OVERCHARGE_ECHO = 1 / 3;
 /** TIER II is worth this many gild levels (ITERATION_8: one level made tier II a trap). */
@@ -63,23 +63,23 @@ export const TIER_STEP = 2;
 /** FULL SET (the same charm on all 3 payline cells): levels added to each of those cells (+1 more with the Golden Ticket). */
 export const FULL_SET_STEP = 2;
 /** VAMP heals at most this much per sword group (a VAMP FULL SET was the strongest thing measured). */
-export const VAMP_CAP = 3;
+export const VAMP_CAP = 3 * UNIT;
 /** The Mirror's REFLECTION is capped at this share of your max HP (two from full kill you). */
 export const REFLECT_CAP = 0.6;
 /** Bomber bombs: fuse in the victim's turns, damage when it runs out (shield blocks). */
-export const BOMB = { fuse: 3, damage: 3 };
+export const BOMB = { fuse: 3, damage: 3 * UNIT };
 /** The Mirror's Reflection: never less than this. */
-export const REFLECT_MIN = 3;
+export const REFLECT_MIN = 3 * UNIT;
 
 export const CLOVER_CHANCE = 0.3;
-export const BATTERY_ENERGY = 3;
-export const FANG_HEAL = 3;
-export const BANDAGE_HEAL = 6;
-export const SPIKED_DAMAGE = 2;
-export const CACTUS_DAMAGE = 4;
-export const KEEN_BONUS = 1;
-export const HONE_BONUS = 2;
-export const ROD_SPECIAL_COST = 4;
+export const BATTERY_ENERGY = 3 * UNIT;
+export const FANG_HEAL = 3 * UNIT;
+export const BANDAGE_HEAL = 6 * UNIT;
+export const SPIKED_DAMAGE = 2 * UNIT;
+export const CACTUS_DAMAGE = 4 * UNIT;
+export const KEEN_BONUS = UNIT;
+export const HONE_BONUS = 2 * UNIT;
+export const ROD_SPECIAL_COST = 4 * UNIT;
 
 /** What each build relic needs you to own before it's offered (playtest ITERATION_4). */
 export const BUILD_ENABLER: Partial<Record<RelicId, 'gold' | 'keen' | 'charged' | 'spiked' | 'wild' | 'full'>> = {
@@ -90,7 +90,7 @@ export const BUILD_ENABLER: Partial<Record<RelicId, 'gold' | 'keen' | 'charged' 
   hone: 'keen',
   prism: 'wild',
 };
-export const ROD_SPECIAL_DAMAGE = 12;
+export const ROD_SPECIAL_DAMAGE = 12 * UNIT;
 
 /** Too strong for drafts (best pick 92% of the time): only elites drop it. */
 export const ELITE_ONLY: ReadonlySet<RelicId> = new Set<RelicId>(['mirror']);
@@ -100,6 +100,6 @@ export const ELITE_ONLY: ReadonlySet<RelicId> = new Set<RelicId>(['mirror']);
  * rest growing. It cashes out at the START of its turn (before it spins) so the LETHAL warning is
  * always true (playtest ITERATION_3).
  */
-export const POT = { seed: 5, houseCut: 1, cashEvery: 4, skim: 0.5, allInMin: 8 };
+export const POT = { seed: 5 * UNIT, houseCut: UNIT, cashEvery: 4, skim: 0.5, allInMin: 8 * UNIT };
 /** Boss HP grows with the relics you bring in. */
-export const BOSS_HP_PER_RELIC = 3;
+export const BOSS_HP_PER_RELIC = 3 * UNIT;

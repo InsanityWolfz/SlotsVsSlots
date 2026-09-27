@@ -1,4 +1,4 @@
-import { cloneConfig, type AbilityDef, type Enh, type GameConfig, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
+import { cloneConfig, UNIT, unitsDown, unitsUp, type AbilityDef, type Enh, type GameConfig, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
 import { CABINETS, type Cabinet } from './cabinets';
 import type { CombatEvent, DealCard, VoucherKind } from './events';
 import {
@@ -43,8 +43,11 @@ import {
 
 /** Symbols that act on the opponent when they're native to the caster's strips. */
 /** Act 3: marked-card bite, the Croupier's rake, and the Dealer's shuffle size. */
-const MARK_DAMAGE = 2;
-const RAKE_CUT = 1;
+const MARK_DAMAGE = 2 * UNIT;
+const RAKE_CUT = UNIT;
+/** Writer tiers: what an enemy double / jackpot of one symbol pays. */
+const PAIR_PAY = 4 * UNIT;
+const JACKPOT_PAY = 9 * UNIT;
 const SHUFFLE_SWAPS = 5;
 const DEALS: DealCard[] = ['shuffle', 'cut', 'raise'];
 
@@ -84,7 +87,7 @@ export interface TurnResult {
 export const other = (s: SideId): SideId => (s === 'player' ? 'enemy' : 'player');
 
 /** 1 → 1 reel for 1 turn, a double (4) → 2 reels × 2 turns, a jackpot (9) → 3 × 3. */
-export const statusSize = (amount: number) => Math.max(1, Math.min(3, Math.round(Math.sqrt(amount))));
+export const statusSize = (amount: number) => Math.max(1, Math.min(3, Math.round(Math.sqrt(amount / UNIT))));
 
 function makeCombatant(side: SideId, sc: SideConfig, rng: Rng, relics: RelicId[]): Combatant {
   const reels = sc.strips.map((counts, r) => buildReel(counts, rng, (sc.gilded ?? []).filter((g) => g.reel === r)));
@@ -209,7 +212,7 @@ export class Fight {
     this.blaze = p.reels.reduce((a, reel) => {
       const cell = reel.cells.find((c) => c.enh === 'blaze');
       if (!cell) return a;
-      return a + BLAZE_BONUS.each + (cell.tier === 2 ? TIER_STEP : 0);
+      return a + BLAZE_BONUS.each + (cell.tier === 2 ? TIER_STEP * UNIT : 0);
     }, 0);
     // The Mirror plays your machine but never your junk (and fires no specials).
     if (this.isMirror) e.casts.clear();
@@ -357,7 +360,7 @@ export class Fight {
       const gold = me.reels.map((_, r) => r).filter((r) => this.paylineEnh(me, r) === 'gold');
       if (gold.length) {
         events.push({ type: 'relic', side, relic: 'midas' });
-        this.gainEnergy(me, gold.length, gold, events);
+        this.gainEnergy(me, gold.length * UNIT, gold, events);
       }
     }
     const steals = score.tier === 'triple' || (score.tier === 'pair' && me.relics.has('crown'));
@@ -415,8 +418,8 @@ export class Fight {
           if (set) g.fullSet = true;
         }
         if (enh === 'charged' && g.symbol === 'bolt') {
-          g.amount += lvl;
-          notes.push(`+${lvl}`);
+          g.amount += lvl * UNIT;
+          notes.push(`+${lvl * UNIT}`);
           if (set) g.fullSet = true;
         }
         if (set && ((enh === 'spiked' && g.symbol === 'shield') || (enh === 'vamp' && g.symbol === 'sword') || enh === 'lucky')) g.fullSet = true;
@@ -460,12 +463,12 @@ export class Fight {
       }
       // COUNTERFEIT: a group with a faked cell on the payline pays half.
       if (g.reels.some((r) => (me.reels[r].cells[me.reels[r].stop]?.faked ?? 0) > 0)) {
-        g.amount = Math.floor(g.amount / 2);
+        g.amount = unitsDown(g.amount / 2);
         notes.push('FAKE');
       }
       // HEX: a group touching a hexed reel pays half.
       if (g.reels.some((r) => me.hexed[r] > 0)) {
-        g.amount = Math.floor(g.amount / 2);
+        g.amount = unitsDown(g.amount / 2);
         notes.push('HALF');
       }
       if (notes.length) g.notes = notes;
@@ -589,7 +592,7 @@ export class Fight {
         this.hit(me, foe, g.amount, g.reels, events, g.reels.some((r) => this.paylineEnh(me, r) === 'keen'));
         {
           // VAMP: vamp swords in the group heal you.
-          const vamp = g.reels.filter((r) => this.paylineEnh(me, r) === 'vamp').reduce((a, r) => a + this.level(me, r), 0);
+          const vamp = UNIT * g.reels.filter((r) => this.paylineEnh(me, r) === 'vamp').reduce((a, r) => a + this.level(me, r), 0);
           if (vamp && !this.over && g.amount > 0) this.heal(me, Math.min(VAMP_CAP, vamp), 'vamp', events);
         }
         return;
@@ -607,7 +610,7 @@ export class Fight {
         {
           // The Grounder: a grounded bolt on your payline earths its share of the energy.
           const grounded = me.side === 'player' ? g.reels.filter((r) => me.reels[r].cells[me.reels[r].stop]?.grounded).length : 0;
-          const earthed = grounded ? Math.ceil((g.amount * grounded) / g.reels.length) : 0;
+          const earthed = grounded ? unitsUp((g.amount * grounded) / g.reels.length) : 0;
           this.gainEnergy(me, Math.max(0, g.amount - earthed), g.reels, events, earthed);
         }
         return;
@@ -650,7 +653,7 @@ export class Fight {
     // SPIKED: a spiked shield on the victim's payline hits back (once per hit).
     const spikeReel = foe.reels.findIndex((_, r) => this.paylineEnh(foe, r) === 'spiked');
     if (!this.over && amount > 0 && spikeReel >= 0) {
-      let dmg = (foe.relics.has('cactus') ? CACTUS_DAMAGE : SPIKED_DAMAGE) + 2 * (this.level(foe, spikeReel) - 1);
+      let dmg = (foe.relics.has('cactus') ? CACTUS_DAMAGE : SPIKED_DAMAGE) + 2 * UNIT * (this.level(foe, spikeReel) - 1);
       // A SPIKED FULL SET hits back for the shield you had up.
       if (this.setActive(foe, 'spiked')) dmg = Math.max(dmg, foe.shield + h.blocked);
       const back = this.damage(me, dmg, false);
@@ -670,7 +673,7 @@ export class Fight {
     const pierce = this.cfg.specialIgnoresShield && !grounded;
     while (me.energy >= this.cfg.specialCost && !this.over) {
       me.energy -= this.cfg.specialCost;
-      const blazeSet = me.side === 'player' && this.lineSet(me) === 'blaze' ? this.blazeReels * this.setStep(me) : 0;
+      const blazeSet = me.side === 'player' && this.lineSet(me) === 'blaze' ? this.blazeReels * this.setStep(me) * UNIT : 0;
       const dmg = this.cfg.specialDamage + (me.side === 'player' ? this.blaze + blazeSet : 0);
       const h = this.damage(foe, dmg, pierce);
       events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
@@ -678,7 +681,7 @@ export class Fight {
       // Overcharge: the special echoes at half damage.
       if (!this.over && me.relics.has('overcharge')) {
         events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
-        const echo = Math.ceil(dmg * OVERCHARGE_ECHO);
+        const echo = unitsUp(dmg * OVERCHARGE_ECHO);
         const h2 = this.damage(foe, echo, pierce);
         events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: echo, ...h2, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
         this.checkDeath(foe, events);
@@ -759,21 +762,22 @@ export class Fight {
   private write(me: Combatant, foe: Combatant, sym: SymbolId, amount: number, reels: number[], events: CombatEvent[]): void {
     switch (sym) {
       case 'slime':
-        return this.applySlime(me, foe, amount, reels, events);
+        // One slimed cell per UNIT of slime pay (a double slimes 4, a jackpot 9).
+        return this.applySlime(me, foe, Math.round(amount / UNIT), reels, events);
       case 'ice':
         // 1 reel × 1 turn, a double 2 × 2, a jackpot 2 × 3 (never all three reels).
-        return this.applyStatus(me, foe, 'frozen', amount >= 4 ? 2 : 1, amount >= 9 ? 3 : amount >= 4 ? 2 : 1, reels, events);
+        return this.applyStatus(me, foe, 'frozen', amount >= PAIR_PAY ? 2 : 1, amount >= JACKPOT_PAY ? 3 : amount >= PAIR_PAY ? 2 : 1, reels, events);
       case 'lock':
         // Jams bite hard (the reel scores nothing): single locks fizzle, doubles jam 1 reel,
         // jackpots 2, always for one turn.
-        if (amount < 4) return this.fizzle(me, 'lock', reels, events);
-        return this.applyStatus(me, foe, 'locked', amount >= 9 ? 2 : 1, 1, reels, events);
+        if (amount < PAIR_PAY) return this.fizzle(me, 'lock', reels, events);
+        return this.applyStatus(me, foe, 'locked', amount >= JACKPOT_PAY ? 2 : 1, 1, reels, events);
       case 'claw':
         return this.steal(me, foe, statusSize(amount), reels, events);
       case 'rock':
         // Rocks are permanent for the run: single rocks fizzle, doubles add 1, jackpots 2.
-        if (amount < 4) return this.fizzle(me, 'rock', reels, events);
-        return this.junk(me, foe, amount >= 9 ? 2 : 1, reels, events);
+        if (amount < PAIR_PAY) return this.fizzle(me, 'rock', reels, events);
+        return this.junk(me, foe, amount >= JACKPOT_PAY ? 2 : 1, reels, events);
       case 'coin':
         this.pot += amount;
         events.push({ type: 'pot', side: me.side, reels, amount, total: this.pot });
@@ -783,11 +787,11 @@ export class Fight {
         return this.plantBombs(me, foe, statusSize(amount), reels, events);
       case 'hex':
         // Single hexes fizzle; a double hexes 1 reel × 2 turns, a jackpot 2 × 2.
-        if (amount < 4) return this.fizzle(me, 'hex', reels, events);
-        return this.hex(me, foe, amount >= 9 ? 2 : 1, 2, reels, events);
+        if (amount < PAIR_PAY) return this.fizzle(me, 'hex', reels, events);
+        return this.hex(me, foe, amount >= JACKPOT_PAY ? 2 : 1, 2, reels, events);
       case 'fangs': {
         // Drain: hurts you and heals the vampire by what got through.
-        const dmg = amount >= 9 ? 7 : amount >= 4 ? 4 : 2;
+        const dmg = (amount >= JACKPOT_PAY ? 7 : amount >= PAIR_PAY ? 4 : 2) * UNIT;
         const got = this.hit(me, foe, dmg, reels, events, false, 'drain');
         if (!this.over && got > 0) this.heal(me, got, 'drain', events);
         return;
@@ -797,8 +801,8 @@ export class Fight {
         return this.markCells(me, foe, statusSize(amount), reels, events);
       case 'gavel':
         // Singles fizzle; a double confiscates 1 gild, a jackpot 2 (for the fight).
-        if (amount < 4) return this.fizzle(me, 'gavel', reels, events);
-        return this.confiscate(me, foe, amount >= 9 ? 2 : 1, reels, events);
+        if (amount < PAIR_PAY) return this.fizzle(me, 'gavel', reels, events);
+        return this.confiscate(me, foe, amount >= JACKPOT_PAY ? 2 : 1, reels, events);
       case 'rake':
         // 1 turn, a double 2, a jackpot 3.
         return this.applyRake(me, foe, statusSize(amount), reels, events);
@@ -811,7 +815,7 @@ export class Fight {
       case 'mimicSym': {
         // The Mimic copies your last spin's biggest group (half on a single, double on a jackpot).
         const best = this.last[foe.side].best;
-        const dmg = Math.min(12, Math.max(1, amount >= 9 ? best * 2 : amount >= 4 ? best : Math.ceil(best / 2)));
+        const dmg = Math.min(12 * UNIT, Math.max(UNIT, amount >= JACKPOT_PAY ? best * 2 : amount >= PAIR_PAY ? best : unitsUp(best / 2)));
         this.hit(me, foe, dmg, reels, events, false, 'mimic');
         return;
       }
@@ -1263,7 +1267,7 @@ export class Fight {
         // Takes your chips and turns them into its HP (x3).
         this.chipsEaten += ab.power;
         events.push({ type: 'gulp', from: me.side, chips: ab.power });
-        return this.heal(me, ab.power * 3, 'ability', events);
+        return this.heal(me, ab.power * 3 * UNIT, 'ability', events);
       case 'reflect': {
         // The Mirror throws your last spin back at you (at least a little).
         const dmg = Math.max(REFLECT_MIN, Math.min(ab.power, this.reflectBank));
@@ -1278,7 +1282,7 @@ export class Fight {
 
   /** The House skims half the pot (rounded up) as damage (shield blocks); the rest keeps growing. */
   private cashPot(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
-    const amount = Math.ceil(this.pot * POT.skim);
+    const amount = unitsUp(this.pot * POT.skim);
     this.pot -= amount;
     const h = this.damage(foe, amount, false);
     events.push({ type: 'potWin', from: me.side, to: foe.side, amount, ...h, potLeft: this.pot });
@@ -1289,7 +1293,7 @@ export class Fight {
   private winPot(me: Combatant, events: CombatEvent[], share = 1): void {
     if (this.pot <= 0) return;
     const foe = this.sides[other(me.side)];
-    const amount = Math.ceil(this.pot * share);
+    const amount = unitsUp(this.pot * share);
     this.pot -= amount;
     const h = this.damage(foe, amount, true);
     events.push({ type: 'potWin', from: me.side, to: foe.side, amount, ...h, potLeft: this.pot });
