@@ -860,7 +860,7 @@ export class RunScreens {
   private drawDraft(ctx: CanvasRenderingContext2D, time: number): void {
     const last = this.lastRecord;
     const start = this.draftKind === 'start';
-    drawText(ctx, last ? `${last.enemy} DEFEATED!` : start ? `${CABINETS[this.run!.cabinet].name} - A NEW RUN` : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight);
+    drawText(ctx, last ? `${last.enemy} DEFEATED!` : start ? 'A NEW RUN' : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight);
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';

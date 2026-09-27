@@ -4,7 +4,7 @@ import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { NEW_RELIC, RELICS } from '../src/core/relics';
-import { charmOptions, charmSymbols, createRun, draftOffers, fightConfig, finishFight, gildsFor, isRelicDraft, startRelics, takeStart } from '../src/core/run';
+import { charmOptions, charmSymbols, createRun, draftOffers, fightConfig, finishFight, gildsFor, isRelicDraft, relicFits, startRelics, takeStart } from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -31,6 +31,24 @@ describe('slot machine relics', () => {
     f.forceNext('player', ['sword', 'shield', 'shield']);
     expect(playerAttack(f.step().events)[0].amount).toBe(first + NEW_RELIC.drumStep);
     expect(f.drum).toBe(2);
+  });
+
+  it('SHIELD BASH that kills at turn start ends the turn (no spin after the win)', () => {
+    const f = on('knight', ['bash']);
+    f.step();
+    f.step();
+    f.sides.enemy.hp = 20;
+    f.sides.player.shield = 200;
+    const ev = f.step().events;
+    expect(f.winner).toBe('player');
+    expect(ofType(ev, 'spin')).toHaveLength(0);
+  });
+
+  it('HORSESHOE is not offered to JAX before lucky charms can be drafted', () => {
+    const run = createRun(base, 4, 'joker');
+    expect(relicFits(run, 'horseshoe')).toBe(false);
+    run.act = 2;
+    expect(relicFits(run, 'horseshoe')).toBe(true);
   });
 
   it('CHAINMAIL heals 10% of leftover shield; SHIELD BASH hits for half of it', () => {

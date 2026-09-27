@@ -283,6 +283,11 @@ export class Fight {
     if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
     if (this.cfg.shieldReset === 'ownTurnStart') this.resetShield(me, events);
+    // SHIELD BASH can end the fight before the spin.
+    if (this.over) {
+      this.next = other(side);
+      return { turn: this.turn, side, events };
+    }
     // Saved chips shield you at the start of each boss turn (the House and the Mirror).
     if (side === 'enemy' && (this.isBoss || this.isMirror || this.isDealer)) {
       const p = this.sides.player;

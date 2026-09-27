@@ -1126,7 +1126,7 @@ export function relicFits(run: RunState, r: RelicId): boolean {
   const def = RELICS[r];
   // Slot machine relics only on their machine; charm relics once you own the charm (or your machine favours it).
   if (def.machine && def.machine !== run.cabinet) return false;
-  if (def.charm && charmCount(run.player, def.charm) === 0 && CABINETS[run.cabinet].favors !== def.charm) return false;
+  if (def.charm && charmCount(run.player, def.charm) === 0 && !(CABINETS[run.cabinet].favors === def.charm && gildsFor(run).includes(def.charm))) return false;
   const need = BUILD_ENABLER[r];
   if (!need) return true;
   const has = (n: Enabler): boolean => {
