@@ -4,6 +4,7 @@ An 8-bit roguelike where two slot machines fight. TypeScript + Vite + Canvas, wi
 Live playtest: https://insanitywolfz.github.io/SlotsVsSlots/ (auto-deploys on every push to `main`).
 
 ## Read first, every session
+0. `loop/TUESDAY_PLAN.md`: the step-by-step runbook for the next session (start here).
 1. `loop/DIRECTION_NOTES.md`: the agreed next direction (charm rework, ×10 numbers, character meters,
    Act 3 length, post-boss choices, endless mode) and the **Tuesday plan** (expert review first).
 2. `loop/BACKLOG.md`: the user's playtest notes and what's already done.
