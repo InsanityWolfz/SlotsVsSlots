@@ -255,7 +255,7 @@ export class Game {
       ring: () => this.prefs.auto,
     });
     this.autoBtn = this.btn('AUTO', px - 116, by, 84, 44, () => this.setAuto(!this.prefs.auto));
-    SPEEDS.forEach((s, i) => this.speedBtns.push(this.btn(`${s}X`, px + 86 + i * 44, by, 40, 44, () => this.setSpeed(s))));
+    SPEEDS.forEach((s, i) => this.speedBtns.push(this.btn(`${s}X`, px + 80 + i * 39, by, 36, 44, () => this.setSpeed(s))));
     this.startBtn = this.btn('START RUN', W / 2 + 10, by, 196, 56, () => this.newRunPressed(), { idlePulse: true, textScale: 3 });
     const ex = MACHINE_CX.enemy;
     const tune = this.btn('TUNE', ex - 110, by, 90, 44, () => {});

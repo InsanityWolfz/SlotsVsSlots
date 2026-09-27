@@ -1223,7 +1223,7 @@ export class RunScreens {
       const boss = run.act >= 3 ? 'DEALER' : 'MIRROR';
       drawText(ctx, run.act >= 3 ? "ACT 3: THE HOUSE DOESN'T COMP. NO HEALING AFTER FIGHTS." : 'ACT 2: A LEGENDARY ON THE SHELF. LEVEL CARDS LIFT A WHOLE TYPE.', W / 2, 118, 2, run.act >= 3 ? '#ff8a7a' : COLORS.goldLight);
       drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
-      drawText(ctx, `KEEP CHIPS FOR THE ${boss}: +${Math.min(MIRROR_CHIP_SHIELD_CAP, sh)} SHIELD EACH ${boss} TURN (1 PER ${CHIPS.stackPer}, MAX ${MIRROR_CHIP_SHIELD_CAP})`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
+      drawText(ctx, `KEEP CHIPS FOR THE ${boss}: +${Math.min(MIRROR_CHIP_SHIELD_CAP, sh)} SHIELD EACH ${boss} TURN (${UNIT} PER ${CHIPS.stackPer} CHIPS, MAX ${MIRROR_CHIP_SHIELD_CAP})`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
     }
     drawText(ctx, 'HP', W - 360, 80, 2, COLORS.textDim, { align: 'left' });
     this.drawHp(ctx, W - 330, 80, 190);
@@ -1270,7 +1270,7 @@ export class RunScreens {
       drawSprite(ctx, 'minusBadge', 28, iy + 20, 3);
     } else drawSprite(ctx, 'heart', 0, iy, 4.5);
     // Long titles drop a size so they never clip (SPIKED CHARM and friends).
-    const tScale = title.length > 12 ? 1.5 : title.length > 9 ? 2 : 3;
+    const tScale = title.length > 18 ? 1.5 : title.length > 11 ? 2 : 3;
     drawText(ctx, title, 0, 8, tScale, o.kind === 'gild' ? CHARM_COLOR[o.enh] : o.kind === 'relic' ? '#c9a0ff' : o.kind === 'symLevel' || o.kind === 'charmLevel' ? '#5ad8e8' : COLORS.text);
     const long = wrap(text, 16).length > 3;
     const lines = long ? wrap(text, 22).slice(0, 6) : wrap(text, 16);

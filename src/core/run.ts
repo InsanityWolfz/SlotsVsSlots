@@ -1130,7 +1130,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'gild':
       return {
         title: `${o.n} ${o.enh.toUpperCase()} CHARM${o.n > 1 ? 'S' : ''}`,
-        text: `REEL ${o.reel + 1} · ${plural(o.symbol, o.n)}. EACH: ${charmRule(o.enh, charmLevel(lv, o.enh, ticket))}`,
+        text: `REEL ${o.reel + 1} - ${plural(o.symbol, o.n)}. EACH: ${charmRule(o.enh, charmLevel(lv, o.enh, ticket))}`,
       };
     case 'symLevel': {
       const next = Math.min(LEVEL_CAP, symLevel(lv, o.symbol) + 1);

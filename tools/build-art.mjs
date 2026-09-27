@@ -1822,6 +1822,25 @@ const MINI = {
     '  YOo  ',
     ' Yo    ',
   ],
+  // Tuesday rework: MIDAS's gold bar and BRIAR's thorn as mini reel symbols
+  goldbar: [
+    '       ',
+    '  WYYY ',
+    ' WYYYYO',
+    'GGGGGGg',
+    'GYGGGGg',
+    'GGGGGGg',
+    'gggggg ',
+  ],
+  thorn: [
+    '     EE',
+    '  W EeQ',
+    '  EEeQ ',
+    ' W EQ E',
+    ' QEeQEQ',
+    ' EeQ   ',
+    'EQ     ',
+  ],
   spiky: [
     ' W L S ',
     ' LLLLS ',
@@ -1966,7 +1985,7 @@ const plot = (g, pts) => pts.forEach(([x, y, c]) => put(g, x, y, c));
 // knight: royal-blue body, steel trim, heraldic crest breaking the marquee top
 S.cabinetKnight = cabinet({
   body: ['A', 'U', 'N', 'N'], trim: ['L', 'S', 'D'], panel: ['U', 'N', 'N'], bulbs: ['Y', 'g'], knob: ['M', 'R', 'r'],
-  reels: [['bolt', 'sword', 'shield'], ['sword', 'shield', 'bolt'], ['shield', 'bolt', 'sword']],
+  reels: [['sword', 'shield', 'sword'], ['shield', 'sword', 'shield'], ['sword', 'shield', 'sword']],
   belly(g) {
     stamp(g, 11, 47, [
       '   Y                  ',
@@ -1996,7 +2015,7 @@ S.cabinetKnight = cabinet({
 // midas: all gold, red velvet trim, a crown on the marquee, gold-framed bolts, coins spilling in the tray
 S.cabinetMidas = cabinet({
   body: ['Y', 'G', 'g', 'b'], trim: ['R', 'r', 'd'], rim: ['Y', 'G', 'g'], panel: ['R', 'r', 'd'], bulbs: ['W', 'Y'], knob: ['M', 'R', 'r'],
-  reels: [['bolt', 'bolt', 'bolt'], ['bolt', 'bolt', 'bolt'], ['bolt', 'bolt', 'bolt']],
+  reels: [['goldbar', 'goldbar', 'goldbar'], ['goldbar', 'goldbar', 'goldbar'], ['goldbar', 'goldbar', 'goldbar']],
   cellFx(g, x0, y0) {
     for (let y = y0 - 1; y <= y0 + 9; y++) for (let x = x0; x <= x0 + 8; x++) {
       if (x !== x0 && x !== x0 + 8 && y !== y0 - 1 && y !== y0 + 9) continue;
@@ -2029,7 +2048,7 @@ S.cabinetMidas = cabinet({
   S.cabinetThorn = cabinet({
     body: ['Q', 'q', 'q', 'K'], trim: ['w', 'B', 'b'], panel: ['Q', 'q', 'q'], bulbs: ['E', 'Q'], knob: ['M', 'R', 'r'],
     bodyFx: (x, y, c) => (c === 'q' && (x * 7 + Math.floor(y / 5) * 3) % 11 === 0 ? 'Q' : c),
-    reels: [['spiky', 'spiky', 'spiky'], ['spiky', 'spiky', 'spiky'], ['spiky', 'spiky', 'spiky']],
+    reels: [['thorn', 'thorn', 'thorn'], ['thorn', 'thorn', 'thorn'], ['thorn', 'thorn', 'thorn']],
     deco(g) {
       vine.forEach(([x, y], i) => put(g, x, y, i % 5 === 0 ? 'E' : 'e'));
       vine.forEach(([x, y], i) => { if (i % 7 === 3) put(g, x + (x < 22 ? -1 : 1), y, 'T'); if (i % 9 === 6) put(g, x + (x < 22 ? 1 : -1), y - 1, 'E'); });

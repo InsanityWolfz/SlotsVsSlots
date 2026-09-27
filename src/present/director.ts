@@ -21,33 +21,6 @@ const BASE = defaultConfig().base;
 
 type Ev<T extends CombatEvent['type']> = Extract<CombatEvent, { type: T }>;
 
-const EFFECT_WORD: Record<SymbolId, string> = {
-  sword: 'DAMAGE',
-  shield: 'SHIELD',
-  bolt: 'ENERGY',
-  slime: 'SLIME',
-  ice: 'FREEZE',
-  claw: 'STEAL',
-  rock: 'ROCKS',
-  lock: 'JAM',
-  coin: 'TO THE POT',
-  seven: 'DAMAGE',
-  empty: 'NOTHING',
-  wild: 'WILD',
-  bomb: 'BOMBS',
-  hex: 'HEX',
-  fangs: 'DRAIN',
-  mimicSym: 'COPYCAT',
-  ground: 'GROUNDING',
-  fake: 'FAKES',
-  card: 'MARKED CARDS',
-  bonusSym: 'BONUS WHEEL',
-  goldbar: 'GOLD',
-  thorn: 'THORNS',
-  relicSym: 'RELIC RUSH',
-  gavel: 'CONFISCATION',
-  rake: 'RAKE',
-};
 
 /** Where banked vouchers sit (bottom-left, above the SPIN row). */
 export const VOUCHER_X = 52;
@@ -507,10 +480,16 @@ export class Director {
 
   /** 3 WILDS: a small bonus reel spins and lands on the symbol whose jackpot pays. */
   private async bonusReel(side: SideId, pick: SymbolId): Promise<void> {
-    const c = this.machineCenter(side);
     this.s.sounds.lucky();
-    const pool: SymbolId[] = side === 'player' ? ['sword', 'shield', 'bolt', 'goldbar', 'thorn'] : ['sword', 'shield'];
-    const spr = this.s.fx.add(new Projectile(pool[0] as SpriteId, c.x, MACHINE_TOP - 60, 0));
+    // It ticks through YOUR symbols (the ones a jackpot can be made of), in the centre gutter.
+    const own = new Set(this.s.machines[side].reels.flatMap((r) => r.cells.map((c) => c.symbol)));
+    const pool = (['sword', 'shield', 'bolt', 'goldbar', 'thorn'] as SymbolId[]).filter((x) => own.has(x));
+    if (!pool.length) pool.push(pick);
+    const cx = W / 2;
+    const cy = MACHINE_TOP + MACHINE_H / 2 + 120;
+    const frame = this.s.fx.add(new Banner('  ', '#ff6ad5', cx, cy, 6));
+    frame.scale = 1;
+    const spr = this.s.fx.add(new Projectile(pool[0] as SpriteId, cx, cy, 0));
     spr.z = 32;
     await this.c.tween({ from: 0, to: 4, dur: 0.15, ease: backOut(2), onUpdate: (v) => (spr.scale = v) });
     // It ticks through your symbols, slowing down, then lands.
@@ -523,9 +502,9 @@ export class Director {
     spr.sprite = pick as SpriteId;
     spr.flash = 1;
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (spr.flash = v) }));
-    this.bg(this.popText(`WILD ${EFFECT_WORD[pick] ?? ''} JACKPOT!`, c.x, MACHINE_TOP - 110, 3, '#ff6ad5', 16, 0.4));
+    this.bg(this.popText(`WILD ${pick === 'goldbar' ? 'GOLD BAR' : pick.toUpperCase()} JACKPOT!`, cx, cy - 70, 2, '#ff6ad5', 16, 0.4));
     await this.c.wait(0.35);
-    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.2, onUpdate: (v) => (spr.alpha = v) }).then(() => this.s.fx.remove(spr)));
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.2, onUpdate: (v) => ((spr.alpha = v), (frame.alpha = v)) }).then(() => (this.s.fx.remove(spr), this.s.fx.remove(frame))));
   }
 
   /** Juice §3, mapped to tiers: none → small, pair → medium, triple → jackpot. */
@@ -574,7 +553,7 @@ export class Director {
       ? [{ text: 'CLEANSE!', color: COLORS.slime }]
       : [
           { text: `${g.base}`, color: '#ffffff' },
-          { text: ' X ', color: COLORS.goldLight },
+          { text: ' × ', color: COLORS.goldLight },
           { text: fmt(g.mult), color: COLORS.goldLight },
           { text: ' = ', color: '#ffffff' },
           { text: `${gross}!`, color: tier === 'triple' ? '#ff8a5a' : COLORS.goldLight },
