@@ -88,3 +88,15 @@ Status: discussion only. No code until after the usage reset (Tue 2026-09-29). T
   - Gold charms in one group ADD together: x2 + x2 + x2 = x6. The label stays "x2" per cell.
   - Example: triple gold bolt (base 10 each) = 30 × (3 jackpot × 6 gold = 18) = 540.
 - **Reel tables:** the left panel and the shop both use the vertical shop-style table.
+
+## Tuesday plan: expert playtester tasks
+1. Review this whole direction doc and push back where needed.
+2. Draft the post-boss big choices list (strong with a cost, plus a safe pick).
+3. KNIGHT: "simple but exciting with no special mechanic" ideas.
+4. **Competitor comparison:**
+   - Slot or Not, CloverPit, Slotbound, Slot or Die, Slots & Daggers (and others found).
+   - For each: core loop, what players praise, what reviews complain about.
+   - Where Slots vs. Slots is unique: machine vs. machine, enemies write on your reels, slot-mechanic bosses, hands-off fights, character meters.
+   - Gaps to exploit, and risks (e.g. hands-off fights splitting players).
+   - A suggested store pitch line (draft: "Your slot machine vs. theirs. They cheat.").
+Then decide build order together.
