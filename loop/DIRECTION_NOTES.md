@@ -100,3 +100,19 @@ Status: discussion only. No code until after the usage reset (Tue 2026-09-29). T
    - Gaps to exploit, and risks (e.g. hands-off fights splitting players).
    - A suggested store pitch line (draft: "Your slot machine vs. theirs. They cheat.").
 Then decide build order together.
+
+## STOP 1 decisions (2026-09-27, after playtest/EXPERT_REVIEW.md)
+- **Build order:** as the review recommends. A → B (the ×10 rescale alone first, as a regression gate) → C (meter framework + TESLA-only lightning as one change, then one machine per commit) → D → E → playtest checkpoint → F.
+- **Symbol levels:** capped at Lvl 3 in acts 1–3. Growing steps (user: "+1 +3 +5") so early levels don't snowball. Exact values TBD with the sim.
+- **Charm hooks:** keen/vamp/charged may look weak on paper; relics for each charm type sharpen them.
+- **TESLA-only lightning:** accepted as one big change. Other machines' bolts become their signature symbols.
+- **MIDAS ×4:** applies to the next PAYING group (double or jackpot), like RAISE. Stacking TBD.
+- **Act 3 HP:** the user prefers healing relics per machine that synergise with its special (instead of a generic heal). TBD whether that's enough alone.
+- **JAX:** a WILD on the payline fills his meter (no new symbol). He starts with 2 wilds per reel.
+- **BRIAR:** any enemy attack triggers thorns, blocked or not.
+- **Storm:** one sustained arc, not many flashes.
+- **Golden Hourglass:** nerf to 1 turn slower (was 2).
+- **Preps:** removed.
+- **Big choices:** the review's 12 (4 sets of 3) ship first; more later.
+- **KNIGHT:** FORGED STEEL (swords and shields start at Lvl 2), half swords / half shields.
+- **Marketing:** agree with the review. Consider a name that doesn't start with "Slot" (rename still held).
