@@ -23,6 +23,7 @@ import {
   reroll,
   shopOffers,
   takeSpoils,
+  takeStart,
   type DraftOption,
   type FightRecord,
   type RunState,
@@ -352,6 +353,9 @@ export class Game {
     this.startRun(undefined, 'knight', 0);
     if (!this.run) return;
     this.run.tutorial = true;
+    // The guided first fight skips the starting relic pick (callouts first, choices later).
+    this.run.pendingStart = null;
+    this.screens.showNext(this.run);
     this.tut = {};
     this.coach.show(TUTORIAL.preview);
   }
@@ -466,7 +470,8 @@ export class Game {
     // Show the first opponent on the machines behind the preview.
     this.newFight(false, null, fightConfig(this.run, this.cfg), true);
     this.phase = 'between';
-    this.screens.showNext(this.run);
+    if (this.run.pendingStart?.length) this.screens.showDraft(this.run, this.run.pendingStart.map((relic) => ({ kind: 'relic', relic }) as DraftOption), null, 'start');
+    else this.screens.showNext(this.run);
     this.syncButtons();
   }
 
@@ -547,6 +552,11 @@ export class Game {
 
   private pickSpoils(relic: RelicId): void {
     if (!this.run) return;
+    if (this.run.pendingStart) {
+      takeStart(this.run, relic);
+      this.showNextFight();
+      return;
+    }
     takeSpoils(this.run, relic);
     this.screens.showDraft(this.run, draftOffers(this.run), this.lastRecord);
   }

@@ -45,7 +45,7 @@ export const STAKE = {
 };
 
 /** Relics the Mirror can use against you at GREEN stake (legendaries first, then the best of the rest). */
-export const MIRROR_COPYABLE: RelicId[] = ['phoenix', 'key', 'bell', 'prism', 'hone', 'mirror', 'clover'];
+export const MIRROR_COPYABLE: RelicId[] = ['phoenix', 'key', 'bell', 'prism', 'mirror', 'clover'];
 export const mirrorCanUse = (r: RelicId) => MIRROR_COPYABLE.includes(r);
 
 /**

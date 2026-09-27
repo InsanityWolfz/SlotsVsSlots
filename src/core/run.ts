@@ -9,7 +9,7 @@ import {
   BOSS_HP_PER_RELIC,
   BUILD_ENABLER,
   ELITE_ONLY,
-  HONE_BONUS,
+  NEW_RELIC,
   LEGENDARY,
   REFLECT_CAP,
   REFLECT_MIN,
@@ -58,7 +58,10 @@ export const RUN = {
 export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged'];
 export const ACT2_GILDS: Enh[] = ['lucky', 'blaze'];
 const TESLA_ONLY: ReadonlySet<Enh> = new Set(['charged', 'blaze']);
-export const gildsFor = (run: RunState): Enh[] => [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter((e) => run.cabinet === 'tesla' || !TESLA_ONLY.has(e));
+/** LUCKY is a later-machine charm (a wild barely changes KNIGHT's or MIDAS's two-symbol line). */
+export const LUCKY_MACHINES: ReadonlySet<CabinetId> = new Set(['thorn', 'tesla', 'joker']);
+export const gildsFor = (run: RunState): Enh[] =>
+  [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter((e) => (run.cabinet === 'tesla' || !TESLA_ONLY.has(e)) && (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)));
 /** Symbols this machine's swap cards move between. */
 export const swappable = (run: RunState): SymbolId[] => CABINETS[run.cabinet].symbols;
 /** The symbol +2 / rock-swap cards give (the signature symbol, or swords for KNIGHT and JAX). */
@@ -169,6 +172,8 @@ export interface RunState {
   won: boolean;
   /** An elite was beaten: choose 1 of these relics before the draft. */
   pendingSpoils: RelicId[] | null;
+  /** A new run: pick 1 of 3 starting relics (your machine's two, plus a general one). */
+  pendingStart?: RelicId[] | null;
   /** Rerolls used at the current Cashier visit. */
   shopRerolls: number;
   /** The starting machine. */
@@ -205,7 +210,7 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
   const rng = new Rng(seed);
   const paths = generateRunPaths(rng);
   const cab = CABINETS[cabinet];
-  return {
+  const run: RunState = {
     seed,
     depth: 0,
     paths,
@@ -232,6 +237,23 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
     stake: Math.max(0, Math.min(MAX_STAKE, stake)),
     act3,
   };
+  run.pendingStart = startRelics(run);
+  return run;
+}
+
+/** The starting pick: up to 2 of your machine's relics that fit now, then a general common one. */
+export function startRelics(run: RunState): RelicId[] {
+  const rng = new Rng((run.seed ^ 0x51a27) >>> 0);
+  const fits = (r: RelicId) => relicFits(run, r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r);
+  const mine = rng.shuffle((Object.keys(RELICS) as RelicId[]).filter((r) => RELICS[r].machine === run.cabinet && fits(r))).slice(0, 2);
+  const general = RELIC_TIER.common.filter((r) => !isIdentityRelic(r) && fits(r) && r !== 'crown');
+  return [...mine, ...rng.shuffle(general)].slice(0, 3);
+}
+
+export function takeStart(run: RunState, relic: RelicId): void {
+  if (!run.pendingStart?.includes(relic)) return;
+  if (!run.player.relics.includes(relic)) run.player.relics.push(relic);
+  run.pendingStart = null;
 }
 
 export const cloneLevels = (l: Levels): Levels => ({ sym: { ...l.sym }, charm: { ...l.charm } });
@@ -591,11 +613,11 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  * be hit), so the same HP formula would give each a different win rate.
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number }> = {
-  knight: { house: 3.3, mirror: 0.7, dealer: 0.75, act3: 0.6 },
-  midas: { house: 2.5, mirror: 4, dealer: 0.1, act3: 0.08 },
-  thorn: { house: 2.4, mirror: 5, dealer: 1.3, act3: 1.4 },
-  tesla: { house: 1.05, mirror: 2, dealer: 0.7, act3: 0.95 },
-  joker: { house: 2.4, mirror: 1.5, dealer: 1.1, act3: 1.2 },
+  knight: { house: 6, mirror: 1.2, dealer: 1.05, act3: 0.7 },
+  midas: { house: 2.8, mirror: 5, dealer: 1.4, act3: 0.1 },
+  thorn: { house: 2.8, mirror: 10, dealer: 1.35, act3: 1.4 },
+  tesla: { house: 1.2, mirror: 2.4, dealer: 0.75, act3: 0.95 },
+  joker: { house: 2.4, mirror: 1.9, dealer: 1.75, act3: 1.3 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
@@ -664,8 +686,11 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   // Chips: interest on what you banked, then the win, elite bonus, jackpots and overkill.
   const beaten = currentEnemy(run);
   const interest = Math.min(CHIPS.interestCap, Math.floor(run.player.chips / CHIPS.interestPer));
+  // PIGGY BANK: more interest on what you hold.
+  const piggy = run.player.relics.includes('piggy') ? Math.min(NEW_RELIC.piggyMax, Math.floor(run.player.chips / NEW_RELIC.piggyPer)) : 0;
   const earned =
     interest +
+    piggy +
     CHIPS.win +
     (CABINETS[run.cabinet].chipsPerWin ?? 0) +
     (beaten.elite ? CHIPS.eliteBonus : 0) +
@@ -683,7 +708,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   if (beaten.elite && run.act === 1) {
     const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && !LEGENDARY.has(r));
     const rng = new Rng((run.seed ^ Math.imul(run.depth + 7 + run.act * 100, 0x85ebca6b)) >>> 0);
-    const spoils = rng.shuffle(pool).slice(0, 2);
+    const spoils = pickRelics(pool, 2, rng);
     if (spoils.length) run.pendingSpoils = spoils;
   }
   // Act 3: THE HOUSE DOESN'T COMP — no patch-up between fights.
@@ -692,6 +717,11 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   // THE DECK REMEMBERS: the Card Sharp's marks carry into the Dealer fight.
   run.deckMarks = Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
   if (run.player.relics.includes('bandage') && !run.glass) hp += BANDAGE_HEAL;
+  // TROPHY BELT: every win adds max HP.
+  if (run.player.relics.includes('trophy')) {
+    run.player.maxHp += NEW_RELIC.trophyHp;
+    hp += NEW_RELIC.trophyHp;
+  }
   run.player.hp = Math.min(run.player.maxHp, hp);
   // Bonus vouchers from this fight pay out now that you've won it (after the HP settles, so a
   // wheel HEAL / MAX HP isn't overwritten — QA_1 B2).
@@ -784,7 +814,7 @@ export function stripStats(
           let gold = 0;
           for (const r of g.reels) {
             const e = enh[r];
-            if (e === 'keen' && g.symbol === 'sword') g.base += cv('keen') + (relics.includes('hone') ? HONE_BONUS : 0);
+            if (e === 'keen' && g.symbol === 'sword') g.base += cv('keen');
             if (e === 'charged' && g.symbol === 'bolt') g.base += cv('charged');
             if (e === 'gold') gold += cv('gold');
             if (e === 'vamp' && g.symbol === 'sword') out.heal += p * cv('vamp');
@@ -829,11 +859,22 @@ function similarKey(o: DraftOption): string {
 export const isRelicDraft = (run: RunState) => RUN.relicDraftsAfter.includes(run.depth);
 
 /** Every CHARM card you could be offered: `n` charms on plain cells of one symbol on one reel. */
+/** Symbols a charm can go on for this run (relics bend it: charms on your signature symbol). */
+export function charmSymbols(run: RunState, enh: Enh): SymbolId[] {
+  const has = (r: RelicId) => run.player.relics.includes(r);
+  const out = new Set<SymbolId>(CHARM_SYMBOLS[enh]);
+  if (enh === 'gold' && has('vault')) out.add('goldbar');
+  if ((enh === 'gold' || enh === 'keen' || enh === 'vamp') && has('graft')) out.add('thorn');
+  if ((enh === 'gold' || enh === 'keen' || enh === 'vamp') && has('stacked')) out.add('wild');
+  if (enh === 'vamp' && has('kiss')) for (const s of ['shield', 'bolt', 'goldbar', 'thorn'] as SymbolId[]) out.add(s);
+  return [...out];
+}
+
 export function charmOptions(run: RunState, n: number, enhs: Enh[] = gildsFor(run)): DraftOption[] {
   const p = run.player;
   const out: DraftOption[] = [];
   for (const enh of enhs)
-    for (const symbol of CHARM_SYMBOLS[enh])
+    for (const symbol of charmSymbols(run, enh))
       for (let reel = 0; reel < p.strips.length; reel++) if (plainCells(p, reel, symbol) >= n) out.push({ kind: 'gild', enh, symbol, reel, n });
   return out;
 }
@@ -918,6 +959,9 @@ export function draftOffers(run: RunState): DraftOption[] {
     const pool = (Object.keys(RELICS) as RelicId[]).filter(
       (r) => !p.relics.includes(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && (run.act > 1 || !LEGENDARY.has(r)) && !out.some((o) => o.kind === 'relic' && o.relic === r),
     );
+    // One relic card per draft is yours: your machine's or your charms' (while any are left).
+    const ident = pool.filter(isIdentityRelic);
+    if (ident.length && !out.some((o) => o.kind === 'relic')) return { kind: 'relic', relic: rng.pick(ident) };
     // Act 2 relic drafts lean legendary.
     const legends = pool.filter((r) => LEGENDARY.has(r));
     if (legends.length && rng.next() < 0.4) return { kind: 'relic', relic: rng.pick(legends) };
@@ -1066,8 +1110,23 @@ export function shopOffers(run: RunState): ShopItem[] {
   return shelf;
 }
 
+/** Your identity relics: your machine's and your charms' (one relic card per draft comes from here). */
+export const isIdentityRelic = (r: RelicId) => !!(RELICS[r].machine || RELICS[r].charm);
+
+/** Pick `n` relics from a pool, the first from your identity relics when any fit. */
+export function pickRelics(pool: RelicId[], n: number, rng: Rng): RelicId[] {
+  const ident = pool.filter(isIdentityRelic);
+  const first = ident.length ? rng.pick(ident) : null;
+  const rest = rng.shuffle(pool.filter((r) => r !== first));
+  return [...(first ? [first] : []), ...rest].slice(0, n);
+}
+
 /** Build relics are only offered once you own what they amplify (and meter relics only to machines with a meter). */
 export function relicFits(run: RunState, r: RelicId): boolean {
+  const def = RELICS[r];
+  // Slot machine relics only on their machine; charm relics once you own the charm (or your machine favours it).
+  if (def.machine && def.machine !== run.cabinet) return false;
+  if (def.charm && charmCount(run.player, def.charm) === 0 && CABINETS[run.cabinet].favors !== def.charm) return false;
   const need = BUILD_ENABLER[r];
   if (!need) return true;
   const has = (n: Enabler): boolean => {

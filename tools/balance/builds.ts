@@ -10,6 +10,8 @@ import { BIG_SETS, type BigChoiceId } from '../../src/core/run';
 import { SIM_BIAS, simulateRuns } from '../../src/sim/simulateRun';
 
 const N = Number(process.argv[2] ?? 300);
+// Probe rows start holding one relic, so the baseline skips the starting pick too (comparable rows).
+SIM_BIAS.noStart = true;
 const only = process.argv[3];
 const row = (label: string) => {
   const w = CABINET_ORDER.map((cab) => simulateRuns(defaultConfig(), N, 'greedy', 777, cab, 2, true).winPct);

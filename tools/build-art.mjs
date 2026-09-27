@@ -3296,6 +3296,345 @@ S.relicChalice = lit(16, 16, [
   '....GGGGGGgg....',
   '................',
 ]);
+// ---------------------------------------------------------------- charm-rework relics (16x16)
+// relicDrum (16x16): WAR DRUM, crossed sticks over a cream head, red rims, gold lacing
+S.relicDrum = lit(16, 16, [
+  '................',
+  '....W......W....',
+  '.....w....w.....',
+  '......w..w......',
+  '.......ww.......',
+  '.......ww.......',
+  '......w..w......',
+  '...TWTTTTTTTI...',
+  '..MRRRRRRRRRRr..',
+  '..wYBBBYBBBYbb..',
+  '..wwYBYBYBYBYb..',
+  '..wwBYBBBYBBbb..',
+  '..RRRRRRRRRRrr..',
+  '...rrrrrrrrrr...',
+]);
+// relicChainmail (16x16): CHAINMAIL, a grey mail shirt with one red heart link
+{
+  const g = grid(16, 16);
+  const mask = [
+    '................',
+    '...xxx....xxx...',
+    '..xxxxx..xxxxx..',
+    '.xxxxxxxxxxxxxx.',
+    '.xxxxxxxxxxxxxx.',
+    '.xxxxxxxxxxxxxx.',
+    '.xx.xxxxxxxx.xx.',
+    '...xxxxxxxxxx...',
+    '...xxxxxxxxxx...',
+    '...xxxxxxxxxx...',
+    '...xxxxxxxxxx...',
+    '...xxxxxxxxxx...',
+    '...xxxxxxxxxx...',
+    '...xxxxxxxxxx...',
+  ];
+  const has = (x, y) => (mask[y] || '')[x] === 'x';
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if (!has(x, y)) continue;
+    const ring = (x + y) % 2 === 0;
+    let c = x >= 10 ? (ring ? 'S' : 'D') : (ring ? 'L' : 'S');
+    if (!has(x - 1, y) || !has(x, y - 1)) c = 'L';
+    if (!has(x + 1, y)) c = 'D';
+    if (y === 13) c = x >= 10 ? 'h' : 'D'; // hem
+    put(g, x, y, c);
+  }
+  stamp(g, 5, 7, ['MR RR', 'RRRRr', ' RRr ', '  r  ']);
+  S.relicChainmail = toRows(outline(g));
+}
+// relicVault (16x16): KING'S VAULT, a gold bar in a dark vault, the round-dial door swung open
+S.relicVault = lit(16, 16, [
+  '................',
+  '.LLLLLLLLS.LSSD.',
+  '.LkkkkkkkD.LSSD.',
+  '.LkkkkkkkDDLSGD.',
+  '.LkkkkkkkD.LGYg.',
+  '.LkkkkkkkD.LSGD.',
+  '.LkkkkkkkD.LSSD.',
+  '.LkWYYYOkD.LSSD.',
+  '.LkGGGGgkD.LSSD.',
+  '.LkGGGGgkD.LSSD.',
+  '.LhhhhhhhDDLSSD.',
+  '.SDDDDDDDD.DDDD.',
+]);
+// relicDecree (16x16): ROYAL DECREE, a cream scroll with a red wax seal stamped with a gold crown
+S.relicDecree = lit(16, 16, [
+  '................',
+  '..TwwwwwwwwwwB..',
+  '..BBBBBBBBBBBb..',
+  '...TTTTTTTTTI...',
+  '...TttttttTTI...',
+  '...TTTTTTTTTI...',
+  '...TtttttttTI...',
+  '...TTTTTTTTTI...',
+  '...TtttMRRRr....',
+  '...TTTMYRYRYr...',
+  '..wwwwRYYYYYr...',
+  '..BBBBRGGGGgr...',
+  '.......rrrrr....',
+]);
+// relicRosehip (16x16): ROSE HIP, a glossy red hip hanging from a thorny green stem
+S.relicRosehip = lit(16, 16, [
+  '................',
+  '.Ee.........EEE.',
+  '.WEe.......EeeQ.',
+  '...EeW....EeQQ..',
+  '....Ee...EeQ....',
+  '....WEeeQ.......',
+  '......eQ........',
+  '.....MRRRr......',
+  '....MWRRRRRr....',
+  '....RMRRRRRr....',
+  '....RRRRRRrr....',
+  '....RRRRRrrr....',
+  '.....rRRrrr.....',
+  '......QqQ.......',
+]);
+// relicGraft (16x16): GRAFT, a thorny vine spear, a small sword blade lashed to its tip with twine
+{
+  const g = grid(16, 16);
+  for (let i = 0; i <= 6; i++) { put(g, 2 + i, 13 - i, 'e'); put(g, 3 + i, 13 - i, 'Q'); }
+  put(g, 2, 13, 'E'); put(g, 3, 12, 'E');
+  plot(g, [[2, 11, 'W'], [7, 9, 'W'], [7, 6, 'W'], [8, 7, 'T'], [9, 7, 'w'], [7, 8, 'T'], [8, 8, 'w'], [10, 8, 'T'], [10, 9, 'w']]);
+  // crossguard across the join, then the blade up-right
+  plot(g, [[8, 5, 'Y'], [9, 6, 'G'], [10, 7, 'g']]);
+  for (let j = 0; j <= 3; j++) { put(g, 9 + j, 5 - j, 'L'); put(g, 10 + j, 5 - j, 'S'); }
+  put(g, 13, 1, 'L'); put(g, 10, 4, 'W'); put(g, 11, 3, 'W');
+  S.relicGraft = toRows(outline(g));
+}
+// relicFaraday (16x16): FARADAY CAGE, a copper birdcage holding a yellow spark
+S.relicFaraday = lit(16, 16, [
+  '................',
+  '.......aO.......',
+  '.....aOOOOo.....',
+  '...aOOOOOOOOo...',
+  '...a.O..Y.O.o...',
+  '...a.O.YW.O.o...',
+  '...a.OYWYY..o...',
+  '...a.O..WY..o...',
+  '...a.O.YW.O.o...',
+  '...a.O.W..O.o...',
+  '...a.OY...O.o...',
+  '..aOOOOOOOOOOo..',
+  '..oooooooooooo..',
+]);
+// relicStatic (16x16): STATIC, a yellow zigzag bolt striking a small blue shield and bouncing off
+S.relicStatic = lit(16, 16, [
+  '................',
+  '............YY..',
+  '...........YW...',
+  '..........YYYY..',
+  '...........YW...',
+  '.LLLLLS...YY....',
+  '.LAAUNS..YW.....',
+  '.LAUUNS.WY......',
+  '.LAUUNSWW.......',
+  '.LUUNNS.WY......',
+  '..SUNS....YW....',
+  '...SS......YYY..',
+  '............YW..',
+  '.............Y..',
+]);
+// relicCapbells (16x16): CAP AND BELLS, a purple-and-green jester cap, gold bells on both tips
+S.relicCapbells = lit(16, 16, [
+  '................',
+  '................',
+  '.JVV........EeQ.',
+  '.V.VVv....EeQ.Q.',
+  'YY..VVv..EeQ..YY',
+  'Gg...VVvEeQ...Gg',
+  '.....JVVeeQ.....',
+  '....JVVVeeeQ....',
+  '....VVvVeeQQ....',
+  '...YGYGYGYGYg...',
+  '...gggggggggg...',
+]);
+// relicStacked (16x16): STACKED DECK, three fanned cards, the top one a joker with gold corners
+{
+  const g = grid(16, 16);
+  const card = (x0, y0, w, h, fn) => {
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) {
+      const edge = (x === x0 || y === y0) && get(g, x, y) !== '.';
+      put(g, x, y, edge ? 'K' : fn(x - x0, y - y0, w, h));
+    }
+  };
+  card(1, 5, 7, 10, (x, y, w, h) => (x === 0 || y === 0 ? 'M' : x === w - 1 || y === h - 1 ? 'r' : (x + y) % 2 ? 'R' : 'r'));
+  card(4, 2, 7, 10, (x, y, w, h) => (x === 0 || y === 0 ? 'A' : x === w - 1 || y === h - 1 ? 'N' : (x + y) % 2 ? 'U' : 'N'));
+  card(8, 4, 7, 11, (x, y, w, h) => (x === w - 1 || y === h - 1 ? 't' : 'T'));
+  stamp(g, 9, 5, [
+    'YY    ',
+    'Y V e ',
+    ' VJeE ',
+    ' FFFf ',
+    ' KFKf ',
+    ' FRFf ',
+    ' fFf  ',
+    '     Y',
+    '    YG',
+  ]);
+  S.relicStacked = toRows(outline(g));
+}
+// relicGoldleaf (16x16): GOLD LEAF, a thin crinkled flake of gold, its top corner curling over
+{
+  const g = grid(16, 16);
+  const inSheet = (x, y) => { const u = x + y, v = x - y; return u >= 8 && u <= 22 && v >= -5 && v <= 5 && !((u === 8 || u === 22 || v === -5 || v === 5) && (u + v) % 3 === 0); };
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if (!inSheet(x, y)) continue;
+    const u = x + y, v = x - y;
+    let c = 'Y';
+    if (v >= 3) c = v === 3 ? 'W' : (u + v) % 2 ? 'G' : 'g';            // curled-over underside
+    else if (!inSheet(x + 1, y) || !inSheet(x, y + 1)) c = 'G';
+    else if (!inSheet(x - 1, y) || !inSheet(x, y - 1)) c = 'W';
+    else if ((u === 12 && v <= -1) || (u === 17 && v >= -4 && v <= 1)) c = 'G'; // two soft crinkles
+    put(g, x, y, c);
+  }
+  put(g, 4, 6, 'W'); put(g, 6, 5, 'W');
+  S.relicGoldleaf = toRows(outline(g));
+}
+// relicExecutioner (16x16): EXECUTIONER, a heavy steel axe head with a keen cyan edge on a dark haft
+S.relicExecutioner = lit(16, 16, [
+  '................',
+  '.....LS...C.....',
+  '.....Bb.LLSC....',
+  '.....BbLLSSSC...',
+  '...LSBbSSSSDcC..',
+  '..LSDBbSSSDDcC..',
+  '...SDBbSSDDDcC..',
+  '.....BbDDDDcC...',
+  '.....BbDDDcC....',
+  '.....Bb...C.....',
+  '.....Bb.........',
+  '.....Bb.........',
+  '.....Bb.........',
+  '.....Bb.........',
+  '.....kk.........',
+]);
+// relicKiss (16x16): VAMPIRE'S KISS, glossy red lips with one white fang
+S.relicKiss = lit(16, 16, [
+  '................',
+  '................',
+  '................',
+  '................',
+  '...MRR....RRr...',
+  '..MRRRR..RRRRr..',
+  '.MRRRRRRRRRRRRr.',
+  '.rrdddddddWWdrr.',
+  '..MRRRRRRRWRrr..',
+  '..RRRMMRRRRRrr..',
+  '...rRRRRRRRrr...',
+  '.....rrrrrr.....',
+  '..........R.....',
+]);
+// relicHorseshoe (16x16): HORSESHOE, a green lucky horseshoe with nail holes and a sparkle
+{
+  const g = grid(16, 16);
+  const cells = new Set();
+  for (let y = 2; y <= 14; y++) for (let x = 1; x <= 14; x++) {
+    const dx = x - 7.5;
+    const inShoe = y <= 8 ? Math.abs(dx) >= 2.5 && Math.abs(dx) <= 6.5 : Math.hypot(dx, y - 8) >= 2.6 && Math.hypot(dx, y - 8) <= 6.6;
+    if (inShoe) cells.add(`${x},${y}`);
+  }
+  const has = (x, y) => cells.has(`${x},${y}`);
+  for (const k of cells) { const [x, y] = k.split(',').map(Number); put(g, x, y, edgeShade('E', 'e', 'Q')(x, y, has)); }
+  plot(g, [[2, 5, 'q'], [2, 8, 'q'], [13, 5, 'q'], [13, 8, 'q'], [4, 12, 'q'], [11, 12, 'q']]);
+  plot(g, [[2, 2, 'W'], [7, 2, 'Y'], [6, 3, 'Y'], [7, 3, 'W'], [8, 3, 'Y'], [7, 4, 'Y']]);
+  S.relicHorseshoe = toRows(outline(g));
+}
+// relicUnderdog (16x16): UNDERDOG, a scrappy floppy-eared pup with a sticking plaster and a notched ear
+S.relicUnderdog = lit(16, 16, [
+  '................',
+  '................',
+  '....wwwwBTBB....',
+  '..bbwwwwTTTbbb..',
+  '.bbbwKwwBTKBbb..',
+  '.bbbwwwwBBBBbbb.',
+  '.bbwwwTTTTBBBbb.',
+  '.bb.wTTKKTTB.bb.',
+  '.b..wTTTTTTB..b.',
+  '....BTtKKtTB....',
+  '.....BTRRTB.....',
+  '......bRrb......',
+]);
+// relicFirstblood (16x16): FIRST BLOOD, a sword tip with a single red drop falling from it
+{
+  const g = grid(16, 16);
+  for (let i = 0; i <= 9; i++) { const x = 1 + i, y = 13 - i; put(g, x, y, 'L'); put(g, x + 1, y, 'S'); put(g, x + 2, y, 'D'); }
+  plot(g, [[11, 3, 'L'], [12, 3, 'S'], [12, 2, 'W'], [5, 9, 'W'], [7, 7, 'W'], [9, 5, 'W']]);
+  plot(g, [[12, 3, 'R'], [11, 3, 'R']]); // blooded tip
+  plot(g, [[13, 6, 'R'], [12, 7, 'M'], [13, 7, 'R'], [12, 8, 'R'], [13, 8, 'r'], [13, 9, 'r']]);
+  S.relicFirstblood = toRows(outline(g));
+}
+// relicPiggy (16x16): PIGGY BANK, a pink pig with a slot on its back and a gold coin dropping in
+S.relicPiggy = lit(16, 16, [
+  '................',
+  '.......YY.......',
+  '......YWYG......',
+  '......YYGg......',
+  '.......Gg.Mm....',
+  '....MMMKKMMm....',
+  '...MWMMMMMMMm...',
+  '.MMMMMMMMMKMMM..',
+  '..MMMMMMMMMMmMm.',
+  '..MMMMMMMMMMMm..',
+  '...mMMMMMMMMm...',
+  '...mm..mm.mm....',
+]);
+// relicTrophy (16x16): TROPHY BELT, a brown strap with gold studs through a big gold buckle
+S.relicTrophy = lit(16, 16, [
+  '................',
+  '................',
+  '................',
+  '....YYYYYYYG....',
+  '....YWYYYYGg....',
+  '....YG...Gg.....',
+  '.wwwYGwwwGgwwww.',
+  '.BYBYGYYYYgBYBY.',
+  '.BBBYGBBBGgBBBB.',
+  '.bbbYGbbbGgbbbb.',
+  '....YG...Gg.....',
+  '....GGGGGGgg....',
+  '....gggggggg....',
+]);
+// relicHolywater (16x16): HOLY WATER, a corked blue flask marked with a white cross
+S.relicHolywater = lit(16, 16, [
+  '................',
+  '......wBBb......',
+  '......wBBb......',
+  '.....AAAAAN.....',
+  '......AUUN......',
+  '.....AUUUUN.....',
+  '....ACUUUUUN....',
+  '...ACUUWWUUUN...',
+  '...AUWWWWWWUN...',
+  '...AUUUWWUUUN...',
+  '...UUUUWWUUNN...',
+  '...UUUUWWUNNN...',
+  '....NUUUUNNN....',
+  '.....NNNNNN.....',
+]);
+// relicBash (16x16): SHIELD BASH, a round shield with a centre spike, speed lines trailing
+{
+  const g = grid(16, 16);
+  shape(g, 3, discSpans(9, 8, 5.2, 3, 13), (x, y, has) => {
+    const rim = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !has(x + dx, y + dy));
+    if (rim) return x + y >= 19 ? 'D' : x + y <= 14 ? 'L' : 'S';
+    return x + y >= 20 ? 'N' : 'U';
+  });
+  stamp(g, 7, 5, [
+    'W   ',
+    'LS  ',
+    'LSSD',
+    ' SDk',
+    '  kk',
+  ]);
+  plot(g, [[5, 6, 'L'], [13, 6, 'D'], [5, 11, 'S'], [13, 11, 'D']]); // rim rivets
+  for (const y of [5, 8, 11]) { put(g, 1, y, 'S'); put(g, 2, y, 'L'); }
+  S.relicBash = toRows(outline(g));
+}
 /** Ticket stub (24x16): notched ends, 1px rim lit top-left, perforation, icon on the left, mark on the stub. */
 function voucher(pal, icon, mark) {
   const g = grid(24, 16);
@@ -3902,6 +4241,10 @@ const DIMS = {
   hsSkull: 12, trophySmall: 12, coinSpin0: 16, coinSpin1: 16, coinSpin2: 16, coinSpin3: 16, tutorialPointer: 12,
   heroKnight: 24, heroMidas: 24, heroThorn: 24, heroTesla: 24, heroJoker: 24,
   goldbar: 16, thorn: 16, relicChalice: 16,
+  relicDrum: 16, relicChainmail: 16, relicVault: 16, relicDecree: 16, relicRosehip: 16,
+  relicGraft: 16, relicFaraday: 16, relicStatic: 16, relicCapbells: 16, relicStacked: 16,
+  relicGoldleaf: 16, relicExecutioner: 16, relicKiss: 16, relicHorseshoe: 16, relicUnderdog: 16,
+  relicFirstblood: 16, relicPiggy: 16, relicTrophy: 16, relicHolywater: 16, relicBash: 16,
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -4019,7 +4362,12 @@ export type SpriteId =
   | 'heroKnight' | 'heroMidas' | 'heroThorn'      // player hero portraits (face RIGHT), 24x24
   | 'heroTesla' | 'heroJoker'
   | 'goldbar' | 'thorn'                          // signature symbols: MIDAS gold bar, BRIAR thorn, 16x16
-  | 'relicChalice';                              // BLOOD CHALICE relic, 16x16
+  | 'relicChalice'                               // BLOOD CHALICE relic, 16x16
+  | 'relicDrum' | 'relicChainmail' | 'relicVault' | 'relicDecree' // charm-rework relics, 16x16
+  | 'relicRosehip' | 'relicGraft' | 'relicFaraday' | 'relicStatic'
+  | 'relicCapbells' | 'relicStacked' | 'relicGoldleaf' | 'relicExecutioner'
+  | 'relicKiss' | 'relicHorseshoe' | 'relicUnderdog' | 'relicFirstblood'
+  | 'relicPiggy' | 'relicTrophy' | 'relicHolywater' | 'relicBash';
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

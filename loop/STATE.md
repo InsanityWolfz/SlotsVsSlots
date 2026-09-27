@@ -385,3 +385,54 @@ Charms: gold 13.1, vamp 9.4, lucky 8.4, keen 7.5. On raw engine damage keen now 
 gold 29, keen 33); gold wins in drafts because it fits swords, shields and bolts (3x the card offers) and on levels.
 Big choices: still all within noise (8.8-11.4). One late pick doesn't move a run; they need bigger numbers to matter.
 Open: WHITE rose ~3 pts (act 1 regulars are easier for knight/thorn after the buffs).
+
+### Iteration 28 (2026-09-27): 20 new/reworked relics, relic pools, starting pick, lucky gating, bug fixes
+User-approved (playtest/RELIC_PROPOSALS.md; GRAFT kept for flavour). Changes:
+- **18 new relics + 2 reworks.** Machine pools:
+  - KNIGHT: drum, chainmail.
+  - MIDAS: vault, decree.
+  - BRIAR: rosehip, graft, plus cactus.
+  - TESLA: faraday, static, plus rod.
+  - JAX: capbells, stacked.
+  - Charm relics: gold = GOLD LEAF (id `midas`, replaces the Midas relic), keen = EXECUTIONER (id `hone`), vamp = kiss, lucky = horseshoe. Offered once you own the charm or your machine favours it.
+  - General: underdog, firstblood, piggy, trophy, holywater, bash.
+  - Numbers are in `NEW_RELIC` (relics.ts), at the playtester's tuned values.
+- **Pools and slots:**
+  - Machine relics are only offered on their machine.
+  - One relic card per relic draft (and per set of elite spoils) comes from your identity pool (machine + charm relics) while any are left.
+- **Starting pick:** every new run (not the tutorial) offers 1 of 3: up to 2 machine relics plus a general common.
+- **Lucky:** only offered to BRIAR, TESLA and JAX.
+- **Bug fixes:**
+  - Lightning Rod text now reads "YOUR LIGHTNING DEALS 90".
+  - The sim's deaths array was too short for GREEN's 18 fights.
+  - Hone is off the Mirror's copy list (EXECUTIONER is player-only).
+- **Retune:** `regularHp` 0.8 -> 0.95, `act2Hp` 1.45 -> 1.6. BOSS_MUL:
+  | machine | house | mirror | dealer | act3 |
+  |---|---|---|---|---|
+  | knight | 6 | 1.2 | 1.05 | 0.7 |
+  | midas | 2.8 | 5 | 1.4 | 0.1 |
+  | thorn | 2.8 | 10 | 1.35 | 1.4 |
+  | tesla | 1.2 | 2.4 | 0.75 | 0.95 |
+  | joker | 2.4 | 1.9 | 1.75 | 1.3 |
+
+**tuesday.ts 2000 (before relics -> after retune):**
+| machine | WHITE | GREEN | Dealer |
+|---|---|---|---|
+| knight | 27.5 -> 26.3 | 11.0 -> 8.8 | 61.5 -> 54.2 |
+| midas | 27.1 -> 22.7 | 10.3 -> 8.1 | 55.7 -> 56.6 |
+| thorn | 30.3 -> 27.8 | 11.5 -> 10.3 | 54.5 -> 54.0 |
+| tesla | 27.9 -> 24.4 | 11.3 -> 9.9 | 55.9 -> 60.9 |
+| joker | 25.8 -> 26.0 | 8.9 -> 8.9 | 61.0 -> 60.8 |
+| AVG | 27.7 -> 25.4 | 10.6 -> 9.2 | 57.7 -> 57.3 |
+
+- Before the retune, the relics alone gave WHITE 35.1, GREEN 17.0, Dealer 73.9.
+- Early act 1 deaths (npm run sim, fights 2 and 3) are now 1–4% on most machines and 8–11% on one row, down from 13–17%.
+
+**builds.ts 400 relics** (probes skip the starting pick; baseline 5.3%): own-machine deltas, noise about ±2.5:
+- KNIGHT: drum +2.3, chainmail +1.5.
+- MIDAS: vault +1.0, decree +3.3.
+- BRIAR: rosehip +4.5, graft +4.5, cactus +7.8.
+- TESLA: static +5.5, faraday +2.5, rod +3.0.
+- JAX: capbells +1.0, stacked +1.2.
+- General: underdog +4.6, firstblood +3.6, holywater +1.8, piggy +2.1.
+- Fang is still the strongest common: MIDAS +10, TESLA +13, BRIAR +9.8.

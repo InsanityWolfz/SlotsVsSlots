@@ -17,7 +17,7 @@ import {
   FANG_HEAL,
   FANG_THORN_HEAL,
   CROWN_HEAL,
-  HONE_BONUS,
+  NEW_RELIC,
   POT,
   ROD_SPECIAL_COST,
   REFLECT_MIN,
@@ -55,6 +55,10 @@ const FAKE_TURNS = 3;
 
 /** Symbols that act on the opponent when they're native to the caster's strips. */
 const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake']);
+/** HOLY WATER washes off these writes (not coins, drains or the Mimic's hit) and these abilities. */
+const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'bomb', 'hex', 'card', 'gavel', 'rake', 'ground', 'fake']);
+const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel']);
+const WRITER_ABILITIES: ReadonlySet<string> = new Set(['flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
 const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'shield', 'bolt', 'seven', 'thorn']);
 /** Symbols the 3-WILD bonus reel (and a WILD in JAX's payoff) can pick. */
@@ -174,6 +178,12 @@ export class Fight {
   raisePlayer = false;
   /** BRIAR: the thorn bank already hit back on this turn. */
   private thornsTurn = -1;
+  /** WAR DRUM stacks, KING'S VAULT gold, FIRST BLOOD / HOLY WATER used, STATIC's last turn (this fight). */
+  drum = 0;
+  vault = 0;
+  private firstBlood = false;
+  private holyWater = false;
+  private staticTurn = -1;
   /** Card Sharp marks placed this fight (THE DECK REMEMBERS). */
   marksPlaced = 0;
   /** Bonus vouchers banked this fight (they pay out if you win). */
@@ -357,7 +367,9 @@ export class Fight {
     if (!this.over && side === 'player' && this.meter?.kind === 'jackpots') {
       const wilds = line.flatMap((s, r) => (s === 'wild' && !this.isGrounded(me, r) ? [r] : []));
       const earthed = line.filter((s, r) => s === 'wild' && this.isGrounded(me, r)).length * (this.meter.perWild ?? 0);
-      if (wilds.length || earthed) this.fillMeter(me, wilds.length * (this.meter.perWild ?? 0), wilds, events, earthed);
+      // STACKED DECK: a charmed WILD fills double.
+      const charmed = me.relics.has('stacked') ? wilds.filter((r) => me.reels[r].cells[me.reels[r].stop]?.symbol === 'wild' && this.paylineEnh(me, r)).length : 0;
+      if (wilds.length || earthed) this.fillMeter(me, (wilds.length + charmed) * (this.meter.perWild ?? 0), wilds, events, earthed);
     }
     // Jackpot Bell: a jackpot fills your meter (TESLA: a full special; BRIAR: the jackpot again into the bank).
     if (!this.over && score.tier === 'triple' && me.relics.has('bell') && (side !== 'player' || this.special || this.meter)) {
@@ -366,13 +378,14 @@ export class Fight {
       else if (this.meter!.kind === 'thorns') this.fillMeter(me, score.groups.find((g) => g.matched)?.amount ?? 0, [], events);
       else this.fillMeter(me, this.meterCost, [], events);
     }
-    // Midas: gold cells on the payline also fill your meter.
-    if (!this.over && me.relics.has('midas') && (side !== 'player' || this.special || this.meter)) {
-      const gold = me.reels.map((_, r) => r).filter((r) => this.paylineEnh(me, r) === 'gold');
-      if (gold.length) {
-        events.push({ type: 'relic', side, relic: 'midas' });
-        if (this.special || side !== 'player') this.gainEnergy(me, gold.length * UNIT, gold, events);
-        else this.fillMeter(me, gold.length * UNIT, gold, events);
+    if (!this.over && side === 'player') {
+      // WAR DRUM: a spin that pays adds a stack (max 5) for the rest of the fight.
+      if (me.relics.has('drum') && score.groups.some((g) => g.amount > 0 && PAYING.has(g.symbol))) this.drum = Math.min(NEW_RELIC.drumCap, this.drum + 1);
+      // CAP AND BELLS: every WILD on your payline heals.
+      const wilds = line.filter((s) => s === 'wild').length;
+      if (me.relics.has('capbells') && wilds) {
+        events.push({ type: 'relic', side, relic: 'capbells' });
+        this.heal(me, wilds * NEW_RELIC.capbellsHeal, 'capbells', events);
       }
     }
     if (!this.over && side === 'player' && score.tier === 'pair' && me.relics.has('crown')) {
@@ -454,36 +467,76 @@ export class Fight {
       s = { line, tier: 'triple', tierSymbol: null, groups, totals, jackpots: true };
     }
     const fired = new Set<RelicId>();
-    let raise = player && me.armed && this.meter?.kind === 'raise';
+    const has = (r: RelicId) => player && me.relics.has(r);
+    const pays = (g: ScoreGroup) => g.base > 0 && PAYING.has(g.symbol);
+    // MIDAS: a full meter makes your next PAYING group pay x4 (KING'S VAULT adds its banked gold first).
+    const raise = player && me.armed && this.meter?.kind === 'raise';
+    const cellSym = (r: number) => me.reels[r].cells[me.reels[r].stop]?.symbol;
+    const goldOf = new Map<ScoreGroup, number>();
+    const notesOf = new Map<ScoreGroup, string[]>();
+    // KING'S VAULT: gold charms on gold bars bank their xN for the next x4 (they don't multiply the fill).
+    const vaulted = (g: ScoreGroup, r: number) => has('vault') && g.symbol === 'goldbar' && cellSym(r) === 'goldbar';
+    for (const g of s.groups)
+      for (const r of g.reels)
+        if (vaulted(g, r) && this.paylineEnh(me, r) === 'gold') {
+          this.vault += charmValue('gold', this.charmLvl(me, 'gold')) * (g.jackpot && g.reels.length === 1 ? 3 : 1);
+          fired.add('vault');
+        }
+    const raisedGroup = raise ? s.groups.find(pays) : undefined;
+    const decree = raisedGroup && has('decree');
+    // FIRST BLOOD: your first paying spin each fight.
+    const firstBlood = has('firstblood') && !this.firstBlood && s.groups.some(pays);
+    if (firstBlood) this.firstBlood = true;
+    const foe = this.sides[other(me.side)];
     for (const g of s.groups) {
       const notes: string[] = [];
+      notesOf.set(g, notes);
       // A jackpot of one cell counts that cell's charm three times.
       const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
       let gold = 0;
+      let keen = false;
       for (const r of g.reels) {
         const enh = this.paylineEnh(me, r);
         if (!enh) continue;
         const v = charmValue(enh, this.charmLvl(me, enh)) * copies;
-        if (enh === 'keen' && g.symbol === 'sword') {
-          const bonus = v + (me.relics.has('hone') ? HONE_BONUS * copies : 0);
-          if (me.relics.has('hone')) fired.add('hone');
-          g.base += bonus;
+        // KEEN adds to a sword group (and a thorn group with GRAFT) and pierces.
+        if (enh === 'keen' && (g.symbol === 'sword' || g.symbol === 'thorn')) {
+          g.base += v;
           g.pierce = true;
+          keen = true;
         }
         if (enh === 'charged' && g.symbol === 'bolt') g.base += v;
-        if (enh === 'gold') gold += v;
+        if (enh === 'gold' && !vaulted(g, r)) gold += v;
+      }
+      // WAR DRUM: every paying spin this fight adds to your swords.
+      if (has('drum') && g.symbol === 'sword' && this.drum > 0 && g.base > 0) {
+        g.base += NEW_RELIC.drumStep * this.drum;
+        fired.add('drum');
       }
       // GOLD charms in a group ADD (x2 + x2 + x2 = x6), then multiply with the double/jackpot.
+      goldOf.set(g, gold);
       if (gold) {
         g.mult *= gold;
         notes.push(`X${gold} GOLD`);
       }
-      const paying = g.base > 0 && PAYING.has(g.symbol);
+      const paying = pays(g);
       // Prism: a match that used a WILD pays double.
       if (me.relics.has('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) {
         fired.add('prism');
         g.mult *= 2;
         notes.push('X2');
+      }
+      // HORSESHOE: a group with a lucky-born wild.
+      if (has('horseshoe') && paying && g.reels.some((r) => line[r] === 'wild' && cellSym(r) !== 'wild' && this.paylineEnh(me, r) === 'lucky')) {
+        fired.add('horseshoe');
+        g.mult *= NEW_RELIC.horseshoeMul;
+        notes.push(`X${NEW_RELIC.horseshoeMul}`);
+      }
+      // EXECUTIONER: keen swords against an enemy under half HP.
+      if (has('hone') && keen && g.symbol === 'sword' && foe.hp < foe.maxHp / 2) {
+        fired.add('hone');
+        g.mult *= NEW_RELIC.executionerMul;
+        notes.push(`X${NEW_RELIC.executionerMul}`);
       }
       // Legendaries: Skeleton Key (doubles) and Jackpot Bell (jackpots).
       if (me.relics.has('key') && g.matched && g.reels.length === 2) {
@@ -502,18 +555,52 @@ export class Fight {
         notes.push('RAISE X2');
         this.raisePlayer = false;
       }
-      // MIDAS: a full meter makes your next PAYING group pay x4.
-      if (raise && paying && !s.raised) {
-        g.mult *= MIDAS_RAISE;
-        notes.push(`X${MIDAS_RAISE} MIDAS`);
+      if (g === raisedGroup) {
+        const x = MIDAS_RAISE + this.vault;
+        g.mult *= x;
+        notes.push(`X${x} MIDAS`);
         s.raised = true;
-        raise = false;
+        this.vault = 0;
+      } else if (decree && (paying || (g.symbol === 'goldbar' && g.base > 0))) {
+        // ROYAL DECREE: the x4 hits every group on that spin, gold bars too.
+        fired.add('decree');
+        g.mult *= MIDAS_RAISE;
+        notes.push(`X${MIDAS_RAISE} DECREE`);
+      }
+      // UNDERDOG: under half HP, every paying group.
+      if (has('underdog') && paying && me.hp < me.maxHp / 2) {
+        fired.add('underdog');
+        g.mult *= NEW_RELIC.underdogMul;
+        notes.push(`X${NEW_RELIC.underdogMul}`);
+      }
+      if (firstBlood && paying) {
+        fired.add('firstblood');
+        g.mult *= NEW_RELIC.firstbloodMul;
+        notes.push(`X${NEW_RELIC.firstbloodMul} FIRST`);
       }
       // GLASS CANNON: every paying group pays x1.5.
       if (player && paying && this.cfg.player.payMul) {
         g.mult *= this.cfg.player.payMul;
         notes.push(`X${this.cfg.player.payMul}`);
       }
+    }
+    // GOLD LEAF: gold on a payline cell that pays nothing joins your biggest paying group.
+    if (has('midas')) {
+      const best = s.groups.filter(pays).sort((a, b) => b.base * b.mult - a.base * a.mult)[0];
+      if (best) {
+        const inPaying = new Set(s.groups.filter(pays).flatMap((g) => g.reels));
+        const gv = charmValue('gold', this.charmLvl(me, 'gold'));
+        const stray = line.reduce((a, _s, r) => a + (!inPaying.has(r) && cellSym(r) !== 'goldbar' && this.paylineEnh(me, r) === 'gold' ? gv : 0), 0);
+        if (stray) {
+          const own = goldOf.get(best) ?? 0;
+          best.mult = (best.mult / (own || 1)) * (own + stray);
+          notesOf.get(best)!.push(`+X${stray} LEAF`);
+          fired.add('midas');
+        }
+      }
+    }
+    for (const g of s.groups) {
+      const notes = notesOf.get(g)!;
       g.amount = Math.round(g.base * g.mult);
       // RAKE: the Croupier takes a cut of each group.
       if (me.raked > 0 && g.amount > 0) {
@@ -553,6 +640,26 @@ export class Fight {
 
   private resetShield(c: Combatant, events: CombatEvent[]): void {
     if (c.shield <= 0) return;
+    if (c.side === 'player' && !this.over) {
+      const held = c.shield;
+      // SHIELD BASH: leftover shield hits back for half before it resets.
+      if (c.relics.has('bash')) {
+        const amt = Math.round((held * NEW_RELIC.bashShare) / UNIT) * UNIT;
+        if (amt > 0) {
+          events.push({ type: 'relic', side: 'player', relic: 'bash' });
+          this.hit(c, this.sides.enemy, amt, [], events);
+        }
+      }
+      // CHAINMAIL: leftover shield heals you for a share of it.
+      if (!this.over && c.relics.has('chainmail')) {
+        const h = Math.round((held * NEW_RELIC.chainmailShare) / 5) * 5;
+        if (h > 0) {
+          events.push({ type: 'relic', side: 'player', relic: 'chainmail' });
+          this.heal(c, h, 'chainmail', events);
+        }
+      }
+      if (this.over) return;
+    }
     events.push({ type: 'shieldReset', side: c.side, lost: c.shield });
     c.shield = 0;
   }
@@ -615,12 +722,7 @@ export class Fight {
       case 'sword':
         // KEEN: a keen sword in the group pierces shields.
         this.hit(me, foe, g.amount, g.reels, events, !!g.pierce);
-        {
-          // VAMP: vamp swords in the group heal you.
-          const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
-          const vamp = g.reels.filter((r) => this.paylineEnh(me, r) === 'vamp').reduce((a) => a + charmValue('vamp', this.charmLvl(me, 'vamp')) * copies, 0);
-          if (vamp && !this.over && g.amount > 0) this.heal(me, vamp, 'vamp', events);
-        }
+        this.vampHeal(me, g, events);
         return;
       case 'seven':
         // Sevens are the House's heavy hitters.
@@ -629,6 +731,15 @@ export class Fight {
       case 'shield':
         me.shield += g.amount;
         events.push({ type: 'shieldGain', side: me.side, reels: g.reels, amount: g.amount, total: me.shield });
+        // FARADAY CAGE: shield you gain also charges your lightning.
+        if (player && this.special && me.relics.has('faraday') && g.amount > 0 && !this.over) {
+          const e = Math.round((g.amount * NEW_RELIC.faradayShare) / UNIT) * UNIT;
+          if (e > 0) {
+            events.push({ type: 'relic', side: me.side, relic: 'faraday' });
+            this.gainEnergy(me, e, g.reels, events);
+          }
+        }
+        this.vampHeal(me, g, events);
         return;
       case 'bolt':
         // The Mirror has no special of its own: it only reflects. Only TESLA (or the bare engine) has one.
@@ -639,6 +750,7 @@ export class Fight {
           const earthed = grounded ? unitsUp((g.amount * grounded) / g.reels.length) : 0;
           this.gainEnergy(me, Math.max(0, g.amount - earthed), g.reels, events, earthed);
         }
+        this.vampHeal(me, g, events);
         return;
       case 'goldbar':
       case 'thorn':
@@ -655,6 +767,7 @@ export class Fight {
             events.push({ type: 'shieldGain', side: me.side, reels: [], amount: sh, total: me.shield, source: 'cactus' });
           }
         }
+        this.vampHeal(me, g, events);
         return;
     }
     if (me.casts.has(g.symbol)) {
@@ -672,6 +785,14 @@ export class Fight {
     }
     void score;
     events.push({ type: 'fizzle', side: me.side, reels: g.reels, symbol: g.symbol });
+  }
+
+  /** VAMP: vamp cells in a group that pays heal you (swords; any symbol with VAMPIRE'S KISS or GRAFT). */
+  private vampHeal(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
+    if (this.over || g.amount <= 0) return;
+    const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
+    const vamp = g.reels.filter((r) => this.paylineEnh(me, r) === 'vamp').length * charmValue('vamp', this.charmLvl(me, 'vamp')) * copies;
+    if (vamp) this.heal(me, vamp, 'vamp', events);
   }
 
   /** MIDAS / JAX: the full meter pays off this spin — it empties, and you heal. */
@@ -730,6 +851,14 @@ export class Fight {
     events.push({ type: 'meter', side: victim.side, reels: [], amount: -bank, total: 0 });
     this.checkDeath(attacker, events);
     this.payoffHeal(victim, events);
+    // ROSE HIP: a volley heals you for a share of what it fired.
+    if (!this.over && victim.relics.has('rosehip')) {
+      const h = Math.round((bank * NEW_RELIC.rosehipShare) / 5) * 5;
+      if (h > 0) {
+        events.push({ type: 'relic', side: victim.side, relic: 'rosehip' });
+        this.heal(victim, h, 'rosehip', events);
+      }
+    }
     if (!this.over && victim.relics.has('overcharge')) {
       events.push({ type: 'relic', side: victim.side, relic: 'overcharge' });
       const echo = Math.max(1, Math.round(bank * OVERCHARGE_ECHO));
@@ -762,6 +891,12 @@ export class Fight {
     this.checkDeath(foe, events);
     // BRIAR: being attacked (blocked or not) sets the thorn bank off.
     if (!this.over && amount > 0) this.thorns(foe, me, events);
+    // STATIC: being attacked charges your lightning (once per enemy turn).
+    if (!this.over && amount > 0 && foe.side === 'player' && this.special && foe.relics.has('static') && this.staticTurn !== this.turn) {
+      this.staticTurn = this.turn;
+      events.push({ type: 'relic', side: 'player', relic: 'static' });
+      this.gainEnergy(foe, NEW_RELIC.staticCharge, [], events);
+    }
     return h.hpDamage;
   }
 
@@ -870,6 +1005,12 @@ export class Fight {
   // ---- writers: what an enemy does to your machine ------------------------------------
 
   private write(me: Combatant, foe: Combatant, sym: SymbolId, amount: number, reels: number[], events: CombatEvent[]): void {
+    // HOLY WATER: the first cheat on your reels each fight washes off (singles that fizzle anyway don't use it).
+    if (foe.side === 'player' && foe.relics.has('holywater') && !this.holyWater && REEL_WRITES.has(sym) && !(FIZZLE_SINGLES.has(sym) && amount < PAIR_PAY)) {
+      this.holyWater = true;
+      events.push({ type: 'relic', side: 'player', relic: 'holywater' });
+      return this.fizzle(me, sym, reels, events);
+    }
     switch (sym) {
       case 'slime':
         // One slimed cell per UNIT of slime pay (a double slimes 4, a jackpot 9).
@@ -1314,6 +1455,11 @@ export class Fight {
 
   private fireAbility(me: Combatant, ab: AbilityDef, events: CombatEvent[]): void {
     const foe = this.sides[other(me.side)];
+    if (foe.side === 'player' && foe.relics.has('holywater') && !this.holyWater && WRITER_ABILITIES.has(ab.kind)) {
+      this.holyWater = true;
+      events.push({ type: 'relic', side: 'player', relic: 'holywater' });
+      return;
+    }
     switch (ab.kind) {
       case 'flood':
         return this.applySlime(me, foe, ab.power, [], events);

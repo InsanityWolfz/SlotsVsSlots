@@ -14,6 +14,7 @@ export type DealCard = 'shuffle' | 'cut' | 'raise';
 
 export type HealSource = RelicId | 'special' | 'vamp' | 'drain' | 'ability' | 'payoff';
 
+
 export type CombatEvent =
   | { type: 'turnStart'; turn: number; side: SideId }
   | { type: 'shieldReset'; side: SideId; lost: number }

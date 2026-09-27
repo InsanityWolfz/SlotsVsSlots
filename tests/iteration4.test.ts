@@ -17,7 +17,7 @@ function fight(mut: (c: GameConfig) => void, seed = 7): Fight {
 }
 
 describe('build relics & keen', () => {
-  it('KEEN swords add +20 to their group and HONE adds +40 more', () => {
+  it('KEEN swords add +20 to their group; EXECUTIONER (hone) makes them x3 once the enemy is under half HP', () => {
     const f = fight((c) => (c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen', n: 4 }]));
     f.forceNext('player', ['sword', 'bolt', 'shield']);
     expect(ofType(f.step().events, 'attack')[0].amount).toBe(30);
@@ -26,17 +26,26 @@ describe('build relics & keen', () => {
       c.relics = ['hone'];
     });
     g.forceNext('player', ['sword', 'bolt', 'shield']);
-    expect(ofType(g.step().events, 'attack')[0].amount).toBe(70);
+    expect(ofType(g.step().events, 'attack')[0].amount).toBe(30);
+    g.step();
+    g.sides.enemy.hp = 100;
+    g.forceNext('player', ['sword', 'bolt', 'shield']);
+    expect(ofType(g.step().events, 'attack')[0].amount).toBe(90);
   });
 
-  it('MIDAS: gold cells on the payline also fill the meter by 10', () => {
-    const f = fight((c) => {
-      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }];
-      c.relics = ['midas'];
-    });
-    f.forceNext('player', ['sword', 'shield', 'shield']);
-    const en = ofType(f.step().events, 'energyGain');
-    expect(en.at(-1)!.amount).toBe(10);
+  it('GOLD LEAF (midas): gold on a cell that pays nothing joins your biggest group', () => {
+    const mk = (relics: RelicId[]) =>
+      fight((c) => {
+        c.player.strips = reels3({ sword: 6, rock: 6 });
+        c.player.gilded = [{ reel: 2, symbol: 'rock', enh: 'gold', n: 6 }];
+        c.relics = relics;
+      });
+    const plain = mk([]);
+    plain.forceNext('player', ['sword', 'sword', 'rock']);
+    const a = ofType(plain.step().events, 'attack')[0].amount;
+    const leaf = mk(['midas']);
+    leaf.forceNext('player', ['sword', 'sword', 'rock']);
+    expect(ofType(leaf.step().events, 'attack')[0].amount).toBe(a * 2);
   });
 
   it('LIGHTNING ROD makes the special cost 40 with a charged build', () => {

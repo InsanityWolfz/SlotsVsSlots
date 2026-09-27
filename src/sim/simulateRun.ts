@@ -22,6 +22,7 @@ import {
   needsChoice,
   shopOffers,
   takeSpoils,
+  takeStart,
   type DraftOption,
   type RunState,
 } from '../core/run';
@@ -29,7 +30,7 @@ import {
 export type DraftPolicy = 'greedy' | 'random' | 'relic';
 
 /** Balance probes (tools/balance/builds.ts): start with a relic, draft only one charm, or force a big choice. */
-export const SIM_BIAS: { startRelic?: RelicId; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
+export const SIM_BIAS: { startRelic?: RelicId; noStart?: boolean; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
 
 const RELIC_VALUE: Record<RelicId, number> = {
   mirror: 10,
@@ -52,14 +53,31 @@ const RELIC_VALUE: Record<RelicId, number> = {
   key: 9,
   sandglass: 8.5,
   chalice: 3,
+  // Slot machine relics (only offered on their machine).
+  drum: 8,
+  chainmail: 8,
+  vault: 8,
+  decree: 8.5,
+  rosehip: 9,
+  graft: 5,
+  faraday: 7,
+  static: 8.5,
+  capbells: 8.5,
+  stacked: 8.5,
+  kiss: 7.5,
+  horseshoe: 8,
+  underdog: 8,
+  firstblood: 7.5,
+  piggy: 5,
+  trophy: 6,
+  holywater: 6,
+  bash: 5.5,
 };
 const BUILD: Partial<Record<RelicId, (run: RunState) => boolean>> = {
-  midas: (r) => r.player.gilded.some((g) => g.enh === 'gold'),
   rod: (r) => r.player.gilded.some((g) => g.enh === 'charged'),
   cactus: (r) => r.cabinet === 'thorn',
   chalice: (r) => r.player.gilded.some((g) => g.enh === 'vamp'),
   prism: (r) => r.player.strips.some((s) => (s.wild ?? 0) > 0),
-  hone: (r) => r.player.gilded.some((g) => g.enh === 'keen'),
 };
 
 
@@ -190,7 +208,7 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
   const seeds = new Rng(seed);
   const pick = new Rng(seed ^ 0x5eed);
   let wins = 0;
-  const deaths = Array(16).fill(0);
+  const deaths = Array(24).fill(0);
   let reachedDealer = 0;
   let dealerWins = 0;
   let act1 = 0;
@@ -215,6 +233,12 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
     const runSeed = seeds.int(0xffffffff);
     const run = createRun(base, runSeed, cabinet, stake, act3);
     if (SIM_BIAS.startRelic && !run.player.relics.includes(SIM_BIAS.startRelic)) run.player.relics.push(SIM_BIAS.startRelic);
+    // The starting relic pick (off in probes that start with a relic, so they stay comparable).
+    if (run.pendingStart?.length) {
+      const st = run.pendingStart;
+      if (!SIM_BIAS.noStart && !SIM_BIAS.startRelic) takeStart(run, policy === 'random' ? pick.pick(st) : st.reduce((a, b) => (RELIC_VALUE[b] > RELIC_VALUE[a] ? b : a)));
+      run.pendingStart = null;
+    }
     // Fights draw from their own per-run stream, so a change in one run never desyncs the next (paired ladders).
     const fightSeeds = new Rng((runSeed ^ 0x5f3759df) >>> 0);
     while (!run.over) {

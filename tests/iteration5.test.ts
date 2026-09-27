@@ -91,14 +91,16 @@ describe('build-aware offers & the heal service', () => {
       run.depth = 3;
       for (const it of shopOffers(run)) if (it.option.kind === 'relic' && BUILD_ENABLER[it.option.relic]) expect(relicFits(run, it.option.relic)).toBe(true);
     }
-    // The Midas relic needs gold AND a meter (KNIGHT has none).
+    // Charm relics (GOLD LEAF = midas) need the charm, unless your machine favours it; machine relics stay home.
     const knight = createRun(base, 1);
-    knight.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'gold', n: 2 });
     expect(relicFits(knight, 'midas')).toBe(false);
-    const run = createRun(base, 1, 'thorn');
-    expect(relicFits(run, 'midas')).toBe(false);
-    run.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'gold', n: 2 });
-    expect(relicFits(run, 'midas')).toBe(true);
+    knight.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'gold', n: 2 });
+    expect(relicFits(knight, 'midas')).toBe(true);
+    const midas = createRun(base, 1, 'midas');
+    midas.player.gilded = [];
+    expect(relicFits(midas, 'midas')).toBe(true);
+    expect(relicFits(knight, 'rosehip')).toBe(false);
+    expect(relicFits(createRun(base, 1, 'thorn'), 'rosehip')).toBe(true);
   });
 
   it('HEAL is a permanent service slot, hidden at full HP; first reroll costs 1', () => {

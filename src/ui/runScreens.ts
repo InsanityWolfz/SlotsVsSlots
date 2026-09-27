@@ -141,7 +141,7 @@ export class RunScreens {
   private picked = -1;
   private lastRecord: FightRecord | null = null;
   /** 'spoils' = an elite's relic choice (1 of 2) shown with the draft layout. */
-  private draftKind: 'draft' | 'spoils' | 'legend' = 'draft';
+  private draftKind: 'draft' | 'spoils' | 'legend' | 'start' = 'draft';
   private shopItems: ShopItem[] = [];
   private shopHits: Hit[] = [];
   private chipPulse = 1;
@@ -640,7 +640,7 @@ export class RunScreens {
     this.drawHp(ctx, 900, 630, 220);
   }
 
-  showDraft(run: RunState, offers: DraftOption[], last: FightRecord | null, kind: 'draft' | 'spoils' | 'legend' = 'draft'): void {
+  showDraft(run: RunState, offers: DraftOption[], last: FightRecord | null, kind: 'draft' | 'spoils' | 'legend' | 'start' = 'draft'): void {
     this.draftKind = kind;
     this.run = run;
     this.offers = offers;
@@ -657,7 +657,7 @@ export class RunScreens {
           .tween({ from: 1.08, to: 1.18, dur: 0.15, ease: backOut(2), onUpdate: (v) => (card.scale = v) })
           .then(() => this.ui.wait(0.35))
           .then(() =>
-            kind === 'legend' && o.kind === 'relic' ? this.cb.onLegend(o.relic) : kind === 'spoils' && o.kind === 'relic' ? this.cb.onSpoils(o.relic) : this.cb.onPick(o),
+            kind === 'legend' && o.kind === 'relic' ? this.cb.onLegend(o.relic) : (kind === 'spoils' || kind === 'start') && o.kind === 'relic' ? this.cb.onSpoils(o.relic) : this.cb.onPick(o),
           );
       }),
     );
@@ -859,7 +859,8 @@ export class RunScreens {
 
   private drawDraft(ctx: CanvasRenderingContext2D, time: number): void {
     const last = this.lastRecord;
-    drawText(ctx, last ? `${last.enemy} DEFEATED!` : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight);
+    const start = this.draftKind === 'start';
+    drawText(ctx, last ? `${last.enemy} DEFEATED!` : start ? `${CABINETS[this.run!.cabinet].name} - A NEW RUN` : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight);
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
@@ -874,7 +875,9 @@ export class RunScreens {
       ? 'ACT 3 - THE HOUSE HAS A PARTNER - FULLY HEALED - CHOOSE ONE'
       : legend
         ? 'ACT 2 BEGINS - FULLY HEALED - CHOOSE A LEGENDARY RELIC'
-        : spoils
+        : start
+          ? 'CHOOSE A STARTING RELIC'
+          : spoils
           ? 'ELITE SPOILS - CHOOSE A RELIC'
           : relicDraft
             ? 'RELIC DRAFT - CHOOSE ONE'

@@ -115,7 +115,28 @@ export type RelicId =
   | 'key'
   | 'sandglass'
   // Charm relic
-  | 'chalice';
+  | 'chalice'
+  // Slot machine relics (only offered on that machine)
+  | 'drum'
+  | 'chainmail'
+  | 'vault'
+  | 'decree'
+  | 'rosehip'
+  | 'graft'
+  | 'faraday'
+  | 'static'
+  | 'capbells'
+  | 'stacked'
+  // Charm relics (hone = EXECUTIONER, midas = GOLD LEAF keep their old ids for saves)
+  | 'kiss'
+  | 'horseshoe'
+  // General
+  | 'underdog'
+  | 'firstblood'
+  | 'piggy'
+  | 'trophy'
+  | 'holywater'
+  | 'bash';
 
 export interface SideConfig {
   hp: number;
