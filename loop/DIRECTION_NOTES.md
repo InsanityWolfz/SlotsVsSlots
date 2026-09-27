@@ -78,3 +78,13 @@ Status: discussion only. No code until after the usage reset (Tue 2026-09-29). T
 - **Random-charm card** ("3 random charms on reel 2", cheaper): later, once players know the charms.
 - **Levels live on the TYPE, not the cell:** Gold Lvl 2 upgrades every gold charm, including ones added later. Swords Lvl 2 upgrades every sword, including ones added later.
 - **Left panel:** replace the strip-order list with shop-style columns 1 2 3, one row per symbol+charm pair with a count (e.g. ⚔2, gold ⚔2, ⚡4).
+- **Numbers on symbols** (readability):
+  - base value in the bottom-left (white), charm tag in the top-right (coloured by charm: gold x2, keen +5 blue, vamp +3 red, charged +1 yellow...);
+  - keep the art cues (gold tint, vamp blood);
+  - numbers show only on the payline, popping in as each symbol lands.
+- **Pay math:** BASE × MULT = TOTAL, shown as the payline pays (e.g. 30 × 18 = 540), no words.
+  - BASE = sum of the group's symbol values.
+  - MULT = jackpot/pair multiplier × gold multiplier. These two MULTIPLY together.
+  - Gold charms in one group ADD together: x2 + x2 + x2 = x6. The label stays "x2" per cell.
+  - Example: triple gold bolt (base 10 each) = 30 × (3 jackpot × 6 gold = 18) = 540.
+- **Reel tables:** the left panel and the shop both use the vertical shop-style table.
