@@ -14,6 +14,8 @@ import {
   fightConfig,
   fightNumber,
   takeLegend,
+  takeChoice,
+  type BigChoice,
   isShopNow,
   leaveShop,
   needsChoice,
@@ -45,11 +47,13 @@ const RELIC_VALUE: Record<RelicId, number> = {
   overcharge: 9.5,
   key: 9,
   sandglass: 8.5,
+  chalice: 3,
 };
 const BUILD: Partial<Record<RelicId, (run: RunState) => boolean>> = {
   midas: (r) => r.player.gilded.some((g) => g.enh === 'gold'),
   rod: (r) => r.player.gilded.some((g) => g.enh === 'charged'),
-  cactus: (r) => r.player.gilded.some((g) => g.enh === 'spiked'),
+  cactus: (r) => r.cabinet === 'thorn',
+  chalice: (r) => r.player.gilded.some((g) => g.enh === 'vamp'),
   prism: (r) => r.player.strips.some((s) => (s.wild ?? 0) > 0),
   hone: (r) => r.player.gilded.some((g) => g.enh === 'keen'),
 };
@@ -67,21 +71,61 @@ export function greedyValue(run: RunState, o: DraftOption): number {
       return (1 - p.hp / p.maxHp) * 14;
     case 'maxHp':
       return 3.5;
-    case 'swap':
-      if (o.to === 'wild') return 6;
-      if (o.from === 'rock') return (o.to === 'bolt' ? 8 : 6) + 2;
-      // Any-direction swaps: shields are the weakest symbol, bolts the strongest.
-      return { bolt: 3, sword: 2, shield: 0 }[o.to as 'bolt'] - ({ bolt: 3, sword: 2, shield: 0 }[o.from as 'bolt'] ?? 0) + (o.count >= 3 ? 6 : 4);
+    case 'swap': {
+      if (o.to === 'wild') return run.cabinet === 'joker' ? 8 : 6;
+      // Shields are the weakest symbol, your signature symbol the strongest.
+      const worth = (x: string) => (x === 'rock' ? -2 : x === 'shield' ? 0 : x === 'sword' ? 2 : 3);
+      return worth(o.to) - worth(o.from) + (o.count >= 3 ? 6 : 4);
+    }
     case 'gild':
-      return { gold: 9, charged: 8.5, spiked: 7.5, keen: 6, vamp: 7, lucky: 7.5, blaze: 8.5 }[o.enh] + (o.tier ? 1 : 0);
+      return { gold: 9, charged: 8.5, spiked: 0, keen: 6.5, vamp: 7, lucky: run.cabinet === 'joker' ? 8.5 : 7, blaze: 8 }[o.enh] + (p.gilded.some((g) => g.enh === o.enh) ? 0.5 : 0);
+    case 'symLevel':
+      return o.symbol === 'sword' ? 8 : o.symbol === 'shield' ? 5 : 7.5;
+    case 'charmLevel':
+      return Math.min(9.5, 6.5 + p.gilded.reduce((a, g) => a + (g.enh === o.enh ? g.n : 0), 0) / 2);
     case 'clear':
       return 3 + (p.strips[o.reel].rock ?? 0) * 2;
     case 'add':
-      return o.symbol === 'bolt' ? 4 : 2;
+      return o.symbol === 'sword' ? 3 : 4;
     case 'remove':
       return o.symbol === 'rock' ? 5 : o.symbol === 'shield' ? 3 : 0;
   }
 }
+
+/** Big choices: strong picks are worth more, but the costs bite when you're low or already built. */
+export function choiceValue(run: RunState, c: BigChoice): number {
+  const p = run.player;
+  const hp = p.hp / p.maxHp;
+  const charms = p.gilded.reduce((a, g) => a + g.n, 0);
+  const gold = p.gilded.reduce((a, g) => a + (g.enh === 'gold' ? g.n : 0), 0);
+  switch (c.id) {
+    case 'armsRace':
+      return 8 - (p.maxHp < 300 ? 2 : 0);
+    case 'masterwork':
+      return c.symbol === 'shield' ? 4 : 7;
+    case 'whetstone':
+      return c.symbol === 'shield' ? 4 : 6;
+    case 'meltDown':
+      return 4 + (charms - gold) * 0.5;
+    case 'gildLot':
+      return 8;
+    case 'polish':
+      return 5 + Math.min(3, charms / 3);
+    case 'cleanCut':
+      return 6.5;
+    case 'twinReel':
+      return 5;
+    case 'sweepUp':
+      return 3 + (1 - hp) * 4 + p.strips.reduce((a, s) => a + (s.rock ?? 0), 0);
+    case 'glassCannon':
+      return 7;
+    case 'bloodPact':
+      return 6.5;
+    case 'secondWind':
+      return 4 + (1 - hp) * 6;
+  }
+}
+export const CHOICE_LOG: Record<string, [number, number]> = {};
 
 function pickEnemy(run: RunState, policy: DraftPolicy, rng: Rng): number {
   const opts = run.paths[run.depth];
@@ -213,6 +257,12 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
       if (run.act === 3 && act === 2) mirrorWins++;
       else if (run.won && act === 2) mirrorWins++;
       if (run.won && act === 3) dealerWins++;
+      if (!run.over && run.pendingChoice?.length) {
+        const cs = run.pendingChoice;
+        const c = policy === 'random' ? pick.pick(cs) : cs.reduce((a, b) => (choiceValue(run, b) > choiceValue(run, a) ? b : a));
+        takeChoice(run, c);
+        (run as RunState & { took?: string[] }).took = [...((run as RunState & { took?: string[] }).took ?? []), c.id];
+      }
       if (!run.over && run.pendingLegend) {
         const lg = run.pendingLegend;
         if (lg.length) takeLegend(run, policy === 'random' ? pick.pick(lg) : lg.reduce((a, b) => (RELIC_VALUE[b] > RELIC_VALUE[a] ? b : a)));
@@ -238,6 +288,11 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
       }
     }
     if (run.won) wins++;
+    for (const id of (run as RunState & { took?: string[] }).took ?? []) {
+      const e = (CHOICE_LOG[id] ??= [0, 0]);
+      e[0]++;
+      if (run.won) e[1]++;
+    }
     rocks += run.player.strips.reduce((a, s) => a + (s.rock ?? 0), 0);
     for (const r of run.player.relics) {
       const e = (relicRuns[r] ??= [0, 0]);

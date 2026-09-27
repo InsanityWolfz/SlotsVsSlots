@@ -7,12 +7,10 @@ export interface StripCell {
   slimed: boolean;
   /** Snatched by a thief: an empty hole for the rest of the fight. */
   stolen?: boolean;
-  /** Gilded for the run. */
+  /** This cell's charm (for the run). */
   enh?: Enh;
   /** A Bomber's bomb: turns left on its fuse. Landing it on your payline defuses it. */
   bomb?: number;
-  /** Tier II gild. */
-  tier?: 2;
   /** The Grounder's rod: while on your payline, your special can't ignore shields. */
   grounded?: boolean;
   /** The Counterfeiter's fake coin: this cell's gild counts as plain for this many of your turns. */
@@ -44,13 +42,16 @@ export function buildReel(counts: StripCounts, rng: Rng, gilds: Gild[] = []): Re
   }
   if (cells.length === 0) throw new Error('Reel strip is empty');
   rng.shuffle(cells);
-  // A gild enhances EVERY cell of its symbol on this reel.
-  for (const g of gilds)
-    for (const c of cells)
-      if (c.symbol === g.symbol) {
-        c.enh = g.enh;
-        if (g.tier) c.tier = g.tier;
-      }
+  // A charm sits on `n` cells of its symbol (the strip is shuffled, so which ones is random).
+  for (const g of gilds) {
+    let left = g.n;
+    for (const c of cells) {
+      if (left <= 0) break;
+      if (c.symbol !== g.symbol || c.enh) continue;
+      c.enh = g.enh;
+      left--;
+    }
+  }
   return { cells, stop: rng.int(cells.length) };
 }
 
@@ -70,7 +71,7 @@ export const BONUS_SYMBOLS: ReadonlySet<SymbolId> = new Set(['bonusSym', 'relicS
 /** How much the player would miss losing this symbol (enemy targeting). */
 export function symbolValue(s: SymbolId): number {
   // Bolts are worth ~2 shield-piercing damage, swords 1 blockable (playtest ITERATION_1).
-  return s === 'wild' ? 4 : s === 'bolt' ? 3 : s === 'sword' ? 2 : s === 'shield' ? 1 : 0;
+  return s === 'wild' ? 4 : s === 'bolt' || s === 'goldbar' || s === 'thorn' ? 3 : s === 'sword' ? 2 : s === 'shield' ? 1 : 0;
 }
 
 /** Enemy targeting value of a specific cell: gilded cells are juicier targets. */

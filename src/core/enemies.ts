@@ -256,11 +256,16 @@ export const DEPTH_HP_2 = [52, 62, 73, 85, 97].map((h) => h * UNIT);
 /** Mutable so balance sweeps can tune it. */
 /** mirrorPower/mirrorFlat: the Mirror's HP = power × your expected damage per spin + flat (ITERATION_6 Package N). */
 /** Act 3: 3 fights, then the Dealer. */
-export const DEPTH_HP_3 = [120, 140, 160].map((h) => h * UNIT);
-export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 3 };
+/**
+ * Act 3: 5 fights, then the Dealer. Regular act 3 enemies are sized to YOUR machine (like the bosses:
+ * act3Power x machinePower x the depth step, never below this curve) so their abilities get seen.
+ */
+export const DEPTH_HP_3 = [120, 135, 150, 165, 180].map((h) => h * UNIT);
+export const ACT3_DEPTH_MUL = [1, 1.1, 1.2, 1.3, 1.4];
+export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5 };
 export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
 /** Act 3 (ITERATION_12 playtest, commit at GREEN): Dealer HP = 7 x typical-spin power + 60 (+4/relic), less bursty strip -> ~62% Dealer win. */
-export const TUNE = { dealerPower: 8, dealerFlat: 70 * UNIT, act3Sevens: 3, bossHp: 80 * UNIT, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 48 * UNIT, mirrorPerRelic: 4 * UNIT, mirrorSpecialWeight: 1 };
+export const TUNE = { regularHp: 1, enemyShield: 0.5, act3Power: 4, act3Flat: 20 * UNIT, dealerPower: 10, dealerFlat: 50 * UNIT, act3Sevens: 4, bossHp: 95 * UNIT, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 30 * UNIT, mirrorPerRelic: 4 * UNIT, mirrorSpecialWeight: 1 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
@@ -323,7 +328,7 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
   const opener = depth === 0 && act === 1 ? OPENER_HP_MUL : 1;
   // (The Mirror's real HP is sized to your machine in run.enemyHp.)
   const bossHp = a.id === 'mirror' ? 100 * UNIT : TUNE.bossHp;
-  const hp = isBoss ? bossHp : unitsRound(curve[Math.min(depth, curve.length - 1)] * hpMul * opener);
+  const hp = isBoss ? bossHp : unitsRound(curve[Math.min(depth, curve.length - 1)] * hpMul * opener * TUNE.regularHp);
   const every = a.ability.every;
   return {
     archetype: a.id,
@@ -359,8 +364,7 @@ export function generateRunPaths(rng: Rng, act = 1): EnemyDef[][] {
     let pool = inAct.filter((a) => a.minDepth <= depth && !prev.has(a.id));
     if (depth === 0) pool = act === 1 ? inAct.filter((a) => a.id === 'slime' || a.id === 'frost') : act === 2 ? inAct.filter((a) => ACT2_NEW.has(a.id) && a.minDepth === 0) : inAct.filter((a) => ACT3_NEW.has(a.id));
     if (pool.length === 0) pool = inAct.filter((a) => a.minDepth <= depth);
-    // Act 3 is short: its only fork is the middle fight.
-    const branch = act > 2 ? depth === 1 : BRANCH_DEPTHS.has(depth);
+    const branch = BRANCH_DEPTHS.has(depth);
     const n = branch ? Math.min(2, pool.length) : 1;
     let picks = rng.shuffle([...pool]).slice(0, n);
     // Act 2 forks always show at least one of the new faces.

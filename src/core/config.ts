@@ -31,21 +31,30 @@ export type SymbolId =
   | 'rake'
   // The player's chase symbols (BONUS WHEEL / RELIC RUSH)
   | 'bonusSym'
-  | 'relicSym';
+  | 'relicSym'
+  // Signature symbols (each fills its slot machine's meter)
+  | 'goldbar'
+  | 'thorn';
 
 /**
- * Gilded cells (enhancements that persist for the run):
- * GOLD pays x2, KEEN swords pierce shields, CHARGED bolts give +1 energy, SPIKED shields on your
- * payline hit back for 2 when you're struck.
+ * CHARMS live on single cells (code name: gild / enh). GOLD adds a multiplier, KEEN swords add base
+ * and pierce, VAMP swords heal, LUCKY cells can land as WILDs, CHARGED / BLAZE bolts feed TESLA's
+ * special. SPIKED is retired (BRIAR's thorns replaced it); the id stays so old saves still read.
  */
 export type Enh = 'gold' | 'keen' | 'charged' | 'spiked' | 'vamp' | 'lucky' | 'blaze';
+/** `n` cells of `symbol` on reel `reel` carry charm `enh` (at most one charm per cell). */
 export interface Gild {
   reel: number;
   symbol: SymbolId;
   enh: Enh;
-  /** Tier II (act 2 upgrade of a gild you already own). */
-  tier?: 2;
+  n: number;
 }
+/** Levels live on the TYPE: every sword (or gold charm), including ones added later. Level 1 = base. */
+export interface Levels {
+  sym: Partial<Record<SymbolId, number>>;
+  charm: Partial<Record<Enh, number>>;
+}
+export const emptyLevels = (): Levels => ({ sym: {}, charm: {} });
 export type StripCounts = Partial<Record<SymbolId, number>>;
 
 /** When a combatant's shield drops to 0. */
@@ -104,7 +113,9 @@ export type RelicId =
   | 'phoenix'
   | 'overcharge'
   | 'key'
-  | 'sandglass';
+  | 'sandglass'
+  // Charm relic
+  | 'chalice';
 
 export interface SideConfig {
   hp: number;
@@ -119,8 +130,14 @@ export interface SideConfig {
   ability?: AbilityDef | null;
   /** Boss rule set, if any. */
   boss?: 'house' | 'mirror' | 'dealer' | null;
-  /** Enhanced cells, applied to matching symbols on each reel at fight start. */
+  /** Charmed cells, dealt onto matching symbols on each reel at fight start. */
   gilded?: Gild[];
+  /** Symbol and charm levels (the player, and the Mirror's copy of your symbol levels). */
+  levels?: Levels;
+  /** GLASS CANNON: every paying group pays this much more. */
+  payMul?: number;
+  /** BLOOD PACT: your meter fills this many times faster. */
+  meterMul?: number;
   /** Boss fight: chips carried in grant this much shield at the start of each House turn. */
   stackShield?: number;
   /** BONUS WHEEL / RELIC RUSH symbols ride on this side's reels (run fights only). */
@@ -171,7 +188,7 @@ export function defaultConfig(): GameConfig {
     player: { hp: 20 * UNIT, strips: reels3({ sword: 4, shield: 4, bolt: 4 }) },
     // Tuned from playtest/PLAYTEST_REPORT.md: ~65% player wins, ~24 turns, cleanse in ~half of fights.
     enemy: { hp: 30 * UNIT, strips: reels3({ sword: 5, shield: 2, slime: 5 }), name: 'SLIME KING', portrait: 'enemyPortrait' },
-    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, ground: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0 },
+    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, ground: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0, goldbar: UNIT, thorn: 1.5 * UNIT },
     pairMult: 2,
     tripleMult: 3,
     pairRule: 'inOrder',

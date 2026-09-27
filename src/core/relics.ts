@@ -11,23 +11,24 @@ export interface RelicDef {
 /** Passive rule changes. None of them ask for input mid-fight. */
 export const RELICS: Record<RelicId, RelicDef> = {
   clover: { id: 'clover', name: 'LUCKY CLOVER', text: '30% CHANCE A NEAR-MISS BECOMES A JACKPOT', sprite: 'relicClover' },
-  battery: { id: 'battery', name: 'BATTERY', text: 'START EACH FIGHT WITH 30 ENERGY', sprite: 'relicBattery' },
+  battery: { id: 'battery', name: 'BATTERY', text: 'YOUR METER STARTS EACH FIGHT MORE THAN HALF FULL', sprite: 'relicBattery' },
   mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS PAY AS A DOUBLE', sprite: 'relicMirror' },
-  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR SPECIAL HEALS 30 HP', sprite: 'relicFang' },
+  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFF HEALS 30 MORE', sprite: 'relicFang' },
   bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 60 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
   crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR DOUBLES ALSO STEAL HALF THE HOUSE POT', sprite: 'relicCrown' },
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
-  midas: { id: 'midas', name: 'MIDAS', text: 'GOLD CELLS ON YOUR PAYLINE ALSO GIVE +10 ENERGY', sprite: 'relicMidas' },
+  midas: { id: 'midas', name: 'MIDAS', text: 'GOLD CELLS ON YOUR PAYLINE ALSO FILL YOUR METER BY 10', sprite: 'relicMidas' },
   rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'IF YOU HAVE CHARGED BOLTS, YOUR SPECIAL COSTS 40', sprite: 'relicRod' },
-  cactus: { id: 'cactus', name: 'CACTUS', text: 'SPIKED SHIELDS HIT BACK FOR 40', sprite: 'relicCactus' },
+  cactus: { id: 'cactus', name: 'CACTUS', text: 'BANKING THORNS ALSO SHIELDS YOU FOR 10% OF THEM', sprite: 'relicCactus' },
   prism: { id: 'prism', name: 'PRISM', text: 'A MATCH THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
   hone: { id: 'hone', name: 'HONE', text: 'KEEN SWORDS DEAL +20 MORE', sprite: 'relicHone' },
   // Legendary (act 2): big, build-bending effects.
-  ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'FULL SETS NEED ONLY 2 MATCHING CHARMS ON THE LINE AND PAY ONE STEP MORE', sprite: 'relicTicket' },
-  bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND REFILL YOUR SPECIAL', sprite: 'relicBell' },
+  ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'EVERY CHARM IS ONE LEVEL HIGHER (EVEN PAST LEVEL 3)', sprite: 'relicTicket' },
+  bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND FILL YOUR METER', sprite: 'relicBell' },
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'ONCE PER FIGHT, SURVIVE A LETHAL HIT AT 1 HP', sprite: 'relicPhoenix' },
-  overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR SPECIAL ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
+  overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR METER PAYOFF ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
   key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR DOUBLES PAY X2', sprite: 'relicKey' },
+  chalice: { id: 'chalice', name: 'BLOOD CHALICE', text: 'HEALING PAST FULL HP BECOMES SHIELD', sprite: 'relicChalice' },
   sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: 'ENEMY ABILITIES CHARGE 1 TURN SLOWER', sprite: 'relicSandglass' },
 };
 
@@ -42,7 +43,7 @@ export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
   common: ['clover', 'battery', 'fang', 'bandage', 'crown'],
-  uncommon: ['midas', 'rod', 'cactus', 'prism', 'hone', 'mirror'],
+  uncommon: ['midas', 'rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass'],
 };
 
@@ -51,21 +52,12 @@ export const BELL_MULT = 2;
 export const KEY_MULT = 2;
 /** Golden Hourglass: enemy abilities take this many more turns (was 2: 76% run win, the top relic by 12+ points). */
 export const SANDGLASS_SLOW = 1;
-/** Act 2 gilds. */
-/** LUCKY: chance per level (1 = plain, +1 tier II, +1 full set): each + step × (level − 1). */
-export const LUCKY_CHANCE = { each: 0.35, step: 0.15 };
-/** BLAZE: special damage per blaze reel = each + (level − 1). */
-export const BLAZE_BONUS = { each: 3 * UNIT };
 /** OVERCHARGE: the echo deals this fraction of the special. */
 export const OVERCHARGE_ECHO = 1 / 3;
-/** TIER II is worth this many gild levels (ITERATION_8: one level made tier II a trap). */
-export const TIER_STEP = 2;
-/** FULL SET (the same charm on all 3 payline cells): levels added to each of those cells (+1 more with the Golden Ticket). */
-export const FULL_SET_STEP = 2;
-/** VAMP heals at most this much per sword group (a VAMP FULL SET was the strongest thing measured). */
-export const VAMP_CAP = 3 * UNIT;
 /** The Mirror's REFLECTION is capped at this share of your max HP (two from full kill you). */
 export const REFLECT_CAP = 0.6;
+/** The Mirror plays your build, so its hits are capped at this share of your max HP (your gold jackpots would one-shot you). */
+export const MIRROR_HIT_CAP = 0.4;
 /** Bomber bombs: fuse in the victim's turns, damage when it runs out (shield blocks). */
 export const BOMB = { fuse: 3, damage: 3 * UNIT };
 /** The Mirror's Reflection: never less than this. */
@@ -73,22 +65,31 @@ export const REFLECT_MIN = 3 * UNIT;
 
 export const CLOVER_CHANCE = 0.3;
 export const BATTERY_ENERGY = 3 * UNIT;
+/** Battery on a MIDAS / JAX meter: it starts this full. */
+export const BATTERY_SHARE = 0.6;
+/** MIDAS: a full meter makes your next paying group pay this many times. */
+export const MIDAS_RAISE = 4;
+/** Cactus: banking thorns shields you for this share of what you banked. */
+export const CACTUS_SHARE = 0.1;
 export const FANG_HEAL = 3 * UNIT;
 export const BANDAGE_HEAL = 6 * UNIT;
-export const SPIKED_DAMAGE = 2 * UNIT;
-export const CACTUS_DAMAGE = 4 * UNIT;
-export const KEEN_BONUS = UNIT;
 export const HONE_BONUS = 2 * UNIT;
 export const ROD_SPECIAL_COST = 4 * UNIT;
 
 /** What each build relic needs you to own before it's offered (playtest ITERATION_4). */
-export const BUILD_ENABLER: Partial<Record<RelicId, 'gold' | 'keen' | 'charged' | 'spiked' | 'wild' | 'full'>> = {
-  ticket: 'full',
-  midas: 'gold',
+export type Enabler = 'gold' | 'keen' | 'charged' | 'vamp' | 'wild' | 'charm' | 'meter' | 'thorns';
+export const BUILD_ENABLER: Partial<Record<RelicId, Enabler | Enabler[]>> = {
+  ticket: 'charm',
+  midas: ['gold', 'meter'],
   rod: 'charged',
-  cactus: 'spiked',
+  cactus: 'thorns',
   hone: 'keen',
   prism: 'wild',
+  chalice: 'vamp',
+  // Relics that feed a meter: every slot machine but KNIGHT.
+  battery: 'meter',
+  overcharge: 'meter',
+  fang: 'meter',
 };
 export const ROD_SPECIAL_DAMAGE = 12 * UNIT;
 

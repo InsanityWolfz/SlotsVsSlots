@@ -12,6 +12,8 @@ export type VoucherKind = 'wheel' | 'rush';
 /** The Dealer's face-up cards. */
 export type DealCard = 'shuffle' | 'cut' | 'raise';
 
+export type HealSource = RelicId | 'special' | 'vamp' | 'drain' | 'ability' | 'payoff';
+
 export type CombatEvent =
   | { type: 'turnStart'; turn: number; side: SideId }
   | { type: 'shieldReset'; side: SideId; lost: number }
@@ -27,8 +29,6 @@ export type CombatEvent =
       locked: boolean[];
       /** A relic turned a near-miss into a jackpot. */
       lucky: RelicId | null;
-      /** A FULL SET bonus paid on this spin. */
-      fullSet?: boolean;
       /** Reels whose LUCKY cell turned into a WILD this spin. */
       luckyWilds?: number[];
       /** Reels that were hexed this spin (pay half). */
@@ -43,13 +43,13 @@ export type CombatEvent =
       reels: number[];
       amount: number;
       /** KEEN: ignored shields. SPIKED: this is a reflected hit. Act 2: drain / mimic / reflect. */
-      note?: 'pierce' | 'spiked' | 'snap' | 'drain' | 'mimic' | 'reflect';
+      note?: 'pierce' | 'thorns' | 'echo' | 'drain' | 'mimic' | 'reflect';
       blocked: number;
       hpDamage: number;
       targetHp: number;
       targetShield: number;
     }
-  | { type: 'shieldGain'; side: SideId; reels: number[]; amount: number; total: number }
+  | { type: 'shieldGain'; side: SideId; reels: number[]; amount: number; total: number; /** Not from a shield group: chips vs a boss, the Chalice's overheal, the Cactus. */ source?: 'chips' | 'chalice' | 'cactus' }
   | { type: 'energyGain'; side: SideId; reels: number[]; amount: number; total: number; /** Energy the Grounder's rods earthed away. */ earthed?: number }
   | {
       type: 'specialFire';
@@ -64,7 +64,14 @@ export type CombatEvent =
       /** A grounded cell on the payline: this special hit shields. */
       grounded?: boolean;
     }
-  | { type: 'heal'; side: SideId; amount: number; hp: number; source: RelicId | 'special' | 'vamp' | 'drain' | 'ability' }
+  | { type: 'heal'; side: SideId; amount: number; hp: number; source: HealSource }
+  /**
+   * A signature meter moved (MIDAS gold bars, BRIAR's thorn bank, JAX's wilds). `armed`: it's full and
+   * waiting to pay off; `wasted`: gold bars that landed while it was already full.
+   */
+  | { type: 'meter'; side: SideId; reels: number[]; amount: number; total: number; armed?: boolean; wasted?: number; earthed?: number }
+  /** A meter paid off (MIDAS x4 group, JAX all-jackpots spin); it empties. */
+  | { type: 'payoff'; side: SideId; kind: 'raise' | 'jackpots' }
   | { type: 'slime'; from: SideId; to: SideId; reels: number[]; amount: number; cells: CellRef[]; wasted: number }
   | { type: 'cleanse'; side: SideId; reels: number[]; cells: CellRef[] }
   /** A jackpot of stolen cells: every stolen cell comes back. */

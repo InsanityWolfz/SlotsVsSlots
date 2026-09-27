@@ -1,34 +1,25 @@
-import { cloneConfig, defaultConfig, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACTS, actLength, ARCHETYPES, generateRunPaths, makeEnemy, TUNE, type EnemyDef } from './enemies';
+import { cloneConfig, defaultConfig, emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
+import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_HP_MUL_2, generateRunPaths, makeEnemy, TUNE, type EnemyDef } from './enemies';
 import { MAX_STAKE, MIRROR_COPYABLE, mirrorCanUse, STAKE } from './stakes';
-import type { Fight } from './fight';
+import { Fight as FightCtor, type Fight } from './fight';
 import {
   BANDAGE_HEAL,
-  BATTERY_ENERGY,
   BELL_MULT,
-  BLAZE_BONUS,
   KEY_MULT,
   BOSS_HP_PER_RELIC,
   BUILD_ENABLER,
-  CACTUS_DAMAGE,
   ELITE_ONLY,
   HONE_BONUS,
-  KEEN_BONUS,
   LEGENDARY,
-  LUCKY_CHANCE,
-  OVERCHARGE_ECHO,
   REFLECT_CAP,
   REFLECT_MIN,
   RELIC_TIER,
   RELICS,
   RUSH,
-  ROD_SPECIAL_COST,
-  ROD_SPECIAL_DAMAGE,
-  SPIKED_DAMAGE,
-  TIER_STEP,
-  VAMP_CAP,
+  type Enabler,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
+import { CHARM_SYMBOLS, charmLevel, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue } from './charms';
 import { Rng } from './rng';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
@@ -52,28 +43,29 @@ export const RUN = {
   wildCount: 2,
   /** Any-direction swap cards move this many cells. */
   anySwapCount: 2,
+  /** Charm cards: cells charmed by a draft / wheel card, and by a Cashier item. */
+  charmCells: 2,
+  charmCellsShop: 3,
+  /** Chance a draft's first card is a LEVEL card (when one can be offered). */
+  levelCardChance: 0.35,
   /** The Cashier opens after these fights (1-based), after the draft. */
   shopAfter: [1, 3, 5],
   /** Legendary relics offered when an act's boss falls. */
   legendPick: 3,
 };
 
-/** Player symbols the any-direction swap cards move between. */
-export const SWAPPABLE: SymbolId[] = ['sword', 'shield', 'bolt'];
-
-/** Which gild goes on which symbols (act 2 unlocks VAMP, LUCKY and BLAZE). */
-export const GILD_SYMBOLS: Record<Enh, SymbolId[]> = {
-  gold: ['sword', 'bolt', 'shield'],
-  keen: ['sword'],
-  charged: ['bolt'],
-  spiked: ['shield'],
-  vamp: ['sword'],
-  lucky: ['shield', 'bolt'],
-  blaze: ['bolt'],
+/** Charms by act (act 2 unlocks LUCKY and BLAZE). CHARGED and BLAZE feed the lightning: TESLA only. */
+export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged'];
+export const ACT2_GILDS: Enh[] = ['lucky', 'blaze'];
+const TESLA_ONLY: ReadonlySet<Enh> = new Set(['charged', 'blaze']);
+export const gildsFor = (run: RunState): Enh[] => [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter((e) => run.cabinet === 'tesla' || !TESLA_ONLY.has(e));
+/** Symbols this machine's swap cards move between. */
+export const swappable = (run: RunState): SymbolId[] => CABINETS[run.cabinet].symbols;
+/** The symbol +2 / rock-swap cards give (the signature symbol, or swords for KNIGHT and JAX). */
+export const sigSymbol = (run: RunState): SymbolId => {
+  const m = CABINETS[run.cabinet].meter;
+  return m && m.symbol !== 'wild' ? m.symbol : 'sword';
 };
-export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'charged', 'spiked'];
-export const ACT2_GILDS: Enh[] = ['vamp', 'lucky', 'blaze'];
-export const gildsFor = (run: RunState): Enh[] => (run.act > 1 ? [...ACT1_GILDS, ...ACT2_GILDS] : ACT1_GILDS);
 
 /** Chip economy (earning is passive, spending happens only at the Cashier). */
 export const CHIPS = {
@@ -87,11 +79,11 @@ export const CHIPS = {
   /** +1 interest per this many banked chips, capped. */
   interestPer: 5,
   interestCap: 3,
-  /** Boss fight: every this many unspent chips = +1 shield at the start of each House turn. */
+  /** Boss fight: every this many unspent chips = +10 shield at the start of each House turn. */
   stackPer: 8,
   /** Every run starts with a little float so shop 1 is a real visit. */
   start: 4,
-  prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 5, legend: 20, tierUp: 10 },
+  prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 5, legend: 20, level: 12 },
   /** First reroll per visit costs 1, then +1 each time. */
   rerollBase: 1,
 };
@@ -103,7 +95,11 @@ export type DraftOption =
   | { kind: 'relic'; relic: RelicId }
   | { kind: 'heal'; amount: number }
   | { kind: 'maxHp'; amount: number }
-  | { kind: 'gild'; enh: Enh; symbol: SymbolId; reel: number; tier?: 2 }
+  /** CHARM card: `n` <enh> charms onto plain <symbol> cells of one reel. */
+  | { kind: 'gild'; enh: Enh; symbol: SymbolId; reel: number; n: number }
+  /** LEVEL cards: +1 level to a symbol type, or to a charm type. */
+  | { kind: 'symLevel'; symbol: SymbolId }
+  | { kind: 'charmLevel'; enh: Enh }
   | { kind: 'remove'; symbol: SymbolId; reel: number };
 
 export interface ShopItem {
@@ -117,8 +113,10 @@ export interface RunPlayer {
   maxHp: number;
   strips: StripCounts[];
   relics: RelicId[];
-  /** Gilded symbols per reel (every cell of that symbol on that reel): persist for the run. */
+  /** Charmed cells per reel (n cells of a symbol carry a charm): persist for the run. */
   gilded: Gild[];
+  /** Symbol and charm levels (on the type: later cells get them too). */
+  levels: Levels;
   /** Casino chips: earned by winning, spent at the Cashier, and a shield stack vs the House. */
   chips: number;
 }
@@ -151,6 +149,8 @@ export interface FightRecord {
   pick?: DraftOption;
   /** What was bought at the Cashier after this fight. */
   bought?: DraftOption[];
+  /** The BIG CHOICE taken after this (boss) fight. */
+  choice?: BigChoiceId;
 }
 
 export interface RunState {
@@ -189,6 +189,16 @@ export interface RunState {
   bonusLog?: BonusPayout[];
   /** The TUTORIAL run: its first fight is a little softer. */
   tutorial?: boolean;
+  /** A boss fell: pick 1 of these BIG CHOICES (before the legendary pick). */
+  pendingChoice?: BigChoice[] | null;
+  /** Big-choice sets already offered this run. */
+  choiceSets?: number[];
+  /** GLASS CANNON: paying groups x1.5, no healing between fights. */
+  glass?: boolean;
+  /** BLOOD PACT: your meter fills twice as fast. */
+  bloodPact?: boolean;
+  /** MASTERWORK: these symbols can't gain levels. */
+  levelLock?: SymbolId[];
 }
 
 export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false): RunState {
@@ -207,6 +217,7 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
       strips: cab.strips.map((s) => ({ ...s })),
       relics: [],
       gilded: cab.gilded.map((g) => ({ ...g })),
+      levels: cloneLevels(cab.levels ?? emptyLevels()),
       chips: CHIPS.start,
     },
     records: [],
@@ -223,6 +234,43 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
   };
 }
 
+export const cloneLevels = (l: Levels): Levels => ({ sym: { ...l.sym }, charm: { ...l.charm } });
+
+// ---- charms on cells -------------------------------------------------------------------
+
+/** Charmed cells of `symbol` on `reel`. */
+export const charmedCells = (p: RunPlayer, reel: number, symbol: SymbolId) => p.gilded.reduce((a, g) => a + (g.reel === reel && g.symbol === symbol ? g.n : 0), 0);
+/** Plain (uncharmed) cells of `symbol` on `reel`: what a charm card can target. */
+export const plainCells = (p: RunPlayer, reel: number, symbol: SymbolId) => Math.max(0, (p.strips[reel]?.[symbol] ?? 0) - charmedCells(p, reel, symbol));
+/** Cells you own with this charm (any reel). */
+export const charmCount = (p: RunPlayer, enh: Enh) => p.gilded.reduce((a, g) => a + (g.enh === enh ? g.n : 0), 0);
+
+/** Add `n` charms of a kind to a (reel, symbol), merging with an entry you already have. */
+function addCharms(p: RunPlayer, reel: number, symbol: SymbolId, enh: Enh, n: number): void {
+  const k = Math.min(n, plainCells(p, reel, symbol));
+  if (k <= 0) return;
+  const own = p.gilded.find((g) => g.reel === reel && g.symbol === symbol && g.enh === enh);
+  if (own) own.n += k;
+  else p.gilded.push({ reel, symbol, enh, n: k });
+}
+
+/** A charm lives on a cell: when cells leave a reel (swaps, removals), plain cells go first, then charmed ones. */
+export function normalizeCharms(p: RunPlayer): void {
+  for (let reel = 0; reel < p.strips.length; reel++)
+    for (const symbol of new Set(p.gilded.filter((g) => g.reel === reel).map((g) => g.symbol))) {
+      let over = charmedCells(p, reel, symbol) - (p.strips[reel][symbol] ?? 0);
+      for (let i = p.gilded.length - 1; i >= 0 && over > 0; i--) {
+        const g = p.gilded[i];
+        if (g.reel !== reel || g.symbol !== symbol) continue;
+        const k = Math.min(g.n, over);
+        g.n -= k;
+        over -= k;
+      }
+    }
+  p.gilded = p.gilded.filter((g) => g.n > 0);
+}
+
+
 // ---- BONUS WHEEL & RELIC RUSH ------------------------------------------------------------
 
 export type RelicTier = 'common' | 'uncommon' | 'legendary';
@@ -237,20 +285,20 @@ export function wheelOptions(run: RunState, rng: Rng): DraftOption[] {
   const push = (o: DraftOption) => {
     if (!out.some((x) => similarKey(x) === similarKey(o))) out.push(o);
   };
-  for (const enh of gildsFor(run))
-    for (const symbol of GILD_SYMBOLS[enh])
-      for (const reel of [0, 1, 2]) if ((p.strips[reel][symbol] ?? 0) > 0 && !p.gilded.some((g) => g.reel === reel && g.symbol === symbol)) push({ kind: 'gild', enh, symbol, reel });
-  tierUps(run).forEach(push);
+  for (const o of charmOptions(run, RUN.charmCells)) push(o);
+  for (const o of levelOptions(run)) push(o);
   p.strips.forEach((s, reel) => {
     if ((s.rock ?? 0) > 0) push({ kind: 'clear', symbol: 'rock', reel });
     if ((s.shield ?? 0) > RUN.wildCount) push({ kind: 'swap', from: 'shield', to: 'wild', count: RUN.wildCount, reel });
-    if ((s.shield ?? 0) >= 2) push({ kind: 'swap', from: 'shield', to: 'bolt', count: Math.min(RUN.swapCount, s.shield ?? 0), reel });
+    const sig = sigSymbol(run);
+    if (sig !== 'shield' && (s.shield ?? 0) >= 2) push({ kind: 'swap', from: 'shield', to: sig, count: Math.min(RUN.swapCount, s.shield ?? 0), reel });
   });
-  push({ kind: 'add', symbol: 'bolt', reel: rng.int(3), count: RUN.addCount });
+  push({ kind: 'add', symbol: sigSymbol(run), reel: rng.int(3), count: RUN.addCount });
   push({ kind: 'maxHp', amount: RUN.maxHpCard });
-  if (p.hp < p.maxHp) push({ kind: 'heal', amount: RUN.healCard });
+  if (p.hp < p.maxHp && !run.glass) push({ kind: 'heal', amount: RUN.healCard });
   return rng.shuffle(out).slice(0, 15);
 }
+
 
 /** RELIC RUSH: 5x3 hold-and-spin. The 3 trigger symbols start stuck; 3 respins, reset by every new stick. */
 export function playRush(rng: Rng): { frames: number[][]; count: number } {
@@ -326,7 +374,8 @@ function startNextAct(run: RunState): void {
   run.chosen = run.paths.map((opts) => opts.length === 1);
   run.player.hp = run.player.maxHp;
   run.actIntro = true;
-  // Act 3 (THE DEALER): a full heal and the Cashier only — the legendary pick stays act 2's decision.
+  offerChoices(run, rng);
+  // Act 3 (THE DEALER): a full heal, a big choice and the Cashier — the legendary pick stays act 2's decision.
   if (run.act > 2) return;
   applySignature(run);
   const pool = [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
@@ -337,10 +386,6 @@ function startNextAct(run: RunState): void {
 export function applySignature(run: RunState): void {
   const sig = CABINETS[run.cabinet].act2;
   if (!sig) return;
-  if (sig.tierII) {
-    const own = new Set(CABINETS[run.cabinet].gilded.map((g) => g.enh));
-    for (const g of run.player.gilded) if (own.has(g.enh)) g.tier = 2;
-  }
   if (sig.maxHp) {
     run.player.maxHp += sig.maxHp;
     run.player.hp = run.player.maxHp;
@@ -350,16 +395,18 @@ export function applySignature(run: RunState): void {
     const n = Math.min(sig.wilds.count, Math.max(0, (s.shield ?? 0) - 1));
     s.shield = (s.shield ?? 0) - n;
     s.wild = (s.wild ?? 0) + n;
+    normalizeCharms(run.player);
   }
 }
 
-/** What answers your build: specials → the Grounder; a gild build → the Counterfeiter. */
+/** What answers your build: TESLA's lightning → the Grounder; a charm build → the Counterfeiter; any other meter → the Grounder. */
 export function counterFor(run: RunState): string | null {
-  const g = run.player.gilded;
-  const specials = run.cabinet === 'tesla' || g.some((x) => x.enh === 'charged' || x.enh === 'blaze') || run.player.relics.includes('rod');
-  if (specials) return 'grounder';
-  return g.length >= 2 ? 'counterfeiter' : null;
+  const charms = run.player.gilded.reduce((a, g) => a + g.n, 0);
+  if (run.cabinet === 'tesla') return 'grounder';
+  if (charms >= 4) return 'counterfeiter';
+  return CABINETS[run.cabinet].meter ? 'grounder' : null;
 }
+
 
 /** BLUE stake: your counter takes the non-elite slot of ONE act 2 fork (fight 3), marked YOUR COUNTER. */
 function offerCounter(run: RunState, rng: Rng): void {
@@ -420,6 +467,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     startHp: run.player.hp,
     strips: run.player.strips.map((s) => ({ ...s })),
     gilded: run.player.gilded.map((g) => ({ ...g })),
+    levels: cloneLevels(run.player.levels),
+    ...(run.glass ? { payMul: BIG.glassPay } : {}),
+    ...(run.bloodPact ? { meterMul: 2 } : {}),
     // BLACK stake: the House ignores your chip shield.
     // No bonus in the run's final fight: a voucher could never be spent (QA_1 B11).
     bonusSymbols: !(e.isBoss && run.act >= runActs(run)),
@@ -430,9 +480,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // The Mirror plays a copy of your machine: your strips and gilds (not your relics).
   if (e.boss === 'mirror') {
     cfg.enemy.strips = run.player.strips.map((s) => ({ ...s }));
-    // It copies what you hit with: never your spikes.
-    // It copies what you hit with, but not your spikes and not your edge (KEEN).
-    cfg.enemy.gilded = run.player.gilded.filter((g) => g.enh !== 'spiked' && g.enh !== 'keen').map((g) => ({ reel: g.reel, symbol: g.symbol, enh: g.enh }));
+    // It copies what you hit with, but not your edge (KEEN), and your symbol levels (charms at level 1).
+    cfg.enemy.gilded = run.player.gilded.filter((g) => g.enh !== 'keen').map((g) => ({ ...g }));
+    cfg.enemy.levels = { sym: { ...run.player.levels.sym }, charm: {} };
     cfg.player.stackShield = Math.min(MIRROR_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
     // REFLECTION is capped relative to you: two from full HP kill you.
     if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, power: Math.max(REFLECT_MIN, unitsRound(run.player.maxHp * REFLECT_CAP)) };
@@ -470,32 +520,65 @@ export function enemyHp(run: RunState, e: EnemyDef): number {
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {
+  // Act 3 regulars grow with your machine (never below their curve).
+  if (!e.isBoss && run.act >= 3) {
+    const arch = ARCHETYPES.find((a) => a.id === e.archetype);
+    const mul = (ACT3_DEPTH_MUL[Math.min(e.depth, ACT3_DEPTH_MUL.length - 1)] ?? 1) * (arch?.hpMul ?? 1) * (e.elite ? ELITE_HP_MUL_2 : 1);
+    return Math.max(e.hp, unitsRound((TUNE.act3Power * BOSS_MUL[run.cabinet].act3 * machinePower(run) + TUNE.act3Flat) * mul));
+  }
   if (!e.isBoss) return run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? unitsRound(e.hp * FRAGILE_OPENER_MUL) : e.hp;
   // The Mirror grows with your machine and (like the House) with every relic you carry in.
-  if (e.boss === 'mirror') return unitsRound(TUNE.mirrorPower * machinePower(run)) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length;
-  if (e.boss === 'dealer') return unitsRound(TUNE.dealerPower * machinePower(run)) + TUNE.dealerFlat + TUNE.mirrorPerRelic * run.player.relics.length;
-  return e.hp + BOSS_HP_PER_RELIC * run.player.relics.length;
+  const cm = BOSS_MUL[run.cabinet];
+  if (e.boss === 'mirror') return unitsRound(TUNE.mirrorPower * cm.mirror * machinePower(run)) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length;
+  if (e.boss === 'dealer') return unitsRound(TUNE.dealerPower * cm.dealer * machinePower(run)) + TUNE.dealerFlat + TUNE.mirrorPerRelic * run.player.relics.length;
+  return unitsRound(e.hp * cm.house) + BOSS_HP_PER_RELIC * run.player.relics.length;
 }
 
 /**
- * Your machine's damage on a TYPICAL spin: swords (each spin capped at 20, so rare gold jackpots
- * don't inflate it) plus energy turned into specials, counting Rod, Battery and Overcharge.
+ * Your machine's damage per turn, MEASURED: the real engine plays POWER_SPINS of your turns (your strips,
+ * charms, levels, relics and meter) against a dummy that attacks back, deterministic per run and fight.
+ * Each turn is capped at the 90th percentile so one freak jackpot doesn't size a boss. Bosses and act 3
+ * regulars are sized from it, so they keep up with any build without a fixed curve.
  */
 export function machinePower(run: RunState): number {
-  const base = defaultConfig();
-  const cab = CABINETS[run.cabinet];
-  const { relics, gilded } = run.player;
-  const s = stripStats(run.player.strips, base, relics, gilded, POWER_CAP);
-  const rod = relics.includes('rod') && gilded.some((g) => g.enh === 'charged');
-  const cost = rod ? ROD_SPECIAL_COST : cab.specialCost ?? base.specialCost;
-  let dmg = Math.max(cab.specialDamage ?? base.specialDamage, rod ? cab.rodDamage ?? ROD_SPECIAL_DAMAGE : 0) + s.specialBonus;
-  if (relics.includes('overcharge')) dmg += Math.ceil((dmg * OVERCHARGE_ECHO) / UNIT) * UNIT;
-  // Battery: a head start worth about one extra special over a Mirror fight (~8 of your spins).
-  const energy = s.energy + (relics.includes('battery') ? BATTERY_ENERGY / 8 : 0);
-  // Specials pierce shields and the Mirror has none of its own: they count extra toward its HP.
-  return s.damage + TUNE.mirrorSpecialWeight * (energy / cost) * Math.min(POWER_CAP, dmg);
+  const key = `${run.seed}:${run.act}:${run.depth}:${JSON.stringify(run.player)}`;
+  const hit = powerCache.get(key);
+  if (hit !== undefined) return hit;
+  const cfg = defaultConfig();
+  cfg.player = { hp: 99999 * UNIT, strips: run.player.strips.map((s) => ({ ...s })), gilded: run.player.gilded.map((g) => ({ ...g })), levels: cloneLevels(run.player.levels), ...(run.glass ? { payMul: BIG.glassPay } : {}), ...(run.bloodPact ? { meterMul: 2 } : {}) };
+  cfg.enemy = { hp: 99999 * UNIT, strips: [{ sword: 8, shield: 4 }, { sword: 8, shield: 4 }, { sword: 8, shield: 4 }], ability: null };
+  cfg.relics = run.player.relics.filter((r) => r !== 'phoenix');
+  cfg.cabinet = run.cabinet;
+  const f = new FightCtor(cfg, (run.seed ^ Math.imul(run.act * 16 + run.depth + 1, 0x2545f491)) >>> 0);
+  const turns: number[] = [];
+  for (let t = 0; t < POWER_SPINS * 2 && !f.over; t++) {
+    const { side, events } = f.step();
+    let d = 0;
+    for (const e of events) if ((e.type === 'attack' || e.type === 'specialFire') && e.from === 'player') d += e.hpDamage;
+    if (side === 'player') turns.push(d);
+    else if (turns.length) turns[turns.length - 1] += d;
+  }
+  const sorted = [...turns].sort((x, y) => x - y);
+  const cap = sorted[Math.floor(sorted.length * 0.9)] ?? 0;
+  const power = turns.reduce((a, d) => a + Math.min(d, cap), 0) / Math.max(1, turns.length);
+  if (powerCache.size > 5000) powerCache.clear();
+  powerCache.set(key, power);
+  return power;
 }
-const POWER_CAP = 20 * UNIT;
+const POWER_SPINS = 40;
+/**
+ * Per slot machine: how much of your measured power the Mirror, the Dealer and act 3 regulars are sized
+ * to. Machines race differently (KNIGHT's shields, JAX's rare huge payoffs, BRIAR's thorns that need to
+ * be hit), so the same HP formula would give each a different win rate.
+ */
+export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number }> = {
+  knight: { house: 1.7, mirror: 0.45, dealer: 0.55, act3: 0.5 },
+  midas: { house: 2, mirror: 2.5, dealer: 0.2, act3: 0.2 },
+  thorn: { house: 0.95, mirror: 2.5, dealer: 1.3, act3: 1.1 },
+  tesla: { house: 1.05, mirror: 1.6, dealer: 0.7, act3: 0.9 },
+  joker: { house: 1.8, mirror: 1.5, dealer: 1.1, act3: 1.2 },
+};
+const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
 export const MIRROR_CHIP_SHIELD_CAP = 4 * UNIT;
 /** Cabinets this fragile face a softer opener (ITERATION_8: 3-5% opener deaths). */
@@ -525,6 +608,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     crumbled++;
   }
   run.player.strips = next;
+  normalizeCharms(run.player);
   // RED stake (SCARS): every 2nd win leaves a permanent rock on your best reel.
   const wins = run.records.filter((r) => r.won).length + (fight.winner === 'player' ? 1 : 0);
   let scar: number | undefined;
@@ -584,10 +668,11 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     if (spoils.length) run.pendingSpoils = spoils;
   }
   // Act 3: THE HOUSE DOESN'T COMP — no patch-up between fights.
-  let hp = p.hp + unitsRound(run.player.maxHp * RUN.postFightHeal * (run.stake >= STAKE.halfHeal ? 0.5 : 1) * (run.act >= 3 ? 0 : 1));
+  // GLASS CANNON: no healing between fights at all.
+  let hp = p.hp + (run.glass ? 0 : unitsRound(run.player.maxHp * RUN.postFightHeal * (run.stake >= STAKE.halfHeal ? 0.5 : 1) * (run.act >= 3 ? 0 : 1)));
   // THE DECK REMEMBERS: the Card Sharp's marks carry into the Dealer fight.
   run.deckMarks = Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
-  if (run.player.relics.includes('bandage')) hp += BANDAGE_HEAL;
+  if (run.player.relics.includes('bandage') && !run.glass) hp += BANDAGE_HEAL;
   run.player.hp = Math.min(run.player.maxHp, hp);
   // Bonus vouchers from this fight pay out now that you've won it (after the HP settles, so a
   // wheel HEAL / MAX HP isn't overwritten — QA_1 B2).
@@ -604,11 +689,14 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   return record;
 }
 
-// ---- strip math (shown on cards so reel targeting is legible) --------------------------
+// ---- strip math (boss HP sizing and the sims) ---------------------------------------------
 
 export interface StripStats {
   /** Expected per spin, before shields. */
   damage: number;
+  /** Expected meter fill per spin (TESLA energy, MIDAS gold, BRIAR thorns, JAX wilds). */
+  meter: number;
+  /** TESLA energy per spin (= meter for TESLA). */
   energy: number;
   shield: number;
   pairPct: number;
@@ -619,67 +707,88 @@ export interface StripStats {
   heal: number;
   /** BLAZE: extra damage on each special. */
   specialBonus: number;
+  /** One payline cell paid as a jackpot of itself, on average (JAX's payoff). */
+  jackpotDamage: number;
 }
 
-export function stripStats(strips: StripCounts[], base: GameConfig, relics: RelicId[] = [], gilded: Gild[] = [], damageCap = Infinity): StripStats {
-  const gildOf = (reel: number, sym: SymbolId) => gilded.find((g) => g.reel === reel && g.symbol === sym);
-  const enhOf = (reel: number, sym: SymbolId) => gildOf(reel, sym)?.enh;
-  const sets = fullSets(gilded, relics);
-  const setStep = relics.includes('ticket') ? 2 : 1;
-  const lvlOf = (reel: number, sym: SymbolId) => {
-    const g = gildOf(reel, sym);
-    // A FULL SET needs all 3 charmed cells on the payline at once: rare enough to leave out of the averages.
-    void sets;
-    void setStep;
-    return g ? 1 + (g.tier ? TIER_STEP : 0) : 0;
-  };
-  // Each line entry: [shown symbol, probability, the cell's own symbol (for its gild)].
+export function stripStats(
+  strips: StripCounts[],
+  base: GameConfig,
+  relics: RelicId[] = [],
+  gilded: Gild[] = [],
+  damageCap = Infinity,
+  levels: Levels = emptyLevels(),
+  cabinet: CabinetId | null = null,
+): StripStats {
+  const cab = cabinet ? CABINETS[cabinet] : null;
+  const ticket = relics.includes('ticket');
+  const cv = (e: Enh) => charmValue(e, charmLevel(levels, e, ticket));
+  const value = (s: SymbolId) => playerSymValue(levels, s, base.base[s]);
+  // Each reel: [shown symbol, probability, the cell's own charm].
   const probs = strips.map((s, reel) => {
     const total = Object.values(s).reduce((a, n) => a + (n ?? 0), 0) || 1;
-    return (Object.entries(s) as [SymbolId, number][])
-      .filter(([, n]) => n > 0)
-      .flatMap(([sym, n]) => {
-        const p = n / total;
-        if (enhOf(reel, sym) !== 'lucky') return [[sym, p, sym] as const];
-        const c = Math.min(0.8, LUCKY_CHANCE.each + LUCKY_CHANCE.step * (lvlOf(reel, sym) - 1));
-        return [[sym, p * (1 - c), sym] as const, ['wild' as SymbolId, p * c, sym] as const];
-      });
+    const out: [SymbolId, number, Enh | undefined][] = [];
+    for (const [sym, n] of Object.entries(s) as [SymbolId, number][]) {
+      if (!n) continue;
+      let plain = n;
+      for (const g of gilded) {
+        if (g.reel !== reel || g.symbol !== sym) continue;
+        const k = Math.min(plain, g.n);
+        plain -= k;
+        const p = k / total;
+        if (g.enh === 'lucky') {
+          const c = cv('lucky') / 100;
+          out.push([sym, p * (1 - c), g.enh], ['wild', p * c, g.enh]);
+        } else out.push([sym, p, g.enh]);
+      }
+      if (plain > 0) out.push([sym, plain / total, undefined]);
+    }
+    return out;
   });
-  const cfg = { ...base, pairRule: relics.includes('mirror') ? ('anyTwo' as const) : base.pairRule };
-  const out = { damage: 0, energy: 0, shield: 0, pairPct: 0, jackpotPct: 0, spinsPerSpecial: 0, heal: 0, specialBonus: 0 };
-  strips.forEach((s, reel) => {
-    const sym = (Object.keys(s) as SymbolId[]).find((k) => enhOf(reel, k) === 'blaze' && (s[k] ?? 0) > 0);
-    if (sym) out.specialBonus += BLAZE_BONUS.each + (lvlOf(reel, sym) - 1) * UNIT;
-  });
-  for (const [a, pa, oa] of probs[0])
-    for (const [b, pb, ob] of probs[1])
-      for (const [c, pc, oc] of probs[2]) {
+  const special = !cab || cab.meter?.kind === 'special';
+  const alone: SymbolId = special ? 'bolt' : 'sword';
+  const cfg = { ...base, pairRule: relics.includes('mirror') || cab?.jokerWilds ? ('anyTwo' as const) : base.pairRule };
+  const out = { damage: 0, meter: 0, energy: 0, shield: 0, pairPct: 0, jackpotPct: 0, spinsPerSpecial: 0, heal: 0, specialBonus: 0, jackpotDamage: 0 };
+  // BLAZE: every blaze cell you own adds to the special.
+  out.specialBonus = gilded.reduce((a, g) => a + (g.enh === 'blaze' ? g.n : 0), 0) * cv('blaze');
+  const meterSym = cab?.meter?.symbol;
+  for (const [a, pa, ea] of probs[0])
+    for (const [b, pb, eb] of probs[1])
+      for (const [c, pc, ec] of probs[2]) {
         const p = pa * pb * pc;
         const line = [a, b, c];
-        const own = [oa, ob, oc];
-        const sc = scoreLine(line, cfg);
+        const enh = [ea, eb, ec];
+        // (A 3-WILD line pays a jackpot of one of your symbols: counted as a sword jackpot here.)
+        const sc = scoreLine(line, cfg, { value, wildAlone: alone });
+        let dmg = 0;
         for (const g of sc.groups) {
+          let gold = 0;
           for (const r of g.reels) {
-            const enh = enhOf(r, own[r]);
-            const lvl = lvlOf(r, own[r]);
-            if (enh === 'keen' && g.symbol === 'sword') g.amount += KEEN_BONUS * lvl + (relics.includes('hone') ? HONE_BONUS : 0);
-            if (enh === 'charged' && g.symbol === 'bolt') g.amount += lvl * UNIT;
+            const e = enh[r];
+            if (e === 'keen' && g.symbol === 'sword') g.base += cv('keen') + (relics.includes('hone') ? HONE_BONUS : 0);
+            if (e === 'charged' && g.symbol === 'bolt') g.base += cv('charged');
+            if (e === 'gold') gold += cv('gold');
+            if (e === 'vamp' && g.symbol === 'sword') out.heal += p * cv('vamp');
           }
-          const goldLevels = g.reels.filter((r) => enhOf(r, own[r]) === 'gold').reduce((a, r) => a + lvlOf(r, own[r]), 0);
-          if (goldLevels) g.amount *= 1 + goldLevels;
-          if (relics.includes('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) g.amount *= 2;
-          if (relics.includes('key') && g.matched && g.reels.length === 2) g.amount = Math.ceil(g.amount * KEY_MULT);
-          if (relics.includes('bell') && g.matched && g.reels.length === 3) g.amount *= BELL_MULT;
-          if (g.symbol === 'sword' && g.amount > 0) for (const r of g.reels) if (enhOf(r, own[r]) === 'vamp') out.heal += p * lvlOf(r, own[r]) * UNIT;
+          let mult = g.mult * (gold || 1);
+          if (relics.includes('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) mult *= 2;
+          if (relics.includes('key') && g.matched && g.reels.length === 2) mult *= KEY_MULT;
+          if (relics.includes('bell') && g.matched && g.reels.length === 3) mult *= BELL_MULT;
+          const amt = g.base * mult;
+          if (g.symbol === 'sword') dmg += amt;
+          else if (g.symbol === 'shield') out.shield += p * amt;
+          else if (g.symbol === 'bolt' && special) {
+            out.energy += p * amt;
+            out.meter += p * amt;
+          } else if (g.symbol === meterSym) out.meter += p * amt;
         }
-        sc.totals = {};
-        for (const g of sc.groups) sc.totals[g.symbol] = (sc.totals[g.symbol] ?? 0) + g.amount;
-        out.damage += p * Math.min(damageCap, sc.totals.sword ?? 0);
-        out.energy += p * (sc.totals.bolt ?? 0);
-        out.shield += p * (sc.totals.shield ?? 0);
+        if (cab?.meter?.kind === 'jackpots') out.meter += p * line.filter((s) => s === 'wild').length * (cab.meter.perWild ?? 0);
+        out.damage += p * Math.min(damageCap, dmg);
         if (sc.tier === 'pair') out.pairPct += p * 100;
         if (sc.tier === 'triple') out.jackpotPct += p * 100;
       }
+  // One payline cell as a jackpot of itself (swords only count as damage), averaged over the three reels.
+  for (const reel of probs) for (const [s, p, e] of reel) if (s === 'sword' || s === 'wild') out.jackpotDamage += (p / 3) * 3 * (value('sword') + (e === 'keen' ? cv('keen') : 0)) * 3 * (e === 'gold' ? 3 * cv('gold') : 1);
   out.spinsPerSpecial = out.energy > 0 ? base.specialCost / out.energy : Infinity;
   return out;
 }
@@ -692,13 +801,34 @@ function keyOf(o: DraftOption): string {
 
 /** Cards that differ only by reel read as the same choice (ITERATION_8 G7). */
 function similarKey(o: DraftOption): string {
-  if (o.kind === 'gild') return `gild:${o.enh}:${o.symbol}:${o.tier ?? 1}`;
+  if (o.kind === 'gild') return `gild:${o.enh}:${o.symbol}`;
   if (o.kind === 'swap') return `swap:${o.from}:${o.to}`;
   if (o.kind === 'add') return `add:${o.symbol}`;
   return keyOf(o);
 }
 
 export const isRelicDraft = (run: RunState) => RUN.relicDraftsAfter.includes(run.depth);
+
+/** Every CHARM card you could be offered: `n` charms on plain cells of one symbol on one reel. */
+export function charmOptions(run: RunState, n: number, enhs: Enh[] = gildsFor(run)): DraftOption[] {
+  const p = run.player;
+  const out: DraftOption[] = [];
+  for (const enh of enhs)
+    for (const symbol of CHARM_SYMBOLS[enh])
+      for (let reel = 0; reel < p.strips.length; reel++) if (plainCells(p, reel, symbol) >= n) out.push({ kind: 'gild', enh, symbol, reel, n });
+  return out;
+}
+
+/** LEVEL cards you could be offered: your machine's symbols, and charms you own, below the cap. */
+export function levelOptions(run: RunState): DraftOption[] {
+  const p = run.player;
+  const out: DraftOption[] = [];
+  const owned = new Set(p.strips.flatMap((s) => Object.keys(s).filter((k) => (s[k as SymbolId] ?? 0) > 0)));
+  for (const symbol of CABINETS[run.cabinet].symbols)
+    if (owned.has(symbol) && symLevel(p.levels, symbol) < LEVEL_CAP && !run.levelLock?.includes(symbol)) out.push({ kind: 'symLevel', symbol });
+  for (const enh of new Set(p.gilded.map((g) => g.enh))) if (charmLevel(p.levels, enh) < LEVEL_CAP) out.push({ kind: 'charmLevel', enh });
+  return out;
+}
 
 /**
  * Three reward cards after a won fight. Relic drafts (after fights 2 and 4) show 2 relics + 1
@@ -711,14 +841,15 @@ export function draftOffers(run: RunState): DraftOption[] {
   const push = (o: DraftOption | null) => {
     if (o && out.length < RUN.draftSize && !out.some((x) => keyOf(x) === keyOf(o) || similarKey(x) === similarKey(o))) out.push(o);
   };
+  const sig = sigSymbol(run);
 
   const swapCard = (): DraftOption | null => {
     const options: DraftOption[] = [];
     p.strips.forEach((s, reel) => {
       for (const from of ['rock', 'shield'] as SymbolId[]) {
         const n = s[from] ?? 0;
-        if (n <= 0 || (from === 'shield' && n < 2)) continue;
-        options.push({ kind: 'swap', from, to: 'bolt', count: Math.min(RUN.swapCount, n), reel });
+        if (n <= 0 || (from === 'shield' && n < 2) || from === sig) continue;
+        options.push({ kind: 'swap', from, to: sig, count: Math.min(RUN.swapCount, n), reel });
       }
     });
     // Rocks-to-something first when you're carrying junk.
@@ -731,63 +862,55 @@ export function draftOffers(run: RunState): DraftOption[] {
     rocky.sort((a, b) => b.n - a.n);
     return { kind: 'clear', symbol: 'rock', reel: rocky[0].reel };
   };
-  const addCard = (): DraftOption => ({ kind: 'add', symbol: 'bolt', reel: rng.int(3), count: RUN.addCount });
-  /** GILD: enhance one cell (GOLD any symbol, KEEN sword, CHARGED bolt, SPIKED shield). */
+  const addCard = (): DraftOption => ({ kind: 'add', symbol: sig, reel: rng.int(3), count: RUN.addCount });
+  /** CHARM: N charms on plain cells of one symbol on one reel. */
   const gildCard = (): DraftOption | null => {
-    // Act 2: upgrade a gild you own to TIER II.
-    const ups = tierUps(run).filter((u) => !out.some((o) => keyOf(o) === keyOf(u)));
-    if (ups.length && rng.next() < 0.4) return rng.pick(ups);
-    // EXTEND: half the time, offer the same gild you already own on another reel (builds!).
+    const n = RUN.charmCells;
+    const taken = (o: DraftOption) => out.some((x) => x.kind === 'gild' && o.kind === 'gild' && x.enh === o.enh && x.symbol === o.symbol);
+    // EXTEND: half the time, more of a charm you already own (builds!).
     if (p.gilded.length && rng.next() < 0.5) {
-      const own = rng.pick(p.gilded);
-      const reels = [0, 1, 2].filter((r) => r !== own.reel && (p.strips[r][own.symbol] ?? 0) > 0 && !p.gilded.some((g) => g.reel === r && g.symbol === own.symbol));
-      const pickable = reels.filter((r) => !out.some((o) => o.kind === 'gild' && o.reel === r && o.symbol === own.symbol));
-      if (pickable.length) return { kind: 'gild', enh: own.enh, symbol: own.symbol, reel: rng.pick(pickable) };
+      const own = charmOptions(run, n, [rng.pick(p.gilded).enh]).filter((o) => !taken(o));
+      if (own.length) return rng.pick(own);
     }
     const favored = CABINETS[run.cabinet].favors;
-    // Act 2: the new gilds show up half the time.
-    const enh = favored && rng.next() < 0.5 ? favored : run.act > 1 && rng.next() < 0.5 ? rng.pick(ACT2_GILDS) : rng.pick(ACT1_GILDS);
-    const symbols = GILD_SYMBOLS[enh];
-    const options: DraftOption[] = [];
-    p.strips.forEach((s, reel) => {
-      for (const symbol of symbols) {
-        const taken = p.gilded.some((g) => g.reel === reel && g.symbol === symbol);
-        if ((s[symbol] ?? 0) > 0 && !taken) options.push({ kind: 'gild', enh, symbol, reel });
-      }
-    });
+    const pool = gildsFor(run);
+    // Act 2: the new charms show up half the time.
+    const act2 = pool.filter((e) => ACT2_GILDS.includes(e));
+    const enh = favored && pool.includes(favored) && rng.next() < 0.5 ? favored : act2.length && rng.next() < 0.5 ? rng.pick(act2) : rng.pick(pool.filter((e) => !ACT2_GILDS.includes(e)));
+    const options = charmOptions(run, n, [enh]).filter((o) => !taken(o));
+    return options.length ? rng.pick(options) : null;
+  };
+  /** LEVEL: +1 level to a symbol type or a charm you own. */
+  const levelCard = (): DraftOption | null => {
+    const options = levelOptions(run).filter((o) => !out.some((x) => keyOf(x) === keyOf(o)));
     return options.length ? rng.pick(options) : null;
   };
   /** WILD: turn a shield (or rock) on a reel into a WILD. */
   const wildCard = (): DraftOption | null => {
     const options: DraftOption[] = [];
     p.strips.forEach((s, reel) => {
-      const gildedShield = p.gilded.some((g) => g.reel === reel && g.symbol === 'shield');
       if ((s.rock ?? 0) > 0) options.push({ kind: 'swap', from: 'rock', to: 'wild', count: Math.min(RUN.wildCount, s.rock ?? 0), reel });
-      else if ((s.shield ?? 0) > RUN.wildCount && !gildedShield) options.push({ kind: 'swap', from: 'shield', to: 'wild', count: RUN.wildCount, reel });
+      else if (plainCells(p, reel, 'shield') >= RUN.wildCount && (s.shield ?? 0) > RUN.wildCount) options.push({ kind: 'swap', from: 'shield', to: 'wild', count: RUN.wildCount, reel });
     });
     return options.length ? rng.pick(options) : null;
   };
-  const hpCard = (): DraftOption => (p.hp < p.maxHp * 0.75 ? { kind: 'heal', amount: RUN.healCard } : { kind: 'maxHp', amount: RUN.maxHpCard });
+  const hpCard = (): DraftOption => (p.hp < p.maxHp * 0.75 && !run.glass ? { kind: 'heal', amount: RUN.healCard } : { kind: 'maxHp', amount: RUN.maxHpCard });
   const relicCard = (): DraftOption | null => {
     const pool = (Object.keys(RELICS) as RelicId[]).filter(
-      (r) =>
-        !p.relics.includes(r) &&
-        !ELITE_ONLY.has(r) &&
-        relicFits(run, r) &&
-        (run.act > 1 || !LEGENDARY.has(r)) &&
-        !out.some((o) => o.kind === 'relic' && o.relic === r),
+      (r) => !p.relics.includes(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && (run.act > 1 || !LEGENDARY.has(r)) && !out.some((o) => o.kind === 'relic' && o.relic === r),
     );
     // Act 2 relic drafts lean legendary.
     const legends = pool.filter((r) => LEGENDARY.has(r));
     if (legends.length && rng.next() < 0.4) return { kind: 'relic', relic: rng.pick(legends) };
     return pool.length ? { kind: 'relic', relic: rng.pick(pool) } : null;
   };
-  /** SWAP, any direction: turn a few of one symbol into another (small counts). */
+  /** SWAP, any direction: turn a few of one of your symbols into another (small counts). */
   const anySwapCard = (): DraftOption | null => {
     const options: DraftOption[] = [];
+    const syms = swappable(run);
     p.strips.forEach((s, reel) => {
-      for (const from of SWAPPABLE)
-        for (const to of SWAPPABLE) {
+      for (const from of syms)
+        for (const to of syms) {
           if (from === to || (s[from] ?? 0) < RUN.anySwapCount + 1) continue;
           options.push({ kind: 'swap', from, to, count: RUN.anySwapCount, reel });
         }
@@ -800,9 +923,9 @@ export function draftOffers(run: RunState): DraftOption[] {
     push(relicCard());
     push(rng.next() < 0.5 ? hpCard() : swapCard() ?? hpCard());
   } else {
-    push(gildCard() ?? swapCard());
+    push((rng.next() < RUN.levelCardChance ? levelCard() : null) ?? gildCard() ?? swapCard());
     const r = rng.next();
-    push((r < 0.35 ? wildCard() : r < 0.65 ? swapCard() : null) ?? clearCard() ?? gildCard() ?? addCard());
+    push((r < 0.35 ? wildCard() : r < 0.65 ? swapCard() : null) ?? clearCard() ?? gildCard() ?? levelCard() ?? addCard());
     push((rng.next() < 0.6 ? anySwapCard() : null) ?? hpCard());
   }
   let guard = 0;
@@ -829,14 +952,15 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
     case 'relic':
       if (!p.relics.includes(o.relic)) p.relics.push(o.relic);
       break;
-    case 'gild': {
-      const own = p.gilded.find((g) => g.reel === o.reel && g.symbol === o.symbol && g.enh === o.enh);
-      if (o.tier) for (const g of p.gilded) if (g.enh === o.enh) g.tier = 2;
-      // New cells of a gild you've upgraded come in at TIER II too.
-      const tiered = o.tier || p.gilded.some((g) => g.enh === o.enh && g.tier);
-      if (!own) p.gilded.push({ reel: o.reel, symbol: o.symbol, enh: o.enh, ...(tiered ? { tier: 2 as const } : {}) });
+    case 'gild':
+      addCharms(p, o.reel, o.symbol, o.enh, o.n);
       break;
-    }
+    case 'symLevel':
+      p.levels.sym[o.symbol] = Math.min(LEVEL_CAP, symLevel(p.levels, o.symbol) + 1);
+      break;
+    case 'charmLevel':
+      p.levels.charm[o.enh] = Math.min(LEVEL_CAP, charmLevel(p.levels, o.enh) + 1);
+      break;
     case 'remove': {
       const n = p.strips[o.reel][o.symbol] ?? 0;
       if (n > 0) p.strips[o.reel][o.symbol] = n - 1;
@@ -850,8 +974,8 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
       p.hp += o.amount;
       break;
   }
-  // A gild lasts while its symbol is on the reel.
-  p.gilded = p.gilded.filter((g) => (p.strips[g.reel][g.symbol] ?? 0) > 0);
+  // A charm lasts while its cell is on the reel.
+  normalizeCharms(p);
   const last = run.records.at(-1);
   if (last && asPick) last.pick = o;
 }
@@ -872,8 +996,8 @@ export const rerollCost = (run: RunState) => CHIPS.rerollBase + run.shopRerolls;
 export const chipShield = (chips: number) => Math.floor(chips / CHIPS.stackPer) * UNIT;
 
 /**
- * The Cashier's four slots: two targeted gilds, a relic, and a utility (WILDs, remove a symbol,
- * or a heal). Deterministic per run seed + depth + rerolls.
+ * The Cashier's four slots: a level or charm (extending what you own), another charm, a relic, and a
+ * utility (WILDs, remove a symbol), plus the HEAL service. Deterministic per run seed + depth + rerolls.
  */
 export function shopOffers(run: RunState): ShopItem[] {
   const rng = new Rng((run.seed ^ Math.imul(run.depth + 31 + run.act * 64, 0x27d4eb2f) ^ Math.imul(run.shopRerolls + 1, 0x165667b1)) >>> 0);
@@ -883,17 +1007,12 @@ export function shopOffers(run: RunState): ShopItem[] {
   const add = (option: DraftOption | null, price: number) => {
     if (option && !items.some((i) => JSON.stringify(i.option) === JSON.stringify(option))) items.push({ option, price, sold: false });
   };
-  const gildOptions: DraftOption[] = [];
-  p.strips.forEach((s, reel) => {
-    for (const enh of gildsFor(run))
-      for (const symbol of GILD_SYMBOLS[enh])
-        if ((s[symbol] ?? 0) > 0 && !p.gilded.some((g) => g.reel === reel && g.symbol === symbol)) gildOptions.push({ kind: 'gild', enh, symbol, reel });
-  });
+  const gildOptions = charmOptions(run, RUN.charmCellsShop);
   // Prefer extending what you already own, so builds can be finished on purpose.
   const favored = CABINETS[run.cabinet].favors;
-  const extend = gildOptions.filter((o) => o.kind === 'gild' && (p.gilded.some((g) => g.enh === o.enh && g.symbol === o.symbol) || o.enh === favored));
-  const ups = tierUps(run);
-  if (ups.length && rng.next() < 0.5) add(rng.pick(ups), P.tierUp);
+  const extend = gildOptions.filter((o) => o.kind === 'gild' && (p.gilded.some((g) => g.enh === o.enh) || o.enh === favored));
+  const levels = levelOptions(run);
+  if (levels.length && rng.next() < 0.5) add(rng.pick(levels), P.level);
   else add(extend.length ? rng.pick(extend) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
   add(gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
   const lastShop = run.act === runActs(run) && run.depth >= Math.min(actLength(run.act), RUN.shopAfter[RUN.shopAfter.length - 1]);
@@ -906,15 +1025,13 @@ export function shopOffers(run: RunState): ShopItem[] {
   else add(relics.length ? { kind: 'relic', relic: rng.pick(relics) } : null, P.relic);
   const u = rng.next();
   if (u < 0.35) {
-    const reels = p.strips
-      .map((s, reel) => ({ s, reel }))
-      .filter(({ s, reel }) => (s.shield ?? 0) > RUN.wildCount && !p.gilded.some((g) => g.reel === reel && g.symbol === 'shield'));
+    const reels = p.strips.map((s, reel) => ({ s, reel })).filter(({ s, reel }) => (s.shield ?? 0) > RUN.wildCount && plainCells(p, reel, 'shield') >= RUN.wildCount);
     add(reels.length ? { kind: 'swap', from: 'shield', to: 'wild', count: RUN.wildCount, reel: rng.pick(reels).reel } : null, P.wild);
   } else if (u < 0.7) {
     const junk = p.strips.flatMap((s, reel) => (['rock', 'shield'] as SymbolId[]).filter((sym) => (s[sym] ?? 0) > 0).map((symbol) => ({ kind: 'remove' as const, symbol, reel })));
     add(junk.length ? (junk.find((j) => j.symbol === 'rock') ?? rng.pick(junk)) : null, P.remove);
-  }
-  // Never a thin shelf: top up with gilds, then a rock/shield removal.
+  } else if (levels.length) add(rng.pick(levels), P.level);
+  // Never a thin shelf: top up with charms, then a rock/shield removal.
   for (const o of rng.shuffle(gildOptions)) {
     if (items.length >= 4) break;
     add(o, P.gild);
@@ -926,53 +1043,22 @@ export function shopOffers(run: RunState): ShopItem[] {
   const shelf = items.slice(0, 4);
   // HEAL is a permanent service slot, sized to what you're missing (hidden when nearly full).
   const missing = p.maxHp - p.hp;
-  if (missing >= 3 * UNIT) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal, sold: false });
+  if (missing >= 3 * UNIT && !run.glass) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal, sold: false });
   return shelf;
 }
 
-/** Build relics are only offered once you own what they amplify. */
+/** Build relics are only offered once you own what they amplify (and meter relics only to machines with a meter). */
 export function relicFits(run: RunState, r: RelicId): boolean {
   const need = BUILD_ENABLER[r];
   if (!need) return true;
-  if (need === 'wild') return run.player.strips.some((s) => (s.wild ?? 0) > 0);
-  if (need === 'full') return run.player.gilded.length > 0;
-  return run.player.gilded.some((g) => g.enh === need);
-}
-
-/** Charms spread over enough reels to line up as a FULL SET on the payline (all 3 reels; any 2 with the Golden Ticket). */
-export function fullSets(gilded: Gild[], relics: RelicId[]): Set<Enh> {
-  const need = relics.includes('ticket') ? 2 : 3;
-  const reels = new Map<Enh, Set<number>>();
-  for (const g of gilded) (reels.get(g.enh) ?? reels.set(g.enh, new Set()).get(g.enh)!).add(g.reel);
-  return new Set([...reels].filter(([, r]) => r.size >= need).map(([e]) => e));
-}
-
-/** This charm card/item would put the charm on enough reels to hit FULL SETS. */
-export function completesSet(run: RunState, o: DraftOption): boolean {
-  if (o.kind !== 'gild') return false;
-  const before = fullSets(run.player.gilded, run.player.relics);
-  return !before.has(o.enh) && fullSets(gildsAfter(run, o), run.player.relics).has(o.enh);
-}
-
-/** How many reels already carry this gild (for the set pips). */
-export const setProgress = (run: RunState, enh: Enh) => new Set(run.player.gilded.filter((g) => g.enh === enh).map((g) => g.reel)).size;
-
-/** Card/shop items that extend what you're already building (for the FITS tag). */
-export function fitsBuild(run: RunState, o: DraftOption): boolean {
-  const p = run.player;
-  const favored = CABINETS[run.cabinet].favors;
-  if (o.kind === 'gild') return p.gilded.some((g) => g.enh === o.enh) || o.enh === favored;
-  // THORN's act 2 build is HP (ITERATION_9).
-  if (o.kind === 'maxHp') return run.cabinet === 'thorn' && run.act > 1;
-  if (o.kind === 'relic') {
-    // Legendaries that feed what you're doing.
-    const spec = p.gilded.some((g) => g.enh === 'charged' || g.enh === 'blaze') || run.cabinet === 'tesla';
-    if (o.relic === 'overcharge') return spec;
-    if (o.relic === 'bell' || o.relic === 'key') return p.gilded.some((g) => g.enh === 'gold');
-    return !!BUILD_ENABLER[o.relic] && relicFits(run, o.relic);
-  }
-  if (o.kind === 'swap' && o.to === 'wild') return p.relics.includes('prism') || (p.strips.some((s) => (s.wild ?? 0) > 0) && run.cabinet === 'joker');
-  return false;
+  const has = (n: Enabler): boolean => {
+    if (n === 'wild') return run.player.strips.some((s) => (s.wild ?? 0) > 0);
+    if (n === 'charm') return run.player.gilded.length > 0;
+    if (n === 'meter') return !!CABINETS[run.cabinet].meter;
+    if (n === 'thorns') return CABINETS[run.cabinet].meter?.kind === 'thorns';
+    return charmCount(run.player, n) > 0;
+  };
+  return (Array.isArray(need) ? need : [need]).every(has);
 }
 
 export function buy(run: RunState, item: ShopItem): boolean {
@@ -999,28 +1085,6 @@ export function leaveShop(run: RunState): void {
   run.actIntro = false;
 }
 
-/** Act 2: TIER II upgrades for gilds you own. */
-export function tierUps(run: RunState): DraftOption[] {
-  if (run.act < 2) return [];
-  // One offer per gild type: TIER II upgrades every reel that carries it.
-  const seen = new Set<Enh>();
-  const out: DraftOption[] = [];
-  for (const g of run.player.gilded) {
-    if (g.tier || seen.has(g.enh)) continue;
-    seen.add(g.enh);
-    out.push({ kind: 'gild', enh: g.enh, symbol: g.symbol, reel: g.reel, tier: 2 });
-  }
-  return out;
-}
-
-/** Gilds after taking a card. */
-export function gildsAfter(run: RunState, o: DraftOption): Gild[] {
-  if (o.kind !== 'gild') return run.player.gilded;
-  const own = run.player.gilded.find((g) => g.reel === o.reel && g.symbol === o.symbol && g.enh === o.enh);
-  if (own) return run.player.gilded.map((g) => (g.enh === o.enh && o.tier ? { ...g, tier: 2 as const } : g));
-  const tiered = run.player.gilded.some((g) => g.enh === o.enh && g.tier);
-  return [...run.player.gilded, { reel: o.reel, symbol: o.symbol, enh: o.enh, ...(tiered ? { tier: 2 as const } : {}) }];
-}
 
 /** Strips after taking a card (for the before/after stat line). */
 export function stripsAfter(run: RunState, o: DraftOption): StripCounts[] {
@@ -1039,53 +1103,33 @@ export function stripsAfter(run: RunState, o: DraftOption): StripCounts[] {
   return copy.player.strips;
 }
 
-const NAME: Partial<Record<SymbolId, string>> = { sword: 'SWORD', shield: 'SHIELD', bolt: 'BOLT', rock: 'ROCK', wild: 'WILD' };
-const ENH_TEXT: Record<Enh, (s: string, reel: number) => string> = {
-  gold: (s, r) => `${s}S ON REEL ${r} PAY X2`,
-  keen: (s, r) => `${s}S ON REEL ${r} DEAL +10 AND PIERCE SHIELDS`,
-  charged: (s, r) => `${s}S ON REEL ${r} GIVE +10 ENERGY`,
-  spiked: (s, r) => `${s}S ON REEL ${r} HIT BACK FOR 20 WHEN YOU ARE HIT`,
-  vamp: (s, r) => `${s}S ON REEL ${r} HEAL YOU 10 WHEN THEY HIT`,
-  lucky: (s, r) => `${s}S ON REEL ${r}: ${Math.round(LUCKY_CHANCE.each * 100)}% CHANCE TO LAND AS A WILD`,
-  blaze: (_s, r) => `BLAZE REEL ${r}: YOUR SPECIAL DEALS +${BLAZE_BONUS.each}`,
-};
-const TIER_TEXT: Record<Enh, (s: string, reel: number) => string> = {
-  gold: (s, r) => `${s}S ON REEL ${r} PAY X4`,
-  keen: (s, r) => `${s}S ON REEL ${r} DEAL +30 AND PIERCE`,
-  charged: (s, r) => `${s}S ON REEL ${r} GIVE +30 ENERGY`,
-  spiked: (s, r) => `${s}S ON REEL ${r} HIT BACK FOR 60`,
-  vamp: (s, r) => `${s}S ON REEL ${r} HEAL 30 WHEN THEY HIT`,
-  lucky: (s, r) => `${s}S ON REEL ${r}: 65% CHANCE TO LAND AS A WILD`,
-  blaze: (_s, r) => `BLAZE REEL ${r}: YOUR SPECIAL DEALS +50`,
-};
-/** What a gild card's cell will really do, at the level it will have after you take it. */
-function levelText(run: RunState, o: Extract<DraftOption, { kind: 'gild' }>): string {
-  const after = gildsAfter(run, o);
-  const g = after.find((x) => x.reel === o.reel && x.symbol === o.symbol && x.enh === o.enh);
-  const lvl = 1 + (g?.tier ? TIER_STEP : 0);
-  const set = '';
-  const spikeBase = run.player.relics.includes('cactus') ? CACTUS_DAMAGE : SPIKED_DAMAGE;
-  switch (o.enh) {
+const NAME: Partial<Record<SymbolId, string>> = { sword: 'SWORD', shield: 'SHIELD', bolt: 'BOLT', rock: 'ROCK', wild: 'WILD', goldbar: 'GOLD BAR', thorn: 'THORN' };
+const plural = (s: SymbolId, n: number) => `${NAME[s] ?? s.toUpperCase()}${n > 1 ? 'S' : ''}`;
+
+/** What one charm of this kind does at a level (the card's rule, never an expected value). */
+export function charmRule(enh: Enh, lvl: number): string {
+  const v = charmValue(enh, lvl);
+  switch (enh) {
     case 'gold':
-      return `PAY X${1 + lvl}${set}`;
+      return `X${v} TO ITS GROUP (GOLD IN A GROUP ADDS UP)`;
     case 'keen':
-      return `+${KEEN_BONUS * lvl + (run.player.relics.includes('hone') ? HONE_BONUS : 0)} DAMAGE AND PIERCE${set}`;
+      return `+${v} TO ITS GROUP, WHICH PIERCES SHIELDS`;
     case 'charged':
-      return `+${lvl * UNIT} ENERGY${set}`;
-    case 'spiked':
-      return `HIT BACK FOR ${spikeBase + 2 * UNIT * (lvl - 1)}${set}`;
+      return `+${v} TO ITS GROUP`;
     case 'vamp':
-      return `HEAL ${Math.min(VAMP_CAP, lvl * UNIT)} WHEN THEY HIT${set}`;
+      return `HEALS ${v} WHEN IT HITS`;
     case 'lucky':
-      return `${Math.round(100 * Math.min(0.8, LUCKY_CHANCE.each + LUCKY_CHANCE.step * (lvl - 1)))}% TO LAND AS A WILD${set}`;
+      return `${v}% TO LAND AS A WILD`;
     case 'blaze':
-      return `YOUR SPECIAL DEALS +${BLAZE_BONUS.each + (lvl - 1) * UNIT}${set}`;
+      return `YOUR SPECIAL DEALS +${v}`;
+    case 'spiked':
+      return '';
   }
 }
 
-const plural = (s: SymbolId, n: number) => `${NAME[s] ?? s.toUpperCase()}${n > 1 ? 'S' : ''}`;
-
 export function describeOption(o: DraftOption, run?: RunState): { title: string; text: string } {
+  const lv = run?.player.levels;
+  const ticket = !!run?.player.relics.includes('ticket');
   switch (o.kind) {
     case 'add': {
       const n = o.count ?? 1;
@@ -1101,52 +1145,203 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
       return { title: `HEAL ${o.amount}`, text: `RESTORE ${o.amount} HP NOW` };
     case 'maxHp':
       return { title: `+${o.amount} MAX HP`, text: `GAIN ${o.amount} MAX HP (AND HEAL IT)` };
-    case 'gild': {
-      let text = ENH_TEXT[o.enh](NAME[o.symbol] ?? '', o.reel + 1);
-      if (o.enh === 'spiked' && run?.player.relics.includes('cactus')) text = text.replace(`FOR ${SPIKED_DAMAGE}`, `FOR ${CACTUS_DAMAGE}`);
-      if (run) {
-        const live = levelText(run, o);
-        if (o.tier) return { title: `${o.enh.toUpperCase()} CHARM II`, text: `EVERY ${o.enh.toUpperCase()} CHARM: ${live}` };
-        return { title: `${o.enh.toUpperCase()} CHARM`, text: `${NAME[o.symbol]}S ON REEL ${o.reel + 1}: ${live}` };
-      }
-      if (o.tier) return { title: `${o.enh.toUpperCase()} CHARM II`, text: `UPGRADE: ${TIER_TEXT[o.enh](NAME[o.symbol] ?? '', o.reel + 1)}` };
-      return { title: `${o.enh.toUpperCase()} CHARM`, text };
+    case 'gild':
+      return {
+        title: `${o.n} ${o.enh.toUpperCase()} CHARM${o.n > 1 ? 'S' : ''}`,
+        text: `REEL ${o.reel + 1} · ${plural(o.symbol, o.n)}. EACH: ${charmRule(o.enh, charmLevel(lv, o.enh, ticket))}`,
+      };
+    case 'symLevel': {
+      const next = Math.min(LEVEL_CAP, symLevel(lv, o.symbol) + 1);
+      return { title: `${plural(o.symbol, 2)} LVL ${next}`, text: `EVERY ${NAME[o.symbol] ?? o.symbol.toUpperCase()} IS WORTH ${symValue(next)}, EVEN ONES YOU ADD LATER` };
+    }
+    case 'charmLevel': {
+      const next = Math.min(LEVEL_CAP, charmLevel(lv, o.enh) + 1);
+      return { title: `${o.enh.toUpperCase()} LVL ${next}`, text: `EVERY ${o.enh.toUpperCase()} CHARM: ${charmRule(o.enh, next + (ticket ? 1 : 0))}` };
     }
     case 'remove':
       return { title: `-1 ${NAME[o.symbol]}`, text: `REMOVE A ${NAME[o.symbol]} FROM REEL ${o.reel + 1}` };
   }
 }
 
-/** Up to two "before TO after" lines for strip cards: the biggest gain, then the biggest cost. */
-export function optionDeltas(run: RunState, o: DraftOption, base: GameConfig): { gain: string; loss: string } {
-  if (o.kind !== 'add' && o.kind !== 'swap' && o.kind !== 'clear' && o.kind !== 'gild' && o.kind !== 'remove') return { gain: '', loss: '' };
-  const a = stripStats(run.player.strips, base, run.player.relics, run.player.gilded);
-  const b = stripStats(stripsAfter(run, o), base, run.player.relics, gildsAfter(run, o));
-  const rows: [string, number, number][] = [
-    ['ENERGY', a.energy, b.energy],
-    ['DAMAGE', a.damage, b.damage],
-    ['SHIELD', a.shield, b.shield],
-    ['HEAL', a.heal, b.heal],
-    ['SPECIAL DMG', a.specialBonus, b.specialBonus],
-  ];
-  const fmt = ([label, from, to]: [string, number, number]) =>
-    label === 'SPECIAL DMG' ? `SPECIAL +${from} TO +${to}` : `${label} ${from.toFixed(2)} TO ${to.toFixed(2)}`;
-  const gains = rows.filter((r) => r[2] - r[1] > 0.005).sort((x, y) => y[2] - y[1] - (x[2] - x[1]));
-  const losses = rows.filter((r) => r[1] - r[2] > 0.005).sort((x, y) => y[1] - y[2] - (x[1] - x[2]));
-  return { gain: gains[0] ? fmt(gains[0]) : '', loss: losses[0] ? fmt(losses[0]) : '' };
+/** The tag a charm shows at your current level (e.g. X2, +5). */
+export const charmTagFor = (run: RunState, enh: Enh) => charmTag(enh, charmLevel(run.player.levels, enh, run.player.relics.includes('ticket')));
+// ---- post-boss BIG CHOICES (Tuesday Step E) ------------------------------------------------
+
+/**
+ * After the House and the Mirror you pick 1 of 3 build-defining moves from one set (never the same set
+ * twice in a run). Strong options carry a real, visible cost; each set has one safe pick.
+ */
+export type BigChoiceId = 'armsRace' | 'masterwork' | 'whetstone' | 'meltDown' | 'gildLot' | 'polish' | 'cleanCut' | 'twinReel' | 'sweepUp' | 'glassCannon' | 'bloodPact' | 'secondWind';
+export interface BigChoice {
+  id: BigChoiceId;
+  /** Rolled target: a symbol, a charm or a reel. */
+  symbol?: SymbolId;
+  enh?: Enh;
+  reel?: number;
+}
+export const BIG_SETS: BigChoiceId[][] = [
+  ['armsRace', 'masterwork', 'whetstone'],
+  ['meltDown', 'gildLot', 'polish'],
+  ['cleanCut', 'twinReel', 'sweepUp'],
+  ['glassCannon', 'bloodPact', 'secondWind'],
+];
+export const BIG_SET_NAMES = ['THE FORGE', 'THE MELT', 'SURGERY', "DEVIL'S BARGAIN"];
+/** The safe pick in each set (no cost). */
+export const SAFE_CHOICES: ReadonlySet<BigChoiceId> = new Set(['whetstone', 'polish', 'sweepUp', 'secondWind']);
+export const BIG = { armsRaceHp: 6 * UNIT, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, bloodPactHp: 0.25, gildLotHp: 0.25, gildLotCells: 3, glassPay: 1.5 };
+
+const SYM_NAME = (s: SymbolId) => (s === 'goldbar' ? 'GOLD BARS' : `${s.toUpperCase()}S`);
+
+/** Title, rule and cost as plain card text (no expected values). */
+export function describeChoice(run: RunState, c: BigChoice): { title: string; rule: string; cost: string } {
+  const meter = !!CABINETS[run.cabinet].meter;
+  switch (c.id) {
+    case 'armsRace':
+      return { title: 'ARMS RACE', rule: '+1 LEVEL TO ALL YOUR SYMBOLS', cost: `-${BIG.armsRaceHp} MAX HP` };
+    case 'masterwork':
+      return { title: 'MASTERWORK', rule: `+2 LEVELS TO YOUR ${SYM_NAME(c.symbol!)}`, cost: 'YOUR OTHER SYMBOLS CAN NEVER LEVEL UP AGAIN' };
+    case 'whetstone':
+      return { title: 'WHETSTONE', rule: `+1 LEVEL TO YOUR ${SYM_NAME(c.symbol!)}`, cost: '' };
+    case 'meltDown':
+      return { title: 'MELT IT DOWN', rule: 'EVERY CHARM ON YOUR REELS BECOMES GOLD, AT YOUR BEST CHARM LEVEL', cost: 'YOUR OTHER CHARM LEVELS ARE GONE' };
+    case 'gildLot':
+      return { title: 'GILD THE LOT', rule: `EVERY REEL GETS ${BIG.gildLotCells} GOLD CHARMS (ON PLAIN SWORDS, SHIELDS OR BOLTS)`, cost: `YOUR SYMBOLS LOSE A LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
+    case 'polish':
+      return { title: 'POLISH', rule: `+1 LEVEL TO YOUR ${c.enh!.toUpperCase()} CHARMS`, cost: '' };
+    case 'cleanCut':
+      return { title: 'CLEAN CUT', rule: `REMOVE EVERY SHIELD FROM REEL ${c.reel! + 1}. +1 LEVEL TO SWORDS`, cost: 'THOSE SHIELDS AND THEIR CHARMS ARE GONE' };
+    case 'twinReel':
+      return { title: 'TWIN REEL', rule: 'REEL 3 BECOMES AN EXACT COPY OF REEL 1, CHARMS INCLUDED', cost: "REEL 3'S OLD CELLS ARE GONE" };
+    case 'sweepUp':
+      return { title: 'SWEEP UP', rule: `SMASH EVERY ROCK ON YOUR REELS AND HEAL ${BIG.sweepHeal}`, cost: '' };
+    case 'glassCannon':
+      return { title: 'GLASS CANNON', rule: `EVERY PAYING GROUP PAYS X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS (COMPS, BANDAGE, CASHIER)' };
+    case 'bloodPact':
+      return meter
+        ? { title: 'BLOOD PACT', rule: 'YOUR METER FILLS TWICE AS FAST', cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` }
+        : { title: 'BLOOD PACT', rule: '+1 LEVEL TO SWORDS AND SHIELDS', cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` };
+    case 'secondWind':
+      return { title: 'SECOND WIND', rule: `HEAL TO FULL AND +${BIG.secondWindHp} MAX HP`, cost: '' };
+  }
 }
 
-/** One "before TO after" line for strip cards, picking the stat that moves the most. */
-export function optionDelta(run: RunState, o: DraftOption, base: GameConfig): string {
-  if (o.kind !== 'add' && o.kind !== 'swap' && o.kind !== 'clear') return '';
-  const a = stripStats(run.player.strips, base, run.player.relics, run.player.gilded);
-  const b = stripStats(stripsAfter(run, o), base, run.player.relics, gildsAfter(run, o));
-  const rows: [string, number, number][] = [
-    ['ENERGY', a.energy, b.energy],
-    ['DAMAGE', a.damage, b.damage],
-    ['SHIELD', a.shield, b.shield],
-  ];
-  rows.sort((x, y) => Math.abs(y[2] - y[1]) - Math.abs(x[2] - x[1]));
-  const [label, from, to] = rows[0];
-  return `${label} ${from.toFixed(2)} TO ${to.toFixed(2)}`;
+/** Your symbols (on your strips) that levels apply to. */
+const levelSyms = (run: RunState) => CABINETS[run.cabinet].symbols.filter((s) => run.player.strips.some((x) => (x[s] ?? 0) > 0));
+
+/** Roll the three choices of one set (targets included). */
+function rollChoices(run: RunState, set: number, rng: Rng): BigChoice[] {
+  const p = run.player;
+  const syms = levelSyms(run);
+  const count = (s: SymbolId) => p.strips.reduce((a, x) => a + (x[s] ?? 0), 0);
+  const most = syms.reduce((a, b) => (count(b) > count(a) ? b : a), syms[0] ?? 'sword');
+  const lowest = [...syms].sort((a, b) => symLevel(p.levels, a) - symLevel(p.levels, b) || count(b) - count(a))[0] ?? 'shield';
+  const charms = [...new Set(p.gilded.map((g) => g.enh))];
+  const topCharm = charms.reduce((a, b) => (charmCount(p, b) > charmCount(p, a) ? b : a), charms[0] ?? 'gold');
+  const shieldReel = [0, 1, 2].reduce((a, b) => ((p.strips[b].shield ?? 0) > (p.strips[a].shield ?? 0) ? b : a), 0);
+  void rng;
+  return BIG_SETS[set].map((id): BigChoice => {
+    if (id === 'masterwork') return { id, symbol: most };
+    if (id === 'whetstone') return { id, symbol: lowest };
+    if (id === 'polish') return { id, enh: topCharm };
+    if (id === 'cleanCut') return { id, reel: shieldReel };
+    return { id };
+  });
+}
+
+/** A boss fell: roll one set you haven't seen this run (THE MELT needs a charm to melt). */
+function offerChoices(run: RunState, rng: Rng): void {
+  const used = run.choiceSets ?? [];
+  const ok = [0, 1, 2, 3].filter((i) => !used.includes(i) && (i !== 1 || run.player.gilded.length > 0));
+  if (!ok.length) return;
+  const set = rng.pick(ok);
+  run.choiceSets = [...used, set];
+  run.pendingChoice = rollChoices(run, set, rng);
+}
+
+export function takeChoice(run: RunState, c: BigChoice): void {
+  if (!run.pendingChoice?.some((x) => x.id === c.id)) return;
+  const p = run.player;
+  const lock = (s: SymbolId) => run.levelLock?.includes(s);
+  const up = (s: SymbolId, n = 1) => {
+    if (!lock(s)) p.levels.sym[s] = Math.min(LEVEL_CAP, symLevel(p.levels, s) + n);
+  };
+  const loseMax = (n: number) => {
+    p.maxHp = Math.max(UNIT, p.maxHp - n);
+    p.hp = Math.min(p.hp, p.maxHp);
+  };
+  switch (c.id) {
+    case 'armsRace':
+      levelSyms(run).forEach((s) => up(s));
+      loseMax(BIG.armsRaceHp);
+      break;
+    case 'masterwork':
+      up(c.symbol!, 2);
+      run.levelLock = CABINETS[run.cabinet].symbols.filter((s) => s !== c.symbol);
+      break;
+    case 'whetstone':
+      up(c.symbol!);
+      break;
+    case 'meltDown': {
+      const best = Math.max(1, ...p.gilded.map((g) => charmLevel(p.levels, g.enh)));
+      for (const g of p.gilded) g.enh = 'gold';
+      // Merge entries that now say the same thing.
+      const merged: Gild[] = [];
+      for (const g of p.gilded) {
+        const m = merged.find((x) => x.reel === g.reel && x.symbol === g.symbol && x.enh === g.enh);
+        if (m) m.n += g.n;
+        else merged.push({ ...g });
+      }
+      p.gilded = merged;
+      p.levels.charm = { gold: best };
+      break;
+    }
+    case 'gildLot':
+      p.strips.forEach((_s, reel) => {
+        let left = BIG.gildLotCells;
+        for (const sym of ['sword', 'bolt', 'shield'] as SymbolId[]) {
+          const k = Math.min(left, plainCells(p, reel, sym));
+          addCharms(p, reel, sym, 'gold', k);
+          left -= k;
+        }
+      });
+      for (const s of Object.keys(p.levels.sym) as SymbolId[]) p.levels.sym[s] = Math.max(1, symLevel(p.levels, s) - 1);
+      loseMax(Math.round(p.maxHp * BIG.gildLotHp));
+      break;
+    case 'polish':
+      p.levels.charm[c.enh!] = Math.min(LEVEL_CAP, charmLevel(p.levels, c.enh!) + 1);
+      break;
+    case 'cleanCut':
+      p.strips[c.reel!].shield = 0;
+      normalizeCharms(p);
+      up('sword');
+      break;
+    case 'twinReel':
+      p.strips[2] = { ...p.strips[0] };
+      p.gilded = [...p.gilded.filter((g) => g.reel !== 2), ...p.gilded.filter((g) => g.reel === 0).map((g) => ({ ...g, reel: 2 }))];
+      break;
+    case 'sweepUp':
+      for (const s of p.strips) s.rock = 0;
+      p.hp = Math.min(p.maxHp, p.hp + BIG.sweepHeal);
+      break;
+    case 'glassCannon':
+      run.glass = true;
+      break;
+    case 'bloodPact':
+      if (CABINETS[run.cabinet].meter) run.bloodPact = true;
+      else {
+        up('sword');
+        up('shield');
+      }
+      loseMax(Math.round(p.maxHp * BIG.bloodPactHp));
+      break;
+    case 'secondWind':
+      p.maxHp += BIG.secondWindHp;
+      p.hp = p.maxHp;
+      break;
+  }
+  for (const s of p.strips) for (const k of Object.keys(s) as SymbolId[]) if ((s[k] ?? 0) <= 0) delete s[k];
+  normalizeCharms(p);
+  const last = run.records.at(-1);
+  if (last) last.choice = c.id;
+  run.pendingChoice = null;
 }

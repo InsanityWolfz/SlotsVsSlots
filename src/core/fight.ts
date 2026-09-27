@@ -1,32 +1,30 @@
-import { cloneConfig, UNIT, unitsDown, unitsUp, type AbilityDef, type Enh, type GameConfig, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
-import { CABINETS, type Cabinet } from './cabinets';
-import type { CombatEvent, DealCard, VoucherKind } from './events';
+import { cloneConfig, UNIT, unitsUp, type AbilityDef, type Enh, type GameConfig, type Levels, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
+import { CABINETS, hasSpecial, type Cabinet, type Meter } from './cabinets';
+import { charmLevel, charmValue, playerSymValue } from './charms';
+import type { CombatEvent, DealCard, HealSource, VoucherKind } from './events';
 import {
+  BATTERY_SHARE,
   BATTERY_ENERGY,
   BONUS,
   BELL_MULT,
-  BLAZE_BONUS,
   BOMB,
+  CACTUS_SHARE,
   KEY_MULT,
+  MIDAS_RAISE,
+  MIRROR_HIT_CAP,
   OVERCHARGE_ECHO,
-  TIER_STEP,
-  VAMP_CAP,
-  LUCKY_CHANCE,
-  CACTUS_DAMAGE,
   CLOVER_CHANCE,
   FANG_HEAL,
   HONE_BONUS,
-  FULL_SET_STEP,
-  KEEN_BONUS,
   POT,
   ROD_SPECIAL_COST,
   REFLECT_MIN,
   ROD_SPECIAL_DAMAGE,
-  SPIKED_DAMAGE,
 } from './relics';
 import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
-import { isNearMiss, scoreLine, type LineScore, type ScoreGroup } from './scoring';
+import { TUNE } from './enemies';
+import { isNearMiss, multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {
   BONUS_SYMBOLS,
   buildReel,
@@ -41,7 +39,6 @@ import {
   type Reel,
 } from './strip';
 
-/** Symbols that act on the opponent when they're native to the caster's strips. */
 /** Act 3: marked-card bite, the Croupier's rake, and the Dealer's shuffle size. */
 const MARK_DAMAGE = 2 * UNIT;
 const RAKE_CUT = UNIT;
@@ -54,14 +51,22 @@ const DEALS: DealCard[] = ['shuffle', 'cut', 'raise'];
 /** Counterfeit coins last this many of your turns. */
 const FAKE_TURNS = 3;
 
+/** Symbols that act on the opponent when they're native to the caster's strips. */
 const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake']);
+/** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
+const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'shield', 'bolt', 'seven', 'thorn']);
+/** Symbols the 3-WILD bonus reel (and a WILD in JAX's payoff) can pick. */
+const JACKPOTABLE: ReadonlySet<SymbolId> = new Set(['sword', 'shield', 'bolt', 'goldbar', 'thorn']);
 
 export interface Combatant {
   side: SideId;
   hp: number;
   maxHp: number;
   shield: number;
+  /** The signature meter: TESLA's energy, MIDAS's gold, BRIAR's thorn bank, JAX's wilds. */
   energy: number;
+  /** MIDAS / JAX: the meter is full and waiting to pay off. */
+  armed: boolean;
   reels: Reel[];
   /** Writer symbols native to this side's strips. */
   casts: Set<SymbolId>;
@@ -69,13 +74,15 @@ export interface Combatant {
   frozen: number[];
   /** Remaining own-turns each reel is jammed (scores nothing). */
   locked: number[];
-  /** Remaining own-turns each reel is hexed (pays half, gilds are dead). */
+  /** Remaining own-turns each reel is hexed (pays half, charms are dark). */
   hexed: number[];
   /** The Croupier's rake: remaining own-turns your groups pay less. */
   raked: number;
   ability: AbilityDef | null;
   charge: number;
   relics: Set<RelicId>;
+  /** Symbol and charm levels (the player; the Mirror copies your symbol levels). */
+  levels?: Levels;
 }
 
 export interface TurnResult {
@@ -86,7 +93,7 @@ export interface TurnResult {
 
 export const other = (s: SideId): SideId => (s === 'player' ? 'enemy' : 'player');
 
-/** 1 → 1 reel for 1 turn, a double (4) → 2 reels × 2 turns, a jackpot (9) → 3 × 3. */
+/** 1 → 1 reel for 1 turn, a double (40) → 2 reels × 2 turns, a jackpot (90) → 3 × 3. */
 export const statusSize = (amount: number) => Math.max(1, Math.min(3, Math.round(Math.sqrt(amount / UNIT))));
 
 function makeCombatant(side: SideId, sc: SideConfig, rng: Rng, relics: RelicId[]): Combatant {
@@ -101,6 +108,7 @@ function makeCombatant(side: SideId, sc: SideConfig, rng: Rng, relics: RelicId[]
     maxHp: sc.hp,
     shield: 0,
     energy: sc.startEnergy ?? 0,
+    armed: false,
     reels,
     casts,
     frozen: reels.map(() => 0),
@@ -110,6 +118,7 @@ function makeCombatant(side: SideId, sc: SideConfig, rng: Rng, relics: RelicId[]
     ability: sc.ability ?? null,
     charge: 0,
     relics: new Set(relics),
+    levels: sc.levels,
   };
 }
 
@@ -135,12 +144,10 @@ export class Fight {
   overkill = 0;
   /** The run's starting machine rules. */
   readonly cabinet: Cabinet | null;
-  /** Enhancements present on all 3 of the player's reels: their effect is boosted. */
-  /**
-   * Charms spread over enough reels that they CAN line up as a FULL SET (all 3 reels; 2 with the
-   * Golden Ticket). Only enemy targeting uses it — the set itself is decided on the payline.
-   */
-  readonly fullSet: ReadonlySet<Enh>;
+  /** The player's signature meter (null: KNIGHT, or an engine test with the bare special). */
+  readonly meter: Meter | null;
+  /** The player has TESLA's lightning special (or no machine at all: the bare engine). */
+  readonly special: boolean;
   /** Chips the Mimic ate this fight (taken from the run's purse afterwards). */
   chipsEaten = 0;
   /** Phoenix Feather already burned this fight. */
@@ -153,11 +160,8 @@ export class Fight {
   private crackTurn = -1;
   /** What each side did on its last spin: biggest group, and total damage sent (for Mimic / Reflection). */
   readonly last: Record<SideId, { best: number; damage: number }> = { player: { best: 0, damage: 0 }, enemy: { best: 0, damage: 0 } };
-  /** BLAZE: extra special damage from blaze-gilded reels. */
+  /** BLAZE: extra special damage from the blaze cells you own. */
   readonly blaze: number;
-  private readonly blazeReels: number;
-  /** The player's reels carrying each enhancement (for FULL SETs, which a hex can break). */
-  private readonly enhReels: Partial<Record<Enh, number[]>> = {};
   /** The Mirror's Reflection: your best spin since its last one. */
   reflectBank = 0;
   /** The Dealer: the card it will deal next, whether it has dealt yet, HOUSE RULES, and RAISE flags. */
@@ -166,6 +170,8 @@ export class Fight {
   houseRules = false;
   raiseEnemy = false;
   raisePlayer = false;
+  /** BRIAR: the thorn bank already hit back on this turn. */
+  private thornsTurn = -1;
   /** Card Sharp marks placed this fight (THE DECK REMEMBERS). */
   marksPlaced = 0;
   /** Bonus vouchers banked this fight (they pay out if you win). */
@@ -182,38 +188,27 @@ export class Fight {
       enemy: makeCombatant('enemy', this.cfg.enemy, this.rng, this.cfg.enemy.relics ?? []),
     };
     const p = this.sides.player;
-    if (p.relics.has('battery')) {
-      p.energy = Math.min(this.cfg.specialCost - 1, p.energy + BATTERY_ENERGY);
-      this.openers.push('battery');
-    }
     this.cabinet = this.cfg.cabinet ? CABINETS[this.cfg.cabinet] : null;
+    this.meter = this.cabinet?.meter ?? null;
+    this.special = hasSpecial(this.cabinet);
     if (this.cabinet?.specialCost) this.cfg.specialCost = this.cabinet.specialCost;
     if (this.cabinet?.specialDamage) this.cfg.specialDamage = this.cabinet.specialDamage;
+    // Battery: your meter starts part-full (the special: 30 energy; a bank: 30; MIDAS / JAX: 60%).
+    if (p.relics.has('battery') && (this.special || this.meter)) {
+      const start = this.special ? BATTERY_ENERGY : this.meter!.kind === 'thorns' ? BATTERY_ENERGY : unitsUp(this.meter!.cost * BATTERY_SHARE);
+      p.energy = this.special ? Math.min(this.cfg.specialCost - 1, p.energy + start) : Math.min(Math.max(0, this.meterCost - 1), p.energy + start);
+      this.openers.push('battery');
+    }
     // Lightning Rod: a charged-bolt build makes the special cheaper and harder-hitting.
-    if (p.relics.has('rod') && p.reels.some((r) => r.cells.some((c) => c.enh === 'charged'))) {
+    if (this.special && p.relics.has('rod') && p.reels.some((r) => r.cells.some((c) => c.enh === 'charged'))) {
       this.cfg.specialCost = ROD_SPECIAL_COST;
       this.cfg.specialDamage = Math.max(this.cfg.specialDamage, this.cabinet?.rodDamage ?? ROD_SPECIAL_DAMAGE);
       this.openers.push('rod');
     }
-    // Thorn: enemy specials hit one weaker (the House's skim is untouched).
-    const minus = this.cabinet?.enemyAbilityMinus ?? 0;
     const e = this.sides.enemy;
-    const flat: ReadonlySet<string> = new Set(['jackpot', 'reflect', 'bloodmoon']);
-    if (minus && e.ability && !flat.has(e.ability.kind)) e.ability = { ...e.ability, power: Math.max(1, e.ability.power - minus) };
-
-    // FULL SET: an enhancement present on every reel (Golden Ticket: on any two).
-    const perReel = p.reels.map((r) => new Set(r.cells.map((c) => c.enh).filter((x): x is Enh => !!x)));
-    const need = p.relics.has('ticket') ? 2 : 3;
-    const all = new Set(perReel.flatMap((s) => [...s]));
-    this.fullSet = new Set([...all].filter((enh) => perReel.filter((s) => s.has(enh)).length >= need));
-    perReel.forEach((s, r) => s.forEach((enh) => (this.enhReels[enh] ??= []).push(r)));
-    // BLAZE: every blaze reel adds to your special (more for tier II; a payline full set adds more when it fires).
-    this.blazeReels = p.reels.filter((reel) => reel.cells.some((c) => c.enh === 'blaze')).length;
-    this.blaze = p.reels.reduce((a, reel) => {
-      const cell = reel.cells.find((c) => c.enh === 'blaze');
-      if (!cell) return a;
-      return a + BLAZE_BONUS.each + (cell.tier === 2 ? TIER_STEP * UNIT : 0);
-    }, 0);
+    // BLAZE: every blaze cell you own adds to your special.
+    const blazeCells = p.reels.reduce((a, reel) => a + reel.cells.filter((c) => c.enh === 'blaze').length, 0);
+    this.blaze = blazeCells * charmValue('blaze', this.charmLvl(p, 'blaze'));
     // The Mirror plays your machine but never your junk (and fires no specials).
     if (this.isMirror) e.casts.clear();
     if (this.isBoss) this.pot = POT.seed;
@@ -255,6 +250,11 @@ export class Fight {
     return this.cfg.enemy.boss === 'dealer';
   }
 
+  /** How full the player's meter has to be (the special's cost for TESLA). */
+  get meterCost(): number {
+    return this.special ? this.cfg.specialCost : this.meter?.cost ?? 0;
+  }
+
   /** Debug: make the next spin of `side` land these payline symbols where the strip allows. */
   forceNext(side: SideId, line: SymbolId[]): void {
     this.forced[side] = line;
@@ -277,7 +277,7 @@ export class Fight {
       const stack = this.cfg.player.stackShield ?? 0;
       if (stack > 0) {
         p.shield += stack;
-        events.push({ type: 'shieldGain', side: 'player', reels: [], amount: stack, total: p.shield });
+        events.push({ type: 'shieldGain', side: 'player', reels: [], amount: stack, total: p.shield, source: 'chips' });
       }
     }
     if (side === 'enemy' && this.isBoss) {
@@ -319,8 +319,8 @@ export class Fight {
     // LUCKY: a lucky cell on the payline sometimes turns WILD.
     const luckyWilds: number[] = [];
     me.reels.forEach((_, r) => {
-      const luckChance = Math.min(0.8, LUCKY_CHANCE.each + LUCKY_CHANCE.step * (this.level(me, r) - 1));
-      if (line[r] !== 'wild' && this.paylineEnh(me, r) === 'lucky' && this.rng.next() < luckChance) {
+      const chance = this.paylineEnh(me, r) === 'lucky' ? charmValue('lucky', this.charmLvl(me, 'lucky')) / 100 : 0;
+      if (line[r] !== 'wild' && chance > 0 && this.rng.next() < chance) {
         line[r] = 'wild';
         luckyWilds.push(r);
       }
@@ -329,7 +329,6 @@ export class Fight {
     const score = this.score(me, line);
     // Dead symbols lining up isn't a tease — except slime, which can cleanse.
     const nearMiss = isNearMiss(line) && (me.casts.has(line[0]) || line[0] === 'slime' || !DEAD.has(line[0]));
-    const fullSet = score.groups.some((g) => g.fullSet);
     events.push({
       type: 'spin',
       side,
@@ -339,28 +338,39 @@ export class Fight {
       frozen,
       locked,
       lucky,
-      ...(fullSet ? { fullSet } : {}),
       ...(luckyWilds.length ? { luckyWilds } : {}),
       ...(hexed.some(Boolean) ? { hexed } : {}),
     });
     const sentBefore = events.length;
 
     if (side === 'player' && score.tier === 'triple') this.playerJackpots++;
+    // A meter that pays off this spin empties first (so what lands now can refill it).
+    if (side === 'player' && (score.raised || score.jackpots)) this.payoff(me, score, events);
     for (const group of score.groups) {
       this.resolveGroup(me, group, score, events);
       if (this.over) break;
     }
-    // Jackpot Bell: a jackpot refills your special.
-    if (!this.over && score.tier === 'triple' && me.relics.has('bell')) {
-      events.push({ type: 'relic', side, relic: 'bell' });
-      this.gainEnergy(me, this.cfg.specialCost, [], events);
+    if (!this.over && side === 'player' && (score.raised || score.jackpots)) this.payoffAfter(me, score, events, sentBefore);
+    // JAX: every WILD on the payline fills the meter (lucky wilds too).
+    if (!this.over && side === 'player' && this.meter?.kind === 'jackpots') {
+      const wilds = line.flatMap((s, r) => (s === 'wild' && !this.isGrounded(me, r) ? [r] : []));
+      const earthed = line.filter((s, r) => s === 'wild' && this.isGrounded(me, r)).length * (this.meter.perWild ?? 0);
+      if (wilds.length || earthed) this.fillMeter(me, wilds.length * (this.meter.perWild ?? 0), wilds, events, earthed);
     }
-    // Midas: gold cells on the payline also give energy.
-    if (!this.over && me.relics.has('midas')) {
+    // Jackpot Bell: a jackpot fills your meter (TESLA: a full special; BRIAR: the jackpot again into the bank).
+    if (!this.over && score.tier === 'triple' && me.relics.has('bell') && (side !== 'player' || this.special || this.meter)) {
+      events.push({ type: 'relic', side, relic: 'bell' });
+      if (this.special || side !== 'player') this.gainEnergy(me, this.cfg.specialCost, [], events);
+      else if (this.meter!.kind === 'thorns') this.fillMeter(me, score.groups.find((g) => g.matched)?.amount ?? 0, [], events);
+      else this.fillMeter(me, this.meterCost, [], events);
+    }
+    // Midas: gold cells on the payline also fill your meter.
+    if (!this.over && me.relics.has('midas') && (side !== 'player' || this.special || this.meter)) {
       const gold = me.reels.map((_, r) => r).filter((r) => this.paylineEnh(me, r) === 'gold');
       if (gold.length) {
         events.push({ type: 'relic', side, relic: 'midas' });
-        this.gainEnergy(me, gold.length * UNIT, gold, events);
+        if (this.special || side !== 'player') this.gainEnergy(me, gold.length * UNIT, gold, events);
+        else this.fillMeter(me, gold.length * UNIT, gold, events);
       }
     }
     const steals = score.tier === 'triple' || (score.tier === 'pair' && me.relics.has('crown'));
@@ -377,7 +387,7 @@ export class Fight {
     // What this spin did (the Mimic and the Mirror copy it).
     this.last[side] = {
       best: Math.max(0, ...score.groups.filter((g) => g.matched || !DEAD.has(g.symbol)).map((g) => g.amount)),
-      damage: events.slice(sentBefore).reduce((a, e) => a + ((e.type === 'attack' || e.type === 'specialFire') && e.from === side && !(e.type === 'attack' && e.note === 'spiked') ? e.amount : 0), 0),
+      damage: events.slice(sentBefore).reduce((a, e) => a + ((e.type === 'attack' || e.type === 'specialFire') && e.from === side && !(e.type === 'attack' && e.note === 'thorns') ? e.amount : 0), 0),
     };
     if (side === 'player') this.reflectBank = Math.max(this.reflectBank, this.last.player.damage);
     if (!this.over) this.defuse(me, events);
@@ -396,85 +406,128 @@ export class Fight {
     return { turn: this.turn, side, events };
   }
 
+  /** A charm's level for this side (the player's charm levels; the Golden Ticket adds one). */
+  private charmLvl(c: Combatant, enh: Enh): number {
+    return c.side === 'player' ? charmLevel(c.levels, enh, c.relics.has('ticket')) : 1;
+  }
+
+  /** What a lone (or all-) WILD line pays as for this side. */
+  private wildAlone(c: Combatant): SymbolId {
+    return c.side === 'player' && !this.special ? 'sword' : 'bolt';
+  }
+
+  /** The 3-WILD bonus reel: one of your jackpot-able symbols (by how many live cells you have of it). */
+  private wildPick(c: Combatant): SymbolId {
+    const pool = c.reels.flatMap((reel) => reel.cells.filter((cell) => !cell.slimed && !cell.stolen && !cell.carded && !cell.bomb && JACKPOTABLE.has(cell.symbol)).map((cell) => cell.symbol));
+    if (c.side !== 'player' || !pool.length) return this.wildAlone(c);
+    return this.rng.pick(pool);
+  }
+
   private score(me: Combatant, line: SymbolId[]): LineScore {
-    const joker = me.side === 'player' && this.cabinet?.jokerWilds && line.includes('wild');
+    const player = me.side === 'player';
+    const joker = player && this.cabinet?.jokerWilds && line.includes('wild');
     const pairRule = me.relics.has('mirror') || joker ? 'anyTwo' : this.cfg.pairRule;
-    const s = scoreLine(line, { ...this.cfg, pairRule });
+    const cfg = { ...this.cfg, pairRule } as GameConfig;
+    // Your symbols are worth their level (the Mirror copies your levels).
+    const lv = player ? me.levels : this.isMirror ? me.levels : undefined;
+    // Enemy shields are worth less than yours (your damage is mostly swords now; only TESLA pierces).
+    const value = (s: SymbolId) => (lv ? playerSymValue(lv, s, this.cfg.base[s]) : s === 'shield' && !player ? Math.round(this.cfg.base[s] * TUNE.enemyShield) : this.cfg.base[s]);
+    // 3 WILDS: the bonus reel picks one of your symbols and the line pays its jackpot.
+    const allWild = line.every((s) => s === 'wild');
+    const pick = allWild ? this.wildPick(me) : undefined;
+    const jackpots = player && me.armed && this.meter?.kind === 'jackpots';
+    let s = scoreLine(line, cfg, { value, wildAlone: pick ?? this.wildAlone(me) });
+    if (pick) s.wildPick = pick;
+    if (jackpots) {
+      // JAX's payoff: each payline cell pays as a jackpot of itself (a WILD rolls a random one).
+      const groups: ScoreGroup[] = line.map((raw, r) => {
+        const symbol = raw === 'wild' ? this.wildPick(me) : raw;
+        const base = 3 * value(symbol);
+        return { symbol, reels: [r], amount: base * multFor(3, cfg), base, mult: multFor(3, cfg), matched: true, jackpot: true };
+      });
+      const totals: Partial<Record<SymbolId, number>> = {};
+      s = { line, tier: 'triple', tierSymbol: null, groups, totals, jackpots: true };
+    }
     const fired = new Set<RelicId>();
+    let raise = player && me.armed && this.meter?.kind === 'raise';
     for (const g of s.groups) {
-      g.base = g.amount;
       const notes: string[] = [];
+      // A jackpot of one cell counts that cell's charm three times.
+      const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
+      let gold = 0;
       for (const r of g.reels) {
         const enh = this.paylineEnh(me, r);
         if (!enh) continue;
-        // Level: 1 plain, +1 tier II, +1 full set (+2 with the Golden Ticket).
-        const lvl = this.level(me, r);
-        const set = this.setActive(me, enh);
+        const v = charmValue(enh, this.charmLvl(me, enh)) * copies;
         if (enh === 'keen' && g.symbol === 'sword') {
-          const bonus = KEEN_BONUS * lvl + (me.relics.has('hone') ? HONE_BONUS : 0);
+          const bonus = v + (me.relics.has('hone') ? HONE_BONUS * copies : 0);
           if (me.relics.has('hone')) fired.add('hone');
-          g.amount += bonus;
-          notes.push(`+${bonus}`);
-          if (set) g.fullSet = true;
+          g.base += bonus;
+          g.pierce = true;
         }
-        if (enh === 'charged' && g.symbol === 'bolt') {
-          g.amount += lvl * UNIT;
-          notes.push(`+${lvl * UNIT}`);
-          if (set) g.fullSet = true;
-        }
-        if (set && ((enh === 'spiked' && g.symbol === 'shield') || (enh === 'vamp' && g.symbol === 'sword') || enh === 'lucky')) g.fullSet = true;
+        if (enh === 'charged' && g.symbol === 'bolt') g.base += v;
+        if (enh === 'gold') gold += v;
       }
-      // GOLD: one multiplier per group, 1 + the levels of its gold cells (x2 for one plain gold cell).
-      const goldLevels = g.reels.filter((r) => this.paylineEnh(me, r) === 'gold').reduce((a, r) => a + this.level(me, r), 0);
-      if (goldLevels) {
-        const mult = 1 + goldLevels;
-        g.amount *= mult;
-        notes.push(`X${mult}`);
-        if (this.setActive(me, 'gold')) g.fullSet = true;
+      // GOLD charms in a group ADD (x2 + x2 + x2 = x6), then multiply with the double/jackpot.
+      if (gold) {
+        g.mult *= gold;
+        notes.push(`X${gold} GOLD`);
       }
+      const paying = g.base > 0 && PAYING.has(g.symbol);
       // Prism: a match that used a WILD pays double.
       if (me.relics.has('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) {
         fired.add('prism');
-        g.amount *= 2;
+        g.mult *= 2;
         notes.push('X2');
       }
       // Legendaries: Skeleton Key (doubles) and Jackpot Bell (jackpots).
       if (me.relics.has('key') && g.matched && g.reels.length === 2) {
         fired.add('key');
-        g.amount = Math.ceil(g.amount * KEY_MULT);
+        g.mult *= KEY_MULT;
         notes.push(`X${KEY_MULT}`);
       }
-      if (me.relics.has('bell') && g.matched && g.reels.length === 3) {
+      if (me.relics.has('bell') && g.matched && (g.reels.length === 3 || g.jackpot)) {
         fired.add('bell');
-        g.amount *= BELL_MULT;
+        g.mult *= BELL_MULT;
         notes.push(`X${BELL_MULT}`);
       }
-      // RAISE: the Dealer raised the stakes, and your next jackpot pays double.
-      // RAISE is a fair coin: your next PAYING group pays double too.
-      if (me.side === 'player' && this.raisePlayer && g.amount > 0 && ['sword', 'shield', 'bolt', 'seven'].includes(g.symbol)) {
-        g.amount *= 2;
+      // RAISE is a fair coin: the Dealer's next hit and your next PAYING group pay double.
+      if (player && this.raisePlayer && paying) {
+        g.mult *= 2;
         notes.push('RAISE X2');
         this.raisePlayer = false;
       }
+      // MIDAS: a full meter makes your next PAYING group pay x4.
+      if (raise && paying && !s.raised) {
+        g.mult *= MIDAS_RAISE;
+        notes.push(`X${MIDAS_RAISE} MIDAS`);
+        s.raised = true;
+        raise = false;
+      }
+      // GLASS CANNON: every paying group pays x1.5.
+      if (player && paying && this.cfg.player.payMul) {
+        g.mult *= this.cfg.player.payMul;
+        notes.push(`X${this.cfg.player.payMul}`);
+      }
+      g.amount = Math.round(g.base * g.mult);
       // RAKE: the Croupier takes a cut of each group.
       if (me.raked > 0 && g.amount > 0) {
-        g.amount = Math.max(0, g.amount - RAKE_CUT);
-        notes.push(`-${RAKE_CUT}`);
-      }
-      // COUNTERFEIT: a group with a faked cell on the payline pays half.
-      if (g.reels.some((r) => (me.reels[r].cells[me.reels[r].stop]?.faked ?? 0) > 0)) {
-        g.amount = unitsDown(g.amount / 2);
-        notes.push('FAKE');
+        const cut = Math.min(g.amount, RAKE_CUT);
+        g.amount -= cut;
+        g.cut = (g.cut ?? 0) + cut;
+        notes.push(`-${cut} RAKE`);
       }
       // HEX: a group touching a hexed reel pays half.
-      if (g.reels.some((r) => me.hexed[r] > 0)) {
-        g.amount = unitsDown(g.amount / 2);
+      if (g.reels.some((r) => me.hexed[r] > 0) && g.amount > 0) {
+        const cut = g.amount - Math.floor(g.amount / 2);
+        g.amount -= cut;
+        g.cut = (g.cut ?? 0) + cut;
         notes.push('HALF');
       }
       if (notes.length) g.notes = notes;
       // Twin Reels: a pair that only pays because any two reels count.
       if (me.relics.has('mirror') && g.matched && g.reels.length === 2 && !(g.reels[0] === 0 && g.reels[1] === 1)) fired.add('mirror');
-      if (g.fullSet && me.relics.has('ticket')) fired.add('ticket');
+      if (me.relics.has('ticket') && g.reels.some((r) => this.paylineEnh(me, r))) fired.add('ticket');
     }
     if (fired.size) s.relics = [...fired];
     s.totals = {};
@@ -482,49 +535,15 @@ export class Fight {
     return s;
   }
 
-  /**
-   * FULL SET: the same charm on all 3 PAYLINE cells right now (2 with the Golden Ticket). Slimed,
-   * stolen, jammed, hexed or counterfeit cells don't count.
-   */
-  private lineSet(me: Combatant): Enh | null {
-    if (me.side !== 'player') return null;
-    const need = me.relics.has('ticket') ? 2 : 3;
-    const count = new Map<Enh, number>();
-    me.reels.forEach((reel, r) => {
-      const enh = this.paylineEnh(me, r);
-      if (!enh || (reel.cells[reel.stop].faked ?? 0) > 0) return;
-      count.set(enh, (count.get(enh) ?? 0) + 1);
-    });
-    for (const [enh, n] of count) if (n >= need) return enh;
-    return null;
-  }
-
-  private setActive(me: Combatant, enh: Enh): boolean {
-    return this.lineSet(me) === enh;
-  }
-
-  /** How many levels a FULL SET adds to each of its cells (2 with the Golden Ticket). */
-  private setStep(me: Combatant): number {
-    return FULL_SET_STEP + (me.relics.has('ticket') ? 1 : 0);
-  }
-
-  /** How strong the live gild on a reel's payline cell is: 0 none, 1 plain, +1 tier II, +1 set (+2 with the Ticket). */
-  private level(c: Combatant, r: number): number {
-    const enh = this.paylineEnh(c, r);
-    if (!enh) return 0;
+  /** The charm on a reel's payline cell, if it's live (not stolen, slimed, jammed, hexed or counterfeit). */
+  private paylineEnh(c: Combatant, r: number): Enh | undefined {
     const cell = c.reels[r].cells[c.reels[r].stop];
-    // A counterfeit coin makes the gild plain: no tier, no set.
-    if (cell.faked && cell.faked > 0) return 1;
-    let lvl = 1 + (cell.tier === 2 ? TIER_STEP : 0);
-    if (this.setActive(c, enh)) lvl += this.setStep(c);
-    return lvl;
-  }
-
-  /** The enhancement on a reel's payline cell, if it's live (not stolen, slimed or jammed). */
-  private paylineEnh(c: Combatant, r: number) {
-    const cell = c.reels[r].cells[c.reels[r].stop];
-    if (!cell?.enh || cell.stolen || cell.slimed || c.locked[r] > 0 || c.hexed[r] > 0) return undefined;
+    if (!cell?.enh || cell.stolen || cell.slimed || (cell.faked ?? 0) > 0 || c.locked[r] > 0 || c.hexed[r] > 0) return undefined;
     return cell.enh;
+  }
+
+  private isGrounded(c: Combatant, r: number): boolean {
+    return c.side === 'player' && !!c.reels[r].cells[c.reels[r].stop]?.grounded;
   }
 
   private resetShield(c: Combatant, events: CombatEvent[]): void {
@@ -586,14 +605,16 @@ export class Fight {
 
   private resolveGroup(me: Combatant, g: ScoreGroup, score: LineScore, events: CombatEvent[]): void {
     const foe = this.sides[other(me.side)];
+    const player = me.side === 'player';
     switch (g.symbol) {
       case 'sword':
         // KEEN: a keen sword in the group pierces shields.
-        this.hit(me, foe, g.amount, g.reels, events, g.reels.some((r) => this.paylineEnh(me, r) === 'keen'));
+        this.hit(me, foe, g.amount, g.reels, events, !!g.pierce);
         {
           // VAMP: vamp swords in the group heal you.
-          const vamp = UNIT * g.reels.filter((r) => this.paylineEnh(me, r) === 'vamp').reduce((a, r) => a + this.level(me, r), 0);
-          if (vamp && !this.over && g.amount > 0) this.heal(me, Math.min(VAMP_CAP, vamp), 'vamp', events);
+          const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
+          const vamp = g.reels.filter((r) => this.paylineEnh(me, r) === 'vamp').reduce((a) => a + charmValue('vamp', this.charmLvl(me, 'vamp')) * copies, 0);
+          if (vamp && !this.over && g.amount > 0) this.heal(me, vamp, 'vamp', events);
         }
         return;
       case 'seven':
@@ -605,13 +626,29 @@ export class Fight {
         events.push({ type: 'shieldGain', side: me.side, reels: g.reels, amount: g.amount, total: me.shield });
         return;
       case 'bolt':
-        // The Mirror has no special of its own: it only reflects.
-        if (me.side === 'enemy' && this.isMirror) break;
+        // The Mirror has no special of its own: it only reflects. Only TESLA (or the bare engine) has one.
+        if ((me.side === 'enemy' && this.isMirror) || (player && !this.special)) break;
         {
           // The Grounder: a grounded bolt on your payline earths its share of the energy.
-          const grounded = me.side === 'player' ? g.reels.filter((r) => me.reels[r].cells[me.reels[r].stop]?.grounded).length : 0;
+          const grounded = player ? g.reels.filter((r) => this.isGrounded(me, r)).length : 0;
           const earthed = grounded ? unitsUp((g.amount * grounded) / g.reels.length) : 0;
           this.gainEnergy(me, Math.max(0, g.amount - earthed), g.reels, events, earthed);
+        }
+        return;
+      case 'goldbar':
+      case 'thorn':
+        if (!player || this.meter?.symbol !== g.symbol) break;
+        {
+          const grounded = g.reels.filter((r) => this.isGrounded(me, r)).length;
+          const earthed = grounded ? Math.ceil((g.amount * grounded) / g.reels.length) : 0;
+          this.fillMeter(me, Math.max(0, g.amount - earthed), g.reels, events, earthed);
+          // Cactus: banking thorns also shields you for a share of what you banked.
+          if (g.symbol === 'thorn' && me.relics.has('cactus') && g.amount > earthed) {
+            const sh = Math.max(1, Math.round((g.amount - earthed) * CACTUS_SHARE));
+            me.shield += sh;
+            events.push({ type: 'relic', side: me.side, relic: 'cactus' });
+            events.push({ type: 'shieldGain', side: me.side, reels: [], amount: sh, total: me.shield, source: 'cactus' });
+          }
         }
         return;
     }
@@ -632,6 +669,72 @@ export class Fight {
     events.push({ type: 'fizzle', side: me.side, reels: g.reels, symbol: g.symbol });
   }
 
+  /** MIDAS / JAX: the full meter pays off this spin — it empties, and you heal. */
+  private payoff(me: Combatant, score: LineScore, events: CombatEvent[]): void {
+    me.armed = false;
+    me.energy = 0;
+    events.push({ type: 'payoff', side: me.side, kind: score.jackpots ? 'jackpots' : 'raise' });
+  }
+
+  /** After a payoff's groups resolved: its heal (+ Vampire Fang) and the Overcharge echo. */
+  private payoffAfter(me: Combatant, _score: LineScore, events: CombatEvent[], from: number): void {
+    const foe = this.sides[other(me.side)];
+    const dealt = events.slice(from).reduce((a, e) => a + (e.type === 'attack' && e.from === me.side && e.note !== 'thorns' ? e.amount : 0), 0);
+    this.payoffHeal(me, events);
+    if (!this.over && me.relics.has('overcharge') && dealt > 0) {
+      events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
+      this.hit(me, foe, Math.max(1, Math.round(dealt * OVERCHARGE_ECHO)), [], events, false, 'echo');
+      if (!this.over && me.relics.has('fang')) this.heal(me, FANG_HEAL, 'fang', events);
+    }
+  }
+
+  /** Every meter payoff heals (the machine's own heal, plus Vampire Fang). */
+  private payoffHeal(me: Combatant, events: CombatEvent[]): void {
+    if (me.side !== 'player' || this.over) return;
+    const heal = this.meter?.heal ?? 0;
+    if (heal > 0) this.heal(me, heal, 'payoff', events);
+    if (!this.over && me.relics.has('fang')) this.heal(me, FANG_HEAL, 'fang', events);
+  }
+
+  /** MIDAS / JAX / BRIAR: fill the signature meter (a full MIDAS / JAX meter locks until it pays off). */
+  private fillMeter(me: Combatant, amount: number, reels: number[], events: CombatEvent[], earthed = 0): void {
+    if (me.side !== 'player' || !this.meter) return;
+    amount *= this.cfg.player.meterMul ?? 1;
+    if (this.meter.kind === 'thorns') {
+      me.energy += amount;
+      events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(earthed ? { earthed } : {}) });
+      return;
+    }
+    if (me.armed) {
+      events.push({ type: 'meter', side: me.side, reels, amount: 0, total: me.energy, armed: true, wasted: amount });
+      return;
+    }
+    me.energy = Math.min(this.meterCost, me.energy + amount);
+    if (me.energy >= this.meterCost) me.armed = true;
+    events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(me.armed ? { armed: true } : {}), ...(earthed ? { earthed } : {}) });
+  }
+
+  /** BRIAR: when you're attacked, the thorn bank hits back through shields (once per enemy turn), then clears. */
+  private thorns(victim: Combatant, attacker: Combatant, events: CombatEvent[]): void {
+    if (this.over || victim.side !== 'player' || this.meter?.kind !== 'thorns' || victim.energy <= 0 || this.thornsTurn === this.turn) return;
+    this.thornsTurn = this.turn;
+    const bank = victim.energy;
+    victim.energy = 0;
+    const h = this.damage(attacker, bank, true);
+    events.push({ type: 'attack', from: victim.side, to: attacker.side, reels: [], amount: bank, ...h, note: 'thorns' });
+    events.push({ type: 'meter', side: victim.side, reels: [], amount: -bank, total: 0 });
+    this.checkDeath(attacker, events);
+    this.payoffHeal(victim, events);
+    if (!this.over && victim.relics.has('overcharge')) {
+      events.push({ type: 'relic', side: victim.side, relic: 'overcharge' });
+      const echo = Math.max(1, Math.round(bank * OVERCHARGE_ECHO));
+      const h2 = this.damage(attacker, echo, true);
+      events.push({ type: 'attack', from: victim.side, to: attacker.side, reels: [], amount: echo, ...h2, note: 'echo' });
+      this.checkDeath(attacker, events);
+      if (!this.over && victim.relics.has('fang')) this.heal(victim, FANG_HEAL, 'fang', events);
+    }
+  }
+
   private hit(
     me: Combatant,
     foe: Combatant,
@@ -639,33 +742,27 @@ export class Fight {
     reels: number[],
     events: CombatEvent[],
     pierce = false,
-    note?: 'snap' | 'drain' | 'mimic' | 'reflect',
+    note?: 'drain' | 'mimic' | 'reflect' | 'echo',
   ): number {
     // RAISE: the Dealer's next hit pays double.
     if (me.side === 'enemy' && this.raiseEnemy && amount > 0 && note !== 'reflect') {
       amount *= 2;
       this.raiseEnemy = false;
     }
+    // The Mirror copies your build: its hits are capped relative to you.
+    if (me.side === 'enemy' && this.isMirror && note !== 'reflect') amount = Math.min(amount, Math.max(UNIT, Math.round(foe.maxHp * MIRROR_HIT_CAP)));
     const pierced = pierce && foe.shield > 0;
     const h = this.damage(foe, amount, pierce);
     events.push({ type: 'attack', from: me.side, to: foe.side, reels, amount, ...h, ...(pierced ? { note: 'pierce' as const } : note ? { note } : {}) });
     this.checkDeath(foe, events);
-    // SPIKED: a spiked shield on the victim's payline hits back (once per hit).
-    const spikeReel = foe.reels.findIndex((_, r) => this.paylineEnh(foe, r) === 'spiked');
-    if (!this.over && amount > 0 && spikeReel >= 0) {
-      let dmg = (foe.relics.has('cactus') ? CACTUS_DAMAGE : SPIKED_DAMAGE) + 2 * UNIT * (this.level(foe, spikeReel) - 1);
-      // A SPIKED FULL SET hits back for the shield you had up.
-      if (this.setActive(foe, 'spiked')) dmg = Math.max(dmg, foe.shield + h.blocked);
-      const back = this.damage(me, dmg, false);
-      if (foe.relics.has('cactus')) events.push({ type: 'relic', side: foe.side, relic: 'cactus' });
-      events.push({ type: 'attack', from: foe.side, to: me.side, reels: [], amount: dmg, ...back, note: 'spiked' });
-      this.checkDeath(me, events);
-    }
+    // BRIAR: being attacked (blocked or not) sets the thorn bank off.
+    if (!this.over && amount > 0) this.thorns(foe, me, events);
     return h.hpDamage;
   }
 
   private gainEnergy(me: Combatant, amount: number, reels: number[], events: CombatEvent[], earthed = 0): void {
     const foe = this.sides[other(me.side)];
+    if (me.side === 'player') amount *= this.cfg.player.meterMul ?? 1;
     me.energy += amount;
     events.push({ type: 'energyGain', side: me.side, reels, amount, total: me.energy, ...(earthed ? { earthed } : {}) });
     // The Grounder: a grounded cell on your payline makes your special hit shields.
@@ -673,12 +770,11 @@ export class Fight {
     const pierce = this.cfg.specialIgnoresShield && !grounded;
     while (me.energy >= this.cfg.specialCost && !this.over) {
       me.energy -= this.cfg.specialCost;
-      const blazeSet = me.side === 'player' && this.lineSet(me) === 'blaze' ? this.blazeReels * this.setStep(me) * UNIT : 0;
-      const dmg = this.cfg.specialDamage + (me.side === 'player' ? this.blaze + blazeSet : 0);
+      const dmg = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
       const h = this.damage(foe, dmg, pierce);
       events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
       this.checkDeath(foe, events);
-      // Overcharge: the special echoes at half damage.
+      // Overcharge: the special echoes at a third of its damage.
       if (!this.over && me.relics.has('overcharge')) {
         events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
         const echo = unitsUp(dmg * OVERCHARGE_ECHO);
@@ -688,15 +784,24 @@ export class Fight {
         // Vampire Fang drinks from the echo too.
         if (!this.over && me.relics.has('fang')) this.heal(me, FANG_HEAL, 'fang', events);
       }
-      if (!this.over && me.relics.has('fang')) this.heal(me, FANG_HEAL, 'fang', events);
+      // Every special heals a little (TESLA's payoff heal), plus Vampire Fang.
+      if (me.side === 'player') this.payoffHeal(me, events);
     }
   }
 
-  private heal(me: Combatant, amount: number, source: RelicId | 'special' | 'vamp' | 'drain' | 'ability', events: CombatEvent[]): void {
+  private heal(me: Combatant, amount: number, source: HealSource, events: CombatEvent[]): void {
     const n = Math.min(amount, me.maxHp - me.hp);
-    if (n <= 0) return;
-    me.hp += n;
-    events.push({ type: 'heal', side: me.side, amount: n, hp: me.hp, source });
+    if (n > 0) {
+      me.hp += n;
+      events.push({ type: 'heal', side: me.side, amount: n, hp: me.hp, source });
+    }
+    // Blood Chalice: healing past full HP becomes shield.
+    const over = amount - Math.max(0, n);
+    if (over > 0 && me.relics.has('chalice') && source !== 'drain' && source !== 'ability') {
+      me.shield += over;
+      events.push({ type: 'relic', side: me.side, relic: 'chalice' });
+      events.push({ type: 'shieldGain', side: me.side, reels: [], amount: over, total: me.shield, source: 'chalice' });
+    }
   }
 
   private damage(target: Combatant, amount: number, ignoreShield: boolean) {
@@ -802,7 +907,7 @@ export class Fight {
       case 'gavel':
         // Singles fizzle; a double confiscates 1 gild, a jackpot 2 (for the fight).
         if (amount < PAIR_PAY) return this.fizzle(me, 'gavel', reels, events);
-        return this.confiscate(me, foe, amount >= JACKPOT_PAY ? 2 : 1, reels, events);
+        return this.confiscate(me, foe, amount >= JACKPOT_PAY ? 4 : 2, reels, events);
       case 'rake':
         // 1 turn, a double 2, a jackpot 3.
         return this.applyRake(me, foe, statusSize(amount), reels, events);
@@ -811,7 +916,7 @@ export class Fight {
         return this.plantGround(me, foe, statusSize(amount) + 1, reels, events);
       case 'fake':
         // 1 cell, a double 2, a jackpot 3 (gilded cells, visible first), plain for 2 turns.
-        return this.fakeGilds(me, foe, statusSize(amount), FAKE_TURNS, reels, events);
+        return this.fakeGilds(me, foe, 2 * statusSize(amount), FAKE_TURNS, reels, events);
       case 'mimicSym': {
         // The Mimic copies your last spin's biggest group (half on a single, double on a jackpot).
         const best = this.last[foe.side].best;
@@ -870,27 +975,28 @@ export class Fight {
     this.checkDeath(me, events);
   }
 
-  /** The Pit Boss takes `count` of your gilds (one reel's gild each, your set first) for the fight. */
+  /** The Pit Boss confiscates `count` charmed cells (visible ones first) for the fight. */
   private confiscate(me: Combatant, foe: Combatant, count: number, reels: number[], events: CombatEvent[]): void {
-    const owned: { reel: number; enh: Enh }[] = [];
-    foe.reels.forEach((reel, r) => {
-      for (const enh of new Set(reel.cells.map((c) => c.enh).filter((x): x is Enh => !!x))) owned.push({ reel: r, enh });
-    });
-    if (!owned.length) return this.fizzle(me, 'gavel', reels, events);
-    const pick = this.rng.shuffle(owned).sort((a, b) => Number(this.fullSet.has(b.enh)) - Number(this.fullSet.has(a.enh))).slice(0, count);
-    const cells: CellRef[] = [];
-    for (const { reel, enh } of pick) {
-      foe.reels[reel].cells.forEach((c, i) => {
-        if (c.enh !== enh) return;
-        c.confiscated = enh;
-        delete c.enh;
-        delete c.tier;
-        cells.push({ reel, index: i });
-      });
-      // That reel no longer carries the gild (a set can break).
-      this.enhReels[enh] = (this.enhReels[enh] ?? []).filter((r) => r !== reel);
+    const cells = this.charmedTargets(foe, count);
+    if (!cells.length) return this.fizzle(me, 'gavel', reels, events);
+    const enhs = new Set<Enh>();
+    for (const ref of cells) {
+      const c = foe.reels[ref.reel].cells[ref.index];
+      enhs.add(c.enh!);
+      c.confiscated = c.enh;
+      delete c.enh;
     }
-    events.push({ type: 'confiscate', from: me.side, to: foe.side, reels, cells, enhs: [...new Set(pick.map((p) => p.enh))] });
+    events.push({ type: 'confiscate', from: me.side, to: foe.side, reels, cells, enhs: [...enhs] });
+  }
+
+  /** Charmed cells to target: visible first (gold first), then the rest of the strips. */
+  private charmedTargets(foe: Combatant, count: number, skip: (c: { faked?: number }) => boolean = () => false): CellRef[] {
+    const vis = new Set(visibleCells(foe.reels).map((r) => `${r.reel}:${r.index}`));
+    const all: CellRef[] = [];
+    foe.reels.forEach((reel, r) => reel.cells.forEach((c, i) => c.enh && !c.stolen && !skip(c) && all.push({ reel: r, index: i })));
+    const gold = (x: CellRef) => (foe.reels[x.reel].cells[x.index].enh === 'gold' ? 1 : 0);
+    const order = (xs: CellRef[]) => this.rng.shuffle(xs).sort((a, b) => gold(b) - gold(a));
+    return [...order(all.filter((x) => vis.has(`${x.reel}:${x.index}`))), ...order(all.filter((x) => !vis.has(`${x.reel}:${x.index}`)))].slice(0, count);
   }
 
   /** The Croupier's rake: your groups pay RAKE_CUT less for `turns` of your turns. */
@@ -958,7 +1064,9 @@ export class Fight {
   private plantGround(me: Combatant, foe: Combatant, count: number, reels: number[], events: CombatEvent[]): void {
     const vis = new Set(visibleCells(foe.reels).map((r) => `${r.reel}:${r.index}`));
     const all: CellRef[] = [];
-    foe.reels.forEach((reel, r) => reel.cells.forEach((c, i) => c.symbol === 'bolt' && !c.grounded && !c.stolen && all.push({ reel: r, index: i })));
+    // It grounds your signature symbol (TESLA's bolts, MIDAS's gold bars, BRIAR's thorns, JAX's wilds).
+    const sig: SymbolId = foe.side === 'player' && this.meter ? this.meter.symbol : 'bolt';
+    foe.reels.forEach((reel, r) => reel.cells.forEach((c, i) => c.symbol === sig && !c.grounded && !c.stolen && all.push({ reel: r, index: i })));
     const pool = [...this.rng.shuffle(all.filter((x) => vis.has(`${x.reel}:${x.index}`))), ...this.rng.shuffle(all.filter((x) => !vis.has(`${x.reel}:${x.index}`)))];
     const cells = pool.slice(0, count);
     if (!cells.length) return this.fizzle(me, 'ground', reels, events);
@@ -966,28 +1074,13 @@ export class Fight {
     events.push({ type: 'ground', from: me.side, to: foe.side, reels, cells });
   }
 
-  /** Slap counterfeit coins over the foe's gilded cells (visible first): they pay plain for `turns`. */
+  /** Slap counterfeit coins over the foe's charmed cells (visible first): their charms go plain for `turns`. */
   private fakeGilds(me: Combatant, foe: Combatant, count: number, turns: number, reels: number[], events: CombatEvent[]): void {
-    const vis = new Set(visibleCells(foe.reels).map((r) => `${r.reel}:${r.index}`));
-    const all: CellRef[] = [];
-    foe.reels.forEach((reel, r) => reel.cells.forEach((c, i) => c.enh && !(c.faked && c.faked > 0) && !c.stolen && all.push({ reel: r, index: i })));
-    // It goes for your FULL SET first.
-    const inSet = (x: CellRef) => this.fullSet.has(foe.reels[x.reel].cells[x.index].enh!);
-    all.sort((a, b) => Number(inSet(b)) - Number(inSet(a)));
-    const pool = [...this.rng.shuffle(all.filter((x) => vis.has(`${x.reel}:${x.index}`))), ...this.rng.shuffle(all.filter((x) => !vis.has(`${x.reel}:${x.index}`)))];
-    const cells = pool.slice(0, count);
+    const cells = this.charmedTargets(foe, count, (c) => (c.faked ?? 0) > 0);
     if (!cells.length) return this.fizzle(me, 'fake', reels, events);
-    // It counterfeits the whole gild: every cell of the hit gild types pays plain.
+    for (const ref of cells) foe.reels[ref.reel].cells[ref.index].faked = turns;
     const enhs = [...new Set(cells.map((ref) => foe.reels[ref.reel].cells[ref.index].enh!))];
-    const whole: CellRef[] = [];
-    foe.reels.forEach((reel, r) =>
-      reel.cells.forEach((c, i) => {
-        if (!c.enh || !enhs.includes(c.enh)) return;
-        c.faked = turns;
-        whole.push({ reel: r, index: i });
-      }),
-    );
-    events.push({ type: 'fake', from: me.side, to: foe.side, reels, cells: whole, turns, enhs });
+    events.push({ type: 'fake', from: me.side, to: foe.side, reels, cells, turns, enhs });
   }
 
   /** Counterfeit coins wear off after their owner's turns. */
@@ -1249,8 +1342,8 @@ export class Fight {
       case 'mark':
         return this.markCells(me, foe, ab.power, [], events);
       case 'penalty':
-        // AUDIT: confiscates one of your charms, then hits.
-        this.confiscate(me, foe, 1, [], events);
+        // AUDIT: confiscates two of your charmed cells, then hits.
+        this.confiscate(me, foe, 2, [], events);
         if (!this.over) this.hit(me, foe, ab.power, [], events);
         return;
       case 'houseTake':
@@ -1258,7 +1351,7 @@ export class Fight {
       case 'deal':
         return this.deal(me, foe, events);
       case 'earth': {
-        const amount = Math.min(foe.energy, ab.power);
+        const amount = foe.armed ? 0 : Math.min(foe.energy, ab.power);
         foe.energy -= amount;
         events.push({ type: 'earth', from: me.side, to: foe.side, amount, total: foe.energy });
         return;
@@ -1287,6 +1380,8 @@ export class Fight {
     const h = this.damage(foe, amount, false);
     events.push({ type: 'potWin', from: me.side, to: foe.side, amount, ...h, potLeft: this.pot });
     this.checkDeath(foe, events);
+    // The House cashing out is an attack: BRIAR's thorns answer it.
+    if (!this.over && amount > 0) this.thorns(foe, me, events);
   }
 
   /** Any player jackpot steals the pot (a High Roller double steals half), ignoring shield. */

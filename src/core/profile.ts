@@ -2,7 +2,8 @@ import { CABINET_ORDER, type CabinetId } from './cabinets';
 import type { Enh, RelicId } from './config';
 import { RELICS } from './relics';
 import { MAX_STAKE } from './stakes';
-import { fightNumber, fullSets, runActs, totalFights, type RunState } from './run';
+import { charmCount, fightNumber, runActs, totalFights, type RunState } from './run';
+import { charmLevel } from './charms';
 
 /**
  * The player's profile (saved locally): what they've discovered for the COLLECTION log, and a
@@ -14,10 +15,10 @@ export const MAX_ENTRIES = 60;
 
 export interface CharmEntry {
   enh: Enh;
-  /** Tier II bought for this charm. */
-  tier: boolean;
-  /** A full set (the same charm on all 3 reels). */
-  set: boolean;
+  /** Charmed cells at the end of the run (0 on old saves). */
+  n: number;
+  /** The charm's level (old saves: tier II reads as level 2). */
+  lvl: number;
 }
 
 export interface RunEntry {
@@ -53,11 +54,10 @@ export const emptyProfile = (): Profile => ({ found: { relics: [], charms: [] },
 
 /** Charms on the player's machine, one entry per charm type. */
 export function charmsOf(run: RunState): CharmEntry[] {
-  const sets = fullSets(run.player.gilded, run.player.relics);
   const out: CharmEntry[] = [];
   for (const enh of ALL_CHARMS) {
-    const gs = run.player.gilded.filter((g) => g.enh === enh);
-    if (gs.length) out.push({ enh, tier: gs.some((g) => !!g.tier), set: sets.has(enh) });
+    const n = charmCount(run.player, enh);
+    if (n) out.push({ enh, n, lvl: charmLevel(run.player.levels, enh) });
   }
   return out;
 }
@@ -123,7 +123,7 @@ export function sanitizeProfile(raw: unknown): Profile {
       const charms: CharmEntry[] = Array.isArray(e.charms)
         ? (e.charms as unknown[])
             .filter((c): c is Record<string, unknown> => !!c && typeof c === 'object' && (ALL_CHARMS as unknown[]).includes((c as Record<string, unknown>).enh))
-            .map((c) => ({ enh: c.enh as Enh, tier: c.tier === true, set: c.set === true }))
+            .map((c) => ({ enh: c.enh as Enh, n: num(c.n, 0, 99), lvl: typeof c.lvl === 'number' ? num(c.lvl, 1, 4, 1) : c.tier === true ? 2 : 1 }))
         : [];
       runs.push({
         at: num(e.at, 0, 8.64e15),
@@ -139,7 +139,7 @@ export function sanitizeProfile(raw: unknown): Profile {
         ...(typeof e.killerFight === 'number' ? { killerFight: num(e.killerFight, 1, 99, 1) } : {}),
         relics: relicIds(e.relics),
         charms,
-        maxHp: num(e.maxHp, 0, 999),
+        maxHp: num(e.maxHp, 0, 99999),
         chips: num(e.chips, 0, 9999),
         ...(e.tutorial === true ? { tutorial: true } : {}),
       });
