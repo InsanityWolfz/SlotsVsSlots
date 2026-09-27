@@ -1,11 +1,11 @@
 import { Sounds } from './audio/sounds';
 import { Synth } from './audio/synth';
-import { mergeConfig, type GameConfig, type SideId } from './core/config';
-import { actLength, RUN_FIGHTS } from './core/enemies';
+import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
+import { actLength, RUN_FIGHTS, TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { Fight } from './core/fight';
 import { turnRow, type TurnRow } from './core/log';
-import { REFLECT_MIN, RELICS } from './core/relics';
+import { MIDAS_RAISE, REFLECT_MIN, RELICS } from './core/relics';
 import {
   applyOption,
   buy,
@@ -15,8 +15,9 @@ import {
   fightConfig,
   finishFight,
   isShopNow,
-  completesSet,
   takeLegend,
+  takeChoice,
+  type BigChoice,
   leaveShop,
   needsChoice,
   reroll,
@@ -34,7 +35,7 @@ import { Camera } from './present/camera';
 import { Clock } from './present/clock';
 import { Director, VOUCHER_GAP, VOUCHER_X, VOUCHER_Y } from './present/director';
 import { FxLayer } from './present/fx';
-import { HudView } from './present/hud';
+import { HudView, type HudMeter } from './present/hud';
 import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
 import { MachineView } from './present/machine';
 import { Particles } from './present/particles';
@@ -85,6 +86,16 @@ const clampStake = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) 
 const machineIds = (v: unknown): CabinetId[] => (Array.isArray(v) ? (v.filter((x) => (CABINET_ORDER as string[]).includes(x)) as CabinetId[]) : []);
 
 /** Saved prefs are player-editable: validate everything so a bad save can't lock the game (QA_1 B6). */
+/** The player's signature meter on the HUD (TESLA's special, MIDAS's gold, BRIAR's thorns, JAX's jackpots). */
+function hudMeter(f: Fight): HudMeter | null {
+  if (f.special) return { kind: 'special', pips: Math.round(f.cfg.specialCost / UNIT), label: 'SPECIAL', color: COLORS.energy, icon: 'boltIcon' };
+  const m = f.meter;
+  if (!m) return null;
+  if (m.kind === 'raise') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: `X${MIDAS_RAISE} GOLD`, color: '#ffd23f', icon: 'goldbar' as SpriteId };
+  if (m.kind === 'thorns') return { kind: m.kind, pips: 0, label: 'THORNS', color: '#9dff6a', icon: 'thorn' as SpriteId };
+  return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'JACKPOTS', color: '#ff6ad5', icon: 'wild' };
+}
+
 function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
   const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const unlocked = machineIds(p.unlocked);
@@ -201,6 +212,7 @@ export class Game {
       onPick: (o) => this.pickReward(o),
       onSpoils: (r) => this.pickSpoils(r),
       onLegend: (r) => this.pickLegend(r),
+      onChoice: (c) => this.pickChoice(c),
       onFight: (i) => this.beginRunFight(i),
       onNewRun: () => this.chooseCabinet(),
       onMenu: () => this.showMenu(),
@@ -491,14 +503,7 @@ export class Game {
       const log = run.bonusLog;
       run.bonusLog = [];
       this.screens.showBonus(run, log, () => this.afterBonus(record));
-    } else if (run.pendingLegend) {
-      // The House is gone: set up the idle machines for act 2 so its HUD doesn't linger behind.
-      this.newFight(false, null, fightConfig(run, this.cfg), true);
-      this.phase = 'between';
-      this.screens.showLegend(run, run.pendingLegend, record);
-    }
-    else if (run.pendingSpoils) this.screens.showSpoils(run, run.pendingSpoils, record);
-    else this.screens.showDraft(run, draftOffers(run), record);
+    } else this.afterBonus(record);
     if (this.screens.mode === 'draft') this.tip('draft', 'draft');
     this.syncButtons();
   }
@@ -507,14 +512,25 @@ export class Game {
   private afterBonus(record: FightRecord): void {
     const run = this.run;
     if (!run) return;
-    if (run.pendingLegend) {
+    if (run.pendingChoice?.length || run.pendingLegend) {
+      // A boss is gone: set up the idle machines for the next act so its HUD doesn't linger behind.
       this.newFight(false, null, fightConfig(run, this.cfg), true);
       this.phase = 'between';
-      this.screens.showLegend(run, run.pendingLegend, record);
-    } else if (run.pendingSpoils) this.screens.showSpoils(run, run.pendingSpoils, record);
+    }
+    if (run.pendingChoice?.length) this.screens.showChoice(run, run.pendingChoice);
+    else if (run.pendingLegend) this.screens.showLegend(run, run.pendingLegend, record);
+    else if (run.pendingSpoils) this.screens.showSpoils(run, run.pendingSpoils, record);
     else this.screens.showDraft(run, draftOffers(run), record);
     if (this.screens.mode === 'draft') this.tip('draft', 'draft');
     this.syncButtons();
+  }
+
+  /** A boss fell: take the BIG CHOICE, then the legendary pick (act 2) or the act's draft. */
+  private pickChoice(c: BigChoice): void {
+    const run = this.run;
+    if (!run) return;
+    takeChoice(run, c);
+    this.afterBonus(this.lastRecord ?? run.records[run.records.length - 1]);
   }
 
   /** An act's boss fell: take the legendary, then the new act's Cashier opens. */
@@ -538,12 +554,9 @@ export class Game {
   private buyItem(i: number): void {
     const item = this.shelf[i];
     if (!this.run || !item) return;
-    const finishesSet = completesSet(this.run, item.option);
+    const levelUp = item.option.kind === 'symLevel' || item.option.kind === 'charmLevel';
     if (buy(this.run, item)) {
-      if (finishesSet) {
-        this.sounds.lucky();
-        this.sounds.fanfareJackpot();
-      }
+      if (levelUp) this.sounds.lucky();
       this.sounds.coin(4);
       this.sounds.coin(9);
       this.screens.bought();
@@ -620,11 +633,12 @@ export class Game {
         const c = this.fight.sides[s];
         const sc = s === 'player' ? cfg.player : cfg.enemy;
         const hero = s === 'player' && this.run && inRun ? this.run.cabinet : null;
-        const hud = new HudView(s, c.maxHp, s === 'player', this.fight.cfg.specialCost, {
+        const meter = s === 'player' ? hudMeter(this.fight) : null;
+        const hud = new HudView(s, c.maxHp, meter, {
           name: s === 'player' ? (hero ? CABINETS[hero].hero : 'HERO') : sc.name,
           portrait: hero ? heroSprite(hero) : sc.portrait,
           ability: c.ability,
-          energy: c.energy,
+          energy: meter?.kind === 'thorns' ? c.energy : c.energy / UNIT,
         });
         hud.hp = hud.ghost = c.hp;
         return [s, hud];
@@ -642,6 +656,9 @@ export class Game {
       juice: this.prefs.juice,
       relics: [...cfg.relics],
       relicPops: {},
+      levels: { player: cfg.player.levels, ...(cfg.enemy.boss === 'mirror' ? { enemy: cfg.enemy.levels } : {}) },
+      ticket: cfg.relics.includes('ticket'),
+      enemyShield: TUNE.enemyShield,
       gutter: {
         turn: 0,
         side: null,
@@ -906,7 +923,7 @@ export class Game {
     this.background.drawMarquee(ctx, t);
     this.drawRelics(ctx);
     if (this.phase === 'fighting') this.drawVouchers(ctx, this.time);
-    drawStripMap(ctx, s.machines.player, t);
+    drawStripMap(ctx, s.machines.player, t, s.levels.player);
     s.huds.player.draw(ctx, t);
     s.huds.enemy.draw(ctx, t);
     s.machines.player.draw(ctx, s.clock.time);

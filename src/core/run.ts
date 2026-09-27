@@ -19,7 +19,7 @@ import {
   type Enabler,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
-import { CHARM_SYMBOLS, charmLevel, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue } from './charms';
+import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue } from './charms';
 import { Rng } from './rng';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
@@ -1095,6 +1095,7 @@ export function stripsAfter(run: RunState, o: DraftOption): StripCounts[] {
       strips: run.player.strips.map((s) => ({ ...s })),
       relics: [...run.player.relics],
       gilded: run.player.gilded.map((g) => ({ ...g })),
+      levels: cloneLevels(run.player.levels),
       chips: run.player.chips,
     },
     records: [],
@@ -1106,26 +1107,7 @@ export function stripsAfter(run: RunState, o: DraftOption): StripCounts[] {
 const NAME: Partial<Record<SymbolId, string>> = { sword: 'SWORD', shield: 'SHIELD', bolt: 'BOLT', rock: 'ROCK', wild: 'WILD', goldbar: 'GOLD BAR', thorn: 'THORN' };
 const plural = (s: SymbolId, n: number) => `${NAME[s] ?? s.toUpperCase()}${n > 1 ? 'S' : ''}`;
 
-/** What one charm of this kind does at a level (the card's rule, never an expected value). */
-export function charmRule(enh: Enh, lvl: number): string {
-  const v = charmValue(enh, lvl);
-  switch (enh) {
-    case 'gold':
-      return `X${v} TO ITS GROUP (GOLD IN A GROUP ADDS UP)`;
-    case 'keen':
-      return `+${v} TO ITS GROUP, WHICH PIERCES SHIELDS`;
-    case 'charged':
-      return `+${v} TO ITS GROUP`;
-    case 'vamp':
-      return `HEALS ${v} WHEN IT HITS`;
-    case 'lucky':
-      return `${v}% TO LAND AS A WILD`;
-    case 'blaze':
-      return `YOUR SPECIAL DEALS +${v}`;
-    case 'spiked':
-      return '';
-  }
-}
+export const charmRule = charmRuleText;
 
 export function describeOption(o: DraftOption, run?: RunState): { title: string; text: string } {
   const lv = run?.player.levels;

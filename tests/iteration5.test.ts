@@ -4,7 +4,7 @@ import { CABINETS, CABINET_ORDER } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { BUILD_ENABLER } from '../src/core/relics';
-import { CHIPS, createRun, draftOffers, fightConfig, fitsBuild, relicFits, rerollCost, shopOffers } from '../src/core/run';
+import { CHIPS, createRun, draftOffers, fightConfig, relicFits, rerollCost, shopOffers } from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -26,12 +26,12 @@ describe('cabinets', () => {
 
   it('TESLA changes the special; JOKER lets WILDs pair any two reels', () => {
     const t = new Fight(fightConfig(createRun(base, 2, 'tesla'), base), 1);
-    expect(t.cfg.specialCost).toBe(4);
-    expect(t.cfg.specialDamage).toBe(7);
+    expect(t.cfg.specialCost).toBe(40);
+    expect(t.cfg.specialDamage).toBe(60);
 
     const c = fightConfig(createRun(base, 3, 'joker'), base);
     c.player.strips = reels3({ sword: 6, wild: 3, bolt: 3 });
-    c.enemy = { hp: 99, strips: reels3({ shield: 12 }) };
+    c.enemy = { hp: 9999, strips: reels3({ shield: 12 }) };
     const f = new Fight(c, 4);
     f.forceNext('player', ['bolt', 'sword', 'wild']);
     const [spin] = ofType(f.step().events, 'spin');
@@ -51,23 +51,32 @@ describe('cabinets', () => {
   });
 });
 
-describe('FULL SET', () => {
-  it('only the same charm on all 3 PAYLINE cells is a full set (it levels every cell up)', () => {
+describe('pay math: BASE x MULT (charms on cells, levels on types)', () => {
+  it('gold charms in a group ADD, then multiply with the jackpot: 3 gold bolts = 30 x 18 = 540', () => {
     const c = defaultConfig();
-    c.enemy = { hp: 99, strips: reels3({ shield: 12 }) };
-    c.player.gilded = [0, 1, 2].map((reel) => ({ reel, symbol: 'bolt' as const, enh: 'gold' as const }));
-    // Gold on every reel, but only one gold bolt on the line: just that charm (x2), no set.
+    c.enemy = { hp: 9999, strips: reels3({ shield: 12 }) };
+    c.specialCost = 9999;
+    c.player.gilded = [0, 1, 2].map((reel) => ({ reel, symbol: 'bolt' as const, enh: 'gold' as const, n: 4 }));
     const f = new Fight(c, 1);
     f.forceNext('player', ['bolt', 'sword', 'shield']);
-    const one = f.step().events;
-    expect(ofType(one, 'energyGain')[0].amount).toBe(2);
-    expect(ofType(one, 'spin')[0].fullSet).toBeFalsy();
-    // Three gold bolts on the line: each charm is level 1 + FULL_SET_STEP (2) = 3, so 1 + 3 + 3 + 3 = x10.
+    const one = ofType(f.step().events, 'spin')[0].score.groups[0];
+    expect([one.base, one.mult, one.amount]).toEqual([10, 2, 20]);
     const g = new Fight(c, 1);
     g.forceNext('player', ['bolt', 'bolt', 'bolt']);
-    const three = g.step().events;
-    expect(ofType(three, 'spin')[0].fullSet).toBe(true);
-    expect(ofType(three, 'spin')[0].score.groups[0].notes).toContain('X10');
+    const three = ofType(g.step().events, 'spin')[0].score.groups[0];
+    expect([three.base, three.mult, three.amount]).toEqual([30, 18, 540]);
+  });
+
+  it('symbol levels raise every cell of the type (10 -> 13 -> 18); charm levels raise every charm (gold x2 -> x3)', () => {
+    const c = defaultConfig();
+    c.enemy = { hp: 9999, strips: reels3({ shield: 12 }) };
+    c.player.levels = { sym: { sword: 3 }, charm: { gold: 2 } };
+    c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }];
+    const f = new Fight(c, 1);
+    f.forceNext('player', ['sword', 'sword', 'shield']);
+    const pair = ofType(f.step().events, 'spin')[0].score.groups[0];
+    // Two level-3 swords (18 each), one gold at level 2 (x3): 36 x (2 x 3).
+    expect([pair.base, pair.mult, pair.amount]).toEqual([36, 6, 216]);
   });
 });
 
@@ -82,18 +91,21 @@ describe('build-aware offers & the heal service', () => {
       run.depth = 3;
       for (const it of shopOffers(run)) if (it.option.kind === 'relic' && BUILD_ENABLER[it.option.relic]) expect(relicFits(run, it.option.relic)).toBe(true);
     }
-    const run = createRun(base, 1);
+    // The Midas relic needs gold AND a meter (KNIGHT has none).
+    const knight = createRun(base, 1);
+    knight.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'gold', n: 2 });
+    expect(relicFits(knight, 'midas')).toBe(false);
+    const run = createRun(base, 1, 'thorn');
     expect(relicFits(run, 'midas')).toBe(false);
-    run.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'gold' });
+    run.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'gold', n: 2 });
     expect(relicFits(run, 'midas')).toBe(true);
-    expect(fitsBuild(run, { kind: 'gild', enh: 'gold', symbol: 'bolt', reel: 1 })).toBe(true);
   });
 
   it('HEAL is a permanent service slot, hidden at full HP; first reroll costs 1', () => {
     const run = createRun(base, 6);
     run.depth = 1;
     expect(shopOffers(run).some((i) => i.option.kind === 'heal')).toBe(false);
-    run.player.hp -= 5;
+    run.player.hp -= 50;
     const heal = shopOffers(run).find((i) => i.option.kind === 'heal');
     expect(heal?.price).toBe(CHIPS.prices.heal);
     expect(rerollCost(run)).toBe(1);

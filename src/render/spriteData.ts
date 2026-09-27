@@ -155,7 +155,9 @@ export type SpriteId =
   | 'coinSpin0' | 'coinSpin1' | 'coinSpin2' | 'coinSpin3' // loading-screen coin spin frames, 16x16
   | 'tutorialPointer'                             // tutorial callout arrow, points DOWN, 12x12
   | 'heroKnight' | 'heroMidas' | 'heroThorn'      // player hero portraits (face RIGHT), 24x24
-  | 'heroTesla' | 'heroJoker';
+  | 'heroTesla' | 'heroJoker'
+  | 'goldbar' | 'thorn'                          // signature symbols: MIDAS gold bar, BRIAR thorn, 16x16
+  | 'relicChalice';                              // BLOOD CHALICE relic, 16x16
 
 export const SPRITES: Record<SpriteId, string[]> = {
   sword: [
@@ -3820,5 +3822,59 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'JVVVVvMMMmmVVVvvMMMmmVVv',
     'VVVVvvMMMMmVVVVvMMMmmVvv',
     'VVVvvvMMMmmVVVvvMMmmmvvv',
+  ],
+  goldbar: [
+    '................',
+    '................',
+    '.......KKKKK....',
+    '.....KKWWYYYK...',
+    '....KWWYYYYYOK..',
+    '...KWYYYYYYOOgK.',
+    '..KYYYYYYYYOOgK.',
+    '.KGGGGGGGGGGggK.',
+    '.KGYYGGGGGGGggK.',
+    '.KGYGGGGGGGGggK.',
+    '.KGGGGGGGGGGgK..',
+    '.KGGGGGGGGGGgK..',
+    '.KggggggggggK...',
+    '..KKKKKKKKKK....',
+    '................',
+    '................',
+  ],
+  thorn: [
+    '............KK..',
+    '...........KEEK.',
+    '.....K....KEeQK.',
+    '....KWK..KEeQK..',
+    '....KEWKKEeQKK..',
+    '.....KEeEeQKKWK.',
+    '......KEeQKKEQK.',
+    '.....KEeQeEeQK..',
+    '..K.KEeQKKQQK...',
+    '.KWKEeQK..KK....',
+    '.KQEeQK.........',
+    '..KEQK..........',
+    '.KEeQK..........',
+    'KEeQK...........',
+    'KQQK............',
+    '.KK.............',
+  ],
+  relicChalice: [
+    '...KKKKKKKKKK...',
+    '..KWYYYYYYYYGK..',
+    '..KYRRRRRRRRGK..',
+    '..KGrRRMRRRrgK..',
+    '...KGrRRRRrgK...',
+    '....KGrrrrGK....',
+    '.....KGYGgK.....',
+    '......KYgK......',
+    '......KGgK......',
+    '......KGgK......',
+    '.....KYGGgK.....',
+    '....KYGGGGgK....',
+    '...KGGGGGGggK...',
+    '....KKKKKKKK....',
+    '................',
+    '................',
   ],
 };

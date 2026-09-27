@@ -79,6 +79,9 @@ export class Banner implements FxItem {
   alpha = 1;
   z = 30;
   sub = '';
+  /** A coloured sub line built part by part (BASE X MULT = TOTAL): `reveal` parts are shown. */
+  subParts: { text: string; color: string }[] = [];
+  reveal = 99;
   constructor(
     public text: string,
     public color: string,
@@ -93,9 +96,12 @@ export class Banner implements FxItem {
     ctx.translate(this.x, this.y);
     ctx.scale(this.scale, this.scale);
     const tw = textWidth(this.text, this.textScale);
-    const subScale = this.sub && textWidth(this.sub, 3) > 520 ? 2 : 3;
-    const pw = Math.max(tw, this.sub ? textWidth(this.sub, subScale) : 0) + 60;
-    const ph = this.textScale * 7 + (this.sub ? 50 : 36);
+    const partsText = this.subParts.map((p) => p.text).join('');
+    const hasSub = !!this.sub || this.subParts.length > 0;
+    const subText = this.sub || partsText;
+    const subScale = subText && textWidth(subText, 4) <= 520 && this.subParts.length ? 4 : subText && textWidth(subText, 3) > 520 ? 2 : 3;
+    const pw = Math.max(tw, hasSub ? textWidth(subText, subScale) : 0) + 60;
+    const ph = this.textScale * 7 + (hasSub ? 50 + (subScale - 3) * 7 : 36);
     // Solid dark panel + border frame that scales with it (juice §3.6).
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(-pw / 2 - 6, -ph / 2 - 6, pw + 12, ph + 12);
@@ -105,8 +111,16 @@ export class Banner implements FxItem {
     ctx.fillRect(-pw / 2, -ph / 2, pw, ph);
     ctx.fillStyle = 'rgba(255,255,255,0.06)';
     ctx.fillRect(-pw / 2, -ph / 2, pw, ph / 2);
-    drawText(ctx, this.text, 0, this.sub ? -12 : 0, this.textScale, this.color);
+    drawText(ctx, this.text, 0, hasSub ? -12 - (subScale - 3) * 4 : 0, this.textScale, this.color);
     if (this.sub) drawText(ctx, this.sub, 0, ph / 2 - 20, subScale, COLORS.text);
+    else if (this.subParts.length) {
+      // Left-aligned from the full line's start, so parts pop in without the line sliding.
+      let x = -textWidth(partsText, subScale) / 2;
+      this.subParts.forEach((p, i) => {
+        if (i < this.reveal) drawText(ctx, p.text, x, ph / 2 - 20 - (subScale - 3) * 3, subScale, p.color, { align: 'left' });
+        x += textWidth(p.text, subScale);
+      });
+    }
     ctx.restore();
   }
 }

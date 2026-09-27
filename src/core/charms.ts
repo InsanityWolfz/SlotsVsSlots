@@ -40,6 +40,27 @@ export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
   spiked: [],
 };
 
+/** One charm's rule at a level, as plain card text (never an expected value). */
+export function charmRuleText(enh: Enh, lvl: number): string {
+  const v = charmValue(enh, lvl);
+  switch (enh) {
+    case 'gold':
+      return `X${v} TO ITS GROUP (GOLD IN A GROUP ADDS UP)`;
+    case 'keen':
+      return `+${v} TO ITS GROUP, WHICH PIERCES SHIELDS`;
+    case 'charged':
+      return `+${v} TO ITS GROUP`;
+    case 'vamp':
+      return `HEALS ${v} WHEN IT HITS`;
+    case 'lucky':
+      return `${v}% TO LAND AS A WILD`;
+    case 'blaze':
+      return `YOUR SPECIAL DEALS +${v}`;
+    case 'spiked':
+      return '';
+  }
+}
+
 /** The number shown on a charmed cell's top-right tag (coloured by charm). */
 export function charmTag(enh: Enh, lvl: number): string {
   const v = charmValue(enh, lvl);

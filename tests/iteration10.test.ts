@@ -66,7 +66,7 @@ describe('HIGH STAKES', () => {
 
   it('GREEN: the Mirror copies one of your relics; BLUE (act 2) / GOLD (all): abilities charge faster', () => {
     const run = toAct2('knight', STAKE.mirrorRelic);
-    run.player.relics.push('key');
+    run.player.relics = ['clover', 'key'];
     run.depth = RUN_FIGHTS;
     run.paths = generateRunPaths(new Rng(1), 2);
     run.enemies = run.paths.map((o) => o[0]);

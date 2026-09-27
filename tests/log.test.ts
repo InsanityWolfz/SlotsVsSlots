@@ -9,7 +9,7 @@ describe('combat log + stats', () => {
     const f = new Fight(defaultConfig(), 5);
     f.forceNext('player', ['sword', 'sword', 'bolt']);
     const row = turnRow(f, f.step(), 1);
-    expect(row).toMatchObject({ side: 'player', tier: 'pair', attack: 4, hpDamage: 4, energyGain: 1, enemyHp: 26 });
+    expect(row).toMatchObject({ side: 'player', tier: 'pair', attack: 40, hpDamage: 40, energyGain: 10, enemyHp: 260 });
     expect(formatRow(row)).toContain('SWD SWD BLT DOUBLE');
   });
 

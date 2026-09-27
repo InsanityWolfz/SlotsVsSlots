@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
 import { RUN_FIGHTS } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
-import { applyOption, chooseEnemy, createRun, draftOffers, fightConfig, finishFight, needsChoice, optionDelta, RUN } from '../src/core/run';
+import { applyOption, chooseEnemy, createRun, draftOffers, fightConfig, finishFight, needsChoice, RUN } from '../src/core/run';
 
 const base = defaultConfig();
 
@@ -63,9 +63,9 @@ describe('run', () => {
   it('applying cards changes the strips / relics / hp', () => {
     const run = createRun(base, 5);
     applyOption(run, { kind: 'add', symbol: 'sword', reel: 1 });
-    expect(run.player.strips[1].sword).toBe(5);
-    applyOption(run, { kind: 'swap', from: 'shield', to: 'bolt', count: 2, reel: 0 });
-    expect(run.player.strips[0]).toMatchObject({ shield: 2, bolt: 6 });
+    expect(run.player.strips[1].sword).toBe(7);
+    applyOption(run, { kind: 'swap', from: 'shield', to: 'sword', count: 2, reel: 0 });
+    expect(run.player.strips[0]).toMatchObject({ shield: 4, sword: 8 });
     applyOption(run, { kind: 'relic', relic: 'clover' });
     expect(run.player.relics).toEqual(['clover']);
     run.player.hp = 10;
@@ -109,11 +109,4 @@ describe('run', () => {
     expect(needsChoice(run)).toBe(false);
   });
 
-  it('card stat deltas move the right way', () => {
-    const run = createRun(base, 4);
-    const d = optionDelta(run, { kind: 'swap', from: 'shield', to: 'bolt', count: 2, reel: 0 }, base);
-    const [, from, to] = d.match(/([\d.]+) TO ([\d.]+)/)!;
-    expect(d.startsWith('ENERGY')).toBe(true);
-    expect(Number(to)).toBeGreaterThan(Number(from));
-  });
 });

@@ -1,6 +1,6 @@
 import type { Sounds } from '../audio/sounds';
 import type { Synth } from '../audio/synth';
-import type { SideId } from '../core/config';
+import type { Levels, SideId } from '../core/config';
 import type { Camera } from './camera';
 import type { Clock } from './clock';
 import type { FxLayer } from './fx';
@@ -74,6 +74,11 @@ export interface Stage {
     raised?: boolean;
     houseRules?: boolean;
   };
+  /** Symbol / charm levels per side (the payline numbers), and the Golden Ticket (charms one level up). */
+  levels: Partial<Record<SideId, Levels>>;
+  ticket: boolean;
+  /** Enemy shields are worth this much of their base (payline numbers). */
+  enemyShield: number;
   /** The player's relics (for the HUD column) and how hard each is popping (1 = just fired). */
   relics: string[];
   relicPops: Record<string, number>;

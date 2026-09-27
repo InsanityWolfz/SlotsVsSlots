@@ -1,4 +1,4 @@
-import type { SideId, SymbolId, Enh } from '../core/config';
+import { UNIT, type SideId, type SymbolId } from '../core/config';
 import type { RelicId } from '../core/config';
 import type { CombatEvent } from '../core/events';
 import { other, type TurnResult } from '../core/fight';
@@ -12,6 +12,12 @@ import { ABILITY_UI } from './hud';
 import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
 import { BOMB, RELICS } from '../core/relics';
+import { charmLevel, charmTag, CHARM_COLOR, playerSymValue } from '../core/charms';
+import { defaultConfig } from '../core/config';
+import { DEAD } from '../core/strip';
+
+/** Base symbol values (the payline numbers). */
+const BASE = defaultConfig().base;
 
 type Ev<T extends CombatEvent['type']> = Extract<CombatEvent, { type: T }>;
 
@@ -36,6 +42,8 @@ const EFFECT_WORD: Record<SymbolId, string> = {
   fake: 'FAKES',
   card: 'MARKED CARDS',
   bonusSym: 'BONUS WHEEL',
+  goldbar: 'GOLD',
+  thorn: 'THORNS',
   relicSym: 'RELIC RUSH',
   gavel: 'CONFISCATION',
   rake: 'RAKE',
@@ -46,16 +54,9 @@ export const VOUCHER_X = 52;
 export const VOUCHER_Y = 612;
 export const VOUCHER_GAP = 66;
 
-/** What each FULL SET does, for its banner (playtest ITERATION_5). */
-const SET_TEXT: Record<Enh, string> = {
-  gold: 'EVERY GOLD CHARM COUNTS 3X',
-  keen: 'KEEN SWORDS +2 MORE EACH',
-  charged: 'CHARGED BOLTS +2 MORE EACH',
-  spiked: 'SPIKES HIT BACK +4 MORE',
-  vamp: 'VAMP SWORDS HEAL MORE',
-  lucky: 'LUCKY CHARMS SUPERCHARGED',
-  blaze: 'SPECIAL +2 PER BLAZE REEL',
-};
+/** Events that ride inside a lightning storm (strikes, their echoes, Fang / payoff heals). */
+const STORM_PART = (e: CombatEvent) =>
+  e.type === 'specialFire' || (e.type === 'relic' && (e.relic === 'overcharge' || e.relic === 'fang')) || (e.type === 'heal' && (e.source === 'fang' || e.source === 'payoff'));
 
 const BATCHABLE = new Set<CombatEvent['type']>(['attack', 'shieldGain', 'energyGain', 'fizzle', 'slime', 'freeze', 'lock', 'steal', 'pot', 'heal', 'bomb', 'hex']);
 
@@ -78,6 +79,17 @@ export class Director {
   async playTurn(result: TurnResult): Promise<void> {
     const evs = result.events;
     for (let i = 0; i < evs.length; i++) {
+      // More than one lightning strike in a turn plays as ONE storm (length grows with the log of the count).
+      if (evs[i].type === 'specialFire') {
+        let j = i;
+        while (j < evs.length && STORM_PART(evs[j])) j++;
+        const group = evs.slice(i, j);
+        if (group.filter((x) => x.type === 'specialFire').length >= 2) {
+          await this.storm(group);
+          i = j - 1;
+          continue;
+        }
+      }
       // Losses fast, wins linger: on a no-match line, consecutive single-symbol resolves
       // play as one simultaneous beat instead of one after another.
       if (this.lastScore?.tier === 'none' && BATCHABLE.has(evs[i].type)) {
@@ -104,6 +116,10 @@ export class Director {
         return this.shieldGain(e);
       case 'energyGain':
         return this.energyGain(e);
+      case 'meter':
+        return this.meter(e);
+      case 'payoff':
+        return this.payoff(e);
       case 'specialFire':
         return this.specialFire(e);
       case 'slime':
@@ -265,10 +281,22 @@ export class Director {
       .then(() => this.s.fx.remove(t));
   }
 
-  private async banner(text: string, color: string, overshoot: number, hold: number, sub = '', y = BANNER_Y, textScale = 4): Promise<void> {
+  private async banner(text: string, color: string, overshoot: number, hold: number, sub: string | { text: string; color: string }[] = '', y = BANNER_Y, textScale = 4): Promise<void> {
     if (!this.s.juice.banners) return;
     const b = this.s.fx.add(new Banner(text, color, W / 2, y, textScale));
-    b.sub = sub;
+    if (typeof sub === 'string') b.sub = sub;
+    else {
+      // The equation builds up part by part.
+      b.subParts = sub;
+      b.reveal = 0;
+      void (async () => {
+        for (let i = 1; i <= sub.length; i++) {
+          await this.c.wait(i === 1 ? 0.12 : 0.07);
+          b.reveal = i;
+          if (i === sub.length || i === 5) this.s.sounds.coin(i);
+        }
+      })();
+    }
     await this.c.tween({ from: 0, to: overshoot, dur: 0.25, ease: backOut(2), onUpdate: (v) => (b.scale = v) });
     await this.c.tween({ from: overshoot, to: 1, dur: 0.15, ease: sineIn, onUpdate: (v) => (b.scale = v) });
     await this.c.wait(hold);
@@ -357,7 +385,7 @@ export class Director {
     this.bg(this.c.to(h, 'hp', hp, 0.08));
     this.bg(this.c.to(h, 'shield', shield, 0.12));
     this.decay(h, 'hpFlash', 1, 0.25);
-    this.decay(h, 'hpShake', Math.min(10, 3 + amount), 0.35);
+    this.decay(h, 'hpShake', Math.min(10, 3 + amount / UNIT), 0.35);
     this.decay(h, 'portraitFlash', 1, 0.2);
     this.decay(h, 'portraitShake', 4, 0.3);
     this.bg(this.c.wait(0.4).then(() => this.c.to(h, 'ghost', hp, 0.5, sineInOut)));
@@ -414,6 +442,10 @@ export class Director {
           this.s.sounds.nearMissSting();
           this.s.camera.punchZoom(0.015, 0.9);
         },
+        // The payline numbers pop in as each symbol lands.
+        onReelStop: (r) => {
+          if (!e.bonus) this.setTag(e.side, r, e.locked[r]);
+        },
       },
       e.frozen,
     );
@@ -428,24 +460,11 @@ export class Director {
     }
     for (const r of e.score.relics ?? []) this.relicPop(e.side, r);
     if (e.luckyWilds?.length) await this.luckyWilds(e.side, e.luckyWilds);
-    this.stampGilds(e.side, e.score);
-    if (e.fullSet) {
-      const c = this.machineCenter(e.side);
-      this.s.sounds.lucky();
-      const star = this.s.fx.add(new Projectile('setStar', c.x, c.y - 170, 0));
-      this.bg(
-        this.c
-          .tween({ from: 0, to: 4, dur: 0.25, ease: backOut(3), onUpdate: (v) => (star.scale = v) })
-          .then(() => this.c.wait(0.7))
-          .then(() => this.c.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (star.alpha = v) }))
-          .then(() => this.s.fx.remove(star)),
-      );
-      const setGroup = e.score.groups.find((g) => g.fullSet);
-      const enh = setGroup ? this.s.machines[e.side].reels[setGroup.reels[0]].cellAtRow(1).enh : undefined;
-      await this.banner('FULL SET!', '#ffd23f', 1.3, 0.35, enh ? SET_TEXT[enh] : 'THE SAME CHARM ALL ACROSS THE LINE', BANNER_Y, 4);
-    }
+    // 3 WILDS: a little bonus reel picks one of your symbols, and that jackpot pays.
+    if (e.score.wildPick) await this.bonusReel(e.side, e.score.wildPick);
     if (near && e.score.tier !== 'triple') this.missedTriple(e.side, e.score.line[0]);
-    await this.winPresentation(e.side, e.score);
+    // JAX's all-jackpots spin is announced by its payoff; each cell then pays on its own.
+    if (!e.score.jackpots) await this.winPresentation(e.side, e.score);
   }
 
   /**
@@ -468,33 +487,45 @@ export class Director {
     }
   }
 
-  /** Gilded cells that paid this spin get a stamp: X2 for gold, +N for keen/charged. */
-  private stampGilds(side: SideId, score: LineScore): void {
+  /** The numbers on a landed payline symbol: its value (bottom-left) and its charm's tag (top-right). */
+  private setTag(side: SideId, r: number, jammed = false): void {
     const m = this.s.machines[side];
-    for (const g of score.groups) {
-      if (!g.notes?.length) continue;
-      for (const r of g.reels) {
-        const cell = m.reels[r].cellAtRow(1);
-        if (!cell.enh || cell.slimed || (cell.stolen ?? 0) > 0 || m.locked[r] > 0 || m.hexed[r] > 0) continue;
-        const p = cellCenter(side, r, 1);
-        const gm = g.notes.find((n) => /^X[3-9]$/.test(n));
-        if (cell.enh === 'gold' && gm) {
-          this.bg(this.popText(gm, p.x + 26, p.y - 30, 4, COLORS.goldLight, 16, 0.4));
-          this.s.sounds.coin(r * 3);
-        } else if (cell.enh === 'gold') {
-          const stamp = this.s.fx.add(new Projectile('stampX2', p.x + 24, p.y - 30, 0));
-          this.bg(
-            this.c
-              .tween({ from: 0, to: 3.5, dur: 0.2, ease: backOut(3), onUpdate: (v) => (stamp.scale = v) })
-              .then(() => this.c.wait(0.5))
-              .then(() => this.c.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => ((stamp.alpha = v), (stamp.y -= 0.6)) }))
-              .then(() => this.s.fx.remove(stamp)),
-          );
-          this.s.sounds.coin(r * 3);
-        } else if (cell.enh === 'keen' && g.symbol === 'sword') this.bg(this.popText(g.notes.find((n) => n.startsWith('+')) ?? '+1', p.x + 26, p.y - 30, 3, '#bff4ff', 16, 0.3));
-        else if (cell.enh === 'charged' && g.symbol === 'bolt') this.bg(this.popText(g.notes.find((n) => n.startsWith('+')) ?? '+1', p.x + 26, p.y - 30, 3, '#fff27a', 16, 0.3));
-      }
+    const cell = m.reels[r].cellAtRow(1);
+    if (jammed || (cell.stolen ?? 0) > 0 || cell.slimed || cell.carded) return;
+    const lv = this.s.levels[side];
+    const player = side === 'player';
+    if ((player && DEAD.has(cell.symbol)) || cell.symbol === 'wild' || cell.symbol === 'empty') return;
+    const base = BASE[cell.symbol] ?? 0;
+    const value = lv ? playerSymValue(lv, cell.symbol, base) : !player && cell.symbol === 'shield' ? Math.round(base * this.s.enemyShield) : base;
+    const charm = cell.enh && cell.enh !== 'spiked' && !(cell.faked && cell.faked > 0) && m.hexed[r] <= 0 ? cell.enh : undefined;
+    const lvl = charm ? (player ? charmLevel(lv, charm, this.s.ticket) : 1) : 1;
+    if (!value && !charm) return;
+    const tag = { value: value ? String(value) : '', ...(charm ? { charm: charmTag(charm, lvl), color: CHARM_COLOR[charm] } : {}), pop: 0, alpha: 1 };
+    m.tags[r] = tag;
+    this.bg(this.c.tween({ from: 0, to: 1, dur: 0.18, ease: backOut(3), onUpdate: (v) => (tag.pop = v) }));
+  }
+
+  /** 3 WILDS: a small bonus reel spins and lands on the symbol whose jackpot pays. */
+  private async bonusReel(side: SideId, pick: SymbolId): Promise<void> {
+    const c = this.machineCenter(side);
+    this.s.sounds.lucky();
+    const pool: SymbolId[] = side === 'player' ? ['sword', 'shield', 'bolt', 'goldbar', 'thorn'] : ['sword', 'shield'];
+    const spr = this.s.fx.add(new Projectile(pool[0] as SpriteId, c.x, MACHINE_TOP - 60, 0));
+    spr.z = 32;
+    await this.c.tween({ from: 0, to: 4, dur: 0.15, ease: backOut(2), onUpdate: (v) => (spr.scale = v) });
+    // It ticks through your symbols, slowing down, then lands.
+    const ticks = 9;
+    for (let i = 0; i < ticks; i++) {
+      spr.sprite = pool[i % pool.length] as SpriteId;
+      this.s.sounds.reelStop(i % 3, 1.2);
+      await this.c.wait(0.04 + i * 0.012);
     }
+    spr.sprite = pick as SpriteId;
+    spr.flash = 1;
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (spr.flash = v) }));
+    this.bg(this.popText(`WILD ${EFFECT_WORD[pick] ?? ''} JACKPOT!`, c.x, MACHINE_TOP - 110, 3, '#ff6ad5', 16, 0.4));
+    await this.c.wait(0.35);
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.2, onUpdate: (v) => (spr.alpha = v) }).then(() => this.s.fx.remove(spr)));
   }
 
   /** Juice §3, mapped to tiers: none → small, pair → medium, triple → jackpot. */
@@ -535,15 +566,26 @@ export class Director {
 
     const sym = matched!.symbol;
     const slimeCleanse = sym === 'slime' && side === 'player';
-    // Spell out the maths when gilds/relics changed the payout: "9 X2 = 18 ENERGY".
-    const maths = matched!.notes?.length ? `${matched!.base} ${matched!.notes.join(' ')} = ` : '';
-    const sub = slimeCleanse ? 'CLEANSE!' : `${maths}${matched!.amount} ${EFFECT_WORD[sym]}`;
+    // BASE X MULT = TOTAL, built part by part (a red -N for what an enemy cut), no words.
+    const g = matched!;
+    const fmt = (x: number) => (Number.isInteger(x) ? String(x) : x.toFixed(1));
+    const gross = Math.round(g.base * g.mult);
+    const parts = slimeCleanse
+      ? [{ text: 'CLEANSE!', color: COLORS.slime }]
+      : [
+          { text: `${g.base}`, color: '#ffffff' },
+          { text: ' X ', color: COLORS.goldLight },
+          { text: fmt(g.mult), color: COLORS.goldLight },
+          { text: ' = ', color: '#ffffff' },
+          { text: `${gross}!`, color: tier === 'triple' ? '#ff8a5a' : COLORS.goldLight },
+          ...(g.cut ? [{ text: ` -${g.cut}`, color: '#ff5a5a' }] : []),
+        ];
     if (tier === 'pair') {
       this.s.sounds.stingerMedium();
       this.shake(3, 0.15);
       this.s.camera.chromaPulse(0.15);
       // Non-blocking: the effects start while the banner is still up.
-      this.bg(this.banner('DOUBLE!', COLORS.pair, 1.15, 0.2, sub));
+      this.bg(this.banner('DOUBLE!', COLORS.pair, 1.15, 0.35, parts));
       await this.c.wait(0.3);
     } else {
       this.s.sounds.fanfareJackpot();
@@ -567,7 +609,7 @@ export class Director {
         size: [5, 9],
         kind: 'confetti',
       });
-      await this.banner('JACKPOT!', COLORS.triple, 1.5, 0.6, sub, BANNER_Y, 5);
+      await this.banner('JACKPOT!', COLORS.triple, 1.5, 0.6, parts, BANNER_Y, 5);
       this.s.camera.dimTarget = 0;
     }
   }
@@ -575,7 +617,7 @@ export class Director {
   /** The Mirror remembers your best presented spin (the REFLECTION panel reads this, never the engine). */
   private noteDamage(from: SideId, amount: number, note?: string): void {
     const g = this.s.gutter;
-    if (from !== 'player' || note === 'spiked') return;
+    if (from !== 'player' || note === 'thorns') return;
     g.turnDamage = (g.turnDamage ?? 0) + amount;
     g.reflect = Math.max(g.reflect ?? 0, g.turnDamage);
   }
@@ -608,13 +650,13 @@ export class Director {
       this.s.fx.remove(p);
       // Per-projectile impact.
       this.flashMachine(e.to, 0.8, 0.12);
-      this.knockback(e.to, 4 + Math.min(10, e.amount));
+      this.knockback(e.to, 4 + Math.min(10, e.amount / UNIT));
       this.s.particles.burst({ x: tx, y: ty, count: 16, colors: ['#ffffff', '#ffe08a', '#dfe6f0'], speed: [150, 500], kind: 'spark', gravity: 300, life: [0.15, 0.35], size: [2, 4] });
-      this.s.sounds.hit(e.amount / e.reels.length);
-      this.shake(Math.min(2 + e.amount, 9), 0.25);
+      this.s.sounds.hit(e.amount / UNIT / Math.max(1, e.reels.length));
+      this.shake(Math.min(2 + e.amount / UNIT, 9), 0.25);
     });
     await Promise.all(flights);
-    if (e.amount >= 4) this.hitstop(e.amount >= 9 ? 3 : 1);
+    if (e.amount >= 4 * UNIT) this.hitstop(e.amount >= 9 * UNIT ? 3 : 1);
 
     const h = this.s.huds[e.to];
     if (e.blocked > 0) {
@@ -633,10 +675,11 @@ export class Director {
       this.s.camera.flashScreen(0.35, '#c8f0ff');
       this.bg(this.popText('YOUR OWN HIT!', target.x, MACHINE_TOP - 22, 2, '#c8f0ff', 14, 0.5));
     }
-    if (e.note === 'spiked') {
+    if (e.note === 'thorns') {
       this.s.sounds.block();
-      this.bg(this.popText('SPIKED!', target.x - 90, MACHINE_TOP - 22, 2, '#c9d0dc', 14, 0.35));
+      this.bg(this.popText('THORNS!', target.x - 90, MACHINE_TOP - 22, 3, '#9dff6a', 14, 0.35));
     }
+    if (e.note === 'echo') this.bg(this.popText('ECHO!', target.x + 90, MACHINE_TOP - 22, 2, '#fff27a', 14, 0.35));
     if (e.hpDamage > 0) this.bg(this.popText(`-${e.hpDamage}`, target.x, MACHINE_TOP + 40, this.tierScale(), color, 60));
     else this.bg(this.popText('BLOCKED!', target.x, MACHINE_TOP + 40, 4, '#9fd0ff', 40));
     this.settle(e.from, e.reels);
@@ -644,13 +687,22 @@ export class Director {
   }
 
   private async shieldGain(e: Ev<'shieldGain'>): Promise<void> {
+    if (e.source === 'chalice' || e.source === 'cactus') {
+      const h = this.s.huds[e.side];
+      const sb = h.shieldBar();
+      this.s.sounds.shieldGain(e.amount / UNIT);
+      this.bg(this.popText(`${e.source === 'chalice' ? 'OVERHEAL' : 'CACTUS'} +${e.amount} SHIELD`, sb.x + sb.w / 2 + 20, sb.y - 30, 2, '#9fd0ff', 12, 0.4));
+      this.decay(h, 'shieldFlash', 1, 0.3);
+      await this.c.to(h, 'shield', e.total, 0.25, sineOut);
+      return;
+    }
     if (e.side === 'player' && !e.reels.length) {
       // Saved chips paying out as shield vs the House.
       const h = this.s.huds.player;
       const sb = h.shieldBar();
       const chip = this.s.fx.add(new Projectile('chipShield', sb.x + 20, sb.y - 30, 0));
       this.s.sounds.coin(5);
-      this.s.sounds.shieldGain(e.amount);
+      this.s.sounds.shieldGain(e.amount / UNIT);
       await this.c.tween({ from: 0, to: 3, dur: 0.2, ease: backOut(3), onUpdate: (v) => (chip.scale = v) });
       this.bg(this.popText(`CHIPS +${e.amount} SHIELD`, sb.x + sb.w / 2 + 20, sb.y - 30, 2, '#9fd0ff', 12, 0.4));
       this.decay(h, 'shieldFlash', 1, 0.3);
@@ -670,7 +722,7 @@ export class Director {
       this.s.particles.burst({ x: p.x, y: p.y, count: 8, colors: [COLORS.shield, '#ffffff'], speed: [60, 200], gravity: 0, life: [0.2, 0.4], size: [2, 4] });
     });
     await Promise.all(hops);
-    this.s.sounds.shieldGain(e.amount);
+    this.s.sounds.shieldGain(e.amount / UNIT);
     this.decay(h, 'shieldFlash', 1, 0.3);
     this.bg(this.c.to(h, 'shield', e.total, 0.25, sineOut));
     this.bg(this.popText(`+${e.amount}`, sb.x + sb.w - 24, sb.y + sb.h / 2, 3, '#9fd0ff', 16, 0.3));
@@ -700,7 +752,7 @@ export class Director {
     }
     await this.activate(e.side, e.reels, COLORS.energy);
     const h = this.s.huds[e.side];
-    const before = e.total - e.amount;
+    const before = Math.floor((e.total - e.amount) / UNIT);
     const zaps = e.reels.map(async (r, i) => {
       await this.c.wait(i * 0.05);
       const from = cellCenter(e.side, r, 1);
@@ -711,7 +763,7 @@ export class Director {
     });
     await Promise.all(zaps);
     // Light pips one by one (capped at the bar; overflow shows after the special fires).
-    const lit = Math.min(h.energyMax, e.total);
+    const lit = Math.min(h.energyMax, Math.floor(e.total / UNIT));
     for (let i = Math.floor(h.energy); i < lit; i++) {
       h.energy = i + 1;
       this.s.sounds.energyPip(i);
@@ -775,7 +827,7 @@ export class Director {
 
     // Drain, then refill any overflow visibly.
     await this.c.to(h, 'energy', 0, 0.2, sineIn);
-    const refill = Math.min(h.energyMax, e.energyLeft);
+    const refill = Math.min(h.energyMax, Math.floor(e.energyLeft / UNIT));
     for (let i = 0; i < refill; i++) {
       h.energy = i + 1;
       this.s.sounds.energyPip(i);
@@ -783,6 +835,149 @@ export class Director {
       await this.c.wait(0.08);
     }
     await this.c.wait(0.2);
+  }
+
+  /**
+   * A LIGHTNING STORM: several strikes in one turn play as ONE sustained arc with a racing damage counter.
+   * Its length grows with the log of the strike count (1.2 s for 2, 2.5 s for 10, at most 4 s). The arc
+   * re-forks at most ~2 times a second and never flashes the screen (photosensitivity); SOFT holds it still.
+   */
+  private async storm(group: CombatEvent[]): Promise<void> {
+    const strikes = group.filter((x): x is Ev<'specialFire'> => x.type === 'specialFire');
+    const n = strikes.length;
+    const first = strikes[0];
+    const last = strikes[n - 1];
+    const dur = Math.min(4, 1.2 + (1.3 * Math.log(n / 2)) / Math.log(5));
+    const total = strikes.reduce((a, x) => a + x.hpDamage, 0);
+    for (const x of strikes) this.noteDamage(x.from, x.amount);
+    const h = this.s.huds[first.from];
+    const to = this.s.huds[first.to];
+    const cam = this.s.camera;
+    const soft = this.s.juice.softLightning;
+    this.s.sounds.specialCharge();
+    cam.dimTarget = soft ? 0.25 : 0.45;
+    this.bg(this.c.tween({ from: 0, to: 1, dur: 0.35, onUpdate: (v) => (h.energyFlash = v * 0.8) }));
+    await this.c.wait(0.35);
+    const target = this.machineCenter(first.to);
+    const bolt = this.s.fx.add(new Lightning(target.x, -20, target.x, target.y));
+    bolt.alpha = soft ? 0.6 : 0.95;
+    const counter = this.s.fx.add(new FloatText('-0', target.x, MACHINE_TOP + 40, 7, COLORS.energy));
+    counter.z = 31;
+    this.s.sounds.thunder();
+    this.shake(soft ? 2 : 5, 0.3);
+    this.flashMachine(first.to, soft ? 0.25 : 0.5, 0.3);
+    const hp0 = to.hp;
+    const sh0 = to.shield;
+    const e0 = h.energy;
+    let forks = 0;
+    let crackles = 0;
+    this.bg(this.banner(`LIGHTNING STORM X${n}`, COLORS.energy, 1.2, Math.max(0.2, dur - 0.6), '', BANNER_Y, 4));
+    await this.c.tween({
+      dur,
+      onUpdate: (v) => {
+        counter.text = `-${Math.round(total * v)}`;
+        to.hp = hp0 + (last.targetHp - hp0) * v;
+        to.shield = sh0 + (last.targetShield - sh0) * v;
+        h.energy = e0 * (1 - v);
+        this.s.machines[first.to].kx = Math.sin(v * dur * 40) * (soft ? 1 : 3);
+        // Re-fork about twice a second (a still arc on SOFT).
+        if (!soft && v * dur - forks * 0.5 >= 0.5) {
+          forks++;
+          bolt.reroll();
+        }
+        if (v * dur - crackles * 0.25 >= 0.25) {
+          crackles++;
+          this.s.sounds.energyPip(crackles % 8);
+        }
+      },
+    });
+    this.s.machines[first.to].kx = 0;
+    this.s.fx.remove(bolt);
+    counter.text = `-${total}`;
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.6, onUpdate: (v) => ((counter.alpha = v), (counter.y -= 0.5)) }).then(() => this.s.fx.remove(counter)));
+    this.damageHud(first.to, last.targetHp, last.targetShield, total);
+    this.knockback(first.to, soft ? 6 : 14);
+    cam.dimTarget = 0;
+    h.energyFlash = 0;
+    h.energy = Math.min(h.energyMax, Math.floor(last.energyLeft / UNIT));
+    // Heals and relic pops that rode inside the storm.
+    for (const x of group) if (x.type !== 'specialFire') await this.play(x);
+  }
+
+  /** A signature meter moved: MIDAS gold bars / JAX wilds light pips, BRIAR's thorns fill the bank. */
+  private async meter(e: Ev<'meter'>): Promise<void> {
+    const h = this.s.huds[e.side];
+    const m = h.meter;
+    if (!m) return;
+    if (e.earthed) {
+      const c = this.machineCenter(e.side);
+      this.bg(this.popText(`EARTHED -${e.earthed}`, c.x, MACHINE_TOP - 30, 2, '#e0a070', 16, 0.5));
+    }
+    if (m.kind === 'thorns') {
+      if (e.amount < 0) {
+        // It fired: the bank empties.
+        await this.c.to(h, 'bank', 0, 0.2, sineIn);
+        return;
+      }
+      if (e.reels.length) await this.activate(e.side, e.reels, m.color);
+      const p0 = h.pipPos(0);
+      const hops = e.reels.map(async (r, i) => {
+        await this.c.wait(i * 0.05);
+        const from = cellCenter(e.side, r, 1);
+        const p = this.s.fx.add(new Projectile(m.icon, from.x, from.y - 14, 2.5, false, m.color));
+        await this.arc(p, p0.x + 10, p0.y, 0.25, 30, cubicIn);
+        this.s.fx.remove(p);
+      });
+      await Promise.all(hops);
+      this.s.sounds.energyPip(2);
+      this.bg(this.c.tween({ from: 1.6, to: 1, dur: 0.2, ease: backOut(), onUpdate: (v) => (h.bankPunch = v) }));
+      await this.c.to(h, 'bank', e.total, 0.2, sineOut);
+      if (e.amount > 0) this.bg(this.popText(`+${e.amount}`, p0.x + 70, p0.y - 22, 3, m.color, 24, 0.2));
+      if (e.reels.length) this.settle(e.side, e.reels);
+      return;
+    }
+    if (e.wasted) {
+      const p0 = h.pipPos(h.energyMax - 1);
+      await this.popText('FULL!', p0.x, p0.y - 24, 2, COLORS.textDim, 16, 0.2);
+      return;
+    }
+    if (e.reels.length) await this.activate(e.side, e.reels, m.color);
+    const before = Math.floor(h.energy);
+    const lit = Math.min(h.energyMax, e.total / UNIT);
+    const zaps = e.reels.map(async (r, i) => {
+      await this.c.wait(i * 0.05);
+      const from = cellCenter(e.side, r, 1);
+      const pip = h.pipPos(Math.min(h.energyMax - 1, before + i));
+      const p = this.s.fx.add(new Projectile(m.icon, from.x, from.y - 14, 2, false, m.color));
+      await this.arc(p, pip.x, pip.y, 0.22, 30, cubicIn);
+      this.s.fx.remove(p);
+    });
+    await Promise.all(zaps);
+    for (let i = before; i < Math.ceil(lit); i++) {
+      h.energy = Math.min(lit, i + 1);
+      this.s.sounds.energyPip(i);
+      if (h.pipPunch[i] !== undefined) this.bg(this.c.tween({ from: 1.6, to: 1, dur: 0.18, ease: backOut(), onUpdate: (v) => (h.pipPunch[i] = v) }));
+      await this.c.wait(0.06);
+    }
+    h.energy = lit;
+    if (e.armed && !h.armed) {
+      h.armed = true;
+      this.s.sounds.lucky();
+      const p0 = h.pipPos(0);
+      this.bg(this.popText(m.kind === 'raise' ? `NEXT PAY X4!` : 'NEXT SPIN: ALL JACKPOTS!', p0.x + 80, p0.y - 26, 2, m.color, 20, 0.6));
+    }
+    if (e.reels.length) this.settle(e.side, e.reels);
+  }
+
+  /** MIDAS's x4 or JAX's all-jackpots spin: the meter pays off and empties. */
+  private async payoff(e: Ev<'payoff'>): Promise<void> {
+    const h = this.s.huds[e.side];
+    h.armed = false;
+    this.bg(this.c.to(h, 'energy', 0, 0.3, sineIn));
+    this.s.sounds.fanfareJackpot();
+    this.shake(4, 0.25);
+    const color = h.meter?.color ?? COLORS.goldLight;
+    await this.banner(e.kind === 'raise' ? 'X4 GOLD!' : 'ALL JACKPOTS!', color, 1.35, 0.35, '', BANNER_Y, 5);
   }
 
   private async slime(e: Ev<'slime'>): Promise<void> {
@@ -1144,7 +1339,7 @@ export class Director {
   private async pot(e: Ev<'pot'>): Promise<void> {
     const g = this.s.gutter;
     const dst = this.potPos();
-    const n = Math.min(9, e.amount);
+    const n = Math.max(1, Math.min(9, Math.round(e.amount / UNIT)));
     const coins = Array.from({ length: n }, async (_, i) => {
       await this.c.wait(i * 0.05);
       const src = this.srcPoint(e.side, e.reels, i);
@@ -1170,11 +1365,11 @@ export class Director {
       return;
     }
     g.pot = e.amount + e.potLeft;
-    const big = Math.min(1, e.amount / 15);
-    if (e.amount >= 8 || playerWins) this.s.sounds.fanfareJackpot();
+    const big = Math.min(1, e.amount / (15 * UNIT));
+    if (e.amount >= 8 * UNIT || playerWins) this.s.sounds.fanfareJackpot();
     else this.s.sounds.stingerMedium();
     this.bg(this.banner(playerWins ? 'POT STOLEN!' : 'CASH OUT!', playerWins ? COLORS.goldLight : '#ff6a5a', 1.2 + 0.3 * big, 0.4, `${e.amount} DAMAGE`, BANNER_Y, 4));
-    const n = Math.min(24, 6 + e.amount);
+    const n = Math.min(24, 6 + Math.round(e.amount / UNIT));
     const coins = Array.from({ length: n }, async (_, i) => {
       await this.c.wait(i * 0.03);
       const p = this.s.fx.add(new Projectile('coin', src.x, src.y, 3, false, COLORS.energy));
@@ -1189,8 +1384,8 @@ export class Director {
     this.s.camera.chromaPulse(0.2 + 0.6 * big);
     this.flashMachine(e.to, 0.5 + 0.5 * big, 0.25);
     this.knockback(e.to, 6 + 10 * big);
-    this.s.sounds.hit(e.amount);
-    if (playerWins && e.amount >= 8)
+    this.s.sounds.hit(e.amount / UNIT);
+    if (playerWins && e.amount >= 8 * UNIT)
       this.s.particles.burst({ x: target.x, y: target.y - 40, count: 80, colors: ['#ffd23f', '#ffe08a', '#fff6c8'], speed: [200, 600], angle: -Math.PI / 2, spread: Math.PI, gravity: 900, life: [0.8, 1.4], size: [4, 7], kind: 'confetti' });
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
     this.bg(this.popText(`-${e.hpDamage}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
@@ -1427,9 +1622,10 @@ export class Director {
       const p = h.pipPos(i);
       this.s.particles.burst({ x: p.x, y: p.y, count: 4, colors: ['#c87a3a', COLORS.energy], speed: [40, 120], angle: Math.PI / 2, spread: 0.8, gravity: 300, life: [0.3, 0.5], size: [2, 3] });
     }
-    await this.c.to(h, 'energy', e.total, 0.3, sineIn);
+    if (h.meter?.kind === 'thorns') await this.c.to(h, 'bank', e.total, 0.3, sineIn);
+    else await this.c.to(h, 'energy', e.total / UNIT, 0.3, sineIn);
     const p0 = h.pipPos(0);
-    await this.popText(e.amount ? `-${e.amount} ENERGY` : 'NO ENERGY', p0.x + 40, p0.y - 22, 2, '#e0a070', 16, 0.3);
+    await this.popText(e.amount ? `-${e.amount} METER` : 'NO METER', p0.x + 40, p0.y - 22, 2, '#e0a070', 16, 0.3);
   }
 
   // ---- act 3 -----------------------------------------------------------------------------
@@ -1459,7 +1655,7 @@ export class Director {
 
   private async markedHit(e: Ev<'markedHit'>): Promise<void> {
     const c = this.machineCenter(e.side);
-    this.s.sounds.hit(e.amount);
+    this.s.sounds.hit(e.amount / UNIT);
     this.shake(4, 0.2);
     this.flashMachine(e.side, 0.6, 0.15);
     for (const ref of e.cells) {
@@ -1480,7 +1676,6 @@ export class Director {
       const cell = to.reels[ref.reel].cells[ref.index];
       cell.confiscated = cell.enh;
       delete cell.enh;
-      delete cell.tier;
     }
     const c = this.machineCenter(e.to);
     this.bg(this.popText(`CONFISCATED: ${e.enhs.map((x) => x.toUpperCase()).join(' + ')}`, c.x, MACHINE_TOP - 30, 2, '#e0c090', 16, 0.6));
@@ -1616,6 +1811,8 @@ export class Director {
     }
     this.bg(this.c.to(m.payline, 'alpha', 0, 0.2));
     this.bg(m.focusPayline(this.c, false));
+    // The payline numbers fade once the turn is paid.
+    for (const t of m.tags) if (t) this.bg(this.c.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (t.alpha = v) }));
     await this.c.wait(0.05);
   }
 }

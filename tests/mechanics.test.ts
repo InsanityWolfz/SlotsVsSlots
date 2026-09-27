@@ -10,7 +10,7 @@ const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
 
 function vs(enemy: StripCounts, opts: { relics?: RelicId[]; ability?: AbilityDef; hp?: number; mut?: (c: GameConfig) => void } = {}): Fight {
   const c = defaultConfig();
-  c.enemy = { hp: opts.hp ?? 60, strips: reels3(enemy), ability: opts.ability ?? null };
+  c.enemy = { hp: opts.hp ?? 600, strips: reels3(enemy), ability: opts.ability ?? null };
   c.relics = opts.relics ?? [];
   opts.mut?.(c);
   return new Fight(c, 1234);
@@ -38,7 +38,7 @@ describe('enemy writers', () => {
   it('freeze never holds a reels 1+2 match (no free doubles) and never all 3 reels', () => {
     for (let seed = 0; seed < 200; seed++) {
       const c = defaultConfig();
-      c.enemy = { hp: 60, strips: reels3({ ice: 12 }) };
+      c.enemy = { hp: 600, strips: reels3({ ice: 12 }) };
       const f = new Fight(c, seed);
       f.forceNext('player', ['bolt', 'bolt', 'bolt']);
       f.step();
@@ -142,8 +142,8 @@ describe('enemy abilities (telegraphed)', () => {
 });
 
 describe('relics', () => {
-  it('battery starts with 3 energy', () => {
-    expect(vs({ sword: 12 }, { relics: ['battery'] }).sides.player.energy).toBe(3);
+  it('battery starts with 30 energy', () => {
+    expect(vs({ sword: 12 }, { relics: ['battery'] }).sides.player.energy).toBe(30);
   });
 
   it('mirror makes reels 2+3 a double', () => {
@@ -151,14 +151,14 @@ describe('relics', () => {
     f.forceNext('player', ['shield', 'sword', 'sword']);
     const [spin] = ofType(f.step().events, 'spin');
     expect(spin.score.tier).toBe('pair');
-    expect(spin.score.totals.sword).toBe(4);
+    expect(spin.score.totals.sword).toBe(40);
   });
 
   it('fang heals when the special fires', () => {
     const f = vs({ sword: 12 }, { relics: ['fang'], mut: (c) => (c.player.startHp = 10) });
     f.forceNext('player', ['bolt', 'bolt', 'bolt']);
     const [h] = ofType(f.step().events, 'heal');
-    expect(h).toMatchObject({ amount: 3, hp: 13, source: 'fang' });
+    expect(h).toMatchObject({ amount: 30, hp: 40, source: 'fang' });
   });
 
   it('clover sometimes converts a near-miss into a jackpot (and only then)', () => {
@@ -166,7 +166,7 @@ describe('relics', () => {
     let trials = 0;
     for (let s = 0; s < 400; s++) {
       const c = defaultConfig();
-      c.enemy = { hp: 60, strips: reels3({ shield: 12 }) };
+      c.enemy = { hp: 600, strips: reels3({ shield: 12 }) };
       c.relics = ['clover'];
       const f = new Fight(c, s);
       f.forceNext('player', ['sword', 'sword', 'shield']);
@@ -194,20 +194,20 @@ describe('boss: the progressive pot', () => {
     f.step();
     f.forceNext('player', ['shield', 'shield', 'shield']);
     const [win] = ofType(f.step().events, 'potWin');
-    expect(win).toMatchObject({ from: 'player', amount: 15, blocked: 0 });
+    expect(win).toMatchObject({ from: 'player', amount: 150, blocked: 0 });
     expect(f.pot).toBe(0);
 
     const g = boss((c) => (c.relics = ['crown']));
     g.forceNext('player', ['shield', 'shield', 'bolt']);
-    expect(ofType(g.step().events, 'potWin')[0]).toMatchObject({ from: 'player', amount: 3 }); // half of 5, rounded up
+    expect(ofType(g.step().events, 'potWin')[0]).toMatchObject({ from: 'player', amount: 30 }); // half of 50, rounded up to 10s
   });
 
   it('at half HP the House goes ALL IN and doubles the pot', () => {
-    const f = boss((c) => (c.enemy.hp = 18));
+    const f = boss((c) => (c.enemy.hp = 180));
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const [ph] = ofType(f.step().events, 'phase');
     expect(f.allIn).toBe(true);
-    expect(ph.pot).toBe(13); // max(5 x 2, 5 + 8)
+    expect(ph.pot).toBe(130); // max(50 x 2, 50 + 80)
   });
 });
 

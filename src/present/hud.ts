@@ -1,10 +1,21 @@
 import type { AbilityDef, AbilityKind, SideId } from '../core/config';
+import type { MeterKind } from '../core/cabinets';
 import { artId, drawSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 import { COLORS, HUD_TOP, MACHINE_CX } from './layout';
 
 export const HUD_W = 330;
-export const SHIELD_SOFT_CAP = 20;
+export const SHIELD_SOFT_CAP = 200;
+
+/** The signature meter on the player's HUD (none for KNIGHT). */
+export interface HudMeter {
+  kind: MeterKind;
+  /** Pips (one per 10 of meter); 0 for BRIAR's thorn bank, which shows a number. */
+  pips: number;
+  label: string;
+  color: string;
+  icon: SpriteId;
+}
 
 export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> = {
   flood: { icon: 'icoFlood', label: 'FLOOD' },
@@ -37,6 +48,11 @@ export class HudView {
   /** Pips lit (can be fractional mid-fill). */
   energy = 0;
   energyMax: number;
+  /** BRIAR: the thorn bank (a number, not pips). */
+  bank = 0;
+  bankPunch = 1;
+  /** MIDAS / JAX: the meter is full and waiting to pay off. */
+  armed = false;
   hpShake = 0;
   hpFlash = 0;
   shieldFlash = 0;
@@ -62,8 +78,7 @@ export class HudView {
   constructor(
     readonly side: SideId,
     maxHp: number,
-    readonly hasSpecial: boolean,
-    energyMax: number,
+    readonly meter: HudMeter | null,
     opts: { name?: string; portrait?: string; ability?: AbilityDef | null; energy?: number } = {},
   ) {
     this.name = opts.name ?? (side === 'player' ? 'HERO' : 'ENEMY');
@@ -73,8 +88,10 @@ export class HudView {
     this.maxHp = maxHp;
     this.hp = maxHp;
     this.ghost = maxHp;
-    this.energyMax = energyMax;
-    this.pipPunch = Array(energyMax).fill(1);
+    this.energyMax = meter?.pips ?? 0;
+    this.pipPunch = Array(Math.max(1, this.energyMax)).fill(1);
+    if (meter?.kind === 'thorns') this.bank = opts.energy ?? 0;
+    else this.energy = Math.min(this.energyMax, opts.energy ?? 0);
   }
 
   get x(): number {
@@ -87,8 +104,12 @@ export class HudView {
   shieldBar() {
     return { x: this.x + 64, y: HUD_TOP + 66, w: HUD_W - 64, h: 16 };
   }
+  get hasSpecial(): boolean {
+    return !!this.meter;
+  }
   pipPos(i: number) {
-    return { x: this.x + 88 + i * 34, y: HUD_TOP + 106 };
+    const pitch = Math.min(34, 200 / Math.max(1, this.energyMax));
+    return { x: this.x + 88 + i * pitch, y: HUD_TOP + 106 };
   }
   /** Where damage numbers / projectiles aim for this side. */
   get anchor() {
@@ -145,19 +166,27 @@ export class HudView {
     if (this.shield > 0.01)
       drawText(ctx, `${Math.round(this.shield)}`, sb.x + 6 + (sb.w - 6) / 2 + ss, sb.y + sb.h / 2 + 1, 2, COLORS.text);
 
-    // Special pips.
-    if (this.hasSpecial) {
-      drawSprite(ctx, 'boltIcon', x + 64, y + 106, 2);
-      for (let i = 0; i < this.energyMax; i++) {
-        const p = this.pipPos(i);
-        const lit = Math.max(0, Math.min(1, this.energy - i));
-        drawSprite(ctx, 'pipEmpty', p.x, p.y, 3);
-        if (lit > 0) {
-          const pulse = this.energy >= this.energyMax - 0.01 ? 0.3 + 0.3 * Math.sin(time * 18) : 0;
-          drawSprite(ctx, 'pipFull', p.x, p.y, 3 * this.pipPunch[i], { alpha: lit, flash: Math.max(pulse, this.energyFlash) });
+    // The signature meter: pips (TESLA, MIDAS, JAX) or BRIAR's thorn bank.
+    const m = this.meter;
+    if (m) {
+      drawSprite(ctx, m.icon, x + 64, y + 106, m.icon === 'boltIcon' ? 2 : 1.5);
+      if (m.kind === 'thorns') {
+        drawText(ctx, `${Math.round(this.bank)}`, x + 88, y + 106, 3, this.bank > 0 ? m.color : COLORS.textDim, { align: 'left', punch: this.bankPunch });
+      } else {
+        const small = this.energyMax > 6;
+        for (let i = 0; i < this.energyMax; i++) {
+          const p = this.pipPos(i);
+          const lit = Math.max(0, Math.min(1, this.energy - i));
+          drawSprite(ctx, 'pipEmpty', p.x, p.y, small ? 2 : 3);
+          if (lit > 0) {
+            const full = this.energy >= this.energyMax - 0.01;
+            const pulse = full ? 0.3 + 0.3 * Math.sin(time * (this.armed ? 10 : 18)) : 0;
+            drawSprite(ctx, 'pipFull', p.x, p.y, (small ? 2 : 3) * this.pipPunch[i], { alpha: lit, flash: Math.max(pulse, this.energyFlash) });
+          }
         }
       }
-      drawText(ctx, 'SPECIAL', x + HUD_W - 4, y + 106, 2, this.energy >= this.energyMax ? COLORS.energy : COLORS.textDim, { align: 'right' });
+      const ready = m.kind === 'thorns' ? this.bank > 0 : this.energy >= this.energyMax - 0.01;
+      drawText(ctx, this.armed ? `${m.label} READY!` : m.label, x + HUD_W - 4, y + 106, 2, ready ? m.color : COLORS.textDim, { align: 'right' });
     }
     if (this.ability) this.drawAbility(ctx, x, y + 106, time);
   }

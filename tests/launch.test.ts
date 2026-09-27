@@ -34,7 +34,7 @@ describe('public playtest shell', () => {
     const run = createRun(base, 5, 'knight');
     const hp = enemyHp(run, currentEnemy(run));
     run.tutorial = true;
-    expect(enemyHp(run, currentEnemy(run))).toBe(Math.round(hp * TUTORIAL_OPENER_MUL));
+    expect(enemyHp(run, currentEnemy(run))).toBe(Math.round((hp * TUTORIAL_OPENER_MUL) / 10) * 10);
   });
 
   it('hiscores record the run, the killer and the build; collection discovers relics and charms', () => {
@@ -75,7 +75,7 @@ describe('public playtest shell', () => {
 describe('relic activations are visible', () => {
   it('opening relics fire on turn 1, and pay-changing relics ride on the score', async () => {
     const { Fight } = await import('../src/core/fight');
-    const run = createRun(base, 11, 'knight');
+    const run = createRun(base, 11, 'tesla');
     run.player.relics.push('battery', 'key', 'bell', 'prism');
     const { fightConfig } = await import('../src/core/run');
     const f = new Fight(fightConfig(run, base), 3);

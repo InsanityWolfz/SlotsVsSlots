@@ -8,6 +8,16 @@ import { ReelView, SPIN, type CellView } from './reel';
 import { drawSprite, artId, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 
+/** Numbers on a payline symbol: its value bottom-left (white), its charm's tag top-right (coloured). */
+export interface PayTag {
+  value: string;
+  charm?: string;
+  color?: string;
+  /** 0..1 pop-in scale. */
+  pop: number;
+  alpha: number;
+}
+
 export interface SpinCallbacks {
   onReelStop?: (reel: number) => void;
   onNearMiss?: () => void;
@@ -40,6 +50,8 @@ export class MachineView {
   hexedFx: number[];
   /** The Mirror cracked at half HP. */
   cracked = false;
+  /** Payline numbers, one per reel (null = none shown). */
+  tags: (PayTag | null)[] = [null, null, null];
   private spun = false;
 
   constructor(
@@ -50,7 +62,7 @@ export class MachineView {
     this.reels = combatant.reels.map(
       (r) =>
         new ReelView(
-          r.cells.map((c): CellView => ({ symbol: c.symbol, slimed: c.slimed, goo: c.slimed ? 1 : 0, flash: 0, stolen: c.stolen ? 1 : 0, enh: c.enh, tier: c.tier, bomb: c.bomb, grounded: c.grounded, faked: c.faked, carded: c.carded, confiscated: c.confiscated })),
+          r.cells.map((c): CellView => ({ symbol: c.symbol, slimed: c.slimed, goo: c.slimed ? 1 : 0, flash: 0, stolen: c.stolen ? 1 : 0, enh: c.enh, bomb: c.bomb, grounded: c.grounded, faked: c.faked, carded: c.carded, confiscated: c.confiscated })),
           r.stop,
         ),
     );
@@ -86,6 +98,7 @@ export class MachineView {
    * then does the slow 0.7s decel (juice §2, 3-reel version).
    */
   async spin(stops: number[], nearMiss: boolean, clock: Clock, cb: SpinCallbacks = {}, frozen: boolean[] = []): Promise<void> {
+    this.tags = [null, null, null];
     this.payline.alpha = 0;
     this.payline.progress = 0;
     const windup = this.spun;
@@ -181,6 +194,7 @@ export class MachineView {
 
     this.drawStatuses(ctx, time);
     this.drawPayline(ctx);
+    this.drawTags(ctx);
 
     if (this.flash > 0) {
       ctx.globalAlpha = Math.min(1, this.flash);
@@ -314,6 +328,28 @@ export class MachineView {
         drawText(ctx, String(badge.n), cx + 10, -1, 2, badge.c);
       }
     }
+  }
+
+  private drawTags(ctx: CanvasRenderingContext2D): void {
+    this.tags.forEach((t, r) => {
+      if (!t || t.pop <= 0.01 || t.alpha <= 0.01) return;
+      const x = PITCH * (r + 0.5);
+      const y = PITCH * 1.5;
+      const tag = (text: string, tx: number, ty: number, color: string, align: 'left' | 'right') => {
+        const w = text.length * 12 + 6;
+        const bx = align === 'left' ? tx : tx - w;
+        ctx.save();
+        ctx.globalAlpha = t.alpha;
+        ctx.translate(bx + w / 2, ty);
+        ctx.scale(t.pop, t.pop);
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(-w / 2, -10, w, 20);
+        drawText(ctx, text, 0, 1, 2, color);
+        ctx.restore();
+      };
+      if (t.value) tag(t.value, x - 46, y + 34, '#ffffff', 'left');
+      if (t.charm) tag(t.charm, x + 46, y - 34, t.color ?? COLORS.goldLight, 'right');
+    });
   }
 
   private drawPayline(ctx: CanvasRenderingContext2D): void {

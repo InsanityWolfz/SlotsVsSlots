@@ -19,16 +19,16 @@ function fight(mut: (c: GameConfig) => void, seed = 7): Fight {
 const dealerCfg = (c: GameConfig) => (c.enemy = { hp: 100, strips: reels3({ shield: 12 }), ability: { kind: 'deal', every: 1, power: 0 }, boss: 'dealer' });
 
 describe('ACT 3: the run', () => {
-  it('act 3 comes with GREEN stake and up; it has 3 fights, a fork in the middle, and the Dealer', () => {
+  it('act 3 comes with GREEN stake and up; it has 5 fights with forks like acts 1-2, and the Dealer', () => {
     expect(runActs(createRun(base, 1, 'knight', 1, true))).toBe(2);
     expect(runActs(createRun(base, 1, 'knight', STAKE.act3, false))).toBe(3);
     const run = createRun(base, 1, 'knight', STAKE.act3, true);
     expect(runActs(run)).toBe(3);
-    expect(totalFights(run)).toBe(16);
+    expect(totalFights(run)).toBe(18);
     const paths = generateRunPaths(new Rng(3), 3);
     expect(paths.length).toBe(actLength(3) + 1);
-    expect(paths.map((o) => o.length)).toEqual([1, 2, 1, 1]);
-    expect(paths[3][0].boss).toBe('dealer');
+    expect(paths.map((o) => o.length)).toEqual([1, 2, 2, 2, 1, 1]);
+    expect(paths[5][0].boss).toBe('dealer');
   });
 
   it('beating the Mirror at GREEN goes to act 3 (full heal, Cashier, no legendary); beating the Dealer wins', () => {
@@ -67,29 +67,32 @@ describe('ACT 3: enemies', () => {
     f.forceNext('player', ['card', 'sword', 'sword']);
     const { events } = f.step();
     expect(ofType(events, 'spin')[0].score.line[0]).toBe('card');
-    expect(ofType(events, 'markedHit')[0]).toMatchObject({ amount: 2 });
+    expect(ofType(events, 'markedHit')[0]).toMatchObject({ amount: 20 });
   });
 
-  it('PIT BOSS confiscates a gild (your set first) for the fight', () => {
+  it('PIT BOSS confiscates charmed cells (gold first) for the fight', () => {
     const f = fight((c) => {
-      c.enemy = { hp: 99, strips: [{ gavel: 12 }, { gavel: 12 }, { shield: 12 }] };
+      c.enemy = { hp: 9999, strips: [{ gavel: 12 }, { gavel: 12 }, { shield: 12 }] };
       c.player.gilded = [
-        ...[0, 1, 2].map((reel) => ({ reel, symbol: 'sword' as SymbolId, enh: 'gold' as const })),
-        { reel: 0, symbol: 'bolt' as SymbolId, enh: 'charged' as const },
+        ...[0, 1, 2].map((reel) => ({ reel, symbol: 'sword' as SymbolId, enh: 'gold' as const, n: 4 })),
+        { reel: 0, symbol: 'bolt' as SymbolId, enh: 'charged' as const, n: 4 },
       ];
     });
     f.next = 'enemy';
     f.forceNext('enemy', ['gavel', 'gavel', 'shield']);
     const c = ofType(f.step().events, 'confiscate')[0];
+    expect(c.cells).toHaveLength(2);
     expect(c.enhs).toEqual(['gold']);
     for (const ref of c.cells) expect(f.sides.player.reels[ref.reel].cells[ref.index].enh).toBeUndefined();
   });
 
-  it('CROUPIER rakes: your groups pay 1 less while it lasts', () => {
+  it('CROUPIER rakes: your groups pay 10 less while it lasts (shown as a cut)', () => {
     const f = fight((c) => (c.player.strips = reels3({ sword: 12 })));
     f.sides.player.raked = 2;
     f.forceNext('player', ['sword', 'sword', 'sword']);
-    expect(ofType(f.step().events, 'attack')[0].amount).toBe(8);
+    const ev = f.step().events;
+    expect(ofType(ev, 'attack')[0].amount).toBe(80);
+    expect(ofType(ev, 'spin')[0].score.groups[0].cut).toBe(10);
     expect(f.sides.player.raked).toBe(1);
   });
 });
@@ -100,11 +103,11 @@ describe('THE DEALER', () => {
       dealerCfg(c);
       c.player.strips = reels3({ sword: 12 });
     });
-    f.sides.enemy.hp = 52;
+    f.sides.enemy.hp = f.sides.enemy.maxHp / 2 + 20;
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const { events } = f.step();
     expect(ofType(events, 'dealNext').length).toBe(1);
-    expect(f.sides.enemy.hp).toBe(50);
+    expect(f.sides.enemy.hp).toBe(f.sides.enemy.maxHp / 2);
   });
 
   it('SHUFFLE swaps cells between two reels (a live FULL SET is immune); CUT removes one cell per reel', () => {
@@ -132,7 +135,7 @@ describe('THE DEALER', () => {
     expect(g.sides.player.reels.every((r) => r.cells.length === 11)).toBe(true);
   });
 
-  it('RAISE doubles its next hit and your next jackpot', () => {
+  it('RAISE doubles its next hit and your next paying group', () => {
     const f = fight((c) => {
       dealerCfg(c);
       c.enemy!.strips = reels3({ sword: 12 });
@@ -146,6 +149,6 @@ describe('THE DEALER', () => {
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const g = ofType(f.step().events, 'spin')[0].score.groups[0];
     expect(g.notes).toContain('RAISE X2');
-    expect(g.amount).toBe(18);
+    expect(g.amount).toBe(180);
   });
 });

@@ -3,7 +3,7 @@ import { defaultConfig, reels3, type GameConfig, type RelicId } from '../src/cor
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { BOSS_HP_PER_RELIC } from '../src/core/relics';
-import { buy, CHIPS, createRun, fightConfig, finishFight, isShopNow, reroll, rerollCost, shopOffers, takeSpoils } from '../src/core/run';
+import { BOSS_MUL, buy, CHIPS, createRun, fightConfig, finishFight, isShopNow, reroll, rerollCost, shopOffers, takeSpoils } from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -11,54 +11,55 @@ const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
 
 function fight(mut: (c: GameConfig) => void, seed = 7): Fight {
   const c = defaultConfig();
-  c.enemy = { hp: 99, strips: reels3({ shield: 12 }) };
+  c.enemy = { hp: 9999, strips: reels3({ shield: 12 }) };
   mut(c);
   return new Fight(c, seed);
 }
 
 describe('build relics & keen', () => {
-  it('KEEN swords deal +1 and HONE adds +2 more', () => {
-    const f = fight((c) => (c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen' }]));
+  it('KEEN swords add +5 to their group and HONE adds +20 more', () => {
+    const f = fight((c) => (c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen', n: 4 }]));
     f.forceNext('player', ['sword', 'bolt', 'shield']);
-    expect(ofType(f.step().events, 'attack')[0].amount).toBe(2);
+    expect(ofType(f.step().events, 'attack')[0].amount).toBe(15);
     const g = fight((c) => {
-      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen' }];
+      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen', n: 4 }];
       c.relics = ['hone'];
     });
     g.forceNext('player', ['sword', 'bolt', 'shield']);
-    expect(ofType(g.step().events, 'attack')[0].amount).toBe(4);
+    expect(ofType(g.step().events, 'attack')[0].amount).toBe(35);
   });
 
-  it('MIDAS: gold cells on the payline give +1 energy', () => {
+  it('MIDAS: gold cells on the payline also fill the meter by 10', () => {
     const f = fight((c) => {
-      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold' }];
+      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }];
       c.relics = ['midas'];
     });
     f.forceNext('player', ['sword', 'shield', 'shield']);
     const en = ofType(f.step().events, 'energyGain');
-    expect(en.at(-1)!.amount).toBe(1);
+    expect(en.at(-1)!.amount).toBe(10);
   });
 
-  it('LIGHTNING ROD makes the special cost 4 with a charged build', () => {
+  it('LIGHTNING ROD makes the special cost 40 with a charged build', () => {
     const f = fight((c) => {
-      c.player.gilded = [{ reel: 1, symbol: 'bolt', enh: 'charged' }];
+      c.player.gilded = [{ reel: 1, symbol: 'bolt', enh: 'charged', n: 4 }];
       c.relics = ['rod'];
     });
-    expect(f.cfg.specialCost).toBe(4);
-    expect(fight((c) => (c.relics = ['rod'])).cfg.specialCost).toBe(5);
+    expect(f.cfg.specialCost).toBe(40);
+    expect(fight((c) => (c.relics = ['rod'])).cfg.specialCost).toBe(50);
   });
 
-  it('CACTUS makes spikes hit back for 4', () => {
+  it('CACTUS: banking thorns also shields you for 10% of them (BRIAR)', () => {
     const c = defaultConfig();
-    c.enemy = { hp: 99, strips: reels3({ sword: 12 }) };
-    c.player.gilded = [{ reel: 0, symbol: 'shield', enh: 'spiked' }];
+    c.enemy = { hp: 9999, strips: reels3({ sword: 12 }) };
+    c.cabinet = 'thorn';
+    c.player.strips = reels3({ sword: 4, shield: 4, thorn: 4 });
     c.relics = ['cactus'];
     const f = new Fight(c, 2);
-    f.forceNext('player', ['shield', 'bolt', 'bolt']);
-    f.step();
-    f.forceNext('enemy', ['sword', 'sword', 'sword']);
-    const back = ofType(f.step().events, 'attack').find((e) => e.note === 'spiked');
-    expect(back?.amount).toBe(4);
+    f.forceNext('player', ['thorn', 'thorn', 'sword']);
+    const ev = f.step().events;
+    const bank = ofType(ev, 'meter')[0];
+    expect(bank.amount).toBe(60); // (15 + 15) x2
+    expect(ofType(ev, 'shieldGain').find((e) => e.source === 'cactus')?.amount).toBe(6);
   });
 
   it('PRISM doubles a match that used a WILD', () => {
@@ -67,11 +68,11 @@ describe('build relics & keen', () => {
       c.relics = ['prism'];
     });
     f.forceNext('player', ['wild', 'sword', 'sword']);
-    expect(ofType(f.step().events, 'attack')[0].amount).toBe(18);
+    expect(ofType(f.step().events, 'attack')[0].amount).toBe(180);
   });
 
   it('PIERCE only shows when there was a shield to pierce', () => {
-    const f = fight((c) => (c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen' }]));
+    const f = fight((c) => (c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen', n: 4 }]));
     f.forceNext('player', ['sword', 'bolt', 'shield']);
     expect(ofType(f.step().events, 'attack')[0].note).toBeUndefined();
   });
@@ -80,7 +81,8 @@ describe('build relics & keen', () => {
 describe('the House cashes out at the start of its turn', () => {
   it('arms at the end of a turn, fires before its next spin, reports the pot left', () => {
     const c = defaultConfig();
-    c.enemy = { hp: 99, strips: reels3({ sword: 2, coin: 10 }), ability: { kind: 'jackpot', every: 2, power: 1 }, boss: 'house' };
+    c.enemy = { hp: 9999, strips: reels3({ sword: 2, coin: 10 }), ability: { kind: 'jackpot', every: 2, power: 1 }, boss: 'house' };
+    c.player.hp = 9999;
     const f = new Fight(c, 3);
     f.step();
     f.step(); // House turn 1: charge 1
@@ -96,13 +98,13 @@ describe('the House cashes out at the start of its turn', () => {
     expect(cash).toBeGreaterThan(-1);
     expect(cash).toBeLessThan(firstSpin);
     const pw = ofType(e3, 'potWin')[0];
-    expect(pw.amount).toBe(Math.ceil(before / 2));
+    expect(pw.amount).toBe(Math.ceil(before / 20) * 10);
     expect(pw.potLeft).toBe(before - pw.amount);
   });
 
   it('chips carried in give shield at the start of each House turn', () => {
     const c = defaultConfig();
-    c.enemy = { hp: 99, strips: reels3({ sword: 12 }), boss: 'house' };
+    c.enemy = { hp: 9999, strips: reels3({ sword: 12 }), boss: 'house' };
     c.player.stackShield = 3;
     const f = new Fight(c, 3);
     f.step();
@@ -156,7 +158,7 @@ describe('run economy', () => {
     run.player.relics = ['clover', 'fang'] as RelicId[];
     run.player.chips = 12;
     const cfg = fightConfig(run, base);
-    expect(cfg.enemy.hp).toBe(run.enemies[5].hp + 2 * BOSS_HP_PER_RELIC);
-    expect(cfg.player.stackShield).toBe(Math.floor(12 / CHIPS.stackPer));
+    expect(cfg.enemy.hp).toBe(Math.round((run.enemies[5].hp * BOSS_MUL.knight.house) / 10) * 10 + 2 * BOSS_HP_PER_RELIC);
+    expect(cfg.player.stackShield).toBe(Math.floor(12 / CHIPS.stackPer) * 10);
   });
 });

@@ -3,17 +3,17 @@ import { defaultConfig, reels3, type GameConfig, type SymbolId } from '../src/co
 import { ARCHETYPES, generateRunPaths, MIRROR, RUN_FIGHTS, TUNE } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { BOMB, LEGENDARY, LUCKY_CHANCE, SANDGLASS_SLOW } from '../src/core/relics';
+import { BOMB, LEGENDARY, SANDGLASS_SLOW } from '../src/core/relics';
+import { CHARM_VALUE } from '../src/core/charms';
 import { Rng } from '../src/core/rng';
 import {
+  BOSS_MUL,
   CHIPS,
-  completesSet,
   createRun,
   draftOffers,
   enemyHp,
   fightConfig,
   finishFight,
-  fullSets,
   machinePower,
   isShopNow,
   leaveShop,
@@ -29,7 +29,7 @@ const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
 
 function fight(mut: (c: GameConfig) => void, seed = 7): Fight {
   const c = defaultConfig();
-  c.enemy = { hp: 99, strips: reels3({ shield: 12 }) };
+  c.enemy = { hp: 9999, strips: reels3({ shield: 12 }) };
   mut(c);
   return new Fight(c, seed);
 }
@@ -44,7 +44,7 @@ function bombTheBolt(f: Fight, fuse: number) {
 
 describe('act 2 writers', () => {
   it('BOMBER: plants bombs on visible cells; a bomb whose fuse runs out blasts you (shield blocks)', () => {
-    const f = fight((c) => (c.enemy = { hp: 99, strips: [{ bomb: 12 }, { sword: 12 }, { shield: 12 }] }));
+    const f = fight((c) => (c.enemy = { hp: 9999, strips: [{ bomb: 12 }, { sword: 12 }, { shield: 12 }] }));
     f.next = 'enemy';
     f.forceNext('enemy', ['bomb', 'sword', 'shield']);
     const planted = ofType(f.step().events, 'bomb');
@@ -76,9 +76,9 @@ describe('act 2 writers', () => {
 
   it('HEXER: a hexed reel pays half and its gilds go dark', () => {
     const f = fight((c) => {
-      c.enemy = { hp: 99, strips: [{ hex: 12 }, { hex: 12 }, { shield: 12 }] };
+      c.enemy = { hp: 9999, strips: [{ hex: 12 }, { hex: 12 }, { shield: 12 }] };
       c.player.strips = reels3({ sword: 12 });
-      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold' }];
+      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 12 }];
     });
     f.next = 'enemy';
     f.forceNext('enemy', ['hex', 'hex', 'shield']);
@@ -87,34 +87,34 @@ describe('act 2 writers', () => {
     expect(hex.turns).toBe(2);
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const spin = ofType(f.step().events, 'spin')[0];
-    // Jackpot 9, gold is dark while hexed, then halved.
-    expect(spin.score.groups[0].amount).toBe(4);
+    // Jackpot 90, gold is dark while hexed, then halved.
+    expect(spin.score.groups[0].amount).toBe(45);
     expect(spin.hexed).toEqual([true, false, false]);
   });
 
   it('VAMPIRE: drains HP and heals by what got through', () => {
-    const f = fight((c) => (c.enemy = { hp: 99, strips: [{ fangs: 12 }, { fangs: 12 }, { shield: 12 }] }));
+    const f = fight((c) => (c.enemy = { hp: 9999, strips: [{ fangs: 12 }, { fangs: 12 }, { shield: 12 }] }));
     f.sides.enemy.hp = 90;
     f.next = 'enemy';
     f.forceNext('enemy', ['fangs', 'fangs', 'shield']);
     const { events } = f.step();
     const hit = ofType(events, 'attack')[0];
     expect(hit.note).toBe('drain');
-    expect(hit.amount).toBe(4);
-    expect(ofType(events, 'heal')[0].amount).toBe(4);
-    expect(f.sides.enemy.hp).toBe(94);
+    expect(hit.amount).toBe(40);
+    expect(ofType(events, 'heal')[0].amount).toBe(40);
+    expect(f.sides.enemy.hp).toBe(130);
   });
 
   it('MIMIC: copies your last big group (half on a single)', () => {
     const f = fight((c) => {
       c.player.strips = reels3({ sword: 12 });
-      c.enemy = { hp: 99, strips: [{ mimicSym: 12 }, { shield: 12 }, { shield: 12 }] };
+      c.enemy = { hp: 9999, strips: [{ mimicSym: 12 }, { shield: 12 }, { shield: 12 }] };
     });
     f.forceNext('player', ['sword', 'sword', 'sword']);
-    f.step(); // a 9-damage jackpot
+    f.step(); // a 90-damage jackpot
     f.forceNext('enemy', ['mimicSym', 'shield', 'shield']);
     const hit = ofType(f.step().events, 'attack').find((a) => a.note === 'mimic')!;
-    expect(hit.amount).toBe(5);
+    expect(hit.amount).toBe(50); // half, rounded up to tens
   });
 
   it('MIMIC: GULP eats chips from the run purse', () => {
@@ -129,37 +129,37 @@ describe('act 2 writers', () => {
 });
 
 describe('act 2 gilds', () => {
-  it('VAMP swords heal when they hit; BLAZE adds special damage per reel', () => {
+  it('VAMP swords heal when they hit; BLAZE adds special damage per blaze cell', () => {
     const f = fight((c) => {
       c.player.strips = reels3({ sword: 12 });
-      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'vamp' }];
+      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'vamp', n: 12 }];
     });
     f.sides.player.hp = 10;
     f.forceNext('player', ['sword', 'sword', 'sword']);
-    expect(ofType(f.step().events, 'heal')[0]).toMatchObject({ amount: 1, source: 'vamp' });
+    expect(ofType(f.step().events, 'heal')[0]).toMatchObject({ amount: 10, source: 'vamp' });
 
     const g = fight((c) => {
       c.player.strips = reels3({ bolt: 12 });
-      c.player.gilded = [0, 1].map((reel) => ({ reel, symbol: 'bolt' as SymbolId, enh: 'blaze' as const }));
+      c.player.gilded = [0, 1].map((reel) => ({ reel, symbol: 'bolt' as SymbolId, enh: 'blaze' as const, n: 1 }));
     });
     g.forceNext('player', ['bolt', 'bolt', 'bolt']);
-    expect(ofType(g.step().events, 'specialFire')[0].amount).toBe(base.specialDamage + 6);
+    expect(ofType(g.step().events, 'specialFire')[0].amount).toBe(base.specialDamage + 20);
   });
 
   it('LUCKY cells sometimes land as a WILD', () => {
-    const old = LUCKY_CHANCE.each;
-    LUCKY_CHANCE.each = 1;
+    const old = CHARM_VALUE.lucky[1];
+    CHARM_VALUE.lucky[1] = 100;
     try {
       const f = fight((c) => {
         c.player.strips = [{ sword: 12 }, { sword: 12 }, { shield: 12 }];
-        c.player.gilded = [{ reel: 2, symbol: 'shield', enh: 'lucky' }];
+        c.player.gilded = [{ reel: 2, symbol: 'shield', enh: 'lucky', n: 12 }];
       });
       f.forceNext('player', ['sword', 'sword', 'shield']);
       const spin = ofType(f.step().events, 'spin')[0];
       expect(spin.luckyWilds).toEqual([2]);
       expect(spin.score.tier).toBe('triple');
     } finally {
-      LUCKY_CHANCE.each = old;
+      CHARM_VALUE.lucky[1] = old;
     }
   });
 });
@@ -168,7 +168,7 @@ describe('legendary relics', () => {
   it('PHOENIX: survive one lethal hit at 1 HP', () => {
     const f = fight((c) => {
       c.relics = ['phoenix'];
-      c.enemy = { hp: 99, strips: reels3({ sword: 12 }) };
+      c.enemy = { hp: 9999, strips: reels3({ sword: 12 }) };
     });
     f.sides.player.hp = 3;
     f.next = 'enemy';
@@ -186,43 +186,39 @@ describe('legendary relics', () => {
     });
     f.forceNext('player', ['bolt', 'bolt', 'bolt']);
     const fires = ofType(f.step().events, 'specialFire');
-    expect(fires.map((x) => x.amount)).toEqual([base.specialDamage, Math.ceil(base.specialDamage / 3)]);
+    expect(fires.map((x) => x.amount)).toEqual([base.specialDamage, Math.ceil(base.specialDamage / 30) * 10]);
 
     const k = fight((c) => {
       c.relics = ['key'];
       c.player.strips = reels3({ sword: 6, shield: 6 });
     });
     k.forceNext('player', ['sword', 'sword', 'shield']);
-    expect(ofType(k.step().events, 'attack')[0].amount).toBe(8);
+    expect(ofType(k.step().events, 'attack')[0].amount).toBe(80);
 
     const b = fight((c) => {
       c.relics = ['bell'];
       c.player.strips = reels3({ sword: 12 });
     });
     b.forceNext('player', ['sword', 'sword', 'sword']);
-    expect(ofType(b.step().events, 'attack')[0].amount).toBe(18);
+    expect(ofType(b.step().events, 'attack')[0].amount).toBe(180);
 
     const s = fight((c) => {
       c.relics = ['sandglass'];
-      c.enemy = { hp: 99, strips: reels3({ shield: 12 }), ability: { kind: 'smash', every: 3, power: 4 } };
+      c.enemy = { hp: 9999, strips: reels3({ shield: 12 }), ability: { kind: 'smash', every: 3, power: 4 } };
     });
     expect(s.sides.enemy.ability!.every).toBe(3 + SANDGLASS_SLOW);
   });
 
-  it('GOLDEN TICKET: a gild on any 2 reels is a FULL SET', () => {
-    const gilded = [0, 1].map((reel) => ({ reel, symbol: 'bolt' as SymbolId, enh: 'gold' as const }));
-    expect(fightSets(gilded, [])).toBe(false);
-    expect(fightSets(gilded, ['ticket'])).toBe(true);
-    expect(fullSets(gilded, ['ticket']).has('gold')).toBe(true);
+  it('GOLDEN TICKET: every charm is one level higher', () => {
+    const f = fight((c) => {
+      c.relics = ['ticket'];
+      c.player.strips = reels3({ sword: 6, shield: 6 });
+      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 6 }];
+    });
+    f.forceNext('player', ['sword', 'shield', 'shield']);
+    expect(ofType(f.step().events, 'attack')[0].amount).toBe(30); // x3 instead of x2
   });
 });
-
-function fightSets(gilded: { reel: number; symbol: SymbolId; enh: 'gold' }[], relics: ('ticket' | 'bell')[]): boolean {
-  return fight((c) => {
-    c.player.gilded = gilded;
-    c.relics = relics;
-  }).fullSet.has('gold');
-}
 
 describe('act structure', () => {
   it('beating the House starts act 2: new map, full heal, a legendary pick and the Cashier', () => {
@@ -274,7 +270,7 @@ describe('act structure', () => {
     expect(cfg.enemy.strips).toEqual(run.player.strips);
     expect(cfg.enemy.gilded).toEqual(run.player.gilded);
     expect(cfg.enemy.hp).toBe(enemyHp(run, run.enemies[RUN_FIGHTS]));
-    expect(cfg.enemy.hp).toBe(Math.round(TUNE.mirrorPower * machinePower(run)) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length);
+    expect(cfg.enemy.hp).toBe(Math.round((TUNE.mirrorPower * BOSS_MUL.midas.mirror * machinePower(run)) / 10) * 10 + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length);
     expect(cfg.enemy.ability?.kind).toBe(MIRROR.ability.kind);
 
     const f = new Fight(cfg, 9);
@@ -285,15 +281,15 @@ describe('act structure', () => {
     expect(f.sides.enemy.ability!.every).toBe(MIRROR.ability.every - 1);
   });
 
-  it('REFLECTION throws your last spin damage back (min 3)', () => {
+  it('REFLECTION throws your last spin damage back (min 30)', () => {
     const f = fight((c) => {
       c.player.strips = reels3({ sword: 12 });
-      c.enemy = { hp: 99, strips: reels3({ shield: 12 }), ability: { kind: 'reflect', every: 1, power: 20 }, boss: 'mirror' };
+      c.enemy = { hp: 9999, strips: reels3({ shield: 12 }), ability: { kind: 'reflect', every: 1, power: 200 }, boss: 'mirror' };
     });
     f.forceNext('player', ['sword', 'sword', 'sword']);
     f.step();
     const hit = ofType(f.step().events, 'attack').find((a) => a.note === 'reflect')!;
-    expect(hit.amount).toBe(9);
+    expect(hit.amount).toBe(90);
   });
 
   it('act 2 archetypes exist with art ids and only appear in act 2', () => {
@@ -304,32 +300,18 @@ describe('act structure', () => {
 });
 
 describe('ITERATION_5 fixes', () => {
-  it('the SPIKED full set flags its banner; a third charmed reel adds to the stat lines', () => {
-    const f = fight((c) => {
-      c.player.strips = reels3({ shield: 12 });
-      c.player.gilded = [0, 1, 2].map((reel) => ({ reel, symbol: 'shield' as SymbolId, enh: 'spiked' as const }));
-    });
-    f.forceNext('player', ['shield', 'shield', 'shield']);
-    expect(ofType(f.step().events, 'spin')[0].fullSet).toBe(true);
-
+  it('more gold cells mean more expected damage; the heal slot is sized to what is missing', () => {
     const strips = reels3({ sword: 6, shield: 3, bolt: 3 });
-    const two = [0, 1].map((reel) => ({ reel, symbol: 'sword' as SymbolId, enh: 'gold' as const }));
-    const three = [...two, { reel: 2, symbol: 'sword' as SymbolId, enh: 'gold' as const }];
-    const a = stripStats(strips, base, [], two).damage;
-    const b = stripStats(strips, base, [], three).damage;
-    expect(b).toBeGreaterThan(a);
-  });
+    const two = [0, 1].map((reel) => ({ reel, symbol: 'sword' as SymbolId, enh: 'gold' as const, n: 3 }));
+    const three = [...two, { reel: 2, symbol: 'sword' as SymbolId, enh: 'gold' as const, n: 3 }];
+    expect(stripStats(strips, base, [], three).damage).toBeGreaterThan(stripStats(strips, base, [], two).damage);
 
-  it('COMPLETES SET is detected; the heal slot is sized to what is missing', () => {
     const run = createRun(base, 31);
-    run.player.gilded = [0, 1].map((reel) => ({ reel, symbol: 'sword' as SymbolId, enh: 'gold' as const }));
-    expect(completesSet(run, { kind: 'gild', enh: 'gold', symbol: 'sword', reel: 2 })).toBe(true);
-    expect(completesSet(run, { kind: 'gild', enh: 'keen', symbol: 'sword', reel: 2 })).toBe(false);
     run.depth = 1;
-    run.player.hp = run.player.maxHp - 1;
+    run.player.hp = run.player.maxHp - 10;
     expect(shopOffers(run).some((i) => i.option.kind === 'heal')).toBe(false);
-    run.player.hp = run.player.maxHp - 5;
-    expect(shopOffers(run).find((i) => i.option.kind === 'heal')?.option).toEqual({ kind: 'heal', amount: 5 });
+    run.player.hp = run.player.maxHp - 50;
+    expect(shopOffers(run).find((i) => i.option.kind === 'heal')?.option).toEqual({ kind: 'heal', amount: 50 });
   });
 
   it('the shelf always has at least 4 items before the heal slot', () => {

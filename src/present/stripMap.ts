@@ -1,77 +1,26 @@
-import { wrap } from '../core/strip';
-import { drawSprite, type SpriteId } from '../render/sprites';
+import type { Levels } from '../core/config';
+import { BONUS_SYMBOLS } from '../core/strip';
+import { drawReelTable, liveTable } from '../ui/reelTable';
 import { drawText } from '../render/text';
 import { COLORS, MACHINE_TOP } from './layout';
 import type { MachineView } from './machine';
 
 const X0 = 18;
-const COL_W = 40;
+const COL_W = 42;
 const TOP = MACHINE_TOP - 6;
 const HEIGHT = 300;
 
 /**
- * Whole-strip view of the player's reels, centred on the payline, so persistent damage
- * (slime, stolen holes, golem rocks) is visible beyond the 9 cells in the window.
+ * YOUR REELS during a fight: the same table as the draft and the Cashier (columns 1 2 3, a row per
+ * symbol + charm with a count), live, so enemy damage (slime, stolen cells, marks, bombs) shows as rows.
  */
-export function drawStripMap(ctx: CanvasRenderingContext2D, m: MachineView, time: number): void {
+export function drawStripMap(ctx: CanvasRenderingContext2D, m: MachineView, _time: number, levels?: Levels): void {
   ctx.fillStyle = COLORS.outline;
   ctx.fillRect(X0 - 8, TOP - 30, COL_W * 3 + 12, HEIGHT + 40);
   ctx.fillStyle = COLORS.panel;
   ctx.fillRect(X0 - 5, TOP - 27, COL_W * 3 + 6, HEIGHT + 34);
-  drawText(ctx, 'STRIPS', X0 + (COL_W * 3) / 2 - 4, TOP - 16, 2, COLORS.textDim);
-
-  m.reels.forEach((reel, r) => {
-    const n = reel.cells.length;
-    const cellH = Math.max(10, Math.min(22, Math.floor(HEIGHT / n)));
-    const shown = Math.min(n, Math.floor(HEIGHT / cellH));
-    const half = Math.floor(shown / 2);
-    const cx = X0 + r * COL_W + COL_W / 2 - 4;
-    const midY = TOP + HEIGHT / 2;
-    for (let k = -half; k < shown - half; k++) {
-      const idx = wrap(reel.stop + k, n);
-      const cell = reel.cells[idx];
-      const y = midY + k * cellH;
-      const visible = Math.abs(k) <= 1;
-      ctx.fillStyle = visible ? (k === 0 ? 'rgba(255,224,138,0.28)' : 'rgba(255,255,255,0.1)') : 'rgba(255,255,255,0.03)';
-      ctx.fillRect(cx - 17, y - cellH / 2 + 1, 34, cellH - 2);
-      const stolen = cell.stolen ?? 0;
-      if (stolen >= 1) {
-        ctx.strokeStyle = 'rgba(180,160,220,0.4)';
-        ctx.strokeRect(cx - 8, y - cellH / 2 + 2, 16, cellH - 4);
-      } else {
-        const scale = cellH >= 18 ? 1 : cellH / 18;
-        drawSprite(ctx, cell.symbol as SpriteId, cx, y, scale * (cell.pop ?? 1), { dim: cell.goo > 0.5 ? 0.5 : 0 });
-        if (cell.goo > 0) {
-          ctx.globalAlpha = 0.55 * cell.goo;
-          ctx.fillStyle = COLORS.slime;
-          ctx.fillRect(cx - 12, y - cellH / 2 + 2, 24, (cellH - 4) * cell.goo);
-          ctx.globalAlpha = 1;
-        }
-      }
-      if (cell.enh && stolen < 1) {
-        // Gilded: a distinct tick shape per enhancement.
-        const tick = cell.enh === 'gold' || cell.enh === 'lucky' ? 'tickGold' : cell.enh === 'keen' || cell.enh === 'vamp' ? 'tickKeen' : cell.enh === 'charged' || cell.enh === 'blaze' ? 'tickCharged' : 'tickSpiked';
-        drawSprite(ctx, tick, cx + 13, y - cellH / 2 + 5, 1.4);
-      }
-      if (cell.bomb && cell.bomb > 0) {
-        // Live bombs show on the strip map with their fuse, so an off-screen BOOM is never a surprise.
-        ctx.fillStyle = cell.bomb <= 1 ? '#ff3a2e' : '#ff9a3a';
-        ctx.fillRect(cx - 19, y - cellH / 2 + 1, 5, cellH - 2);
-        drawText(ctx, String(cell.bomb), cx - 12, y, 1, cell.bomb <= 1 ? '#ff5a4a' : '#ffd23f');
-      }
-      if (m.frozen[r] > 0 && visible) {
-        ctx.globalAlpha = 0.35 + 0.1 * Math.sin(time * 3);
-        ctx.fillStyle = '#9fe8ff';
-        ctx.fillRect(cx - 17, y - cellH / 2 + 1, 34, cellH - 2);
-        ctx.globalAlpha = 1;
-      }
-    }
-    // Payline marker.
-    ctx.fillStyle = COLORS.goldLight;
-    ctx.fillRect(cx - 19, midY - 1, 3, 2);
-    ctx.fillRect(cx + 16, midY - 1, 3, 2);
-    drawText(ctx, `${n}`, cx, TOP + HEIGHT + 2, 1, n > 14 ? '#c9a27a' : COLORS.textDim);
-  });
+  drawText(ctx, 'YOUR REELS', X0 + (COL_W * 3) / 2 - 4, TOP - 16, 1.5, COLORS.textDim);
+  drawReelTable(ctx, X0 - 2, TOP - 4, liveTable(m.reels, BONUS_SYMBOLS), { colW: COL_W, rowH: 22, scale: 1, text: 1.5, maxRows: 12, levels });
 }
 
 /** Where rocks should fly to for a given reel (centre of that column). */

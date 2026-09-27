@@ -12,24 +12,24 @@ const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
 
 describe('scoring (in-order)', () => {
   it('one of each = base values', () => {
-    expect(totals(['sword', 'shield', 'bolt'])).toEqual({ sword: 1, shield: 1, bolt: 1 });
+    expect(totals(['sword', 'shield', 'bolt'])).toEqual({ sword: 10, shield: 10, bolt: 10 });
     expect(scoreLine(['sword', 'shield', 'bolt'], cfg).tier).toBe('none');
   });
   it('pair on reels 1+2 = (1+1)*2, plus the loose third', () => {
     const s = scoreLine(['sword', 'sword', 'shield'], cfg);
     expect(s.tier).toBe('pair');
-    expect(s.totals).toEqual({ sword: 4, shield: 1 });
+    expect(s.totals).toEqual({ sword: 40, shield: 10 });
   });
   it('reels 2+3 matching is NOT a pair', () => {
     const s = scoreLine(['shield', 'sword', 'sword'], cfg);
     expect(s.tier).toBe('none');
-    expect(s.totals).toEqual({ shield: 1, sword: 2 });
+    expect(s.totals).toEqual({ shield: 10, sword: 20 });
   });
   it('reels 1+3 matching is NOT a pair', () => {
     expect(scoreLine(['bolt', 'sword', 'bolt'], cfg).tier).toBe('none');
   });
   it('triple = (1+1+1)*3', () => {
-    expect(totals(['bolt', 'bolt', 'bolt'])).toEqual({ bolt: 9 });
+    expect(totals(['bolt', 'bolt', 'bolt'])).toEqual({ bolt: 90 });
     expect(scoreLine(['sword', 'sword', 'sword'], cfg).tier).toBe('triple');
   });
   it('groups resolve left to right', () => {
@@ -41,7 +41,7 @@ describe('scoring (in-order)', () => {
   });
   it('anyTwo rule counts reels 2+3', () => {
     const c = { ...defaultConfig(), pairRule: 'anyTwo' as const };
-    expect(scoreLine(['shield', 'sword', 'sword'], c).totals).toEqual({ shield: 1, sword: 4 });
+    expect(scoreLine(['shield', 'sword', 'sword'], c).totals).toEqual({ shield: 10, sword: 40 });
   });
   it('near-miss = first two reels match', () => {
     expect(isNearMiss(['sword', 'sword', 'bolt'])).toBe(true);
@@ -63,14 +63,14 @@ describe('fight resolution', () => {
     expect(f.step().side).toBe('player');
   });
 
-  it('sword pair deals 4 damage', () => {
+  it('sword pair deals 40 damage', () => {
     const f = fight();
     f.forceNext('player', ['sword', 'sword', 'shield']);
     const { events } = f.step();
     const [atk] = ofType(events, 'attack');
-    expect(atk.amount).toBe(4);
-    expect(f.sides.enemy.hp).toBe(26);
-    expect(f.sides.player.shield).toBe(1);
+    expect(atk.amount).toBe(40);
+    expect(f.sides.enemy.hp).toBe(260);
+    expect(f.sides.player.shield).toBe(10);
   });
 
   it('shield absorbs damage before HP', () => {
@@ -79,19 +79,19 @@ describe('fight resolution', () => {
     f.step(); // player: shield 1
     f.forceNext('enemy', ['sword', 'sword', 'sword']);
     const [atk] = ofType(f.step().events, 'attack');
-    expect(atk.blocked).toBe(1);
-    expect(atk.hpDamage).toBe(8);
-    expect(f.sides.player.hp).toBe(12);
+    expect(atk.blocked).toBe(10);
+    expect(atk.hpDamage).toBe(80);
+    expect(f.sides.player.hp).toBe(120);
   });
 
   it("each side's shield resets at the start of its own turn", () => {
     const f = fight();
     f.forceNext('player', ['shield', 'shield', 'shield']);
     f.step();
-    expect(f.sides.player.shield).toBe(9);
+    expect(f.sides.player.shield).toBe(90);
     f.forceNext('enemy', ['shield', 'shield', 'bolt' as SymbolId]); // enemy has no bolt: falls back to random
     f.step();
-    expect(f.sides.player.shield).toBeLessThanOrEqual(9); // survived through the enemy turn (maybe dented)
+    expect(f.sides.player.shield).toBeLessThanOrEqual(90); // survived through the enemy turn (maybe dented)
     const shieldBefore = f.sides.player.shield;
     const { events } = f.step(); // player's next turn wipes it first
     const [reset] = ofType(events, 'shieldReset');
@@ -104,32 +104,33 @@ describe('fight resolution', () => {
     f.step();
     f.forceNext('enemy', ['shield', 'shield', 'shield']);
     f.step();
-    expect(f.sides.enemy.shield).toBe(9);
+    // Enemy shields are worth half (TUNE.enemyShield): a jackpot of them is 45.
+    expect(f.sides.enemy.shield).toBe(45);
     f.forceNext('player', ['sword', 'sword', 'bolt']);
     const [atk] = ofType(f.step().events, 'attack');
-    expect(atk.blocked).toBe(4);
+    expect(atk.blocked).toBe(40);
     expect(f.sides.enemy.shield).toBe(5);
     const { events } = f.step();
     expect(ofType(events, 'shieldReset')[0]).toMatchObject({ side: 'enemy', lost: 5 });
   });
 
-  it('bolt triple fires the special once and overflows 4 energy', () => {
+  it('bolt triple fires the special once and overflows 40 energy', () => {
     const f = fight();
     f.forceNext('player', ['bolt', 'bolt', 'bolt']);
     const { events } = f.step();
     const fires = ofType(events, 'specialFire');
     expect(fires).toHaveLength(1);
-    expect(fires[0].amount).toBe(10);
-    expect(f.sides.player.energy).toBe(4);
-    expect(f.sides.enemy.hp).toBe(20);
+    expect(fires[0].amount).toBe(100);
+    expect(f.sides.player.energy).toBe(40);
+    expect(f.sides.enemy.hp).toBe(200);
   });
 
   it('special can fire multiple times from carried energy', () => {
-    const f = fight((c) => (c.specialCost = 4));
+    const f = fight((c) => (c.specialCost = 40));
     f.forceNext('player', ['bolt', 'bolt', 'bolt']);
     const fires = ofType(f.step().events, 'specialFire');
     expect(fires).toHaveLength(2);
-    expect(f.sides.player.energy).toBe(1);
+    expect(f.sides.player.energy).toBe(10);
   });
 
   it('special ignores shield by default, respects it when toggled', () => {
@@ -138,10 +139,10 @@ describe('fight resolution', () => {
       f.forceNext('player', ['shield', 'bolt', 'shield']);
       f.step();
       f.forceNext('enemy', ['shield', 'shield', 'sword']);
-      f.step(); // enemy shield 4
+      f.step(); // enemy shield 20 (a double of half-value shields)
       f.forceNext('player', ['bolt', 'bolt', 'bolt']);
       const [fire] = ofType(f.step().events, 'specialFire');
-      expect(fire.blocked).toBe(ignore ? 0 : 4);
+      expect(fire.blocked).toBe(ignore ? 0 : 20);
     }
   });
 
@@ -199,7 +200,7 @@ describe('fight resolution', () => {
   });
 
   it('death ends the fight and stops resolving', () => {
-    const f = fight((c) => (c.enemy.hp = 3));
+    const f = fight((c) => (c.enemy.hp = 30));
     f.forceNext('player', ['sword', 'sword', 'bolt']);
     const { events } = f.step();
     expect(f.winner).toBe('player');

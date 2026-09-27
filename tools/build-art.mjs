@@ -3223,6 +3223,60 @@ S.relicSym = lit(16, 16, [
   '..GGGGGGGGGGgg..',
   '..gg........gg..',
 ]);
+// ---------------------------------------------------------------- Tuesday rework: signature symbols + charm relic
+// goldbar (16x16): MIDAS's signature symbol, a gold ingot (bright top face, gold front, dark side)
+S.goldbar = lit(16, 16, [
+  '................',
+  '................',
+  '................',
+  '.......WWYYY....',
+  '.....WWYYYYYO...',
+  '....WYYYYYYOOg..',
+  '...YYYYYYYYOOg..',
+  '..GGGGGGGGGGgg..',
+  '..GYYGGGGGGGgg..',
+  '..GYGGGGGGGGgg..',
+  '..GGGGGGGGGGg...',
+  '..GGGGGGGGGGg...',
+  '..gggggggggg....',
+  '................',
+]);
+// thorn (16x16): BRIAR's signature symbol, a bramble with pale-tipped spikes
+S.thorn = lit(16, 16, [
+  '................',
+  '............EE..',
+  '...........EeQ..',
+  '.....W....EeQ...',
+  '.....EW..EeQ....',
+  '......EeEeQ..W..',
+  '.......EeQ..EQ..',
+  '......EeQeEeQ...',
+  '.....EeQ..QQ....',
+  '..W.EeQ.........',
+  '..QEeQ..........',
+  '...EQ...........',
+  '..EeQ...........',
+  '.EeQ............',
+  '.QQ.............',
+  '................',
+]);
+// relicChalice (16x16): BLOOD CHALICE, a gold goblet brimming red (overheal becomes shield)
+S.relicChalice = lit(16, 16, [
+  '................',
+  '...WYYYYYYYYG...',
+  '...YRRRRRRRRG...',
+  '...GrRRMRRRrg...',
+  '....GrRRRRrg....',
+  '.....GrrrrG.....',
+  '......GYGg......',
+  '.......Yg.......',
+  '.......Gg.......',
+  '.......Gg.......',
+  '......YGGg......',
+  '.....YGGGGg.....',
+  '....GGGGGGgg....',
+  '................',
+]);
 /** Ticket stub (24x16): notched ends, 1px rim lit top-left, perforation, icon on the left, mark on the stub. */
 function voucher(pal, icon, mark) {
   const g = grid(24, 16);
@@ -3828,6 +3882,7 @@ const DIMS = {
   iconNewRun: 16, iconTutorial: 16, iconCollection: 16, iconHiscores: 16, mysterySlot: 16,
   hsSkull: 12, trophySmall: 12, coinSpin0: 16, coinSpin1: 16, coinSpin2: 16, coinSpin3: 16, tutorialPointer: 12,
   heroKnight: 24, heroMidas: 24, heroThorn: 24, heroTesla: 24, heroJoker: 24,
+  goldbar: 16, thorn: 16, relicChalice: 16,
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -3943,7 +3998,9 @@ export type SpriteId =
   | 'coinSpin0' | 'coinSpin1' | 'coinSpin2' | 'coinSpin3' // loading-screen coin spin frames, 16x16
   | 'tutorialPointer'                             // tutorial callout arrow, points DOWN, 12x12
   | 'heroKnight' | 'heroMidas' | 'heroThorn'      // player hero portraits (face RIGHT), 24x24
-  | 'heroTesla' | 'heroJoker';
+  | 'heroTesla' | 'heroJoker'
+  | 'goldbar' | 'thorn'                          // signature symbols: MIDAS gold bar, BRIAR thorn, 16x16
+  | 'relicChalice';                              // BLOOD CHALICE relic, 16x16
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

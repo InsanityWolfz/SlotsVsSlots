@@ -18,10 +18,8 @@ export interface CellView {
   stolen?: number;
   /** Freshly inserted (rock): punch-in 0..1. */
   pop?: number;
-  /** Gilded for the run. */
+  /** This cell's charm (for the run). */
   enh?: Enh;
-  /** Tier II gild. */
-  tier?: 2;
   /** The Grounder's rod. */
   grounded?: boolean;
   /** The Card Sharp's marked card. */
@@ -280,12 +278,6 @@ export function drawCell(
   if (cell.enh && !cell.slimed) {
     const shimmer = 0.85 + 0.15 * Math.sin(time * 4 + x * 0.05 + y * 0.03);
     drawSprite(ctx, ENH_SPRITE[cell.enh], x, y, ART_SCALE, { sx: sx * pop, sy: sy * pop, alpha: alpha * (1 - stolen) * shimmer, dim });
-    if (cell.tier === 2 && hasSprite('tier2Frame')) drawSprite(ctx, artId('tier2Frame'), x, y, ART_SCALE, { sx: sx * pop, sy: sy * pop, alpha: alpha * (1 - stolen), dim });
-    if (cell.tier === 2 && !hasSprite('tier2Frame')) {
-      ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(x + 12, y - 34, 22, 16);
-      drawText(ctx, 'II', x + 23, y - 26, 1.5, COLORS.goldLight, { alpha });
-    }
   }
 
   // A marked card sits over the symbol: it's dead, and it bites on your payline.

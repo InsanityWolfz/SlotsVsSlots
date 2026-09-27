@@ -1,9 +1,9 @@
 import type { Sounds } from '../audio/sounds';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import type { Enh, RelicId } from '../core/config';
-import { ALL_CHARMS, runScore, type Profile, type RunEntry } from '../core/profile';
-import { BLAZE_BONUS, LEGENDARY, LUCKY_CHANCE, RELICS, RELIC_TIER } from '../core/relics';
-import { GILD_SYMBOLS } from '../core/run';
+import { runScore, type Profile, type RunEntry } from '../core/profile';
+import { LEGENDARY, RELICS, RELIC_TIER } from '../core/relics';
+import { CHARM_SYMBOLS, charmRuleText } from '../core/charms';
 import { STAKES } from '../core/stakes';
 import type { Clock } from '../present/clock';
 import { sineOut } from '../present/ease';
@@ -22,14 +22,16 @@ import { wrap } from './runScreens';
 export type MenuMode = 'none' | 'loading' | 'main' | 'collection' | 'hiscores';
 
 export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
-  gold: { name: 'GOLD', text: 'SWORDS, BOLTS OR SHIELDS. A GROUP WITH IT PAYS X2 (MORE WITH TIER II).' },
-  keen: { name: 'KEEN', text: 'SWORDS DEAL +1 AND PIERCE SHIELDS.' },
-  charged: { name: 'CHARGED', text: 'BOLTS GIVE +1 ENERGY FOR YOUR SPECIAL.' },
-  spiked: { name: 'SPIKED', text: 'SHIELDS HIT BACK FOR 2 WHEN YOU ARE HIT.' },
-  vamp: { name: 'VAMP', text: 'ACT 2. SWORDS HEAL YOU 1 WHEN THEY HIT.' },
-  lucky: { name: 'LUCKY', text: `ACT 2. SHIELDS OR BOLTS: ${Math.round(LUCKY_CHANCE.each * 100)}% CHANCE TO LAND AS A WILD.` },
-  blaze: { name: 'BLAZE', text: `ACT 2. BOLTS: YOUR SPECIAL DEALS +${BLAZE_BONUS.each}.` },
+  gold: { name: 'GOLD', text: `SWORDS, SHIELDS OR BOLTS. ${charmRuleText('gold', 1)}. LEVELS: X3, X4.` },
+  keen: { name: 'KEEN', text: `SWORDS. ${charmRuleText('keen', 1)}.` },
+  charged: { name: 'CHARGED', text: `TESLA'S BOLTS. ${charmRuleText('charged', 1)}.` },
+  spiked: { name: 'SPIKED', text: 'RETIRED.' },
+  vamp: { name: 'VAMP', text: `SWORDS. ${charmRuleText('vamp', 1)}.` },
+  lucky: { name: 'LUCKY', text: `ACT 2. ${charmRuleText('lucky', 1)}.` },
+  blaze: { name: 'BLAZE', text: `ACT 2. TESLA'S BOLTS. ${charmRuleText('blaze', 1)}.` },
 };
+/** Charms in the COLLECTION (SPIKED retired). */
+const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze'];
 
 const TIER_COLOR = { common: '#c9c9d9', uncommon: '#5ad8e8', legendary: '#ffd23f', other: '#9a8fb0' };
 
@@ -334,7 +336,7 @@ export class Menus {
     if (hasSprite('menuBackdrop')) drawSprite(ctx, artId('menuBackdrop'), W / 2, 646, 3);
     const p = this.profile();
     const found = p.found.relics.length + p.found.charms.length;
-    const total = RELIC_ORDER.length + ALL_CHARMS.length;
+    const total = RELIC_ORDER.length + CHARM_ORDER.length;
     const best = p.runs.reduce((m, e) => Math.max(m, runScore(e)), 0);
     drawText(ctx, `COLLECTION ${found}/${total}   RUNS ${p.runs.length}   BEST ${best}`, W / 2, 604, 1.5, COLORS.textDim);
     if (!this.cb.tutorialDone()) drawText(ctx, 'NEW HERE? TRY THE TUTORIAL', W / 2, 276, 2, COLORS.goldLight, { alpha: 0.6 + 0.4 * Math.sin(t * 4) });
@@ -366,16 +368,16 @@ export class Menus {
 
     // Charms.
     const nc = p.found.charms.length;
-    drawText(ctx, `CHARMS ${nc}/${ALL_CHARMS.length}`, 60, 110, 2.5, COLORS.text, { align: 'left' });
-    drawText(ctx, 'FULL SET: THE SAME CHARM ALL ACROSS THE PAYLINE', W - 60, 110, 1.5, COLORS.textDim, { align: 'right' });
-    ALL_CHARMS.forEach((enh, i) => {
-      const x = W / 2 + (i - 3) * 150;
+    drawText(ctx, `CHARMS ${Math.min(nc, CHARM_ORDER.length)}/${CHARM_ORDER.length}`, 60, 110, 2.5, COLORS.text, { align: 'left' });
+    drawText(ctx, 'A CHARM SITS ON ONE CELL. GOLD IN A GROUP ADDS UP', W - 60, 110, 1.5, COLORS.textDim, { align: 'right' });
+    CHARM_ORDER.forEach((enh, i) => {
+      const x = W / 2 + (i - 2.5) * 150;
       const y = 176;
       const got = p.found.charms.includes(enh);
       const hover = this.near(x, y, 36);
       this.tile(ctx, x, y, 72, got ? COLORS.gold : '#3a3448', hover);
       if (got) {
-        drawSprite(ctx, GILD_SYMBOLS[enh][0] as SpriteId, x, y, 3);
+        drawSprite(ctx, CHARM_SYMBOLS[enh][0] as SpriteId, x, y, 3);
         drawSprite(ctx, ENH_SPRITE[enh], x, y, 3);
       } else this.mystery(ctx, x, y, 3);
       drawText(ctx, got ? CHARM_INFO[enh].name : '???', x, y + 52, 1.5, got ? COLORS.goldLight : COLORS.textDim);
@@ -462,10 +464,10 @@ export class Menus {
       e.charms.forEach((c, k) => {
         const x = cx + (k % 4) * 30;
         const yy = y - 12 + Math.floor(k / 4) * 26;
-        drawSprite(ctx, GILD_SYMBOLS[c.enh][0] as SpriteId, x, yy, 1.4);
+        drawSprite(ctx, (CHARM_SYMBOLS[c.enh][0] ?? 'shield') as SpriteId, x, yy, 1.4);
         drawSprite(ctx, ENH_SPRITE[c.enh], x, yy, 1.4);
-        if (c.tier) drawText(ctx, 'II', x + 11, yy + 9, 1, '#ffffff');
-        if (c.set) drawText(ctx, '3', x - 11, yy + 9, 1, '#ffd23f');
+        if (c.lvl > 1) drawText(ctx, `L${c.lvl}`, x + 10, yy + 9, 1, '#ffffff');
+        if (c.n) drawText(ctx, `${c.n}`, x - 11, yy + 9, 1, '#ffd23f');
       });
       if (!e.charms.length) drawText(ctx, 'NO CHARMS', cx - 12, y - 12, 1.25, COLORS.textDim, { align: 'left' });
       // Score and date.
@@ -475,6 +477,6 @@ export class Menus {
     });
     const pages = Math.ceil(list.length / ROWS_PER_PAGE);
     if (pages > 1) drawText(ctx, `PAGE ${this.page + 1}/${pages}`, W / 2, H - 36, 2, COLORS.textDim);
-    drawText(ctx, 'II: TIER II   3: ON ALL 3 REELS', 60, H - 30, 1.25, COLORS.textDim, { align: 'left' });
+    drawText(ctx, 'N: CHARMED CELLS   L2: CHARM LEVEL', 60, H - 30, 1.25, COLORS.textDim, { align: 'left' });
   }
 }
