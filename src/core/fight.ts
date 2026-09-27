@@ -18,9 +18,6 @@ import {
   HONE_BONUS,
   FULL_SET_STEP,
   KEEN_BONUS,
-  LOCKPICK_CHANCE,
-  MOUSETRAP_CHANCE,
-  MOUSETRAP_DAMAGE,
   POT,
   ROD_SPECIAL_COST,
   REFLECT_MIN,
@@ -623,9 +620,9 @@ export class Fight {
       this.cleanse(me, g.reels, events);
       return;
     }
-    if (g.symbol === 'rock' && me.relics.has('pickaxe')) {
-      events.push({ type: 'relic', side: me.side, relic: 'pickaxe' });
-      this.hit(me, foe, g.amount, g.reels, events);
+    // A jackpot of stolen (empty) cells gets EVERYTHING back, the way slime's cleanse does.
+    if (g.symbol === 'empty' && g.matched && g.reels.length >= 3) {
+      this.recover(me, events);
       return;
     }
     void score;
@@ -685,6 +682,8 @@ export class Fight {
         const h2 = this.damage(foe, echo, pierce);
         events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: echo, ...h2, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
         this.checkDeath(foe, events);
+        // Vampire Fang drinks from the echo too.
+        if (!this.over && me.relics.has('fang')) this.heal(me, FANG_HEAL, 'fang', events);
       }
       if (!this.over && me.relics.has('fang')) this.heal(me, FANG_HEAL, 'fang', events);
     }
@@ -1073,11 +1072,6 @@ export class Fight {
    */
   private applyStatus(me: Combatant, foe: Combatant, status: 'frozen' | 'locked', count: number, turns: number, reels: number[], events: CombatEvent[]): void {
     const ice = status === 'frozen';
-    if (ice && foe.relics.has('mittens')) turns -= 1;
-    if (turns <= 0) {
-      events.push({ type: 'resist', side: foe.side, relic: 'mittens', what: 'freeze' });
-      return;
-    }
     const arr = foe[status];
     const valueAt = (r: number, stop: number) => {
       const c = foe.reels[r].cells[stop];
@@ -1088,11 +1082,6 @@ export class Fight {
     let targets = order.slice(0, count).sort((a, b) => a - b);
 
     if (!ice) {
-      if (foe.relics.has('lockpick')) {
-        const kept = targets.filter(() => this.rng.next() >= LOCKPICK_CHANCE);
-        if (kept.length < targets.length) events.push({ type: 'resist', side: foe.side, relic: 'lockpick', what: 'jam' });
-        targets = kept;
-      }
       if (!targets.length) return;
       for (const r of targets) arr[r] = Math.max(arr[r], turns);
       events.push({ type: 'lock', from: me.side, to: foe.side, reels, targets, turns });
@@ -1153,22 +1142,10 @@ export class Fight {
       }),
     );
     pool.sort((a, b) => cellValue(foe.reels[b.reel].cells[b.index]) - cellValue(foe.reels[a.reel].cells[a.index]));
-    let cells = pool.slice(0, amount);
-    // Mousetrap: each grab can get snapped — and the thief pays for it.
-    let snapped = false;
-    if (foe.relics.has('mousetrap')) {
-      const kept = cells.filter(() => this.rng.next() >= MOUSETRAP_CHANCE);
-      snapped = kept.length < cells.length;
-      cells = kept;
-    }
+    const cells = pool.slice(0, amount);
     const symbols = cells.map((ref) => foe.reels[ref.reel].cells[ref.index].symbol);
     for (const ref of cells) foe.reels[ref.reel].cells[ref.index].stolen = true;
-    if (snapped) {
-      events.push({ type: 'resist', side: foe.side, relic: 'mousetrap', what: 'steal' });
-      this.hit(foe, me, MOUSETRAP_DAMAGE, [], events, false, 'snap');
-      if (this.over) return;
-    }
-    if (cells.length || !snapped) events.push({ type: 'steal', from: me.side, to: foe.side, reels, cells, symbols, wasted: snapped ? 0 : amount - cells.length });
+    events.push({ type: 'steal', from: me.side, to: foe.side, reels, cells, symbols, wasted: amount - cells.length });
   }
 
   private junk(me: Combatant, foe: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
@@ -1183,6 +1160,19 @@ export class Fight {
       inserts.push({ reel: idx, index });
     }
     events.push({ type: 'junk', from: me.side, to: foe.side, reels, inserts });
+  }
+
+  /** Every stolen cell on your strips comes back. */
+  private recover(me: Combatant, events: CombatEvent[]): void {
+    const cells: CellRef[] = [];
+    me.reels.forEach((reel, r) =>
+      reel.cells.forEach((cell, i) => {
+        if (!cell.stolen) return;
+        delete cell.stolen;
+        cells.push({ reel: r, index: i });
+      }),
+    );
+    events.push({ type: 'recover', side: me.side, cells });
   }
 
   private cleanse(me: Combatant, reels: number[], events: CombatEvent[]): void {

@@ -55,8 +55,14 @@ const PREFS_KEY = 'slotvslot.prefs.v2';
 const PROFILE_KEY = 'slotvslot.profile.v1';
 const AUTO_DELAY = 0.35;
 
+/** Speed buttons (keys 1-4). The new 1X is half of the old 1X, so the clock runs at speed / 2. */
+const SPEEDS = [1, 2, 4, 8];
+const clockSpeed = (s: number) => s / 2;
+
 interface Prefs {
   speed: number;
+  /** 2 = speeds are on the 1/2/4/8 scale (older saves stored 1/2/4 on the old scale). */
+  speedV: number;
   auto: boolean;
   juice: JuiceToggles;
   muted: boolean;
@@ -87,7 +93,9 @@ function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
   if (p.stakes && typeof p.stakes === 'object') for (const id of CABINET_ORDER) if (id in (p.stakes as object)) stakes[id] = clampStake((p.stakes as Record<string, unknown>)[id]);
   const juice = p.juice && typeof p.juice === 'object' ? (p.juice as Partial<JuiceToggles>) : {};
   return {
-    speed: [1, 2, 4].includes(p.speed as number) ? (p.speed as number) : 1,
+    // Old saves: 1/2/4 on the old scale become 2/4/8 (the same real speed).
+    speed: p.speedV === 2 ? (SPEEDS.includes(p.speed as number) ? (p.speed as number) : 2) : [1, 2, 4].includes(p.speed as number) ? (p.speed as number) * 2 : 2,
+    speedV: 2,
     auto: typeof p.auto === 'boolean' ? p.auto : true,
     juice: { ...defaultJuice(), ...juice },
     muted: p.muted === true,
@@ -235,7 +243,7 @@ export class Game {
       ring: () => this.prefs.auto,
     });
     this.autoBtn = this.btn('AUTO', px - 116, by, 84, 44, () => this.setAuto(!this.prefs.auto));
-    [1, 2, 4].forEach((s, i) => this.speedBtns.push(this.btn(`${s}X`, px + 90 + i * 48, by, 42, 44, () => this.setSpeed(s))));
+    SPEEDS.forEach((s, i) => this.speedBtns.push(this.btn(`${s}X`, px + 86 + i * 44, by, 40, 44, () => this.setSpeed(s))));
     this.startBtn = this.btn('START RUN', W / 2 + 10, by, 196, 56, () => this.newRunPressed(), { idlePulse: true, textScale: 3 });
     const ex = MACHINE_CX.enemy;
     const tune = this.btn('TUNE', ex - 110, by, 90, 44, () => {});
@@ -252,7 +260,7 @@ export class Game {
 
   private syncButtons(): void {
     this.autoBtn.toggled = this.prefs.auto;
-    this.speedBtns.forEach((b, i) => (b.toggled = [1, 2, 4][i] === this.prefs.speed));
+    this.speedBtns.forEach((b, i) => (b.toggled = SPEEDS[i] === this.prefs.speed));
     this.spinBtn.enabled = this.awaitingSpin;
     this.startBtn.label = this.phase === 'title' ? 'START RUN' : this.abandonArmed ? 'SURE?' : 'NEW RUN';
     this.startBtn.opts.idlePulse = this.phase === 'title';
@@ -604,7 +612,7 @@ export class Game {
     this.lastSeed = this.fight.seed;
     this.tracker = new StatsTracker(this.fight);
     const clock = new Clock();
-    clock.speed = this.prefs.speed;
+    clock.speed = clockSpeed(this.prefs.speed);
     const sides: SideId[] = ['player', 'enemy'];
     const machines = Object.fromEntries(sides.map((s) => [s, new MachineView(s, this.fight.sides[s], this.sounds)])) as Stage['machines'];
     const huds = Object.fromEntries(
@@ -729,7 +737,7 @@ export class Game {
 
   setSpeed(s: number): void {
     this.prefs.speed = s;
-    this.stage.clock.speed = s;
+    this.stage.clock.speed = clockSpeed(s);
     this.savePrefs();
     this.syncButtons();
   }
@@ -841,13 +849,10 @@ export class Game {
         else this.skip();
         return true;
       case '1':
-        this.setSpeed(1);
-        return true;
       case '2':
-        this.setSpeed(2);
-        return true;
       case '3':
-        this.setSpeed(4);
+      case '4':
+        this.setSpeed(SPEEDS[Number(k) - 1]);
         return true;
       case 'a':
         this.setAuto(!this.prefs.auto);
@@ -1054,7 +1059,7 @@ export class Game {
       }
     }
     else drawText(ctx, 'VS', cx, cy + 70, 6, '#ff6a5a', { alpha: 0.35 + 0.1 * Math.sin(t * 2) });
-    if (this.prefs.speed > 1) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss || this.fight.isMirror || this.fight.isDealer ? cy - 136 : cy + 172, 2, COLORS.textDim);
+    if (this.prefs.speed !== 2) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss || this.fight.isMirror || this.fight.isDealer ? cy - 136 : cy + 172, 2, COLORS.textDim);
   }
 
   /** The House's progressive pot, front and centre: grows (and glows) with the stakes. */

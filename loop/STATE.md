@@ -311,3 +311,12 @@ User direction (binding): a FULL SET is ONLY the same charm on all 3 PAYLINE cel
 ### Iteration 23 — 2026-09-25 (user: RELIC RUSH juice; BONUS WHEEL collect or pass)
 - RELIC RUSH is slower and juicier (~12 s for a big rush, was ~5): each respin ticks fast then slows, relics land one at a time with a scale pop, gold burst, panel shake and rising coin pitch; the RESPINS counter punches gold on a reset / red on a whiff; banners for LAST SPIN!, UNCOMMON!, LEGENDARY!, GRAND!.
 - BONUS WHEEL: the prize is held (finishFight(run, fight, holdWheel=true) in the game); the reveal offers PASS or COLLECT. Sims/tests still collect (default). Test added.
+
+### Iteration 24 — 2026-09-27 (Tuesday runbook Step A: quick fixes; user decisions in DIRECTION_NOTES "STOP 1 decisions")
+- Preps (MITTENS, LOCKPICK, MOUSETRAP, PICKAXE) removed from relics, drafts, collection, sims and tests (expert review §1.9: bottom 4 relics, 30-45% win). The draft's third slot now offers an any-direction SWAP card (2 cells, e.g. SHIELDS TO SWORDS) 60% of the time, else HP.
+- Rat thief: a jackpot of stolen (empty) cells returns EVERY stolen cell (new 'recover' event, RECOVERED xN banner). Slime unchanged.
+- Vampire Fang also heals on the Overcharge echo.
+- Golden Hourglass: enemy abilities 1 turn slower (was 2; it was the top relic at 76% run win).
+- Speeds 1X/2X/4X/8X (keys 1-4); the new 1X is half the old 1X. Prefs migrate old 1/2/4 to 2/4/8 (speedV 2); default 2X (= old 1X).
+- New official harness tools/balance/tuesday.ts (greedy sim, per slot machine: WHITE acts 1-2, GREEN act 3 + Dealer, HP into the Dealer, act 3 regular deaths/HP lost/turns). simulateRuns gained hpIntoDealerPct, act3Regular, turnsByAct.
+Numbers (tuesday.ts N 1000, before → after): WHITE win avg 24.9 → 26.5 (knight 26.6→28.3, midas 28.9→29.3, thorn 24.3→25.2, tesla 20.8→25.1, joker 23.7→24.6); GREEN win 13.1 → 14.6; Dealer 69.8 → 72.2; HP into Dealer 90.8 → 90.4%. Rebalanced later with the rework.

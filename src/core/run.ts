@@ -11,8 +11,6 @@ import {
   BOSS_HP_PER_RELIC,
   BUILD_ENABLER,
   CACTUS_DAMAGE,
-  COUNTER_RELICS,
-  COUNTERS,
   ELITE_ONLY,
   HONE_BONUS,
   KEEN_BONUS,
@@ -52,11 +50,16 @@ export const RUN = {
   swapCount: 3,
   addCount: 2,
   wildCount: 2,
+  /** Any-direction swap cards move this many cells. */
+  anySwapCount: 2,
   /** The Cashier opens after these fights (1-based), after the draft. */
   shopAfter: [1, 3, 5],
   /** Legendary relics offered when an act's boss falls. */
   legendPick: 3,
 };
+
+/** Player symbols the any-direction swap cards move between. */
+export const SWAPPABLE: SymbolId[] = ['sword', 'shield', 'bolt'];
 
 /** Which gild goes on which symbols (act 2 unlocks VAMP, LUCKY and BLAZE). */
 export const GILD_SYMBOLS: Record<Enh, SymbolId[]> = {
@@ -575,7 +578,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   }
   // Act 1 elites offer their spoils: choose 1 of 2 relics.
   if (beaten.elite && run.act === 1) {
-    const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && !COUNTER_RELICS.has(r) && relicFits(run, r) && !LEGENDARY.has(r));
+    const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && !LEGENDARY.has(r));
     const rng = new Rng((run.seed ^ Math.imul(run.depth + 7 + run.act * 100, 0x85ebca6b)) >>> 0);
     const spoils = rng.shuffle(pool).slice(0, 2);
     if (spoils.length) run.pendingSpoils = spoils;
@@ -671,7 +674,7 @@ export function stripStats(strips: StripCounts[], base: GameConfig, relics: Reli
         }
         sc.totals = {};
         for (const g of sc.groups) sc.totals[g.symbol] = (sc.totals[g.symbol] ?? 0) + g.amount;
-        out.damage += p * Math.min(damageCap, (sc.totals.sword ?? 0) + (relics.includes('pickaxe') ? sc.totals.rock ?? 0 : 0));
+        out.damage += p * Math.min(damageCap, sc.totals.sword ?? 0);
         out.energy += p * (sc.totals.bolt ?? 0);
         out.shield += p * (sc.totals.shield ?? 0);
         if (sc.tier === 'pair') out.pairPct += p * 100;
@@ -769,7 +772,6 @@ export function draftOffers(run: RunState): DraftOption[] {
     const pool = (Object.keys(RELICS) as RelicId[]).filter(
       (r) =>
         !p.relics.includes(r) &&
-        !COUNTER_RELICS.has(r) &&
         !ELITE_ONLY.has(r) &&
         relicFits(run, r) &&
         (run.act > 1 || !LEGENDARY.has(r)) &&
@@ -780,11 +782,17 @@ export function draftOffers(run: RunState): DraftOption[] {
     if (legends.length && rng.next() < 0.4) return { kind: 'relic', relic: rng.pick(legends) };
     return pool.length ? { kind: 'relic', relic: rng.pick(pool) } : null;
   };
-  /** PREP: a counter relic for an enemy on the very next fight/fork. */
-  const prepCard = (): DraftOption | null => {
-    const next = run.paths[run.depth] ?? [];
-    const counters = next.map((e) => COUNTERS[e.archetype]).filter((r): r is RelicId => !!r && !p.relics.includes(r));
-    return counters.length ? { kind: 'relic', relic: rng.pick(counters) } : null;
+  /** SWAP, any direction: turn a few of one symbol into another (small counts). */
+  const anySwapCard = (): DraftOption | null => {
+    const options: DraftOption[] = [];
+    p.strips.forEach((s, reel) => {
+      for (const from of SWAPPABLE)
+        for (const to of SWAPPABLE) {
+          if (from === to || (s[from] ?? 0) < RUN.anySwapCount + 1) continue;
+          options.push({ kind: 'swap', from, to, count: RUN.anySwapCount, reel });
+        }
+    });
+    return options.length ? rng.pick(options) : null;
   };
 
   if (isRelicDraft(run)) {
@@ -795,7 +803,7 @@ export function draftOffers(run: RunState): DraftOption[] {
     push(gildCard() ?? swapCard());
     const r = rng.next();
     push((r < 0.35 ? wildCard() : r < 0.65 ? swapCard() : null) ?? clearCard() ?? gildCard() ?? addCard());
-    push((rng.next() < 0.6 ? prepCard() : null) ?? hpCard());
+    push((rng.next() < 0.6 ? anySwapCard() : null) ?? hpCard());
   }
   let guard = 0;
   while (out.length < RUN.draftSize && guard++ < 30) push(guard % 3 === 0 ? addCard() : guard % 3 === 1 ? swapCard() : { kind: 'maxHp', amount: RUN.maxHpCard });
@@ -890,7 +898,7 @@ export function shopOffers(run: RunState): ShopItem[] {
   add(gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
   const lastShop = run.act === runActs(run) && run.depth >= Math.min(actLength(run.act), RUN.shopAfter[RUN.shopAfter.length - 1]);
   const relics = (Object.keys(RELICS) as RelicId[]).filter(
-    (r) => !p.relics.includes(r) && !COUNTER_RELICS.has(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && !(lastShop && r === 'bandage') && !LEGENDARY.has(r),
+    (r) => !p.relics.includes(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && !(lastShop && r === 'bandage') && !LEGENDARY.has(r),
   );
   // Act 2: the relic slot holds a legendary, priced like one.
   const legends = run.act > 1 ? [...LEGENDARY].filter((r) => !p.relics.includes(r) && relicFits(run, r)) : [];
@@ -1088,7 +1096,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'clear':
       return { title: 'CLEAR ROCKS', text: `SMASH EVERY ROCK ON REEL ${o.reel + 1}` };
     case 'relic':
-      return { title: COUNTER_RELICS.has(o.relic) ? `PREP: ${RELICS[o.relic].name}` : RELICS[o.relic].name, text: RELICS[o.relic].text };
+      return { title: RELICS[o.relic].name, text: RELICS[o.relic].text };
     case 'heal':
       return { title: `HEAL ${o.amount}`, text: `RESTORE ${o.amount} HP NOW` };
     case 'maxHp':

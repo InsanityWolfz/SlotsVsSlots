@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type RelicId } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { BOSS_HP_PER_RELIC, COUNTER_RELICS } from '../src/core/relics';
+import { BOSS_HP_PER_RELIC } from '../src/core/relics';
 import { buy, CHIPS, createRun, fightConfig, finishFight, isShopNow, reroll, rerollCost, shopOffers, takeSpoils } from '../src/core/run';
 
 const base = defaultConfig();
@@ -125,7 +125,6 @@ describe('run economy', () => {
     const rec = finishFight(run, f);
     expect(rec.chips).toBe(2 + CHIPS.win + CHIPS.eliteBonus); // interest 2 on 10 banked
     expect(run.pendingSpoils).toHaveLength(2);
-    for (const r of run.pendingSpoils!) expect(COUNTER_RELICS.has(r)).toBe(false);
     const pick = run.pendingSpoils![1];
     takeSpoils(run, pick);
     expect(run.player.relics).toContain(pick);

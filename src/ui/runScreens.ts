@@ -26,7 +26,6 @@ import {
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import { effectiveAbility, mirrorCanUse, STAKE, STAKES, stakeOf } from '../core/stakes';
 import type { RelicId } from '../core/config';
-import { COUNTER_RELICS } from '../core/relics';
 import { DANGER } from '../core/enemies';
 import type { Clock } from '../present/clock';
 import { backOut, sineOut } from '../present/ease';
@@ -820,8 +819,7 @@ export class RunScreens {
     if (c.scale <= 0.01) return;
     const dimmed = this.picked >= 0 && this.picked !== i;
     const { title, text } = describeOption(o, this.run ?? undefined);
-    const prep = o.kind === 'relic' && COUNTER_RELICS.has(o.relic);
-    const accent = prep ? '#ff9a3a' : o.kind === 'gild' ? '#ffd23f' : o.kind === 'relic' ? '#c9a0ff' : o.kind === 'clear' ? '#c9bba8' : o.kind === 'swap' || o.kind === 'add' ? '#7dff7a' : '#ff9ab0';
+    const accent = o.kind === 'gild' ? '#ffd23f' : o.kind === 'relic' ? '#c9a0ff' : o.kind === 'clear' ? '#c9bba8' : o.kind === 'swap' || o.kind === 'add' ? '#7dff7a' : '#ff9ab0';
     ctx.save();
     ctx.globalAlpha *= dimmed ? 0.3 : 1;
     ctx.translate(c.x, c.y + c.lift);
@@ -851,7 +849,6 @@ export class RunScreens {
     };
     if (o.kind === 'relic') {
       drawSprite(ctx, RELICS[o.relic].sprite as SpriteId, 0, iy, 4);
-      if (prep) drawSprite(ctx, 'cardPrep', w / 2 - 28, iy - 18, 2);
     }
     else if (o.kind === 'swap') {
       drawSprite(ctx, o.from as SpriteId, -44, iy, 3);

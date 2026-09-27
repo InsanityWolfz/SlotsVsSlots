@@ -15,10 +15,6 @@ export const RELICS: Record<RelicId, RelicDef> = {
   mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS PAY AS A DOUBLE', sprite: 'relicMirror' },
   fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR SPECIAL HEALS 3 HP', sprite: 'relicFang' },
   bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 6 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
-  mittens: { id: 'mittens', name: 'MITTENS', text: 'FREEZES LAST 1 TURN LESS', sprite: 'relicMittens' },
-  lockpick: { id: 'lockpick', name: 'LOCKPICK', text: 'EACH JAM HAS A 50% CHANCE TO FAIL', sprite: 'relicLockpick' },
-  mousetrap: { id: 'mousetrap', name: 'MOUSETRAP', text: 'STEALS FAIL 35% OF THE TIME. SNAP: 2 DAMAGE', sprite: 'relicMousetrap' },
-  pickaxe: { id: 'pickaxe', name: 'PICKAXE', text: 'ROCKS ON YOUR PAYLINE HIT LIKE SWORDS', sprite: 'relicPickaxe' },
   crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR DOUBLES ALSO STEAL HALF THE HOUSE POT', sprite: 'relicCrown' },
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
   midas: { id: 'midas', name: 'MIDAS', text: 'GOLD CELLS ON YOUR PAYLINE ALSO GIVE +1 ENERGY', sprite: 'relicMidas' },
@@ -32,7 +28,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'ONCE PER FIGHT, SURVIVE A LETHAL HIT AT 1 HP', sprite: 'relicPhoenix' },
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR SPECIAL ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
   key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR DOUBLES PAY X2', sprite: 'relicKey' },
-  sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: 'ENEMY ABILITIES CHARGE 2 TURNS SLOWER', sprite: 'relicSandglass' },
+  sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: 'ENEMY ABILITIES CHARGE 1 TURN SLOWER', sprite: 'relicSandglass' },
 };
 
 /**
@@ -45,7 +41,6 @@ export const BONUS = { wheel: 0.028, rush: 0.012 };
 export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9, uncommonMax: 12, grandChips: 15 };
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
-  // (No counter relics: drafts offer those as PREP cards for a specific enemy — QA_1.)
   common: ['clover', 'battery', 'fang', 'bandage', 'crown'],
   uncommon: ['midas', 'rod', 'cactus', 'prism', 'hone', 'mirror'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass'],
@@ -54,7 +49,8 @@ export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> 
 export const LEGENDARY: ReadonlySet<RelicId> = new Set<RelicId>(['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass']);
 export const BELL_MULT = 2;
 export const KEY_MULT = 2;
-export const SANDGLASS_SLOW = 2;
+/** Golden Hourglass: enemy abilities take this many more turns (was 2: 76% run win, the top relic by 12+ points). */
+export const SANDGLASS_SLOW = 1;
 /** Act 2 gilds. */
 /** LUCKY: chance per level (1 = plain, +1 tier II, +1 full set): each + step × (level − 1). */
 export const LUCKY_CHANCE = { each: 0.35, step: 0.15 };
@@ -79,18 +75,12 @@ export const CLOVER_CHANCE = 0.3;
 export const BATTERY_ENERGY = 3;
 export const FANG_HEAL = 3;
 export const BANDAGE_HEAL = 6;
-export const LOCKPICK_CHANCE = 0.5;
-export const MOUSETRAP_CHANCE = 0.35;
-export const MOUSETRAP_DAMAGE = 2;
 export const SPIKED_DAMAGE = 2;
 export const CACTUS_DAMAGE = 4;
 export const KEEN_BONUS = 1;
 export const HONE_BONUS = 2;
 export const ROD_SPECIAL_COST = 4;
 
-/** Counter relics are offered as PREP cards when their enemy is on the next fork, never in relic drafts. */
-export const COUNTERS: Partial<Record<string, RelicId>> = { frost: 'mittens', gremlin: 'lockpick', thief: 'mousetrap', golem: 'pickaxe' };
-export const COUNTER_RELICS: ReadonlySet<RelicId> = new Set(Object.values(COUNTERS) as RelicId[]);
 /** What each build relic needs you to own before it's offered (playtest ITERATION_4). */
 export const BUILD_ENABLER: Partial<Record<RelicId, 'gold' | 'keen' | 'charged' | 'spiked' | 'wild' | 'full'>> = {
   ticket: 'full',

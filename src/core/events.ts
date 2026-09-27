@@ -67,6 +67,8 @@ export type CombatEvent =
   | { type: 'heal'; side: SideId; amount: number; hp: number; source: RelicId | 'special' | 'vamp' | 'drain' | 'ability' }
   | { type: 'slime'; from: SideId; to: SideId; reels: number[]; amount: number; cells: CellRef[]; wasted: number }
   | { type: 'cleanse'; side: SideId; reels: number[]; cells: CellRef[] }
+  /** A jackpot of stolen cells: every stolen cell comes back. */
+  | { type: 'recover'; side: SideId; cells: CellRef[] }
   /** stops[i] = where targets[i] clunked to before freezing (its least useful visible cell). */
   | { type: 'freeze'; from: SideId; to: SideId; reels: number[]; targets: number[]; turns: number; stops: number[] }
   | { type: 'lock'; from: SideId; to: SideId; reels: number[]; targets: number[]; turns: number }
@@ -127,8 +129,6 @@ export type CombatEvent =
   | { type: 'pot'; side: SideId; reels: number[]; amount: number; total: number }
   /** Someone takes the progressive pot as damage. */
   | { type: 'potWin'; from: SideId; to: SideId; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number; potLeft: number }
-  /** A relic shrugged off an enemy effect. */
-  | { type: 'resist'; side: SideId; relic: RelicId; what: 'freeze' | 'jam' | 'steal' }
   /** A relic did something (the HUD pops its icon). Pay-changing relics ride on the spin's score instead. */
   | { type: 'relic'; side: SideId; relic: RelicId }
   /** Boss phase 2 at half HP: the House goes ALL IN and doubles the pot. */

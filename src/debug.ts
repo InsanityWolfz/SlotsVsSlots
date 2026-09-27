@@ -23,7 +23,7 @@ export function installDebug(game: Game): void {
   const dbg = {
     game,
     pause,
-    resume: () => (game.stage.clock.speed = game.prefs.speed),
+    resume: () => (game.stage.clock.speed = game.prefs.speed / 2),
     /** Advance game time by `sec` (paused otherwise). */
     adv: (sec: number) => step(sec),
     /** Advance until the director starts playing an event of this type. */

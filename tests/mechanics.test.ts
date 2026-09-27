@@ -211,49 +211,22 @@ describe('boss: the progressive pot', () => {
   });
 });
 
-describe('counter relics', () => {
-  it('mittens: a single ice does nothing', () => {
-    const f = vs({ sword: 4, ice: 8 }, { relics: ['mittens'] });
-    f.step();
-    f.forceNext('enemy', ['ice', 'sword', 'shield']);
-    const { events } = f.step();
-    expect(ofType(events, 'resist')[0]).toMatchObject({ relic: 'mittens' });
-    expect(ofType(events, 'freeze')).toHaveLength(0);
+describe('step A quick fixes', () => {
+  it('a jackpot of stolen cells brings every stolen cell back', () => {
+    const f = vs({ sword: 4, claw: 8 });
+    const p = f.sides.player;
+    for (const reel of p.reels) for (const c of reel.cells.slice(0, 5)) c.stolen = true;
+    f.forceNext('player', ['empty', 'empty', 'empty']);
+    const [rec] = ofType(f.step().events, 'recover');
+    expect(rec.cells).toHaveLength(15);
+    expect(p.reels.every((r) => r.cells.every((c) => !c.stolen))).toBe(true);
   });
 
-  it('lockpick and mousetrap each fail roughly half the time; mousetrap snaps the thief', () => {
-    let jams = 0;
-    let steals = 0;
-    let snaps = 0;
-    for (let seed = 0; seed < 300; seed++) {
-      const a = new Fight({ ...defaultConfig(), enemy: { hp: 60, strips: reels3({ lock: 12 }) }, relics: ['lockpick'] }, seed);
-      a.step();
-      a.forceNext('enemy', ['lock', 'lock', 'lock']);
-      jams += ofType(a.step().events, 'lock').reduce((n, e) => n + e.targets.length, 0);
-      const b = new Fight({ ...defaultConfig(), enemy: { hp: 60, strips: reels3({ claw: 12 }) }, relics: ['mousetrap'] }, seed);
-      b.step();
-      b.forceNext('enemy', ['claw', 'sword', 'shield']);
-      const hpBefore = b.sides.enemy.hp;
-      const ev = b.step().events;
-      steals += ofType(ev, 'steal').reduce((n, e) => n + e.cells.length, 0);
-      snaps += ofType(ev, 'resist').length;
-      if (ofType(ev, 'resist').length) expect(b.sides.enemy.hp).toBe(hpBefore - 2);
-    }
-    expect(jams / 600).toBeGreaterThan(0.35);
-    expect(jams / 600).toBeLessThan(0.65);
-    expect(steals / 300).toBeGreaterThan(0.35);
-    expect(snaps / 300).toBeGreaterThan(0.2);
-  });
-
-  it('pickaxe: rocks on your payline hit', () => {
-    const c = defaultConfig();
-    c.player.strips = reels3({ sword: 4, rock: 8 });
-    c.enemy = { hp: 60, strips: reels3({ bolt: 12 }) };
-    c.relics = ['pickaxe'];
-    const f = new Fight(c, 5);
-    f.forceNext('player', ['rock', 'rock', 'sword']);
-    expect(ofType(f.step().events, 'attack').map((e) => e.amount)).toEqual([4, 1]);
-
-
+  it('Vampire Fang also heals on the Overcharge echo', () => {
+    const f = vs({ sword: 4, shield: 8 }, { relics: ['fang', 'overcharge'], hp: 200 });
+    f.sides.player.hp = 5;
+    f.forceNext('player', ['bolt', 'bolt', 'bolt']);
+    const heals = ofType(f.step().events, 'heal').filter((e) => e.source === 'fang');
+    expect(heals).toHaveLength(2);
   });
 });

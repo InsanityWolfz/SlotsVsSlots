@@ -110,6 +110,8 @@ export class Director {
         return this.slime(e);
       case 'cleanse':
         return this.cleanse(e);
+      case 'recover':
+        return this.recover(e);
       case 'fizzle':
         return this.fizzle(e);
       case 'death':
@@ -137,9 +139,6 @@ export class Director {
         return this.pot(e);
       case 'potWin':
         return this.potWin(e);
-      case 'resist':
-        this.relicPop(e.side, e.relic);
-        return this.resist(e);
       case 'relic':
         this.relicPop(e.side, e.relic);
         return this.c.wait(0.12);
@@ -862,6 +861,24 @@ export class Director {
     await this.banner(`CLEANSED x${e.cells.length}!`, COLORS.goldLight, 1.3, 0.4, '', BANNER_Y, 3);
   }
 
+  /** A jackpot of stolen cells: every stolen symbol comes home. */
+  private async recover(e: Ev<'recover'>): Promise<void> {
+    const m = this.s.machines[e.side];
+    this.s.sounds.cleanse();
+    for (const [i, ref] of e.cells.entries()) {
+      const cell = m.reels[ref.reel].cells[ref.index];
+      const row = this.rowOf(e.side, ref);
+      this.bg(this.c.to(cell, 'stolen', 0, 0.3, sineIn));
+      if (row < 0) continue;
+      const pos = cellCenter(e.side, ref.reel, row);
+      this.s.sounds.pop(i);
+      this.bg(this.c.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (cell.flash = v) }));
+      this.s.particles.burst({ x: pos.x, y: pos.y, count: 12, colors: ['#ffffff', '#c9a0ff'], speed: [60, 220], gravity: -300, life: [0.4, 0.8], size: [2, 4] });
+      await this.c.wait(0.05);
+    }
+    await this.banner(e.cells.length ? `RECOVERED x${e.cells.length}!` : 'NOTHING STOLEN', COLORS.goldLight, 1.3, 0.4, '', BANNER_Y, 3);
+  }
+
   private async fizzle(e: Ev<'fizzle'>): Promise<void> {
     const m = this.s.machines[e.side];
     this.s.sounds.fizzle();
@@ -1178,20 +1195,6 @@ export class Director {
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
     this.bg(this.popText(`-${e.hpDamage}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
     await this.c.wait(0.5);
-  }
-
-  /** A relic shrugged an effect off: show which one, loudly. */
-  private async resist(e: Ev<'resist'>): Promise<void> {
-    const words = { freeze: 'MITTENS!', jam: 'LOCKPICKED!', steal: 'SNAP!' } as const;
-    const c = this.machineCenter(e.side);
-    this.s.sounds.block();
-    this.s.sounds.lucky();
-    const icon = this.s.fx.add(new Projectile(RELICS[e.relic].sprite as SpriteId, c.x, c.y - 30, 0));
-    await this.c.tween({ from: 0, to: 4, dur: 0.2, ease: backOut(3), onUpdate: (v) => (icon.scale = v) });
-    this.bg(this.popText(words[e.what], c.x, c.y - 90, 3, '#7dff7a', 20, 0.3));
-    this.s.particles.burst({ x: c.x, y: c.y - 30, count: 20, colors: ['#7dff7a', '#ffffff'], speed: [80, 260], gravity: -100, life: [0.3, 0.6], size: [2, 4] });
-    await this.c.wait(0.3);
-    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.2, onUpdate: (v) => (icon.alpha = v) }).then(() => this.s.fx.remove(icon)));
   }
 
   /** Boss phase 2: the House goes ALL IN and doubles the pot. */

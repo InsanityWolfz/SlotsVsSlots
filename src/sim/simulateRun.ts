@@ -32,10 +32,6 @@ const RELIC_VALUE: Record<RelicId, number> = {
   crown: 8,
   clover: 7.5,
   bandage: 6,
-  mittens: 2,
-  lockpick: 2,
-  mousetrap: 2,
-  pickaxe: 2,
   // Build relics are worth a lot more once you own the gild they amplify.
   midas: 4,
   rod: 4,
@@ -58,18 +54,13 @@ const BUILD: Partial<Record<RelicId, (run: RunState) => boolean>> = {
   hone: (r) => r.player.gilded.some((g) => g.enh === 'keen'),
 };
 
-const COUNTER: Record<string, RelicId> = { frost: 'mittens', gremlin: 'lockpick', thief: 'mousetrap', golem: 'pickaxe' };
 
 /** A reasonable human-ish drafter, tuned against rollout values from playtest ITERATION_1. */
 export function greedyValue(run: RunState, o: DraftOption): number {
   const p = run.player;
-  const rocks = p.strips.reduce((a, s) => a + (s.rock ?? 0), 0);
   switch (o.kind) {
     case 'relic': {
-      if (o.relic === 'pickaxe' && rocks > 0) return 5 + rocks * 0.3;
       if (BUILD[o.relic]?.(run)) return 10;
-      const countered = Object.entries(COUNTER).find(([, r]) => r === o.relic)?.[0];
-      if (countered) return (run.paths[run.depth] ?? []).some((e) => e.archetype === countered) ? 7 : 2;
       return RELIC_VALUE[o.relic];
     }
     case 'heal':
@@ -78,7 +69,9 @@ export function greedyValue(run: RunState, o: DraftOption): number {
       return 3.5;
     case 'swap':
       if (o.to === 'wild') return 6;
-      return (o.to === 'bolt' ? 8 : 6) + (o.from === 'rock' ? 2 : 0);
+      if (o.from === 'rock') return (o.to === 'bolt' ? 8 : 6) + 2;
+      // Any-direction swaps: shields are the weakest symbol, bolts the strongest.
+      return { bolt: 3, sword: 2, shield: 0 }[o.to as 'bolt'] - ({ bolt: 3, sword: 2, shield: 0 }[o.from as 'bolt'] ?? 0) + (o.count >= 3 ? 6 : 4);
     case 'gild':
       return { gold: 9, charged: 8.5, spiked: 7.5, keen: 6, vamp: 7, lucky: 7.5, blaze: 8.5 }[o.enh] + (o.tier ? 1 : 0);
     case 'clear':
@@ -95,10 +88,9 @@ function pickEnemy(run: RunState, policy: DraftPolicy, rng: Rng): number {
   if (policy === 'random') return rng.int(opts.length);
   const score = (i: number) => {
     const a = opts[i].archetype;
-    const countered = COUNTER[a] && run.player.relics.includes(COUNTER[a]);
     // Elites are tougher but pay a relic: take them when healthy.
     const eliteBonus = opts[i].elite ? (run.player.hp / run.player.maxHp > 0.7 ? -4 : 3) : 0;
-    return (DANGER[a] ?? 8) * (countered ? 0.4 : 1) * (opts[i].elite ? 1.25 : 1) + eliteBonus;
+    return (DANGER[a] ?? 8) * (opts[i].elite ? 1.25 : 1) + eliteBonus;
   };
   return opts.map((_, i) => i).reduce((best, i) => (score(i) < score(best) ? i : best), 0);
 }
@@ -136,6 +128,12 @@ export interface RunSummary {
   bossWinPct: number;
   relicWin: Record<string, string>;
   avgRocksAtEnd: number;
+  /** HP into the Dealer as a share of max HP. */
+  hpIntoDealerPct: number;
+  /** Act 3 regular fights: count, % deaths, average % of max HP lost, average turns. */
+  act3Regular: { n: number; diePct: number; lostPct: number; turns: number };
+  /** Average turns per fight by act (regular fights only). */
+  turnsByAct: number[];
 }
 
 export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false): RunSummary {
@@ -158,6 +156,10 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
   let bossWins = 0;
   let rocks = 0;
   const relicRuns: Record<string, [number, number]> = {};
+  let dealerHpFrac = 0;
+  const a3 = { n: 0, die: 0, lost: 0, turns: 0 };
+  const actTurns = [0, 0, 0, 0];
+  const actFights = [0, 0, 0, 0];
 
   for (let i = 0; i < runs; i++) {
     const runSeed = seeds.int(0xffffffff);
@@ -166,7 +168,10 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
     const fightSeeds = new Rng((runSeed ^ 0x5f3759df) >>> 0);
     while (!run.over) {
       if (needsChoice(run)) chooseEnemy(run, pickEnemy(run, policy, pick));
-      if (run.depth === actLength(3) && run.act === 3) reachedDealer++;
+      if (run.depth === actLength(3) && run.act === 3) {
+        reachedDealer++;
+        dealerHpFrac += run.player.hp / run.player.maxHp;
+      }
       if (run.depth === actLength(1) && run.act === 1) {
         reachedBoss++;
         bossHp += run.player.hp;
@@ -183,6 +188,19 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
       turns += fight.turn;
       const depth = fightNumber(run) - 1;
       const act = run.act;
+      const regular = run.depth < actLength(act);
+      const hpBefore = run.player.hp;
+      const maxBefore = run.player.maxHp;
+      if (regular) {
+        actTurns[act] += fight.turn;
+        actFights[act]++;
+      }
+      if (regular && act === 3) {
+        a3.n++;
+        a3.turns += fight.turn;
+        a3.lost += (hpBefore - Math.max(0, fight.sides.player.hp)) / maxBefore;
+        if (fight.winner !== 'player') a3.die++;
+      }
       finishFight(run, fight);
       if (run.over && !run.won) {
         deaths[depth]++;
@@ -246,6 +264,9 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
     bossWinPct: reachedBoss ? (100 * bossWins) / reachedBoss : 0,
     relicWin: Object.fromEntries(Object.entries(relicRuns).map(([k, [n, w]]) => [k, `${pct(w, n)} win (${n} runs)`])),
     avgRocksAtEnd: rocks / runs,
+    hpIntoDealerPct: reachedDealer ? (100 * dealerHpFrac) / reachedDealer : 0,
+    act3Regular: { n: a3.n, diePct: a3.n ? (100 * a3.die) / a3.n : 0, lostPct: a3.n ? (100 * a3.lost) / a3.n : 0, turns: a3.n ? a3.turns / a3.n : 0 },
+    turnsByAct: [1, 2, 3].map((a) => (actFights[a] ? actTurns[a] / actFights[a] : 0)),
   };
 }
 

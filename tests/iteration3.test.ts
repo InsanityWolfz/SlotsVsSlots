@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3 } from '../src/core/config';
 import { ELITE_HP_MUL } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
-import { COUNTER_RELICS, COUNTERS } from '../src/core/relics';
-import { applyOption, createRun, draftOffers, RUN } from '../src/core/run';
+import { applyOption, createRun, RUN } from '../src/core/run';
 import { effectiveSymbol } from '../src/core/strip';
 
 const base = defaultConfig();
@@ -19,20 +18,6 @@ describe('package H', () => {
       }
     }
     expect(ELITE_HP_MUL).toBeGreaterThan(1);
-  });
-
-  it('counter relics only ever appear as PREP for an enemy on the next fight', () => {
-    for (let s = 0; s < 60; s++) {
-      const run = createRun(base, s);
-      for (let d = 1; d <= 5; d++) {
-        run.depth = d;
-        for (const o of draftOffers(run)) {
-          if (o.kind !== 'relic' || !COUNTER_RELICS.has(o.relic)) continue;
-          const next = run.paths[d].map((e) => COUNTERS[e.archetype]);
-          expect(next).toContain(o.relic);
-        }
-      }
-    }
   });
 
   it('+bolt cards add 2 and swaps move up to 3', () => {
