@@ -129,3 +129,10 @@ Must change before live? **No balance blocker.** The spread is tight (WHITE 22.7
 - **Blocker:** B1 (SHIELD BASH kill makes a ghost spin after VICTORY, plus a free bonus). The fix is 4 lines at `fight.ts:285`, plus a test.
 - **After that: SHIP.** The engine matches the spec, the cards fit, the sprites read well, saves are safe, and balance is within tolerance.
 - **Next pass:** N1 to N4, the HORSESHOE act 1 gate for JAX, Fang out of the start pick, and BRIAR fight length.
+
+---
+
+## Re-check after fixes (commit 29eeade): **SHIP**
+- **B1 fixed:** `fight.ts:286-290` returns right after `resetShield` if the fight is over. The probe shows `... death fightEnd` and nothing after it, for KNIGHT and for JAX with a full meter. In the browser, a BASH kill goes straight to the draft screen with no ghost spin and no voucher.
+- **HORSESHOE gating** (`run.ts:1129`) is correct. Start title "A NEW RUN" now fits its frame.
+- `npm test`: 166/166. `tsc`: clean.
