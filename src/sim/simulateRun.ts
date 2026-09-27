@@ -1,4 +1,4 @@
-import type { GameConfig, RelicId } from '../core/config';
+import type { Enh, GameConfig, RelicId } from '../core/config';
 import type { CabinetId } from '../core/cabinets';
 import { actLength, DANGER } from '../core/enemies';
 import { Fight } from '../core/fight';
@@ -16,6 +16,7 @@ import {
   takeLegend,
   takeChoice,
   type BigChoice,
+  type BigChoiceId,
   isShopNow,
   leaveShop,
   needsChoice,
@@ -26,6 +27,9 @@ import {
 } from '../core/run';
 
 export type DraftPolicy = 'greedy' | 'random' | 'relic';
+
+/** Balance probes (tools/balance/builds.ts): start with a relic, draft only one charm, or force a big choice. */
+export const SIM_BIAS: { startRelic?: RelicId; enh?: Enh; choice?: BigChoiceId } = {};
 
 const RELIC_VALUE: Record<RelicId, number> = {
   mirror: 10,
@@ -78,10 +82,12 @@ export function greedyValue(run: RunState, o: DraftOption): number {
       return worth(o.to) - worth(o.from) + (o.count >= 3 ? 6 : 4);
     }
     case 'gild':
+      if (SIM_BIAS.enh) return o.enh === SIM_BIAS.enh ? 9.5 : 0;
       return { gold: 9, charged: 8.5, spiked: 0, keen: 6.5, vamp: 7, lucky: run.cabinet === 'joker' ? 8.5 : 7, blaze: 8 }[o.enh] + (p.gilded.some((g) => g.enh === o.enh) ? 0.5 : 0);
     case 'symLevel':
       return o.symbol === 'sword' ? 8 : o.symbol === 'shield' ? 5 : 7.5;
     case 'charmLevel':
+      if (SIM_BIAS.enh) return o.enh === SIM_BIAS.enh ? 9.5 : 0;
       return Math.min(9.5, 6.5 + p.gilded.reduce((a, g) => a + (g.enh === o.enh ? g.n : 0), 0) / 2);
     case 'clear':
       return 3 + (p.strips[o.reel].rock ?? 0) * 2;
@@ -208,6 +214,7 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
   for (let i = 0; i < runs; i++) {
     const runSeed = seeds.int(0xffffffff);
     const run = createRun(base, runSeed, cabinet, stake, act3);
+    if (SIM_BIAS.startRelic && !run.player.relics.includes(SIM_BIAS.startRelic)) run.player.relics.push(SIM_BIAS.startRelic);
     // Fights draw from their own per-run stream, so a change in one run never desyncs the next (paired ladders).
     const fightSeeds = new Rng((runSeed ^ 0x5f3759df) >>> 0);
     while (!run.over) {
@@ -259,7 +266,8 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
       if (run.won && act === 3) dealerWins++;
       if (!run.over && run.pendingChoice?.length) {
         const cs = run.pendingChoice;
-        const c = policy === 'random' ? pick.pick(cs) : cs.reduce((a, b) => (choiceValue(run, b) > choiceValue(run, a) ? b : a));
+        const forced = cs.find((x) => x.id === SIM_BIAS.choice);
+        const c = forced ?? (policy === 'random' ? pick.pick(cs) : cs.reduce((a, b) => (choiceValue(run, b) > choiceValue(run, a) ? b : a)));
         takeChoice(run, c);
         (run as RunState & { took?: string[] }).took = [...((run as RunState & { took?: string[] }).took ?? []), c.id];
       }

@@ -346,3 +346,14 @@ Balance (tools/balance/tuesday.ts, greedy, N 1500; baseline = Iteration 23 code,
 Open: MIDAS Dealer 47% and THORN 70% (spread 23, target ≤12); HP into the Dealer high for BRIAR/TESLA/JAX; endless mode (Step F) not started (runbook: later).
 - HIGH STAKES ladder (tools/balance/ladder.ts, greedy, N 1000; baseline knight 26.6/21.8/13.8/11.3/8.3/6.2): see tools/out/final_ladder.txt. BLACK's House was 28% for KNIGHT (House HP x1.7 made its cheats stack); fix: 1 cheat bomb per reel (was 2) and at BLACK+ the House uses sqrt of the machine's House multiplier. BLACK House now 46-65% (baseline 54). GREEN+ runs sit lower than before because act 3 is 5 fights with real deaths (expected, expert review §1.11).
 - New harness tools/balance/ladder.ts (stake ladder per machine).
+
+### Probe: per-relic / per-charm / per-big-choice (tools/balance/builds.ts 400, GREEN, paired seeds, no gameplay change)
+Baseline 9.3% (knight 8.8, midas 9.0, thorn 12.3, tesla 9.0, joker 7.8). Noise is about ±1.5 on the average.
+- Start-with-relic (avg win): fang 19.6 (thorn 35.5!), key 16.4, mirror 14.8, ticket 14.4, battery 14.3, phoenix 13.9, bell 13.8,
+  bandage 13.6, overcharge 13.2, prism 12.9, clover 12.6, sandglass 12.3, midas 11.9, rod 11.2, chalice 10.8, cactus 10.4,
+  crown 9.7, hone 9.7. Outlier: Fang's flat +30 heal fires on every BRIAR thorn volley. Dead weight: crown, hone.
+- Only-this-charm: lucky 10.8 (tesla 20.0, midas 2.3), gold 10.0, vamp 9.7, keen 6.6 (below baseline). No charms at all
+  (the only-charged/blaze rows on non-TESLA): knight 2.0, midas 4.3, thorn 7.0, joker 15.0 (charms hurt greedy JAX).
+- Forced big choice: all within noise (8.9–9.9) except twinReel 11.1 and bloodPact 10.6. Power picks (armsRace, gildLot,
+  masterwork) do ~nothing: act 3 and Dealer HP scale with measured machinePower, so damage upgrades get eaten there;
+  only healing and survival (fang, bandage, key's burst, secondWind) move the needle.
