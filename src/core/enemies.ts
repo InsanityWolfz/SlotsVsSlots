@@ -265,7 +265,7 @@ export const ACT3_DEPTH_MUL = [1, 1.1, 1.2, 1.3, 1.4];
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5 };
 export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
 /** Act 3 (ITERATION_12 playtest, commit at GREEN): Dealer HP = 7 x typical-spin power + 60 (+4/relic), less bursty strip -> ~62% Dealer win. */
-export const TUNE = { regularHp: 1, enemyShield: 0.5, act3Power: 4, act3Flat: 20 * UNIT, dealerPower: 10, dealerFlat: 50 * UNIT, act3Sevens: 4, bossHp: 95 * UNIT, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 30 * UNIT, mirrorPerRelic: 4 * UNIT, mirrorSpecialWeight: 1 };
+export const TUNE = { regularHp: 0.8, act2Hp: 1.45, act1Swords: 1, enemyShield: 0.5, act3Power: 4, act3Flat: 20 * UNIT, dealerPower: 10, dealerFlat: 50 * UNIT, act3Sevens: 4, bossHp: 95 * UNIT, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 30 * UNIT, mirrorPerRelic: 4 * UNIT, mirrorSpecialWeight: 1 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
@@ -328,7 +328,7 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
   const opener = depth === 0 && act === 1 ? OPENER_HP_MUL : 1;
   // (The Mirror's real HP is sized to your machine in run.enemyHp.)
   const bossHp = a.id === 'mirror' ? 100 * UNIT : TUNE.bossHp;
-  const hp = isBoss ? bossHp : unitsRound(curve[Math.min(depth, curve.length - 1)] * hpMul * opener * TUNE.regularHp);
+  const hp = isBoss ? bossHp : unitsRound(curve[Math.min(depth, curve.length - 1)] * hpMul * opener * TUNE.regularHp * (act === 2 ? TUNE.act2Hp : 1));
   const every = a.ability.every;
   return {
     archetype: a.id,
@@ -340,7 +340,7 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
     hp,
     strips: (isBoss ? [{ ...a.strip }, { ...a.strip }, { ...a.strip }] : [0, 1, 2].map(() => jitter(a.strip, rng))).map((st) =>
       // Act 2 enemies hit harder.
-      act > 1 && !isBoss ? (act > 2 ? { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords, seven: (st.seven ?? 0) + TUNE.act3Sevens } : { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords }) : st,
+      isBoss ? st : act > 2 ? { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords, seven: (st.seven ?? 0) + TUNE.act3Sevens } : act > 1 ? { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords } : { ...st, sword: (st.sword ?? 0) + TUNE.act1Swords },
     ),
     ability: { ...a.ability, every },
     boss: isBoss ? (a.id === 'mirror' ? 'mirror' : a.id === 'dealer' ? 'dealer' : 'house') : null,

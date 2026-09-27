@@ -1,5 +1,8 @@
 # Tuesday plan (2026-09-29): runbook for the next session
 
+**Status (2026-09-27): Phases 0-1 done (playtest/EXPERT_REVIEW.md), STOP 1 answered (DIRECTION_NOTES), Steps A-E built,
+balanced and logged (STATE.md iterations 24-26). Step F (endless) not started.**
+
 To start, say: **"Read CLAUDE.md, then run loop/TUESDAY_PLAN.md."** Work top to bottom. There are two
 **STOP** points where the user decides. Don't push to GitHub unless the user says to.
 

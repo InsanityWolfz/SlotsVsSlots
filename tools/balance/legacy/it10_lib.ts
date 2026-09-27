@@ -1,9 +1,9 @@
 // Iteration-10 playtest helpers: it9_lib + HIGH STAKES (stake-aware snapshots / full runs, rule toggles).
 // Package Q + HIGH STAKES are in the real code. Reviewer scratch.
-import { createRun, type RunState } from '../../src/core/run';
-import { STAKE } from '../../src/core/stakes';
+import { createRun, type RunState } from '../../../src/core/run';
+import { STAKE } from '../../../src/core/stakes';
 import { BASE, cloneRun, playRun, Rng, P, type Policy, type RunRec } from './it9_lib';
-import type { CabinetId } from '../../src/core/cabinets';
+import type { CabinetId } from '../../../src/core/cabinets';
 
 export * from './it9_lib';
 

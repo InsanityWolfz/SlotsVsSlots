@@ -30,7 +30,7 @@ export const STAKE = {
   scarEvery: 4,
   mirrorRelic: 2,
   houseDirty: 3,
-  houseBombsPerReel: 2,
+  houseBombsPerReel: 1,
   /** BLUE: one act 2 fork (fight 3) is your counter, marked. */
   counterForks: 4,
   houseSkimEvery: 3,

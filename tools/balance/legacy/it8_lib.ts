@@ -1,7 +1,7 @@
 // Iteration-8 playtest helpers: it7_lib (tier-aware commit etc.) + HP-first drafts, B1 snapshots and
 // Mirror stats. Package O is in the real code now: no preFight emulation hooks. Reviewer scratch.
-import type { RunState } from '../../src/core/run';
-import { REFLECT_CAP, REFLECT_MIN } from '../../src/core/relics';
+import type { RunState } from '../../../src/core/run';
+import { REFLECT_CAP, REFLECT_MIN } from '../../../src/core/relics';
 import { DRAFTS, playRun, Rng, pct, avg, type FightRec, type Policy } from './it7_lib';
 
 export * from './it7_lib';

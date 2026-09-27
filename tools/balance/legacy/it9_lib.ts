@@ -1,9 +1,9 @@
 // Iteration-9 playtest helpers: it8_lib + counter-enemy instrumentation (GROUNDER / COUNTERFEITER) and
 // build-aware fork policies (dodge or face the counter to your build). Package P is in the real code.
-import type { Enh } from '../../src/core/config';
-import { Fight } from '../../src/core/fight';
-import { CABINETS } from '../../src/core/cabinets';
-import type { RunState } from '../../src/core/run';
+import type { Enh } from '../../../src/core/config';
+import { Fight } from '../../../src/core/fight';
+import { CABINETS } from '../../../src/core/cabinets';
+import type { RunState } from '../../../src/core/run';
 import { buildOf, FORKS, type FightRec } from './it8_lib';
 
 export * from './it8_lib';

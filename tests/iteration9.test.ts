@@ -104,11 +104,13 @@ describe('Package P', () => {
 
   it('act 2 signatures: KNIGHT +60 max HP, THORN +40 max HP, JOKER wilds on reel 3', () => {
     const k = createRun(base, 9, 'knight');
+    const kHp = k.player.maxHp;
     applySignature(k);
-    expect(k.player.maxHp).toBe(340);
+    expect(k.player.maxHp).toBe(kHp + 60);
     const t = createRun(base, 9, 'thorn');
+    const tHp = t.player.maxHp;
     applySignature(t);
-    expect(t.player.maxHp).toBe(340);
+    expect(t.player.maxHp).toBe(tHp + 40);
     const j = createRun(base, 9, 'joker');
     const w = j.player.strips[2].wild ?? 0;
     applySignature(j);

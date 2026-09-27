@@ -1,6 +1,6 @@
 // ACT 3 audit (reviewer): full act3 runs per cabinet at a stake. npx tsx playtest/scratch/it12p_act3.ts [N] [stake] [policy]
 import { A3S, avg, CABINET_ORDER, fullRuns3, pct, type Policy, type RunRec } from './it12p_lib';
-import { Fight } from '../../src/core/fight';
+import { Fight } from '../../../src/core/fight';
 
 const N = Number(process.argv[2] ?? 1000);
 const STK = Number(process.argv[3] ?? 2);

@@ -1,10 +1,10 @@
 // Iteration-12 playtest helpers (reviewer): it10_lib + ACT 3 (Dealer instrumentation, act3 full runs,
 // Dealer-entry snapshots, forced deals, GREEN-aware legendary pick). Package R + act 3 are real code.
-import { Fight } from '../../src/core/fight';
-import { createRun, fightConfig, fullSets, machinePower, mirrorCopy, type RunState } from '../../src/core/run';
-import { mirrorCanUse } from '../../src/core/stakes';
-import type { CabinetId } from '../../src/core/cabinets';
-import type { RelicId } from '../../src/core/config';
+import { Fight } from '../../../src/core/fight';
+import { createRun, fightConfig, fullSets, machinePower, mirrorCopy, type RunState } from '../../../src/core/run';
+import { mirrorCanUse } from '../../../src/core/stakes';
+import type { CabinetId } from '../../../src/core/cabinets';
+import type { RelicId } from '../../../src/core/config';
 import { BASE, cloneRun, LEGENDS, playRun, Rng, type Policy, type RunRec } from './it10_lib';
 
 export * from './it10_lib';

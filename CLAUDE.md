@@ -11,14 +11,14 @@ Live playtest: https://insanitywolfz.github.io/SlotsVsSlots/ (auto-deploys on ev
 3. `loop/STATE.md`: binding design constraints and the full iteration log (balance numbers per change).
 
 ## Commands
-- `npm install`, then `npm test` (vitest, ~140 tests; keep green)
+- `npm install`, then `npm test` (vitest, ~150 tests; keep green)
 - `npx tsc --noEmit -p .` (typecheck; `noUnusedLocals` is on)
 - `npm run sim -- --runs 1500`: headless balance sim. Prints policies, the HIGH STAKES ladder, a Dealer row
   per slot machine, and the slot machine table.
 - `tools/balance/*.ts` (run with `npx tsx`): focused harnesses.
-  - `it10_ladder.ts [N] commit`: stake ladder.
-  - `it12p_act3.ts [N] [stake] commit`: Act 3 / Dealer.
-  - `bonus_rates.ts`, `qa_bonus_freq.ts`, `qa2_headless.ts`.
+  - `tuesday.ts [N]`: THE official per-slot-machine table (WHITE, GREEN, the Dealer, act 3, big choices). Log its numbers.
+  - `diag.ts [N]`: bare machines vs act 1 (damage per turn by source). `calib.ts [N]`: measured late-run damage per machine.
+  - `bonus_rates.ts`, `qa2_headless.ts`. `legacy/` holds the pre-rework (full set) harnesses; they no longer run.
 - `npm run dev`: dev server (:5173) with `window.dbg` helpers and the TUNE panel. `npm run build`: public build to `dist/`
   (no dev tools; verify with a grep for `dbg`/`TuningPanel` in `dist/assets`).
 - Art: `node tools/build-art.mjs` regenerates `src/render/spriteData.ts` (hand-authored pixel grids; 8-bit stays).
@@ -36,7 +36,8 @@ Live playtest: https://insanitywolfz.github.io/SlotsVsSlots/ (auto-deploys on ev
   Enemies write on the player's machine.
 - **User-facing words:** "Slot Machines" (never cabinets), "Charms" (never gild). Code identifiers may stay.
 - **No decision hints** on upgrade cards: no "FITS" tags, no expected-value or stat-delta numbers.
-- **FULL SET** (current live rule) = the same charm on all 3 PAYLINE cells. Note: the planned charm rework removes sets.
+- **Charms live on CELLS** (the rework shipped 2026-09-27): no FULL SETS, no tier II. Levels live on the TYPE (cap 3).
+  Pay = BASE × MULT; gold charms in a group ADD. Every slot machine but KNIGHT has one signature symbol + meter.
 - **GREEN stake and up always include Act 3** (the Dealer).
 - **Push to GitHub only when the user says so.** Commit freely. Players are on the live build: don't push
   gameplay changes mid-playtest without asking.

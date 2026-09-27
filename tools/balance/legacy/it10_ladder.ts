@@ -1,6 +1,6 @@
 // HIGH STAKES per cabinet (reviewer). Full runs from identical run seeds at each stake (paired by index).
 //   npx tsx playtest/scratch/it10_ladder.ts [N] [policy=commit|greedy]
-import { MIRROR_COPYABLE, STAKES } from '../../src/core/stakes';
+import { MIRROR_COPYABLE, STAKES } from '../../../src/core/stakes';
 import { avg, CABINET_ORDER, fullRuns, onlyRules, pairedDiff, pct, type Policy, type RunRec } from './it10_lib';
 
 const N = Number(process.argv[2] ?? 1500);

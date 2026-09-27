@@ -1,6 +1,6 @@
 // QA_1: bonus frequency per run (banked vs paid), by act / stake / slot machine.  npx tsx playtest/scratch/qa_bonus_freq.ts [N] [stake] [act3]
 import { CABINET_ORDER, fullRuns3, type Policy } from './it12p_lib';
-import { Fight } from '../../src/core/fight';
+import { Fight } from '../../../src/core/fight';
 
 const N = Number(process.argv[2] ?? 300);
 const STK = Number(process.argv[3] ?? 0);

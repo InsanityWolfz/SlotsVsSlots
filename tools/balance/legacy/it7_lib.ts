@@ -1,8 +1,8 @@
 // Iteration-7 playtest helpers: extends it6_lib with tier-aware policies (gild TIER II upgrades),
 // act-2-only fork policies, and machine-power helpers for the rebuilt Mirror. Reviewer scratch.
-import type { Enh } from '../../src/core/config';
-import { completesSet, machinePower, tierUps, type DraftOption, type RunState } from '../../src/core/run';
-import { greedyValue } from '../../src/sim/simulateRun';
+import type { Enh } from '../../../src/core/config';
+import { completesSet, machinePower, tierUps, type DraftOption, type RunState } from '../../../src/core/run';
+import { greedyValue } from '../../../src/sim/simulateRun';
 import { buildOf, DRAFTS, FORKS, LEGENDARY, reelsWith, SHOPS } from './it6_lib';
 
 export * from './it6_lib';
@@ -35,7 +35,7 @@ DRAFTS.tierfirst = (run, offers) => best(offers, (o) => commitScore(run, o, 180,
 DRAFTS.notier = (run, offers) => best(offers, (o) => (isTier(o) ? -999 : commitScore(run, o, 0, 0)));
 
 const hurt = (run: RunState, t = 0.7) => run.player.hp < run.player.maxHp * t;
-import { buy, shopOffers, type ShopItem } from '../../src/core/run';
+import { buy, shopOffers, type ShopItem } from '../../../src/core/run';
 function buyWhile(run: RunState, score: (it: ShopItem) => number, min = 4.99) {
   const items = shopOffers(run);
   for (;;) {

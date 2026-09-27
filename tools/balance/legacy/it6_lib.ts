@@ -1,16 +1,16 @@
 // Iteration-6 playtest helpers: full 12-fight runs (act 1 + act 2) with pluggable policies and
 // per-fight instrumentation for the act 2 mechanics. Reviewer scratch.
-import { defaultConfig, type Enh, type RelicId } from '../../src/core/config';
-import { CABINETS, CABINET_ORDER, type CabinetId } from '../../src/core/cabinets';
-import { DANGER, RUN_FIGHTS } from '../../src/core/enemies';
-import { Fight } from '../../src/core/fight';
-import { LEGENDARY } from '../../src/core/relics';
-import { Rng } from '../../src/core/rng';
+import { defaultConfig, type Enh, type RelicId } from '../../../src/core/config';
+import { CABINETS, CABINET_ORDER, type CabinetId } from '../../../src/core/cabinets';
+import { DANGER, RUN_FIGHTS } from '../../../src/core/enemies';
+import { Fight } from '../../../src/core/fight';
+import { LEGENDARY } from '../../../src/core/relics';
+import { Rng } from '../../../src/core/rng';
 import {
   applyOption, buy, CHIPS, chooseEnemy, completesSet, createRun, draftOffers, finishFight, fightConfig, fullSets, isShopNow, leaveShop, needsChoice,
   shopOffers, takeLegend, takeSpoils, type DraftOption, type RunState, type ShopItem,
-} from '../../src/core/run';
-import { greedyValue } from '../../src/sim/simulateRun';
+} from '../../../src/core/run';
+import { greedyValue } from '../../../src/sim/simulateRun';
 
 export { Rng, CABINET_ORDER, CABINETS, LEGENDARY };
 export type { CabinetId };

@@ -531,7 +531,9 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
   const cm = BOSS_MUL[run.cabinet];
   if (e.boss === 'mirror') return unitsRound(TUNE.mirrorPower * cm.mirror * machinePower(run)) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length;
   if (e.boss === 'dealer') return unitsRound(TUNE.dealerPower * cm.dealer * machinePower(run)) + TUNE.dealerFlat + TUNE.mirrorPerRelic * run.player.relics.length;
-  return unitsRound(e.hp * cm.house) + BOSS_HP_PER_RELIC * run.player.relics.length;
+  // BLACK+: the House cheats (faster skims, payline bombs, no chip shield) instead of just being tougher.
+  const house = run.stake >= STAKE.houseDirty ? Math.sqrt(cm.house) : cm.house;
+  return unitsRound(e.hp * house) + BOSS_HP_PER_RELIC * run.player.relics.length;
 }
 
 /**
@@ -572,11 +574,11 @@ const POWER_SPINS = 40;
  * be hit), so the same HP formula would give each a different win rate.
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number }> = {
-  knight: { house: 1.7, mirror: 0.45, dealer: 0.55, act3: 0.5 },
-  midas: { house: 2, mirror: 2.5, dealer: 0.2, act3: 0.2 },
-  thorn: { house: 0.95, mirror: 2.5, dealer: 1.3, act3: 1.1 },
-  tesla: { house: 1.05, mirror: 1.6, dealer: 0.7, act3: 0.9 },
-  joker: { house: 1.8, mirror: 1.5, dealer: 1.1, act3: 1.2 },
+  knight: { house: 1.7, mirror: 0.45, dealer: 0.55, act3: 0.6 },
+  midas: { house: 2.5, mirror: 4, dealer: 0.13, act3: 0.08 },
+  thorn: { house: 1.2, mirror: 3.5, dealer: 1.3, act3: 1.4 },
+  tesla: { house: 1.05, mirror: 2, dealer: 0.7, act3: 0.95 },
+  joker: { house: 2.4, mirror: 1.5, dealer: 1.1, act3: 1.2 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */

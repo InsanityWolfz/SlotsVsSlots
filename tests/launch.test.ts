@@ -78,7 +78,10 @@ describe('relic activations are visible', () => {
     const run = createRun(base, 11, 'tesla');
     run.player.relics.push('battery', 'key', 'bell', 'prism');
     const { fightConfig } = await import('../src/core/run');
-    const f = new Fight(fightConfig(run, base), 3);
+    const cfg = fightConfig(run, base);
+    cfg.enemy.hp = 99999;
+    cfg.player.hp = cfg.player.startHp = 99999;
+    const f = new Fight(cfg, 3);
     const first = f.step().events;
     expect(first.some((e) => e.type === 'relic' && e.relic === 'battery')).toBe(true);
     let paid = false;

@@ -2,7 +2,7 @@
 // Prints, per slot machine: WHITE (acts 1-2) and GREEN (act 3 + Dealer) numbers.
 import { defaultConfig } from '../../src/core/config';
 import { CABINET_ORDER } from '../../src/core/cabinets';
-import { simulateRuns } from '../../src/sim/simulateRun';
+import { CHOICE_LOG, simulateRuns } from '../../src/sim/simulateRun';
 
 const N = Number(process.argv[2] ?? 1000);
 const f = (x: number) => x.toFixed(1).padStart(5);
@@ -19,3 +19,6 @@ for (const cab of CABINET_ORDER) {
 }
 const n = CABINET_ORDER.length;
 console.log(`AVG     | ${f(tot.w / n)}                                | ${f(tot.g / n)}        ${f(tot.hp / n)} ${f(tot.d / n)}`);
+
+console.log('\nbig choices (all GREEN + WHITE runs above): taken / won%');
+console.log(Object.entries(CHOICE_LOG).sort((a, b) => b[1][0] - a[1][0]).map(([k, [n, w]]) => `${k} ${n} (${((100 * w) / n).toFixed(0)}%)`).join(' | '));
