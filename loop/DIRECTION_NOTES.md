@@ -62,3 +62,15 @@ Status: discussion only. No code until after the usage reset (Tue 2026-09-29). T
 ## More reels / paylines
 - Players want them, but balancing gets insane.
 - Idea: keep acts 1-3 at 3x3 with one payline. After act 3, an ENDLESS mode scales content exponentially: more reels/paylines, random enemies, new bosses. Just avoid infinite damage/HP bugs.
+
+## Follow-up decisions (same day)
+- **Lightning storm:** 1 special = 1 normal strike. More than one = a LIGHTNING STORM whose length grows with the log of the strike count (~1.2 s for 2, ~2.5 s for 10, ~4 s for 300). Damage is unchanged.
+- **Charms go on specific CELLS** (not the reel, not the symbol type). The engine already stores a charm per cell.
+  - The card rolls its target cells when it's offered and shows them on the card, e.g. "3 GOLD CHARMS · REEL 1" with the target cells' symbols drawn (sword, sword, bolt). No extra menu, and speedrun-friendly.
+  - Charms show on those exact cells on the reels and in the left strip map. New symbols arrive plain.
+- **×10 numbers:** base symbol 10 (jackpot 30), level steps +1 (10 → 11), all HP ×10. More room for balancing.
+- **Full sets removed**, replaced by symbol levels and charm levels.
+- **Post-boss big choices:** pick 1 of 3. Strong options come with a real cost (e.g. "+1 level to ALL symbols, −10 HP"; "add GOLD to every uncharmed cell, −X"). Mild options have no downside, so there's always a safe pick. Have the expert draft the list.
+- **Characters locked:** MIDAS ×4 applies to whatever lands on the payline. BRIAR thorns fire once per enemy turn, then clear (a "keep 10%" relic needs a cap). JAX's meter payoff stands, and the 3-wild rule (a bonus reel picks one of your symbols to pay a jackpot) applies to everyone. KNIGHT has no special; ask the expert for "simple but exciting".
+- **Staging:** the user is confident shipping the changes together is fine. Keep the current live build as a reference anyway.
+- **Art:** stays 8-bit.
