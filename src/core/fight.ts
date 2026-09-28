@@ -54,7 +54,7 @@ const DEALS: DealCard[] = ['shuffle', 'cut', 'raise'];
 const FAKE_TURNS = 3;
 
 /** Symbols that act on the opponent when they're native to the caster's strips. */
-const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake']);
+export const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake']);
 /** HOLY WATER washes off these writes (not coins, drains or the Mimic's hit) and these abilities. */
 const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'bomb', 'hex', 'card', 'gavel', 'rake', 'ground', 'fake']);
 const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel']);
@@ -126,6 +126,48 @@ function makeCombatant(side: SideId, sc: SideConfig, rng: Rng, relics: RelicId[]
     relics: new Set(relics),
     levels: sc.levels,
   };
+}
+
+/** What an enemy's effect symbols do at this pay (single / pair / jackpot), in plain words, matching write(). */
+export function effectText(sym: SymbolId, amount: number): string {
+  const pair = amount >= PAIR_PAY;
+  const jackpot = amount >= JACKPOT_PAY;
+  const n = statusSize(amount);
+  const s = (k: number, one: string, many = `${one}S`) => `${k} ${k === 1 ? one : many}`;
+  switch (sym) {
+    case 'slime':
+      return `SLIMES ${s(Math.round(amount / UNIT), 'CELL')}`;
+    case 'ice':
+      return `FREEZES ${s(pair ? 2 : 1, 'REEL')} FOR ${s(jackpot ? 3 : pair ? 2 : 1, 'TURN')}`;
+    case 'lock':
+      return pair ? `JAMS ${s(jackpot ? 2 : 1, 'REEL')}` : 'FIZZLES';
+    case 'claw':
+      return `STEALS ${s(n, 'CELL')}`;
+    case 'rock':
+      return pair ? `ADDS ${s(jackpot ? 2 : 1, 'ROCK')}` : 'FIZZLES';
+    case 'coin':
+      return `+${amount} TO THE POT`;
+    case 'bomb':
+      return `PLANTS ${s(n, 'BOMB')}`;
+    case 'hex':
+      return pair ? `HEXES ${s(jackpot ? 2 : 1, 'REEL')}` : 'FIZZLES';
+    case 'fangs':
+      return `DRAINS ${(jackpot ? 7 : pair ? 4 : 2) * UNIT}`;
+    case 'card':
+      return `MARKS ${s(n, 'CELL')}`;
+    case 'gavel':
+      return pair ? `SEIZES ${jackpot ? 4 : 2} CHARMS` : 'FIZZLES';
+    case 'rake':
+      return `RAKES YOUR PAY FOR ${s(n, 'TURN')}`;
+    case 'ground':
+      return `GROUNDS ${s(n + 1, 'BOLT')}`;
+    case 'fake':
+      return `FAKES ${s(2 * n, 'CHARM')}`;
+    case 'mimicSym':
+      return jackpot ? 'COPIES YOUR BEST HIT X2' : pair ? 'COPIES YOUR BEST HIT' : 'COPIES HALF YOUR BEST HIT';
+    default:
+      return '';
+  }
 }
 
 /**

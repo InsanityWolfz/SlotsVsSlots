@@ -225,3 +225,14 @@ describe('relic pools, the starting pick and lucky', () => {
     }
   });
 });
+
+describe('enemy effect symbols say what they do', () => {
+  it('effect text follows the write() tiers', async () => {
+    const { effectText } = await import('../src/core/fight');
+    expect(effectText('slime', 90)).toBe('SLIMES 9 CELLS');
+    expect(effectText('slime', 10)).toBe('SLIMES 1 CELL');
+    expect(effectText('ice', 90)).toBe('FREEZES 2 REELS FOR 3 TURNS');
+    expect(effectText('lock', 10)).toBe('FIZZLES');
+    expect(effectText('claw', 40)).toBe('STEALS 2 CELLS');
+  });
+});

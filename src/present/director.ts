@@ -1,7 +1,7 @@
 import { UNIT, type SideId, type SymbolId } from '../core/config';
 import type { RelicId } from '../core/config';
 import type { CombatEvent } from '../core/events';
-import { other, type TurnResult } from '../core/fight';
+import { effectText, other, WRITERS, type TurnResult } from '../core/fight';
 import type { LineScore } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
@@ -472,6 +472,8 @@ export class Director {
     const lv = this.s.levels[side];
     const player = side === 'player';
     if ((player && DEAD.has(cell.symbol)) || cell.symbol === 'wild' || cell.symbol === 'empty') return;
+    // Enemy effect symbols (slime, ice, claws...) don't pay a number: the banner says what they do.
+    if (!player && WRITERS.has(cell.symbol)) return;
     const base = BASE[cell.symbol] ?? 0;
     const value = lv ? playerSymValue(lv, cell.symbol, base) : !player && cell.symbol === 'shield' ? Math.round(base * this.s.enemyShield) : base;
     const charm = cell.enh && cell.enh !== 'spiked' && !(cell.faked && cell.faked > 0) && m.hexed[r] <= 0 ? cell.enh : undefined;
@@ -559,9 +561,12 @@ export class Director {
     const g = matched!;
     const fmt = (x: number) => (Number.isInteger(x) ? String(x) : x.toFixed(1));
     const gross = Math.round(g.base * g.mult);
+    const effect = side === 'enemy' && WRITERS.has(sym) ? effectText(sym, g.amount) : '';
     const parts = slimeCleanse
       ? [{ text: 'CLEANSE!', color: COLORS.slime }]
-      : [
+      : effect
+        ? [{ text: effect, color: '#ff8a7a' }]
+        : [
           { text: `${g.base}`, color: '#ffffff' },
           { text: ' × ', color: COLORS.goldLight },
           { text: fmt(g.mult), color: COLORS.goldLight },
