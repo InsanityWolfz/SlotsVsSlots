@@ -184,12 +184,19 @@ export class HudView {
         const b = this.meterBar();
         const full = this.energy >= this.energyMax - 0.01;
         const pulse = full ? 0.3 + 0.3 * Math.sin(time * (this.armed ? 10 : 18)) : 0;
-        const punch = Math.max(...this.pipPunch);
-        const ph = b.h * punch;
-        this.bar(ctx, b.x, b.y + (b.h - ph) / 2, b.w, ph, [[Math.min(1, this.energy / Math.max(1, this.energyMax)), m.color]], Math.max(pulse, this.energyFlash));
+        // Fixed size (no punch), and the glow only lights the filled part, so the text always reads.
+        const frac = Math.min(1, this.energy / Math.max(1, this.energyMax));
+        this.bar(ctx, b.x, b.y, b.w, b.h, [[frac, m.color]], 0);
+        const glow = Math.min(0.45, Math.max(pulse, this.energyFlash) * 0.55);
+        if (glow > 0 && frac > 0) {
+          ctx.globalAlpha = glow;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(b.x, b.y, frac * b.w, b.h);
+          ctx.globalAlpha = 1;
+        }
         const label = this.armed ? (m.kind === 'touch' ? 'TOUCH READY!' : `${m.label} READY!`) : m.label;
-        drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, 1.5, full ? '#1a0f24' : COLORS.text, { align: 'left' });
-        drawText(ctx, `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`, b.x + b.w - 6, b.y + b.h / 2 + 1, 1.5, full ? '#1a0f24' : COLORS.text, { align: 'right' });
+        drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'left' });
+        drawText(ctx, `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`, b.x + b.w - 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'right' });
       }
     }
     if (this.ability) this.drawAbility(ctx, x, y + 106, time);
