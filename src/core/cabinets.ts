@@ -120,7 +120,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     favors: 'vamp',
     meter: { kind: 'thorns', symbol: 'thorn', cost: 0, heal: UNIT },
     symbols: ['sword', 'shield', 'thorn'],
-    rule: 'THORNS BANK THEIR PAY. WHEN YOU ARE ATTACKED, THE BANK HITS BACK. 300 HP.',
+    rule: 'THORNS ADD UP. WHEN YOU ARE ATTACKED, YOUR THORNS HIT BACK. 300 HP.',
     act2: { text: '+40 MAX HP', maxHp: 4 * UNIT },
     unlock: 'BEAT AN ELITE',
   },

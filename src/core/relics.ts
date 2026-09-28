@@ -26,7 +26,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
   midas: { id: 'midas', name: 'GOLD LEAF', text: 'GOLD ON A CELL THAT PAYS NOTHING JOINS YOUR BIGGEST GROUP', sprite: 'relicGoldleaf', charm: 'gold', retired: true },
   rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'YOUR CHARGED BOLTS MAKE YOUR LIGHTNING DEAL 90', sprite: 'relicRod', machine: 'tesla' },
-  cactus: { id: 'cactus', name: 'CACTUS', text: 'BANKING THORNS ALSO SHIELDS YOU FOR 30% OF THEM', sprite: 'relicCactus', machine: 'thorn' },
+  cactus: { id: 'cactus', name: 'CACTUS', text: 'THORNS YOU LAND ALSO SHIELD YOU FOR 30% OF THEM', sprite: 'relicCactus', machine: 'thorn' },
   prism: { id: 'prism', name: 'PRISM', text: 'A MATCH THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
   hone: { id: 'hone', name: 'EXECUTIONER', text: 'KEEN SWORDS PAY X3 WHEN THE ENEMY IS UNDER HALF HP', sprite: 'relicExecutioner', charm: 'keen' },
   // Legendary (act 2): big, build-bending effects.
@@ -68,7 +68,7 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
   battery: {
     tesla: 'YOUR LIGHTNING STARTS EACH FIGHT 30 CHARGED',
     midas: 'YOUR X4 METER STARTS EACH FIGHT MORE THAN HALF FULL',
-    thorn: 'YOUR THORN BANK STARTS EACH FIGHT AT 30',
+    thorn: 'YOUR THORNS START EACH FIGHT AT 30',
     joker: 'YOUR JACKPOT METER STARTS EACH FIGHT MORE THAN HALF FULL',
   },
   fang: {
@@ -86,7 +86,7 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
     knight: 'JACKPOTS PAY X2',
     tesla: 'JACKPOTS PAY X2 AND FULLY CHARGE YOUR LIGHTNING',
     midas: 'JACKPOTS PAY X2 AND READY YOUR X4',
-    thorn: 'JACKPOTS PAY X2 AND BANK THEIR PAY AGAIN',
+    thorn: 'JACKPOTS PAY X2 AND ADD THEIR PAY TO YOUR THORNS',
     joker: 'JACKPOTS PAY X2 AND FILL YOUR JACKPOT METER',
   },
 };
