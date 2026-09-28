@@ -230,3 +230,70 @@ export class Bubble implements FxItem {
     ctx.restore();
   }
 }
+
+/** The WILD symbol wheel: your symbols on a small wheel that spins and stops under the pointer. */
+export class SymbolWheel implements FxItem {
+  angle = 0;
+  scale = 0;
+  alpha = 1;
+  /** Segment that just landed (flashes). */
+  landed = -1;
+  flash = 0;
+  z = 32;
+  constructor(
+    public symbols: SpriteId[],
+    public x: number,
+    public y: number,
+    public radius: number,
+  ) {}
+  /** The wheel angle that puts segment k's centre under the pointer (top), after `turns` spins. */
+  stopAngle(k: number, turns: number): number {
+    const seg = (Math.PI * 2) / this.symbols.length;
+    return -Math.PI / 2 - (k + 0.5) * seg - Math.PI * 2 * turns;
+  }
+  draw(ctx: CanvasRenderingContext2D): void {
+    if (this.scale <= 0.01) return;
+    const n = this.symbols.length;
+    const seg = (Math.PI * 2) / n;
+    const r = this.radius * this.scale;
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    // Rim.
+    ctx.fillStyle = COLORS.outline;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, r + 6, 0, Math.PI * 2);
+    ctx.fill();
+    for (let i = 0; i < n; i++) {
+      const a0 = this.angle + i * seg;
+      ctx.fillStyle = i === this.landed && this.flash > 0 ? '#ff6ad5' : i % 2 ? '#3a2350' : '#52306e';
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y);
+      ctx.arc(this.x, this.y, r, a0, a0 + seg);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ff6ad5';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    ctx.restore();
+    for (let i = 0; i < n; i++) {
+      const a = this.angle + (i + 0.5) * seg;
+      drawSprite(ctx, this.symbols[i], this.x + Math.cos(a) * r * 0.6, this.y + Math.sin(a) * r * 0.6, 2.2 * this.scale, { alpha: this.alpha, flash: i === this.landed ? this.flash : 0 });
+    }
+    // Hub and pointer.
+    drawSprite(ctx, 'wild', this.x, this.y, 1.6 * this.scale, { alpha: this.alpha });
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = COLORS.outline;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(this.x - 12 * this.scale, this.y - r - 16 * this.scale);
+    ctx.lineTo(this.x + 12 * this.scale, this.y - r - 16 * this.scale);
+    ctx.lineTo(this.x, this.y - r + 6 * this.scale);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+    ctx.restore();
+  }
+}

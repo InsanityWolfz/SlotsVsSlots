@@ -46,7 +46,7 @@ export const RELIC_ORDER: RelicId[] = (() => {
         out.push(r);
       }
   for (const r of Object.keys(RELICS) as RelicId[]) if (!seen.has(r)) out.push(r);
-  return out;
+  return out.filter((r) => !RELICS[r].retired);
 })();
 
 const relicTier = (r: RelicId): keyof typeof TIER_COLOR =>

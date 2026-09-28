@@ -5,13 +5,13 @@ import { other, type TurnResult } from '../core/fight';
 import type { LineScore } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
-import { Banner, Bubble, FloatText, Lightning, Projectile, TurnCard } from './fx';
+import { Banner, Bubble, FloatText, Lightning, Projectile, SymbolWheel, TurnCard } from './fx';
 import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, W, relicSlot } from './layout';
 import type { Stage } from './stage';
 import { ABILITY_UI } from './hud';
 import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
-import { BOMB, RELICS } from '../core/relics';
+import { BOMB, MIDAS_RAISE, RELICS } from '../core/relics';
 import { charmLevel, charmTag, CHARM_COLOR, playerSymValue } from '../core/charms';
 import { defaultConfig } from '../core/config';
 import { DEAD } from '../core/strip';
@@ -379,7 +379,7 @@ export class Director {
     if (!this.s.juice.turnCards) return;
     const player = e.side === 'player';
     this.s.sounds.turnCard(player);
-    const card = this.s.fx.add(new TurnCard(player ? 'PLAYER TURN' : 'ENEMY TURN', player ? COLORS.goldLight : COLORS.slime, BANNER_Y));
+    const card = this.s.fx.add(new TurnCard(e.free ? 'FREE SPIN!' : player ? 'PLAYER TURN' : 'ENEMY TURN', e.free ? '#ffd23f' : player ? COLORS.goldLight : COLORS.slime, BANNER_Y));
     card.x = player ? -W : W;
     await this.c.tween({ from: card.x, to: 0, dur: 0.18, ease: cubicOut, onUpdate: (v) => (card.x = v) });
     this.bg(
@@ -435,6 +435,8 @@ export class Director {
     if (e.luckyWilds?.length) await this.luckyWilds(e.side, e.luckyWilds);
     // 3 WILDS: a little bonus reel picks one of your symbols, and that jackpot pays.
     if (e.score.wildPick) await this.bonusReel(e.side, e.score.wildPick);
+    // JAX's all-jackpots spin: each WILD on the line spins the wheel for its symbol.
+    if (e.score.jackpots) for (const [r, s] of e.score.line.entries()) if (s === 'wild' && e.score.groups[r]) await this.bonusReel(e.side, e.score.groups[r].symbol);
     if (near && e.score.tier !== 'triple') this.missedTriple(e.side, e.score.line[0]);
     // JAX's all-jackpots spin is announced by its payoff; each cell then pays on its own.
     if (!e.score.jackpots) await this.winPresentation(e.side, e.score);
@@ -478,33 +480,39 @@ export class Director {
     this.bg(this.c.tween({ from: 0, to: 1, dur: 0.18, ease: backOut(3), onUpdate: (v) => (tag.pop = v) }));
   }
 
-  /** 3 WILDS: a small bonus reel spins and lands on the symbol whose jackpot pays. */
+  /** WILDS: a small wheel of your symbols spins and lands on the one whose jackpot pays. */
   private async bonusReel(side: SideId, pick: SymbolId): Promise<void> {
     this.s.sounds.lucky();
-    // It ticks through YOUR symbols (the ones a jackpot can be made of), in the centre gutter.
+    // Every symbol a jackpot can be made of on YOUR machine, one segment each.
     const own = new Set(this.s.machines[side].reels.flatMap((r) => r.cells.map((c) => c.symbol)));
     const pool = (['sword', 'shield', 'bolt', 'goldbar', 'thorn'] as SymbolId[]).filter((x) => own.has(x));
-    if (!pool.length) pool.push(pick);
+    if (!pool.includes(pick)) pool.push(pick);
     const cx = W / 2;
-    const cy = MACHINE_TOP + MACHINE_H / 2 + 120;
-    const frame = this.s.fx.add(new Banner('  ', '#ff6ad5', cx, cy, 6));
-    frame.scale = 1;
-    const spr = this.s.fx.add(new Projectile(pool[0] as SpriteId, cx, cy, 0));
-    spr.z = 32;
-    await this.c.tween({ from: 0, to: 4, dur: 0.15, ease: backOut(2), onUpdate: (v) => (spr.scale = v) });
-    // It ticks through your symbols, slowing down, then lands.
-    const ticks = 9;
-    for (let i = 0; i < ticks; i++) {
-      spr.sprite = pool[i % pool.length] as SpriteId;
-      this.s.sounds.reelStop(i % 3, 1.2);
-      await this.c.wait(0.04 + i * 0.012);
-    }
-    spr.sprite = pick as SpriteId;
-    spr.flash = 1;
-    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (spr.flash = v) }));
-    this.bg(this.popText(`WILD ${pick === 'goldbar' ? 'GOLD BAR' : pick.toUpperCase()} JACKPOT!`, cx, cy - 70, 2, '#ff6ad5', 16, 0.4));
-    await this.c.wait(0.35);
-    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.2, onUpdate: (v) => ((spr.alpha = v), (frame.alpha = v)) }).then(() => (this.s.fx.remove(spr), this.s.fx.remove(frame))));
+    const cy = MACHINE_TOP + MACHINE_H / 2 + 60;
+    const wheel = this.s.fx.add(new SymbolWheel(pool as SpriteId[], cx, cy, 70));
+    await this.c.tween({ from: 0, to: 1, dur: 0.18, ease: backOut(2), onUpdate: (v) => (wheel.scale = v) });
+    const end = wheel.stopAngle(pool.indexOf(pick), 3);
+    const seg = (Math.PI * 2) / pool.length;
+    let last = 0;
+    await this.c.tween({
+      from: 0,
+      to: end,
+      dur: 1.3,
+      ease: cubicOut,
+      onUpdate: (v) => {
+        wheel.angle = v;
+        const tick = Math.floor(Math.abs(v) / seg);
+        if (tick !== last) {
+          last = tick;
+          this.s.sounds.reelStop(tick % 3, 1.2);
+        }
+      },
+    });
+    wheel.landed = pool.indexOf(pick);
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (wheel.flash = v) }));
+    this.bg(this.popText(`WILD ${pick === 'goldbar' ? 'GOLD BAR' : pick.toUpperCase()} JACKPOT!`, cx, cy - 100, 2.5, '#ff6ad5', 16, 0.4));
+    await this.c.wait(0.4);
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.2, onUpdate: (v) => (wheel.alpha = v) }).then(() => this.s.fx.remove(wheel)));
   }
 
   /** Juice §3, mapped to tiers: none → small, pair → medium, triple → jackpot. */
@@ -564,7 +572,7 @@ export class Director {
       this.shake(3, 0.15);
       this.s.camera.chromaPulse(0.15);
       // Non-blocking: the effects start while the banner is still up.
-      this.bg(this.banner('DOUBLE!', COLORS.pair, 1.15, 0.35, parts));
+      this.bg(this.banner('PAIR!', COLORS.pair, 1.15, 0.35, parts));
       await this.c.wait(0.3);
     } else {
       this.s.sounds.fanfareJackpot();
@@ -915,6 +923,17 @@ export class Director {
       if (e.reels.length) this.settle(e.side, e.reels);
       return;
     }
+    if (e.raise) h.raiseMult = e.raise;
+    // MIDAS: a gold bar while the x4 is ready raises it.
+    if (e.armed && h.armed && e.raise && !e.amount) {
+      if (e.reels.length) await this.activate(e.side, e.reels, m.color);
+      this.s.sounds.lucky();
+      const p0 = h.pipPos(h.energyMax - 1);
+      this.bg(this.c.tween({ from: 1.5, to: 1, dur: 0.25, ease: backOut(), onUpdate: (v) => h.pipPunch.fill(v) }));
+      await this.popText(`X${e.raise}!`, p0.x, p0.y - 24, 3, m.color, 20, 0.3);
+      if (e.reels.length) this.settle(e.side, e.reels);
+      return;
+    }
     if (e.wasted) {
       const p0 = h.pipPos(h.energyMax - 1);
       await this.popText('FULL!', p0.x, p0.y - 24, 2, COLORS.textDim, 16, 0.2);
@@ -943,7 +962,7 @@ export class Director {
       h.armed = true;
       this.s.sounds.lucky();
       const p0 = h.pipPos(0);
-      this.bg(this.popText(m.kind === 'raise' ? `NEXT PAY X4!` : 'NEXT SPIN: ALL JACKPOTS!', p0.x + 80, p0.y - 26, 2, m.color, 20, 0.6));
+      this.bg(this.popText(m.kind === 'raise' ? `NEXT PAIR OR JACKPOT X${h.raiseMult}!` : 'NEXT SPIN: ALL JACKPOTS!', p0.x + 80, p0.y - 26, 2, m.color, 20, 0.6));
     }
     if (e.reels.length) this.settle(e.side, e.reels);
   }
@@ -956,7 +975,11 @@ export class Director {
     this.s.sounds.fanfareJackpot();
     this.shake(4, 0.25);
     const color = h.meter?.color ?? COLORS.goldLight;
-    await this.banner(e.kind === 'raise' ? 'X4 GOLD!' : 'ALL JACKPOTS!', color, 1.35, 0.35, '', BANNER_Y, 5);
+    // A callout over the machine, not a second banner (the PAIR!/JACKPOT! banner carries the math).
+    const c = this.machineCenter(e.side);
+    const text = e.kind === 'raise' ? `X${h.raiseMult} GOLD!` : 'ALL JACKPOTS!';
+    h.raiseMult = MIDAS_RAISE;
+    await this.popText(text, c.x, MACHINE_TOP - 34, 4, color, 30, 0.45);
   }
 
   private async slime(e: Ev<'slime'>): Promise<void> {

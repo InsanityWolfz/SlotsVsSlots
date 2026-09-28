@@ -9,21 +9,23 @@ export interface RelicDef {
   sprite: string;
   /** Only offered on this slot machine. */
   machine?: CabinetId;
-  /** Only offered once you own this charm (or your machine favours it). */
+  /** Only offered once you own this charm. */
   charm?: Enh;
+  /** Never offered any more (kept so old saves and collections still load). */
+  retired?: boolean;
 }
 
 /** Passive rule changes. None of them ask for input mid-fight. */
 export const RELICS: Record<RelicId, RelicDef> = {
   clover: { id: 'clover', name: 'LUCKY CLOVER', text: '30% CHANCE A NEAR-MISS BECOMES A JACKPOT', sprite: 'relicClover' },
   battery: { id: 'battery', name: 'BATTERY', text: 'YOUR METER STARTS EACH FIGHT MORE THAN HALF FULL', sprite: 'relicBattery' },
-  mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS PAY AS A DOUBLE', sprite: 'relicMirror' },
+  mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS PAY AS A PAIR', sprite: 'relicMirror' },
   fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFF HEALS 30 MORE (BRIAR: 10)', sprite: 'relicFang' },
   bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 60 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
-  crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR DOUBLES HEAL 5 (AND STEAL HALF THE HOUSE POT)', sprite: 'relicCrown' },
+  crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR PAIRS HEAL 5 (AND STEAL HALF THE HOUSE POT)', sprite: 'relicCrown' },
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
-  midas: { id: 'midas', name: 'GOLD LEAF', text: 'GOLD ON A CELL THAT PAYS NOTHING JOINS YOUR BIGGEST GROUP', sprite: 'relicGoldleaf', charm: 'gold' },
-  rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'IF YOU HAVE CHARGED BOLTS, YOUR LIGHTNING DEALS 90', sprite: 'relicRod', machine: 'tesla' },
+  midas: { id: 'midas', name: 'GOLD LEAF', text: 'GOLD ON A CELL THAT PAYS NOTHING JOINS YOUR BIGGEST GROUP', sprite: 'relicGoldleaf', charm: 'gold', retired: true },
+  rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'YOUR CHARGED BOLTS MAKE YOUR LIGHTNING DEAL 90', sprite: 'relicRod', machine: 'tesla' },
   cactus: { id: 'cactus', name: 'CACTUS', text: 'BANKING THORNS ALSO SHIELDS YOU FOR 30% OF THEM', sprite: 'relicCactus', machine: 'thorn' },
   prism: { id: 'prism', name: 'PRISM', text: 'A MATCH THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
   hone: { id: 'hone', name: 'EXECUTIONER', text: 'KEEN SWORDS PAY X3 WHEN THE ENEMY IS UNDER HALF HP', sprite: 'relicExecutioner', charm: 'keen' },
@@ -32,31 +34,65 @@ export const RELICS: Record<RelicId, RelicDef> = {
   bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND FILL YOUR METER', sprite: 'relicBell' },
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'ONCE PER FIGHT, SURVIVE A LETHAL HIT AT 1 HP', sprite: 'relicPhoenix' },
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR METER PAYOFF ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
-  key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR DOUBLES PAY X2', sprite: 'relicKey' },
+  key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR PAIRS PAY X2', sprite: 'relicKey' },
   chalice: { id: 'chalice', name: 'BLOOD CHALICE', text: 'HEALING PAST FULL HP BECOMES SHIELD', sprite: 'relicChalice' },
   sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: 'ENEMY ABILITIES CHARGE 1 TURN SLOWER', sprite: 'relicSandglass' },
   // Slot machine relics: each machine gets an identity relic and a heal that feeds off its own mechanic.
   drum: { id: 'drum', name: 'WAR DRUM', text: 'EACH SPIN THAT PAYS: SWORDS +5 THIS FIGHT (MAX +25)', sprite: 'relicDrum', machine: 'knight' },
   chainmail: { id: 'chainmail', name: 'CHAINMAIL', text: 'LEFTOVER SHIELD HEALS YOU 10% OF IT EACH TURN', sprite: 'relicChainmail', machine: 'knight' },
   vault: { id: 'vault', name: "KING'S VAULT", text: 'GOLD CHARMS FIT GOLD BARS. THEIR GOLD ADDS TO YOUR NEXT X4', sprite: 'relicVault', machine: 'midas' },
-  decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR X4 HITS EVERY GROUP ON THAT SPIN, GOLD BARS TOO', sprite: 'relicDecree', machine: 'midas' },
+  decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR X4 HITS EVERYTHING ON THAT SPIN, GOLD BARS TOO', sprite: 'relicDecree', machine: 'midas' },
   rosehip: { id: 'rosehip', name: 'ROSE HIP', text: 'YOUR THORN VOLLEYS HEAL YOU 10% OF WHAT THEY FIRE', sprite: 'relicRosehip', machine: 'thorn' },
-  graft: { id: 'graft', name: 'GRAFT', text: 'GOLD, KEEN AND VAMP CHARMS FIT THORNS', sprite: 'relicGraft', machine: 'thorn' },
+  graft: { id: 'graft', name: 'GRAFT', text: 'GOLD AND VAMP CHARMS FIT THORNS', sprite: 'relicGraft', machine: 'thorn' },
   faraday: { id: 'faraday', name: 'FARADAY CAGE', text: 'SHIELD YOU GAIN ALSO CHARGES LIGHTNING (1/4 AS MUCH)', sprite: 'relicFaraday', machine: 'tesla' },
   static: { id: 'static', name: 'STATIC', text: "WHEN YOU'RE ATTACKED, YOUR LIGHTNING CHARGES 5", sprite: 'relicStatic', machine: 'tesla' },
   capbells: { id: 'capbells', name: 'CAP AND BELLS', text: 'EVERY WILD ON YOUR PAYLINE HEALS 10', sprite: 'relicCapbells', machine: 'joker' },
   stacked: { id: 'stacked', name: 'STACKED DECK', text: 'WILDS TAKE GOLD, KEEN AND VAMP CHARMS. CHARMED WILDS FILL YOUR METER X2', sprite: 'relicStacked', machine: 'joker' },
   // Charm relics.
   kiss: { id: 'kiss', name: "VAMPIRE'S KISS", text: 'VAMP CHARMS FIT ANY SYMBOL AND HEAL WHEN IT PAYS', sprite: 'relicKiss', charm: 'vamp' },
-  horseshoe: { id: 'horseshoe', name: 'HORSESHOE', text: 'A GROUP WITH A LUCKY WILD PAYS X3', sprite: 'relicHorseshoe', charm: 'lucky' },
+  horseshoe: { id: 'horseshoe', name: 'HORSESHOE', text: 'A MATCH MADE WITH A LUCKY WILD PAYS X3', sprite: 'relicHorseshoe', charm: 'lucky' },
   // General.
-  underdog: { id: 'underdog', name: 'UNDERDOG', text: 'UNDER HALF HP, EVERY GROUP PAYS X1.5', sprite: 'relicUnderdog' },
+  underdog: { id: 'underdog', name: 'UNDERDOG', text: 'UNDER HALF HP, EVERYTHING PAYS X1.5', sprite: 'relicUnderdog' },
   firstblood: { id: 'firstblood', name: 'FIRST BLOOD', text: 'YOUR FIRST PAYING SPIN EACH FIGHT PAYS X3', sprite: 'relicFirstblood' },
   piggy: { id: 'piggy', name: 'PIGGY BANK', text: 'AFTER EACH WIN: +1 CHIP PER 5 CHIPS YOU HOLD (MAX +4)', sprite: 'relicPiggy' },
   trophy: { id: 'trophy', name: 'TROPHY BELT', text: '+10 MAX HP FOR EVERY FIGHT YOU WIN', sprite: 'relicTrophy' },
   holywater: { id: 'holywater', name: 'HOLY WATER', text: 'THE FIRST CHEAT ON YOUR REELS EACH FIGHT WASHES OFF', sprite: 'relicHolywater' },
   bash: { id: 'bash', name: 'SHIELD BASH', text: 'YOUR LEFTOVER SHIELD HITS BACK FOR HALF EACH TURN', sprite: 'relicBash' },
 };
+
+/**
+ * A relic's card text on a given slot machine: meter relics speak your machine's language
+ * (LIGHTNING, the X4, the THORN BANK, the JACKPOT METER). Without a machine, the generic text.
+ */
+const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>> = {
+  battery: {
+    tesla: 'YOUR LIGHTNING STARTS EACH FIGHT 30 CHARGED',
+    midas: 'YOUR X4 METER STARTS EACH FIGHT MORE THAN HALF FULL',
+    thorn: 'YOUR THORN BANK STARTS EACH FIGHT AT 30',
+    joker: 'YOUR JACKPOT METER STARTS EACH FIGHT MORE THAN HALF FULL',
+  },
+  fang: {
+    tesla: 'EVERY LIGHTNING STRIKE HEALS 30 MORE',
+    midas: 'YOUR X4 HEALS 30 MORE',
+    thorn: 'YOUR THORN VOLLEYS HEAL 10 MORE',
+    joker: 'YOUR ALL-JACKPOTS SPIN HEALS 30 MORE',
+  },
+  overcharge: {
+    tesla: 'YOUR LIGHTNING ECHOES FOR 1/3 DAMAGE',
+    midas: 'YOUR X4 SPIN ECHOES FOR 1/3 OF ITS DAMAGE',
+    joker: 'YOUR ALL-JACKPOTS SPIN ECHOES FOR 1/3 OF ITS DAMAGE',
+  },
+  bell: {
+    knight: 'JACKPOTS PAY X2',
+    tesla: 'JACKPOTS PAY X2 AND FULLY CHARGE YOUR LIGHTNING',
+    midas: 'JACKPOTS PAY X2 AND READY YOUR X4',
+    thorn: 'JACKPOTS PAY X2 AND BANK THEIR PAY AGAIN',
+    joker: 'JACKPOTS PAY X2 AND FILL YOUR JACKPOT METER',
+  },
+};
+export const relicText = (r: RelicId, cabinet?: CabinetId | null) => (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;
+/** Relics that make no sense on a machine even reworded (never offered there). */
+export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['thorn'] };
 
 /** New-relic numbers (playtest/RELIC_PROPOSALS.md, tuned in the engine). */
 export const NEW_RELIC = {
@@ -88,7 +124,7 @@ export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
   common: ['clover', 'battery', 'fang', 'bandage', 'crown', 'graft', 'firstblood', 'piggy', 'trophy', 'bash'],
-  uncommon: ['midas', 'rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater'],
+  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass'],
 };
 
@@ -114,6 +150,8 @@ export const BATTERY_ENERGY = 3 * UNIT;
 export const BATTERY_SHARE = 0.6;
 /** MIDAS: a full meter makes your next paying group pay this many times. */
 export const MIDAS_RAISE = 4;
+/** Gold bars that land while the x4 is ready add at most this much to it (x6). */
+export const MIDAS_STACK_CAP = 2;
 /** Cactus: banking thorns shields you for this share of what you banked. */
 export const CACTUS_SHARE = 0.3;
 export const FANG_HEAL = 3 * UNIT;

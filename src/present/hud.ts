@@ -1,4 +1,4 @@
-import type { AbilityDef, AbilityKind, SideId } from '../core/config';
+import { UNIT, type AbilityDef, type AbilityKind, type SideId } from '../core/config';
 import type { MeterKind } from '../core/cabinets';
 import { artId, drawSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
@@ -53,6 +53,8 @@ export class HudView {
   bankPunch = 1;
   /** MIDAS / JAX: the meter is full and waiting to pay off. */
   armed = false;
+  /** MIDAS: the ready multiplier (x4, plus vault gold and bars that landed while ready). */
+  raiseMult = 4;
   hpShake = 0;
   hpFlash = 0;
   shieldFlash = 0;
@@ -107,9 +109,15 @@ export class HudView {
   get hasSpecial(): boolean {
     return !!this.meter;
   }
+  /** The meter bar (TESLA, MIDAS, JAX): one bar with a number, not pips. */
+  meterBar() {
+    return { x: this.x + 80, y: HUD_TOP + 98, w: HUD_W - 86, h: 16 };
+  }
+  /** A point along the meter bar for the i-th 10 of meter (projectiles aim here). */
   pipPos(i: number) {
-    const pitch = Math.min(34, 200 / Math.max(1, this.energyMax));
-    return { x: this.x + 88 + i * pitch, y: HUD_TOP + 106 };
+    const b = this.meterBar();
+    const n = Math.max(1, this.energyMax);
+    return { x: b.x + ((Math.min(i, n - 1) + 0.5) / n) * b.w, y: b.y + b.h / 2 };
   }
   /** Where damage numbers / projectiles aim for this side. */
   get anchor() {
@@ -172,21 +180,19 @@ export class HudView {
       drawSprite(ctx, m.icon, x + 64, y + 106, m.icon === 'boltIcon' ? 2 : 1.5);
       if (m.kind === 'thorns') {
         drawText(ctx, `${Math.round(this.bank)}`, x + 88, y + 106, 3, this.bank > 0 ? m.color : COLORS.textDim, { align: 'left', punch: this.bankPunch });
+        drawText(ctx, m.label, x + HUD_W - 4, y + 106, 2, this.bank > 0 ? m.color : COLORS.textDim, { align: 'right' });
       } else {
-        const small = this.energyMax > 6;
-        for (let i = 0; i < this.energyMax; i++) {
-          const p = this.pipPos(i);
-          const lit = Math.max(0, Math.min(1, this.energy - i));
-          drawSprite(ctx, 'pipEmpty', p.x, p.y, small ? 2 : 3);
-          if (lit > 0) {
-            const full = this.energy >= this.energyMax - 0.01;
-            const pulse = full ? 0.3 + 0.3 * Math.sin(time * (this.armed ? 10 : 18)) : 0;
-            drawSprite(ctx, 'pipFull', p.x, p.y, (small ? 2 : 3) * this.pipPunch[i], { alpha: lit, flash: Math.max(pulse, this.energyFlash) });
-          }
-        }
+        // One bar with a number: how much you have / how much it takes.
+        const b = this.meterBar();
+        const full = this.energy >= this.energyMax - 0.01;
+        const pulse = full ? 0.3 + 0.3 * Math.sin(time * (this.armed ? 10 : 18)) : 0;
+        const punch = Math.max(...this.pipPunch);
+        const ph = b.h * punch;
+        this.bar(ctx, b.x, b.y + (b.h - ph) / 2, b.w, ph, [[this.energy / Math.max(1, this.energyMax), m.color]], Math.max(pulse, this.energyFlash));
+        const label = m.kind === 'raise' ? `X${this.raiseMult} ${this.armed ? 'READY!' : 'GOLD'}` : this.armed ? `${m.label} READY!` : m.label;
+        drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, 1.5, full ? '#1a0f24' : COLORS.text, { align: 'left' });
+        drawText(ctx, `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`, b.x + b.w - 6, b.y + b.h / 2 + 1, 1.5, full ? '#1a0f24' : COLORS.text, { align: 'right' });
       }
-      const ready = m.kind === 'thorns' ? this.bank > 0 : this.energy >= this.energyMax - 0.01;
-      drawText(ctx, this.armed ? `${m.label} READY!` : m.label, x + HUD_W - 4, y + 106, 2, ready ? m.color : COLORS.textDim, { align: 'right' });
     }
     if (this.ability) this.drawAbility(ctx, x, y + 106, time);
   }

@@ -16,7 +16,7 @@ export type HealSource = RelicId | 'special' | 'vamp' | 'drain' | 'ability' | 'p
 
 
 export type CombatEvent =
-  | { type: 'turnStart'; turn: number; side: SideId }
+  | { type: 'turnStart'; turn: number; side: SideId; free?: boolean }
   | { type: 'shieldReset'; side: SideId; lost: number }
   | {
       type: 'spin';
@@ -70,7 +70,7 @@ export type CombatEvent =
    * A signature meter moved (MIDAS gold bars, BRIAR's thorn bank, JAX's wilds). `armed`: it's full and
    * waiting to pay off; `wasted`: gold bars that landed while it was already full.
    */
-  | { type: 'meter'; side: SideId; reels: number[]; amount: number; total: number; armed?: boolean; wasted?: number; earthed?: number }
+  | { type: 'meter'; side: SideId; reels: number[]; amount: number; total: number; armed?: boolean; wasted?: number; earthed?: number; raise?: number }
   /** A meter paid off (MIDAS x4 group, JAX all-jackpots spin); it empties. */
   | { type: 'payoff'; side: SideId; kind: 'raise' | 'jackpots' }
   | { type: 'slime'; from: SideId; to: SideId; reels: number[]; amount: number; cells: CellRef[]; wasted: number }

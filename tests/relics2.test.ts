@@ -44,11 +44,17 @@ describe('slot machine relics', () => {
     expect(ofType(ev, 'spin')).toHaveLength(0);
   });
 
-  it('HORSESHOE is not offered to JAX before lucky charms can be drafted', () => {
+  it('charm relics need the charm; GOLD LEAF is retired; OVERCHARGE never shows on BRIAR', () => {
     const run = createRun(base, 4, 'joker');
-    expect(relicFits(run, 'horseshoe')).toBe(false);
     run.act = 2;
+    expect(relicFits(run, 'horseshoe')).toBe(false);
+    run.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'lucky', n: 2 });
     expect(relicFits(run, 'horseshoe')).toBe(true);
+    const midas = createRun(base, 4, 'midas');
+    midas.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'gold', n: 2 });
+    expect(relicFits(midas, 'midas')).toBe(false);
+    expect(relicFits(createRun(base, 4, 'thorn'), 'overcharge')).toBe(false);
+    expect(relicFits(createRun(base, 4, 'tesla'), 'overcharge')).toBe(true);
   });
 
   it('CHAINMAIL heals 10% of leftover shield; SHIELD BASH hits for half of it', () => {
@@ -69,8 +75,8 @@ describe('slot machine relics', () => {
     f.step();
     expect(f.vault).toBe(2);
     expect(f.sides.player.armed).toBe(true);
-    f.step();
-    f.forceNext('player', ['sword', 'shield', 'shield']);
+    // The free spin.
+    f.forceNext('player', ['shield', 'shield', 'sword']);
     const g = ofType(f.step().events, 'spin')[0].score.groups[0];
     expect(g.notes).toContain('X6 MIDAS');
     expect(f.vault).toBe(0);
@@ -78,7 +84,7 @@ describe('slot machine relics', () => {
     const d = on('midas', ['decree']);
     d.sides.player.energy = 20;
     d.sides.player.armed = true;
-    d.forceNext('player', ['sword', 'shield', 'shield']);
+    d.forceNext('player', ['shield', 'shield', 'sword']);
     const gs = ofType(d.step().events, 'spin')[0].score.groups;
     expect(gs.filter((x) => x.notes?.some((n) => n.includes('X4'))).length).toBe(gs.length);
   });

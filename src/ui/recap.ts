@@ -13,7 +13,7 @@ const ROWS: Row[] = [
   ['DAMAGE DEALT', n('damageDealt'), n('damageDealt')],
   ['DAMAGE BLOCKED', n('damageBlocked'), n('damageBlocked')],
   ['SHIELD GAINED', n('shieldGained'), n('shieldGained')],
-  ['DOUBLES', n('pairs'), n('pairs')],
+  ['PAIRS', n('pairs'), n('pairs')],
   ['JACKPOTS', n('triples'), n('triples')],
   ['NEAR-MISS HIT/ALL', (s) => `${s.nearMissHits}/${s.nearMisses}`, (s) => `${s.nearMissHits}/${s.nearMisses}`],
   ['BIGGEST HIT', n('biggestHit'), n('biggestHit')],

@@ -10,6 +10,8 @@ import {
   BUILD_ENABLER,
   ELITE_ONLY,
   NEW_RELIC,
+  MACHINE_EXCLUDE,
+  relicText,
   LEGENDARY,
   REFLECT_CAP,
   REFLECT_MIN,
@@ -614,9 +616,9 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number }> = {
   knight: { house: 6, mirror: 1.2, dealer: 1.05, act3: 0.7 },
-  midas: { house: 2.8, mirror: 5, dealer: 1.4, act3: 0.1 },
-  thorn: { house: 2.8, mirror: 10, dealer: 1.35, act3: 1.4 },
-  tesla: { house: 1.2, mirror: 2.4, dealer: 0.75, act3: 0.95 },
+  midas: { house: 12, mirror: 30, dealer: 7.5, act3: 0.1 },
+  thorn: { house: 3.2, mirror: 12, dealer: 1.8, act3: 1.4 },
+  tesla: { house: 1.2, mirror: 2.4, dealer: 0.8, act3: 0.95 },
   joker: { house: 2.4, mirror: 1.9, dealer: 1.75, act3: 1.3 },
 };
 const powerCache = new Map<string, number>();
@@ -864,7 +866,7 @@ export function charmSymbols(run: RunState, enh: Enh): SymbolId[] {
   const has = (r: RelicId) => run.player.relics.includes(r);
   const out = new Set<SymbolId>(CHARM_SYMBOLS[enh]);
   if (enh === 'gold' && has('vault')) out.add('goldbar');
-  if ((enh === 'gold' || enh === 'keen' || enh === 'vamp') && has('graft')) out.add('thorn');
+  if ((enh === 'gold' || enh === 'vamp') && has('graft')) out.add('thorn');
   if ((enh === 'gold' || enh === 'keen' || enh === 'vamp') && has('stacked')) out.add('wild');
   if (enh === 'vamp' && has('kiss')) for (const s of ['shield', 'bolt', 'goldbar', 'thorn'] as SymbolId[]) out.add(s);
   return [...out];
@@ -1125,8 +1127,9 @@ export function pickRelics(pool: RelicId[], n: number, rng: Rng): RelicId[] {
 export function relicFits(run: RunState, r: RelicId): boolean {
   const def = RELICS[r];
   // Slot machine relics only on their machine; charm relics once you own the charm (or your machine favours it).
+  if (def.retired || MACHINE_EXCLUDE[r]?.includes(run.cabinet)) return false;
   if (def.machine && def.machine !== run.cabinet) return false;
-  if (def.charm && charmCount(run.player, def.charm) === 0 && !(CABINETS[run.cabinet].favors === def.charm && gildsFor(run).includes(def.charm))) return false;
+  if (def.charm && charmCount(run.player, def.charm) === 0) return false;
   const need = BUILD_ENABLER[r];
   if (!need) return true;
   const has = (n: Enabler): boolean => {
@@ -1200,7 +1203,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'clear':
       return { title: 'CLEAR ROCKS', text: `SMASH EVERY ROCK ON REEL ${o.reel + 1}` };
     case 'relic':
-      return { title: RELICS[o.relic].name, text: RELICS[o.relic].text };
+      return { title: RELICS[o.relic].name, text: relicText(o.relic, run?.cabinet) };
     case 'heal':
       return { title: `HEAL ${o.amount}`, text: `RESTORE ${o.amount} HP NOW` };
     case 'maxHp':

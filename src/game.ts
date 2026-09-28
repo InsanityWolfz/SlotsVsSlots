@@ -89,7 +89,7 @@ const machineIds = (v: unknown): CabinetId[] => (Array.isArray(v) ? (v.filter((x
 /** Saved prefs are player-editable: validate everything so a bad save can't lock the game (QA_1 B6). */
 /** The player's signature meter on the HUD (TESLA's special, MIDAS's gold, BRIAR's thorns, JAX's jackpots). */
 function hudMeter(f: Fight): HudMeter | null {
-  if (f.special) return { kind: 'special', pips: Math.round(f.cfg.specialCost / UNIT), label: 'SPECIAL', color: COLORS.energy, icon: 'boltIcon' };
+  if (f.special) return { kind: 'special', pips: Math.round(f.cfg.specialCost / UNIT), label: 'LIGHTNING', color: COLORS.energy, icon: 'boltIcon' };
   const m = f.meter;
   if (!m) return null;
   if (m.kind === 'raise') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: `X${MIDAS_RAISE} GOLD`, color: '#ffd23f', icon: 'goldbar' as SpriteId };

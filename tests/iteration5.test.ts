@@ -91,14 +91,11 @@ describe('build-aware offers & the heal service', () => {
       run.depth = 3;
       for (const it of shopOffers(run)) if (it.option.kind === 'relic' && BUILD_ENABLER[it.option.relic]) expect(relicFits(run, it.option.relic)).toBe(true);
     }
-    // Charm relics (GOLD LEAF = midas) need the charm, unless your machine favours it; machine relics stay home.
+    // Charm relics (EXECUTIONER = hone) need the charm; machine relics stay home.
     const knight = createRun(base, 1);
-    expect(relicFits(knight, 'midas')).toBe(false);
-    knight.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'gold', n: 2 });
-    expect(relicFits(knight, 'midas')).toBe(true);
-    const midas = createRun(base, 1, 'midas');
-    midas.player.gilded = [];
-    expect(relicFits(midas, 'midas')).toBe(true);
+    expect(relicFits(knight, 'hone')).toBe(false);
+    knight.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'keen', n: 2 });
+    expect(relicFits(knight, 'hone')).toBe(true);
     expect(relicFits(knight, 'rosehip')).toBe(false);
     expect(relicFits(createRun(base, 1, 'thorn'), 'rosehip')).toBe(true);
   });

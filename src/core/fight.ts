@@ -11,6 +11,7 @@ import {
   CACTUS_SHARE,
   KEY_MULT,
   MIDAS_RAISE,
+  MIDAS_STACK_CAP,
   MIRROR_HIT_CAP,
   OVERCHARGE_ECHO,
   CLOVER_CHANCE,
@@ -181,6 +182,8 @@ export class Fight {
   /** WAR DRUM stacks, KING'S VAULT gold, FIRST BLOOD / HOLY WATER used, STATIC's last turn (this fight). */
   drum = 0;
   vault = 0;
+  /** MIDAS: gold bars that landed while the x4 was ready (+1 each to it). */
+  raiseStack = 0;
   private firstBlood = false;
   private holyWater = false;
   private staticTurn = -1;
@@ -263,6 +266,11 @@ export class Fight {
   }
 
   /** How full the player's meter has to be (the special's cost for TESLA). */
+  /** MIDAS's ready multiplier: x4, plus KING'S VAULT gold, plus bars that landed while it was ready. */
+  get raiseMult(): number {
+    return MIDAS_RAISE + this.vault + this.raiseStack;
+  }
+
   get meterCost(): number {
     return this.special ? this.cfg.specialCost : this.meter?.cost ?? 0;
   }
@@ -278,7 +286,8 @@ export class Fight {
     const me = this.sides[side];
     const events: CombatEvent[] = [];
     this.turn++;
-    events.push({ type: 'turnStart', turn: this.turn, side });
+    events.push({ type: 'turnStart', turn: this.turn, side, ...(this.nextFree ? { free: true } : {}) });
+    this.nextFree = false;
     if (this.turn === 1) for (const relic of this.openers) events.push({ type: 'relic', side: 'player', relic });
     if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
@@ -425,9 +434,19 @@ export class Fight {
       this.resetShield(this.sides.enemy, events);
     }
 
+    // MIDAS: a ready x4 that didn't fire spins again for free (the enemy waits), up to its cap per turn.
+    const free = this.meter?.freeSpins ?? 0;
+    if (free && side === 'player' && !this.over && me.armed && this.meter?.kind === 'raise' && this.freeSpins < free) {
+      this.freeSpins++;
+      this.nextFree = true;
+      return { turn: this.turn, side, events };
+    }
+    this.freeSpins = 0;
     this.next = other(side);
     return { turn: this.turn, side, events };
   }
+  private freeSpins = 0;
+  private nextFree = false;
 
   /** A charm's level for this side (the player's charm levels; the Golden Ticket adds one). */
   private charmLvl(c: Combatant, enh: Enh): number {
@@ -487,7 +506,8 @@ export class Fight {
           this.vault += charmValue('gold', this.charmLvl(me, 'gold')) * (g.jackpot && g.reels.length === 1 ? 3 : 1);
           fired.add('vault');
         }
-    const raisedGroup = raise ? s.groups.find(pays) : undefined;
+    // The ready x4 waits for a PAIR or a JACKPOT (singles don't use it up).
+    const raisedGroup = raise ? s.groups.find((g) => pays(g) && g.matched && (g.reels.length >= 2 || !!g.jackpot)) : undefined;
     const decree = raisedGroup && has('decree');
     // FIRST BLOOD: your first paying spin each fight.
     const firstBlood = has('firstblood') && !this.firstBlood && s.groups.some(pays);
@@ -504,8 +524,8 @@ export class Fight {
         const enh = this.paylineEnh(me, r);
         if (!enh) continue;
         const v = charmValue(enh, this.charmLvl(me, enh)) * copies;
-        // KEEN adds to a sword group (and a thorn group with GRAFT) and pierces.
-        if (enh === 'keen' && (g.symbol === 'sword' || g.symbol === 'thorn')) {
+        // KEEN adds to a sword group and pierces.
+        if (enh === 'keen' && g.symbol === 'sword') {
           g.base += v;
           g.pierce = true;
           keen = true;
@@ -561,11 +581,12 @@ export class Fight {
         this.raisePlayer = false;
       }
       if (g === raisedGroup) {
-        const x = MIDAS_RAISE + this.vault;
+        const x = this.raiseMult;
         g.mult *= x;
         notes.push(`X${x} MIDAS`);
         s.raised = true;
         this.vault = 0;
+        this.raiseStack = 0;
       } else if (decree && (paying || (g.symbol === 'goldbar' && g.base > 0))) {
         // ROYAL DECREE: the x4 hits every group on that spin, gold bars too.
         fired.add('decree');
@@ -836,13 +857,18 @@ export class Fight {
       events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(earthed ? { earthed } : {}) });
       return;
     }
+    const raise = this.meter.kind === 'raise';
     if (me.armed) {
-      events.push({ type: 'meter', side: me.side, reels, amount: 0, total: me.energy, armed: true, wasted: amount });
+      // MIDAS: bars that land while the x4 is ready raise it (+1 each) instead of going to waste.
+      if (raise && amount > 0) {
+        this.raiseStack = Math.min(MIDAS_STACK_CAP, this.raiseStack + Math.max(1, reels.length));
+        events.push({ type: 'meter', side: me.side, reels, amount: 0, total: me.energy, armed: true, raise: this.raiseMult });
+      } else events.push({ type: 'meter', side: me.side, reels, amount: 0, total: me.energy, armed: true, wasted: amount });
       return;
     }
     me.energy = Math.min(this.meterCost, me.energy + amount);
     if (me.energy >= this.meterCost) me.armed = true;
-    events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(me.armed ? { armed: true } : {}), ...(earthed ? { earthed } : {}) });
+    events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(me.armed ? { armed: true } : {}), ...(earthed ? { earthed } : {}), ...(raise ? { raise: this.raiseMult } : {}) });
   }
 
   /** BRIAR: when you're attacked, the thorn bank hits back through shields (once per enemy turn), then clears. */

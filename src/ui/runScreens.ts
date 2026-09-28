@@ -1,7 +1,7 @@
 import type { Sounds } from '../audio/sounds';
 import { UNIT, type GameConfig, type SymbolId } from '../core/config';
 import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
-import { LEGENDARY, MIRROR_HIT_CAP, REFLECT_CAP, REFLECT_MIN, RELICS, RUSH } from '../core/relics';
+import { LEGENDARY, MIRROR_HIT_CAP, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
 import {
@@ -510,7 +510,7 @@ export class RunScreens {
       if (b.relic) {
         drawSprite(ctx, RELICS[b.relic].sprite as SpriteId, W / 2 - 200, 580, 3);
         drawText(ctx, `${b.tier.toUpperCase()}: ${RELICS[b.relic].name}${b.count >= 15 ? `  +  GRAND! +${b.chips} CHIPS` : ''}`, W / 2 - 170, 568, 2.5, tierColor, { align: 'left' });
-        drawText(ctx, RELICS[b.relic].text, W / 2 - 170, 596, 1.5, COLORS.text, { align: 'left' });
+        drawText(ctx, relicText(b.relic, this.run?.cabinet), W / 2 - 170, 596, 1.5, COLORS.text, { align: 'left' });
       } else drawText(ctx, `NO RELIC LEFT FOR YOU: +${b.chips} CHIPS`, W / 2, 580, 2.5, tierColor);
     }
   }

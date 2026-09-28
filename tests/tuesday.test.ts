@@ -45,23 +45,29 @@ describe('signature meters (one per slot machine)', () => {
     expect(on('tesla').special).toBe(true);
   });
 
-  it('MIDAS: gold bars fill the meter; full, the next PAYING group pays x4 and it heals', () => {
+  it('MIDAS: gold bars fill the meter; full, the next PAIR or JACKPOT pays x4 (singles wait), bars while ready add +1', () => {
     const f = on('midas');
     f.sides.player.hp = 100;
     f.forceNext('player', ['goldbar', 'goldbar', 'shield']);
     const fill = ofType(f.step().events, 'meter')[0];
-    expect(fill).toMatchObject({ total: 20, armed: true });
+    expect(fill).toMatchObject({ total: 20, armed: true, raise: 4 });
     expect(f.sides.player.armed).toBe(true);
-    f.step();
+    // Ready and no pair: a FREE SPIN (the enemy waits). Singles don't use it up; the gold bar raises it to x5.
     f.forceNext('player', ['shield', 'goldbar', 'sword']);
+    const wait = f.step().events;
+    expect(ofType(wait, 'turnStart')[0]).toMatchObject({ side: 'player', free: true });
+    expect(ofType(wait, 'payoff')).toHaveLength(0);
+    expect(ofType(wait, 'meter')[0]).toMatchObject({ armed: true, raise: 5 });
+    f.step();
+    f.forceNext('player', ['shield', 'shield', 'goldbar']);
     const ev = f.step().events;
     expect(ofType(ev, 'payoff')[0].kind).toBe('raise');
     const shield = ofType(ev, 'spin')[0].score.groups[0];
-    expect(shield.notes).toContain('X4 MIDAS');
-    expect(shield.amount).toBe(40);
+    expect(shield.notes).toContain('X5 MIDAS');
     expect(ofType(ev, 'heal').some((h) => h.source === 'payoff')).toBe(true);
     // The gold bar that landed during the payoff refills the (now empty) meter.
     expect(f.sides.player.energy).toBe(10);
+    expect(f.raiseMult).toBe(4);
   });
 
   it('BRIAR: thorns bank their pay; being attacked (blocked or not) fires the bank through shields, once per turn', () => {

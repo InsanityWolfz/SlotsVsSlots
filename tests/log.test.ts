@@ -10,7 +10,7 @@ describe('combat log + stats', () => {
     f.forceNext('player', ['sword', 'sword', 'bolt']);
     const row = turnRow(f, f.step(), 1);
     expect(row).toMatchObject({ side: 'player', tier: 'pair', attack: 40, hpDamage: 40, energyGain: 10, enemyHp: 260 });
-    expect(formatRow(row)).toContain('SWD SWD BLT DOUBLE');
+    expect(formatRow(row)).toContain('SWD SWD BLT PAIR');
   });
 
   it('stats totals agree with the log over a whole fight', () => {

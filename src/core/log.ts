@@ -207,7 +207,7 @@ export function formatRow(r: TurnRow): string {
   if (r.potAdded) parts.push(`pot +${r.potAdded}`);
   if (r.potWon) parts.push(`POT ${r.potWon}!`);
   if (r.fizzled) parts.push(`${r.fizzled} dead`);
-  const tier = r.tier === 'none' ? '' : r.tier === 'pair' ? ' DOUBLE' : ' JACKPOT';
+  const tier = r.tier === 'none' ? '' : r.tier === 'pair' ? ' PAIR' : ' JACKPOT';
   const near = r.nearMiss && r.tier !== 'triple' ? ' (near-miss)' : '';
   const status = `${r.frozenReels ? ` [${r.frozenReels} frozen]` : ''}${r.lockedReels ? ` [${r.lockedReels} jammed]` : ''}${r.lucky ? ' [LUCKY]' : ''}`;
   return (
