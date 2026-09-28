@@ -30,7 +30,7 @@ import {
   type ShopItem,
 } from './core/run';
 import type { RelicId } from './core/config';
-import { CABINETS, CABINET_ORDER, type CabinetId } from './core/cabinets';
+import { ALL_CABINETS, CABINETS, CABINET_ORDER, type CabinetId } from './core/cabinets';
 import { StatsTracker } from './core/stats';
 import { Camera } from './present/camera';
 import { Clock } from './present/clock';
@@ -84,7 +84,7 @@ interface Prefs {
 }
 
 const clampStake = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.min(MAX_STAKE, Math.floor(n))) : 0);
-const machineIds = (v: unknown): CabinetId[] => (Array.isArray(v) ? (v.filter((x) => (CABINET_ORDER as string[]).includes(x)) as CabinetId[]) : []);
+const machineIds = (v: unknown): CabinetId[] => (Array.isArray(v) ? (v.filter((x) => (ALL_CABINETS as string[]).includes(x)) as CabinetId[]) : []);
 
 /** Saved prefs are player-editable: validate everything so a bad save can't lock the game (QA_1 B6). */
 /** The player's signature meter on the HUD (TESLA's special, MIDAS's gold, BRIAR's thorns, JAX's jackpots). */
@@ -102,7 +102,7 @@ function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
   const unlocked = machineIds(p.unlocked);
   if (!unlocked.includes('knight')) unlocked.unshift('knight');
   const stakes: Partial<Record<CabinetId, number>> = {};
-  if (p.stakes && typeof p.stakes === 'object') for (const id of CABINET_ORDER) if (id in (p.stakes as object)) stakes[id] = clampStake((p.stakes as Record<string, unknown>)[id]);
+  if (p.stakes && typeof p.stakes === 'object') for (const id of ALL_CABINETS) if (id in (p.stakes as object)) stakes[id] = clampStake((p.stakes as Record<string, unknown>)[id]);
   const juice = p.juice && typeof p.juice === 'object' ? (p.juice as Partial<JuiceToggles>) : {};
   return {
     // Old saves: 1/2/4 on the old scale become 2/4/8 (the same real speed).
@@ -427,12 +427,12 @@ export class Game {
     const got: CabinetId[] = [];
     const reachedBoss = run.records.length >= RUN_FIGHTS + 1 || run.won;
     const beatHouse = run.act > 1 || run.won;
-    const beatElite = run.records.some((r) => r.won && run.enemies[r.depth]?.elite);
+    // MIDAS is shelved (no unlock) while he's reworked; TESLA is the second machine.
     const cond: Record<CabinetId, boolean> = {
       knight: true,
-      midas: reachedBoss,
-      thorn: beatElite,
-      tesla: beatHouse,
+      midas: false,
+      tesla: reachedBoss,
+      thorn: beatHouse,
       joker: beatHouse && run.player.strips.some((s) => (s.wild ?? 0) > 0),
     };
     for (const id of CABINET_ORDER) {

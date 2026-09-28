@@ -1,4 +1,4 @@
-import { CABINET_ORDER, type CabinetId } from './cabinets';
+import { ALL_CABINETS, type CabinetId } from './cabinets';
 import type { Enh, RelicId } from './config';
 import { RELICS } from './relics';
 import { MAX_STAKE } from './stakes';
@@ -119,7 +119,7 @@ export function sanitizeProfile(raw: unknown): Profile {
     for (const r of p.runs.slice(-MAX_ENTRIES)) {
       if (!r || typeof r !== 'object') continue;
       const e = r as Record<string, unknown>;
-      if (!(CABINET_ORDER as unknown[]).includes(e.cabinet)) continue;
+      if (!(ALL_CABINETS as unknown[]).includes(e.cabinet)) continue;
       const charms: CharmEntry[] = Array.isArray(e.charms)
         ? (e.charms as unknown[])
             .filter((c): c is Record<string, unknown> => !!c && typeof c === 'object' && (ALL_CHARMS as unknown[]).includes((c as Record<string, unknown>).enh))

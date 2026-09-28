@@ -201,7 +201,7 @@ export class RunScreens {
     }
     this.buttons.push(this.btn('MENU', 90, 40, 130, 44, () => this.cb.onMenu()));
     this.cards = CABINET_ORDER.map((id, i) => {
-      const h = this.hit(W / 2 + (i - 2) * 240, 380, 220, 420, () => {
+      const h = this.hit(W / 2 + (i - (CABINET_ORDER.length - 1) / 2) * 240, 380, 220, 420, () => {
         if (!this.cabinetUnlocked.has(id) || this.picked >= 0) return;
         this.picked = i;
         this.sounds.stingerMedium();

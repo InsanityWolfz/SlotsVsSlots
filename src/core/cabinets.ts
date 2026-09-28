@@ -120,7 +120,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     symbols: ['sword', 'shield', 'thorn'],
     rule: 'THORNS ADD UP. WHEN YOU ARE ATTACKED, YOUR THORNS HIT BACK. 300 HP.',
     act2: { text: '+40 MAX HP', maxHp: 4 * UNIT },
-    unlock: 'BEAT AN ELITE',
+    unlock: 'BEAT THE HOUSE',
   },
   tesla: {
     id: 'tesla',
@@ -138,7 +138,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE THROUGH SHIELDS. 250 HP.',
     rodDamage: 9 * UNIT,
     act2: { text: 'CHEAP SPECIALS KEEP FIRING' },
-    unlock: 'BEAT THE HOUSE',
+    unlock: 'REACH THE HOUSE',
     specialCost: 4 * UNIT,
     specialDamage: 6 * UNIT,
   },
@@ -162,7 +162,10 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
   },
 };
 
-export const CABINET_ORDER: CabinetId[] = ['knight', 'midas', 'thorn', 'tesla', 'joker'];
+/** The playable lineup, in unlock order. MIDAS is shelved for a rework (2026-09-28): hidden, but kept in saves. */
+export const CABINET_ORDER: CabinetId[] = ['knight', 'tesla', 'thorn', 'joker'];
+/** Every machine id a save may hold (shelved ones included), so loading a save never drops an unlock. */
+export const ALL_CABINETS: CabinetId[] = ['knight', 'midas', 'thorn', 'tesla', 'joker'];
 
 /** This machine has the lightning special (TESLA; also the bare engine with no machine, for tests). */
 export const hasSpecial = (c: Cabinet | null | undefined) => !c || c.meter?.kind === 'special';

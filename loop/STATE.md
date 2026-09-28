@@ -436,3 +436,37 @@ User-approved (playtest/RELIC_PROPOSALS.md; GRAFT kept for flavour). Changes:
 - JAX: capbells +1.0, stacked +1.2.
 - General: underdog +4.6, firstblood +3.6, holywater +1.8, piggy +2.1.
 - Fang is still the strongest common: MIDAS +10, TESLA +13, BRIAR +9.8.
+
+### Iteration 29 (2026-09-28): playtest notes; MIDAS shelved; lineup KNIGHT, TESLA, BRIAR, JAX
+User playtest notes and decisions:
+- **MIDAS is shelved** until his identity is reworked. The user's reason: a gold-locked special fights the 7-charm draft.
+  - Tried first:
+    - x4 waits for a pair plus bar stacking: about 1% WHITE.
+    - One free spin: 28%, but bosses became trivial.
+    - MIDAS TOUCH (the playtester's pick, `playtest/MIDAS_SPECIAL.md`). It is built (meter kind `touch`) and tuned to WHITE 26.8 / Dealer ~50 with heal 30 and BOSS_MUL midas 3.5 / 16 / 0.6. It is kept in code.
+  - `ALL_CABINETS` still accepts `midas` in saves and profiles; `CABINET_ORDER` is the playable lineup.
+  - Rework idea for later: gold = money (an economy machine).
+- **Lineup and unlocks:** KNIGHT; TESLA (REACH THE HOUSE); BRIAR (BEAT THE HOUSE); JAX (BEAT THE HOUSE WITH WILDS).
+- **UI:**
+  - Meters are a bar with a number ("LIGHTNING 10/40"). BRIAR still shows a number.
+  - PAIR replaces DOUBLE everywhere.
+  - No second payoff banner over the pay math.
+  - JAX's wild picks spin a symbol wheel.
+  - No "bank" wording (BRIAR's meter is just THORNS).
+  - Relic cards say "match" or "everything", not "group".
+- **Relic context:**
+  - Charm relics need the charm (no favourite exception).
+  - Gold Leaf is retired (`retired: true`, id kept).
+  - Graft is gold and vamp only.
+  - Overcharge is excluded on BRIAR.
+  - Battery, Fang, Overcharge and Bell use each machine's own wording (`relicText`).
+  - The Lightning Rod text is clearer.
+
+**tuesday.ts 2000** (4 machines; BOSS_MUL unchanged except thorn dealer 1.8 and tesla dealer 0.8):
+| machine | WHITE | GREEN | Dealer |
+|---|---|---|---|
+| knight | 28.1 | 10.5 | 55.4 |
+| tesla | 25.1 | 9.8 | 61.9 |
+| thorn | 29.9 | 11.2 | 53.2 |
+| joker | 27.9 | 9.4 | 57.3 |
+| AVG | 27.8 | 10.2 | 57.0 |
