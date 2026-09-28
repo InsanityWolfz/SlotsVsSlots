@@ -20,6 +20,8 @@ export interface CellView {
   pop?: number;
   /** This cell's charm (for the run). */
   enh?: Enh;
+  /** MIDAS TOUCH: gold touches this fight (1-3). */
+  touch?: number;
   /** The Grounder's rod. */
   grounded?: boolean;
   /** The Card Sharp's marked card. */
@@ -280,6 +282,17 @@ export function drawCell(
     drawSprite(ctx, ENH_SPRITE[cell.enh], x, y, ART_SCALE, { sx: sx * pop, sy: sy * pop, alpha: alpha * (1 - stolen) * shimmer, dim });
   }
 
+  // MIDAS TOUCH: a gold rim, one pip per touch.
+  if (cell.touch && stolen < 1) {
+    ctx.save();
+    ctx.globalAlpha = alpha * (0.8 + 0.2 * Math.sin(time * 3 + x * 0.04));
+    ctx.strokeStyle = '#ffd23f';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x - 29, y - 29, 58, 58);
+    ctx.fillStyle = '#ffd23f';
+    for (let i = 0; i < cell.touch; i++) ctx.fillRect(x - 26 + i * 8, y + 20, 5, 5);
+    ctx.restore();
+  }
   // A marked card sits over the symbol: it's dead, and it bites on your payline.
   if (cell.carded && stolen < 1) {
     drawSprite(ctx, artId('card'), x, y, ART_SCALE * 0.9, { sx, sy, alpha });

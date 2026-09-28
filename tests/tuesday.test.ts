@@ -45,29 +45,26 @@ describe('signature meters (one per slot machine)', () => {
     expect(on('tesla').special).toBe(true);
   });
 
-  it('MIDAS: gold bars fill the meter; full, the next PAIR or JACKPOT pays x4 (singles wait), bars while ready add +1', () => {
+  it('MIDAS TOUCH: gold keeps counting past full; full, the swords and shields on the next spin turn gold for the fight', () => {
     const f = on('midas');
     f.sides.player.hp = 100;
     f.forceNext('player', ['goldbar', 'goldbar', 'shield']);
     const fill = ofType(f.step().events, 'meter')[0];
-    expect(fill).toMatchObject({ total: 20, armed: true, raise: 4 });
-    expect(f.sides.player.armed).toBe(true);
-    // Ready and no pair: a FREE SPIN (the enemy waits). Singles don't use it up; the gold bar raises it to x5.
-    f.forceNext('player', ['shield', 'goldbar', 'sword']);
-    const wait = f.step().events;
-    expect(ofType(wait, 'turnStart')[0]).toMatchObject({ side: 'player', free: true });
-    expect(ofType(wait, 'payoff')).toHaveLength(0);
-    expect(ofType(wait, 'meter')[0]).toMatchObject({ armed: true, raise: 5 });
+    expect(fill).toMatchObject({ total: 40, armed: true });
     f.step();
-    f.forceNext('player', ['shield', 'shield', 'goldbar']);
+    f.forceNext('player', ['sword', 'shield', 'goldbar']);
     const ev = f.step().events;
-    expect(ofType(ev, 'payoff')[0].kind).toBe('raise');
-    const shield = ofType(ev, 'spin')[0].score.groups[0];
-    expect(shield.notes).toContain('X5 MIDAS');
+    const touched = ofType(ev, 'touch')[0].cells;
+    // Both payline cells, plus one more anywhere for the second full meter.
+    expect(touched.length).toBe(3);
+    const [sword, shield] = ofType(ev, 'spin')[0].score.groups;
+    expect(sword.notes).toContain('X4 GOLD'); // its gold charm x2 + the touch x2
+    expect(shield.notes).toContain('X2 GOLD');
+    expect(ofType(ev, 'payoff')[0]).toMatchObject({ kind: 'touch', left: 0 });
     expect(ofType(ev, 'heal').some((h) => h.source === 'payoff')).toBe(true);
-    // The gold bar that landed during the payoff refills the (now empty) meter.
+    // The gold bar that landed refills the meter; the touches stay for the fight (max 3 per cell).
     expect(f.sides.player.energy).toBe(10);
-    expect(f.raiseMult).toBe(4);
+    expect(f.touches.size).toBe(3);
   });
 
   it('BRIAR: thorns bank their pay; being attacked (blocked or not) fires the bank through shields, once per turn', () => {

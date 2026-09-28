@@ -5,7 +5,7 @@ import { actLength, RUN_FIGHTS, TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { Fight } from './core/fight';
 import { turnRow, type TurnRow } from './core/log';
-import { MIDAS_RAISE, REFLECT_MIN, RELICS } from './core/relics';
+import { REFLECT_MIN, RELICS } from './core/relics';
 import {
   applyOption,
   buy,
@@ -92,7 +92,7 @@ function hudMeter(f: Fight): HudMeter | null {
   if (f.special) return { kind: 'special', pips: Math.round(f.cfg.specialCost / UNIT), label: 'LIGHTNING', color: COLORS.energy, icon: 'boltIcon' };
   const m = f.meter;
   if (!m) return null;
-  if (m.kind === 'raise') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: `X${MIDAS_RAISE} GOLD`, color: '#ffd23f', icon: 'goldbar' as SpriteId };
+  if (m.kind === 'touch') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'GOLD', color: '#ffd23f', icon: 'goldbar' as SpriteId };
   if (m.kind === 'thorns') return { kind: m.kind, pips: 0, label: 'THORNS', color: '#9dff6a', icon: 'thorn' as SpriteId };
   return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'JACKPOTS', color: '#ff6ad5', icon: 'wild' };
 }

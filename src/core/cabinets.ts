@@ -5,14 +5,14 @@ export type CabinetId = 'knight' | 'midas' | 'thorn' | 'tesla' | 'joker';
 /**
  * What a slot machine's signature symbol fills, and what the full meter does (the Tuesday rework):
  * - special (TESLA): bolts charge the lightning special, which fires at `cost` and ignores shields;
- * - raise (MIDAS): gold bars fill the meter; when full, your next PAIR or JACKPOT pays x4 (bars that land
- *   while it's ready add +1 each);
+ * - touch (MIDAS): gold bars fill the meter (no cap); when full, the swords and shields on your next such spin
+ *   gain a gold touch (x2 each, max 3 per cell) for the rest of the fight; every extra full meter touches one more cell;
  * - thorns (BRIAR): thorns bank their pay; the next time you're attacked the bank hits back, then clears;
  * - jackpots (JAX): each WILD on the payline fills the meter; when full, the next spin's three payline
  *   cells each pay as a jackpot of themselves.
  * Every payoff also heals you a little (`heal`). KNIGHT has no meter.
  */
-export type MeterKind = 'special' | 'raise' | 'thorns' | 'jackpots';
+export type MeterKind = 'special' | 'touch' | 'thorns' | 'jackpots';
 export interface Meter {
   kind: MeterKind;
   /** The symbol that fills it. */
@@ -23,8 +23,6 @@ export interface Meter {
   heal: number;
   /** JAX: meter per WILD on the payline. */
   perWild?: number;
-  /** MIDAS: a ready x4 that didn't fire spins again for free, this many times per turn. */
-  freeSpins?: number;
 }
 
 /**
@@ -100,9 +98,9 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     strips: r3({ sword: 4, shield: 4, goldbar: 4 }),
     gilded: [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }],
     favors: 'gold',
-    meter: { kind: 'raise', symbol: 'goldbar', cost: 2 * UNIT, heal: 3 * UNIT, freeSpins: 1 },
+    meter: { kind: 'touch', symbol: 'goldbar', cost: 2 * UNIT, heal: 3 * UNIT },
     symbols: ['sword', 'shield', 'goldbar'],
-    rule: 'GOLD BARS FILL A METER: YOUR NEXT PAIR OR JACKPOT IS X4 (MISS: 1 FREE SPIN). +1 CHIP A WIN. 190 HP.',
+    rule: 'GOLD BARS FILL THE METER. FULL: THE SWORDS AND SHIELDS ON YOUR NEXT SPIN TURN GOLD FOR THE FIGHT. +1 CHIP A WIN. 190 HP.',
     act2: { text: 'THE +1 CHIP PER WIN KEEPS PAYING' },
     unlock: 'REACH THE HOUSE',
     chipsPerWin: 1,

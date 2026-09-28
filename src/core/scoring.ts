@@ -41,8 +41,10 @@ export interface LineScore {
   wildPick?: SymbolId;
   /** JAX's payoff: all three payline cells paid as jackpots of themselves. */
   jackpots?: boolean;
-  /** MIDAS's payoff: this spin's first paying group paid x4. */
+  /** MIDAS TOUCH fired this spin (the meter pays off). */
   raised?: boolean;
+  /** MIDAS TOUCH: cells touched this spin and their touch count after it. */
+  touched?: { reel: number; index: number; n: number }[];
 }
 
 /** What a WILD pays as when it completes nothing (or the whole line is wild), by default. */

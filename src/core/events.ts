@@ -16,7 +16,7 @@ export type HealSource = RelicId | 'special' | 'vamp' | 'drain' | 'ability' | 'p
 
 
 export type CombatEvent =
-  | { type: 'turnStart'; turn: number; side: SideId; free?: boolean }
+  | { type: 'turnStart'; turn: number; side: SideId }
   | { type: 'shieldReset'; side: SideId; lost: number }
   | {
       type: 'spin';
@@ -70,9 +70,11 @@ export type CombatEvent =
    * A signature meter moved (MIDAS gold bars, BRIAR's thorn bank, JAX's wilds). `armed`: it's full and
    * waiting to pay off; `wasted`: gold bars that landed while it was already full.
    */
-  | { type: 'meter'; side: SideId; reels: number[]; amount: number; total: number; armed?: boolean; wasted?: number; earthed?: number; raise?: number }
+  | { type: 'meter'; side: SideId; reels: number[]; amount: number; total: number; armed?: boolean; wasted?: number; earthed?: number }
   /** A meter paid off (MIDAS x4 group, JAX all-jackpots spin); it empties. */
-  | { type: 'payoff'; side: SideId; kind: 'raise' | 'jackpots' }
+  | { type: 'payoff'; side: SideId; kind: 'touch' | 'jackpots'; left?: number }
+  /** MIDAS TOUCH: these cells turned (more) gold for the fight; `n` is each cell's touch count. */
+  | { type: 'touch'; side: SideId; cells: { reel: number; index: number; n: number }[] }
   | { type: 'slime'; from: SideId; to: SideId; reels: number[]; amount: number; cells: CellRef[]; wasted: number }
   | { type: 'cleanse'; side: SideId; reels: number[]; cells: CellRef[] }
   /** A jackpot of stolen cells: every stolen cell comes back. */

@@ -10,8 +10,7 @@ import {
   BOMB,
   CACTUS_SHARE,
   KEY_MULT,
-  MIDAS_RAISE,
-  MIDAS_STACK_CAP,
+  MIDAS_TOUCH_CAP,
   MIRROR_HIT_CAP,
   OVERCHARGE_ECHO,
   CLOVER_CHANCE,
@@ -181,9 +180,9 @@ export class Fight {
   private thornsTurn = -1;
   /** WAR DRUM stacks, KING'S VAULT gold, FIRST BLOOD / HOLY WATER used, STATIC's last turn (this fight). */
   drum = 0;
-  vault = 0;
-  /** MIDAS: gold bars that landed while the x4 was ready (+1 each to it). */
-  raiseStack = 0;
+  /** MIDAS TOUCH: gold touches per cell (this fight), and how much meter the current touch spends. */
+  readonly touches = new Map<object, number>();
+  private touchSpend = 0;
   private firstBlood = false;
   private holyWater = false;
   private staticTurn = -1;
@@ -266,11 +265,6 @@ export class Fight {
   }
 
   /** How full the player's meter has to be (the special's cost for TESLA). */
-  /** MIDAS's ready multiplier: x4, plus KING'S VAULT gold, plus bars that landed while it was ready. */
-  get raiseMult(): number {
-    return MIDAS_RAISE + this.vault + this.raiseStack;
-  }
-
   get meterCost(): number {
     return this.special ? this.cfg.specialCost : this.meter?.cost ?? 0;
   }
@@ -286,8 +280,7 @@ export class Fight {
     const me = this.sides[side];
     const events: CombatEvent[] = [];
     this.turn++;
-    events.push({ type: 'turnStart', turn: this.turn, side, ...(this.nextFree ? { free: true } : {}) });
-    this.nextFree = false;
+    events.push({ type: 'turnStart', turn: this.turn, side });
     if (this.turn === 1) for (const relic of this.openers) events.push({ type: 'relic', side: 'player', relic });
     if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
@@ -367,6 +360,7 @@ export class Fight {
       ...(luckyWilds.length ? { luckyWilds } : {}),
       ...(hexed.some(Boolean) ? { hexed } : {}),
     });
+    if (score.touched?.length) events.push({ type: 'touch', side, cells: score.touched });
     const sentBefore = events.length;
 
     if (side === 'player' && score.tier === 'triple') this.playerJackpots++;
@@ -434,19 +428,43 @@ export class Fight {
       this.resetShield(this.sides.enemy, events);
     }
 
-    // MIDAS: a ready x4 that didn't fire spins again for free (the enemy waits), up to its cap per turn.
-    const free = this.meter?.freeSpins ?? 0;
-    if (free && side === 'player' && !this.over && me.armed && this.meter?.kind === 'raise' && this.freeSpins < free) {
-      this.freeSpins++;
-      this.nextFree = true;
-      return { turn: this.turn, side, events };
-    }
-    this.freeSpins = 0;
     this.next = other(side);
     return { turn: this.turn, side, events };
   }
-  private freeSpins = 0;
-  private nextFree = false;
+
+  /** MIDAS TOUCH fires: each sword and shield on the payline gains a gold touch (ROYAL DECREE: the cells above and
+   * below too), and every extra full meter touches one more sword or shield anywhere on your reels. */
+  private midasTouch(me: Combatant, line: SymbolId[], touchable: (r: number) => boolean, decree: boolean): { reel: number; index: number; n: number }[] {
+    const out = new Map<object, { reel: number; index: number; n: number }>();
+    const bump = (reel: number, index: number) => {
+      const c = me.reels[reel].cells[index];
+      if (!c || (c.symbol !== 'sword' && c.symbol !== 'shield') || c.slimed || c.stolen) return false;
+      const n = this.touches.get(c) ?? 0;
+      if (n >= MIDAS_TOUCH_CAP) return false;
+      this.touches.set(c, n + 1);
+      out.set(c, { reel, index, n: n + 1 });
+      return true;
+    };
+    line.forEach((_x, r) => {
+      if (!touchable(r)) return;
+      const reel = me.reels[r];
+      bump(r, reel.stop);
+      if (decree) {
+        const len = reel.cells.length;
+        bump(r, (reel.stop + 1) % len);
+        bump(r, (reel.stop + len - 1) % len);
+      }
+    });
+    const k = Math.max(1, Math.floor(me.energy / this.meterCost));
+    for (let i = 1; i < k; i++) {
+      const pool = me.reels.flatMap((reel, r) => reel.cells.flatMap((c, index) => ((c.symbol === 'sword' || c.symbol === 'shield') && !c.slimed && !c.stolen && (this.touches.get(c) ?? 0) < MIDAS_TOUCH_CAP ? [{ r, index }] : [])));
+      if (!pool.length) break;
+      const p = this.rng.pick(pool);
+      bump(p.r, p.index);
+    }
+    this.touchSpend = k * this.meterCost;
+    return [...out.values()];
+  }
 
   /** A charm's level for this side (the player's charm levels; the Golden Ticket adds one). */
   private charmLvl(c: Combatant, enh: Enh): number {
@@ -493,22 +511,19 @@ export class Fight {
     const fired = new Set<RelicId>();
     const has = (r: RelicId) => player && me.relics.has(r);
     const pays = (g: ScoreGroup) => g.base > 0 && PAYING.has(g.symbol);
-    // MIDAS: a full meter makes your next PAYING group pay x4 (KING'S VAULT adds its banked gold first).
-    const raise = player && me.armed && this.meter?.kind === 'raise';
     const cellSym = (r: number) => me.reels[r].cells[me.reels[r].stop]?.symbol;
     const goldOf = new Map<ScoreGroup, number>();
     const notesOf = new Map<ScoreGroup, string[]>();
-    // KING'S VAULT: gold charms on gold bars bank their xN for the next x4 (they don't multiply the fill).
-    const vaulted = (g: ScoreGroup, r: number) => has('vault') && g.symbol === 'goldbar' && cellSym(r) === 'goldbar';
-    for (const g of s.groups)
-      for (const r of g.reels)
-        if (vaulted(g, r) && this.paylineEnh(me, r) === 'gold') {
-          this.vault += charmValue('gold', this.charmLvl(me, 'gold')) * (g.jackpot && g.reels.length === 1 ? 3 : 1);
-          fired.add('vault');
-        }
-    // The ready x4 waits for a PAIR or a JACKPOT (singles don't use it up).
-    const raisedGroup = raise ? s.groups.find((g) => pays(g) && g.matched && (g.reels.length >= 2 || !!g.jackpot)) : undefined;
-    const decree = raisedGroup && has('decree');
+    // MIDAS TOUCH: a full meter turns the swords and shields on this spin gold for the fight.
+    const touchMeter = player && this.meter?.kind === 'touch';
+    const touchable = (r: number) => {
+      const c = me.reels[r].cells[me.reels[r].stop];
+      return touchMeter && (line[r] === 'sword' || line[r] === 'shield') && !!c && c.symbol === line[r] && !c.slimed && !c.stolen;
+    };
+    if (touchMeter && me.armed && line.some((_x, r) => touchable(r))) {
+      s.touched = this.midasTouch(me, line, touchable, has('decree'));
+      s.raised = true;
+    }
     // FIRST BLOOD: your first paying spin each fight.
     const firstBlood = has('firstblood') && !this.firstBlood && s.groups.some(pays);
     if (firstBlood) this.firstBlood = true;
@@ -531,8 +546,11 @@ export class Fight {
           keen = true;
         }
         if (enh === 'charged' && g.symbol === 'bolt') g.base += v;
-        if (enh === 'gold' && !vaulted(g, r)) gold += v;
+        if (enh === 'gold') gold += v;
       }
+      // MIDAS TOUCH: each gold touch on a sword or shield counts as a gold charm.
+      if (touchMeter && (g.symbol === 'sword' || g.symbol === 'shield'))
+        for (const r of g.reels) if (touchable(r)) gold += (this.touches.get(me.reels[r].cells[me.reels[r].stop]) ?? 0) * charmValue('gold', this.charmLvl(me, 'gold')) * copies;
       // WAR DRUM: every paying spin this fight adds to your swords.
       if (has('drum') && g.symbol === 'sword' && this.drum > 0 && g.base > 0) {
         g.base += NEW_RELIC.drumStep * this.drum;
@@ -579,19 +597,6 @@ export class Fight {
         g.mult *= 2;
         notes.push('RAISE X2');
         this.raisePlayer = false;
-      }
-      if (g === raisedGroup) {
-        const x = this.raiseMult;
-        g.mult *= x;
-        notes.push(`X${x} MIDAS`);
-        s.raised = true;
-        this.vault = 0;
-        this.raiseStack = 0;
-      } else if (decree && (paying || (g.symbol === 'goldbar' && g.base > 0))) {
-        // ROYAL DECREE: the x4 hits every group on that spin, gold bars too.
-        fired.add('decree');
-        g.mult *= MIDAS_RAISE;
-        notes.push(`X${MIDAS_RAISE} DECREE`);
       }
       // UNDERDOG: under half HP, every paying group.
       if (has('underdog') && paying && me.hp < me.maxHp / 2) {
@@ -823,9 +828,17 @@ export class Fight {
 
   /** MIDAS / JAX: the full meter pays off this spin — it empties, and you heal. */
   private payoff(me: Combatant, score: LineScore, events: CombatEvent[]): void {
-    me.armed = false;
-    me.energy = 0;
-    events.push({ type: 'payoff', side: me.side, kind: score.jackpots ? 'jackpots' : 'raise' });
+    if (score.jackpots) {
+      me.armed = false;
+      me.energy = 0;
+      events.push({ type: 'payoff', side: me.side, kind: 'jackpots' });
+      return;
+    }
+    // MIDAS TOUCH spends what it used; gold past that stays.
+    me.energy = Math.max(0, me.energy - this.touchSpend);
+    this.touchSpend = 0;
+    me.armed = me.energy >= this.meterCost;
+    events.push({ type: 'payoff', side: me.side, kind: 'touch', left: me.energy });
   }
 
   /** After a payoff's groups resolved: its heal (+ Vampire Fang) and the Overcharge echo. */
@@ -857,18 +870,20 @@ export class Fight {
       events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(earthed ? { earthed } : {}) });
       return;
     }
-    const raise = this.meter.kind === 'raise';
+    // MIDAS: gold is never wasted: it keeps counting past full (each touch spends one full meter).
+    if (this.meter.kind === 'touch') {
+      me.energy += amount;
+      if (me.energy >= this.meterCost) me.armed = true;
+      events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(me.armed ? { armed: true } : {}), ...(earthed ? { earthed } : {}) });
+      return;
+    }
     if (me.armed) {
-      // MIDAS: bars that land while the x4 is ready raise it (+1 each) instead of going to waste.
-      if (raise && amount > 0) {
-        this.raiseStack = Math.min(MIDAS_STACK_CAP, this.raiseStack + Math.max(1, reels.length));
-        events.push({ type: 'meter', side: me.side, reels, amount: 0, total: me.energy, armed: true, raise: this.raiseMult });
-      } else events.push({ type: 'meter', side: me.side, reels, amount: 0, total: me.energy, armed: true, wasted: amount });
+      events.push({ type: 'meter', side: me.side, reels, amount: 0, total: me.energy, armed: true, wasted: amount });
       return;
     }
     me.energy = Math.min(this.meterCost, me.energy + amount);
     if (me.energy >= this.meterCost) me.armed = true;
-    events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(me.armed ? { armed: true } : {}), ...(earthed ? { earthed } : {}), ...(raise ? { raise: this.raiseMult } : {}) });
+    events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(me.armed ? { armed: true } : {}), ...(earthed ? { earthed } : {}) });
   }
 
   /** BRIAR: when you're attacked, the thorn bank hits back through shields (once per enemy turn), then clears. */

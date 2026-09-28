@@ -11,7 +11,7 @@ import type { Stage } from './stage';
 import { ABILITY_UI } from './hud';
 import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
-import { BOMB, MIDAS_RAISE, RELICS } from '../core/relics';
+import { BOMB, RELICS } from '../core/relics';
 import { charmLevel, charmTag, CHARM_COLOR, playerSymValue } from '../core/charms';
 import { defaultConfig } from '../core/config';
 import { DEAD } from '../core/strip';
@@ -91,6 +91,8 @@ export class Director {
         return this.energyGain(e);
       case 'meter':
         return this.meter(e);
+      case 'touch':
+        return this.touch(e);
       case 'payoff':
         return this.payoff(e);
       case 'specialFire':
@@ -379,7 +381,7 @@ export class Director {
     if (!this.s.juice.turnCards) return;
     const player = e.side === 'player';
     this.s.sounds.turnCard(player);
-    const card = this.s.fx.add(new TurnCard(e.free ? 'FREE SPIN!' : player ? 'PLAYER TURN' : 'ENEMY TURN', e.free ? '#ffd23f' : player ? COLORS.goldLight : COLORS.slime, BANNER_Y));
+    const card = this.s.fx.add(new TurnCard(player ? 'PLAYER TURN' : 'ENEMY TURN', player ? COLORS.goldLight : COLORS.slime, BANNER_Y));
     card.x = player ? -W : W;
     await this.c.tween({ from: card.x, to: 0, dur: 0.18, ease: cubicOut, onUpdate: (v) => (card.x = v) });
     this.bg(
@@ -923,25 +925,16 @@ export class Director {
       if (e.reels.length) this.settle(e.side, e.reels);
       return;
     }
-    if (e.raise) h.raiseMult = e.raise;
-    // MIDAS: a gold bar while the x4 is ready raises it.
-    if (e.armed && h.armed && e.raise && !e.amount) {
-      if (e.reels.length) await this.activate(e.side, e.reels, m.color);
-      this.s.sounds.lucky();
-      const p0 = h.pipPos(h.energyMax - 1);
-      this.bg(this.c.tween({ from: 1.5, to: 1, dur: 0.25, ease: backOut(), onUpdate: (v) => h.pipPunch.fill(v) }));
-      await this.popText(`X${e.raise}!`, p0.x, p0.y - 24, 3, m.color, 20, 0.3);
-      if (e.reels.length) this.settle(e.side, e.reels);
-      return;
-    }
     if (e.wasted) {
       const p0 = h.pipPos(h.energyMax - 1);
       await this.popText('FULL!', p0.x, p0.y - 24, 2, COLORS.textDim, 16, 0.2);
       return;
     }
     if (e.reels.length) await this.activate(e.side, e.reels, m.color);
-    const before = Math.floor(h.energy);
-    const lit = Math.min(h.energyMax, e.total / UNIT);
+    const before = Math.min(h.energyMax, Math.floor(h.energy));
+    // MIDAS keeps counting past full (GOLD 60/20); the others stop at full.
+    const over = m.kind === 'touch' ? e.total / UNIT : Math.min(h.energyMax, e.total / UNIT);
+    const lit = Math.min(h.energyMax, over);
     const zaps = e.reels.map(async (r, i) => {
       await this.c.wait(i * 0.05);
       const from = cellCenter(e.side, r, 1);
@@ -957,29 +950,49 @@ export class Director {
       if (h.pipPunch[i] !== undefined) this.bg(this.c.tween({ from: 1.6, to: 1, dur: 0.18, ease: backOut(), onUpdate: (v) => (h.pipPunch[i] = v) }));
       await this.c.wait(0.06);
     }
-    h.energy = lit;
+    h.energy = over;
     if (e.armed && !h.armed) {
       h.armed = true;
       this.s.sounds.lucky();
       const p0 = h.pipPos(0);
-      this.bg(this.popText(m.kind === 'raise' ? `NEXT PAIR OR JACKPOT X${h.raiseMult}!` : 'NEXT SPIN: ALL JACKPOTS!', p0.x + 80, p0.y - 26, 2, m.color, 20, 0.6));
+      this.bg(this.popText(m.kind === 'touch' ? 'NEXT SWORDS AND SHIELDS TURN GOLD!' : 'NEXT SPIN: ALL JACKPOTS!', p0.x + 80, p0.y - 26, 2, m.color, 20, 0.6));
     }
     if (e.reels.length) this.settle(e.side, e.reels);
   }
 
-  /** MIDAS's x4 or JAX's all-jackpots spin: the meter pays off and empties. */
+  /** MIDAS TOUCH or JAX's all-jackpots spin: the meter pays off (MIDAS keeps any gold past what it spent). */
   private async payoff(e: Ev<'payoff'>): Promise<void> {
     const h = this.s.huds[e.side];
-    h.armed = false;
-    this.bg(this.c.to(h, 'energy', 0, 0.3, sineIn));
+    const left = (e.left ?? 0) / UNIT;
+    h.armed = left >= h.energyMax;
+    this.bg(this.c.to(h, 'energy', left, 0.3, sineIn));
     this.s.sounds.fanfareJackpot();
     this.shake(4, 0.25);
     const color = h.meter?.color ?? COLORS.goldLight;
     // A callout over the machine, not a second banner (the PAIR!/JACKPOT! banner carries the math).
     const c = this.machineCenter(e.side);
-    const text = e.kind === 'raise' ? `X${h.raiseMult} GOLD!` : 'ALL JACKPOTS!';
-    h.raiseMult = MIDAS_RAISE;
-    await this.popText(text, c.x, MACHINE_TOP - 34, 4, color, 30, 0.45);
+    await this.popText(e.kind === 'touch' ? 'MIDAS TOUCH!' : 'ALL JACKPOTS!', c.x, MACHINE_TOP - 34, 4, color, 30, 0.45);
+  }
+
+  /** MIDAS TOUCH: swords and shields turn gold (a gold rim with 1-3 pips) for the rest of the fight. */
+  private async touch(e: Ev<'touch'>): Promise<void> {
+    const m = this.s.machines[e.side];
+    this.s.sounds.lucky();
+    const flips = e.cells.map(async (ref, i) => {
+      const cell = m.reels[ref.reel]?.cells[ref.index];
+      if (!cell) return;
+      await this.c.wait(i * 0.06);
+      cell.touch = ref.n;
+      cell.flash = 0.8;
+      this.bg(this.c.tween({ from: 0.8, to: 0, dur: 0.35, onUpdate: (v) => (cell.flash = v) }));
+      const row = this.rowOf(e.side, ref);
+      if (row >= 0) {
+        const p = cellCenter(e.side, ref.reel, row);
+        this.s.particles.burst({ x: p.x, y: p.y, count: 14, colors: ['#ffd23f', '#fff6c8'], speed: [60, 200], gravity: 0, life: [0.25, 0.5], size: [2, 4], kind: 'spark' });
+      }
+    });
+    await Promise.all(flips);
+    await this.c.wait(0.15);
   }
 
   private async slime(e: Ev<'slime'>): Promise<void> {

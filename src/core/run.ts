@@ -616,7 +616,7 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number }> = {
   knight: { house: 6, mirror: 1.2, dealer: 1.05, act3: 0.7 },
-  midas: { house: 12, mirror: 30, dealer: 7.5, act3: 0.1 },
+  midas: { house: 3.5, mirror: 16, dealer: 0.45, act3: 0.1 },
   thorn: { house: 3.2, mirror: 12, dealer: 1.8, act3: 1.4 },
   tesla: { house: 1.2, mirror: 2.4, dealer: 0.8, act3: 0.95 },
   joker: { house: 2.4, mirror: 1.9, dealer: 1.75, act3: 1.3 },
@@ -719,6 +719,11 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   // THE DECK REMEMBERS: the Card Sharp's marks carry into the Dealer fight.
   run.deckMarks = Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
   if (run.player.relics.includes('bandage') && !run.glass) hp += BANDAGE_HEAL;
+  // KING'S VAULT (MIDAS): after each win, one of your swords turns gold for good.
+  if (run.player.relics.includes('vault')) {
+    const reels = [0, 1, 2].filter((r) => plainCells(run.player, r, 'sword') > 0);
+    if (reels.length) addCharms(run.player, new Rng((run.seed ^ Math.imul(fightNumber(run) + 11, 0x9e3779b1)) >>> 0).pick(reels), 'sword', 'gold', 1);
+  }
   // TROPHY BELT: every win adds max HP.
   if (run.player.relics.includes('trophy')) {
     run.player.maxHp += NEW_RELIC.trophyHp;
@@ -865,7 +870,6 @@ export const isRelicDraft = (run: RunState) => RUN.relicDraftsAfter.includes(run
 export function charmSymbols(run: RunState, enh: Enh): SymbolId[] {
   const has = (r: RelicId) => run.player.relics.includes(r);
   const out = new Set<SymbolId>(CHARM_SYMBOLS[enh]);
-  if (enh === 'gold' && has('vault')) out.add('goldbar');
   if ((enh === 'gold' || enh === 'vamp') && has('graft')) out.add('thorn');
   if ((enh === 'gold' || enh === 'keen' || enh === 'vamp') && has('stacked')) out.add('wild');
   if (enh === 'vamp' && has('kiss')) for (const s of ['shield', 'bolt', 'goldbar', 'thorn'] as SymbolId[]) out.add(s);

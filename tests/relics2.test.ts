@@ -68,25 +68,23 @@ describe('slot machine relics', () => {
     expect(playerAttack(ev)[0].amount).toBe(50);
   });
 
-  it("KING'S VAULT: gold on gold bars banks into the next x4; ROYAL DECREE hits every group", () => {
-    const f = on('midas', ['vault'], (c) => (c.player.gilded = [{ reel: 1, symbol: 'goldbar', enh: 'gold', n: c.player.strips[1].goldbar ?? 0 }]));
-    f.sides.player.energy = 10;
-    f.forceNext('player', ['shield', 'goldbar', 'shield']);
-    f.step();
-    expect(f.vault).toBe(2);
-    expect(f.sides.player.armed).toBe(true);
-    // The free spin.
-    f.forceNext('player', ['shield', 'shield', 'sword']);
-    const g = ofType(f.step().events, 'spin')[0].score.groups[0];
-    expect(g.notes).toContain('X6 MIDAS');
-    expect(f.vault).toBe(0);
+  it("KING'S VAULT: after each win a sword turns gold for good; ROYAL DECREE: the touch spreads above and below", () => {
+    const run = createRun(base, 3, 'midas');
+    run.pendingStart = null;
+    run.player.relics = ['vault'];
+    const gold = () => run.player.gilded.reduce((a, g) => a + (g.enh === 'gold' && g.symbol === 'sword' ? g.n : 0), 0);
+    const before = gold();
+    const w = new Fight(fightConfig(run, base), 1);
+    w.winner = 'player';
+    finishFight(run, w);
+    expect(gold()).toBe(before + 1);
 
-    const d = on('midas', ['decree']);
+    const d = on('midas', ['decree'], (c) => (c.player.strips = reels3({ sword: 6, shield: 6 })));
     d.sides.player.energy = 20;
     d.sides.player.armed = true;
     d.forceNext('player', ['shield', 'shield', 'sword']);
-    const gs = ofType(d.step().events, 'spin')[0].score.groups;
-    expect(gs.filter((x) => x.notes?.some((n) => n.includes('X4'))).length).toBe(gs.length);
+    const cells = ofType(d.step().events, 'touch')[0].cells;
+    expect(cells).toHaveLength(9);
   });
 
   it('ROSE HIP: a thorn volley heals 10% of what it fired', () => {
@@ -179,10 +177,11 @@ describe('charm and general relics', () => {
   });
 
   it('charm-on-symbol relics widen charm targets', () => {
-    const run = createRun(base, 3, 'midas');
-    expect(charmSymbols(run, 'gold')).not.toContain('goldbar');
-    run.player.relics.push('vault');
-    expect(charmSymbols(run, 'gold')).toContain('goldbar');
+    const run = createRun(base, 3, 'thorn');
+    expect(charmSymbols(run, 'gold')).not.toContain('thorn');
+    run.player.relics.push('graft');
+    expect(charmSymbols(run, 'gold')).toContain('thorn');
+    expect(charmSymbols(run, 'keen')).not.toContain('thorn');
     run.player.relics.push('kiss');
     expect(charmSymbols(run, 'vamp')).toEqual(expect.arrayContaining(['shield', 'goldbar']));
   });

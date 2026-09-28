@@ -53,8 +53,6 @@ export class HudView {
   bankPunch = 1;
   /** MIDAS / JAX: the meter is full and waiting to pay off. */
   armed = false;
-  /** MIDAS: the ready multiplier (x4, plus vault gold and bars that landed while ready). */
-  raiseMult = 4;
   hpShake = 0;
   hpFlash = 0;
   shieldFlash = 0;
@@ -93,7 +91,7 @@ export class HudView {
     this.energyMax = meter?.pips ?? 0;
     this.pipPunch = Array(Math.max(1, this.energyMax)).fill(1);
     if (meter?.kind === 'thorns') this.bank = opts.energy ?? 0;
-    else this.energy = Math.min(this.energyMax, opts.energy ?? 0);
+    else this.energy = meter?.kind === 'touch' ? (opts.energy ?? 0) : Math.min(this.energyMax, opts.energy ?? 0);
   }
 
   get x(): number {
@@ -188,8 +186,8 @@ export class HudView {
         const pulse = full ? 0.3 + 0.3 * Math.sin(time * (this.armed ? 10 : 18)) : 0;
         const punch = Math.max(...this.pipPunch);
         const ph = b.h * punch;
-        this.bar(ctx, b.x, b.y + (b.h - ph) / 2, b.w, ph, [[this.energy / Math.max(1, this.energyMax), m.color]], Math.max(pulse, this.energyFlash));
-        const label = m.kind === 'raise' ? `X${this.raiseMult} ${this.armed ? 'READY!' : 'GOLD'}` : this.armed ? `${m.label} READY!` : m.label;
+        this.bar(ctx, b.x, b.y + (b.h - ph) / 2, b.w, ph, [[Math.min(1, this.energy / Math.max(1, this.energyMax)), m.color]], Math.max(pulse, this.energyFlash));
+        const label = this.armed ? (m.kind === 'touch' ? 'TOUCH READY!' : `${m.label} READY!`) : m.label;
         drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, 1.5, full ? '#1a0f24' : COLORS.text, { align: 'left' });
         drawText(ctx, `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`, b.x + b.w - 6, b.y + b.h / 2 + 1, 1.5, full ? '#1a0f24' : COLORS.text, { align: 'right' });
       }

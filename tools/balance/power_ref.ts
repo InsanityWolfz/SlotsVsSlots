@@ -8,7 +8,7 @@ import { SIM_BIAS, simulateRuns } from '../../src/sim/simulateRun';
 const N = Number(process.argv[2] ?? 300);
 const med = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)] ?? 0;
 const q = (a: number[], p: number) => [...a].sort((x, y) => x - y)[Math.floor(a.length * p)] ?? 0;
-for (const cab of CABINET_ORDER) {
+for (const cab of (process.argv[3] ? [process.argv[3]] : CABINET_ORDER) as typeof CABINET_ORDER) {
   const m: number[] = [], a3: number[] = [], d: number[] = [];
   SIM_BIAS.onFight = (run) => {
     if (run.act === 2 && run.depth === actLength(2)) m.push(machinePower(run));

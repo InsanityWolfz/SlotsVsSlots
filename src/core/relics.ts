@@ -40,8 +40,8 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // Slot machine relics: each machine gets an identity relic and a heal that feeds off its own mechanic.
   drum: { id: 'drum', name: 'WAR DRUM', text: 'EACH SPIN THAT PAYS: SWORDS +5 THIS FIGHT (MAX +25)', sprite: 'relicDrum', machine: 'knight' },
   chainmail: { id: 'chainmail', name: 'CHAINMAIL', text: 'LEFTOVER SHIELD HEALS YOU 10% OF IT EACH TURN', sprite: 'relicChainmail', machine: 'knight' },
-  vault: { id: 'vault', name: "KING'S VAULT", text: 'GOLD CHARMS FIT GOLD BARS. THEIR GOLD ADDS TO YOUR NEXT X4', sprite: 'relicVault', machine: 'midas' },
-  decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR X4 HITS EVERYTHING ON THAT SPIN, GOLD BARS TOO', sprite: 'relicDecree', machine: 'midas' },
+  vault: { id: 'vault', name: "KING'S VAULT", text: 'AFTER EACH WIN, ONE OF YOUR SWORDS TURNS GOLD FOR GOOD', sprite: 'relicVault', machine: 'midas' },
+  decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR MIDAS TOUCH ALSO SPREADS TO THE CELLS ABOVE AND BELOW', sprite: 'relicDecree', machine: 'midas' },
   rosehip: { id: 'rosehip', name: 'ROSE HIP', text: 'YOUR THORN VOLLEYS HEAL YOU 10% OF WHAT THEY FIRE', sprite: 'relicRosehip', machine: 'thorn' },
   graft: { id: 'graft', name: 'GRAFT', text: 'GOLD AND VAMP CHARMS FIT THORNS', sprite: 'relicGraft', machine: 'thorn' },
   faraday: { id: 'faraday', name: 'FARADAY CAGE', text: 'SHIELD YOU GAIN ALSO CHARGES LIGHTNING (1/4 AS MUCH)', sprite: 'relicFaraday', machine: 'tesla' },
@@ -62,30 +62,30 @@ export const RELICS: Record<RelicId, RelicDef> = {
 
 /**
  * A relic's card text on a given slot machine: meter relics speak your machine's language
- * (LIGHTNING, the X4, the THORN BANK, the JACKPOT METER). Without a machine, the generic text.
+ * (LIGHTNING, the MIDAS TOUCH, the THORNS, the JACKPOT METER). Without a machine, the generic text.
  */
 const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>> = {
   battery: {
     tesla: 'YOUR LIGHTNING STARTS EACH FIGHT 30 CHARGED',
-    midas: 'YOUR X4 METER STARTS EACH FIGHT MORE THAN HALF FULL',
+    midas: 'YOUR GOLD METER STARTS EACH FIGHT MORE THAN HALF FULL',
     thorn: 'YOUR THORNS START EACH FIGHT AT 30',
     joker: 'YOUR JACKPOT METER STARTS EACH FIGHT MORE THAN HALF FULL',
   },
   fang: {
     tesla: 'EVERY LIGHTNING STRIKE HEALS 30 MORE',
-    midas: 'YOUR X4 HEALS 30 MORE',
+    midas: 'EVERY MIDAS TOUCH HEALS 30 MORE',
     thorn: 'YOUR THORN VOLLEYS HEAL 10 MORE',
     joker: 'YOUR ALL-JACKPOTS SPIN HEALS 30 MORE',
   },
   overcharge: {
     tesla: 'YOUR LIGHTNING ECHOES FOR 1/3 DAMAGE',
-    midas: 'YOUR X4 SPIN ECHOES FOR 1/3 OF ITS DAMAGE',
+    midas: 'YOUR MIDAS TOUCH SPIN ECHOES FOR 1/3 OF ITS DAMAGE',
     joker: 'YOUR ALL-JACKPOTS SPIN ECHOES FOR 1/3 OF ITS DAMAGE',
   },
   bell: {
     knight: 'JACKPOTS PAY X2',
     tesla: 'JACKPOTS PAY X2 AND FULLY CHARGE YOUR LIGHTNING',
-    midas: 'JACKPOTS PAY X2 AND READY YOUR X4',
+    midas: 'JACKPOTS PAY X2 AND FILL YOUR GOLD METER',
     thorn: 'JACKPOTS PAY X2 AND ADD THEIR PAY TO YOUR THORNS',
     joker: 'JACKPOTS PAY X2 AND FILL YOUR JACKPOT METER',
   },
@@ -148,10 +148,8 @@ export const CLOVER_CHANCE = 0.3;
 export const BATTERY_ENERGY = 3 * UNIT;
 /** Battery on a MIDAS / JAX meter: it starts this full. */
 export const BATTERY_SHARE = 0.6;
-/** MIDAS: a full meter makes your next paying group pay this many times. */
-export const MIDAS_RAISE = 4;
-/** Gold bars that land while the x4 is ready add at most this much to it (x6). */
-export const MIDAS_STACK_CAP = 2;
+/** MIDAS TOUCH: a cell holds at most this many gold touches (+x6). */
+export const MIDAS_TOUCH_CAP = 3;
 /** Cactus: banking thorns shields you for this share of what you banked. */
 export const CACTUS_SHARE = 0.3;
 export const FANG_HEAL = 3 * UNIT;
