@@ -1128,7 +1128,6 @@ export class RunScreens {
         ctx.strokeStyle = COLORS.goldLight;
         ctx.lineWidth = 4;
         ctx.strokeRect(-h.w / 2 + 6, -h.h / 2 + 6, h.w - 12, h.h - 12);
-        drawText(ctx, 'TRUE ENDING', 0, -h.h / 2 + 22, 1.5, COLORS.goldLight);
       }
       if (open) {
         // The hero you play as on this machine.
