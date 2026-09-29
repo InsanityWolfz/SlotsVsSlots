@@ -40,3 +40,13 @@ Status: [x] done, [ ] to do, [?] needs design talk first.
 - [x] Does VAMPIRE FANG work on the OVERCHARGE echo? (yes, since 2026-09-27) Currently no: Fang heals once per special fired, and the echo isn't a separate special. Decide if it should.
 - [ ] Per-relic / per-charm / per-upgrade win rates for finer balance (the sim already prints relic win rates; add charms and upgrades)
 - [ ] How hard is the Dealer: about 64% of players who reach it win (commit-policy harness). By slot machine: MIDAS ~80% (easiest), THORN/TESLA ~57-65%.
+
+## User notes 2026-09-28 (after the cloud rework): for the next session
+- **Pacing:** early rounds feel slow and drawn out, then the game swings to way too fast. Smooth the curve (early fights shorter/snappier, late fights less instant).
+- **Offers are too "fitted":** take one gold charm on KNIGHT and you rarely see any other charm. Late-game rerolls barely change the pool. Re-look at the shop/draft/relic offer weighting: a looser spread, more variety per reroll.
+- **Bimodal runs:** either you're weak, stay weak and die early, or you snowball and one-shot everything. Brainstorm smoothing (catch-up for weak runs, softer snowball, enemy scaling that keeps pressure).
+- **Visual clarity:** boss mechanics are hard to follow. The Dealer feels underwhelming (needs more presence and a clearer threat).
+- **Relic audit:** every relic needs an in-depth test that it works as written AND shows it.
+  - Example: WAR DRUM stacks sword base damage, but the sword symbols don't display the buff. It may or may not be working. Buffs must show on the payline numbers.
+- **Tuesday:** spin up an expert playtester (roguelikes, slot machines, player incentives, fun) to play through the whole game and propose what to improve or change. The user feels "something is just missing".
+- The user's overall read: good progress, a long way to go.
