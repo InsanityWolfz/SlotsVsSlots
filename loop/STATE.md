@@ -490,3 +490,4 @@ User playtest notes and decisions:
 | AVG | 28.8 | 12.3 | 56.7 |
 
 Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
+- 2026-09-29 follow-up (user): deaths still resolve at the end of the turn, but NO new spin starts once a machine is at 0 HP (e.g. a SHIELD BASH kill at turn start), and nothing hits a machine that already fell this turn (attacks, lightning, thorns). tuesday.ts 1500: WHITE 28.4 / GREEN 12.7 / Dealer 58.2 (unchanged).

@@ -372,6 +372,11 @@ export class Fight {
       }
     }
 
+    // Someone already fell (e.g. SHIELD BASH at the start of your turn): no new spin; the death resolves now.
+    if (this.sides.player.hp <= 0 || this.sides.enemy.hp <= 0) {
+      this.next = other(side);
+      return { turn: this.turn, side, events };
+    }
     const frozen = me.frozen.map((t) => t > 0);
     const locked = me.locked.map((t) => t > 0);
     const forcedLine = this.forced[side];
@@ -968,7 +973,7 @@ export class Fight {
 
   /** BRIAR: when you're attacked, the thorn bank hits back through shields (once per enemy turn), then clears. */
   private thorns(victim: Combatant, attacker: Combatant, events: CombatEvent[]): void {
-    if (this.over || victim.side !== 'player' || this.meter?.kind !== 'thorns' || victim.energy <= 0 || this.thornsTurn === this.turn) return;
+    if (this.over || attacker.hp <= 0 || victim.side !== 'player' || this.meter?.kind !== 'thorns' || victim.energy <= 0 || this.thornsTurn === this.turn) return;
     this.thornsTurn = this.turn;
     const bank = victim.energy;
     victim.energy = 0;
@@ -1004,6 +1009,8 @@ export class Fight {
     pierce = false,
     note?: 'drain' | 'mimic' | 'reflect' | 'echo',
   ): number {
+    // Nothing hits a machine that already fell this turn (its death resolves at the end of the turn).
+    if (foe.hp <= 0) return 0;
     // RAISE: the Dealer's next hit pays double.
     if (me.side === 'enemy' && this.raiseEnemy && amount > 0 && note !== 'reflect') {
       amount *= 2;
@@ -1036,7 +1043,7 @@ export class Fight {
     // The Grounder: a grounded cell on your payline makes your special hit shields.
     const grounded = me.reels.some((reel) => reel.cells[reel.stop]?.grounded);
     const pierce = this.cfg.specialIgnoresShield && !grounded;
-    while (me.energy >= this.cfg.specialCost && !this.over) {
+    while (me.energy >= this.cfg.specialCost && !this.over && foe.hp > 0) {
       me.energy -= this.cfg.specialCost;
       const dmg = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
       const h = this.damage(foe, dmg, pierce);

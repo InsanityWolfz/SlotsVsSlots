@@ -33,7 +33,7 @@ describe('slot machine relics', () => {
     expect(f.drum).toBe(2);
   });
 
-  it('SHIELD BASH that kills at turn start: the turn plays out, then the enemy falls (no win before the spin)', () => {
+  it('SHIELD BASH that kills at turn start: no spin after the enemy falls', () => {
     const f = on('knight', ['bash']);
     f.step();
     f.step();
@@ -41,9 +41,7 @@ describe('slot machine relics', () => {
     f.sides.player.shield = 200;
     const ev = f.step().events;
     expect(f.winner).toBe('player');
-    const spin = ev.findIndex((e) => e.type === 'spin');
-    expect(spin).toBeGreaterThan(-1);
-    expect(ev.findIndex((e) => e.type === 'fightEnd')).toBeGreaterThan(spin);
+    expect(ofType(ev, 'spin')).toHaveLength(0);
   });
 
   it('charm relics need the charm; GOLD LEAF is retired; OVERCHARGE never shows on BRIAR', () => {
