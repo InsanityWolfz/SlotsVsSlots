@@ -241,7 +241,8 @@ export class SymbolWheel implements FxItem {
   flash = 0;
   z = 32;
   constructor(
-    public symbols: SpriteId[],
+    /** One segment per symbol + charm you own (the charm drawn over the symbol). */
+    public symbols: { sprite: SpriteId; charm?: SpriteId }[],
     public x: number,
     public y: number,
     public radius: number,
@@ -276,9 +277,15 @@ export class SymbolWheel implements FxItem {
       ctx.stroke();
     }
     ctx.restore();
+    const k = Math.min(2.2, 2.2 * Math.sqrt(4 / Math.max(4, n))) * this.scale;
     for (let i = 0; i < n; i++) {
       const a = this.angle + (i + 0.5) * seg;
-      drawSprite(ctx, this.symbols[i], this.x + Math.cos(a) * r * 0.6, this.y + Math.sin(a) * r * 0.6, 2.2 * this.scale, { alpha: this.alpha, flash: i === this.landed ? this.flash : 0 });
+      const px = this.x + Math.cos(a) * r * 0.64;
+      const py = this.y + Math.sin(a) * r * 0.64;
+      const fl = i === this.landed ? this.flash : 0;
+      drawSprite(ctx, this.symbols[i].sprite, px, py, k, { alpha: this.alpha, flash: fl });
+      const charm = this.symbols[i].charm;
+      if (charm) drawSprite(ctx, charm, px, py, k, { alpha: this.alpha, flash: fl });
     }
     // Hub and pointer.
     drawSprite(ctx, 'wild', this.x, this.y, 1.6 * this.scale, { alpha: this.alpha });

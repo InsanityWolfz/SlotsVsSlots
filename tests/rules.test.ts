@@ -199,13 +199,15 @@ describe('fight resolution', () => {
     expect(f.sides.player.reels.every((r) => r.cells.every((c) => !c.slimed))).toBe(true);
   });
 
-  it('death ends the fight and stops resolving', () => {
+  it('a 0 HP machine falls at the END of the turn: the rest of the turn still resolves first', () => {
     const f = fight((c) => (c.enemy.hp = 30));
     f.forceNext('player', ['sword', 'sword', 'bolt']);
     const { events } = f.step();
     expect(f.winner).toBe('player');
     expect(events.at(-1)).toMatchObject({ type: 'fightEnd', winner: 'player' });
-    expect(ofType(events, 'energyGain')).toHaveLength(0);
+    // The bolt after the killing blow still charged (after-hit effects play out).
+    expect(ofType(events, 'energyGain').length).toBeGreaterThan(0);
+    expect(events.findIndex((e) => e.type === 'death')).toBeGreaterThan(events.findIndex((e) => e.type === 'energyGain'));
     expect(() => f.step()).toThrow();
   });
 

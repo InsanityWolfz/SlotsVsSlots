@@ -1,4 +1,4 @@
-import type { GameConfig, RelicId, SymbolId } from './config';
+import type { Enh, GameConfig, RelicId, SymbolId } from './config';
 
 export type Tier = 'none' | 'pair' | 'triple';
 
@@ -41,6 +41,10 @@ export interface LineScore {
   wildPick?: SymbolId;
   /** JAX's payoff: all three payline cells paid as jackpots of themselves. */
   jackpots?: boolean;
+  /** The 3-WILD wheel's charm (the picked cell's), if it had one. */
+  wildPickEnh?: Enh;
+  /** JAX's all-jackpots spin: what each WILD's wheel landed on. */
+  picks?: { reel: number; symbol: SymbolId; enh?: Enh }[];
   /** MIDAS TOUCH fired this spin (the meter pays off). */
   raised?: boolean;
   /** MIDAS TOUCH: cells touched this spin and their touch count after it. */

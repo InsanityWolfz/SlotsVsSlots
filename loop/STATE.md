@@ -470,3 +470,23 @@ User playtest notes and decisions:
 | thorn | 29.9 | 11.2 | 53.2 |
 | joker | 27.9 | 9.4 | 57.3 |
 | AVG | 27.8 | 10.2 | 57.0 |
+
+### Iteration 30 (2026-09-29): playtest bugs: Mirror lightning, JAX wheel charms, end-of-turn deaths
+- **Mirror lightning:** a copied Jackpot Bell made the Mirror charge a special and strike you. The Mirror now never gains energy.
+- **JAX / 3-WILD wheel:** the pick is a symbol AND its charm (gold, keen, vamp or charged), weighted by the cells you own, and the jackpot pays with that charm. The wheel shows one segment per symbol + charm.
+- **End-of-turn deaths (user rule):** a machine at 0 HP falls at the END of the turn, so heals, vamp, echoes and after-hit effects resolve first. Phoenix is checked then too.
+- **Retune:**
+  - `regularHp` 0.95 -> 1.05.
+  - BOSS_MUL thorn: house 4.2, mirror 22, dealer 2.2, act3 1.6.
+  - BOSS_MUL joker: house 5, mirror 4, dealer 2.6, act3 1.8.
+
+**tuesday.ts 2000:**
+| machine | WHITE | GREEN | Dealer |
+|---|---|---|---|
+| knight | 28.9 | 10.4 | 51.6 |
+| tesla | 27.9 | 11.7 | 59.4 |
+| thorn | 29.4 | 13.8 | 57.9 |
+| joker | 28.7 | 13.1 | 57.6 |
+| AVG | 28.8 | 12.3 | 56.7 |
+
+Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.

@@ -617,9 +617,9 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number }> = {
   knight: { house: 6, mirror: 1.2, dealer: 1.05, act3: 0.7 },
   midas: { house: 3.5, mirror: 16, dealer: 0.45, act3: 0.1 },
-  thorn: { house: 3.2, mirror: 12, dealer: 1.8, act3: 1.4 },
+  thorn: { house: 4.2, mirror: 22, dealer: 2.2, act3: 1.6 },
   tesla: { house: 1.2, mirror: 2.4, dealer: 0.8, act3: 0.95 },
-  joker: { house: 2.4, mirror: 1.9, dealer: 1.75, act3: 1.3 },
+  joker: { house: 5, mirror: 4, dealer: 2.6, act3: 1.8 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */

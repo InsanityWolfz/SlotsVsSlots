@@ -61,8 +61,13 @@ const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'g
 const WRITER_ABILITIES: ReadonlySet<string> = new Set(['flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
 const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'shield', 'bolt', 'seven', 'thorn']);
+/** A cell's charm as the WILD wheel shows it (only charms that change a jackpot's pay or heal). */
+export const wheelCharm = (cell: { enh?: Enh; faked?: number }): Enh | undefined =>
+  cell.enh && (cell.enh === 'gold' || cell.enh === 'keen' || cell.enh === 'vamp' || cell.enh === 'charged') && !((cell.faked ?? 0) > 0) ? cell.enh : undefined;
+
 /** Symbols the 3-WILD bonus reel (and a WILD in JAX's payoff) can pick. */
-const JACKPOTABLE: ReadonlySet<SymbolId> = new Set(['sword', 'shield', 'bolt', 'goldbar', 'thorn']);
+export const WHEEL_SYMBOLS: ReadonlySet<SymbolId> = new Set(['sword', 'shield', 'bolt', 'goldbar', 'thorn']);
+const JACKPOTABLE = WHEEL_SYMBOLS;
 
 export interface Combatant {
   side: SideId;
@@ -316,8 +321,24 @@ export class Fight {
     this.forced[side] = line;
   }
 
+  /**
+   * One turn. Deaths resolve at the END of the turn: a machine at 0 HP mid-turn lets the rest of that turn play out
+   * (heals, vamp, echoes, after-hit effects), then it falls.
+   */
   step(): TurnResult {
     if (this.over) throw new Error('Fight is over');
+    this.resolving = false;
+    const res = this.turnBody();
+    this.resolving = true;
+    const first = res.side === 'player' ? this.sides.enemy : this.sides.player;
+    for (const c of [first, this.sides[res.side]]) this.checkDeath(c, res.events);
+    this.resolving = false;
+    return res;
+  }
+  /** True while end-of-turn deaths resolve (a 0 HP machine falls only then). */
+  private resolving = false;
+
+  private turnBody(): TurnResult {
     const side = this.next;
     const me = this.sides[side];
     const events: CombatEvent[] = [];
@@ -327,11 +348,6 @@ export class Fight {
     if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
     if (this.cfg.shieldReset === 'ownTurnStart') this.resetShield(me, events);
-    // SHIELD BASH can end the fight before the spin.
-    if (this.over) {
-      this.next = other(side);
-      return { turn: this.turn, side, events };
-    }
     // Saved chips shield you at the start of each boss turn (the House and the Mirror).
     if (side === 'enemy' && (this.isBoss || this.isMirror || this.isDealer)) {
       const p = this.sides.player;
@@ -518,12 +534,14 @@ export class Fight {
     return c.side === 'player' && !this.special ? 'sword' : 'bolt';
   }
 
-  /** The 3-WILD bonus reel: one of your jackpot-able symbols (by how many live cells you have of it). */
-  private wildPick(c: Combatant): SymbolId {
-    const pool = c.reels.flatMap((reel) => reel.cells.filter((cell) => !cell.slimed && !cell.stolen && !cell.carded && !cell.bomb && JACKPOTABLE.has(cell.symbol)).map((cell) => cell.symbol));
-    if (c.side !== 'player' || !pool.length) return this.wildAlone(c);
+  /** The WILD wheel: one of your live cells (symbol AND charm), weighted by how many you have of each. */
+  private wildPick(c: Combatant): { symbol: SymbolId; enh?: Enh } {
+    const pool = c.reels.flatMap((reel) => reel.cells.filter((cell) => !cell.slimed && !cell.stolen && !cell.carded && !cell.bomb && JACKPOTABLE.has(cell.symbol)).map((cell) => ({ symbol: cell.symbol, ...(wheelCharm(cell) ? { enh: wheelCharm(cell) } : {}) })));
+    if (c.side !== 'player' || !pool.length) return { symbol: this.wildAlone(c) };
     return this.rng.pick(pool);
   }
+  /** Charms a WILD's pick brings to its reel this spin (on top of the cell's own). */
+  private pickEnh = new Map<number, Enh>();
 
   private score(me: Combatant, line: SymbolId[]): LineScore {
     const player = me.side === 'player';
@@ -538,17 +556,31 @@ export class Fight {
     const allWild = line.every((s) => s === 'wild');
     const pick = allWild ? this.wildPick(me) : undefined;
     const jackpots = player && me.armed && this.meter?.kind === 'jackpots';
-    let s = scoreLine(line, cfg, { value, wildAlone: pick ?? this.wildAlone(me) });
-    if (pick) s.wildPick = pick;
+    this.pickEnh.clear();
+    let s = scoreLine(line, cfg, { value, wildAlone: pick?.symbol ?? this.wildAlone(me) });
+    if (pick) {
+      s.wildPick = pick.symbol;
+      if (pick.enh) {
+        s.wildPickEnh = pick.enh;
+        line.forEach((_x, r) => this.pickEnh.set(r, pick.enh!));
+      }
+    }
     if (jackpots) {
-      // JAX's payoff: each payline cell pays as a jackpot of itself (a WILD rolls a random one).
+      // JAX's payoff: each payline cell pays as a jackpot of itself (a WILD spins the wheel: a symbol and its charm).
+      const picks: { reel: number; symbol: SymbolId; enh?: Enh }[] = [];
       const groups: ScoreGroup[] = line.map((raw, r) => {
-        const symbol = raw === 'wild' ? this.wildPick(me) : raw;
+        let symbol = raw;
+        if (raw === 'wild') {
+          const p = this.wildPick(me);
+          symbol = p.symbol;
+          picks.push({ reel: r, ...p });
+          if (p.enh) this.pickEnh.set(r, p.enh);
+        }
         const base = 3 * value(symbol);
         return { symbol, reels: [r], amount: base * multFor(3, cfg), base, mult: multFor(3, cfg), matched: true, jackpot: true };
       });
       const totals: Partial<Record<SymbolId, number>> = {};
-      s = { line, tier: 'triple', tierSymbol: null, groups, totals, jackpots: true };
+      s = { line, tier: 'triple', tierSymbol: null, groups, totals, jackpots: true, ...(picks.length ? { picks } : {}) };
     }
     const fired = new Set<RelicId>();
     const has = (r: RelicId) => player && me.relics.has(r);
@@ -577,9 +609,8 @@ export class Fight {
       const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
       let gold = 0;
       let keen = false;
-      for (const r of g.reels) {
-        const enh = this.paylineEnh(me, r);
-        if (!enh) continue;
+      for (const r of g.reels)
+        for (const enh of this.enhsAt(me, r)) {
         const v = charmValue(enh, this.charmLvl(me, enh)) * copies;
         // KEEN adds to a sword group and pierces.
         if (enh === 'keen' && g.symbol === 'sword') {
@@ -701,6 +732,13 @@ export class Fight {
   }
 
   /** The charm on a reel's payline cell, if it's live (not stolen, slimed, jammed, hexed or counterfeit). */
+  /** The live charms on a payline reel this spin: the cell's own, plus what a WILD's pick brought. */
+  private enhsAt(c: Combatant, r: number): Enh[] {
+    const own = this.paylineEnh(c, r);
+    const picked = c.side === 'player' ? this.pickEnh.get(r) : undefined;
+    return [...(own ? [own] : []), ...(picked ? [picked] : [])];
+  }
+
   private paylineEnh(c: Combatant, r: number): Enh | undefined {
     const cell = c.reels[r].cells[c.reels[r].stop];
     if (!cell?.enh || cell.stolen || cell.slimed || (cell.faked ?? 0) > 0 || c.locked[r] > 0 || c.hexed[r] > 0) return undefined;
@@ -864,7 +902,7 @@ export class Fight {
   private vampHeal(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
     if (this.over || g.amount <= 0) return;
     const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
-    const vamp = g.reels.filter((r) => this.paylineEnh(me, r) === 'vamp').length * charmValue('vamp', this.charmLvl(me, 'vamp')) * copies;
+    const vamp = g.reels.reduce((a, r) => a + this.enhsAt(me, r).filter((e) => e === 'vamp').length, 0) * charmValue('vamp', this.charmLvl(me, 'vamp')) * copies;
     if (vamp) this.heal(me, vamp, 'vamp', events);
   }
 
@@ -989,6 +1027,8 @@ export class Fight {
   }
 
   private gainEnergy(me: Combatant, amount: number, reels: number[], events: CombatEvent[], earthed = 0): void {
+    // The Mirror has no special (a copied Jackpot Bell must not make it throw lightning).
+    if (me.side === 'enemy' && this.isMirror) return;
     const foe = this.sides[other(me.side)];
     if (me.side === 'player') amount *= this.cfg.player.meterMul ?? 1;
     me.energy += amount;
@@ -1049,7 +1089,8 @@ export class Fight {
 
   private checkDeath(c: Combatant, events: CombatEvent[]): void {
     if (this.over) return;
-    if (c.hp > 0) {
+    if (c.hp > 0 || !this.resolving) {
+      if (c.hp <= 0) return;
       // Boss phase 2: at half HP the House goes ALL IN and doubles the pot.
       if (c.side === 'enemy' && this.isBoss && !this.allIn && c.hp <= c.maxHp / 2) {
         this.allIn = true;

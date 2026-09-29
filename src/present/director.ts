@@ -1,7 +1,7 @@
-import { UNIT, type SideId, type SymbolId } from '../core/config';
+import { UNIT, type Enh, type SideId, type SymbolId } from '../core/config';
 import type { RelicId } from '../core/config';
 import type { CombatEvent } from '../core/events';
-import { effectText, other, WRITERS, type TurnResult } from '../core/fight';
+import { effectText, other, WHEEL_SYMBOLS, wheelCharm, WRITERS, type TurnResult } from '../core/fight';
 import type { LineScore } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
@@ -15,6 +15,7 @@ import { BOMB, RELICS } from '../core/relics';
 import { charmLevel, charmTag, CHARM_COLOR, playerSymValue } from '../core/charms';
 import { defaultConfig } from '../core/config';
 import { DEAD } from '../core/strip';
+import { ENH_SPRITE } from './reel';
 
 /** Base symbol values (the payline numbers). */
 const BASE = defaultConfig().base;
@@ -436,9 +437,9 @@ export class Director {
     for (const r of e.score.relics ?? []) this.relicPop(e.side, r);
     if (e.luckyWilds?.length) await this.luckyWilds(e.side, e.luckyWilds);
     // 3 WILDS: a little bonus reel picks one of your symbols, and that jackpot pays.
-    if (e.score.wildPick) await this.bonusReel(e.side, e.score.wildPick);
-    // JAX's all-jackpots spin: each WILD on the line spins the wheel for its symbol.
-    if (e.score.jackpots) for (const [r, s] of e.score.line.entries()) if (s === 'wild' && e.score.groups[r]) await this.bonusReel(e.side, e.score.groups[r].symbol);
+    if (e.score.wildPick) await this.bonusReel(e.side, e.score.wildPick, e.score.wildPickEnh);
+    // JAX's all-jackpots spin: each WILD on the line spins the wheel for its symbol and charm.
+    for (const p of e.score.picks ?? []) await this.bonusReel(e.side, p.symbol, p.enh);
     if (near && e.score.tier !== 'triple') this.missedTriple(e.side, e.score.line[0]);
     // JAX's all-jackpots spin is announced by its payoff; each cell then pays on its own.
     if (!e.score.jackpots) await this.winPresentation(e.side, e.score);
@@ -484,18 +485,27 @@ export class Director {
     this.bg(this.c.tween({ from: 0, to: 1, dur: 0.18, ease: backOut(3), onUpdate: (v) => (tag.pop = v) }));
   }
 
-  /** WILDS: a small wheel of your symbols spins and lands on the one whose jackpot pays. */
-  private async bonusReel(side: SideId, pick: SymbolId): Promise<void> {
+  /** WILDS: a small wheel of every symbol + charm you own spins and lands on the one whose jackpot pays. */
+  private async bonusReel(side: SideId, pick: SymbolId, pickEnh?: Enh): Promise<void> {
     this.s.sounds.lucky();
-    // Every symbol a jackpot can be made of on YOUR machine, one segment each.
-    const own = new Set(this.s.machines[side].reels.flatMap((r) => r.cells.map((c) => c.symbol)));
-    const pool = (['sword', 'shield', 'bolt', 'goldbar', 'thorn'] as SymbolId[]).filter((x) => own.has(x));
-    if (!pool.includes(pick)) pool.push(pick);
+    // One segment per live symbol + charm on YOUR machine (what the engine's pick can land on).
+    const key = (sym: SymbolId, enh?: Enh) => `${sym}:${enh ?? ''}`;
+    const seen = new Map<string, { symbol: SymbolId; enh?: Enh }>();
+    for (const reel of this.s.machines[side].reels)
+      for (const c of reel.cells) {
+        if (c.slimed || (c.stolen ?? 0) > 0 || c.carded || (c.bomb ?? 0) > 0 || !WHEEL_SYMBOLS.has(c.symbol)) continue;
+        const enh = wheelCharm(c);
+        seen.set(key(c.symbol, enh), { symbol: c.symbol, ...(enh ? { enh } : {}) });
+      }
+    if (!seen.has(key(pick, pickEnh))) seen.set(key(pick, pickEnh), { symbol: pick, ...(pickEnh ? { enh: pickEnh } : {}) });
+    const order = ['sword', 'shield', 'bolt', 'goldbar', 'thorn'];
+    const pool = [...seen.values()].sort((a, b) => order.indexOf(a.symbol) - order.indexOf(b.symbol) || (a.enh ?? '').localeCompare(b.enh ?? ''));
+    const at = pool.findIndex((p) => key(p.symbol, p.enh) === key(pick, pickEnh));
     const cx = W / 2;
     const cy = MACHINE_TOP + MACHINE_H / 2 + 60;
-    const wheel = this.s.fx.add(new SymbolWheel(pool as SpriteId[], cx, cy, 70));
+    const wheel = this.s.fx.add(new SymbolWheel(pool.map((p) => ({ sprite: p.symbol as SpriteId, ...(p.enh ? { charm: ENH_SPRITE[p.enh] } : {}) })), cx, cy, pool.length > 4 ? 90 : 70));
     await this.c.tween({ from: 0, to: 1, dur: 0.18, ease: backOut(2), onUpdate: (v) => (wheel.scale = v) });
-    const end = wheel.stopAngle(pool.indexOf(pick), 3);
+    const end = wheel.stopAngle(at, 3);
     const seg = (Math.PI * 2) / pool.length;
     let last = 0;
     await this.c.tween({
@@ -512,9 +522,9 @@ export class Director {
         }
       },
     });
-    wheel.landed = pool.indexOf(pick);
+    wheel.landed = at;
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (wheel.flash = v) }));
-    this.bg(this.popText(`WILD ${pick === 'goldbar' ? 'GOLD BAR' : pick.toUpperCase()} JACKPOT!`, cx, cy - 100, 2.5, '#ff6ad5', 16, 0.4));
+    this.bg(this.popText(`WILD ${pickEnh ? `${pickEnh.toUpperCase()} ` : ''}${pick === 'goldbar' ? 'GOLD BAR' : pick.toUpperCase()} JACKPOT!`, cx, cy - 120, 2.5, '#ff6ad5', 16, 0.4));
     await this.c.wait(0.4);
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.2, onUpdate: (v) => (wheel.alpha = v) }).then(() => this.s.fx.remove(wheel)));
   }

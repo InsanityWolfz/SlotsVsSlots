@@ -33,7 +33,7 @@ describe('slot machine relics', () => {
     expect(f.drum).toBe(2);
   });
 
-  it('SHIELD BASH that kills at turn start ends the turn (no spin after the win)', () => {
+  it('SHIELD BASH that kills at turn start: the turn plays out, then the enemy falls (no win before the spin)', () => {
     const f = on('knight', ['bash']);
     f.step();
     f.step();
@@ -41,7 +41,9 @@ describe('slot machine relics', () => {
     f.sides.player.shield = 200;
     const ev = f.step().events;
     expect(f.winner).toBe('player');
-    expect(ofType(ev, 'spin')).toHaveLength(0);
+    const spin = ev.findIndex((e) => e.type === 'spin');
+    expect(spin).toBeGreaterThan(-1);
+    expect(ev.findIndex((e) => e.type === 'fightEnd')).toBeGreaterThan(spin);
   });
 
   it('charm relics need the charm; GOLD LEAF is retired; OVERCHARGE never shows on BRIAR', () => {
@@ -234,5 +236,36 @@ describe('enemy effect symbols say what they do', () => {
     expect(effectText('ice', 90)).toBe('FREEZES 2 REELS FOR 3 TURNS');
     expect(effectText('lock', 10)).toBe('FIZZLES');
     expect(effectText('claw', 40)).toBe('STEALS 2 CELLS');
+  });
+});
+
+describe('playtest bugs (2026-09-29)', () => {
+  it('the Mirror never throws lightning, even with a copied Jackpot Bell', () => {
+    const c = defaultConfig();
+    c.relics = [];
+    c.enemy = { hp: 9999, strips: reels3({ sword: 6, bolt: 6 }), boss: 'mirror', relics: ['bell'] };
+    const f = new Fight(c, 5);
+    f.step();
+    f.forceNext('enemy', ['bolt', 'bolt', 'bolt']);
+    const ev = f.step().events;
+    expect(ofType(ev, 'specialFire')).toHaveLength(0);
+    expect(ofType(ev, 'energyGain')).toHaveLength(0);
+  });
+
+  it('3 WILDS: the wheel picks a symbol AND its charm, and the jackpot pays with that charm', () => {
+    let seen = false;
+    for (let seed = 1; seed < 40 && !seen; seed++) {
+      const f = on('joker', [], (c) => {
+        c.player.strips = reels3({ sword: 4, wild: 4 });
+        c.player.gilded = [0, 1, 2].map((reel) => ({ reel, symbol: 'sword' as const, enh: 'gold' as const, n: 4 }));
+      }, seed);
+      f.forceNext('player', ['wild', 'wild', 'wild']);
+      const s = ofType(f.step().events, 'spin')[0].score;
+      expect(s.wildPick).toBe('sword');
+      expect(s.wildPickEnh).toBe('gold');
+      expect(s.groups[0].notes?.some((n) => n.includes('GOLD'))).toBe(true);
+      seen = true;
+    }
+    expect(seen).toBe(true);
   });
 });
