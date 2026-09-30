@@ -19,7 +19,7 @@ describe('cabinets', () => {
       expect(run.player.maxHp).toBe(cab.hp);
       expect(run.player.gilded).toEqual(cab.gilded);
       expect(run.player.strips).toEqual(cab.strips);
-      expect(run.player.chips).toBe(CHIPS.start);
+      expect(run.player.chips).toBe(cab.startChips ?? CHIPS.start);
       expect(fightConfig(run, base).cabinet).toBe(id);
     }
   });

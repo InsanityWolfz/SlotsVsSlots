@@ -246,7 +246,7 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
       relics: [],
       gilded: cab.gilded.map((g) => ({ ...g })),
       levels: cloneLevels(cab.levels ?? emptyLevels()),
-      chips: CHIPS.start,
+      chips: cab.startChips ?? CHIPS.start,
     },
     records: [],
     over: false,
@@ -648,7 +648,9 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
     const m2 = BOSS_MUL[run.cabinet].act2 ?? 1;
     return unitsRound(Math.max(e.hp, TUNE.act2Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'mirror') * mul) * m2);
   }
-  if (!e.isBoss) return run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? unitsRound(e.hp * FRAGILE_OPENER_MUL) : e.hp;
+  // Per machine: act 1 regular HP (MIDAS is slow to start: EXPERT_PLAYTEST_5).
+  const m1 = run.act === 1 ? (BOSS_MUL[run.cabinet].act1 ?? 1) : 1;
+  if (!e.isBoss) return unitsRound((run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? e.hp * FRAGILE_OPENER_MUL : e.hp) * m1);
   // ENDLESS: loop bosses are sized from your power (the loop House was a free win; the loop Dealer a sponge).
   if (run.endless) {
     const regular = TUNE.act3Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'act3') + TUNE.act3Flat;
@@ -675,7 +677,7 @@ export function machinePower(run: RunState): number {
   const hit = powerCache.get(key);
   if (hit !== undefined) return hit;
   const cfg = defaultConfig();
-  cfg.player = { hp: 99999 * UNIT, strips: run.player.strips.map((s) => ({ ...s })), gilded: run.player.gilded.map((g) => ({ ...g })), levels: cloneLevels(run.player.levels), ...(run.glass ? { payMul: BIG.glassPay } : {}), ...(run.bloodPact ? { meterMul: 2 } : {}), chipsHeld: run.player.chips };
+  cfg.player = { hp: 99999 * UNIT, strips: run.player.strips.map((s) => ({ ...s })), gilded: run.player.gilded.map((g) => ({ ...g })), levels: cloneLevels(run.player.levels), ...(run.glass ? { payMul: BIG.glassPay } : {}), ...(run.bloodPact ? { meterMul: 2 } : {}), chipsHeld: Math.min(run.player.chips, 20) };
   cfg.enemy = { hp: 99999 * UNIT, strips: [{ sword: 8, shield: 4 }, { sword: 8, shield: 4 }, { sword: 8, shield: 4 }], ability: null };
   cfg.relics = run.player.relics.filter((r) => r !== 'phoenix');
   cfg.cabinet = run.cabinet;
@@ -718,9 +720,9 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  * to. Machines race differently (KNIGHT's shields, JAX's rare huge payoffs, BRIAR's thorns that need to
  * be hit), so the same HP formula would give each a different win rate.
  */
-export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number }> = {
+export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number }> = {
   knight: { house: 2.0, mirror: 0.9, dealer: 0.85, act3: 0.5 },
-  midas: { house: 3, mirror: 8, dealer: 3.6, act3: 0.35 },
+  midas: { house: 3, mirror: 2.8, dealer: 2.6, act3: 0.25, act1: 0.55, act2: 0.6 },
   thorn: { house: 0.85, mirror: 10.5, dealer: 2.4, act3: 1.1, act2: 0.55 },
   tesla: { house: 0.5, mirror: 2.4, dealer: 2.0, act3: 0.95 },
   joker: { house: 2.2, mirror: 3.7, dealer: 1.85, act3: 0.55, act2: 1.8 },
@@ -790,7 +792,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     record.chipsEaten = eaten;
   }
   // MIDAS: the chips his gold bars paid this fight.
-  if (fight.midasChips) run.player.chips += fight.midasChips;
+  if (fight.midasChips) run.player.chips = Math.max(0, run.player.chips + fight.midasChips);
   // Chips: interest on what you banked, then the win, elite bonus, jackpots and overkill.
   const beaten = currentEnemy(run);
   const interest = Math.min(CHIPS.interestCap, Math.floor(run.player.chips / CHIPS.interestPer));

@@ -198,7 +198,7 @@ export class Director {
         const c = this.machineCenter(e.side);
         this.s.sounds.coin(6);
         this.s.sounds.coin(10);
-        return this.popText(`+${e.amount} CHIPS`, c.x - 80, MACHINE_TOP - 22, 2, '#ffd23f', 14, 0.35);
+        return this.popText(e.amount > 0 ? `+${e.amount} CHIPS` : `THE HOUSE SKIMS ${-e.amount} CHIPS`, c.x - 80, MACHINE_TOP - 22, 2, e.amount > 0 ? '#ffd23f' : '#ff8a7a', 14, 0.35);
       }
       case 'lastCall':
         this.s.sounds.stingerMedium();

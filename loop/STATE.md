@@ -737,3 +737,29 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 
   **Open:** the MIDAS House at 99% (the vault ×3 plus pot steals trivialise it; raising its HP barely moves it).
 - Tests: 179 (MIDAS VAULT test replaces the MIDAS TOUCH / KING'S VAULT-DECREE tests).
+
+### Iteration 43 (2026-09-30): EXPERT_PLAYTEST_5 E1-E5 + E8
+- **E1-E3:**
+  - the endless bust keeps KILLED BY (the last lost record);
+  - MARKED DECK is credited correctly;
+  - the LET IT RIDE subline is visible and uses the same font;
+  - "1 FIGHT";
+  - the pot glow thresholds are ×UNIT (the pot escalates again);
+  - "YOUR JACKPOT TAKES IT" sits above the pot box;
+  - ALL IN / VAULT float text stays inside frames;
+  - edge cards promise only rewards that exist;
+  - the vault hits your best paying group (swords first).
+- **E4/E5 MIDAS shape:**
+  - starts with 16 chips (`startChips`);
+  - payoff heal 30 → 20;
+  - after a payoff the vault rests at 3/4 of its pre-fill (a full reset made the House a regen engine; a half reset gutted MIDAS: WHITE 9);
+  - the House skims 2 chips from MIDAS per cash-out.
+- **E8:** boss sizing reads at most 20 chips held.
+- New BOSS_MUL knob act1 (per machine, act 1 regular HP). MIDAS: house 3, mirror 2.8, dealer 2.6, act3 0.25, act1 0.55, act2 0.6.
+- **tuesday.ts 1500:**
+  | machine | WHITE | act1 | House | Mirror | GREEN | Dealer |
+  |---|---|---|---|---|---|---|
+  | midas | 36.8 | 74.5 | 82.4 | 61.9 | 11.3 | 50.0 |
+  | AVG | 42.0 | | | | 14.4 | 52.0 |
+- **expert5_midas (WHITE):** greedy 49.7, pure spend 26.3, pure hoard 13.3, keep-30 54.0. Both extremes lose to a middle policy, so there's a real tradeoff. E9 (the vault costs chips) is deferred.
+- Tests: 179.

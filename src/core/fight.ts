@@ -28,7 +28,7 @@ import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
 import { ENDLESS, TUNE } from './enemies';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
-export const MIDAS = { chipsPerPip: 2, chipsPerMul: 20, maxMul: 3, jackpotChips: 3, chipCap: 8 };
+export const MIDAS = { houseSkim: 2, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3, jackpotChips: 3, chipCap: 8 };
 import { isNearMiss, multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {
   BONUS_SYMBOLS,
@@ -1068,7 +1068,8 @@ export class Fight {
       return;
     }
     if (this.meter?.kind === 'vault') {
-      me.energy = this.vaultBase();
+      // It rests at 3/4 of its pre-fill after a payoff (full made the House a regen engine: EXPERT_PLAYTEST_5).
+      me.energy = Math.floor((this.vaultBase() * 3) / 4 / UNIT) * UNIT;
       me.armed = false;
       events.push({ type: 'payoff', side: me.side, kind: 'vault', left: me.energy, mul: this.vaultPaid });
       this.vaultPaid = 0;
@@ -1895,6 +1896,14 @@ export class Fight {
   private cashPot(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
     const amount = unitsUp(this.pot * POT.skim * (this.cfg.enemy.dmgMul ?? 1));
     this.pot -= amount;
+    // MIDAS's rival: the House skims his chips too (2 per cash-out).
+    if (foe.side === 'player' && this.meter?.kind === 'vault') {
+      const took = Math.min(MIDAS.houseSkim, (this.cfg.player.chipsHeld ?? 0) + this.midasChips);
+      if (took > 0) {
+        this.midasChips -= took;
+        events.push({ type: 'midasChips', side: foe.side, amount: -took, total: this.midasChips });
+      }
+    }
     const h = this.damage(foe, amount, false);
     events.push({ type: 'potWin', from: me.side, to: foe.side, amount, ...h, potLeft: this.pot });
     this.checkDeath(foe, events);

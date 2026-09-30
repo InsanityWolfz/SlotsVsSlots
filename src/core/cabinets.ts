@@ -54,6 +54,8 @@ export interface Cabinet {
   /** Starting symbol / charm levels. */
   levels?: Levels;
   chipsPerWin?: number;
+  /** Chips this machine starts a run with (default CHIPS.start). */
+  startChips?: number;
   enemyAbilityMinus?: number;
   specialCost?: number;
   specialDamage?: number;
@@ -98,7 +100,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     strips: r3({ sword: 4, shield: 4, goldbar: 4 }),
     gilded: [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }],
     favors: 'gold',
-    meter: { kind: 'vault', symbol: 'goldbar', cost: 10 * UNIT, heal: 3 * UNIT },
+    meter: { kind: 'vault', symbol: 'goldbar', cost: 10 * UNIT, heal: 2 * UNIT },
+    startChips: 16,
     symbols: ['sword', 'shield', 'goldbar'],
     rule: 'GOLD BARS PAY CHIPS AND FILL THE VAULT. THE VAULT STARTS FULLER THE MORE CHIPS YOU HOLD. FULL: YOUR NEXT PAY X1 + CHIPS/20 (MAX X3). CASHIER 20% OFF. 300 HP.',
     act2: { text: 'THE +1 CHIP PER WIN KEEPS PAYING' },
