@@ -136,7 +136,11 @@ export type RelicId =
   | 'piggy'
   | 'trophy'
   | 'holywater'
-  | 'bash';
+  | 'bash'
+  // Side bets
+  | 'loaded'
+  | 'marker'
+  | 'highlimit';
 
 export interface SideConfig {
   hp: number;

@@ -10,6 +10,7 @@ const N = Number(process.argv[2] ?? 300);
 const STAKE = Number(process.argv[3] ?? 10);
 const KEEP = Number(process.argv[4] ?? 0);
 const base = defaultConfig();
+if (process.env.RELIC) SIM_BIAS.startRelic = process.env.RELIC as never;
 const pct = (a: number, b: number) => (b ? ((100 * a) / b).toFixed(1) : '-');
 for (const stake of process.env.STAKE_ONLY ? [Number(process.env.STAKE_ONLY)] : [0, 2]) {
   for (const cab of CABINET_ORDER.filter((c) => !process.env.CAB || c === process.env.CAB)) {

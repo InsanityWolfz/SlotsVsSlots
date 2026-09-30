@@ -163,7 +163,8 @@ export type SpriteId =
   | 'relicRosehip' | 'relicGraft' | 'relicFaraday' | 'relicStatic'
   | 'relicCapbells' | 'relicStacked' | 'relicGoldleaf' | 'relicExecutioner'
   | 'relicKiss' | 'relicHorseshoe' | 'relicUnderdog' | 'relicFirstblood'
-  | 'relicPiggy' | 'relicTrophy' | 'relicHolywater' | 'relicBash';
+  | 'relicPiggy' | 'relicTrophy' | 'relicHolywater' | 'relicBash'
+  | 'relicLoaded' | 'relicMarker' | 'relicHighLimit';
 
 export const SPRITES: Record<SpriteId, string[]> = {
   sword: [
@@ -4260,5 +4261,59 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '......KKDDDKK...',
     '........KKK.....',
     '................',
+  ],
+  relicLoaded: [
+    '................',
+    '.....KKKKKKKKK..',
+    '....KTWWWWWWWTK.',
+    '...KTWWWKKWWTIK.',
+    '..KTTTTTTTTTIHK.',
+    '.KTTTTTTTTTIHHK.',
+    '.KTKTTTTTKIHHHK.',
+    '.KTTTTTTTTIHMHK.',
+    '.KTTTTMTTTIHRHK.',
+    '.KTTTMRRTTIHrHK.',
+    '.KTTTTrTTTIHHHK.',
+    '.KTTTTTTTTIHHhK.',
+    '.KTKTTTTTKIHhK..',
+    '..KIIIIIIIHhK...',
+    '...KKKKKKKKK....',
+    '................',
+  ],
+  relicMarker: [
+    '..........KKK...',
+    '.........KYTGK..',
+    '..KKKKKKKYWGGgK.',
+    '.KWWWWWWWYGYGgK.',
+    '.KWTTTTTTYGGggK.',
+    '.KWTTTTTTTgggK..',
+    '.KWTHHHHHHTIK...',
+    '.KWTTTTTTTTIK...',
+    '.KWTHHHHTTTIK...',
+    '.KWTTTTTRRTIK...',
+    '.KWTTTTRTTrIK...',
+    '.KWNTNTRTTrIK...',
+    '.KWTNTTTrrTIK...',
+    '.KIIIIIIIIIIK...',
+    '..KKKKKKKKKK....',
+    '................',
+  ],
+  relicHighLimit: [
+    '.....K.KK.K.....',
+    '....KYKYYKGK....',
+    '....KYYRRGGK....',
+    '....KGGGGggK....',
+    '...KJJJJJJJVK...',
+    '...KJYVVVVYvK...',
+    '...KVvvvvvvvK...',
+    '...KYVGGGGVgK...',
+    '...KGgggggggK...',
+    '....KJYVVVVYvK..',
+    '....KVvvvvvvvK..',
+    '...KYVGGGGVgK...',
+    '...KGgggggggK...',
+    '...KJYVVVVYvK...',
+    '...KvvvvvvvvK...',
+    '....KKKKKKKK....',
   ],
 };

@@ -3664,6 +3664,58 @@ S.relicHolywater = lit(16, 16, [
   for (const y of [5, 8, 11]) { put(g, 1, y, 'S'); put(g, 2, y, 'L'); }
   S.relicBash = toRows(outline(g));
 }
+// relicLoaded (16x16): LOADED DICE, one chunky ivory die at an angle, a glowing red centre pip and a red weight in its side
+S.relicLoaded = lit(16, 16, [
+  '................',
+  '................',
+  '.....TWWWWWWWT..',
+  '....TWWWKKWWTI..',
+  '...TTTTTTTTTIH..',
+  '..TTTTTTTTTIHH..',
+  '..TKTTTTTKIHHH..',
+  '..TTTTTTTTIHMH..',
+  '..TTTTMTTTIHRH..',
+  '..TTTMRRTTIHrH..',
+  '..TTTTrTTTIHHH..',
+  '..TTTTTTTTIHHh..',
+  '..TKTTTTTKIHh...',
+  '...IIIIIIIHh....',
+]);
+// relicMarker (16x16): MARKER, a cream IOU slip with ink lines, a blue signature, a red stamp and a gold chip clipped on
+S.relicMarker = lit(16, 16, [
+  '................',
+  '..........YTG...',
+  '.........YWGGg..',
+  '..WWWWWWWYGYGg..',
+  '..WTTTTTTYGGgg..',
+  '..WTTTTTTTggg...',
+  '..WTHHHHHHTI....',
+  '..WTTTTTTTTI....',
+  '..WTHHHHTTTI....',
+  '..WTTTTTRRTI....',
+  '..WTTTTRTTrI....',
+  '..WNTNTRTTrI....',
+  '..WTNTTTrrTI....',
+  '..IIIIIIIIII....',
+]);
+// relicHighLimit (16x16): HIGH LIMIT, a tall purple-and-gold chip stack (one chip askew) crowned in gold
+S.relicHighLimit = lit(16, 16, [
+  '................',
+  '.....Y.YY.G.....',
+  '.....YYRRGG.....',
+  '.....GGGGgg.....',
+  '....JJJJJJJV....',
+  '....JYVVVVYv....',
+  '....Vvvvvvvv....',
+  '....YVGGGGVg....',
+  '....Gggggggg....',
+  '.....JYVVVVYv...',
+  '.....Vvvvvvvv...',
+  '....YVGGGGVg....',
+  '....Gggggggg....',
+  '....JYVVVVYv....',
+  '....vvvvvvvv....',
+]);
 /** Ticket stub (24x16): notched ends, 1px rim lit top-left, perforation, icon on the left, mark on the stub. */
 function voucher(pal, icon, mark) {
   const g = grid(24, 16);
@@ -4274,6 +4326,7 @@ const DIMS = {
   relicGraft: 16, relicFaraday: 16, relicStatic: 16, relicCapbells: 16, relicStacked: 16,
   relicGoldleaf: 16, relicExecutioner: 16, relicKiss: 16, relicHorseshoe: 16, relicUnderdog: 16,
   relicFirstblood: 16, relicPiggy: 16, relicTrophy: 16, relicHolywater: 16, relicBash: 16,
+  relicLoaded: 16, relicMarker: 16, relicHighLimit: 16,
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -4397,7 +4450,8 @@ export type SpriteId =
   | 'relicRosehip' | 'relicGraft' | 'relicFaraday' | 'relicStatic'
   | 'relicCapbells' | 'relicStacked' | 'relicGoldleaf' | 'relicExecutioner'
   | 'relicKiss' | 'relicHorseshoe' | 'relicUnderdog' | 'relicFirstblood'
-  | 'relicPiggy' | 'relicTrophy' | 'relicHolywater' | 'relicBash';
+  | 'relicPiggy' | 'relicTrophy' | 'relicHolywater' | 'relicBash'
+  | 'relicLoaded' | 'relicMarker' | 'relicHighLimit';
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

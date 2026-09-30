@@ -20,6 +20,7 @@ import {
   needsChoice,
   offerBets,
   allInStake,
+  betStakes,
   interestOn,
   placeBet,
   clearBet,
@@ -45,9 +46,8 @@ import { COLORS, H, W } from '../present/layout';
 import { artId, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 import { heroSprite } from './menus';
-import { BET_STAKES, betProfit, describeBet, type SideBet } from '../core/bets';
-/** The stake buttons: two fixed stakes, then ALL IN (-1). */
-const STAKE_BTNS = [...BET_STAKES, -1];
+import { betProfit, describeBet, type SideBet } from '../core/bets';
+
 
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus' | 'choice';
 
@@ -703,7 +703,7 @@ export class RunScreens {
     this.betOffer = offerBets(run, this.base());
     this.betOffer.forEach((_, i) => {
       const cx = W / 2 + (i === 0 ? -440 : 440);
-      STAKE_BTNS.forEach((s, k) => {
+      [...betStakes(run), -1].forEach((s, k) => {
         const b = this.btn(s < 0 ? 'ALL IN' : `${s}`, cx - 90 + k * 84 + (s < 0 ? 6 : 0), 694, s < 0 ? 96 : 72, 28, () => this.placeSideBet(i, s));
         b.bet = [i, s];
         this.buttons.push(b);
@@ -961,7 +961,7 @@ export class RunScreens {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
       drawText(ctx, `${rounds(last.turns)}  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}${chips}${rocks}`, W / 2, 60, 2, COLORS.textDim);
-      if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${betProfit(last.bet)} CHIPS` : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, W / 2, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
+      if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${betProfit(last.bet)} CHIPS` : last.bet.refunded ? 'SIDE BET BUSTED: YOUR MARKER COVERS IT' : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, W / 2, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
     }
     this.drawMap(ctx, 158, time);
     const spoils = this.draftKind === 'spoils';

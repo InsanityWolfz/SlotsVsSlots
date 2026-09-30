@@ -58,7 +58,13 @@ export const RELICS: Record<RelicId, RelicDef> = {
   trophy: { id: 'trophy', name: 'TROPHY BELT', text: '+10 MAX HP FOR EVERY FIGHT YOU WIN', sprite: 'relicTrophy' },
   holywater: { id: 'holywater', name: 'HOLY WATER', text: 'THE FIRST CHEAT ON YOUR REELS EACH FIGHT WASHES OFF', sprite: 'relicHolywater' },
   bash: { id: 'bash', name: 'SHIELD BASH', text: 'YOUR LEFTOVER SHIELD HITS BACK FOR HALF EACH TURN', sprite: 'relicBash' },
+  // Side bets (EXPERT_PLAYTEST_6 E11): relics that change which bet you want.
+  loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY X0.5 MORE', sprite: 'relicLoaded' },
+  marker: { id: 'marker', name: 'MARKER', text: 'THE FIRST SIDE BET YOU BUST EACH ACT IS REFUNDED', sprite: 'relicMarker' },
+  highlimit: { id: 'highlimit', name: 'HIGH LIMIT', text: 'SIDE BET STAKES DOUBLE: 4, 10 OR ALL IN UP TO 40', sprite: 'relicHighLimit' },
 };
+/** LOADED DICE: extra pay on every side bet. */
+export const LOADED_PAY = 0.5;
 
 /**
  * A relic's card text on a given slot machine: meter relics speak your machine's language
@@ -123,8 +129,8 @@ export const BONUS = { wheel: 0.028, rush: 0.012 };
 export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9, uncommonMax: 12, grandChips: 15 };
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
-  common: ['clover', 'battery', 'fang', 'bandage', 'crown', 'graft', 'firstblood', 'piggy', 'trophy', 'bash'],
-  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater'],
+  common: ['clover', 'battery', 'fang', 'bandage', 'crown', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker'],
+  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass'],
 };
 

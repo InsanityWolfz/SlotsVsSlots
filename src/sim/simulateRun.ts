@@ -72,6 +72,10 @@ const RELIC_VALUE: Record<RelicId, number> = {
   underdog: 8,
   firstblood: 7.5,
   piggy: 5,
+  // The official sim doesn't bet: the bet relics are dead picks for it.
+  loaded: 0.5,
+  marker: 0.5,
+  highlimit: 0.5,
   trophy: 6,
   holywater: 6,
   bash: 5.5,

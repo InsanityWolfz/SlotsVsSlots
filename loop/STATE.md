@@ -962,3 +962,20 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - FOLD HIM EARLY: offered 0–63% (machines that overshoot 40% rarely see it), return 39–105% (small n);
   - GREEN is identical with and without the bet (the gate: Dealer win ±2).
 - Tests: 185 (bets.test.ts covers the new kinds).
+
+### Iteration 53 (2026-09-30): EXPERT_PLAYTEST_6 E11, bet relics
+- **Three relics** that change which bet you want (the art agent drew the sprites: relicLoaded, relicMarker, relicHighLimit):
+  - **LOADED DICE** (common): every side bet pays ×0.5 more, shown on the card. The playtester's +1× would make every bet ~165%.
+  - **MARKER** (common): the first side bet you bust each act (each loop in endless) is refunded. "SIDE BET BUSTED: YOUR MARKER COVERS IT".
+  - **HIGH LIMIT** (uncommon): stakes double, 4 / 10 / ALL IN up to 40 (100 in endless).
+- BOOKIE (a 3rd bet) was dropped: the table has two card slots.
+- The official sim doesn't bet, so it values these at 0.5 (dead picks for it).
+- **`bets.ts 300` with LOADED DICE as the start relic** (the start pick is replaced, so baselines are ~30):
+  | bettor | returns | run win change |
+  |---|---|---|
+  | cautious (5, keep 10) | 123–144% | +0.3 to +1.4 (bets rarely) |
+  | always 5 | 126–138% | −3 to +6 |
+  | always ALL IN | 126–135% | −2 to +8, MIDAS −8 |
+
+  A real build-around for players who bet.
+- Tests: 186 (bet relics in bets.test.ts).

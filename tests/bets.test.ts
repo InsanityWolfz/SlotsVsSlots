@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
 import { betState, newTrack, trackEvent } from '../src/core/bets';
 import { Fight } from '../src/core/fight';
-import { allInStake, betsOpen, clearBet, createRun, fightConfig, finishFight, offerBets, placeBet } from '../src/core/run';
+import { allInStake, betStakes, betsOpen, clearBet, createRun, fightConfig, finishFight, offerBets, placeBet } from '../src/core/run';
 
 describe('SIDE BETS', () => {
   it('each kind settles on its own condition', () => {
@@ -85,5 +85,29 @@ describe('SIDE BETS', () => {
     expect(offerBets(run, base).every((b) => b.pay === 3)).toBe(true);
     run.betStreak = 2;
     expect(offerBets(run, base).every((b) => b.pay === 4)).toBe(true);
+  });
+
+  it('bet relics: LOADED DICE pays x0.5 more, HIGH LIMIT doubles the stakes, MARKER refunds the first bust in an act', () => {
+    const base = defaultConfig();
+    const run = createRun(base, 99, 'knight');
+    run.pendingStart = null;
+    run.player.chips = 60;
+    const plain = offerBets(run, base).map((b) => b.pay);
+    run.bets = null;
+    run.player.relics.push('loaded', 'highlimit', 'marker');
+    expect(offerBets(run, base).map((b) => b.pay)).toEqual(plain.map((x) => x + 0.5));
+    expect(betStakes(run)).toEqual([4, 10]);
+    expect(allInStake(run)).toBe(40);
+    // A bet you can't win: land 99 jackpots.
+    placeBet(run, 0, 10);
+    run.bet = { kind: 'jackpot', target: 99, pay: 2, stake: 10 };
+    let fight: Fight;
+    let seed = 1;
+    do fight = new Fight(fightConfig(run, base), seed++);
+    while ((() => { while (!fight.over) fight.step(); return fight.winner !== 'player'; })());
+    const before = run.player.chips;
+    const rec = finishFight(run, fight);
+    expect(rec.bet?.refunded).toBe(true);
+    expect(run.player.chips - before - (rec.chips ?? 0)).toBe(10);
   });
 });

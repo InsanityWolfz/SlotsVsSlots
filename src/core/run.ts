@@ -19,11 +19,12 @@ import {
   RELICS,
   RUSH,
   type Enabler,
+  LOADED_PAY,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
 import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
-import { ALL_IN_STAKE, BETS, betPayout, betsFrom, dealerBets, betState, HOT_HAND, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
+import { ALL_IN_STAKE, BET_STAKES, BETS, betPayout, betsFrom, dealerBets, betState, HOT_HAND, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
 
@@ -171,7 +172,7 @@ export interface FightRecord {
   /** What was bought at the Cashier after this fight. */
   bought?: DraftOption[];
   /** SIDE BET placed on this fight, and whether it paid. */
-  bet?: PlacedBet & { won: boolean };
+  bet?: PlacedBet & { won: boolean; refunded?: boolean };
   /** The BIG CHOICE taken after this (boss) fight. */
   choice?: BigChoiceId;
 }
@@ -231,6 +232,8 @@ export interface RunState {
   /** SIDE BETS on the next fight: the table's offer (keyed to the fight) and the bet you placed. */
   bets?: { key: string; offer: SideBet[] } | null;
   bet?: PlacedBet | null;
+  /** MARKER: the act (and loop) whose first busted bet was refunded. */
+  markerUsed?: string;
   /** HOT HAND: side bets won in a row (a bust resets it). */
   betStreak?: number;
   /** MASTERWORK: these symbols can't gain levels. */
@@ -600,9 +603,11 @@ export function offerBets(run: RunState, base: GameConfig): SideBet[] {
     all.push({ t, won: f.winner === 'player' });
   }
   // The Dealer has his own table (win before his FINAL HAND; survive an ALL IN).
-  const offer = cfg.enemy.boss === 'dealer'
+  const raw = cfg.enemy.boss === 'dealer'
     ? dealerBets(all)
     : betsFrom(all.filter((x) => x.won).map((x) => x.t), BETS.samples, rng, cfg.enemy.hp, run.betStreak ?? 0);
+  // LOADED DICE: every line pays more (shown on the card).
+  const offer = run.player.relics.includes('loaded') ? raw.map((b) => ({ ...b, pay: b.pay + LOADED_PAY })) : raw;
   run.bets = { key, offer };
   return offer;
 }
@@ -619,7 +624,11 @@ export function placeBet(run: RunState, i: number, stake: number): boolean {
 }
 
 /** ALL IN: the stake that button would place (every chip you hold, capped). */
-export const allInStake = (run: RunState) => Math.min(run.endless ? ALL_IN_STAKE.endlessCap : ALL_IN_STAKE.cap, run.player.chips + (run.bet?.stake ?? 0));
+export const allInStake = (run: RunState) => Math.min((run.endless ? ALL_IN_STAKE.endlessCap : ALL_IN_STAKE.cap) * stakeMul(run), run.player.chips + (run.bet?.stake ?? 0));
+/** HIGH LIMIT doubles every stake. */
+export const stakeMul = (run: RunState) => (run.player.relics.includes('highlimit') ? 2 : 1);
+/** The table's fixed stakes for this run. */
+export const betStakes = (run: RunState) => BET_STAKES.map((s) => s * stakeMul(run));
 
 /** Interest paid after a win on the chips you hold then (chips on the table don't count). */
 export const interestOn = (chips: number) => Math.min(CHIPS.interestCap, Math.floor(chips / CHIPS.interestPer));
@@ -878,6 +887,13 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     const won = betState(run.bet, fight.betTrack, true) === 'won';
     if (won) run.player.chips += betPayout(run.bet);
     record.bet = { ...run.bet, won };
+    // MARKER: the first bust each act (each loop in endless) is refunded.
+    const act = `${run.act}:${run.endless?.loop ?? 0}`;
+    if (!won && run.player.relics.includes('marker') && run.markerUsed !== act) {
+      run.markerUsed = act;
+      run.player.chips += run.bet.stake;
+      record.bet.refunded = true;
+    }
     run.betStreak = won ? Math.min(HOT_HAND.max, (run.betStreak ?? 0) + 1) : 0;
   }
   run.bet = null;
