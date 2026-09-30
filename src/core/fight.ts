@@ -52,7 +52,9 @@ const SHUFFLE_SWAPS = 5;
 /** The Dealer's deals (EXPERT_PLAYTEST_2 E): a card on your payline, ALL IN, or RAISE. */
 const DEALS: DealCard[] = ['card', 'allin', 'raise'];
 /** ALL IN is capped at this share of your max HP. */
-const ALL_IN_CAP = 0.45;
+const ALL_IN_CAP = 0.55;
+/** ALL IN always lands at least this share of your max HP: the telegraphed hit is THE threat (EXPERT_PLAYTEST_4 C3). */
+const ALL_IN_FLOOR = 0.3;
 
 /** Counterfeit coins last this many of your turns. */
 const FAKE_TURNS = 3;
@@ -387,7 +389,8 @@ export class Fight {
     this.playerTurnHp = 0;
     if (side === 'player') this.thawShield.clear();
     // The Dealer's big turns are the announced ones (ALL IN, RAISE): only those may hit up to the boss cap.
-    if (side === 'enemy') this.bigTurn = this.dealerAllIn || this.raiseEnemy;
+    // (Your own turn is never a big one: marks biting on your spin stay under the quiet cap.)
+    this.bigTurn = side === 'enemy' && (this.dealerAllIn || this.raiseEnemy);
     if (this.turn === 1) for (const relic of this.openers) events.push({ type: 'relic', side: 'player', relic });
     if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
@@ -501,7 +504,8 @@ export class Fight {
           const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
           if (c.symbol === 'sword' || c.symbol === 'seven') hand += this.cfg.base[c.symbol] ?? 0;
         }
-      let amount = Math.max(UNIT, Math.min(hand, Math.round((foe.maxHp * ALL_IN_CAP) / UNIT) * UNIT));
+      const floor = Math.round((foe.maxHp * ALL_IN_FLOOR) / UNIT) * UNIT;
+      let amount = Math.max(UNIT, floor, Math.min(hand, Math.round((foe.maxHp * ALL_IN_CAP) / UNIT) * UNIT));
       if (this.raiseEnemy) {
         amount *= 2;
         this.raiseEnemy = false;

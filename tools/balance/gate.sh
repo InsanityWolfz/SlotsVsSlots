@@ -8,3 +8,5 @@ grep -A5 "PACING per machine" tools/out/${T}_e2.txt | tail -4
 grep "death fight#" tools/out/${T}_e2.txt
 grep -A4 "HP% into bosses" tools/out/${T}_e2.txt | tail -4 | cut -c1-110
 grep "^act [123]:" tools/out/${T}_e2.txt | sort -u
+# Finale gate (replaces "HP into the Dealer"): telegraphed killing blows, big untelegraphed turns.
+npx tsx tools/balance/expert4_dealer.ts $((N/4)) 2>/dev/null | grep "DEALER n" | sed 's/biggest.*killing/killing/' | cut -c1-120

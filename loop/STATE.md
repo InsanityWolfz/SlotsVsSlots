@@ -701,3 +701,18 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - The sim takes all queued choices (`while`); the policy always rides.
 - endless.ts 400: loops cleared p50 knight 1, tesla 2, thorn 2, joker 3; p90 3-6.
 - Tests: 180.
+
+### Iteration 41 (2026-09-30): E11 BRIAR bosses, E12 finale gate, ALL IN floor
+- **E11:** tried thorn mirror 10.5 → 6.5 (+house 1.05). The Mirror only went 48 → 40 turns, but the win rate went 59 → 71 and WHITE to 52: BRIAR's damage is reactive (thorns need hits), so HP cuts make it easier, not faster. Reverted. Long BRIAR boss fights are accepted as its identity.
+- **E12:** "HP into the Dealer" is retired as a target (survivor bias + healing). gate.sh now prints the finale line from `expert4_dealer.ts` (killing blow = ALL IN %, ALL IN HP damage).
+- **Fix:** the Dealer's quiet cap resets on your own turn (marks biting after an ALL IN turn could reach 60%).
+- **ALL IN:** floor 30% of your max HP, cap 55%.
+- **Finale gate (N 250):** killing blow = ALL IN only 10-18% (target 50%); ALL IN HP damage p50 15-24% (shields soak it). **Open**: consider ALL IN piercing shields, or giving the telegraph more weight.
+- **tuesday.ts 1000:**
+  | machine | WHITE | GREEN | Dealer |
+  |---|---|---|---|
+  | knight | 43.1 | 14.3 | 52.8 |
+  | tesla | 43.9 | 15.0 | 54.7 |
+  | thorn | 45.8 | 14.9 | 49.3 |
+  | joker | 41.8 | 16.8 | 56.2 |
+  | AVG | 43.7 | 15.3 | 53.3 |
