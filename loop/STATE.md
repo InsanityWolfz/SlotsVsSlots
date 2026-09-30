@@ -979,3 +979,7 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 
   A real build-around for players who bet.
 - Tests: 186 (bet relics in bets.test.ts).
+- **Follow-up (same iteration):** the gate showed WHITE −3 to −5 on four machines (KNIGHT 43.1 → 39.0, MIDAS 38.6 → 33.8). The bet relics were dead picks crowding relic drafts, the Cashier and Relic Rush for anyone who doesn't bet.
+  - Fix: `relicFits` offers the bet relics only once you've placed a side bet this run (`run.betsPlaced`).
+  - tuesday.ts 1000 is back to exactly the post-E10 table: WHITE 42.6, GREEN 16.1, Dealer 48.7.
+  - The gate.sh BRIAR row read 19.8 / 19.8 in that run: a harness glitch. tuesday.ts alone gave 45.8.

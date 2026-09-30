@@ -232,6 +232,8 @@ export interface RunState {
   /** SIDE BETS on the next fight: the table's offer (keyed to the fight) and the bet you placed. */
   bets?: { key: string; offer: SideBet[] } | null;
   bet?: PlacedBet | null;
+  /** Side bets placed this run (the bet relics show up after the first). */
+  betsPlaced?: number;
   /** MARKER: the act (and loop) whose first busted bet was refunded. */
   markerUsed?: string;
   /** HOT HAND: side bets won in a row (a bust resets it). */
@@ -620,6 +622,7 @@ export function placeBet(run: RunState, i: number, stake: number): boolean {
   if (run.player.chips < stake) return false;
   run.player.chips -= stake;
   run.bet = { ...b, stake };
+  run.betsPlaced = (run.betsPlaced ?? 0) + 1;
   return true;
 }
 
@@ -1361,10 +1364,14 @@ export function pickRelics(pool: RelicId[], n: number, rng: Rng): RelicId[] {
 }
 
 /** Build relics are only offered once you own what they amplify (and meter relics only to machines with a meter). */
+const BET_RELICS: ReadonlySet<RelicId> = new Set<RelicId>(['loaded', 'marker', 'highlimit']);
+
 export function relicFits(run: RunState, r: RelicId): boolean {
   const def = RELICS[r];
   // Slot machine relics only on their machine; charm relics once you own the charm (or your machine favours it).
   if (def.retired || MACHINE_EXCLUDE[r]?.includes(run.cabinet)) return false;
+  // Bet relics show up once you've placed a side bet this run (dead picks otherwise).
+  if (BET_RELICS.has(r) && !run.betsPlaced) return false;
   if (def.machine && def.machine !== run.cabinet) return false;
   if (def.charm && charmCount(run.player, def.charm) === 0) return false;
   const need = BUILD_ENABLER[r];
