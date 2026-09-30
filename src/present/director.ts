@@ -409,6 +409,7 @@ export class Director {
     m.clearRowFx();
     const near = e.nearMiss && this.s.juice.nearMiss;
     this.lastSpin[e.side] = { frozen: e.frozen, locked: e.locked, hexed: e.hexed ?? [] };
+    this.symBonus[e.side] = e.symBonus ?? {};
     await m.spin(
       e.stops,
       near,
@@ -465,6 +466,9 @@ export class Director {
     }
   }
 
+  /** Per-fight bonuses on each cell of a symbol this spin (WAR DRUM), added to the shown number. */
+  private symBonus: Partial<Record<SideId, Partial<Record<SymbolId, number>>>> = {};
+
   /** The numbers on a landed payline symbol: its value (bottom-left) and its charm's tag (top-right). */
   private setTag(side: SideId, r: number, jammed = false): void {
     const m = this.s.machines[side];
@@ -476,7 +480,8 @@ export class Director {
     // Enemy effect symbols (slime, ice, claws...) don't pay a number: the banner says what they do.
     if (!player && WRITERS.has(cell.symbol)) return;
     const base = BASE[cell.symbol] ?? 0;
-    const value = lv ? playerSymValue(lv, cell.symbol, base) : !player && cell.symbol === 'shield' ? Math.round(base * this.s.enemyShield) : base;
+    const bonus = this.symBonus[side]?.[cell.symbol] ?? 0;
+    const value = (lv ? playerSymValue(lv, cell.symbol, base) : !player && cell.symbol === 'shield' ? Math.round(base * this.s.enemyShield) : base) + bonus;
     const charm = cell.enh && cell.enh !== 'spiked' && !(cell.faked && cell.faked > 0) && m.hexed[r] <= 0 ? cell.enh : undefined;
     const lvl = charm ? (player ? charmLevel(lv, charm, this.s.ticket) : 1) : 1;
     if (!value && !charm) return;

@@ -91,3 +91,21 @@ describe('relic activations are visible', () => {
     expect(paid).toBe(true);
   });
 });
+
+describe('relic audit fixes', () => {
+  it('WAR DRUM adds to EACH sword and the spin reports it so the sword numbers can show it', async () => {
+    const { Fight } = await import('../src/core/fight');
+    const { fightConfig } = await import('../src/core/run');
+    const run = createRun(base, 11, 'knight');
+    run.player.relics.push('drum');
+    const cfg = fightConfig(run, base);
+    cfg.enemy.hp = 99999;
+    cfg.player.hp = cfg.player.startHp = 99999;
+    const f = new Fight(cfg, 5);
+    let shown = 0;
+    for (let i = 0; i < 60 && !f.over; i++)
+      for (const e of f.step().events) if (e.type === 'spin' && e.side === 'player' && (e.symBonus?.sword ?? 0) > 0) shown = Math.max(shown, e.symBonus!.sword!);
+    expect(shown).toBeGreaterThan(0);
+    expect(shown).toBeLessThanOrEqual(10);
+  });
+});

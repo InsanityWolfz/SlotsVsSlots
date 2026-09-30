@@ -491,3 +491,14 @@ User playtest notes and decisions:
 
 Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - 2026-09-29 follow-up (user): deaths still resolve at the end of the turn, but NO new spin starts once a machine is at 0 HP (e.g. a SHIELD BASH kill at turn start), and nothing hits a machine that already fell this turn (attacks, lightning, thorns). tuesday.ts 1500: WHITE 28.4 / GREEN 12.7 / Dealer 58.2 (unchanged).
+
+### Iteration 31 (2026-09-29): relic audit
+- New harnesses:
+  - `tools/balance/relic_audit.ts [N]` runs every relic with vs without it (seeded, on a machine and charm it fits), and counts how often the game SHOWS it firing.
+  - `relic_audit_run.ts` checks the charm-fit relics (GRAFT, KISS, STACKED) and the after-fight relics (BANDAGE, PIGGY, TROPHY).
+- Result: all 33 relics work.
+  - **STACKED DECK** never showed: a relic pop is now added when a charmed wild fills double.
+  - **WAR DRUM** worked but its buff was invisible on the sword numbers. It now adds +2 to EACH sword per paying spin (max +10 each; was +5 to the whole sword match, max +25). The spin event carries `symBonus.sword` and the payline sword numbers include it.
+- tuesday.ts 1500: knight WHITE 27.7 / GREEN 11.1 / Dealer 57.8 (was ~28-29 / ~11 / ~52-58: noise). AVG WHITE 28.2, GREEN 12.8, Dealer 59.4.
+- Pacing data for the expert: turns per fight in act 1 are 17.9-24.2; act 2 ranges from 6.8 (JAX) to 24.8 (BRIAR).
+- Tests: 170.

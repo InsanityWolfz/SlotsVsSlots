@@ -38,7 +38,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   chalice: { id: 'chalice', name: 'BLOOD CHALICE', text: 'HEALING PAST FULL HP BECOMES SHIELD', sprite: 'relicChalice' },
   sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: 'ENEMY ABILITIES CHARGE 1 TURN SLOWER', sprite: 'relicSandglass' },
   // Slot machine relics: each machine gets an identity relic and a heal that feeds off its own mechanic.
-  drum: { id: 'drum', name: 'WAR DRUM', text: 'EACH SPIN THAT PAYS: SWORDS +5 THIS FIGHT (MAX +25)', sprite: 'relicDrum', machine: 'knight' },
+  drum: { id: 'drum', name: 'WAR DRUM', text: 'EACH SPIN THAT PAYS: EVERY SWORD +2 THIS FIGHT (MAX +10)', sprite: 'relicDrum', machine: 'knight' },
   chainmail: { id: 'chainmail', name: 'CHAINMAIL', text: 'LEFTOVER SHIELD HEALS YOU 10% OF IT EACH TURN', sprite: 'relicChainmail', machine: 'knight' },
   vault: { id: 'vault', name: "KING'S VAULT", text: 'AFTER EACH WIN, ONE OF YOUR SWORDS TURNS GOLD FOR GOOD', sprite: 'relicVault', machine: 'midas' },
   decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR MIDAS TOUCH ALSO SPREADS TO THE CELLS ABOVE AND BELOW', sprite: 'relicDecree', machine: 'midas' },
@@ -96,7 +96,7 @@ export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overchar
 
 /** New-relic numbers (playtest/RELIC_PROPOSALS.md, tuned in the engine). */
 export const NEW_RELIC = {
-  drumStep: UNIT / 2,
+  drumStep: UNIT / 5,
   drumCap: 5,
   chainmailShare: 0.1,
   rosehipShare: 0.1,

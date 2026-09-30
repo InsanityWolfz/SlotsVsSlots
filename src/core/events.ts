@@ -36,6 +36,8 @@ export type CombatEvent =
       hexed?: boolean[];
       /** This spin landed a bonus (three chase symbols): it pays nothing and the reels spin again. */
       bonus?: VoucherKind;
+      /** Per-fight bonus added to EACH cell of a symbol this spin (WAR DRUM on swords), so its number shows it. */
+      symBonus?: Partial<Record<SymbolId, number>>;
     }
   | {
       type: 'attack';

@@ -408,6 +408,7 @@ export class Fight {
       }
     });
     const hexed = me.hexed.map((t) => t > 0);
+    const drumNow = side === 'player' && me.relics.has('drum') ? NEW_RELIC.drumStep * this.drum : 0;
     const score = this.score(me, line);
     // Dead symbols lining up isn't a tease — except slime, which can cleanse.
     const nearMiss = isNearMiss(line) && (me.casts.has(line[0]) || line[0] === 'slime' || !DEAD.has(line[0]));
@@ -422,6 +423,7 @@ export class Fight {
       lucky,
       ...(luckyWilds.length ? { luckyWilds } : {}),
       ...(hexed.some(Boolean) ? { hexed } : {}),
+      ...(drumNow ? { symBonus: { sword: drumNow } } : {}),
     });
     if (score.touched?.length) events.push({ type: 'touch', side, cells: score.touched });
     const sentBefore = events.length;
@@ -440,6 +442,7 @@ export class Fight {
       const earthed = line.filter((s, r) => s === 'wild' && this.isGrounded(me, r)).length * (this.meter.perWild ?? 0);
       // STACKED DECK: a charmed WILD fills double.
       const charmed = me.relics.has('stacked') ? wilds.filter((r) => me.reels[r].cells[me.reels[r].stop]?.symbol === 'wild' && this.paylineEnh(me, r)).length : 0;
+      if (charmed) events.push({ type: 'relic', side, relic: 'stacked' });
       if (wilds.length || earthed) this.fillMeter(me, (wilds.length + charmed) * (this.meter.perWild ?? 0), wilds, events, earthed);
     }
     // Jackpot Bell: a jackpot fills your meter (TESLA: a full special; BRIAR: the jackpot again into the bank).
@@ -629,9 +632,9 @@ export class Fight {
       // MIDAS TOUCH: each gold touch on a sword or shield counts as a gold charm.
       if (touchMeter && (g.symbol === 'sword' || g.symbol === 'shield'))
         for (const r of g.reels) if (touchable(r)) gold += (this.touches.get(me.reels[r].cells[me.reels[r].stop]) ?? 0) * charmValue('gold', this.charmLvl(me, 'gold')) * copies;
-      // WAR DRUM: every paying spin this fight adds to your swords.
+      // WAR DRUM: every paying spin this fight adds to EACH sword (shown on the sword's number).
       if (has('drum') && g.symbol === 'sword' && this.drum > 0 && g.base > 0) {
-        g.base += NEW_RELIC.drumStep * this.drum;
+        g.base += NEW_RELIC.drumStep * this.drum * g.reels.length;
         fired.add('drum');
       }
       // GOLD charms in a group ADD (x2 + x2 + x2 = x6), then multiply with the double/jackpot.
