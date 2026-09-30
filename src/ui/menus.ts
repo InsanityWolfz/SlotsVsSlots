@@ -450,7 +450,7 @@ export class Menus {
       if (hasSprite(icon)) drawSprite(ctx, artId(icon), 172, y + 13, 1.5);
       const result = e.won
         ? e.acts >= 3
-          ? 'BEAT THE DEALER! TRUE ENDING'
+          ? e.loops ? `BEAT THE DEALER + ${e.loops} ENDLESS LOOP${e.loops > 1 ? 'S' : ''}` : 'BEAT THE DEALER! TRUE ENDING'
           : 'BEAT THE MIRROR! RUN CLEARED'
         : `KILLED BY ${e.killer ?? '???'}, FIGHT ${e.killerFight ?? e.fights + 1}/${e.total}`;
       drawText(ctx, result, 188, y + 13, 1.5, e.won ? '#ffd23f' : '#ff8a7a', { align: 'left' });

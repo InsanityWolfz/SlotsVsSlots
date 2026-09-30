@@ -75,6 +75,13 @@ export function textWidth(text: string, scale: number): number {
   return ([...text].length * (FONT_W + 1) - 1) * scale;
 }
 
+/** Short big numbers: 12.4K, 3.1M, 1.2B (endless loops get large). */
+export function fmtNum(n: number): string {
+  const a = Math.abs(n);
+  const f = (x: number, s: string) => `${(n < 0 ? -x : x).toFixed(x < 100 ? 1 : 0).replace(/\.0$/, '')}${s}`;
+  return a >= 1e9 ? f(a / 1e9, 'B') : a >= 1e6 ? f(a / 1e6, 'M') : a >= 1e4 ? f(a / 1e3, 'K') : String(Math.round(n));
+}
+
 export function drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, scale: number, color: string, o: TextOpts = {}): void {
   if (!text) return;
   const alpha = o.alpha ?? 1;

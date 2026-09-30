@@ -18,6 +18,7 @@ import {
   isShopNow,
   takeLegend,
   takeChoice,
+  letItRide,
   type BigChoice,
   leaveShop,
   needsChoice,
@@ -218,6 +219,7 @@ export class Game {
       onFight: (i) => this.beginRunFight(i),
       onNewRun: () => this.chooseCabinet(),
       onMenu: () => this.showMenu(),
+      onLetItRide: () => this.letItRide(),
       onWheelCollect: (o) => {
         if (!this.run) return;
         applyOption(this.run, o, false);
@@ -311,8 +313,17 @@ export class Game {
   }
 
   /** HISCORES: log the finished run (keeps the newest entries, but never drops a top-10 score). */
+  /** The hiscore entry of a Dealer win you LET RIDE (endless updates it instead of adding a second one). */
+  private rideEntry: ReturnType<typeof runEntry> | null = null;
   private recordRun(run: RunState): void {
-    this.profile.runs.push(runEntry(run, Date.now(), !!run.tutorial));
+    if (run.endless && this.rideEntry) {
+      Object.assign(this.rideEntry, runEntry(run, this.rideEntry.at, !!run.tutorial), { won: true });
+      this.saveProfile();
+      return;
+    }
+    const entry = runEntry(run, Date.now(), !!run.tutorial);
+    this.rideEntry = run.won ? entry : null;
+    this.profile.runs.push(entry);
     while (this.profile.runs.length > MAX_ENTRIES) {
       const top = new Set([...this.profile.runs].sort((a, b) => runScore(b) - runScore(a)).slice(0, 10));
       const i = this.profile.runs.findIndex((e) => !top.has(e));
@@ -529,7 +540,7 @@ export class Game {
       this.noteDiscoveries();
       this.recordRun(run);
       this.skipTutorial();
-      this.screens.setUnlockedNow(this.checkUnlocks(run));
+      this.screens.setUnlockedNow(run.endless ? [] : this.checkUnlocks(run));
       this.screens.showOver(run);
     }
     else if (run.bonusLog?.length) {
@@ -540,6 +551,16 @@ export class Game {
     } else this.afterBonus(record);
     if (this.screens.mode === 'draft') this.tip('draft', 'draft');
     this.syncButtons();
+  }
+
+  /** LET IT RIDE: after beating the Dealer, keep playing endless loops (the win is already recorded). */
+  private letItRide(): void {
+    const run = this.run;
+    if (!run || !run.won || run.endless) return;
+    letItRide(run);
+    this.newFight(false, null, fightConfig(run, this.cfg), true);
+    this.phase = 'between';
+    this.afterBonus(run.records[run.records.length - 1]);
   }
 
   /** After the bonus payouts: the legendary pick, elite spoils or the draft, as usual. */
@@ -707,7 +728,7 @@ export class Game {
         pulse: 0,
         pot: this.fight.pot,
         potPunch: 1,
-        fightLabel: this.run && inRun ? (this.run.depth >= actLength(this.run.act) ? 'BOSS' : `ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}`) : 'SANDBOX',
+        fightLabel: this.run && inRun ? (this.run.depth >= actLength(this.run.act) ? (this.run.endless ? `LOOP ${this.run.endless.loop} BOSS` : 'BOSS') : this.run.endless ? `LOOP ${this.run.endless.loop} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}` : `ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}`) : 'SANDBOX',
         allIn: false,
         reflect: 0,
         turnDamage: 0,

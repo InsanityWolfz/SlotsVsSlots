@@ -106,6 +106,8 @@ export type CombatEvent =
   | { type: 'lineCardUsed'; side: SideId; reel: number; card: LineCard }
   /** ALL IN telegraph: the Dealer's next attack is its whole hand. */
   | { type: 'allInArmed'; side: SideId; cap: number }
+  /** ENDLESS: LAST CALL (the fight ran long; the enemy hits harder every turn now). */
+  | { type: 'lastCall'; side: SideId }
   /** ACT 3 cover charge: the first enemy attack of the fight takes a cut that no shield blocks. */
   | { type: 'coverCharge'; side: SideId; amount: number }
   /** ALL IN: the Dealer throws its whole visible hand at you. */

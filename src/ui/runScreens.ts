@@ -168,6 +168,8 @@ export class RunScreens {
       onFight: (option: number) => void;
       onNewRun: () => void;
       onMenu: () => void;
+      /** ENDLESS: keep going after the Dealer. */
+      onLetItRide: () => void;
       /** BONUS WHEEL: the player took the prize (PASS just moves on). */
       onWheelCollect: (o: DraftOption) => void;
       onBuy: (index: number) => void;
@@ -566,7 +568,7 @@ export class RunScreens {
     this.choices = choices;
     this.open('choice');
     this.cards = choices.map((c, i) =>
-      this.hit(W / 2 + (i - 1) * 330, 380, 300, 330, () => {
+      this.hit(W / 2 + (i - (choices.length - 1) / 2) * 330, 380, 300, 330, () => {
         if (this.picked >= 0) return;
         this.picked = i;
         this.sounds.fanfareJackpot();
@@ -590,8 +592,9 @@ export class RunScreens {
   private drawChoice(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
     const set = BIG_SETS.findIndex((ids) => ids.includes(this.choices[0]?.id));
-    drawText(ctx, 'A BIG CHOICE', W / 2, 60, 6, COLORS.goldLight);
-    drawText(ctx, `${BIG_SET_NAMES[set] ?? ''}  -  PICK ONE. STRONG MOVES HAVE A PRICE.`, W / 2, 110, 2, COLORS.textDim);
+    const edge = this.choices[0]?.id === 'edge';
+    drawText(ctx, edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'A BIG CHOICE', W / 2, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
+    drawText(ctx, edge ? 'THE HOUSE RAISES THE STAKES. PICK A RULE; EACH ONE PAYS.' : `${BIG_SET_NAMES[set] ?? ''}  -  PICK ONE. STRONG MOVES HAVE A PRICE.`, W / 2, 110, 2, COLORS.textDim);
     this.cards.forEach((c, i) => {
       const ch = this.choices[i];
       if (!ch || c.scale <= 0.01) return;
@@ -621,7 +624,7 @@ export class RunScreens {
         drawText(ctx, 'SAFE', 0, -c.h / 2 + 15, 1.5, '#b6ff9a');
       }
       // The symbol / charm it touches, when there is one.
-      const icon = (ch.symbol ?? (ch.enh ? CHARM_SYMBOLS[ch.enh][0] : ch.id === 'meltDown' || ch.id === 'gildLot' ? 'sword' : ch.id === 'glassCannon' || ch.id === 'bloodPact' ? 'heart' : ch.id === 'secondWind' ? 'heart' : ch.id === 'sweepUp' ? 'rock' : 'shield')) as SpriteId;
+      const icon = (ch.symbol ?? (ch.enh ? CHARM_SYMBOLS[ch.enh][0] : ch.id === 'meltDown' || ch.id === 'gildLot' ? 'sword' : ch.id === 'glassCannon' || ch.id === 'bloodPact' ? 'heart' : ch.id === 'secondWind' ? 'heart' : ch.id === 'sweepUp' ? 'rock' : ch.id === 'edge' ? (ch.reward === 'legend' ? 'relicBell' : 'chip') : 'shield')) as SpriteId;
       drawSprite(ctx, icon, 0, -c.h / 2 + 70, 4);
       if (ch.enh) drawSprite(ctx, ENH_SPRITE[ch.enh], 0, -c.h / 2 + 70, 4);
       if (ch.id === 'meltDown' || ch.id === 'gildLot') drawSprite(ctx, ENH_SPRITE.gold, 0, -c.h / 2 + 70, 4);
@@ -714,6 +717,14 @@ export class RunScreens {
     this.run = run;
     this.open('over');
     this.buttons = [this.btn('MENU', W / 2 - 140, 650, 240, 60, () => this.cb.onMenu()), this.btn('NEW RUN', W / 2 + 140, 650, 240, 60, () => this.cb.onNewRun())];
+    // Beat the Dealer: CASH OUT (the two buttons above) or LET IT RIDE into endless loops.
+    if (run.won && run.act >= 3 && !run.endless) {
+      this.buttons = [
+        this.btn('MENU', W / 2 - 300, 650, 200, 60, () => this.cb.onMenu()),
+        this.btn('CASH OUT', W / 2 - 60, 650, 220, 60, () => this.cb.onNewRun()),
+        this.btn('LET IT RIDE', W / 2 + 220, 650, 280, 60, () => this.cb.onLetItRide()),
+      ];
+    }
   }
 
   hide(): void {
@@ -1328,7 +1339,8 @@ export class RunScreens {
   private drawOver(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
     const trueEnding = run.won && run.act >= 3;
-    drawText(ctx, trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, 6, run.won ? COLORS.goldLight : COLORS.danger);
+    const busted = !!run.endless;
+    drawText(ctx, busted ? `BUSTED ON LOOP ${run.endless!.loop}` : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     // DEATH RECAP: its own full-width line under the table (the most important line on a loss).
     const loss = !run.won ? run.records[run.records.length - 1] : undefined;

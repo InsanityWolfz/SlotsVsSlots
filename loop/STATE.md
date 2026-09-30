@@ -645,3 +645,17 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   | thorn | 42.2 | 13.5 | 46.5 |
   | joker | 38.1 | 15.7 | 58.8 |
   | AVG | 39.6 | 13.7 | 52.1 |
+
+### Iteration 38 (2026-09-29): ENDLESS mode (EXPERT_PLAYTEST_3 D/E12), built
+- **After a Dealer win:** CASH OUT or LET IT RIDE (`letItRide`; the win is already recorded, and the hiscore entry is updated with loops).
+- **A loop** (act 4) is 3 regulars from acts 2-3, plus a boss cycling House → Mirror → Dealer. Full heal per loop; a Cashier after fight 2.
+- **Scaling:** enemy HP × ENDLESS.hpBy[machine]^loop (knight 1.35, tesla 1.75, thorn 1.45, joker 1.45); damage × 1.13^loop.
+- **Rules:** LAST CALL after enemy turn 40 (+10%/turn, banner); a fight that stalls past 80 turns goes to the House.
+- **HOUSE EDGE pick at each loop start** (2 options, one pays +8 chips, one a legendary pick): FAST HANDS, LOADED REELS, HOUSE CUT, IRON BOSSES, EARLY BIRD, GLASS JAW.
+- **Numbers:** `fmtNum()` gives 12.4K / 3.1M for the HP bar and damage pops; damage and HP are clamped at 1e12.
+- **Hiscores:** "BEAT THE DEALER + N ENDLESS LOOPS"; score +1500 per loop.
+- **Gate** (`tools/balance/endless.ts 500`, riders only): loops cleared p50 2 for all four machines, p90 4-5.
+- tuesday.ts is unchanged (endless only follows a Dealer win).
+- Tests: 179 (tests/endless.test.ts).
+- **Last edit before the usage limit** (built, not yet browser-checked): edge cards centred for 2 choices; "HOUSE EDGE: LOOP N" heading; chip / legend icons.
+- **NEXT:** browser-check the edge screen, then spawn EXPERT_PLAYTEST_4 (verify endless + the E-batches, what's off now), then continue the loop.

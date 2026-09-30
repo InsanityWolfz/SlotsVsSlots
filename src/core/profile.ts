@@ -43,6 +43,8 @@ export interface RunEntry {
   maxHp: number;
   chips: number;
   tutorial?: boolean;
+  /** ENDLESS: loops cleared after LET IT RIDE. */
+  loops?: number;
 }
 
 export interface Profile {
@@ -80,12 +82,13 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
     maxHp: run.player.maxHp,
     chips: run.player.chips,
     ...(tutorial ? { tutorial: true } : {}),
+    ...(run.endless ? { loops: run.endless.loop - 1 } : {}),
   };
 }
 
 /** HISCORE: 100 per fight won, +1000 for clearing the run, +1000 more for beating the Dealer; x1.5 per stake level. */
 export function runScore(e: RunEntry): number {
-  const base = e.fights * 100 + (e.won ? 1000 : 0) + (e.won && e.acts >= 3 ? 1000 : 0);
+  const base = e.fights * 100 + (e.won ? 1000 : 0) + (e.won && e.acts >= 3 ? 1000 : 0) + (e.loops ?? 0) * 1500;
   return Math.round(base * (1 + 0.5 * e.stake));
 }
 
@@ -142,6 +145,7 @@ export function sanitizeProfile(raw: unknown): Profile {
         maxHp: num(e.maxHp, 0, 99999),
         chips: num(e.chips, 0, 9999),
         ...(e.tutorial === true ? { tutorial: true } : {}),
+        ...(typeof e.loops === 'number' ? { loops: num(e.loops, 0, 999) } : {}),
       });
     }
   return { found: { relics: [...new Set(relicIds(f.relics))], charms: [...new Set(charmIds(f.charms))] }, runs };

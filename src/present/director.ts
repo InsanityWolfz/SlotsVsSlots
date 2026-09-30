@@ -11,6 +11,7 @@ import type { Stage } from './stage';
 import { ABILITY_UI } from './hud';
 import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
+import { fmtNum } from '../render/text';
 import { BOMB, RELICS } from '../core/relics';
 import { charmLevel, charmTag, CHARM_COLOR, playerSymValue } from '../core/charms';
 import { defaultConfig } from '../core/config';
@@ -185,6 +186,9 @@ export class Director {
         this.s.sounds.stingerMedium();
         this.s.gutter.allInCap = e.cap;
         return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, `ITS WHOLE HAND: UP TO ${e.cap}`, BANNER_Y, 3);
+      case 'lastCall':
+        this.s.sounds.stingerMedium();
+        return this.banner('LAST CALL!', '#ff6a5a', 1.2, 0.3, 'THE HOUSE HITS HARDER EVERY TURN NOW', BANNER_Y, 3);
       case 'coverCharge': {
         const c = this.machineCenter(e.side);
         this.s.sounds.coin(1);
@@ -738,7 +742,7 @@ export class Director {
       this.bg(this.popText('THORNS!', target.x - 90, MACHINE_TOP - 22, 3, '#9dff6a', 14, 0.35));
     }
     if (e.note === 'echo') this.bg(this.popText('ECHO!', target.x + 90, MACHINE_TOP - 22, 2, '#fff27a', 14, 0.35));
-    if (e.hpDamage > 0) this.bg(this.popText(`-${e.hpDamage}`, target.x, MACHINE_TOP + 40, this.tierScale(), color, 60));
+    if (e.hpDamage > 0) this.bg(this.popText(`-${fmtNum(e.hpDamage)}`, target.x, MACHINE_TOP + 40, this.tierScale(), color, 60));
     else this.bg(this.popText('BLOCKED!', target.x, MACHINE_TOP + 40, 4, '#9fd0ff', 40));
     this.settle(e.from, e.reels);
     await this.c.wait(0.25);
@@ -871,7 +875,7 @@ export class Director {
     this.s.particles.burst({ x: target.x, y: target.y, count: soft ? 18 : 60, colors: [COLORS.energy, '#ffffff', '#fff6c8'], speed: [200, 700], kind: 'spark', gravity: 400, life: [0.2, 0.6], size: [3, 5] });
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
     h.energyFlash = 0;
-    this.bg(this.popText(`-${e.hpDamage}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
+    this.bg(this.popText(`-${fmtNum(e.hpDamage)}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
     // Full: the bolt crackles (re-strikes 3 times). Soft: it just fades out.
     if (!soft)
       for (let i = 0; i < 3; i++) {
@@ -1472,7 +1476,7 @@ export class Director {
     if (playerWins && e.amount >= 8 * UNIT)
       this.s.particles.burst({ x: target.x, y: target.y - 40, count: 80, colors: ['#ffd23f', '#ffe08a', '#fff6c8'], speed: [200, 600], angle: -Math.PI / 2, spread: Math.PI, gravity: 900, life: [0.8, 1.4], size: [4, 7], kind: 'confetti' });
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
-    this.bg(this.popText(`-${e.hpDamage}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
+    this.bg(this.popText(`-${fmtNum(e.hpDamage)}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
     await this.c.wait(0.5);
   }
 

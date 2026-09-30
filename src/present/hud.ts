@@ -1,7 +1,7 @@
 import { UNIT, type AbilityDef, type AbilityKind, type SideId } from '../core/config';
 import type { MeterKind } from '../core/cabinets';
 import { artId, drawSprite, type SpriteId } from '../render/sprites';
-import { drawText } from '../render/text';
+import { drawText, fmtNum } from '../render/text';
 import { COLORS, HUD_TOP, MACHINE_CX } from './layout';
 
 export const HUD_W = 330;
@@ -162,7 +162,7 @@ export class HudView {
       [this.hp / this.maxHp, COLORS.hp],
     ], this.hpFlash);
     const low = this.hp / this.maxHp <= 0.25 && this.hp > 0;
-    drawText(ctx, `${Math.ceil(this.hp)}/${this.maxHp}`, hx + 6 + (hb.w - 6) / 2, hb.y + hb.h / 2 + 1, 2, low && Math.sin(time * 10) > 0 ? '#ffb0b0' : COLORS.text);
+    drawText(ctx, `${fmtNum(Math.ceil(this.hp))}/${fmtNum(this.maxHp)}`, hx + 6 + (hb.w - 6) / 2, hb.y + hb.h / 2 + 1, 2, low && Math.sin(time * 10) > 0 ? '#ffb0b0' : COLORS.text);
 
     // Shield bar (no max; fills to a soft cap).
     const sb = this.shieldBar();

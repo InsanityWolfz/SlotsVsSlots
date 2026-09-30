@@ -25,12 +25,13 @@ import {
   takeStart,
   type DraftOption,
   type RunState,
+  letItRide,
 } from '../core/run';
 
 export type DraftPolicy = 'greedy' | 'random' | 'relic';
 
 /** Balance probes (tools/balance/builds.ts): start with a relic, draft only one charm, or force a big choice. */
-export const SIM_BIAS: { startRelic?: RelicId; noStart?: boolean; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
+export const SIM_BIAS: { ride?: boolean; onEnd?: (run: RunState) => void; startRelic?: RelicId; noStart?: boolean; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
 
 const RELIC_VALUE: Record<RelicId, number> = {
   mirror: 10,
@@ -147,6 +148,9 @@ export function choiceValue(run: RunState, c: BigChoice): number {
       return 6.5;
     case 'secondWind':
       return 4 + (1 - hp) * 6;
+    case 'edge':
+      // Endless house edges: legendaries beat chips; the harsh edges cost more.
+      return (c.reward === 'legend' ? 6 : 3) - (c.edge === 'frail' || c.edge === 'heal' ? 2 : c.edge === 'fast' ? 1 : 0);
   }
 }
 export const CHOICE_LOG: Record<string, [number, number]> = {};
@@ -278,6 +282,9 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
         if (fight.winner !== 'player') a3.die++;
       }
       finishFight(run, fight);
+      // ENDLESS probe: LET IT RIDE after the Dealer (a busted endless run keeps its win).
+      if (SIM_BIAS.ride && run.over && run.won && !run.endless) letItRide(run);
+      if (run.endless && run.endless.loop > 50) run.over = true;
       if (run.over && !run.won) {
         deaths[depth]++;
         killed[arch] = (killed[arch] ?? 0) + 1;
@@ -320,6 +327,7 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
         if (isShopNow(run)) shop(run, policy, pick);
       }
     }
+    SIM_BIAS.onEnd?.(run);
     if (run.won) wins++;
     for (const id of (run as RunState & { took?: string[] }).took ?? []) {
       const e = (CHOICE_LOG[id] ??= [0, 0]);

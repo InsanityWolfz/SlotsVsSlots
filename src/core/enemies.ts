@@ -262,7 +262,9 @@ export const DEPTH_HP_2 = [52, 62, 73, 85, 97].map((h) => h * UNIT);
  */
 export const DEPTH_HP_3 = [120, 135, 150, 165, 180].map((h) => h * UNIT);
 export const ACT3_DEPTH_MUL = [1, 1.1, 1.2, 1.3, 1.4];
-export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5 };
+export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5, 4: 3 };
+/** ENDLESS (act 4) tuning: per loop, enemy HP x hp^loop and damage x dmg^loop (EXPERT_PLAYTEST_3 D). */
+export const ENDLESS = { hp: 1.45, hpBy: { knight: 1.35, tesla: 1.75, thorn: 1.45, joker: 1.45 } as Record<string, number>, dmg: 1.13, lastCall: 40, lastCallStep: 0.1, maxTurns: 80, clamp: 1e12, edgeChips: 8 };
 export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
 /** Act 3 (ITERATION_12 playtest, commit at GREEN): Dealer HP = 7 x typical-spin power + 60 (+4/relic), less bursty strip -> ~62% Dealer win. */
 export const TUNE = { coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, act2Power: 1.6, rampPerTurn: 0.06, act3Heal: 0.5, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act1Swords: 1, enemyShield: 0.5, act3Power: 4, act3Flat: 20 * UNIT, dealerPower: 10, dealerFlat: 50 * UNIT, act3Sevens: 4, bossHp: 95 * UNIT, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 30 * UNIT, mirrorPerRelic: 4 * UNIT, mirrorSpecialWeight: 1, powerElastic: 0.5 };
@@ -357,14 +359,15 @@ export const BRANCH_DEPTHS = new Set([1, 2, 3]);
  * The run's map: per depth, the enemy options (1, or 2 at a fork), then the boss. Options at a
  * depth never repeat an archetype offered at the previous depth; the opener is always gentle.
  */
-export function generateRunPaths(rng: Rng, act = 1): EnemyDef[][] {
+export function generateRunPaths(rng: Rng, act = 1, loop = 1): EnemyDef[][] {
   const out: EnemyDef[][] = [];
   let prev = new Set<string>();
-  const inAct = ARCHETYPES.filter((a) => actsOf(a).includes(act));
+  // ENDLESS (act 4): regulars from acts 2 and 3.
+  const inAct = act >= 4 ? ARCHETYPES.filter((a) => actsOf(a).some((x) => x >= 2)) : ARCHETYPES.filter((a) => actsOf(a).includes(act));
   const len = actLength(act);
   for (let depth = 0; depth < len; depth++) {
     let pool = inAct.filter((a) => a.minDepth <= depth && !prev.has(a.id));
-    if (depth === 0) pool = act === 1 ? inAct.filter((a) => a.id === 'slime' || a.id === 'frost') : act === 2 ? inAct.filter((a) => ACT2_NEW.has(a.id) && a.minDepth === 0) : inAct.filter((a) => ACT3_NEW.has(a.id));
+    if (depth === 0 && act < 4) pool = act === 1 ? inAct.filter((a) => a.id === 'slime' || a.id === 'frost') : act === 2 ? inAct.filter((a) => ACT2_NEW.has(a.id) && a.minDepth === 0) : inAct.filter((a) => ACT3_NEW.has(a.id));
     if (pool.length === 0) pool = inAct.filter((a) => a.minDepth <= depth);
     const branch = BRANCH_DEPTHS.has(depth);
     const n = branch ? Math.min(2, pool.length) : 1;
@@ -372,7 +375,7 @@ export function generateRunPaths(rng: Rng, act = 1): EnemyDef[][] {
     // Act 2 forks always show at least one of the new faces.
     // Act 2 and 3 forks always show at least one of the act's new faces.
     const NEW = act === 3 ? ACT3_NEW : ACT2_NEW;
-    if (act >= 2 && !picks.some((a) => NEW.has(a.id))) {
+    if (act >= 2 && act < 4 && !picks.some((a) => NEW.has(a.id))) {
       const fresh = pool.filter((a) => NEW.has(a.id));
       if (fresh.length) picks = [rng.pick(fresh), ...picks].slice(0, n);
     }
@@ -389,6 +392,8 @@ export function generateRunPaths(rng: Rng, act = 1): EnemyDef[][] {
     out.push(opts);
     prev = new Set(picks.map((a) => a.id));
   }
-  out.push([makeEnemy(BOSSES[act] ?? BOSS, len, rng, true, act)]);
+  // ENDLESS: the boss cycles THE HOUSE -> THE MIRROR -> THE DEALER.
+  const boss = act >= 4 ? [BOSS, MIRROR, DEALER][(Math.max(1, loop) - 1) % 3] : (BOSSES[act] ?? BOSS);
+  out.push([makeEnemy(boss, len, rng, true, act)]);
   return out;
 }

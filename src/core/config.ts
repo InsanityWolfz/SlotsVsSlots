@@ -167,6 +167,14 @@ export interface SideConfig {
   startMarks?: number;
   /** Which act this side comes from (enemy). */
   act?: number;
+  /** ENDLESS: enemy damage multiplier (1.12^loop), LAST CALL / 80-turn cap on, and a starting shield (HOUSE EDGE). */
+  dmgMul?: number;
+  endless?: boolean;
+  startShield?: number;
+  /** HOUSE EDGE "EARLY BIRD": the enemy spins first. */
+  first?: boolean;
+  /** HOUSE EDGE "HOUSE CUT": your healing multiplier. */
+  healMul?: number;
   /** Relics this side carries (the Mirror copies one at GREEN stake). */
   relics?: RelicId[];
 }

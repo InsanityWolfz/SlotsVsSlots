@@ -26,7 +26,7 @@ import {
 } from './relics';
 import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
-import { TUNE } from './enemies';
+import { ENDLESS, TUNE } from './enemies';
 import { isNearMiss, multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {
   BONUS_SYMBOLS,
@@ -213,6 +213,8 @@ export class Fight {
   get act3Regular(): boolean {
     return (this.cfg.enemy.act ?? 1) >= 3 && !this.isBoss && !this.isMirror && !this.isDealer;
   }
+  /** ENDLESS: LAST CALL has been announced. */
+  private lastCall = false;
   /** The act 3 cover charge has been taken this fight. */
   private coverTaken = false;
   /** The Mirror's damage so far this turn (its whole turn is capped). */
@@ -295,6 +297,9 @@ export class Fight {
     // The Mirror plays your machine but never your junk (and fires no specials).
     if (this.isMirror) e.casts.clear();
     if (this.isBoss) this.pot = POT.seed;
+    // ENDLESS house edges: bosses start shielded; enemies spin first.
+    if (this.cfg.enemy.startShield) this.sides.enemy.shield = this.cfg.enemy.startShield;
+    if (this.cfg.enemy.first) this.next = 'enemy';
     // ACT 3 regulars open with their ability on their first turn (it never fired in 38% of act 3 fights: EXPERT_PLAYTEST_3 C3).
     if (this.act3Regular && this.sides.enemy.ability) this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - 1);
     if (this.isDealer) this.nextDeal = this.rng.pick(DEALS);
@@ -552,6 +557,13 @@ export class Fight {
       this.resetShield(this.sides.enemy, events);
     }
 
+    // ENDLESS: a fight that stalls past 80 turns goes to the House.
+    if (!this.over && this.cfg.enemy.endless && this.turn >= ENDLESS.maxTurns) {
+      this.sides.player.hp = 0;
+      this.winner = 'enemy';
+      events.push({ type: 'death', side: 'player' });
+      events.push({ type: 'fightEnd', winner: 'enemy', turns: this.turn });
+    }
     this.next = other(side);
     return { turn: this.turn, side, events };
   }
@@ -1084,6 +1096,15 @@ export class Fight {
   ): number {
     // Nothing hits a machine that already fell this turn (its death resolves at the end of the turn).
     if (foe.hp <= 0) return 0;
+    // ENDLESS: enemy damage grows per loop; LAST CALL after enemy turn 40 (+10% per turn).
+    if (me.side === 'enemy' && this.cfg.enemy.endless && amount > 0 && note !== 'reflect') {
+      const late = Math.floor(this.turn / 2) - ENDLESS.lastCall;
+      if (late > 0 && !this.lastCall) {
+        this.lastCall = true;
+        events.push({ type: 'lastCall', side: me.side });
+      }
+      amount = Math.min(ENDLESS.clamp, Math.round((amount * (this.cfg.enemy.dmgMul ?? 1) * (late > 0 ? 1 + ENDLESS.lastCallStep * late : 1)) / UNIT) * UNIT || amount);
+    }
     // ATTRITION (act 3): the longer a fight runs, the harder the enemy hits (+6% per enemy turn after the 2nd, max x2).
     if (me.side === 'enemy' && (this.cfg.enemy.act ?? 1) >= 3 && note !== 'reflect' && amount > 0) {
       const ramp = Math.min(TUNE.rampMax, 1 + TUNE.rampPerTurn * Math.max(0, Math.floor(this.turn / 2) - 2));
@@ -1164,6 +1185,7 @@ export class Fight {
   private heal(me: Combatant, amount: number, source: HealSource, events: CombatEvent[]): void {
     // ACT 3: the House doesn't comp. Your healing is halved, so you reach the Dealer worn down (EXPERT_PLAYTEST_2 G8).
     if (me.side === 'player' && (this.cfg.enemy.act ?? 1) >= 3) amount = Math.max(1, Math.round(amount * TUNE.act3Heal));
+    if (me.side === 'player' && this.cfg.player.healMul) amount = Math.max(1, Math.round(amount * this.cfg.player.healMul));
     const n = Math.min(amount, me.maxHp - me.hp);
     if (n > 0) {
       me.hp += n;
@@ -1181,6 +1203,7 @@ export class Fight {
   private damage(target: Combatant, amount: number, ignoreShield: boolean) {
     const blocked = ignoreShield ? 0 : Math.min(target.shield, amount);
     target.shield -= blocked;
+    amount = Math.min(ENDLESS.clamp, amount);
     let hpDamage = Math.min(target.hp, amount - blocked);
     // ONE-TURN CAP on you: no turn takes more than 40% of your max HP (60% for bosses): no turn-2 one-shots (EXPERT_PLAYTEST_3 E2).
     if (target.side === 'player') {

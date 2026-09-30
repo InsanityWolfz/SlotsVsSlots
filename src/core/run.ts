@@ -1,5 +1,5 @@
 import { cloneConfig, defaultConfig, emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_HP_MUL_2, generateRunPaths, makeEnemy, TUNE, type EnemyDef } from './enemies';
+import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_HP_MUL_2, generateRunPaths, makeEnemy, TUNE, type EnemyDef, ENDLESS } from './enemies';
 import { MAX_STAKE, MIRROR_COPYABLE, mirrorCanUse, STAKE } from './stakes';
 import { Fight as FightCtor, type Fight } from './fight';
 import {
@@ -215,6 +215,8 @@ export interface RunState {
   tutorial?: boolean;
   /** A boss fell: pick 1 of these BIG CHOICES (before the legendary pick). */
   pendingChoice?: BigChoice[] | null;
+  /** ENDLESS (LET IT RIDE after the Dealer): the loop you're on and the HOUSE EDGES you've taken. */
+  endless?: { loop: number; edges: EdgeId[] };
   /** Big-choice sets already offered this run. */
   choiceSets?: number[];
   /** GLASS CANNON: paying groups x1.5, no healing between fights. */
@@ -543,9 +545,59 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     const copy = mirrorCopy(run);
     if (copy) cfg.enemy.relics = [copy];
   }
+  // ENDLESS: damage grows per loop; HOUSE EDGES bend the fight.
+  if (run.endless) {
+    const edges = new Set(run.endless.edges);
+    cfg.enemy.endless = true;
+    cfg.enemy.dmgMul = Math.pow(ENDLESS.dmg, run.endless.loop);
+    if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
+    if (edges.has('writer')) cfg.enemy.strips = cfg.enemy.strips.map((s) => {
+      const w = (Object.keys(s) as SymbolId[]).find((k) => WRITER_SYMS.has(k));
+      return w ? { ...s, [w]: (s[w] ?? 0) + 1 } : s;
+    });
+    if (edges.has('heal')) cfg.player.healMul = 0.5;
+    if (edges.has('shield') && e.isBoss) cfg.enemy.startShield = unitsRound(hp * 0.2);
+    if (edges.has('first')) cfg.enemy.first = true;
+  }
   cfg.seed = null;
   return cfg;
 }
+
+/** Enemy symbols that write on your machine (for the WRITER house edge). */
+const WRITER_SYMS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'coin', 'lock', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake'] as SymbolId[]);
+
+/** LET IT RIDE: after beating the Dealer, keep going (the win is already recorded). */
+export function letItRide(run: RunState): void {
+  if (!run.won || run.endless) return;
+  run.over = false;
+  run.endless = { loop: 1, edges: [] };
+  startEndlessLoop(run);
+}
+
+/** A new endless loop: 3 fights and a boss (cycling House, Mirror, Dealer), after a HOUSE EDGE pick. */
+function startEndlessLoop(run: RunState): void {
+  const loop = run.endless!.loop;
+  run.act = 4;
+  run.depth = 0;
+  const rng = new Rng((run.seed ^ Math.imul(loop + 40, 0x3c6ef372)) >>> 0);
+  run.paths = generateRunPaths(rng, 4, loop);
+  run.enemies = run.paths.map((opts) => opts[0]);
+  run.chosen = run.paths.map((opts) => opts.length === 1);
+  run.player.hp = run.player.maxHp;
+  run.actIntro = false;
+  const open = EDGES.filter((x) => !run.endless!.edges.includes(x));
+  const pick = rng.shuffle(open.length >= 2 ? open : EDGES).slice(0, 2);
+  run.pendingChoice = pick.map((edge, i): BigChoice => ({ id: 'edge', edge, reward: i === 0 ? 'chips' : 'legend' }));
+}
+
+export const EDGE_TEXT: Record<EdgeId, { title: string; text: string }> = {
+  fast: { title: 'FAST HANDS', text: 'ENEMY ABILITIES CHARGE 1 TURN FASTER' },
+  writer: { title: 'LOADED REELS', text: 'ENEMIES GET +1 OF THEIR CHEAT SYMBOL PER REEL' },
+  heal: { title: 'HOUSE CUT', text: 'YOUR HEALING IS HALVED' },
+  shield: { title: 'IRON BOSSES', text: 'BOSSES START WITH A 20% SHIELD' },
+  first: { title: 'EARLY BIRD', text: 'ENEMIES SPIN FIRST' },
+  frail: { title: 'GLASS JAW', text: '-10% MAX HP' },
+};
 
 /**
  * An enemy's real HP for this run. Bosses grow with the relics you bring in; the Mirror is sized to
@@ -557,7 +609,8 @@ export const TUTORIAL_OPENER_MUL = 0.75;
 export function enemyHp(run: RunState, e: EnemyDef): number {
   const gold = e.isBoss && run.stake >= STAKE.fasterAll ? STAKE.goldBossHp : 1;
   const tutorial = run.tutorial && run.act === 1 && e.depth === 0 ? TUTORIAL_OPENER_MUL : 1;
-  return unitsRound(baseEnemyHp(run, e) * gold * tutorial);
+  const loop = run.endless ? Math.pow(ENDLESS.hpBy[run.cabinet] ?? ENDLESS.hp, run.endless.loop) : 1;
+  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop));
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {
@@ -761,7 +814,10 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   if (run.bonusLog.length) record.bonuses = run.bonusLog.map((b) => b.label);
   run.depth++;
   if (run.depth > actLength(run.act)) {
-    if (run.act < runActs(run)) startNextAct(run);
+    if (run.endless) {
+      run.endless.loop++;
+      startEndlessLoop(run);
+    } else if (run.act < runActs(run)) startNextAct(run);
     else {
       run.over = true;
       run.won = true;
@@ -1096,7 +1152,8 @@ export function takeSpoils(run: RunState, relic: RelicId): void {
   run.pendingSpoils = null;
 }
 
-export const isShopNow = (run: RunState) => !run.over && (RUN.shopAfter.includes(run.depth) || run.actIntro);
+export const isShopNow = (run: RunState) => (run.endless ? !run.over && run.depth === 2 : isShopNowActs(run));
+const isShopNowActs = (run: RunState) => !run.over && (RUN.shopAfter.includes(run.depth) || run.actIntro);
 export const rerollCost = (run: RunState) => CHIPS.rerollBase + run.shopRerolls;
 /** Shield per House turn your current chips would give in the final fight. */
 export const chipShield = (chips: number) => Math.floor(chips / CHIPS.stackPer) * UNIT;
@@ -1291,9 +1348,16 @@ export const charmTagFor = (run: RunState, enh: Enh) => charmTag(enh, charmLevel
  * After the House and the Mirror you pick 1 of 3 build-defining moves from one set (never the same set
  * twice in a run). Strong options carry a real, visible cost; each set has one safe pick.
  */
-export type BigChoiceId = 'armsRace' | 'masterwork' | 'whetstone' | 'meltDown' | 'gildLot' | 'polish' | 'cleanCut' | 'twinReel' | 'sweepUp' | 'glassCannon' | 'bloodPact' | 'secondWind';
+export type BigChoiceId = 'edge' | 'armsRace' | 'masterwork' | 'whetstone' | 'meltDown' | 'gildLot' | 'polish' | 'cleanCut' | 'twinReel' | 'sweepUp' | 'glassCannon' | 'bloodPact' | 'secondWind';
+/** HOUSE EDGES: endless-mode rules you take on, each paying a reward. */
+export type EdgeId = 'fast' | 'writer' | 'heal' | 'shield' | 'first' | 'frail';
+export const EDGES: EdgeId[] = ['fast', 'writer', 'heal', 'shield', 'first', 'frail'];
+
 export interface BigChoice {
   id: BigChoiceId;
+  /** HOUSE EDGE picks: the edge and its reward. */
+  edge?: EdgeId;
+  reward?: 'chips' | 'legend';
   /** Rolled target: a symbol, a charm or a reel. */
   symbol?: SymbolId;
   enh?: Enh;
@@ -1316,6 +1380,10 @@ const SYM_NAME = (s: SymbolId) => (s === 'goldbar' ? 'GOLD BARS' : `${s.toUpperC
 export function describeChoice(run: RunState, c: BigChoice): { title: string; rule: string; cost: string } {
   const meter = !!CABINETS[run.cabinet].meter;
   switch (c.id) {
+    case 'edge': {
+      const t = EDGE_TEXT[c.edge!];
+      return { title: t.title, rule: c.reward === 'legend' ? 'PICK A LEGENDARY RELIC' : `+${ENDLESS.edgeChips} CHIPS`, cost: `HOUSE EDGE: ${t.text}` };
+    }
     case 'armsRace':
       return { title: 'ARMS RACE', rule: '+1 LEVEL TO ALL YOUR SYMBOLS', cost: `-${BIG.armsRaceHp} MAX HP` };
     case 'masterwork':
@@ -1390,6 +1458,14 @@ export function takeChoice(run: RunState, c: BigChoice): void {
     p.hp = Math.min(p.hp, p.maxHp);
   };
   switch (c.id) {
+    case 'edge': {
+      run.endless?.edges.push(c.edge!);
+      if (c.edge === 'frail') loseMax(Math.round(p.maxHp * 0.1 / UNIT) * UNIT);
+      const legends = [...LEGENDARY].filter((x) => !p.relics.includes(x) && relicFits(run, x));
+      if (c.reward === 'legend' && legends.length) run.pendingLegend = new Rng((run.seed ^ (run.endless?.loop ?? 1) * 977) >>> 0).shuffle(legends).slice(0, RUN.legendPick);
+      else p.chips += ENDLESS.edgeChips;
+      break;
+    }
     case 'armsRace':
       levelSyms(run).forEach((s) => up(s));
       loseMax(BIG.armsRaceHp);
