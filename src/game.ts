@@ -6,7 +6,7 @@ import { actLength, RUN_FIGHTS, TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { Fight } from './core/fight';
 import { betProfit, betProgress, describeBet, newTrack } from './core/bets';
-import { dailyCabinet, dailyKey, dailySeed } from './core/daily';
+import { dailyCabinet, dailyKey, dailySeed, dailySpent } from './core/daily';
 import { turnRow, type TurnRow } from './core/log';
 import { REFLECT_MIN, RELICS } from './core/relics';
 import {
@@ -496,7 +496,7 @@ export class Game {
   /** THE DAILY RUN: today's seed and machine, base stake. The try is spent now (quitting doesn't give it back). */
   startDaily(): void {
     const key = dailyKey();
-    if (this.profile.lastDaily === key) return;
+    if (dailySpent(key, this.profile.lastDaily)) return;
     this.profile.lastDaily = key;
     this.saveProfile();
     this.startRun(dailySeed(key), dailyCabinet(key), 0);
@@ -763,7 +763,7 @@ export class Game {
         pulse: 0,
         pot: this.fight.pot,
         potPunch: 1,
-        fightLabel: this.run && inRun ? (this.run.depth >= actLength(this.run.act) ? (this.run.endless ? `LOOP ${this.run.endless.loop} BOSS` : 'BOSS') : this.run.endless ? `LOOP ${this.run.endless.loop} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}` : `ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}`) : 'SANDBOX',
+        fightLabel: this.run && inRun ? (this.run.depth >= actLength(this.run.act) ? (this.run.endless ? `LOOP ${this.run.endless.loop} BOSS` : 'BOSS') : this.run.endless ? `LOOP ${this.run.endless.loop} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}` : `${this.run.daily ? 'DAILY - ' : ''}ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}`) : 'SANDBOX',
         allIn: false,
         reflect: 0,
         turnDamage: 0,

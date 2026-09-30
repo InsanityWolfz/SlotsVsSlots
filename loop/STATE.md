@@ -1072,3 +1072,29 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - **The menu** is five rows (NEW RUN, DAILY, TUTORIAL, COLLECTION, HISCORES), each with its own icon; the daily uses the chip sprite.
 - The run history already exists: HISCORES → RECENT.
 - Tests: 190 (tests/daily.test.ts).
+
+### Iteration 60 (2026-09-30): EXPERT_PLAYTEST_8 batch 1 (E1, E2, E3, E7), the daily finished
+- EXPERT_PLAYTEST_8 read:
+  - FINAL HAND works: the Dealer is the peak per attempt (takes 49% of runs that reach him; Mirror 27%, House 16%);
+  - SAFE vs LONG is a real choice, but LOADED DICE solves it (SAFE 133–143%);
+  - ALL IN at the Dealer is dominant;
+  - the daily is deterministic but WHITE (it never reaches the Dealer), has no social surface, and the clock can be wound back for retries;
+  - it retires the "turns after FINAL HAND ≤ 5" gate.
+- **E1:** THE DAILY RUN goes on to the Dealer (runActs = 3 for a daily) at base-stake numbers.
+  - Its Mirror is the eased GREEN one (without the copied relic).
+  - Its act 3 (the Dealer included) has TUNE.dailyAct3 0.55 HP.
+  - `expert8_daily.ts 120 8` (fixed fights, 8 choice variants per day), mean win per day:
+    | variant | mean win | days with no winner |
+    |---|---|---|
+    | act 3 as GREEN | 10.7% | 59 |
+    | + eased Mirror | 11.6% | |
+    | + dailyAct3 0.7 | 17.7% | |
+    | + dailyAct3 0.55 | 22.9% | 36 of 120 (30%, gate 25%: fixed-fight variance) |
+
+    By machine: thorn 28, tesla 12, knight 33, joker 19, midas 20.
+- **E2:**
+  - the start screen reads "THE DAILY RUN - 09-30" and the fight header "DAILY - ACT 1 FIGHT 1/5";
+  - the run-over screen shows a share line, e.g. "SLOTS VS. SLOTS DAILY 09-30 | BRIAR | 2450 | WWWWWB WWWWL", with a COPY RESULT button (clipboard).
+- **E3:** the daily key is UTC (friends share a day). A key at or before the newest one played is SPENT (`dailySpent`), so winding the clock back gives no retries.
+- **E7:** "FREEZES 1 REEL" (singular); the daily row names the hero ("DAILY: BRIAR").
+- Tests: 192 (daily guard, share line, act 3).

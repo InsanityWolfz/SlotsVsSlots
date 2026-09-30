@@ -415,7 +415,8 @@ const DECK_MARKS_CAP = 6;
 
 /** Acts in this run: GREEN stake and up adds act 3 (THE DEALER). */
 /** GREEN and up always go on to ACT 3 (the Dealer). */
-export const runActs = (run: RunState) => (run.stake >= STAKE.act3 ? 3 : ACTS);
+/** Acts in this run: GREEN+ and THE DAILY RUN go on to the Dealer (act 3). */
+export const runActs = (run: RunState) => (run.stake >= STAKE.act3 || run.daily ? 3 : ACTS);
 /** Fights in the base run (2 acts, bosses included) — the most fights any act 1-2 run can have. */
 export const TOTAL_FIGHTS = ACTS * (actLength(1) + 1);
 /** Fights in this run, bosses included. */
@@ -711,7 +712,9 @@ export function enemyHp(run: RunState, e: EnemyDef): number {
   const gold = e.isBoss && run.stake >= STAKE.fasterAll ? STAKE.goldBossHp : 1;
   const tutorial = run.tutorial && run.act === 1 && e.depth === 0 ? TUTORIAL_OPENER_MUL : 1;
   const loop = run.endless ? Math.pow(ENDLESS.hpBy[run.cabinet] ?? ENDLESS.hp, run.endless.loop) : 1;
-  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop));
+  // THE DAILY RUN plays act 3 at base-stake numbers: its act 3 (the Dealer included) is lighter.
+  const daily = run.daily && run.act >= 3 && !run.endless ? TUNE.dailyAct3 : 1;
+  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily));
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {
@@ -741,7 +744,8 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
   // The Mirror grows with your machine and (like the House) with every relic you carry in.
   const cm = BOSS_MUL[run.cabinet];
   // GREEN+: the Mirror copies one of your relics, so it gets less HP (it was the run's real wall: EXPERT_PLAYTEST_6 E10).
-  if (e.boss === 'mirror') return unitsRound((unitsRound(TUNE.mirrorPower * cm.mirror * sizingPower(run, 'mirror')) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length) * (run.stake >= STAKE.mirrorRelic ? TUNE.greenMirror : 1));
+  // THE DAILY RUN goes on to the Dealer too, so its Mirror is the eased one (without the copied relic).
+  if (e.boss === 'mirror') return unitsRound((unitsRound(TUNE.mirrorPower * cm.mirror * sizingPower(run, 'mirror')) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length) * (run.stake >= STAKE.mirrorRelic || run.daily ? TUNE.greenMirror : 1));
   if (e.boss === 'dealer') return unitsRound(TUNE.dealerPower * cm.dealer * sizingPower(run, 'dealer')) + TUNE.dealerFlat + TUNE.mirrorPerRelic * run.player.relics.length;
   // BLACK+: the House cheats (faster skims, payline bombs, no chip shield) instead of just being tougher.
   const house = run.stake >= STAKE.houseDirty ? Math.sqrt(cm.house) : cm.house;

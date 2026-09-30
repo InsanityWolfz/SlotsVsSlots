@@ -4,10 +4,23 @@
  */
 import { CABINET_ORDER, type CabinetId } from './cabinets';
 
-/** Today's key, e.g. "2026-09-30" (the player's local date). */
+/** Today's key, e.g. "2026-09-30" (UTC, so everyone shares the same day). */
 export function dailyKey(d = new Date()): string {
   const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`;
+}
+
+/** The try is spent for this day, or for any day before the newest one played (winding the clock back doesn't help). */
+export const dailySpent = (key: string, lastPlayed?: string) => !!lastPlayed && key <= lastPlayed;
+
+/** The share line for a finished daily: day, hero, score and each act's fights (W won, B boss won, L the loss). */
+export function dailyShare(key: string, hero: string, score: number, records: { act?: number; won: boolean; depth: number }[], actLen: (act: number) => number): string {
+  const acts = new Map<number, string>();
+  for (const r of records) {
+    const a = r.act ?? 1;
+    acts.set(a, (acts.get(a) ?? '') + (!r.won ? 'L' : r.depth >= actLen(a) ? 'B' : 'W'));
+  }
+  return `SLOTS VS. SLOTS DAILY ${key.slice(5)} | ${hero} | ${score} | ${[...acts.values()].join(' ')}`;
 }
 
 /** The day's run seed (FNV-1a of the key). */

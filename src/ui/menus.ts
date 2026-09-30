@@ -2,7 +2,7 @@ import type { Sounds } from '../audio/sounds';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import type { Enh, RelicId } from '../core/config';
 import { runScore, type Profile, type RunEntry } from '../core/profile';
-import { dailyCabinet, dailyKey } from '../core/daily';
+import { dailyCabinet, dailyKey, dailySpent } from '../core/daily';
 import { LEGENDARY, RELICS, RELIC_TIER } from '../core/relics';
 import { CHARM_SYMBOLS, charmRuleText } from '../core/charms';
 import { STAKES } from '../core/stakes';
@@ -132,8 +132,9 @@ export class Menus {
     // THE DAILY RUN: today's slot machine, one try a day (then its score).
     const today = dailyKey();
     const run = this.profile().runs.find((e) => e.daily === today);
-    const done = this.profile().lastDaily === today;
-    const daily = this.btn(run ? `DAILY: ${runScore(run)}` : done ? 'DAILY: SPENT' : `DAILY: ${CABINETS[dailyCabinet(today)].name}`, x, 380, 380, 54, () => !done && this.cb.onDaily(), 3);
+    const done = dailySpent(today, this.profile().lastDaily);
+    const label = run ? `DAILY: ${runScore(run)}` : done ? 'DAILY: SPENT' : `DAILY: ${CABINETS[dailyCabinet(today)].hero}`;
+    const daily = this.btn(label, x, 380, 380, 54, () => !done && this.cb.onDaily(), label.length > 14 ? 2 : 3);
     daily.toggled = done;
     this.btn('TUTORIAL', x, 442, 380, 54, () => this.cb.onTutorial(), 3).opts.idlePulse = first;
     this.btn('COLLECTION', x, 504, 380, 54, () => this.showCollection(), 3);
