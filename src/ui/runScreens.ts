@@ -19,6 +19,8 @@ import {
   isRelicDraft,
   needsChoice,
   offerBets,
+  allInStake,
+  interestOn,
   placeBet,
   clearBet,
   rerollCost,
@@ -44,6 +46,8 @@ import { artId, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 import { heroSprite } from './menus';
 import { BET_STAKES, betProfit, describeBet, type SideBet } from '../core/bets';
+/** The stake buttons: two fixed stakes, then ALL IN (-1). */
+const STAKE_BTNS = [...BET_STAKES, -1];
 
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus' | 'choice';
 
@@ -699,23 +703,26 @@ export class RunScreens {
     this.betOffer = offerBets(run, this.base());
     this.betOffer.forEach((_, i) => {
       const cx = W / 2 + (i === 0 ? -440 : 440);
-      BET_STAKES.forEach((s, k) => {
-        const b = this.btn(`${s}`, cx - 84 + k * 84, 694, 72, 28, () => this.placeSideBet(i, s));
+      STAKE_BTNS.forEach((s, k) => {
+        const b = this.btn(s < 0 ? 'ALL IN' : `${s}`, cx - 90 + k * 84 + (s < 0 ? 6 : 0), 694, s < 0 ? 96 : 72, 28, () => this.placeSideBet(i, s));
         b.bet = [i, s];
         this.buttons.push(b);
       });
     });
   }
 
-  private placeSideBet(i: number, stake: number): void {
+  private placeSideBet(i: number, button: number): void {
     const run = this.run!;
     const b = this.betOffer[i];
-    if (run.bet && run.bet.kind === b.kind && run.bet.stake === stake) {
+    const allIn = button < 0;
+    if (run.bet && run.bet.kind === b.kind && (allIn ? run.bet.allIn : run.bet.stake === button && !run.bet.allIn)) {
       clearBet(run);
       this.sounds.click();
       return;
     }
-    if (placeBet(run, i, stake)) {
+    const stake = allIn ? allInStake(run) : button;
+    if (stake > 0 && placeBet(run, i, stake)) {
+      if (allIn) run.bet!.allIn = true;
       this.sounds.coin(4);
       this.sounds.coin(8);
     } else this.sounds.fizzle();
@@ -724,7 +731,9 @@ export class RunScreens {
   /** The table: each bet's name, its line, what it pays, and your stake buttons. */
   private drawBets(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
-    drawText(ctx, `CHIPS ${run.player.chips}`, W / 2, 694, 2, COLORS.goldLight);
+    drawText(ctx, `CHIPS ${run.player.chips}  -  INTEREST +${interestOn(run.player.chips)}`, W / 2, 694, 2, COLORS.goldLight);
+    const streak = run.betStreak ?? 0;
+    if (streak) drawText(ctx, `HOT HAND: ${streak} WON IN A ROW`, W / 2, 712, 1.5, '#ff8aa0');
     this.betOffer.forEach((b, i) => {
       const cx = W / 2 + (i === 0 ? -440 : 440);
       const on = run.bet?.kind === b.kind;
@@ -737,8 +746,8 @@ export class RunScreens {
     for (const btn of this.buttons) {
       if (!btn.bet) continue;
       const [i, s] = btn.bet;
-      const picked = run.bet?.kind === this.betOffer[i]?.kind && run.bet?.stake === s;
-      const afford = run.player.chips + (run.bet?.stake ?? 0) >= s;
+      const picked = run.bet?.kind === this.betOffer[i]?.kind && (s < 0 ? !!run.bet?.allIn : run.bet?.stake === s && !run.bet?.allIn);
+      const afford = s < 0 ? allInStake(run) > 0 : run.player.chips + (run.bet?.stake ?? 0) >= s;
       ctx.save();
       ctx.globalAlpha *= afford || picked ? 1 : 0.35;
       ctx.fillStyle = COLORS.outline;
@@ -749,7 +758,7 @@ export class RunScreens {
       }
       ctx.fillStyle = picked ? '#c8321f' : btn.hover && afford ? '#3a8a4a' : '#1e4a2a';
       ctx.fillRect(btn.x - btn.w / 2, btn.y - btn.h / 2, btn.w, btn.h);
-      drawText(ctx, `${s}`, btn.x, btn.y + 1, picked ? 2.5 : 2, '#fff6c8', { punch: picked ? 1 + 0.04 * Math.sin(time * 6) : 1 });
+      drawText(ctx, s < 0 ? (picked ? `ALL ${run.bet!.stake}` : 'ALL IN') : `${s}`, btn.x, btn.y + 1, picked && s > 0 ? 2.5 : 2, '#fff6c8', { punch: picked ? 1 + 0.04 * Math.sin(time * 6) : 1 });
       ctx.restore();
     }
   }

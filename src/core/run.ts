@@ -23,7 +23,7 @@ import {
 import { CABINETS, type CabinetId } from './cabinets';
 import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
-import { BETS, betsFrom, betState, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
+import { ALL_IN_STAKE, BETS, betsFrom, betState, HOT_HAND, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
 
@@ -231,6 +231,8 @@ export interface RunState {
   /** SIDE BETS on the next fight: the table's offer (keyed to the fight) and the bet you placed. */
   bets?: { key: string; offer: SideBet[] } | null;
   bet?: PlacedBet | null;
+  /** HOT HAND: side bets won in a row (a bust resets it). */
+  betStreak?: number;
   /** MASTERWORK: these symbols can't gain levels. */
   levelLock?: SymbolId[];
 }
@@ -581,7 +583,7 @@ export function betsOpen(run: RunState): boolean {
 /** The Cashier's table for the next fight: 2 bets, sized by rehearsing this very fight on other seeds. */
 export function offerBets(run: RunState, base: GameConfig): SideBet[] {
   if (!betsOpen(run)) return [];
-  const key = `${run.act}:${run.endless?.loop ?? 0}:${run.depth}`;
+  const key = `${run.act}:${run.endless?.loop ?? 0}:${run.depth}:${run.betStreak ?? 0}`;
   if (run.bets?.key === key) return run.bets.offer;
   const cfg = fightConfig(run, base);
   const rng = new Rng((run.seed ^ Math.imul(fightNumber(run) + 31 + (run.endless?.loop ?? 0) * 97, 0x27d4eb2f)) >>> 0);
@@ -592,7 +594,7 @@ export function offerBets(run: RunState, base: GameConfig): SideBet[] {
     while (!f.over && f.turn < 400) for (const e of f.step().events) trackEvent(t, e);
     if (f.winner === 'player') wins.push(t);
   }
-  const offer = betsFrom(wins, BETS.samples, rng, cfg.enemy.hp);
+  const offer = betsFrom(wins, BETS.samples, rng, cfg.enemy.hp, run.betStreak ?? 0);
   run.bets = { key, offer };
   return offer;
 }
@@ -607,6 +609,12 @@ export function placeBet(run: RunState, i: number, stake: number): boolean {
   run.bet = { ...b, stake };
   return true;
 }
+
+/** ALL IN: the stake that button would place (every chip you hold, capped). */
+export const allInStake = (run: RunState) => Math.min(run.endless ? ALL_IN_STAKE.endlessCap : ALL_IN_STAKE.cap, run.player.chips + (run.bet?.stake ?? 0));
+
+/** Interest paid after a win on the chips you hold then (chips on the table don't count). */
+export const interestOn = (chips: number) => Math.min(CHIPS.interestCap, Math.floor(chips / CHIPS.interestPer));
 
 /** Take a placed bet back off the table. */
 export function clearBet(run: RunState): void {
@@ -843,7 +851,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   if (fight.midasChips) run.player.chips = Math.max(0, run.player.chips + fight.midasChips);
   // Chips: interest on what you banked, then the win, elite bonus, jackpots and overkill.
   const beaten = currentEnemy(run);
-  const interest = Math.min(CHIPS.interestCap, Math.floor(run.player.chips / CHIPS.interestPer));
+  const interest = interestOn(run.player.chips);
   // PIGGY BANK: more interest on what you hold.
   const piggy = run.player.relics.includes('piggy') ? Math.min(NEW_RELIC.piggyMax, Math.floor(run.player.chips / NEW_RELIC.piggyPer)) : 0;
   const earned =
@@ -861,6 +869,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     const won = betState(run.bet, fight.betTrack, true) === 'won';
     if (won) run.player.chips += run.bet.stake * run.bet.pay;
     record.bet = { ...run.bet, won };
+    run.betStreak = won ? Math.min(HOT_HAND.max, (run.betStreak ?? 0) + 1) : 0;
   }
   run.bet = null;
   run.bets = null;

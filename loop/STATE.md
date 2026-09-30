@@ -871,3 +871,22 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - GREEN 13.6 / 15.9 / 13.2 / 14.8 / 11.1 (avg 13.7);
   - the Dealer wins 50.2 / 58.0 / 43.7 / 49.5 / 48.9 (avg 50.1, was 54.1). That moves toward the playtester's ~47 target (E10).
 - Tests: 184.
+
+### Iteration 49 (2026-09-30): EXPERT_PLAYTEST_6 E4, E5, E7, the bet economy
+- **E4 stakes 2 / 5 / ALL IN.** ALL IN is every chip you hold, capped at 20 (50 in endless). The button reads "ALL 14" once placed. (Median chips at the table is 8, so 12 was a dead button.)
+- **E5:** the table shows "CHIPS N - INTEREST +N", live as you stake. Interest is on the chips you hold after the win, so a stake costs 1 interest per 5 chips: now a visible trade, not a hidden tax.
+- **E7 HOT HAND:** each bet won in a row (cap 2) makes the next lines bolder at a fixed pay ×3 / ×4, sized so the return stays ~110%: aim = 1.1 / pay. A bust resets it. The table shows "HOT HAND: N WON IN A ROW".
+  - This deviates from the playtester's version: +1 pay at the same odds would return ~165% after one win.
+- **`bets.ts 300` (WHITE), always-bet 5:**
+  - return 101–113% overall; ×2 102–113%, ×3 100–119%, ×4 97–122%;
+  - bet on 65–80% of regular fights.
+  - With the HOT_HAND bias at 0.05, the hot lines realized under plan (×4 76–105%), so the bias is 0.
+- **Run win rates:**
+  | bettor | WHITE shift |
+  |---|---|
+  | always bets 5 | −4.7 to −12.4 |
+  | always ALL IN | −12 to −22 (MIDAS −22) |
+  | keeps 10 chips | within ±1.5 (MIDAS −2.6) |
+
+  Chips are worth more to the shop than a fair bet pays back, plus the interest cost. That's the intended risk tradeoff: bets are fair, but gambling the shop budget away loses runs.
+- Tests: 184.

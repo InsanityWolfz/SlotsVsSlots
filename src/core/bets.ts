@@ -17,8 +17,14 @@ export interface SideBet {
 }
 export interface PlacedBet extends SideBet {
   stake: number;
+  /** Placed with the ALL IN button. */
+  allIn?: boolean;
 }
-export const BET_STAKES = [3, 6, 12] as const;
+export const BET_STAKES = [2, 5] as const;
+/** ALL IN stakes every chip you hold, up to this (more in endless, where chips pile up). */
+export const ALL_IN_STAKE = { cap: 20, endlessCap: 50 };
+/** HOT HAND: each bet won in a row makes the next lines bolder and pay +1 (up to x4). A bust resets it. */
+export const HOT_HAND = { max: 2, ret: 1.1, bias: 0 };
 /** How many rehearsals size a bet, and the odds a line aims for. */
 export const BETS = { samples: 12, aim: 0.55, hardBelow: 0.31, minP: 0.25, maxP: 0.75 };
 
@@ -118,26 +124,30 @@ export const betProfit = (b: PlacedBet) => b.stake * (b.pay - 1);
 const hits = (xs: number[], ok: (x: number) => boolean) => xs.filter(ok).length / Math.max(1, xs.length);
 
 /** Pick the line for one kind from the rehearsals: the candidate whose odds sit nearest the aim. */
-export function lineFor(kind: BetKind, runs: BetTrack[], enemyHp = Infinity): SideBet | null {
+export function lineFor(kind: BetKind, runs: BetTrack[], enemyHp = Infinity, streak = 0): SideBet | null {
+  const hot = Math.min(HOT_HAND.max, streak);
+  const aim = hot ? HOT_HAND.ret / (2 + hot) - HOT_HAND.bias : BETS.aim;
+  const minP = hot ? Math.max(0.1, aim - 0.1) : BETS.minP;
+  const maxP = hot ? aim + 0.12 : BETS.maxP;
   const vals = runs.map((t) => (kind === 'quick' ? t.spins : kind === 'clean' ? t.lost : kind === 'jackpot' ? t.jackpots : t.best));
   const round = (x: number) => (kind === 'clean' || kind === 'big' ? Math.floor(x / UNIT) * UNIT : x);
   const cands = [...new Set(vals.map(round))].filter((x) => (kind === 'jackpot' || kind === 'big' ? x > 0 : x >= 0) && !(kind === 'big' && x > enemyHp));
   let best: { target: number; p: number } | null = null;
   for (const target of cands) {
     const p = hits(vals, (v) => (kind === 'quick' || kind === 'clean' ? v <= target : v >= target));
-    if (p < BETS.minP || p > BETS.maxP) continue;
-    if (!best || Math.abs(p - BETS.aim) < Math.abs(best.p - BETS.aim)) best = { target, p };
+    if (p < minP || p > maxP) continue;
+    if (!best || Math.abs(p - aim) < Math.abs(best.p - aim)) best = { target, p };
   }
   if (!best) return null;
-  return { kind, target: best.target, pay: best.p < BETS.hardBelow ? 3 : 2 };
+  return { kind, target: best.target, pay: hot ? 2 + hot : best.p < BETS.hardBelow ? 3 : 2 };
 }
 
 /** Up to 2 bets from a fight's rehearsals (the winning ones); none if you usually lose it. */
-export function betsFrom(wins: BetTrack[], samples: number, rng: Rng, enemyHp = Infinity): SideBet[] {
+export function betsFrom(wins: BetTrack[], samples: number, rng: Rng, enemyHp = Infinity, streak = 0): SideBet[] {
   if (wins.length < samples / 2) return [];
   const out: SideBet[] = [];
   for (const k of rng.shuffle<BetKind>(['quick', 'clean', 'jackpot', 'big'])) {
-    const b = lineFor(k, wins, enemyHp);
+    const b = lineFor(k, wins, enemyHp, streak);
     if (b) out.push(b);
     if (out.length === 2) break;
   }
