@@ -27,6 +27,8 @@ import {
 import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
 import { ENDLESS, TUNE } from './enemies';
+/** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
+export const MIDAS = { chipsPerPip: 2, chipsPerMul: 20, maxMul: 3, jackpotChips: 3, chipCap: 8 };
 import { isNearMiss, multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {
   BONUS_SYMBOLS,
@@ -288,6 +290,8 @@ export class Fight {
       p.energy = this.special ? Math.min(this.cfg.specialCost - 1, p.energy + start) : Math.min(Math.max(0, this.meterCost - 1), p.energy + start);
       this.openers.push('battery');
     }
+    // MIDAS: the VAULT starts pre-filled by the chips you hold (1 per 2 chips, never full).
+    if (this.meter?.kind === 'vault') p.energy = Math.max(p.energy, this.vaultBase());
     // Lightning Rod: a charged-bolt build makes the special cheaper and harder-hitting.
     if (this.special && p.relics.has('rod') && p.reels.some((r) => r.cells.some((c) => c.enh === 'charged'))) {
       this.cfg.specialCost = ROD_SPECIAL_COST;
@@ -350,6 +354,20 @@ export class Fight {
   /** The Dealer (act 3 boss). */
   get isDealer(): boolean {
     return this.cfg.enemy.boss === 'dealer';
+  }
+
+  /** MIDAS: chips won mid-fight by gold bars (paid out if you win). */
+  midasChips = 0;
+  private vaultPaid = 0;
+  /** MIDAS: the VAULT's resting level (from chips held). */
+  vaultBase(): number {
+    const chips = (this.cfg.player.chipsHeld ?? 0) + this.midasChips;
+    return Math.min(this.meterCost - UNIT, Math.floor(chips / MIDAS.chipsPerPip) * UNIT);
+  }
+  /** MIDAS: the VAULT's payoff multiplier: 1 + chips held / 20, max x3. */
+  vaultMul(): number {
+    const chips = (this.cfg.player.chipsHeld ?? 0) + this.midasChips;
+    return Math.min(MIDAS.maxMul, Math.round((1 + chips / MIDAS.chipsPerMul) * 4) / 4);
   }
 
   /** How full the player's meter has to be (the special's cost for TESLA). */
@@ -698,6 +716,18 @@ export class Fight {
       s.touched = this.midasTouch(me, line, touchable, has('decree'));
       s.raised = true;
     }
+    let vaultGroup: ScoreGroup | null = null;
+    // MIDAS: an open VAULT multiplies your first paying group, then resets to its resting level.
+    if (player && this.meter?.kind === 'vault' && me.armed) {
+      const g0 = s.groups.find(pays);
+      if (g0) {
+        const mul = this.vaultMul();
+        g0.mult *= mul;
+        vaultGroup = g0;
+        s.raised = true;
+        this.vaultPaid = mul;
+      }
+    }
     // FIRST BLOOD: your first paying spin each fight.
     const firstBlood = has('firstblood') && !this.firstBlood && s.groups.some(pays);
     if (firstBlood) this.firstBlood = true;
@@ -705,6 +735,7 @@ export class Fight {
     for (const g of s.groups) {
       const notes: string[] = [];
       notesOf.set(g, notes);
+      if (g === vaultGroup) notes.push(`VAULT X${this.vaultPaid}`);
       // A jackpot of one cell counts that cell's charm three times.
       const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
       let gold = 0;
@@ -978,6 +1009,15 @@ export class Fight {
       case 'goldbar':
       case 'thorn':
         if (!player || this.meter?.symbol !== g.symbol) break;
+        // MIDAS: gold bars pay chips (+1 per bar, +3 on a jackpot), capped per fight.
+        if (g.symbol === 'goldbar' && this.meter.kind === 'vault') {
+          const want = g.reels.length + (g.reels.length >= 3 ? MIDAS.jackpotChips : 0);
+          const got = Math.min(want, MIDAS.chipCap - this.midasChips);
+          if (got > 0) {
+            this.midasChips += got;
+            events.push({ type: 'midasChips', side: me.side, amount: got, total: this.midasChips });
+          }
+        }
         {
           const grounded = g.reels.filter((r) => this.isGrounded(me, r)).length;
           const earthed = grounded ? Math.ceil((g.amount * grounded) / g.reels.length) : 0;
@@ -1026,6 +1066,13 @@ export class Fight {
       events.push({ type: 'payoff', side: me.side, kind: 'jackpots' });
       return;
     }
+    if (this.meter?.kind === 'vault') {
+      me.energy = this.vaultBase();
+      me.armed = false;
+      events.push({ type: 'payoff', side: me.side, kind: 'vault', left: me.energy, mul: this.vaultPaid });
+      this.vaultPaid = 0;
+      return;
+    }
     // MIDAS TOUCH spends what it used; gold past that stays.
     me.energy = Math.max(0, me.energy - this.touchSpend);
     this.touchSpend = 0;
@@ -1060,6 +1107,15 @@ export class Fight {
     if (this.meter.kind === 'thorns') {
       me.energy += amount;
       events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(earthed ? { earthed } : {}) });
+      return;
+    }
+    // MIDAS VAULT: +1 pip per gold bar landed; locks when full.
+    if (this.meter.kind === 'vault') {
+      if (me.armed) return;
+      const add = Math.max(1, reels.length) * UNIT * (this.cfg.player.meterMul ?? 1);
+      me.energy = Math.min(this.meterCost, me.energy + add);
+      if (me.energy >= this.meterCost) me.armed = true;
+      events.push({ type: 'meter', side: me.side, reels, amount: add, total: me.energy, ...(me.armed ? { armed: true } : {}) });
       return;
     }
     // MIDAS: gold is never wasted: it keeps counting past full (each touch spends one full meter).

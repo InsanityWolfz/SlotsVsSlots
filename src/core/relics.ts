@@ -41,7 +41,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   drum: { id: 'drum', name: 'WAR DRUM', text: 'EACH SPIN THAT PAYS: EVERY SWORD +2 THIS FIGHT (MAX +10)', sprite: 'relicDrum', machine: 'knight' },
   chainmail: { id: 'chainmail', name: 'CHAINMAIL', text: 'LEFTOVER SHIELD HEALS YOU 10% OF IT EACH TURN', sprite: 'relicChainmail', machine: 'knight' },
   vault: { id: 'vault', name: "KING'S VAULT", text: 'AFTER EACH WIN, ONE OF YOUR SWORDS TURNS GOLD FOR GOOD', sprite: 'relicVault', machine: 'midas' },
-  decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR MIDAS TOUCH ALSO SPREADS TO THE CELLS ABOVE AND BELOW', sprite: 'relicDecree', machine: 'midas' },
+  decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR MIDAS TOUCH ALSO SPREADS TO THE CELLS ABOVE AND BELOW', sprite: 'relicDecree', machine: 'midas', retired: true },
   rosehip: { id: 'rosehip', name: 'ROSE HIP', text: 'YOUR THORN VOLLEYS HEAL YOU 10% OF WHAT THEY FIRE', sprite: 'relicRosehip', machine: 'thorn' },
   graft: { id: 'graft', name: 'GRAFT', text: 'GOLD AND VAMP CHARMS FIT THORNS', sprite: 'relicGraft', machine: 'thorn' },
   faraday: { id: 'faraday', name: 'FARADAY CAGE', text: 'SHIELD YOU GAIN ALSO CHARGES LIGHTNING (1/4 AS MUCH)', sprite: 'relicFaraday', machine: 'tesla' },

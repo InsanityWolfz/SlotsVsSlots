@@ -173,6 +173,8 @@ export interface SideConfig {
   startShield?: number;
   /** HOUSE EDGE "EARLY BIRD": the enemy spins first. */
   first?: boolean;
+  /** MIDAS: chips held when the fight starts (the VAULT pre-fills from them). */
+  chipsHeld?: number;
   /** HOUSE EDGE "HOUSE CUT": your healing multiplier. */
   healMul?: number;
   /** Relics this side carries (the Mirror copies one at GREEN stake). */

@@ -12,7 +12,7 @@ export type CabinetId = 'knight' | 'midas' | 'thorn' | 'tesla' | 'joker';
  *   cells each pay as a jackpot of themselves.
  * Every payoff also heals you a little (`heal`). KNIGHT has no meter.
  */
-export type MeterKind = 'special' | 'touch' | 'thorns' | 'jackpots';
+export type MeterKind = 'special' | 'touch' | 'thorns' | 'jackpots' | 'vault';
 export interface Meter {
   kind: MeterKind;
   /** The symbol that fills it. */
@@ -94,15 +94,15 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'MIDAS MACHINE',
     sprite: 'cabinetMidas',
     blurb: 'EVERYTHING IT TOUCHES...',
-    hp: 19 * UNIT,
+    hp: 30 * UNIT,
     strips: r3({ sword: 4, shield: 4, goldbar: 4 }),
     gilded: [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }],
     favors: 'gold',
-    meter: { kind: 'touch', symbol: 'goldbar', cost: 2 * UNIT, heal: 3 * UNIT },
+    meter: { kind: 'vault', symbol: 'goldbar', cost: 10 * UNIT, heal: 3 * UNIT },
     symbols: ['sword', 'shield', 'goldbar'],
-    rule: 'GOLD BARS FILL THE METER. FULL: THE SWORDS AND SHIELDS ON YOUR NEXT SPIN TURN GOLD FOR THE FIGHT. +1 CHIP A WIN. 190 HP.',
+    rule: 'GOLD BARS PAY CHIPS AND FILL THE VAULT. THE VAULT STARTS FULLER THE MORE CHIPS YOU HOLD. FULL: YOUR NEXT PAY X1 + CHIPS/20 (MAX X3). CASHIER 20% OFF. 300 HP.',
     act2: { text: 'THE +1 CHIP PER WIN KEEPS PAYING' },
-    unlock: 'REACH THE HOUSE',
+    unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },
   thorn: {
@@ -163,7 +163,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
 };
 
 /** The playable lineup, in unlock order. MIDAS is shelved for a rework (2026-09-28): hidden, but kept in saves. */
-export const CABINET_ORDER: CabinetId[] = ['knight', 'tesla', 'thorn', 'joker'];
+export const CABINET_ORDER: CabinetId[] = ['knight', 'tesla', 'thorn', 'joker', 'midas'];
 /** Every machine id a save may hold (shelved ones included), so loading a save never drops an unlock. */
 export const ALL_CABINETS: CabinetId[] = ['knight', 'midas', 'thorn', 'tesla', 'joker'];
 

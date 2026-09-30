@@ -518,7 +518,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // BLACK stake: the House ignores your chip shield.
     // No bonus in the run's final fight: a voucher could never be spent (QA_1 B11).
     bonusSymbols: !(e.isBoss && run.act >= runActs(run)),
-    stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? chipShield(run.player.chips) : 0,
+    chipsHeld: run.player.chips,
+    // Saved chips shield you at every boss, capped (a MIDAS hoard made the House untouchable).
+    stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? Math.min(MIRROR_CHIP_SHIELD_CAP, chipShield(run.player.chips)) : 0,
   };
   const hp = enemyHp(run, e);
   cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
@@ -668,7 +670,7 @@ export function machinePower(run: RunState): number {
   const hit = powerCache.get(key);
   if (hit !== undefined) return hit;
   const cfg = defaultConfig();
-  cfg.player = { hp: 99999 * UNIT, strips: run.player.strips.map((s) => ({ ...s })), gilded: run.player.gilded.map((g) => ({ ...g })), levels: cloneLevels(run.player.levels), ...(run.glass ? { payMul: BIG.glassPay } : {}), ...(run.bloodPact ? { meterMul: 2 } : {}) };
+  cfg.player = { hp: 99999 * UNIT, strips: run.player.strips.map((s) => ({ ...s })), gilded: run.player.gilded.map((g) => ({ ...g })), levels: cloneLevels(run.player.levels), ...(run.glass ? { payMul: BIG.glassPay } : {}), ...(run.bloodPact ? { meterMul: 2 } : {}), chipsHeld: run.player.chips };
   cfg.enemy = { hp: 99999 * UNIT, strips: [{ sword: 8, shield: 4 }, { sword: 8, shield: 4 }, { sword: 8, shield: 4 }], ability: null };
   cfg.relics = run.player.relics.filter((r) => r !== 'phoenix');
   cfg.cabinet = run.cabinet;
@@ -713,7 +715,7 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number }> = {
   knight: { house: 2.0, mirror: 0.9, dealer: 0.85, act3: 0.5 },
-  midas: { house: 3.5, mirror: 16, dealer: 0.45, act3: 0.1 },
+  midas: { house: 3, mirror: 8, dealer: 3.6, act3: 0.35 },
   thorn: { house: 0.85, mirror: 10.5, dealer: 2.4, act3: 1.1, act2: 0.55 },
   tesla: { house: 0.5, mirror: 2.4, dealer: 2.0, act3: 0.95 },
   joker: { house: 2.2, mirror: 3.7, dealer: 1.85, act3: 0.55, act2: 1.8 },
@@ -782,6 +784,8 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     run.player.chips -= eaten;
     record.chipsEaten = eaten;
   }
+  // MIDAS: the chips his gold bars paid this fight.
+  if (fight.midasChips) run.player.chips += fight.midasChips;
   // Chips: interest on what you banked, then the win, elite bonus, jackpots and overkill.
   const beaten = currentEnemy(run);
   const interest = Math.min(CHIPS.interestCap, Math.floor(run.player.chips / CHIPS.interestPer));
@@ -1191,7 +1195,8 @@ export function shopOffers(run: RunState): ShopItem[] {
   // A reroll never deals what was just on the shelf.
   const prev = new Set(run.shopRerolls > 0 ? (run.shelfKeys ?? []) : []);
   const add = (option: DraftOption | null, price: number) => {
-    if (option && !prev.has(JSON.stringify(option)) && !items.some((i) => JSON.stringify(i.option) === JSON.stringify(option))) items.push({ option, price, sold: false });
+    // MIDAS: the Cashier gives him 20% off.
+    if (option && !prev.has(JSON.stringify(option)) && !items.some((i) => JSON.stringify(i.option) === JSON.stringify(option))) items.push({ option, price: run.cabinet === 'midas' ? Math.max(1, Math.ceil(price * 0.8)) : price, sold: false });
   };
   const gildOptions = charmOptions(run, RUN.charmCellsShop).filter((o) => !prev.has(JSON.stringify(o)));
   // Prefer extending what you already own, so builds can be finished on purpose.

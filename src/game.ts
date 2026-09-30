@@ -95,6 +95,7 @@ function hudMeter(f: Fight): HudMeter | null {
   const m = f.meter;
   if (!m) return null;
   if (m.kind === 'touch') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'GOLD', color: '#ffd23f', icon: 'goldbar' as SpriteId };
+  if (m.kind === 'vault') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'VAULT', color: '#ffd23f', icon: 'goldbar' as SpriteId };
   if (m.kind === 'thorns') return { kind: m.kind, pips: 0, label: 'THORNS', color: '#9dff6a', icon: 'thorn' as SpriteId };
   return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'JACKPOTS', color: '#ff6ad5', icon: 'wild' };
 }
@@ -442,7 +443,7 @@ export class Game {
     // MIDAS is shelved (no unlock) while he's reworked; TESLA is the second machine.
     const cond: Record<CabinetId, boolean> = {
       knight: true,
-      midas: false,
+      midas: run.won,
       tesla: reachedBoss,
       thorn: beatHouse,
       joker: beatHouse && run.player.strips.some((s) => (s.wild ?? 0) > 0),

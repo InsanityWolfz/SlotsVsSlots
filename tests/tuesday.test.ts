@@ -45,28 +45,22 @@ describe('signature meters (one per slot machine)', () => {
     expect(on('tesla').special).toBe(true);
   });
 
-  it('MIDAS TOUCH: gold keeps counting past full; full, the swords and shields on the next spin turn gold for the fight', () => {
+  it('MIDAS VAULT: pre-fills from chips held; gold bars fill it and pay chips; full, the next paying group multiplies', () => {
     const f = on('midas');
     f.sides.player.hp = 100;
-    f.forceNext('player', ['goldbar', 'goldbar', 'shield']);
-    const fill = ofType(f.step().events, 'meter')[0];
-    expect(fill).toMatchObject({ total: 40, armed: true });
+    const start = f.sides.player.energy;
+    f.forceNext('player', ['goldbar', 'goldbar', 'goldbar']);
+    const evs = f.step().events;
+    const chips = ofType(evs, 'midasChips')[0];
+    expect(chips.amount).toBe(6); // 3 bars + 3 for the jackpot
+    expect(f.sides.player.energy).toBeGreaterThan(start);
+    f.sides.player.energy = f.meterCost;
+    f.sides.player.armed = true;
     f.step();
-    f.forceNext('player', ['sword', 'shield', 'goldbar']);
-    const ev = f.step().events;
-    const touched = ofType(ev, 'touch')[0].cells;
-    // Both payline cells, plus one more anywhere for the second full meter.
-    expect(touched.length).toBe(3);
-    const [sword, shield] = ofType(ev, 'spin')[0].score.groups;
-    expect(sword.notes).toContain('X4 GOLD'); // its gold charm x2 + the touch x2
-    expect(shield.notes).toContain('X2 GOLD');
-    expect(ofType(ev, 'payoff')[0]).toMatchObject({ kind: 'touch', left: 0 });
-    expect(ofType(ev, 'heal').some((h) => h.source === 'payoff')).toBe(true);
-    // The gold bar that landed refills the meter; the touches stay for the fight (max 3 per cell).
-    expect(f.sides.player.energy).toBe(10);
-    expect(f.touches.size).toBe(3);
+    f.forceNext('player', ['sword', 'sword', 'shield']);
+    const spin = ofType(f.step().events, 'spin')[0];
+    expect(spin.score.groups.some((g) => g.notes?.some((n) => n.startsWith('VAULT X')))).toBe(true);
   });
-
   it('BRIAR: thorns bank their pay; being attacked (blocked or not) fires the bank through shields, once per turn', () => {
     const f = on('thorn');
     f.forceNext('player', ['thorn', 'thorn', 'shield']);

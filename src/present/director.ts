@@ -194,6 +194,12 @@ export class Director {
       case 'closingTime':
         this.s.sounds.stingerMedium();
         return this.banner('CLOSING TIME!', '#ff6a5a', 1.2, 0.4, 'A STALLED TABLE GOES TO THE HOUSE', BANNER_Y, 3);
+      case 'midasChips': {
+        const c = this.machineCenter(e.side);
+        this.s.sounds.coin(6);
+        this.s.sounds.coin(10);
+        return this.popText(`+${e.amount} CHIPS`, c.x - 80, MACHINE_TOP - 22, 2, '#ffd23f', 14, 0.35);
+      }
       case 'lastCall':
         this.s.sounds.stingerMedium();
         return this.banner('LAST CALL!', '#ff6a5a', 1.2, 0.3, 'THE HOUSE HITS HARDER EVERY TURN NOW', BANNER_Y, 3);
@@ -1036,7 +1042,7 @@ export class Director {
       h.armed = true;
       this.s.sounds.lucky();
       const p0 = h.pipPos(0);
-      this.bg(this.popText(m.kind === 'touch' ? 'NEXT SWORDS AND SHIELDS TURN GOLD!' : 'NEXT SPIN: ALL JACKPOTS!', p0.x + 80, p0.y - 26, 2, m.color, 20, 0.6));
+      this.bg(this.popText(m.kind === 'touch' ? 'NEXT SWORDS AND SHIELDS TURN GOLD!' : m.kind === 'vault' ? 'THE VAULT IS OPEN: YOUR NEXT PAY MULTIPLIES!' : 'NEXT SPIN: ALL JACKPOTS!', p0.x + 80, p0.y - 26, 2, m.color, 20, 0.6));
     }
     if (e.reels.length) this.settle(e.side, e.reels);
   }
@@ -1052,7 +1058,7 @@ export class Director {
     const color = h.meter?.color ?? COLORS.goldLight;
     // A callout over the machine, not a second banner (the PAIR!/JACKPOT! banner carries the math).
     const c = this.machineCenter(e.side);
-    await this.popText(e.kind === 'touch' ? 'MIDAS TOUCH!' : 'ALL JACKPOTS!', c.x, MACHINE_TOP - 34, 4, color, 30, 0.45);
+    await this.popText(e.kind === 'touch' ? 'MIDAS TOUCH!' : e.kind === 'vault' ? `VAULT X${e.mul ?? 1}!` : 'ALL JACKPOTS!', c.x, MACHINE_TOP - 34, 4, color, 30, 0.45);
   }
 
   /** MIDAS TOUCH: swords and shields turn gold (a gold rim with 1-3 pips) for the rest of the fight. */

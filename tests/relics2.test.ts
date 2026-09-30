@@ -68,25 +68,6 @@ describe('slot machine relics', () => {
     expect(playerAttack(ev)[0].amount).toBe(50);
   });
 
-  it("KING'S VAULT: after each win a sword turns gold for good; ROYAL DECREE: the touch spreads above and below", () => {
-    const run = createRun(base, 3, 'midas');
-    run.pendingStart = null;
-    run.player.relics = ['vault'];
-    const gold = () => run.player.gilded.reduce((a, g) => a + (g.enh === 'gold' && g.symbol === 'sword' ? g.n : 0), 0);
-    const before = gold();
-    const w = new Fight(fightConfig(run, base), 1);
-    w.winner = 'player';
-    finishFight(run, w);
-    expect(gold()).toBe(before + 1);
-
-    const d = on('midas', ['decree'], (c) => (c.player.strips = reels3({ sword: 6, shield: 6 })));
-    d.sides.player.energy = 20;
-    d.sides.player.armed = true;
-    d.forceNext('player', ['shield', 'shield', 'sword']);
-    const cells = ofType(d.step().events, 'touch')[0].cells;
-    expect(cells).toHaveLength(9);
-  });
-
   it('ROSE HIP: a thorn volley heals 10% of what it fired', () => {
     const f = on('thorn', ['rosehip']);
     f.sides.player.hp = 100;

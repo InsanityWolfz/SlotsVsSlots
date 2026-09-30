@@ -716,3 +716,24 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   | thorn | 45.8 | 14.9 | 49.3 |
   | joker | 41.8 | 16.8 | 56.2 |
   | AVG | 43.7 | 15.3 | 53.3 |
+
+### Iteration 42 (2026-09-30): MIDAS returns as the ECONOMY machine (EXPERT_PLAYTEST_4 D)
+- **MIDAS is back in the lineup** (CABINET_ORDER: knight, tesla, thorn, joker, midas). Unlock: CLEAR A RUN. 300 HP. Starts with gold swords on reel 1; gold bars on every reel.
+- **Meter THE VAULT** (kind 'vault', 10 pips):
+  - it starts each fight pre-filled at 1 pip per 2 chips held (never full);
+  - +1 pip per gold bar landed;
+  - when full, your first paying group is multiplied by 1 + chips/20 (max ×3; "VAULT X2.5"), then it resets to its resting level. The payoff heals.
+- **Gold bars pay chips mid-fight:** +1 per bar, +3 on a jackpot, capped at 8 per fight (`midasChips` event; paid on a win).
+- **Cashier 20% off for MIDAS.** Core tension: hoard for the vault or spend at the Cashier.
+- `machinePower` now sees chips held (it sizes bosses right for the vault).
+- **All bosses:** the chip shield is capped at MIRROR_CHIP_SHIELD_CAP (it was uncapped at the House).
+- KING'S VAULT stays (a gold-sword relic); ROYAL DECREE is retired (it was a MIDAS TOUCH relic). MIDAS TOUCH code is kept (meter kind 'touch'), unused.
+- BOSS_MUL midas: house 3, mirror 8, dealer 3.6, act3 0.35.
+- **tuesday.ts 1000:**
+  | machine | WHITE | act1 | House | Mirror | GREEN | Dealer |
+  |---|---|---|---|---|---|---|
+  | midas | 43.6 | 73.8 | 99.3 | 73.5 | 19.2 | 57.0 |
+  | AVG (5 machines) | 43.6 | | | | 16.0 | 54.0 |
+
+  **Open:** the MIDAS House at 99% (the vault ×3 plus pot steals trivialise it; raising its HP barely moves it).
+- Tests: 179 (MIDAS VAULT test replaces the MIDAS TOUCH / KING'S VAULT-DECREE tests).
