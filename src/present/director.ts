@@ -183,7 +183,13 @@ export class Director {
       case 'allInArmed':
         this.s.gutter.allInArmed = true;
         this.s.sounds.stingerMedium();
-        return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, 'ITS NEXT ATTACK IS ITS WHOLE HAND', BANNER_Y, 3);
+        this.s.gutter.allInCap = e.cap;
+        return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, `ITS WHOLE HAND: UP TO ${e.cap}`, BANNER_Y, 3);
+      case 'coverCharge': {
+        const c = this.machineCenter(e.side);
+        this.s.sounds.coin(1);
+        return this.popText(`COVER CHARGE -${e.amount}`, c.x, MACHINE_TOP - 22, 2, '#ff8a7a', 12, 0.5);
+      }
       case 'allInHit':
         return this.allInHit(e);
       case 'dealNext':

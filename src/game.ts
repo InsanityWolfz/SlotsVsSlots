@@ -682,6 +682,7 @@ export class Game {
           energy: meter?.kind === 'thorns' ? c.energy : c.energy / UNIT,
         });
         hud.hp = hud.ghost = c.hp;
+        if (c.ability) hud.charge = c.charge;
         return [s, hud];
       }),
     ) as Stage['huds'];
@@ -1159,6 +1160,8 @@ export class Game {
     if (pot > 0) {
       drawSprite(ctx, 'potSkim', x - 70, y + 64, 2);
       drawText(ctx, `NEXT SKIM ${cashOut}`, x - 52, y + 64, 2, lethal ? '#ff6a5a' : COLORS.textDim, { align: 'left' });
+      // The House's key rule, where players look (EXPERT_PLAYTEST_2 E): your jackpot takes the pot.
+      drawText(ctx, 'YOUR JACKPOT TAKES IT', x, y + 86, 1.5, COLORS.goldLight);
     }
   }
 
@@ -1183,17 +1186,17 @@ export class Game {
     const name = card === 'card' ? 'A CARD' : card === 'allin' ? 'ALL IN' : card.toUpperCase();
     drawText(ctx, name, x + 26, y + 2, 3, card === 'allin' ? '#ff6a5a' : '#ffffff');
     const what =
-      card === 'card' ? ['ON YOUR PAYLINE:', 'ACE, JOKER OR DEUCE']
+      card === 'card' ? ['ON YOUR PAYLINE:', 'ACE, JOKER, DEUCE']
       : card === 'allin' ? ['ITS NEXT ATTACK', 'IS ITS WHOLE HAND']
       : card === 'shuffle' ? ['SWAPS 5 CELLS', 'BETWEEN 2 REELS']
       : card === 'cut' ? ['CUTS A CHARMED', 'CELL PER REEL']
       : ['ITS NEXT HIT X2', 'YOUR NEXT WIN X2'];
-    what.forEach((l, k) => drawText(ctx, l, x + 26, y + 22 + k * 12, 1.25, COLORS.textDim));
+    what.forEach((l, k) => drawText(ctx, l, x + 20, y + 22 + k * 14, 1.5, COLORS.text));
     if (g.raised) drawText(ctx, 'RAISED!', x, y - 44 - 14, 2, '#ffd23f');
     else if (g.houseRules) drawText(ctx, 'HOUSE RULES', x, y - 44 - 14, 2, '#ff6a5a');
     // Its marked cards are most of its damage: count them on YOUR reels.
     const marks = this.stage.machines.player.reels.reduce((a, r) => a + r.cells.filter((c) => c.carded).length, 0);
-    if (marks) drawText(ctx, `MARKS ON YOU: ${marks}`, x, y + 70, 1.5, '#ff8aa0');
+    if (marks) drawText(ctx, `MARKS ON YOU: ${marks}`, x, y + 72, 2, '#ff8aa0');
   }
 
   /** The Dealer's table: green felt behind its machine, and the ALL IN warning over it. */
@@ -1206,7 +1209,7 @@ export class Game {
     ctx.strokeStyle = '#c9a040';
     ctx.lineWidth = 2;
     ctx.strokeRect(cx - 174, MACHINE_TOP - 14, 348, MACHINE_H + 28);
-    if (this.stage.gutter.allInArmed) drawText(ctx, 'ALL IN!', cx, MACHINE_TOP - 40, 4, '#ff6a5a', { punch: 1 + 0.08 * Math.sin(t * 10) });
+    if (this.stage.gutter.allInArmed) drawText(ctx, `ALL IN! UP TO ${this.stage.gutter.allInCap ?? ''}`, cx, MACHINE_TOP - 40, 3, '#ff6a5a', { punch: 1 + 0.08 * Math.sin(t * 10) });
   }
 
   /** The Mirror's next Reflection: what your last spin would bounce back, and when. */

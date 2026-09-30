@@ -105,7 +105,9 @@ export type CombatEvent =
   /** A laid card resolved on your spin (it's then taken back). */
   | { type: 'lineCardUsed'; side: SideId; reel: number; card: LineCard }
   /** ALL IN telegraph: the Dealer's next attack is its whole hand. */
-  | { type: 'allInArmed'; side: SideId }
+  | { type: 'allInArmed'; side: SideId; cap: number }
+  /** ACT 3 cover charge: the first enemy attack of the fight takes a cut that no shield blocks. */
+  | { type: 'coverCharge'; side: SideId; amount: number }
   /** ALL IN: the Dealer throws its whole visible hand at you. */
   | { type: 'allInHit'; from: SideId; to: SideId; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number }
   /** SHUFFLE: cells swapped between two of the target's reels (index pairs: [in reel a, in reel b]). */

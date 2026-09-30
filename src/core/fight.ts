@@ -209,6 +209,12 @@ export class Fight {
   chipsEaten = 0;
   /** Phoenix Feather already burned this fight. */
   phoenixUsed = false;
+  /** An act 3 regular fight (graded: its ability opens, its first attack takes a cover charge). */
+  get act3Regular(): boolean {
+    return (this.cfg.enemy.act ?? 1) >= 3 && !this.isBoss && !this.isMirror && !this.isDealer;
+  }
+  /** The act 3 cover charge has been taken this fight. */
+  private coverTaken = false;
   /** The Mirror's damage so far this turn (its whole turn is capped). */
   private mirrorTurnDealt = 0;
   /** HP you've lost this turn (one-turn cap: regular enemies 40% of your max HP, bosses 60%). */
@@ -289,6 +295,8 @@ export class Fight {
     // The Mirror plays your machine but never your junk (and fires no specials).
     if (this.isMirror) e.casts.clear();
     if (this.isBoss) this.pot = POT.seed;
+    // ACT 3 regulars open with their ability on their first turn (it never fired in 38% of act 3 fights: EXPERT_PLAYTEST_3 C3).
+    if (this.act3Regular && this.sides.enemy.ability) this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - 1);
     if (this.isDealer) this.nextDeal = this.rng.pick(DEALS);
     // The chase symbols: one BONUS and one RELIC cell per reel, for this fight only.
     if (this.cfg.player.bonusSymbols)
@@ -1096,6 +1104,18 @@ export class Fight {
       this.mirrorTurnDealt += amount;
     }
     const pierced = pierce && foe.shield > 0;
+    // ACT 3 COVER CHARGE: the first enemy attack each fight puts at least 10% of your max HP through your shield.
+    if (me.side === 'enemy' && this.act3Regular && !this.coverTaken && amount > 0) {
+      this.coverTaken = true;
+      const cut = Math.min(amount, Math.max(UNIT, Math.round((foe.maxHp * TUNE.coverCharge) / UNIT) * UNIT));
+      const c = this.damage(foe, cut, true);
+      if (c.hpDamage > 0) events.push({ type: 'coverCharge', side: foe.side, amount: c.hpDamage });
+      amount -= cut;
+      if (amount <= 0) {
+        this.checkDeath(foe, events);
+        return c.hpDamage;
+      }
+    }
     const h = this.damage(foe, amount, pierce);
     events.push({ type: 'attack', from: me.side, to: foe.side, reels, amount, ...h, ...(pierced ? { note: 'pierce' as const } : note ? { note } : {}) });
     this.checkDeath(foe, events);
@@ -1389,15 +1409,17 @@ export class Fight {
     else if (card === 'cut') this.cutReels(me, foe, events);
     else if (card === 'card') {
       // A face-up card on one of your payline cells. At HOUSE RULES it deals you more deuces.
-      const reel = this.rng.int(3);
       const r = this.rng.next();
-      const [ace, joker] = this.houseRules ? [0.2, 0.15] : [0.35, 0.25];
+      const [ace, joker] = this.houseRules ? [0.15, 0.1] : [0.25, 0.2];
       const kind: LineCard = r < ace ? 'ace' : r < ace + joker ? 'joker' : 'deuce';
+      // A DEUCE aims at your best reel (the most value on its strip); ACE and JOKER land anywhere.
+      const worth = foe.reels.map((reel) => reel.cells.reduce((a, c) => a + cellValue(c), 0));
+      const reel = kind === 'deuce' ? worth.indexOf(Math.max(...worth)) : this.rng.int(3);
       this.lineCard = { reel, card: kind };
       events.push({ type: 'lineCard', side: foe.side, reel, card: kind });
     } else if (card === 'allin') {
       this.dealerAllIn = true;
-      events.push({ type: 'allInArmed', side: me.side });
+      events.push({ type: 'allInArmed', side: me.side, cap: Math.round((foe.maxHp * ALL_IN_CAP) / UNIT) * UNIT });
     } else {
       this.raiseEnemy = true;
       this.raisePlayer = true;

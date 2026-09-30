@@ -336,17 +336,24 @@ export class MachineView {
   private drawLineCard(ctx: CanvasRenderingContext2D): void {
     const lc = this.lineCard;
     if (!lc) return;
-    const x = PITCH * (lc.reel + 0.5) + 30;
-    const y = PITCH * 1.5 - 30;
+    const x = PITCH * (lc.reel + 0.5);
+    const y = PITCH * 1.5;
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(Math.max(0.05, Math.abs(Math.cos((1 - lc.flip) * Math.PI))), 1);
-    ctx.rotate(0.12);
+    // Face-up and gold-rimmed (the Dealer's marks are red card backs): it sits over the whole cell.
+    ctx.globalAlpha = 0.92;
     ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(-17, -23, 34, 46);
-    ctx.fillStyle = lc.flip > 0.5 ? '#f4eee0' : '#8e1f3a';
-    ctx.fillRect(-15, -21, 30, 42);
-    if (lc.flip > 0.5) drawText(ctx, lc.card === 'ace' ? 'A' : lc.card === 'joker' ? 'J' : '2', 0, 1, 3, lc.card === 'deuce' ? '#140c1c' : '#c8321f');
+    ctx.fillRect(-30, -40, 60, 80);
+    ctx.fillStyle = lc.flip > 0.5 ? '#ffd23f' : '#8e1f3a';
+    ctx.fillRect(-28, -38, 56, 76);
+    ctx.fillStyle = lc.flip > 0.5 ? '#f4eee0' : '#5a1020';
+    ctx.fillRect(-24, -34, 48, 68);
+    if (lc.flip > 0.5) {
+      const deuce = lc.card === 'deuce';
+      drawText(ctx, lc.card === 'ace' ? 'A' : lc.card === 'joker' ? 'J' : '2', 0, -6, 5, deuce ? '#140c1c' : '#c8321f');
+      drawText(ctx, lc.card === 'ace' ? 'X2' : lc.card === 'joker' ? 'WILD' : 'ZERO', 0, 22, 1.5, deuce ? '#8e1f3a' : '#1f7d3c');
+    }
     ctx.restore();
   }
 

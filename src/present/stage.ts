@@ -75,6 +75,7 @@ export interface Stage {
     houseRules?: boolean;
     /** The Dealer's ALL IN is armed (big red warning over its machine). */
     allInArmed?: boolean;
+    allInCap?: number;
   };
   /** Symbol / charm levels per side (the payline numbers), and the Golden Ticket (charms one level up). */
   levels: Partial<Record<SideId, Levels>>;
