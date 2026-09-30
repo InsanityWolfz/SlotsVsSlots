@@ -850,7 +850,7 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - **E12:**
   - the ride subline moves below a machine-unlock line (no overlap);
   - edge rewards show a relic voucher / legendary badge (no longer the LUCKY CLOVER).
-- Tests: 184.
+- Tests: 185 (ALL IN cap and HOT HAND pay in bets.test.ts).
 
 ### Iteration 48 (2026-09-30): EXPERT_PLAYTEST_6 E3, FINAL HAND that arrives
 - **FINAL HAND** triggers at 40% of the Dealer's HP (was 1/3).
@@ -870,7 +870,7 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - WHITE unchanged (43.1 / 43.9 / 45.8 / 41.8 / 38.6);
   - GREEN 13.6 / 15.9 / 13.2 / 14.8 / 11.1 (avg 13.7);
   - the Dealer wins 50.2 / 58.0 / 43.7 / 49.5 / 48.9 (avg 50.1, was 54.1). That moves toward the playtester's ~47 target (E10).
-- Tests: 184.
+- Tests: 185 (ALL IN cap and HOT HAND pay in bets.test.ts).
 
 ### Iteration 49 (2026-09-30): EXPERT_PLAYTEST_6 E4, E5, E7, the bet economy
 - **E4 stakes 2 / 5 / ALL IN.** ALL IN is every chip you hold, capped at 20 (50 in endless). The button reads "ALL 14" once placed. (Median chips at the table is 8, so 12 was a dead button.)
@@ -889,4 +889,4 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   | keeps 10 chips | within ±1.5 (MIDAS −2.6) |
 
   Chips are worth more to the shop than a fair bet pays back, plus the interest cost. That's the intended risk tradeoff: bets are fair, but gambling the shop budget away loses runs.
-- Tests: 184.
+- Tests: 185 (ALL IN cap and HOT HAND pay in bets.test.ts).

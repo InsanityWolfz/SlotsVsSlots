@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
 import { betState, newTrack, trackEvent } from '../src/core/bets';
 import { Fight } from '../src/core/fight';
-import { betsOpen, clearBet, createRun, fightConfig, finishFight, offerBets, placeBet } from '../src/core/run';
+import { allInStake, betsOpen, clearBet, createRun, fightConfig, finishFight, offerBets, placeBet } from '../src/core/run';
 
 describe('SIDE BETS', () => {
   it('each kind settles on its own condition', () => {
@@ -64,5 +64,20 @@ describe('SIDE BETS', () => {
     expect(rec.bet?.won).toBe(true);
     expect(run.player.chips - before - (rec.chips ?? 0)).toBe(12);
     expect(run.bet).toBeNull();
+  });
+
+  it('ALL IN stakes what you hold, capped at 20; HOT HAND pays x3 then x4 on a streak', () => {
+    const base = defaultConfig();
+    const run = createRun(base, 99, 'knight');
+    run.pendingStart = null;
+    run.player.chips = 7;
+    expect(allInStake(run)).toBe(7);
+    run.player.chips = 40;
+    expect(allInStake(run)).toBe(20);
+    expect(offerBets(run, base).every((b) => b.pay <= 3)).toBe(true);
+    run.betStreak = 1;
+    expect(offerBets(run, base).every((b) => b.pay === 3)).toBe(true);
+    run.betStreak = 2;
+    expect(offerBets(run, base).every((b) => b.pay === 4)).toBe(true);
   });
 });
