@@ -717,7 +717,7 @@ export class Director {
       this.decay(h, 'shieldFlash', 1, 0.25);
       this.decay(h, 'shieldShake', 5, 0.3);
       this.s.particles.burst({ x: sb.x + 30, y: sb.y + 8, count: 20, colors: [COLORS.shield, '#ffffff', '#9fd0ff'], speed: [100, 350], kind: 'spark', gravity: 200, life: [0.2, 0.4] });
-      this.bg(this.popText(`BLOCK ${e.blocked}`, sb.x + sb.w - 60, sb.y + sb.h / 2, 3, '#9fd0ff', 16, 0.3));
+      this.bg(this.popText(`BLOCK ${e.blocked}`, sb.x + sb.w / 2, sb.y + sb.h / 2, 2.5, '#9fd0ff', 16, 0.3));
     }
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
     if (e.note === 'pierce') this.bg(this.popText('PIERCE!', target.x + 90, MACHINE_TOP - 22, 2, '#bff4ff', 14, 0.35));
@@ -1601,7 +1601,7 @@ export class Director {
     this.s.particles.burst({ x: p.x, y: p.y, count: 40, colors: ['#ff5a2a', '#ffd23f', '#ffffff', '#3a2a20'], speed: [150, 550], kind: 'spark', gravity: 400, life: [0.25, 0.6], size: [3, 6] });
     this.damageHud(e.side, e.targetHp, e.targetShield, e.hpDamage);
     const c = this.machineCenter(e.side);
-    if (e.blocked > 0) this.bg(this.popText(`BLOCK ${e.blocked}`, c.x + 80, MACHINE_TOP + 70, 2, '#9fd0ff', 16, 0.3));
+    if (e.blocked > 0) this.bg(this.popText(`BLOCK ${e.blocked}`, c.x + 40, MACHINE_TOP + 70, 2, '#9fd0ff', 16, 0.3));
     this.bg(this.popText(e.hpDamage > 0 ? `BOOM -${e.hpDamage}` : 'BOOM!', c.x, MACHINE_TOP + 40, 4, '#ff8a3a', 50));
     await this.c.wait(0.35);
   }

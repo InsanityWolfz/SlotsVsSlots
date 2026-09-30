@@ -211,6 +211,10 @@ export class Fight {
   phoenixUsed = false;
   /** The Mirror's damage so far this turn (its whole turn is capped). */
   private mirrorTurnDealt = 0;
+  /** HP you've lost this turn (one-turn cap: regular enemies 40% of your max HP, bosses 60%). */
+  private playerTurnHp = 0;
+  /** E3: reels of yours that thawed on your last turn can't be frozen or jammed on the next enemy turn. */
+  private thawShield = new Set<number>();
   /** Relics that act as the fight opens (Battery, Lightning Rod): popped on turn 1. */
   private openers: RelicId[] = [];
   /** The Mirror cracked (phase 2). */
@@ -357,6 +361,8 @@ export class Fight {
     this.turn++;
     events.push({ type: 'turnStart', turn: this.turn, side });
     this.mirrorTurnDealt = 0;
+    this.playerTurnHp = 0;
+    if (side === 'player') this.thawShield.clear();
     if (this.turn === 1) for (const relic of this.openers) events.push({ type: 'relic', side: 'player', relic });
     if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
@@ -1156,6 +1162,12 @@ export class Fight {
     const blocked = ignoreShield ? 0 : Math.min(target.shield, amount);
     target.shield -= blocked;
     let hpDamage = Math.min(target.hp, amount - blocked);
+    // ONE-TURN CAP on you: no turn takes more than 40% of your max HP (60% for bosses): no turn-2 one-shots (EXPERT_PLAYTEST_3 E2).
+    if (target.side === 'player') {
+      const cap = Math.round(target.maxHp * (this.isBoss || this.isMirror || this.isDealer ? TUNE.bossTurnCap : TUNE.turnCap));
+      hpDamage = Math.max(0, Math.min(hpDamage, cap - this.playerTurnHp));
+      this.playerTurnHp += hpDamage;
+    }
     // The crack gate: the Mirror's glass holds at half HP for the rest of the turn it cracks on.
     if (target.side === 'enemy' && this.isDealer && !this.dealt) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp / 2)));
     if (target.side === 'enemy' && this.isMirror) {
@@ -1312,7 +1324,15 @@ export class Fight {
       }),
     );
     pool.sort((a, b) => cellValue(foe.reels[b.reel].cells[b.index]) - cellValue(foe.reels[a.reel].cells[a.index]));
-    const cells = pool.slice(0, count);
+    // At most MARKS_PER_REEL marked cells per reel: the fight stays a duel (EXPERT_PLAYTEST_3 E4).
+    const perReel = foe.reels.map((reel) => reel.cells.filter((c) => c.carded).length);
+    const cells: CellRef[] = [];
+    for (const ref of pool) {
+      if (cells.length >= count) break;
+      if (perReel[ref.reel] >= TUNE.marksPerReel) continue;
+      perReel[ref.reel]++;
+      cells.push(ref);
+    }
     if (!cells.length) return this.fizzle(me, 'card', reels, events);
     for (const ref of cells) foe.reels[ref.reel].cells[ref.index].carded = true;
     if (me.side === 'enemy') this.marksPlaced += cells.length;
@@ -1540,7 +1560,7 @@ export class Fight {
       const c = foe.reels[r].cells[stop];
       return symbolValue(effectiveSymbol(c)) + (c.enh && !c.slimed && !c.stolen ? 3 : 0);
     };
-    const order = this.rng.shuffle(foe.reels.map((_, r) => r));
+    const order = this.rng.shuffle(foe.reels.map((_, r) => r)).filter((r) => foe.side !== 'player' || !this.thawShield.has(r));
     order.sort((a, b) => (ice ? valueAt(a, foe.reels[a].stop) - valueAt(b, foe.reels[b].stop) : valueAt(b, foe.reels[b].stop) - valueAt(a, foe.reels[a].stop)));
     let targets = order.slice(0, count).sort((a, b) => a - b);
 
@@ -1590,6 +1610,7 @@ export class Fight {
         if (t - 1 === 0) ended.push(r);
       });
       if (ended.length) events.push({ type: 'thaw', side: me.side, reels: ended, status });
+      if (me.side === 'player' && status !== 'hexed') for (const r of ended) this.thawShield.add(r);
     }
     if (me.raked > 0) {
       me.raked -= 1;

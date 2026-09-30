@@ -593,3 +593,30 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - It shows in the reel table and the payline tags (tag "50%").
 - tuesday.ts 1500: knight WHITE 38.7 / GREEN 11.3 / Dealer 51.8 (was 40.1 / 13.8 / 55.2: noise-ish). AVG 36.3 / 10.7 / 50.0.
 - **All of EXPERT_PLAYTEST_2 section G is done:** G1-G12, plus G13's meta drip, which is deferred as a larger design (endless, MIDAS and new machines are gated on the playtester's call).
+
+### Iteration 36 (2026-09-29): EXPERT_PLAYTEST_3 batch E1-E7
+- **E1 death recap:** now counts THE POT (House skims), ALL IN, and THE DEALER'S / THE SHARP'S MARK. It's clamped to the HP actually lost and adds "(FROZEN n OF m SPINS)". It's on its own full-width line under the run-over table.
+- **E2 one-turn caps:** you never lose more than 40% of max HP in one turn to a regular enemy, 60% to a boss (TUNE.turnCap / bossTurnCap; applied in `damage()` to the player).
+- **E3 thaw immunity:** a reel of yours that thawed can't be frozen or jammed on the next enemy turn.
+- **E4:** at most 2 marked cells per reel (TUNE.marksPerReel).
+- **E5 UI:**
+  - the reel table fits a height budget (rows shrink) on the draft/run-over panels and the in-fight strip map;
+  - BLOCK labels are centred;
+  - relic rows are 8 wide;
+  - the elite text is shorter.
+- **E6:** catch-up on relic drafts too; the heal is max(35%, missing HP).
+- **E7 shop:**
+  - slot 2 differs from a LEVEL card's charm too;
+  - late shelves are topped up with levels, a 2nd relic, then max HP (never thin).
+- **Re-balance** (the caps made the Dealer 71%): BOSS_MUL dealer knight 0.8, tesla 1.45, thorn 2.4, joker 1.5; thorn house 0.85, mirror 13; joker mirror 3.7.
+- **tuesday.ts 1500:**
+  | machine | WHITE | GREEN | Dealer |
+  |---|---|---|---|
+  | knight | 39.7 | 13.7 | 51.8 |
+  | tesla | 38.5 | 14.0 | 52.8 |
+  | thorn | 37.9 | 13.5 | 47.8 |
+  | joker | 39.5 | 16.7 | 54.6 |
+  | AVG | 38.9 | 14.5 | 51.7 |
+
+  The tightest machine spread yet. Act 3 regular deaths 2-4%.
+- Tests: 176 (tests/fairness.test.ts).

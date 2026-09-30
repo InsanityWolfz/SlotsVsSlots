@@ -492,13 +492,20 @@ export class Game {
   private lastRecord: FightRecord | null = null;
   /** DEATH RECAP: HP damage the player took this fight, by source. */
   private hurt = new Map<string, number>();
+  private spins = [0, 0];
   private noteHurt(events: CombatEvent[]): void {
     const add = (k: string, n: number) => n > 0 && this.hurt.set(k, (this.hurt.get(k) ?? 0) + n);
     for (const e of events) {
+      if (e.type === 'spin' && e.side === 'player' && !e.bonus) {
+        this.spins[1]++;
+        if (e.frozen.some(Boolean) || e.locked.some(Boolean)) this.spins[0]++;
+      }
+      if (e.type === 'potWin' && e.to === 'player') add('THE POT', e.hpDamage);
+      if (e.type === 'allInHit' && e.to === 'player') add('ALL IN', e.hpDamage);
       if (e.type === 'attack' && e.to === 'player')
         add(e.note === 'reflect' ? 'REFLECTION' : e.note === 'drain' ? 'DRAIN' : e.note === 'mimic' ? 'COPYCAT' : e.reels.length ? 'SPIN HITS' : this.fight.isBoss ? 'THE POT' : 'ABILITY', e.hpDamage);
       else if (e.type === 'specialFire' && e.to === 'player') add('SPECIAL', e.hpDamage);
-      else if (e.type === 'markedHit' && e.side === 'player') add('MARKED CARDS', e.hpDamage);
+      else if (e.type === 'markedHit' && e.side === 'player') add(this.fight.isDealer ? "THE DEALER'S MARK" : "THE SHARP'S MARK", e.hpDamage);
       else if (e.type === 'blast' && e.side === 'player') add('BOMBS', e.hpDamage);
     }
   }
@@ -507,8 +514,15 @@ export class Game {
   private afterRunFight(): void {
     const run = this.run!;
     const record = finishFight(run, this.fight, true);
-    if (!record.won) record.hurt = [...this.hurt].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    if (!record.won) {
+      // Clamp to the HP you actually lost (overkill past 0 isn't damage you felt).
+      const total = [...this.hurt.values()].reduce((a, b) => a + b, 0);
+      const k = total > record.hpBefore && total > 0 ? record.hpBefore / total : 1;
+      record.hurt = [...this.hurt].map(([s, n]) => [s, Math.round(n * k)] as [string, number]).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      if (this.spins[0] >= 2) record.stuck = [this.spins[0], this.spins[1]];
+    }
     this.hurt.clear();
+    this.spins = [0, 0];
     this.lastRecord = record;
     this.phase = run.over ? 'over' : 'between';
     if (run.over) {
@@ -648,6 +662,7 @@ export class Game {
     this.camera.dimTarget = 0;
     this.fight = new Fight(cfg, seed ?? cfg.seed ?? undefined);
     this.hurt.clear();
+    this.spins = [0, 0];
     this.lastSeed = this.fight.seed;
     this.tracker = new StatsTracker(this.fight);
     const clock = new Clock();

@@ -73,10 +73,23 @@ export interface TableOpts {
   levels?: Levels;
   ticket?: boolean;
   header?: boolean;
+  /** Total height available (header + rows + LV line): rows shrink to fit instead of spilling (EXPERT_PLAYTEST_3 B2). */
+  maxH?: number;
 }
 
 /** Draw the table with its top-left at (x, y). Returns the height used. */
-export function drawReelTable(ctx: CanvasRenderingContext2D, x: number, y: number, cols: TableRow[][], o: TableOpts): number {
+export function drawReelTable(ctx: CanvasRenderingContext2D, x: number, y: number, cols: TableRow[][], opts: TableOpts): number {
+  let o = opts;
+  if (opts.maxH) {
+    const head = opts.header !== false ? 22 : 0;
+    const lvLine = opts.levels && Object.values(opts.levels.sym).some((l) => (l ?? 1) > 1) ? 20 : 0;
+    const most = Math.max(1, ...cols.map((r) => Math.min(r.length, opts.maxRows ?? r.length)));
+    const fit = Math.floor((opts.maxH - head - lvLine) / most);
+    if (fit < opts.rowH) {
+      const k = Math.max(0.55, fit / opts.rowH);
+      o = { ...opts, rowH: Math.max(10, fit), scale: opts.scale * k, text: Math.max(1, (opts.text ?? 2) * Math.max(0.7, k)) };
+    }
+  }
   const ts = o.text ?? 2;
   let top = y;
   if (o.header !== false) {

@@ -140,6 +140,8 @@ export interface RunPlayer {
 export interface FightRecord {
   /** DEATH RECAP (lost fights): the top sources of HP damage you took, e.g. [['SPIN HITS', 180], ['BOMBS', 60]]. */
   hurt?: [string, number][];
+  /** Your spins this fight that had a frozen or jammed reel, of all your spins. */
+  stuck?: [number, number];
   depth: number;
   enemy: string;
   archetype: string;
@@ -636,11 +638,11 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  * be hit), so the same HP formula would give each a different win rate.
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number }> = {
-  knight: { house: 2.0, mirror: 0.9, dealer: 0.5, act3: 0.5 },
+  knight: { house: 2.0, mirror: 0.9, dealer: 0.8, act3: 0.5 },
   midas: { house: 3.5, mirror: 16, dealer: 0.45, act3: 0.1 },
-  thorn: { house: 1.0, mirror: 16, dealer: 1.1, act3: 1.1 },
-  tesla: { house: 0.5, mirror: 2.4, dealer: 0.65, act3: 0.95 },
-  joker: { house: 2.2, mirror: 3, dealer: 1.15, act3: 0.55 },
+  thorn: { house: 0.85, mirror: 13, dealer: 2.4, act3: 1.1 },
+  tesla: { house: 0.5, mirror: 2.4, dealer: 1.45, act3: 0.95 },
+  joker: { house: 2.2, mirror: 3.7, dealer: 1.5, act3: 0.55 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
@@ -931,7 +933,7 @@ export function draftOffers(run: RunState): DraftOption[] {
   // ACT 1 CATCH-UP: a costly win adds a 4th card, a big heal (deaths at fights 2-3 were the run killer).
   const last = run.records[run.records.length - 1];
   const costly = run.act === 1 && !!last?.won && last.hpBefore - last.hpAfter >= p.maxHp * RUN.catchUpLoss && p.hp < p.maxHp;
-  const size = RUN.draftSize + (costly && !isRelicDraft(run) ? 1 : 0);
+  const size = RUN.draftSize + (costly ? 1 : 0);
   const sig = sigSymbol(run);
 
   const swapCard = (): DraftOption | null => {
@@ -1029,7 +1031,7 @@ export function draftOffers(run: RunState): DraftOption[] {
     push((r < 0.35 ? wildCard() : r < 0.65 ? swapCard() : null) ?? clearCard() ?? gildCard() ?? levelCard() ?? addCard());
     push((rng.next() < 0.6 ? anySwapCard() : null) ?? hpCard());
   }
-  if (size > RUN.draftSize) out.push({ kind: 'heal', amount: Math.max(UNIT, Math.round((p.maxHp * RUN.catchUpHeal) / UNIT) * UNIT) });
+  if (size > RUN.draftSize) out.push({ kind: 'heal', amount: Math.max(UNIT, Math.round(Math.max(p.maxHp * RUN.catchUpHeal, p.maxHp - p.hp) / UNIT) * UNIT) });
   let guard = 0;
   while (out.length < RUN.draftSize && guard++ < 30) push(guard % 3 === 0 ? addCard() : guard % 3 === 1 ? swapCard() : { kind: 'maxHp', amount: RUN.maxHpCard });
   return out;
@@ -1119,8 +1121,9 @@ export function shopOffers(run: RunState): ShopItem[] {
   if (levels.length && rng.next() < 0.5) add(rng.pick(levels), P.level);
   else add(extend.length ? rng.pick(extend) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
   // Slot 2: a DIFFERENT charm type from slot 1, leaning to types you don't own.
-  const firstEnh = items.map((i) => i.option).find((o) => o.kind === 'gild');
-  const other = gildOptions.filter((o) => o.kind === 'gild' && (!firstEnh || firstEnh.kind !== 'gild' || o.enh !== firstEnh.enh));
+  const first = items.map((i) => i.option).find((o) => o.kind === 'gild' || o.kind === 'charmLevel');
+  const firstEnh = first && (first.kind === 'gild' || first.kind === 'charmLevel') ? first.enh : undefined;
+  const other = gildOptions.filter((o) => o.kind === 'gild' && o.enh !== firstEnh);
   const fresh = other.filter((o) => o.kind === 'gild' && !p.gilded.some((g) => g.enh === o.enh));
   add(fresh.length && rng.next() < 0.6 ? rng.pick(fresh) : other.length ? rng.pick(other) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
   const lastShop = run.act === runActs(run) && run.depth >= Math.min(actLength(run.act), RUN.shopAfter[RUN.shopAfter.length - 1]);
@@ -1148,6 +1151,13 @@ export function shopOffers(run: RunState): ShopItem[] {
     const junk = p.strips.flatMap((s, reel) => (['rock', 'shield'] as SymbolId[]).filter((sym) => (s[sym] ?? 0) > 1).map((symbol) => ({ kind: 'remove' as const, symbol, reel })));
     if (junk.length) add(rng.pick(junk), P.remove);
   }
+  // Never a thin shelf late: levels, a second relic, then max HP (EXPERT_PLAYTEST_3 B6).
+  for (const o of rng.shuffle(levels)) {
+    if (items.length >= 4) break;
+    add(o, P.level);
+  }
+  if (items.length < 4 && relics.length) add({ kind: 'relic', relic: rng.pick(relics) }, P.relic);
+  if (items.length < 4) add({ kind: 'maxHp', amount: RUN.maxHpCard }, P.heal);
   // Rerolls also redraw the layout: the four slots come in a new order.
   const shelf = run.shopRerolls > 0 ? rng.shuffle(items.slice(0, 4)) : items.slice(0, 4);
   run.shelfKeys = shelf.map((i) => JSON.stringify(i.option));

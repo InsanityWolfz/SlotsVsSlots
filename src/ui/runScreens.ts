@@ -831,18 +831,21 @@ export class RunScreens {
     });
   }
 
+  /** Height the YOUR REELS table may use (its panel is 134 tall; the title takes ~24). */
+  private stripsH = 104;
+
   /** YOUR REELS: the one reel table (columns 1 2 3, a row per symbol + charm). */
   private drawStrips(ctx: CanvasRenderingContext2D, x: number, y: number, maxRows = 5): void {
     const p = this.run!.player;
     drawText(ctx, 'YOUR REELS', x, y, 2, COLORS.textDim, { align: 'left' });
-    drawReelTable(ctx, x - 4, y + 10, runTable(p), { colW: 136, rowH: 19, scale: 1.1, text: 1.5, maxRows, levels: p.levels, ticket: p.relics.includes('ticket') });
+    drawReelTable(ctx, x - 4, y + 10, runTable(p), { colW: 136, rowH: 19, scale: 1.1, text: 1.5, maxRows, levels: p.levels, ticket: p.relics.includes('ticket'), maxH: this.stripsH });
   }
 
   private drawRelics(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     const relics = this.run!.player.relics;
     drawText(ctx, 'RELICS', x, y, 2, COLORS.textDim, { align: 'left' });
     if (!relics.length) drawText(ctx, 'NONE YET', x, y + 26, 2, '#4a4058', { align: 'left' });
-    relics.forEach((r, i) => drawSprite(ctx, RELICS[r].sprite as SpriteId, x + 16 + (i % 10) * 32, y + 30 + Math.floor(i / 10) * 32, 1.75));
+    relics.forEach((r, i) => drawSprite(ctx, RELICS[r].sprite as SpriteId, x + 16 + (i % 8) * 32, y + 30 + Math.floor(i / 8) * 30, 1.6));
   }
 
   private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
@@ -1016,7 +1019,7 @@ export class RunScreens {
     if (e.elite)
       drawText(
         ctx,
-        (e.act ?? 1) > 1 ? `ELITE: +${Math.round((ELITE_HP_MUL_2 - 1) * 100)}% HP. PAYS ${CHIPS.act2EliteChips + CHIPS.eliteBonus} CHIPS` : `ELITE: +${e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP, 1 OF 2 RELICS, +${CHIPS.eliteBonus} CHIPS`,
+        (e.act ?? 1) > 1 ? `ELITE: +${Math.round((ELITE_HP_MUL_2 - 1) * 100)}% HP. PAYS ${CHIPS.act2EliteChips + CHIPS.eliteBonus} CHIPS` : `ELITE: +${e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP, RELIC PICK, +${CHIPS.eliteBonus} CHIPS`,
         tx + 90,
         y + 104,
         1.5,
@@ -1327,8 +1330,12 @@ export class RunScreens {
     const trueEnding = run.won && run.act >= 3;
     drawText(ctx, trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, 6, run.won ? COLORS.goldLight : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
+    // DEATH RECAP: its own full-width line under the table (the most important line on a loss).
+    const loss = !run.won ? run.records[run.records.length - 1] : undefined;
+    const recap = loss?.hurt?.length ? `KILLED BY ${loss.enemy}: ${loss.hurt.map(([k, n]) => `${k} ${n}`).join(' - ')}${loss.stuck ? `  (FROZEN ${loss.stuck[0]} OF ${loss.stuck[1]} SPINS)` : ''}` : '';
+    if (recap) drawText(ctx, recap, W / 2, this.unlockedNow.length ? 460 : 466, 1.5, COLORS.danger);
     if (this.unlockedNow.length)
-      drawText(ctx, `NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, W / 2, 466, 2, COLORS.goldLight);
+      drawText(ctx, `NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, W / 2, recap ? 474 : 466, recap ? 1.5 : 2, COLORS.goldLight);
     drawText(ctx, run.stake > 0 ? `${reached}  -  STAKE ${run.stake} ${stakeOf(run.stake).name}` : reached, W / 2, 88, 2, COLORS.textDim);
     const unlockRow = !!this.stakeUnlockedNow;
     if (unlockRow) {
@@ -1368,7 +1375,7 @@ export class RunScreens {
       drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 680, y, 2, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
       if (compact) {
         const parts = [...(r.bonuses ?? []), r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
-        const what = !r.won && r.hurt?.length ? `KILLED BY: ${r.hurt.slice(0, 2).map(([k, n]) => `${k} ${n}`).join(', ')}` : parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
+        const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
         drawText(ctx, what.length > 34 ? `${what.slice(0, 33)}...` : what, 790, y, 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
         return;
       }
@@ -1380,7 +1387,6 @@ export class RunScreens {
         r.chips ? `+${r.chips} CHIPS` : '',
       ].filter(Boolean).join('  ');
       if (extra) drawText(ctx, extra, 790, y + 12, 1, COLORS.textDim, { align: 'left' });
-      else if (!r.won && r.hurt?.length) drawText(ctx, `KILLED BY: ${r.hurt.map(([k, n]) => `${k} ${n}`).join(' - ')}`, 790, y, 1.25, COLORS.danger, { align: 'left' });
       else if (!r.won) drawText(ctx, 'DEFEATED', 790, y, 2, COLORS.danger, { align: 'left' });
       if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCKS`, 640, y + 12, 1, '#c9bba8');
     });

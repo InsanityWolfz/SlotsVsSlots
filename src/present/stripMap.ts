@@ -20,7 +20,7 @@ export function drawStripMap(ctx: CanvasRenderingContext2D, m: MachineView, _tim
   ctx.fillStyle = COLORS.panel;
   ctx.fillRect(X0 - 5, TOP - 27, COL_W * 3 + 6, HEIGHT + 34);
   drawText(ctx, 'YOUR REELS', X0 + (COL_W * 3) / 2 - 4, TOP - 16, 1.5, COLORS.textDim);
-  drawReelTable(ctx, X0 - 2, TOP - 4, liveTable(m.reels, BONUS_SYMBOLS), { colW: COL_W, rowH: 22, scale: 1, text: 1.5, maxRows: 12, levels });
+  drawReelTable(ctx, X0 - 2, TOP - 4, liveTable(m.reels, BONUS_SYMBOLS), { colW: COL_W, rowH: 22, scale: 1, text: 1.5, maxRows: 12, levels, maxH: HEIGHT + 6 });
 }
 
 /** Where rocks should fly to for a given reel (centre of that column). */
