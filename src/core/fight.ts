@@ -1898,7 +1898,7 @@ export class Fight {
 
   /** The House skims half the pot (rounded up) as damage (shield blocks); the rest keeps growing. */
   private cashPot(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
-    const amount = unitsUp(this.pot * POT.skim * (this.cfg.enemy.dmgMul ?? 1));
+    const amount = unitsUp(this.pot * POT.skim * (this.cfg.enemy.dmgMul ?? 1) * (this.cfg.enemy.endless ? ENDLESS.housePot : 1));
     this.pot -= amount;
     // MIDAS's rival: the House skims his chips too (2 per cash-out).
     if (foe.side === 'player' && this.meter?.kind === 'vault') {

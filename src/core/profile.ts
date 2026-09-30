@@ -83,7 +83,7 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
     maxHp: run.player.maxHp,
     chips: run.player.chips,
     ...(tutorial ? { tutorial: true } : {}),
-    ...(run.endless ? { loops: run.endless.loop - 1, pot: run.endless.cashed ? run.endless.pot : Math.floor(run.endless.pot / 2) } : {}),
+    ...(run.endless ? { loops: run.endless.loop - 1, pot: run.endless.cashed ? run.endless.pot : Math.floor(run.endless.pot / 2) + run.player.chips * 10 } : {}),
   };
 }
 

@@ -763,3 +763,30 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   | AVG | 42.0 | | | | 14.4 | 52.0 |
 - **expert5_midas (WHITE):** greedy 49.7, pure spend 26.3, pure hoard 13.3, keep-30 54.0. Both extremes lose to a middle policy, so there's a real tradeoff. E9 (the vault costs chips) is deferred.
 - Tests: 179.
+
+### Iteration 44 (2026-09-30): EXPERT_PLAYTEST_5 E6, E7, E12
+- **E6 (commit 2384d81):** ALL IN pierces shields and comes at most once per 4 enemy turns; the Dealer's quiet cap is 25%.
+- **E7, endless loop bosses:**
+  - House HP ×4 → ×2.5, but its pot skims ×1.5 (a fast, dangerous race);
+  - Mirror HP ×5 → ×4;
+  - MIDAS gets its own endless growth: HP 1.3, damage 1.25.
+- **E7, edge rewards re-tiered by measured cost:**
+  | tier | edges |
+  |---|---|
+  | chips | frail, fast, nocomps |
+  | relic | heal |
+  | legend | marked, rollers |
+- **E7, the bust score:** half the pot plus your chips ×10 (the card says "YOUR CHIPS ARE SAFE").
+- **E12:** the sim cashes out when (HP%·0.8^(L-1)) < L/(L+4), instead of never.
+- **expert4_endless 250 (none):**
+  - loops cleared p50 4, mean 2.8;
+  - House L1 lost 0%, Mirror L2 23.6%, Dealer L3 18% (LAST CALL 23%).
+- **endless.ts 300, loops cleared p50:**
+  | machine | loops cleared p50 |
+  |---|---|
+  | KNIGHT | 1 |
+  | TESLA | 2 |
+  | BRIAR | 2 |
+  | JAX | 3 |
+  | MIDAS | 1 |
+- Regular runs are untouched (every change is endless-only). Tests: 179.

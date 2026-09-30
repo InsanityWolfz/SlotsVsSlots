@@ -148,8 +148,12 @@ export function choiceValue(run: RunState, c: BigChoice): number {
       return 6.5;
     case 'secondWind':
       return 4 + (1 - hp) * 6;
-    case 'cashOut':
-      return -1;
+    case 'cashOut': {
+      // Cash out when the odds of clearing the next loop fall below L / (L + 4) (HP proxies p(clear)).
+      const L = run.endless?.loop ?? 1;
+      const pClear = (run.player.hp / run.player.maxHp) * Math.pow(0.8, L - 1);
+      return pClear < L / (L + 4) ? 2 : -1;
+    }
     case 'ride':
       return 1;
     case 'edge':

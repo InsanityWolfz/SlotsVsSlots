@@ -1386,7 +1386,7 @@ export type BigChoiceId = 'edge' | 'cashOut' | 'ride' | 'armsRace' | 'masterwork
 export type EdgeId = 'fast' | 'marked' | 'heal' | 'rollers' | 'nocomps' | 'frail';
 export const EDGES: EdgeId[] = ['fast', 'marked', 'heal', 'rollers', 'nocomps', 'frail'];
 /** How much each edge costs you, and so what it pays (EXPERT_PLAYTEST_4 C1: rewards sized to cost). */
-export const EDGE_TIER: Record<EdgeId, 'chips' | 'relic' | 'legend'> = { frail: 'chips', heal: 'chips', fast: 'relic', marked: 'relic', rollers: 'legend', nocomps: 'legend' };
+export const EDGE_TIER: Record<EdgeId, 'chips' | 'relic' | 'legend'> = { frail: 'chips', heal: 'relic', fast: 'chips', marked: 'legend', rollers: 'legend', nocomps: 'chips' };
 /** The endless Cashier sells levels past the cap. */
 export const levelCap = (run: RunState) => (run.endless ? LEVEL_CAP + 1 : LEVEL_CAP);
 /** RIDE AGAIN: each loop cleared adds this x loop to the pot; a bust banks half. */
@@ -1426,7 +1426,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'cashOut':
       return { title: 'CASH OUT', rule: `BANK THE POT: ${cashOutValue(run)} POINTS (INCLUDES ${run.player.chips} CHIPS X10). THE RUN ENDS.`, cost: '' };
     case 'ride':
-      return { title: 'RIDE AGAIN', rule: `PLAY LOOP ${run.endless?.loop ?? 1}. THE POT GROWS BY ${POT_PER_LOOP * (run.endless?.loop ?? 1)}.`, cost: 'BUST AND YOU BANK ONLY HALF THE POT' };
+      return { title: 'RIDE AGAIN', rule: `PLAY LOOP ${run.endless?.loop ?? 1}. THE POT GROWS BY ${POT_PER_LOOP * (run.endless?.loop ?? 1)}.`, cost: 'BUST AND YOU BANK HALF THE POT (YOUR CHIPS ARE SAFE)' };
     case 'armsRace':
       return { title: 'ARMS RACE', rule: '+1 LEVEL TO ALL YOUR SYMBOLS', cost: `-${BIG.armsRaceHp} MAX HP` };
     case 'masterwork':
