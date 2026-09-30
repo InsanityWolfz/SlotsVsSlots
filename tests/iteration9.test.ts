@@ -125,7 +125,8 @@ describe('Package P', () => {
     f.forceNext('player', ['sword', 'sword', 'sword']);
     expect(ofType(f.step().events, 'specialFire').length).toBe(1);
 
-    const m = createRun(base, 10, 'midas');
+    // A fragile machine (under 260 HP) gets a softer opener. MIDAS isn't fragile any more (300 HP).
+    const m = createRun(base, 10, 'joker');
     const k = createRun(base, 10, 'knight');
     expect(enemyHp(m, m.enemies[0])).toBeLessThan(enemyHp(k, k.enemies[0]));
   });
