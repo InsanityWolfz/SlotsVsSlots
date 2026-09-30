@@ -512,3 +512,7 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 3. May fold in: the slime 3x3 cleanse, per-charm/per-upgrade win rates, new act 2/3 enemies that write on the machine, Relic Rush slow-mo/particles, hiscore and collection polish.
 4. HOLD for the user (write proposals only): endless mode, the MIDAS rework, a chip charm, new machines, the rename, 16-bit.
 5. Don't push to GitHub. Commit every iteration and log it here with before/after numbers from `tuesday.ts`.
+- **Amendment (user, same day):**
+  - Slime stays as it is (no 3x3 cleanse); it's already too slow.
+  - Endless mode, the MIDAS rework and new slot machines MAY be built during the loop, once the playtester judges the game is in a good enough spot for them.
+  - 16-bit art: never. The rename: later.
