@@ -1098,3 +1098,16 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - **E3:** the daily key is UTC (friends share a day). A key at or before the newest one played is SPENT (`dailySpent`), so winding the clock back gives no retries.
 - **E7:** "FREEZES 1 REEL" (singular); the daily row names the hero ("DAILY: BRIAR").
 - Tests: 192 (daily guard, share line, act 3).
+
+### Iteration 61 (2026-09-30): EXPERT_PLAYTEST_8 E4, E8, daily depth
+- **E4:** THE DAILY RUN has a HOUSE EDGE of the day (`dailyEdge`, from FAST HANDS / HOUSE CUT / HIGH ROLLERS / GLASS JAW).
+  - The menu row reads "DAILY: BRIAR + HOUSE CUT", the start screen "DAILY 09-30: HOUSE CUT", and the share line includes it.
+  - `applyDaily(run, key)` in run.ts sets up a daily (the game and the harness share it).
+  - fightConfig applies HOUSE EDGEs from endless and the daily alike.
+  - MARKED DECK is left out: three marks from fight 1 gave a fresh build 1% daily wins. NO COMPS only works between loops.
+- **E8:** a won daily scores +1 per HP left (`hpLeft` on the entry), so winners aren't ranked only by hoarded chips.
+- **`expert8_daily.ts 120 8`**, with the edges and dailyAct3 0.55 → 0.45:
+  - mean day win 18.0% (edges cost ~5 points);
+  - by edge: fast 17, frail 23, rollers 21, heal 12;
+  - days with no winner 45/120. The harness's 8 choice variants are mostly random picks, so this is pessimistic for a thinking player; a hard daily is part of its character.
+- Tests: 192.

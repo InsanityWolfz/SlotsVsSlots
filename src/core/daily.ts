@@ -3,6 +3,12 @@
  * when the run starts), its fights are seeded from the day, and it lands in the hiscores tagged DAILY.
  */
 import { CABINET_ORDER, type CabinetId } from './cabinets';
+import type { EdgeId } from './run';
+
+/** The day's HOUSE EDGE (the ones that bend every fight or the run's start: NO COMPS only works between loops, and
+ * MARKED DECK from fight 1 left a fresh build 1% daily wins). */
+export const DAILY_EDGES: EdgeId[] = ['fast', 'heal', 'rollers', 'frail'];
+export const dailyEdge = (key: string): EdgeId => DAILY_EDGES[dailySeed(`${key}:edge`) % DAILY_EDGES.length];
 
 /** Today's key, e.g. "2026-09-30" (UTC, so everyone shares the same day). */
 export function dailyKey(d = new Date()): string {
@@ -14,13 +20,13 @@ export function dailyKey(d = new Date()): string {
 export const dailySpent = (key: string, lastPlayed?: string) => !!lastPlayed && key <= lastPlayed;
 
 /** The share line for a finished daily: day, hero, score and each act's fights (W won, B boss won, L the loss). */
-export function dailyShare(key: string, hero: string, score: number, records: { act?: number; won: boolean; depth: number }[], actLen: (act: number) => number): string {
+export function dailyShare(key: string, hero: string, edge: string, score: number, records: { act?: number; won: boolean; depth: number }[], actLen: (act: number) => number): string {
   const acts = new Map<number, string>();
   for (const r of records) {
     const a = r.act ?? 1;
     acts.set(a, (acts.get(a) ?? '') + (!r.won ? 'L' : r.depth >= actLen(a) ? 'B' : 'W'));
   }
-  return `SLOTS VS. SLOTS DAILY ${key.slice(5)} | ${hero} | ${score} | ${[...acts.values()].join(' ')}`;
+  return `SLOTS VS. SLOTS DAILY ${key.slice(5)} | ${hero} | ${edge} | ${score} | ${[...acts.values()].join(' ')}`;
 }
 
 /** The day's run seed (FNV-1a of the key). */

@@ -15,6 +15,7 @@ import {
   chooseEnemy,
   createRun,
   draftOffers,
+  applyDaily,
   offerBets,
   fightConfig,
   finishFight,
@@ -500,7 +501,7 @@ export class Game {
     this.profile.lastDaily = key;
     this.saveProfile();
     this.startRun(dailySeed(key), dailyCabinet(key), 0);
-    if (this.run) this.run.daily = key;
+    if (this.run) applyDaily(this.run, key);
     // The first fight was set up before the run knew it was the daily: rebuild it on the day's seed.
     this.newFight(false, null, fightConfig(this.run!, this.cfg), true);
   }

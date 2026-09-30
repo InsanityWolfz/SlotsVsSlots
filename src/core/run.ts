@@ -24,7 +24,7 @@ import {
 import { CABINETS, type CabinetId } from './cabinets';
 import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
-import { dailyFightSeed } from './daily';
+import { dailyEdge, dailyFightSeed } from './daily';
 import { ALL_IN_STAKE, BET_STAKES, BETS, betPayout, betsFrom, dealerBets, betState, HOT_HAND, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
@@ -233,8 +233,9 @@ export interface RunState {
   /** SIDE BETS on the next fight: the table's offer (keyed to the fight) and the bet you placed. */
   bets?: { key: string; offer: SideBet[] } | null;
   bet?: PlacedBet | null;
-  /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day). */
+  /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day), and the day's HOUSE EDGE. */
   daily?: string;
+  dailyEdge?: EdgeId;
   /** Side bets placed this run (the bet relics show up after the first). */
   betsPlaced?: number;
   /** MARKER: the act (and loop) whose first busted bet was refunded. */
@@ -568,17 +569,18 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     const copy = mirrorCopy(run);
     if (copy) cfg.enemy.relics = [copy];
   }
-  // ENDLESS: damage grows per loop; HOUSE EDGES bend the fight.
+  // HOUSE EDGES bend the fight: the ones taken in endless, and THE DAILY RUN's edge of the day.
+  const edges = new Set<EdgeId>([...(run.endless?.edges ?? []), ...(run.dailyEdge ? [run.dailyEdge] : [])]);
+  if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 2) };
+  if (edges.has('marked')) cfg.player.startMarks = Math.max(cfg.player.startMarks ?? 0, 3);
+  if (edges.has('heal')) cfg.player.healMul = 0.5;
+  if (edges.has('rollers')) cfg.enemy.hp = unitsRound(cfg.enemy.hp * 1.3);
+  // ENDLESS: damage grows per loop.
   if (run.endless) {
-    const edges = new Set(run.endless.edges);
     // The loop House is a race: it cashes its pot every 2 turns.
     if (e.boss === 'house' && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: ENDLESS.houseEvery };
     cfg.enemy.endless = true;
     cfg.enemy.dmgMul = Math.pow(ENDLESS.dmgBy[run.cabinet] ?? ENDLESS.dmg, run.endless.loop);
-    if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 2) };
-    if (edges.has('marked')) cfg.player.startMarks = Math.max(cfg.player.startMarks ?? 0, 3);
-    if (edges.has('heal')) cfg.player.healMul = 0.5;
-    if (edges.has('rollers')) cfg.enemy.hp = unitsRound(cfg.enemy.hp * 1.3);
   }
   // THE DAILY RUN: every fight is fixed by the day, so everyone meets the same fights.
   cfg.seed = run.daily ? dailyFightSeed(run.seed, run.act, run.depth, run.endless?.loop ?? 0) : null;
@@ -587,6 +589,17 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
 
 /** Enemy symbols that write on your machine (for the WRITER house edge). */
 
+
+/** Make a fresh run THE DAILY RUN of this day: fights fixed by the day, and the day's HOUSE EDGE. */
+export function applyDaily(run: RunState, key: string): void {
+  run.daily = key;
+  run.dailyEdge = dailyEdge(key);
+  // GLASS JAW takes its 10% at the start.
+  if (run.dailyEdge === 'frail') {
+    run.player.maxHp = Math.max(UNIT, run.player.maxHp - Math.round((run.player.maxHp * 0.1) / UNIT) * UNIT);
+    run.player.hp = Math.min(run.player.hp, run.player.maxHp);
+  }
+}
 
 /** SIDE BETS are offered before regular fights (not bosses, not the tutorial's first fight, not at a fork). */
 export function betsOpen(run: RunState): boolean {

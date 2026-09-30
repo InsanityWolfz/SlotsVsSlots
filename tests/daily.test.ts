@@ -47,9 +47,9 @@ describe('THE DAILY RUN', () => {
     expect(runActs(run)).toBe(2);
     run.daily = '2026-09-30';
     expect(runActs(run)).toBe(3);
-    const line = dailyShare('2026-09-30', 'BRIAR', 2450, [
+    const line = dailyShare('2026-09-30', 'BRIAR', 'MARKED DECK', 2450, [
       { act: 1, won: true, depth: 0 }, { act: 1, won: true, depth: 5 }, { act: 2, won: false, depth: 1 },
     ], () => 5);
-    expect(line).toBe('SLOTS VS. SLOTS DAILY 09-30 | BRIAR | 2450 | WB L');
+    expect(line).toBe('SLOTS VS. SLOTS DAILY 09-30 | BRIAR | MARKED DECK | 2450 | WB L');
   });
 });

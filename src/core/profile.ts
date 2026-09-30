@@ -43,8 +43,9 @@ export interface RunEntry {
   maxHp: number;
   chips: number;
   tutorial?: boolean;
-  /** THE DAILY RUN: its day. */
+  /** THE DAILY RUN: its day, and the HP it finished with (a won daily scores it). */
   daily?: string;
+  hpLeft?: number;
   /** ENDLESS: loops cleared after LET IT RIDE, and the points banked (all of it on CASH OUT, half on a bust). */
   loops?: number;
   pot?: number;
@@ -90,7 +91,7 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
     maxHp: run.player.maxHp,
     chips: run.player.chips,
     ...(tutorial ? { tutorial: true } : {}),
-    ...(run.daily ? { daily: run.daily } : {}),
+    ...(run.daily ? { daily: run.daily, hpLeft: Math.max(0, run.player.hp) } : {}),
     ...(run.endless ? { loops: run.endless.loop - 1, pot: run.endless.cashed ? run.endless.pot : bustPot(run.endless.pot) + run.player.chips * 10 } : {}),
   };
 }
@@ -100,7 +101,9 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
 export const CHIP_SCORE = 5;
 export function runScore(e: RunEntry): number {
   const chips = e.won && e.pot == null ? (e.chips ?? 0) * CHIP_SCORE : 0;
-  const base = e.fights * 100 + (e.won ? 1000 : 0) + (e.won && e.acts >= 3 ? 1000 : 0) + (e.pot ?? 0) + chips;
+  // THE DAILY RUN: +1 per HP left on a win (winners aren't ranked only by chips they hoarded).
+  const hp = e.won && e.daily ? (e.hpLeft ?? 0) : 0;
+  const base = e.fights * 100 + (e.won ? 1000 : 0) + (e.won && e.acts >= 3 ? 1000 : 0) + (e.pot ?? 0) + chips + hp;
   return Math.round(base * (1 + 0.5 * e.stake));
 }
 
@@ -157,7 +160,7 @@ export function sanitizeProfile(raw: unknown): Profile {
         maxHp: num(e.maxHp, 0, 99999),
         chips: num(e.chips, 0, 9999),
         ...(e.tutorial === true ? { tutorial: true } : {}),
-        ...(typeof e.daily === 'string' && DATE_KEY.test(e.daily) ? { daily: e.daily } : {}),
+        ...(typeof e.daily === 'string' && DATE_KEY.test(e.daily) ? { daily: e.daily, hpLeft: num(e.hpLeft, 0, 99999) } : {}),
         ...(typeof e.loops === 'number' ? { loops: num(e.loops, 0, 999) } : {}),
         ...(typeof e.pot === 'number' ? { pot: num(e.pot, 0, 1e9) } : {}),
       });

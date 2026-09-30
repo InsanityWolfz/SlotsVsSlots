@@ -19,6 +19,7 @@ import {
   isRelicDraft,
   needsChoice,
   offerBets,
+  EDGE_TEXT,
   allInStake,
   betStakes,
   interestOn,
@@ -812,7 +813,7 @@ export class RunScreens {
       this.rideOffer = true;
     }
     // THE DAILY RUN: a line to share, and a button that copies it.
-    this.shareLine = run.daily ? dailyShare(run.daily, CABINETS[run.cabinet].hero, runScore(runEntry(run, 0)), run.records, actLength) : '';
+    this.shareLine = run.daily ? dailyShare(run.daily, CABINETS[run.cabinet].hero, run.dailyEdge ? EDGE_TEXT[run.dailyEdge].title : '-', runScore(runEntry(run, 0)), run.records, actLength) : '';
     if (this.shareLine) {
       const copy = this.btn('COPY RESULT', W / 2, 590, 240, 40, () => {
         void navigator.clipboard?.writeText(this.shareLine).then(
@@ -973,7 +974,7 @@ export class RunScreens {
   private drawDraft(ctx: CanvasRenderingContext2D, time: number): void {
     const last = this.lastRecord;
     const start = this.draftKind === 'start';
-    drawText(ctx, last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `THE DAILY RUN - ${this.run.daily.slice(5)}` : 'A NEW RUN') : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
+    drawText(ctx, last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${this.run.dailyEdge ? `: ${EDGE_TEXT[this.run.dailyEdge].title}` : ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';

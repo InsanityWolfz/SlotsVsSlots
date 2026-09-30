@@ -3,12 +3,12 @@
 // = greedy with 25% random picks (a different player on the same day). Compares the spread of per-day win rates with
 // fixed fights vs fresh fight seeds, the value of a retry (best of 3), and determinism (same choices, same result).
 import { defaultConfig } from '../../src/core/config';
-import { dailyCabinet, dailySeed } from '../../src/core/daily';
+import { dailyCabinet, dailyEdge, dailySeed } from '../../src/core/daily';
 import { actLength } from '../../src/core/enemies';
 import { Fight } from '../../src/core/fight';
 import { Rng } from '../../src/core/rng';
 import {
-  applyOption, buy, chooseEnemy, CHIPS, createRun, draftOffers, finishFight, fightConfig, isShopNow, leaveShop,
+  applyDaily, applyOption, buy, chooseEnemy, CHIPS, createRun, draftOffers, finishFight, fightConfig, isShopNow, leaveShop,
   needsChoice, shopOffers, takeChoice, takeLegend, takeSpoils, takeStart, type RunState,
 } from '../../src/core/run';
 import { choiceValue, greedyValue } from '../../src/sim/simulateRun';
@@ -21,7 +21,7 @@ const base = defaultConfig();
 function play(key: string, v: number, fixed: boolean): { won: boolean; fights: number; sig: string } {
   const seed = dailySeed(key);
   const run: RunState = createRun(base, seed, dailyCabinet(key), STAKE, STAKE >= 2);
-  if (fixed) run.daily = key;
+  if (fixed) applyDaily(run, key);
   const r = new Rng((seed ^ (v * 0x9e3779b1)) >>> 0);
   const eps = v === 0 ? 0 : 0.25;
   const pick = <T,>(xs: T[], val: (x: T) => number): T => (r.next() < eps ? r.pick(xs) : xs.reduce((a, b) => (val(b) > val(a) ? b : a)));
@@ -88,3 +88,6 @@ console.log(`one try vs best of 3 (fresh): ${((100 * firstFresh) / DAYS).toFixed
 const byMachine: Record<string, number[]> = {};
 keys.forEach((k, i) => (byMachine[dailyCabinet(k)] ??= []).push(res.fixed[i]));
 console.log('per machine fixed-day win:', Object.entries(byMachine).map(([c, xs]) => `${c} ${((100 * xs.reduce((a, b) => a + b, 0)) / xs.length).toFixed(0)}% (${xs.length}d)`).join(' | '));
+const byEdge: Record<string, number[]> = {};
+keys.forEach((k, i) => (byEdge[dailyEdge(k)] ??= []).push(res.fixed[i]));
+console.log('per edge fixed-day win:', Object.entries(byEdge).map(([c, xs]) => `${c} ${((100 * xs.reduce((a, b) => a + b, 0)) / xs.length).toFixed(0)}% (${xs.length}d)`).join(' | '));
