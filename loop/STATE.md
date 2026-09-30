@@ -502,3 +502,13 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - tuesday.ts 1500: knight WHITE 27.7 / GREEN 11.1 / Dealer 57.8 (was ~28-29 / ~11 / ~52-58: noise). AVG WHITE 28.2, GREEN 12.8, Dealer 59.4.
 - Pacing data for the expert: turns per fight in act 1 are 17.9-24.2; act 2 ranges from 6.8 (JAX) to 24.8 (BRIAR).
 - Tests: 170.
+
+## User direction (2026-09-29): BINDING FOR THIS LOOP
+1. Implement ALL of playtest/EXPERT_PLAYTEST_2.md section G, small and medium: Mirror fixes, act 1 pacing, offer rules, chips, death recap, catch-up, act 2 scaling to power, late attrition, Dealer rework, KNIGHT's 4th charm.
+2. Then run the autonomous loop until the user returns and asks for a full report:
+   - the playtester (an expert in roguelikes, slot machines, incentives and fun) plays and says what feels off, and suggests changes;
+   - the changes get implemented and measured;
+   - repeat.
+3. May fold in: the slime 3x3 cleanse, per-charm/per-upgrade win rates, new act 2/3 enemies that write on the machine, Relic Rush slow-mo/particles, hiscore and collection polish.
+4. HOLD for the user (write proposals only): endless mode, the MIDAS rework, a chip charm, new machines, the rename, 16-bit.
+5. Don't push to GitHub. Commit every iteration and log it here with before/after numbers from `tuesday.ts`.
