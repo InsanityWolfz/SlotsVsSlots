@@ -24,6 +24,7 @@ import {
 import { CABINETS, type CabinetId } from './cabinets';
 import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
+import { dailyFightSeed } from './daily';
 import { ALL_IN_STAKE, BET_STAKES, BETS, betPayout, betsFrom, dealerBets, betState, HOT_HAND, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
@@ -232,6 +233,8 @@ export interface RunState {
   /** SIDE BETS on the next fight: the table's offer (keyed to the fight) and the bet you placed. */
   bets?: { key: string; offer: SideBet[] } | null;
   bet?: PlacedBet | null;
+  /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day). */
+  daily?: string;
   /** Side bets placed this run (the bet relics show up after the first). */
   betsPlaced?: number;
   /** MARKER: the act (and loop) whose first busted bet was refunded. */
@@ -576,7 +579,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     if (edges.has('heal')) cfg.player.healMul = 0.5;
     if (edges.has('rollers')) cfg.enemy.hp = unitsRound(cfg.enemy.hp * 1.3);
   }
-  cfg.seed = null;
+  // THE DAILY RUN: every fight is fixed by the day, so everyone meets the same fights.
+  cfg.seed = run.daily ? dailyFightSeed(run.seed, run.act, run.depth, run.endless?.loop ?? 0) : null;
   return cfg;
 }
 

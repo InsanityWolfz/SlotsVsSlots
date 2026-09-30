@@ -1060,3 +1060,15 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - Tried +20% max HP alone: 7.3.
   - With the shield level: 8.3 (knight 8.7, tesla 4.3, thorn 9.0, joker 10.7, midas 9.0). TESLA lives on GLASS CANNON, so its safe pick lags.
 - Tests: 187.
+
+### Iteration 59 (2026-09-30): THE DAILY RUN (EXPERT_PLAYTEST_7 section 6, #2)
+- **A new main-menu row, "DAILY: <MACHINE>":** one seed and one slot machine per calendar day, the same for everyone (`src/core/daily.ts`: dailyKey, FNV-1a dailySeed, dailyCabinet).
+  - It can be a machine you haven't unlocked (a taste of it). Base stake.
+- **Its fights are fixed by the day:** `fightConfig` seeds each fight from the run seed, act, depth and loop (normal runs stay random). The bet rehearsals use other seeds, so they don't leak the real fight.
+- **One try a day:** `profile.lastDaily` is spent when the run starts (quitting doesn't give it back). The row then shows "DAILY: <score>" or "DAILY: SPENT".
+  - The run's hiscore entry carries `daily` (tagged "DAILY MM-DD" in HISCORES).
+  - A daily doesn't unlock machines or stakes.
+  - The save keeps both fields; junk is dropped by the sanitizer. The save keys are unchanged.
+- **The menu** is five rows (NEW RUN, DAILY, TUTORIAL, COLLECTION, HISCORES), each with its own icon; the daily uses the chip sprite.
+- The run history already exists: HISCORES → RECENT.
+- Tests: 190 (tests/daily.test.ts).

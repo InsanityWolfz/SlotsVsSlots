@@ -43,14 +43,21 @@ export interface RunEntry {
   maxHp: number;
   chips: number;
   tutorial?: boolean;
+  /** THE DAILY RUN: its day. */
+  daily?: string;
   /** ENDLESS: loops cleared after LET IT RIDE, and the points banked (all of it on CASH OUT, half on a bust). */
   loops?: number;
   pot?: number;
 }
 
+/** A daily key: YYYY-MM-DD. */
+const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
+
 export interface Profile {
   found: { relics: RelicId[]; charms: Enh[] };
   runs: RunEntry[];
+  /** THE DAILY RUN: the last day whose try was spent (it's spent when the run starts). */
+  lastDaily?: string;
 }
 
 export const emptyProfile = (): Profile => ({ found: { relics: [], charms: [] }, runs: [] });
@@ -83,6 +90,7 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
     maxHp: run.player.maxHp,
     chips: run.player.chips,
     ...(tutorial ? { tutorial: true } : {}),
+    ...(run.daily ? { daily: run.daily } : {}),
     ...(run.endless ? { loops: run.endless.loop - 1, pot: run.endless.cashed ? run.endless.pot : bustPot(run.endless.pot) + run.player.chips * 10 } : {}),
   };
 }
@@ -149,9 +157,11 @@ export function sanitizeProfile(raw: unknown): Profile {
         maxHp: num(e.maxHp, 0, 99999),
         chips: num(e.chips, 0, 9999),
         ...(e.tutorial === true ? { tutorial: true } : {}),
+        ...(typeof e.daily === 'string' && DATE_KEY.test(e.daily) ? { daily: e.daily } : {}),
         ...(typeof e.loops === 'number' ? { loops: num(e.loops, 0, 999) } : {}),
         ...(typeof e.pot === 'number' ? { pot: num(e.pot, 0, 1e9) } : {}),
       });
     }
-  return { found: { relics: [...new Set(relicIds(f.relics))], charms: [...new Set(charmIds(f.charms))] }, runs };
+  const lastDaily = typeof p.lastDaily === 'string' && DATE_KEY.test(p.lastDaily) ? p.lastDaily : undefined;
+  return { found: { relics: [...new Set(relicIds(f.relics))], charms: [...new Set(charmIds(f.charms))] }, runs, ...(lastDaily ? { lastDaily } : {}) };
 }

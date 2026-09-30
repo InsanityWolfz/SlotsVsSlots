@@ -6,6 +6,7 @@ import { actLength, RUN_FIGHTS, TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { Fight } from './core/fight';
 import { betProfit, betProgress, describeBet, newTrack } from './core/bets';
+import { dailyCabinet, dailyKey, dailySeed } from './core/daily';
 import { turnRow, type TurnRow } from './core/log';
 import { REFLECT_MIN, RELICS } from './core/relics';
 import {
@@ -206,6 +207,7 @@ export class Game {
     this.menus = new Menus(this.ui, this.sounds, () => this.profile, () => this.unlockedCabinets(), {
       onNewRun: () => this.chooseCabinet(),
       onTutorial: () => this.startTutorial(),
+      onDaily: () => this.startDaily(),
       onReset: () => this.resetSave(),
       tutorialDone: () => this.prefs.tutorialDone,
       softLightning: () => this.prefs.juice.softLightning,
@@ -491,6 +493,18 @@ export class Game {
     this.syncButtons();
   }
 
+  /** THE DAILY RUN: today's seed and machine, base stake. The try is spent now (quitting doesn't give it back). */
+  startDaily(): void {
+    const key = dailyKey();
+    if (this.profile.lastDaily === key) return;
+    this.profile.lastDaily = key;
+    this.saveProfile();
+    this.startRun(dailySeed(key), dailyCabinet(key), 0);
+    if (this.run) this.run.daily = key;
+    // The first fight was set up before the run knew it was the daily: rebuild it on the day's seed.
+    this.newFight(false, null, fightConfig(this.run!, this.cfg), true);
+  }
+
   /** Tuning panel "apply": restart with the new base config. */
   restart(): void {
     this.startRun();
@@ -550,7 +564,8 @@ export class Game {
       this.recordRun(run);
       this.skipTutorial();
       if (run.endless) this.screens.setStakeUnlockedNow('');
-      this.screens.setUnlockedNow(run.endless ? [] : this.checkUnlocks(run));
+      if (run.daily) this.screens.setStakeUnlockedNow('');
+      this.screens.setUnlockedNow(run.endless || run.daily ? [] : this.checkUnlocks(run));
       this.screens.showOver(run);
     }
     else if (run.bonusLog?.length) {

@@ -2,6 +2,7 @@ import type { Sounds } from '../audio/sounds';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import type { Enh, RelicId } from '../core/config';
 import { runScore, type Profile, type RunEntry } from '../core/profile';
+import { dailyCabinet, dailyKey } from '../core/daily';
 import { LEGENDARY, RELICS, RELIC_TIER } from '../core/relics';
 import { CHARM_SYMBOLS, charmRuleText } from '../core/charms';
 import { STAKES } from '../core/stakes';
@@ -83,6 +84,8 @@ export class Menus {
     private cb: {
       onNewRun: () => void;
       onTutorial: () => void;
+      /** THE DAILY RUN (one try a day). */
+      onDaily: () => void;
       onReset: () => void;
       tutorialDone: () => boolean;
       /** SOFT LIGHTNING option. */
@@ -125,10 +128,16 @@ export class Menus {
     this.open('main');
     const x = W / 2;
     const first = !this.cb.tutorialDone();
-    this.btn('NEW RUN', x, 336, 380, 60, () => this.cb.onNewRun(), 3).opts.idlePulse = !first;
-    this.btn('TUTORIAL', x, 410, 380, 60, () => this.cb.onTutorial(), 3).opts.idlePulse = first;
-    this.btn('COLLECTION', x, 484, 380, 60, () => this.showCollection(), 3);
-    this.btn('HISCORES', x, 558, 380, 60, () => this.showHiscores(), 3);
+    this.btn('NEW RUN', x, 318, 380, 54, () => this.cb.onNewRun(), 3).opts.idlePulse = !first;
+    // THE DAILY RUN: today's slot machine, one try a day (then its score).
+    const today = dailyKey();
+    const run = this.profile().runs.find((e) => e.daily === today);
+    const done = this.profile().lastDaily === today;
+    const daily = this.btn(run ? `DAILY: ${runScore(run)}` : done ? 'DAILY: SPENT' : `DAILY: ${CABINETS[dailyCabinet(today)].name}`, x, 380, 380, 54, () => !done && this.cb.onDaily(), 3);
+    daily.toggled = done;
+    this.btn('TUTORIAL', x, 442, 380, 54, () => this.cb.onTutorial(), 3).opts.idlePulse = first;
+    this.btn('COLLECTION', x, 504, 380, 54, () => this.showCollection(), 3);
+    this.btn('HISCORES', x, 566, 380, 54, () => this.showHiscores(), 3);
     const light = this.btn(this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL', 150, 36, 260, 40, () => {
       this.cb.setSoftLightning(!this.cb.softLightning());
       light.label = this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL';
@@ -274,8 +283,8 @@ export class Menus {
     for (const b of this.buttons) b.draw(ctx, t);
     if (this.mode === 'main') {
       // Icons on the menu buttons (over them, scaled with their press).
-      const icons = ['iconNewRun', 'iconTutorial', 'iconCollection', 'iconHiscores'];
-      this.buttons.slice(0, 4).forEach((b, i) => {
+      const icons = ['iconNewRun', 'chip', 'iconTutorial', 'iconCollection', 'iconHiscores'];
+      this.buttons.slice(0, 5).forEach((b, i) => {
         if (hasSprite(icons[i])) drawSprite(ctx, artId(icons[i]), b.x - (b.w / 2 - 38) * b.scale, b.y, 2.5 * b.scale);
       });
     }
@@ -339,7 +348,7 @@ export class Menus {
     const total = RELIC_ORDER.length + CHARM_ORDER.length;
     const best = p.runs.reduce((m, e) => Math.max(m, runScore(e)), 0);
     drawText(ctx, `COLLECTION ${found}/${total}   RUNS ${p.runs.length}   BEST ${best}`, W / 2, 604, 1.5, COLORS.textDim);
-    if (!this.cb.tutorialDone()) drawText(ctx, 'NEW HERE? TRY THE TUTORIAL', W / 2, 276, 2, COLORS.goldLight, { alpha: 0.6 + 0.4 * Math.sin(t * 4) });
+    if (!this.cb.tutorialDone()) drawText(ctx, 'NEW HERE? TRY THE TUTORIAL', W / 2, 268, 2, COLORS.goldLight, { alpha: 0.6 + 0.4 * Math.sin(t * 4) });
     drawText(ctx, 'PLAYTEST BUILD', 20, H - 20, 1.5, COLORS.textDim, { align: 'left' });
   }
 
@@ -448,6 +457,7 @@ export class Menus {
       // Result.
       const icon = e.won ? 'trophySmall' : 'hsSkull';
       if (hasSprite(icon)) drawSprite(ctx, artId(icon), 172, y + 13, 1.5);
+      if (e.daily) drawText(ctx, `DAILY ${e.daily.slice(5)}`, 164 + CABINETS[e.cabinet].hero.length * 12 + 14, y - 26, 1.25, '#7dff7a', { align: 'left' });
       const result = e.won
         ? e.acts >= 3
           ? e.loops ? `BEAT THE DEALER + ${e.loops} ENDLESS LOOP${e.loops > 1 ? 'S' : ''}` : 'BEAT THE DEALER! TRUE ENDING'
