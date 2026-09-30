@@ -27,6 +27,7 @@ import {
 import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
 import { ENDLESS, TUNE } from './enemies';
+import { newTrack, trackEvent } from './bets';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
 export const MIDAS = { houseSkim: 2, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3, jackpotChips: 3, chipCap: 8 };
 import { isNearMiss, multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
@@ -361,6 +362,8 @@ export class Fight {
 
   /** MIDAS: chips won mid-fight by gold bars (paid out if you win). */
   midasChips = 0;
+  /** SIDE BETS: what this fight has done so far (spins, damage taken, jackpots, best turn). */
+  readonly betTrack = newTrack();
   private vaultPaid = 0;
   /** MIDAS: the VAULT's resting level (from chips held). */
   vaultBase(): number {
@@ -395,6 +398,7 @@ export class Fight {
     const first = res.side === 'player' ? this.sides.enemy : this.sides.player;
     for (const c of [first, this.sides[res.side]]) this.checkDeath(c, res.events);
     this.resolving = false;
+    for (const e of res.events) trackEvent(this.betTrack, e);
     return res;
   }
   /** True while end-of-turn deaths resolve (a 0 HP machine falls only then). */

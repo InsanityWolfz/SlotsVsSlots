@@ -5,6 +5,7 @@ import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
 import { actLength, RUN_FIGHTS, TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { Fight } from './core/fight';
+import { betProgress, describeBet, newTrack } from './core/bets';
 import { turnRow, type TurnRow } from './core/log';
 import { REFLECT_MIN, RELICS } from './core/relics';
 import {
@@ -13,6 +14,7 @@ import {
   chooseEnemy,
   createRun,
   draftOffers,
+  offerBets,
   fightConfig,
   finishFight,
   isShopNow,
@@ -496,7 +498,11 @@ export class Game {
 
   private beginRunFight(option = 0): void {
     if (!this.run) return;
-    if (needsChoice(this.run)) chooseEnemy(this.run, option);
+    if (needsChoice(this.run)) {
+      chooseEnemy(this.run, option);
+      // SIDE BETS: the table opens once you've picked who you face.
+      if (offerBets(this.run, this.cfg).length) return this.showNextFight();
+    }
     this.screens.hide();
     this.newFight(true, null, fightConfig(this.run, this.cfg), true);
     if (this.run.depth === 0 && this.run.act === 1) this.tip('fight', 'fight');
@@ -749,6 +755,7 @@ export class Game {
         cracked: false,
         chipsEaten: 0,
         vouchers: [],
+        ...(inRun && start && this.run?.bet ? { bet: this.run.bet, betTrack: newTrack() } : {}),
       },
     };
     this.director = new Director(this.stage);
@@ -1154,8 +1161,11 @@ export class Game {
         drawText(ctx, `COPIED ${RELICS[copied].name}`, cx - 50, cy + 196, 1.5, '#c8f0ff', { align: 'left' });
       }
     }
-    else drawText(ctx, 'VS', cx, cy + 70, 6, '#ff6a5a', { alpha: 0.35 + 0.1 * Math.sin(t * 2) });
-    if (this.prefs.speed !== 2) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss || this.fight.isMirror || this.fight.isDealer ? cy - 136 : cy + 172, 2, COLORS.textDim);
+    else {
+      drawText(ctx, 'VS', cx, cy + 70, 6, '#ff6a5a', { alpha: 0.35 + 0.1 * Math.sin(t * 2) });
+      this.drawBet(ctx, cx, cy + 130, t);
+    }
+    if (this.prefs.speed !== 2) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss || this.fight.isMirror || this.fight.isDealer ? cy - 136 : this.stage.gutter.bet ? cy + 196 : cy + 172, 2, COLORS.textDim);
   }
 
   /** The House's progressive pot, front and centre: grows (and glows) with the stakes. */
@@ -1233,6 +1243,25 @@ export class Game {
     // Its marked cards are most of its damage: count them on YOUR reels.
     const marks = this.stage.machines.player.reels.reduce((a, r) => a + r.cells.filter((c) => c.carded).length, 0);
     if (marks) drawText(ctx, `MARKS ON YOU: ${marks}`, x, y + 72, 2, '#ff8aa0');
+  }
+
+  /** SIDE BET tracker under the VS: the bet, then how it stands (information only: fights stay watch-only). */
+  private drawBet(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+    const g = this.stage.gutter;
+    if (!g.bet || !g.betTrack) return;
+    const d = describeBet(g.bet);
+    const done = g.betDone;
+    const col = done === 'won' ? '#ffd23f' : done === 'lost' ? '#ff8a7a' : '#c8f0c8';
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 112, y - 22, 224, 66);
+    ctx.fillStyle = done ? col : '#2a6a3a';
+    ctx.fillRect(x - 109, y - 19, 218, 60);
+    ctx.fillStyle = '#0e2a18';
+    ctx.fillRect(x - 105, y - 15, 210, 52);
+    drawText(ctx, `BET ${g.bet.stake}: ${d.name}`, x, y - 4, 1.5, COLORS.goldLight);
+    drawText(ctx, d.rule, x, y + 10, 1.25, COLORS.text);
+    const line = done === 'won' ? `WON +${g.bet.stake * g.bet.pay}` : done === 'lost' ? 'BUSTED' : betProgress(g.bet, g.betTrack);
+    drawText(ctx, line, x, y + 27, 2, col, { punch: done ? 1 : 1 + 0.04 * Math.sin(t * 6) });
   }
 
   /** The Dealer's table: green felt behind its machine, and the ALL IN warning over it. */

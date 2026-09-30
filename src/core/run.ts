@@ -23,6 +23,7 @@ import {
 import { CABINETS, type CabinetId } from './cabinets';
 import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
+import { BETS, betsFrom, betState, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
 
@@ -169,6 +170,8 @@ export interface FightRecord {
   pick?: DraftOption;
   /** What was bought at the Cashier after this fight. */
   bought?: DraftOption[];
+  /** SIDE BET placed on this fight, and whether it paid. */
+  bet?: PlacedBet & { won: boolean };
   /** The BIG CHOICE taken after this (boss) fight. */
   choice?: BigChoiceId;
 }
@@ -225,6 +228,9 @@ export interface RunState {
   glass?: boolean;
   /** BLOOD PACT: your meter fills twice as fast. */
   bloodPact?: boolean;
+  /** SIDE BETS on the next fight: the table's offer (keyed to the fight) and the bet you placed. */
+  bets?: { key: string; offer: SideBet[] } | null;
+  bet?: PlacedBet | null;
   /** MASTERWORK: these symbols can't gain levels. */
   levelLock?: SymbolId[];
 }
@@ -566,6 +572,48 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
 /** Enemy symbols that write on your machine (for the WRITER house edge). */
 
 
+/** SIDE BETS are offered before regular fights (not bosses, not the tutorial's first fight, not at a fork). */
+export function betsOpen(run: RunState): boolean {
+  const e = run.enemies[run.depth];
+  return !run.over && !!e && !e.isBoss && !needsChoice(run) && !(run.tutorial && run.act === 1 && run.depth === 0);
+}
+
+/** The Cashier's table for the next fight: 2 bets, sized by rehearsing this very fight on other seeds. */
+export function offerBets(run: RunState, base: GameConfig): SideBet[] {
+  if (!betsOpen(run)) return [];
+  const key = `${run.act}:${run.endless?.loop ?? 0}:${run.depth}`;
+  if (run.bets?.key === key) return run.bets.offer;
+  const cfg = fightConfig(run, base);
+  const rng = new Rng((run.seed ^ Math.imul(fightNumber(run) + 31 + (run.endless?.loop ?? 0) * 97, 0x27d4eb2f)) >>> 0);
+  const wins: BetTrack[] = [];
+  for (let i = 0; i < BETS.samples; i++) {
+    const f = new FightCtor(cfg, rng.int(0xffffffff));
+    const t = newTrack();
+    while (!f.over && f.turn < 400) for (const e of f.step().events) trackEvent(t, e);
+    if (f.winner === 'player') wins.push(t);
+  }
+  const offer = betsFrom(wins, BETS.samples, rng);
+  run.bets = { key, offer };
+  return offer;
+}
+
+/** Stake chips on one of the table's bets (a new bet replaces the old one and refunds it). */
+export function placeBet(run: RunState, i: number, stake: number): boolean {
+  const b = run.bets?.offer[i];
+  if (!b) return false;
+  clearBet(run);
+  if (run.player.chips < stake) return false;
+  run.player.chips -= stake;
+  run.bet = { ...b, stake };
+  return true;
+}
+
+/** Take a placed bet back off the table. */
+export function clearBet(run: RunState): void {
+  if (run.bet) run.player.chips += run.bet.stake;
+  run.bet = null;
+}
+
 /** CASH OUT: the pot plus your unspent chips x10. */
 export const cashOutValue = (run: RunState) => (run.endless?.pot ?? 0) + run.player.chips * 10;
 
@@ -808,6 +856,14 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     Math.min(CHIPS.overkillCap, Math.floor(fight.overkill / CHIPS.overkillPer));
   run.player.chips += earned;
   record.chips = earned;
+  // SIDE BET: paid stake x pay if it came in (a lost fight ends the run, bet and all).
+  if (run.bet) {
+    const won = betState(run.bet, fight.betTrack, true) === 'won';
+    if (won) run.player.chips += run.bet.stake * run.bet.pay;
+    record.bet = { ...run.bet, won };
+  }
+  run.bet = null;
+  run.bets = null;
   // Act 2 elites pay chips (more relics made the Mirror a walkover: ITERATION_8).
   if (beaten.elite && run.act > 1) {
     run.player.chips += CHIPS.act2EliteChips;

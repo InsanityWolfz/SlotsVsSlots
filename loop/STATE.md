@@ -801,3 +801,31 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - the Dealer wins 52.4 / 62.0 / 46.7 / 55.5 / 53.7 (avg 54.1, before ~52–54);
   - a telegraphed climax with no balance shift.
 - Tests: 180.
+
+### Iteration 46 (2026-09-30): EXPERT_PLAYTEST_5 E11, SIDE BETS
+- **The table:** before each regular fight, the Cashier's table offers 2 side bets on the next-fight screen.
+  - Stakes are 3 / 6 / 12 chips; click again to take the bet back.
+  - At a fork, pick the enemy first; then the table opens.
+  - No bets at bosses or in the tutorial's first fight.
+- **The four bets:**
+  | bet | condition |
+  |---|---|
+  | QUICK HANDS | win by your spin N |
+  | CLEAN HANDS | win losing ≤ N HP, or "without a scratch" |
+  | HIGH ROLLER | land N jackpots |
+  | BIG HIT | N+ damage in one turn |
+- **Sizing (src/core/bets.ts + run.ts offerBets):** the fight is rehearsed 12 times on other seeds (deterministic per fight).
+  - Each line is picked nearest 55% odds among the winning rehearsals.
+  - A line under 42% odds pays ×3, otherwise ×2.
+  - No bets if you lose most rehearsals. No odds are shown (no decision hints).
+- **Watch-only UI:**
+  - a tracker under the VS ("0 OF 1", "5 SPINS LEFT", "30 HP TO SPARE"), then BET WON +N / BUSTED;
+  - the result line on the next screen ("SIDE BET WON: +12 CHIPS").
+  - `Fight.betTrack` is the engine's tracker; the Director feeds the same `trackEvent` during playback.
+- **Measured with the new tools/balance/bets.ts:**
+  - odds tuning: at aim 0.45, bets realized only 41% (a 88% return, a hidden tax), so the aim moved to 0.55;
+  - an always-bettor at 6 chips has a live bet on 52–77% of regular fights (sits at the ≥60% gate: chips are tight in the main run, since the shop soaks them);
+  - bets win 49–57% and return 102–118% of stakes;
+  - run win rates (1000 runs, KNIGHT WHITE): 1-chip bets 43.1 → 40.5; 6-chip always-bettor 43.1 → 39.4. That's mostly run divergence (every chip changes the greedy shop), not a tax;
+  - a cautious bettor (keeps 10 in reserve) is within ±1.5, except MIDAS −3 (chips on the table don't fill the vault, which is intended).
+- Tests: 184 (bets.test.ts). The official sim doesn't bet (unchanged baseline).

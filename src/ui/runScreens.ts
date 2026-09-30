@@ -18,6 +18,9 @@ import {
   mirrorCopy,
   isRelicDraft,
   needsChoice,
+  offerBets,
+  placeBet,
+  clearBet,
   rerollCost,
   runActs,
   totalFights,
@@ -40,6 +43,7 @@ import { COLORS, H, W } from '../present/layout';
 import { artId, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 import { heroSprite } from './menus';
+import { BET_STAKES, describeBet, type SideBet } from '../core/bets';
 
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus' | 'choice';
 
@@ -70,7 +74,7 @@ interface Hit {
   enabled: boolean;
 }
 
-type Btn = Hit & { label: string };
+type Btn = Hit & { label: string; /** A SIDE BET stake button: [bet index, stake]. */ bet?: [number, number] };
 
 
 /** What each enemy writes on your machine, as a map badge. */
@@ -137,6 +141,8 @@ export class RunScreens {
   private offers: DraftOption[] = [];
   private cards: Hit[] = [];
   private buttons: Btn[] = [];
+  /** SIDE BETS on the next fight (the table on the preview screen). */
+  private betOffer: SideBet[] = [];
   private fade = 0;
   private picked = -1;
   private lastRecord: FightRecord | null = null;
@@ -158,7 +164,7 @@ export class RunScreens {
   constructor(
     private ui: Clock,
     private sounds: Sounds,
-    _base: () => GameConfig,
+    private base: () => GameConfig,
     private cb: {
       onPick: (o: DraftOption) => void;
       onSpoils: (relic: RelicId) => void;
@@ -684,6 +690,63 @@ export class RunScreens {
       const bossId = run.enemies[run.depth]?.boss;
       const boss = run.depth >= actLength(run.act) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'mirror' ? 'FACE THE MIRROR' : 'FACE THE HOUSE') : 'FIGHT!';
       this.buttons = [this.btn(boss, W / 2, 640, 290, 64, () => this.cb.onFight(0))];
+      this.addBetButtons(run);
+    }
+  }
+
+  /** SIDE BETS: two bets, three stakes each. Click a stake to bet it; click it again to take it back. */
+  private addBetButtons(run: RunState): void {
+    this.betOffer = offerBets(run, this.base());
+    this.betOffer.forEach((_, i) => {
+      const cx = W / 2 + (i === 0 ? -440 : 440);
+      BET_STAKES.forEach((s, k) => {
+        const b = this.btn(`${s}`, cx - 84 + k * 84, 694, 72, 28, () => this.placeSideBet(i, s));
+        b.bet = [i, s];
+        this.buttons.push(b);
+      });
+    });
+  }
+
+  private placeSideBet(i: number, stake: number): void {
+    const run = this.run!;
+    const b = this.betOffer[i];
+    if (run.bet && run.bet.kind === b.kind && run.bet.stake === stake) {
+      clearBet(run);
+      this.sounds.click();
+      return;
+    }
+    if (placeBet(run, i, stake)) {
+      this.sounds.coin(4);
+      this.sounds.coin(8);
+    } else this.sounds.fizzle();
+  }
+
+  /** The table: each bet's name, its line, what it pays, and your stake buttons. */
+  private drawBets(ctx: CanvasRenderingContext2D, time: number): void {
+    const run = this.run!;
+    drawText(ctx, `CHIPS ${run.player.chips}`, W / 2, 694, 2, COLORS.goldLight);
+    this.betOffer.forEach((b, i) => {
+      const cx = W / 2 + (i === 0 ? -440 : 440);
+      const on = run.bet?.kind === b.kind;
+      this.panel(ctx, cx - 150, 606, 300, 108, on ? COLORS.goldLight : '#2a6a3a');
+      const d = describeBet(b);
+      drawText(ctx, `SIDE BET: ${d.name}`, cx, 624, 2, on ? COLORS.goldLight : '#c8f0c8');
+      drawText(ctx, d.rule, cx, 646, 1.5, COLORS.text);
+      drawText(ctx, `PAYS X${b.pay}`, cx, 666, 1.5, b.pay >= 3 ? '#ff8aa0' : COLORS.goldLight);
+    });
+    for (const btn of this.buttons) {
+      if (!btn.bet) continue;
+      const [i, s] = btn.bet;
+      const picked = run.bet?.kind === this.betOffer[i]?.kind && run.bet?.stake === s;
+      const afford = run.player.chips + (run.bet?.stake ?? 0) >= s;
+      ctx.save();
+      ctx.globalAlpha *= afford || picked ? 1 : 0.35;
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(btn.x - btn.w / 2 - 2, btn.y - btn.h / 2 - 2, btn.w + 4, btn.h + 4);
+      ctx.fillStyle = picked ? COLORS.goldLight : btn.hover && afford ? '#3a8a4a' : '#1e4a2a';
+      ctx.fillRect(btn.x - btn.w / 2, btn.y - btn.h / 2, btn.w, btn.h);
+      drawText(ctx, picked ? `BET ${s}` : `${s}`, btn.x, btn.y + 1, 2, picked ? '#2a1a08' : '#fff6c8', { punch: picked ? 1 + 0.04 * Math.sin(time * 6) : 1 });
+      ctx.restore();
     }
   }
 
@@ -885,6 +948,7 @@ export class RunScreens {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
       drawText(ctx, `${rounds(last.turns)}  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}${chips}${rocks}`, W / 2, 60, 2, COLORS.textDim);
+      if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${last.bet.stake * last.bet.pay} CHIPS` : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, W / 2, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
     }
     this.drawMap(ctx, 158, time);
     const spoils = this.draftKind === 'spoils';
@@ -1108,8 +1172,9 @@ export class RunScreens {
       drawText(ctx, 'YOUR HP', W / 2 - 330, 540, 2, COLORS.textDim, { align: 'left' });
       this.drawHp(ctx, W / 2 - 330, 568, 220);
       this.drawRelics(ctx, W / 2 + 40, 540);
+      if (this.betOffer.length) this.drawBets(ctx, time);
     }
-    for (const b of this.buttons) this.drawButton(ctx, b, time);
+    for (const b of this.buttons) if (!b.bet) this.drawButton(ctx, b, time);
   }
 
   private drawCabinets(ctx: CanvasRenderingContext2D, time: number): void {
