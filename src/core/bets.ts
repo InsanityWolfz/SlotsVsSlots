@@ -11,9 +11,20 @@ import type { Rng } from './rng';
 export type BetKind = 'quick' | 'clean' | 'jackpot' | 'big' | 'early' | 'survive';
 /** The Dealer's own table (EXPERT_PLAYTEST_6 E8): win before his FINAL HAND; survive an ALL IN. */
 export const DEALER_BETS: BetKind[] = ['early', 'survive'];
+/** SAFE: likely, pays x1.5. LONG: a long shot, pays x3 (more on a HOT HAND). EVEN: a coin flip at x2. */
+export type LineStyle = 'safe' | 'long' | 'even';
+export const LINES: Record<LineStyle, { aim: number; pay: number; band: number }> = {
+  safe: { aim: 0.78, pay: 1.5, band: 0.12 },
+  long: { aim: 0.34, pay: 3, band: 0.1 },
+  even: { aim: 0.55, pay: 2, band: 0.2 },
+};
 export interface SideBet {
   kind: BetKind;
   target: number;
+  /** Which line of the table this is (the regular table is one SAFE, one LONG: EXPERT_PLAYTEST_7 E7). */
+  style?: LineStyle;
+  /** HOT HAND: bets won in a row that bolded this line. */
+  hot?: number;
   /** Paid back as stake x pay. */
   pay: number;
 }
@@ -25,10 +36,10 @@ export interface PlacedBet extends SideBet {
 export const BET_STAKES = [2, 5] as const;
 /** ALL IN stakes every chip you hold, up to this (more in endless, where chips pile up). */
 export const ALL_IN_STAKE = { cap: 20, endlessCap: 50 };
-/** HOT HAND: each bet won in a row makes the next lines bolder and pay +1 (up to x4). A bust resets it. */
-export const HOT_HAND = { max: 2, ret: 1.1, bias: 0 };
+/** HOT HAND: each bet won in a row makes the next LONG SHOT bolder and pay +1 (up to x5). A bust resets it. */
+export const HOT_HAND = { max: 2 };
 /** How many rehearsals size a bet, and the odds a line aims for. */
-export const BETS = { samples: 12, aim: 0.55, hardBelow: 0.31, minP: 0.25, maxP: 0.75 };
+export const BETS = { samples: 12 };
 
 /** What a fight has done so far, as far as the bets care. */
 export interface BetTrack {
@@ -149,22 +160,24 @@ export const betPayout = (b: PlacedBet) => Math.floor(b.stake * b.pay);
 const hits = (xs: number[], ok: (x: number) => boolean) => xs.filter(ok).length / Math.max(1, xs.length);
 
 /** Pick the line for one kind from the rehearsals: the candidate whose odds sit nearest the aim. */
-export function lineFor(kind: BetKind, runs: BetTrack[], enemyHp = Infinity, streak = 0): SideBet | null {
-  const hot = Math.min(HOT_HAND.max, streak);
-  const aim = hot ? HOT_HAND.ret / (2 + hot) - HOT_HAND.bias : BETS.aim;
-  const minP = hot ? Math.max(0.1, aim - 0.1) : BETS.minP;
-  const maxP = hot ? aim + 0.12 : BETS.maxP;
+export function lineFor(kind: BetKind, runs: BetTrack[], enemyHp = Infinity, style: LineStyle = 'even', streak = 0): SideBet | null {
+  const L = LINES[style];
+  // HOT HAND bolds only the long shot: it pays +1 per bet won in a row, sized so the return holds.
+  const hot = style === 'long' ? Math.min(HOT_HAND.max, streak) : 0;
+  const pay = L.pay + hot;
+  const aim = hot ? L.aim * (L.pay / pay) : L.aim;
   const vals = runs.map((t) => (kind === 'quick' ? t.spins : kind === 'clean' ? t.lost : kind === 'jackpot' ? t.jackpots : t.best));
   const round = (x: number) => (kind === 'clean' || kind === 'big' ? Math.floor(x / UNIT) * UNIT : x);
   const cands = [...new Set(vals.map(round))].filter((x) => (kind === 'jackpot' || kind === 'big' ? x > 0 : x >= 0) && !(kind === 'big' && x > enemyHp));
   let best: { target: number; p: number } | null = null;
   for (const target of cands) {
     const p = hits(vals, (v) => (kind === 'quick' || kind === 'clean' ? v <= target : v >= target));
-    if (p < minP || p > maxP) continue;
+    const band = hot ? L.band * 1.5 : L.band;
+    if (p < aim - band || p > aim + band) continue;
     if (!best || Math.abs(p - aim) < Math.abs(best.p - aim)) best = { target, p };
   }
   if (!best) return null;
-  return { kind, target: best.target, pay: hot ? 2 + hot : best.p < BETS.hardBelow ? 3 : 2 };
+  return { kind, target: best.target, pay, ...(style !== 'even' ? { style } : {}), ...(hot ? { hot } : {}) };
 }
 
 /**
@@ -192,11 +205,16 @@ export function dealerBets(all: { t: BetTrack; won: boolean }[], rng: Rng, enemy
 /** Up to 2 bets from a fight's rehearsals (the winning ones); none if you usually lose it. */
 export function betsFrom(wins: BetTrack[], samples: number, rng: Rng, enemyHp = Infinity, streak = 0): SideBet[] {
   if (wins.length < samples / 2) return [];
+  // One SAFE bet and one LONG SHOT (on different kinds); a coin flip fills in if a kind can't make its line.
+  const kinds = rng.shuffle<BetKind>(['quick', 'clean', 'jackpot', 'big']);
   const out: SideBet[] = [];
-  for (const k of rng.shuffle<BetKind>(['quick', 'clean', 'jackpot', 'big'])) {
-    const b = lineFor(k, wins, enemyHp, streak);
+  for (const style of ['safe', 'long'] as const) {
+    const left = kinds.filter((k) => !out.some((b) => b.kind === k));
+    const b =
+      left.map((k) => lineFor(k, wins, enemyHp, style, streak)).find(Boolean) ??
+      (streak ? left.map((k) => lineFor(k, wins, enemyHp, style)).find(Boolean) : null) ??
+      left.map((k) => lineFor(k, wins, enemyHp, 'even')).find(Boolean);
     if (b) out.push(b);
-    if (out.length === 2) break;
   }
   return out;
 }

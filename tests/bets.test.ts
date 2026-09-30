@@ -81,10 +81,22 @@ describe('SIDE BETS', () => {
     run.player.chips = 40;
     expect(allInStake(run)).toBe(20);
     expect(offerBets(run, base).every((b) => b.pay <= 3)).toBe(true);
-    run.betStreak = 1;
-    expect(offerBets(run, base).every((b) => b.pay === 3)).toBe(true);
-    run.betStreak = 2;
-    expect(offerBets(run, base).every((b) => b.pay === 4)).toBe(true);
+    // Across a few fights: a HOT HAND bolds only the long shot (x4, then x5); the safe bet stays x1.5.
+    const seen: Record<number, number[]> = { 1: [], 2: [] };
+    for (const seed of [99, 7, 21, 55, 300]) {
+      for (const streak of [1, 2]) {
+        const r2 = createRun(base, seed, 'knight');
+        r2.pendingStart = null;
+        r2.betStreak = streak;
+        const o = offerBets(r2, base);
+        seen[streak].push(...o.filter((b) => b.hot).map((b) => b.pay));
+        expect(o.filter((b) => b.hot).length).toBeLessThanOrEqual(1);
+        expect(o.every((b) => b.hot || b.pay <= 3)).toBe(true);
+      }
+    }
+    expect(seen[1].length).toBeGreaterThan(0);
+    expect(seen[1].every((p) => p === 4)).toBe(true);
+    expect(seen[2].every((p) => p === 5)).toBe(true);
   });
 
   it('bet relics: LOADED DICE pays x0.5 more, HIGH LIMIT doubles the stakes, MARKER refunds the first bust in an act', () => {

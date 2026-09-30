@@ -733,7 +733,7 @@ export class RunScreens {
     const run = this.run!;
     drawText(ctx, `CHIPS ${run.player.chips}  -  INTEREST +${interestOn(run.player.chips)}`, W / 2, 694, 2, COLORS.goldLight);
     const streak = run.betStreak ?? 0;
-    if (streak) drawText(ctx, `HOT HAND: ${streak} WON IN A ROW`, W / 2, 712, 1.5, '#ff8aa0');
+    if (streak) drawText(ctx, `HOT HAND: ${streak} WON IN A ROW`, W / 2, 711, 1.75, '#ff8a3a', { punch: 1 + 0.05 * Math.sin(time * 8) });
     this.betOffer.forEach((b, i) => {
       const cx = W / 2 + (i === 0 ? -440 : 440);
       const on = run.bet?.kind === b.kind;
@@ -741,7 +741,9 @@ export class RunScreens {
       const d = describeBet(b);
       drawText(ctx, `SIDE BET: ${d.name}`, cx, 624, 2, on ? COLORS.goldLight : '#c8f0c8');
       drawText(ctx, d.rule, cx, 646, 1.5, COLORS.text);
-      drawText(ctx, on ? `PAYS X${b.pay}  -  YOUR BET: ${run.bet!.stake}` : `PAYS X${b.pay}`, cx, 666, 1.5, b.pay >= 3 ? '#ff8aa0' : COLORS.goldLight);
+      const tag = b.hot ? 'HOT HAND! ' : b.style === 'long' ? 'LONG SHOT: ' : b.style === 'safe' ? 'SAFE BET: ' : '';
+      const payLine = `${tag}PAYS X${b.pay}`;
+      drawText(ctx, on ? `${tag}X${b.pay}  -  YOUR BET ${run.bet!.stake}` : payLine, cx, 666, b.hot ? 1.75 : 1.5, b.hot ? '#ff8a3a' : b.style === 'long' ? '#ff8aa0' : COLORS.goldLight, { punch: b.hot ? 1 + 0.05 * Math.sin(time * 8) : 1 });
     });
     for (const btn of this.buttons) {
       if (!btn.bet) continue;

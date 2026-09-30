@@ -1024,3 +1024,19 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   | midas | 38.6 | 13.2 | 52.0 |
   | AVG | 42.6 | 16.7 | 50.5 |
 - Tests: 186.
+
+### Iteration 56 (2026-09-30): EXPERT_PLAYTEST_7 E6, E7, the table's decision
+- **E7:** every regular table is one SAFE BET (×1.5, likely) and one LONG SHOT (×3), on different kinds; a coin flip at ×2 fills in if a kind can't make its line. It replaces two coin flips plus a rare ×3.
+  - The choice is now risk appetite: LOADED DICE favours safe, MARKER favours long, and chips vs interest tilts it.
+  - The card reads "SAFE BET: PAYS X1.5" / "LONG SHOT: PAYS X3".
+- **Aims (`LINES`):**
+  - the rehearsals overstate the chosen line (at aims 0.70 / 0.30 they realized 62.7% / 30.9%, returns 94% / 93%);
+  - aims moved to safe 0.78 and long 0.34;
+  - `expert6_bets.ts 150`: safe 70.1% won, 105.1% return; long 34.1% won, 102.4%.
+- **E6 HOT HAND** bolds only the long shot: ×4 after one won bet, ×5 after two, sized at the same return; the safe bet stays ×1.5.
+  - Fallbacks: hot long → plain long → coin flip, with a wider band for hot lines so it rarely vanishes.
+  - The card says "HOT HAND! PAYS X4" in orange, pulsing; "HOT HAND: N WON IN A ROW" sits under the chips line.
+  - `bets.ts 300 5 0 PICK=1` (always the long shot): ×3 95–107%, ×4 94–117%, ×5 90–116% return.
+  - Always-long bettors lose −8 to −16 WHITE to variance; always-safe −5 to −10 (bets.ts ignores the shop value of chips).
+- `bets.ts` gains PICK (0 = the first bet, the safe one; 1 = the long shot).
+- Tests: 186 (the HOT HAND test checks several fights: only the long shot goes hot).

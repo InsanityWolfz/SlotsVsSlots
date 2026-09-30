@@ -27,7 +27,8 @@ for (const stake of process.env.STAKE_ONLY ? [Number(process.env.STAKE_ONLY)] : 
       const offer = offerBets(run, base);
       if (offer.length) offered++;
       const st = STAKE < 0 ? allInStake(run) : STAKE;
-      if (offer.length && st > 0 && run.player.chips - st >= KEEP && placeBet(run, 0, st)) placed++;
+      const pick = Math.min(offer.length - 1, Number(process.env.PICK ?? 0));
+      if (offer.length && st > 0 && run.player.chips - st >= KEEP && placeBet(run, pick, st)) placed++;
     };
     SIM_BIAS.onEnd = (run: RunState) => {
       // A bet still on the table when a lost fight ended the run is a lost bet (EXPERT_PLAYTEST_7 E2).
