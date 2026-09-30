@@ -19,7 +19,7 @@ describe('ENDLESS (LET IT RIDE)', () => {
     expect(run.over).toBe(false);
     expect(run.paths.length).toBe(4);
     expect(run.paths[3][0].boss).toBe('house');
-    expect(run.pendingChoice?.length).toBe(2);
+    expect(run.pendingChoice?.length).toBe(3);
     takeChoice(run, run.pendingChoice![0]);
     expect(run.endless!.edges.length).toBe(1);
   });
@@ -59,5 +59,35 @@ describe('ENDLESS (LET IT RIDE)', () => {
     expect(fmtNum(3_100_000)).toBe('3.1M');
     expect(fmtNum(950)).toBe('950');
     expect(UNIT).toBe(10);
+  });
+});
+
+describe('ENDLESS: RIDE AGAIN / CASH OUT', () => {
+  it('after a cleared loop: RIDE or CASH OUT first, then a big choice, then the edge; cashing out banks the pot and ends', () => {
+    const run = createRun(base, 24, 'knight', 2, true);
+    run.over = run.won = true;
+    run.act = 3;
+    letItRide(run);
+    while (run.pendingChoice?.length) takeChoice(run, run.pendingChoice[0]);
+    run.pendingLegend = null;
+    run.depth = 3;
+    const f = new Fight(fightConfig(run, base), 1);
+    f.winner = 'player';
+    finishFight(run, f);
+    expect(run.endless!.loop).toBe(2);
+    expect(run.endless!.pot).toBe(1500);
+    expect(run.pendingChoice!.map((c) => c.id)).toEqual(['cashOut', 'ride']);
+    takeChoice(run, { id: 'ride' });
+    expect(run.pendingChoice?.[0].id).not.toBe('cashOut');
+    const run2 = createRun(base, 25, 'knight', 2, true);
+    run2.over = run2.won = true;
+    run2.act = 3;
+    letItRide(run2);
+    run2.endless!.pot = 3000;
+    run2.pendingChoice = [{ id: 'cashOut' }, { id: 'ride' }];
+    takeChoice(run2, { id: 'cashOut' });
+    expect(run2.over).toBe(true);
+    expect(run2.endless!.cashed).toBe(true);
+    expect(run2.endless!.pot).toBe(3000 + run2.player.chips * 10);
   });
 });

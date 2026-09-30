@@ -587,6 +587,16 @@ export class Game {
     const run = this.run;
     if (!run) return;
     takeChoice(run, c);
+    // CASH OUT ends an endless run: bank the pot and show the run-over screen.
+    if (run.over) {
+      this.phase = 'over';
+      this.recordRun(run);
+      this.screens.setStakeUnlockedNow('');
+      this.screens.setUnlockedNow([]);
+      this.screens.showOver(run);
+      this.syncButtons();
+      return;
+    }
     this.afterBonus(this.lastRecord ?? run.records[run.records.length - 1]);
   }
 

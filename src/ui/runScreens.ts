@@ -593,8 +593,9 @@ export class RunScreens {
     const run = this.run!;
     const set = BIG_SETS.findIndex((ids) => ids.includes(this.choices[0]?.id));
     const edge = this.choices[0]?.id === 'edge';
-    drawText(ctx, edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'A BIG CHOICE', W / 2, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
-    drawText(ctx, edge ? 'THE HOUSE RAISES THE STAKES. PICK A RULE. EACH ONE PAYS.' : `${BIG_SET_NAMES[set] ?? ''}  -  PICK ONE. STRONG MOVES HAVE A PRICE.`, W / 2, 110, 2, COLORS.textDim);
+    const rideQ = this.choices[0]?.id === 'cashOut';
+    drawText(ctx, rideQ ? `LOOP ${(this.run?.endless?.loop ?? 2) - 1} CLEARED! POT ${this.run?.endless?.pot ?? 0}` : edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'A BIG CHOICE', W / 2, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
+    drawText(ctx, rideQ ? 'PUSH YOUR LUCK: RIDE AGAIN, OR CASH OUT AND BANK IT. YOUR DEALER WIN IS SAFE EITHER WAY.' : edge ? 'THE HOUSE RAISES THE STAKES. PICK A RULE. EACH ONE PAYS.' : `${BIG_SET_NAMES[set] ?? ''}  -  PICK ONE. STRONG MOVES HAVE A PRICE.`, W / 2, 110, 2, COLORS.textDim);
     this.cards.forEach((c, i) => {
       const ch = this.choices[i];
       if (!ch || c.scale <= 0.01) return;
@@ -624,7 +625,7 @@ export class RunScreens {
         drawText(ctx, 'SAFE', 0, -c.h / 2 + 15, 1.5, '#b6ff9a');
       }
       // The symbol / charm it touches, when there is one.
-      const icon = (ch.symbol ?? (ch.enh ? CHARM_SYMBOLS[ch.enh][0] : ch.id === 'meltDown' || ch.id === 'gildLot' ? 'sword' : ch.id === 'glassCannon' || ch.id === 'bloodPact' ? 'heart' : ch.id === 'secondWind' ? 'heart' : ch.id === 'sweepUp' ? 'rock' : ch.id === 'edge' ? (ch.reward === 'legend' ? 'relicBell' : 'chip') : 'shield')) as SpriteId;
+      const icon = (ch.symbol ?? (ch.enh ? CHARM_SYMBOLS[ch.enh][0] : ch.id === 'meltDown' || ch.id === 'gildLot' ? 'sword' : ch.id === 'glassCannon' || ch.id === 'bloodPact' ? 'heart' : ch.id === 'secondWind' ? 'heart' : ch.id === 'sweepUp' ? 'rock' : ch.id === 'edge' ? (ch.reward === 'legend' ? 'relicBell' : ch.reward === 'relic' ? 'relicClover' : 'chip') : ch.id === 'cashOut' ? 'chip' : ch.id === 'ride' ? 'relicDrum' : 'shield')) as SpriteId;
       drawSprite(ctx, icon, 0, -c.h / 2 + 70, 4);
       if (ch.enh) drawSprite(ctx, ENH_SPRITE[ch.enh], 0, -c.h / 2 + 70, 4);
       if (ch.id === 'meltDown' || ch.id === 'gildLot') drawSprite(ctx, ENH_SPRITE.gold, 0, -c.h / 2 + 70, 4);
@@ -1383,7 +1384,7 @@ export class RunScreens {
     const trueEnding = run.won && run.act >= 3;
     if (this.rideOffer) drawText(ctx, 'YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', W / 2, 620, 1.5, COLORS.goldLight);
     const busted = !!run.endless;
-    drawText(ctx, busted ? `BUSTED ON LOOP ${run.endless!.loop}` : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
+    drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     // DEATH RECAP: its own full-width line under the table (the most important line on a loss).
     const loss = !run.won ? run.records[run.records.length - 1] : undefined;

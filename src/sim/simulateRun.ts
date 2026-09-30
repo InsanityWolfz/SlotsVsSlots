@@ -148,6 +148,10 @@ export function choiceValue(run: RunState, c: BigChoice): number {
       return 6.5;
     case 'secondWind':
       return 4 + (1 - hp) * 6;
+    case 'cashOut':
+      return -1;
+    case 'ride':
+      return 1;
     case 'edge':
       // Endless house edges: legendaries beat chips; the harsh edges cost more.
       return (c.reward === 'legend' ? 6 : 3) - (c.edge === 'frail' || c.edge === 'heal' ? 2 : c.edge === 'fast' ? 1 : 0);
@@ -296,7 +300,7 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
       if (run.act === 3 && act === 2) mirrorWins++;
       else if (run.won && act === 2) mirrorWins++;
       if (run.won && act === 3) dealerWins++;
-      if (!run.over && run.pendingChoice?.length) {
+      while (!run.over && run.pendingChoice?.length) {
         const cs = run.pendingChoice;
         const forced = cs.find((x) => x.id === SIM_BIAS.choice);
         const c = forced ?? (policy === 'random' ? pick.pick(cs) : cs.reduce((a, b) => (choiceValue(run, b) > choiceValue(run, a) ? b : a)));

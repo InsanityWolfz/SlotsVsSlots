@@ -216,7 +216,9 @@ export interface RunState {
   /** A boss fell: pick 1 of these BIG CHOICES (before the legendary pick). */
   pendingChoice?: BigChoice[] | null;
   /** ENDLESS (LET IT RIDE after the Dealer): the loop you're on and the HOUSE EDGES you've taken. */
-  endless?: { loop: number; edges: EdgeId[] };
+  endless?: { loop: number; edges: EdgeId[]; pot: number; cashed?: boolean };
+  /** Choices waiting behind the current one (after a loop boss: RIDE?, then a big choice, then the edge). */
+  choiceQueue?: BigChoice[][];
   /** Big-choice sets already offered this run. */
   choiceSets?: number[];
   /** GLASS CANNON: paying groups x1.5, no healing between fights. */
@@ -550,27 +552,26 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     const edges = new Set(run.endless.edges);
     cfg.enemy.endless = true;
     cfg.enemy.dmgMul = Math.pow(ENDLESS.dmgBy[run.cabinet] ?? ENDLESS.dmg, run.endless.loop);
-    if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
-    if (edges.has('writer')) cfg.enemy.strips = cfg.enemy.strips.map((s) => {
-      const w = (Object.keys(s) as SymbolId[]).find((k) => WRITER_SYMS.has(k));
-      return w ? { ...s, [w]: (s[w] ?? 0) + 1 } : s;
-    });
+    if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 2) };
+    if (edges.has('marked')) cfg.player.startMarks = Math.max(cfg.player.startMarks ?? 0, 3);
     if (edges.has('heal')) cfg.player.healMul = 0.5;
-    if (edges.has('shield') && e.isBoss) cfg.enemy.startShield = unitsRound(hp * 0.2);
-    if (edges.has('first')) cfg.enemy.first = true;
+    if (edges.has('rollers')) cfg.enemy.hp = unitsRound(cfg.enemy.hp * 1.3);
   }
   cfg.seed = null;
   return cfg;
 }
 
 /** Enemy symbols that write on your machine (for the WRITER house edge). */
-const WRITER_SYMS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'coin', 'lock', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake'] as SymbolId[]);
+
+
+/** CASH OUT: the pot plus your unspent chips x10. */
+export const cashOutValue = (run: RunState) => (run.endless?.pot ?? 0) + run.player.chips * 10;
 
 /** LET IT RIDE: after beating the Dealer, keep going (the win is already recorded). */
 export function letItRide(run: RunState): void {
   if (!run.won || run.endless) return;
   run.over = false;
-  run.endless = { loop: 1, edges: [] };
+  run.endless = { loop: 1, edges: [], pot: 0 };
   startEndlessLoop(run);
 }
 
@@ -583,20 +584,31 @@ function startEndlessLoop(run: RunState): void {
   run.paths = generateRunPaths(rng, 4, loop);
   run.enemies = run.paths.map((opts) => opts[0]);
   run.chosen = run.paths.map((opts) => opts.length === 1);
-  run.player.hp = run.player.maxHp;
+  // NO COMPS: a new loop heals only half your HP.
+  run.player.hp = run.endless!.edges.includes('nocomps') ? Math.min(run.player.maxHp, run.player.hp + Math.round(run.player.maxHp / 2)) : run.player.maxHp;
   run.actIntro = false;
-  // Never offer an edge you already took (EXPERT_PLAYTEST_4 B4); once they're all taken, no pick.
+  // Never offer an edge you already took (EXPERT_PLAYTEST_4 B4); 3 offered, pick 1, each paying for its cost.
   const open = EDGES.filter((x) => !run.endless!.edges.includes(x));
-  const pick = rng.shuffle(open).slice(0, 2);
-  run.pendingChoice = pick.length ? pick.map((edge, i): BigChoice => ({ id: 'edge', edge, reward: i === 0 ? 'chips' : 'legend' })) : null;
+  const pick = rng.shuffle(open).slice(0, 3);
+  const edges = pick.map((edge): BigChoice => ({ id: 'edge', edge, reward: EDGE_TIER[edge] }));
+  const queue: BigChoice[][] = [];
+  // After a cleared loop: RIDE AGAIN or CASH OUT the pot, then a big choice set.
+  if (loop > 1) {
+    queue.push([{ id: 'cashOut' }, { id: 'ride' }]);
+    const set = rng.int(BIG_SETS.length);
+    queue.push(rollChoices(run, set, rng));
+  }
+  if (edges.length) queue.push(edges);
+  run.pendingChoice = queue.shift() ?? null;
+  run.choiceQueue = queue;
 }
 
 export const EDGE_TEXT: Record<EdgeId, { title: string; text: string }> = {
-  fast: { title: 'FAST HANDS', text: 'ENEMY ABILITIES CHARGE 1 TURN FASTER' },
-  writer: { title: 'LOADED REELS', text: 'ENEMIES GET +1 OF THEIR CHEAT SYMBOL PER REEL' },
+  fast: { title: 'FAST HANDS', text: 'ENEMY ABILITIES CHARGE 2 TURNS FASTER' },
+  marked: { title: 'MARKED DECK', text: 'EVERY FIGHT OPENS WITH 1 MARK PER REEL ON YOU' },
   heal: { title: 'HOUSE CUT', text: 'YOUR HEALING IS HALVED' },
-  shield: { title: 'IRON BOSSES', text: 'BOSSES START WITH A 20% SHIELD' },
-  first: { title: 'EARLY BIRD', text: 'ENEMIES SPIN FIRST' },
+  rollers: { title: 'HIGH ROLLERS', text: 'ENEMIES HAVE +30% HP' },
+  nocomps: { title: 'NO COMPS', text: 'A NEW LOOP HEALS ONLY HALF YOUR HP' },
   frail: { title: 'GLASS JAW', text: '-10% MAX HP' },
 };
 
@@ -823,6 +835,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   run.depth++;
   if (run.depth > actLength(run.act)) {
     if (run.endless) {
+      run.endless.pot += POT_PER_LOOP * run.endless.loop;
       run.endless.loop++;
       startEndlessLoop(run);
     } else if (run.act < runActs(run)) startNextAct(run);
@@ -980,8 +993,8 @@ export function levelOptions(run: RunState): DraftOption[] {
   const out: DraftOption[] = [];
   const owned = new Set(p.strips.flatMap((s) => Object.keys(s).filter((k) => (s[k as SymbolId] ?? 0) > 0)));
   for (const symbol of CABINETS[run.cabinet].symbols)
-    if (owned.has(symbol) && symLevel(p.levels, symbol) < LEVEL_CAP && !run.levelLock?.includes(symbol)) out.push({ kind: 'symLevel', symbol });
-  for (const enh of new Set(p.gilded.map((g) => g.enh))) if (charmLevel(p.levels, enh) < LEVEL_CAP) out.push({ kind: 'charmLevel', enh });
+    if (owned.has(symbol) && symLevel(p.levels, symbol) < levelCap(run) && !run.levelLock?.includes(symbol)) out.push({ kind: 'symLevel', symbol });
+  for (const enh of new Set(p.gilded.map((g) => g.enh))) if (charmLevel(p.levels, enh) < levelCap(run)) out.push({ kind: 'charmLevel', enh });
   return out;
 }
 
@@ -1126,10 +1139,10 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
       addCharms(p, o.reel, o.symbol, o.enh, o.n);
       break;
     case 'symLevel':
-      p.levels.sym[o.symbol] = Math.min(LEVEL_CAP, symLevel(p.levels, o.symbol) + 1);
+      p.levels.sym[o.symbol] = Math.min(levelCap(run), symLevel(p.levels, o.symbol) + 1);
       break;
     case 'charmLevel':
-      p.levels.charm[o.enh] = Math.min(LEVEL_CAP, charmLevel(p.levels, o.enh) + 1);
+      p.levels.charm[o.enh] = Math.min(levelCap(run), charmLevel(p.levels, o.enh) + 1);
       break;
     case 'remove': {
       const n = p.strips[o.reel][o.symbol] ?? 0;
@@ -1356,16 +1369,22 @@ export const charmTagFor = (run: RunState, enh: Enh) => charmTag(enh, charmLevel
  * After the House and the Mirror you pick 1 of 3 build-defining moves from one set (never the same set
  * twice in a run). Strong options carry a real, visible cost; each set has one safe pick.
  */
-export type BigChoiceId = 'edge' | 'armsRace' | 'masterwork' | 'whetstone' | 'meltDown' | 'gildLot' | 'polish' | 'cleanCut' | 'twinReel' | 'sweepUp' | 'glassCannon' | 'bloodPact' | 'secondWind';
+export type BigChoiceId = 'edge' | 'cashOut' | 'ride' | 'armsRace' | 'masterwork' | 'whetstone' | 'meltDown' | 'gildLot' | 'polish' | 'cleanCut' | 'twinReel' | 'sweepUp' | 'glassCannon' | 'bloodPact' | 'secondWind';
 /** HOUSE EDGES: endless-mode rules you take on, each paying a reward. */
-export type EdgeId = 'fast' | 'writer' | 'heal' | 'shield' | 'first' | 'frail';
-export const EDGES: EdgeId[] = ['fast', 'writer', 'heal', 'shield', 'first', 'frail'];
+export type EdgeId = 'fast' | 'marked' | 'heal' | 'rollers' | 'nocomps' | 'frail';
+export const EDGES: EdgeId[] = ['fast', 'marked', 'heal', 'rollers', 'nocomps', 'frail'];
+/** How much each edge costs you, and so what it pays (EXPERT_PLAYTEST_4 C1: rewards sized to cost). */
+export const EDGE_TIER: Record<EdgeId, 'chips' | 'relic' | 'legend'> = { frail: 'chips', heal: 'chips', fast: 'relic', marked: 'relic', rollers: 'legend', nocomps: 'legend' };
+/** The endless Cashier sells levels past the cap. */
+export const levelCap = (run: RunState) => (run.endless ? LEVEL_CAP + 1 : LEVEL_CAP);
+/** RIDE AGAIN: each loop cleared adds this x loop to the pot; a bust banks half. */
+export const POT_PER_LOOP = 1500;
 
 export interface BigChoice {
   id: BigChoiceId;
   /** HOUSE EDGE picks: the edge and its reward. */
   edge?: EdgeId;
-  reward?: 'chips' | 'legend';
+  reward?: 'chips' | 'relic' | 'legend';
   /** Rolled target: a symbol, a charm or a reel. */
   symbol?: SymbolId;
   enh?: Enh;
@@ -1390,8 +1409,12 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
   switch (c.id) {
     case 'edge': {
       const t = EDGE_TEXT[c.edge!];
-      return { title: t.title, rule: c.reward === 'legend' ? 'PICK A LEGENDARY RELIC' : `+${ENDLESS.edgeChips} CHIPS`, cost: `HOUSE EDGE: ${t.text}` };
+      return { title: t.title, rule: c.reward === 'legend' ? 'PICK A LEGENDARY RELIC' : c.reward === 'relic' ? 'PICK A RELIC' : `+${ENDLESS.edgeChips} CHIPS`, cost: `HOUSE EDGE: ${t.text}` };
     }
+    case 'cashOut':
+      return { title: 'CASH OUT', rule: `BANK THE POT: ${cashOutValue(run)} POINTS (INCLUDES ${run.player.chips} CHIPS X10). THE RUN ENDS.`, cost: '' };
+    case 'ride':
+      return { title: 'RIDE AGAIN', rule: `PLAY LOOP ${run.endless?.loop ?? 1}. THE POT GROWS BY ${POT_PER_LOOP * (run.endless?.loop ?? 1)}.`, cost: 'BUST AND YOU BANK ONLY HALF THE POT' };
     case 'armsRace':
       return { title: 'ARMS RACE', rule: '+1 LEVEL TO ALL YOUR SYMBOLS', cost: `-${BIG.armsRaceHp} MAX HP` };
     case 'masterwork':
@@ -1469,11 +1492,24 @@ export function takeChoice(run: RunState, c: BigChoice): void {
     case 'edge': {
       run.endless?.edges.push(c.edge!);
       if (c.edge === 'frail') loseMax(Math.round(p.maxHp * 0.1 / UNIT) * UNIT);
+      const rng = new Rng((run.seed ^ (run.endless?.loop ?? 1) * 977) >>> 0);
       const legends = [...LEGENDARY].filter((x) => !p.relics.includes(x) && relicFits(run, x));
-      if (c.reward === 'legend' && legends.length) run.pendingLegend = new Rng((run.seed ^ (run.endless?.loop ?? 1) * 977) >>> 0).shuffle(legends).slice(0, RUN.legendPick);
+      const relics = (Object.keys(RELICS) as RelicId[]).filter((x) => !p.relics.includes(x) && !LEGENDARY.has(x) && !ELITE_ONLY.has(x) && relicFits(run, x) && !RELICS[x].retired);
+      if (c.reward === 'legend' && legends.length) run.pendingLegend = rng.shuffle(legends).slice(0, RUN.legendPick);
+      else if (c.reward === 'relic' && relics.length) run.pendingLegend = rng.shuffle(relics).slice(0, RUN.legendPick);
       else p.chips += ENDLESS.edgeChips;
       break;
     }
+    case 'cashOut':
+      if (run.endless) {
+        run.endless.pot = cashOutValue(run);
+        run.endless.cashed = true;
+      }
+      run.over = true;
+      run.choiceQueue = [];
+      break;
+    case 'ride':
+      break;
     case 'armsRace':
       levelSyms(run).forEach((s) => up(s));
       loseMax(BIG.armsRaceHp);
@@ -1551,5 +1587,5 @@ export function takeChoice(run: RunState, c: BigChoice): void {
   normalizeCharms(p);
   const last = run.records.at(-1);
   if (last) last.choice = c.id;
-  run.pendingChoice = null;
+  run.pendingChoice = run.over ? null : (run.choiceQueue?.shift() ?? null);
 }

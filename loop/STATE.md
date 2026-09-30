@@ -692,3 +692,12 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   | AVG | 43.3 | 16.2 | 56.0 |
 
   The easier Frost/Gremlin raised WHITE ~39.6 → 43.3.
+
+### Iteration 40 (2026-09-30): EXPERT_PLAYTEST_4 E9-E10, endless decisions
+- **HOUSE EDGEs** are real costs: FAST HANDS (abilities -2 turns), MARKED DECK (3 marks carried into every fight), HOUSE CUT (heals halved), HIGH ROLLERS (enemies +30% HP), NO COMPS (a new loop heals only half), GLASS JAW (-10% max HP).
+  - 3 are offered, pick 1. The reward is sized to the cost (EDGE_TIER): chips / a relic pick / a legendary pick.
+- **RIDE AGAIN:** each cleared loop adds POT_PER_LOOP × loop (1500 × n) to a pot. After every loop boss: CASH OUT (bank the pot + chips × 10; the run ends) or RIDE (bust = half the pot). Then a big-choice set, then the edge (`run.choiceQueue`). Hiscore score adds the banked pot.
+- **Chip sink:** endless levels go to 4 (`levelCap`; SYM_VALUE 25 at level 4).
+- The sim takes all queued choices (`while`); the policy always rides.
+- endless.ts 400: loops cleared p50 knight 1, tesla 2, thorn 2, joker 3; p90 3-6.
+- Tests: 180.

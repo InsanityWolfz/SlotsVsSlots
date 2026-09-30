@@ -9,7 +9,7 @@ import { UNIT, type Enh, type Levels, type SymbolId } from './config';
  */
 export const LEVEL_CAP = 3;
 /** A symbol's value by level (1..3): the step grows so early levels don't snowball (user: +1 then bigger). */
-export const SYM_VALUE = [0, 10, 13, 18];
+export const SYM_VALUE = [0, 10, 13, 18, 25];
 
 /** Each charm's number by level (1..4; level 4 only with the Golden Ticket). */
 export const CHARM_VALUE: Record<Enh, number[]> = {
@@ -83,7 +83,7 @@ export const CHARM_COLOR: Record<Enh, string> = {
 const clampLvl = (l: number, max: number) => Math.max(1, Math.min(max, Math.floor(l)));
 
 /** A symbol's value at a level (the base game's symbols; enemy symbols use the config base). */
-export const symValue = (lvl: number) => SYM_VALUE[clampLvl(lvl, LEVEL_CAP)];
+export const symValue = (lvl: number) => SYM_VALUE[clampLvl(lvl, LEVEL_CAP + 1)];
 export const charmValue = (enh: Enh, lvl: number) => CHARM_VALUE[enh][clampLvl(lvl, 4)];
 
 /** Symbols the player's levels apply to. */
