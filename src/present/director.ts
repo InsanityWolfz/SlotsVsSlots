@@ -212,7 +212,13 @@ export class Director {
         return this.allInHit(e);
       case 'dealNext':
         this.s.gutter.nextDeal = e.card;
+        this.s.gutter.then = e.then;
         return Promise.resolve();
+      case 'finalHand':
+        this.s.gutter.finalHand = true;
+        this.s.sounds.abilityFire();
+        this.s.camera.chromaPulse(0.6);
+        return this.banner('FINAL HAND!', '#ff6a5a', 1.3, 0.5, 'RAISE, RAISE, THEN ALL IN', BANNER_Y, 4);
       case 'shuffle':
         return this.shuffle(e);
       case 'cut':

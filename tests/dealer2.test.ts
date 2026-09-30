@@ -47,3 +47,23 @@ describe('THE DEALER (rework): cards on your payline, ALL IN', () => {
     expect(f.dealerAllIn).toBe(false);
   });
 });
+
+describe('THE DEALER: FINAL HAND', () => {
+  it('at a third of its HP it deals RAISE, RAISE, ALL IN face up, once', () => {
+    const c = defaultConfig();
+    c.player.hp = c.player.startHp = 99999;
+    c.enemy = { hp: 3000, strips: [{ sword: 6 }, { sword: 6 }, { sword: 6 }], ability: { kind: 'deal', every: 2, power: 0 }, boss: 'dealer', name: 'THE DEALER' };
+    const f = new Fight(c, 11);
+    const all: CombatEvent[] = [];
+    for (let i = 0; i < 400 && !f.over; i++) {
+      f.forceNext('player', ['sword', 'sword', 'sword']);
+      all.push(...f.step().events);
+      if (ofType(all, 'finalHand').length) break;
+    }
+    const fh = ofType(all, 'finalHand');
+    expect(fh.length).toBe(1);
+    expect(fh[0].cards).toEqual(['raise', 'raise', 'allin']);
+    const next = ofType(all, 'dealNext');
+    expect(next[next.length - 1]).toMatchObject({ card: 'raise', then: ['raise', 'allin'] });
+  });
+});

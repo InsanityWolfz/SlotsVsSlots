@@ -252,6 +252,8 @@ export class Fight {
   /** The Dealer's next attack is its whole hand. */
   dealerAllIn = false;
   private lastAllIn = -99;
+  /** The Dealer's FINAL HAND: the cards still to come after nextDeal (null until it's dealt). */
+  private finalHand: DealCard[] | null = null;
   /** ACE on your payline this spin: the group through this reel pays x2. */
   private aceReel = -1;
   /** BRIAR: the thorn bank already hit back on this turn. */
@@ -1322,6 +1324,13 @@ export class Fight {
         c.charge = Math.min(c.charge, c.ability.every - 1);
         events.push({ type: 'houseRules', side: c.side, every: c.ability.every });
       }
+      // The Dealer at a third of its HP: FINAL HAND. Its next deals are face up: RAISE, RAISE, ALL IN.
+      if (c.side === 'enemy' && this.isDealer && this.dealt && !this.finalHand && c.hp <= c.maxHp / 3) {
+        this.finalHand = ['raise', 'allin'];
+        this.nextDeal = 'raise';
+        events.push({ type: 'finalHand', side: c.side, cards: ['raise', 'raise', 'allin'] });
+        events.push({ type: 'dealNext', side: c.side, card: this.nextDeal, then: [...this.finalHand] });
+      }
       // The Mirror cracks at half HP: its Reflection charges faster.
       if (c.side === 'enemy' && this.isMirror && !this.shattered && c.hp <= c.maxHp / 2 && c.ability) {
         this.shattered = true;
@@ -1532,9 +1541,10 @@ export class Fight {
       events.push({ type: 'raise', from: me.side });
     }
     if (card === 'allin') this.lastAllIn = this.turn;
-    // At most one ALL IN per 4 enemy turns.
-    this.nextDeal = this.rng.pick(this.turn - this.lastAllIn < 8 ? DEALS.filter((d) => d !== 'allin') : DEALS);
-    events.push({ type: 'dealNext', side: me.side, card: this.nextDeal });
+    // FINAL HAND plays out its fixed row; otherwise at most one ALL IN per 4 enemy turns.
+    if (this.finalHand?.length) this.nextDeal = this.finalHand.shift()!;
+    else this.nextDeal = this.rng.pick(this.turn - this.lastAllIn < 8 ? DEALS.filter((d) => d !== 'allin') : DEALS);
+    events.push({ type: 'dealNext', side: me.side, card: this.nextDeal, ...(this.finalHand?.length ? { then: [...this.finalHand] } : {}) });
   }
 
   /** SHUFFLE: swap up to 5 cells between two of the foe's reels (never the chase cells). */

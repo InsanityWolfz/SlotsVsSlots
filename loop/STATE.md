@@ -790,3 +790,14 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   | JAX | 3 |
   | MIDAS | 1 |
 - Regular runs are untouched (every change is endless-only). Tests: 179.
+
+### Iteration 45 (2026-09-30): EXPERT_PLAYTEST_5 E10, FINAL HAND
+- The first time the Dealer drops to 1/3 HP (after its first deal), it shows **FINAL HAND!**: its next deals are face up, RAISE → RAISE → ALL IN.
+  - The HUD reads "FINAL HAND, THEN: …".
+  - After the row, deals go back to random (the ALL IN spacing still applies).
+- A test was added in dealer2.test.ts.
+- **gate 1000:**
+  - WHITE 43.1 / 43.9 / 45.8 / 41.8 / 38.6 (avg 42.6); GREEN avg 14.8;
+  - the Dealer wins 52.4 / 62.0 / 46.7 / 55.5 / 53.7 (avg 54.1, before ~52–54);
+  - a telegraphed climax with no balance shift.
+- Tests: 180.

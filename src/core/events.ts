@@ -101,7 +101,9 @@ export type CombatEvent =
   /** A bonus voucher was banked: it pays out if you win this fight. */
   | { type: 'voucher'; side: SideId; kind: VoucherKind }
   /** The Dealer shows the card it will deal next (telegraph). */
-  | { type: 'dealNext'; side: SideId; card: DealCard }
+  | { type: 'dealNext'; side: SideId; card: DealCard; then?: DealCard[] }
+  /** The Dealer at a third of its HP: its FINAL HAND is dealt face up (RAISE, RAISE, ALL IN). */
+  | { type: 'finalHand'; side: SideId; cards: DealCard[] }
   /** The Dealer lays a card on one of YOUR payline cells (it applies to your next spin). */
   | { type: 'lineCard'; side: SideId; reel: number; card: LineCard }
   /** A laid card resolved on your spin (it's then taken back). */

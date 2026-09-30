@@ -1228,6 +1228,7 @@ export class Game {
       : ['ITS NEXT HIT X2', 'YOUR NEXT WIN X2'];
     what.forEach((l, k) => drawText(ctx, l, x + 20, y + 22 + k * 14, 1.5, COLORS.text));
     if (g.raised) drawText(ctx, 'RAISED!', x, y - 44 - 14, 2, '#ffd23f');
+    else if (g.finalHand) drawText(ctx, g.then?.length ? `FINAL HAND, THEN: ${g.then.map((c) => (c === 'allin' ? 'ALL IN' : c.toUpperCase())).join(', ')}` : 'FINAL HAND', x, y - 44 - 14, 2, '#ff6a5a');
     else if (g.houseRules) drawText(ctx, 'HOUSE RULES', x, y - 44 - 14, 2, '#ff6a5a');
     // Its marked cards are most of its damage: count them on YOUR reels.
     const marks = this.stage.machines.player.reels.reduce((a, r) => a + r.cells.filter((c) => c.carded).length, 0);

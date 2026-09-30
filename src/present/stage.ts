@@ -73,6 +73,9 @@ export interface Stage {
     nextDeal?: import('../core/events').DealCard;
     raised?: boolean;
     houseRules?: boolean;
+    /** FINAL HAND: the Dealer's face-up cards after the next one. */
+    then?: import('../core/events').DealCard[];
+    finalHand?: boolean;
     /** The Dealer's ALL IN is armed (big red warning over its machine). */
     allInArmed?: boolean;
     allInCap?: number;
