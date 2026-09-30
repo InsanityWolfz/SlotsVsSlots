@@ -1330,7 +1330,7 @@ export class RunScreens {
     ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, b.h - 8);
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
     ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, (b.h - 8) / 2);
-    drawText(ctx, b.label, 0, 1, b.label.length > 10 ? 2 : 3, '#fff6c8');
+    drawText(ctx, b.label, 0, 1, b.label.length > 11 ? 2 : 3, '#fff6c8');
     ctx.restore();
   }
 
@@ -1367,7 +1367,7 @@ export class RunScreens {
     });
     for (const act of [1, 2, 3]) {
       const list = rest.filter((r) => (r.act ?? 1) === act);
-      if (list.length) out.push(sum(list, `ACT ${act}: ${list.length} FIGHTS`, act));
+      if (list.length) out.push(sum(list, `ACT ${act}: ${list.length} FIGHT${list.length > 1 ? 'S' : ''}`, act));
     }
     // Loops: group act 4 fights into loops of 4 (3 regulars + the boss).
     const loops = rest.filter((r) => (r.act ?? 1) >= 4);
@@ -1382,12 +1382,13 @@ export class RunScreens {
   private drawOver(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
     const trueEnding = run.won && run.act >= 3;
-    if (this.rideOffer) drawText(ctx, 'YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', W / 2, 620, 1.5, COLORS.goldLight);
+    if (this.rideOffer) drawText(ctx, 'YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', W / 2, 466, 2, COLORS.goldLight);
     const busted = !!run.endless;
     drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     // DEATH RECAP: its own full-width line under the table (the most important line on a loss).
-    const loss = !run.won ? run.records[run.records.length - 1] : undefined;
+    const lastRec = run.records[run.records.length - 1];
+    const loss = lastRec && !lastRec.won ? lastRec : undefined;
     const recap = loss?.hurt?.length ? `KILLED BY ${loss.enemy}: ${loss.hurt.map(([k, n]) => `${k} ${n}`).join(' - ')}${loss.stuck ? `  (FROZEN ${loss.stuck[0]} OF ${loss.stuck[1]} SPINS)` : ''}` : '';
     if (recap) drawText(ctx, recap, W / 2, this.unlockedNow.length ? 460 : 466, 1.5, COLORS.danger);
     if (this.unlockedNow.length)

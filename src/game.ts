@@ -19,6 +19,7 @@ import {
   takeLegend,
   takeChoice,
   letItRide,
+  currentEnemy,
   type BigChoice,
   leaveShop,
   needsChoice,
@@ -518,7 +519,7 @@ export class Game {
       if (e.type === 'attack' && e.to === 'player')
         add(e.note === 'reflect' ? 'REFLECTION' : e.note === 'drain' ? 'DRAIN' : e.note === 'mimic' ? 'COPYCAT' : e.reels.length ? 'SPIN HITS' : this.fight.isBoss ? 'THE POT' : 'ABILITY', e.hpDamage);
       else if (e.type === 'specialFire' && e.to === 'player') add('SPECIAL', e.hpDamage);
-      else if (e.type === 'markedHit' && e.side === 'player') add(this.fight.isDealer ? "THE DEALER'S MARK" : "THE SHARP'S MARK", e.hpDamage);
+      else if (e.type === 'markedHit' && e.side === 'player') add(this.fight.isDealer ? "THE DEALER'S MARK" : this.run && currentEnemy(this.run).archetype === 'sharp' ? "THE SHARP'S MARK" : 'MARKED DECK', e.hpDamage);
       else if (e.type === 'blast' && e.side === 'player') add('BOMBS', e.hpDamage);
     }
   }
@@ -1167,7 +1168,7 @@ export class Game {
     const stack = this.fight.cfg.player.stackShield ?? 0;
     const lethal = pot > 0 && cashOut >= hud.hp + hud.shield + stack;
     this.stage.huds.enemy.alarm = lethal;
-    const tier = lethal ? 4 : pot >= 12 ? 3 : pot >= 6 ? 2 : 1;
+    const tier = lethal ? 4 : pot >= 12 * UNIT ? 3 : pot >= 6 * UNIT ? 2 : 1;
     const glow = tier >= 3 ? 0.5 + 0.3 * Math.sin(t * (lethal ? 14 : 8)) : tier === 2 ? 0.25 + 0.1 * Math.sin(t * 4) : 0;
     const shake = lethal ? Math.sin(t * 40) * 2 : 0;
     x += shake;
@@ -1195,7 +1196,7 @@ export class Game {
       drawSprite(ctx, 'potSkim', x - 70, y + 64, 2);
       drawText(ctx, `NEXT SKIM ${cashOut}`, x - 52, y + 64, 2, lethal ? '#ff6a5a' : COLORS.textDim, { align: 'left' });
       // The House's key rule, where players look (EXPERT_PLAYTEST_2 E): your jackpot takes the pot.
-      drawText(ctx, 'YOUR JACKPOT TAKES IT', x, y + 86, 1.5, COLORS.goldLight);
+      drawText(ctx, 'YOUR JACKPOT TAKES IT', x, y - 70, 1.5, COLORS.goldLight);
     }
   }
 

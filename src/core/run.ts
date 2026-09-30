@@ -592,7 +592,12 @@ function startEndlessLoop(run: RunState): void {
   // Never offer an edge you already took (EXPERT_PLAYTEST_4 B4); 3 offered, pick 1, each paying for its cost.
   const open = EDGES.filter((x) => !run.endless!.edges.includes(x));
   const pick = rng.shuffle(open).slice(0, 3);
-  const edges = pick.map((edge): BigChoice => ({ id: 'edge', edge, reward: EDGE_TIER[edge] }));
+  // The reward on the card is what you'll really get (no silent swap to chips: EXPERT_PLAYTEST_5 B7).
+  const p = run.player;
+  const hasLegend = [...LEGENDARY].some((x) => !p.relics.includes(x) && relicFits(run, x));
+  const hasRelic = (Object.keys(RELICS) as RelicId[]).some((x) => !p.relics.includes(x) && !LEGENDARY.has(x) && !ELITE_ONLY.has(x) && relicFits(run, x) && !RELICS[x].retired);
+  const pay = (t: 'chips' | 'relic' | 'legend'): 'chips' | 'relic' | 'legend' => (t === 'legend' && !hasLegend ? (hasRelic ? 'relic' : 'chips') : t === 'relic' && !hasRelic ? 'chips' : t);
+  const edges = pick.map((edge): BigChoice => ({ id: 'edge', edge, reward: pay(EDGE_TIER[edge]) }));
   const queue: BigChoice[][] = [];
   // After a cleared loop: RIDE AGAIN or CASH OUT the pot, then a big choice set.
   if (loop > 1) {

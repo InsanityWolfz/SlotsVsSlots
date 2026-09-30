@@ -719,7 +719,8 @@ export class Fight {
     let vaultGroup: ScoreGroup | null = null;
     // MIDAS: an open VAULT multiplies your first paying group, then resets to its resting level.
     if (player && this.meter?.kind === 'vault' && me.armed) {
-      const g0 = s.groups.find(pays);
+      // Your best paying group: swords first, then the biggest (never a lone shield if anything better paid).
+      const g0 = s.groups.filter(pays).sort((a, b) => Number(b.symbol === 'sword') - Number(a.symbol === 'sword') || b.base * b.mult - a.base * a.mult)[0];
       if (g0) {
         const mul = this.vaultMul();
         g0.mult *= mul;

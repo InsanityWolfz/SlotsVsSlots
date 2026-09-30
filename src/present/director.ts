@@ -251,7 +251,7 @@ export class Director {
     this.flashMachine(e.to, 1, 0.3);
     this.knockback(e.to, 14);
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
-    await this.popText(e.hpDamage > 0 ? `ALL IN! -${e.hpDamage}` : 'ALL IN! BLOCKED', c.x, MACHINE_TOP + 40, 5, '#ff6a5a', 50, 0.5);
+    await this.popText(e.hpDamage > 0 ? `ALL IN! -${fmtNum(e.hpDamage)}` : 'ALL IN! BLOCKED', c.x, MACHINE_TOP + 60, 4, '#ff6a5a', 30, 0.5);
   }
 
   /** One of your relics just did something: its icon pops, hops and flashes, and says its name. */
@@ -1058,7 +1058,7 @@ export class Director {
     const color = h.meter?.color ?? COLORS.goldLight;
     // A callout over the machine, not a second banner (the PAIR!/JACKPOT! banner carries the math).
     const c = this.machineCenter(e.side);
-    await this.popText(e.kind === 'touch' ? 'MIDAS TOUCH!' : e.kind === 'vault' ? `VAULT X${e.mul ?? 1}!` : 'ALL JACKPOTS!', c.x, MACHINE_TOP - 34, 4, color, 30, 0.45);
+    await this.popText(e.kind === 'touch' ? 'MIDAS TOUCH!' : e.kind === 'vault' ? `VAULT X${e.mul ?? 1}!` : 'ALL JACKPOTS!', c.x, MACHINE_TOP + 30, 4, color, 30, 0.45);
   }
 
   /** MIDAS TOUCH: swords and shields turn gold (a gold rim with 1-3 pips) for the rest of the fight. */
