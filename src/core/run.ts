@@ -717,7 +717,8 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
   }
   // The Mirror grows with your machine and (like the House) with every relic you carry in.
   const cm = BOSS_MUL[run.cabinet];
-  if (e.boss === 'mirror') return unitsRound(TUNE.mirrorPower * cm.mirror * sizingPower(run, 'mirror')) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length;
+  // GREEN+: the Mirror copies one of your relics, so it gets less HP (it was the run's real wall: EXPERT_PLAYTEST_6 E10).
+  if (e.boss === 'mirror') return unitsRound((unitsRound(TUNE.mirrorPower * cm.mirror * sizingPower(run, 'mirror')) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length) * (run.stake >= STAKE.mirrorRelic ? TUNE.greenMirror : 1));
   if (e.boss === 'dealer') return unitsRound(TUNE.dealerPower * cm.dealer * sizingPower(run, 'dealer')) + TUNE.dealerFlat + TUNE.mirrorPerRelic * run.player.relics.length;
   // BLACK+: the House cheats (faster skims, payline bombs, no chip shield) instead of just being tougher.
   const house = run.stake >= STAKE.houseDirty ? Math.sqrt(cm.house) : cm.house;
@@ -780,9 +781,9 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number }> = {
   knight: { house: 2.0, mirror: 0.9, dealer: 0.85, act3: 0.5 },
-  midas: { house: 3, mirror: 2.8, dealer: 2.6, act3: 0.25, act1: 0.55, act2: 0.6 },
-  thorn: { house: 0.85, mirror: 10.5, dealer: 2.4, act3: 1.1, act2: 0.55 },
-  tesla: { house: 0.5, mirror: 2.4, dealer: 2.0, act3: 0.95 },
+  midas: { house: 3, mirror: 2.8, dealer: 2.3, act3: 0.25, act1: 0.55, act2: 0.6 },
+  thorn: { house: 0.85, mirror: 10.5, dealer: 1.8, act3: 1.1, act2: 0.55 },
+  tesla: { house: 0.5, mirror: 2.4, dealer: 2.25, act3: 0.95 },
   joker: { house: 2.2, mirror: 3.7, dealer: 1.85, act3: 0.55, act2: 1.8 },
 };
 const powerCache = new Map<string, number>();

@@ -917,3 +917,31 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   The House is a real race now, but it rarely kills (the gate's 10–20% deaths isn't reachable without breaking the one-turn cap).
 - endless.ts 300: loops cleared p50 knight 1 / tesla 2 / thorn 2 / joker 2 / midas 1, max 4 (the sim now cashes out; it used to ride to 50).
 - Tests: 185.
+
+### Iteration 51 (2026-09-30): EXPERT_PLAYTEST_6 E10, benchmark move (the Dealer is the peak)
+- The playtester moved the targets:
+  - the finale should be the hardest fight;
+  - the GREEN Mirror killed 22.2% of runs vs the Dealer 12.6%;
+  - the Dealer target is 52 → ~47;
+  - WHITE and GREEN stay.
+- **Tried:** lowering BOSS_MUL.mirror ~20% on every machine. The WHITE Mirror rose 6–8 points (WHITE +3), but the GREEN Mirror only dropped 22.2 → 20.0. Reverted.
+  - The GREEN Mirror's extra wall is the relic it copies.
+- **Kept:** TUNE.greenMirror 0.5, so at GREEN+ the Mirror has half HP. WHITE is untouched.
+  | greenMirror | Mirror deaths | Dealer deaths |
+  |---|---|---|
+  | 0.75 | 19.0% | 14.9% |
+  | 0.6 | 16.3% | 15.7% |
+  | 0.5 | 14.3% | 15.4% |
+- The Dealer is levelled per machine: BOSS_MUL.dealer thorn 2.4 → 1.8, midas 2.6 → 2.3, tesla 2.0 → 2.25. More weak BRIAR / MIDAS runs reach it now.
+- **gate 1000:**
+  | machine | WHITE | GREEN | reachD | Dealer |
+  |---|---|---|---|---|
+  | knight | 43.1 | 17.5 | 37.5 | 46.7 |
+  | tesla | 43.9 | 16.7 | 31.5 | 53.0 |
+  | thorn | 45.8 | 18.4 | 40.1 | 45.9 |
+  | joker | 41.8 | 16.0 | 31.8 | 50.3 |
+  | midas | 38.6 | 12.1 | 25.4 | 47.6 |
+  | AVG | 42.6 | 16.1 | | 48.7 |
+
+  The Dealer was 50.1 before. Deaths: Mirror 14.3% < Dealer 15.4%. All the E10 gates pass (GREEN 14–17, Dealer 45–50, Mirror < Dealer).
+- Tests: 185.
