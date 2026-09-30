@@ -16,6 +16,12 @@ describe('SIDE BETS', () => {
     t.jackpots = 2;
     expect(betState({ kind: 'jackpot', target: 2, pay: 3 }, t, false)).toBe('won');
     expect(betState({ kind: 'big', target: 100, pay: 2 }, t, true)).toBe('lost');
+    expect(betState({ kind: 'early', target: 0, pay: 3 }, t, true)).toBe('won');
+    expect(betState({ kind: 'survive', target: 0, pay: 2 }, t, false)).toBe('live');
+    t.finalHand = true;
+    t.allIns = 1;
+    expect(betState({ kind: 'early', target: 0, pay: 3 }, t, false)).toBe('lost');
+    expect(betState({ kind: 'survive', target: 0, pay: 2 }, t, false)).toBe('won');
   });
 
   it('the engine tracks spins, jackpots and your best turn', () => {

@@ -8,7 +8,9 @@ import type { CombatEvent } from './events';
 import type { Rng } from './rng';
 
 /** QUICK: win by your Nth spin. CLEAN: take at most N damage. JACKPOTS: land N jackpots. BIG HIT: one turn of N+ damage. */
-export type BetKind = 'quick' | 'clean' | 'jackpot' | 'big';
+export type BetKind = 'quick' | 'clean' | 'jackpot' | 'big' | 'early' | 'survive';
+/** The Dealer's own table (EXPERT_PLAYTEST_6 E8): win before his FINAL HAND; survive an ALL IN. */
+export const DEALER_BETS: BetKind[] = ['early', 'survive'];
 export interface SideBet {
   kind: BetKind;
   target: number;
@@ -30,6 +32,9 @@ export const BETS = { samples: 12, aim: 0.55, hardBelow: 0.31, minP: 0.25, maxP:
 
 /** What a fight has done so far, as far as the bets care. */
 export interface BetTrack {
+  /** The Dealer played his FINAL HAND; ALL INs that hit you. */
+  finalHand?: boolean;
+  allIns?: number;
   spins: number;
   lost: number;
   jackpots: number;
@@ -58,8 +63,14 @@ export function trackEvent(t: BetTrack, e: CombatEvent): void {
       if (e.to === 'player') t.lost += e.hpDamage;
       return;
     case 'allInHit':
+      if (e.to === 'player') t.allIns = (t.allIns ?? 0) + 1;
+      if (e.to === 'player') t.lost += e.hpDamage;
+      return;
     case 'potWin':
       if (e.to === 'player') t.lost += e.hpDamage;
+      return;
+    case 'finalHand':
+      t.finalHand = true;
       return;
     case 'markedHit':
     case 'blast':
@@ -85,6 +96,10 @@ export function betState(b: SideBet, t: BetTrack, done: boolean): 'live' | 'won'
       return t.jackpots >= b.target ? 'won' : done ? 'lost' : 'live';
     case 'big':
       return t.best >= b.target ? 'won' : done ? 'lost' : 'live';
+    case 'early':
+      return t.finalHand ? 'lost' : done ? 'won' : 'live';
+    case 'survive':
+      return t.allIns ? 'won' : done ? 'lost' : 'live';
   }
 }
 
@@ -99,6 +114,10 @@ export function describeBet(b: SideBet): { name: string; rule: string } {
       return { name: 'HIGH ROLLER', rule: b.target === 1 ? 'LAND A JACKPOT' : `LAND ${b.target} JACKPOTS` };
     case 'big':
       return { name: 'BIG HIT', rule: `DEAL ${num(b.target)}+ IN ONE TURN` };
+    case 'early':
+      return { name: 'FOLD HIM EARLY', rule: 'WIN BEFORE HIS FINAL HAND' };
+    case 'survive':
+      return { name: 'TAKE THE HIT', rule: 'SURVIVE AN ALL IN' };
   }
 }
 
@@ -113,13 +132,19 @@ export function betProgress(b: SideBet, t: BetTrack): string {
       return `${Math.min(t.jackpots, b.target)} OF ${b.target}`;
     case 'big':
       return `BEST ${num(t.best)}`;
+    case 'early':
+      return t.finalHand ? 'FINAL HAND!' : 'NO FINAL HAND YET';
+    case 'survive':
+      return t.allIns ? 'SURVIVED!' : 'NO ALL IN YET';
   }
 }
 
 /** Big numbers the endless way (12.4K); core can't reach the renderer's fmtNum. */
 const num = (n: number) => (n >= 1e9 ? `${+(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : n >= 1e4 ? `${+(n / 1e3).toFixed(1)}K` : String(n));
 /** What a won bet makes you (the stake came off your chips when you placed it). */
-export const betProfit = (b: PlacedBet) => b.stake * (b.pay - 1);
+export const betProfit = (b: PlacedBet) => betPayout(b) - b.stake;
+/** What a won bet pays back, in whole chips (pays can be x1.5, x2.5 ...). */
+export const betPayout = (b: PlacedBet) => Math.floor(b.stake * b.pay);
 
 const hits = (xs: number[], ok: (x: number) => boolean) => xs.filter(ok).length / Math.max(1, xs.length);
 
@@ -140,6 +165,18 @@ export function lineFor(kind: BetKind, runs: BetTrack[], enemyHp = Infinity, str
   }
   if (!best) return null;
   return { kind, target: best.target, pay: hot ? 2 + hot : best.p < BETS.hardBelow ? 3 : 2 };
+}
+
+/** The Dealer's two bets, paid by how often the rehearsals made them (a win is part of every bet). */
+export function dealerBets(all: { t: BetTrack; won: boolean }[]): SideBet[] {
+  const out: SideBet[] = [];
+  for (const kind of DEALER_BETS) {
+    const p = all.filter(({ t, won }) => won && (kind === 'early' ? !t.finalHand : !!t.allIns)).length / Math.max(1, all.length);
+    if (p < 0.12 || p > 0.8) continue;
+    // Half steps from x1.5 (a likely win pays little): the return stays ~105%.
+    out.push({ kind, target: 0, pay: Math.max(1.5, Math.min(5, Math.round((2 * 1.05) / p) / 2)) });
+  }
+  return out;
 }
 
 /** Up to 2 bets from a fight's rehearsals (the winning ones); none if you usually lose it. */

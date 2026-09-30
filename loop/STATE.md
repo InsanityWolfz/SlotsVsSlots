@@ -945,3 +945,20 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 
   The Dealer was 50.1 before. Deaths: Mirror 14.3% < Dealer 15.4%. All the E10 gates pass (GREEN 14–17, Dealer 45–50, Mirror < Dealer).
 - Tests: 185.
+
+### Iteration 52 (2026-09-30): EXPERT_PLAYTEST_6 E8, the Dealer's own table
+- **The Dealer is the one boss with side bets**, and he has his own two:
+  - FOLD HIM EARLY: win before his FINAL HAND (a long shot, ~×4–5);
+  - TAKE THE HIT: survive an ALL IN.
+- **Sizing:**
+  - rehearsed 24× (twice a regular fight); a win is part of every bet;
+  - pay ≈ 1.05 / p in half steps from ×1.5 to ×5, with the payout floored to whole chips (`betPayout`);
+  - not offered below p 0.12 or above 0.8.
+  - At a ×2 floor, a likely Dealer win paid 142% (Dealer fights are bimodal per build: p(win) is ~5% or ~80%).
+- **Fix found by the measurement:** a side bet's stake still counts toward the boss chip shield (it's on the table in front of you). Taking it out made the real fight weaker than its rehearsal: KNIGHT TAKE THE HIT returned 62%. It still doesn't fill the MIDAS vault.
+- The in-fight tracker has a compact two-line form in the Dealer's gutter, above the deal box.
+- **`tools/balance/dealer_bets.ts 300` (GREEN):**
+  - TAKE THE HIT: offered 33–86% of Dealer fights, won 30–55%, return 85–119%;
+  - FOLD HIM EARLY: offered 0–63% (machines that overshoot 40% rarely see it), return 39–105% (small n);
+  - GREEN is identical with and without the bet (the gate: Dealer win ±2).
+- Tests: 185 (bets.test.ts covers the new kinds).

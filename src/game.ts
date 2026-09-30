@@ -1151,7 +1151,10 @@ export class Game {
       }
     }
     if (this.fight.isBoss) this.drawPot(ctx, cx, cy + 118, t);
-    else if (this.fight.isDealer) this.drawDeal(ctx, cx, cy + 118, t);
+    else if (this.fight.isDealer) {
+      this.drawDeal(ctx, cx, cy + 118, t);
+      this.drawBet(ctx, cx, cy + 40, t, true);
+    }
     else if (this.fight.isMirror) {
       this.drawReflection(ctx, cx, cy + 118, t);
       // GREEN stake: the relic it copied from you.
@@ -1246,12 +1249,21 @@ export class Game {
   }
 
   /** SIDE BET tracker under the VS: the bet, then how it stands (information only: fights stay watch-only). */
-  private drawBet(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+  private drawBet(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, compact = false): void {
     const g = this.stage.gutter;
     if (!g.bet || !g.betTrack) return;
     const d = describeBet(g.bet);
     const done = g.betDone;
     const col = done === 'won' ? '#ffd23f' : done === 'lost' ? '#ff8a7a' : '#c8f0c8';
+    const status = done === 'won' ? `WON +${betProfit(g.bet)}` : done === 'lost' ? `BUSTED -${g.bet.stake}` : betProgress(g.bet, g.betTrack);
+    // The Dealer's gutter holds its deal box: one line above it.
+    if (compact) {
+      ctx.fillStyle = 'rgba(10,6,18,0.85)';
+      ctx.fillRect(x - 130, y - 16, 260, 34);
+      drawText(ctx, `BET ${g.bet.stake}: ${d.name}`, x, y - 6, 1.5, COLORS.goldLight);
+      drawText(ctx, status, x, y + 8, 1.5, col);
+      return;
+    }
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(x - 112, y - 22, 224, 66);
     ctx.fillStyle = done ? col : '#2a6a3a';
@@ -1260,7 +1272,7 @@ export class Game {
     ctx.fillRect(x - 105, y - 15, 210, 52);
     drawText(ctx, `BET ${g.bet.stake}: ${d.name}`, x, y - 4, 1.5, COLORS.goldLight);
     drawText(ctx, d.rule, x, y + 10, 1.25, COLORS.text);
-    const line = done === 'won' ? `WON +${betProfit(g.bet)}` : done === 'lost' ? `BUSTED -${g.bet.stake}` : betProgress(g.bet, g.betTrack);
+    const line = status;
     drawText(ctx, line, x, y + 27, 2, col, { punch: done ? 1 : 1 + 0.04 * Math.sin(t * 6) });
   }
 

@@ -23,7 +23,7 @@ import {
 import { CABINETS, type CabinetId } from './cabinets';
 import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
-import { ALL_IN_STAKE, BETS, betsFrom, betState, HOT_HAND, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
+import { ALL_IN_STAKE, BETS, betPayout, betsFrom, dealerBets, betState, HOT_HAND, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
 
@@ -527,8 +527,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // No bonus in the run's final fight: a voucher could never be spent (QA_1 B11).
     bonusSymbols: !(e.isBoss && run.act >= runActs(run)),
     chipsHeld: run.player.chips,
-    // Saved chips shield you at every boss, capped (a MIDAS hoard made the House untouchable).
-    stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? Math.min(MIRROR_CHIP_SHIELD_CAP, chipShield(run.player.chips)) : 0,
+    // Saved chips shield you at every boss, capped (a MIDAS hoard made the House untouchable). A side bet's
+    // stake still sits in front of you: it counts (it doesn't fill the MIDAS vault, though).
+    stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? Math.min(MIRROR_CHIP_SHIELD_CAP, chipShield(run.player.chips + (run.bet?.stake ?? 0))) : 0,
   };
   const hp = enemyHp(run, e);
   cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
@@ -579,7 +580,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
 /** SIDE BETS are offered before regular fights (not bosses, not the tutorial's first fight, not at a fork). */
 export function betsOpen(run: RunState): boolean {
   const e = run.enemies[run.depth];
-  return !run.over && !!e && !e.isBoss && !needsChoice(run) && !(run.tutorial && run.act === 1 && run.depth === 0);
+  return !run.over && !!e && (!e.isBoss || e.boss === 'dealer') && !needsChoice(run) && !(run.tutorial && run.act === 1 && run.depth === 0);
 }
 
 /** The Cashier's table for the next fight: 2 bets, sized by rehearsing this very fight on other seeds. */
@@ -589,14 +590,19 @@ export function offerBets(run: RunState, base: GameConfig): SideBet[] {
   if (run.bets?.key === key) return run.bets.offer;
   const cfg = fightConfig(run, base);
   const rng = new Rng((run.seed ^ Math.imul(fightNumber(run) + 31 + (run.endless?.loop ?? 0) * 97, 0x27d4eb2f)) >>> 0);
-  const wins: BetTrack[] = [];
-  for (let i = 0; i < BETS.samples; i++) {
+  const all: { t: BetTrack; won: boolean }[] = [];
+  // The Dealer (one fight a run, long odds) gets twice the rehearsals.
+  const samples = cfg.enemy.boss === 'dealer' ? BETS.samples * 2 : BETS.samples;
+  for (let i = 0; i < samples; i++) {
     const f = new FightCtor(cfg, rng.int(0xffffffff));
     const t = newTrack();
     while (!f.over && f.turn < 400) for (const e of f.step().events) trackEvent(t, e);
-    if (f.winner === 'player') wins.push(t);
+    all.push({ t, won: f.winner === 'player' });
   }
-  const offer = betsFrom(wins, BETS.samples, rng, cfg.enemy.hp, run.betStreak ?? 0);
+  // The Dealer has his own table (win before his FINAL HAND; survive an ALL IN).
+  const offer = cfg.enemy.boss === 'dealer'
+    ? dealerBets(all)
+    : betsFrom(all.filter((x) => x.won).map((x) => x.t), BETS.samples, rng, cfg.enemy.hp, run.betStreak ?? 0);
   run.bets = { key, offer };
   return offer;
 }
@@ -870,7 +876,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   // SIDE BET: paid stake x pay if it came in (a lost fight ends the run, bet and all).
   if (run.bet) {
     const won = betState(run.bet, fight.betTrack, true) === 'won';
-    if (won) run.player.chips += run.bet.stake * run.bet.pay;
+    if (won) run.player.chips += betPayout(run.bet);
     record.bet = { ...run.bet, won };
     run.betStreak = won ? Math.min(HOT_HAND.max, (run.betStreak ?? 0) + 1) : 0;
   }
