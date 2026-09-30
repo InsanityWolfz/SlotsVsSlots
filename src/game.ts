@@ -5,7 +5,7 @@ import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
 import { actLength, RUN_FIGHTS, TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { Fight } from './core/fight';
-import { betProgress, describeBet, newTrack } from './core/bets';
+import { betProfit, betProgress, describeBet, newTrack } from './core/bets';
 import { turnRow, type TurnRow } from './core/log';
 import { REFLECT_MIN, RELICS } from './core/relics';
 import {
@@ -1260,7 +1260,7 @@ export class Game {
     ctx.fillRect(x - 105, y - 15, 210, 52);
     drawText(ctx, `BET ${g.bet.stake}: ${d.name}`, x, y - 4, 1.5, COLORS.goldLight);
     drawText(ctx, d.rule, x, y + 10, 1.25, COLORS.text);
-    const line = done === 'won' ? `WON +${g.bet.stake * g.bet.pay}` : done === 'lost' ? 'BUSTED' : betProgress(g.bet, g.betTrack);
+    const line = done === 'won' ? `WON +${betProfit(g.bet)}` : done === 'lost' ? `BUSTED -${g.bet.stake}` : betProgress(g.bet, g.betTrack);
     drawText(ctx, line, x, y + 27, 2, col, { punch: done ? 1 : 1 + 0.04 * Math.sin(t * 6) });
   }
 

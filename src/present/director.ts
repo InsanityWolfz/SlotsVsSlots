@@ -9,7 +9,7 @@ import { Banner, Bubble, FloatText, Lightning, Projectile, SymbolWheel, TurnCard
 import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, W, relicSlot } from './layout';
 import type { Stage } from './stage';
 import { ABILITY_UI } from './hud';
-import { betState, trackEvent } from '../core/bets';
+import { betProfit, betState, trackEvent } from '../core/bets';
 import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
 import { fmtNum } from '../render/text';
@@ -97,7 +97,7 @@ export class Director {
       this.s.sounds.coin(6);
       this.s.sounds.coin(11);
     }
-    this.bg(this.popText(g.betDone === 'won' ? `BET WON +${g.bet.stake * g.bet.pay}` : 'BET BUSTED', W / 2, MACHINE_TOP + MACHINE_H - 40, 2.5, g.betDone === 'won' ? '#ffd23f' : '#ff8a7a', 24, 0.6));
+    this.bg(this.popText(g.betDone === 'won' ? `BET WON +${betProfit(g.bet)}` : `BET BUSTED -${g.bet.stake}`, W / 2, MACHINE_TOP + MACHINE_H - 40, 2.5, g.betDone === 'won' ? '#ffd23f' : '#ff8a7a', 24, 0.6));
   }
 
   private play(e: CombatEvent): Promise<void> {

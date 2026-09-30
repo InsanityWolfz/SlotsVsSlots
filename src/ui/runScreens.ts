@@ -43,7 +43,7 @@ import { COLORS, H, W } from '../present/layout';
 import { artId, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 import { heroSprite } from './menus';
-import { BET_STAKES, describeBet, type SideBet } from '../core/bets';
+import { BET_STAKES, betProfit, describeBet, type SideBet } from '../core/bets';
 
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus' | 'choice';
 
@@ -631,7 +631,7 @@ export class RunScreens {
         drawText(ctx, 'SAFE', 0, -c.h / 2 + 15, 1.5, '#b6ff9a');
       }
       // The symbol / charm it touches, when there is one.
-      const icon = (ch.symbol ?? (ch.enh ? CHARM_SYMBOLS[ch.enh][0] : ch.id === 'meltDown' || ch.id === 'gildLot' ? 'sword' : ch.id === 'glassCannon' || ch.id === 'bloodPact' ? 'heart' : ch.id === 'secondWind' ? 'heart' : ch.id === 'sweepUp' ? 'rock' : ch.id === 'edge' ? (ch.reward === 'legend' ? 'relicBell' : ch.reward === 'relic' ? 'relicClover' : 'chip') : ch.id === 'cashOut' ? 'chip' : ch.id === 'ride' ? 'relicDrum' : 'shield')) as SpriteId;
+      const icon = (ch.symbol ?? (ch.enh ? CHARM_SYMBOLS[ch.enh][0] : ch.id === 'meltDown' || ch.id === 'gildLot' ? 'sword' : ch.id === 'glassCannon' || ch.id === 'bloodPact' ? 'heart' : ch.id === 'secondWind' ? 'heart' : ch.id === 'sweepUp' ? 'rock' : ch.id === 'edge' ? (ch.reward === 'legend' ? artId('tierLegendary') : ch.reward === 'relic' ? artId('voucherRelic') : 'chip') : ch.id === 'cashOut' ? 'chip' : ch.id === 'ride' ? 'relicDrum' : 'shield')) as SpriteId;
       drawSprite(ctx, icon, 0, -c.h / 2 + 70, 4);
       if (ch.enh) drawSprite(ctx, ENH_SPRITE[ch.enh], 0, -c.h / 2 + 70, 4);
       if (ch.id === 'meltDown' || ch.id === 'gildLot') drawSprite(ctx, ENH_SPRITE.gold, 0, -c.h / 2 + 70, 4);
@@ -732,7 +732,7 @@ export class RunScreens {
       const d = describeBet(b);
       drawText(ctx, `SIDE BET: ${d.name}`, cx, 624, 2, on ? COLORS.goldLight : '#c8f0c8');
       drawText(ctx, d.rule, cx, 646, 1.5, COLORS.text);
-      drawText(ctx, `PAYS X${b.pay}`, cx, 666, 1.5, b.pay >= 3 ? '#ff8aa0' : COLORS.goldLight);
+      drawText(ctx, on ? `PAYS X${b.pay}  -  YOUR BET: ${run.bet!.stake}` : `PAYS X${b.pay}`, cx, 666, 1.5, b.pay >= 3 ? '#ff8aa0' : COLORS.goldLight);
     });
     for (const btn of this.buttons) {
       if (!btn.bet) continue;
@@ -743,9 +743,13 @@ export class RunScreens {
       ctx.globalAlpha *= afford || picked ? 1 : 0.35;
       ctx.fillStyle = COLORS.outline;
       ctx.fillRect(btn.x - btn.w / 2 - 2, btn.y - btn.h / 2 - 2, btn.w + 4, btn.h + 4);
-      ctx.fillStyle = picked ? COLORS.goldLight : btn.hover && afford ? '#3a8a4a' : '#1e4a2a';
+      if (picked) {
+        ctx.fillStyle = COLORS.goldLight;
+        ctx.fillRect(btn.x - btn.w / 2 - 2, btn.y - btn.h / 2 - 2, btn.w + 4, btn.h + 4);
+      }
+      ctx.fillStyle = picked ? '#c8321f' : btn.hover && afford ? '#3a8a4a' : '#1e4a2a';
       ctx.fillRect(btn.x - btn.w / 2, btn.y - btn.h / 2, btn.w, btn.h);
-      drawText(ctx, picked ? `BET ${s}` : `${s}`, btn.x, btn.y + 1, 2, picked ? '#2a1a08' : '#fff6c8', { punch: picked ? 1 + 0.04 * Math.sin(time * 6) : 1 });
+      drawText(ctx, `${s}`, btn.x, btn.y + 1, picked ? 2.5 : 2, '#fff6c8', { punch: picked ? 1 + 0.04 * Math.sin(time * 6) : 1 });
       ctx.restore();
     }
   }
@@ -948,7 +952,7 @@ export class RunScreens {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
       drawText(ctx, `${rounds(last.turns)}  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}${chips}${rocks}`, W / 2, 60, 2, COLORS.textDim);
-      if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${last.bet.stake * last.bet.pay} CHIPS` : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, W / 2, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
+      if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${betProfit(last.bet)} CHIPS` : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, W / 2, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
     }
     this.drawMap(ctx, 158, time);
     const spoils = this.draftKind === 'spoils';
@@ -1447,7 +1451,7 @@ export class RunScreens {
   private drawOver(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
     const trueEnding = run.won && run.act >= 3;
-    if (this.rideOffer) drawText(ctx, 'YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', W / 2, 466, 2, COLORS.goldLight);
+    if (this.rideOffer) drawText(ctx, 'YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', W / 2, this.unlockedNow.length ? 492 : 466, this.unlockedNow.length ? 1.5 : 2, COLORS.goldLight);
     const busted = !!run.endless;
     drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;

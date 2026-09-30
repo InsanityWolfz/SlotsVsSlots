@@ -20,7 +20,7 @@ export interface PlacedBet extends SideBet {
 }
 export const BET_STAKES = [3, 6, 12] as const;
 /** How many rehearsals size a bet, and the odds a line aims for. */
-export const BETS = { samples: 12, aim: 0.55, hardBelow: 0.42, minP: 0.25, maxP: 0.75 };
+export const BETS = { samples: 12, aim: 0.55, hardBelow: 0.31, minP: 0.25, maxP: 0.75 };
 
 /** What a fight has done so far, as far as the bets care. */
 export interface BetTrack {
@@ -86,13 +86,13 @@ export function betState(b: SideBet, t: BetTrack, done: boolean): 'live' | 'won'
 export function describeBet(b: SideBet): { name: string; rule: string } {
   switch (b.kind) {
     case 'quick':
-      return { name: 'QUICK HANDS', rule: `WIN BY YOUR SPIN ${b.target}` };
+      return { name: 'QUICK HANDS', rule: `WIN BY ROUND ${b.target}` };
     case 'clean':
-      return { name: 'CLEAN HANDS', rule: b.target <= 0 ? 'WIN WITHOUT A SCRATCH' : `WIN, LOSING ${b.target} HP OR LESS` };
+      return { name: 'CLEAN HANDS', rule: b.target <= 0 ? 'WIN WITHOUT A SCRATCH' : `WIN, LOSING ${num(b.target)} HP OR LESS` };
     case 'jackpot':
       return { name: 'HIGH ROLLER', rule: b.target === 1 ? 'LAND A JACKPOT' : `LAND ${b.target} JACKPOTS` };
     case 'big':
-      return { name: 'BIG HIT', rule: `DEAL ${b.target}+ IN ONE TURN` };
+      return { name: 'BIG HIT', rule: `DEAL ${num(b.target)}+ IN ONE TURN` };
   }
 }
 
@@ -100,23 +100,28 @@ export function describeBet(b: SideBet): { name: string; rule: string } {
 export function betProgress(b: SideBet, t: BetTrack): string {
   switch (b.kind) {
     case 'quick':
-      return `${Math.max(0, b.target - t.spins)} SPINS LEFT`;
+      return b.target - t.spins === 1 ? 'LAST ROUND' : `${Math.max(0, b.target - t.spins)} ROUNDS LEFT`;
     case 'clean':
-      return b.target <= 0 ? (t.lost ? 'HIT!' : 'NO SCRATCH YET') : `${Math.max(0, b.target - t.lost)} HP TO SPARE`;
+      return b.target <= 0 ? (t.lost ? 'HIT!' : 'NO SCRATCH YET') : `${num(Math.max(0, b.target - t.lost))} HP TO SPARE`;
     case 'jackpot':
       return `${Math.min(t.jackpots, b.target)} OF ${b.target}`;
     case 'big':
-      return `BEST ${t.best}`;
+      return `BEST ${num(t.best)}`;
   }
 }
+
+/** Big numbers the endless way (12.4K); core can't reach the renderer's fmtNum. */
+const num = (n: number) => (n >= 1e9 ? `${+(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : n >= 1e4 ? `${+(n / 1e3).toFixed(1)}K` : String(n));
+/** What a won bet makes you (the stake came off your chips when you placed it). */
+export const betProfit = (b: PlacedBet) => b.stake * (b.pay - 1);
 
 const hits = (xs: number[], ok: (x: number) => boolean) => xs.filter(ok).length / Math.max(1, xs.length);
 
 /** Pick the line for one kind from the rehearsals: the candidate whose odds sit nearest the aim. */
-export function lineFor(kind: BetKind, runs: BetTrack[]): SideBet | null {
+export function lineFor(kind: BetKind, runs: BetTrack[], enemyHp = Infinity): SideBet | null {
   const vals = runs.map((t) => (kind === 'quick' ? t.spins : kind === 'clean' ? t.lost : kind === 'jackpot' ? t.jackpots : t.best));
   const round = (x: number) => (kind === 'clean' || kind === 'big' ? Math.floor(x / UNIT) * UNIT : x);
-  const cands = [...new Set(vals.map(round))].filter((x) => (kind === 'jackpot' || kind === 'big' ? x > 0 : x >= 0));
+  const cands = [...new Set(vals.map(round))].filter((x) => (kind === 'jackpot' || kind === 'big' ? x > 0 : x >= 0) && !(kind === 'big' && x > enemyHp));
   let best: { target: number; p: number } | null = null;
   for (const target of cands) {
     const p = hits(vals, (v) => (kind === 'quick' || kind === 'clean' ? v <= target : v >= target));
@@ -128,11 +133,11 @@ export function lineFor(kind: BetKind, runs: BetTrack[]): SideBet | null {
 }
 
 /** Up to 2 bets from a fight's rehearsals (the winning ones); none if you usually lose it. */
-export function betsFrom(wins: BetTrack[], samples: number, rng: Rng): SideBet[] {
+export function betsFrom(wins: BetTrack[], samples: number, rng: Rng, enemyHp = Infinity): SideBet[] {
   if (wins.length < samples / 2) return [];
   const out: SideBet[] = [];
   for (const k of rng.shuffle<BetKind>(['quick', 'clean', 'jackpot', 'big'])) {
-    const b = lineFor(k, wins);
+    const b = lineFor(k, wins, enemyHp);
     if (b) out.push(b);
     if (out.length === 2) break;
   }

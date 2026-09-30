@@ -829,3 +829,25 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - run win rates (1000 runs, KNIGHT WHITE): 1-chip bets 43.1 → 40.5; 6-chip always-bettor 43.1 → 39.4. That's mostly run divergence (every chip changes the greedy shop), not a tax;
   - a cautious bettor (keeps 10 in reserve) is within ±1.5, except MIDAS −3 (chips on the table don't fill the vault, which is intended).
 - Tests: 184 (bets.test.ts). The official sim doesn't bet (unchanged baseline).
+
+### Iteration 47 (2026-09-30): EXPERT_PLAYTEST_6 batch 1 (E1, E2, E12)
+- EXPERT_PLAYTEST_6 read:
+  - gate 600: WHITE 43.2, GREEN 14.7, Dealer 53.0;
+  - bets add tension (73–83% still live in the last 2 spins), but the choice is flat (every policy returns 109–113%);
+  - FINAL HAND rarely reaches its ALL IN;
+  - the loop-1 House is still free;
+  - RIDE vs CASH OUT is solved;
+  - recommends moving the Dealer target to ~47 and making the Mirror easier.
+- **E1 bet text:**
+  - net payouts ("BET WON +6", "BUSTED -6", "SIDE BET WON: +6 CHIPS");
+  - QUICK HANDS reads "WIN BY ROUND N" / "N ROUNDS LEFT" (the HUD's word);
+  - BIG HIT lines never exceed the enemy's max HP;
+  - K formatting for endless lines;
+  - the picked stake is a red button with a gold rim and "YOUR BET: N" on the card;
+  - a SIDE BETS tutorial tip.
+- **E2:** a ×3 pay only for lines under 0.31 rehearsed odds (hard lines realize ~7 points above their rehearsal).
+  - `expert6_bets.ts 150`: ×3 returns 106.5% and ×2 returns 106.5% (were 128 / 107).
+- **E12:**
+  - the ride subline moves below a machine-unlock line (no overlap);
+  - edge rewards show a relic voucher / legendary badge (no longer the LUCKY CLOVER).
+- Tests: 184.

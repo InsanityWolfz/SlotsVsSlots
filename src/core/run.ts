@@ -592,7 +592,7 @@ export function offerBets(run: RunState, base: GameConfig): SideBet[] {
     while (!f.over && f.turn < 400) for (const e of f.step().events) trackEvent(t, e);
     if (f.winner === 'player') wins.push(t);
   }
-  const offer = betsFrom(wins, BETS.samples, rng);
+  const offer = betsFrom(wins, BETS.samples, rng, cfg.enemy.hp);
   run.bets = { key, offer };
   return offer;
 }
