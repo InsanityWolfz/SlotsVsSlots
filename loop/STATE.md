@@ -620,3 +620,28 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 
   The tightest machine spread yet. Act 3 regular deaths 2-4%.
 - Tests: 176 (tests/fairness.test.ts).
+
+### Iteration 37 (2026-09-29): EXPERT_PLAYTEST_3 E8-E11
+- **E9 graded act 3:**
+  - act 3 regulars start with their ability charged, so it fires on their first turn;
+  - their first attack each fight puts a COVER CHARGE of 10% of your max HP through your shield (TUNE.coverCharge; `coverCharge` event).
+  - Result: zero-damage act 3 fights 56% → 51%; act 3 deaths 2.9 → 5.3% per fight (the one-turn cap keeps them from being one-shots). Still bimodal: strong builds kill act 3 regulars before they act.
+- **E8 Dealer finale:**
+  - line cards are ACE 25 / JOKER 20 / DEUCE 55 (HOUSE RULES 15/10/75); a DEUCE aims at your best reel (the most strip value);
+  - ALL IN shows "UP TO N" in its banner and over its machine;
+  - the laid card is full-cell, face-up and gold-rimmed with "X2 / WILD / ZERO" (marks stay red card backs);
+  - MARKS ON YOU is at 2x.
+- **E10:**
+  - the Dealer deal sublines are at 1.5x in normal text colour;
+  - the House pot box says "YOUR JACKPOT TAKES IT";
+  - the HUD ability countdown is synced to the engine's starting charge.
+- **E11 act 2 pacing per machine:** BOSS_MUL.act2 (thorn 0.55, joker 1.8) scales act 2 regular HP. Act 2 turns p50: knight 14 / tesla 18 / thorn 17 / joker 14 (were 14 / 18 / 30 / 9). Thorn mirror 16 → 10.5 (Mirror 66 → ~40 turns).
+- BOSS_MUL dealer knight 0.7, thorn 2.0.
+- **tuesday.ts 1500:**
+  | machine | WHITE | GREEN | Dealer |
+  |---|---|---|---|
+  | knight | 39.7 | 12.0 | 49.5 |
+  | tesla | 38.5 | 13.5 | 53.8 |
+  | thorn | 42.2 | 13.5 | 46.5 |
+  | joker | 38.1 | 15.7 | 58.8 |
+  | AVG | 39.6 | 13.7 | 52.1 |

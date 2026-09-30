@@ -571,7 +571,9 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
   if (!e.isBoss && run.act === 2) {
     const arch = ARCHETYPES.find((a) => a.id === e.archetype);
     const mul = (ACT3_DEPTH_MUL[Math.min(e.depth, ACT3_DEPTH_MUL.length - 1)] ?? 1) * (arch?.hpMul ?? 1) * (e.elite ? ELITE_HP_MUL_2 : 1);
-    return Math.max(e.hp, unitsRound(TUNE.act2Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'mirror') * mul));
+    // Per machine: act 2 fight length (BRIAR ran ~30 turns, JAX ~9: EXPERT_PLAYTEST_3 E11).
+    const m2 = BOSS_MUL[run.cabinet].act2 ?? 1;
+    return unitsRound(Math.max(e.hp, TUNE.act2Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'mirror') * mul) * m2);
   }
   if (!e.isBoss) return run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? unitsRound(e.hp * FRAGILE_OPENER_MUL) : e.hp;
   // The Mirror grows with your machine and (like the House) with every relic you carry in.
@@ -637,12 +639,12 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  * to. Machines race differently (KNIGHT's shields, JAX's rare huge payoffs, BRIAR's thorns that need to
  * be hit), so the same HP formula would give each a different win rate.
  */
-export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number }> = {
-  knight: { house: 2.0, mirror: 0.9, dealer: 0.8, act3: 0.5 },
+export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number }> = {
+  knight: { house: 2.0, mirror: 0.9, dealer: 0.7, act3: 0.5 },
   midas: { house: 3.5, mirror: 16, dealer: 0.45, act3: 0.1 },
-  thorn: { house: 0.85, mirror: 13, dealer: 2.4, act3: 1.1 },
+  thorn: { house: 0.85, mirror: 10.5, dealer: 2.0, act3: 1.1, act2: 0.55 },
   tesla: { house: 0.5, mirror: 2.4, dealer: 1.45, act3: 0.95 },
-  joker: { house: 2.2, mirror: 3.7, dealer: 1.5, act3: 0.55 },
+  joker: { house: 2.2, mirror: 3.7, dealer: 1.5, act3: 0.55, act2: 1.8 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
