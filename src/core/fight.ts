@@ -54,6 +54,8 @@ const JACKPOT_PAY = 9 * UNIT;
 const SHUFFLE_SWAPS = 5;
 /** The Dealer's deals (EXPERT_PLAYTEST_2 E): a card on your payline, ALL IN, or RAISE. */
 const DEALS: DealCard[] = ['card', 'allin', 'raise'];
+/** The Dealer plays its FINAL HAND at this share of its HP. */
+export const FINAL_HAND_AT = 0.4;
 /** ALL IN is capped at this share of your max HP. */
 const ALL_IN_CAP = 0.55;
 /** ALL IN always lands at least this share of your max HP: the telegraphed hit is THE threat (EXPERT_PLAYTEST_4 C3). */
@@ -255,6 +257,8 @@ export class Fight {
   private lastAllIn = -99;
   /** The Dealer's FINAL HAND: the cards still to come after nextDeal (null until it's dealt). */
   private finalHand: DealCard[] | null = null;
+  /** FINAL HAND is playing out (it deals every turn); the deal cadence to restore after. */
+  private fhEvery = 0;
   /** ACE on your payline this spin: the group through this reel pays x2. */
   private aceReel = -1;
   /** BRIAR: the thorn bank already hit back on this turn. */
@@ -1328,11 +1332,16 @@ export class Fight {
         c.charge = Math.min(c.charge, c.ability.every - 1);
         events.push({ type: 'houseRules', side: c.side, every: c.ability.every });
       }
-      // The Dealer at a third of its HP: FINAL HAND. Its next deals are face up: RAISE, RAISE, ALL IN.
-      if (c.side === 'enemy' && this.isDealer && this.dealt && !this.finalHand && c.hp <= c.maxHp / 3) {
-        this.finalHand = ['raise', 'allin'];
+      // The Dealer at 40% HP: FINAL HAND. It deals every turn now, face up: RAISE, then ALL IN
+      // (an ALL IN already armed counts as the row's ALL IN: then it just RAISES).
+      if (c.side === 'enemy' && this.isDealer && this.dealt && !this.finalHand && c.hp <= c.maxHp * FINAL_HAND_AT && c.ability) {
+        const armed = this.dealerAllIn;
+        this.finalHand = armed ? [] : ['allin'];
         this.nextDeal = 'raise';
-        events.push({ type: 'finalHand', side: c.side, cards: ['raise', 'raise', 'allin'] });
+        this.fhEvery = c.ability.every;
+        c.ability = { ...c.ability, every: 1 };
+        c.charge = 0;
+        events.push({ type: 'finalHand', side: c.side, cards: armed ? ['allin', 'raise'] : ['raise', 'allin'] });
         events.push({ type: 'dealNext', side: c.side, card: this.nextDeal, then: [...this.finalHand] });
       }
       // The Mirror cracks at half HP: its Reflection charges faster.
@@ -1545,9 +1554,14 @@ export class Fight {
       events.push({ type: 'raise', from: me.side });
     }
     if (card === 'allin') this.lastAllIn = this.turn;
-    // FINAL HAND plays out its fixed row; otherwise at most one ALL IN per 4 enemy turns.
+    // FINAL HAND plays out its fixed row (then the Dealer's old pace returns); otherwise at most one ALL IN per 4 enemy turns.
     if (this.finalHand?.length) this.nextDeal = this.finalHand.shift()!;
-    else this.nextDeal = this.rng.pick(this.turn - this.lastAllIn < 8 ? DEALS.filter((d) => d !== 'allin') : DEALS);
+    else if (this.fhEvery && me.ability) {
+      me.ability = { ...me.ability, every: this.fhEvery };
+      me.charge = 0;
+      this.fhEvery = 0;
+      this.nextDeal = this.rng.pick(DEALS.filter((d) => d !== 'allin'));
+    } else this.nextDeal = this.rng.pick(this.turn - this.lastAllIn < 8 ? DEALS.filter((d) => d !== 'allin') : DEALS);
     events.push({ type: 'dealNext', side: me.side, card: this.nextDeal, ...(this.finalHand?.length ? { then: [...this.finalHand] } : {}) });
   }
 

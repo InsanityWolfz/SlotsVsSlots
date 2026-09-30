@@ -240,7 +240,7 @@ export class Director {
         this.s.gutter.finalHand = true;
         this.s.sounds.abilityFire();
         this.s.camera.chromaPulse(0.6);
-        return this.banner('FINAL HAND!', '#ff6a5a', 1.3, 0.5, 'RAISE, RAISE, THEN ALL IN', BANNER_Y, 4);
+        return this.banner('FINAL HAND!', '#ff6a5a', 1.3, 0.5, e.cards[0] === 'allin' ? 'ALL IN, THEN IT RAISES. IT DEALS EVERY TURN' : 'RAISE, THEN ALL IN. IT DEALS EVERY TURN', MACHINE_TOP + MACHINE_H / 2, 4);
       case 'shuffle':
         return this.shuffle(e);
       case 'cut':
@@ -1439,6 +1439,8 @@ export class Director {
 
   private async abilityCharge(e: Ev<'abilityCharge'>): Promise<void> {
     const h = this.s.huds[e.side];
+    // The pace can change mid-fight (HOUSE RULES, FINAL HAND): keep the HUD's countdown honest.
+    if (h.ability && h.ability.every !== e.every) h.ability = { ...h.ability, every: e.every };
     if (e.charge === h.charge) return;
     const rising = e.charge > h.charge;
     h.charge = e.charge;

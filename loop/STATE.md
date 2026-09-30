@@ -851,3 +851,23 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - the ride subline moves below a machine-unlock line (no overlap);
   - edge rewards show a relic voucher / legendary badge (no longer the LUCKY CLOVER).
 - Tests: 184.
+
+### Iteration 48 (2026-09-30): EXPERT_PLAYTEST_6 E3, FINAL HAND that arrives
+- **FINAL HAND** triggers at 40% of the Dealer's HP (was 1/3).
+  - While it plays, the Dealer deals EVERY turn (ability every 1), face up: RAISE, then ALL IN.
+  - An ALL IN already armed counts as the row's ALL IN (then it just RAISES).
+  - After the row, its old pace returns and the next deal isn't another ALL IN.
+- The banner sits mid-machine (off the HP panel), and its subline says what's coming.
+- The HUD countdown now syncs its pace from every abilityCharge event (HOUSE RULES / FINAL HAND).
+- **`expert6_final.ts 250`:**
+  | | before | after |
+  |---|---|---|
+  | row reached ALL IN | 4–51% | 59–91% (knight 59, tesla 75, thorn 91, joker 88, midas 66) |
+  | FINAL HAND fires | | 59–84% |
+
+  FINAL HAND's ALL IN is now the top killing blow for KNIGHT / BRIAR. The rest is overshoot: a big hit takes the Dealer from 45% to dead.
+- **gate 1000:**
+  - WHITE unchanged (43.1 / 43.9 / 45.8 / 41.8 / 38.6);
+  - GREEN 13.6 / 15.9 / 13.2 / 14.8 / 11.1 (avg 13.7);
+  - the Dealer wins 50.2 / 58.0 / 43.7 / 49.5 / 48.9 (avg 50.1, was 54.1). That moves toward the playtester's ~47 target (E10).
+- Tests: 184.
