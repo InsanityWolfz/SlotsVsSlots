@@ -594,7 +594,7 @@ export class RunScreens {
     const set = BIG_SETS.findIndex((ids) => ids.includes(this.choices[0]?.id));
     const edge = this.choices[0]?.id === 'edge';
     drawText(ctx, edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'A BIG CHOICE', W / 2, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
-    drawText(ctx, edge ? 'THE HOUSE RAISES THE STAKES. PICK A RULE; EACH ONE PAYS.' : `${BIG_SET_NAMES[set] ?? ''}  -  PICK ONE. STRONG MOVES HAVE A PRICE.`, W / 2, 110, 2, COLORS.textDim);
+    drawText(ctx, edge ? 'THE HOUSE RAISES THE STAKES. PICK A RULE. EACH ONE PAYS.' : `${BIG_SET_NAMES[set] ?? ''}  -  PICK ONE. STRONG MOVES HAVE A PRICE.`, W / 2, 110, 2, COLORS.textDim);
     this.cards.forEach((c, i) => {
       const ch = this.choices[i];
       if (!ch || c.scale <= 0.01) return;
