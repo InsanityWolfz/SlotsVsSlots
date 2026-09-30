@@ -563,6 +563,12 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
     const mul = (ACT3_DEPTH_MUL[Math.min(e.depth, ACT3_DEPTH_MUL.length - 1)] ?? 1) * (arch?.hpMul ?? 1) * (e.elite ? ELITE_HP_MUL_2 : 1);
     return Math.max(e.hp, unitsRound((TUNE.act3Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'act3') + TUNE.act3Flat) * mul));
   }
+  // Act 2 regulars grow with your machine too (fixed HP turned them to paper for strong builds: EXPERT_PLAYTEST_2 G6).
+  if (!e.isBoss && run.act === 2) {
+    const arch = ARCHETYPES.find((a) => a.id === e.archetype);
+    const mul = (ACT3_DEPTH_MUL[Math.min(e.depth, ACT3_DEPTH_MUL.length - 1)] ?? 1) * (arch?.hpMul ?? 1) * (e.elite ? ELITE_HP_MUL_2 : 1);
+    return Math.max(e.hp, unitsRound(TUNE.act2Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'mirror') * mul));
+  }
   if (!e.isBoss) return run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? unitsRound(e.hp * FRAGILE_OPENER_MUL) : e.hp;
   // The Mirror grows with your machine and (like the House) with every relic you carry in.
   const cm = BOSS_MUL[run.cabinet];
@@ -628,11 +634,11 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  * be hit), so the same HP formula would give each a different win rate.
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number }> = {
-  knight: { house: 6, mirror: 1.2, dealer: 1.05, act3: 0.7 },
+  knight: { house: 2.0, mirror: 0.9, dealer: 0.5, act3: 0.5 },
   midas: { house: 3.5, mirror: 16, dealer: 0.45, act3: 0.1 },
-  thorn: { house: 4.2, mirror: 22, dealer: 2.2, act3: 1.6 },
-  tesla: { house: 1.2, mirror: 2.4, dealer: 0.8, act3: 0.95 },
-  joker: { house: 5, mirror: 4, dealer: 2.6, act3: 1.8 },
+  thorn: { house: 1.0, mirror: 16, dealer: 1.1, act3: 1.1 },
+  tesla: { house: 0.5, mirror: 2.4, dealer: 0.8, act3: 0.95 },
+  joker: { house: 2.2, mirror: 3, dealer: 1.3, act3: 0.7 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */

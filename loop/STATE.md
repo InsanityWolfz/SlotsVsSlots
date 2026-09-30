@@ -538,3 +538,28 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 
   Act 1 turns p50 are 11-20 (was 15-27). The House now has 28% of deaths and ~80 turns. The Dealer collapsed because the overkill cap removed the late chip stacks that shielded you: re-size the bosses in batch 2.
 - The pacing gate is `tools/balance/expert2.ts [N]` (turns per act/depth, bimodality, HP into bosses).
+
+### Iteration 33 (2026-09-29): EXPERT_PLAYTEST_2 batch 2 (G6, G7, G8)
+- **Every regular enemy uses its ability at least every 3 turns** (TUNE.act1Every), so the "writes on your machine" hook gets seen.
+- **Act 2 regulars are sized to your measured power**, like act 3: TUNE.act2Power 1.6 × BOSS_MUL.act3 × sizingPower('mirror') × depth/archetype/elite, never below their curve.
+- **The House: threat instead of HP.** POT seed 8U (was 5), houseCut 2U (was 1), cashEvery 3 (was 4). BOSS_MUL.house: knight 6→2, thorn 4.2→1, tesla 1.2→0.5, joker 5→2.2.
+- **Act 3 attrition:** enemy hits grow +6% per enemy turn after the 2nd, up to x2 (TUNE.rampPerTurn / rampMax). Tried on acts 2-3 first: act 2 deaths hit 17-30% per fight, so it's act 3 only.
+- **Boss re-size** after the chip cap:
+  - mirror: knight 0.9, thorn 16, joker 3;
+  - dealer: knight 0.5, thorn 1.1, joker 1.3;
+  - act3: knight 0.5, thorn 1.1, joker 0.7.
+- `tools/balance/gate.sh [N] [tag]` runs tuesday.ts + expert2.ts together.
+- **Gate at 1500:**
+  | machine | WHITE | act1 | House | Mirror | GREEN | Dealer |
+  |---|---|---|---|---|---|---|
+  | knight | 40.1 | 79.7 | 83.9 | 60.0 | 14.7 | 56.8 |
+  | tesla | 35.3 | 72.4 | 80.0 | 71.5 | 10.3 | 47.3 |
+  | thorn | 33.9 | 72.3 | 75.4 | 59.0 | 11.9 | 50.3 |
+  | joker | 37.0 | 72.9 | 95.6 | 61.9 | 9.9 | 41.9 |
+  | AVG | 36.6 | | | | 11.7 | 49.1 |
+
+  Deaths by fight: act 1 regulars 12.5%, House 20.2%, act 2 regulars 17%, Mirror 20.7%, act 3 regulars 6.5%, Dealer 9.9%.
+
+  Per regular fight: act 1 deaths 2.6%, act 2 5.7%, act 3 4.7%.
+
+  HP into the Dealer is still ~94% (target 60-75%). The Dealer rework (G9) is next.

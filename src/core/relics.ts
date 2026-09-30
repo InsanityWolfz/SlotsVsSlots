@@ -182,6 +182,6 @@ export const ELITE_ONLY: ReadonlySet<RelicId> = new Set<RelicId>(['mirror']);
  * rest growing. It cashes out at the START of its turn (before it spins) so the LETHAL warning is
  * always true (playtest ITERATION_3).
  */
-export const POT = { seed: 5 * UNIT, houseCut: UNIT, cashEvery: 4, skim: 0.5, allInMin: 8 * UNIT };
+export const POT = { seed: 8 * UNIT, houseCut: 2 * UNIT, cashEvery: 3, skim: 0.5, allInMin: 8 * UNIT };
 /** Boss HP grows with the relics you bring in. */
 export const BOSS_HP_PER_RELIC = 3 * UNIT;

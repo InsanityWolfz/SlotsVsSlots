@@ -1018,6 +1018,11 @@ export class Fight {
   ): number {
     // Nothing hits a machine that already fell this turn (its death resolves at the end of the turn).
     if (foe.hp <= 0) return 0;
+    // ATTRITION (act 3): the longer a fight runs, the harder the enemy hits (+6% per enemy turn after the 2nd, max x2).
+    if (me.side === 'enemy' && (this.cfg.enemy.act ?? 1) >= 3 && note !== 'reflect' && amount > 0) {
+      const ramp = Math.min(TUNE.rampMax, 1 + TUNE.rampPerTurn * Math.max(0, Math.floor(this.turn / 2) - 2));
+      amount = Math.round((amount * ramp) / UNIT) * UNIT || amount;
+    }
     // RAISE: the Dealer's next hit pays double.
     if (me.side === 'enemy' && this.raiseEnemy && amount > 0 && note !== 'reflect') {
       amount *= 2;
