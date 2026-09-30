@@ -2,7 +2,7 @@ import { ALL_CABINETS, type CabinetId } from './cabinets';
 import type { Enh, RelicId } from './config';
 import { RELICS } from './relics';
 import { MAX_STAKE } from './stakes';
-import { charmCount, fightNumber, runActs, totalFights, type RunState } from './run';
+import { charmCount, fightNumber, runActs, totalFights, type RunState, bustPot } from './run';
 import { charmLevel } from './charms';
 
 /**
@@ -83,7 +83,7 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
     maxHp: run.player.maxHp,
     chips: run.player.chips,
     ...(tutorial ? { tutorial: true } : {}),
-    ...(run.endless ? { loops: run.endless.loop - 1, pot: run.endless.cashed ? run.endless.pot : Math.floor(run.endless.pot / 2) + run.player.chips * 10 } : {}),
+    ...(run.endless ? { loops: run.endless.loop - 1, pot: run.endless.cashed ? run.endless.pot : bustPot(run.endless.pot) + run.player.chips * 10 } : {}),
   };
 }
 

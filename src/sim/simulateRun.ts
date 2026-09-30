@@ -26,6 +26,8 @@ import {
   type DraftOption,
   type RunState,
   letItRide,
+  nextPot,
+  bustPot,
 } from '../core/run';
 
 export type DraftPolicy = 'greedy' | 'random' | 'relic';
@@ -149,10 +151,12 @@ export function choiceValue(run: RunState, c: BigChoice): number {
     case 'secondWind':
       return 4 + (1 - hp) * 6;
     case 'cashOut': {
-      // Cash out when the odds of clearing the next loop fall below L / (L + 4) (HP proxies p(clear)).
+      // Cash out when riding is worth less than the pot in hand: p(clear) x the grown pot + p(bust) x a third
+      // (HP proxies p(clear); later loops are harder).
       const L = run.endless?.loop ?? 1;
+      const pot = run.endless?.pot ?? 0;
       const pClear = (run.player.hp / run.player.maxHp) * Math.pow(0.8, L - 1);
-      return pClear < L / (L + 4) ? 2 : -1;
+      return pClear * nextPot(pot) + (1 - pClear) * bustPot(pot) < pot ? 2 : -1;
     }
     case 'ride':
       return 1;

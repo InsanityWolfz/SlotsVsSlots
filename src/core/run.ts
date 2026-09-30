@@ -560,6 +560,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // ENDLESS: damage grows per loop; HOUSE EDGES bend the fight.
   if (run.endless) {
     const edges = new Set(run.endless.edges);
+    // The loop House is a race: it cashes its pot every 2 turns.
+    if (e.boss === 'house' && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: ENDLESS.houseEvery };
     cfg.enemy.endless = true;
     cfg.enemy.dmgMul = Math.pow(ENDLESS.dmgBy[run.cabinet] ?? ENDLESS.dmg, run.endless.loop);
     if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 2) };
@@ -911,7 +913,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   run.depth++;
   if (run.depth > actLength(run.act)) {
     if (run.endless) {
-      run.endless.pot += POT_PER_LOOP * run.endless.loop;
+      run.endless.pot = nextPot(run.endless.pot);
       run.endless.loop++;
       startEndlessLoop(run);
     } else if (run.act < runActs(run)) startNextAct(run);
@@ -1456,6 +1458,10 @@ export const EDGE_TIER: Record<EdgeId, 'chips' | 'relic' | 'legend'> = { frail: 
 export const levelCap = (run: RunState) => (run.endless ? LEVEL_CAP + 1 : LEVEL_CAP);
 /** RIDE AGAIN: each loop cleared adds this x loop to the pot; a bust banks half. */
 export const POT_PER_LOOP = 1500;
+/** A cleared loop: the pot grows x1.5, plus POT_PER_LOOP. */
+export const nextPot = (pot: number) => Math.round(pot * ENDLESS.potGrowth) + POT_PER_LOOP;
+/** What a bust banks of the pot. */
+export const bustPot = (pot: number) => Math.floor(pot * ENDLESS.bustKeep);
 
 export interface BigChoice {
   id: BigChoiceId;
@@ -1491,7 +1497,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'cashOut':
       return { title: 'CASH OUT', rule: `BANK THE POT: ${cashOutValue(run)} POINTS (INCLUDES ${run.player.chips} CHIPS X10). THE RUN ENDS.`, cost: '' };
     case 'ride':
-      return { title: 'RIDE AGAIN', rule: `PLAY LOOP ${run.endless?.loop ?? 1}. THE POT GROWS BY ${POT_PER_LOOP * (run.endless?.loop ?? 1)}.`, cost: 'BUST AND YOU BANK HALF THE POT (YOUR CHIPS ARE SAFE)' };
+      return { title: 'RIDE AGAIN', rule: `PLAY LOOP ${run.endless?.loop ?? 1}. CLEAR IT AND THE POT GROWS TO ${nextPot(run.endless?.pot ?? 0)}.`, cost: `BUST AND YOU BANK A THIRD OF THE POT: ${bustPot(run.endless?.pot ?? 0)} (YOUR CHIPS ARE SAFE)` };
     case 'armsRace':
       return { title: 'ARMS RACE', rule: '+1 LEVEL TO ALL YOUR SYMBOLS', cost: `-${BIG.armsRaceHp} MAX HP` };
     case 'masterwork':

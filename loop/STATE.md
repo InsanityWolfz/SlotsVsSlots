@@ -890,3 +890,30 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 
   Chips are worth more to the shop than a fair bet pays back, plus the interest cost. That's the intended risk tradeoff: bets are fair, but gambling the shop budget away loses runs.
 - Tests: 185 (ALL IN cap and HOT HAND pay in bets.test.ts).
+
+### Iteration 50 (2026-09-30): EXPERT_PLAYTEST_6 E9, endless House and pot (E6 skipped)
+- **E6 (move the table to the Cashier) is skipped.** The Cashier doesn't open before every fight, and bets are already sized on the build you walk in with (the preview comes after the shop). Small gain for a rework.
+- **Why the loop House was free:**
+  - its pot was flat (seed 8U, cut 2U/turn) against late builds;
+  - JAX-style builds steal the pot with a jackpot nearly every spin;
+  - the House died in ~11 turns.
+- **The loop House now:**
+  - pot seed = 30% of your max HP, cut = 15% of max HP per House turn (ENDLESS.potSeed / potCut);
+  - cashes every 2 turns (houseEvery);
+  - a jackpot takes only a third of the pot (potSteal 0.34);
+  - HP share 2.5 → 3.
+  - housePot 2.5 was tried: no change, because the House's hits already reach the 60% one-turn boss cap. Reverted to 1.5.
+- **The pot:** grows ×1.5 per cleared loop, plus 1500 (`nextPot`: 1500 → 3750 → 7125 → 12187). A bust banks a third (`bustPot`, was half).
+  - The RIDE card names both numbers: "THE POT GROWS TO N" / "BUST AND YOU BANK A THIRD OF THE POT: N".
+- **The sim's cash-out policy** is EV-based: ride if p·nextPot + (1−p)·bustPot > pot, with p = HP% × 0.8^(L−1).
+- **expert4_endless 150:**
+  | boss | lost | HP lost p90 |
+  |---|---|---|
+  | L1 House | 1.0% | 47% (was 0%) |
+  | L2 Mirror | 25% | |
+  | L3 Dealer | 18% | |
+  | L4 House | 3.8% | 21% |
+
+  The House is a real race now, but it rarely kills (the gate's 10–20% deaths isn't reachable without breaking the one-turn cap).
+- endless.ts 300: loops cleared p50 knight 1 / tesla 2 / thorn 2 / joker 2 / midas 1, max 4 (the sim now cashes out; it used to ride to 50).
+- Tests: 185.

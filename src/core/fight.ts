@@ -199,6 +199,8 @@ export class Fight {
   winner: SideId | null = null;
   /** The House's progressive pot (boss fight). */
   pot = 0;
+  /** ENDLESS: the loop House's pot is sized to your max HP (a flat pot is nothing to a late build). */
+  private potCut = POT.houseCut;
   /** Boss went ALL IN (phase 2). */
   allIn = false;
   /** The House's cash-out fires at the start of its next turn (so LETHAL is always accurate). */
@@ -312,7 +314,10 @@ export class Fight {
     this.blaze = blazeCells * charmValue('blaze', this.charmLvl(p, 'blaze'));
     // The Mirror plays your machine but never your junk (and fires no specials).
     if (this.isMirror) e.casts.clear();
-    if (this.isBoss) this.pot = POT.seed;
+    // ENDLESS: the loop House opens with a fatter pot.
+    const loopHouse = this.isBoss && !!this.cfg.enemy.endless;
+    if (this.isBoss) this.pot = loopHouse ? unitsUp(this.cfg.player.hp * ENDLESS.potSeed) : POT.seed;
+    if (loopHouse) this.potCut = unitsUp(this.cfg.player.hp * ENDLESS.potCut);
     // ENDLESS house edges: bosses start shielded; enemies spin first.
     if (this.cfg.enemy.startShield) this.sides.enemy.shield = this.cfg.enemy.startShield;
     if (this.cfg.enemy.first) this.next = 'enemy';
@@ -577,12 +582,14 @@ export class Fight {
     }
     const steals = score.tier === 'triple' || (score.tier === 'pair' && me.relics.has('crown'));
     if (!this.over && side === 'player' && this.isBoss && steals) {
-      this.winPot(me, events, score.tier === 'triple' ? 1 : 0.5);
+      // ENDLESS: a jackpot takes only half the loop House's pot (it can't be farmed every spin).
+      this.winPot(me, events, (score.tier === 'triple' ? 1 : 0.5) * (this.cfg.enemy.endless ? ENDLESS.potSteal : 1));
     }
     // The house always takes its cut.
     if (!this.over && side === 'enemy' && this.isBoss) {
-      this.pot += POT.houseCut;
-      events.push({ type: 'pot', side, reels: [], amount: POT.houseCut, total: this.pot });
+      const cut = this.potCut;
+      this.pot += cut;
+      events.push({ type: 'pot', side, reels: [], amount: cut, total: this.pot });
     }
 
     // What this spin did (the Mimic and the Mirror copy it).
