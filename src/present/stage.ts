@@ -70,9 +70,11 @@ export interface Stage {
     /** Bonus vouchers banked this fight (tiles bottom-left; they pay out if you win). */
     vouchers?: ('wheel' | 'rush')[];
     /** The Dealer's face-up next card, and RAISE in play. */
-    nextDeal?: 'shuffle' | 'cut' | 'raise';
+    nextDeal?: import('../core/events').DealCard;
     raised?: boolean;
     houseRules?: boolean;
+    /** The Dealer's ALL IN is armed (big red warning over its machine). */
+    allInArmed?: boolean;
   };
   /** Symbol / charm levels per side (the payline numbers), and the Golden Ticket (charms one level up). */
   levels: Partial<Record<SideId, Levels>>;

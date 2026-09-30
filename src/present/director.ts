@@ -175,6 +175,17 @@ export class Director {
         return this.confiscate(e);
       case 'rake':
         return this.rake(e);
+      case 'lineCard':
+        return this.lineCard(e);
+      case 'lineCardUsed':
+        this.s.machines[e.side].lineCard = null;
+        return Promise.resolve();
+      case 'allInArmed':
+        this.s.gutter.allInArmed = true;
+        this.s.sounds.stingerMedium();
+        return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, 'ITS NEXT ATTACK IS ITS WHOLE HAND', BANNER_Y, 3);
+      case 'allInHit':
+        return this.allInHit(e);
       case 'dealNext':
         this.s.gutter.nextDeal = e.card;
         return Promise.resolve();
@@ -192,6 +203,32 @@ export class Director {
   }
 
   // ---- helpers -----------------------------------------------------------------------
+
+  /** The Dealer flips a card face-up onto one of your payline cells. */
+  private async lineCard(e: Ev<'lineCard'>): Promise<void> {
+    const m = this.s.machines[e.side];
+    const p = cellCenter(e.side, e.reel, 1);
+    this.s.sounds.click();
+    this.s.sounds.coin(3);
+    m.lineCard = { reel: e.reel, card: e.card, flip: 0 };
+    const lc = m.lineCard;
+    await this.c.tween({ from: 0, to: 1, dur: 0.35, ease: backOut(2), onUpdate: (v) => (lc.flip = v) });
+    const label = e.card === 'ace' ? 'ACE: THIS CELL PAYS X2' : e.card === 'joker' ? 'JOKER: THIS CELL IS WILD' : 'DEUCE: THIS CELL PAYS NOTHING';
+    await this.popText(label, p.x, MACHINE_TOP - 22, 2, e.card === 'deuce' ? '#ff8a7a' : '#7dff7a', 12, 0.6);
+  }
+
+  /** ALL IN: the Dealer throws its whole hand. */
+  private async allInHit(e: Ev<'allInHit'>): Promise<void> {
+    this.s.gutter.allInArmed = false;
+    const c = this.machineCenter(e.to);
+    this.s.sounds.fanfareJackpot();
+    this.hitstop(6);
+    this.shake(10, 0.5);
+    this.flashMachine(e.to, 1, 0.3);
+    this.knockback(e.to, 14);
+    this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
+    await this.popText(e.hpDamage > 0 ? `ALL IN! -${e.hpDamage}` : 'ALL IN! BLOCKED', c.x, MACHINE_TOP + 40, 5, '#ff6a5a', 50, 0.5);
+  }
 
   /** One of your relics just did something: its icon pops, hops and flashes, and says its name. */
   private relicPop(side: SideId, relic: string): void {
@@ -1704,7 +1741,9 @@ export class Director {
       this.s.particles.burst({ x: p.x, y: p.y, count: 14, colors: ['#ff5a7a', '#ffffff'], speed: [80, 260], kind: 'spark', gravity: 300, life: [0.2, 0.4], size: [2, 4] });
     }
     this.damageHud(e.side, e.targetHp, e.targetShield, e.hpDamage);
-    await this.popText(e.hpDamage > 0 ? `MARKED! -${e.hpDamage}` : 'MARKED! BLOCKED', c.x, MACHINE_TOP + 40, 3, '#ff8aa0', 30, 0.3);
+    // Credit the Dealer (its marks are most of its damage).
+    const who = this.s.gutter.nextDeal ? "THE DEALER'S MARK" : 'MARKED!';
+    await this.popText(e.hpDamage > 0 ? `${who} -${e.hpDamage}` : `${who} BLOCKED`, c.x, MACHINE_TOP + 40, 3, '#ff8aa0', 30, 0.3);
   }
 
   /** The Pit Boss bangs the gavel: gilds are taken for the fight. */

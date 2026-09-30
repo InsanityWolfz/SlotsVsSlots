@@ -240,7 +240,7 @@ export const DEALER: Archetype = {
   hpMul: 1,
   ability: { kind: 'deal', every: 3, power: 0 },
   minDepth: 3,
-  blurb: 'DEALS FACE-UP CARDS: SHUFFLE, CUT OR RAISE. THE HOUSE HAS A PARTNER',
+  blurb: 'DEALS FACE-UP CARDS ONTO YOUR PAYLINE, GOES ALL IN, RAISES. THE HOUSE HAS A PARTNER',
   acts: [3],
 };
 export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: MIRROR, 3: DEALER };
@@ -265,7 +265,7 @@ export const ACT3_DEPTH_MUL = [1, 1.1, 1.2, 1.3, 1.4];
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5 };
 export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
 /** Act 3 (ITERATION_12 playtest, commit at GREEN): Dealer HP = 7 x typical-spin power + 60 (+4/relic), less bursty strip -> ~62% Dealer win. */
-export const TUNE = { act1Hp: 0.7, act1Every: 3, act2Power: 1.6, rampPerTurn: 0.06, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act1Swords: 1, enemyShield: 0.5, act3Power: 4, act3Flat: 20 * UNIT, dealerPower: 10, dealerFlat: 50 * UNIT, act3Sevens: 4, bossHp: 95 * UNIT, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 30 * UNIT, mirrorPerRelic: 4 * UNIT, mirrorSpecialWeight: 1, powerElastic: 0.5 };
+export const TUNE = { act1Hp: 0.7, act1Every: 3, act2Power: 1.6, rampPerTurn: 0.06, act3Heal: 0.5, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act1Swords: 1, enemyShield: 0.5, act3Power: 4, act3Flat: 20 * UNIT, dealerPower: 10, dealerFlat: 50 * UNIT, act3Sevens: 4, bossHp: 95 * UNIT, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 30 * UNIT, mirrorPerRelic: 4 * UNIT, mirrorSpecialWeight: 1, powerElastic: 0.5 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;

@@ -563,3 +563,25 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   Per regular fight: act 1 deaths 2.6%, act 2 5.7%, act 3 4.7%.
 
   HP into the Dealer is still ~94% (target 60-75%). The Dealer rework (G9) is next.
+
+### Iteration 34 (2026-09-29): EXPERT_PLAYTEST_2 G9, the Dealer rework, plus act 3 healing
+- **The Dealer's deals are now CARD / ALL IN / RAISE** (SHUFFLE and CUT stay in code, unused).
+  - **CARD:** a face-up card on one of YOUR payline cells for your next spin. ACE (35%) doubles the group through it, JOKER (25%) makes it wild, DEUCE (40%) makes it empty (pays nothing). At HOUSE RULES: 20/15/65.
+    - Events `lineCard` / `lineCardUsed`; the card flips onto your machine with a caption.
+  - **ALL IN:** telegraphed (a banner, plus "ALL IN!" over its machine). Its next spin's swords and sevens are replaced by one hit of every sword and seven in its visible 3x3, capped at 45% of your max HP (RAISE still doubles). Events `allInArmed` / `allInHit`.
+  - Its marked cards are credited: "THE DEALER'S MARK -20". Its panel shows "MARKS ON YOU: N".
+  - A green felt table sits behind its machine. The card texts are updated.
+- **Act 3 healing is halved** (TUNE.act3Heal 0.5): "the House doesn't comp".
+  - Tried first: bigger act 3 enemies plus +10% attrition (act 3 deaths 11%/fight, HP into the Dealer unchanged), and act 3 enemies spinning first (deaths 7.8%, HP barely moved). Both reverted.
+- BOSS_MUL: tesla dealer 0.65; joker dealer 1.15, act3 0.55.
+- **tuesday.ts 1500:**
+  | machine | WHITE | GREEN | Dealer |
+  |---|---|---|---|
+  | knight | 40.1 | 13.8 | 55.2 |
+  | tesla | 35.3 | 9.0 | 49.8 |
+  | thorn | 33.9 | 11.1 | 49.9 |
+  | joker | 37.2 | 11.3 | 48.4 |
+  | AVG | 36.6 | 11.3 | 50.8 |
+
+  HP into the Dealer: 88% (was 94%; target 60-75% not met, flagged for the playtester). Act 3 deaths 5.9% per fight.
+- Tests: 173 (tests/dealer2.test.ts).

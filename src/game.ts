@@ -954,6 +954,7 @@ export class Game {
     s.huds.player.draw(ctx, t);
     s.huds.enemy.draw(ctx, t);
     s.machines.player.draw(ctx, s.clock.time);
+    if (this.fight.isDealer) this.drawDealerTable(ctx, t);
     s.machines.enemy.draw(ctx, s.clock.time);
     s.fx.draw(ctx, s.clock.time, -Infinity, 20);
     this.drawGutter(ctx, t);
@@ -1161,14 +1162,36 @@ export class Game {
     ctx.fillStyle = '#0e2a18';
     ctx.fillRect(x - 101, y - 47, 202, 94);
     drawText(ctx, soon ? 'DEALS NEXT TURN!' : `NEXT DEAL IN ${left}`, x, y - 32, 2, soon ? '#ff6a5a' : '#c8f0c8', { punch: soon ? 1 + 0.08 * Math.sin(t * 12) : 1 });
-    const card = g.nextDeal ?? 'shuffle';
-    const sprite = card === 'shuffle' ? 'dealShuffle' : card === 'cut' ? 'dealCut' : 'dealRaise';
+    const card = g.nextDeal ?? 'card';
+    const sprite = card === 'shuffle' ? 'dealShuffle' : card === 'cut' || card === 'card' ? 'dealCut' : card === 'allin' ? 'dealShuffle' : 'dealRaise';
     drawSprite(ctx, artId(sprite), x - 58, y + 12, 2.5);
-    drawText(ctx, card.toUpperCase(), x + 26, y + 2, 3, '#ffffff');
-    const what = card === 'shuffle' ? ['SWAPS 5 CELLS', 'BETWEEN 2 REELS'] : card === 'cut' ? ['CUTS A CHARMED', 'CELL PER REEL'] : ['ITS NEXT HIT X2', 'YOUR NEXT WIN X2'];
+    const name = card === 'card' ? 'A CARD' : card === 'allin' ? 'ALL IN' : card.toUpperCase();
+    drawText(ctx, name, x + 26, y + 2, 3, card === 'allin' ? '#ff6a5a' : '#ffffff');
+    const what =
+      card === 'card' ? ['ON YOUR PAYLINE:', 'ACE, JOKER OR DEUCE']
+      : card === 'allin' ? ['ITS NEXT ATTACK', 'IS ITS WHOLE HAND']
+      : card === 'shuffle' ? ['SWAPS 5 CELLS', 'BETWEEN 2 REELS']
+      : card === 'cut' ? ['CUTS A CHARMED', 'CELL PER REEL']
+      : ['ITS NEXT HIT X2', 'YOUR NEXT WIN X2'];
     what.forEach((l, k) => drawText(ctx, l, x + 26, y + 22 + k * 12, 1.25, COLORS.textDim));
     if (g.raised) drawText(ctx, 'RAISED!', x, y - 44 - 14, 2, '#ffd23f');
     else if (g.houseRules) drawText(ctx, 'HOUSE RULES', x, y - 44 - 14, 2, '#ff6a5a');
+    // Its marked cards are most of its damage: count them on YOUR reels.
+    const marks = this.stage.machines.player.reels.reduce((a, r) => a + r.cells.filter((c) => c.carded).length, 0);
+    if (marks) drawText(ctx, `MARKS ON YOU: ${marks}`, x, y + 70, 1.5, '#ff8aa0');
+  }
+
+  /** The Dealer's table: green felt behind its machine, and the ALL IN warning over it. */
+  private drawDealerTable(ctx: CanvasRenderingContext2D, t: number): void {
+    const cx = MACHINE_CX.enemy;
+    ctx.fillStyle = '#0a2416';
+    ctx.fillRect(cx - 186, MACHINE_TOP - 26, 372, MACHINE_H + 52);
+    ctx.fillStyle = '#0f3a22';
+    ctx.fillRect(cx - 180, MACHINE_TOP - 20, 360, MACHINE_H + 40);
+    ctx.strokeStyle = '#c9a040';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cx - 174, MACHINE_TOP - 14, 348, MACHINE_H + 28);
+    if (this.stage.gutter.allInArmed) drawText(ctx, 'ALL IN!', cx, MACHINE_TOP - 40, 4, '#ff6a5a', { punch: 1 + 0.08 * Math.sin(t * 10) });
   }
 
   /** The Mirror's next Reflection: what your last spin would bounce back, and when. */

@@ -52,6 +52,8 @@ export class MachineView {
   cracked = false;
   /** Payline numbers, one per reel (null = none shown). */
   tags: (PayTag | null)[] = [null, null, null];
+  /** The Dealer's face-up card on a payline cell (flip 0..1). */
+  lineCard: { reel: number; card: 'ace' | 'joker' | 'deuce'; flip: number } | null = null;
   private spun = false;
 
   constructor(
@@ -195,6 +197,7 @@ export class MachineView {
     this.drawStatuses(ctx, time);
     this.drawPayline(ctx);
     this.drawTags(ctx);
+    this.drawLineCard(ctx);
 
     if (this.flash > 0) {
       ctx.globalAlpha = Math.min(1, this.flash);
@@ -328,6 +331,23 @@ export class MachineView {
         drawText(ctx, String(badge.n), cx + 10, -1, 2, badge.c);
       }
     }
+  }
+
+  private drawLineCard(ctx: CanvasRenderingContext2D): void {
+    const lc = this.lineCard;
+    if (!lc) return;
+    const x = PITCH * (lc.reel + 0.5) + 30;
+    const y = PITCH * 1.5 - 30;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(Math.max(0.05, Math.abs(Math.cos((1 - lc.flip) * Math.PI))), 1);
+    ctx.rotate(0.12);
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(-17, -23, 34, 46);
+    ctx.fillStyle = lc.flip > 0.5 ? '#f4eee0' : '#8e1f3a';
+    ctx.fillRect(-15, -21, 30, 42);
+    if (lc.flip > 0.5) drawText(ctx, lc.card === 'ace' ? 'A' : lc.card === 'joker' ? 'J' : '2', 0, 1, 3, lc.card === 'deuce' ? '#140c1c' : '#c8321f');
+    ctx.restore();
   }
 
   private drawTags(ctx: CanvasRenderingContext2D): void {

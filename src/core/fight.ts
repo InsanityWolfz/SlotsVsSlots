@@ -1,7 +1,7 @@
 import { cloneConfig, UNIT, unitsUp, type AbilityDef, type Enh, type GameConfig, type Levels, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
 import { CABINETS, hasSpecial, type Cabinet, type Meter } from './cabinets';
 import { charmLevel, charmValue, playerSymValue } from './charms';
-import type { CombatEvent, DealCard, HealSource, VoucherKind } from './events';
+import type { CombatEvent, DealCard, HealSource, LineCard, VoucherKind } from './events';
 import {
   BATTERY_SHARE,
   BATTERY_ENERGY,
@@ -49,7 +49,10 @@ const RAKE_CUT = UNIT;
 const PAIR_PAY = 4 * UNIT;
 const JACKPOT_PAY = 9 * UNIT;
 const SHUFFLE_SWAPS = 5;
-const DEALS: DealCard[] = ['shuffle', 'cut', 'raise'];
+/** The Dealer's deals (EXPERT_PLAYTEST_2 E): a card on your payline, ALL IN, or RAISE. */
+const DEALS: DealCard[] = ['card', 'allin', 'raise'];
+/** ALL IN is capped at this share of your max HP. */
+const ALL_IN_CAP = 0.45;
 
 /** Counterfeit coins last this many of your turns. */
 const FAKE_TURNS = 3;
@@ -226,6 +229,12 @@ export class Fight {
   houseRules = false;
   raiseEnemy = false;
   raisePlayer = false;
+  /** The Dealer's card on your payline (applies to your next spin). */
+  lineCard: { reel: number; card: LineCard } | null = null;
+  /** The Dealer's next attack is its whole hand. */
+  dealerAllIn = false;
+  /** ACE on your payline this spin: the group through this reel pays x2. */
+  private aceReel = -1;
   /** BRIAR: the thorn bank already hit back on this turn. */
   private thornsTurn = -1;
   /** WAR DRUM stacks, KING'S VAULT gold, FIRST BLOOD / HOLY WATER used, STATIC's last turn (this fight). */
@@ -402,6 +411,15 @@ export class Fight {
       me.reels.forEach((reel, i) => (reel.stop = stops[i]));
     }
     const line = paylineSymbols(me.reels).map((s, i) => (locked[i] ? 'lock' : s));
+    // The Dealer's card on your payline: JOKER makes that cell wild, DEUCE makes it pay nothing, ACE doubles its group.
+    const laid = side === 'player' ? this.lineCard : null;
+    this.aceReel = -1;
+    if (laid) {
+      if (laid.card === 'joker') line[laid.reel] = 'wild';
+      else if (laid.card === 'deuce') line[laid.reel] = 'empty';
+      else this.aceReel = laid.reel;
+      this.lineCard = null;
+    }
     // LUCKY: a lucky cell on the payline sometimes turns WILD.
     const luckyWilds: number[] = [];
     me.reels.forEach((_, r) => {
@@ -435,9 +453,31 @@ export class Fight {
     if (side === 'player' && score.tier === 'triple') this.playerJackpots++;
     // A meter that pays off this spin empties first (so what lands now can refill it).
     if (side === 'player' && (score.raised || score.jackpots)) this.payoff(me, score, events);
+    if (laid) events.push({ type: 'lineCardUsed', side, reel: laid.reel, card: laid.card });
+    const allIn = side === 'enemy' && this.isDealer && this.dealerAllIn;
     for (const group of score.groups) {
+      if (allIn && (group.symbol === 'sword' || group.symbol === 'seven')) continue;
       this.resolveGroup(me, group, score, events);
       if (this.over) break;
+    }
+    if (allIn && !this.over) {
+      this.dealerAllIn = false;
+      const foe = this.sides[other(side)];
+      // Its whole visible hand: every sword and seven in its 3x3.
+      let hand = 0;
+      for (const reel of me.reels)
+        for (const d of [-1, 0, 1]) {
+          const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
+          if (c.symbol === 'sword' || c.symbol === 'seven') hand += this.cfg.base[c.symbol] ?? 0;
+        }
+      let amount = Math.max(UNIT, Math.min(hand, Math.round((foe.maxHp * ALL_IN_CAP) / UNIT) * UNIT));
+      if (this.raiseEnemy) {
+        amount *= 2;
+        this.raiseEnemy = false;
+      }
+      const h = this.damage(foe, amount, false);
+      events.push({ type: 'allInHit', from: side, to: foe.side, amount, ...h });
+      this.checkDeath(foe, events);
     }
     if (!this.over && side === 'player' && (score.raised || score.jackpots)) this.payoffAfter(me, score, events, sentBefore);
     // JAX: every WILD on the payline fills the meter (lucky wilds too).
@@ -676,6 +716,11 @@ export class Fight {
         fired.add('bell');
         g.mult *= BELL_MULT;
         notes.push(`X${BELL_MULT}`);
+      }
+      // ACE: the Dealer's card doubles the group through its reel.
+      if (player && this.aceReel >= 0 && paying && g.reels.includes(this.aceReel)) {
+        g.mult *= 2;
+        notes.push('ACE X2');
       }
       // RAISE is a fair coin: the Dealer's next hit and your next PAYING group pay double.
       if (player && this.raisePlayer && paying) {
@@ -1084,6 +1129,8 @@ export class Fight {
   }
 
   private heal(me: Combatant, amount: number, source: HealSource, events: CombatEvent[]): void {
+    // ACT 3: the House doesn't comp. Your healing is halved, so you reach the Dealer worn down (EXPERT_PLAYTEST_2 G8).
+    if (me.side === 'player' && (this.cfg.enemy.act ?? 1) >= 3) amount = Math.max(1, Math.round(amount * TUNE.act3Heal));
     const n = Math.min(amount, me.maxHp - me.hp);
     if (n > 0) {
       me.hp += n;
@@ -1313,7 +1360,18 @@ export class Fight {
     this.dealt = true;
     if (card === 'shuffle') this.shuffleReels(me, foe, events);
     else if (card === 'cut') this.cutReels(me, foe, events);
-    else {
+    else if (card === 'card') {
+      // A face-up card on one of your payline cells. At HOUSE RULES it deals you more deuces.
+      const reel = this.rng.int(3);
+      const r = this.rng.next();
+      const [ace, joker] = this.houseRules ? [0.2, 0.15] : [0.35, 0.25];
+      const kind: LineCard = r < ace ? 'ace' : r < ace + joker ? 'joker' : 'deuce';
+      this.lineCard = { reel, card: kind };
+      events.push({ type: 'lineCard', side: foe.side, reel, card: kind });
+    } else if (card === 'allin') {
+      this.dealerAllIn = true;
+      events.push({ type: 'allInArmed', side: me.side });
+    } else {
       this.raiseEnemy = true;
       this.raisePlayer = true;
       events.push({ type: 'raise', from: me.side });

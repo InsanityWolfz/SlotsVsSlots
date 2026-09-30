@@ -122,7 +122,7 @@ function abilityText(e: EnemyDef, every: number, run?: RunState): string {
     mark: `MARKS ${e.ability.power} OF YOUR CELLS`,
     penalty: `HITS FOR ${e.ability.power}`,
     houseTake: `RAKES YOUR GROUPS FOR ${e.ability.power} TURNS`,
-    deal: 'DEALS A FACE-UP CARD: SHUFFLE, CUT OR RAISE',
+    deal: 'DEALS: A CARD ON YOUR PAYLINE, ALL IN, OR RAISE',
   };
   return `${ui.label} EVERY ${every} TURNS: ${what[e.ability.kind]}`;
 }
@@ -1049,7 +1049,7 @@ export class RunScreens {
     }
     const bossText =
       e.boss === 'dealer'
-        ? 'FACE-UP DEALS: SHUFFLE (SWAPS 5 CELLS), CUT (A CHARMED CELL), RAISE (ITS HIT + YOUR NEXT PAY X2). NO KILL BEFORE ITS FIRST DEAL.'
+        ? 'DEALS: A CARD ON YOUR PAYLINE (ACE X2, JOKER WILD, DEUCE 0), ALL IN (ITS WHOLE HAND), RAISE (BOTH X2). NO KILL BEFORE ITS FIRST DEAL.'
         : e.boss === 'mirror'
         ? `COPIES YOUR MACHINE (NO RELICS, METER OR KEEN). REFLECTS YOUR BEST HIT; A TURN NEVER DEALS MORE THAN ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKS AT HALF HP, THEN REFLECTS AT ONCE.`
         : `COINS + A CUT EACH TURN FILL THE POT. EVERY ${this.houseEvery()} TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +${UNIT} SHIELD EACH HOUSE TURN.${dirty ? ' BLACK: IT BOMBS YOUR CELLS, EVEN THE PAYLINE.' : ''}`;
