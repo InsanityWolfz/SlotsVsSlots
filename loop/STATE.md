@@ -516,3 +516,25 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - Slime stays as it is (no 3x3 cleanse); it's already too slow.
   - Endless mode, the MIDAS rework and new slot machines MAY be built during the loop, once the playtester judges the game is in a good enough spot for them.
   - 16-bit art: never. The rename: later.
+
+### Iteration 32 (2026-09-29): EXPERT_PLAYTEST_2 batch 1 (G1-G5, G10, F1-F6)
+- **Mirror:**
+  - A whole Mirror turn is capped at REFLECT_CAP (60%) of your max HP (reflection plus attack; it was up to 100%).
+  - The countdown updates on the crack.
+  - The label is "UP TO"; the preview text is shorter.
+- **Act 1:** regulars get TUNE.act1Hp 0.7 and use their ability every 3 turns at most. Quiet turns play at 1.5x (`Clock.boost`).
+- **Offers:**
+  - Drafts: a pivot card (a charm type you don't own) 50% of the time when you own charms; extend 50% -> 30%.
+  - Cashier: slot 2 is a different charm type (60% an unowned one).
+  - A reroll never repeats the previous shelf, and shuffles the layout.
+- **Catch-up:** after an act 1 win that cost 35%+ of max HP, the draft adds a 4th card that heals 35%.
+- **Chips:** start 8 (was 4); overkill chips capped at +3 per fight.
+- **Death recap:** the lost fight's row on the run-over screen reads "KILLED BY: SPIN HITS 180 - BOMBS 60 ...".
+- **Small fixes:** SWEEP UP at full HP gives max HP instead of a heal; the draft title fades in after the logo is covered.
+- tuesday.ts 1500 (before -> after):
+  | | WHITE | GREEN | Dealer |
+  |---|---|---|---|
+  | AVG | 28.2 -> 36.8 | 12.8 -> 9.5 | 59.4 -> 37.6 |
+
+  Act 1 turns p50 are 11-20 (was 15-27). The House now has 28% of deaths and ~80 turns. The Dealer collapsed because the overkill cap removed the late chip stacks that shielded you: re-size the bosses in batch 2.
+- The pacing gate is `tools/balance/expert2.ts [N]` (turns per act/depth, bimodality, HP into bosses).

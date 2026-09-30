@@ -36,6 +36,13 @@ export const RUN = {
   /** A strip can't be thinned below this many cells. */
   minStrip: 6,
   draftSize: 3,
+  /** Drafts: chance a charm card is MORE of a charm you own (the rest lean to new charm types). */
+  extendChance: 0.3,
+  /** Drafts: chance a charm card is a charm type you DON'T own yet (a pivot), when you own some. */
+  pivotChance: 0.5,
+  /** Act 1 catch-up: a fight that cost at least this share of max HP adds a 4th card, a big heal. */
+  catchUpLoss: 0.35,
+  catchUpHeal: 0.35,
   /** Rocks added during one fight that stay for the rest of the run; the rest crumble. */
   permanentRocksPerFight: 2,
   /** Drafts right after these fights (1-based) offer relics (2 relics + 1 other). */
@@ -87,7 +94,9 @@ export const CHIPS = {
   /** Boss fight: every this many unspent chips = +10 shield at the start of each House turn. */
   stackPer: 8,
   /** Every run starts with a little float so shop 1 is a real visit. */
-  start: 4,
+  start: 8,
+  /** Overkill pays at most this many chips per fight (late one-shots were flooding the Cashier). */
+  overkillCap: 3,
   prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 5, legend: 20, level: 12 },
   /** First reroll per visit costs 1, then +1 each time. */
   rerollBase: 1,
@@ -127,6 +136,8 @@ export interface RunPlayer {
 }
 
 export interface FightRecord {
+  /** DEATH RECAP (lost fights): the top sources of HP damage you took, e.g. [['SPIN HITS', 180], ['BOMBS', 60]]. */
+  hurt?: [string, number][];
   depth: number;
   enemy: string;
   archetype: string;
@@ -178,6 +189,8 @@ export interface RunState {
   pendingStart?: RelicId[] | null;
   /** Rerolls used at the current Cashier visit. */
   shopRerolls: number;
+  /** The Cashier's current shelf (a reroll deals none of these again). */
+  shelfKeys?: string[];
   /** The starting machine. */
   cabinet: CabinetId;
   /** Current act (1 = the House, 2 = the Mirror). */
@@ -697,7 +710,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     (CABINETS[run.cabinet].chipsPerWin ?? 0) +
     (beaten.elite ? CHIPS.eliteBonus : 0) +
     fight.playerJackpots * CHIPS.perJackpot +
-    Math.floor(fight.overkill / CHIPS.overkillPer);
+    Math.min(CHIPS.overkillCap, Math.floor(fight.overkill / CHIPS.overkillPer));
   run.player.chips += earned;
   record.chips = earned;
   // Act 2 elites pay chips (more relics made the Mirror a walkover: ITERATION_8).
@@ -905,8 +918,12 @@ export function draftOffers(run: RunState): DraftOption[] {
   const p = run.player;
   const out: DraftOption[] = [];
   const push = (o: DraftOption | null) => {
-    if (o && out.length < RUN.draftSize && !out.some((x) => keyOf(x) === keyOf(o) || similarKey(x) === similarKey(o))) out.push(o);
+    if (o && out.length < size && !out.some((x) => keyOf(x) === keyOf(o) || similarKey(x) === similarKey(o))) out.push(o);
   };
+  // ACT 1 CATCH-UP: a costly win adds a 4th card, a big heal (deaths at fights 2-3 were the run killer).
+  const last = run.records[run.records.length - 1];
+  const costly = run.act === 1 && !!last?.won && last.hpBefore - last.hpAfter >= p.maxHp * RUN.catchUpLoss && p.hp < p.maxHp;
+  const size = RUN.draftSize + (costly && !isRelicDraft(run) ? 1 : 0);
   const sig = sigSymbol(run);
 
   const swapCard = (): DraftOption | null => {
@@ -933,8 +950,15 @@ export function draftOffers(run: RunState): DraftOption[] {
   const gildCard = (): DraftOption | null => {
     const n = RUN.charmCells;
     const taken = (o: DraftOption) => out.some((x) => x.kind === 'gild' && o.kind === 'gild' && x.enh === o.enh && x.symbol === o.symbol);
-    // EXTEND: half the time, more of a charm you already own (builds!).
-    if (p.gilded.length && rng.next() < 0.5) {
+    // PIVOT: when you own charms, often a charm TYPE you don't own yet (offers were too "fitted": EXPERT_PLAYTEST_2 C).
+    const owned = new Set(p.gilded.map((g) => g.enh));
+    const unowned = gildsFor(run).filter((e) => !owned.has(e));
+    if (owned.size && unowned.length && rng.next() < RUN.pivotChance) {
+      const fresh = charmOptions(run, n, [rng.pick(unowned)]).filter((o) => !taken(o));
+      if (fresh.length) return rng.pick(fresh);
+    }
+    // EXTEND: sometimes more of a charm you already own (builds!).
+    if (p.gilded.length && rng.next() < RUN.extendChance) {
       const own = charmOptions(run, n, [rng.pick(p.gilded).enh]).filter((o) => !taken(o));
       if (own.length) return rng.pick(own);
     }
@@ -997,6 +1021,7 @@ export function draftOffers(run: RunState): DraftOption[] {
     push((r < 0.35 ? wildCard() : r < 0.65 ? swapCard() : null) ?? clearCard() ?? gildCard() ?? levelCard() ?? addCard());
     push((rng.next() < 0.6 ? anySwapCard() : null) ?? hpCard());
   }
+  if (size > RUN.draftSize) out.push({ kind: 'heal', amount: Math.max(UNIT, Math.round((p.maxHp * RUN.catchUpHeal) / UNIT) * UNIT) });
   let guard = 0;
   while (out.length < RUN.draftSize && guard++ < 30) push(guard % 3 === 0 ? addCard() : guard % 3 === 1 ? swapCard() : { kind: 'maxHp', amount: RUN.maxHpCard });
   return out;
@@ -1073,17 +1098,23 @@ export function shopOffers(run: RunState): ShopItem[] {
   const p = run.player;
   const items: ShopItem[] = [];
   const P = CHIPS.prices;
+  // A reroll never deals what was just on the shelf.
+  const prev = new Set(run.shopRerolls > 0 ? (run.shelfKeys ?? []) : []);
   const add = (option: DraftOption | null, price: number) => {
-    if (option && !items.some((i) => JSON.stringify(i.option) === JSON.stringify(option))) items.push({ option, price, sold: false });
+    if (option && !prev.has(JSON.stringify(option)) && !items.some((i) => JSON.stringify(i.option) === JSON.stringify(option))) items.push({ option, price, sold: false });
   };
-  const gildOptions = charmOptions(run, RUN.charmCellsShop);
+  const gildOptions = charmOptions(run, RUN.charmCellsShop).filter((o) => !prev.has(JSON.stringify(o)));
   // Prefer extending what you already own, so builds can be finished on purpose.
   const favored = CABINETS[run.cabinet].favors;
   const extend = gildOptions.filter((o) => o.kind === 'gild' && (p.gilded.some((g) => g.enh === o.enh) || o.enh === favored));
   const levels = levelOptions(run);
   if (levels.length && rng.next() < 0.5) add(rng.pick(levels), P.level);
   else add(extend.length ? rng.pick(extend) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
-  add(gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
+  // Slot 2: a DIFFERENT charm type from slot 1, leaning to types you don't own.
+  const firstEnh = items.map((i) => i.option).find((o) => o.kind === 'gild');
+  const other = gildOptions.filter((o) => o.kind === 'gild' && (!firstEnh || firstEnh.kind !== 'gild' || o.enh !== firstEnh.enh));
+  const fresh = other.filter((o) => o.kind === 'gild' && !p.gilded.some((g) => g.enh === o.enh));
+  add(fresh.length && rng.next() < 0.6 ? rng.pick(fresh) : other.length ? rng.pick(other) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
   const lastShop = run.act === runActs(run) && run.depth >= Math.min(actLength(run.act), RUN.shopAfter[RUN.shopAfter.length - 1]);
   const relics = (Object.keys(RELICS) as RelicId[]).filter(
     (r) => !p.relics.includes(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && !(lastShop && r === 'bandage') && !LEGENDARY.has(r),
@@ -1109,7 +1140,9 @@ export function shopOffers(run: RunState): ShopItem[] {
     const junk = p.strips.flatMap((s, reel) => (['rock', 'shield'] as SymbolId[]).filter((sym) => (s[sym] ?? 0) > 1).map((symbol) => ({ kind: 'remove' as const, symbol, reel })));
     if (junk.length) add(rng.pick(junk), P.remove);
   }
-  const shelf = items.slice(0, 4);
+  // Rerolls also redraw the layout: the four slots come in a new order.
+  const shelf = run.shopRerolls > 0 ? rng.shuffle(items.slice(0, 4)) : items.slice(0, 4);
+  run.shelfKeys = shelf.map((i) => JSON.stringify(i.option));
   // HEAL is a permanent service slot, sized to what you're missing (hidden when nearly full).
   const missing = p.maxHp - p.hp;
   if (missing >= 3 * UNIT && !run.glass) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal, sold: false });
@@ -1280,7 +1313,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'twinReel':
       return { title: 'TWIN REEL', rule: 'REEL 3 BECOMES AN EXACT COPY OF REEL 1, CHARMS INCLUDED', cost: "REEL 3'S OLD CELLS ARE GONE" };
     case 'sweepUp':
-      return { title: 'SWEEP UP', rule: `SMASH EVERY ROCK ON YOUR REELS AND HEAL ${BIG.sweepHeal}`, cost: '' };
+      return { title: 'SWEEP UP', rule: run.player.hp >= run.player.maxHp ? `SMASH EVERY ROCK ON YOUR REELS. +${BIG.sweepHeal / 2} MAX HP` : `SMASH EVERY ROCK ON YOUR REELS AND HEAL ${BIG.sweepHeal}`, cost: '' };
     case 'glassCannon':
       return { title: 'GLASS CANNON', rule: `EVERY PAYING GROUP PAYS X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS, BANDAGE AND CASHIER INCLUDED' };
     case 'bloodPact':
@@ -1388,7 +1421,11 @@ export function takeChoice(run: RunState, c: BigChoice): void {
       break;
     case 'sweepUp':
       for (const s of p.strips) s.rock = 0;
-      p.hp = Math.min(p.maxHp, p.hp + BIG.sweepHeal);
+      // At full HP the heal would be wasted: grow max HP instead.
+      if (p.hp >= p.maxHp) {
+        p.maxHp += BIG.sweepHeal / 2;
+        p.hp = p.maxHp;
+      } else p.hp = Math.min(p.maxHp, p.hp + BIG.sweepHeal);
       break;
     case 'glassCannon':
       run.glass = true;

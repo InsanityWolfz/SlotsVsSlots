@@ -52,6 +52,11 @@ export class Director {
 
   async playTurn(result: TurnResult): Promise<void> {
     const evs = result.events;
+    // A quiet turn (no jackpot, ability, special, bonus or death, and little damage) plays 1.5x faster.
+    const loud = new Set<CombatEvent['type']>(['ability', 'specialFire', 'death', 'fightEnd', 'voucher', 'shatter', 'phoenix', 'potWin', 'payoff' as CombatEvent['type']]);
+    const dealt = evs.reduce((a, e) => a + (e.type === 'attack' ? e.amount : 0), 0);
+    const quiet = !evs.some((e) => loud.has(e.type) || (e.type === 'spin' && (e.score.tier === 'triple' || !!e.bonus))) && dealt <= 2 * UNIT;
+    this.c.boost = quiet ? 1.5 : 1;
     for (let i = 0; i < evs.length; i++) {
       // More than one lightning strike in a turn plays as ONE storm (length grows with the log of the count).
       if (evs[i].type === 'specialFire') {
@@ -74,6 +79,7 @@ export class Director {
       } else await this.play(evs[i]);
     }
     await this.endTurn(result.side);
+    this.c.boost = 1;
   }
 
   private play(e: CombatEvent): Promise<void> {
@@ -1815,6 +1821,8 @@ export class Director {
   /** The Mirror cracks at half HP. */
   private async shatter(e: Ev<'shatter'>): Promise<void> {
     const m = this.s.machines[e.side];
+    // The crack snaps back: its countdown jumps to 'next turn' (EXPERT_PLAYTEST_2 F2).
+    this.s.huds[e.side].charge = Math.max(0, e.every - 1);
     this.s.sounds.shatter();
     this.s.sounds.abilityFire();
     this.hitstop(4);

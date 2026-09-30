@@ -1,7 +1,7 @@
 import type { Sounds } from '../audio/sounds';
 import { UNIT, type GameConfig, type SymbolId } from '../core/config';
 import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
-import { LEGENDARY, MIRROR_HIT_CAP, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH } from '../core/relics';
+import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
 import {
@@ -860,7 +860,7 @@ export class RunScreens {
   private drawDraft(ctx: CanvasRenderingContext2D, time: number): void {
     const last = this.lastRecord;
     const start = this.draftKind === 'start';
-    drawText(ctx, last ? `${last.enemy} DEFEATED!` : start ? 'A NEW RUN' : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight);
+    drawText(ctx, last ? `${last.enemy} DEFEATED!` : start ? 'A NEW RUN' : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
@@ -1051,7 +1051,7 @@ export class RunScreens {
       e.boss === 'dealer'
         ? 'FACE-UP DEALS: SHUFFLE (SWAPS 5 CELLS), CUT (A CHARMED CELL), RAISE (ITS HIT + YOUR NEXT PAY X2). NO KILL BEFORE ITS FIRST DEAL.'
         : e.boss === 'mirror'
-        ? `YOUR MACHINE AND SYMBOL LEVELS, CHARMS AT LEVEL 1 (NO RELICS, METER OR KEEN). ITS HITS ARE CAPPED AT ${Math.round(MIRROR_HIT_CAP * 100)}% OF YOUR MAX HP; REFLECTS UP TO ${Math.round(REFLECT_CAP * 100)}%. CRACKS AT HALF HP AND SNAPS BACK AT ONCE. CHIPS SHIELD YOU (${UNIT} PER ${CHIPS.stackPer}, MAX ${MIRROR_CHIP_SHIELD_CAP}).`
+        ? `COPIES YOUR MACHINE (NO RELICS, METER OR KEEN). REFLECTS YOUR BEST HIT; A TURN NEVER DEALS MORE THAN ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKS AT HALF HP, THEN REFLECTS AT ONCE.`
         : `COINS + A CUT EACH TURN FILL THE POT. EVERY ${this.houseEvery()} TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +${UNIT} SHIELD EACH HOUSE TURN.${dirty ? ' BLACK: IT BOMBS YOUR CELLS, EVEN THE PAYLINE.' : ''}`;
     // GREEN: say which relic the Mirror will copy.
     const copy = mirror && this.run ? mirrorCopy(this.run) : null;
@@ -1368,7 +1368,7 @@ export class RunScreens {
       drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 680, y, 2, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
       if (compact) {
         const parts = [...(r.bonuses ?? []), r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
-        const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
+        const what = !r.won && r.hurt?.length ? `KILLED BY: ${r.hurt.slice(0, 2).map(([k, n]) => `${k} ${n}`).join(', ')}` : parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
         drawText(ctx, what.length > 34 ? `${what.slice(0, 33)}...` : what, 790, y, 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
         return;
       }
@@ -1380,6 +1380,7 @@ export class RunScreens {
         r.chips ? `+${r.chips} CHIPS` : '',
       ].filter(Boolean).join('  ');
       if (extra) drawText(ctx, extra, 790, y + 12, 1, COLORS.textDim, { align: 'left' });
+      else if (!r.won && r.hurt?.length) drawText(ctx, `KILLED BY: ${r.hurt.map(([k, n]) => `${k} ${n}`).join(' - ')}`, 790, y, 1.25, COLORS.danger, { align: 'left' });
       else if (!r.won) drawText(ctx, 'DEFEATED', 790, y, 2, COLORS.danger, { align: 'left' });
       if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCKS`, 640, y + 12, 1, '#c9bba8');
     });

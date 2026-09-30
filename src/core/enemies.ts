@@ -265,7 +265,7 @@ export const ACT3_DEPTH_MUL = [1, 1.1, 1.2, 1.3, 1.4];
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5 };
 export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
 /** Act 3 (ITERATION_12 playtest, commit at GREEN): Dealer HP = 7 x typical-spin power + 60 (+4/relic), less bursty strip -> ~62% Dealer win. */
-export const TUNE = { regularHp: 1.05, act2Hp: 1.6, act1Swords: 1, enemyShield: 0.5, act3Power: 4, act3Flat: 20 * UNIT, dealerPower: 10, dealerFlat: 50 * UNIT, act3Sevens: 4, bossHp: 95 * UNIT, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 30 * UNIT, mirrorPerRelic: 4 * UNIT, mirrorSpecialWeight: 1, powerElastic: 0.5 };
+export const TUNE = { act1Hp: 0.7, act1Every: 3, regularHp: 1.05, act2Hp: 1.6, act1Swords: 1, enemyShield: 0.5, act3Power: 4, act3Flat: 20 * UNIT, dealerPower: 10, dealerFlat: 50 * UNIT, act3Sevens: 4, bossHp: 95 * UNIT, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 30 * UNIT, mirrorPerRelic: 4 * UNIT, mirrorSpecialWeight: 1, powerElastic: 0.5 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
@@ -328,8 +328,9 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
   const opener = depth === 0 && act === 1 ? OPENER_HP_MUL : 1;
   // (The Mirror's real HP is sized to your machine in run.enemyHp.)
   const bossHp = a.id === 'mirror' ? 100 * UNIT : TUNE.bossHp;
-  const hp = isBoss ? bossHp : unitsRound(curve[Math.min(depth, curve.length - 1)] * hpMul * opener * TUNE.regularHp * (act === 2 ? TUNE.act2Hp : 1));
-  const every = a.ability.every;
+  const hp = isBoss ? bossHp : unitsRound(curve[Math.min(depth, curve.length - 1)] * hpMul * opener * TUNE.regularHp * (act === 2 ? TUNE.act2Hp : act === 1 ? TUNE.act1Hp : 1));
+  // Act 1 regulars use their ability every 3 turns at most, so players see what each enemy does (EXPERT_PLAYTEST_2 G2).
+  const every = !isBoss && act === 1 ? Math.min(a.ability.every, TUNE.act1Every) : a.ability.every;
   return {
     archetype: a.id,
     depth,

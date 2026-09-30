@@ -12,6 +12,7 @@ import {
   KEY_MULT,
   MIDAS_TOUCH_CAP,
   MIRROR_HIT_CAP,
+  REFLECT_CAP,
   OVERCHARGE_ECHO,
   CLOVER_CHANCE,
   FANG_HEAL,
@@ -205,6 +206,8 @@ export class Fight {
   chipsEaten = 0;
   /** Phoenix Feather already burned this fight. */
   phoenixUsed = false;
+  /** The Mirror's damage so far this turn (its whole turn is capped). */
+  private mirrorTurnDealt = 0;
   /** Relics that act as the fight opens (Battery, Lightning Rod): popped on turn 1. */
   private openers: RelicId[] = [];
   /** The Mirror cracked (phase 2). */
@@ -344,6 +347,7 @@ export class Fight {
     const events: CombatEvent[] = [];
     this.turn++;
     events.push({ type: 'turnStart', turn: this.turn, side });
+    this.mirrorTurnDealt = 0;
     if (this.turn === 1) for (const relic of this.openers) events.push({ type: 'relic', side: 'player', relic });
     if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
@@ -1019,8 +1023,15 @@ export class Fight {
       amount *= 2;
       this.raiseEnemy = false;
     }
-    // The Mirror copies your build: its hits are capped relative to you.
-    if (me.side === 'enemy' && this.isMirror && note !== 'reflect') amount = Math.min(amount, Math.max(UNIT, Math.round(foe.maxHp * MIRROR_HIT_CAP)));
+    // The Mirror copies your build: each hit is capped relative to you, and so is its WHOLE turn
+    // (reflection + attack together never exceed REFLECT_CAP of your max HP: EXPERT_PLAYTEST_2 F1).
+    if (me.side === 'enemy' && this.isMirror) {
+      if (note !== 'reflect') amount = Math.min(amount, Math.max(UNIT, Math.round(foe.maxHp * MIRROR_HIT_CAP)));
+      const budget = Math.max(0, Math.round(foe.maxHp * REFLECT_CAP) - this.mirrorTurnDealt);
+      amount = Math.min(amount, budget);
+      if (amount <= 0) return 0;
+      this.mirrorTurnDealt += amount;
+    }
     const pierced = pierce && foe.shield > 0;
     const h = this.damage(foe, amount, pierce);
     events.push({ type: 'attack', from: me.side, to: foe.side, reels, amount, ...h, ...(pierced ? { note: 'pierce' as const } : note ? { note } : {}) });

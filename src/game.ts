@@ -1,4 +1,5 @@
 import { Sounds } from './audio/sounds';
+import type { CombatEvent } from './core/events';
 import { Synth } from './audio/synth';
 import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
 import { actLength, RUN_FIGHTS, TUNE } from './core/enemies';
@@ -489,11 +490,25 @@ export class Game {
   }
 
   private lastRecord: FightRecord | null = null;
+  /** DEATH RECAP: HP damage the player took this fight, by source. */
+  private hurt = new Map<string, number>();
+  private noteHurt(events: CombatEvent[]): void {
+    const add = (k: string, n: number) => n > 0 && this.hurt.set(k, (this.hurt.get(k) ?? 0) + n);
+    for (const e of events) {
+      if (e.type === 'attack' && e.to === 'player')
+        add(e.note === 'reflect' ? 'REFLECTION' : e.note === 'drain' ? 'DRAIN' : e.note === 'mimic' ? 'COPYCAT' : e.reels.length ? 'SPIN HITS' : this.fight.isBoss ? 'THE POT' : 'ABILITY', e.hpDamage);
+      else if (e.type === 'specialFire' && e.to === 'player') add('SPECIAL', e.hpDamage);
+      else if (e.type === 'markedHit' && e.side === 'player') add('MARKED CARDS', e.hpDamage);
+      else if (e.type === 'blast' && e.side === 'player') add('BOMBS', e.hpDamage);
+    }
+  }
   private shelf: ShopItem[] = [];
 
   private afterRunFight(): void {
     const run = this.run!;
     const record = finishFight(run, this.fight, true);
+    if (!record.won) record.hurt = [...this.hurt].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    this.hurt.clear();
     this.lastRecord = record;
     this.phase = run.over ? 'over' : 'between';
     if (run.over) {
@@ -632,6 +647,7 @@ export class Game {
     this.synth.enabled = true;
     this.camera.dimTarget = 0;
     this.fight = new Fight(cfg, seed ?? cfg.seed ?? undefined);
+    this.hurt.clear();
     this.lastSeed = this.fight.seed;
     this.tracker = new StatsTracker(this.fight);
     const clock = new Clock();
@@ -716,6 +732,7 @@ export class Game {
       }
       if (token !== this.token) return;
       const result = this.fight.step();
+      this.noteHurt(result.events);
       this.tracker.record(result.events);
       this.rows.push(turnRow(this.fight, result, this.fightNo));
       this.onRows.forEach((f) => f());
@@ -1180,7 +1197,7 @@ export class Game {
     ctx.fillStyle = '#10202e';
     ctx.fillRect(x - 101, y - 47, 202, 94);
     drawText(ctx, soon ? 'REFLECTS NEXT!' : `REFLECTION IN ${left}`, x, y - 32, 2, soon ? '#ff6a5a' : '#c8f0ff');
-    drawText(ctx, 'AT LEAST', x - 48, y + 10, 1.5, COLORS.textDim);
+    drawText(ctx, 'UP TO', x - 48, y + 10, 1.5, COLORS.textDim);
     drawText(ctx, String(dmg), x + 38, y + 10, 6, soon ? '#ff6a5a' : '#c8f0ff');
     drawText(ctx, 'BEST HIT SINCE ITS LAST', x, y + 36, 1.5, COLORS.textDim);
   }

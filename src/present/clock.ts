@@ -22,6 +22,8 @@ export interface TweenOpts {
  */
 export class Clock {
   speed = 1;
+  /** Extra speed for the current turn only (quiet turns play faster). */
+  boost = 1;
   /** Seconds of game time elapsed (frozen during hitstop). */
   time = 0;
   /** While true every wait/tween resolves instantly (tap-to-skip). */
@@ -35,7 +37,7 @@ export class Clock {
       this.freeze -= realDt;
       return 0;
     }
-    const dt = realDt * this.speed;
+    const dt = realDt * this.speed * this.boost;
     this.time += dt;
     const tasks = this.tasks;
     this.tasks = [];
