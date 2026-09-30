@@ -221,6 +221,8 @@ export class Fight {
   private mirrorTurnDealt = 0;
   /** HP you've lost this turn (one-turn cap: regular enemies 40% of your max HP, bosses 60%). */
   private playerTurnHp = 0;
+  /** This enemy turn was announced (ALL IN or RAISE). */
+  private bigTurn = false;
   /** E3: reels of yours that thawed on your last turn can't be frozen or jammed on the next enemy turn. */
   private thawShield = new Set<number>();
   /** Relics that act as the fight opens (Battery, Lightning Rod): popped on turn 1. */
@@ -311,7 +313,15 @@ export class Fight {
     const carried = this.cfg.player.startMarks ?? 0;
     if (carried > 0) {
       const cells = this.rng.shuffle(p.reels.flatMap((reel, r) => reel.cells.map((c, i) => ({ c, r, i })).filter(({ c }) => symbolValue(c.symbol) > 0)));
-      for (const { c } of cells.slice(0, carried)) c.carded = true;
+      const perReel = [0, 0, 0];
+      let placed = 0;
+      for (const { c, r } of cells) {
+        if (placed >= carried) break;
+        if (perReel[r] >= TUNE.marksPerReel) continue;
+        c.carded = true;
+        perReel[r]++;
+        placed++;
+      }
     }
     // The Golden Hourglass and HIGH STAKES change enemy cadence (the same helper feeds the cards).
     if (e.ability) e.ability = effectiveAbility(e.ability, { stake: this.cfg.stake ?? 0, act: this.cfg.enemy.act ?? 1, sandglass: p.relics.has('sandglass') });
@@ -376,6 +386,8 @@ export class Fight {
     this.mirrorTurnDealt = 0;
     this.playerTurnHp = 0;
     if (side === 'player') this.thawShield.clear();
+    // The Dealer's big turns are the announced ones (ALL IN, RAISE): only those may hit up to the boss cap.
+    if (side === 'enemy') this.bigTurn = this.dealerAllIn || this.raiseEnemy;
     if (this.turn === 1) for (const relic of this.openers) events.push({ type: 'relic', side: 'player', relic });
     if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
@@ -558,11 +570,17 @@ export class Fight {
     }
 
     // ENDLESS: a fight that stalls past 80 turns goes to the House.
-    if (!this.over && this.cfg.enemy.endless && this.turn >= ENDLESS.maxTurns) {
-      this.sides.player.hp = 0;
-      this.winner = 'enemy';
-      events.push({ type: 'death', side: 'player' });
-      events.push({ type: 'fightEnd', winner: 'enemy', turns: this.turn });
+    // Counted in ENEMY turns, with a visible countdown (EXPERT_PLAYTEST_4 B2).
+    if (!this.over && this.cfg.enemy.endless && side === 'enemy') {
+      const enemyTurns = Math.ceil(this.turn / 2);
+      const left = ENDLESS.maxTurns - enemyTurns;
+      if (left <= 0) {
+        events.push({ type: 'closingTime', side: 'player', hp: this.sides.player.hp });
+        this.sides.player.hp = 0;
+        this.winner = 'enemy';
+        events.push({ type: 'death', side: 'player' });
+        events.push({ type: 'fightEnd', winner: 'enemy', turns: this.turn });
+      } else if (left <= ENDLESS.closingWarn) events.push({ type: 'closing', side: 'enemy', left });
     }
     this.next = other(side);
     return { turn: this.turn, side, events };
@@ -1207,7 +1225,8 @@ export class Fight {
     let hpDamage = Math.min(target.hp, amount - blocked);
     // ONE-TURN CAP on you: no turn takes more than 40% of your max HP (60% for bosses): no turn-2 one-shots (EXPERT_PLAYTEST_3 E2).
     if (target.side === 'player') {
-      const cap = Math.round(target.maxHp * (this.isBoss || this.isMirror || this.isDealer ? TUNE.bossTurnCap : TUNE.turnCap));
+      const capShare = this.isDealer && !this.bigTurn ? TUNE.dealerQuietCap : this.isBoss || this.isMirror || this.isDealer ? TUNE.bossTurnCap : TUNE.turnCap;
+      const cap = Math.round(target.maxHp * capShare);
       hpDamage = Math.max(0, Math.min(hpDamage, cap - this.playerTurnHp));
       this.playerTurnHp += hpDamage;
     }
@@ -1605,7 +1624,8 @@ export class Fight {
       const c = foe.reels[r].cells[stop];
       return symbolValue(effectiveSymbol(c)) + (c.enh && !c.slimed && !c.stolen ? 3 : 0);
     };
-    const order = this.rng.shuffle(foe.reels.map((_, r) => r)).filter((r) => foe.side !== 'player' || !this.thawShield.has(r));
+    // Thaw immunity covers your whole machine for the next enemy turn (one reel wasn't enough: EXPERT_PLAYTEST_4 C2).
+    const order = this.rng.shuffle(foe.reels.map((_, r) => r)).filter(() => foe.side !== 'player' || this.thawShield.size === 0);
     order.sort((a, b) => (ice ? valueAt(a, foe.reels[a].stop) - valueAt(b, foe.reels[b].stop) : valueAt(b, foe.reels[b].stop) - valueAt(a, foe.reels[a].stop)));
     let targets = order.slice(0, count).sort((a, b) => a - b);
 
@@ -1812,7 +1832,7 @@ export class Fight {
 
   /** The House skims half the pot (rounded up) as damage (shield blocks); the rest keeps growing. */
   private cashPot(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
-    const amount = unitsUp(this.pot * POT.skim);
+    const amount = unitsUp(this.pot * POT.skim * (this.cfg.enemy.dmgMul ?? 1));
     this.pot -= amount;
     const h = this.damage(foe, amount, false);
     events.push({ type: 'potWin', from: me.side, to: foe.side, amount, ...h, potLeft: this.pot });

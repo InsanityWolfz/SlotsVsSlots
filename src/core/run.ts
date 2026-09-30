@@ -549,7 +549,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   if (run.endless) {
     const edges = new Set(run.endless.edges);
     cfg.enemy.endless = true;
-    cfg.enemy.dmgMul = Math.pow(ENDLESS.dmg, run.endless.loop);
+    cfg.enemy.dmgMul = Math.pow(ENDLESS.dmgBy[run.cabinet] ?? ENDLESS.dmg, run.endless.loop);
     if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
     if (edges.has('writer')) cfg.enemy.strips = cfg.enemy.strips.map((s) => {
       const w = (Object.keys(s) as SymbolId[]).find((k) => WRITER_SYMS.has(k));
@@ -585,9 +585,10 @@ function startEndlessLoop(run: RunState): void {
   run.chosen = run.paths.map((opts) => opts.length === 1);
   run.player.hp = run.player.maxHp;
   run.actIntro = false;
+  // Never offer an edge you already took (EXPERT_PLAYTEST_4 B4); once they're all taken, no pick.
   const open = EDGES.filter((x) => !run.endless!.edges.includes(x));
-  const pick = rng.shuffle(open.length >= 2 ? open : EDGES).slice(0, 2);
-  run.pendingChoice = pick.map((edge, i): BigChoice => ({ id: 'edge', edge, reward: i === 0 ? 'chips' : 'legend' }));
+  const pick = rng.shuffle(open).slice(0, 2);
+  run.pendingChoice = pick.length ? pick.map((edge, i): BigChoice => ({ id: 'edge', edge, reward: i === 0 ? 'chips' : 'legend' })) : null;
 }
 
 export const EDGE_TEXT: Record<EdgeId, { title: string; text: string }> = {
@@ -629,6 +630,12 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
     return unitsRound(Math.max(e.hp, TUNE.act2Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'mirror') * mul) * m2);
   }
   if (!e.isBoss) return run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? unitsRound(e.hp * FRAGILE_OPENER_MUL) : e.hp;
+  // ENDLESS: loop bosses are sized from your power (the loop House was a free win; the loop Dealer a sponge).
+  if (run.endless) {
+    const regular = TUNE.act3Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'act3') + TUNE.act3Flat;
+    const share = e.boss === 'house' ? ENDLESS.houseHp : e.boss === 'dealer' ? ENDLESS.dealerHp : ENDLESS.mirrorHp;
+    return unitsRound(regular * share);
+  }
   // The Mirror grows with your machine and (like the House) with every relic you carry in.
   const cm = BOSS_MUL[run.cabinet];
   if (e.boss === 'mirror') return unitsRound(TUNE.mirrorPower * cm.mirror * sizingPower(run, 'mirror')) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length;
@@ -693,11 +700,11 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  * be hit), so the same HP formula would give each a different win rate.
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number }> = {
-  knight: { house: 2.0, mirror: 0.9, dealer: 0.7, act3: 0.5 },
+  knight: { house: 2.0, mirror: 0.9, dealer: 0.85, act3: 0.5 },
   midas: { house: 3.5, mirror: 16, dealer: 0.45, act3: 0.1 },
-  thorn: { house: 0.85, mirror: 10.5, dealer: 2.0, act3: 1.1, act2: 0.55 },
-  tesla: { house: 0.5, mirror: 2.4, dealer: 1.45, act3: 0.95 },
-  joker: { house: 2.2, mirror: 3.7, dealer: 1.5, act3: 0.55, act2: 1.8 },
+  thorn: { house: 0.85, mirror: 10.5, dealer: 2.4, act3: 1.1, act2: 0.55 },
+  tesla: { house: 0.5, mirror: 2.4, dealer: 2.0, act3: 0.95 },
+  joker: { house: 2.2, mirror: 3.7, dealer: 1.85, act3: 0.55, act2: 1.8 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
@@ -795,7 +802,8 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   // GLASS CANNON: no healing between fights at all.
   let hp = p.hp + (run.glass ? 0 : unitsRound(run.player.maxHp * RUN.postFightHeal * (run.stake >= STAKE.halfHeal ? 0.5 : 1) * (run.act >= 3 ? 0 : 1)));
   // THE DECK REMEMBERS: the Card Sharp's marks carry into the Dealer fight.
-  run.deckMarks = Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
+  // The Dealer's own marks don't carry on; the deck resets once it falls.
+  run.deckMarks = beaten.boss === 'dealer' ? 0 : Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
   if (run.player.relics.includes('bandage') && !run.glass) hp += BANDAGE_HEAL;
   // KING'S VAULT (MIDAS): after each win, one of your swords turns gold for good.
   if (run.player.relics.includes('vault')) {

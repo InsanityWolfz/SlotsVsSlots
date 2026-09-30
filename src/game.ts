@@ -513,6 +513,7 @@ export class Game {
       }
       if (e.type === 'potWin' && e.to === 'player') add('THE POT', e.hpDamage);
       if (e.type === 'allInHit' && e.to === 'player') add('ALL IN', e.hpDamage);
+      if (e.type === 'closingTime') add('CLOSING TIME', e.hp);
       if (e.type === 'attack' && e.to === 'player')
         add(e.note === 'reflect' ? 'REFLECTION' : e.note === 'drain' ? 'DRAIN' : e.note === 'mimic' ? 'COPYCAT' : e.reels.length ? 'SPIN HITS' : this.fight.isBoss ? 'THE POT' : 'ABILITY', e.hpDamage);
       else if (e.type === 'specialFire' && e.to === 'player') add('SPECIAL', e.hpDamage);
@@ -529,7 +530,7 @@ export class Game {
       // Clamp to the HP you actually lost (overkill past 0 isn't damage you felt).
       const total = [...this.hurt.values()].reduce((a, b) => a + b, 0);
       const k = total > record.hpBefore && total > 0 ? record.hpBefore / total : 1;
-      record.hurt = [...this.hurt].map(([s, n]) => [s, Math.round(n * k)] as [string, number]).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      record.hurt = [...this.hurt].map(([s, n]) => [s, Math.round(n * k)] as [string, number]).filter(([, n]) => n >= UNIT).sort((a, b) => b[1] - a[1]).slice(0, 3);
       if (this.spins[0] >= 2) record.stuck = [this.spins[0], this.spins[1]];
     }
     this.hurt.clear();
@@ -540,6 +541,7 @@ export class Game {
       this.noteDiscoveries();
       this.recordRun(run);
       this.skipTutorial();
+      if (run.endless) this.screens.setStakeUnlockedNow('');
       this.screens.setUnlockedNow(run.endless ? [] : this.checkUnlocks(run));
       this.screens.showOver(run);
     }

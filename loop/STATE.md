@@ -659,3 +659,36 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - Tests: 179 (tests/endless.test.ts).
 - **Last edit before the usage limit** (built, not yet browser-checked): edge cards centred for 2 choices; "HOUSE EDGE: LOOP N" heading; chip / legend icons.
 - **NEXT:** browser-check the edge screen, then spawn EXPERT_PLAYTEST_4 (verify endless + the E-batches, what's off now), then continue the loop.
+
+### Iteration 39 (2026-09-30): EXPERT_PLAYTEST_4 E1-E8
+- **E1:** the endless cap counts ENEMY turns (80). LAST CALL at enemy turn 25. "THE HOUSE CLOSES IN N" for the last 5 turns. CLOSING TIME banner, credited in the death recap.
+- **E2 endless text:**
+  - "LOOP N - FIGHT x OF 3" / "LOOP N - BOSS FIGHT";
+  - the boss button names its real boss;
+  - the loop legend pick has no ACT 2 heading or signature;
+  - a "YOUR WIN IS BANKED..." line under LET IT RIDE.
+- **E3:** the endless bust screen summarizes: one row per act, one per loop (its boss), then the last 3 fights. The stale stake-unlock line is cleared.
+- **E4:** thaw immunity covers the WHOLE machine for the next enemy turn; Frost Imp blizzard and Gremlin jam hit 1 reel.
+- **E5:**
+  - carried marks respect 2 per reel;
+  - deckMarks resets after the Dealer;
+  - no duplicate HOUSE EDGEs (no pick once all are taken);
+  - the House rules text uses POT.cashEvery;
+  - recap entries under 1 UNIT are dropped.
+- **E6 loop bosses** are sized from your power: act 3 regular formula × houseHp 4 / mirrorHp 5 / dealerHp 6.
+  - The House pot skim × dmgMul.
+  - Growth per loop: HP hpBy knight 1.05, tesla 1.5, thorn 1.45, joker 1.28; damage 1.35 (knight 1.18).
+  - Loop House 3 → 15 turns. Early loop bosses end by attrition (p90 ≤ ~50 turns up to loop 4).
+  - endless.ts: loops cleared p50 knight 1, tesla 2, thorn 2, joker 3; p90 4-7.
+- **E7:** the Dealer's un-announced turns are capped at 35% of max HP (TUNE.dealerQuietCap); only ALL IN / RAISE turns reach 60%. BOSS_MUL dealer: knight 0.85, tesla 2.0, thorn 2.4, joker 1.85.
+- **E8:** marks draw the new red `cardBack` sprite (art agent).
+- **tuesday.ts 1500 (before the tesla nudge):**
+  | machine | WHITE | GREEN | Dealer |
+  |---|---|---|---|
+  | knight | 42.9 | 14.1 | 51.2 |
+  | tesla | 42.8 | 16.5 | 61.3 |
+  | thorn | 45.8 | 16.4 | 52.5 |
+  | joker | 41.7 | 17.7 | 59.1 |
+  | AVG | 43.3 | 16.2 | 56.0 |
+
+  The easier Frost/Gremlin raised WHITE ~39.6 → 43.3.

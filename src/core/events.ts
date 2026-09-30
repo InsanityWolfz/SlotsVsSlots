@@ -108,6 +108,10 @@ export type CombatEvent =
   | { type: 'allInArmed'; side: SideId; cap: number }
   /** ENDLESS: LAST CALL (the fight ran long; the enemy hits harder every turn now). */
   | { type: 'lastCall'; side: SideId }
+  /** ENDLESS: the House closes the table in N enemy turns (a stalled fight goes to the House). */
+  | { type: 'closing'; side: SideId; left: number }
+  /** ENDLESS: CLOSING TIME, the stalled fight goes to the House. */
+  | { type: 'closingTime'; side: SideId; hp: number }
   /** ACT 3 cover charge: the first enemy attack of the fight takes a cut that no shield blocks. */
   | { type: 'coverCharge'; side: SideId; amount: number }
   /** ALL IN: the Dealer throws its whole visible hand at you. */

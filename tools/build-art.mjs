@@ -3157,6 +3157,35 @@ S.dealRaise = dealCard(false, [
   '   gggg   ',
 ], 3, 5, 'G');
 S.dealBack = dealCard(true);
+// cardBack (16x16): a face-down playing card, tilted clockwise (rows step left going down), used as the
+// "MARKED by the enemy" cell overlay. Gold rim (lit top-left), deep red back, dark-red diamond lattice with
+// gold studs where the lines cross, a bright gold centre diamond.
+{
+  const g = grid(16, 16);
+  const W = 10, top = 1, bot = 14;
+  const off = (y) => (y <= 3 ? 4 : y <= 7 ? 3 : y <= 11 ? 2 : 1); // skew = tilt
+  const inCard = (lx, y) => y >= top && y <= bot && lx >= 0 && lx < W &&
+    !((lx === 0 || lx === W - 1) && (y === top || y === bot)); // rounded corners
+  for (let y = top; y <= bot; y++) for (let lx = 0; lx < W; lx++) {
+    if (!inCard(lx, y)) continue;
+    const x = off(y) + lx;
+    const rim = !inCard(lx - 1, y) || !inCard(lx + 1, y) || !inCard(lx, y - 1) || !inCard(lx, y + 1);
+    let c;
+    if (rim) c = (lx === 0 || y === top) ? 'Y' : (lx === W - 1 || y === bot) ? 'g' : 'G';
+    else {
+      const a = (x + y) % 4 === 2, b = (x - y + 40) % 4 === 0; // lattice in screen space: clean diamonds
+      c = a && b ? 'G' : a || b ? 'r' : 'R';
+    }
+    put(g, x, y, c);
+  }
+  // centre diamond (screen space, sits in one lattice cell)
+  const cx = 7, cy = 7;
+  for (let y = cy - 2; y <= cy + 2; y++) for (let x = cx - 2; x <= cx + 2; x++) {
+    const d = Math.abs(x - cx) + Math.abs(y - cy);
+    if (d <= 2) put(g, x, y, d === 0 ? 'W' : d === 1 ? ((x < cx || y < cy) ? 'Y' : 'G') : ((x <= cx && y <= cy) ? 'G' : 'g'));
+  }
+  S.cardBack = toRows(outline(g));
+}
 
 // ---------------------------------------------------------------- overlays
 // confiscatedOverlay: grey dashed frame round the cell, red wax seal with a tiny gavel top-right, centre clear
@@ -4232,7 +4261,7 @@ const DIMS = {
   enemyDealer: 24, enemySharp: 24, enemyPitBoss: 24, enemyCroupier: 24, card: 16, gavel: 16, rake: 16,
   icoShuffle: 8, icoCut: 8, icoRaise: 8, icoMark: 8, icoGavel: 8, icoRake: 8,
   mapBadgeCard: 8, mapBadgeGavel: 8, mapBadgeRake: 8, mapBadgeDealer: 8,
-  dealShuffle: { w: 16, h: 22 }, dealCut: { w: 16, h: 22 }, dealRaise: { w: 16, h: 22 }, dealBack: { w: 16, h: 22 },
+  dealShuffle: { w: 16, h: 22 }, dealCut: { w: 16, h: 22 }, dealRaise: { w: 16, h: 22 }, dealBack: { w: 16, h: 22 }, cardBack: 16,
   confiscatedOverlay: 16, actPlaque3: { w: 24, h: 12 },
   bonusSym: 16, relicSym: 16, voucherBonus: { w: 24, h: 16 }, voucherRelic: { w: 24, h: 16 },
   rushEmpty: 16, rushJunk: 16, tierCommon: 12, tierUncommon: 12, tierLegendary: 12, wheelPointer: 12,
@@ -4345,6 +4374,7 @@ export type SpriteId =
   | 'icoMark' | 'icoGavel' | 'icoRake'
   | 'mapBadgeCard' | 'mapBadgeGavel' | 'mapBadgeRake' | 'mapBadgeDealer' // act 3 map badges, 8x8
   | 'dealShuffle' | 'dealCut' | 'dealRaise' | 'dealBack' // Dealer's face-up deal cards, 16x22 (non-square)
+  | 'cardBack'                                     // face-down card: MARKED cell overlay, 16x16
   | 'confiscatedOverlay'                           // confiscated-gild cell overlay, 16x16 (mostly transparent)
   | 'actPlaque3'                                   // act 3 map header plaque, 24x12 (non-square)
   | 'bonusSym' | 'relicSym'                       // rare chase reel symbols (BONUS / RELIC RUSH), 16x16

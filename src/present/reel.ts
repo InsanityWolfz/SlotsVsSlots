@@ -295,7 +295,7 @@ export function drawCell(
   }
   // A marked card sits over the symbol: it's dead, and it bites on your payline.
   if (cell.carded && stolen < 1) {
-    drawSprite(ctx, artId('card'), x, y, ART_SCALE * 0.9, { sx, sy, alpha });
+    drawSprite(ctx, artId(hasSprite('cardBack') ? 'cardBack' : 'card'), x, y, ART_SCALE * 0.9, { sx, sy, alpha });
   }
   // Confiscated gild: a gavel seal where the gild used to be.
   if (cell.confiscated && stolen < 1 && hasSprite('confiscatedOverlay')) drawSprite(ctx, artId('confiscatedOverlay'), x, y, ART_SCALE, { sx, sy, alpha });

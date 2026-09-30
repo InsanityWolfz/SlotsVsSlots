@@ -186,6 +186,14 @@ export class Director {
         this.s.sounds.stingerMedium();
         this.s.gutter.allInCap = e.cap;
         return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, `ITS WHOLE HAND: UP TO ${e.cap}`, BANNER_Y, 3);
+      case 'closing': {
+        const c = this.machineCenter('enemy');
+        this.s.sounds.click();
+        return this.popText(`THE HOUSE CLOSES IN ${e.left}`, c.x, MACHINE_TOP - 22, 2, '#ff6a5a', 12, 0.6);
+      }
+      case 'closingTime':
+        this.s.sounds.stingerMedium();
+        return this.banner('CLOSING TIME!', '#ff6a5a', 1.2, 0.4, 'A STALLED TABLE GOES TO THE HOUSE', BANNER_Y, 3);
       case 'lastCall':
         this.s.sounds.stingerMedium();
         return this.banner('LAST CALL!', '#ff6a5a', 1.2, 0.3, 'THE HOUSE HITS HARDER EVERY TURN NOW', BANNER_Y, 3);

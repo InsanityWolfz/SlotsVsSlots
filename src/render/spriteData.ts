@@ -140,6 +140,7 @@ export type SpriteId =
   | 'icoMark' | 'icoGavel' | 'icoRake'
   | 'mapBadgeCard' | 'mapBadgeGavel' | 'mapBadgeRake' | 'mapBadgeDealer' // act 3 map badges, 8x8
   | 'dealShuffle' | 'dealCut' | 'dealRaise' | 'dealBack' // Dealer's face-up deal cards, 16x22 (non-square)
+  | 'cardBack'                                     // face-down card: MARKED cell overlay, 16x16
   | 'confiscatedOverlay'                           // confiscated-gild cell overlay, 16x16 (mostly transparent)
   | 'actPlaque3'                                   // act 3 map header plaque, 24x12 (non-square)
   | 'bonusSym' | 'relicSym'                       // rare chase reel symbols (BONUS / RELIC RUSH), 16x16
@@ -3209,6 +3210,24 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KRYGGGGGGGGGGGdK',
     '.KddddddddddddK.',
     '..KKKKKKKKKKKK..',
+  ],
+  cardBack: [
+    '.....KKKKKKKK...',
+    '....KYYYYYYYYK..',
+    '...KYRrRrRrRrgK.',
+    '...KYRRGRRRGRgK.',
+    '..KYrRrRrRrRgK..',
+    '..KYRGRGRGRRgK..',
+    '..KYrRGYgRrRgK..',
+    '..KYRGYWGgRGgK..',
+    '.KYRrRgGgRrgK...',
+    '.KYRRGRgRGRgK...',
+    '.KYRrRrRrRrgK...',
+    '.KYGRRRGRRRgK...',
+    'KYrRrRrRrRgK....',
+    'KYRRRGRRRGgK....',
+    '.KggggggggK.....',
+    '..KKKKKKKK......',
   ],
   confiscatedOverlay: [
     'SS..SS..SSKKRKK.',

@@ -1,7 +1,7 @@
 import type { Sounds } from '../audio/sounds';
 import { UNIT, type GameConfig, type SymbolId } from '../core/config';
 import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
-import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH } from '../core/relics';
+import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
 import {
@@ -221,7 +221,7 @@ export class RunScreens {
   /** The House's skim cadence for this run (BLACK makes it 3). */
   private houseEvery(): number {
     const run = this.run;
-    return run ? effectiveAbility({ kind: 'jackpot', every: 4, power: 1 }, { stake: run.stake, act: 1, sandglass: run.player.relics.includes('sandglass') }).every : 4;
+    return run ? effectiveAbility({ kind: 'jackpot', every: POT.cashEvery, power: 1 }, { stake: run.stake, act: 1, sandglass: run.player.relics.includes('sandglass') }).every : 4;
   }
 
   private maxStake(): number {
@@ -680,7 +680,8 @@ export class RunScreens {
     if (needsChoice(run)) {
       this.buttons = run.paths[run.depth].map((_, i) => this.btn('FIGHT THIS ONE', W / 2 + (i === 0 ? -310 : 310), 580, 260, 56, () => this.cb.onFight(i)));
     } else {
-      const boss = run.depth >= actLength(run.act) ? (run.act > 2 ? 'FACE THE DEALER' : run.act > 1 ? 'FACE THE MIRROR' : 'FACE THE HOUSE') : 'FIGHT!';
+      const bossId = run.enemies[run.depth]?.boss;
+      const boss = run.depth >= actLength(run.act) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'mirror' ? 'FACE THE MIRROR' : 'FACE THE HOUSE') : 'FIGHT!';
       this.buttons = [this.btn(boss, W / 2, 640, 290, 64, () => this.cb.onFight(0))];
     }
   }
@@ -713,7 +714,10 @@ export class RunScreens {
     if (this.run) this.showShop(this.run, this.shopItems, true);
   }
 
+  /** The run-over screen is offering LET IT RIDE (shows the "win is banked" line). */
+  private rideOffer = false;
   showOver(run: RunState): void {
+    this.rideOffer = false;
     this.run = run;
     this.open('over');
     this.buttons = [this.btn('MENU', W / 2 - 140, 650, 240, 60, () => this.cb.onMenu()), this.btn('NEW RUN', W / 2 + 140, 650, 240, 60, () => this.cb.onNewRun())];
@@ -724,6 +728,7 @@ export class RunScreens {
         this.btn('CASH OUT', W / 2 - 60, 650, 220, 60, () => this.cb.onNewRun()),
         this.btn('LET IT RIDE', W / 2 + 220, 650, 280, 60, () => this.cb.onLetItRide()),
       ];
+      this.rideOffer = true;
     }
   }
 
@@ -888,7 +893,7 @@ export class RunScreens {
     const heading = act3Arrival
       ? 'ACT 3 - THE HOUSE HAS A PARTNER - FULLY HEALED - CHOOSE ONE'
       : legend
-        ? 'ACT 2 BEGINS - FULLY HEALED - CHOOSE A LEGENDARY RELIC'
+        ? this.run!.endless ? `LOOP ${this.run!.endless.loop} - CHOOSE A LEGENDARY RELIC` : 'ACT 2 BEGINS - FULLY HEALED - CHOOSE A LEGENDARY RELIC'
         : start
           ? 'CHOOSE A STARTING RELIC'
           : spoils
@@ -899,7 +904,7 @@ export class RunScreens {
     if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), W / 2, 208, 3);
     drawText(ctx, heading, W / 2, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
     const sig = CABINETS[this.run!.cabinet].act2;
-    if (legend && sig) drawText(ctx, `${CABINETS[this.run!.cabinet].name} ACT 2 SIGNATURE: ${sig.text}`, W / 2, 262, 2, '#c8f0ff');
+    if (legend && sig && !this.run!.endless) drawText(ctx, `${CABINETS[this.run!.cabinet].name} ACT 2 SIGNATURE: ${sig.text}`, W / 2, 262, 2, '#c8f0ff');
     this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], i, time));
     this.panel(ctx, 110, 530, 1060, 134);
     this.drawStrips(ctx, 130, 544);
@@ -1087,9 +1092,9 @@ export class RunScreens {
     const opts = run.paths[run.depth];
     const fork = needsChoice(run);
     const e = run.enemies[run.depth];
-    const act = `ACT ${run.act} - `;
+    const act = run.endless ? `LOOP ${run.endless.loop} - ` : `ACT ${run.act} - `;
     const len = actLength(run.act);
-    const title = e.isBoss ? (run.act >= runActs(run) ? 'FINAL FIGHT' : `${act}BOSS FIGHT`) : fork ? `${act}FIGHT ${run.depth + 1} OF ${len} - CHOOSE YOUR PATH` : `${act}FIGHT ${run.depth + 1} OF ${len}`;
+    const title = e.isBoss ? (run.act >= runActs(run) && !run.endless ? 'FINAL FIGHT' : `${act}BOSS FIGHT`) : fork ? `${act}FIGHT ${run.depth + 1} OF ${len} - CHOOSE YOUR PATH` : `${act}FIGHT ${run.depth + 1} OF ${len}`;
     drawText(ctx, title, W / 2, 26, 3, fork ? COLORS.goldLight : run.act > 1 ? '#c8f0ff' : COLORS.textDim);
     this.drawMap(ctx, 128, time);
     if (fork) {
@@ -1336,9 +1341,47 @@ export class RunScreens {
     drawText(ctx, label, x - 18, y, 1, color);
   }
 
+  /**
+   * Rows for the run-over table. A normal run lists every fight. An endless run (dozens of fights) shows one
+   * summary row per act, one per loop (its boss), then the last 3 fights in full (EXPERT_PLAYTEST_4 B1).
+   */
+  private overRows(run: RunState): FightRecord[] {
+    if (!run.endless || run.records.length <= 18) return run.records;
+    const last = run.records.slice(-3);
+    const rest = run.records.slice(0, -3);
+    const out: FightRecord[] = [];
+    const sum = (list: FightRecord[], label: string, act: number): FightRecord => ({
+      ...list[list.length - 1],
+      enemy: label,
+      act,
+      turns: list.reduce((a, r) => a + r.turns, 0),
+      hpBefore: list[0].hpBefore,
+      won: list.every((r) => r.won),
+      pick: undefined,
+      bought: undefined,
+      bonuses: undefined,
+      eliteRelic: undefined,
+      chips: undefined,
+      rocksAdded: 0,
+    });
+    for (const act of [1, 2, 3]) {
+      const list = rest.filter((r) => (r.act ?? 1) === act);
+      if (list.length) out.push(sum(list, `ACT ${act}: ${list.length} FIGHTS`, act));
+    }
+    // Loops: group act 4 fights into loops of 4 (3 regulars + the boss).
+    const loops = rest.filter((r) => (r.act ?? 1) >= 4);
+    for (let i = 0; i < loops.length; i += 4) {
+      const chunk = loops.slice(i, i + 4);
+      const boss = chunk[chunk.length - 1];
+      out.push(sum(chunk, `LOOP ${i / 4 + 1}: ${chunk.length === 4 ? boss.enemy : `${chunk.length} FIGHTS`}`, 4));
+    }
+    return [...out, ...last];
+  }
+
   private drawOver(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
     const trueEnding = run.won && run.act >= 3;
+    if (this.rideOffer) drawText(ctx, 'YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', W / 2, 620, 1.5, COLORS.goldLight);
     const busted = !!run.endless;
     drawText(ctx, busted ? `BUSTED ON LOOP ${run.endless!.loop}` : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
@@ -1362,15 +1405,16 @@ export class RunScreens {
     drawText(ctx, 'HP', 680, 142 + top, 2, COLORS.textDim);
     drawText(ctx, 'THEN PICKED', 790, 142 + top, 2, COLORS.textDim, { align: 'left' });
     // Up to 16 fights: rows shrink (and drop the detail line) once they stop fitting.
-    const rowH = Math.min(42, Math.floor((290 - top) / Math.max(1, run.records.length)));
+    const rows = this.overRows(run);
+    const rowH = Math.min(42, Math.floor((290 - top) / Math.max(1, rows.length)));
     const compact = rowH < 40;
-    run.records.forEach((r, i) => {
+    rows.forEach((r, i) => {
       const y = 170 + top + i * rowH + (compact ? 0 : 6);
       if (i % 2 === 0) {
         ctx.fillStyle = 'rgba(255,255,255,0.04)';
         ctx.fillRect(122, y - rowH / 2, 1036, rowH - 2);
       }
-      if (compact && r.act && r.act > 1 && run.records[i - 1]?.act === 1) {
+      if (compact && r.act && r.act > 1 && rows[i - 1]?.act === 1) {
         ctx.fillStyle = '#c8f0ff';
         ctx.fillRect(122, y - rowH / 2 - 1, 1036, 2);
         this.actPlaque(ctx, 1150, y - rowH / 2, 'ACT 2', '#c8f0ff');
