@@ -30,6 +30,14 @@ for (const stake of process.env.STAKE_ONLY ? [Number(process.env.STAKE_ONLY)] : 
       if (offer.length && st > 0 && run.player.chips - st >= KEEP && placeBet(run, 0, st)) placed++;
     };
     SIM_BIAS.onEnd = (run: RunState) => {
+      // A bet still on the table when a lost fight ended the run is a lost bet (EXPERT_PLAYTEST_7 E2).
+      if (run.bet) {
+        staked += run.bet.stake;
+        const k = (byKind[run.bet.kind] ??= [0, 0]);
+        k[1]++;
+        const bp = (byPay[run.bet.pay] ??= [0, 0, 0, 0]);
+        bp[1]++; bp[2] += run.bet.stake;
+      }
       for (const r of run.records) {
         if (!r.bet) continue;
         staked += r.bet.stake;

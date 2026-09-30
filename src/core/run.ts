@@ -894,7 +894,8 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     const act = `${run.act}:${run.endless?.loop ?? 0}`;
     if (!won && run.player.relics.includes('marker') && run.markerUsed !== act) {
       run.markerUsed = act;
-      run.player.chips += run.bet.stake;
+      // Up to your top fixed stake (an ALL IN was a free roll: EXPERT_PLAYTEST_7 E1).
+      run.player.chips += Math.min(run.bet.stake, betStakes(run)[1]);
       record.bet.refunded = true;
     }
     run.betStreak = won ? Math.min(HOT_HAND.max, (run.betStreak ?? 0) + 1) : 0;

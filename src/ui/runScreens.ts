@@ -961,7 +961,7 @@ export class RunScreens {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
       drawText(ctx, `${rounds(last.turns)}  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}${chips}${rocks}`, W / 2, 60, 2, COLORS.textDim);
-      if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${betProfit(last.bet)} CHIPS` : last.bet.refunded ? 'SIDE BET BUSTED: YOUR MARKER COVERS IT' : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, W / 2, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
+      if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${betProfit(last.bet)} CHIPS` : last.bet.refunded ? `SIDE BET BUSTED: YOUR MARKER COVERS ${Math.min(last.bet.stake, betStakes(this.run!)[1])}` : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, W / 2, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
     }
     this.drawMap(ctx, 158, time);
     const spoils = this.draftKind === 'spoils';

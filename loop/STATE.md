@@ -983,3 +983,17 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - Fix: `relicFits` offers the bet relics only once you've placed a side bet this run (`run.betsPlaced`).
   - tuesday.ts 1000 is back to exactly the post-E10 table: WHITE 42.6, GREEN 16.1, Dealer 48.7.
   - The gate.sh BRIAR row read 19.8 / 19.8 in that run: a harness glitch. tuesday.ts alone gave 45.8.
+
+### Iteration 54 (2026-09-30): EXPERT_PLAYTEST_7 batch 1 (E1, E2, E12)
+- EXPERT_PLAYTEST_7 read:
+  - tuesday 600: WHITE 43.2, GREEN 16.4, Dealer 48.9;
+  - the exploit: MARKER + ALL IN was a free roll (147–155% return, +5–10 GREEN on a common);
+  - HOT HAND is forced and invisible; the Dealer's table is empty in up to 67% of fights;
+  - FINAL HAND is followed by 10–12 quiet turns;
+  - MIDAS lags; CLEAN CUT is a trap.
+- **E1:** MARKER refunds at most your top fixed stake (5, or 10 with HIGH LIMIT). The card text is updated, and the next screen says "YOUR MARKER COVERS N".
+  - `expert7_relics.ts 300 allin` at GREEN, MARKER: return 107–126% (was ~150%).
+  - GREEN vs no betting: knight +5.0, tesla +1.3, thorn +3.0, joker +3.0, midas −6.0 (N=300, ±3 noise). The ALL IN policy alone gives −3 to +0.3.
+- **E2:** `bets.ts` counts a bet still on the table when a lost fight ends the run (returns were 3–9 points high). `expert7_relics.ts` counted MARKER refunds as the full stake; now it's capped like the game.
+- **E12:** the HIGH LIMIT card says it doubles your stakes and so your winnings.
+- Tests: 186.
