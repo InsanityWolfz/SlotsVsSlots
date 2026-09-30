@@ -122,4 +122,28 @@ describe('SIDE BETS', () => {
     expect(rec.bet?.refunded).toBe(true);
     expect(run.player.chips - before - (rec.chips ?? 0)).toBe(10);
   });
+
+  it('MIDAS cashes a side bet the moment it is won, as gold-bar chips (and is not paid twice)', () => {
+    const base = defaultConfig();
+    const run = createRun(base, 99, 'midas');
+    run.pendingStart = null;
+    run.player.chips = 20;
+    // A later fight (the opener can fall in one turn, and a bet won at the end pays after the fight).
+    run.depth = 4;
+    run.chosen = run.chosen.map(() => true);
+    offerBets(run, base);
+    placeBet(run, 0, 5);
+    // A bet you win on your first paying turn: BIG HIT of 10.
+    run.bet = { kind: 'big', target: 10, pay: 2, stake: 5 };
+    let fight: Fight;
+    let seed = 1;
+    do fight = new Fight(fightConfig(run, base), seed++);
+    while ((() => { while (!fight.over) fight.step(); return fight.winner !== 'player'; })());
+    expect(fight.betPaid).toBe(true);
+    const chips = run.player.chips;
+    const rec = finishFight(run, fight);
+    expect(rec.bet?.won).toBe(true);
+    // Paid once: in the fight's gold-bar chips, not again after it.
+    expect(run.player.chips - chips).toBe((rec.chips ?? 0) + fight.midasChips);
+  });
 });

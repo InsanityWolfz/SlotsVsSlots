@@ -48,7 +48,9 @@ describe('public playtest shell', () => {
     expect(e.relics).toEqual(['clover']);
     expect(e.charms.map((c) => c.enh)).toContain('gold');
     expect(runScore(e)).toBe(0);
-    expect(runScore({ ...e, won: true, fights: 12, acts: 2, stake: 0 })).toBe(2200);
+    expect(runScore({ ...e, won: true, fights: 12, acts: 2, stake: 0, chips: 0 })).toBe(2200);
+    // A won run scores the chips it kept (+5 each).
+    expect(runScore({ ...e, won: true, fights: 12, acts: 2, stake: 0, chips: 20 })).toBe(2300);
     const p = emptyProfile();
     expect(discover(p, run)).toBe(true);
     expect(p.found.relics).toEqual(['clover']);

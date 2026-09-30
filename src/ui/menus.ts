@@ -429,7 +429,7 @@ export class Menus {
     }
     const rows = list.slice(this.page * ROWS_PER_PAGE, (this.page + 1) * ROWS_PER_PAGE);
     const bestScore = runScore([...list].sort((a, b) => runScore(b) - runScore(a))[0]);
-    drawText(ctx, 'SCORE: 100 PER FIGHT WON, +1000 FOR A CLEAR, +1000 FOR THE DEALER. X1.5 PER STAKE.', W / 2, 92, 1.25, COLORS.textDim);
+    drawText(ctx, 'SCORE: 100 PER FIGHT WON, +1000 FOR A CLEAR, +1000 FOR THE DEALER, +5 PER CHIP LEFT. X1.5 PER STAKE.', W / 2, 92, 1.25, COLORS.textDim);
     rows.forEach((e, i) => {
       const y = 150 + i * 72;
       const rank = this.page * ROWS_PER_PAGE + i + 1;

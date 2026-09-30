@@ -87,9 +87,12 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
   };
 }
 
-/** HISCORE: 100 per fight won, +1000 for clearing the run, +1000 more for beating the Dealer; x1.5 per stake level. */
+/** HISCORE: 100 per fight won, +1000 for clearing the run, +1000 more for beating the Dealer, +5 per chip left on a
+ * won run (endless banks chips x10 in its pot instead); x1.5 per stake level. */
+export const CHIP_SCORE = 5;
 export function runScore(e: RunEntry): number {
-  const base = e.fights * 100 + (e.won ? 1000 : 0) + (e.won && e.acts >= 3 ? 1000 : 0) + (e.pot ?? 0);
+  const chips = e.won && e.pot == null ? (e.chips ?? 0) * CHIP_SCORE : 0;
+  const base = e.fights * 100 + (e.won ? 1000 : 0) + (e.won && e.acts >= 3 ? 1000 : 0) + (e.pot ?? 0) + chips;
   return Math.round(base * (1 + 0.5 * e.stake));
 }
 

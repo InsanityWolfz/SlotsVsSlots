@@ -532,6 +532,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // No bonus in the run's final fight: a voucher could never be spent (QA_1 B11).
     bonusSymbols: !(e.isBoss && run.act >= runActs(run)),
     chipsHeld: run.player.chips,
+    ...(run.bet ? { sideBet: { ...run.bet } } : {}),
     // Saved chips shield you at every boss, capped (a MIDAS hoard made the House untouchable). A side bet's
     // stake still sits in front of you: it counts (it doesn't fill the MIDAS vault, though).
     stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? Math.min(MIRROR_CHIP_SHIELD_CAP, chipShield(run.player.chips + (run.bet?.stake ?? 0))) : 0,
@@ -888,7 +889,8 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   // SIDE BET: paid stake x pay if it came in (a lost fight ends the run, bet and all).
   if (run.bet) {
     const won = betState(run.bet, fight.betTrack, true) === 'won';
-    if (won) run.player.chips += betPayout(run.bet);
+    // (MIDAS was already paid mid-fight, with his gold-bar chips.)
+    if (won && !fight.betPaid) run.player.chips += betPayout(run.bet);
     record.bet = { ...run.bet, won };
     // MARKER: the first bust each act (each loop in endless) is refunded.
     const act = `${run.act}:${run.endless?.loop ?? 0}`;
@@ -1489,6 +1491,8 @@ export const EDGE_TIER: Record<EdgeId, 'chips' | 'relic' | 'legend'> = { frail: 
 export const levelCap = (run: RunState) => (run.endless ? LEVEL_CAP + 1 : LEVEL_CAP);
 /** RIDE AGAIN: each loop cleared adds this x loop to the pot; a bust banks half. */
 export const POT_PER_LOOP = 1500;
+/** Loop bosses by name (the RIDE card says who's next). */
+const BOSS_NAME: Record<string, string> = { house: 'THE HOUSE', mirror: 'THE MIRROR', dealer: 'THE DEALER' };
 /** A cleared loop: the pot grows x1.5, plus POT_PER_LOOP. */
 export const nextPot = (pot: number) => Math.round(pot * ENDLESS.potGrowth) + POT_PER_LOOP;
 /** What a bust banks of the pot. */
@@ -1528,7 +1532,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'cashOut':
       return { title: 'CASH OUT', rule: `BANK THE POT: ${cashOutValue(run)} POINTS (INCLUDES ${run.player.chips} CHIPS X10). THE RUN ENDS.`, cost: '' };
     case 'ride':
-      return { title: 'RIDE AGAIN', rule: `PLAY LOOP ${run.endless?.loop ?? 1}. CLEAR IT AND THE POT GROWS TO ${nextPot(run.endless?.pot ?? 0)}.`, cost: `BUST AND YOU BANK A THIRD OF THE POT: ${bustPot(run.endless?.pot ?? 0)} (YOUR CHIPS ARE SAFE)` };
+      return { title: 'RIDE AGAIN', rule: `LOOP ${run.endless?.loop ?? 1}: ${BOSS_NAME[run.enemies[run.enemies.length - 1]?.boss ?? 'house'] ?? 'THE HOUSE'}. YOU ${run.player.hp}/${run.player.maxHp} HP. CLEAR IT AND THE POT GROWS TO ${nextPot(run.endless?.pot ?? 0)}.`, cost: `BUST AND YOU BANK A THIRD OF THE POT: ${bustPot(run.endless?.pot ?? 0)} (YOUR CHIPS ARE SAFE)` };
     case 'armsRace':
       return { title: 'ARMS RACE', rule: '+1 LEVEL TO ALL YOUR SYMBOLS', cost: `-${BIG.armsRaceHp} MAX HP` };
     case 'masterwork':

@@ -1040,3 +1040,13 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - Always-long bettors lose −8 to −16 WHITE to variance; always-safe −5 to −10 (bets.ts ignores the shop value of chips).
 - `bets.ts` gains PICK (0 = the first bet, the safe one; 1 = the long shot).
 - Tests: 186 (the HOT HAND test checks several fights: only the long shot goes hot).
+
+### Iteration 57 (2026-09-30): EXPERT_PLAYTEST_7 E8, E9, E10
+- **E8:** a won run's score adds +5 per chip left (CHIP_SCORE; endless already banks chips ×10 in its pot). The hiscores rule line says so.
+  - The run-over line adds "N CHIPS (+N SCORE)" and "SIDE BETS W OF N".
+  - Sim: chips are 2–9% of a won run's score (gate < 25%).
+- **E9:** MIDAS cashes a side bet the moment it's won mid-fight (HIGH ROLLER, BIG HIT, TAKE THE HIT), as gold-bar chips that lift the vault's resting level at once. `Fight.betPaid` stops finishFight paying it twice.
+  - The config carries `player.sideBet`.
+  - `bets.ts` CAB=midas, always 5: 41.3 → 30.0 (was → 33.0: within noise). The always-bettor penalty is shop starvation, the same on every machine.
+- **E10:** the RIDE card names the next loop's boss and your HP: "LOOP 2: THE MIRROR. YOU 212/640 HP. CLEAR IT AND THE POT GROWS TO 3750."
+- Tests: 187 (the MIDAS mid-fight bet; the score test includes chips).

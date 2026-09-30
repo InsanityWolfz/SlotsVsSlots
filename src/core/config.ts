@@ -179,6 +179,8 @@ export interface SideConfig {
   first?: boolean;
   /** MIDAS: chips held when the fight starts (the VAULT pre-fills from them). */
   chipsHeld?: number;
+  /** The side bet on this fight (MIDAS cashes it mid-fight, into the vault). */
+  sideBet?: import('./bets').PlacedBet;
   /** HOUSE EDGE "HOUSE CUT": your healing multiplier. */
   healMul?: number;
   /** Relics this side carries (the Mirror copies one at GREEN stake). */

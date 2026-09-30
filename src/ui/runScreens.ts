@@ -46,6 +46,7 @@ import { COLORS, H, W } from '../present/layout';
 import { artId, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 import { heroSprite } from './menus';
+import { CHIP_SCORE } from '../core/profile';
 import { betProfit, describeBet, type SideBet } from '../core/bets';
 
 
@@ -1473,7 +1474,11 @@ export class RunScreens {
     if (recap) drawText(ctx, recap, W / 2, this.unlockedNow.length ? 460 : 466, 1.5, COLORS.danger);
     if (this.unlockedNow.length)
       drawText(ctx, `NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, W / 2, recap ? 474 : 466, recap ? 1.5 : 2, COLORS.goldLight);
-    drawText(ctx, run.stake > 0 ? `${reached}  -  STAKE ${run.stake} ${stakeOf(run.stake).name}` : reached, W / 2, 88, 2, COLORS.textDim);
+    // Chips left (a won run scores them) and the side bets' record.
+    const bets = run.records.filter((r) => r.bet);
+    const betLine = bets.length ? `  -  SIDE BETS ${bets.filter((r) => r.bet!.won).length} OF ${bets.length}` : '';
+    const chipLine = `  -  ${run.player.chips} CHIPS${run.won && !run.endless ? ` (+${run.player.chips * CHIP_SCORE * (1 + 0.5 * run.stake)} SCORE)` : ''}`;
+    drawText(ctx, (run.stake > 0 ? `${reached}  -  STAKE ${run.stake} ${stakeOf(run.stake).name}` : reached) + chipLine + betLine, W / 2, 88, run.stake > 0 ? 1.5 : 2, COLORS.textDim);
     const unlockRow = !!this.stakeUnlockedNow;
     if (unlockRow) {
       this.stakeChip(ctx, 140, 116, run.stake + 1, performance.now() / 1000, 14);
