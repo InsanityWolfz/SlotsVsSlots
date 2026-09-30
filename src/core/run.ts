@@ -21,7 +21,7 @@ import {
   type Enabler,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
-import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue } from './charms';
+import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
@@ -64,13 +64,15 @@ export const RUN = {
 };
 
 /** Charms by act (act 2 unlocks LUCKY and BLAZE). CHARGED and BLAZE feed the lightning: TESLA only. */
-export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged'];
+export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'spiked'];
 export const ACT2_GILDS: Enh[] = ['lucky', 'blaze'];
 const TESLA_ONLY: ReadonlySet<Enh> = new Set(['charged', 'blaze']);
+/** BULWARK (id 'spiked') is KNIGHT's own charm. */
+const KNIGHT_ONLY: ReadonlySet<Enh> = new Set(['spiked']);
 /** LUCKY is a later-machine charm (a wild barely changes KNIGHT's or MIDAS's two-symbol line). */
 export const LUCKY_MACHINES: ReadonlySet<CabinetId> = new Set(['thorn', 'tesla', 'joker']);
 export const gildsFor = (run: RunState): Enh[] =>
-  [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter((e) => (run.cabinet === 'tesla' || !TESLA_ONLY.has(e)) && (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)));
+  [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter((e) => (run.cabinet === 'tesla' || !TESLA_ONLY.has(e)) && (run.cabinet === 'knight' || !KNIGHT_ONLY.has(e)) && (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)));
 /** Symbols this machine's swap cards move between. */
 export const swappable = (run: RunState): SymbolId[] => CABINETS[run.cabinet].symbols;
 /** The symbol +2 / rock-swap cards give (the signature symbol, or swords for KNIGHT and JAX). */
@@ -1253,7 +1255,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
       return { title: `+${o.amount} MAX HP`, text: `GAIN ${o.amount} MAX HP (AND HEAL IT)` };
     case 'gild':
       return {
-        title: `${o.n} ${o.enh.toUpperCase()} CHARM${o.n > 1 ? 'S' : ''}`,
+        title: `${o.n} ${charmName(o.enh)} CHARM${o.n > 1 ? 'S' : ''}`,
         text: `REEL ${o.reel + 1} - ${plural(o.symbol, o.n)}. EACH: ${charmRule(o.enh, charmLevel(lv, o.enh, ticket))}`,
       };
     case 'symLevel': {
@@ -1262,7 +1264,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     }
     case 'charmLevel': {
       const next = Math.min(LEVEL_CAP, charmLevel(lv, o.enh) + 1);
-      return { title: `${o.enh.toUpperCase()} LVL ${next}`, text: `EVERY ${o.enh.toUpperCase()} CHARM: ${charmRule(o.enh, next + (ticket ? 1 : 0))}` };
+      return { title: `${charmName(o.enh)} LVL ${next}`, text: `EVERY ${charmName(o.enh)} CHARM: ${charmRule(o.enh, next + (ticket ? 1 : 0))}` };
     }
     case 'remove':
       return { title: `-1 ${NAME[o.symbol]}`, text: `REMOVE A ${NAME[o.symbol]} FROM REEL ${o.reel + 1}` };
@@ -1313,7 +1315,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'gildLot':
       return { title: 'SOLID GOLD', rule: `EVERY REEL GETS ${BIG.gildLotCells} GOLD CHARMS (ON PLAIN SWORDS, SHIELDS OR BOLTS)`, cost: `YOUR SYMBOLS LOSE A LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
     case 'polish':
-      return { title: 'POLISH', rule: `+1 LEVEL TO YOUR ${c.enh!.toUpperCase()} CHARMS`, cost: '' };
+      return { title: 'POLISH', rule: `+1 LEVEL TO YOUR ${charmName(c.enh!)} CHARMS`, cost: '' };
     case 'cleanCut':
       return { title: 'CLEAN CUT', rule: `REMOVE EVERY SHIELD FROM REEL ${c.reel! + 1}. +1 LEVEL TO SWORDS`, cost: 'THOSE SHIELDS AND THEIR CHARMS ARE GONE' };
     case 'twinReel':

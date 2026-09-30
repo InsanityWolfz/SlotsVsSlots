@@ -53,7 +53,7 @@ export function liveTable(reels: { cells: CellView[] }[], hide: ReadonlySet<Symb
       if ((c.stolen ?? 0) >= 1) add({ symbol: 'stolen', n: 1 });
       else if (c.carded) add({ symbol: 'card', n: 1 });
       else if (c.slimed) add({ symbol: 'slime', n: 1 });
-      else add({ symbol: c.symbol, ...(c.enh && c.enh !== 'spiked' ? { enh: c.enh } : {}), n: 1 });
+      else add({ symbol: c.symbol, ...(c.enh ? { enh: c.enh } : {}), n: 1 });
       if (c.bomb && c.bomb > 0) add({ symbol: 'bombs', n: 1 });
     }
     return [...map.values()].sort((a, b) => rank(a) - rank(b));

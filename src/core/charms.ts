@@ -25,8 +25,8 @@ export const CHARM_VALUE: Record<Enh, number[]> = {
   lucky: [0, 40, 55, 70, 85],
   /** BLAZE: added to TESLA's special for every blaze cell you own. */
   blaze: [0, 10, 15, 20, 25],
-  /** Retired. */
-  spiked: [0, 0, 0, 0, 0],
+  /** BULWARK (id 'spiked'): a shield cell with it also deals this % of its share of the group as damage. */
+  spiked: [0, 50, 75, 100, 125],
 };
 
 /** Which symbols each charm can go on. */
@@ -37,7 +37,7 @@ export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
   vamp: ['sword'],
   lucky: ['sword', 'shield', 'bolt'],
   blaze: ['bolt'],
-  spiked: [],
+  spiked: ['shield'],
 };
 
 /** One charm's rule at a level, as plain card text (never an expected value). */
@@ -57,14 +57,17 @@ export function charmRuleText(enh: Enh, lvl: number): string {
     case 'blaze':
       return `YOUR SPECIAL DEALS +${v}`;
     case 'spiked':
-      return '';
+      return `ALSO HITS FOR ${v}% OF ITS SHIELD`;
   }
 }
+
+/** A charm's name as players see it (the id 'spiked' is BULWARK). */
+export const charmName = (enh: Enh): string => (enh === 'spiked' ? 'BULWARK' : enh.toUpperCase());
 
 /** The number shown on a charmed cell's top-right tag (coloured by charm). */
 export function charmTag(enh: Enh, lvl: number): string {
   const v = charmValue(enh, lvl);
-  return enh === 'gold' ? `X${v}` : enh === 'lucky' ? `${v}%` : `+${v}`;
+  return enh === 'gold' ? `X${v}` : enh === 'lucky' || enh === 'spiked' ? `${v}%` : `+${v}`;
 }
 
 export const CHARM_COLOR: Record<Enh, string> = {

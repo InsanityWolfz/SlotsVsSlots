@@ -585,3 +585,11 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 
   HP into the Dealer: 88% (was 94%; target 60-75% not met, flagged for the playtester). Act 3 deaths 5.9% per fight.
 - Tests: 173 (tests/dealer2.test.ts).
+
+### Iteration 35 (2026-09-29): EXPERT_PLAYTEST_2 G11, KNIGHT's 4th charm BULWARK
+- The retired 'spiked' charm id is reused as **BULWARK** (KNIGHT only; shields). A bulwark shield also deals 50/75/100/125% of its share of the shield group as damage (by level).
+  - Reusing the id keeps saves, the collection and the art valid.
+  - `charmName()` shows 'BULWARK' everywhere.
+  - It shows in the reel table and the payline tags (tag "50%").
+- tuesday.ts 1500: knight WHITE 38.7 / GREEN 11.3 / Dealer 51.8 (was 40.1 / 13.8 / 55.2: noise-ish). AVG 36.3 / 10.7 / 50.0.
+- **All of EXPERT_PLAYTEST_2 section G is done:** G1-G12, plus G13's meta drip, which is deferred as a larger design (endless, MIDAS and new machines are gated on the playtester's call).

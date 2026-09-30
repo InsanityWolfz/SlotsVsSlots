@@ -25,13 +25,13 @@ export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
   gold: { name: 'GOLD', text: `SWORDS, SHIELDS OR BOLTS. ${charmRuleText('gold', 1)}. LEVELS: X3, X4.` },
   keen: { name: 'KEEN', text: `SWORDS. ${charmRuleText('keen', 1)}.` },
   charged: { name: 'CHARGED', text: `TESLA'S BOLTS. ${charmRuleText('charged', 1)}.` },
-  spiked: { name: 'SPIKED', text: 'RETIRED.' },
+  spiked: { name: 'BULWARK', text: `KNIGHT. SHIELDS. ${charmRuleText('spiked', 1)}.` },
   vamp: { name: 'VAMP', text: `SWORDS. ${charmRuleText('vamp', 1)}.` },
   lucky: { name: 'LUCKY', text: `ACT 2. ${charmRuleText('lucky', 1)}.` },
   blaze: { name: 'BLAZE', text: `ACT 2. TESLA'S BOLTS. ${charmRuleText('blaze', 1)}.` },
 };
 /** Charms in the COLLECTION (SPIKED retired). */
-const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze'];
+const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'spiked', 'charged', 'lucky', 'blaze'];
 
 const TIER_COLOR = { common: '#c9c9d9', uncommon: '#5ad8e8', legendary: '#ffd23f', other: '#9a8fb0' };
 

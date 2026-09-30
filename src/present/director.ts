@@ -525,7 +525,7 @@ export class Director {
     const base = BASE[cell.symbol] ?? 0;
     const bonus = this.symBonus[side]?.[cell.symbol] ?? 0;
     const value = (lv ? playerSymValue(lv, cell.symbol, base) : !player && cell.symbol === 'shield' ? Math.round(base * this.s.enemyShield) : base) + bonus;
-    const charm = cell.enh && cell.enh !== 'spiked' && !(cell.faked && cell.faked > 0) && m.hexed[r] <= 0 ? cell.enh : undefined;
+    const charm = cell.enh && !(cell.faked && cell.faked > 0) && m.hexed[r] <= 0 ? cell.enh : undefined;
     const lvl = charm ? (player ? charmLevel(lv, charm, this.s.ticket) : 1) : 1;
     if (!value && !charm) return;
     const tag = { value: value ? String(value) : '', ...(charm ? { charm: charmTag(charm, lvl), color: CHARM_COLOR[charm] } : {}), pop: 0, alpha: 1 };

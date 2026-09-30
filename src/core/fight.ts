@@ -908,6 +908,13 @@ export class Fight {
           }
         }
         this.vampHeal(me, g, events);
+        // BULWARK: each bulwark shield also deals a share of its shield as damage.
+        if (player && g.amount > 0 && !this.over) {
+          const share = g.amount / Math.max(1, g.reels.length);
+          const pct = g.reels.reduce((a, r) => a + this.enhsAt(me, r).filter((e) => e === 'spiked').length, 0) * charmValue('spiked', this.charmLvl(me, 'spiked'));
+          const dmg = Math.round((share * pct) / 100 / UNIT) * UNIT;
+          if (dmg > 0) this.hit(me, foe, dmg, g.reels, events);
+        }
         return;
       case 'bolt':
         // The Mirror has no special of its own: it only reflects. Only TESLA (or the bare engine) has one.
