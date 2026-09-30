@@ -56,6 +56,8 @@ const SHUFFLE_SWAPS = 5;
 const DEALS: DealCard[] = ['card', 'allin', 'raise'];
 /** The Dealer plays its FINAL HAND at this share of its HP. */
 export const FINAL_HAND_AT = 0.4;
+/** FINAL HAND: each ALL IN after its first is this much as hard. */
+export const FINAL_HAND_FADE = 0.8;
 /** ALL IN is capped at this share of your max HP. */
 const ALL_IN_CAP = 0.55;
 /** ALL IN always lands at least this share of your max HP: the telegraphed hit is THE threat (EXPERT_PLAYTEST_4 C3). */
@@ -259,8 +261,9 @@ export class Fight {
   private lastAllIn = -99;
   /** The Dealer's FINAL HAND: the cards still to come after nextDeal (null until it's dealt). */
   private finalHand: DealCard[] | null = null;
-  /** FINAL HAND is playing out (it deals every turn); the deal cadence to restore after. */
+  /** FINAL HAND is on (it deals every turn to the end of the fight), and the ALL INs it has dealt. */
   private fhEvery = 0;
+  private fhAllIns = 0;
   /** ACE on your payline this spin: the group through this reel pays x2. */
   private aceReel = -1;
   /** BRIAR: the thorn bank already hit back on this turn. */
@@ -538,8 +541,10 @@ export class Fight {
           const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
           if (c.symbol === 'sword' || c.symbol === 'seven') hand += this.cfg.base[c.symbol] ?? 0;
         }
-      const floor = Math.round((foe.maxHp * ALL_IN_FLOOR) / UNIT) * UNIT;
-      let amount = Math.max(UNIT, floor, Math.min(hand, Math.round((foe.maxHp * ALL_IN_CAP) / UNIT) * UNIT));
+      // In FINAL HAND each ALL IN after the first hits x0.8 as hard (it deals every other turn).
+      const fade = Math.pow(FINAL_HAND_FADE, Math.max(0, this.fhAllIns - 1));
+      const floor = Math.round((foe.maxHp * ALL_IN_FLOOR * fade) / UNIT) * UNIT;
+      let amount = Math.max(UNIT, floor, Math.min(hand, Math.round((foe.maxHp * ALL_IN_CAP * fade) / UNIT) * UNIT));
       if (this.raiseEnemy) {
         amount *= 2;
         this.raiseEnemy = false;
@@ -1554,21 +1559,20 @@ export class Fight {
       events.push({ type: 'lineCard', side: foe.side, reel, card: kind });
     } else if (card === 'allin') {
       this.dealerAllIn = true;
-      events.push({ type: 'allInArmed', side: me.side, cap: Math.round((foe.maxHp * ALL_IN_CAP) / UNIT) * UNIT });
+      const fade = this.fhEvery ? Math.pow(FINAL_HAND_FADE, this.fhAllIns) : 1;
+      events.push({ type: 'allInArmed', side: me.side, cap: Math.round((foe.maxHp * ALL_IN_CAP * fade) / UNIT) * UNIT });
     } else {
       this.raiseEnemy = true;
       this.raisePlayer = true;
       events.push({ type: 'raise', from: me.side });
     }
     if (card === 'allin') this.lastAllIn = this.turn;
-    // FINAL HAND plays out its fixed row (then the Dealer's old pace returns); otherwise at most one ALL IN per 4 enemy turns.
+    // FINAL HAND is a phase to the end of the fight: RAISE and ALL IN take turns (EXPERT_PLAYTEST_7 E3).
+    // Otherwise at most one ALL IN per 4 enemy turns.
+    if (this.fhEvery && card === 'allin') this.fhAllIns++;
     if (this.finalHand?.length) this.nextDeal = this.finalHand.shift()!;
-    else if (this.fhEvery && me.ability) {
-      me.ability = { ...me.ability, every: this.fhEvery };
-      me.charge = 0;
-      this.fhEvery = 0;
-      this.nextDeal = this.rng.pick(DEALS.filter((d) => d !== 'allin'));
-    } else this.nextDeal = this.rng.pick(this.turn - this.lastAllIn < 8 ? DEALS.filter((d) => d !== 'allin') : DEALS);
+    else if (this.fhEvery) this.nextDeal = card === 'allin' ? 'raise' : 'allin';
+    else this.nextDeal = this.rng.pick(this.turn - this.lastAllIn < 8 ? DEALS.filter((d) => d !== 'allin') : DEALS);
     events.push({ type: 'dealNext', side: me.side, card: this.nextDeal, ...(this.finalHand?.length ? { then: [...this.finalHand] } : {}) });
   }
 

@@ -72,6 +72,7 @@ export interface Stage {
     /** The Dealer's face-up next card, and RAISE in play. */
     nextDeal?: import('../core/events').DealCard;
     raised?: boolean;
+    raisedTurn?: number;
     houseRules?: boolean;
     /** FINAL HAND: the Dealer's face-up cards after the next one. */
     then?: import('../core/events').DealCard[];

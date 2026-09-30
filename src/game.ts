@@ -1219,7 +1219,8 @@ export class Game {
     const ab = e.ability;
     const g = this.stage.gutter;
     if (!ab || this.stage.huds.enemy.hp <= 0) return;
-    const left = Math.max(1, ab.every - this.stage.huds.enemy.charge);
+    // Count like the Dealer's panel does (the presented pace, not the engine's, which runs ahead).
+    const left = Math.max(1, (this.stage.huds.enemy.ability?.every ?? ab.every) - this.stage.huds.enemy.charge);
     const soon = left <= 1;
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(x - 110, y - 56, 220, 112);
@@ -1270,7 +1271,7 @@ export class Game {
     ctx.fillRect(x - 109, y - 19, 218, 60);
     ctx.fillStyle = '#0e2a18';
     ctx.fillRect(x - 105, y - 15, 210, 52);
-    drawText(ctx, `BET ${g.bet.stake}: ${d.name}`, x, y - 4, 1.5, COLORS.goldLight);
+    drawText(ctx, `BET ${g.bet.stake}: ${d.name}`, x, y - 4, 1.75, COLORS.goldLight);
     drawText(ctx, d.rule, x, y + 10, 1.25, COLORS.text);
     const line = status;
     drawText(ctx, line, x, y + 27, 2, col, { punch: done ? 1 : 1 + 0.04 * Math.sin(t * 6) });

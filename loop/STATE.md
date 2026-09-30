@@ -997,3 +997,30 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - **E2:** `bets.ts` counts a bet still on the table when a lost fight ends the run (returns were 3–9 points high). `expert7_relics.ts` counted MARKER refunds as the full stake; now it's capped like the game.
 - **E12:** the HIGH LIMIT card says it doubles your stakes and so your winnings.
 - Tests: 186.
+
+### Iteration 55 (2026-09-30): EXPERT_PLAYTEST_7 E3, E4, E5, the finale
+- **Wording correction for iterations 45–53:** the tuesday.ts "Dealer" column is YOUR win rate against the Dealer (GREEN win = reachD × Dealer). Where the log says "the Dealer wins N", read "you beat the Dealer N% of the time". The numbers and the tuning direction were right.
+- **E3 FINAL HAND is a phase to the end of the fight:**
+  - once it fires, the Dealer deals every turn, and RAISE and ALL IN take turns;
+  - each ALL IN after the phase's first hits ×0.8 as hard (FINAL_HAND_FADE; the telegraphed cap shrinks too).
+  - The phase made the Dealer much deadlier (you beat him 26–41%), so BOSS_MUL.dealer is ×0.75 on every machine, then knight 0.82 and thorn 1.2.
+- **`expert6_final.ts 250`:**
+  - turns after FINAL HAND, p50: 4–9 (was 10–12);
+  - telegraphed killing blows: knight 48%, tesla 60%, thorn 63%, joker 51%, midas 64%. The gate of 55% is short on KNIGHT / JAX, up from 33–60% quiet.
+- **E4:** the Dealer's table is always set. His two bets when fair, topped up with regular kinds; odds are on the rehearsals you won (on all of them if you rarely win). A table of 2 in 100% of Dealer fights (was empty in 14–67%).
+- **E5:**
+  - the RAISE and ALL IN banners sit mid-machine (off the HP panels);
+  - RAISE reads "ITS NEXT HIT X2, YOUR NEXT WIN X2" everywhere;
+  - "RAISED!" clears after its raised spin;
+  - the deal box counts from the presented pace, like the Dealer's panel;
+  - the bet tracker header is larger.
+- **tuesday.ts 1000:**
+  | machine | WHITE | GREEN | vs the Dealer |
+  |---|---|---|---|
+  | knight | 43.1 | 17.9 | 47.7 |
+  | tesla | 43.9 | 16.1 | 51.1 |
+  | thorn | 45.8 | 20.1 | 50.1 |
+  | joker | 41.8 | 16.4 | 51.6 |
+  | midas | 38.6 | 13.2 | 52.0 |
+  | AVG | 42.6 | 16.7 | 50.5 |
+- Tests: 186.

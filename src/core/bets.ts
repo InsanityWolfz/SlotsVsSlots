@@ -167,14 +167,24 @@ export function lineFor(kind: BetKind, runs: BetTrack[], enemyHp = Infinity, str
   return { kind, target: best.target, pay: hot ? 2 + hot : best.p < BETS.hardBelow ? 3 : 2 };
 }
 
-/** The Dealer's two bets, paid by how often the rehearsals made them (a win is part of every bet). */
-export function dealerBets(all: { t: BetTrack; won: boolean }[]): SideBet[] {
+/**
+ * The Dealer's table: his own two bets when the rehearsals make a fair line, topped up with regular kinds so it's
+ * always set (an empty table told you how the finale would go: EXPERT_PLAYTEST_7 E4). Odds are on the rehearsals
+ * you won (a lost Dealer fight ends the run, bet and all); if you rarely win, on all of them.
+ */
+export function dealerBets(all: { t: BetTrack; won: boolean }[], rng: Rng, enemyHp = Infinity): SideBet[] {
+  const wins = all.filter((x) => x.won).map((x) => x.t);
+  const base = wins.length >= 3 ? wins : all.map((x) => x.t);
   const out: SideBet[] = [];
   for (const kind of DEALER_BETS) {
-    const p = all.filter(({ t, won }) => won && (kind === 'early' ? !t.finalHand : !!t.allIns)).length / Math.max(1, all.length);
+    const p = base.filter((t) => (kind === 'early' ? !t.finalHand : !!t.allIns)).length / Math.max(1, base.length);
     if (p < 0.12 || p > 0.8) continue;
-    // Half steps from x1.5 (a likely win pays little): the return stays ~105%.
     out.push({ kind, target: 0, pay: Math.max(1.5, Math.min(5, Math.round((2 * 1.05) / p) / 2)) });
+  }
+  for (const k of rng.shuffle<BetKind>(['big', 'quick', 'clean', 'jackpot'])) {
+    if (out.length >= 2) break;
+    const b = lineFor(k, base, enemyHp);
+    if (b) out.push(b);
   }
   return out;
 }

@@ -207,7 +207,7 @@ export class Director {
         this.s.gutter.allInArmed = true;
         this.s.sounds.stingerMedium();
         this.s.gutter.allInCap = e.cap;
-        return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, `ITS WHOLE HAND: UP TO ${e.cap}`, BANNER_Y, 3);
+        return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, `ITS WHOLE HAND: UP TO ${e.cap}`, MACHINE_TOP + MACHINE_H / 2, 3);
       case 'closing': {
         const c = this.machineCenter('enemy');
         this.s.sounds.click();
@@ -469,6 +469,8 @@ export class Director {
     if (e.side === 'player') gutter.turnDamage = 0;
     gutter.turn = e.turn;
     gutter.side = e.side;
+    // RAISED! lasts until its raised spin has been played (the Dealer's next turn).
+    if (gutter.raised && e.side === 'enemy' && e.turn >= (gutter.raisedTurn ?? 0) + 4) gutter.raised = false;
     this.decay(gutter, 'pulse', 1, 0.4);
     this.bg(this.c.to(machines[e.side], 'active', 1, 0.25));
     this.bg(this.c.to(machines[e.side], 'dim', 0, 0.25));
@@ -1863,9 +1865,10 @@ export class Director {
 
   private async raise(e: Ev<'raise'>): Promise<void> {
     this.s.gutter.raised = true;
+    this.s.gutter.raisedTurn = this.s.gutter.turn;
     this.s.sounds.coin(9);
     this.s.sounds.stingerMedium();
-    await this.banner('RAISE!', '#ffd23f', 1.3, 0.4, 'ITS NEXT HIT AND YOUR NEXT JACKPOT PAY X2', BANNER_Y, 4);
+    await this.banner('RAISE!', '#ffd23f', 1.3, 0.4, 'ITS NEXT HIT X2, YOUR NEXT WIN X2', MACHINE_TOP + MACHINE_H / 2, 4);
     void e;
   }
 

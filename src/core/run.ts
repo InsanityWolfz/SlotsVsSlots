@@ -606,7 +606,7 @@ export function offerBets(run: RunState, base: GameConfig): SideBet[] {
   }
   // The Dealer has his own table (win before his FINAL HAND; survive an ALL IN).
   const raw = cfg.enemy.boss === 'dealer'
-    ? dealerBets(all)
+    ? dealerBets(all, rng, cfg.enemy.hp)
     : betsFrom(all.filter((x) => x.won).map((x) => x.t), BETS.samples, rng, cfg.enemy.hp, run.betStreak ?? 0);
   // LOADED DICE: every line pays more (shown on the card).
   const offer = run.player.relics.includes('loaded') ? raw.map((b) => ({ ...b, pay: b.pay + LOADED_PAY })) : raw;
@@ -798,11 +798,11 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  * be hit), so the same HP formula would give each a different win rate.
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number }> = {
-  knight: { house: 2.0, mirror: 0.9, dealer: 0.85, act3: 0.5 },
-  midas: { house: 3, mirror: 2.8, dealer: 2.3, act3: 0.25, act1: 0.55, act2: 0.6 },
-  thorn: { house: 0.85, mirror: 10.5, dealer: 1.8, act3: 1.1, act2: 0.55 },
-  tesla: { house: 0.5, mirror: 2.4, dealer: 2.25, act3: 0.95 },
-  joker: { house: 2.2, mirror: 3.7, dealer: 1.85, act3: 0.55, act2: 1.8 },
+  knight: { house: 2.0, mirror: 0.9, dealer: 0.82, act3: 0.5 },
+  midas: { house: 3, mirror: 2.8, dealer: 1.72, act3: 0.25, act1: 0.55, act2: 0.6 },
+  thorn: { house: 0.85, mirror: 10.5, dealer: 1.2, act3: 1.1, act2: 0.55 },
+  tesla: { house: 0.5, mirror: 2.4, dealer: 1.69, act3: 0.95 },
+  joker: { house: 2.2, mirror: 3.7, dealer: 1.39, act3: 0.55, act2: 1.8 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
