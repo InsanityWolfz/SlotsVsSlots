@@ -1111,3 +1111,23 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - by edge: fast 17, frail 23, rollers 21, heal 12;
   - days with no winner 45/120. The harness's 8 choice variants are mostly random picks, so this is pessimistic for a thinking player; a hard daily is part of its character.
 - Tests: 192.
+
+### Iteration 62 (2026-09-30): EXPERT_PLAYTEST_8 E5, E6, E9, E10, the table and the finale
+- **E5:** LOADED DICE multiplies side-bet pay ×1.2 (LOADED_MUL; was +0.5, which made the ×1.5 SAFE bet pay 133–143%).
+  - `bets.ts 200 5 0 RELIC=loaded`: PICK 0 (safe) 117–131%, PICK 1 (long) 112–125%.
+  - SAFE leads by 5–11 points, near the gate of 8.
+- **E6:**
+  - the deal box's ALL IN card shows FINAL HAND's fade ("ALL IN X0.8", then X0.64; `Fight.allInFade`);
+  - the deal box hides once either side's presented HP is 0;
+  - the "ALL IN! UP TO N" warning sits below the Dealer's felt (off the panel's countdown line).
+- **E9:** at the Dealer, a side bet's stake comes off your chip shield again. ALL IN was strictly dominant there: chips are worthless if you lose, and the stake cost no shield.
+- **E10 + the finale guarantee:**
+  - a hit that drops the Dealer to 15% (FINAL_HAND_DEEP) opens FINAL HAND on its ALL IN;
+  - before his FINAL HAND, no hit takes the Dealer below 15%, like the existing 50% hold before his first deal. A burst one-shot used to skip the climax.
+  - `expert6_final.ts 250`: FINAL HAND fires 77–86% on every machine (MIDAS 53 → 77%, KNIGHT 72 → 80%). The rest are fights you lose before it.
+  - The burst machines lost more, so BOSS_MUL.dealer is knight 0.82 → 0.74, midas 1.72 → 1.55.
+- **tuesday.ts 1000:**
+  - WHITE 42.6;
+  - GREEN 18.2 / 16.1 / 19.3 / 16.4 / 13.0 (avg 16.6);
+  - vs the Dealer 48.5 / 51.1 / 48.1 / 51.6 / 51.2 (avg 50.1).
+- Tests: 192.

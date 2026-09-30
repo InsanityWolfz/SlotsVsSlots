@@ -58,6 +58,8 @@ const DEALS: DealCard[] = ['card', 'allin', 'raise'];
 export const FINAL_HAND_AT = 0.4;
 /** FINAL HAND: each ALL IN after its first is this much as hard. */
 export const FINAL_HAND_FADE = 0.8;
+/** FINAL HAND opens on its ALL IN when a hit drops the Dealer to this share of his HP. */
+export const FINAL_HAND_DEEP = 0.15;
 /** ALL IN is capped at this share of your max HP. */
 const ALL_IN_CAP = 0.55;
 /** ALL IN always lands at least this share of your max HP: the telegraphed hit is THE threat (EXPERT_PLAYTEST_4 C3). */
@@ -264,6 +266,10 @@ export class Fight {
   /** FINAL HAND is on (it deals every turn to the end of the fight), and the ALL INs it has dealt. */
   private fhEvery = 0;
   private fhAllIns = 0;
+  /** The next ALL IN's strength in FINAL HAND (1, then x0.8, x0.64 ...: shown on the deal box). */
+  get allInFade(): number {
+    return this.fhEvery ? Math.pow(FINAL_HAND_FADE, this.fhAllIns) : 1;
+  }
   /** ACE on your payline this spin: the group through this reel pays x2. */
   private aceReel = -1;
   /** BRIAR: the thorn bank already hit back on this turn. */
@@ -1330,6 +1336,8 @@ export class Fight {
     }
     // The crack gate: the Mirror's glass holds at half HP for the rest of the turn it cracks on.
     if (target.side === 'enemy' && this.isDealer && !this.dealt) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp / 2)));
+    // The Dealer always plays his FINAL HAND: before it, no hit takes him below 15% (a burst one-shot skipped the climax).
+    if (target.side === 'enemy' && this.isDealer && this.dealt && !this.finalHand) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp * FINAL_HAND_DEEP)));
     if (target.side === 'enemy' && this.isMirror) {
       if (this.crackTurn === this.turn) hpDamage = 0;
       else if (!this.shattered) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp / 2)));
@@ -1360,12 +1368,14 @@ export class Fight {
       // (an ALL IN already armed counts as the row's ALL IN: then it just RAISES).
       if (c.side === 'enemy' && this.isDealer && this.dealt && !this.finalHand && c.hp <= c.maxHp * FINAL_HAND_AT && c.ability) {
         const armed = this.dealerAllIn;
-        this.finalHand = armed ? [] : ['allin'];
-        this.nextDeal = 'raise';
+        // A hit that drops him to 15% (a MIDAS vault spike) opens the phase on its ALL IN (EXPERT_PLAYTEST_8 E10).
+        const deep = !armed && c.hp <= c.maxHp * FINAL_HAND_DEEP;
+        this.finalHand = armed || deep ? [] : ['allin'];
+        this.nextDeal = deep ? 'allin' : 'raise';
         this.fhEvery = c.ability.every;
         c.ability = { ...c.ability, every: 1 };
         c.charge = 0;
-        events.push({ type: 'finalHand', side: c.side, cards: armed ? ['allin', 'raise'] : ['raise', 'allin'] });
+        events.push({ type: 'finalHand', side: c.side, cards: armed || deep ? ['allin', 'raise'] : ['raise', 'allin'] });
         events.push({ type: 'dealNext', side: c.side, card: this.nextDeal, then: [...this.finalHand] });
       }
       // The Mirror cracks at half HP: its Reflection charges faster.

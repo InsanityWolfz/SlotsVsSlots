@@ -19,7 +19,7 @@ import {
   RELICS,
   RUSH,
   type Enabler,
-  LOADED_PAY,
+  LOADED_MUL,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
 import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
@@ -538,9 +538,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     bonusSymbols: !(e.isBoss && run.act >= runActs(run)),
     chipsHeld: run.player.chips,
     ...(run.bet ? { sideBet: { ...run.bet } } : {}),
-    // Saved chips shield you at every boss, capped (a MIDAS hoard made the House untouchable). A side bet's
-    // stake still sits in front of you: it counts (it doesn't fill the MIDAS vault, though).
-    stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? Math.min(MIRROR_CHIP_SHIELD_CAP, chipShield(run.player.chips + (run.bet?.stake ?? 0))) : 0,
+    // Saved chips shield you at every boss, capped (a MIDAS hoard made the House untouchable). A side bet's stake
+    // doesn't: at the Dealer, ALL IN would otherwise cost nothing (EXPERT_PLAYTEST_8 E9).
+    stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? Math.min(MIRROR_CHIP_SHIELD_CAP, chipShield(run.player.chips)) : 0,
   };
   const hp = enemyHp(run, e);
   cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
@@ -628,7 +628,7 @@ export function offerBets(run: RunState, base: GameConfig): SideBet[] {
     ? dealerBets(all, rng, cfg.enemy.hp)
     : betsFrom(all.filter((x) => x.won).map((x) => x.t), BETS.samples, rng, cfg.enemy.hp, run.betStreak ?? 0);
   // LOADED DICE: every line pays more (shown on the card).
-  const offer = run.player.relics.includes('loaded') ? raw.map((b) => ({ ...b, pay: b.pay + LOADED_PAY })) : raw;
+  const offer = run.player.relics.includes('loaded') ? raw.map((b) => ({ ...b, pay: Math.round(b.pay * LOADED_MUL * 10) / 10 })) : raw;
   run.bets = { key, offer };
   return offer;
 }
@@ -820,8 +820,8 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  * be hit), so the same HP formula would give each a different win rate.
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number }> = {
-  knight: { house: 2.0, mirror: 0.9, dealer: 0.82, act3: 0.5 },
-  midas: { house: 3, mirror: 2.8, dealer: 1.72, act3: 0.25, act1: 0.55, act2: 0.6 },
+  knight: { house: 2.0, mirror: 0.9, dealer: 0.74, act3: 0.5 },
+  midas: { house: 3, mirror: 2.8, dealer: 1.55, act3: 0.25, act1: 0.55, act2: 0.6 },
   thorn: { house: 0.85, mirror: 10.5, dealer: 1.2, act3: 1.1, act2: 0.55 },
   tesla: { house: 0.5, mirror: 2.4, dealer: 1.69, act3: 0.95 },
   joker: { house: 2.2, mirror: 3.7, dealer: 1.39, act3: 0.55, act2: 1.8 },

@@ -107,7 +107,7 @@ describe('SIDE BETS', () => {
     const plain = offerBets(run, base).map((b) => b.pay);
     run.bets = null;
     run.player.relics.push('loaded', 'highlimit', 'marker');
-    expect(offerBets(run, base).map((b) => b.pay)).toEqual(plain.map((x) => x + 0.5));
+    expect(offerBets(run, base).map((b) => b.pay)).toEqual(plain.map((x) => Math.round(x * 12) / 10));
     expect(betStakes(run)).toEqual([4, 10]);
     expect(allInStake(run)).toBe(40);
     // A bet you can't win: land 99 jackpots.

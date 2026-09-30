@@ -59,12 +59,12 @@ export const RELICS: Record<RelicId, RelicDef> = {
   holywater: { id: 'holywater', name: 'HOLY WATER', text: 'THE FIRST CHEAT ON YOUR REELS EACH FIGHT WASHES OFF', sprite: 'relicHolywater' },
   bash: { id: 'bash', name: 'SHIELD BASH', text: 'YOUR LEFTOVER SHIELD HITS BACK FOR HALF EACH TURN', sprite: 'relicBash' },
   // Side bets (EXPERT_PLAYTEST_6 E11): relics that change which bet you want.
-  loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY X0.5 MORE', sprite: 'relicLoaded' },
+  loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY 20% MORE', sprite: 'relicLoaded' },
   marker: { id: 'marker', name: 'MARKER', text: 'YOUR FIRST BUSTED SIDE BET EACH ACT: UP TO 5 CHIPS BACK (10 WITH HIGH LIMIT)', sprite: 'relicMarker' },
   highlimit: { id: 'highlimit', name: 'HIGH LIMIT', text: 'DOUBLES YOUR SIDE BET STAKES, AND SO YOUR WINNINGS: 4, 10 OR ALL IN UP TO 40', sprite: 'relicHighLimit' },
 };
-/** LOADED DICE: extra pay on every side bet. */
-export const LOADED_PAY = 0.5;
+/** LOADED DICE: every side bet's pay x1.2 (a flat +0.5 made the x1.5 SAFE bet pay 133-143%: EXPERT_PLAYTEST_8 E5). */
+export const LOADED_MUL = 1.2;
 
 /**
  * A relic's card text on a given slot machine: meter relics speak your machine's language

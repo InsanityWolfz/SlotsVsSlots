@@ -1234,7 +1234,8 @@ export class Game {
     const e = this.fight.sides.enemy;
     const ab = e.ability;
     const g = this.stage.gutter;
-    if (!ab || this.stage.huds.enemy.hp <= 0) return;
+    // Gone once either side's presented HP is 0 (the fight is decided).
+    if (!ab || this.stage.huds.enemy.hp <= 0 || this.stage.huds.player.hp <= 0) return;
     // Count like the Dealer's panel does (the presented pace, not the engine's, which runs ahead).
     const left = Math.max(1, (this.stage.huds.enemy.ability?.every ?? ab.every) - this.stage.huds.enemy.charge);
     const soon = left <= 1;
@@ -1248,7 +1249,9 @@ export class Game {
     const card = g.nextDeal ?? 'card';
     const sprite = card === 'shuffle' ? 'dealShuffle' : card === 'cut' || card === 'card' ? 'dealCut' : card === 'allin' ? 'dealShuffle' : 'dealRaise';
     drawSprite(ctx, artId(sprite), x - 58, y + 12, 2.5);
-    const name = card === 'card' ? 'A CARD' : card === 'allin' ? 'ALL IN' : card.toUpperCase();
+    // In FINAL HAND each ALL IN after the first is weaker: say so on the card.
+    const fade = this.fight.allInFade;
+    const name = card === 'card' ? 'A CARD' : card === 'allin' ? (fade < 1 ? `ALL IN X${+fade.toFixed(2)}` : 'ALL IN') : card.toUpperCase();
     drawText(ctx, name, x + 26, y + 2, 3, card === 'allin' ? '#ff6a5a' : '#ffffff');
     const what =
       card === 'card' ? ['ON YOUR PAYLINE:', 'ACE, JOKER, DEUCE']
@@ -1303,7 +1306,7 @@ export class Game {
     ctx.strokeStyle = '#c9a040';
     ctx.lineWidth = 2;
     ctx.strokeRect(cx - 174, MACHINE_TOP - 14, 348, MACHINE_H + 28);
-    if (this.stage.gutter.allInArmed) drawText(ctx, `ALL IN! UP TO ${this.stage.gutter.allInCap ?? ''}`, cx, MACHINE_TOP - 40, 3, '#ff6a5a', { punch: 1 + 0.08 * Math.sin(t * 10) });
+    if (this.stage.gutter.allInArmed) drawText(ctx, `ALL IN! UP TO ${this.stage.gutter.allInCap ?? ''}`, cx, MACHINE_TOP + MACHINE_H + 46, 3, '#ff6a5a', { punch: 1 + 0.08 * Math.sin(t * 10) });
   }
 
   /** The Mirror's next Reflection: what your last spin would bounce back, and when. */
