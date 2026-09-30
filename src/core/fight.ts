@@ -251,6 +251,7 @@ export class Fight {
   lineCard: { reel: number; card: LineCard } | null = null;
   /** The Dealer's next attack is its whole hand. */
   dealerAllIn = false;
+  private lastAllIn = -99;
   /** ACE on your payline this spin: the group through this reel pays x2. */
   private aceReel = -1;
   /** BRIAR: the thorn bank already hit back on this turn. */
@@ -528,7 +529,8 @@ export class Fight {
         amount *= 2;
         this.raiseEnemy = false;
       }
-      const h = this.damage(foe, amount, false);
+      // ALL IN pierces shields: the telegraphed hit is the real threat (EXPERT_PLAYTEST_5 E6).
+      const h = this.damage(foe, amount, true);
       events.push({ type: 'allInHit', from: side, to: foe.side, amount, ...h });
       this.checkDeath(foe, events);
     }
@@ -1529,7 +1531,9 @@ export class Fight {
       this.raisePlayer = true;
       events.push({ type: 'raise', from: me.side });
     }
-    this.nextDeal = this.rng.pick(DEALS);
+    if (card === 'allin') this.lastAllIn = this.turn;
+    // At most one ALL IN per 4 enemy turns.
+    this.nextDeal = this.rng.pick(this.turn - this.lastAllIn < 8 ? DEALS.filter((d) => d !== 'allin') : DEALS);
     events.push({ type: 'dealNext', side: me.side, card: this.nextDeal });
   }
 
