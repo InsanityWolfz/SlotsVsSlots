@@ -1050,3 +1050,13 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - `bets.ts` CAB=midas, always 5: 41.3 → 30.0 (was → 33.0: within noise). The always-bettor penalty is shop starvation, the same on every machine.
 - **E10:** the RIDE card names the next loop's boss and your HP: "LOOP 2: THE MIRROR. YOU 212/640 HP. CLEAR IT AND THE POT GROWS TO 3750."
 - Tests: 187 (the MIDAS mid-fight bet; the score test includes chips).
+
+### Iteration 58 (2026-09-30): EXPERT_PLAYTEST_7 E11, big choices
+- **`builds.ts 300 choices`** forces each pick when its set comes up (GREEN, paired): baseline 9.7 avg.
+  - CLEAN CUT 9.4: fine. Its "31% when taken" was a selection effect (the greedy sim takes it in weaker spots). Unchanged.
+  - SWEEP UP 10.7: fine. The sim rarely takes it because its value only counts rocks and missing HP. A real player's call.
+  - SECOND WIND 6.9 was the real trap: the safe pick in DEVIL'S BARGAIN, against GLASS CANNON (= the baseline's pick).
+- **SECOND WIND** is now heal to full, +20% max HP (at least 40) and +1 level to shields.
+  - Tried +20% max HP alone: 7.3.
+  - With the shield level: 8.3 (knight 8.7, tesla 4.3, thorn 9.0, joker 10.7, midas 9.0). TESLA lives on GLASS CANNON, so its safe pick lags.
+- Tests: 187.

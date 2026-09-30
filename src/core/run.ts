@@ -1517,7 +1517,7 @@ export const BIG_SETS: BigChoiceId[][] = [
 export const BIG_SET_NAMES = ['THE FORGE', 'THE MELT', 'SURGERY', "DEVIL'S BARGAIN"];
 /** The safe pick in each set (no cost). */
 export const SAFE_CHOICES: ReadonlySet<BigChoiceId> = new Set(['whetstone', 'polish', 'sweepUp', 'secondWind']);
-export const BIG = { armsRaceHp: 6 * UNIT, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, bloodPactHp: 0.25, gildLotHp: 0.25, gildLotCells: 3, glassPay: 1.5 };
+export const BIG = { armsRaceHp: 6 * UNIT, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.25, gildLotCells: 3, glassPay: 1.5 };
 
 const SYM_NAME = (s: SymbolId) => (s === 'goldbar' ? 'GOLD BARS' : `${s.toUpperCase()}S`);
 
@@ -1558,9 +1558,12 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
         ? { title: 'BLOOD PACT', rule: 'YOUR METER FILLS TWICE AS FAST', cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` }
         : { title: 'BLOOD PACT', rule: '+1 LEVEL TO SWORDS AND SHIELDS', cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` };
     case 'secondWind':
-      return { title: 'SECOND WIND', rule: `HEAL TO FULL AND +${BIG.secondWindHp} MAX HP`, cost: '' };
+      return { title: 'SECOND WIND', rule: `HEAL TO FULL, +${secondWindHp(run)} MAX HP AND +1 LEVEL TO SHIELDS`, cost: '' };
   }
 }
+
+/** SECOND WIND grows with you: +20% max HP (at least 40). A flat +40 was the weakest pick by 3 GREEN points. */
+const secondWindHp = (run: RunState) => Math.max(BIG.secondWindHp, unitsRound(run.player.maxHp * BIG.secondWindShare));
 
 /** Your symbols (on your strips) that levels apply to. */
 const levelSyms = (run: RunState) => CABINETS[run.cabinet].symbols.filter((s) => run.player.strips.some((x) => (x[s] ?? 0) > 0));
@@ -1697,7 +1700,8 @@ export function takeChoice(run: RunState, c: BigChoice): void {
       loseMax(Math.round(p.maxHp * BIG.bloodPactHp));
       break;
     case 'secondWind':
-      p.maxHp += BIG.secondWindHp;
+      up('shield');
+      p.maxHp += secondWindHp(run);
       p.hp = p.maxHp;
       break;
   }
