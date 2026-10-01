@@ -1132,7 +1132,7 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - vs the Dealer 48.5 / 51.1 / 48.1 / 51.6 / 51.2 (avg 50.1).
 - Tests: 192.
 
-### Iteration 63 (2026-09-30): EXPERT_PLAYTEST_8 E11, THE GATEKEEPER (first version, tuning in progress)
+### Iteration 63 (2026-09-30): EXPERT_PLAYTEST_8 E11, THE GATEKEEPER
 - **THE REPO MAN** holds fight 4 of every act (no fork; not in endless).
   - Every 3 turns he repossesses your best cell (a charmed one first: confiscate; otherwise steal), at most 2 a fight.
   - What he holds when he falls leaves your machine as liens (`run.liens`). They come back when the act's boss falls, or pay one off at the Cashier for 3 chips ("PAY OFF A LIEN", a service slot like the heal).
@@ -1148,5 +1148,33 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   | + 3-chip bounty (gate.sh) | knight 42.6, tesla 43.1, joker 42.0, midas 34.8 | avg ~16.6 |
 
   The gate.sh BRIAR row glitched again (19.6/19.6).
-- **Open:** MIDAS WHITE 34.8 (was 38.6); the fight-4 death rate is 2.7% (gate 4–7%); the gatekeeper needs its own portrait (art agent).
+- **Was open:** MIDAS WHITE 34.8 (was 38.6); the fight-4 death rate is 2.7% (gate 4–7%); the gatekeeper needs its own portrait (art agent).
+- **Tuning finished (2026-10-01):**
+  - His strip is sword 6 → 7, so he's a real spike before the boss.
+  - New knob: `BOSS_MUL.gate`, the REPO MAN's HP per machine: KNIGHT 1.15, BRIAR 1.4, JOKER 0.85, MIDAS 0.5.
+  - MIDAS loses its starting gold swords to him (charmed cells go first), so he's lighter there. BRIAR barely died to him (thorns punish his swords).
+  - Harness: `tools/balance/repo_tune.ts [N] key=val` (hp, sword, shield, every, takes, bounty, price, gate.<machine>) prints WHITE/GREEN and the A4/B4 deaths.
+  - Tried (repo_tune 600, WHITE avg / A4 deaths avg):
+    | variant | WHITE | A4 deaths |
+    |---|---|---|
+    | first version | 42.7 | 2.8 |
+    | liens off (takes 0) | 46.3 | |
+    | sword 7 | 42.8 | 4.2 (MIDAS 34.5) |
+    | sword 8, shield 4, 1 take | 39.4 | 8.7 |
+
+    MIDAS gate 0.7 → 34.8, 0.5 → 38.3. BRIAR gate 1.8 → A4 10.5% (too much), 1.4 → 5.3%.
+  - **Official:**
+    - gate.sh 800: death histogram fight 4 = **5.5%** (gate 4–7, was 2.8); fights 10/16 2.6/0.8.
+    - tuesday.ts 1000:
+      | machine | WHITE | GREEN | vs the Dealer |
+      |---|---|---|---|
+      | KNIGHT | 43.0 | 17.2 | 46.7 |
+      | TESLA | 42.4 | 16.3 | 47.4 |
+      | BRIAR | 45.6 | 19.5 | 49.2 |
+      | JOKER | 40.0 | 18.5 | 52.0 |
+      | MIDAS | 37.6 | 12.9 | 47.6 |
+      | **AVG** | **41.7** | **16.9** | **48.6** |
+
+      Pre-gatekeeper: WHITE 42.6, GREEN 16.6. WHITE −0.9 is the gatekeeper's bite, accepted.
+  - **Still open:** MIDAS GREEN 12.9 (it was ~13 before him: not his doing); his own portrait (art agent).
 - Tests: 193 (tests/gatekeeper.test.ts; map tests updated).
