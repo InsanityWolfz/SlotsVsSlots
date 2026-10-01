@@ -203,7 +203,7 @@ export const REPO_MAN: Archetype = {
   name: 'REPO MAN',
   portrait: 'enemyPitBoss',
   // A plain strip: he only takes on his telegraphed turns (gavels would take on their own).
-  strip: { sword: 6, shield: 5 },
+  strip: { sword: 7, shield: 5 },
   hpMul: 1.3,
   ability: { kind: 'repo', every: 3, power: 1 },
   minDepth: 2,
