@@ -773,7 +773,9 @@ export function enemyHp(run: RunState, e: EnemyDef): number {
   const loop = run.endless ? Math.pow(ENDLESS.hpBy[run.cabinet] ?? ENDLESS.hp, run.endless.loop) : 1;
   // THE DAILY RUN plays act 3 at base-stake numbers: its act 3 (the Dealer included) is lighter.
   const daily = run.daily && run.act >= 3 && !run.endless ? TUNE.dailyAct3 : 1;
-  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily));
+  // Per machine: THE REPO MAN's HP (his liens cost machines differently: MIDAS loses its gold).
+  const gate = e.archetype === REPO_MAN.id ? (BOSS_MUL[run.cabinet].gate ?? 1) : 1;
+  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * gate));
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {
@@ -865,7 +867,7 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  * to. Machines race differently (KNIGHT's shields, JAX's rare huge payoffs, BRIAR's thorns that need to
  * be hit), so the same HP formula would give each a different win rate.
  */
-export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number }> = {
+export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number }> = {
   knight: { house: 2.0, mirror: 0.9, dealer: 0.74, act3: 0.5 },
   midas: { house: 3, mirror: 2.8, dealer: 1.55, act3: 0.25, act1: 0.55, act2: 0.6 },
   thorn: { house: 0.85, mirror: 10.5, dealer: 1.2, act3: 1.1, act2: 0.55 },
