@@ -1,5 +1,5 @@
 import { cloneConfig, defaultConfig, emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_HP_MUL_2, generateRunPaths, makeEnemy, TUNE, type EnemyDef, ENDLESS } from './enemies';
+import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_HP_MUL_2, GATEKEEPER, generateRunPaths, makeEnemy, REPO_MAN, TUNE, type EnemyDef, ENDLESS } from './enemies';
 import { MAX_STAKE, MIRROR_COPYABLE, mirrorCanUse, STAKE } from './stakes';
 import { Fight as FightCtor, type Fight } from './fight';
 import {
@@ -119,6 +119,8 @@ export type DraftOption =
   /** LEVEL cards: +1 level to a symbol type, or to a charm type. */
   | { kind: 'symLevel'; symbol: SymbolId }
   | { kind: 'charmLevel'; enh: Enh }
+  /** The Cashier: pay off THE REPO MAN's oldest lien. */
+  | { kind: 'payLien' }
   | { kind: 'remove'; symbol: SymbolId; reel: number };
 
 export interface ShopItem {
@@ -178,6 +180,13 @@ export interface FightRecord {
   choice?: BigChoiceId;
 }
 
+/** A cell THE REPO MAN holds: its reel and symbol, and its charm if it had one. */
+export interface Lien {
+  reel: number;
+  symbol: SymbolId;
+  enh?: Enh;
+}
+
 export interface RunState {
   seed: number;
   /** Index of the next fight (0..5; 5 = boss). */
@@ -233,6 +242,8 @@ export interface RunState {
   /** SIDE BETS on the next fight: the table's offer (keyed to the fight) and the bet you placed. */
   bets?: { key: string; offer: SideBet[] } | null;
   bet?: PlacedBet | null;
+  /** THE REPO MAN's liens: cells (and charms) he holds until the act's boss falls. */
+  liens?: Lien[];
   /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day), and the day's HOUSE EDGE. */
   daily?: string;
   dailyEdge?: EdgeId;
@@ -601,6 +612,41 @@ export function applyDaily(run: RunState, key: string): void {
   }
 }
 
+/** THE REPO MAN's takes (confiscated charms, repossessed cells) leave your machine as liens. */
+function takeLiens(run: RunState, fight: Fight): void {
+  const p = run.player;
+  const liens: Lien[] = [];
+  fight.sides.player.reels.forEach((reel, r) =>
+    reel.cells.forEach((c) => {
+      if (c.confiscated) liens.push({ reel: r, symbol: c.symbol, enh: c.confiscated });
+      else if (c.stolen) liens.push({ reel: r, symbol: c.symbol });
+    }),
+  );
+  for (const l of liens.slice(0, GATEKEEPER.maxTakes)) {
+    if (l.enh) {
+      const g = p.gilded.find((x) => x.reel === l.reel && x.symbol === l.symbol && x.enh === l.enh);
+      if (!g) continue;
+      g.n--;
+      p.gilded = p.gilded.filter((x) => x.n > 0);
+    } else {
+      const n = p.strips[l.reel][l.symbol] ?? 0;
+      if (n <= 0) continue;
+      p.strips[l.reel][l.symbol] = n - 1;
+    }
+    (run.liens ??= []).push(l);
+  }
+}
+
+/** A lien comes back: the cell, or the charm onto its cell. */
+function returnLien(run: RunState, l: Lien): void {
+  const p = run.player;
+  if (l.enh) addCharms(p, l.reel, l.symbol, l.enh, 1);
+  else p.strips[l.reel][l.symbol] = (p.strips[l.reel][l.symbol] ?? 0) + 1;
+}
+
+/** A lien in words ("A GOLD CHARM ON A REEL 2 SWORD"). */
+export const lienText = (l: Lien) => (l.enh ? `A ${charmName(l.enh)} CHARM ON A REEL ${l.reel + 1} ${l.symbol.toUpperCase()}` : `A ${l.symbol.toUpperCase()} ON REEL ${l.reel + 1}`);
+
 /** SIDE BETS are offered before regular fights (not bosses, not the tutorial's first fight, not at a fork). */
 export function betsOpen(run: RunState): boolean {
   const e = run.enemies[run.depth];
@@ -925,6 +971,13 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   }
   run.bet = null;
   run.bets = null;
+  // THE REPO MAN fell: what he holds stays gone until the act's boss falls (or you pay it off).
+  if (beaten.archetype === REPO_MAN.id) {
+    takeLiens(run, fight);
+    // His bounty (the fork he replaced could have paid an elite's spoils).
+    run.player.chips += GATEKEEPER.bounty;
+    record.chips = (record.chips ?? 0) + GATEKEEPER.bounty;
+  }
   // Act 2 elites pay chips (more relics made the Mirror a walkover: ITERATION_8).
   if (beaten.elite && run.act > 1) {
     run.player.chips += CHIPS.act2EliteChips;
@@ -962,6 +1015,9 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   if (run.bonusLog.length) record.bonuses = run.bonusLog.map((b) => b.label);
   run.depth++;
   if (run.depth > actLength(run.act)) {
+    // The act's boss fell: THE REPO MAN gives everything back.
+    for (const l of run.liens ?? []) returnLien(run, l);
+    run.liens = [];
     if (run.endless) {
       run.endless.pot = nextPot(run.endless.pot);
       run.endless.loop++;
@@ -1284,6 +1340,9 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
       p.maxHp += o.amount;
       p.hp += o.amount;
       break;
+    case 'payLien':
+      if (run.liens?.length) returnLien(run, run.liens.shift()!);
+      break;
   }
   // A charm lasts while its cell is on the reel.
   normalizeCharms(p);
@@ -1373,6 +1432,8 @@ export function shopOffers(run: RunState): ShopItem[] {
   // HEAL is a permanent service slot, sized to what you're missing (hidden when nearly full).
   const missing = p.maxHp - p.hp;
   if (missing >= 3 * UNIT && !run.glass) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal, sold: false });
+  // THE REPO MAN's liens: pay one off (a service slot, like the heal).
+  if (run.liens?.length) shelf.push({ option: { kind: 'payLien' }, price: GATEKEEPER.lienPrice, sold: false });
   return shelf;
 }
 
@@ -1476,6 +1537,10 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
       return { title: `HEAL ${o.amount}`, text: `RESTORE ${o.amount} HP NOW` };
     case 'maxHp':
       return { title: `+${o.amount} MAX HP`, text: `GAIN ${o.amount} MAX HP (AND HEAL IT)` };
+    case 'payLien': {
+      const l = run?.liens?.[0];
+      return { title: 'PAY OFF A LIEN', text: l ? `THE REPO MAN GIVES BACK ${lienText(l)}` : 'NOTHING OWED' };
+    }
     case 'gild':
       return {
         title: `${o.n} ${charmName(o.enh)} CHARM${o.n > 1 ? 'S' : ''}`,

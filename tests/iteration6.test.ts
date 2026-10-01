@@ -1,3 +1,4 @@
+import { ACT2_NEW } from '../src/core/enemies';
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type SymbolId } from '../src/core/config';
 import { ARCHETYPES, generateRunPaths, MIRROR, RUN_FIGHTS, TUNE } from '../src/core/enemies';
@@ -243,7 +244,8 @@ describe('act structure', () => {
     expect(isShopNow(run)).toBe(false);
     // The act 2 map ends with the Mirror and shows new faces at every fork.
     expect(run.paths[RUN_FIGHTS][0].boss).toBe('mirror');
-    expect(run.paths.slice(0, RUN_FIGHTS).every((opts) => opts.some((e) => ['bomber', 'hexer', 'vampire', 'mimic'].includes(e.archetype)))).toBe(true);
+    // (fight 4 is THE GATEKEEPER, the REPO MAN)
+    expect(run.paths.slice(0, RUN_FIGHTS).every((opts) => opts.some((e) => ACT2_NEW.has(e.archetype) || e.archetype === 'repo'))).toBe(true);
     expect(TOTAL_FIGHTS).toBe(12);
   });
 

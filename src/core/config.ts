@@ -87,7 +87,9 @@ export type AbilityKind =
   | 'mark'
   | 'penalty'
   | 'houseTake'
-  | 'deal';
+  | 'deal'
+  // THE GATEKEEPER (fight 4 of every act): repossesses a cell until the act's boss falls
+  | 'repo';
 export interface AbilityDef {
   kind: AbilityKind;
   /** Enemy turns per charge. */

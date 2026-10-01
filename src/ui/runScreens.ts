@@ -132,6 +132,7 @@ function abilityText(e: EnemyDef, every: number, run?: RunState): string {
     launder: `TAKES ${e.ability.power} CHIPS AND HEALS ${e.ability.power * 3 * UNIT}`,
     mark: `MARKS ${e.ability.power} OF YOUR CELLS`,
     penalty: `HITS FOR ${e.ability.power}`,
+    repo: 'REPOSSESSES YOUR BEST CELL (CHARMED FIRST). IT STAYS GONE UNTIL THE BOSS FALLS',
     houseTake: `RAKES YOUR GROUPS FOR ${e.ability.power} TURNS`,
     deal: 'DEALS: A CARD ON YOUR PAYLINE, ALL IN, OR RAISE',
   };

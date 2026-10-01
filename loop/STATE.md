@@ -1131,3 +1131,22 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - GREEN 18.2 / 16.1 / 19.3 / 16.4 / 13.0 (avg 16.6);
   - vs the Dealer 48.5 / 51.1 / 48.1 / 51.6 / 51.2 (avg 50.1).
 - Tests: 192.
+
+### Iteration 63 (2026-09-30): EXPERT_PLAYTEST_8 E11, THE GATEKEEPER (first version, tuning in progress)
+- **THE REPO MAN** holds fight 4 of every act (no fork; not in endless).
+  - Every 3 turns he repossesses your best cell (a charmed one first: confiscate; otherwise steal), at most 2 a fight.
+  - What he holds when he falls leaves your machine as liens (`run.liens`). They come back when the act's boss falls, or pay one off at the Cashier for 3 chips ("PAY OFF A LIEN", a service slot like the heal).
+  - He pays a 3-chip bounty. Plain strip (no gavels); HP ×1.3; uses the PIT BOSS portrait for now.
+  - Fight 4 (not 3), because BLUE stake's counter fork is act 2 fight 3, and the Cashier then opens before the boss.
+- **Tuning (tuesday 1000):**
+  | version | WHITE | GREEN |
+  |---|---|---|
+  | 3 takes, no reward | 37.6 | 14.5 |
+  | 2 takes, lien 3 | 38.5 | 15.2 |
+  | + elite rewards | 51.5 | 26.2 (reverted) |
+  | + 4-chip bounty | 43.1 | 18.3 |
+  | + 3-chip bounty (gate.sh) | knight 42.6, tesla 43.1, joker 42.0, midas 34.8 | avg ~16.6 |
+
+  The gate.sh BRIAR row glitched again (19.6/19.6).
+- **Open:** MIDAS WHITE 34.8 (was 38.6); the fight-4 death rate is 2.7% (gate 4–7%); the gatekeeper needs its own portrait (art agent).
+- Tests: 193 (tests/gatekeeper.test.ts; map tests updated).

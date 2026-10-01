@@ -193,6 +193,26 @@ ARCHETYPES.push(
   },
 );
 
+/**
+ * THE GATEKEEPER (EXPERT_PLAYTEST_8 E11): fight 4 of every act (no fork; the Cashier opens before the boss) is THE REPO MAN. Every 3 turns he repossesses
+ * your best cell (a charmed one first) and what he holds when he falls STAYS GONE until the act's boss falls, unless
+ * you pay it off at the Cashier. His writes outlast the fight, the game's hook between bosses.
+ */
+export const REPO_MAN: Archetype = {
+  id: 'repo',
+  name: 'REPO MAN',
+  portrait: 'enemyPitBoss',
+  // A plain strip: he only takes on his telegraphed turns (gavels would take on their own).
+  strip: { sword: 6, shield: 5 },
+  hpMul: 1.3,
+  ability: { kind: 'repo', every: 3, power: 1 },
+  minDepth: 2,
+  blurb: 'REPOSSESSES YOUR BEST CELL. WHAT HE HOLDS STAYS GONE UNTIL THE BOSS FALLS',
+  acts: [],
+};
+/** The gatekeeper's fight (0-based depth), how many cells he can take in one fight, and a lien's price. */
+export const GATEKEEPER = { depth: 3, maxTakes: 2, lienPrice: 3, bounty: 3 };
+
 export const ACT2_NEW: ReadonlySet<string> = new Set(['bomber', 'hexer', 'vampire', 'mimic', 'grounder', 'counterfeiter']);
 export const ACT3_NEW: ReadonlySet<string> = new Set(['sharp', 'pitboss', 'croupier']);
 /** Act 2's own enemies come back in act 3. */
@@ -366,6 +386,12 @@ export function generateRunPaths(rng: Rng, act = 1, loop = 1): EnemyDef[][] {
   const inAct = act >= 4 ? ARCHETYPES.filter((a) => actsOf(a).some((x) => x >= 2)) : ARCHETYPES.filter((a) => actsOf(a).includes(act));
   const len = actLength(act);
   for (let depth = 0; depth < len; depth++) {
+    // THE GATEKEEPER holds fight 4 of every act (not in endless).
+    if (depth === GATEKEEPER.depth && act < 4) {
+      out.push([makeEnemy(REPO_MAN, depth, rng, false, act)]);
+      prev = new Set([REPO_MAN.id]);
+      continue;
+    }
     let pool = inAct.filter((a) => a.minDepth <= depth && !prev.has(a.id));
     if (depth === 0 && act < 4) pool = act === 1 ? inAct.filter((a) => a.id === 'slime' || a.id === 'frost') : act === 2 ? inAct.filter((a) => ACT2_NEW.has(a.id) && a.minDepth === 0) : inAct.filter((a) => ACT3_NEW.has(a.id));
     if (pool.length === 0) pool = inAct.filter((a) => a.minDepth <= depth);

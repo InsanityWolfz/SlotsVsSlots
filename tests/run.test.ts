@@ -20,7 +20,9 @@ describe('run', () => {
       expect(run.enemies.at(-1)!.isBoss).toBe(true);
       expect(['slime', 'frost']).toContain(run.enemies[0].archetype);
       for (let i = 1; i < RUN_FIGHTS; i++) for (const o of run.paths[i]) for (const q of run.paths[i - 1]) expect(o.archetype).not.toBe(q.archetype);
-      for (const d of [1, 2, 3]) expect(run.paths[d]).toHaveLength(2);
+      for (const d of [1, 2]) expect(run.paths[d]).toHaveLength(2);
+      // Fight 4 is THE GATEKEEPER (no fork).
+      expect(run.paths[3].map((e) => e.archetype)).toEqual(['repo']);
     }
   });
 

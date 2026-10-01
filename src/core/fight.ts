@@ -26,7 +26,7 @@ import {
 } from './relics';
 import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
-import { ENDLESS, TUNE } from './enemies';
+import { ENDLESS, GATEKEEPER, TUNE } from './enemies';
 import { betPayout, betState, newTrack, trackEvent } from './bets';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
 export const MIDAS = { houseSkim: 2, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3, jackpotChips: 3, chipCap: 8 };
@@ -73,7 +73,7 @@ export const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', '
 /** HOLY WATER washes off these writes (not coins, drains or the Mimic's hit) and these abilities. */
 const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'bomb', 'hex', 'card', 'gavel', 'rake', 'ground', 'fake']);
 const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel']);
-const WRITER_ABILITIES: ReadonlySet<string> = new Set(['flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
+const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
 const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'shield', 'bolt', 'seven', 'thorn']);
 /** A cell's charm as the WILD wheel shows it (only charms that change a jackpot's pay or heal). */
@@ -1546,6 +1546,15 @@ export class Fight {
     events.push({ type: 'confiscate', from: me.side, to: foe.side, reels, cells, enhs: [...enhs] });
   }
 
+  /** THE REPO MAN: repossess your best cell (a charmed one first), up to GATEKEEPER.maxTakes a fight. */
+  private repoTaken = 0;
+  private repossess(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
+    if (this.repoTaken >= GATEKEEPER.maxTakes) return this.fizzle(me, 'gavel', [], events);
+    this.repoTaken++;
+    if (this.charmedTargets(foe, 1).length) return this.confiscate(me, foe, 1, [], events);
+    this.steal(me, foe, 1, [], events);
+  }
+
   /** Charmed cells to target: visible first (gold first), then the rest of the strips. */
   private charmedTargets(foe: Combatant, count: number, skip: (c: { faked?: number }) => boolean = () => false): CellRef[] {
     const vis = new Set(visibleCells(foe.reels).map((r) => `${r.reel}:${r.index}`));
@@ -1932,6 +1941,8 @@ export class Fight {
         return;
       case 'houseTake':
         return this.applyRake(me, foe, ab.power, [], events);
+      case 'repo':
+        return this.repossess(me, foe, events);
       case 'deal':
         return this.deal(me, foe, events);
       case 'earth': {

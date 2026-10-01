@@ -100,6 +100,8 @@ export function greedyValue(run: RunState, o: DraftOption): number {
       return (1 - p.hp / p.maxHp) * 14;
     case 'maxHp':
       return 3.5;
+    case 'payLien':
+      return 6;
     case 'swap': {
       if (o.to === 'wild') return run.cabinet === 'joker' ? 8 : 6;
       // Shields are the weakest symbol, your signature symbol the strongest.

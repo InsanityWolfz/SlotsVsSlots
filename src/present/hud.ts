@@ -35,6 +35,7 @@ export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> 
   launder: { icon: artId('icoLaunder'), label: 'LAUNDER' },
   mark: { icon: artId('icoMark'), label: 'STACKED DECK' },
   penalty: { icon: artId('icoGavel'), label: 'PENALTY' },
+  repo: { icon: artId('icoGavel'), label: 'REPO' },
   houseTake: { icon: artId('icoRake'), label: "HOUSE'S TAKE" },
   deal: { icon: artId('icoShuffle'), label: 'THE DEAL' },
 };
