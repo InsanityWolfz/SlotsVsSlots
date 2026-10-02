@@ -247,6 +247,13 @@ export interface RunState {
   /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day), and the day's HOUSE EDGE. */
   daily?: string;
   dailyEdge?: EdgeId;
+  /** THE WEEKLY CHALLENGE (its ISO week key, e.g. 2026-W40): fights fixed by the week, like the daily. */
+  weekly?: string;
+  /** A CHALLENGE run (its id, or "weekly"), and the HOUSE EDGES it plays under. */
+  challenge?: string;
+  mods?: EdgeId[];
+  /** Liens paid off at the Cashier (achievements). */
+  liensPaid?: number;
   /** Side bets placed this run (the bet relics show up after the first). */
   betsPlaced?: number;
   /** MARKER: the act (and loop) whose first busted bet was refunded. */
@@ -428,7 +435,9 @@ const DECK_MARKS_CAP = 6;
 /** Acts in this run: GREEN stake and up adds act 3 (THE DEALER). */
 /** GREEN and up always go on to ACT 3 (the Dealer). */
 /** Acts in this run: GREEN+ and THE DAILY RUN go on to the Dealer (act 3). */
-export const runActs = (run: RunState) => (run.stake >= STAKE.act3 || run.daily ? 3 : ACTS);
+/** THE DAILY RUN and THE WEEKLY CHALLENGE: fights fixed by the day / week, base-stake numbers, through the Dealer. */
+export const fixedRun = (run: RunState) => !!(run.daily || run.weekly);
+export const runActs = (run: RunState) => (run.stake >= STAKE.act3 || fixedRun(run) ? 3 : ACTS);
 /** Fights in the base run (2 acts, bosses included) — the most fights any act 1-2 run can have. */
 export const TOTAL_FIGHTS = ACTS * (actLength(1) + 1);
 /** Fights in this run, bosses included. */
@@ -581,7 +590,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     if (copy) cfg.enemy.relics = [copy];
   }
   // HOUSE EDGES bend the fight: the ones taken in endless, and THE DAILY RUN's edge of the day.
-  const edges = new Set<EdgeId>([...(run.endless?.edges ?? []), ...(run.dailyEdge ? [run.dailyEdge] : [])]);
+  const edges = new Set<EdgeId>([...(run.endless?.edges ?? []), ...(run.dailyEdge ? [run.dailyEdge] : []), ...(run.mods ?? [])]);
   if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 2) };
   if (edges.has('marked')) cfg.player.startMarks = Math.max(cfg.player.startMarks ?? 0, 3);
   if (edges.has('heal')) cfg.player.healMul = 0.5;
@@ -594,22 +603,27 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.enemy.dmgMul = Math.pow(ENDLESS.dmgBy[run.cabinet] ?? ENDLESS.dmg, run.endless.loop);
   }
   // THE DAILY RUN: every fight is fixed by the day, so everyone meets the same fights.
-  cfg.seed = run.daily ? dailyFightSeed(run.seed, run.act, run.depth, run.endless?.loop ?? 0) : null;
+  cfg.seed = fixedRun(run) ? dailyFightSeed(run.seed, run.act, run.depth, run.endless?.loop ?? 0) : null;
   return cfg;
 }
 
 /** Enemy symbols that write on your machine (for the WRITER house edge). */
 
 
+/** HOUSE EDGES that act at the start of a run: GLASS JAW takes its 10% of max HP. */
+export function startEdges(run: RunState, edges: EdgeId[]): void {
+  for (const e of edges)
+    if (e === 'frail') {
+      run.player.maxHp = Math.max(UNIT, run.player.maxHp - Math.round((run.player.maxHp * 0.1) / UNIT) * UNIT);
+      run.player.hp = Math.min(run.player.hp, run.player.maxHp);
+    }
+}
+
 /** Make a fresh run THE DAILY RUN of this day: fights fixed by the day, and the day's HOUSE EDGE. */
 export function applyDaily(run: RunState, key: string): void {
   run.daily = key;
   run.dailyEdge = dailyEdge(key);
-  // GLASS JAW takes its 10% at the start.
-  if (run.dailyEdge === 'frail') {
-    run.player.maxHp = Math.max(UNIT, run.player.maxHp - Math.round((run.player.maxHp * 0.1) / UNIT) * UNIT);
-    run.player.hp = Math.min(run.player.hp, run.player.maxHp);
-  }
+  startEdges(run, [run.dailyEdge]);
 }
 
 /** THE REPO MAN's takes (confiscated charms, repossessed cells) leave your machine as liens. */
@@ -772,7 +786,7 @@ export function enemyHp(run: RunState, e: EnemyDef): number {
   const tutorial = run.tutorial && run.act === 1 && e.depth === 0 ? TUTORIAL_OPENER_MUL : 1;
   const loop = run.endless ? Math.pow(ENDLESS.hpBy[run.cabinet] ?? ENDLESS.hp, run.endless.loop) : 1;
   // THE DAILY RUN plays act 3 at base-stake numbers: its act 3 (the Dealer included) is lighter.
-  const daily = run.daily && run.act >= 3 && !run.endless ? TUNE.dailyAct3 : 1;
+  const daily = fixedRun(run) && run.act >= 3 && !run.endless ? TUNE.dailyAct3 : 1;
   // Per machine: THE REPO MAN's HP (his liens cost machines differently: MIDAS loses its gold).
   const gate = e.archetype === REPO_MAN.id ? (BOSS_MUL[run.cabinet].gate ?? 1) : 1;
   return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * gate));
@@ -806,7 +820,7 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
   const cm = BOSS_MUL[run.cabinet];
   // GREEN+: the Mirror copies one of your relics, so it gets less HP (it was the run's real wall: EXPERT_PLAYTEST_6 E10).
   // THE DAILY RUN goes on to the Dealer too, so its Mirror is the eased one (without the copied relic).
-  if (e.boss === 'mirror') return unitsRound((unitsRound(TUNE.mirrorPower * cm.mirror * sizingPower(run, 'mirror')) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length) * (run.stake >= STAKE.mirrorRelic || run.daily ? TUNE.greenMirror : 1));
+  if (e.boss === 'mirror') return unitsRound((unitsRound(TUNE.mirrorPower * cm.mirror * sizingPower(run, 'mirror')) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length) * (run.stake >= STAKE.mirrorRelic || fixedRun(run) ? TUNE.greenMirror : 1));
   if (e.boss === 'dealer') return unitsRound(TUNE.dealerPower * cm.dealer * sizingPower(run, 'dealer')) + TUNE.dealerFlat + TUNE.mirrorPerRelic * run.player.relics.length;
   // BLACK+: the House cheats (faster skims, payline bombs, no chip shield) instead of just being tougher.
   const house = run.stake >= STAKE.houseDirty ? Math.sqrt(cm.house) : cm.house;
@@ -1343,7 +1357,10 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
       p.hp += o.amount;
       break;
     case 'payLien':
-      if (run.liens?.length) returnLien(run, run.liens.shift()!);
+      if (run.liens?.length) {
+        returnLien(run, run.liens.shift()!);
+        run.liensPaid = (run.liensPaid ?? 0) + 1;
+      }
       break;
   }
   // A charm lasts while its cell is on the reel.

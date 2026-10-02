@@ -4,6 +4,7 @@ import { RELICS } from './relics';
 import { MAX_STAKE } from './stakes';
 import { charmCount, fightNumber, runActs, totalFights, type RunState, bustPot } from './run';
 import { charmLevel } from './charms';
+import { ACHIEVEMENT_XP, CHALLENGES, levelOf, newAchievements, titlesOwned, WEEK_KEY, type AchievementDef, type ChallengeRecord, type MetaStats } from './meta';
 
 /**
  * The player's profile (saved locally): what they've discovered for the COLLECTION log, and a
@@ -49,6 +50,10 @@ export interface RunEntry {
   /** ENDLESS: loops cleared after LET IT RIDE, and the points banked (all of it on CASH OUT, half on a bust). */
   loops?: number;
   pot?: number;
+  /** A CHALLENGE run (its id, or "weekly"), THE WEEKLY CHALLENGE's week, and liens paid off. */
+  challenge?: string;
+  weekly?: string;
+  liensPaid?: number;
 }
 
 /** A daily key: YYYY-MM-DD. */
@@ -59,9 +64,17 @@ export interface Profile {
   runs: RunEntry[];
   /** THE DAILY RUN: the last day whose try was spent (it's spent when the run starts). */
   lastDaily?: string;
+  /** META: lifetime XP, achievements (id -> when), challenge bests (by id, and "weekly:<week>"), lifetime counters. */
+  xp: number;
+  achievements: Record<string, number>;
+  challenges: Record<string, ChallengeRecord>;
+  stats: MetaStats;
+  /** The player's name on the leaderboards (later: the Steam name), and the title they show. */
+  name?: string;
+  title?: string;
 }
 
-export const emptyProfile = (): Profile => ({ found: { relics: [], charms: [] }, runs: [] });
+export const emptyProfile = (): Profile => ({ found: { relics: [], charms: [] }, runs: [], xp: 0, achievements: {}, challenges: {}, stats: { runs: 0, wins: 0, dailies: 0 } });
 
 /** Charms on the player's machine, one entry per charm type. */
 export function charmsOf(run: RunState): CharmEntry[] {
@@ -93,6 +106,9 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
     ...(tutorial ? { tutorial: true } : {}),
     ...(run.daily ? { daily: run.daily, hpLeft: Math.max(0, run.player.hp) } : {}),
     ...(run.endless ? { loops: run.endless.loop - 1, pot: run.endless.cashed ? run.endless.pot : bustPot(run.endless.pot) + run.player.chips * 10 } : {}),
+    ...(run.challenge ? { challenge: run.challenge } : {}),
+    ...(run.weekly ? { weekly: run.weekly } : {}),
+    ...(run.liensPaid ? { liensPaid: run.liensPaid } : {}),
   };
 }
 
@@ -163,8 +179,109 @@ export function sanitizeProfile(raw: unknown): Profile {
         ...(typeof e.daily === 'string' && DATE_KEY.test(e.daily) ? { daily: e.daily, hpLeft: num(e.hpLeft, 0, 99999) } : {}),
         ...(typeof e.loops === 'number' ? { loops: num(e.loops, 0, 999) } : {}),
         ...(typeof e.pot === 'number' ? { pot: num(e.pot, 0, 1e9) } : {}),
+        ...(typeof e.challenge === 'string' && (e.challenge === 'weekly' || CHALLENGES.some((c) => c.id === e.challenge)) ? { challenge: e.challenge } : {}),
+        ...(typeof e.weekly === 'string' && WEEK_KEY.test(e.weekly) ? { weekly: e.weekly } : {}),
+        ...(typeof e.liensPaid === 'number' ? { liensPaid: num(e.liensPaid, 0, 99) } : {}),
       });
     }
   const lastDaily = typeof p.lastDaily === 'string' && DATE_KEY.test(p.lastDaily) ? p.lastDaily : undefined;
-  return { found: { relics: [...new Set(relicIds(f.relics))], charms: [...new Set(charmIds(f.charms))] }, runs, ...(lastDaily ? { lastDaily } : {}) };
+  const achievements: Record<string, number> = {};
+  if (p.achievements && typeof p.achievements === 'object')
+    for (const [k, v] of Object.entries(p.achievements as Record<string, unknown>)) if (/^[a-z0-9_]{1,24}$/.test(k)) achievements[k] = num(v, 0, 8.64e15);
+  const challenges: Record<string, ChallengeRecord> = {};
+  if (p.challenges && typeof p.challenges === 'object')
+    for (const [k, v] of Object.entries(p.challenges as Record<string, unknown>)) {
+      if (!(CHALLENGES.some((c) => c.id === k) || /^weekly:\d{4}-W\d{2}$/.test(k)) || !v || typeof v !== 'object') continue;
+      const r = v as Record<string, unknown>;
+      challenges[k] = { best: num(r.best, 0, 1e9), won: r.won === true, tries: num(r.tries, 0, 1e6) };
+    }
+  const st = (p.stats && typeof p.stats === 'object' ? p.stats : {}) as Record<string, unknown>;
+  // Old saves: their runs count towards XP and the counters once.
+  const stats: MetaStats = p.stats ? { runs: num(st.runs, 0, 1e7), wins: num(st.wins, 0, 1e7), dailies: num(st.dailies, 0, 1e7) } : { runs: runs.filter((r) => !r.tutorial).length, wins: runs.filter((r) => r.won && !r.tutorial).length, dailies: runs.filter((r) => r.daily).length };
+  const xp = typeof p.xp === 'number' ? num(p.xp, 0, 1e12) : runs.filter((r) => !r.tutorial).reduce((a, r) => a + runScore(r), 0);
+  const name = typeof p.name === 'string' ? cleanName(p.name) : '';
+  const title = str(p.title, 24);
+  return {
+    found: { relics: [...new Set(relicIds(f.relics))], charms: [...new Set(charmIds(f.charms))] },
+    runs,
+    ...(lastDaily ? { lastDaily } : {}),
+    xp,
+    achievements,
+    challenges,
+    stats,
+    ...(name ? { name } : {}),
+    ...(title ? { title } : {}),
+  };
+}
+
+/** A leaderboard name: 3-12 of A-Z, 0-9, _ and - (upper-cased; the pixel font has no lower case). '' if not valid. */
+export function cleanName(raw: string): string {
+  const n = raw.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 12);
+  return n.length >= 3 ? n : '';
+}
+
+/** What a finished run earned on the meta layers (for the run-over screen). */
+export interface MetaGain {
+  xp: number;
+  levelBefore: number;
+  levelAfter: number;
+  achievements: AchievementDef[];
+  titles: string[];
+  /** A challenge or weekly: this run beat its best. */
+  newBest: boolean;
+}
+
+/** Log a finished run on the meta layers: counters, challenge bests, achievements, XP (mutates the profile). */
+export function recordMeta(p: Profile, e: RunEntry, collectionTotal: number): MetaGain {
+  const before = levelOf(p.xp).level;
+  const titlesBefore = new Set(titlesOwned(before, p.challenges));
+  const score = runScore(e);
+  let newBest = false;
+  if (!e.tutorial) {
+    p.stats.runs++;
+    if (e.won) p.stats.wins++;
+    if (e.daily) p.stats.dailies++;
+    const key = e.weekly ? `weekly:${e.weekly}` : e.challenge;
+    if (key) {
+      const r = (p.challenges[key] ??= { best: 0, won: false, tries: 0 });
+      r.tries++;
+      newBest = score > r.best;
+      r.best = Math.max(r.best, score);
+      r.won ||= e.won;
+    }
+  }
+  const got = newAchievements({
+    won: e.won,
+    acts: e.acts,
+    act: e.act,
+    cabinet: e.cabinet,
+    stake: e.stake,
+    score,
+    chips: e.chips,
+    relics: e.relics.length,
+    loops: e.loops ?? 0,
+    killer: e.killer,
+    daily: !!e.daily,
+    weekly: !!e.weekly,
+    challenge: e.challenge,
+    liensPaid: e.liensPaid ?? 0,
+    tutorial: !!e.tutorial,
+    stats: p.stats,
+    have: p.achievements,
+    found: p.found.relics.length + p.found.charms.length,
+    collection: collectionTotal,
+    challengesWon: CHALLENGES.filter((c) => p.challenges[c.id]?.won).length,
+  });
+  for (const a of got) p.achievements[a.id] = e.at || Date.now();
+  const xp = e.tutorial ? 0 : score + got.length * ACHIEVEMENT_XP;
+  p.xp += xp;
+  const after = levelOf(p.xp).level;
+  const titles = titlesOwned(after, p.challenges).filter((t) => !titlesBefore.has(t));
+  return { xp, levelBefore: before, levelAfter: after, achievements: got, titles, newBest };
+}
+
+/** The title the player shows: their pick if they still hold it, else their best level title. */
+export function shownTitle(p: Profile): string {
+  const owned = titlesOwned(levelOf(p.xp).level, p.challenges);
+  return p.title && owned.includes(p.title) ? p.title : owned.filter((t) => !CHALLENGES.some((c) => c.title === t)).pop() ?? 'ROOKIE';
 }
