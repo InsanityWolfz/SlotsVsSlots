@@ -72,6 +72,8 @@ export interface Profile {
   /** The player's name on the leaderboards (later: the Steam name), and the title they show. */
   name?: string;
   title?: string;
+  /** A random id for this player's scores (src/net/identity.ts). */
+  pid?: string;
 }
 
 export const emptyProfile = (): Profile => ({ found: { relics: [], charms: [] }, runs: [], xp: 0, achievements: {}, challenges: {}, stats: { runs: 0, wins: 0, dailies: 0 } });
@@ -201,6 +203,7 @@ export function sanitizeProfile(raw: unknown): Profile {
   const xp = typeof p.xp === 'number' ? num(p.xp, 0, 1e12) : runs.filter((r) => !r.tutorial).reduce((a, r) => a + runScore(r), 0);
   const name = typeof p.name === 'string' ? cleanName(p.name) : '';
   const title = str(p.title, 24);
+  const pid = typeof p.pid === 'string' && /^[A-Za-z0-9:-]{8,64}$/.test(p.pid) ? p.pid : undefined;
   return {
     found: { relics: [...new Set(relicIds(f.relics))], charms: [...new Set(charmIds(f.charms))] },
     runs,
@@ -211,6 +214,7 @@ export function sanitizeProfile(raw: unknown): Profile {
     stats,
     ...(name ? { name } : {}),
     ...(title ? { title } : {}),
+    ...(pid ? { pid } : {}),
   };
 }
 

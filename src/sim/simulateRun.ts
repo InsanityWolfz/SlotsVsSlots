@@ -226,7 +226,7 @@ export interface RunSummary {
   turnsByAct: number[];
 }
 
-export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false): RunSummary {
+export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false, setup?: (run: RunState) => void): RunSummary {
   const seeds = new Rng(seed);
   const pick = new Rng(seed ^ 0x5eed);
   let wins = 0;
@@ -254,6 +254,8 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
   for (let i = 0; i < runs; i++) {
     const runSeed = seeds.int(0xffffffff);
     const run = createRun(base, runSeed, cabinet, stake, act3);
+    // A CHALLENGE / WEEKLY set-up (tools/balance/challenges.ts).
+    setup?.(run);
     if (SIM_BIAS.startRelic && !run.player.relics.includes(SIM_BIAS.startRelic)) run.player.relics.push(SIM_BIAS.startRelic);
     // The starting relic pick (off in probes that start with a relic, so they stay comparable).
     if (run.pendingStart?.length) {

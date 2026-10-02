@@ -29,12 +29,12 @@ export interface ChallengeDef {
 /** Cleared in order: each clear opens the next. */
 export const CHALLENGES: ChallengeDef[] = [
   { id: 'fast', name: 'FAST COMPANY', cabinet: 'knight', stake: 0, edges: ['fast'], title: 'QUICK DRAW', text: 'THE TABLE PLAYS FAST TONIGHT.' },
+  { id: 'glass', name: 'GLASS JAW', cabinet: 'joker', stake: 0, edges: ['frail', 'fast'], title: 'WILD CARD', text: 'ONE GOOD HIT AND IT IS OVER.' },
+  { id: 'rollers', name: 'HEAVY HITTERS', cabinet: 'tesla', stake: 0, edges: ['rollers'], title: 'LIVE WIRE', text: 'EVERYONE AT THIS TABLE CAME TO STAY.' },
   { id: 'broke', name: 'SHORT STACK', cabinet: 'midas', stake: 0, edges: [], chips: 0, title: 'SELF-MADE', text: 'KING AURUM WALKS IN WITH EMPTY POCKETS.' },
   { id: 'cut', name: 'BAD BLOOD', cabinet: 'thorn', stake: 0, edges: ['heal'], title: 'THORN IN THE SIDE', text: 'THE HOUSE TAKES ITS CUT OF EVERY HEAL.' },
-  { id: 'rollers', name: 'HEAVY HITTERS', cabinet: 'tesla', stake: 0, edges: ['rollers'], title: 'LIVE WIRE', text: 'EVERYONE AT THIS TABLE CAME TO STAY.' },
-  { id: 'glass', name: 'GLASS JAW', cabinet: 'joker', stake: 0, edges: ['frail', 'fast'], title: 'WILD CARD', text: 'ONE GOOD HIT AND IT IS OVER.' },
   { id: 'night', name: 'THE LONG NIGHT', cabinet: 'knight', stake: 2, edges: ['heal'], title: 'NIGHT OWL', text: 'ALL THE WAY TO THE DEALER, ON HALF HEALS.' },
-  { id: 'all', name: 'ALL OF IT', cabinet: 'midas', stake: 2, edges: ['rollers', 'fast'], title: 'HIGH ROLLER', text: 'THE WHOLE HOUSE IS AGAINST YOU. PROVE IT WRONG.' },
+  { id: 'all', name: 'ALL OF IT', cabinet: 'midas', stake: 2, edges: ['fast'], title: 'HIGH ROLLER', text: 'THE WHOLE HOUSE PLAYS FAST. ALL THE WAY TO THE DEALER.' },
 ];
 export const challengeById = (id: string) => CHALLENGES.find((c) => c.id === id);
 export const edgeLine = (edges: EdgeId[]) => (edges.length ? edges.map((e) => `${EDGE_TEXT[e].title}: ${EDGE_TEXT[e].text}`).join('. ') : '');
@@ -69,13 +69,16 @@ export function weekKey(d = new Date()): string {
 }
 export const WEEK_KEY = /^\d{4}-W\d{2}$/;
 
-/** The week's machine and two different HOUSE EDGES (the daily's set). */
+/** The weekly's HOUSE EDGES: the daily's set minus HOUSE CUT (paired with any other it left 3-6% weeks). */
+export const WEEKLY_EDGES: EdgeId[] = DAILY_EDGES.filter((e) => e !== 'heal');
+/** The week's machine and two different HOUSE EDGES. */
 export function weekly(key: string): { cabinet: CabinetId; edges: EdgeId[]; seed: number } {
   const seed = dailySeed(`weekly:${key}`);
   const cabinet = CABINET_ORDER[dailySeed(`weekly:${key}:machine`) % CABINET_ORDER.length];
-  const a = dailySeed(`weekly:${key}:edge`) % DAILY_EDGES.length;
-  const b = (a + 1 + (dailySeed(`weekly:${key}:edge2`) % (DAILY_EDGES.length - 1))) % DAILY_EDGES.length;
-  return { cabinet, edges: [DAILY_EDGES[a], DAILY_EDGES[b]], seed };
+  const n = WEEKLY_EDGES.length;
+  const a = dailySeed(`weekly:${key}:edge`) % n;
+  const b = (a + 1 + (dailySeed(`weekly:${key}:edge2`) % (n - 1))) % n;
+  return { cabinet, edges: [WEEKLY_EDGES[a], WEEKLY_EDGES[b]], seed };
 }
 
 /** Make a fresh run (seeded with weekly(key).seed) THE WEEKLY CHALLENGE: fights fixed by the week, through the Dealer. */
