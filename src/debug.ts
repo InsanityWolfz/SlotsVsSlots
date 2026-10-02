@@ -1,5 +1,5 @@
 import type { RelicId, SideId, SymbolId } from './core/config';
-import { ARCHETYPES, BOSS, DEALER, makeEnemy, MIRROR } from './core/enemies';
+import { ARCHETYPES, BOSS, DEALER, makeEnemy, MIRROR, REPO_MAN } from './core/enemies';
 import { Rng } from './core/rng';
 import type { CombatEvent } from './core/events';
 import type { Game } from './game';
@@ -77,7 +77,7 @@ export function installDebug(game: Game): void {
     },
     /** Start a paused sandbox fight against an archetype ('slime', 'frost', 'thief', 'golem', 'gremlin', 'brute', 'house'). */
     vs(id: string, player?: SymbolId[], enemy?: SymbolId[], relics: RelicId[] = []) {
-      const a = id === 'house' ? BOSS : id === 'mirror' ? MIRROR : id === 'dealer' ? DEALER : ARCHETYPES.find((x) => x.id === id);
+      const a = id === 'house' ? BOSS : id === 'mirror' ? MIRROR : id === 'dealer' ? DEALER : id === 'repo' ? REPO_MAN : ARCHETYPES.find((x) => x.id === id);
       if (!a) throw new Error(`no archetype ${id}`);
       const boss = id === 'house' || id === 'mirror' || id === 'dealer';
       const e = makeEnemy(a, 2, new Rng(1), boss, a.acts?.includes(3) ? 3 : a.acts?.includes(2) ? 2 : 1);

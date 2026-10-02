@@ -268,6 +268,9 @@ export function cleanName(raw: string): string {
 /** What a finished run earned on the meta layers (for the run-over screen). */
 export interface MetaGain {
   xp: number;
+  /** Lifetime XP before and after this run (the RESULTS bar fills between them). */
+  xpBefore: number;
+  xpAfter: number;
   levelBefore: number;
   levelAfter: number;
   achievements: AchievementDef[];
@@ -279,6 +282,7 @@ export interface MetaGain {
 /** Log a finished run on the meta layers: counters, challenge bests, achievements, XP (mutates the profile). */
 /** prevScore: an endless run updating the entry its Dealer win already logged (no new run, XP for the gain only). */
 export function recordMeta(p: Profile, e: RunEntry, collectionTotal: number, prevScore?: number): MetaGain {
+  const xpBefore = p.xp;
   const before = levelOf(p.xp).level;
   const titlesBefore = new Set(titlesOwned(before, p.challenges));
   const score = runScore(e);
@@ -302,7 +306,7 @@ export function recordMeta(p: Profile, e: RunEntry, collectionTotal: number, pre
   p.xp += xp;
   const after = levelOf(p.xp).level;
   const titles = titlesOwned(after, p.challenges).filter((t) => !titlesBefore.has(t));
-  return { xp, levelBefore: before, levelAfter: after, achievements: got, titles, newBest };
+  return { xp, xpBefore, xpAfter: p.xp, levelBefore: before, levelAfter: after, achievements: got, titles, newBest };
 }
 
 /** The title the player shows: their pick if they still hold it, else their best level title. */

@@ -1,6 +1,6 @@
 import type { Sounds } from '../audio/sounds';
 import type { MetaGain } from '../core/profile';
-import { challengeById } from '../core/meta';
+import { challengeById, levelOf } from '../core/meta';
 import { UNIT, type GameConfig, type SymbolId } from '../core/config';
 import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
 import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH, POT } from '../core/relics';
@@ -699,7 +699,7 @@ export class RunScreens {
     } else {
       const bossId = run.enemies[run.depth]?.boss;
       const boss = run.depth >= actLength(run.act) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'mirror' ? 'FACE THE MIRROR' : 'FACE THE HOUSE') : 'FIGHT!';
-      this.buttons = [this.btn(boss, W / 2, 640, 290, 64, () => this.cb.onFight(0))];
+      this.buttons = [this.btn(boss, W / 2, 640, boss === 'FIGHT!' ? 290 : 360, 64, () => this.cb.onFight(0))];
       this.addBetButtons(run);
     }
   }
@@ -817,15 +817,7 @@ export class RunScreens {
     }
     // THE DAILY RUN: a line to share, and a button that copies it.
     this.shareLine = run.daily ? dailyShare(run.daily, CABINETS[run.cabinet].hero, run.dailyEdge ? EDGE_TEXT[run.dailyEdge].title : '-', runScore(runEntry(run, 0)), run.records, actLength) : '';
-    if (this.shareLine) {
-      const copy = this.btn('COPY RESULT', W / 2, 590, 240, 40, () => {
-        void navigator.clipboard?.writeText(this.shareLine).then(
-          () => (copy.label = 'COPIED!'),
-          () => (copy.label = 'COPY FAILED'),
-        );
-      });
-      this.buttons.push(copy);
-    }
+    this.openResults();
   }
   /** THE DAILY RUN: the finished run's share line. */
   private shareLine = '';
@@ -835,6 +827,67 @@ export class RunScreens {
   setMeta(g: MetaGain): void {
     this.meta = g;
     this.onlineLine = '';
+  }
+  /** THE RESULTS card over the run-over table: XP filling, a level up, achievements, titles, unlocks, the share line. */
+  private results: { xp: number; fill: Promise<void> | null; done: boolean; level: number; pop: number } | null = null;
+  private resultsHit: Hit | null = null;
+  /** THE DAILY RUN: COPY RESULT, on the RESULTS card under the share line. */
+  private resultsCopy: Btn | null = null;
+  private openResults(): void {
+    const g = this.meta;
+    const worth = g && (g.xp > 0 || g.achievements.length || g.titles.length || this.unlockedNow.length || this.shareLine);
+    if (!g || !worth) {
+      this.results = null;
+      return;
+    }
+    const r = { xp: g.xpBefore, fill: null as Promise<void> | null, done: false, level: g.levelBefore, pop: 0 };
+    this.results = r;
+    this.resultsHit = this.hit(W / 2, H / 2, W, H, () => {
+      if (!r.done) return this.finishResults(r);
+      this.results = null;
+      this.resultsHit = null;
+      this.resultsCopy = null;
+    });
+    const copy = this.shareLine
+      ? this.btn('COPY RESULT', W / 2, 584, 240, 40, () => {
+          void navigator.clipboard?.writeText(this.shareLine).then(
+            () => (copy!.label = 'COPIED!'),
+            () => (copy!.label = 'COPY FAILED'),
+          );
+        })
+      : null;
+    this.resultsCopy = copy;
+    // The bar fills over ~1.6 s (a click skips it); each level crossed pops a banner.
+    r.fill = this.ui
+      .tween({
+        from: g.xpBefore,
+        to: g.xpAfter,
+        dur: Math.min(2.2, 0.6 + g.xp / 4000),
+        ease: sineOut,
+        onUpdate: (v) => {
+          if (r.done) return;
+          r.xp = v;
+          const lvl = levelOf(v).level;
+          if (lvl > r.level) {
+            r.level = lvl;
+            this.levelPop(r);
+          }
+        },
+      })
+      .then(() => this.finishResults(r));
+  }
+  private finishResults(r: NonNullable<typeof this.results>): void {
+    if (r.done || !this.meta) return;
+    r.done = true;
+    r.xp = this.meta.xpAfter;
+    if (this.meta.levelAfter > r.level) {
+      r.level = this.meta.levelAfter;
+      this.levelPop(r);
+    }
+  }
+  private levelPop(r: NonNullable<typeof this.results>): void {
+    this.sounds.fanfareJackpot();
+    void this.ui.tween({ from: 1, to: 0, dur: 0.9, onUpdate: (v) => (r.pop = v) });
   }
   setOnline(text: string): void {
     this.onlineLine = text;
@@ -847,6 +900,7 @@ export class RunScreens {
   // ---- input -------------------------------------------------------------------------
 
   private all(): Hit[] {
+    if (this.mode === 'over' && this.results && this.resultsHit) return this.resultsCopy ? [this.resultsCopy, this.resultsHit] : [this.resultsHit];
     return [...this.cards.filter((c) => c.enabled), ...this.buttons, ...this.shopHits.filter((_, i) => !this.shopItems[i]?.sold)];
   }
 
@@ -1439,7 +1493,8 @@ export class RunScreens {
     ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, b.h - 8);
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
     ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, (b.h - 8) / 2);
-    drawText(ctx, b.label, 0, 1, b.label.length > 11 ? 2 : 3, '#fff6c8');
+    // The big size whenever the label fits the button (the boss buttons used to drop a size).
+    drawText(ctx, b.label, 0, 1, b.label.length <= 11 || b.label.length * 18 <= b.w - 30 ? 3 : 2, '#fff6c8');
     ctx.restore();
   }
 
@@ -1490,23 +1545,9 @@ export class RunScreens {
 
   private drawOver(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
-    // META: the run's XP, a level up, new achievements and titles, the leaderboard rank.
-    if (this.meta) {
-      const g = this.meta;
-      const parts = [
-        g.xp ? `+${g.xp} XP` : '',
-        g.levelAfter > g.levelBefore ? `LEVEL ${g.levelAfter}!` : '',
-        g.newBest ? 'NEW BEST!' : '',
-        g.achievements.length ? `${g.achievements.length > 1 ? 'ACHIEVEMENTS' : 'ACHIEVEMENT'}: ${g.achievements.map((a) => a.name).join(', ')}` : '',
-        g.titles.length ? `NEW TITLE: ${g.titles.join(', ')}` : '',
-        this.onlineLine,
-      ].filter(Boolean);
-      const line = parts.join('  -  ');
-      if (line) drawText(ctx, line, W / 2, 700, line.length > 110 ? 1.25 : 1.5, g.achievements.length || g.levelAfter > g.levelBefore ? COLORS.goldLight : COLORS.textDim);
-    }
-    if (this.shareLine) drawText(ctx, this.shareLine, W / 2, 556, 1.5, '#7dff7a');
+    // The leaderboard post's result (the rest of the meta is on the RESULTS card).
+    if (this.onlineLine) drawText(ctx, this.onlineLine, W / 2, 702, 1.5, COLORS.goldLight);
     const trueEnding = run.won && run.act >= 3;
-    if (this.rideOffer) drawText(ctx, 'YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', W / 2, this.unlockedNow.length ? 492 : 466, this.unlockedNow.length ? 1.5 : 2, COLORS.goldLight);
     const busted = !!run.endless;
     drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
@@ -1514,9 +1555,13 @@ export class RunScreens {
     const lastRec = run.records[run.records.length - 1];
     const loss = lastRec && !lastRec.won ? lastRec : undefined;
     const recap = loss?.hurt?.length ? `KILLED BY ${loss.enemy}: ${loss.hurt.map(([k, n]) => `${k} ${n}`).join(' - ')}${loss.stuck ? `  (FROZEN ${loss.stuck[0]} OF ${loss.stuck[1]} SPINS)` : ''}` : '';
-    if (recap) drawText(ctx, recap, W / 2, this.unlockedNow.length ? 460 : 466, 1.5, COLORS.danger);
-    if (this.unlockedNow.length)
-      drawText(ctx, `NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, W / 2, recap ? 474 : 466, recap ? 1.5 : 2, COLORS.goldLight);
+    // The lines between the table and the reels panel: stacked so they never overlap it or each other.
+    const lines: [string, string][] = [];
+    if (recap) lines.push([recap, COLORS.danger]);
+    if (this.unlockedNow.length) lines.push([`NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, COLORS.goldLight]);
+    if (this.rideOffer) lines.push(['YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', COLORS.goldLight]);
+    const shown = lines.slice(0, 2);
+    shown.forEach(([text, color], k) => drawText(ctx, text, W / 2, shown.length > 1 ? 459 + k * 14 : 466, shown.length > 1 || text.length > 90 ? 1.5 : 2, color));
     // Chips left (a won run scores them) and the side bets' record.
     const bets = run.records.filter((r) => r.bet);
     const betLine = bets.length ? `  -  SIDE BETS ${bets.filter((r) => r.bet!.won).length} OF ${bets.length}` : '';
@@ -1555,14 +1600,16 @@ export class RunScreens {
         this.actPlaque(ctx, 1150, y - rowH / 2, 'ACT 3', '#7dff7a');
       }
       if (compact && i === 0) this.actPlaque(ctx, 1150, y - rowH / 2, 'ACT 1', COLORS.goldLight);
-      drawSprite(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 150, y, compact ? 0.9 : 1.4);
-      drawText(ctx, r.enemy, 176, y, 2, r.won ? COLORS.text : COLORS.danger, { align: 'left' });
-      drawText(ctx, `${Math.ceil(r.turns / 2)}`, 560, y, 2, COLORS.text);
-      drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 680, y, 2, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
+      // Tight rows (a GREEN run has 18) get smaller text, so the act dividers run between rows, not through them.
+      const ts = rowH < 22 ? 1.5 : 2;
+      drawSprite(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 150, y, compact ? (rowH < 22 ? 0.65 : 0.9) : 1.4);
+      drawText(ctx, r.enemy, 176, y, ts, r.won ? COLORS.text : COLORS.danger, { align: 'left' });
+      drawText(ctx, `${Math.ceil(r.turns / 2)}`, 560, y, ts, COLORS.text);
+      drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 680, y, ts, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
       if (compact) {
         const parts = [...(r.bonuses ?? []), r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
         const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
-        drawText(ctx, what.length > 34 ? `${what.slice(0, 33)}...` : what, 790, y, 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
+        drawText(ctx, what.length > 34 ? `${what.slice(0, 33)}...` : what, 790, y, rowH < 22 ? 1.25 : 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
         return;
       }
       if (r.pick) drawText(ctx, describeOption(r.pick).title, 790, y - 6, 2, '#c9a0ff', { align: 'left' });
@@ -1574,11 +1621,74 @@ export class RunScreens {
       ].filter(Boolean).join('  ');
       if (extra) drawText(ctx, extra, 790, y + 12, 1, COLORS.textDim, { align: 'left' });
       else if (!r.won) drawText(ctx, 'DEFEATED', 790, y, 2, COLORS.danger, { align: 'left' });
-      if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCKS`, 640, y + 12, 1, '#c9bba8');
+      if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCK${r.rocksAdded > 1 ? 'S' : ''}`, 640, y + 12, 1, '#c9bba8');
     });
     this.panel(ctx, 110, 480, 1060, 134);
     this.drawStrips(ctx, 130, 494);
     this.drawRelics(ctx, 620, 496);
     for (const b of this.buttons) this.drawButton(ctx, b, 0);
+    if (this.results) this.drawResults(ctx, run);
+  }
+
+  /** THE RESULTS card: what the run earned outside the run. */
+  private drawResults(ctx: CanvasRenderingContext2D, run: RunState): void {
+    const g = this.meta!;
+    const r = this.results!;
+    ctx.fillStyle = 'rgba(6,2,12,0.75)';
+    ctx.fillRect(0, 0, W, H);
+    const x0 = 200;
+    const w = W - 400;
+    this.panel(ctx, x0, 96, w, 540, COLORS.gold);
+    drawText(ctx, 'RESULTS', W / 2, 132, 4, COLORS.goldLight);
+    // XP bar.
+    const lv = levelOf(r.xp);
+    drawText(ctx, `+${Math.round(r.xp - g.xpBefore)} XP`, x0 + 40, 190, 2.5, COLORS.text, { align: 'left' });
+    drawText(ctx, `LEVEL ${lv.level}`, x0 + w - 40, 190, 2.5, COLORS.goldLight, { align: 'right', punch: 1 + 0.5 * r.pop });
+    const bx = x0 + 40;
+    const bw = w - 80;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(bx - 3, 210, bw + 6, 22);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(bx, 213, bw, 16);
+    ctx.fillStyle = COLORS.energy;
+    ctx.fillRect(bx, 213, Math.round((bw * lv.into) / Math.max(1, lv.need)), 16);
+    drawText(ctx, `${Math.round(lv.into)}/${lv.need} XP TO LEVEL ${lv.level + 1}`, W / 2, 246, 1.25, COLORS.textDim);
+    if (r.pop > 0.01) drawText(ctx, `LEVEL ${r.level}!`, W / 2, 170, 4 + 2 * r.pop, '#ffd23f', { alpha: Math.min(1, r.pop * 2) });
+    let y = 280;
+    // Unlocks, new titles, a new best.
+    const notes: [string, string][] = [];
+    if (this.unlockedNow.length) notes.push([`NEW SLOT MACHINE: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}`, '#7dff7a']);
+    for (const t of g.titles) notes.push([`NEW TITLE: ${t}`, '#ffd23f']);
+    if (g.newBest) notes.push([run.weekly ? 'NEW WEEKLY BEST!' : 'NEW CHALLENGE BEST!', COLORS.goldLight]);
+    for (const [text, color] of notes.slice(0, 3)) {
+      drawText(ctx, text, W / 2, y, 2.5, color);
+      y += 34;
+    }
+    // Achievements: up to 4 cards, then "+N MORE".
+    if (g.achievements.length) {
+      drawText(ctx, g.achievements.length > 1 ? `${g.achievements.length} ACHIEVEMENTS` : 'ACHIEVEMENT', W / 2, y + 4, 2, COLORS.text);
+      const shown = g.achievements.slice(0, 4);
+      const cw = 196;
+      const gap = 12;
+      const left = W / 2 - (shown.length * cw + (shown.length - 1) * gap) / 2;
+      shown.forEach((a, i) => {
+        const cx = left + i * (cw + gap);
+        const cy = y + 24;
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(cx, cy, cw, 116);
+        ctx.fillStyle = '#8a6a1c';
+        ctx.fillRect(cx + 3, cy + 3, cw - 6, 110);
+        ctx.fillStyle = COLORS.panel;
+        ctx.fillRect(cx + 6, cy + 6, cw - 12, 104);
+        if (hasSprite('trophySmall')) drawSprite(ctx, artId('trophySmall'), cx + cw / 2, cy + 26, 2);
+        wrap(a.name, 18).slice(0, 2).forEach((l, k) => drawText(ctx, l, cx + cw / 2, cy + 52 + k * 15, 1.5, COLORS.goldLight));
+        wrap(a.text, 26).slice(0, 2).forEach((l, k) => drawText(ctx, l, cx + cw / 2, cy + 86 + k * 11, 1, COLORS.textDim));
+      });
+      if (g.achievements.length > 4) drawText(ctx, `+${g.achievements.length - 4} MORE ON THE TROPHIES SCREEN`, W / 2, y + 156, 1.5, COLORS.textDim);
+      y += 172;
+    }
+    if (this.shareLine) drawText(ctx, this.shareLine, W / 2, 548, 1.5, '#7dff7a');
+    if (this.resultsCopy) this.drawButton(ctx, this.resultsCopy, 0);
+    drawText(ctx, r.done ? 'CLICK TO CONTINUE' : 'CLICK TO SKIP', W / 2, 620, 1.5, COLORS.textDim, { alpha: 0.6 + 0.4 * Math.sin(performance.now() / 200) });
   }
 }
