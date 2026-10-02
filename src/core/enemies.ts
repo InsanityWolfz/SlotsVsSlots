@@ -216,7 +216,7 @@ export const REPO_MAN: Archetype = {
 /** The gatekeeper's fight (0-based depth), how many cells he can take in one fight, a lien's price, his bounty, the turn of
  * his first take, the acts he holds (act 3 has the Pit Boss's confiscates), and whether his liens outlast his fight (a
  * measuring knob: false returns them at once). */
-export const GATEKEEPER = { depth: 3, maxTakes: 2, lienPrice: 3, bounty: 3, firstTurn: 2, acts: 2, persist: true };
+export const GATEKEEPER = { depth: 3, maxTakes: 2, lienPrice: 3, bounty: 3, firstTurn: 1, acts: 2, persist: true };
 
 export const ACT2_NEW: ReadonlySet<string> = new Set(['bomber', 'hexer', 'vampire', 'mimic', 'grounder', 'counterfeiter']);
 export const ACT3_NEW: ReadonlySet<string> = new Set(['sharp', 'pitboss', 'croupier']);

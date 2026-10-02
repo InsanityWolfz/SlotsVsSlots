@@ -194,8 +194,9 @@ export class Menus {
       const key = weekKey();
       const wk = weekly(key);
       const best = this.profile().challenges[`weekly:${key}`];
-      const wl = best ? `WEEKLY: BEST ${best.best}` : `WEEKLY: ${CABINETS[wk.cabinet].hero} + ${wk.edges.map((e) => EDGE_TEXT[e].title).join(' + ')}`;
-      this.btn(wl, x, 442, 380, 54, () => this.cb.onWeekly(), wl.length > 26 ? 1.25 : wl.length > 20 ? 1.5 : wl.length > 14 ? 2 : 3);
+      // Short: the machine (or your best); the week's edges are on the CHALLENGES screen and the run's first card.
+      const wl = best ? `WEEKLY: BEST ${best.best}` : `WEEKLY: ${CABINETS[wk.cabinet].name}`;
+      this.btn(wl, x, 442, 380, 54, () => this.cb.onWeekly(), wl.length > 18 ? 2 : 3);
       this.btn('CHALLENGES', x, 504, 380, 54, () => this.showChallenges(), 3);
       this.mainIcons.push('trophySmall', 'trophySmall');
       const w = 89;

@@ -332,7 +332,7 @@ export class Fight {
     if (this.cfg.enemy.first) this.next = 'enemy';
     // ACT 3 regulars open with their ability on their first turn (it never fired in 38% of act 3 fights: EXPERT_PLAYTEST_3 C3).
     if (this.act3Regular && this.sides.enemy.ability) this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - 1);
-    // THE REPO MAN takes on his 2nd turn, then every 3 (half of MIDAS's fights ended before his 3rd: EXPERT_PLAYTEST_9 D3).
+    // THE REPO MAN takes on his first turn, then every 3 (half of MIDAS's fights ended before his 3rd: EXPERT_PLAYTEST_9 D3).
     else if (this.sides.enemy.ability?.kind === 'repo') this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - GATEKEEPER.firstTurn);
     if (this.isDealer) this.nextDeal = this.rng.pick(DEALS);
     // The chase symbols: one BONUS and one RELIC cell per reel, for this fight only.

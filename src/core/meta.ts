@@ -26,15 +26,16 @@ export interface ChallengeDef {
   text: string;
 }
 
-/** Cleared in order: each clear opens the next. */
 export const CHALLENGES: ChallengeDef[] = [
-  { id: 'fast', name: 'FAST COMPANY', cabinet: 'knight', stake: 0, edges: ['fast'], title: 'QUICK DRAW', text: 'THE TABLE PLAYS FAST TONIGHT.' },
+  // Ordered by measured difficulty (challenges.ts 400 greedy, EXPERT_PLAYTEST_9 D4): 34 / 30 / 29 / 27 / 25 / 13.5 / 11.
   { id: 'glass', name: 'GLASS JAW', cabinet: 'joker', stake: 0, edges: ['frail', 'fast'], title: 'WILD CARD', text: 'ONE GOOD HIT AND IT IS OVER.' },
   { id: 'rollers', name: 'HEAVY HITTERS', cabinet: 'tesla', stake: 0, edges: ['rollers'], title: 'LIVE WIRE', text: 'EVERYONE AT THIS TABLE CAME TO STAY.' },
+  { id: 'fast', name: 'FAST COMPANY', cabinet: 'knight', stake: 0, edges: ['fast'], title: 'QUICK DRAW', text: 'THE TABLE PLAYS FAST TONIGHT.' },
   { id: 'broke', name: 'SHORT STACK', cabinet: 'midas', stake: 0, edges: [], chips: 0, title: 'SELF-MADE', text: 'KING AURUM WALKS IN WITH EMPTY POCKETS.' },
-  { id: 'cut', name: 'BAD BLOOD', cabinet: 'thorn', stake: 0, edges: ['heal'], title: 'THORN IN THE SIDE', text: 'THE HOUSE TAKES ITS CUT OF EVERY HEAL.' },
-  { id: 'night', name: 'THE LONG NIGHT', cabinet: 'knight', stake: 2, edges: ['heal'], title: 'NIGHT OWL', text: 'ALL THE WAY TO THE DEALER, ON HALF HEALS.' },
+  // (Was HOUSE CUT: it attacked BRIAR's identity, 50.7 -> 13.7, and walled the ladder: EXPERT_PLAYTEST_9 D4.)
+  { id: 'cut', name: 'BAD BLOOD', cabinet: 'thorn', stake: 0, edges: ['rollers', 'frail', 'fast'], title: 'THORN IN THE SIDE', text: 'EVERY TABLE CAME TO STAY. LET THEM BLEED ON YOUR THORNS.' },
   { id: 'all', name: 'ALL OF IT', cabinet: 'midas', stake: 2, edges: ['fast'], title: 'HIGH ROLLER', text: 'THE WHOLE HOUSE PLAYS FAST. ALL THE WAY TO THE DEALER.' },
+  { id: 'night', name: 'THE LONG NIGHT', cabinet: 'knight', stake: 2, edges: ['heal'], title: 'NIGHT OWL', text: 'ALL THE WAY TO THE DEALER, ON HALF HEALS.' },
 ];
 export const challengeById = (id: string) => CHALLENGES.find((c) => c.id === id);
 export const edgeLine = (edges: EdgeId[]) => (edges.length ? edges.map((e) => `${EDGE_TEXT[e].title}: ${EDGE_TEXT[e].text}`).join('. ') : '');
@@ -47,7 +48,7 @@ export interface ChallengeRecord {
 }
 /** The first two are open; each clear opens the next two, so one hard step never walls off the rest (EXPERT_PLAYTEST_9 D4). */
 export const challengeOpen = (records: Record<string, ChallengeRecord>, i: number) =>
-  i <= 1 || !!records[CHALLENGES[i - 1].id]?.won || !!records[CHALLENGES[i - 2].id]?.won;
+  i <= 1 || !!records[CHALLENGES[i].id]?.won || !!records[CHALLENGES[i - 1].id]?.won || !!records[CHALLENGES[i - 2].id]?.won;
 
 /** Set up a fresh run (made with the challenge's machine and stake) as this challenge. */
 export function applyChallenge(run: RunState, c: ChallengeDef): void {
