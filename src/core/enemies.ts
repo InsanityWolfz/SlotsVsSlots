@@ -6,6 +6,8 @@ import type { Rng } from './rng';
 export interface Archetype {
   id: string;
   name: string;
+  /** A named character (THE REPO MAN): no random adjective. */
+  fixedName?: string;
   portrait: string;
   /** Per-reel strip composition before jitter. */
   strip: StripCounts;
@@ -201,6 +203,7 @@ ARCHETYPES.push(
 export const REPO_MAN: Archetype = {
   id: 'repo',
   name: 'REPO MAN',
+  fixedName: 'THE REPO MAN',
   portrait: 'enemyRepoMan',
   // A plain strip: he only takes on his telegraphed turns (gavels would take on their own).
   strip: { sword: 7, shield: 5 },
@@ -359,7 +362,8 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
     depth,
     blurb: a.blurb,
     isBoss,
-    name: isBoss ? a.name : `${rng.pick(ADJECTIVES)} ${a.name}`,
+    // The adjective is always drawn (keeps seeded runs' fights the same), but named characters keep their name.
+    name: ((adj) => (isBoss ? a.name : (a.fixedName ?? `${adj} ${a.name}`)))(isBoss ? '' : rng.pick(ADJECTIVES)),
     portrait: a.portrait,
     hp,
     strips: (isBoss ? [{ ...a.strip }, { ...a.strip }, { ...a.strip }] : [0, 1, 2].map(() => jitter(a.strip, rng))).map((st) =>

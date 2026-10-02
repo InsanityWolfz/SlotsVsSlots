@@ -170,6 +170,8 @@ export class Menus {
   }
 
   showMain(): void {
+    // No name yet (first launch, or the one picked offline was taken): pick one first.
+    if (this.cb.needsName()) return this.showName();
     this.open('main');
     const x = W / 2;
     const first = !this.cb.tutorialDone();

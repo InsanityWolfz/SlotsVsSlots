@@ -339,7 +339,7 @@ export class Game {
     if (run.endless && this.rideEntry) {
       const prev = runScore(this.rideEntry);
       Object.assign(this.rideEntry, runEntry(run, this.rideEntry.at, !!run.tutorial), { won: true });
-      this.afterRecord(this.rideEntry, recordMeta(this.profile, this.rideEntry, collectionTotal(), prev));
+      this.afterRecord(this.rideEntry, recordMeta(this.profile, this.rideEntry, collectionTotal(), prev), true);
       return;
     }
     const entry = runEntry(run, Date.now(), !!run.tutorial);
@@ -354,15 +354,16 @@ export class Game {
   }
 
   /** META: save, show what the run earned, and post it to the leaderboards. */
-  private afterRecord(entry: RunEntry, gain: MetaGain): void {
+  private afterRecord(entry: RunEntry, gain: MetaGain, ride = false): void {
     this.saveProfile();
     this.screens.setMeta(gain);
     if (entry.tutorial || !online() || !playerName(this.profile)) return;
-    const boards = ['all', ...(entry.daily ? [`daily:${entry.daily}`] : []), ...(entry.weekly ? [`weekly:${entry.weekly}`] : [])];
+    // An endless ride re-posts its bigger score, but a daily board keeps the one score it took at the Dealer.
+    const boards = ['all', ...(entry.daily && !ride ? [`daily:${entry.daily}`] : []), ...(entry.weekly ? [`weekly:${entry.weekly}`] : [])];
     const main = boards[boards.length - 1];
     this.screens.setOnline('POSTING YOUR SCORE...');
     void this.claimed().then(async (ok) => {
-      if (!ok) return this.screens.setOnline('');
+      if (!ok) return this.screens.setOnline(this.profile.name ? '' : 'YOUR NAME WAS TAKEN: PICK A NEW ONE AT THE MENU');
       const ranks = await Promise.all(
         boards.map((board) =>
           submitScore({
@@ -396,6 +397,11 @@ export class Game {
       this.saveProfile();
     }
     this.nameClaimed = r === 'ok' || r.startsWith('have:');
+    // Picked offline and someone got there first: ask again at the menu.
+    if (r === 'taken') {
+      delete this.profile.name;
+      this.saveProfile();
+    }
     return this.nameClaimed;
   }
 
@@ -415,7 +421,9 @@ export class Game {
   private resetSave(): void {
     const { speed, auto, juice, muted } = this.prefs;
     this.prefs = { ...sanitizePrefs({}, this.publicBuild), speed, auto, juice, muted };
-    this.profile = emptyProfile();
+    // Your name and player id are who you are, not progress: they survive a reset (the server still holds the name).
+    const { name, pid } = this.profile;
+    this.profile = { ...emptyProfile(), ...(name ? { name } : {}), ...(pid ? { pid } : {}) };
     this.savePrefs();
     this.saveProfile();
   }

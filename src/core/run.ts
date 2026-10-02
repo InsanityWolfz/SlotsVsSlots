@@ -632,8 +632,10 @@ function takeLiens(run: RunState, fight: Fight): void {
   const liens: Lien[] = [];
   fight.sides.player.reels.forEach((reel, r) =>
     reel.cells.forEach((c) => {
+      // His second take can steal the cell his first one stripped: the cell goes first, then its charm (paying off
+      // in that order puts the cell back before the charm needs it).
+      if (c.stolen) liens.push({ reel: r, symbol: c.symbol });
       if (c.confiscated) liens.push({ reel: r, symbol: c.symbol, enh: c.confiscated });
-      else if (c.stolen) liens.push({ reel: r, symbol: c.symbol });
     }),
   );
   for (const l of liens.slice(0, GATEKEEPER.maxTakes)) {

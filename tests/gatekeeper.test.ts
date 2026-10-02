@@ -38,4 +38,29 @@ describe('THE GATEKEEPER: the REPO MAN', () => {
     expect(run.liens).toEqual([]);
     expect(run.player.strips[1].sword).toBe(swords1);
   });
+
+  it('his second take on the cell he stripped: the cell and its charm are both held, and come back in order', () => {
+    const base = defaultConfig();
+    const run = createRun(base, 5, 'knight');
+    run.pendingStart = null;
+    run.chosen = run.chosen.map(() => true);
+    run.depth = GATEKEEPER.depth;
+    run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 1 }];
+    const swords0 = run.player.strips[0].sword ?? 0;
+    const f = new Fight(fightConfig(run, base), 3);
+    const gold = f.sides.player.reels[0].cells.find((c) => c.enh === 'gold')!;
+    gold.confiscated = gold.enh;
+    delete gold.enh;
+    gold.stolen = true;
+    f.winner = 'player';
+    finishFight(run, f);
+    expect(run.liens).toEqual([{ reel: 0, symbol: 'sword' }, { reel: 0, symbol: 'sword', enh: 'gold' }]);
+    expect(run.player.strips[0].sword).toBe(swords0 - 1);
+    expect(run.player.gilded).toEqual([]);
+    applyOption(run, { kind: 'payLien' });
+    applyOption(run, { kind: 'payLien' });
+    expect(run.player.strips[0].sword).toBe(swords0);
+    expect(run.player.gilded).toEqual([{ reel: 0, symbol: 'sword', enh: 'gold', n: 1 }]);
+    expect(run.liensPaid).toBe(2);
+  });
 });

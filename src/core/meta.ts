@@ -194,7 +194,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'score_10k', name: 'JACKPOT', text: 'SCORE 10,000 IN ONE RUN.', check: (c) => c.score >= 10000 },
   { id: 'score_20k', name: 'WHALE WATCHING', text: 'SCORE 20,000 IN ONE RUN.', check: (c) => c.score >= 20000 },
   { id: 'lien_paid', name: 'PAID IN FULL', text: 'PAY OFF A LIEN AT THE CASHIER.', check: (c) => c.liensPaid >= 1 },
-  { id: 'repo_loss', name: 'REPOSSESSED', text: 'LOSE A RUN TO THE REPO MAN.', secret: true, check: (c) => !c.won && c.killer === 'REPO MAN' },
+  { id: 'repo_loss', name: 'REPOSSESSED', text: 'LOSE A RUN TO THE REPO MAN.', secret: true, check: (c) => !c.won && !!c.killer?.endsWith('REPO MAN') },
   { id: 'runs_25', name: 'REGULAR', text: 'PLAY 25 RUNS.', check: (c) => c.stats.runs >= 25 },
   { id: 'runs_100', name: 'LIFER', text: 'PLAY 100 RUNS.', check: (c) => c.stats.runs >= 100 },
   { id: 'collect_half', name: 'COLLECTOR', text: 'DISCOVER HALF THE COLLECTION.', check: (c) => c.found * 2 >= c.collection },
