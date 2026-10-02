@@ -1235,3 +1235,65 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - Round 1's two "stuck" runs were bot artifacts: RELIC RUSH runs on the UI clock (8x doesn't speed it up), and the fork + side bet + FIGHT flow was checked separately and works.
   - Phone (844×390, touch): the name box focuses, input is upper-cased, OK lands on the menu.
 - Tests: 207.
+
+### Iteration 66 (2026-10-02): EXPERT_PLAYTEST_9 (likes/dislikes → agreed plan → built)
+- `playtest/EXPERT_PLAYTEST_9.md`: 11 likes, 12 dislikes. The plan was agreed with the playtester (its AGREED PLAN section).
+- **D2, the RESULTS card on the run-over:**
+  - XP fills (a click skips), with a LEVEL N! banner and sting;
+  - achievement cards (4 + "N MORE");
+  - titles, unlocks, new bests;
+  - the daily share line with COPY RESULT.
+  - Fixed the unlock line hidden under the reels panel, COPY RESULT on the relics, and the off-screen meta line.
+  - Tight run-over rows shrink, so the act dividers clear the text.
+- **D3, THE REPO MAN:**
+  - REPOSSESSED popups ("GONE UNTIL THE BOSS FALLS");
+  - liens in YOUR REELS ("HELD BY THE REPO MAN: ..."), on the map ("GIVES BACK N HELD") and on the run-over ("N HELD");
+  - acts 1–2 only (act 3 fight 4 is a fork again);
+  - first take on his first turn.
+  - **Persistence gate** (repo_tune 600): takes kept but liens returned after his fight → WHITE 44.6 vs 41.8 held. Persistence alone costs 2.8 points (gate ≥2), so no dead cells: visibility was the gap.
+  - Turn 2 vs turn 1 (e9_repo, no-take %): turn 2 gave KNIGHT 11.8 / TESLA 11.2 / BRIAR 5.0 / JOKER 16.5 / MIDAS 39.3. Turn 1 gives 7.3 / 7.5 / 5.4 / 9.8 / 20.2 (MIDAS at gate 0.8; its other misses are opening bursts).
+  - Gate HP: MIDAS 0.5 → 0.8, TESLA 1 → 0.85 (TESLA GREEN 14.3 → 17.6).
+- **D6, MIDAS:**
+  - 360 HP (was 300); BOSS_MUL mirror 2.8 → 2.2, dealer 1.55 → 1.35, act3 0.25 → 0.2.
+  - Its GREEN deaths were spread over the whole run (House 16, Mirror 16, act 3 ~16), so boss knobs alone stalled at ~14. `tools/balance/midas_tune.ts` (MUL=k:v, hp:units).
+- **D4, challenges:**
+  - ordered by measured difficulty;
+  - BAD BLOOD is BRIAR + HIGH ROLLERS + GLASS JAW + FAST HANDS (HOUSE CUT gave 13.7; rollers alone 33; +frail 30);
+  - names shown; the first two are open; a clear opens the next two; a cleared one stays open.
+- **D5, TROPHIES:**
+  - text inline, progress counters;
+  - every title shown, with how to earn the locked ones;
+  - machine-clear and Dealer achievements on full-numbers runs only (not the daily or weekly);
+  - REGULAR achievement → HOUSE REGULAR.
+- **D7:** the weekly gets its own main-menu row once you've played a run (TUTORIAL moves to the small row). Weekly pairs: FAST+ROLLERS, FAST+GLASS.
+- **D8:**
+  - no side bets on act 1 fight 1;
+  - CLEAN HANDS is never offered with a limit ≥ your max HP.
+- **D1 (boards):**
+  - schema caps (daily/weekly ≤ 8,000, all ≤ 60,000), 1 post per player per board per 20 s, a name blocklist (claim_name + the client);
+  - ALL TIME = standard runs only; no re-posts from an endless ride.
+- **D9 / D12:**
+  - the relic grid clears the hero panel;
+  - every boss preview's rules at 1.5×;
+  - hiscore tags on the hero line;
+  - the name box drawn in the pixel font;
+  - boss button label size; +1 ROCK; dbg.vs('repo').
+- **Official:**
+  - tuesday 1000:
+
+    | machine | WHITE | GREEN |
+    |---|---|---|
+    | KNIGHT | 41.6 | 16.2 |
+    | TESLA | 40.9 | 17.6 |
+    | BRIAR | 45.7 | 18.7 |
+    | JOKER | 41.2 | 18.2 |
+    | MIDAS | 41.3 | 16.2 |
+    | **AVG** | **42.1** | **17.4** |
+
+    vs the Dealer 51.8 (gates: WHITE 41–45, GREEN 16–19).
+  - gate.sh 800: fight-4 deaths 5.0% (gate 4–7).
+  - challenges.ts 400: 34.3 / 30.8 / 29.3 / 27.3 / 25.3 / 13.5 / 10.8 (no step >12).
+  - Weekly random-draft mean 13.6%. W32 KNIGHT FAST+ROLLERS is 4% at n=80; noisy, watch it.
+  - fuzz 30: 1800 runs, no invariant breaks.
+- **Not now** (agreed): the stake restructure, pacing (D10), SWEEP UP / RELIC RUSH tiers (D11), run-replay anti-cheat. Cosmetic level unlocks are proposed to the user.
+- Tests: 211.
