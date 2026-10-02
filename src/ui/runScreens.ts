@@ -1,10 +1,10 @@
 import type { Sounds } from '../audio/sounds';
 import type { MetaGain } from '../core/profile';
 import { challengeById, levelOf } from '../core/meta';
-import { UNIT, type GameConfig, type SymbolId } from '../core/config';
+import { UNIT, type Enh, type GameConfig, type SymbolId } from '../core/config';
 import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
 import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH, POT } from '../core/relics';
-import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, symLevel } from '../core/charms';
+import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmName, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
 import {
   chipShield,
@@ -55,6 +55,9 @@ import { betProfit, describeBet, type SideBet } from '../core/bets';
 
 
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus' | 'choice';
+
+/** A lien in a few words ("GOLD SWORD R1"). */
+const lienShort = (l: { reel: number; symbol: string; enh?: Enh }) => `${l.enh ? `${charmName(l.enh)} ` : ''}${l.symbol.toUpperCase()} R${l.reel + 1}`;
 
 /** Greedy word wrap for the pixel font. */
 export function wrap(text: string, maxChars: number): string[] {
@@ -1006,6 +1009,9 @@ export class RunScreens {
       if (here) drawSprite(ctx, 'nodeHere', x, y - (fork ? 70 : 44) + Math.sin(time * 6) * 4, 2);
       if (opts[0].isBoss) drawSprite(ctx, 'nodeBoss', x, y - 38, 2);
       drawText(ctx, opts[0].isBoss ? 'BOSS' : `${i + 1}`, x, y + (fork ? 64 : 42), 2, here ? COLORS.goldLight : done ? '#6a6078' : COLORS.textDim);
+      // The boss gives THE REPO MAN's liens back.
+      const held = this.run!.liens?.length ?? 0;
+      if (opts[0].isBoss && held) drawText(ctx, `GIVES BACK ${held} HELD`, x, y + 62, 1.25, '#ff9a3a');
     });
   }
 
@@ -1016,6 +1022,9 @@ export class RunScreens {
   private drawStrips(ctx: CanvasRenderingContext2D, x: number, y: number, maxRows = 5): void {
     const p = this.run!.player;
     drawText(ctx, 'YOUR REELS', x, y, 2, COLORS.textDim, { align: 'left' });
+    // THE REPO MAN's liens: what's missing from the table, and why.
+    const liens = this.run!.liens ?? [];
+    if (liens.length) drawText(ctx, `HELD BY THE REPO MAN: ${liens.map(lienShort).join(', ')}`, x + 150, y, 1.25, '#ff9a3a', { align: 'left' });
     drawReelTable(ctx, x - 4, y + 10, runTable(p), { colW: 136, rowH: 19, scale: 1.1, text: 1.5, maxRows, levels: p.levels, ticket: p.relics.includes('ticket'), maxH: this.stripsH });
   }
 
@@ -1623,6 +1632,7 @@ export class RunScreens {
       if (extra) drawText(ctx, extra, 790, y + 12, 1, COLORS.textDim, { align: 'left' });
       else if (!r.won) drawText(ctx, 'DEFEATED', 790, y, 2, COLORS.danger, { align: 'left' });
       if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCK${r.rocksAdded > 1 ? 'S' : ''}`, 640, y + 12, 1, '#c9bba8');
+      if (r.liens) drawText(ctx, `${r.liens} HELD`, r.rocksAdded ? 590 : 640, y + 12, 1, '#ff9a3a');
     });
     this.panel(ctx, 110, 480, 1060, 134);
     this.drawStrips(ctx, 130, 494);

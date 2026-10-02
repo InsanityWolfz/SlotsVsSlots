@@ -259,6 +259,10 @@ function achievementCtx(p: Profile, e: RunEntry, collectionTotal = Infinity) {
   };
 }
 
+/** Names the boards refuse (also enforced by supabase/schema.sql's claim_name). */
+export const NAME_BLOCKLIST = ['FUCK', 'SHIT', 'CUNT', 'NIGG', 'FAGG', 'NAZI', 'HITLER', 'KKK', 'WHORE', 'SLUT', 'PUSSY', 'ASSHOLE', 'BITCH', 'RETARD', 'PENIS', 'VAGINA', 'DILDO', 'TWAT', 'WANK', 'CHINK', 'KIKE', 'TRANNY'];
+export const nameBlocked = (name: string) => NAME_BLOCKLIST.some((w) => name.replace(/-/g, '').includes(w));
+
 /** A leaderboard name: 3-12 of A-Z, 0-9 and - (upper-cased; the pixel font has no lower case or underscore). '' if not valid. */
 export function cleanName(raw: string): string {
   const n = raw.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 12);

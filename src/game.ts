@@ -57,7 +57,7 @@ import { Recap } from './ui/recap';
 import { RunScreens, wrap } from './ui/runScreens';
 import { Coach, TUTORIAL } from './ui/coach';
 import { collectionTotal, heroSprite, Menus } from './ui/menus';
-import { cleanName, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type MetaGain, type Profile, type RunEntry } from './core/profile';
+import { cleanName, nameBlocked, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type MetaGain, type Profile, type RunEntry } from './core/profile';
 import { applyChallenge, applyWeekly, challengeById, challengeOpen, CHALLENGES, levelOf, weekKey, weekly } from './core/meta';
 import { needsName, playerId, playerName } from './net/identity';
 import { claimName, submitScore } from './net/leaderboard';
@@ -358,8 +358,12 @@ export class Game {
     this.saveProfile();
     this.screens.setMeta(gain);
     if (entry.tutorial || !online() || !playerName(this.profile)) return;
-    // An endless ride re-posts its bigger score, but a daily board keeps the one score it took at the Dealer.
-    const boards = ['all', ...(entry.daily && !ride ? [`daily:${entry.daily}`] : []), ...(entry.weekly ? [`weekly:${entry.weekly}`] : [])];
+    // ALL TIME takes standard runs (not the daily, weekly or challenges: EXPERT_PLAYTEST_9 D1). Scores post when the run
+    // ends or at the Dealer win, never again from an endless ride (its pot would swamp every board). The daily keeps its one
+    // score; the weekly takes every try (the board shows your best).
+    const standard = !entry.daily && !entry.weekly && !entry.challenge;
+    const boards = ride ? [] : [...(standard ? ['all'] : []), ...(entry.daily ? [`daily:${entry.daily}`] : []), ...(entry.weekly ? [`weekly:${entry.weekly}`] : [])];
+    if (!boards.length) return this.screens.setOnline('');
     const main = boards[boards.length - 1];
     this.screens.setOnline('POSTING YOUR SCORE...');
     void this.claimed().then(async (ok) => {
@@ -397,8 +401,8 @@ export class Game {
       this.saveProfile();
     }
     this.nameClaimed = r === 'ok' || r.startsWith('have:');
-    // Picked offline and someone got there first: ask again at the menu.
-    if (r === 'taken') {
+    // Picked offline and someone got there first (or the boards refuse it): ask again at the menu.
+    if (r === 'taken' || r === 'blocked') {
       delete this.profile.name;
       this.saveProfile();
     }
@@ -409,8 +413,9 @@ export class Game {
   private async pickName(raw: string): Promise<string> {
     const name = cleanName(raw);
     if (!name) return 'taken';
+    if (nameBlocked(name)) return 'blocked';
     const r = await claimName(name, playerId(this.profile));
-    if (r === 'taken') return r;
+    if (r === 'taken' || r === 'blocked') return r;
     this.profile.name = r.startsWith('have:') ? cleanName(r.slice(5)) || name : name;
     this.nameClaimed = r !== 'offline';
     this.saveProfile();

@@ -1,9 +1,17 @@
-// EXPERT_PLAYTEST_9: what THE REPO MAN actually does per machine. npx tsx tools/balance/e9_repo.ts [N] [stake]
+// EXPERT_PLAYTEST_9: what THE REPO MAN actually does per machine. [GATE=midas:0.8] npx tsx tools/balance/e9_repo.ts [N] [stake]
 import { defaultConfig } from '../../src/core/config';
 import { CABINET_ORDER } from '../../src/core/cabinets';
 import { type RunState } from '../../src/core/run';
 import { actLength } from '../../src/core/enemies';
 import { SIM_BIAS, simulateRuns } from '../../src/sim/simulateRun';
+import { BOSS_MUL } from '../../src/core/run';
+import { GATEKEEPER } from '../../src/core/enemies';
+if (process.env.FIRST) GATEKEEPER.firstTurn = Number(process.env.FIRST);
+// GATE=midas:0.8,joker:0.85 overrides BOSS_MUL.gate (the REPO MAN's HP per machine).
+for (const kv of (process.env.GATE ?? '').split(',').filter(Boolean)) {
+  const [m, v] = kv.split(':');
+  (BOSS_MUL as Record<string, { gate?: number }>)[m].gate = Number(v);
+}
 
 const N = Number(process.argv[2] ?? 400);
 const stake = Number(process.argv[3] ?? 0);

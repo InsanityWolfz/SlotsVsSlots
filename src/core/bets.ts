@@ -160,7 +160,7 @@ export const betPayout = (b: PlacedBet) => Math.floor(b.stake * b.pay);
 const hits = (xs: number[], ok: (x: number) => boolean) => xs.filter(ok).length / Math.max(1, xs.length);
 
 /** Pick the line for one kind from the rehearsals: the candidate whose odds sit nearest the aim. */
-export function lineFor(kind: BetKind, runs: BetTrack[], enemyHp = Infinity, style: LineStyle = 'even', streak = 0): SideBet | null {
+export function lineFor(kind: BetKind, runs: BetTrack[], enemyHp = Infinity, style: LineStyle = 'even', streak = 0, maxHp = Infinity): SideBet | null {
   const L = LINES[style];
   // HOT HAND bolds only the long shot: it pays +1 per bet won in a row, sized so the return holds.
   const hot = style === 'long' ? Math.min(HOT_HAND.max, streak) : 0;
@@ -168,7 +168,8 @@ export function lineFor(kind: BetKind, runs: BetTrack[], enemyHp = Infinity, sty
   const aim = hot ? L.aim * (L.pay / pay) : L.aim;
   const vals = runs.map((t) => (kind === 'quick' ? t.spins : kind === 'clean' ? t.lost : kind === 'jackpot' ? t.jackpots : t.best));
   const round = (x: number) => (kind === 'clean' || kind === 'big' ? Math.floor(x / UNIT) * UNIT : x);
-  const cands = [...new Set(vals.map(round))].filter((x) => (kind === 'jackpot' || kind === 'big' ? x > 0 : x >= 0) && !(kind === 'big' && x > enemyHp));
+  // CLEAN HANDS with a limit at or past your max HP reads as free money (it counts healed-back damage): not offered (EXPERT_PLAYTEST_9 D8).
+  const cands = [...new Set(vals.map(round))].filter((x) => (kind === 'jackpot' || kind === 'big' ? x > 0 : x >= 0) && !(kind === 'big' && x > enemyHp) && !(kind === 'clean' && x >= maxHp));
   let best: { target: number; p: number } | null = null;
   for (const target of cands) {
     const p = hits(vals, (v) => (kind === 'quick' || kind === 'clean' ? v <= target : v >= target));
@@ -185,7 +186,7 @@ export function lineFor(kind: BetKind, runs: BetTrack[], enemyHp = Infinity, sty
  * always set (an empty table told you how the finale would go: EXPERT_PLAYTEST_7 E4). Odds are on the rehearsals
  * you won (a lost Dealer fight ends the run, bet and all); if you rarely win, on all of them.
  */
-export function dealerBets(all: { t: BetTrack; won: boolean }[], rng: Rng, enemyHp = Infinity): SideBet[] {
+export function dealerBets(all: { t: BetTrack; won: boolean }[], rng: Rng, enemyHp = Infinity, maxHp = Infinity): SideBet[] {
   const wins = all.filter((x) => x.won).map((x) => x.t);
   const base = wins.length >= 3 ? wins : all.map((x) => x.t);
   const out: SideBet[] = [];
@@ -196,14 +197,14 @@ export function dealerBets(all: { t: BetTrack; won: boolean }[], rng: Rng, enemy
   }
   for (const k of rng.shuffle<BetKind>(['big', 'quick', 'clean', 'jackpot'])) {
     if (out.length >= 2) break;
-    const b = lineFor(k, base, enemyHp);
+    const b = lineFor(k, base, enemyHp, 'even', 0, maxHp);
     if (b) out.push(b);
   }
   return out;
 }
 
 /** Up to 2 bets from a fight's rehearsals (the winning ones); none if you usually lose it. */
-export function betsFrom(wins: BetTrack[], samples: number, rng: Rng, enemyHp = Infinity, streak = 0): SideBet[] {
+export function betsFrom(wins: BetTrack[], samples: number, rng: Rng, enemyHp = Infinity, streak = 0, maxHp = Infinity): SideBet[] {
   if (wins.length < samples / 2) return [];
   // One SAFE bet and one LONG SHOT (on different kinds); a coin flip fills in if a kind can't make its line.
   const kinds = rng.shuffle<BetKind>(['quick', 'clean', 'jackpot', 'big']);
@@ -211,9 +212,9 @@ export function betsFrom(wins: BetTrack[], samples: number, rng: Rng, enemyHp = 
   for (const style of ['safe', 'long'] as const) {
     const left = kinds.filter((k) => !out.some((b) => b.kind === k));
     const b =
-      left.map((k) => lineFor(k, wins, enemyHp, style, streak)).find(Boolean) ??
-      (streak ? left.map((k) => lineFor(k, wins, enemyHp, style)).find(Boolean) : null) ??
-      left.map((k) => lineFor(k, wins, enemyHp, 'even')).find(Boolean);
+      left.map((k) => lineFor(k, wins, enemyHp, style, streak, maxHp)).find(Boolean) ??
+      (streak ? left.map((k) => lineFor(k, wins, enemyHp, style, 0, maxHp)).find(Boolean) : null) ??
+      left.map((k) => lineFor(k, wins, enemyHp, 'even', 0, maxHp)).find(Boolean);
     if (b) out.push(b);
   }
   return out;

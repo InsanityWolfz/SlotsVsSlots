@@ -1,5 +1,5 @@
 // THE REPO MAN tuning: WHITE win and fight-4 death rate per machine under a variant. npx tsx tools/balance/repo_tune.ts [N] [key=val ...]
-// Keys: hp (REPO_MAN.hpMul), gate.<machine> (BOSS_MUL gate), sword, shield, every, takes (GATEKEEPER.maxTakes), bounty, price.
+// Keys: first (turn of his first take), persist (0: liens return at once), acts, hp (REPO_MAN.hpMul), gate.<machine> (BOSS_MUL gate), sword, shield, every, takes (GATEKEEPER.maxTakes), bounty, price.
 import { defaultConfig } from '../../src/core/config';
 import { CABINET_ORDER } from '../../src/core/cabinets';
 import { GATEKEEPER, REPO_MAN } from '../../src/core/enemies';
@@ -16,6 +16,9 @@ for (const kv of process.argv.slice(3)) {
   else if (k === 'takes') GATEKEEPER.maxTakes = x;
   else if (k === 'bounty') GATEKEEPER.bounty = x;
   else if (k === 'price') GATEKEEPER.lienPrice = x;
+  else if (k === 'first') GATEKEEPER.firstTurn = x;
+  else if (k === 'persist') GATEKEEPER.persist = x > 0;
+  else if (k === 'acts') GATEKEEPER.acts = x;
   else if (k.startsWith('gate.')) BOSS_MUL[k.slice(5) as keyof typeof BOSS_MUL].gate = x;
 }
 const f = (x: number) => x.toFixed(1).padStart(5);

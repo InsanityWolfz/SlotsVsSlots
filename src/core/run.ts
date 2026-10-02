@@ -166,6 +166,8 @@ export interface FightRecord {
   /** Bonus prizes won in this fight. */
   bonuses?: string[];
   rocksAdded: number;
+  /** THE REPO MAN: cells and charms he took that stay gone until the act's boss falls. */
+  liens?: number;
   rocksCrumbled: number;
   /** Relic taken from an elite's spoils. */
   eliteRelic?: RelicId;
@@ -666,7 +668,8 @@ export const lienText = (l: Lien) => (l.enh ? `A ${charmName(l.enh)} CHARM ON A 
 /** SIDE BETS are offered before regular fights (not bosses, not the tutorial's first fight, not at a fork). */
 export function betsOpen(run: RunState): boolean {
   const e = run.enemies[run.depth];
-  return !run.over && !!e && (!e.isBoss || e.boss === 'dealer') && !needsChoice(run) && !(run.tutorial && run.act === 1 && run.depth === 0);
+  // Not on act 1's first fight: a new player meets the table after their first spins (EXPERT_PLAYTEST_9 D8).
+  return !run.over && !!e && (!e.isBoss || e.boss === 'dealer') && !needsChoice(run) && !(run.act === 1 && run.depth === 0 && !run.endless);
 }
 
 /** The Cashier's table for the next fight: 2 bets, sized by rehearsing this very fight on other seeds. */
@@ -687,8 +690,8 @@ export function offerBets(run: RunState, base: GameConfig): SideBet[] {
   }
   // The Dealer has his own table (win before his FINAL HAND; survive an ALL IN).
   const raw = cfg.enemy.boss === 'dealer'
-    ? dealerBets(all, rng, cfg.enemy.hp)
-    : betsFrom(all.filter((x) => x.won).map((x) => x.t), BETS.samples, rng, cfg.enemy.hp, run.betStreak ?? 0);
+    ? dealerBets(all, rng, cfg.enemy.hp, run.player.maxHp)
+    : betsFrom(all.filter((x) => x.won).map((x) => x.t), BETS.samples, rng, cfg.enemy.hp, run.betStreak ?? 0, run.player.maxHp);
   // LOADED DICE: every line pays more (shown on the card).
   const offer = run.player.relics.includes('loaded') ? raw.map((b) => ({ ...b, pay: Math.round(b.pay * LOADED_MUL * 10) / 10 })) : raw;
   run.bets = { key, offer };
@@ -991,7 +994,10 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   run.bets = null;
   // THE REPO MAN fell: what he holds stays gone until the act's boss falls (or you pay it off).
   if (beaten.archetype === REPO_MAN.id) {
-    takeLiens(run, fight);
+    const before = run.liens?.length ?? 0;
+    if (GATEKEEPER.persist) takeLiens(run, fight);
+    const taken = (run.liens?.length ?? 0) - before;
+    if (taken) record.liens = taken;
     // His bounty (the fork he replaced could have paid an elite's spoils).
     run.player.chips += GATEKEEPER.bounty;
     record.chips = (record.chips ?? 0) + GATEKEEPER.bounty;

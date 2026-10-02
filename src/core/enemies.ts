@@ -213,8 +213,10 @@ export const REPO_MAN: Archetype = {
   blurb: 'REPOSSESSES YOUR BEST CELL. WHAT HE HOLDS STAYS GONE UNTIL THE BOSS FALLS',
   acts: [],
 };
-/** The gatekeeper's fight (0-based depth), how many cells he can take in one fight, and a lien's price. */
-export const GATEKEEPER = { depth: 3, maxTakes: 2, lienPrice: 3, bounty: 3 };
+/** The gatekeeper's fight (0-based depth), how many cells he can take in one fight, a lien's price, his bounty, the turn of
+ * his first take, the acts he holds (act 3 has the Pit Boss's confiscates), and whether his liens outlast his fight (a
+ * measuring knob: false returns them at once). */
+export const GATEKEEPER = { depth: 3, maxTakes: 2, lienPrice: 3, bounty: 3, firstTurn: 2, acts: 2, persist: true };
 
 export const ACT2_NEW: ReadonlySet<string> = new Set(['bomber', 'hexer', 'vampire', 'mimic', 'grounder', 'counterfeiter']);
 export const ACT3_NEW: ReadonlySet<string> = new Set(['sharp', 'pitboss', 'croupier']);
@@ -390,8 +392,8 @@ export function generateRunPaths(rng: Rng, act = 1, loop = 1): EnemyDef[][] {
   const inAct = act >= 4 ? ARCHETYPES.filter((a) => actsOf(a).some((x) => x >= 2)) : ARCHETYPES.filter((a) => actsOf(a).includes(act));
   const len = actLength(act);
   for (let depth = 0; depth < len; depth++) {
-    // THE GATEKEEPER holds fight 4 of every act (not in endless).
-    if (depth === GATEKEEPER.depth && act < 4) {
+    // THE GATEKEEPER holds fight 4 of acts 1-2 (not act 3, not endless).
+    if (depth === GATEKEEPER.depth && act <= GATEKEEPER.acts) {
       out.push([makeEnemy(REPO_MAN, depth, rng, false, act)]);
       prev = new Set([REPO_MAN.id]);
       continue;

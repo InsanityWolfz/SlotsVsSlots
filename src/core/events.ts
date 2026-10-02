@@ -95,7 +95,7 @@ export type CombatEvent =
   /** A marked card landed on the payline and bit. */
   | { type: 'markedHit'; side: SideId; cells: CellRef[]; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number }
   /** The Pit Boss confiscated gilds (cells lose their gild for the fight). */
-  | { type: 'confiscate'; from: SideId; to: SideId; reels: number[]; cells: CellRef[]; enhs: Enh[] }
+  | { type: 'confiscate'; from: SideId; to: SideId; reels: number[]; cells: CellRef[]; enhs: Enh[]; repo?: boolean }
   /** The Croupier rakes your winnings: your groups pay less for `turns` of your turns. */
   | { type: 'rake'; from: SideId; to: SideId; reels: number[]; turns: number; cut: number }
   /** A bonus voucher was banked: it pays out if you win this fight. */
@@ -152,7 +152,7 @@ export type CombatEvent =
   | { type: 'phoenix'; side: SideId; hp: number }
   /** The Mirror cracked at half HP: it reflects faster. */
   | { type: 'shatter'; side: SideId; every: number }
-  | { type: 'steal'; from: SideId; to: SideId; reels: number[]; cells: CellRef[]; symbols: SymbolId[]; wasted: number }
+  | { type: 'steal'; from: SideId; to: SideId; reels: number[]; cells: CellRef[]; symbols: SymbolId[]; wasted: number; repo?: boolean }
   /** Rocks inserted into the target's strips (indices are post-insert, applied in order). */
   | { type: 'junk'; from: SideId; to: SideId; reels: number[]; inserts: CellRef[] }
   | { type: 'fizzle'; side: SideId; reels: number[]; symbol: SymbolId }

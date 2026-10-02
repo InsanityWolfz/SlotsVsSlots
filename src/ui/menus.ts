@@ -2,7 +2,7 @@ import type { Sounds } from '../audio/sounds';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import type { Enh, RelicId } from '../core/config';
 import { runScore, shownTitle, type Profile, type RunEntry } from '../core/profile';
-import { ACHIEVEMENTS, CHALLENGES, challengeOpen, edgeLine, levelOf, titlesOwned, weekKey, weekly } from '../core/meta';
+import { ACHIEVEMENTS, allTitles, CHALLENGES, challengeOpen, edgeLine, levelOf, titlesOwned, weekKey, weekly } from '../core/meta';
 import { online } from '../net/config';
 import { topScores, type ScoreRow } from '../net/leaderboard';
 import { dailyCabinet, dailyEdge, dailyKey, dailySpent } from '../core/daily';
@@ -71,7 +71,7 @@ const ROWS_PER_PAGE = 7;
 const NAME_Y = 360;
 const CH_Y = 272;
 const CH_ROW = 54;
-const TR_Y = 320;
+const TR_Y = 300;
 
 /** Time until the next weekly (Monday 00:00 UTC), e.g. "3D 4H". */
 function untilMonday(now = new Date()): string {
@@ -103,6 +103,10 @@ export class Menus {
   private nameBusy = false;
   // trophies: the achievement under the pointer
   private trophyTip = '';
+  /** TROPHIES: each title chip's hover line. */
+  private titleTips: { x: number; y: number; w: number; text: string }[] = [];
+  /** The main menu's big-row icons (the rows change once you've played a run). */
+  private mainIcons: string[] = [];
   private page = 0;
   private resetArmed = 0;
 
@@ -183,11 +187,30 @@ export class Menus {
     const label = run ? `DAILY: ${runScore(run)}` : done ? 'DAILY: SPENT' : `DAILY: ${CABINETS[dailyCabinet(today)].hero} + ${EDGE_TEXT[dailyEdge(today)].title}`;
     const daily = this.btn(label, x, 380, 380, 54, () => !done && this.cb.onDaily(), label.length > 20 ? 1.5 : label.length > 14 ? 2 : 3);
     daily.toggled = done;
-    this.btn('CHALLENGES', x, 442, 380, 54, () => this.showChallenges(), 3);
-    this.btn('TUTORIAL', x, 504, 380, 54, () => this.cb.onTutorial(), 3).opts.idlePulse = first;
-    this.btn('COLLECTION', x - 128, 566, 124, 54, () => this.showCollection(), 1.5);
-    this.btn('TROPHIES', x, 566, 124, 54, () => this.showTrophies(), 1.5);
-    this.btn('HISCORES', x + 128, 566, 124, 54, () => this.showHiscores(), 1.5);
+    // THE WEEKLY CHALLENGE gets its own row once you've played a run (the TUTORIAL moves to the small row).
+    const veteran = !first && this.profile().stats.runs > 0;
+    this.mainIcons = ['iconNewRun', 'chip'];
+    if (veteran) {
+      const key = weekKey();
+      const wk = weekly(key);
+      const best = this.profile().challenges[`weekly:${key}`];
+      const wl = best ? `WEEKLY: BEST ${best.best}` : `WEEKLY: ${CABINETS[wk.cabinet].hero} + ${wk.edges.map((e) => EDGE_TEXT[e].title).join(' + ')}`;
+      this.btn(wl, x, 442, 380, 54, () => this.cb.onWeekly(), wl.length > 26 ? 1.25 : wl.length > 20 ? 1.5 : wl.length > 14 ? 2 : 3);
+      this.btn('CHALLENGES', x, 504, 380, 54, () => this.showChallenges(), 3);
+      this.mainIcons.push('trophySmall', 'trophySmall');
+      const w = 89;
+      this.btn('TUTORIAL', x - 1.5 * (w + 8), 566, w, 54, () => this.cb.onTutorial(), 1.25);
+      this.btn('COLLECTION', x - 0.5 * (w + 8), 566, w, 54, () => this.showCollection(), 1.25);
+      this.btn('TROPHIES', x + 0.5 * (w + 8), 566, w, 54, () => this.showTrophies(), 1.25);
+      this.btn('HISCORES', x + 1.5 * (w + 8), 566, w, 54, () => this.showHiscores(), 1.25);
+    } else {
+      this.btn('CHALLENGES', x, 442, 380, 54, () => this.showChallenges(), 3);
+      this.btn('TUTORIAL', x, 504, 380, 54, () => this.cb.onTutorial(), 3).opts.idlePulse = first;
+      this.mainIcons.push('trophySmall', 'iconTutorial');
+      this.btn('COLLECTION', x - 128, 566, 124, 54, () => this.showCollection(), 1.5);
+      this.btn('TROPHIES', x, 566, 124, 54, () => this.showTrophies(), 1.5);
+      this.btn('HISCORES', x + 128, 566, 124, 54, () => this.showHiscores(), 1.5);
+    }
     const light = this.btn(this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL', 150, 36, 260, 40, () => {
       this.cb.setSoftLightning(!this.cb.softLightning());
       light.label = this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL';
@@ -350,8 +373,8 @@ export class Menus {
     const r = await this.cb.onName(name);
     this.nameBusy = false;
     if (this.mode !== 'name') return;
-    if (r === 'taken') {
-      this.nameStatus = `${name} IS TAKEN. TRY ANOTHER`;
+    if (r === 'taken' || r === 'blocked') {
+      this.nameStatus = r === 'blocked' ? 'PICK ANOTHER NAME' : `${name} IS TAKEN. TRY ANOTHER`;
       this.sounds.fizzle();
       return;
     }
@@ -430,7 +453,7 @@ export class Menus {
     drawText(ctx, best ? `YOUR BEST ${best.best}${best.won ? ' - CLEARED' : ''} - ${best.tries} TR${best.tries > 1 ? 'IES' : 'Y'}` : 'NOT PLAYED YET', 160, 198, 1.25, best?.won ? '#ffd23f' : COLORS.textDim, { align: 'left' });
     drawText(ctx, `NEW ONE IN ${untilMonday()}`, W - 170, 194, 1.25, COLORS.textDim);
     // The ladder.
-    drawText(ctx, 'CLEAR ONE TO OPEN THE NEXT. EACH CLEAR EARNS A TITLE.', W / 2, CH_Y - 40, 1.5, COLORS.textDim);
+    drawText(ctx, 'EACH CLEAR OPENS THE NEXT TWO AND EARNS A TITLE.', W / 2, CH_Y - 40, 1.5, COLORS.textDim);
     CHALLENGES.forEach((c, i) => {
       const y = CH_Y + i * CH_ROW;
       const open = challengeOpen(p.challenges, i);
@@ -439,10 +462,11 @@ export class Menus {
       ctx.fillRect(60, y - CH_ROW / 2 + 2, W - 120, CH_ROW - 4);
       drawText(ctx, String(i + 1), 84, y, 2.5, r?.won ? '#ffd23f' : COLORS.textDim);
       drawSprite(ctx, open ? heroSprite(c.cabinet) : 'playerPortrait', 130, y, 1.5, open ? {} : { variant: 'black', alpha: 0.5 });
-      drawText(ctx, open ? c.name : '???', 160, y - 10, 2, open ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
+      // Names always show (the next row's "CLEAR X TO OPEN" gave them away); a locked one hides only its setup.
+      drawText(ctx, c.name, 160, y - 10, 2, open ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
       const stake = c.stake ? ` - ${STAKES[c.stake].name} STAKE, THROUGH THE DEALER` : '';
       const rule = [edgeLine(c.edges), c.chips === 0 ? 'START WITH 0 CHIPS' : ''].filter(Boolean).join('. ');
-      drawText(ctx, open ? `${CABINETS[c.cabinet].name}${stake}. ${rule || c.text}` : `CLEAR ${CHALLENGES[i - 1].name} TO OPEN`, 160, y + 10, 1.25, COLORS.textDim, { align: 'left' });
+      drawText(ctx, open ? `${CABINETS[c.cabinet].name}${stake}. ${rule || c.text}` : `CLEAR ${CHALLENGES[i - 2].name} OR ${CHALLENGES[i - 1].name} TO OPEN`, 160, y + 10, 1.25, COLORS.textDim, { align: 'left' });
       drawText(ctx, r?.won ? `CLEARED - BEST ${r.best}` : r ? `BEST ${r.best}` : '', W - 220, y - 6, 1.5, r?.won ? '#ffd23f' : COLORS.text, { align: 'right' });
       drawText(ctx, `TITLE: ${c.title}`, W - 220, y + 12, 1.25, r?.won ? COLORS.goldLight : COLORS.textDim, { align: 'right' });
     });
@@ -468,21 +492,27 @@ export class Menus {
     this.buttons = [];
     this.btn('BACK', 100, 44, 140, 48, () => this.showMain());
     const p = this.profile();
-    const owned = titlesOwned(levelOf(p.xp).level, p.challenges);
+    const owned = new Set(titlesOwned(levelOf(p.xp).level, p.challenges));
     const shown = shownTitle(p);
+    this.titleTips = [];
     let x = 70;
-    let y = 196;
-    for (const title of owned) {
-      const w = title.length * 9 + 30;
+    let y = 194;
+    // Every title: the ones you hold are buttons (wear one); the rest are greyed, with how to earn them on hover.
+    for (const t of allTitles()) {
+      const w = t.title.length * 9 + 26;
       if (x + w > W - 60) {
         x = 70;
-        y += 40;
+        y += 38;
       }
-      const b = this.btn(title, x + w / 2, y, w, 32, () => {
-        this.cb.setTitle(title);
+      const have = owned.has(t.title);
+      const b = this.btn(t.title, x + w / 2, y, w, 30, () => {
+        if (!have) return;
+        this.cb.setTitle(t.title);
         this.trophyButtons();
       }, 1.25);
-      b.toggled = title === shown;
+      b.toggled = t.title === shown;
+      b.enabled = have;
+      this.titleTips.push({ x: x + w / 2, y, w, text: have ? `${t.title}: CLICK TO WEAR IT` : `${t.title}: ${t.how}` });
       x += w + 8;
     }
   }
@@ -491,30 +521,38 @@ export class Menus {
     const p = this.profile();
     drawText(ctx, 'TROPHIES', W / 2, 44, 5, COLORS.goldLight);
     this.badge(ctx, W / 2, 108);
-    drawText(ctx, 'TITLES (CLICK ONE TO WEAR IT)', 60, 164, 1.5, COLORS.text, { align: 'left' });
-    const got = ACHIEVEMENTS.filter((a) => p.achievements[a.id]).length;
-    drawText(ctx, `ACHIEVEMENTS ${got}/${ACHIEVEMENTS.length}`, 60, TR_Y - 36, 2, COLORS.text, { align: 'left' });
-    drawText(ctx, 'EACH ONE IS WORTH 250 XP', W - 60, TR_Y - 36, 1.25, COLORS.textDim, { align: 'right' });
+    drawText(ctx, 'TITLES', 60, 160, 1.5, COLORS.text, { align: 'left' });
     this.trophyTip = '';
-    const cols = 3;
+    for (const t of this.titleTips) if (Math.abs(this.mouse.x - t.x) < t.w / 2 && Math.abs(this.mouse.y - t.y) < 15) this.trophyTip = t.text;
+    const got = ACHIEVEMENTS.filter((a) => p.achievements[a.id]).length;
+    drawText(ctx, `ACHIEVEMENTS ${got}/${ACHIEVEMENTS.length}`, 60, TR_Y - 30, 2, COLORS.text, { align: 'left' });
+    drawText(ctx, 'EACH ONE IS WORTH 250 XP', W - 60, TR_Y - 30, 1.25, COLORS.textDim, { align: 'right' });
+    const ctxP = {
+      stats: p.stats,
+      have: p.achievements,
+      found: p.found.relics.length + p.found.charms.length,
+      collection: collectionTotal(),
+      challengesWon: CHALLENGES.filter((c) => p.challenges[c.id]?.won).length,
+    };
+    // Two columns, every achievement with its text and (where it counts up) its progress.
+    const cols = 2;
     const colW = (W - 120) / cols;
     const rows = Math.ceil(ACHIEVEMENTS.length / cols);
-    const rowH = Math.min(34, Math.floor((H - 70 - TR_Y) / rows));
+    const rowH = Math.min(26, Math.floor((H - 52 - TR_Y) / rows));
     ACHIEVEMENTS.forEach((a, i) => {
       const cx = 60 + Math.floor(i / rows) * colW;
       const y = TR_Y + (i % rows) * rowH;
       const have = !!p.achievements[a.id];
-      const hover = this.mouse.x >= cx && this.mouse.x < cx + colW - 10 && Math.abs(this.mouse.y - y) < rowH / 2;
-      if (hover) {
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.fillRect(cx - 4, y - rowH / 2 + 1, colW - 10, rowH - 2);
-        this.trophyTip = have || !a.secret ? `${a.name}: ${a.text}` : '???: A SECRET. KEEP PLAYING.';
-      }
-      if (have && hasSprite('trophySmall')) drawSprite(ctx, artId('trophySmall'), cx + 10, y, 1.25);
-      else drawText(ctx, '-', cx + 10, y, 1.5, COLORS.textDim);
-      drawText(ctx, have || !a.secret ? a.name : '???', cx + 28, y, 1.5, have ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
+      const hidden = a.secret && !have;
+      if (have && hasSprite('trophySmall')) drawSprite(ctx, artId('trophySmall'), cx + 8, y, 1);
+      else drawText(ctx, '-', cx + 8, y, 1.25, COLORS.textDim);
+      drawText(ctx, hidden ? '???' : a.name, cx + 22, y, 1.25, have ? COLORS.goldLight : COLORS.text, { align: 'left' });
+      const nameW = (hidden ? 3 : a.name.length) * 7.5;
+      drawText(ctx, hidden ? 'A SECRET. KEEP PLAYING.' : a.text, cx + 34 + nameW, y, 1, have ? '#b8a878' : COLORS.textDim, { align: 'left' });
+      const prog = !have && a.progress ? a.progress(ctxP) : null;
+      if (prog) drawText(ctx, `${Math.min(prog[0], prog[1])}/${prog[1]}`, cx + colW - 24, y, 1.25, COLORS.energy, { align: 'right' });
     });
-    drawText(ctx, this.trophyTip || 'HOVER OR TAP AN ACHIEVEMENT TO READ IT', W / 2, H - 30, 1.5, this.trophyTip ? COLORS.text : COLORS.textDim);
+    if (this.trophyTip) drawText(ctx, this.trophyTip, W / 2, H - 26, 1.5, COLORS.text);
   }
 
   // ---- input -------------------------------------------------------------------------
@@ -594,7 +632,7 @@ export class Menus {
     for (const b of this.buttons) b.draw(ctx, t);
     if (this.mode === 'main') {
       // Icons on the menu buttons (over them, scaled with their press).
-      const icons = ['iconNewRun', 'chip', 'trophySmall', 'iconTutorial'];
+      const icons = this.mainIcons;
       this.buttons.slice(0, 4).forEach((b, i) => {
         if (hasSprite(icons[i])) drawSprite(ctx, artId(icons[i]), b.x - (b.w / 2 - 38) * b.scale, b.y, 2.5 * b.scale);
       });
@@ -810,7 +848,7 @@ export class Menus {
   /** An online board: the top players (their best), you highlighted. */
   private drawBoard(ctx: CanvasRenderingContext2D, t: number): void {
     const key = this.boardKey(this.tab);
-    const sub = this.tab === 'daily' ? `THE DAILY RUN ${dailyKey().slice(5)} - ONE TRY EACH` : this.tab === 'weekly' ? `THE WEEKLY CHALLENGE ${weekKey()} - YOUR BEST TRY` : 'EVERY RUN, ANY STAKE - YOUR BEST';
+    const sub = this.tab === 'daily' ? `THE DAILY RUN ${dailyKey().slice(5)} - ONE TRY EACH` : this.tab === 'weekly' ? `THE WEEKLY CHALLENGE ${weekKey()} - YOUR BEST TRY` : 'REGULAR RUNS, ANY STAKE (NO ENDLESS) - YOUR BEST';
     drawText(ctx, sub, W / 2, 140, 1.5, COLORS.textDim);
     if (!online()) {
       drawText(ctx, 'THE ONLINE BOARDS ARE NOT OPEN YET', W / 2, H / 2 - 16, 3, COLORS.textDim);

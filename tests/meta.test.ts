@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
 import { ACHIEVEMENTS, applyChallenge, applyWeekly, challengeById, challengeOpen, CHALLENGES, levelOf, weekKey, weekly, xpForLevel } from '../src/core/meta';
-import { cleanName, emptyProfile, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type RunEntry } from '../src/core/profile';
+import { cleanName, nameBlocked, emptyProfile, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type RunEntry } from '../src/core/profile';
 import { createRun, fightConfig, fixedRun, runActs } from '../src/core/run';
 
 const entry = (over: Partial<RunEntry> = {}): RunEntry => ({
@@ -49,8 +49,12 @@ describe('meta: weekly challenge', () => {
 describe('meta: challenges', () => {
   it('open in order', () => {
     expect(challengeOpen({}, 0)).toBe(true);
-    expect(challengeOpen({}, 1)).toBe(false);
-    expect(challengeOpen({ [CHALLENGES[0].id]: { best: 1, won: true, tries: 1 } }, 1)).toBe(true);
+    expect(challengeOpen({}, 1)).toBe(true);
+    expect(challengeOpen({}, 2)).toBe(false);
+    // A clear opens the next two.
+    const one = { [CHALLENGES[0].id]: { best: 1, won: true, tries: 1 } };
+    expect(challengeOpen(one, 2)).toBe(true);
+    expect(challengeOpen(one, 3)).toBe(false);
   });
   it('SHORT STACK starts broke; GLASS JAW takes 10% max HP; edges reach the fight', () => {
     const broke = createRun(defaultConfig(), 7, 'midas', 0);
@@ -130,5 +134,28 @@ describe('meta: profile save', () => {
   it('names are 3-12 safe characters', () => {
     expect(cleanName('ab')).toBe('');
     expect(cleanName('Lucky_7-Seven-XL')).toBe('LUCKY7-SEVEN');
+  });
+});
+
+describe('meta: EXPERT_PLAYTEST_9 rules', () => {
+  it('weekly pairs never include HOUSE CUT or HIGH ROLLERS + GLASS JAW', () => {
+    for (let w = 1; w <= 53; w++) {
+      const e = weekly(`2026-W${String(w).padStart(2, '0')}`).edges;
+      expect(e).not.toContain('heal');
+      expect(e.includes('rollers') && e.includes('frail')).toBe(false);
+    }
+  });
+  it('the daily and weekly never earn a machine clear or the Dealer', () => {
+    const p = emptyProfile();
+    const ids = recordMeta(p, entry({ won: true, acts: 3, act: 3, fights: 18, total: 18, daily: '2026-10-02', cabinet: 'tesla' }), 40).achievements.map((a) => a.id);
+    expect(ids).toContain('daily_win');
+    expect(ids).not.toContain('dealer');
+    expect(ids).not.toContain('clear_tesla');
+  });
+  it('the name blocklist (letters only, dashes ignored), and no false hits on everyday words', () => {
+    expect(nameBlocked('NAZI-1')).toBe(true);
+    expect(nameBlocked('N-A-Z-I')).toBe(true);
+    expect(nameBlocked('GRAPE')).toBe(false);
+    expect(nameBlocked('PEACOCK')).toBe(false);
   });
 });

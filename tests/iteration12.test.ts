@@ -27,7 +27,9 @@ describe('ACT 3: the run', () => {
     expect(totalFights(run)).toBe(18);
     const paths = generateRunPaths(new Rng(3), 3);
     expect(paths.length).toBe(actLength(3) + 1);
-    expect(paths.map((o) => o.length)).toEqual([1, 2, 2, 1, 1, 1]);
+    // THE REPO MAN holds fight 4 of acts 1-2 only: act 3's fight 4 is a fork again.
+    expect(paths.map((o) => o.length)).toEqual([1, 2, 2, 2, 1, 1]);
+    expect(paths[3].every((e) => e.archetype !== 'repo')).toBe(true);
     expect(paths[5][0].boss).toBe('dealer');
   });
 

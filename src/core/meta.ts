@@ -5,7 +5,7 @@
  * outside the challenge runs themselves.
  */
 import { CABINETS, CABINET_ORDER, type CabinetId } from './cabinets';
-import { DAILY_EDGES, dailySeed } from './daily';
+import { dailySeed } from './daily';
 import { EDGE_TEXT, startEdges, type EdgeId, type RunState } from './run';
 import { MAX_STAKE, STAKES } from './stakes';
 
@@ -45,8 +45,9 @@ export interface ChallengeRecord {
   won: boolean;
   tries: number;
 }
-/** Challenge i is open once challenge i-1 is cleared. */
-export const challengeOpen = (records: Record<string, ChallengeRecord>, i: number) => i === 0 || !!records[CHALLENGES[i - 1].id]?.won;
+/** The first two are open; each clear opens the next two, so one hard step never walls off the rest (EXPERT_PLAYTEST_9 D4). */
+export const challengeOpen = (records: Record<string, ChallengeRecord>, i: number) =>
+  i <= 1 || !!records[CHALLENGES[i - 1].id]?.won || !!records[CHALLENGES[i - 2].id]?.won;
 
 /** Set up a fresh run (made with the challenge's machine and stake) as this challenge. */
 export function applyChallenge(run: RunState, c: ChallengeDef): void {
@@ -69,16 +70,18 @@ export function weekKey(d = new Date()): string {
 }
 export const WEEK_KEY = /^\d{4}-W\d{2}$/;
 
-/** The weekly's HOUSE EDGES: the daily's set minus HOUSE CUT (paired with any other it left 3-6% weeks). */
-export const WEEKLY_EDGES: EdgeId[] = DAILY_EDGES.filter((e) => e !== 'heal');
-/** The week's machine and two different HOUSE EDGES. */
+/** The weekly's HOUSE EDGE pairs: no HOUSE CUT (any pair with it made 3-6% weeks), and no HIGH ROLLERS + GLASS JAW
+ * (the 5% weeks: EXPERT_PLAYTEST_9 D7). Variety comes from the machine and the seed. */
+export const WEEKLY_PAIRS: [EdgeId, EdgeId][] = [
+  ['fast', 'rollers'],
+  ['fast', 'frail'],
+];
+/** The week's machine and its pair of HOUSE EDGES. */
 export function weekly(key: string): { cabinet: CabinetId; edges: EdgeId[]; seed: number } {
   const seed = dailySeed(`weekly:${key}`);
   const cabinet = CABINET_ORDER[dailySeed(`weekly:${key}:machine`) % CABINET_ORDER.length];
-  const n = WEEKLY_EDGES.length;
-  const a = dailySeed(`weekly:${key}:edge`) % n;
-  const b = (a + 1 + (dailySeed(`weekly:${key}:edge2`) % (n - 1))) % n;
-  return { cabinet, edges: [WEEKLY_EDGES[a], WEEKLY_EDGES[b]], seed };
+  const pair = WEEKLY_PAIRS[dailySeed(`weekly:${key}:edge`) % WEEKLY_PAIRS.length];
+  return { cabinet, edges: [...pair], seed };
 }
 
 /** Make a fresh run (seeded with weekly(key).seed) THE WEEKLY CHALLENGE: fights fixed by the week, through the Dealer. */
@@ -157,13 +160,25 @@ export interface AchievementDef {
   /** Hidden until earned (the text reads ???). */
   secret?: boolean;
   check: (c: AchievementCtx) => boolean;
+  /** A counter for the TROPHIES screen ([have, need]). */
+  progress?: (c: ProgressCtx) => [number, number];
+}
+
+/** What the TROPHIES counters read from the profile. */
+export interface ProgressCtx {
+  stats: MetaStats;
+  have: Record<string, number>;
+  found: number;
+  collection: number;
+  challengesWon: number;
 }
 
 const clearOf = (cab: CabinetId): AchievementDef => ({
   id: `clear_${cab}`,
   name: `${CABINETS[cab].hero} CASHES IN`,
   text: `CLEAR A RUN WITH ${CABINETS[cab].name}.`,
-  check: (c) => c.won && c.cabinet === cab,
+  // Full numbers only: THE DAILY and THE WEEKLY ease act 3 and lend you machines you haven't unlocked (EXPERT_PLAYTEST_9 D5).
+  check: (c) => c.won && c.cabinet === cab && !c.daily && !c.weekly,
 });
 const stakeOf = (lvl: number): AchievementDef => ({
   id: `stake_${lvl}`,
@@ -176,16 +191,22 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'first_win', name: 'FIRST BLOOD', text: 'WIN A FIGHT.', check: (c) => c.act > 1 || c.won || c.score > 0 },
   { id: 'house', name: 'HOUSE CALL', text: 'BEAT THE HOUSE.', check: (c) => c.act >= 2 || c.won },
   { id: 'clear', name: 'MIRROR, MIRROR', text: 'CLEAR A RUN: BEAT THE MIRROR.', check: (c) => c.won },
-  { id: 'dealer', name: 'THE HOUSE ALWAYS LOSES', text: 'BEAT THE DEALER.', check: (c) => c.won && c.acts >= 3 },
+  { id: 'dealer', name: 'THE HOUSE ALWAYS LOSES', text: 'BEAT THE DEALER (NOT IN THE DAILY OR WEEKLY).', check: (c) => c.won && c.acts >= 3 && !c.daily && !c.weekly },
   ...CABINET_ORDER.map(clearOf),
-  { id: 'all_machines', name: 'FULL HOUSE', text: 'CLEAR A RUN WITH EVERY SLOT MACHINE.', check: (c) => CABINET_ORDER.every((m) => c.have[`clear_${m}`] || (c.won && c.cabinet === m)) },
+  {
+    id: 'all_machines',
+    name: 'FULL HOUSE',
+    text: 'CLEAR A RUN WITH EVERY SLOT MACHINE.',
+    check: (c) => CABINET_ORDER.every((m) => c.have[`clear_${m}`] || (c.won && c.cabinet === m && !c.daily && !c.weekly)),
+    progress: (c) => [CABINET_ORDER.filter((m) => c.have[`clear_${m}`]).length, CABINET_ORDER.length],
+  },
   ...Array.from({ length: MAX_STAKE }, (_, i) => stakeOf(i + 1)),
   { id: 'daily_play', name: 'DAILY BREAD', text: 'PLAY THE DAILY RUN.', check: (c) => c.daily },
   { id: 'daily_win', name: 'DAILY DOUBLE', text: 'WIN THE DAILY RUN.', check: (c) => c.daily && c.won },
-  { id: 'daily_7', name: 'CREATURE OF HABIT', text: 'PLAY 7 DAILY RUNS.', check: (c) => c.stats.dailies >= 7 },
+  { id: 'daily_7', name: 'CREATURE OF HABIT', text: 'PLAY 7 DAILY RUNS.', check: (c) => c.stats.dailies >= 7, progress: (c) => [c.stats.dailies, 7] },
   { id: 'weekly_win', name: 'WEEK IN, WEEK OUT', text: 'CLEAR THE WEEKLY CHALLENGE.', check: (c) => c.weekly && c.won },
   { id: 'challenge_1', name: 'CHALLENGER', text: 'CLEAR A CHALLENGE.', check: (c) => c.challengesWon >= 1 },
-  { id: 'challenge_all', name: 'NO CHALLENGE', text: 'CLEAR EVERY CHALLENGE.', check: (c) => c.challengesWon >= CHALLENGES.length },
+  { id: 'challenge_all', name: 'NO CHALLENGE', text: 'CLEAR EVERY CHALLENGE.', check: (c) => c.challengesWon >= CHALLENGES.length, progress: (c) => [c.challengesWon, CHALLENGES.length] },
   { id: 'endless_1', name: 'LET IT RIDE', text: 'CLEAR AN ENDLESS LOOP.', check: (c) => c.loops >= 1 },
   { id: 'endless_3', name: 'ON A HEATER', text: 'CLEAR 3 ENDLESS LOOPS IN ONE RUN.', check: (c) => c.loops >= 3 },
   { id: 'chips_50', name: 'MONEYBAGS', text: 'WIN A RUN HOLDING 50 CHIPS OR MORE.', check: (c) => c.won && c.chips >= 50 },
@@ -195,10 +216,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'score_20k', name: 'WHALE WATCHING', text: 'SCORE 20,000 IN ONE RUN.', check: (c) => c.score >= 20000 },
   { id: 'lien_paid', name: 'PAID IN FULL', text: 'PAY OFF A LIEN AT THE CASHIER.', check: (c) => c.liensPaid >= 1 },
   { id: 'repo_loss', name: 'REPOSSESSED', text: 'LOSE A RUN TO THE REPO MAN.', secret: true, check: (c) => !c.won && !!c.killer?.endsWith('REPO MAN') },
-  { id: 'runs_25', name: 'REGULAR', text: 'PLAY 25 RUNS.', check: (c) => c.stats.runs >= 25 },
-  { id: 'runs_100', name: 'LIFER', text: 'PLAY 100 RUNS.', check: (c) => c.stats.runs >= 100 },
-  { id: 'collect_half', name: 'COLLECTOR', text: 'DISCOVER HALF THE COLLECTION.', check: (c) => c.found * 2 >= c.collection },
-  { id: 'collect_all', name: 'COMPLETIONIST', text: 'DISCOVER THE WHOLE COLLECTION.', check: (c) => c.found >= c.collection },
+  // (Not "REGULAR": that's the level 3 title.)
+  { id: 'runs_25', name: 'HOUSE REGULAR', text: 'PLAY 25 RUNS.', check: (c) => c.stats.runs >= 25, progress: (c) => [c.stats.runs, 25] },
+  { id: 'runs_100', name: 'LIFER', text: 'PLAY 100 RUNS.', check: (c) => c.stats.runs >= 100, progress: (c) => [c.stats.runs, 100] },
+  { id: 'collect_half', name: 'COLLECTOR', text: 'DISCOVER HALF THE COLLECTION.', check: (c) => c.found * 2 >= c.collection, progress: (c) => [c.found, Math.ceil(c.collection / 2)] },
+  { id: 'collect_all', name: 'COMPLETIONIST', text: 'DISCOVER THE WHOLE COLLECTION.', check: (c) => c.found >= c.collection, progress: (c) => [c.found, c.collection] },
 ];
 
 /** The achievements this run newly earns (ids, in list order). */
@@ -210,6 +232,11 @@ export function newAchievements(c: AchievementCtx): AchievementDef[] {
     if (a.check({ ...c, have: { ...c.have, ...Object.fromEntries(out.map((x) => [x.id, 1])) } })) out.push(a);
   }
   return out;
+}
+
+/** Every title and how it's earned (for the TROPHIES screen's locked ones). */
+export function allTitles(): { title: string; how: string; level?: number }[] {
+  return [...LEVEL_TITLES.map((t) => ({ title: t.title, how: `REACH LEVEL ${t.level}`, level: t.level })), ...CHALLENGES.map((c) => ({ title: c.title, how: `CLEAR THE ${c.name} CHALLENGE` }))];
 }
 
 /** Every title the player holds: by level, and one per cleared challenge. */

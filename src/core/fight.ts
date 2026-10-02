@@ -332,6 +332,8 @@ export class Fight {
     if (this.cfg.enemy.first) this.next = 'enemy';
     // ACT 3 regulars open with their ability on their first turn (it never fired in 38% of act 3 fights: EXPERT_PLAYTEST_3 C3).
     if (this.act3Regular && this.sides.enemy.ability) this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - 1);
+    // THE REPO MAN takes on his 2nd turn, then every 3 (half of MIDAS's fights ended before his 3rd: EXPERT_PLAYTEST_9 D3).
+    else if (this.sides.enemy.ability?.kind === 'repo') this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - GATEKEEPER.firstTurn);
     if (this.isDealer) this.nextDeal = this.rng.pick(DEALS);
     // The chase symbols: one BONUS and one RELIC cell per reel, for this fight only.
     if (this.cfg.player.bonusSymbols)
@@ -1551,8 +1553,11 @@ export class Fight {
   private repossess(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
     if (this.repoTaken >= GATEKEEPER.maxTakes) return this.fizzle(me, 'gavel', [], events);
     this.repoTaken++;
-    if (this.charmedTargets(foe, 1).length) return this.confiscate(me, foe, 1, [], events);
-    this.steal(me, foe, 1, [], events);
+    const at = events.length;
+    if (this.charmedTargets(foe, 1).length) this.confiscate(me, foe, 1, [], events);
+    else this.steal(me, foe, 1, [], events);
+    // The presentation calls it what it is: REPOSSESSED, held until the act's boss falls.
+    for (const e of events.slice(at)) if (e.type === 'confiscate' || e.type === 'steal') e.repo = true;
   }
 
   /** Charmed cells to target: visible first (gold first), then the rest of the strips. */

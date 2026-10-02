@@ -14,7 +14,7 @@ import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
 import { fmtNum } from '../render/text';
 import { BOMB, RELICS } from '../core/relics';
-import { charmLevel, charmTag, CHARM_COLOR, playerSymValue } from '../core/charms';
+import { charmLevel, charmName, charmTag, CHARM_COLOR, playerSymValue } from '../core/charms';
 import { defaultConfig } from '../core/config';
 import { DEAD } from '../core/strip';
 import { ENH_SPRITE } from './reel';
@@ -1407,7 +1407,8 @@ export class Director {
     });
     await Promise.all(grabs);
     const c = this.machineCenter(e.to);
-    this.bg(this.popText(`STOLEN x${e.cells.length}`, c.x, MACHINE_TOP - 4, 3, '#c9a0ff', 16, 0.3));
+    if (e.repo) this.repossessed(e.to, e.symbols.map((s) => s.toUpperCase()).join(' + '));
+    else this.bg(this.popText(`STOLEN x${e.cells.length}`, c.x, MACHINE_TOP - 4, 3, '#c9a0ff', 16, 0.3));
     if (e.reels.length) this.settle(e.from, e.reels);
     await this.c.wait(0.15);
   }
@@ -1814,9 +1815,18 @@ export class Director {
       delete cell.enh;
     }
     const c = this.machineCenter(e.to);
-    this.bg(this.popText(`CONFISCATED: ${e.enhs.map((x) => x.toUpperCase()).join(' + ')}`, c.x, MACHINE_TOP - 30, 2, '#e0c090', 16, 0.6));
+    if (e.repo) this.repossessed(e.to, `${e.enhs.map((x) => charmName(x)).join(' + ')} CHARM`);
+    else this.bg(this.popText(`CONFISCATED: ${e.enhs.map((x) => x.toUpperCase()).join(' + ')}`, c.x, MACHINE_TOP - 30, 2, '#e0c090', 16, 0.6));
     if (e.reels.length) this.settle(e.from, e.reels);
     await this.c.wait(0.3);
+  }
+
+  /** THE REPO MAN's take: its own banner (the write that outlasts the fight). */
+  private repossessed(to: SideId, what: string): void {
+    const c = this.machineCenter(to);
+    this.s.sounds.stingerMedium();
+    this.bg(this.popText(`REPOSSESSED: ${what}`, c.x, MACHINE_TOP - 34, 2.5, '#ff9a3a', 18, 0.9));
+    this.bg(this.popText('GONE UNTIL THE BOSS FALLS', c.x, MACHINE_TOP - 8, 1.5, '#ffd0a0', 10, 0.9));
   }
 
   private async rake(e: Ev<'rake'>): Promise<void> {

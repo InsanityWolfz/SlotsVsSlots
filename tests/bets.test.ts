@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
-import { betState, newTrack, trackEvent } from '../src/core/bets';
+import { betState, lineFor, newTrack, trackEvent } from '../src/core/bets';
 import { Fight } from '../src/core/fight';
 import { allInStake, betStakes, betsOpen, clearBet, createRun, fightConfig, finishFight, offerBets, placeBet } from '../src/core/run';
+
+/** The table opens from act 1's second fight. */
+const toFight2 = (run: { depth: number; chosen: boolean[] }) => {
+  run.depth = 1;
+  run.chosen = run.chosen.map(() => true);
+};
 
 describe('SIDE BETS', () => {
   it('each kind settles on its own condition', () => {
@@ -37,6 +43,7 @@ describe('SIDE BETS', () => {
     const base = defaultConfig();
     const run = createRun(base, 99, 'knight');
     run.pendingStart = null;
+    toFight2(run);
     expect(betsOpen(run)).toBe(true);
     const a = offerBets(run, base);
     expect(a.length).toBe(2);
@@ -51,6 +58,7 @@ describe('SIDE BETS', () => {
     const base = defaultConfig();
     const run = createRun(base, 99, 'knight');
     run.pendingStart = null;
+    toFight2(run);
     run.player.chips = 20;
     offerBets(run, base);
     expect(placeBet(run, 0, 6)).toBe(true);
@@ -76,6 +84,7 @@ describe('SIDE BETS', () => {
     const base = defaultConfig();
     const run = createRun(base, 99, 'knight');
     run.pendingStart = null;
+    toFight2(run);
     run.player.chips = 7;
     expect(allInStake(run)).toBe(7);
     run.player.chips = 40;
@@ -87,6 +96,7 @@ describe('SIDE BETS', () => {
       for (const streak of [1, 2]) {
         const r2 = createRun(base, seed, 'knight');
         r2.pendingStart = null;
+        toFight2(r2);
         r2.betStreak = streak;
         const o = offerBets(r2, base);
         seen[streak].push(...o.filter((b) => b.hot).map((b) => b.pay));
@@ -103,6 +113,7 @@ describe('SIDE BETS', () => {
     const base = defaultConfig();
     const run = createRun(base, 99, 'knight');
     run.pendingStart = null;
+    toFight2(run);
     run.player.chips = 60;
     const plain = offerBets(run, base).map((b) => b.pay);
     run.bets = null;
@@ -127,6 +138,7 @@ describe('SIDE BETS', () => {
     const base = defaultConfig();
     const run = createRun(base, 99, 'midas');
     run.pendingStart = null;
+    toFight2(run);
     run.player.chips = 20;
     // A later fight (the opener can fall in one turn, and a bet won at the end pays after the fight).
     run.depth = 4;
@@ -145,5 +157,16 @@ describe('SIDE BETS', () => {
     expect(rec.bet?.won).toBe(true);
     // Paid once: in the fight's gold-bar chips, not again after it.
     expect(run.player.chips - chips).toBe((rec.chips ?? 0) + fight.midasChips);
+  });
+
+  it("no table on act 1's first fight; CLEAN HANDS never offers a limit at or past your max HP", () => {
+    const base = defaultConfig();
+    const run = createRun(base, 99, 'knight');
+    run.pendingStart = null;
+    expect(betsOpen(run)).toBe(false);
+    // Rehearsals that all lose 500-900 HP: a 400 max HP player gets no CLEAN HANDS line.
+    const runs = [500, 600, 700, 800, 900].map((lost) => ({ ...newTrack(), lost }));
+    expect(lineFor('clean', runs, Infinity, 'even', 0, 400)).toBeNull();
+    expect(lineFor('clean', runs, Infinity, 'even', 0, 2000)).not.toBeNull();
   });
 });
