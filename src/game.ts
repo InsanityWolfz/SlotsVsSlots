@@ -56,8 +56,12 @@ import { Button } from './ui/button';
 import { Recap } from './ui/recap';
 import { RunScreens, wrap } from './ui/runScreens';
 import { Coach, TUTORIAL } from './ui/coach';
-import { heroSprite, Menus } from './ui/menus';
-import { discover, emptyProfile, MAX_ENTRIES, runEntry, runScore, sanitizeProfile, type Profile } from './core/profile';
+import { collectionTotal, heroSprite, Menus } from './ui/menus';
+import { cleanName, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type MetaGain, type Profile, type RunEntry } from './core/profile';
+import { applyChallenge, applyWeekly, challengeById, challengeOpen, CHALLENGES, levelOf, weekKey, weekly } from './core/meta';
+import { needsName, playerId, playerName } from './net/identity';
+import { claimName, submitScore } from './net/leaderboard';
+import { online } from './net/config';
 
 const CFG_KEY = 'slotvslot.config.v3';
 const PREFS_KEY = 'slotvslot.prefs.v2';
@@ -209,6 +213,15 @@ export class Game {
       onNewRun: () => this.chooseCabinet(),
       onTutorial: () => this.startTutorial(),
       onDaily: () => this.startDaily(),
+      onChallenge: (id) => this.startChallenge(id),
+      onWeekly: () => this.startWeekly(),
+      needsName: () => needsName(this.profile),
+      onName: (name) => this.pickName(name),
+      playerName: () => playerName(this.profile),
+      setTitle: (title) => {
+        this.profile.title = title;
+        this.saveProfile();
+      },
       onReset: () => this.resetSave(),
       tutorialDone: () => this.prefs.tutorialDone,
       softLightning: () => this.prefs.juice.softLightning,
@@ -324,8 +337,9 @@ export class Game {
   private rideEntry: ReturnType<typeof runEntry> | null = null;
   private recordRun(run: RunState): void {
     if (run.endless && this.rideEntry) {
+      const prev = runScore(this.rideEntry);
       Object.assign(this.rideEntry, runEntry(run, this.rideEntry.at, !!run.tutorial), { won: true });
-      this.saveProfile();
+      this.afterRecord(this.rideEntry, recordMeta(this.profile, this.rideEntry, collectionTotal(), prev));
       return;
     }
     const entry = runEntry(run, Date.now(), !!run.tutorial);
@@ -336,7 +350,65 @@ export class Game {
       const i = this.profile.runs.findIndex((e) => !top.has(e));
       this.profile.runs.splice(i < 0 ? 0 : i, 1);
     }
+    this.afterRecord(entry, recordMeta(this.profile, entry, collectionTotal()));
+  }
+
+  /** META: save, show what the run earned, and post it to the leaderboards. */
+  private afterRecord(entry: RunEntry, gain: MetaGain): void {
     this.saveProfile();
+    this.screens.setMeta(gain);
+    if (entry.tutorial || !online() || !playerName(this.profile)) return;
+    const boards = ['all', ...(entry.daily ? [`daily:${entry.daily}`] : []), ...(entry.weekly ? [`weekly:${entry.weekly}`] : [])];
+    const main = boards[boards.length - 1];
+    this.screens.setOnline('POSTING YOUR SCORE...');
+    void this.claimed().then(async (ok) => {
+      if (!ok) return this.screens.setOnline('');
+      const ranks = await Promise.all(
+        boards.map((board) =>
+          submitScore({
+            name: playerName(this.profile),
+            title: shownTitle(this.profile),
+            pid: playerId(this.profile),
+            board,
+            score: runScore(entry),
+            cabinet: entry.cabinet,
+            stake: entry.stake,
+            won: entry.won,
+            level: levelOf(this.profile.xp).level,
+          }),
+        ),
+      );
+      const r = ranks[boards.indexOf(main)];
+      const where = main === 'all' ? 'ALL TIME' : main.startsWith('daily') ? 'TODAY' : 'THIS WEEK';
+      this.screens.setOnline(r ? `RANK ${r} ${where}` : r === 0 ? 'SCORE POSTED' : "COULDN'T POST YOUR SCORE");
+    });
+  }
+
+  /** The name is claimed on the server (once a session; a name picked offline is claimed when the boards open). */
+  private nameClaimed = false;
+  private async claimed(): Promise<boolean> {
+    if (this.nameClaimed) return true;
+    const r = await claimName(playerName(this.profile), playerId(this.profile));
+    this.saveProfile();
+    if (r.startsWith('have:')) {
+      const mine = cleanName(r.slice(5));
+      if (mine) this.profile.name = mine;
+      this.saveProfile();
+    }
+    this.nameClaimed = r === 'ok' || r.startsWith('have:');
+    return this.nameClaimed;
+  }
+
+  /** First launch: claim a name (offline keeps it locally and claims it later). */
+  private async pickName(raw: string): Promise<string> {
+    const name = cleanName(raw);
+    if (!name) return 'taken';
+    const r = await claimName(name, playerId(this.profile));
+    if (r === 'taken') return r;
+    this.profile.name = r.startsWith('have:') ? cleanName(r.slice(5)) || name : name;
+    this.nameClaimed = r !== 'offline';
+    this.saveProfile();
+    return r;
   }
 
   /** RESET SAVE (main menu): unlocks, stakes, collection and hiscores. Settings stay. */
@@ -506,6 +578,28 @@ export class Game {
     this.newFight(false, null, fightConfig(this.run!, this.cfg), true);
   }
 
+  /** A CHALLENGE: its machine and stake, its edges (open ones only). */
+  startChallenge(id: string): void {
+    const c = challengeById(id);
+    const i = CHALLENGES.findIndex((x) => x.id === id);
+    if (!c || !challengeOpen(this.profile.challenges, i)) return;
+    this.startRun(undefined, c.cabinet, c.stake);
+    if (!this.run) return;
+    applyChallenge(this.run, c);
+    this.newFight(false, null, fightConfig(this.run, this.cfg), true);
+  }
+
+  /** THE WEEKLY CHALLENGE: the week's seed, machine and edges, fights fixed by the week. As many tries as you like. */
+  startWeekly(): void {
+    const key = weekKey();
+    const w = weekly(key);
+    this.startRun(w.seed, w.cabinet, 0);
+    if (!this.run) return;
+    applyWeekly(this.run, key);
+    // The first fight was set up before the run knew it was the weekly: rebuild it on the week's seed.
+    this.newFight(false, null, fightConfig(this.run, this.cfg), true);
+  }
+
   /** Tuning panel "apply": restart with the new base config. */
   restart(): void {
     this.startRun();
@@ -565,8 +659,9 @@ export class Game {
       this.recordRun(run);
       this.skipTutorial();
       if (run.endless) this.screens.setStakeUnlockedNow('');
-      if (run.daily) this.screens.setStakeUnlockedNow('');
-      this.screens.setUnlockedNow(run.endless || run.daily ? [] : this.checkUnlocks(run));
+      // The daily, the weekly and challenges are side roads: no unlocks from them.
+      if (run.daily || run.challenge) this.screens.setStakeUnlockedNow('');
+      this.screens.setUnlockedNow(run.endless || run.daily || run.challenge ? [] : this.checkUnlocks(run));
       this.screens.showOver(run);
     }
     else if (run.bonusLog?.length) {
@@ -764,7 +859,7 @@ export class Game {
         pulse: 0,
         pot: this.fight.pot,
         potPunch: 1,
-        fightLabel: this.run && inRun ? (this.run.depth >= actLength(this.run.act) ? (this.run.endless ? `LOOP ${this.run.endless.loop} BOSS` : 'BOSS') : this.run.endless ? `LOOP ${this.run.endless.loop} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}` : `${this.run.daily ? 'DAILY - ' : ''}ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}`) : 'SANDBOX',
+        fightLabel: this.run && inRun ? (this.run.depth >= actLength(this.run.act) ? (this.run.endless ? `LOOP ${this.run.endless.loop} BOSS` : 'BOSS') : this.run.endless ? `LOOP ${this.run.endless.loop} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}` : `${this.run.daily ? 'DAILY - ' : this.run.weekly ? 'WEEKLY - ' : this.run.challenge ? 'CHALLENGE - ' : ''}ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}`) : 'SANDBOX',
         allIn: false,
         reflect: 0,
         turnDamage: 0,

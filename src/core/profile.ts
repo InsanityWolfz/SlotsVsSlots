@@ -218,9 +218,9 @@ export function sanitizeProfile(raw: unknown): Profile {
   };
 }
 
-/** A leaderboard name: 3-12 of A-Z, 0-9, _ and - (upper-cased; the pixel font has no lower case). '' if not valid. */
+/** A leaderboard name: 3-12 of A-Z, 0-9 and - (upper-cased; the pixel font has no lower case or underscore). '' if not valid. */
 export function cleanName(raw: string): string {
-  const n = raw.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 12);
+  const n = raw.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 12);
   return n.length >= 3 ? n : '';
 }
 
@@ -236,12 +236,13 @@ export interface MetaGain {
 }
 
 /** Log a finished run on the meta layers: counters, challenge bests, achievements, XP (mutates the profile). */
-export function recordMeta(p: Profile, e: RunEntry, collectionTotal: number): MetaGain {
+/** prevScore: an endless run updating the entry its Dealer win already logged (no new run, XP for the gain only). */
+export function recordMeta(p: Profile, e: RunEntry, collectionTotal: number, prevScore?: number): MetaGain {
   const before = levelOf(p.xp).level;
   const titlesBefore = new Set(titlesOwned(before, p.challenges));
   const score = runScore(e);
   let newBest = false;
-  if (!e.tutorial) {
+  if (!e.tutorial && prevScore == null) {
     p.stats.runs++;
     if (e.won) p.stats.wins++;
     if (e.daily) p.stats.dailies++;
@@ -277,7 +278,7 @@ export function recordMeta(p: Profile, e: RunEntry, collectionTotal: number): Me
     challengesWon: CHALLENGES.filter((c) => p.challenges[c.id]?.won).length,
   });
   for (const a of got) p.achievements[a.id] = e.at || Date.now();
-  const xp = e.tutorial ? 0 : score + got.length * ACHIEVEMENT_XP;
+  const xp = e.tutorial ? 0 : Math.max(0, score - (prevScore ?? 0)) + got.length * ACHIEVEMENT_XP;
   p.xp += xp;
   const after = levelOf(p.xp).level;
   const titles = titlesOwned(after, p.challenges).filter((t) => !titlesBefore.has(t));

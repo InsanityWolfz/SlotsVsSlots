@@ -1,7 +1,10 @@
 /**
- * THE LEADERBOARDS' backend (Supabase). Both values are public by design (the anon key only allows what the row-level
- * security in supabase/schema.sql allows). Empty = offline: the game hides the online boards and submits nothing.
+ * THE LEADERBOARDS' backend (Supabase). Paste the project URL and anon key here (Supabase dashboard > Project Settings >
+ * API), or set VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY at build time. Both are public by design: the anon key only
+ * allows what the row-level security in supabase/schema.sql allows. Empty = offline: no online boards, nothing posted.
  */
-export const SUPABASE_URL = '';
-export const SUPABASE_ANON_KEY = '';
+const URL_HERE = '';
+const KEY_HERE = '';
+export const SUPABASE_URL: string = URL_HERE || (import.meta.env?.VITE_SUPABASE_URL ?? '');
+export const SUPABASE_ANON_KEY: string = KEY_HERE || (import.meta.env?.VITE_SUPABASE_ANON_KEY ?? '');
 export const online = () => !!(SUPABASE_URL && SUPABASE_ANON_KEY);

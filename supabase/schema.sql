@@ -5,7 +5,7 @@
 --   * a daily board takes one score per player; nobody can edit or delete through the API.
 
 create table if not exists public.players (
-  name text primary key check (name ~ '^[A-Z0-9_-]{3,12}$'),
+  name text primary key check (name ~ '^[A-Z0-9-]{3,12}$'),
   pid text not null unique check (char_length(pid) between 8 and 64),
   created_at timestamptz not null default now()
 );
@@ -13,7 +13,7 @@ create table if not exists public.players (
 create table if not exists public.scores (
   id bigint generated always as identity primary key,
   created_at timestamptz not null default now(),
-  name text not null check (name ~ '^[A-Z0-9_-]{3,12}$'),
+  name text not null check (name ~ '^[A-Z0-9-]{3,12}$'),
   title text not null default '' check (char_length(title) <= 24),
   pid text not null check (char_length(pid) between 8 and 64),
   board text not null check (board ~ '^(all|daily:[0-9]{4}-[0-9]{2}-[0-9]{2}|weekly:[0-9]{4}-W[0-9]{2})$'),

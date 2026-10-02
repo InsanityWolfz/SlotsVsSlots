@@ -126,6 +126,6 @@ describe('meta: profile save', () => {
   });
   it('names are 3-12 safe characters', () => {
     expect(cleanName('ab')).toBe('');
-    expect(cleanName('Lucky_7-Seven-XL')).toBe('LUCKY_7-SEVE');
+    expect(cleanName('Lucky_7-Seven-XL')).toBe('LUCKY7-SEVEN');
   });
 });

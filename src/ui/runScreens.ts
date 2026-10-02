@@ -1,4 +1,6 @@
 import type { Sounds } from '../audio/sounds';
+import type { MetaGain } from '../core/profile';
+import { challengeById } from '../core/meta';
 import { UNIT, type GameConfig, type SymbolId } from '../core/config';
 import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
 import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH, POT } from '../core/relics';
@@ -827,6 +829,16 @@ export class RunScreens {
   }
   /** THE DAILY RUN: the finished run's share line. */
   private shareLine = '';
+  /** META: what the finished run earned (XP, level, achievements, titles), and its leaderboard post. */
+  private meta: MetaGain | null = null;
+  private onlineLine = '';
+  setMeta(g: MetaGain): void {
+    this.meta = g;
+    this.onlineLine = '';
+  }
+  setOnline(text: string): void {
+    this.onlineLine = text;
+  }
 
   hide(): void {
     this.mode = 'none';
@@ -975,7 +987,7 @@ export class RunScreens {
   private drawDraft(ctx: CanvasRenderingContext2D, time: number): void {
     const last = this.lastRecord;
     const start = this.draftKind === 'start';
-    drawText(ctx, last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${this.run.dailyEdge ? `: ${EDGE_TEXT[this.run.dailyEdge].title}` : ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
+    drawText(ctx, last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${this.run.dailyEdge ? `: ${EDGE_TEXT[this.run.dailyEdge].title}` : ''}` : this.run?.weekly ? `WEEKLY: ${(this.run.mods ?? []).map((e) => EDGE_TEXT[e].title).join(' + ')}` : this.run?.challenge ? `CHALLENGE: ${challengeById(this.run.challenge)?.name ?? ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
@@ -1478,6 +1490,20 @@ export class RunScreens {
 
   private drawOver(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
+    // META: the run's XP, a level up, new achievements and titles, the leaderboard rank.
+    if (this.meta) {
+      const g = this.meta;
+      const parts = [
+        g.xp ? `+${g.xp} XP` : '',
+        g.levelAfter > g.levelBefore ? `LEVEL ${g.levelAfter}!` : '',
+        g.newBest ? 'NEW BEST!' : '',
+        g.achievements.length ? `${g.achievements.length > 1 ? 'ACHIEVEMENTS' : 'ACHIEVEMENT'}: ${g.achievements.map((a) => a.name).join(', ')}` : '',
+        g.titles.length ? `NEW TITLE: ${g.titles.join(', ')}` : '',
+        this.onlineLine,
+      ].filter(Boolean);
+      const line = parts.join('  -  ');
+      if (line) drawText(ctx, line, W / 2, 700, line.length > 110 ? 1.25 : 1.5, g.achievements.length || g.levelAfter > g.levelBefore ? COLORS.goldLight : COLORS.textDim);
+    }
     if (this.shareLine) drawText(ctx, this.shareLine, W / 2, 556, 1.5, '#7dff7a');
     const trueEnding = run.won && run.act >= 3;
     if (this.rideOffer) drawText(ctx, 'YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', W / 2, this.unlockedNow.length ? 492 : 466, this.unlockedNow.length ? 1.5 : 2, COLORS.goldLight);

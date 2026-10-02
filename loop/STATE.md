@@ -1179,3 +1179,41 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - **Still open:** MIDAS GREEN 12.9 (it was ~13 before him: not his doing).
   - His own portrait `enemyRepoMan` (2026-10-02): navy trucker cap, stubble, hi-vis orange vest, a tow hook on a chain raised in one fist.
 - Tests: 193 (tests/gatekeeper.test.ts; map tests updated).
+
+### Iteration 64 (2026-10-02): META LAYERS (user ask: "a public leaderboard, challenges, the daily... so it feels like a real game")
+- **Name on first launch** (after the loading click): 3-12 of A-Z, 0-9 and dashes (the pixel font has no `_` or `#`).
+  - A DOM input sits over the canvas, so phones get their keyboard.
+  - `src/net/identity.ts` hides where the name comes from: the profile today, `globalThis.steam` (persona name / id) in the Steam build, which skips the screen.
+- **Leaderboards (Supabase):**
+  - `src/net/leaderboard.ts` uses fetch (no SDK) and fails soft (6 s timeout).
+  - Boards: `all`, `daily:<day>`, `weekly:<week>`.
+  - `supabase/schema.sql`:
+    - a name is claimed once per pid (`claim_name` RPC);
+    - scores only post under the name your pid owns;
+    - one daily score per player;
+    - column grants never return a pid;
+    - no update or delete.
+  - Config: `src/net/config.ts` (paste URL + anon key) or VITE_SUPABASE_* env. Empty = offline: the boards say "NOT OPEN YET" and nothing posts.
+  - HISCORES tabs: MY RUNS / TODAY / THIS WEEK / ALL TIME. The run-over line shows "RANK N TODAY/THIS WEEK/ALL TIME".
+  - Tested in a browser against a mocked Supabase: name taken/claimed, posts to both boards, rank, board render.
+- **CHALLENGES** (`src/core/meta.ts`): 7 fixed twists, each opened by clearing the one before. Each clear earns a title. No unlocks from them (like the daily).
+  - `challenges.ts 400` greedy win:
+    | challenge | setup | win | plain |
+    |---|---|---|---|
+    | FAST COMPANY | KNIGHT, FAST HANDS | 32.5 | 41.8 |
+    | GLASS JAW | JOKER, GLASS JAW + FAST | 33.5 | |
+    | HEAVY HITTERS | TESLA, HIGH ROLLERS | 32.0 | |
+    | SHORT STACK | MIDAS, 0 chips | 25.8 | |
+    | BAD BLOOD | BRIAR, HOUSE CUT | 14.5 | 50.0 (BRIAR lives on heals) |
+    | THE LONG NIGHT | KNIGHT GREEN, HOUSE CUT | 10.8 | |
+    | ALL OF IT | MIDAS GREEN, FAST HANDS | 10.0 (600 runs) | |
+
+    Tried for ALL OF IT: rollers+fast 4.3, rollers + 0 chips 2.8.
+- **THE WEEKLY CHALLENGE:** an ISO week (UTC) seed, machine and 2 HOUSE EDGES; fights fixed by the week; through the Dealer at daily numbers; unlimited tries, best score counts.
+  - Edges are drawn from FAST/ROLLERS/GLASS. Any pair with HOUSE CUT made 3–6% weeks: random-draft mean 9.8% → 14.1% over 12 weeks.
+- **ACHIEVEMENTS (34)**, 250 XP each: clears, per-machine and per-stake clears, daily/weekly, challenges, endless, score tiers, liens, collection, a secret one.
+- **LEVELS:** XP = run score (+ achievements); level L at 400·L·(L−1). Titles by level (ROOKIE … THE HOUSE) plus one per challenge; you pick which to wear on TROPHIES.
+  - Old saves backfill XP and counters from their stored runs.
+  - Cosmetic only: no balance impact outside the challenge runs.
+- **Main menu:** NEW RUN / DAILY / CHALLENGES / TUTORIAL, then COLLECTION | TROPHIES | HISCORES. A name/level/XP badge sits up top.
+- Tests: 206 (tests/meta.test.ts).

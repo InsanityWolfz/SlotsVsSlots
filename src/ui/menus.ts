@@ -1,7 +1,10 @@
 import type { Sounds } from '../audio/sounds';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import type { Enh, RelicId } from '../core/config';
-import { runScore, type Profile, type RunEntry } from '../core/profile';
+import { runScore, shownTitle, type Profile, type RunEntry } from '../core/profile';
+import { ACHIEVEMENTS, CHALLENGES, challengeOpen, edgeLine, levelOf, titlesOwned, weekKey, weekly } from '../core/meta';
+import { online } from '../net/config';
+import { topScores, type ScoreRow } from '../net/leaderboard';
 import { dailyCabinet, dailyEdge, dailyKey, dailySpent } from '../core/daily';
 import { EDGE_TEXT } from '../core/run';
 import { LEGENDARY, RELICS, RELIC_TIER } from '../core/relics';
@@ -21,7 +24,9 @@ import { wrap } from './runScreens';
  * Out-of-run screens: LOADING (warms the sprite cache, then asks for a click so audio can start),
  * the MAIN MENU, the COLLECTION log and personal HISCORES.
  */
-export type MenuMode = 'none' | 'loading' | 'main' | 'collection' | 'hiscores';
+export type MenuMode = 'none' | 'loading' | 'name' | 'main' | 'collection' | 'hiscores' | 'challenges' | 'trophies';
+/** HISCORES tabs: your own runs, or the online boards. */
+export type ScoreTab = 'mine' | 'daily' | 'weekly' | 'all';
 
 export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
   gold: { name: 'GOLD', text: `SWORDS, SHIELDS OR BOLTS. ${charmRuleText('gold', 1)}. LEVELS: X3, X4.` },
@@ -51,6 +56,9 @@ export const RELIC_ORDER: RelicId[] = (() => {
   return out.filter((r) => !RELICS[r].retired);
 })();
 
+/** Collection size (relics + charms), for the COLLECTOR achievements. */
+export const collectionTotal = () => RELIC_ORDER.length + CHARM_ORDER.length;
+
 const relicTier = (r: RelicId): keyof typeof TIER_COLOR =>
   LEGENDARY.has(r) ? 'legendary' : RELIC_TIER.uncommon.includes(r) ? 'uncommon' : RELIC_TIER.common.includes(r) ? 'common' : 'other';
 
@@ -59,6 +67,18 @@ export const heroSprite = (id: CabinetId): SpriteId => (hasSprite(CABINETS[id].h
 const LOAD_MIN = 1.3;
 const TOUCH = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches ?? false);
 const ROWS_PER_PAGE = 7;
+/** Name entry box centre; challenge rows; achievement grid top. */
+const NAME_Y = 360;
+const CH_Y = 272;
+const CH_ROW = 54;
+const TR_Y = 320;
+
+/** Time until the next weekly (Monday 00:00 UTC), e.g. "3D 4H". */
+function untilMonday(now = new Date()): string {
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + ((8 - (now.getUTCDay() || 7)) % 7 || 7)));
+  const h = Math.max(0, Math.floor((next.getTime() - now.getTime()) / 3600000));
+  return h >= 24 ? `${Math.floor(h / 24)}D ${h % 24}H` : `${h}H`;
+}
 
 export class Menus {
   mode: MenuMode = 'none';
@@ -74,6 +94,15 @@ export class Menus {
   private ready = false;
   // hiscores
   private sort: 'best' | 'recent' = 'best';
+  private tab: ScoreTab = 'mine';
+  /** Online board rows by board key (null while loading, 'error' if it failed). */
+  private boards = new Map<string, ScoreRow[] | null | 'error'>();
+  // name entry (a DOM input over the canvas: phones get their keyboard)
+  private nameInput: HTMLInputElement | null = null;
+  private nameStatus = '';
+  private nameBusy = false;
+  // trophies: the achievement under the pointer
+  private trophyTip = '';
   private page = 0;
   private resetArmed = 0;
 
@@ -87,6 +116,14 @@ export class Menus {
       onTutorial: () => void;
       /** THE DAILY RUN (one try a day). */
       onDaily: () => void;
+      /** A CHALLENGE (by id), or THE WEEKLY CHALLENGE. */
+      onChallenge: (id: string) => void;
+      onWeekly: () => void;
+      /** Name entry: claim the name; resolves to the claim result ('ok', 'taken', 'have:NAME', 'offline'). */
+      needsName: () => boolean;
+      onName: (name: string) => Promise<string>;
+      playerName: () => string;
+      setTitle: (title: string) => void;
       onReset: () => void;
       tutorialDone: () => boolean;
       /** SOFT LIGHTNING option. */
@@ -106,6 +143,7 @@ export class Menus {
   }
 
   private open(mode: MenuMode): void {
+    if (mode !== 'name') this.dropInput();
     this.mode = mode;
     this.buttons = [];
     this.active = null;
@@ -116,6 +154,12 @@ export class Menus {
   hide(): void {
     this.mode = 'none';
     this.buttons = [];
+    this.dropInput();
+  }
+
+  private dropInput(): void {
+    this.nameInput?.remove();
+    this.nameInput = null;
   }
 
   showLoading(): void {
@@ -137,9 +181,11 @@ export class Menus {
     const label = run ? `DAILY: ${runScore(run)}` : done ? 'DAILY: SPENT' : `DAILY: ${CABINETS[dailyCabinet(today)].hero} + ${EDGE_TEXT[dailyEdge(today)].title}`;
     const daily = this.btn(label, x, 380, 380, 54, () => !done && this.cb.onDaily(), label.length > 20 ? 1.5 : label.length > 14 ? 2 : 3);
     daily.toggled = done;
-    this.btn('TUTORIAL', x, 442, 380, 54, () => this.cb.onTutorial(), 3).opts.idlePulse = first;
-    this.btn('COLLECTION', x, 504, 380, 54, () => this.showCollection(), 3);
-    this.btn('HISCORES', x, 566, 380, 54, () => this.showHiscores(), 3);
+    this.btn('CHALLENGES', x, 442, 380, 54, () => this.showChallenges(), 3);
+    this.btn('TUTORIAL', x, 504, 380, 54, () => this.cb.onTutorial(), 3).opts.idlePulse = first;
+    this.btn('COLLECTION', x - 128, 566, 124, 54, () => this.showCollection(), 1.5);
+    this.btn('TROPHIES', x, 566, 124, 54, () => this.showTrophies(), 1.5);
+    this.btn('HISCORES', x + 128, 566, 124, 54, () => this.showHiscores(), 1.5);
     const light = this.btn(this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL', 150, 36, 260, 40, () => {
       this.cb.setSoftLightning(!this.cb.softLightning());
       light.label = this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL';
@@ -180,9 +226,33 @@ export class Menus {
     this.hiscoreButtons();
   }
 
+  /** The online board a tab shows. */
+  private boardKey(tab: ScoreTab): string {
+    return tab === 'daily' ? `daily:${dailyKey()}` : tab === 'weekly' ? `weekly:${weekKey()}` : 'all';
+  }
+
+  private loadBoard(key: string): void {
+    if (!online() || this.boards.get(key) === null) return;
+    this.boards.set(key, null);
+    void topScores(key, ROWS_PER_PAGE + 3).then((rows) => this.boards.set(key, rows ?? 'error'));
+  }
+
   private hiscoreButtons(): void {
     this.buttons = [];
     this.btn('BACK', 100, 44, 140, 48, () => this.showMain());
+    (['mine', 'daily', 'weekly', 'all'] as ScoreTab[]).forEach((tab, i) => {
+      const b = this.btn({ mine: 'MY RUNS', daily: 'TODAY', weekly: 'THIS WEEK', all: 'ALL TIME' }[tab], W / 2 + (i - 1.5) * 168, 100, 160, 40, () => {
+        this.tab = tab;
+        this.page = 0;
+        if (tab !== 'mine') this.boards.delete(this.boardKey(tab));
+        this.hiscoreButtons();
+      }, 1.5);
+      b.toggled = this.tab === tab;
+    });
+    if (this.tab !== 'mine') {
+      this.loadBoard(this.boardKey(this.tab));
+      return;
+    }
     const best = this.btn('BEST', W - 250, 44, 130, 44, () => {
       this.sort = 'best';
       this.page = 0;
@@ -216,6 +286,228 @@ export class Menus {
     return runs.sort((a, b) => runScore(b) - runScore(a) || b.at - a.at);
   }
 
+  // ---- player name (first launch) -----------------------------------------------------
+
+  showName(): void {
+    this.open('name');
+    this.nameStatus = '';
+    this.nameBusy = false;
+    const stage = document.getElementById('stage');
+    if (stage && !this.nameInput) {
+      const el = document.createElement('input');
+      el.maxLength = 12;
+      el.autocomplete = 'off';
+      el.spellcheck = false;
+      el.setAttribute('autocapitalize', 'characters');
+      el.setAttribute('aria-label', 'Leaderboard name');
+      Object.assign(el.style, {
+        position: 'absolute',
+        left: `${((W / 2 - 200) / W) * 100}%`,
+        top: `${((NAME_Y - 24) / H) * 100}%`,
+        width: `${(400 / W) * 100}%`,
+        height: `${(48 / H) * 100}%`,
+        background: 'transparent',
+        border: 'none',
+        outline: 'none',
+        color: '#f4eee0',
+        textAlign: 'center',
+        textTransform: 'uppercase',
+        fontFamily: 'ui-monospace, Consolas, monospace',
+        fontWeight: 'bold',
+        letterSpacing: '0.15em',
+        caretColor: '#ffe45c',
+        userSelect: 'text',
+        webkitUserSelect: 'text',
+        touchAction: 'auto',
+        zIndex: '5',
+      } as Partial<CSSStyleDeclaration>);
+      el.addEventListener('input', () => {
+        el.value = el.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+        this.nameStatus = '';
+      });
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') void this.submitName();
+      });
+      stage.appendChild(el);
+      this.nameInput = el;
+      setTimeout(() => el.focus(), 50);
+    }
+    this.btn('OK', W / 2, NAME_Y + 80, 200, 54, () => void this.submitName(), 3);
+  }
+
+  private async submitName(): Promise<void> {
+    if (this.nameBusy || !this.nameInput) return;
+    const name = this.nameInput.value;
+    if (name.length < 3) {
+      this.nameStatus = 'AT LEAST 3 LETTERS OR NUMBERS';
+      this.sounds.fizzle();
+      return;
+    }
+    this.nameBusy = true;
+    this.nameStatus = 'CHECKING...';
+    const r = await this.cb.onName(name);
+    this.nameBusy = false;
+    if (this.mode !== 'name') return;
+    if (r === 'taken') {
+      this.nameStatus = `${name} IS TAKEN. TRY ANOTHER`;
+      this.sounds.fizzle();
+      return;
+    }
+    this.sounds.fanfareJackpot();
+    this.showMain();
+  }
+
+  private drawName(ctx: CanvasRenderingContext2D, t: number): void {
+    ctx.fillStyle = '#0a0612';
+    ctx.fillRect(0, 0, W, H);
+    this.logo(ctx, 150, t, 3);
+    drawText(ctx, 'PICK YOUR NAME', W / 2, NAME_Y - 110, 4, COLORS.goldLight);
+    drawText(ctx, 'IT GOES ON THE LEADERBOARDS: THE DAILY, THE WEEKLY AND ALL TIME', W / 2, NAME_Y - 66, 1.5, COLORS.textDim);
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(W / 2 - 214, NAME_Y - 32, 428, 64);
+    ctx.fillStyle = COLORS.gold;
+    ctx.fillRect(W / 2 - 210, NAME_Y - 28, 420, 56);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(W / 2 - 206, NAME_Y - 24, 412, 48);
+    if (!this.nameInput?.value) drawText(ctx, 'TYPE A NAME', W / 2, NAME_Y, 2.5, COLORS.textDim, { alpha: 0.5 + 0.3 * Math.sin(t * 4) });
+    drawText(ctx, '3-12 LETTERS, NUMBERS OR DASHES', W / 2, NAME_Y + 42, 1.25, COLORS.textDim);
+    if (this.nameStatus) drawText(ctx, this.nameStatus, W / 2, NAME_Y + 130, 2, this.nameBusy ? COLORS.textDim : COLORS.danger);
+    // Keep the input's text in step with the stage size.
+    const stage = this.nameInput?.parentElement;
+    if (this.nameInput && stage) this.nameInput.style.fontSize = `${(stage.clientWidth / W) * 30}px`;
+  }
+
+  /** The player's badge: name, level, title and the XP bar. */
+  private badge(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+    const p = this.profile();
+    const lv = levelOf(p.xp);
+    const name = this.cb.playerName() || 'PLAYER';
+    drawText(ctx, `${name}  -  LV ${lv.level} ${shownTitle(p)}`, x, y - 6, 2, COLORS.goldLight);
+    const bw = 300;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - bw / 2 - 2, y + 10, bw + 4, 10);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(x - bw / 2, y + 12, bw, 6);
+    ctx.fillStyle = COLORS.energy;
+    ctx.fillRect(x - bw / 2, y + 12, Math.round((bw * lv.into) / Math.max(1, lv.need)), 6);
+    drawText(ctx, `${lv.into}/${lv.need} XP`, x + bw / 2 + 8, y + 15, 1, COLORS.textDim, { align: 'left' });
+  }
+
+  // ---- challenges -----------------------------------------------------------------------
+
+  showChallenges(): void {
+    this.open('challenges');
+    this.btn('BACK', 100, 44, 140, 48, () => this.showMain());
+    this.btn('PLAY', W - 170, 150, 180, 54, () => this.cb.onWeekly(), 3);
+    const rec = this.profile().challenges;
+    CHALLENGES.forEach((c, i) => {
+      const b = this.btn(rec[c.id]?.won ? 'AGAIN' : 'PLAY', W - 130, CH_Y + i * CH_ROW, 140, 40, () => this.cb.onChallenge(c.id));
+      b.enabled = challengeOpen(rec, i);
+    });
+  }
+
+  private drawChallenges(ctx: CanvasRenderingContext2D, t: number): void {
+    const p = this.profile();
+    drawText(ctx, 'CHALLENGES', W / 2, 44, 5, COLORS.goldLight);
+    // THE WEEKLY CHALLENGE.
+    const key = weekKey();
+    const wk = weekly(key);
+    const best = p.challenges[`weekly:${key}`];
+    this.panel(ctx, 60, 92, W - 120, 118, '#7dff7a');
+    drawText(ctx, `THE WEEKLY CHALLENGE  ${key}`, 90, 112, 2.5, '#7dff7a', { align: 'left' });
+    drawSprite(ctx, heroSprite(wk.cabinet), 120, 162, 2.5, { rot: Math.sin(t * 2) * 0.03 });
+    drawText(ctx, `${CABINETS[wk.cabinet].hero} - ${CABINETS[wk.cabinet].name}. SAME FIGHTS FOR EVERYONE, THROUGH THE DEALER. AS MANY TRIES AS YOU LIKE.`, 160, 144, 1.25, COLORS.text, { align: 'left' });
+    wrap(edgeLine(wk.edges), 96).slice(0, 2).forEach((l, k) => drawText(ctx, l, 160, 164 + k * 16, 1.25, COLORS.goldLight, { align: 'left' }));
+    drawText(ctx, best ? `YOUR BEST ${best.best}${best.won ? ' - CLEARED' : ''} - ${best.tries} TR${best.tries > 1 ? 'IES' : 'Y'}` : 'NOT PLAYED YET', 160, 198, 1.25, best?.won ? '#ffd23f' : COLORS.textDim, { align: 'left' });
+    drawText(ctx, `NEW ONE IN ${untilMonday()}`, W - 170, 194, 1.25, COLORS.textDim);
+    // The ladder.
+    drawText(ctx, 'CLEAR ONE TO OPEN THE NEXT. EACH CLEAR EARNS A TITLE.', W / 2, CH_Y - 40, 1.5, COLORS.textDim);
+    CHALLENGES.forEach((c, i) => {
+      const y = CH_Y + i * CH_ROW;
+      const open = challengeOpen(p.challenges, i);
+      const r = p.challenges[c.id];
+      ctx.fillStyle = i % 2 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)';
+      ctx.fillRect(60, y - CH_ROW / 2 + 2, W - 120, CH_ROW - 4);
+      drawText(ctx, String(i + 1), 84, y, 2.5, r?.won ? '#ffd23f' : COLORS.textDim);
+      drawSprite(ctx, open ? heroSprite(c.cabinet) : 'playerPortrait', 130, y, 1.5, open ? {} : { variant: 'black', alpha: 0.5 });
+      drawText(ctx, open ? c.name : '???', 160, y - 10, 2, open ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
+      const stake = c.stake ? ` - ${STAKES[c.stake].name} STAKE, THROUGH THE DEALER` : '';
+      const rule = [edgeLine(c.edges), c.chips === 0 ? 'START WITH 0 CHIPS' : ''].filter(Boolean).join('. ');
+      drawText(ctx, open ? `${CABINETS[c.cabinet].name}${stake}. ${rule || c.text}` : `CLEAR ${CHALLENGES[i - 1].name} TO OPEN`, 160, y + 10, 1.25, COLORS.textDim, { align: 'left' });
+      drawText(ctx, r?.won ? `CLEARED - BEST ${r.best}` : r ? `BEST ${r.best}` : '', W - 220, y - 6, 1.5, r?.won ? '#ffd23f' : COLORS.text, { align: 'right' });
+      drawText(ctx, `TITLE: ${c.title}`, W - 220, y + 12, 1.25, r?.won ? COLORS.goldLight : COLORS.textDim, { align: 'right' });
+    });
+  }
+
+  private panel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, border: string): void {
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+    ctx.fillStyle = border;
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(x + 3, y + 3, w - 6, h - 6);
+  }
+
+  // ---- trophies --------------------------------------------------------------------------
+
+  showTrophies(): void {
+    this.open('trophies');
+    this.trophyButtons();
+  }
+
+  private trophyButtons(): void {
+    this.buttons = [];
+    this.btn('BACK', 100, 44, 140, 48, () => this.showMain());
+    const p = this.profile();
+    const owned = titlesOwned(levelOf(p.xp).level, p.challenges);
+    const shown = shownTitle(p);
+    let x = 70;
+    let y = 196;
+    for (const title of owned) {
+      const w = title.length * 9 + 30;
+      if (x + w > W - 60) {
+        x = 70;
+        y += 40;
+      }
+      const b = this.btn(title, x + w / 2, y, w, 32, () => {
+        this.cb.setTitle(title);
+        this.trophyButtons();
+      }, 1.25);
+      b.toggled = title === shown;
+      x += w + 8;
+    }
+  }
+
+  private drawTrophies(ctx: CanvasRenderingContext2D): void {
+    const p = this.profile();
+    drawText(ctx, 'TROPHIES', W / 2, 44, 5, COLORS.goldLight);
+    this.badge(ctx, W / 2, 108);
+    drawText(ctx, 'TITLES (CLICK ONE TO WEAR IT)', 60, 164, 1.5, COLORS.text, { align: 'left' });
+    const got = ACHIEVEMENTS.filter((a) => p.achievements[a.id]).length;
+    drawText(ctx, `ACHIEVEMENTS ${got}/${ACHIEVEMENTS.length}`, 60, TR_Y - 36, 2, COLORS.text, { align: 'left' });
+    drawText(ctx, 'EACH ONE IS WORTH 250 XP', W - 60, TR_Y - 36, 1.25, COLORS.textDim, { align: 'right' });
+    this.trophyTip = '';
+    const cols = 3;
+    const colW = (W - 120) / cols;
+    const rows = Math.ceil(ACHIEVEMENTS.length / cols);
+    const rowH = Math.min(34, Math.floor((H - 70 - TR_Y) / rows));
+    ACHIEVEMENTS.forEach((a, i) => {
+      const cx = 60 + Math.floor(i / rows) * colW;
+      const y = TR_Y + (i % rows) * rowH;
+      const have = !!p.achievements[a.id];
+      const hover = this.mouse.x >= cx && this.mouse.x < cx + colW - 10 && Math.abs(this.mouse.y - y) < rowH / 2;
+      if (hover) {
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.fillRect(cx - 4, y - rowH / 2 + 1, colW - 10, rowH - 2);
+        this.trophyTip = have || !a.secret ? `${a.name}: ${a.text}` : '???: A SECRET. KEEP PLAYING.';
+      }
+      if (have && hasSprite('trophySmall')) drawSprite(ctx, artId('trophySmall'), cx + 10, y, 1.25);
+      else drawText(ctx, '-', cx + 10, y, 1.5, COLORS.textDim);
+      drawText(ctx, have || !a.secret ? a.name : '???', cx + 28, y, 1.5, have ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
+    });
+    drawText(ctx, this.trophyTip || 'HOVER OR TAP AN ACHIEVEMENT TO READ IT', W / 2, H - 30, 1.5, this.trophyTip ? COLORS.text : COLORS.textDim);
+  }
+
   // ---- input -------------------------------------------------------------------------
 
   pointerDown(x: number, y: number): boolean {
@@ -223,7 +515,8 @@ export class Menus {
     if (this.mode === 'loading') {
       if (this.ready) {
         this.sounds.fanfareJackpot();
-        this.showMain();
+        if (this.cb.needsName()) this.showName();
+        else this.showMain();
       }
       return true;
     }
@@ -253,6 +546,10 @@ export class Menus {
 
   /** Space / Enter on the loading screen. */
   key(k: string): boolean {
+    if (this.mode === 'name') {
+      if (k === 'enter') void this.submitName();
+      return true;
+    }
     if (this.mode === 'loading') {
       if ((k === ' ' || k === 'enter') && this.ready) this.pointerDown(0, 0);
       return true;
@@ -282,11 +579,14 @@ export class Menus {
     else if (this.mode === 'main') this.drawMain(ctx, t);
     else if (this.mode === 'collection') this.drawCollection(ctx);
     else if (this.mode === 'hiscores') this.drawHiscores(ctx, t);
+    else if (this.mode === 'name') this.drawName(ctx, t);
+    else if (this.mode === 'challenges') this.drawChallenges(ctx, t);
+    else if (this.mode === 'trophies') this.drawTrophies(ctx);
     for (const b of this.buttons) b.draw(ctx, t);
     if (this.mode === 'main') {
       // Icons on the menu buttons (over them, scaled with their press).
-      const icons = ['iconNewRun', 'chip', 'iconTutorial', 'iconCollection', 'iconHiscores'];
-      this.buttons.slice(0, 5).forEach((b, i) => {
+      const icons = ['iconNewRun', 'chip', 'trophySmall', 'iconTutorial'];
+      this.buttons.slice(0, 4).forEach((b, i) => {
         if (hasSprite(icons[i])) drawSprite(ctx, artId(icons[i]), b.x - (b.w / 2 - 38) * b.scale, b.y, 2.5 * b.scale);
       });
     }
@@ -349,7 +649,8 @@ export class Menus {
     const found = p.found.relics.length + p.found.charms.length;
     const total = RELIC_ORDER.length + CHARM_ORDER.length;
     const best = p.runs.reduce((m, e) => Math.max(m, runScore(e)), 0);
-    drawText(ctx, `COLLECTION ${found}/${total}   RUNS ${p.runs.length}   BEST ${best}`, W / 2, 604, 1.5, COLORS.textDim);
+    drawText(ctx, `COLLECTION ${found}/${total}   RUNS ${p.stats.runs}   BEST ${best}`, W / 2, 604, 1.5, COLORS.textDim);
+    this.badge(ctx, W / 2, 20);
     if (!this.cb.tutorialDone()) drawText(ctx, 'NEW HERE? TRY THE TUTORIAL', W / 2, 268, 2, COLORS.goldLight, { alpha: 0.6 + 0.4 * Math.sin(t * 4) });
     drawText(ctx, 'PLAYTEST BUILD', 20, H - 20, 1.5, COLORS.textDim, { align: 'left' });
   }
@@ -433,6 +734,7 @@ export class Menus {
 
   private drawHiscores(ctx: CanvasRenderingContext2D, t: number): void {
     drawText(ctx, 'HISCORES', W / 2, 44, 5, COLORS.goldLight);
+    if (this.tab !== 'mine') return this.drawBoard(ctx, t);
     const list = this.entries();
     if (!list.length) {
       drawText(ctx, 'NO RUNS YET. GO PLAY ONE!', W / 2, H / 2, 3, COLORS.textDim);
@@ -440,9 +742,9 @@ export class Menus {
     }
     const rows = list.slice(this.page * ROWS_PER_PAGE, (this.page + 1) * ROWS_PER_PAGE);
     const bestScore = runScore([...list].sort((a, b) => runScore(b) - runScore(a))[0]);
-    drawText(ctx, 'SCORE: 100 PER FIGHT WON, +1000 FOR A CLEAR, +1000 FOR THE DEALER, +5 PER CHIP LEFT. X1.5 PER STAKE.', W / 2, 92, 1.25, COLORS.textDim);
+    drawText(ctx, 'SCORE: 100 PER FIGHT WON, +1000 FOR A CLEAR, +1000 FOR THE DEALER, +5 PER CHIP LEFT. X1.5 PER STAKE.', W / 2, 132, 1.25, COLORS.textDim);
     rows.forEach((e, i) => {
-      const y = 150 + i * 72;
+      const y = 180 + i * 70;
       const rank = this.page * ROWS_PER_PAGE + i + 1;
       const top = runScore(e) === bestScore && this.sort === 'best' && rank === 1;
       ctx.fillStyle = COLORS.outline;
@@ -459,7 +761,8 @@ export class Menus {
       // Result.
       const icon = e.won ? 'trophySmall' : 'hsSkull';
       if (hasSprite(icon)) drawSprite(ctx, artId(icon), 172, y + 13, 1.5);
-      if (e.daily) drawText(ctx, `DAILY ${e.daily.slice(5)}`, 164 + CABINETS[e.cabinet].hero.length * 12 + 14, y - 26, 1.25, '#7dff7a', { align: 'left' });
+      const tag = e.daily ? `DAILY ${e.daily.slice(5)}` : e.weekly ? `WEEKLY ${e.weekly}` : e.challenge ? `CHALLENGE: ${CHALLENGES.find((c) => c.id === e.challenge)?.name ?? ''}` : '';
+      if (tag) drawText(ctx, tag, 164 + CABINETS[e.cabinet].hero.length * 12 + 14, y - 26, 1.25, '#7dff7a', { align: 'left' });
       const result = e.won
         ? e.acts >= 3
           ? e.loops ? `BEAT THE DEALER + ${e.loops} ENDLESS LOOP${e.loops > 1 ? 'S' : ''}` : 'BEAT THE DEALER! TRUE ENDING'
@@ -490,5 +793,48 @@ export class Menus {
     const pages = Math.ceil(list.length / ROWS_PER_PAGE);
     if (pages > 1) drawText(ctx, `PAGE ${this.page + 1}/${pages}`, W / 2, H - 36, 2, COLORS.textDim);
     drawText(ctx, 'N: CHARMED CELLS   L2: CHARM LEVEL', 60, H - 30, 1.25, COLORS.textDim, { align: 'left' });
+  }
+
+  /** An online board: the top players (their best), you highlighted. */
+  private drawBoard(ctx: CanvasRenderingContext2D, t: number): void {
+    const key = this.boardKey(this.tab);
+    const sub = this.tab === 'daily' ? `THE DAILY RUN ${dailyKey().slice(5)} - ONE TRY EACH` : this.tab === 'weekly' ? `THE WEEKLY CHALLENGE ${weekKey()} - YOUR BEST TRY` : 'EVERY RUN, ANY STAKE - YOUR BEST';
+    drawText(ctx, sub, W / 2, 140, 1.5, COLORS.textDim);
+    if (!online()) {
+      drawText(ctx, 'THE ONLINE BOARDS ARE NOT OPEN YET', W / 2, H / 2 - 16, 3, COLORS.textDim);
+      drawText(ctx, 'YOUR RUNS ARE STILL SAVED UNDER MY RUNS', W / 2, H / 2 + 24, 1.5, COLORS.textDim);
+      return;
+    }
+    const rows = this.boards.get(key);
+    if (rows === null || rows === undefined) {
+      drawText(ctx, 'LOADING...', W / 2, H / 2, 3, COLORS.textDim, { alpha: 0.6 + 0.4 * Math.sin(t * 5) });
+      return;
+    }
+    if (rows === 'error') {
+      drawText(ctx, "COULDN'T REACH THE BOARDS. TRY AGAIN LATER", W / 2, H / 2, 2.5, COLORS.danger);
+      return;
+    }
+    if (!rows.length) {
+      drawText(ctx, 'NO SCORES YET. BE THE FIRST!', W / 2, H / 2, 3, COLORS.textDim);
+      return;
+    }
+    const me = this.cb.playerName();
+    rows.forEach((r, i) => {
+      const y = 186 + i * 50;
+      const mine = r.name === me;
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(140, y - 23, W - 280, 46);
+      ctx.fillStyle = mine ? '#8a6a1c' : i === 0 ? '#5a4a1c' : '#3a2d52';
+      ctx.fillRect(143, y - 20, W - 286, 40);
+      ctx.fillStyle = COLORS.panel;
+      ctx.fillRect(146, y - 17, W - 292, 34);
+      drawText(ctx, String(i + 1), 180, y, 2.5, i === 0 ? '#ffd23f' : COLORS.textDim);
+      if ((CABINET_ORDER as string[]).includes(r.cabinet)) drawSprite(ctx, heroSprite(r.cabinet), 226, y, 1.5);
+      drawText(ctx, r.name, 256, y - 6, 2, mine ? '#ffd23f' : COLORS.goldLight, { align: 'left' });
+      drawText(ctx, `LV ${r.level} ${r.title}`, 256, y + 11, 1.25, COLORS.textDim, { align: 'left' });
+      const st = STAKES[r.stake];
+      drawText(ctx, `${r.won ? 'CLEARED' : 'FELL'}${r.stake ? ` - ${st?.name ?? ''} STAKE` : ''}`, 760, y, 1.5, r.won ? '#ffd23f' : '#ff8a7a', { align: 'left' });
+      drawText(ctx, String(r.score), W - 170, y, 2.5, i === 0 ? '#ffd23f' : COLORS.text, { align: 'right', punch: i === 0 ? 1 + 0.04 * Math.sin(t * 4) : 1 });
+    });
   }
 }

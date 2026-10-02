@@ -47,11 +47,11 @@ async function call(path: string, init: RequestInit = {}, prefer?: string): Prom
   }
 }
 
-/** Post a score. Resolves to its rank on the board (1 = top), or null if it didn't go up. */
+/** Post a score. Resolves to its rank on the board (1 = top), 0 if it went up but the rank couldn't be read, or null. */
 export async function submitScore(row: ScoreRow): Promise<number | null> {
   const res = await call('scores', { method: 'POST', body: JSON.stringify(row) }, 'return=minimal');
   if (!res?.ok) return null;
-  return rankOf(row.board, row.score);
+  return (await rankOf(row.board, row.score)) ?? 0;
 }
 
 /** How many scores on the board beat this one, plus one. */
