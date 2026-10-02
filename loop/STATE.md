@@ -1176,5 +1176,6 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
       | **AVG** | **41.7** | **16.9** | **48.6** |
 
       Pre-gatekeeper: WHITE 42.6, GREEN 16.6. WHITE −0.9 is the gatekeeper's bite, accepted.
-  - **Still open:** MIDAS GREEN 12.9 (it was ~13 before him: not his doing); his own portrait (art agent).
+  - **Still open:** MIDAS GREEN 12.9 (it was ~13 before him: not his doing).
+  - His own portrait `enemyRepoMan` (2026-10-02): navy trucker cap, stubble, hi-vis orange vest, a tow hook on a chain raised in one fist.
 - Tests: 193 (tests/gatekeeper.test.ts; map tests updated).

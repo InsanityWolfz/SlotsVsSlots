@@ -3028,6 +3028,43 @@ S.mapBadgeFake = lit(8, 8, ['', '..IIHh', '.IHHkkh', '.IHHkhh', '.HHkkhh', '..hh
   plot(g, [[16, 14, 'T'], [17, 14, 't'], [15, 15, 'T'], [16, 15, 't']]);
   S.enemyCroupier = toRows(outline(g));
 }
+// repo man: navy trucker cap, hard brows, stubble, flat mouth; hi-vis orange vest with a reflective stripe over a
+// grey work shirt, one fist raised with a tow hook swinging on a chain
+{
+  const g = grid(24, 24);
+  for (let y = 14; y <= 23; y++) {
+    const [x0, x1] = y === 14 ? [3, 16] : [0, 19];
+    for (let x = x0; x <= x1; x++) {
+      let c;
+      if (x >= 8 && x <= 11) c = y === 14 ? (x <= 9 ? 'L' : 'S') : x <= 9 ? 'S' : 'D';
+      else if (y === 19) c = 'Y';
+      else if (x === 7 || x === 12) c = 'o';
+      else c = x < 8 ? 'O' : x >= 17 ? 'o' : 'O';
+      put(g, x, y, c);
+    }
+  }
+  plot(g, [[14, 16, 'T'], [15, 16, 'T'], [14, 17, 't'], [15, 17, 't']]); // name patch
+  stamp(g, 0, 1, [
+    '     NNNNNNNNN',
+    '    NUUUUUUUUUN',
+    '    NUUUTTUUUUN',
+    '  NNNNNNNNNNNKN',
+    '    FFFFFFFFFFf',
+    '    FKKKFFKKKFf',
+    '    FFWKFFFWKFf',
+    '    FFFFFffFFFf',
+    '    FFhFFFFFhFf',
+    '    FhFKKKKKFhf',
+    '    fFhFhFhFhFf',
+    '     ffFhFhFff',
+    '       fFFFf',
+  ]);
+  stamp(g, 17, 2, ['FFf', 'fFf']);                                   // raised fist
+  for (let y = 4; y <= 13; y++) stamp(g, 17, y, ['SD']);              // sleeve down to the shoulder
+  plot(g, [[20, 3, 'S'], [20, 4, 'D'], [21, 5, 'S'], [21, 6, 'D'], [22, 7, 'S']]); // chain
+  stamp(g, 20, 8, ['  LS', '  LS', '  LS', 'L LS', 'L LS', ' SSD']);  // tow hook
+  S.enemyRepoMan = toRows(outline(g));
+}
 
 // ---------------------------------------------------------------- reel symbols (16x16)
 // card: marked playing card — red index + heart pip, black "X" scratched in the top-right corner
@@ -4310,7 +4347,7 @@ const DIMS = {
   actBadge2: { w: 24, h: 12 },
   enemyGrounder: 24, enemyCounterfeiter: 24, ground: 16, fake: 16, groundOverlay: 16, fakeOverlay: 16,
   icoEarth: 8, icoLaunder: 8, mapBadgeGround: 8, mapBadgeFake: 8, setRibbon: { w: 44, h: 9 },
-  enemyDealer: 24, enemySharp: 24, enemyPitBoss: 24, enemyCroupier: 24, card: 16, gavel: 16, rake: 16,
+  enemyDealer: 24, enemySharp: 24, enemyPitBoss: 24, enemyCroupier: 24, enemyRepoMan: 24, card: 16, gavel: 16, rake: 16,
   icoShuffle: 8, icoCut: 8, icoRaise: 8, icoMark: 8, icoGavel: 8, icoRake: 8,
   mapBadgeCard: 8, mapBadgeGavel: 8, mapBadgeRake: 8, mapBadgeDealer: 8,
   dealShuffle: { w: 16, h: 22 }, dealCut: { w: 16, h: 22 }, dealRaise: { w: 16, h: 22 }, dealBack: { w: 16, h: 22 }, cardBack: 16,
@@ -4420,7 +4457,7 @@ export type SpriteId =
   | 'icoEarth' | 'icoLaunder'                      // their ability icons, 8x8
   | 'mapBadgeGround' | 'mapBadgeFake'              // their map badges, 8x8
   | 'setRibbon'                                    // 'SET!' completes-set ribbon, 44x9 (non-square)
-  | 'enemySharp' | 'enemyPitBoss' | 'enemyCroupier' // act 3 enemy portraits, 24x24
+  | 'enemySharp' | 'enemyPitBoss' | 'enemyCroupier' | 'enemyRepoMan' // act 3 enemy portraits + the gatekeeper, 24x24
   | 'enemyDealer'                                  // (enemyDealer = act 3 final boss)
   | 'card' | 'gavel' | 'rake'                      // act 3 enemy reel symbols, 16x16
   | 'icoShuffle' | 'icoCut' | 'icoRaise'           // act 3 ability icons, 8x8

@@ -133,7 +133,7 @@ export type SpriteId =
   | 'icoEarth' | 'icoLaunder'                      // their ability icons, 8x8
   | 'mapBadgeGround' | 'mapBadgeFake'              // their map badges, 8x8
   | 'setRibbon'                                    // 'SET!' completes-set ribbon, 44x9 (non-square)
-  | 'enemySharp' | 'enemyPitBoss' | 'enemyCroupier' // act 3 enemy portraits, 24x24
+  | 'enemySharp' | 'enemyPitBoss' | 'enemyCroupier' | 'enemyRepoMan' // act 3 enemy portraits + the gatekeeper, 24x24
   | 'enemyDealer'                                  // (enemyDealer = act 3 final boss)
   | 'card' | 'gavel' | 'rake'                      // act 3 enemy reel symbols, 16x16
   | 'icoShuffle' | 'icoCut' | 'icoRaise'           // act 3 ability icons, 8x8
@@ -2961,6 +2961,32 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '...KTMRRRGRRrrtK.KwBK...',
     '...KTMRRRRRRrrtK.KwBK...',
     '...KTMRRRgRRrrtK.KwBK...',
+  ],
+  enemyRepoMan: [
+    '.....KKKKKKKKK..........',
+    '....KNNNNNNNNNK..KKK....',
+    '...KNUUUUUUUUUNKKFFfK...',
+    '..KKNUUUTTUUUUNKKfFfSK..',
+    '.KNNNNNNNNNNNKNKKSDKDK..',
+    '..KKFFFFFFFFFFfKKSDKKSK.',
+    '...KFKKKFFKKKFfKKSDKKDK.',
+    '...KFFWKFFFWKFfKKSDK.KSK',
+    '...KFFFFFffFFFfKKSDK.KLS',
+    '...KFFhFFFFFhFfKKSDK.KLS',
+    '...KFhFKKKKKFhfKKSDKKKLS',
+    '...KfFhFhFhFhFfKKSDKLKLS',
+    '....KffFhFhFffK.KSDKLKLS',
+    '...KKKKfFFFfKKKKKSDKKSSD',
+    'KKKOOOOoLLSSoOOOOKKK.KKK',
+    'OOOOOOOoSSDDoOOOOoooK...',
+    'OOOOOOOoSSDDoOTTOoooK...',
+    'OOOOOOOoSSDDoOttOoooK...',
+    'OOOOOOOoSSDDoOOOOoooK...',
+    'YYYYYYYYSSDDYYYYYYYYK...',
+    'OOOOOOOoSSDDoOOOOoooK...',
+    'OOOOOOOoSSDDoOOOOoooK...',
+    'OOOOOOOoSSDDoOOOOoooK...',
+    'OOOOOOOoSSDDoOOOOoooK...',
   ],
   card: [
     '...KKKKKKKKKK...',

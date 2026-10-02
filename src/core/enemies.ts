@@ -201,7 +201,7 @@ ARCHETYPES.push(
 export const REPO_MAN: Archetype = {
   id: 'repo',
   name: 'REPO MAN',
-  portrait: 'enemyPitBoss',
+  portrait: 'enemyRepoMan',
   // A plain strip: he only takes on his telegraphed turns (gavels would take on their own).
   strip: { sword: 7, shield: 5 },
   hpMul: 1.3,
