@@ -108,11 +108,14 @@ describe('meta: levels, achievements, titles', () => {
 });
 
 describe('meta: profile save', () => {
-  it('old saves get XP and counters from their runs', () => {
+  it('old saves get XP, counters and the achievements their runs already show', () => {
     const p = sanitizeProfile({ found: {}, runs: [entry({ won: true, fights: 12 }), entry({ tutorial: true })] });
-    expect(p.xp).toBe(runScore(entry({ won: true, fights: 12 })));
     expect(p.stats.runs).toBe(1);
-    expect(p.achievements).toEqual({});
+    expect(Object.keys(p.achievements)).toEqual(expect.arrayContaining(['first_win', 'house', 'clear', 'clear_knight']));
+    expect(p.achievements.dealer).toBeUndefined();
+    expect(p.xp).toBe(runScore(entry({ won: true, fights: 12 })) + 250 * Object.keys(p.achievements).length);
+    // Only once: a save that already has achievements isn't backfilled again.
+    expect(sanitizeProfile(JSON.parse(JSON.stringify(p))).xp).toBe(p.xp);
   });
   it('keeps clean names, titles you hold, and drops junk', () => {
     const p = sanitizeProfile({ runs: [], name: 'ace high!', title: 'THE HOUSE', achievements: { clear: 5, 'bad key!': 1 }, challenges: { fast: { best: 900, won: true, tries: 2 }, nope: { best: 1 } }, xp: 10, stats: { runs: 2 } });

@@ -204,7 +204,7 @@ export function sanitizeProfile(raw: unknown): Profile {
   const name = typeof p.name === 'string' ? cleanName(p.name) : '';
   const title = str(p.title, 24);
   const pid = typeof p.pid === 'string' && /^[A-Za-z0-9:-]{8,64}$/.test(p.pid) ? p.pid : undefined;
-  return {
+  const out: Profile = {
     found: { relics: [...new Set(relicIds(f.relics))], charms: [...new Set(charmIds(f.charms))] },
     runs,
     ...(lastDaily ? { lastDaily } : {}),
@@ -215,6 +215,47 @@ export function sanitizeProfile(raw: unknown): Profile {
     ...(name ? { name } : {}),
     ...(title ? { title } : {}),
     ...(pid ? { pid } : {}),
+  };
+  // Old saves (from before achievements): earn what their stored runs already show, with its XP.
+  if (!p.achievements) backfillAchievements(out);
+  return out;
+}
+
+function backfillAchievements(p: Profile): void {
+  for (const e of [...p.runs].sort((a, b) => a.at - b.at)) {
+    if (e.tutorial) continue;
+    const got = newAchievements({
+      ...achievementCtx(p, e),
+      stats: p.stats,
+    });
+    for (const a of got) p.achievements[a.id] = e.at;
+    p.xp += got.length * ACHIEVEMENT_XP;
+  }
+}
+
+/** The achievement check's view of a finished run. */
+function achievementCtx(p: Profile, e: RunEntry, collectionTotal = Infinity) {
+  return {
+    won: e.won,
+    acts: e.acts,
+    act: e.act,
+    cabinet: e.cabinet,
+    stake: e.stake,
+    score: runScore(e),
+    chips: e.chips,
+    relics: e.relics.length,
+    loops: e.loops ?? 0,
+    killer: e.killer,
+    daily: !!e.daily,
+    weekly: !!e.weekly,
+    challenge: e.challenge,
+    liensPaid: e.liensPaid ?? 0,
+    tutorial: !!e.tutorial,
+    stats: p.stats,
+    have: p.achievements,
+    found: p.found.relics.length + p.found.charms.length,
+    collection: collectionTotal,
+    challengesWon: CHALLENGES.filter((c) => p.challenges[c.id]?.won).length,
   };
 }
 
@@ -255,28 +296,7 @@ export function recordMeta(p: Profile, e: RunEntry, collectionTotal: number, pre
       r.won ||= e.won;
     }
   }
-  const got = newAchievements({
-    won: e.won,
-    acts: e.acts,
-    act: e.act,
-    cabinet: e.cabinet,
-    stake: e.stake,
-    score,
-    chips: e.chips,
-    relics: e.relics.length,
-    loops: e.loops ?? 0,
-    killer: e.killer,
-    daily: !!e.daily,
-    weekly: !!e.weekly,
-    challenge: e.challenge,
-    liensPaid: e.liensPaid ?? 0,
-    tutorial: !!e.tutorial,
-    stats: p.stats,
-    have: p.achievements,
-    found: p.found.relics.length + p.found.charms.length,
-    collection: collectionTotal,
-    challengesWon: CHALLENGES.filter((c) => p.challenges[c.id]?.won).length,
-  });
+  const got = newAchievements(achievementCtx(p, e, collectionTotal));
   for (const a of got) p.achievements[a.id] = e.at || Date.now();
   const xp = e.tutorial ? 0 : Math.max(0, score - (prevScore ?? 0)) + got.length * ACHIEVEMENT_XP;
   p.xp += xp;
