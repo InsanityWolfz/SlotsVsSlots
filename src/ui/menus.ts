@@ -311,13 +311,13 @@ export class Menus {
         background: 'transparent',
         border: 'none',
         outline: 'none',
-        color: '#f4eee0',
+        color: 'transparent',
         textAlign: 'center',
         textTransform: 'uppercase',
         fontFamily: 'ui-monospace, Consolas, monospace',
         fontWeight: 'bold',
         letterSpacing: '0.15em',
-        caretColor: '#ffe45c',
+        caretColor: 'transparent',
         userSelect: 'text',
         webkitUserSelect: 'text',
         touchAction: 'auto',
@@ -371,7 +371,14 @@ export class Menus {
     ctx.fillRect(W / 2 - 210, NAME_Y - 28, 420, 56);
     ctx.fillStyle = COLORS.panel;
     ctx.fillRect(W / 2 - 206, NAME_Y - 24, 412, 48);
-    if (!this.nameInput?.value) drawText(ctx, 'TYPE A NAME', W / 2, NAME_Y, 2.5, COLORS.textDim, { alpha: 0.5 + 0.3 * Math.sin(t * 4) });
+    // The typed name in the pixel font (the DOM input underneath only takes the keys), with a blinking caret.
+    const typed = this.nameInput?.value ?? '';
+    if (!typed) drawText(ctx, 'TYPE A NAME', W / 2, NAME_Y, 2.5, COLORS.textDim, { alpha: 0.5 + 0.3 * Math.sin(t * 4) });
+    else drawText(ctx, typed, W / 2, NAME_Y, 3.5, COLORS.text);
+    if (Math.sin(t * 6) > 0 && (document.activeElement === this.nameInput || !typed)) {
+      ctx.fillStyle = COLORS.goldLight;
+      ctx.fillRect(W / 2 + (typed.length * 21) / 2 + 4, NAME_Y - 14, 4, 28);
+    }
     drawText(ctx, '3-12 LETTERS, NUMBERS OR DASHES', W / 2, NAME_Y + 42, 1.25, COLORS.textDim);
     if (this.nameStatus) drawText(ctx, this.nameStatus, W / 2, NAME_Y + 130, 2, this.nameBusy ? COLORS.textDim : COLORS.danger);
     // Keep the input's text in step with the stage size.
@@ -759,12 +766,15 @@ export class Menus {
       drawSprite(ctx, heroSprite(e.cabinet), 130, y, 2);
       const stake = STAKES[e.stake];
       drawText(ctx, CABINETS[e.cabinet].hero, 164, y - 12, 2, COLORS.goldLight, { align: 'left' });
-      drawText(ctx, `${CABINETS[e.cabinet].name}  ${e.stake ? `STAKE ${e.stake} ${stake.name}` : 'BASE GAME'}`, 164 + CABINETS[e.cabinet].hero.length * 12 + 14, y - 12, 1.25, e.stake ? stake.color : COLORS.textDim, { align: 'left' });
+      const sub = `${CABINETS[e.cabinet].name}  ${e.stake ? `STAKE ${e.stake} ${stake.name}` : 'BASE GAME'}`;
+      const subX = 164 + CABINETS[e.cabinet].hero.length * 12 + 14;
+      drawText(ctx, sub, subX, y - 12, 1.25, e.stake ? stake.color : COLORS.textDim, { align: 'left' });
       // Result.
       const icon = e.won ? 'trophySmall' : 'hsSkull';
       if (hasSprite(icon)) drawSprite(ctx, artId(icon), 172, y + 13, 1.5);
       const tag = e.daily ? `DAILY ${e.daily.slice(5)}` : e.weekly ? `WEEKLY ${e.weekly}` : e.challenge ? `CHALLENGE: ${CHALLENGES.find((c) => c.id === e.challenge)?.name ?? ''}` : '';
-      if (tag) drawText(ctx, tag, 164 + CABINETS[e.cabinet].hero.length * 12 + 14, y - 26, 1.25, '#7dff7a', { align: 'left' });
+      // On the hero's line, after the machine (it sat on the row's border).
+      if (tag) drawText(ctx, tag, subX + sub.length * 7.5 + 16, y - 12, 1.25, '#7dff7a', { align: 'left' });
       const result = e.won
         ? e.acts >= 3
           ? e.loops ? `BEAT THE DEALER + ${e.loops} ENDLESS LOOP${e.loops > 1 ? 'S' : ''}` : 'BEAT THE DEALER! TRUE ENDING'

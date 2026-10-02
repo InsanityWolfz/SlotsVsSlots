@@ -1234,7 +1234,7 @@ export class RunScreens {
         ? 'DEALS: A CARD ON YOUR PAYLINE (ACE X2, JOKER WILD, DEUCE 0), ALL IN (ITS WHOLE HAND), RAISE (BOTH X2). NO KILL BEFORE ITS FIRST DEAL.'
         : e.boss === 'mirror'
         ? `COPIES YOUR MACHINE (NO RELICS, METER OR KEEN). REFLECTS YOUR BEST HIT; A TURN NEVER DEALS MORE THAN ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKS AT HALF HP, THEN REFLECTS AT ONCE.`
-        : `COINS + A CUT EACH TURN FILL THE POT. EVERY ${this.houseEvery()} TURNS THE HOUSE SKIMS HALF OF IT AT YOU (SHIELD BLOCKS). ANY JACKPOT YOU HIT STEALS THE WHOLE POT! AT HALF HP IT GOES ALL IN. EVERY ${CHIPS.stackPer} CHIPS YOU KEEP GIVES +${UNIT} SHIELD EACH HOUSE TURN.${dirty ? ' BLACK: IT BOMBS YOUR CELLS, EVEN THE PAYLINE.' : ''}`;
+        : `COINS FILL THE POT. EVERY ${this.houseEvery()} TURNS IT SKIMS HALF AT YOU. ANY JACKPOT YOU HIT STEALS THE POT! AT HALF HP IT GOES ALL IN. ${CHIPS.stackPer} CHIPS KEPT = +${UNIT} SHIELD EACH HOUSE TURN.${dirty ? ' BLACK: IT BOMBS YOUR PAYLINE.' : ''}`;
     // GREEN: say which relic the Mirror will copy.
     const copy = mirror && this.run ? mirrorCopy(this.run) : null;
     if (copy) {
@@ -1243,7 +1243,8 @@ export class RunScreens {
     }
     if (e.isBoss)
       {
-        const sc = e.boss === 'mirror' || e.boss === 'dealer' ? 1.5 : 1;
+        // The act's most important rules: readable size for every boss (the House's was 1x).
+        const sc = 1.5;
         wrap(bossText, Math.floor((w - 32) / (6 * sc))).forEach((l, k) =>
           drawText(ctx, l, x + 16, y + 254 + k * 12 * sc, sc, e.boss === 'mirror' ? '#c8f0ff' : COLORS.goldLight, { align: 'left' }),
         );
