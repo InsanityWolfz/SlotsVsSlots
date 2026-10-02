@@ -1217,3 +1217,21 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - Cosmetic only: no balance impact outside the challenge runs.
 - **Main menu:** NEW RUN / DAILY / CHALLENGES / TUTORIAL, then COLLECTION | TROPHIES | HISCORES. A name/level/XP badge sits up top.
 - Tests: 206 (tests/meta.test.ts).
+
+### Iteration 65 (2026-10-02): two bug rounds on the REPO MAN + meta layers
+- **Round 1:** a code read plus `tools/balance/fuzz.ts 40`: 2400 headless runs over 30 modes (5 machines × WHITE/GREEN/GOLD/daily, 7 challenges, 3 weeklies, endless on).
+  - It checks invariants after every fight and run (strip counts, charms ≤ cells, hp ≤ max, chips, liens returned at the act boss) and a save round trip (score, XP, achievements).
+  - Fixed:
+    - THE REPO MAN drew random adjectives ("MANGY REPO MAN"), so REPOSSESSED could never unlock. He's now THE REPO MAN; the adjective is still drawn, so seeded fights don't change.
+    - A cell he strips and then steals is held as both liens (cell first, then charm).
+    - RESET SAVE keeps your name and player id (the server still holds the name).
+    - A name picked offline that's taken by the time the boards open asks for a new name instead of silently never posting.
+    - LET IT RIDE no longer re-posts the daily (the board allows one score per player).
+    - Old saves backfill the achievements their stored runs show, once.
+  - After the fixes: no invariant breaks, no crashes; REPO MAN beaten in 1970 runs, liens paid in 1147.
+- **Round 2:** a Playwright bot played 9 runs through the real UI (mouse clicks on hit boxes, AUTO at 8x; some fights forced to end).
+  - Runs: KNIGHT/TESLA/BRIAR WHITE, MIDAS/JOKER GREEN, KNIGHT GOLD, weekly, GLASS JAW, daily (through the Dealer into LET IT RIDE).
+  - Every screen was reached (draft, next/bets, shop, bonus, choice, over); no page or console errors.
+  - Round 1's two "stuck" runs were bot artifacts: RELIC RUSH runs on the UI clock (8x doesn't speed it up), and the fork + side bet + FIGHT flow was checked separately and works.
+  - Phone (844×390, touch): the name box focuses, input is upper-cased, OK lands on the menu.
+- Tests: 207.
