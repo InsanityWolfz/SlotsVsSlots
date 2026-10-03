@@ -3753,6 +3753,120 @@ S.relicHighLimit = lit(16, 16, [
   '....JYVVVVYv....',
   '....vvvvvvvv....',
 ]);
+// ---------------------------------------------------------------- slot machine TRIM crests (16x16)
+// One medallion family: a 2px rim in the trim's colours (lit top-left), a 1px inset groove, a deep field,
+// and a centred motif. Drawn on the top edge of the player's frame and in the TROPHIES trim picker.
+/** pal: { hi, mid, lo, groove, field, stud? }; motif rows stamped at (mx,my), ' ' = leave. */
+function crest(pal, motif, mx, my, opts = {}) {
+  const g = grid(16, 16);
+  const cx = 7.5, cy = opts.cy ?? 7.5, R = opts.r ?? 6.9;
+  const inDisc = (x, y) => (x - cx) ** 2 + (y - cy) ** 2 <= R * R;
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if (!inDisc(x, y)) continue;
+    const d = Math.hypot(x - cx, y - cy);
+    if (d > R - 1.75) {
+      // rim: lit along the upper-left arc, shadowed along the lower-right arc
+      const s = (x - cx) + (y - cy);
+      put(g, x, y, s < -3 ? pal.hi : s > 3 ? pal.lo : pal.mid);
+    } else if (d > R - 2.6) {
+      put(g, x, y, pal.groove);
+    } else put(g, x, y, pal.field);
+  }
+  if (pal.gloss !== false) { put(g, 4, Math.round(cy - 5), 'W'); put(g, 3, Math.round(cy - 4), 'W'); }
+  if (pal.stud) [[7, Math.round(cy + R - 0.6)], [Math.round(cx + R - 0.6), Math.round(cy)], [Math.round(cx - R + 0.6), Math.round(cy)]]
+    .forEach(([x, y]) => put(g, x, y, pal.stud));
+  stamp(g, mx, my, motif);
+  if (opts.extra) opts.extra(g);
+  return toRows(outline(g));
+}
+// trimClassic: CLASSIC, a gold coin struck with a red 7
+S.trimClassic = crest({ hi: 'Y', mid: 'G', lo: 'g', groove: 'g', field: 'G' }, [
+  'WRRRRR',
+  'rrrrRr',
+  '   RRr',
+  '  RRr ',
+  '  RRr ',
+  '  RRr ',
+], 5, 5);
+// trimBronze: BRONZE, a bronze bell with an orange clapper
+S.trimBronze = crest({ hi: 'a', mid: 'w', lo: 'B', groove: 'b', field: 'b' }, [
+  '  aw  ',
+  ' awwB ',
+  ' awwB ',
+  ' awwB ',
+  'awwwBB',
+  'BBBBBb',
+  '  OO  ',
+], 5, 4);
+// trimSilver: SILVER, a steel horseshoe (open end up) with nail holes
+S.trimSilver = crest({ hi: 'W', mid: 'L', lo: 'S', groove: 'D', field: 'k' }, [
+  'LS  SD',
+  'LS  SD',
+  'WS  SD',
+  'LS  SD',
+  'LSSSSD',
+  ' DDDD ',
+], 5, 5);
+// trimNeon: NEON, a hot-pink star on a cyan glow rim
+S.trimNeon = crest({ hi: 'C', mid: 'i', lo: 'c', groove: 'x', field: 'P' }, [
+  '   x   ',
+  '  xWx  ',
+  'xxxMxxx',
+  ' xMMMs ',
+  '  xxs  ',
+  ' xs xs ',
+], 4, 5);
+// trimVelvet: VELVET, a glossy red heart on deep velvet
+S.trimVelvet = crest({ hi: 'M', mid: 'R', lo: 'r', groove: 'd', field: 'd' }, [
+  'RR  RR',
+  'WMRRRr',
+  'MRRRRr',
+  ' RRRr ',
+  '  Rr  ',
+], 5, 5);
+// trimEmerald: EMERALD, a step-cut green gem
+S.trimEmerald = crest({ hi: 'E', mid: 'e', lo: 'Q', groove: 'q', field: 'q' }, [
+  ' EEEe ',
+  'EWEeeQ',
+  'EEeeQQ',
+  'EEeeQQ',
+  'eeeQQQ',
+  ' QQQq ',
+], 5, 5);
+// trimDiamond: DIAMOND, a faceted brilliant on deep navy
+S.trimDiamond = crest({ hi: 'W', mid: 'C', lo: 'c', groove: 'N', field: 'N' }, [
+  ' CWCA ',
+  'CWCCAc',
+  'cCCAAc',
+  ' cCAc ',
+  '  cA  ',
+  '   c  ',
+], 5, 5);
+// trimObsidian: OBSIDIAN, a jagged violet-edged black shard
+S.trimObsidian = crest({ hi: 'V', mid: 'v', lo: 'k', groove: 'k', field: 'K', gloss: false }, [
+  '   J  ',
+  '  JVk ',
+  '  Jvk ',
+  ' JVvkk',
+  ' Jvkk ',
+  ' Vvk  ',
+  '  v   ',
+], 5, 4);
+// trimHouse: THE HOUSE, gold medallion on red with ruby studs, a crown over 777 (the most ornate)
+S.trimHouse = crest({ hi: 'Y', mid: 'G', lo: 'g', groove: 'g', field: 'r', stud: 'R' }, [
+  'YYGYYGYYG',
+  '  G  G  g',
+  ' G  G  g ',
+  ' G  G  g ',
+], 3, 8, {
+  cy: 8.5, r: 6.5,
+  extra: (g) => stamp(g, 4, 1, [
+    'Y  Y  G',
+    'YRYWYRG',
+    'YYYYYGg',
+    'GGGGGGg',
+  ]),
+});
 /** Ticket stub (24x16): notched ends, 1px rim lit top-left, perforation, icon on the left, mark on the stub. */
 function voucher(pal, icon, mark) {
   const g = grid(24, 16);
@@ -4364,6 +4478,8 @@ const DIMS = {
   relicGoldleaf: 16, relicExecutioner: 16, relicKiss: 16, relicHorseshoe: 16, relicUnderdog: 16,
   relicFirstblood: 16, relicPiggy: 16, relicTrophy: 16, relicHolywater: 16, relicBash: 16,
   relicLoaded: 16, relicMarker: 16, relicHighLimit: 16,
+  trimClassic: 16, trimBronze: 16, trimSilver: 16, trimNeon: 16, trimVelvet: 16,
+  trimEmerald: 16, trimDiamond: 16, trimObsidian: 16, trimHouse: 16,
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -4488,7 +4604,10 @@ export type SpriteId =
   | 'relicCapbells' | 'relicStacked' | 'relicGoldleaf' | 'relicExecutioner'
   | 'relicKiss' | 'relicHorseshoe' | 'relicUnderdog' | 'relicFirstblood'
   | 'relicPiggy' | 'relicTrophy' | 'relicHolywater' | 'relicBash'
-  | 'relicLoaded' | 'relicMarker' | 'relicHighLimit';
+  | 'relicLoaded' | 'relicMarker' | 'relicHighLimit'
+  | 'trimClassic' | 'trimBronze' | 'trimSilver'  // slot machine trim crests, 16x16
+  | 'trimNeon' | 'trimVelvet' | 'trimEmerald'
+  | 'trimDiamond' | 'trimObsidian' | 'trimHouse';
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;
