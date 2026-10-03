@@ -1297,3 +1297,64 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - fuzz 30: 1800 runs, no invariant breaks.
 - **Not now** (agreed): the stake restructure, pacing (D10), SWEEP UP / RELIC RUSH tiers (D11), run-replay anti-cheat. Cosmetic level unlocks are proposed to the user.
 - Tests: 211.
+
+### Iteration 67 (2026-10-03): trims, EXPERT_PLAYTEST_10 (likes/dislikes + charm/relic audit) → agreed plan → built
+- **Cosmetic TRIMS** (the user's ask): 9 slot machine frames unlocked by level.
+  - The trims: CLASSIC, BRONZE 3, SILVER 5, NEON 8, VELVET 12, EMERALD 16, DIAMOND 20, OBSIDIAN 25, THE HOUSE 30 (shimmers).
+  - Each sets the bezel colours and puts a crest on top of your machine in fights; you wear one from TROPHIES; a level-up shows "NEW TRIM" on RESULTS.
+  - The art agent drew the 9 crests: one medallion family, a `crest()` helper in build-art.mjs.
+- **EXPERT_PLAYTEST_10:** 9 likes, 12 dislikes, and a charm/relic audit (the user's extra scope). AGREED PLAN at the bottom of the report.
+  - The playtester's D5 (side bets) was its own error: forks re-show the table after you pick a path.
+- **D2 layout:**
+  - run-over lines clear both panels; the liens line fits;
+  - multi-edge challenge setups list edge names; the MIDAS card rule fits;
+  - the REPO MAN preview gives the true timing in 2 lines; tight-row dividers; hiscore rows clear SOUND.
+  - `tools/shots/screens.cjs` captures 10 layout screens; run it before a layout change ships.
+- **D3:** name screen copy while offline. **D4:** the boss preview names what it gives back.
+- **D7:** the catch-up heal replaces a smaller heal card. **D8:** the twist on the fight HUD all run; NEW BEST only after a first try.
+- **D6:** 6 weekly setups (incl. broke starts and HOUSE CUT alone), never a challenge's exact setup. **D9:** the daily row uses the machine name.
+- **Charms** (builds.ts 300 charms, "only X" vs baseline, GREEN):
+  - The sim values BULWARK at 6.5 (it was 0, so no table included it; KNIGHT WHITE fell 41.6 → 36.4 once it was taken).
+  - Changes:
+    - VAMP heals once per group (stacking was the exploit); values stay 20/30/40.
+    - 15/20/30 once-per-group took the whole game's sustain: WHITE 39.2, GREEN 12.9. 25/35/45: +9 again.
+    - KEEN +N per sword in its group; BULWARK 100/125/150%; CHARGED +10/15/20.
+  - Results:
+
+    | | before | after |
+    |---|---|---|
+    | only vamp | 21.3 vs 10.9 | 18.9 vs 9.9 (still +9: JOKER 36.7, MIDAS 19.3) |
+    | only keen | 7.6 (trap) | 9.4 (≈ baseline) |
+
+    gold 13.5, lucky 13.0, charged/blaze 12.1.
+- **Sustain** (so VAMP stops being a heal tax): post-fight heal 25% (was 20%), plus a third of it in act 3 (it had none). Swept with charm_tune.ts.
+- **Relics** (e10_relics.ts 120, start holding):
+  - JACKPOT BELL on JOKER: ×1.25, keeping the meter fill. Without the fill, JOKER fell to 5.5 GREEN (its balance leans on BELL). Still 65 vs 9: **open**.
+  - VAMPIRE FANG on TESLA 10: TESLA 24.2 (was 36.7).
+  - LIGHTNING ROD +10 lightning: +30 per charged bolt made TESLA 66% WHITE; +30 capped, 51.5.
+  - SHIELD BASH full share: 11.7 avg.
+- **New relics:**
+  - HOT STREAK (common: after a jackpot, the next spin pays ×2): 14.0;
+  - WHETSTONE BELT (KNIGHT: blocked hits sharpen the next sword group, +10 per sword per stack, max 4): KNIGHT 17.5 vs 9.2;
+  - TOLL BOOTH (uncommon: +1 chip per lien after each win): 10.5.
+  - Art by the art agent.
+- **MIDAS:** mirror 1.9, dealer 1.05, act3 0.12, act2 0.55. **BRIAR:** dealer 1.3, act3 1.3, act2 0.6.
+- **Official:**
+  - tuesday 1000:
+
+    | machine | WHITE | GREEN |
+    |---|---|---|
+    | KNIGHT | 42.9 | 17.0 |
+    | TESLA | 46.9 | 17.0 |
+    | BRIAR | 48.8 | 18.8 |
+    | JOKER | 42.5 | 17.2 |
+    | MIDAS | 39.2 | 14.9 |
+    | **AVG** | **44.1** | **17.0** |
+
+    vs the Dealer 49.4.
+  - gate.sh: fight-4 deaths **3.3%** (gate 4–7: the bigger heal; open).
+  - challenges 400: 36.3 / 32.3 / 33.5 / 31.5 / 28.0 / 10.3 / 6.5.
+  - Weekly random-draft mean 20.2% (HOUSE CUT-alone weeks 30%).
+  - fuzz 30: 1800 runs, no breaks.
+- **Open for round 11:** VAMP +9 (JOKER/MIDAS), BELL on JOKER, MIDAS GREEN 14.9, fight-4 deaths 3.3%, THE LONG NIGHT 6.5, TOLL BOOTH weak. The signature-symbol charms step (agreed next round).
+- Tests: 216 (tests/expert10.test.ts).
