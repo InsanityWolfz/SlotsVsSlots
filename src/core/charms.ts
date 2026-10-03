@@ -64,6 +64,27 @@ export function charmRuleText(enh: Enh, lvl: number): string {
   }
 }
 
+/** The same rule in a few words, for shop and draft cards (the collection and tooltips keep the long form). */
+export function charmShortText(enh: Enh, lvl: number): string {
+  const v = charmValue(enh, lvl);
+  switch (enh) {
+    case 'gold':
+      return `X${v} PAY, GOLD STACKS`;
+    case 'keen':
+      return `+${v} PER SWORD, PIERCES`;
+    case 'charged':
+      return `+${v} BOLT PAY`;
+    case 'vamp':
+      return `HEAL ${v} ON A HIT`;
+    case 'lucky':
+      return `${v}% TO BE WILD`;
+    case 'blaze':
+      return `SPECIAL +${v}`;
+    case 'spiked':
+      return `HITS FOR ${v}% OF ITS SHIELD`;
+  }
+}
+
 /** A charm's name as players see it (the id 'spiked' is BULWARK). */
 export const charmName = (enh: Enh): string => (enh === 'spiked' ? 'BULWARK' : enh.toUpperCase());
 

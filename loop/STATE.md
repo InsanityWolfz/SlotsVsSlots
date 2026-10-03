@@ -1358,3 +1358,14 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - fuzz 30: 1800 runs, no breaks.
 - **Open for round 11:** VAMP +9 (JOKER/MIDAS), BELL on JOKER, MIDAS GREEN 14.9, fight-4 deaths 3.3%, THE LONG NIGHT 6.5, TOLL BOOTH weak. The signature-symbol charms step (agreed next round).
 - Tests: 216 (tests/expert10.test.ts).
+
+## Iteration 67b (2026-10-03): relic tooltips, charm levels on show, slimmer charm text (user requests)
+- **Relic tooltips everywhere:** hover any relic icon (fight HUD, the Mirror's copy, previews, fork, draft, shop, run over,
+  HISCORES runs) for its name + rule (machine-specific text where it exists). The shop now shows the relics you hold.
+- **Charm levels in YOUR REELS:** the badge line under every reel table shows each charm type you own (LV1 too) and
+  symbols above LV1; **MAX** (orange) at the cap. Level cards say `LV3 MAX` on the title and badge for the last level.
+- **No dead level picks:** POLISH / WHETSTONE / MASTERWORK only target types below the cap; with nothing left to level
+  POLISH and WHETSTONE become SECOND WIND (draft/shop level cards already skipped maxed types). Test in expert10.
+- **Shop/draft charm text slimmed:** `REEL 2 SWORDS: +20 PER SWORD, PIERCES`, `ALL GOLD: X4 PAY, GOLD STACKS`,
+  `EVERY SWORD IS WORTH 18` (charmShortText; the collection keeps the long rules).
+- tuesday 1000 after: WHITE **44.1** / GREEN **16.9** (was 44.1 / 17.0): no balance change. Tests: 217.

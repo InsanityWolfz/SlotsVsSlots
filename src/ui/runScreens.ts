@@ -36,6 +36,7 @@ import {
   type FightRecord,
   type RunState,
   type ShopItem,
+  levelCap,
 } from '../core/run';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import { effectiveAbility, mirrorCanUse, STAKE, STAKES, stakeOf } from '../core/stakes';
@@ -1039,7 +1040,7 @@ export class RunScreens {
       const text = all.length <= 44 ? all : `HELD: ${lienShort(liens[0])} +${liens.length - 1} MORE`;
       drawText(ctx, text, x + 150, y, 1.25, '#ff9a3a', { align: 'left' });
     }
-    drawReelTable(ctx, x - 4, y + 10, runTable(p), { colW: 136, rowH: 19, scale: 1.1, text: 1.5, maxRows, levels: p.levels, ticket: p.relics.includes('ticket'), maxH: this.stripsH });
+    drawReelTable(ctx, x - 4, y + 10, runTable(p), { colW: 136, rowH: 19, scale: 1.1, text: 1.5, maxRows, levels: p.levels, ticket: p.relics.includes('ticket'), cap: levelCap(this.run!), maxH: this.stripsH });
   }
 
   private drawRelics(ctx: CanvasRenderingContext2D, x: number, y: number, cols = 8): void {
@@ -1181,10 +1182,12 @@ export class RunScreens {
       drawSprite(ctx, CHARM_SYMBOLS[o.enh][0] as SpriteId, x, y, scale);
       drawSprite(ctx, ENH_SPRITE[o.enh], x, y, scale);
     }
-    const next = (o.kind === 'symLevel' ? symLevel(lv, o.symbol) : charmLevel(lv, o.enh)) + 1;
+    const cap = this.run ? levelCap(this.run) : 3;
+    const next = Math.min(cap, (o.kind === 'symLevel' ? symLevel(lv, o.symbol) : charmLevel(lv, o.enh)) + 1);
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(x + 22, y + 8, 50, 24);
-    drawText(ctx, `LV${Math.min(3, next)}`, x + 47, y + 20, 2, '#5ad8e8');
+    // The last level a type can take says MAX (no card is offered past it).
+    drawText(ctx, next >= cap ? 'MAX' : `LV${next}`, x + 47, y + 20, 2, next >= cap ? '#ff9a3a' : '#5ad8e8');
   }
 
   /** Violet/gold LEGENDARY ribbon inside the top of a card. */

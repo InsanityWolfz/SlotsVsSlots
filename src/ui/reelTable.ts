@@ -1,4 +1,4 @@
-import { charmLevel, charmTag, CHARM_COLOR, symLevel } from '../core/charms';
+import { charmLevel, charmTag, CHARM_COLOR, LEVEL_CAP, symLevel } from '../core/charms';
 import type { Enh, Levels, SymbolId } from '../core/config';
 import type { RunPlayer } from '../core/run';
 import { ENH_SPRITE, type CellView } from '../present/reel';
@@ -72,6 +72,8 @@ export interface TableOpts {
   /** Charm tags shown at these levels (X2, +5...), and symbol levels as a small LV badge. */
   levels?: Levels;
   ticket?: boolean;
+  /** The level cap (MAX shows at it); the base game's by default. */
+  cap?: number;
   header?: boolean;
   /** Total height available (header + rows + LV line): rows shrink to fit instead of spilling (EXPERT_PLAYTEST_3 B2). */
   maxH?: number;
@@ -82,7 +84,7 @@ export function drawReelTable(ctx: CanvasRenderingContext2D, x: number, y: numbe
   let o = opts;
   if (opts.maxH) {
     const head = opts.header !== false ? 22 : 0;
-    const lvLine = opts.levels && Object.values(opts.levels.sym).some((l) => (l ?? 1) > 1) ? 20 : 0;
+    const lvLine = opts.levels ? levelBadges(opts.levels, cols).length ? 20 * Math.ceil((levelBadges(opts.levels, cols).length * BADGE_W) / (opts.colW * cols.length)) : 0 : 0;
     const most = Math.max(1, ...cols.map((r) => Math.min(r.length, opts.maxRows ?? r.length)));
     const fit = Math.floor((opts.maxH - head - lvLine) / most);
     if (fit < opts.rowH) {
@@ -126,17 +128,41 @@ export function drawReelTable(ctx: CanvasRenderingContext2D, x: number, y: numbe
     }
     maxH = Math.max(maxH, (shown.length + (shown.length < rows.length ? 1 : 0)) * o.rowH);
   });
-  // Symbol levels (only the ones above 1).
+  // Levels: symbols above 1, and every charm type you own (LV1 too), so a level card's effect shows; MAX at the cap.
   if (o.levels) {
-    const lv = (Object.keys(o.levels.sym) as SymbolId[]).filter((s) => symLevel(o.levels, s) > 1);
+    const badges = levelBadges(o.levels, cols);
+    const cap = o.cap ?? LEVEL_CAP;
+    const width = o.colW * cols.length;
     let lx = x;
-    const ly = top + maxH + 12;
-    for (const s of lv) {
-      drawSprite(ctx, s as SpriteId, lx + 6, ly, 0.75);
-      drawText(ctx, `LV${symLevel(o.levels, s)}`, lx + 14, ly, 1, COLORS.goldLight, { align: 'left' });
-      lx += 44;
+    let ly = top + maxH + 12;
+    for (const b of badges) {
+      if (lx + BADGE_W > x + width + 4) {
+        lx = x;
+        ly += 20;
+        maxH += 20;
+      }
+      drawSprite(ctx, b.symbol as SpriteId, lx + 6, ly, 0.75);
+      if (b.enh) drawSprite(ctx, ENH_SPRITE[b.enh], lx + 6, ly, 0.75);
+      const max = b.level >= cap;
+      drawText(ctx, max ? 'MAX' : `LV${b.level}`, lx + 14, ly, 1, max ? '#ff9a3a' : b.enh ? CHARM_COLOR[b.enh] : COLORS.goldLight, { align: 'left' });
+      lx += BADGE_W;
     }
-    if (lv.length) maxH += 20;
+    if (badges.length) maxH += 20;
   }
   return top - y + maxH;
+}
+
+const BADGE_W = 46;
+
+/** The level badges under a table: symbols above level 1, then each charm type on the reels. */
+function levelBadges(levels: Levels, cols: TableRow[][]): { symbol: SymbolId; enh?: Enh; level: number }[] {
+  const out: { symbol: SymbolId; enh?: Enh; level: number }[] = [];
+  for (const s of Object.keys(levels.sym) as SymbolId[]) if (symLevel(levels, s) > 1) out.push({ symbol: s, level: symLevel(levels, s) });
+  const seen = new Set<Enh>();
+  for (const row of cols.flat())
+    if (row.enh && !seen.has(row.enh)) {
+      seen.add(row.enh);
+      out.push({ symbol: row.symbol as SymbolId, enh: row.enh, level: charmLevel(levels, row.enh) });
+    }
+  return out;
 }

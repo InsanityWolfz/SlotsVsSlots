@@ -22,7 +22,7 @@ import {
   LOADED_MUL,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
-import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
+import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { dailyEdge, dailyFightSeed } from './daily';
 import { ALL_IN_STAKE, BET_STAKES, BETS, betPayout, betsFrom, dealerBets, betState, HOT_HAND, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
@@ -1562,6 +1562,8 @@ const NAME: Partial<Record<SymbolId, string>> = { sword: 'SWORD', shield: 'SHIEL
 const plural = (s: SymbolId, n: number) => `${NAME[s] ?? s.toUpperCase()}${n > 1 ? 'S' : ''}`;
 
 export const charmRule = charmRuleText;
+/** LV2, or MAX at the cap. */
+const lvTag = (lvl: number, cap: number) => (lvl >= cap ? `LV${lvl} MAX` : `LV${lvl}`);
 
 export function describeOption(o: DraftOption, run?: RunState): { title: string; text: string } {
   const lv = run?.player.levels;
@@ -1588,15 +1590,17 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'gild':
       return {
         title: `${o.n} ${charmName(o.enh)} CHARM${o.n > 1 ? 'S' : ''}`,
-        text: `REEL ${o.reel + 1} - ${plural(o.symbol, o.n)}. EACH: ${charmRule(o.enh, charmLevel(lv, o.enh, ticket))}`,
+        text: `REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${charmShortText(o.enh, charmLevel(lv, o.enh, ticket))}`,
       };
     case 'symLevel': {
-      const next = Math.min(LEVEL_CAP, symLevel(lv, o.symbol) + 1);
-      return { title: `${plural(o.symbol, 2)} LVL ${next}`, text: `EVERY ${NAME[o.symbol] ?? o.symbol.toUpperCase()} IS WORTH ${symValue(next)}, EVEN ONES YOU ADD LATER` };
+      const cap = run ? levelCap(run) : LEVEL_CAP;
+      const next = Math.min(cap, symLevel(lv, o.symbol) + 1);
+      return { title: `${plural(o.symbol, 2)} ${lvTag(next, cap)}`, text: `EVERY ${NAME[o.symbol] ?? o.symbol.toUpperCase()} IS WORTH ${symValue(next)}` };
     }
     case 'charmLevel': {
-      const next = Math.min(LEVEL_CAP, charmLevel(lv, o.enh) + 1);
-      return { title: `${charmName(o.enh)} LVL ${next}`, text: `EVERY ${charmName(o.enh)} CHARM: ${charmRule(o.enh, next + (ticket ? 1 : 0))}` };
+      const cap = run ? levelCap(run) : LEVEL_CAP;
+      const next = Math.min(cap, charmLevel(lv, o.enh) + 1);
+      return { title: `${charmName(o.enh)} ${lvTag(next, cap)}`, text: `ALL ${charmName(o.enh)}: ${charmShortText(o.enh, next + (ticket ? 1 : 0))}` };
     }
     case 'remove':
       return { title: `-1 ${NAME[o.symbol]}`, text: `REMOVE A ${NAME[o.symbol]} FROM REEL ${o.reel + 1}` };
@@ -1699,20 +1703,23 @@ const secondWindHp = (run: RunState) => Math.max(BIG.secondWindHp, unitsRound(ru
 const levelSyms = (run: RunState) => CABINETS[run.cabinet].symbols.filter((s) => run.player.strips.some((x) => (x[s] ?? 0) > 0));
 
 /** Roll the three choices of one set (targets included). */
-function rollChoices(run: RunState, set: number, rng: Rng): BigChoice[] {
+export function rollChoices(run: RunState, set: number, rng: Rng): BigChoice[] {
   const p = run.player;
   const syms = levelSyms(run);
   const count = (s: SymbolId) => p.strips.reduce((a, x) => a + (x[s] ?? 0), 0);
-  const most = syms.reduce((a, b) => (count(b) > count(a) ? b : a), syms[0] ?? 'sword');
+  // Targets below the level cap only: a level card that lands on a maxed type does nothing.
+  const open = syms.filter((s) => symLevel(p.levels, s) < LEVEL_CAP);
+  const most = open.reduce((a, b) => (count(b) > count(a) ? b : a), open[0] ?? syms[0] ?? 'sword');
   const lowest = [...syms].sort((a, b) => symLevel(p.levels, a) - symLevel(p.levels, b) || count(b) - count(a))[0] ?? 'shield';
-  const charms = [...new Set(p.gilded.map((g) => g.enh))];
+  const charms = [...new Set(p.gilded.map((g) => g.enh))].filter((e) => charmLevel(p.levels, e) < LEVEL_CAP);
   const topCharm = charms.reduce((a, b) => (charmCount(p, b) > charmCount(p, a) ? b : a), charms[0] ?? 'gold');
   const shieldReel = [0, 1, 2].reduce((a, b) => ((p.strips[b].shield ?? 0) > (p.strips[a].shield ?? 0) ? b : a), 0);
   void rng;
   return BIG_SETS[set].map((id): BigChoice => {
     if (id === 'masterwork') return { id, symbol: most };
-    if (id === 'whetstone') return { id, symbol: lowest };
-    if (id === 'polish') return { id, enh: topCharm };
+    // Nothing left to level: the set's safe pick becomes SECOND WIND (its shield level aside, it always does something).
+    if (id === 'whetstone') return open.length ? { id, symbol: lowest } : { id: 'secondWind' };
+    if (id === 'polish') return charms.length ? { id, enh: topCharm } : { id: 'secondWind' };
     if (id === 'cleanCut') return { id, reel: shieldReel };
     return { id };
   });
