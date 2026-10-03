@@ -152,7 +152,8 @@ export function choiceValue(run: RunState, c: BigChoice): number {
     case 'twinReel':
       return 5;
     case 'sweepUp':
-      return 3 + (1 - hp) * 4 + p.strips.reduce((a, s) => a + (s.rock ?? 0), 0);
+      // Forced in THE SURGERY it won 28.6% vs CLEAN CUT 24.8 (EXPERT_PLAYTEST_12 D3): 3 made the bot skip it (0.6% of picks).
+      return 6.5 + (1 - hp) * 4 + p.strips.reduce((a, s) => a + (s.rock ?? 0), 0);
     case 'glassCannon':
       return 7;
     case 'bloodPact':

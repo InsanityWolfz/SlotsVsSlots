@@ -1437,3 +1437,20 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - Fuzz 30: no breaks.
 - **Next:** #6, the bot's value for SWEEP UP (a sim change; re-baseline). Watch BRIAR's Dealer kill at 41.6 (the lowest).
 - Tests: 221 (tests/expert12.test.ts).
+
+## Iteration 69b (2026-10-03): the bot values SWEEP UP (EXPERT_PLAYTEST_12 #6), then BRIAR's Dealer
+- Sim only: `choiceValue.sweepUp` 3 → **6.5** + (1 − HP) × 4 + rocks. Forced, it won 28.6% in THE SURGERY. Its share of
+  big choices rose from 0.6% to about 15% (1619 of about 10,600).
+- **New baseline** (same game, a better bot): tuesday 1000 WHITE **44.9** / GREEN **18.9**.
+
+    | machine | WHITE | GREEN |
+    |---|---|---|
+    | KNIGHT | 43.1 | 18.6 |
+    | TESLA | 47.9 | 16.4 |
+    | BRIAR | 50.3 | 20.2 |
+    | JOKER | 43.2 | 19.7 |
+    | MIDAS | 39.9 | 19.6 |
+
+- **BRIAR dealer 1.3 → 1.4:** BRIAR GREEN 20.2 → **19.2** (Dealer kill 45.7 → 43.4; 1.5 gave 16.5).
+  Baseline after: WHITE 44.9 / GREEN ≈ 18.7.
+- **Watch:** BRIAR WHITE 50.3 (the highest); both gates are near their tops with the better bot (WHITE 41–45, GREEN 16–19).
