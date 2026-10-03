@@ -55,7 +55,8 @@ import { drawSprite, type SpriteId, artId } from './render/sprites';
 import { drawText } from './render/text';
 import { Button } from './ui/button';
 import { Recap } from './ui/recap';
-import { RunScreens, wrap } from './ui/runScreens';
+import { RunScreens } from './ui/runScreens';
+import { drawRelicTip } from './ui/relicTip';
 import { Coach, TUTORIAL } from './ui/coach';
 import { collectionTotal, heroSprite, Menus } from './ui/menus';
 import { cleanName, nameBlocked, shownTrim, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type MetaGain, type Profile, type RunEntry } from './core/profile';
@@ -196,6 +197,7 @@ export class Game {
   private spinResolve: (() => void) | null = null;
   private audioStarted = false;
   private mouse = { x: -1, y: -1 };
+  private mirrorCopySpot: { x: number; y: number } | null = null;
   buttons: Button[] = [];
   private spinBtn!: Button;
   private autoBtn!: Button;
@@ -1231,17 +1233,15 @@ export class Game {
       const { x, y } = relicSlot(i);
       return Math.abs(this.mouse.x - x) < 19 && Math.abs(this.mouse.y - y) < 19;
     });
-    if (i < 0) return;
-    const def = RELICS[relics[i]];
-    const lines = wrap(def.text, 24);
-    const x = RELIC_X + 150;
-    const y = RELIC_Y - 10;
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(x - 4, y - 4, 320, 40 + lines.length * 20);
-    ctx.fillStyle = COLORS.panel;
-    ctx.fillRect(x, y, 312, 32 + lines.length * 20);
-    drawText(ctx, def.name, x + 10, y + 14, 2, '#c9a0ff', { align: 'left' });
-    lines.forEach((l, k) => drawText(ctx, l, x + 10, y + 38 + k * 20, 2, COLORS.text, { align: 'left' }));
+    if (i >= 0) {
+      const { x, y } = relicSlot(i);
+      drawRelicTip(ctx, relics[i], x + 186, y - 19, y + 19, this.run?.cabinet);
+      return;
+    }
+    // The relic the Mirror copied from you (GREEN), under its pot.
+    const copied = this.fight.isMirror ? [...this.fight.sides.enemy.relics][0] : undefined;
+    const c = this.mirrorCopySpot;
+    if (copied && c && Math.abs(this.mouse.x - c.x) < 18 && Math.abs(this.mouse.y - c.y) < 18) drawRelicTip(ctx, copied, c.x, c.y - 18, c.y + 18, this.run?.cabinet);
   }
 
   /** Mirror the slime on the player's displayed strips into the HUD counter. */
@@ -1295,6 +1295,7 @@ export class Game {
       const copied = [...this.fight.sides.enemy.relics][0];
       if (copied) {
         drawSprite(ctx, RELICS[copied].sprite as SpriteId, cx - 70, cy + 196, 2);
+        this.mirrorCopySpot = { x: cx - 70, y: cy + 196 };
         drawText(ctx, `COPIED ${RELICS[copied].name}`, cx - 50, cy + 196, 1.5, '#c8f0ff', { align: 'left' });
       }
     }

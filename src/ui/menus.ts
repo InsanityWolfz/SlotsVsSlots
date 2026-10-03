@@ -10,6 +10,7 @@ import { EDGE_TEXT } from '../core/run';
 import { LEGENDARY, RELICS, RELIC_TIER } from '../core/relics';
 import { CHARM_SYMBOLS, charmRuleText } from '../core/charms';
 import { STAKES } from '../core/stakes';
+import { RelicTips } from './relicTip';
 import type { Clock } from '../present/clock';
 import { sineOut } from '../present/ease';
 import { COLORS, H, W } from '../present/layout';
@@ -90,6 +91,7 @@ export class Menus {
   private active: Button | null = null;
   private fade = 0;
   private mouse = { x: -1, y: -1 };
+  private relicTips = new RelicTips();
   // loading
   private loadT = 0;
   private warmed = 0;
@@ -672,12 +674,16 @@ export class Menus {
     if (this.mode === 'loading') this.drawLoading(ctx, t);
     else if (this.mode === 'main') this.drawMain(ctx, t);
     else if (this.mode === 'collection') this.drawCollection(ctx);
-    else if (this.mode === 'hiscores') this.drawHiscores(ctx, t);
+    else if (this.mode === 'hiscores') {
+      this.relicTips.begin();
+      this.drawHiscores(ctx, t);
+    }
     else if (this.mode === 'name') this.drawName(ctx, t);
     else if (this.mode === 'challenges') this.drawChallenges(ctx, t);
     else if (this.mode === 'trophies') this.drawTrophies(ctx);
     for (const b of this.buttons) b.draw(ctx, t);
     if (this.mode === 'trophies') this.drawTrimRow(ctx);
+    if (this.mode === 'hiscores') this.relicTips.draw(ctx, this.mouse.x, this.mouse.y);
     if (this.mode === 'main') {
       // Icons on the menu buttons (over them, scaled with their press).
       const icons = this.mainIcons;
@@ -871,7 +877,10 @@ export class Menus {
       if (!e.won && e.killerPortrait) drawSprite(ctx, e.killerPortrait as SpriteId, 188 + result.length * 9 + 22, y + 4, 1.5);
       // Build: relics then charms.
       const bx = 650;
-      e.relics.slice(0, 14).forEach((r, k) => drawSprite(ctx, RELICS[r].sprite as SpriteId, bx + (k % 7) * 26, y - 12 + Math.floor(k / 7) * 26, 1.4));
+      e.relics.slice(0, 14).forEach((r, k) => {
+        drawSprite(ctx, RELICS[r].sprite as SpriteId, bx + (k % 7) * 26, y - 12 + Math.floor(k / 7) * 26, 1.4);
+        this.relicTips.add(r, bx + (k % 7) * 26, y - 12 + Math.floor(k / 7) * 26, 13, e.cabinet);
+      });
       if (e.relics.length > 14) drawText(ctx, `+${e.relics.length - 14}`, bx + 7 * 26, y + 14, 1.25, COLORS.textDim, { align: 'left' });
       if (!e.relics.length) drawText(ctx, 'NO RELICS', bx, y - 12, 1.25, COLORS.textDim, { align: 'left' });
       const cx = 860;

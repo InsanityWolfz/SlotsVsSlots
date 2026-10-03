@@ -52,6 +52,7 @@ import { heroSprite } from './menus';
 import { CHIP_SCORE, runEntry, runScore } from '../core/profile';
 import { dailyShare } from '../core/daily';
 import { betProfit, describeBet, type SideBet } from '../core/bets';
+import { RelicTips } from './relicTip';
 
 
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus' | 'choice';
@@ -159,6 +160,8 @@ export class RunScreens {
   /** SIDE BETS on the next fight (the table on the preview screen). */
   private betOffer: SideBet[] = [];
   private fade = 0;
+  private mouse = { x: -1, y: -1 };
+  private tips = new RelicTips();
   private picked = -1;
   private lastRecord: FightRecord | null = null;
   /** 'spoils' = an elite's relic choice (1 of 2) shown with the draft layout. */
@@ -914,6 +917,7 @@ export class RunScreens {
   }
 
   pointerMove(x: number, y: number): boolean {
+    this.mouse = { x, y };
     let any = false;
     for (const h of this.all()) {
       const was = h.hover;
@@ -953,6 +957,7 @@ export class RunScreens {
 
   draw(ctx: CanvasRenderingContext2D, time: number): void {
     if (!this.active || (!this.run && this.mode !== 'cabinet')) return;
+    this.tips.begin();
     ctx.fillStyle = `rgba(6,2,12,${0.95 * this.fade})`;
     ctx.fillRect(0, 0, W, H);
     ctx.save();
@@ -965,6 +970,8 @@ export class RunScreens {
     else if (this.mode === 'choice') this.drawChoice(ctx, time);
     else this.drawOver(ctx);
     if (this.mode !== 'over' && this.mode !== 'cabinet') this.drawChips(ctx, W - 40, 28);
+    // Over everything: what the relic under the pointer does (cards that already say it don't add spots).
+    if (!this.results) this.tips.draw(ctx, this.mouse.x, this.mouse.y, this.run?.cabinet);
     ctx.restore();
   }
 
@@ -1035,11 +1042,16 @@ export class RunScreens {
     drawReelTable(ctx, x - 4, y + 10, runTable(p), { colW: 136, rowH: 19, scale: 1.1, text: 1.5, maxRows, levels: p.levels, ticket: p.relics.includes('ticket'), maxH: this.stripsH });
   }
 
-  private drawRelics(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  private drawRelics(ctx: CanvasRenderingContext2D, x: number, y: number, cols = 8): void {
     const relics = this.run!.player.relics;
     drawText(ctx, 'RELICS', x, y, 2, COLORS.textDim, { align: 'left' });
     if (!relics.length) drawText(ctx, 'NONE YET', x, y + 26, 2, '#4a4058', { align: 'left' });
-    relics.forEach((r, i) => drawSprite(ctx, RELICS[r].sprite as SpriteId, x + 16 + (i % 8) * 32, y + 30 + Math.floor(i / 8) * 30, 1.6));
+    relics.forEach((r, i) => {
+      const rx = x + 16 + (i % cols) * 32;
+      const ry = y + 30 + Math.floor(i / cols) * 30;
+      drawSprite(ctx, RELICS[r].sprite as SpriteId, rx, ry, 1.6);
+      this.tips.add(r, rx, ry, 15);
+    });
   }
 
   private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
@@ -1255,6 +1267,7 @@ export class RunScreens {
     const copy = mirror && this.run ? mirrorCopy(this.run) : null;
     if (copy) {
       drawSprite(ctx, RELICS[copy].sprite as SpriteId, x + w - 40, y + 100, 2);
+      this.tips.add(copy, x + w - 40, y + 100);
       drawText(ctx, `COPIES YOUR ${RELICS[copy].name}`, x + w - 62, y + 100, 1.5, '#c8f0ff', { align: 'right' });
     }
     // Beat this boss and THE REPO MAN gives back what he holds: say what (EXPERT_PLAYTEST_10 D4).
@@ -1442,6 +1455,8 @@ export class RunScreens {
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
     this.panel(ctx, 300, 500, 680, 150);
     this.drawStrips(ctx, 320, 512, 6);
+    // What you already hold (hover one to read it), right of the reel table.
+    this.drawRelics(ctx, 770, 512, 6);
     for (const b of this.buttons) this.drawButton(ctx, b, time);
   }
 
@@ -1504,7 +1519,10 @@ export class RunScreens {
   }
 
   private drawRelicsRow(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-    this.run!.player.relics.forEach((r, i) => drawSprite(ctx, RELICS[r].sprite as SpriteId, x + i * 36, y, 2));
+    this.run!.player.relics.forEach((r, i) => {
+      drawSprite(ctx, RELICS[r].sprite as SpriteId, x + i * 36, y, 2);
+      this.tips.add(r, x + i * 36, y);
+    });
   }
 
   private drawButton(ctx: CanvasRenderingContext2D, b: Btn, time: number): void {
