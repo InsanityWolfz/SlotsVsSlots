@@ -189,7 +189,7 @@ export class Menus {
     const today = dailyKey();
     const run = this.profile().runs.find((e) => e.daily === today);
     const done = dailySpent(today, this.profile().lastDaily);
-    const label = run ? `DAILY: ${runScore(run)}` : done ? 'DAILY: SPENT' : `DAILY: ${CABINETS[dailyCabinet(today)].hero} + ${EDGE_TEXT[dailyEdge(today)].title}`;
+    const label = run ? `DAILY: ${runScore(run)}` : done ? 'DAILY: SPENT' : `DAILY: ${CABINETS[dailyCabinet(today)].name} + ${EDGE_TEXT[dailyEdge(today)].title}`;
     const daily = this.btn(label, x, 380, 380, 54, () => !done && this.cb.onDaily(), label.length > 20 ? 1.5 : label.length > 14 ? 2 : 3);
     daily.toggled = done;
     // THE WEEKLY CHALLENGE gets its own row once you've played a run (the TUTORIAL moves to the small row).
@@ -393,7 +393,7 @@ export class Menus {
     ctx.fillRect(0, 0, W, H);
     this.logo(ctx, 150, t, 3);
     drawText(ctx, 'PICK YOUR NAME', W / 2, NAME_Y - 110, 4, COLORS.goldLight);
-    drawText(ctx, 'IT GOES ON THE LEADERBOARDS: THE DAILY, THE WEEKLY AND ALL TIME', W / 2, NAME_Y - 66, 1.5, COLORS.textDim);
+    drawText(ctx, online() ? 'IT GOES ON THE LEADERBOARDS: THE DAILY, THE WEEKLY AND ALL TIME' : 'YOUR NAME FOR THE HISCORES (ONLINE BOARDS OPENING SOON)', W / 2, NAME_Y - 66, 1.5, COLORS.textDim);
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(W / 2 - 214, NAME_Y - 32, 428, 64);
     ctx.fillStyle = COLORS.gold;
@@ -471,7 +471,8 @@ export class Menus {
       // Names always show (the next row's "CLEAR X TO OPEN" gave them away); a locked one hides only its setup.
       drawText(ctx, c.name, 160, y - 10, 2, open ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
       const stake = c.stake ? ` - ${STAKES[c.stake].name} STAKE, THROUGH THE DEALER` : '';
-      const rule = [edgeLine(c.edges), c.chips === 0 ? 'START WITH 0 CHIPS' : ''].filter(Boolean).join('. ');
+      // One edge reads in full; several list their names (three didn't fit and ran through the title: EXPERT_PLAYTEST_10 D2).
+      const rule = [c.edges.length > 1 ? c.edges.map((e) => EDGE_TEXT[e].title).join(' + ') : edgeLine(c.edges), c.chips === 0 ? 'START WITH 0 CHIPS' : ''].filter(Boolean).join('. ');
       drawText(ctx, open ? `${CABINETS[c.cabinet].name}${stake}. ${rule || c.text}` : `CLEAR ${CHALLENGES[i - 2].name} OR ${CHALLENGES[i - 1].name} TO OPEN`, 160, y + 10, 1.25, COLORS.textDim, { align: 'left' });
       drawText(ctx, r?.won ? `CLEARED - BEST ${r.best}` : r ? `BEST ${r.best}` : '', W - 220, y - 6, 1.5, r?.won ? '#ffd23f' : COLORS.text, { align: 'right' });
       drawText(ctx, `TITLE: ${c.title}`, W - 220, y + 12, 1.25, r?.won ? COLORS.goldLight : COLORS.textDim, { align: 'right' });
@@ -838,15 +839,16 @@ export class Menus {
     const bestScore = runScore([...list].sort((a, b) => runScore(b) - runScore(a))[0]);
     drawText(ctx, 'SCORE: 100 PER FIGHT WON, +1000 FOR A CLEAR, +1000 FOR THE DEALER, +5 PER CHIP LEFT. X1.5 PER STAKE.', W / 2, 132, 1.25, COLORS.textDim);
     rows.forEach((e, i) => {
-      const y = 180 + i * 70;
+      // Rows stop above the global SOUND button (bottom right).
+      const y = 176 + i * 66;
       const rank = this.page * ROWS_PER_PAGE + i + 1;
       const top = runScore(e) === bestScore && this.sort === 'best' && rank === 1;
       ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(40, y - 32, W - 80, 66);
+      ctx.fillRect(40, y - 30, W - 80, 62);
       ctx.fillStyle = e.won ? '#8a6a1c' : '#3a2d52';
-      ctx.fillRect(43, y - 29, W - 86, 60);
+      ctx.fillRect(43, y - 27, W - 86, 56);
       ctx.fillStyle = COLORS.panel;
-      ctx.fillRect(46, y - 26, W - 92, 54);
+      ctx.fillRect(46, y - 24, W - 92, 50);
       drawText(ctx, String(rank), 76, y, 3, top ? '#ffd23f' : COLORS.textDim);
       drawSprite(ctx, heroSprite(e.cabinet), 130, y, 2);
       const stake = STAKES[e.stake];

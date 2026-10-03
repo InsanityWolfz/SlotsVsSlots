@@ -137,10 +137,12 @@ function abilityText(e: EnemyDef, every: number, run?: RunState): string {
     launder: `TAKES ${e.ability.power} CHIPS AND HEALS ${e.ability.power * 3 * UNIT}`,
     mark: `MARKS ${e.ability.power} OF YOUR CELLS`,
     penalty: `HITS FOR ${e.ability.power}`,
-    repo: 'REPOSSESSES YOUR BEST CELL (CHARMED FIRST). IT STAYS GONE UNTIL THE BOSS FALLS',
+    repo: 'TAKES YOUR BEST CELL (CHARMED FIRST). HELD UNTIL THE BOSS FALLS',
     houseTake: `RAKES YOUR GROUPS FOR ${e.ability.power} TURNS`,
     deal: 'DEALS: A CARD ON YOUR PAYLINE, ALL IN, OR RAISE',
   };
+  // THE REPO MAN takes on his first turn, then every few.
+  if (e.ability.kind === 'repo') return `${ui.label} FROM TURN 1, THEN EVERY ${every}: TAKES YOUR BEST CELL UNTIL THE BOSS FALLS`;
   return `${ui.label} EVERY ${every} TURNS: ${what[e.ability.kind]}`;
 }
 
@@ -1024,7 +1026,12 @@ export class RunScreens {
     drawText(ctx, 'YOUR REELS', x, y, 2, COLORS.textDim, { align: 'left' });
     // THE REPO MAN's liens: what's missing from the table, and why.
     const liens = this.run!.liens ?? [];
-    if (liens.length) drawText(ctx, `HELD BY THE REPO MAN: ${liens.map(lienShort).join(', ')}`, x + 150, y, 1.25, '#ff9a3a', { align: 'left' });
+    if (liens.length) {
+      // Fits before the RELICS label (x + 490): the first lien, then "+N MORE".
+      const all = `HELD: ${liens.map(lienShort).join(', ')}`;
+      const text = all.length <= 44 ? all : `HELD: ${lienShort(liens[0])} +${liens.length - 1} MORE`;
+      drawText(ctx, text, x + 150, y, 1.25, '#ff9a3a', { align: 'left' });
+    }
     drawReelTable(ctx, x - 4, y + 10, runTable(p), { colW: 136, rowH: 19, scale: 1.1, text: 1.5, maxRows, levels: p.levels, ticket: p.relics.includes('ticket'), maxH: this.stripsH });
   }
 
@@ -1250,6 +1257,12 @@ export class RunScreens {
       drawSprite(ctx, RELICS[copy].sprite as SpriteId, x + w - 40, y + 100, 2);
       drawText(ctx, `COPIES YOUR ${RELICS[copy].name}`, x + w - 62, y + 100, 1.5, '#c8f0ff', { align: 'right' });
     }
+    // Beat this boss and THE REPO MAN gives back what he holds: say what (EXPERT_PLAYTEST_10 D4).
+    const held = e.isBoss ? (this.run?.liens ?? []) : [];
+    if (held.length) {
+      const all = `BEAT IT AND YOU GET BACK: ${held.map(lienShort).join(', ')}`;
+      drawText(ctx, all.length <= 60 ? all : `BEAT IT AND YOU GET BACK ${held.length} HELD CELLS`, x + w - 20, y + 124, 1.25, '#ff9a3a', { align: 'right' });
+    }
     if (e.isBoss)
       {
         // The act's most important rules: readable size for every boss (the House's was 1x).
@@ -1327,9 +1340,13 @@ export class RunScreens {
         drawSprite(ctx, heroSprite(id), -h.w / 2 + 30, -h.h / 2 + 30, 1.5);
         drawText(ctx, `PLAY AS ${cab.hero}`, 0, 28, 1.25, '#c9a0ff');
         drawText(ctx, cab.blurb, 0, 42, 1, COLORS.textDim);
-        const lines = wrap(cab.rule, 17).slice(0, 5);
-        lines.forEach((l, k) => drawText(ctx, l, 0, 64 + k * 18, 2, COLORS.text));
-        if (cab.act2) wrap(`ACT 2: ${cab.act2.text}`, 22).forEach((l, k) => drawText(ctx, l, 0, 74 + lines.length * 18 + k * 14, 1.5, '#c8f0ff'));
+        // The rule at the big size if it fits 5 lines, else smaller (MIDAS's was cut off: EXPERT_PLAYTEST_10 D2).
+        const big = wrap(cab.rule, 17);
+        const fits = big.length <= 5;
+        const lines = fits ? big : wrap(cab.rule, 23).slice(0, 8);
+        const lh = fits ? 18 : 14;
+        lines.forEach((l, k) => drawText(ctx, l, 0, 64 + k * lh, fits ? 2 : 1.5, COLORS.text));
+        if (cab.act2) wrap(`ACT 2: ${cab.act2.text}`, 22).forEach((l, k) => drawText(ctx, l, 0, 74 + lines.length * lh + k * 14, 1.5, '#c8f0ff'));
       } else {
         drawText(ctx, 'LOCKED', 0, 40, 2, '#ff8a7a');
         wrap(`UNLOCK: ${cab.unlock}`, 17).forEach((l, k) => drawText(ctx, l, 0, 70 + k * 18, 2, COLORS.textDim));
@@ -1571,7 +1588,7 @@ export class RunScreens {
     if (this.unlockedNow.length) lines.push([`NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, COLORS.goldLight]);
     if (this.rideOffer) lines.push(['YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', COLORS.goldLight]);
     const shown = lines.slice(0, 2);
-    shown.forEach(([text, color], k) => drawText(ctx, text, W / 2, shown.length > 1 ? 459 + k * 14 : 466, shown.length > 1 || text.length > 90 ? 1.5 : 2, color));
+    shown.forEach(([text, color], k) => drawText(ctx, text, W / 2, shown.length > 1 ? 444 + k * 18 : 466, shown.length > 1 || text.length > 90 ? 1.5 : 2, color));
     // Chips left (a won run scores them) and the side bets' record.
     const bets = run.records.filter((r) => r.bet);
     const betLine = bets.length ? `  -  SIDE BETS ${bets.filter((r) => r.bet!.won).length} OF ${bets.length}` : '';
@@ -1582,16 +1599,18 @@ export class RunScreens {
       this.stakeChip(ctx, 140, 116, run.stake + 1, performance.now() / 1000, 14);
       wrap(this.stakeUnlockedNow, 110).slice(0, 3).forEach((l, k) => drawText(ctx, l, 164, 104 + k * 13, 1.25, stakeOf(run.stake + 1).color, { align: 'left' }));
     }
-    // The table moves down under an unlock message (QA_1 B5).
+    // The table moves down under an unlock message (QA_1 B5), and ends higher when two lines sit under it.
     const top = unlockRow ? 22 : 0;
-    this.panel(ctx, 110, 120 + top, 1060, 330 - top);
+    const twoLines = [recap, this.unlockedNow.length, this.rideOffer].filter(Boolean).length > 1;
+    const cut = twoLines ? 18 : 0;
+    this.panel(ctx, 110, 120 + top, 1060, 330 - top - cut);
     drawText(ctx, 'FIGHT', 150, 142 + top, 2, COLORS.textDim, { align: 'left' });
     drawText(ctx, 'ROUNDS', 560, 142 + top, 2, COLORS.textDim);
     drawText(ctx, 'HP', 680, 142 + top, 2, COLORS.textDim);
     drawText(ctx, 'THEN PICKED', 790, 142 + top, 2, COLORS.textDim, { align: 'left' });
     // Up to 16 fights: rows shrink (and drop the detail line) once they stop fitting.
     const rows = this.overRows(run);
-    const rowH = Math.min(42, Math.floor((290 - top) / Math.max(1, rows.length)));
+    const rowH = Math.min(42, Math.floor((290 - top - cut) / Math.max(1, rows.length)));
     const compact = rowH < 40;
     rows.forEach((r, i) => {
       const y = 170 + top + i * rowH + (compact ? 0 : 6);
@@ -1611,7 +1630,7 @@ export class RunScreens {
       }
       if (compact && i === 0) this.actPlaque(ctx, 1150, y - rowH / 2, 'ACT 1', COLORS.goldLight);
       // Tight rows (a GREEN run has 18) get smaller text, so the act dividers run between rows, not through them.
-      const ts = rowH < 22 ? 1.5 : 2;
+      const ts = rowH < 18 ? 1.25 : rowH < 22 ? 1.5 : 2;
       drawSprite(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 150, y, compact ? (rowH < 22 ? 0.65 : 0.9) : 1.4);
       drawText(ctx, r.enemy, 176, y, ts, r.won ? COLORS.text : COLORS.danger, { align: 'left' });
       drawText(ctx, `${Math.ceil(r.turns / 2)}`, 560, y, ts, COLORS.text);

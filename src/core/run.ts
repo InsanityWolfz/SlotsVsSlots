@@ -1318,7 +1318,16 @@ export function draftOffers(run: RunState): DraftOption[] {
     push((r < 0.35 ? wildCard() : r < 0.65 ? swapCard() : null) ?? clearCard() ?? gildCard() ?? levelCard() ?? addCard());
     push((rng.next() < 0.6 ? anySwapCard() : null) ?? hpCard());
   }
-  if (size > RUN.draftSize) out.push({ kind: 'heal', amount: Math.max(UNIT, Math.round(Math.max(p.maxHp * RUN.catchUpHeal, p.maxHp - p.hp) / UNIT) * UNIT) });
+  if (size > RUN.draftSize) {
+    // The catch-up heal replaces a smaller heal card already in the draft (HEAL 80 sat next to HEAL 170: EXPERT_PLAYTEST_10 D7).
+    const catchUp: DraftOption = { kind: 'heal', amount: Math.max(UNIT, Math.round(Math.max(p.maxHp * RUN.catchUpHeal, p.maxHp - p.hp) / UNIT) * UNIT) };
+    const i = out.findIndex((o) => o.kind === 'heal');
+    if (i < 0) out.push(catchUp);
+    else {
+      out[i] = catchUp;
+      out.push({ kind: 'maxHp', amount: RUN.maxHpCard });
+    }
+  }
   let guard = 0;
   while (out.length < RUN.draftSize && guard++ < 30) push(guard % 3 === 0 ? addCard() : guard % 3 === 1 ? swapCard() : { kind: 'maxHp', amount: RUN.maxHpCard });
   return out;

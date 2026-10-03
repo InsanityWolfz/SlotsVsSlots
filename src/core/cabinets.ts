@@ -104,7 +104,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'vault', symbol: 'goldbar', cost: 10 * UNIT, heal: 2 * UNIT },
     startChips: 16,
     symbols: ['sword', 'shield', 'goldbar'],
-    rule: 'GOLD BARS PAY CHIPS AND FILL THE VAULT. THE VAULT STARTS FULLER THE MORE CHIPS YOU HOLD. FULL: YOUR NEXT PAY X1 + CHIPS/20 (MAX X3). CASHIER 20% OFF. 360 HP.',
+    rule: 'GOLD BARS PAY CHIPS AND FILL THE VAULT (FULLER THE MORE CHIPS YOU HOLD). FULL: YOUR NEXT PAY X1 + CHIPS/20, MAX X3. CASHIER 20% OFF. 360 HP.',
     act2: { text: 'THE +1 CHIP PER WIN KEEPS PAYING' },
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,

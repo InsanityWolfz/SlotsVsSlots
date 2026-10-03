@@ -57,6 +57,8 @@ export interface Stage {
     pot: number;
     potPunch: number;
     fightLabel: string;
+    /** A challenge / weekly / daily run's HOUSE EDGES, shown all run (EXPERT_PLAYTEST_10 D8). */
+    twist?: string;
     allIn: boolean;
     /** The Mirror: your best presented spin since its last Reflection, and this turn's running total. */
     reflect?: number;

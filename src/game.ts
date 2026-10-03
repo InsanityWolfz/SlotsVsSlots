@@ -16,6 +16,7 @@ import {
   createRun,
   draftOffers,
   applyDaily,
+  EDGE_TEXT,
   offerBets,
   fightConfig,
   finishFight,
@@ -880,6 +881,7 @@ export class Game {
         pot: this.fight.pot,
         potPunch: 1,
         fightLabel: this.run && inRun ? (this.run.depth >= actLength(this.run.act) ? (this.run.endless ? `LOOP ${this.run.endless.loop} BOSS` : 'BOSS') : this.run.endless ? `LOOP ${this.run.endless.loop} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}` : `${this.run.daily ? 'DAILY - ' : this.run.weekly ? 'WEEKLY - ' : this.run.challenge ? 'CHALLENGE - ' : ''}ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}`) : 'SANDBOX',
+        twist: this.run && inRun ? [...(this.run.mods ?? []), ...(this.run.dailyEdge ? [this.run.dailyEdge] : [])].map((e) => EDGE_TEXT[e].title).join(' + ') : '',
         allIn: false,
         reflect: 0,
         turnDamage: 0,
@@ -1267,6 +1269,7 @@ export class Game {
     const cy = MACHINE_TOP + MACHINE_H / 2;
     if (this.phase === 'title') return;
     drawText(ctx, g.fightLabel, cx, cy - 112, 2, g.fightLabel === 'BOSS' ? '#ff6a5a' : COLORS.textDim);
+    if (g.twist) drawText(ctx, g.twist, cx, cy - 132, 1.25, '#ff9a3a');
     if (g.turn > 0) {
       drawText(ctx, `ROUND ${Math.ceil(g.turn / 2)}`, cx, cy - 78, 3, COLORS.textDim, { punch: 1 + g.pulse * 0.3 });
       if (g.side)

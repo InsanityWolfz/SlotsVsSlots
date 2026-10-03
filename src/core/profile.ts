@@ -305,7 +305,8 @@ export function recordMeta(p: Profile, e: RunEntry, collectionTotal: number, pre
     if (key) {
       const r = (p.challenges[key] ??= { best: 0, won: false, tries: 0 });
       r.tries++;
-      newBest = score > r.best;
+      // A first try is no "new best" (a fight-2 death got the banner: EXPERT_PLAYTEST_10 D8).
+      newBest = r.tries > 1 && score > r.best;
       r.best = Math.max(r.best, score);
       r.won ||= e.won;
     }
