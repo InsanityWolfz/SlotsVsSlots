@@ -59,8 +59,8 @@ export const RELICS: Record<RelicId, RelicDef> = {
   holywater: { id: 'holywater', name: 'HOLY WATER', text: 'THE FIRST CHEAT ON YOUR REELS EACH FIGHT WASHES OFF', sprite: 'relicHolywater' },
   // EXPERT_PLAYTEST_10: relics that make a choice (streaky vs steady, turtle-and-counter, keep the liens or pay them).
   hotstreak: { id: 'hotstreak', name: 'HOT STREAK', text: 'AFTER A JACKPOT, YOUR NEXT SPIN PAYS X2', sprite: 'relicHotStreak' },
-  belt: { id: 'belt', name: 'WHETSTONE BELT', text: 'EACH HIT YOUR SHIELD BLOCKS: EVERY SWORD +10 ON YOUR NEXT SWORD GROUP (MAX +40)', sprite: 'relicBelt', machine: 'knight' },
-  toll: { id: 'toll', name: 'TOLL BOOTH', text: 'AFTER EACH WIN: +1 CHIP FOR EVERY LIEN THE REPO MAN HOLDS', sprite: 'relicToll' },
+  belt: { id: 'belt', name: 'WHETSTONE BELT', text: 'BLOCKED HITS SHARPEN YOUR NEXT SWORD GROUP: +10 PER SWORD (MAX +40)', sprite: 'relicBelt', machine: 'knight' },
+  toll: { id: 'toll', name: 'TOLL BOOTH', text: 'AFTER EACH WIN: +2 CHIPS FOR EVERY LIEN THE REPO MAN HOLDS', sprite: 'relicToll' },
   bash: { id: 'bash', name: 'SHIELD BASH', text: 'YOUR LEFTOVER SHIELD HITS BACK FOR ITS FULL AMOUNT EACH TURN', sprite: 'relicBash' },
   // Side bets (EXPERT_PLAYTEST_6 E11): relics that change which bet you want.
   loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY 20% MORE', sprite: 'relicLoaded' },

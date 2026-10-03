@@ -5,6 +5,7 @@
 //   VAMPSIG="goldbar:0.5" VAMP heals x0.5 from a group of that symbol.
 //   SIG="gold:thorn,wild,goldbar;vamp:goldbar"  symbols a charm fits by default.
 //   CHARM="vamp:0,20,30,40,50"  charm values.  JOKER="perWild:25,hp:25,heal:3" (x10 units except perWild raw).
+//   HP="midas:38"  a machine's HP (x10 units).
 //   FAVORS="midas:vamp"  a machine's favoured charm (offered half the time).
 //   GATE="midas:1.0,knight:1.1" BOSS_MUL gate overrides (REPO MAN HP).  BMUL="joker.mirror:4.2,midas.dealer:1"  RUNK="postFightHeal:0.25"
 import { UNIT, type Enh, type SymbolId } from '../../src/core/config';
@@ -89,4 +90,8 @@ for (const kv of (E.FAVORS ?? '').split(',').filter(Boolean)) {
   const [k, v] = kv.split(':');
   (CABINETS as unknown as Record<string, { favors: string | null }>)[k].favors = v === 'null' ? null : v;
 }
-export const PATCH_LABEL = ['FAVORS', 'BELLFIX', 'BELLX', 'VAMPV', 'VAMPSIG', 'SIG', 'CHARM', 'JOKER', 'GATE', 'BMUL', 'RUNK'].filter((k) => E[k]).map((k) => `${k}=${E[k]}`).join(' ') || 'current';
+for (const kv of (E.HP ?? '').split(',').filter(Boolean)) {
+  const [k, v] = kv.split(':');
+  (CABINETS as unknown as Record<string, { hp: number }>)[k].hp = Number(v) * UNIT;
+}
+export const PATCH_LABEL = ['HP', 'FAVORS', 'BELLFIX', 'BELLX', 'VAMPV', 'VAMPSIG', 'SIG', 'CHARM', 'JOKER', 'GATE', 'BMUL', 'RUNK'].filter((k) => E[k]).map((k) => `${k}=${E[k]}`).join(' ') || 'current';

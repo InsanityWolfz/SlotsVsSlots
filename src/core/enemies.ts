@@ -210,7 +210,7 @@ export const REPO_MAN: Archetype = {
   hpMul: 1.3,
   ability: { kind: 'repo', every: 3, power: 1 },
   minDepth: 2,
-  blurb: 'REPOSSESSES YOUR BEST CELL. WHAT HE HOLDS STAYS GONE UNTIL THE BOSS FALLS',
+  blurb: 'REPOSSESSES YOUR BEST CELL.',
   acts: [],
 };
 /** The gatekeeper's fight (0-based depth), how many cells he can take in one fight, a lien's price, his bounty, the turn of

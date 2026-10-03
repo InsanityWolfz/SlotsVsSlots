@@ -595,7 +595,9 @@ export class Fight {
     // HOT STREAK: a jackpot makes your next spin pay x2 (any other spin ends it).
     if (side === 'player') this.hotStreak = me.relics.has('hotstreak') && score.tier === 'triple';
     // Jackpot Bell: a jackpot fills your meter (TESLA: a full special; BRIAR: the jackpot again into the bank).
-    if (!this.over && score.tier === 'triple' && me.relics.has('bell') && (side !== 'player' || this.special || this.meter)) {
+    // Not on JOKER's payoff spin: the payoff scores as a jackpot, so the Bell refilled the meter it had just emptied and it
+    // never ran dry (EXPERT_PLAYTEST_11 D1: JOKER + BELL 63%).
+    if (!this.over && score.tier === 'triple' && me.relics.has('bell') && (side !== 'player' || this.special || this.meter) && !(side === 'player' && score.jackpots)) {
       events.push({ type: 'relic', side, relic: 'bell' });
       if (this.special || side !== 'player') this.gainEnergy(me, this.cfg.specialCost, [], events);
       else if (this.meter!.kind === 'thorns') this.fillMeter(me, score.groups.find((g) => g.matched)?.amount ?? 0, [], events);
@@ -1120,10 +1122,9 @@ export class Fight {
   /** VAMP: vamp cells in a group that pays heal you (swords; any symbol with VAMPIRE'S KISS or GRAFT). */
   private vampHeal(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
     if (this.over || g.amount <= 0) return;
-    const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
-    // Once per group, however many vamp cells it holds (stacked vamp was the auto-pick: EXPERT_PLAYTEST_10 D1).
+    // Once per group (a one-cell jackpot too: JOKER's payoff cells healed x3, EXPERT_PLAYTEST_11 D2), however many vamp cells it holds (stacked vamp was the auto-pick: EXPERT_PLAYTEST_10 D1).
     const any = g.reels.some((r) => this.enhsAt(me, r).includes('vamp'));
-    const vamp = any ? charmValue('vamp', this.charmLvl(me, 'vamp')) * copies : 0;
+    const vamp = any ? charmValue('vamp', this.charmLvl(me, 'vamp')) : 0;
     if (vamp) this.heal(me, vamp, 'vamp', events);
   }
 

@@ -805,7 +805,7 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
   if (!e.isBoss && run.act >= 3) {
     const arch = ARCHETYPES.find((a) => a.id === e.archetype);
     const mul = (ACT3_DEPTH_MUL[Math.min(e.depth, ACT3_DEPTH_MUL.length - 1)] ?? 1) * (arch?.hpMul ?? 1) * (e.elite ? ELITE_HP_MUL_2 : 1);
-    return Math.max(e.hp, unitsRound((TUNE.act3Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'act3') + TUNE.act3Flat) * mul));
+    return Math.max(unitsRound(e.hp * (BOSS_MUL[run.cabinet].act3Floor ?? 1)), unitsRound((TUNE.act3Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'act3') + TUNE.act3Flat) * mul));
   }
   // Act 2 regulars grow with your machine too (fixed HP turned them to paper for strong builds: EXPERT_PLAYTEST_2 G6).
   if (!e.isBoss && run.act === 2) {
@@ -889,12 +889,16 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  * to. Machines race differently (KNIGHT's shields, JAX's rare huge payoffs, BRIAR's thorns that need to
  * be hit), so the same HP formula would give each a different win rate.
  */
-export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number }> = {
-  knight: { house: 2.0, mirror: 0.9, dealer: 0.74, act3: 0.5, gate: 1.15 },
-  midas: { house: 3, mirror: 1.9, dealer: 1.05, act3: 0.12, act1: 0.55, act2: 0.55, gate: 0.8 },
-  thorn: { house: 0.85, mirror: 10.5, dealer: 1.3, act3: 1.3, act2: 0.6, gate: 1.4 },
-  tesla: { house: 0.5, mirror: 2.4, dealer: 1.69, act3: 0.95, gate: 0.85 },
-  joker: { house: 2.2, mirror: 3.7, dealer: 1.39, act3: 0.55, act2: 1.8, gate: 0.85 },
+/** TOLL BOOTH: chips per held lien per win (EXPERT_PLAYTEST_11 D5). */
+export const TOLL_PER_LIEN = 2;
+
+export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
+  knight: { house: 2.0, mirror: 0.9, dealer: 0.74, act3: 0.5, gate: 1.3 },
+  // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
+  midas: { house: 3, mirror: 1.9, dealer: 0.9, act3: 0.12, act1: 0.55, act2: 0.55, gate: 0.8, act3Floor: 0.75 },
+  thorn: { house: 0.85, mirror: 10.5, dealer: 1.3, act3: 1.3, act2: 0.6, gate: 1.55 },
+  tesla: { house: 0.5, mirror: 2.4, dealer: 1.69, act3: 0.95, gate: 1.0 },
+  joker: { house: 2.2, mirror: 2.8, dealer: 0.75, act3: 0.35, act2: 1.8, gate: 0.85 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
@@ -1005,10 +1009,10 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     run.player.chips += GATEKEEPER.bounty;
     record.chips = (record.chips ?? 0) + GATEKEEPER.bounty;
   }
-  // TOLL BOOTH: every lien THE REPO MAN holds pays a chip after each win (keep them, or pay them off).
+  // TOLL BOOTH: every lien THE REPO MAN holds pays 2 chips after each win (keep them, or pay them off). 1 was dead weight.
   if (record.won && run.player.relics.includes('toll') && run.liens?.length) {
-    run.player.chips += run.liens.length;
-    record.chips = (record.chips ?? 0) + run.liens.length;
+    run.player.chips += TOLL_PER_LIEN * run.liens.length;
+    record.chips = (record.chips ?? 0) + TOLL_PER_LIEN * run.liens.length;
   }
   // Act 2 elites pay chips (more relics made the Mirror a walkover: ITERATION_8).
   if (beaten.elite && run.act > 1) {

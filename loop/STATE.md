@@ -1369,3 +1369,40 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - **Shop/draft charm text slimmed:** `REEL 2 SWORDS: +20 PER SWORD, PIERCES`, `ALL GOLD: X4 PAY, GOLD STACKS`,
   `EVERY SWORD IS WORTH 18` (charmShortText; the collection keeps the long rules).
 - tuesday 1000 after: WHITE **44.1** / GREEN **16.9** (was 44.1 / 17.0): no balance change. Tests: 217.
+
+## Iteration 68 (2026-10-03): EXPERT_PLAYTEST_11 built
+- **JACKPOT BELL:** it no longer refills JOKER's meter on a payoff spin (natural jackpots still fill it; ×1.25 stays).
+- **VAMP:** a one-cell jackpot group heals ×1 (JOKER's payoff cells healed ×3).
+- **JOKER boss HP:** dealer 1.39→0.75, act3 0.55→0.35, mirror 3.7→2.8.
+- **MIDAS:** dealer 1.05→0.9; new `act3Floor` 0.75 (its act-3 regulars may go under their curve; the act3 knob was floored).
+- **REPO MAN `gate` HP:** KNIGHT 1.15→1.3, TESLA 0.85→1.0, BRIAR 1.4→1.55. The fight-4 death gate is restated as **3–6%**.
+- **TOLL BOOTH:** +2 chips per held lien per win (`TOLL_PER_LIEN`).
+- **Weekly:** never a challenge's machine plus any of its edges; it falls through to the next setup, then the next machine.
+  W40 is now JOKER + HOUSE CUT.
+- Text: WHETSTONE BELT shortened; the REPO MAN subtitle no longer repeats "UNTIL THE BOSS FALLS".
+- **Held:** signature-symbol charms (every blanket rule broke a machine: GOLD on thorns BRIAR 63/36, GOLD on gold bars
+  MIDAS 29/8); a content round with one meter-feeding charm per machine instead. SWEEP UP (0.6% of picks) goes with it.
+- **Measured (real code):** tuesday 1000:
+
+    | machine | WHITE | GREEN |
+    |---|---|---|
+    | KNIGHT | 42.9 → 41.3 | 17.0 → 17.6 |
+    | TESLA | 46.9 → 47.3 | 17.0 → 16.6 |
+    | BRIAR | 48.8 → 47.5 | 18.8 → 20.2 |
+    | JOKER | 42.5 → 42.2 | 17.2 → 17.3 |
+    | MIDAS | 39.2 → 39.1 | 14.9 → **17.1** |
+    | **AVG** | **44.1 → 43.5** | **17.0 → 17.8** |
+
+  - Dealer kill 48.7. Fight-4 deaths **3.8%**.
+  - Rows (e11_rows 300, GREEN avg): baseline 10.2, no charms 10.9, only VAMP **16.1** (was 18.9), GOLD 12.9, LUCKY 12.4,
+    KEEN 8.7, +BELL 22.9 (JOKER 31.7, was 63.3), +TOLL 14.8 (was 11.5).
+  - Challenges 400: 35.5 / 31.8 / 32.5 / 31.5 / 30.8 / 15.3 / **8.8**.
+  - Weekly random-draft mean **15.2%** (was 20.2: new setups plus the JOKER/VAMP changes; JOKER + HOUSE CUT is 8%).
+  - Fuzz 30: 1800 runs, no breaks.
+- **Watch next round:**
+  - BRIAR GREEN 20.2 (about 1 SE over; trim its dealer 1.3 if it holds);
+  - the weekly mean of 15%;
+  - JOKER's Dealer kill 44.7;
+  - KNIGHT GREEN still needs VAMP (no-charms 6.3);
+  - BRIAR no-charms 22.7 (charms trap).
+- Tests: 217.

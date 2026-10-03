@@ -87,16 +87,27 @@ export const WEEKLY_SETUPS: WeeklySetup[] = [
   { edges: ['heal'] },
   { edges: ['fast'], chips: 0 },
 ];
-const sameSetup = (cab: CabinetId, w: WeeklySetup, c: ChallengeDef) =>
-  c.cabinet === cab && c.stake === 0 && (c.chips ?? null) === (w.chips ?? null) && c.edges.length === w.edges.length && c.edges.every((e) => w.edges.includes(e));
+/** Reads like a challenge: its machine plus any of its edges (W40 was GLASS JAW minus one edge: EXPERT_PLAYTEST_11 D8). */
+const sameSetup = (cab: CabinetId, w: WeeklySetup, c: ChallengeDef) => c.cabinet === cab && c.edges.some((e) => w.edges.includes(e));
 
 /** The week's machine and setup (the next setup along if it would copy a challenge). */
 export function weekly(key: string): { cabinet: CabinetId; edges: EdgeId[]; chips?: number; seed: number } {
   const seed = dailySeed(`weekly:${key}`);
-  const cabinet = CABINET_ORDER[dailySeed(`weekly:${key}:machine`) % CABINET_ORDER.length];
-  let i = dailySeed(`weekly:${key}:edge`) % WEEKLY_SETUPS.length;
-  for (let k = 0; k < WEEKLY_SETUPS.length && CHALLENGES.some((c) => sameSetup(cabinet, WEEKLY_SETUPS[i], c)); k++) i = (i + 1) % WEEKLY_SETUPS.length;
-  const w = WEEKLY_SETUPS[i];
+  const m0 = dailySeed(`weekly:${key}:machine`) % CABINET_ORDER.length;
+  const e0 = dailySeed(`weekly:${key}:edge`) % WEEKLY_SETUPS.length;
+  // The week's setup, else the next one along, else the next machine along: never one that reads like a challenge.
+  let cabinet = CABINET_ORDER[m0];
+  let w = WEEKLY_SETUPS[e0];
+  search: for (let m = 0; m < CABINET_ORDER.length; m++)
+    for (let k = 0; k < WEEKLY_SETUPS.length; k++) {
+      const cab = CABINET_ORDER[(m0 + m) % CABINET_ORDER.length];
+      const setup = WEEKLY_SETUPS[(e0 + k) % WEEKLY_SETUPS.length];
+      if (!CHALLENGES.some((c) => sameSetup(cab, setup, c))) {
+        cabinet = cab;
+        w = setup;
+        break search;
+      }
+    }
   return { cabinet, edges: [...w.edges], ...(w.chips != null ? { chips: w.chips } : {}), seed };
 }
 
