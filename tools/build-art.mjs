@@ -3764,15 +3764,15 @@ function crest(pal, motif, mx, my, opts = {}) {
   for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
     if (!inDisc(x, y)) continue;
     const d = Math.hypot(x - cx, y - cy);
-    if (d > R - 1.75) {
+    if (d > R - (opts.rim ?? 1.75)) {
       // rim: lit along the upper-left arc, shadowed along the lower-right arc
       const s = (x - cx) + (y - cy);
       put(g, x, y, s < -3 ? pal.hi : s > 3 ? pal.lo : pal.mid);
-    } else if (d > R - 2.6) {
+    } else if (d > R - (opts.rim ?? 1.75) - 0.85) {
       put(g, x, y, pal.groove);
     } else put(g, x, y, pal.field);
   }
-  if (pal.gloss !== false) { put(g, 4, Math.round(cy - 5), 'W'); put(g, 3, Math.round(cy - 4), 'W'); }
+  if (pal.gloss !== false && opts.gloss !== false) { put(g, 4, Math.floor(cy - 5.5), 'W'); put(g, 3, Math.floor(cy - 4.5), 'W'); }
   if (pal.stud) [[7, Math.round(cy + R - 0.6)], [Math.round(cx + R - 0.6), Math.round(cy)], [Math.round(cx - R + 0.6), Math.round(cy)]]
     .forEach(([x, y]) => put(g, x, y, pal.stud));
   stamp(g, mx, my, motif);
@@ -3791,31 +3791,40 @@ S.trimClassic = crest({ hi: 'Y', mid: 'G', lo: 'g', groove: 'g', field: 'G' }, [
 // trimBronze: BRONZE, a bronze bell with an orange clapper
 S.trimBronze = crest({ hi: 'a', mid: 'w', lo: 'B', groove: 'b', field: 'b' }, [
   '  aw  ',
-  ' awwB ',
+  ' aWwB ',
   ' awwB ',
   ' awwB ',
   'awwwBB',
-  'BBBBBb',
+  'BBBBBB',
   '  OO  ',
 ], 5, 4);
-// trimSilver: SILVER, a steel horseshoe (open end up) with nail holes
+// trimSilver: SILVER, a polished steel horseshoe (open end up, lucky side)
 S.trimSilver = crest({ hi: 'W', mid: 'L', lo: 'S', groove: 'D', field: 'k' }, [
-  'LS  SD',
-  'LS  SD',
-  'WS  SD',
-  'LS  SD',
-  'LSSSSD',
-  ' DDDD ',
-], 5, 5);
-// trimNeon: NEON, a hot-pink star on a cyan glow rim
-S.trimNeon = crest({ hi: 'C', mid: 'i', lo: 'c', groove: 'x', field: 'P' }, [
+  'WL    SD',
+  'LS    SD',
+  'LS    SD',
+  'LSS  SSD',
+  ' LSSSSD ',
+  '  DDDD  ',
+], 4, 5);
+// trimNeon: NEON, a hot-pink star with a magenta glow on a cyan rim
+S.trimNeon = crest({ hi: 'C', mid: 'i', lo: 'c', groove: 'n', field: 'P' }, [
   '   x   ',
   '  xWx  ',
   'xxxMxxx',
   ' xMMMs ',
-  '  xxs  ',
+  '  xMs  ',
   ' xs xs ',
-], 4, 5);
+  ' s   s ',
+], 4, 4, {
+  extra: (g) => {
+    // soft glow: field cells touching the star turn dark magenta
+    const glow = [];
+    for (let y = 3; y <= 12; y++) for (let x = 3; x <= 12; x++)
+      if (g[y][x] === 'P' && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => ['x', 'M', 'W'].includes(get(g, x + dx, y + dy)))) glow.push([x, y]);
+    glow.forEach(([x, y]) => put(g, x, y, 's'));
+  },
+});
 // trimVelvet: VELVET, a glossy red heart on deep velvet
 S.trimVelvet = crest({ hi: 'M', mid: 'R', lo: 'r', groove: 'd', field: 'd' }, [
   'RR  RR',
@@ -3824,15 +3833,15 @@ S.trimVelvet = crest({ hi: 'M', mid: 'R', lo: 'r', groove: 'd', field: 'd' }, [
   ' RRRr ',
   '  Rr  ',
 ], 5, 5);
-// trimEmerald: EMERALD, a step-cut green gem
+// trimEmerald: EMERALD, a step-cut green gem (bright frame, flat table, dark lower facets)
 S.trimEmerald = crest({ hi: 'E', mid: 'e', lo: 'Q', groove: 'q', field: 'q' }, [
-  ' EEEe ',
-  'EWEeeQ',
-  'EEeeQQ',
-  'EEeeQQ',
-  'eeeQQQ',
-  ' QQQq ',
-], 5, 5);
+  ' EEEEe ',
+  'EEWEEeQ',
+  'EEeeeQQ',
+  'EEeEeQQ',
+  'EeQQQQQ',
+  ' QQQQq ',
+], 4, 5);
 // trimDiamond: DIAMOND, a faceted brilliant on deep navy
 S.trimDiamond = crest({ hi: 'W', mid: 'C', lo: 'c', groove: 'N', field: 'N' }, [
   ' CWCA ',
@@ -3842,29 +3851,30 @@ S.trimDiamond = crest({ hi: 'W', mid: 'C', lo: 'c', groove: 'N', field: 'N' }, [
   '  cA  ',
   '   c  ',
 ], 5, 5);
-// trimObsidian: OBSIDIAN, a jagged violet-edged black shard
-S.trimObsidian = crest({ hi: 'V', mid: 'v', lo: 'k', groove: 'k', field: 'K', gloss: false }, [
-  '   J  ',
-  '  JVk ',
-  '  Jvk ',
-  ' JVvkk',
-  ' Jvkk ',
-  ' Vvk  ',
-  '  v   ',
-], 5, 4);
-// trimHouse: THE HOUSE, gold medallion on red with ruby studs, a crown over 777 (the most ornate)
+// trimObsidian: OBSIDIAN, a jagged black shard with violet glints on a soot field
+S.trimObsidian = crest({ hi: 'V', mid: 'v', lo: 'k', groove: 'k', field: 'v', gloss: false }, [
+  '    J ',
+  '   JW ',
+  '  JVK ',
+  '  JKKk',
+  ' JVKKk',
+  ' JKKKk',
+  '  VKk ',
+  '   k  ',
+], 4, 4);
+// trimHouse: THE HOUSE, a jewelled crown over a ruby-studded gold medallion struck with 777 (the most ornate)
 S.trimHouse = crest({ hi: 'Y', mid: 'G', lo: 'g', groove: 'g', field: 'r', stud: 'R' }, [
-  'YYGYYGYYG',
-  '  G  G  g',
-  ' G  G  g ',
-  ' G  G  g ',
-], 3, 8, {
-  cy: 8.5, r: 6.5,
-  extra: (g) => stamp(g, 4, 1, [
-    'Y  Y  G',
-    'YRYWYRG',
-    'YYYYYGg',
-    'GGGGGGg',
+  'YY YY YY',
+  ' G  G  G',
+  'G  G  G ',
+  'G  G  G ',
+], 4, 8, {
+  cy: 8.5, r: 6.45, rim: 1.2, gloss: false,
+  extra: (g) => stamp(g, 3, 0, [
+    ' W  YG  G ',
+    'YR YRRG Rg',
+    'YYYYGGGGGg',
+    'GYWYGGGGgg',
   ]),
 });
 /** Ticket stub (24x16): notched ends, 1px rim lit top-left, perforation, icon on the left, mark on the stub. */
