@@ -71,9 +71,9 @@ const ROWS_PER_PAGE = 7;
 const NAME_Y = 360;
 const CH_Y = 272;
 const CH_ROW = 54;
-const TR_Y = 350;
+const TR_Y = 384;
 /** TROPHIES: the trim picker row. */
-const TRIM_Y = 290;
+const TRIM_Y = 302;
 const TRIM_X = 90;
 const TRIM_PITCH = 70;
 
@@ -566,13 +566,13 @@ export class Menus {
     drawText(ctx, 'TROPHIES', W / 2, 44, 5, COLORS.goldLight);
     this.badge(ctx, W / 2, 108);
     drawText(ctx, 'TITLES', 60, 160, 1.5, COLORS.text, { align: 'left' });
-    drawText(ctx, 'TRIMS', 60, TRIM_Y - 34, 1.5, COLORS.text, { align: 'left' });
-    drawText(ctx, 'YOUR SLOT MACHINE\'S FRAME. ONE MORE EVERY FEW LEVELS', TRIM_X + TRIMS.length * TRIM_PITCH - 20, TRIM_Y - 34, 1.25, COLORS.textDim, { align: 'right' });
+    drawText(ctx, 'TRIMS', 60, TRIM_Y - 38, 1.5, COLORS.text, { align: 'left' });
+    drawText(ctx, 'YOUR SLOT MACHINE\'S FRAME. ONE MORE EVERY FEW LEVELS', TRIM_X + TRIMS.length * TRIM_PITCH - 20, TRIM_Y - 38, 1.25, COLORS.textDim, { align: 'right' });
     this.trophyTip = '';
     for (const t of this.titleTips) if (Math.abs(this.mouse.x - t.x) < t.w / 2 && Math.abs(this.mouse.y - t.y) < 15) this.trophyTip = t.text;
     const got = ACHIEVEMENTS.filter((a) => p.achievements[a.id]).length;
-    drawText(ctx, `ACHIEVEMENTS ${got}/${ACHIEVEMENTS.length}`, 60, TR_Y - 30, 2, COLORS.text, { align: 'left' });
-    drawText(ctx, 'EACH ONE IS WORTH 250 XP', W - 60, TR_Y - 30, 1.25, COLORS.textDim, { align: 'right' });
+    drawText(ctx, `ACHIEVEMENTS ${got}/${ACHIEVEMENTS.length}`, 60, TR_Y - 24, 2, COLORS.text, { align: 'left' });
+    drawText(ctx, 'EACH ONE IS WORTH 250 XP', W - 60, TR_Y - 24, 1.25, COLORS.textDim, { align: 'right' });
     const ctxP = {
       stats: p.stats,
       have: p.achievements,
