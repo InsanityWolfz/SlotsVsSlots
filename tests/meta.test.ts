@@ -138,12 +138,17 @@ describe('meta: profile save', () => {
 });
 
 describe('meta: EXPERT_PLAYTEST_9 rules', () => {
-  it('weekly pairs never include HOUSE CUT or HIGH ROLLERS + GLASS JAW', () => {
+  it('weekly setups: HOUSE CUT only alone, never HIGH ROLLERS + GLASS JAW, never a challenge copy, and they vary', () => {
+    const seen = new Set<string>();
     for (let w = 1; w <= 53; w++) {
-      const e = weekly(`2026-W${String(w).padStart(2, '0')}`).edges;
-      expect(e).not.toContain('heal');
-      expect(e.includes('rollers') && e.includes('frail')).toBe(false);
+      const wk = weekly(`2026-W${String(w).padStart(2, '0')}`);
+      if (wk.edges.includes('heal')) expect(wk.edges).toEqual(['heal']);
+      expect(wk.edges.includes('rollers') && wk.edges.includes('frail')).toBe(false);
+      for (const c of CHALLENGES)
+        expect(c.cabinet === wk.cabinet && c.stake === 0 && (c.chips ?? null) === (wk.chips ?? null) && c.edges.length === wk.edges.length && c.edges.every((e) => wk.edges.includes(e))).toBe(false);
+      seen.add(`${wk.edges.join('+')}:${wk.chips ?? ''}`);
     }
+    expect(seen.size).toBeGreaterThanOrEqual(5);
   });
   it('the daily and weekly never earn a machine clear or the Dealer', () => {
     const p = emptyProfile();

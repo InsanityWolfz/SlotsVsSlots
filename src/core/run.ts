@@ -1002,6 +1002,11 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     run.player.chips += GATEKEEPER.bounty;
     record.chips = (record.chips ?? 0) + GATEKEEPER.bounty;
   }
+  // TOLL BOOTH: every lien THE REPO MAN holds pays a chip after each win (keep them, or pay them off).
+  if (record.won && run.player.relics.includes('toll') && run.liens?.length) {
+    run.player.chips += run.liens.length;
+    record.chips = (record.chips ?? 0) + run.liens.length;
+  }
   // Act 2 elites pay chips (more relics made the Mirror a walkover: ITERATION_8).
   if (beaten.elite && run.act > 1) {
     run.player.chips += CHIPS.act2EliteChips;

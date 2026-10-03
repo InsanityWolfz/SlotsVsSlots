@@ -167,7 +167,8 @@ export type SpriteId =
   | 'relicLoaded' | 'relicMarker' | 'relicHighLimit'
   | 'trimClassic' | 'trimBronze' | 'trimSilver'  // slot machine trim crests, 16x16
   | 'trimNeon' | 'trimVelvet' | 'trimEmerald'
-  | 'trimDiamond' | 'trimObsidian' | 'trimHouse';
+  | 'trimDiamond' | 'trimObsidian' | 'trimHouse'
+  | 'relicHotStreak' | 'relicBelt' | 'relicToll'; // relics, 16x16
 
 export const SPRITES: Record<SpriteId, string[]> = {
   sword: [
@@ -4344,6 +4345,60 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '...KJYVVVVYvK...',
     '...KvvvvvvvvK...',
     '....KKKKKKKK....',
+  ],
+  relicHotStreak: [
+    '..........K.....',
+    '....K....KYK....',
+    '...KYK..KYOK.K..',
+    '..KYOK.KYOOKKYK.',
+    '..KOOYKYOYOKYOK.',
+    '.KYOYOYOYYOYOOK.',
+    '.KOYYOOYYOOYOoK.',
+    '.KMRRRRRRRRRRrK.',
+    '.KRRRRRRRRRRRrK.',
+    '.KrrrrrrrRRRrK..',
+    '..KKKKKKRRRrK...',
+    '......KRRRrK....',
+    '.....KMRRrK.....',
+    '.....KRRrK......',
+    '....KMRRrK......',
+    '....KrrrK.......',
+  ],
+  relicBelt: [
+    '.........KK.....',
+    '........KLSK....',
+    '.......KLLLSK...',
+    '.......KLWSDK...',
+    '.......KLSSDK...',
+    '.......KLSDDK...',
+    '......KwwwwwBK..',
+    '.KKKKKKwBBBBbK..',
+    'KYYYYGKwBGBBbKKK',
+    'wYwwwGwwBBBBbwww',
+    'BYBYBGBwBBBBbBBB',
+    'bYbbbgbwBBBBbbbb',
+    'KGGGggKwBBBBbKKK',
+    '.KKKKKKwBBBBbK..',
+    '......KbbbbbbK..',
+    '.......KKKKKK...',
+  ],
+  relicToll: [
+    '...........KKK..',
+    '.KKKKKK...KYYGK.',
+    'KRRRRRrK.KYWGGgK',
+    'RMRRRRrrKKYGgGgK',
+    'KTTTTTtK.KYGGGgK',
+    'KTCCCAtK..KgggK.',
+    'KTCWCAtK...KKK..',
+    'KTAAActK........',
+    'KTTTTTtKKKKKKKK.',
+    'KTTTTTtWRRTTRRTK',
+    'KTTTTTtrrrttrrtK',
+    'KtttttttKKKKKKK.',
+    'KIIIIIHK........',
+    'KHHHHHhK........',
+    '.KKKKKK.........',
+    '................',
   ],
   trimClassic: [
     '......KKKK......',

@@ -139,6 +139,10 @@ export type RelicId =
   | 'trophy'
   | 'holywater'
   | 'bash'
+  // EXPERT_PLAYTEST_10's new relics
+  | 'hotstreak'
+  | 'belt'
+  | 'toll'
   // Side bets
   | 'loaded'
   | 'marker'

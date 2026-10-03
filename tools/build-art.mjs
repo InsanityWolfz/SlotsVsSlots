@@ -3753,6 +3753,60 @@ S.relicHighLimit = lit(16, 16, [
   '....JYVVVVYv....',
   '....vvvvvvvv....',
 ]);
+// relicHotStreak (16x16): HOT STREAK, a red 7 on fire (flames licking up off its top bar)
+S.relicHotStreak = lit(16, 16, [
+  '................',
+  '..........Y.....',
+  '....Y....YO.....',
+  '...YO...YOO..Y..',
+  '...OOY.YOYO.YO..',
+  '..YOYOYOYYOYOO..',
+  '..OYYOOYYOOYOo..',
+  '..MRRRRRRRRRRr..',
+  '..RRRRRRRRRRRr..',
+  '..rrrrrrrRRRr...',
+  '........RRRr....',
+  '.......RRRr.....',
+  '......MRRr......',
+  '......RRr.......',
+  '.....MRRr.......',
+  '.....rrr........',
+]);
+// relicBelt (16x16): WHETSTONE BELT, a brown belt with a gold buckle and a pouch holding a grey whetstone
+S.relicBelt = lit(16, 16, [
+  '................',
+  '.........LS.....',
+  '........LLLS....',
+  '........LWSD....',
+  '........LSSD....',
+  '........LSDD....',
+  '.......wwwwwB...',
+  '.......wBBBBb...',
+  '.YYYYG.wBGBBb...',
+  'wYwwwGwwBBBBbwww',
+  'BYBYBGBwBBBBbBBB',
+  'bYbbbgbwBBBBbbbb',
+  '.GGGgg.wBBBBb...',
+  '.......wBBBBb...',
+  '.......bbbbbb...',
+]);
+// relicToll (16x16): TOLL BOOTH, a little red-roofed booth with a striped barrier arm and a gold coin
+S.relicToll = lit(16, 16, [
+  '................',
+  '...........YYG..',
+  '.RRRRRr...YWGGg.',
+  'RMRRRRrr..YGgGg.',
+  '.TTTTTt...YGGGg.',
+  '.TCCCAt....ggg..',
+  '.TCWCAt.........',
+  '.TAAAct.........',
+  '.TTTTTt.........',
+  '.TTTTTtWRRTTRRT.',
+  '.TTTTTtrrrttrrt.',
+  '.ttttttt........',
+  '.IIIIIH.........',
+  '.HHHHHh.........',
+]);
 // ---------------------------------------------------------------- slot machine TRIM crests (16x16)
 // One medallion family: a 2px rim in the trim's colours (lit top-left), a 1px inset groove, a deep field,
 // and a centred motif. Drawn on the top edge of the player's frame and in the TROPHIES trim picker.
@@ -4488,6 +4542,7 @@ const DIMS = {
   relicGoldleaf: 16, relicExecutioner: 16, relicKiss: 16, relicHorseshoe: 16, relicUnderdog: 16,
   relicFirstblood: 16, relicPiggy: 16, relicTrophy: 16, relicHolywater: 16, relicBash: 16,
   relicLoaded: 16, relicMarker: 16, relicHighLimit: 16,
+  relicHotStreak: 16, relicBelt: 16, relicToll: 16,
   trimClassic: 16, trimBronze: 16, trimSilver: 16, trimNeon: 16, trimVelvet: 16,
   trimEmerald: 16, trimDiamond: 16, trimObsidian: 16, trimHouse: 16,
 };
@@ -4617,7 +4672,8 @@ export type SpriteId =
   | 'relicLoaded' | 'relicMarker' | 'relicHighLimit'
   | 'trimClassic' | 'trimBronze' | 'trimSilver'  // slot machine trim crests, 16x16
   | 'trimNeon' | 'trimVelvet' | 'trimEmerald'
-  | 'trimDiamond' | 'trimObsidian' | 'trimHouse';
+  | 'trimDiamond' | 'trimObsidian' | 'trimHouse'
+  | 'relicHotStreak' | 'relicBelt' | 'relicToll'; // relics, 16x16
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

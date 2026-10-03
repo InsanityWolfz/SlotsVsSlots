@@ -67,7 +67,7 @@ describe('wilds and gilds', () => {
     const atk = e1.find((e) => e.type === 'attack')!;
     expect(atk.type === 'attack' && atk.amount).toBe(20); // gold single sword: 10 x2 (keen is on reel 3)
     const en = e1.find((e) => e.type === 'energyGain')!;
-    expect(en.type === 'energyGain' && en.amount).toBe(15); // reels 2+3 aren't a double: the charged bolt alone, 10 + 5
+    expect(en.type === 'energyGain' && en.amount).toBe(20); // reels 2+3 aren't a double: the charged bolt alone, 10 + 10
 
     const g = new Fight(c, 4);
     g.sides.enemy.shield = 50;

@@ -455,7 +455,7 @@ export class Menus {
     drawText(ctx, `THE WEEKLY CHALLENGE  ${key}`, 90, 112, 2.5, '#7dff7a', { align: 'left' });
     drawSprite(ctx, heroSprite(wk.cabinet), 120, 162, 2.5, { rot: Math.sin(t * 2) * 0.03 });
     drawText(ctx, `${CABINETS[wk.cabinet].hero} - ${CABINETS[wk.cabinet].name}. SAME FIGHTS FOR EVERYONE, THROUGH THE DEALER. AS MANY TRIES AS YOU LIKE.`, 160, 144, 1.25, COLORS.text, { align: 'left' });
-    wrap(edgeLine(wk.edges), 96).slice(0, 2).forEach((l, k) => drawText(ctx, l, 160, 164 + k * 16, 1.25, COLORS.goldLight, { align: 'left' }));
+    wrap([edgeLine(wk.edges), wk.chips === 0 ? 'START WITH 0 CHIPS' : ''].filter(Boolean).join('. '), 96).slice(0, 2).forEach((l, k) => drawText(ctx, l, 160, 164 + k * 16, 1.25, COLORS.goldLight, { align: 'left' }));
     drawText(ctx, best ? `YOUR BEST ${best.best}${best.won ? ' - CLEARED' : ''} - ${best.tries} TR${best.tries > 1 ? 'IES' : 'Y'}` : 'NOT PLAYED YET', 160, 198, 1.25, best?.won ? '#ffd23f' : COLORS.textDim, { align: 'left' });
     drawText(ctx, `NEW ONE IN ${untilMonday()}`, W - 170, 194, 1.25, COLORS.textDim);
     // The ladder.

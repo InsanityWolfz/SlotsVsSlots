@@ -20,7 +20,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   clover: { id: 'clover', name: 'LUCKY CLOVER', text: '30% CHANCE A NEAR-MISS BECOMES A JACKPOT', sprite: 'relicClover' },
   battery: { id: 'battery', name: 'BATTERY', text: 'YOUR METER STARTS EACH FIGHT MORE THAN HALF FULL', sprite: 'relicBattery' },
   mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS PAY AS A PAIR', sprite: 'relicMirror' },
-  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFF HEALS 30 MORE (BRIAR: 10)', sprite: 'relicFang' },
+  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFF HEALS 30 MORE (TESLA: 15, BRIAR: 10)', sprite: 'relicFang' },
   bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 60 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
   crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR PAIRS HEAL 5 (AND STEAL HALF THE HOUSE POT)', sprite: 'relicCrown' },
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
@@ -31,7 +31,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   hone: { id: 'hone', name: 'EXECUTIONER', text: 'KEEN SWORDS PAY X3 WHEN THE ENEMY IS UNDER HALF HP', sprite: 'relicExecutioner', charm: 'keen' },
   // Legendary (act 2): big, build-bending effects.
   ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'EVERY CHARM IS ONE LEVEL HIGHER (EVEN PAST LEVEL 3)', sprite: 'relicTicket' },
-  bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND FILL YOUR METER', sprite: 'relicBell' },
+  bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 (JOKER: X1.5) AND FILL YOUR METER', sprite: 'relicBell' },
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'ONCE PER FIGHT, SURVIVE A LETHAL HIT AT 1 HP', sprite: 'relicPhoenix' },
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR METER PAYOFF ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
   key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR PAIRS PAY X2', sprite: 'relicKey' },
@@ -57,6 +57,10 @@ export const RELICS: Record<RelicId, RelicDef> = {
   piggy: { id: 'piggy', name: 'PIGGY BANK', text: 'AFTER EACH WIN: +1 CHIP PER 5 CHIPS YOU HOLD (MAX +4)', sprite: 'relicPiggy' },
   trophy: { id: 'trophy', name: 'TROPHY BELT', text: '+10 MAX HP FOR EVERY FIGHT YOU WIN', sprite: 'relicTrophy' },
   holywater: { id: 'holywater', name: 'HOLY WATER', text: 'THE FIRST CHEAT ON YOUR REELS EACH FIGHT WASHES OFF', sprite: 'relicHolywater' },
+  // EXPERT_PLAYTEST_10: relics that make a choice (streaky vs steady, turtle-and-counter, keep the liens or pay them).
+  hotstreak: { id: 'hotstreak', name: 'HOT STREAK', text: 'AFTER A JACKPOT, YOUR NEXT SPIN PAYS X2', sprite: 'relicHotStreak' },
+  belt: { id: 'belt', name: 'WHETSTONE BELT', text: 'EACH HIT YOUR SHIELD BLOCKS: EVERY SWORD +10 ON YOUR NEXT SWORD GROUP (MAX +40)', sprite: 'relicBelt', machine: 'knight' },
+  toll: { id: 'toll', name: 'TOLL BOOTH', text: 'AFTER EACH WIN: +1 CHIP FOR EVERY LIEN THE REPO MAN HOLDS', sprite: 'relicToll' },
   bash: { id: 'bash', name: 'SHIELD BASH', text: 'YOUR LEFTOVER SHIELD HITS BACK FOR HALF EACH TURN', sprite: 'relicBash' },
   // Side bets (EXPERT_PLAYTEST_6 E11): relics that change which bet you want.
   loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY 20% MORE', sprite: 'relicLoaded' },
@@ -129,13 +133,18 @@ export const BONUS = { wheel: 0.028, rush: 0.012 };
 export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9, uncommonMax: 12, grandChips: 15 };
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
-  common: ['clover', 'battery', 'fang', 'bandage', 'crown', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker'],
-  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit'],
+  common: ['clover', 'battery', 'fang', 'bandage', 'crown', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker', 'hotstreak'],
+  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass'],
 };
 
 export const LEGENDARY: ReadonlySet<RelicId> = new Set<RelicId>(['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass']);
+/** WHETSTONE BELT: per blocked hit, every sword in your next sword group gets this much more (up to BELT_MAX stacks). */
+export const BELT_STEP = 1 * UNIT;
+export const BELT_MAX = 4;
 export const BELL_MULT = 2;
+/** JOKER's jackpots already fill its meter: the Bell's x2 there was 77.5% wins vs 5.8 (EXPERT_PLAYTEST_10). */
+export const BELL_MULT_JOKER = 1.5;
 export const KEY_MULT = 2;
 /** Golden Hourglass: enemy abilities take this many more turns (was 2: 76% run win, the top relic by 12+ points). */
 export const SANDGLASS_SLOW = 1;
@@ -159,6 +168,8 @@ export const MIDAS_TOUCH_CAP = 3;
 /** Cactus: banking thorns shields you for this share of what you banked. */
 export const CACTUS_SHARE = 0.3;
 export const FANG_HEAL = 3 * UNIT;
+/** TESLA's lightning pays off often: a common heal of 30 there was 36.7% wins vs 9.2 (EXPERT_PLAYTEST_10). */
+export const FANG_TESLA_HEAL = 1.5 * UNIT;
 /** BRIAR's thorns fire almost every enemy turn, so its Fang heal is smaller (35% win with 30, probe 2026-09-27). */
 export const FANG_THORN_HEAL = 1 * UNIT;
 export const BANDAGE_HEAL = 6 * UNIT;

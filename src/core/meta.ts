@@ -71,18 +71,33 @@ export function weekKey(d = new Date()): string {
 }
 export const WEEK_KEY = /^\d{4}-W\d{2}$/;
 
-/** The weekly's HOUSE EDGE pairs: no HOUSE CUT (any pair with it made 3-6% weeks), and no HIGH ROLLERS + GLASS JAW
- * (the 5% weeks: EXPERT_PLAYTEST_9 D7). Variety comes from the machine and the seed. */
-export const WEEKLY_PAIRS: [EdgeId, EdgeId][] = [
-  ['fast', 'rollers'],
-  ['fast', 'frail'],
+/**
+ * The weekly's setups: a pair of HOUSE EDGES, or one edge and an empty wallet. No HOUSE CUT pairs (3-6% weeks), no HIGH
+ * ROLLERS + GLASS JAW (5%), and never a challenge's exact setup (EXPERT_PLAYTEST_10 D6: 2 pairs, FAST in every week).
+ */
+export interface WeeklySetup {
+  edges: EdgeId[];
+  chips?: number;
+}
+export const WEEKLY_SETUPS: WeeklySetup[] = [
+  { edges: ['fast', 'rollers'] },
+  { edges: ['fast', 'frail'] },
+  { edges: ['rollers'], chips: 0 },
+  { edges: ['frail'], chips: 0 },
+  { edges: ['heal'] },
+  { edges: ['fast'], chips: 0 },
 ];
-/** The week's machine and its pair of HOUSE EDGES. */
-export function weekly(key: string): { cabinet: CabinetId; edges: EdgeId[]; seed: number } {
+const sameSetup = (cab: CabinetId, w: WeeklySetup, c: ChallengeDef) =>
+  c.cabinet === cab && c.stake === 0 && (c.chips ?? null) === (w.chips ?? null) && c.edges.length === w.edges.length && c.edges.every((e) => w.edges.includes(e));
+
+/** The week's machine and setup (the next setup along if it would copy a challenge). */
+export function weekly(key: string): { cabinet: CabinetId; edges: EdgeId[]; chips?: number; seed: number } {
   const seed = dailySeed(`weekly:${key}`);
   const cabinet = CABINET_ORDER[dailySeed(`weekly:${key}:machine`) % CABINET_ORDER.length];
-  const pair = WEEKLY_PAIRS[dailySeed(`weekly:${key}:edge`) % WEEKLY_PAIRS.length];
-  return { cabinet, edges: [...pair], seed };
+  let i = dailySeed(`weekly:${key}:edge`) % WEEKLY_SETUPS.length;
+  for (let k = 0; k < WEEKLY_SETUPS.length && CHALLENGES.some((c) => sameSetup(cabinet, WEEKLY_SETUPS[i], c)); k++) i = (i + 1) % WEEKLY_SETUPS.length;
+  const w = WEEKLY_SETUPS[i];
+  return { cabinet, edges: [...w.edges], ...(w.chips != null ? { chips: w.chips } : {}), seed };
 }
 
 /** Make a fresh run (seeded with weekly(key).seed) THE WEEKLY CHALLENGE: fights fixed by the week, through the Dealer. */
@@ -91,6 +106,7 @@ export function applyWeekly(run: RunState, key: string): void {
   run.weekly = key;
   run.challenge = 'weekly';
   run.mods = [...w.edges];
+  if (w.chips != null) run.player.chips = w.chips;
   startEdges(run, w.edges);
 }
 

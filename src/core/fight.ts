@@ -7,6 +7,9 @@ import {
   BATTERY_ENERGY,
   BONUS,
   BELL_MULT,
+  BELL_MULT_JOKER,
+  BELT_MAX,
+  BELT_STEP,
   BOMB,
   CACTUS_SHARE,
   KEY_MULT,
@@ -16,6 +19,7 @@ import {
   OVERCHARGE_ECHO,
   CLOVER_CHANCE,
   FANG_HEAL,
+  FANG_TESLA_HEAL,
   FANG_THORN_HEAL,
   CROWN_HEAL,
   NEW_RELIC,
@@ -584,6 +588,8 @@ export class Fight {
       if (charmed) events.push({ type: 'relic', side, relic: 'stacked' });
       if (wilds.length || earthed) this.fillMeter(me, (wilds.length + charmed) * (this.meter.perWild ?? 0), wilds, events, earthed);
     }
+    // HOT STREAK: a jackpot makes your next spin pay x2 (any other spin ends it).
+    if (side === 'player') this.hotStreak = me.relics.has('hotstreak') && score.tier === 'triple';
     // Jackpot Bell: a jackpot fills your meter (TESLA: a full special; BRIAR: the jackpot again into the bank).
     if (!this.over && score.tier === 'triple' && me.relics.has('bell') && (side !== 'player' || this.special || this.meter)) {
       events.push({ type: 'relic', side, relic: 'bell' });
@@ -788,9 +794,9 @@ export class Fight {
       for (const r of g.reels)
         for (const enh of this.enhsAt(me, r)) {
         const v = charmValue(enh, this.charmLvl(me, enh)) * copies;
-        // KEEN adds to a sword group and pierces.
+        // KEEN adds to every sword in its group, and the group pierces.
         if (enh === 'keen' && g.symbol === 'sword') {
-          g.base += v;
+          g.base += v * g.reels.length;
           g.pierce = true;
           keen = true;
         }
@@ -800,6 +806,12 @@ export class Fight {
       // MIDAS TOUCH: each gold touch on a sword or shield counts as a gold charm.
       if (touchMeter && (g.symbol === 'sword' || g.symbol === 'shield'))
         for (const r of g.reels) if (touchable(r)) gold += (this.touches.get(me.reels[r].cells[me.reels[r].stop]) ?? 0) * charmValue('gold', this.charmLvl(me, 'gold')) * copies;
+      // WHETSTONE BELT: blocked hits sharpen every sword in your next sword group (then it's spent).
+      if (player && has('belt') && g.symbol === 'sword' && this.belt > 0 && g.base > 0) {
+        g.base += BELT_STEP * this.belt * g.reels.length;
+        notes.push(`BELT +${BELT_STEP * this.belt}`);
+        this.belt = 0;
+      }
       // WAR DRUM: every paying spin this fight adds to EACH sword (shown on the sword's number).
       if (has('drum') && g.symbol === 'sword' && this.drum > 0 && g.base > 0) {
         g.base += NEW_RELIC.drumStep * this.drum * g.reels.length;
@@ -838,8 +850,14 @@ export class Fight {
       }
       if (me.relics.has('bell') && g.matched && (g.reels.length === 3 || g.jackpot)) {
         fired.add('bell');
-        g.mult *= BELL_MULT;
-        notes.push(`X${BELL_MULT}`);
+        const bell = this.meter?.kind === 'jackpots' ? BELL_MULT_JOKER : BELL_MULT;
+        g.mult *= bell;
+        notes.push(`X${bell}`);
+      }
+      if (player && this.hotStreak && g.matched) {
+        fired.add('hotstreak');
+        g.mult *= 2;
+        notes.push('HOT X2');
       }
       // ACE: the Dealer's card doubles the group through its reel.
       if (player && this.aceReel >= 0 && paying && g.reels.includes(this.aceReel)) {
@@ -1099,7 +1117,9 @@ export class Fight {
   private vampHeal(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
     if (this.over || g.amount <= 0) return;
     const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
-    const vamp = g.reels.reduce((a, r) => a + this.enhsAt(me, r).filter((e) => e === 'vamp').length, 0) * charmValue('vamp', this.charmLvl(me, 'vamp')) * copies;
+    // Once per group, however many vamp cells it holds (stacked vamp was the auto-pick: EXPERT_PLAYTEST_10 D1).
+    const any = g.reels.some((r) => this.enhsAt(me, r).includes('vamp'));
+    const vamp = any ? charmValue('vamp', this.charmLvl(me, 'vamp')) * copies : 0;
     if (vamp) this.heal(me, vamp, 'vamp', events);
   }
 
@@ -1134,7 +1154,7 @@ export class Fight {
     if (!this.over && me.relics.has('overcharge') && dealt > 0) {
       events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
       this.hit(me, foe, Math.max(1, Math.round(dealt * OVERCHARGE_ECHO)), [], events, false, 'echo');
-      if (!this.over && me.relics.has('fang')) this.heal(me, FANG_HEAL, 'fang', events);
+      if (!this.over && me.relics.has('fang')) this.heal(me, this.special ? FANG_TESLA_HEAL : FANG_HEAL, 'fang', events);
     }
   }
 
@@ -1143,7 +1163,7 @@ export class Fight {
     if (me.side !== 'player' || this.over) return;
     const heal = this.meter?.heal ?? 0;
     if (heal > 0) this.heal(me, heal, 'payoff', events);
-    if (!this.over && me.relics.has('fang')) this.heal(me, this.meter?.kind === 'thorns' ? FANG_THORN_HEAL : FANG_HEAL, 'fang', events);
+    if (!this.over && me.relics.has('fang')) this.heal(me, this.meter?.kind === 'thorns' ? FANG_THORN_HEAL : this.special ? FANG_TESLA_HEAL : FANG_HEAL, 'fang', events);
   }
 
   /** MIDAS / JAX / BRIAR: fill the signature meter (a full MIDAS / JAX meter locks until it pays off). */
@@ -1263,6 +1283,10 @@ export class Fight {
     }
     const h = this.damage(foe, amount, pierce);
     events.push({ type: 'attack', from: me.side, to: foe.side, reels, amount, ...h, ...(pierced ? { note: 'pierce' as const } : note ? { note } : {}) });
+    if (foe.side === 'player' && foe.relics.has('belt') && h.blocked > 0 && this.belt < BELT_MAX) {
+      this.belt++;
+      events.push({ type: 'relic', side: foe.side, relic: 'belt' });
+    }
     this.checkDeath(foe, events);
     // BRIAR: being attacked (blocked or not) sets the thorn bank off.
     if (!this.over && amount > 0) this.thorns(foe, me, events);
@@ -1548,7 +1572,10 @@ export class Fight {
     events.push({ type: 'confiscate', from: me.side, to: foe.side, reels, cells, enhs: [...enhs] });
   }
 
-  /** THE REPO MAN: repossess your best cell (a charmed one first), up to GATEKEEPER.maxTakes a fight. */
+  /** HOT STREAK: your last spin was a jackpot, so this one pays x2. WHETSTONE BELT: stacks from blocked hits. */
+  private hotStreak = false;
+  private belt = 0;
+    /** THE REPO MAN: repossess your best cell (a charmed one first), up to GATEKEEPER.maxTakes a fight. */
   private repoTaken = 0;
   private repossess(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
     if (this.repoTaken >= GATEKEEPER.maxTakes) return this.fizzle(me, 'gavel', [], events);
