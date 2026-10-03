@@ -25,13 +25,13 @@ export const RELICS: Record<RelicId, RelicDef> = {
   crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR PAIRS HEAL 5 (AND STEAL HALF THE HOUSE POT)', sprite: 'relicCrown' },
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
   midas: { id: 'midas', name: 'GOLD LEAF', text: 'GOLD ON A CELL THAT PAYS NOTHING JOINS YOUR BIGGEST GROUP', sprite: 'relicGoldleaf', charm: 'gold', retired: true },
-  rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'WITH CHARGED BOLTS: CHEAPER LIGHTNING, +30 PER CHARGED BOLT YOU OWN', sprite: 'relicRod', machine: 'tesla' },
+  rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'WITH CHARGED BOLTS: CHEAPER LIGHTNING, +10 LIGHTNING DAMAGE', sprite: 'relicRod', machine: 'tesla' },
   cactus: { id: 'cactus', name: 'CACTUS', text: 'THORNS YOU LAND ALSO SHIELD YOU FOR 30% OF THEM', sprite: 'relicCactus', machine: 'thorn' },
   prism: { id: 'prism', name: 'PRISM', text: 'A MATCH THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
   hone: { id: 'hone', name: 'EXECUTIONER', text: 'KEEN SWORDS PAY X3 WHEN THE ENEMY IS UNDER HALF HP', sprite: 'relicExecutioner', charm: 'keen' },
   // Legendary (act 2): big, build-bending effects.
   ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'EVERY CHARM IS ONE LEVEL HIGHER (EVEN PAST LEVEL 3)', sprite: 'relicTicket' },
-  bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND FILL YOUR METER (JOKER: X1.5, NO FILL)', sprite: 'relicBell' },
+  bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 (JOKER: X1.25) AND FILL YOUR METER', sprite: 'relicBell' },
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'ONCE PER FIGHT, SURVIVE A LETHAL HIT AT 1 HP', sprite: 'relicPhoenix' },
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR METER PAYOFF ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
   key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR PAIRS PAY X2', sprite: 'relicKey' },
@@ -144,7 +144,7 @@ export const BELT_STEP = 1 * UNIT;
 export const BELT_MAX = 4;
 export const BELL_MULT = 2;
 /** JOKER's jackpots already fill its meter: the Bell's x2 there was 77.5% wins vs 5.8 (EXPERT_PLAYTEST_10). */
-export const BELL_MULT_JOKER = 1.5;
+export const BELL_MULT_JOKER = 1.25;
 export const KEY_MULT = 2;
 /** Golden Hourglass: enemy abilities take this many more turns (was 2: 76% run win, the top relic by 12+ points). */
 export const SANDGLASS_SLOW = 1;
@@ -177,7 +177,9 @@ export const BANDAGE_HEAL = 6 * UNIT;
 export const CROWN_HEAL = UNIT / 2;
 export const ROD_SPECIAL_COST = 4 * UNIT;
 /** LIGHTNING ROD: extra lightning damage per charged bolt you own. */
-export const ROD_PER_CHARGED = 3 * UNIT;
+export const ROD_PER_CHARGED = 1 * UNIT;
+/** ...up to this much (TESLA owns many: +30 each made TESLA 66% WHITE). */
+export const ROD_MAX_BONUS = 1 * UNIT;
 
 /** What each build relic needs you to own before it's offered (playtest ITERATION_4). */
 export type Enabler = 'gold' | 'keen' | 'charged' | 'vamp' | 'wild' | 'charm' | 'meter' | 'thorns';

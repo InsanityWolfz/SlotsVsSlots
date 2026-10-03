@@ -24,6 +24,7 @@ import {
   CROWN_HEAL,
   NEW_RELIC,
   POT,
+  ROD_MAX_BONUS,
   ROD_PER_CHARGED,
   ROD_SPECIAL_COST,
   REFLECT_MIN,
@@ -321,7 +322,7 @@ export class Fight {
       this.cfg.specialCost = ROD_SPECIAL_COST;
       // ...and scales with the build: +ROD_PER_CHARGED per charged bolt you own (a flat 90 was dead: EXPERT_PLAYTEST_10).
       const charged = p.reels.reduce((a, r) => a + r.cells.filter((c) => c.enh === 'charged').length, 0);
-      this.cfg.specialDamage = Math.max(this.cfg.specialDamage, this.cabinet?.rodDamage ?? ROD_SPECIAL_DAMAGE) + ROD_PER_CHARGED * charged;
+      this.cfg.specialDamage = Math.max(this.cfg.specialDamage, this.cabinet?.rodDamage ?? ROD_SPECIAL_DAMAGE) + Math.min(ROD_MAX_BONUS, ROD_PER_CHARGED * charged);
       this.openers.push('rod');
     }
     const e = this.sides.enemy;
@@ -594,8 +595,7 @@ export class Fight {
     // HOT STREAK: a jackpot makes your next spin pay x2 (any other spin ends it).
     if (side === 'player') this.hotStreak = me.relics.has('hotstreak') && score.tier === 'triple';
     // Jackpot Bell: a jackpot fills your meter (TESLA: a full special; BRIAR: the jackpot again into the bank).
-    // (Not JOKER: its jackpots already fill its meter, and the Bell doubled that loop: 77.5% wins vs 5.8.)
-    if (!this.over && score.tier === 'triple' && me.relics.has('bell') && (side !== 'player' || this.special || this.meter) && this.meter?.kind !== 'jackpots') {
+    if (!this.over && score.tier === 'triple' && me.relics.has('bell') && (side !== 'player' || this.special || this.meter)) {
       events.push({ type: 'relic', side, relic: 'bell' });
       if (this.special || side !== 'player') this.gainEnergy(me, this.cfg.specialCost, [], events);
       else if (this.meter!.kind === 'thorns') this.fillMeter(me, score.groups.find((g) => g.matched)?.amount ?? 0, [], events);
