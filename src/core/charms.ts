@@ -20,8 +20,9 @@ export const CHARM_VALUE: Record<Enh, number[]> = {
   keen: [0, 20, 30, 40, 50],
   /** CHARGED: added to the bolt group's BASE (TESLA). Was 5/10/15: a tax TESLA always held. */
   charged: [0, 10, 15, 20, 25],
-  /** VAMP: heal when the sword group hits, ONCE per group however many vamp cells are in it. Was 20/30/40 per cell: the auto-pick. */
-  vamp: [0, 15, 20, 30, 40],
+  /** VAMP: heal when the sword group hits, ONCE per group however many vamp cells are in it (stacked vamp was the auto-pick:
+   * EXPERT_PLAYTEST_10). Values as before (15/20/30 took the whole game's sustain: WHITE 41 -> 39); the stacking was the exploit. */
+  vamp: [0, 20, 30, 40, 50],
   /** LUCKY: % chance the cell lands as a WILD. */
   lucky: [0, 40, 55, 70, 85],
   /** BLAZE: added to TESLA's special for every blaze cell you own. */

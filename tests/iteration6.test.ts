@@ -137,7 +137,7 @@ describe('act 2 gilds', () => {
     });
     f.sides.player.hp = 10;
     f.forceNext('player', ['sword', 'sword', 'sword']);
-    expect(ofType(f.step().events, 'heal')[0]).toMatchObject({ amount: 15, source: 'vamp' });
+    expect(ofType(f.step().events, 'heal')[0]).toMatchObject({ amount: 20, source: 'vamp' });
 
     const g = fight((c) => {
       c.player.strips = reels3({ bolt: 12 });

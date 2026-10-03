@@ -33,7 +33,10 @@ import { BONUS_SYMBOLS, stripCounts } from './strip';
 export const RUN = {
   startHp: 32 * UNIT,
   /** Fraction of max HP restored after every won fight (low, so HP cards matter). */
-  postFightHeal: 0.2,
+  /** 25% (was 20%): with stacked VAMP gone, sustain is more of a baseline and less a charm tax (EXPERT_PLAYTEST_10). */
+  postFightHeal: 0.25,
+  /** Act 3's share of the post-fight heal (it had none). */
+  act3HealMul: 0.33,
   healCard: 8 * UNIT,
   maxHpCard: 4 * UNIT,
   /** A strip can't be thinned below this many cells. */
@@ -888,8 +891,8 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number }> = {
   knight: { house: 2.0, mirror: 0.9, dealer: 0.74, act3: 0.5, gate: 1.15 },
-  midas: { house: 3, mirror: 2.2, dealer: 1.35, act3: 0.2, act1: 0.55, act2: 0.6, gate: 0.8 },
-  thorn: { house: 0.85, mirror: 10.5, dealer: 1.2, act3: 1.1, act2: 0.55, gate: 1.4 },
+  midas: { house: 3, mirror: 1.9, dealer: 1.15, act3: 0.14, act1: 0.55, act2: 0.55, gate: 0.8 },
+  thorn: { house: 0.85, mirror: 10.5, dealer: 1.3, act3: 1.3, act2: 0.6, gate: 1.4 },
   tesla: { house: 0.5, mirror: 2.4, dealer: 1.69, act3: 0.95, gate: 0.85 },
   joker: { house: 2.2, mirror: 3.7, dealer: 1.39, act3: 0.55, act2: 1.8, gate: 0.85 },
 };
@@ -1022,7 +1025,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   }
   // Act 3: THE HOUSE DOESN'T COMP — no patch-up between fights.
   // GLASS CANNON: no healing between fights at all.
-  let hp = p.hp + (run.glass ? 0 : unitsRound(run.player.maxHp * RUN.postFightHeal * (run.stake >= STAKE.halfHeal ? 0.5 : 1) * (run.act >= 3 ? 0 : 1)));
+  let hp = p.hp + (run.glass ? 0 : unitsRound(run.player.maxHp * RUN.postFightHeal * (run.stake >= STAKE.halfHeal ? 0.5 : 1) * (run.act >= 3 ? RUN.act3HealMul : 1)));
   // THE DECK REMEMBERS: the Card Sharp's marks carry into the Dealer fight.
   // The Dealer's own marks don't carry on; the deck resets once it falls.
   run.deckMarks = beaten.boss === 'dealer' ? 0 : Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);

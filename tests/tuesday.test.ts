@@ -110,7 +110,7 @@ describe('signature meters (one per slot machine)', () => {
     });
     f.forceNext('player', ['sword', 'shield', 'shield']);
     const ev = f.step().events;
-    expect(ofType(ev, 'shieldGain').find((e) => e.source === 'chalice')?.amount).toBe(15);
+    expect(ofType(ev, 'shieldGain').find((e) => e.source === 'chalice')?.amount).toBe(20);
   });
 
   it('the Golden Hourglass slows enemy abilities by 1 turn', () => {

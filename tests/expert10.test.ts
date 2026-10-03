@@ -37,7 +37,7 @@ describe('EXPERT_PLAYTEST_10: charms', () => {
     vamp.sides.player.hp -= 100;
     vamp.forceNext('player', ['sword', 'sword', 'sword']);
     const heals = ofType(vamp.step().events, 'heal').filter((e) => e.source === 'vamp');
-    expect(heals.map((h) => h.amount)).toEqual([15]);
+    expect(heals.map((h) => h.amount)).toEqual([20]);
   });
 });
 
