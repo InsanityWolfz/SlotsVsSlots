@@ -4,7 +4,7 @@ import { RELICS } from './relics';
 import { MAX_STAKE } from './stakes';
 import { charmCount, fightNumber, runActs, totalFights, type RunState, bustPot } from './run';
 import { charmLevel } from './charms';
-import { ACHIEVEMENT_XP, CHALLENGES, levelOf, newAchievements, titlesOwned, WEEK_KEY, type AchievementDef, type ChallengeRecord, type MetaStats } from './meta';
+import { ACHIEVEMENT_XP, CHALLENGES, levelOf, TRIMS, trimById, trimsOwned, newAchievements, titlesOwned, WEEK_KEY, type AchievementDef, type ChallengeRecord, type MetaStats } from './meta';
 
 /**
  * The player's profile (saved locally): what they've discovered for the COLLECTION log, and a
@@ -74,6 +74,8 @@ export interface Profile {
   title?: string;
   /** A random id for this player's scores (src/net/identity.ts). */
   pid?: string;
+  /** The slot machine TRIM the player wears (cosmetic). */
+  trim?: string;
 }
 
 export const emptyProfile = (): Profile => ({ found: { relics: [], charms: [] }, runs: [], xp: 0, achievements: {}, challenges: {}, stats: { runs: 0, wins: 0, dailies: 0 } });
@@ -203,6 +205,7 @@ export function sanitizeProfile(raw: unknown): Profile {
   const xp = typeof p.xp === 'number' ? num(p.xp, 0, 1e12) : runs.filter((r) => !r.tutorial).reduce((a, r) => a + runScore(r), 0);
   const name = typeof p.name === 'string' ? cleanName(p.name) : '';
   const title = str(p.title, 24);
+  const trim = typeof p.trim === 'string' && TRIMS.some((t) => t.id === p.trim) ? p.trim : undefined;
   const pid = typeof p.pid === 'string' && /^[A-Za-z0-9:-]{8,64}$/.test(p.pid) ? p.pid : undefined;
   const out: Profile = {
     found: { relics: [...new Set(relicIds(f.relics))], charms: [...new Set(charmIds(f.charms))] },
@@ -215,6 +218,7 @@ export function sanitizeProfile(raw: unknown): Profile {
     ...(name ? { name } : {}),
     ...(title ? { title } : {}),
     ...(pid ? { pid } : {}),
+    ...(trim ? { trim } : {}),
   };
   // Old saves (from before achievements): earn what their stored runs already show, with its XP.
   if (!p.achievements) backfillAchievements(out);
@@ -279,6 +283,8 @@ export interface MetaGain {
   levelAfter: number;
   achievements: AchievementDef[];
   titles: string[];
+  /** Slot machine TRIMS this run's levels unlocked. */
+  trims: string[];
   /** A challenge or weekly: this run beat its best. */
   newBest: boolean;
 }
@@ -310,7 +316,14 @@ export function recordMeta(p: Profile, e: RunEntry, collectionTotal: number, pre
   p.xp += xp;
   const after = levelOf(p.xp).level;
   const titles = titlesOwned(after, p.challenges).filter((t) => !titlesBefore.has(t));
-  return { xp, xpBefore, xpAfter: p.xp, levelBefore: before, levelAfter: after, achievements: got, titles, newBest };
+  const trims = trimsOwned(after).filter((t) => t.level > before).map((t) => t.name);
+  return { xp, xpBefore, xpAfter: p.xp, levelBefore: before, levelAfter: after, achievements: got, titles, trims, newBest };
+}
+
+/** The TRIM the player wears: their pick while their level holds it, else CLASSIC. */
+export function shownTrim(p: Profile) {
+  const t = trimById(p.trim);
+  return levelOf(p.xp).level >= t.level ? t : TRIMS[0];
 }
 
 /** The title the player shows: their pick if they still hold it, else their best level title. */

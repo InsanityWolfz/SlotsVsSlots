@@ -838,7 +838,7 @@ export class RunScreens {
   private resultsCopy: Btn | null = null;
   private openResults(): void {
     const g = this.meta;
-    const worth = g && (g.xp > 0 || g.achievements.length || g.titles.length || this.unlockedNow.length || this.shareLine);
+    const worth = g && (g.xp > 0 || g.achievements.length || g.titles.length || g.trims.length || this.unlockedNow.length || this.shareLine);
     if (!g || !worth) {
       this.results = null;
       return;
@@ -1670,6 +1670,7 @@ export class RunScreens {
     const notes: [string, string][] = [];
     if (this.unlockedNow.length) notes.push([`NEW SLOT MACHINE: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}`, '#7dff7a']);
     for (const t of g.titles) notes.push([`NEW TITLE: ${t}`, '#ffd23f']);
+    for (const t of g.trims) notes.push([`NEW TRIM: ${t} (WEAR IT FROM TROPHIES)`, '#ff9ec8']);
     if (g.newBest) notes.push([run.weekly ? 'NEW WEEKLY BEST!' : 'NEW CHALLENGE BEST!', COLORS.goldLight]);
     for (const [text, color] of notes.slice(0, 3)) {
       drawText(ctx, text, W / 2, y, 2.5, color);

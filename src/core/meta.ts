@@ -106,6 +106,36 @@ export function levelOf(xp: number): { level: number; into: number; need: number
 /** XP an achievement is worth. */
 export const ACHIEVEMENT_XP = 250;
 
+/**
+ * TRIMS: cosmetic frames for your slot machine, unlocked by level (cosmetic only). Colours for the bezel the fight draws
+ * (rim, its dark inner band, the top-left light, the glow, the reel dividers) and a 16x16 crest on top of it.
+ */
+export interface Trim {
+  id: string;
+  name: string;
+  level: number;
+  rim: string;
+  dark: string;
+  light: string;
+  glow: string;
+  crest: string;
+  /** THE HOUSE: the rim cycles through the colours. */
+  shimmer?: boolean;
+}
+export const TRIMS: Trim[] = [
+  { id: 'classic', name: 'CLASSIC', level: 1, rim: '#d9a640', dark: '#8a5a1c', light: '#ffe08a', glow: '#ffcf5a', crest: 'trimClassic' },
+  { id: 'bronze', name: 'BRONZE', level: 3, rim: '#c8763a', dark: '#6e3a1a', light: '#f0a868', glow: '#ff9a4a', crest: 'trimBronze' },
+  { id: 'silver', name: 'SILVER', level: 5, rim: '#b8c4d8', dark: '#4f5b74', light: '#ffffff', glow: '#d3dde8', crest: 'trimSilver' },
+  { id: 'neon', name: 'NEON', level: 8, rim: '#ff4fd8', dark: '#6a1a8a', light: '#7cf4ff', glow: '#ff4fd8', crest: 'trimNeon' },
+  { id: 'velvet', name: 'VELVET', level: 12, rim: '#c8304a', dark: '#561530', light: '#ff8aa0', glow: '#ff4a6a', crest: 'trimVelvet' },
+  { id: 'emerald', name: 'EMERALD', level: 16, rim: '#2ec46a', dark: '#0f4128', light: '#b8f25a', glow: '#4cff8a', crest: 'trimEmerald' },
+  { id: 'diamond', name: 'DIAMOND', level: 20, rim: '#9de8ff', dark: '#2e6aa8', light: '#ffffff', glow: '#b4f4ff', crest: 'trimDiamond' },
+  { id: 'obsidian', name: 'OBSIDIAN', level: 25, rim: '#4c2372', dark: '#140c1c', light: '#c795f0', glow: '#8a4fc4', crest: 'trimObsidian' },
+  { id: 'house', name: 'THE HOUSE', level: 30, rim: '#ffd23f', dark: '#8e1f3a', light: '#fff6c8', glow: '#ff6a5a', crest: 'trimHouse', shimmer: true },
+];
+export const trimById = (id?: string) => TRIMS.find((t) => t.id === id) ?? TRIMS[0];
+export const trimsOwned = (level: number) => TRIMS.filter((t) => level >= t.level);
+
 /** Titles earned by level. */
 export const LEVEL_TITLES: { level: number; title: string }[] = [
   { level: 1, title: 'ROOKIE' },

@@ -1,8 +1,8 @@
 import type { Sounds } from '../audio/sounds';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import type { Enh, RelicId } from '../core/config';
-import { runScore, shownTitle, type Profile, type RunEntry } from '../core/profile';
-import { ACHIEVEMENTS, allTitles, CHALLENGES, challengeOpen, edgeLine, levelOf, titlesOwned, weekKey, weekly } from '../core/meta';
+import { runScore, shownTitle, shownTrim, type Profile, type RunEntry } from '../core/profile';
+import { ACHIEVEMENTS, allTitles, TRIMS, CHALLENGES, challengeOpen, edgeLine, levelOf, titlesOwned, weekKey, weekly } from '../core/meta';
 import { online } from '../net/config';
 import { topScores, type ScoreRow } from '../net/leaderboard';
 import { dailyCabinet, dailyEdge, dailyKey, dailySpent } from '../core/daily';
@@ -71,7 +71,11 @@ const ROWS_PER_PAGE = 7;
 const NAME_Y = 360;
 const CH_Y = 272;
 const CH_ROW = 54;
-const TR_Y = 300;
+const TR_Y = 350;
+/** TROPHIES: the trim picker row. */
+const TRIM_Y = 290;
+const TRIM_X = 90;
+const TRIM_PITCH = 70;
 
 /** Time until the next weekly (Monday 00:00 UTC), e.g. "3D 4H". */
 function untilMonday(now = new Date()): string {
@@ -128,6 +132,7 @@ export class Menus {
       onName: (name: string) => Promise<string>;
       playerName: () => string;
       setTitle: (title: string) => void;
+      setTrim: (id: string) => void;
       onReset: () => void;
       tutorialDone: () => boolean;
       /** SOFT LIGHTNING option. */
@@ -516,6 +521,44 @@ export class Menus {
       this.titleTips.push({ x: x + w / 2, y, w, text: have ? `${t.title}: CLICK TO WEAR IT` : `${t.title}: ${t.how}` });
       x += w + 8;
     }
+    // TRIMS: your slot machine's frame (cosmetic), one per level milestone.
+    const lvl = levelOf(p.xp).level;
+    const worn = shownTrim(p).id;
+    TRIMS.forEach((t, i) => {
+      const tx = TRIM_X + i * TRIM_PITCH;
+      const have = lvl >= t.level;
+      const b = this.btn('', tx, TRIM_Y, 52, 52, () => {
+        if (!have) return;
+        this.cb.setTrim(t.id);
+        this.trophyButtons();
+      });
+      b.enabled = have;
+      b.toggled = t.id === worn;
+      this.titleTips.push({ x: tx, y: TRIM_Y, w: 52, text: have ? `${t.name} TRIM: CLICK TO PUT IT ON YOUR SLOT MACHINE` : `${t.name} TRIM: REACH LEVEL ${t.level}` });
+    });
+  }
+
+  /** TROPHIES: the trim swatches (drawn over their hit boxes), the worn one outlined. */
+  private drawTrimRow(ctx: CanvasRenderingContext2D): void {
+    const p = this.profile();
+    const worn = shownTrim(p).id;
+    const lvl = levelOf(p.xp).level;
+    TRIMS.forEach((t, i) => {
+      const tx = TRIM_X + i * TRIM_PITCH;
+      const have = lvl >= t.level;
+      // A swatch of the trim's rim under its crest (greyed until earned).
+      if (t.id === worn) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(tx - 24, TRIM_Y - 24, 48, 48);
+      }
+      ctx.fillStyle = have ? t.rim : '#2a2238';
+      ctx.fillRect(tx - 20, TRIM_Y - 20, 40, 40);
+      ctx.fillStyle = have ? t.dark : '#1a1426';
+      ctx.fillRect(tx - 16, TRIM_Y - 16, 32, 32);
+      if (hasSprite(t.crest)) drawSprite(ctx, artId(t.crest), tx, TRIM_Y, 2, have ? {} : { variant: 'black', alpha: 0.6 });
+      if (!have) drawText(ctx, `LV ${t.level}`, tx, TRIM_Y + 32, 1, COLORS.textDim);
+      else drawText(ctx, t.name, tx, TRIM_Y + 32, 1, COLORS.goldLight);
+    });
   }
 
   private drawTrophies(ctx: CanvasRenderingContext2D): void {
@@ -523,6 +566,8 @@ export class Menus {
     drawText(ctx, 'TROPHIES', W / 2, 44, 5, COLORS.goldLight);
     this.badge(ctx, W / 2, 108);
     drawText(ctx, 'TITLES', 60, 160, 1.5, COLORS.text, { align: 'left' });
+    drawText(ctx, 'TRIMS', 60, TRIM_Y - 34, 1.5, COLORS.text, { align: 'left' });
+    drawText(ctx, 'YOUR SLOT MACHINE\'S FRAME. ONE MORE EVERY FEW LEVELS', TRIM_X + TRIMS.length * TRIM_PITCH - 20, TRIM_Y - 34, 1.25, COLORS.textDim, { align: 'right' });
     this.trophyTip = '';
     for (const t of this.titleTips) if (Math.abs(this.mouse.x - t.x) < t.w / 2 && Math.abs(this.mouse.y - t.y) < 15) this.trophyTip = t.text;
     const got = ACHIEVEMENTS.filter((a) => p.achievements[a.id]).length;
@@ -631,6 +676,7 @@ export class Menus {
     else if (this.mode === 'challenges') this.drawChallenges(ctx, t);
     else if (this.mode === 'trophies') this.drawTrophies(ctx);
     for (const b of this.buttons) b.draw(ctx, t);
+    if (this.mode === 'trophies') this.drawTrimRow(ctx);
     if (this.mode === 'main') {
       // Icons on the menu buttons (over them, scaled with their press).
       const icons = this.mainIcons;

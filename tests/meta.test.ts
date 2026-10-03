@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
 import { ACHIEVEMENTS, applyChallenge, applyWeekly, challengeById, challengeOpen, CHALLENGES, levelOf, weekKey, weekly, xpForLevel } from '../src/core/meta';
-import { cleanName, nameBlocked, emptyProfile, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type RunEntry } from '../src/core/profile';
+import { cleanName, nameBlocked, shownTrim, emptyProfile, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type RunEntry } from '../src/core/profile';
 import { createRun, fightConfig, fixedRun, runActs } from '../src/core/run';
 
 const entry = (over: Partial<RunEntry> = {}): RunEntry => ({
@@ -157,5 +157,20 @@ describe('meta: EXPERT_PLAYTEST_9 rules', () => {
     expect(nameBlocked('N-A-Z-I')).toBe(true);
     expect(nameBlocked('GRAPE')).toBe(false);
     expect(nameBlocked('PEACOCK')).toBe(false);
+  });
+});
+
+describe('meta: TRIMS (cosmetic)', () => {
+  it('unlock by level; a run that levels up reports them; you only wear what you hold', () => {
+    const p = emptyProfile();
+    p.trim = 'diamond';
+    expect(shownTrim(p).id).toBe('classic');
+    p.xp = xpForLevel(5) - 100;
+    const g = recordMeta(p, entry({ won: true, fights: 12 }), 40);
+    expect(g.levelAfter).toBeGreaterThanOrEqual(5);
+    expect(g.trims).toContain('SILVER');
+    p.trim = 'silver';
+    expect(shownTrim(p).id).toBe('silver');
+    expect(sanitizeProfile(JSON.parse(JSON.stringify({ ...p, trim: 'nope' }))).trim).toBeUndefined();
   });
 });

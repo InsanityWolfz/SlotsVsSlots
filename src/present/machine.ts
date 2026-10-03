@@ -5,7 +5,8 @@ import type { Clock } from './clock';
 import { sineInOut } from './ease';
 import { COLORS, MACHINE_H, MACHINE_W, PITCH, REELS, reelWindow } from './layout';
 import { ReelView, SPIN, type CellView } from './reel';
-import { drawSprite, artId, type SpriteId } from '../render/sprites';
+import { drawSprite, artId, hasSprite, type SpriteId } from '../render/sprites';
+import type { Trim } from '../core/meta';
 import { drawText } from '../render/text';
 
 /** Numbers on a payline symbol: its value bottom-left (white), its charm's tag top-right (coloured). */
@@ -24,6 +25,8 @@ export interface SpinCallbacks {
 }
 
 export class MachineView {
+  /** The player's slot machine TRIM (cosmetic frame colours + crest); null = the classic gold. */
+  trim: Trim | null = null;
   reels: ReelView[];
   /** Knockback offset in px (springs back). */
   kx = 0;
@@ -190,8 +193,8 @@ export class MachineView {
     if (this.wash.t >= 0) this.drawWash(ctx);
     ctx.restore();
 
-    // Thin gold dividers between reels.
-    ctx.fillStyle = COLORS.gold;
+    // Thin dividers between reels (gold, or the trim's rim).
+    ctx.fillStyle = this.trim ? this.rimColor(time) : COLORS.gold;
     for (let i = 1; i < REELS; i++) ctx.fillRect(PITCH * i - 1, 4, 2, MACHINE_H - 8);
 
     this.drawStatuses(ctx, time);
@@ -215,13 +218,19 @@ export class MachineView {
     ctx.restore();
   }
 
+  /** The trim's rim colour (THE HOUSE shimmers through the hues). */
+  private rimColor(time: number): string {
+    const t = this.trim!;
+    return t.shimmer ? `hsl(${Math.floor((time * 60) % 360)}, 85%, 62%)` : t.rim;
+  }
+
   private drawBezel(ctx: CanvasRenderingContext2D, time: number): void {
     const pad = 14;
     // Pulsing rim glow — stronger on the active machine (juice §9).
     const pulse = 0.5 + 0.5 * Math.sin(time * 2.2 + (this.side === 'enemy' ? 1.3 : 0));
     const glow = 0.15 + 0.2 * pulse + 0.45 * this.active;
     ctx.save();
-    ctx.shadowColor = this.side === 'player' ? '#ffcf5a' : '#9dff6a';
+    ctx.shadowColor = this.side === 'player' ? (this.trim?.glow ?? '#ffcf5a') : '#9dff6a';
     ctx.shadowBlur = 18 + 22 * this.active;
     ctx.globalAlpha = glow;
     ctx.fillStyle = ctx.shadowColor;
@@ -230,14 +239,15 @@ export class MachineView {
 
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(-pad - 4, -pad - 4, MACHINE_W + pad * 2 + 8, MACHINE_H + pad * 2 + 8);
-    ctx.fillStyle = COLORS.gold;
+    const t = this.trim;
+    ctx.fillStyle = t ? this.rimColor(time) : COLORS.gold;
     ctx.fillRect(-pad, -pad, MACHINE_W + pad * 2, MACHINE_H + pad * 2);
-    ctx.fillStyle = '#8a5a1c';
+    ctx.fillStyle = t?.dark ?? '#8a5a1c';
     ctx.fillRect(-pad + 4, -pad + 4, MACHINE_W + pad * 2 - 8, MACHINE_H + pad * 2 - 8);
     ctx.fillStyle = COLORS.panel;
     ctx.fillRect(-pad + 8, -pad + 8, MACHINE_W + pad * 2 - 16, MACHINE_H + pad * 2 - 16);
     // Bezel highlight (top-left light).
-    ctx.fillStyle = COLORS.goldLight;
+    ctx.fillStyle = t?.light ?? COLORS.goldLight;
     ctx.fillRect(-pad, -pad, MACHINE_W + pad * 2, 2);
     ctx.fillRect(-pad, -pad, 2, MACHINE_H + pad * 2);
     // Payline arrow markers.
@@ -263,6 +273,8 @@ export class MachineView {
       [MACHINE_W + pad - 7, MACHINE_H + pad - 7],
     ])
       ctx.fillRect(x, y, 4, 4);
+    // The trim's crest, centred on the top edge.
+    if (t && hasSprite(t.crest)) drawSprite(ctx, artId(t.crest), MACHINE_W / 2, -pad - 2, 2);
   }
 
   /** Jagged cracks across the glass once the Mirror is at half HP. */

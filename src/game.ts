@@ -57,7 +57,7 @@ import { Recap } from './ui/recap';
 import { RunScreens, wrap } from './ui/runScreens';
 import { Coach, TUTORIAL } from './ui/coach';
 import { collectionTotal, heroSprite, Menus } from './ui/menus';
-import { cleanName, nameBlocked, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type MetaGain, type Profile, type RunEntry } from './core/profile';
+import { cleanName, nameBlocked, shownTrim, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type MetaGain, type Profile, type RunEntry } from './core/profile';
 import { applyChallenge, applyWeekly, challengeById, challengeOpen, CHALLENGES, levelOf, weekKey, weekly } from './core/meta';
 import { needsName, playerId, playerName } from './net/identity';
 import { claimName, submitScore } from './net/leaderboard';
@@ -220,6 +220,10 @@ export class Game {
       playerName: () => playerName(this.profile),
       setTitle: (title) => {
         this.profile.title = title;
+        this.saveProfile();
+      },
+      setTrim: (id) => {
+        this.profile.trim = id;
         this.saveProfile();
       },
       onReset: () => this.resetSave(),
@@ -834,6 +838,9 @@ export class Game {
     clock.speed = clockSpeed(this.prefs.speed);
     const sides: SideId[] = ['player', 'enemy'];
     const machines = Object.fromEntries(sides.map((s) => [s, new MachineView(s, this.fight.sides[s], this.sounds)])) as Stage['machines'];
+    // The player's TRIM (cosmetic; CLASSIC draws the stock gold).
+    const trim = shownTrim(this.profile);
+    machines.player.trim = trim.id === 'classic' ? null : trim;
     const huds = Object.fromEntries(
       sides.map((s) => {
         const c = this.fight.sides[s];
