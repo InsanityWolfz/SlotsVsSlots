@@ -20,18 +20,18 @@ export const RELICS: Record<RelicId, RelicDef> = {
   clover: { id: 'clover', name: 'LUCKY CLOVER', text: '30% CHANCE A NEAR-MISS BECOMES A JACKPOT', sprite: 'relicClover' },
   battery: { id: 'battery', name: 'BATTERY', text: 'YOUR METER STARTS EACH FIGHT MORE THAN HALF FULL', sprite: 'relicBattery' },
   mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS PAY AS A PAIR', sprite: 'relicMirror' },
-  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFF HEALS 30 MORE (TESLA: 15, BRIAR: 10)', sprite: 'relicFang' },
+  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFF HEALS 30 MORE (TESLA AND BRIAR: 10)', sprite: 'relicFang' },
   bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 60 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
   crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR PAIRS HEAL 5 (AND STEAL HALF THE HOUSE POT)', sprite: 'relicCrown' },
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
   midas: { id: 'midas', name: 'GOLD LEAF', text: 'GOLD ON A CELL THAT PAYS NOTHING JOINS YOUR BIGGEST GROUP', sprite: 'relicGoldleaf', charm: 'gold', retired: true },
-  rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'YOUR CHARGED BOLTS MAKE YOUR LIGHTNING DEAL 90', sprite: 'relicRod', machine: 'tesla' },
+  rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'WITH CHARGED BOLTS: CHEAPER LIGHTNING, +30 PER CHARGED BOLT YOU OWN', sprite: 'relicRod', machine: 'tesla' },
   cactus: { id: 'cactus', name: 'CACTUS', text: 'THORNS YOU LAND ALSO SHIELD YOU FOR 30% OF THEM', sprite: 'relicCactus', machine: 'thorn' },
   prism: { id: 'prism', name: 'PRISM', text: 'A MATCH THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
   hone: { id: 'hone', name: 'EXECUTIONER', text: 'KEEN SWORDS PAY X3 WHEN THE ENEMY IS UNDER HALF HP', sprite: 'relicExecutioner', charm: 'keen' },
   // Legendary (act 2): big, build-bending effects.
   ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'EVERY CHARM IS ONE LEVEL HIGHER (EVEN PAST LEVEL 3)', sprite: 'relicTicket' },
-  bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 (JOKER: X1.5) AND FILL YOUR METER', sprite: 'relicBell' },
+  bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND FILL YOUR METER (JOKER: X1.5, NO FILL)', sprite: 'relicBell' },
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'ONCE PER FIGHT, SURVIVE A LETHAL HIT AT 1 HP', sprite: 'relicPhoenix' },
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR METER PAYOFF ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
   key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR PAIRS PAY X2', sprite: 'relicKey' },
@@ -61,7 +61,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   hotstreak: { id: 'hotstreak', name: 'HOT STREAK', text: 'AFTER A JACKPOT, YOUR NEXT SPIN PAYS X2', sprite: 'relicHotStreak' },
   belt: { id: 'belt', name: 'WHETSTONE BELT', text: 'EACH HIT YOUR SHIELD BLOCKS: EVERY SWORD +10 ON YOUR NEXT SWORD GROUP (MAX +40)', sprite: 'relicBelt', machine: 'knight' },
   toll: { id: 'toll', name: 'TOLL BOOTH', text: 'AFTER EACH WIN: +1 CHIP FOR EVERY LIEN THE REPO MAN HOLDS', sprite: 'relicToll' },
-  bash: { id: 'bash', name: 'SHIELD BASH', text: 'YOUR LEFTOVER SHIELD HITS BACK FOR HALF EACH TURN', sprite: 'relicBash' },
+  bash: { id: 'bash', name: 'SHIELD BASH', text: 'YOUR LEFTOVER SHIELD HITS BACK FOR ITS FULL AMOUNT EACH TURN', sprite: 'relicBash' },
   // Side bets (EXPERT_PLAYTEST_6 E11): relics that change which bet you want.
   loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY 20% MORE', sprite: 'relicLoaded' },
   marker: { id: 'marker', name: 'MARKER', text: 'YOUR FIRST BUSTED SIDE BET EACH ACT: UP TO 5 CHIPS BACK (10 WITH HIGH LIMIT)', sprite: 'relicMarker' },
@@ -120,7 +120,7 @@ export const NEW_RELIC = {
   piggyPer: 5,
   piggyMax: 4,
   trophyHp: UNIT,
-  bashShare: 0.5,
+  bashShare: 1,
 };
 
 /**
@@ -169,13 +169,15 @@ export const MIDAS_TOUCH_CAP = 3;
 export const CACTUS_SHARE = 0.3;
 export const FANG_HEAL = 3 * UNIT;
 /** TESLA's lightning pays off often: a common heal of 30 there was 36.7% wins vs 9.2 (EXPERT_PLAYTEST_10). */
-export const FANG_TESLA_HEAL = 1.5 * UNIT;
+export const FANG_TESLA_HEAL = 1 * UNIT;
 /** BRIAR's thorns fire almost every enemy turn, so its Fang heal is smaller (35% win with 30, probe 2026-09-27). */
 export const FANG_THORN_HEAL = 1 * UNIT;
 export const BANDAGE_HEAL = 6 * UNIT;
 /** HIGH ROLLER: every double you land heals this much. */
 export const CROWN_HEAL = UNIT / 2;
 export const ROD_SPECIAL_COST = 4 * UNIT;
+/** LIGHTNING ROD: extra lightning damage per charged bolt you own. */
+export const ROD_PER_CHARGED = 3 * UNIT;
 
 /** What each build relic needs you to own before it's offered (playtest ITERATION_4). */
 export type Enabler = 'gold' | 'keen' | 'charged' | 'vamp' | 'wild' | 'charm' | 'meter' | 'thorns';

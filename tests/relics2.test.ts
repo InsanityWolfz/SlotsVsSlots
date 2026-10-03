@@ -57,7 +57,7 @@ describe('slot machine relics', () => {
     expect(relicFits(createRun(base, 4, 'tesla'), 'overcharge')).toBe(true);
   });
 
-  it('CHAINMAIL heals 10% of leftover shield; SHIELD BASH hits for half of it', () => {
+  it('CHAINMAIL heals 10% of leftover shield; SHIELD BASH hits for all of it', () => {
     const f = on('knight', ['chainmail', 'bash']);
     f.sides.player.hp = 100;
     f.step();
@@ -65,7 +65,7 @@ describe('slot machine relics', () => {
     f.sides.player.shield = 100;
     const ev = f.step().events;
     expect(ofType(ev, 'heal').find((h) => h.source === 'chainmail')?.amount).toBe(10);
-    expect(playerAttack(ev)[0].amount).toBe(50);
+    expect(playerAttack(ev)[0].amount).toBe(100); // full share (was half)
   });
 
   it('ROSE HIP: a thorn volley heals 10% of what it fired', () => {

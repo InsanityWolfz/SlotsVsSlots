@@ -891,7 +891,7 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
  */
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number }> = {
   knight: { house: 2.0, mirror: 0.9, dealer: 0.74, act3: 0.5, gate: 1.15 },
-  midas: { house: 3, mirror: 1.9, dealer: 1.15, act3: 0.14, act1: 0.55, act2: 0.55, gate: 0.8 },
+  midas: { house: 3, mirror: 1.9, dealer: 1.05, act3: 0.12, act1: 0.55, act2: 0.55, gate: 0.8 },
   thorn: { house: 0.85, mirror: 10.5, dealer: 1.3, act3: 1.3, act2: 0.6, gate: 1.4 },
   tesla: { house: 0.5, mirror: 2.4, dealer: 1.69, act3: 0.95, gate: 0.85 },
   joker: { house: 2.2, mirror: 3.7, dealer: 1.39, act3: 0.55, act2: 1.8, gate: 0.85 },
