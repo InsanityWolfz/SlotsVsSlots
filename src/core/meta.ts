@@ -94,20 +94,21 @@ const sameSetup = (cab: CabinetId, w: WeeklySetup, c: ChallengeDef) => c.cabinet
 export function weekly(key: string): { cabinet: CabinetId; edges: EdgeId[]; chips?: number; seed: number } {
   const seed = dailySeed(`weekly:${key}`);
   const m0 = dailySeed(`weekly:${key}:machine`) % CABINET_ORDER.length;
-  const e0 = dailySeed(`weekly:${key}:edge`) % WEEKLY_SETUPS.length;
-  // The week's setup, else the next one along, else the next machine along: never one that reads like a challenge.
+  const pick = dailySeed(`weekly:${key}:edge`);
+  const e0 = pick % WEEKLY_SETUPS.length;
+  // Any setup for the week's machine that doesn't read like a challenge, picked evenly (the next one along made two
+  // setups 43% of weeks: EXPERT_PLAYTEST_12 D2); none left, the next machine along.
   let cabinet = CABINET_ORDER[m0];
   let w = WEEKLY_SETUPS[e0];
-  search: for (let m = 0; m < CABINET_ORDER.length; m++)
-    for (let k = 0; k < WEEKLY_SETUPS.length; k++) {
-      const cab = CABINET_ORDER[(m0 + m) % CABINET_ORDER.length];
-      const setup = WEEKLY_SETUPS[(e0 + k) % WEEKLY_SETUPS.length];
-      if (!CHALLENGES.some((c) => sameSetup(cab, setup, c))) {
-        cabinet = cab;
-        w = setup;
-        break search;
-      }
+  for (let m = 0; m < CABINET_ORDER.length; m++) {
+    const cab = CABINET_ORDER[(m0 + m) % CABINET_ORDER.length];
+    const allowed = WEEKLY_SETUPS.filter((setup) => !CHALLENGES.some((c) => sameSetup(cab, setup, c)));
+    if (allowed.length) {
+      cabinet = cab;
+      w = allowed[pick % allowed.length];
+      break;
     }
+  }
   return { cabinet, edges: [...w.edges], ...(w.chips != null ? { chips: w.chips } : {}), seed };
 }
 

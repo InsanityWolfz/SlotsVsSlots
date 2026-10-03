@@ -70,15 +70,17 @@ export const RUN = {
 };
 
 /** Charms by act (act 2 unlocks LUCKY and BLAZE). CHARGED and BLAZE feed the lightning: TESLA only. */
-export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'spiked'];
+export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'spiked', 'thorny'];
 export const ACT2_GILDS: Enh[] = ['lucky', 'blaze'];
 const TESLA_ONLY: ReadonlySet<Enh> = new Set(['charged', 'blaze']);
 /** BULWARK (id 'spiked') is KNIGHT's own charm. */
 const KNIGHT_ONLY: ReadonlySet<Enh> = new Set(['spiked']);
+/** THORNY is BRIAR's own charm. */
+const BRIAR_ONLY: ReadonlySet<Enh> = new Set(['thorny']);
 /** LUCKY is a later-machine charm (a wild barely changes KNIGHT's or MIDAS's two-symbol line). */
 export const LUCKY_MACHINES: ReadonlySet<CabinetId> = new Set(['thorn', 'tesla', 'joker']);
 export const gildsFor = (run: RunState): Enh[] =>
-  [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter((e) => (run.cabinet === 'tesla' || !TESLA_ONLY.has(e)) && (run.cabinet === 'knight' || !KNIGHT_ONLY.has(e)) && (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)));
+  [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter((e) => (run.cabinet === 'tesla' || !TESLA_ONLY.has(e)) && (run.cabinet === 'knight' || !KNIGHT_ONLY.has(e)) && (run.cabinet === 'thorn' || !BRIAR_ONLY.has(e)) && (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)));
 /** Symbols this machine's swap cards move between. */
 export const swappable = (run: RunState): SymbolId[] => CABINETS[run.cabinet].symbols;
 /** The symbol +2 / rock-swap cards give (the signature symbol, or swords for KNIGHT and JAX). */
@@ -1688,7 +1690,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'twinReel':
       return { title: 'TWIN REEL', rule: 'REEL 3 BECOMES AN EXACT COPY OF REEL 1, CHARMS INCLUDED', cost: "REEL 3'S OLD CELLS ARE GONE" };
     case 'sweepUp':
-      return { title: 'SWEEP UP', rule: run.player.hp >= run.player.maxHp ? `SMASH EVERY ROCK ON YOUR REELS. +${BIG.sweepHeal / 2} MAX HP` : `SMASH EVERY ROCK ON YOUR REELS AND HEAL ${BIG.sweepHeal}`, cost: '' };
+      return { title: 'SWEEP UP', rule: run.player.hp >= run.player.maxHp ? `+${BIG.sweepHeal / 2} MAX HP AND SMASH EVERY ROCK ON YOUR REELS` : `HEAL ${BIG.sweepHeal} AND SMASH EVERY ROCK ON YOUR REELS`, cost: '' };
     case 'glassCannon':
       return { title: 'GLASS CANNON', rule: `EVERY PAYING GROUP PAYS X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS, BANDAGE AND CASHIER INCLUDED' };
     case 'bloodPact':
@@ -1729,10 +1731,12 @@ export function rollChoices(run: RunState, set: number, rng: Rng): BigChoice[] {
   });
 }
 
-/** A boss fell: roll one set you haven't seen this run (THE MELT needs a charm to melt). */
-function offerChoices(run: RunState, rng: Rng): void {
+/** A boss fell: roll one set you haven't seen this run (THE MELT needs a charm to melt; THE FORGE a symbol to level). */
+export function offerChoices(run: RunState, rng: Rng): void {
   const used = run.choiceSets ?? [];
-  const ok = [0, 1, 2, 3].filter((i) => !used.includes(i) && (i !== 1 || run.player.gilded.length > 0));
+  // Every symbol at the cap: MASTERWORK and ARMS RACE would be dead cards (EXPERT_PLAYTEST_12 D5).
+  const forgeDead = levelSyms(run).every((s) => symLevel(run.player.levels, s) >= LEVEL_CAP);
+  const ok = [0, 1, 2, 3].filter((i) => !used.includes(i) && (i !== 1 || run.player.gilded.length > 0) && (i !== 0 || !forgeDead));
   if (!ok.length) return;
   const set = rng.pick(ok);
   run.choiceSets = [...used, set];

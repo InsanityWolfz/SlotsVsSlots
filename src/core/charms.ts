@@ -30,6 +30,10 @@ export const CHARM_VALUE: Record<Enh, number[]> = {
   /** BULWARK (id 'spiked'): a shield cell with it also deals this % of its share of the group as damage. Was 50/75/100: KNIGHT's own
    * charm cost KNIGHT runs. */
   spiked: [0, 100, 125, 150, 175],
+  /** THORNY (BRIAR only): banked into your thorns when it lands on the payline. BRIAR's charms were a trap: a no-charms
+   * drafter won +9 WHITE (EXPERT_PLAYTEST_12 D1). 20/30/40 measured 42.1/14.6 for BRIAR: a trap of its own (the round's
+   * prototype read LV4 from the start). */
+  thorny: [0, 50, 60, 70, 80],
 };
 
 /** Which symbols each charm can go on. */
@@ -41,6 +45,7 @@ export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
   lucky: ['sword', 'shield', 'bolt'],
   blaze: ['bolt'],
   spiked: ['shield'],
+  thorny: ['thorn'],
 };
 
 /** One charm's rule at a level, as plain card text (never an expected value). */
@@ -61,6 +66,8 @@ export function charmRuleText(enh: Enh, lvl: number): string {
       return `YOUR SPECIAL DEALS +${v}`;
     case 'spiked':
       return `ALSO HITS FOR ${v}% OF ITS SHIELD`;
+    case 'thorny':
+      return `+${v} TO YOUR THORNS WHEN IT LANDS`;
   }
 }
 
@@ -82,6 +89,8 @@ export function charmShortText(enh: Enh, lvl: number): string {
       return `SPECIAL +${v}`;
     case 'spiked':
       return `HITS FOR ${v}% OF ITS SHIELD`;
+    case 'thorny':
+      return `+${v} THORNS WHEN IT LANDS`;
   }
 }
 
@@ -101,6 +110,7 @@ export const CHARM_COLOR: Record<Enh, string> = {
   vamp: '#ff5a6a',
   lucky: '#7dff7a',
   blaze: '#ff9a3a',
+  thorny: '#ff9ec8',
   spiked: '#c9d0dc',
 };
 

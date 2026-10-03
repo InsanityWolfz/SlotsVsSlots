@@ -557,6 +557,7 @@ export class Fight {
     for (const group of score.groups) {
       if (allIn && (group.symbol === 'sword' || group.symbol === 'seven')) continue;
       this.resolveGroup(me, group, score, events);
+      if (!this.over && side === 'player') this.thornyFill(me, group, events);
       if (this.over) break;
     }
     if (allIn && !this.over) {
@@ -1117,6 +1118,13 @@ export class Fight {
     }
     void score;
     events.push({ type: 'fizzle', side: me.side, reels: g.reels, symbol: g.symbol });
+  }
+
+  /** THORNY (BRIAR): each thorny cell on the payline banks its value into your thorns (EXPERT_PLAYTEST_12 D1). */
+  private thornyFill(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
+    if (this.meter?.kind !== 'thorns') return;
+    const n = g.reels.filter((r) => this.enhsAt(me, r).includes('thorny')).length;
+    if (n) this.fillMeter(me, n * charmValue('thorny', this.charmLvl(me, 'thorny')), g.reels, events);
   }
 
   /** VAMP: vamp cells in a group that pays heal you (swords; any symbol with VAMPIRE'S KISS or GRAFT). */

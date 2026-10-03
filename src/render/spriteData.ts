@@ -120,7 +120,7 @@ export type SpriteId =
   | 'enemyMimic' | 'enemyMirror'                   // (enemyMirror = act 2 final boss)
   | 'bomb' | 'hex' | 'fangs' | 'mimicSym'          // act 2 enemy reel symbols, 16x16
   | 'bombOverlay' | 'hexOverlay' | 'tier2Frame'    // act 2 cell overlays / tier II gild marker, 16x16 (mostly transparent)
-  | 'enhVamp' | 'enhLucky' | 'enhBlaze'            // act 2 upgrade overlays, 16x16 (mostly transparent)
+  | 'enhVamp' | 'enhLucky' | 'enhBlaze' | 'enhThorny'         // act 2 upgrade overlays, 16x16 (mostly transparent)
   | 'relicTicket' | 'relicBell' | 'relicPhoenix'   // legendary relics, 16x16
   | 'relicOvercharge' | 'relicKey' | 'relicSandglass'
   | 'icoBomb' | 'icoHex' | 'icoDrain' | 'icoGulp' | 'icoReflect' // act 2 intent icons, 8x8
@@ -2464,6 +2464,24 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'oOOKoOOoKOOoKOOo',
     'OYYoOWYOoYYOoYWO',
     'OYYOOYYOOYWOOYYO',
+  ],
+  enhThorny: [
+    '.KK.............',
+    'KRMK............',
+    'KrRmK...........',
+    'KmKK............',
+    'MdK.............',
+    'KKdK............',
+    'KmKMK...........',
+    'KdKK............',
+    'MKdK............',
+    'KmKK............',
+    'KdKMK...........',
+    '.KdK..K...K.....',
+    '.KmK.KMK.KMKK.KK',
+    'KMKdKKdKKdKKdKmM',
+    '.K.KdmKdmKdmKdmd',
+    '....KMKKKMKKKMKK',
   ],
   relicTicket: [
     '................',

@@ -20,7 +20,7 @@ export interface TableRow {
 const ORDER: string[] = ['sword', 'shield', 'bolt', 'goldbar', 'thorn', 'wild', 'rock', 'slime', 'card', 'stolen', 'bombs'];
 const rank = (r: TableRow) => {
   const i = ORDER.indexOf(r.symbol);
-  return (i < 0 ? 50 : i) * 10 + (r.enh ? 1 + ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'spiked'].indexOf(r.enh) : 0);
+  return (i < 0 ? 50 : i) * 10 + (r.enh ? 1 + ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'spiked', 'thorny'].indexOf(r.enh) : 0);
 };
 
 /** Rows for the run's machine: plain cells, then charmed cells, per symbol. */
@@ -144,7 +144,7 @@ export function drawReelTable(ctx: CanvasRenderingContext2D, x: number, y: numbe
       drawSprite(ctx, b.symbol as SpriteId, lx + 6, ly, 0.75);
       if (b.enh) drawSprite(ctx, ENH_SPRITE[b.enh], lx + 6, ly, 0.75);
       const max = b.level >= cap;
-      drawText(ctx, max ? 'MAX' : `LV${b.level}`, lx + 14, ly, 1, max ? '#ff9a3a' : b.enh ? CHARM_COLOR[b.enh] : COLORS.goldLight, { align: 'left' });
+      drawText(ctx, max ? 'MAX' : `LV${b.level}`, lx + 14, ly, 1.25, max ? '#ff9a3a' : b.enh ? CHARM_COLOR[b.enh] : COLORS.goldLight, { align: 'left' });
       lx += BADGE_W;
     }
     if (badges.length) maxH += 20;
@@ -152,7 +152,7 @@ export function drawReelTable(ctx: CanvasRenderingContext2D, x: number, y: numbe
   return top - y + maxH;
 }
 
-const BADGE_W = 46;
+const BADGE_W = 52;
 
 /** The level badges under a table: symbols above level 1, then each charm type on the reels. */
 function levelBadges(levels: Levels, cols: TableRow[][]): { symbol: SymbolId; enh?: Enh; level: number }[] {

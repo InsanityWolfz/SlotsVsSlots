@@ -57,6 +57,9 @@ import { Button } from './ui/button';
 import { Recap } from './ui/recap';
 import { RunScreens } from './ui/runScreens';
 import { drawRelicTip } from './ui/relicTip';
+
+/** The fight HUD's relic tooltip starts under the player panel (EXPERT_PLAYTEST_12). */
+const RELIC_TIP_TOP = 232;
 import { Coach, TUTORIAL } from './ui/coach';
 import { collectionTotal, heroSprite, Menus } from './ui/menus';
 import { cleanName, nameBlocked, shownTrim, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type MetaGain, type Profile, type RunEntry } from './core/profile';
@@ -1234,8 +1237,8 @@ export class Game {
       return Math.abs(this.mouse.x - x) < 19 && Math.abs(this.mouse.y - y) < 19;
     });
     if (i >= 0) {
-      const { x, y } = relicSlot(i);
-      drawRelicTip(ctx, relics[i], x + 186, y - 19, y + 19, this.run?.cabinet);
+      // Below your machine's panel, over the YOUR REELS box: beside the icon it covered your HP bar.
+      drawRelicTip(ctx, relics[i], RELIC_X + 168, RELIC_Y - 19, Math.max(relicSlot(relics.length - 1).y + 19, RELIC_TIP_TOP), this.run?.cabinet);
       return;
     }
     // The relic the Mirror copied from you (GREEN), under its pot.

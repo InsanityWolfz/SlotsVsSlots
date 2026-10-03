@@ -234,3 +234,10 @@ Measured stacked on the real code via runtime patches (`e12_patch.ts`). Build in
   the REPO MAN taking a THORNY cell (liens are generic, so it should just work: add a test).
 
 **Not now:** TRICK / INGOT, KEEN (8.7, the next charm to look at), pacing beyond BRIAR.
+
+## AGREED PLAN (2026-10-03), as built
+Built: #1 THORNY, #3 THE FORGE skip, #4 weekly, #5 SWEEP UP text, #7 badges + HUD tip. #6 (the bot's SWEEP UP value) is the next step.
+**Changed in the build:** the prototype's charm read **LV4 (+50) from the start**. `Object.prototype.sig = 8` also answered
+`levels.charm.sig`, so it was never offered a level card. At the real +20/30/40, BRIAR measured 42.1/14.6 with
+mirror 12. Shipped at **+50/60/70** (80 with the Ticket), with **BRIAR mirror kept at 10.5** (#2 dropped).
+Numbers are in STATE iteration 69.

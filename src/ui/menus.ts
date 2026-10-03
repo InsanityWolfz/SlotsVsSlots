@@ -37,9 +37,10 @@ export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
   vamp: { name: 'VAMP', text: `SWORDS. ${charmRuleText('vamp', 1)}.` },
   lucky: { name: 'LUCKY', text: `ACT 2. ${charmRuleText('lucky', 1)}.` },
   blaze: { name: 'BLAZE', text: `ACT 2. TESLA'S BOLTS. ${charmRuleText('blaze', 1)}.` },
+  thorny: { name: 'THORNY', text: `BRIAR'S THORNS. ${charmRuleText('thorny', 1)}.` },
 };
 /** Charms in the COLLECTION (SPIKED retired). */
-const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'spiked', 'charged', 'lucky', 'blaze'];
+const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'spiked', 'charged', 'lucky', 'blaze', 'thorny'];
 
 const TIER_COLOR = { common: '#c9c9d9', uncommon: '#5ad8e8', legendary: '#ffd23f', other: '#9a8fb0' };
 

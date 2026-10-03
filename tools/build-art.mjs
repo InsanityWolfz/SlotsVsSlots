@@ -2549,6 +2549,22 @@ S.mimicSym = lit(16, 16, [
   S.enhBlaze = toRows(outline(g));
 }
 
+// thorny (BRIAR's own charm): a rose bramble curling up the left side and along the bottom, pink thorns pointing out
+// (rose, not green: it sits on BRIAR's green thorn)
+{
+  const g = grid(16, 16);
+  // The vine: up the left edge, then along the bottom, a little wobble.
+  const vine = [[1, 3], [1, 4], [2, 5], [1, 6], [1, 7], [2, 8], [1, 9], [1, 10], [2, 11], [2, 12], [3, 13], [4, 14], [5, 14], [6, 13], [7, 14], [8, 14], [9, 13], [10, 14], [11, 14], [12, 13], [13, 14], [14, 14]];
+  vine.forEach(([x, y], i) => put(g, x, y, i % 3 === 0 ? 'm' : 'd'));
+  // Thorns: a pale tip on a darker base, pointing away from the vine.
+  const thorns = [[0, 4, 'M'], [3, 6, 'M'], [0, 8, 'M'], [3, 10, 'M'], [1, 13, 'M'], [5, 15, 'M'], [6, 12, 'M'], [9, 15, 'M'], [10, 12, 'M'], [13, 15, 'M'], [15, 13, 'M']];
+  plot(g, thorns);
+  // A curled tip at the top of the vine and a leaf at its end.
+  // A rosebud at the top of the vine.
+  plot(g, [[1, 1, 'R'], [2, 1, 'M'], [1, 2, 'r'], [2, 2, 'R'], [3, 2, 'm'], [14, 13, 'm'], [15, 14, 'd']]);
+  S.enhThorny = toRows(outline(g));
+}
+
 // ---------------------------------------------------------------- legendary relics (16x16)
 S.relicTicket = lit(16, 16, [
   '................',
@@ -4518,7 +4534,7 @@ const DIMS = {
   cabinetTesla: { w: 48, h: 64 }, cabinetJoker: { w: 48, h: 64 }, cabinetLocked: { w: 48, h: 64 },
   enemyBomber: 24, enemyHexer: 24, enemyVampire: 24, enemyMimic: 24, enemyMirror: 24,
   bomb: 16, hex: 16, fangs: 16, mimicSym: 16, bombOverlay: 16, hexOverlay: 16, tier2Frame: 16,
-  enhVamp: 16, enhLucky: 16, enhBlaze: 16,
+  enhVamp: 16, enhLucky: 16, enhBlaze: 16, enhThorny: 16,
   relicTicket: 16, relicBell: 16, relicPhoenix: 16, relicOvercharge: 16, relicKey: 16, relicSandglass: 16,
   icoBomb: 8, icoHex: 8, icoDrain: 8, icoGulp: 8, icoReflect: 8,
   mapBadgeBomb: 8, mapBadgeHex: 8, mapBadgeFang: 8, mapBadgeMimic: 8, mapBadgeMirror: 8,
@@ -4625,7 +4641,7 @@ export type SpriteId =
   | 'enemyMimic' | 'enemyMirror'                   // (enemyMirror = act 2 final boss)
   | 'bomb' | 'hex' | 'fangs' | 'mimicSym'          // act 2 enemy reel symbols, 16x16
   | 'bombOverlay' | 'hexOverlay' | 'tier2Frame'    // act 2 cell overlays / tier II gild marker, 16x16 (mostly transparent)
-  | 'enhVamp' | 'enhLucky' | 'enhBlaze'            // act 2 upgrade overlays, 16x16 (mostly transparent)
+  | 'enhVamp' | 'enhLucky' | 'enhBlaze' | 'enhThorny'         // act 2 upgrade overlays, 16x16 (mostly transparent)
   | 'relicTicket' | 'relicBell' | 'relicPhoenix'   // legendary relics, 16x16
   | 'relicOvercharge' | 'relicKey' | 'relicSandglass'
   | 'icoBomb' | 'icoHex' | 'icoDrain' | 'icoGulp' | 'icoReflect' // act 2 intent icons, 8x8

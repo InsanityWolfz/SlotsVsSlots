@@ -44,6 +44,7 @@ export const ENH_SPRITE: Record<Enh, SpriteId> = {
   vamp: artId('enhVamp'),
   lucky: artId('enhLucky'),
   blaze: artId('enhBlaze'),
+  thorny: artId('enhThorny'),
 };
 
 /** Per visible-row cosmetic state (row 0 = top). */

@@ -1406,3 +1406,34 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - KNIGHT GREEN still needs VAMP (no-charms 6.3);
   - BRIAR no-charms 22.7 (charms trap).
 - Tests: 217.
+
+## Iteration 69 (2026-10-03): EXPERT_PLAYTEST_12 built
+- **THORNY** (BRIAR's own charm, act 1, BRIAR only):
+  - Goes on a thorn; when it lands on the payline it banks **+50 / 60 / 70** (80 with the Ticket) into your thorns.
+  - Pink bramble overlay (enhThorny); a green one vanished on the thorn.
+  - The round's prototype read LV4 from the start (an Object.prototype hack also answered the charm level). The real
+    +20/30/40 measured 42.1 / 14.6 for BRIAR.
+  - BRIAR mirror HP stays at **10.5** (plan #2, mirror 12, cost 4–5 WHITE once the charm was weaker).
+- **THE FORGE** isn't offered when every symbol is at the cap (MASTERWORK and ARMS RACE were dead cards).
+- **Weekly:** an even pick among the setups allowed for the week's machine. BRIAR's only allowed setup is HOUSE CUT
+  (BAD BLOOD uses the other edges), so BRIAR + HOUSE CUT stays about 23% of weeks.
+- **SWEEP UP:** its text leads with the heal. **Badges:** text 1.25. **Fight HUD relic tip:** sits under the player panel
+  (it covered the HP bar).
+- **Measured:** tuesday 1000:
+
+    | machine | WHITE | GREEN | Dealer |
+    |---|---|---|---|
+    | KNIGHT | 41.7 | 17.5 | 49.7 |
+    | TESLA | 47.3 | 16.6 | 48.5 |
+    | BRIAR | 47.5 → 48.4 | 20.2 → **17.7** | 41.6 |
+    | JOKER | 42.2 | 17.4 | 45.0 |
+    | MIDAS | 39.1 | 17.3 | 48.5 |
+    | **AVG** | **43.5 → 43.7** | **17.8 → 17.3** | |
+
+  - The GREEN spread is now 16.6–17.7.
+  - Fight-4 deaths 3.5%.
+  - Rows GREEN: BRIAR baseline 8.3, no charms 20.7 (the GREEN gap holds, as expected), only THORNY 13.7.
+  - Challenges 400: 35.5 / 31.8 / 32.3 / 31.5 / 27.8 / 15.3 / 9.5. Weekly mean 15.5%.
+  - Fuzz 30: no breaks.
+- **Next:** #6, the bot's value for SWEEP UP (a sim change; re-baseline). Watch BRIAR's Dealer kill at 41.6 (the lowest).
+- Tests: 221 (tests/expert12.test.ts).
