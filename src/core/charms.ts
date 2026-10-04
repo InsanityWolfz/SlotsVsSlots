@@ -38,9 +38,7 @@ export const CHARM_VALUE: Record<Enh, number[]> = {
    * taking no charm (CONTENT_13). */
   lucre: [0, 6, 9, 12, 15],
   /** TRICK (JOKER only): into the jackpot meter when it lands. */
-  trick: [0, 25, 35, 50, 60],
-  /** INGOT (MIDAS only): gold meter pips when it lands (draft cards only: sold at the Cashier, MIDAS fell to 32 WHITE). */
-  ingot: [0, 2, 3, 4, 5],
+  trick: [0, 30, 40, 55, 65],
 };
 /** LUCRE: chips each time its group pays (up to its cap). */
 export const LUCRE_CHIPS = 3;
@@ -57,7 +55,6 @@ export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
   thorny: ['thorn'],
   lucre: ['sword', 'shield', 'bolt'],
   trick: ['sword', 'shield'],
-  ingot: ['goldbar'],
 };
 
 /** One charm's rule at a level, as plain card text (never an expected value). */
@@ -84,8 +81,6 @@ export function charmRuleText(enh: Enh, lvl: number): string {
       return `+${LUCRE_CHIPS} CHIPS WHEN ITS GROUP PAYS (MAX ${v} A FIGHT, ON A WIN)`;
     case 'trick':
       return `+${v} TO YOUR JACKPOT METER WHEN IT LANDS`;
-    case 'ingot':
-      return `+${v} TO YOUR GOLD METER WHEN IT LANDS`;
   }
 }
 
@@ -113,13 +108,11 @@ export function charmShortText(enh: Enh, lvl: number): string {
       return `+${LUCRE_CHIPS} CHIPS ON A HIT, MAX ${v}`;
     case 'trick':
       return `+${v} METER WHEN IT LANDS`;
-    case 'ingot':
-      return `+${v} GOLD METER WHEN IT LANDS`;
   }
 }
 
 /** A charm's name as players see it (the id 'spiked' is BULWARK). */
-export const charmName = (enh: Enh): string => (enh === 'spiked' ? 'BULWARK' : enh.toUpperCase());
+export const charmName = (enh: Enh): string => (enh === 'spiked' ? 'BULWARK' : enh === 'lucre' ? 'CHIP' : enh.toUpperCase());
 
 /** The number shown on a charmed cell's top-right tag (coloured by charm). */
 export function charmTag(enh: Enh, lvl: number): string {
@@ -138,7 +131,6 @@ export const CHARM_COLOR: Record<Enh, string> = {
   thorny: '#ff9ec8',
   lucre: '#ffd23f',
   trick: '#c795f0',
-  ingot: '#d3dde8',
   spiked: '#c9d0dc',
 };
 

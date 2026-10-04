@@ -975,17 +975,16 @@ export class Fight {
       if (me.relics.has('mirror') && g.matched && g.reels.length === 2 && !(g.reels[0] === 0 && g.reels[1] === 1)) fired.add('mirror');
       if (me.relics.has('ticket') && g.reels.some((r) => this.paylineEnh(me, r))) fired.add('ticket');
     }
-    // PIT BOSS: the enemy's first jackpot each fight pays as a pair (two of its symbols at the pair's multiplier).
+    // PIT BOSS: the enemy's first jackpot each fight doesn't count: it pays nothing (user playtest: "as a pair" wasn't
+    // worth taking).
     if (!player && s.tier === 'triple' && !this.pitUsed && this.sides.player.relics.has('pitboss')) {
       const g = s.groups.find((x) => x.matched && x.reels.length >= 3);
       if (g) {
         this.pitUsed = true;
-        const k = (2 * multFor(2, this.cfg)) / (3 * multFor(3, this.cfg));
-        g.base = Math.round((g.base * 2) / 3);
-        g.mult = (g.mult / multFor(3, this.cfg)) * multFor(2, this.cfg);
-        g.amount = Math.round(g.amount * k);
+        g.base = 0;
+        g.amount = 0;
         g.notes = [...(g.notes ?? []), 'PIT BOSS'];
-        s.tier = 'pair';
+        s.tier = 'none';
         this.pitJustFired = true;
       }
     }
@@ -1180,7 +1179,7 @@ export class Fight {
 
   /**
    * Charms that act when their group lands: the meter charms (THORNY banks thorns: EXPERT_PLAYTEST_12 D1; TRICK fills
-   * JOKER's meter; INGOT adds MIDAS gold pips: CONTENT_13), LUCRE's chips, and TAX MAN on a paying gold bar group.
+   * JOKER's meter: CONTENT_13), LUCRE's chips, and TAX MAN on a paying gold bar group.
    */
   private cellCharms(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
     const n = (e: Enh) => g.reels.filter((r) => this.enhsAt(me, r).includes(e)).length;
@@ -1188,7 +1187,6 @@ export class Fight {
     const kind = this.meter?.kind;
     if (kind === 'thorns' && n('thorny')) this.fillMeter(me, n('thorny') * v('thorny'), g.reels, events);
     if (kind === 'jackpots' && n('trick')) this.fillMeter(me, n('trick') * v('trick'), g.reels, events);
-    if (kind === 'vault' && n('ingot')) this.fillMeter(me, 0, Array.from({ length: n('ingot') * v('ingot') }, () => g.reels[0]), events);
     const pays = g.amount > 0 && (PAYING.has(g.symbol) || g.symbol === 'goldbar');
     if (pays && n('lucre') && this.lucreChips < v('lucre')) {
       const got = Math.min(LUCRE_CHIPS, v('lucre') - this.lucreChips);

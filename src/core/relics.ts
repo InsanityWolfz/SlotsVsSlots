@@ -64,8 +64,8 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // CONTENT_13.
   bracelet: { id: 'bracelet', name: 'CHARM BRACELET', text: 'EVERYTHING PAYS +5% FOR EACH CHARM TYPE YOU OWN', sprite: 'relicBracelet' },
   metronome: { id: 'metronome', name: 'METRONOME', text: 'EVERY 3RD SPIN PAYS X1.5', sprite: 'relicMetronome' },
-  snakeeyes: { id: 'snakeeyes', name: 'SNAKE EYES', text: 'EACH ENEMY JACKPOT HEALS YOU 15', sprite: 'relicSnakeEyes' },
-  pitboss: { id: 'pitboss', name: 'PIT BOSS', text: "THE ENEMY'S FIRST JACKPOT EACH FIGHT PAYS AS A PAIR", sprite: 'relicPitBoss' },
+  snakeeyes: { id: 'snakeeyes', name: 'SNAKE EYES', text: 'EACH ENEMY JACKPOT HEALS YOU 30', sprite: 'relicSnakeEyes' },
+  pitboss: { id: 'pitboss', name: 'PIT BOSS', text: "THE ENEMY'S FIRST JACKPOT EACH FIGHT DOESN'T COUNT", sprite: 'relicPitBoss' },
   coil: { id: 'coil', name: 'TESLA COIL', text: 'A BOLT ABOVE OR BELOW YOUR PAYLINE CHARGES 5', sprite: 'relicCoil', machine: 'tesla' },
   // TAX MAN (CONTENT_13): retired at build. It took MIDAS's identity-relic slot from KING'S VAULT (MIDAS 36.3 -> 28.0 WHITE).
   taxman: { id: 'taxman', name: 'TAX MAN', text: 'EACH GOLD BAR GROUP THAT PAYS: +1 CHIP (MAX 3)', sprite: 'relicTaxMan', machine: 'midas', retired: true },
@@ -119,7 +119,7 @@ export const NEW_RELIC = {
   braceletPer: 0.05,
   metronomeEvery: 3,
   metronomeMul: 1.5,
-  snakeHeal: 15,
+  snakeHeal: 30,
   coilCharge: 5,
   taxCap: 3,
   drumStep: UNIT / 5,

@@ -38,12 +38,11 @@ export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
   lucky: { name: 'LUCKY', text: `ACT 2. ${charmRuleText('lucky', 1)}.` },
   blaze: { name: 'BLAZE', text: `ACT 2. TESLA'S BOLTS. ${charmRuleText('blaze', 1)}.` },
   thorny: { name: 'THORNY', text: `BRIAR'S THORNS. ${charmRuleText('thorny', 1)}.` },
-  lucre: { name: 'LUCRE', text: `SWORDS, SHIELDS AND BOLTS. ${charmRuleText('lucre', 1)}.` },
+  lucre: { name: 'CHIP', text: `SWORDS, SHIELDS AND BOLTS. ${charmRuleText('lucre', 1)}.` },
   trick: { name: 'TRICK', text: `JOKER'S SWORDS AND SHIELDS. ${charmRuleText('trick', 1)}.` },
-  ingot: { name: 'INGOT', text: `MIDAS'S GOLD BARS. ${charmRuleText('ingot', 1)}.` },
 };
 /** Charms in the COLLECTION (SPIKED retired). */
-const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'spiked', 'charged', 'lucky', 'blaze', 'thorny', 'lucre', 'trick', 'ingot'];
+const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'spiked', 'charged', 'lucky', 'blaze', 'thorny', 'lucre', 'trick'];
 
 const TIER_COLOR = { common: '#c9c9d9', uncommon: '#5ad8e8', legendary: '#ffd23f', other: '#9a8fb0' };
 

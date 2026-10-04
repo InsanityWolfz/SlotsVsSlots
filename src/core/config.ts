@@ -41,7 +41,7 @@ export type SymbolId =
  * and pierce, VAMP swords heal, LUCKY cells can land as WILDs, CHARGED / BLAZE bolts feed TESLA's
  * special. SPIKED is retired (BRIAR's thorns replaced it); the id stays so old saves still read.
  */
-export type Enh = 'gold' | 'keen' | 'charged' | 'spiked' | 'vamp' | 'lucky' | 'blaze' | 'thorny' | 'lucre' | 'trick' | 'ingot';
+export type Enh = 'gold' | 'keen' | 'charged' | 'spiked' | 'vamp' | 'lucky' | 'blaze' | 'thorny' | 'lucre' | 'trick';
 /** `n` cells of `symbol` on reel `reel` carry charm `enh` (at most one charm per cell). */
 export interface Gild {
   reel: number;

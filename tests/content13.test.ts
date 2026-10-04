@@ -4,7 +4,7 @@ import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { charmLevel } from '../src/core/charms';
-import { createRun, fightConfig, finishFight, gildsFor, shopOffers } from '../src/core/run';
+import { createRun, fightConfig, finishFight, gildsFor } from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -20,15 +20,14 @@ function on(cabinet: CabinetId, mut?: (c: GameConfig) => void, seed = 7): Fight 
 
 describe('CONTENT_13: charms', () => {
   it('every new charm starts at LV1 (the round-12 prototype bug)', () => {
-    for (const e of ['lucre', 'trick', 'ingot'] as const) expect(charmLevel(createRun(base, 1, 'knight').player.levels, e)).toBe(1);
+    for (const e of ['lucre', 'trick'] as const) expect(charmLevel(createRun(base, 1, 'knight').player.levels, e)).toBe(1);
   });
 
-  it('locks: TRICK is JOKER only, INGOT MIDAS only; LUCRE every machine but MIDAS', () => {
+  it('locks: TRICK is JOKER only; the CHIP charm (lucre) on every machine', () => {
     for (const cab of ['knight', 'tesla', 'thorn', 'joker', 'midas'] as CabinetId[]) {
       const g = gildsFor(createRun(base, 3, cab));
       expect(g.includes('trick')).toBe(cab === 'joker');
-      expect(g.includes('ingot')).toBe(cab === 'midas');
-      expect(g.includes('lucre')).toBe(cab !== 'midas');
+      expect(g).toContain('lucre');
     }
   });
 
@@ -52,29 +51,16 @@ describe('CONTENT_13: charms', () => {
     expect(rec.chips).toBeGreaterThanOrEqual(6);
   });
 
-  it('TRICK fills JOKER\'s meter when it lands; INGOT adds MIDAS gold pips', () => {
+  it('TRICK fills JOKER\'s meter when it lands', () => {
     const plain = on('joker');
     plain.forceNext('player', ['sword', 'shield', 'shield']);
     plain.step();
     const trick = on('joker', (c) => (c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'trick', n: 4 }]));
     trick.forceNext('player', ['sword', 'shield', 'shield']);
     trick.step();
-    expect(trick.sides.player.energy - plain.sides.player.energy).toBe(25);
-    const m0 = on('midas');
-    m0.forceNext('player', ['goldbar', 'sword', 'shield']);
-    m0.step();
-    const m1 = on('midas', (c) => (c.player.gilded = [{ reel: 0, symbol: 'goldbar', enh: 'ingot', n: 4 }]));
-    m1.forceNext('player', ['goldbar', 'sword', 'shield']);
-    m1.step();
-    expect(m1.sides.player.energy).toBeGreaterThan(m0.sides.player.energy);
+    expect(trick.sides.player.energy - plain.sides.player.energy).toBe(30);
   });
 
-  it('INGOT is never on the Cashier\'s shelf', () => {
-    for (let seed = 1; seed <= 30; seed++) {
-      const run = createRun(base, seed, 'midas');
-      expect(shopOffers(run).some((i) => i.option.kind === 'gild' && i.option.enh === 'ingot')).toBe(false);
-    }
-  });
 });
 
 describe('CONTENT_13: relics', () => {
@@ -110,7 +96,7 @@ describe('CONTENT_13: relics', () => {
     expect(q[2]).toBe(Math.round(p[2] * 1.5));
   });
 
-  it('SNAKE EYES heals on an enemy jackpot; PIT BOSS turns the first one into a pair', () => {
+  it('SNAKE EYES heals on an enemy jackpot; PIT BOSS cancels the first one', () => {
     const s = sword3(['snakeeyes']);
     s.sides.player.hp -= 100;
     s.next = 'enemy';
@@ -122,7 +108,8 @@ describe('CONTENT_13: relics', () => {
       f.forceNext('enemy', ['sword', 'sword', 'sword']);
       return ofType(f.step().events, 'attack')[0].amount;
     };
-    expect(hitBy(['pitboss'])).toBeLessThan(hitBy([]));
+    expect(hitBy([])).toBeGreaterThan(0);
+    expect(hitBy(['pitboss'])).toBe(0);
   });
 
   it('TESLA COIL: a bolt next to the payline charges 5', () => {

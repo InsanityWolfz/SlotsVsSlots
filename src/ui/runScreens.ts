@@ -1236,13 +1236,7 @@ export class RunScreens {
         '#ff9a3a',
         { align: 'left' },
       );
-    if (e.counter) {
-      ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(x + w - 170, y + 36, 156, 20);
-      ctx.fillStyle = '#3b8ef0';
-      ctx.fillRect(x + w - 168, y + 38, 152, 16);
-      drawText(ctx, 'YOUR COUNTER', x + w - 92, y + 46, 1.5, '#ffffff');
-    }
+    // (BLUE stake's counter fork carries no label: the player doesn't need to be told it's their counter.)
     if (e.ability) {
       // The real cadence: Hourglass and HIGH STAKES (the same helper the Fight uses).
       const run = this.run!;

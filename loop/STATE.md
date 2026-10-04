@@ -1491,3 +1491,25 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - **Open:** the playtester's sim note (the greedy bot spends MIDAS's chip hoard; a 16-chip reserve takes MIDAS to 47.8):
   a sim-only round. Damage charms are taxed by boss sizing and heals aren't.
 - Tests: 230 (tests/content13.test.ts).
+
+## Iteration 71 (2026-10-04): the user's notes on CONTENT_13
+- **LUCRE is now the CHIP charm** (display name; the id stays `lucre`) and **MIDAS can draft it**. **INGOT removed.**
+- **TRICK** 25/35/50 → **30/40/55**. **SNAKE EYES** 15 → **30**.
+- **PIT BOSS:** the enemy's first jackpot each fight **doesn't count** (it pays nothing).
+- **No "counter" wording:** BLUE stake reads "ACT 2 ABILITIES CHARGE FASTER"; the YOUR COUNTER badge is gone.
+- **Measured** (tuesday 1000): WHITE **45.9** / GREEN **19.8**, **over both gate tops** (45 / 19).
+
+    | machine | WHITE | GREEN |
+    |---|---|---|
+    | KNIGHT | 46.0 | 21.6 |
+    | TESLA | 47.9 | 18.7 |
+    | BRIAR | 49.5 | 18.5 |
+    | JOKER | 46.6 | 19.6 |
+    | MIDAS | 39.4 | **20.4** |
+
+  - Rows: +PIT BOSS **23.9** (the strongest relic; BELL was 22), +SNAKE EYES **20.5** (a common), baseline 13.3;
+    CHIP 11.9, TRICK 10.4.
+  - With the CHIP charm, MIDAS's GREEN went up (17.8 → 20.4).
+  - Fight-4 deaths 4.3%. Challenges: 40.0 / 34.5 / 36.3 / 30.0 / 27.5 / 14.5 / 14.0. Fuzz: no breaks.
+- **Pending (user):** the GAMBLIN MAN rework (MIDAS), the weekly's seeding, and whether machine-only charms and relics stay.
+  Retune the gates after those land.

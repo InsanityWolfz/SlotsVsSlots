@@ -226,7 +226,7 @@ export class Director {
         // LUCRE: banked on a win (the RESULTS line counts them).
         const c = this.machineCenter(e.side);
         this.s.sounds.coin(8);
-        return this.popText(`LUCRE +${e.amount} CHIPS`, c.x + 80, MACHINE_TOP - 22, 2, '#ffd23f', 14, 0.35);
+        return this.popText(`CHIP CHARM +${e.amount}`, c.x + 80, MACHINE_TOP - 22, 2, '#ffd23f', 14, 0.35);
       }
       case 'lastCall':
         this.s.sounds.stingerMedium();

@@ -20,7 +20,7 @@ export interface TableRow {
 const ORDER: string[] = ['sword', 'shield', 'bolt', 'goldbar', 'thorn', 'wild', 'rock', 'slime', 'card', 'stolen', 'bombs'];
 const rank = (r: TableRow) => {
   const i = ORDER.indexOf(r.symbol);
-  return (i < 0 ? 50 : i) * 10 + (r.enh ? 1 + ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'spiked', 'thorny', 'lucre', 'trick', 'ingot'].indexOf(r.enh) : 0);
+  return (i < 0 ? 50 : i) * 10 + (r.enh ? 1 + ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'spiked', 'thorny', 'lucre', 'trick'].indexOf(r.enh) : 0);
 };
 
 /** Rows for the run's machine: plain cells, then charmed cells, per symbol. */

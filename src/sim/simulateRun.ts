@@ -41,8 +41,8 @@ const RELIC_VALUE: Record<RelicId, number> = {
   toll: 3,
   bracelet: 6,
   metronome: 6,
-  snakeeyes: 6,
-  pitboss: 7.5,
+  snakeeyes: 7,
+  pitboss: 8,
   coil: 6.5,
   taxman: 6,
   mirror: 10,
@@ -119,7 +119,7 @@ export function greedyValue(run: RunState, o: DraftOption): number {
     }
     case 'gild':
       if (SIM_BIAS.enh) return o.enh === SIM_BIAS.enh ? 9.5 : 0;
-      return { gold: 9, charged: 8.5, spiked: 6.5, keen: 6.5, vamp: 7, lucky: run.cabinet === 'joker' ? 8.5 : 7, blaze: 8, thorny: 8, lucre: 6.5, trick: 8, ingot: 7 }[o.enh] + (p.gilded.some((g) => g.enh === o.enh) ? 0.5 : 0);
+      return { gold: 9, charged: 8.5, spiked: 6.5, keen: 6.5, vamp: 7, lucky: run.cabinet === 'joker' ? 8.5 : 7, blaze: 8, thorny: 8, lucre: 6.5, trick: 8 }[o.enh] + (p.gilded.some((g) => g.enh === o.enh) ? 0.5 : 0);
     case 'symLevel':
       return o.symbol === 'sword' ? 8 : o.symbol === 'shield' ? 5 : 7.5;
     case 'charmLevel':

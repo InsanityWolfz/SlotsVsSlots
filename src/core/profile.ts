@@ -11,7 +11,7 @@ import { ACHIEVEMENT_XP, CHALLENGES, levelOf, TRIMS, trimById, trimsOwned, newAc
  * history of finished runs for HISCORES. Pure data + helpers; the game owns persistence.
  */
 
-export const ALL_CHARMS: Enh[] = ['gold', 'keen', 'charged', 'spiked', 'vamp', 'lucky', 'blaze', 'thorny', 'lucre', 'trick', 'ingot'];
+export const ALL_CHARMS: Enh[] = ['gold', 'keen', 'charged', 'spiked', 'vamp', 'lucky', 'blaze', 'thorny', 'lucre', 'trick'];
 export const MAX_ENTRIES = 60;
 
 export interface CharmEntry {
