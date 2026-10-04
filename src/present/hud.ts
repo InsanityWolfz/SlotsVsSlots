@@ -200,9 +200,11 @@ export class HudView {
           ctx.fillRect(b.x, b.y, frac * b.w, b.h);
           ctx.globalAlpha = 1;
         }
-        const label = this.armed ? (m.kind === 'touch' ? 'TOUCH READY!' : `${m.label} READY!`) : m.label;
-        drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'left' });
-        drawText(ctx, m.note ? m.note(this.chips) : `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`, b.x + b.w - 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'right' });
+        const label = this.armed ? (m.kind === 'touch' ? 'TOUCH READY!' : m.note ? 'READY!' : `${m.label} READY!`) : m.label;
+        // The HIGH ROLLER bar carries two texts (its name, and chips with their payoff): a size down so both fit.
+        const ts = m.note ? 1.25 : 1.5;
+        drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, ts, '#ffffff', { align: 'left' });
+        drawText(ctx, m.note ? m.note(this.chips) : `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`, b.x + b.w - 6, b.y + b.h / 2 + 1, ts, '#ffffff', { align: 'right' });
       }
     }
     if (this.ability) this.drawAbility(ctx, x, y + 106, time);

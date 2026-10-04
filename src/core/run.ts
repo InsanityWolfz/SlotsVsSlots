@@ -902,9 +902,9 @@ export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer
   knight: { house: 2.0, mirror: 1.0, dealer: 0.8, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
   midas: { house: 3, mirror: 1.9, dealer: 1.3, act3: 0.12, act1: 0.55, act2: 0.55, gate: 0.8, act3Floor: 1 },
-  thorn: { house: 0.85, mirror: 13.5, dealer: 1.45, act3: 1.3, act2: 0.6, gate: 1.55 },
+  thorn: { house: 0.85, mirror: 20, dealer: 1.55, act3: 1.3, act2: 0.6, gate: 1.55 },
   tesla: { house: 0.5, mirror: 3.0, dealer: 1.69, act3: 0.95, gate: 1.0 },
-  joker: { house: 2.2, mirror: 2.8, dealer: 0.75, act3: 0.35, act2: 1.8, gate: 0.85 },
+  joker: { house: 2.2, mirror: 3.1, dealer: 0.8, act3: 0.35, act2: 1.8, gate: 0.85 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */

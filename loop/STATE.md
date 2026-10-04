@@ -1534,3 +1534,47 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 
   Fight-4 deaths 4.4%. Challenges: 39.5 / 34.3 / 33.0 / 29.0 / 27.8 / 12.8 / 12.3. Weekly 17.2%. Fuzz: no breaks.
   A global retune is agreed for after the GAMBLIN MAN rework.
+
+## Iteration 72 (2026-10-04): CASH CASSIDY / THE BANKROLL (MIDAS reworked with the user)
+- **Names and art:**
+  - Hero **CASH CASSIDY**, machine **THE BANKROLL**, blurb "MAKE IT RAIN."
+  - The gold bar is now a **CHIP** symbol (the id stays `goldbar`); the VAULT is now the **HIGH ROLLER** bar.
+  - The bar shows "N CHIPS XM": the live payoff, 1 + chips/20, max ×3.
+  - KING'S VAULT is now **BANK VAULT**. New art by the art agent: chip symbol, hero, machine, vault and 5 relics.
+  - The cabinet id stays `midas` (saves, boards).
+- **Chips:** 1 per chip symbol (a pair 2, a jackpot 3), no bonus and **no cap**.
+- **MAKE IT RAIN!:** a chip jackpot with **5+ chips** hits for chips held **×3** (counted before it costs). The jackpot,
+  charms, relics and a full HIGH ROLLER bar multiply it, uncapped. Then it **costs 5 chips**.
+  - The user's draft (×2 / 10 chips) measured 20.8 WHITE: the rain cost more than it hit. The user OK'd a lower cost.
+- **5 rain relics** (CASSIDY only, as **add-ons**: they don't take the "your relic" slot, which as identity relics
+  cost 10 WHITE, like TAX MAN):
+  - LOADED CHIPS: gold and vamp fit chips.
+  - RAINMAKER: rain costs 2.
+  - SLUSH FUND: rain +50 bar.
+  - TIP JAR: rain heals 20.
+  - LOOSE CHANGE: a chip pair rains for half.
+- **Global retune** (this round's buffs had put WHITE at 46):
+
+    | machine | mirror | dealer |
+    |---|---|---|
+    | KNIGHT | 0.9 → 1.0 | 0.74 → 0.8 |
+    | TESLA | 2.4 → 3.0 | — |
+    | BRIAR | 13.5 → 20 | 1.45 → 1.55 |
+    | JOKER | 3.7 → 3.1 | 0.75 → 0.8 |
+    | CASSIDY | — | 0.85 → 1.3 (act3Floor 0.75 → 1) |
+
+- **Measured** (tuesday 1000): WHITE **43.0** / GREEN **18.5**, inside both gates.
+
+    | machine | WHITE | GREEN |
+    |---|---|---|
+    | KNIGHT | 43.6 | 19.3 |
+    | TESLA | 45.8 | 17.6 |
+    | BRIAR | 43.2 | 17.6 |
+    | JOKER | 43.7 | 17.7 |
+    | CASSIDY | 38.9 | 20.4 |
+
+  - Fight-4 deaths 4.3%.
+  - Challenges: 37.5 / 31.3 / 32.8 / 31.5 / 24.3 / 17.0 / 11.3. Weekly 19.7%.
+  - Fuzz 30: no breaks. Tests: 234 (tests/cassidy.test.ts).
+- **Watch:** CASSIDY is the lowest WHITE and the highest GREEN (rain scales with a big late chip pile). The sim bot's
+  shop habit (it spends the pile) still undersells him.
