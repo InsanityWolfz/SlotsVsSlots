@@ -1042,7 +1042,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   // The Dealer's own marks don't carry on; the deck resets once it falls.
   run.deckMarks = beaten.boss === 'dealer' ? 0 : Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
   if (run.player.relics.includes('bandage') && !run.glass) hp += BANDAGE_HEAL;
-  // KING'S VAULT (MIDAS): after each win, one of your swords turns gold for good.
+  // BANK VAULT (CASH CASSIDY): after each win, a plain sword gets a GOLD charm.
   if (run.player.relics.includes('vault')) {
     const reels = [0, 1, 2].filter((r) => plainCells(run.player, r, 'sword') > 0);
     if (reels.length) addCharms(run.player, new Rng((run.seed ^ Math.imul(fightNumber(run) + 11, 0x9e3779b1)) >>> 0).pick(reels), 'sword', 'gold', 1);
