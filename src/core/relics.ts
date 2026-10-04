@@ -9,6 +9,9 @@ export interface RelicDef {
   sprite: string;
   /** Only offered on this slot machine. */
   machine?: CabinetId;
+  /** Machine-locked, but not an identity relic: it never takes the draft's "your relic" slot or a start pick (the five
+   * MAKE IT RAIN relics: as identity relics they pushed BANK VAULT out, like TAX MAN did). */
+  addon?: boolean;
   /** Only offered once you own this charm. */
   charm?: Enh;
   /** Never offered any more (kept so old saves and collections still load). */
@@ -41,7 +44,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // Slot machine relics: each machine gets an identity relic and a heal that feeds off its own mechanic.
   drum: { id: 'drum', name: 'WAR DRUM', text: 'EACH SPIN THAT PAYS: EVERY SWORD +2 THIS FIGHT (MAX +10)', sprite: 'relicDrum', machine: 'knight' },
   chainmail: { id: 'chainmail', name: 'CHAINMAIL', text: 'LEFTOVER SHIELD HEALS YOU 10% OF IT EACH TURN', sprite: 'relicChainmail', machine: 'knight' },
-  vault: { id: 'vault', name: "KING'S VAULT", text: 'AFTER EACH WIN, ONE OF YOUR SWORDS TURNS GOLD FOR GOOD', sprite: 'relicVault', machine: 'midas' },
+  vault: { id: 'vault', name: 'BANK VAULT', text: 'AFTER EACH WIN, ONE OF YOUR SWORDS TURNS GOLD FOR GOOD', sprite: 'relicVault', machine: 'midas' },
   decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR MIDAS TOUCH ALSO SPREADS TO THE CELLS ABOVE AND BELOW', sprite: 'relicDecree', machine: 'midas', retired: true },
   rosehip: { id: 'rosehip', name: 'ROSE HIP', text: 'YOUR THORN VOLLEYS HEAL YOU 10% OF WHAT THEY FIRE', sprite: 'relicRosehip', machine: 'thorn' },
   graft: { id: 'graft', name: 'GRAFT', text: 'GOLD AND VAMP CHARMS FIT THORNS', sprite: 'relicGraft', machine: 'thorn' },
@@ -69,6 +72,12 @@ export const RELICS: Record<RelicId, RelicDef> = {
   pitboss: { id: 'pitboss', name: 'PIT BOSS', text: "THE ENEMY'S FIRST JACKPOT EACH FIGHT DOESN'T COUNT", sprite: 'relicPitBoss' },
   coil: { id: 'coil', name: 'TESLA COIL', text: 'A BOLT ABOVE OR BELOW YOUR PAYLINE CHARGES 5', sprite: 'relicCoil', machine: 'tesla' },
   // TAX MAN (CONTENT_13): retired at build. It took MIDAS's identity-relic slot from KING'S VAULT (MIDAS 36.3 -> 28.0 WHITE).
+  // CASH CASSIDY's MAKE IT RAIN relics.
+  loadedchips: { id: 'loadedchips', name: 'LOADED CHIPS', text: 'GOLD AND VAMP CHARMS FIT CHIP SYMBOLS', sprite: 'relicLoadedChips', machine: 'midas', addon: true },
+  rainmaker: { id: 'rainmaker', name: 'RAINMAKER', text: 'MAKE IT RAIN COSTS 2 CHIPS (NOT 5)', sprite: 'relicRainmaker', machine: 'midas', addon: true },
+  slushfund: { id: 'slushfund', name: 'SLUSH FUND', text: 'MAKE IT RAIN ALSO FILLS YOUR HIGH ROLLER BAR 50', sprite: 'relicSlushFund', machine: 'midas', addon: true },
+  tipjar: { id: 'tipjar', name: 'TIP JAR', text: 'MAKE IT RAIN ALSO HEALS YOU 20', sprite: 'relicTipJar', machine: 'midas', addon: true },
+  loosechange: { id: 'loosechange', name: 'LOOSE CHANGE', text: 'A CHIP PAIR MAKES IT RAIN TOO, FOR HALF', sprite: 'relicLooseChange', machine: 'midas', addon: true },
   taxman: { id: 'taxman', name: 'TAX MAN', text: 'EACH GOLD BAR GROUP THAT PAYS: +1 CHIP (MAX 3)', sprite: 'relicTaxMan', machine: 'midas', retired: true },
   bash: { id: 'bash', name: 'SHIELD BASH', text: 'YOUR LEFTOVER SHIELD HITS BACK FOR ITS FULL AMOUNT EACH TURN', sprite: 'relicBash' },
   // Side bets (EXPERT_PLAYTEST_6 E11): relics that change which bet you want.
@@ -81,30 +90,30 @@ export const LOADED_MUL = 1.2;
 
 /**
  * A relic's card text on a given slot machine: meter relics speak your machine's language
- * (LIGHTNING, the MIDAS TOUCH, the THORNS, the JACKPOT METER). Without a machine, the generic text.
+ * (LIGHTNING, the HIGH ROLLER bar, the THORNS, the JACKPOT METER). Without a machine, the generic text.
  */
 const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>> = {
   battery: {
     tesla: 'YOUR LIGHTNING STARTS EACH FIGHT 30 CHARGED',
-    midas: 'YOUR GOLD METER STARTS EACH FIGHT MORE THAN HALF FULL',
+    midas: 'YOUR HIGH ROLLER BAR STARTS EACH FIGHT MORE THAN HALF FULL',
     thorn: 'YOUR THORNS START EACH FIGHT AT 30',
     joker: 'YOUR JACKPOT METER STARTS EACH FIGHT MORE THAN HALF FULL',
   },
   fang: {
     tesla: 'EVERY LIGHTNING STRIKE HEALS 30 MORE',
-    midas: 'EVERY MIDAS TOUCH HEALS 30 MORE',
+    midas: 'EVERY HIGH ROLLER PAYOFF HEALS 30 MORE',
     thorn: 'YOUR THORN VOLLEYS HEAL 10 MORE',
     joker: 'YOUR ALL-JACKPOTS SPIN HEALS 30 MORE',
   },
   overcharge: {
     tesla: 'YOUR LIGHTNING ECHOES FOR 1/3 DAMAGE',
-    midas: 'YOUR MIDAS TOUCH SPIN ECHOES FOR 1/3 OF ITS DAMAGE',
+    midas: 'YOUR HIGH ROLLER PAYOFF ECHOES FOR 1/3 OF ITS DAMAGE',
     joker: 'YOUR ALL-JACKPOTS SPIN ECHOES FOR 1/3 OF ITS DAMAGE',
   },
   bell: {
     knight: 'JACKPOTS PAY X2',
     tesla: 'JACKPOTS PAY X2 AND FULLY CHARGE YOUR LIGHTNING',
-    midas: 'JACKPOTS PAY X2 AND FILL YOUR GOLD METER',
+    midas: 'JACKPOTS PAY X2 AND FILL YOUR HIGH ROLLER BAR',
     thorn: 'JACKPOTS PAY X2 AND ADD THEIR PAY TO YOUR THORNS',
     joker: 'JACKPOTS PAY X2 AND FILL YOUR JACKPOT METER',
   },
@@ -150,8 +159,8 @@ export const BONUS = { wheel: 0.028, rush: 0.012 };
 export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9, uncommonMax: 12, grandChips: 15 };
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
-  common: ['clover', 'battery', 'fang', 'bandage', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker', 'hotstreak', 'metronome', 'snakeeyes'],
-  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll', 'bracelet', 'coil'],
+  common: ['clover', 'battery', 'fang', 'bandage', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar'],
+  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll', 'bracelet', 'coil', 'loadedchips', 'rainmaker', 'slushfund', 'loosechange'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
 };
 

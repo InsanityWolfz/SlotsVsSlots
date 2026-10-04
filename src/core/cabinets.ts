@@ -91,11 +91,11 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
   },
   midas: {
     id: 'midas',
-    hero: 'KING AURUM',
+    hero: 'CASH CASSIDY',
     heroSprite: 'heroMidas',
-    name: 'MIDAS MACHINE',
+    name: 'THE BANKROLL',
     sprite: 'cabinetMidas',
-    blurb: 'EVERYTHING IT TOUCHES...',
+    blurb: 'MAKE IT RAIN.',
     // 360 HP (was 300): MIDAS trailed every table, its GREEN deaths spread over the whole run (EXPERT_PLAYTEST_9 D6).
     hp: 36 * UNIT,
     strips: r3({ sword: 4, shield: 4, goldbar: 4 }),
@@ -104,7 +104,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'vault', symbol: 'goldbar', cost: 10 * UNIT, heal: 2 * UNIT },
     startChips: 16,
     symbols: ['sword', 'shield', 'goldbar'],
-    rule: 'GOLD BARS PAY CHIPS AND FILL THE VAULT (FULLER THE MORE CHIPS YOU HOLD). FULL: YOUR NEXT PAY X1 + CHIPS/20, MAX X3. CASHIER 20% OFF. 360 HP.',
+    rule: 'CHIPS PAY A CHIP EACH AND FILL THE HIGH ROLLER BAR. FULL: YOUR NEXT PAY X1 + CHIPS/20 (MAX X3). A CHIP JACKPOT WITH 5+ CHIPS: MAKE IT RAIN! IT HITS FOR YOUR CHIPS X3, THEN COSTS 5. CASHIER 20% OFF. 360 HP.',
     act2: { text: 'THE +1 CHIP PER WIN KEEPS PAYING' },
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,

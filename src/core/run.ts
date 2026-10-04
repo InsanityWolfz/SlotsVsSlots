@@ -312,7 +312,7 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
 export function startRelics(run: RunState): RelicId[] {
   const rng = new Rng((run.seed ^ 0x51a27) >>> 0);
   const fits = (r: RelicId) => relicFits(run, r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r);
-  const mine = rng.shuffle((Object.keys(RELICS) as RelicId[]).filter((r) => RELICS[r].machine === run.cabinet && fits(r))).slice(0, 2);
+  const mine = rng.shuffle((Object.keys(RELICS) as RelicId[]).filter((r) => RELICS[r].machine === run.cabinet && !RELICS[r].addon && fits(r))).slice(0, 2);
   const general = RELIC_TIER.common.filter((r) => !isIdentityRelic(r) && fits(r) && r !== 'crown');
   return [...mine, ...rng.shuffle(general)].slice(0, 3);
 }
@@ -899,11 +899,11 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
 export const TOLL_PER_LIEN = 2;
 
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
-  knight: { house: 2.0, mirror: 0.9, dealer: 0.74, act3: 0.5, gate: 1.3 },
+  knight: { house: 2.0, mirror: 1.0, dealer: 0.8, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
-  midas: { house: 3, mirror: 1.9, dealer: 0.85, act3: 0.12, act1: 0.55, act2: 0.55, gate: 0.8, act3Floor: 0.75 },
+  midas: { house: 3, mirror: 1.9, dealer: 1.3, act3: 0.12, act1: 0.55, act2: 0.55, gate: 0.8, act3Floor: 1 },
   thorn: { house: 0.85, mirror: 13.5, dealer: 1.45, act3: 1.3, act2: 0.6, gate: 1.55 },
-  tesla: { house: 0.5, mirror: 2.4, dealer: 1.69, act3: 0.95, gate: 1.0 },
+  tesla: { house: 0.5, mirror: 3.0, dealer: 1.69, act3: 0.95, gate: 1.0 },
   joker: { house: 2.2, mirror: 2.8, dealer: 0.75, act3: 0.35, act2: 1.8, gate: 0.85 },
 };
 const powerCache = new Map<string, number>();
@@ -1201,6 +1201,8 @@ export function charmSymbols(run: RunState, enh: Enh): SymbolId[] {
   const has = (r: RelicId) => run.player.relics.includes(r);
   const out = new Set<SymbolId>(CHARM_SYMBOLS[enh]);
   if ((enh === 'gold' || enh === 'vamp') && has('graft')) out.add('thorn');
+  // LOADED CHIPS (CASH CASSIDY): gold and vamp fit chip symbols, so MAKE IT RAIN can be charmed.
+  if ((enh === 'gold' || enh === 'vamp') && has('loadedchips')) out.add('goldbar');
   if ((enh === 'gold' || enh === 'keen' || enh === 'vamp') && has('stacked')) out.add('wild');
   if (enh === 'vamp' && has('kiss')) for (const s of ['shield', 'bolt', 'goldbar', 'thorn'] as SymbolId[]) out.add(s);
   return [...out];
@@ -1494,7 +1496,7 @@ export function shopOffers(run: RunState): ShopItem[] {
 }
 
 /** Your identity relics: your machine's and your charms' (one relic card per draft comes from here). */
-export const isIdentityRelic = (r: RelicId) => !!(RELICS[r].machine || RELICS[r].charm);
+export const isIdentityRelic = (r: RelicId) => !!((RELICS[r].machine && !RELICS[r].addon) || RELICS[r].charm);
 
 /** Pick `n` relics from a pool, the first from your identity relics when any fit. */
 export function pickRelics(pool: RelicId[], n: number, rng: Rng): RelicId[] {
@@ -1570,7 +1572,7 @@ export function stripsAfter(run: RunState, o: DraftOption): StripCounts[] {
   return copy.player.strips;
 }
 
-const NAME: Partial<Record<SymbolId, string>> = { sword: 'SWORD', shield: 'SHIELD', bolt: 'BOLT', rock: 'ROCK', wild: 'WILD', goldbar: 'GOLD BAR', thorn: 'THORN' };
+const NAME: Partial<Record<SymbolId, string>> = { sword: 'SWORD', shield: 'SHIELD', bolt: 'BOLT', rock: 'ROCK', wild: 'WILD', goldbar: 'CHIP', thorn: 'THORN' };
 const plural = (s: SymbolId, n: number) => `${NAME[s] ?? s.toUpperCase()}${n > 1 ? 'S' : ''}`;
 
 export const charmRule = charmRuleText;
@@ -1665,7 +1667,7 @@ export const BIG_SET_NAMES = ['THE FORGE', 'THE MELT', 'SURGERY', "DEVIL'S BARGA
 export const SAFE_CHOICES: ReadonlySet<BigChoiceId> = new Set(['whetstone', 'polish', 'sweepUp', 'secondWind']);
 export const BIG = { armsRaceHp: 6 * UNIT, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.25, gildLotCells: 3, glassPay: 1.5 };
 
-const SYM_NAME = (s: SymbolId) => (s === 'goldbar' ? 'GOLD BARS' : `${s.toUpperCase()}S`);
+const SYM_NAME = (s: SymbolId) => (s === 'goldbar' ? 'CHIPS' : `${s.toUpperCase()}S`);
 
 /** Title, rule and cost as plain card text (no expected values). */
 export function describeChoice(run: RunState, c: BigChoice): { title: string; rule: string; cost: string } {

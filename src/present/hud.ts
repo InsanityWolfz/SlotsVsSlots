@@ -15,6 +15,8 @@ export interface HudMeter {
   label: string;
   color: string;
   icon: SpriteId;
+  /** CASH CASSIDY: the HIGH ROLLER bar shows chips in hand and the payoff they make (in place of the number). */
+  note?: (chips: number) => string;
 }
 
 export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> = {
@@ -42,6 +44,9 @@ export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> 
 
 /** Displayed (tweened) values for one side's bars — never read from game state mid-animation. */
 export class HudView {
+  /** CASH CASSIDY: chips held when the fight began, and in hand now (the Director follows the chip events). */
+  chipsHeld = 0;
+  chips = 0;
   hp: number;
   ghost: number;
   maxHp: number;
@@ -197,7 +202,7 @@ export class HudView {
         }
         const label = this.armed ? (m.kind === 'touch' ? 'TOUCH READY!' : `${m.label} READY!`) : m.label;
         drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'left' });
-        drawText(ctx, `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`, b.x + b.w - 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'right' });
+        drawText(ctx, m.note ? m.note(this.chips) : `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`, b.x + b.w - 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'right' });
       }
     }
     if (this.ability) this.drawAbility(ctx, x, y + 106, time);

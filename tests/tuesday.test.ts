@@ -45,21 +45,21 @@ describe('signature meters (one per slot machine)', () => {
     expect(on('tesla').special).toBe(true);
   });
 
-  it('MIDAS VAULT: pre-fills from chips held; gold bars fill it and pay chips; full, the next paying group multiplies', () => {
+  it('CASH CASSIDY HIGH ROLLER: pre-fills from chips held; chip symbols fill it and pay a chip each; full, the next paying group multiplies', () => {
     const f = on('midas');
     f.sides.player.hp = 100;
     const start = f.sides.player.energy;
-    f.forceNext('player', ['goldbar', 'goldbar', 'goldbar']);
+    f.forceNext('player', ['goldbar', 'goldbar', 'shield']);
     const evs = f.step().events;
     const chips = ofType(evs, 'midasChips')[0];
-    expect(chips.amount).toBe(6); // 3 bars + 3 for the jackpot
+    expect(chips.amount).toBe(2); // a chip each, no bonus
     expect(f.sides.player.energy).toBeGreaterThan(start);
     f.sides.player.energy = f.meterCost;
     f.sides.player.armed = true;
     f.step();
     f.forceNext('player', ['sword', 'sword', 'shield']);
     const spin = ofType(f.step().events, 'spin')[0];
-    expect(spin.score.groups.some((g) => g.notes?.some((n) => n.startsWith('VAULT X')))).toBe(true);
+    expect(spin.score.groups.some((g) => g.notes?.some((n) => n.startsWith('HIGH ROLLER X')))).toBe(true);
   });
   it('BRIAR: thorns bank their pay; being attacked (blocked or not) fires the bank through shields, once per turn', () => {
     const f = on('thorn');

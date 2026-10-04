@@ -4,7 +4,7 @@ import { Synth } from './audio/synth';
 import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
 import { actLength, RUN_FIGHTS, TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
-import { Fight } from './core/fight';
+import { Fight, highRollerMul } from './core/fight';
 import { betProfit, betProgress, describeBet, newTrack } from './core/bets';
 import { dailyCabinet, dailyKey, dailySeed, dailySpent } from './core/daily';
 import { turnRow, type TurnRow } from './core/log';
@@ -109,7 +109,7 @@ function hudMeter(f: Fight): HudMeter | null {
   const m = f.meter;
   if (!m) return null;
   if (m.kind === 'touch') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'GOLD', color: '#ffd23f', icon: 'goldbar' as SpriteId };
-  if (m.kind === 'vault') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'VAULT', color: '#ffd23f', icon: 'goldbar' as SpriteId };
+  if (m.kind === 'vault') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'HIGH ROLLER', color: '#7dff7a', icon: 'goldbar' as SpriteId, note: (chips) => `${chips} CHIPS X${highRollerMul(chips)}` };
   if (m.kind === 'thorns') return { kind: m.kind, pips: 0, label: 'THORNS', color: '#9dff6a', icon: 'thorn' as SpriteId };
   return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'JACKPOTS', color: '#ff6ad5', icon: 'wild' };
 }
@@ -860,6 +860,7 @@ export class Game {
           energy: meter?.kind === 'thorns' ? c.energy : c.energy / UNIT,
         });
         hud.hp = hud.ghost = c.hp;
+        if (s === 'player') hud.chips = hud.chipsHeld = cfg.player.chipsHeld ?? 0;
         if (c.ability) hud.charge = c.charge;
         return [s, hud];
       }),

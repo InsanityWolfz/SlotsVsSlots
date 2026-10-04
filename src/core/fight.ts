@@ -35,7 +35,16 @@ import { effectiveAbility, STAKE } from './stakes';
 import { ENDLESS, GATEKEEPER, TUNE } from './enemies';
 import { betPayout, betState, newTrack, trackEvent } from './bets';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
-export const MIDAS = { houseSkim: 2, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3, jackpotChips: 3, chipCap: 8 };
+export const MIDAS = { houseSkim: 2, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3 };
+/**
+ * CASH CASSIDY's MAKE IT RAIN!: a chip jackpot with at least `cost` chips held hits for chips x `perChip` (base: the
+ * jackpot, charms, relics and a full HIGH ROLLER bar multiply it), counted before it costs `cost` chips.
+ * RAINMAKER halves the cost; LOOSE CHANGE lets a chip pair rain at half base; TIP JAR heals; SLUSH FUND refills the bar.
+ */
+// Built at x2 / 10 chips (the user's draft), the rain cost more than it hit: CASSIDY 20.8 WHITE. x3 / 5 measured 39.6 / 18.8.
+export const RAIN = { perChip: 3, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5 };
+/** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x3 (quarter steps). */
+export const highRollerMul = (chips: number) => Math.min(MIDAS.maxMul, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
 import { isNearMiss, multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {
   BONUS_SYMBOLS,
@@ -411,8 +420,14 @@ export class Fight {
   }
   /** MIDAS: the VAULT's payoff multiplier: 1 + chips held / 20, max x3. */
   vaultMul(): number {
-    const chips = (this.cfg.player.chipsHeld ?? 0) + this.midasChips;
-    return Math.min(MIDAS.maxMul, Math.round((1 + chips / MIDAS.chipsPerMul) * 4) / 4);
+    return highRollerMul(this.chipsNow());
+  }
+  /** CASH CASSIDY: chips in hand right now (held at the start, plus what this fight paid or cost). */
+  chipsNow(): number {
+    return (this.cfg.player.chipsHeld ?? 0) + this.midasChips;
+  }
+  private rainCost(me: Combatant): number {
+    return me.relics.has('rainmaker') ? RAIN.rainmakerCost : RAIN.cost;
   }
 
   /** How full the player's meter has to be (the special's cost for TESLA). */
@@ -790,7 +805,7 @@ export class Fight {
     }
     const fired = new Set<RelicId>();
     const has = (r: RelicId) => player && me.relics.has(r);
-    const pays = (g: ScoreGroup) => g.base > 0 && PAYING.has(g.symbol);
+    const pays = (g: ScoreGroup) => g.base > 0 && (PAYING.has(g.symbol) || !!g.rain);
     const cellSym = (r: number) => me.reels[r].cells[me.reels[r].stop]?.symbol;
     const goldOf = new Map<ScoreGroup, number>();
     const notesOf = new Map<ScoreGroup, string[]>();
@@ -804,11 +819,21 @@ export class Fight {
       s.touched = this.midasTouch(me, line, touchable, has('decree'));
       s.raised = true;
     }
+    // CASH CASSIDY: MAKE IT RAIN! A chip jackpot (a chip pair with LOOSE CHANGE, at half base) with enough chips held
+    // hits for the chips in hand x2, counted before it costs them.
+    if (player && this.meter?.kind === 'vault' && this.chipsNow() >= this.rainCost(me)) {
+      const g = s.groups.find((x) => x.symbol === 'goldbar' && x.matched && (x.reels.length >= 3 || (x.reels.length === 2 && has('loosechange'))));
+      if (g) {
+        g.rain = true;
+        g.base = Math.round((this.chipsNow() * RAIN.perChip) / (g.reels.length >= 3 ? 1 : 2));
+      }
+    }
     let vaultGroup: ScoreGroup | null = null;
-    // MIDAS: an open VAULT multiplies your first paying group, then resets to its resting level.
+    // CASH CASSIDY: a full HIGH ROLLER bar multiplies your first paying group (MAKE IT RAIN first, then swords), then
+    // resets to its resting level.
     if (player && this.meter?.kind === 'vault' && me.armed) {
       // Your best paying group: swords first, then the biggest (never a lone shield if anything better paid).
-      const g0 = s.groups.filter(pays).sort((a, b) => Number(b.symbol === 'sword') - Number(a.symbol === 'sword') || b.base * b.mult - a.base * a.mult)[0];
+      const g0 = s.groups.filter(pays).sort((a, b) => Number(!!b.rain) - Number(!!a.rain) || Number(b.symbol === 'sword') - Number(a.symbol === 'sword') || b.base * b.mult - a.base * a.mult)[0];
       if (g0) {
         const mul = this.vaultMul();
         g0.mult *= mul;
@@ -827,7 +852,8 @@ export class Fight {
     for (const g of s.groups) {
       const notes: string[] = [];
       notesOf.set(g, notes);
-      if (g === vaultGroup) notes.push(`VAULT X${this.vaultPaid}`);
+      if (g === vaultGroup) notes.push(`HIGH ROLLER X${this.vaultPaid}`);
+      if (g.rain) notes.push('MAKE IT RAIN!');
       // A jackpot of one cell counts that cell's charm three times.
       const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
       let gold = 0;
@@ -1136,14 +1162,11 @@ export class Fight {
       case 'goldbar':
       case 'thorn':
         if (!player || this.meter?.symbol !== g.symbol) break;
-        // MIDAS: gold bars pay chips (+1 per bar, +3 on a jackpot), capped per fight.
+        // CASH CASSIDY: every chip symbol pays a chip (1, 2 or 3; no cap: MAKE IT RAIN spends them).
         if (g.symbol === 'goldbar' && this.meter.kind === 'vault') {
-          const want = g.reels.length + (g.reels.length >= 3 ? MIDAS.jackpotChips : 0);
-          const got = Math.min(want, MIDAS.chipCap - this.midasChips);
-          if (got > 0) {
-            this.midasChips += got;
-            events.push({ type: 'midasChips', side: me.side, amount: got, total: this.midasChips });
-          }
+          this.midasChips += g.reels.length;
+          events.push({ type: 'midasChips', side: me.side, amount: g.reels.length, total: this.midasChips });
+          if (g.rain) this.makeItRain(me, g, events);
         }
         {
           const grounded = g.reels.filter((r) => this.isGrounded(me, r)).length;
@@ -1175,6 +1198,26 @@ export class Fight {
     }
     void score;
     events.push({ type: 'fizzle', side: me.side, reels: g.reels, symbol: g.symbol });
+  }
+
+  /** MAKE IT RAIN!: the hit (scored in score()), then its cost; TIP JAR heals, SLUSH FUND refills the bar. */
+  private makeItRain(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
+    const foe = this.sides[other(me.side)];
+    const cost = this.rainCost(me);
+    events.push({ type: 'makeItRain', side: me.side, reels: g.reels, chips: this.chipsNow(), cost, total: this.midasChips - cost });
+    if (me.relics.has('rainmaker')) events.push({ type: 'relic', side: me.side, relic: 'rainmaker' });
+    this.hit(me, foe, g.amount, g.reels, events);
+    this.midasChips -= cost;
+    events.push({ type: 'midasChips', side: me.side, amount: -cost, total: this.midasChips });
+    if (this.over) return;
+    if (me.relics.has('tipjar')) {
+      events.push({ type: 'relic', side: me.side, relic: 'tipjar' });
+      this.heal(me, RAIN.tipJarHeal, 'tipjar', events);
+    }
+    if (me.relics.has('slushfund') && !me.armed) {
+      events.push({ type: 'relic', side: me.side, relic: 'slushfund' });
+      this.fillMeter(me, 0, Array.from({ length: RAIN.slushFund }, () => g.reels[0]), events);
+    }
   }
 
   /**

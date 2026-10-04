@@ -81,6 +81,8 @@ export type CombatEvent =
   | { type: 'midasChips'; side: SideId; amount: number; total: number }
   /** LUCRE: chips its group paid (banked on a win). */
   | { type: 'lucreChips'; side: SideId; reels: number[]; amount: number; total: number }
+  /** CASH CASSIDY: MAKE IT RAIN! (a chip jackpot hits for the chips held, then costs `cost` chips). */
+  | { type: 'makeItRain'; side: SideId; reels: number[]; chips: number; cost: number; total: number }
   /** MIDAS TOUCH: these cells turned (more) gold for the fight; `n` is each cell's touch count. */
   | { type: 'touch'; side: SideId; cells: { reel: number; index: number; n: number }[] }
   | { type: 'slime'; from: SideId; to: SideId; reels: number[]; amount: number; cells: CellRef[]; wasted: number }

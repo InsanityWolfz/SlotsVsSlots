@@ -31,7 +31,7 @@ export const CHALLENGES: ChallengeDef[] = [
   { id: 'glass', name: 'GLASS JAW', cabinet: 'joker', stake: 0, edges: ['frail', 'fast'], title: 'WILD CARD', text: 'ONE GOOD HIT AND IT IS OVER.' },
   { id: 'rollers', name: 'HEAVY HITTERS', cabinet: 'tesla', stake: 0, edges: ['rollers'], title: 'LIVE WIRE', text: 'EVERYONE AT THIS TABLE CAME TO STAY.' },
   { id: 'fast', name: 'FAST COMPANY', cabinet: 'knight', stake: 0, edges: ['fast'], title: 'QUICK DRAW', text: 'THE TABLE PLAYS FAST TONIGHT.' },
-  { id: 'broke', name: 'SHORT STACK', cabinet: 'midas', stake: 0, edges: [], chips: 0, title: 'SELF-MADE', text: 'KING AURUM WALKS IN WITH EMPTY POCKETS.' },
+  { id: 'broke', name: 'SHORT STACK', cabinet: 'midas', stake: 0, edges: [], chips: 0, title: 'SELF-MADE', text: 'CASH CASSIDY WALKS IN WITH EMPTY POCKETS.' },
   // (Was HOUSE CUT: it attacked BRIAR's identity, 50.7 -> 13.7, and walled the ladder: EXPERT_PLAYTEST_9 D4.)
   { id: 'cut', name: 'BAD BLOOD', cabinet: 'thorn', stake: 0, edges: ['rollers', 'frail', 'fast'], title: 'THORN IN THE SIDE', text: 'EVERY TABLE CAME TO STAY. LET THEM BLEED ON YOUR THORNS.' },
   { id: 'all', name: 'ALL OF IT', cabinet: 'midas', stake: 2, edges: ['fast'], title: 'HIGH ROLLER', text: 'THE WHOLE HOUSE PLAYS FAST. ALL THE WAY TO THE DEALER.' },

@@ -19,6 +19,8 @@ export interface ScoreGroup {
   mult: number;
   /** Paid as a jackpot even with one cell (JAX's payoff, the 3-WILD bonus reel). */
   jackpot?: boolean;
+  /** CASH CASSIDY: a chip jackpot that MAKES IT RAIN (it hits for the chips you hold, then costs some). */
+  rain?: boolean;
   /** Taken off by an enemy (the Croupier's rake, a hex): shown as a red -N. */
   cut?: number;
   /** Why it paid what it did (X2 GOLD, RAISE X2, HALF...). */

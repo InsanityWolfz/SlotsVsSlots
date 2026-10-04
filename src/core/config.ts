@@ -150,6 +150,12 @@ export type RelicId =
   | 'pitboss'
   | 'coil'
   | 'taxman'
+  // CASH CASSIDY (MAKE IT RAIN)
+  | 'loadedchips'
+  | 'rainmaker'
+  | 'slushfund'
+  | 'tipjar'
+  | 'loosechange'
   // Side bets
   | 'loaded'
   | 'marker'

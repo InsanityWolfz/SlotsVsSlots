@@ -1822,15 +1822,15 @@ const MINI = {
     '  YOo  ',
     ' Yo    ',
   ],
-  // Tuesday rework: MIDAS's gold bar and BRIAR's thorn as mini reel symbols
+  // Tuesday rework: THE BANKROLL's casino chip (id kept: goldbar) and BRIAR's thorn as mini reel symbols
   goldbar: [
-    '       ',
-    '  WYYY ',
-    ' WYYYYO',
-    'GGGGGGg',
-    'GYGGGGg',
-    'GGGGGGg',
-    'gggggg ',
+    ' RMWRr ',
+    'RMrrrRr',
+    'WrRYRrW',
+    'WrYWYrL',
+    'RrRGRrr',
+    'rRRLRRd',
+    ' rTTrd ',
   ],
   thorn: [
     '     EE',
@@ -2012,9 +2012,12 @@ S.cabinetKnight = cabinet({
   },
 });
 
-// midas: all gold, red velvet trim, a crown on the marquee, gold-framed bolts, coins spilling in the tray
+// bankroll: money-green pinstripe body, gold trim, a fan of banknotes behind a big red chip on the topper,
+// a gold $ on the marquee, gold-framed chips on the reels, chips and coins spilling in the tray
 S.cabinetMidas = cabinet({
-  body: ['Y', 'G', 'g', 'b'], trim: ['R', 'r', 'd'], rim: ['Y', 'G', 'g'], panel: ['R', 'r', 'd'], bulbs: ['W', 'Y'], knob: ['M', 'R', 'r'],
+  body: ['e', 'Q', 'q', 'q'], trim: ['Y', 'G', 'g'], rim: ['Y', 'G', 'g'], panel: ['Q', 'q', 'q'], bulbs: ['W', 'Y'], knob: ['M', 'R', 'r'],
+  bodyFx: (x, y, c) => (c === 'Q' && x % 6 === 1 && y > 19 ? 'e' : c),
+  panelFx: (x, y) => ((x + y) % 4 === 0 ? 'Q' : y <= 12 ? 'Q' : 'q'),
   reels: [['goldbar', 'goldbar', 'goldbar'], ['goldbar', 'goldbar', 'goldbar'], ['goldbar', 'goldbar', 'goldbar']],
   cellFx(g, x0, y0) {
     for (let y = y0 - 1; y <= y0 + 9; y++) for (let x = x0; x <= x0 + 8; x++) {
@@ -2023,19 +2026,47 @@ S.cabinetMidas = cabinet({
     }
     put(g, x0, y0 - 1, 'W'); put(g, x0 + 8, y0 + 9, 'G');
   },
-  belly(g) { for (let x = 9; x <= 35; x += 4) { put(g, x, 48, 'Y'); put(g, x + 1, 49, 'G'); } },
-  tray(g) { stamp(g, 12, 53, [' YG  WYG', 'GYYg YYGg']); stamp(g, 25, 53, ['  YG', 'YGYYg']); stamp(g, 31, 54, ['YG']); },
+  belly(g) {
+    // a banded wad of cash across the belly
+    for (let x = 9; x <= 35; x++) { put(g, x, 48, x % 3 ? 'X' : 'Z'); put(g, x, 49, x % 3 ? 'Z' : 'z'); }
+    for (const x of [15, 22, 29]) { put(g, x, 48, 'Y'); put(g, x, 49, 'G'); put(g, x + 1, 48, 'G'); put(g, x + 1, 49, 'g'); }
+  },
+  tray(g) {
+    stamp(g, 11, 53, [' MW ', 'MRRr', 'TrTr']);
+    stamp(g, 17, 54, ['WYYG', 'GYGg']);
+    stamp(g, 23, 53, [' MW  YG', 'MRRr YYg', 'TrTr Gg']);
+    stamp(g, 32, 54, ['MW', 'Tr']);
+  },
   deco(g) {
-    stampRimmed(g, 15, 1, [
-      'W     W     W',
-      'YG   YWG   YG',
-      'YGG YGGGg YGg',
-      'YGGYGRRGgYGGg',
-      'YGGGGRrGGGGGg',
-      'YMRYGGGGGAUGg',
-      'ggggggggggggg',
+    // short chip stacks flanking the big chip: red / blue / red and blue / red
+    const stack = (x0, y0, cols) => {
+      const rows = [' RMWRr ', 'RRRWRRr'];
+      cols.forEach((c) => rows.push(c === 'R' ? 'TrrTrrd' : 'AUUAUUN'));
+      stampRimmed(g, x0, y0, rows);
+    };
+    stack(7, 2, ['R', 'U', 'R', 'U']);
+    stack(31, 3, ['U', 'R', 'U']);
+    stampRimmed(g, 16, 0, [
+      '   RMWWRR   ',
+      ' RMRRWWRRRr ',
+      'RMrrrrrrrrRr',
+      'WWrRRYYRRrWW',
+      'WWrRYWYGRrLL',
+      'MRrRRGgRRrrr',
+      'rRRrrrrrrRRd',
+      ' rTRRLLRRtd ',
+      '   rTTrrt   ',
     ]);
-    stampRimmed(g, 19, 10, [' YYYG ', 'YWYYGg', 'YYgYGg', 'YYgYGg', 'GYYGgg', ' Gggg ']);
+    // gold $ on the marquee
+    stampRimmed(g, 20, 10, [
+      '  YG ',
+      ' YWYGg',
+      'YG    ',
+      ' YYYG ',
+      '    Gg',
+      'gGGGg ',
+      '  Gg  ',
+    ].map((r) => r.padEnd(6)));
   },
 });
 
@@ -3392,21 +3423,24 @@ S.relicSym = lit(16, 16, [
   '..gg........gg..',
 ]);
 // ---------------------------------------------------------------- Tuesday rework: signature symbols + charm relic
-// goldbar (16x16): MIDAS's signature symbol, a gold ingot (bright top face, gold front, dark side)
+// goldbar (16x16): THE BANKROLL's signature symbol (id kept), a red casino chip matching the `chip` currency:
+// tilted face with white edge inserts, a dark inner groove and a gold star, over a red/white striped rim
 S.goldbar = lit(16, 16, [
   '................',
-  '................',
-  '................',
-  '.......WWYYY....',
-  '.....WWYYYYYO...',
-  '....WYYYYYYOOg..',
-  '...YYYYYYYYOOg..',
-  '..GGGGGGGGGGgg..',
-  '..GYYGGGGGGGgg..',
-  '..GYGGGGGGGGgg..',
-  '..GGGGGGGGGGg...',
-  '..GGGGGGGGGGg...',
-  '..gggggggggg....',
+  '.....RMWWRR.....',
+  '...RMRRWWRRRr...',
+  '..RMrrrrrrrrRr..',
+  '.RRrRMRRRRRRrRr.',
+  '.WWrMRRRYRRRrWW.',
+  '.WWrRRYYWYYRrWL.',
+  '.WWrRRRYYGRRrLL.',
+  '.WWrRRRGRgRRrLL.',
+  '.RRrRRRRRRRRrRR.',
+  '.rRRrrrrrrrrRRt.',
+  '.rTRRRRLLRRRRdt.',
+  '..TTrRRLLRRtdd..',
+  '...TrrTTrrttd...',
+  '.....rTTrrt.....',
   '................',
 ]);
 // thorn (16x16): BRIAR's signature symbol, a bramble with pale-tipped spikes
@@ -3495,20 +3529,24 @@ S.relicDrum = lit(16, 16, [
   stamp(g, 5, 7, ['MR RR', 'RRRRr', ' RRr ', '  r  ']);
   S.relicChainmail = toRows(outline(g));
 }
-// relicVault (16x16): KING'S VAULT, a gold bar in a dark vault, the round-dial door swung open
+// relicVault (16x16): BANK VAULT, a round steel vault door with a riveted rim and a spoked wheel handle
 S.relicVault = lit(16, 16, [
   '................',
-  '.LLLLLLLLS.LSSD.',
-  '.LkkkkkkkD.LSSD.',
-  '.LkkkkkkkDDLSGD.',
-  '.LkkkkkkkD.LGYg.',
-  '.LkkkkkkkD.LSGD.',
-  '.LkkkkkkkD.LSSD.',
-  '.LkWYYYOkD.LSSD.',
-  '.LkGGGGgkD.LSSD.',
-  '.LkGGGGgkD.LSSD.',
-  '.LhhhhhhhDDLSSD.',
-  '.SDDDDDDDD.DDDD.',
+  '.....LLWLLS.....',
+  '...LLLLLLLLSS...',
+  '..LLLkkkkkkSSS..',
+  '.LLkWkkkkkkIkSD.',
+  '.WLkkLkkkkSkkSI.',
+  '.LLkkkLLLSkkkSD.',
+  '.LLkkkLWLSkkkSD.',
+  '.LLkkkLLSDkkkSD.',
+  '.LLkkkSSDDkkkDD.',
+  '.SLkkSkkkkDkkDD.',
+  '.SSkIkkkkkkSkDD.',
+  '..SSSkkkkkkDDD..',
+  '...ISSSDDDDDI...',
+  '.....SDDIDD.....',
+  '................',
 ]);
 // relicDecree (16x16): ROYAL DECREE, a cream scroll with a red wax seal stamped with a gold crown
 S.relicDecree = lit(16, 16, [
@@ -3889,6 +3927,101 @@ S.relicToll = lit(16, 16, [
   '.ttttttt........',
   '.IIIIIH.........',
   '.HHHHHh.........',
+]);
+// relicLoadedChips (16x16): LOADED CHIPS, a short leaning stack of casino chips (red / blue / red) with a charm sparkle on top
+S.relicLoadedChips = lit(16, 16, [
+  '................',
+  '............Y...',
+  '...........YWY..',
+  '....RMWWRr..Y...',
+  '..MRRRWWRRRr....',
+  '.WWRRYWYRRRWW...',
+  '.RRRRRYGRRRrr...',
+  '.TRRrrWWrrRRt...',
+  '.TrrTTrrTTrrt...',
+  '.dddddddddddd...',
+  '..AUUAAUUAAUUN..',
+  '..NNNNNNNNNNNN..',
+  '.TrrTTrrTTrrt...',
+  '.rrrrrrrrrrrd...',
+  '..ddddddddddd...',
+  '................',
+]);
+// relicRainmaker (16x16): RAINMAKER, a little storm cloud raining green banknotes and gold coins
+S.relicRainmaker = lit(16, 16, [
+  '................',
+  '.....WWL........',
+  '...WWWWLLWL.....',
+  '..WWLLLLLLLLS...',
+  '.WLLLLLLLLLLSS..',
+  '.LLLLLLLLLLSSSD.',
+  '..SSSSSSSSSSDD..',
+  '................',
+  '.XXXXZ..WYG.....',
+  '.XZzZz..YGg.....',
+  '.ZZZzz..Ggg.....',
+  '..........XXXXZ.',
+  '...WYG....XZzZz.',
+  '...YGg....ZZZzz.',
+  '...Ggg..........',
+  '................',
+]);
+// relicSlushFund (16x16): SLUSH FUND, a tied burlap money bag with a gold cord and a gold $
+S.relicSlushFund = lit(16, 16, [
+  '................',
+  '.....wB..wB.....',
+  '......wBwB......',
+  '.....GYYYGg.....',
+  '......wBBb......',
+  '.....wwBBBb.....',
+  '....wwBBYBBb....',
+  '...wwBBYYYBBb...',
+  '..wwBBBYBBBBBb..',
+  '..wwBBBYYYBBBb..',
+  '..wBBBBBBYBBBb..',
+  '..wBBBBYYYBBbb..',
+  '..BBBBBBYBBBbb..',
+  '...BBBBBBBBbb...',
+  '....bbbbbbbb....',
+  '................',
+]);
+// relicTipJar (16x16): TIP JAR, a glass jar with a label strip, gold coins in the bottom and a folded bill sticking out
+S.relicTipJar = lit(16, 16, [
+  '................',
+  '........XXXXZ...',
+  '.......XZzZz....',
+  '......XZZZz.....',
+  '...LLLXZzzLLS...',
+  '....CWCZzCCA....',
+  '...CWCCCCCCCA...',
+  '...TTTTTTTTTt...',
+  '...ttttttttts...',
+  '...CWCCCCCCCA...',
+  '...CWCCYGCCCA...',
+  '...CWYGYWGYGA...',
+  '...AYGGYGGYgN...',
+  '....AAAAAAAN....',
+  '................',
+  '................',
+]);
+// relicLooseChange (16x16): LOOSE CHANGE, coins tumbling every which way (one face-on, one on its edge, flat ones) and a red chip
+S.relicLooseChange = lit(16, 16, [
+  '................',
+  '...........Yg...',
+  '...YYYG...YWg...',
+  '..YWYYYG..YYg...',
+  '.YWGGGGYg..gg...',
+  '.YGYYYYGg.......',
+  '.YGYYYYGg.......',
+  '.YYGGGGgg.......',
+  '..GYYGgg..RWWr..',
+  '...gggg..RRrrRr.',
+  '.........WrYGrW.',
+  '..YY.....RrGgrd.',
+  '.GYYg.YY.rRRRRd.',
+  '.....GYYg.TrTd..',
+  '................',
+  '................',
 ]);
 // relicBracelet (16x16): CHARM BRACELET, a gold chain loop with three charms hanging (red heart, blue gem, green clover)
 S.relicBracelet = lit(16, 16, [
@@ -4580,32 +4713,33 @@ S.heroKnight = lit(24, 24, [
   segRow(24, 0, 'LSSSSSSDD', 9, 'UUUYGgUUN', 18, 'SSSDDD'),
   segRow(24, 0, 'SSSSSDDDD', 9, 'AUUUgUUNN', 18, 'SSDDDD'),
 ]);
-// heroMidas: smug gold-bearded king -- jewelled crown, heavy-lidded eye, curled moustache, ermine collar on a red robe
+// heroMidas (id kept): CASH CASSIDY -- black gambler hat with a gold band and an ace tucked in it, gold-rimmed shades,
+// sly gold-tooth grin with a toothpick, charcoal jacket over a money-green vest, red bow tie, a chip in the breast pocket
 S.heroMidas = lit(24, 24, [
   segRow(24),
-  segRow(24, 7, 'Y', 12, 'W', 17, 'Y'),
-  segRow(24, 7, 'YY', 11, 'YWY', 16, 'Gg'),
-  segRow(24, 7, 'YYG', 11, 'YRG', 15, 'YGg'),
-  segRow(24, 7, 'YYYGYYYGYGg'),
-  segRow(24, 7, 'WYRYYAYYRGg'),
-  segRow(24, 6, 'gGGGGGGGGGGg'),
-  segRow(24, 5, 'gGYY', 9, 'FFFFFFFFf'),
-  segRow(24, 5, 'gGYG', 9, 'FFFFFGGGg'),
-  segRow(24, 5, 'gGGY', 9, 'FFFFfffKf'),
-  segRow(24, 5, 'gGYG', 9, 'FFfFFfWKF'),
-  segRow(24, 5, 'gGGG', 9, 'FFffFFFFFF'),
-  segRow(24, 5, 'gGYG', 9, 'FfFFFFMFFf', 19, 'Y'),
-  segRow(24, 5, 'gGG', 8, 'YGFFFFYYYYGg'),
-  segRow(24, 6, 'gG', 8, 'YYGFFFGGrrKg'),
-  segRow(24, 7, 'gYYYGGYYYGGg'),
-  segRow(24, 8, 'gYYGYYGYGGg'),
-  segRow(24, 4, 'TWTT', 9, 'gYGYYGGGg', 18, 'TTt'),
-  segRow(24, 2, 'TWKTTT', 10, 'gYGGGgg', 17, 'TKTTt'),
-  segRow(24, 1, 'RTTTKTTR', 11, 'gGGg', 16, 'RTTKTtR'),
-  segRow(24, 0, 'RRRRRRRRRR', 12, 'gg', 15, 'RRRRRRRRr'),
-  segRow(24, 0, 'MRRRRRRRRRRRRRRRRRRRRRrr'),
-  segRow(24, 0, 'RRRRRRRRRYRRRRRRYRRRRrrr'),
-  segRow(24, 0, 'RRRRRRRRRGRRRRRRGRRRrrrr'),
+  segRow(24, 9, 'lkk', 13, 'lkkk'),
+  segRow(24, 8, 'lkkTTkkkkkkk'),
+  segRow(24, 8, 'lkkTRkkkkkkk'),
+  segRow(24, 8, 'lkkTTkkkkkkk'),
+  segRow(24, 1, 'l', 8, 'GYYGGGGGGGGg', 22, 'k'),
+  segRow(24, 1, 'lllllllllllllllllllllk'),
+  segRow(24, 2, 'kkkkkkkkkkkkkkkkkkkk'),
+  segRow(24, 8, 'bbffffffffff'),
+  segRow(24, 8, 'bbFFFFFFFFFF'),
+  segRow(24, 7, 'fbbFF', 12, 'YGGGGGG'),
+  segRow(24, 7, 'Ffb', 10, 'FF', 12, 'kWlkkkkk'),
+  segRow(24, 8, 'bbFF', 12, 'FkkkkkkF'),
+  segRow(24, 8, 'bFFFFFFFFFFFf'),
+  segRow(24, 8, 'bFFFFFFFFFFK'),
+  segRow(24, 8, 'bbFFKTTGTTK', 19, 'wwww'),
+  segRow(24, 9, 'bbFFFKKKKf'),
+  segRow(24, 10, 'bbfFFFFf'),
+  segRow(24, 11, 'fffff'),
+  segRow(24, 3, 'lkkkkkkT', 11, 'MRrR', 15, 'Tkkkkk'),
+  segRow(24, 1, 'lllkkkkkT', 10, 'TTRrTT', 16, 'kkkkkk'),
+  segRow(24, 0, 'llkkkkkkklQ', 11, 'TTTT', 15, 'eQkkkkkkk'),
+  segRow(24, 0, 'lkRWRkkkklQQ', 12, 'TT', 14, 'QQQkkkkkkk'),
+  segRow(24, 0, 'kkkkkkkkklQQG', 13, 'T', 14, 'GQQkkkkkkk'),
 ]);
 // heroThorn: briar ranger -- deep green hood peaked back, a thorned vine wound round it (with a rose),
 // shadowed face with one lime eye glaring right, leaf-mail shoulders
@@ -4744,6 +4878,7 @@ const DIMS = {
   relicFirstblood: 16, relicPiggy: 16, relicTrophy: 16, relicHolywater: 16, relicBash: 16,
   relicLoaded: 16, relicMarker: 16, relicHighLimit: 16,
   relicHotStreak: 16, relicBelt: 16, relicToll: 16,
+  relicLoadedChips: 16, relicRainmaker: 16, relicSlushFund: 16, relicTipJar: 16, relicLooseChange: 16,
   relicBracelet: 16, relicMetronome: 16, relicSnakeEyes: 16, relicPitBoss: 16, relicCoil: 16, relicTaxMan: 16,
   trimClassic: 16, trimBronze: 16, trimSilver: 16, trimNeon: 16, trimVelvet: 16,
   trimEmerald: 16, trimDiamond: 16, trimObsidian: 16, trimHouse: 16,
@@ -4878,7 +5013,9 @@ export type SpriteId =
   | 'trimDiamond' | 'trimObsidian' | 'trimHouse'
   | 'relicHotStreak' | 'relicBelt' | 'relicToll' // relics, 16x16
   | 'relicBracelet' | 'relicMetronome' | 'relicSnakeEyes'
-  | 'relicPitBoss' | 'relicCoil' | 'relicTaxMan';
+  | 'relicPitBoss' | 'relicCoil' | 'relicTaxMan'
+  | 'relicLoadedChips' | 'relicRainmaker' | 'relicSlushFund' // THE BANKROLL relics, 16x16
+  | 'relicTipJar' | 'relicLooseChange';
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

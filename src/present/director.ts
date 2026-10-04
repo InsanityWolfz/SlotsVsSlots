@@ -216,7 +216,16 @@ export class Director {
       case 'closingTime':
         this.s.sounds.stingerMedium();
         return this.banner('CLOSING TIME!', '#ff6a5a', 1.2, 0.4, 'A STALLED TABLE GOES TO THE HOUSE', BANNER_Y, 3);
+      case 'makeItRain': {
+        // MAKE IT RAIN!: a callout, a shower of coins (sound), and the HUD's chip count follows.
+        const c = this.machineCenter(e.side);
+        this.s.sounds.coin(4);
+        this.s.sounds.coin(8);
+        this.s.sounds.coin(12);
+        return this.popText('MAKE IT RAIN!', c.x, MACHINE_TOP + 30, 4, '#7dff7a', 30, 0.5);
+      }
       case 'midasChips': {
+        if (e.side === 'player') this.s.huds.player.chips = this.s.huds.player.chipsHeld + e.total;
         const c = this.machineCenter(e.side);
         this.s.sounds.coin(6);
         this.s.sounds.coin(10);
@@ -632,7 +641,7 @@ export class Director {
     });
     wheel.landed = at;
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (wheel.flash = v) }));
-    this.bg(this.popText(`WILD ${pickEnh ? `${pickEnh.toUpperCase()} ` : ''}${pick === 'goldbar' ? 'GOLD BAR' : pick.toUpperCase()} JACKPOT!`, cx, cy - 120, 2.5, '#ff6ad5', 16, 0.4));
+    this.bg(this.popText(`WILD ${pickEnh ? `${pickEnh.toUpperCase()} ` : ''}${pick === 'goldbar' ? 'CHIP' : pick.toUpperCase()} JACKPOT!`, cx, cy - 120, 2.5, '#ff6ad5', 16, 0.4));
     await this.c.wait(0.4);
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.2, onUpdate: (v) => (wheel.alpha = v) }).then(() => this.s.fx.remove(wheel)));
   }
@@ -1078,7 +1087,7 @@ export class Director {
       h.armed = true;
       this.s.sounds.lucky();
       const p0 = h.pipPos(0);
-      this.bg(this.popText(m.kind === 'touch' ? 'NEXT SWORDS AND SHIELDS TURN GOLD!' : m.kind === 'vault' ? 'THE VAULT IS OPEN: YOUR NEXT PAY MULTIPLIES!' : 'NEXT SPIN: ALL JACKPOTS!', p0.x + 80, p0.y - 26, 2, m.color, 20, 0.6));
+      this.bg(this.popText(m.kind === 'touch' ? 'NEXT SWORDS AND SHIELDS TURN GOLD!' : m.kind === 'vault' ? 'HIGH ROLLER! YOUR NEXT PAY MULTIPLIES!' : 'NEXT SPIN: ALL JACKPOTS!', p0.x + 80, p0.y - 26, 2, m.color, 20, 0.6));
     }
     if (e.reels.length) this.settle(e.side, e.reels);
   }
@@ -1094,7 +1103,7 @@ export class Director {
     const color = h.meter?.color ?? COLORS.goldLight;
     // A callout over the machine, not a second banner (the PAIR!/JACKPOT! banner carries the math).
     const c = this.machineCenter(e.side);
-    await this.popText(e.kind === 'touch' ? 'MIDAS TOUCH!' : e.kind === 'vault' ? `VAULT X${e.mul ?? 1}!` : 'ALL JACKPOTS!', c.x, MACHINE_TOP + 30, 4, color, 30, 0.45);
+    await this.popText(e.kind === 'touch' ? 'MIDAS TOUCH!' : e.kind === 'vault' ? `HIGH ROLLER X${e.mul ?? 1}!` : 'ALL JACKPOTS!', c.x, MACHINE_TOP + 30, 4, color, 30, 0.45);
   }
 
   /** MIDAS TOUCH: swords and shields turn gold (a gold rim with 1-3 pips) for the rest of the fight. */
