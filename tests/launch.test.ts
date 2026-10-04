@@ -39,6 +39,7 @@ describe('public playtest shell', () => {
 
   it('hiscores record the run, the killer and the build; collection discovers relics and charms', () => {
     const run = createRun(base, 9, 'midas', 1);
+    run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }];
     run.player.relics.push('clover');
     run.records.push({ depth: 0, enemy: 'SLIME', archetype: 'slime', won: false, turns: 3, hpBefore: 20, hpAfter: 0, rocksAdded: 0, rocksCrumbled: 0, portrait: 'enemyPortrait' });
     run.over = true;

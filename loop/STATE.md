@@ -1578,3 +1578,11 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - Fuzz 30: no breaks. Tests: 234 (tests/cassidy.test.ts).
 - **Watch:** CASSIDY is the lowest WHITE and the highest GREEN (rain scales with a big late chip pile). The sim bot's
   shop habit (it spends the pile) still undersells him.
+
+## Iteration 72b (2026-10-04): CASH CASSIDY polish (user)
+- The machine description has no formulas: "MORE CHIPS, BIGGER PAYS. A CHIP JACKPOT MAKES IT RAIN! 360 HP."
+  BANK VAULT reads "AFTER EACH WIN, ONE OF YOUR SWORDS GETS A GOLD CHARM".
+- The HIGH ROLLER bar keeps its N/100; "N CHIPS XM" sits on a line under it. The top-left chip counter follows every
+  chip mid-fight (chips paid, MAKE IT RAIN, the House's skim, a bet won mid-fight, CHIP charm chips, the Mimic).
+- **No 4-gold-sword start; 24 chips (was 16).** CASSIDY 38.9 / 20.4 → 42.1 / 23.8; dealer 1.3 → **1.7**: **42.1 / 18.9**.
+- Tests: 234 (three tests that leaned on the gold start now set it themselves). Fuzz 20: no breaks.

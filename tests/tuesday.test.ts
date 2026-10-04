@@ -120,7 +120,8 @@ describe('signature meters (one per slot machine)', () => {
 
 describe('charm and level cards', () => {
   it('charm cards only target plain cells, and only when there are enough of them', () => {
-    const run = createRun(base, 3, 'midas'); // 4 gold swords on reel 1: no plain swords there
+    const run = createRun(base, 3, 'midas');
+    run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }]; // 4 gold swords on reel 1: no plain swords there
     const opts = charmOptions(run, 2);
     expect(opts.some((o) => o.kind === 'gild' && o.reel === 0 && o.symbol === 'sword')).toBe(false);
     expect(opts.some((o) => o.kind === 'gild' && o.reel === 1 && o.symbol === 'sword')).toBe(true);
@@ -163,6 +164,7 @@ describe('post-boss BIG CHOICES', () => {
 
   it('ARMS RACE: +1 level to all your symbols for -60 max HP; TWIN REEL copies reel 1 onto reel 3', () => {
     const run = createRun(base, 5, 'midas');
+    run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }];
     const hp = run.player.maxHp;
     run.pendingChoice = [{ id: 'armsRace' }, { id: 'masterwork', symbol: 'sword' }, { id: 'whetstone', symbol: 'shield' }];
     takeChoice(run, { id: 'armsRace' });

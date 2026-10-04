@@ -99,10 +99,11 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     // 360 HP (was 300): MIDAS trailed every table, its GREEN deaths spread over the whole run (EXPERT_PLAYTEST_9 D6).
     hp: 36 * UNIT,
     strips: r3({ sword: 4, shield: 4, goldbar: 4 }),
-    gilded: [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }],
+    // No gold-sword start (a leftover from MIDAS): 8 more chips instead (user playtest).
+    gilded: [],
     favors: 'gold',
     meter: { kind: 'vault', symbol: 'goldbar', cost: 10 * UNIT, heal: 2 * UNIT },
-    startChips: 16,
+    startChips: 24,
     symbols: ['sword', 'shield', 'goldbar'],
     rule: 'MORE CHIPS, BIGGER PAYS. A CHIP JACKPOT MAKES IT RAIN! 360 HP.',
     act2: { text: 'THE +1 CHIP PER WIN KEEPS PAYING' },
