@@ -1513,3 +1513,24 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - Fight-4 deaths 4.3%. Challenges: 40.0 / 34.5 / 36.3 / 30.0 / 27.5 / 14.5 / 14.0. Fuzz: no breaks.
 - **Pending (user):** the GAMBLIN MAN rework (MIDAS), the weekly's seeding, and whether machine-only charms and relics stay.
   Retune the gates after those land.
+
+## Iteration 71b (2026-10-04): the user's answers
+- **Machine-only charms and relics stay** (the user withdrew that rule). INGOT stays out: back-to-back INGOTs did nothing.
+- Big choices show **no SAFE tag** and no green "safe" glow (one accent for every card).
+- **SNAKE EYES 25.** PIT BOSS stays as is (strong and enticing, and it doesn't scale).
+- **HIGH ROLLER relic (crown) retired:** a relic that mostly matters against one boss isn't enticing. Its name goes to
+  GAMBLIN MAN's bar.
+- **The weekly's spins are fresh every try.** Its map, enemies and offers are still the week's, the same for everyone.
+  The daily stays fully locked (one try).
+- **Measured** (tuesday 1000): WHITE **46.0** / GREEN **19.5**, over both gate tops.
+
+    | machine | WHITE | GREEN |
+    |---|---|---|
+    | KNIGHT | 46.2 | 20.3 |
+    | TESLA | 49.0 | 18.5 |
+    | BRIAR | 50.9 | 20.7 |
+    | JOKER | 46.0 | 19.4 |
+    | MIDAS | 37.9 | 18.4 |
+
+  Fight-4 deaths 4.4%. Challenges: 39.5 / 34.3 / 33.0 / 29.0 / 27.8 / 12.8 / 12.3. Weekly 17.2%. Fuzz: no breaks.
+  A global retune is agreed for after the GAMBLIN MAN rework.

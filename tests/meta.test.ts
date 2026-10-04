@@ -34,14 +34,15 @@ describe('meta: weekly challenge', () => {
       expect(weekly(k)).toEqual(a);
     }
   });
-  it('plays through the Dealer on fixed fights, under both edges', () => {
+  it('plays through the Dealer on a fixed map, under both edges, with fresh spins', () => {
     const k = '2026-W40';
     const w = weekly(k);
     const run = createRun(defaultConfig(), w.seed, w.cabinet, 0);
     applyWeekly(run, k);
     expect(fixedRun(run)).toBe(true);
     expect(runActs(run)).toBe(3);
-    expect(fightConfig(run, defaultConfig()).seed).not.toBeNull();
+    // Fixed map and offers, fresh spins every try (user playtest: a retry replayed the same spins).
+    expect(fightConfig(run, defaultConfig()).seed).toBeNull();
     expect(runEntry(run, 1).weekly).toBe(k);
   });
 });

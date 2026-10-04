@@ -612,7 +612,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.enemy.dmgMul = Math.pow(ENDLESS.dmgBy[run.cabinet] ?? ENDLESS.dmg, run.endless.loop);
   }
   // THE DAILY RUN: every fight is fixed by the day, so everyone meets the same fights.
-  cfg.seed = fixedRun(run) ? dailyFightSeed(run.seed, run.act, run.depth, run.endless?.loop ?? 0) : null;
+  // The daily locks its spins too (one try: the purest comparison). The weekly locks the map, enemies and offers, but
+  // its spins are fresh every try: a retry used to replay the same spins (user playtest).
+  cfg.seed = run.daily ? dailyFightSeed(run.seed, run.act, run.depth, run.endless?.loop ?? 0) : null;
   return cfg;
 }
 

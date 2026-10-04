@@ -12,7 +12,6 @@ import {
   BIG_SET_NAMES,
   BIG_SETS,
   describeChoice,
-  SAFE_CHOICES,
   type BigChoice,
   MIRROR_CHIP_SHIELD_CAP,
   describeOption,
@@ -625,8 +624,8 @@ export class RunScreens {
       const ch = this.choices[i];
       if (!ch || c.scale <= 0.01) return;
       const { title, rule, cost } = describeChoice(run, ch);
-      const safe = SAFE_CHOICES.has(ch.id);
-      const accent = safe ? '#7dff7a' : '#ff9a3a';
+      // One accent for every card: no SAFE tag or green glow (the player doesn't need to be told which pick is safe).
+      const accent = '#ff9a3a';
       const dimmed = this.picked >= 0 && this.picked !== i;
       ctx.save();
       ctx.globalAlpha *= dimmed ? 0.3 : 1;
@@ -642,13 +641,6 @@ export class RunScreens {
         ctx.restore();
       }
       this.panel(ctx, -c.w / 2, -c.h / 2, c.w, c.h, c.hover || this.picked === i ? accent : COLORS.gold);
-      if (safe) {
-        ctx.fillStyle = COLORS.outline;
-        ctx.fillRect(-40, -c.h / 2 + 6, 80, 18);
-        ctx.fillStyle = '#1f5a1e';
-        ctx.fillRect(-38, -c.h / 2 + 8, 76, 14);
-        drawText(ctx, 'SAFE', 0, -c.h / 2 + 15, 1.5, '#b6ff9a');
-      }
       // The symbol / charm it touches, when there is one.
       const icon = (ch.symbol ?? (ch.enh ? CHARM_SYMBOLS[ch.enh][0] : ch.id === 'meltDown' || ch.id === 'gildLot' ? 'sword' : ch.id === 'glassCannon' || ch.id === 'bloodPact' ? 'heart' : ch.id === 'secondWind' ? 'heart' : ch.id === 'sweepUp' ? 'rock' : ch.id === 'edge' ? (ch.reward === 'legend' ? artId('tierLegendary') : ch.reward === 'relic' ? artId('voucherRelic') : 'chip') : ch.id === 'cashOut' ? 'chip' : ch.id === 'ride' ? 'relicDrum' : 'shield')) as SpriteId;
       drawSprite(ctx, icon, 0, -c.h / 2 + 70, 4);

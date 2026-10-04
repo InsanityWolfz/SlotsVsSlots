@@ -22,7 +22,8 @@ export const RELICS: Record<RelicId, RelicDef> = {
   mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS PAY AS A PAIR', sprite: 'relicMirror' },
   fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFF HEALS 30 MORE (TESLA AND BRIAR: 10)', sprite: 'relicFang' },
   bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 60 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
-  crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR PAIRS HEAL 5 (AND STEAL HALF THE HOUSE POT)', sprite: 'relicCrown' },
+  // Retired (user playtest): a relic that mostly matters against one boss isn't enticing. Its name goes to GAMBLIN MAN's bar.
+  crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR PAIRS HEAL 5 (AND STEAL HALF THE HOUSE POT)', sprite: 'relicCrown', retired: true },
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
   midas: { id: 'midas', name: 'GOLD LEAF', text: 'GOLD ON A CELL THAT PAYS NOTHING JOINS YOUR BIGGEST GROUP', sprite: 'relicGoldleaf', charm: 'gold', retired: true },
   rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'WITH CHARGED BOLTS: CHEAPER LIGHTNING, +10 LIGHTNING DAMAGE', sprite: 'relicRod', machine: 'tesla' },
@@ -64,7 +65,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // CONTENT_13.
   bracelet: { id: 'bracelet', name: 'CHARM BRACELET', text: 'EVERYTHING PAYS +5% FOR EACH CHARM TYPE YOU OWN', sprite: 'relicBracelet' },
   metronome: { id: 'metronome', name: 'METRONOME', text: 'EVERY 3RD SPIN PAYS X1.5', sprite: 'relicMetronome' },
-  snakeeyes: { id: 'snakeeyes', name: 'SNAKE EYES', text: 'EACH ENEMY JACKPOT HEALS YOU 30', sprite: 'relicSnakeEyes' },
+  snakeeyes: { id: 'snakeeyes', name: 'SNAKE EYES', text: 'EACH ENEMY JACKPOT HEALS YOU 25', sprite: 'relicSnakeEyes' },
   pitboss: { id: 'pitboss', name: 'PIT BOSS', text: "THE ENEMY'S FIRST JACKPOT EACH FIGHT DOESN'T COUNT", sprite: 'relicPitBoss' },
   coil: { id: 'coil', name: 'TESLA COIL', text: 'A BOLT ABOVE OR BELOW YOUR PAYLINE CHARGES 5', sprite: 'relicCoil', machine: 'tesla' },
   // TAX MAN (CONTENT_13): retired at build. It took MIDAS's identity-relic slot from KING'S VAULT (MIDAS 36.3 -> 28.0 WHITE).
@@ -119,7 +120,7 @@ export const NEW_RELIC = {
   braceletPer: 0.05,
   metronomeEvery: 3,
   metronomeMul: 1.5,
-  snakeHeal: 30,
+  snakeHeal: 25,
   coilCharge: 5,
   taxCap: 3,
   drumStep: UNIT / 5,
@@ -149,7 +150,7 @@ export const BONUS = { wheel: 0.028, rush: 0.012 };
 export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9, uncommonMax: 12, grandChips: 15 };
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
-  common: ['clover', 'battery', 'fang', 'bandage', 'crown', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker', 'hotstreak', 'metronome', 'snakeeyes'],
+  common: ['clover', 'battery', 'fang', 'bandage', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker', 'hotstreak', 'metronome', 'snakeeyes'],
   uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll', 'bracelet', 'coil'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
 };
