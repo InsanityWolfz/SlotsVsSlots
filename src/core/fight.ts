@@ -1,6 +1,6 @@
 import { cloneConfig, UNIT, unitsUp, type AbilityDef, type Enh, type GameConfig, type Levels, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
 import { CABINETS, hasSpecial, type Cabinet, type Meter } from './cabinets';
-import { charmLevel, charmValue, playerSymValue } from './charms';
+import { charmLevel, charmValue, LUCRE_CHIPS, playerSymValue } from './charms';
 import type { CombatEvent, DealCard, HealSource, LineCard, VoucherKind } from './events';
 import {
   BATTERY_SHARE,
@@ -390,6 +390,15 @@ export class Fight {
 
   /** MIDAS: chips won mid-fight by gold bars (paid out if you win). */
   midasChips = 0;
+  /** LUCRE: chips its groups paid this fight (paid on a win, up to its cap). */
+  lucreChips = 0;
+  /** TAX MAN: chips paid this fight. */
+  private taxChips = 0;
+  /** Your spins this fight (METRONOME). */
+  private playerSpins = 0;
+  /** PIT BOSS: the enemy's first jackpot was already cut. */
+  private pitUsed = false;
+  private pitJustFired = false;
   /** SIDE BETS: what this fight has done so far (spins, damage taken, jackpots, best turn). */
   readonly betTrack = newTrack();
   /** MIDAS: the side bet was already paid mid-fight (finishFight mustn't pay it twice). */
@@ -449,6 +458,7 @@ export class Fight {
     const me = this.sides[side];
     const events: CombatEvent[] = [];
     this.turn++;
+    if (side === 'player') this.playerSpins++;
     events.push({ type: 'turnStart', turn: this.turn, side });
     this.mirrorTurnDealt = 0;
     this.playerTurnHp = 0;
@@ -557,7 +567,7 @@ export class Fight {
     for (const group of score.groups) {
       if (allIn && (group.symbol === 'sword' || group.symbol === 'seven')) continue;
       this.resolveGroup(me, group, score, events);
-      if (!this.over && side === 'player') this.thornyFill(me, group, events);
+      if (!this.over && side === 'player') this.cellCharms(me, group, events);
       if (this.over) break;
     }
     if (allIn && !this.over) {
@@ -595,6 +605,27 @@ export class Fight {
     }
     // HOT STREAK: a jackpot makes your next spin pay x2 (any other spin ends it).
     if (side === 'player') this.hotStreak = me.relics.has('hotstreak') && score.tier === 'triple';
+    if (this.pitJustFired) {
+      this.pitJustFired = false;
+      events.push({ type: 'relic', side: 'player', relic: 'pitboss' });
+    }
+    // SNAKE EYES: an enemy jackpot heals you.
+    const you = this.sides.player;
+    if (!this.over && side === 'enemy' && score.tier === 'triple' && you.relics.has('snakeeyes') && you.hp > 0) {
+      events.push({ type: 'relic', side: 'player', relic: 'snakeeyes' });
+      this.heal(you, NEW_RELIC.snakeHeal, 'snakeeyes', events);
+    }
+    // TESLA COIL: a bolt just above or below your payline charges your lightning (once a spin).
+    if (!this.over && side === 'player' && this.special && me.relics.has('coil')) {
+      const near = me.reels.some((reel) => [-1, 1].some((d) => {
+        const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
+        return c.symbol === 'bolt' && !c.slimed && !c.stolen;
+      }));
+      if (near) {
+        events.push({ type: 'relic', side, relic: 'coil' });
+        this.gainEnergy(me, NEW_RELIC.coilCharge, [], events);
+      }
+    }
     // Jackpot Bell: a jackpot fills your meter (TESLA: a full special; BRIAR: the jackpot again into the bank).
     // Not on JOKER's payoff spin: the payoff scores as a jackpot, so the Bell refilled the meter it had just emptied and it
     // never ran dry (EXPERT_PLAYTEST_11 D1: JOKER + BELL 63%).
@@ -789,6 +820,9 @@ export class Fight {
     // FIRST BLOOD: your first paying spin each fight.
     const firstBlood = has('firstblood') && !this.firstBlood && s.groups.some(pays);
     if (firstBlood) this.firstBlood = true;
+    // CHARM BRACELET: the charm types on your reels; METRONOME: every 3rd spin.
+    const bracelet = has('bracelet') ? 1 + NEW_RELIC.braceletPer * new Set(me.reels.flatMap((r) => r.cells.map((c) => c.enh).filter(Boolean))).size : 1;
+    const metronome = has('metronome') && this.playerSpins % NEW_RELIC.metronomeEvery === 0;
     const foe = this.sides[other(me.side)];
     for (const g of s.groups) {
       const notes: string[] = [];
@@ -883,6 +917,16 @@ export class Fight {
         g.mult *= NEW_RELIC.underdogMul;
         notes.push(`X${NEW_RELIC.underdogMul}`);
       }
+      if (bracelet > 1 && paying) {
+        fired.add('bracelet');
+        g.mult *= bracelet;
+        notes.push(`X${Math.round(bracelet * 100) / 100}`);
+      }
+      if (metronome && paying) {
+        fired.add('metronome');
+        g.mult *= NEW_RELIC.metronomeMul;
+        notes.push(`X${NEW_RELIC.metronomeMul} BEAT`);
+      }
       if (firstBlood && paying) {
         fired.add('firstblood');
         g.mult *= NEW_RELIC.firstbloodMul;
@@ -930,6 +974,20 @@ export class Fight {
       // Twin Reels: a pair that only pays because any two reels count.
       if (me.relics.has('mirror') && g.matched && g.reels.length === 2 && !(g.reels[0] === 0 && g.reels[1] === 1)) fired.add('mirror');
       if (me.relics.has('ticket') && g.reels.some((r) => this.paylineEnh(me, r))) fired.add('ticket');
+    }
+    // PIT BOSS: the enemy's first jackpot each fight pays as a pair (two of its symbols at the pair's multiplier).
+    if (!player && s.tier === 'triple' && !this.pitUsed && this.sides.player.relics.has('pitboss')) {
+      const g = s.groups.find((x) => x.matched && x.reels.length >= 3);
+      if (g) {
+        this.pitUsed = true;
+        const k = (2 * multFor(2, this.cfg)) / (3 * multFor(3, this.cfg));
+        g.base = Math.round((g.base * 2) / 3);
+        g.mult = (g.mult / multFor(3, this.cfg)) * multFor(2, this.cfg);
+        g.amount = Math.round(g.amount * k);
+        g.notes = [...(g.notes ?? []), 'PIT BOSS'];
+        s.tier = 'pair';
+        this.pitJustFired = true;
+      }
     }
     if (fired.size) s.relics = [...fired];
     s.totals = {};
@@ -1120,11 +1178,29 @@ export class Fight {
     events.push({ type: 'fizzle', side: me.side, reels: g.reels, symbol: g.symbol });
   }
 
-  /** THORNY (BRIAR): each thorny cell on the payline banks its value into your thorns (EXPERT_PLAYTEST_12 D1). */
-  private thornyFill(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
-    if (this.meter?.kind !== 'thorns') return;
-    const n = g.reels.filter((r) => this.enhsAt(me, r).includes('thorny')).length;
-    if (n) this.fillMeter(me, n * charmValue('thorny', this.charmLvl(me, 'thorny')), g.reels, events);
+  /**
+   * Charms that act when their group lands: the meter charms (THORNY banks thorns: EXPERT_PLAYTEST_12 D1; TRICK fills
+   * JOKER's meter; INGOT adds MIDAS gold pips: CONTENT_13), LUCRE's chips, and TAX MAN on a paying gold bar group.
+   */
+  private cellCharms(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
+    const n = (e: Enh) => g.reels.filter((r) => this.enhsAt(me, r).includes(e)).length;
+    const v = (e: Enh) => charmValue(e, this.charmLvl(me, e));
+    const kind = this.meter?.kind;
+    if (kind === 'thorns' && n('thorny')) this.fillMeter(me, n('thorny') * v('thorny'), g.reels, events);
+    if (kind === 'jackpots' && n('trick')) this.fillMeter(me, n('trick') * v('trick'), g.reels, events);
+    if (kind === 'vault' && n('ingot')) this.fillMeter(me, 0, Array.from({ length: n('ingot') * v('ingot') }, () => g.reels[0]), events);
+    const pays = g.amount > 0 && (PAYING.has(g.symbol) || g.symbol === 'goldbar');
+    if (pays && n('lucre') && this.lucreChips < v('lucre')) {
+      const got = Math.min(LUCRE_CHIPS, v('lucre') - this.lucreChips);
+      this.lucreChips += got;
+      events.push({ type: 'lucreChips', side: me.side, reels: g.reels, amount: got, total: this.lucreChips });
+    }
+    if (pays && g.symbol === 'goldbar' && kind === 'vault' && me.relics.has('taxman') && this.taxChips < NEW_RELIC.taxCap) {
+      this.taxChips++;
+      this.midasChips++;
+      events.push({ type: 'relic', side: me.side, relic: 'taxman' });
+      events.push({ type: 'midasChips', side: me.side, amount: 1, total: this.midasChips });
+    }
   }
 
   /** VAMP: vamp cells in a group that pays heal you (swords; any symbol with VAMPIRE'S KISS or GRAFT). */

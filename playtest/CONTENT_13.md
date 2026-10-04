@@ -219,3 +219,12 @@ All ten items in the pools at the numbers and bot values above (`c13_tuesday.ts`
    chips show in RESULTS' "+N CHIPS" line, and a lost fight pays nothing.
 5. Photosensitivity: nothing here flashes. METRONOME's pop, SNAKE EYES's green heal and TESLA COIL's spark all reuse
    existing relic and energy popups. No new HUD widgets.
+
+## AS BUILT (2026-10-04)
+Built: LUCRE, TRICK, INGOT (draft only), KEEN 40/50/60; CHARM BRACELET, METRONOME, SNAKE EYES, PIT BOSS, TESLA COIL.
+**Changed in the build:**
+- **TAX MAN retired.** It took MIDAS's identity-relic slot from KING'S VAULT: MIDAS 36.3 without it, 28.0 with it.
+- **LUCRE isn't offered to MIDAS.** It took his charm picks (38.7 → 33.7).
+- **BRIAR's knobs:** mirror 13.5 and dealer 1.45 (LUCRE's chips are BRIAR's best charm).
+
+Numbers are in STATE iteration 70.

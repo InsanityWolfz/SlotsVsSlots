@@ -1042,7 +1042,8 @@ export class Game {
       return;
     }
     if (this.screens.active && this.screens.pointerDown(x, y)) return;
-    this.skip();
+    // A click no longer skips the fight's playback: spam-clicking skipped every turn and ended rounds in seconds.
+    // The speed buttons (1X-8X) are the way to watch faster.
   }
 
   pointerUp(x: number, y: number): void {
@@ -1085,8 +1086,8 @@ export class Game {
     }
     switch (k) {
       case ' ':
+        // Spins only (no skipping the playback, like a click).
         if (this.awaitingSpin) this.requestSpin();
-        else this.skip();
         return true;
       case '1':
       case '2':

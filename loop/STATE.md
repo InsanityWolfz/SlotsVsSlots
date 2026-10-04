@@ -1454,3 +1454,40 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - **BRIAR dealer 1.3 → 1.4:** BRIAR GREEN 20.2 → **19.2** (Dealer kill 45.7 → 43.4; 1.5 gave 16.5).
   Baseline after: WHITE 44.9 / GREEN ≈ 18.7.
 - **Watch:** BRIAR WHITE 50.3 (the highest); both gates are near their tops with the better bot (WHITE 41–45, GREEN 16–19).
+
+## Iteration 70 (2026-10-04): CONTENT_13 built (new charms and relics), and click-to-skip removed
+- **Charms:**
+  - **LUCRE** (swords, shields, bolts; every machine but MIDAS): +3 chips when its group pays, max 6/9/12 a fight, on a win.
+  - **TRICK** (JOKER): +25/35/50 to the jackpot meter when it lands.
+  - **INGOT** (MIDAS, draft cards only): +2/3/4 gold meter pips when it lands.
+  - **KEEN** 20/30/40 → **40/50/60** per sword.
+- **Relics:**
+  - **CHARM BRACELET** (uncommon, once you own a charm): +5% per charm type.
+  - **METRONOME** (common): every 3rd spin ×1.5.
+  - **SNAKE EYES** (common): an enemy jackpot heals 15.
+  - **PIT BOSS** (legendary): the enemy's first jackpot each fight pays as a pair.
+  - **TESLA COIL** (TESLA): a bolt above or below the payline charges 5, once a spin.
+  - Art by the art agent: 3 overlays and 6 icons.
+- **Cut at build:** TAX MAN (retired; it took KING'S VAULT's identity slot: MIDAS 28.0 with it vs 36.3 without).
+  LUCRE is off MIDAS (38.7 → 33.7 with it).
+- **Knobs:** BRIAR mirror 10.5 → 13.5 and dealer 1.4 → 1.45; MIDAS dealer 0.9 → 0.85.
+- **Click (and space) no longer skips fight playback:** spam-clicking skipped every turn. The speed buttons stay.
+- Collection: the charm row fits all 11; relics are 16 across (3 rows, clear of the panel).
+- **Measured:** tuesday 1000, before the BRIAR knob:
+
+    | machine | WHITE | GREEN |
+    |---|---|---|
+    | KNIGHT | 43.9 | 17.6 |
+    | TESLA | 46.8 | 17.5 |
+    | BRIAR | 51.7 → **48.7** (knob) | 20.4 → **17.8** |
+    | JOKER | 42.0 | 18.2 |
+    | MIDAS | 38.7 | 17.8 |
+    | **AVG** | **≈ 44.0** | **≈ 17.8** |
+
+  - Fight-4 deaths 5.0% (gate 3–6).
+  - Challenges: 34.0 / 35.5 / 32.8 / 29.5 / 28.8 / 13.0 / 11.3. Weekly 15.5%.
+  - Fuzz 30: no breaks.
+  - Rows (GREEN): +BRACELET 17.7, +METRONOME 15.5, +SNAKE EYES 17.3, +PIT BOSS 18.5, +COIL 12.9 (baseline 12.7).
+- **Open:** the playtester's sim note (the greedy bot spends MIDAS's chip hoard; a 16-chip reserve takes MIDAS to 47.8):
+  a sim-only round. Damage charms are taxed by boss sizing and heals aren't.
+- Tests: 230 (tests/content13.test.ts).

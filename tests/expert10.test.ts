@@ -28,8 +28,8 @@ describe('EXPERT_PLAYTEST_10: charms', () => {
       c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen', n: 6 }];
     });
     keen.forceNext('player', ['sword', 'sword', 'sword']);
-    // One keen cell in a 3-sword jackpot: +20 for each of the 3 swords, x3 for the jackpot.
-    expect(ofType(keen.step().events, 'attack')[0].amount - p).toBe(20 * 3 * 3);
+    // One keen cell in a 3-sword jackpot: +40 for each of the 3 swords, x3 for the jackpot (CONTENT_13: was 20).
+    expect(ofType(keen.step().events, 'attack')[0].amount - p).toBe(40 * 3 * 3);
     const vamp = on('knight', (c) => {
       c.player.strips = reels3({ sword: 6, shield: 6 });
       c.player.gilded = [0, 1, 2].map((reel) => ({ reel, symbol: 'sword' as const, enh: 'vamp' as const, n: 6 }));

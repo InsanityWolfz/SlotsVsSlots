@@ -70,17 +70,22 @@ export const RUN = {
 };
 
 /** Charms by act (act 2 unlocks LUCKY and BLAZE). CHARGED and BLAZE feed the lightning: TESLA only. */
-export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'spiked', 'thorny'];
+export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'spiked', 'thorny', 'lucre', 'trick', 'ingot'];
 export const ACT2_GILDS: Enh[] = ['lucky', 'blaze'];
 const TESLA_ONLY: ReadonlySet<Enh> = new Set(['charged', 'blaze']);
 /** BULWARK (id 'spiked') is KNIGHT's own charm. */
 const KNIGHT_ONLY: ReadonlySet<Enh> = new Set(['spiked']);
 /** THORNY is BRIAR's own charm. */
 const BRIAR_ONLY: ReadonlySet<Enh> = new Set(['thorny']);
+/** TRICK is JOKER's, INGOT is MIDAS's (CONTENT_13). */
+const JOKER_ONLY: ReadonlySet<Enh> = new Set(['trick']);
+const MIDAS_ONLY: ReadonlySet<Enh> = new Set(['ingot']);
+/** LUCRE isn't MIDAS's: his gold bars pay chips already, and LUCRE took his charm picks (MIDAS 38.7 -> 33.7 WHITE). */
+const NOT_MIDAS: ReadonlySet<Enh> = new Set(['lucre']);
 /** LUCKY is a later-machine charm (a wild barely changes KNIGHT's or MIDAS's two-symbol line). */
 export const LUCKY_MACHINES: ReadonlySet<CabinetId> = new Set(['thorn', 'tesla', 'joker']);
 export const gildsFor = (run: RunState): Enh[] =>
-  [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter((e) => (run.cabinet === 'tesla' || !TESLA_ONLY.has(e)) && (run.cabinet === 'knight' || !KNIGHT_ONLY.has(e)) && (run.cabinet === 'thorn' || !BRIAR_ONLY.has(e)) && (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)));
+  [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter((e) => (run.cabinet === 'tesla' || !TESLA_ONLY.has(e)) && (run.cabinet === 'knight' || !KNIGHT_ONLY.has(e)) && (run.cabinet === 'thorn' || !BRIAR_ONLY.has(e)) && (run.cabinet === 'joker' || !JOKER_ONLY.has(e)) && (run.cabinet === 'midas' || !MIDAS_ONLY.has(e)) && (run.cabinet !== 'midas' || !NOT_MIDAS.has(e)) && (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)));
 /** Symbols this machine's swap cards move between. */
 export const swappable = (run: RunState): SymbolId[] => CABINETS[run.cabinet].symbols;
 /** The symbol +2 / rock-swap cards give (the signature symbol, or swords for KNIGHT and JAX). */
@@ -897,8 +902,8 @@ export const TOLL_PER_LIEN = 2;
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
   knight: { house: 2.0, mirror: 0.9, dealer: 0.74, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
-  midas: { house: 3, mirror: 1.9, dealer: 0.9, act3: 0.12, act1: 0.55, act2: 0.55, gate: 0.8, act3Floor: 0.75 },
-  thorn: { house: 0.85, mirror: 10.5, dealer: 1.4, act3: 1.3, act2: 0.6, gate: 1.55 },
+  midas: { house: 3, mirror: 1.9, dealer: 0.85, act3: 0.12, act1: 0.55, act2: 0.55, gate: 0.8, act3Floor: 0.75 },
+  thorn: { house: 0.85, mirror: 13.5, dealer: 1.45, act3: 1.3, act2: 0.6, gate: 1.55 },
   tesla: { house: 0.5, mirror: 2.4, dealer: 1.69, act3: 0.95, gate: 1.0 },
   joker: { house: 2.2, mirror: 2.8, dealer: 0.75, act3: 0.35, act2: 1.8, gate: 0.85 },
 };
@@ -968,6 +973,8 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   }
   // MIDAS: the chips his gold bars paid this fight.
   if (fight.midasChips) run.player.chips = Math.max(0, run.player.chips + fight.midasChips);
+  // LUCRE: the chips its groups paid this fight (a win only: a lost fight ends the run).
+  if (fight.lucreChips) run.player.chips += fight.lucreChips;
   // Chips: interest on what you banked, then the win, elite bonus, jackpots and overkill.
   const beaten = currentEnemy(run);
   const interest = interestOn(run.player.chips);
@@ -982,7 +989,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     fight.playerJackpots * CHIPS.perJackpot +
     Math.min(CHIPS.overkillCap, Math.floor(fight.overkill / CHIPS.overkillPer));
   run.player.chips += earned;
-  record.chips = earned;
+  record.chips = earned + fight.lucreChips;
   // SIDE BET: paid stake x pay if it came in (a lost fight ends the run, bet and all).
   if (run.bet) {
     const won = betState(run.bet, fight.betTrack, true) === 'won';
@@ -1431,7 +1438,8 @@ export function shopOffers(run: RunState): ShopItem[] {
     // MIDAS: the Cashier gives him 20% off.
     if (option && !prev.has(JSON.stringify(option)) && !items.some((i) => JSON.stringify(i.option) === JSON.stringify(option))) items.push({ option, price: run.cabinet === 'midas' ? Math.max(1, Math.ceil(price * 0.8)) : price, sold: false });
   };
-  const gildOptions = charmOptions(run, RUN.charmCellsShop).filter((o) => !prev.has(JSON.stringify(o)));
+  // INGOT is a draft-only charm: bought with MIDAS's chips it took him to 32 WHITE (CONTENT_13).
+  const gildOptions = charmOptions(run, RUN.charmCellsShop).filter((o) => !prev.has(JSON.stringify(o)) && !(o.kind === 'gild' && o.enh === 'ingot'));
   // Prefer extending what you already own, so builds can be finished on purpose.
   const favored = CABINETS[run.cabinet].favors;
   const extend = gildOptions.filter((o) => o.kind === 'gild' && (p.gilded.some((g) => g.enh === o.enh) || o.enh === favored));

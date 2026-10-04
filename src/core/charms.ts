@@ -17,7 +17,7 @@ export const CHARM_VALUE: Record<Enh, number[]> = {
   gold: [0, 2, 3, 4, 5],
   /** KEEN: added to the sword group's BASE for EVERY sword in the group (and the group pierces shields). A flat +20 on one
    * cell lost to taking no charm at all (EXPERT_PLAYTEST_10 D1). */
-  keen: [0, 20, 30, 40, 50],
+  keen: [0, 40, 50, 60, 70],
   /** CHARGED: added to the bolt group's BASE (TESLA). Was 5/10/15: a tax TESLA always held. */
   charged: [0, 10, 15, 20, 25],
   /** VAMP: heal when the sword group hits, ONCE per group however many vamp cells are in it (stacked vamp was the auto-pick:
@@ -34,7 +34,16 @@ export const CHARM_VALUE: Record<Enh, number[]> = {
    * drafter won +9 WHITE (EXPERT_PLAYTEST_12 D1). 20/30/40 measured 42.1/14.6 for BRIAR: a trap of its own (the round's
    * prototype read LV4 from the start). */
   thorny: [0, 50, 60, 70, 80],
+  /** LUCRE: the per-fight chip cap (+LUCRE_CHIPS each time its group pays, paid on a win). +1 a hit measured under
+   * taking no charm (CONTENT_13). */
+  lucre: [0, 6, 9, 12, 15],
+  /** TRICK (JOKER only): into the jackpot meter when it lands. */
+  trick: [0, 25, 35, 50, 60],
+  /** INGOT (MIDAS only): gold meter pips when it lands (draft cards only: sold at the Cashier, MIDAS fell to 32 WHITE). */
+  ingot: [0, 2, 3, 4, 5],
 };
+/** LUCRE: chips each time its group pays (up to its cap). */
+export const LUCRE_CHIPS = 3;
 
 /** Which symbols each charm can go on. */
 export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
@@ -46,6 +55,9 @@ export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
   blaze: ['bolt'],
   spiked: ['shield'],
   thorny: ['thorn'],
+  lucre: ['sword', 'shield', 'bolt'],
+  trick: ['sword', 'shield'],
+  ingot: ['goldbar'],
 };
 
 /** One charm's rule at a level, as plain card text (never an expected value). */
@@ -68,6 +80,12 @@ export function charmRuleText(enh: Enh, lvl: number): string {
       return `ALSO HITS FOR ${v}% OF ITS SHIELD`;
     case 'thorny':
       return `+${v} TO YOUR THORNS WHEN IT LANDS`;
+    case 'lucre':
+      return `+${LUCRE_CHIPS} CHIPS WHEN ITS GROUP PAYS (MAX ${v} A FIGHT, ON A WIN)`;
+    case 'trick':
+      return `+${v} TO YOUR JACKPOT METER WHEN IT LANDS`;
+    case 'ingot':
+      return `+${v} TO YOUR GOLD METER WHEN IT LANDS`;
   }
 }
 
@@ -91,6 +109,12 @@ export function charmShortText(enh: Enh, lvl: number): string {
       return `HITS FOR ${v}% OF ITS SHIELD`;
     case 'thorny':
       return `+${v} THORNS WHEN IT LANDS`;
+    case 'lucre':
+      return `+${LUCRE_CHIPS} CHIPS ON A HIT, MAX ${v}`;
+    case 'trick':
+      return `+${v} METER WHEN IT LANDS`;
+    case 'ingot':
+      return `+${v} GOLD METER WHEN IT LANDS`;
   }
 }
 
@@ -100,7 +124,8 @@ export const charmName = (enh: Enh): string => (enh === 'spiked' ? 'BULWARK' : e
 /** The number shown on a charmed cell's top-right tag (coloured by charm). */
 export function charmTag(enh: Enh, lvl: number): string {
   const v = charmValue(enh, lvl);
-  return enh === 'gold' ? `X${v}` : enh === 'lucky' || enh === 'spiked' ? `${v}%` : `+${v}`;
+  // LUCRE's number is its cap; its tag shows what a hit pays.
+  return enh === 'gold' ? `X${v}` : enh === 'lucky' || enh === 'spiked' ? `${v}%` : enh === 'lucre' ? `+${LUCRE_CHIPS}` : `+${v}`;
 }
 
 export const CHARM_COLOR: Record<Enh, string> = {
@@ -111,6 +136,9 @@ export const CHARM_COLOR: Record<Enh, string> = {
   lucky: '#7dff7a',
   blaze: '#ff9a3a',
   thorny: '#ff9ec8',
+  lucre: '#ffd23f',
+  trick: '#c795f0',
+  ingot: '#d3dde8',
   spiked: '#c9d0dc',
 };
 

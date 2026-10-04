@@ -38,9 +38,12 @@ export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
   lucky: { name: 'LUCKY', text: `ACT 2. ${charmRuleText('lucky', 1)}.` },
   blaze: { name: 'BLAZE', text: `ACT 2. TESLA'S BOLTS. ${charmRuleText('blaze', 1)}.` },
   thorny: { name: 'THORNY', text: `BRIAR'S THORNS. ${charmRuleText('thorny', 1)}.` },
+  lucre: { name: 'LUCRE', text: `SWORDS, SHIELDS AND BOLTS. ${charmRuleText('lucre', 1)}.` },
+  trick: { name: 'TRICK', text: `JOKER'S SWORDS AND SHIELDS. ${charmRuleText('trick', 1)}.` },
+  ingot: { name: 'INGOT', text: `MIDAS'S GOLD BARS. ${charmRuleText('ingot', 1)}.` },
 };
 /** Charms in the COLLECTION (SPIKED retired). */
-const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'spiked', 'charged', 'lucky', 'blaze', 'thorny'];
+const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'spiked', 'charged', 'lucky', 'blaze', 'thorny', 'lucre', 'trick', 'ingot'];
 
 const TIER_COLOR = { common: '#c9c9d9', uncommon: '#5ad8e8', legendary: '#ffd23f', other: '#9a8fb0' };
 
@@ -785,7 +788,9 @@ export class Menus {
     drawText(ctx, `CHARMS ${Math.min(nc, CHARM_ORDER.length)}/${CHARM_ORDER.length}`, 60, 110, 2.5, COLORS.text, { align: 'left' });
     drawText(ctx, 'A CHARM SITS ON ONE CELL. GOLD IN A GROUP ADDS UP', W - 60, 110, 1.5, COLORS.textDim, { align: 'right' });
     CHARM_ORDER.forEach((enh, i) => {
-      const x = W / 2 + (i - 2.5) * 150;
+      // Every charm in one row, however many there are (11 since CONTENT_13).
+      const pitch = Math.min(150, (W - 120) / CHARM_ORDER.length);
+      const x = W / 2 + (i - (CHARM_ORDER.length - 1) / 2) * pitch;
       const y = 176;
       const got = p.found.charms.includes(enh);
       const hover = this.near(x, y, 36);
@@ -804,8 +809,9 @@ export class Menus {
     (['common', 'uncommon', 'legendary'] as const).forEach((tier, i) =>
       drawText(ctx, tier.toUpperCase(), W - 360 + i * 120, 270, 1.5, TIER_COLOR[tier], { align: 'left' }),
     );
-    const cols = 14;
-    const pitch = 80;
+    // Three rows clear of the detail panel: 16 across fits 48 relics.
+    const cols = 16;
+    const pitch = 70;
     RELIC_ORDER.forEach((r, i) => {
       const x = W / 2 + ((i % cols) - (cols - 1) / 2) * pitch;
       const y = 330 + Math.floor(i / cols) * 76;

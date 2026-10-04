@@ -2565,6 +2565,73 @@ S.mimicSym = lit(16, 16, [
   S.enhThorny = toRows(outline(g));
 }
 
+// lucre (chip charm): two loose gold coins tumbling in the top-right corner, a coin stack up the bottom-left edge
+{
+  const g = grid(16, 16);
+  stamp(g, 10, 0, [
+    ' YYG ',
+    'YWYGg',
+    'YGGGg',
+    ' ggg ',
+  ]);
+  stamp(g, 13, 4, [' YG', 'YWg', ' g ']);
+  stamp(g, 0, 8, [
+    ' YYG ',
+    'YWYGg',
+    'gGGgg',
+    'YYYGg',
+    'gGGgg',
+    'YWYGg',
+    'gGGgg',
+    'ggggg',
+  ]);
+  outline(g);
+  legend(g, 7, 14, false);
+  S.enhLucre = toRows(g);
+}
+// trick (JOKER's charm): a jester's bell-cap tip curling in from the top-left, a card corner with a pink pip bottom-right
+{
+  const g = grid(16, 16);
+  stamp(g, 0, 0, [
+    'MMVV   ',
+    'mMVVJ  ',
+    ' mmVVM ',
+    '   vVMm',
+    '    vmY',
+    '     YWY',
+    '     GYG',
+    '      g',
+  ]);
+  stamp(g, 11, 11, [
+    'WTTTT',
+    'TVMTT',
+    'TMMMT',
+    'TTMTt',
+    'Tttt ',
+  ]);
+  S.enhTrick = toRows(outline(g));
+}
+// ingot (MIDAS's charm, sits on a GOLD bar): silver mint sparkle top-left, a stamped silver seal bottom-right,
+// a tiny silver bar bottom-left. Cool greys so it reads against the gold underneath.
+{
+  const g = grid(16, 16);
+  plot(g, [[2, 2, 'W'], [1, 2, 'C'], [3, 2, 'C'], [2, 1, 'C'], [2, 3, 'C'], [0, 2, 'L'], [4, 2, 'L'], [2, 0, 'L'], [2, 4, 'L']]);
+  stamp(g, 10, 10, [
+    ' LLLS ',
+    'LWLDLS',
+    'LLDDDS',
+    'LLLDSS',
+    'LLLSSD',
+    ' SSDD ',
+  ]);
+  stamp(g, 0, 13, [
+    ' LWL ',
+    'LLLLS',
+    'SSSSD',
+  ]);
+  S.enhIngot = toRows(outline(g));
+}
+
 // ---------------------------------------------------------------- legendary relics (16x16)
 S.relicTicket = lit(16, 16, [
   '................',
@@ -3823,6 +3890,123 @@ S.relicToll = lit(16, 16, [
   '.IIIIIH.........',
   '.HHHHHh.........',
 ]);
+// relicBracelet (16x16): CHARM BRACELET, a gold chain loop with three charms hanging (red heart, blue gem, green clover)
+S.relicBracelet = lit(16, 16, [
+  '................',
+  '................',
+  '....YGYGYGY.....',
+  '..YG.......GY...',
+  '.G...........G..',
+  '.Y...........g..',
+  '.G...........g..',
+  '..gG.......Gg...',
+  '...gGgGgGgGg....',
+  '...Y...Y...Y....',
+  '..MYR.CAA.EYe...',
+  '..RRr.AUN.eeQ...',
+  '...r...N...Q....',
+]);
+// relicMetronome (16x16): METRONOME, a wooden truncated pyramid on a plinth, a silver pendulum arm with a sliding weight
+{
+  const g = grid(16, 16);
+  hline(g, 6, 9, 2, 'w');
+  const spans = [[5, 10], [5, 10], [5, 10], [4, 11], [4, 11], [4, 11], [3, 12], [3, 12], [3, 12], [2, 13], [2, 13]];
+  spans.forEach(([a, b], i) => { for (let x = a; x <= b; x++) put(g, x, 3 + i, x <= a ? 'w' : x >= b ? 'b' : 'B'); });
+  hline(g, 1, 14, 14, 'b'); put(g, 1, 14, 'B');
+  // front face: a dark slot the arm swings in, with tick marks either side
+  for (let y = 4; y <= 12; y++) for (let x = 7; x <= 9; x++) put(g, x, y, 'b');
+  plot(g, [[6, 6, 'w'], [6, 8, 'w'], [6, 10, 'w'], [10, 6, 'g'], [10, 8, 'g'], [10, 10, 'g']]);
+  // pendulum arm: pivot low, leaning right, poking out above the top
+  for (let y = 8; y <= 12; y++) put(g, 8, y, 'L');
+  for (let y = 0; y <= 7; y++) put(g, 9, y, 'L');
+  put(g, 9, 0, 'W');
+  // sliding weight
+  plot(g, [[8, 5, 'L'], [9, 5, 'W'], [10, 5, 'S'], [8, 6, 'S'], [9, 6, 'S'], [10, 6, 'D']]);
+  put(g, 8, 13, 'G'); // brass pivot
+  S.relicMetronome = toRows(outline(g));
+}
+// relicSnakeEyes (16x16): SNAKE EYES, two white dice side by side, each showing a single red pip
+{
+  const g = grid(16, 16);
+  const die = (x0, y0) => {
+    for (let y = 0; y < 7; y++) for (let x = 0; x < 7; x++)
+      put(g, x0 + x, y0 + y, x === 6 || y === 6 ? 't' : x === 5 || y === 5 ? 'u' : x === 0 || y === 0 ? 'W' : 'T');
+    stamp(g, x0 + 2, y0 + 2, ['rMr', 'RRr', 'rrd']); // round pip: a 3x3 blob, darker corners, pink glint
+  };
+  die(1, 7);
+  // the right die sits higher and in front: give it its own dark border so the overlap reads
+  for (let y = 7; y <= 10; y++) put(g, 6, y, 'K');
+  hline(g, 6, 13, 10, 'K');
+  die(7, 3);
+  S.relicSnakeEyes = toRows(outline(g));
+}
+// relicPitBoss (16x16): PIT BOSS, slicked-back hair, shades, a moustache, black suit and a red bow tie
+S.relicPitBoss = lit(16, 16, [
+  '................',
+  '.....kkkkkk.....',
+  '....kllllkkk....',
+  '....kkkkkkkkk...',
+  '....kFFFFFFkk...',
+  '....FFFFFFFFk...',
+  '....FKKkkKKf....',
+  '....FFFFFFFf....',
+  '....FFkkkkFf....',
+  '.....fFFFFf.....',
+  '......fFFf......',
+  '...kWMRrrRRWk...',
+  '..kkkRRrrRrkkk..',
+  '.kklkkWTTWkklkk.',
+  '.kklkkkWTkkklkk.',
+  '.kkkkkkkkkkkkkk.',
+]);
+// relicCoil (16x16): TESLA COIL, a copper coil tower on a steel base with a crackling blue spark ball on top
+S.relicCoil = lit(16, 16, [
+  '..C..........C..',
+  '...C..CAAU..C...',
+  '....ACWCAUNA....',
+  '......AAUN......',
+  '.......DD.......',
+  '.....aOWOOo.....',
+  '......bbbb......',
+  '.....aOOOOo.....',
+  '......bbbb......',
+  '....aOOOOOOo....',
+  '.....bbbbbb.....',
+  '....aOOOOOOo....',
+  '.....bbbbbb.....',
+  '...aOOOOOOOOo...',
+  '..LSSSSSSSSSSD..',
+]);
+// relicTaxMan (16x16): TAX MAN, a green eyeshade over an open ledger, a gold coin stamped with a tick
+{
+  const g = grid(16, 16);
+  stamp(g, 0, 1, [
+    '....QQQQQQQQ....',
+    '...eEEEEEEEEe...',
+    '..eEEWEEEEEEEe..',
+    '..qeeeeeeeeeeq..',
+  ]);
+  stamp(g, 1, 6, [
+    'WTTTTTtTTTTTt',
+    'TtttTTtTtttTt',
+    'TTTTTTtTTTTTt',
+    'TtttTTtTtttTt',
+    'TTTTTTtTTTTTt',
+    'TtttTTtTtttTt',
+    'ttttttbtttttt',
+  ]);
+  stamp(g, 9, 9, [
+    '.KKKKK.',
+    'KYYYGgK',
+    'KYWYGgK',
+    'KYGGGgK',
+    'KYGGGgK',
+    'KgGGggK',
+    '.KKKKK.',
+  ].map((r) => r.replace(/\./g, ' ')));
+  plot(g, [[10, 12, 'Q'], [11, 13, 'Q'], [12, 12, 'Q'], [13, 11, 'Q']]);
+  S.relicTaxMan = toRows(outline(g));
+}
 // ---------------------------------------------------------------- slot machine TRIM crests (16x16)
 // One medallion family: a 2px rim in the trim's colours (lit top-left), a 1px inset groove, a deep field,
 // and a centred motif. Drawn on the top edge of the player's frame and in the TROPHIES trim picker.
@@ -4535,6 +4719,7 @@ const DIMS = {
   enemyBomber: 24, enemyHexer: 24, enemyVampire: 24, enemyMimic: 24, enemyMirror: 24,
   bomb: 16, hex: 16, fangs: 16, mimicSym: 16, bombOverlay: 16, hexOverlay: 16, tier2Frame: 16,
   enhVamp: 16, enhLucky: 16, enhBlaze: 16, enhThorny: 16,
+  enhLucre: 16, enhTrick: 16, enhIngot: 16,
   relicTicket: 16, relicBell: 16, relicPhoenix: 16, relicOvercharge: 16, relicKey: 16, relicSandglass: 16,
   icoBomb: 8, icoHex: 8, icoDrain: 8, icoGulp: 8, icoReflect: 8,
   mapBadgeBomb: 8, mapBadgeHex: 8, mapBadgeFang: 8, mapBadgeMimic: 8, mapBadgeMirror: 8,
@@ -4559,6 +4744,7 @@ const DIMS = {
   relicFirstblood: 16, relicPiggy: 16, relicTrophy: 16, relicHolywater: 16, relicBash: 16,
   relicLoaded: 16, relicMarker: 16, relicHighLimit: 16,
   relicHotStreak: 16, relicBelt: 16, relicToll: 16,
+  relicBracelet: 16, relicMetronome: 16, relicSnakeEyes: 16, relicPitBoss: 16, relicCoil: 16, relicTaxMan: 16,
   trimClassic: 16, trimBronze: 16, trimSilver: 16, trimNeon: 16, trimVelvet: 16,
   trimEmerald: 16, trimDiamond: 16, trimObsidian: 16, trimHouse: 16,
 };
@@ -4642,6 +4828,7 @@ export type SpriteId =
   | 'bomb' | 'hex' | 'fangs' | 'mimicSym'          // act 2 enemy reel symbols, 16x16
   | 'bombOverlay' | 'hexOverlay' | 'tier2Frame'    // act 2 cell overlays / tier II gild marker, 16x16 (mostly transparent)
   | 'enhVamp' | 'enhLucky' | 'enhBlaze' | 'enhThorny'         // act 2 upgrade overlays, 16x16 (mostly transparent)
+  | 'enhLucre' | 'enhTrick' | 'enhIngot'           // charm overlays (LUCRE, TRICK, INGOT), 16x16 (mostly transparent)
   | 'relicTicket' | 'relicBell' | 'relicPhoenix'   // legendary relics, 16x16
   | 'relicOvercharge' | 'relicKey' | 'relicSandglass'
   | 'icoBomb' | 'icoHex' | 'icoDrain' | 'icoGulp' | 'icoReflect' // act 2 intent icons, 8x8
@@ -4689,7 +4876,9 @@ export type SpriteId =
   | 'trimClassic' | 'trimBronze' | 'trimSilver'  // slot machine trim crests, 16x16
   | 'trimNeon' | 'trimVelvet' | 'trimEmerald'
   | 'trimDiamond' | 'trimObsidian' | 'trimHouse'
-  | 'relicHotStreak' | 'relicBelt' | 'relicToll'; // relics, 16x16
+  | 'relicHotStreak' | 'relicBelt' | 'relicToll' // relics, 16x16
+  | 'relicBracelet' | 'relicMetronome' | 'relicSnakeEyes'
+  | 'relicPitBoss' | 'relicCoil' | 'relicTaxMan';
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

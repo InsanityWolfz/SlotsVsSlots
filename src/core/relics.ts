@@ -61,6 +61,14 @@ export const RELICS: Record<RelicId, RelicDef> = {
   hotstreak: { id: 'hotstreak', name: 'HOT STREAK', text: 'AFTER A JACKPOT, YOUR NEXT SPIN PAYS X2', sprite: 'relicHotStreak' },
   belt: { id: 'belt', name: 'WHETSTONE BELT', text: 'BLOCKED HITS SHARPEN YOUR NEXT SWORD GROUP: +10 PER SWORD (MAX +40)', sprite: 'relicBelt', machine: 'knight' },
   toll: { id: 'toll', name: 'TOLL BOOTH', text: 'AFTER EACH WIN: +2 CHIPS FOR EVERY LIEN THE REPO MAN HOLDS', sprite: 'relicToll' },
+  // CONTENT_13.
+  bracelet: { id: 'bracelet', name: 'CHARM BRACELET', text: 'EVERYTHING PAYS +5% FOR EACH CHARM TYPE YOU OWN', sprite: 'relicBracelet' },
+  metronome: { id: 'metronome', name: 'METRONOME', text: 'EVERY 3RD SPIN PAYS X1.5', sprite: 'relicMetronome' },
+  snakeeyes: { id: 'snakeeyes', name: 'SNAKE EYES', text: 'EACH ENEMY JACKPOT HEALS YOU 15', sprite: 'relicSnakeEyes' },
+  pitboss: { id: 'pitboss', name: 'PIT BOSS', text: "THE ENEMY'S FIRST JACKPOT EACH FIGHT PAYS AS A PAIR", sprite: 'relicPitBoss' },
+  coil: { id: 'coil', name: 'TESLA COIL', text: 'A BOLT ABOVE OR BELOW YOUR PAYLINE CHARGES 5', sprite: 'relicCoil', machine: 'tesla' },
+  // TAX MAN (CONTENT_13): retired at build. It took MIDAS's identity-relic slot from KING'S VAULT (MIDAS 36.3 -> 28.0 WHITE).
+  taxman: { id: 'taxman', name: 'TAX MAN', text: 'EACH GOLD BAR GROUP THAT PAYS: +1 CHIP (MAX 3)', sprite: 'relicTaxMan', machine: 'midas', retired: true },
   bash: { id: 'bash', name: 'SHIELD BASH', text: 'YOUR LEFTOVER SHIELD HITS BACK FOR ITS FULL AMOUNT EACH TURN', sprite: 'relicBash' },
   // Side bets (EXPERT_PLAYTEST_6 E11): relics that change which bet you want.
   loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY 20% MORE', sprite: 'relicLoaded' },
@@ -106,6 +114,14 @@ export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overchar
 
 /** New-relic numbers (playtest/RELIC_PROPOSALS.md, tuned in the engine). */
 export const NEW_RELIC = {
+  /** CONTENT_13: CHARM BRACELET +5% per charm type; METRONOME every 3rd spin x1.5; SNAKE EYES heal; TESLA COIL charge
+   * (once a spin: 5 per bolt gave TESLA 21%); TAX MAN chip cap. */
+  braceletPer: 0.05,
+  metronomeEvery: 3,
+  metronomeMul: 1.5,
+  snakeHeal: 15,
+  coilCharge: 5,
+  taxCap: 3,
   drumStep: UNIT / 5,
   drumCap: 5,
   chainmailShare: 0.1,
@@ -133,12 +149,12 @@ export const BONUS = { wheel: 0.028, rush: 0.012 };
 export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9, uncommonMax: 12, grandChips: 15 };
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
-  common: ['clover', 'battery', 'fang', 'bandage', 'crown', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker', 'hotstreak'],
-  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll'],
-  legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass'],
+  common: ['clover', 'battery', 'fang', 'bandage', 'crown', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker', 'hotstreak', 'metronome', 'snakeeyes'],
+  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll', 'bracelet', 'coil'],
+  legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
 };
 
-export const LEGENDARY: ReadonlySet<RelicId> = new Set<RelicId>(['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass']);
+export const LEGENDARY: ReadonlySet<RelicId> = new Set<RelicId>(['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss']);
 /** WHETSTONE BELT: per blocked hit, every sword in your next sword group gets this much more (up to BELT_MAX stacks). */
 export const BELT_STEP = 1 * UNIT;
 export const BELT_MAX = 4;
@@ -185,6 +201,7 @@ export const ROD_MAX_BONUS = 1 * UNIT;
 export type Enabler = 'gold' | 'keen' | 'charged' | 'vamp' | 'wild' | 'charm' | 'meter' | 'thorns';
 export const BUILD_ENABLER: Partial<Record<RelicId, Enabler | Enabler[]>> = {
   ticket: 'charm',
+  bracelet: 'charm',
   rod: 'charged',
   prism: 'wild',
   chalice: 'vamp',
