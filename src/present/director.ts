@@ -232,6 +232,7 @@ export class Director {
         return this.popText(e.amount > 0 ? `+${e.amount} CHIP${e.amount > 1 ? 'S' : ''}` : `THE HOUSE SKIMS ${-e.amount} CHIPS`, c.x - 80, MACHINE_TOP - 22, 2, e.amount > 0 ? '#ffd23f' : '#ff8a7a', 14, 0.35);
       }
       case 'lucreChips': {
+        if (e.side === 'player') this.s.huds.player.lucre = e.total;
         // LUCRE: banked on a win (the RESULTS line counts them).
         const c = this.machineCenter(e.side);
         this.s.sounds.coin(8);
