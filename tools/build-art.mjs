@@ -504,6 +504,29 @@ S.lock = lit(16, 16, [
   rim.forEach(([x, y]) => put(g, x, y, (y <= 2 || x <= 3 || (x + y <= 13)) ? 'Y' : (x + y >= 17 ? 'g' : 'G')));
   S.seven = toRows(outline(g));
 }
+// shard: THE MIRROR's reel symbol, a jagged broken-mirror fragment (lit top-left, inner reflection, glint)
+{
+  const g = grid(16, 16);
+  stamp(g, 0, 0, [
+    '................',
+    '..........WS....',
+    '.........WCAS...',
+    '........WCCAAS..',
+    '........WCAANS..',
+    '.......WCCANNDS.',
+    '.......WCANNcND.',
+    '......WCCANcNN..',
+    '......WCANNNNAS.',
+    '.....WKANNcNAAS.',
+    '....WCWKANNAAAD.',
+    '....WWAAKAAAADD.',
+    '...WCAAAAKAADD..',
+    '...WCAAAAAKDD...',
+    '..WCAADD........',
+    '................',
+  ]);
+  S.shard = toRows(outline(g));
+}
 
 // ---------------------------------------------------------------- cell overlays (16x16)
 {
@@ -4832,7 +4855,7 @@ const DIMS = {
   heart: 8, shieldIcon: 8, boltIcon: 8, pipFull: 8, pipEmpty: 8,
   swordProjectile: 12, slimeBlob: 8, spark: 5, playerPortrait: 24, enemyPortrait: 24,
   enemyBrute: 24, enemyFrost: 24, enemyThief: 24, enemyGolem: 24, enemyGremlin: 24, enemyBoss: 24,
-  ice: 16, claw: 16, rock: 16, lock: 16, coin: 16, seven: 16,
+  ice: 16, claw: 16, rock: 16, lock: 16, coin: 16, seven: 16, shard: 16,
   frozenOverlay: 16, lockOverlay: 16,
   relicClover: 16, relicWhetstone: 16, relicSoap: 16, relicBattery: 16, relicMirror: 16,
   relicFang: 16, relicBandage: 16, relicHourglass: 16, relicMagnet: 16,
@@ -4924,7 +4947,7 @@ export type SpriteId =
   | 'enemyBrute' | 'enemyFrost' | 'enemyThief'     // enemy portraits, 24x24
   | 'enemyGolem' | 'enemyGremlin' | 'enemyBoss'
   | 'ice' | 'claw' | 'rock' | 'lock'               // enemy reel symbols, 16x16
-  | 'coin' | 'seven'                              // boss reel symbols, 16x16
+  | 'coin' | 'seven' | 'shard'                    // boss reel symbols, 16x16
   | 'frozenOverlay' | 'lockOverlay'               // cell overlays, 16x16 (mostly transparent)
   | 'relicClover' | 'relicWhetstone' | 'relicSoap'  // relic icons, 16x16
   | 'relicBattery' | 'relicMirror' | 'relicFang'

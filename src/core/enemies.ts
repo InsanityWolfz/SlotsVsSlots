@@ -13,7 +13,8 @@ export interface Archetype {
   strip: StripCounts;
   /** HP multiplier on the depth curve. */
   hpMul: number;
-  ability: AbilityDef;
+  /** null: no timed ability (THE MIRROR: its shards do the reflecting). */
+  ability: AbilityDef | null;
   /** Earliest fight (0-based) this archetype can appear at. */
   minDepth: number;
   /** One-line description for the intent/telegraph tooltip and the run map. */
@@ -236,18 +237,19 @@ export const BOSS: Archetype = {
 };
 
 /**
- * Act 2 boss. It plays a copy of YOUR machine (strips and gilds, but none of your relics) and every
- * few turns throws your last spin's damage back at you. At half HP it cracks and reflects faster.
+ * Act 2 boss. Its own reels (it used to copy yours, and your special symbols did nothing on its side: sword builds
+ * were crushed and the rest breezed through). Each SHARD on its payline throws a share of your last spin's damage
+ * back at you (at least a little); cracked at half HP, the shards cut deeper.
  */
 export const MIRROR: Archetype = {
   id: 'mirror',
   name: 'THE MIRROR',
   portrait: 'enemyMirror',
-  strip: { sword: 4, shield: 4, bolt: 4 },
+  strip: { sword: 5, shield: 3, shard: 3 },
   hpMul: 1,
-  ability: { kind: 'reflect', every: 3, power: 20 * UNIT },
+  ability: null,
   minDepth: 5,
-  blurb: 'PLAYS YOUR OWN MACHINE. THROWS YOUR BEST HIT BACK AT YOU',
+  blurb: 'ITS SHARDS THROW YOUR LAST HIT BACK AT YOU',
   acts: [2],
 };
 /**
@@ -358,7 +360,7 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
   const hp = isBoss ? bossHp : unitsRound(curve[Math.min(depth, curve.length - 1)] * hpMul * opener * TUNE.regularHp * (act === 2 ? TUNE.act2Hp : act === 1 ? TUNE.act1Hp : 1));
   // Act 1 regulars use their ability every 3 turns at most, so players see what each enemy does (EXPERT_PLAYTEST_2 G2).
   // Every regular uses its ability at least every 3 turns (31-40% of act 2-3 abilities never fired: EXPERT_PLAYTEST_2 A1).
-  const every = !isBoss ? Math.min(a.ability.every, TUNE.act1Every) : a.ability.every;
+  const every = !a.ability ? 0 : !isBoss ? Math.min(a.ability.every, TUNE.act1Every) : a.ability.every;
   return {
     archetype: a.id,
     depth,
@@ -372,7 +374,7 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
       // Act 2 enemies hit harder.
       isBoss ? st : act > 2 ? { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords, seven: (st.seven ?? 0) + TUNE.act3Sevens } : act > 1 ? { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords } : { ...st, sword: (st.sword ?? 0) + TUNE.act1Swords },
     ),
-    ability: { ...a.ability, every },
+    ability: a.ability ? { ...a.ability, every } : null,
     boss: isBoss ? (a.id === 'mirror' ? 'mirror' : a.id === 'dealer' ? 'dealer' : 'house') : null,
     act,
   };

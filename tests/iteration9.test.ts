@@ -3,7 +3,7 @@ import { defaultConfig, reels3, type GameConfig, type SymbolId } from '../src/co
 import { ARCHETYPES, RUN_FIGHTS } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { applySignature, createRun, describeOption, enemyHp, fightConfig, levelOptions, shopOffers, stripsAfter } from '../src/core/run';
+import { createRun, describeOption, enemyHp, fightConfig, levelOptions, shopOffers, stripsAfter } from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -83,7 +83,7 @@ describe('counter-enemies', () => {
 });
 
 describe('Package P', () => {
-  it('the Mirror stops at half HP on the turn it cracks, and copies no keen', () => {
+  it('the Mirror stops at half HP on the turn it cracks, and copies none of your charms', () => {
     const f = fight((c) => {
       c.player.strips = reels3({ sword: 12 });
       c.enemy = { hp: 1000, strips: reels3({ shield: 12 }), ability: { kind: 'reflect', every: 3, power: 200 }, boss: 'mirror' };
@@ -99,23 +99,9 @@ describe('Package P', () => {
     run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen', n: 2 }, { reel: 1, symbol: 'shield', enh: 'gold', n: 2 }];
     run.depth = RUN_FIGHTS;
     run.enemies[RUN_FIGHTS] = { ...run.enemies[RUN_FIGHTS], boss: 'mirror', isBoss: true };
-    expect(fightConfig(run, base).enemy.gilded).toEqual([{ reel: 1, symbol: 'shield', enh: 'gold', n: 2 }]);
+    expect(fightConfig(run, base).enemy.gilded ?? []).toEqual([]);
   });
 
-  it('act 2 signatures: KNIGHT +60 max HP, THORN +40 max HP, JOKER wilds on reel 3', () => {
-    const k = createRun(base, 9, 'knight');
-    const kHp = k.player.maxHp;
-    applySignature(k);
-    expect(k.player.maxHp).toBe(kHp + 60);
-    const t = createRun(base, 9, 'thorn');
-    const tHp = t.player.maxHp;
-    applySignature(t);
-    expect(t.player.maxHp).toBe(tHp + 40);
-    const j = createRun(base, 9, 'joker');
-    const w = j.player.strips[2].wild ?? 0;
-    applySignature(j);
-    expect(j.player.strips[2].wild).toBe(w + 2);
-  });
 
   it('JACKPOT BELL refills your special; fragile cabinets get a softer opener', () => {
     const f = fight((c) => {
@@ -129,5 +115,35 @@ describe('Package P', () => {
     const m = createRun(base, 10, 'joker');
     const k = createRun(base, 10, 'knight');
     expect(enemyHp(m, m.enemies[0])).toBeLessThan(enemyHp(k, k.enemies[0]));
+  });
+});
+
+describe('THE MIRROR: SHARDS', () => {
+  const mirror = (shards: string[], cracked = false) => {
+    const f = new Fight(
+      (() => {
+        const c = fightConfig(createRun(base, 3, 'knight'), base);
+        c.player.strips = reels3({ sword: 12 });
+        c.player.bonusSymbols = false;
+        c.enemy = { hp: 9999, strips: reels3({ sword: 4, shield: 4, shard: 4 }), ability: null, boss: 'mirror' };
+        return c;
+      })(),
+      5,
+    );
+    if (cracked) (f as unknown as { shattered: boolean }).shattered = true;
+    f.forceNext('player', ['sword', 'sword', 'sword']);
+    const dealt = ofType(f.step().events, 'attack')[0].amount;
+    f.forceNext('enemy', shards as never);
+    const hit = ofType(f.step().events, 'attack').find((a) => a.note === 'reflect')?.amount ?? 0;
+    return { dealt, hit };
+  };
+  it('each shard throws a third of your last hit back (a jackpot: all of it); cracked, a half each; at least 30', () => {
+    const one = mirror(['shard', 'sword', 'shield']);
+    expect(one.hit).toBe(Math.max(30, Math.round(one.dealt / 3 / 10) * 10));
+    const all = mirror(['shard', 'shard', 'shard']);
+    expect(all.hit).toBe(Math.max(30, Math.round(all.dealt / 10) * 10));
+    expect(all.hit).toBeGreaterThanOrEqual(one.hit);
+    const cracked = mirror(['shard', 'sword', 'shield'], true);
+    expect(cracked.hit).toBeGreaterThan(one.hit - 1);
   });
 });

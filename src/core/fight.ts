@@ -42,6 +42,9 @@ export const MIDAS = { houseSkim: 2, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3 
  * RAINMAKER halves the cost; LOOSE CHANGE lets a chip pair rain at half base; TIP JAR heals; SLUSH FUND refills the bar.
  */
 // Built at x2 / 10 chips (the user's draft), the rain cost more than it hit: CASSIDY 20.8 WHITE. x3 / 5 measured 39.6 / 18.8.
+/** THE MIRROR's shards: the share of your last spin's damage each one throws back (cracked: deeper). */
+export const SHARD_SHARE = 1 / 3;
+export const SHARD_CRACKED = 1 / 2;
 export const RAIN = { perChip: 3, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x3 (quarter steps). */
 export const highRollerMul = (chips: number) => Math.min(MIDAS.maxMul, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
@@ -1128,6 +1131,15 @@ export class Fight {
         // Sevens are the House's heavy hitters.
         this.hit(me, foe, g.amount, g.reels, events);
         return;
+      case 'shard': {
+        // THE MIRROR: each shard on its payline throws a third of your last spin's damage back (a half once cracked),
+        // at least REFLECT_MIN. Its whole turn stays under REFLECT_CAP of your max HP (hit()).
+        if (player || !this.isMirror) break;
+        const share = (this.shattered ? SHARD_CRACKED : SHARD_SHARE) * g.reels.length;
+        const dmg = Math.max(REFLECT_MIN, Math.round((this.last.player.damage * share) / UNIT) * UNIT);
+        this.hit(me, foe, dmg, g.reels, events, false, 'reflect');
+        return;
+      }
       case 'shield':
         me.shield += g.amount;
         events.push({ type: 'shieldGain', side: me.side, reels: g.reels, amount: g.amount, total: me.shield });
@@ -1534,14 +1546,11 @@ export class Fight {
         events.push({ type: 'finalHand', side: c.side, cards: armed || deep ? ['allin', 'raise'] : ['raise', 'allin'] });
         events.push({ type: 'dealNext', side: c.side, card: this.nextDeal, then: [...this.finalHand] });
       }
-      // The Mirror cracks at half HP: its Reflection charges faster.
-      if (c.side === 'enemy' && this.isMirror && !this.shattered && c.hp <= c.maxHp / 2 && c.ability) {
+      // The Mirror cracks at half HP: its shards cut deeper (a half of your last hit each, not a third).
+      if (c.side === 'enemy' && this.isMirror && !this.shattered && c.hp <= c.maxHp / 2) {
         this.shattered = true;
         this.crackTurn = this.turn;
-        c.ability = { ...c.ability, every: Math.max(2, c.ability.every - 1) };
-        // The crack snaps back: it reflects on its very next turn.
-        c.charge = c.ability.every - 1;
-        events.push({ type: 'shatter', side: c.side, every: c.ability.every });
+        events.push({ type: 'shatter', side: c.side, every: 0 });
       }
       return;
     }

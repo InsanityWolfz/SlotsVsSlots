@@ -13,8 +13,6 @@ import {
   MACHINE_EXCLUDE,
   relicText,
   LEGENDARY,
-  REFLECT_CAP,
-  REFLECT_MIN,
   RELIC_TIER,
   RELICS,
   RUSH,
@@ -469,26 +467,8 @@ function startNextAct(run: RunState): void {
   offerChoices(run, rng);
   // Act 3 (THE DEALER): a full heal, a big choice and the Cashier — the legendary pick stays act 2's decision.
   if (run.act > 2) return;
-  applySignature(run);
   const pool = [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
   run.pendingLegend = rng.shuffle(pool).slice(0, RUN.legendPick);
-}
-
-/** Each cabinet's act 2 signature (shown on its card and on the act transition screen). */
-export function applySignature(run: RunState): void {
-  const sig = CABINETS[run.cabinet].act2;
-  if (!sig) return;
-  if (sig.maxHp) {
-    run.player.maxHp += sig.maxHp;
-    run.player.hp = run.player.maxHp;
-  }
-  if (sig.wilds) {
-    const s = run.player.strips[sig.wilds.reel];
-    const n = Math.min(sig.wilds.count, Math.max(0, (s.shield ?? 0) - 1));
-    s.shield = (s.shield ?? 0) - n;
-    s.wild = (s.wild ?? 0) + n;
-    normalizeCharms(run.player);
-  }
 }
 
 /** What answers your build: TESLA's lightning → the Grounder; a charm build → the Counterfeiter; any other meter → the Grounder. */
@@ -573,16 +553,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   };
   const hp = enemyHp(run, e);
   cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
-  // The Mirror plays a copy of your machine: your strips and gilds (not your relics).
-  if (e.boss === 'mirror') {
-    cfg.enemy.strips = run.player.strips.map((s) => ({ ...s }));
-    // It copies what you hit with, but not your edge (KEEN), and your symbol levels (charms at level 1).
-    cfg.enemy.gilded = run.player.gilded.filter((g) => g.enh !== 'keen').map((g) => ({ ...g }));
-    cfg.enemy.levels = { sym: { ...run.player.levels.sym }, charm: {} };
-    cfg.player.stackShield = Math.min(MIRROR_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
-    // REFLECTION is capped relative to you: two from full HP kill you.
-    if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, power: Math.max(REFLECT_MIN, unitsRound(run.player.maxHp * REFLECT_CAP)) };
-  }
+  // The Mirror plays its own reels (swords, shields, SHARDS): a turn never deals more than REFLECT_CAP of your max HP.
+  if (e.boss === 'mirror') cfg.player.stackShield = Math.min(MIRROR_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
   cfg.relics = [...run.player.relics];
   cfg.cabinet = run.cabinet;
   cfg.stake = run.stake;
@@ -899,11 +871,11 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
 export const TOLL_PER_LIEN = 2;
 
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
-  knight: { house: 2.0, mirror: 1.0, dealer: 0.8, act3: 0.5, gate: 1.3 },
+  knight: { house: 2.0, mirror: 1.6, dealer: 0.8, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
-  midas: { house: 3, mirror: 1.9, dealer: 1.7, act3: 0.12, act1: 0.55, act2: 0.55, gate: 0.8, act3Floor: 1 },
-  thorn: { house: 0.85, mirror: 20, dealer: 1.55, act3: 1.3, act2: 0.6, gate: 1.55 },
-  tesla: { house: 0.5, mirror: 3.0, dealer: 1.69, act3: 0.95, gate: 1.0 },
+  midas: { house: 3, mirror: 2.5, dealer: 2.1, act3: 0.12, act1: 0.55, act2: 0.55, gate: 0.8, act3Floor: 1 },
+  thorn: { house: 0.85, mirror: 75, dealer: 2.2, act3: 1.3, act2: 0.6, gate: 1.55 },
+  tesla: { house: 0.5, mirror: 2.7, dealer: 1.69, act3: 0.95, gate: 1.0 },
   joker: { house: 2.2, mirror: 3.1, dealer: 0.8, act3: 0.35, act2: 1.8, gate: 0.85 },
 };
 const powerCache = new Map<string, number>();

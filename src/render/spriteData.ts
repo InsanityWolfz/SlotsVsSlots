@@ -82,7 +82,7 @@ export type SpriteId =
   | 'enemyBrute' | 'enemyFrost' | 'enemyThief'     // enemy portraits, 24x24
   | 'enemyGolem' | 'enemyGremlin' | 'enemyBoss'
   | 'ice' | 'claw' | 'rock' | 'lock'               // enemy reel symbols, 16x16
-  | 'coin' | 'seven'                              // boss reel symbols, 16x16
+  | 'coin' | 'seven' | 'shard'                    // boss reel symbols, 16x16
   | 'frozenOverlay' | 'lockOverlay'               // cell overlays, 16x16 (mostly transparent)
   | 'relicClover' | 'relicWhetstone' | 'relicSoap'  // relic icons, 16x16
   | 'relicBattery' | 'relicMirror' | 'relicFang'
@@ -662,6 +662,24 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '....KggggK......',
     '.....KKKK.......',
     '................',
+  ],
+  shard: [
+    '..........KK....',
+    '.........KWSK...',
+    '........KWCASK..',
+    '.......KWCCAASK.',
+    '.......KWCAANSK.',
+    '......KWCCANNDSK',
+    '......KWCANNcNDK',
+    '.....KWCCANcNNK.',
+    '.....KWCANNNNASK',
+    '....KWKANNcNAASK',
+    '...KWCWKANNAAADK',
+    '...KWWAAKAAAADDK',
+    '..KWCAAAAKAADDK.',
+    '..KWCAAAAAKDDK..',
+    '.KWCAADDKKKKK...',
+    '..KKKKKK........',
   ],
   frozenOverlay: [
     'cccccccccccccccc',

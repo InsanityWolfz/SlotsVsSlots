@@ -1087,8 +1087,6 @@ export class RunScreens {
             : 'CHOOSE ONE';
     if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), W / 2, 208, 3);
     drawText(ctx, heading, W / 2, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
-    const sig = CABINETS[this.run!.cabinet].act2;
-    if (legend && sig && !this.run!.endless) drawText(ctx, `${CABINETS[this.run!.cabinet].name} ACT 2 SIGNATURE: ${sig.text}`, W / 2, 262, 2, '#c8f0ff');
     this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], i, time));
     this.panel(ctx, 110, 530, 1060, 134);
     this.drawStrips(ctx, 130, 544);
@@ -1237,10 +1235,10 @@ export class RunScreens {
       wrap(abilityText(e, every, this.run ?? undefined), Math.floor((w - 60) / 12)).forEach((l, k) => drawText(ctx, l, x + 40, y + 146 + k * 18, 2, '#ff9a3a', { align: 'left' }));
     }
     const mirror = e.boss === 'mirror';
-    drawText(ctx, mirror ? 'THEIR REELS: A COPY OF YOURS (REEL 1)' : 'THEIR REELS', x + 16, y + 200, 2, mirror ? '#c8f0ff' : COLORS.textDim, { align: 'left' });
+    drawText(ctx, 'THEIR REELS', x + 16, y + 200, 2, COLORS.textDim, { align: 'left' });
     let cx = x + 36;
     const dirty = e.boss === 'house' && this.run!.stake >= STAKE.houseDirty;
-    const shown = mirror ? this.run!.player.strips[0] : dirty ? { ...e.strips[0], bomb: STAKE.houseBombsPerReel } : e.strips[0];
+    const shown = dirty ? { ...e.strips[0], bomb: STAKE.houseBombsPerReel } : e.strips[0];
     for (const [sym, n] of (Object.entries(shown) as [SymbolId, number][]).filter(([, n]) => n > 0)) {
       drawSprite(ctx, sym as SpriteId, cx, y + 232, 2);
       drawText(ctx, `${n}`, cx + 24, y + 232, 2, COLORS.text, { align: 'left' });
@@ -1250,7 +1248,7 @@ export class RunScreens {
       e.boss === 'dealer'
         ? 'DEALS: A CARD ON YOUR PAYLINE (ACE X2, JOKER WILD, DEUCE 0), ALL IN (ITS WHOLE HAND), RAISE (BOTH X2). NO KILL BEFORE ITS FIRST DEAL.'
         : e.boss === 'mirror'
-        ? `COPIES YOUR MACHINE (NO RELICS, METER OR KEEN). REFLECTS YOUR BEST HIT; A TURN NEVER DEALS MORE THAN ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP. CRACKS AT HALF HP, THEN REFLECTS AT ONCE.`
+        ? `EACH SHARD ON ITS PAYLINE THROWS A THIRD OF YOUR LAST HIT BACK. CRACKED AT HALF HP, A HALF. A TURN NEVER DEALS MORE THAN ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP.`
         : `COINS FILL THE POT. EVERY ${this.houseEvery()} TURNS IT SKIMS HALF AT YOU. ANY JACKPOT YOU HIT STEALS THE POT! AT HALF HP IT GOES ALL IN. ${CHIPS.stackPer} CHIPS KEPT = +${UNIT} SHIELD EACH HOUSE TURN.${dirty ? ' BLACK: IT BOMBS YOUR PAYLINE.' : ''}`;
     // GREEN: say which relic the Mirror will copy.
     const copy = mirror && this.run ? mirrorCopy(this.run) : null;
@@ -1348,7 +1346,6 @@ export class RunScreens {
         const lines = fits ? big : wrap(cab.rule, 23).slice(0, 8);
         const lh = fits ? 18 : 14;
         lines.forEach((l, k) => drawText(ctx, l, 0, 64 + k * lh, fits ? 2 : 1.5, COLORS.text));
-        if (cab.act2) wrap(`ACT 2: ${cab.act2.text}`, 22).forEach((l, k) => drawText(ctx, l, 0, 74 + lines.length * lh + k * 14, 1.5, '#c8f0ff'));
       } else {
         drawText(ctx, 'LOCKED', 0, 40, 2, '#ff8a7a');
         wrap(`UNLOCK: ${cab.unlock}`, 17).forEach((l, k) => drawText(ctx, l, 0, 70 + k * 18, 2, COLORS.textDim));

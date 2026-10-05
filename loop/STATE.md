@@ -1586,3 +1586,44 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   chip mid-fight (chips paid, MAKE IT RAIN, the House's skim, a bet won mid-fight, CHIP charm chips, the Mimic).
 - **No 4-gold-sword start; 24 chips (was 16).** CASSIDY 38.9 / 20.4 → 42.1 / 23.8; dealer 1.3 → **1.7**: **42.1 / 18.9**.
 - Tests: 234 (three tests that leaned on the gold start now set it themselves). Fuzz 20: no breaks.
+
+## Iteration 73 (2026-10-05): THE MIRROR has its own reels; the act 2 signatures are gone (user)
+- **THE MIRROR** no longer copies your machine.
+  - Its special symbols did nothing on its side, so sword builds were crushed and the rest breezed through.
+  - Its own reels: sword 5, shield 3, **SHARD 3** per reel (new symbol and art).
+  - Each shard on its payline throws **a third of your last spin's damage** back; a shard jackpot throws all of it.
+    Damage only (user: shield builds deal damage with shields anyway). At least REFLECT_MIN (30).
+  - Cracked at half HP, each shard throws **a half**.
+  - The timed REFLECTION ability is gone (the shards do it). The 60%-of-your-max-HP turn cap and the GREEN relic
+    copy stay.
+- **Act 2 signatures axed** (and their lines on the machine cards and the legend screen). Measured on → off:
+
+    | machine | signature | WHITE | GREEN |
+    |---|---|---|---|
+    | JOKER | wilds | 44.5 → 43.4 | 17.5 → 17.8 |
+    | BRIAR | +40 max HP | 43.0 → 44.0 | 17.1 → 15.6 |
+    | KNIGHT | +60 max HP | 43.8 → 39.3 | 19.3 → 15.3 |
+
+  TESLA's and MIDAS's were text only. KNIGHT and BRIAR are compensated in the boss knobs.
+- **Retune** (Mirror, then Dealer):
+
+    | machine | mirror | dealer |
+    |---|---|---|
+    | KNIGHT | 1.0 → 1.6 | 0.8 (unchanged) |
+    | TESLA | 3.0 → 2.7 | — |
+    | BRIAR | 20 → 75 | 1.55 → 2.2 |
+    | CASSIDY | 1.9 → 2.5 | 1.7 → 2.1 |
+
+- **Measured** (tuesday 1000): WHITE **43.6** / GREEN **18.2**, the tightest spread yet: WHITE 42.6–44.3, GREEN 17.0–19.5.
+
+    | machine | WHITE | GREEN |
+    |---|---|---|
+    | KNIGHT | 42.6 | 18.4 |
+    | TESLA | 44.3 | 17.0 |
+    | BRIAR | 43.4 | 18.0 |
+    | JOKER | 44.0 | 18.2 |
+    | CASSIDY | 43.7 | 19.5 |
+
+  - Mirror win 55–68%.
+  - Fight-4 deaths 4.4%. Challenges: 36.8 / 30.3 / 34.8 / 34.8 / 29.0 / 14.3 / 9.0. Weekly 20.5%.
+  - Fuzz 20: no breaks. Tests: 234 (a shard test; the signature test is gone).

@@ -261,7 +261,7 @@ describe('act structure', () => {
     expect(run.over && run.won).toBe(true);
   });
 
-  it('the Mirror copies your strips and gilds and is sized to your HP; it cracks at half HP', () => {
+  it('the Mirror plays its own reels (swords, shields, SHARDS) and is sized to your HP; it cracks at half HP', () => {
     const run = createRun(base, 23, 'midas');
     run.act = 2;
     run.paths = generateRunPaths(new Rng(5), 2);
@@ -269,18 +269,18 @@ describe('act structure', () => {
     run.depth = RUN_FIGHTS;
     run.player.relics = ['battery', 'fang'];
     const cfg = fightConfig(run, base);
-    expect(cfg.enemy.strips).toEqual(run.player.strips);
-    expect(cfg.enemy.gilded).toEqual(run.player.gilded);
+    expect(cfg.enemy.strips.every((st) => (st.shard ?? 0) > 0)).toBe(true);
+    expect(cfg.enemy.gilded ?? []).toEqual([]);
     expect(cfg.enemy.hp).toBe(enemyHp(run, run.enemies[RUN_FIGHTS]));
     expect(cfg.enemy.hp).toBe(Math.round((TUNE.mirrorPower * BOSS_MUL.midas.mirror * sizingPower(run, 'mirror')) / 10) * 10 + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length);
-    expect(cfg.enemy.ability?.kind).toBe(MIRROR.ability.kind);
+    expect(cfg.enemy.ability ?? null).toBeNull();
+    expect(MIRROR.ability).toBeNull();
 
     const f = new Fight(cfg, 9);
     f.sides.enemy.hp = Math.floor(f.sides.enemy.maxHp / 2) + 1;
     f.forceNext('player', ['sword', 'sword', 'shield']);
     const { events } = f.step();
     expect(ofType(events, 'shatter').length).toBe(1);
-    expect(f.sides.enemy.ability!.every).toBe(MIRROR.ability.every - 1);
   });
 
   it('REFLECTION throws your last spin damage back (min 30)', () => {

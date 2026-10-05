@@ -61,8 +61,6 @@ export interface Cabinet {
   specialDamage?: number;
   /** A WILD anywhere on the line lets any two matching reels pay as a double. */
   jokerWilds?: boolean;
-  /** Act 2 signature, applied when the House falls (ITERATION_8 Package P). */
-  act2?: { text: string; maxHp?: number; wilds?: { reel: number; count: number } };
   /** Lightning Rod special damage for this cabinet (default 12). */
   rodDamage?: number;
 }
@@ -86,7 +84,6 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     symbols: ['sword', 'shield'],
     levels: { sym: { sword: 2, shield: 2 }, charm: {} },
     rule: 'HALF SWORDS, HALF SHIELDS, BOTH AT LEVEL 2. NO METER. 300 HP.',
-    act2: { text: '+60 MAX HP', maxHp: 6 * UNIT },
     unlock: '',
   },
   midas: {
@@ -106,7 +103,6 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     startChips: 24,
     symbols: ['sword', 'shield', 'goldbar'],
     rule: 'MORE CHIPS, BIGGER PAYS. A CHIP JACKPOT MAKES IT RAIN! 360 HP.',
-    act2: { text: 'THE +1 CHIP PER WIN KEEPS PAYING' },
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },
@@ -124,7 +120,6 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'thorns', symbol: 'thorn', cost: 0, heal: UNIT },
     symbols: ['sword', 'shield', 'thorn'],
     rule: 'THORNS ADD UP. WHEN YOU ARE ATTACKED, YOUR THORNS HIT BACK. 300 HP.',
-    act2: { text: '+40 MAX HP', maxHp: 4 * UNIT },
     unlock: 'BEAT THE HOUSE',
   },
   tesla: {
@@ -142,7 +137,6 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     symbols: ['sword', 'shield', 'bolt'],
     rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE THROUGH SHIELDS. 250 HP.',
     rodDamage: 9 * UNIT,
-    act2: { text: 'CHEAP SPECIALS KEEP FIRING' },
     unlock: 'REACH THE HOUSE',
     specialCost: 4 * UNIT,
     specialDamage: 6 * UNIT,
@@ -161,7 +155,6 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 3 * UNIT, perWild: 2 * UNIT },
     symbols: ['sword', 'shield'],
     rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 220 HP.',
-    act2: { text: '2 SHIELDS ON REEL 3 BECOME WILDS', wilds: { reel: 2, count: 2 } },
     unlock: 'BEAT THE HOUSE WITH WILDS',
     jokerWilds: true,
   },
