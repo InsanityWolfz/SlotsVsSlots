@@ -121,3 +121,26 @@ describe('CONTENT_13: relics', () => {
     expect(ofType(t.step().events, 'relic').some((e) => e.relic === 'coil')).toBe(true);
   });
 });
+
+describe('TESLA COIL feeds the strike it lands with', () => {
+  it('its charge joins the bolt group, before the lightning fires (no strike of its own after)', () => {
+    const run = (relics: string[]) => {
+      const c = fightConfig(createRun(base, 2, 'tesla'), base);
+      c.enemy = { hp: 99999, strips: reels3({ sword: 6, shield: 6 }) };
+      c.player.bonusSymbols = false;
+      c.player.strips = reels3({ bolt: 12 });
+      c.relics = relics as GameConfig['relics'];
+      const f = new Fight(c, 7);
+      f.forceNext('player', ['bolt', 'bolt', 'bolt']);
+      return f.step().events;
+    };
+    const plain = ofType(run([]), 'energyGain');
+    const coil = run(['coil']);
+    const gains = ofType(coil, 'energyGain');
+    expect(gains).toHaveLength(plain.length);
+    expect(gains[0].amount).toBe(plain[0].amount + 5);
+    // The relic pops before the charge it adds to.
+    const idx = (t: string) => coil.findIndex((e) => e.type === t && (t !== 'relic' || (e as { relic?: string }).relic === 'coil'));
+    expect(idx('relic')).toBeLessThan(idx('energyGain'));
+  });
+});

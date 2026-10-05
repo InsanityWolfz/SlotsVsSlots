@@ -412,6 +412,8 @@ export class Fight {
   /** PIT BOSS: the enemy's first jackpot was already cut. */
   private pitUsed = false;
   private pitJustFired = false;
+  /** TESLA COIL: this spin's charge, waiting to join the bolt group's (or to go in alone after the groups). */
+  private coilPending = 0;
   /** SIDE BETS: what this fight has done so far (spins, damage taken, jackpots, best turn). */
   readonly betTrack = newTrack();
   /** MIDAS: the side bet was already paid mid-fight (finishFight mustn't pay it twice). */
@@ -590,6 +592,15 @@ export class Fight {
     if (side === 'player' && (score.raised || score.jackpots)) this.payoff(me, score, events);
     if (laid) events.push({ type: 'lineCardUsed', side, reel: laid.reel, card: laid.card });
     const allIn = side === 'enemy' && this.isDealer && this.dealerAllIn;
+    // TESLA COIL: a bolt just above or below your payline charges your lightning (once a spin).
+    this.coilPending = 0;
+    if (side === 'player' && this.special && me.relics.has('coil')) {
+      const near = me.reels.some((reel) => [-1, 1].some((d) => {
+        const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
+        return c.symbol === 'bolt' && !c.slimed && !c.stolen;
+      }));
+      if (near) this.coilPending = NEW_RELIC.coilCharge;
+    }
     for (const group of score.groups) {
       if (allIn && (group.symbol === 'sword' || group.symbol === 'seven')) continue;
       this.resolveGroup(me, group, score, events);
@@ -641,17 +652,12 @@ export class Fight {
       events.push({ type: 'relic', side: 'player', relic: 'snakeeyes' });
       this.heal(you, NEW_RELIC.snakeHeal, 'snakeeyes', events);
     }
-    // TESLA COIL: a bolt just above or below your payline charges your lightning (once a spin).
-    if (!this.over && side === 'player' && this.special && me.relics.has('coil')) {
-      const near = me.reels.some((reel) => [-1, 1].some((d) => {
-        const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
-        return c.symbol === 'bolt' && !c.slimed && !c.stolen;
-      }));
-      if (near) {
-        events.push({ type: 'relic', side, relic: 'coil' });
-        this.gainEnergy(me, NEW_RELIC.coilCharge, [], events);
-      }
+    // TESLA COIL with no paying bolt group: its charge goes in on its own.
+    if (!this.over && this.coilPending > 0) {
+      events.push({ type: 'relic', side, relic: 'coil' });
+      this.gainEnergy(me, this.coilPending, [], events);
     }
+    this.coilPending = 0;
     // Jackpot Bell: a jackpot fills your meter (TESLA: a full special; BRIAR: the jackpot again into the bank).
     // Not on JOKER's payoff spin: the payoff scores as a jackpot, so the Bell refilled the meter it had just emptied and it
     // never ran dry (EXPERT_PLAYTEST_11 D1: JOKER + BELL 63%).
@@ -1184,7 +1190,13 @@ export class Fight {
           // The Grounder: a grounded bolt on your payline earths its share of the energy.
           const grounded = player ? g.reels.filter((r) => this.isGrounded(me, r)).length : 0;
           const earthed = grounded ? unitsUp((g.amount * grounded) / g.reels.length) : 0;
-          this.gainEnergy(me, Math.max(0, g.amount - earthed), g.reels, events, earthed);
+          // TESLA COIL: its charge joins this group's, so it feeds the same strike (it fired a strike of its own after).
+          const coil = player ? this.coilPending : 0;
+          if (coil) {
+            this.coilPending = 0;
+            events.push({ type: 'relic', side: me.side, relic: 'coil' });
+          }
+          this.gainEnergy(me, Math.max(0, g.amount - earthed) + coil, g.reels, events, earthed);
         }
         this.vampHeal(me, g, events);
         return;
@@ -1318,11 +1330,11 @@ export class Fight {
   }
 
   /** Every meter payoff heals (the machine's own heal, plus Vampire Fang). */
-  private payoffHeal(me: Combatant, events: CombatEvent[]): void {
+  private payoffHeal(me: Combatant, events: CombatEvent[], times = 1): void {
     if (me.side !== 'player' || this.over) return;
-    const heal = this.meter?.heal ?? 0;
+    const heal = (this.meter?.heal ?? 0) * times;
     if (heal > 0) this.heal(me, heal, 'payoff', events);
-    if (!this.over && me.relics.has('fang')) this.heal(me, this.meter?.kind === 'thorns' ? FANG_THORN_HEAL : this.special ? FANG_TESLA_HEAL : FANG_HEAL, 'fang', events);
+    if (!this.over && me.relics.has('fang')) this.heal(me, (this.meter?.kind === 'thorns' ? FANG_THORN_HEAL : this.special ? FANG_TESLA_HEAL : FANG_HEAL) * times, 'fang', events);
   }
 
   /** MIDAS / JAX / BRIAR: fill the signature meter (a full MIDAS / JAX meter locks until it pays off). */
@@ -1480,6 +1492,7 @@ export class Fight {
     // through a LIGHTNING STORM (user playtest); it pops once per storm now.
     const over = me.relics.has('overcharge');
     let overPopped = false;
+    let strikes = 0;
     while (me.energy >= this.cfg.specialCost && !this.over && foe.hp > 0) {
       me.energy -= this.cfg.specialCost;
       const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
@@ -1491,9 +1504,11 @@ export class Fight {
       const h = this.damage(foe, dmg, pierce);
       events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
       this.checkDeath(foe, events);
-      // Every special heals a little (TESLA's payoff heal), plus Vampire Fang.
-      if (me.side === 'player') this.payoffHeal(me, events);
+      strikes++;
     }
+    // Every strike heals a little (TESLA's payoff heal), plus Vampire Fang: once per storm, for all its strikes (one heal
+    // after each strike spammed through a LIGHTNING STORM: user playtest).
+    if (me.side === 'player' && strikes > 0) this.payoffHeal(me, events, strikes);
   }
 
   private heal(me: Combatant, amount: number, source: HealSource, events: CombatEvent[]): void {

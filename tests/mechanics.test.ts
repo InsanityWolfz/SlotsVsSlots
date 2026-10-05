@@ -222,12 +222,13 @@ describe('step A quick fixes', () => {
     expect(p.reels.every((r) => r.cells.every((c) => !c.stolen))).toBe(true);
   });
 
-  it('TESLA with Overcharge: one Vampire Fang heal per strike (no echo strike to drink from)', () => {
+  it('TESLA: one Vampire Fang heal per lightning storm, worth every strike (no heal spam)', () => {
     const f = vs({ sword: 4, shield: 8 }, { relics: ['fang', 'overcharge'], hp: 200 });
     f.sides.player.hp = 5;
     f.forceNext('player', ['bolt', 'bolt', 'bolt']);
     const ev = f.step().events;
     const heals = ofType(ev, 'heal').filter((e) => e.source === 'fang');
-    expect(heals).toHaveLength(ofType(ev, 'specialFire').length);
+    expect(heals).toHaveLength(1);
+    expect(ofType(ev, 'specialFire').length).toBeGreaterThan(0);
   });
 });

@@ -1653,3 +1653,10 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   no echo. Other machines' payoff echo is unchanged.
 - OVERCHARGE's strength barely moves TESLA (+30 / 50 / 75%: 42.7 / 42.3 / 42.6 WHITE). TESLA GREEN had drifted to ~14
   (13.8), so its dealer goes 1.69 → **1.3**: TESLA **42.7 / 16.6**. Tests: 236 (two echo tests updated).
+
+## Iteration 73d (2026-10-05): TESLA's Fang and Coil (user bugs)
+- **Vampire Fang (and TESLA's own payoff heal)** healed after every lightning strike, so they spammed through a storm.
+  Now **one heal per storm**, worth every strike (the same total).
+- **TESLA COIL** charged after the spin's lightning had fired, so it set off a strike of its own. Its charge now
+  **joins the bolt group's energy** before the lightning fires; it goes in alone only when no bolt group paid.
+- TESLA **42.7 / 16.6** (unchanged). Fuzz 15: no breaks. Tests: 237 (a coil test).
