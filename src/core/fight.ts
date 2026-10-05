@@ -2180,8 +2180,11 @@ export class Fight {
 
   /** The House skims half the pot (rounded up) as damage (shield blocks); the rest keeps growing. */
   private cashPot(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
-    const amount = unitsUp(this.pot * POT.skim * (this.cfg.enemy.dmgMul ?? 1) * (this.cfg.enemy.endless ? ENDLESS.housePot : 1));
-    this.pot -= amount;
+    // It takes half the pot out of the pot; the endless loop's growth only multiplies the hit. (The boosted hit used to come
+    // out of the pot too: from loop 4 that was more than the pot held, and the pot went negative: user playtest.)
+    const taken = Math.min(this.pot, unitsUp(this.pot * POT.skim));
+    this.pot -= taken;
+    const amount = unitsUp(taken * (this.cfg.enemy.dmgMul ?? 1) * (this.cfg.enemy.endless ? ENDLESS.housePot : 1));
     // MIDAS's rival: the House skims his chips too (2 per cash-out).
     if (foe.side === 'player' && this.meter?.kind === 'vault') {
       const took = Math.min(MIDAS.houseSkim, (this.cfg.player.chipsHeld ?? 0) + this.midasChips);

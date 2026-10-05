@@ -1660,3 +1660,9 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - **TESLA COIL** charged after the spin's lightning had fired, so it set off a strike of its own. Its charge now
   **joins the bolt group's energy** before the lightning fires; it goes in alone only when no bolt group paid.
 - TESLA **42.7 / 16.6** (unchanged). Fuzz 15: no breaks. Tests: 237 (a coil test).
+
+## Iteration 73e (2026-10-05): the House's pot went negative in endless (user bug)
+- `cashPot` took the whole BOOSTED skim out of the pot: half the pot × the loop's dmgMul (1.35^loop) × housePot 1.5.
+  From loop 4 that exceeds the pot, so the pot went negative (and the next skims went wrong).
+- Now it takes **at most half the pot** out of it, and the loop growth only multiplies the hit (the damage is unchanged).
+  Regression test (it fails without the fix: pot -671,030). Fuzz 15: no breaks. Tests: 238.

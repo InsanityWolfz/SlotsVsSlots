@@ -186,3 +186,18 @@ describe('on-symbol numbers match the calculation (audit)', () => {
     expect(shards.amount).toBe(Math.max(30, Math.round(dealt / 10) * 10));
   });
 });
+
+describe('THE HOUSE pot never goes negative (endless loop 4: user bug)', () => {
+  it('a skim takes at most half the pot; the loop growth only multiplies the hit', () => {
+    const c = fightConfig(createRun(base, 3, 'knight'), base);
+    c.player.bonusSymbols = false;
+    c.enemy = { hp: 99999, strips: reels3({ sword: 4, shield: 4, coin: 4 }), ability: { kind: 'jackpot', every: 1, power: 0 }, boss: 'house', endless: true, dmgMul: Math.pow(1.35, 4) };
+    c.player.hp = 99999 * 10;
+    const f = new Fight(c, 3);
+    for (let i = 0; i < 40 && !f.over; i++) {
+      const { events } = f.step();
+      for (const e of events) if (e.type === 'potWin') expect(e.potLeft).toBeGreaterThanOrEqual(0);
+      expect((f as unknown as { pot: number }).pot).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
