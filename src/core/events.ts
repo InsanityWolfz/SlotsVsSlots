@@ -156,6 +156,10 @@ export type CombatEvent =
   | { type: 'phoenix'; side: SideId; hp: number }
   /** The Mirror cracked at half HP: it reflects faster. */
   | { type: 'shatter'; side: SideId; every: number }
+  /** THE MIRROR: what each shard will throw back next turn (your last spin's damage x its share). */
+  | { type: 'mirrorCharge'; side: SideId; last: number; each: number; share: number }
+  /** THE MIRROR's shards land: `count` x `share` of your last spin's damage (`last`), at least the minimum. */
+  | { type: 'shardReflect'; side: SideId; reels: number[]; count: number; share: number; last: number; amount: number }
   | { type: 'steal'; from: SideId; to: SideId; reels: number[]; cells: CellRef[]; symbols: SymbolId[]; wasted: number; repo?: boolean }
   /** Rocks inserted into the target's strips (indices are post-insert, applied in order). */
   | { type: 'junk'; from: SideId; to: SideId; reels: number[]; inserts: CellRef[] }

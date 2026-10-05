@@ -861,6 +861,8 @@ export class Game {
         });
         hud.hp = hud.ghost = c.hp;
         if (s === 'player') hud.chips = hud.chipsHeld = cfg.player.chipsHeld ?? 0;
+        // THE MIRROR: until you've hit it, its HUD says what its shards do.
+        if (s === 'enemy' && this.fight.isMirror) hud.hint = 'EACH SHARD THROWS BACK YOUR LAST HIT';
         if (c.ability) hud.charge = c.charge;
         return [s, hud];
       }),

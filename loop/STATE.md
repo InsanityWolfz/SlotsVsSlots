@@ -1627,3 +1627,22 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   - Mirror win 55–68%.
   - Fight-4 deaths 4.4%. Challenges: 36.8 / 30.3 / 34.8 / 34.8 / 29.0 / 14.3 / 9.0. Weekly 20.5%.
   - Fuzz 20: no breaks. Tests: 234 (a shard test; the signature test is gone).
+
+## Iteration 73b (2026-10-05): glass-pane shard, explicit shards, on-symbol number audit (user)
+- **SHARD** is now a framed pane of glass (art agent).
+- **Explicit shards:**
+  - The Mirror's HUD says "EACH SHARD: A THIRD OF 117 = 40" after every spin you make (`mirrorCharge` event; before
+    your first hit: "EACH SHARD THROWS BACK YOUR LAST HIT").
+  - Shard cells show their 40.
+  - A shard pair or jackpot's banner reads "2 X 1/3 OF YOUR 117 HIT = 80"; a single shard pops the same line
+    (`shardReflect` event).
+  - Cracked: "EACH SHARD NOW THROWS BACK HALF YOUR HIT".
+- **On-symbol number audit:**
+  - CASSIDY's chips show their **MAKE IT RAIN share** (chips held, which ×3 makes the group's base; nothing under
+    5 chips), not 10.
+  - Shards show their throw-back.
+  - Enemy effect symbols show no number (already true).
+  - Act 3 attrition and the endless growth were a **hidden** multiplier on enemy hits. They now show on the banner as
+    "X1.06 LATE" on scored swords and sevens, so the banner equals the damage (test). Unscored hits (fangs, abilities)
+    still scale in hit(). LAST CALL is announced at the enemy's turn start.
+- tuesday 1000: WHITE 43.6 (unchanged) / GREEN 17.5 (18.2: whole-HP rounding of LATE). Tests: 236.

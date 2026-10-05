@@ -454,6 +454,11 @@ export class Fight {
     this.resolving = true;
     const first = res.side === 'player' ? this.sides.enemy : this.sides.player;
     for (const c of [first, this.sides[res.side]]) this.checkDeath(c, res.events);
+    // THE MIRROR: say what each shard will throw back on its turn (your hit just now, cracked or not).
+    if (this.isMirror && res.side === 'player' && !this.over) {
+      const share = this.shattered ? SHARD_CRACKED : SHARD_SHARE;
+      res.events.push({ type: 'mirrorCharge', side: 'enemy', last: this.last.player.damage, share, each: Math.round((this.last.player.damage * share) / UNIT) * UNIT });
+    }
     this.resolving = false;
     for (const e of res.events) trackEvent(this.betTrack, e);
     // MIDAS: a side bet won mid-fight pays at once, as gold-bar chips (they fill the vault: EXPERT_PLAYTEST_7 E9).
@@ -477,6 +482,8 @@ export class Fight {
     const events: CombatEvent[] = [];
     this.turn++;
     if (side === 'player') this.playerSpins++;
+    // LAST CALL is announced as the enemy's turn begins (its scored hits carry the multiplier on their banner).
+    else this.enemyDmgMul(events);
     events.push({ type: 'turnStart', turn: this.turn, side });
     this.mirrorTurnDealt = 0;
     this.playerTurnHp = 0;
@@ -966,6 +973,14 @@ export class Fight {
         g.mult *= this.cfg.player.payMul;
         notes.push(`X${this.cfg.player.payMul}`);
       }
+      // Late in act 3 / an endless loop, enemy swords and sevens hit harder: on the banner, not a hidden multiplier.
+      if (!player && (g.symbol === 'sword' || g.symbol === 'seven') && g.base > 0) {
+        const late = this.enemyDmgMul();
+        if (late !== 1) {
+          g.mult *= late;
+          notes.push(`X${Math.round(late * 100) / 100} LATE`);
+        }
+      }
     }
     // GOLD LEAF: gold on a payline cell that pays nothing joins your biggest paying group.
     if (has('midas')) {
@@ -1123,20 +1138,21 @@ export class Fight {
     const player = me.side === 'player';
     switch (g.symbol) {
       case 'sword':
-        // KEEN: a keen sword in the group pierces shields.
-        this.hit(me, foe, g.amount, g.reels, events, !!g.pierce);
+        // KEEN: a keen sword in the group pierces shields. (An enemy's LATE multiplier is already in its amount.)
+        this.hit(me, foe, g.amount, g.reels, events, !!g.pierce, undefined, true);
         this.vampHeal(me, g, events);
         return;
       case 'seven':
         // Sevens are the House's heavy hitters.
-        this.hit(me, foe, g.amount, g.reels, events);
+        this.hit(me, foe, g.amount, g.reels, events, false, undefined, true);
         return;
       case 'shard': {
         // THE MIRROR: each shard on its payline throws a third of your last spin's damage back (a half once cracked),
         // at least REFLECT_MIN. Its whole turn stays under REFLECT_CAP of your max HP (hit()).
         if (player || !this.isMirror) break;
-        const share = (this.shattered ? SHARD_CRACKED : SHARD_SHARE) * g.reels.length;
-        const dmg = Math.max(REFLECT_MIN, Math.round((this.last.player.damage * share) / UNIT) * UNIT);
+        const each = this.shattered ? SHARD_CRACKED : SHARD_SHARE;
+        const dmg = Math.max(REFLECT_MIN, Math.round((this.last.player.damage * each * g.reels.length) / UNIT) * UNIT);
+        events.push({ type: 'shardReflect', side: me.side, reels: g.reels, count: g.reels.length, share: each, last: this.last.player.damage, amount: dmg });
         this.hit(me, foe, dmg, g.reels, events, false, 'reflect');
         return;
       }
@@ -1371,6 +1387,21 @@ export class Fight {
     }
   }
 
+  /** Enemy damage growth: ENDLESS (per loop, LAST CALL after enemy turn 40) x ATTRITION (act 3). */
+  private enemyDmgMul(events?: CombatEvent[]): number {
+    let mul = 1;
+    if (this.cfg.enemy.endless) {
+      const late = Math.floor(this.turn / 2) - ENDLESS.lastCall;
+      if (late > 0 && !this.lastCall && events) {
+        this.lastCall = true;
+        events.push({ type: 'lastCall', side: 'enemy' });
+      }
+      mul *= (this.cfg.enemy.dmgMul ?? 1) * (late > 0 ? 1 + ENDLESS.lastCallStep * late : 1);
+    }
+    if ((this.cfg.enemy.act ?? 1) >= 3) mul *= Math.min(TUNE.rampMax, 1 + TUNE.rampPerTurn * Math.max(0, Math.floor(this.turn / 2) - 2));
+    return mul;
+  }
+
   private hit(
     me: Combatant,
     foe: Combatant,
@@ -1379,22 +1410,15 @@ export class Fight {
     events: CombatEvent[],
     pierce = false,
     note?: 'drain' | 'mimic' | 'reflect' | 'echo',
+    scaled = false,
   ): number {
     // Nothing hits a machine that already fell this turn (its death resolves at the end of the turn).
     if (foe.hp <= 0) return 0;
-    // ENDLESS: enemy damage grows per loop; LAST CALL after enemy turn 40 (+10% per turn).
-    if (me.side === 'enemy' && this.cfg.enemy.endless && amount > 0 && note !== 'reflect') {
-      const late = Math.floor(this.turn / 2) - ENDLESS.lastCall;
-      if (late > 0 && !this.lastCall) {
-        this.lastCall = true;
-        events.push({ type: 'lastCall', side: me.side });
-      }
-      amount = Math.min(ENDLESS.clamp, Math.round((amount * (this.cfg.enemy.dmgMul ?? 1) * (late > 0 ? 1 + ENDLESS.lastCallStep * late : 1)) / UNIT) * UNIT || amount);
-    }
-    // ATTRITION (act 3): the longer a fight runs, the harder the enemy hits (+6% per enemy turn after the 2nd, max x2).
-    if (me.side === 'enemy' && (this.cfg.enemy.act ?? 1) >= 3 && note !== 'reflect' && amount > 0) {
-      const ramp = Math.min(TUNE.rampMax, 1 + TUNE.rampPerTurn * Math.max(0, Math.floor(this.turn / 2) - 2));
-      amount = Math.round((amount * ramp) / UNIT) * UNIT || amount;
+    // ENDLESS (per loop, LAST CALL after enemy turn 40) and ATTRITION (act 3: +6% per enemy turn after the 2nd, max x2).
+    // Scored swords and sevens carry it already (it shows on their banner).
+    if (me.side === 'enemy' && note !== 'reflect' && amount > 0 && !scaled) {
+      const mul = this.enemyDmgMul(events);
+      if (mul !== 1) amount = Math.min(ENDLESS.clamp, Math.round((amount * mul) / UNIT) * UNIT || amount);
     }
     // RAISE: the Dealer's next hit pays double.
     if (me.side === 'enemy' && this.raiseEnemy && amount > 0 && note !== 'reflect') {

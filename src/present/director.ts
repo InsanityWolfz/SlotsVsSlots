@@ -1,7 +1,7 @@
 import { UNIT, type Enh, type SideId, type SymbolId } from '../core/config';
 import type { RelicId } from '../core/config';
 import type { CombatEvent } from '../core/events';
-import { effectText, other, WHEEL_SYMBOLS, wheelCharm, WRITERS, type TurnResult } from '../core/fight';
+import { effectText, other, RAIN, WHEEL_SYMBOLS, wheelCharm, WRITERS, type TurnResult } from '../core/fight';
 import type { LineScore } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
@@ -13,7 +13,7 @@ import { betProfit, betState, trackEvent } from '../core/bets';
 import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
 import { fmtNum } from '../render/text';
-import { BOMB, RELICS } from '../core/relics';
+import { BOMB, REFLECT_MIN, RELICS } from '../core/relics';
 import { charmLevel, charmName, charmTag, CHARM_COLOR, playerSymValue } from '../core/charms';
 import { defaultConfig } from '../core/config';
 import { DEAD } from '../core/strip';
@@ -230,6 +230,20 @@ export class Director {
         this.s.sounds.coin(6);
         this.s.sounds.coin(10);
         return this.popText(e.amount > 0 ? `+${e.amount} CHIP${e.amount > 1 ? 'S' : ''}` : `THE HOUSE SKIMS ${-e.amount} CHIPS`, c.x - 80, MACHINE_TOP - 22, 2, e.amount > 0 ? '#ffd23f' : '#ff8a7a', 14, 0.35);
+      }
+      case 'mirrorCharge': {
+        // THE MIRROR: the enemy HUD says what each shard will throw back, and its shard cells show it.
+        this.mirrorEach = e.each;
+        this.mirrorLast = e.last;
+        this.mirrorShare = e.share;
+        this.s.huds[e.side].hint = `EACH SHARD: ${e.share >= 0.5 ? 'HALF' : 'A THIRD'} OF ${e.last} = ${e.each}`;
+        return Promise.resolve();
+      }
+      case 'shardReflect': {
+        // A pair or a jackpot says it on its banner; a single shard gets the line here.
+        if (e.count >= 2) return Promise.resolve();
+        const c = this.machineCenter(e.side);
+        return this.popText(`SHARD: ${e.share >= 0.5 ? 'HALF' : '1/3'} OF YOUR ${e.last} HIT = ${e.amount}`, c.x, MACHINE_TOP - 22, 2, '#c8f0ff', 30, 0.6);
       }
       case 'lucreChips': {
         if (e.side === 'player') this.s.huds.player.lucre = e.total;
@@ -581,6 +595,16 @@ export class Director {
 
   /** Per-fight bonuses on each cell of a symbol this spin (WAR DRUM), added to the shown number. */
   private symBonus: Partial<Record<SideId, Partial<Record<SymbolId, number>>>> = {};
+  /** THE MIRROR: what each shard throws back this turn (from the last mirrorCharge). */
+  private mirrorEach = 0;
+  private mirrorLast = 0;
+  private mirrorShare = 1 / 3;
+  /** "2 X 1/3 OF YOUR 117 HIT = 80": what `n` shards throw back (as the engine does it: at least REFLECT_MIN). */
+  private shardText(n: number): string {
+    const amount = Math.max(REFLECT_MIN, Math.round((this.mirrorLast * this.mirrorShare * n) / UNIT) * UNIT);
+    const part = n >= 3 && this.mirrorShare < 0.5 ? 'ALL' : `${n} X ${this.mirrorShare >= 0.5 ? 'HALF' : '1/3'}`;
+    return `${part} OF YOUR ${this.mirrorLast} HIT = ${amount}`;
+  }
 
   /** The numbers on a landed payline symbol: its value (bottom-left) and its charm's tag (top-right). */
   private setTag(side: SideId, r: number, jammed = false): void {
@@ -594,7 +618,16 @@ export class Director {
     if (!player && WRITERS.has(cell.symbol)) return;
     const base = BASE[cell.symbol] ?? 0;
     const bonus = this.symBonus[side]?.[cell.symbol] ?? 0;
-    const value = (lv ? playerSymValue(lv, cell.symbol, base) : !player && cell.symbol === 'shield' ? Math.round(base * this.s.enemyShield) : base) + bonus;
+    // What the cell really adds to its group's BASE (the banner carries the multipliers):
+    // - CASH CASSIDY's chips only hit in MAKE IT RAIN: each chip's share of it (chips x3 over three cells), none
+    //   while you hold too few chips to make it rain.
+    // - THE MIRROR's shards throw back a share of your last hit (its HUD says the same).
+    let value: number;
+    if (player && cell.symbol === 'goldbar') {
+      const chips = this.s.huds.player.chips;
+      value = chips >= RAIN.cost ? Math.round((chips * RAIN.perChip) / 3) : 0;
+    } else if (!player && cell.symbol === 'shard') value = this.mirrorEach;
+    else value = (lv ? playerSymValue(lv, cell.symbol, base) : !player && cell.symbol === 'shield' ? Math.round(base * this.s.enemyShield) : base) + bonus;
     const charm = cell.enh && !(cell.faked && cell.faked > 0) && m.hexed[r] <= 0 ? cell.enh : undefined;
     const lvl = charm ? (player ? charmLevel(lv, charm, this.s.ticket) : 1) : 1;
     if (!value && !charm) return;
@@ -689,7 +722,8 @@ export class Director {
     const g = matched!;
     const fmt = (x: number) => (Number.isInteger(x) ? String(x) : x.toFixed(1));
     const gross = Math.round(g.base * g.mult);
-    const effect = side === 'enemy' && WRITERS.has(sym) ? effectText(sym, g.amount) : '';
+    // THE MIRROR's shards aren't BASE x MULT: they throw back a share of your last hit (the same words as the popup).
+    const effect = side === 'enemy' && WRITERS.has(sym) ? effectText(sym, g.amount) : side === 'enemy' && sym === 'shard' ? this.shardText(g.reels.length) : '';
     const parts = slimeCleanse
       ? [{ text: 'CLEANSE!', color: COLORS.slime }]
       : effect
@@ -1961,7 +1995,7 @@ export class Director {
       hud.ability = { ...hud.ability, every: e.every };
       hud.charge = Math.min(hud.charge, e.every - 1);
     }
-    await this.banner('CRACKED!', '#c8f0ff', 1.3, 0.5, `REFLECTS EVERY ${e.every} TURNS`, BANNER_Y, 4);
+    await this.banner('CRACKED!', '#c8f0ff', 1.3, 0.5, e.every ? `REFLECTS EVERY ${e.every} TURNS` : 'EACH SHARD NOW THROWS BACK HALF YOUR HIT', BANNER_Y, 4);
   }
 
   private async endTurn(side: SideId): Promise<void> {

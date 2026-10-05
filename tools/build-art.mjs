@@ -504,26 +504,41 @@ S.lock = lit(16, 16, [
   rim.forEach(([x, y]) => put(g, x, y, (y <= 2 || x <= 3 || (x + y <= 13)) ? 'Y' : (x + y >= 17 ? 'g' : 'G')));
   S.seven = toRows(outline(g));
 }
-// shard: THE MIRROR's reel symbol, a jagged broken-mirror fragment (lit top-left, inner reflection, glint)
+// shard: THE MIRROR's reel symbol, a framed pane of glass: steel frame (lit top-left), pale
+// blue glass, the classic double diagonal glare (thick + thin), and a small crack in the lower-right corner
 {
   const g = grid(16, 16);
   stamp(g, 0, 0, [
     '................',
-    '..........WS....',
-    '.........WCAS...',
-    '........WCCAAS..',
-    '........WCAANS..',
-    '.......WCCANNDS.',
-    '.......WCANNcND.',
-    '......WCCANcNN..',
-    '......WCANNNNAS.',
-    '.....WKANNcNAAS.',
-    '....WCWKANNAAAD.',
-    '....WWAAKAAAADD.',
-    '...WCAAAAKAADD..',
-    '...WCAAAAAKDD...',
-    '..WCAADD........',
+    '..WLLLLLLLLLLS..',
+    '..LSSSSSSSSSSD..',
+    '..LS........SD..',
+    '..LS........SD..',
+    '..LS........SD..',
+    '..LS........SD..',
+    '..LS........SD..',
+    '..LS........SD..',
+    '..LS........SD..',
+    '..LS........SD..',
+    '..LS........SD..',
+    '..LS........SD..',
+    '..LSSSSSSSSSSD..',
+    '..SDDDDDDDDDDD..',
     '................',
+  ]);
+  // glass (8x10): pale top-left, bold 2px glare + thin 1px glare in the upper-left half,
+  // and a small navy crack spidering out of the lower-right corner (with a glint on the break)
+  stamp(g, 4, 3, [
+    'CCCWWCAA',
+    'CCWWCAAA',
+    'CWWCAWAA',
+    'WWCAWAAA',
+    'WCAWAAAA',
+    'CAWAAAAA',
+    'AWAAAAWN',
+    'AAAAAANc',
+    'AAAAANcN',
+    'AAAANccc',
   ]);
   S.shard = toRows(outline(g));
 }

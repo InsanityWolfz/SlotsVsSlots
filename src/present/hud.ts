@@ -82,6 +82,8 @@ export class HudView {
   name: string;
   portrait: SpriteId;
   ability: AbilityDef | null;
+  /** A line in the ability slot for an enemy without one (THE MIRROR: what each shard throws back). */
+  hint = '';
 
   constructor(
     readonly side: SideId,
@@ -134,7 +136,7 @@ export class HudView {
   draw(ctx: CanvasRenderingContext2D, time: number): void {
     const x = this.x;
     const y = HUD_TOP;
-    const h = this.hasSpecial || this.ability ? 128 : 96;
+    const h = this.hasSpecial || this.ability || this.hint ? 128 : 96;
 
     // Panel.
     ctx.fillStyle = COLORS.outline;
@@ -210,6 +212,7 @@ export class HudView {
       }
     }
     if (this.ability) this.drawAbility(ctx, x, y + 106, time);
+    else if (this.hint) drawText(ctx, this.hint, x + HUD_W - 4, y + 106, 1.5, '#c8f0ff', { align: 'right' });
   }
 
   /** Passive telegraph: what the enemy's special does and how many turns until it fires. */
