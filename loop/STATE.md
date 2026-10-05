@@ -1646,3 +1646,10 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
     "X1.06 LATE" on scored swords and sevens, so the banner equals the damage (test). Unscored hits (fangs, abilities)
     still scale in hit(). LAST CALL is announced at the enemy's turn start.
 - tuesday 1000: WHITE 43.6 (unchanged) / GREEN 17.5 (18.2: whole-HP rounding of LATE). Tests: 236.
+
+## Iteration 73c (2026-10-05): OVERCHARGE on TESLA (user bug)
+- TESLA's OVERCHARGE fired an echo strike (plus a relic pop and a Fang heal) after every lightning strike, so it spammed
+  through a LIGHTNING STORM. Now **every strike hits 30% harder** (`OVERCHARGE.lightning`), with one pop per storm and
+  no echo. Other machines' payoff echo is unchanged.
+- OVERCHARGE's strength barely moves TESLA (+30 / 50 / 75%: 42.7 / 42.3 / 42.6 WHITE). TESLA GREEN had drifted to ~14
+  (13.8), so its dealer goes 1.69 → **1.3**: TESLA **42.7 / 16.6**. Tests: 236 (two echo tests updated).

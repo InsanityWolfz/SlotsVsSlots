@@ -17,6 +17,7 @@ import {
   MIRROR_HIT_CAP,
   REFLECT_CAP,
   OVERCHARGE_ECHO,
+  OVERCHARGE,
   CLOVER_CHANCE,
   FANG_HEAL,
   FANG_TESLA_HEAL,
@@ -1475,22 +1476,21 @@ export class Fight {
     // The Grounder: a grounded cell on your payline makes your special hit shields.
     const grounded = me.reels.some((reel) => reel.cells[reel.stop]?.grounded);
     const pierce = this.cfg.specialIgnoresShield && !grounded;
+    // OVERCHARGE (TESLA): every strike hits 30% harder. It used to fire an echo strike after each one, which spammed
+    // through a LIGHTNING STORM (user playtest); it pops once per storm now.
+    const over = me.relics.has('overcharge');
+    let overPopped = false;
     while (me.energy >= this.cfg.specialCost && !this.over && foe.hp > 0) {
       me.energy -= this.cfg.specialCost;
-      const dmg = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
+      const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
+      const dmg = over ? unitsUp(raw * (1 + OVERCHARGE.lightning)) : raw;
+      if (over && !overPopped) {
+        overPopped = true;
+        events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
+      }
       const h = this.damage(foe, dmg, pierce);
       events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
       this.checkDeath(foe, events);
-      // Overcharge: the special echoes at a third of its damage.
-      if (!this.over && me.relics.has('overcharge')) {
-        events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
-        const echo = unitsUp(dmg * OVERCHARGE_ECHO);
-        const h2 = this.damage(foe, echo, pierce);
-        events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: echo, ...h2, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
-        this.checkDeath(foe, events);
-        // Vampire Fang drinks from the echo too.
-        if (!this.over && me.relics.has('fang')) this.heal(me, FANG_HEAL, 'fang', events);
-      }
       // Every special heals a little (TESLA's payoff heal), plus Vampire Fang.
       if (me.side === 'player') this.payoffHeal(me, events);
     }

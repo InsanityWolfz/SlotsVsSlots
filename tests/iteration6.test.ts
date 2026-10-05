@@ -180,14 +180,14 @@ describe('legendary relics', () => {
     expect(f.over).toBe(false);
   });
 
-  it('OVERCHARGE echoes the special; KEY doubles x2; BELL jackpots x2; HOURGLASS slows abilities', () => {
+  it('OVERCHARGE: lightning hits 30% harder (one strike, no echo); KEY doubles x2; BELL jackpots x2; HOURGLASS slows abilities', () => {
     const f = fight((c) => {
       c.relics = ['overcharge'];
       c.player.strips = reels3({ bolt: 12 });
     });
     f.forceNext('player', ['bolt', 'bolt', 'bolt']);
     const fires = ofType(f.step().events, 'specialFire');
-    expect(fires.map((x) => x.amount)).toEqual([base.specialDamage, Math.ceil(base.specialDamage / 30) * 10]);
+    expect(fires.map((x) => x.amount)).toEqual([Math.ceil((base.specialDamage * 1.3) / 10) * 10]);
 
     const k = fight((c) => {
       c.relics = ['key'];

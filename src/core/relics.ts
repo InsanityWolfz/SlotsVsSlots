@@ -106,7 +106,7 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
     joker: 'YOUR ALL-JACKPOTS SPIN HEALS 30 MORE',
   },
   overcharge: {
-    tesla: 'YOUR LIGHTNING ECHOES FOR 1/3 DAMAGE',
+    tesla: 'YOUR LIGHTNING HITS 30% HARDER',
     midas: 'YOUR HIGH ROLLER PAYOFF ECHOES FOR 1/3 OF ITS DAMAGE',
     joker: 'YOUR ALL-JACKPOTS SPIN ECHOES FOR 1/3 OF ITS DAMAGE',
   },
@@ -176,6 +176,8 @@ export const KEY_MULT = 2;
 export const SANDGLASS_SLOW = 1;
 /** OVERCHARGE: the echo deals this fraction of the special. */
 export const OVERCHARGE_ECHO = 1 / 3;
+/** OVERCHARGE on TESLA: every lightning strike hits this much harder (not an echo per strike). */
+export const OVERCHARGE = { lightning: 0.3 };
 /** The Mirror's REFLECTION is capped at this share of your max HP (two from full kill you). */
 export const REFLECT_CAP = 0.6;
 /** The Mirror plays your build, so its hits are capped at this share of your max HP (your gold jackpots would one-shot you). */
