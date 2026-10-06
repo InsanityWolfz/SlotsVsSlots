@@ -75,7 +75,9 @@ started (light weighting, no hints on cards).
 ## 4. Side bets
 - Cut the SAFE (x1.5) line. Keep only the HOT HAND long-shot line.
 - Stake with **-5 / -1 / +1 / +5** chip steppers (amount shown between them), replacing the 2 / 5 buttons.
-  Open: keep ALL IN as a button or let the stepper reach it.
+- **Stake cap 20**, everywhere (today ALL IN caps at 20, but 50 in endless: drop the endless 50). Only relics or
+  upgrades raise it: HIGH LIMIT (exists; today it doubles stakes) becomes "cap 40"; room for more bet relics.
+  ALL IN is just the stepper's max (no separate button needed).
 - Move it to a better spot on the pre-fight screen, near the fight button.
 
 ## 5. Order of work
