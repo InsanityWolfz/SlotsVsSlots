@@ -75,14 +75,24 @@ started (light weighting, no hints on cards).
 ## 4. Side bets
 - Cut the SAFE (x1.5) line. Keep only the HOT HAND long-shot line.
 - Stake with **-5 / -1 / +1 / +5** chip steppers (amount shown between them), replacing the 2 / 5 buttons.
-- **Stake cap 20**, everywhere (today ALL IN caps at 20, but 50 in endless: drop the endless 50). Only relics or
-  upgrades raise it: HIGH LIMIT (exists; today it doubles stakes) becomes "cap 40"; room for more bet relics.
+- **Stake cap 20** in a run, **40 in endless** (today: 20 / 50). Only relics or upgrades raise it: HIGH LIMIT
+  (exists; today it doubles stakes) doubles the cap (40 / 80); room for more bet relics.
   ALL IN is just the stepper's max (no separate button needed).
 - Move it to a better spot on the pre-fight screen, near the fight button.
 
-## 5. Order of work
+## 5. Endless scales harder
+- Today, per loop: enemy HP x1.45 (per machine 1.05-1.5), damage x1.35 (KNIGHT 1.18, CASSIDY 1.25).
+- Goal: **only truly broken builds reach loop 5.** Proposed targets (set by sim, per machine):
+  most endless runs end by loop 2-3; loop 5 reached by under ~5% of endless runs, and only by top builds.
+- Shape: the growth itself should grow (e.g. x1.45, x1.6, x1.8... per loop), so a strong build gets a loop or
+  two more but a merely good one hits a wall. Even the per-machine spread out once machines are retuned.
+- Needs an endless sim harness that reports the loop reached per machine (check tools/balance for one first).
+- Do this after the sword removal retune (machine power changes).
+
+## 6. Order of work
 1. Playtester review of this doc (approval gate).
 2. Sword removal + attack symbols + charm retarget (everything else builds on it). Full sim pass, log in STATE.
 3. UI panel + text budget (can run alongside 2, after the late-endless screenshots).
 4. Side bets (small; can ship early).
 5. Content wave by archetype (+~50%), measured per machine.
+6. Endless scaling pass (after 2 and 5, since both change build power).
