@@ -89,10 +89,20 @@ started (light weighting, no hints on cards).
 - Needs an endless sim harness that reports the loop reached per machine (check tools/balance for one first).
 - Do this after the sword removal retune (machine power changes).
 
-## 6. Order of work
+## 6. Sim rewrite
+- tools/balance has grown by patching each round (~60 one-off harnesses: e9_..., e11_..., c13_...). The bot
+  policies assume swords, so they break with step 2 anyway.
+- Rewrite fresh: one shared bot (draft/shop/chip spending that plays each archetype on purpose, not one generic
+  policy), one official table (WHITE / GREEN / Dealer / act 3 per machine + per archetype win rates), one endless
+  report (loop reached per machine), plus fuzz. Move the old one-offs to tools/balance/legacy/.
+- Calibrate the new sim against the current game *before* removing swords, so the before/after numbers mean
+  something.
+
+## 7. Order of work
 1. Playtester review of this doc (approval gate).
-2. Sword removal + attack symbols + charm retarget (everything else builds on it). Full sim pass, log in STATE.
-3. UI panel + text budget (can run alongside 2, after the late-endless screenshots).
-4. Side bets (small; can ship early).
-5. Content wave by archetype (+~50%), measured per machine.
-6. Endless scaling pass (after 2 and 5, since both change build power).
+2. Sim rewrite (calibrated on today's game).
+3. Sword removal + attack symbols + charm retarget (everything else builds on it). Full sim pass, log in STATE.
+4. UI panel + text budget (can run alongside 2, after the late-endless screenshots).
+5. Side bets (small; can ship early).
+6. Content wave by archetype (+~50%), measured per machine.
+7. Endless scaling pass (after 3 and 6, since both change build power).
