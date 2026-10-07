@@ -4081,6 +4081,194 @@ S.relicLooseChange = lit(16, 16, [
   '................',
   '................',
 ]);
+// ---------------------------------------------------------------- per-character relics (16x16)
+// relicBramble (16x16): BRAMBLE WALL, a hedge of green brambles bristling with red thorns on a low stone wall
+S.relicBramble = lit(16, 16, [
+  '................',
+  '................',
+  '....R......R....',
+  '...EeR....EeR...',
+  '..REeeQ..EEeeQ..',
+  '..EeWeQQEeWeeQR.',
+  '.REeeRQqEeeeRQq.',
+  '..eeQQqQeeRQQqq.',
+  '.ReQReeqQQeeQqr.',
+  '..QQqQQqqQqQqq..',
+  '.IIIHIIIIHIIIIH.',
+  '.HHHhHHHHhHHHHh.',
+  '.IHIIIIHIIIIHIh.',
+  '.hhhhhhhhhhhhhh.',
+  '................',
+  '................',
+]);
+// relicRiposte (16x16): RIPOSTE, a round blue buckler with a gold boss, a sword crossing behind it thrusting up-right
+S.relicRiposte = lit(16, 16, [
+  '................',
+  '.............WS.',
+  '............LS..',
+  '...........LS...',
+  '.....LLLLSLS....',
+  '....LAUUUUD.....',
+  '...LAUUUUUND....',
+  '...LUUYGgUND....',
+  '...LUUGGgUND....',
+  '...LUUgggNND....',
+  '..YSUUUUNNND....',
+  '...GSNNNNND.....',
+  '..BbgDDDDD......',
+  '.Gg.............',
+  '................',
+  '................',
+]);
+// relicTower (16x16): TOWER SHIELD, a tall blue tower shield with a gold rim and a gold cross
+S.relicTower = lit(16, 16, [
+  '................',
+  '...YGGGGGGGGg...',
+  '...YAAUUUUUNg...',
+  '...YAUUYGUUNg...',
+  '...YAUUYGUUNg...',
+  '...YAYYYGGgNg...',
+  '...YAUUYGUUNg...',
+  '...YAUUYGUUNg...',
+  '...YAUUYgUUNg...',
+  '...YAUUUUUUNg...',
+  '...YAUUUUUNNg...',
+  '...YUUUUUNNNg...',
+  '...GUUUUNNNNg...',
+  '....GGGGGggg....',
+  '................',
+  '................',
+]);
+// relicHeadsman (16x16): HEADSMAN, a big executioner's axe, a grey crescent head on a long brown handle
+S.relicHeadsman = lit(16, 16, [
+  '................',
+  '....WL.....SD...',
+  '...WLS.....Bb...',
+  '...WLSSSSSSBbS..',
+  '...WLSSSSSDBbD..',
+  '...WLSSSSDDBbD..',
+  '...WLSSDDDDBb...',
+  '...WLSD....Bb...',
+  '....WD.....Bb...',
+  '...........Bb...',
+  '...........Bb...',
+  '...........Bb...',
+  '...........bb...',
+  '...........Bb...',
+  '...........DD...',
+  '................',
+]);
+// relicCapacitor (16x16): CAPACITOR, a blue cylindrical capacitor with a steel cap, two leads and a yellow bolt
+S.relicCapacitor = lit(16, 16, [
+  '................',
+  '.....LLLLLS.....',
+  '....LWLLLLSD....',
+  '....DSSSSSDD....',
+  '....AUUUYYNN....',
+  '....AUUYYUNN....',
+  '....AUYYYYNN....',
+  '....AUUYYUNN....',
+  '....AUYYUUNN....',
+  '....AUYUUUNN....',
+  '....AUUUUUNN....',
+  '....SSSSSSDD....',
+  '.....SDDDDD.....',
+  '......L..L......',
+  '......S..S......',
+  '................',
+]);
+// relicLivewire (16x16): LIVE WIRE, a red cable snaking up to a frayed cut end of copper strands throwing yellow sparks
+S.relicLivewire = lit(16, 16, [
+  '................',
+  '..........Y.....',
+  '.....Y...YWY..Y.',
+  '..........Y.....',
+  '.......O.a..o...',
+  '........OaOo....',
+  '.........Mr.....',
+  '.........Rr.....',
+  '.........Rr.....',
+  '.........Rr.....',
+  '........MRr.....',
+  '.......MRrr.....',
+  '.....MRRrr......',
+  '.MRRRRRrr.......',
+  '.rrrrrrr........',
+  '................',
+]);
+// relicEncore (16x16): ENCORE, red theatre curtains drawn back on a gold rod, a gold star on the stage between them
+S.relicEncore = lit(16, 16, [
+  '................',
+  '.YGGGGGGGGGGGGg.',
+  '.MRRRRRRRRRRRRr.',
+  '.RRrRRrRRrRRrRr.',
+  '.MRrRrvvvvRrRrr.',
+  '.MRrRrvYGvRrRrr.',
+  '.MRrRYYWYGgrRrr.',
+  '.MRrRvYYGgvrRrr.',
+  '.MRrvYGvvGgvRrr.',
+  '.YGgvvvvvvvvYGg.',
+  '.MRrvvvvvvvvRrr.',
+  '.MRrRvvvvvvrRrr.',
+  '.MRrRrvvvvRrRrr.',
+  '.MRrRrRvvrRrRrr.',
+  '.wwwwwwwwwwwwwB.',
+  '................',
+]);
+// relicWildwheel (16x16): WILD WHEEL, a rainbow prize wheel with a gold rim and hub, a steel pointer on top
+{
+  const g = grid(16, 16);
+  const cx = 7.5, cy = 8.5, segs = ['R', 'O', 'Y', 'e', 'U', 'V'];
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
+    if (d > 6.2) continue;
+    if (d > 5.2) { put(g, x, y, dx + dy > 2 ? 'g' : 'G'); continue; }
+    if (d < 1.3) { put(g, x, y, dx + dy < 0 ? 'Y' : 'G'); continue; }
+    const a = (Math.atan2(dy, dx) + Math.PI) / (2 * Math.PI);
+    put(g, x, y, segs[Math.floor(a * 6 + 0.25) % 6]);
+  }
+  put(g, 4, 6, 'W');
+  stamp(g, 6, 0, ['LLLS', ' WS ', ' LS ']);
+  S.relicWildwheel = toRows(outline(g));
+}
+// relicDownpour (16x16): DOWNPOUR, a dark storm cloud raining red-and-white casino chips
+S.relicDownpour = lit(16, 16, [
+  '................',
+  '......SSSS......',
+  '..SSSSSDDDSS....',
+  '.SSDDDDDDDDDDS..',
+  '.SDDDDDDDDDDDDD.',
+  '..kkkkkkkkkkkk..',
+  '................',
+  '........RWR.....',
+  '..RWR...WrW.....',
+  '..WrW...........',
+  '...........RWR..',
+  '.....RWR...WrW..',
+  '.....WrW........',
+  '..RWR...........',
+  '..WrW...........',
+  '................',
+]);
+// relicNestegg (16x16): NEST EGG, a gold egg sitting in a brown twig nest
+S.relicNestegg = lit(16, 16, [
+  '................',
+  '................',
+  '......YYYG......',
+  '.....YWYYGG.....',
+  '.....YWYYGg.....',
+  '....YYYYGGGg....',
+  '....YYYGGGgg....',
+  '.w..YYGGGGgg..b.',
+  '.wBwBBwBBwBBwBb.',
+  '.BbBwBbBBwBbBBb.',
+  '..bBBbBwBBbBBb..',
+  '...bbBbbBbbBb...',
+  '.....bbbbbb.....',
+  '................',
+  '................',
+  '................',
+]);
 // relicBracelet (16x16): CHARM BRACELET, a gold chain loop with three charms hanging (red heart, blue gem, green clover)
 S.relicBracelet = lit(16, 16, [
   '................',
@@ -4937,6 +5125,8 @@ const DIMS = {
   relicLoaded: 16, relicMarker: 16, relicHighLimit: 16,
   relicHotStreak: 16, relicBelt: 16, relicToll: 16,
   relicLoadedChips: 16, relicRainmaker: 16, relicSlushFund: 16, relicTipJar: 16, relicLooseChange: 16,
+  relicBramble: 16, relicRiposte: 16, relicTower: 16, relicHeadsman: 16, relicCapacitor: 16,
+  relicLivewire: 16, relicEncore: 16, relicWildwheel: 16, relicDownpour: 16, relicNestegg: 16,
   relicBracelet: 16, relicMetronome: 16, relicSnakeEyes: 16, relicPitBoss: 16, relicCoil: 16, relicTaxMan: 16,
   trimClassic: 16, trimBronze: 16, trimSilver: 16, trimNeon: 16, trimVelvet: 16,
   trimEmerald: 16, trimDiamond: 16, trimObsidian: 16, trimHouse: 16,
@@ -5073,7 +5263,10 @@ export type SpriteId =
   | 'relicBracelet' | 'relicMetronome' | 'relicSnakeEyes'
   | 'relicPitBoss' | 'relicCoil' | 'relicTaxMan'
   | 'relicLoadedChips' | 'relicRainmaker' | 'relicSlushFund' // THE BANKROLL relics, 16x16
-  | 'relicTipJar' | 'relicLooseChange';
+  | 'relicTipJar' | 'relicLooseChange'
+  | 'relicBramble' | 'relicRiposte' | 'relicTower' | 'relicHeadsman' // per-character relics, 16x16
+  | 'relicCapacitor' | 'relicLivewire' | 'relicEncore' | 'relicWildwheel'
+  | 'relicDownpour' | 'relicNestegg';
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

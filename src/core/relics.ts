@@ -54,16 +54,16 @@ export const RELICS: Record<RelicId, RelicDef> = {
   capbells: { id: 'capbells', name: 'CAP AND BELLS', text: 'EVERY WILD ON YOUR PAYLINE HEALS 10', sprite: 'relicCapbells', machine: 'joker' },
   stacked: { id: 'stacked', name: 'STACKED DECK', text: 'WILDS TAKE GOLD, KEEN, VAMP. CHARMED WILDS FILL X2', sprite: 'relicStacked', machine: 'joker' },
   // CONTENT WAVE 1 (2026-10-07, playtest/CONTENT_WAVE1_REVIEW.md): slot machine relics, one hook each.
-  bramble: { id: 'bramble', name: 'BRAMBLE WALL', text: 'BLOCKED HITS FIRE 30% OF YOUR THORNS', sprite: 'relicRosehip', machine: 'thorn' },
-  riposte: { id: 'riposte', name: 'RIPOSTE', text: 'A BLOCKED HIT RETURNS HALF OF WHAT YOU BLOCKED', sprite: 'relicBelt', machine: 'knight' },
-  tower: { id: 'tower', name: 'TOWER SHIELD', text: 'HALF YOUR LEFTOVER SHIELD STAYS (MAX 20% HP)', sprite: 'relicChainmail', machine: 'knight' },
-  headsman: { id: 'headsman', name: 'HEADSMAN', text: 'SWORDS HIT FOR +2% OF YOUR MAX HP', sprite: 'relicDrum', machine: 'knight' },
-  capacitor: { id: 'capacitor', name: 'CAPACITOR', text: 'LEFTOVER SHIELD CHARGES LIGHTNING (1/4)', sprite: 'relicFaraday', machine: 'tesla' },
-  livewire: { id: 'livewire', name: 'LIVE WIRE', text: 'LIGHTNING +40%. EACH STORM COSTS 4% HP', sprite: 'relicStatic', machine: 'tesla' },
-  encore: { id: 'encore', name: 'ENCORE', text: 'AFTER YOUR JACKPOT METER PAYS, IT KEEPS 30%', sprite: 'relicCapbells', machine: 'joker' },
-  wildwheel: { id: 'wildwheel', name: 'WILD WHEEL', text: 'THE WILD WHEEL SPINS TWICE AND KEEPS THE BEST', sprite: 'relicStacked', machine: 'joker' },
-  downpour: { id: 'downpour', name: 'DOWNPOUR', text: 'EACH RAIN THIS FIGHT: NEXT RAIN +25%', sprite: 'relicVault', machine: 'midas' },
-  nestegg: { id: 'nestegg', name: 'NEST EGG', text: 'HIGH ROLLER COUNTS 10 MORE CHIPS', sprite: 'relicVault', machine: 'midas' },
+  bramble: { id: 'bramble', name: 'BRAMBLE WALL', text: 'BLOCKED HITS FIRE 30% OF YOUR THORNS (MAX 10% HP)', sprite: 'relicBramble', machine: 'thorn' },
+  riposte: { id: 'riposte', name: 'RIPOSTE', text: 'A BLOCKED HIT RETURNS HALF OF WHAT YOU BLOCKED', sprite: 'relicRiposte', machine: 'knight' },
+  tower: { id: 'tower', name: 'TOWER SHIELD', text: 'A QUARTER OF LEFTOVER SHIELD STAYS (MAX 10% HP)', sprite: 'relicTower', machine: 'knight' },
+  headsman: { id: 'headsman', name: 'HEADSMAN', text: 'SWORDS HIT FOR +2% OF YOUR MAX HP', sprite: 'relicHeadsman', machine: 'knight' },
+  capacitor: { id: 'capacitor', name: 'CAPACITOR', text: 'LEFTOVER SHIELD CHARGES LIGHTNING (1/4)', sprite: 'relicCapacitor', machine: 'tesla' },
+  livewire: { id: 'livewire', name: 'LIVE WIRE', text: 'LIGHTNING +50%. EACH STORM COSTS 2% HP', sprite: 'relicLivewire', machine: 'tesla' },
+  encore: { id: 'encore', name: 'ENCORE', text: 'AFTER YOUR JACKPOT METER PAYS, IT KEEPS 30%', sprite: 'relicEncore', machine: 'joker' },
+  wildwheel: { id: 'wildwheel', name: 'WILD WHEEL', text: 'THE WILD WHEEL SPINS TWICE AND KEEPS THE BEST', sprite: 'relicWildwheel', machine: 'joker' },
+  downpour: { id: 'downpour', name: 'DOWNPOUR', text: 'EACH RAIN THIS FIGHT: NEXT RAIN +40%', sprite: 'relicDownpour', machine: 'midas' },
+  nestegg: { id: 'nestegg', name: 'NEST EGG', text: 'HIGH ROLLER COUNTS 10 MORE CHIPS', sprite: 'relicNestegg', machine: 'midas' },
   // Charm relics.
   kiss: { id: 'kiss', name: "VAMPIRE'S KISS", text: 'VAMP FITS ANY SYMBOL AND HEALS WHEN IT PAYS', sprite: 'relicKiss', charm: 'vamp' },
   horseshoe: { id: 'horseshoe', name: 'HORSESHOE', text: 'MATCHES MADE WITH A LUCKY WILD PAY X3', sprite: 'relicHorseshoe', charm: 'lucky' },
@@ -141,6 +141,8 @@ export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
   return w ? t.replace(/SWORD/g, w) : t;
 };
 /** Relics that make no sense on a machine even reworded (never offered there). */
+/** Content wave 1: offered in drafts, shops and RELIC RUSH, but not in the starting pick (it keeps each machine's signature relics). */
+export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['bramble', 'riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg']);
 export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['thorn'], bash: ['tesla', 'midas', 'joker'] };
 
 /** New-relic numbers (playtest/RELIC_PROPOSALS.md, tuned in the engine). */
@@ -158,15 +160,17 @@ export const NEW_RELIC = {
   chainmailShare: 0.1,
   // CONTENT WAVE 1.
   brambleShare: 0.3,
+  /** ...at most this share of your max HP a blocked hit. */
+  brambleCap: 0.1,
   riposteShare: 0.5,
-  towerShare: 0.5,
-  towerCap: 0.2,
+  towerShare: 0.25,
+  towerCap: 0.1,
   headsmanPct: 0.02,
   capacitorShare: 0.25,
-  livewireMul: 0.4,
-  livewireCost: 0.04,
+  livewireMul: 0.5,
+  livewireCost: 0.02,
   encoreKeep: 0.3,
-  downpourStep: 0.25,
+  downpourStep: 0.4,
   nestEggChips: 10,
   rosehipShare: 0.1,
   /** ...at most this much a volley (no swords: BRIAR's volleys got huge, and 10% of them healed everything). */

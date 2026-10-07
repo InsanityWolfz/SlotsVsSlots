@@ -930,7 +930,7 @@ export class Fight {
       }
       // HEADSMAN (KNIGHT): each sword hits for a share of your max HP (boss sizing passes your real HP).
       if (player && has('headsman') && g.symbol === 'sword' && g.base > 0) {
-        g.base += unitsRound((this.cfg.player.sizeHp ?? me.maxHp) * NEW_RELIC.headsmanPct) * g.reels.length;
+        g.base += Math.round(((this.cfg.player.sizeHp ?? me.maxHp) * NEW_RELIC.headsmanPct) / 5) * 5 * g.reels.length;
         fired.add('headsman');
       }
       // WAR DRUM: every paying spin this fight adds to EACH sword (shown on the sword's number).
@@ -1302,6 +1302,8 @@ export class Fight {
   }
 
   /** MAKE IT RAIN!: the hit (scored in score()), then its cost; TIP JAR heals, SLUSH FUND refills the bar. */
+  /** BRAMBLE WALL: the enemy turn its partial volley last fired. */
+  private brambleTurn = -1;
   /** DOWNPOUR: rains so far this fight. */
   private rains = 0;
   private makeItRain(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
@@ -1438,13 +1440,21 @@ export class Fight {
 
   /** BRIAR: when you're attacked, the thorn bank hits back through shields (once per enemy turn), then clears. */
   private thorns(victim: Combatant, attacker: Combatant, events: CombatEvent[], share = 1): void {
-    if (this.over || attacker.hp <= 0 || victim.side !== 'player' || this.meter?.kind !== 'thorns' || victim.energy <= 0 || this.thornsTurn === this.turn) return;
-    this.thornsTurn = this.turn;
+    if (this.over || attacker.hp <= 0 || victim.side !== 'player' || this.meter?.kind !== 'thorns' || victim.energy <= 0) return;
+    // One full volley per enemy turn; BRAMBLE WALL's partial volley has its own guard, so it never locks out the full one.
+    if (share >= 1) {
+      if (this.thornsTurn === this.turn) return;
+      this.thornsTurn = this.turn;
+    } else {
+      if (this.brambleTurn === this.turn) return;
+      this.brambleTurn = this.turn;
+    }
     const banked = victim.energy;
     // The volley is a share of the bank (the rest is spent too): with no swords BRIAR banks thorns every spin.
     // BRAMBLE WALL fires only a share on a blocked hit; the rest stays banked.
     const part = share < 1 ? share : THORNS.volley;
-    const bank = part >= 1 ? banked : Math.min(banked, Math.max(UNIT, unitsUp(banked * part)));
+    // (BRAMBLE WALL is capped too: against the Dealer her shields block everything and the bank grows without limit.)
+    const bank = part >= 1 ? banked : Math.min(banked, Math.max(UNIT, unitsUp(banked * part)), share < 1 ? Math.max(UNIT, unitsRound(victim.maxHp * NEW_RELIC.brambleCap)) : Infinity);
     victim.energy = share < 1 ? banked - bank : 0;
     const h = this.damage(attacker, bank, true);
     events.push({ type: 'attack', from: victim.side, to: attacker.side, reels: [], amount: bank, ...h, note: 'thorns' });
@@ -1549,7 +1559,7 @@ export class Fight {
     // BRIAR: being attacked sets the thorn bank off (THORNS.onBlocked 0: only when damage gets through).
     if (!this.over && amount > 0 && (THORNS.onBlocked || h.hpDamage > 0)) this.thorns(foe, me, events);
     // BRAMBLE WALL: a fully blocked hit fires a share of the bank.
-    else if (!this.over && amount > 0 && h.hpDamage === 0 && h.blocked > 0 && foe.side === 'player' && foe.relics.has('bramble') && foe.energy > 0 && this.thornsTurn !== this.turn) {
+    else if (!this.over && amount > 0 && h.hpDamage === 0 && h.blocked > 0 && foe.side === 'player' && foe.relics.has('bramble') && foe.energy > 0 && this.brambleTurn !== this.turn && this.thornsTurn !== this.turn) {
       events.push({ type: 'relic', side: 'player', relic: 'bramble' });
       this.thorns(foe, me, events, NEW_RELIC.brambleShare);
     }

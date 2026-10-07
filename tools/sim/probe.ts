@@ -6,13 +6,14 @@ import * as run from '../../src/core/run';
 import * as relics from '../../src/core/relics';
 import * as enemies from '../../src/core/enemies';
 import * as fight from '../../src/core/fight';
+import * as bot from '../../src/sim/bot';
 import type { CabinetId } from '../../src/core/cabinets';
 import { simulateRuns } from '../../src/sim/simulateRun';
 
 const [machine, nArg, edits = ''] = process.argv.slice(2);
 const N = Number(nArg ?? 200);
 const cfg = defaultConfig();
-const roots: Record<string, unknown> = { ...cab, ...run, ...relics, ...enemies, ...fight, BASE: cfg.base };
+const roots: Record<string, unknown> = { ...cab, ...run, ...relics, ...enemies, ...fight, ...bot, BASE: cfg.base };
 for (const e of edits.split(';').filter(Boolean)) {
   const [path, val] = e.split('=');
   const keys = path.trim().split('.');

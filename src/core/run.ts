@@ -11,6 +11,7 @@ import {
   ELITE_ONLY,
   NEW_RELIC,
   MACHINE_EXCLUDE,
+  WAVE1,
   relicText,
   LEGENDARY,
   RELIC_TIER,
@@ -319,7 +320,7 @@ export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: C
 /** The starting pick: up to 2 of your machine's relics that fit now, then a general common one. */
 export function startRelics(run: RunState): RelicId[] {
   const rng = new Rng((run.seed ^ 0x51a27) >>> 0);
-  const fits = (r: RelicId) => relicFits(run, r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r);
+  const fits = (r: RelicId) => relicFits(run, r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r) && !WAVE1.has(r);
   const mine = rng.shuffle((Object.keys(RELICS) as RelicId[]).filter((r) => RELICS[r].machine === run.cabinet && !RELICS[r].addon && fits(r))).slice(0, 2);
   const general = RELIC_TIER.common.filter((r) => !isIdentityRelic(r) && fits(r) && r !== 'crown');
   return [...mine, ...rng.shuffle(general)].slice(0, 3);
@@ -903,7 +904,7 @@ export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer
   midas: { house: 3.5, mirror: 3.4, dealer: 5, act3: 1, gate: 0.8, act3Floor: 1 },
   thorn: { house: 2, mirror: 200, dealer: 3.2, act3: 2.25, act2: 3.5, act1: 0.9, gate: 1.55 },
   tesla: { house: 0.85, mirror: 2, dealer: 2.3, act3: 1.6, act1: 1.35, act2: 1.2, gate: 1.0 },
-  joker: { house: 2.2, mirror: 1.5, dealer: 0.55, act3: 0.35, act2: 1.5, gate: 0.85 },
+  joker: { house: 1.9, mirror: 1.2, dealer: 0.5, act3: 0.35, act2: 1.5, gate: 0.85 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
@@ -1309,7 +1310,9 @@ export function draftOffers(run: RunState): DraftOption[] {
       (r) => !p.relics.includes(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && (run.act > 1 || !LEGENDARY.has(r)) && !out.some((o) => o.kind === 'relic' && o.relic === r),
     );
     // One relic card per draft is yours: your machine's or your charms' (while any are left).
-    const ident = pool.filter(isIdentityRelic);
+    // The identity slot draws from each machine's signature relics; wave relics compete in the open slots (with them in
+  // the identity slot, BRIAR and JAX lost ~10 WHITE: their build-defining relics showed up half as often).
+  const ident = pool.filter((r) => isIdentityRelic(r) && !WAVE1.has(r));
     if (ident.length && !out.some((o) => o.kind === 'relic')) return { kind: 'relic', relic: rng.pick(ident) };
     // Act 2 relic drafts lean legendary.
     const legends = pool.filter((r) => LEGENDARY.has(r));
