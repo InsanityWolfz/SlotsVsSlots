@@ -54,7 +54,7 @@ import { drawSprite, type SpriteId, artId } from './render/sprites';
 import { drawText } from './render/text';
 import { Button } from './ui/button';
 import { Recap } from './ui/recap';
-import { CHIP_SPOT, RunScreens } from './ui/runScreens';
+import { BUILD, CHIP_SPOT, RunScreens } from './ui/runScreens';
 import { drawRelicTip } from './ui/relicTip';
 
 /** The fight HUD's relic tooltip starts under the player panel (EXPERT_PLAYTEST_12). */
@@ -205,9 +205,9 @@ export class Game {
   private autoBtn!: Button;
   private startBtn!: Button;
   private speedBtns: Button[] = [];
-  private buildBtn!: Button;
-  /** The BUILD pane is popped out in fights. */
+  /** The BUILD drawer: pulled out (or not) in fights, and how far out it is (0..1, eased). */
   private buildOpen = false;
+  private drawerT = 0;
   private recapBtns: Button[] = [];
   private muteBtn!: Button;
   toolButtons: { tune: Button; log: Button } | null = null;
@@ -298,11 +298,7 @@ export class Game {
     const tune = this.btn('TUNE', W / 2, by, 90, 44, () => {});
     const log = this.btn('LOG', ex - 110, by, 90, 44, () => {});
     this.muteBtn = this.btn('SOUND', ex, by, 90, 44, () => this.setMuted(!this.prefs.muted));
-    // BUILD: pop your build out over the left side during a fight (shops and upgrades always show it).
-    this.buildBtn = this.btn('BUILD', 64, by, 96, 44, () => {
-      this.buildOpen = !this.buildOpen;
-      this.syncButtons();
-    });
+
     this.toolButtons = { tune, log };
     this.recapBtns = [
       this.btn('REMATCH', W / 2 - 230, 0, 190, 50, () => this.newFight(true, this.lastSeed)),
@@ -326,13 +322,8 @@ export class Game {
     this.muteBtn.toggled = this.prefs.muted;
     const overlay = this.screens.active || this.phase === 'recap' || this.menus.isOpen;
     for (const b of [this.spinBtn, this.autoBtn, this.startBtn, ...this.speedBtns]) b.visible = !overlay;
-    this.buildBtn.visible = !overlay && !!this.run && this.phase !== 'title';
-    // The popped-out pane covers AUTO: it comes back when the pane closes.
-    if (this.buildOpen && this.buildBtn.visible) this.autoBtn.visible = false;
-    this.buildBtn.toggled = this.buildOpen;
-    this.buildBtn.label = this.buildOpen ? 'HIDE' : 'BUILD';
-    // Open, HIDE sits in the pane's top-right corner (at the bottom it covered the relic grid).
-    Object.assign(this.buildBtn, this.buildOpen ? { x: 252, y: 46, w: 76, h: 32 } : { x: 64, y: 648, w: 96, h: 44 });
+    // The pulled-out drawer covers AUTO: it comes back when the drawer closes.
+    if (this.buildOpen && this.drawerLive()) this.autoBtn.visible = false;
     for (const b of this.recapBtns) b.visible = this.phase === 'recap';
     for (const b of this.buttons) if (b.label === 'TUNE' || b.label === 'LOG') b.visible = this.screens.mode !== 'cabinet' && !(b.label === 'TUNE' && this.publicBuild);
     this.muteBtn.visible = this.screens.mode !== 'cabinet' && this.menus.mode !== 'loading' && this.menus.mode !== 'collection' && this.menus.mode !== 'hiscores';
@@ -1059,6 +1050,13 @@ export class Game {
     }
     // Run screens get first pick: the tool buttons (TUNE/LOG/SOUND) sit under them (ITERATION_8 G3).
     if (this.screens.active && this.screens.pointerDown(x, y)) return;
+    // The BUILD drawer's handle: pull it out, push it back in.
+    if (this.drawerLive() && this.onHandle(x, y)) {
+      this.buildOpen = !this.buildOpen;
+      this.sounds.click();
+      this.syncButtons();
+      return;
+    }
     const b = this.buttons.find((b) => b.visible && b.contains(x, y));
     if (b) {
       this.active = b;
@@ -1140,6 +1138,7 @@ export class Game {
     const dt = Math.min(realDt, 1 / 20);
     this.time += dt;
     this.ui.tick(dt);
+    this.drawerT += ((this.buildOpen ? 1 : 0) - this.drawerT) * Math.min(1, dt * 14);
     this.menus.update(dt);
     // A tutorial callout freezes the fight where it is.
     const gdt = this.coach.active ? 0 : this.stage.clock.tick(dt);
@@ -1170,7 +1169,7 @@ export class Game {
     }
     this.background.drawMarquee(ctx, t);
     this.drawChips(ctx);
-    if (!this.buildOpen) this.drawRelics(ctx);
+    if (this.drawerT < 0.5) this.drawRelics(ctx);
     if (this.phase === 'fighting') this.drawVouchers(ctx, this.time);
     s.huds.player.draw(ctx, t);
     s.huds.enemy.draw(ctx, t);
@@ -1181,11 +1180,17 @@ export class Game {
     this.drawGutter(ctx, t);
     this.particles.draw(ctx);
     s.fx.draw(ctx, s.clock.time, 20, Infinity);
-    // BUILD popped out: your whole build over the left side (relics fire inside it), chips on top.
-    if (this.buildOpen && this.run && !this.screens.active) {
-      this.screens.drawBuildFor(ctx, this.run);
-      this.drawRelics(ctx);
-      this.drawChips(ctx);
+    // The BUILD drawer: your whole build slides out over the left side (relics fire inside it), chips stay put on top.
+    if (this.drawerLive()) {
+      if (this.drawerT > 0.005) {
+        ctx.save();
+        ctx.translate(-(1 - this.drawerT) * (BUILD.x + BUILD.w + 8), 0);
+        this.screens.drawBuildFor(ctx, this.run!);
+        if (this.drawerT >= 0.5) this.drawRelics(ctx);
+        ctx.restore();
+        this.drawChips(ctx);
+      }
+      this.drawHandle(ctx);
     }
     ctx.restore();
 
@@ -1217,6 +1222,45 @@ export class Game {
     if (list.length) drawText(ctx, 'VOUCHERS: WIN TO CASH', 14, VOUCHER_Y - 30, 1.25, '#ffd23f', { align: 'left' });
   }
 
+  /** The drawer exists in a run, between no run screens (they always show the build). */
+  private drawerLive(): boolean {
+    return !!this.run && this.phase !== 'title' && !this.screens.active && !this.menus.isOpen && this.phase !== 'recap';
+  }
+
+  /** The handle: a tab on the drawer's right edge (the screen's left edge when it's shut). */
+  private handleRect(): { x: number; y: number; w: number; h: number } {
+    const edge = this.drawerT * (BUILD.x + BUILD.w + 4);
+    return { x: edge, y: H / 2 - 52, w: 26, h: 104 };
+  }
+
+  private onHandle(x: number, y: number): boolean {
+    const r = this.handleRect();
+    return x >= r.x - 4 && x <= r.x + r.w + 6 && y >= r.y && y <= r.y + r.h;
+  }
+
+  private drawHandle(ctx: CanvasRenderingContext2D): void {
+    const r = this.handleRect();
+    const hover = this.onHandle(this.mouse.x, this.mouse.y);
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(r.x - 2, r.y - 3, r.w + 5, r.h + 6);
+    ctx.fillStyle = hover ? COLORS.goldLight : COLORS.gold;
+    ctx.fillRect(r.x, r.y - 1, r.w + 1, r.h + 2);
+    ctx.fillStyle = hover ? '#3a2e52' : COLORS.panel;
+    ctx.fillRect(r.x, r.y + 2, r.w - 2, r.h - 4);
+    // Grip lines and an arrow: out when shut, back in when open.
+    ctx.fillStyle = COLORS.goldLight;
+    for (const gy of [-30, -24, 24, 30]) ctx.fillRect(r.x + 7, r.y + r.h / 2 + gy, r.w - 16, 2);
+    const cx = r.x + r.w / 2 - 1;
+    const cy = r.y + r.h / 2;
+    const dir = this.drawerT >= 0.5 ? -1 : 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - 5 * dir, cy - 9);
+    ctx.lineTo(cx + 6 * dir, cy);
+    ctx.lineTo(cx - 5 * dir, cy + 9);
+    ctx.closePath();
+    ctx.fill();
+  }
+
   /** Your chips (live in a fight), top-left: the same spot as on every run screen. */
   private drawChips(ctx: CanvasRenderingContext2D): void {
     if (this.run && this.phase !== 'title') {
@@ -1244,7 +1288,7 @@ export class Game {
     const relics = this.relicList();
     if (!relics.length) return;
     // BUILD closed: only a relic that's firing shows, in a row under your chips. Open: the whole grid, in the panel.
-    const open = this.buildOpen;
+    const open = this.drawerT >= 0.5;
     let k0 = 0;
     relics.forEach((r, i) => {
       const firing = (this.stage.relicPops[r] ?? 0) > 0.02;
@@ -1274,7 +1318,7 @@ export class Game {
   }
 
   private drawRelicTooltip(ctx: CanvasRenderingContext2D): void {
-    if (this.screens.active || !this.buildOpen) return;
+    if (this.screens.active || this.drawerT < 0.98) return;
     const relics = this.relicList();
     const i = relics.findIndex((_, i) => {
       const { x, y } = relicSlot(i);

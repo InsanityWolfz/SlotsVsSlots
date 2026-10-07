@@ -113,7 +113,7 @@ export const BADGE: Record<string, SpriteId> = {
 
 const INPUT_GUARD_MS = 250;
 /** YOUR BUILD: a fixed column on the left of every run screen (screens lay out to its right, around CX). */
-const BUILD = { x: 16, y: 16, w: 284, h: H - 32 };
+export const BUILD = { x: 16, y: 16, w: 284, h: H - 32 };
 /** The middle of the space right of YOUR BUILD: run screens center on it. */
 const CX = (BUILD.x + BUILD.w + 12 + W) / 2;
 /** Your chips: the same spot in the fights (game.ts draws them there too). */
