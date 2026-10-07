@@ -3,7 +3,7 @@
 // Gate: >= 60% of regular fights carry a live bet; bets win 40-60%; win rates move <= ~2 points vs no betting.
 import { defaultConfig } from '../../src/core/config';
 import { CABINET_ORDER } from '../../src/core/cabinets';
-import { allInStake, betsOpen, offerBets, placeBet, type RunState } from '../../src/core/run';
+import { maxStake, betsOpen, offerBets, placeBet, type RunState } from '../../src/core/run';
 import { SIM_BIAS, simulateRuns } from '../../src/sim/simulateRun';
 
 const N = Number(process.argv[2] ?? 300);
@@ -26,7 +26,7 @@ for (const stake of process.env.STAKE_ONLY ? [Number(process.env.STAKE_ONLY)] : 
       if (!betsOpen(run)) return;
       const offer = offerBets(run, base);
       if (offer.length) offered++;
-      const st = STAKE < 0 ? allInStake(run) : STAKE;
+      const st = STAKE < 0 ? maxStake(run) : STAKE;
       const pick = Math.min(offer.length - 1, Number(process.env.PICK ?? 0));
       if (offer.length && st > 0 && run.player.chips - st >= KEEP && placeBet(run, pick, st)) placed++;
     };

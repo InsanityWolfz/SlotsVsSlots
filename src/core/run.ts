@@ -23,7 +23,7 @@ import { CABINETS, type CabinetId } from './cabinets';
 import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { dailyEdge, dailyFightSeed } from './daily';
-import { ALL_IN_STAKE, BET_STAKES, BETS, betPayout, betsFrom, dealerBets, betState, HOT_HAND, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
+import { BET_CAP, BETS, MARKER_REFUND, betPayout, betsFrom, dealerBets, betState, HOT_HAND, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
 
@@ -670,8 +670,9 @@ export function offerBets(run: RunState, base: GameConfig): SideBet[] {
     all.push({ t, won: f.winner === 'player' });
   }
   // The Dealer has his own table (win before his FINAL HAND; survive an ALL IN).
+  // One bet a fight (2026-10-07): the Dealer's is his first (win before his FINAL HAND, when it makes a line).
   const raw = cfg.enemy.boss === 'dealer'
-    ? dealerBets(all, rng, cfg.enemy.hp, run.player.maxHp)
+    ? dealerBets(all, rng, cfg.enemy.hp, run.player.maxHp).slice(0, 1)
     : betsFrom(all.filter((x) => x.won).map((x) => x.t), BETS.samples, rng, cfg.enemy.hp, run.betStreak ?? 0, run.player.maxHp);
   // LOADED DICE: every line pays more (shown on the card).
   const offer = run.player.relics.includes('loaded') ? raw.map((b) => ({ ...b, pay: Math.round(b.pay * LOADED_MUL * 10) / 10 })) : raw;
@@ -691,12 +692,26 @@ export function placeBet(run: RunState, i: number, stake: number): boolean {
   return true;
 }
 
-/** ALL IN: the stake that button would place (every chip you hold, capped). */
-export const allInStake = (run: RunState) => Math.min((run.endless ? ALL_IN_STAKE.endlessCap : ALL_IN_STAKE.cap) * stakeMul(run), run.player.chips + (run.bet?.stake ?? 0));
-/** HIGH LIMIT doubles every stake. */
+/** MARKER refunds a bust up to this. */
+export const markerRefund = (run: RunState) => MARKER_REFUND * stakeMul(run);
+/** HIGH LIMIT doubles the stake cap. */
 export const stakeMul = (run: RunState) => (run.player.relics.includes('highlimit') ? 2 : 1);
-/** The table's fixed stakes for this run. */
-export const betStakes = (run: RunState) => BET_STAKES.map((s) => s * stakeMul(run));
+/** The most you may stake: 20 a run, 40 in endless (x2 with HIGH LIMIT). */
+export const stakeCap = (run: RunState) => (run.endless ? BET_CAP.endless : BET_CAP.run) * stakeMul(run);
+/** The most you can stake right now: the cap, or every chip you hold (counting the one on the table). */
+export const maxStake = (run: RunState) => Math.min(stakeCap(run), run.player.chips + (run.bet?.stake ?? 0));
+/** The stepper: move your stake on the fight's bet by `delta` (0 takes it off the table). Returns the new stake. */
+export function stepStake(run: RunState, delta: number): number {
+  const next = Math.max(0, Math.min(maxStake(run), (run.bet?.stake ?? 0) + delta));
+  if (next === 0) clearBet(run);
+  else if (next !== run.bet?.stake) {
+    const placed = !!run.bet;
+    placeBet(run, 0, next);
+    // Changing the stake isn't a new bet.
+    if (placed) run.betsPlaced = Math.max(0, (run.betsPlaced ?? 1) - 1);
+  }
+  return run.bet?.stake ?? 0;
+}
 
 /** Interest paid after a win on the chips you hold then (chips on the table don't count). */
 export const interestOn = (chips: number) => Math.min(CHIPS.interestCap, Math.floor(chips / CHIPS.interestPer));
@@ -971,8 +986,8 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     const act = `${run.act}:${run.endless?.loop ?? 0}`;
     if (!won && run.player.relics.includes('marker') && run.markerUsed !== act) {
       run.markerUsed = act;
-      // Up to your top fixed stake (an ALL IN was a free roll: EXPERT_PLAYTEST_7 E1).
-      run.player.chips += Math.min(run.bet.stake, betStakes(run)[1]);
+      // Up to a small stake (a big one was a free roll: EXPERT_PLAYTEST_7 E1).
+      run.player.chips += Math.min(run.bet.stake, markerRefund(run));
       record.bet.refunded = true;
     }
     run.betStreak = won ? Math.min(HOT_HAND.max, (run.betStreak ?? 0) + 1) : 0;

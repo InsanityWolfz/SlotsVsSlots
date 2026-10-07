@@ -83,7 +83,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // Side bets (EXPERT_PLAYTEST_6 E11): relics that change which bet you want.
   loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY 20% MORE', sprite: 'relicLoaded' },
   marker: { id: 'marker', name: 'MARKER', text: 'YOUR FIRST BUSTED SIDE BET EACH ACT: UP TO 5 CHIPS BACK (10 WITH HIGH LIMIT)', sprite: 'relicMarker' },
-  highlimit: { id: 'highlimit', name: 'HIGH LIMIT', text: 'DOUBLES YOUR SIDE BET STAKES, AND SO YOUR WINNINGS: 4, 10 OR ALL IN UP TO 40', sprite: 'relicHighLimit' },
+  highlimit: { id: 'highlimit', name: 'HIGH LIMIT', text: 'YOUR SIDE BET LIMIT DOUBLES: 40 (80 IN ENDLESS)', sprite: 'relicHighLimit' },
 };
 /** LOADED DICE: every side bet's pay x1.2 (a flat +0.5 made the x1.5 SAFE bet pay 133-143%: EXPERT_PLAYTEST_8 E5). */
 export const LOADED_MUL = 1.2;

@@ -21,11 +21,10 @@ import {
   needsChoice,
   offerBets,
   EDGE_TEXT,
-  allInStake,
-  betStakes,
-  interestOn,
-  placeBet,
-  clearBet,
+  maxStake,
+  markerRefund,
+  stakeCap,
+  stepStake,
   rerollCost,
   runActs,
   totalFights,
@@ -51,7 +50,7 @@ import { drawText } from '../render/text';
 import { heroSprite } from './menus';
 import { CHIP_SCORE, runEntry, runScore } from '../core/profile';
 import { dailyShare } from '../core/daily';
-import { betProfit, describeBet, type SideBet } from '../core/bets';
+import { BET_STEPS, betProfit, describeBet, type SideBet } from '../core/bets';
 import { RelicTips } from './relicTip';
 
 
@@ -87,7 +86,7 @@ interface Hit {
   enabled: boolean;
 }
 
-type Btn = Hit & { label: string; /** A SIDE BET stake button: [bet index, stake]. */ bet?: [number, number] };
+type Btn = Hit & { label: string; /** A SIDE BET stepper button: its stake change. */ bet?: number };
 
 
 /** What each enemy writes on your machine, as a map badge. */
@@ -113,6 +112,8 @@ export const BADGE: Record<string, SpriteId> = {
 };
 
 const INPUT_GUARD_MS = 250;
+/** The side bet card sits left of the FIGHT button. */
+const BET_X = W / 2 - 440;
 
 const rounds = (turns: number) => { const n = Math.ceil(turns / 2); return `${n} ROUND${n === 1 ? '' : 'S'}`; };
 
@@ -705,69 +706,54 @@ export class RunScreens {
     }
   }
 
-  /** SIDE BETS: two bets, three stakes each. Click a stake to bet it; click it again to take it back. */
+  /** SIDE BET: the fight's one bet, staked with a -5 / -1 / +1 / +5 stepper (0 takes it off the table). */
   private addBetButtons(run: RunState): void {
     this.betOffer = offerBets(run, this.base());
-    this.betOffer.forEach((_, i) => {
-      const cx = W / 2 + (i === 0 ? -440 : 440);
-      [...betStakes(run), -1].forEach((s, k) => {
-        const b = this.btn(s < 0 ? 'ALL IN' : `${s}`, cx - 90 + k * 84 + (s < 0 ? 6 : 0), 694, s < 0 ? 96 : 72, 28, () => this.placeSideBet(i, s));
-        b.bet = [i, s];
-        this.buttons.push(b);
-      });
+    if (!this.betOffer.length) return;
+    BET_STEPS.forEach((d) => {
+      const x = BET_X + (d < 0 ? -1 : 1) * (Math.abs(d) === 1 ? 62 : 118);
+      const b = this.btn(d > 0 ? `+${d}` : `${d}`, x, 684, Math.abs(d) === 1 ? 44 : 50, 30, () => this.stepBet(d));
+      b.bet = d;
+      this.buttons.push(b);
     });
   }
 
-  private placeSideBet(i: number, button: number): void {
+  private stepBet(d: number): void {
     const run = this.run!;
-    const b = this.betOffer[i];
-    const allIn = button < 0;
-    if (run.bet && run.bet.kind === b.kind && (allIn ? run.bet.allIn : run.bet.stake === button && !run.bet.allIn)) {
-      clearBet(run);
-      this.sounds.click();
-      return;
-    }
-    const stake = allIn ? allInStake(run) : button;
-    if (stake > 0 && placeBet(run, i, stake)) {
-      if (allIn) run.bet!.allIn = true;
+    const before = run.bet?.stake ?? 0;
+    const after = stepStake(run, d);
+    if (after === before) this.sounds.fizzle();
+    else if (after > before) {
       this.sounds.coin(4);
       this.sounds.coin(8);
-    } else this.sounds.fizzle();
+    } else this.sounds.click();
   }
 
-  /** The table: each bet's name, its line, what it pays, and your stake buttons. */
+  /** The bet card: its name, its line, what it pays, and the stake stepper. */
   private drawBets(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
-    drawText(ctx, `CHIPS ${run.player.chips}  -  INTEREST +${interestOn(run.player.chips)}`, W / 2, 694, 2, COLORS.goldLight);
-    const streak = run.betStreak ?? 0;
-    if (streak) drawText(ctx, `HOT HAND: ${streak} WON IN A ROW`, W / 2, 711, 1.75, '#ff8a3a', { punch: 1 + 0.05 * Math.sin(time * 8) });
-    this.betOffer.forEach((b, i) => {
-      const cx = W / 2 + (i === 0 ? -440 : 440);
-      const on = run.bet?.kind === b.kind;
-      this.panel(ctx, cx - 150, 606, 300, 108, on ? COLORS.goldLight : '#2a6a3a');
-      const d = describeBet(b);
-      drawText(ctx, `SIDE BET: ${d.name}`, cx, 624, 2, on ? COLORS.goldLight : '#c8f0c8');
-      drawText(ctx, d.rule, cx, 646, 1.5, COLORS.text);
-      const tag = b.hot ? 'HOT HAND! ' : b.style === 'long' ? 'LONG SHOT: ' : b.style === 'safe' ? 'SAFE BET: ' : '';
-      const payLine = `${tag}PAYS X${b.pay}`;
-      drawText(ctx, on ? `${tag}X${b.pay}  -  YOUR BET ${run.bet!.stake}` : payLine, cx, 666, b.hot ? 1.75 : 1.5, b.hot ? '#ff8a3a' : b.style === 'long' ? '#ff8aa0' : COLORS.goldLight, { punch: b.hot ? 1 + 0.05 * Math.sin(time * 8) : 1 });
-    });
+    const b = this.betOffer[0];
+    const stake = run.bet?.stake ?? 0;
+    const cx = BET_X;
+    this.panel(ctx, cx - 150, 582, 300, 128, stake ? COLORS.goldLight : '#2a6a3a');
+    const d = describeBet(b);
+    drawText(ctx, `SIDE BET: ${d.name}`, cx, 598, 2, stake ? COLORS.goldLight : '#c8f0c8');
+    drawText(ctx, d.rule, cx, 619, 1.5, COLORS.text);
+    const hot = !!b.hot;
+    drawText(ctx, hot ? `HOT HAND! PAYS X${b.pay}` : `PAYS X${b.pay}`, cx, 640, hot ? 1.75 : 1.5, hot ? '#ff8a3a' : COLORS.goldLight, { punch: hot ? 1 + 0.05 * Math.sin(time * 8) : 1 });
+    drawText(ctx, `CHIPS ${run.player.chips}  -  MAX ${stakeCap(run)}`, cx, 660, 1.5, COLORS.textDim);
+    drawText(ctx, `${stake}`, cx, 685, stake ? 2.5 : 2, stake ? '#fff6c8' : COLORS.textDim, { punch: stake ? 1 + 0.04 * Math.sin(time * 6) : 1 });
+    const top = maxStake(run);
     for (const btn of this.buttons) {
-      if (!btn.bet) continue;
-      const [i, s] = btn.bet;
-      const picked = run.bet?.kind === this.betOffer[i]?.kind && (s < 0 ? !!run.bet?.allIn : run.bet?.stake === s && !run.bet?.allIn);
-      const afford = s < 0 ? allInStake(run) > 0 : run.player.chips + (run.bet?.stake ?? 0) >= s;
+      if (btn.bet === undefined) continue;
+      const ok = btn.bet > 0 ? stake < top : stake > 0;
       ctx.save();
-      ctx.globalAlpha *= afford || picked ? 1 : 0.35;
+      ctx.globalAlpha *= ok ? 1 : 0.35;
       ctx.fillStyle = COLORS.outline;
       ctx.fillRect(btn.x - btn.w / 2 - 2, btn.y - btn.h / 2 - 2, btn.w + 4, btn.h + 4);
-      if (picked) {
-        ctx.fillStyle = COLORS.goldLight;
-        ctx.fillRect(btn.x - btn.w / 2 - 2, btn.y - btn.h / 2 - 2, btn.w + 4, btn.h + 4);
-      }
-      ctx.fillStyle = picked ? '#c8321f' : btn.hover && afford ? '#3a8a4a' : '#1e4a2a';
+      ctx.fillStyle = btn.hover && ok ? '#3a8a4a' : '#1e4a2a';
       ctx.fillRect(btn.x - btn.w / 2, btn.y - btn.h / 2, btn.w, btn.h);
-      drawText(ctx, s < 0 ? (picked ? `ALL ${run.bet!.stake}` : 'ALL IN') : `${s}`, btn.x, btn.y + 1, picked && s > 0 ? 2.5 : 2, '#fff6c8', { punch: picked ? 1 + 0.04 * Math.sin(time * 6) : 1 });
+      drawText(ctx, btn.label, btn.x, btn.y + 1, 2, '#fff6c8');
       ctx.restore();
     }
   }
@@ -1067,7 +1053,7 @@ export class RunScreens {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
       drawText(ctx, `${rounds(last.turns)}  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}${chips}${rocks}`, W / 2, 60, 2, COLORS.textDim);
-      if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${betProfit(last.bet)} CHIPS` : last.bet.refunded ? `SIDE BET BUSTED: YOUR MARKER COVERS ${Math.min(last.bet.stake, betStakes(this.run!)[1])}` : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, W / 2, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
+      if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${betProfit(last.bet)} CHIPS` : last.bet.refunded ? `SIDE BET BUSTED: YOUR MARKER COVERS ${Math.min(last.bet.stake, markerRefund(this.run!))}` : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, W / 2, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
     }
     this.drawMap(ctx, 158, time);
     const spoils = this.draftKind === 'spoils';

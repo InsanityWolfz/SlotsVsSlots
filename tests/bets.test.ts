@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
 import { betState, lineFor, newTrack, trackEvent } from '../src/core/bets';
 import { Fight } from '../src/core/fight';
-import { allInStake, betStakes, betsOpen, clearBet, createRun, fightConfig, finishFight, offerBets, placeBet } from '../src/core/run';
+import { betsOpen, maxStake, stakeCap, stepStake, clearBet, createRun, fightConfig, finishFight, offerBets, placeBet } from '../src/core/run';
 
 /** The table opens from act 1's second fight. */
 const toFight2 = (run: { depth: number; chosen: boolean[] }) => {
@@ -39,14 +39,15 @@ describe('SIDE BETS', () => {
     expect(t.best).toBeGreaterThan(0);
   });
 
-  it('the table offers 2 bets before a regular fight (the same ones every time), none before a boss', () => {
+  it('the table offers 1 bet (a long shot or a coin flip) before a regular fight, the same every time; none before a boss', () => {
     const base = defaultConfig();
     const run = createRun(base, 99, 'knight');
     run.pendingStart = null;
     toFight2(run);
     expect(betsOpen(run)).toBe(true);
     const a = offerBets(run, base);
-    expect(a.length).toBe(2);
+    expect(a.length).toBe(1);
+    expect(a[0].pay).toBeGreaterThanOrEqual(2);
     run.bets = null;
     expect(offerBets(run, base)).toEqual(a);
     const boss = createRun(base, 99, 'knight');
@@ -80,17 +81,30 @@ describe('SIDE BETS', () => {
     expect(run.bet).toBeNull();
   });
 
-  it('ALL IN stakes what you hold, capped at 20; HOT HAND pays x3 then x4 on a streak', () => {
+  it('the stepper stakes up to what you hold, capped at 20 (40 in endless); HOT HAND pays x3 then x4 on a streak', () => {
     const base = defaultConfig();
     const run = createRun(base, 99, 'knight');
     run.pendingStart = null;
     toFight2(run);
+    offerBets(run, base);
     run.player.chips = 7;
-    expect(allInStake(run)).toBe(7);
-    run.player.chips = 40;
-    expect(allInStake(run)).toBe(20);
+    expect(maxStake(run)).toBe(7);
+    expect(stepStake(run, 5)).toBe(5);
+    expect(stepStake(run, 5)).toBe(7);
+    expect(run.player.chips).toBe(0);
+    expect(stepStake(run, -1)).toBe(6);
+    expect(run.player.chips).toBe(1);
+    expect(stepStake(run, -5)).toBe(1);
+    expect(stepStake(run, -5)).toBe(0);
+    expect(run.bet).toBeNull();
+    expect(run.player.chips).toBe(7);
+    run.player.chips = 60;
+    expect(maxStake(run)).toBe(20);
+    run.endless = { loop: 1, edges: [], pot: 0 };
+    expect(stakeCap(run)).toBe(40);
+    run.endless = undefined;
     expect(offerBets(run, base).every((b) => b.pay <= 3)).toBe(true);
-    // Across a few fights: a HOT HAND bolds only the long shot (x4, then x5); the safe bet stays x1.5.
+    // Across a few fights: a HOT HAND bolds only the long shot (x4, then x5).
     const seen: Record<number, number[]> = { 1: [], 2: [] };
     for (const seed of [99, 7, 21, 55, 300]) {
       for (const streak of [1, 2]) {
@@ -119,8 +133,7 @@ describe('SIDE BETS', () => {
     run.bets = null;
     run.player.relics.push('loaded', 'highlimit', 'marker');
     expect(offerBets(run, base).map((b) => b.pay)).toEqual(plain.map((x) => Math.round(x * 12) / 10));
-    expect(betStakes(run)).toEqual([4, 10]);
-    expect(allInStake(run)).toBe(40);
+    expect(stakeCap(run)).toBe(40);
     // A bet you can't win: land 99 jackpots.
     placeBet(run, 0, 10);
     run.bet = { kind: 'jackpot', target: 99, pay: 2, stake: 10 };

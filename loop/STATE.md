@@ -1666,3 +1666,14 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   From loop 4 that exceeds the pot, so the pot went negative (and the next skims went wrong).
 - Now it takes **at most half the pot** out of it, and the loop growth only multiplies the hit (the damage is unchanged).
   Regression test (it fails without the fix: pot -671,030). Fuzz 15: no breaks. Tests: 238.
+
+## Iteration 74 (2026-10-07): side bets slimmed (ARCHETYPES_PLAN step 2)
+- One bet a fight: the HOT HAND **long shot** (x3, x4/x5 on a streak); a coin flip (x2) only when no long shot fits.
+  The SAFE x1.5 line is gone (it was the only line that made money: 78% at x1.5). The Dealer offers his first bet.
+- Stake with a **-5 / -1 / +1 / +5** stepper (0 takes the bet back). Cap **20 a run, 40 in endless** (was ALL IN
+  20 / 50); HIGH LIMIT doubles the cap (text: "YOUR SIDE BET LIMIT DOUBLES: 40 (80 IN ENDLESS)"). MARKER refunds up
+  to 5 (10 with HIGH LIMIT), as before. The card sits left of FIGHT.
+- bets.ts 150 (WHITE, a bot that stakes 10 on every bet it can afford): bets win 28-34%, return **88-106%**
+  (break-even, as agreed). Its win rate drops (KNIGHT 41.3 -> 40.0, MIDAS 40.0 -> 39.3, THORN 48 -> 35 at N=150)
+  because chips go to break-even gambles instead of the shop; that's the player's choice. The official sim doesn't
+  bet, so WHITE/GREEN are unchanged. Tests: 238 (bets tests rewritten for the stepper).
