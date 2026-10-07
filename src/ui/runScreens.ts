@@ -112,8 +112,41 @@ export const BADGE: Record<string, SpriteId> = {
 };
 
 const INPUT_GUARD_MS = 250;
-/** The side bet card sits left of the FIGHT button. */
-const BET_X = W / 2 - 440;
+/** YOUR BUILD panel: fixed at the bottom of every run screen (screens lay out above it). */
+const BUILD = { x: 24, y: 574, w: W - 48, h: 128 };
+/** The side bet card sits in the left gutter, beside the enemy card. */
+const BET_X = 166;
+
+/** The casino floor behind every run screen: a dark carpet with a faint diamond weave (cached). */
+let carpet: HTMLCanvasElement | null = null;
+function drawBackdrop(ctx: CanvasRenderingContext2D): void {
+  if (!carpet && typeof document !== 'undefined') {
+    carpet = document.createElement('canvas');
+    carpet.width = W;
+    carpet.height = H;
+    const c = carpet.getContext('2d')!;
+    const g = c.createRadialGradient(W / 2, H / 2, 80, W / 2, H / 2, W * 0.7);
+    g.addColorStop(0, '#1a1030');
+    g.addColorStop(1, '#07040e');
+    c.fillStyle = g;
+    c.fillRect(0, 0, W, H);
+    c.fillStyle = 'rgba(255,210,63,0.035)';
+    for (let yy = 0; yy < H; yy += 32)
+      for (let xx = (yy / 32) % 2 ? 16 : 0; xx < W; xx += 32) {
+        c.beginPath();
+        c.moveTo(xx, yy - 6);
+        c.lineTo(xx + 6, yy);
+        c.lineTo(xx, yy + 6);
+        c.lineTo(xx - 6, yy);
+        c.fill();
+      }
+  }
+  if (carpet) ctx.drawImage(carpet, 0, 0);
+  else {
+    ctx.fillStyle = '#07040e';
+    ctx.fillRect(0, 0, W, H);
+  }
+}
 
 const rounds = (turns: number) => { const n = Math.ceil(turns / 2); return `${n} ROUND${n === 1 ? '' : 'S'}`; };
 
@@ -655,11 +688,7 @@ export class RunScreens {
       } else drawText(ctx, 'NO COST', 0, c.h / 2 - 50, 2, '#7dff7a');
       ctx.restore();
     });
-    this.panel(ctx, 110, 580, 1060, 120);
-    this.drawStrips(ctx, 130, 590);
-    this.drawRelics(ctx, 620, 590);
-    drawText(ctx, 'HP', 900, 590, 2, COLORS.textDim, { align: 'left' });
-    this.drawHp(ctx, 900, 630, 220);
+
   }
 
   showDraft(run: RunState, offers: DraftOption[], last: FightRecord | null, kind: 'draft' | 'spoils' | 'legend' | 'start' = 'draft'): void {
@@ -697,11 +726,11 @@ export class RunScreens {
     this.run = run;
     this.open('next');
     if (needsChoice(run)) {
-      this.buttons = run.paths[run.depth].map((_, i) => this.btn('FIGHT THIS ONE', W / 2 + (i === 0 ? -310 : 310), 580, 260, 56, () => this.cb.onFight(i)));
+      this.buttons = run.paths[run.depth].map((_, i) => this.btn('FIGHT THIS ONE', W / 2 + (i === 0 ? -310 : 310), 540, 260, 48, () => this.cb.onFight(i)));
     } else {
       const bossId = run.enemies[run.depth]?.boss;
       const boss = run.depth >= actLength(run.act) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'mirror' ? 'FACE THE MIRROR' : 'FACE THE HOUSE') : 'FIGHT!';
-      this.buttons = [this.btn(boss, W / 2, 640, boss === 'FIGHT!' ? 290 : 360, 64, () => this.cb.onFight(0))];
+      this.buttons = [this.btn(boss, W / 2, 538, boss === 'FIGHT!' ? 290 : 360, 56, () => this.cb.onFight(0))];
       this.addBetButtons(run);
     }
   }
@@ -711,8 +740,8 @@ export class RunScreens {
     this.betOffer = offerBets(run, this.base());
     if (!this.betOffer.length) return;
     BET_STEPS.forEach((d) => {
-      const x = BET_X + (d < 0 ? -1 : 1) * (Math.abs(d) === 1 ? 62 : 118);
-      const b = this.btn(d > 0 ? `+${d}` : `${d}`, x, 684, Math.abs(d) === 1 ? 44 : 50, 30, () => this.stepBet(d));
+      const x = BET_X + (d < 0 ? -1 : 1) * (Math.abs(d) === 1 ? 54 : 102);
+      const b = this.btn(d > 0 ? `+${d}` : `${d}`, x, 316, Math.abs(d) === 1 ? 40 : 46, 30, () => this.stepBet(d));
       b.bet = d;
       this.buttons.push(b);
     });
@@ -735,14 +764,14 @@ export class RunScreens {
     const b = this.betOffer[0];
     const stake = run.bet?.stake ?? 0;
     const cx = BET_X;
-    this.panel(ctx, cx - 150, 582, 300, 128, stake ? COLORS.goldLight : '#2a6a3a');
+    this.panel(ctx, cx - 130, 214, 260, 128, stake ? COLORS.goldLight : '#2a6a3a');
     const d = describeBet(b);
-    drawText(ctx, `SIDE BET: ${d.name}`, cx, 598, 2, stake ? COLORS.goldLight : '#c8f0c8');
-    drawText(ctx, d.rule, cx, 619, 1.5, COLORS.text);
+    drawText(ctx, 'SIDE BET', cx, 228, 1.5, COLORS.textDim);
+    drawText(ctx, d.name, cx, 248, 2, stake ? COLORS.goldLight : '#c8f0c8');
+    drawText(ctx, d.rule, cx, 270, 1.5, COLORS.text);
     const hot = !!b.hot;
-    drawText(ctx, hot ? `HOT HAND! PAYS X${b.pay}` : `PAYS X${b.pay}`, cx, 640, hot ? 1.75 : 1.5, hot ? '#ff8a3a' : COLORS.goldLight, { punch: hot ? 1 + 0.05 * Math.sin(time * 8) : 1 });
-    drawText(ctx, `CHIPS ${run.player.chips}  -  MAX ${stakeCap(run)}`, cx, 660, 1.5, COLORS.textDim);
-    drawText(ctx, `${stake}`, cx, 685, stake ? 2.5 : 2, stake ? '#fff6c8' : COLORS.textDim, { punch: stake ? 1 + 0.04 * Math.sin(time * 6) : 1 });
+    drawText(ctx, `${hot ? 'HOT HAND! ' : ''}PAYS X${b.pay}  -  MAX ${stakeCap(run)}`, cx, 290, 1.5, hot ? '#ff8a3a' : COLORS.goldLight, { punch: hot ? 1 + 0.05 * Math.sin(time * 8) : 1 });
+    drawText(ctx, `${stake}`, cx, 317, stake ? 2.5 : 2, stake ? '#fff6c8' : COLORS.textDim, { punch: stake ? 1 + 0.04 * Math.sin(time * 6) : 1 });
     const top = maxStake(run);
     for (const btn of this.buttons) {
       if (btn.bet === undefined) continue;
@@ -764,8 +793,8 @@ export class RunScreens {
     this.shopItems = items;
     if (!reopen) this.open('shop');
     this.buttons = [
-      this.btn(`REROLL - ${rerollCost(run)}`, W / 2 - 400, 676, 230, 50, () => this.cb.onReroll()),
-      this.btn('LEAVE', W / 2 + 400, 676, 230, 50, () => this.cb.onLeave()),
+      this.btn(`REROLL - ${rerollCost(run)}`, W / 2 - 160, 530, 260, 50, () => this.cb.onReroll()),
+      this.btn('LEAVE', W / 2 + 160, 530, 260, 50, () => this.cb.onLeave()),
     ];
     const gap = items.length > 4 ? 234 : 250;
     this.shopHits = items.map((_, i) => {
@@ -792,13 +821,13 @@ export class RunScreens {
     this.rideOffer = false;
     this.run = run;
     this.open('over');
-    this.buttons = [this.btn('MENU', W / 2 - 140, 650, 240, 60, () => this.cb.onMenu()), this.btn('NEW RUN', W / 2 + 140, 650, 240, 60, () => this.cb.onNewRun())];
+    this.buttons = [this.btn('MENU', W / 2 - 140, 528, 240, 52, () => this.cb.onMenu()), this.btn('NEW RUN', W / 2 + 140, 528, 240, 52, () => this.cb.onNewRun())];
     // Beat the Dealer: CASH OUT (the two buttons above) or LET IT RIDE into endless loops.
     if (run.won && run.act >= 3 && !run.endless) {
       this.buttons = [
-        this.btn('MENU', W / 2 - 300, 650, 200, 60, () => this.cb.onMenu()),
-        this.btn('CASH OUT', W / 2 - 60, 650, 220, 60, () => this.cb.onNewRun()),
-        this.btn('LET IT RIDE', W / 2 + 220, 650, 280, 60, () => this.cb.onLetItRide()),
+        this.btn('MENU', W / 2 - 300, 528, 200, 52, () => this.cb.onMenu()),
+        this.btn('CASH OUT', W / 2 - 60, 528, 220, 52, () => this.cb.onNewRun()),
+        this.btn('LET IT RIDE', W / 2 + 220, 528, 280, 52, () => this.cb.onLetItRide()),
       ];
       this.rideOffer = true;
     }
@@ -937,8 +966,11 @@ export class RunScreens {
   draw(ctx: CanvasRenderingContext2D, time: number): void {
     if (!this.active || (!this.run && this.mode !== 'cabinet')) return;
     this.tips.begin();
-    ctx.fillStyle = `rgba(6,2,12,${0.95 * this.fade})`;
-    ctx.fillRect(0, 0, W, H);
+    // A solid casino-floor backdrop: the fight scene never shows through a menu.
+    ctx.save();
+    ctx.globalAlpha = this.fade;
+    drawBackdrop(ctx);
+    ctx.restore();
     ctx.save();
     ctx.globalAlpha = this.fade;
     if (this.mode === 'draft') this.drawDraft(ctx, time);
@@ -948,7 +980,8 @@ export class RunScreens {
     else if (this.mode === 'bonus') this.drawBonus(ctx, time);
     else if (this.mode === 'choice') this.drawChoice(ctx, time);
     else this.drawOver(ctx);
-    if (this.mode !== 'over' && this.mode !== 'cabinet') this.drawChips(ctx, W - 40, 28);
+    // YOUR BUILD: one fixed panel at the bottom of every between-fights screen.
+    if (this.run && this.mode !== 'cabinet' && this.mode !== 'bonus') this.drawBuild(ctx);
     // Over everything: what the relic under the pointer does (cards that already say it don't add spots).
     if (!this.results) this.tips.draw(ctx, this.mouse.x, this.mouse.y, this.run?.cabinet);
     ctx.restore();
@@ -1003,11 +1036,47 @@ export class RunScreens {
     });
   }
 
+  /** YOUR BUILD: hero, HP and chips | your reels | your relics. Same place, same size, on every run screen. */
+  private drawBuild(ctx: CanvasRenderingContext2D): void {
+    const run = this.run!;
+    const p = run.player;
+    const { x, y, w, h } = BUILD;
+    this.panel(ctx, x, y, w, h);
+    ctx.fillStyle = '#2a2140';
+    ctx.fillRect(x + 268, y + 8, 2, h - 16);
+    ctx.fillRect(x + 742, y + 8, 2, h - 16);
+    // Who you are, how you're doing, what you can spend.
+    const cab = CABINETS[run.cabinet];
+    if (hasSprite(cab.heroSprite)) drawSprite(ctx, cab.heroSprite as SpriteId, x + 34, y + 32, 2);
+    drawText(ctx, cab.hero, x + 64, y + 24, 2, COLORS.goldLight, { align: 'left' });
+    drawText(ctx, run.endless ? `LOOP ${run.endless.loop}` : `ACT ${run.act}${run.stake ? `  -  ${stakeOf(run.stake).name}` : ''}`, x + 64, y + 44, 1.5, COLORS.textDim, { align: 'left' });
+    this.drawHp(ctx, x + 6, y + 80, 222);
+    drawSprite(ctx, 'chip', x + 22, y + 112, 2);
+    drawText(ctx, `${p.chips} CHIPS`, x + 40, y + 112, 2, COLORS.energy, { align: 'left', punch: this.chipPulse });
+    // Your reels.
+    this.drawStrips(ctx, x + 290, y + 16, 6, 16);
+    // Your relics: a fixed grid; past its size the last cell says how many more.
+    const relics = p.relics;
+    const rx0 = x + 762;
+    drawText(ctx, relics.length ? `RELICS ${relics.length}` : 'RELICS', rx0, y + 18, 2, COLORS.textDim, { align: 'left' });
+    if (!relics.length) drawText(ctx, 'NONE YET', rx0, y + 50, 2, '#4a4058', { align: 'left' });
+    const cols = 14;
+    const cap = cols * 3;
+    const shown = relics.length > cap ? relics.slice(0, cap - 1) : relics;
+    shown.forEach((r, i) => {
+      const cx = rx0 + 14 + (i % cols) * 32;
+      const cy = y + 46 + Math.floor(i / cols) * 30;
+      drawSprite(ctx, RELICS[r].sprite as SpriteId, cx, cy, 1.6);
+      this.tips.add(r, cx, cy, 15);
+    });
+    if (relics.length > cap) drawText(ctx, `+${relics.length - shown.length}`, rx0 + 14 + (cap - 1) % cols * 32, y + 46 + 2 * 30, 1.5, COLORS.goldLight);
+  }
+
   /** Height the YOUR REELS table may use (its panel is 134 tall; the title takes ~24). */
   private stripsH = 104;
 
   /** YOUR REELS: the one reel table (columns 1 2 3, a row per symbol + charm). */
-  private drawStrips(ctx: CanvasRenderingContext2D, x: number, y: number, maxRows = 5): void {
+  private drawStrips(ctx: CanvasRenderingContext2D, x: number, y: number, maxRows = 5, rowH = 19): void {
     const p = this.run!.player;
     drawText(ctx, 'YOUR REELS', x, y, 2, COLORS.textDim, { align: 'left' });
     // THE REPO MAN's liens: what's missing from the table, and why.
@@ -1018,19 +1087,7 @@ export class RunScreens {
       const text = all.length <= 44 ? all : `HELD: ${lienShort(liens[0])} +${liens.length - 1} MORE`;
       drawText(ctx, text, x + 150, y, 1.25, '#ff9a3a', { align: 'left' });
     }
-    drawReelTable(ctx, x - 4, y + 10, runTable(p), { colW: 136, rowH: 19, scale: 1.1, text: 1.5, maxRows, levels: p.levels, ticket: p.relics.includes('ticket'), cap: levelCap(this.run!), maxH: this.stripsH });
-  }
-
-  private drawRelics(ctx: CanvasRenderingContext2D, x: number, y: number, cols = 8): void {
-    const relics = this.run!.player.relics;
-    drawText(ctx, 'RELICS', x, y, 2, COLORS.textDim, { align: 'left' });
-    if (!relics.length) drawText(ctx, 'NONE YET', x, y + 26, 2, '#4a4058', { align: 'left' });
-    relics.forEach((r, i) => {
-      const rx = x + 16 + (i % cols) * 32;
-      const ry = y + 30 + Math.floor(i / cols) * 30;
-      drawSprite(ctx, RELICS[r].sprite as SpriteId, rx, ry, 1.6);
-      this.tips.add(r, rx, ry, 15);
-    });
+    drawReelTable(ctx, x - 4, y + 10, runTable(p), { colW: 136, rowH, scale: rowH < 19 ? 1 : 1.1, text: 1.5, maxRows, levels: p.levels, ticket: p.relics.includes('ticket'), cap: levelCap(this.run!), maxH: this.stripsH });
   }
 
   private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
@@ -1074,11 +1131,6 @@ export class RunScreens {
     if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), W / 2, 208, 3);
     drawText(ctx, heading, W / 2, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
     this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], i, time));
-    this.panel(ctx, 110, 530, 1060, 134);
-    this.drawStrips(ctx, 130, 544);
-    this.drawRelics(ctx, 560, 546);
-    drawText(ctx, 'HP', 900, 546, 2, COLORS.textDim, { align: 'left' });
-    this.drawHp(ctx, 900, 586, 220);
   }
 
   private drawCard(ctx: CanvasRenderingContext2D, c: Hit, o: DraftOption, i: number, time: number): void {
@@ -1272,13 +1324,8 @@ export class RunScreens {
     if (fork) {
       opts.forEach((o, i) => this.drawEnemyPanel(ctx, o, i === 0 ? 40 : W / 2 + 20, 222, W / 2 - 60, time));
       drawText(ctx, 'OR', W / 2, 372, 4, COLORS.goldLight);
-      this.drawHp(ctx, W / 2 - 130, 640, 220);
-      this.drawRelicsRow(ctx, W / 2 + 140, 640);
     } else {
       this.drawEnemyPanel(ctx, e, W / 2 - 330, 206, 660, time);
-      drawText(ctx, 'YOUR HP', W / 2 - 330, 540, 2, COLORS.textDim, { align: 'left' });
-      this.drawHp(ctx, W / 2 - 330, 568, 220);
-      this.drawRelics(ctx, W / 2 + 40, 540);
       if (this.betOffer.length) this.drawBets(ctx, time);
     }
     for (const b of this.buttons) if (!b.bet) this.drawButton(ctx, b, time);
@@ -1398,12 +1445,6 @@ export class RunScreens {
     drawText(ctx, String(level), x, y, r >= 14 ? 2 : 1.5, '#ffffff');
   }
 
-  private drawChips(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-    const chips = this.run?.player.chips ?? 0;
-    drawText(ctx, `${chips}`, x, y, 3, COLORS.energy, { align: 'right', punch: this.chipPulse });
-    drawSprite(ctx, 'chip', x - 14 - String(chips).length * 18 - 8, y, 2.5);
-  }
-
   private drawShop(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
     ctx.fillStyle = COLORS.panelLight;
@@ -1415,20 +1456,14 @@ export class RunScreens {
     const sh = chipShield(run.player.chips);
     if (run.act === 1) {
       drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
-      drawText(ctx, `KEEP CHIPS FOR THE HOUSE: RIGHT NOW +${sh} SHIELD EACH HOUSE TURN (${UNIT} PER ${CHIPS.stackPer})`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
+      drawText(ctx, `CHIPS YOU KEEP SHIELD YOU FROM THE HOUSE: +${sh} A TURN`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
     } else {
       const boss = run.act >= 3 ? 'DEALER' : 'MIRROR';
-      drawText(ctx, run.act >= 3 ? "ACT 3: THE HOUSE DOESN'T COMP. NO HEALING AFTER FIGHTS." : 'ACT 2: A LEGENDARY ON THE SHELF. LEVEL CARDS LIFT A WHOLE TYPE.', W / 2, 118, 2, run.act >= 3 ? '#ff8a7a' : COLORS.goldLight);
+      drawText(ctx, run.act >= 3 ? 'ACT 3: NO HEALING AFTER FIGHTS.' : 'ACT 2: A LEGENDARY ON THE SHELF.', W / 2, 118, 2, run.act >= 3 ? '#ff8a7a' : COLORS.goldLight);
       drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
-      drawText(ctx, `KEEP CHIPS FOR THE ${boss}: +${Math.min(MIRROR_CHIP_SHIELD_CAP, sh)} SHIELD EACH ${boss} TURN (${UNIT} PER ${CHIPS.stackPer} CHIPS, MAX ${MIRROR_CHIP_SHIELD_CAP})`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
+      drawText(ctx, `CHIPS YOU KEEP SHIELD YOU FROM THE ${boss}: +${Math.min(MIRROR_CHIP_SHIELD_CAP, sh)} A TURN`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
     }
-    drawText(ctx, 'HP', W - 360, 80, 2, COLORS.textDim, { align: 'left' });
-    this.drawHp(ctx, W - 330, 80, 190);
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
-    this.panel(ctx, 300, 500, 680, 150);
-    this.drawStrips(ctx, 320, 512, 6);
-    // What you already hold (hover one to read it), right of the reel table.
-    this.drawRelics(ctx, 770, 512, 6);
     for (const b of this.buttons) this.drawButton(ctx, b, time);
   }
 
@@ -1488,13 +1523,6 @@ export class RunScreens {
       drawText(ctx, String(item.price), 12, h.h / 2 - 20, 2, afford ? COLORS.energy : '#ff8a7a');
     }
     ctx.restore();
-  }
-
-  private drawRelicsRow(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-    this.run!.player.relics.forEach((r, i) => {
-      drawSprite(ctx, RELICS[r].sprite as SpriteId, x + i * 36, y, 2);
-      this.tips.add(r, x + i * 36, y);
-    });
   }
 
   private drawButton(ctx: CanvasRenderingContext2D, b: Btn, time: number): void {
@@ -1563,7 +1591,7 @@ export class RunScreens {
   private drawOver(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
     // The leaderboard post's result (the rest of the meta is on the RESULTS card).
-    if (this.onlineLine) drawText(ctx, this.onlineLine, W / 2, 702, 1.5, COLORS.goldLight);
+    if (this.onlineLine) drawText(ctx, this.onlineLine, W / 2, 563, 1.5, COLORS.goldLight);
     const trueEnding = run.won && run.act >= 3;
     const busted = !!run.endless;
     drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
@@ -1578,7 +1606,7 @@ export class RunScreens {
     if (this.unlockedNow.length) lines.push([`NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, COLORS.goldLight]);
     if (this.rideOffer) lines.push(['YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', COLORS.goldLight]);
     const shown = lines.slice(0, 2);
-    shown.forEach(([text, color], k) => drawText(ctx, text, W / 2, shown.length > 1 ? 444 + k * 18 : 466, shown.length > 1 || text.length > 90 ? 1.5 : 2, color));
+    shown.forEach(([text, color], k) => drawText(ctx, text, W / 2, shown.length > 1 ? 462 + k * 18 : 472, shown.length > 1 || text.length > 90 ? 1.5 : 2, color));
     // Chips left (a won run scores them) and the side bets' record.
     const bets = run.records.filter((r) => r.bet);
     const betLine = bets.length ? `  -  SIDE BETS ${bets.filter((r) => r.bet!.won).length} OF ${bets.length}` : '';
@@ -1593,14 +1621,14 @@ export class RunScreens {
     const top = unlockRow ? 22 : 0;
     const twoLines = [recap, this.unlockedNow.length, this.rideOffer].filter(Boolean).length > 1;
     const cut = twoLines ? 18 : 0;
-    this.panel(ctx, 110, 120 + top, 1060, 330 - top - cut);
+    this.panel(ctx, 110, 120 + top, 1060, 320 - top - cut);
     drawText(ctx, 'FIGHT', 150, 142 + top, 2, COLORS.textDim, { align: 'left' });
     drawText(ctx, 'ROUNDS', 560, 142 + top, 2, COLORS.textDim);
     drawText(ctx, 'HP', 680, 142 + top, 2, COLORS.textDim);
     drawText(ctx, 'THEN PICKED', 790, 142 + top, 2, COLORS.textDim, { align: 'left' });
     // Up to 16 fights: rows shrink (and drop the detail line) once they stop fitting.
     const rows = this.overRows(run);
-    const rowH = Math.min(42, Math.floor((290 - top - cut) / Math.max(1, rows.length)));
+    const rowH = Math.min(42, Math.floor((280 - top - cut) / Math.max(1, rows.length)));
     const compact = rowH < 40;
     rows.forEach((r, i) => {
       const y = 170 + top + i * rowH + (compact ? 0 : 6);
@@ -1643,9 +1671,6 @@ export class RunScreens {
       if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCK${r.rocksAdded > 1 ? 'S' : ''}`, 640, y + 12, 1, '#c9bba8');
       if (r.liens) drawText(ctx, `${r.liens} HELD`, r.rocksAdded ? 590 : 640, y + 12, 1, '#ff9a3a');
     });
-    this.panel(ctx, 110, 480, 1060, 134);
-    this.drawStrips(ctx, 130, 494);
-    this.drawRelics(ctx, 620, 496);
     for (const b of this.buttons) this.drawButton(ctx, b, 0);
     if (this.results) this.drawResults(ctx, run);
   }
