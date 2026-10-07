@@ -1,10 +1,10 @@
 import type { Sounds } from '../audio/sounds';
 import type { MetaGain } from '../core/profile';
 import { challengeById, levelOf } from '../core/meta';
-import { UNIT, type Enh, type GameConfig, type SymbolId } from '../core/config';
+import { symLabel, UNIT, type Enh, type GameConfig, type SymbolId } from '../core/config';
 import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
 import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH, POT } from '../core/relics';
-import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, symLevel } from '../core/charms';
+import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmName, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
 import {
   CHIPS,
@@ -12,6 +12,9 @@ import {
   BIG_SETS,
   describeChoice,
   type BigChoice,
+  type BigChoiceId,
+  BIG,
+  SAFE_CHOICES,
   describeOption,
   enemyHp,
   mirrorCopy,
@@ -217,6 +220,66 @@ const BOSS_HEADLINE: Record<string, string> = {
   mirror: 'CRACKED AT HALF HP: IT THROWS HALF',
   dealer: 'IT CAN NOT KILL YOU BEFORE ITS FIRST DEAL',
 };
+
+/**
+ * A BIG CHOICE card's look (display only, never a hint about which pick is better):
+ * - broken: a huge effect with a real cost. It looks tempting and dangerous (a red frame, embers, a gold sheen).
+ * - safe: no cost. A calm, cool stage.
+ * - normal: everything else.
+ * New choices default to normal (or safe when they carry no cost); list a new broken one here.
+ */
+type ChoiceTier = 'normal' | 'broken' | 'safe';
+const BROKEN_CHOICES: ReadonlySet<BigChoiceId> = new Set<BigChoiceId>(['masterwork', 'meltDown', 'glassCannon']);
+const choiceTier = (id: BigChoiceId, cost: string): ChoiceTier => (BROKEN_CHOICES.has(id) ? 'broken' : SAFE_CHOICES.has(id) || !cost ? 'safe' : 'normal');
+const TIER_FRAME: Record<ChoiceTier, string> = { normal: COLORS.gold, broken: '#ff3b30', safe: COLORS.gold };
+const TIER_NAME: Record<ChoiceTier, string> = { normal: '#ff9a3a', broken: '#ff6a5a', safe: COLORS.goldLight };
+/** The stage behind a card's art: warm, ominous red, or cool. */
+const TIER_STAGE: Record<ChoiceTier, string> = { normal: '#5a3a14', broken: '#6a0e14', safe: '#1e3a5a' };
+const plural = (s: SymbolId) => `${symLabel(s)}S`;
+
+/**
+ * The short lines a BIG CHOICE card shows: one effect line and one cost line (empty when it costs nothing). The full
+ * rule (describeChoice) is in the hover tip. Display only: what a choice does lives in run.ts.
+ */
+function choiceShort(run: RunState, c: BigChoice): { effect: string; cost: string } {
+  const full = describeChoice(run, c);
+  const atk = CABINETS[run.cabinet].attack;
+  const meter = !!CABINETS[run.cabinet].meter;
+  switch (c.id) {
+    case 'armsRace':
+      return { effect: 'ALL YOUR SYMBOLS +1 LEVEL', cost: full.cost };
+    case 'masterwork':
+      return { effect: `${plural(c.symbol!)} +2 LEVELS`, cost: 'YOUR OTHER SYMBOLS STOP LEVELING' };
+    case 'whetstone':
+      return { effect: `${plural(c.symbol!)} +1 LEVEL`, cost: '' };
+    case 'meltDown':
+      return { effect: 'EVERY CHARM BECOMES GOLD', cost: 'YOUR OTHER CHARM LEVELS ARE GONE' };
+    case 'gildLot':
+      return { effect: `${BIG.gildLotCells} GOLD CHARMS ON EVERY REEL`, cost: `SYMBOLS -1 LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
+    case 'polish':
+      return { effect: `${charmName(c.enh!)} CHARMS +1 LEVEL`, cost: '' };
+    case 'cleanCut':
+      return { effect: `REEL ${c.reel! + 1} DROPS ITS SHIELDS. ${plural(atk)} +1 LEVEL`, cost: 'THOSE SHIELDS ARE GONE' };
+    case 'twinReel':
+      return { effect: 'REEL 3 BECOMES A COPY OF REEL 1', cost: "REEL 3'S CELLS ARE GONE" };
+    case 'sweepUp':
+      return { effect: run.player.hp >= run.player.maxHp ? `+${BIG.sweepHeal / 2} MAX HP. ROCKS SMASHED` : `HEAL ${BIG.sweepHeal}. ROCKS SMASHED`, cost: '' };
+    case 'glassCannon':
+      return { effect: `EVERY GROUP PAYS X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS' };
+    case 'bloodPact':
+      return { effect: meter ? 'YOUR METER FILLS 2X FAST' : 'SWORDS AND SHIELDS +1 LEVEL', cost: full.cost };
+    case 'secondWind': {
+      const hp = /\+(\d+) MAX HP/.exec(full.rule)?.[1] ?? '';
+      return { effect: `FULL HEAL, +${hp} MAX HP, SHIELDS +1 LEVEL`, cost: '' };
+    }
+    case 'edge':
+      return { effect: full.rule, cost: EDGE_TEXT[c.edge!].text };
+    case 'cashOut':
+      return { effect: `BANK ${/: (\d+) POINTS/.exec(full.rule)?.[1] ?? ''} POINTS. THE RUN ENDS`, cost: '' };
+    case 'ride':
+      return { effect: `THE POT GROWS TO ${/GROWS TO (\d+)/.exec(full.rule)?.[1] ?? ''}`, cost: `BUST: BANK ${/POT: (\d+)/.exec(full.cost)?.[1] ?? ''}` };
+  }
+}
 
 /**
  * Canvas overlays between fights: the draft (pick 1 of 3), the next-fight preview (or a fork:
@@ -700,74 +763,318 @@ export class RunScreens {
 
   /** A boss fell: pick 1 of 3 BIG CHOICES (strong ones cost something; one is safe). */
   private choices: BigChoice[] = [];
+  /** The pick's stamp landing (0..1). */
+  private stamp = 0;
+  /** When the pointer settled on each card (for the full-rule tip). */
+  private choiceHoverAt: number[] = [];
   showChoice(run: RunState, choices: BigChoice[]): void {
     this.run = run;
     this.choices = choices;
     this.open('choice');
+    this.stamp = 0;
+    this.choiceHoverAt = [];
+    const n = choices.length;
+    const w = n > 3 ? 222 : 282;
+    const pitch = w + 18;
     this.cards = choices.map((c, i) =>
-      this.hit(CX + (i - (choices.length - 1) / 2) * 312, 380, 288, 330, () => {
+      this.hit(CX + (i - (n - 1) / 2) * pitch, 398, w, 352, () => {
         if (this.picked >= 0) return;
         this.picked = i;
         this.sounds.fanfareJackpot();
         const card = this.cards[i];
+        // The card swells, a TAKEN stamp slams onto it, the others sink away.
+        void this.ui.tween({ from: 1.06, to: 1.1, dur: 0.15, ease: backOut(2), onUpdate: (v) => (card.scale = v) });
         void this.ui
-          .tween({ from: 1.08, to: 1.16, dur: 0.15, ease: backOut(2), onUpdate: (v) => (card.scale = v) })
-          .then(() => this.ui.wait(0.45))
+          .wait(0.08)
+          .then(() => this.ui.tween({ from: 0, to: 1, dur: 0.24, ease: backOut(2.4), onUpdate: (v) => (this.stamp = v) }))
+          .then(() => {
+            this.sounds.click();
+            return this.ui.wait(0.5);
+          })
           .then(() => this.cb.onChoice(c));
       }),
     );
-    this.cards.forEach(
-      (c, i) =>
-        void this.ui.wait(0.15 + i * 0.12).then(() => {
-          this.sounds.click();
-          return this.ui.tween({ from: 0, to: 1, dur: 0.35, ease: backOut(2), onUpdate: (v) => (c.scale = v) });
-        }),
-    );
+    // Deal the cards in from below, one by one.
+    this.cards.forEach((c, i) => {
+      c.lift = 40;
+      void this.ui.wait(0.15 + i * 0.11).then(() => {
+        this.sounds.click();
+        void this.ui.to(c, 'lift', 0, 0.35, backOut(1.8));
+        return this.ui.tween({ from: 0, to: 1, dur: 0.35, ease: backOut(2), onUpdate: (v) => (c.scale = v) });
+      });
+    });
     this.sounds.stingerMedium();
   }
 
   private drawChoice(ctx: CanvasRenderingContext2D, time: number): void {
-    const run = this.run!;
     const set = BIG_SETS.findIndex((ids) => ids.includes(this.choices[0]?.id));
     const edge = this.choices[0]?.id === 'edge';
     const rideQ = this.choices[0]?.id === 'cashOut';
     drawText(ctx, rideQ ? `LOOP ${(this.run?.endless?.loop ?? 2) - 1} CLEARED! POT ${this.run?.endless?.pot ?? 0}` : edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'A BIG CHOICE', CX, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
     drawText(ctx, rideQ ? 'RIDE AGAIN OR CASH OUT. YOUR WIN IS SAFE EITHER WAY.' : edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : `${BIG_SET_NAMES[set] ?? ''}: STRONG MOVES HAVE A PRICE`, CX, 110, 2, COLORS.textDim);
+    let tip = -1;
     this.cards.forEach((c, i) => {
       const ch = this.choices[i];
       if (!ch || c.scale <= 0.01) return;
-      const { title, rule, cost } = describeChoice(run, ch);
-      // One accent for every card: no SAFE tag or green glow (the player doesn't need to be told which pick is safe).
-      const accent = '#ff9a3a';
-      const dimmed = this.picked >= 0 && this.picked !== i;
-      ctx.save();
-      ctx.globalAlpha *= dimmed ? 0.3 : 1;
-      ctx.translate(c.x, c.y + c.lift);
-      ctx.scale(c.scale, c.scale);
       if (c.hover && this.picked < 0) {
+        this.choiceHoverAt[i] ??= time;
+        if (time - this.choiceHoverAt[i] > 0.35) tip = i;
+      } else delete this.choiceHoverAt[i];
+      this.drawChoiceCard(ctx, c, ch, i, time);
+    });
+    if (tip >= 0) this.drawChoiceTip(ctx, this.cards[tip], this.choices[tip]);
+  }
+
+  /** One BIG CHOICE card: the name on top, a big symbol composition, one effect line, and a red cost strip. */
+  private drawChoiceCard(ctx: CanvasRenderingContext2D, c: Hit, ch: BigChoice, i: number, time: number): void {
+    const run = this.run!;
+    const { title } = describeChoice(run, ch);
+    const { effect, cost } = choiceShort(run, ch);
+    const tier = choiceTier(ch.id, cost);
+    const picked = this.picked === i;
+    const dimmed = this.picked >= 0 && !picked;
+    const w = c.w;
+    const h = c.h;
+    const hover = c.hover && this.picked < 0;
+    ctx.save();
+    ctx.globalAlpha *= dimmed ? 0.3 : 1;
+    ctx.translate(c.x, c.y + c.lift + (dimmed ? 16 * this.stamp : 0));
+    ctx.scale(c.scale, c.scale);
+    // Glow: a broken card smoulders red all the time; any card lights up under the pointer (local, never full-screen).
+    const glow = tier === 'broken' ? 0.18 + 0.08 * Math.sin(time * 3) + (hover ? 0.15 : 0) : hover ? 0.3 + 0.1 * Math.sin(time * 6) : 0;
+    if (glow > 0) {
+      ctx.save();
+      ctx.shadowColor = tier === 'broken' ? '#ff3b30' : TIER_NAME[tier];
+      ctx.shadowBlur = 26;
+      ctx.globalAlpha *= glow;
+      ctx.fillStyle = tier === 'broken' ? '#ff3b30' : TIER_NAME[tier];
+      ctx.fillRect(-w / 2, -h / 2, w, h);
+      ctx.restore();
+    }
+    const frame = hover || picked ? (tier === 'broken' ? '#ff8a7a' : COLORS.goldLight) : TIER_FRAME[tier];
+    this.panel(ctx, -w / 2, -h / 2, w, h, frame);
+    // Name band.
+    ctx.fillStyle = tier === 'broken' ? '#2a0c12' : COLORS.panelLight;
+    ctx.fillRect(-w / 2, -h / 2, w, 44);
+    drawText(ctx, title, 0, -h / 2 + 23, title.length * 18 <= w - 20 ? 3 : 2.5, TIER_NAME[tier]);
+    // The stage: a lit box the art stands in.
+    const sy = -h / 2 + 52;
+    const sh = 150;
+    const g = ctx.createRadialGradient(0, sy + sh / 2, 6, 0, sy + sh / 2, w * 0.6);
+    g.addColorStop(0, TIER_STAGE[tier]);
+    g.addColorStop(1, COLORS.panel);
+    ctx.fillStyle = g;
+    ctx.fillRect(-w / 2 + 8, sy, w - 16, sh);
+    if (tier === 'broken') {
+      // A gold sheen sweeps the stage every few seconds; embers drift up from the cost.
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-w / 2 + 8, sy, w - 16, sh);
+      ctx.clip();
+      const sx = -w / 2 - 60 + ((time * 160) % (w + 400));
+      ctx.fillStyle = 'rgba(255,236,150,0.16)';
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx + 18, sy);
+      ctx.lineTo(sx - 42, sy + sh);
+      ctx.lineTo(sx - 60, sy + sh);
+      ctx.fill();
+      ctx.restore();
+      for (let k = 0; k < 7; k++) {
+        const ex = -w / 2 + 20 + ((k * 53) % (w - 40));
+        const rise = (time * (24 + k * 3) + k * 41) % 150;
+        ctx.fillStyle = k % 2 ? '#ff6a3a' : '#ffb03a';
         ctx.save();
-        ctx.shadowColor = accent;
-        ctx.shadowBlur = 24;
-        ctx.globalAlpha *= 0.45 + 0.2 * Math.sin(time * 6);
-        ctx.fillStyle = accent;
-        ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+        ctx.globalAlpha *= Math.max(0, 1 - rise / 150) * 0.8;
+        ctx.fillRect(ex, h / 2 - 70 - rise, 3, 3);
         ctx.restore();
       }
-      this.panel(ctx, -c.w / 2, -c.h / 2, c.w, c.h, c.hover || this.picked === i ? accent : COLORS.gold);
-      // The symbol / charm it touches, when there is one.
-      const icon = (ch.symbol ?? (ch.enh ? CHARM_SYMBOLS[ch.enh][0] : ch.id === 'meltDown' || ch.id === 'gildLot' ? 'sword' : ch.id === 'glassCannon' || ch.id === 'bloodPact' ? 'heart' : ch.id === 'secondWind' ? 'heart' : ch.id === 'sweepUp' ? 'rock' : ch.id === 'edge' ? (ch.reward === 'legend' ? artId('tierLegendary') : ch.reward === 'relic' ? artId('voucherRelic') : 'chip') : ch.id === 'cashOut' ? 'chip' : ch.id === 'ride' ? 'relicDrum' : 'shield')) as SpriteId;
-      drawSprite(ctx, icon, 0, -c.h / 2 + 70, 4);
-      if (ch.enh) drawSprite(ctx, ENH_SPRITE[ch.enh], 0, -c.h / 2 + 70, 4);
-      if (ch.id === 'meltDown' || ch.id === 'gildLot') drawSprite(ctx, ENH_SPRITE.gold, 0, -c.h / 2 + 70, 4);
-      drawText(ctx, title, 0, -c.h / 2 + 130, title.length > 12 ? 2.5 : 3, accent);
-      wrap(rule, 22).forEach((l, k) => drawText(ctx, l, 0, -c.h / 2 + 166 + k * 20, 2, COLORS.text));
-      if (cost) {
-        drawText(ctx, 'COST', 0, c.h / 2 - 84, 1.5, '#ff8a7a');
-        wrap(cost, 26).forEach((l, k) => drawText(ctx, l, 0, c.h / 2 - 62 + k * 16, 1.5, '#ff8a7a'));
-      } else drawText(ctx, 'NO COST', 0, c.h / 2 - 50, 2, '#7dff7a');
+    }
+    const big = w > 250 ? 5 : 4.2;
+    const bob = hover ? Math.sin(time * 5) * 3 : Math.sin(time * 2 + i) * 1.5;
+    this.drawChoiceArt(ctx, ch, 0, sy + sh / 2 + bob, big, time);
+    // The effect: one line at the readable size (two if it must).
+    const ey = sy + sh + 30;
+    const big2 = wrap(effect, Math.floor((w - 24) / 12));
+    const lines = big2.length <= 2 ? big2 : wrap(effect, Math.floor((w - 24) / 9)).slice(0, 3);
+    const es = big2.length <= 2 ? 2 : 1.5;
+    lines.forEach((l, k) => drawText(ctx, l, 0, ey + (k - (lines.length - 1) / 2) * (es * 11), es, COLORS.text));
+    // The cost strip (only when it costs something).
+    const cy = h / 2 - 44;
+    if (cost) {
+      ctx.fillStyle = tier === 'broken' ? '#3a0a10' : '#2a0e14';
+      ctx.fillRect(-w / 2 + 8, cy - 26, w - 16, 60);
+      ctx.fillStyle = '#ff6a5a';
+      ctx.fillRect(-w / 2 + 8, cy - 26, w - 16, 2);
+      drawText(ctx, 'COST', 0, cy - 12, 1.5, '#ff6a5a');
+      const cl = wrap(cost, Math.floor((w - 28) / 12));
+      const cs = cl.length <= 2 ? 2 : 1.5;
+      const cls = cs === 2 ? cl : wrap(cost, Math.floor((w - 28) / 9)).slice(0, 2);
+      cls.forEach((l, k) => drawText(ctx, l, 0, cy + 10 + (k - (cls.length - 1) / 2) * (cs * 10), cs, '#ff8a7a'));
+    } else drawText(ctx, 'NO COST', 0, cy + 4, 1.5, COLORS.textDim);
+    // The pick: a TAKEN stamp slams on, tilted.
+    if (picked && this.stamp > 0) {
+      const k = this.stamp;
+      ctx.save();
+      ctx.translate(0, sy + sh / 2);
+      ctx.rotate(-0.2);
+      ctx.scale(2.2 - 1.2 * k, 2.2 - 1.2 * k);
+      ctx.globalAlpha *= Math.min(1, k * 1.5);
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(-84, -26, 168, 52);
+      ctx.fillStyle = tier === 'broken' ? '#ff3b30' : COLORS.goldLight;
+      ctx.fillRect(-80, -22, 160, 44);
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(-74, -16, 148, 32);
+      drawText(ctx, 'TAKEN', 0, 1, 3, tier === 'broken' ? '#ff6a5a' : COLORS.goldLight);
       ctx.restore();
-    });
+    }
+    ctx.restore();
+  }
 
+  /** A choice's symbols, composed: what it touches, big, with its change on a tag. */
+  private drawChoiceArt(ctx: CanvasRenderingContext2D, ch: BigChoice, x: number, y: number, s: number, time: number): void {
+    const run = this.run!;
+    const p = run.player;
+    const cab = CABINETS[run.cabinet];
+    const atk = cab.attack as SpriteId;
+    const syms = cab.symbols.filter((sym) => p.strips.some((st) => (st[sym] ?? 0) > 0)).slice(0, 3);
+    const tag = (text: string, tx: number, ty: number, color: string, sc = 2.5) => {
+      const tw = text.length * 6 * sc + 12;
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(tx - tw / 2, ty - 6 * sc, tw, 12 * sc);
+      drawText(ctx, text, tx, ty, sc, color);
+    };
+    const charmOn = (enh: Enh, sx: number, sy: number, sc: number) => {
+      drawSprite(ctx, CHARM_SYMBOLS[enh][0] as SpriteId, sx, sy, sc);
+      drawSprite(ctx, ENH_SPRITE[enh], sx, sy, sc);
+    };
+    const cost = (sx: number, sy: number) => {
+      drawSprite(ctx, 'heart', sx, sy, 2.5);
+      drawSprite(ctx, 'minusBadge', sx + 12, sy + 10, 2);
+    };
+    const LV = '#5ad8e8';
+    switch (ch.id) {
+      case 'armsRace':
+        syms.forEach((sym, k) => {
+          const sx = x + (k - (syms.length - 1) / 2) * (s * 15);
+          drawSprite(ctx, sym as SpriteId, sx, y - 8, s * 0.65);
+          tag('+1', sx, y + 34, LV, 2);
+        });
+        cost(x + s * 22, y - 50);
+        break;
+      case 'masterwork': {
+        const others = syms.filter((sym) => sym !== ch.symbol);
+        others.forEach((sym, k) => drawSprite(ctx, sym as SpriteId, x + (k ? 1 : -1) * s * 17, y + 10, s * 0.45, { alpha: 0.3 }));
+        drawSprite(ctx, ch.symbol as SpriteId, x, y - 6, s * 1.05);
+        tag('+2', x + s * 10, y + 30, LV, 3);
+        break;
+      }
+      case 'whetstone':
+        drawSprite(ctx, ch.symbol as SpriteId, x, y - 6, s);
+        tag('+1', x + s * 10, y + 30, LV, 3);
+        break;
+      case 'polish':
+        charmOn(ch.enh!, x, y - 6, s);
+        tag('+1', x + s * 10, y + 30, LV, 3);
+        break;
+      case 'meltDown': {
+        const owned = [...new Set(p.gilded.map((gc) => gc.enh))].filter((e) => e !== 'gold').slice(0, 3);
+        const list = owned.length ? owned : (['keen'] as Enh[]);
+        list.forEach((e, k) => charmOn(e, x - s * 13, y - (list.length - 1) * s * 4 + k * s * 8, s * 0.42));
+        drawSprite(ctx, 'arrowRight', x - s * 2, y, 2.5);
+        charmOn('gold', x + s * 10, y - 4, s * 0.9);
+        break;
+      }
+      case 'gildLot':
+        [-1, 1, 0].forEach((k) => {
+          drawSprite(ctx, atk, x + k * s * 11, y - 4 + Math.abs(k) * 6, s * 0.7, { rot: k * 0.18 });
+          drawSprite(ctx, ENH_SPRITE.gold, x + k * s * 11, y - 4 + Math.abs(k) * 6, s * 0.7, { rot: k * 0.18 });
+        });
+        tag('X3', x, y + 40, COLORS.goldLight, 2);
+        break;
+      case 'cleanCut':
+        drawText(ctx, `REEL ${ch.reel! + 1}`, x, y - 56, 1.5, COLORS.textDim);
+        drawSprite(ctx, 'shield', x - s * 11, y, s * 0.7, { alpha: 0.6 });
+        drawSprite(ctx, 'minusBadge', x - s * 11 + 20, y + 18, 3);
+        drawSprite(ctx, 'arrowRight', x, y, 2.5);
+        drawSprite(ctx, atk, x + s * 11, y, s * 0.7);
+        tag('+1', x + s * 11 + 14, y + 30, LV, 2);
+        break;
+      case 'twinReel': {
+        const top = (Object.entries(p.strips[0]) as [SymbolId, number][]).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([sym]) => sym);
+        for (const [cx, label, alpha] of [[x - s * 12, 'R1', 1], [x + s * 12, 'R3', 1]] as [number, string, number][]) {
+          ctx.fillStyle = COLORS.outline;
+          ctx.fillRect(cx - s * 5, y - s * 12, s * 10, s * 24);
+          ctx.fillStyle = '#0d0818';
+          ctx.fillRect(cx - s * 5 + 3, y - s * 12 + 3, s * 10 - 6, s * 24 - 6);
+          top.forEach((sym, k) => drawSprite(ctx, sym as SpriteId, cx, y - s * 7.5 + k * s * 7.5, s * 0.42, { alpha }));
+          drawText(ctx, label, cx, y + s * 12 + 10, 1.5, COLORS.textDim);
+        }
+        drawSprite(ctx, 'arrowRight', x, y, 3, { sx: 1 + 0.15 * Math.sin(time * 6) });
+        break;
+      }
+      case 'sweepUp':
+        drawSprite(ctx, 'rock', x - s * 9, y, s * 0.7);
+        drawSprite(ctx, 'minusBadge', x - s * 9 + 18, y + 18, 3);
+        drawSprite(ctx, 'heart', x + s * 9, y, s * 0.8);
+        drawSprite(ctx, 'plusBadge', x + s * 9 + 18, y + 18, 3);
+        break;
+      case 'glassCannon':
+        drawSprite(ctx, atk, x, y - 6, s);
+        tag(`X${BIG.glassPay}`, x + s * 9, y + 30, COLORS.goldLight, 3);
+        cost(x - s * 12, y + 30);
+        break;
+      case 'bloodPact': {
+        const m = cab.meter?.symbol as SpriteId | undefined;
+        if (m) {
+          drawSprite(ctx, m, x, y - 6, s);
+          tag('2X', x + s * 10, y + 30, LV, 3);
+        } else {
+          drawSprite(ctx, 'sword', x - s * 8, y - 4, s * 0.75);
+          drawSprite(ctx, 'shield', x + s * 8, y - 4, s * 0.75);
+          tag('+1', x, y + 34, LV, 2.5);
+        }
+        cost(x - s * 14, y - 46);
+        break;
+      }
+      case 'secondWind':
+        drawSprite(ctx, 'heart', x - s * 4, y - 4, s * 1.1);
+        drawSprite(ctx, 'plusBadge', x - s * 4 + 24, y + 20, 3);
+        drawSprite(ctx, 'shield', x + s * 12, y + 4, s * 0.5);
+        tag('+1', x + s * 12, y + 34, LV, 2);
+        break;
+      case 'edge':
+        drawSprite(ctx, (ch.reward === 'legend' ? artId('tierLegendary') : ch.reward === 'relic' ? artId('voucherRelic') : 'chip') as SpriteId, x, y, s);
+        break;
+      case 'cashOut':
+        [2, 1, 0].forEach((k) => drawSprite(ctx, 'chip', x - k * 8, y + 10 - k * 14, s * 0.8));
+        break;
+      case 'ride':
+        drawSprite(ctx, 'relicDrum', x, y, s);
+        break;
+    }
+  }
+
+  /** Hovered for a moment: the card's full rule and cost, under it (above when there's no room). */
+  private drawChoiceTip(ctx: CanvasRenderingContext2D, c: Hit, ch: BigChoice): void {
+    const { title, rule, cost } = describeChoice(this.run!, ch);
+    const w = 380;
+    const rl = wrap(rule, 38);
+    const cl = cost ? wrap(`COST: ${cost}`, 38) : [];
+    const h = 40 + (rl.length + cl.length) * 15 + (cl.length ? 6 : 0);
+    const x = Math.max(BUILD.x + BUILD.w + 12, Math.min(W - w - 8, c.x - w / 2));
+    const below = c.y + c.h / 2 + 10;
+    const y = below + h <= H - 6 ? below : c.y - c.h / 2 - h - 10;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 4, y - 4, w + 8, h + 8);
+    ctx.fillStyle = COLORS.gold;
+    ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(x, y, w, h);
+    drawText(ctx, title, x + 12, y + 16, 2, COLORS.goldLight, { align: 'left' });
+    rl.forEach((l, k) => drawText(ctx, l, x + 12, y + 38 + k * 15, 1.5, COLORS.text, { align: 'left' }));
+    cl.forEach((l, k) => drawText(ctx, l, x + 12, y + 44 + (rl.length + k) * 15, 1.5, '#ff8a7a', { align: 'left' }));
   }
 
   showDraft(run: RunState, offers: DraftOption[], last: FightRecord | null, kind: 'draft' | 'spoils' | 'legend' | 'start' = 'draft'): void {
