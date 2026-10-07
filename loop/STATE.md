@@ -1790,3 +1790,15 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   CASSIDY mirror 4.3 -> 4.8, dealer 6 -> 7.5 (44.6 / 17.8). JAX 43.5 / 18.3 (unchanged).
 - **RELIC RUSH** plays as three spins (~5s, was ~25s): the engine still rolls the full hold-and-respin, so the odds
   and the prize are unchanged; later hits show over spins 2 and 3.
+
+## Iteration 82 (2026-10-07): UI round 2 (user notes, no balance change)
+- YOUR BUILD is a full-height left column on run screens: chips (big, top-left, same spot as in fights), hero + HP,
+  a tall YOUR REELS table, a LEVELS pane (every symbol and charm type, LV1 included, bigger text), relics. Screens
+  center to its right.
+- Fights: a drawer. A handle on the left edge slides the build out over the fight (relics fire inside it); the same
+  handle slides it back. Closed, a firing relic hops up just above your reels with its name. The YOUR REELS side table
+  is gone from fights (rocks / steals fly to the machine). HUD: heart and shield icons in one column, clear of the
+  portrait.
+- THE CASHIER, Balatro style: two shelves (the counter: charms, swaps, levels, heals; behind glass: relics on velvet,
+  legendaries glowing). Each item is its picture and chip price; hovering shows its name and rule.
+- No gameplay change; tests 238.

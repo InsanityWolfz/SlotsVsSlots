@@ -109,10 +109,10 @@ export class HudView {
   }
 
   hpBar() {
-    return { x: this.x + 64, y: HUD_TOP + 34, w: HUD_W - 64, h: 22 };
+    return { x: this.x + 80, y: HUD_TOP + 34, w: HUD_W - 80, h: 22 };
   }
   shieldBar() {
-    return { x: this.x + 64, y: HUD_TOP + 66, w: HUD_W - 64, h: 16 };
+    return { x: this.x + 80, y: HUD_TOP + 66, w: HUD_W - 80, h: 16 };
   }
   get hasSpecial(): boolean {
     return !!this.meter;
@@ -166,7 +166,8 @@ export class HudView {
     const hb = this.hpBar();
     const sh = this.hpShake * (Math.random() * 2 - 1);
     const hx = hb.x + sh;
-    drawSprite(ctx, 'heart', hx - 12 + 2, hb.y + hb.h / 2, 2);
+    // Heart and shield sit in one column between the portrait box and the bars.
+    drawSprite(ctx, 'heart', x + 68 + sh, hb.y + hb.h / 2, 2);
     this.bar(ctx, hx + 6, hb.y, hb.w - 6, hb.h, [
       [this.ghost / this.maxHp, COLORS.hpGhost],
       [this.hp / this.maxHp, COLORS.hp],
@@ -177,7 +178,7 @@ export class HudView {
     // Shield bar (no max; fills to a soft cap).
     const sb = this.shieldBar();
     const ss = this.shieldShake * (Math.random() * 2 - 1);
-    drawSprite(ctx, 'shieldIcon', sb.x - 10 + ss + 2, sb.y + sb.h / 2, 2, { alpha: this.shield > 0 ? 1 : 0.4 });
+    drawSprite(ctx, 'shieldIcon', x + 68 + ss, sb.y + sb.h / 2, 2, { alpha: this.shield > 0 ? 1 : 0.4 });
     this.bar(ctx, sb.x + 6 + ss, sb.y, sb.w - 6, sb.h, [[Math.min(1, this.shield / SHIELD_SOFT_CAP), COLORS.shield]], this.shieldFlash);
     if (this.shield > 0.01)
       drawText(ctx, `${Math.round(this.shield)}`, sb.x + 6 + (sb.w - 6) / 2 + ss, sb.y + sb.h / 2 + 1, 2, COLORS.text);

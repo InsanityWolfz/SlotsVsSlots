@@ -45,7 +45,7 @@ import { Clock } from './present/clock';
 import { Director, VOUCHER_GAP, VOUCHER_X, VOUCHER_Y } from './present/director';
 import { FxLayer } from './present/fx';
 import { HudView, type HudMeter } from './present/hud';
-import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, RELIC_FIRE_Y, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
+import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, RELIC_FIRE_X, RELIC_FIRE_Y, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
 import { MachineView } from './present/machine';
 import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
@@ -1294,7 +1294,7 @@ export class Game {
       const firing = (this.stage.relicPops[r] ?? 0) > 0.02;
       if (!open && !firing) return;
       if (open && i >= RELIC_SHOWN) return;
-      const { x, y: y0 } = open ? relicSlot(i) : { x: CHIP_SPOT.x + (k0++) * 40, y: RELIC_FIRE_Y };
+      const { x, y: y0 } = open ? relicSlot(i) : { x: RELIC_FIRE_X + (k0++) * 36, y: RELIC_FIRE_Y };
       // A relic that just fired pops: it grows, hops up, wiggles and flashes gold.
       const pop = this.stage.relicPops[r] ?? 0;
       const y = y0 - Math.sin(pop * Math.PI) * 8;

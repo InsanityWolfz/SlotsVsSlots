@@ -118,6 +118,8 @@ export const BUILD = { x: 16, y: 16, w: 284, h: H - 32 };
 const CX = (BUILD.x + BUILD.w + 12 + W) / 2;
 /** Your chips: the same spot in the fights (game.ts draws them there too). */
 export const CHIP_SPOT = { x: 44, y: 46 };
+/** The Cashier's shelves: item centers per row (the counter, then the relics behind the glass). */
+const SHELF = { y: [262, 440], gap: 164 };
 /** The side bet card: under the enemy card, left of FIGHT. */
 const BET_X = CX - 200;
 const BET_Y = 540;
@@ -805,12 +807,17 @@ export class RunScreens {
     this.shopItems = items;
     if (!reopen) this.open('shop');
     this.buttons = [
-      this.btn(`REROLL - ${rerollCost(run)}`, CX - 160, 530, 260, 50, () => this.cb.onReroll()),
-      this.btn('LEAVE', CX + 160, 530, 260, 50, () => this.cb.onLeave()),
+      this.btn(`REROLL - ${rerollCost(run)}`, CX - 160, 574, 260, 50, () => this.cb.onReroll()),
+      this.btn('LEAVE', CX + 160, 574, 260, 50, () => this.cb.onLeave()),
     ];
-    const gap = items.length > 4 ? 188 : 232;
-    this.shopHits = items.map((_, i) => {
-      const h = this.hit(CX + (i - (items.length - 1) / 2) * gap, 352, gap - 14, 262, () => this.cb.onBuy(i));
+    // Two shelves: the counter (charms, swaps, levels, heals) and, behind the glass, the relics.
+    const premium = (it: ShopItem) => it.option.kind === 'relic';
+    const rows = [items.filter((it) => !premium(it)), items.filter(premium)];
+    this.shopHits = items.map((it, i) => {
+      const row = premium(it) ? 1 : 0;
+      const k = rows[row].indexOf(it);
+      const n = rows[row].length;
+      const h = this.hit(CX + (k - (n - 1) / 2) * SHELF.gap, SHELF.y[row], 128, 122, () => this.cb.onBuy(i));
       h.scale = reopen ? 1 : 0;
       return h;
     });
@@ -1497,70 +1504,150 @@ export class RunScreens {
       drawSprite(ctx, 'chipShield', CX - 330, 150, 2);
       drawText(ctx, `CHIPS YOU KEEP SHIELD YOU FROM THE ${boss}: +${Math.min(MIRROR_CHIP_SHIELD_CAP, sh)} A TURN`, CX - 312, 150, 2, '#9fd0ff', { align: 'left' });
     }
+    this.drawShelves(ctx, time);
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
     for (const b of this.buttons) this.drawButton(ctx, b, time);
+    // What the item under the pointer is: name, rule and price, beside it.
+    const i = this.shopHits.findIndex((h, k) => h.hover && h.scale > 0.9 && !this.shopItems[k]?.sold);
+    if (i >= 0) this.drawShopTip(ctx, this.shopHits[i], this.shopItems[i]);
   }
 
+  /** Two wooden shelves; the lower one sits behind glass under a spotlight (the premium shelf). */
+  private drawShelves(ctx: CanvasRenderingContext2D, time: number): void {
+    const x0 = CX - 440;
+    const w = 880;
+    // The glass case behind the relic shelf.
+    const gy = SHELF.y[1] - 76;
+    const g = ctx.createLinearGradient(0, gy, 0, gy + 150);
+    g.addColorStop(0, 'rgba(255,224,138,0.10)');
+    g.addColorStop(1, 'rgba(120,70,200,0.10)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x0, gy, w, 150);
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    for (let k = 0; k < 6; k++) {
+      const sx = x0 + 40 + k * 160 + ((time * 30) % 160);
+      ctx.beginPath();
+      ctx.moveTo(sx, gy);
+      ctx.lineTo(sx + 24, gy);
+      ctx.lineTo(sx - 36, gy + 150);
+      ctx.lineTo(sx - 60, gy + 150);
+      ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(255,224,138,0.35)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x0 + 1, gy + 1, w - 2, 148);
+    drawText(ctx, 'RELICS', x0 + 10, gy + 14, 1.5, COLORS.goldLight, { align: 'left' });
+    drawText(ctx, 'ON THE COUNTER', x0 + 10, SHELF.y[0] - 70, 1.5, COLORS.textDim, { align: 'left' });
+    // The planks.
+    for (const y of SHELF.y) {
+      const py = y + 58;
+      ctx.fillStyle = '#2a170c';
+      ctx.fillRect(x0 - 4, py - 2, w + 8, 18);
+      ctx.fillStyle = '#7a4a26';
+      ctx.fillRect(x0, py, w, 12);
+      ctx.fillStyle = '#a06636';
+      ctx.fillRect(x0, py, w, 3);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(x0, py + 14, w, 6);
+    }
+  }
+
+  /** The hovered item's card: its name, what it does, and the price. */
+  private drawShopTip(ctx: CanvasRenderingContext2D, h: Hit, item: ShopItem): void {
+    const o = item.option;
+    const { title, text } = describeOption(o, this.run ?? undefined);
+    const lines = wrap(text, 26);
+    const legend = o.kind === 'relic' && LEGENDARY.has(o.relic);
+    const relicId = o.kind === 'relic' ? o.relic : null;
+    const mirrorNote = legend && relicId && this.run && this.run.stake >= STAKE.mirrorRelic && this.run.act === 2 ? (mirrorCanUse(relicId) ? 'THE MIRROR WILL COPY IT' : "THE MIRROR CAN'T USE IT") : '';
+    const w = 340;
+    const tall = 46 + lines.length * 20 + (mirrorNote ? 18 : 0);
+    const right = h.x + h.w / 2 + 14 + w <= W - 8;
+    const x = right ? h.x + h.w / 2 + 14 : h.x - h.w / 2 - 14 - w;
+    const y = Math.max(8, Math.min(H - tall - 8, h.y - tall / 2));
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 4, y - 4, w + 8, tall + 8);
+    ctx.fillStyle = legend ? '#ffd23f' : COLORS.gold;
+    ctx.fillRect(x - 2, y - 2, w + 4, tall + 4);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(x, y, w, tall);
+    const color = o.kind === 'gild' ? CHARM_COLOR[o.enh] : o.kind === 'relic' ? (legend ? '#ffd23f' : '#c9a0ff') : o.kind === 'symLevel' || o.kind === 'charmLevel' ? '#5ad8e8' : COLORS.goldLight;
+    drawText(ctx, title, x + 12, y + 18, 2.5, color, { align: 'left' });
+    lines.forEach((l, k) => drawText(ctx, l, x + 12, y + 46 + k * 20, 2, COLORS.text, { align: 'left' }));
+    if (mirrorNote && relicId) drawText(ctx, mirrorNote, x + 12, y + 46 + lines.length * 20, 1.5, mirrorCanUse(relicId) ? '#ff8a7a' : '#7dff7a', { align: 'left' });
+  }
+
+  /** One item on a shelf: just its picture and its chip price (hover it to read it). Relics sit on velvet. */
   private drawShopItem(ctx: CanvasRenderingContext2D, h: Hit, item: ShopItem, time: number): void {
     if (!h || h.scale <= 0.01) return;
     const o = item.option;
-    const { title, text } = describeOption(o, this.run ?? undefined);
     const afford = (this.run?.player.chips ?? 0) >= item.price;
+    const relic = o.kind === 'relic';
+    const legend = relic && LEGENDARY.has(o.relic);
     ctx.save();
-    ctx.globalAlpha *= item.sold ? 0.35 : 1;
-    ctx.translate(h.x, h.y + h.lift);
+    ctx.globalAlpha *= item.sold ? 0.3 : 1;
+    ctx.translate(h.x, h.y + h.lift - (h.hover && !item.sold ? 6 : 0));
     ctx.scale(h.scale, h.scale);
-    const hover = h.hover && !item.sold && afford;
-    if (hover) {
+    if (relic) {
+      // Velvet cushion in a gold frame, under a spotlight; a legendary shimmers.
+      const glow = ctx.createRadialGradient(0, -20, 4, 0, -20, 90);
+      glow.addColorStop(0, legend ? 'rgba(255,210,63,0.45)' : 'rgba(201,160,255,0.30)');
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(-90, -110, 180, 180);
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(-52, -50, 104, 96);
+      ctx.fillStyle = legend ? '#ffd23f' : COLORS.gold;
+      ctx.fillRect(-49, -47, 98, 90);
+      ctx.fillStyle = legend ? '#5a1838' : '#3a1530';
+      ctx.fillRect(-45, -43, 90, 82);
+      if (legend) {
+        ctx.fillStyle = `rgba(255,236,150,${0.12 + 0.1 * Math.sin(time * 4)})`;
+        ctx.fillRect(-45, -43, 90, 82);
+      }
+    } else {
+      // A soft shadow where it sits on the counter.
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(-36, 40, 72, 8);
+    }
+    if (h.hover && !item.sold && afford) {
       ctx.save();
       ctx.shadowColor = COLORS.energy;
-      ctx.shadowBlur = 22;
-      ctx.globalAlpha *= 0.4 + 0.2 * Math.sin(time * 6);
-      ctx.fillStyle = COLORS.energy;
-      ctx.fillRect(-h.w / 2, -h.h / 2, h.w, h.h);
+      ctx.shadowBlur = 18;
+      ctx.strokeStyle = COLORS.energy;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(-56, -54, 112, 104);
       ctx.restore();
     }
-    this.panel(ctx, -h.w / 2, -h.h / 2, h.w, h.h, hover ? COLORS.energy : COLORS.gold);
-    drawSprite(ctx, 'shopSlot', 0, -h.h / 2 + 64, 4);
-    const iy = -h.h / 2 + 50;
-    if (o.kind === 'relic') drawSprite(ctx, RELICS[o.relic].sprite as SpriteId, 0, iy, 3.5);
+    const iy = -4;
+    if (o.kind === 'relic') drawSprite(ctx, RELICS[o.relic].sprite as SpriteId, 0, iy, 4);
     else if (o.kind === 'gild') {
-      drawSprite(ctx, o.symbol as SpriteId, 0, iy, 3.5);
-      drawSprite(ctx, ENH_SPRITE[o.enh], 0, iy, 3.5);
-      drawText(ctx, `X${o.n}`, 40, iy + 18, 2.5, CHARM_COLOR[o.enh]);
-    } else if (o.kind === 'symLevel' || o.kind === 'charmLevel') this.levelIcon(ctx, o, -10, iy, 3.2);
+      drawSprite(ctx, o.symbol as SpriteId, 0, iy, 4);
+      drawSprite(ctx, ENH_SPRITE[o.enh], 0, iy, 4);
+      drawText(ctx, `X${o.n}`, 40, iy + 24, 2.5, CHARM_COLOR[o.enh]);
+    } else if (o.kind === 'symLevel' || o.kind === 'charmLevel') this.levelIcon(ctx, o, -10, iy, 3.6);
     else if (o.kind === 'swap') {
-      drawSprite(ctx, o.from as SpriteId, -34, iy, 2.5);
+      drawSprite(ctx, o.from as SpriteId, -34, iy, 2.6);
       drawSprite(ctx, 'arrowRight', 0, iy, 2.5);
-      drawSprite(ctx, o.to as SpriteId, 34, iy, 2.5);
+      drawSprite(ctx, o.to as SpriteId, 34, iy, 2.6);
     } else if (o.kind === 'remove') {
-      drawSprite(ctx, o.symbol as SpriteId, 0, iy, 3.5);
-      drawSprite(ctx, 'minusBadge', 28, iy + 20, 3);
-    } else drawSprite(ctx, 'heart', 0, iy, 4.5);
-    // Long titles drop a size so they never clip (SPIKED CHARM and friends).
-    const tScale = [3, 2, 1.5].find((k) => title.length * 6.4 * k <= h.w - 16) ?? 1.25;
-    drawText(ctx, title, 0, 8, tScale, o.kind === 'gild' ? CHARM_COLOR[o.enh] : o.kind === 'relic' ? '#c9a0ff' : o.kind === 'symLevel' || o.kind === 'charmLevel' ? '#5ad8e8' : COLORS.text);
-    // Wrap to the card's width (five cards are narrower than four).
-    const per2 = Math.floor((h.w - 20) / 12.8);
-    const per15 = Math.floor((h.w - 20) / 9.6);
-    const long = wrap(text, per2).length > 3;
-    const lines = long ? wrap(text, per15).slice(0, 6) : wrap(text, per2);
-    lines.forEach((line, k) => drawText(ctx, line, 0, 30 + k * (long ? 13 : 17), long ? 1.5 : 2, COLORS.text));
-    if (o.kind === 'relic' && LEGENDARY.has(o.relic)) this.legendTag(ctx, 0, -h.h / 2 + 14, time);
-    if (o.kind === 'relic' && LEGENDARY.has(o.relic) && this.run && this.run.stake >= STAKE.mirrorRelic && this.run.act === 2)
-      drawText(ctx, mirrorCanUse(o.relic) ? 'MIRROR WILL COPY' : "MIRROR CAN'T USE", 0, -h.h / 2 + 32, 1.25, mirrorCanUse(o.relic) ? '#ff8a7a' : '#7dff7a');
-    // Price tag.
+      drawSprite(ctx, o.symbol as SpriteId, 0, iy, 4);
+      drawSprite(ctx, 'minusBadge', 30, iy + 22, 3);
+    } else drawSprite(ctx, 'heart', 0, iy, 5);
+    if (legend) this.legendTag(ctx, 0, -62, time);
+    // The price tag, on the shelf's front edge.
     ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(-52, h.h / 2 - 34, 104, 28);
+    ctx.fillRect(-40, 52, 80, 28);
     ctx.fillStyle = item.sold ? '#3a2e52' : afford ? '#3a2a14' : '#3a1414';
-    ctx.fillRect(-50, h.h / 2 - 32, 100, 24);
-    if (item.sold) drawText(ctx, 'SOLD', 0, h.h / 2 - 20, 2, COLORS.textDim);
+    ctx.fillRect(-38, 54, 76, 24);
+    if (item.sold) drawText(ctx, 'SOLD', 0, 66, 2, COLORS.textDim);
     else {
-      drawSprite(ctx, 'chip', -22, h.h / 2 - 20, 1.6);
-      drawText(ctx, String(item.price), 12, h.h / 2 - 20, 2, afford ? COLORS.energy : '#ff8a7a');
+      drawSprite(ctx, 'chip', -18, 66, 1.6);
+      drawText(ctx, String(item.price), 12, 66, 2.5, afford ? COLORS.energy : '#ff8a7a');
     }
     ctx.restore();
   }
+
 
   private drawButton(ctx: CanvasRenderingContext2D, b: Btn, time: number): void {
     const pulse = 1 + 0.02 + 0.02 * Math.sin((time * Math.PI * 2) / 1.6);

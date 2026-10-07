@@ -38,7 +38,9 @@ export const RELIC_Y = 606;
 export const RELIC_COLS = 8;
 export const RELIC_PITCH = 34;
 export const RELIC_SHOWN = 32;
-export const RELIC_FIRE_Y = 104;
+// ...closed, a firing relic hops up just above your reels, under your HP and shield.
+export const RELIC_FIRE_X = 196;
+export const RELIC_FIRE_Y = 244;
 export const relicSlot = (i: number) => ({ x: RELIC_X + (i % RELIC_COLS) * RELIC_PITCH, y: RELIC_Y + Math.floor(i / RELIC_COLS) * 30 });
 
 export const COLORS = {
