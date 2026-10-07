@@ -1824,3 +1824,20 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - `tools/sim/endless.ts 400` (forced ride), riders reaching loop 5, before -> after:
   KNIGHT 9 -> 1%, TESLA 22 -> 3%, BRIAR 12 -> 1%, JAX 1 -> 1%, CASSIDY 71 -> 9%. (Target: under 10% of riders on the greedy bot.)
 - Watch: BRIAR clears loop 2 at 96% then walls (5% clear loop 3). A best-of bot (sim step 2) should check the broken builds.
+
+## Iteration 85 (2026-10-07): content wave 1, first 10 relics (playtest/CONTENT_WAVE1_REVIEW.md)
+- New (slot machine relics, one hook each): BRAMBLE WALL (BRIAR), RIPOSTE / TOWER SHIELD / HEADSMAN (KNIGHT),
+  CAPACITOR / LIVE WIRE (TESLA), ENCORE / WILD WHEEL (JAX), DOWNPOUR / NEST EGG (CASSIDY). New `hpCost` event (LIVE WIRE).
+- Solo strength (relic held from the start, other 9 retired, N400, vs no-wave baseline) before tuning, WHITE/GREEN:
+  BRAMBLE +5.5/+21.5, TOWER +13.7/+11.7, HEADSMAN +9.7/+1.7, NEST EGG +6.7/+1, CAPACITOR +5.5/-1, ENCORE +3.8/+6.2,
+  RIPOSTE +3/-1.3, DOWNPOUR +0.7/+3.2, WILD WHEEL 0/+1.5, LIVE WIRE -4.5/-10.8.
+- Bugs found: BRAMBLE shared the volley's once-a-turn guard (a blocked first hit locked out the full volley); vs the
+  Dealer BRIAR's bank grows unbounded behind her shields, so any share of it won (Dealer 98%): now capped at 10% max HP.
+  BRAMBLE is kept out of boss sizing (BRIAR's bosses are fitted to a power without volleys). Sizing passes your real
+  max HP (`sizeHp`) for HEADSMAN.
+- Pool dilution: with 2-3 more machine relics, the start pick and each draft's identity slot showed the signature
+  relics half as often (BRIAR -11, JAX -9 WHITE). WAVE1 relics are now excluded from both; they appear in open slots.
+- Tuning: TOWER 50%/20% -> 25%/10% HP, HEADSMAN 2% in 5s, LIVE WIRE +40%/4% -> +50%/2%, DOWNPOUR +25% -> +40%.
+  BOSS_MUL joker house 2.2 -> 1.9, mirror 1.5 -> 1.2, dealer 0.55 -> 0.5; tesla dealer 2.3 -> 2.0, act3 1.6 -> 1.45.
+- Official table N1000 (WHITE / GREEN): KNIGHT 45.2/17.4, TESLA 44.1/17.4, BRIAR 43.1/19.5, JAX 44.6/18.5, CASSIDY 42.1/16.7.
+  All inside the gates; fight-4 deaths 3.8-5.4% (CASSIDY 0.1, as before).
