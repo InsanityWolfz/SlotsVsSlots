@@ -49,3 +49,19 @@ Keywords render in one colour each (and maybe a tiny icon), always in the same f
 2. Do hovering keywords get a mini tooltip ("VOLLEY: your thorns hit back, through shields")?
 3. Keep MAKE IT RAIN as the name, with RAIN as the keyword?
 4. FOE vs ENEMY?
+
+## Decisions (user, 2026-10-07 evening)
+- **PAIR / JACKPOT only.** MATCH is dropped (a pair is a match).
+- **Attack symbols by their own word** on each machine: SWORD (KNIGHT), BOLT (TESLA), THORN (BRIAR), CARD (JAX), and
+  CASSIDY'S CHIPS, unless the playtester prefers renaming CASSIDY's symbol to COINS so it never collides with the
+  chips you spend. Ask the playtester.
+- **Machine mechanics:** TESLA = LIGHTNING; BRIAR = THORNS (not VOLLEY); CASSIDY = MAKE IT RAIN (always the full
+  name); JAX = his meter's real name; CASSIDY's bar = HIGH ROLLER.
+- **"YOUR METER"** is always replaced by the actual meter of the machine being played (text is per machine).
+- **SABOTAGE** replaces CHEAT for anything an enemy writes on your reels.
+- **ENEMY** (not FOE).
+- **PAY:** damage, heal and shield numbers that come off the payline are all called PAY.
+- **Timing:** SPIN instead of TURN; ROUND instead of FIGHT. (Conflict: the fight HUD says "ROUND 3" today for a pair of
+  turns. If a whole fight is a ROUND, that counter needs a new word, e.g. "SPIN 6".)
+- **Charm art in the shop must match the machine:** a GOLD charm on BRIAR shows a gold THORN, not a gold sword.
+- **Keywords get colour + a tooltip.** Icons only where we have art; colour is the baseline.
