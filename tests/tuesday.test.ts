@@ -3,7 +3,7 @@ import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CabinetId } from '../src/core/cabinets';
 import { actLength, generateRunPaths } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
-import { Fight } from '../src/core/fight';
+import { Fight, RAIN } from '../src/core/fight';
 import { MIRROR_HIT_CAP, SANDGLASS_SLOW } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
 import {
@@ -45,19 +45,20 @@ describe('signature meters (one per slot machine)', () => {
     expect(on('tesla').special).toBe(true);
   });
 
-  it('CASH CASSIDY HIGH ROLLER: pre-fills from chips held; chip symbols fill it and pay a chip each; full, the next paying group multiplies', () => {
+  it('CASH CASSIDY HIGH ROLLER: pre-fills from chips held; chip symbols hit, fill it and pay chips; full, the next paying group multiplies', () => {
     const f = on('midas');
     f.sides.player.hp = 100;
     const start = f.sides.player.energy;
     f.forceNext('player', ['goldbar', 'goldbar', 'shield']);
     const evs = f.step().events;
     const chips = ofType(evs, 'midasChips')[0];
-    expect(chips.amount).toBe(2); // a chip each, no bonus
+    expect(chips.amount).toBe(2 - RAIN.chipLess); // a chip pair pays 1
+    expect(ofType(evs, 'attack').some((a) => a.from === 'player')).toBe(true); // chips are his weapon
     expect(f.sides.player.energy).toBeGreaterThan(start);
     f.sides.player.energy = f.meterCost;
     f.sides.player.armed = true;
     f.step();
-    f.forceNext('player', ['sword', 'sword', 'shield']);
+    f.forceNext('player', ['goldbar', 'goldbar', 'shield']);
     const spin = ofType(f.step().events, 'spin')[0];
     expect(spin.score.groups.some((g) => g.notes?.some((n) => n.startsWith('HIGH ROLLER X')))).toBe(true);
   });
@@ -120,8 +121,8 @@ describe('signature meters (one per slot machine)', () => {
 
 describe('charm and level cards', () => {
   it('charm cards only target plain cells, and only when there are enough of them', () => {
-    const run = createRun(base, 3, 'midas');
-    run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }]; // 4 gold swords on reel 1: no plain swords there
+    const run = createRun(base, 3, 'knight');
+    run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 6 }]; // 6 gold swords on reel 1: no plain swords there
     const opts = charmOptions(run, 2);
     expect(opts.some((o) => o.kind === 'gild' && o.reel === 0 && o.symbol === 'sword')).toBe(false);
     expect(opts.some((o) => o.kind === 'gild' && o.reel === 1 && o.symbol === 'sword')).toBe(true);
@@ -164,17 +165,17 @@ describe('post-boss BIG CHOICES', () => {
 
   it('ARMS RACE: +1 level to all your symbols for -60 max HP; TWIN REEL copies reel 1 onto reel 3', () => {
     const run = createRun(base, 5, 'midas');
-    run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }];
+    run.player.gilded = [{ reel: 0, symbol: 'goldbar', enh: 'gold', n: 4 }];
     const hp = run.player.maxHp;
-    run.pendingChoice = [{ id: 'armsRace' }, { id: 'masterwork', symbol: 'sword' }, { id: 'whetstone', symbol: 'shield' }];
+    run.pendingChoice = [{ id: 'armsRace' }, { id: 'masterwork', symbol: 'goldbar' }, { id: 'whetstone', symbol: 'shield' }];
     takeChoice(run, { id: 'armsRace' });
-    expect(run.player.levels.sym).toEqual({ sword: 2, shield: 2, goldbar: 2 });
+    expect(run.player.levels.sym).toEqual({ shield: 2, goldbar: 2 });
     expect(run.player.maxHp).toBe(hp - 60);
 
     run.pendingChoice = [{ id: 'cleanCut', reel: 0 }, { id: 'twinReel' }, { id: 'sweepUp' }];
     takeChoice(run, { id: 'twinReel' });
     expect(run.player.strips[2]).toEqual(run.player.strips[0]);
-    expect(run.player.gilded.filter((g) => g.reel === 2)).toEqual([{ reel: 2, symbol: 'sword', enh: 'gold', n: 4 }]);
+    expect(run.player.gilded.filter((g) => g.reel === 2)).toEqual([{ reel: 2, symbol: 'goldbar', enh: 'gold', n: 4 }]);
   });
 
   it('GLASS CANNON: paying groups x1.5, and no healing between fights', () => {

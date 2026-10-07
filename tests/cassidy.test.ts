@@ -32,22 +32,23 @@ describe('CASH CASSIDY / THE BANKROLL', () => {
     expect(highRollerMul(100)).toBe(3);
   });
 
-  it('MAKE IT RAIN!: a chip jackpot with 5+ chips hits for chips x3 (x the jackpot), counted before it costs 5', () => {
+  it('MAKE IT RAIN!: a chip jackpot with 5+ chips hits for chips x2 (x the jackpot), counted before it costs 5', () => {
     const f = cassidy(20);
     const { rain, hit } = rainHit(f);
     expect(rain).toBeDefined();
     expect(rain.cost).toBe(RAIN.cost);
-    // The 20 chips held when it lands (its own 3 come after): base 20 x RAIN.perChip, x3 for the jackpot.
+    // The 20 chips held when it lands (its own chips come after): base 20 x RAIN.perChip, x3 for the jackpot.
     expect(hit).toBe(20 * RAIN.perChip * 3);
-    expect(f.chipsNow()).toBe(20 + 3 - RAIN.cost);
+    // A chip jackpot pays 3 - RAIN.chipLess chips.
+    expect(f.chipsNow()).toBe(20 + 3 - RAIN.chipLess - RAIN.cost);
   });
 
-  it('under 5 chips it just pays the 3 chips', () => {
+  it('under 5 chips a chip jackpot is a plain hit (chips are his weapon) and pays its chips', () => {
     const f = cassidy(4);
     const { rain, hit } = rainHit(f);
     expect(rain).toBeUndefined();
-    expect(hit).toBe(0);
-    expect(f.chipsNow()).toBe(7);
+    expect(hit).toBeGreaterThan(0);
+    expect(f.chipsNow()).toBe(4 + 3 - RAIN.chipLess);
   });
 
   it('a full HIGH ROLLER bar multiplies the rain (no cap)', () => {
@@ -58,10 +59,10 @@ describe('CASH CASSIDY / THE BANKROLL', () => {
     expect(rainHit(f).hit).toBeGreaterThan(plain * 2);
   });
 
-  it('relics: RAINMAKER costs 5; LOOSE CHANGE rains on a pair; TIP JAR heals; LOADED CHIPS fits gold on chips', () => {
+  it('relics: RAINMAKER costs 2; LOOSE CHANGE rains on a pair; TIP JAR heals; gold fits chips without LOADED CHIPS (retired)', () => {
     const r = cassidy(20, (c) => (c.relics = ['rainmaker']));
     rainHit(r);
-    expect(r.chipsNow()).toBe(20 + 3 - RAIN.rainmakerCost);
+    expect(r.chipsNow()).toBe(20 + 3 - RAIN.chipLess - RAIN.rainmakerCost);
     const l = cassidy(20, (c) => (c.relics = ['loosechange']));
     l.forceNext('player', ['goldbar', 'goldbar', 'shield']);
     expect(ofType(l.step().events, 'makeItRain')).toHaveLength(1);
@@ -69,8 +70,6 @@ describe('CASH CASSIDY / THE BANKROLL', () => {
     t.sides.player.hp -= 100;
     expect(ofType(rainHit(t).ev, 'heal').some((h) => h.source === 'tipjar')).toBe(true);
     const run = createRun(base, 3, 'midas');
-    expect(charmOptions(run, RUN.charmCells, ['gold']).some((o) => o.kind === 'gild' && o.symbol === 'goldbar')).toBe(false);
-    run.player.relics.push('loadedchips');
     expect(charmOptions(run, RUN.charmCells, ['gold']).some((o) => o.kind === 'gild' && o.symbol === 'goldbar')).toBe(true);
   });
 });

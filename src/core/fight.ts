@@ -46,7 +46,10 @@ export const MIDAS = { houseSkim: 2, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3 
 /** THE MIRROR's shards: the share of your last spin's damage each one throws back (cracked: deeper). */
 export const SHARD_SHARE = 1 / 3;
 export const SHARD_CRACKED = 1 / 2;
-export const RAIN = { perChip: 3, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5 };
+/** chipLess: a chip group pays (its size - chipLess) chips, at least 1. */
+// 2026-10-07 (no swords): chips now hit too and land 1.5x as often, and rain grows with chips held (uncapped), so
+// rain x3 + a chip per symbol made CASSIDY 83 / 63. Now x2, and a group pays its size - 1 chips (1, 1, 2).
+export const RAIN = { perChip: 2, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x3 (quarter steps). */
 export const highRollerMul = (chips: number) => Math.min(MIDAS.maxMul, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
 import { isNearMiss, multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
@@ -94,7 +97,7 @@ const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'roc
 const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel']);
 const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
-const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'thorn']);
+const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'thorn', 'goldbar']);
 /** A cell's charm as the WILD wheel shows it (only charms that change a jackpot's pay or heal). */
 export const wheelCharm = (cell: { enh?: Enh; faked?: number }): Enh | undefined =>
   cell.enh && (cell.enh === 'gold' || cell.enh === 'keen' || cell.enh === 'vamp' || cell.enh === 'charged') && !((cell.faked ?? 0) > 0) ? cell.enh : undefined;
@@ -767,6 +770,11 @@ export class Fight {
     return c.side === 'player' ? charmLevel(c.levels, enh, c.relics.has('ticket')) : 1;
   }
 
+  /** The player's attack symbols: swords and cards, or this machine's own (CASSIDY's chips). */
+  private isAttack(sym: SymbolId): boolean {
+    return BLADES.has(sym) || (!!this.cfg.cabinet && CABINETS[this.cfg.cabinet].attack === sym);
+  }
+
   /** What a lone (or all-) WILD line pays as for this side. */
   private wildAlone(c: Combatant): SymbolId {
     return c.side === 'player' && !this.special ? (this.cfg.cabinet ? CABINETS[this.cfg.cabinet].attack : 'sword') : 'bolt';
@@ -850,7 +858,7 @@ export class Fight {
     // resets to its resting level.
     if (player && this.meter?.kind === 'vault' && me.armed) {
       // Your best paying group: swords first, then the biggest (never a lone shield if anything better paid).
-      const g0 = s.groups.filter(pays).sort((a, b) => Number(!!b.rain) - Number(!!a.rain) || Number(BLADES.has(b.symbol)) - Number(BLADES.has(a.symbol)) || b.base * b.mult - a.base * a.mult)[0];
+      const g0 = s.groups.filter(pays).sort((a, b) => Number(!!b.rain) - Number(!!a.rain) || Number(this.isAttack(b.symbol)) - Number(this.isAttack(a.symbol)) || b.base * b.mult - a.base * a.mult)[0];
       if (g0) {
         const mul = this.vaultMul();
         g0.mult *= mul;
@@ -1206,9 +1214,13 @@ export class Fight {
         if (!player || this.meter?.symbol !== g.symbol) break;
         // CASH CASSIDY: every chip symbol pays a chip (1, 2 or 3; no cap: MAKE IT RAIN spends them).
         if (g.symbol === 'goldbar' && this.meter.kind === 'vault') {
-          this.midasChips += g.reels.length;
-          events.push({ type: 'midasChips', side: me.side, amount: g.reels.length, total: this.midasChips });
+          const got = Math.max(1, g.reels.length - RAIN.chipLess);
+          this.midasChips += got;
+          events.push({ type: 'midasChips', side: me.side, amount: got, total: this.midasChips });
+          // Chips are CASSIDY's weapon: a chip group hits for its pay (MAKE IT RAIN is the big version).
           if (g.rain) this.makeItRain(me, g, events);
+          else if (g.amount > 0) this.hit(me, this.sides[other(me.side)], g.amount, g.reels, events);
+          if (this.over) return;
         }
         {
           const grounded = g.reels.filter((r) => this.isGrounded(me, r)).length;

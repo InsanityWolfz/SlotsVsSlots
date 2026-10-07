@@ -1,7 +1,7 @@
 import { symLabel, UNIT, type Enh, type SideId, type SymbolId } from '../core/config';
 import type { RelicId } from '../core/config';
 import type { CombatEvent } from '../core/events';
-import { effectText, other, RAIN, WHEEL_SYMBOLS, wheelCharm, WRITERS, type TurnResult } from '../core/fight';
+import { effectText, other, WHEEL_SYMBOLS, wheelCharm, WRITERS, type TurnResult } from '../core/fight';
 import type { LineScore } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
@@ -619,14 +619,12 @@ export class Director {
     const base = BASE[cell.symbol] ?? 0;
     const bonus = this.symBonus[side]?.[cell.symbol] ?? 0;
     // What the cell really adds to its group's BASE (the banner carries the multipliers):
-    // - CASH CASSIDY's chips only hit in MAKE IT RAIN: each chip's share of it (chips x3 over three cells), none
-    //   while you hold too few chips to make it rain.
+    // - CASH CASSIDY's chips hit like swords; in MAKE IT RAIN each chip shows its share of the rain.
     // - THE MIRROR's shards throw back a share of your last hit (its HUD says the same).
     let value: number;
-    if (player && cell.symbol === 'goldbar') {
-      const chips = this.s.huds.player.chips;
-      value = chips >= RAIN.cost ? Math.round((chips * RAIN.perChip) / 3) : 0;
-    } else if (!player && cell.symbol === 'shard') value = this.mirrorEach;
+    const rain = player && cell.symbol === 'goldbar' ? this.lastScore?.groups.find((g) => g.rain && g.reels.includes(r)) : undefined;
+    if (rain) value = Math.round(rain.base / rain.reels.length);
+    else if (!player && cell.symbol === 'shard') value = this.mirrorEach;
     else value = (lv ? playerSymValue(lv, cell.symbol, base) : !player && cell.symbol === 'shield' ? Math.round(base * this.s.enemyShield) : base) + bonus;
     const charm = cell.enh && !(cell.faked && cell.faked > 0) && m.hexed[r] <= 0 ? cell.enh : undefined;
     const lvl = charm ? (player ? charmLevel(lv, charm, this.s.ticket) : 1) : 1;

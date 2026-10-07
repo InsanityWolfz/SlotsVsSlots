@@ -98,14 +98,15 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     blurb: 'MAKE IT RAIN.',
     // 360 HP (was 300): MIDAS trailed every table, its GREEN deaths spread over the whole run (EXPERT_PLAYTEST_9 D6).
     hp: 36 * UNIT,
-    strips: r3({ sword: 4, shield: 4, goldbar: 4 }),
+    // No swords (2026-10-07): CASSIDY flings his chips. Each chip symbol hits, pays a chip and fills the bar.
+    strips: r3({ shield: 6, goldbar: 6 }),
     // No gold-sword start (a leftover from MIDAS): 8 more chips instead (user playtest).
     gilded: [],
     favors: 'gold',
     meter: { kind: 'vault', symbol: 'goldbar', cost: 10 * UNIT, heal: 2 * UNIT },
     startChips: 24,
-    symbols: ['sword', 'shield', 'goldbar'],
-    attack: 'sword',
+    symbols: ['goldbar', 'shield'],
+    attack: 'goldbar',
     rule: 'MORE CHIPS, BIGGER PAYS. A CHIP JACKPOT MAKES IT RAIN! 360 HP.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,

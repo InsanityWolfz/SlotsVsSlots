@@ -44,7 +44,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // Slot machine relics: each machine gets an identity relic and a heal that feeds off its own mechanic.
   drum: { id: 'drum', name: 'WAR DRUM', text: 'EACH SPIN THAT PAYS: EVERY SWORD +2 THIS FIGHT (MAX +10)', sprite: 'relicDrum', machine: 'knight' },
   chainmail: { id: 'chainmail', name: 'CHAINMAIL', text: 'LEFTOVER SHIELD HEALS YOU 10% OF IT EACH TURN', sprite: 'relicChainmail', machine: 'knight' },
-  vault: { id: 'vault', name: 'BANK VAULT', text: 'AFTER EACH WIN, ONE OF YOUR SWORDS GETS A GOLD CHARM', sprite: 'relicVault', machine: 'midas' },
+  vault: { id: 'vault', name: 'BANK VAULT', text: 'AFTER EACH WIN, ONE OF YOUR CHIPS GETS A GOLD CHARM', sprite: 'relicVault', machine: 'midas' },
   decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR MIDAS TOUCH ALSO SPREADS TO THE CELLS ABOVE AND BELOW', sprite: 'relicDecree', machine: 'midas', retired: true },
   rosehip: { id: 'rosehip', name: 'ROSE HIP', text: 'YOUR THORN VOLLEYS HEAL YOU 10% OF WHAT THEY FIRE', sprite: 'relicRosehip', machine: 'thorn' },
   graft: { id: 'graft', name: 'GRAFT', text: 'GOLD AND VAMP CHARMS FIT THORNS', sprite: 'relicGraft', machine: 'thorn' },
@@ -73,7 +73,8 @@ export const RELICS: Record<RelicId, RelicDef> = {
   coil: { id: 'coil', name: 'TESLA COIL', text: 'A BOLT ABOVE OR BELOW YOUR PAYLINE CHARGES 5', sprite: 'relicCoil', machine: 'tesla' },
   // TAX MAN (CONTENT_13): retired at build. It took MIDAS's identity-relic slot from KING'S VAULT (MIDAS 36.3 -> 28.0 WHITE).
   // CASH CASSIDY's MAKE IT RAIN relics.
-  loadedchips: { id: 'loadedchips', name: 'LOADED CHIPS', text: 'GOLD AND VAMP CHARMS FIT CHIP SYMBOLS', sprite: 'relicLoadedChips', machine: 'midas', addon: true },
+  // LOADED CHIPS: retired 2026-10-07; gold charms fit chips on CASSIDY without it (chips are his weapon).
+  loadedchips: { id: 'loadedchips', name: 'LOADED CHIPS', text: 'GOLD AND VAMP CHARMS FIT CHIP SYMBOLS', sprite: 'relicLoadedChips', machine: 'midas', addon: true, retired: true },
   rainmaker: { id: 'rainmaker', name: 'RAINMAKER', text: 'MAKE IT RAIN COSTS 2 CHIPS (NOT 5)', sprite: 'relicRainmaker', machine: 'midas', addon: true },
   slushfund: { id: 'slushfund', name: 'SLUSH FUND', text: 'MAKE IT RAIN ALSO FILLS YOUR HIGH ROLLER BAR 50', sprite: 'relicSlushFund', machine: 'midas', addon: true },
   tipjar: { id: 'tipjar', name: 'TIP JAR', text: 'MAKE IT RAIN ALSO HEALS YOU 20', sprite: 'relicTipJar', machine: 'midas', addon: true },
@@ -119,7 +120,7 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
   },
 };
 /** Machines that attack with something other than swords: relic texts name their symbol instead. */
-const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD' };
+const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP', tesla: 'BOLT' };
 export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
   const t = (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;
   const w = cabinet ? ATTACK_WORD[cabinet] : undefined;

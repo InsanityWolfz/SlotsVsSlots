@@ -1723,3 +1723,19 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   BOSS_MUL tesla house 0.5 -> 1.5, mirror 2.7 -> 3.1, dealer 1.3 -> 3, act3 0.95 -> 1.6, new act1 1.35, act2 1.2.
 - N1000: **WHITE 43.0** (House 90, Mirror 57.5, fight-4 deaths 4.8%) / **GREEN 19.1** (Dealer 53.4); jackpot
   32.9% (was 17.4). Tests: 238 (fang 5; a swap test now uses bolts).
+
+## Iteration 78 (2026-10-07): CASH CASSIDY drops his swords (sword removal 3 of 4)
+- Reels **shield 6 / chip 6**; `attack: 'goldbar'`. Chips are his weapon: a chip group now **hits for its pay** (plus
+  its chips and the HIGH ROLLER bar fill); MAKE IT RAIN is the big version. The HIGH ROLLER bar multiplies MAKE IT
+  RAIN first, then his attack group. Chip cells show their value like swords (a rain cell shows its share).
+- GOLD and the CHIP charm fit chips natively; **LOADED CHIPS retired** (built in). BANK VAULT charms a chip
+  ("ONE OF YOUR CHIPS GETS A GOLD CHARM"); relic texts say CHIP for SWORD on CASSIDY (BOLT on TESLA).
+- First pass: **83.0 / 63.3** (N300). Unlike TESLA the payoff heal wasn't it (heal 5: 78 / 60), nor HP (280 / 300),
+  nor enemy HP: rain hits for chips held x3 with **no cap** (kept, as the user asked), chips landed 1.5x as often,
+  and longer fights only meant more chips. Act 3 regulars can't hurt him (act3 / act3Floor did nothing).
+- Shipped: rain **x3 -> x2** per chip held (cost 5 kept); a chip group pays **size - 1 chips** (1 / 1 / 2, was
+  1 / 2 / 3: `RAIN.chipLess`); BOSS_MUL midas house 3 -> 5, mirror 2.5 -> 4.3, dealer 2.1 -> 6, act3 0.12 -> 1,
+  act1 / act2 0.55 -> 1 (the slow-start crutches are gone).
+- N1000: **WHITE 44.5** (House 97.2, Mirror 47.0, fight-4 deaths 0.1) / **GREEN 18.0** (Dealer 30.4); jackpot 34.6%,
+  chips per fight 15.2. **Watch:** his difficulty lives in the Mirror and the Dealer; the House is ~free. Tests:
+  238 (cassidy / tuesday / iteration6 tests moved to chips).

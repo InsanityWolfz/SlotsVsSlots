@@ -278,7 +278,7 @@ describe('act structure', () => {
 
     const f = new Fight(cfg, 9);
     f.sides.enemy.hp = Math.floor(f.sides.enemy.maxHp / 2) + 1;
-    f.forceNext('player', ['sword', 'sword', 'shield']);
+    f.forceNext('player', ['goldbar', 'goldbar', 'shield']);
     const { events } = f.step();
     expect(ofType(events, 'shatter').length).toBe(1);
   });

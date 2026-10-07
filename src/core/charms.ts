@@ -45,7 +45,7 @@ export const LUCRE_CHIPS = 3;
 
 /** Which symbols each charm can go on. */
 export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
-  gold: ['sword', 'ace', 'shield', 'bolt'],
+  gold: ['sword', 'ace', 'goldbar', 'shield', 'bolt'],
   keen: ['sword', 'ace'],
   charged: ['bolt'],
   vamp: ['sword', 'ace'],
@@ -53,7 +53,7 @@ export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
   blaze: ['bolt'],
   spiked: ['shield'],
   thorny: ['thorn'],
-  lucre: ['sword', 'ace', 'shield', 'bolt'],
+  lucre: ['sword', 'ace', 'goldbar', 'shield', 'bolt'],
   trick: ['sword', 'ace', 'shield'],
 };
 

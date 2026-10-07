@@ -897,7 +897,7 @@ export const TOLL_PER_LIEN = 2;
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
   knight: { house: 2.0, mirror: 1.6, dealer: 0.8, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
-  midas: { house: 3, mirror: 2.5, dealer: 2.1, act3: 0.12, act1: 0.55, act2: 0.55, gate: 0.8, act3Floor: 1 },
+  midas: { house: 5, mirror: 4.3, dealer: 6, act3: 1, gate: 0.8, act3Floor: 1 },
   thorn: { house: 0.85, mirror: 75, dealer: 2.2, act3: 1.3, act2: 0.6, gate: 1.55 },
   tesla: { house: 1.5, mirror: 3.1, dealer: 3, act3: 1.6, act1: 1.35, act2: 1.2, gate: 1.0 },
   joker: { house: 2.2, mirror: 3.1, dealer: 0.8, act3: 0.35, act2: 1.8, gate: 0.85 },
@@ -1038,10 +1038,11 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   // The Dealer's own marks don't carry on; the deck resets once it falls.
   run.deckMarks = beaten.boss === 'dealer' ? 0 : Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
   if (run.player.relics.includes('bandage') && !run.glass) hp += BANDAGE_HEAL;
-  // BANK VAULT (CASH CASSIDY): after each win, a plain sword gets a GOLD charm.
+  // BANK VAULT (CASH CASSIDY): after each win, a plain chip (his attack symbol) gets a GOLD charm.
   if (run.player.relics.includes('vault')) {
-    const reels = [0, 1, 2].filter((r) => plainCells(run.player, r, 'sword') > 0);
-    if (reels.length) addCharms(run.player, new Rng((run.seed ^ Math.imul(fightNumber(run) + 11, 0x9e3779b1)) >>> 0).pick(reels), 'sword', 'gold', 1);
+    const atk = CABINETS[run.cabinet].attack;
+    const reels = [0, 1, 2].filter((r) => plainCells(run.player, r, atk) > 0);
+    if (reels.length) addCharms(run.player, new Rng((run.seed ^ Math.imul(fightNumber(run) + 11, 0x9e3779b1)) >>> 0).pick(reels), atk, 'gold', 1);
   }
   // TROPHY BELT: every win adds max HP.
   if (run.player.relics.includes('trophy')) {
