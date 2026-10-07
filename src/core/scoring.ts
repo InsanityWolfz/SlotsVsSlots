@@ -69,6 +69,8 @@ export interface ScoreOpts {
   value?: (s: SymbolId) => number;
   /** What a lone WILD (or an all-WILD line) pays as. */
   wildAlone?: SymbolId;
+  /** LOADED REEL: a WILD on the middle reel pairs with BOTH neighbours when they differ. */
+  loadedReel?: boolean;
 }
 
 /** The matched set and the symbol it pays as, or null. WILDs join whatever they complete. */
@@ -101,8 +103,19 @@ export function scoreLine(line: SymbolId[], cfg: GameConfig, opts: ScoreOpts = {
     const mult = multFor(n, cfg);
     groups.push({ symbol: run.symbol, reels: matched, amount: base * mult, base, mult, matched: true });
   }
+  // LOADED REEL: a middle WILD between two different symbols makes both pairs (it only counts once for the tier).
+  const extra: number[] = [];
+  if (opts.loadedReel && run && line.length === 3 && isWild(line[1]) && !isWild(line[0]) && !isWild(line[2]) && line[0] !== line[2] && matched.length === 2) {
+    const end = matched.includes(0) ? 2 : 0;
+    const symbol = line[end];
+    const reels = end === 2 ? [1, 2] : [0, 1];
+    const base = 2 * value(symbol);
+    const mult = multFor(2, cfg);
+    groups.push({ symbol, reels, amount: base * mult, base, mult, matched: true });
+    extra.push(end);
+  }
   line.forEach((raw, reel) => {
-    if (matched.includes(reel)) return;
+    if (matched.includes(reel) || extra.includes(reel)) return;
     const symbol = isWild(raw) ? alone : raw;
     const base = value(symbol);
     groups.push({ symbol, reels: [reel], amount: base, base, mult: 1, matched: false });

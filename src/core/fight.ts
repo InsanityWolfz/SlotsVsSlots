@@ -55,7 +55,7 @@ export const POT_STEAL = { any: 1 };
 export const THORNS = { volley: 1, onBlocked: 0 };
 export const RAIN = { perChip: 2, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x3 (quarter steps). */
-export const highRollerMul = (chips: number) => Math.min(MIDAS.maxMul, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
+export const highRollerMul = (chips: number, cap = MIDAS.maxMul) => Math.min(cap, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
 import { isNearMiss, multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {
   BONUS_SYMBOLS,
@@ -435,7 +435,8 @@ export class Fight {
   }
   /** MIDAS: the VAULT's payoff multiplier: 1 + chips held / 20, max x3. */
   vaultMul(): number {
-    return highRollerMul(this.chipsNow() + this.nestEgg());
+    // COMPOUND raises the cap.
+    return highRollerMul(this.chipsNow() + this.nestEgg(), this.sides.player.relics.has('compound') ? NEW_RELIC.compoundCap : MIDAS.maxMul);
   }
   /** NEST EGG: HIGH ROLLER counts this many more chips (rain still spends real chips). */
   private nestEgg(): number {
@@ -580,7 +581,7 @@ export class Fight {
       }
     });
     const hexed = me.hexed.map((t) => t > 0);
-    const drumNow = side === 'player' && me.relics.has('drum') ? NEW_RELIC.drumStep * this.drum : 0;
+    const drumNow = side === 'player' && (me.relics.has('drum') || me.relics.has('deckdrum')) ? NEW_RELIC.drumStep * this.drum : 0;
     const score = this.score(me, line);
     // Dead symbols lining up isn't a tease — except slime, which can cleanse.
     const nearMiss = isNearMiss(line) && (me.casts.has(line[0]) || line[0] === 'slime' || !DEAD.has(line[0]));
@@ -682,9 +683,16 @@ export class Fight {
     }
     if (!this.over && side === 'player') {
       // WAR DRUM: a spin that pays adds a stack (max 5) for the rest of the fight.
-      if (me.relics.has('drum') && score.groups.some((g) => g.amount > 0 && PAYING.has(g.symbol))) this.drum = Math.min(NEW_RELIC.drumCap, this.drum + 1);
+      if ((me.relics.has('drum') || me.relics.has('deckdrum')) && score.groups.some((g) => g.amount > 0 && PAYING.has(g.symbol))) this.drum = Math.min(NEW_RELIC.drumCap, this.drum + 1);
       // CAP AND BELLS: every WILD on your payline heals.
       const wilds = line.filter((s) => s === 'wild').length;
+      // WILD CARD: every WILD on your payline charges your meter (lightning, thorns or jackpots).
+      if (me.relics.has('wildcard') && wilds && !this.over) {
+        events.push({ type: 'relic', side, relic: 'wildcard' });
+        const q = wilds * NEW_RELIC.wildcardCharge;
+        if (this.special) this.gainEnergy(me, q, [], events);
+        else if (this.meter && this.meter.kind !== 'vault' && this.meter.kind !== 'touch') this.fillMeter(me, q, [], events);
+      }
       if (me.relics.has('capbells') && wilds) {
         events.push({ type: 'relic', side, relic: 'capbells' });
         this.heal(me, wilds * NEW_RELIC.capbellsHeal, 'capbells', events);
@@ -825,7 +833,7 @@ export class Fight {
     const pick = allWild ? this.wildPick(me) : undefined;
     const jackpots = player && me.armed && this.meter?.kind === 'jackpots';
     this.pickEnh.clear();
-    let s = scoreLine(line, cfg, { value, wildAlone: pick?.symbol ?? this.wildAlone(me) });
+    let s = scoreLine(line, cfg, { value, wildAlone: pick?.symbol ?? this.wildAlone(me), loadedReel: player && me.relics.has('loadedreel') });
     if (pick) {
       s.wildPick = pick.symbol;
       if (pick.enh) {
@@ -934,9 +942,10 @@ export class Fight {
         fired.add('headsman');
       }
       // WAR DRUM: every paying spin this fight adds to EACH sword (shown on the sword's number).
-      if (has('drum') && BLADES.has(g.symbol) && this.drum > 0 && g.base > 0) {
+      // (DECK DRUM is WAR DRUM on JAX: the same stacks, on cards.)
+      if ((has('drum') || has('deckdrum')) && BLADES.has(g.symbol) && this.drum > 0 && g.base > 0) {
         g.base += NEW_RELIC.drumStep * this.drum * g.reels.length;
-        fired.add('drum');
+        fired.add(has('deckdrum') ? 'deckdrum' : 'drum');
       }
       // GOLD charms in a group ADD (x2 + x2 + x2 = x6), then multiply with the double/jackpot.
       goldOf.set(g, gold);
@@ -1200,11 +1209,24 @@ export class Fight {
     const player = me.side === 'player';
     switch (g.symbol) {
       case 'sword':
-      case 'ace':
+      case 'ace': {
+        // COUP DE GRACE (KNIGHT): swords finish a foe under 20% of YOUR max HP (a boss takes x1.5 there instead).
+        const coupLine = player && g.symbol === 'sword' && me.relics.has('coup') ? Math.round(me.maxHp * NEW_RELIC.coupPct) : 0;
+        const boss = this.isBoss || this.isMirror || this.isDealer;
+        const amount = coupLine && boss && foe.hp <= coupLine ? unitsUp(g.amount * NEW_RELIC.coupBossMul) : g.amount;
+        if (amount !== g.amount) events.push({ type: 'relic', side: me.side, relic: 'coup' });
         // KEEN: a keen sword in the group pierces shields. (An enemy's LATE multiplier is already in its amount.)
-        this.hit(me, foe, g.amount, g.reels, events, !!g.pierce, undefined, true);
+        this.hit(me, foe, amount, g.reels, events, !!g.pierce, undefined, true);
+        if (coupLine && !boss && !this.over && foe.hp > 0 && foe.hp <= coupLine) {
+          events.push({ type: 'relic', side: me.side, relic: 'coup' });
+          const left = foe.hp;
+          const h = this.damage(foe, left + foe.shield, true);
+          events.push({ type: 'attack', from: me.side, to: foe.side, reels: g.reels, amount: left, ...h, note: 'pierce' });
+          this.checkDeath(foe, events);
+        }
         this.vampHeal(me, g, events);
         return;
+      }
       case 'seven':
         // Sevens are the House's heavy hitters.
         this.hit(me, foe, g.amount, g.reels, events, false, undefined, true);
@@ -1302,6 +1324,8 @@ export class Fight {
   }
 
   /** MAKE IT RAIN!: the hit (scored in score()), then its cost; TIP JAR heals, SLUSH FUND refills the bar. */
+  /** PULSE: used this fight. */
+  private pulsed = false;
   /** BRAMBLE WALL: the enemy turn its partial volley last fired. */
   private brambleTurn = -1;
   /** DOWNPOUR: rains so far this fight. */
@@ -1558,6 +1582,14 @@ export class Fight {
     }
     // BRIAR: being attacked sets the thorn bank off (THORNS.onBlocked 0: only when damage gets through).
     if (!this.over && amount > 0 && (THORNS.onBlocked || h.hpDamage > 0)) this.thorns(foe, me, events);
+    // HEDGE (BRIAR): HP you lose seeds the bank again (after the volley that hit cleared it).
+    if (!this.over && foe.side === 'player' && h.hpDamage > 0 && foe.relics.has('hedge') && this.meter?.kind === 'thorns') {
+      const q = unitsUp(h.hpDamage * NEW_RELIC.hedgeShare);
+      if (q > 0) {
+        events.push({ type: 'relic', side: 'player', relic: 'hedge' });
+        this.fillMeter(foe, q, [], events);
+      }
+    }
     // BRAMBLE WALL: a fully blocked hit fires a share of the bank.
     else if (!this.over && amount > 0 && h.hpDamage === 0 && h.blocked > 0 && foe.side === 'player' && foe.relics.has('bramble') && foe.energy > 0 && this.brambleTurn !== this.turn && this.thornsTurn !== this.turn) {
       events.push({ type: 'relic', side: 'player', relic: 'bramble' });
@@ -1591,7 +1623,9 @@ export class Fight {
     while (me.energy >= this.cfg.specialCost && !this.over && foe.hp > 0) {
       me.energy -= this.cfg.specialCost;
       const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
-      const dmg = unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1));
+      // MELTDOWN: +1% per 1% of HP you're missing (capped).
+      const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, 1 - me.hp / me.maxHp) : 0;
+      const dmg = unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1) * (1 + melt));
       if (over && !overPopped) {
         overPopped = true;
         events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
@@ -1603,6 +1637,14 @@ export class Fight {
     }
     // Every strike heals a little (TESLA's payoff heal), plus Vampire Fang: once per storm, for all its strikes (one heal
     // after each strike spammed through a LIGHTNING STORM: user playtest).
+    // PULSE: once a fight, a storm right before their ability fires resets it (not the House's cash out, the Dealer's
+    // deal or the Mirror: their telegraphs are the drama).
+    if (strikes > 0 && me.side === 'player' && me.relics.has('pulse') && !this.pulsed && !this.over && foe.ability && foe.charge >= foe.ability.every - 1 && foe.ability.kind !== 'jackpot' && foe.ability.kind !== 'deal' && !this.isMirror) {
+      this.pulsed = true;
+      foe.charge = 0;
+      events.push({ type: 'relic', side: 'player', relic: 'pulse' });
+      events.push({ type: 'abilityCharge', side: foe.side, charge: 0, every: foe.ability.every, kind: foe.ability.kind });
+    }
     // LIVE WIRE: each storm costs HP, once a storm (never per strike), never lethal, outside damage() and its turn cap.
     if (live && strikes > 0 && !this.over) {
       const cost = Math.min(me.hp - 1, unitsUp(me.maxHp * NEW_RELIC.livewireCost));

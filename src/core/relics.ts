@@ -64,6 +64,15 @@ export const RELICS: Record<RelicId, RelicDef> = {
   wildwheel: { id: 'wildwheel', name: 'WILD WHEEL', text: 'THE WILD WHEEL SPINS TWICE AND KEEPS THE BEST', sprite: 'relicWildwheel', machine: 'joker' },
   downpour: { id: 'downpour', name: 'DOWNPOUR', text: 'EACH RAIN THIS FIGHT: NEXT RAIN +40%', sprite: 'relicDownpour', machine: 'midas' },
   nestegg: { id: 'nestegg', name: 'NEST EGG', text: 'HIGH ROLLER COUNTS 10 MORE CHIPS', sprite: 'relicNestegg', machine: 'midas' },
+  // CONTENT WAVE 1, part 2.
+  coup: { id: 'coup', name: 'COUP DE GRACE', text: 'SWORDS FINISH FOES UNDER 20% OF YOUR MAX HP (BOSSES: X1.5)', sprite: 'relicHeadsman', machine: 'knight' },
+  compound: { id: 'compound', name: 'COMPOUND', text: 'HIGH ROLLER CAPS AT X4, NOT X3', sprite: 'relicNestegg', machine: 'midas' },
+  hedge: { id: 'hedge', name: 'HEDGE', text: 'HP YOU LOSE ADDS 25% OF IT TO YOUR THORNS', sprite: 'relicBramble', machine: 'thorn' },
+  meltdown: { id: 'meltdown', name: 'MELTDOWN', text: 'LIGHTNING +1% FOR EACH 1% HP YOU ARE MISSING (MAX +50%)', sprite: 'relicLivewire', machine: 'tesla' },
+  pulse: { id: 'pulse', name: 'PULSE', text: 'ONCE A FIGHT, A STORM RESETS THEIR ABILITY ABOUT TO FIRE', sprite: 'relicCapacitor', machine: 'tesla' },
+  deckdrum: { id: 'deckdrum', name: 'DECK DRUM', text: 'EACH PAYING SPIN THIS FIGHT: CARDS +2 (MAX +10)', sprite: 'relicDrum', machine: 'joker' },
+  wildcard: { id: 'wildcard', name: 'WILD CARD', text: 'EACH WILD ON YOUR PAYLINE CHARGES YOUR METER 10', sprite: 'relicWildwheel' },
+  loadedreel: { id: 'loadedreel', name: 'LOADED REEL', text: 'A WILD ON REEL 2 COUNTS FOR BOTH SIDES', sprite: 'relicStacked' },
   // Charm relics.
   kiss: { id: 'kiss', name: "VAMPIRE'S KISS", text: 'VAMP FITS ANY SYMBOL AND HEALS WHEN IT PAYS', sprite: 'relicKiss', charm: 'vamp' },
   horseshoe: { id: 'horseshoe', name: 'HORSESHOE', text: 'MATCHES MADE WITH A LUCKY WILD PAY X3', sprite: 'relicHorseshoe', charm: 'lucky' },
@@ -142,8 +151,8 @@ export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
 };
 /** Relics that make no sense on a machine even reworded (never offered there). */
 /** Content wave 1: offered in drafts, shops and RELIC RUSH, but not in the starting pick (it keeps each machine's signature relics). */
-export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['bramble', 'riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg']);
-export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['thorn'], bash: ['tesla', 'midas', 'joker'] };
+export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['bramble', 'riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg', 'coup', 'compound', 'hedge', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel']);
+export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['thorn'], bash: ['tesla', 'midas', 'joker'], wildcard: ['knight', 'midas'] };
 
 /** New-relic numbers (playtest/RELIC_PROPOSALS.md, tuned in the engine). */
 export const NEW_RELIC = {
@@ -172,6 +181,12 @@ export const NEW_RELIC = {
   encoreKeep: 0.3,
   downpourStep: 0.4,
   nestEggChips: 10,
+  coupPct: 0.2,
+  coupBossMul: 1.5,
+  compoundCap: 4,
+  hedgeShare: 0.25,
+  meltdownCap: 0.5,
+  wildcardCharge: UNIT,
   rosehipShare: 0.1,
   /** ...at most this much a volley (no swords: BRIAR's volleys got huge, and 10% of them healed everything). */
   rosehipCap: 2 * UNIT,
@@ -199,7 +214,7 @@ export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
   common: ['clover', 'battery', 'fang', 'bandage', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar'],
-  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll', 'bracelet', 'coil', 'loadedchips', 'rainmaker', 'slushfund', 'loosechange', 'bramble', 'riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg'],
+  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll', 'bracelet', 'coil', 'loadedchips', 'rainmaker', 'slushfund', 'loosechange', 'bramble', 'riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg', 'coup', 'compound', 'hedge', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
 };
 
@@ -260,6 +275,9 @@ export const BUILD_ENABLER: Partial<Record<RelicId, Enabler | Enabler[]>> = {
   battery: 'meter',
   overcharge: 'meter',
   fang: 'meter',
+  // Wave 1: wild relics wait until you have wilds.
+  wildcard: ['wild', 'meter'],
+  loadedreel: 'wild',
 };
 export const ROD_SPECIAL_DAMAGE = 12 * UNIT;
 
