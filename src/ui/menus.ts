@@ -42,7 +42,7 @@ export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
   trick: { name: 'TRICK', text: `JOKER'S SWORDS AND SHIELDS. ${charmRuleText('trick', 1)}.` },
 };
 /** Charms in the COLLECTION (SPIKED retired). */
-const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'spiked', 'charged', 'lucky', 'blaze', 'thorny', 'lucre', 'trick'];
+const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'thorny', 'lucre', 'trick'];
 
 const TIER_COLOR = { common: '#c9c9d9', uncommon: '#5ad8e8', legendary: '#ffd23f', other: '#9a8fb0' };
 

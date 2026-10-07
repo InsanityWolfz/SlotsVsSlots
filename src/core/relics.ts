@@ -81,7 +81,8 @@ export const RELICS: Record<RelicId, RelicDef> = {
   tipjar: { id: 'tipjar', name: 'TIP JAR', text: 'MAKE IT RAIN ALSO HEALS YOU 20', sprite: 'relicTipJar', machine: 'midas', addon: true },
   loosechange: { id: 'loosechange', name: 'LOOSE CHANGE', text: 'CHIP PAIRS MAKE IT RAIN TOO, AT HALF', sprite: 'relicLooseChange', machine: 'midas', addon: true },
   taxman: { id: 'taxman', name: 'TAX MAN', text: 'EACH GOLD BAR GROUP THAT PAYS: +1 CHIP (MAX 3)', sprite: 'relicTaxMan', machine: 'midas', retired: true },
-  bash: { id: 'bash', name: 'SHIELD BASH', text: 'LEFTOVER SHIELD HITS BACK IN FULL EACH TURN', sprite: 'relicBash' },
+  // SHIELD BASH: KNIGHT-only since 2026-10-07 (shield damage is KNIGHT's; it replaces the BULWARK charm).
+  bash: { id: 'bash', name: 'SHIELD BASH', text: 'LEFTOVER SHIELD HITS BACK IN FULL EACH TURN', sprite: 'relicBash', machine: 'knight', addon: true },
   // Side bets (EXPERT_PLAYTEST_6 E11): relics that change which bet you want.
   loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY 20% MORE', sprite: 'relicLoaded' },
   marker: { id: 'marker', name: 'MARKER', text: 'FIRST BUSTED BET EACH ACT: UP TO 5 BACK', sprite: 'relicMarker' },

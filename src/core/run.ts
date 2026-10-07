@@ -68,7 +68,8 @@ export const RUN = {
 };
 
 /** Charms by act (act 2 unlocks LUCKY and BLAZE). CHARGED and BLAZE feed the lightning: TESLA only. */
-export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'spiked', 'thorny', 'lucre', 'trick'];
+// BULWARK (id 'spiked') retired 2026-10-07: SHIELD BASH (KNIGHT-only) is the shield-damage piece. The id stays for saves.
+export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'thorny', 'lucre', 'trick'];
 export const ACT2_GILDS: Enh[] = ['lucky', 'blaze'];
 const TESLA_ONLY: ReadonlySet<Enh> = new Set(['charged', 'blaze']);
 /** BULWARK (id 'spiked') is KNIGHT's own charm. */
@@ -895,7 +896,7 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
 export const TOLL_PER_LIEN = 2;
 
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
-  knight: { house: 2.0, mirror: 1.6, dealer: 0.8, act3: 0.5, gate: 1.3 },
+  knight: { house: 2.0, mirror: 2.2, dealer: 0.88, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
   midas: { house: 5, mirror: 4.3, dealer: 6, act3: 1, gate: 0.8, act3Floor: 1 },
   thorn: { house: 3, mirror: 200, dealer: 3.6, act3: 2.25, act2: 3.5, act1: 0.9, gate: 1.55 },
