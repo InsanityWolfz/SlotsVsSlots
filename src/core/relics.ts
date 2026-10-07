@@ -81,8 +81,9 @@ export const RELICS: Record<RelicId, RelicDef> = {
   tipjar: { id: 'tipjar', name: 'TIP JAR', text: 'MAKE IT RAIN ALSO HEALS YOU 20', sprite: 'relicTipJar', machine: 'midas', addon: true },
   loosechange: { id: 'loosechange', name: 'LOOSE CHANGE', text: 'CHIP PAIRS MAKE IT RAIN TOO, AT HALF', sprite: 'relicLooseChange', machine: 'midas', addon: true },
   taxman: { id: 'taxman', name: 'TAX MAN', text: 'EACH GOLD BAR GROUP THAT PAYS: +1 CHIP (MAX 3)', sprite: 'relicTaxMan', machine: 'midas', retired: true },
-  // SHIELD BASH: KNIGHT-only since 2026-10-07 (shield damage is KNIGHT's; it replaces the BULWARK charm).
-  bash: { id: 'bash', name: 'SHIELD BASH', text: 'LEFTOVER SHIELD HITS BACK IN FULL EACH TURN', sprite: 'relicBash', machine: 'knight', addon: true },
+  // SHIELD BASH: KNIGHT's (it replaces the BULWARK charm) and BRIAR's (her Dealer fight leans on it: without it her GREEN
+  // fell 17.0 -> 2.4). Not offered to the others (MACHINE_EXCLUDE).
+  bash: { id: 'bash', name: 'SHIELD BASH', text: 'LEFTOVER SHIELD HITS BACK IN FULL EACH TURN', sprite: 'relicBash' },
   // Side bets (EXPERT_PLAYTEST_6 E11): relics that change which bet you want.
   loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY 20% MORE', sprite: 'relicLoaded' },
   marker: { id: 'marker', name: 'MARKER', text: 'FIRST BUSTED BET EACH ACT: UP TO 5 BACK', sprite: 'relicMarker' },
@@ -129,7 +130,7 @@ export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
   return w ? t.replace(/SWORD/g, w) : t;
 };
 /** Relics that make no sense on a machine even reworded (never offered there). */
-export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['thorn'] };
+export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['thorn'], bash: ['tesla', 'midas', 'joker'] };
 
 /** New-relic numbers (playtest/RELIC_PROPOSALS.md, tuned in the engine). */
 export const NEW_RELIC = {

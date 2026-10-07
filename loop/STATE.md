@@ -1772,3 +1772,21 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   chips per fight 24.1. **Watch:** measured power reads 0 at the Mirror and act 3 (volleys only fire when the
   dummy's hits get through), so her bosses are sized by the flat parts; act 2 regulars carry her difficulty.
   Tests: 238 (BRIAR, CACTUS and the charm-target tests updated).
+
+## Iteration 81 (2026-10-07): UI overhaul, SHIELD BASH / BULWARK, short RELIC RUSH
+- **UI** (user: "clean menus that don't clip, better wording, less clutter, a real game"):
+  - Run screens draw a solid casino-carpet backdrop: the dimmed fight HUD no longer shows through every menu.
+  - **YOUR BUILD**: one fixed panel at the bottom of every run screen (hero, act/loop, HP, chips | reel table | relic
+    grid, 42 slots then "+N"). Screens lay out above it; the bet card sits beside the enemy card.
+  - Fight bar: one SPEED button cycles 1X-8X; QUIT (asks SURE?) replaces NEW RUN mid-fight; TUNE is dev-only.
+    Fight relics moved to the right gutter (they ran into YOUR REELS past 12). SOUND sits bottom-right on menus.
+  - Wording: 26 relic texts cut to ~8 words; JACKPOT BELL on JOKER now says X1.25 (it said X2); fewer headings.
+- **BULWARK (spiked) charm retired** (ids kept for saves). SHIELD BASH is no longer general: KNIGHT and BRIAR only.
+  KNIGHT-only first: KNIGHT 42.6 / 17.5 -> 50.2 / 20.7 (sizing mirror 1.6 -> 2.2, dealer 0.8 -> 0.88: 43.1 / 17.2),
+  but BRIAR's GREEN fell 17.0 -> **2.4** (Dealer 7%): her shield wall blocks the Dealer's hits, so thorns never fire,
+  and SHIELD BASH was her Dealer damage. Firing thorns on ALL IN / marked hits and capping volleys (probes) swung the
+  Dealer to 100% and the Mirror to 0-46%. Interim: BRIAR keeps SHIELD BASH (back to 43.9 / 17.0). **User call.**
+- Others re-tuned for losing SHIELD BASH from their pools: TESLA mirror 3.1 -> 3.4, dealer 3 -> 3.3 (43.2 / 17.2);
+  CASSIDY mirror 4.3 -> 4.8, dealer 6 -> 7.5 (44.6 / 17.8). JAX 43.5 / 18.3 (unchanged).
+- **RELIC RUSH** plays as three spins (~5s, was ~25s): the engine still rolls the full hold-and-respin, so the odds
+  and the prize are unchanged; later hits show over spins 2 and 3.
