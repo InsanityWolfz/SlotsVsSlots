@@ -224,10 +224,11 @@ export class HudView {
     const imminent = left <= 1 || this.alarm;
     const pulse = imminent ? 0.5 + 0.5 * Math.sin(time * 10) : 0;
     if (this.alarm) x += Math.sin(time * 40) * 2;
-    drawSprite(ctx, ui.icon, x + 70, y, 2 * this.chargePunch, { flash: Math.max(this.abilityFlash, pulse * 0.6) });
+    drawSprite(ctx, ui.icon, x + 70, y, 2.5 * this.chargePunch, { flash: Math.max(this.abilityFlash, pulse * 0.6) });
     for (let i = 0; i < ab.every; i++) {
       const px = x + 92 + i * 14;
-      ctx.fillStyle = COLORS.outline;
+      // The last pip is outlined red: the ability fires there (same as the enemy card before the fight).
+      ctx.fillStyle = i === ab.every - 1 ? '#ff5a4a' : COLORS.outline;
       ctx.fillRect(px - 6, y - 6, 12, 12);
       ctx.fillStyle = i < this.charge ? (imminent ? '#ff5a4a' : '#ff9a3a') : '#2a2038';
       ctx.fillRect(px - 4, y - 4, 8, 8);

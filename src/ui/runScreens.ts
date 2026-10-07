@@ -306,6 +306,8 @@ export class RunScreens {
   private betPunch = 1;
   private betFall = 0;
   private betDrop = 1;
+  /** The map node under the pointer (its tip is drawn over everything on the screen). */
+  private mapTip: { e: EnemyDef; x: number; y: number } | null = null;
   /** Shop purchases in flight to YOUR BUILD. */
   private flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   private picked = -1;
@@ -1446,6 +1448,8 @@ export class RunScreens {
     ctx.fillRect(x0, y - 2, (n - 1) * gap, 4);
     ctx.fillStyle = COLORS.gold;
     ctx.fillRect(x0, y - 2, Math.min(run.depth, n - 1) * gap, 4);
+    // Hovering a node shows who it is (deep planners can read the whole act; nobody has to).
+    let tip: { e: EnemyDef; x: number; y: number } | null = null;
     run.paths.forEach((opts, i) => {
       const x = x0 + i * gap;
       const done = i < run.depth;
@@ -1466,11 +1470,35 @@ export class RunScreens {
         if (badge) drawSprite(ctx, badge, x + s - 2, ny + s - 4, 2, { alpha: faded ? 0.4 : 1 });
         if (e.elite) drawSprite(ctx, 'mapBadgeElite', x - s + 4, ny - s + 4, 2, { alpha: faded ? 0.4 : 1 });
         if (done && chosen) drawSprite(ctx, 'nodeDone', x - s + 6, ny + s - 6, 2);
+        if (Math.abs(this.mouse.x - x) <= s && Math.abs(this.mouse.y - ny) <= s) tip = { e, x, y: ny + s };
       });
       if (here) drawSprite(ctx, 'nodeHere', x, y - (fork ? 70 : 44) + Math.sin(time * 6) * 4, 2);
       if (opts[0].isBoss) drawSprite(ctx, 'nodeBoss', x, y - 38, 2);
       drawText(ctx, opts[0].isBoss ? 'BOSS' : `${i + 1}`, x, y + (fork ? 64 : 42), 2, here ? COLORS.goldLight : done ? '#6a6078' : COLORS.textDim);
     });
+    // Drawn last by drawNext (over the enemy card).
+    this.mapTip = tip;
+  }
+
+  /** A map node's mini card: name, then its ability icon and name. */
+  private drawNodeTip(ctx: CanvasRenderingContext2D, t: { e: EnemyDef; x: number; y: number }): void {
+    const name = t.e.name ?? 'ENEMY';
+    const ab = t.e.ability ? ABILITY_UI[t.e.ability.kind] : null;
+    const w = Math.max(name.length * 12, ab ? ab.label.length * 9 + 30 : 0) + 24;
+    const h = ab ? 52 : 32;
+    const x = Math.max(BUILD.x + BUILD.w + 12, Math.min(W - w - 8, t.x - w / 2));
+    const y = t.y + 10;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+    ctx.fillStyle = t.e.isBoss ? '#ff6a5a' : t.e.elite ? '#ff9a3a' : COLORS.gold;
+    ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(x, y, w, h);
+    drawText(ctx, name, x + 12, y + 16, 2, t.e.isBoss ? '#ff6a5a' : COLORS.slime, { align: 'left' });
+    if (ab) {
+      drawSprite(ctx, ab.icon, x + 20, y + 38, 1.5);
+      drawText(ctx, ab.label, x + 34, y + 38, 1.5, '#ff9a3a', { align: 'left' });
+    }
   }
 
   /** YOUR BUILD: a fixed column on the left of every run screen. Chips (top-left, where the fights show them too), you,
@@ -1642,7 +1670,7 @@ export class RunScreens {
         ctx.fillStyle = r === reel ? accent : '#3a2e52';
         ctx.fillRect(-w / 2 + 12 + r * 11, iy - 20, 8, 36);
       }
-      drawText(ctx, `REEL ${reel + 1}`, -w / 2 + 27, iy + 30, 1, COLORS.textDim);
+      drawText(ctx, `REEL ${reel + 1}`, -w / 2 + 30, iy + 32, 1.5, COLORS.textDim);
     };
     if (o.kind === 'relic') {
       drawSprite(ctx, RELICS[o.relic].sprite as SpriteId, 0, iy, 4);
@@ -1974,6 +2002,7 @@ export class RunScreens {
       if (this.betOffer.length) this.drawBets(ctx, time);
     }
     for (const b of this.buttons) if (!b.bet) this.drawButton(ctx, b, time);
+    if (this.mapTip) this.drawNodeTip(ctx, this.mapTip);
   }
 
   private drawCabinets(ctx: CanvasRenderingContext2D, time: number): void {

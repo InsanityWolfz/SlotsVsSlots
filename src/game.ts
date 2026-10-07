@@ -1398,7 +1398,8 @@ export class Game {
     const cx = W / 2;
     const cy = MACHINE_TOP + MACHINE_H / 2;
     if (this.phase === 'title') return;
-    drawText(ctx, g.fightLabel, cx, cy - 112, 2, g.fightLabel === 'BOSS' ? '#ff6a5a' : COLORS.textDim);
+    // Only a boss gets a label here (the map already said FIGHT n OF 5): ROUND and whose turn tell the story.
+    if (g.fightLabel.includes('BOSS') || g.fightLabel === 'SANDBOX') drawText(ctx, g.fightLabel, cx, cy - 112, 2, g.fightLabel === 'SANDBOX' ? COLORS.textDim : '#ff6a5a');
     if (g.twist) drawText(ctx, g.twist, cx, cy - 132, 1.25, '#ff9a3a');
     if (g.turn > 0) {
       drawText(ctx, `ROUND ${Math.ceil(g.turn / 2)}`, cx, cy - 78, 3, COLORS.textDim, { punch: 1 + g.pulse * 0.3 });
