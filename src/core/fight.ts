@@ -52,7 +52,12 @@ export const SHARD_CRACKED = 1 / 2;
 /** Pot steals: 1 = any jackpot steals the boss pot, 0 = only a jackpot of your attack symbol (probe knob). */
 export const POT_STEAL = { any: 1 };
 /** BRIAR's volley: this share of the thorn bank hits back (2026-10-07, no swords). */
-export const THORNS = { volley: 1, onBlocked: 0 };
+/**
+ * BRIAR's thorns. direct: the share of a thorn group that hits right away (the rest banks for volleys); blockShare /
+ * blockCap: a fully blocked hit fires that share of the bank (capped at a share of her max HP). Probe knobs (2026-10-07:
+ * with thorns only firing on hits that got through, a BRIAR who blocked everything never dealt damage).
+ */
+export const THORNS = { volley: 1, onBlocked: 0, direct: 0, blockShare: 0, blockCap: 0.1 };
 export const RAIN = { perChip: 2, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x3 (quarter steps). */
 export const highRollerMul = (chips: number, cap = MIDAS.maxMul) => Math.min(cap, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
@@ -1287,7 +1292,13 @@ export class Fight {
         {
           const grounded = g.reels.filter((r) => this.isGrounded(me, r)).length;
           const earthed = grounded ? Math.ceil((g.amount * grounded) / g.reels.length) : 0;
-          this.fillMeter(me, Math.max(0, g.amount - earthed), g.reels, events, earthed);
+          // BRIAR (probe): part of a thorn group hits right away; the rest banks.
+          const direct = g.symbol === 'thorn' && THORNS.direct > 0 ? unitsRound(g.amount * THORNS.direct) : 0;
+          if (direct > 0) {
+            this.hit(me, this.sides[other(me.side)], direct, g.reels, events);
+            if (this.over) return;
+          }
+          this.fillMeter(me, Math.max(0, g.amount - earthed - direct), g.reels, events, earthed);
           // Cactus: banking thorns also shields you for a share of what you banked.
           if (g.symbol === 'thorn' && me.relics.has('cactus') && g.amount > earthed) {
             const sh = Math.max(1, Math.round((g.amount - earthed) * CACTUS_SHARE));
@@ -1471,7 +1482,7 @@ export class Fight {
     // BRAMBLE WALL fires only a share on a blocked hit; the rest stays banked.
     const part = share < 1 ? share : THORNS.volley;
     // (BRAMBLE WALL is capped too: against the Dealer her shields block everything and the bank grows without limit.)
-    const bank = part >= 1 ? banked : Math.min(banked, Math.max(UNIT, unitsUp(banked * part)), share < 1 ? Math.max(UNIT, unitsRound(victim.maxHp * NEW_RELIC.brambleCap)) : Infinity);
+    const bank = part >= 1 ? banked : Math.min(banked, Math.max(UNIT, unitsUp(banked * part)), share < 1 ? Math.max(UNIT, unitsRound(victim.maxHp * (victim.relics.has('bramble') ? NEW_RELIC.brambleCap : THORNS.blockCap))) : Infinity);
     victim.energy = share < 1 ? banked - bank : 0;
     const h = this.damage(attacker, bank, true);
     events.push({ type: 'attack', from: victim.side, to: attacker.side, reels: [], amount: bank, ...h, note: 'thorns' });
@@ -1575,6 +1586,9 @@ export class Fight {
     }
     // BRIAR: being attacked sets the thorn bank off (THORNS.onBlocked 0: only when damage gets through).
     if (!this.over && amount > 0 && (THORNS.onBlocked || h.hpDamage > 0)) this.thorns(foe, me, events);
+    // (probe) A fully blocked hit fires a capped share of the bank, built in.
+    else if (!this.over && THORNS.blockShare > 0 && amount > 0 && h.hpDamage === 0 && h.blocked > 0 && foe.side === 'player' && foe.energy > 0 && this.brambleTurn !== this.turn && this.thornsTurn !== this.turn)
+      this.thorns(foe, me, events, THORNS.blockShare);
     // HEDGE (BRIAR): HP you lose seeds the bank again (after the volley that hit cleared it).
     if (!this.over && foe.side === 'player' && h.hpDamage > 0 && foe.relics.has('hedge') && this.meter?.kind === 'thorns') {
       const q = unitsUp(h.hpDamage * NEW_RELIC.hedgeShare);
