@@ -903,7 +903,7 @@ export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
   midas: { house: 3.5, mirror: 3.1, dealer: 4.6, act3: 1, gate: 0.8, act3Floor: 1 },
   // SHED (2026-10-07): her damage is finally visible to sizing, so the multipliers came back to a normal range.
-  thorn: { house: 1, mirror: 15, dealer: 2.1, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
+  thorn: { house: 1, mirror: 13.5, dealer: 1.9, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
   tesla: { house: 0.85, mirror: 2, dealer: 2.0, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
   joker: { house: 1.9, mirror: 1.2, dealer: 0.53, act3: 0.35, act2: 1.5, gate: 0.85 },
 };

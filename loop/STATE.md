@@ -1876,3 +1876,7 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - Official table N1000: BRIAR 44.0 / 16.6, fight-4 deaths 3.0%, chips/f 8.9 (was 19.7), act-1 fights ~12 turns.
   Endless (N400 ride): loop 5 reached by 9% of riders, 43% of the best 10% builds (targets <10% / 30-50%).
 - UI: the fight's ROUND n counter is now SPIN n (a ROUND is a whole fight in the new keyword set).
+- Follow-up (same day): VAMPIRE FANG also healed on every SHED lash (payoffHeal ran in thorns() for every fire). Now
+  only when a hit gets through, like ROSE HIP. Text: "A HIT THAT GETS THROUGH: YOUR THORNS HEAL 10 MORE" (no VOLLEY:
+  BRIAR's keyword is THORNS). BRIAR fell to 39.6 / 13.1; BOSS_MUL.thorn mirror 15 -> 13.5, dealer 2.1 -> 1.9.
+  Official N1000: 43.4 / 17.3, fight-4 deaths 3.0%.

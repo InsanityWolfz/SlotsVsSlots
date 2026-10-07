@@ -126,7 +126,7 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
   fang: {
     tesla: 'LIGHTNING STRIKES HEAL 5 MORE',
     midas: 'HIGH ROLLER PAYOFFS HEAL 30 MORE',
-    thorn: 'THORN VOLLEYS HEAL 10 MORE',
+    thorn: 'A HIT THAT GETS THROUGH: YOUR THORNS HEAL 10 MORE',
     joker: 'ALL-JACKPOT SPINS HEAL 30 MORE',
   },
   overcharge: {

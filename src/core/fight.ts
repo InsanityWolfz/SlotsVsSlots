@@ -1503,7 +1503,8 @@ export class Fight {
     this.checkDeath(attacker, events);
     // THE MIRROR reflects BRIAR's volleys too (her spins never hit): the volley counts toward her next spin's hit.
     this.volleyCarry += bank;
-    this.payoffHeal(victim, events);
+    // Payoff heals (VAMPIRE FANG) only when a hit gets through, not on SHED's per-spin lash (like ROSE HIP).
+    if (fixed <= 0) this.payoffHeal(victim, events);
     // ROSE HIP: a volley heals you for a share of what it fired.
     // (Not on SHED's per-spin lash: healing every spin made ROSE HIP carry the whole machine, 43 -> 11 WHITE without it.)
     if (!this.over && fixed <= 0 && victim.relics.has('rosehip')) {
