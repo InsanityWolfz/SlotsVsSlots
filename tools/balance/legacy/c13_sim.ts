@@ -1,16 +1,13 @@
-/**
- * The headless run simulator (2026-10-07 rewrite, step 1): plays whole runs with the sim bot (bot.ts) and reports
- * what the official table needs (tools/sim/table.ts): win rates, pacing, jackpot rate, chips, boss-sizing power and
- * endless depth. Deterministic per seed: fights draw from their own per-run stream, so runs stay paired.
- */
-import type { GameConfig } from '../core/config';
-import type { CabinetId } from '../core/cabinets';
-import { actLength } from '../core/enemies';
-import { Fight } from '../core/fight';
-import { Rng } from '../core/rng';
+import type { Enh, GameConfig, RelicId } from '../../../src/core/config';
+import type { CabinetId } from '../../../src/core/cabinets';
+import { actLength, DANGER } from '../../../src/core/enemies';
+import { Fight } from '../../../src/core/fight';
+import { Rng } from '../../../src/core/rng';
 import {
   applyOption,
+  buy,
   chooseEnemy,
+  CHIPS,
   createRun,
   draftOffers,
   finishFight,
@@ -18,17 +15,197 @@ import {
   fightNumber,
   takeLegend,
   takeChoice,
+  type BigChoice,
+  type BigChoiceId,
   isShopNow,
-  machinePower,
+  leaveShop,
   needsChoice,
+  shopOffers,
   takeSpoils,
   takeStart,
+  type DraftOption,
   type RunState,
   letItRide,
-} from '../core/run';
-import { CHOICE_LOG, choiceValue, greedyValue, pickEnemy, RELIC_VALUE, shop, SIM_BIAS, type DraftPolicy } from './bot';
+  nextPot,
+  bustPot,
+} from '../../../src/core/run';
 
-export { CHOICE_LOG, choiceValue, greedyValue, SIM_BIAS, type DraftPolicy } from './bot';
+export type DraftPolicy = 'greedy' | 'random' | 'relic';
+
+/** Balance probes (tools/balance/builds.ts): start with a relic, draft only one charm, or force a big choice. */
+export const SIM_BIAS: { ride?: boolean; onEnd?: (run: RunState) => void; startRelic?: RelicId; noStart?: boolean; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
+
+// CONTENT_13 (throwaway copy of src/sim/simulateRun.ts): the bot's value tables are exported and extensible, plus an
+// onFinish hook (after finishFight) for chip prototypes. Keep in step with src/sim/simulateRun.ts.
+export const C13_HOOK: { onFinish?: (run: RunState, fight: Fight) => void } = {};
+export const GILD_VALUE: Record<string, number> = { gold: 9, charged: 8.5, spiked: 6.5, keen: 6.5, vamp: 7, lucky: 7, blaze: 8, thorny: 8 };
+export const RELIC_VALUE: Record<RelicId, number> = {
+  hotstreak: 6,
+  belt: 6,
+  toll: 3,
+  mirror: 10,
+  battery: 9,
+  fang: 9,
+  crown: 8,
+  clover: 7.5,
+  bandage: 6,
+  // Build relics are worth a lot more once you own the gild they amplify.
+  midas: 4,
+  rod: 4,
+  cactus: 3,
+  prism: 3,
+  hone: 3,
+  // Legendaries.
+  ticket: 8,
+  bell: 8,
+  phoenix: 9,
+  overcharge: 9.5,
+  key: 9,
+  sandglass: 8.5,
+  chalice: 3,
+  // Slot machine relics (only offered on their machine).
+  drum: 8,
+  chainmail: 8,
+  vault: 8,
+  decree: 8.5,
+  rosehip: 9,
+  graft: 5,
+  faraday: 7,
+  static: 8.5,
+  capbells: 8.5,
+  stacked: 8.5,
+  kiss: 7.5,
+  horseshoe: 8,
+  underdog: 8,
+  firstblood: 7.5,
+  piggy: 5,
+  // The official sim doesn't bet: the bet relics are dead picks for it.
+  loaded: 0.5,
+  marker: 0.5,
+  highlimit: 0.5,
+  trophy: 6,
+  holywater: 6,
+  bash: 5.5,
+};
+const BUILD: Partial<Record<RelicId, (run: RunState) => boolean>> = {
+  rod: (r) => r.player.gilded.some((g) => g.enh === 'charged'),
+  cactus: (r) => r.cabinet === 'thorn',
+  chalice: (r) => r.player.gilded.some((g) => g.enh === 'vamp'),
+  prism: (r) => r.player.strips.some((s) => (s.wild ?? 0) > 0),
+};
+
+
+/** A reasonable human-ish drafter, tuned against rollout values from playtest ITERATION_1. */
+export function greedyValue(run: RunState, o: DraftOption): number {
+  const p = run.player;
+  switch (o.kind) {
+    case 'relic': {
+      if (BUILD[o.relic]?.(run)) return 10;
+      return RELIC_VALUE[o.relic];
+    }
+    case 'heal':
+      return (1 - p.hp / p.maxHp) * 14;
+    case 'maxHp':
+      return 3.5;
+    case 'payLien':
+      return 6;
+    case 'swap': {
+      if (o.to === 'wild') return run.cabinet === 'joker' ? 8 : 6;
+      // Shields are the weakest symbol, your signature symbol the strongest.
+      const worth = (x: string) => (x === 'rock' ? -2 : x === 'shield' ? 0 : x === 'sword' ? 2 : 3);
+      return worth(o.to) - worth(o.from) + (o.count >= 3 ? 6 : 4);
+    }
+    case 'gild':
+      if (SIM_BIAS.enh) return o.enh === SIM_BIAS.enh ? 9.5 : 0;
+      return (o.enh === 'lucky' && run.cabinet === 'joker' ? 8.5 : GILD_VALUE[o.enh]) + (p.gilded.some((g) => g.enh === o.enh) ? 0.5 : 0);
+    case 'symLevel':
+      return o.symbol === 'sword' ? 8 : o.symbol === 'shield' ? 5 : 7.5;
+    case 'charmLevel':
+      if (SIM_BIAS.enh) return o.enh === SIM_BIAS.enh ? 9.5 : 0;
+      return Math.min(9.5, 6.5 + p.gilded.reduce((a, g) => a + (g.enh === o.enh ? g.n : 0), 0) / 2);
+    case 'clear':
+      return 3 + (p.strips[o.reel].rock ?? 0) * 2;
+    case 'add':
+      return o.symbol === 'sword' ? 3 : 4;
+    case 'remove':
+      return o.symbol === 'rock' ? 5 : o.symbol === 'shield' ? 3 : 0;
+  }
+}
+
+/** Big choices: strong picks are worth more, but the costs bite when you're low or already built. */
+export function choiceValue(run: RunState, c: BigChoice): number {
+  const p = run.player;
+  const hp = p.hp / p.maxHp;
+  const charms = p.gilded.reduce((a, g) => a + g.n, 0);
+  const gold = p.gilded.reduce((a, g) => a + (g.enh === 'gold' ? g.n : 0), 0);
+  switch (c.id) {
+    case 'armsRace':
+      return 8 - (p.maxHp < 300 ? 2 : 0);
+    case 'masterwork':
+      return c.symbol === 'shield' ? 4 : 7;
+    case 'whetstone':
+      return c.symbol === 'shield' ? 4 : 6;
+    case 'meltDown':
+      return 4 + (charms - gold) * 0.5;
+    case 'gildLot':
+      return 8;
+    case 'polish':
+      return 5 + Math.min(3, charms / 3);
+    case 'cleanCut':
+      return 6.5;
+    case 'twinReel':
+      return 5;
+    case 'sweepUp':
+      // Forced in THE SURGERY it won 28.6% vs CLEAN CUT 24.8 (EXPERT_PLAYTEST_12 D3): 3 made the bot skip it (0.6% of picks).
+      return 6.5 + (1 - hp) * 4 + p.strips.reduce((a, s) => a + (s.rock ?? 0), 0);
+    case 'glassCannon':
+      return 7;
+    case 'bloodPact':
+      return 6.5;
+    case 'secondWind':
+      return 4 + (1 - hp) * 6;
+    case 'cashOut': {
+      // Cash out when riding is worth less than the pot in hand: p(clear) x the grown pot + p(bust) x a third
+      // (HP proxies p(clear); later loops are harder).
+      const L = run.endless?.loop ?? 1;
+      const pot = run.endless?.pot ?? 0;
+      const pClear = (run.player.hp / run.player.maxHp) * Math.pow(0.8, L - 1);
+      return pClear * nextPot(pot) + (1 - pClear) * bustPot(pot) < pot ? 2 : -1;
+    }
+    case 'ride':
+      return 1;
+    case 'edge':
+      // Endless house edges: legendaries beat chips; the harsh edges cost more.
+      return (c.reward === 'legend' ? 6 : 3) - (c.edge === 'frail' || c.edge === 'heal' ? 2 : c.edge === 'fast' ? 1 : 0);
+  }
+}
+export const CHOICE_LOG: Record<string, [number, number]> = {};
+
+function pickEnemy(run: RunState, policy: DraftPolicy, rng: Rng): number {
+  const opts = run.paths[run.depth];
+  if (policy === 'random') return rng.int(opts.length);
+  const score = (i: number) => {
+    const a = opts[i].archetype;
+    // Elites are tougher but pay a relic: take them when healthy.
+    const eliteBonus = opts[i].elite ? (run.player.hp / run.player.maxHp > 0.7 ? -4 : 3) : 0;
+    return (DANGER[a] ?? 8) * (opts[i].elite ? 1.25 : 1) + eliteBonus;
+  };
+  return opts.map((_, i) => i).reduce((best, i) => (score(i) < score(best) ? i : best), 0);
+}
+
+/** Cashier policy: greedy buys the best value-per-chip items, keeping a reserve before the boss. */
+function shop(run: RunState, policy: DraftPolicy, rng: Rng): void {
+  const items = shopOffers(run);
+  if (policy === 'random') {
+    for (const it of items) if (rng.next() < 0.5) buy(run, it);
+  } else {
+    const reserve = Math.max(run.depth >= actLength(run.act) ? CHIPS.stackPer * 2 : 0, run.cabinet === 'midas' ? Number(process.env.MIDAS_RESERVE ?? 0) : 0);
+    const sorted = [...items].sort((a, b) => greedyValue(run, b.option) / b.price - greedyValue(run, a.option) / a.price);
+    const skip = (process.env.SHOP_SKIP ?? '').split(',');
+    for (const it of sorted) if (!((it.option.kind === 'gild' || it.option.kind === 'charmLevel') && skip.includes(it.option.enh)) && greedyValue(run, it.option) >= 5 && run.player.chips - it.price >= reserve) buy(run, it);
+  }
+  leaveShop(run);
+}
 
 export interface RunSummary {
   runs: number;
@@ -56,17 +233,6 @@ export interface RunSummary {
   act3Regular: { n: number; diePct: number; lostPct: number; turns: number };
   /** Average turns per fight by act (regular fights only). */
   turnsByAct: number[];
-  /** % of your (non-bonus) spins that land a jackpot. */
-  jackpotPct: number;
-  /** Chips earned per fight won (wins, jackpots, overkill, charms). */
-  chipsPerFight: number;
-  /** Median measured machinePower going into the Mirror, act 3 regulars and the Dealer (what sizes them). */
-  power: { mirror: number; act3: number; dealer: number };
-  /** HP into the House and the Mirror, as a % of max HP. */
-  hpIntoHousePct: number;
-  hpIntoMirrorPct: number;
-  /** ENDLESS (SIM_BIAS.ride): loops cleared by each rider, sorted. */
-  endlessLoops: number[];
 }
 
 export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false, setup?: (run: RunState) => void): RunSummary {
@@ -93,14 +259,6 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
   const a3 = { n: 0, die: 0, lost: 0, turns: 0 };
   const actTurns = [0, 0, 0, 0];
   const actFights = [0, 0, 0, 0];
-  let spins = 0;
-  let jackpots = 0;
-  let chips = 0;
-  let wonFights = 0;
-  const pw = { mirror: [] as number[], act3: [] as number[], dealer: [] as number[] };
-  let houseFrac = 0;
-  let mirrorFrac = 0;
-  const loops: number[] = [];
 
   for (let i = 0; i < runs; i++) {
     const runSeed = seeds.int(0xffffffff);
@@ -125,25 +283,16 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
       if (run.depth === actLength(1) && run.act === 1) {
         reachedBoss++;
         bossHp += run.player.hp;
-        houseFrac += run.player.hp / run.player.maxHp;
       }
       if (run.depth === actLength(2) && run.act === 2) {
         reachedMirror++;
         mirrorHp += run.player.hp;
-        mirrorFrac += run.player.hp / run.player.maxHp;
-        pw.mirror.push(machinePower(run));
       }
-      if (run.act === 3 && !run.endless) (run.depth < actLength(3) ? pw.act3 : pw.dealer).push(machinePower(run));
       SIM_BIAS.onFight?.(run);
       const arch = run.enemies[run.depth].archetype;
       faced[arch] = (faced[arch] ?? 0) + 1;
       const fight = new Fight(fightConfig(run, base), fightSeeds.int(0xffffffff));
-      while (!fight.over && fight.turn < 2000)
-        for (const e of fight.step().events)
-          if (e.type === 'spin' && e.side === 'player' && !e.bonus) {
-            spins++;
-            if (e.score.tier === 'triple') jackpots++;
-          }
+      while (!fight.over && fight.turn < 2000) fight.step();
       fights++;
       turns += fight.turn;
       const depth = fightNumber(run) - 1;
@@ -161,11 +310,8 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
         a3.lost += (hpBefore - Math.max(0, fight.sides.player.hp)) / maxBefore;
         if (fight.winner !== 'player') a3.die++;
       }
-      const rec = finishFight(run, fight);
-      if (fight.winner === 'player') {
-        wonFights++;
-        chips += rec.chips ?? 0;
-      }
+      finishFight(run, fight);
+      C13_HOOK.onFinish?.(run, fight);
       // ENDLESS probe: LET IT RIDE after the Dealer (a busted endless run keeps its win).
       if (SIM_BIAS.ride && run.over && run.won && !run.endless) letItRide(run);
       if (run.endless && run.endless.loop > 50) run.over = true;
@@ -212,7 +358,6 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
       }
     }
     SIM_BIAS.onEnd?.(run);
-    if (run.endless) loops.push(run.endless.loop - 1);
     if (run.won) wins++;
     for (const id of (run as RunState & { took?: string[] }).took ?? []) {
       const e = (CHOICE_LOG[id] ??= [0, 0]);
@@ -248,16 +393,8 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
     hpIntoDealerPct: reachedDealer ? (100 * dealerHpFrac) / reachedDealer : 0,
     act3Regular: { n: a3.n, diePct: a3.n ? (100 * a3.die) / a3.n : 0, lostPct: a3.n ? (100 * a3.lost) / a3.n : 0, turns: a3.n ? a3.turns / a3.n : 0 },
     turnsByAct: [1, 2, 3].map((a) => (actFights[a] ? actTurns[a] / actFights[a] : 0)),
-    jackpotPct: spins ? (100 * jackpots) / spins : 0,
-    chipsPerFight: wonFights ? chips / wonFights : 0,
-    power: { mirror: median(pw.mirror), act3: median(pw.act3), dealer: median(pw.dealer) },
-    hpIntoHousePct: reachedBoss ? (100 * houseFrac) / reachedBoss : 0,
-    hpIntoMirrorPct: reachedMirror ? (100 * mirrorFrac) / reachedMirror : 0,
-    endlessLoops: loops.sort((a, b) => a - b),
   };
 }
-
-const median = (a: number[]) => (a.length ? [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)] : 0);
 
 export function formatRunSummary(s: RunSummary): string {
   return [

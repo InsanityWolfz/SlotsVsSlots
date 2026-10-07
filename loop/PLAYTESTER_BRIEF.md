@@ -7,8 +7,8 @@ repo. It's an 8-bit roguelike where two slot machines fight.
 `loop/DIRECTION_NOTES.md`.
 
 **How to test:**
-- **Headless:** `npm test`; `npm run sim -- --runs 1500`; the harnesses in `tools/balance/` (see CLAUDE.md). You
-  may write small throwaway harnesses under `tools/balance/`. Don't edit `src/`.
+- **Headless:** `npm test`; `npm run sim -- --runs 1500`; the harnesses in `tools/sim/` (see CLAUDE.md). You
+  may write small throwaway harnesses under `tools/sim/`. Don't edit `src/`.
 - **Visual, if a browser is available:** `npm run dev`, then use `window.dbg` in the console:
   - `dbg.run(seed, id, stake)` starts a run;
   - `dbg.vs('mirror' | 'dealer' | ...)` starts a fight against a named enemy;

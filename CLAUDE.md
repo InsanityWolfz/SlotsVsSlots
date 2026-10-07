@@ -15,10 +15,12 @@ Live playtest: https://insanitywolfz.github.io/SlotsVsSlots/ (auto-deploys on ev
 - `npx tsc --noEmit -p .` (typecheck; `noUnusedLocals` is on)
 - `npm run sim -- --runs 1500`: headless balance sim. Prints policies, the HIGH STAKES ladder, a Dealer row
   per slot machine, and the slot machine table.
-- `tools/balance/*.ts` (run with `npx tsx`): focused harnesses.
-  - `tuesday.ts [N]`: THE official per-slot-machine table (WHITE, GREEN, the Dealer, act 3, big choices). Log its numbers.
-  - `diag.ts [N]`: bare machines vs act 1 (damage per turn by source). `calib.ts [N]`: measured late-run damage per machine.
-  - `bonus_rates.ts`, `qa2_headless.ts`. `legacy/` holds the pre-rework (full set) harnesses; they no longer run.
+- `tools/sim/*.ts` (run with `npx tsx`; the 2026-10-07 rewrite). The bot lives in `src/sim/bot.ts` (keyed on each
+  machine's `attack` symbol), the runner in `src/sim/simulateRun.ts`.
+  - `table.ts [N] [machine]`: THE official table (WHITE, GREEN, Dealer, fight-4 deaths, HP into bosses, jackpot %,
+    chips per fight, boss-sizing power). Log its numbers. Gates: WHITE 41-45, GREEN 16-19, fight-4 deaths 3-6%.
+  - `endless.ts [N]`: Dealer winners always ride, never cash out (loops really reached). `fuzz.ts [N]`: invariants.
+  - `bets.ts`, `power_ref.ts` (POWER_REF), `challenges.ts`. Old one-offs live in `tools/balance/legacy/` (records only).
 - `npm run dev`: dev server (:5173) with `window.dbg` helpers and the TUNE panel. `npm run build`: public build to `dist/`
   (no dev tools; verify with a grep for `dbg`/`TuningPanel` in `dist/assets`).
 - Art: `node tools/build-art.mjs` regenerates `src/render/spriteData.ts` (hand-authored pixel grids; 8-bit stays).

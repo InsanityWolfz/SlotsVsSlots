@@ -51,6 +51,8 @@ export interface Cabinet {
   meter: Meter | null;
   /** The symbols this machine's swap cards move between. */
   symbols: SymbolId[];
+  /** The symbol this machine attacks with (the sim's bot values it highest). */
+  attack: SymbolId;
   /** Starting symbol / charm levels. */
   levels?: Levels;
   chipsPerWin?: number;
@@ -82,6 +84,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     favors: null,
     meter: null,
     symbols: ['sword', 'shield'],
+    attack: 'sword',
     levels: { sym: { sword: 2, shield: 2 }, charm: {} },
     rule: 'HALF SWORDS, HALF SHIELDS, BOTH AT LEVEL 2. NO METER. 300 HP.',
     unlock: '',
@@ -102,6 +105,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'vault', symbol: 'goldbar', cost: 10 * UNIT, heal: 2 * UNIT },
     startChips: 24,
     symbols: ['sword', 'shield', 'goldbar'],
+    attack: 'sword',
     rule: 'MORE CHIPS, BIGGER PAYS. A CHIP JACKPOT MAKES IT RAIN! 360 HP.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
@@ -119,6 +123,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     favors: 'vamp',
     meter: { kind: 'thorns', symbol: 'thorn', cost: 0, heal: UNIT },
     symbols: ['sword', 'shield', 'thorn'],
+    attack: 'sword',
     rule: 'THORNS ADD UP. WHEN YOU ARE ATTACKED, YOUR THORNS HIT BACK. 300 HP.',
     unlock: 'BEAT THE HOUSE',
   },
@@ -135,6 +140,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     favors: 'charged',
     meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: 2 * UNIT },
     symbols: ['sword', 'shield', 'bolt'],
+    attack: 'sword',
     rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE THROUGH SHIELDS. 250 HP.',
     rodDamage: 9 * UNIT,
     unlock: 'REACH THE HOUSE',
@@ -154,6 +160,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     favors: 'lucky',
     meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 3 * UNIT, perWild: 2 * UNIT },
     symbols: ['sword', 'shield'],
+    attack: 'sword',
     rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 220 HP.',
     unlock: 'BEAT THE HOUSE WITH WILDS',
     jokerWilds: true,
