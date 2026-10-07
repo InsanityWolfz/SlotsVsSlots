@@ -1677,3 +1677,26 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   (break-even, as agreed). Its win rate drops (KNIGHT 41.3 -> 40.0, MIDAS 40.0 -> 39.3, THORN 48 -> 35 at N=150)
   because chips go to break-even gambles instead of the shop; that's the player's choice. The official sim doesn't
   bet, so WHITE/GREEN are unchanged. Tests: 238 (bets tests rewritten for the stepper).
+
+## Iteration 75 (2026-10-07): sim rewrite, step 1 (ARCHETYPES_PLAN step 3)
+- The bot moved to `src/sim/bot.ts` and reads each machine's new `attack` symbol (cabinets.ts; `sword` everywhere
+  today) instead of assuming swords. The runner (`src/sim/simulateRun.ts`) now also reports jackpot %, chips per fight
+  won, median measured power into the Mirror / act 3 / the Dealer, HP into the House and Mirror, and endless loops.
+- New tools: `tools/sim/table.ts` (THE official table; replaces tuesday.ts), `tools/sim/endless.ts` (Dealer winners
+  always ride and **never cash out**). fuzz, bets, power_ref, challenges moved to tools/sim; ~85 old one-offs to
+  tools/balance/legacy (records only).
+- Calibration: `table.ts 300` reproduces the old tuesday table **exactly** (same policy, deterministic):
+
+| machine | WHITE | f4 die | GREEN | Dealer | jackpot % | chips/fight | power mirror / act3 / dealer |
+|---|---|---|---|---|---|---|---|
+| KNIGHT | 44.0 | 4.3 | 16.7 | 45.9 | 32.0 | 9.8 | 620 / 1589 / 2466 |
+| TESLA | 43.3 | 5.7 | 18.0 | 58.1 | 17.4 | 7.0 | 344 / 764 / 1284 |
+| BRIAR | 48.3 | 7.0 | 18.0 | 41.5 | 22.5 | 10.0 | 176 / 618 / 859 |
+| JAX | 44.3 | 3.7 | 19.3 | 48.7 | 54.5 | 12.0 | 897 / 2582 / 3976 |
+| CASSIDY | 44.3 | 1.0 | 19.3 | 41.4 | 18.5 | 11.7 | 530 / 999 / 1835 |
+
+  (Measured power now runs well above POWER_REF, e.g. KNIGHT mirror 620 vs ref 405: the refs are stale; re-run
+  power_ref.ts when sizing is next touched.)
+- **Endless, forced riding** (`endless.ts 400`, GREEN; riders = Dealer winners), % of riders reaching loop 5:
+  KNIGHT 16%, TESLA 3%, BRIAR **31%**, JAX 1%, CASSIDY **55%** (p50 4 loops cleared, max 18). The old harness hid
+  this by cashing out at loop 5. Goal (plan step 7): under ~5% for every machine.
