@@ -37,7 +37,7 @@ const STORM_PART = (e: CombatEvent) =>
 const BATCHABLE = new Set<CombatEvent['type']>(['attack', 'shieldGain', 'energyGain', 'fizzle', 'slime', 'freeze', 'lock', 'steal', 'pot', 'heal', 'bomb', 'hex']);
 
 /** Where a relic's name pops (the RELICS header row). */
-const RELIC_NAME_Y = 108;
+const RELIC_NAME_Y = 134;
 
 /** Banners sit in the top gutter between the HUD panels, never over the reels. */
 const BANNER_Y = 172;
@@ -325,7 +325,7 @@ export class Director {
     const w = name.length * 9;
     // Names line up in the header row (stacked upward if several fire at once).
     const busy = Object.entries(this.s.relicPops).filter(([k, v]) => k !== relic && v > 0.4).length;
-    this.bg(this.popText(name, Math.min(156 - w / 2, Math.max(RELIC_X + w / 2, at.x)), RELIC_NAME_Y - busy * 16, 1.5, '#e0c0ff', 12, 0.45));
+    this.bg(this.popText(name, Math.min(156 - w / 2, Math.max(RELIC_X + w / 2, at.x)), RELIC_NAME_Y + busy * 16, 1.5, '#e0c0ff', 12, 0.45));
   }
 
   private get c() {

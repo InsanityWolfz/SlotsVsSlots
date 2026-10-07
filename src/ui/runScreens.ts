@@ -1050,7 +1050,15 @@ export class RunScreens {
 
   /** YOUR BUILD: a fixed column on the left of every run screen. Chips (top-left, where the fights show them too), you,
    * your reels as a tall table (a row per symbol and charm), your relics. */
-  private drawBuild(ctx: CanvasRenderingContext2D): void {
+  /** The BUILD pane popped out over a fight: chips and relic icons are drawn live by the fight itself. */
+  drawBuildFor(ctx: CanvasRenderingContext2D, run: RunState): void {
+    const keep = this.run;
+    this.run = run;
+    this.drawBuild(ctx, true);
+    this.run = keep;
+  }
+
+  private drawBuild(ctx: CanvasRenderingContext2D, inFight = false): void {
     const run = this.run!;
     const p = run.player;
     const { x, y, w, h } = BUILD;
@@ -1060,9 +1068,11 @@ export class RunScreens {
       ctx.fillRect(x + 10, yy, w - 20, 2);
     };
     // CHIPS: big, always in the same spot.
-    drawSprite(ctx, 'chip', CHIP_SPOT.x, CHIP_SPOT.y, 3);
-    drawText(ctx, `${p.chips}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, COLORS.energy, { align: 'left', punch: this.chipPulse });
-    drawText(ctx, 'CHIPS', x + w - 12, CHIP_SPOT.y + 4, 1.5, COLORS.textDim, { align: 'right' });
+    if (!inFight) {
+      drawSprite(ctx, 'chip', CHIP_SPOT.x, CHIP_SPOT.y, 3);
+      drawText(ctx, `${p.chips}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, COLORS.energy, { align: 'left', punch: this.chipPulse });
+    }
+    if (!inFight) drawText(ctx, 'CHIPS', x + w - 12, CHIP_SPOT.y + 4, 1.5, COLORS.textDim, { align: 'right' });
     rule(y + 58);
     // Who you are and how you're doing.
     const cab = CABINETS[run.cabinet];
@@ -1104,6 +1114,7 @@ export class RunScreens {
     const cols = 8;
     const slots = cols * 4;
     const shown = relics.length > slots ? relics.slice(0, slots - 1) : relics;
+    if (inFight) return;
     shown.forEach((r, i) => {
       const cx = x + 24 + (i % cols) * 34;
       const cy = y + 590 + Math.floor(i / cols) * 30;

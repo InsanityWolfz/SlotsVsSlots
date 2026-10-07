@@ -31,12 +31,15 @@ export function cellCenter(side: SideId, reel: number, row: number) {
 export const HUD_TOP = 96;
 
 /** The player's relic column (top left): 4 wide so 10-12 relics never slide under the strip map. */
-// Your relics in a fight: the left column (4 across, up to 13 rows) under your chips, so you can watch them fire.
-export const RELIC_X = 12;
-export const RELIC_Y = 140;
-export const RELIC_COLS = 4;
+// Your relics in a fight: the grid inside the BUILD pane (same cells as on the run screens: 8 across from y 606), when
+// it's popped out; closed, a relic that fires shows under your chips (RELIC_FIRE_Y).
+export const RELIC_X = 40;
+export const RELIC_Y = 606;
+export const RELIC_COLS = 8;
 export const RELIC_PITCH = 34;
-export const relicSlot = (i: number) => ({ x: RELIC_X + 16 + (i % RELIC_COLS) * RELIC_PITCH, y: RELIC_Y + Math.floor(i / RELIC_COLS) * RELIC_PITCH });
+export const RELIC_SHOWN = 32;
+export const RELIC_FIRE_Y = 104;
+export const relicSlot = (i: number) => ({ x: RELIC_X + (i % RELIC_COLS) * RELIC_PITCH, y: RELIC_Y + Math.floor(i / RELIC_COLS) * 30 });
 
 export const COLORS = {
   bgTop: '#29123d',

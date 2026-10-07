@@ -45,7 +45,7 @@ import { Clock } from './present/clock';
 import { Director, VOUCHER_GAP, VOUCHER_X, VOUCHER_Y } from './present/director';
 import { FxLayer } from './present/fx';
 import { HudView, type HudMeter } from './present/hud';
-import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
+import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, RELIC_FIRE_Y, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
 import { MachineView } from './present/machine';
 import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
@@ -205,6 +205,9 @@ export class Game {
   private autoBtn!: Button;
   private startBtn!: Button;
   private speedBtns: Button[] = [];
+  private buildBtn!: Button;
+  /** The BUILD pane is popped out in fights. */
+  private buildOpen = false;
   private recapBtns: Button[] = [];
   private muteBtn!: Button;
   toolButtons: { tune: Button; log: Button } | null = null;
@@ -295,6 +298,11 @@ export class Game {
     const tune = this.btn('TUNE', W / 2, by, 90, 44, () => {});
     const log = this.btn('LOG', ex - 110, by, 90, 44, () => {});
     this.muteBtn = this.btn('SOUND', ex, by, 90, 44, () => this.setMuted(!this.prefs.muted));
+    // BUILD: pop your build out over the left side during a fight (shops and upgrades always show it).
+    this.buildBtn = this.btn('BUILD', 64, by, 96, 44, () => {
+      this.buildOpen = !this.buildOpen;
+      this.syncButtons();
+    });
     this.toolButtons = { tune, log };
     this.recapBtns = [
       this.btn('REMATCH', W / 2 - 230, 0, 190, 50, () => this.newFight(true, this.lastSeed)),
@@ -318,6 +326,13 @@ export class Game {
     this.muteBtn.toggled = this.prefs.muted;
     const overlay = this.screens.active || this.phase === 'recap' || this.menus.isOpen;
     for (const b of [this.spinBtn, this.autoBtn, this.startBtn, ...this.speedBtns]) b.visible = !overlay;
+    this.buildBtn.visible = !overlay && !!this.run && this.phase !== 'title';
+    // The popped-out pane covers AUTO: it comes back when the pane closes.
+    if (this.buildOpen && this.buildBtn.visible) this.autoBtn.visible = false;
+    this.buildBtn.toggled = this.buildOpen;
+    this.buildBtn.label = this.buildOpen ? 'HIDE' : 'BUILD';
+    // Open, HIDE sits in the pane's top-right corner (at the bottom it covered the relic grid).
+    Object.assign(this.buildBtn, this.buildOpen ? { x: 252, y: 46, w: 76, h: 32 } : { x: 64, y: 648, w: 96, h: 44 });
     for (const b of this.recapBtns) b.visible = this.phase === 'recap';
     for (const b of this.buttons) if (b.label === 'TUNE' || b.label === 'LOG') b.visible = this.screens.mode !== 'cabinet' && !(b.label === 'TUNE' && this.publicBuild);
     this.muteBtn.visible = this.screens.mode !== 'cabinet' && this.menus.mode !== 'loading' && this.menus.mode !== 'collection' && this.menus.mode !== 'hiscores';
@@ -1154,7 +1169,8 @@ export class Game {
       return;
     }
     this.background.drawMarquee(ctx, t);
-    this.drawRelics(ctx);
+    this.drawChips(ctx);
+    if (!this.buildOpen) this.drawRelics(ctx);
     if (this.phase === 'fighting') this.drawVouchers(ctx, this.time);
     s.huds.player.draw(ctx, t);
     s.huds.enemy.draw(ctx, t);
@@ -1165,6 +1181,12 @@ export class Game {
     this.drawGutter(ctx, t);
     this.particles.draw(ctx);
     s.fx.draw(ctx, s.clock.time, 20, Infinity);
+    // BUILD popped out: your whole build over the left side (relics fire inside it), chips on top.
+    if (this.buildOpen && this.run && !this.screens.active) {
+      this.screens.drawBuildFor(ctx, this.run);
+      this.drawRelics(ctx);
+      this.drawChips(ctx);
+    }
     ctx.restore();
 
     if (this.camera.flash > 0) {
@@ -1195,7 +1217,8 @@ export class Game {
     if (list.length) drawText(ctx, 'VOUCHERS: WIN TO CASH', 14, VOUCHER_Y - 30, 1.25, '#ffd23f', { align: 'left' });
   }
 
-  private drawRelics(ctx: CanvasRenderingContext2D): void {
+  /** Your chips (live in a fight), top-left: the same spot as on every run screen. */
+  private drawChips(ctx: CanvasRenderingContext2D): void {
     if (this.run && this.phase !== 'title') {
       // Chips: big, in the same top-left spot as on every run screen (CHIP_SPOT).
       drawSprite(ctx, 'chip', CHIP_SPOT.x, CHIP_SPOT.y, 3);
@@ -1214,13 +1237,20 @@ export class Game {
         drawText(ctx, `+${this.fight.cfg.player.stackShield ?? 0} SH/TURN`, cx + 18, CHIP_SPOT.y, 2, '#9fd0ff', { align: 'left' });
       }
     }
+  }
+
+  /** Your relics in a fight: firing ones under the chips, or the whole grid in the BUILD pane. */
+  private drawRelics(ctx: CanvasRenderingContext2D): void {
     const relics = this.relicList();
     if (!relics.length) return;
-    // The header steps aside while a relic's name pops up in its place.
-    const popping = Object.values(this.stage.relicPops).some((v) => v > 0.02);
-    if (!popping) drawText(ctx, 'RELICS', RELIC_X + 60, RELIC_Y - 22, 2, COLORS.textDim);
+    // BUILD closed: only a relic that's firing shows, in a row under your chips. Open: the whole grid, in the panel.
+    const open = this.buildOpen;
+    let k0 = 0;
     relics.forEach((r, i) => {
-      const { x, y: y0 } = relicSlot(i);
+      const firing = (this.stage.relicPops[r] ?? 0) > 0.02;
+      if (!open && !firing) return;
+      if (open && i >= RELIC_SHOWN) return;
+      const { x, y: y0 } = open ? relicSlot(i) : { x: CHIP_SPOT.x + (k0++) * 40, y: RELIC_FIRE_Y };
       // A relic that just fired pops: it grows, hops up, wiggles and flashes gold.
       const pop = this.stage.relicPops[r] ?? 0;
       const y = y0 - Math.sin(pop * Math.PI) * 8;
@@ -1244,7 +1274,7 @@ export class Game {
   }
 
   private drawRelicTooltip(ctx: CanvasRenderingContext2D): void {
-    if (this.screens.active) return;
+    if (this.screens.active || !this.buildOpen) return;
     const relics = this.relicList();
     const i = relics.findIndex((_, i) => {
       const { x, y } = relicSlot(i);
