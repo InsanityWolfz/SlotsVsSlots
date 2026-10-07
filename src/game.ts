@@ -208,6 +208,11 @@ export class Game {
   /** The BUILD drawer: pulled out (or not) in fights, and how far out it is (0..1, eased). */
   private buildOpen = false;
   private drawerT = 0;
+  /** The drawer's spring (it overshoots a little opening, and shuts clean). */
+  private drawerV = 0;
+  /** Until the player first pulls the drawer, the handle nudges out every few seconds. */
+  private drawerUsed = false;
+  private handleHover = 0;
   private recapBtns: Button[] = [];
   private muteBtn!: Button;
   toolButtons: { tune: Button; log: Button } | null = null;
@@ -295,9 +300,10 @@ export class Game {
     this.speedBtns.push(this.btn('2X', px + 130, by, 120, 44, () => this.setSpeed(SPEEDS[(SPEEDS.indexOf(this.prefs.speed) + 1) % SPEEDS.length])));
     this.startBtn = this.btn('START RUN', W / 2 + 10, by, 196, 56, () => this.newRunPressed(), { idlePulse: true, textScale: 3 });
     const ex = MACHINE_CX.enemy;
-    const tune = this.btn('TUNE', W / 2, by, 90, 44, () => {});
-    const log = this.btn('LOG', ex - 110, by, 90, 44, () => {});
-    this.muteBtn = this.btn('SOUND', ex, by, 90, 44, () => this.setMuted(!this.prefs.muted));
+    const tune = this.btn('TUNE', W / 2, by, 90, 44, () => {}, { quiet: true });
+    // The tool row: small and dim (it's a watch-only game; the chrome shouldn't compete with the reels).
+    const log = this.btn('LOG', ex + 60, by, 70, 36, () => {}, { quiet: true });
+    this.muteBtn = this.btn('SOUND', ex + 140, by, 70, 36, () => this.setMuted(!this.prefs.muted), { quiet: true });
 
     this.toolButtons = { tune, log };
     this.recapBtns = [
@@ -317,18 +323,19 @@ export class Game {
     this.startBtn.label = title ? 'START RUN' : this.abandonArmed ? 'SURE?' : 'QUIT';
     this.startBtn.opts.idlePulse = title;
     this.startBtn.opts.textScale = title ? 3 : undefined;
-    Object.assign(this.startBtn, title ? { x: W / 2 + 10, w: 196, h: 56 } : { x: MACHINE_CX.enemy + 110, w: 90, h: 44 });
+    Object.assign(this.startBtn, title ? { x: W / 2 + 10, w: 196, h: 56 } : { x: MACHINE_CX.enemy + 220, w: 70, h: 36 });
+    this.startBtn.opts.quiet = !title;
     this.muteBtn.label = this.prefs.muted ? 'MUTED' : 'SOUND';
     this.muteBtn.toggled = this.prefs.muted;
     const overlay = this.screens.active || this.phase === 'recap' || this.menus.isOpen;
     for (const b of [this.spinBtn, this.autoBtn, this.startBtn, ...this.speedBtns]) b.visible = !overlay;
-    // The pulled-out drawer covers AUTO: it comes back when the drawer closes.
-    if (this.buildOpen && this.drawerLive()) this.autoBtn.visible = false;
+    // The pulled-out drawer covers AUTO and SPIN: they come back when the drawer closes.
+    if (this.buildOpen && this.drawerLive()) this.autoBtn.visible = this.spinBtn.visible = false;
     for (const b of this.recapBtns) b.visible = this.phase === 'recap';
     for (const b of this.buttons) if (b.label === 'TUNE' || b.label === 'LOG') b.visible = this.screens.mode !== 'cabinet' && !(b.label === 'TUNE' && this.publicBuild);
     this.muteBtn.visible = this.screens.mode !== 'cabinet' && this.menus.mode !== 'loading' && this.menus.mode !== 'collection' && this.menus.mode !== 'hiscores';
     // On menus SOUND sits in the bottom-right corner (bottom-right: the corner clear of every menu's buttons).
-    Object.assign(this.muteBtn, this.menus.isOpen ? { x: W - 70, y: H - 30 } : { x: MACHINE_CX.enemy, y: 648 });
+    Object.assign(this.muteBtn, this.menus.isOpen ? { x: W - 70, y: H - 30 } : { x: MACHINE_CX.enemy + 140, y: 648 });
     if (this.menus.isOpen) this.toolButtons!.tune.visible = this.toolButtons!.log.visible = false;
     this.noteDiscoveries();
   }
@@ -785,7 +792,7 @@ export class Game {
       if (levelUp) this.sounds.lucky();
       this.sounds.coin(4);
       this.sounds.coin(9);
-      this.screens.bought();
+      this.screens.bought(i, item);
     } else {
       this.sounds.fizzle();
       this.screens.deny(i);
@@ -1053,6 +1060,7 @@ export class Game {
     // The BUILD drawer's handle: pull it out, push it back in.
     if (this.drawerLive() && this.onHandle(x, y)) {
       this.buildOpen = !this.buildOpen;
+      this.drawerUsed = true;
       this.sounds.click();
       this.syncButtons();
       return;
@@ -1138,7 +1146,16 @@ export class Game {
     const dt = Math.min(realDt, 1 / 20);
     this.time += dt;
     this.ui.tick(dt);
-    this.drawerT += ((this.buildOpen ? 1 : 0) - this.drawerT) * Math.min(1, dt * 14);
+    if (this.buildOpen) {
+      // A stiff spring, a touch under-damped: the drawer slides out and settles with a small overshoot.
+      this.drawerV += (300 * (1 - this.drawerT) - 26 * this.drawerV) * dt;
+      this.drawerT += this.drawerV * dt;
+    } else {
+      this.drawerV = 0;
+      this.drawerT += (0 - this.drawerT) * Math.min(1, dt * 18);
+      if (this.drawerT < 0.002) this.drawerT = 0;
+    }
+    this.handleHover += ((this.onHandle(this.mouse.x, this.mouse.y) ? 1 : 0) - this.handleHover) * Math.min(1, dt * 16);
     this.menus.update(dt);
     // A tutorial callout freezes the fight where it is.
     const gdt = this.coach.active ? 0 : this.stage.clock.tick(dt);
@@ -1183,6 +1200,10 @@ export class Game {
     // The BUILD drawer: your whole build slides out over the left side (relics fire inside it), chips stay put on top.
     if (this.drawerLive()) {
       if (this.drawerT > 0.005) {
+        // The fight dims behind the open drawer, so the drawer reads as a layer on top.
+        const edge = BUILD.x + BUILD.w + 8;
+        ctx.fillStyle = `rgba(6,2,12,${(0.45 * Math.min(1, this.drawerT)).toFixed(3)})`;
+        ctx.fillRect(edge, 0, W - edge, H);
         ctx.save();
         ctx.translate(-(1 - this.drawerT) * (BUILD.x + BUILD.w + 8), 0);
         this.screens.drawBuildFor(ctx, this.run!);
@@ -1229,8 +1250,11 @@ export class Game {
 
   /** The handle: a tab on the drawer's right edge (the screen's left edge when it's shut). */
   private handleRect(): { x: number; y: number; w: number; h: number } {
-    const edge = this.drawerT * (BUILD.x + BUILD.w + 4);
-    return { x: edge, y: H / 2 - 52, w: 26, h: 104 };
+    // Shut and never used: every 8s the handle slides out 4px and back, so players find it.
+    const k = (this.time % 8) / 0.25;
+    const nudge = !this.drawerUsed && !this.buildOpen && k < 1 ? Math.sin(k * Math.PI) * 4 : 0;
+    const edge = this.drawerT * (BUILD.x + BUILD.w + 4) + nudge;
+    return { x: edge, y: H / 2 - 52, w: 26 + 4 * this.handleHover, h: 104 };
   }
 
   private onHandle(x: number, y: number): boolean {
@@ -1250,9 +1274,9 @@ export class Game {
     // Grip lines and an arrow: out when shut, back in when open.
     ctx.fillStyle = COLORS.goldLight;
     for (const gy of [-30, -24, 24, 30]) ctx.fillRect(r.x + 7, r.y + r.h / 2 + gy, r.w - 16, 2);
-    const cx = r.x + r.w / 2 - 1;
-    const cy = r.y + r.h / 2;
     const dir = this.drawerT >= 0.5 ? -1 : 1;
+    const cx = r.x + r.w / 2 - 1 + (hover ? Math.sin(this.time * 8) * 2 * dir : 0);
+    const cy = r.y + r.h / 2;
     ctx.beginPath();
     ctx.moveTo(cx - 5 * dir, cy - 9);
     ctx.lineTo(cx + 6 * dir, cy);
@@ -1273,7 +1297,7 @@ export class Game {
       const hud = fighting ? this.stage.huds.player : null;
       const shown = Math.max(0, this.run.player.chips - eaten + (hud ? hud.chips - hud.chipsHeld + hud.lucre : 0));
       drawText(ctx, `${shown}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
-      if (this.run.stake > 0) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 80, 1.5, STAKES[this.run.stake].color, { align: 'left' });
+      if (this.run.stake > 0 && !(this.drawerLive() && this.drawerT > 0.05)) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 80, 1.5, STAKES[this.run.stake].color, { align: 'left' });
       if ((this.fight.isBoss || this.fight.isMirror || this.fight.isDealer) && (this.fight.cfg.player.stackShield ?? 0) > 0) {
         // Sits after the chip count, however many digits it has (QA_1 B10).
         const cx = CHIP_SPOT.x + 24 + String(shown).length * 24 + 22;
@@ -1290,6 +1314,14 @@ export class Game {
     // BUILD closed: only a relic that's firing shows, in a row under your chips. Open: the whole grid, in the panel.
     const open = this.drawerT >= 0.5;
     let k0 = 0;
+    if (!open) {
+      // A dark plate under the hop row, so the icons read against the machine's frame.
+      const n = relics.filter((r) => (this.stage.relicPops[r] ?? 0) > 0.02).length;
+      if (n) {
+        ctx.fillStyle = 'rgba(20,12,28,0.85)';
+        ctx.fillRect(RELIC_FIRE_X - 22, RELIC_FIRE_Y - 22, (n - 1) * 36 + 44, 44);
+      }
+    }
     relics.forEach((r, i) => {
       const firing = (this.stage.relicPops[r] ?? 0) > 0.02;
       if (!open && !firing) return;

@@ -1,10 +1,10 @@
 import type { Sounds } from '../audio/sounds';
 import type { MetaGain } from '../core/profile';
 import { challengeById, levelOf } from '../core/meta';
-import { symLabel, UNIT, type Enh, type GameConfig, type SymbolId } from '../core/config';
+import { UNIT, type Enh, type GameConfig, type SymbolId } from '../core/config';
 import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
 import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH, POT } from '../core/relics';
-import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmName, symLevel } from '../core/charms';
+import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
 import {
   CHIPS,
@@ -44,7 +44,7 @@ import { ABILITY_UI } from '../present/hud';
 import { ENH_SPRITE } from '../present/reel';
 import { COLORS, H, W } from '../present/layout';
 import { artId, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
-import { drawText } from '../render/text';
+import { drawText, fmtNum } from '../render/text';
 import { heroSprite } from './menus';
 import { CHIP_SCORE, runEntry, runScore } from '../core/profile';
 import { dailyShare } from '../core/daily';
@@ -55,7 +55,6 @@ import { RelicTips } from './relicTip';
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus' | 'choice';
 
 /** A lien in a few words ("GOLD SWORD R1"). */
-const lienShort = (l: { reel: number; symbol: string; enh?: Enh }) => `${l.enh ? `${charmName(l.enh)} ` : ''}${symLabel(l.symbol as SymbolId)} R${l.reel + 1}`;
 
 /** Greedy word wrap for the pixel font. */
 export function wrap(text: string, maxChars: number): string[] {
@@ -84,7 +83,15 @@ interface Hit {
   enabled: boolean;
 }
 
-type Btn = Hit & { label: string; /** A SIDE BET stepper button: its stake change. */ bet?: number };
+type Btn = Hit & {
+  label: string;
+  /** A SIDE BET stepper button: its stake change. */
+  bet?: number;
+  /** Secondary: a quiet button that never breathes (only the screen's next step does). */
+  minor?: boolean;
+  /** Primary, but not breathing right now (a fork's other path). */
+  quiet?: boolean;
+};
 
 
 /** What each enemy writes on your machine, as a map badge. */
@@ -155,36 +162,57 @@ function drawBackdrop(ctx: CanvasRenderingContext2D): void {
 
 const rounds = (turns: number) => { const n = Math.ceil(turns / 2); return `${n} ROUND${n === 1 ? '' : 'S'}`; };
 
+/** The ability's effect in a few words (the panel's front shows this under the cadence pips). */
+function abilityWhat(e: EnemyDef, run?: RunState): string {
+  if (!e.ability) return '';
+  const p = e.ability.power;
+  const cap = run ? Math.max(REFLECT_MIN, Math.round(run.player.maxHp * REFLECT_CAP)) : p;
+  const what: Record<string, string> = {
+    flood: `SLIMES ${p} OF YOUR SYMBOLS`,
+    smash: `HITS FOR ${p}`,
+    fortify: `GAINS ${p} SHIELD`,
+    blizzard: `FREEZES ${p} REEL${p === 1 ? '' : 'S'} FOR 2 TURNS`,
+    pilfer: `STEALS ${p} SYMBOL${p > 1 ? 'S' : ''}`,
+    quake: `ADDS ${p} ROCKS TO YOUR STRIPS`,
+    jam: `JAMS A REEL FOR ${p} TURNS`,
+    jackpot: 'SKIMS HALF THE POT AT YOU',
+    carpet: `STICKS ${p} BOMBS ON YOUR CELLS`,
+    curse: `HEXES ${p} REEL${p > 1 ? 'S' : ''} FOR 3 TURNS`,
+    bloodmoon: `HEALS ${p} HP`,
+    gulp: `EATS ${p} OF YOUR CHIPS`,
+    reflect: `THROWS YOUR BEST HIT BACK (${REFLECT_MIN} TO ${cap})`,
+    earth: `DRAINS ${p} FROM YOUR METER`,
+    launder: `TAKES ${p} CHIPS, HEALS ${p * 3 * UNIT}`,
+    mark: `MARKS ${p} OF YOUR CELLS`,
+    penalty: `HITS FOR ${p}`,
+    repo: 'TAKES A CHARM FOR THE FIGHT',
+    houseTake: `RAKES YOUR GROUPS FOR ${p} TURNS`,
+    deal: 'DEALS A CARD ON YOUR PAYLINE',
+  };
+  return what[e.ability.kind] ?? '';
+}
+
 function abilityText(e: EnemyDef, every: number, run?: RunState): string {
   if (!e.ability) return '';
   const ui = ABILITY_UI[e.ability.kind];
-  const cap = run ? Math.max(REFLECT_MIN, Math.round(run.player.maxHp * REFLECT_CAP)) : e.ability.power;
-  const what: Record<string, string> = {
-    flood: `SLIMES ${e.ability.power} OF YOUR SYMBOLS`,
-    smash: `HITS FOR ${e.ability.power}`,
-    fortify: `GAINS ${e.ability.power} SHIELD`,
-    blizzard: `FREEZES ${e.ability.power} REEL${e.ability.power === 1 ? '' : 'S'} FOR 2 TURNS`,
-    pilfer: `STEALS ${e.ability.power} SYMBOL${e.ability.power > 1 ? 'S' : ''}`,
-    quake: `ADDS ${e.ability.power} ROCKS TO YOUR STRIPS`,
-    jam: `JAMS A REEL FOR ${e.ability.power} TURNS`,
-    jackpot: 'SKIMS HALF THE POT AT YOU',
-    carpet: `STICKS ${e.ability.power} BOMBS ON YOUR CELLS`,
-    curse: `HEXES ${e.ability.power} REEL${e.ability.power > 1 ? 'S' : ''} FOR 3 TURNS`,
-    bloodmoon: `HEALS ${e.ability.power} HP`,
-    gulp: `EATS ${e.ability.power} OF YOUR CHIPS`,
-    reflect: `THROWS YOUR BEST HIT SINCE THE LAST ONE BACK (${REFLECT_MIN} TO ${cap})`,
-    earth: `DRAINS ${e.ability.power} FROM YOUR METER`,
-    launder: `TAKES ${e.ability.power} CHIPS AND HEALS ${e.ability.power * 3 * UNIT}`,
-    mark: `MARKS ${e.ability.power} OF YOUR CELLS`,
-    penalty: `HITS FOR ${e.ability.power}`,
-    repo: 'TAKES YOUR BEST CELL (CHARMED FIRST). HELD UNTIL THE BOSS FALLS',
-    houseTake: `RAKES YOUR GROUPS FOR ${e.ability.power} TURNS`,
-    deal: 'DEALS: A CARD ON YOUR PAYLINE, ALL IN, OR RAISE',
-  };
   // THE REPO MAN takes on his first turn, then every few.
-  if (e.ability.kind === 'repo') return `${ui.label} FROM TURN 1, THEN EVERY ${every}: TAKES YOUR BEST CELL UNTIL THE BOSS FALLS`;
-  return `${ui.label} EVERY ${every} TURNS: ${what[e.ability.kind]}`;
+  if (e.ability.kind === 'repo') return `${ui.label} FROM TURN 1, THEN EVERY ${every}: TAKES ONE OF YOUR CHARMS. YOU GET IT BACK AFTER THE FIGHT`;
+  if (e.ability.kind === 'deal') return `${ui.label} EVERY ${every} TURNS: A CARD ON YOUR PAYLINE, ALL IN, OR RAISE`;
+  return `${ui.label} EVERY ${every} TURNS: ${abilityWhat(e, run)}`;
 }
+
+/** The stage light behind each enemy's portrait (the panel's front). */
+const STAGE_TINT: Record<string, string> = {
+  slime: '#5ed15a', frost: '#5ad8e8', thief: '#c9a0ff', hexer: '#c9a0ff', golem: '#c9bba8', grounder: '#c9bba8',
+  brute: '#ff9a3a', gremlin: '#ff9a3a', bomber: '#ff9a3a', vampire: '#ff6a5a', house: '#ff6a5a', pitboss: '#ff6a5a',
+  dealer: '#ff6a5a', mirror: '#c8f0ff', croupier: '#ffd23f', sharp: '#ffd23f', counterfeiter: '#ffd23f', mimic: '#ffd23f',
+};
+/** A boss's one rule on the front of its card (the full paragraph is on the back). */
+const BOSS_HEADLINE: Record<string, string> = {
+  house: 'JACKPOTS STEAL ITS POT',
+  mirror: 'ITS SHARDS THROW YOUR HITS BACK',
+  dealer: 'IT CAN NOT KILL YOU BEFORE ITS FIRST DEAL',
+};
 
 /**
  * Canvas overlays between fights: the draft (pick 1 of 3), the next-fight preview (or a fork:
@@ -201,6 +229,29 @@ export class RunScreens {
   private fade = 0;
   private mouse = { x: -1, y: -1 };
   private tips = new RelicTips();
+  /** The enemy cards: flip (0 front, 1 back) and hover start, keyed by the card's x. */
+  private flips = new Map<number, number>();
+  private hoverSince = new Map<number, number>();
+  /** A tap flips a card for touch players (the card's x, or -1). */
+  private pinned = -1;
+  private frameDt = 0;
+  private lastDraw = 0;
+  /** The card's entrance: rise-in, portrait landing, skulls popping, cadence pips filling. */
+  private panelIn = 1;
+  private portraitPop = 1;
+  private skullPop = [1, 1, 1];
+  private pipFill = 99;
+  private lastPip = 1;
+  /** LEVELS pane: the last level seen per row, and when a row last went up (it punches and sparkles). */
+  private lvSeen = new Map<string, number>();
+  private lvPunch = new Map<string, number>();
+  private lvRun: RunState | null = null;
+  /** The side bet's chip stack: the stake punches on each change; the top chip drops on (or lifts off). */
+  private betPunch = 1;
+  private betFall = 0;
+  private betDrop = 1;
+  /** Shop purchases in flight to YOUR BUILD. */
+  private flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   private picked = -1;
   private lastRecord: FightRecord | null = null;
   /** 'spoils' = an elite's relic choice (1 of 2) shown with the draft layout. */
@@ -262,9 +313,9 @@ export class RunScreens {
         });
         this.cb.onStake(this.stakeSel);
       };
-      this.buttons = [this.btn('LOWER', W / 2 - 430, 640, 110, 40, () => step(-1)), this.btn('HIGHER', W / 2 + 430, 640, 110, 40, () => step(1))];
+      this.buttons = [this.minorBtn('LOWER', W / 2 - 430, 640, 110, 40, () => step(-1)), this.minorBtn('HIGHER', W / 2 + 430, 640, 110, 40, () => step(1))];
     }
-    this.buttons.push(this.btn('MENU', 90, 40, 130, 44, () => this.cb.onMenu()));
+    this.buttons.push(this.minorBtn('MENU', 90, 40, 130, 44, () => this.cb.onMenu()));
     this.cards = CABINET_ORDER.map((id, i) => {
       const h = this.hit(W / 2 + (i - (CABINET_ORDER.length - 1) / 2) * 240, 380, 220, 420, () => {
         if (!this.cabinetUnlocked.has(id) || this.picked >= 0) return;
@@ -440,7 +491,7 @@ export class RunScreens {
     if (b?.kind === 'wheel') {
       // The wheel's prize is yours to take or leave.
       this.buttons = [
-        this.btn('PASS', W / 2 - 160, 660, 260, 56, () => {
+        this.minorBtn('PASS', W / 2 - 160, 660, 260, 56, () => {
           this.sounds.fizzle();
           advance();
         }),
@@ -569,7 +620,14 @@ export class RunScreens {
     drawText(ctx, this.bonusLanded ? 'DONE' : `SPINS LEFT ${this.rushRespins}`, W / 2 + 140, 500, 3, pulseCol, { punch: 1 + 0.35 * this.rushPulse });
     if (this.rushBanner && this.rushBanner.t > 0) {
       const t = this.rushBanner.t;
-      drawText(ctx, this.rushBanner.text, W / 2, 110, 5, this.rushBanner.color, { punch: 1 + 0.4 * Math.max(0, t - 0.7) * 3, alpha: Math.min(1, t * 2.5) });
+      // On its own plate, clear of the grid's frame.
+      const bw = this.rushBanner.text.length * 30 + 24;
+      ctx.save();
+      ctx.globalAlpha *= Math.min(1, t * 2.5);
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(W / 2 - bw / 2, 100 - 28, bw, 56);
+      ctx.restore();
+      drawText(ctx, this.rushBanner.text, W / 2, 100, 5, this.rushBanner.color, { punch: 1 + 0.4 * Math.max(0, t - 0.7) * 3, alpha: Math.min(1, t * 2.5) });
     }
     drawText(ctx, `UP TO ${RUSH.commonMax} COMMON  -  ${RUSH.commonMax + 1}-${RUSH.uncommonMax} UNCOMMON  -  ${RUSH.uncommonMax + 1}+ LEGENDARY`, W / 2, 530, 1.5, COLORS.textDim);
     if (this.bonusLanded) {
@@ -616,6 +674,10 @@ export class RunScreens {
 
   private btn(label: string, x: number, y: number, w: number, h: number, onClick: () => void): Btn {
     return { ...this.hit(x, y, w, h, onClick), label, scale: 1 };
+  }
+  /** A secondary button: quiet purple, no breathing. */
+  private minorBtn(label: string, x: number, y: number, w: number, h: number, onClick: () => void): Btn {
+    return { ...this.btn(label, x, y, w, h, onClick), minor: true };
   }
 
   showSpoils(run: RunState, relics: RelicId[], last: FightRecord | null): void {
@@ -735,6 +797,7 @@ export class RunScreens {
   showNext(run: RunState): void {
     this.run = run;
     this.open('next');
+    this.enemyEntrance(run);
     if (needsChoice(run)) {
       this.buttons = run.paths[run.depth].map((_, i) => this.btn('FIGHT THIS ONE', CX + (i === 0 ? -238 : 238), 560, 260, 48, () => this.cb.onFight(i)));
     } else {
@@ -745,6 +808,36 @@ export class RunScreens {
       // With a side bet on the table, FIGHT steps right of its card.
       if (this.betOffer.length) this.buttons[0].x = CX + 170;
     }
+  }
+
+  /** The headliner card arrives: it rises in, the portrait lands, the skulls pop one by one, the pips fill. */
+  private enemyEntrance(run: RunState): void {
+    this.flips.clear();
+    this.hoverSince.clear();
+    this.pinned = -1;
+    this.panelIn = 0;
+    this.portraitPop = 1.25;
+    this.skullPop = [0, 0, 0];
+    this.pipFill = 0;
+    this.lastPip = 1;
+    void this.ui.tween({ from: 0, to: 1, dur: 0.3, ease: backOut(2), onUpdate: (v) => (this.panelIn = v) });
+    void this.ui.wait(0.12).then(() => this.ui.tween({ from: 1.25, to: 1, dur: 0.18, ease: backOut(2), onUpdate: (v) => (this.portraitPop = v) }));
+    const e = run.enemies[run.depth];
+    const pips = needsChoice(run) ? 3 : this.dangerOf(e);
+    for (let k = 0; k < 3; k++)
+      void this.ui.wait(0.2 + k * 0.08).then(() => {
+        if (k < pips) {
+          if (k === 2 && e.isBoss && !needsChoice(run)) this.sounds.stingerMedium();
+          else this.sounds.click();
+        }
+        return this.ui.tween({ from: 0, to: 1, dur: 0.22, ease: backOut(3), onUpdate: (v) => (this.skullPop[k] = v) });
+      });
+    void this.ui.wait(0.5).then(() =>
+      this.ui.tween({ from: 0, to: 8, dur: 0.4, onUpdate: (v) => (this.pipFill = v) }).then(() => {
+        this.pipFill = 99;
+        return this.ui.tween({ from: 1.3, to: 1, dur: 0.2, ease: backOut(2), onUpdate: (v) => (this.lastPip = v) });
+      }),
+    );
   }
 
   /** SIDE BET: the fight's one bet, staked with a -5 / -1 / +1 / +5 stepper (0 takes it off the table). */
@@ -768,6 +861,11 @@ export class RunScreens {
       this.sounds.coin(4);
       this.sounds.coin(8);
     } else this.sounds.click();
+    if (after !== before) {
+      this.betDrop = after > before ? 1 : -1;
+      void this.ui.tween({ from: 1.3, to: 1, dur: 0.22, ease: backOut(2), onUpdate: (v) => (this.betPunch = v) });
+      void this.ui.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (this.betFall = v) });
+    }
   }
 
   /** The bet card: its name, its line, what it pays, and the stake stepper. */
@@ -783,8 +881,18 @@ export class RunScreens {
     drawText(ctx, d.rule, cx, BET_Y + 56, 1.5, COLORS.text);
     const hot = !!b.hot;
     drawText(ctx, `${hot ? 'HOT HAND! ' : ''}PAYS X${b.pay}  -  MAX ${stakeCap(run)}`, cx, BET_Y + 76, 1.5, hot ? '#ff8a3a' : COLORS.goldLight, { punch: hot ? 1 + 0.05 * Math.sin(time * 8) : 1 });
-    drawText(ctx, `${stake}`, cx, BET_Y + 103, stake ? 2.5 : 2, stake ? '#fff6c8' : COLORS.textDim, { punch: stake ? 1 + 0.04 * Math.sin(time * 6) : 1 });
+    drawText(ctx, `${stake}`, cx, BET_Y + 103, stake ? 2.5 : 2, stake ? '#fff6c8' : COLORS.textDim, { punch: this.betPunch });
     const top = maxStake(run);
+    // The stake as a chip stack beside the card: a chip drops on with each raise, lifts off with each cut.
+    const chips = Math.min(10, Math.ceil(stake / 2));
+    const sx = cx - 168;
+    const wob = stake >= top && stake > 0 && this.betFall > 0 ? Math.sin(this.betFall * Math.PI * 4) * 2 : 0;
+    for (let k = 0; k < chips; k++) {
+      const topChip = k === chips - 1 && this.betDrop > 0;
+      drawSprite(ctx, 'chip', sx + wob, BET_Y + 110 - k * 5 - (topChip ? this.betFall * 24 : 0), 1.5);
+    }
+    if (this.betDrop < 0 && this.betFall > 0) drawSprite(ctx, 'chip', sx, BET_Y + 110 - chips * 5 - (1 - this.betFall) * 18, 1.5, { alpha: this.betFall });
+    if (stake >= top && stake > 0) drawText(ctx, 'MAX', sx, BET_Y + 92 - chips * 5, 1.5, COLORS.goldLight, { punch: this.betPunch });
     for (const btn of this.buttons) {
       if (btn.bet === undefined) continue;
       const ok = btn.bet > 0 ? stake < top : stake > 0;
@@ -805,7 +913,7 @@ export class RunScreens {
     this.shopItems = items;
     if (!reopen) this.open('shop');
     this.buttons = [
-      this.btn(`REROLL - ${rerollCost(run)}`, CX - 160, 574, 260, 50, () => this.cb.onReroll()),
+      this.minorBtn(`REROLL - ${rerollCost(run)}`, CX - 160, 574, 260, 50, () => this.cb.onReroll()),
       this.btn('LEAVE', CX + 160, 574, 260, 50, () => this.cb.onLeave()),
     ];
     // Two shelves: the counter (charms, swaps, levels, heals) and, behind the glass, the relics.
@@ -827,8 +935,21 @@ export class RunScreens {
   }
 
   /** Called after a purchase: bounce the chip counter and refresh the shelf. */
-  bought(): void {
+  bought(i?: number, item?: ShopItem): void {
     void this.ui.tween({ from: 1.6, to: 1, dur: 0.3, ease: backOut(3), onUpdate: (v) => (this.chipPulse = v) });
+    // What you bought hops in an arc into its spot on YOUR BUILD (relics to the grid, levels to LEVELS, the rest to your reels).
+    const h = i !== undefined ? this.shopHits[i] : undefined;
+    if (h && item) {
+      const o = item.option;
+      const sprite = (o.kind === 'relic' ? RELICS[o.relic].sprite : o.kind === 'gild' ? ENH_SPRITE[o.enh] : o.kind === 'charmLevel' ? ENH_SPRITE[o.enh] : o.kind === 'symLevel' ? o.symbol : o.kind === 'swap' ? o.to : o.kind === 'remove' ? o.symbol : 'heart') as SpriteId;
+      const to =
+        o.kind === 'relic' ? { x: BUILD.x + 40, y: BUILD.y + 600 } : o.kind === 'symLevel' || o.kind === 'charmLevel' ? { x: BUILD.x + 60, y: BUILD.y + 432 } : o.kind === 'gild' || o.kind === 'swap' || o.kind === 'remove' ? { x: BUILD.x + 140, y: BUILD.y + 240 } : { x: BUILD.x + 140, y: BUILD.y + 140 };
+      const f = { sprite, x0: h.x, y0: h.y, x1: to.x, y1: to.y, t: 0 };
+      this.flyers.push(f);
+      void this.ui.tween({ from: 0, to: 1, dur: 0.35, ease: sineOut, onUpdate: (v) => (f.t = v) }).then(() => {
+        this.flyers = this.flyers.filter((x) => x !== f);
+      });
+    }
     if (this.run) this.showShop(this.run, this.shopItems, true);
   }
 
@@ -838,11 +959,11 @@ export class RunScreens {
     this.rideOffer = false;
     this.run = run;
     this.open('over');
-    this.buttons = [this.btn('MENU', CX - 140, 528, 240, 52, () => this.cb.onMenu()), this.btn('NEW RUN', CX + 140, 528, 240, 52, () => this.cb.onNewRun())];
+    this.buttons = [this.minorBtn('MENU', CX - 140, 528, 240, 52, () => this.cb.onMenu()), this.btn('NEW RUN', CX + 140, 528, 240, 52, () => this.cb.onNewRun())];
     // Beat the Dealer: CASH OUT (the two buttons above) or LET IT RIDE into endless loops.
     if (run.won && run.act >= 3 && !run.endless) {
       this.buttons = [
-        this.btn('MENU', CX - 300, 528, 200, 52, () => this.cb.onMenu()),
+        this.minorBtn('MENU', CX - 300, 528, 200, 52, () => this.cb.onMenu()),
         this.btn('CASH OUT', CX - 60, 528, 220, 52, () => this.cb.onNewRun()),
         this.btn('LET IT RIDE', CX + 220, 528, 280, 52, () => this.cb.onLetItRide()),
       ];
@@ -882,7 +1003,7 @@ export class RunScreens {
       this.resultsCopy = null;
     });
     const copy = this.shareLine
-      ? this.btn('COPY RESULT', W / 2, 584, 240, 40, () => {
+      ? this.minorBtn('COPY RESULT', W / 2, 584, 240, 40, () => {
           void navigator.clipboard?.writeText(this.shareLine).then(
             () => (copy!.label = 'COPIED!'),
             () => (copy!.label = 'COPY FAILED'),
@@ -958,6 +1079,18 @@ export class RunScreens {
     // A fresh screen ignores clicks for a moment, so a double-click can't buy on arrival (ITERATION_9 H8).
     if (performance.now() - this.openedAt < INPUT_GUARD_MS) return this.active;
     const h = this.all().find((h) => this.inside(h, x, y));
+    // A tap on an enemy card flips it (touch players can't hover).
+    if (!h && this.mode === 'next' && this.run) {
+      const fork = needsChoice(this.run);
+      const xs = fork ? [CX - 464, CX + 12] : [CX - 330];
+      const y0 = fork ? 222 : 214;
+      const hitX = xs.find((px) => x >= px && x <= px + (fork ? 452 : 660) && y >= y0 && y <= y0 + 260);
+      if (hitX !== undefined) {
+        this.pinned = this.pinned === hitX ? -1 : hitX;
+        this.sounds.click();
+        return true;
+      }
+    }
     if (!h) return this.active;
     h.pressed = true;
     h.scale = Math.min(h.scale, 0.95);
@@ -999,6 +1132,11 @@ export class RunScreens {
     else this.drawOver(ctx);
     // YOUR BUILD: one fixed panel at the bottom of every between-fights screen.
     if (this.run && this.mode !== 'cabinet' && this.mode !== 'bonus') this.drawBuild(ctx);
+    for (const f of this.flyers) {
+      const x = f.x0 + (f.x1 - f.x0) * f.t;
+      const y = f.y0 + (f.y1 - f.y0) * f.t - Math.sin(f.t * Math.PI) * 90;
+      drawSprite(ctx, f.sprite, x, y, 4 - 2.5 * f.t, { rot: f.t * Math.PI * 2 * 0.5 });
+    }
     // Over everything: what the relic under the pointer does (cards that already say it don't add spots).
     if (!this.results) this.tips.draw(ctx, this.mouse.x, this.mouse.y, this.run?.cabinet);
     ctx.restore();
@@ -1047,9 +1185,6 @@ export class RunScreens {
       if (here) drawSprite(ctx, 'nodeHere', x, y - (fork ? 70 : 44) + Math.sin(time * 6) * 4, 2);
       if (opts[0].isBoss) drawSprite(ctx, 'nodeBoss', x, y - 38, 2);
       drawText(ctx, opts[0].isBoss ? 'BOSS' : `${i + 1}`, x, y + (fork ? 64 : 42), 2, here ? COLORS.goldLight : done ? '#6a6078' : COLORS.textDim);
-      // The boss gives THE REPO MAN's liens back.
-      const held = this.run!.liens?.length ?? 0;
-      if (opts[0].isBoss && held) drawText(ctx, `GIVES BACK ${held} HELD`, x, y + 62, 1.25, '#ff9a3a');
     });
   }
 
@@ -1088,8 +1223,6 @@ export class RunScreens {
     rule(y + 160);
     // Your reels: columns 1 2 3, a row per symbol (and charm).
     drawText(ctx, 'YOUR REELS', x + 12, y + 178, 2, COLORS.textDim, { align: 'left' });
-    const liens = run.liens ?? [];
-    if (liens.length) drawText(ctx, `${liens.length} HELD`, x + w - 12, y + 178, 1.5, '#ff9a3a', { align: 'right' });
     const table = runTable(p);
     drawReelTable(ctx, x + 8, y + 190, table, { colW: 90, rowH: 28, scale: 1.5, text: 2, maxRows: 6, levels: p.levels, ticket: p.relics.includes('ticket'), cap: levelCap(run), maxH: 190, badges: false });
     rule(y + 386);
@@ -1103,13 +1236,35 @@ export class RunScreens {
       ...syms.map((sym) => ({ sprite: sym, level: symLevel(p.levels, sym) })),
       ...charms.map(([enh, sym]) => ({ sprite: sym, enh, level: charmLevel(p.levels, enh, ticket) })),
     ];
+    if (this.lvRun !== run) {
+      this.lvRun = run;
+      this.lvSeen.clear();
+      this.lvPunch.clear();
+    }
+    const now = performance.now() / 1000;
     entries.slice(0, 8).forEach((e, i) => {
       const ex = x + 26 + (i % 2) * 134;
       const ey = y + 432 + Math.floor(i / 2) * 28;
-      drawSprite(ctx, e.sprite as SpriteId, ex, ey, 1.5);
-      if (e.enh) drawSprite(ctx, ENH_SPRITE[e.enh], ex, ey, 1.5);
+      const key = e.enh ?? e.sprite;
+      const seen = this.lvSeen.get(key);
+      if (seen !== undefined && e.level > seen) this.lvPunch.set(key, now);
+      this.lvSeen.set(key, e.level);
+      const pt = (now - (this.lvPunch.get(key) ?? -9)) / 0.3;
+      const punch = pt < 1 ? 1 + 0.6 * (1 - pt) * (1 - pt) : 1;
+      if (pt < 1)
+        for (let k = 0; k < 3; k++) {
+          const a = -Math.PI / 2 + (k - 1) * 0.7;
+          ctx.fillStyle = '#5ad8e8';
+          ctx.globalAlpha = 1 - pt;
+          ctx.fillRect(ex + 40 + Math.cos(a) * 20 * pt - 2, ey + Math.sin(a) * 20 * pt - 2, 4, 4);
+          ctx.globalAlpha = 1;
+        }
+      // LV 1 sits dim, so what you've upgraded stands out at a glance.
       const max = e.level >= cap;
-      drawText(ctx, max ? 'MAX' : `LV ${e.level}`, ex + 20, ey, 2, max ? '#ff9a3a' : e.enh ? CHARM_COLOR[e.enh] : COLORS.goldLight, { align: 'left' });
+      const base = e.level <= 1 && !max;
+      drawSprite(ctx, e.sprite as SpriteId, ex, ey, 1.5, { dim: base ? 0.4 : 0 });
+      if (e.enh) drawSprite(ctx, ENH_SPRITE[e.enh], ex, ey, 1.5, { dim: base ? 0.4 : 0 });
+      drawText(ctx, max ? 'MAX' : `LV ${e.level}`, ex + 20, ey, 2, max ? '#ff9a3a' : base ? COLORS.textDim : e.enh ? CHARM_COLOR[e.enh] : COLORS.goldLight, { align: 'left', punch });
     });
     rule(y + 546);
     // Your relics: a fixed grid; past its size the last cell says how many more.
@@ -1266,86 +1421,216 @@ export class RunScreens {
     drawText(ctx, 'LEGENDARY', x, y, 1.5, COLORS.goldLight, { alpha: 0.8 + 0.2 * Math.sin(time * 5) });
   }
 
-  /** One enemy's scouting report. */
-  private drawEnemyPanel(ctx: CanvasRenderingContext2D, e: EnemyDef, x: number, y: number, w: number, time: number): void {
-    this.panel(ctx, x, y, w, 300, e.isBoss || e.elite ? '#ff6a5a' : COLORS.gold);
-    // Danger rating: 1-3 skulls from the archetype's single-fight danger (x1.25 for elites).
-    const danger = (DANGER[e.archetype] ?? 8) * (e.elite ? 1.25 : 1);
-    const pips = e.isBoss ? 3 : danger >= 20 ? 3 : danger >= 9 ? 2 : 1;
-    for (let k = 0; k < pips; k++) drawSprite(ctx, 'dangerPip', x + w - 20 - k * 20, y + 18, 2);
+  /** How many danger skulls (1-3) a fight shows. */
+  private dangerOf(e: EnemyDef): number {
+    if (e.isBoss) return 3;
+    const d = (DANGER[e.archetype] ?? 8) * (e.elite ? 1.25 : 1);
+    return d >= 20 ? 3 : d >= 9 ? 2 : 1;
+  }
+
+  /**
+   * One enemy's scouting report: a casino "headliner card". The front is what you need at a glance (danger, HP,
+   * ability + cadence, one rule); hovering it for a moment flips it to the back (exact text, reels with counts).
+   */
+  private drawEnemyPanel(ctx: CanvasRenderingContext2D, e: EnemyDef, x: number, y: number, w: number, time: number, other = false): void {
+    const h = 260;
+    const m = this.mouse;
+    const inside = m.x >= x - 6 && m.x <= x + w + 6 && m.y >= y - 6 && m.y <= y + h + 6;
+    if (inside && !this.hoverSince.has(x)) this.hoverSince.set(x, time);
+    if (!inside) this.hoverSince.delete(x);
+    const want = (inside && time - (this.hoverSince.get(x) ?? time) >= 0.3) || this.pinned === x ? 1 : 0;
+    let f = this.flips.get(x) ?? 0;
+    f += (want - f) * Math.min(1, this.frameDt * 12);
+    this.flips.set(x, f);
+    const fork = w < 600;
+    const tier = e.isBoss ? 2 : e.elite ? 1 : 0;
+    const bossFrame = `rgb(255,${Math.round(106 + 48 * (0.5 + 0.5 * Math.sin(time * 3)))},${Math.round(90 + 48 * (0.5 + 0.5 * Math.sin(time * 3)))})`;
+    const frame = inside ? COLORS.goldLight : tier === 2 ? bossFrame : tier === 1 ? '#ff9a3a' : COLORS.gold;
+    const back = f > 0.5;
+    ctx.save();
+    ctx.globalAlpha *= this.panelIn * (other ? 0.75 : 1);
+    ctx.translate(x + w / 2, y + h / 2 + (1 - this.panelIn) * 24 - (inside ? 4 : 0));
+    const grow = fork && inside ? 1.02 : 1;
+    ctx.scale(Math.max(0.03, Math.abs(1 - 2 * f)) * grow, grow);
+    ctx.translate(-w / 2, -h / 2);
+    this.panel(ctx, 0, 0, w, h, frame);
+    // Header band: a marquee of bulbs with the name, and 3 skulls (the unearned ones dim).
     ctx.fillStyle = COLORS.panelLight;
-    ctx.fillRect(x + 16, y + 16, 104, 104);
-    drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, x + 68, y + 68 + Math.sin(time * 2) * 2, 4);
-    const badge = BADGE[e.archetype];
-    if (badge) drawSprite(ctx, badge, x + 112, y + 112, 3);
-    const tx = x + 136;
-    drawText(ctx, e.name ?? 'ENEMY', tx, y + 30, e.name && e.name.length > 18 ? 2 : 3, e.isBoss ? '#ff6a5a' : COLORS.slime, { align: 'left' });
-    {
-      const big = wrap(e.blurb, Math.floor((w - 150) / 12));
-      const small = big.length > 2;
-      const lines = small ? wrap(e.blurb, Math.floor((w - 150) / 9)) : big;
-      lines.slice(0, 3).forEach((l, k) => drawText(ctx, l, tx, y + 58 + k * (small ? 13 : 18), small ? 1.5 : 2, COLORS.text, { align: 'left' }));
-    }
-    const hp = enemyHp(this.run!, e);
-    drawText(ctx, `HP ${hp}`, tx, y + 104, 2, COLORS.hp, { align: 'left' });
-    if (e.elite)
-      drawText(
-        ctx,
-        (e.act ?? 1) > 1 ? `ELITE: +${Math.round((ELITE_HP_MUL_2 - 1) * 100)}% HP. PAYS ${CHIPS.act2EliteChips + CHIPS.eliteBonus} CHIPS` : `ELITE: +${e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP, RELIC PICK, +${CHIPS.eliteBonus} CHIPS`,
-        tx + 90,
-        y + 104,
-        1.5,
-        '#ff9a3a',
-        { align: 'left' },
-      );
-    // (BLUE stake's counter fork carries no label: the player doesn't need to be told it's their counter.)
-    if (e.ability) {
-      // The real cadence: Hourglass and HIGH STAKES (the same helper the Fight uses).
-      const run = this.run!;
-      const every = effectiveAbility(e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
-      drawSprite(ctx, ABILITY_UI[e.ability.kind].icon, x + 24, y + 146, 2);
-      wrap(abilityText(e, every, this.run ?? undefined), Math.floor((w - 60) / 12)).forEach((l, k) => drawText(ctx, l, x + 40, y + 146 + k * 18, 2, '#ff9a3a', { align: 'left' }));
-    }
-    const mirror = e.boss === 'mirror';
-    drawText(ctx, 'THEIR REELS', x + 16, y + 200, 2, COLORS.textDim, { align: 'left' });
-    let cx = x + 36;
-    const dirty = e.boss === 'house' && this.run!.stake >= STAKE.houseDirty;
-    const shown = dirty ? { ...e.strips[0], bomb: STAKE.houseBombsPerReel } : e.strips[0];
-    for (const [sym, n] of (Object.entries(shown) as [SymbolId, number][]).filter(([, n]) => n > 0)) {
-      drawSprite(ctx, sym as SpriteId, cx, y + 232, 2);
-      drawText(ctx, `${n}`, cx + 24, y + 232, 2, COLORS.text, { align: 'left' });
-      cx += 72;
-    }
-    const bossText =
-      e.boss === 'dealer'
-        ? 'DEALS: A CARD ON YOUR PAYLINE (ACE X2, JOKER WILD, DEUCE 0), ALL IN (ITS WHOLE HAND), RAISE (BOTH X2). NO KILL BEFORE ITS FIRST DEAL.'
-        : e.boss === 'mirror'
-        ? `EACH SHARD ON ITS PAYLINE THROWS A THIRD OF YOUR LAST HIT BACK. CRACKED AT HALF HP, A HALF. A TURN NEVER DEALS MORE THAN ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP.`
-        : `COINS FILL THE POT. EVERY ${this.houseEvery()} TURNS IT SKIMS HALF AT YOU. ANY JACKPOT YOU HIT STEALS THE POT! AT HALF HP IT GOES ALL IN. ${CHIPS.stackPer} CHIPS KEPT = +${UNIT} SHIELD EACH HOUSE TURN.${dirty ? ' BLACK: IT BOMBS YOUR PAYLINE.' : ''}`;
-    // GREEN: say which relic the Mirror will copy.
-    const copy = mirror && this.run ? mirrorCopy(this.run) : null;
-    if (copy) {
-      drawSprite(ctx, RELICS[copy].sprite as SpriteId, x + w - 40, y + 100, 2);
-      this.tips.add(copy, x + w - 40, y + 100);
-      drawText(ctx, `COPIES YOUR ${RELICS[copy].name}`, x + w - 62, y + 100, 1.5, '#c8f0ff', { align: 'right' });
-    }
-    // Beat this boss and THE REPO MAN gives back what he holds: say what (EXPERT_PLAYTEST_10 D4).
-    const held = e.isBoss ? (this.run?.liens ?? []) : [];
-    if (held.length) {
-      const all = `BEAT IT AND YOU GET BACK: ${held.map(lienShort).join(', ')}`;
-      drawText(ctx, all.length <= 60 ? all : `BEAT IT AND YOU GET BACK ${held.length} HELD CELLS`, x + w - 20, y + 124, 1.25, '#ff9a3a', { align: 'right' });
-    }
-    if (e.isBoss)
-      {
-        // The act's most important rules: readable size for every boss (the House's was 1x).
-        const sc = 1.5;
-        wrap(bossText, Math.floor((w - 32) / (6 * sc))).forEach((l, k) =>
-          drawText(ctx, l, x + 16, y + 254 + k * 12 * sc, sc, e.boss === 'mirror' ? '#c8f0ff' : COLORS.goldLight, { align: 'left' }),
-        );
+    ctx.fillRect(0, 0, w, 40);
+    const phase = tier === 2 ? Math.floor(time * 8) : tier === 1 ? Math.floor(time * 4) : 0;
+    for (let i = 0; 10 + i * 20 < w; i++)
+      for (const by of [3, 33]) {
+        ctx.fillStyle = (i + phase + (by > 20 ? 1 : 0)) % 2 ? '#3a2e52' : frame;
+        ctx.fillRect(8 + i * 20, by, 4, 4);
       }
+    const name = e.name ?? 'ENEMY';
+    const tx = fork ? 124 : 148;
+    drawText(ctx, name, tx, 20, fork ? (name.length > 12 ? 2 : 2.5) : name.length > 16 ? 2.5 : 3, tier === 2 ? '#ff6a5a' : tier === 1 ? '#ff9a3a' : COLORS.slime, { align: 'left' });
+    const pips = this.dangerOf(e);
+    for (let k = 0; k < 3; k++) {
+      const lit = 2 - k < pips;
+      const pop = this.skullPop[2 - k] ?? 1;
+      drawSprite(ctx, 'dangerPip', w - 24 - k * 30, 20, (fork ? 2.5 : 3) * (lit ? pop : 1), { alpha: lit ? 1 : 0.25 });
+    }
+    if (back) this.drawPanelBack(ctx, e, w, pips);
+    else this.drawPanelFront(ctx, e, w, h, time, inside, fork);
+    ctx.restore();
+    // The relic tip for the Mirror's copy uses screen coordinates (front only).
+    const copy = e.boss === 'mirror' && this.run ? mirrorCopy(this.run) : null;
+    if (copy && f < 0.1) this.tips.add(copy, x + w - 56, y + 228);
+  }
+
+  private drawPanelFront(ctx: CanvasRenderingContext2D, e: EnemyDef, w: number, h: number, time: number, hover: boolean, fork: boolean): void {
+    const run = this.run!;
+    // The stage: a spotlit box with the portrait standing on it.
+    const st = fork ? 92 : 116;
+    const sx = 16;
+    const sy = 52;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(sx - 3, sy - 3, st + 6, st + 6);
+    const g = ctx.createRadialGradient(sx + st / 2, sy + st / 2, 4, sx + st / 2, sy + st / 2, st * 0.7);
+    const tint = STAGE_TINT[e.boss ?? e.archetype] ?? COLORS.gold;
+    g.addColorStop(0, tint);
+    g.addColorStop(1, COLORS.panel);
+    ctx.save();
+    ctx.globalAlpha *= 0.35;
+    ctx.fillStyle = g;
+    ctx.fillRect(sx, sy, st, st);
+    ctx.restore();
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(sx + st / 2 - st * 0.3, sy + st - 18, st * 0.6, 8);
+    const bob = hover ? Math.sin(time * 5) * 4 : Math.sin(time * 2) * 2;
+    drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, sx + st / 2, sy + st / 2 + bob, (fork ? 3 : 4) * this.portraitPop);
+    const badge = BADGE[e.archetype];
+    if (badge) drawSprite(ctx, badge, sx + st - 8, sy + st - 8, fork ? 2.5 : 3);
+    if (e.elite) {
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(sx, sy, st, 18);
+      ctx.fillStyle = '#8a3a10';
+      ctx.fillRect(sx + 2, sy + 2, st - 4, 14);
+      drawText(ctx, 'ELITE', sx + st / 2, sy + 9, 1.5, COLORS.goldLight);
+      drawSprite(ctx, artId('voucherRelic'), sx + 14, sy + st - 12, 1.5);
+    }
+    // Right column: one-line blurb, the HP bar, then the ability with its cadence.
+    const tx = fork ? 124 : 148;
+    const room = w - tx - 16;
+    const blurbScale = e.blurb.length * 12 <= room ? 2 : e.blurb.length * 9 <= room ? 1.5 : 0;
+    if (blurbScale) drawText(ctx, e.blurb, tx, 62, blurbScale, COLORS.textDim, { align: 'left' });
+    const hp = enemyHp(run, e);
+    const bw = fork ? Math.min(200, room - 24) : 280;
+    drawSprite(ctx, 'heart', tx + 8, 96, 2);
+    const bx = tx + 24;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(bx - 2, 84, bw + 4, 24);
+    ctx.fillStyle = COLORS.hp;
+    ctx.fillRect(bx, 86, bw, 20);
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillRect(bx, 86, bw, 3);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(bx, 103, bw, 3);
+    drawText(ctx, fmtNum(hp), bx + bw / 2, 96, 2, COLORS.text);
+    if (e.ability) {
+      const every = effectiveAbility(e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
+      const ui = ABILITY_UI[e.ability.kind];
+      drawSprite(ctx, ui.icon, tx + 12, 138, fork ? 2.5 : 3);
+      drawText(ctx, ui.label, tx + 34, 138, fork ? 2 : 2.5, '#ff9a3a', { align: 'left' });
+      let px = tx + 34 + ui.label.length * (fork ? 12 : 15) + 16;
+      const shownPips = Math.min(every, 8);
+      for (let i = 0; i < shownPips; i++) {
+        const last = i === shownPips - 1;
+        const on = this.pipFill > i;
+        const s = last && on ? this.lastPip : 1;
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(px - 6 * s, 138 - 6 * s, 12 * s, 12 * s);
+        ctx.fillStyle = last && on ? '#ff5a4a' : '#2a2038';
+        ctx.fillRect(px - 4 * s, 138 - 4 * s, 8 * s, 8 * s);
+        px += 14;
+      }
+      if (!fork) drawText(ctx, `EVERY ${every} TURNS`, px + 4, 138, 1.5, COLORS.textDim, { align: 'left' });
+      const what = abilityWhat(e, run);
+      drawText(ctx, what, tx, 166, what.length * 12 <= room ? 2 : 1.5, COLORS.text, { align: 'left' });
+    }
+    // Footer: which symbols it runs (icons only), or a boss's one rule.
+    ctx.fillStyle = '#2a2140';
+    ctx.fillRect(8, 197, w - 16, 2);
+    if (e.isBoss) {
+      drawText(ctx, BOSS_HEADLINE[e.boss ?? ''] ?? '', 16, 228, 2, e.boss === 'mirror' ? '#c8f0ff' : COLORS.goldLight, { align: 'left' });
+      const copy = e.boss === 'mirror' ? mirrorCopy(run) : null;
+      if (copy) {
+        drawText(ctx, 'COPIES', w - 80, 228, 1.5, '#c8f0ff', { align: 'right' });
+        drawSprite(ctx, RELICS[copy].sprite as SpriteId, w - 56, 228, 2);
+      }
+    } else {
+      let cx = 36;
+      for (const [sym, n] of Object.entries(e.strips[0]) as [SymbolId, number][]) {
+        if (n <= 0) continue;
+        drawSprite(ctx, sym as SpriteId, cx, 228, 2);
+        cx += 40;
+      }
+    }
+    // "?" tab: says the card has a back.
+    ctx.fillStyle = COLORS.panelLight;
+    ctx.fillRect(w - 34, h - 30, 26, 22);
+    drawText(ctx, '?', w - 21, h - 19, 2, hover ? COLORS.goldLight : COLORS.textDim);
+  }
+
+  private drawPanelBack(ctx: CanvasRenderingContext2D, e: EnemyDef, w: number, danger: number): void {
+    const run = this.run!;
+    const sc = w < 600 ? 1.5 : 2;
+    const cols = Math.floor((w - 32) / (6 * sc));
+    let y = 60;
+    const line = (text: string, color: string) => {
+      wrap(text, cols).forEach((l) => {
+        drawText(ctx, l, 16, y, sc, color, { align: 'left' });
+        y += 10 * sc;
+      });
+      y += 4;
+    };
+    const blurbFits = e.blurb.length * 9 <= w - (w < 600 ? 140 : 164);
+    if (!blurbFits) line(e.blurb, COLORS.textDim);
+    if (e.ability) {
+      const every = effectiveAbility(e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
+      line(abilityText(e, every, run), COLORS.text);
+    }
+    if (e.elite)
+      line(
+        (e.act ?? 1) > 1
+          ? `ELITE: +${Math.round((ELITE_HP_MUL_2 - 1) * 100)}% HP. PAYS ${CHIPS.act2EliteChips + CHIPS.eliteBonus} CHIPS`
+          : `ELITE: +${e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP, RELIC PICK, +${CHIPS.eliteBonus} CHIPS`,
+        '#ff9a3a',
+      );
+    const dirty = e.boss === 'house' && run.stake >= STAKE.houseDirty;
+    if (e.isBoss) {
+      y += 2;
+      line(
+        e.boss === 'dealer'
+          ? 'DEALS: A CARD ON YOUR PAYLINE (ACE X2, JOKER WILD, DEUCE 0), ALL IN (ITS WHOLE HAND), RAISE (BOTH X2). NO KILL BEFORE ITS FIRST DEAL.'
+          : e.boss === 'mirror'
+          ? `EACH SHARD ON ITS PAYLINE THROWS A THIRD OF YOUR LAST HIT BACK. CRACKED AT HALF HP, A HALF. A TURN NEVER DEALS MORE THAN ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP.`
+          : `COINS FILL THE POT. EVERY ${this.houseEvery()} TURNS IT SKIMS HALF AT YOU. ANY JACKPOT YOU HIT STEALS THE POT! AT HALF HP IT GOES ALL IN.${dirty ? ' BLACK: IT BOMBS YOUR PAYLINE.' : ''}`,
+        e.boss === 'mirror' ? '#c8f0ff' : COLORS.goldLight,
+      );
+      const copy = e.boss === 'mirror' ? mirrorCopy(run) : null;
+      if (copy) line(`COPIES YOUR ${RELICS[copy].name}`, '#c8f0ff');
+    }
+    // THEIR REELS with counts, along the bottom.
+    ctx.fillStyle = '#2a2140';
+    ctx.fillRect(8, 197, w - 16, 2);
+    drawText(ctx, 'THEIR REELS', 16, 216, 1.25, COLORS.textDim, { align: 'left' });
+    const shown = dirty ? { ...e.strips[0], bomb: STAKE.houseBombsPerReel } : e.strips[0];
+    let cx = 26;
+    for (const [sym, n] of Object.entries(shown) as [SymbolId, number][]) {
+      if (n <= 0) continue;
+      drawSprite(ctx, sym as SpriteId, cx, 238, 1.5);
+      drawText(ctx, `${n}`, cx + 16, 238, 1.5, COLORS.text, { align: 'left' });
+      cx += 50;
+    }
+    drawText(ctx, `DANGER ${danger} OF 3`, w - 14, 238, 1.25, COLORS.textDim, { align: 'right' });
   }
 
   private drawNext(ctx: CanvasRenderingContext2D, time: number): void {
+    this.frameDt = this.lastDraw ? Math.min(0.1, Math.max(0, time - this.lastDraw)) : 0;
+    this.lastDraw = time;
     const run = this.run!;
     const opts = run.paths[run.depth];
     const fork = needsChoice(run);
@@ -1353,13 +1638,29 @@ export class RunScreens {
     const act = run.endless ? `LOOP ${run.endless.loop} - ` : `ACT ${run.act} - `;
     const len = actLength(run.act);
     const title = e.isBoss ? (run.act >= runActs(run) && !run.endless ? 'FINAL FIGHT' : `${act}BOSS FIGHT`) : fork ? `${act}FIGHT ${run.depth + 1} OF ${len} - CHOOSE YOUR PATH` : `${act}FIGHT ${run.depth + 1} OF ${len}`;
-    drawText(ctx, title, CX, 26, 3, fork ? COLORS.goldLight : run.act > 1 ? '#c8f0ff' : COLORS.textDim);
+    drawText(ctx, title, CX, 26, 3, e.isBoss && !fork ? '#ff6a5a' : fork ? COLORS.goldLight : run.act > 1 ? '#c8f0ff' : COLORS.textDim);
     this.drawMap(ctx, 128, time);
     if (fork) {
-      opts.forEach((o, i) => this.drawEnemyPanel(ctx, o, i === 0 ? CX - 464 : CX + 12, 222, 452, time));
-      drawText(ctx, 'OR', CX, 372, 4, COLORS.goldLight);
+      const xs = [CX - 464, CX + 12];
+      const over = xs.map((px) => this.mouse.x >= px && this.mouse.x <= px + 452 && this.mouse.y >= 222 && this.mouse.y <= 482);
+      opts.forEach((o, i) => this.drawEnemyPanel(ctx, o, xs[i], 222, 452, time, over[1 - i]));
+      this.buttons.forEach((b, i) => (b.quiet = !over[i] && !b.hover));
+      // "OR": a gold coin in the gap between the two cards.
+      ctx.fillStyle = COLORS.outline;
+      ctx.beginPath();
+      ctx.arc(CX, 352, 25, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = COLORS.gold;
+      ctx.beginPath();
+      ctx.arc(CX, 352, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = COLORS.outline;
+      ctx.beginPath();
+      ctx.arc(CX, 352, 19, 0, Math.PI * 2);
+      ctx.fill();
+      drawText(ctx, 'OR', CX, 353, 2.5, COLORS.goldLight);
     } else {
-      this.drawEnemyPanel(ctx, e, CX - 330, 206, 660, time);
+      this.drawEnemyPanel(ctx, e, CX - 330, 214, 660, time);
       if (this.betOffer.length) this.drawBets(ctx, time);
     }
     for (const b of this.buttons) if (!b.bet) this.drawButton(ctx, b, time);
@@ -1559,9 +1860,11 @@ export class RunScreens {
     const mirrorNote = legend && relicId && this.run && this.run.stake >= STAKE.mirrorRelic && this.run.act === 2 ? (mirrorCanUse(relicId) ? 'THE MIRROR WILL COPY IT' : "THE MIRROR CAN'T USE IT") : '';
     const w = 340;
     const tall = 46 + lines.length * 20 + (mirrorNote ? 18 : 0);
+    // The top shelf opens its card above the item (a side card covered the neighbours' prices); the relic shelf, to the side.
+    const top = h.y < (SHELF.y[0] + SHELF.y[1]) / 2;
     const right = h.x + h.w / 2 + 14 + w <= W - 8;
-    const x = right ? h.x + h.w / 2 + 14 : h.x - h.w / 2 - 14 - w;
-    const y = Math.max(8, Math.min(H - tall - 8, h.y - tall / 2));
+    const x = top ? Math.max(BUILD.x + BUILD.w + 12, Math.min(W - w - 8, h.x - w / 2)) : right ? h.x + h.w / 2 + 14 : h.x - h.w / 2 - 14 - w;
+    const y = top ? Math.max(8, h.y - h.h / 2 - tall - 14) : Math.max(8, Math.min(H - tall - 8, h.y - tall / 2));
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(x - 4, y - 4, w + 8, tall + 8);
     ctx.fillStyle = legend ? '#ffd23f' : COLORS.gold;
@@ -1599,8 +1902,19 @@ export class RunScreens {
       ctx.fillStyle = legend ? '#5a1838' : '#3a1530';
       ctx.fillRect(-45, -43, 90, 82);
       if (legend) {
-        ctx.fillStyle = `rgba(255,236,150,${0.12 + 0.1 * Math.sin(time * 4)})`;
-        ctx.fillRect(-45, -43, 90, 82);
+        // One diagonal sheen sweeps the velvet every 2.5s (a pulse read as flicker).
+        const k = (time % 2.5) / 0.6;
+        if (k < 1) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(-45, -43, 90, 82);
+          ctx.clip();
+          ctx.translate(-80 + k * 160, 0);
+          ctx.rotate(0.5);
+          ctx.fillStyle = 'rgba(255,236,150,0.2)';
+          ctx.fillRect(-6, -90, 12, 180);
+          ctx.restore();
+        }
       }
     } else {
       // A soft shadow where it sits on the counter.
@@ -1650,7 +1964,8 @@ export class RunScreens {
 
 
   private drawButton(ctx: CanvasRenderingContext2D, b: Btn, time: number): void {
-    const pulse = 1 + 0.02 + 0.02 * Math.sin((time * Math.PI * 2) / 1.6);
+    // Only the screen's next step breathes; secondary buttons sit still.
+    const pulse = b.minor || b.quiet ? 1 : 1 + 0.02 + 0.02 * Math.sin((time * Math.PI * 2) / 1.6);
     ctx.save();
     ctx.translate(b.x, b.y);
     ctx.scale(b.scale * pulse, b.scale * pulse);
@@ -1658,12 +1973,12 @@ export class RunScreens {
     ctx.fillRect(-b.w / 2 - 3, -b.h / 2 - 3, b.w + 6, b.h + 6);
     ctx.fillStyle = COLORS.gold;
     ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
-    ctx.fillStyle = b.pressed ? '#2a0806' : b.hover ? '#e04a2f' : '#c8321f';
+    ctx.fillStyle = b.minor ? (b.pressed ? '#1a1428' : b.hover ? '#3a2e52' : COLORS.panelLight) : b.pressed ? '#2a0806' : b.hover ? '#e04a2f' : '#c8321f';
     ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, b.h - 8);
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillStyle = b.minor ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.15)';
     ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, (b.h - 8) / 2);
     // The big size whenever the label fits the button (the boss buttons used to drop a size).
-    drawText(ctx, b.label, 0, 1, b.label.length <= 11 || b.label.length * 18 <= b.w - 30 ? 3 : 2, '#fff6c8');
+    drawText(ctx, b.label, 0, 1, b.label.length <= 11 || b.label.length * 18 <= b.w - 30 ? 3 : 2, b.minor ? COLORS.goldLight : '#fff6c8');
     ctx.restore();
   }
 
@@ -1730,7 +2045,18 @@ export class RunScreens {
     if (this.unlockedNow.length) lines.push([`NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, COLORS.goldLight]);
     if (this.rideOffer) lines.push(['YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', COLORS.goldLight]);
     const shown = lines.slice(0, 2);
-    shown.forEach(([text, color], k) => drawText(ctx, text, CX, shown.length > 1 ? 462 + k * 18 : 472, shown.length > 1 || text.length > 90 ? 1.5 : 2, color));
+    shown.forEach(([text, color], k) => {
+      const ly = shown.length > 1 ? 462 + k * 18 : 472;
+      if (text === recap) {
+        // The death recap is the lesson on a loss: it gets a red-framed strip.
+        const sh = shown.length > 1 ? 16 : 30;
+        ctx.fillStyle = COLORS.danger;
+        ctx.fillRect(316, ly - sh / 2 - 3, 940, sh + 6);
+        ctx.fillStyle = '#1a0a10';
+        ctx.fillRect(319, ly - sh / 2, 934, sh);
+      }
+      drawText(ctx, text, CX, ly, shown.length > 1 || text.length > 90 ? 1.5 : 2, color);
+    });
     // Chips left (a won run scores them) and the side bets' record.
     const bets = run.records.filter((r) => r.bet);
     const betLine = bets.length ? `  -  SIDE BETS ${bets.filter((r) => r.bet!.won).length} OF ${bets.length}` : '';
@@ -1790,10 +2116,9 @@ export class RunScreens {
         ...(r.bought ?? []).map((b) => `BUY: ${describeOption(b).title}`),
         r.chips ? `+${r.chips} CHIPS` : '',
       ].filter(Boolean).join('  ');
-      if (extra) drawText(ctx, extra, 919, y + 12, 1, COLORS.textDim, { align: 'left' });
+      if (extra) drawText(ctx, extra, 919, y + 13, 1.25, COLORS.textDim, { align: 'left' });
       else if (!r.won) drawText(ctx, 'DEFEATED', 919, y, 2, COLORS.danger, { align: 'left' });
-      if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCK${r.rocksAdded > 1 ? 'S' : ''}`, 786, y + 12, 1, '#c9bba8');
-      if (r.liens) drawText(ctx, `${r.liens} HELD`, r.rocksAdded ? 742 : 786, y + 12, 1, '#ff9a3a');
+      if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCK${r.rocksAdded > 1 ? 'S' : ''}`, 786, y + 13, 1.25, '#c9bba8');
     });
     for (const b of this.buttons) this.drawButton(ctx, b, 0);
     if (this.results) this.drawResults(ctx, run);

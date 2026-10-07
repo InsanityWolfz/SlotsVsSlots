@@ -363,8 +363,9 @@ export class Director {
     });
   }
 
-  private popText(text: string, x: number, y: number, scale: number, color: string, rise = 50, hold = 0.35): Promise<void> {
+  private popText(text: string, x: number, y: number, scale: number, color: string, rise = 50, hold = 0.35, plate = false): Promise<void> {
     const t = this.s.fx.add(new FloatText(text, x, y, scale, color));
+    t.plate = plate;
     t.punch = 0;
     return this.c
       .tween({ from: 0, to: 1, dur: 0.18, ease: backOut(3), onUpdate: (v) => (t.punch = v) })
@@ -1119,8 +1120,8 @@ export class Director {
     if (e.armed && !h.armed) {
       h.armed = true;
       this.s.sounds.lucky();
-      const p0 = h.pipPos(0);
-      this.bg(this.popText(m.kind === 'touch' ? 'NEXT SWORDS AND SHIELDS TURN GOLD!' : m.kind === 'vault' ? 'HIGH ROLLER! YOUR NEXT PAY MULTIPLIES!' : 'NEXT SPIN: ALL JACKPOTS!', p0.x + 80, p0.y - 26, 2, m.color, 20, 0.6));
+      // Over the machine's top, on a plate: it used to land on the HP and meter bars.
+      this.bg(this.popText(m.kind === 'touch' ? 'NEXT SPIN TURNS GOLD!' : m.kind === 'vault' ? 'HIGH ROLLER! NEXT PAY MULTIPLIES!' : 'NEXT SPIN: ALL JACKPOTS!', MACHINE_CX[e.side], MACHINE_TOP - 18, 2, m.color, 12, 0.6, true));
     }
     if (e.reels.length) this.settle(e.side, e.reels);
   }

@@ -30,6 +30,8 @@ export class FloatText implements FxItem {
   alpha = 1;
   punch = 1;
   z = 20;
+  /** A dark plate behind the words, for callouts that land on busy art. */
+  plate = false;
   constructor(
     public text: string,
     public x: number,
@@ -38,6 +40,15 @@ export class FloatText implements FxItem {
     public color: string,
   ) {}
   draw(ctx: CanvasRenderingContext2D): void {
+    if (this.plate && this.alpha > 0) {
+      const w = this.text.length * 6 * this.scale * this.punch + 24;
+      const h = 10 * this.scale * this.punch + 10;
+      ctx.save();
+      ctx.globalAlpha *= this.alpha;
+      ctx.fillStyle = 'rgba(20,12,28,0.85)';
+      ctx.fillRect(this.x - w / 2, this.y - h / 2, w, h);
+      ctx.restore();
+    }
     drawText(ctx, this.text, this.x, this.y, this.scale, this.color, { alpha: this.alpha, punch: this.punch });
   }
 }

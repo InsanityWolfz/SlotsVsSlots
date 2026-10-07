@@ -189,7 +189,9 @@ export class Menus {
     this.open('main');
     const x = W / 2;
     const first = !this.cb.tutorialDone();
-    this.btn('NEW RUN', x, 318, 380, 54, () => this.cb.onNewRun(), 3).opts.idlePulse = !first;
+    const newRun = this.btn('NEW RUN', x, 318, 380, 54, () => this.cb.onNewRun(), 3);
+    newRun.opts.idlePulse = !first;
+    newRun.opts.primary = true;
     // THE DAILY RUN: today's slot machine, one try a day (then its score).
     const today = dailyKey();
     const run = this.profile().runs.find((e) => e.daily === today);
@@ -222,33 +224,38 @@ export class Menus {
       this.btn('TROPHIES', x, 566, 124, 54, () => this.showTrophies(), 1.5);
       this.btn('HISCORES', x + 128, 566, 124, 54, () => this.showHiscores(), 1.5);
     }
-    const light = this.btn(this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL', 150, 36, 260, 40, () => {
+    // Settings sit small and dim in the bottom row: the title should lead the eye to NEW RUN.
+    const light = this.btn(this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL', 330, H - 30, 200, 32, () => {
       this.cb.setSoftLightning(!this.cb.softLightning());
       light.label = this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL';
       light.toggled = this.cb.softLightning();
     });
     light.toggled = this.cb.softLightning();
+    light.opts.quiet = true;
+    light.opts.textScale = 1.5;
     this.resetArmed = 0;
-    const reset = this.btn('RESET SAVE', W - 110, 36, 190, 40, () => {
+    const reset = this.btn('RESET SAVE', 530, H - 30, 160, 32, () => {
       if (performance.now() - this.resetArmed < 400) return;
       if (!this.resetArmed) {
         this.resetArmed = performance.now();
         reset.label = 'SURE? CLICK AGAIN';
-        reset.w = 250;
-        reset.x = W - 140;
+        reset.w = 220;
+        reset.x = 560;
         this.sounds.fizzle();
         setTimeout(() => {
           if (this.mode !== 'main') return;
           this.resetArmed = 0;
           reset.label = 'RESET SAVE';
-          reset.w = 190;
-          reset.x = W - 110;
+          reset.w = 160;
+          reset.x = 530;
         }, 2500);
         return;
       }
       this.cb.onReset();
       this.showMain();
     });
+    reset.opts.quiet = true;
+    reset.opts.textScale = 1.5;
   }
 
   showCollection(): void {

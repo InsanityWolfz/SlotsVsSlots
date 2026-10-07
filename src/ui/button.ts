@@ -10,6 +10,10 @@ export interface ButtonOpts {
   textScale?: number;
   /** Draw an inset rotating dashed ring (autoplay indicator). */
   ring?: () => boolean;
+  /** Chrome (LOG, SOUND, QUIT): a dim frame and dim text that light up on hover, so it never competes with the reels. */
+  quiet?: boolean;
+  /** The screen's next step: the red casino button (the same as FIGHT!). */
+  primary?: boolean;
 }
 
 /** Canvas button with the full juice §6 treatment. Animates on a real-time UI clock. */
@@ -79,9 +83,11 @@ export class Button {
     ctx.translate(this.x, this.y);
     ctx.scale(s, s);
     ctx.globalAlpha = 1 - 0.45 * d;
-    const bg = this.pressed ? '#0c0a12' : this.toggled ? '#8a5a1c' : this.hover ? '#2a2238' : '#1a1426';
-    const border = d > 0.5 ? '#6d6660' : COLORS.gold;
-    const text = d > 0.5 ? '#8f8a96' : this.toggled ? '#fff6c8' : COLORS.goldLight;
+    const red = this.opts.primary && d < 0.5;
+    const bg = this.pressed ? (red ? '#2a0806' : '#0c0a12') : red ? (this.hover ? '#e04a2f' : '#c8321f') : this.toggled ? '#8a5a1c' : this.hover ? '#2a2238' : '#1a1426';
+    const quiet = this.opts.quiet && !this.hover && !this.toggled;
+    const border = d > 0.5 ? '#6d6660' : quiet ? '#4a4058' : COLORS.gold;
+    const text = d > 0.5 ? '#8f8a96' : this.toggled ? '#fff6c8' : quiet ? COLORS.textDim : COLORS.goldLight;
     const hw = this.w / 2;
     const hh = this.h / 2;
 
@@ -126,7 +132,7 @@ export class Button {
       ctx.fillRect(-hw, -hh, this.w, this.h);
       ctx.fillStyle = bg;
       ctx.fillRect(-hw + 3, -hh + 3, this.w - 6, this.h - 6);
-      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      ctx.fillStyle = red ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.07)';
       ctx.fillRect(-hw + 3, -hh + 3, this.w - 6, (this.h - 6) / 2);
     }
     if (this.pressed) {
@@ -140,7 +146,7 @@ export class Button {
       } else ctx.fillRect(-hw, -hh, this.w, this.h);
       ctx.globalAlpha = 1 - 0.45 * d;
     }
-    drawText(ctx, this.label, 0, 1, this.opts.textScale ?? 2, text);
+    drawText(ctx, this.label, 0, 1, this.opts.textScale ?? 2, red ? '#fff6c8' : text);
     ctx.restore();
   }
 }
