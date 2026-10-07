@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CabinetId } from '../src/core/cabinets';
 import { Fight } from '../src/core/fight';
-import { applyOption, createRun, fightConfig, finishFight, gildsFor, offerChoices } from '../src/core/run';
+import { createRun, fightConfig, finishFight, gildsFor, offerChoices } from '../src/core/run';
 import { GATEKEEPER } from '../src/core/enemies';
 import { Rng } from '../src/core/rng';
 
@@ -32,7 +32,7 @@ describe('EXPERT_PLAYTEST_12: THORNY (BRIAR)', () => {
     expect(gildsFor(createRun(base, 3, 'thorn'))).toContain('thorny');
   });
 
-  it('THE REPO MAN can take a THORNY charm, and paying it off gives it back', () => {
+  it('THE REPO MAN can take a THORNY charm, and it is back after the fight', () => {
     const run = createRun(base, 5, 'thorn');
     run.pendingStart = null;
     run.chosen = run.chosen.map(() => true);
@@ -44,9 +44,7 @@ describe('EXPERT_PLAYTEST_12: THORNY (BRIAR)', () => {
     delete cell.enh;
     f.winner = 'player';
     finishFight(run, f);
-    expect(run.liens).toEqual([{ reel: 1, symbol: 'thorn', enh: 'thorny' }]);
-    expect(run.player.gilded).toEqual([{ reel: 1, symbol: 'thorn', enh: 'thorny', n: 1 }]);
-    applyOption(run, { kind: 'payLien' });
+    expect(run.liens ?? []).toEqual([]);
     expect(run.player.gilded).toEqual([{ reel: 1, symbol: 'thorn', enh: 'thorny', n: 2 }]);
   });
 });

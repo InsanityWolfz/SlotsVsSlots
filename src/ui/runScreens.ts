@@ -7,13 +7,11 @@ import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH, POT } fro
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmName, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
 import {
-  chipShield,
   CHIPS,
   BIG_SET_NAMES,
   BIG_SETS,
   describeChoice,
   type BigChoice,
-  MIRROR_CHIP_SHIELD_CAP,
   describeOption,
   enemyHp,
   mirrorCopy,
@@ -1290,11 +1288,6 @@ export class RunScreens {
     }
     const hp = enemyHp(this.run!, e);
     drawText(ctx, `HP ${hp}`, tx, y + 104, 2, COLORS.hp, { align: 'left' });
-    if (e.boss === 'house') {
-      const sh = chipShield(this.run!.player.chips);
-      drawSprite(ctx, 'chipShield', tx + 110, y + 104, 2);
-      drawText(ctx, `YOUR ${this.run!.player.chips} CHIPS: +${sh} SHIELD EACH HOUSE TURN`, tx + 128, y + 104, 1, '#9fd0ff', { align: 'left' });
-    }
     if (e.elite)
       drawText(
         ctx,
@@ -1494,16 +1487,8 @@ export class RunScreens {
     drawText(ctx, 'THE CASHIER', CX - 330, 44, 4, COLORS.goldLight, { align: 'left' });
     const quips = ['PLACE YOUR BETS.', 'EVERYTHING HAS A PRICE, FRIEND.', 'THE HOUSE WILL HEAR ABOUT THIS.', 'CHIPS ARE FOR SPENDING... OR ARE THEY?'];
     drawText(ctx, quips[(run.depth + run.shopRerolls) % quips.length], CX - 330, 80, 2, COLORS.textDim, { align: 'left' });
-    const sh = chipShield(run.player.chips);
-    if (run.act === 1) {
-      drawSprite(ctx, 'chipShield', CX - 330, 150, 2);
-      drawText(ctx, `CHIPS YOU KEEP SHIELD YOU FROM THE HOUSE: +${sh} A TURN`, CX - 312, 150, 2, '#9fd0ff', { align: 'left' });
-    } else {
-      const boss = run.act >= 3 ? 'DEALER' : 'MIRROR';
-      drawText(ctx, run.act >= 3 ? 'ACT 3: NO HEALING AFTER FIGHTS.' : 'ACT 2: A LEGENDARY ON THE SHELF.', CX, 118, 2, run.act >= 3 ? '#ff8a7a' : COLORS.goldLight);
-      drawSprite(ctx, 'chipShield', CX - 330, 150, 2);
-      drawText(ctx, `CHIPS YOU KEEP SHIELD YOU FROM THE ${boss}: +${Math.min(MIRROR_CHIP_SHIELD_CAP, sh)} A TURN`, CX - 312, 150, 2, '#9fd0ff', { align: 'left' });
-    }
+    if (run.act === 2) drawText(ctx, 'ACT 2: A LEGENDARY ON THE SHELF.', CX, 140, 2, COLORS.goldLight);
+    else if (run.act >= 3) drawText(ctx, 'ACT 3: NO HEALING AFTER FIGHTS.', CX, 140, 2, '#ff8a7a');
     this.drawShelves(ctx, time);
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
     for (const b of this.buttons) this.drawButton(ctx, b, time);

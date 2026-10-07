@@ -1874,7 +1874,7 @@ export class Director {
     const c = this.machineCenter(to);
     this.s.sounds.stingerMedium();
     this.bg(this.popText(`REPOSSESSED: ${what}`, c.x, MACHINE_TOP - 34, 2.5, '#ff9a3a', 18, 0.9));
-    this.bg(this.popText('GONE UNTIL THE BOSS FALLS', c.x, MACHINE_TOP - 8, 1.5, '#ffd0a0', 10, 0.9));
+    this.bg(this.popText('BACK AFTER THE FIGHT', c.x, MACHINE_TOP - 8, 1.5, '#ffd0a0', 10, 0.9));
   }
 
   private async rake(e: Ev<'rake'>): Promise<void> {

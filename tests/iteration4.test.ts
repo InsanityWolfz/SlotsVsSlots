@@ -161,13 +161,13 @@ describe('run economy', () => {
     expect(rerollCost(run)).toBe(cost + 1);
   });
 
-  it('the boss gets tougher per relic and your chip stack becomes shield', () => {
+  it('the boss gets tougher per relic (your chips no longer shield you)', () => {
     const run = createRun(base, 9);
     run.depth = 5;
     run.player.relics = ['clover', 'fang'] as RelicId[];
     run.player.chips = 12;
     const cfg = fightConfig(run, base);
     expect(cfg.enemy.hp).toBe(Math.round((run.enemies[5].hp * BOSS_MUL.knight.house) / 10) * 10 + 2 * BOSS_HP_PER_RELIC);
-    expect(cfg.player.stackShield).toBe(Math.floor(12 / CHIPS.stackPer) * 10);
+    expect(cfg.player.stackShield ?? 0).toBe(0);
   });
 });

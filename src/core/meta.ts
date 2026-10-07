@@ -273,7 +273,6 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'score_5k', name: 'BIG WINNER', text: 'SCORE 5,000 IN ONE RUN.', check: (c) => c.score >= 5000 },
   { id: 'score_10k', name: 'JACKPOT', text: 'SCORE 10,000 IN ONE RUN.', check: (c) => c.score >= 10000 },
   { id: 'score_20k', name: 'WHALE WATCHING', text: 'SCORE 20,000 IN ONE RUN.', check: (c) => c.score >= 20000 },
-  { id: 'lien_paid', name: 'PAID IN FULL', text: 'PAY OFF A LIEN AT THE CASHIER.', check: (c) => c.liensPaid >= 1 },
   { id: 'repo_loss', name: 'REPOSSESSED', text: 'LOSE A RUN TO THE REPO MAN.', secret: true, check: (c) => !c.won && !!c.killer?.endsWith('REPO MAN') },
   // (Not "REGULAR": that's the level 3 title.)
   { id: 'runs_25', name: 'HOUSE REGULAR', text: 'PLAY 25 RUNS.', check: (c) => c.stats.runs >= 25, progress: (c) => [c.stats.runs, 25] },

@@ -559,7 +559,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     ...(run.bet ? { sideBet: { ...run.bet } } : {}),
     // Saved chips shield you at every boss, capped (a MIDAS hoard made the House untouchable). A side bet's stake
     // doesn't: at the Dealer, ALL IN would otherwise cost nothing (EXPERT_PLAYTEST_8 E9).
-    stackShield: e.isBoss && !(e.boss === 'house' && run.stake >= STAKE.houseDirty) ? Math.min(MIRROR_CHIP_SHIELD_CAP, chipShield(run.player.chips)) : 0,
+    // Chips no longer shield you on bosses (2026-10-07, user: too noisy).
   };
   const hp = enemyHp(run, e);
   cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };

@@ -1787,8 +1787,9 @@ export class Fight {
     if (this.repoTaken >= GATEKEEPER.maxTakes) return this.fizzle(me, 'gavel', [], events);
     this.repoTaken++;
     const at = events.length;
-    if (this.charmedTargets(foe, 1).length) this.confiscate(me, foe, 1, [], events);
-    else this.steal(me, foe, 1, [], events);
+    // A charm for the fight (it comes back when the fight ends); nothing charmed, nothing to take.
+    if (!this.charmedTargets(foe, 1).length) return this.fizzle(me, 'gavel', [], events);
+    this.confiscate(me, foe, 1, [], events);
     // The presentation calls it what it is: REPOSSESSED, held until the act's boss falls.
     for (const e of events.slice(at)) if (e.type === 'confiscate' || e.type === 'steal') e.repo = true;
   }

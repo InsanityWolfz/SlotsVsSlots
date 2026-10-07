@@ -1274,7 +1274,7 @@ export class Game {
       const shown = Math.max(0, this.run.player.chips - eaten + (hud ? hud.chips - hud.chipsHeld + hud.lucre : 0));
       drawText(ctx, `${shown}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
       if (this.run.stake > 0) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 80, 1.5, STAKES[this.run.stake].color, { align: 'left' });
-      if (this.fight.isBoss || this.fight.isMirror || this.fight.isDealer) {
+      if ((this.fight.isBoss || this.fight.isMirror || this.fight.isDealer) && (this.fight.cfg.player.stackShield ?? 0) > 0) {
         // Sits after the chip count, however many digits it has (QA_1 B10).
         const cx = CHIP_SPOT.x + 24 + String(shown).length * 24 + 22;
         drawSprite(ctx, 'chipShield', cx, CHIP_SPOT.y, 2);
