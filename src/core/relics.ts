@@ -46,7 +46,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   chainmail: { id: 'chainmail', name: 'CHAINMAIL', text: 'LEFTOVER SHIELD HEALS 10% OF IT EACH TURN', sprite: 'relicChainmail', machine: 'knight' },
   vault: { id: 'vault', name: 'BANK VAULT', text: 'EACH WIN PUTS A GOLD CHARM ON A CHIP', sprite: 'relicVault', machine: 'midas' },
   decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR MIDAS TOUCH ALSO SPREADS TO THE CELLS ABOVE AND BELOW', sprite: 'relicDecree', machine: 'midas', retired: true },
-  rosehip: { id: 'rosehip', name: 'ROSE HIP', text: 'VOLLEYS HEAL 10% OF WHAT THEY FIRE (MAX 20)', sprite: 'relicRosehip', machine: 'thorn' },
+  rosehip: { id: 'rosehip', name: 'ROSE HIP', text: 'A HIT THAT GETS THROUGH: YOUR THORNS HEAL 10% OF WHAT THEY FIRE (MAX 20)', sprite: 'relicRosehip', machine: 'thorn' },
   // GRAFT: retired 2026-10-07; gold and vamp fit BRIAR's thorns without it (thorns are his weapon).
   graft: { id: 'graft', name: 'GRAFT', text: 'GOLD AND VAMP CHARMS FIT THORNS', sprite: 'relicGraft', machine: 'thorn', retired: true },
   faraday: { id: 'faraday', name: 'FARADAY CAGE', text: 'SHIELD YOU GAIN ALSO CHARGES LIGHTNING (1/4)', sprite: 'relicFaraday', machine: 'tesla' },

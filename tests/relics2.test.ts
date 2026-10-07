@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type RelicId } from '../src/core/config';
 import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
-import { Fight } from '../src/core/fight';
+import { Fight, THORNS } from '../src/core/fight';
 import { NEW_RELIC, RELICS } from '../src/core/relics';
 import { charmOptions, charmSymbols, createRun, draftOffers, fightConfig, finishFight, gildsFor, isRelicDraft, relicFits, startRelics, takeStart } from '../src/core/run';
 
@@ -69,12 +69,18 @@ describe('slot machine relics', () => {
   });
 
   it('ROSE HIP: a thorn volley heals 10% of what it fired', () => {
-    const f = on('thorn', ['rosehip']);
-    f.sides.player.hp = 100;
-    f.sides.player.energy = 100;
-    f.step();
-    f.forceNext('enemy', ['sword', 'sword', 'sword']);
-    expect(ofType(f.step().events, 'heal').find((h) => h.source === 'rosehip')?.amount).toBe(10);
+    const shed = THORNS.shed;
+    THORNS.shed = 0;
+    try {
+      const f = on('thorn', ['rosehip']);
+      f.sides.player.hp = 100;
+      f.sides.player.energy = 100;
+      f.step();
+      f.forceNext('enemy', ['sword', 'sword', 'sword']);
+      expect(ofType(f.step().events, 'heal').find((h) => h.source === 'rosehip')?.amount).toBe(10);
+    } finally {
+      THORNS.shed = shed;
+    }
   });
 
   it('FARADAY CAGE: shields charge lightning; STATIC: being attacked charges 5', () => {

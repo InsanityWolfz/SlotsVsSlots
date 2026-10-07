@@ -1863,3 +1863,16 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   under 25% of your max HP" (-1.5/+2.2). Watch: why faster regular kills cost KNIGHT win rate.
 - BOSS_MUL: midas mirror 3.4 -> 3.1, dealer 5 -> 4.6; joker dealer 0.5 -> 0.53.
 - Official table N1000 (WHITE / GREEN): KNIGHT 43.1/17.2, TESLA 41.1/18.4, BRIAR 44.3/17.2, JAX 43.9/18.3, CASSIDY 43.7/16.2.
+
+## Iteration 88 (2026-10-07): BRIAR SHED (user-approved redesign, playtest/BRIAR_REDESIGN.md)
+- Problem (user playtest): thorns only fired on hits that got through, so a BRIAR behind a full shield never attacked.
+  Measured: 63% of her rounds dealt 0, act-1 fights 21 turns (act 2/3: 56-65), 19.7 chips per fight.
+- SHED: each of her spins, half her thorn bank lashes out (through shields); a hit that gets through fires the rest.
+  Rule text: "THORNS ADD UP. EACH SPIN, HALF OF THEM LASH OUT. A HIT THAT GETS THROUGH FIRES THE REST."
+- ROSE HIP: SHED healed every spin and carried the machine (43.4 -> 10.6 WHITE without it). Now it heals only on the
+  full volley (a hit through). Without ROSE HIP she's still ~-18 WHITE (mostly the Mirror): watch item.
+- BOSS_MUL.thorn: house 2 -> 1, mirror 200 -> 15, dealer 3.2 -> 2.1, act3 2.25 -> 1.6, act2 3.5 -> 0.5, act1 0.9 -> 0.6
+  (sizing finally sees her damage: power at the House 279, Mirror 1008, Dealer 1837; was 0 / 0 / ~1100).
+- Official table N1000: BRIAR 44.0 / 16.6, fight-4 deaths 3.0%, chips/f 8.9 (was 19.7), act-1 fights ~12 turns.
+  Endless (N400 ride): loop 5 reached by 9% of riders, 43% of the best 10% builds (targets <10% / 30-50%).
+- UI: the fight's ROUND n counter is now SPIN n (a ROUND is a whole fight in the new keyword set).

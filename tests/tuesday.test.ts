@@ -3,7 +3,7 @@ import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CabinetId } from '../src/core/cabinets';
 import { actLength, generateRunPaths } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
-import { Fight, RAIN } from '../src/core/fight';
+import { Fight, RAIN, THORNS } from '../src/core/fight';
 import { MIRROR_HIT_CAP, SANDGLASS_SLOW } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
 import {
@@ -62,7 +62,23 @@ describe('signature meters (one per slot machine)', () => {
     const spin = ofType(f.step().events, 'spin')[0];
     expect(spin.score.groups.some((g) => g.notes?.some((n) => n.startsWith('HIGH ROLLER X')))).toBe(true);
   });
+  it('BRIAR SHED: each of her spins, half her thorns lash out (through shields)', () => {
+    const f = on('thorn');
+    f.sides.player.energy = 100;
+    f.sides.enemy.shield = 999;
+    f.forceNext('player', ['shield', 'shield', 'shield']);
+    const shed = ofType(f.step().events, 'attack').filter((a) => a.note === 'thorns');
+    expect(shed).toHaveLength(1);
+    expect(shed[0].amount).toBe(50);
+    expect(shed[0].hpDamage).toBe(50);
+    expect(f.sides.player.energy).toBe(50);
+  });
+
   it('BRIAR: thorns bank their pay; a hit that gets through fires the bank through shields (once per turn), a blocked one does not', () => {
+    // (The hit-through volley on its own: SHED off.)
+    const shed = THORNS.shed;
+    THORNS.shed = 0;
+    try {
     const f = on('thorn');
     f.forceNext('player', ['thorn', 'thorn', 'shield']);
     f.step();
@@ -81,6 +97,9 @@ describe('signature meters (one per slot machine)', () => {
     expect(back).toHaveLength(1);
     expect(back[0]).toMatchObject({ amount: 50, blocked: 0, hpDamage: 50 });
     expect(f.sides.player.energy).toBe(0);
+    } finally {
+      THORNS.shed = shed;
+    }
   });
 
   it('JAX: each WILD on the payline fills the meter; full, the next spin pays every cell as a jackpot of itself', () => {

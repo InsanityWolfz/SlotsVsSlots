@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CabinetId } from '../src/core/cabinets';
-import { Fight } from '../src/core/fight';
+import { Fight, THORNS } from '../src/core/fight';
 import { createRun, fightConfig, finishFight, gildsFor, offerChoices } from '../src/core/run';
 import { GATEKEEPER } from '../src/core/enemies';
 import { Rng } from '../src/core/rng';
@@ -18,13 +18,19 @@ function on(cabinet: CabinetId, mut?: (c: GameConfig) => void, seed = 7): Fight 
 
 describe('EXPERT_PLAYTEST_12: THORNY (BRIAR)', () => {
   it('banks its value into your thorns when it lands on the payline', () => {
-    const plain = on('thorn');
-    plain.forceNext('player', ['thorn', 'thorn', 'shield']);
-    plain.step();
-    const thorny = on('thorn', (c) => (c.player.gilded = [{ reel: 0, symbol: 'thorn', enh: 'thorny', n: 6 }]));
-    thorny.forceNext('player', ['thorn', 'thorn', 'shield']);
-    thorny.step();
-    expect(thorny.sides.player.energy - plain.sides.player.energy).toBe(50);
+    const shed = THORNS.shed;
+    THORNS.shed = 0;
+    try {
+      const plain = on('thorn');
+      plain.forceNext('player', ['thorn', 'thorn', 'shield']);
+      plain.step();
+      const thorny = on('thorn', (c) => (c.player.gilded = [{ reel: 0, symbol: 'thorn', enh: 'thorny', n: 6 }]));
+      thorny.forceNext('player', ['thorn', 'thorn', 'shield']);
+      thorny.step();
+      expect(thorny.sides.player.energy - plain.sides.player.energy).toBe(50);
+    } finally {
+      THORNS.shed = shed;
+    }
   });
 
   it('is offered to BRIAR only', () => {

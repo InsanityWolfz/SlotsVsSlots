@@ -127,7 +127,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'thorns', symbol: 'thorn', cost: 0, heal: 0 },
     symbols: ['thorn', 'shield'],
     attack: 'thorn',
-    rule: 'THORNS ADD UP. WHEN A HIT GETS THROUGH, YOUR THORNS HIT BACK. 300 HP.',
+    rule: 'THORNS ADD UP. EACH SPIN, HALF OF THEM LASH OUT. A HIT THAT GETS THROUGH FIRES THE REST. 300 HP.',
     unlock: 'BEAT THE HOUSE',
   },
   tesla: {

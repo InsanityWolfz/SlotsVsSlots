@@ -1402,7 +1402,7 @@ export class Game {
     if (g.fightLabel.includes('BOSS') || g.fightLabel === 'SANDBOX') drawText(ctx, g.fightLabel, cx, cy - 112, 2, g.fightLabel === 'SANDBOX' ? COLORS.textDim : '#ff6a5a');
     if (g.twist) drawText(ctx, g.twist, cx, cy - 132, 1.25, '#ff9a3a');
     if (g.turn > 0) {
-      drawText(ctx, `ROUND ${Math.ceil(g.turn / 2)}`, cx, cy - 78, 3, COLORS.textDim, { punch: 1 + g.pulse * 0.3 });
+      drawText(ctx, `SPIN ${g.turn}`, cx, cy - 78, 3, COLORS.textDim, { punch: 1 + g.pulse * 0.3 });
       if (g.side)
         drawText(ctx, g.side === 'player' ? "HERO'S TURN" : 'ENEMY TURN', cx, cy - 46, 2, g.side === 'player' ? COLORS.goldLight : COLORS.slime, { punch: 1 + g.pulse * 0.5 });
       if (g.side) {

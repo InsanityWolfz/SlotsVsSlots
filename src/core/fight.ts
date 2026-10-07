@@ -57,7 +57,7 @@ export const POT_STEAL = { any: 1 };
  * blockCap: a fully blocked hit fires that share of the bank (capped at a share of her max HP). Probe knobs (2026-10-07:
  * with thorns only firing on hits that got through, a BRIAR who blocked everything never dealt damage).
  */
-export const THORNS = { volley: 1, onBlocked: 0, direct: 0, blockShare: 0, blockCap: 0.1, bloom: 0, shed: 0, parry: 0, triple: 0 };
+export const THORNS = { volley: 1, onBlocked: 0, direct: 0, blockShare: 0, blockCap: 0.1, bloom: 0, shed: 0.5, parry: 0, triple: 0 };
 // BRIAR redesign probe knobs (playtest/BRIAR_REDESIGN.md), all 0 = today's rules:
 // bloom: at the end of her spin, a bank at or above this (game units) fires whole; shed: at the end of her spin this
 // share of the bank fires; parry: a fully blocked hit fires this share of what was blocked from the bank (bank-capped);
@@ -1505,7 +1505,8 @@ export class Fight {
     this.volleyCarry += bank;
     this.payoffHeal(victim, events);
     // ROSE HIP: a volley heals you for a share of what it fired.
-    if (!this.over && victim.relics.has('rosehip')) {
+    // (Not on SHED's per-spin lash: healing every spin made ROSE HIP carry the whole machine, 43 -> 11 WHITE without it.)
+    if (!this.over && fixed <= 0 && victim.relics.has('rosehip')) {
       const h = Math.min(NEW_RELIC.rosehipCap, Math.round((bank * NEW_RELIC.rosehipShare) / 5) * 5);
       if (h > 0) {
         events.push({ type: 'relic', side: victim.side, relic: 'rosehip' });
