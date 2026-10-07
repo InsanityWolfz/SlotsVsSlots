@@ -225,7 +225,7 @@ export class Menus {
       this.btn('HISCORES', x + 128, 566, 124, 54, () => this.showHiscores(), 1.5);
     }
     // Settings sit small and dim in the bottom row: the title should lead the eye to NEW RUN.
-    const light = this.btn(this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL', 330, H - 30, 200, 32, () => {
+    const light = this.btn(this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL', 265, H - 30, 200, 32, () => {
       this.cb.setSoftLightning(!this.cb.softLightning());
       light.label = this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL';
       light.toggled = this.cb.softLightning();
@@ -234,20 +234,20 @@ export class Menus {
     light.opts.quiet = true;
     light.opts.textScale = 1.5;
     this.resetArmed = 0;
-    const reset = this.btn('RESET SAVE', 530, H - 30, 160, 32, () => {
+    const reset = this.btn('RESET SAVE', 455, H - 30, 160, 32, () => {
       if (performance.now() - this.resetArmed < 400) return;
       if (!this.resetArmed) {
         this.resetArmed = performance.now();
         reset.label = 'SURE? CLICK AGAIN';
         reset.w = 220;
-        reset.x = 560;
+        reset.x = 485;
         this.sounds.fizzle();
         setTimeout(() => {
           if (this.mode !== 'main') return;
           this.resetArmed = 0;
           reset.label = 'RESET SAVE';
           reset.w = 160;
-          reset.x = 530;
+          reset.x = 455;
         }, 2500);
         return;
       }

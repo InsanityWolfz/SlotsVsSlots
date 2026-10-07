@@ -880,7 +880,9 @@ export class Director {
     this.s.sounds.shieldGain(e.amount / UNIT);
     this.decay(h, 'shieldFlash', 1, 0.3);
     this.bg(this.c.to(h, 'shield', e.total, 0.25, sineOut));
-    this.bg(this.popText(`+${e.amount}`, sb.x + sb.w - 24, sb.y + sb.h / 2, 3, '#9fd0ff', 16, 0.3));
+    // Right-aligned inside the HUD (at 3x a big number spilled past its border).
+    const gain = `+${e.amount}`;
+    this.bg(this.popText(gain, sb.x + sb.w - 6 - gain.length * 7.5, sb.y + sb.h / 2, 2.5, '#9fd0ff', 16, 0.3));
     const c = this.machineCenter(e.side);
     const bubble = this.s.fx.add(new Bubble(c.x, c.y, '#7fc0ff'));
     this.bg(
@@ -1121,7 +1123,7 @@ export class Director {
       h.armed = true;
       this.s.sounds.lucky();
       // Over the machine's top, on a plate: it used to land on the HP and meter bars.
-      this.bg(this.popText(m.kind === 'touch' ? 'NEXT SPIN TURNS GOLD!' : m.kind === 'vault' ? 'HIGH ROLLER! NEXT PAY MULTIPLIES!' : 'NEXT SPIN: ALL JACKPOTS!', MACHINE_CX[e.side], MACHINE_TOP - 18, 2, m.color, 12, 0.6, true));
+      this.bg(this.popText(m.kind === 'touch' ? 'NEXT SPIN TURNS GOLD!' : m.kind === 'vault' ? 'HIGH ROLLER! NEXT PAY MULTIPLIES!' : 'NEXT SPIN: ALL JACKPOTS!', MACHINE_CX[e.side], MACHINE_TOP + MACHINE_H + 14, 2, m.color, 12, 0.6, true));
     }
     if (e.reels.length) this.settle(e.side, e.reels);
   }
@@ -1970,7 +1972,7 @@ export class Director {
     this.bg(this.c.tween({ from: 5, to: 3, dur: 0.2, onUpdate: (v) => (tile.scale = v) }).then(() => this.s.fx.remove(tile)));
     g.vouchers = [...(g.vouchers ?? []), e.kind];
     this.s.sounds.coin(8);
-    await this.popText('FREE RESPIN!', c.x, MACHINE_TOP + 40, 3, '#7dff7a', 30, 0.3);
+    await this.popText('FREE RESPIN!', c.x, MACHINE_TOP + 48, 3, '#7dff7a', 30, 0.3, true);
   }
 
   /** The Mirror cracks at half HP. */

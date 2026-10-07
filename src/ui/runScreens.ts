@@ -207,10 +207,12 @@ const STAGE_TINT: Record<string, string> = {
   brute: '#ff9a3a', gremlin: '#ff9a3a', bomber: '#ff9a3a', vampire: '#ff6a5a', house: '#ff6a5a', pitboss: '#ff6a5a',
   dealer: '#ff6a5a', mirror: '#c8f0ff', croupier: '#ffd23f', sharp: '#ffd23f', counterfeiter: '#ffd23f', mimic: '#ffd23f',
 };
+/** A shorter line for the front when a boss's blurb won't fit on one line (the full blurb is on the back). */
+const FRONT_BLURB: Record<string, string> = { dealer: 'THE HOUSE HAS A PARTNER' };
 /** A boss's one rule on the front of its card (the full paragraph is on the back). */
 const BOSS_HEADLINE: Record<string, string> = {
   house: 'JACKPOTS STEAL ITS POT',
-  mirror: 'ITS SHARDS THROW YOUR HITS BACK',
+  mirror: 'CRACKED AT HALF HP: IT THROWS HALF',
   dealer: 'IT CAN NOT KILL YOU BEFORE ITS FIRST DEAL',
 };
 
@@ -1448,7 +1450,7 @@ export class RunScreens {
     const frame = inside ? COLORS.goldLight : tier === 2 ? bossFrame : tier === 1 ? '#ff9a3a' : COLORS.gold;
     const back = f > 0.5;
     ctx.save();
-    ctx.globalAlpha *= this.panelIn * (other ? 0.75 : 1);
+    ctx.globalAlpha *= this.panelIn;
     ctx.translate(x + w / 2, y + h / 2 + (1 - this.panelIn) * 24 - (inside ? 4 : 0));
     const grow = fork && inside ? 1.02 : 1;
     ctx.scale(Math.max(0.03, Math.abs(1 - 2 * f)) * grow, grow);
@@ -1474,6 +1476,11 @@ export class RunScreens {
     }
     if (back) this.drawPanelBack(ctx, e, w, pips);
     else this.drawPanelFront(ctx, e, w, h, time, inside, fork);
+    // At a fork, the card you're not looking at sinks back under a shade (alpha turned it muddy).
+    if (other) {
+      ctx.fillStyle = 'rgba(7,4,14,0.35)';
+      ctx.fillRect(-6, -6, w + 12, h + 12);
+    }
     ctx.restore();
     // The relic tip for the Mirror's copy uses screen coordinates (front only).
     const copy = e.boss === 'mirror' && this.run ? mirrorCopy(this.run) : null;
@@ -1504,18 +1511,20 @@ export class RunScreens {
     const badge = BADGE[e.archetype];
     if (badge) drawSprite(ctx, badge, sx + st - 8, sy + st - 8, fork ? 2.5 : 3);
     if (e.elite) {
+      // The ribbon sits along the stage floor (on top it covered the portrait's head); the relic reward is in the header.
       ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(sx, sy, st, 18);
+      ctx.fillRect(sx, sy + st - 18, st, 18);
       ctx.fillStyle = '#8a3a10';
-      ctx.fillRect(sx + 2, sy + 2, st - 4, 14);
-      drawText(ctx, 'ELITE', sx + st / 2, sy + 9, 1.5, COLORS.goldLight);
-      drawSprite(ctx, artId('voucherRelic'), sx + 14, sy + st - 12, 1.5);
+      ctx.fillRect(sx + 2, sy + st - 16, st - 4, 14);
+      drawText(ctx, 'ELITE', sx + st / 2, sy + st - 9, 1.5, COLORS.goldLight);
+      drawSprite(ctx, artId('voucherRelic'), w - 24 - 2 * (fork ? 25 : 30) - 46, 20, 2);
     }
     // Right column: one-line blurb, the HP bar, then the ability with its cadence.
     const tx = fork ? 124 : 148;
     const room = w - tx - 16;
-    const blurbScale = e.blurb.length * 12 <= room ? 2 : e.blurb.length * 9 <= room ? 1.5 : 0;
-    if (blurbScale) drawText(ctx, e.blurb, tx, 62, blurbScale, COLORS.textDim, { align: 'left' });
+    const blurb = FRONT_BLURB[e.boss ?? ''] ?? e.blurb;
+    const blurbScale = blurb.length * 12 <= room ? 2 : blurb.length * 9 <= room ? 1.5 : 0;
+    if (blurbScale) drawText(ctx, blurb, tx, 62, blurbScale, COLORS.textDim, { align: 'left' });
     const hp = enemyHp(run, e);
     const bw = fork ? Math.min(200, room - 24) : 280;
     drawSprite(ctx, 'heart', tx + 8, 96, 2);
@@ -1546,9 +1555,14 @@ export class RunScreens {
         ctx.fillRect(px - 4 * s, 138 - 4 * s, 8 * s, 8 * s);
         px += 14;
       }
-      if (!fork) drawText(ctx, `EVERY ${every} TURNS`, px + 4, 138, 1.5, COLORS.textDim, { align: 'left' });
+      drawText(ctx, fork ? `EVERY ${every}` : `EVERY ${every} TURNS`, px + 4, 138, fork ? 1.25 : 1.5, COLORS.textDim, { align: 'left' });
       const what = abilityWhat(e, run);
       drawText(ctx, what, tx, 166, what.length * 12 <= room ? 2 : 1.5, COLORS.text, { align: 'left' });
+    } else if (e.boss === 'mirror') {
+      // The Mirror has no timed ability: its shards are the threat, so they take the ability slot.
+      drawSprite(ctx, artId('icoReflect'), tx + 12, 138, 3);
+      drawText(ctx, 'REFLECTION', tx + 34, 138, 2.5, '#ff9a3a', { align: 'left' });
+      drawText(ctx, 'A THIRD OF YOUR LAST HIT, PER SHARD', tx, 166, 2, COLORS.text, { align: 'left' });
     }
     // Footer: which symbols it runs (icons only), or a boss's one rule.
     ctx.fillStyle = '#2a2140';
@@ -1577,6 +1591,7 @@ export class RunScreens {
   private drawPanelBack(ctx: CanvasRenderingContext2D, e: EnemyDef, w: number, danger: number): void {
     const run = this.run!;
     const sc = w < 600 ? 1.5 : 2;
+    const big = w < 600 ? 1.5 : 2.5;
     const cols = Math.floor((w - 32) / (6 * sc));
     let y = 60;
     const line = (text: string, color: string) => {
@@ -1586,11 +1601,16 @@ export class RunScreens {
       });
       y += 4;
     };
-    const blurbFits = e.blurb.length * 9 <= w - (w < 600 ? 140 : 164);
+    const blurbFits = !FRONT_BLURB[e.boss ?? ''] && e.blurb.length * 9 <= w - (w < 600 ? 140 : 164);
     if (!blurbFits) line(e.blurb, COLORS.textDim);
-    if (e.ability) {
+    if (e.ability && !e.isBoss) {
+      // The ability sentence leads, big (a boss's rules paragraph below already says it): it's what the back is for.
       const every = effectiveAbility(e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
-      line(abilityText(e, every, run), COLORS.text);
+      wrap(abilityText(e, every, run), Math.floor((w - 32) / (6 * big))).forEach((l) => {
+        drawText(ctx, l, 16, y + 2, big, '#ff9a3a', { align: 'left' });
+        y += 10 * big + 2;
+      });
+      y += 4;
     }
     if (e.elite)
       line(
@@ -1616,16 +1636,16 @@ export class RunScreens {
     // THEIR REELS with counts, along the bottom.
     ctx.fillStyle = '#2a2140';
     ctx.fillRect(8, 197, w - 16, 2);
-    drawText(ctx, 'THEIR REELS', 16, 216, 1.25, COLORS.textDim, { align: 'left' });
+    drawText(ctx, 'THEIR REELS', 16, 214, 1.5, COLORS.textDim, { align: 'left' });
     const shown = dirty ? { ...e.strips[0], bomb: STAKE.houseBombsPerReel } : e.strips[0];
-    let cx = 26;
+    let cx = 30;
     for (const [sym, n] of Object.entries(shown) as [SymbolId, number][]) {
       if (n <= 0) continue;
-      drawSprite(ctx, sym as SpriteId, cx, 238, 1.5);
-      drawText(ctx, `${n}`, cx + 16, 238, 1.5, COLORS.text, { align: 'left' });
-      cx += 50;
+      drawSprite(ctx, sym as SpriteId, cx, 240, 2);
+      drawText(ctx, `${n}`, cx + 20, 240, 2, COLORS.text, { align: 'left' });
+      cx += 56;
     }
-    drawText(ctx, `DANGER ${danger} OF 3`, w - 14, 238, 1.25, COLORS.textDim, { align: 'right' });
+    drawText(ctx, `DANGER ${danger} OF 3`, w - 14, 240, 1.5, COLORS.textDim, { align: 'right' });
   }
 
   private drawNext(ctx: CanvasRenderingContext2D, time: number): void {

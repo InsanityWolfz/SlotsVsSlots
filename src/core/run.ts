@@ -1,5 +1,5 @@
 import { BLADES, cloneConfig, defaultConfig, symLabel, emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_HP_MUL_2, GATEKEEPER, generateRunPaths, makeEnemy, REPO_MAN, TUNE, type EnemyDef, ENDLESS } from './enemies';
+import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_HP_MUL_2, GATEKEEPER, generateRunPaths, makeEnemy, REPO_MAN, TUNE, type EnemyDef, ENDLESS, endlessMul } from './enemies';
 import { MAX_STAKE, MIRROR_COPYABLE, mirrorCanUse, STAKE } from './stakes';
 import { Fight as FightCtor, type Fight } from './fight';
 import {
@@ -591,7 +591,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // The loop House is a race: it cashes its pot every 2 turns.
     if (e.boss === 'house' && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: ENDLESS.houseEvery };
     cfg.enemy.endless = true;
-    cfg.enemy.dmgMul = Math.pow(ENDLESS.dmgBy[run.cabinet] ?? ENDLESS.dmg, run.endless.loop);
+    cfg.enemy.dmgMul = endlessMul(ENDLESS.dmgBy[run.cabinet] ?? ENDLESS.dmg, run.endless.loop);
   }
   // THE DAILY RUN: every fight is fixed by the day, so everyone meets the same fights.
   // The daily locks its spins too (one try: the purest comparison). The weekly locks the map, enemies and offers, but
@@ -795,7 +795,7 @@ export const TUTORIAL_OPENER_MUL = 0.75;
 export function enemyHp(run: RunState, e: EnemyDef): number {
   const gold = e.isBoss && run.stake >= STAKE.fasterAll ? STAKE.goldBossHp : 1;
   const tutorial = run.tutorial && run.act === 1 && e.depth === 0 ? TUTORIAL_OPENER_MUL : 1;
-  const loop = run.endless ? Math.pow(ENDLESS.hpBy[run.cabinet] ?? ENDLESS.hp, run.endless.loop) : 1;
+  const loop = run.endless ? endlessMul(ENDLESS.hpBy[run.cabinet] ?? ENDLESS.hp, run.endless.loop) : 1;
   // THE DAILY RUN plays act 3 at base-stake numbers: its act 3 (the Dealer included) is lighter.
   const daily = fixedRun(run) && run.act >= 3 && !run.endless ? TUNE.dailyAct3 : 1;
   // Per machine: THE REPO MAN's HP (his liens cost machines differently: MIDAS loses its gold).

@@ -4,6 +4,13 @@
 import { defaultConfig } from '../../src/core/config';
 import { CABINET_ORDER, type CabinetId } from '../../src/core/cabinets';
 import { SIM_BIAS, simulateRuns } from '../../src/sim/simulateRun';
+import { ENDLESS } from '../../src/core/enemies';
+// Probe: ENDLESS_JSON='{"ramp":0.1,"hpBy":{"midas":1.4}}' overrides the endless knobs for this run.
+if (process.env.ENDLESS_JSON) {
+  const o = JSON.parse(process.env.ENDLESS_JSON);
+  for (const [k, v] of Object.entries(o)) (ENDLESS as Record<string, unknown>)[k] = typeof v === 'object' ? { ...(ENDLESS as Record<string, object>)[k], ...(v as object) } : v;
+  console.log('ENDLESS override', JSON.stringify(o));
+}
 
 const N = Number(process.argv[2] ?? 400);
 const only = process.argv[3] as CabinetId | undefined;
