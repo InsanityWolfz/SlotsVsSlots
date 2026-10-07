@@ -55,7 +55,7 @@ import { drawSprite, type SpriteId, artId } from './render/sprites';
 import { drawText } from './render/text';
 import { Button } from './ui/button';
 import { Recap } from './ui/recap';
-import { RunScreens } from './ui/runScreens';
+import { CHIP_SPOT, RunScreens } from './ui/runScreens';
 import { drawRelicTip } from './ui/relicTip';
 
 /** The fight HUD's relic tooltip starts under the player panel (EXPERT_PLAYTEST_12). */
@@ -1199,21 +1199,21 @@ export class Game {
 
   private drawRelics(ctx: CanvasRenderingContext2D): void {
     if (this.run && this.phase !== 'title') {
-      drawSprite(ctx, 'chip', 38, 30, 2);
+      // Chips: big, in the same top-left spot as on every run screen (CHIP_SPOT).
+      drawSprite(ctx, 'chip', CHIP_SPOT.x, CHIP_SPOT.y, 3);
       // In a fight, the count follows every chip as it plays out: chips paid or spent mid-fight (CASH CASSIDY's chips,
       // MAKE IT RAIN, the House's skim, a bet won mid-fight), CHIP charm chips and what the Mimic ate.
       const fighting = this.phase === 'fighting';
       const eaten = fighting ? (this.stage.gutter.chipsEaten ?? 0) : 0;
       const hud = fighting ? this.stage.huds.player : null;
       const shown = Math.max(0, this.run.player.chips - eaten + (hud ? hud.chips - hud.chipsHeld + hud.lucre : 0));
-      drawText(ctx, `${shown}`, 56, 30, 3, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
-      drawText(ctx, CABINETS[this.run.cabinet].name, 30, 58, 1, COLORS.textDim, { align: 'left' });
-      if (this.run.stake > 0) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 74, 1.5, STAKES[this.run.stake].color, { align: 'left' });
+      drawText(ctx, `${shown}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
+      if (this.run.stake > 0) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 80, 1.5, STAKES[this.run.stake].color, { align: 'left' });
       if (this.fight.isBoss || this.fight.isMirror || this.fight.isDealer) {
         // Sits after the chip count, however many digits it has (QA_1 B10).
-        const cx = 56 + String(shown).length * 18 + 22;
-        drawSprite(ctx, 'chipShield', cx, 30, 2);
-        drawText(ctx, `+${this.fight.cfg.player.stackShield ?? 0} SH/TURN`, cx + 18, 30, 2, '#9fd0ff', { align: 'left' });
+        const cx = CHIP_SPOT.x + 24 + String(shown).length * 24 + 22;
+        drawSprite(ctx, 'chipShield', cx, CHIP_SPOT.y, 2);
+        drawText(ctx, `+${this.fight.cfg.player.stackShield ?? 0} SH/TURN`, cx + 18, CHIP_SPOT.y, 2, '#9fd0ff', { align: 'left' });
       }
     }
     const relics = this.relicList();

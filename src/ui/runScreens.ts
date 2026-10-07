@@ -112,10 +112,15 @@ export const BADGE: Record<string, SpriteId> = {
 };
 
 const INPUT_GUARD_MS = 250;
-/** YOUR BUILD panel: fixed at the bottom of every run screen (screens lay out above it). */
-const BUILD = { x: 24, y: 574, w: W - 48, h: 128 };
-/** The side bet card sits in the left gutter, beside the enemy card. */
-const BET_X = 166;
+/** YOUR BUILD: a fixed column on the left of every run screen (screens lay out to its right, around CX). */
+const BUILD = { x: 16, y: 16, w: 284, h: H - 32 };
+/** The middle of the space right of YOUR BUILD: run screens center on it. */
+const CX = (BUILD.x + BUILD.w + 12 + W) / 2;
+/** Your chips: the same spot in the fights (game.ts draws them there too). */
+export const CHIP_SPOT = { x: 44, y: 46 };
+/** The side bet card: under the enemy card, left of FIGHT. */
+const BET_X = CX - 200;
+const BET_Y = 540;
 
 /** The casino floor behind every run screen: a dark carpet with a faint diamond weave (cached). */
 let carpet: HTMLCanvasElement | null = null;
@@ -630,7 +635,7 @@ export class RunScreens {
     this.choices = choices;
     this.open('choice');
     this.cards = choices.map((c, i) =>
-      this.hit(W / 2 + (i - (choices.length - 1) / 2) * 330, 380, 300, 330, () => {
+      this.hit(CX + (i - (choices.length - 1) / 2) * 312, 380, 288, 330, () => {
         if (this.picked >= 0) return;
         this.picked = i;
         this.sounds.fanfareJackpot();
@@ -656,8 +661,8 @@ export class RunScreens {
     const set = BIG_SETS.findIndex((ids) => ids.includes(this.choices[0]?.id));
     const edge = this.choices[0]?.id === 'edge';
     const rideQ = this.choices[0]?.id === 'cashOut';
-    drawText(ctx, rideQ ? `LOOP ${(this.run?.endless?.loop ?? 2) - 1} CLEARED! POT ${this.run?.endless?.pot ?? 0}` : edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'A BIG CHOICE', W / 2, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
-    drawText(ctx, rideQ ? 'RIDE AGAIN OR CASH OUT. YOUR WIN IS SAFE EITHER WAY.' : edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : `${BIG_SET_NAMES[set] ?? ''}: STRONG MOVES HAVE A PRICE`, W / 2, 110, 2, COLORS.textDim);
+    drawText(ctx, rideQ ? `LOOP ${(this.run?.endless?.loop ?? 2) - 1} CLEARED! POT ${this.run?.endless?.pot ?? 0}` : edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'A BIG CHOICE', CX, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
+    drawText(ctx, rideQ ? 'RIDE AGAIN OR CASH OUT. YOUR WIN IS SAFE EITHER WAY.' : edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : `${BIG_SET_NAMES[set] ?? ''}: STRONG MOVES HAVE A PRICE`, CX, 110, 2, COLORS.textDim);
     this.cards.forEach((c, i) => {
       const ch = this.choices[i];
       if (!ch || c.scale <= 0.01) return;
@@ -702,8 +707,9 @@ export class RunScreens {
     this.lastRecord = last;
     this.open('draft');
     const n = offers.length;
+    const gap = n > 3 ? 232 : 300;
     this.cards = offers.map((o, i) =>
-      this.hit(W / 2 + (i - (n - 1) / 2) * 300, 384, 270, 222, () => {
+      this.hit(CX + (i - (n - 1) / 2) * gap, 384, gap - 30, 222, () => {
         if (this.picked >= 0) return;
         this.picked = i;
         this.sounds.stingerMedium();
@@ -730,12 +736,14 @@ export class RunScreens {
     this.run = run;
     this.open('next');
     if (needsChoice(run)) {
-      this.buttons = run.paths[run.depth].map((_, i) => this.btn('FIGHT THIS ONE', W / 2 + (i === 0 ? -310 : 310), 540, 260, 48, () => this.cb.onFight(i)));
+      this.buttons = run.paths[run.depth].map((_, i) => this.btn('FIGHT THIS ONE', CX + (i === 0 ? -238 : 238), 560, 260, 48, () => this.cb.onFight(i)));
     } else {
       const bossId = run.enemies[run.depth]?.boss;
       const boss = run.depth >= actLength(run.act) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'mirror' ? 'FACE THE MIRROR' : 'FACE THE HOUSE') : 'FIGHT!';
-      this.buttons = [this.btn(boss, W / 2, 538, boss === 'FIGHT!' ? 290 : 360, 56, () => this.cb.onFight(0))];
+      this.buttons = [this.btn(boss, CX, 560, boss === 'FIGHT!' ? 290 : 360, 56, () => this.cb.onFight(0))];
       this.addBetButtons(run);
+      // With a side bet on the table, FIGHT steps right of its card.
+      if (this.betOffer.length) this.buttons[0].x = CX + 170;
     }
   }
 
@@ -745,7 +753,7 @@ export class RunScreens {
     if (!this.betOffer.length) return;
     BET_STEPS.forEach((d) => {
       const x = BET_X + (d < 0 ? -1 : 1) * (Math.abs(d) === 1 ? 54 : 102);
-      const b = this.btn(d > 0 ? `+${d}` : `${d}`, x, 316, Math.abs(d) === 1 ? 40 : 46, 30, () => this.stepBet(d));
+      const b = this.btn(d > 0 ? `+${d}` : `${d}`, x, BET_Y + 102, Math.abs(d) === 1 ? 40 : 46, 30, () => this.stepBet(d));
       b.bet = d;
       this.buttons.push(b);
     });
@@ -768,14 +776,14 @@ export class RunScreens {
     const b = this.betOffer[0];
     const stake = run.bet?.stake ?? 0;
     const cx = BET_X;
-    this.panel(ctx, cx - 130, 214, 260, 128, stake ? COLORS.goldLight : '#2a6a3a');
+    this.panel(ctx, cx - 130, BET_Y, 260, 128, stake ? COLORS.goldLight : '#2a6a3a');
     const d = describeBet(b);
-    drawText(ctx, 'SIDE BET', cx, 228, 1.5, COLORS.textDim);
-    drawText(ctx, d.name, cx, 248, 2, stake ? COLORS.goldLight : '#c8f0c8');
-    drawText(ctx, d.rule, cx, 270, 1.5, COLORS.text);
+    drawText(ctx, 'SIDE BET', cx, BET_Y + 14, 1.5, COLORS.textDim);
+    drawText(ctx, d.name, cx, BET_Y + 34, 2, stake ? COLORS.goldLight : '#c8f0c8');
+    drawText(ctx, d.rule, cx, BET_Y + 56, 1.5, COLORS.text);
     const hot = !!b.hot;
-    drawText(ctx, `${hot ? 'HOT HAND! ' : ''}PAYS X${b.pay}  -  MAX ${stakeCap(run)}`, cx, 290, 1.5, hot ? '#ff8a3a' : COLORS.goldLight, { punch: hot ? 1 + 0.05 * Math.sin(time * 8) : 1 });
-    drawText(ctx, `${stake}`, cx, 317, stake ? 2.5 : 2, stake ? '#fff6c8' : COLORS.textDim, { punch: stake ? 1 + 0.04 * Math.sin(time * 6) : 1 });
+    drawText(ctx, `${hot ? 'HOT HAND! ' : ''}PAYS X${b.pay}  -  MAX ${stakeCap(run)}`, cx, BET_Y + 76, 1.5, hot ? '#ff8a3a' : COLORS.goldLight, { punch: hot ? 1 + 0.05 * Math.sin(time * 8) : 1 });
+    drawText(ctx, `${stake}`, cx, BET_Y + 103, stake ? 2.5 : 2, stake ? '#fff6c8' : COLORS.textDim, { punch: stake ? 1 + 0.04 * Math.sin(time * 6) : 1 });
     const top = maxStake(run);
     for (const btn of this.buttons) {
       if (btn.bet === undefined) continue;
@@ -797,12 +805,12 @@ export class RunScreens {
     this.shopItems = items;
     if (!reopen) this.open('shop');
     this.buttons = [
-      this.btn(`REROLL - ${rerollCost(run)}`, W / 2 - 160, 530, 260, 50, () => this.cb.onReroll()),
-      this.btn('LEAVE', W / 2 + 160, 530, 260, 50, () => this.cb.onLeave()),
+      this.btn(`REROLL - ${rerollCost(run)}`, CX - 160, 530, 260, 50, () => this.cb.onReroll()),
+      this.btn('LEAVE', CX + 160, 530, 260, 50, () => this.cb.onLeave()),
     ];
-    const gap = items.length > 4 ? 234 : 250;
+    const gap = items.length > 4 ? 188 : 232;
     this.shopHits = items.map((_, i) => {
-      const h = this.hit(W / 2 + (i - (items.length - 1) / 2) * gap, 352, gap - 22, 262, () => this.cb.onBuy(i));
+      const h = this.hit(CX + (i - (items.length - 1) / 2) * gap, 352, gap - 14, 262, () => this.cb.onBuy(i));
       h.scale = reopen ? 1 : 0;
       return h;
     });
@@ -825,13 +833,13 @@ export class RunScreens {
     this.rideOffer = false;
     this.run = run;
     this.open('over');
-    this.buttons = [this.btn('MENU', W / 2 - 140, 528, 240, 52, () => this.cb.onMenu()), this.btn('NEW RUN', W / 2 + 140, 528, 240, 52, () => this.cb.onNewRun())];
+    this.buttons = [this.btn('MENU', CX - 140, 528, 240, 52, () => this.cb.onMenu()), this.btn('NEW RUN', CX + 140, 528, 240, 52, () => this.cb.onNewRun())];
     // Beat the Dealer: CASH OUT (the two buttons above) or LET IT RIDE into endless loops.
     if (run.won && run.act >= 3 && !run.endless) {
       this.buttons = [
-        this.btn('MENU', W / 2 - 300, 528, 200, 52, () => this.cb.onMenu()),
-        this.btn('CASH OUT', W / 2 - 60, 528, 220, 52, () => this.cb.onNewRun()),
-        this.btn('LET IT RIDE', W / 2 + 220, 528, 280, 52, () => this.cb.onLetItRide()),
+        this.btn('MENU', CX - 300, 528, 200, 52, () => this.cb.onMenu()),
+        this.btn('CASH OUT', CX - 60, 528, 220, 52, () => this.cb.onNewRun()),
+        this.btn('LET IT RIDE', CX + 220, 528, 280, 52, () => this.cb.onLetItRide()),
       ];
       this.rideOffer = true;
     }
@@ -1004,8 +1012,8 @@ export class RunScreens {
   private drawMap(ctx: CanvasRenderingContext2D, y: number, time: number): void {
     const run = this.run!;
     const n = run.paths.length;
-    const gap = 150;
-    const x0 = W / 2 - ((n - 1) * gap) / 2;
+    const gap = Math.min(150, 880 / Math.max(1, n - 1));
+    const x0 = CX - ((n - 1) * gap) / 2;
     ctx.fillStyle = '#3a2e52';
     ctx.fillRect(x0, y - 2, (n - 1) * gap, 4);
     ctx.fillStyle = COLORS.gold;
@@ -1040,58 +1048,49 @@ export class RunScreens {
     });
   }
 
-  /** YOUR BUILD: hero, HP and chips | your reels | your relics. Same place, same size, on every run screen. */
+  /** YOUR BUILD: a fixed column on the left of every run screen. Chips (top-left, where the fights show them too), you,
+   * your reels as a tall table (a row per symbol and charm), your relics. */
   private drawBuild(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
     const p = run.player;
     const { x, y, w, h } = BUILD;
     this.panel(ctx, x, y, w, h);
-    ctx.fillStyle = '#2a2140';
-    ctx.fillRect(x + 268, y + 8, 2, h - 16);
-    ctx.fillRect(x + 742, y + 8, 2, h - 16);
-    // Who you are, how you're doing, what you can spend.
+    const rule = (yy: number) => {
+      ctx.fillStyle = '#2a2140';
+      ctx.fillRect(x + 10, yy, w - 20, 2);
+    };
+    // CHIPS: big, always in the same spot.
+    drawSprite(ctx, 'chip', CHIP_SPOT.x, CHIP_SPOT.y, 3);
+    drawText(ctx, `${p.chips}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, COLORS.energy, { align: 'left', punch: this.chipPulse });
+    drawText(ctx, 'CHIPS', x + w - 12, CHIP_SPOT.y + 4, 1.5, COLORS.textDim, { align: 'right' });
+    rule(y + 58);
+    // Who you are and how you're doing.
     const cab = CABINETS[run.cabinet];
-    if (hasSprite(cab.heroSprite)) drawSprite(ctx, cab.heroSprite as SpriteId, x + 34, y + 32, 2);
-    drawText(ctx, cab.hero, x + 64, y + 24, 2, COLORS.goldLight, { align: 'left' });
-    drawText(ctx, run.endless ? `LOOP ${run.endless.loop}` : `ACT ${run.act}${run.stake ? `  -  ${stakeOf(run.stake).name}` : ''}`, x + 64, y + 44, 1.5, COLORS.textDim, { align: 'left' });
-    this.drawHp(ctx, x + 6, y + 80, 222);
-    drawSprite(ctx, 'chip', x + 22, y + 112, 2);
-    drawText(ctx, `${p.chips} CHIPS`, x + 40, y + 112, 2, COLORS.energy, { align: 'left', punch: this.chipPulse });
-    // Your reels.
-    this.drawStrips(ctx, x + 290, y + 16, 6, 16);
+    if (hasSprite(cab.heroSprite)) drawSprite(ctx, cab.heroSprite as SpriteId, x + 30, y + 94, 2);
+    drawText(ctx, cab.hero, x + 60, y + 86, 2, COLORS.goldLight, { align: 'left' });
+    drawText(ctx, run.endless ? `LOOP ${run.endless.loop}` : `ACT ${run.act}${run.stake ? `  -  ${stakeOf(run.stake).name}` : ''}`, x + 60, y + 106, 1.5, COLORS.textDim, { align: 'left' });
+    this.drawHp(ctx, x + 2, y + 138, w - 44);
+    rule(y + 160);
+    // Your reels: columns 1 2 3, a row per symbol (and charm).
+    drawText(ctx, 'YOUR REELS', x + 12, y + 178, 2, COLORS.textDim, { align: 'left' });
+    const liens = run.liens ?? [];
+    if (liens.length) drawText(ctx, `${liens.length} HELD`, x + w - 12, y + 178, 1.5, '#ff9a3a', { align: 'right' });
+    drawReelTable(ctx, x + 8, y + 190, runTable(p), { colW: 90, rowH: 30, scale: 1.6, text: 2, maxRows: 9, levels: p.levels, ticket: p.relics.includes('ticket'), cap: levelCap(run), maxH: 300 });
+    rule(y + 498);
     // Your relics: a fixed grid; past its size the last cell says how many more.
     const relics = p.relics;
-    const rx0 = x + 762;
-    drawText(ctx, relics.length ? `RELICS ${relics.length}` : 'RELICS', rx0, y + 18, 2, COLORS.textDim, { align: 'left' });
-    if (!relics.length) drawText(ctx, 'NONE YET', rx0, y + 50, 2, '#4a4058', { align: 'left' });
-    const cols = 14;
-    const cap = cols * 3;
+    drawText(ctx, relics.length ? `RELICS ${relics.length}` : 'RELICS', x + 12, y + 516, 2, COLORS.textDim, { align: 'left' });
+    if (!relics.length) drawText(ctx, 'NONE YET', x + 12, y + 546, 2, '#4a4058', { align: 'left' });
+    const cols = 8;
+    const cap = cols * 5;
     const shown = relics.length > cap ? relics.slice(0, cap - 1) : relics;
     shown.forEach((r, i) => {
-      const cx = rx0 + 14 + (i % cols) * 32;
-      const cy = y + 46 + Math.floor(i / cols) * 30;
+      const cx = x + 24 + (i % cols) * 34;
+      const cy = y + 546 + Math.floor(i / cols) * 30;
       drawSprite(ctx, RELICS[r].sprite as SpriteId, cx, cy, 1.6);
       this.tips.add(r, cx, cy, 15);
     });
-    if (relics.length > cap) drawText(ctx, `+${relics.length - shown.length}`, rx0 + 14 + (cap - 1) % cols * 32, y + 46 + 2 * 30, 1.5, COLORS.goldLight);
-  }
-
-  /** Height the YOUR REELS table may use (its panel is 134 tall; the title takes ~24). */
-  private stripsH = 104;
-
-  /** YOUR REELS: the one reel table (columns 1 2 3, a row per symbol + charm). */
-  private drawStrips(ctx: CanvasRenderingContext2D, x: number, y: number, maxRows = 5, rowH = 19): void {
-    const p = this.run!.player;
-    drawText(ctx, 'YOUR REELS', x, y, 2, COLORS.textDim, { align: 'left' });
-    // THE REPO MAN's liens: what's missing from the table, and why.
-    const liens = this.run!.liens ?? [];
-    if (liens.length) {
-      // Fits before the RELICS label (x + 490): the first lien, then "+N MORE".
-      const all = `HELD: ${liens.map(lienShort).join(', ')}`;
-      const text = all.length <= 44 ? all : `HELD: ${lienShort(liens[0])} +${liens.length - 1} MORE`;
-      drawText(ctx, text, x + 150, y, 1.25, '#ff9a3a', { align: 'left' });
-    }
-    drawReelTable(ctx, x - 4, y + 10, runTable(p), { colW: 136, rowH, scale: rowH < 19 ? 1 : 1.1, text: 1.5, maxRows, levels: p.levels, ticket: p.relics.includes('ticket'), cap: levelCap(this.run!), maxH: this.stripsH });
+    if (relics.length > cap) drawText(ctx, `+${relics.length - shown.length}`, x + 24 + ((cap - 1) % cols) * 34, y + 546 + 4 * 30, 1.5, COLORS.goldLight);
   }
 
   private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
@@ -1109,12 +1108,12 @@ export class RunScreens {
   private drawDraft(ctx: CanvasRenderingContext2D, time: number): void {
     const last = this.lastRecord;
     const start = this.draftKind === 'start';
-    drawText(ctx, last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${this.run.dailyEdge ? `: ${EDGE_TEXT[this.run.dailyEdge].title}` : ''}` : this.run?.weekly ? `WEEKLY: ${(this.run.mods ?? []).map((e) => EDGE_TEXT[e].title).join(' + ')}` : this.run?.challenge ? `CHALLENGE: ${challengeById(this.run.challenge)?.name ?? ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', W / 2, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
+    drawText(ctx, last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${this.run.dailyEdge ? `: ${EDGE_TEXT[this.run.dailyEdge].title}` : ''}` : this.run?.weekly ? `WEEKLY: ${(this.run.mods ?? []).map((e) => EDGE_TEXT[e].title).join(' + ')}` : this.run?.challenge ? `CHALLENGE: ${challengeById(this.run.challenge)?.name ?? ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
-      drawText(ctx, `${rounds(last.turns)}${chips}${rocks}`, W / 2, 60, 2, COLORS.textDim);
-      if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${betProfit(last.bet)} CHIPS` : last.bet.refunded ? `SIDE BET BUSTED: YOUR MARKER COVERS ${Math.min(last.bet.stake, markerRefund(this.run!))}` : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, W / 2, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
+      drawText(ctx, `${rounds(last.turns)}${chips}${rocks}`, CX, 60, 2, COLORS.textDim);
+      if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${betProfit(last.bet)} CHIPS` : last.bet.refunded ? `SIDE BET BUSTED: YOUR MARKER COVERS ${Math.min(last.bet.stake, markerRefund(this.run!))}` : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, CX, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
     }
     this.drawMap(ctx, 158, time);
     const spoils = this.draftKind === 'spoils';
@@ -1132,8 +1131,8 @@ export class RunScreens {
           : relicDraft
             ? 'RELIC DRAFT'
             : '';
-    if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), W / 2, 208, 3);
-    drawText(ctx, heading, W / 2, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
+    if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), CX, 208, 3);
+    drawText(ctx, heading, CX, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
     this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], i, time));
   }
 
@@ -1323,13 +1322,13 @@ export class RunScreens {
     const act = run.endless ? `LOOP ${run.endless.loop} - ` : `ACT ${run.act} - `;
     const len = actLength(run.act);
     const title = e.isBoss ? (run.act >= runActs(run) && !run.endless ? 'FINAL FIGHT' : `${act}BOSS FIGHT`) : fork ? `${act}FIGHT ${run.depth + 1} OF ${len} - CHOOSE YOUR PATH` : `${act}FIGHT ${run.depth + 1} OF ${len}`;
-    drawText(ctx, title, W / 2, 26, 3, fork ? COLORS.goldLight : run.act > 1 ? '#c8f0ff' : COLORS.textDim);
+    drawText(ctx, title, CX, 26, 3, fork ? COLORS.goldLight : run.act > 1 ? '#c8f0ff' : COLORS.textDim);
     this.drawMap(ctx, 128, time);
     if (fork) {
-      opts.forEach((o, i) => this.drawEnemyPanel(ctx, o, i === 0 ? 40 : W / 2 + 20, 222, W / 2 - 60, time));
-      drawText(ctx, 'OR', W / 2, 372, 4, COLORS.goldLight);
+      opts.forEach((o, i) => this.drawEnemyPanel(ctx, o, i === 0 ? CX - 464 : CX + 12, 222, 452, time));
+      drawText(ctx, 'OR', CX, 372, 4, COLORS.goldLight);
     } else {
-      this.drawEnemyPanel(ctx, e, W / 2 - 330, 206, 660, time);
+      this.drawEnemyPanel(ctx, e, CX - 330, 206, 660, time);
       if (this.betOffer.length) this.drawBets(ctx, time);
     }
     for (const b of this.buttons) if (!b.bet) this.drawButton(ctx, b, time);
@@ -1452,20 +1451,20 @@ export class RunScreens {
   private drawShop(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
     ctx.fillStyle = COLORS.panelLight;
-    ctx.fillRect(40, 20, 96, 96);
-    drawSprite(ctx, 'cashierPortrait', 88, 68 + Math.sin(time * 2) * 2, 3.5);
-    drawText(ctx, 'THE CASHIER', 160, 44, 4, COLORS.goldLight, { align: 'left' });
+    ctx.fillRect(CX - 450, 20, 96, 96);
+    drawSprite(ctx, 'cashierPortrait', CX - 402, 68 + Math.sin(time * 2) * 2, 3.5);
+    drawText(ctx, 'THE CASHIER', CX - 330, 44, 4, COLORS.goldLight, { align: 'left' });
     const quips = ['PLACE YOUR BETS.', 'EVERYTHING HAS A PRICE, FRIEND.', 'THE HOUSE WILL HEAR ABOUT THIS.', 'CHIPS ARE FOR SPENDING... OR ARE THEY?'];
-    drawText(ctx, quips[(run.depth + run.shopRerolls) % quips.length], 160, 80, 2, COLORS.textDim, { align: 'left' });
+    drawText(ctx, quips[(run.depth + run.shopRerolls) % quips.length], CX - 330, 80, 2, COLORS.textDim, { align: 'left' });
     const sh = chipShield(run.player.chips);
     if (run.act === 1) {
-      drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
-      drawText(ctx, `CHIPS YOU KEEP SHIELD YOU FROM THE HOUSE: +${sh} A TURN`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
+      drawSprite(ctx, 'chipShield', CX - 330, 150, 2);
+      drawText(ctx, `CHIPS YOU KEEP SHIELD YOU FROM THE HOUSE: +${sh} A TURN`, CX - 312, 150, 2, '#9fd0ff', { align: 'left' });
     } else {
       const boss = run.act >= 3 ? 'DEALER' : 'MIRROR';
-      drawText(ctx, run.act >= 3 ? 'ACT 3: NO HEALING AFTER FIGHTS.' : 'ACT 2: A LEGENDARY ON THE SHELF.', W / 2, 118, 2, run.act >= 3 ? '#ff8a7a' : COLORS.goldLight);
-      drawSprite(ctx, 'chipShield', W / 2 - 330, 150, 2);
-      drawText(ctx, `CHIPS YOU KEEP SHIELD YOU FROM THE ${boss}: +${Math.min(MIRROR_CHIP_SHIELD_CAP, sh)} A TURN`, W / 2 - 312, 150, 2, '#9fd0ff', { align: 'left' });
+      drawText(ctx, run.act >= 3 ? 'ACT 3: NO HEALING AFTER FIGHTS.' : 'ACT 2: A LEGENDARY ON THE SHELF.', CX, 118, 2, run.act >= 3 ? '#ff8a7a' : COLORS.goldLight);
+      drawSprite(ctx, 'chipShield', CX - 330, 150, 2);
+      drawText(ctx, `CHIPS YOU KEEP SHIELD YOU FROM THE ${boss}: +${Math.min(MIRROR_CHIP_SHIELD_CAP, sh)} A TURN`, CX - 312, 150, 2, '#9fd0ff', { align: 'left' });
     }
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
     for (const b of this.buttons) this.drawButton(ctx, b, time);
@@ -1508,10 +1507,13 @@ export class RunScreens {
       drawSprite(ctx, 'minusBadge', 28, iy + 20, 3);
     } else drawSprite(ctx, 'heart', 0, iy, 4.5);
     // Long titles drop a size so they never clip (SPIKED CHARM and friends).
-    const tScale = title.length > 18 ? 1.5 : title.length > 11 ? 2 : 3;
+    const tScale = [3, 2, 1.5].find((k) => title.length * 6.4 * k <= h.w - 16) ?? 1.25;
     drawText(ctx, title, 0, 8, tScale, o.kind === 'gild' ? CHARM_COLOR[o.enh] : o.kind === 'relic' ? '#c9a0ff' : o.kind === 'symLevel' || o.kind === 'charmLevel' ? '#5ad8e8' : COLORS.text);
-    const long = wrap(text, 16).length > 3;
-    const lines = long ? wrap(text, 22).slice(0, 6) : wrap(text, 16);
+    // Wrap to the card's width (five cards are narrower than four).
+    const per2 = Math.floor((h.w - 20) / 12.8);
+    const per15 = Math.floor((h.w - 20) / 9.6);
+    const long = wrap(text, per2).length > 3;
+    const lines = long ? wrap(text, per15).slice(0, 6) : wrap(text, per2);
     lines.forEach((line, k) => drawText(ctx, line, 0, 30 + k * (long ? 13 : 17), long ? 1.5 : 2, COLORS.text));
     if (o.kind === 'relic' && LEGENDARY.has(o.relic)) this.legendTag(ctx, 0, -h.h / 2 + 14, time);
     if (o.kind === 'relic' && LEGENDARY.has(o.relic) && this.run && this.run.stake >= STAKE.mirrorRelic && this.run.act === 2)
@@ -1595,10 +1597,10 @@ export class RunScreens {
   private drawOver(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
     // The leaderboard post's result (the rest of the meta is on the RESULTS card).
-    if (this.onlineLine) drawText(ctx, this.onlineLine, W / 2, 563, 1.5, COLORS.goldLight);
+    if (this.onlineLine) drawText(ctx, this.onlineLine, CX, 563, 1.5, COLORS.goldLight);
     const trueEnding = run.won && run.act >= 3;
     const busted = !!run.endless;
-    drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', W / 2, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
+    drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     // DEATH RECAP: its own full-width line under the table (the most important line on a loss).
     const lastRec = run.records[run.records.length - 1];
@@ -1610,26 +1612,26 @@ export class RunScreens {
     if (this.unlockedNow.length) lines.push([`NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, COLORS.goldLight]);
     if (this.rideOffer) lines.push(['YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', COLORS.goldLight]);
     const shown = lines.slice(0, 2);
-    shown.forEach(([text, color], k) => drawText(ctx, text, W / 2, shown.length > 1 ? 462 + k * 18 : 472, shown.length > 1 || text.length > 90 ? 1.5 : 2, color));
+    shown.forEach(([text, color], k) => drawText(ctx, text, CX, shown.length > 1 ? 462 + k * 18 : 472, shown.length > 1 || text.length > 90 ? 1.5 : 2, color));
     // Chips left (a won run scores them) and the side bets' record.
     const bets = run.records.filter((r) => r.bet);
     const betLine = bets.length ? `  -  SIDE BETS ${bets.filter((r) => r.bet!.won).length} OF ${bets.length}` : '';
     const chipLine = `  -  ${run.player.chips} CHIPS${run.won && !run.endless ? ` (+${run.player.chips * CHIP_SCORE * (1 + 0.5 * run.stake)} SCORE)` : ''}`;
-    drawText(ctx, (run.stake > 0 ? `${reached}  -  STAKE ${run.stake} ${stakeOf(run.stake).name}` : reached) + chipLine + betLine, W / 2, 88, run.stake > 0 ? 1.5 : 2, COLORS.textDim);
+    drawText(ctx, (run.stake > 0 ? `${reached}  -  STAKE ${run.stake} ${stakeOf(run.stake).name}` : reached) + chipLine + betLine, CX, 88, run.stake > 0 ? 1.5 : 2, COLORS.textDim);
     const unlockRow = !!this.stakeUnlockedNow;
     if (unlockRow) {
-      this.stakeChip(ctx, 140, 116, run.stake + 1, performance.now() / 1000, 14);
-      wrap(this.stakeUnlockedNow, 110).slice(0, 3).forEach((l, k) => drawText(ctx, l, 164, 104 + k * 13, 1.25, stakeOf(run.stake + 1).color, { align: 'left' }));
+      this.stakeChip(ctx, 340, 116, run.stake + 1, performance.now() / 1000, 14);
+      wrap(this.stakeUnlockedNow, 96).slice(0, 3).forEach((l, k) => drawText(ctx, l, 364, 104 + k * 13, 1.25, stakeOf(run.stake + 1).color, { align: 'left' }));
     }
     // The table moves down under an unlock message (QA_1 B5), and ends higher when two lines sit under it.
     const top = unlockRow ? 22 : 0;
     const twoLines = [recap, this.unlockedNow.length, this.rideOffer].filter(Boolean).length > 1;
     const cut = twoLines ? 18 : 0;
-    this.panel(ctx, 110, 120 + top, 1060, 320 - top - cut);
-    drawText(ctx, 'FIGHT', 150, 142 + top, 2, COLORS.textDim, { align: 'left' });
-    drawText(ctx, 'ROUNDS', 560, 142 + top, 2, COLORS.textDim);
-    drawText(ctx, 'HP', 680, 142 + top, 2, COLORS.textDim);
-    drawText(ctx, 'THEN PICKED', 790, 142 + top, 2, COLORS.textDim, { align: 'left' });
+    this.panel(ctx, 316, 120 + top, 940, 320 - top - cut);
+    drawText(ctx, 'FIGHT', 350, 142 + top, 2, COLORS.textDim, { align: 'left' });
+    drawText(ctx, 'ROUNDS', 715, 142 + top, 2, COLORS.textDim);
+    drawText(ctx, 'HP', 821, 142 + top, 2, COLORS.textDim);
+    drawText(ctx, 'THEN PICKED', 919, 142 + top, 2, COLORS.textDim, { align: 'left' });
     // Up to 16 fights: rows shrink (and drop the detail line) once they stop fitting.
     const rows = this.overRows(run);
     const rowH = Math.min(42, Math.floor((280 - top - cut) / Math.max(1, rows.length)));
@@ -1638,42 +1640,42 @@ export class RunScreens {
       const y = 170 + top + i * rowH + (compact ? 0 : 6);
       if (i % 2 === 0) {
         ctx.fillStyle = 'rgba(255,255,255,0.04)';
-        ctx.fillRect(122, y - rowH / 2, 1036, rowH - 2);
+        ctx.fillRect(328, y - rowH / 2, 916, rowH - 2);
       }
       if (compact && r.act && r.act > 1 && rows[i - 1]?.act === 1) {
         ctx.fillStyle = '#c8f0ff';
-        ctx.fillRect(122, y - rowH / 2 - 1, 1036, 2);
-        this.actPlaque(ctx, 1150, y - rowH / 2, 'ACT 2', '#c8f0ff');
+        ctx.fillRect(328, y - rowH / 2 - 1, 916, 2);
+        this.actPlaque(ctx, 1236, y - rowH / 2, 'ACT 2', '#c8f0ff');
       }
       if (compact && r.act && r.act > 2 && run.records[i - 1]?.act === 2) {
         ctx.fillStyle = '#7dff7a';
-        ctx.fillRect(122, y - rowH / 2 - 1, 1036, 2);
-        this.actPlaque(ctx, 1150, y - rowH / 2, 'ACT 3', '#7dff7a');
+        ctx.fillRect(328, y - rowH / 2 - 1, 916, 2);
+        this.actPlaque(ctx, 1236, y - rowH / 2, 'ACT 3', '#7dff7a');
       }
-      if (compact && i === 0) this.actPlaque(ctx, 1150, y - rowH / 2, 'ACT 1', COLORS.goldLight);
+      if (compact && i === 0) this.actPlaque(ctx, 1236, y - rowH / 2, 'ACT 1', COLORS.goldLight);
       // Tight rows (a GREEN run has 18) get smaller text, so the act dividers run between rows, not through them.
       const ts = rowH < 18 ? 1.25 : rowH < 22 ? 1.5 : 2;
-      drawSprite(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 150, y, compact ? (rowH < 22 ? 0.65 : 0.9) : 1.4);
-      drawText(ctx, r.enemy, 176, y, ts, r.won ? COLORS.text : COLORS.danger, { align: 'left' });
-      drawText(ctx, `${Math.ceil(r.turns / 2)}`, 560, y, ts, COLORS.text);
-      drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 680, y, ts, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
+      drawSprite(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 350, y, compact ? (rowH < 22 ? 0.65 : 0.9) : 1.4);
+      drawText(ctx, r.enemy, 376, y, ts, r.won ? COLORS.text : COLORS.danger, { align: 'left' });
+      drawText(ctx, `${Math.ceil(r.turns / 2)}`, 715, y, ts, COLORS.text);
+      drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 821, y, ts, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
       if (compact) {
         const parts = [...(r.bonuses ?? []), r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
         const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
-        drawText(ctx, what.length > 34 ? `${what.slice(0, 33)}...` : what, 790, y, rowH < 22 ? 1.25 : 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
+        drawText(ctx, what.length > 30 ? `${what.slice(0, 29)}...` : what, 919, y, rowH < 22 ? 1.25 : 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
         return;
       }
-      if (r.pick) drawText(ctx, describeOption(r.pick).title, 790, y - 6, 2, '#c9a0ff', { align: 'left' });
+      if (r.pick) drawText(ctx, describeOption(r.pick).title, 919, y - 6, 2, '#c9a0ff', { align: 'left' });
       const extra = [
         ...(r.bonuses ?? []),
         r.eliteRelic ? `SPOILS: ${RELICS[r.eliteRelic].name}` : '',
         ...(r.bought ?? []).map((b) => `BUY: ${describeOption(b).title}`),
         r.chips ? `+${r.chips} CHIPS` : '',
       ].filter(Boolean).join('  ');
-      if (extra) drawText(ctx, extra, 790, y + 12, 1, COLORS.textDim, { align: 'left' });
-      else if (!r.won) drawText(ctx, 'DEFEATED', 790, y, 2, COLORS.danger, { align: 'left' });
-      if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCK${r.rocksAdded > 1 ? 'S' : ''}`, 640, y + 12, 1, '#c9bba8');
-      if (r.liens) drawText(ctx, `${r.liens} HELD`, r.rocksAdded ? 590 : 640, y + 12, 1, '#ff9a3a');
+      if (extra) drawText(ctx, extra, 919, y + 12, 1, COLORS.textDim, { align: 'left' });
+      else if (!r.won) drawText(ctx, 'DEFEATED', 919, y, 2, COLORS.danger, { align: 'left' });
+      if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCK${r.rocksAdded > 1 ? 'S' : ''}`, 786, y + 12, 1, '#c9bba8');
+      if (r.liens) drawText(ctx, `${r.liens} HELD`, r.rocksAdded ? 742 : 786, y + 12, 1, '#ff9a3a');
     });
     for (const b of this.buttons) this.drawButton(ctx, b, 0);
     if (this.results) this.drawResults(ctx, run);
