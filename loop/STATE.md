@@ -1802,3 +1802,15 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - THE CASHIER, Balatro style: two shelves (the counter: charms, swaps, levels, heals; behind glass: relics on velvet,
   legendaries glowing). Each item is its picture and chip price; hovering shows its name and rule.
 - No gameplay change; tests 238.
+
+## Iteration 83 (2026-10-07): REPO MAN without liens; no chip shield on bosses (user: "too noisy")
+- THE REPO MAN takes a charm for the fight only (`GATEKEEPER.persist = false`); no charms, his take fizzles (he no
+  longer steals cells). No liens, no PAY OFF A LIEN, no HELD; TOLL BOOTH retired, PAID IN FULL achievement removed.
+- Chips no longer shield you on bosses (stackShield 0; the shop and House-card lines are gone).
+- Untuned: **WHITE 24-38 / GREEN 9-15** (N1000): the chip shield was a big piece of every boss fight (House 92 -> 72,
+  Mirror 59 -> 41 for KNIGHT).
+- Re-tuned BOSS_MUL: knight house 2.0 -> 1.1, mirror 2.2 -> 1.3, dealer 0.88 -> 0.5; tesla house 1.5 -> 0.85,
+  mirror 3.4 -> 2, dealer 3.3 -> 2.3; joker mirror 3.1 -> 1.5, act2 1.8 -> 1.5, dealer 0.8 -> 0.55; midas house 5 -> 3.5,
+  mirror 4.8 -> 3.4, dealer 7.5 -> 5; thorn house 3 -> 2, dealer 3.6 -> 3.2.
+- N1000: KNIGHT 43.7 / 18.6, TESLA 44.5 / 17.1, BRIAR 43.2 / 17.8, JAX 43.4 / 18.8, CASSIDY 43.2 / 17.5 (avg 43.6 /
+  18.0). Tests: 238 (lien tests rewritten for the new rule).
