@@ -6,7 +6,7 @@ import type { LineScore } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
 import { Banner, Bubble, FloatText, Lightning, Projectile, SymbolWheel, TurnCard } from './fx';
-import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, W, relicSlot } from './layout';
+import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, W, RELIC_X, relicSlot } from './layout';
 import type { Stage } from './stage';
 import { ABILITY_UI } from './hud';
 import { betProfit, betState, trackEvent } from '../core/bets';
@@ -325,7 +325,7 @@ export class Director {
     const w = name.length * 9;
     // Names line up in the header row (stacked upward if several fire at once).
     const busy = Object.entries(this.s.relicPops).filter(([k, v]) => k !== relic && v > 0.4).length;
-    this.bg(this.popText(name, Math.min(162 - w / 2, Math.max(8 + w / 2, at.x)), RELIC_NAME_Y - busy * 16, 1.5, '#e0c0ff', 12, 0.45));
+    this.bg(this.popText(name, Math.min(W - 8 - w / 2, Math.max(RELIC_X + w / 2, at.x)), RELIC_NAME_Y - busy * 16, 1.5, '#e0c0ff', 12, 0.45));
   }
 
   private get c() {

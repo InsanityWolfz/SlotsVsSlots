@@ -289,12 +289,13 @@ export class Game {
       ring: () => this.prefs.auto,
     });
     this.autoBtn = this.btn('AUTO', px - 116, by, 84, 44, () => this.setAuto(!this.prefs.auto));
-    SPEEDS.forEach((s, i) => this.speedBtns.push(this.btn(`${s}X`, px + 80 + i * 39, by, 36, 44, () => this.setSpeed(s))));
+    // One SPEED button cycles 1X -> 2X -> 4X -> 8X (the keys 1-4 still pick one).
+    this.speedBtns.push(this.btn('2X', px + 130, by, 120, 44, () => this.setSpeed(SPEEDS[(SPEEDS.indexOf(this.prefs.speed) + 1) % SPEEDS.length])));
     this.startBtn = this.btn('START RUN', W / 2 + 10, by, 196, 56, () => this.newRunPressed(), { idlePulse: true, textScale: 3 });
     const ex = MACHINE_CX.enemy;
-    const tune = this.btn('TUNE', ex - 110, by, 90, 44, () => {});
-    const log = this.btn('LOG', ex, by, 90, 44, () => {});
-    this.muteBtn = this.btn('SOUND', ex + 110, by, 90, 44, () => this.setMuted(!this.prefs.muted));
+    const tune = this.btn('TUNE', W / 2, by, 90, 44, () => {});
+    const log = this.btn('LOG', ex - 110, by, 90, 44, () => {});
+    this.muteBtn = this.btn('SOUND', ex, by, 90, 44, () => this.setMuted(!this.prefs.muted));
     this.toolButtons = { tune, log };
     this.recapBtns = [
       this.btn('REMATCH', W / 2 - 230, 0, 190, 50, () => this.newFight(true, this.lastSeed)),
@@ -306,10 +307,14 @@ export class Game {
 
   private syncButtons(): void {
     this.autoBtn.toggled = this.prefs.auto;
-    this.speedBtns.forEach((b, i) => (b.toggled = SPEEDS[i] === this.prefs.speed));
+    this.speedBtns.forEach((b) => (b.label = `SPEED ${this.prefs.speed}X`));
     this.spinBtn.enabled = this.awaitingSpin;
-    this.startBtn.label = this.phase === 'title' ? 'START RUN' : this.abandonArmed ? 'SURE?' : 'NEW RUN';
-    this.startBtn.opts.idlePulse = this.phase === 'title';
+    // START RUN on the title; in a run it's a small QUIT on the right (asks SURE? first).
+    const title = this.phase === 'title';
+    this.startBtn.label = title ? 'START RUN' : this.abandonArmed ? 'SURE?' : 'QUIT';
+    this.startBtn.opts.idlePulse = title;
+    this.startBtn.opts.textScale = title ? 3 : undefined;
+    Object.assign(this.startBtn, title ? { x: W / 2 + 10, w: 196, h: 56 } : { x: MACHINE_CX.enemy + 110, w: 90, h: 44 });
     this.muteBtn.label = this.prefs.muted ? 'MUTED' : 'SOUND';
     this.muteBtn.toggled = this.prefs.muted;
     const overlay = this.screens.active || this.phase === 'recap' || this.menus.isOpen;
@@ -317,6 +322,8 @@ export class Game {
     for (const b of this.recapBtns) b.visible = this.phase === 'recap';
     for (const b of this.buttons) if (b.label === 'TUNE' || b.label === 'LOG') b.visible = this.screens.mode !== 'cabinet' && !(b.label === 'TUNE' && this.publicBuild);
     this.muteBtn.visible = this.screens.mode !== 'cabinet' && this.menus.mode !== 'loading' && this.menus.mode !== 'collection' && this.menus.mode !== 'hiscores';
+    // On menus SOUND sits in the bottom-right corner (bottom-right: the corner clear of every menu's buttons).
+    Object.assign(this.muteBtn, this.menus.isOpen ? { x: W - 70, y: H - 30 } : { x: MACHINE_CX.enemy, y: 648 });
     if (this.menus.isOpen) this.toolButtons!.tune.visible = this.toolButtons!.log.visible = false;
     this.noteDiscoveries();
   }
