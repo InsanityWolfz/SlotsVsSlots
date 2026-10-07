@@ -898,7 +898,7 @@ export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer
   knight: { house: 2.0, mirror: 1.6, dealer: 0.8, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
   midas: { house: 5, mirror: 4.3, dealer: 6, act3: 1, gate: 0.8, act3Floor: 1 },
-  thorn: { house: 3, mirror: 200, dealer: 3.25, act3: 2.25, act2: 3.5, act1: 0.9, gate: 1.55 },
+  thorn: { house: 3, mirror: 200, dealer: 3.6, act3: 2.25, act2: 3.5, act1: 0.9, gate: 1.55 },
   tesla: { house: 1.5, mirror: 3.1, dealer: 3, act3: 1.6, act1: 1.35, act2: 1.2, gate: 1.0 },
   joker: { house: 2.2, mirror: 3.1, dealer: 0.8, act3: 0.35, act2: 1.8, gate: 0.85 },
 };

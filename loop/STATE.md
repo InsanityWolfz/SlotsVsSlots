@@ -1754,3 +1754,21 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   makes shields and thorns pull against each other (a real BRIAR decision), but it's a rule change for the user.
 - Left in fight.ts as no-op probe knobs: `THORNS { volley: 1, onBlocked: 1 }`, `POT_STEAL { any: 1 }`. BRIAR is
   unchanged (swords kept) until the user picks a direction.
+
+## Iteration 80 (2026-10-07): BRIAR drops her swords (sword removal 4 of 4)
+- User call (after iteration 79): no swords; cut her healing / shields as needed; thorns only on hits that get through.
+- Reels **shield 6 / thorn 6**; `attack: 'thorn'`; favors THORNY. Rules:
+  - The thorn bank fires only when a hit **gets through** (`THORNS.onBlocked = 0`): blocking spares you but holds
+    the bank. (Fewer shields made her *stronger*: more hits through, more volleys. 6 stays.)
+  - **THE MIRROR reflects her volleys** (they count toward her next spin's hit): her spins never hit, so its shards
+    had nothing to throw.
+  - Healing cut: volley heal **10 -> 0**; VAMP no longer fits thorns; **ROSE HIP capped at 20 a volley** (10% of
+    volleys healed everything: at 0% WHITE fell to 11-28). GOLD fits thorns natively, **GRAFT retired**.
+  - Thorn base **15 -> 10** (the early-game lever: 7 -> 47 / 29, 10 -> 82 / 52 before the heal cuts).
+  - BOSS_MUL thorn house 0.85 -> 3, mirror 75 -> 200, dealer 2.2 -> 3.6, act3 1.3 -> 2.25, act2 0.6 -> 3.5, act1 0.9.
+- Probes along the way (N200): thorns-on-hit alone 89.5 / 53; + Mirror reflects volleys ~same; + thorn 10 82 / 52;
+  + ROSE HIP cap 20 76.5 / 17.5; + house 3 / act2 4 / act3 2.5 / dealer 3.5: 40.5 / 14.
+- N1000: **WHITE 43.9** (House 84.0, Mirror 81.3, fight-4 deaths 4.7) / **GREEN 17.0** (Dealer 42.2); jackpot 57.7%,
+  chips per fight 24.1. **Watch:** measured power reads 0 at the Mirror and act 3 (volleys only fire when the
+  dummy's hits get through), so her bosses are sized by the flat parts; act 2 regulars carry her difficulty.
+  Tests: 238 (BRIAR, CACTUS and the charm-target tests updated).
