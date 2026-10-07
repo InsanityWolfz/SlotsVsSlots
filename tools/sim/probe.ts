@@ -20,7 +20,11 @@ for (const e of edits.split(';').filter(Boolean)) {
   for (const k of keys.slice(0, -1)) o = o[k] as Record<string, unknown>;
   o[keys[keys.length - 1]] = Number(val);
 }
-const w = simulateRuns(cfg, N, 'greedy', 4242, machine as CabinetId, 0);
-const g = simulateRuns(cfg, N, 'greedy', 4242, machine as CabinetId, 2, true);
+// "Only X" rows: RELICS=riposte,tower starts every run holding those relics.
+const give = (process.env.RELICS ?? '').split(',').filter(Boolean);
+const setup = give.length ? (r: run.RunState) => { for (const id of give) if (!r.player.relics.includes(id as never)) r.player.relics.push(id as never); } : undefined;
+const w = simulateRuns(cfg, N, 'greedy', 4242, machine as CabinetId, 0, false, setup);
+const g = simulateRuns(cfg, N, 'greedy', 4242, machine as CabinetId, 2, true, setup);
+if (give.length) console.log(`only ${give.join('+')}`);
 const f = (x: number) => x.toFixed(1).padStart(5);
 console.log(`${machine} N${N} [${edits}] WHITE ${f(w.winPct)} House ${f(w.bossWinPct)} Mirror ${f(w.mirrorWinPct)} f4die ${f(w.deathsAtDepth[3])} | GREEN ${f(g.winPct)} Dealer ${f(g.dealerWinPct)} | jack ${f(w.jackpotPct)} hpH ${f(w.hpIntoHousePct)} t1 ${w.turnsByAct[0].toFixed(1)} chips/f ${w.chipsPerFight.toFixed(1)}`);

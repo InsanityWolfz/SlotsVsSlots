@@ -53,6 +53,17 @@ export const RELICS: Record<RelicId, RelicDef> = {
   static: { id: 'static', name: 'STATIC', text: "WHEN YOU'RE ATTACKED, YOUR LIGHTNING CHARGES 5", sprite: 'relicStatic', machine: 'tesla' },
   capbells: { id: 'capbells', name: 'CAP AND BELLS', text: 'EVERY WILD ON YOUR PAYLINE HEALS 10', sprite: 'relicCapbells', machine: 'joker' },
   stacked: { id: 'stacked', name: 'STACKED DECK', text: 'WILDS TAKE GOLD, KEEN, VAMP. CHARMED WILDS FILL X2', sprite: 'relicStacked', machine: 'joker' },
+  // CONTENT WAVE 1 (2026-10-07, playtest/CONTENT_WAVE1_REVIEW.md): slot machine relics, one hook each.
+  bramble: { id: 'bramble', name: 'BRAMBLE WALL', text: 'BLOCKED HITS FIRE 30% OF YOUR THORNS', sprite: 'relicRosehip', machine: 'thorn' },
+  riposte: { id: 'riposte', name: 'RIPOSTE', text: 'A BLOCKED HIT RETURNS HALF OF WHAT YOU BLOCKED', sprite: 'relicBelt', machine: 'knight' },
+  tower: { id: 'tower', name: 'TOWER SHIELD', text: 'HALF YOUR LEFTOVER SHIELD STAYS (MAX 20% HP)', sprite: 'relicChainmail', machine: 'knight' },
+  headsman: { id: 'headsman', name: 'HEADSMAN', text: 'SWORDS HIT FOR +2% OF YOUR MAX HP', sprite: 'relicDrum', machine: 'knight' },
+  capacitor: { id: 'capacitor', name: 'CAPACITOR', text: 'LEFTOVER SHIELD CHARGES LIGHTNING (1/4)', sprite: 'relicFaraday', machine: 'tesla' },
+  livewire: { id: 'livewire', name: 'LIVE WIRE', text: 'LIGHTNING +40%. EACH STORM COSTS 4% HP', sprite: 'relicStatic', machine: 'tesla' },
+  encore: { id: 'encore', name: 'ENCORE', text: 'AFTER YOUR JACKPOT METER PAYS, IT KEEPS 30%', sprite: 'relicCapbells', machine: 'joker' },
+  wildwheel: { id: 'wildwheel', name: 'WILD WHEEL', text: 'THE WILD WHEEL SPINS TWICE AND KEEPS THE BEST', sprite: 'relicStacked', machine: 'joker' },
+  downpour: { id: 'downpour', name: 'DOWNPOUR', text: 'EACH RAIN THIS FIGHT: NEXT RAIN +25%', sprite: 'relicVault', machine: 'midas' },
+  nestegg: { id: 'nestegg', name: 'NEST EGG', text: 'HIGH ROLLER COUNTS 10 MORE CHIPS', sprite: 'relicVault', machine: 'midas' },
   // Charm relics.
   kiss: { id: 'kiss', name: "VAMPIRE'S KISS", text: 'VAMP FITS ANY SYMBOL AND HEALS WHEN IT PAYS', sprite: 'relicKiss', charm: 'vamp' },
   horseshoe: { id: 'horseshoe', name: 'HORSESHOE', text: 'MATCHES MADE WITH A LUCKY WILD PAY X3', sprite: 'relicHorseshoe', charm: 'lucky' },
@@ -145,6 +156,18 @@ export const NEW_RELIC = {
   drumStep: UNIT / 5,
   drumCap: 5,
   chainmailShare: 0.1,
+  // CONTENT WAVE 1.
+  brambleShare: 0.3,
+  riposteShare: 0.5,
+  towerShare: 0.5,
+  towerCap: 0.2,
+  headsmanPct: 0.02,
+  capacitorShare: 0.25,
+  livewireMul: 0.4,
+  livewireCost: 0.04,
+  encoreKeep: 0.3,
+  downpourStep: 0.25,
+  nestEggChips: 10,
   rosehipShare: 0.1,
   /** ...at most this much a volley (no swords: BRIAR's volleys got huge, and 10% of them healed everything). */
   rosehipCap: 2 * UNIT,
@@ -172,7 +195,7 @@ export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
   common: ['clover', 'battery', 'fang', 'bandage', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar'],
-  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll', 'bracelet', 'coil', 'loadedchips', 'rainmaker', 'slushfund', 'loosechange'],
+  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll', 'bracelet', 'coil', 'loadedchips', 'rainmaker', 'slushfund', 'loosechange', 'bramble', 'riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
 };
 

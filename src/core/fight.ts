@@ -1,4 +1,4 @@
-import { BLADES, cloneConfig, UNIT, unitsUp, type AbilityDef, type Enh, type GameConfig, type Levels, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
+import { BLADES, cloneConfig, UNIT, unitsRound, unitsUp, type AbilityDef, type Enh, type GameConfig, type Levels, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
 import { CABINETS, hasSpecial, type Cabinet, type Meter } from './cabinets';
 import { charmLevel, charmValue, LUCRE_CHIPS, playerSymValue } from './charms';
 import type { CombatEvent, DealCard, HealSource, LineCard, VoucherKind } from './events';
@@ -430,12 +430,16 @@ export class Fight {
   private vaultPaid = 0;
   /** MIDAS: the VAULT's resting level (from chips held). */
   vaultBase(): number {
-    const chips = (this.cfg.player.chipsHeld ?? 0) + this.midasChips;
+    const chips = (this.cfg.player.chipsHeld ?? 0) + this.midasChips + this.nestEgg();
     return Math.min(this.meterCost - UNIT, Math.floor(chips / MIDAS.chipsPerPip) * UNIT);
   }
   /** MIDAS: the VAULT's payoff multiplier: 1 + chips held / 20, max x3. */
   vaultMul(): number {
-    return highRollerMul(this.chipsNow());
+    return highRollerMul(this.chipsNow() + this.nestEgg());
+  }
+  /** NEST EGG: HIGH ROLLER counts this many more chips (rain still spends real chips). */
+  private nestEgg(): number {
+    return this.sides.player.relics.has('nestegg') ? NEW_RELIC.nestEggChips : 0;
   }
   /** CASH CASSIDY: chips in hand right now (held at the start, plus what this fight paid or cost). */
   chipsNow(): number {
@@ -795,6 +799,13 @@ export class Fight {
   private wildPick(c: Combatant): { symbol: SymbolId; enh?: Enh } {
     const pool = c.reels.flatMap((reel) => reel.cells.filter((cell) => !cell.slimed && !cell.stolen && !cell.carded && !cell.bomb && JACKPOTABLE.has(cell.symbol)).map((cell) => ({ symbol: cell.symbol, ...(wheelCharm(cell) ? { enh: wheelCharm(cell) } : {}) })));
     if (c.side !== 'player' || !pool.length) return { symbol: this.wildAlone(c) };
+    // WILD WHEEL: it spins twice and keeps the better pick (base pay, plus any charm).
+    if (c.relics.has('wildwheel')) {
+      const a = this.rng.pick(pool);
+      const b = this.rng.pick(pool);
+      const worth = (p: { symbol: SymbolId; enh?: Enh }) => (this.cfg.base[p.symbol] ?? 0) * (p.enh ? 2 : 1);
+      return worth(b) > worth(a) ? b : a;
+    }
     return this.rng.pick(pool);
   }
   /** Charms a WILD's pick brings to its reel this spin (on top of the cell's own). */
@@ -862,6 +873,8 @@ export class Fight {
       if (g) {
         g.rain = true;
         g.base = Math.round((this.chipsNow() * RAIN.perChip) / (g.reels.length >= 3 ? 1 : 2));
+        // DOWNPOUR: each rain this fight makes the next one hit harder.
+        if (has('downpour') && this.rains > 0) g.base = unitsRound(g.base * (1 + NEW_RELIC.downpourStep * this.rains));
       }
     }
     let vaultGroup: ScoreGroup | null = null;
@@ -914,6 +927,11 @@ export class Fight {
         g.base += BELT_STEP * this.belt * g.reels.length;
         notes.push(`BELT +${BELT_STEP * this.belt}`);
         this.belt = 0;
+      }
+      // HEADSMAN (KNIGHT): each sword hits for a share of your max HP (boss sizing passes your real HP).
+      if (player && has('headsman') && g.symbol === 'sword' && g.base > 0) {
+        g.base += unitsRound((this.cfg.player.sizeHp ?? me.maxHp) * NEW_RELIC.headsmanPct) * g.reels.length;
+        fired.add('headsman');
       }
       // WAR DRUM: every paying spin this fight adds to EACH sword (shown on the sword's number).
       if (has('drum') && BLADES.has(g.symbol) && this.drum > 0 && g.base > 0) {
@@ -1102,7 +1120,25 @@ export class Fight {
           this.heal(c, h, 'chainmail', events);
         }
       }
+      // CAPACITOR (TESLA): leftover shield charges lightning before it resets.
+      if (!this.over && this.special && c.relics.has('capacitor')) {
+        const q = unitsRound(held * NEW_RELIC.capacitorShare);
+        if (q > 0) {
+          events.push({ type: 'relic', side: 'player', relic: 'capacitor' });
+          this.gainEnergy(c, q, [], events);
+        }
+      }
       if (this.over) return;
+      // TOWER SHIELD (KNIGHT): half the leftover shield stays (capped, since SHIELD BASH reads it again next turn).
+      if (c.relics.has('tower')) {
+        const keep = Math.min(unitsRound(held * NEW_RELIC.towerShare), unitsRound(c.maxHp * NEW_RELIC.towerCap));
+        if (keep > 0) {
+          events.push({ type: 'relic', side: 'player', relic: 'tower' });
+          events.push({ type: 'shieldReset', side: c.side, lost: c.shield - keep });
+          c.shield = keep;
+          return;
+        }
+      }
     }
     events.push({ type: 'shieldReset', side: c.side, lost: c.shield });
     c.shield = 0;
@@ -1266,7 +1302,11 @@ export class Fight {
   }
 
   /** MAKE IT RAIN!: the hit (scored in score()), then its cost; TIP JAR heals, SLUSH FUND refills the bar. */
+  /** DOWNPOUR: rains so far this fight. */
+  private rains = 0;
   private makeItRain(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
+    this.rains++;
+    if (me.relics.has('downpour') && this.rains > 1) events.push({ type: 'relic', side: me.side, relic: 'downpour' });
     const foe = this.sides[other(me.side)];
     const cost = this.rainCost(me);
     events.push({ type: 'makeItRain', side: me.side, reels: g.reels, chips: this.chipsNow(), cost, total: this.midasChips - cost });
@@ -1322,7 +1362,8 @@ export class Fight {
   private payoff(me: Combatant, score: LineScore, events: CombatEvent[]): void {
     if (score.jackpots) {
       me.armed = false;
-      me.energy = 0;
+      // ENCORE: the meter keeps a share after it pays.
+      me.energy = me.side === 'player' && me.relics.has('encore') ? unitsUp(this.meterCost * NEW_RELIC.encoreKeep) : 0;
       events.push({ type: 'payoff', side: me.side, kind: 'jackpots' });
       return;
     }
@@ -1396,16 +1437,18 @@ export class Fight {
   }
 
   /** BRIAR: when you're attacked, the thorn bank hits back through shields (once per enemy turn), then clears. */
-  private thorns(victim: Combatant, attacker: Combatant, events: CombatEvent[]): void {
+  private thorns(victim: Combatant, attacker: Combatant, events: CombatEvent[], share = 1): void {
     if (this.over || attacker.hp <= 0 || victim.side !== 'player' || this.meter?.kind !== 'thorns' || victim.energy <= 0 || this.thornsTurn === this.turn) return;
     this.thornsTurn = this.turn;
     const banked = victim.energy;
     // The volley is a share of the bank (the rest is spent too): with no swords BRIAR banks thorns every spin.
-    const bank = THORNS.volley >= 1 ? banked : Math.max(UNIT, unitsUp(banked * THORNS.volley));
-    victim.energy = 0;
+    // BRAMBLE WALL fires only a share on a blocked hit; the rest stays banked.
+    const part = share < 1 ? share : THORNS.volley;
+    const bank = part >= 1 ? banked : Math.min(banked, Math.max(UNIT, unitsUp(banked * part)));
+    victim.energy = share < 1 ? banked - bank : 0;
     const h = this.damage(attacker, bank, true);
     events.push({ type: 'attack', from: victim.side, to: attacker.side, reels: [], amount: bank, ...h, note: 'thorns' });
-    events.push({ type: 'meter', side: victim.side, reels: [], amount: -banked, total: 0 });
+    events.push({ type: 'meter', side: victim.side, reels: [], amount: -(share < 1 ? bank : banked), total: victim.energy });
     this.checkDeath(attacker, events);
     // THE MIRROR reflects BRIAR's volleys too (her spins never hit): the volley counts toward her next spin's hit.
     this.volleyCarry += bank;
@@ -1495,8 +1538,21 @@ export class Fight {
       events.push({ type: 'relic', side: foe.side, relic: 'belt' });
     }
     this.checkDeath(foe, events);
+    // RIPOSTE (KNIGHT): a blocked hit returns half of what you blocked.
+    if (!this.over && foe.side === 'player' && h.blocked > 0 && me.hp > 0 && foe.relics.has('riposte')) {
+      const back = unitsUp(h.blocked * NEW_RELIC.riposteShare);
+      events.push({ type: 'relic', side: 'player', relic: 'riposte' });
+      const r = this.damage(me, back, false);
+      events.push({ type: 'attack', from: 'player', to: me.side, reels: [], amount: back, ...r });
+      this.checkDeath(me, events);
+    }
     // BRIAR: being attacked sets the thorn bank off (THORNS.onBlocked 0: only when damage gets through).
     if (!this.over && amount > 0 && (THORNS.onBlocked || h.hpDamage > 0)) this.thorns(foe, me, events);
+    // BRAMBLE WALL: a fully blocked hit fires a share of the bank.
+    else if (!this.over && amount > 0 && h.hpDamage === 0 && h.blocked > 0 && foe.side === 'player' && foe.relics.has('bramble') && foe.energy > 0 && this.thornsTurn !== this.turn) {
+      events.push({ type: 'relic', side: 'player', relic: 'bramble' });
+      this.thorns(foe, me, events, NEW_RELIC.brambleShare);
+    }
     // STATIC: being attacked charges your lightning (once per enemy turn).
     if (!this.over && amount > 0 && foe.side === 'player' && this.special && foe.relics.has('static') && this.staticTurn !== this.turn) {
       this.staticTurn = this.turn;
@@ -1519,12 +1575,13 @@ export class Fight {
     // OVERCHARGE (TESLA): every strike hits 30% harder. It used to fire an echo strike after each one, which spammed
     // through a LIGHTNING STORM (user playtest); it pops once per storm now.
     const over = me.relics.has('overcharge');
+    const live = me.side === 'player' && me.relics.has('livewire');
     let overPopped = false;
     let strikes = 0;
     while (me.energy >= this.cfg.specialCost && !this.over && foe.hp > 0) {
       me.energy -= this.cfg.specialCost;
       const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
-      const dmg = over ? unitsUp(raw * (1 + OVERCHARGE.lightning)) : raw;
+      const dmg = unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1));
       if (over && !overPopped) {
         overPopped = true;
         events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
@@ -1536,6 +1593,15 @@ export class Fight {
     }
     // Every strike heals a little (TESLA's payoff heal), plus Vampire Fang: once per storm, for all its strikes (one heal
     // after each strike spammed through a LIGHTNING STORM: user playtest).
+    // LIVE WIRE: each storm costs HP, once a storm (never per strike), never lethal, outside damage() and its turn cap.
+    if (live && strikes > 0 && !this.over) {
+      const cost = Math.min(me.hp - 1, unitsUp(me.maxHp * NEW_RELIC.livewireCost));
+      if (cost > 0) {
+        me.hp -= cost;
+        events.push({ type: 'relic', side: 'player', relic: 'livewire' });
+        events.push({ type: 'hpCost', side: 'player', amount: cost, hp: me.hp });
+      }
+    }
     if (me.side === 'player' && strikes > 0) this.payoffHeal(me, events, strikes);
   }
 

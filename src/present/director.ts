@@ -255,6 +255,15 @@ export class Director {
       case 'lastCall':
         this.s.sounds.stingerMedium();
         return this.banner('LAST CALL!', '#ff6a5a', 1.2, 0.3, 'THE HOUSE HITS HARDER EVERY TURN NOW', BANNER_Y, 3);
+      case 'hpCost': {
+        // LIVE WIRE: the storm's price comes off your own HP bar.
+        const h = this.s.huds[e.side];
+        const b = h.hpBar();
+        this.s.sounds.coin(1);
+        this.bg(this.popText(`-${e.amount}`, b.x + b.w - 30, b.y - 4, 2.5, '#ff8a7a', 16, 0.3));
+        this.bg(this.c.to(h, 'ghost', e.hp, 0.5));
+        return this.c.to(h, 'hp', e.hp, 0.2, sineOut);
+      }
       case 'coverCharge': {
         const c = this.machineCenter(e.side);
         this.s.sounds.coin(1);

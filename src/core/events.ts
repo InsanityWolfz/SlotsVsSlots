@@ -122,6 +122,8 @@ export type CombatEvent =
   | { type: 'closingTime'; side: SideId; hp: number }
   /** ACT 3 cover charge: the first enemy attack of the fight takes a cut that no shield blocks. */
   | { type: 'coverCharge'; side: SideId; amount: number }
+  /** LIVE WIRE: a storm costs you HP (never lethal, not through damage()). */
+  | { type: 'hpCost'; side: SideId; amount: number; hp: number }
   /** ALL IN: the Dealer throws its whole visible hand at you. */
   | { type: 'allInHit'; from: SideId; to: SideId; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number }
   /** SHUFFLE: cells swapped between two of the target's reels (index pairs: [in reel a, in reel b]). */

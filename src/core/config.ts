@@ -138,6 +138,17 @@ export type RelicId =
   | 'static'
   | 'capbells'
   | 'stacked'
+  // CONTENT WAVE 1 (2026-10-07): one hook each
+  | 'bramble'
+  | 'riposte'
+  | 'capacitor'
+  | 'encore'
+  | 'downpour'
+  | 'nestegg'
+  | 'wildwheel'
+  | 'livewire'
+  | 'headsman'
+  | 'tower'
   // Charm relics (hone = EXECUTIONER, midas = GOLD LEAF keep their old ids for saves)
   | 'kiss'
   | 'horseshoe'
@@ -207,6 +218,8 @@ export interface SideConfig {
   first?: boolean;
   /** MIDAS: chips held when the fight starts (the VAULT pre-fills from them). */
   chipsHeld?: number;
+  /** Boss sizing: your real max HP (the sizing dummy's HP is huge, so %-of-max-HP relics read this instead). */
+  sizeHp?: number;
   /** The side bet on this fight (MIDAS cashes it mid-fight, into the vault). */
   sideBet?: import('./bets').PlacedBet;
   /** HOUSE EDGE "HOUSE CUT": your healing multiplier. */
