@@ -1851,3 +1851,15 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - `endless.ts` gains a "best 10% by build power" row (final-build machinePower of each rider). N400 forced ride:
   loop 5 reached, all riders / best 10%: KNIGHT 0 / 0, TESLA 3 / 29, BRIAR 18 / 38, JAX 0 / 0, CASSIDY 6 / 14.
   Watch: KNIGHT and JAX best builds stop at loop 3 (7 riders each: thin); BRIAR's average is above the 10% target.
+
+## Iteration 87 (2026-10-07): content wave 1 complete (18 relics)
+- New: COUP DE GRACE (KNIGHT), COMPOUND (CASSIDY), HEDGE (BRIAR), MELTDOWN / PULSE (TESLA), DECK DRUM (JAX),
+  WILD CARD (wild machines; not KNIGHT/CASSIDY), LOADED REEL (needs wilds). All in WAVE1 (not in start pick or identity slot).
+- Solo (held from start, other part-2 relics retired, N400) vs baseline, WHITE/GREEN, first build -> tuned:
+  MELTDOWN +13.8/+14 -> +5.8/+3 (0.5% per 1% missing, cap 25%); HEDGE +10.5/+5.2 -> +7.5/+1.7 (25% -> 10%);
+  DECK DRUM +8.3/+5.7 -> +2.5/+4 (half WAR DRUM's step); WILD CARD (JAX) +7.3/+3 -> 5 a wild, half on JAX;
+  COMPOUND -0.3/-1.5 -> +1.2/+1 (sizer chip cap stays 20); LOADED REEL +1-2; PULSE -1.2/+4;
+  COUP DE GRACE: the instant finish measured -3 to -4 WHITE (finish-only probe 39.3 vs 42.8 off): swapped for "swords x2
+  under 25% of your max HP" (-1.5/+2.2). Watch: why faster regular kills cost KNIGHT win rate.
+- BOSS_MUL: midas mirror 3.4 -> 3.1, dealer 5 -> 4.6; joker dealer 0.5 -> 0.53.
+- Official table N1000 (WHITE / GREEN): KNIGHT 43.1/17.2, TESLA 41.1/18.4, BRIAR 44.3/17.2, JAX 43.9/18.3, CASSIDY 43.7/16.2.
