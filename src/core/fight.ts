@@ -49,6 +49,10 @@ export const SHARD_CRACKED = 1 / 2;
 /** chipLess: a chip group pays (its size - chipLess) chips, at least 1. */
 // 2026-10-07 (no swords): chips now hit too and land 1.5x as often, and rain grows with chips held (uncapped), so
 // rain x3 + a chip per symbol made CASSIDY 83 / 63. Now x2, and a group pays its size - 1 chips (1, 1, 2).
+/** Pot steals: 1 = any jackpot steals the boss pot, 0 = only a jackpot of your attack symbol (probe knob). */
+export const POT_STEAL = { any: 1 };
+/** BRIAR's volley: this share of the thorn bank hits back (2026-10-07, no swords). */
+export const THORNS = { volley: 1, onBlocked: 1 };
 export const RAIN = { perChip: 2, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x3 (quarter steps). */
 export const highRollerMul = (chips: number) => Math.min(MIDAS.maxMul, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
@@ -684,7 +688,9 @@ export class Fight {
       events.push({ type: 'relic', side, relic: 'crown' });
       this.heal(me, CROWN_HEAL, 'crown', events);
     }
-    const steals = score.tier === 'triple' || (score.tier === 'pair' && me.relics.has('crown'));
+    // Only a jackpot of your attack symbol (or wilds) steals the pot (2026-10-07: two-symbol reels made jackpots 3x as common).
+    const atkJackpot = score.tier === 'triple' && (POT_STEAL.any || score.groups.some((g) => g.matched && g.reels.length >= 3 && (this.isAttack(g.symbol) || g.symbol === 'wild' || !!g.rain)));
+    const steals = atkJackpot || (score.tier === 'pair' && me.relics.has('crown'));
     if (!this.over && side === 'player' && this.isBoss && steals) {
       // ENDLESS: a jackpot takes only half the loop House's pot (it can't be farmed every spin).
       this.winPot(me, events, (score.tier === 'triple' ? 1 : 0.5) * (this.cfg.enemy.endless ? ENDLESS.potSteal : 1));
@@ -1388,11 +1394,13 @@ export class Fight {
   private thorns(victim: Combatant, attacker: Combatant, events: CombatEvent[]): void {
     if (this.over || attacker.hp <= 0 || victim.side !== 'player' || this.meter?.kind !== 'thorns' || victim.energy <= 0 || this.thornsTurn === this.turn) return;
     this.thornsTurn = this.turn;
-    const bank = victim.energy;
+    const banked = victim.energy;
+    // The volley is a share of the bank (the rest is spent too): with no swords BRIAR banks thorns every spin.
+    const bank = Math.max(UNIT, unitsUp(banked * THORNS.volley));
     victim.energy = 0;
     const h = this.damage(attacker, bank, true);
     events.push({ type: 'attack', from: victim.side, to: attacker.side, reels: [], amount: bank, ...h, note: 'thorns' });
-    events.push({ type: 'meter', side: victim.side, reels: [], amount: -bank, total: 0 });
+    events.push({ type: 'meter', side: victim.side, reels: [], amount: -banked, total: 0 });
     this.checkDeath(attacker, events);
     this.payoffHeal(victim, events);
     // ROSE HIP: a volley heals you for a share of what it fired.
@@ -1480,8 +1488,8 @@ export class Fight {
       events.push({ type: 'relic', side: foe.side, relic: 'belt' });
     }
     this.checkDeath(foe, events);
-    // BRIAR: being attacked (blocked or not) sets the thorn bank off.
-    if (!this.over && amount > 0) this.thorns(foe, me, events);
+    // BRIAR: being attacked sets the thorn bank off (THORNS.onBlocked 0: only when damage gets through).
+    if (!this.over && amount > 0 && (THORNS.onBlocked || h.hpDamage > 0)) this.thorns(foe, me, events);
     // STATIC: being attacked charges your lightning (once per enemy turn).
     if (!this.over && amount > 0 && foe.side === 'player' && this.special && foe.relics.has('static') && this.staticTurn !== this.turn) {
       this.staticTurn = this.turn;

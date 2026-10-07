@@ -1739,3 +1739,18 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - N1000: **WHITE 44.5** (House 97.2, Mirror 47.0, fight-4 deaths 0.1) / **GREEN 18.0** (Dealer 30.4); jackpot 34.6%,
   chips per fight 15.2. **Watch:** his difficulty lives in the Mirror and the Dealer; the House is ~free. Tests:
   238 (cassidy / tuesday / iteration6 tests moved to chips).
+
+## Iteration 79 (2026-10-07): BRIAR without swords — probed, NOT shipped (needs a design call)
+- Tried: reels shield 6 / thorn 6, `attack: 'thorn'`, favors THORNY, GRAFT retired (gold + vamp native on thorns).
+  Result **WHITE 100 / GREEN 91** (N300). Nothing ordinary moved it (N200 probes):
+  - volley heal 0: 95.5 / 82; 8 shields + 4 thorns: 97.5 / 83.5; 3 shields + 9 thorns: 100 / 97;
+  - every enemy x2-x3 (act1 2.2, house 3, mirror 250, dealer 7, act3 4): 97.5 / 96.5; no vamp on thorns: 100 / 94;
+  - no gold on thorns: 100 / 84.5; volley = 30-50% of the bank: 90-99 / 80-88; only attack-symbol jackpots steal the
+    boss pot: 99.5 / 93.
+- Why (boss-fight replay, `scratchpad/briar3.ts`): enemies barely get through 6 shields (the Mirror dealt ~1 a turn
+  over 465 turns at 250x HP), yet every **blocked** hit still fires the whole thorn bank (~900-2,400 a volley on the
+  Dealer), and each volley heals him. Bosses' attacks don't grow with their HP, so more HP only makes fights longer.
+- The one rule that bit: volleys fire only when damage **gets through** (`THORNS.onBlocked = 0`): 88.5 / 60.5. It
+  makes shields and thorns pull against each other (a real BRIAR decision), but it's a rule change for the user.
+- Left in fight.ts as no-op probe knobs: `THORNS { volley: 1, onBlocked: 1 }`, `POT_STEAL { any: 1 }`. BRIAR is
+  unchanged (swords kept) until the user picks a direction.
