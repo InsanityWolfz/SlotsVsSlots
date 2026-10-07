@@ -1700,3 +1700,12 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - **Endless, forced riding** (`endless.ts 400`, GREEN; riders = Dealer winners), % of riders reaching loop 5:
   KNIGHT 16%, TESLA 3%, BRIAR **31%**, JAX 1%, CASSIDY **55%** (p50 4 loops cleared, max 18). The old harness hid
   this by cashing out at loop 5. Goal (plan step 7): under ~5% for every machine.
+
+## Iteration 76 (2026-10-07): JAX throws cards (sword removal 1 of 4)
+- JESTER JAX's swords are now **CARDS** (code id `ace`; `card` stays the Dealer's mark): reels card 5 / shield 5 /
+  wild 2. Cards hit like swords (`BLADES` = sword + ace in config.ts): KEEN, VAMP, gold, lucky, CHIP, TRICK, BELT,
+  DRUM, EXECUTIONER, the vault sort and the estimator all take them. `symLabel()` names symbols on screen (CHIP,
+  CARD); relic texts say CARD on JAX; SOLID GOLD / CLEAN CUT name the machine's attack symbol. New 16x16 card art.
+- KEEN text is symbol-neutral ("+N TO EACH ONE IN ITS GROUP, WHICH PIERCES SHIELDS").
+- table.ts 300, JAX: **identical** to before (WHITE 44.3, GREEN 19.3, Dealer 48.7, jackpot 54.5%): a pure re-skin,
+  which also proves every sword hook was moved over. Tests: 238 (TRICK test uses cards).

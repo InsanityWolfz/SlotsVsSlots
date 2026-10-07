@@ -1,4 +1,4 @@
-import { cloneConfig, defaultConfig, emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
+import { BLADES, cloneConfig, defaultConfig, symLabel, emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
 import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_HP_MUL_2, GATEKEEPER, generateRunPaths, makeEnemy, REPO_MAN, TUNE, type EnemyDef, ENDLESS } from './enemies';
 import { MAX_STAKE, MIRROR_COPYABLE, mirrorCanUse, STAKE } from './stakes';
 import { Fight as FightCtor, type Fight } from './fight';
@@ -86,7 +86,7 @@ export const swappable = (run: RunState): SymbolId[] => CABINETS[run.cabinet].sy
 /** The symbol +2 / rock-swap cards give (the signature symbol, or swords for KNIGHT and JAX). */
 export const sigSymbol = (run: RunState): SymbolId => {
   const m = CABINETS[run.cabinet].meter;
-  return m && m.symbol !== 'wild' ? m.symbol : 'sword';
+  return m && m.symbol !== 'wild' ? m.symbol : CABINETS[run.cabinet].attack;
 };
 
 /** Chip economy (earning is passive, spending happens only at the Cashier). */
@@ -644,7 +644,7 @@ function returnLien(run: RunState, l: Lien): void {
 }
 
 /** A lien in words ("A GOLD CHARM ON A REEL 2 SWORD"). */
-export const lienText = (l: Lien) => (l.enh ? `A ${charmName(l.enh)} CHARM ON A REEL ${l.reel + 1} ${l.symbol.toUpperCase()}` : `A ${l.symbol.toUpperCase()} ON REEL ${l.reel + 1}`);
+export const lienText = (l: Lien) => (l.enh ? `A ${charmName(l.enh)} CHARM ON A REEL ${l.reel + 1} ${symLabel(l.symbol)}` : `A ${symLabel(l.symbol)} ON REEL ${l.reel + 1}`);
 
 /** SIDE BETS are offered before regular fights (not bosses, not the tutorial's first fight, not at a fork). */
 export function betsOpen(run: RunState): boolean {
@@ -1119,7 +1119,7 @@ export function stripStats(
     return out;
   });
   const special = !cab || cab.meter?.kind === 'special';
-  const alone: SymbolId = special ? 'bolt' : 'sword';
+  const alone: SymbolId = special ? 'bolt' : (cab?.attack ?? 'sword');
   const cfg = { ...base, pairRule: relics.includes('mirror') || cab?.jokerWilds ? ('anyTwo' as const) : base.pairRule };
   const out = { damage: 0, meter: 0, energy: 0, shield: 0, pairPct: 0, jackpotPct: 0, spinsPerSpecial: 0, heal: 0, specialBonus: 0, jackpotDamage: 0 };
   // BLAZE: every blaze cell you own adds to the special.
@@ -1138,17 +1138,17 @@ export function stripStats(
           let gold = 0;
           for (const r of g.reels) {
             const e = enh[r];
-            if (e === 'keen' && g.symbol === 'sword') g.base += cv('keen');
+            if (e === 'keen' && BLADES.has(g.symbol)) g.base += cv('keen');
             if (e === 'charged' && g.symbol === 'bolt') g.base += cv('charged');
             if (e === 'gold') gold += cv('gold');
-            if (e === 'vamp' && g.symbol === 'sword') out.heal += p * cv('vamp');
+            if (e === 'vamp' && BLADES.has(g.symbol)) out.heal += p * cv('vamp');
           }
           let mult = g.mult * (gold || 1);
           if (relics.includes('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) mult *= 2;
           if (relics.includes('key') && g.matched && g.reels.length === 2) mult *= KEY_MULT;
           if (relics.includes('bell') && g.matched && g.reels.length === 3) mult *= BELL_MULT;
           const amt = g.base * mult;
-          if (g.symbol === 'sword') dmg += amt;
+          if (BLADES.has(g.symbol)) dmg += amt;
           else if (g.symbol === 'shield') out.shield += p * amt;
           else if (g.symbol === 'bolt' && special) {
             out.energy += p * amt;
@@ -1161,7 +1161,7 @@ export function stripStats(
         if (sc.tier === 'triple') out.jackpotPct += p * 100;
       }
   // One payline cell as a jackpot of itself (swords only count as damage), averaged over the three reels.
-  for (const reel of probs) for (const [s, p, e] of reel) if (s === 'sword' || s === 'wild') out.jackpotDamage += (p / 3) * 3 * (value('sword') + (e === 'keen' ? cv('keen') : 0)) * 3 * (e === 'gold' ? 3 * cv('gold') : 1);
+  for (const reel of probs) for (const [s, p, e] of reel) if (BLADES.has(s) || s === 'wild') out.jackpotDamage += (p / 3) * 3 * (value(BLADES.has(s) ? s : (cab?.attack ?? 'sword')) + (e === 'keen' ? cv('keen') : 0)) * 3 * (e === 'gold' ? 3 * cv('gold') : 1);
   out.spinsPerSpecial = out.energy > 0 ? base.specialCost / out.energy : Infinity;
   return out;
 }
@@ -1559,8 +1559,7 @@ export function stripsAfter(run: RunState, o: DraftOption): StripCounts[] {
   return copy.player.strips;
 }
 
-const NAME: Partial<Record<SymbolId, string>> = { sword: 'SWORD', shield: 'SHIELD', bolt: 'BOLT', rock: 'ROCK', wild: 'WILD', goldbar: 'CHIP', thorn: 'THORN' };
-const plural = (s: SymbolId, n: number) => `${NAME[s] ?? s.toUpperCase()}${n > 1 ? 'S' : ''}`;
+const plural = (s: SymbolId, n: number) => `${symLabel(s)}${n > 1 ? 'S' : ''}`;
 
 export const charmRule = charmRuleText;
 /** LV2, or MAX at the cap. */
@@ -1596,7 +1595,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'symLevel': {
       const cap = run ? levelCap(run) : LEVEL_CAP;
       const next = Math.min(cap, symLevel(lv, o.symbol) + 1);
-      return { title: `${plural(o.symbol, 2)} ${lvTag(next, cap)}`, text: `EVERY ${NAME[o.symbol] ?? o.symbol.toUpperCase()} IS WORTH ${symValue(next)}` };
+      return { title: `${plural(o.symbol, 2)} ${lvTag(next, cap)}`, text: `EVERY ${symLabel(o.symbol)} IS WORTH ${symValue(next)}` };
     }
     case 'charmLevel': {
       const cap = run ? levelCap(run) : LEVEL_CAP;
@@ -1604,7 +1603,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
       return { title: `${charmName(o.enh)} ${lvTag(next, cap)}`, text: `ALL ${charmName(o.enh)}: ${charmShortText(o.enh, next + (ticket ? 1 : 0))}` };
     }
     case 'remove':
-      return { title: `-1 ${NAME[o.symbol]}`, text: `REMOVE A ${NAME[o.symbol]} FROM REEL ${o.reel + 1}` };
+      return { title: `-1 ${symLabel(o.symbol)}`, text: `REMOVE A ${symLabel(o.symbol)} FROM REEL ${o.reel + 1}` };
   }
 }
 
@@ -1654,7 +1653,7 @@ export const BIG_SET_NAMES = ['THE FORGE', 'THE MELT', 'SURGERY', "DEVIL'S BARGA
 export const SAFE_CHOICES: ReadonlySet<BigChoiceId> = new Set(['whetstone', 'polish', 'sweepUp', 'secondWind']);
 export const BIG = { armsRaceHp: 6 * UNIT, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.25, gildLotCells: 3, glassPay: 1.5 };
 
-const SYM_NAME = (s: SymbolId) => (s === 'goldbar' ? 'CHIPS' : `${s.toUpperCase()}S`);
+const SYM_NAME = (s: SymbolId) => `${symLabel(s)}S`;
 
 /** Title, rule and cost as plain card text (no expected values). */
 export function describeChoice(run: RunState, c: BigChoice): { title: string; rule: string; cost: string } {
@@ -1677,11 +1676,11 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'meltDown':
       return { title: 'MELT IT DOWN', rule: 'EVERY CHARM ON YOUR REELS BECOMES GOLD, AT YOUR BEST CHARM LEVEL', cost: 'YOUR OTHER CHARM LEVELS ARE GONE' };
     case 'gildLot':
-      return { title: 'SOLID GOLD', rule: `EVERY REEL GETS ${BIG.gildLotCells} GOLD CHARMS (ON PLAIN SWORDS, SHIELDS OR BOLTS)`, cost: `YOUR SYMBOLS LOSE A LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
+      return { title: 'SOLID GOLD', rule: `EVERY REEL GETS ${BIG.gildLotCells} GOLD CHARMS (ON PLAIN ${SYM_NAME(CABINETS[run.cabinet].attack)}, SHIELDS OR BOLTS)`, cost: `YOUR SYMBOLS LOSE A LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
     case 'polish':
       return { title: 'POLISH', rule: `+1 LEVEL TO YOUR ${charmName(c.enh!)} CHARMS`, cost: '' };
     case 'cleanCut':
-      return { title: 'CLEAN CUT', rule: `REMOVE EVERY SHIELD FROM REEL ${c.reel! + 1}. +1 LEVEL TO SWORDS`, cost: 'THOSE SHIELDS AND THEIR CHARMS ARE GONE' };
+      return { title: 'CLEAN CUT', rule: `REMOVE EVERY SHIELD FROM REEL ${c.reel! + 1}. +1 LEVEL TO ${SYM_NAME(CABINETS[run.cabinet].attack)}`, cost: 'THOSE SHIELDS AND THEIR CHARMS ARE GONE' };
     case 'twinReel':
       return { title: 'TWIN REEL', rule: 'REEL 3 BECOMES AN EXACT COPY OF REEL 1, CHARMS INCLUDED', cost: "REEL 3'S OLD CELLS ARE GONE" };
     case 'sweepUp':
@@ -1799,7 +1798,7 @@ export function takeChoice(run: RunState, c: BigChoice): void {
     case 'gildLot':
       p.strips.forEach((_s, reel) => {
         let left = BIG.gildLotCells;
-        for (const sym of ['sword', 'bolt', 'shield'] as SymbolId[]) {
+        for (const sym of [...new Set<SymbolId>([CABINETS[run.cabinet].attack, 'sword', 'bolt', 'shield'])]) {
           const k = Math.min(left, plainCells(p, reel, sym));
           addCharms(p, reel, sym, 'gold', k);
           left -= k;
@@ -1814,7 +1813,7 @@ export function takeChoice(run: RunState, c: BigChoice): void {
     case 'cleanCut':
       p.strips[c.reel!].shield = 0;
       normalizeCharms(p);
-      up('sword');
+      up(CABINETS[run.cabinet].attack);
       break;
     case 'twinReel':
       p.strips[2] = { ...p.strips[0] };

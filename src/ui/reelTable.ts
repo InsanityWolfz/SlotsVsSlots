@@ -17,7 +17,7 @@ export interface TableRow {
   n: number;
 }
 
-const ORDER: string[] = ['sword', 'shield', 'bolt', 'goldbar', 'thorn', 'wild', 'rock', 'slime', 'card', 'stolen', 'bombs'];
+const ORDER: string[] = ['sword', 'ace', 'shield', 'bolt', 'goldbar', 'thorn', 'wild', 'rock', 'slime', 'card', 'stolen', 'bombs'];
 const rank = (r: TableRow) => {
   const i = ORDER.indexOf(r.symbol);
   return (i < 0 ? 50 : i) * 10 + (r.enh ? 1 + ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'spiked', 'thorny', 'lucre', 'trick'].indexOf(r.enh) : 0);

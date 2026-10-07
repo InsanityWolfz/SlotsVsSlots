@@ -71,7 +71,7 @@ export const BONUS_SYMBOLS: ReadonlySet<SymbolId> = new Set(['bonusSym', 'relicS
 /** How much the player would miss losing this symbol (enemy targeting). */
 export function symbolValue(s: SymbolId): number {
   // Bolts are worth ~2 shield-piercing damage, swords 1 blockable (playtest ITERATION_1).
-  return s === 'wild' ? 4 : s === 'bolt' || s === 'goldbar' || s === 'thorn' ? 3 : s === 'sword' ? 2 : s === 'shield' ? 1 : 0;
+  return s === 'wild' ? 4 : s === 'bolt' || s === 'goldbar' || s === 'thorn' ? 3 : s === 'sword' || s === 'ace' ? 2 : s === 'shield' ? 1 : 0;
 }
 
 /** Enemy targeting value of a specific cell: gilded cells are juicier targets. */

@@ -45,16 +45,16 @@ export const LUCRE_CHIPS = 3;
 
 /** Which symbols each charm can go on. */
 export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
-  gold: ['sword', 'shield', 'bolt'],
-  keen: ['sword'],
+  gold: ['sword', 'ace', 'shield', 'bolt'],
+  keen: ['sword', 'ace'],
   charged: ['bolt'],
-  vamp: ['sword'],
-  lucky: ['sword', 'shield', 'bolt'],
+  vamp: ['sword', 'ace'],
+  lucky: ['sword', 'ace', 'shield', 'bolt'],
   blaze: ['bolt'],
   spiked: ['shield'],
   thorny: ['thorn'],
-  lucre: ['sword', 'shield', 'bolt'],
-  trick: ['sword', 'shield'],
+  lucre: ['sword', 'ace', 'shield', 'bolt'],
+  trick: ['sword', 'ace', 'shield'],
 };
 
 /** One charm's rule at a level, as plain card text (never an expected value). */
@@ -64,7 +64,7 @@ export function charmRuleText(enh: Enh, lvl: number): string {
     case 'gold':
       return `X${v} TO ITS GROUP (GOLD IN A GROUP ADDS UP)`;
     case 'keen':
-      return `+${v} TO EACH SWORD IN ITS GROUP, WHICH PIERCES SHIELDS`;
+      return `+${v} TO EACH ONE IN ITS GROUP, WHICH PIERCES SHIELDS`;
     case 'charged':
       return `+${v} TO ITS GROUP`;
     case 'vamp':
@@ -91,7 +91,7 @@ export function charmShortText(enh: Enh, lvl: number): string {
     case 'gold':
       return `X${v} PAY, GOLD STACKS`;
     case 'keen':
-      return `+${v} PER SWORD, PIERCES`;
+      return `+${v} EACH, PIERCES`;
     case 'charged':
       return `+${v} BOLT PAY`;
     case 'vamp':
@@ -141,7 +141,7 @@ export const symValue = (lvl: number) => SYM_VALUE[clampLvl(lvl, LEVEL_CAP + 1)]
 export const charmValue = (enh: Enh, lvl: number) => CHARM_VALUE[enh][clampLvl(lvl, 4)];
 
 /** Symbols the player's levels apply to. */
-export const LEVELLED: ReadonlySet<SymbolId> = new Set(['sword', 'shield', 'bolt', 'goldbar', 'thorn']);
+export const LEVELLED: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'goldbar', 'thorn']);
 
 export const symLevel = (lv: Levels | undefined, s: SymbolId) => lv?.sym[s] ?? 1;
 /** The Golden Ticket makes every charm one level higher (past the cap). */

@@ -1,4 +1,4 @@
-import { cloneConfig, UNIT, unitsUp, type AbilityDef, type Enh, type GameConfig, type Levels, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
+import { BLADES, cloneConfig, UNIT, unitsUp, type AbilityDef, type Enh, type GameConfig, type Levels, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
 import { CABINETS, hasSpecial, type Cabinet, type Meter } from './cabinets';
 import { charmLevel, charmValue, LUCRE_CHIPS, playerSymValue } from './charms';
 import type { CombatEvent, DealCard, HealSource, LineCard, VoucherKind } from './events';
@@ -94,13 +94,13 @@ const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'roc
 const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel']);
 const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
-const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'shield', 'bolt', 'seven', 'thorn']);
+const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'thorn']);
 /** A cell's charm as the WILD wheel shows it (only charms that change a jackpot's pay or heal). */
 export const wheelCharm = (cell: { enh?: Enh; faked?: number }): Enh | undefined =>
   cell.enh && (cell.enh === 'gold' || cell.enh === 'keen' || cell.enh === 'vamp' || cell.enh === 'charged') && !((cell.faked ?? 0) > 0) ? cell.enh : undefined;
 
 /** Symbols the 3-WILD bonus reel (and a WILD in JAX's payoff) can pick. */
-export const WHEEL_SYMBOLS: ReadonlySet<SymbolId> = new Set(['sword', 'shield', 'bolt', 'goldbar', 'thorn']);
+export const WHEEL_SYMBOLS: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'goldbar', 'thorn']);
 const JACKPOTABLE = WHEEL_SYMBOLS;
 
 export interface Combatant {
@@ -582,7 +582,7 @@ export class Fight {
       lucky,
       ...(luckyWilds.length ? { luckyWilds } : {}),
       ...(hexed.some(Boolean) ? { hexed } : {}),
-      ...(drumNow ? { symBonus: { sword: drumNow } } : {}),
+      ...(drumNow ? { symBonus: { sword: drumNow, ace: drumNow } } : {}),
     });
     if (score.touched?.length) events.push({ type: 'touch', side, cells: score.touched });
     const sentBefore = events.length;
@@ -769,7 +769,7 @@ export class Fight {
 
   /** What a lone (or all-) WILD line pays as for this side. */
   private wildAlone(c: Combatant): SymbolId {
-    return c.side === 'player' && !this.special ? 'sword' : 'bolt';
+    return c.side === 'player' && !this.special ? (this.cfg.cabinet ? CABINETS[this.cfg.cabinet].attack : 'sword') : 'bolt';
   }
 
   /** The WILD wheel: one of your live cells (symbol AND charm), weighted by how many you have of each. */
@@ -850,7 +850,7 @@ export class Fight {
     // resets to its resting level.
     if (player && this.meter?.kind === 'vault' && me.armed) {
       // Your best paying group: swords first, then the biggest (never a lone shield if anything better paid).
-      const g0 = s.groups.filter(pays).sort((a, b) => Number(!!b.rain) - Number(!!a.rain) || Number(b.symbol === 'sword') - Number(a.symbol === 'sword') || b.base * b.mult - a.base * a.mult)[0];
+      const g0 = s.groups.filter(pays).sort((a, b) => Number(!!b.rain) - Number(!!a.rain) || Number(BLADES.has(b.symbol)) - Number(BLADES.has(a.symbol)) || b.base * b.mult - a.base * a.mult)[0];
       if (g0) {
         const mul = this.vaultMul();
         g0.mult *= mul;
@@ -879,7 +879,7 @@ export class Fight {
         for (const enh of this.enhsAt(me, r)) {
         const v = charmValue(enh, this.charmLvl(me, enh)) * copies;
         // KEEN adds to every sword in its group, and the group pierces.
-        if (enh === 'keen' && g.symbol === 'sword') {
+        if (enh === 'keen' && BLADES.has(g.symbol)) {
           g.base += v * g.reels.length;
           g.pierce = true;
           keen = true;
@@ -891,13 +891,13 @@ export class Fight {
       if (touchMeter && (g.symbol === 'sword' || g.symbol === 'shield'))
         for (const r of g.reels) if (touchable(r)) gold += (this.touches.get(me.reels[r].cells[me.reels[r].stop]) ?? 0) * charmValue('gold', this.charmLvl(me, 'gold')) * copies;
       // WHETSTONE BELT: blocked hits sharpen every sword in your next sword group (then it's spent).
-      if (player && has('belt') && g.symbol === 'sword' && this.belt > 0 && g.base > 0) {
+      if (player && has('belt') && BLADES.has(g.symbol) && this.belt > 0 && g.base > 0) {
         g.base += BELT_STEP * this.belt * g.reels.length;
         notes.push(`BELT +${BELT_STEP * this.belt}`);
         this.belt = 0;
       }
       // WAR DRUM: every paying spin this fight adds to EACH sword (shown on the sword's number).
-      if (has('drum') && g.symbol === 'sword' && this.drum > 0 && g.base > 0) {
+      if (has('drum') && BLADES.has(g.symbol) && this.drum > 0 && g.base > 0) {
         g.base += NEW_RELIC.drumStep * this.drum * g.reels.length;
         fired.add('drum');
       }
@@ -921,7 +921,7 @@ export class Fight {
         notes.push(`X${NEW_RELIC.horseshoeMul}`);
       }
       // EXECUTIONER: keen swords against an enemy under half HP.
-      if (has('hone') && keen && g.symbol === 'sword' && foe.hp < foe.maxHp / 2) {
+      if (has('hone') && keen && BLADES.has(g.symbol) && foe.hp < foe.maxHp / 2) {
         fired.add('hone');
         g.mult *= NEW_RELIC.executionerMul;
         notes.push(`X${NEW_RELIC.executionerMul}`);
@@ -1145,6 +1145,7 @@ export class Fight {
     const player = me.side === 'player';
     switch (g.symbol) {
       case 'sword':
+      case 'ace':
         // KEEN: a keen sword in the group pierces shields. (An enemy's LATE multiplier is already in its amount.)
         this.hit(me, foe, g.amount, g.reels, events, !!g.pierce, undefined, true);
         this.vampHeal(me, g, events);

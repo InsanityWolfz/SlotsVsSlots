@@ -158,7 +158,7 @@ export type SpriteId =
   | 'tutorialPointer'                             // tutorial callout arrow, points DOWN, 12x12
   | 'heroKnight' | 'heroMidas' | 'heroThorn'      // player hero portraits (face RIGHT), 24x24
   | 'heroTesla' | 'heroJoker'
-  | 'goldbar' | 'thorn'                          // signature symbols: MIDAS gold bar, BRIAR thorn, 16x16
+  | 'goldbar' | 'thorn' | 'ace'                          // signature symbols: MIDAS gold bar, BRIAR thorn, 16x16
   | 'relicChalice'                               // BLOOD CHALICE relic, 16x16
   | 'relicDrum' | 'relicChainmail' | 'relicVault' | 'relicDecree' // charm-rework relics, 16x16
   | 'relicRosehip' | 'relicGraft' | 'relicFaraday' | 'relicStatic'
@@ -4008,6 +4008,24 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KEeQK...........',
     'KQQK............',
     '.KK.............',
+  ],
+  ace: [
+    '....KKKKKKKKK...',
+    '...KWWWWWWWWTK..',
+    '...KWVWWWWWWTK..',
+    '...KWVWWWWWWTK..',
+    '.KKKWWWWkWWWTK..',
+    'KJJKWWWkkkWWTK..',
+    '.KKKWWkkkkkWTK..',
+    '..KKWkkkkkkkTK..',
+    '.KJKWkklkkkkTK..',
+    '.KKKWWkWkWkWTK..',
+    'KJJKWWWWkWWWTK..',
+    '.KKKWWWkkkWWTK..',
+    '...KWWWWWWWVTK..',
+    '...KWWWWWWWVTK..',
+    '...KTTTTTTTTtK..',
+    '....KKKKKKKKK...',
   ],
   relicChalice: [
     '...KKKKKKKKKK...',

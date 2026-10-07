@@ -1,4 +1,4 @@
-import { UNIT, type Enh, type SideId, type SymbolId } from '../core/config';
+import { symLabel, UNIT, type Enh, type SideId, type SymbolId } from '../core/config';
 import type { RelicId } from '../core/config';
 import type { CombatEvent } from '../core/events';
 import { effectText, other, RAIN, WHEEL_SYMBOLS, wheelCharm, WRITERS, type TurnResult } from '../core/fight';
@@ -649,7 +649,7 @@ export class Director {
         seen.set(key(c.symbol, enh), { symbol: c.symbol, ...(enh ? { enh } : {}) });
       }
     if (!seen.has(key(pick, pickEnh))) seen.set(key(pick, pickEnh), { symbol: pick, ...(pickEnh ? { enh: pickEnh } : {}) });
-    const order = ['sword', 'shield', 'bolt', 'goldbar', 'thorn'];
+    const order = ['sword', 'ace', 'shield', 'bolt', 'goldbar', 'thorn'];
     const pool = [...seen.values()].sort((a, b) => order.indexOf(a.symbol) - order.indexOf(b.symbol) || (a.enh ?? '').localeCompare(b.enh ?? ''));
     const at = pool.findIndex((p) => key(p.symbol, p.enh) === key(pick, pickEnh));
     const cx = W / 2;
@@ -675,7 +675,7 @@ export class Director {
     });
     wheel.landed = at;
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (wheel.flash = v) }));
-    this.bg(this.popText(`WILD ${pickEnh ? `${pickEnh.toUpperCase()} ` : ''}${pick === 'goldbar' ? 'CHIP' : pick.toUpperCase()} JACKPOT!`, cx, cy - 120, 2.5, '#ff6ad5', 16, 0.4));
+    this.bg(this.popText(`WILD ${pickEnh ? `${pickEnh.toUpperCase()} ` : ''}${symLabel(pick)} JACKPOT!`, cx, cy - 120, 2.5, '#ff6ad5', 16, 0.4));
     await this.c.wait(0.4);
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.2, onUpdate: (v) => (wheel.alpha = v) }).then(() => this.s.fx.remove(wheel)));
   }
@@ -1457,7 +1457,7 @@ export class Director {
     });
     await Promise.all(grabs);
     const c = this.machineCenter(e.to);
-    if (e.repo) this.repossessed(e.to, e.symbols.map((s) => s.toUpperCase()).join(' + '));
+    if (e.repo) this.repossessed(e.to, e.symbols.map((s) => symLabel(s)).join(' + '));
     else this.bg(this.popText(`STOLEN x${e.cells.length}`, c.x, MACHINE_TOP - 4, 3, '#c9a0ff', 16, 0.3));
     if (e.reels.length) this.settle(e.from, e.reels);
     await this.c.wait(0.15);

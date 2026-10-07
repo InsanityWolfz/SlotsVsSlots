@@ -1,7 +1,7 @@
 import type { Sounds } from '../audio/sounds';
 import type { MetaGain } from '../core/profile';
 import { challengeById, levelOf } from '../core/meta';
-import { UNIT, type Enh, type GameConfig, type SymbolId } from '../core/config';
+import { symLabel, UNIT, type Enh, type GameConfig, type SymbolId } from '../core/config';
 import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
 import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmName, symLevel } from '../core/charms';
@@ -57,7 +57,7 @@ import { RelicTips } from './relicTip';
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus' | 'choice';
 
 /** A lien in a few words ("GOLD SWORD R1"). */
-const lienShort = (l: { reel: number; symbol: string; enh?: Enh }) => `${l.enh ? `${charmName(l.enh)} ` : ''}${l.symbol.toUpperCase()} R${l.reel + 1}`;
+const lienShort = (l: { reel: number; symbol: string; enh?: Enh }) => `${l.enh ? `${charmName(l.enh)} ` : ''}${symLabel(l.symbol as SymbolId)} R${l.reel + 1}`;
 
 /** Greedy word wrap for the pixel font. */
 export function wrap(text: string, maxChars: number): string[] {

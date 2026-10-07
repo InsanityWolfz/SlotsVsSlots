@@ -3481,6 +3481,26 @@ S.goldbar = lit(16, 16, [
   '.....rTTrrt.....',
   '................',
 ]);
+// ace (16x16): JESTER JAX's attack symbol (shown as CARD), a thrown playing card: a black spade, purple corner pips and
+// speed lines (the Dealer's 'card' mark is a red heart, so they never read alike)
+S.ace = lit(16, 16, [
+  '................',
+  '....WWWWWWWWT...',
+  '....WVWWWWWWT...',
+  '....WVWWWWWWT...',
+  '....WWWWkWWWT...',
+  '.JJ.WWWkkkWWT...',
+  '....WWkkkkkWT...',
+  '....WkkkkkkkT...',
+  '..J.WkklkkkkT...',
+  '....WWkWkWkWT...',
+  '.JJ.WWWWkWWWT...',
+  '....WWWkkkWWT...',
+  '....WWWWWWWVT...',
+  '....WWWWWWWVT...',
+  '....TTTTTTTTt...',
+  '................',
+]);
 // thorn (16x16): BRIAR's signature symbol, a bramble with pale-tipped spikes
 S.thorn = lit(16, 16, [
   '................',
@@ -4909,7 +4929,7 @@ const DIMS = {
   iconNewRun: 16, iconTutorial: 16, iconCollection: 16, iconHiscores: 16, mysterySlot: 16,
   hsSkull: 12, trophySmall: 12, coinSpin0: 16, coinSpin1: 16, coinSpin2: 16, coinSpin3: 16, tutorialPointer: 12,
   heroKnight: 24, heroMidas: 24, heroThorn: 24, heroTesla: 24, heroJoker: 24,
-  goldbar: 16, thorn: 16, relicChalice: 16,
+  goldbar: 16, thorn: 16, ace: 16, relicChalice: 16,
   relicDrum: 16, relicChainmail: 16, relicVault: 16, relicDecree: 16, relicRosehip: 16,
   relicGraft: 16, relicFaraday: 16, relicStatic: 16, relicCapbells: 16, relicStacked: 16,
   relicGoldleaf: 16, relicExecutioner: 16, relicKiss: 16, relicHorseshoe: 16, relicUnderdog: 16,
@@ -5038,7 +5058,7 @@ export type SpriteId =
   | 'tutorialPointer'                             // tutorial callout arrow, points DOWN, 12x12
   | 'heroKnight' | 'heroMidas' | 'heroThorn'      // player hero portraits (face RIGHT), 24x24
   | 'heroTesla' | 'heroJoker'
-  | 'goldbar' | 'thorn'                          // signature symbols: MIDAS gold bar, BRIAR thorn, 16x16
+  | 'goldbar' | 'thorn' | 'ace'                          // signature symbols: MIDAS gold bar, BRIAR thorn, 16x16
   | 'relicChalice'                               // BLOOD CHALICE relic, 16x16
   | 'relicDrum' | 'relicChainmail' | 'relicVault' | 'relicDecree' // charm-rework relics, 16x16
   | 'relicRosehip' | 'relicGraft' | 'relicFaraday' | 'relicStatic'

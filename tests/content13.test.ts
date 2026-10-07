@@ -53,10 +53,10 @@ describe('CONTENT_13: charms', () => {
 
   it('TRICK fills JOKER\'s meter when it lands', () => {
     const plain = on('joker');
-    plain.forceNext('player', ['sword', 'shield', 'shield']);
+    plain.forceNext('player', ['ace', 'shield', 'shield']);
     plain.step();
-    const trick = on('joker', (c) => (c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'trick', n: 4 }]));
-    trick.forceNext('player', ['sword', 'shield', 'shield']);
+    const trick = on('joker', (c) => (c.player.gilded = [{ reel: 0, symbol: 'ace', enh: 'trick', n: 4 }]));
+    trick.forceNext('player', ['ace', 'shield', 'shield']);
     trick.step();
     expect(trick.sides.player.energy - plain.sides.player.energy).toBe(30);
   });

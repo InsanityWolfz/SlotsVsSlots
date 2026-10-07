@@ -118,7 +118,13 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
     joker: 'JACKPOTS PAY X2 AND FILL YOUR JACKPOT METER',
   },
 };
-export const relicText = (r: RelicId, cabinet?: CabinetId | null) => (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;
+/** Machines that attack with something other than swords: relic texts name their symbol instead. */
+const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD' };
+export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
+  const t = (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;
+  const w = cabinet ? ATTACK_WORD[cabinet] : undefined;
+  return w ? t.replace(/SWORD/g, w) : t;
+};
 /** Relics that make no sense on a machine even reworded (never offered there). */
 export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['thorn'] };
 
