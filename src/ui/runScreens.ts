@@ -127,6 +127,8 @@ export const CHIP_SPOT = { x: 44, y: 46 };
 const SHELF = { y: [262, 440], gap: 164 };
 /** The side bet card: under the enemy card, left of FIGHT. */
 const BET_X = CX - 200;
+/** The shop's price tags (they buy): size and offset under the item's centre. */
+const TAG = { w: 108, h: 40, y: 70 };
 const BET_Y = 540;
 
 /** The casino floor behind every run screen: a dark carpet with a faint diamond weave (cached). */
@@ -259,6 +261,10 @@ export class RunScreens {
   /** 'spoils' = an elite's relic choice (1 of 2) shown with the draft layout. */
   private draftKind: 'draft' | 'spoils' | 'legend' | 'start' = 'draft';
   private shopItems: ShopItem[] = [];
+  /** The price tags: clicking a tag buys (clicking the item only shows what it is). */
+  private shopTags: Hit[] = [];
+  /** The item whose card a click or tap pinned open (-1: none). */
+  private shopSel = -1;
   private shopHits: Hit[] = [];
   private chipPulse = 1;
   private openedAt = 0;
@@ -649,9 +655,9 @@ export class RunScreens {
     this.unlockedNow = ids;
   }
 
-  /** Unaffordable purchase: shake the item. */
+  /** Unaffordable purchase: shake its price tag. */
   deny(i: number): void {
-    const h = this.shopHits[i];
+    const h = this.shopTags[i];
     if (!h) return;
     void this.ui.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (h.lift = Math.sin(v * 30) * 6 * v) });
   }
@@ -925,10 +931,21 @@ export class RunScreens {
       const row = premium(it) ? 1 : 0;
       const k = rows[row].indexOf(it);
       const n = rows[row].length;
-      const h = this.hit(CX + (k - (n - 1) / 2) * SHELF.gap, SHELF.y[row], 128, 122, () => this.cb.onBuy(i));
+      // The item itself: a click or tap pins its card open (hover shows it too). The tag under it buys.
+      const x = CX + (k - (n - 1) / 2) * SHELF.gap;
+      const h = this.hit(x, SHELF.y[row] - 8, 128, 100, () => {
+        this.shopSel = this.shopSel === i ? -1 : i;
+      });
       h.scale = reopen ? 1 : 0;
       return h;
     });
+    this.shopTags = items.map((_, i) => {
+      const it = this.shopHits[i];
+      // (Its size follows the item's entrance; its own scale is only the press bounce.)
+      return { ...this.hit(it.x, it.y + 8 + TAG.y, TAG.w, TAG.h, () => this.cb.onBuy(i)), scale: 1 };
+    });
+    if (!reopen) this.shopSel = -1;
+    else if (this.shopItems[this.shopSel]?.sold) this.shopSel = -1;
     if (!reopen)
       this.shopHits.forEach(
         (c, i) =>
@@ -1057,7 +1074,7 @@ export class RunScreens {
 
   private all(): Hit[] {
     if (this.mode === 'over' && this.results && this.resultsHit) return this.resultsCopy ? [this.resultsCopy, this.resultsHit] : [this.resultsHit];
-    return [...this.cards.filter((c) => c.enabled), ...this.buttons, ...this.shopHits.filter((_, i) => !this.shopItems[i]?.sold)];
+    return [...this.cards.filter((c) => c.enabled), ...this.buttons, ...this.shopHits.filter((_, i) => !this.shopItems[i]?.sold), ...this.shopTags.filter((_, i) => !this.shopItems[i]?.sold)];
   }
 
   private inside(h: Hit, x: number, y: number): boolean {
@@ -1814,7 +1831,9 @@ export class RunScreens {
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
     for (const b of this.buttons) this.drawButton(ctx, b, time);
     // What the item under the pointer is: name, rule and price, beside it.
-    const i = this.shopHits.findIndex((h, k) => h.hover && h.scale > 0.9 && !this.shopItems[k]?.sold);
+    const live = (k: number) => this.shopHits[k]?.scale > 0.9 && !this.shopItems[k]?.sold;
+    const hov = this.shopHits.findIndex((h, k) => (h.hover || this.shopTags[k]?.hover) && live(k));
+    const i = hov >= 0 ? hov : live(this.shopSel) ? this.shopSel : -1;
     if (i >= 0) this.drawShopTip(ctx, this.shopHits[i], this.shopItems[i]);
   }
 
@@ -1966,18 +1985,49 @@ export class RunScreens {
       drawSprite(ctx, 'minusBadge', 30, iy + 22, 3);
     } else drawSprite(ctx, 'heart', 0, iy, 5);
     if (legend) this.legendTag(ctx, 0, -62, time);
-    // The price tag, on the shelf's front edge.
-    // A green felt price tag in a gold rim (the price goes red when you can't afford it).
+    ctx.restore();
+    this.drawPriceTag(ctx, h, this.shopTags[this.shopHits.indexOf(h)], item, afford, time);
+  }
+
+  /** The price tag hanging off the shelf edge: a real tag (string, hole, notched end). Clicking it buys. */
+  private drawPriceTag(ctx: CanvasRenderingContext2D, item: Hit, tag: Hit | undefined, it: ShopItem, afford: boolean, time: number): void {
+    if (!tag) return;
+    const sold = it.sold;
+    const hover = tag.hover && !sold;
+    ctx.save();
+    ctx.translate(tag.x + tag.lift, tag.y - (hover && afford ? 3 : 0));
+    ctx.scale(item.scale * tag.scale, item.scale * tag.scale);
+    // A tiny sway on its string.
+    ctx.rotate(sold ? 0.12 : Math.sin(time * 1.6 + tag.x * 0.05) * 0.03);
+    const w = TAG.w;
+    const h = TAG.h;
+    // The string up to the shelf.
+    ctx.fillStyle = '#c9bba8';
+    ctx.fillRect(-1, -h / 2 - 12, 2, 12);
+    // Body: a dark rim, gold edge, green felt, with a notched left end.
+    const shape = (inset: number) => {
+      ctx.beginPath();
+      ctx.moveTo(-w / 2 + 12 + inset, -h / 2 + inset);
+      ctx.lineTo(w / 2 - inset, -h / 2 + inset);
+      ctx.lineTo(w / 2 - inset, h / 2 - inset);
+      ctx.lineTo(-w / 2 + 12 + inset, h / 2 - inset);
+      ctx.lineTo(-w / 2 + inset, 0);
+      ctx.closePath();
+      ctx.fill();
+    };
     ctx.fillStyle = '#3a2010';
-    ctx.fillRect(-42, 51, 84, 30);
-    ctx.fillStyle = item.sold ? '#8a7e76' : COLORS.gold;
-    ctx.fillRect(-40, 53, 80, 26);
-    ctx.fillStyle = item.sold ? '#554a4c' : '#1f5a3a';
-    ctx.fillRect(-38, 55, 76, 22);
-    if (item.sold) drawText(ctx, 'SOLD', 0, 66, 2, COLORS.text);
+    shape(-3);
+    ctx.fillStyle = sold ? '#8a7e76' : hover ? COLORS.goldLight : COLORS.gold;
+    shape(0);
+    ctx.fillStyle = sold ? '#554a4c' : hover && afford ? '#2a7a4a' : '#1f5a3a';
+    shape(3);
+    // The punched hole the string goes through.
+    ctx.fillStyle = '#3a2010';
+    ctx.fillRect(-w / 2 + 12, -3, 6, 6);
+    if (sold) drawText(ctx, 'SOLD', 6, 1, 2.5, COLORS.text);
     else {
-      drawSprite(ctx, 'chip', -18, 66, 1.6);
-      drawText(ctx, String(item.price), 12, 66, 2.5, afford ? COLORS.goldLight : '#ff8a7a');
+      drawSprite(ctx, 'chip', -10, 1, 2);
+      drawText(ctx, String(it.price), 24, 1, 3, afford ? COLORS.goldLight : '#ff8a7a');
     }
     ctx.restore();
   }
