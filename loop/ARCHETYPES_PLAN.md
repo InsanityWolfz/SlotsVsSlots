@@ -1,70 +1,55 @@
-# Archetypes + identity plan (planning only; drafted 2026-10-06)
+# Archetypes + identity plan (drafted 2026-10-06; decisions after review 2026-10-07)
 
-Status: **agreed with the user in direction; needs the expert playtester's review before any code.**
-Nothing here is built yet. Numbers are placeholders for the sim to set.
+Status: **approved by the user after the playtester review (playtest/ARCHETYPES_REVIEW.md).** Numbers are
+placeholders for the sim to set.
+
+**Archetypes are a planning tool only.** They never appear in the game: no archetype names, tags or hints on
+cards. They're our outline for making relics and charms that synergize and tempt the player.
 
 ## 0. The big picture
 1. **Swords become KNIGHT-only.** Every other slot machine fights with its own signature symbol.
-2. **Archetypes per machine** drive a content wave (charms + relics), roughly +50% first, then reassess.
-3. **UI overhaul:** one fixed build panel; much less text everywhere.
-4. **Side bets slimmed:** only the HOT HAND (long shot) line, with a chip stepper.
+2. **Archetypes per machine** (planning only) drive a content wave of ~20 items first, then measure, then more.
+3. **UI overhaul:** one fixed build panel; much less text everywhere (relic texts rewritten short; the user may
+   hand-edit them).
+4. **Side bets slimmed:** only the HOT HAND (long shot) line, with a chip stepper. Break-even betting is fine.
+5. **No machine affects the enemy's reels** (EMP and TRICKSTER cut).
 
 ## 1. Swords only on KNIGHT
-Each machine's signature symbol becomes its **attack symbol** (it pays damage itself, and still fills the meter).
+Reels: **6 shields + 6 attack symbols** to start (same 12 stops as today). The sim decides whether a machine
+needs a different split; jackpot rate and chips per fight go in the official table so the change is visible.
+Swords come out **one machine at a time**, measured and logged after each: JAX, TESLA, CASSIDY, BRIAR.
 
-| Machine | Reels today | Reels after (draft) | Attack symbol |
-|---|---|---|---|
-| KNIGHT (SIR REGINALD) | sword 6, shield 6 | unchanged | sword |
-| THE BANKROLL (CASH CASSIDY) | sword 4, shield 4, chip 4 | shield + chip | chip (flung coins) |
-| THORN (BRIAR) | sword 4, shield 4, thorn 4 | shield + thorn | thorn |
-| TESLA (DOC VOLTZ) | sword 4, shield 4, bolt 4 | shield + bolt | bolt |
-| JOKER (JESTER JAX) | sword 5, shield 5, wild 2 | shield + CARD + wild | **playing card** (new symbol + art) |
+| Machine | Reels after (start) | Its damage |
+|---|---|---|
+| KNIGHT | sword 6, shield 6 (unchanged) | swords |
+| CASH CASSIDY | shield 6, chip 6 | chips pay damage (flung coins) + MAKE IT RAIN |
+| BRIAR | shield 6, thorn 6 | all retaliation: the thorn bank hits back (as today, no double count) |
+| DOC VOLTZ (TESLA) | shield 6, bolt 6 | bolts fire the lightning (their damage is the lightning) |
+| JESTER JAX | shield + **playing cards** + wild | cards (new symbol + art; new internal id, NOT `card`, which the Dealer uses) |
 
-- **Charm retarget:** KEEN, VAMP, TRICK (and any charm that names swords) apply to "your attack symbol".
-- **Built-in, not relics:** relics that only exist to let charms land on signature symbols become part of the
-  machine; take them out of the draft pool (code ids stay, flagged `retired`, so saves load).
-- **Shields stay on every machine** as defense. Shield *damage* (SPIKED, retaliating shields) is **KNIGHT-only**.
-- Enemies still write on your reels; check enemy write-ins that place or mention swords.
-- Cost: every machine retuned (BOSS_MUL, HP, meter costs) and the sim bot policies updated (they assume swords).
+- Meter costs and HP get retuned per machine (the signature lands ~1.8x as often).
+- **One attack charm per machine** (replaces "retarget KEEN everywhere"): KNIGHT KEEN, TESLA CHARGED, BRIAR THORNY,
+  JAX KEEN on cards, CASSIDY GOLD on chips.
+- **Shield damage is KNIGHT-only:** SHIELD BASH becomes KNIGHT-only; the SPIKED charm is removed (redundant).
+- **Retire:** GRAFT, LOADED CHIPS. **Retarget:** BANK VAULT, EXECUTIONER, STACKED DECK, VAMPIRE'S KISS (details in
+  the review, section 1.4). **Fix:** big choices CLEAN CUT and SOLID GOLD (dead on four machines otherwise).
+  Delete the dead MIDAS TOUCH path. Retired ids stay in code so saves load.
+- Enemy write-ins that place or mention swords get checked.
 
-## 2. Archetypes
-Rule: an archetype must spend a **different resource** or win a **different way**, not "more of the same damage".
-Each archetype gets enablers (make it happen) and payoffs (reward it). Offers lean toward the archetype you've
-started (light weighting, no hints on cards).
+## 2. Archetypes (planning only)
+Rule: an archetype spends a **different resource** or wins a **different way**. Fewer archetypes for now.
+Boss sizing only counts damage, so anything that wins without damage needs a damage-side payoff or measuring.
 
-### Shared (any machine)
-- **WILD / LUCKY:** wilds, lucky charms, jackpot chasing.
-
-### KNIGHT
-- **BLADE:** sword scaling (KEEN, gold swords, sword count).
-- **BULWARK (KNIGHT-only):** shields that retaliate / turn block into damage.
-- **EXECUTIONER:** hits that scale with HP (a % of the enemy's max HP, or off your own max HP). Needs a cap so
-  bosses don't melt.
-
-### CASH CASSIDY
-- **HOARDER:** banked chips earn interest; rewards *not* spending.
-- **RAINMAKER:** spend often; cheap, frequent MAKE IT RAIN.
-- **LOAN SHARK:** borrow chips now; the debt grows each fight; paying it off (or defaulting) triggers effects.
-
-### BRIAR
-- **RETALIATION:** punish enemy hits (the thorn bank today).
-- **BLEED:** damage that stacks over turns.
-- **OVERGROWTH:** thorns spread to neighbouring cells.
-
-### DOC VOLTZ (TESLA)
-- **LIGHTNING:** burst; charge the meter and fire through shields (rod, OVERCHARGE exist).
-- **FARADAY:** shields charge lightning; the tank build (FARADAY CAGE, STATIC exist).
-- **OVERLOAD:** lightning hits harder **at the cost of your HP** (each strike costs HP for extra damage;
-  payoffs scale with missing HP). No overflow meter; keep it simple.
-- **EMP:** bolts and strikes jam the enemy's machine: a reel spins blank for a turn, their meter/boss ability
-  drains, a jackpot shorts out. Win by the enemy doing nothing. (Automatic, so fights stay watch-only.)
-- Cut: GENERATOR (selling charge).
-
-### JESTER JAX
-- **CARD SHARK:** card scaling (his new attack symbol).
-- **CHAOS:** wilds copy and multiply.
-- **TRICKSTER:** steal/swap on the enemy's reels: flip their symbols to yours, put gag symbols on their payline,
-  copy their jackpot. (Distinct from EMP: TESLA disables, JAX steals.)
+- **Shared:** WILD / LUCKY (JAX's CHAOS folds in here).
+- **KNIGHT:** BLADE (baseline sword scaling), BULWARK (shields hit back; KNIGHT-only), EXECUTIONER (scales off
+  **your own max HP**, capped on bosses and in endless).
+- **CASH CASSIDY:** HOARDER (banked chips earn interest), RAINMAKER (spend often, cheap rains).
+  LOAN SHARK removed for now.
+- **BRIAR:** RETALIATION (the bank), BLEED (damage that stacks over turns). OVERGROWTH: open (see below).
+- **DOC VOLTZ:** LIGHTNING (burst), FARADAY (shields charge lightning), OVERLOAD (lightning hits harder at the cost
+  of your HP; must cost something real in the sim too). EMP cut. GENERATOR cut.
+- **JESTER JAX:** cards (baseline) + WILD. TRICKSTER cut. (Thin: needs one more idea later.)
+- OPEN: OVERGROWTH as "brambles on the enemy's reels" conflicts with "no machine affects enemy reels".
 
 ## 3. UI overhaul
 - **One fixed build panel**, same spot on every screen (draft, shop, fight, bonus): HP, meter/bar with numbers,
