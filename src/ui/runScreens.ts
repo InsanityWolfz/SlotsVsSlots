@@ -1516,6 +1516,19 @@ export class RunScreens {
   private drawShelves(ctx: CanvasRenderingContext2D, time: number): void {
     const x0 = CX - 440;
     const w = 880;
+    // The shop's back wall: light wood boards behind both shelves.
+    const wy = SHELF.y[0] - 84;
+    const wh = SHELF.y[1] + 88 - wy;
+    ctx.fillStyle = '#2a170c';
+    ctx.fillRect(x0 - 16, wy - 4, w + 32, wh + 8);
+    for (let k = 0, by = wy; by < wy + wh; k++, by += 28) {
+      ctx.fillStyle = k % 2 ? '#b98a5a' : '#c49464';
+      ctx.fillRect(x0 - 12, by, w + 24, Math.min(28, wy + wh - by));
+      ctx.fillStyle = 'rgba(90,50,20,0.25)';
+      ctx.fillRect(x0 - 12, by + 26, w + 24, 2);
+      ctx.fillStyle = 'rgba(90,50,20,0.12)';
+      for (let g = 0; g < 5; g++) ctx.fillRect(x0 + ((k * 131 + g * 197) % (w - 60)), by + 8 + (g % 3) * 6, 40 + (g * 23) % 50, 1);
+    }
     // The glass case behind the relic shelf.
     const gy = SHELF.y[1] - 76;
     const g = ctx.createLinearGradient(0, gy, 0, gy + 150);
@@ -1536,8 +1549,7 @@ export class RunScreens {
     ctx.strokeStyle = 'rgba(255,224,138,0.35)';
     ctx.lineWidth = 2;
     ctx.strokeRect(x0 + 1, gy + 1, w - 2, 148);
-    drawText(ctx, 'RELICS', x0 + 10, gy + 14, 1.5, COLORS.goldLight, { align: 'left' });
-    drawText(ctx, 'ON THE COUNTER', x0 + 10, SHELF.y[0] - 70, 1.5, COLORS.textDim, { align: 'left' });
+
     // The planks.
     for (const y of SHELF.y) {
       const py = y + 58;
@@ -1636,14 +1648,17 @@ export class RunScreens {
     } else drawSprite(ctx, 'heart', 0, iy, 5);
     if (legend) this.legendTag(ctx, 0, -62, time);
     // The price tag, on the shelf's front edge.
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(-40, 52, 80, 28);
-    ctx.fillStyle = item.sold ? '#3a2e52' : afford ? '#3a2a14' : '#3a1414';
-    ctx.fillRect(-38, 54, 76, 24);
-    if (item.sold) drawText(ctx, 'SOLD', 0, 66, 2, COLORS.textDim);
+    // A green felt price tag in a gold rim (the price goes red when you can't afford it).
+    ctx.fillStyle = '#3a2010';
+    ctx.fillRect(-42, 51, 84, 30);
+    ctx.fillStyle = item.sold ? '#8a7e76' : COLORS.gold;
+    ctx.fillRect(-40, 53, 80, 26);
+    ctx.fillStyle = item.sold ? '#554a4c' : '#1f5a3a';
+    ctx.fillRect(-38, 55, 76, 22);
+    if (item.sold) drawText(ctx, 'SOLD', 0, 66, 2, COLORS.text);
     else {
       drawSprite(ctx, 'chip', -18, 66, 1.6);
-      drawText(ctx, String(item.price), 12, 66, 2.5, afford ? COLORS.energy : '#ff8a7a');
+      drawText(ctx, String(item.price), 12, 66, 2.5, afford ? COLORS.goldLight : '#ff8a7a');
     }
     ctx.restore();
   }
