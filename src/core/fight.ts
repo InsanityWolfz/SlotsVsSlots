@@ -581,7 +581,7 @@ export class Fight {
       }
     });
     const hexed = me.hexed.map((t) => t > 0);
-    const drumNow = side === 'player' && (me.relics.has('drum') || me.relics.has('deckdrum')) ? NEW_RELIC.drumStep * this.drum : 0;
+    const drumNow = side === 'player' && (me.relics.has('drum') || me.relics.has('deckdrum')) ? (me.relics.has('drum') ? NEW_RELIC.drumStep : NEW_RELIC.deckdrumStep) * this.drum : 0;
     const score = this.score(me, line);
     // Dead symbols lining up isn't a tease — except slime, which can cleanse.
     const nearMiss = isNearMiss(line) && (me.casts.has(line[0]) || line[0] === 'slime' || !DEAD.has(line[0]));
@@ -689,7 +689,8 @@ export class Fight {
       // WILD CARD: every WILD on your payline charges your meter (lightning, thorns or jackpots).
       if (me.relics.has('wildcard') && wilds && !this.over) {
         events.push({ type: 'relic', side, relic: 'wildcard' });
-        const q = wilds * NEW_RELIC.wildcardCharge;
+        // (Half on JAX's jackpot meter: wilds are his whole machine.)
+        const q = Math.max(1, Math.round((wilds * NEW_RELIC.wildcardCharge) / (this.meter?.kind === 'jackpots' ? 2 : 1)));
         if (this.special) this.gainEnergy(me, q, [], events);
         else if (this.meter && this.meter.kind !== 'vault' && this.meter.kind !== 'touch') this.fillMeter(me, q, [], events);
       }
@@ -944,8 +945,8 @@ export class Fight {
       // WAR DRUM: every paying spin this fight adds to EACH sword (shown on the sword's number).
       // (DECK DRUM is WAR DRUM on JAX: the same stacks, on cards.)
       if ((has('drum') || has('deckdrum')) && BLADES.has(g.symbol) && this.drum > 0 && g.base > 0) {
-        g.base += NEW_RELIC.drumStep * this.drum * g.reels.length;
-        fired.add(has('deckdrum') ? 'deckdrum' : 'drum');
+        g.base += (has('drum') ? NEW_RELIC.drumStep : NEW_RELIC.deckdrumStep) * this.drum * g.reels.length;
+        fired.add(has('drum') ? 'drum' : 'deckdrum');
       }
       // GOLD charms in a group ADD (x2 + x2 + x2 = x6), then multiply with the double/jackpot.
       goldOf.set(g, gold);
@@ -1210,20 +1211,12 @@ export class Fight {
     switch (g.symbol) {
       case 'sword':
       case 'ace': {
-        // COUP DE GRACE (KNIGHT): swords finish a foe under 20% of YOUR max HP (a boss takes x1.5 there instead).
+        // COUP DE GRACE (KNIGHT): swords hit x2 a foe under 25% of YOUR max HP. (An instant finish measured worse.)
         const coupLine = player && g.symbol === 'sword' && me.relics.has('coup') ? Math.round(me.maxHp * NEW_RELIC.coupPct) : 0;
-        const boss = this.isBoss || this.isMirror || this.isDealer;
-        const amount = coupLine && boss && foe.hp <= coupLine ? unitsUp(g.amount * NEW_RELIC.coupBossMul) : g.amount;
+        const amount = coupLine && foe.hp <= coupLine ? unitsUp(g.amount * NEW_RELIC.coupBossMul) : g.amount;
         if (amount !== g.amount) events.push({ type: 'relic', side: me.side, relic: 'coup' });
         // KEEN: a keen sword in the group pierces shields. (An enemy's LATE multiplier is already in its amount.)
         this.hit(me, foe, amount, g.reels, events, !!g.pierce, undefined, true);
-        if (coupLine && !boss && !this.over && foe.hp > 0 && foe.hp <= coupLine) {
-          events.push({ type: 'relic', side: me.side, relic: 'coup' });
-          const left = foe.hp;
-          const h = this.damage(foe, left + foe.shield, true);
-          events.push({ type: 'attack', from: me.side, to: foe.side, reels: g.reels, amount: left, ...h, note: 'pierce' });
-          this.checkDeath(foe, events);
-        }
         this.vampHeal(me, g, events);
         return;
       }
@@ -1624,7 +1617,7 @@ export class Fight {
       me.energy -= this.cfg.specialCost;
       const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
       // MELTDOWN: +1% per 1% of HP you're missing (capped).
-      const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, 1 - me.hp / me.maxHp) : 0;
+      const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, (1 - me.hp / me.maxHp) * NEW_RELIC.meltdownRate) : 0;
       const dmg = unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1) * (1 + melt));
       if (over && !overPopped) {
         overPopped = true;

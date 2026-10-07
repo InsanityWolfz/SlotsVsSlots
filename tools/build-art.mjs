@@ -4269,6 +4269,151 @@ S.relicNestegg = lit(16, 16, [
   '................',
   '................',
 ]);
+// relicCoup (16x16): COUP DE GRACE, a sword plunging point-down, a red-gold spark flaring at its tip
+S.relicCoup = lit(16, 16, [
+  '................',
+  '......YGg.......',
+  '......wBb.......',
+  '......wBb.......',
+  '..YGGGGGGGGGg...',
+  '...g..WLS..g....',
+  '......WLS.......',
+  '......WLS.......',
+  '......WLS.......',
+  '......WLS.......',
+  '.......LS.......',
+  '.......W........',
+  '......RYR.......',
+  '.....RYWYR......',
+  '......RYR.......',
+  '................',
+]);
+// relicCompound (16x16): COMPOUND, a jaunty stack of gold coins beside a green up-arrow
+S.relicCompound = lit(16, 16, [
+  '................',
+  '................',
+  '...YYYYG....e...',
+  '..YWYYYYG..EeQ..',
+  '..GYYYYGg.EeeeQ.',
+  '..gGgGgGg..EeQ..',
+  '.YYYYYYYG..EeQ..',
+  '.gGgGgGgg..EeQ..',
+  '..YYYYYYYG.EeQ..',
+  '..gGgGgGgg.EeQ..',
+  '.YYYYYYYG..EeQ..',
+  '.gGgGgGgg..EeQ..',
+  '..YYYYYYYG.EQQ..',
+  '..gGgGgGgg......',
+  '................',
+  '................',
+]);
+// relicHedge (16x16): HEDGE, a round green hedge bush pricked with red thorns, a red droplet falling from it
+S.relicHedge = lit(16, 16, [
+  '................',
+  '................',
+  '.....EEEee......',
+  '...REWEeeeeQR...',
+  '...EEWEeeReQQ...',
+  '..REEEeeeeeQQ...',
+  '...EeeReeeQQqR..',
+  '..EeeeeeQQReQq..',
+  '..ReeeQQeeQQqq..',
+  '...eQReQQqQqq...',
+  '....QQqQqqRq....',
+  '.....qqqqqq.R...',
+  '...........MRr..',
+  '...........Rrr..',
+  '............r...',
+  '................',
+]);
+// relicMeltdown (16x16): MELTDOWN, a cracked, overheating orange-red core bulb on a steel base, a yellow bolt inside
+S.relicMeltdown = lit(16, 16, [
+  '................',
+  '.....aOOOOo.....',
+  '.Y..aOROYYOo....',
+  '...aORKOYYOOo.Y.',
+  '...ORORYYOOKo...',
+  '...OOROYYYYOo...',
+  '...oOOOOYYKOo...',
+  '....oOOYYOKo....',
+  '....oKOYOOOo....',
+  '.....oOOOOo.....',
+  '.....LSSSSD.....',
+  '.....SDDDDD.....',
+  '......LSSD......',
+  '.......DD.......',
+  '................',
+  '................',
+]);
+// relicPulse (16x16): PULSE, a blue shockwave ring with a yellow bolt crackling in its centre
+{
+  const g = grid(16, 16);
+  const cx = 7.5, cy = 7.5;
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
+    if (d < 4.9 || d > 6.6) continue;
+    put(g, x, y, dx + dy < -3 ? 'A' : dx + dy > 3 ? 'N' : 'U');
+  }
+  put(g, 3, 3, 'C');
+  stamp(g, 6, 4, ['  WY ', ' YY  ', 'YYYYY', '  YG ', ' YG  ', ' G   ']);
+  S.relicPulse = toRows(outline(g));
+}
+// relicDeckdrum (16x16): DECK DRUM, a small red drum with gold hoops, a spade playing card leaning against it
+S.relicDeckdrum = lit(16, 16, [
+  '................',
+  '................',
+  '.......WTTTt....',
+  '.......WKTTt....',
+  '.......WTTTt....',
+  '........WTKTt...',
+  '..FFFf..WKKKt...',
+  '.FWFFFf.WKKKt...',
+  '.GGGGGg.WTKTt...',
+  '.RWRRWr..WTTTt..',
+  '.RRWWRr..WTTTt..',
+  '.MRRRRr..WTTKt..',
+  '.GGGGGg..WTTTt..',
+  '.........ttttt..',
+  '................',
+  '................',
+]);
+// relicWildcard (16x16): WILD CARD, a playing card with a rainbow border and a gold star in the middle
+{
+  const g = grid(16, 16);
+  const x0 = 3, x1 = 12, y0 = 1, y1 = 14, segs = ['R', 'O', 'Y', 'e', 'U', 'V'];
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const corner = (x === x0 || x === x1) && (y === y0 || y === y1);
+    if (corner) continue;
+    const edge = x === x0 || x === x1 || y === y0 || y === y1;
+    if (edge) {
+      // walk the rim clockwise from the top-left so the six colours run round it in order
+      const w = x1 - x0, h = y1 - y0;
+      const i = y === y0 ? x - x0 : x === x1 ? w + (y - y0) : y === y1 ? w + h + (x1 - x) : 2 * w + h + (y1 - y);
+      put(g, x, y, segs[Math.floor(i * 6 / (2 * (w + h))) % 6]);
+    } else put(g, x, y, x === x0 + 1 || y === y0 + 1 ? 'W' : 'T');
+  }
+  stamp(g, 5, 5, ['   Y   ', '  YYG  ', 'YYYWYGG', ' YYYYG ', '  YYGg ', ' YG Gg ', ' g   g ']);
+  S.relicWildcard = toRows(outline(g));
+}
+// relicLoadedreel (16x16): LOADED REEL, a gold-framed reel window showing a rainbow wild star, arrows pushing outward
+S.relicLoadedreel = lit(16, 16, [
+  '................',
+  '....YGGGGGGg....',
+  '....GSSSSSSg....',
+  '....GLLLLLLg....',
+  '....GTTTTTTg....',
+  '....GTTRRTTg....',
+  '..Y.GTTOOTTg.G..',
+  '.YG.GYYYYYYg.Gg.',
+  '.YG.GTeeeeTg.Gg.',
+  '..G.GTUUUUTg.g..',
+  '....GVVTTVVg....',
+  '....GTTTTTTg....',
+  '....GLLLLLLg....',
+  '....GSSSSSSg....',
+  '....Gggggggg....',
+  '................',
+]);
 // relicBracelet (16x16): CHARM BRACELET, a gold chain loop with three charms hanging (red heart, blue gem, green clover)
 S.relicBracelet = lit(16, 16, [
   '................',
@@ -5127,6 +5272,8 @@ const DIMS = {
   relicLoadedChips: 16, relicRainmaker: 16, relicSlushFund: 16, relicTipJar: 16, relicLooseChange: 16,
   relicBramble: 16, relicRiposte: 16, relicTower: 16, relicHeadsman: 16, relicCapacitor: 16,
   relicLivewire: 16, relicEncore: 16, relicWildwheel: 16, relicDownpour: 16, relicNestegg: 16,
+  relicCoup: 16, relicCompound: 16, relicHedge: 16, relicMeltdown: 16, relicPulse: 16,
+  relicDeckdrum: 16, relicWildcard: 16, relicLoadedreel: 16,
   relicBracelet: 16, relicMetronome: 16, relicSnakeEyes: 16, relicPitBoss: 16, relicCoil: 16, relicTaxMan: 16,
   trimClassic: 16, trimBronze: 16, trimSilver: 16, trimNeon: 16, trimVelvet: 16,
   trimEmerald: 16, trimDiamond: 16, trimObsidian: 16, trimHouse: 16,
@@ -5266,7 +5413,9 @@ export type SpriteId =
   | 'relicTipJar' | 'relicLooseChange'
   | 'relicBramble' | 'relicRiposte' | 'relicTower' | 'relicHeadsman' // per-character relics, 16x16
   | 'relicCapacitor' | 'relicLivewire' | 'relicEncore' | 'relicWildwheel'
-  | 'relicDownpour' | 'relicNestegg';
+  | 'relicDownpour' | 'relicNestegg'
+  | 'relicCoup' | 'relicCompound' | 'relicHedge' | 'relicMeltdown' | 'relicPulse'
+  | 'relicDeckdrum' | 'relicWildcard' | 'relicLoadedreel';
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

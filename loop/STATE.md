@@ -1841,3 +1841,13 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   BOSS_MUL joker house 2.2 -> 1.9, mirror 1.5 -> 1.2, dealer 0.55 -> 0.5; tesla dealer 2.3 -> 2.0, act3 1.6 -> 1.45.
 - Official table N1000 (WHITE / GREEN): KNIGHT 45.2/17.4, TESLA 44.1/17.4, BRIAR 43.1/19.5, JAX 44.6/18.5, CASSIDY 42.1/16.7.
   All inside the gates; fight-4 deaths 3.8-5.4% (CASSIDY 0.1, as before).
+
+## Iteration 86 (2026-10-07): sim upkeep (no balance change)
+- POWER_REF re-measured (`power_ref.ts 300`, GREEN greedy, medians mirror / act3 / dealer):
+  KNIGHT 638 / 1619 / 2820, TESLA 702 / 1964 / 3595, BRIAR 11 / 0 / 1204, JAX 874 / 2412 / 4041, CASSIDY 1758 / 5356 / 14927.
+  Kept the old values on purpose: POWER_REF is only the pivot of `sizingPower = sqrt(ref x power)`. Moving it rescales
+  boss HP, and BOSS_MUL.act3 multiplies both the act3 and the mirror sizing (act 2 regulars), so no single BOSS_MUL
+  change compensates exactly. The curve doesn't drift with the ref, so "only X" rows were never off by it.
+- `endless.ts` gains a "best 10% by build power" row (final-build machinePower of each rider). N400 forced ride:
+  loop 5 reached, all riders / best 10%: KNIGHT 0 / 0, TESLA 3 / 29, BRIAR 18 / 38, JAX 0 / 0, CASSIDY 6 / 14.
+  Watch: KNIGHT and JAX best builds stop at loop 3 (7 riders each: thin); BRIAR's average is above the 10% target.

@@ -850,7 +850,7 @@ export function machinePower(run: RunState): number {
   const hit = powerCache.get(key);
   if (hit !== undefined) return hit;
   const cfg = defaultConfig();
-  cfg.player = { hp: 99999 * UNIT, strips: run.player.strips.map((s) => ({ ...s })), gilded: run.player.gilded.map((g) => ({ ...g })), levels: cloneLevels(run.player.levels), ...(run.glass ? { payMul: BIG.glassPay } : {}), ...(run.bloodPact ? { meterMul: 2 } : {}), chipsHeld: Math.min(run.player.chips, run.player.relics.includes('compound') ? 60 : 20), sizeHp: run.player.maxHp };
+  cfg.player = { hp: 99999 * UNIT, strips: run.player.strips.map((s) => ({ ...s })), gilded: run.player.gilded.map((g) => ({ ...g })), levels: cloneLevels(run.player.levels), ...(run.glass ? { payMul: BIG.glassPay } : {}), ...(run.bloodPact ? { meterMul: 2 } : {}), chipsHeld: Math.min(run.player.chips, 20), sizeHp: run.player.maxHp };
   cfg.enemy = { hp: 99999 * UNIT, strips: [{ sword: 8, shield: 4 }, { sword: 8, shield: 4 }, { sword: 8, shield: 4 }], ability: null };
   // BRAMBLE WALL: BRIAR's bosses are fitted (BOSS_MUL.thorn) to a power that leaves her volleys out, and the dummy's
   // blocked hits would fire it every turn; keep it out of sizing like her other thorns.
