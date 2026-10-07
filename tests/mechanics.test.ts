@@ -158,7 +158,7 @@ describe('relics', () => {
     const f = vs({ sword: 12 }, { relics: ['fang'], mut: (c) => (c.player.startHp = 10) });
     f.forceNext('player', ['bolt', 'bolt', 'bolt']);
     const [h] = ofType(f.step().events, 'heal');
-    expect(h).toMatchObject({ amount: 10, hp: 20, source: 'fang' }); // TESLA's special: FANG_TESLA_HEAL
+    expect(h).toMatchObject({ amount: 5, hp: 15, source: 'fang' }); // TESLA's special: FANG_TESLA_HEAL
   });
 
   it('clover sometimes converts a near-miss into a jackpot (and only then)', () => {

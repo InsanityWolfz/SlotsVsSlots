@@ -1,0 +1,24 @@
+// Quick knob probe: WHITE + GREEN for one machine with live edits. npx tsx tools/sim/probe.ts <machine> [N] "path=value;..."
+// Paths start at a module export: CABINETS.tesla.meter.cost=60; BOSS_MUL.tesla.house=0.5 (numbers in game units).
+import { defaultConfig } from '../../src/core/config';
+import * as cab from '../../src/core/cabinets';
+import * as run from '../../src/core/run';
+import * as relics from '../../src/core/relics';
+import * as enemies from '../../src/core/enemies';
+import type { CabinetId } from '../../src/core/cabinets';
+import { simulateRuns } from '../../src/sim/simulateRun';
+
+const [machine, nArg, edits = ''] = process.argv.slice(2);
+const N = Number(nArg ?? 200);
+const roots: Record<string, unknown> = { ...cab, ...run, ...relics, ...enemies };
+for (const e of edits.split(';').filter(Boolean)) {
+  const [path, val] = e.split('=');
+  const keys = path.trim().split('.');
+  let o = roots as Record<string, unknown>;
+  for (const k of keys.slice(0, -1)) o = o[k] as Record<string, unknown>;
+  o[keys[keys.length - 1]] = Number(val);
+}
+const w = simulateRuns(defaultConfig(), N, 'greedy', 4242, machine as CabinetId, 0);
+const g = simulateRuns(defaultConfig(), N, 'greedy', 4242, machine as CabinetId, 2, true);
+const f = (x: number) => x.toFixed(1).padStart(5);
+console.log(`${machine} N${N} [${edits}] WHITE ${f(w.winPct)} House ${f(w.bossWinPct)} Mirror ${f(w.mirrorWinPct)} f4die ${f(w.deathsAtDepth[3])} | GREEN ${f(g.winPct)} Dealer ${f(g.dealerWinPct)} | jack ${f(w.jackpotPct)}`);

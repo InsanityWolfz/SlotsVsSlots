@@ -80,7 +80,16 @@ const JOKER_ONLY: ReadonlySet<Enh> = new Set(['trick']);
 /** LUCKY is a later-machine charm (a wild barely changes KNIGHT's or MIDAS's two-symbol line). */
 export const LUCKY_MACHINES: ReadonlySet<CabinetId> = new Set(['thorn', 'tesla', 'joker']);
 export const gildsFor = (run: RunState): Enh[] =>
-  [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter((e) => (run.cabinet === 'tesla' || !TESLA_ONLY.has(e)) && (run.cabinet === 'knight' || !KNIGHT_ONLY.has(e)) && (run.cabinet === 'thorn' || !BRIAR_ONLY.has(e)) && (run.cabinet === 'joker' || !JOKER_ONLY.has(e)) && (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)));
+  [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter(
+    (e) =>
+      (run.cabinet === 'tesla' || !TESLA_ONLY.has(e)) &&
+      (run.cabinet === 'knight' || !KNIGHT_ONLY.has(e)) &&
+      (run.cabinet === 'thorn' || !BRIAR_ONLY.has(e)) &&
+      (run.cabinet === 'joker' || !JOKER_ONLY.has(e)) &&
+      (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)) &&
+      // A charm with nothing on your reels to go on is never offered (KEEN on a machine with no swords).
+      charmSymbols(run, e).some((sym) => run.player.strips.some((st) => (st[sym] ?? 0) > 0)),
+  );
 /** Symbols this machine's swap cards move between. */
 export const swappable = (run: RunState): SymbolId[] => CABINETS[run.cabinet].symbols;
 /** The symbol +2 / rock-swap cards give (the signature symbol, or swords for KNIGHT and JAX). */
@@ -890,7 +899,7 @@ export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
   midas: { house: 3, mirror: 2.5, dealer: 2.1, act3: 0.12, act1: 0.55, act2: 0.55, gate: 0.8, act3Floor: 1 },
   thorn: { house: 0.85, mirror: 75, dealer: 2.2, act3: 1.3, act2: 0.6, gate: 1.55 },
-  tesla: { house: 0.5, mirror: 2.7, dealer: 1.3, act3: 0.95, gate: 1.0 },
+  tesla: { house: 1.5, mirror: 3.1, dealer: 3, act3: 1.6, act1: 1.35, act2: 1.2, gate: 1.0 },
   joker: { house: 2.2, mirror: 3.1, dealer: 0.8, act3: 0.35, act2: 1.8, gate: 0.85 },
 };
 const powerCache = new Map<string, number>();

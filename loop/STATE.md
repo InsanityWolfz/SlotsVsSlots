@@ -1709,3 +1709,17 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - KEEN text is symbol-neutral ("+N TO EACH ONE IN ITS GROUP, WHICH PIERCES SHIELDS").
 - table.ts 300, JAX: **identical** to before (WHITE 44.3, GREEN 19.3, Dealer 48.7, jackpot 54.5%): a pure re-skin,
   which also proves every sword hook was moved over. Tests: 238 (TRICK test uses cards).
+
+## Iteration 77 (2026-10-07): TESLA drops its swords (sword removal 2 of 4)
+- Reels **shield 6 / bolt 6** (was sword 4 / shield 4 / bolt 4); `attack: 'bolt'`; swap cards move bolts and shields.
+  All of TESLA's damage is now the lightning (cost 40, 60 through shields, unchanged).
+- Charms with nothing on your reels to go on are never offered (`gildsFor`): TESLA no longer sees KEEN or VAMP
+  (VAMPIRE'S KISS still lets vamp onto bolts). No-op for every other machine today.
+- First pass, untuned: **WHITE 94.3 / GREEN 84.3** (N300). Probes (tools/sim/probe.ts, new):
+  - Cost 60-100 or damage 30-40 only trimmed it (cost 80: 73 / 57); 8x boss HP still left the House at 93%.
+  - The lever is the **payoff heal**: lightning now fires so often that 20 HP a strike made TESLA unkillable
+    (heal 0: 23 / 12; heal 10: 73 / 59; heal 5: 51 / 39).
+- Shipped: heal per strike **20 -> 5**; FANG on TESLA 10 -> 5 (its text said 30: fixed, "HEALS 5 MORE");
+  BOSS_MUL tesla house 0.5 -> 1.5, mirror 2.7 -> 3.1, dealer 1.3 -> 3, act3 0.95 -> 1.6, new act1 1.35, act2 1.2.
+- N1000: **WHITE 43.0** (House 90, Mirror 57.5, fight-4 deaths 4.8%) / **GREEN 19.1** (Dealer 53.4); jackpot
+  32.9% (was 17.4). Tests: 238 (fang 5; a swap test now uses bolts).

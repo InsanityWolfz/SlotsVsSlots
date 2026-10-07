@@ -23,7 +23,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   clover: { id: 'clover', name: 'LUCKY CLOVER', text: '30% CHANCE A NEAR-MISS BECOMES A JACKPOT', sprite: 'relicClover' },
   battery: { id: 'battery', name: 'BATTERY', text: 'YOUR METER STARTS EACH FIGHT MORE THAN HALF FULL', sprite: 'relicBattery' },
   mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS PAY AS A PAIR', sprite: 'relicMirror' },
-  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFF HEALS 30 MORE (TESLA AND BRIAR: 10)', sprite: 'relicFang' },
+  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFF HEALS 30 MORE (TESLA: 5, BRIAR: 10)', sprite: 'relicFang' },
   bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 60 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
   // Retired (user playtest): a relic that mostly matters against one boss isn't enticing. Its name goes to GAMBLIN MAN's bar.
   crown: { id: 'crown', name: 'HIGH ROLLER', text: 'YOUR PAIRS HEAL 5 (AND STEAL HALF THE HOUSE POT)', sprite: 'relicCrown', retired: true },
@@ -100,7 +100,7 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
     joker: 'YOUR JACKPOT METER STARTS EACH FIGHT MORE THAN HALF FULL',
   },
   fang: {
-    tesla: 'EVERY LIGHTNING STRIKE HEALS 30 MORE',
+    tesla: 'EVERY LIGHTNING STRIKE HEALS 5 MORE',
     midas: 'EVERY HIGH ROLLER PAYOFF HEALS 30 MORE',
     thorn: 'YOUR THORN VOLLEYS HEAL 10 MORE',
     joker: 'YOUR ALL-JACKPOTS SPIN HEALS 30 MORE',
@@ -203,7 +203,7 @@ export const MIDAS_TOUCH_CAP = 3;
 export const CACTUS_SHARE = 0.3;
 export const FANG_HEAL = 3 * UNIT;
 /** TESLA's lightning pays off often: a common heal of 30 there was 36.7% wins vs 9.2 (EXPERT_PLAYTEST_10). */
-export const FANG_TESLA_HEAL = 1 * UNIT;
+export const FANG_TESLA_HEAL = UNIT / 2;
 /** BRIAR's thorns fire almost every enemy turn, so its Fang heal is smaller (35% win with 30, probe 2026-09-27). */
 export const FANG_THORN_HEAL = 1 * UNIT;
 export const BANDAGE_HEAL = 6 * UNIT;

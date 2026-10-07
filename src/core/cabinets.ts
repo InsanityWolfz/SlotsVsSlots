@@ -135,12 +135,14 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     sprite: 'cabinetTesla',
     blurb: 'IT HUMS WHEN YOU LOOK AT IT',
     hp: 25 * UNIT,
-    strips: r3({ sword: 4, shield: 4, bolt: 4 }),
+    // No swords (2026-10-07): bolts are TESLA's weapon, and their damage is the lightning.
+    strips: r3({ shield: 6, bolt: 6 }),
     gilded: [{ reel: 0, symbol: 'bolt', enh: 'charged', n: 4 }],
     favors: 'charged',
-    meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: 2 * UNIT },
-    symbols: ['sword', 'shield', 'bolt'],
-    attack: 'sword',
+    // Heal per strike 20 -> 5: with 6 bolts a reel lightning fires far more often, and 20 a strike made TESLA unkillable (94% WHITE).
+    meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: UNIT / 2 },
+    symbols: ['bolt', 'shield'],
+    attack: 'bolt',
     rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE THROUGH SHIELDS. 250 HP.',
     rodDamage: 9 * UNIT,
     unlock: 'REACH THE HOUSE',

@@ -23,9 +23,9 @@ describe('package H', () => {
   it('+symbol cards add 2 and swaps move up to 3', () => {
     const run = createRun(base, 9, 'tesla');
     applyOption(run, { kind: 'add', symbol: 'bolt', reel: 0, count: RUN.addCount });
-    expect(run.player.strips[0].bolt).toBe(6);
-    applyOption(run, { kind: 'swap', from: 'shield', to: 'sword', count: RUN.swapCount, reel: 1 });
-    expect(run.player.strips[1]).toMatchObject({ shield: 1, sword: 7 });
+    expect(run.player.strips[0].bolt).toBe(8);
+    applyOption(run, { kind: 'swap', from: 'shield', to: 'bolt', count: RUN.swapCount, reel: 1 });
+    expect(run.player.strips[1]).toMatchObject({ shield: 3, bolt: 9 });
   });
 
   it('no two frozen reels ever show the same payline symbol', () => {
