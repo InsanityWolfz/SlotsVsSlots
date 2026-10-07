@@ -74,20 +74,20 @@ Boss sizing only counts damage, so anything that wins without damage needs a dam
 - Needs an endless sim harness that reports the loop reached per machine (check tools/balance for one first).
 - Do this after the sword removal retune (machine power changes).
 
-## 6. Sim rewrite
-- tools/balance has grown by patching each round (~60 one-off harnesses: e9_..., e11_..., c13_...). The bot
-  policies assume swords, so they break with step 2 anyway.
-- Rewrite fresh: one shared bot (draft/shop/chip spending that plays each archetype on purpose, not one generic
-  policy), one official table (WHITE / GREEN / Dealer / act 3 per machine + per archetype win rates), one endless
-  report (loop reached per machine), plus fuzz. Move the old one-offs to tools/balance/legacy/.
-- Calibrate the new sim against the current game *before* removing swords, so the before/after numbers mean
-  something.
+## 6. Sim rewrite (two steps)
+- tools/balance has grown by patching each round (~80 files). The bot policies assume swords.
+- **Now:** one harness with a bot keyed on each machine's attack symbol. It must reproduce today's tuesday table
+  within ~1 point per machine before it replaces anything. The official table adds jackpot rate, chips per fight
+  and boss-sizing power. The endless report **forces riding** (no cash-out) so it measures the real wall.
+  Old one-offs move to tools/balance/legacy/.
+- **With the content wave:** archetype-aware bots, and a "best builds" bot for endless (greedy can't find the
+  broken builds).
 
 ## 7. Order of work
-1. Playtester review of this doc (approval gate).
-2. Sim rewrite (calibrated on today's game).
-3. Sword removal + attack symbols + charm retarget (everything else builds on it). Full sim pass, log in STATE.
-4. UI panel + text budget (can run alongside 2, after the late-endless screenshots).
-5. Side bets (small; can ship early).
-6. Content wave by archetype (+~50%), measured per machine.
-7. Endless scaling pass (after 3 and 6, since both change build power).
+1. ~~Playtester review~~ (done, playtest/ARCHETYPES_REVIEW.md).
+2. Side bets (small, independent).
+3. Sim rewrite step 1 (calibrated on today's game).
+4. Sword removal, one machine at a time (JAX, TESLA, CASSIDY, BRIAR) + attack charms + relic fixes. Log each.
+5. UI panel + text budget (late-endless screenshots first).
+6. Content wave 1 (~20 items, by archetype), then sim step 2.
+7. Endless scaling: fixed curve / lower powerElastic first, then make the growth grow; target set on riding runs.
