@@ -851,7 +851,9 @@ export function machinePower(run: RunState): number {
   const cfg = defaultConfig();
   cfg.player = { hp: 99999 * UNIT, strips: run.player.strips.map((s) => ({ ...s })), gilded: run.player.gilded.map((g) => ({ ...g })), levels: cloneLevels(run.player.levels), ...(run.glass ? { payMul: BIG.glassPay } : {}), ...(run.bloodPact ? { meterMul: 2 } : {}), chipsHeld: Math.min(run.player.chips, 20), sizeHp: run.player.maxHp };
   cfg.enemy = { hp: 99999 * UNIT, strips: [{ sword: 8, shield: 4 }, { sword: 8, shield: 4 }, { sword: 8, shield: 4 }], ability: null };
-  cfg.relics = run.player.relics.filter((r) => r !== 'phoenix');
+  // BRAMBLE WALL: BRIAR's bosses are fitted (BOSS_MUL.thorn) to a power that leaves her volleys out, and the dummy's
+  // blocked hits would fire it every turn; keep it out of sizing like her other thorns.
+  cfg.relics = run.player.relics.filter((r) => r !== 'phoenix' && r !== 'bramble');
   cfg.cabinet = run.cabinet;
   const f = new FightCtor(cfg, (run.seed ^ Math.imul(run.act * 16 + run.depth + 1, 0x2545f491)) >>> 0);
   const turns: number[] = [];
