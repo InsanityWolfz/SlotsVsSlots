@@ -1075,22 +1075,42 @@ export class RunScreens {
     drawText(ctx, 'YOUR REELS', x + 12, y + 178, 2, COLORS.textDim, { align: 'left' });
     const liens = run.liens ?? [];
     if (liens.length) drawText(ctx, `${liens.length} HELD`, x + w - 12, y + 178, 1.5, '#ff9a3a', { align: 'right' });
-    drawReelTable(ctx, x + 8, y + 190, runTable(p), { colW: 90, rowH: 30, scale: 1.6, text: 2, maxRows: 9, levels: p.levels, ticket: p.relics.includes('ticket'), cap: levelCap(run), maxH: 300 });
-    rule(y + 498);
+    const table = runTable(p);
+    drawReelTable(ctx, x + 8, y + 190, table, { colW: 90, rowH: 28, scale: 1.5, text: 2, maxRows: 6, levels: p.levels, ticket: p.relics.includes('ticket'), cap: levelCap(run), maxH: 190, badges: false });
+    rule(y + 386);
+    // LEVELS: every symbol type and charm type you own, LV1 included, MAX at the cap.
+    drawText(ctx, 'LEVELS', x + 12, y + 404, 2, COLORS.textDim, { align: 'left' });
+    const cap = levelCap(run);
+    const ticket = p.relics.includes('ticket');
+    const syms = CABINETS[run.cabinet].symbols.filter((sym) => p.strips.some((st) => (st[sym] ?? 0) > 0));
+    const charms = [...new Map(table.flat().filter((r) => r.enh).map((r) => [r.enh!, r.symbol as SymbolId])).entries()];
+    const entries: { sprite: SymbolId; enh?: Enh; level: number }[] = [
+      ...syms.map((sym) => ({ sprite: sym, level: symLevel(p.levels, sym) })),
+      ...charms.map(([enh, sym]) => ({ sprite: sym, enh, level: charmLevel(p.levels, enh, ticket) })),
+    ];
+    entries.slice(0, 8).forEach((e, i) => {
+      const ex = x + 26 + (i % 2) * 134;
+      const ey = y + 432 + Math.floor(i / 2) * 28;
+      drawSprite(ctx, e.sprite as SpriteId, ex, ey, 1.5);
+      if (e.enh) drawSprite(ctx, ENH_SPRITE[e.enh], ex, ey, 1.5);
+      const max = e.level >= cap;
+      drawText(ctx, max ? 'MAX' : `LV ${e.level}`, ex + 20, ey, 2, max ? '#ff9a3a' : e.enh ? CHARM_COLOR[e.enh] : COLORS.goldLight, { align: 'left' });
+    });
+    rule(y + 546);
     // Your relics: a fixed grid; past its size the last cell says how many more.
     const relics = p.relics;
-    drawText(ctx, relics.length ? `RELICS ${relics.length}` : 'RELICS', x + 12, y + 516, 2, COLORS.textDim, { align: 'left' });
-    if (!relics.length) drawText(ctx, 'NONE YET', x + 12, y + 546, 2, '#4a4058', { align: 'left' });
+    drawText(ctx, relics.length ? `RELICS ${relics.length}` : 'RELICS', x + 12, y + 562, 2, COLORS.textDim, { align: 'left' });
+    if (!relics.length) drawText(ctx, 'NONE YET', x + 12, y + 590, 2, '#4a4058', { align: 'left' });
     const cols = 8;
-    const cap = cols * 5;
-    const shown = relics.length > cap ? relics.slice(0, cap - 1) : relics;
+    const slots = cols * 4;
+    const shown = relics.length > slots ? relics.slice(0, slots - 1) : relics;
     shown.forEach((r, i) => {
       const cx = x + 24 + (i % cols) * 34;
-      const cy = y + 546 + Math.floor(i / cols) * 30;
+      const cy = y + 590 + Math.floor(i / cols) * 30;
       drawSprite(ctx, RELICS[r].sprite as SpriteId, cx, cy, 1.6);
       this.tips.add(r, cx, cy, 15);
     });
-    if (relics.length > cap) drawText(ctx, `+${relics.length - shown.length}`, x + 24 + ((cap - 1) % cols) * 34, y + 546 + 4 * 30, 1.5, COLORS.goldLight);
+    if (relics.length > slots) drawText(ctx, `+${relics.length - shown.length}`, x + 24 + ((slots - 1) % cols) * 34, y + 590 + 3 * 30, 1.5, COLORS.goldLight);
   }
 
   private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {

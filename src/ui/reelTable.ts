@@ -75,6 +75,8 @@ export interface TableOpts {
   /** The level cap (MAX shows at it); the base game's by default. */
   cap?: number;
   header?: boolean;
+  /** false: no level badges under the table (YOUR BUILD has its own LEVELS pane). */
+  badges?: boolean;
   /** Total height available (header + rows + LV line): rows shrink to fit instead of spilling (EXPERT_PLAYTEST_3 B2). */
   maxH?: number;
 }
@@ -129,7 +131,7 @@ export function drawReelTable(ctx: CanvasRenderingContext2D, x: number, y: numbe
     maxH = Math.max(maxH, (shown.length + (shown.length < rows.length ? 1 : 0)) * o.rowH);
   });
   // Levels: symbols above 1, and every charm type you own (LV1 too), so a level card's effect shows; MAX at the cap.
-  if (o.levels) {
+  if (o.levels && o.badges !== false) {
     const badges = levelBadges(o.levels, cols);
     const cap = o.cap ?? LEVEL_CAP;
     const width = o.colW * cols.length;

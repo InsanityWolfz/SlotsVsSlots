@@ -31,12 +31,11 @@ export function cellCenter(side: SideId, reel: number, row: number) {
 export const HUD_TOP = 96;
 
 /** The player's relic column (top left): 4 wide so 10-12 relics never slide under the strip map. */
-// Your relics in a fight: the right gutter beside the enemy machine (4 columns, up to 14 rows). In the left gutter they
-// ran into the YOUR REELS table past 12 relics.
-export const RELIC_X = 1132;
-export const RELIC_Y = 120;
+// Your relics in a fight: the left column (4 across, up to 13 rows) under your chips, so you can watch them fire.
+export const RELIC_X = 12;
+export const RELIC_Y = 140;
 export const RELIC_COLS = 4;
-export const RELIC_PITCH = 32;
+export const RELIC_PITCH = 34;
 export const relicSlot = (i: number) => ({ x: RELIC_X + 16 + (i % RELIC_COLS) * RELIC_PITCH, y: RELIC_Y + Math.floor(i / RELIC_COLS) * RELIC_PITCH });
 
 export const COLORS = {

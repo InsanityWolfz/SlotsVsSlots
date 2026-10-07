@@ -49,7 +49,6 @@ import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, RELIC_X, RELIC_Y, relicS
 import { MachineView } from './present/machine';
 import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
-import { drawStripMap } from './present/stripMap';
 import { Background } from './render/background';
 import { drawSprite, type SpriteId, artId } from './render/sprites';
 import { drawText } from './render/text';
@@ -1157,7 +1156,6 @@ export class Game {
     this.background.drawMarquee(ctx, t);
     this.drawRelics(ctx);
     if (this.phase === 'fighting') this.drawVouchers(ctx, this.time);
-    drawStripMap(ctx, s.machines.player, t, s.levels.player);
     s.huds.player.draw(ctx, t);
     s.huds.enemy.draw(ctx, t);
     s.machines.player.draw(ctx, s.clock.time);
