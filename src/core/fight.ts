@@ -1396,7 +1396,7 @@ export class Fight {
     this.thornsTurn = this.turn;
     const banked = victim.energy;
     // The volley is a share of the bank (the rest is spent too): with no swords BRIAR banks thorns every spin.
-    const bank = Math.max(UNIT, unitsUp(banked * THORNS.volley));
+    const bank = THORNS.volley >= 1 ? banked : Math.max(UNIT, unitsUp(banked * THORNS.volley));
     victim.energy = 0;
     const h = this.damage(attacker, bank, true);
     events.push({ type: 'attack', from: victim.side, to: attacker.side, reels: [], amount: bank, ...h, note: 'thorns' });
