@@ -39,3 +39,9 @@ Open questions for the playtester:
 - Which items are engine-trivial and which need new systems (BLEED is a new status)?
 - Should JAX get a second enabler?
 - Does OVERGROWTH stay cut? (The user said no machine affects enemy reels.)
+
+## Status (2026-10-07)
+- Shipped to main for playtest (STATE iteration 85): BRAMBLE WALL, RIPOSTE, TOWER SHIELD, HEADSMAN, CAPACITOR,
+  LIVE WIRE, ENCORE, WILD WHEEL, DOWNPOUR, NEST EGG.
+- **On hold (user, 2026-10-07):** BLEED (BARB, OPEN WOUND). BRIAR is the hardest machine to tune; revisit after playtest.
+- Not built yet: COUP DE GRACE, COMPOUND, HEDGE, MELTDOWN, PULSE, WILD CARD, LOADED REEL, DECK DRUM.
