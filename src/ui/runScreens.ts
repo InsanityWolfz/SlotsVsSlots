@@ -653,7 +653,7 @@ export class RunScreens {
     const edge = this.choices[0]?.id === 'edge';
     const rideQ = this.choices[0]?.id === 'cashOut';
     drawText(ctx, rideQ ? `LOOP ${(this.run?.endless?.loop ?? 2) - 1} CLEARED! POT ${this.run?.endless?.pot ?? 0}` : edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'A BIG CHOICE', W / 2, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
-    drawText(ctx, rideQ ? 'PUSH YOUR LUCK: RIDE AGAIN, OR CASH OUT AND BANK IT. YOUR DEALER WIN IS SAFE EITHER WAY.' : edge ? 'THE HOUSE RAISES THE STAKES. PICK A RULE. EACH ONE PAYS.' : `${BIG_SET_NAMES[set] ?? ''}  -  PICK ONE. STRONG MOVES HAVE A PRICE.`, W / 2, 110, 2, COLORS.textDim);
+    drawText(ctx, rideQ ? 'RIDE AGAIN OR CASH OUT. YOUR WIN IS SAFE EITHER WAY.' : edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : `${BIG_SET_NAMES[set] ?? ''}: STRONG MOVES HAVE A PRICE`, W / 2, 110, 2, COLORS.textDim);
     this.cards.forEach((c, i) => {
       const ch = this.choices[i];
       if (!ch || c.scale <= 0.01) return;
@@ -1109,7 +1109,7 @@ export class RunScreens {
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
-      drawText(ctx, `${rounds(last.turns)}  -  HP ${last.hpBefore} TO ${last.hpAfter}  -  PATCHED UP TO ${this.run!.player.hp}${chips}${rocks}`, W / 2, 60, 2, COLORS.textDim);
+      drawText(ctx, `${rounds(last.turns)}${chips}${rocks}`, W / 2, 60, 2, COLORS.textDim);
       if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${betProfit(last.bet)} CHIPS` : last.bet.refunded ? `SIDE BET BUSTED: YOUR MARKER COVERS ${Math.min(last.bet.stake, markerRefund(this.run!))}` : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, W / 2, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
     }
     this.drawMap(ctx, 158, time);
@@ -1118,16 +1118,16 @@ export class RunScreens {
     const relicDraft = !spoils && !legend && isRelicDraft(this.run!);
     const act3Arrival = !legend && !spoils && this.run!.act >= 3 && this.run!.depth === 0 && this.run!.actIntro;
     const heading = act3Arrival
-      ? 'ACT 3 - THE HOUSE HAS A PARTNER - FULLY HEALED - CHOOSE ONE'
+      ? 'ACT 3: THE HOUSE HAS A PARTNER. FULLY HEALED.'
       : legend
-        ? this.run!.endless ? `LOOP ${this.run!.endless.loop} - CHOOSE A LEGENDARY RELIC` : 'ACT 2 BEGINS - FULLY HEALED - CHOOSE A LEGENDARY RELIC'
+        ? this.run!.endless ? `LOOP ${this.run!.endless.loop}: A LEGENDARY RELIC` : 'ACT 2: FULLY HEALED. A LEGENDARY RELIC.'
         : start
-          ? 'CHOOSE A STARTING RELIC'
+          ? 'PICK A STARTING RELIC'
           : spoils
-          ? 'ELITE SPOILS - CHOOSE A RELIC'
+          ? 'ELITE SPOILS'
           : relicDraft
-            ? 'RELIC DRAFT - CHOOSE ONE'
-            : 'CHOOSE ONE';
+            ? 'RELIC DRAFT'
+            : '';
     if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), W / 2, 208, 3);
     drawText(ctx, heading, W / 2, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
     this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], i, time));
@@ -1333,7 +1333,7 @@ export class RunScreens {
 
   private drawCabinets(ctx: CanvasRenderingContext2D, time: number): void {
     drawText(ctx, 'CHOOSE YOUR MACHINE', W / 2, 60, 5, COLORS.goldLight);
-    drawText(ctx, 'EVERY RUN STARTS ON A SLOT MACHINE. WIN AND UNLOCK MORE.', W / 2, 104, 2, COLORS.textDim);
+    drawText(ctx, 'WIN RUNS TO UNLOCK MORE.', W / 2, 104, 2, COLORS.textDim);
     this.drawStakePicker(ctx, time);
     CABINET_ORDER.forEach((id, i) => {
       const h = this.cards[i];
