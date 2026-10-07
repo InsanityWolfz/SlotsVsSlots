@@ -824,14 +824,13 @@ export class Menus {
       const period = 4;
       const id = open[Math.floor(t / period) % open.length];
       const local = t % period;
-      // Each swap pops in: a quick squash from thin to full width, then a soft settle.
-      const pop = open.length > 1 ? Math.min(1, local / 0.18) : 1;
-      const sx = pop < 1 ? 0.2 + 0.8 * pop : 1 + 0.06 * Math.max(0, 1 - (local - 0.18) / 0.25);
-      drawSprite(ctx, heroSprite(id), 210, 430 + Math.sin(t * 2) * 3, 5, { sx });
-      drawText(ctx, CABINETS[id].hero, 210, 520, 2, COLORS.goldLight, { alpha: pop });
-      drawText(ctx, CABINETS[id].name, 210, 542, 1.5, COLORS.textDim, { alpha: pop });
+      // Each swap fades in softly (the squash-pop read as unnatural: user 2026-10-07); the idle bob and sway stay.
+      const fade = open.length > 1 ? Math.min(1, local / 0.35) : 1;
+      drawSprite(ctx, heroSprite(id), 210, 430 + Math.sin(t * 2) * 3, 5, { alpha: fade });
+      drawText(ctx, CABINETS[id].hero, 210, 520, 2, COLORS.goldLight, { alpha: fade });
+      drawText(ctx, CABINETS[id].name, 210, 542, 1.5, COLORS.textDim, { alpha: fade });
       const cab = (hasSprite(CABINETS[id].sprite) ? CABINETS[id].sprite : 'cabinetKnight') as SpriteId;
-      drawSprite(ctx, cab, W - 220, 430, 4, { rot: Math.sin(t * 1.3) * 0.02, sx });
+      drawSprite(ctx, cab, W - 220, 430, 4, { rot: Math.sin(t * 1.3) * 0.02, alpha: fade });
     }
     if (hasSprite('menuBackdrop')) drawSprite(ctx, artId('menuBackdrop'), W / 2, 666, 3);
     this.badge(ctx, W / 2, 20);
