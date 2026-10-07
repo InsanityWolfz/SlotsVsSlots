@@ -52,7 +52,7 @@ export const SHARD_CRACKED = 1 / 2;
 /** Pot steals: 1 = any jackpot steals the boss pot, 0 = only a jackpot of your attack symbol (probe knob). */
 export const POT_STEAL = { any: 1 };
 /** BRIAR's volley: this share of the thorn bank hits back (2026-10-07, no swords). */
-export const THORNS = { volley: 1, onBlocked: 1 };
+export const THORNS = { volley: 1, onBlocked: 0 };
 export const RAIN = { perChip: 2, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x3 (quarter steps). */
 export const highRollerMul = (chips: number) => Math.min(MIDAS.maxMul, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
@@ -412,6 +412,8 @@ export class Fight {
   midasChips = 0;
   /** LUCRE: chips its groups paid this fight (paid on a win, up to its cap). */
   lucreChips = 0;
+  /** BRIAR: thorn volleys since her last spin (the Mirror reflects them as her hit). */
+  private volleyCarry = 0;
   /** TAX MAN: chips paid this fight. */
   private taxChips = 0;
   /** Your spins this fight (METRONOME). */
@@ -705,8 +707,11 @@ export class Fight {
     // What this spin did (the Mimic and the Mirror copy it).
     this.last[side] = {
       best: Math.max(0, ...score.groups.filter((g) => g.matched || !DEAD.has(g.symbol)).map((g) => g.amount)),
-      damage: events.slice(sentBefore).reduce((a, e) => a + ((e.type === 'attack' || e.type === 'specialFire') && e.from === side && !(e.type === 'attack' && e.note === 'thorns') ? e.amount : 0), 0),
+      damage:
+        events.slice(sentBefore).reduce((a, e) => a + ((e.type === 'attack' || e.type === 'specialFire') && e.from === side && !(e.type === 'attack' && e.note === 'thorns') ? e.amount : 0), 0) +
+        (side === 'player' ? this.volleyCarry : 0),
     };
+    if (side === 'player') this.volleyCarry = 0;
     if (side === 'player') this.reflectBank = Math.max(this.reflectBank, this.last.player.damage);
     if (!this.over) this.defuse(me, events);
     if (!this.over && side === 'player') this.markedCards(me, events);
@@ -1402,10 +1407,12 @@ export class Fight {
     events.push({ type: 'attack', from: victim.side, to: attacker.side, reels: [], amount: bank, ...h, note: 'thorns' });
     events.push({ type: 'meter', side: victim.side, reels: [], amount: -banked, total: 0 });
     this.checkDeath(attacker, events);
+    // THE MIRROR reflects BRIAR's volleys too (her spins never hit): the volley counts toward her next spin's hit.
+    this.volleyCarry += bank;
     this.payoffHeal(victim, events);
     // ROSE HIP: a volley heals you for a share of what it fired.
     if (!this.over && victim.relics.has('rosehip')) {
-      const h = Math.round((bank * NEW_RELIC.rosehipShare) / 5) * 5;
+      const h = Math.min(NEW_RELIC.rosehipCap, Math.round((bank * NEW_RELIC.rosehipShare) / 5) * 5);
       if (h > 0) {
         events.push({ type: 'relic', side: victim.side, relic: 'rosehip' });
         this.heal(victim, h, 'rosehip', events);

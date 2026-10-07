@@ -119,13 +119,15 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     sprite: 'cabinetThorn',
     blurb: 'TOUCH IT. I DARE YOU.',
     hp: 30 * UNIT,
-    strips: r3({ sword: 4, shield: 4, thorn: 4 }),
+    // No swords (2026-10-07): BRIAR is all retaliation. Thorns bank; a hit that gets through fires the bank.
+    strips: r3({ shield: 6, thorn: 6 }),
     gilded: [],
-    favors: 'vamp',
-    meter: { kind: 'thorns', symbol: 'thorn', cost: 0, heal: UNIT },
-    symbols: ['sword', 'shield', 'thorn'],
-    attack: 'sword',
-    rule: 'THORNS ADD UP. WHEN YOU ARE ATTACKED, YOUR THORNS HIT BACK. 300 HP.',
+    favors: 'thorny',
+    // No volley heal (her volleys fire so often now that 10 each kept her topped up); ROSE HIP is her sustain.
+    meter: { kind: 'thorns', symbol: 'thorn', cost: 0, heal: 0 },
+    symbols: ['thorn', 'shield'],
+    attack: 'thorn',
+    rule: 'THORNS ADD UP. WHEN A HIT GETS THROUGH, YOUR THORNS HIT BACK. 300 HP.',
     unlock: 'BEAT THE HOUSE',
   },
   tesla: {

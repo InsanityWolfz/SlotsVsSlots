@@ -11,7 +11,8 @@ import { simulateRuns } from '../../src/sim/simulateRun';
 
 const [machine, nArg, edits = ''] = process.argv.slice(2);
 const N = Number(nArg ?? 200);
-const roots: Record<string, unknown> = { ...cab, ...run, ...relics, ...enemies, ...fight };
+const cfg = defaultConfig();
+const roots: Record<string, unknown> = { ...cab, ...run, ...relics, ...enemies, ...fight, BASE: cfg.base };
 for (const e of edits.split(';').filter(Boolean)) {
   const [path, val] = e.split('=');
   const keys = path.trim().split('.');
@@ -19,7 +20,7 @@ for (const e of edits.split(';').filter(Boolean)) {
   for (const k of keys.slice(0, -1)) o = o[k] as Record<string, unknown>;
   o[keys[keys.length - 1]] = Number(val);
 }
-const w = simulateRuns(defaultConfig(), N, 'greedy', 4242, machine as CabinetId, 0);
-const g = simulateRuns(defaultConfig(), N, 'greedy', 4242, machine as CabinetId, 2, true);
+const w = simulateRuns(cfg, N, 'greedy', 4242, machine as CabinetId, 0);
+const g = simulateRuns(cfg, N, 'greedy', 4242, machine as CabinetId, 2, true);
 const f = (x: number) => x.toFixed(1).padStart(5);
 console.log(`${machine} N${N} [${edits}] WHITE ${f(w.winPct)} House ${f(w.bossWinPct)} Mirror ${f(w.mirrorWinPct)} f4die ${f(w.deathsAtDepth[3])} | GREEN ${f(g.winPct)} Dealer ${f(g.dealerWinPct)} | jack ${f(w.jackpotPct)} hpH ${f(w.hpIntoHousePct)} t1 ${w.turnsByAct[0].toFixed(1)} chips/f ${w.chipsPerFight.toFixed(1)}`);

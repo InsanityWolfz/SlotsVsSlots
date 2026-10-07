@@ -67,8 +67,8 @@ describe('build relics & keen', () => {
     f.forceNext('player', ['thorn', 'thorn', 'sword']);
     const ev = f.step().events;
     const bank = ofType(ev, 'meter')[0];
-    expect(bank.amount).toBe(60); // (15 + 15) x2
-    expect(ofType(ev, 'shieldGain').find((e) => e.source === 'cactus')?.amount).toBe(18);
+    expect(bank.amount).toBe(40); // (10 + 10) x2
+    expect(ofType(ev, 'shieldGain').find((e) => e.source === 'cactus')?.amount).toBe(12);
   });
 
   it('PRISM doubles a match that used a WILD', () => {

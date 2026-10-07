@@ -46,8 +46,9 @@ export const RELICS: Record<RelicId, RelicDef> = {
   chainmail: { id: 'chainmail', name: 'CHAINMAIL', text: 'LEFTOVER SHIELD HEALS YOU 10% OF IT EACH TURN', sprite: 'relicChainmail', machine: 'knight' },
   vault: { id: 'vault', name: 'BANK VAULT', text: 'AFTER EACH WIN, ONE OF YOUR CHIPS GETS A GOLD CHARM', sprite: 'relicVault', machine: 'midas' },
   decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR MIDAS TOUCH ALSO SPREADS TO THE CELLS ABOVE AND BELOW', sprite: 'relicDecree', machine: 'midas', retired: true },
-  rosehip: { id: 'rosehip', name: 'ROSE HIP', text: 'YOUR THORN VOLLEYS HEAL YOU 10% OF WHAT THEY FIRE', sprite: 'relicRosehip', machine: 'thorn' },
-  graft: { id: 'graft', name: 'GRAFT', text: 'GOLD AND VAMP CHARMS FIT THORNS', sprite: 'relicGraft', machine: 'thorn' },
+  rosehip: { id: 'rosehip', name: 'ROSE HIP', text: 'YOUR THORN VOLLEYS HEAL YOU 10% OF WHAT THEY FIRE (UP TO 20)', sprite: 'relicRosehip', machine: 'thorn' },
+  // GRAFT: retired 2026-10-07; gold and vamp fit BRIAR's thorns without it (thorns are his weapon).
+  graft: { id: 'graft', name: 'GRAFT', text: 'GOLD AND VAMP CHARMS FIT THORNS', sprite: 'relicGraft', machine: 'thorn', retired: true },
   faraday: { id: 'faraday', name: 'FARADAY CAGE', text: 'SHIELD YOU GAIN ALSO CHARGES LIGHTNING (1/4 AS MUCH)', sprite: 'relicFaraday', machine: 'tesla' },
   static: { id: 'static', name: 'STATIC', text: "WHEN YOU'RE ATTACKED, YOUR LIGHTNING CHARGES 5", sprite: 'relicStatic', machine: 'tesla' },
   capbells: { id: 'capbells', name: 'CAP AND BELLS', text: 'EVERY WILD ON YOUR PAYLINE HEALS 10', sprite: 'relicCapbells', machine: 'joker' },
@@ -120,7 +121,7 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
   },
 };
 /** Machines that attack with something other than swords: relic texts name their symbol instead. */
-const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP', tesla: 'BOLT' };
+const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP', tesla: 'BOLT', thorn: 'THORN' };
 export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
   const t = (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;
   const w = cabinet ? ATTACK_WORD[cabinet] : undefined;
@@ -143,6 +144,8 @@ export const NEW_RELIC = {
   drumCap: 5,
   chainmailShare: 0.1,
   rosehipShare: 0.1,
+  /** ...at most this much a volley (no swords: BRIAR's volleys got huge, and 10% of them healed everything). */
+  rosehipCap: 2 * UNIT,
   faradayShare: 0.25,
   staticCharge: UNIT / 2,
   capbellsHeal: UNIT,

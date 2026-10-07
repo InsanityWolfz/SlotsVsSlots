@@ -62,17 +62,24 @@ describe('signature meters (one per slot machine)', () => {
     const spin = ofType(f.step().events, 'spin')[0];
     expect(spin.score.groups.some((g) => g.notes?.some((n) => n.startsWith('HIGH ROLLER X')))).toBe(true);
   });
-  it('BRIAR: thorns bank their pay; being attacked (blocked or not) fires the bank through shields, once per turn', () => {
+  it('BRIAR: thorns bank their pay; a hit that gets through fires the bank through shields (once per turn), a blocked one does not', () => {
     const f = on('thorn');
     f.forceNext('player', ['thorn', 'thorn', 'shield']);
     f.step();
-    expect(f.sides.player.energy).toBe(60);
+    expect(f.sides.player.energy).toBe(40);
     f.sides.enemy.shield = 999;
+    f.sides.player.shield = 9999;
     f.forceNext('enemy', ['sword', 'sword', 'sword']);
-    const ev = f.step().events;
-    const back = ofType(ev, 'attack').filter((a) => a.note === 'thorns');
+    expect(ofType(f.step().events, 'attack').filter((a) => a.note === 'thorns')).toHaveLength(0);
+    expect(f.sides.player.energy).toBe(40);
+    f.sides.player.shield = 0;
+    f.forceNext('player', ['shield', 'thorn', 'shield']);
+    f.step();
+    f.sides.player.shield = 0;
+    f.forceNext('enemy', ['sword', 'sword', 'sword']);
+    const back = ofType(f.step().events, 'attack').filter((a) => a.note === 'thorns');
     expect(back).toHaveLength(1);
-    expect(back[0]).toMatchObject({ amount: 60, blocked: 0, hpDamage: 60 });
+    expect(back[0]).toMatchObject({ amount: 50, blocked: 0, hpDamage: 50 });
     expect(f.sides.player.energy).toBe(0);
   });
 

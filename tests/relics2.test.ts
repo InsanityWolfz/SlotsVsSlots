@@ -157,11 +157,10 @@ describe('charm and general relics', () => {
     expect(rec.chips! - finishFight(plain, g).chips!).toBe(4);
   });
 
-  it('charm-on-symbol relics widen charm targets', () => {
+  it("gold fits BRIAR's thorns natively (GRAFT retired), vamp doesn't; VAMPIRE'S KISS widens vamp", () => {
     const run = createRun(base, 3, 'thorn');
-    expect(charmSymbols(run, 'gold')).not.toContain('thorn');
-    run.player.relics.push('graft');
     expect(charmSymbols(run, 'gold')).toContain('thorn');
+    expect(charmSymbols(run, 'vamp')).not.toContain('thorn');
     expect(charmSymbols(run, 'keen')).not.toContain('thorn');
     run.player.relics.push('kiss');
     expect(charmSymbols(run, 'vamp')).toEqual(expect.arrayContaining(['shield', 'goldbar']));
