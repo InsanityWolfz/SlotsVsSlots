@@ -12,7 +12,7 @@ import { CHARM_SYMBOLS, charmRuleText } from '../core/charms';
 import { STAKES } from '../core/stakes';
 import { RelicTips } from './relicTip';
 import type { Clock } from '../present/clock';
-import { sineOut } from '../present/ease';
+import { backOut, sineOut } from '../present/ease';
 import { COLORS, H, W } from '../present/layout';
 import { ENH_SPRITE } from '../present/reel';
 import { SPRITES } from '../render/spriteData';
@@ -25,7 +25,7 @@ import { wrap } from './runScreens';
  * Out-of-run screens: LOADING (warms the sprite cache, then asks for a click so audio can start),
  * the MAIN MENU, the COLLECTION log and personal HISCORES.
  */
-export type MenuMode = 'none' | 'loading' | 'name' | 'main' | 'collection' | 'hiscores' | 'challenges' | 'trophies';
+export type MenuMode = 'none' | 'loading' | 'name' | 'main' | 'modes' | 'progress' | 'settings' | 'collection' | 'hiscores' | 'challenges' | 'trophies';
 /** HISCORES tabs: your own runs, or the online boards. */
 export type ScoreTab = 'mine' | 'daily' | 'weekly' | 'all';
 
@@ -114,8 +114,12 @@ export class Menus {
   private trophyTip = '';
   /** TROPHIES: each title chip's hover line. */
   private titleTips: { x: number; y: number; w: number; text: string }[] = [];
-  /** The main menu's big-row icons (the rows change once you've played a run). */
-  private mainIcons: string[] = [];
+  /** Icons drawn on menu buttons (main menu and sub-menus). */
+  private icons = new Map<Button, string>();
+  /** Where BACK (and Escape) goes from this screen. */
+  private back: (() => void) | null = null;
+  /** A sub-menu panel's entrance (0..1, overshoots). */
+  private panelIn = 1;
   private page = 0;
   private resetArmed = 0;
 
@@ -143,6 +147,8 @@ export class Menus {
       /** SOFT LIGHTNING option. */
       softLightning: () => boolean;
       setSoftLightning: (on: boolean) => void;
+      muted: () => boolean;
+      setMuted: (on: boolean) => void;
     },
   ) {}
 
@@ -159,6 +165,8 @@ export class Menus {
   private open(mode: MenuMode): void {
     if (mode !== 'name') this.dropInput();
     this.mode = mode;
+    this.back = null;
+    this.icons.clear();
     this.buttons = [];
     this.active = null;
     this.fade = 0;
@@ -189,78 +197,138 @@ export class Menus {
     this.open('main');
     const x = W / 2;
     const first = !this.cb.tutorialDone();
-    const newRun = this.btn('NEW RUN', x, 318, 380, 54, () => this.cb.onNewRun(), 3);
+    // Three things on the main screen: NEW RUN (the one red button), the play modes, your progress.
+    const newRun = this.btn('NEW RUN', x, 336, 400, 62, () => this.cb.onNewRun(), 3);
     newRun.opts.idlePulse = !first;
     newRun.opts.primary = true;
+    this.icons.set(newRun, 'iconNewRun');
+    let y = 412;
+    // First time here: the TUTORIAL sits right under NEW RUN and breathes.
+    if (first) {
+      const tut = this.btn('TUTORIAL', x, y, 400, 54, () => this.cb.onTutorial(), 3);
+      tut.opts.idlePulse = true;
+      this.icons.set(tut, 'iconTutorial');
+      y += 66;
+    }
+    this.icons.set(this.btn('PLAY MODES', x, y, 400, 54, () => this.showModes(), 3), 'chip');
+    this.icons.set(this.btn('PROGRESS', x, y + 66, 400, 54, () => this.showProgress(), 3), 'trophySmall');
+    const settings = this.btn('SETTINGS', W - 90, H - 30, 150, 34, () => this.showSettings(), 1.5);
+    settings.opts.quiet = true;
+    this.slideIn();
+  }
+
+  /** A sub-menu: its title, a BACK button, and its rows dealt in one by one. */
+  private openSub(mode: MenuMode, back: () => void): void {
+    this.open(mode);
+    this.back = back;
+    this.btn('BACK', 100, 44, 140, 48, back);
+    this.panelIn = 0;
+    void this.ui.tween({ from: 0, to: 1, dur: 0.3, ease: backOut(1.6), onUpdate: (v) => (this.panelIn = v) });
+  }
+
+  /** Every button but BACK drops into place, 40ms apart (BACK stays put). */
+  private slideIn(): void {
+    this.buttons
+      .filter((b) => b.label !== 'BACK')
+      .forEach((b, i) => {
+        const y = b.y;
+        b.y = y + 24;
+        b.scale = 0.9;
+        void this.ui.wait(0.05 + i * 0.04).then(() => {
+          void this.ui.to(b, 'y', y, 0.22, backOut(2));
+          return this.ui.to(b, 'scale', 1, 0.22, backOut(2));
+        });
+      });
+  }
+
+  /** The rows inside a sub-menu panel (first row's centre). */
+  private static readonly SUB_Y = 284;
+  private static readonly SUB_PITCH = 84;
+
+  /** PLAY MODES: the daily, the weekly, the challenges and the tutorial. */
+  showModes(): void {
+    this.openSub('modes', () => this.showMain());
+    const x = W / 2;
+    const row = (i: number) => Menus.SUB_Y + i * Menus.SUB_PITCH;
     // THE DAILY RUN: today's slot machine, one try a day (then its score).
     const today = dailyKey();
     const run = this.profile().runs.find((e) => e.daily === today);
     const done = dailySpent(today, this.profile().lastDaily);
-    const label = run ? `DAILY: ${runScore(run)}` : done ? 'DAILY: SPENT' : `DAILY: ${CABINETS[dailyCabinet(today)].name} + ${EDGE_TEXT[dailyEdge(today)].title}`;
-    const daily = this.btn(label, x, 380, 380, 54, () => !done && this.cb.onDaily(), label.length > 20 ? 1.5 : label.length > 14 ? 2 : 3);
+    // The machine on the button, today's rule in the caption under it.
+    const label = run ? `DAILY: ${runScore(run)}` : done ? 'DAILY: SPENT' : `DAILY: ${CABINETS[dailyCabinet(today)].name}`;
+    const daily = this.btn(label, x, row(0), 440, 54, () => !done && this.cb.onDaily(), label.length > 20 ? 2 : 3);
     daily.toggled = done;
-    // THE WEEKLY CHALLENGE gets its own row once you've played a run (the TUTORIAL moves to the small row).
-    const veteran = !first && this.profile().stats.runs > 0;
-    this.mainIcons = ['iconNewRun', 'chip'];
-    if (veteran) {
-      const key = weekKey();
-      const wk = weekly(key);
-      const best = this.profile().challenges[`weekly:${key}`];
-      // Short: the machine (or your best); the week's edges are on the CHALLENGES screen and the run's first card.
-      const wl = best ? `WEEKLY: BEST ${best.best}` : `WEEKLY: ${CABINETS[wk.cabinet].name}`;
-      this.btn(wl, x, 442, 380, 54, () => this.cb.onWeekly(), wl.length > 18 ? 2 : 3);
-      this.btn('CHALLENGES', x, 504, 380, 54, () => this.showChallenges(), 3);
-      this.mainIcons.push('trophySmall', 'trophySmall');
-      const w = 89;
-      this.btn('TUTORIAL', x - 1.5 * (w + 8), 566, w, 54, () => this.cb.onTutorial(), 1.25);
-      this.btn('COLLECTION', x - 0.5 * (w + 8), 566, w, 54, () => this.showCollection(), 1.25);
-      this.btn('TROPHIES', x + 0.5 * (w + 8), 566, w, 54, () => this.showTrophies(), 1.25);
-      this.btn('HISCORES', x + 1.5 * (w + 8), 566, w, 54, () => this.showHiscores(), 1.25);
-    } else {
-      this.btn('CHALLENGES', x, 442, 380, 54, () => this.showChallenges(), 3);
-      this.btn('TUTORIAL', x, 504, 380, 54, () => this.cb.onTutorial(), 3).opts.idlePulse = first;
-      this.mainIcons.push('trophySmall', 'iconTutorial');
-      this.btn('COLLECTION', x - 128, 566, 124, 54, () => this.showCollection(), 1.5);
-      this.btn('TROPHIES', x, 566, 124, 54, () => this.showTrophies(), 1.5);
-      this.btn('HISCORES', x + 128, 566, 124, 54, () => this.showHiscores(), 1.5);
-    }
-    // Settings sit small and dim in the bottom row: the title should lead the eye to NEW RUN.
-    const light = this.btn(this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL', 265, H - 30, 200, 32, () => {
+    this.icons.set(daily, 'chip');
+    // THE WEEKLY CHALLENGE: the machine (or your best); its rules are on the CHALLENGES screen and the run's first card.
+    const key = weekKey();
+    const best = this.profile().challenges[`weekly:${key}`];
+    const wl = best ? `WEEKLY: BEST ${best.best}` : `WEEKLY: ${CABINETS[weekly(key).cabinet].name}`;
+    this.icons.set(this.btn(wl, x, row(1), 440, 54, () => this.cb.onWeekly(), wl.length > 18 ? 2 : 3), 'voucherBonus');
+    this.icons.set(this.btn('CHALLENGES', x, row(2), 440, 54, () => this.showChallenges(), 3), 'trophySmall');
+    this.icons.set(this.btn('TUTORIAL', x, row(3), 440, 54, () => this.cb.onTutorial(), 3), 'iconTutorial');
+    this.slideIn();
+  }
+
+  /** PROGRESS: the collection, trophies and hiscores. */
+  showProgress(): void {
+    this.openSub('progress', () => this.showMain());
+    const x = W / 2;
+    const row = (i: number) => Menus.SUB_Y + 40 + i * Menus.SUB_PITCH;
+    this.icons.set(this.btn('COLLECTION', x, row(0), 440, 54, () => this.showCollection(), 3), 'iconCollection');
+    this.icons.set(this.btn('TROPHIES', x, row(1), 440, 54, () => this.showTrophies(), 3), 'trophySmall');
+    this.icons.set(this.btn('HISCORES', x, row(2), 440, 54, () => this.showHiscores(), 3), 'iconHiscores');
+    this.slideIn();
+  }
+
+  /** SETTINGS: sound, the lightning (photosensitivity) option, and RESET SAVE (two clicks). */
+  showSettings(): void {
+    this.openSub('settings', () => this.showMain());
+    const x = W / 2;
+    const row = (i: number) => Menus.SUB_Y + i * Menus.SUB_PITCH;
+    const soundLabel = () => (this.cb.muted() ? 'SOUND: OFF' : 'SOUND: ON');
+    const sound = this.btn(soundLabel(), x, row(0), 440, 54, () => {
+      this.cb.setMuted(!this.cb.muted());
+      sound.label = soundLabel();
+      sound.toggled = this.cb.muted();
+    }, 3);
+    sound.toggled = this.cb.muted();
+    const lightLabel = () => (this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL');
+    const light = this.btn(lightLabel(), x, row(1), 440, 54, () => {
       this.cb.setSoftLightning(!this.cb.softLightning());
-      light.label = this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL';
+      light.label = lightLabel();
       light.toggled = this.cb.softLightning();
-    });
+    }, 3);
     light.toggled = this.cb.softLightning();
-    light.opts.quiet = true;
-    light.opts.textScale = 1.5;
     this.resetArmed = 0;
-    const reset = this.btn('RESET SAVE', 455, H - 30, 160, 32, () => {
+    const reset = this.btn('RESET SAVE', x, row(3), 300, 44, () => {
       if (performance.now() - this.resetArmed < 400) return;
       if (!this.resetArmed) {
         this.resetArmed = performance.now();
+        // Armed: it turns into the red button for a moment, so the second click is a clear choice.
         reset.label = 'SURE? CLICK AGAIN';
-        reset.w = 220;
-        reset.x = 485;
+        reset.opts.primary = true;
+        reset.opts.quiet = false;
         this.sounds.fizzle();
         setTimeout(() => {
-          if (this.mode !== 'main') return;
+          if (this.mode !== 'settings') return;
           this.resetArmed = 0;
           reset.label = 'RESET SAVE';
-          reset.w = 160;
-          reset.x = 455;
+          reset.opts.primary = false;
+          reset.opts.quiet = true;
         }, 2500);
         return;
       }
       this.cb.onReset();
       this.showMain();
-    });
+    }, 2);
     reset.opts.quiet = true;
-    reset.opts.textScale = 1.5;
+    this.slideIn();
   }
 
   showCollection(): void {
     this.open('collection');
-    this.btn('BACK', 100, 44, 140, 48, () => this.showMain());
+    this.back = () => this.showProgress();
+    this.btn('BACK', 100, 44, 140, 48, () => this.showProgress());
   }
 
   showHiscores(): void {
@@ -282,7 +350,8 @@ export class Menus {
 
   private hiscoreButtons(): void {
     this.buttons = [];
-    this.btn('BACK', 100, 44, 140, 48, () => this.showMain());
+    this.back = () => this.showProgress();
+    this.btn('BACK', 100, 44, 140, 48, () => this.showProgress());
     (['mine', 'daily', 'weekly', 'all'] as ScoreTab[]).forEach((tab, i) => {
       const b = this.btn({ mine: 'MY RUNS', daily: 'TODAY', weekly: 'THIS WEEK', all: 'ALL TIME' }[tab], W / 2 + (i - 1.5) * 168, 100, 160, 40, () => {
         this.tab = tab;
@@ -447,7 +516,8 @@ export class Menus {
 
   showChallenges(): void {
     this.open('challenges');
-    this.btn('BACK', 100, 44, 140, 48, () => this.showMain());
+    this.back = () => this.showModes();
+    this.btn('BACK', 100, 44, 140, 48, () => this.showModes());
     this.btn('PLAY', W - 170, 150, 180, 54, () => this.cb.onWeekly(), 3);
     const rec = this.profile().challenges;
     CHALLENGES.forEach((c, i) => {
@@ -509,7 +579,8 @@ export class Menus {
 
   private trophyButtons(): void {
     this.buttons = [];
-    this.btn('BACK', 100, 44, 140, 48, () => this.showMain());
+    this.back = () => this.showProgress();
+    this.btn('BACK', 100, 44, 140, 48, () => this.showProgress());
     const p = this.profile();
     const owned = new Set(titlesOwned(levelOf(p.xp).level, p.challenges));
     const shown = shownTitle(p);
@@ -660,6 +731,12 @@ export class Menus {
       if ((k === ' ' || k === 'enter') && this.ready) this.pointerDown(0, 0);
       return true;
     }
+    // Escape: one screen back (sub-screen -> its sub-menu -> the main menu).
+    if (k === 'escape' && this.back) {
+      this.sounds.click();
+      this.back();
+      return true;
+    }
     return this.isOpen;
   }
 
@@ -683,6 +760,7 @@ export class Menus {
     ctx.globalAlpha = this.fade;
     if (this.mode === 'loading') this.drawLoading(ctx, t);
     else if (this.mode === 'main') this.drawMain(ctx, t);
+    else if (this.mode === 'modes' || this.mode === 'progress' || this.mode === 'settings') this.drawSub(ctx, t);
     else if (this.mode === 'collection') this.drawCollection(ctx);
     else if (this.mode === 'hiscores') {
       this.relicTips.begin();
@@ -694,13 +772,9 @@ export class Menus {
     for (const b of this.buttons) b.draw(ctx, t);
     if (this.mode === 'trophies') this.drawTrimRow(ctx);
     if (this.mode === 'hiscores') this.relicTips.draw(ctx, this.mouse.x, this.mouse.y);
-    if (this.mode === 'main') {
-      // Icons on the menu buttons (over them, scaled with their press).
-      const icons = this.mainIcons;
-      this.buttons.slice(0, 4).forEach((b, i) => {
-        if (hasSprite(icons[i])) drawSprite(ctx, artId(icons[i]), b.x - (b.w / 2 - 38) * b.scale, b.y, 2.5 * b.scale);
-      });
-    }
+    // Icons on the menu buttons (over them, scaled with their press).
+    for (const [b, icon] of this.icons)
+      if (b.visible && hasSprite(icon)) drawSprite(ctx, artId(icon), b.x - (b.w / 2 - 38) * b.scale, b.y, 2.5 * b.scale);
     ctx.restore();
   }
 
@@ -744,26 +818,69 @@ export class Menus {
     ctx.fillRect(0, 0, W, H);
     this.logo(ctx, 130, t);
     drawText(ctx, 'A SLOT MACHINE ROGUELIKE', W / 2, 238, 2, COLORS.textDim);
-    // Your unlocked heroes on the left, their machines on the right.
-    const open = this.unlocked();
-    CABINET_ORDER.forEach((id, i) => {
-      const on = open.has(id);
-      const y = 300 + i * 70;
-      const bob = on ? Math.sin(t * 2 + i) * 2 : 0;
-      drawSprite(ctx, on ? heroSprite(id) : 'playerPortrait', 190, y + bob, 2.5, on ? {} : { variant: 'black', alpha: 0.5 });
-      drawText(ctx, on ? CABINETS[id].hero : '???', 240, y, 2, on ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
-      drawText(ctx, on ? CABINETS[id].name : 'LOCKED', 240, y + 20, 1.25, COLORS.textDim, { align: 'left' });
-    });
-    drawSprite(ctx, 'cabinetKnight', W - 250, 440, 4.5, { rot: Math.sin(t * 1.3) * 0.02 });
-    if (hasSprite('menuBackdrop')) drawSprite(ctx, artId('menuBackdrop'), W / 2, 646, 3);
-    const p = this.profile();
-    const found = p.found.relics.length + p.found.charms.length;
-    const total = RELIC_ORDER.length + CHARM_ORDER.length;
-    const best = p.runs.reduce((m, e) => Math.max(m, runScore(e)), 0);
-    drawText(ctx, `COLLECTION ${found}/${total}   RUNS ${p.stats.runs}   BEST ${best}`, W / 2, 604, 1.5, COLORS.textDim);
+    // The showcase: one unlocked hero (left) and their Slot Machine (right), taking turns every few seconds.
+    const open = CABINET_ORDER.filter((id) => this.unlocked().has(id));
+    if (open.length) {
+      const period = 4;
+      const id = open[Math.floor(t / period) % open.length];
+      const local = t % period;
+      // Each swap pops in: a quick squash from thin to full width, then a soft settle.
+      const pop = open.length > 1 ? Math.min(1, local / 0.18) : 1;
+      const sx = pop < 1 ? 0.2 + 0.8 * pop : 1 + 0.06 * Math.max(0, 1 - (local - 0.18) / 0.25);
+      drawSprite(ctx, heroSprite(id), 210, 430 + Math.sin(t * 2) * 3, 5, { sx });
+      drawText(ctx, CABINETS[id].hero, 210, 520, 2, COLORS.goldLight, { alpha: pop });
+      drawText(ctx, CABINETS[id].name, 210, 542, 1.5, COLORS.textDim, { alpha: pop });
+      const cab = (hasSprite(CABINETS[id].sprite) ? CABINETS[id].sprite : 'cabinetKnight') as SpriteId;
+      drawSprite(ctx, cab, W - 220, 430, 4, { rot: Math.sin(t * 1.3) * 0.02, sx });
+    }
+    if (hasSprite('menuBackdrop')) drawSprite(ctx, artId('menuBackdrop'), W / 2, 666, 3);
     this.badge(ctx, W / 2, 20);
-    if (!this.cb.tutorialDone()) drawText(ctx, 'NEW HERE? TRY THE TUTORIAL', W / 2, 268, 2, COLORS.goldLight, { alpha: 0.6 + 0.4 * Math.sin(t * 4) });
+    if (!this.cb.tutorialDone()) drawText(ctx, 'NEW HERE? TRY THE TUTORIAL', W / 2, 270, 2, COLORS.goldLight, { alpha: 0.6 + 0.4 * Math.sin(t * 4) });
     drawText(ctx, 'PLAYTEST BUILD', 20, H - 20, 1.5, COLORS.textDim, { align: 'left' });
+  }
+
+  /** A sub-menu (PLAY MODES, PROGRESS, SETTINGS): a small logo, the title, and a panel the rows sit in. */
+  private drawSub(ctx: CanvasRenderingContext2D, t: number): void {
+    const title = this.mode === 'modes' ? 'PLAY MODES' : this.mode === 'progress' ? 'PROGRESS' : 'SETTINGS';
+    if (hasSprite('logo')) drawSprite(ctx, artId('logo'), W / 2, 66 + Math.sin(t * 2) * 2, 2);
+    const k = this.panelIn;
+    const top = Menus.SUB_Y - 96;
+    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 2 * Menus.SUB_PITCH + 52 : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
+    const pw = 540;
+    // The panel rises in (no alpha on the layered frame: a half-faded gold rim tints the panel brown).
+    ctx.save();
+    ctx.translate(0, (1 - k) * 24);
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(W / 2 - pw / 2 - 6, top - 6, pw + 12, bottom - top + 12);
+    ctx.fillStyle = COLORS.gold;
+    ctx.fillRect(W / 2 - pw / 2 - 3, top - 3, pw + 6, bottom - top + 6);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(W / 2 - pw / 2, top, pw, bottom - top);
+    drawText(ctx, title, W / 2, top + 32, 3, COLORS.goldLight);
+    ctx.restore();
+    const cap = (text: string, i: number, color: string = COLORS.textDim) => drawText(ctx, text, W / 2, Menus.SUB_Y + i * Menus.SUB_PITCH + 40, 1.25, color, { alpha: Math.max(0, Math.min(1, k)) });
+    if (this.mode === 'modes') {
+      cap(`TODAY: ${EDGE_TEXT[dailyEdge(dailyKey())].title}. ONE TRY, THE SAME RUN FOR EVERYONE`, 0);
+      cap('THIS WEEK\'S RULES. AS MANY TRIES AS YOU LIKE', 1);
+      cap('SET RUNS WITH A TWIST. EACH CLEAR EARNS A TITLE', 2);
+      cap('LEARN THE BASICS IN ONE FIGHT', 3);
+    } else if (this.mode === 'progress') {
+      const p = this.profile();
+      const found = p.found.relics.length + p.found.charms.length;
+      const total = RELIC_ORDER.length + CHARM_ORDER.length;
+      const best = p.runs.reduce((m, e) => Math.max(m, runScore(e)), 0);
+      drawText(ctx, `COLLECTION ${found}/${total}   RUNS ${p.stats.runs}   BEST ${best}`, W / 2, Menus.SUB_Y - 4, 1.5, COLORS.textDim, { alpha: Math.max(0, Math.min(1, k)) });
+    } else {
+      // The M key toggles sound too: keep the button's label in step.
+      const sb = this.buttons.find((b) => b.label.startsWith('SOUND'));
+      if (sb) {
+        sb.label = this.cb.muted() ? 'SOUND: OFF' : 'SOUND: ON';
+        sb.toggled = this.cb.muted();
+      }
+      cap('M ALSO TURNS THE SOUND ON AND OFF', 0);
+      cap('SOFT: GENTLER LIGHTNING, NO BIG FLASHES', 1);
+      cap('ERASES YOUR UNLOCKS, COLLECTION AND SCORES', 3, '#ff8a7a');
+    }
   }
 
   private tile(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, border: string, hover: boolean): void {

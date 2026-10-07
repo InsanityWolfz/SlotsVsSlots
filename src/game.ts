@@ -246,6 +246,8 @@ export class Game {
         this.prefs.juice.softLightning = on;
         this.applyJuice();
       },
+      muted: () => this.prefs.muted,
+      setMuted: (on) => this.setMuted(on),
     });
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
     this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {
@@ -333,8 +335,8 @@ export class Game {
     if (this.buildOpen && this.drawerLive()) this.autoBtn.visible = this.spinBtn.visible = false;
     for (const b of this.recapBtns) b.visible = this.phase === 'recap';
     for (const b of this.buttons) if (b.label === 'TUNE' || b.label === 'LOG') b.visible = this.screens.mode !== 'cabinet' && !(b.label === 'TUNE' && this.publicBuild);
-    this.muteBtn.visible = this.screens.mode !== 'cabinet' && this.menus.mode !== 'loading' && this.menus.mode !== 'collection' && this.menus.mode !== 'hiscores';
-    // On menus SOUND sits in the bottom-right corner (bottom-right: the corner clear of every menu's buttons).
+    // On the menus SOUND lives in SETTINGS (the main menu stays clear); M still toggles it everywhere.
+    this.muteBtn.visible = this.screens.mode !== 'cabinet' && !this.menus.isOpen;
     Object.assign(this.muteBtn, this.menus.isOpen ? { x: W - 70, y: H - 30 } : { x: MACHINE_CX.enemy + 140, y: 648 });
     if (this.menus.isOpen) this.toolButtons!.tune.visible = this.toolButtons!.log.visible = false;
     this.noteDiscoveries();

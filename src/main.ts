@@ -90,6 +90,8 @@ window.addEventListener('keydown', (e) => {
   else if (k === 'escape') {
     tuning?.toggle(false);
     log.toggle(false);
+    // The menus: one screen back.
+    if (game.key(k)) e.preventDefault();
   } else if (game.key(k)) e.preventDefault();
 });
 
