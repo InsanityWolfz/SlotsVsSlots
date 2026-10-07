@@ -74,11 +74,13 @@ canvas.addEventListener('pointerdown', (e) => {
   goFullscreen();
   canvas.setPointerCapture(e.pointerId);
   // Touch has no hover: a tap first "hovers" where it lands (tooltips, collection tiles).
+  game.setTouch(e.pointerType !== 'mouse');
   if (e.pointerType !== 'mouse') game.pointerMove(...toLogical(e));
   game.pointerDown(...toLogical(e));
 });
 canvas.addEventListener('pointerup', (e) => game.pointerUp(...toLogical(e)));
 canvas.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'mouse') game.setTouch(false);
   canvas.style.cursor = game.pointerMove(...toLogical(e)) ? 'pointer' : 'default';
 });
 window.addEventListener('keydown', (e) => {

@@ -12,9 +12,7 @@ import {
   BIG_SETS,
   describeChoice,
   type BigChoice,
-  type BigChoiceId,
   BIG,
-  SAFE_CHOICES,
   describeOption,
   enemyHp,
   mirrorCopy,
@@ -132,6 +130,8 @@ const SHELF = { y: [262, 440], gap: 164 };
 const BET_X = CX - 200;
 /** The shop's price tags (they buy): size and offset under the item's centre. */
 const TAG = { w: 108, h: 40, y: 70 };
+/** The enemy card's flip tab (bottom-right): big enough for a thumb. */
+const FLIP_TAB = { w: 40, h: 32 };
 const BET_Y = 540;
 
 /** The casino floor behind every run screen: a dark carpet with a faint diamond weave (cached). */
@@ -221,20 +221,7 @@ const BOSS_HEADLINE: Record<string, string> = {
   dealer: 'IT CAN NOT KILL YOU BEFORE ITS FIRST DEAL',
 };
 
-/**
- * A BIG CHOICE card's look (display only, never a hint about which pick is better):
- * - broken: a huge effect with a real cost. It looks tempting and dangerous (a red frame, embers, a gold sheen).
- * - safe: no cost. A calm, cool stage.
- * - normal: everything else.
- * New choices default to normal (or safe when they carry no cost); list a new broken one here.
- */
-type ChoiceTier = 'normal' | 'broken' | 'safe';
-const BROKEN_CHOICES: ReadonlySet<BigChoiceId> = new Set<BigChoiceId>(['masterwork', 'meltDown', 'glassCannon']);
-const choiceTier = (id: BigChoiceId, cost: string): ChoiceTier => (BROKEN_CHOICES.has(id) ? 'broken' : SAFE_CHOICES.has(id) || !cost ? 'safe' : 'normal');
-const TIER_FRAME: Record<ChoiceTier, string> = { normal: COLORS.gold, broken: '#ff3b30', safe: COLORS.gold };
-const TIER_NAME: Record<ChoiceTier, string> = { normal: '#ff9a3a', broken: '#ff6a5a', safe: COLORS.goldLight };
-/** The stage behind a card's art: warm, ominous red, or cool. */
-const TIER_STAGE: Record<ChoiceTier, string> = { normal: '#5a3a14', broken: '#6a0e14', safe: '#1e3a5a' };
+/** Every BIG CHOICE card looks the same: no tier, no hint which pick is strong or safe. The player decides. */
 const plural = (s: SymbolId) => `${symLabel(s)}S`;
 
 /**
@@ -299,6 +286,8 @@ export class RunScreens {
   /** The enemy cards: flip (0 front, 1 back) and hover start, keyed by the card's x. */
   private flips = new Map<number, number>();
   private hoverSince = new Map<number, number>();
+  /** The last pointer was a finger: no hover-to-flip (a tap left a stuck "hover" that flipped the card). */
+  touch = false;
   /** A tap flips a card for touch players (the card's x, or -1). */
   private pinned = -1;
   private frameDt = 0;
@@ -774,8 +763,8 @@ export class RunScreens {
     this.stamp = 0;
     this.choiceHoverAt = [];
     const n = choices.length;
-    const w = n > 3 ? 222 : 282;
-    const pitch = w + 18;
+    const w = n > 3 ? 214 : 282;
+    const pitch = w + 16;
     this.cards = choices.map((c, i) =>
       this.hit(CX + (i - (n - 1) / 2) * pitch, 398, w, 352, () => {
         if (this.picked >= 0) return;
@@ -830,66 +819,37 @@ export class RunScreens {
     const run = this.run!;
     const { title } = describeChoice(run, ch);
     const { effect, cost } = choiceShort(run, ch);
-    const tier = choiceTier(ch.id, cost);
     const picked = this.picked === i;
     const dimmed = this.picked >= 0 && !picked;
     const w = c.w;
     const h = c.h;
     const hover = c.hover && this.picked < 0;
     ctx.save();
-    ctx.globalAlpha *= dimmed ? 0.3 : 1;
     ctx.translate(c.x, c.y + c.lift + (dimmed ? 16 * this.stamp : 0));
     ctx.scale(c.scale, c.scale);
-    // Glow: a broken card smoulders red all the time; any card lights up under the pointer (local, never full-screen).
-    const glow = tier === 'broken' ? 0.18 + 0.08 * Math.sin(time * 3) + (hover ? 0.15 : 0) : hover ? 0.3 + 0.1 * Math.sin(time * 6) : 0;
-    if (glow > 0) {
+    // Under the pointer a card lights up (a local glow, never full-screen).
+    if (hover) {
       ctx.save();
-      ctx.shadowColor = tier === 'broken' ? '#ff3b30' : TIER_NAME[tier];
-      ctx.shadowBlur = 26;
-      ctx.globalAlpha *= glow;
-      ctx.fillStyle = tier === 'broken' ? '#ff3b30' : TIER_NAME[tier];
+      ctx.shadowColor = COLORS.goldLight;
+      ctx.shadowBlur = 24;
+      ctx.globalAlpha *= 0.3 + 0.1 * Math.sin(time * 6);
+      ctx.fillStyle = COLORS.goldLight;
       ctx.fillRect(-w / 2, -h / 2, w, h);
       ctx.restore();
     }
-    const frame = hover || picked ? (tier === 'broken' ? '#ff8a7a' : COLORS.goldLight) : TIER_FRAME[tier];
-    this.panel(ctx, -w / 2, -h / 2, w, h, frame);
+    this.panel(ctx, -w / 2, -h / 2, w, h, hover || picked ? COLORS.goldLight : COLORS.gold);
     // Name band.
-    ctx.fillStyle = tier === 'broken' ? '#2a0c12' : COLORS.panelLight;
+    ctx.fillStyle = COLORS.panelLight;
     ctx.fillRect(-w / 2, -h / 2, w, 44);
-    drawText(ctx, title, 0, -h / 2 + 23, title.length * 18 <= w - 20 ? 3 : 2.5, TIER_NAME[tier]);
+    drawText(ctx, title, 0, -h / 2 + 23, title.length * 18 <= w - 20 ? 3 : 2.5, '#ff9a3a');
     // The stage: a lit box the art stands in.
     const sy = -h / 2 + 52;
     const sh = 150;
     const g = ctx.createRadialGradient(0, sy + sh / 2, 6, 0, sy + sh / 2, w * 0.6);
-    g.addColorStop(0, TIER_STAGE[tier]);
+    g.addColorStop(0, '#4a3418');
     g.addColorStop(1, COLORS.panel);
     ctx.fillStyle = g;
     ctx.fillRect(-w / 2 + 8, sy, w - 16, sh);
-    if (tier === 'broken') {
-      // A gold sheen sweeps the stage every few seconds; embers drift up from the cost.
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(-w / 2 + 8, sy, w - 16, sh);
-      ctx.clip();
-      const sx = -w / 2 - 60 + ((time * 160) % (w + 400));
-      ctx.fillStyle = 'rgba(255,236,150,0.16)';
-      ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.lineTo(sx + 18, sy);
-      ctx.lineTo(sx - 42, sy + sh);
-      ctx.lineTo(sx - 60, sy + sh);
-      ctx.fill();
-      ctx.restore();
-      for (let k = 0; k < 7; k++) {
-        const ex = -w / 2 + 20 + ((k * 53) % (w - 40));
-        const rise = (time * (24 + k * 3) + k * 41) % 150;
-        ctx.fillStyle = k % 2 ? '#ff6a3a' : '#ffb03a';
-        ctx.save();
-        ctx.globalAlpha *= Math.max(0, 1 - rise / 150) * 0.8;
-        ctx.fillRect(ex, h / 2 - 70 - rise, 3, 3);
-        ctx.restore();
-      }
-    }
     const big = w > 250 ? 5 : 4.2;
     const bob = hover ? Math.sin(time * 5) * 3 : Math.sin(time * 2 + i) * 1.5;
     this.drawChoiceArt(ctx, ch, 0, sy + sh / 2 + bob, big, time);
@@ -899,19 +859,24 @@ export class RunScreens {
     const lines = big2.length <= 2 ? big2 : wrap(effect, Math.floor((w - 24) / 9)).slice(0, 3);
     const es = big2.length <= 2 ? 2 : 1.5;
     lines.forEach((l, k) => drawText(ctx, l, 0, ey + (k - (lines.length - 1) / 2) * (es * 11), es, COLORS.text));
-    // The cost strip (only when it costs something).
-    const cy = h / 2 - 44;
+    // The cost strip (only when it costs something): it states the rule, the same look on every card.
+    const top = h / 2 - 80;
     if (cost) {
-      ctx.fillStyle = tier === 'broken' ? '#3a0a10' : '#2a0e14';
-      ctx.fillRect(-w / 2 + 8, cy - 26, w - 16, 60);
+      ctx.fillStyle = '#2a0e14';
+      ctx.fillRect(-w / 2 + 8, top, w - 16, 72);
       ctx.fillStyle = '#ff6a5a';
-      ctx.fillRect(-w / 2 + 8, cy - 26, w - 16, 2);
-      drawText(ctx, 'COST', 0, cy - 12, 1.5, '#ff6a5a');
+      ctx.fillRect(-w / 2 + 8, top, w - 16, 2);
+      drawText(ctx, 'COST', 0, top + 13, 1.5, '#ff6a5a');
       const cl = wrap(cost, Math.floor((w - 28) / 12));
       const cs = cl.length <= 2 ? 2 : 1.5;
-      const cls = cs === 2 ? cl : wrap(cost, Math.floor((w - 28) / 9)).slice(0, 2);
-      cls.forEach((l, k) => drawText(ctx, l, 0, cy + 10 + (k - (cls.length - 1) / 2) * (cs * 10), cs, '#ff8a7a'));
-    } else drawText(ctx, 'NO COST', 0, cy + 4, 1.5, COLORS.textDim);
+      const cls = cs === 2 ? cl : wrap(cost, Math.floor((w - 28) / 9)).slice(0, 3);
+      cls.forEach((l, k) => drawText(ctx, l, 0, top + 45 + (k - (cls.length - 1) / 2) * (cs * 10), cs, '#ff8a7a'));
+    } else drawText(ctx, 'NO COST', 0, top + 40, 1.5, COLORS.textDim);
+    // The cards not taken sink into shadow (a shade, not alpha: a faded frame tints the card brown).
+    if (dimmed) {
+      ctx.fillStyle = 'rgba(7,4,14,0.7)';
+      ctx.fillRect(-w / 2 - 6, -h / 2 - 6, w + 12, h + 12);
+    }
     // The pick: a TAKEN stamp slams on, tilted.
     if (picked && this.stamp > 0) {
       const k = this.stamp;
@@ -922,11 +887,11 @@ export class RunScreens {
       ctx.globalAlpha *= Math.min(1, k * 1.5);
       ctx.fillStyle = COLORS.outline;
       ctx.fillRect(-84, -26, 168, 52);
-      ctx.fillStyle = tier === 'broken' ? '#ff3b30' : COLORS.goldLight;
+      ctx.fillStyle = COLORS.goldLight;
       ctx.fillRect(-80, -22, 160, 44);
       ctx.fillStyle = COLORS.outline;
       ctx.fillRect(-74, -16, 148, 32);
-      drawText(ctx, 'TAKEN', 0, 1, 3, tier === 'broken' ? '#ff6a5a' : COLORS.goldLight);
+      drawText(ctx, 'TAKEN', 0, 1, 3, COLORS.goldLight);
       ctx.restore();
     }
     ctx.restore();
@@ -949,10 +914,6 @@ export class RunScreens {
       drawSprite(ctx, CHARM_SYMBOLS[enh][0] as SpriteId, sx, sy, sc);
       drawSprite(ctx, ENH_SPRITE[enh], sx, sy, sc);
     };
-    const cost = (sx: number, sy: number) => {
-      drawSprite(ctx, 'heart', sx, sy, 2.5);
-      drawSprite(ctx, 'minusBadge', sx + 12, sy + 10, 2);
-    };
     const LV = '#5ad8e8';
     switch (ch.id) {
       case 'armsRace':
@@ -961,7 +922,6 @@ export class RunScreens {
           drawSprite(ctx, sym as SpriteId, sx, y - 8, s * 0.65);
           tag('+1', sx, y + 34, LV, 2);
         });
-        cost(x + s * 22, y - 50);
         break;
       case 'masterwork': {
         const others = syms.filter((sym) => sym !== ch.symbol);
@@ -1023,7 +983,6 @@ export class RunScreens {
       case 'glassCannon':
         drawSprite(ctx, atk, x, y - 6, s);
         tag(`X${BIG.glassPay}`, x + s * 9, y + 30, COLORS.goldLight, 3);
-        cost(x - s * 12, y + 30);
         break;
       case 'bloodPact': {
         const m = cab.meter?.symbol as SpriteId | undefined;
@@ -1035,7 +994,6 @@ export class RunScreens {
           drawSprite(ctx, 'shield', x + s * 8, y - 4, s * 0.75);
           tag('+1', x, y + 34, LV, 2.5);
         }
-        cost(x - s * 14, y - 46);
         break;
       }
       case 'secondWind':
@@ -1045,7 +1003,7 @@ export class RunScreens {
         tag('+1', x + s * 12, y + 34, LV, 2);
         break;
       case 'edge':
-        drawSprite(ctx, (ch.reward === 'legend' ? artId('tierLegendary') : ch.reward === 'relic' ? artId('voucherRelic') : 'chip') as SpriteId, x, y, s);
+        drawSprite(ctx, (ch.reward === 'legend' ? artId('tierLegendary') : ch.reward === 'relic' ? artId('voucherRelic') : 'chip') as SpriteId, x, y, ch.reward === 'chips' ? s * 1.5 : s);
         break;
       case 'cashOut':
         [2, 1, 0].forEach((k) => drawSprite(ctx, 'chip', x - k * 8, y + 10 - k * 14, s * 0.8));
@@ -1405,12 +1363,13 @@ export class RunScreens {
     // A fresh screen ignores clicks for a moment, so a double-click can't buy on arrival (ITERATION_9 H8).
     if (performance.now() - this.openedAt < INPUT_GUARD_MS) return this.active;
     const h = this.all().find((h) => this.inside(h, x, y));
-    // A tap on an enemy card flips it (touch players can't hover).
+    // Only the card's "?" tab flips it (picking is the FIGHT button): one spot per action, so taps never mix them up.
     if (!h && this.mode === 'next' && this.run) {
       const fork = needsChoice(this.run);
       const xs = fork ? [CX - 464, CX + 12] : [CX - 330];
       const y0 = fork ? 222 : 214;
-      const hitX = xs.find((px) => x >= px && x <= px + (fork ? 452 : 660) && y >= y0 && y <= y0 + 260);
+      const cw = fork ? 452 : 660;
+      const hitX = xs.find((px) => x >= px + cw - FLIP_TAB.w - 16 && x <= px + cw && y >= y0 + 260 - FLIP_TAB.h - 16 && y <= y0 + 260);
       if (hitX !== undefined) {
         this.pinned = this.pinned === hitX ? -1 : hitX;
         this.sounds.click();
@@ -1764,7 +1723,7 @@ export class RunScreens {
     const inside = m.x >= x - 6 && m.x <= x + w + 6 && m.y >= y - 6 && m.y <= y + h + 6;
     if (inside && !this.hoverSince.has(x)) this.hoverSince.set(x, time);
     if (!inside) this.hoverSince.delete(x);
-    const want = (inside && time - (this.hoverSince.get(x) ?? time) >= 0.3) || this.pinned === x ? 1 : 0;
+    const want = (!this.touch && inside && time - (this.hoverSince.get(x) ?? time) >= 0.3) || this.pinned === x ? 1 : 0;
     let f = this.flips.get(x) ?? 0;
     f += (want - f) * Math.min(1, this.frameDt * 12);
     this.flips.set(x, f);
@@ -1800,6 +1759,17 @@ export class RunScreens {
     }
     if (back) this.drawPanelBack(ctx, e, w, pips);
     else this.drawPanelFront(ctx, e, w, h, time, inside, fork);
+    // The "?" tab (both sides): tap or click it to turn the card over (hovering does it too, with a mouse).
+    {
+      const tx0 = w - FLIP_TAB.w - 8;
+      const ty0 = h - FLIP_TAB.h - 8;
+      const lit = inside || back;
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(tx0 - 2, ty0 - 2, FLIP_TAB.w + 4, FLIP_TAB.h + 4);
+      ctx.fillStyle = lit ? COLORS.gold : COLORS.panelLight;
+      ctx.fillRect(tx0, ty0, FLIP_TAB.w, FLIP_TAB.h);
+      drawText(ctx, back ? 'X' : '?', tx0 + FLIP_TAB.w / 2, ty0 + FLIP_TAB.h / 2 + 1, 2.5, lit ? COLORS.outline : COLORS.goldLight);
+    }
     // At a fork, the card you're not looking at sinks back under a shade (alpha turned it muddy).
     if (other) {
       ctx.fillStyle = 'rgba(7,4,14,0.35)';
@@ -1808,10 +1778,10 @@ export class RunScreens {
     ctx.restore();
     // The relic tip for the Mirror's copy uses screen coordinates (front only).
     const copy = e.boss === 'mirror' && this.run ? mirrorCopy(this.run) : null;
-    if (copy && f < 0.1) this.tips.add(copy, x + w - 56, y + 228);
+    if (copy && f < 0.1) this.tips.add(copy, x + w - 86, y + 228);
   }
 
-  private drawPanelFront(ctx: CanvasRenderingContext2D, e: EnemyDef, w: number, h: number, time: number, hover: boolean, fork: boolean): void {
+  private drawPanelFront(ctx: CanvasRenderingContext2D, e: EnemyDef, w: number, _h: number, time: number, hover: boolean, fork: boolean): void {
     const run = this.run!;
     // The stage: a spotlit box with the portrait standing on it.
     const st = fork ? 92 : 116;
@@ -1895,8 +1865,8 @@ export class RunScreens {
       drawText(ctx, BOSS_HEADLINE[e.boss ?? ''] ?? '', 16, 228, 2, e.boss === 'mirror' ? '#c8f0ff' : COLORS.goldLight, { align: 'left' });
       const copy = e.boss === 'mirror' ? mirrorCopy(run) : null;
       if (copy) {
-        drawText(ctx, 'COPIES', w - 80, 228, 1.5, '#c8f0ff', { align: 'right' });
-        drawSprite(ctx, RELICS[copy].sprite as SpriteId, w - 56, 228, 2);
+        drawText(ctx, 'COPIES', w - 110, 228, 1.5, '#c8f0ff', { align: 'right' });
+        drawSprite(ctx, RELICS[copy].sprite as SpriteId, w - 86, 228, 2);
       }
     } else {
       let cx = 36;
@@ -1906,10 +1876,6 @@ export class RunScreens {
         cx += 40;
       }
     }
-    // "?" tab: says the card has a back.
-    ctx.fillStyle = COLORS.panelLight;
-    ctx.fillRect(w - 34, h - 30, 26, 22);
-    drawText(ctx, '?', w - 21, h - 19, 2, hover ? COLORS.goldLight : COLORS.textDim);
   }
 
   private drawPanelBack(ctx: CanvasRenderingContext2D, e: EnemyDef, w: number, danger: number): void {
@@ -1969,7 +1935,7 @@ export class RunScreens {
       drawText(ctx, `${n}`, cx + 20, 240, 2, COLORS.text, { align: 'left' });
       cx += 56;
     }
-    drawText(ctx, `DANGER ${danger} OF 3`, w - 14, 240, 1.5, COLORS.textDim, { align: 'right' });
+    drawText(ctx, `DANGER ${danger} OF 3`, w - FLIP_TAB.w - 20, 240, 1.5, COLORS.textDim, { align: 'right' });
   }
 
   private drawNext(ctx: CanvasRenderingContext2D, time: number): void {

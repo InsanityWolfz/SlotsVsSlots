@@ -1091,6 +1091,11 @@ export class Game {
     if (this.screens.active) this.screens.pointerUp(x, y);
   }
 
+  /** Touch or mouse: run screens drop hover-only behaviour for fingers. */
+  setTouch(touch: boolean): void {
+    this.screens.touch = touch;
+  }
+
   pointerMove(x: number, y: number): boolean {
     this.mouse = { x, y };
     let any = false;
