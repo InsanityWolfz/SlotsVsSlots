@@ -292,7 +292,7 @@ export const DEPTH_HP_3 = [120, 135, 150, 165, 180].map((h) => h * UNIT);
 export const ACT3_DEPTH_MUL = [1, 1.1, 1.2, 1.3, 1.4];
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5, 4: 3 };
 /** ENDLESS (act 4) tuning: per loop, enemy HP x hp^loop and damage x dmg^loop (EXPERT_PLAYTEST_3 D). */
-export const ENDLESS = { ramp: 0, hp: 1.45, hpBy: { knight: 1.05, tesla: 1.5, thorn: 1.45, joker: 1.28, midas: 1.3 } as Record<string, number>, dmgBy: { knight: 1.18, midas: 1.25 } as Record<string, number>, dmg: 1.35, houseHp: 3, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, bustKeep: 1 / 3, mirrorHp: 4, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
+export const ENDLESS = { ramp: 0.15, hp: 1.45, hpBy: { knight: 1.05, tesla: 1.5, thorn: 1.3, joker: 1.2, midas: 1.7 } as Record<string, number>, dmgBy: { knight: 1.18, midas: 1.35 } as Record<string, number>, dmg: 1.35, houseHp: 3, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, bustKeep: 1 / 3, mirrorHp: 4, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
 /**
  * ENDLESS: each loop multiplies enemy HP (and damage) by its base, and the step itself grows by RAMP every loop,
  * so the climb accelerates: loop L totals base^L x (1 + ramp)^(L(L-1)/2). Only broken builds should see loop 5.

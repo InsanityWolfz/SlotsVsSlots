@@ -1814,3 +1814,13 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   mirror 4.8 -> 3.4, dealer 7.5 -> 5; thorn house 3 -> 2, dealer 3.6 -> 3.2.
 - N1000: KNIGHT 43.7 / 18.6, TESLA 44.5 / 17.1, BRIAR 43.2 / 17.8, JAX 43.4 / 18.8, CASSIDY 43.2 / 17.5 (avg 43.6 /
   18.0). Tests: 238 (lien tests rewritten for the new rule).
+
+## Iteration 84 (2026-10-07): UI/UX audit rounds 1-2 (no balance change); endless ramps harder
+- UI: enemy headliner cards (front/back flip), one breathing button per screen, quiet tool row, drawer spring + scrim,
+  meter callout under the machine, level punch, bet chip stack, shop buy arc, death recap strip (playtest/UIUX_AUDIT*.md).
+  Official table (N1000) after the UI work is identical to iteration 83: WHITE 43.7/44.5/43.2/43.4/43.2, GREEN 18.6/17.1/17.8/18.8/17.5.
+- Endless: `ENDLESS.ramp` 0.15: loop L multiplies by base^L x 1.15^(L(L-1)/2), so the step grows each loop.
+  Per machine: hpBy thorn 1.45 -> 1.3, joker 1.28 -> 1.2, midas 1.3 -> 1.7; dmgBy midas 1.25 -> 1.35.
+- `tools/sim/endless.ts 400` (forced ride), riders reaching loop 5, before -> after:
+  KNIGHT 9 -> 1%, TESLA 22 -> 3%, BRIAR 12 -> 1%, JAX 1 -> 1%, CASSIDY 71 -> 9%. (Target: under 10% of riders on the greedy bot.)
+- Watch: BRIAR clears loop 2 at 96% then walls (5% clear loop 3). A best-of bot (sim step 2) should check the broken builds.
