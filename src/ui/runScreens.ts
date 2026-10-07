@@ -361,54 +361,58 @@ export class RunScreens {
     }
   }
 
+  /**
+   * RELIC RUSH, short: the engine plays the full hold-and-respin (same odds), and the screen shows it as three spins:
+   * the opening cells, then everything later respins landed, split over two more spins.
+   */
   private async playRushFrames(b: Extract<BonusPayout, { kind: 'rush' }>): Promise<void> {
-    await this.ui.wait(0.5);
-    for (const [k, frame] of b.frames.entries()) {
-      if (k > 0) {
-        if (this.rushRespins === 1) this.flashRushBanner('LAST SPIN!', '#ff6a5a');
-        // The empty cells spin: they tick fast, then slow down as the respin settles.
-        let next = 0;
-        const dur = 1.2;
-        await this.ui.tween({
-          from: 0,
-          to: 1,
-          dur,
-          onUpdate: (v) => {
-            if (v * dur < next) return;
-            next = v * dur + 0.045 + 0.22 * v * v;
-            this.rushFlicker = this.rushCells.map((c) => (c ? 0 : Math.random() < 0.45 ? 1 : 0));
-            this.sounds.click();
-          },
-        });
-        this.rushFlicker = Array(15).fill(0);
-        await this.ui.wait(0.18);
-      }
-      // New relics slam in one at a time.
-      for (const i of frame) {
+    const later = b.frames.slice(1).flat();
+    const half = Math.ceil(later.length / 2);
+    const spins = [b.frames[0] ?? [], later.slice(0, half), later.slice(half)];
+    await this.ui.wait(0.3);
+    for (const [k, cells] of spins.entries()) {
+      this.rushRespins = spins.length - k;
+      if (k === spins.length - 1) this.flashRushBanner('LAST SPIN!', '#ff6a5a');
+      // The empty cells spin: they tick fast, then slow down as the spin settles.
+      let next = 0;
+      const dur = 0.7;
+      await this.ui.tween({
+        from: 0,
+        to: 1,
+        dur,
+        onUpdate: (v) => {
+          if (v * dur < next) return;
+          next = v * dur + 0.04 + 0.16 * v * v;
+          this.rushFlicker = this.rushCells.map((c) => (c ? 0 : Math.random() < 0.45 ? 1 : 0));
+          this.sounds.click();
+        },
+      });
+      this.rushFlicker = Array(15).fill(0);
+      // New relics slam in, quickly.
+      for (const i of cells) {
         const before = rushTier(this.rushCells.filter(Boolean).length);
         this.rushCells[i] = 1;
         const count = this.rushCells.filter(Boolean).length;
-        void this.ui.tween({ from: 1, to: 0, dur: 0.45, onUpdate: (v) => (this.rushPop[i] = v) });
-        void this.ui.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (this.rushShake = v) });
+        void this.ui.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (this.rushPop[i] = v) });
+        void this.ui.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (this.rushShake = v) });
         this.sounds.coin(Math.min(14, 2 + count));
         const now = rushTier(count);
         if (now !== before) {
           this.sounds.fanfareJackpot();
           this.flashRushBanner(now === 'legendary' ? 'LEGENDARY!' : 'UNCOMMON!', now === 'legendary' ? '#ffd23f' : '#5ad8e8');
         } else if (count === RUSH.cells) this.flashRushBanner('GRAND!', '#ffd23f');
-        await this.ui.wait(k === 0 ? 0.18 : 0.32);
+        await this.ui.wait(0.12);
       }
+      this.rushPulseGood = cells.length > 0;
       if (k > 0) {
-        // A hit resets the respins (gold); a whiff burns one (red).
-        this.rushPulseGood = frame.length > 0;
-        this.rushRespins = frame.length ? 3 : this.rushRespins - 1;
-        if (frame.length) this.sounds.stingerMedium();
+        if (cells.length) this.sounds.stingerMedium();
         else this.sounds.fizzle();
-        void this.ui.tween({ from: 1, to: 0, dur: 0.5, onUpdate: (v) => (this.rushPulse = v) });
       }
-      await this.ui.wait(0.4);
+      void this.ui.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (this.rushPulse = v) });
+      await this.ui.wait(0.3);
     }
-    await this.ui.wait(0.4);
+    this.rushRespins = 0;
+    await this.ui.wait(0.3);
     this.bonusReveal();
   }
 
@@ -557,7 +561,7 @@ export class RunScreens {
     drawText(ctx, `RELICS ${count} / 15`, W / 2 - 120, 500, 3, '#c080ff');
     ctx.restore();
     const pulseCol = this.rushPulse > 0.05 ? (this.rushPulseGood ? '#ffd23f' : '#ff6a5a') : this.rushRespins <= 1 && !this.bonusLanded ? '#ff6a5a' : COLORS.text;
-    drawText(ctx, this.bonusLanded ? 'DONE' : `RESPINS ${this.rushRespins}`, W / 2 + 140, 500, 3, pulseCol, { punch: 1 + 0.35 * this.rushPulse });
+    drawText(ctx, this.bonusLanded ? 'DONE' : `SPINS LEFT ${this.rushRespins}`, W / 2 + 140, 500, 3, pulseCol, { punch: 1 + 0.35 * this.rushPulse });
     if (this.rushBanner && this.rushBanner.t > 0) {
       const t = this.rushBanner.t;
       drawText(ctx, this.rushBanner.text, W / 2, 110, 5, this.rushBanner.color, { punch: 1 + 0.4 * Math.max(0, t - 0.7) * 3, alpha: Math.min(1, t * 2.5) });
