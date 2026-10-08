@@ -1339,6 +1339,20 @@ export class RunScreens {
 
   // ---- input -------------------------------------------------------------------------
 
+  /** Keyboard / gamepad focus targets (STEAM_READINESS S3): everything clickable, plus the cards' "?" flip tabs. */
+  navTargets(): { x: number; y: number; w: number; h: number }[] {
+    if (!this.active || performance.now() - this.openedAt < INPUT_GUARD_MS) return [];
+    const out: { x: number; y: number; w: number; h: number }[] = this.all().filter((h) => h.enabled);
+    if (this.mode === 'next' && this.run) {
+      const fork = needsChoice(this.run);
+      const xs = fork ? [CX - 464, CX + 12] : [CX - 330];
+      const y0 = fork ? 222 : 214;
+      const cw = fork ? 452 : 660;
+      for (const px of xs) out.push({ x: px + cw - FLIP_TAB.w / 2 - 8, y: y0 + 260 - FLIP_TAB.h / 2 - 8, w: FLIP_TAB.w + 16, h: FLIP_TAB.h + 16 });
+    }
+    return out;
+  }
+
   private all(): Hit[] {
     if (this.mode === 'over' && this.results && this.resultsHit) return this.resultsCopy ? [this.resultsCopy, this.resultsHit] : [this.resultsHit];
     return [...this.cards.filter((c) => c.enabled), ...this.buttons, ...this.shopHits.filter((_, i) => !this.shopItems[i]?.sold), ...this.shopTags.filter((_, i) => !this.shopItems[i]?.sold)];

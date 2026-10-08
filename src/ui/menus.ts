@@ -159,6 +159,12 @@ export class Menus {
     },
   ) {}
 
+  /** Keyboard / gamepad focus targets (no focus while typing a name). */
+  navTargets(): Button[] {
+    if (this.mode === 'name' || this.mode === 'loading') return [];
+    return this.buttons.filter((b) => b.visible && b.enabled);
+  }
+
   get isOpen(): boolean {
     return this.mode !== 'none';
   }

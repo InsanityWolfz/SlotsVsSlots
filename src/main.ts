@@ -76,12 +76,19 @@ canvas.addEventListener('pointerdown', (e) => {
   canvas.setPointerCapture(e.pointerId);
   // Touch has no hover: a tap first "hovers" where it lands (tooltips, collection tiles).
   game.setTouch(e.pointerType !== 'mouse');
+  game.focus.hide();
   if (e.pointerType !== 'mouse') game.pointerMove(...toLogical(e));
   game.pointerDown(...toLogical(e));
 });
 canvas.addEventListener('pointerup', (e) => game.pointerUp(...toLogical(e)));
+let lastMouse = { x: -1, y: -1 };
 canvas.addEventListener('pointermove', (e) => {
   if (e.pointerType === 'mouse') game.setTouch(false);
+  // A real mouse move hands control back from the keyboard / gamepad focus.
+  if (Math.hypot(e.clientX - lastMouse.x, e.clientY - lastMouse.y) > 6) {
+    if (lastMouse.x >= 0) game.focus.hide();
+    lastMouse = { x: e.clientX, y: e.clientY };
+  }
   canvas.style.cursor = game.pointerMove(...toLogical(e)) ? 'pointer' : 'default';
 });
 window.addEventListener('keydown', (e) => {
@@ -116,10 +123,49 @@ document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: fals
 const crashContext = () => ({ phase: game.phase, machine: game.run?.cabinet, act: game.run?.act, seed: game.run?.seed, stake: game.run?.stake });
 installCrashHandlers(crashContext);
 
+// Gamepads (STEAM_READINESS S3): the d-pad / left stick move the focus, A presses, B / Start back out or pause,
+// X spins, Y toggles AUTO, the bumpers change speed. Edges only, with a repeat while a direction is held.
+const PAD: Record<number, string> = { 12: 'arrowup', 13: 'arrowdown', 14: 'arrowleft', 15: 'arrowright', 0: 'enter', 1: 'escape', 9: 'escape', 2: ' ', 3: 'a' };
+const padHeld = new Map<string, number>();
+let speedIdx = -1;
+function pollPads(now: number): void {
+  const pads = navigator.getGamepads?.() ?? [];
+  const down = new Set<string>();
+  for (const pad of pads) {
+    if (!pad) continue;
+    pad.buttons.forEach((b, i) => b.pressed && PAD[i] && down.add(PAD[i]));
+    const [ax, ay] = pad.axes;
+    if (ax < -0.5) down.add('arrowleft');
+    if (ax > 0.5) down.add('arrowright');
+    if (ay < -0.5) down.add('arrowup');
+    if (ay > 0.5) down.add('arrowdown');
+    if (pad.buttons[4]?.pressed) down.add('lb');
+    if (pad.buttons[5]?.pressed) down.add('rb');
+  }
+  for (const k of down) {
+    const t = padHeld.get(k);
+    const repeat = k.startsWith('arrow') && t !== undefined && now - t > 380;
+    if (t === undefined || repeat) {
+      padHeld.set(k, repeat ? now - 260 : now);
+      if (k === 'lb' || k === 'rb') {
+        speedIdx = Math.max(0, Math.min(3, (speedIdx < 0 ? 1 : speedIdx) + (k === 'rb' ? 1 : -1)));
+        game.key(String(speedIdx + 1));
+      } else game.key(k);
+    }
+  }
+  for (const k of [...padHeld.keys()]) if (!down.has(k)) padHeld.delete(k);
+}
+window.addEventListener('gamepadconnected', () => game.focus.hide());
+
 let last = performance.now();
 function frame(now: number): void {
   const dt = (now - last) / 1000;
   last = now;
+  try {
+    pollPads(now);
+  } catch {
+    /* no gamepad API */
+  }
   // One bad frame never stops the loop (STEAM_READINESS S13).
   try {
     game.update(dt);

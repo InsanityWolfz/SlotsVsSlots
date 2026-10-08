@@ -57,6 +57,7 @@ import { Recap } from './ui/recap';
 import { BUILD, CHIP_SPOT, RunScreens } from './ui/runScreens';
 import { drawRelicTip } from './ui/relicTip';
 import { Pause } from './ui/pause';
+import { Focus, type NavDir, type NavRect } from './ui/focus';
 import { VERSION } from './build';
 
 /** The fight HUD's relic tooltip starts under the player panel (EXPERT_PLAYTEST_12). */
@@ -147,6 +148,7 @@ function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
 /** Saves are crash-safe (STEAM_READINESS S11): every write first copies the last good value to `<key>.bak` (the live keys
  * never change names), and a save that fails to parse is set aside under `<key>.corrupt` and the backup loads instead. */
 const BAK = '.bak';
+const NAV_KEYS: Record<string, NavDir> = { arrowup: 'up', arrowdown: 'down', arrowleft: 'left', arrowright: 'right' };
 export type SettingKey = 'master' | 'music' | 'sfx' | 'shake' | 'motion' | 'fullscreen';
 /** Fullscreen through the browser API (the desktop wrapper's window follows it). */
 export function toggleFullscreen(on = !document.fullscreenElement): void {
@@ -220,6 +222,7 @@ export class Game {
   readonly screens: RunScreens;
   readonly menus: Menus;
   readonly coach = new Coach();
+  readonly focus = new Focus();
   readonly pause: Pause = new Pause(this.ui, () => this.sounds.click(), {
     onResume: () => this.setPaused(false),
     onSettings: () => {
@@ -1158,6 +1161,17 @@ export class Game {
     this.applyJuice();
   }
 
+  /** Everything the keyboard / gamepad focus can land on right now. */
+  navTargets(): NavRect[] {
+    if (this.coach.active) return [];
+    if (this.pause.open && !this.menus.isOpen) return this.pause.navTargets();
+    if (this.menus.isOpen) return [...this.menus.navTargets(), ...(this.muteBtn.visible ? [this.muteBtn] : [])];
+    const own = this.buttons.filter((b) => b.visible && b.enabled && !this.recapBtns.includes(b));
+    // Run screens draw over the fight's buttons: only their own targets count.
+    if (this.screens.active) return this.screens.navTargets();
+    return [...own, ...this.recapBtns.filter((b) => b.visible && b.enabled)];
+  }
+
   /** PAUSE is open to any run in progress (fights and between-fight screens), never on the title or menus. */
   pausable(): boolean {
     return !this.menus.isOpen && (this.phase === 'fighting' || this.phase === 'between' || this.phase === 'recap') && !!this.run && !this.run.over;
@@ -1288,6 +1302,32 @@ export class Game {
       else if (k === 's') this.skipTutorial();
       return true;
     }
+    // Keyboard / gamepad focus (STEAM_READINESS S3): arrows move it, Enter presses it.
+    const dir = NAV_KEYS[k];
+    if (dir) {
+      const t = this.focus.move(dir, this.navTargets());
+      if (t) this.pointerMove(t.x, t.y);
+      return !!t;
+    }
+    // Enter / A with no focus yet: show it (on the screen's first target) instead of doing nothing.
+    if (k === 'enter' && !this.focus.visible && !(this.menus.isOpen && (this.menus.mode === 'loading' || this.menus.mode === 'name'))) {
+      const t = this.focus.move('down', this.navTargets());
+      if (t) {
+        this.pointerMove(t.x, t.y);
+        return true;
+      }
+    }
+    if (k === 'enter' && this.focus.visible) {
+      const t = this.focus.current(this.navTargets());
+      if (t) {
+        this.pointerDown(t.x, t.y);
+        this.pointerUp(t.x, t.y);
+        // The screen may have changed under the press: re-hover what's under the focus now.
+        const n = this.focus.current(this.navTargets());
+        if (n) this.pointerMove(n.x, n.y);
+        return true;
+      }
+    }
     if (this.menus.isOpen && k !== 'm') {
       const was = this.menus.mode;
       const used = this.menus.key(k);
@@ -1369,6 +1409,7 @@ export class Game {
       ctx.restore();
       this.menus.draw(ctx, t);
       if (this.muteBtn.visible) this.muteBtn.draw(ctx, t);
+      if (this.focus.visible) this.focus.draw(ctx, this.navTargets(), t);
       return;
     }
     this.background.drawMarquee(ctx, t);
@@ -1415,6 +1456,7 @@ export class Game {
     for (const b of this.recapBtns) b.draw(ctx, t);
     this.coach.draw(ctx, t);
     this.pause.draw(ctx, t);
+    if (this.focus.visible) this.focus.draw(ctx, this.navTargets(), t);
   }
 
   private relicList() {

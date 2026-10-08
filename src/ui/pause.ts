@@ -54,6 +54,10 @@ export class Pause {
     if (DESKTOP) mk('QUIT TO DESKTOP', 4, () => cb.onQuitToDesktop());
   }
 
+  navTargets(): Button[] {
+    return this.open ? this.buttons : [];
+  }
+
   show(): void {
     this.open = true;
     this.armed = 0;
