@@ -920,7 +920,7 @@ export const POWER_REF: Record<CabinetId, { mirror: number; act3: number; dealer
   tesla: { mirror: 246, act3: 566, dealer: 872 },
   joker: { mirror: 826, act3: 6465, dealer: 8499 },
   // THE JUKEBOX (2026-10-08): measured with tools/sim/power_ref.ts 300 (GREEN, greedy).
-  jukebox: { mirror: 550, act3: 1065, dealer: 1666 },
+  jukebox: { mirror: 1077, act3: 2735, dealer: 4810 },
 };
 export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): number {
   const ref = POWER_REF[run.cabinet][at];
@@ -943,7 +943,7 @@ export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer
   thorn: { house: 1, mirror: 9.5, dealer: 2.3, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
   tesla: { house: 0.85, mirror: 2.6, dealer: 2.2, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
   joker: { house: 1.9, mirror: 3.4, dealer: 0.66, act3: 0.35, act2: 1.5, gate: 0.85 },
-  jukebox: { house: 1.1, mirror: 0.9, dealer: 0.52, act3: 0.5, gate: 2.0 },
+  jukebox: { house: 1.1, mirror: 0.7, dealer: 0.36, act3: 0.3, gate: 2.4 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
@@ -1734,7 +1734,7 @@ export const BIG = {
   armsRaceHp: 0.15, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.2, gildLotCells: 3, glassPay: 1.5,
   devilPay: 1.75, devilDecay: 0.08, allInHp: 0.2, wardedHp: 0.15, wards: 3, houseMoney: 40, heist: 30, heistHp: 0.3, crusadeStep: 5, crusadeHp: 0.2,
   chainHp: 0.3, madMul: 2, madCost: 0.05, groundHeal: 5, jokerHp: 0.5, featureHp: 0.2, noLimitHp: 0.25, monsoonCost: 10, trustChips: 2,
-  convertHp: 0.15, highCardMul: 1.5, headlinerMul: 2, headlinerMax: 8, encoreHp: 0.25, dancers: 2, fourLeafHp: 0.2, shieldWallKeep: 0.3, slamShare: 0.5, squireCells: 2, sharkWilds: 2, quickeningHp: 0,
+  convertHp: 0.15, highCardMul: 1.5, headlinerMul: 2, headlinerMax: 8, feedbackTo: 1, encoreHp: 0.25, dancers: 2, fourLeafHp: 0.2, shieldWallKeep: 0.3, slamShare: 0.5, squireCells: 2, sharkWilds: 2, quickeningHp: 0,
 };
 
 /** One card of the pool: who it's for and when it shows up. */
@@ -1936,9 +1936,9 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'headliner':
       return { title: 'HEADLINER', rule: `THE DROP HITS X${BIG.headlinerMul}`, cost: `THE VOLUME MAX GOES UP TO ${BIG.headlinerMax}` };
     case 'feedback':
-      return { title: 'FEEDBACK', rule: 'THE VOLUME NEVER DROPS ON A SPIN WITH NO NOTE', cost: 'THE DROP RESETS THE VOLUME TO 0' };
+      return { title: 'FEEDBACK', rule: 'THE RECORD NEVER SKIPS', cost: `THE DROP RESETS THE VOLUME TO ${BIG.feedbackTo}` };
     case 'hypeMan':
-      return { title: 'HYPE MAN', rule: '+1 VOLUME AT THE START OF EVERY SPIN', cost: 'NOTES PAY HALF WHEN IT ISN\'T THE DROP' };
+      return { title: 'HYPE MAN', rule: '+1 VOLUME BEFORE EVERY OTHER SPIN', cost: 'NOTES PAY HALF WHEN IT ISN\'T THE DROP' };
     case 'encoreDrop':
       return { title: 'ENCORE', rule: 'AFTER THE DROP, THE NEXT SPIN IS A DROP TOO', cost: pct(run, BIG.encoreHp) };
     case 'backupDancers':
@@ -2313,7 +2313,7 @@ export function takeChoice(run: RunState, c: BigChoice): void {
       break;
     case 'feedback':
       big.noSkip = true;
-      big.dropTo = 0;
+      big.dropTo = BIG.feedbackTo;
       break;
     case 'hypeMan':
       big.hype = true;

@@ -40,6 +40,8 @@ export type CombatEvent =
       bonus?: VoucherKind;
       /** Per-fight bonus added to EACH cell of a symbol this spin (WAR DRUM on swords), so its number shows it. */
       symBonus?: Partial<Record<SymbolId, number>>;
+      /** THE JUKEBOX: this spin is THE DROP (the notes it lights; the note group's hit, after). */
+      drop?: { cells: { reel: number; row: number; wild?: true }[]; amount: number; encore?: true };
     }
   | {
       type: 'attack';
@@ -74,11 +76,11 @@ export type CombatEvent =
    * A signature meter moved (MIDAS gold bars, BRIAR's thorn bank, JAX's wilds). `armed`: it's full and
    * waiting to pay off; `wasted`: gold bars that landed while it was already full.
    */
-  | { type: 'meter'; side: SideId; reels: number[]; amount: number; total: number; armed?: boolean; wasted?: number; earthed?: number }
+  | { type: 'meter'; side: SideId; reels: number[]; amount: number; total: number; armed?: boolean; wasted?: number; earthed?: number; dropsNow?: boolean }
   /** A meter paid off (MIDAS x4 group, JAX all-jackpots spin); it empties. */
   | { type: 'payoff'; side: SideId; kind: 'touch' | 'jackpots' | 'vault' | 'volume'; left?: number; mul?: number }
   /** THE JUKEBOX: THE DROP. Every NOTE in the 3x3 window off the payline hits (the payline scores as usual). */
-  | { type: 'drop'; side: SideId; cells: { reel: number; row: number; wild?: true }[]; amount: number }
+  | { type: 'drop'; side: SideId; cells: { reel: number; row: number; wild?: true }[]; amount: number; encore?: true }
   /** MIDAS: gold bars paid chips mid-fight (they're yours if you win). */
   | { type: 'midasChips'; side: SideId; amount: number; total: number }
   /** LUCRE: chips its group paid (banked on a win). */

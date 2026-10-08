@@ -1957,3 +1957,27 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - LUCKY on THE JUKEBOX (user fix): it works as on every machine (payline cells roll to turn WILD). At the drop, each
   lucky cell off the payline rolls too; a WILD plays as a note in the drop (LUCKY WILD! shows on that cell).
   Official N1000 after: JUKEBOX 43.5 / 18.0 (fight-4 deaths 3.0%).
+
+## Iteration 93 (2026-10-08): JUKEBOX deep test fixes (playtest/JUKEBOX_DEEP_TEST.md)
+- THE DROP is one hit: the notes off the payline join the note group (or hit as a group of their own when the payline
+  has none). So the volume, HEADLINER (now the whole drop, payline too), gold (adds), ECHO, KEEN/EXECUTIONER and every
+  pay relic (UNDERDOG, METRONOME, BRACELET, HOT STREAK, FIRST BLOOD, GLASS CANNON) apply to it, on one PAIR/JACKPOT banner.
+  Show: "THE DROP!" (or "ENCORE!") over the machine first, every note in view lights up (the payline too), then the
+  banner, and the hit flies a note from each lit cell. A drop with no notes shows a small "THE DROP... NO NOTES".
+- The drop respects enemy writes: dead cards, slime and theft aren't notes, a jammed reel or a grounded cell sits out,
+  a hexed reel pays half with its Charm dark, counterfeit Charms do nothing. GROUNDER: a rod in a payline note doesn't
+  turn the volume up (its blurb now says "A GROUNDED SYMBOL FILLS NO METER").
+- Fixes: ECHO kept in the profile (it was wiped on load); BATTERY starts at 3 (was 4); QUICKENING starts at max (the
+  first spin drops; was one short); JACKPOT BELL doesn't re-max the volume on the drop spin; TURNTABLE beats FEEDBACK's
+  reset; HYPE MAN no longer shows "drops next spin" on the spin it drops; "MAX VOLUME! DROP NEXT SPIN!" fits the machine.
+- HUD: the volume reads in levels (4/6). Text: FEEDBACK "THE RECORD NEVER SKIPS" (reset 0 -> 1); HYPE MAN "+1 VOLUME
+  BEFORE EVERY OTHER SPIN" (was every spin: 57% of runs that took it won); MIXTAPE "THE RECORD NEVER SKIPS: ...";
+  machine card mentions the skip; collection KEEN/VAMP say notes; coach says VOLUME; log abbreviation NTE.
+- BRIAR retired fully: BAD BLOOD is now TOUGH CROWD (THE JUKEBOX, same edges and id, title ONE-HIT WONDER): challenges.ts
+  400: 21.8% (plain 42.0), between SHORT STACK 35.5 and ALL OF IT 16.3. CACTUS, BRAMBLE WALL, HEDGE retired; THORNY
+  left the collection (old finds no longer count toward it).
+- Balance: with the drop in the note group, sizing power more than doubled: POWER_REF jukebox 550/1065/1666 ->
+  1077/2735/4810; BOSS_MUL jukebox mirror 0.9 -> 0.7, dealer 0.52 -> 0.36, act3 0.5 -> 0.3, gate 2.0 -> 2.4.
+  Official N1000: JUKEBOX 42.9 / 17.5 (act1 88.8, House 95.4, Mirror 54.9, fight-4 deaths 4.6%, Dealer 50.3).
+  Cards: HYPE MAN 37%, FEEDBACK 29%, ENCORE 35%, HEADLINER 25%, BACKUP DANCERS 33% (avg about 35%).
+  KNIGHT N600 43.5 / 19.0 (unchanged).

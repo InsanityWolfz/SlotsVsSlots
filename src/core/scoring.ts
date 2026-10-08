@@ -27,6 +27,8 @@ export interface ScoreGroup {
   notes?: string[];
   /** Keen: this group pierces shields. */
   pierce?: boolean;
+  /** THE JUKEBOX: THE DROP's notes off the payline joined this group. */
+  drop?: boolean;
 }
 
 export interface LineScore {

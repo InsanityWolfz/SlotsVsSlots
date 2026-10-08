@@ -207,7 +207,9 @@ export class HudView {
         }
         const label = this.armed ? (m.kind === 'touch' ? 'TOUCH READY!' : `${m.label} READY!`) : m.label;
         drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'left' });
-        drawText(ctx, `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`, b.x + b.w - 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'right' });
+        // THE JUKEBOX counts its volume in levels (4/6), like its cards do.
+        const count = m.kind === 'volume' ? `${Math.floor(this.energy + 0.01)}/${this.energyMax}` : `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`;
+        drawText(ctx, count, b.x + b.w - 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'right' });
         // The HIGH ROLLER bar: your chips and the payoff they make, on a line under the bar.
         if (m.note) drawText(ctx, m.note(this.chips), b.x + b.w - 6, b.y + b.h + 9, 1.25, m.color, { align: 'right' });
       }

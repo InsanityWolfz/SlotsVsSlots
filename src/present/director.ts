@@ -48,6 +48,8 @@ const BANNER_Y = 172;
  */
 export class Director {
   private lastScore: LineScore | null = null;
+  /** THE DROP's lit cells: the next player attack flies a note from each. */
+  private dropCells: { reel: number; row: number }[] | null = null;
   private lastSpin: Partial<Record<SideId, { frozen: boolean[]; locked: boolean[]; hexed: boolean[] }>> = {};
 
   constructor(private s: Stage) {}
@@ -126,7 +128,8 @@ export class Director {
       case 'payoff':
         return this.payoff(e);
       case 'drop':
-        return this.drop(e);
+        // Played with its spin (before the banner).
+        return Promise.resolve();
       case 'specialFire':
         return this.specialFire(e);
       case 'slime':
@@ -582,6 +585,8 @@ export class Director {
     for (const p of e.score.picks ?? []) await this.bonusReel(e.side, p.symbol, p.enh);
     if (near && e.score.tier !== 'triple') this.missedTriple(e.side, e.score.line[0]);
     // JAX's all-jackpots spin is announced by its payoff; each cell then pays on its own.
+    // THE DROP shows before the PAIR!/JACKPOT! math (the note group carries it).
+    if (e.drop) await this.drop({ side: e.side, ...e.drop });
     if (!e.score.jackpots) await this.winPresentation(e.side, e.score);
   }
 
@@ -801,16 +806,19 @@ export class Director {
     const dir = e.to === 'enemy' ? 1 : -1;
     const big = this.lastScore?.tier === 'triple';
 
-    const srcReels = e.reels.length ? e.reels : [-1];
+    // THE DROP: a note flies from every lit cell (the rest of the attacks throw swords).
+    const drop = e.from === 'player' ? this.dropCells : null;
+    this.dropCells = null;
+    const srcReels = drop?.length ? drop : e.reels.length ? e.reels : [-1];
     const flights = srcReels.map(async (_r, i) => {
-      await this.c.wait(i * 0.08);
-      const from = this.srcPoint(e.from, e.reels, i);
-      const scale = (big && i === e.reels.length - 1) || !e.reels.length ? 6 : 4;
-      const p = this.s.fx.add(new Projectile('swordProjectile', from.x, from.y - 14, scale, dir < 0, '#dfe6f0'));
+      await this.c.wait(i * (drop ? 0.04 : 0.08));
+      const from = drop ? cellCenter(e.from, drop[i].reel, drop[i].row) : this.srcPoint(e.from, e.reels, i);
+      const scale = drop ? 3 : (big && i === e.reels.length - 1) || !e.reels.length ? 6 : 4;
+      const p = this.s.fx.add(new Projectile(drop ? artId('note') : 'swordProjectile', from.x, from.y - 14, scale, dir < 0, '#dfe6f0'));
       p.rot = dir > 0 ? -0.5 : 0.5;
       this.s.sounds.whoosh();
       const tx = target.x - dir * 40 + (Math.random() * 2 - 1) * 30;
-      const ty = target.y + (i - (e.reels.length - 1) / 2) * 50;
+      const ty = target.y + (i - (srcReels.length - 1) / 2) * (drop ? 20 : 50);
       this.bg(this.c.tween({ from: p.rot, to: 0, dur: 0.3, onUpdate: (v) => (p.rot = v) }));
       await this.arc(p, tx, ty, 0.3, 70, cubicIn);
       this.s.fx.remove(p);
@@ -818,7 +826,7 @@ export class Director {
       this.flashMachine(e.to, 0.8, 0.12);
       this.knockback(e.to, 4 + Math.min(10, e.amount / UNIT));
       this.s.particles.burst({ x: tx, y: ty, count: 16, colors: ['#ffffff', '#ffe08a', '#dfe6f0'], speed: [150, 500], kind: 'spark', gravity: 300, life: [0.15, 0.35], size: [2, 4] });
-      this.s.sounds.hit(e.amount / UNIT / Math.max(1, e.reels.length));
+      this.s.sounds.hit(e.amount / UNIT / Math.max(1, srcReels.length));
       this.shake(Math.min(2 + e.amount / UNIT, 9), 0.25);
     });
     await Promise.all(flights);
@@ -1142,7 +1150,8 @@ export class Director {
       h.armed = true;
       this.s.sounds.lucky();
       // Over the machine's top, on a plate: it used to land on the HP and meter bars.
-      this.bg(this.popText(m.kind === 'touch' ? 'NEXT SPIN TURNS GOLD!' : m.kind === 'vault' ? 'HIGH ROLLER! NEXT PAY MULTIPLIES!' : m.kind === 'volume' ? 'MAX VOLUME! THE BEAT DROPS NEXT SPIN!' : 'NEXT SPIN: ALL JACKPOTS!', MACHINE_CX[e.side], MACHINE_TOP + MACHINE_H + 14, 2, m.color, 12, 0.6, true));
+      // HYPE MAN can max the volume right before the spin it drops on: no "next spin" then.
+      if (!e.dropsNow) this.bg(this.popText(m.kind === 'touch' ? 'NEXT SPIN TURNS GOLD!' : m.kind === 'vault' ? 'HIGH ROLLER! NEXT PAY MULTIPLIES!' : m.kind === 'volume' ? 'MAX VOLUME! DROP NEXT SPIN!' : 'NEXT SPIN: ALL JACKPOTS!', MACHINE_CX[e.side], MACHINE_TOP + MACHINE_H + 14, 2, m.color, 12, 0.6, true));
     }
     if (e.reels.length) this.settle(e.side, e.reels);
   }
@@ -1163,14 +1172,21 @@ export class Director {
   }
 
   /** THE JUKEBOX: THE DROP. A bass hit, every note in the window lights up, then they all hit (the attack follows). */
-  private async drop(e: Ev<'drop'>): Promise<void> {
+  private async drop(e: Omit<Ev<'drop'>, 'type'>): Promise<void> {
     const m = this.s.machines[e.side];
     const c = this.machineCenter(e.side);
+    // Nothing to play: a small callout, no boom.
+    if (!e.cells.length) {
+      await this.popText(e.encore ? 'ENCORE... NO NOTES' : 'THE DROP... NO NOTES', c.x, MACHINE_TOP - 24, 2, COLORS.textDim, 12, 0.4);
+      return;
+    }
     this.s.sounds.drop();
     this.shake(7, 0.35);
-    this.bg(this.popText('THE DROP!', c.x, MACHINE_TOP + 30, 5, '#5ad8e8', 34, 0.5));
+    // Over the machine (not on the top row it lights), first; then the notes light up; the note group hits after.
+    await this.popText(e.encore ? 'ENCORE!' : 'THE DROP!', c.x, MACHINE_TOP - 26, 4, '#5ad8e8', 16, 0.25, true);
     const wilds = e.cells.filter((x) => x.wild);
     if (wilds.length) await this.luckyWilds(e.side, wilds);
+    this.dropCells = e.amount > 0 ? e.cells : null;
     const lights = e.cells.map(async (ref, i) => {
       await this.c.wait(i * 0.04);
       const fx = m.reels[ref.reel]?.rows[ref.row];

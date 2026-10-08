@@ -175,7 +175,7 @@ describe('charm and general relics', () => {
 
 describe('relic pools, the starting pick and lucky', () => {
   it('a new run offers 1 of 3 starting relics: your machine relics first, then a general one', () => {
-    for (const cab of ['knight', 'midas', 'thorn', 'tesla', 'joker'] as CabinetId[]) {
+    for (const cab of ['knight', 'midas', 'jukebox', 'tesla', 'joker'] as CabinetId[]) {
       const run = createRun(base, 11, cab);
       const st = run.pendingStart!;
       expect(st).toHaveLength(3);
@@ -190,14 +190,14 @@ describe('relic pools, the starting pick and lucky', () => {
 
   it('relic drafts put one of your identity relics first; other machines never show up', () => {
     for (let s = 0; s < 30; s++) {
-      const run = createRun(base, s, 'thorn');
+      const run = createRun(base, s, 'jukebox');
       run.pendingStart = null;
       for (let d = 0; d < 6; d++) {
         run.depth = d;
         if (!isRelicDraft(run)) continue;
         const relics = draftOffers(run).flatMap((o) => (o.kind === 'relic' ? [o.relic] : []));
-        for (const r of relics) expect([undefined, 'thorn']).toContain(RELICS[r].machine);
-        expect(RELICS[relics[0]].machine === 'thorn' || !!RELICS[relics[0]].charm).toBe(true);
+        for (const r of relics) expect([undefined, 'jukebox']).toContain(RELICS[r].machine);
+        expect(RELICS[relics[0]].machine === 'jukebox' || !!RELICS[relics[0]].charm).toBe(true);
       }
     }
   });

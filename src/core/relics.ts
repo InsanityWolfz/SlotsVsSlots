@@ -30,7 +30,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
   midas: { id: 'midas', name: 'GOLD LEAF', text: 'GOLD ON A CELL THAT PAYS NOTHING JOINS YOUR BIGGEST GROUP', sprite: 'relicGoldleaf', charm: 'gold', retired: true },
   rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'WITH A CHARGED BOLT: LIGHTNING HITS 100 (NOT 60)', sprite: 'relicRod', machine: 'tesla' },
-  cactus: { id: 'cactus', name: 'CACTUS', text: 'THORNS ALSO SHIELD YOU 30% OF THE DAMAGE', sprite: 'relicCactus', machine: 'thorn' },
+  cactus: { id: 'cactus', name: 'CACTUS', text: 'THORNS ALSO SHIELD YOU 30% OF THE DAMAGE', sprite: 'relicCactus', machine: 'thorn', retired: true },
   prism: { id: 'prism', name: 'PRISM', text: 'A PAIR OR JACKPOT THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
   hone: { id: 'hone', name: 'EXECUTIONER', text: 'KEEN SWORDS PAY X3 VS ENEMIES UNDER HALF HP', sprite: 'relicExecutioner', charm: 'keen' },
   // Legendary (act 2): big, build-bending effects.
@@ -54,7 +54,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   capbells: { id: 'capbells', name: 'CAP AND BELLS', text: 'WILDS ON YOUR PAYLINE HEAL 10 HP', sprite: 'relicCapbells', machine: 'joker' },
   stacked: { id: 'stacked', name: 'STACKED DECK', text: 'WILDS TAKE GOLD, KEEN, VAMP. CHARMED WILDS FILL X2', sprite: 'relicStacked', machine: 'joker', retired: true },
   // CONTENT WAVE 1 (2026-10-07, playtest/CONTENT_WAVE1_REVIEW.md): slot machine relics, one hook each.
-  bramble: { id: 'bramble', name: 'BRAMBLE WALL', text: 'BLOCKED HITS FIRE 30% OF YOUR THORNS (MAX 10% HP)', sprite: 'relicBramble', machine: 'thorn' },
+  bramble: { id: 'bramble', name: 'BRAMBLE WALL', text: 'BLOCKED HITS FIRE 30% OF YOUR THORNS (MAX 10% HP)', sprite: 'relicBramble', machine: 'thorn', retired: true },
   riposte: { id: 'riposte', name: 'RIPOSTE', text: 'A BLOCKED HIT RETURNS HALF OF WHAT YOU BLOCKED', sprite: 'relicRiposte', machine: 'knight', retired: true },
   tower: { id: 'tower', name: 'TOWER SHIELD', text: 'RETAIN 25% OF YOUR SHIELD EACH SPIN (MAX 10% OF YOUR HP)', sprite: 'relicTower', machine: 'knight' },
   headsman: { id: 'headsman', name: 'HEADSMAN', text: 'SWORDS HIT FOR +2% OF YOUR MAX HP', sprite: 'relicHeadsman', machine: 'knight' },
@@ -67,7 +67,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // CONTENT WAVE 1, part 2.
   coup: { id: 'coup', name: 'COUP DE GRACE', text: 'SWORDS HIT X2 WHEN THE ENEMY IS UNDER 25% OF YOUR MAX HP', sprite: 'relicCoup', machine: 'knight' },
   compound: { id: 'compound', name: 'COMPOUND', text: 'HIGH ROLLER CAP INCREASES TO X4', sprite: 'relicCompound', machine: 'midas' },
-  hedge: { id: 'hedge', name: 'HEDGE', text: 'LOSING HP ADDS 10% OF IT TO YOUR THORNS', sprite: 'relicHedge', machine: 'thorn' },
+  hedge: { id: 'hedge', name: 'HEDGE', text: 'LOSING HP ADDS 10% OF IT TO YOUR THORNS', sprite: 'relicHedge', machine: 'thorn', retired: true },
   meltdown: { id: 'meltdown', name: 'MELTDOWN', text: 'LIGHTNING DAMAGE +1% FOR EACH HP YOU ARE MISSING (MAX 50%)', sprite: 'relicMeltdown', machine: 'tesla' },
   pulse: { id: 'pulse', name: 'PULSE', text: 'LIGHTNING RESETS THE ENEMY ABILITY COUNTDOWN ONCE PER FIGHT', sprite: 'relicPulse', machine: 'tesla' },
   deckdrum: { id: 'deckdrum', name: 'DECK DRUM', text: 'EACH PAIR AND JACKPOT: CARD DAMAGE +1 THIS FIGHT (MAX +5)', sprite: 'relicDeckdrum', machine: 'joker' },
@@ -110,7 +110,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   highlimit: { id: 'highlimit', name: 'HIGH LIMIT', text: 'YOUR SIDE BET LIMIT DOUBLES', sprite: 'relicHighLimit' },
   // THE JUKEBOX (2026-10-08).
   turntable: { id: 'turntable', name: 'TURNTABLE', text: 'AFTER THE DROP, THE VOLUME FALLS TO 5, NOT 3', sprite: 'relicTurntable', machine: 'jukebox' },
-  mixtape: { id: 'mixtape', name: 'MIXTAPE', text: "A SPIN WITH NO NOTE DOESN'T LOWER THE VOLUME", sprite: 'relicMixtape', machine: 'jukebox' },
+  mixtape: { id: 'mixtape', name: 'MIXTAPE', text: 'THE RECORD NEVER SKIPS: A SPIN WITH NO NOTE KEEPS THE VOLUME', sprite: 'relicMixtape', machine: 'jukebox' },
   subwoofer: { id: 'subwoofer', name: 'SUBWOOFER', text: 'THE DROP PIERCES SHIELDS', sprite: 'relicSubwoofer', machine: 'jukebox' },
 };
 /** LOADED DICE: every side bet's pay x1.2 (a flat +0.5 made the x1.5 SAFE bet pay 133-143%: EXPERT_PLAYTEST_8 E5). */
@@ -152,7 +152,7 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
     midas: 'JACKPOTS PAY X2 AND FILL YOUR HIGH ROLLER BAR',
     thorn: 'JACKPOTS PAY X2 AND ADD THEIR PAY TO YOUR THORNS',
     joker: 'JACKPOTS PAY X1.25 AND FILL YOUR JACKPOT METER',
-    jukebox: 'JACKPOTS PAY X2 AND MAX YOUR VOLUME',
+    jukebox: 'JACKPOTS PAY X2 AND MAX YOUR VOLUME (NOT ON THE DROP)',
   },
 };
 /** Machines that attack with something other than swords: relic texts name their symbol instead. */

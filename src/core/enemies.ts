@@ -143,7 +143,7 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 1,
     ability: { kind: 'earth', every: 4, power: 3 * UNIT },
     minDepth: 1,
-    blurb: 'RODS IN YOUR BOLTS: A GROUNDED BOLT GIVES NO ENERGY',
+    blurb: 'RODS IN YOUR REELS: A GROUNDED SYMBOL FILLS NO METER',
     acts: [2],
   },
   {

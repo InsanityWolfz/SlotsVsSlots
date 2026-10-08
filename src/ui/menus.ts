@@ -1,7 +1,7 @@
 import type { Sounds } from '../audio/sounds';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import type { Enh, RelicId } from '../core/config';
-import { runScore, shownTitle, shownTrim, type Profile, type RunEntry } from '../core/profile';
+import { foundCount, runScore, shownTitle, shownTrim, type Profile, type RunEntry } from '../core/profile';
 import { ACHIEVEMENTS, allTitles, TRIMS, CHALLENGES, challengeOpen, edgeLine, levelOf, titlesOwned, weekKey, weekly } from '../core/meta';
 import { online } from '../net/config';
 import { topScores, type ScoreRow } from '../net/leaderboard';
@@ -33,10 +33,10 @@ export type ScoreTab = 'mine' | 'daily' | 'weekly' | 'all';
 
 export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
   gold: { name: 'GOLD', text: 'YOUR ATTACK SYMBOLS AND SHIELDS. X2/X3/X4 PAY.' },
-  keen: { name: 'KEEN', text: 'SWORDS AND CARDS. +40/+50/+60 DAMAGE AND PIERCES SHIELDS.' },
+  keen: { name: 'KEEN', text: 'SWORDS, CARDS AND NOTES. +40/+50/+60 DAMAGE AND PIERCES SHIELDS.' },
   charged: { name: 'CHARGED', text: "DOC VOLTZ'S BOLTS. +10/+20/+30 CHARGE ON BOLTS." },
   spiked: { name: 'BULWARK', text: `KNIGHT. SHIELDS. ${charmRuleText('spiked', 1)}.` },
-  vamp: { name: 'VAMP', text: 'SWORDS AND CARDS. HEALS +20/+30/+40 HP.' },
+  vamp: { name: 'VAMP', text: 'SWORDS, CARDS AND NOTES. HEALS +20/+30/+40 HP.' },
   lucky: { name: 'LUCKY', text: '40%/55%/70% CHANCE TO BE A WILD.' },
   blaze: { name: 'BLAZE', text: "DOC VOLTZ'S BOLTS. +10/+20/+30 LIGHTNING DAMAGE." },
   thorny: { name: 'THORNY', text: "BRIAR'S THORNS. +50/+60/+70 DAMAGE ON THORNS." },
@@ -45,7 +45,7 @@ export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
   echo: { name: 'ECHO', text: "DJ DECIBEL'S NOTES. AT THE DROP ITS NOTE HITS X2/X2.5/X3." },
 };
 /** Charms in the COLLECTION (SPIKED retired). */
-const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'thorny', 'lucre', 'trick', 'echo'];
+const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'lucre', 'trick', 'echo'];
 
 const TIER_COLOR = { common: '#c9c9d9', uncommon: '#5ad8e8', legendary: '#ffd23f', other: '#9a8fb0' };
 
@@ -760,7 +760,7 @@ export class Menus {
     const ctxP = {
       stats: p.stats,
       have: p.achievements,
-      found: p.found.relics.length + p.found.charms.length,
+      found: foundCount(p),
       collection: collectionTotal(),
       challengesWon: CHALLENGES.filter((c) => p.challenges[c.id]?.won).length,
     };
@@ -968,7 +968,7 @@ export class Menus {
       cap('LEARN THE BASICS IN ONE FIGHT', 3);
     } else if (this.mode === 'progress') {
       const p = this.profile();
-      const found = p.found.relics.length + p.found.charms.length;
+      const found = foundCount(p);
       const total = RELIC_ORDER.length + CHARM_ORDER.length;
       const best = p.runs.reduce((m, e) => Math.max(m, runScore(e)), 0);
       drawText(ctx, `COLLECTION ${found}/${total}   RUNS ${p.stats.runs}   BEST ${best}`, W / 2, Menus.SUB_Y - 4, 1.5, COLORS.textDim, { alpha: Math.max(0, Math.min(1, k)) });

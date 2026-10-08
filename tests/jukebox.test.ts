@@ -48,7 +48,9 @@ describe('THE JUKEBOX (DJ DECIBEL)', () => {
     expect(f.volume).toBe(6);
     const evs = round(f, ['note', 'note', 'note']);
     const drop = ofType(evs, 'drop')[0];
-    expect(drop.cells.length).toBe(6);
+    // 3 payline notes + 6 off the payline, and they hit as one.
+    expect(drop.cells.length).toBe(9);
+    expect(ofType(evs, 'attack').filter((a) => a.from === 'player').length).toBe(1);
     expect(drop.amount).toBeGreaterThan(0);
     expect(f.volume).toBe(3);
   });
@@ -88,16 +90,55 @@ describe('THE JUKEBOX (DJ DECIBEL)', () => {
       f.sides.player.energy = 6 * UNIT;
       f.sides.player.armed = true;
       const drop = ofType(round(f, ['note', 'note', 'shield']), 'drop')[0];
-      // Reels 1-2: 4 notes off the payline; reel 3: 2 lucky shields come up WILD.
-      expect(drop.cells.length).toBe(6);
+      // 3 on the payline (the lucky shield turned WILD), 4 notes off it, and 2 lucky shields off it come up WILD.
+      expect(drop.cells.length).toBe(9);
       expect(drop.cells.filter((c) => c.wild).map((c) => c.reel)).toEqual([2, 2]);
     } finally {
       CHARM_VALUE.lucky[1] = old;
     }
   });
 
+  it('HEADLINER doubles the whole drop (the payline notes too); the drop ignores what enemies wrote', () => {
+    const mk = (big?: object) =>
+      juke((c) => {
+        c.player.strips = reels3({ note: 12 });
+        if (big) c.player.big = big;
+      });
+    const amt = (f: Fight) => {
+      f.sides.player.energy = f.meterCost;
+      f.sides.player.armed = true;
+      return ofType(round(f, ['note', 'note', 'note']), 'drop')[0].amount;
+    };
+    const plain = amt(mk());
+    expect(amt(mk({ dropMul: 2 }))).toBe(plain * 2);
+    // A jammed reel sits the drop out; a grounded note off the payline too.
+    const j = mk();
+    j.sides.player.locked[0] = 2;
+    j.sides.player.energy = 60;
+    j.sides.player.armed = true;
+    const dj = ofType(round(j, ['note', 'note', 'note']), 'drop')[0];
+    expect(dj.cells.filter((c) => c.row !== 1 && c.reel === 0).length).toBe(0);
+  });
+
+  it('BATTERY starts at 3; QUICKENING starts at max (the first spin drops)', () => {
+    expect(juke((c) => (c.relics = ['battery'])).volume).toBe(3);
+    const q = juke((c) => {
+      c.player.strips = reels3({ note: 12 });
+      c.player.big = { startFull: true };
+    });
+    expect(ofType(round(q, ['note', 'note', 'note']), 'drop').length).toBe(1);
+  });
+
   it('the volume meter is full at 6 (HEADLINER raises it to 8)', () => {
     expect(juke().meterCost).toBe(6 * UNIT);
     expect(juke((c) => (c.player.big = { volumeMax: 8 })).meterCost).toBe(8 * UNIT);
+  });
+});
+
+describe('THE JUKEBOX in the profile', () => {
+  it('the ECHO Charm survives a profile reload', async () => {
+    const { sanitizeProfile } = await import('../src/core/profile');
+    const p = sanitizeProfile({ found: { relics: [], charms: ['echo', 'gold'] } });
+    expect(p.found.charms).toContain('echo');
   });
 });

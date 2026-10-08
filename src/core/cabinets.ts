@@ -188,7 +188,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 2 * UNIT },
     symbols: ['note', 'shield'],
     attack: 'note',
-    rule: 'NOTES TURN UP THE VOLUME. AT MAX THE BEAT DROPS: EVERY NOTE HITS. 320 HP.',
+    rule: 'NOTES TURN UP THE VOLUME. NO NOTE, THE RECORD SKIPS. AT MAX THE BEAT DROPS: EVERY NOTE HITS. 320 HP.',
     unlock: 'BEAT THE HOUSE',
   },
 };

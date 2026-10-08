@@ -34,7 +34,8 @@ export const CHALLENGES: ChallengeDef[] = [
   { id: 'fast', name: 'FAST COMPANY', cabinet: 'knight', stake: 0, edges: ['fast'], title: 'QUICK DRAW', text: 'THE TABLE PLAYS FAST TONIGHT.' },
   { id: 'broke', name: 'SHORT STACK', cabinet: 'midas', stake: 0, edges: [], chips: 0, title: 'SELF-MADE', text: 'CASH CASSIDY WALKS IN WITH EMPTY POCKETS.' },
   // (Was HOUSE CUT: it attacked BRIAR's identity, 50.7 -> 13.7, and walled the ladder: EXPERT_PLAYTEST_9 D4.)
-  { id: 'cut', name: 'BAD BLOOD', cabinet: 'thorn', stake: 0, edges: ['rollers', 'frail', 'fast'], title: 'THORN IN THE SIDE', text: 'EVERY TABLE CAME TO STAY. LET THEM BLEED ON YOUR THORNS.' },
+  // BAD BLOOD was BRIAR's; remade for THE JUKEBOX when it replaced BRIAR (user, 2026-10-08). Same id: records carry over.
+  { id: 'cut', name: 'TOUGH CROWD', cabinet: 'jukebox', stake: 0, edges: ['rollers', 'frail', 'fast'], title: 'ONE-HIT WONDER', text: 'EVERY TABLE CAME TO STAY. PLAY THEM OFF THE STAGE.' },
   { id: 'all', name: 'ALL OF IT', cabinet: 'midas', stake: 2, edges: ['fast'], title: 'HIGH ROLLER', text: 'THE WHOLE HOUSE PLAYS FAST. ALL THE WAY TO THE DEALER.' },
   { id: 'night', name: 'THE LONG NIGHT', cabinet: 'knight', stake: 2, edges: ['heal'], title: 'NIGHT OWL', text: 'ALL THE WAY TO THE DEALER, ON HALF HEALS.' },
 ];

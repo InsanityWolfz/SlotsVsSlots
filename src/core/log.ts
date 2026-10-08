@@ -163,7 +163,7 @@ export function turnRow(fight: Fight, r: TurnResult, fightNo: number): TurnRow {
 }
 
 const ABBR: Record<SymbolId, string> = {
-  note: 'NOT',
+  note: 'NTE',
   goldbar: 'BAR',
   ace: 'ACE',
   thorn: 'THN',
