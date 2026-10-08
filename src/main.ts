@@ -1,4 +1,4 @@
-import { Game } from './game';
+import { Game, toggleFullscreen } from './game';
 import { H, W } from './present/layout';
 import { CombatLog } from './ui/combatLog';
 import { TuningPanel } from './ui/tuningPanel';
@@ -87,6 +87,12 @@ window.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return;
   if (e.repeat) return;
   const k = e.key.toLowerCase();
+  // Fullscreen: F11 or Alt+Enter (desktop habit).
+  if (k === 'f11' || (k === 'enter' && e.altKey)) {
+    e.preventDefault();
+    toggleFullscreen();
+    return;
+  }
   if (k === '`' || k === 't') tuning?.toggle();
   else if (k === 'l') log.toggle();
   else if (k === 'escape') {

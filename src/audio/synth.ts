@@ -42,6 +42,8 @@ export class Synth {
   /** When false, one-shots are dropped (used while tap-to-skip fast-forwards). */
   enabled = true;
   muted = false;
+  /** Player volumes, 0..1 each (SETTINGS). 1 = the mix as designed. */
+  private vol = { master: 1, music: 1, sfx: 1 };
 
   constructor() {
     this.ctx = new AudioContext();
@@ -77,7 +79,16 @@ export class Synth {
 
   setMuted(m: boolean): void {
     this.muted = m;
-    this.master.gain.setTargetAtTime(m ? 0 : 0.7, this.now, 0.02);
+    this.master.gain.setTargetAtTime(m ? 0 : 0.7 * this.vol.master, this.now, 0.02);
+  }
+
+  /** SETTINGS: master, music and sound-effect volumes (0..1). */
+  setVolumes(master: number, music: number, sfx: number): void {
+    this.vol = { master, music, sfx };
+    this.master.gain.setTargetAtTime(this.muted ? 0 : 0.7 * master, this.now, 0.02);
+    this.music.gain.setTargetAtTime(db(-14) * music, this.now, 0.02);
+    this.sfx.gain.setTargetAtTime(sfx, this.now, 0.02);
+    this.loops.gain.setTargetAtTime(db(-9) * sfx, this.now, 0.02);
   }
 
   private env(g: GainNode, t0: number, peak: number, attack: number, dur: number, release: number): void {
@@ -176,7 +187,7 @@ export class Synth {
   duck(amount: number, dur: number): void {
     const p = this.music.gain;
     const t = this.now;
-    const base = db(-14);
+    const base = db(-14) * this.vol.music;
     p.cancelScheduledValues(t);
     p.setValueAtTime(p.value, t);
     p.linearRampToValueAtTime(base * (1 - amount), t + dur * 0.2);

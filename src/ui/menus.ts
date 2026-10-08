@@ -10,6 +10,7 @@ import { EDGE_TEXT } from '../core/run';
 import { LEGENDARY, RELICS, RELIC_TIER } from '../core/relics';
 import { CHARM_SYMBOLS, charmRuleText } from '../core/charms';
 import { STEAM, VERSION } from '../build';
+import type { SettingKey } from '../game';
 import { STAKES } from '../core/stakes';
 import { RelicTips } from './relicTip';
 import type { Clock } from '../present/clock';
@@ -150,6 +151,8 @@ export class Menus {
       setSoftLightning: (on: boolean) => void;
       muted: () => boolean;
       setMuted: (on: boolean) => void;
+      setting: (k: SettingKey) => number | boolean;
+      setSetting: (k: SettingKey, v: number | boolean) => void;
     },
   ) {}
 
@@ -169,6 +172,7 @@ export class Menus {
     this.back = null;
     this.icons.clear();
     this.buttons = [];
+    this.liveLabels = [];
     this.active = null;
     this.fade = 0;
     void this.ui.tween({ from: 0, to: 1, dur: 0.25, ease: sineOut, onUpdate: (v) => (this.fade = v) });
@@ -245,6 +249,11 @@ export class Menus {
   /** The rows inside a sub-menu panel (first row's centre). */
   private static readonly SUB_Y = 284;
   private static readonly SUB_PITCH = 84;
+  /** SETTINGS has more rows: a tighter grid in a taller panel. */
+  private static readonly SET_Y = 276;
+  private static readonly SET_PITCH = 46;
+  /** Labels that follow live state (the M key mutes; fullscreen can change outside the menu). */
+  private liveLabels: (() => void)[] = [];
 
   /** PLAY MODES: the daily, the weekly, the challenges and the tutorial. */
   showModes(): void {
@@ -257,14 +266,14 @@ export class Menus {
     const done = dailySpent(today, this.profile().lastDaily);
     // The machine on the button, today's rule in the caption under it.
     const label = run ? `DAILY: ${runScore(run)}` : done ? 'DAILY: SPENT' : `DAILY: ${CABINETS[dailyCabinet(today)].name}`;
-    const daily = this.btn(label, x, row(0), 440, 54, () => !done && this.cb.onDaily(), label.length > 20 ? 2 : 3);
+    const daily = this.btn(label, x, row(0), 440, 54, () => !done && this.cb.onDaily(), label.length > 17 ? 2 : 3);
     daily.toggled = done;
     this.icons.set(daily, 'chip');
     // THE WEEKLY CHALLENGE: the machine (or your best); its rules are on the CHALLENGES screen and the run's first card.
     const key = weekKey();
     const best = this.profile().challenges[`weekly:${key}`];
     const wl = best ? `WEEKLY: BEST ${best.best}` : `WEEKLY: ${CABINETS[weekly(key).cabinet].name}`;
-    this.icons.set(this.btn(wl, x, row(1), 440, 54, () => this.cb.onWeekly(), wl.length > 18 ? 2 : 3), 'voucherBonus');
+    this.icons.set(this.btn(wl, x, row(1), 440, 54, () => this.cb.onWeekly(), wl.length > 17 ? 2 : 3), 'voucherBonus');
     this.icons.set(this.btn('CHALLENGES', x, row(2), 440, 54, () => this.showChallenges(), 3), 'trophySmall');
     this.icons.set(this.btn('TUTORIAL', x, row(3), 440, 54, () => this.cb.onTutorial(), 3), 'iconTutorial');
     this.slideIn();
@@ -285,23 +294,38 @@ export class Menus {
   showSettings(): void {
     this.openSub('settings', () => this.showMain());
     const x = W / 2;
-    const row = (i: number) => Menus.SUB_Y + i * Menus.SUB_PITCH;
-    const soundLabel = () => (this.cb.muted() ? 'SOUND: OFF' : 'SOUND: ON');
-    const sound = this.btn(soundLabel(), x, row(0), 440, 54, () => {
-      this.cb.setMuted(!this.cb.muted());
-      sound.label = soundLabel();
-      sound.toggled = this.cb.muted();
-    }, 3);
-    sound.toggled = this.cb.muted();
-    const lightLabel = () => (this.cb.softLightning() ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL');
-    const light = this.btn(lightLabel(), x, row(1), 440, 54, () => {
-      this.cb.setSoftLightning(!this.cb.softLightning());
-      light.label = lightLabel();
-      light.toggled = this.cb.softLightning();
-    }, 3);
-    light.toggled = this.cb.softLightning();
+    const row = (i: number) => Menus.SET_Y + i * Menus.SET_PITCH;
+    // Volumes: a [-] VALUE [+] row each (STEAM_READINESS S7).
+    const vols: [SettingKey, string][] = [['master', 'MASTER'], ['music', 'MUSIC'], ['sfx', 'SOUND FX']];
+    vols.forEach(([k, name], i) => {
+      const label = () => `${name}: ${this.cb.setting(k) as number}${k === 'master' && this.cb.muted() ? ' (MUTED)' : ''}`;
+      const mid = this.btn(label(), x, row(i), 300, 40, () => this.cb.setMuted(!this.cb.muted()), 2);
+      if (k === 'master') this.liveLabels.push(() => (mid.toggled = this.cb.muted()));
+      const step = (d: number) => () => {
+        this.cb.setSetting(k, Math.max(0, Math.min(10, (this.cb.setting(k) as number) + d)));
+        if (k === 'master' && this.cb.muted()) this.cb.setMuted(false);
+        this.sounds.coin(1);
+      };
+      this.btn('-', x - 190, row(i), 56, 40, step(-1), 3);
+      this.btn('+', x + 190, row(i), 56, 40, step(1), 3);
+      this.liveLabels.push(() => (mid.label = label()));
+    });
+    // A toggle lights up when it's off its default (like a muted sound).
+    const toggle = (i: number, label: (on: boolean) => string, get: () => boolean, set: (on: boolean) => void, def = false) => {
+      const b = this.btn(label(get()), x, row(i), 436, 40, () => {
+        set(!get());
+        b.label = label(get());
+        b.toggled = get() !== def;
+      }, 2);
+      b.toggled = get() !== def;
+      this.liveLabels.push(() => ((b.label = label(get())), (b.toggled = get() !== def)));
+    };
+    toggle(3, (on) => (on ? 'SCREEN SHAKE: ON' : 'SCREEN SHAKE: OFF'), () => this.cb.setting('shake') as boolean, (on) => this.cb.setSetting('shake', on), true);
+    toggle(4, (on) => (on ? 'MOTION: REDUCED' : 'MOTION: FULL'), () => this.cb.setting('motion') as boolean, (on) => this.cb.setSetting('motion', on));
+    toggle(5, (on) => (on ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL'), () => this.cb.softLightning(), (on) => this.cb.setSoftLightning(on));
+    toggle(6, (on) => (on ? 'FULLSCREEN: ON' : 'FULLSCREEN: OFF'), () => this.cb.setting('fullscreen') as boolean, (on) => this.cb.setSetting('fullscreen', on));
     this.resetArmed = 0;
-    const reset = this.btn('RESET SAVE', x, row(3), 300, 44, () => {
+    const reset = this.btn('RESET SAVE', x, row(7) + 14, 300, 40, () => {
       if (performance.now() - this.resetArmed < 400) return;
       if (!this.resetArmed) {
         this.resetArmed = performance.now();
@@ -845,7 +869,7 @@ export class Menus {
     if (hasSprite('logo')) drawSprite(ctx, artId('logo'), W / 2, 66 + Math.sin(t * 2) * 2, 2);
     const k = this.panelIn;
     const top = Menus.SUB_Y - 96;
-    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 2 * Menus.SUB_PITCH + 52 : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
+    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 2 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + 7 * Menus.SET_PITCH + 62 : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
     const pw = 540;
     // The panel rises in (no alpha on the layered frame: a half-faded gold rim tints the panel brown).
     ctx.save();
@@ -871,15 +895,11 @@ export class Menus {
       const best = p.runs.reduce((m, e) => Math.max(m, runScore(e)), 0);
       drawText(ctx, `COLLECTION ${found}/${total}   RUNS ${p.stats.runs}   BEST ${best}`, W / 2, Menus.SUB_Y - 4, 1.5, COLORS.textDim, { alpha: Math.max(0, Math.min(1, k)) });
     } else {
-      // The M key toggles sound too: keep the button's label in step.
-      const sb = this.buttons.find((b) => b.label.startsWith('SOUND'));
-      if (sb) {
-        sb.label = this.cb.muted() ? 'SOUND: OFF' : 'SOUND: ON';
-        sb.toggled = this.cb.muted();
-      }
-      cap('M ALSO TURNS THE SOUND ON AND OFF', 0);
-      cap('SOFT: GENTLER LIGHTNING, NO BIG FLASHES', 1);
-      cap('ERASES YOUR UNLOCKS, COLLECTION AND SCORES', 3, '#ff8a7a');
+      // The M key and F11 change state outside the menu: keep the labels in step.
+      for (const f of this.liveLabels) f();
+      const scap = (text: string, y: number, color: string = COLORS.textDim) => drawText(ctx, text, W / 2, y, 1.25, color, { alpha: Math.max(0, Math.min(1, k)) });
+      scap('CLICK MASTER (OR PRESS M) TO MUTE. F11: FULLSCREEN', Menus.SET_Y + 6 * Menus.SET_PITCH + 30);
+      scap('ERASES YOUR UNLOCKS, COLLECTION AND SCORES', Menus.SET_Y + 7 * Menus.SET_PITCH + 44, '#ff8a7a');
     }
   }
 
@@ -937,7 +957,7 @@ export class Menus {
     const pitch = 70;
     RELIC_ORDER.forEach((r, i) => {
       const x = W / 2 + ((i % cols) - (cols - 1) / 2) * pitch;
-      const y = 330 + Math.floor(i / cols) * 76;
+      const y = 330 + Math.floor(i / cols) * 72;
       const got = p.found.relics.includes(r);
       const hover = this.near(x, y, 30);
       const tier = relicTier(r);
@@ -951,7 +971,7 @@ export class Menus {
     });
 
     // Detail panel.
-    const py = 610;
+    const py = 624;
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(W / 2 - 424, py - 44, 848, 92);
     ctx.fillStyle = COLORS.panel;

@@ -96,8 +96,11 @@ interface Prefs {
   dealerBeaten: CabinetId[];
   /** The TUTORIAL has been started once (the menu stops nudging toward it). */
   tutorialDone: boolean;
+  /** SETTINGS volumes, 0..10 each (10 = the designed mix). */
+  vol: { master: number; music: number; sfx: number };
 }
 
+const clampVol = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.min(10, Math.round(n))) : 10);
 const clampStake = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.min(MAX_STAKE, Math.floor(n))) : 0);
 const machineIds = (v: unknown): CabinetId[] => (Array.isArray(v) ? (v.filter((x) => (ALL_CABINETS as string[]).includes(x)) as CabinetId[]) : []);
 
@@ -120,6 +123,7 @@ function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
   const stakes: Partial<Record<CabinetId, number>> = {};
   if (p.stakes && typeof p.stakes === 'object') for (const id of ALL_CABINETS) if (id in (p.stakes as object)) stakes[id] = clampStake((p.stakes as Record<string, unknown>)[id]);
   const juice = p.juice && typeof p.juice === 'object' ? (p.juice as Partial<JuiceToggles>) : {};
+  const vol = p.vol && typeof p.vol === 'object' ? (p.vol as Partial<Prefs['vol']>) : {};
   return {
     // Old saves: 1/2/4 on the old scale become 2/4/8 (the same real speed).
     speed: p.speedV === 2 ? (SPEEDS.includes(p.speed as number) ? (p.speed as number) : 2) : [1, 2, 4].includes(p.speed as number) ? (p.speed as number) * 2 : 2,
@@ -134,12 +138,24 @@ function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
     act3: p.act3 === true,
     dealerBeaten: machineIds(p.dealerBeaten),
     tutorialDone: p.tutorialDone === true,
+    vol: { master: clampVol(vol.master), music: clampVol(vol.music), sfx: clampVol(vol.sfx) },
   };
 }
 
 /** Saves are crash-safe (STEAM_READINESS S11): every write first copies the last good value to `<key>.bak` (the live keys
  * never change names), and a save that fails to parse is set aside under `<key>.corrupt` and the backup loads instead. */
 const BAK = '.bak';
+export type SettingKey = 'master' | 'music' | 'sfx' | 'shake' | 'motion' | 'fullscreen';
+/** Fullscreen through the browser API (the desktop wrapper's window follows it). */
+export function toggleFullscreen(on = !document.fullscreenElement): void {
+  try {
+    if (on && !document.fullscreenElement) void document.documentElement.requestFullscreen?.().catch(() => {});
+    else if (!on && document.fullscreenElement) void document.exitFullscreen?.().catch(() => {});
+  } catch {
+    /* not allowed here */
+  }
+}
+
 function parse<T>(raw: string | null): T | null {
   if (!raw) return null;
   try {
@@ -266,6 +282,8 @@ export class Game {
       },
       muted: () => this.prefs.muted,
       setMuted: (on) => this.setMuted(on),
+      setting: (k) => this.setting(k),
+      setSetting: (k, v) => this.setSetting(k, v),
     });
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
     this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {
@@ -365,6 +383,8 @@ export class Game {
     Object.assign(this.camera.enabled, { shake: j.shake, zoom: j.zoom, chroma: j.chroma, flash: j.flash });
     this.particles.enabled = j.particles;
     this.synth.setMuted(this.prefs.muted || !j.audio);
+    const v = this.prefs.vol;
+    this.synth.setVolumes(v.master / 10, v.music / 10, v.sfx / 10);
     this.savePrefs();
   }
 
@@ -473,8 +493,8 @@ export class Game {
 
   /** RESET SAVE (main menu): unlocks, stakes, collection and hiscores. Settings stay. */
   private resetSave(): void {
-    const { speed, auto, juice, muted } = this.prefs;
-    this.prefs = { ...sanitizePrefs({}, this.publicBuild), speed, auto, juice, muted };
+    const { speed, auto, juice, muted, vol } = this.prefs;
+    this.prefs = { ...sanitizePrefs({}, this.publicBuild), speed, auto, juice, muted, vol };
     // Your name and player id are who you are, not progress: they survive a reset (the server still holds the name).
     const { name, pid } = this.profile;
     this.profile = { ...emptyProfile(), ...(name ? { name } : {}), ...(pid ? { pid } : {}) };
@@ -1022,6 +1042,27 @@ export class Game {
     this.stage.clock.speed = clockSpeed(s);
     this.savePrefs();
     this.syncButtons();
+  }
+
+  /** SETTINGS rows (volumes 0..10, toggles as booleans). */
+  setting(k: SettingKey): number | boolean {
+    const j = this.prefs.juice;
+    if (k === 'master' || k === 'music' || k === 'sfx') return this.prefs.vol[k];
+    if (k === 'shake') return j.shake;
+    if (k === 'motion') return !j.zoom && !j.chroma && !j.hitstop;
+    return !!document.fullscreenElement;
+  }
+
+  setSetting(k: SettingKey, v: number | boolean): void {
+    const j = this.prefs.juice;
+    if (k === 'master' || k === 'music' || k === 'sfx') this.prefs.vol[k] = clampVol(v);
+    else if (k === 'shake') j.shake = !!v;
+    else if (k === 'motion') j.zoom = j.chroma = j.hitstop = !v;
+    else if (k === 'fullscreen') {
+      toggleFullscreen(!!v);
+      return;
+    }
+    this.applyJuice();
   }
 
   setMuted(m: boolean): void {
