@@ -93,8 +93,9 @@ canvas.addEventListener('pointermove', (e) => {
 });
 window.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return;
-  if (e.repeat) return;
   const k = e.key.toLowerCase();
+  // Held arrows repeat (menu navigation); nothing else does.
+  if (e.repeat && !k.startsWith('arrow')) return;
   // Fullscreen: F11 or Alt+Enter (desktop habit).
   if (k === 'f11' || (k === 'enter' && e.altKey)) {
     e.preventDefault();

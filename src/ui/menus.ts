@@ -161,7 +161,7 @@ export class Menus {
 
   /** Keyboard / gamepad focus targets (no focus while typing a name). */
   navTargets(): Button[] {
-    if (this.mode === 'name' || this.mode === 'loading') return [];
+    if (this.mode === 'loading') return [];
     return this.buttons.filter((b) => b.visible && b.enabled);
   }
 
@@ -256,6 +256,28 @@ export class Menus {
     this.slideIn();
   }
 
+  /** Anything that starts a run asks first while a saved run exists (it would replace it: STEAM_QA_1 Q6). */
+  private guardSaved(b: Button): void {
+    if (!this.cb.savedRun()) return;
+    const go = b.onClick;
+    const label = b.label;
+    const scale = b.opts.textScale;
+    let armed = 0;
+    b.onClick = () => {
+      if (armed && performance.now() - armed > 400) return go();
+      if (armed) return;
+      armed = performance.now();
+      b.label = b.w >= 300 ? 'ENDS YOUR SAVED RUN. AGAIN?' : 'SURE?';
+      b.opts.textScale = Math.min(scale ?? 2, 2);
+      this.sounds.fizzle();
+      setTimeout(() => {
+        armed = 0;
+        b.label = label;
+        b.opts.textScale = scale;
+      }, 2500);
+    };
+  }
+
   /** A sub-menu: its title, a BACK button, and its rows dealt in one by one. */
   private openSub(mode: MenuMode, back: () => void): void {
     this.open(mode);
@@ -308,9 +330,14 @@ export class Menus {
     const key = weekKey();
     const best = this.profile().challenges[`weekly:${key}`];
     const wl = best ? `WEEKLY: BEST ${best.best}` : `WEEKLY: ${CABINETS[weekly(key).cabinet].name}`;
-    this.icons.set(this.btn(wl, x, row(1), 440, 54, () => this.cb.onWeekly(), wl.length > 17 ? 2 : 3), 'voucherBonus');
+    if (!done) this.guardSaved(daily);
+    const wb = this.btn(wl, x, row(1), 440, 54, () => this.cb.onWeekly(), wl.length > 17 ? 2 : 3);
+    this.icons.set(wb, 'voucherBonus');
+    this.guardSaved(wb);
     this.icons.set(this.btn('CHALLENGES', x, row(2), 440, 54, () => this.showChallenges(), 3), 'trophySmall');
-    this.icons.set(this.btn('TUTORIAL', x, row(3), 440, 54, () => this.cb.onTutorial(), 3), 'iconTutorial');
+    const tb = this.btn('TUTORIAL', x, row(3), 440, 54, () => this.cb.onTutorial(), 3);
+    this.icons.set(tb, 'iconTutorial');
+    this.guardSaved(tb);
     this.slideIn();
   }
 
@@ -509,11 +536,13 @@ export class Menus {
     }
     this.btn('OK', W / 2, NAME_Y + 80, 200, 54, () => void this.submitName(), 3);
     // Not everyone wants to type a name first (STEAM_READINESS S16): a random PLAYER name, changeable later.
-    this.btn('SKIP', W / 2, NAME_Y + 150, 140, 36, () => {
-      if (!this.nameInput) return;
-      this.nameInput.value = `PLAYER${Math.floor(1000 + Math.random() * 9000)}`;
-      void this.submitName();
-    }, 1.5).opts.quiet = true;
+    this.btn('SKIP', W / 2, NAME_Y + 150, 140, 36, () => this.skipName(), 1.5).opts.quiet = true;
+  }
+
+  private skipName(): void {
+    if (!this.nameInput) return;
+    this.nameInput.value = `PLAYER${Math.floor(1000 + Math.random() * 9000)}`;
+    void this.submitName();
   }
 
   private async submitName(): Promise<void> {
@@ -591,6 +620,7 @@ export class Menus {
     const rec = this.profile().challenges;
     CHALLENGES.forEach((c, i) => {
       const b = this.btn(rec[c.id]?.won ? 'AGAIN' : 'PLAY', W - 130, CH_Y + i * CH_ROW, 140, 40, () => this.cb.onChallenge(c.id));
+      this.guardSaved(b);
       b.enabled = challengeOpen(rec, i);
     });
   }
@@ -794,6 +824,8 @@ export class Menus {
   key(k: string): boolean {
     if (this.mode === 'name') {
       if (k === 'enter') void this.submitName();
+      // Gamepad B / Escape: no typing needed (STEAM_QA_1 Q4).
+      else if (k === 'escape') this.skipName();
       return true;
     }
     if (this.mode === 'loading') {

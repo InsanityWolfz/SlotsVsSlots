@@ -57,6 +57,7 @@ import { Recap } from './ui/recap';
 import { BUILD, CHIP_SPOT, RunScreens } from './ui/runScreens';
 import { drawRelicTip } from './ui/relicTip';
 import { Pause } from './ui/pause';
+import { CHARM_VALUE } from './core/charms';
 import { Focus, type NavDir, type NavRect } from './ui/focus';
 import { desktop, steamUnlock, VERSION } from './build';
 
@@ -714,18 +715,21 @@ export class Game {
   // screen plays on exactly as it would have. Taken at the next-fight preview ('next') and after a fight's payouts
   // ('after': spoils, legend, big choice or draft). Quitting anywhere else resumes at the last snapshot.
 
-  private checkpoint(at: 'next' | 'after'): void {
+  private checkpoint(at: 'next' | 'after' | 'fight'): void {
     const run = this.run;
     if (!run || run.over || this.tut) return;
     save(RUN_KEY, { v: 1, at, version: VERSION, run });
   }
 
-  private loadRunSave(): { at: 'next' | 'after'; run: RunState } | null {
+  private loadRunSave(): { at: 'next' | 'after' | 'fight'; run: RunState } | null {
     const s = load<{ v?: number; at?: string; run?: RunState }>(RUN_KEY);
     const run = s?.run;
     if (!s || s.v !== 1 || !run || typeof run.seed !== 'number' || !run.player || !Array.isArray(run.paths) || !Array.isArray(run.records)) return null;
     if (!(ALL_CABINETS as string[]).includes(run.cabinet) || run.over) return null;
-    return { at: s.at === 'after' ? 'after' : 'next', run };
+    // A game update may have removed a relic or Charm the save still holds (STEAM_QA_1 Q5): drop what no longer exists.
+    if (Array.isArray(run.player.relics)) run.player.relics = run.player.relics.filter((r) => r in RELICS);
+    if (Array.isArray(run.player.gilded)) run.player.gilded = run.player.gilded.filter((g) => g && g.enh in CHARM_VALUE);
+    return { at: s.at === 'after' ? 'after' : s.at === 'fight' ? 'fight' : 'next', run };
   }
 
   private savedRunLabel(): string | null {
@@ -735,6 +739,17 @@ export class Game {
 
   /** CONTINUE: the saved run, at the screen it was saved on. */
   continueRun(): void {
+    try {
+      this.resumeRun();
+    } catch (err) {
+      // A save this build can't play: drop it rather than crash on every CONTINUE.
+      console.error(err);
+      clearRunSave();
+      this.showMenu();
+    }
+  }
+
+  private resumeRun(): void {
     const s = this.loadRunSave();
     if (!s) return this.menus.showMain();
     this.menus.hide();
@@ -746,7 +761,8 @@ export class Game {
     this.newFight(false, null, fightConfig(this.run, this.cfg), true);
     this.phase = 'between';
     const last = this.run.records[this.run.records.length - 1];
-    if (s.at === 'after' && last) {
+    if (s.at === 'fight') this.startRunFight();
+    else if (s.at === 'after' && last) {
       this.lastRecord = last;
       this.afterBonus(last);
     } else this.showRunStart();
@@ -802,7 +818,17 @@ export class Game {
       // SIDE BETS: the table opens once you've picked who you face.
       if (offerBets(this.run, this.cfg).length) return this.showNextFight();
     }
+    // Snapshot with the opponent and the bet locked in: a quit mid-fight resumes into this same fight, so a
+    // side bet can't be re-placed after watching it (STEAM_QA_1 Q3).
+    this.checkpoint('fight');
+    this.startRunFight();
+  }
+
+  private startRunFight(): void {
+    if (!this.run) return;
     this.screens.hide();
+    // The focus belongs to the screens: in the fight, Enter on a stale ring would change the speed.
+    this.focus.hide();
     this.newFight(true, null, fightConfig(this.run, this.cfg), true);
     if (this.run.depth === 0 && this.run.act === 1) this.tip('fight', 'fight');
   }
@@ -1333,6 +1359,8 @@ export class Game {
         return true;
       }
     }
+    // Space presses the focused button too (outside a fight, where Space spins).
+    if (k === ' ' && this.focus.visible && this.phase !== 'fighting') k = 'enter';
     if (k === 'enter' && this.focus.visible) {
       const t = this.focus.current(this.navTargets());
       if (t) {
@@ -1352,6 +1380,12 @@ export class Game {
     }
     // CHOOSE YOUR MACHINE: Escape goes back to the menu (a saved run stays saved).
     if (k === 'escape' && this.screens.active && this.screens.mode === 'cabinet') {
+      this.sounds.click();
+      this.showMenu();
+      return true;
+    }
+    // RUN OVER: Escape is the way back to the menu.
+    if (k === 'escape' && this.phase === 'over' && !this.menus.isOpen) {
       this.sounds.click();
       this.showMenu();
       return true;
