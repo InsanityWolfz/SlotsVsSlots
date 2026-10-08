@@ -1879,6 +1879,16 @@ const MINI = {
     ' EeQ   ',
     'EQ     ',
   ],
+  // THE JUKEBOX's beamed eighth notes (apricot / orange)
+  note: [
+    '  WaaaO',
+    '  a   O',
+    '  a   O',
+    '  a WaO',
+    'WaO aOo',
+    'aOo  o ',
+    ' o     ',
+  ],
   spiky: [
     ' W L S ',
     ' LLLLS ',
@@ -5219,6 +5229,218 @@ S.heroJoker = lit(24, 24, [
   segRow(24, 0, 'VVVvvvMMMmmVVVvvMMmmmvvv'),
 ]);
 
+// ================================================================ THE JUKEBOX (DJ DECIBEL)
+// Teal lacquer + chrome, warm orange / pink / cyan bubble tubes; the attack symbol is an apricot NOTE.
+// note (16x16): THE JUKEBOX's attack symbol, two beamed eighth notes with a teal sound-wave arc either side
+S.note = lit(16, 16, [
+  '................',
+  '................',
+  '....aWaaaaaa....',
+  '....aOOOOOOo....',
+  '..i.aO....aO.i..',
+  '.i..aO....aO..i.',
+  '.i..aO....aO..i.',
+  '.j..aO....aO..j.',
+  '..j.aO....aO.j..',
+  '....aO..WaaO....',
+  '..WaaO.aaOOO....',
+  '.aOOOo.aOOOo....',
+  '.aOOOo..ooo.....',
+  '..ooo...........',
+  '................',
+  '................',
+]);
+
+// jukebox cabinet: teal lacquer body with fluting, chrome trim, an arched crown ringed by a glowing bubble tube
+// (orange -> pink -> cyan), an EQ bar display in the marquee, bubble tubes up both sides, a chrome speaker grille
+{
+  const EQ = [3, 5, 7, 6, 4, 6, 7, 5, 3, 4, 6, 5, 2]; // bar heights, 2px bars on a 3px pitch from x=5
+  S.cabinetJukebox = cabinet({
+    body: ['i', 'j', 'n', 'K'], trim: ['L', 'S', 'D'], rim: ['W', 'L', 'S'], panel: ['n', 'K', 'K'], bulbs: ['a', 'o'],
+    knob: ['a', 'O', 'o'],
+    bodyFx: (x, y, c) => (c === 'j' && x % 5 === 0 && y > 19 ? 'n' : c),
+    panelFx: (x, y) => {
+      const i = Math.floor((x - 5) / 3), k = (x - 5) % 3;
+      if (x < 5 || i >= EQ.length || k === 2) return 'P';
+      const lvl = 16 - y, h = EQ[i];
+      if (lvl === h && h < 7) return 'T'; // peak-hold dot
+      if (lvl > h) return 'P';
+      const [hi, lo] = lvl <= 1 ? ['C', 'c'] : lvl <= 4 ? ['a', 'O'] : ['M', 'm'];
+      return k === 0 ? hi : lo;
+    },
+    reels: [['note', 'note', 'note'], ['note', 'note', 'note'], ['note', 'note', 'note']],
+    belly(g) {
+      // chrome speaker grille slats
+      for (let y = 47; y <= 50; y++) for (let x = 9; x <= 35; x++) put(g, x, y, y % 2 ? (x === 9 ? 'W' : 'L') : 'n');
+      // a row of glowing selector buttons
+      for (let x = 11, i = 0; x <= 33; x += 4, i++) { put(g, x, 48, 'aMC'[i % 3]); put(g, x + 1, 48, 'Omc'[i % 3]); }
+    },
+    tray(g) {
+      // a spilled 45 record in the coin tray
+      stamp(g, 13, 53, [' kkk ', 'klaOk', 'kkOkk']);
+      stamp(g, 27, 54, ['WaO', 'aOo']);
+    },
+    deco(g) {
+      // bubble tubes up the body sides (warm left, cool right), bubbles every few px
+      for (let y = 20; y <= 58; y++) {
+        const bub = (y + 1) % 5 === 0;
+        put(g, 4, y, bub ? 'W' : 'a'); put(g, 5, y, bub ? 'a' : 'O');
+        put(g, 39, y, bub ? 'W' : 'C'); put(g, 40, y, bub ? 'C' : 'c');
+      }
+      // the arched crown: chrome rim, glowing bubble tube, dark teal grille with chrome slats
+      layer(g, (h) => {
+        for (let y = 0; y <= 8; y++) for (let x = 3; x <= 41; x++) {
+          const d = Math.sqrt(((x - 22) / 18) ** 2 + ((y - 9.5) / 9.5) ** 2);
+          if (d > 1) continue;
+          let c;
+          if (d > 0.88) c = x <= 20 ? (x + y <= 22 ? 'W' : 'L') : (x >= 30 ? 'S' : 'L');
+          else if (d > 0.66) {
+            const [hi, lo] = x < 15 ? ['a', 'O'] : x < 29 ? ['M', 'm'] : ['C', 'c'];
+            c = (x * 3 + y * 5) % 11 === 0 ? 'W' : d > 0.78 ? hi : lo;
+          } else c = x % 3 === 1 ? 'S' : 'n';
+          put(h, x, y, c);
+        }
+      });
+      // tiny gold note badge at the crown's keystone
+      stampRimmed(g, 21, 3, [' Y', ' Y', 'GG']);
+    },
+  });
+}
+
+// heroJukebox: DJ DECIBEL -- black flat-top, chrome-banded teal headphones with an orange glow ring,
+// wraparound shades with a cyan glint, a cool lopsided grin, teal satin bomber with an orange collar over a white tee
+{
+  const g = grid(24, 24);
+  // flat-top hair
+  shape(g, 2, [[9, 17], [8, 18], [8, 18], [8, 18], [8, 18], [8, 18]], (x, y) => (y === 2 || (x <= 9 && y < 5) ? 'l' : 'k'));
+  for (let y = 8; y <= 10; y++) put(g, 10, y, 'k');
+  // face
+  shape(g, 7, [[10, 18], [11, 19], [11, 20], [11, 20], [11, 21], [11, 21], [11, 20], [11, 20], [11, 19], [12, 19], [13, 18]],
+    (x, y, has) => (!has(x + 1, y) || !has(x, y + 1) ? 'b' : (y === 7 || x === 11) ? 'w' : 'B'));
+  for (let x = 13; x <= 16; x++) put(g, x, 18, 'b');
+  // shades: a heavy bar with two dark lenses, a cyan glint on each
+  stamp(g, 11, 9, [
+    'kkkkkkkkkk',
+    ' kCnnkCnk ',
+    ' knnnkknk',
+  ]);
+  // nose + grin (corner kicked up on the right)
+  plot(g, [[21, 12, 'b']]);
+  stamp(g, 14, 14, [
+    '     K',
+    'KKKKK ',
+    ' TWWK',
+  ]);
+  // headphones: band arching over the crown, big cup on the ear
+  plot(g, [[7, 7, 'L'], [7, 6, 'L'], [7, 5, 'L'], [8, 4, 'L'], [8, 3, 'L'], [9, 2, 'W'], [10, 1, 'W'], [11, 1, 'L'], [12, 1, 'L'],
+    [13, 1, 'L'], [14, 1, 'L'], [15, 1, 'L'], [16, 1, 'S'], [17, 1, 'S'], [18, 2, 'S'], [18, 3, 'D'],
+    [8, 7, 'S'], [8, 6, 'S'], [8, 5, 'S'], [9, 4, 'S'], [9, 3, 'S'], [10, 2, 'S'], [11, 2, 'S'], [12, 2, 'S'], [13, 2, 'S'],
+    [14, 2, 'S'], [15, 2, 'S'], [16, 2, 'D'], [17, 2, 'D']]);
+  stamp(g, 5, 8, [
+    ' iiij',
+    'iijjjn',
+    'ijaOjn',
+    'ijOojn',
+    'ijjjjn',
+    'jjjjnn',
+    ' nnnn',
+  ]);
+  // shoulders: teal bomber, orange collar, white tee
+  stamp(g, 0, 18, [
+    '        aO       oO',
+    '   iijjaOOO   OOojjjj',
+    ' iijjjjjOOTTTTTtOojjjjn',
+    'ijjjjjjjjOTTTTTtOjjjjjnn',
+    'ijjjjjjjjjTTTTTtjjjjjnnn',
+    'jjjjjjjjjjTTTTttjjjjnnnn',
+  ]);
+  S.heroJukebox = toRows(outline(g));
+}
+
+// relicTurntable (16x16): TURNTABLE, a chrome deck with a black vinyl (orange label, grooves) and a tonearm
+{
+  const g = grid(16, 16);
+  for (let y = 2; y <= 13; y++) for (let x = 1; x <= 14; x++)
+    put(g, x, y, (y === 2 || x === 1) ? 'L' : (y === 13 || x === 14) ? 'D' : 'S');
+  put(g, 1, 2, 'W');
+  for (let y = 3; y <= 13; y++) for (let x = 1; x <= 12; x++) {
+    const r = Math.hypot(x - 6.5, y - 8);
+    if (r > 4.9) continue;
+    put(g, x, y, r < 1.6 ? (x + y <= 13 ? 'a' : 'O') : r > 2.6 && r < 3.6 && x + y < 15 ? 'l' : 'k');
+  }
+  put(g, 6, 8, 'W');
+  // tonearm: pivot top-right, arm swinging onto the record
+  plot(g, [[12, 3, 'W'], [13, 3, 'L'], [12, 4, 'L'], [13, 4, 'S'], [13, 5, 'L'], [13, 6, 'L'], [13, 7, 'L'], [12, 8, 'L'], [11, 9, 'L'],
+    [10, 10, 'a'], [10, 9, 'O'], [2, 12, 'R'], [4, 12, 'E']]);
+  S.relicTurntable = toRows(outline(g));
+}
+// relicMixtape (16x16): MIXTAPE, a black cassette with a cream label (pink + orange stripes) and two tape hubs
+S.relicMixtape = lit(16, 16, [
+  '................',
+  '................',
+  '.lllllllllllllk.',
+  '.lTTTTTTTTTTTtk.',
+  '.lTMMMMMMMMMMtk.',
+  '.lTOOOOOOOOOOtk.',
+  '.lTkkkkkkkkkktk.',
+  '.lTkWLkbbkWLktk.',
+  '.lTkLSkbbkLSktk.',
+  '.lTkkkkkkkkkktk.',
+  '.lTTTTTTTTTTTtk.',
+  '.llllkkkkkkllkk.',
+  '.lllklkllklkkkk.',
+  '................',
+  '................',
+  '................',
+]);
+// relicSubwoofer (16x16): SUBWOOFER, a charcoal box with one big cone in an orange glow ring, a chrome dust cap
+{
+  const g = grid(16, 16);
+  for (let y = 1; y <= 14; y++) for (let x = 1; x <= 14; x++)
+    put(g, x, y, (y === 1 || x === 1) ? 'l' : (y === 14 || x === 14) ? 'P' : 'k');
+  for (let y = 2; y <= 13; y++) for (let x = 2; x <= 13; x++) {
+    const r = Math.hypot(x - 7.5, y - 7.5);
+    if (r > 5.6) continue;
+    let c;
+    if (r > 4.7) c = x + y < 15 ? 'a' : 'O';
+    else if (r > 3.9) c = 'K';
+    else if (r > 1.9) c = x + y < 14 ? 'S' : x + y > 17 ? 'h' : 'D';
+    else c = x + y < 15 ? 'L' : 'S';
+    put(g, x, y, c);
+  }
+  plot(g, [[6, 6, 'W'], [5, 4, 'L'], [2, 2, 'W']]);
+  S.relicSubwoofer = toRows(outline(g));
+}
+
+// echo (THE JUKEBOX's charm): cyan sound-wave rings radiating in from the bottom-right corner (two rings) and
+// the top-left (one), edged in deep teal rather than K so they stay light over the symbol underneath
+// (cool cyan so it reads on the apricot NOTE and on blue shields alike)
+{
+  const g = grid(16, 16);
+  // clean pixel quarter-arcs as (dx, dy) offsets from the corner
+  const R3 = [[0, 3], [1, 3], [2, 2], [3, 1], [3, 0]];
+  const R6 = [[0, 6], [1, 6], [2, 6], [3, 5], [4, 4], [5, 3], [6, 2], [6, 1], [6, 0]];
+  const dot = [[0, 0, 'W'], [1, 0, 'C'], [0, 1, 'C']];
+  plot(g, dot.map(([dx, dy, c]) => [15 - dx, 15 - dy, c]));
+  plot(g, R3.map(([dx, dy], i) => [15 - dx, 15 - dy, i === 2 ? 'W' : 'C']));
+  plot(g, R6.map(([dx, dy], i) => [15 - dx, 15 - dy, i === 4 ? 'W' : 'C']));
+  plot(g, dot.map(([dx, dy, c]) => [dx, dy, c]));
+  plot(g, R3.map(([dx, dy], i) => [dx, dy, i === 2 ? 'W' : 'C']));
+  outline(g, 'n');
+  S.enhEcho = toRows(g);
+}
+// volumeIcon (8x8): HUD speaker, an orange cone with one cyan sound wave
+S.volumeIcon = [
+  '...KK.K.',
+  '..KWOKCK',
+  'KKWaOKKC',
+  'KWaOOKKC',
+  'KaOOOKKC',
+  'KKKOoKKC',
+  '..KKoKCK',
+  '...KK.K.',
+];
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -5279,6 +5501,8 @@ const DIMS = {
   relicBracelet: 16, relicMetronome: 16, relicSnakeEyes: 16, relicPitBoss: 16, relicCoil: 16, relicTaxMan: 16,
   trimClassic: 16, trimBronze: 16, trimSilver: 16, trimNeon: 16, trimVelvet: 16,
   trimEmerald: 16, trimDiamond: 16, trimObsidian: 16, trimHouse: 16,
+  note: 16, cabinetJukebox: { w: 48, h: 64 }, heroJukebox: 24,
+  relicTurntable: 16, relicMixtape: 16, relicSubwoofer: 16, enhEcho: 16, volumeIcon: 8,
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -5417,7 +5641,13 @@ export type SpriteId =
   | 'relicCapacitor' | 'relicLivewire' | 'relicEncore' | 'relicWildwheel'
   | 'relicDownpour' | 'relicNestegg'
   | 'relicCoup' | 'relicCompound' | 'relicHedge' | 'relicMeltdown' | 'relicPulse'
-  | 'relicDeckdrum' | 'relicWildcard' | 'relicLoadedreel';
+  | 'relicDeckdrum' | 'relicWildcard' | 'relicLoadedreel'
+  | 'note'                                       // THE JUKEBOX attack symbol (NOTE), 16x16
+  | 'cabinetJukebox'                             // THE JUKEBOX slot machine, 48x64 (non-square)
+  | 'heroJukebox'                                // DJ DECIBEL hero portrait (faces RIGHT), 24x24
+  | 'relicTurntable' | 'relicMixtape' | 'relicSubwoofer' // THE JUKEBOX relics, 16x16
+  | 'enhEcho'                                    // ECHO charm overlay, 16x16 (mostly transparent)
+  | 'volumeIcon';                                // HUD volume meter icon, 8x8
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

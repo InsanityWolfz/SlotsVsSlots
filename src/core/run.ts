@@ -70,7 +70,7 @@ export const RUN = {
 
 /** Charms by act (act 2 unlocks LUCKY and BLAZE). CHARGED and BLAZE feed the lightning: TESLA only. */
 // BULWARK (id 'spiked') retired 2026-10-07: SHIELD BASH (KNIGHT-only) is the shield-damage piece. The id stays for saves.
-export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'thorny', 'lucre', 'trick', 'lucky', 'blaze'];
+export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'thorny', 'lucre', 'trick', 'lucky', 'blaze', 'echo'];
 /** Empty since 2026-10-08 (user: LUCKY and BLAZE from Act 1). */
 export const ACT2_GILDS: Enh[] = [];
 const TESLA_ONLY: ReadonlySet<Enh> = new Set(['charged', 'blaze']);
@@ -80,8 +80,10 @@ const KNIGHT_ONLY: ReadonlySet<Enh> = new Set(['spiked']);
 const BRIAR_ONLY: ReadonlySet<Enh> = new Set(['thorny']);
 /** TRICK is JOKER's (CONTENT_13). */
 const JOKER_ONLY: ReadonlySet<Enh> = new Set(['trick']);
+/** ECHO is THE JUKEBOX's. */
+const JUKEBOX_ONLY: ReadonlySet<Enh> = new Set(['echo']);
 /** LUCKY is a later-machine charm (a wild barely changes KNIGHT's or MIDAS's two-symbol line). */
-export const LUCKY_MACHINES: ReadonlySet<CabinetId> = new Set(['thorn', 'tesla', 'joker']);
+export const LUCKY_MACHINES: ReadonlySet<CabinetId> = new Set(['thorn', 'tesla', 'joker', 'jukebox']);
 export const gildsFor = (run: RunState): Enh[] =>
   [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter(
     (e) =>
@@ -89,6 +91,7 @@ export const gildsFor = (run: RunState): Enh[] =>
       (run.cabinet === 'knight' || !KNIGHT_ONLY.has(e)) &&
       (run.cabinet === 'thorn' || !BRIAR_ONLY.has(e)) &&
       (run.cabinet === 'joker' || !JOKER_ONLY.has(e)) &&
+      (run.cabinet === 'jukebox' || !JUKEBOX_ONLY.has(e)) &&
       (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)) &&
       !run.noCharms?.includes(e) &&
       // A charm with nothing on your reels to go on is never offered (KEEN on a machine with no swords).
@@ -916,6 +919,8 @@ export const POWER_REF: Record<CabinetId, { mirror: number; act3: number; dealer
   thorn: { mirror: 159, act3: 317, dealer: 695 },
   tesla: { mirror: 246, act3: 566, dealer: 872 },
   joker: { mirror: 826, act3: 6465, dealer: 8499 },
+  // THE JUKEBOX (2026-10-08): measured with tools/sim/power_ref.ts 300 (GREEN, greedy).
+  jukebox: { mirror: 550, act3: 1065, dealer: 1666 },
 };
 export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): number {
   const ref = POWER_REF[run.cabinet][at];
@@ -938,6 +943,7 @@ export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer
   thorn: { house: 1, mirror: 9.5, dealer: 2.3, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
   tesla: { house: 0.85, mirror: 2.6, dealer: 2.2, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
   joker: { house: 1.9, mirror: 3.4, dealer: 0.66, act3: 0.35, act2: 1.5, gate: 0.85 },
+  jukebox: { house: 1.1, mirror: 0.9, dealer: 0.52, act3: 0.5, gate: 2.0 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
@@ -1683,7 +1689,8 @@ export type BigChoiceId =
   | 'excalibur' | 'shieldWall' | 'shieldSlam' | 'crusade' | 'squire'
   | 'chainLightning' | 'madScience' | 'supercell' | 'stormFront' | 'groundWire'
   | 'jokersReel' | 'doubleFeature' | 'highCard' | 'cardShark' | 'trumpCard'
-  | 'noLimit' | 'openBar' | 'heist' | 'monsoon' | 'trustFund';
+  | 'noLimit' | 'openBar' | 'heist' | 'monsoon' | 'trustFund'
+  | 'headliner' | 'feedback' | 'hypeMan' | 'encoreDrop' | 'backupDancers';
 /** HOUSE EDGES: endless-mode rules you take on, each paying a reward. */
 export type EdgeId = 'fast' | 'marked' | 'heal' | 'rollers' | 'nocomps' | 'frail';
 export const EDGES: EdgeId[] = ['fast', 'marked', 'heal', 'rollers', 'nocomps', 'frail'];
@@ -1727,7 +1734,7 @@ export const BIG = {
   armsRaceHp: 0.15, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.2, gildLotCells: 3, glassPay: 1.5,
   devilPay: 1.75, devilDecay: 0.08, allInHp: 0.2, wardedHp: 0.15, wards: 3, houseMoney: 40, heist: 30, heistHp: 0.3, crusadeStep: 5, crusadeHp: 0.2,
   chainHp: 0.3, madMul: 2, madCost: 0.05, groundHeal: 5, jokerHp: 0.5, featureHp: 0.2, noLimitHp: 0.25, monsoonCost: 10, trustChips: 2,
-  convertHp: 0.15, highCardMul: 1.5, fourLeafHp: 0.2, shieldWallKeep: 0.3, slamShare: 0.5, squireCells: 2, sharkWilds: 2, quickeningHp: 0,
+  convertHp: 0.15, highCardMul: 1.5, headlinerMul: 2, headlinerMax: 8, encoreHp: 0.25, dancers: 2, fourLeafHp: 0.2, shieldWallKeep: 0.3, slamShare: 0.5, squireCells: 2, sharkWilds: 2, quickeningHp: 0,
 };
 
 /** One card of the pool: who it's for and when it shows up. */
@@ -1800,13 +1807,19 @@ export const BIG_CARDS: BigCard[] = [
   { id: 'heist', slot: 'machine', machine: 'midas' },
   { id: 'monsoon', slot: 'machine', machine: 'midas' },
   { id: 'trustFund', slot: 'machine', machine: 'midas' },
+  // DJ DECIBEL
+  { id: 'headliner', slot: 'machine', machine: 'jukebox' },
+  { id: 'feedback', slot: 'machine', machine: 'jukebox' },
+  { id: 'hypeMan', slot: 'machine', machine: 'jukebox' },
+  { id: 'encoreDrop', slot: 'machine', machine: 'jukebox' },
+  { id: 'backupDancers', slot: 'machine', machine: 'jukebox' },
 ];
 /** Charm conversions: the Charm each one makes. */
 const CONVERT: Partial<Record<BigChoiceId, Enh>> = { whetted: 'keen', bloodMoon: 'vamp', cashIn: 'lucre', fourLeaf: 'lucky', overclock: 'charged', markedCards: 'trick' };
 
 const SYM_NAME = (s: SymbolId) => `${symLabel(s)}S`;
 /** Each machine's meter by its own name. */
-const METER_NAME: Partial<Record<CabinetId, string>> = { tesla: 'LIGHTNING METER', thorn: 'THORNS', joker: 'JACKPOT METER', midas: 'HIGH ROLLER METER' };
+const METER_NAME: Partial<Record<CabinetId, string>> = { tesla: 'LIGHTNING METER', thorn: 'THORNS', joker: 'JACKPOT METER', midas: 'HIGH ROLLER METER', jukebox: 'VOLUME' };
 const pct = (run: RunState, share: number) => `-${unitsRound(run.player.maxHp * share)} MAX HP`;
 /** The level a Charm or symbol type lands on (shown on the card). */
 const bestCharmLevel = (run: RunState) => Math.max(1, ...run.player.gilded.map((g) => charmLevel(run.player.levels, g.enh)));
@@ -1920,6 +1933,16 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
       return { title: 'THE HEIST', rule: `+${BIG.heist} CHIPS`, cost: pct(run, BIG.heistHp) };
     case 'monsoon':
       return { title: 'MONSOON', rule: 'CHIP PAIRS CAUSE MAKE IT RAIN AT FULL DAMAGE', cost: `MAKE IT RAIN COSTS ${BIG.monsoonCost} CHIPS` };
+    case 'headliner':
+      return { title: 'HEADLINER', rule: `THE DROP HITS X${BIG.headlinerMul}`, cost: `THE VOLUME MAX GOES UP TO ${BIG.headlinerMax}` };
+    case 'feedback':
+      return { title: 'FEEDBACK', rule: 'THE VOLUME NEVER DROPS ON A SPIN WITH NO NOTE', cost: 'THE DROP RESETS THE VOLUME TO 0' };
+    case 'hypeMan':
+      return { title: 'HYPE MAN', rule: '+1 VOLUME AT THE START OF EVERY SPIN', cost: 'NOTES PAY HALF WHEN IT ISN\'T THE DROP' };
+    case 'encoreDrop':
+      return { title: 'ENCORE', rule: 'AFTER THE DROP, THE NEXT SPIN IS A DROP TOO', cost: pct(run, BIG.encoreHp) };
+    case 'backupDancers':
+      return { title: 'BACKUP DANCERS', rule: `+${BIG.dancers} NOTES ON EVERY REEL`, cost: '' };
     case 'trustFund':
       return { title: 'TRUST FUND', rule: `+${BIG.trustChips} CHIPS AFTER EVERY ROUND YOU WIN`, cost: '' };
   }
@@ -2283,6 +2306,24 @@ export function takeChoice(run: RunState, c: BigChoice): void {
     case 'monsoon':
       big.monsoon = true;
       big.rainCost = BIG.monsoonCost;
+      break;
+    case 'headliner':
+      big.dropMul = BIG.headlinerMul;
+      big.volumeMax = BIG.headlinerMax;
+      break;
+    case 'feedback':
+      big.noSkip = true;
+      big.dropTo = 0;
+      break;
+    case 'hypeMan':
+      big.hype = true;
+      break;
+    case 'encoreDrop':
+      big.encoreDrop = true;
+      losePct(BIG.encoreHp);
+      break;
+    case 'backupDancers':
+      for (const s of p.strips) s.note = (s.note ?? 0) + BIG.dancers;
       break;
     case 'trustFund':
       run.trustFund = (run.trustFund ?? 0) + BIG.trustChips;

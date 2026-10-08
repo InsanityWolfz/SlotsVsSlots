@@ -118,15 +118,19 @@ function hudMeter(f: Fight): HudMeter | null {
   if (m.kind === 'touch') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'GOLD', color: '#ffd23f', icon: 'goldbar' as SpriteId };
   if (m.kind === 'vault') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'HIGH ROLLER', color: '#7dff7a', icon: 'goldbar' as SpriteId, note: (chips) => `${chips} CHIPS X${highRollerMul(chips)}` };
   if (m.kind === 'thorns') return { kind: m.kind, pips: 0, label: 'THORNS', color: '#9dff6a', icon: 'thorn' as SpriteId };
+  if (m.kind === 'volume') return { kind: m.kind, pips: Math.round(f.meterCost / UNIT), label: 'VOLUME', color: '#5ad8e8', icon: artId('volumeIcon') as SpriteId };
   return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'JACKPOTS', color: '#ff6ad5', icon: 'wild' };
 }
 
 function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
   const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const unlocked = machineIds(p.unlocked);
+  // BRIAR was retired for THE JUKEBOX (2026-10-08): her unlock and her stakes carry over to it.
+  if (unlocked.includes('thorn') && !unlocked.includes('jukebox')) unlocked.push('jukebox');
   if (!unlocked.includes('knight')) unlocked.unshift('knight');
   const stakes: Partial<Record<CabinetId, number>> = {};
   if (p.stakes && typeof p.stakes === 'object') for (const id of ALL_CABINETS) if (id in (p.stakes as object)) stakes[id] = clampStake((p.stakes as Record<string, unknown>)[id]);
+  if (stakes.thorn !== undefined && stakes.jukebox === undefined) stakes.jukebox = stakes.thorn;
   const juice = p.juice && typeof p.juice === 'object' ? (p.juice as Partial<JuiceToggles>) : {};
   const vol = p.vol && typeof p.vol === 'object' ? (p.vol as Partial<Prefs['vol']>) : {};
   return {
@@ -662,7 +666,9 @@ export class Game {
       knight: true,
       midas: run.won,
       tesla: reachedBoss,
-      thorn: beatHouse,
+      thorn: false,
+      // THE JUKEBOX takes BRIAR's slot and her unlock (2026-10-08).
+      jukebox: beatHouse,
       joker: beatHouse && run.player.strips.some((s) => (s.wild ?? 0) > 0),
     };
     for (const id of CABINET_ORDER) {

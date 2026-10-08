@@ -1,6 +1,6 @@
 import { UNIT, type Enh, type Gild, type Levels, type StripCounts, type SymbolId } from './config';
 
-export type CabinetId = 'knight' | 'midas' | 'thorn' | 'tesla' | 'joker';
+export type CabinetId = 'knight' | 'midas' | 'thorn' | 'tesla' | 'joker' | 'jukebox';
 
 /**
  * What a slot machine's signature symbol fills, and what the full meter does (the Tuesday rework):
@@ -10,9 +10,11 @@ export type CabinetId = 'knight' | 'midas' | 'thorn' | 'tesla' | 'joker';
  * - thorns (BRIAR): thorns bank their pay; the next time you're attacked the bank hits back, then clears;
  * - jackpots (JAX): each WILD on the payline fills the meter; when full, the next spin's three payline
  *   cells each pay as a jackpot of themselves.
+ * - volume (THE JUKEBOX): each NOTE on the payline turns the volume up 1 (+10% damage each); a spin with no note drops it
+ *   2; at the max the next spin is THE DROP: every NOTE you can see in the 3x3 window hits. Then it falls back to 2.
  * Every payoff also heals you a little (`heal`). KNIGHT has no meter.
  */
-export type MeterKind = 'special' | 'touch' | 'thorns' | 'jackpots' | 'vault';
+export type MeterKind = 'special' | 'touch' | 'thorns' | 'jackpots' | 'vault' | 'volume';
 export interface Meter {
   kind: MeterKind;
   /** The symbol that fills it. */
@@ -171,12 +173,31 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     unlock: 'BEAT THE HOUSE WITH WILDS',
     jokerWilds: true,
   },
+  jukebox: {
+    id: 'jukebox',
+    hero: 'DJ DECIBEL',
+    heroSprite: 'heroJukebox',
+    name: 'THE JUKEBOX',
+    sprite: 'cabinetJukebox',
+    blurb: 'TURN IT UP',
+    hp: 32 * UNIT,
+    // Replaces BRIAR (user, 2026-10-08): notes and shields. NOTES turn up the volume; at the max the beat drops.
+    strips: r3({ note: 6, shield: 6 }),
+    gilded: [],
+    favors: 'echo',
+    meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 2 * UNIT },
+    symbols: ['note', 'shield'],
+    attack: 'note',
+    rule: 'NOTES TURN UP THE VOLUME. AT MAX THE BEAT DROPS: EVERY NOTE HITS. 320 HP.',
+    unlock: 'BEAT THE HOUSE',
+  },
 };
 
 /** The playable lineup, in unlock order. MIDAS is shelved for a rework (2026-09-28): hidden, but kept in saves. */
-export const CABINET_ORDER: CabinetId[] = ['knight', 'tesla', 'thorn', 'joker', 'midas'];
+/** BRIAR ('thorn') is retired (2026-10-08): THE JUKEBOX takes her slot. Her id stays in saves (ALL_CABINETS). */
+export const CABINET_ORDER: CabinetId[] = ['knight', 'tesla', 'jukebox', 'joker', 'midas'];
 /** Every machine id a save may hold (shelved ones included), so loading a save never drops an unlock. */
-export const ALL_CABINETS: CabinetId[] = ['knight', 'midas', 'thorn', 'tesla', 'joker'];
+export const ALL_CABINETS: CabinetId[] = ['knight', 'midas', 'thorn', 'tesla', 'joker', 'jukebox'];
 
 /** This machine has the lightning special (TESLA; also the bare engine with no machine, for tests). */
 export const hasSpecial = (c: Cabinet | null | undefined) => !c || c.meter?.kind === 'special';

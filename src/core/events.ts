@@ -76,7 +76,9 @@ export type CombatEvent =
    */
   | { type: 'meter'; side: SideId; reels: number[]; amount: number; total: number; armed?: boolean; wasted?: number; earthed?: number }
   /** A meter paid off (MIDAS x4 group, JAX all-jackpots spin); it empties. */
-  | { type: 'payoff'; side: SideId; kind: 'touch' | 'jackpots' | 'vault'; left?: number; mul?: number }
+  | { type: 'payoff'; side: SideId; kind: 'touch' | 'jackpots' | 'vault' | 'volume'; left?: number; mul?: number }
+  /** THE JUKEBOX: THE DROP. Every NOTE in the 3x3 window off the payline hits (the payline scores as usual). */
+  | { type: 'drop'; side: SideId; cells: { reel: number; row: number }[]; amount: number }
   /** MIDAS: gold bars paid chips mid-fight (they're yours if you win). */
   | { type: 'midasChips'; side: SideId; amount: number; total: number }
   /** LUCRE: chips its group paid (banked on a win). */

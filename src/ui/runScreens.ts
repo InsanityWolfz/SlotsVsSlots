@@ -777,7 +777,7 @@ export class RunScreens {
     const edge = this.choices[0]?.id === 'edge';
     const rideQ = this.choices[0]?.id === 'cashOut';
     drawText(ctx, rideQ ? `LOOP ${(this.run?.endless?.loop ?? 2) - 1} CLEARED! POT ${this.run?.endless?.pot ?? 0}` : edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'BONUS ROUND', CX, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
-    drawText(ctx, rideQ ? 'RIDE AGAIN OR CASH OUT. YOUR WIN IS SAFE EITHER WAY.' : edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : 'THE BOSS PAID OUT. PICK ONE PRIZE: SOME COME WITH A PRICE.', CX, 110, 2, COLORS.textDim);
+    drawText(ctx, rideQ ? 'RIDE AGAIN OR CASH OUT. YOUR WIN IS SAFE EITHER WAY.' : edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : '', CX, 110, 2, COLORS.textDim);
     let tip = -1;
     this.cards.forEach((c, i) => {
       const ch = this.choices[i];
@@ -1091,6 +1091,14 @@ export class RunScreens {
       case 'trumpCard':
         drawSprite(ctx, 'ace', x, y - 6, s);
         tag(ch.id === 'highCard' ? 'X2' : 'PIERCE', x + s * 8, y + 30, ch.id === 'highCard' ? COLORS.goldLight : LV, 2.5);
+        break;
+      case 'headliner':
+      case 'feedback':
+      case 'hypeMan':
+      case 'encoreDrop':
+      case 'backupDancers':
+        drawSprite(ctx, 'note' as SpriteId, x, y - 6, s);
+        tag(ch.id === 'headliner' ? 'X2' : ch.id === 'feedback' ? 'HOLD' : ch.id === 'hypeMan' ? '+1' : ch.id === 'encoreDrop' ? 'AGAIN' : `+${BIG.dancers}`, x + s * 8, y + 30, '#5ad8e8', 2.5);
         break;
       case 'noLimit':
       case 'openBar':

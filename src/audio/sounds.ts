@@ -139,6 +139,15 @@ export class Sounds {
     this.s.tone({ type: 'sine', freq: 90, freqEnd: 60, dur: 1.0, gain: 0.3, attack: 0.2 });
   }
 
+  /** THE JUKEBOX: THE DROP. A sub-bass dive, a riser of noise into a snare crack, and a bright stab on top. */
+  drop(): void {
+    this.s.noise({ dur: 0.35, filter: 'highpass', freq: 800, freqEnd: 6000, gain: 0.12, attack: 0.3 });
+    this.s.tone({ type: 'sine', freq: 110, freqEnd: 36, dur: 0.7, gain: 0.5, at: 0.3 });
+    this.s.tone({ type: 'square', freq: 55, freqEnd: 40, dur: 0.4, gain: 0.12, at: 0.3 });
+    this.s.noise({ dur: 0.18, filter: 'bandpass', freq: 1800, q: 1.2, gain: 0.3, at: 0.3 });
+    [523.25, 659.25, 783.99].forEach((f) => this.s.tone({ type: 'square', freq: f, dur: 0.25, gain: 0.05, at: 0.3 }));
+  }
+
   fizzle(): void {
     this.s.tone({ type: 'sine', freq: 300, freqEnd: 150, dur: 0.18, gain: 0.08 });
   }

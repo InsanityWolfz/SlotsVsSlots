@@ -108,6 +108,10 @@ export const RELICS: Record<RelicId, RelicDef> = {
   loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY 20% MORE', sprite: 'relicLoaded' },
   marker: { id: 'marker', name: 'MARKER', text: 'FIRST BUSTED BET EACH ACT: UP TO 5 BACK', sprite: 'relicMarker', retired: true },
   highlimit: { id: 'highlimit', name: 'HIGH LIMIT', text: 'YOUR SIDE BET LIMIT DOUBLES', sprite: 'relicHighLimit' },
+  // THE JUKEBOX (2026-10-08).
+  turntable: { id: 'turntable', name: 'TURNTABLE', text: 'AFTER THE DROP, THE VOLUME FALLS TO 5, NOT 3', sprite: 'relicTurntable', machine: 'jukebox' },
+  mixtape: { id: 'mixtape', name: 'MIXTAPE', text: "A SPIN WITH NO NOTE DOESN'T LOWER THE VOLUME", sprite: 'relicMixtape', machine: 'jukebox' },
+  subwoofer: { id: 'subwoofer', name: 'SUBWOOFER', text: 'THE DROP PIERCES SHIELDS', sprite: 'relicSubwoofer', machine: 'jukebox' },
 };
 /** LOADED DICE: every side bet's pay x1.2 (a flat +0.5 made the x1.5 SAFE bet pay 133-143%: EXPERT_PLAYTEST_8 E5). */
 export const LOADED_MUL = 1.2;
@@ -122,12 +126,14 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
     midas: 'HIGH ROLLER STARTS AT 60/100 EACH FIGHT',
     thorn: 'THORNS START EACH FIGHT AT 30',
     joker: 'JACKPOT METER STARTS AT 60/100 EACH FIGHT',
+    jukebox: 'THE VOLUME STARTS EACH FIGHT AT 3',
   },
   fang: {
     tesla: 'LIGHTNING HEALS 5 HP',
     midas: 'HIGH ROLLER PAYOFFS HEAL 30 HP',
     thorn: 'THORNS THAT TRIGGER WHEN YOU LOSE HP HEAL 20',
     joker: 'ALL-JACKPOT SPINS HEAL 30 HP',
+    jukebox: 'THE DROP HEALS 30 HP',
   },
   overcharge: {
     tesla: 'YOUR LIGHTNING HITS 30% HARDER',
@@ -138,6 +144,7 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
     tesla: 'EACH WILD ON YOUR PAYLINE CHARGES LIGHTNING 5',
     thorn: 'EACH WILD ON YOUR PAYLINE ADDS 10 TO YOUR THORNS',
     joker: 'EACH WILD ON YOUR PAYLINE ADDS 10 TO YOUR JACKPOT METER',
+    jukebox: 'EACH WILD ON YOUR PAYLINE TURNS THE VOLUME UP 1',
   },
   bell: {
     knight: 'JACKPOTS PAY X2',
@@ -145,10 +152,11 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
     midas: 'JACKPOTS PAY X2 AND FILL YOUR HIGH ROLLER BAR',
     thorn: 'JACKPOTS PAY X2 AND ADD THEIR PAY TO YOUR THORNS',
     joker: 'JACKPOTS PAY X1.25 AND FILL YOUR JACKPOT METER',
+    jukebox: 'JACKPOTS PAY X2 AND MAX YOUR VOLUME',
   },
 };
 /** Machines that attack with something other than swords: relic texts name their symbol instead. */
-const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP', tesla: 'BOLT', thorn: 'THORN' };
+const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP', tesla: 'BOLT', thorn: 'THORN', jukebox: 'NOTE' };
 export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
   const t = (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;
   const w = cabinet ? ATTACK_WORD[cabinet] : undefined;
@@ -157,7 +165,7 @@ export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
 /** Relics that make no sense on a machine even reworded (never offered there). */
 /** Content wave 1: offered in drafts, shops and RELIC RUSH, but not in the starting pick (it keeps each machine's signature relics). */
 export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['bramble', 'riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg', 'coup', 'compound', 'hedge', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel']);
-export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['thorn'], bash: ['tesla', 'midas', 'joker'], wildcard: ['knight', 'midas'] };
+export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['thorn', 'jukebox'], bash: ['tesla', 'midas', 'joker'], wildcard: ['knight', 'midas'] };
 
 /** New-relic numbers (playtest/RELIC_PROPOSALS.md, tuned in the engine). */
 export const NEW_RELIC = {
@@ -227,7 +235,7 @@ export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
   common: ['clover', 'battery', 'fang', 'bandage', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar'],
-  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll', 'bracelet', 'coil', 'loadedchips', 'rainmaker', 'slushfund', 'loosechange', 'bramble', 'riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg', 'coup', 'compound', 'hedge', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel'],
+  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll', 'bracelet', 'coil', 'loadedchips', 'rainmaker', 'slushfund', 'loosechange', 'bramble', 'riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg', 'coup', 'compound', 'hedge', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
 };
 

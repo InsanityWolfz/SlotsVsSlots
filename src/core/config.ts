@@ -38,10 +38,12 @@ export type SymbolId =
   | 'goldbar'
   | 'thorn'
   /** JESTER JAX's attack symbol: a playing card (shown as CARD; 'card' is the Dealer's mark). It hits like a sword. */
-  | 'ace';
+  | 'ace'
+  /** DJ DECIBEL's attack symbol (THE JUKEBOX): a NOTE turns up the volume. It hits like a sword. */
+  | 'note';
 
 /** The player's sword-like symbols: they hit, take KEEN and VAMP, and feed the sword relics. */
-export const BLADES: ReadonlySet<SymbolId> = new Set<SymbolId>(['sword', 'ace']);
+export const BLADES: ReadonlySet<SymbolId> = new Set<SymbolId>(['sword', 'ace', 'note']);
 /** A symbol's name on screen (code ids that read differently: goldbar is a CHIP, ace is a CARD). */
 export const symLabel = (s: SymbolId): string => (s === 'goldbar' ? 'CHIP' : s === 'ace' ? 'CARD' : s.toUpperCase());
 
@@ -50,7 +52,7 @@ export const symLabel = (s: SymbolId): string => (s === 'goldbar' ? 'CHIP' : s =
  * and pierce, VAMP swords heal, LUCKY cells can land as WILDs, CHARGED / BLAZE bolts feed TESLA's
  * special. SPIKED is retired (BRIAR's thorns replaced it); the id stays so old saves still read.
  */
-export type Enh = 'gold' | 'keen' | 'charged' | 'spiked' | 'vamp' | 'lucky' | 'blaze' | 'thorny' | 'lucre' | 'trick';
+export type Enh = 'gold' | 'keen' | 'charged' | 'spiked' | 'vamp' | 'lucky' | 'blaze' | 'thorny' | 'lucre' | 'trick' | 'echo';
 /** `n` cells of `symbol` on reel `reel` carry charm `enh` (at most one charm per cell). */
 export interface Gild {
   reel: number;
@@ -187,7 +189,11 @@ export type RelicId =
   // Side bets
   | 'loaded'
   | 'marker'
-  | 'highlimit';
+  | 'highlimit'
+  // THE JUKEBOX (2026-10-08)
+  | 'turntable'
+  | 'mixtape'
+  | 'subwoofer';
 
 /** The fight rules a BIG CHOICE can add (the player's side only; set on the run, passed to every fight). */
 export interface BigMods {
@@ -228,6 +234,15 @@ export interface BigMods {
   startFull?: boolean;
   /** WARDED: this many sabotages a fight wash off. */
   wards?: number;
+  /** THE JUKEBOX: HEADLINER (THE DROP hits this much harder; the volume max is volumeMax), FEEDBACK (no skips; THE DROP
+   * leaves the volume at dropTo), HYPE MAN (+1 volume at every spin's start; notes pay half off the drop), ENCORE
+   * (THE DROP plays twice in a row). */
+  dropMul?: number;
+  volumeMax?: number;
+  noSkip?: boolean;
+  dropTo?: number;
+  hype?: boolean;
+  encoreDrop?: boolean;
 }
 
 export interface SideConfig {
@@ -317,7 +332,7 @@ export function defaultConfig(): GameConfig {
     player: { hp: 20 * UNIT, strips: reels3({ sword: 4, shield: 4, bolt: 4 }) },
     // Tuned from playtest/PLAYTEST_REPORT.md: ~65% player wins, ~24 turns, cleanse in ~half of fights.
     enemy: { hp: 30 * UNIT, strips: reels3({ sword: 5, shield: 2, slime: 5 }), name: 'SLIME KING', portrait: 'enemyPortrait' },
-    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, shard: UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, ground: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0, goldbar: UNIT, thorn: UNIT, ace: UNIT },
+    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, shard: UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, ground: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0, goldbar: UNIT, thorn: UNIT, ace: UNIT, note: UNIT },
     pairMult: 2,
     tripleMult: 3,
     pairRule: 'inOrder',

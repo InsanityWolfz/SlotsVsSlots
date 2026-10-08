@@ -1939,5 +1939,18 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   BOSS_MUL now: knight mirror 1.45 dealer 0.56; tesla 2.6 / 2.2; thorn 9.5 / 2.3; joker 3.4 / 0.66; midas 4.2 / 7
   (the previous refit had CASSIDY's dealer at 13.5, JAX's mirror at 4).
   Official N1000: KNIGHT 44.2/18.8, TESLA 43.3/17.3, BRIAR 42.3/18.0, JAX 41.3/17.5, CASSIDY 42.5/19.3.
-- UI: the post-boss screen is the BONUS ROUND ("THE BOSS PAID OUT. PICK ONE PRIZE"); the build panel's CHARMS show the
+- UI: the post-boss screen is the BONUS ROUND (title only, no subtitle); the build panel's CHARMS show the
   Charm alone (it can sit on several symbols); the CHIP Charm art is black-and-gold casino chips (was gold coins).
+
+## Iteration 92 (2026-10-08): THE JUKEBOX (DJ DECIBEL) replaces BRIAR
+- Machine: NOTES and SHIELDS, 6 each per reel. Payline notes turn up the VOLUME (+20% note damage per level); a spin with
+  no note skips 2. At 6 THE DROP: every note in the 3x3 window hits (gold, keen, vamp and ECHO apply), then the volume
+  falls to 3. A WILD turns the volume up only when it pairs as notes. Unlocks on BEAT THE HOUSE (old BRIAR saves migrate).
+- New: ECHO Charm (JUKEBOX only: at the drop its note hits x2-x4.5), TURNTABLE (drop falls to 5), MIXTAPE (no skip),
+  SUBWOOFER (the drop pierces shields), 5 bonus round cards (HEADLINER, FEEDBACK, HYPE MAN, ENCORE, BACKUP DANCERS).
+  Drop SFX; kept apart from the music. Art: note, machine, hero, 3 relics, ECHO, VOLUME icon.
+- First pass (+10%/level, 280 HP, falls to 2): WHITE 20.1 / GREEN 9.4 (House 83.8, Mirror 38.7). Buffed the machine
+  first: +20%/level, falls to 3 (TURNTABLE 5), 320 HP. Then bosses: mirror 1.45 -> 0.9, dealer 0.56 -> 0.52,
+  gate 1.3 -> 2.0 (fight-4 deaths were 1%). POWER_REF jukebox 412/795/1292 -> 550/1065/1666.
+- Official N1000: JUKEBOX 43.4 / 19.0 (act1 90.0, House 95.1, Mirror 57.8, fight-4 deaths 3.1%, Dealer 48.7).
+  The others didn't change: KNIGHT 44.2/18.8, TESLA 43.3/17.3, JAX 41.3/17.5, CASSIDY 42.5/19.3.

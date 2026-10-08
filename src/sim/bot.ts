@@ -26,6 +26,9 @@ export type DraftPolicy = 'greedy' | 'random' | 'relic';
 export const SIM_BIAS: { ride?: boolean; /** ENDLESS report: never cash out (measure the real wall). */ noCashOut?: boolean; onEnd?: (run: RunState) => void; startRelic?: RelicId; noStart?: boolean; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
 
 export const RELIC_VALUE: Record<RelicId, number> = {
+  turntable: 8,
+  mixtape: 7,
+  subwoofer: 7,
   hotstreak: 6,
   belt: 6,
   toll: 3,
@@ -136,7 +139,7 @@ export function greedyValue(run: RunState, o: DraftOption): number {
     }
     case 'gild':
       if (SIM_BIAS.enh) return o.enh === SIM_BIAS.enh ? 9.5 : 0;
-      return { gold: 9, charged: 8.5, spiked: 6.5, keen: 6.5, vamp: 7, lucky: run.cabinet === 'joker' ? 8.5 : 7, blaze: 8, thorny: 8, lucre: 6.5, trick: 8 }[o.enh] + (p.gilded.some((g) => g.enh === o.enh) ? 0.5 : 0);
+      return { gold: 9, charged: 8.5, spiked: 6.5, keen: 6.5, vamp: 7, lucky: run.cabinet === 'joker' ? 8.5 : 7, blaze: 8, thorny: 8, lucre: 6.5, trick: 8, echo: 8 }[o.enh] + (p.gilded.some((g) => g.enh === o.enh) ? 0.5 : 0);
     case 'symLevel':
       return o.symbol === attackOf(run) ? 8 : o.symbol === 'shield' ? 5 : 7.5;
     case 'charmLevel':
@@ -265,6 +268,13 @@ function choiceValueBase(run: RunState, c: BigChoice): number {
     case 'groundWire':
     case 'trumpCard':
     case 'trustFund':
+      return 6;
+    case 'headliner':
+    case 'encoreDrop':
+      return 7;
+    case 'feedback':
+    case 'hypeMan':
+    case 'backupDancers':
       return 6;
   }
 }

@@ -57,6 +57,8 @@ export const POT_STEAL = { any: 1 };
  * blockCap: a fully blocked hit fires that share of the bank (capped at a share of her max HP). Probe knobs (2026-10-07:
  * with thorns only firing on hits that got through, a BRIAR who blocked everything never dealt damage).
  */
+/** THE JUKEBOX: +10% damage per volume level, max 6, a noteless spin skips 2, and THE DROP leaves it at 2 (TURNTABLE: 4). */
+export const VOLUME = { perLevel: 0.2, max: 6, skip: 2, after: 3, turntable: 5 };
 export const THORNS = { volley: 1, onBlocked: 0, direct: 0, blockShare: 0, blockCap: 0.1, bloom: 0, shed: 0.5, parry: 0, triple: 0 };
 // BRIAR redesign probe knobs (playtest/BRIAR_REDESIGN.md), all 0 = today's rules:
 // bloom: at the end of her spin, a bank at or above this (game units) fires whole; shed: at the end of her spin this
@@ -110,13 +112,13 @@ const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'roc
 const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel']);
 const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
-const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'thorn', 'goldbar']);
+const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'thorn', 'goldbar', 'note']);
 /** A cell's charm as the WILD wheel shows it (only charms that change a jackpot's pay or heal). */
 export const wheelCharm = (cell: { enh?: Enh; faked?: number }): Enh | undefined =>
   cell.enh && (cell.enh === 'gold' || cell.enh === 'keen' || cell.enh === 'vamp' || cell.enh === 'charged') && !((cell.faked ?? 0) > 0) ? cell.enh : undefined;
 
 /** Symbols the 3-WILD bonus reel (and a WILD in JAX's payoff) can pick. */
-export const WHEEL_SYMBOLS: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'goldbar', 'thorn']);
+export const WHEEL_SYMBOLS: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'goldbar', 'thorn', 'note']);
 const JACKPOTABLE = WHEEL_SYMBOLS;
 
 export interface Combatant {
@@ -478,8 +480,19 @@ export class Fight {
 
   /** How full the player's meter has to be (the special's cost for TESLA). */
   get meterCost(): number {
+    // THE JUKEBOX: HEADLINER raises the volume's max.
+    if (this.meter?.kind === 'volume') return (this.big.volumeMax ?? VOLUME.max) * UNIT;
     return this.special ? this.cfg.specialCost : this.meter?.cost ?? 0;
   }
+
+  /** THE JUKEBOX: the volume (0..max). */
+  get volume(): number {
+    return Math.floor(this.sides.player.energy / UNIT);
+  }
+  /** THE JUKEBOX: this spin is THE DROP. */
+  private dropNow = false;
+  /** ENCORE (big choice): the second drop in a row is still to come. */
+  private encorePending = false;
 
   /** Debug: make the next spin of `side` land these payline symbols where the strip allows. */
   forceNext(side: SideId, line: SymbolId[]): void {
@@ -610,6 +623,12 @@ export class Fight {
     });
     const hexed = me.hexed.map((t) => t > 0);
     const drumNow = side === 'player' && (me.relics.has('drum') || me.relics.has('deckdrum')) ? (me.relics.has('drum') ? NEW_RELIC.drumStep : NEW_RELIC.deckdrumStep) * this.drum : 0;
+    // THE JUKEBOX: HYPE MAN turns the volume up before every spin; a full volume makes this spin THE DROP.
+    this.dropNow = false;
+    if (side === 'player' && this.meter?.kind === 'volume') {
+      if (this.big.hype && !me.armed) this.turnUp(me, 1, [], events);
+      this.dropNow = me.armed;
+    }
     const score = this.score(me, line);
     // Dead symbols lining up isn't a tease — except slime, which can cleanse.
     const nearMiss = isNearMiss(line) && (me.casts.has(line[0]) || line[0] === 'slime' || !DEAD.has(line[0]));
@@ -673,6 +692,8 @@ export class Fight {
       this.checkDeath(foe, events);
     }
     if (!this.over && side === 'player' && (score.raised || score.jackpots)) this.payoffAfter(me, score, events, sentBefore);
+    // THE JUKEBOX: THE DROP, or the volume going up (notes on the payline) or down (a spin with no note skips).
+    if (!this.over && side === 'player' && this.meter?.kind === 'volume') this.volumeAfterSpin(me, line, score, events);
     // JAX: every WILD on the payline fills the meter (lucky wilds too).
     if (!this.over && side === 'player' && this.meter?.kind === 'jackpots') {
       const wilds = line.flatMap((s, r) => (s === 'wild' && !this.isGrounded(me, r) ? [r] : []));
@@ -984,6 +1005,22 @@ export class Fight {
         g.base += (has('drum') ? NEW_RELIC.drumStep : NEW_RELIC.deckdrumStep) * this.drum * g.reels.length;
         fired.add(has('drum') ? 'drum' : 'deckdrum');
       }
+      // THE JUKEBOX: notes hit +10% per volume; at THE DROP an ECHO note hits again; HYPE MAN halves notes off the drop.
+      if (player && this.meter?.kind === 'volume' && g.symbol === 'note' && g.base > 0) {
+        const vol = this.volume;
+        if (vol > 0) {
+          g.mult *= 1 + VOLUME.perLevel * vol;
+          notes.push(`VOL +${vol * 10}%`);
+        }
+        if (this.dropNow) {
+          const echoes = g.reels.filter((r) => this.enhsAt(me, r).includes('echo'));
+          if (echoes.length) {
+            const ev = charmValue('echo', this.charmLvl(me, 'echo'));
+            g.mult *= 1 + ((ev - 1) * echoes.length) / g.reels.length;
+            notes.push('ECHO');
+          }
+        } else if (this.big.hype) g.mult *= 0.5;
+      }
       // BIG CHOICES on your groups: CRUSADE, EXCALIBUR, HIGH CARD, TRUMP CARD.
       if (player && g.base > 0) {
         const b = this.big;
@@ -1274,6 +1311,7 @@ export class Fight {
     const player = me.side === 'player';
     switch (g.symbol) {
       case 'sword':
+      case 'note':
       case 'ace': {
         // COUP DE GRACE (KNIGHT): swords hit x2 a foe under 25% of YOUR max HP. (An instant finish measured worse.)
         const coupLine = player && g.symbol === 'sword' && me.relics.has('coup') ? Math.round(me.maxHp * NEW_RELIC.coupPct) : 0;
@@ -1398,6 +1436,69 @@ export class Fight {
   private brambleTurn = -1;
   /** DOWNPOUR: rains so far this fight. */
   private rains = 0;
+  /** THE JUKEBOX: turn the volume up n (BLOOD PACT doubles it); a full volume arms THE DROP. */
+  private turnUp(me: Combatant, n: number, reels: number[], events: CombatEvent[]): void {
+    if (me.armed || n <= 0) return;
+    const add = n * UNIT * (this.cfg.player.meterMul ?? 1);
+    me.energy = Math.min(this.meterCost, me.energy + add);
+    me.armed = me.energy >= this.meterCost;
+    events.push({ type: 'meter', side: me.side, reels, amount: add, total: me.energy, ...(me.armed ? { armed: true } : {}) });
+  }
+
+  /** THE JUKEBOX, after a spin: THE DROP plays out, or the volume goes up (notes) or skips down (no note). */
+  private volumeAfterSpin(me: Combatant, line: SymbolId[], score: LineScore, events: CombatEvent[]): void {
+    if (this.dropNow) {
+      // THE DROP: every NOTE you can see off the payline hits too, with its own Charm (the payline scored already).
+      const foe = this.sides[other(me.side)];
+      const cells: { reel: number; row: number }[] = [];
+      let total = 0;
+      let pierce = me.relics.has('subwoofer');
+      let vamp = 0;
+      me.reels.forEach((reel, r) => {
+        for (const d of [-1, 1]) {
+          const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
+          if (!c || c.symbol !== 'note' || c.slimed || c.stolen) continue;
+          let v = playerSymValue(me.levels, 'note', this.cfg.base.note);
+          if (c.enh === 'keen') {
+            v += charmValue('keen', this.charmLvl(me, 'keen'));
+            pierce = true;
+          }
+          if (c.enh === 'gold') v *= charmValue('gold', this.charmLvl(me, 'gold'));
+          if (c.enh === 'echo') v *= charmValue('echo', this.charmLvl(me, 'echo'));
+          if (c.enh === 'vamp') vamp = Math.max(vamp, charmValue('vamp', this.charmLvl(me, 'vamp')));
+          cells.push({ reel: r, row: d + 1 });
+          total += v;
+        }
+      });
+      const mul = (1 + VOLUME.perLevel * this.volume) * (this.big.dropMul ?? 1) * (this.cfg.player.payMul ?? 1);
+      const amount = unitsRound(total * mul);
+      events.push({ type: 'drop', side: me.side, cells, amount });
+      if (amount > 0) this.hit(me, foe, amount, [], events, pierce, undefined, true);
+      if (!this.over && vamp) this.heal(me, vamp, 'vamp', events);
+      if (this.over) return;
+      // ENCORE (big choice): the beat drops once more before the volume falls.
+      if (this.big.encoreDrop && !this.encorePending) this.encorePending = true;
+      else {
+        this.encorePending = false;
+        me.armed = false;
+        me.energy = (this.big.dropTo ?? (me.relics.has('turntable') ? VOLUME.turntable : VOLUME.after)) * UNIT;
+      }
+      events.push({ type: 'payoff', side: me.side, kind: 'volume', left: me.energy });
+      this.payoffHeal(me, events);
+      return;
+    }
+    // Notes on the payline turn it up; a WILD counts only when it pairs as a note (user, 2026-10-08).
+    const noteGroups = score.groups.filter((g) => g.symbol === 'note');
+    const reels = line.flatMap((s, r) => (s === 'note' || (s === 'wild' && noteGroups.some((g) => g.reels.includes(r))) ? [r] : []));
+    if (reels.length) this.turnUp(me, reels.length, reels, events);
+    else if (me.energy > 0 && !me.armed && !this.big.noSkip && !me.relics.has('mixtape')) {
+      // The record skips.
+      const drop = Math.min(me.energy, VOLUME.skip * UNIT);
+      me.energy -= drop;
+      events.push({ type: 'meter', side: me.side, reels: [], amount: -drop, total: me.energy });
+    } else if (me.relics.has('mixtape') && me.energy > 0 && !me.armed) events.push({ type: 'relic', side: me.side, relic: 'mixtape' });
+  }
+
   private makeItRain(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
     this.rains++;
     if (me.relics.has('downpour') && this.rains > 1) events.push({ type: 'relic', side: me.side, relic: 'downpour' });

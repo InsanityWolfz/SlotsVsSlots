@@ -125,6 +125,8 @@ export class Director {
         return this.touch(e);
       case 'payoff':
         return this.payoff(e);
+      case 'drop':
+        return this.drop(e);
       case 'specialFire':
         return this.specialFire(e);
       case 'slime':
@@ -1102,6 +1104,14 @@ export class Director {
       if (e.reels.length) this.settle(e.side, e.reels);
       return;
     }
+    // THE JUKEBOX: a spin with no note skips the record (the volume falls).
+    if (m.kind === 'volume' && e.amount < 0) {
+      const p0 = h.pipPos(Math.max(0, Math.floor(h.energy) - 1));
+      this.s.sounds.fizzle();
+      this.bg(this.popText('SKIP!', p0.x, p0.y - 24, 2, COLORS.textDim, 16, 0.3));
+      await this.c.to(h, 'energy', e.total / UNIT, 0.2, sineIn);
+      return;
+    }
     if (e.wasted) {
       const p0 = h.pipPos(h.energyMax - 1);
       await this.popText('FULL!', p0.x, p0.y - 24, 2, COLORS.textDim, 16, 0.2);
@@ -1132,7 +1142,7 @@ export class Director {
       h.armed = true;
       this.s.sounds.lucky();
       // Over the machine's top, on a plate: it used to land on the HP and meter bars.
-      this.bg(this.popText(m.kind === 'touch' ? 'NEXT SPIN TURNS GOLD!' : m.kind === 'vault' ? 'HIGH ROLLER! NEXT PAY MULTIPLIES!' : 'NEXT SPIN: ALL JACKPOTS!', MACHINE_CX[e.side], MACHINE_TOP + MACHINE_H + 14, 2, m.color, 12, 0.6, true));
+      this.bg(this.popText(m.kind === 'touch' ? 'NEXT SPIN TURNS GOLD!' : m.kind === 'vault' ? 'HIGH ROLLER! NEXT PAY MULTIPLIES!' : m.kind === 'volume' ? 'MAX VOLUME! THE BEAT DROPS NEXT SPIN!' : 'NEXT SPIN: ALL JACKPOTS!', MACHINE_CX[e.side], MACHINE_TOP + MACHINE_H + 14, 2, m.color, 12, 0.6, true));
     }
     if (e.reels.length) this.settle(e.side, e.reels);
   }
@@ -1148,7 +1158,29 @@ export class Director {
     const color = h.meter?.color ?? COLORS.goldLight;
     // A callout over the machine, not a second banner (the PAIR!/JACKPOT! banner carries the math).
     const c = this.machineCenter(e.side);
+    if (e.kind === 'volume') return;
     await this.popText(e.kind === 'touch' ? 'MIDAS TOUCH!' : e.kind === 'vault' ? `HIGH ROLLER X${e.mul ?? 1}!` : 'ALL JACKPOTS!', c.x, MACHINE_TOP + 30, 4, color, 30, 0.45);
+  }
+
+  /** THE JUKEBOX: THE DROP. A bass hit, every note in the window lights up, then they all hit (the attack follows). */
+  private async drop(e: Ev<'drop'>): Promise<void> {
+    const m = this.s.machines[e.side];
+    const c = this.machineCenter(e.side);
+    this.s.sounds.drop();
+    this.shake(7, 0.35);
+    this.bg(this.popText('THE DROP!', c.x, MACHINE_TOP + 30, 5, '#5ad8e8', 34, 0.5));
+    const lights = e.cells.map(async (ref, i) => {
+      await this.c.wait(i * 0.04);
+      const fx = m.reels[ref.reel]?.rows[ref.row];
+      if (fx) {
+        fx.flash = 0.9;
+        this.bg(this.c.tween({ from: 0.9, to: 0, dur: 0.4, onUpdate: (v) => (fx.flash = v) }));
+      }
+      const p = cellCenter(e.side, ref.reel, ref.row);
+      this.s.particles.burst({ x: p.x, y: p.y, count: 10, colors: ['#5ad8e8', '#ff9ec8', '#ffe45c'], speed: [60, 180], gravity: 0, life: [0.25, 0.45], size: [2, 4], kind: 'spark' });
+    });
+    await Promise.all(lights);
+    await this.c.wait(0.15);
   }
 
   /** MIDAS TOUCH: swords and shields turn gold (a gold rim with 1-3 pips) for the rest of the fight. */
