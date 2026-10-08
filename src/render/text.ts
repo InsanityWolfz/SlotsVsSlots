@@ -71,7 +71,13 @@ export interface TextOpts {
   rot?: number;
 }
 
+/** Readability floor (STEAM_READINESS S6): Steam Deck wants 9px+ glyphs at 1280x800 (the 7px font x1.3 = 9.1px). */
+export const TEXT_MIN = 1.3;
+// Only the fixed small sizes (1 and 1.25) are lifted: tweened scales passing through stay smooth.
+const floorScale = (s: number) => (s === 1 || s === 1.25 ? TEXT_MIN : s);
+
 export function textWidth(text: string, scale: number): number {
+  scale = floorScale(scale);
   return ([...text].length * (FONT_W + 1) - 1) * scale;
 }
 
@@ -87,7 +93,7 @@ export function drawText(ctx: CanvasRenderingContext2D, text: string, x: number,
   const alpha = o.alpha ?? 1;
   if (alpha <= 0) return;
   const img = textCanvas(text, color, o.outline === undefined ? OUTLINE : o.outline);
-  const k = scale * (o.punch ?? 1);
+  const k = floorScale(scale) * (o.punch ?? 1);
   const w = img.width * k;
   const h = img.height * k;
   const ax = o.align === 'left' ? 0 : o.align === 'right' ? w : w / 2;
