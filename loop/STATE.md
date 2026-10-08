@@ -1954,3 +1954,6 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   gate 1.3 -> 2.0 (fight-4 deaths were 1%). POWER_REF jukebox 412/795/1292 -> 550/1065/1666.
 - Official N1000: JUKEBOX 43.4 / 19.0 (act1 90.0, House 95.1, Mirror 57.8, fight-4 deaths 3.1%, Dealer 48.7).
   The others didn't change: KNIGHT 44.2/18.8, TESLA 43.3/17.3, JAX 41.3/17.5, CASSIDY 42.5/19.3.
+- LUCKY on THE JUKEBOX (user fix): it works as on every machine (payline cells roll to turn WILD). At the drop, each
+  lucky cell off the payline rolls too; a WILD plays as a note in the drop (LUCKY WILD! shows on that cell).
+  Official N1000 after: JUKEBOX 43.5 / 18.0 (fight-4 deaths 3.0%).

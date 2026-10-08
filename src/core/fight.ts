@@ -1450,14 +1450,17 @@ export class Fight {
     if (this.dropNow) {
       // THE DROP: every NOTE you can see off the payline hits too, with its own Charm (the payline scored already).
       const foe = this.sides[other(me.side)];
-      const cells: { reel: number; row: number }[] = [];
+      const cells: { reel: number; row: number; wild?: true }[] = [];
       let total = 0;
       let pierce = me.relics.has('subwoofer');
       let vamp = 0;
       me.reels.forEach((reel, r) => {
         for (const d of [-1, 1]) {
           const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
-          if (!c || c.symbol !== 'note' || c.slimed || c.stolen) continue;
+          if (!c || c.slimed || c.stolen) continue;
+          // LUCKY: a lucky cell rolls as usual; if it comes up WILD it plays as a note (user, 2026-10-08).
+          const wild = c.symbol !== 'note' && c.symbol !== 'wild' && c.enh === 'lucky' && this.rng.next() < charmValue('lucky', this.charmLvl(me, 'lucky')) / 100;
+          if (c.symbol !== 'note' && c.symbol !== 'wild' && !wild) continue;
           let v = playerSymValue(me.levels, 'note', this.cfg.base.note);
           if (c.enh === 'keen') {
             v += charmValue('keen', this.charmLvl(me, 'keen'));
@@ -1466,7 +1469,7 @@ export class Fight {
           if (c.enh === 'gold') v *= charmValue('gold', this.charmLvl(me, 'gold'));
           if (c.enh === 'echo') v *= charmValue('echo', this.charmLvl(me, 'echo'));
           if (c.enh === 'vamp') vamp = Math.max(vamp, charmValue('vamp', this.charmLvl(me, 'vamp')));
-          cells.push({ reel: r, row: d + 1 });
+          cells.push({ reel: r, row: d + 1, ...(wild ? { wild: true as const } : {}) });
           total += v;
         }
       });

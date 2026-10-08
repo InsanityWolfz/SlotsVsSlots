@@ -3,6 +3,7 @@ import { defaultConfig, reels3, UNIT, type GameConfig } from '../src/core/config
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { createRun, fightConfig } from '../src/core/run';
+import { CHARM_VALUE } from '../src/core/charms';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(evs: CombatEvent[], t: T) => evs.filter((e) => e.type === t) as Extract<CombatEvent, { type: T }>[];
@@ -74,6 +75,25 @@ describe('THE JUKEBOX (DJ DECIBEL)', () => {
     expect(f.volume).toBe(0);
     round(f, ['note', 'wild', 'shield']);
     expect(f.volume).toBe(2);
+  });
+
+  it('at the drop, a LUCKY cell off the payline rolls; a WILD plays as a note', () => {
+    const old = CHARM_VALUE.lucky[1];
+    CHARM_VALUE.lucky[1] = 100;
+    try {
+      const f = juke((c) => {
+        c.player.strips = [{ note: 12 }, { note: 12 }, { shield: 12 }];
+        c.player.gilded = [{ reel: 2, symbol: 'shield', enh: 'lucky', n: 12 }];
+      });
+      f.sides.player.energy = 6 * UNIT;
+      f.sides.player.armed = true;
+      const drop = ofType(round(f, ['note', 'note', 'shield']), 'drop')[0];
+      // Reels 1-2: 4 notes off the payline; reel 3: 2 lucky shields come up WILD.
+      expect(drop.cells.length).toBe(6);
+      expect(drop.cells.filter((c) => c.wild).map((c) => c.reel)).toEqual([2, 2]);
+    } finally {
+      CHARM_VALUE.lucky[1] = old;
+    }
   });
 
   it('the volume meter is full at 6 (HEADLINER raises it to 8)', () => {

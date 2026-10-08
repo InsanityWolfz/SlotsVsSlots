@@ -575,7 +575,7 @@ export class Director {
       await this.luckyPop(e.side);
     }
     for (const r of e.score.relics ?? []) this.relicPop(e.side, r);
-    if (e.luckyWilds?.length) await this.luckyWilds(e.side, e.luckyWilds);
+    if (e.luckyWilds?.length) await this.luckyWilds(e.side, e.luckyWilds.map((reel) => ({ reel, row: 1 })));
     // 3 WILDS: a little bonus reel picks one of your symbols, and that jackpot pays.
     if (e.score.wildPick) await this.bonusReel(e.side, e.score.wildPick, e.score.wildPickEnh);
     // JAX's all-jackpots spin: each WILD on the line spins the wheel for its symbol and charm.
@@ -1169,6 +1169,8 @@ export class Director {
     this.s.sounds.drop();
     this.shake(7, 0.35);
     this.bg(this.popText('THE DROP!', c.x, MACHINE_TOP + 30, 5, '#5ad8e8', 34, 0.5));
+    const wilds = e.cells.filter((x) => x.wild);
+    if (wilds.length) await this.luckyWilds(e.side, wilds);
     const lights = e.cells.map(async (ref, i) => {
       await this.c.wait(i * 0.04);
       const fx = m.reels[ref.reel]?.rows[ref.row];
@@ -1641,12 +1643,12 @@ export class Director {
   // ---- act 2 -----------------------------------------------------------------------------
 
   /** LUCKY gilds that turned WILD on this spin. */
-  private async luckyWilds(side: SideId, reels: number[]): Promise<void> {
+  private async luckyWilds(side: SideId, cells: { reel: number; row: number }[]): Promise<void> {
     const m = this.s.machines[side];
     this.s.sounds.lucky();
-    for (const r of reels) {
-      const p = cellCenter(side, r, 1);
-      const fx = m.reels[r].rows[1];
+    for (const { reel: r, row } of cells) {
+      const p = cellCenter(side, r, row);
+      const fx = m.reels[r].rows[row];
       fx.glowColor = '#7dff7a';
       this.bg(this.c.tween({ from: 1, to: 0, dur: 0.8, onUpdate: (v) => (fx.glow = v) }));
       const w = this.s.fx.add(new Projectile('wild', p.x, p.y, 0));
