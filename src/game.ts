@@ -167,7 +167,8 @@ export function toggleFullscreen(on?: boolean): void {
 export const RUN_KEY = 'slotvslot.run.v1';
 export function clearRunSave(): void {
   try {
-    localStorage.removeItem(RUN_KEY);
+    // The backups too: a cleared run must never come back through CONTINUE (STEAM_QA_1 Q1).
+    for (const k of [RUN_KEY, RUN_KEY + BAK, RUN_KEY + '.corrupt']) localStorage.removeItem(k);
     desktop()?.saveRemove(RUN_KEY);
   } catch {
     /* no storage */
@@ -192,7 +193,8 @@ function load<T>(key: string): T | null {
     }
     const raw = localStorage.getItem(key);
     const v = parse<T>(raw);
-    if (v !== null || !raw) return v ?? parse<T>(localStorage.getItem(key + BAK));
+    // Missing is missing (a cleared save stays cleared); only a save that fails to parse falls back to its backup.
+    if (v !== null || !raw) return v;
     // Corrupt: keep the bytes for a manual rescue, then fall back to the backup.
     localStorage.setItem(key + '.corrupt', raw);
     return parse<T>(localStorage.getItem(key + BAK));

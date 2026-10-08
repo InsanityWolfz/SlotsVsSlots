@@ -726,6 +726,8 @@ export class RunScreens {
     this.cards = [];
     this.buttons = [];
     this.shopHits = [];
+    // The price tags too: they used to stay live (and buy from the old shelf) after leaving the shop (STEAM_QA_1 Q2).
+    this.shopTags = [];
     this.picked = -1;
     void this.ui.tween({ from: 0, to: 1, dur: 0.3, ease: sineOut, onUpdate: (v) => (this.fade = v) });
   }
@@ -1209,7 +1211,7 @@ export class RunScreens {
     this.shopTags = items.map((_, i) => {
       const it = this.shopHits[i];
       // (Its size follows the item's entrance; its own scale is only the press bounce.)
-      return { ...this.hit(it.x, it.y + 8 + TAG.y, TAG.w, TAG.h, () => this.cb.onBuy(i)), scale: 1 };
+      return { ...this.hit(it.x, it.y + 8 + TAG.y, TAG.w, TAG.h, () => this.mode === 'shop' && this.cb.onBuy(i)), scale: 1 };
     });
     if (!reopen) this.shopSel = -1;
     else if (this.shopItems[this.shopSel]?.sold) this.shopSel = -1;
