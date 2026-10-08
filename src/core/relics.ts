@@ -31,7 +31,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   midas: { id: 'midas', name: 'GOLD LEAF', text: 'GOLD ON A CELL THAT PAYS NOTHING JOINS YOUR BIGGEST GROUP', sprite: 'relicGoldleaf', charm: 'gold', retired: true },
   rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'WITH CHARGED BOLTS: CHEAPER LIGHTNING, +10 LIGHTNING DAMAGE', sprite: 'relicRod', machine: 'tesla' },
   cactus: { id: 'cactus', name: 'CACTUS', text: 'LANDED THORNS ALSO SHIELD YOU 30% OF THEM', sprite: 'relicCactus', machine: 'thorn' },
-  prism: { id: 'prism', name: 'PRISM', text: 'A MATCH THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
+  prism: { id: 'prism', name: 'PRISM', text: 'A PAIR OR JACKPOT THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
   hone: { id: 'hone', name: 'EXECUTIONER', text: 'KEEN SWORDS PAY X3 VS ENEMIES UNDER HALF HP', sprite: 'relicExecutioner', charm: 'keen' },
   // Legendary (act 2): big, build-bending effects.
   ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'EVERY CHARM IS ONE LEVEL HIGHER, PAST 3 TOO', sprite: 'relicTicket' },
@@ -40,10 +40,10 @@ export const RELICS: Record<RelicId, RelicDef> = {
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR METER PAYOFF ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
   key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR PAIRS PAY X2', sprite: 'relicKey' },
   chalice: { id: 'chalice', name: 'BLOOD CHALICE', text: 'HEALING PAST FULL HP BECOMES SHIELD', sprite: 'relicChalice' },
-  sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: 'ENEMY ABILITIES CHARGE 1 TURN SLOWER', sprite: 'relicSandglass' },
+  sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: 'ENEMY ABILITIES CHARGE 1 SPIN SLOWER', sprite: 'relicSandglass' },
   // Slot machine relics: each machine gets an identity relic and a heal that feeds off its own mechanic.
   drum: { id: 'drum', name: 'WAR DRUM', text: 'EVERY PAYING SPIN: SWORDS +2 THIS FIGHT (MAX +10)', sprite: 'relicDrum', machine: 'knight' },
-  chainmail: { id: 'chainmail', name: 'CHAINMAIL', text: 'LEFTOVER SHIELD HEALS 10% OF IT EACH TURN', sprite: 'relicChainmail', machine: 'knight' },
+  chainmail: { id: 'chainmail', name: 'CHAINMAIL', text: 'LEFTOVER SHIELD HEALS 10% OF IT EACH SPIN', sprite: 'relicChainmail', machine: 'knight' },
   vault: { id: 'vault', name: 'BANK VAULT', text: 'EACH WIN PUTS A GOLD CHARM ON A CHIP', sprite: 'relicVault', machine: 'midas' },
   decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR MIDAS TOUCH ALSO SPREADS TO THE CELLS ABOVE AND BELOW', sprite: 'relicDecree', machine: 'midas', retired: true },
   rosehip: { id: 'rosehip', name: 'ROSE HIP', text: 'A HIT THAT GETS THROUGH: YOUR THORNS HEAL 10% OF WHAT THEY FIRE (MAX 20)', sprite: 'relicRosehip', machine: 'thorn' },
@@ -62,26 +62,26 @@ export const RELICS: Record<RelicId, RelicDef> = {
   livewire: { id: 'livewire', name: 'LIVE WIRE', text: 'LIGHTNING +50%. EACH STORM COSTS 2% HP', sprite: 'relicLivewire', machine: 'tesla' },
   encore: { id: 'encore', name: 'ENCORE', text: 'AFTER YOUR JACKPOT METER PAYS, IT KEEPS 30%', sprite: 'relicEncore', machine: 'joker' },
   wildwheel: { id: 'wildwheel', name: 'WILD WHEEL', text: 'THE WILD WHEEL SPINS TWICE AND KEEPS THE BEST', sprite: 'relicWildwheel', machine: 'joker' },
-  downpour: { id: 'downpour', name: 'DOWNPOUR', text: 'EACH RAIN THIS FIGHT: NEXT RAIN +40%', sprite: 'relicDownpour', machine: 'midas' },
+  downpour: { id: 'downpour', name: 'DOWNPOUR', text: 'EACH MAKE IT RAIN THIS FIGHT: THE NEXT ONE +40%', sprite: 'relicDownpour', machine: 'midas' },
   nestegg: { id: 'nestegg', name: 'NEST EGG', text: 'HIGH ROLLER COUNTS 10 MORE CHIPS', sprite: 'relicNestegg', machine: 'midas' },
   // CONTENT WAVE 1, part 2.
-  coup: { id: 'coup', name: 'COUP DE GRACE', text: 'SWORDS HIT X2 WHEN THE FOE IS UNDER 25% OF YOUR MAX HP', sprite: 'relicCoup', machine: 'knight' },
+  coup: { id: 'coup', name: 'COUP DE GRACE', text: 'SWORDS HIT X2 WHEN THE ENEMY IS UNDER 25% OF YOUR MAX HP', sprite: 'relicCoup', machine: 'knight' },
   compound: { id: 'compound', name: 'COMPOUND', text: 'HIGH ROLLER CAPS AT X4, NOT X3', sprite: 'relicCompound', machine: 'midas' },
   hedge: { id: 'hedge', name: 'HEDGE', text: 'HP YOU LOSE ADDS 10% OF IT TO YOUR THORNS', sprite: 'relicHedge', machine: 'thorn' },
   meltdown: { id: 'meltdown', name: 'MELTDOWN', text: 'LIGHTNING +1% FOR EACH 2% HP YOU ARE MISSING (MAX +25%)', sprite: 'relicMeltdown', machine: 'tesla' },
-  pulse: { id: 'pulse', name: 'PULSE', text: 'ONCE A FIGHT, A STORM RESETS THEIR ABILITY ABOUT TO FIRE', sprite: 'relicPulse', machine: 'tesla' },
+  pulse: { id: 'pulse', name: 'PULSE', text: 'ONCE A FIGHT, LIGHTNING RESETS THE ENEMY ABILITY ABOUT TO FIRE', sprite: 'relicPulse', machine: 'tesla' },
   deckdrum: { id: 'deckdrum', name: 'DECK DRUM', text: 'EACH PAYING SPIN THIS FIGHT: CARDS +1 (MAX +5)', sprite: 'relicDeckdrum', machine: 'joker' },
   wildcard: { id: 'wildcard', name: 'WILD CARD', text: 'EACH WILD ON YOUR PAYLINE CHARGES YOUR METER 5', sprite: 'relicWildcard' },
-  loadedreel: { id: 'loadedreel', name: 'LOADED REEL', text: 'A WILD ON REEL 2 COUNTS FOR BOTH SIDES', sprite: 'relicLoadedreel' },
+  loadedreel: { id: 'loadedreel', name: 'LOADED REEL', text: 'A WILD ON REEL 2 PAIRS WITH BOTH NEIGHBOURS', sprite: 'relicLoadedreel' },
   // Charm relics.
   kiss: { id: 'kiss', name: "VAMPIRE'S KISS", text: 'VAMP FITS ANY SYMBOL AND HEALS WHEN IT PAYS', sprite: 'relicKiss', charm: 'vamp' },
-  horseshoe: { id: 'horseshoe', name: 'HORSESHOE', text: 'MATCHES MADE WITH A LUCKY WILD PAY X3', sprite: 'relicHorseshoe', charm: 'lucky' },
+  horseshoe: { id: 'horseshoe', name: 'HORSESHOE', text: 'PAIRS AND JACKPOTS MADE WITH A LUCKY WILD PAY X3', sprite: 'relicHorseshoe', charm: 'lucky' },
   // General.
   underdog: { id: 'underdog', name: 'UNDERDOG', text: 'UNDER HALF HP, EVERYTHING PAYS X1.5', sprite: 'relicUnderdog' },
   firstblood: { id: 'firstblood', name: 'FIRST BLOOD', text: 'YOUR FIRST PAYING SPIN EACH FIGHT PAYS X3', sprite: 'relicFirstblood' },
   piggy: { id: 'piggy', name: 'PIGGY BANK', text: 'EACH WIN: +1 CHIP PER 5 YOU HOLD (MAX 4)', sprite: 'relicPiggy' },
   trophy: { id: 'trophy', name: 'TROPHY BELT', text: '+10 MAX HP FOR EVERY FIGHT YOU WIN', sprite: 'relicTrophy' },
-  holywater: { id: 'holywater', name: 'HOLY WATER', text: 'THE FIRST CHEAT ON YOUR REELS WASHES OFF', sprite: 'relicHolywater' },
+  holywater: { id: 'holywater', name: 'HOLY WATER', text: 'THE FIRST SABOTAGE ON YOUR REELS WASHES OFF', sprite: 'relicHolywater' },
   // EXPERT_PLAYTEST_10: relics that make a choice (streaky vs steady, turtle-and-counter, keep the liens or pay them).
   hotstreak: { id: 'hotstreak', name: 'HOT STREAK', text: 'AFTER A JACKPOT, YOUR NEXT SPIN PAYS X2', sprite: 'relicHotStreak' },
   belt: { id: 'belt', name: 'WHETSTONE BELT', text: 'EACH BLOCKED HIT: NEXT SWORDS +10 (MAX +40)', sprite: 'relicBelt', machine: 'knight' },
@@ -103,7 +103,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   taxman: { id: 'taxman', name: 'TAX MAN', text: 'EACH GOLD BAR GROUP THAT PAYS: +1 CHIP (MAX 3)', sprite: 'relicTaxMan', machine: 'midas', retired: true },
   // SHIELD BASH: KNIGHT's (it replaces the BULWARK charm) and BRIAR's (her Dealer fight leans on it: without it her GREEN
   // fell 17.0 -> 2.4). Not offered to the others (MACHINE_EXCLUDE).
-  bash: { id: 'bash', name: 'SHIELD BASH', text: 'LEFTOVER SHIELD HITS BACK IN FULL EACH TURN', sprite: 'relicBash' },
+  bash: { id: 'bash', name: 'SHIELD BASH', text: 'LEFTOVER SHIELD HITS BACK IN FULL EACH SPIN', sprite: 'relicBash' },
   // Side bets (EXPERT_PLAYTEST_6 E11): relics that change which bet you want.
   loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY 20% MORE', sprite: 'relicLoaded' },
   marker: { id: 'marker', name: 'MARKER', text: 'FIRST BUSTED BET EACH ACT: UP TO 5 BACK', sprite: 'relicMarker' },

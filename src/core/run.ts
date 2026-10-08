@@ -1671,6 +1671,8 @@ export const SAFE_CHOICES: ReadonlySet<BigChoiceId> = new Set(['whetstone', 'pol
 export const BIG = { armsRaceHp: 6 * UNIT, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.25, gildLotCells: 3, glassPay: 1.5 };
 
 const SYM_NAME = (s: SymbolId) => `${symLabel(s)}S`;
+/** Each machine's meter by its own name (never "YOUR METER"). */
+const METER_NAME: Partial<Record<CabinetId, string>> = { tesla: 'LIGHTNING', thorn: 'THORNS', joker: 'JACKPOT METER', midas: 'HIGH ROLLER BAR' };
 
 /** Title, rule and cost as plain card text (no expected values). */
 export function describeChoice(run: RunState, c: BigChoice): { title: string; rule: string; cost: string } {
@@ -1693,7 +1695,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'meltDown':
       return { title: 'MELT IT DOWN', rule: 'EVERY CHARM ON YOUR REELS BECOMES GOLD, AT YOUR BEST CHARM LEVEL', cost: 'YOUR OTHER CHARM LEVELS ARE GONE' };
     case 'gildLot':
-      return { title: 'SOLID GOLD', rule: `EVERY REEL GETS ${BIG.gildLotCells} GOLD CHARMS (ON PLAIN ${SYM_NAME(CABINETS[run.cabinet].attack)}, SHIELDS OR BOLTS)`, cost: `YOUR SYMBOLS LOSE A LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
+      return { title: 'SOLID GOLD', rule: `EVERY REEL GETS ${BIG.gildLotCells} GOLD CHARMS (ON PLAIN ${SYM_NAME(CABINETS[run.cabinet].attack)} OR SHIELDS)`, cost: `YOUR SYMBOLS LOSE A LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
     case 'polish':
       return { title: 'POLISH', rule: `+1 LEVEL TO YOUR ${charmName(c.enh!)} CHARMS`, cost: '' };
     case 'cleanCut':
@@ -1706,7 +1708,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
       return { title: 'GLASS CANNON', rule: `EVERY PAYING GROUP PAYS X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS, BANDAGE AND CASHIER INCLUDED' };
     case 'bloodPact':
       return meter
-        ? { title: 'BLOOD PACT', rule: 'YOUR METER FILLS TWICE AS FAST', cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` }
+        ? { title: 'BLOOD PACT', rule: `YOUR ${METER_NAME[run.cabinet] ?? 'METER'} ${run.cabinet === 'thorn' ? 'FILL' : 'FILLS'} TWICE AS FAST`, cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` }
         : { title: 'BLOOD PACT', rule: '+1 LEVEL TO SWORDS AND SHIELDS', cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` };
     case 'secondWind':
       return { title: 'SECOND WIND', rule: `HEAL TO FULL, +${secondWindHp(run)} MAX HP AND +1 LEVEL TO SHIELDS`, cost: '' };

@@ -72,7 +72,7 @@ export function charmRuleText(enh: Enh, lvl: number): string {
     case 'lucky':
       return `${v}% TO LAND AS A WILD`;
     case 'blaze':
-      return `YOUR SPECIAL DEALS +${v}`;
+      return `YOUR LIGHTNING HITS +${v}`;
     case 'spiked':
       return `ALSO HITS FOR ${v}% OF ITS SHIELD`;
     case 'thorny':

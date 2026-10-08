@@ -30,16 +30,16 @@ export type MenuMode = 'none' | 'loading' | 'name' | 'main' | 'modes' | 'progres
 export type ScoreTab = 'mine' | 'daily' | 'weekly' | 'all';
 
 export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
-  gold: { name: 'GOLD', text: `SWORDS, SHIELDS OR BOLTS. ${charmRuleText('gold', 1)}. LEVELS: X3, X4.` },
-  keen: { name: 'KEEN', text: `SWORDS. ${charmRuleText('keen', 1)}.` },
+  gold: { name: 'GOLD', text: `YOUR ATTACK SYMBOLS AND SHIELDS. ${charmRuleText('gold', 1)}. LEVELS: X3, X4.` },
+  keen: { name: 'KEEN', text: `SWORDS AND CARDS. ${charmRuleText('keen', 1)}.` },
   charged: { name: 'CHARGED', text: `TESLA'S BOLTS. ${charmRuleText('charged', 1)}.` },
   spiked: { name: 'BULWARK', text: `KNIGHT. SHIELDS. ${charmRuleText('spiked', 1)}.` },
-  vamp: { name: 'VAMP', text: `SWORDS. ${charmRuleText('vamp', 1)}.` },
+  vamp: { name: 'VAMP', text: `SWORDS AND CARDS. ${charmRuleText('vamp', 1)}.` },
   lucky: { name: 'LUCKY', text: `ACT 2. ${charmRuleText('lucky', 1)}.` },
   blaze: { name: 'BLAZE', text: `ACT 2. TESLA'S BOLTS. ${charmRuleText('blaze', 1)}.` },
   thorny: { name: 'THORNY', text: `BRIAR'S THORNS. ${charmRuleText('thorny', 1)}.` },
-  lucre: { name: 'CHIP', text: `SWORDS, SHIELDS AND BOLTS. ${charmRuleText('lucre', 1)}.` },
-  trick: { name: 'TRICK', text: `JOKER'S SWORDS AND SHIELDS. ${charmRuleText('trick', 1)}.` },
+  lucre: { name: 'CHIP', text: `YOUR ATTACK SYMBOLS AND SHIELDS. ${charmRuleText('lucre', 1)}.` },
+  trick: { name: 'TRICK', text: `JAX'S CARDS AND SHIELDS. ${charmRuleText('trick', 1)}.` },
 };
 /** Charms in the COLLECTION (SPIKED retired). */
 const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'thorny', 'lucre', 'trick'];

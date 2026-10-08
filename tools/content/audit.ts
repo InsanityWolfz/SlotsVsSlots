@@ -4,6 +4,7 @@ import { defaultConfig, symLabel, type Enh, type RelicId, type SymbolId } from '
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../../src/core/cabinets';
 import { RELICS, RELIC_TIER, LEGENDARY, MACHINE_EXCLUDE, WAVE1, BUILD_ENABLER, relicText } from '../../src/core/relics';
 import { CHARM_SYMBOLS, charmName, charmRuleText } from '../../src/core/charms';
+import { ALL_CHARMS } from '../../src/core/profile';
 import { createRun, describeOption, describeChoice, BIG_SETS, BIG_SET_NAMES, type BigChoice, type BigChoiceId, type DraftOption } from '../../src/core/run';
 import { CHARM_INFO } from '../../src/ui/menus';
 
@@ -39,11 +40,17 @@ for (const group of ['general', 'machine', 'charm'] as const) {
     for (const c of CABINET_ORDER) {
       if (d.machine && d.machine !== c) continue;
       if (excl.includes(c)) continue;
+      // Only what this machine can actually be offered: meter relics need a meter; Charm relics need the Charm to fit.
+      const needs = [BUILD_ENABLER[r] ?? []].flat();
+      if (needs.includes('meter') && !CABINETS[c].meter && !CABINETS[c].special) continue;
+      if (d.charm && !CHARM_SYMBOLS[d.charm].some((s) => CABINETS[c].symbols.includes(s as SymbolId))) continue;
       const t = relicText(r, c);
       texts.set(t, [...(texts.get(t) ?? []), CABINETS[c].hero]);
     }
+    const allowed = [...texts.values()].flat();
+    const whoShown = d.machine ? whoTxt : allowed.length === CABINET_ORDER.length ? 'all' : allowed.join(', ');
     const text = texts.size <= 1 ? [...texts.keys()][0] ?? d.text : [...texts.entries()].map(([t, cs]) => `**${cs.join(', ')}:** ${t}`).join('<br>');
-    p(`| ${d.name} | ${tierOf(r)}${wave} | ${whoTxt}${need} | ${text} |`);
+    p(`| ${d.name} | ${tierOf(r)}${wave} | ${whoShown}${need} | ${text} |`);
   }
 }
 
@@ -52,7 +59,7 @@ p('## Charms');
 p();
 p('| Charm | Fits (per Slot Machine) | LV1 / LV2 / LV3 | Codex text |');
 p('|---|---|---|---|');
-for (const e of Object.keys(CHARM_SYMBOLS) as Enh[]) {
+for (const e of ALL_CHARMS) {
   const fits = CABINET_ORDER.map((c) => {
     const syms = CHARM_SYMBOLS[e].filter((s) => CABINETS[c].symbols.includes(s as SymbolId));
     return syms.length ? `${CABINETS[c].hero}: ${syms.map((x) => symLabel(x as SymbolId)).join(', ')}` : '';
