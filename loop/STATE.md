@@ -1981,3 +1981,10 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   Official N1000: JUKEBOX 42.9 / 17.5 (act1 88.8, House 95.4, Mirror 54.9, fight-4 deaths 4.6%, Dealer 50.3).
   Cards: HYPE MAN 37%, FEEDBACK 29%, ENCORE 35%, HEADLINER 25%, BACKUP DANCERS 33% (avg about 35%).
   KNIGHT N600 43.5 / 19.0 (unchanged).
+- Retest fixes (same day): every payline note group joins the drop (two lone notes were two hits); a hexed payline reel
+  no longer halves its off-payline notes twice; payline VAMP doesn't heal twice with off-payline VAMP; GOLD off the
+  payline multiplies its own note (it added to the group's gold: 6 gold notes in view were x12); a grounded note off
+  the payline hits (the Grounder stops the volume, not the damage); a drop with no payline note doesn't count as matched
+  (no HOT STREAK); collection headers count only current relics/Charms; SKIP! sits under the meter.
+  BOSS_MUL jukebox mirror 0.7 -> 0.6, dealer 0.36 -> 0.33. Official N1000: JUKEBOX 43.9 / 18.2 (Mirror 58.8,
+  fight-4 deaths 4.7%, Dealer 49.2). fuzz.ts 200: no invariant breaks.

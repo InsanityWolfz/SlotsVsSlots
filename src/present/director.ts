@@ -1116,7 +1116,8 @@ export class Director {
     if (m.kind === 'volume' && e.amount < 0) {
       const p0 = h.pipPos(Math.max(0, Math.floor(h.energy) - 1));
       this.s.sounds.fizzle();
-      this.bg(this.popText('SKIP!', p0.x, p0.y - 24, 2, COLORS.textDim, 16, 0.3));
+      // Under the meter (above it sits the shield bar and its number).
+      this.bg(this.popText('SKIP!', p0.x, p0.y + 22, 2, COLORS.textDim, 6, 0.3));
       await this.c.to(h, 'energy', e.total / UNIT, 0.2, sineIn);
       return;
     }

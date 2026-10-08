@@ -1007,7 +1007,7 @@ export class Menus {
     let tip: { title: string; text: string; color: string } | null = null;
 
     // Charms.
-    const nc = p.found.charms.length;
+    const nc = p.found.charms.filter((c) => CHARM_ORDER.includes(c)).length;
     drawText(ctx, `CHARMS ${Math.min(nc, CHARM_ORDER.length)}/${CHARM_ORDER.length}`, 60, 110, 2.5, COLORS.text, { align: 'left' });
     drawText(ctx, 'A CHARM SITS ON ONE CELL. GOLD IN A GROUP ADDS UP', W - 60, 110, 1.5, COLORS.textDim, { align: 'right' });
     CHARM_ORDER.forEach((enh, i) => {
@@ -1027,7 +1027,7 @@ export class Menus {
     });
 
     // Relics.
-    const nr = p.found.relics.length;
+    const nr = p.found.relics.filter((r) => RELIC_ORDER.includes(r)).length;
     drawText(ctx, `RELICS ${nr}/${RELIC_ORDER.length}`, 60, 270, 2.5, COLORS.text, { align: 'left' });
     (['common', 'uncommon', 'legendary'] as const).forEach((tier, i) =>
       drawText(ctx, tier.toUpperCase(), W - 360 + i * 120, 270, 1.5, TIER_COLOR[tier], { align: 'left' }),

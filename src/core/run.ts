@@ -943,7 +943,7 @@ export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer
   thorn: { house: 1, mirror: 9.5, dealer: 2.3, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
   tesla: { house: 0.85, mirror: 2.6, dealer: 2.2, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
   joker: { house: 1.9, mirror: 3.4, dealer: 0.66, act3: 0.35, act2: 1.5, gate: 0.85 },
-  jukebox: { house: 1.1, mirror: 0.7, dealer: 0.36, act3: 0.3, gate: 2.4 },
+  jukebox: { house: 1.1, mirror: 0.6, dealer: 0.33, act3: 0.3, gate: 2.4 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */

@@ -186,3 +186,104 @@ dim color (director.ts:1108).
   note skips the record" would be on theme.
 - **Retire BRIAR fully** (B2): the challenge, the collection and the coach. One leftover path into a machine the user
   retired is worse than none.
+
+---
+
+## RETEST (after ee29453)
+
+Build `ee29453`. `npm test` 255/255. `tsc --noEmit` clean. `fuzz.ts 300`: 18000 runs, 0 crashes, NO INVARIANT BREAKS.
+Harnesses (throwaway, scratchpad only): `rt/probe.ts` (fixed 3x3 windows), `rt/simhook.ts` (hooks `Fight.step` in 1200
+real sim runs: 170,807 drops, 1,396 vs the Mirror), `rt/hype.ts`, `rt1-4.cjs` (Playwright).
+Screenshots: `scratchpad/shots/rt_*.png` and the contact sheets `sheet_drop1/2.png`, `sheet_e2a/b.png`, `sheet_skip.png`.
+
+### FIXED
+- B1: ECHO survives a profile save and reload (localStorage holds it; the collection shows the ECHO tile after a reload: `rt_collection.png`).
+- B2: BAD BLOOD is now TOUGH CROWD (THE JUKEBOX, title ONE-HIT WONDER: `rt_challenges.png`). The collection has no THORNY, CACTUS, BRAMBLE or HEDGE tiles.
+- B3: BATTERY starts at volume 3.
+- B4: the drop skips carded, stolen, slimed and grounded cells and jammed reels. A counterfeit gold does nothing (594 = plain).
+- B5: a grounded payline note doesn't turn the volume up (3 grounded notes: volume stays 0). The GROUNDER blurb is updated.
+- B6: HYPE MAN's arm carries `dropsNow` and drops on the same spin (s1, s3, s5...). The director skips the "next spin" text then (director.ts:1153).
+- B7: the note reads "VOL +120%" at 6, and the comments are fixed.
+- I1: HEADLINER doubles the whole drop, payline included (594 to 1188).
+- I2: UNDERDOG, HOT STREAK, GLASS CANNON, BELL and the rest apply to the drop group, including the synthetic group.
+- I3: TURNTABLE plus FEEDBACK leaves the volume at 5.
+- I4: QUICKENING starts at 6/6 and the first spin drops.
+- I5: the HUD reads levels: 6/6, 4/6 to 3/6 on SKIP!, and 8/8 with HEADLINER (`rt_hud_ready.png`, `sheet_enc1.png`).
+- I6: FEEDBACK now reads "THE RECORD NEVER SKIPS". I7: the coach says VOLUME. I8: KEEN and VAMP mention notes.
+- I9: the machine card mentions the skip. The +20 HP drop heal is still unstated (the same gap as JAX's, so not reopened).
+- I11: `note` and `echo` are in the reel table sort order, and the log abbreviation is `NTE`. I10 (ENCORE name): skipped, as the user asked.
+- V1: the callout sits above the machine, in the HUD gap.
+- V2: the order is now callout, then every note lights up (payline too), then the PAIR!/JACKPOT! banner, then the hit.
+  Verified frame by frame (`sheet_drop1.png`, `sheet_drop2.png`, `sheet_e2b.png`).
+- V3: the code shows "THE DROP... NO NOTES" when no notes land. Not captured on screen.
+- V4: the drop flies a note from each lit cell (`rt_drop_20.png`).
+- V5: "ENCORE!" pops on the second drop (`rt_e2_11.png`).
+- V6: "MAX VOLUME! DROP NEXT SPIN!" fits under the machine (`rt_armed_text.png`).
+- JACKPOT BELL no longer re-arms on the drop spin (volume 3 after a jackpot drop).
+- Mirror: the enemy side never touches the drop code (0 enemy drop events in 1,396 Mirror drops, guarded by `player`). src/sim is fine.
+
+### STILL OPEN / NEW
+**N1 (medium, new): one hexed payline reel halves the whole drop, and that reel's off-payline notes are halved twice.**
+- `dropNotes` halves the off cells on a hexed reel (fight.ts:1514). Then the group HEX rule halves the whole group,
+  because it touches a hexed payline reel (fight.ts:1206).
+- Probe, 9 notes at volume 6:
+  - plain: 594;
+  - hex on reel 0: **264**, where about 495 was expected (the off notes on reels 1-2 lose half, and reel 0's lose 3/4);
+  - shields on the payline, hex on reel 0: 110 (only the hexed cells lose).
+- So the same hex costs 22 or 330 depending on the payline.
+- Fix: on a drop group, halve per cell (`dropNotes` already does it for the off cells) and skip the group HALF. Or skip
+  the per-cell halving and keep the group HALF, but not both.
+
+**N2 (low-medium, new): "THE DROP is one hit" is false in 21% of drops** (36,222 of 170,807 in the sim).
+- The rule is `inOrder`. A payline like `[shield, note, note]` or `[note, shield, note]` makes two unmatched note
+  groups. Only the first becomes the drop group (fight.ts:990). The second note hits on its own.
+- In the browser that second hit flies a SWORD after the note volley (`rt_drop_20.png`), and it isn't in the drop's number.
+- Probe:
+  - `[note, shield, note]` hits 154 and 22;
+  - `[note, lock, note]` (a jammed middle reel) hits 110 and 22.
+- Fix: on a drop spin, fold every payline note group into the drop group.
+
+**N3 (low, new): VAMP heals twice on a drop that has vamp on the payline and off it** (10% of drops in the sim).
+- `vampHeal` fires for the drop group's payline reels. Then `volumeAfterSpin` heals `dropOff.vamp` again (fight.ts:1533).
+- Probe 9: two heals of 20. The "once per group" rule breaks now that the drop is one group.
+- Fix: in `volumeAfterSpin`, heal only if the group had no payline vamp. Or fold `off.vamp` into the group's `vampHeal`.
+
+**N4 (low, new): the collection headers count retired finds.**
+- menus.ts:1010 and 1030 use the raw `found.charms.length` and `found.relics.length`.
+- With an old save holding thorny, cactus, hedge and bramble: "CHARMS 4/9" with 3 tiles lit, and "RELICS 5/58" with
+  2 tiles lit (`rt_collection.png`).
+- The achievements use `foundCount` and are correct. Fix: use the same filter as `foundCount` (profile.ts:18).
+
+**N5 (low, visual): SKIP! pops on the shield bar row and overlaps the "+90" shield-gain number** (`rt_skip_0.png`,
+director.ts:1119). Put it on the volume bar line or to its right.
+
+**N6 (low, consistency):**
+- A grounded note ON the payline still lights and hits in the drop. Grounded notes OFF the payline sit out.
+- The synthetic drop group is flagged `matched: true` (fight.ts:992), so HOT STREAK's "x2 on a match" doubles a drop with
+  no note on the payline (132 to 264). An unmatched payline-note drop group doesn't get it.
+- Neither is wrong by the rules text. Pick one rule for each.
+
+**Balance watch (by design of the merge, not a bug):**
+- The payline's tier now multiplies every off-payline note. Average drop hit by payline tier in the sim:
+  no match 693, pair 2,431, jackpot 6,375, so a jackpot drop is about 9x a no-match drop.
+- So the payline still decides most of the drop. The fantasy "every note hits" now plays out as "the payline note
+  multiplies everything".
+- Pair/jackpot relics (KEY, PRISM, BELL, the jackpot multiplier) now double all nine notes: a pair drop is 352, and 704
+  with KEY.
+- Gold charms off the payline ADD into the group: 6 gold notes in view turn a 594 drop into **7,128** (x12).
+  - That follows the "gold adds" rule, but on THE JUKEBOX the window is 9 cells, not 3.
+  - So gold on notes is about 3x as strong as on any other machine.
+  - Watch GOLD and ECHO notes in the next table and the challenge ladders.
+
+### NUMBERS (`table.ts 1000 jukebox`)
+| WHITE | act1 | House | Mirror | f4 deaths | hpH% | hpM% | GREEN | Dealer | hpD% | a3 deaths | a3 lost | jack% | chips/f | power M/A3/D |
+|------:|-----:|------:|-------:|----------:|-----:|-----:|------:|-------:|-----:|----------:|--------:|------:|--------:|-------------|
+| 42.9 | 88.8 | 95.4 | 54.9 | 4.6% | 94.5 | 92.9 | 17.5 | 50.3 | 81.1 | 5.7% | 22.2 | 34.0 | 8.6 | 1063 / 2781 / 4544 |
+
+- All three gates hold: WHITE 41-45, GREEN 16-19, fight-4 deaths 3-6%.
+- JUKEBOX cards (taken / won%): ENCORE 259 / 35%, HEADLINER 218 / 24%, HYPE MAN 90 / 37%, BACKUP DANCERS 88 / 31%,
+  FEEDBACK 65 / 28%.
+  - HYPE MAN's outlier (it was 57%) is gone.
+  - HEADLINER is now the weakest (24%). Max 8 costs two extra spins per drop, and x2 doesn't make up for it.
+  - Other traps on this machine: GLASS CANNON 17%, FOUR LEAF 21%, CURSED IDOL 23%.
+- `simhook` greedy N400 per stake: WHITE 43.8, GREEN 16.5, GOLD 14.3.

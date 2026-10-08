@@ -120,6 +120,14 @@ describe('THE JUKEBOX (DJ DECIBEL)', () => {
     expect(dj.cells.filter((c) => c.row !== 1 && c.reel === 0).length).toBe(0);
   });
 
+  it('two lone notes on the payline are still one drop (one hit)', () => {
+    const f = juke((c) => (c.player.strips = reels3({ note: 6, shield: 6 })));
+    f.sides.player.energy = 60;
+    f.sides.player.armed = true;
+    const evs = round(f, ['note', 'shield', 'note']);
+    expect(ofType(evs, 'attack').filter((a) => a.from === 'player').length).toBe(1);
+  });
+
   it('BATTERY starts at 3; QUICKENING starts at max (the first spin drops)', () => {
     expect(juke((c) => (c.relics = ['battery'])).volume).toBe(3);
     const q = juke((c) => {

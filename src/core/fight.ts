@@ -984,15 +984,26 @@ export class Fight {
     // THE DROP: every note off the payline joins your biggest note group (or hits as a group of its own).
     this.dropOff = null;
     let dropGroup: ScoreGroup | null = null;
-    const off = player && this.dropNow && this.meter?.kind === 'volume' ? this.dropNotes(me) : null;
-    if (off) {
-      this.dropOff = { cells: off.cells, vamp: off.vamp };
-      dropGroup = s.groups.filter((g) => g.symbol === 'note' && g.base > 0).sort((a, b) => b.reels.length - a.reels.length)[0] ?? null;
+    let off: ReturnType<Fight['dropNotes']> | null = null;
+    if (player && this.dropNow && this.meter?.kind === 'volume') {
+      // Every note group on the payline joins the biggest (two lone notes are still one drop).
+      const noteGroups = s.groups.filter((g) => g.symbol === 'note' && g.base > 0).sort((a, b) => b.reels.length - a.reels.length);
+      dropGroup = noteGroups[0] ?? null;
+      for (const g of noteGroups.slice(1)) {
+        dropGroup!.base += g.base;
+        dropGroup!.reels = [...dropGroup!.reels, ...g.reels].sort((a, b) => a - b);
+        s.groups.splice(s.groups.indexOf(g), 1);
+      }
+      // A hexed payline reel halves the whole group, so the cells off it aren't halved twice.
+      off = this.dropNotes(me, !!dropGroup?.reels.some((r) => me.hexed[r] > 0));
       if (!dropGroup && off.cells.length) {
-        dropGroup = { symbol: 'note', reels: [], amount: 0, base: 0, mult: 1, matched: true };
+        dropGroup = { symbol: 'note', reels: [], amount: 0, base: 0, mult: 1, matched: false };
         s.groups.push(dropGroup);
       }
       if (dropGroup) dropGroup.drop = true;
+      // VAMP on the payline already heals with its group: the cells off it don't heal again.
+      const paylineVamp = !!dropGroup?.reels.some((r) => this.enhsAt(me, r).includes('vamp'));
+      this.dropOff = { cells: off.cells, vamp: paylineVamp ? 0 : off.vamp };
     }
     for (const g of s.groups) {
       const notes: string[] = [];
@@ -1019,7 +1030,6 @@ export class Fight {
       let noteCells = g.reels.length;
       if (g === dropGroup && off) {
         g.base += off.base;
-        gold += off.gold;
         echoes += off.echoes;
         noteCells += off.cells.length;
         if (off.keen) {
@@ -1484,21 +1494,21 @@ export class Fight {
   private brambleTurn = -1;
   /** DOWNPOUR: rains so far this fight. */
   private rains = 0;
-  /** THE JUKEBOX: turn the volume up n (BLOOD PACT doubles it); a full volume arms THE DROP. */
   /**
    * THE DROP: the notes off the payline (rows above and below). What enemies wrote counts: a slimed, stolen or dead-card
-   * cell isn't a note, a jammed reel or a grounded cell sits out, a hexed reel pays half with its Charm dark, and a
-   * counterfeit Charm does nothing. A LUCKY cell rolls: a WILD plays as a note (user, 2026-10-08).
+   * cell isn't a note, a jammed reel sits out, a hexed reel pays half with its Charm dark (unless the payline's hex
+   * already halves the group), and a counterfeit Charm does nothing. A grounded note still hits (the Grounder stops the
+   * volume, not the damage). A LUCKY cell rolls: a WILD plays as a note (user, 2026-10-08).
    */
-  private dropNotes(me: Combatant): { cells: { reel: number; row: number; wild?: true }[]; base: number; gold: number; echoes: number; keen: boolean; vamp: number } {
-    const out = { cells: [] as { reel: number; row: number; wild?: true }[], base: 0, gold: 0, echoes: 0, keen: false, vamp: 0 };
+  private dropNotes(me: Combatant, groupHexed = false): { cells: { reel: number; row: number; wild?: true }[]; base: number; echoes: number; keen: boolean; vamp: number } {
+    const out = { cells: [] as { reel: number; row: number; wild?: true }[], base: 0, echoes: 0, keen: false, vamp: 0 };
     const noteV = playerSymValue(me.levels, 'note', this.cfg.base.note);
     me.reels.forEach((reel, r) => {
       if (me.locked[r] > 0) return;
       const hexed = me.hexed[r] > 0;
       for (const d of [-1, 1]) {
         const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
-        if (!c || c.grounded) continue;
+        if (!c) continue;
         const sym = effectiveSymbol(c);
         const enh = c.enh && !hexed && !((c.faked ?? 0) > 0) ? c.enh : undefined;
         const wild = sym !== 'note' && sym !== 'wild' && PAYING.has(sym) && enh === 'lucky' && this.rng.next() < charmValue('lucky', this.charmLvl(me, 'lucky')) / 100;
@@ -1508,16 +1518,18 @@ export class Fight {
           v += charmValue('keen', this.charmLvl(me, 'keen'));
           out.keen = true;
         }
-        if (enh === 'gold') out.gold += charmValue('gold', this.charmLvl(me, 'gold'));
+        // GOLD off the payline multiplies its own note (it doesn't add to the payline's gold: x6 on 9 cells was too much).
+        if (enh === 'gold') v *= charmValue('gold', this.charmLvl(me, 'gold'));
         if (enh === 'echo') out.echoes++;
         if (enh === 'vamp') out.vamp = Math.max(out.vamp, charmValue('vamp', this.charmLvl(me, 'vamp')));
-        out.base += hexed ? Math.floor(v / 2) : v;
+        out.base += hexed && !groupHexed ? Math.floor(v / 2) : v;
         out.cells.push({ reel: r, row: d + 1, ...(wild ? { wild: true as const } : {}) });
       }
     });
     return out;
   }
 
+  /** THE JUKEBOX: turn the volume up n (BLOOD PACT doubles it); a full volume arms THE DROP. */
   private turnUp(me: Combatant, n: number, reels: number[], events: CombatEvent[], dropsNow = false): void {
     if (me.armed || n <= 0) return;
     const add = n * UNIT * (this.cfg.player.meterMul ?? 1);
