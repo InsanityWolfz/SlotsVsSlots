@@ -50,3 +50,12 @@ Status: [x] done, [ ] to do, [?] needs design talk first.
   - Example: WAR DRUM stacks sword base damage, but the sword symbols don't display the buff. It may or may not be working. Buffs must show on the payline numbers.
 - **Tuesday:** spin up an expert playtester (roguelikes, slot machines, player incentives, fun) to play through the whole game and propose what to improve or change. The user feels "something is just missing".
 - The user's overall read: good progress, a long way to go.
+
+## User decisions (2026-10-08, after the Steam readiness pass)
+- **HIGH PRIORITY: online leaderboards for browser playtesters** (Supabase is wired but has no URL/key; src/net/config.ts,
+  supabase/schema.sql). Steam leaderboards replace them at the Steam launch.
+- English only. Achievements stay as they are; the user audits them before Steam.
+- Music: generated is fine in principle; pick an approach (procedural chiptune on the existing synth, or licensed).
+- Balance waits until all content is in. BRIAR may be replaced (hard to balance, not fun).
+- Big choices: review doc "Big Choices Review" (Claude Doc eeb79633-d315-448f-9136-e81419951a1f).
+- ENCORE stays "after it pays" (the jackpot meter's payoff), not "after each jackpot" (it never triggered that way).
