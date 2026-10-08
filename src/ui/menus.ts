@@ -363,7 +363,7 @@ export class Menus {
     this.resetArmed = 0;
     this.settingsMidRun = midRun;
     if (midRun) return this.slideIn();
-    const reset = this.btn('RESET SAVE', x, row(7) + 14, 300, 40, () => {
+    const reset = this.btn('RESET SAVE', x, row(7) + 22, 300, 40, () => {
       if (performance.now() - this.resetArmed < 400) return;
       if (!this.resetArmed) {
         this.resetArmed = performance.now();
@@ -508,6 +508,12 @@ export class Menus {
       setTimeout(() => el.focus(), 50);
     }
     this.btn('OK', W / 2, NAME_Y + 80, 200, 54, () => void this.submitName(), 3);
+    // Not everyone wants to type a name first (STEAM_READINESS S16): a random PLAYER name, changeable later.
+    this.btn('SKIP', W / 2, NAME_Y + 150, 140, 36, () => {
+      if (!this.nameInput) return;
+      this.nameInput.value = `PLAYER${Math.floor(1000 + Math.random() * 9000)}`;
+      void this.submitName();
+    }, 1.5).opts.quiet = true;
   }
 
   private async submitName(): Promise<void> {
@@ -791,7 +797,8 @@ export class Menus {
       return true;
     }
     if (this.mode === 'loading') {
-      if (this.ready && (STEAM || k === ' ' || k === 'enter')) this.pointerDown(0, 0);
+      // Any key starts (STEAM_READINESS S23); the press also unlocks audio.
+      if (this.ready) this.pointerDown(0, 0);
       return true;
     }
     // Escape: one screen back (sub-screen -> its sub-menu -> the main menu).
@@ -870,7 +877,7 @@ export class Menus {
     ctx.fillRect(bx, 476, bw, 18);
     ctx.fillStyle = COLORS.energy;
     ctx.fillRect(bx, 476, Math.round(bw * p), 18);
-    if (this.ready) drawText(ctx, TOUCH ? 'TAP TO PLAY' : STEAM ? 'PRESS ANY KEY' : 'CLICK TO PLAY', W / 2, 560, 3, COLORS.goldLight, { alpha: 0.55 + 0.45 * Math.sin(t * 5) });
+    if (this.ready) drawText(ctx, TOUCH ? 'TAP TO PLAY' : 'PRESS ANY KEY', W / 2, 560, 3, COLORS.goldLight, { alpha: 0.55 + 0.45 * Math.sin(t * 5) });
     else drawText(ctx, `SHUFFLING THE REELS... ${Math.round(p * 100)}%`, W / 2, 530, 2, COLORS.textDim);
     drawText(ctx, STEAM ? `V${VERSION.toUpperCase()}` : 'PLAYTEST BUILD. PROGRESS SAVES IN THIS BROWSER.', W / 2, H - 30, 1.5, COLORS.textDim);
   }
@@ -907,7 +914,7 @@ export class Menus {
     if (hasSprite('logo')) drawSprite(ctx, artId('logo'), W / 2, 66 + Math.sin(t * 2) * 2, 2);
     const k = this.panelIn;
     const top = Menus.SUB_Y - 96;
-    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 2 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 6 * Menus.SET_PITCH + 48 : 7 * Menus.SET_PITCH + 62) : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
+    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 2 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 6 * Menus.SET_PITCH + 48 : 7 * Menus.SET_PITCH + 70) : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
     const pw = 540;
     // The panel rises in (no alpha on the layered frame: a half-faded gold rim tints the panel brown).
     ctx.save();
@@ -937,7 +944,9 @@ export class Menus {
       for (const f of this.liveLabels) f();
       const scap = (text: string, y: number, color: string = COLORS.textDim) => drawText(ctx, text, W / 2, y, 1.25, color, { alpha: Math.max(0, Math.min(1, k)) });
       scap('CLICK MASTER (OR PRESS M) TO MUTE. F11: FULLSCREEN', Menus.SET_Y + 6 * Menus.SET_PITCH + 30);
-      if (!this.settingsMidRun) scap('ERASES YOUR UNLOCKS, COLLECTION AND SCORES', Menus.SET_Y + 7 * Menus.SET_PITCH + 44, '#ff8a7a');
+      if (!this.settingsMidRun) scap('ERASES YOUR UNLOCKS, COLLECTION AND SCORES', Menus.SET_Y + 7 * Menus.SET_PITCH + 52, '#ff8a7a');
+      // The keys (STEAM_READINESS S29), under the panel.
+      drawText(ctx, 'SPACE SPIN   A AUTO   1-4 SPEED   M MUTE   ESC PAUSE   ARROWS + ENTER: MENUS', W / 2, H - 22, 1.5, COLORS.textDim, { alpha: Math.max(0, Math.min(1, k)) });
     }
   }
 

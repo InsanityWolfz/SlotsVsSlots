@@ -1348,6 +1348,12 @@ export class Game {
       if (was !== this.menus.mode) this.syncButtons();
       return used;
     }
+    // CHOOSE YOUR MACHINE: Escape goes back to the menu (a saved run stays saved).
+    if (k === 'escape' && this.screens.active && this.screens.mode === 'cabinet') {
+      this.sounds.click();
+      this.showMenu();
+      return true;
+    }
     // PAUSE: Escape anywhere in a run (STEAM_READINESS S2).
     if (k === 'escape' && this.pausable()) {
       this.setPaused(!this.pause.open);

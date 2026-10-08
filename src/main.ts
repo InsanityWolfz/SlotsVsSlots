@@ -112,6 +112,8 @@ window.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('visibilitychange', () => game.setHidden(document.hidden));
+// Back in focus: wake the audio (some platforms leave it 'interrupted' after a sleep: S31).
+window.addEventListener('focus', () => !document.hidden && game.setHidden(false));
 // Losing focus mid-fight (alt-tab, the Steam overlay) pauses it (STEAM_READINESS S14).
 window.addEventListener('blur', () => {
   if (game.phase === 'fighting' && game.pausable()) game.setPaused(true);

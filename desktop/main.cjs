@@ -8,6 +8,9 @@ const path = require('node:path');
 // The Steam app id. 480 (Spacewar) is Valve's test app; replace it with the real id (and in steam_appid.txt).
 const APP_ID = Number(process.env.STEAM_APP_ID || fs.readFileSync(path.join(__dirname, 'steam_appid.txt'), 'utf8').trim() || 480);
 
+// The game starts its sound on the first key press anyway; on desktop there's no autoplay gate to wait for.
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
 let steam = null;
 try {
   steam = require('steamworks.js').init(APP_ID);
