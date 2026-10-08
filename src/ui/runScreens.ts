@@ -2572,6 +2572,6 @@ export class RunScreens {
     }
     if (this.shareLine) drawText(ctx, this.shareLine, W / 2, 548, 1.5, '#7dff7a');
     if (this.resultsCopy) this.drawButton(ctx, this.resultsCopy, 0);
-    drawText(ctx, r.done ? 'CLICK TO CONTINUE' : 'CLICK TO SKIP', W / 2, 620, 1.5, COLORS.textDim, { alpha: 0.6 + 0.4 * Math.sin(performance.now() / 200) });
+    drawText(ctx, r.done ? 'PRESS TO CONTINUE' : 'PRESS TO SKIP', W / 2, 620, 1.5, COLORS.textDim, { alpha: 0.6 + 0.4 * Math.sin(performance.now() / 200) });
   }
 }

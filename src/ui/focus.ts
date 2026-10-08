@@ -73,7 +73,8 @@ export class Focus {
   draw(ctx: CanvasRenderingContext2D, targets: NavRect[], t: number): void {
     if (!this.visible) return;
     const r = this.current(targets);
-    if (!r) return;
+    // A whole-screen target ("press to continue") needs no ring.
+    if (!r || r.w > 900) return;
     const pad = 6 + Math.sin(t * 6) * 1.5;
     const pop = Math.max(0, 1 - (performance.now() - this.shown) / 160);
     const g = pad + pop * 6;

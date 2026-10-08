@@ -44,7 +44,7 @@ export class Pause {
       }
       if (!this.armed) {
         this.armed = performance.now();
-        this.abandon.label = 'SURE? CLICK AGAIN';
+        this.abandon.label = 'SURE? PRESS AGAIN';
         setTimeout(() => {
           this.armed = 0;
           this.abandon.label = 'ABANDON RUN';

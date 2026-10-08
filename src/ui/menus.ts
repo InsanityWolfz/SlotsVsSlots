@@ -395,7 +395,7 @@ export class Menus {
       if (!this.resetArmed) {
         this.resetArmed = performance.now();
         // Armed: it turns into the red button for a moment, so the second click is a clear choice.
-        reset.label = 'SURE? CLICK AGAIN';
+        reset.label = 'SURE? PRESS AGAIN';
         reset.opts.primary = true;
         reset.opts.quiet = false;
         this.sounds.fizzle();
@@ -701,7 +701,7 @@ export class Menus {
       }, 1.25);
       b.toggled = t.title === shown;
       b.enabled = have;
-      this.titleTips.push({ x: x + w / 2, y, w, text: have ? `${t.title}: CLICK TO WEAR IT` : `${t.title}: ${t.how}` });
+      this.titleTips.push({ x: x + w / 2, y, w, text: have ? `${t.title}: PICK IT TO WEAR IT` : `${t.title}: ${t.how}` });
       x += w + 8;
     }
     // TRIMS: your slot machine's frame (cosmetic), one per level milestone.
@@ -717,7 +717,7 @@ export class Menus {
       });
       b.enabled = have;
       b.toggled = t.id === worn;
-      this.titleTips.push({ x: tx, y: TRIM_Y, w: 52, text: have ? `${t.name} TRIM: CLICK TO PUT IT ON YOUR SLOT MACHINE` : `${t.name} TRIM: REACH LEVEL ${t.level}` });
+      this.titleTips.push({ x: tx, y: TRIM_Y, w: 52, text: have ? `${t.name} TRIM: PICK IT FOR YOUR SLOT MACHINE` : `${t.name} TRIM: REACH LEVEL ${t.level}` });
     });
   }
 
@@ -1059,7 +1059,7 @@ export class Menus {
     if (shown) {
       drawText(ctx, shown.title, W / 2, py - 20, 2.5, shown.color);
       wrap(shown.text, 64).slice(0, 2).forEach((l, k) => drawText(ctx, l, W / 2, py + 10 + k * 20, 2, COLORS.text));
-    } else drawText(ctx, 'HOVER OR TAP A TILE TO READ IT', W / 2, py, 2, COLORS.textDim);
+    } else drawText(ctx, 'POINT AT A TILE TO READ IT', W / 2, py, 2, COLORS.textDim);
   }
 
   private drawHiscores(ctx: CanvasRenderingContext2D, t: number): void {

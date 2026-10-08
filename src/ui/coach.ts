@@ -127,7 +127,7 @@ export class Coach {
     ctx.fillRect(bx, by, bw, bh);
     drawText(ctx, tip.title, bx + bw / 2, by + 22, 3, COLORS.goldLight);
     lines.forEach((l, k) => drawText(ctx, l, bx + bw / 2, by + 52 + k * 22, 2, COLORS.text));
-    drawText(ctx, `TAP OR CLICK: NEXT (${this.idx + 1}/${this.queue.length})`, bx + 20, by + bh - 14, 1.5, COLORS.textDim, { align: 'left', alpha: 0.7 + 0.3 * Math.sin(t * 4) });
+    drawText(ctx, `NEXT: CLICK OR ANY KEY (${this.idx + 1}/${this.queue.length})`, bx + 20, by + bh - 14, 1.5, COLORS.textDim, { align: 'left', alpha: 0.7 + 0.3 * Math.sin(t * 4) });
     // SKIP: a real button, so touch players can bail out too (S on a keyboard).
     const sw = 150;
     const sx = bx + bw - sw - 12;

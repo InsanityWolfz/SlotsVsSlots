@@ -1340,8 +1340,9 @@ export class Game {
   key(k: string): boolean {
     this.startAudio();
     if (this.coach.active) {
-      if (k === ' ' || k === 'enter') this.coach.advance();
-      else if (k === 's') this.skipTutorial();
+      // Any key moves the tutorial on (a pad's A included); S skips it.
+      if (k === 's') this.skipTutorial();
+      else this.coach.advance();
       return true;
     }
     // Keyboard / gamepad focus (STEAM_READINESS S3): arrows move it, Enter presses it.
