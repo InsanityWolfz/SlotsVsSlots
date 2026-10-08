@@ -698,8 +698,8 @@ export class Fight {
       // WILD CARD: every WILD on your payline charges your meter (lightning, thorns or jackpots).
       if (me.relics.has('wildcard') && wilds && !this.over) {
         events.push({ type: 'relic', side, relic: 'wildcard' });
-        // (Half on JAX's jackpot meter: wilds are his whole machine.)
-        const q = Math.max(1, Math.round((wilds * NEW_RELIC.wildcardCharge) / (this.meter?.kind === 'jackpots' ? 2 : 1)));
+        // 5 on the lightning, 10 on the thorns or the jackpot meter (user, content audit 2026-10-08).
+        const q = wilds * (this.special ? NEW_RELIC.wildcardCharge : NEW_RELIC.wildcardMeter);
         if (this.special) this.gainEnergy(me, q, [], events);
         else if (this.meter && this.meter.kind !== 'vault' && this.meter.kind !== 'touch') this.fillMeter(me, q, [], events);
       }
@@ -1649,7 +1649,7 @@ export class Fight {
       me.energy -= this.cfg.specialCost;
       const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
       // MELTDOWN: +1% per 1% of HP you're missing (capped).
-      const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, (1 - me.hp / me.maxHp) * NEW_RELIC.meltdownRate) : 0;
+      const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, Math.max(0, me.maxHp - me.hp) * NEW_RELIC.meltdownRate) : 0;
       const dmg = unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1) * (1 + melt));
       if (over && !overPopped) {
         overPopped = true;
@@ -1672,7 +1672,7 @@ export class Fight {
     }
     // LIVE WIRE: each storm costs HP, once a storm (never per strike), never lethal, outside damage() and its turn cap.
     if (live && strikes > 0 && !this.over) {
-      const cost = Math.min(me.hp - 1, unitsUp(me.maxHp * NEW_RELIC.livewireCost));
+      const cost = Math.min(me.hp - 1, NEW_RELIC.livewireCost);
       if (cost > 0) {
         me.hp -= cost;
         events.push({ type: 'relic', side: 'player', relic: 'livewire' });

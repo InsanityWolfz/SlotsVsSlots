@@ -70,8 +70,9 @@ export const RUN = {
 
 /** Charms by act (act 2 unlocks LUCKY and BLAZE). CHARGED and BLAZE feed the lightning: TESLA only. */
 // BULWARK (id 'spiked') retired 2026-10-07: SHIELD BASH (KNIGHT-only) is the shield-damage piece. The id stays for saves.
-export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'thorny', 'lucre', 'trick'];
-export const ACT2_GILDS: Enh[] = ['lucky', 'blaze'];
+export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'thorny', 'lucre', 'trick', 'lucky', 'blaze'];
+/** Empty since 2026-10-08 (user: LUCKY and BLAZE from Act 1). */
+export const ACT2_GILDS: Enh[] = [];
 const TESLA_ONLY: ReadonlySet<Enh> = new Set(['charged', 'blaze']);
 /** BULWARK (id 'spiked') is KNIGHT's own charm. */
 const KNIGHT_ONLY: ReadonlySet<Enh> = new Set(['spiked']);
@@ -94,6 +95,10 @@ export const gildsFor = (run: RunState): Enh[] =>
   );
 /** Symbols this machine's swap cards move between. */
 export const swappable = (run: RunState): SymbolId[] => CABINETS[run.cabinet].symbols;
+/** What a WILD card can turn into wilds: shields and your attack symbol. */
+const wildFrom = (run: RunState): SymbolId[] => [...new Set<SymbolId>(['shield', CABINETS[run.cabinet].attack])];
+/** A removal never takes a reel's shields or attack symbols below this many. */
+const REMOVE_FLOOR = 2;
 /** The symbol +2 / rock-swap cards give (the signature symbol, or swords for KNIGHT and JAX). */
 export const sigSymbol = (run: RunState): SymbolId => {
   const m = CABINETS[run.cabinet].meter;
@@ -102,13 +107,12 @@ export const sigSymbol = (run: RunState): SymbolId => {
 
 /** Chip economy (earning is passive, spending happens only at the Cashier). */
 export const CHIPS = {
-  win: 2,
+  /** Was 2 + up to 3 overkill chips; overkill removed 2026-10-08 (unexplained), +1 a fight folded in here (+2 overshot: chips/fight above the old economy). */
+  win: 3,
   eliteBonus: 2,
   /** Act 2 elites pay these chips instead of a relic. */
   act2EliteChips: 6,
   perJackpot: 1,
-  /** +1 chip per this much overkill on the killing blow. */
-  overkillPer: 5 * UNIT,
   /** +1 interest per this many banked chips, capped. */
   interestPer: 5,
   interestCap: 3,
@@ -116,8 +120,6 @@ export const CHIPS = {
   stackPer: 8,
   /** Every run starts with a little float so shop 1 is a real visit. */
   start: 8,
-  /** Overkill pays at most this many chips per fight (late one-shots were flooding the Cashier). */
-  overkillCap: 3,
   prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 5, legend: 20, level: 12 },
   /** First reroll per visit costs 1, then +1 each time. */
   rerollBase: 1,
@@ -898,14 +900,15 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
 /** TOLL BOOTH: chips per held lien per win (EXPERT_PLAYTEST_11 D5). */
 export const TOLL_PER_LIEN = 2;
 
+// Refit 2026-10-08 (content audit batch: ROSE HIP retired, overkill chips out, LUCKY/BLAZE in act 1, CHARGED/BLAZE 10/20/30).
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
   knight: { house: 1.1, mirror: 1.3, dealer: 0.5, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
-  midas: { house: 3.5, mirror: 3.1, dealer: 4.6, act3: 1, gate: 0.8, act3Floor: 1 },
+  midas: { house: 3.5, mirror: 3.4, dealer: 3.6, act3: 1, gate: 0.8, act3Floor: 1 },
   // SHED (2026-10-07): her damage is finally visible to sizing, so the multipliers came back to a normal range.
-  thorn: { house: 1, mirror: 13.5, dealer: 1.9, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
-  tesla: { house: 0.85, mirror: 2, dealer: 2.0, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
-  joker: { house: 1.9, mirror: 1.2, dealer: 0.53, act3: 0.35, act2: 1.5, gate: 0.85 },
+  thorn: { house: 1, mirror: 7.5, dealer: 1.7, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
+  tesla: { house: 0.85, mirror: 2.6, dealer: 2.6, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
+  joker: { house: 1.9, mirror: 1.8, dealer: 0.65, act3: 0.35, act2: 1.5, gate: 0.85 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
@@ -975,7 +978,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   if (fight.midasChips) run.player.chips = Math.max(0, run.player.chips + fight.midasChips);
   // LUCRE: the chips its groups paid this fight (a win only: a lost fight ends the run).
   if (fight.lucreChips) run.player.chips += fight.lucreChips;
-  // Chips: interest on what you banked, then the win, elite bonus, jackpots and overkill.
+  // Chips: interest on what you banked, then the win, elite bonus and jackpots (overkill chips removed 2026-10-08: nothing explained them).
   const beaten = currentEnemy(run);
   const interest = interestOn(run.player.chips);
   // PIGGY BANK: more interest on what you hold.
@@ -986,8 +989,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     CHIPS.win +
     (CABINETS[run.cabinet].chipsPerWin ?? 0) +
     (beaten.elite ? CHIPS.eliteBonus : 0) +
-    fight.playerJackpots * CHIPS.perJackpot +
-    Math.min(CHIPS.overkillCap, Math.floor(fight.overkill / CHIPS.overkillPer));
+    fight.playerJackpots * CHIPS.perJackpot;
   run.player.chips += earned;
   record.chips = earned + fight.lucreChips;
   // SIDE BET: paid stake x pay if it came in (a lost fight ends the run, bet and all).
@@ -1301,7 +1303,10 @@ export function draftOffers(run: RunState): DraftOption[] {
     const options: DraftOption[] = [];
     p.strips.forEach((s, reel) => {
       if ((s.rock ?? 0) > 0) options.push({ kind: 'swap', from: 'rock', to: 'wild', count: Math.min(RUN.wildCount, s.rock ?? 0), reel });
-      else if (plainCells(p, reel, 'shield') >= RUN.wildCount && (s.shield ?? 0) > RUN.wildCount) options.push({ kind: 'swap', from: 'shield', to: 'wild', count: RUN.wildCount, reel });
+      // Shields or your attack symbol to WILDS (user, content audit 2026-10-08: both directions).
+      else
+        for (const from of wildFrom(run))
+          if (plainCells(p, reel, from) >= RUN.wildCount && (s[from] ?? 0) > RUN.wildCount) options.push({ kind: 'swap', from, to: 'wild', count: RUN.wildCount, reel });
     });
     return options.length ? rng.pick(options) : null;
   };
@@ -1466,10 +1471,12 @@ export function shopOffers(run: RunState): ShopItem[] {
   else add(relics.length ? { kind: 'relic', relic: rng.pick(relics) } : null, P.relic);
   const u = rng.next();
   if (u < 0.35) {
-    const reels = p.strips.map((s, reel) => ({ s, reel })).filter(({ s, reel }) => (s.shield ?? 0) > RUN.wildCount && plainCells(p, reel, 'shield') >= RUN.wildCount);
-    add(reels.length ? { kind: 'swap', from: 'shield', to: 'wild', count: RUN.wildCount, reel: rng.pick(reels).reel } : null, P.wild);
+    const wilds = p.strips.flatMap((s, reel) => wildFrom(run).filter((from) => (s[from] ?? 0) > RUN.wildCount && plainCells(p, reel, from) >= RUN.wildCount).map((from) => ({ kind: 'swap' as const, from, to: 'wild' as SymbolId, count: RUN.wildCount, reel })));
+    add(wilds.length ? rng.pick(wilds) : null, P.wild);
   } else if (u < 0.7) {
-    const junk = p.strips.flatMap((s, reel) => (['rock', 'shield'] as SymbolId[]).filter((sym) => (s[sym] ?? 0) > 0).map((symbol) => ({ kind: 'remove' as const, symbol, reel })));
+    // Removals: rocks first, then a shield or one of your attack symbols (thin the strip either way).
+    const atk = CABINETS[run.cabinet].attack;
+    const junk = p.strips.flatMap((s, reel) => (['rock', 'shield', atk] as SymbolId[]).filter((sym) => (s[sym] ?? 0) > (sym === 'rock' ? 0 : REMOVE_FLOOR)).map((symbol) => ({ kind: 'remove' as const, symbol, reel })));
     add(junk.length ? (junk.find((j) => j.symbol === 'rock') ?? rng.pick(junk)) : null, P.remove);
   } else if (levels.length) add(rng.pick(levels), P.level);
   // Never a thin shelf: top up with charms, then a rock/shield removal.
@@ -1612,7 +1619,9 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'symLevel': {
       const cap = run ? levelCap(run) : LEVEL_CAP;
       const next = Math.min(cap, symLevel(lv, o.symbol) + 1);
-      return { title: `${plural(o.symbol, 2)} ${lvTag(next, cap)}`, text: `EVERY ${symLabel(o.symbol)} IS WORTH ${symValue(next)}` };
+      // User, content audit 2026-10-08: level cards show the step, in the symbol's own currency.
+      const word = o.symbol === 'shield' ? 'SHIELD' : o.symbol === 'bolt' ? 'LIGHTNING CHARGE' : o.symbol === 'thorn' ? 'THORNS' : 'DAMAGE';
+      return { title: `${plural(o.symbol, 2)} ${lvTag(next, cap)}`, text: `${symValue(next - 1)} -> ${symValue(next)} ${word}` };
     }
     case 'charmLevel': {
       const cap = run ? levelCap(run) : LEVEL_CAP;
@@ -1671,8 +1680,13 @@ export const SAFE_CHOICES: ReadonlySet<BigChoiceId> = new Set(['whetstone', 'pol
 export const BIG = { armsRaceHp: 6 * UNIT, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.25, gildLotCells: 3, glassPay: 1.5 };
 
 const SYM_NAME = (s: SymbolId) => `${symLabel(s)}S`;
-/** Each machine's meter by its own name (never "YOUR METER"). */
-const METER_NAME: Partial<Record<CabinetId, string>> = { tesla: 'LIGHTNING', thorn: 'THORNS', joker: 'JACKPOT METER', midas: 'HIGH ROLLER BAR' };
+/** BLOOD PACT (the meter fills twice as fast) in each machine's own terms (user, content audit 2026-10-08). */
+const BLOOD_PACT_TEXT: Partial<Record<CabinetId, string>> = {
+  tesla: 'LIGHTNING METER MAX REDUCES TO 20',
+  thorn: 'THORN AMOUNTS ARE DOUBLED',
+  joker: 'JACKPOT METER MAX REDUCES TO 50',
+  midas: 'HIGH ROLLER METER MAX REDUCES TO 50',
+};
 
 /** Title, rule and cost as plain card text (no expected values). */
 export function describeChoice(run: RunState, c: BigChoice): { title: string; rule: string; cost: string } {
@@ -1693,22 +1707,22 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'whetstone':
       return { title: 'WHETSTONE', rule: `+1 LEVEL TO YOUR ${SYM_NAME(c.symbol!)}`, cost: '' };
     case 'meltDown':
-      return { title: 'MELT IT DOWN', rule: 'EVERY CHARM ON YOUR REELS BECOMES GOLD, AT YOUR BEST CHARM LEVEL', cost: 'YOUR OTHER CHARM LEVELS ARE GONE' };
+      return { title: 'MELT IT DOWN', rule: `EVERY CHARM ON YOUR REELS BECOMES GOLD AT LV${Math.max(1, ...run.player.gilded.map((g) => charmLevel(run.player.levels, g.enh)))}`, cost: 'YOUR OTHER CHARM LEVELS ARE GONE' };
     case 'gildLot':
-      return { title: 'SOLID GOLD', rule: `EVERY REEL GETS ${BIG.gildLotCells} GOLD CHARMS (ON PLAIN ${SYM_NAME(CABINETS[run.cabinet].attack)} OR SHIELDS)`, cost: `YOUR SYMBOLS LOSE A LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
+      return { title: 'SOLID GOLD', rule: `EVERY REEL GETS ${BIG.gildLotCells} GOLD CHARMS`, cost: `YOUR SYMBOLS LOSE A LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
     case 'polish':
       return { title: 'POLISH', rule: `+1 LEVEL TO YOUR ${charmName(c.enh!)} CHARMS`, cost: '' };
     case 'cleanCut':
-      return { title: 'CLEAN CUT', rule: `REMOVE EVERY SHIELD FROM REEL ${c.reel! + 1}. +1 LEVEL TO ${SYM_NAME(CABINETS[run.cabinet].attack)}`, cost: 'THOSE SHIELDS AND THEIR CHARMS ARE GONE' };
+      return { title: 'CLEAN CUT', rule: `+1 LEVEL TO ${SYM_NAME(CABINETS[run.cabinet].attack)}`, cost: `REMOVES SHIELDS FROM REEL ${c.reel! + 1}` };
     case 'twinReel':
-      return { title: 'TWIN REEL', rule: 'REEL 3 BECOMES AN EXACT COPY OF REEL 1, CHARMS INCLUDED', cost: "REEL 3'S OLD CELLS ARE GONE" };
+      return { title: 'TWIN REEL', rule: 'REEL 3 BECOMES AN EXACT COPY OF REEL 1, CHARMS INCLUDED', cost: 'REEL 3 IS OVERWRITTEN' };
     case 'sweepUp':
-      return { title: 'SWEEP UP', rule: run.player.hp >= run.player.maxHp ? `+${BIG.sweepHeal / 2} MAX HP AND SMASH EVERY ROCK ON YOUR REELS` : `HEAL ${BIG.sweepHeal} AND SMASH EVERY ROCK ON YOUR REELS`, cost: '' };
+      return { title: 'SWEEP UP', rule: `+${BIG.sweepHeal / 2} MAX HP AND REMOVE ALL ROCKS`, cost: '' };
     case 'glassCannon':
-      return { title: 'GLASS CANNON', rule: `EVERY PAYING GROUP PAYS X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS, BANDAGE AND CASHIER INCLUDED' };
+      return { title: 'GLASS CANNON', rule: `PAIRS AND JACKPOTS PAY X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS' };
     case 'bloodPact':
       return meter
-        ? { title: 'BLOOD PACT', rule: `YOUR ${METER_NAME[run.cabinet] ?? 'METER'} ${run.cabinet === 'thorn' ? 'FILL' : 'FILLS'} TWICE AS FAST`, cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` }
+        ? { title: 'BLOOD PACT', rule: BLOOD_PACT_TEXT[run.cabinet] ?? 'YOUR METER FILLS TWICE AS FAST', cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` }
         : { title: 'BLOOD PACT', rule: '+1 LEVEL TO SWORDS AND SHIELDS', cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` };
     case 'secondWind':
       return { title: 'SECOND WIND', rule: `HEAL TO FULL, +${secondWindHp(run)} MAX HP AND +1 LEVEL TO SHIELDS`, cost: '' };
@@ -1841,10 +1855,9 @@ export function takeChoice(run: RunState, c: BigChoice): void {
     case 'sweepUp':
       for (const s of p.strips) s.rock = 0;
       // At full HP the heal would be wasted: grow max HP instead.
-      if (p.hp >= p.maxHp) {
-        p.maxHp += BIG.sweepHeal / 2;
-        p.hp = p.maxHp;
-      } else p.hp = Math.min(p.maxHp, p.hp + BIG.sweepHeal);
+      // Always +50 max HP (and the 50 HP with it): user, content audit 2026-10-08.
+      p.maxHp += BIG.sweepHeal / 2;
+      p.hp = Math.min(p.maxHp, p.hp + BIG.sweepHeal / 2);
       break;
     case 'glassCannon':
       run.glass = true;

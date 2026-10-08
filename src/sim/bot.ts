@@ -129,7 +129,7 @@ export function greedyValue(run: RunState, o: DraftOption): number {
     case 'payLien':
       return 6;
     case 'swap': {
-      if (o.to === 'wild') return run.cabinet === 'joker' ? 8 : 6;
+      if (o.to === 'wild') return (run.cabinet === 'joker' ? 8 : 6) - (o.from === attackOf(run) ? 3 : 0);
       // Shields are the weakest symbol, your signature symbol the strongest.
       const worth = (x: string) => (x === 'rock' ? -2 : x === 'shield' ? 0 : plainAttack(run, x) ? 2 : 3);
       return worth(o.to) - worth(o.from) + (o.count >= 3 ? 6 : 4);

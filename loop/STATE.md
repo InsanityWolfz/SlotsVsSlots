@@ -1880,3 +1880,20 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   only when a hit gets through, like ROSE HIP. Text: "A HIT THAT GETS THROUGH: YOUR THORNS HEAL 10 MORE" (no VOLLEY:
   BRIAR's keyword is THORNS). BRIAR fell to 39.6 / 13.1; BOSS_MUL.thorn mirror 15 -> 13.5, dealer 2.1 -> 1.9.
   Official N1000: 43.4 / 17.3, fight-4 deaths 3.0%.
+
+## Iteration 89 (2026-10-08): the user's content audit (Claude Doc "Slots vs. Slots Content Audit", rev 3320)
+- Text: ~40 relic/charm/big-choice texts rewritten in the user's words (per machine where the meter differs).
+- Removed (retired, saves keep them): STACKED DECK, RIPOSTE, NEST EGG, VAMPIRE'S KISS, MARKER, ROSE HIP (FANG covers it).
+- Mechanics: WHETSTONE BELT = next swords +20 after a block (one stack; was +10 x4); STATIC 5 -> 10;
+  LIVE WIRE x1.5 / 2% HP -> x1.3 / 1 HP; MELTDOWN +1% per HP missing, max 50%; WILD CARD 5 lightning, 10 thorns or
+  jackpot meter; VAMPIRE FANG on BRIAR heals 20 (was 10) when a hit gets through; CHARGED and BLAZE 10/20/30;
+  LUCKY and BLAZE offered from Act 1; SWEEP UP always +50 max HP (+50 HP); WILD cards can also turn your attack
+  symbol into wilds; shop removals can take an attack symbol (never below 2 on a reel); level cards read "10 -> 13 DAMAGE"
+  (SHIELD / LIGHTNING CHARGE / THORNS) on the user's call (lifts the no-stat-delta rule for level cards only).
+- Overkill chips removed (nothing explained them). They were ~2 chips a fight: KNIGHT 46.8 -> 38.1 WHITE without them.
+  CHIPS.win 2 -> 3 (4 overshot: 48.9 / 22.1). chips/f back to about the old economy.
+- Before the refit (all of the above, win 3): KNIGHT 43.0/17.0, TESLA 51.4/23.4, BRIAR 29.1/14.6, JAX 50.2/20.5, CASSIDY 45.9/14.0.
+- BOSS_MUL: tesla mirror 2 -> 2.6, dealer 2 -> 2.6; thorn mirror 13.5 -> 7.5, dealer 1.9 -> 1.7; joker mirror 1.2 -> 1.8,
+  dealer 0.53 -> 0.65; midas mirror 3.1 -> 3.4, dealer 4.6 -> 3.6.
+- Official table N1000 (WHITE / GREEN, fight-4 deaths): KNIGHT 43.0/17.0 (4.6%), TESLA 43.5/18.2 (2.5%), BRIAR 43.9/17.9 (1.7%),
+  JAX 43.6/16.0 (3.6%), CASSIDY 42.0/17.5 (0.1%). Watch: TESLA / BRIAR / CASSIDY fight-4 deaths under the 3% gate.

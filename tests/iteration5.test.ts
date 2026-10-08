@@ -97,7 +97,7 @@ describe('build-aware offers & the heal service', () => {
     knight.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'keen', n: 2 });
     expect(relicFits(knight, 'hone')).toBe(true);
     expect(relicFits(knight, 'rosehip')).toBe(false);
-    expect(relicFits(createRun(base, 1, 'thorn'), 'rosehip')).toBe(true);
+    expect(relicFits(createRun(base, 1, 'thorn'), 'cactus')).toBe(true);
   });
 
   it('HEAL is a permanent service slot, hidden at full HP; first reroll costs 1', () => {

@@ -19,14 +19,14 @@ export const CHARM_VALUE: Record<Enh, number[]> = {
    * cell lost to taking no charm at all (EXPERT_PLAYTEST_10 D1). */
   keen: [0, 40, 50, 60, 70],
   /** CHARGED: added to the bolt group's BASE (TESLA). Was 5/10/15: a tax TESLA always held. */
-  charged: [0, 10, 15, 20, 25],
+  charged: [0, 10, 20, 30, 40],
   /** VAMP: heal when the sword group hits, ONCE per group however many vamp cells are in it (stacked vamp was the auto-pick:
    * EXPERT_PLAYTEST_10). Values as before (15/20/30 took the whole game's sustain: WHITE 41 -> 39); the stacking was the exploit. */
   vamp: [0, 20, 30, 40, 50],
   /** LUCKY: % chance the cell lands as a WILD. */
   lucky: [0, 40, 55, 70, 85],
   /** BLAZE: added to TESLA's special for every blaze cell you own. */
-  blaze: [0, 10, 15, 20, 25],
+  blaze: [0, 10, 20, 30, 40],
   /** BULWARK (id 'spiked'): a shield cell with it also deals this % of its share of the group as damage. Was 50/75/100: KNIGHT's own
    * charm cost KNIGHT runs. */
   spiked: [0, 100, 125, 150, 175],

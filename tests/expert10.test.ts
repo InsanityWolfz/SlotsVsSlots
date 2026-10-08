@@ -68,7 +68,7 @@ describe('EXPERT_PLAYTEST_10: new relics', () => {
     g.forceNext('player', ['sword', 'sword', 'sword']);
     const plain = ofType(g.step().events, 'attack')[0].amount;
     f.forceNext('player', ['sword', 'sword', 'sword']);
-    expect(ofType(f.step().events, 'attack')[0].amount).toBe(plain + 10 * 3 * 3);
+    expect(ofType(f.step().events, 'attack')[0].amount).toBe(plain + 20 * 3 * 3);
   });
 
   it('TOLL BOOTH: each held lien pays a chip after a win', () => {
