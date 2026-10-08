@@ -1905,3 +1905,8 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   fresh spins per try via `run.spinSeed`. Balance: no change (the sim seeds its own fights).
 - PAUSE (S2/S14), SETTINGS volumes/shake/motion/fullscreen (S7/S9), crash panel (S13), .bak save backups (S11),
   version on screen + VITE_STEAM flag (S8/S19), favicon (S20), tutorial text (S10), overlaps (S17).
+- QA pass (playtest/STEAM_QA_1.md) fixed: Q1 cleared runs came back via the .bak (blocker), Q2 shop price tags stayed
+  live after the shop closed (blocker, LIVE ON MAIN since 6d40ba5: buys from an old shelf on later screens), Q3 fight
+  snapshot locks the bet, Q4 name screen on a pad, Q5 saves with removed content, Q6 play modes ask before replacing a
+  saved run, Q7 build-panel relic tips reachable by keyboard/pad, Q8 PRESS wording. Open: collection/trophy tiles not
+  focusable, shop/bonus-wheel reload rewinds a step, crash panel by pad, Steam Cloud conflict policy, volume L/R.

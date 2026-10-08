@@ -1344,7 +1344,7 @@ export class RunScreens {
   /** Keyboard / gamepad focus targets (STEAM_READINESS S3): everything clickable, plus the cards' "?" flip tabs. */
   navTargets(): { x: number; y: number; w: number; h: number }[] {
     if (!this.active || performance.now() - this.openedAt < INPUT_GUARD_MS) return [];
-    const out: { x: number; y: number; w: number; h: number }[] = this.all().filter((h) => h.enabled);
+    const out: { x: number; y: number; w: number; h: number }[] = [...this.all().filter((h) => h.enabled), ...(this.mode !== 'cabinet' && this.mode !== 'bonus' ? this.relicRects : [])];
     if (this.mode === 'next' && this.run) {
       const fork = needsChoice(this.run);
       const xs = fork ? [CX - 464, CX + 12] : [CX - 330];
@@ -1354,6 +1354,9 @@ export class RunScreens {
     }
     return out;
   }
+
+  /** The build panel's relic icons (drawn each frame): focus targets, so keyboard and pad players can read them (Q7). */
+  private relicRects: { x: number; y: number; w: number; h: number }[] = [];
 
   private all(): Hit[] {
     if (this.mode === 'over' && this.results && this.resultsHit) return this.resultsCopy ? [this.resultsCopy, this.resultsHit] : [this.resultsHit];
@@ -1531,6 +1534,7 @@ export class RunScreens {
     const run = this.run!;
     const p = run.player;
     const { x, y, w, h } = BUILD;
+    this.relicRects = [];
     this.panel(ctx, x, y, w, h);
     const rule = (yy: number) => {
       ctx.fillStyle = '#2a2140';
@@ -1609,6 +1613,7 @@ export class RunScreens {
       const cy = y + 590 + Math.floor(i / cols) * 30;
       drawSprite(ctx, RELICS[r].sprite as SpriteId, cx, cy, 1.6);
       this.tips.add(r, cx, cy, 15);
+      this.relicRects.push({ x: cx, y: cy, w: 30, h: 28 });
     });
     if (relics.length > slots) drawText(ctx, `+${relics.length - shown.length}`, x + 24 + ((slots - 1) % cols) * 34, y + 590 + 3 * 30, 1.5, COLORS.goldLight);
   }
