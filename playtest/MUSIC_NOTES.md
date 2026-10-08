@@ -56,3 +56,7 @@ Bosses have their own themes now: `musicMood()` returns `house`, `mirror` or `de
 Music still goes through the same bus (-14 dB, `MUSIC_GAIN` 2). Run
 `npx vite --port 5173 &` then `NODE_PATH=<playwright> node tools/music/render.cjs <dir> 60 [song]` to render WAVs. It
 prints the in-game peak/RMS and checks the loop seam.
+
+Measured in-game levels (60 s+ renders; old soundtrack in brackets): peaks 0.07-0.12 (0.10-0.14), RMS 0.020-0.032
+(0.019-0.032). The lounge is the quietest (peak 0.072, RMS 0.020). Every loop seam measures the same as an ordinary
+section downbeat (no click).
