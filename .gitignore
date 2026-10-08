@@ -5,3 +5,4 @@ playtest-build
 tools/snaps/
 tools/out/
 tools/shots/ui0/
+desktop/node_modules

@@ -9,7 +9,7 @@ import { dailyCabinet, dailyEdge, dailyKey, dailySpent } from '../core/daily';
 import { EDGE_TEXT } from '../core/run';
 import { LEGENDARY, RELICS, RELIC_TIER } from '../core/relics';
 import { CHARM_SYMBOLS, charmRuleText } from '../core/charms';
-import { STEAM, VERSION } from '../build';
+import { desktop, DESKTOP, STEAM, VERSION } from '../build';
 import type { SettingKey } from '../game';
 import { STAKES } from '../core/stakes';
 import { RelicTips } from './relicTip';
@@ -251,6 +251,8 @@ export class Menus {
     this.icons.set(this.btn('PROGRESS', x, y + 66, 400, 54, () => this.showProgress(), 3), 'trophySmall');
     const settings = this.btn('SETTINGS', W - 90, H - 30, 150, 34, () => this.showSettings(), 1.5);
     settings.opts.quiet = true;
+    // Desktop: a way out (STEAM_READINESS S5). Browsers close the tab.
+    if (DESKTOP) this.btn('QUIT', 70, H - 56, 100, 34, () => desktop()?.quit(), 1.5).opts.quiet = true;
     this.slideIn();
   }
 

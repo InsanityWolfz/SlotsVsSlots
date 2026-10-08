@@ -58,7 +58,7 @@ import { BUILD, CHIP_SPOT, RunScreens } from './ui/runScreens';
 import { drawRelicTip } from './ui/relicTip';
 import { Pause } from './ui/pause';
 import { Focus, type NavDir, type NavRect } from './ui/focus';
-import { VERSION } from './build';
+import { desktop, steamUnlock, VERSION } from './build';
 
 /** The fight HUD's relic tooltip starts under the player panel (EXPERT_PLAYTEST_12). */
 const RELIC_TIP_TOP = 232;
@@ -151,7 +151,10 @@ const BAK = '.bak';
 const NAV_KEYS: Record<string, NavDir> = { arrowup: 'up', arrowdown: 'down', arrowleft: 'left', arrowright: 'right' };
 export type SettingKey = 'master' | 'music' | 'sfx' | 'shake' | 'motion' | 'fullscreen';
 /** Fullscreen through the browser API (the desktop wrapper's window follows it). */
-export function toggleFullscreen(on = !document.fullscreenElement): void {
+export function toggleFullscreen(on?: boolean): void {
+  const d = desktop();
+  if (d) return d.setFullscreen(on ?? !d.isFullscreen());
+  on ??= !document.fullscreenElement;
   try {
     if (on && !document.fullscreenElement) void document.documentElement.requestFullscreen?.().catch(() => {});
     else if (!on && document.fullscreenElement) void document.exitFullscreen?.().catch(() => {});
@@ -165,6 +168,7 @@ export const RUN_KEY = 'slotvslot.run.v1';
 export function clearRunSave(): void {
   try {
     localStorage.removeItem(RUN_KEY);
+    desktop()?.saveRemove(RUN_KEY);
   } catch {
     /* no storage */
   }
@@ -181,6 +185,11 @@ function parse<T>(raw: string | null): T | null {
 
 function load<T>(key: string): T | null {
   try {
+    // Desktop: a save missing from localStorage (a reinstall, a new PC via Steam Cloud) comes back from its file.
+    if (localStorage.getItem(key) === null) {
+      const file = desktop()?.saveRead(key);
+      if (file) localStorage.setItem(key, file);
+    }
     const raw = localStorage.getItem(key);
     const v = parse<T>(raw);
     if (v !== null || !raw) return v ?? parse<T>(localStorage.getItem(key + BAK));
@@ -196,7 +205,9 @@ function save(key: string, v: unknown): void {
   try {
     const prev = localStorage.getItem(key);
     if (prev && parse(prev) !== null) localStorage.setItem(key + BAK, prev);
-    localStorage.setItem(key, JSON.stringify(v));
+    const json = JSON.stringify(v);
+    localStorage.setItem(key, json);
+    desktop()?.saveWrite(key, json);
   } catch {
     /* storage unavailable or full: prefs just won't persist */
   }
@@ -291,6 +302,8 @@ export class Game {
     this.cfg = mergeConfig(publicBuild ? undefined : load(CFG_KEY));
     this.prefs = sanitizePrefs(load<Partial<Prefs>>(PREFS_KEY), publicBuild);
     this.profile = sanitizeProfile(load(PROFILE_KEY));
+    // Steam: re-grant everything already earned (players who started before the Steam build get credit).
+    for (const id of Object.keys(this.profile.achievements)) steamUnlock(id);
     this.menus = new Menus(this.ui, this.sounds, () => this.profile, () => this.unlockedCabinets(), {
       onNewRun: () => this.chooseCabinet(),
       onTutorial: () => this.startTutorial(),
@@ -461,6 +474,7 @@ export class Game {
 
   /** META: save, show what the run earned, and post it to the leaderboards. */
   private afterRecord(entry: RunEntry, gain: MetaGain, ride = false): void {
+    for (const a of gain.achievements) steamUnlock(a.id);
     this.saveProfile();
     this.screens.setMeta(gain);
     if (entry.tutorial || !online() || !playerName(this.profile)) return;
@@ -1146,7 +1160,7 @@ export class Game {
     if (k === 'master' || k === 'music' || k === 'sfx') return this.prefs.vol[k];
     if (k === 'shake') return j.shake;
     if (k === 'motion') return !j.zoom && !j.chroma && !j.hitstop;
-    return !!document.fullscreenElement;
+    return desktop()?.isFullscreen() ?? !!document.fullscreenElement;
   }
 
   setSetting(k: SettingKey, v: number | boolean): void {
