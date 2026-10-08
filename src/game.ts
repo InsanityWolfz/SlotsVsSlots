@@ -57,6 +57,7 @@ import { Recap } from './ui/recap';
 import { BUILD, CHIP_SPOT, RunScreens } from './ui/runScreens';
 import { drawRelicTip } from './ui/relicTip';
 import { Pause } from './ui/pause';
+import { MusicPlayer, type SongId } from './audio/music';
 import { CHARM_VALUE } from './core/charms';
 import { Focus, type NavDir, type NavRect } from './ui/focus';
 import { desktop, steamUnlock, VERSION } from './build';
@@ -1214,6 +1215,16 @@ export class Game {
     return [...own, ...this.recapBtns.filter((b) => b.visible && b.enabled)];
   }
 
+  private music: MusicPlayer | null = null;
+
+  private musicMood(): SongId {
+    if (this.menus.isOpen || this.phase === 'title') return 'menu';
+    if (this.phase !== 'fighting' && this.phase !== 'quick') return 'lounge';
+    if (this.fight.cfg.enemy?.boss) return 'boss';
+    const act = this.run?.act ?? 1;
+    return act >= 3 || this.run?.endless ? 'act3' : act === 2 ? 'act2' : 'act1';
+  }
+
   /** PAUSE is open to any run in progress (fights and between-fight screens), never on the title or menus. */
   pausable(): boolean {
     return !this.menus.isOpen && (this.phase === 'fighting' || this.phase === 'between' || this.phase === 'recap') && !!this.run && !this.run.over;
@@ -1262,7 +1273,8 @@ export class Game {
     this.synth.resume();
     if (!this.audioStarted) {
       this.audioStarted = true;
-      this.synth.startAmbient();
+      this.music = new MusicPlayer(this.synth.ctx, this.synth.music);
+      this.music.play(this.musicMood());
     }
   }
 
@@ -1442,6 +1454,8 @@ export class Game {
     this.menus.update(dt);
     // A tutorial callout freezes the fight where it is.
     this.pause.update(dt);
+    // The soundtrack follows the screen (MUSIC): menus, the lounge between fights, each act, the bosses.
+    if (this.music) this.music.play(this.musicMood());
     const gdt = this.coach.active || this.pause.open ? 0 : this.stage.clock.tick(dt);
     this.camera.update(dt);
     this.particles.update(gdt);
