@@ -56,12 +56,12 @@ describe('EXPERT_PLAYTEST_12: THORNY (BRIAR)', () => {
 });
 
 describe('EXPERT_PLAYTEST_12: THE FORGE when every symbol is maxed', () => {
-  it('is never offered (MASTERWORK and ARMS RACE would do nothing)', () => {
+  it('still offers level cards: they go past the cap now (LIMIT BREAK, 2026-10-08)', () => {
     for (let seed = 1; seed <= 40; seed++) {
       const run = createRun(base, seed, 'knight');
       for (const s of ['sword', 'shield'] as const) run.player.levels.sym[s] = 3;
       offerChoices(run, new Rng(seed));
-      expect(run.choiceSets).not.toContain(0);
+      expect(run.pendingChoice).toHaveLength(3);
     }
   });
 });

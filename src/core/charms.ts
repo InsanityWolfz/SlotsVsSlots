@@ -9,36 +9,38 @@ import { UNIT, type Enh, type Levels, type SymbolId } from './config';
  */
 export const LEVEL_CAP = 3;
 /** A symbol's value by level (1..3): the step grows so early levels don't snowball (user: +1 then bigger). */
-export const SYM_VALUE = [0, 10, 13, 18, 25];
+export const SYM_VALUE = [0, 10, 13, 18, 25, 34];
+/** BIG CHOICES are the only thing that levels past LEVEL_CAP ("LIMIT BREAK"), up to this. */
+export const BIG_CAP = 5;
 
-/** Each charm's number by level (1..4; level 4 only with the Golden Ticket). */
+/** Each charm's number by level (1..6: past 3 only through big choices, +1 with the Golden Ticket). */
 export const CHARM_VALUE: Record<Enh, number[]> = {
   /** GOLD: this cell's share of the group multiplier (x2 plain). */
-  gold: [0, 2, 3, 4, 5],
+  gold: [0, 2, 3, 4, 5, 6, 7],
   /** KEEN: added to the sword group's BASE for EVERY sword in the group (and the group pierces shields). A flat +20 on one
    * cell lost to taking no charm at all (EXPERT_PLAYTEST_10 D1). */
-  keen: [0, 40, 50, 60, 70],
+  keen: [0, 40, 50, 60, 70, 80, 90],
   /** CHARGED: added to the bolt group's BASE (TESLA). Was 5/10/15: a tax TESLA always held. */
-  charged: [0, 10, 20, 30, 40],
+  charged: [0, 10, 20, 30, 40, 50, 60],
   /** VAMP: heal when the sword group hits, ONCE per group however many vamp cells are in it (stacked vamp was the auto-pick:
    * EXPERT_PLAYTEST_10). Values as before (15/20/30 took the whole game's sustain: WHITE 41 -> 39); the stacking was the exploit. */
-  vamp: [0, 20, 30, 40, 50],
+  vamp: [0, 20, 30, 40, 50, 60, 70],
   /** LUCKY: % chance the cell lands as a WILD. */
-  lucky: [0, 40, 55, 70, 85],
+  lucky: [0, 40, 55, 70, 85, 95, 100],
   /** BLAZE: added to TESLA's special for every blaze cell you own. */
-  blaze: [0, 10, 20, 30, 40],
+  blaze: [0, 10, 20, 30, 40, 50, 60],
   /** BULWARK (id 'spiked'): a shield cell with it also deals this % of its share of the group as damage. Was 50/75/100: KNIGHT's own
    * charm cost KNIGHT runs. */
-  spiked: [0, 100, 125, 150, 175],
+  spiked: [0, 100, 125, 150, 175, 200, 225],
   /** THORNY (BRIAR only): banked into your thorns when it lands on the payline. BRIAR's charms were a trap: a no-charms
    * drafter won +9 WHITE (EXPERT_PLAYTEST_12 D1). 20/30/40 measured 42.1/14.6 for BRIAR: a trap of its own (the round's
    * prototype read LV4 from the start). */
-  thorny: [0, 50, 60, 70, 80],
+  thorny: [0, 50, 60, 70, 80, 90, 100],
   /** LUCRE: the per-fight chip cap (+LUCRE_CHIPS each time its group pays, paid on a win). +1 a hit measured under
    * taking no charm (CONTENT_13). */
-  lucre: [0, 6, 9, 12, 15],
+  lucre: [0, 6, 9, 12, 15, 18, 21],
   /** TRICK (JOKER only): into the jackpot meter when it lands. */
-  trick: [0, 30, 40, 55, 65],
+  trick: [0, 30, 40, 55, 65, 75, 85],
 };
 /** LUCRE: chips each time its group pays (up to its cap). */
 export const LUCRE_CHIPS = 3;
@@ -137,8 +139,8 @@ export const CHARM_COLOR: Record<Enh, string> = {
 const clampLvl = (l: number, max: number) => Math.max(1, Math.min(max, Math.floor(l)));
 
 /** A symbol's value at a level (the base game's symbols; enemy symbols use the config base). */
-export const symValue = (lvl: number) => SYM_VALUE[clampLvl(lvl, LEVEL_CAP + 1)];
-export const charmValue = (enh: Enh, lvl: number) => CHARM_VALUE[enh][clampLvl(lvl, 4)];
+export const symValue = (lvl: number) => SYM_VALUE[clampLvl(lvl, BIG_CAP)];
+export const charmValue = (enh: Enh, lvl: number) => CHARM_VALUE[enh][clampLvl(lvl, BIG_CAP + 1)];
 
 /** Symbols the player's levels apply to. */
 export const LEVELLED: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'goldbar', 'thorn']);

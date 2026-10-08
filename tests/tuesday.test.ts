@@ -7,7 +7,6 @@ import { Fight, RAIN, THORNS } from '../src/core/fight';
 import { MIRROR_HIT_CAP, SANDGLASS_SLOW } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
 import {
-  BIG_SETS,
   charmOptions,
   createRun,
   enemyHp,
@@ -17,6 +16,8 @@ import {
   machinePower,
   takeChoice,
   type RunState,
+  BIG_CARDS,
+  SAFE_CHOICES,
 } from '../src/core/run';
 import { STAKE } from '../src/core/stakes';
 
@@ -175,18 +176,19 @@ function beatBoss(run: RunState): void {
 }
 
 describe('post-boss BIG CHOICES', () => {
-  it('after the House and the Mirror: 1 of 3 from a set you have not seen; one safe pick', () => {
+  it('after the House and the Mirror: 3 cards (one with a cost, one of your machine, one free), never repeated', () => {
     const run = createRun(base, 4, 'knight', STAKE.act3, true);
     beatBoss(run);
     const first = run.pendingChoice!;
     expect(first).toHaveLength(3);
-    const set = BIG_SETS.findIndex((ids) => ids.includes(first[0].id));
-    expect(first.map((c) => c.id)).toEqual(BIG_SETS[set]);
+    const ids = first.map((c) => c.id);
+    expect(ids.some((id) => BIG_CARDS.find((c) => c.id === id)?.machine === 'knight')).toBe(true);
+    expect(ids.some((id) => SAFE_CHOICES.has(id))).toBe(true);
     takeChoice(run, first[2]);
     expect(run.pendingChoice).toBeNull();
     beatBoss(run);
-    const second = run.pendingChoice!;
-    expect(BIG_SETS.findIndex((ids) => ids.includes(second[0].id))).not.toBe(set);
+    const second = run.pendingChoice!.map((c) => c.id);
+    expect(second.some((id) => ids.includes(id))).toBe(false);
   });
 
   it('ARMS RACE: +1 level to all your symbols for -60 max HP; TWIN REEL copies reel 1 onto reel 3', () => {
@@ -196,7 +198,7 @@ describe('post-boss BIG CHOICES', () => {
     run.pendingChoice = [{ id: 'armsRace' }, { id: 'masterwork', symbol: 'goldbar' }, { id: 'whetstone', symbol: 'shield' }];
     takeChoice(run, { id: 'armsRace' });
     expect(run.player.levels.sym).toEqual({ shield: 2, goldbar: 2 });
-    expect(run.player.maxHp).toBe(hp - 60);
+    expect(run.player.maxHp).toBe(hp - Math.round((hp * 0.15) / 10) * 10);
 
     run.pendingChoice = [{ id: 'cleanCut', reel: 0 }, { id: 'twinReel' }, { id: 'sweepUp' }];
     takeChoice(run, { id: 'twinReel' });

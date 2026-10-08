@@ -5,7 +5,7 @@ import { CABINETS, CABINET_ORDER, type CabinetId } from '../../src/core/cabinets
 import { RELICS, RELIC_TIER, LEGENDARY, MACHINE_EXCLUDE, WAVE1, BUILD_ENABLER, relicText } from '../../src/core/relics';
 import { CHARM_SYMBOLS, charmName, charmRuleText } from '../../src/core/charms';
 import { ALL_CHARMS } from '../../src/core/profile';
-import { createRun, describeOption, describeChoice, BIG_SETS, BIG_SET_NAMES, type BigChoice, type BigChoiceId, type DraftOption } from '../../src/core/run';
+import { createRun, describeOption, describeChoice, BIG_CARDS, type BigChoice, type BigChoiceId, type DraftOption } from '../../src/core/run';
 import { CHARM_INFO } from '../../src/ui/menus';
 
 const base = defaultConfig();
@@ -99,27 +99,24 @@ for (const c of CABINET_ORDER) {
 p();
 p('## Big choices');
 p();
-p('Today: 4 fixed sets of 3. The rolled target (symbol, Charm, reel) is filled in from a fresh run on each machine.');
-for (const [i, set] of BIG_SETS.entries()) {
-  p();
-  p(`### ${BIG_SET_NAMES[i]}`);
-  p();
-  p('| Choice | Machine | Effect | Cost |');
-  p('|---|---|---|---|');
-  for (const id of set) {
-    const seen = new Map<string, string[]>();
-    for (const c of CABINET_ORDER) {
-      const run = runs[c];
-      const atk = CABINETS[c].attack;
-      const ch: BigChoice = { id: id as BigChoiceId, symbol: atk, enh: 'gold', reel: 0 };
-      const d = describeChoice(run, ch);
-      const key = `${d.title}|${d.rule}|${d.cost}`;
-      seen.set(key, [...(seen.get(key) ?? []), CABINETS[c].hero]);
-    }
-    for (const [key, cs] of seen) {
-      const [title, rule, cost] = key.split('|');
-      p(`| ${title} | ${seen.size > 1 ? cs.join(', ') : 'all'} | ${rule} | ${cost || '—'} |`);
-    }
+p('Three cards after each boss (one with a cost, one of your Slot Machine, one free). Targets are filled in from a fresh run on each machine.');
+p();
+p('| Choice | Machine | Effect | Cost |');
+p('|---|---|---|---|');
+for (const card of BIG_CARDS) {
+  const seen = new Map<string, string[]>();
+  for (const c of CABINET_ORDER) {
+    if (card.machine && card.machine !== c) continue;
+    const run = runs[c];
+    const atk = CABINETS[c].attack;
+    const ch: BigChoice = { id: card.id as BigChoiceId, symbol: atk, enh: 'gold', reel: 0, relic: 'clover', relic2: 'key' };
+    const d = describeChoice(run, ch);
+    const key = `${d.title}|${d.rule}|${d.cost}`;
+    seen.set(key, [...(seen.get(key) ?? []), CABINETS[c].hero]);
+  }
+  for (const [key, cs] of seen) {
+    const [title, rule, cost] = key.split('|');
+    p(`| ${title} | ${card.machine ? cs.join(', ') : seen.size > 1 ? cs.join(', ') : 'all'} | ${rule} | ${cost || '—'} |`);
   }
 }
 console.log(out.join('\n'));

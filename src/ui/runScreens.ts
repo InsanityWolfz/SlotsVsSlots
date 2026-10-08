@@ -1,15 +1,15 @@
 import type { Sounds } from '../audio/sounds';
 import type { MetaGain } from '../core/profile';
 import { challengeById, levelOf } from '../core/meta';
-import { symLabel, UNIT, type Enh, type GameConfig, type SymbolId } from '../core/config';
+import { defaultConfig, UNIT, type Enh, type GameConfig, type SymbolId } from '../core/config';
+/** Base symbol values (a symbol's number in the build panel). */
+const CFG_BASE = defaultConfig().base;
 import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
 import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH, POT } from '../core/relics';
-import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmName, symLevel } from '../core/charms';
+import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
 import {
   CHIPS,
-  BIG_SET_NAMES,
-  BIG_SETS,
   describeChoice,
   type BigChoice,
   BIG,
@@ -222,7 +222,6 @@ const BOSS_HEADLINE: Record<string, string> = {
 };
 
 /** Every BIG CHOICE card looks the same: no tier, no hint which pick is strong or safe. The player decides. */
-const plural = (s: SymbolId) => `${symLabel(s)}S`;
 
 /**
  * The short lines a BIG CHOICE card shows: one effect line and one cost line (empty when it costs nothing). The full
@@ -230,41 +229,16 @@ const plural = (s: SymbolId) => `${symLabel(s)}S`;
  */
 function choiceShort(run: RunState, c: BigChoice): { effect: string; cost: string } {
   const full = describeChoice(run, c);
-  const atk = CABINETS[run.cabinet].attack;
-  const meter = !!CABINETS[run.cabinet].meter;
   switch (c.id) {
-    case 'armsRace':
-      return { effect: 'ALL YOUR SYMBOLS +1 LEVEL', cost: full.cost };
-    case 'masterwork':
-      return { effect: `${plural(c.symbol!)} +2 LEVELS`, cost: 'YOUR OTHER SYMBOLS STOP LEVELING' };
-    case 'whetstone':
-      return { effect: `${plural(c.symbol!)} +1 LEVEL`, cost: '' };
-    case 'meltDown':
-      return { effect: 'EVERY CHARM BECOMES GOLD', cost: 'YOUR OTHER CHARM LEVELS ARE GONE' };
-    case 'gildLot':
-      return { effect: `${BIG.gildLotCells} GOLD CHARMS ON EVERY REEL`, cost: `SYMBOLS -1 LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
-    case 'polish':
-      return { effect: `${charmName(c.enh!)} CHARMS +1 LEVEL`, cost: '' };
-    case 'cleanCut':
-      return { effect: `REEL ${c.reel! + 1} DROPS ITS SHIELDS. ${plural(atk)} +1 LEVEL`, cost: 'THOSE SHIELDS ARE GONE' };
-    case 'twinReel':
-      return { effect: 'REEL 3 BECOMES A COPY OF REEL 1', cost: "REEL 3'S CELLS ARE GONE" };
-    case 'sweepUp':
-      return { effect: run.player.hp >= run.player.maxHp ? `+${BIG.sweepHeal / 2} MAX HP. ROCKS SMASHED` : `HEAL ${BIG.sweepHeal}. ROCKS SMASHED`, cost: '' };
-    case 'glassCannon':
-      return { effect: `EVERY GROUP PAYS X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS' };
-    case 'bloodPact':
-      return { effect: meter ? 'YOUR METER FILLS 2X FAST' : 'SWORDS AND SHIELDS +1 LEVEL', cost: full.cost };
-    case 'secondWind': {
-      const hp = /\+(\d+) MAX HP/.exec(full.rule)?.[1] ?? '';
-      return { effect: `FULL HEAL, +${hp} MAX HP, SHIELDS +1 LEVEL`, cost: '' };
-    }
     case 'edge':
       return { effect: full.rule, cost: EDGE_TEXT[c.edge!].text };
     case 'cashOut':
       return { effect: `BANK ${/: (\d+) POINTS/.exec(full.rule)?.[1] ?? ''} POINTS. THE RUN ENDS`, cost: '' };
     case 'ride':
       return { effect: `THE POT GROWS TO ${/GROWS TO (\d+)/.exec(full.rule)?.[1] ?? ''}`, cost: `BUST: BANK ${/POT: (\d+)/.exec(full.cost)?.[1] ?? ''}` };
+    default:
+      // The card says exactly what the rule says (the user's wording, 2026-10-08).
+      return { effect: full.rule, cost: full.cost };
   }
 }
 
@@ -800,11 +774,10 @@ export class RunScreens {
   }
 
   private drawChoice(ctx: CanvasRenderingContext2D, time: number): void {
-    const set = BIG_SETS.findIndex((ids) => ids.includes(this.choices[0]?.id));
     const edge = this.choices[0]?.id === 'edge';
     const rideQ = this.choices[0]?.id === 'cashOut';
     drawText(ctx, rideQ ? `LOOP ${(this.run?.endless?.loop ?? 2) - 1} CLEARED! POT ${this.run?.endless?.pot ?? 0}` : edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'A BIG CHOICE', CX, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
-    drawText(ctx, rideQ ? 'RIDE AGAIN OR CASH OUT. YOUR WIN IS SAFE EITHER WAY.' : edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : `${BIG_SET_NAMES[set] ?? ''}: STRONG MOVES HAVE A PRICE`, CX, 110, 2, COLORS.textDim);
+    drawText(ctx, rideQ ? 'RIDE AGAIN OR CASH OUT. YOUR WIN IS SAFE EITHER WAY.' : edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : 'PICK ONE. SOME COME WITH A PRICE.', CX, 110, 2, COLORS.textDim);
     let tip = -1;
     this.cards.forEach((c, i) => {
       const ch = this.choices[i];
@@ -915,7 +888,9 @@ export class RunScreens {
       drawText(ctx, text, tx, ty, sc, color);
     };
     const charmOn = (enh: Enh, sx: number, sy: number, sc: number) => {
-      drawSprite(ctx, CHARM_SYMBOLS[enh][0] as SpriteId, sx, sy, sc);
+      // The Charm on one of THIS machine's symbols (attack first): never a sword on a machine without swords.
+      const on = [cab.attack, ...cab.symbols].find((sym) => CHARM_SYMBOLS[enh].includes(sym)) ?? CHARM_SYMBOLS[enh][0];
+      drawSprite(ctx, on as SpriteId, sx, sy, sc);
       drawSprite(ctx, ENH_SPRITE[enh], sx, sy, sc);
     };
     const LV = '#5ad8e8';
@@ -1005,6 +980,124 @@ export class RunScreens {
         drawSprite(ctx, 'plusBadge', x - s * 4 + 24, y + 20, 3);
         drawSprite(ctx, 'shield', x + s * 12, y + 4, s * 0.5);
         tag('+1', x + s * 12, y + 34, LV, 2);
+        break;
+      case 'temper':
+        if (ch.enh) charmOn(ch.enh, x, y - 6, s);
+        else drawSprite(ctx, (ch.symbol ?? atk) as SpriteId, x, y - 6, s);
+        tag('+1', x + s * 10, y + 30, LV, 3);
+        break;
+      case 'luckyBreak':
+        charmOn(ch.enh ?? 'gold', x, y - 6, s);
+        tag('+2', x + s * 10, y + 30, LV, 3);
+        break;
+      case 'devilsDue':
+        drawSprite(ctx, atk, x, y - 6, s);
+        tag(`X${BIG.devilPay}`, x + s * 9, y + 30, '#ff6a5a', 3);
+        break;
+      case 'allIn':
+        drawSprite(ctx, 'shield', x - s * 11, y, s * 0.7);
+        drawSprite(ctx, 'arrowRight', x, y, 2.5);
+        drawSprite(ctx, atk, x + s * 11, y, s * 0.7);
+        break;
+      case 'doubleOrNothing':
+        syms.forEach((sym, k) => drawSprite(ctx, sym as SpriteId, x + (k - (syms.length - 1) / 2) * (s * 15), y - 8, s * 0.65));
+        tag('+1 ALL', x, y + 36, LV, 2);
+        break;
+      case 'cursedIdol':
+        drawSprite(ctx, artId('tierLegendary') as SpriteId, x - s * 6, y - 4, s * 0.9);
+        drawSprite(ctx, 'rock', x + s * 11, y + 14, s * 0.5);
+        break;
+      case 'quickening':
+        drawSprite(ctx, (cab.meter?.symbol ?? atk) as SpriteId, x, y - 6, s);
+        tag('FULL', x + s * 8, y + 30, LV, 2.5);
+        break;
+      case 'warded':
+        drawSprite(ctx, RELICS.holywater.sprite as SpriteId, x, y - 6, s);
+        tag(`X${BIG.wards}`, x + s * 9, y + 30, LV, 3);
+        break;
+      case 'pawnShop':
+        // Both relics on the card: what goes, and what comes.
+        if (ch.relic) drawSprite(ctx, RELICS[ch.relic].sprite as SpriteId, x - s * 12, y, s * 0.8, { alpha: 0.7 });
+        if (ch.relic) drawSprite(ctx, 'minusBadge', x - s * 12 + 20, y + 20, 3);
+        drawSprite(ctx, 'arrowRight', x, y, 2.5);
+        if (ch.relic2) drawSprite(ctx, RELICS[ch.relic2].sprite as SpriteId, x + s * 12, y, s * 0.8);
+        if (ch.relic2) drawSprite(ctx, 'plusBadge', x + s * 12 + 20, y + 20, 3);
+        break;
+      case 'treasure':
+        drawSprite(ctx, artId('voucherRelic') as SpriteId, x, y, s);
+        break;
+      case 'houseMoney':
+      case 'heist':
+        [2, 1, 0].forEach((k) => drawSprite(ctx, 'chip', x - k * 8, y + 10 - k * 14, s * 0.8));
+        tag(`+${ch.id === 'heist' ? BIG.heist : BIG.houseMoney}`, x + s * 9, y + 30, COLORS.goldLight, 2.5);
+        break;
+      case 'whetted':
+      case 'bloodMoon':
+      case 'cashIn':
+      case 'fourLeaf':
+      case 'overclock':
+      case 'markedCards': {
+        const to = ({ whetted: 'keen', bloodMoon: 'vamp', cashIn: 'lucre', fourLeaf: 'lucky', overclock: 'charged', markedCards: 'trick' } as Record<string, Enh>)[ch.id];
+        const owned = [...new Set(p.gilded.map((gc) => gc.enh))].filter((e) => e !== to).slice(0, 3);
+        owned.forEach((e, k) => charmOn(e, x - s * 13, y - (owned.length - 1) * s * 4 + k * s * 8, s * 0.42));
+        drawSprite(ctx, 'arrowRight', x - s * 2, y, 2.5);
+        charmOn(to, x + s * 10, y - 4, s * 0.9);
+        break;
+      }
+      case 'excalibur':
+        drawSprite(ctx, 'sword', x - s * 5, y - 6, s * 0.75, { rot: -0.2 });
+        drawSprite(ctx, 'sword', x + s * 5, y - 6, s * 0.75, { rot: 0.2 });
+        tag('JACKPOT', x, y + 36, COLORS.goldLight, 2);
+        break;
+      case 'shieldWall':
+        drawSprite(ctx, 'shield', x, y - 6, s);
+        tag('KEEP', x + s * 8, y + 30, LV, 2.5);
+        break;
+      case 'shieldSlam':
+        drawSprite(ctx, 'shield', x - s * 8, y, s * 0.75);
+        drawSprite(ctx, 'arrowRight', x + s * 2, y, 2.5);
+        drawSprite(ctx, 'skull', x + s * 12, y, s * 0.6);
+        break;
+      case 'crusade':
+        drawSprite(ctx, 'sword', x, y - 6, s);
+        tag(`+${BIG.crusadeStep}`, x + s * 9, y + 30, LV, 3);
+        break;
+      case 'squire':
+        charmOn('keen', x, y - 6, s);
+        tag(`X${BIG.squireCells}`, x + s * 9, y + 30, LV, 3);
+        break;
+      case 'chainLightning':
+      case 'madScience':
+      case 'stormFront':
+      case 'groundWire':
+        drawSprite(ctx, 'bolt', x - (ch.id === 'chainLightning' ? s * 6 : 0), y - 6, s * (ch.id === 'chainLightning' ? 0.75 : 1));
+        if (ch.id === 'chainLightning') drawSprite(ctx, 'bolt', x + s * 6, y - 6, s * 0.75);
+        if (ch.id === 'madScience') tag(`X${BIG.madMul}`, x + s * 9, y + 30, '#ff6a5a', 3);
+        if (ch.id === 'stormFront') tag('START', x + s * 8, y + 30, LV, 2.5);
+        if (ch.id === 'groundWire') drawSprite(ctx, 'heart', x + s * 10, y + 20, s * 0.45);
+        break;
+      case 'supercell':
+        charmOn('charged', x - s * 11, y, s * 0.7);
+        drawSprite(ctx, 'arrowRight', x, y, 2.5);
+        charmOn('blaze', x + s * 11, y, s * 0.7);
+        break;
+      case 'jokersReel':
+      case 'doubleFeature':
+      case 'cardShark':
+        drawSprite(ctx, 'wild', x, y - 6, s);
+        tag(ch.id === 'jokersReel' ? 'REEL 2' : ch.id === 'cardShark' ? `+${BIG.sharkWilds}` : '2 SPINS', x + s * 8, y + 30, LV, 2.5);
+        break;
+      case 'highCard':
+      case 'trumpCard':
+        drawSprite(ctx, 'ace', x, y - 6, s);
+        tag(ch.id === 'highCard' ? 'X2' : 'PIERCE', x + s * 8, y + 30, ch.id === 'highCard' ? COLORS.goldLight : LV, 2.5);
+        break;
+      case 'noLimit':
+      case 'openBar':
+      case 'monsoon':
+      case 'trustFund':
+        drawSprite(ctx, (ch.id === 'monsoon' ? 'goldbar' : 'chip') as SpriteId, x, y - 6, s);
+        tag(ch.id === 'noLimit' ? 'NO MAX' : ch.id === 'openBar' ? 'FREE' : ch.id === 'monsoon' ? 'RAIN' : `+${BIG.trustChips}`, x + s * 8, y + 30, COLORS.goldLight, 2.5);
         break;
       case 'edge':
         drawSprite(ctx, (ch.reward === 'legend' ? artId('tierLegendary') : ch.reward === 'relic' ? artId('voucherRelic') : 'chip') as SpriteId, x, y, ch.reward === 'chips' ? s * 1.5 : s);
@@ -1559,15 +1652,14 @@ export class RunScreens {
     const table = runTable(p);
     drawReelTable(ctx, x + 8, y + 190, table, { colW: 90, rowH: 28, scale: 1.5, text: 2, maxRows: 6, levels: p.levels, ticket: p.relics.includes('ticket'), cap: levelCap(run), maxH: 190, badges: false });
     rule(y + 386);
-    // LEVELS: every symbol type and charm type you own, LV1 included, MAX at the cap.
-    drawText(ctx, 'LEVELS', x + 12, y + 404, 2, COLORS.textDim, { align: 'left' });
+    // SYMBOLS and CHARMS (user, 2026-10-08): every type you own, its level and what one is worth right now.
     const cap = levelCap(run);
     const ticket = p.relics.includes('ticket');
     const syms = CABINETS[run.cabinet].symbols.filter((sym) => p.strips.some((st) => (st[sym] ?? 0) > 0));
     const charms = [...new Map(table.flat().filter((r) => r.enh).map((r) => [r.enh!, r.symbol as SymbolId])).entries()];
-    const entries: { sprite: SymbolId; enh?: Enh; level: number }[] = [
-      ...syms.map((sym) => ({ sprite: sym, level: symLevel(p.levels, sym) })),
-      ...charms.map(([enh, sym]) => ({ sprite: sym, enh, level: charmLevel(p.levels, enh, ticket) })),
+    const entries: { sprite: SymbolId; enh?: Enh; level: number; value: string }[] = [
+      ...syms.map((sym) => ({ sprite: sym, level: symLevel(p.levels, sym), value: String(playerSymValue(p.levels, sym, CFG_BASE[sym] ?? UNIT)) })),
+      ...charms.map(([enh, sym]) => ({ sprite: sym, enh, level: charmLevel(p.levels, enh, ticket), value: charmTag(enh, charmLevel(p.levels, enh, ticket)) })),
     ];
     if (this.lvRun !== run) {
       this.lvRun = run;
@@ -1575,9 +1667,7 @@ export class RunScreens {
       this.lvPunch.clear();
     }
     const now = performance.now() / 1000;
-    entries.slice(0, 8).forEach((e, i) => {
-      const ex = x + 26 + (i % 2) * 134;
-      const ey = y + 432 + Math.floor(i / 2) * 28;
+    const drawEntry = (e: (typeof entries)[number], ex: number, ey: number) => {
       const key = e.enh ?? e.sprite;
       const seen = this.lvSeen.get(key);
       if (seen !== undefined && e.level > seen) this.lvPunch.set(key, now);
@@ -1592,13 +1682,22 @@ export class RunScreens {
           ctx.fillRect(ex + 40 + Math.cos(a) * 20 * pt - 2, ey + Math.sin(a) * 20 * pt - 2, 4, 4);
           ctx.globalAlpha = 1;
         }
-      // LV 1 sits dim, so what you've upgraded stands out at a glance.
-      const max = e.level >= cap;
-      const base = e.level <= 1 && !max;
+      // LV 1 sits dim, so what you've upgraded stands out; at the draft cap (or past it) the level turns orange.
+      const top = e.level >= cap;
+      const base = e.level <= 1;
       drawSprite(ctx, e.sprite as SpriteId, ex, ey, 1.5, { dim: base ? 0.4 : 0 });
       if (e.enh) drawSprite(ctx, ENH_SPRITE[e.enh], ex, ey, 1.5, { dim: base ? 0.4 : 0 });
-      drawText(ctx, max ? 'MAX' : `LV ${e.level}`, ex + 20, ey, 2, max ? '#ff9a3a' : base ? COLORS.textDim : e.enh ? CHARM_COLOR[e.enh] : COLORS.goldLight, { align: 'left', punch });
-    });
+      drawText(ctx, `LV${e.level}`, ex + 18, ey, 2, top ? '#ff9a3a' : base ? COLORS.textDim : e.enh ? CHARM_COLOR[e.enh] : COLORS.goldLight, { align: 'left', punch });
+      // What one pays right now (a symbol's number, a Charm's tag).
+      drawText(ctx, e.value, ex + 108, ey, 1.5, COLORS.text, { align: 'right' });
+    };
+    drawText(ctx, 'SYMBOLS', x + 12, y + 400, 2, COLORS.textDim, { align: 'left' });
+    entries.filter((e) => !e.enh).slice(0, 4).forEach((e, i) => drawEntry(e, x + 26 + (i % 2) * 134, y + 424 + Math.floor(i / 2) * 24));
+    const cy0 = y + 424 + Math.ceil(Math.min(4, syms.length) / 2) * 24 + 4;
+    drawText(ctx, 'CHARMS', x + 12, cy0, 2, COLORS.textDim, { align: 'left' });
+    const charmEntries = entries.filter((e) => e.enh);
+    if (!charmEntries.length) drawText(ctx, 'NONE YET', x + 26, cy0 + 24, 1.5, '#4a4058', { align: 'left' });
+    charmEntries.slice(0, 4).forEach((e, i) => drawEntry(e, x + 26 + (i % 2) * 134, cy0 + 24 + Math.floor(i / 2) * 24));
     rule(y + 546);
     // Your relics: a fixed grid; past its size the last cell says how many more.
     const relics = p.relics;

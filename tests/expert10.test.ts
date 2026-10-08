@@ -88,17 +88,18 @@ describe('EXPERT_PLAYTEST_10: new relics', () => {
 });
 
 describe('charm levels: no dead level picks', () => {
-  it('POLISH and WHETSTONE never target a maxed type (SECOND WIND instead when nothing is left)', async () => {
-    const { rollChoices, BIG_SETS } = await import('../src/core/run');
-    const { Rng } = await import('../src/core/rng');
+  it('LIMIT BREAK: big-choice level picks go past LV3 (up to LV5), so they are never dead', async () => {
+    const { takeChoice } = await import('../src/core/run');
     const run = createRun(base, 5, 'knight');
-    run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'vamp', n: 2 }];
-    run.player.levels.charm = { vamp: 3 };
     for (const s of ['sword', 'shield'] as const) run.player.levels.sym[s] = 3;
-    for (const set of [0, 1]) {
-      const ids = rollChoices(run, set, new Rng(1)).map((c) => c.id);
-      expect(ids).not.toContain(BIG_SETS[set][2]);
-      expect(ids).toContain('secondWind');
-    }
+    run.pendingChoice = [{ id: 'temper', symbol: 'sword' }];
+    takeChoice(run, { id: 'temper', symbol: 'sword' });
+    expect(run.player.levels.sym.sword).toBe(4);
+    // At LV5 a level has nowhere to go: it becomes 2 GOLD Charms on that symbol.
+    run.player.levels.sym.sword = 5;
+    run.pendingChoice = [{ id: 'temper', symbol: 'sword' }];
+    takeChoice(run, { id: 'temper', symbol: 'sword' });
+    expect(run.player.levels.sym.sword).toBe(5);
+    expect(run.player.gilded.filter((g) => g.symbol === 'sword' && g.enh === 'gold').reduce((a, g) => a + g.n, 0)).toBe(2);
   });
 });

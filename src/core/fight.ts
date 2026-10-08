@@ -316,6 +316,10 @@ export class Fight {
   private touchSpend = 0;
   private firstBlood = false;
   private holyWater = false;
+  /** WARDED (big choice): sabotages washed off this fight. */
+  private wards = 0;
+  /** DOUBLE FEATURE: the first of the two payoff spins has played. */
+  private encoreSecond = false;
   private staticTurn = -1;
   /** Card Sharp marks placed this fight (THE DECK REMEMBERS). */
   marksPlaced = 0;
@@ -346,6 +350,11 @@ export class Fight {
     }
     // MIDAS: the VAULT starts pre-filled by the chips you hold (1 per 2 chips, never full).
     if (this.meter?.kind === 'vault') p.energy = Math.max(p.energy, this.vaultBase());
+    // QUICKENING (big choice): your meter starts every fight one short of full (thorns: a full bank of 60).
+    if (this.big.startFull && (this.special || this.meter)) {
+      p.energy = this.special ? this.cfg.specialCost - 1 : this.meter!.kind === 'thorns' ? 2 * BATTERY_ENERGY : Math.max(0, this.meterCost - 1);
+      this.openers.push('battery');
+    }
     // Lightning Rod: a charged-bolt build makes the special cheaper and harder-hitting.
     if (this.special && p.relics.has('rod') && p.reels.some((r) => r.cells.some((c) => c.enh === 'charged'))) {
       this.cfg.specialCost = ROD_SPECIAL_COST;
@@ -445,7 +454,8 @@ export class Fight {
   /** MIDAS: the VAULT's payoff multiplier: 1 + chips held / 20, max x3. */
   vaultMul(): number {
     // COMPOUND raises the cap.
-    return highRollerMul(this.chipsNow() + this.nestEgg(), this.sides.player.relics.has('compound') ? NEW_RELIC.compoundCap : MIDAS.maxMul);
+    // NO LIMIT (big choice): no cap at all.
+    return highRollerMul(this.chipsNow() + this.nestEgg(), this.big.noHighRollerCap ? Infinity : this.sides.player.relics.has('compound') ? NEW_RELIC.compoundCap : MIDAS.maxMul);
   }
   /** NEST EGG: HIGH ROLLER counts this many more chips (rain still spends real chips). */
   private nestEgg(): number {
@@ -456,7 +466,14 @@ export class Fight {
     return (this.cfg.player.chipsHeld ?? 0) + this.midasChips;
   }
   private rainCost(me: Combatant): number {
+    // OPEN BAR / MONSOON (big choices) set the price outright.
+    if (me.side === 'player' && this.big.rainCost !== undefined) return this.big.rainCost;
     return me.relics.has('rainmaker') ? RAIN.rainmakerCost : RAIN.cost;
+  }
+
+  /** The run's BIG CHOICE fight rules (player only). */
+  get big(): import('./config').BigMods {
+    return this.cfg.player.big ?? {};
   }
 
   /** How full the player's meter has to be (the special's cost for TESLA). */
@@ -521,6 +538,8 @@ export class Fight {
     if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
     if (this.cfg.shieldReset === 'ownTurnStart') this.resetShield(me, events);
+    // STORM FRONT (big choice): your first spin of every fight opens with a lightning strike.
+    if (side === 'player' && this.playerSpins === 1 && this.special && this.big.startStrike) this.gainEnergy(me, Math.max(0, this.cfg.specialCost - me.energy), [], events);
     // Saved chips shield you at the start of each boss turn (the House and the Mirror).
     if (side === 'enemy' && (this.isBoss || this.isMirror || this.isDealer)) {
       const p = this.sides.player;
@@ -894,10 +913,11 @@ export class Fight {
     // CASH CASSIDY: MAKE IT RAIN! A chip jackpot (a chip pair with LOOSE CHANGE, at half base) with enough chips held
     // hits for the chips in hand x2, counted before it costs them.
     if (player && this.meter?.kind === 'vault' && this.chipsNow() >= this.rainCost(me)) {
-      const g = s.groups.find((x) => x.symbol === 'goldbar' && x.matched && (x.reels.length >= 3 || (x.reels.length === 2 && has('loosechange'))));
+      const g = s.groups.find((x) => x.symbol === 'goldbar' && x.matched && (x.reels.length >= 3 || (x.reels.length === 2 && (has('loosechange') || !!this.big.monsoon))));
       if (g) {
         g.rain = true;
-        g.base = Math.round((this.chipsNow() * RAIN.perChip) / (g.reels.length >= 3 ? 1 : 2));
+        // MONSOON (big choice): a chip pair rains in full.
+        g.base = Math.round((this.chipsNow() * RAIN.perChip) / (g.reels.length >= 3 || this.big.monsoon ? 1 : 2));
         // DOWNPOUR: each rain this fight makes the next one hit harder.
         if (has('downpour') && this.rains > 0) g.base = unitsRound(g.base * (1 + NEW_RELIC.downpourStep * this.rains));
       }
@@ -963,6 +983,27 @@ export class Fight {
       if ((has('drum') || has('deckdrum')) && BLADES.has(g.symbol) && this.drum > 0 && g.base > 0) {
         g.base += (has('drum') ? NEW_RELIC.drumStep : NEW_RELIC.deckdrumStep) * this.drum * g.reels.length;
         fired.add(has('drum') ? 'drum' : 'deckdrum');
+      }
+      // BIG CHOICES on your groups: CRUSADE, EXCALIBUR, HIGH CARD, TRUMP CARD.
+      if (player && g.base > 0) {
+        const b = this.big;
+        if (b.swordBonus && g.symbol === 'sword') {
+          g.base += b.swordBonus * g.reels.length;
+          notes.push(`CRUSADE +${b.swordBonus}`);
+        }
+        const pair = g.matched && g.reels.length === 2 && !g.jackpot;
+        const jack = g.matched && (g.reels.length >= 3 || !!g.jackpot);
+        if (b.swordPairJackpot && pair && g.symbol === 'sword') {
+          g.mult *= multFor(3, this.cfg) / multFor(2, this.cfg);
+          notes.push('EXCALIBUR');
+        }
+        if (b.shieldPairsBlockNothing && pair && g.symbol === 'shield') g.base = 0;
+        if (b.pairMul && pair && PAYING.has(g.symbol)) g.mult *= b.pairMul;
+        if (b.jackpotMul && jack && PAYING.has(g.symbol)) {
+          g.mult *= b.jackpotMul;
+          notes.push(`X${b.jackpotMul}`);
+        }
+        if (b.pierce?.includes(g.symbol)) g.pierce = true;
       }
       // GOLD charms in a group ADD (x2 + x2 + x2 = x6), then multiply with the double/jackpot.
       goldOf.set(g, gold);
@@ -1155,6 +1196,13 @@ export class Fight {
         }
       }
       if (this.over) return;
+      // SHIELD WALL (big choice): the shield never resets, up to a share of your max HP.
+      if (this.big.shieldKeep) {
+        const keep = Math.min(held, unitsRound(c.maxHp * this.big.shieldKeep));
+        if (keep < held) events.push({ type: 'shieldReset', side: c.side, lost: held - keep });
+        c.shield = keep;
+        return;
+      }
       // TOWER SHIELD (KNIGHT): half the leftover shield stays (capped, since SHIELD BASH reads it again next turn).
       if (c.relics.has('tower')) {
         const keep = Math.min(unitsRound(held * NEW_RELIC.towerShare), unitsRound(c.maxHp * NEW_RELIC.towerCap));
@@ -1267,6 +1315,11 @@ export class Fight {
           const share = g.amount / Math.max(1, g.reels.length);
           const pct = g.reels.reduce((a, r) => a + this.enhsAt(me, r).filter((e) => e === 'spiked').length, 0) * charmValue('spiked', this.charmLvl(me, 'spiked'));
           const dmg = Math.round((share * pct) / 100 / UNIT) * UNIT;
+          if (dmg > 0) this.hit(me, foe, dmg, g.reels, events);
+        }
+        // SHIELD SLAM (big choice): every shield also hits for a share of what it blocks.
+        if (player && this.big.shieldSlam && g.amount > 0 && !this.over) {
+          const dmg = Math.round((g.amount * this.big.shieldSlam) / UNIT) * UNIT;
           if (dmg > 0) this.hit(me, foe, dmg, g.reels, events);
         }
         return;
@@ -1402,6 +1455,13 @@ export class Fight {
   /** MIDAS / JAX: the full meter pays off this spin — it empties, and you heal. */
   private payoff(me: Combatant, score: LineScore, events: CombatEvent[]): void {
     if (score.jackpots) {
+      // DOUBLE FEATURE (big choice): the jackpot meter pays a second spin in a row.
+      if (me.side === 'player' && this.big.doublePayoff && !this.encoreSecond) {
+        this.encoreSecond = true;
+        events.push({ type: 'payoff', side: me.side, kind: 'jackpots' });
+        return;
+      }
+      this.encoreSecond = false;
       me.armed = false;
       // ENCORE: the meter keeps a share after it pays.
       me.energy = me.side === 'player' && me.relics.has('encore') ? unitsUp(this.meterCost * NEW_RELIC.encoreKeep) : 0;
@@ -1440,6 +1500,8 @@ export class Fight {
     if (me.side !== 'player' || this.over) return;
     const heal = (this.meter?.heal ?? 0) * times;
     if (heal > 0) this.heal(me, heal, 'payoff', events);
+    // GROUND WIRE (big choice): every lightning strike heals more.
+    if (this.special && this.big.strikeHeal && !this.over) this.heal(me, this.big.strikeHeal * times, 'payoff', events);
     if (!this.over && me.relics.has('fang')) this.heal(me, (this.meter?.kind === 'thorns' ? FANG_THORN_HEAL : this.special ? FANG_TESLA_HEAL : FANG_HEAL) * times, 'fang', events);
   }
 
@@ -1650,7 +1712,8 @@ export class Fight {
       const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
       // MELTDOWN: +1% per 1% of HP you're missing (capped).
       const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, Math.max(0, me.maxHp - me.hp) * NEW_RELIC.meltdownRate) : 0;
-      const dmg = unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1) * (1 + melt));
+      const mad = me.side === 'player' ? this.big.lightningMul ?? 1 : 1;
+      const dmg = unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1) * (1 + melt) * mad);
       if (over && !overPopped) {
         overPopped = true;
         events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
@@ -1659,6 +1722,20 @@ export class Fight {
       events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
       this.checkDeath(foe, events);
       strikes++;
+      // CHAIN LIGHTNING (big choice): every strike hits twice.
+      if (me.side === 'player' && this.big.strikeTwice && !this.over && foe.hp > 0) {
+        const h2 = this.damage(foe, dmg, pierce);
+        events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h2, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
+        this.checkDeath(foe, events);
+      }
+    }
+    // MAD SCIENCE (big choice): each storm costs a share of your max HP (never lethal).
+    if (me.side === 'player' && this.big.stormCost && strikes > 0 && !this.over) {
+      const cost = Math.min(me.hp - 1, unitsRound(me.maxHp * this.big.stormCost));
+      if (cost > 0) {
+        me.hp -= cost;
+        events.push({ type: 'hpCost', side: 'player', amount: cost, hp: me.hp });
+      }
     }
     // Every strike heals a little (TESLA's payoff heal), plus Vampire Fang: once per storm, for all its strikes (one heal
     // after each strike spammed through a LIGHTNING STORM: user playtest).
@@ -1787,6 +1864,11 @@ export class Fight {
     if (foe.side === 'player' && foe.relics.has('holywater') && !this.holyWater && REEL_WRITES.has(sym) && !(FIZZLE_SINGLES.has(sym) && amount < PAIR_PAY)) {
       this.holyWater = true;
       events.push({ type: 'relic', side: 'player', relic: 'holywater' });
+      return this.fizzle(me, sym, reels, events);
+    }
+    // WARDED (big choice): the first few sabotages each fight wash off.
+    if (foe.side === 'player' && this.wards < (this.big.wards ?? 0) && REEL_WRITES.has(sym) && !(FIZZLE_SINGLES.has(sym) && amount < PAIR_PAY)) {
+      this.wards++;
       return this.fizzle(me, sym, reels, events);
     }
     switch (sym) {
@@ -2282,6 +2364,10 @@ export class Fight {
     if (foe.side === 'player' && foe.relics.has('holywater') && !this.holyWater && WRITER_ABILITIES.has(ab.kind)) {
       this.holyWater = true;
       events.push({ type: 'relic', side: 'player', relic: 'holywater' });
+      return;
+    }
+    if (foe.side === 'player' && this.wards < (this.big.wards ?? 0) && WRITER_ABILITIES.has(ab.kind)) {
+      this.wards++;
       return;
     }
     switch (ab.kind) {

@@ -189,6 +189,47 @@ export type RelicId =
   | 'marker'
   | 'highlimit';
 
+/** The fight rules a BIG CHOICE can add (the player's side only; set on the run, passed to every fight). */
+export interface BigMods {
+  /** EXCALIBUR: sword pairs pay as jackpots... */
+  swordPairJackpot?: boolean;
+  /** ...and shield pairs block nothing. */
+  shieldPairsBlockNothing?: boolean;
+  /** SHIELD WALL: your shield never resets, up to this share of your max HP. */
+  shieldKeep?: number;
+  /** SHIELD SLAM: shields also hit for this share of what they block. */
+  shieldSlam?: number;
+  /** CRUSADE: each sword hits for this much more. */
+  swordBonus?: number;
+  /** CHAIN LIGHTNING: every lightning strike hits twice. */
+  strikeTwice?: boolean;
+  /** MAD SCIENCE: lightning damage multiplier... */
+  lightningMul?: number;
+  /** ...and each storm costs this share of your max HP. */
+  stormCost?: number;
+  /** STORM FRONT: a lightning strike opens every fight. */
+  startStrike?: boolean;
+  /** GROUND WIRE: each lightning strike heals this much more. */
+  strikeHeal?: number;
+  /** DOUBLE FEATURE: the jackpot meter pays two spins in a row. */
+  doublePayoff?: boolean;
+  /** HIGH CARD: jackpots (and meter payoffs) pay this much more; pairs pay this much. */
+  jackpotMul?: number;
+  pairMul?: number;
+  /** TRUMP CARD: these symbols' damage pierces shields. */
+  pierce?: SymbolId[];
+  /** NO LIMIT: HIGH ROLLER has no max. */
+  noHighRollerCap?: boolean;
+  /** OPEN BAR / MONSOON: what MAKE IT RAIN costs. */
+  rainCost?: number;
+  /** MONSOON: every chip pair makes it rain, at full damage. */
+  monsoon?: boolean;
+  /** QUICKENING: your meter starts every fight full. */
+  startFull?: boolean;
+  /** WARDED: this many sabotages a fight wash off. */
+  wards?: number;
+}
+
 export interface SideConfig {
   hp: number;
   /** One composition per reel, left to right. */
@@ -210,6 +251,8 @@ export interface SideConfig {
   payMul?: number;
   /** BLOOD PACT: your meter fills this many times faster. */
   meterMul?: number;
+  /** BIG CHOICES that change the fight itself (the player only). */
+  big?: BigMods;
   /** Boss fight: chips carried in grant this much shield at the start of each House turn. */
   stackShield?: number;
   /** BONUS WHEEL / RELIC RUSH symbols ride on this side's reels (run fights only). */

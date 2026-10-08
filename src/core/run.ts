@@ -21,7 +21,7 @@ import {
   LOADED_MUL,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
-import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
+import { BIG_CAP, CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { dailyEdge, dailyFightSeed } from './daily';
 import { BET_CAP, BETS, MARKER_REFUND, betPayout, betsFrom, dealerBets, betState, HOT_HAND, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
@@ -90,6 +90,7 @@ export const gildsFor = (run: RunState): Enh[] =>
       (run.cabinet === 'thorn' || !BRIAR_ONLY.has(e)) &&
       (run.cabinet === 'joker' || !JOKER_ONLY.has(e)) &&
       (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)) &&
+      !run.noCharms?.includes(e) &&
       // A charm with nothing on your reels to go on is never offered (KEEN on a machine with no swords).
       charmSymbols(run, e).some((sym) => run.player.strips.some((st) => (st[sym] ?? 0) > 0)),
   );
@@ -283,8 +284,27 @@ export interface RunState {
   markerUsed?: string;
   /** HOT HAND: side bets won in a row (a bust resets it). */
   betStreak?: number;
-  /** MASTERWORK: these symbols can't gain levels. */
+  /** MASTERWORK (until 2026-10-08): these symbols can't gain levels. Old saves only. */
   levelLock?: SymbolId[];
+  /** BIG CHOICES (2026-10-08): cards offered so far this run (never twice), and the fight rules they added. */
+  choicesSeen?: BigChoiceId[];
+  big?: import('./config').BigMods;
+  /** DEVIL'S DUE: everything pays x2; -5% max HP after each win. */
+  devil?: boolean;
+  /** DOUBLE OR NOTHING: the next boss's HP multiplier (cleared when a boss falls). */
+  bossHpMul?: number;
+  /** Relic picks waiting behind the current one (CURSED IDOL / TREASURE after the act's legendary). */
+  legendQueue?: RelicId[][];
+  /** QUICKENING: enemy abilities charge one spin faster. */
+  abilityFaster?: boolean;
+  /** SUPERCELL: Charms never offered again. */
+  noCharms?: Enh[];
+  /** CRUSADE: swords +5 for every win from now on. */
+  crusade?: boolean;
+  /** OPEN BAR: wins pay no chips. */
+  noWinChips?: boolean;
+  /** TRUST FUND: chips after every win. */
+  trustFund?: number;
 }
 
 export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false): RunState {
@@ -531,7 +551,9 @@ export function takeLegend(run: RunState, relic: RelicId): void {
   if (!run.player.relics.includes(relic)) run.player.relics.push(relic);
   const last = run.records.at(-1);
   if (last) last.eliteRelic = relic;
-  run.pendingLegend = null;
+  // CURSED IDOL / TREASURE: a relic pick waiting behind this one (owned relics dropped from it).
+  const next = run.legendQueue?.shift()?.filter((r) => !run.player.relics.includes(r));
+  run.pendingLegend = next?.length ? next : null;
 }
 
 export const currentEnemy = (run: RunState): EnemyDef => run.enemies[Math.min(run.depth, run.enemies.length - 1)];
@@ -556,8 +578,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     strips: run.player.strips.map((s) => ({ ...s })),
     gilded: run.player.gilded.map((g) => ({ ...g })),
     levels: cloneLevels(run.player.levels),
-    ...(run.glass ? { payMul: BIG.glassPay } : {}),
+    ...(run.glass || run.devil ? { payMul: (run.glass ? BIG.glassPay : 1) * (run.devil ? BIG.devilPay : 1) } : {}),
     ...(run.bloodPact ? { meterMul: 2 } : {}),
+    ...(run.big ? { big: { ...run.big } } : {}),
     // No bonus in the run's final fight: a voucher could never be spent (QA_1 B11).
     bonusSymbols: !(e.isBoss && run.act >= runActs(run)),
     chipsHeld: run.player.chips,
@@ -602,6 +625,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // Every run fight is seeded from the run (was: the daily only). A run resumed after a quit replays the same fight,
   // so quitting can't re-roll a loss (STEAM_READINESS S1). The sim seeds its own fights.
   cfg.seed = dailyFightSeed(run.daily ? run.seed : (run.spinSeed ?? run.seed), run.act, run.depth, run.endless?.loop ?? 0);
+  // QUICKENING (big choice): enemy abilities charge one spin faster.
+  if (run.abilityFaster && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
   return cfg;
 }
 
@@ -805,7 +830,9 @@ export function enemyHp(run: RunState, e: EnemyDef): number {
   const daily = fixedRun(run) && run.act >= 3 && !run.endless ? TUNE.dailyAct3 : 1;
   // Per machine: THE REPO MAN's HP (his liens cost machines differently: MIDAS loses its gold).
   const gate = e.archetype === REPO_MAN.id ? (BOSS_MUL[run.cabinet].gate ?? 1) : 1;
-  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * gate));
+  // DOUBLE OR NOTHING (big choice): the next boss has double HP.
+  const dare = e.isBoss ? run.bossHpMul ?? 1 : 1;
+  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * gate * dare));
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {
@@ -854,7 +881,7 @@ export function machinePower(run: RunState): number {
   const hit = powerCache.get(key);
   if (hit !== undefined) return hit;
   const cfg = defaultConfig();
-  cfg.player = { hp: 99999 * UNIT, strips: run.player.strips.map((s) => ({ ...s })), gilded: run.player.gilded.map((g) => ({ ...g })), levels: cloneLevels(run.player.levels), ...(run.glass ? { payMul: BIG.glassPay } : {}), ...(run.bloodPact ? { meterMul: 2 } : {}), chipsHeld: Math.min(run.player.chips, 20), sizeHp: run.player.maxHp };
+  cfg.player = { hp: 99999 * UNIT, strips: run.player.strips.map((s) => ({ ...s })), gilded: run.player.gilded.map((g) => ({ ...g })), levels: cloneLevels(run.player.levels), ...(run.glass || run.devil ? { payMul: (run.glass ? BIG.glassPay : 1) * (run.devil ? BIG.devilPay : 1) } : {}), ...(run.bloodPact ? { meterMul: 2 } : {}), ...(run.big ? { big: { ...run.big } } : {}), chipsHeld: Math.min(run.player.chips, 20), sizeHp: run.player.maxHp };
   cfg.enemy = { hp: 99999 * UNIT, strips: [{ sword: 8, shield: 4 }, { sword: 8, shield: 4 }, { sword: 8, shield: 4 }], ability: null };
   // BRAMBLE WALL: BRIAR's bosses are fitted (BOSS_MUL.thorn) to a power that leaves her volleys out, and the dummy's
   // blocked hits would fire it every turn; keep it out of sizing like her other thorns.
@@ -902,15 +929,15 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
 /** TOLL BOOTH: chips per held lien per win (EXPERT_PLAYTEST_11 D5). */
 export const TOLL_PER_LIEN = 2;
 
-// Refit 2026-10-08 (content audit batch: ROSE HIP retired, overkill chips out, LUCKY/BLAZE in act 1, CHARGED/BLAZE 10/20/30).
+// Refit 2026-10-08 (big choices rework: 45 cards, LIMIT BREAK; before that the content audit batch: ROSE HIP retired, overkill chips out, LUCKY/BLAZE in act 1, CHARGED/BLAZE 10/20/30).
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
-  knight: { house: 1.1, mirror: 1.3, dealer: 0.5, act3: 0.5, gate: 1.3 },
+  knight: { house: 1.1, mirror: 1.5, dealer: 0.62, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
-  midas: { house: 3.5, mirror: 3.4, dealer: 3.6, act3: 1, gate: 0.8, act3Floor: 1 },
+  midas: { house: 3.5, mirror: 5.2, dealer: 13.5, act3: 1, gate: 0.8, act3Floor: 1 },
   // SHED (2026-10-07): her damage is finally visible to sizing, so the multipliers came back to a normal range.
-  thorn: { house: 1, mirror: 7.5, dealer: 1.7, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
-  tesla: { house: 0.85, mirror: 2.6, dealer: 2.6, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
-  joker: { house: 1.9, mirror: 1.8, dealer: 0.65, act3: 0.35, act2: 1.5, gate: 0.85 },
+  thorn: { house: 1, mirror: 10, dealer: 2.3, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
+  tesla: { house: 0.85, mirror: 2.4, dealer: 2.6, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
+  joker: { house: 1.9, mirror: 4, dealer: 0.71, act3: 0.35, act2: 1.5, gate: 0.85 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
@@ -985,13 +1012,9 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   const interest = interestOn(run.player.chips);
   // PIGGY BANK: more interest on what you hold.
   const piggy = run.player.relics.includes('piggy') ? Math.min(NEW_RELIC.piggyMax, Math.floor(run.player.chips / NEW_RELIC.piggyPer)) : 0;
-  const earned =
-    interest +
-    piggy +
-    CHIPS.win +
-    (CABINETS[run.cabinet].chipsPerWin ?? 0) +
-    (beaten.elite ? CHIPS.eliteBonus : 0) +
-    fight.playerJackpots * CHIPS.perJackpot;
+  // OPEN BAR (big choice): wins pay no chips (interest still does). TRUST FUND: chips on top.
+  const winChips = run.noWinChips ? 0 : CHIPS.win + (CABINETS[run.cabinet].chipsPerWin ?? 0) + (beaten.elite ? CHIPS.eliteBonus : 0) + fight.playerJackpots * CHIPS.perJackpot;
+  const earned = interest + piggy + winChips + (run.trustFund ?? 0);
   run.player.chips += earned;
   record.chips = earned + fight.lucreChips;
   // SIDE BET: paid stake x pay if it came in (a lost fight ends the run, bet and all).
@@ -1058,6 +1081,15 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     run.player.maxHp += NEW_RELIC.trophyHp;
     hp += NEW_RELIC.trophyHp;
   }
+  // BIG CHOICES after a win: DEVIL'S DUE takes its toll, CRUSADE grows, DOUBLE OR NOTHING's boss is gone.
+  if (run.devil) {
+    run.player.maxHp = Math.max(UNIT, run.player.maxHp - unitsRound(run.player.maxHp * BIG.devilDecay));
+  }
+  if (run.crusade) {
+    run.big ??= {};
+    run.big.swordBonus = (run.big.swordBonus ?? 0) + BIG.crusadeStep;
+  }
+  if (beaten.isBoss) run.bossHpMul = undefined;
   run.player.hp = Math.min(run.player.maxHp, hp);
   // Bonus vouchers from this fight pay out now that you've won it (after the HP settles, so a
   // wheel HEAL / MAX HP isn't overwritten — QA_1 B2).
@@ -1643,7 +1675,15 @@ export const charmTagFor = (run: RunState, enh: Enh) => charmTag(enh, charmLevel
  * After the House and the Mirror you pick 1 of 3 build-defining moves from one set (never the same set
  * twice in a run). Strong options carry a real, visible cost; each set has one safe pick.
  */
-export type BigChoiceId = 'edge' | 'cashOut' | 'ride' | 'armsRace' | 'masterwork' | 'whetstone' | 'meltDown' | 'gildLot' | 'polish' | 'cleanCut' | 'twinReel' | 'sweepUp' | 'glassCannon' | 'bloodPact' | 'secondWind';
+export type BigChoiceId =
+  | 'edge' | 'cashOut' | 'ride'
+  | 'armsRace' | 'masterwork' | 'whetstone' | 'meltDown' | 'gildLot' | 'polish' | 'cleanCut' | 'twinReel' | 'sweepUp' | 'glassCannon' | 'bloodPact' | 'secondWind'
+  | 'devilsDue' | 'allIn' | 'doubleOrNothing' | 'cursedIdol' | 'quickening' | 'warded' | 'pawnShop' | 'temper' | 'luckyBreak' | 'treasure' | 'houseMoney'
+  | 'whetted' | 'bloodMoon' | 'cashIn' | 'fourLeaf' | 'overclock' | 'markedCards'
+  | 'excalibur' | 'shieldWall' | 'shieldSlam' | 'crusade' | 'squire'
+  | 'chainLightning' | 'madScience' | 'supercell' | 'stormFront' | 'groundWire'
+  | 'jokersReel' | 'doubleFeature' | 'highCard' | 'cardShark' | 'trumpCard'
+  | 'noLimit' | 'openBar' | 'heist' | 'monsoon' | 'trustFund';
 /** HOUSE EDGES: endless-mode rules you take on, each paying a reward. */
 export type EdgeId = 'fast' | 'marked' | 'heal' | 'rollers' | 'nocomps' | 'frail';
 export const EDGES: EdgeId[] = ['fast', 'marked', 'heal', 'rollers', 'nocomps', 'frail'];
@@ -1669,7 +1709,11 @@ export interface BigChoice {
   symbol?: SymbolId;
   enh?: Enh;
   reel?: number;
+  /** PAWN SHOP: the relic you give up and the legendary you get. */
+  relic?: RelicId;
+  relic2?: RelicId;
 }
+/** The old fixed sets (until 2026-10-08). Kept for old tools and saves; the offer draws from BIG_CARDS now. */
 export const BIG_SETS: BigChoiceId[][] = [
   ['armsRace', 'masterwork', 'whetstone'],
   ['meltDown', 'gildLot', 'polish'],
@@ -1677,22 +1721,100 @@ export const BIG_SETS: BigChoiceId[][] = [
   ['glassCannon', 'bloodPact', 'secondWind'],
 ];
 export const BIG_SET_NAMES = ['THE FORGE', 'THE MELT', 'SURGERY', "DEVIL'S BARGAIN"];
-/** The safe pick in each set (no cost). */
-export const SAFE_CHOICES: ReadonlySet<BigChoiceId> = new Set(['whetstone', 'polish', 'sweepUp', 'secondWind']);
-export const BIG = { armsRaceHp: 6 * UNIT, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.25, gildLotCells: 3, glassPay: 1.5 };
+/** The picks with no cost. */
+export const SAFE_CHOICES: ReadonlySet<BigChoiceId> = new Set(['whetstone', 'polish', 'sweepUp', 'secondWind', 'temper', 'luckyBreak', 'treasure', 'houseMoney']);
+export const BIG = {
+  armsRaceHp: 0.15, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.2, gildLotCells: 3, glassPay: 1.5,
+  devilPay: 2, devilDecay: 0.05, allInHp: 0.2, wardedHp: 0.15, wards: 3, houseMoney: 40, heist: 100, heistHp: 0.3, crusadeStep: 5, crusadeHp: 0.2,
+  chainHp: 0.3, madMul: 2, madCost: 0.05, groundHeal: 5, jokerHp: 0.5, featureHp: 0.2, noLimitHp: 0.25, monsoonCost: 10, trustChips: 3,
+  convertHp: 0.15, fourLeafHp: 0.2, shieldWallKeep: 0.5, slamShare: 0.5, squireCells: 2, sharkWilds: 2, quickeningHp: 0,
+};
+
+/** One card of the pool: who it's for and when it shows up. */
+interface BigCard {
+  id: BigChoiceId;
+  /** cost: has a real price; free: no cost; machine: that Slot Machine's own (either). */
+  slot: 'cost' | 'free' | 'machine';
+  machine?: CabinetId;
+  /** H: after the House only. HM: not in endless loops. Otherwise: always. */
+  when?: 'H' | 'HM';
+  ok?: (run: RunState) => boolean;
+}
+const hasMeter = (run: RunState) => !!CABINETS[run.cabinet].meter;
+const charmTotal = (run: RunState) => run.player.gilded.reduce((a, g) => a + g.n, 0);
+const legendsFor = (run: RunState) => [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
+const relicsFor = (run: RunState) => (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && !RELICS[r].retired);
+/** A Charm conversion: 3+ Charms, the Charm fits this machine, and not everything is that Charm already. */
+const convertOk = (enh: Enh) => (run: RunState) => charmTotal(run) >= 3 && gildsFor(run).includes(enh) && run.player.gilded.some((g) => g.enh !== enh);
+/** BIG CHOICES (user review 2026-10-08): general cards, Charm conversions, and five per Slot Machine. */
+export const BIG_CARDS: BigCard[] = [
+  { id: 'armsRace', slot: 'cost' },
+  { id: 'masterwork', slot: 'cost', ok: (run) => CABINETS[run.cabinet].attack !== 'shield' },
+  { id: 'glassCannon', slot: 'cost', when: 'H', ok: (run) => !run.glass },
+  { id: 'bloodPact', slot: 'cost', ok: (run) => !run.bloodPact },
+  { id: 'devilsDue', slot: 'cost', when: 'H', ok: (run) => !run.devil },
+  { id: 'allIn', slot: 'cost', ok: (run) => run.player.strips.some((s) => (s.shield ?? 0) > 0) },
+  { id: 'doubleOrNothing', slot: 'cost' },
+  { id: 'meltDown', slot: 'cost', ok: (run) => run.player.gilded.length > 0 },
+  { id: 'gildLot', slot: 'cost' },
+  { id: 'cursedIdol', slot: 'cost', when: 'HM', ok: (run) => legendsFor(run).length > 0 },
+  { id: 'quickening', slot: 'cost', ok: (run) => hasMeter(run) && !run.big?.startFull },
+  { id: 'twinReel', slot: 'cost' },
+  { id: 'cleanCut', slot: 'cost', ok: (run) => run.player.strips.some((s) => (s.shield ?? 0) > 0) },
+  { id: 'warded', slot: 'cost', when: 'HM', ok: (run) => !run.big?.wards },
+  { id: 'pawnShop', slot: 'cost', when: 'HM', ok: (run) => legendsFor(run).length > 0 && run.player.relics.some((r) => !LEGENDARY.has(r)) },
+  { id: 'whetted', slot: 'cost', ok: convertOk('keen') },
+  { id: 'bloodMoon', slot: 'cost', ok: convertOk('vamp') },
+  { id: 'cashIn', slot: 'cost', ok: convertOk('lucre') },
+  { id: 'fourLeaf', slot: 'cost', ok: convertOk('lucky') },
+  { id: 'overclock', slot: 'cost', ok: convertOk('charged') },
+  { id: 'markedCards', slot: 'cost', ok: convertOk('trick') },
+  { id: 'temper', slot: 'free' },
+  { id: 'luckyBreak', slot: 'free', ok: (run) => run.player.gilded.length > 0 },
+  { id: 'secondWind', slot: 'free' },
+  { id: 'sweepUp', slot: 'free', ok: (run) => run.player.strips.some((s) => (s.rock ?? 0) > 0) },
+  { id: 'treasure', slot: 'free', when: 'HM', ok: (run) => relicsFor(run).length >= 3 },
+  { id: 'houseMoney', slot: 'free', when: 'HM', ok: (run) => run.cabinet !== 'midas' },
+  // SIR REGINALD
+  { id: 'excalibur', slot: 'machine', machine: 'knight' },
+  { id: 'shieldWall', slot: 'machine', machine: 'knight' },
+  { id: 'shieldSlam', slot: 'machine', machine: 'knight' },
+  { id: 'crusade', slot: 'machine', machine: 'knight' },
+  { id: 'squire', slot: 'machine', machine: 'knight' },
+  // DOC VOLTZ
+  { id: 'chainLightning', slot: 'machine', machine: 'tesla' },
+  { id: 'madScience', slot: 'machine', machine: 'tesla' },
+  { id: 'supercell', slot: 'machine', machine: 'tesla', ok: (run) => charmCount(run.player, 'charged') > 0 },
+  { id: 'stormFront', slot: 'machine', machine: 'tesla' },
+  { id: 'groundWire', slot: 'machine', machine: 'tesla' },
+  // JESTER JAX
+  { id: 'jokersReel', slot: 'machine', machine: 'joker' },
+  { id: 'doubleFeature', slot: 'machine', machine: 'joker' },
+  { id: 'highCard', slot: 'machine', machine: 'joker' },
+  { id: 'cardShark', slot: 'machine', machine: 'joker' },
+  { id: 'trumpCard', slot: 'machine', machine: 'joker' },
+  // CASH CASSIDY
+  { id: 'noLimit', slot: 'machine', machine: 'midas' },
+  { id: 'openBar', slot: 'machine', machine: 'midas' },
+  { id: 'heist', slot: 'machine', machine: 'midas' },
+  { id: 'monsoon', slot: 'machine', machine: 'midas' },
+  { id: 'trustFund', slot: 'machine', machine: 'midas' },
+];
+/** Charm conversions: the Charm each one makes. */
+const CONVERT: Partial<Record<BigChoiceId, Enh>> = { whetted: 'keen', bloodMoon: 'vamp', cashIn: 'lucre', fourLeaf: 'lucky', overclock: 'charged', markedCards: 'trick' };
 
 const SYM_NAME = (s: SymbolId) => `${symLabel(s)}S`;
-/** BLOOD PACT (the meter fills twice as fast) in each machine's own terms (user, content audit 2026-10-08). */
-const BLOOD_PACT_TEXT: Partial<Record<CabinetId, string>> = {
-  tesla: 'LIGHTNING METER MAX REDUCES TO 20',
-  thorn: 'THORN AMOUNTS ARE DOUBLED',
-  joker: 'JACKPOT METER MAX REDUCES TO 50',
-  midas: 'HIGH ROLLER METER MAX REDUCES TO 50',
-};
+/** Each machine's meter by its own name. */
+const METER_NAME: Partial<Record<CabinetId, string>> = { tesla: 'LIGHTNING METER', thorn: 'THORNS', joker: 'JACKPOT METER', midas: 'HIGH ROLLER METER' };
+const pct = (run: RunState, share: number) => `-${unitsRound(run.player.maxHp * share)} MAX HP`;
+/** The level a Charm or symbol type lands on (shown on the card). */
+const bestCharmLevel = (run: RunState) => Math.max(1, ...run.player.gilded.map((g) => charmLevel(run.player.levels, g.enh)));
+const what = (c: BigChoice) => (c.symbol ? SYM_NAME(c.symbol) : c.enh ? `${charmName(c.enh)} CHARMS` : '');
 
 /** Title, rule and cost as plain card text (no expected values). */
 export function describeChoice(run: RunState, c: BigChoice): { title: string; rule: string; cost: string } {
-  const meter = !!CABINETS[run.cabinet].meter;
+  const atk = SYM_NAME(CABINETS[run.cabinet].attack);
+  const meter = METER_NAME[run.cabinet] ?? 'METER';
   switch (c.id) {
     case 'edge': {
       const t = EDGE_TEXT[c.edge!];
@@ -1703,95 +1825,249 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'ride':
       return { title: 'RIDE AGAIN', rule: `LOOP ${run.endless?.loop ?? 1}: ${BOSS_NAME[run.enemies[run.enemies.length - 1]?.boss ?? 'house'] ?? 'THE HOUSE'}. YOU ${run.player.hp}/${run.player.maxHp} HP. CLEAR IT AND THE POT GROWS TO ${nextPot(run.endless?.pot ?? 0)}.`, cost: `BUST AND YOU BANK A THIRD OF THE POT: ${bustPot(run.endless?.pot ?? 0)} (YOUR CHIPS ARE SAFE)` };
     case 'armsRace':
-      return { title: 'ARMS RACE', rule: '+1 LEVEL TO ALL YOUR SYMBOLS', cost: `-${BIG.armsRaceHp} MAX HP` };
+      return { title: 'ARMS RACE', rule: '+1 LEVEL TO ALL YOUR SYMBOLS', cost: pct(run, BIG.armsRaceHp) };
     case 'masterwork':
-      return { title: 'MASTERWORK', rule: `+2 LEVELS TO YOUR ${SYM_NAME(c.symbol!)}`, cost: 'YOUR OTHER SYMBOLS CAN NEVER LEVEL UP AGAIN' };
+      return { title: 'MASTERWORK', rule: `+2 LEVELS TO ${atk}`, cost: 'SHIELDS GO BACK TO LV1' };
     case 'whetstone':
-      return { title: 'WHETSTONE', rule: `+1 LEVEL TO YOUR ${SYM_NAME(c.symbol!)}`, cost: '' };
-    case 'meltDown':
-      return { title: 'MELT IT DOWN', rule: `EVERY CHARM ON YOUR REELS BECOMES GOLD AT LV${Math.max(1, ...run.player.gilded.map((g) => charmLevel(run.player.levels, g.enh)))}`, cost: 'YOUR OTHER CHARM LEVELS ARE GONE' };
-    case 'gildLot':
-      return { title: 'SOLID GOLD', rule: `EVERY REEL GETS ${BIG.gildLotCells} GOLD CHARMS`, cost: `YOUR SYMBOLS LOSE A LEVEL, -${Math.round(BIG.gildLotHp * 100)}% MAX HP` };
     case 'polish':
-      return { title: 'POLISH', rule: `+1 LEVEL TO YOUR ${charmName(c.enh!)} CHARMS`, cost: '' };
+    case 'temper':
+      return { title: 'TEMPER', rule: `+1 LEVEL TO ${what(c)}`, cost: '' };
+    case 'meltDown':
+      return { title: 'MELT IT DOWN', rule: `EVERY CHARM BECOMES A GOLD CHARM AT LV${Math.min(BIG_CAP, bestCharmLevel(run) + 1)}`, cost: 'YOUR OTHER CHARM LEVELS ARE GONE' };
+    case 'gildLot':
+      return { title: 'SOLID GOLD', rule: `EVERY REEL GETS ${BIG.gildLotCells} GOLD CHARMS`, cost: pct(run, BIG.gildLotHp) };
     case 'cleanCut':
-      return { title: 'CLEAN CUT', rule: `+1 LEVEL TO ${SYM_NAME(CABINETS[run.cabinet].attack)}`, cost: `REMOVES SHIELDS FROM REEL ${c.reel! + 1}` };
+      return { title: 'CLEAN CUT', rule: `+1 LEVEL TO ${atk}`, cost: `REMOVES SHIELDS FROM REEL ${c.reel! + 1}` };
     case 'twinReel':
-      return { title: 'TWIN REEL', rule: 'REEL 3 BECOMES AN EXACT COPY OF REEL 1, CHARMS INCLUDED', cost: 'REEL 3 IS OVERWRITTEN' };
+      return { title: 'TWIN REEL', rule: 'REEL 3 BECOMES AN EXACT COPY OF REEL 1', cost: 'REEL 3 IS OVERWRITTEN' };
     case 'sweepUp':
       return { title: 'SWEEP UP', rule: `+${BIG.sweepHeal / 2} MAX HP AND REMOVE ALL ROCKS`, cost: '' };
     case 'glassCannon':
-      return { title: 'GLASS CANNON', rule: `PAIRS AND JACKPOTS PAY X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS' };
+      return { title: 'GLASS CANNON', rule: `PAIRS AND JACKPOTS PAY X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN ROUNDS' };
     case 'bloodPact':
-      return meter
-        ? { title: 'BLOOD PACT', rule: BLOOD_PACT_TEXT[run.cabinet] ?? 'YOUR METER FILLS TWICE AS FAST', cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` }
-        : { title: 'BLOOD PACT', rule: '+1 LEVEL TO SWORDS AND SHIELDS', cost: `-${Math.round(BIG.bloodPactHp * 100)}% MAX HP` };
+      return hasMeter(run)
+        ? { title: 'BLOOD PACT', rule: `YOUR ${meter} FILLS TWICE AS FAST`, cost: pct(run, BIG.bloodPactHp) }
+        : { title: 'BLOOD PACT', rule: '+1 LEVEL TO SWORDS AND SHIELDS', cost: pct(run, BIG.bloodPactHp) };
     case 'secondWind':
-      return { title: 'SECOND WIND', rule: `HEAL TO FULL, +${secondWindHp(run)} MAX HP AND +1 LEVEL TO SHIELDS`, cost: '' };
+      return { title: 'SECOND WIND', rule: `+${secondWindHp(run)} MAX HP AND +1 LEVEL TO SHIELDS`, cost: '' };
+    case 'devilsDue':
+      return { title: "DEVIL'S DUE", rule: `EVERYTHING PAYS X${BIG.devilPay}`, cost: `-${Math.round(BIG.devilDecay * 100)}% MAX HP AFTER EVERY ROUND YOU WIN` };
+    case 'allIn':
+      return { title: 'ALL IN', rule: `EVERY SHIELD ON YOUR REELS BECOMES ONE OF YOUR ${atk}`, cost: pct(run, BIG.allInHp) };
+    case 'doubleOrNothing':
+      return { title: 'DOUBLE OR NOTHING', rule: '+1 LEVEL TO EVERY SYMBOL AND CHARM', cost: 'THE NEXT BOSS HAS DOUBLE HP' };
+    case 'cursedIdol':
+      return { title: 'CURSED IDOL', rule: 'PICK A LEGENDARY RELIC', cost: 'EACH REEL GETS A ROCK' };
+    case 'quickening':
+      return { title: 'QUICKENING', rule: `YOUR ${meter} STARTS EVERY ROUND FULL`, cost: 'ENEMY ABILITIES CHARGE 1 SPIN FASTER' };
+    case 'warded':
+      return { title: 'WARDED', rule: `IGNORE THE FIRST ${BIG.wards} SABOTAGES EACH ROUND`, cost: pct(run, BIG.wardedHp) };
+    case 'pawnShop':
+      return { title: 'PAWN SHOP', rule: `TRADE ${RELICS[c.relic!].name} FOR ${RELICS[c.relic2!].name}`, cost: `${RELICS[c.relic!].name} IS GONE` };
+    case 'luckyBreak':
+      return { title: 'LUCKY BREAK', rule: `+2 LEVELS TO ${what(c)}`, cost: '' };
+    case 'treasure':
+      return { title: 'TREASURE', rule: 'PICK 1 OF 3 RELICS', cost: '' };
+    case 'houseMoney':
+      return { title: 'HOUSE MONEY', rule: `+${BIG.houseMoney} CHIPS`, cost: '' };
+    case 'whetted':
+    case 'bloodMoon':
+    case 'cashIn':
+    case 'fourLeaf':
+    case 'overclock':
+    case 'markedCards': {
+      const enh = CONVERT[c.id]!;
+      const title = { whetted: 'WHETTED', bloodMoon: 'BLOOD MOON', cashIn: 'CASH IN', fourLeaf: 'FOUR LEAF', overclock: 'OVERCLOCK', markedCards: 'MARKED CARDS' }[c.id];
+      const cost = c.id === 'bloodMoon' || c.id === 'overclock' ? '-1 LEVEL TO SHIELDS' : c.id === 'cashIn' ? 'YOUR OTHER CHARM LEVELS ARE GONE' : pct(run, c.id === 'fourLeaf' ? BIG.fourLeafHp : BIG.convertHp);
+      return { title, rule: `EVERY CHARM BECOMES ${charmName(enh)} AT LV${bestCharmLevel(run)}`, cost };
+    }
+    case 'excalibur':
+      return { title: 'EXCALIBUR', rule: 'SWORD PAIRS PAY AS JACKPOTS', cost: 'SHIELD PAIRS BLOCK NOTHING' };
+    case 'shieldWall':
+      return { title: 'SHIELD WALL', rule: `YOUR SHIELD NEVER RESETS (MAX ${unitsRound(run.player.maxHp * BIG.shieldWallKeep)})`, cost: '-1 LEVEL TO SWORDS' };
+    case 'shieldSlam':
+      return { title: 'SHIELD SLAM', rule: 'EVERY SHIELD ALSO HITS FOR HALF WHAT IT BLOCKS', cost: '' };
+    case 'crusade':
+      return { title: 'CRUSADE', rule: `+${BIG.crusadeStep} DAMAGE TO SWORDS EACH ROUND YOU WIN, FOR THE REST OF THE RUN`, cost: pct(run, BIG.crusadeHp) };
+    case 'squire':
+      return { title: 'SQUIRE', rule: `EVERY REEL GETS ${BIG.squireCells} KEEN CHARMS`, cost: '' };
+    case 'chainLightning':
+      return { title: 'CHAIN LIGHTNING', rule: 'LIGHTNING DAMAGE STRIKES TWICE', cost: pct(run, BIG.chainHp) };
+    case 'madScience':
+      return { title: 'MAD SCIENCE', rule: `LIGHTNING DAMAGE X${BIG.madMul}`, cost: `EACH STORM COSTS ${unitsRound(run.player.maxHp * BIG.madCost)} HP` };
+    case 'supercell':
+      return { title: 'SUPERCELL', rule: 'EVERY CHARGED CHARM BECOMES A BLAZE CHARM', cost: 'NO MORE CHARGED CHARMS' };
+    case 'stormFront':
+      return { title: 'STORM FRONT', rule: 'EACH ROUND STARTS WITH A LIGHTNING STRIKE', cost: '' };
+    case 'groundWire':
+      return { title: 'GROUND WIRE', rule: `EACH LIGHTNING STRIKE HEALS ${BIG.groundHeal} HP`, cost: '' };
+    case 'jokersReel':
+      return { title: "JOKER'S REEL", rule: 'REEL 2 BECOMES ALL WILDS', cost: pct(run, BIG.jokerHp) };
+    case 'doubleFeature':
+      return { title: 'DOUBLE FEATURE', rule: 'YOUR JACKPOT METER PAYS TWO SPINS IN A ROW', cost: pct(run, BIG.featureHp) };
+    case 'highCard':
+      return { title: 'HIGH CARD', rule: 'JACKPOTS AND JACKPOT METER PAYOFFS PAY X2', cost: 'PAIRS PAY HALF' };
+    case 'cardShark':
+      return { title: 'CARD SHARK', rule: `+${BIG.sharkWilds} WILDS ON EVERY REEL`, cost: '-1 LEVEL TO CARDS' };
+    case 'trumpCard':
+      return { title: 'TRUMP CARD', rule: 'CARD DAMAGE PIERCES SHIELDS', cost: '' };
+    case 'noLimit':
+      return { title: 'NO LIMIT', rule: 'HIGH ROLLER HAS NO MAX', cost: pct(run, BIG.noLimitHp) };
+    case 'openBar':
+      return { title: 'OPEN BAR', rule: 'MAKE IT RAIN COSTS NOTHING', cost: 'NO CHIPS FROM WINS' };
+    case 'heist':
+      return { title: 'THE HEIST', rule: `+${BIG.heist} CHIPS`, cost: pct(run, BIG.heistHp) };
+    case 'monsoon':
+      return { title: 'MONSOON', rule: 'CHIP PAIRS CAUSE MAKE IT RAIN AT FULL DAMAGE', cost: `MAKE IT RAIN COSTS ${BIG.monsoonCost} CHIPS` };
+    case 'trustFund':
+      return { title: 'TRUST FUND', rule: `+${BIG.trustChips} CHIPS AFTER EVERY ROUND YOU WIN`, cost: '' };
   }
 }
 
-/** SECOND WIND grows with you: +20% max HP (at least 40). A flat +40 was the weakest pick by 3 GREEN points. */
+/** SECOND WIND grows with you: +20% max HP (at least 40). It used to heal to full too, but every act already does. */
 const secondWindHp = (run: RunState) => Math.max(BIG.secondWindHp, unitsRound(run.player.maxHp * BIG.secondWindShare));
 
 /** Your symbols (on your strips) that levels apply to. */
 const levelSyms = (run: RunState) => CABINETS[run.cabinet].symbols.filter((s) => run.player.strips.some((x) => (x[s] ?? 0) > 0));
 
-/** Roll the three choices of one set (targets included). */
-export function rollChoices(run: RunState, set: number, rng: Rng): BigChoice[] {
+/** Resolve a card's target (picked at random among ties, shown on the card). */
+function target(run: RunState, id: BigChoiceId, rng: Rng): BigChoice | null {
   const p = run.player;
-  const syms = levelSyms(run);
-  const count = (s: SymbolId) => p.strips.reduce((a, x) => a + (x[s] ?? 0), 0);
-  // Targets below the level cap only: a level card that lands on a maxed type does nothing.
-  const open = syms.filter((s) => symLevel(p.levels, s) < LEVEL_CAP);
-  const most = open.reduce((a, b) => (count(b) > count(a) ? b : a), open[0] ?? syms[0] ?? 'sword');
-  const lowest = [...syms].sort((a, b) => symLevel(p.levels, a) - symLevel(p.levels, b) || count(b) - count(a))[0] ?? 'shield';
-  const charms = [...new Set(p.gilded.map((g) => g.enh))].filter((e) => charmLevel(p.levels, e) < LEVEL_CAP);
-  const topCharm = charms.reduce((a, b) => (charmCount(p, b) > charmCount(p, a) ? b : a), charms[0] ?? 'gold');
-  const shieldReel = [0, 1, 2].reduce((a, b) => ((p.strips[b].shield ?? 0) > (p.strips[a].shield ?? 0) ? b : a), 0);
-  void rng;
-  return BIG_SETS[set].map((id): BigChoice => {
-    if (id === 'masterwork') return { id, symbol: most };
-    // Nothing left to level: the set's safe pick becomes SECOND WIND (its shield level aside, it always does something).
-    if (id === 'whetstone') return open.length ? { id, symbol: lowest } : { id: 'secondWind' };
-    if (id === 'polish') return charms.length ? { id, enh: topCharm } : { id: 'secondWind' };
-    if (id === 'cleanCut') return { id, reel: shieldReel };
-    return { id };
-  });
+  switch (id) {
+    case 'cleanCut':
+      return { id, reel: [0, 1, 2].reduce((a, b) => ((p.strips[b].shield ?? 0) > (p.strips[a].shield ?? 0) ? b : a), 0) };
+    case 'temper': {
+      // Your lowest symbol or Charm type; a tie picks one at random.
+      const types: BigChoice[] = [...levelSyms(run).map((symbol) => ({ id, symbol })), ...[...new Set(p.gilded.map((g) => g.enh))].map((enh) => ({ id, enh }))];
+      const lv = (c: BigChoice) => (c.symbol ? symLevel(p.levels, c.symbol) : charmLevel(p.levels, c.enh!));
+      const open = types.filter((c) => lv(c) < BIG_CAP);
+      if (!open.length) return null;
+      const low = Math.min(...open.map(lv));
+      return rng.pick(open.filter((c) => lv(c) === low));
+    }
+    case 'luckyBreak': {
+      // Your most-used Charm; a tie picks one at random.
+      const enhs = [...new Set(p.gilded.map((g) => g.enh))].filter((e) => charmLevel(p.levels, e) < BIG_CAP);
+      if (!enhs.length) return null;
+      const most = Math.max(...enhs.map((e) => charmCount(p, e)));
+      return { id, enh: rng.pick(enhs.filter((e) => charmCount(p, e) === most)) };
+    }
+    case 'pawnShop': {
+      // A relic of your lowest rarity, at random, for a random legendary (both shown on the card).
+      const tiers: ('common' | 'uncommon')[] = ['common', 'uncommon'];
+      const own = p.relics.filter((r) => !LEGENDARY.has(r));
+      const tier = tiers.find((t) => own.some((r) => RELIC_TIER[t].includes(r)));
+      const pool = tier ? own.filter((r) => RELIC_TIER[tier].includes(r)) : own;
+      const legends = legendsFor(run);
+      if (!pool.length || !legends.length) return null;
+      return { id, relic: rng.pick(pool), relic2: rng.pick(legends) };
+    }
+    default:
+      return { id };
+  }
 }
 
-/** A boss fell: roll one set you haven't seen this run (THE MELT needs a charm to melt; THE FORGE a symbol to level). */
+/**
+ * A boss fell: three cards, one from each slot (a card with a real cost, one of your Slot Machine's own, one with no
+ * cost), shown in random order. Never a card you've seen this run; never one with nothing to act on.
+ */
+export function rollOffer(run: RunState, rng: Rng): BigChoice[] {
+  const seen = new Set(run.choicesSeen ?? []);
+  const stage = run.endless ? 'E' : run.act <= 2 ? 'H' : 'M';
+  const open = BIG_CARDS.filter(
+    (c) => !seen.has(c.id) && (!c.machine || c.machine === run.cabinet) && (!c.when || (c.when === 'H' ? stage === 'H' : stage !== 'E')) && (!c.ok || c.ok(run)),
+  );
+  const out: BigChoice[] = [];
+  const draw = (slot: BigCard['slot']) => {
+    for (const c of rng.shuffle(open.filter((x) => x.slot === slot && !out.some((o) => o.id === x.id)))) {
+      const t = target(run, c.id, rng);
+      if (t) return out.push(t), true;
+    }
+    return false;
+  };
+  draw('cost');
+  // No machine cards left (or none for this machine): another card with a cost.
+  if (!draw('machine')) draw('cost');
+  if (!draw('free')) out.push({ id: 'secondWind' });
+  run.choicesSeen = [...seen, ...out.map((c) => c.id)];
+  return rng.shuffle(out);
+}
+
+/** A boss fell: offer the three cards. */
 export function offerChoices(run: RunState, rng: Rng): void {
-  const used = run.choiceSets ?? [];
-  // Every symbol at the cap: MASTERWORK and ARMS RACE would be dead cards (EXPERT_PLAYTEST_12 D5).
-  const forgeDead = levelSyms(run).every((s) => symLevel(run.player.levels, s) >= LEVEL_CAP);
-  const ok = [0, 1, 2, 3].filter((i) => !used.includes(i) && (i !== 1 || run.player.gilded.length > 0) && (i !== 0 || !forgeDead));
-  if (!ok.length) return;
-  const set = rng.pick(ok);
-  run.choiceSets = [...used, set];
-  run.pendingChoice = rollChoices(run, set, rng);
+  const cards = rollOffer(run, rng);
+  if (cards.length) run.pendingChoice = cards;
+}
+
+/** Kept for old callers: a fresh offer (the old fixed set index is ignored). */
+export function rollChoices(run: RunState, _set: number, rng: Rng): BigChoice[] {
+  return rollOffer(run, rng);
 }
 
 export function takeChoice(run: RunState, c: BigChoice): void {
   if (!run.pendingChoice?.some((x) => x.id === c.id)) return;
   const p = run.player;
-  const lock = (s: SymbolId) => run.levelLock?.includes(s);
+  const big = (run.big ??= {});
+  // LIMIT BREAK: big choices level past the cap, up to LV5. A level with nowhere to go becomes 2 GOLD Charms there.
   const up = (s: SymbolId, n = 1) => {
-    if (!lock(s)) p.levels.sym[s] = Math.min(LEVEL_CAP, symLevel(p.levels, s) + n);
+    for (let i = 0; i < n; i++) {
+      const lv = symLevel(p.levels, s);
+      if (lv < BIG_CAP) p.levels.sym[s] = lv + 1;
+      else overflow(s, 'gold');
+    }
+  };
+  const upCharm = (e: Enh, n = 1) => {
+    for (let i = 0; i < n; i++) {
+      const lv = charmLevel(p.levels, e);
+      if (lv < BIG_CAP) p.levels.charm[e] = lv + 1;
+      else for (const g of p.gilded.filter((x) => x.enh === e).slice(0, 1)) overflow(g.symbol, e);
+    }
+  };
+  const overflow = (s: SymbolId, e: Enh) => {
+    let left = 2;
+    for (const reel of [0, 1, 2]) {
+      const k = Math.min(left, plainCells(p, reel, s));
+      addCharms(p, reel, s, e, k);
+      left -= k;
+    }
+  };
+  const down = (s: SymbolId) => {
+    p.levels.sym[s] = Math.max(1, symLevel(p.levels, s) - 1);
   };
   const loseMax = (n: number) => {
     p.maxHp = Math.max(UNIT, p.maxHp - n);
     p.hp = Math.min(p.hp, p.maxHp);
   };
+  const losePct = (share: number) => loseMax(unitsRound(p.maxHp * share));
+  const queueLegend = (picks: RelicId[]) => {
+    if (!picks.length) return;
+    if (run.pendingLegend?.length) (run.legendQueue ??= []).push(picks);
+    else run.pendingLegend = picks;
+  };
+  const atk = CABINETS[run.cabinet].attack;
+  const rng = new Rng((run.seed ^ Math.imul(fightNumber(run) + 57, 0x2c1b3c6d)) >>> 0);
+  const convert = (enh: Enh) => {
+    const best = bestCharmLevel(run);
+    const fits = charmSymbols(run, enh);
+    for (const g of p.gilded) g.enh = fits.includes(g.symbol) ? enh : 'gold';
+    const merged: Gild[] = [];
+    for (const g of p.gilded) {
+      const m = merged.find((x) => x.reel === g.reel && x.symbol === g.symbol && x.enh === g.enh);
+      if (m) m.n += g.n;
+      else merged.push({ ...g });
+    }
+    p.gilded = merged;
+    p.levels.charm = { [enh]: best, ...(merged.some((g) => g.enh === 'gold') ? { gold: best } : {}) };
+  };
   switch (c.id) {
     case 'edge': {
       run.endless?.edges.push(c.edge!);
       if (c.edge === 'frail') loseMax(Math.round(p.maxHp * 0.1 / UNIT) * UNIT);
-      const rng = new Rng((run.seed ^ (run.endless?.loop ?? 1) * 977) >>> 0);
-      const legends = [...LEGENDARY].filter((x) => !p.relics.includes(x) && relicFits(run, x));
-      const relics = (Object.keys(RELICS) as RelicId[]).filter((x) => !p.relics.includes(x) && !LEGENDARY.has(x) && !ELITE_ONLY.has(x) && relicFits(run, x) && !RELICS[x].retired);
-      if (c.reward === 'legend' && legends.length) run.pendingLegend = rng.shuffle(legends).slice(0, RUN.legendPick);
-      else if (c.reward === 'relic' && relics.length) run.pendingLegend = rng.shuffle(relics).slice(0, RUN.legendPick);
+      const erng = new Rng((run.seed ^ (run.endless?.loop ?? 1) * 977) >>> 0);
+      const legends = legendsFor(run);
+      const relics = relicsFor(run);
+      if (c.reward === 'legend' && legends.length) run.pendingLegend = erng.shuffle(legends).slice(0, RUN.legendPick);
+      else if (c.reward === 'relic' && relics.length) run.pendingLegend = erng.shuffle(relics).slice(0, RUN.legendPick);
       else p.chips += ENDLESS.edgeChips;
       break;
     }
@@ -1807,48 +2083,39 @@ export function takeChoice(run: RunState, c: BigChoice): void {
       break;
     case 'armsRace':
       levelSyms(run).forEach((s) => up(s));
-      loseMax(BIG.armsRaceHp);
+      losePct(BIG.armsRaceHp);
       break;
     case 'masterwork':
-      up(c.symbol!, 2);
-      run.levelLock = CABINETS[run.cabinet].symbols.filter((s) => s !== c.symbol);
+      up(atk, 2);
+      p.levels.sym.shield = 1;
       break;
     case 'whetstone':
-      up(c.symbol!);
+    case 'polish':
+    case 'temper':
+      if (c.symbol) up(c.symbol);
+      else if (c.enh) upCharm(c.enh);
       break;
     case 'meltDown': {
-      const best = Math.max(1, ...p.gilded.map((g) => charmLevel(p.levels, g.enh)));
-      for (const g of p.gilded) g.enh = 'gold';
-      // Merge entries that now say the same thing.
-      const merged: Gild[] = [];
-      for (const g of p.gilded) {
-        const m = merged.find((x) => x.reel === g.reel && x.symbol === g.symbol && x.enh === g.enh);
-        if (m) m.n += g.n;
-        else merged.push({ ...g });
-      }
-      p.gilded = merged;
+      const best = Math.min(BIG_CAP, bestCharmLevel(run) + 1);
+      convert('gold');
       p.levels.charm = { gold: best };
       break;
     }
     case 'gildLot':
       p.strips.forEach((_s, reel) => {
         let left = BIG.gildLotCells;
-        for (const sym of [...new Set<SymbolId>([CABINETS[run.cabinet].attack, 'sword', 'bolt', 'shield'])]) {
+        for (const sym of [...new Set<SymbolId>([atk, 'sword', 'bolt', 'shield'])]) {
           const k = Math.min(left, plainCells(p, reel, sym));
           addCharms(p, reel, sym, 'gold', k);
           left -= k;
         }
       });
-      for (const s of Object.keys(p.levels.sym) as SymbolId[]) p.levels.sym[s] = Math.max(1, symLevel(p.levels, s) - 1);
-      loseMax(Math.round(p.maxHp * BIG.gildLotHp));
-      break;
-    case 'polish':
-      p.levels.charm[c.enh!] = Math.min(LEVEL_CAP, charmLevel(p.levels, c.enh!) + 1);
+      losePct(BIG.gildLotHp);
       break;
     case 'cleanCut':
       p.strips[c.reel!].shield = 0;
       normalizeCharms(p);
-      up(CABINETS[run.cabinet].attack);
+      up(atk);
       break;
     case 'twinReel':
       p.strips[2] = { ...p.strips[0] };
@@ -1856,8 +2123,6 @@ export function takeChoice(run: RunState, c: BigChoice): void {
       break;
     case 'sweepUp':
       for (const s of p.strips) s.rock = 0;
-      // At full HP the heal would be wasted: grow max HP instead.
-      // Always +50 max HP (and the 50 HP with it): user, content audit 2026-10-08.
       p.maxHp += BIG.sweepHeal / 2;
       p.hp = Math.min(p.maxHp, p.hp + BIG.sweepHeal / 2);
       break;
@@ -1865,17 +2130,153 @@ export function takeChoice(run: RunState, c: BigChoice): void {
       run.glass = true;
       break;
     case 'bloodPact':
-      if (CABINETS[run.cabinet].meter) run.bloodPact = true;
+      if (hasMeter(run)) run.bloodPact = true;
       else {
         up('sword');
         up('shield');
       }
-      loseMax(Math.round(p.maxHp * BIG.bloodPactHp));
+      losePct(BIG.bloodPactHp);
       break;
-    case 'secondWind':
+    case 'secondWind': {
+      const add = secondWindHp(run);
       up('shield');
-      p.maxHp += secondWindHp(run);
-      p.hp = p.maxHp;
+      p.maxHp += add;
+      p.hp = Math.min(p.maxHp, p.hp + add);
+      break;
+    }
+    case 'devilsDue':
+      run.devil = true;
+      break;
+    case 'allIn':
+      for (const s of p.strips) {
+        s[atk] = (s[atk] ?? 0) + (s.shield ?? 0);
+        s.shield = 0;
+      }
+      // Charms on the old shields move to the new attack symbols when they fit there.
+      p.gilded = p.gilded.flatMap((g) => (g.symbol !== 'shield' ? [g] : CHARM_SYMBOLS[g.enh].includes(atk) ? [{ ...g, symbol: atk }] : []));
+      losePct(BIG.allInHp);
+      break;
+    case 'doubleOrNothing':
+      levelSyms(run).forEach((s) => up(s));
+      [...new Set(p.gilded.map((g) => g.enh))].forEach((e) => upCharm(e));
+      run.bossHpMul = 2;
+      break;
+    case 'cursedIdol':
+      queueLegend(rng.shuffle(legendsFor(run)).slice(0, RUN.legendPick));
+      for (const s of p.strips) s.rock = (s.rock ?? 0) + 1;
+      break;
+    case 'quickening':
+      big.startFull = true;
+      run.abilityFaster = true;
+      break;
+    case 'warded':
+      big.wards = BIG.wards;
+      losePct(BIG.wardedHp);
+      break;
+    case 'pawnShop':
+      if (c.relic && c.relic2) {
+        p.relics = p.relics.filter((r) => r !== c.relic);
+        if (!p.relics.includes(c.relic2)) p.relics.push(c.relic2);
+      }
+      break;
+    case 'luckyBreak':
+      if (c.enh) upCharm(c.enh, 2);
+      break;
+    case 'treasure':
+      queueLegend(rng.shuffle(relicsFor(run)).slice(0, RUN.legendPick));
+      break;
+    case 'houseMoney':
+      p.chips += BIG.houseMoney;
+      break;
+    case 'whetted':
+    case 'bloodMoon':
+    case 'cashIn':
+    case 'fourLeaf':
+    case 'overclock':
+    case 'markedCards':
+      convert(CONVERT[c.id]!);
+      if (c.id === 'bloodMoon' || c.id === 'overclock') down('shield');
+      else if (c.id === 'fourLeaf') losePct(BIG.fourLeafHp);
+      else if (c.id !== 'cashIn') losePct(BIG.convertHp);
+      break;
+    case 'excalibur':
+      big.swordPairJackpot = true;
+      big.shieldPairsBlockNothing = true;
+      break;
+    case 'shieldWall':
+      big.shieldKeep = BIG.shieldWallKeep;
+      down('sword');
+      break;
+    case 'shieldSlam':
+      big.shieldSlam = BIG.slamShare;
+      break;
+    case 'crusade':
+      run.crusade = true;
+      losePct(BIG.crusadeHp);
+      break;
+    case 'squire':
+      for (const reel of [0, 1, 2]) addCharms(p, reel, 'sword', 'keen', BIG.squireCells);
+      break;
+    case 'chainLightning':
+      big.strikeTwice = true;
+      losePct(BIG.chainHp);
+      break;
+    case 'madScience':
+      big.lightningMul = BIG.madMul;
+      big.stormCost = BIG.madCost;
+      break;
+    case 'supercell':
+      for (const g of p.gilded) if (g.enh === 'charged') g.enh = 'blaze';
+      p.levels.charm.blaze = Math.max(charmLevel(p.levels, 'blaze'), charmLevel(p.levels, 'charged'));
+      delete p.levels.charm.charged;
+      run.noCharms = [...new Set([...(run.noCharms ?? []), 'charged' as Enh])];
+      break;
+    case 'stormFront':
+      big.startStrike = true;
+      break;
+    case 'groundWire':
+      big.strikeHeal = BIG.groundHeal;
+      break;
+    case 'jokersReel': {
+      const cells = Object.values(p.strips[1]).reduce((a, n) => a + (n ?? 0), 0);
+      p.strips[1] = { wild: cells };
+      p.gilded = p.gilded.filter((g) => g.reel !== 1);
+      losePct(BIG.jokerHp);
+      break;
+    }
+    case 'doubleFeature':
+      big.doublePayoff = true;
+      losePct(BIG.featureHp);
+      break;
+    case 'highCard':
+      big.jackpotMul = 2;
+      big.pairMul = 0.5;
+      break;
+    case 'cardShark':
+      for (const s of p.strips) s.wild = (s.wild ?? 0) + BIG.sharkWilds;
+      down('ace');
+      break;
+    case 'trumpCard':
+      big.pierce = [...new Set([...(big.pierce ?? []), 'ace' as SymbolId])];
+      break;
+    case 'noLimit':
+      big.noHighRollerCap = true;
+      losePct(BIG.noLimitHp);
+      break;
+    case 'openBar':
+      big.rainCost = 0;
+      run.noWinChips = true;
+      break;
+    case 'heist':
+      p.chips += BIG.heist;
+      losePct(BIG.heistHp);
+      break;
+    case 'monsoon':
+      big.monsoon = true;
+      big.rainCost = BIG.monsoonCost;
+      break;
+    case 'trustFund':
+      run.trustFund = (run.trustFund ?? 0) + BIG.trustChips;
       break;
   }
   for (const s of p.strips) for (const k of Object.keys(s) as SymbolId[]) if ((s[k] ?? 0) <= 0) delete s[k];

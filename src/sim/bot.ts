@@ -151,8 +151,24 @@ export function greedyValue(run: RunState, o: DraftOption): number {
   }
 }
 
+/** BIG CHOICES: each card's win rate on each machine when the bot took it (table.ts N1000, 2026-10-08). The bot
+ * prefers what wins on its machine, the way a player learns to; cards under 20 picks keep their default value. */
+export const BIG_PICK_WIN: Record<string, Record<string, number>> = {
+  knight: { luckyBreak: 53, excalibur: 31, sweepUp: 42, gildLot: 42, shieldWall: 47, crusade: 39, armsRace: 40, cursedIdol: 31, shieldSlam: 30, masterwork: 39, meltDown: 50, bloodPact: 42, pawnShop: 43, devilsDue: 60, doubleOrNothing: 36, squire: 48, cleanCut: 29, glassCannon: 39, bloodMoon: 42, whetted: 33, cashIn: 8, allIn: 27, treasure: 50 },
+  tesla: { luckyBreak: 24, chainLightning: 28, sweepUp: 18, madScience: 22, gildLot: 33, meltDown: 42, cursedIdol: 15, supercell: 20, fourLeaf: 8, groundWire: 27, pawnShop: 13, doubleOrNothing: 26, overclock: 12, masterwork: 23, devilsDue: 45, cashIn: 3, cleanCut: 28, bloodPact: 41, stormFront: 19, glassCannon: 35, allIn: 33, quickening: 13, treasure: 16, armsRace: 15 },
+  thorn: { luckyBreak: 40, gildLot: 48, armsRace: 39, sweepUp: 35, cursedIdol: 26, meltDown: 54, masterwork: 49, devilsDue: 60, bloodPact: 32, glassCannon: 32, doubleOrNothing: 24, pawnShop: 22, cleanCut: 51, fourLeaf: 51, cashIn: 45, allIn: 60, quickening: 24, treasure: 29 },
+  joker: { luckyBreak: 43, jokersReel: 45, highCard: 43, sweepUp: 29, cardShark: 46, doubleFeature: 41, meltDown: 33, gildLot: 38, cashIn: 9, trumpCard: 32, cursedIdol: 28, fourLeaf: 34, markedCards: 37, pawnShop: 35, bloodMoon: 29, devilsDue: 47, whetted: 26, glassCannon: 41, masterwork: 34, cleanCut: 14, doubleOrNothing: 14, bloodPact: 55 },
+  midas: { luckyBreak: 45, noLimit: 38, sweepUp: 40, gildLot: 35, heist: 81, monsoon: 13, armsRace: 42, meltDown: 38, openBar: 42, cursedIdol: 30, devilsDue: 44, masterwork: 29, glassCannon: 42, pawnShop: 43, doubleOrNothing: 18, trustFund: 50, bloodPact: 54, cleanCut: 29, cashIn: 39 },
+};
+
 /** Big choices: strong picks are worth more, but the costs bite when you're low or already built. */
 export function choiceValue(run: RunState, c: BigChoice): number {
+  const learned = BIG_PICK_WIN[run.cabinet]?.[c.id];
+  if (learned !== undefined && c.id !== 'edge' && c.id !== 'cashOut' && c.id !== 'ride') return learned / 5;
+  return choiceValueBase(run, c);
+}
+
+function choiceValueBase(run: RunState, c: BigChoice): number {
   const p = run.player;
   const hp = p.hp / p.maxHp;
   const charms = p.gilded.reduce((a, g) => a + g.n, 0);
@@ -197,6 +213,59 @@ export function choiceValue(run: RunState, c: BigChoice): number {
     case 'edge':
       // Endless house edges: legendaries beat chips; the harsh edges cost more.
       return (c.reward === 'legend' ? 6 : 3) - (c.edge === 'frail' || c.edge === 'heal' ? 2 : c.edge === 'fast' ? 1 : 0);
+    // BIG CHOICES (2026-10-08): rough values; the forced-pick probe measures them properly.
+    case 'temper':
+      return 5.5;
+    case 'luckyBreak':
+      return 5 + Math.min(3, charms / 3);
+    case 'treasure':
+      return 6;
+    case 'houseMoney':
+      return 5;
+    case 'devilsDue':
+      return 7.5;
+    case 'allIn':
+      return 6;
+    case 'doubleOrNothing':
+      return 6.5;
+    case 'cursedIdol':
+      return 7;
+    case 'quickening':
+      return 6;
+    case 'warded':
+      return 4.5;
+    case 'pawnShop':
+      return 6.5;
+    case 'whetted':
+    case 'bloodMoon':
+    case 'cashIn':
+    case 'fourLeaf':
+    case 'overclock':
+    case 'markedCards':
+      return 4 + (charms - gold) * 0.3;
+    case 'excalibur':
+    case 'chainLightning':
+    case 'highCard':
+    case 'noLimit':
+    case 'jokersReel':
+      return 7.5;
+    case 'shieldWall':
+    case 'crusade':
+    case 'madScience':
+    case 'doubleFeature':
+    case 'cardShark':
+    case 'monsoon':
+    case 'heist':
+    case 'openBar':
+      return 6.5;
+    case 'shieldSlam':
+    case 'squire':
+    case 'supercell':
+    case 'stormFront':
+    case 'groundWire':
+    case 'trumpCard':
+    case 'trustFund':
+      return 6;
   }
 }
 export const CHOICE_LOG: Record<string, [number, number]> = {};

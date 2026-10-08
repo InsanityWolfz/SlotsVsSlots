@@ -1910,3 +1910,23 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   snapshot locks the bet, Q4 name screen on a pad, Q5 saves with removed content, Q6 play modes ask before replacing a
   saved run, Q7 build-panel relic tips reachable by keyboard/pad, Q8 PRESS wording. Open: collection/trophy tiles not
   focusable, shop/bonus-wheel reload rewinds a step, crash panel by pad, Steam Cloud conflict policy, volume L/R.
+
+## Iteration 91 (2026-10-08): BIG CHOICES rework (user review of the Big Choices doc)
+- The 4 fixed sets are gone. After each boss: 3 cards (one with a cost, one of your Slot Machine's 5, one free), random
+  order, never one seen this run. 27 general cards (incl. 6 Charm conversions) + 5 per machine (BRIAR: general only).
+- LIMIT BREAK: big choices level past LV3 up to LV5 (SYM_VALUE LV5 = 34; CHARM_VALUE to LV6 with the Ticket); a
+  level with nowhere to go becomes 2 GOLD Charms on that symbol.
+- User wording on every card (meter names per machine, MELT IT DOWN shows its level, TEMPER / LUCKY BREAK name their
+  target, PAWN SHOP shows both relic icons, -1 LEVEL TO X costs, CURSED IDOL = one rock per reel once, SWEEP UP only
+  with rocks, SECOND WIND no longer heals to full: every act already does, HOT HAND renamed QUICKENING).
+- Engine: config BigMods (fight rules) + run flags (DEVIL'S DUE decay, CRUSADE growth, DOUBLE OR NOTHING boss HP, OPEN BAR,
+  TRUST FUND, SUPERCELL no-CHARGED, QUICKENING ability -1, relic pick queue).
+- Build panel: LEVELS split into SYMBOLS and CHARMS, each with what one pays now.
+- Bot: picks by each card's win rate on its machine (BIG_PICK_WIN, from a first N1000 pass); without it the bot took
+  bad cards (TESLA fell to 34.6 / 9.4).
+- Before refit (learned bot): KNIGHT 47.6/23.8, TESLA 40.7/17.1, BRIAR 49.7/27.1, JAX 56.1/20.5, CASSIDY 53.4/40.5
+  (THE HEIST: 81% of runs that took it won; the sizer caps chips at 20).
+- BOSS_MUL: knight mirror 1.3 -> 1.5, dealer 0.5 -> 0.62; tesla mirror 2.6 -> 2.4; thorn mirror 7.5 -> 10, dealer 1.7 -> 2.3;
+  joker mirror 1.8 -> 4, dealer 0.65 -> 0.71; midas mirror 3.4 -> 5.2, dealer 3.6 -> 13.5.
+- Official N1000: KNIGHT 44.4/18.0, TESLA 43.8/17.3, BRIAR 41.4/17.4, JAX 41.5/16.1, CASSIDY 40.9/19.9.
+  Watch: CASSIDY's Dealer multiplier is now huge (THE HEIST / NO LIMIT); JOKER'S REEL; fight-4 deaths under 3% on 3 machines.
