@@ -1988,3 +1988,10 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   (no HOT STREAK); collection headers count only current relics/Charms; SKIP! sits under the meter.
   BOSS_MUL jukebox mirror 0.7 -> 0.6, dealer 0.36 -> 0.33. Official N1000: JUKEBOX 43.9 / 18.2 (Mirror 58.8,
   fight-4 deaths 4.7%, Dealer 49.2). fuzz.ts 200: no invariant breaks.
+
+## Iteration 94 (2026-10-08): THE GROUNDER is TESLA's only (user)
+- Archetypes take `only` (slot machines that meet them); THE GROUNDER is `only: ['tesla']` in every act and endless.
+  BLUE stake's counter for the other meter machines is now the COUNTERFEITER (was the GROUNDER).
+- Taking the GROUNDER out of their act 2 made KNIGHT 44.2 -> 41.4 and CASSIDY 42.5 -> 37.4 (Mirror 48.4 -> 42.8).
+  BOSS_MUL knight mirror 1.45 -> 1.35, dealer 0.56 -> 0.6; midas mirror 4.2 -> 3.8, dealer 7 -> 7.5.
+- Official N1000: KNIGHT 43.9/17.9, TESLA 43.3/17.3, JUKEBOX 43.3/16.9, JAX 41.0/17.6, CASSIDY 42.3/18.8.

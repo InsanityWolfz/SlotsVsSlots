@@ -312,7 +312,7 @@ export interface RunState {
 
 export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false): RunState {
   const rng = new Rng(seed);
-  const paths = generateRunPaths(rng);
+  const paths = generateRunPaths(rng, 1, 1, cabinet);
   const cab = CABINETS[cabinet];
   const run: RunState = {
     seed,
@@ -496,7 +496,7 @@ function startNextAct(run: RunState): void {
   run.act++;
   run.depth = 0;
   const rng = new Rng((run.seed ^ Math.imul(run.act, 0x3c6ef372)) >>> 0);
-  run.paths = generateRunPaths(rng, run.act);
+  run.paths = generateRunPaths(rng, run.act, 1, run.cabinet);
   // BLUE stake: one act 2 fork is your counter (marked on its card).
   if (run.stake >= STAKE.counterForks) offerCounter(run, rng);
   run.enemies = run.paths.map((opts) => opts[0]);
@@ -510,12 +510,12 @@ function startNextAct(run: RunState): void {
   run.pendingLegend = rng.shuffle(pool).slice(0, RUN.legendPick);
 }
 
-/** What answers your build: TESLA's lightning → the Grounder; a charm build → the Counterfeiter; any other meter → the Grounder. */
+/** What answers your build: TESLA's lightning → the Grounder (only TESLA meets it); a charm build or any other meter → the Counterfeiter. */
 export function counterFor(run: RunState): string | null {
   const charms = run.player.gilded.reduce((a, g) => a + g.n, 0);
   if (run.cabinet === 'tesla') return 'grounder';
   if (charms >= 4) return 'counterfeiter';
-  return CABINETS[run.cabinet].meter ? 'grounder' : null;
+  return CABINETS[run.cabinet].meter ? 'counterfeiter' : null;
 }
 
 
@@ -782,7 +782,7 @@ function startEndlessLoop(run: RunState): void {
   run.act = 4;
   run.depth = 0;
   const rng = new Rng((run.seed ^ Math.imul(loop + 40, 0x3c6ef372)) >>> 0);
-  run.paths = generateRunPaths(rng, 4, loop);
+  run.paths = generateRunPaths(rng, 4, loop, run.cabinet);
   run.enemies = run.paths.map((opts) => opts[0]);
   run.chosen = run.paths.map((opts) => opts.length === 1);
   // NO COMPS: a new loop heals only half your HP.
@@ -936,9 +936,9 @@ export const TOLL_PER_LIEN = 2;
 
 // Refit 2026-10-08 (big choices rework: 45 cards, LIMIT BREAK; before that the content audit batch: ROSE HIP retired, overkill chips out, LUCKY/BLAZE in act 1, CHARGED/BLAZE 10/20/30).
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
-  knight: { house: 1.1, mirror: 1.45, dealer: 0.56, act3: 0.5, gate: 1.3 },
+  knight: { house: 1.1, mirror: 1.35, dealer: 0.6, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
-  midas: { house: 3.5, mirror: 4.2, dealer: 7, act3: 1, gate: 0.8, act3Floor: 1 },
+  midas: { house: 3.5, mirror: 3.8, dealer: 7.5, act3: 1, gate: 0.8, act3Floor: 1 },
   // SHED (2026-10-07): her damage is finally visible to sizing, so the multipliers came back to a normal range.
   thorn: { house: 1, mirror: 9.5, dealer: 2.3, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
   tesla: { house: 0.85, mirror: 2.6, dealer: 2.2, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },

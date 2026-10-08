@@ -1,6 +1,7 @@
 import { UNIT, unitsRound, type AbilityDef, type SideConfig, type StripCounts, type SymbolId } from './config';
 import { POT } from './relics';
 import type { Rng } from './rng';
+import type { CabinetId } from './cabinets';
 
 /** An enemy template. Every enemy writes something onto the player's machine. */
 export interface Archetype {
@@ -15,6 +16,8 @@ export interface Archetype {
   hpMul: number;
   /** null: no timed ability (THE MIRROR: its shards do the reflecting). */
   ability: AbilityDef | null;
+  /** Only these slot machines ever meet it (THE GROUNDER answers TESLA's lightning; user, 2026-10-08). */
+  only?: CabinetId[];
   /** Earliest fight (0-based) this archetype can appear at. */
   minDepth: number;
   /** One-line description for the intent/telegraph tooltip and the run map. */
@@ -143,7 +146,8 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 1,
     ability: { kind: 'earth', every: 4, power: 3 * UNIT },
     minDepth: 1,
-    blurb: 'RODS IN YOUR REELS: A GROUNDED SYMBOL FILLS NO METER',
+    only: ['tesla'],
+    blurb: 'RODS IN YOUR BOLTS: A GROUNDED BOLT GIVES NO ENERGY',
     acts: [2],
   },
   {
@@ -393,11 +397,12 @@ export const BRANCH_DEPTHS = new Set([1, 2, 3]);
  * The run's map: per depth, the enemy options (1, or 2 at a fork), then the boss. Options at a
  * depth never repeat an archetype offered at the previous depth; the opener is always gentle.
  */
-export function generateRunPaths(rng: Rng, act = 1, loop = 1): EnemyDef[][] {
+export function generateRunPaths(rng: Rng, act = 1, loop = 1, cabinet?: CabinetId): EnemyDef[][] {
   const out: EnemyDef[][] = [];
   let prev = new Set<string>();
-  // ENDLESS (act 4): regulars from acts 2 and 3.
-  const inAct = act >= 4 ? ARCHETYPES.filter((a) => actsOf(a).some((x) => x >= 2)) : ARCHETYPES.filter((a) => actsOf(a).includes(act));
+  // ENDLESS (act 4): regulars from acts 2 and 3. An archetype for certain slot machines only skips the rest.
+  const meets = (a: Archetype) => !a.only || (!!cabinet && a.only.includes(cabinet));
+  const inAct = (act >= 4 ? ARCHETYPES.filter((a) => actsOf(a).some((x) => x >= 2)) : ARCHETYPES.filter((a) => actsOf(a).includes(act))).filter(meets);
   const len = actLength(act);
   for (let depth = 0; depth < len; depth++) {
     // THE GATEKEEPER holds fight 4 of acts 1-2 (not act 3, not endless).

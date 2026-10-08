@@ -150,3 +150,18 @@ describe('THE JUKEBOX in the profile', () => {
     expect(p.found.charms).toContain('echo');
   });
 });
+
+describe('THE GROUNDER is for TESLA only', () => {
+  it('no other slot machine meets it, in any act', async () => {
+    const { generateRunPaths } = await import('../src/core/enemies');
+    const { Rng } = await import('../src/core/rng');
+    const seen = (cab?: 'tesla' | 'jukebox' | 'knight') => {
+      let n = 0;
+      for (let s = 0; s < 60; s++) for (const act of [2, 4]) n += generateRunPaths(new Rng(s), act, 1, cab).flat().filter((e) => e.archetype === 'grounder').length;
+      return n;
+    };
+    expect(seen('jukebox')).toBe(0);
+    expect(seen('knight')).toBe(0);
+    expect(seen('tesla')).toBeGreaterThan(0);
+  });
+});
