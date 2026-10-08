@@ -555,13 +555,10 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     levels: cloneLevels(run.player.levels),
     ...(run.glass ? { payMul: BIG.glassPay } : {}),
     ...(run.bloodPact ? { meterMul: 2 } : {}),
-    // BLACK stake: the House ignores your chip shield.
     // No bonus in the run's final fight: a voucher could never be spent (QA_1 B11).
     bonusSymbols: !(e.isBoss && run.act >= runActs(run)),
     chipsHeld: run.player.chips,
     ...(run.bet ? { sideBet: { ...run.bet } } : {}),
-    // Saved chips shield you at every boss, capped (a MIDAS hoard made the House untouchable). A side bet's stake
-    // doesn't: at the Dealer, ALL IN would otherwise cost nothing (EXPERT_PLAYTEST_8 E9).
     // Chips no longer shield you on bosses (2026-10-07, user: too noisy).
   };
   const hp = enemyHp(run, e);

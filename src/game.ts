@@ -137,10 +137,26 @@ function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
   };
 }
 
+/** Saves are crash-safe (STEAM_READINESS S11): every write first copies the last good value to `<key>.bak` (the live keys
+ * never change names), and a save that fails to parse is set aside under `<key>.corrupt` and the backup loads instead. */
+const BAK = '.bak';
+function parse<T>(raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
 function load<T>(key: string): T | null {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : null;
+    const v = parse<T>(raw);
+    if (v !== null || !raw) return v ?? parse<T>(localStorage.getItem(key + BAK));
+    // Corrupt: keep the bytes for a manual rescue, then fall back to the backup.
+    localStorage.setItem(key + '.corrupt', raw);
+    return parse<T>(localStorage.getItem(key + BAK));
   } catch {
     return null;
   }
@@ -148,9 +164,11 @@ function load<T>(key: string): T | null {
 
 function save(key: string, v: unknown): void {
   try {
+    const prev = localStorage.getItem(key);
+    if (prev && parse(prev) !== null) localStorage.setItem(key + BAK, prev);
     localStorage.setItem(key, JSON.stringify(v));
   } catch {
-    /* storage unavailable — prefs just won't persist */
+    /* storage unavailable or full: prefs just won't persist */
   }
 }
 

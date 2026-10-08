@@ -9,6 +9,7 @@ import { dailyCabinet, dailyEdge, dailyKey, dailySpent } from '../core/daily';
 import { EDGE_TEXT } from '../core/run';
 import { LEGENDARY, RELICS, RELIC_TIER } from '../core/relics';
 import { CHARM_SYMBOLS, charmRuleText } from '../core/charms';
+import { STEAM, VERSION } from '../build';
 import { STAKES } from '../core/stakes';
 import { RelicTips } from './relicTip';
 import type { Clock } from '../present/clock';
@@ -474,7 +475,7 @@ export class Menus {
     ctx.fillRect(0, 0, W, H);
     this.logo(ctx, 150, t, 3);
     drawText(ctx, 'PICK YOUR NAME', W / 2, NAME_Y - 110, 4, COLORS.goldLight);
-    drawText(ctx, online() ? 'IT GOES ON THE LEADERBOARDS: THE DAILY, THE WEEKLY AND ALL TIME' : 'YOUR NAME FOR THE HISCORES (ONLINE BOARDS OPENING SOON)', W / 2, NAME_Y - 66, 1.5, COLORS.textDim);
+    drawText(ctx, online() ? 'IT GOES ON THE LEADERBOARDS: THE DAILY, THE WEEKLY AND ALL TIME' : STEAM ? 'YOUR NAME FOR THE HISCORES' : 'YOUR NAME FOR THE HISCORES (ONLINE BOARDS OPENING SOON)', W / 2, NAME_Y - 66, 1.5, COLORS.textDim);
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(W / 2 - 214, NAME_Y - 32, 428, 64);
     ctx.fillStyle = COLORS.gold;
@@ -728,7 +729,7 @@ export class Menus {
       return true;
     }
     if (this.mode === 'loading') {
-      if ((k === ' ' || k === 'enter') && this.ready) this.pointerDown(0, 0);
+      if (this.ready && (STEAM || k === ' ' || k === 'enter')) this.pointerDown(0, 0);
       return true;
     }
     // Escape: one screen back (sub-screen -> its sub-menu -> the main menu).
@@ -807,9 +808,9 @@ export class Menus {
     ctx.fillRect(bx, 476, bw, 18);
     ctx.fillStyle = COLORS.energy;
     ctx.fillRect(bx, 476, Math.round(bw * p), 18);
-    if (this.ready) drawText(ctx, TOUCH ? 'TAP TO PLAY' : 'CLICK TO PLAY', W / 2, 560, 3, COLORS.goldLight, { alpha: 0.55 + 0.45 * Math.sin(t * 5) });
+    if (this.ready) drawText(ctx, TOUCH ? 'TAP TO PLAY' : STEAM ? 'PRESS ANY KEY' : 'CLICK TO PLAY', W / 2, 560, 3, COLORS.goldLight, { alpha: 0.55 + 0.45 * Math.sin(t * 5) });
     else drawText(ctx, `SHUFFLING THE REELS... ${Math.round(p * 100)}%`, W / 2, 530, 2, COLORS.textDim);
-    drawText(ctx, 'PLAYTEST BUILD. PROGRESS SAVES IN THIS BROWSER.', W / 2, H - 30, 1.5, COLORS.textDim);
+    drawText(ctx, STEAM ? `V${VERSION.toUpperCase()}` : 'PLAYTEST BUILD. PROGRESS SAVES IN THIS BROWSER.', W / 2, H - 30, 1.5, COLORS.textDim);
   }
 
   private drawMain(ctx: CanvasRenderingContext2D, t: number): void {
@@ -835,7 +836,7 @@ export class Menus {
     if (hasSprite('menuBackdrop')) drawSprite(ctx, artId('menuBackdrop'), W / 2, 666, 3);
     this.badge(ctx, W / 2, 20);
     if (!this.cb.tutorialDone()) drawText(ctx, 'NEW HERE? TRY THE TUTORIAL', W / 2, 270, 2, COLORS.goldLight, { alpha: 0.6 + 0.4 * Math.sin(t * 4) });
-    drawText(ctx, 'PLAYTEST BUILD', 20, H - 20, 1.5, COLORS.textDim, { align: 'left' });
+    drawText(ctx, STEAM ? `V${VERSION.toUpperCase()}` : `PLAYTEST BUILD V${VERSION.toUpperCase()}`, 20, H - 20, 1.5, COLORS.textDim, { align: 'left' });
   }
 
   /** A sub-menu (PLAY MODES, PROGRESS, SETTINGS): a small logo, the title, and a panel the rows sit in. */
@@ -1038,7 +1039,7 @@ export class Menus {
     const sub = this.tab === 'daily' ? `THE DAILY RUN ${dailyKey().slice(5)} - ONE TRY EACH` : this.tab === 'weekly' ? `THE WEEKLY CHALLENGE ${weekKey()} - YOUR BEST TRY` : 'REGULAR RUNS, ANY STAKE (NO ENDLESS) - YOUR BEST';
     drawText(ctx, sub, W / 2, 140, 1.5, COLORS.textDim);
     if (!online()) {
-      drawText(ctx, 'THE ONLINE BOARDS ARE NOT OPEN YET', W / 2, H / 2 - 16, 3, COLORS.textDim);
+      drawText(ctx, STEAM ? 'THE ONLINE BOARDS ARE OFF' : 'THE ONLINE BOARDS ARE NOT OPEN YET', W / 2, H / 2 - 16, 3, COLORS.textDim);
       drawText(ctx, 'YOUR RUNS ARE STILL SAVED UNDER MY RUNS', W / 2, H / 2 + 24, 1.5, COLORS.textDim);
       return;
     }
