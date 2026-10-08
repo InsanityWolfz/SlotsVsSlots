@@ -14,10 +14,10 @@ describe('THE DAILY RUN', () => {
     expect(CABINET_ORDER).toContain(dailyCabinet(key));
   });
 
-  it("its fights are fixed by the day (a normal run's are random)", () => {
+  it('its fights are fixed by the day (every run fight is seeded from its run: a resumed run replays them)', () => {
     const base = defaultConfig();
     const run = createRun(base, dailySeed('2026-09-30'), 'knight');
-    expect(fightConfig(run, base).seed).toBeNull();
+    expect(fightConfig(run, base).seed).not.toBeNull();
     run.daily = '2026-09-30';
     const a = fightConfig(run, base).seed;
     expect(a).not.toBeNull();

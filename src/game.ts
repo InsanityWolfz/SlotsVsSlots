@@ -57,6 +57,7 @@ import { Recap } from './ui/recap';
 import { BUILD, CHIP_SPOT, RunScreens } from './ui/runScreens';
 import { drawRelicTip } from './ui/relicTip';
 import { Pause } from './ui/pause';
+import { VERSION } from './build';
 
 /** The fight HUD's relic tooltip starts under the player panel (EXPERT_PLAYTEST_12). */
 const RELIC_TIP_TOP = 232;
@@ -313,6 +314,8 @@ export class Game {
       },
       muted: () => this.prefs.muted,
       setMuted: (on) => this.setMuted(on),
+      savedRun: () => this.savedRunLabel(),
+      onContinue: () => this.continueRun(),
       setting: (k) => this.setting(k),
       setSetting: (k, v) => this.setSetting(k, v),
     });
@@ -557,6 +560,8 @@ export class Game {
     this.startRun(undefined, 'knight', 0);
     if (!this.run) return;
     this.run.tutorial = true;
+    // The guided fight isn't saved; the run is, once the callouts are done.
+    clearRunSave();
     // The guided first fight skips the starting relic pick (callouts first, choices later).
     this.run.pendingStart = null;
     this.screens.showNext(this.run);
@@ -674,8 +679,58 @@ export class Game {
     // Show the first opponent on the machines behind the preview.
     this.newFight(false, null, fightConfig(this.run, this.cfg), true);
     this.phase = 'between';
+    this.showRunStart();
+    this.checkpoint('next');
+    this.syncButtons();
+  }
+
+  private showRunStart(): void {
+    if (!this.run) return;
     if (this.run.pendingStart?.length) this.screens.showDraft(this.run, this.run.pendingStart.map((relic) => ({ kind: 'relic', relic }) as DraftOption), null, 'start');
     else this.screens.showNext(this.run);
+  }
+
+  // ---- saved runs (STEAM_READINESS S1) ------------------------------------------------
+  // The run is plain data and every draft, shop and fight is seeded from it, so a snapshot taken at a between-fight
+  // screen plays on exactly as it would have. Taken at the next-fight preview ('next') and after a fight's payouts
+  // ('after': spoils, legend, big choice or draft). Quitting anywhere else resumes at the last snapshot.
+
+  private checkpoint(at: 'next' | 'after'): void {
+    const run = this.run;
+    if (!run || run.over || this.tut) return;
+    save(RUN_KEY, { v: 1, at, version: VERSION, run });
+  }
+
+  private loadRunSave(): { at: 'next' | 'after'; run: RunState } | null {
+    const s = load<{ v?: number; at?: string; run?: RunState }>(RUN_KEY);
+    const run = s?.run;
+    if (!s || s.v !== 1 || !run || typeof run.seed !== 'number' || !run.player || !Array.isArray(run.paths) || !Array.isArray(run.records)) return null;
+    if (!(ALL_CABINETS as string[]).includes(run.cabinet) || run.over) return null;
+    return { at: s.at === 'after' ? 'after' : 'next', run };
+  }
+
+  private savedRunLabel(): string | null {
+    const s = this.loadRunSave();
+    return s ? `ACT ${s.run.act} ${CABINETS[s.run.cabinet].hero}` : null;
+  }
+
+  /** CONTINUE: the saved run, at the screen it was saved on. */
+  continueRun(): void {
+    const s = this.loadRunSave();
+    if (!s) return this.menus.showMain();
+    this.menus.hide();
+    this.skipTutorial();
+    this.run = s.run;
+    this.token++;
+    this.synth.stopLoops();
+    this.recap.hide();
+    this.newFight(false, null, fightConfig(this.run, this.cfg), true);
+    this.phase = 'between';
+    const last = this.run.records[this.run.records.length - 1];
+    if (s.at === 'after' && last) {
+      this.lastRecord = last;
+      this.afterBonus(last);
+    } else this.showRunStart();
     this.syncButtons();
   }
 
@@ -689,6 +744,7 @@ export class Game {
     if (this.run) applyDaily(this.run, key);
     // The first fight was set up before the run knew it was the daily: rebuild it on the day's seed.
     this.newFight(false, null, fightConfig(this.run!, this.cfg), true);
+    this.checkpoint('next');
   }
 
   /** A CHALLENGE: its machine and stake, its edges (open ones only). */
@@ -700,6 +756,7 @@ export class Game {
     if (!this.run) return;
     applyChallenge(this.run, c);
     this.newFight(false, null, fightConfig(this.run, this.cfg), true);
+    this.checkpoint('next');
   }
 
   /** THE WEEKLY CHALLENGE: the week's seed, machine and edges, fights fixed by the week. As many tries as you like. */
@@ -711,6 +768,7 @@ export class Game {
     applyWeekly(this.run, key);
     // The first fight was set up before the run knew it was the weekly: rebuild it on the week's seed.
     this.newFight(false, null, fightConfig(this.run, this.cfg), true);
+    this.checkpoint('next');
   }
 
   /** Tuning panel "apply": restart with the new base config. */
@@ -768,6 +826,7 @@ export class Game {
     this.lastRecord = record;
     this.phase = run.over ? 'over' : 'between';
     if (run.over) {
+      clearRunSave();
       this.noteDiscoveries();
       this.recordRun(run);
       this.skipTutorial();
@@ -801,6 +860,7 @@ export class Game {
   private afterBonus(record: FightRecord): void {
     const run = this.run;
     if (!run) return;
+    this.checkpoint('after');
     if (run.pendingChoice?.length || run.pendingLegend) {
       // A boss is gone: set up the idle machines for the next act so its HUD doesn't linger behind.
       this.newFight(false, null, fightConfig(run, this.cfg), true);
@@ -821,6 +881,7 @@ export class Game {
     takeChoice(run, c);
     // CASH OUT ends an endless run: bank the pot and show the run-over screen.
     if (run.over) {
+      clearRunSave();
       this.phase = 'over';
       this.recordRun(run);
       this.screens.setStakeUnlockedNow('');
@@ -891,6 +952,7 @@ export class Game {
     this.newFight(false, null, fightConfig(this.run, this.cfg), true);
     this.phase = 'between';
     this.screens.showNext(this.run);
+    this.checkpoint('next');
     // The tutorial's last word, then the run is all yours.
     if (this.tut && this.run.depth >= 1) {
       this.coach.show(TUTORIAL.next);

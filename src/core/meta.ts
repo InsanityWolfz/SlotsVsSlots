@@ -1,3 +1,4 @@
+import { Rng } from './rng';
 /**
  * The META LAYERS around runs: CHALLENGES (fixed twists, unlocked in order), THE WEEKLY CHALLENGE (one seed, machine
  * and two HOUSE EDGES a week, as many tries as you like), ACHIEVEMENTS, and the player LEVEL (XP from every run's
@@ -118,6 +119,8 @@ export function applyWeekly(run: RunState, key: string): void {
   run.weekly = key;
   run.challenge = 'weekly';
   run.mods = [...w.edges];
+  // Fresh spins every try (user playtest: a retry replayed the same spins); fixed for the try, so a quit can't re-roll.
+  run.spinSeed = Rng.randomSeed();
   if (w.chips != null) run.player.chips = w.chips;
   startEdges(run, w.edges);
 }

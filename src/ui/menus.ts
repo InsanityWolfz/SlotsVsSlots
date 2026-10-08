@@ -151,6 +151,9 @@ export class Menus {
       setSoftLightning: (on: boolean) => void;
       muted: () => boolean;
       setMuted: (on: boolean) => void;
+      /** A run saved mid-way (its short label), or null. */
+      savedRun: () => string | null;
+      onContinue: () => void;
       setting: (k: SettingKey) => number | boolean;
       setSetting: (k: SettingKey, v: number | boolean) => void;
     },
@@ -203,13 +206,36 @@ export class Menus {
     const x = W / 2;
     const first = !this.cb.tutorialDone();
     // Three things on the main screen: NEW RUN (the one red button), the play modes, your progress.
-    const newRun = this.btn('NEW RUN', x, 336, 400, 62, () => this.cb.onNewRun(), 3);
-    newRun.opts.idlePulse = !first;
-    newRun.opts.primary = true;
-    this.icons.set(newRun, 'iconNewRun');
+    // A saved run (STEAM_READINESS S1): CONTINUE takes the red button; NEW RUN asks before throwing the save away.
+    const saved = this.cb.savedRun();
     let y = 412;
-    // First time here: the TUTORIAL sits right under NEW RUN and breathes.
-    if (first) {
+    if (saved) {
+      const cont = this.btn(`CONTINUE: ${saved}`, x, 336, 400, 62, () => this.cb.onContinue(), saved.length > 12 ? 2 : 3);
+      cont.opts.primary = true;
+      cont.opts.idlePulse = true;
+      let armed = 0;
+      const nr = this.btn('NEW RUN', x, y, 400, 54, () => {
+        if (armed && performance.now() - armed > 400) return this.cb.onNewRun();
+        if (armed) return;
+        armed = performance.now();
+        nr.label = 'NEW RUN? THE SAVED ONE ENDS';
+        nr.opts.textScale = 2;
+        this.sounds.fizzle();
+        setTimeout(() => {
+          armed = 0;
+          nr.label = 'NEW RUN';
+          nr.opts.textScale = 3;
+        }, 2500);
+      }, 3);
+      y += 66;
+    } else {
+      const newRun = this.btn('NEW RUN', x, 336, 400, 62, () => this.cb.onNewRun(), 3);
+      newRun.opts.idlePulse = !first;
+      newRun.opts.primary = true;
+      this.icons.set(newRun, 'iconNewRun');
+    }
+    // First time here: the TUTORIAL sits right under NEW RUN and breathes (not with a saved run: it's in PLAY MODES).
+    if (first && !saved) {
       const tut = this.btn('TUTORIAL', x, y, 400, 54, () => this.cb.onTutorial(), 3);
       tut.opts.idlePulse = true;
       this.icons.set(tut, 'iconTutorial');

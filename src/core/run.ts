@@ -209,6 +209,9 @@ export interface Lien {
 
 export interface RunState {
   seed: number;
+  /** The seed the fights' spins come from (the run seed, unless set): THE WEEKLY rolls a fresh one each try, so its
+   * map and offers are fixed but its spins are not. */
+  spinSeed?: number;
   /** Index of the next fight (0..5; 5 = boss). */
   depth: number;
   /** Enemy options per depth (2 at a fork). */
@@ -596,7 +599,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // THE DAILY RUN: every fight is fixed by the day, so everyone meets the same fights.
   // The daily locks its spins too (one try: the purest comparison). The weekly locks the map, enemies and offers, but
   // its spins are fresh every try: a retry used to replay the same spins (user playtest).
-  cfg.seed = run.daily ? dailyFightSeed(run.seed, run.act, run.depth, run.endless?.loop ?? 0) : null;
+  // Every run fight is seeded from the run (was: the daily only). A run resumed after a quit replays the same fight,
+  // so quitting can't re-roll a loss (STEAM_READINESS S1). The sim seeds its own fights.
+  cfg.seed = dailyFightSeed(run.daily ? run.seed : (run.spinSeed ?? run.seed), run.act, run.depth, run.endless?.loop ?? 0);
   return cfg;
 }
 

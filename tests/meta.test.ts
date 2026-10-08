@@ -42,7 +42,9 @@ describe('meta: weekly challenge', () => {
     expect(fixedRun(run)).toBe(true);
     expect(runActs(run)).toBe(3);
     // Fixed map and offers, fresh spins every try (user playtest: a retry replayed the same spins).
-    expect(fightConfig(run, defaultConfig()).seed).toBeNull();
+    const again = createRun(defaultConfig(), w.seed, w.cabinet, 0);
+    applyWeekly(again, k);
+    expect(fightConfig(again, defaultConfig()).seed).not.toBe(fightConfig(run, defaultConfig()).seed);
     expect(runEntry(run, 1).weekly).toBe(k);
   });
 });

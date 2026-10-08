@@ -1897,3 +1897,11 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   dealer 0.53 -> 0.65; midas mirror 3.1 -> 3.4, dealer 4.6 -> 3.6.
 - Official table N1000 (WHITE / GREEN, fight-4 deaths): KNIGHT 43.0/17.0 (4.6%), TESLA 43.5/18.2 (2.5%), BRIAR 43.9/17.9 (1.7%),
   JAX 43.6/16.0 (3.6%), CASSIDY 42.0/17.5 (0.1%). Watch: TESLA / BRIAR / CASSIDY fight-4 deaths under the 3% gate.
+
+## Iteration 90 (2026-10-08, overnight): Steam readiness, engineering pass (playtest/STEAM_READINESS.md)
+- Saved runs (S1): new key `slotvslot.run.v1` (old keys untouched). Snapshots at the next-fight preview and after a
+  fight's payouts; CONTINUE on the main menu; cleared on run over / ABANDON. Every run fight is now seeded from the run
+  (`dailyFightSeed(run.spinSeed ?? run.seed, ...)`), so quitting mid-fight replays the same fight. THE WEEKLY keeps
+  fresh spins per try via `run.spinSeed`. Balance: no change (the sim seeds its own fights).
+- PAUSE (S2/S14), SETTINGS volumes/shake/motion/fullscreen (S7/S9), crash panel (S13), .bak save backups (S11),
+  version on screen + VITE_STEAM flag (S8/S19), favicon (S20), tutorial text (S10), overlaps (S17).
