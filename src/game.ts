@@ -56,6 +56,7 @@ import { Button } from './ui/button';
 import { Recap } from './ui/recap';
 import { BUILD, CHIP_SPOT, RunScreens } from './ui/runScreens';
 import { drawRelicTip } from './ui/relicTip';
+import { Pause } from './ui/pause';
 
 /** The fight HUD's relic tooltip starts under the player panel (EXPERT_PLAYTEST_12). */
 const RELIC_TIP_TOP = 232;
@@ -156,6 +157,16 @@ export function toggleFullscreen(on = !document.fullscreenElement): void {
   }
 }
 
+/** The saved run (S1). */
+export const RUN_KEY = 'slotvslot.run.v1';
+export function clearRunSave(): void {
+  try {
+    localStorage.removeItem(RUN_KEY);
+  } catch {
+    /* no storage */
+  }
+}
+
 function parse<T>(raw: string | null): T | null {
   if (!raw) return null;
   try {
@@ -208,6 +219,26 @@ export class Game {
   readonly screens: RunScreens;
   readonly menus: Menus;
   readonly coach = new Coach();
+  readonly pause: Pause = new Pause(this.ui, () => this.sounds.click(), {
+    onResume: () => this.setPaused(false),
+    onSettings: () => {
+      this.menus.showSettings(() => {
+        this.menus.hide();
+        this.syncButtons();
+      }, true);
+      this.syncButtons();
+    },
+    onQuitToMenu: () => {
+      this.setPaused(false);
+      this.showMenu();
+    },
+    onAbandon: () => {
+      this.setPaused(false);
+      this.abandonRun();
+      this.showMenu();
+    },
+    onQuitToDesktop: () => (globalThis as { desktop?: { quit?: () => void } }).desktop?.quit?.(),
+  });
   profile: Profile;
   /** TUTORIAL progress: which callouts have been shown (null = not in the tutorial). */
   private tut: { fight?: boolean; spin?: boolean; ability?: boolean; draft?: boolean; shop?: boolean } | null = null;
@@ -1065,6 +1096,24 @@ export class Game {
     this.applyJuice();
   }
 
+  /** PAUSE is open to any run in progress (fights and between-fight screens), never on the title or menus. */
+  pausable(): boolean {
+    return !this.menus.isOpen && (this.phase === 'fighting' || this.phase === 'between' || this.phase === 'recap') && !!this.run && !this.run.over;
+  }
+
+  setPaused(on: boolean): void {
+    if (on === this.pause.open) return;
+    if (on) this.pause.show();
+    else this.pause.hide();
+    this.sounds.click();
+    this.syncButtons();
+  }
+
+  /** ABANDON RUN: the run is thrown away (the daily try stays spent). */
+  private abandonRun(): void {
+    clearRunSave();
+  }
+
   setMuted(m: boolean): void {
     this.prefs.muted = m;
     this.applyJuice();
@@ -1104,6 +1153,7 @@ export class Game {
   pointerDown(x: number, y: number): void {
     this.startAudio();
     if (this.coach.active) return this.coach.hitsSkip(x, y) ? this.skipTutorial() : this.coach.advance();
+    if (this.pause.open && !this.menus.isOpen) return this.pause.pointerDown(x, y);
     if (this.menus.isOpen) {
       // The SOUND toggle stays live on the main menu.
       if (this.muteBtn.visible && this.muteBtn.contains(x, y)) {
@@ -1141,6 +1191,7 @@ export class Game {
     const b = this.active;
     this.active = null;
     b?.up(b.contains(x, y));
+    if (this.pause.open && !this.menus.isOpen) return this.pause.pointerUp(x, y);
     if (this.menus.isOpen) {
       const was = this.menus.mode;
       this.menus.pointerUp(x, y);
@@ -1157,6 +1208,7 @@ export class Game {
 
   pointerMove(x: number, y: number): boolean {
     this.mouse = { x, y };
+    if (this.pause.open && !this.menus.isOpen) return this.pause.pointerMove(x, y);
     let any = false;
     for (const b of this.buttons) {
       b.hover = b.visible && b.contains(x, y);
@@ -1180,6 +1232,12 @@ export class Game {
       if (was !== this.menus.mode) this.syncButtons();
       return used;
     }
+    // PAUSE: Escape anywhere in a run (STEAM_READINESS S2).
+    if (k === 'escape' && this.pausable()) {
+      this.setPaused(!this.pause.open);
+      return true;
+    }
+    if (this.pause.open) return k !== 'm' ? true : (this.setMuted(!this.prefs.muted), true);
     switch (k) {
       case ' ':
         // Spins only (no skipping the playback, like a click).
@@ -1224,7 +1282,8 @@ export class Game {
     this.handleHover += ((this.onHandle(this.mouse.x, this.mouse.y) ? 1 : 0) - this.handleHover) * Math.min(1, dt * 16);
     this.menus.update(dt);
     // A tutorial callout freezes the fight where it is.
-    const gdt = this.coach.active ? 0 : this.stage.clock.tick(dt);
+    this.pause.update(dt);
+    const gdt = this.coach.active || this.pause.open ? 0 : this.stage.clock.tick(dt);
     this.camera.update(dt);
     this.particles.update(gdt);
     this.background.update(dt);
@@ -1293,6 +1352,7 @@ export class Game {
     this.recap.draw(ctx);
     for (const b of this.recapBtns) b.draw(ctx, t);
     this.coach.draw(ctx, t);
+    this.pause.draw(ctx, t);
   }
 
   private relicList() {

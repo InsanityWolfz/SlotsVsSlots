@@ -228,3 +228,25 @@ body {
   color: #8a7fa0;
   margin: 8px 0 4px;
 }
+
+/* ---- crash panel (STEAM_READINESS S13) ------------------------------------------------ */
+.crash {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, 92vw);
+  padding: 16px 20px;
+  background: #1a1426;
+  border: 3px solid #d9a640;
+  box-shadow: 0 0 0 3px #140c1c;
+  pointer-events: auto;
+  z-index: 50;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.crash h2 { margin: 0 0 8px; color: #ffe45c; font-size: 20px; }
+.crash p { margin: 0 0 10px; color: #c8bddb; font-size: 13px; }
+.crash textarea { width: 100%; height: 140px; box-sizing: border-box; background: #07030d; color: #f4eee0; border: 1px solid #3a2d52; font: 11px ui-monospace, Consolas, monospace; }
+.crash div { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.crash button { background: #3a2d52; color: #ffe45c; border: 2px solid #d9a640; padding: 6px 12px; font: bold 13px ui-monospace, Consolas, monospace; cursor: pointer; }

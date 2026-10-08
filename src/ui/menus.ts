@@ -254,6 +254,7 @@ export class Menus {
   private static readonly SET_PITCH = 46;
   /** Labels that follow live state (the M key mutes; fullscreen can change outside the menu). */
   private liveLabels: (() => void)[] = [];
+  private settingsMidRun = false;
 
   /** PLAY MODES: the daily, the weekly, the challenges and the tutorial. */
   showModes(): void {
@@ -291,8 +292,9 @@ export class Menus {
   }
 
   /** SETTINGS: sound, the lightning (photosensitivity) option, and RESET SAVE (two clicks). */
-  showSettings(): void {
-    this.openSub('settings', () => this.showMain());
+  /** midRun: opened from PAUSE (no RESET SAVE there). */
+  showSettings(back: () => void = () => this.showMain(), midRun = false): void {
+    this.openSub('settings', back);
     const x = W / 2;
     const row = (i: number) => Menus.SET_Y + i * Menus.SET_PITCH;
     // Volumes: a [-] VALUE [+] row each (STEAM_READINESS S7).
@@ -325,6 +327,8 @@ export class Menus {
     toggle(5, (on) => (on ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL'), () => this.cb.softLightning(), (on) => this.cb.setSoftLightning(on));
     toggle(6, (on) => (on ? 'FULLSCREEN: ON' : 'FULLSCREEN: OFF'), () => this.cb.setting('fullscreen') as boolean, (on) => this.cb.setSetting('fullscreen', on));
     this.resetArmed = 0;
+    this.settingsMidRun = midRun;
+    if (midRun) return this.slideIn();
     const reset = this.btn('RESET SAVE', x, row(7) + 14, 300, 40, () => {
       if (performance.now() - this.resetArmed < 400) return;
       if (!this.resetArmed) {
@@ -869,7 +873,7 @@ export class Menus {
     if (hasSprite('logo')) drawSprite(ctx, artId('logo'), W / 2, 66 + Math.sin(t * 2) * 2, 2);
     const k = this.panelIn;
     const top = Menus.SUB_Y - 96;
-    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 2 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + 7 * Menus.SET_PITCH + 62 : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
+    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 2 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 6 * Menus.SET_PITCH + 48 : 7 * Menus.SET_PITCH + 62) : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
     const pw = 540;
     // The panel rises in (no alpha on the layered frame: a half-faded gold rim tints the panel brown).
     ctx.save();
@@ -899,7 +903,7 @@ export class Menus {
       for (const f of this.liveLabels) f();
       const scap = (text: string, y: number, color: string = COLORS.textDim) => drawText(ctx, text, W / 2, y, 1.25, color, { alpha: Math.max(0, Math.min(1, k)) });
       scap('CLICK MASTER (OR PRESS M) TO MUTE. F11: FULLSCREEN', Menus.SET_Y + 6 * Menus.SET_PITCH + 30);
-      scap('ERASES YOUR UNLOCKS, COLLECTION AND SCORES', Menus.SET_Y + 7 * Menus.SET_PITCH + 44, '#ff8a7a');
+      if (!this.settingsMidRun) scap('ERASES YOUR UNLOCKS, COLLECTION AND SCORES', Menus.SET_Y + 7 * Menus.SET_PITCH + 44, '#ff8a7a');
     }
   }
 

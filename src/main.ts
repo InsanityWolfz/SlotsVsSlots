@@ -1,4 +1,5 @@
 import { Game, toggleFullscreen } from './game';
+import { installCrashHandlers, reportCrash } from './ui/crash';
 import { H, W } from './present/layout';
 import { CombatLog } from './ui/combatLog';
 import { TuningPanel } from './ui/tuningPanel';
@@ -104,20 +105,36 @@ window.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('visibilitychange', () => game.setHidden(document.hidden));
+// Losing focus mid-fight (alt-tab, the Steam overlay) pauses it (STEAM_READINESS S14).
+window.addEventListener('blur', () => {
+  if (game.phase === 'fighting' && game.pausable()) game.setPaused(true);
+});
 // No long-press menus or double-tap zoom over the game.
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+
+const crashContext = () => ({ phase: game.phase, machine: game.run?.cabinet, act: game.run?.act, seed: game.run?.seed, stake: game.run?.stake });
+installCrashHandlers(crashContext);
 
 let last = performance.now();
 function frame(now: number): void {
   const dt = (now - last) / 1000;
   last = now;
-  game.update(dt);
+  // One bad frame never stops the loop (STEAM_READINESS S13).
+  try {
+    game.update(dt);
+  } catch (err) {
+    reportCrash(err, crashContext);
+  }
 
   // Draw straight to the screen; the spare buffer is only needed for a chroma pulse.
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   ctx.imageSmoothingEnabled = false;
-  game.draw(ctx);
+  try {
+    game.draw(ctx);
+  } catch (err) {
+    reportCrash(err, crashContext);
+  }
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   // Chroma pulse: offset additive double-exposure of the frame (cheap aberration).
   const ch = game.camera.chroma;
