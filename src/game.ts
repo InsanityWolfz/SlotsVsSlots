@@ -1226,7 +1226,9 @@ export class Game {
   private musicMood(): SongId {
     if (this.menus.isOpen || this.phase === 'title') return 'menu';
     if (this.phase !== 'fighting' && this.phase !== 'quick') return 'lounge';
-    if (this.fight.cfg.enemy?.boss) return 'boss';
+    // Each boss has its own theme (endless cycles them too): THE HOUSE, THE MIRROR, THE DEALER.
+    const boss = this.fight.cfg.enemy?.boss;
+    if (boss) return boss;
     const act = this.run?.act ?? 1;
     return act >= 3 || this.run?.endless ? 'act3' : act === 2 ? 'act2' : 'act1';
   }
