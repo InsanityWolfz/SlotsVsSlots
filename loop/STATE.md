@@ -1930,3 +1930,14 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
   joker mirror 1.8 -> 4, dealer 0.65 -> 0.71; midas mirror 3.4 -> 5.2, dealer 3.6 -> 13.5.
 - Official N1000: KNIGHT 44.4/18.0, TESLA 43.8/17.3, BRIAR 41.4/17.4, JAX 41.5/16.1, CASSIDY 40.9/19.9.
   Watch: CASSIDY's Dealer multiplier is now huge (THE HEIST / NO LIMIT); JOKER'S REEL; fight-4 deaths under 3% on 3 machines.
+- Follow-up (user: "adjust the choice instead of just pumping up the boss HP"): the outlier cards were nerfed and
+  the boss multipliers put back near their old values. THE HEIST +100 -> +30 chips (81% of runs that took it won);
+  DEVIL'S DUE x2 -> x1.75, -8% max HP a win; CASH IN on CASSIDY only (3-9% win rate elsewhere); TRUST FUND +3 -> +2;
+  JOKER'S REEL half of reel 2 (not all); HIGH CARD x1.5; SHIELD WALL keeps up to 30% max HP.
+  Old boss values, nerfed cards: KNIGHT 47.3/21.0, TESLA 43.3/14.4, BRIAR 50.0/29.0, JAX 53.8/19.3, CASSIDY 48.7/28.7
+  (the rest is system-wide: every boss now pays a card that always helps, like LUCKY BREAK and levels past the cap).
+  BOSS_MUL now: knight mirror 1.45 dealer 0.56; tesla 2.6 / 2.2; thorn 9.5 / 2.3; joker 3.4 / 0.66; midas 4.2 / 7
+  (the previous refit had CASSIDY's dealer at 13.5, JAX's mirror at 4).
+  Official N1000: KNIGHT 44.2/18.8, TESLA 43.3/17.3, BRIAR 42.3/18.0, JAX 41.3/17.5, CASSIDY 42.5/19.3.
+- UI: the post-boss screen is the BONUS ROUND ("THE BOSS PAID OUT. PICK ONE PRIZE"); the build panel's CHARMS show the
+  Charm alone (it can sit on several symbols); the CHIP Charm art is black-and-gold casino chips (was gold coins).

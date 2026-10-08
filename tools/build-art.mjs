@@ -2634,28 +2634,30 @@ S.mimicSym = lit(16, 16, [
   S.enhThorny = toRows(outline(g));
 }
 
-// lucre (chip charm): two loose gold coins tumbling in the top-right corner, a coin stack up the bottom-left edge
+// lucre (chip charm): real casino chips (user: "it's not even chips"). Black high-roller chips with gold edge spots,
+// so they read on CASSIDY's red chips and on blue shields alike: one tumbling top-right, a short stack bottom-left.
 {
   const g = grid(16, 16);
+  // The loose chip, face on: black rim with gold edge spots, a gold center.
   stamp(g, 10, 0, [
-    ' YYG ',
-    'YWYGg',
-    'YGGGg',
-    ' ggg ',
+    ' pYYp ',
+    'pkppkp',
+    'YpGGpY',
+    'YpGYpY',
+    'pkppkp',
+    ' pYYp ',
   ]);
-  stamp(g, 13, 4, [' YG', 'YWg', ' g ']);
+  // The stack, side on: chip edges striped black and gold, a lit top face.
   stamp(g, 0, 8, [
-    ' YYG ',
-    'YWYGg',
-    'gGGgg',
-    'YYYGg',
-    'gGGgg',
-    'YWYGg',
-    'gGGgg',
-    'ggggg',
+    ' pGGp ',
+    'pYppYp',
+    'kkkkkk',
+    'ppYYpp',
+    'kkkkkk',
+    'pYppYp',
+    'kkkkkk',
   ]);
   outline(g);
-  legend(g, 7, 14, false);
   S.enhLucre = toRows(g);
 }
 // trick (JOKER's charm): a jester's bell-cap tip curling in from the top-left, a card corner with a pink pip bottom-right

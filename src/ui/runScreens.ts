@@ -776,8 +776,8 @@ export class RunScreens {
   private drawChoice(ctx: CanvasRenderingContext2D, time: number): void {
     const edge = this.choices[0]?.id === 'edge';
     const rideQ = this.choices[0]?.id === 'cashOut';
-    drawText(ctx, rideQ ? `LOOP ${(this.run?.endless?.loop ?? 2) - 1} CLEARED! POT ${this.run?.endless?.pot ?? 0}` : edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'A BIG CHOICE', CX, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
-    drawText(ctx, rideQ ? 'RIDE AGAIN OR CASH OUT. YOUR WIN IS SAFE EITHER WAY.' : edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : 'PICK ONE. SOME COME WITH A PRICE.', CX, 110, 2, COLORS.textDim);
+    drawText(ctx, rideQ ? `LOOP ${(this.run?.endless?.loop ?? 2) - 1} CLEARED! POT ${this.run?.endless?.pot ?? 0}` : edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'BONUS ROUND', CX, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
+    drawText(ctx, rideQ ? 'RIDE AGAIN OR CASH OUT. YOUR WIN IS SAFE EITHER WAY.' : edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : 'THE BOSS PAID OUT. PICK ONE PRIZE: SOME COME WITH A PRICE.', CX, 110, 2, COLORS.textDim);
     let tip = -1;
     this.cards.forEach((c, i) => {
       const ch = this.choices[i];
@@ -1685,8 +1685,12 @@ export class RunScreens {
       // LV 1 sits dim, so what you've upgraded stands out; at the draft cap (or past it) the level turns orange.
       const top = e.level >= cap;
       const base = e.level <= 1;
-      drawSprite(ctx, e.sprite as SpriteId, ex, ey, 1.5, { dim: base ? 0.4 : 0 });
-      if (e.enh) drawSprite(ctx, ENH_SPRITE[e.enh], ex, ey, 1.5, { dim: base ? 0.4 : 0 });
+      // A Charm is drawn alone on an empty cell (it can sit on several symbols: the symbol isn't part of it).
+      if (e.enh) {
+        ctx.fillStyle = '#4a3a66';
+        ctx.fillRect(ex - 12, ey - 12, 24, 24);
+        drawSprite(ctx, ENH_SPRITE[e.enh], ex, ey, 1.5, { dim: base ? 0.4 : 0 });
+      } else drawSprite(ctx, e.sprite as SpriteId, ex, ey, 1.5, { dim: base ? 0.4 : 0 });
       drawText(ctx, `LV${e.level}`, ex + 18, ey, 2, top ? '#ff9a3a' : base ? COLORS.textDim : e.enh ? CHARM_COLOR[e.enh] : COLORS.goldLight, { align: 'left', punch });
       // What one pays right now (a symbol's number, a Charm's tag).
       drawText(ctx, e.value, ex + 108, ey, 1.5, COLORS.text, { align: 'right' });

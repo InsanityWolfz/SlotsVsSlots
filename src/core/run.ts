@@ -931,13 +931,13 @@ export const TOLL_PER_LIEN = 2;
 
 // Refit 2026-10-08 (big choices rework: 45 cards, LIMIT BREAK; before that the content audit batch: ROSE HIP retired, overkill chips out, LUCKY/BLAZE in act 1, CHARGED/BLAZE 10/20/30).
 export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
-  knight: { house: 1.1, mirror: 1.5, dealer: 0.62, act3: 0.5, gate: 1.3 },
+  knight: { house: 1.1, mirror: 1.45, dealer: 0.56, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
-  midas: { house: 3.5, mirror: 5.2, dealer: 13.5, act3: 1, gate: 0.8, act3Floor: 1 },
+  midas: { house: 3.5, mirror: 4.2, dealer: 7, act3: 1, gate: 0.8, act3Floor: 1 },
   // SHED (2026-10-07): her damage is finally visible to sizing, so the multipliers came back to a normal range.
-  thorn: { house: 1, mirror: 10, dealer: 2.3, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
-  tesla: { house: 0.85, mirror: 2.4, dealer: 2.6, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
-  joker: { house: 1.9, mirror: 4, dealer: 0.71, act3: 0.35, act2: 1.5, gate: 0.85 },
+  thorn: { house: 1, mirror: 9.5, dealer: 2.3, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
+  tesla: { house: 0.85, mirror: 2.6, dealer: 2.2, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
+  joker: { house: 1.9, mirror: 3.4, dealer: 0.66, act3: 0.35, act2: 1.5, gate: 0.85 },
 };
 const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per Mirror turn (hoarding guard). */
@@ -1725,9 +1725,9 @@ export const BIG_SET_NAMES = ['THE FORGE', 'THE MELT', 'SURGERY', "DEVIL'S BARGA
 export const SAFE_CHOICES: ReadonlySet<BigChoiceId> = new Set(['whetstone', 'polish', 'sweepUp', 'secondWind', 'temper', 'luckyBreak', 'treasure', 'houseMoney']);
 export const BIG = {
   armsRaceHp: 0.15, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.2, gildLotCells: 3, glassPay: 1.5,
-  devilPay: 2, devilDecay: 0.05, allInHp: 0.2, wardedHp: 0.15, wards: 3, houseMoney: 40, heist: 100, heistHp: 0.3, crusadeStep: 5, crusadeHp: 0.2,
-  chainHp: 0.3, madMul: 2, madCost: 0.05, groundHeal: 5, jokerHp: 0.5, featureHp: 0.2, noLimitHp: 0.25, monsoonCost: 10, trustChips: 3,
-  convertHp: 0.15, fourLeafHp: 0.2, shieldWallKeep: 0.5, slamShare: 0.5, squireCells: 2, sharkWilds: 2, quickeningHp: 0,
+  devilPay: 1.75, devilDecay: 0.08, allInHp: 0.2, wardedHp: 0.15, wards: 3, houseMoney: 40, heist: 30, heistHp: 0.3, crusadeStep: 5, crusadeHp: 0.2,
+  chainHp: 0.3, madMul: 2, madCost: 0.05, groundHeal: 5, jokerHp: 0.5, featureHp: 0.2, noLimitHp: 0.25, monsoonCost: 10, trustChips: 2,
+  convertHp: 0.15, highCardMul: 1.5, fourLeafHp: 0.2, shieldWallKeep: 0.3, slamShare: 0.5, squireCells: 2, sharkWilds: 2, quickeningHp: 0,
 };
 
 /** One card of the pool: who it's for and when it shows up. */
@@ -1765,7 +1765,8 @@ export const BIG_CARDS: BigCard[] = [
   { id: 'pawnShop', slot: 'cost', when: 'HM', ok: (run) => legendsFor(run).length > 0 && run.player.relics.some((r) => !LEGENDARY.has(r)) },
   { id: 'whetted', slot: 'cost', ok: convertOk('keen') },
   { id: 'bloodMoon', slot: 'cost', ok: convertOk('vamp') },
-  { id: 'cashIn', slot: 'cost', ok: convertOk('lucre') },
+  // CASH IN: CHIP Charms only pay off on CASSIDY (3-9% win rate elsewhere: a trap).
+  { id: 'cashIn', slot: 'cost', ok: (run) => run.cabinet === 'midas' && convertOk('lucre')(run) },
   { id: 'fourLeaf', slot: 'cost', ok: convertOk('lucky') },
   { id: 'overclock', slot: 'cost', ok: convertOk('charged') },
   { id: 'markedCards', slot: 'cost', ok: convertOk('trick') },
@@ -1902,11 +1903,11 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'groundWire':
       return { title: 'GROUND WIRE', rule: `EACH LIGHTNING STRIKE HEALS ${BIG.groundHeal} HP`, cost: '' };
     case 'jokersReel':
-      return { title: "JOKER'S REEL", rule: 'REEL 2 BECOMES ALL WILDS', cost: pct(run, BIG.jokerHp) };
+      return { title: "JOKER'S REEL", rule: 'HALF OF REEL 2 BECOMES WILDS', cost: pct(run, BIG.jokerHp) };
     case 'doubleFeature':
       return { title: 'DOUBLE FEATURE', rule: 'YOUR JACKPOT METER PAYS TWO SPINS IN A ROW', cost: pct(run, BIG.featureHp) };
     case 'highCard':
-      return { title: 'HIGH CARD', rule: 'JACKPOTS AND JACKPOT METER PAYOFFS PAY X2', cost: 'PAIRS PAY HALF' };
+      return { title: 'HIGH CARD', rule: `JACKPOTS AND JACKPOT METER PAYOFFS PAY X${BIG.highCardMul}`, cost: 'PAIRS PAY HALF' };
     case 'cardShark':
       return { title: 'CARD SHARK', rule: `+${BIG.sharkWilds} WILDS ON EVERY REEL`, cost: '-1 LEVEL TO CARDS' };
     case 'trumpCard':
@@ -2238,9 +2239,17 @@ export function takeChoice(run: RunState, c: BigChoice): void {
       big.strikeHeal = BIG.groundHeal;
       break;
     case 'jokersReel': {
-      const cells = Object.values(p.strips[1]).reduce((a, n) => a + (n ?? 0), 0);
-      p.strips[1] = { wild: cells };
-      p.gilded = p.gilded.filter((g) => g.reel !== 1);
+      // Half of reel 2 (its plain cells first) becomes wilds (all of it measured +13 WHITE on JAX).
+      const s1 = p.strips[1];
+      let left = Math.floor(Object.values(s1).reduce((a, n) => a + (n ?? 0), 0) / 2);
+      for (const sym of Object.keys(s1) as SymbolId[]) {
+        if (sym === 'wild' || left <= 0) continue;
+        const k = Math.min(left, s1[sym] ?? 0);
+        s1[sym] = (s1[sym] ?? 0) - k;
+        s1.wild = (s1.wild ?? 0) + k;
+        left -= k;
+      }
+      normalizeCharms(p);
       losePct(BIG.jokerHp);
       break;
     }
@@ -2249,7 +2258,7 @@ export function takeChoice(run: RunState, c: BigChoice): void {
       losePct(BIG.featureHp);
       break;
     case 'highCard':
-      big.jackpotMul = 2;
+      big.jackpotMul = BIG.highCardMul;
       big.pairMul = 0.5;
       break;
     case 'cardShark':

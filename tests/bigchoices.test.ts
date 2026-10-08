@@ -57,7 +57,7 @@ describe('BIG CHOICES (2026-10-08)', () => {
     }
   });
 
-  it("PAWN SHOP trades the relic on the card for the legendary on the card; DEVIL'S DUE pays x2 and takes 5% max HP a win", () => {
+  it("PAWN SHOP trades the relic on the card for the legendary on the card; DEVIL'S DUE pays x1.75 and takes 8% max HP a win", () => {
     const run = midRun('knight');
     const c: BigChoice = { id: 'pawnShop', relic: 'clover', relic2: 'key' };
     run.pendingChoice = [c];
@@ -66,12 +66,12 @@ describe('BIG CHOICES (2026-10-08)', () => {
     expect(run.player.relics).not.toContain('clover');
     run.pendingChoice = [{ id: 'devilsDue' }];
     takeChoice(run, { id: 'devilsDue' });
-    expect(fightConfig(run, base).player.payMul).toBe(2);
+    expect(fightConfig(run, base).player.payMul).toBe(1.75);
     const max = run.player.maxHp;
     const f = new Fight(fightConfig(run, base), 1);
     f.winner = 'player';
     finishFight(run, f);
-    expect(run.player.maxHp).toBe(max - Math.round((max * 0.05) / 10) * 10);
+    expect(run.player.maxHp).toBe(max - Math.round((max * 0.08) / 10) * 10);
   });
 
   it('DOUBLE OR NOTHING doubles the next boss; QUICKENING speeds enemy abilities by a spin', () => {
