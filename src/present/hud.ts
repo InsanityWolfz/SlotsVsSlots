@@ -32,7 +32,7 @@ export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> 
   curse: { icon: artId('icoHex'), label: 'CURSE' },
   bloodmoon: { icon: artId('icoDrain'), label: 'BLOOD MOON' },
   gulp: { icon: artId('icoGulp'), label: 'GULP' },
-  reflect: { icon: artId('icoReflect'), label: 'REFLECTION' },
+  bets: { icon: artId('icoBets'), label: 'NO MORE BETS' },
   earth: { icon: artId('icoEarth'), label: 'EARTH' },
   launder: { icon: artId('icoLaunder'), label: 'LAUNDER' },
   mark: { icon: artId('icoMark'), label: 'STACKED DECK' },
@@ -82,7 +82,7 @@ export class HudView {
   name: string;
   portrait: SpriteId;
   ability: AbilityDef | null;
-  /** A line in the ability slot for an enemy without one (THE MIRROR: what each shard throws back). */
+  /** A line in the ability slot for an enemy without one. */
   hint = '';
 
   constructor(
@@ -236,7 +236,9 @@ export class HudView {
       ctx.fillRect(px - 4, y - 4, 8, 8);
     }
     const label = imminent ? `${ui.label} NEXT!` : `${ui.label} IN ${left}`;
-    drawText(ctx, label, x + HUD_W - 4, y, 2, imminent ? (pulse > 0.5 ? '#ffffff' : '#ff6a5a') : COLORS.textDim, { align: 'right', punch: 1 + this.abilityFlash * 0.3 });
+    // A long label (NO MORE BETS NEXT!) steps down a size so it clears the pips.
+    const size = label.length > 14 ? 1.5 : 2;
+    drawText(ctx, label, x + HUD_W - 4, y, size, imminent ? (pulse > 0.5 ? '#ffffff' : '#ff6a5a') : COLORS.textDim, { align: 'right', punch: 1 + this.abilityFlash * 0.3 });
   }
 
   private bar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, fills: [number, string][], flash: number): void {

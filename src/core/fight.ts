@@ -1733,7 +1733,7 @@ export class Fight {
     events.push({ type: 'attack', from: victim.side, to: attacker.side, reels: [], amount: bank, ...h, note: 'thorns' });
     events.push({ type: 'meter', side: victim.side, reels: [], amount: -(share < 1 ? bank : banked), total: victim.energy });
     this.checkDeath(attacker, events);
-    // THE MIRROR reflects BRIAR's volleys too (her spins never hit): the volley counts toward her next spin's hit.
+    // BRIAR's volleys count toward her spin's damage (her spins never hit).
     this.volleyCarry += bank;
     // Payoff heals (VAMPIRE FANG) only when a hit gets through, not on SHED's per-spin lash (like ROSE HIP).
     if (fixed <= 0) this.payoffHeal(victim, events);

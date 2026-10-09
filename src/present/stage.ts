@@ -60,11 +60,15 @@ export interface Stage {
     /** A challenge / weekly / daily run's HOUSE EDGES, shown all run (EXPERT_PLAYTEST_10 D8). */
     twist?: string;
     allIn: boolean;
-    /** The Mirror: your best presented spin since its last Reflection, and this turn's running total. */
-    reflect?: number;
-    turnDamage?: number;
-    /** The Mirror cracked (persistent overlay). */
-    cracked?: boolean;
+    /** THE WHEEL (presented): chips on your reels, turns to NO MORE BETS, what one chip hits for, SPINS FASTER, and the
+     * topper's spin (angle, and how fast it turns now). */
+    bets?: number[];
+    betsLeft?: number;
+    betPer?: number;
+    betPunch?: number;
+    wheelFast?: boolean;
+    wheelAngle?: number;
+    wheelSpeed?: number;
     /** Chips the Mimic has eaten so far this fight (presented). */
     chipsEaten?: number;
     /** Bombs presented on the player's strips. */

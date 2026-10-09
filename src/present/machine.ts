@@ -51,8 +51,10 @@ export class MachineView {
   lockedFx: number[];
   hexed: number[];
   hexedFx: number[];
-  /** The Mirror cracked at half HP. */
-  cracked = false;
+  /** THE WHEEL: chips (bets) stacked on each of your reels, their pop-in scale, and their red glow before the drop. */
+  bets = [0, 0, 0];
+  betPop = [1, 1, 1];
+  betGlow = [0, 0, 0];
   /** Payline numbers, one per reel (null = none shown). */
   tags: (PayTag | null)[] = [null, null, null];
   /** The Dealer's face-up card on a payline cell (flip 0..1). */
@@ -201,6 +203,7 @@ export class MachineView {
     this.drawPayline(ctx);
     this.drawTags(ctx);
     this.drawLineCard(ctx);
+    this.drawBets(ctx, time);
 
     if (this.flash > 0) {
       ctx.globalAlpha = Math.min(1, this.flash);
@@ -277,28 +280,34 @@ export class MachineView {
     if (t && hasSprite(t.crest)) drawSprite(ctx, artId(t.crest), MACHINE_W / 2, -pad - 2, 2);
   }
 
-  /** Jagged cracks across the glass once the Mirror is at half HP. */
-  private drawCracks(ctx: CanvasRenderingContext2D): void {
-    if (!this.cracked) return;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(220,245,255,0.75)';
-    ctx.lineWidth = 3;
-    const paths = [
-      [[0.52, 0.0], [0.47, 0.18], [0.56, 0.3], [0.44, 0.52], [0.58, 0.7], [0.5, 1.0]],
-      [[0.44, 0.52], [0.25, 0.46], [0.12, 0.6], [0.0, 0.57]],
-      [[0.56, 0.3], [0.76, 0.24], [0.88, 0.36], [1.0, 0.31]],
-      [[0.58, 0.7], [0.74, 0.82], [0.7, 1.0]],
-    ];
-    for (const path of paths) {
-      ctx.beginPath();
-      path.forEach(([x, y], i) => (i ? ctx.lineTo(x * MACHINE_W, y * MACHINE_H) : ctx.moveTo(x * MACHINE_W, y * MACHINE_H)));
-      ctx.stroke();
+  /** THE WHEEL's bets: a chip stack on the bottom edge of each reel that holds some, with its count. */
+  private drawBets(ctx: CanvasRenderingContext2D, time: number): void {
+    for (let r = 0; r < REELS; r++) {
+      const n = this.bets[r];
+      if (n <= 0) continue;
+      const cx = PITCH * (r + 0.5);
+      const y = MACHINE_H - 8;
+      // The reel is on the table: a red rail along its foot.
+      ctx.fillStyle = 'rgba(176,32,46,0.55)';
+      ctx.fillRect(PITCH * r + 4, MACHINE_H - 6, PITCH - 8, 4);
+      const glow = this.betGlow[r];
+      if (glow > 0) {
+        ctx.save();
+        ctx.globalAlpha = glow * (0.5 + 0.3 * Math.sin(time * 18));
+        ctx.fillStyle = '#ff3a2e';
+        ctx.fillRect(cx - 26, y - 26, 52, 44);
+        ctx.restore();
+      }
+      const k = this.betPop[r];
+      drawSprite(ctx, artId(n >= 3 ? 'betStack3' : n === 2 ? 'betStack2' : 'betStack1'), cx - 8, y - 4, 2.5 * k);
+      // The count, on a dark plate right of the stack.
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(cx + 12, y - 6, 26, 20);
+      drawText(ctx, `X${n}`, cx + 25, y + 4, 2, '#ffe08a');
     }
-    ctx.restore();
   }
 
   private drawStatuses(ctx: CanvasRenderingContext2D, time: number): void {
-    this.drawCracks(ctx);
     for (let r = 0; r < REELS; r++) {
       const fz = this.frozenFx[r];
       const lk = this.lockedFx[r];

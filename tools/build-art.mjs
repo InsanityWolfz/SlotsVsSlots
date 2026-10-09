@@ -504,43 +504,29 @@ S.lock = lit(16, 16, [
   rim.forEach(([x, y]) => put(g, x, y, (y <= 2 || x <= 3 || (x + y <= 13)) ? 'Y' : (x + y >= 17 ? 'g' : 'G')));
   S.seven = toRows(outline(g));
 }
-// shard: THE MIRROR's reel symbol, a framed pane of glass: steel frame (lit top-left), pale
-// blue glass, the classic double diagonal glare (thick + thin), and a small crack in the lower-right corner
+// ball: THE WHEEL's reel symbol (BALL): the big ivory roulette ball, resting on a strip of the wheel's pocket ring
+// (black | red | black, gold frets between).
 {
   const g = grid(16, 16);
-  stamp(g, 0, 0, [
-    '................',
-    '..WLLLLLLLLLLS..',
-    '..LSSSSSSSSSSD..',
-    '..LS........SD..',
-    '..LS........SD..',
-    '..LS........SD..',
-    '..LS........SD..',
-    '..LS........SD..',
-    '..LS........SD..',
-    '..LS........SD..',
-    '..LS........SD..',
-    '..LS........SD..',
-    '..LS........SD..',
-    '..LSSSSSSSSSSD..',
-    '..SDDDDDDDDDDD..',
-    '................',
-  ]);
-  // glass (8x10): pale top-left, bold 2px glare + thin 1px glare in the upper-left half,
-  // and a small navy crack spidering out of the lower-right corner (with a glint on the break)
-  stamp(g, 4, 3, [
-    'CCCWWCAA',
-    'CCWWCAAA',
-    'CWWCAWAA',
-    'WWCAWAAA',
-    'WCAWAAAA',
-    'CAWAAAAA',
-    'AWAAAAWN',
-    'AAAAAANc',
-    'AAAAANcN',
-    'AAAANccc',
-  ]);
-  S.shard = toRows(outline(g));
+  const rows = [[1, 14], [0, 15], [1, 14]];
+  rows.forEach(([a, b], i) => {
+    for (let x = a; x <= b; x++) {
+      const fret = x === 4 || x === 11;
+      const red = x > 4 && x < 11;
+      put(g, x, 12 + i, fret ? (i === 0 ? 'Y' : 'G') : red ? (i === 2 ? 'r' : 'R') : i === 2 ? 'K' : 'k');
+    }
+  });
+  // the ball (lit from the top-left): a round ivory sphere with a hot highlight
+  const cx = 7.5, cy = 6.2, r = 5.3;
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const dx = x - cx, dy = y - cy;
+    if (dx * dx + dy * dy > r * r) continue;
+    const light = dx * 0.8 + dy;
+    put(g, x, y, (dx + 2) ** 2 + (dy + 2) ** 2 < 2.6 ? 'W' : light > 3.6 ? 'H' : light > 1.2 ? 't' : 'T');
+  }
+  // its shadow on the red pocket
+  [[5, 12, 'r'], [6, 12, 'r'], [7, 12, 'r'], [8, 12, 'r'], [9, 12, 'r'], [10, 12, 'd']].forEach(([x, y, c]) => put(g, x, y, c));
+  S.ball = toRows(outline(g));
 }
 
 // ---------------------------------------------------------------- cell overlays (16x16)
@@ -2401,62 +2387,34 @@ S.enemyVampire = lit(24, 24, [
   tongue.forEach(([x, y, s]) => [...s].forEach((c, i) => put(g, x + i, y, c)));
   S.enemyMimic = toRows(outline(g));
 }
-// mirror: FINAL BOSS — ornate gold/silver oval, cracked glass holding the hero's ghostly, flipped, cyan reflection
-{
-  const g = grid(24, 24);
-  const cx = 11.5, cy = 11.5;
-  const ell = (x, y, rx, ry) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
-  for (let y = 0; y < 24; y++) for (let x = 0; x < 24; x++) {
-    if (!ell(x, y, 9.4, 11)) continue;
-    const s = (x - cx) / 9.4 + (y - cy) / 11;
-    if (ell(x, y, 6.9, 8.6)) put(g, x, y, s > 0.8 ? 'N' : 'n');
-    else if (ell(x, y, 7.9, 9.6)) put(g, x, y, s < -0.5 ? 'L' : s > 0.5 ? 'D' : 'S');
-    else put(g, x, y, s < -0.55 ? 'Y' : s > 0.55 ? 'g' : 'G');
-  }
-  // the hero, drawn in hero colours then recoloured to a ghost and flipped left-right
-  const hero = [
-    '     RR     ',
-    '    RWRr    ',
-    '     Rr     ',
-    '   WLLLSS   ',
-    '  WLLLLLSSD ',
-    '  LLLLLLSSD ',
-    ' YGGGGGGGGg ',
-    '  LSFFFFSSD ',
-    '  LSKFFKfSD ',
-    '  LSFFFFfSD ',
-    '  SSFbbFfSD ',
-    '  SSSFFfSSD ',
-    '   SSSSSSD  ',
-    ' LLSAUGUNSD ',
-    'LLSSAGGGUNSD',
-  ];
-  // ghost palette: steel -> cyan (lit side now on the RIGHT), face -> hollow navy, eyes -> burning red
-  const GHOST = { R: 'A', r: 'c', W: 'W', L: 'C', S: 'A', D: 'c', Y: 'W', G: 'C', g: 'c', F: 'N', f: 'n', K: 'R', b: 'c', A: 'C', U: 'c', N: 'N' };
-  stamp(g, 6, 4, hero.map((r) => [...r].reverse().map((c) => (c === ' ' ? ' ' : GHOST[c])).join('')));
-  // cracks: impact star high on the right of the glass, fractures running down its edge and across the lower-left
-  const upper = [[16, 6], [15, 7], [14, 8], [13, 8], [12, 9], [16, 7], [17, 8], [17, 9], [16, 10], [16, 11]];
-  const lower = [[6, 14], [7, 15], [7, 16], [8, 17], [9, 17], [9, 18], [10, 19]];
-  [...upper, ...lower].forEach(([x, y]) => put(g, x, y, 'W'));
-  lower.forEach(([x, y]) => { if (ell(x, y + 1, 6.9, 8.6) && get(g, x, y + 1) !== 'W') put(g, x, y + 1, 'K'); });
-  plot(g, [[17, 5, 'C'], [15, 5, 'C'], [17, 6, 'W'], [15, 6, 'K'], [13, 9, 'K'], [5, 13, 'C'], [8, 16, 'C']]);
-  // crest: gold fleur with a blood-red gem breaking the top of the frame
-  stamp(g, 8, 0, [
-    '  YGGg  ',
-    ' YGRRgg ',
-    'YGRWRrGg',
-    ' gGRrGg ',
-  ]);
-  // side flourishes
-  stamp(g, 0, 9, [' Y', 'YGG', 'Gg', ' g']);
-  stamp(g, 21, 9, [' Gg', 'GGg', ' gg', ' g']);
-  stamp(g, 10, 21, ['GRRg', ' rr ']); // drop gem at the foot of the frame
-  outline(g);
-  // eerie cyan glow hugging the frame
-  for (let y = 0; y < 24; y++) for (let x = 0; x < 24; x++)
-    if (g[y][x] === '.' && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => get(g, x + dx, y + dy) === 'K')) g[y][x] = (x + y) % 3 ? 'c' : 'N';
-  S.enemyMirror = toRows(g);
-}
+// wheel: ACT 2 BOSS, THE WHEEL — a croupier in green velvet under a green visor, auburn bob, red lips, a little
+// roulette-wheel brooch, holding the ivory ball up between finger and thumb
+S.enemyWheel = lit(24, 24, [
+  '........................',
+  '......booooob...........',
+  '....booOOOOooob.....TTT.',
+  '...boOOOooooooob...TWWTt',
+  '...njiiiiiiiiijn...TWTTt',
+  '..iiiiiiiiiiiiijjn.TTTtt',
+  '...nnnnnnnnnnnnn..FtttF.',
+  '...ooffffffffoob..FFFFf.',
+  '...ooFWKFFWKFfob..FFFff.',
+  '...ooFFFFfFFFfob...fFf..',
+  '...ooFFFFfFFFfob...TTt..',
+  '...ooFFRRRRrFfob..qeQQq.',
+  '...bofFFFFFFffbb..qeQq..',
+  '....bbfFFFFffbb..qeQQq..',
+  '.......fFFFf.....qeQq...',
+  '.....qeTTTTtqq..qeQQq...',
+  '..qeeeqTTTTtqQQqeQQq....',
+  '.qeeQQQqTTtqQQQQQQq.....',
+  'qeGYGQQQqTtqQQQQQQq.....',
+  'qeYkYQQQQqTqQQQQQQqq....',
+  'qeGYgQQQQqqqQQQQQQqq....',
+  'qeQQQQQQQQqQQQQQQQqq....',
+  'qeQQQQQQQQqQQQQQQqqq....',
+  'qeQQQQQQQQqQQQQQQqqq....',
+]);
 
 // ---------------------------------------------------------------- act 2 enemy reel symbols (16x16)
 // bomb: round charcoal bomb, steel collar, lit sparking fuse
@@ -2818,14 +2776,16 @@ S.icoBomb = lit(8, 8, ['', '.....YW', '....B', '..llkk', '.lWkkkP', '.lkkkPP', '
 S.icoHex = lit(8, 8, ['', '..xxxx', '.xjiijs', '.xiWKis', '.xjiijs', '..ssss']);
 S.icoDrain = lit(8, 8, ['', '...R', '..MRr', '.MRRRr', '.RWRRr', '.RRRrr', '..rrr']);
 S.icoGulp = lit(8, 8, ['', '..MWR..R', '.MRrR', '.WrYr', '.RrYrRr', '.RRrrrr', '..rWWr']);
-S.icoReflect = lit(8, 8, ['', '.Y...Cc', '..Y..Cc', '...YYCc', '..YY.Cc', '.Y...Cc']);
+// icoBets: THE WHEEL's NO MORE BETS (a little stack of red chips)
+S.icoBets = lit(8, 8, ['', '.MRRRRr', '.WRWRWr', '.dddddd', '.MRRRRr', '.WRWRWr', '.dddddd']);
 
 // ---------------------------------------------------------------- act 2 map badges (8x8)
 S.mapBadgeBomb = lit(8, 8, ['', '....YW', '...B', '..lkkk', '.lWkkkP', '.lkkkPP', '..kPPP']);
 S.mapBadgeHex = lit(8, 8, ['', '..Mxxs', '.Mx..xs', '.x.i..s', '.x..ixs', '..xsss']);
 S.mapBadgeFang = lit(8, 8, ['', '.MRRRRr', '.WTrrWT', '.WT..WT', '..T...T', '..t...t']);
 S.mapBadgeMimic = lit(8, 8, ['', '.wwwwwB', '.GGGGGg', '.WdWdWd', '.GGYGGg', '.BBKBBb', '.bbbbbb']);
-S.mapBadgeMirror = lit(8, 8, ['', '..YGGg', '.YCnWg', '.GnWng', '.GWnNg', '.gNNcg', '..ggg']);
+// mapBadgeWheel: a tiny roulette wheel (red and black pockets round a gold hub)
+S.mapBadgeWheel = lit(8, 8, ['', '..wRkb', '.wkRkRb', '.RkYGkR', '.kRGgRk', '.bRkRkb', '..bkRb']);
 
 // ---------------------------------------------------------------- act 2 header badge (24x12)
 {
@@ -5441,13 +5401,73 @@ S.volumeIcon = [
   '...KK.K.',
 ];
 
+// ================================================================ THE WHEEL (act 2 boss, 2026-10-09)
+// wheelTopper (24x24): a roulette wheel from above — wooden rim, a ring of red and black pockets with gold frets,
+// the dark bowl, and the gold turret in the middle. It turns in the fight (drawn rotated).
+{
+  const g = grid(24, 24);
+  const cx = 11.5, cy = 11.5;
+  for (let y = 0; y < 24; y++) for (let x = 0; x < 24; x++) {
+    const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
+    if (d > 11.3) continue;
+    const a = (Math.atan2(dy, dx) + Math.PI) / (Math.PI * 2);
+    const sector = Math.floor(a * 16);
+    const lit = dx + dy < 0;
+    let c;
+    if (d > 10.2) c = lit ? 'B' : 'b';                                        // the mahogany rim
+    else if (d > 9.3) c = lit ? 'Y' : 'G';                                    // its gold inner ring
+    else if (d > 6.2) c = Math.abs(a * 16 - Math.round(a * 16)) < 0.1 ? 'G' : sector % 2 ? 'K' : 'R'; // pockets + frets
+    else if (d > 4.4) c = lit ? 'g' : 'b';                                    // the bowl
+    else c = d < 1.2 ? 'W' : lit ? 'Y' : 'G';                                 // the gold cone
+    put(g, x, y, c);
+  }
+  // the turret's cross arms
+  for (const [x, y] of [[11, 8], [12, 8], [11, 15], [12, 15], [8, 11], [8, 12], [15, 11], [15, 12]]) put(g, x, y, 'g');
+  // the ivory ball sitting in a pocket (the fight also draws a rolling ball over it)
+  put(g, 18, 6, 'T'); put(g, 19, 7, 't'); put(g, 18, 7, 'T'); put(g, 19, 6, 'W');
+  S.wheelTopper = toRows(outline(g));
+}
+// betChip (12x12): THE WHEEL's bet chip from above — red with white inserts, a black centre and a white dot
+S.betChip = lit(12, 12, [
+  '............',
+  '....RWWR....',
+  '..MRRWWRRr..',
+  '.MRRkkkkRrr.',
+  '.RRkkkkkkrr.',
+  '.WWkkWkkkWW.',
+  '.WWkkkkkkWW.',
+  '.RRkkkkkkrr.',
+  '.RRrkkkkrrr.',
+  '..Rrrrrrrr..',
+  '....rWWr....',
+]);
+// betStack1-3 (16x16): 1, 2 or 3 red bet chips stacked on your reel (side view, sitting on the sprite's floor)
+{
+  const stack = (n) => {
+    const g = grid(16, 16);
+    const x0 = 3, w = 10, yEnd = 14, yTop = yEnd - n * 3 - 1;
+    // each chip's edge: 3 rows (a lit row, a row with white inserts, a dark seam)
+    for (let y = yTop + 2; y <= yEnd; y++) for (let x = x0; x < x0 + w; x++) {
+      const v = (yEnd - y) % 3, u = x - x0;
+      const end = u === 0 ? 'M' : u === w - 1 ? 'r' : null;
+      put(g, x, y, v === 0 ? 'd' : v === 1 ? (end ?? (u % 3 === 1 ? 'W' : 'R')) : (end ?? 'R'));
+    }
+    // the top chip's face (an oval, lit), with its white inserts
+    stamp(g, x0, yTop, [' MMMMMMMM ', 'MWMMRRMMWr']);
+    return toRows(outline(g));
+  };
+  S.betStack1 = stack(1);
+  S.betStack2 = stack(2);
+  S.betStack3 = stack(3);
+}
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
   heart: 8, shieldIcon: 8, boltIcon: 8, pipFull: 8, pipEmpty: 8,
   swordProjectile: 12, slimeBlob: 8, spark: 5, playerPortrait: 24, enemyPortrait: 24,
   enemyBrute: 24, enemyFrost: 24, enemyThief: 24, enemyGolem: 24, enemyGremlin: 24, enemyBoss: 24,
-  ice: 16, claw: 16, rock: 16, lock: 16, coin: 16, seven: 16, shard: 16,
+  ice: 16, claw: 16, rock: 16, lock: 16, coin: 16, seven: 16, ball: 16,
   frozenOverlay: 16, lockOverlay: 16,
   relicClover: 16, relicWhetstone: 16, relicSoap: 16, relicBattery: 16, relicMirror: 16,
   relicFang: 16, relicBandage: 16, relicHourglass: 16, relicMagnet: 16,
@@ -5465,13 +5485,13 @@ const DIMS = {
   chipShield: 12, tagBuild: { w: 20, h: 7 }, shopHeal: 16, setStar: 16,
   cabinetKnight: { w: 48, h: 64 }, cabinetMidas: { w: 48, h: 64 }, cabinetThorn: { w: 48, h: 64 },
   cabinetTesla: { w: 48, h: 64 }, cabinetJoker: { w: 48, h: 64 }, cabinetLocked: { w: 48, h: 64 },
-  enemyBomber: 24, enemyHexer: 24, enemyVampire: 24, enemyMimic: 24, enemyMirror: 24,
+  enemyBomber: 24, enemyHexer: 24, enemyVampire: 24, enemyMimic: 24, enemyWheel: 24,
   bomb: 16, hex: 16, fangs: 16, mimicSym: 16, bombOverlay: 16, hexOverlay: 16, tier2Frame: 16,
   enhVamp: 16, enhLucky: 16, enhBlaze: 16, enhThorny: 16,
   enhLucre: 16, enhTrick: 16, enhIngot: 16,
   relicTicket: 16, relicBell: 16, relicPhoenix: 16, relicOvercharge: 16, relicKey: 16, relicSandglass: 16,
-  icoBomb: 8, icoHex: 8, icoDrain: 8, icoGulp: 8, icoReflect: 8,
-  mapBadgeBomb: 8, mapBadgeHex: 8, mapBadgeFang: 8, mapBadgeMimic: 8, mapBadgeMirror: 8,
+  icoBomb: 8, icoHex: 8, icoDrain: 8, icoGulp: 8, icoBets: 8,
+  mapBadgeBomb: 8, mapBadgeHex: 8, mapBadgeFang: 8, mapBadgeMimic: 8, mapBadgeWheel: 8,
   actBadge2: { w: 24, h: 12 },
   enemyGrounder: 24, enemyCounterfeiter: 24, ground: 16, fake: 16, groundOverlay: 16, fakeOverlay: 16,
   icoEarth: 8, icoLaunder: 8, mapBadgeGround: 8, mapBadgeFake: 8, setRibbon: { w: 44, h: 9 },
@@ -5503,6 +5523,7 @@ const DIMS = {
   trimEmerald: 16, trimDiamond: 16, trimObsidian: 16, trimHouse: 16,
   note: 16, cabinetJukebox: { w: 48, h: 64 }, heroJukebox: 24,
   relicTurntable: 16, relicMixtape: 16, relicSubwoofer: 16, enhEcho: 16, volumeIcon: 8,
+  wheelTopper: 24, betChip: 12, betStack1: 16, betStack2: 16, betStack3: 16,
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -5545,7 +5566,7 @@ export type SpriteId =
   | 'enemyBrute' | 'enemyFrost' | 'enemyThief'     // enemy portraits, 24x24
   | 'enemyGolem' | 'enemyGremlin' | 'enemyBoss'
   | 'ice' | 'claw' | 'rock' | 'lock'               // enemy reel symbols, 16x16
-  | 'coin' | 'seven' | 'shard'                    // boss reel symbols, 16x16
+  | 'coin' | 'seven' | 'ball'                     // boss reel symbols, 16x16 (ball: THE WHEEL's BALL)
   | 'frozenOverlay' | 'lockOverlay'               // cell overlays, 16x16 (mostly transparent)
   | 'relicClover' | 'relicWhetstone' | 'relicSoap'  // relic icons, 16x16
   | 'relicBattery' | 'relicMirror' | 'relicFang'
@@ -5580,16 +5601,16 @@ export type SpriteId =
   | 'cabinetKnight' | 'cabinetMidas' | 'cabinetThorn' // run-select slot cabinets, 48x64 (non-square)
   | 'cabinetTesla' | 'cabinetJoker' | 'cabinetLocked'
   | 'enemyBomber' | 'enemyHexer' | 'enemyVampire'  // act 2 enemy portraits, 24x24
-  | 'enemyMimic' | 'enemyMirror'                   // (enemyMirror = act 2 final boss)
+  | 'enemyMimic' | 'enemyWheel'                    // (enemyWheel = act 2 boss, THE WHEEL)
   | 'bomb' | 'hex' | 'fangs' | 'mimicSym'          // act 2 enemy reel symbols, 16x16
   | 'bombOverlay' | 'hexOverlay' | 'tier2Frame'    // act 2 cell overlays / tier II gild marker, 16x16 (mostly transparent)
   | 'enhVamp' | 'enhLucky' | 'enhBlaze' | 'enhThorny'         // act 2 upgrade overlays, 16x16 (mostly transparent)
   | 'enhLucre' | 'enhTrick' | 'enhIngot'           // charm overlays (LUCRE, TRICK, INGOT), 16x16 (mostly transparent)
   | 'relicTicket' | 'relicBell' | 'relicPhoenix'   // legendary relics, 16x16
   | 'relicOvercharge' | 'relicKey' | 'relicSandglass'
-  | 'icoBomb' | 'icoHex' | 'icoDrain' | 'icoGulp' | 'icoReflect' // act 2 intent icons, 8x8
+  | 'icoBomb' | 'icoHex' | 'icoDrain' | 'icoGulp' | 'icoBets' // act 2 intent icons, 8x8
   | 'mapBadgeBomb' | 'mapBadgeHex' | 'mapBadgeFang' // act 2 map badges, 8x8
-  | 'mapBadgeMimic' | 'mapBadgeMirror'
+  | 'mapBadgeMimic' | 'mapBadgeWheel'
   | 'actBadge2'                                    // act 2 map header plaque, 24x12 (non-square)
   | 'enemyGrounder' | 'enemyCounterfeiter'         // act 2 enemy portraits (batch 8), 24x24
   | 'ground' | 'fake'                              // their reel symbols, 16x16
@@ -5647,7 +5668,10 @@ export type SpriteId =
   | 'heroJukebox'                                // DJ DECIBEL hero portrait (faces RIGHT), 24x24
   | 'relicTurntable' | 'relicMixtape' | 'relicSubwoofer' // THE JUKEBOX relics, 16x16
   | 'enhEcho'                                    // ECHO charm overlay, 16x16 (mostly transparent)
-  | 'volumeIcon';                                // HUD volume meter icon, 8x8
+  | 'volumeIcon'                                 // HUD volume meter icon, 8x8
+  | 'wheelTopper'                                // THE WHEEL's roulette-wheel topper (top view), 24x24
+  | 'betChip'                                    // THE WHEEL's bet chip (top view), 12x12
+  | 'betStack1' | 'betStack2' | 'betStack3';     // bet chip stacks on your reels (side view), 16x16
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

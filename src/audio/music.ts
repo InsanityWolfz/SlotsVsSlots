@@ -20,7 +20,7 @@
  * Works on any BaseAudioContext, so tools can render a song offline (tools/music/render.cjs) to listen to it.
  */
 
-export type SongId = 'menu' | 'lounge' | 'act1' | 'act2' | 'act3' | 'house' | 'mirror' | 'dealer';
+export type SongId = 'menu' | 'lounge' | 'act1' | 'act2' | 'act3' | 'house' | 'wheel' | 'dealer';
 
 interface Echo {
   /** Delay in 16th steps, level relative to the lead, transpose (semitones) and pulse width of the copy. */
@@ -482,54 +482,60 @@ const HOUSE: Song = (() => {
 })();
 
 /**
- * THE MIRROR (Act 2 boss): B minor, and pulse 2 is a CANON: it copies the lead half a bar later, an octave down.
- * The lead bars are palindromes, written so each half-bar still fits the chord its copy lands on.
+ * THE WHEEL (Act 2 boss), "No More Bets": a D minor casino WALTZ in 3/4. The tracker counts 16-step bars, so the waltz
+ * is written 12 steps to its bar, four waltz bars to three tracker bars (`wz` checks each one). Oom-pah-pah bass and
+ * chords, a lead that whirls round the chord like the ball round the wheel; the intro is the ball rattling to a stop.
  */
-const MIRROR: Song = (() => {
-  const Bm = 'D4+F#4+B4', G = 'D4+G4+B4', Em = 'E4+G4+B4', Fs = 'C#4+F#4+A#4', Fs7 = 'C#4+E4+F#4+A#4', D = 'D4+F#4+A4', A = 'C#4+E4+A4';
-  const pat = (lo: string, hi: string) => `${lo}:2 ${lo}:2 ${hi}:2 ${lo}:2 ${lo}:2 ${hi}:2 ${lo}:2 ${hi}:2 |`;
-  const aLead =
-    'B4:2 D5:2 F#5:2 B5:4 F#5:2 D5:2 B4:2 | C#5:2 D5:2 F#5:2 A5:4 G5:2 D5:2 B4:2 | G4:2 B4:2 D5:2 G5:4 D5:2 B4:2 G4:2 | A4:2 B4:2 D5:2 F#5:4 E5:2 B4:2 G4:2 | ' +
-    'E4:2 G4:2 B4:2 E5:4 B4:2 G4:2 E4:2 | F#4:2 G4:2 B4:2 D5:4 C#5:2 A#4:2 F#4:2 | F#4:2 A#4:2 C#5:2 F#5:4 C#5:2 A#4:2 F#4:2 | E5:2 C#5:2 A#4:2 F#4:4 B4:2 D5:2 F#5:2 |';
-  const aBass = `${pat('B1', 'B2')} ${pat('B1', 'B2')} ${pat('G1', 'G2')} ${pat('G1', 'G2')} ${pat('E2', 'E3')} ${pat('E2', 'E3')} ${pat('F#1', 'F#2')} ${pat('F#1', 'F#2')}`;
-  const main = 'K-hoS-h-K-hoS-hh';
-  const aDrums = `C-hoS-h-K-hoS-hh ${x(6, main)} K-hoS-h-S-SsT-tt`;
+const WHEEL_SONG: Song = (() => {
+  /** Four 12-step waltz bars per 48-step stretch: join them and put the tracker's bar line after every fourth. */
+  const wz = (bars: string[]) => {
+    if (bars.length % 4) throw new Error(`music wheel: ${bars.length} waltz bars, want a multiple of 4`);
+    return bars.map((b, i) => (i % 4 === 3 ? `${b} |` : b)).join(' ');
+  };
+  const Dm = 'D4+F4+A4', Gm = 'D4+G4+Bb4', A7 = 'C#4+E4+G4', Bb = 'D4+F4+Bb4', F = 'C4+F4+A4', C7 = 'C4+E4+Bb4';
+  /** Oom-pah-pah: the chord on beats 2 and 3. */
+  const pah = (c: string) => `r:4 ${c}:2' r:2 ${c}:2' r:2`;
+  /** The triangle on the downbeat (a walk up on the last beat now and then). */
+  const oom = (n: string, walk = '') => (walk ? `${n}:4 r:4 ${walk}:4` : `${n}:4 r:8`);
+  const aChords = [Dm, Dm, Gm, Dm, A7, A7, Dm, A7, Dm, Dm, Gm, Gm, Bb, A7, Dm, Dm];
+  const aLead = wz([
+    'D5:2 E5:2 F5:2 A5:2 F5:2 E5:2', 'D5:8 A4:4', 'G4:2 A4:2 Bb4:2 D5:2 Bb4:2 A4:2', 'F4:8 D5:4',
+    'C#5:2 D5:2 E5:2 G5:2 E5:2 D5:2', 'C#5:4 E5:4 A5:4', 'F5:4 E5:4 D5:4', 'E5:8 A4:4',
+    'D5:2 E5:2 F5:2 A5:2 F5:2 E5:2', 'D6:8 A5:4', 'Bb5:2 A5:2 G5:2 D5:2 G5:2 A5:2', 'Bb5:8 G5:4',
+    'F5:2 G5:2 A5:2 Bb5:2 A5:2 G5:2', 'E5:4 G5:4 C#5:4', 'D5:4 F5:4 A5:4', 'D5:8 r:4',
+  ]);
+  const aHarm = wz(aChords.map(pah));
+  const aBass = wz([oom('D2'), oom('A1'), oom('G1'), oom('D2', 'A1'), oom('A1'), oom('E2'), oom('D2'), oom('A1', 'C#2'), oom('D2'), oom('A1'), oom('G1'), oom('D2'), oom('Bb1'), oom('A1'), oom('D2'), oom('D2', 'A1')]);
+  // One-two-three: kick, then the snare and hat on two and three; the fourth bar rolls into the next.
+  const waltz = 'K---S-h-S-h-K---S-h-S-h-K---S-h-S-h-K---S-h-S-SS';
+  const drums = (n: number) => Array.from({ length: n }, (_, i) => waltz.slice((i % 3) * 16, (i % 3) * 16 + 16)).join(' ');
+  // The ball spins faster: the relative major, longer notes, the chords rolled as arpeggios.
+  const bLead = wz([
+    'A5:8 F5:4', 'G5:8 E5:4', 'F5:4 A5:4 C6:4', 'D6:8 A5:4', 'Bb5:4 A5:4 G5:4', 'E5:4 G5:4 Bb5:4', 'A5:8 F5:4', 'E5:8 C#5:4',
+    'A5:8 F5:4', 'G5:8 E5:4', 'F5:4 A5:4 C6:4', 'D6:8 A5:4', 'Bb5:4 G5:4 D5:4', 'C#5:4 E5:4 G5:4', 'F5:4 E5:4 D5:4', 'E5:2 F5:2 E5:2 D5:2 C#5:2 A4:2',
+  ]);
+  const bChords = [F, C7, F, Dm, Bb, C7, F, A7, F, C7, F, Dm, Gm, A7, Dm, A7];
+  const bHarm = wz(bChords.map((c) => `${c}:12`));
+  const bBass = wz(['F2', 'C2', 'F2', 'D2', 'Bb1', 'C2', 'F2', 'A1', 'F2', 'C2', 'F2', 'D2', 'G1', 'A1', 'D2', 'A1'].map((n) => `${n}:4 ${n}:4 ${n}:4`));
   return {
-    bpm: 160,
+    bpm: 176,
     level: 0.9,
-    lead: { duty: 0.25, gain: 0.09, vib: 14 },
-    harm: { duty: 0.25, gain: 0.035 },
-    echo: { steps: 8, gain: 0.55, transpose: -12, duty: 0.5 },
+    lead: { duty: 0.25, gain: 0.09, vib: 16 },
+    harm: { duty: 0.5, gain: 0.04 },
+    arp: 0.05,
     intro: [
       {
-        bars: 2,
-        lead: 'B4:2 D5:2 F#5:2 B5:4 F#5:2 D5:2 B4:2 | r:16 |',
-        bass: 'B1:16 | B1:8 F#2:8 |',
-        drums: 'h-h-h-h-h-h-h-h- h-h-h-h-S-SsS-SS',
+        // The ball rattles round the wheel, slows... and drops (the last bar's kick), then the waltz begins.
+        bars: 3,
+        lead: wz(['r:12', 'r:12', 'r:12', 'r:8 A4:2 C#5:2']),
+        bass: wz(['r:12', 'r:12', 'r:12', 'A1:4 r:8']),
+        drums: 'xxxxxxxxxxxxx-x- x-x-x-x-x---x--- x-----x-----C---',
       },
     ],
     loop: [
-      { bars: 8, lead: aLead, bass: aBass, drums: aDrums },
-      {
-        // The mirror cracks: no canon, a lyrical line in D major on a rounder pulse.
-        bars: 8,
-        lead: 'F#5:6 E5:2 D5:4 A4:4 | C#5:6 D5:2 E5:8 | D5:6 C#5:2 B4:4 F#4:4 | A#4:6 B4:2 C#5:8 | D5:6 E5:2 G5:4 B5:4 | A5:6 G5:2 F#5:8 | G5:4 F#5:4 E5:4 D5:4 | C#5:6 A#4:2 F#4:4 r:4 |',
-        leadDuty: 0.5,
-        echo: null,
-        harm: `${D}:16 | ${A}:16 | ${Bm}:16 | ${Fs}:16 | ${G}:16 | ${D}:16 | ${Em}:16 | ${Fs7}:16 |`,
-        bass: `${pat('D2', 'D3')} ${pat('A1', 'A2')} ${pat('B1', 'B2')} ${pat('F#1', 'F#2')} ${pat('G1', 'G2')} ${pat('D2', 'D3')} ${pat('E2', 'E3')} F#1:2 F#2:2 F#1:2 F#2:2 F#1:2 A#1:2 C#2:2 E2:2 |`,
-        drums: `C-h-S-h-K-h-S-h- ${x(6, 'K-h-S-h-K-h-S-h-')} K-h-S-h-S-SsSsSS`,
-      },
-      {
-        // The reflection: the same canon with the two pulse widths swapped, arpeggios shimmering on top.
-        bars: 8,
-        lead: aLead,
-        leadDuty: 0.5,
-        echo: { steps: 8, gain: 0.55, transpose: -12, duty: 0.25 },
-        harm: `${Bm}:16 | ${Bm}:16 | ${G}:16 | ${G}:16 | ${Em}:16 | ${Em}:16 | ${Fs}:16 | ${Fs7}:16 |`,
-        bass: aBass,
-        drums: aDrums,
-      },
+      { bars: 12, lead: aLead, harm: aHarm, bass: aBass, drums: drums(12) },
+      { bars: 12, lead: bLead, harm: bHarm, harmDuty: 0.25, bass: bBass, drums: drums(12) },
+      { bars: 12, lead: aLead, leadDuty: 0.5, harm: aHarm, bass: aBass, drums: drums(12), echo: { steps: 4, gain: 0.3, transpose: -12, duty: 0.25 } },
     ],
   };
 })();
@@ -597,9 +603,9 @@ const DEALER: Song = (() => {
  * Each song's home major scale, in semitones from C (minor and modal songs use their relative major: the same notes).
  * The tuned sound effects move there so a stinger never clashes with the song under it.
  */
-export const SONG_HOME: Record<SongId, number> = { menu: 5, lounge: 0, act1: -5, act2: 5, act3: -5, house: 3, mirror: 2, dealer: 0 };
+export const SONG_HOME: Record<SongId, number> = { menu: 5, lounge: 0, act1: -5, act2: 5, act3: -5, house: 3, wheel: 5, dealer: 0 };
 
-export const SONGS: Record<SongId, Song> = { menu: MENU, lounge: LOUNGE, act1: ACT1, act2: ACT2, act3: ACT3, house: HOUSE, mirror: MIRROR, dealer: DEALER };
+export const SONGS: Record<SongId, Song> = { menu: MENU, lounge: LOUNGE, act1: ACT1, act2: ACT2, act3: ACT3, house: HOUSE, wheel: WHEEL_SONG, dealer: DEALER };
 
 const midiHz = (m: number) => 440 * 2 ** ((m - 69) / 12);
 

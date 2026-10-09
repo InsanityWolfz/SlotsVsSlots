@@ -6,14 +6,14 @@ import type { LineScore } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
 import { Banner, Bubble, FloatText, Lightning, Projectile, SymbolWheel, TurnCard } from './fx';
-import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, W } from './layout';
+import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, PITCH, reelWindow, W } from './layout';
 import type { Stage } from './stage';
 import { ABILITY_UI } from './hud';
 import { betProfit, betState, trackEvent } from '../core/bets';
 import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
 import { fmtNum } from '../render/text';
-import { BOMB, REFLECT_MIN, RELICS } from '../core/relics';
+import { BOMB, RELICS } from '../core/relics';
 import { charmLevel, charmName, charmTag, charmValue, CHARM_COLOR, playerSymValue } from '../core/charms';
 import { defaultConfig } from '../core/config';
 import { DEAD } from '../core/strip';
@@ -41,6 +41,8 @@ const RELIC_NAME_Y = 244;
 
 /** Banners sit in the top gutter between the HUD panels, never over the reels. */
 const BANNER_Y = 172;
+/** Where your chip count sits (top left: runScreens CHIP_SPOT): swept bets fly there. */
+const CHIP_COUNTER = { x: 44, y: 46 };
 
 /**
  * Turns a TurnResult's event list into choreographed, skippable presentation. Owns the
@@ -57,7 +59,7 @@ export class Director {
   async playTurn(result: TurnResult): Promise<void> {
     const evs = result.events;
     // A quiet turn (no jackpot, ability, special, bonus or death, and little damage) plays 1.5x faster.
-    const loud = new Set<CombatEvent['type']>(['ability', 'specialFire', 'death', 'fightEnd', 'voucher', 'shatter', 'phoenix', 'potWin', 'payoff' as CombatEvent['type']]);
+    const loud = new Set<CombatEvent['type']>(['ability', 'specialFire', 'death', 'fightEnd', 'voucher', 'noMoreBets', 'wheelFast', 'phoenix', 'potWin', 'payoff' as CombatEvent['type']]);
     const dealt = evs.reduce((a, e) => a + (e.type === 'attack' ? e.amount : 0), 0);
     const quiet = !evs.some((e) => loud.has(e.type) || (e.type === 'spin' && (e.score.tier === 'triple' || !!e.bonus))) && dealt <= 2 * UNIT;
     this.c.boost = quiet ? 1.5 : 1;
@@ -185,8 +187,14 @@ export class Director {
       case 'phoenix':
         this.relicPop(e.side, 'phoenix');
         return this.phoenix(e);
-      case 'shatter':
-        return this.shatter(e);
+      case 'betPlaced':
+        return this.betPlaced(e);
+      case 'betSwept':
+        return this.betSwept(e);
+      case 'noMoreBets':
+        return this.noMoreBets(e);
+      case 'wheelFast':
+        return this.wheelFast(e);
       case 'ground':
         return this.ground(e);
       case 'fake':
@@ -236,20 +244,6 @@ export class Director {
         this.s.sounds.coin(10);
         return this.popText(e.amount > 0 ? `+${e.amount} CHIP${e.amount > 1 ? 'S' : ''}` : `THE HOUSE SKIMS ${-e.amount} CHIPS`, c.x - 80, MACHINE_TOP - 22, 2, e.amount > 0 ? '#ffd23f' : '#ff8a7a', 14, 0.35);
       }
-      case 'mirrorCharge': {
-        // THE MIRROR: the enemy HUD says what each shard will throw back, and its shard cells show it.
-        this.mirrorEach = e.each;
-        this.mirrorLast = e.last;
-        this.mirrorShare = e.share;
-        this.s.huds[e.side].hint = `EACH SHARD: ${e.share >= 0.5 ? 'HALF' : 'A THIRD'} OF ${e.last} = ${e.each}`;
-        return Promise.resolve();
-      }
-      case 'shardReflect': {
-        // A pair or a jackpot says it on its banner; a single shard gets the line here.
-        if (e.count >= 2) return Promise.resolve();
-        const c = this.machineCenter(e.side);
-        return this.popText(`SHARD: ${e.share >= 0.5 ? 'HALF' : '1/3'} OF YOUR ${e.last} HIT = ${e.amount}`, c.x, MACHINE_TOP - 22, 2, '#c8f0ff', 30, 0.6);
-      }
       case 'lucreChips': {
         if (e.side === 'player') this.s.huds.player.lucre = e.total;
         // LUCRE: banked on a win (the RESULTS line counts them).
@@ -259,7 +253,7 @@ export class Director {
       }
       case 'lastCall':
         this.s.sounds.stingerMedium();
-        return this.banner('LAST CALL!', '#ff6a5a', 1.2, 0.3, 'THE HOUSE HITS HARDER EVERY TURN NOW', BANNER_Y, 3);
+        return this.banner('LAST CALL!', '#ff6a5a', 1.2, 0.3, e.house ? 'THE HOUSE SKIMS EVERY TURN NOW' : 'THE HOUSE HITS HARDER EVERY TURN NOW', BANNER_Y, 3);
       case 'hpCost': {
         // LIVE WIRE: the storm's price comes off your own HP bar.
         const h = this.s.huds[e.side];
@@ -511,7 +505,6 @@ export class Director {
 
   private async turnStart(e: Ev<'turnStart'>): Promise<void> {
     const { machines, gutter } = this.s;
-    if (e.side === 'player') gutter.turnDamage = 0;
     gutter.turn = e.turn;
     gutter.side = e.side;
     // RAISED! lasts until its raised spin has been played (the Dealer's next turn).
@@ -613,16 +606,6 @@ export class Director {
 
   /** Per-fight bonuses on each cell of a symbol this spin (WAR DRUM), added to the shown number. */
   private symBonus: Partial<Record<SideId, Partial<Record<SymbolId, number>>>> = {};
-  /** THE MIRROR: what each shard throws back this turn (from the last mirrorCharge). */
-  private mirrorEach = 0;
-  private mirrorLast = 0;
-  private mirrorShare = 1 / 3;
-  /** "2 X 1/3 OF YOUR 117 HIT = 80": what `n` shards throw back (as the engine does it: at least REFLECT_MIN). */
-  private shardText(n: number): string {
-    const amount = Math.max(REFLECT_MIN, Math.round((this.mirrorLast * this.mirrorShare * n) / UNIT) * UNIT);
-    const part = n >= 3 && this.mirrorShare < 0.5 ? 'ALL' : `${n} X ${this.mirrorShare >= 0.5 ? 'HALF' : '1/3'}`;
-    return `${part} OF YOUR ${this.mirrorLast} HIT = ${amount}`;
-  }
 
   /** The numbers on a landed payline symbol: its value (bottom-left) and its charm's tag (top-right). */
   private setTag(side: SideId, r: number, jammed = false): void {
@@ -640,7 +623,6 @@ export class Director {
     const lvl = charm ? (player ? charmLevel(lv, charm, this.s.ticket) : 1) : 1;
     // What the cell really hits (or blocks) for: its share of its group's FINAL pay, after every multiplier, so the
     // numbers on the line add up to the banner's total (user: the cells said 13 while the hit was 7,000).
-    // - THE MIRROR's shards throw back a share of your last hit (its HUD says the same).
     const cellBase = (rr: number): number => {
       const c = m.reels[rr].cellAtRow(1);
       const b = (lv ? playerSymValue(lv, c.symbol, BASE[c.symbol] ?? 0) : !player && c.symbol === 'shield' ? Math.round((BASE[c.symbol] ?? 0) * this.s.enemyShield) : BASE[c.symbol] ?? 0) + (this.symBonus[side]?.[c.symbol] ?? 0);
@@ -649,8 +631,7 @@ export class Director {
     };
     let value: number;
     const g = this.lastScore?.groups.find((x) => x.reels.includes(r) && x.base > 0);
-    if (!player && cell.symbol === 'shard') value = this.mirrorEach;
-    else if (g && g.amount > 0) {
+    if (g && g.amount > 0) {
       const mine = cellBase(r);
       // THE DROP's group counts its notes off the payline too (in its BASE); other groups split by their cells.
       const denom = g.drop ? g.base : g.reels.reduce((a, rr) => a + cellBase(rr), 0);
@@ -749,8 +730,7 @@ export class Director {
     const fmt = (x: number) => (Number.isInteger(x) ? String(x) : x.toFixed(1));
     const gross = Math.round(g.base * g.mult);
     const bigMath = gross >= 150 || !!g.drop || g.mult >= 4;
-    // THE MIRROR's shards aren't BASE x MULT: they throw back a share of your last hit (the same words as the popup).
-    const effect = side === 'enemy' && WRITERS.has(sym) ? effectText(sym, g.amount) : side === 'enemy' && sym === 'shard' ? this.shardText(g.reels.length) : '';
+    const effect = side === 'enemy' && WRITERS.has(sym) ? effectText(sym, g.amount) : '';
     const parts = slimeCleanse
       ? [{ text: 'CLEANSE!', color: COLORS.slime }]
       : effect
@@ -798,21 +778,8 @@ export class Director {
     }
   }
 
-  /** The Mirror remembers your best presented spin (the REFLECTION panel reads this, never the engine). */
-  private noteDamage(from: SideId, amount: number, note?: string): void {
-    const g = this.s.gutter;
-    if (from !== 'player' || note === 'thorns') return;
-    g.turnDamage = (g.turnDamage ?? 0) + amount;
-    g.reflect = Math.max(g.reflect ?? 0, g.turnDamage);
-  }
-
   private async attack(e: Ev<'attack'>): Promise<void> {
-    this.noteDamage(e.from, e.amount, e.note);
     if (e.from === 'enemy' && this.s.gutter.raised) this.s.gutter.raised = false;
-    if (e.note === 'reflect') {
-      this.s.gutter.reflect = 0;
-      this.s.gutter.turnDamage = 0;
-    }
     const color = this.tierColor();
     await this.activate(e.from, e.reels, '#ffffff');
     const target = this.machineCenter(e.to);
@@ -858,10 +825,6 @@ export class Director {
     if (e.note === 'pierce') this.bg(this.popText('PIERCE!', target.x + 90, MACHINE_TOP - 22, 2, '#bff4ff', 14, 0.35));
     if (e.note === 'drain') this.bg(this.popText('DRAIN!', target.x - 90, MACHINE_TOP - 22, 2, '#ff5a7a', 14, 0.35));
     if (e.note === 'mimic') this.bg(this.popText('COPYCAT!', target.x - 90, MACHINE_TOP - 22, 2, '#ffb0ff', 14, 0.35));
-    if (e.note === 'reflect') {
-      this.s.camera.flashScreen(0.35, '#c8f0ff');
-      this.bg(this.popText('YOUR OWN HIT!', target.x, MACHINE_TOP - 22, 2, '#c8f0ff', 14, 0.5));
-    }
     if (e.note === 'thorns') {
       this.s.sounds.block();
       this.bg(this.popText('THORNS!', target.x - 90, MACHINE_TOP - 22, 3, '#9dff6a', 14, 0.35));
@@ -968,7 +931,6 @@ export class Director {
   }
 
   private async specialFire(e: Ev<'specialFire'>): Promise<void> {
-    this.noteDamage(e.from, e.amount);
     if (e.grounded) {
       const c = this.machineCenter(e.from);
       this.bg(this.popText('GROUNDED: HITS SHIELDS', c.x, MACHINE_TOP - 30, 2, '#e0a070', 16, 0.5));
@@ -1038,7 +1000,6 @@ export class Director {
     const last = strikes[n - 1];
     const dur = Math.min(4, 1.2 + (1.3 * Math.log(n / 2)) / Math.log(5));
     const total = strikes.reduce((a, x) => a + x.hpDamage, 0);
-    for (const x of strikes) this.noteDamage(x.from, x.amount);
     const h = this.s.huds[first.from];
     const to = this.s.huds[first.to];
     const cam = this.s.camera;
@@ -1592,6 +1553,8 @@ export class Director {
     m.payline.alpha = 0;
     this.bg(this.c.tween({ from: 0.8, to: 0, dur: 0.5, onUpdate: (v) => (m.flash = v * 0.5) }));
     const dealt = e.kind === 'deal' ? this.s.gutter.nextDeal : undefined;
+    // THE WHEEL: the ball drops, the wheel on its topper races.
+    if (e.kind === 'bets') this.s.gutter.wheelSpeed = 16;
     await this.banner(dealt ? `THE DEAL: ${dealt.toUpperCase()}!` : `${ABILITY_UI[e.kind].label}!`, '#ff6a5a', 1.35, 0.25);
   }
 
@@ -2052,28 +2015,131 @@ export class Director {
     await this.popText('FREE RESPIN!', c.x, MACHINE_TOP + 48, 3, '#7dff7a', 30, 0.3, true);
   }
 
-  /** The Mirror cracks at half HP. */
-  private async shatter(e: Ev<'shatter'>): Promise<void> {
-    const m = this.s.machines[e.side];
-    // The crack snaps back: its countdown jumps to 'next turn' (EXPERT_PLAYTEST_2 F2).
-    this.s.huds[e.side].charge = Math.max(0, e.every - 1);
-    this.s.sounds.shatter();
+  // ---- THE WHEEL: PLACE YOUR BETS ------------------------------------------------------
+
+  /** Where a reel's chip stack sits: on the bottom edge of your reel (screen coordinates). */
+  private stackPos(reel: number) {
+    const w = reelWindow('player');
+    return { x: w.x + PITCH * (reel + 0.5), y: w.y + MACHINE_H - 6 };
+  }
+
+  private syncTable(bets: number[], left?: number, per?: number): void {
+    const g = this.s.gutter;
+    g.bets = [...bets];
+    if (left !== undefined && left > 0) g.betsLeft = left;
+    if (per !== undefined) g.betPer = per;
+    this.bg(this.c.tween({ from: 1.5, to: 1, dur: 0.25, ease: backOut(3), onUpdate: (v) => (g.betPunch = v) }));
+  }
+
+  /** PLACE YOUR BETS: chips flip off the wheel and stack on your reels. */
+  private async betPlaced(e: Ev<'betPlaced'>): Promise<void> {
+    const m = this.s.machines.player;
+    const from = { x: MACHINE_CX.enemy, y: MACHINE_TOP - 22 };
+    if (e.ball) {
+      const c = this.machineCenter('enemy');
+      this.bg(this.popText(`THE BALL: +${e.reels.length} BET${e.reels.length > 1 ? 'S' : ''}`, c.x, MACHINE_TOP - 22, 2, '#ff8a7a', 16, 0.4));
+    }
+    const flights = e.reels.map(async (r, i) => {
+      await this.c.wait(i * 0.1);
+      const p = this.s.fx.add(new Projectile(artId('betChip'), from.x, from.y, 3, false, '#ff6a5a'));
+      const to = this.stackPos(r);
+      this.s.sounds.click();
+      await this.arc(p, to.x, to.y - 10, 0.4, 120, sineInOut);
+      this.s.fx.remove(p);
+      m.bets[r] = Math.min(9, m.bets[r] + 1);
+      this.s.sounds.coin(3 + i * 2);
+      const k = m.betPop;
+      this.bg(this.c.tween({ from: 1.7, to: 1, dur: 0.25, ease: backOut(3), onUpdate: (v) => (k[r] = v) }));
+    });
+    await Promise.all(flights);
+    m.bets = [...e.bets];
+    this.syncTable(e.bets, e.left, e.per);
+    await this.c.wait(0.1);
+  }
+
+  /** Your pair took the bets off its reels (a jackpot: TABLE CLEARED!): the chips fly to your chip count. */
+  private async betSwept(e: Ev<'betSwept'>): Promise<void> {
+    const m = this.s.machines.player;
+    const pc = this.machineCenter('player');
+    if (e.table) {
+      this.s.sounds.fanfareJackpot();
+      this.bg(this.banner('TABLE CLEARED!', COLORS.goldLight, 1.3, 0.4, `+${e.chips} CHIP${e.chips > 1 ? 'S' : ''}`, BANNER_Y, 4));
+    } else this.bg(this.popText('BETS CLEARED!', pc.x, MACHINE_TOP - 22, 3, COLORS.goldLight, 20, 0.45));
+    const flights = e.reels.flatMap((r) =>
+      Array.from({ length: Math.min(3, m.bets[r] || 1) }, async (_, i) => {
+        await this.c.wait(i * 0.07 + r * 0.05);
+        const at = this.stackPos(r);
+        const p = this.s.fx.add(new Projectile(artId('betChip'), at.x, at.y - 10 - i * 8, 3, false, COLORS.goldLight));
+        if (i === 0) m.bets[r] = 0;
+        await this.arc(p, CHIP_COUNTER.x, CHIP_COUNTER.y, 0.5, 90, sineIn);
+        this.s.fx.remove(p);
+        this.s.sounds.coin(6 + i * 2);
+      }),
+    );
+    for (const r of e.reels) this.s.particles.burst({ x: this.stackPos(r).x, y: this.stackPos(r).y - 14, count: 18, colors: ['#ffe08a', '#ffffff', '#d9a640'], speed: [80, 260], kind: 'spark', gravity: 300, life: [0.2, 0.45], size: [2, 4] });
+    await Promise.all(flights);
+    m.bets = [...e.bets];
+    this.syncTable(e.bets);
+  }
+
+  /** NO MORE BETS: the ball drops; every chip left on your reels hits at once. */
+  private async noMoreBets(e: Ev<'noMoreBets'>): Promise<void> {
+    const m = this.s.machines.player;
+    const g = this.s.gutter;
+    g.wheelSpeed = Math.max(g.wheelSpeed ?? 0, 16);
+    // The ball rattles round, slows, drops.
+    for (let i = 0; i < 6; i++) {
+      this.s.sounds.click();
+      await this.c.wait(0.06 + i * 0.03);
+    }
+    if (e.chips <= 0) {
+      const c = this.machineCenter('player');
+      await this.popText('NO MORE BETS: THE TABLE IS CLEAN!', c.x, MACHINE_TOP - 22, 2, COLORS.goldLight, 16, 0.5);
+      this.syncTable([0, 0, 0]);
+      return;
+    }
+    // Every stack lights red, then bursts.
+    for (let r = 0; r < 3; r++) if (m.bets[r] > 0) this.bg(this.c.tween({ from: 0, to: 1, dur: 0.25, onUpdate: (v) => (m.betGlow[r] = v) }));
+    await this.c.wait(0.3);
+    for (let r = 0; r < 3; r++) {
+      if (m.bets[r] <= 0) continue;
+      const at = this.stackPos(r);
+      this.s.particles.burst({ x: at.x, y: at.y - 14, count: 14 + m.bets[r] * 8, colors: ['#ff3a2e', '#1a1018', '#ffffff', '#b0202e'], speed: [120, 420], kind: 'spark', gravity: 500, life: [0.25, 0.6], size: [2, 5] });
+    }
+    this.s.sounds.hit(e.amount / UNIT);
+    this.hitstop(3);
+    this.shake(4 + Math.min(8, e.chips), 0.35);
+    this.flashMachine('player', 0.6, 0.2);
+    this.knockback('player', 6 + Math.min(10, e.chips * 2));
+    this.s.camera.chromaPulse(0.3);
+    const h = this.s.huds.player;
+    if (e.blocked > 0) {
+      this.s.sounds.block();
+      const sb = h.shieldBar();
+      this.decay(h, 'shieldFlash', 1, 0.25);
+      this.bg(this.popText(`BLOCK ${e.blocked}`, sb.x + sb.w / 2, sb.y + sb.h / 2, 2.5, '#9fd0ff', 16, 0.3));
+    }
+    this.damageHud('player', e.targetHp, e.targetShield, e.hpDamage);
+    m.bets = [0, 0, 0];
+    m.betGlow = [0, 0, 0];
+    this.syncTable([0, 0, 0]);
+    const c = this.machineCenter('player');
+    await this.popText(e.hpDamage > 0 ? `NO MORE BETS! -${fmtNum(e.hpDamage)}` : 'NO MORE BETS! BLOCKED', c.x, MACHINE_TOP + 60, 3, '#ff6a5a', 30, 0.5);
+  }
+
+  /** THE WHEEL SPINS FASTER at half HP: 3 chips a turn from now on. */
+  private async wheelFast(e: Ev<'wheelFast'>): Promise<void> {
+    const g = this.s.gutter;
+    g.wheelFast = true;
+    g.wheelSpeed = 18;
     this.s.sounds.abilityFire();
     this.hitstop(4);
-    this.shake(8, 0.5);
-    this.s.camera.chromaPulse(0.9);
-    this.s.camera.flashScreen(0.5, '#c8f0ff');
+    this.shake(6, 0.4);
+    this.s.camera.chromaPulse(0.6);
+    this.flashMachine(e.side, 0.5, 0.4);
     const c = this.machineCenter(e.side);
-    this.s.particles.burst({ x: c.x, y: c.y, count: 90, colors: ['#c8f0ff', '#ffffff', '#7aa8c8'], speed: [150, 600], kind: 'spark', gravity: 500, life: [0.4, 0.9], size: [2, 6] });
-    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.6, onUpdate: (v) => (m.flash = v * 0.7) }));
-    m.cracked = true;
-    // The HUD countdown follows the new cadence.
-    const hud = this.s.huds[e.side];
-    if (hud.ability) {
-      hud.ability = { ...hud.ability, every: e.every };
-      hud.charge = Math.min(hud.charge, e.every - 1);
-    }
-    await this.banner('CRACKED!', '#c8f0ff', 1.3, 0.5, e.every ? `REFLECTS EVERY ${e.every} TURNS` : 'EACH SHARD NOW THROWS BACK HALF YOUR HIT', BANNER_Y, 4);
+    this.s.particles.burst({ x: c.x, y: MACHINE_TOP - 22, count: 50, colors: ['#ff3a2e', '#1a1018', '#ffe08a'], speed: [150, 500], kind: 'spark', gravity: 400, life: [0.4, 0.8], size: [2, 5] });
+    await this.banner('THE WHEEL SPINS FASTER!', '#ff6a5a', 1.25, 0.5, `${e.per} CHIPS A TURN NOW`, BANNER_Y, 4);
   }
 
   private async endTurn(side: SideId): Promise<void> {

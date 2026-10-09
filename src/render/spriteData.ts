@@ -82,7 +82,7 @@ export type SpriteId =
   | 'enemyBrute' | 'enemyFrost' | 'enemyThief'     // enemy portraits, 24x24
   | 'enemyGolem' | 'enemyGremlin' | 'enemyBoss'
   | 'ice' | 'claw' | 'rock' | 'lock'               // enemy reel symbols, 16x16
-  | 'coin' | 'seven' | 'shard'                    // boss reel symbols, 16x16
+  | 'coin' | 'seven' | 'ball'                     // boss reel symbols, 16x16 (ball: THE WHEEL's BALL)
   | 'frozenOverlay' | 'lockOverlay'               // cell overlays, 16x16 (mostly transparent)
   | 'relicClover' | 'relicWhetstone' | 'relicSoap'  // relic icons, 16x16
   | 'relicBattery' | 'relicMirror' | 'relicFang'
@@ -117,16 +117,16 @@ export type SpriteId =
   | 'cabinetKnight' | 'cabinetMidas' | 'cabinetThorn' // run-select slot cabinets, 48x64 (non-square)
   | 'cabinetTesla' | 'cabinetJoker' | 'cabinetLocked'
   | 'enemyBomber' | 'enemyHexer' | 'enemyVampire'  // act 2 enemy portraits, 24x24
-  | 'enemyMimic' | 'enemyMirror'                   // (enemyMirror = act 2 final boss)
+  | 'enemyMimic' | 'enemyWheel'                    // (enemyWheel = act 2 boss, THE WHEEL)
   | 'bomb' | 'hex' | 'fangs' | 'mimicSym'          // act 2 enemy reel symbols, 16x16
   | 'bombOverlay' | 'hexOverlay' | 'tier2Frame'    // act 2 cell overlays / tier II gild marker, 16x16 (mostly transparent)
   | 'enhVamp' | 'enhLucky' | 'enhBlaze' | 'enhThorny'         // act 2 upgrade overlays, 16x16 (mostly transparent)
   | 'enhLucre' | 'enhTrick' | 'enhIngot'           // charm overlays (LUCRE, TRICK, INGOT), 16x16 (mostly transparent)
   | 'relicTicket' | 'relicBell' | 'relicPhoenix'   // legendary relics, 16x16
   | 'relicOvercharge' | 'relicKey' | 'relicSandglass'
-  | 'icoBomb' | 'icoHex' | 'icoDrain' | 'icoGulp' | 'icoReflect' // act 2 intent icons, 8x8
+  | 'icoBomb' | 'icoHex' | 'icoDrain' | 'icoGulp' | 'icoBets' // act 2 intent icons, 8x8
   | 'mapBadgeBomb' | 'mapBadgeHex' | 'mapBadgeFang' // act 2 map badges, 8x8
-  | 'mapBadgeMimic' | 'mapBadgeMirror'
+  | 'mapBadgeMimic' | 'mapBadgeWheel'
   | 'actBadge2'                                    // act 2 map header plaque, 24x12 (non-square)
   | 'enemyGrounder' | 'enemyCounterfeiter'         // act 2 enemy portraits (batch 8), 24x24
   | 'ground' | 'fake'                              // their reel symbols, 16x16
@@ -184,7 +184,10 @@ export type SpriteId =
   | 'heroJukebox'                                // DJ DECIBEL hero portrait (faces RIGHT), 24x24
   | 'relicTurntable' | 'relicMixtape' | 'relicSubwoofer' // THE JUKEBOX relics, 16x16
   | 'enhEcho'                                    // ECHO charm overlay, 16x16 (mostly transparent)
-  | 'volumeIcon';                                // HUD volume meter icon, 8x8
+  | 'volumeIcon'                                 // HUD volume meter icon, 8x8
+  | 'wheelTopper'                                // THE WHEEL's roulette-wheel topper (top view), 24x24
+  | 'betChip'                                    // THE WHEEL's bet chip (top view), 12x12
+  | 'betStack1' | 'betStack2' | 'betStack3';     // bet chip stacks on your reels (side view), 16x16
 
 export const SPRITES: Record<SpriteId, string[]> = {
   sword: [
@@ -674,23 +677,23 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '.....KKKK.......',
     '................',
   ],
-  shard: [
-    '..KKKKKKKKKKKK..',
-    '.KWLLLLLLLLLLSK.',
-    '.KLSSSSSSSSSSDK.',
-    '.KLSCCCWWCAASDK.',
-    '.KLSCCWWCAAASDK.',
-    '.KLSCWWCAWAASDK.',
-    '.KLSWWCAWAAASDK.',
-    '.KLSWCAWAAAASDK.',
-    '.KLSCAWAAAAASDK.',
-    '.KLSAWAAAAWNSDK.',
-    '.KLSAAAAAANcSDK.',
-    '.KLSAAAAANcNSDK.',
-    '.KLSAAAANcccSDK.',
-    '.KLSSSSSSSSSSDK.',
-    '.KSDDDDDDDDDDDK.',
-    '..KKKKKKKKKKKK..',
+  ball: [
+    '.......KK.......',
+    '.....KKTTKK.....',
+    '....KTTTTTTK....',
+    '...KTWWTTTTTK...',
+    '..KTWWWWTTTTtK..',
+    '..KTTWWTTTTttK..',
+    '..KTTTTTTTtttK..',
+    '..KTTTTTTtttHK..',
+    '..KTTTTtttHHHK..',
+    '..KTTTtttHHHHK..',
+    '...KTtttHHHHK...',
+    '.KKKKKtHHHKKKKK.',
+    'KkkkYrrrrrdYkkkK',
+    'kkkkGRRRRRRGkkkk',
+    'KKKKGrrrrrrGKKKK',
+    '.KKKKKKKKKKKKKK.',
   ],
   frozenOverlay: [
     'cccccccccccccccc',
@@ -2293,31 +2296,31 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KbbYGbbbbbbbbbbbbbbGgbbK',
     '.KKKKKKKKKKKKKKKKKKKKKK.',
   ],
-  enemyMirror: [
-    '.......ccKYGGgKNc.......',
-    '......cKKYGRRggKKN......',
-    '.....cKYYGRWRrGgGKc.....',
-    '....cKYYLgGRrGgSGGKc....',
-    '...cKYYLLnnAAnnSSGGKN...',
-    '..cKYYLnnncAWAnCnCGGKc..',
-    '..cKYYLnnnncAnnKWWGGKN..',
-    '.cKYYLnnnAACCCWWWnSGGKcN',
-    'cKKYYLncAACCCWWWnWSGgKKK',
-    'KYKYLnncAACCWKCCnWnDgKGg',
-    'YGGYLnncCCCCCCCCWnnDgGGg',
-    'GgKYLnncAANNNNACWnnDgKgg',
-    'KgKYLnncAnRNNRACnnnDgKgK',
-    'cKKYLCncAnNNNNACnnNDgKKN',
-    '.NKYLnWcAnNccNAAnNNDgKN.',
-    '.cKYGSKWAAnNNAAAnNDggKc.',
-    '.cKGGSnWCAAAAAAnNNDggKc.',
-    '..cKGGSKWWcCcCACCDggKc..',
-    '..cKGGcAKWCCCCAACCggKN..',
-    '...cKGGSSKWnnNNDDggKN...',
-    '....NKGGSDDnNDDDggKN....',
-    '.....cKGGgGRRggggKN.....',
-    '......cKKggrrggKKN......',
-    '.......NcKKKKKKcN.......',
+  enemyWheel: [
+    '......KKKKKKK...........',
+    '....KKbooooobKK.....KKK.',
+    '...KbooOOOOooobK...KTTTK',
+    '..KboOOOooooooobK.KTWWTt',
+    '..KnjiiiiiiiiijnKKKTWTTt',
+    '.KiiiiiiiiiiiiijjnKTTTtt',
+    '..KnnnnnnnnnnnnnKKFtttFK',
+    '..KooffffffffoobKKFFFFfK',
+    '..KooFWKFFWKFfobKKFFFffK',
+    '..KooFFFFfFFFfobK.KfFfK.',
+    '..KooFFFFfFFFfobK.KTTtK.',
+    '..KooFFRRRRrFfobKKqeQQqK',
+    '..KbofFFFFFFffbbKKqeQqK.',
+    '...KbbfFFFFffbbKKqeQQqK.',
+    '....KKKfFFFfKKK.KqeQqK..',
+    '..KKKqeTTTTtqqKKqeQQqK..',
+    '.KqeeeqTTTTtqQQqeQQqK...',
+    'KqeeQQQqTTtqQQQQQQqK....',
+    'qeGYGQQQqTtqQQQQQQqK....',
+    'qeYkYQQQQqTqQQQQQQqqK...',
+    'qeGYgQQQQqqqQQQQQQqqK...',
+    'qeQQQQQQQQqQQQQQQQqqK...',
+    'qeQQQQQQQQqQQQQQQqqqK...',
+    'qeQQQQQQQQqQQQQQQqqqK...',
   ],
   bomb: [
     '............Y.Y.',
@@ -2719,15 +2722,15 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '.KrWWrK.',
     '..KKKK..',
   ],
-  icoReflect: [
-    '.K...KK.',
-    'KYK.KCcK',
-    '.KYKKCcK',
-    '..KYYCcK',
-    '.KYYKCcK',
-    'KYKKKCcK',
-    '.K...KK.',
-    '........',
+  icoBets: [
+    '.KKKKKK.',
+    'KMRRRRrK',
+    'KWRWRWrK',
+    'KddddddK',
+    'KMRRRRrK',
+    'KWRWRWrK',
+    'KddddddK',
+    '.KKKKKK.',
   ],
   mapBadgeBomb: [
     '....KK..',
@@ -2769,15 +2772,15 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KbbbbbbK',
     '.KKKKKK.',
   ],
-  mapBadgeMirror: [
+  mapBadgeWheel: [
     '..KKKK..',
-    '.KYGGgK.',
-    'KYCnWgK.',
-    'KGnWngK.',
-    'KGWnNgK.',
-    'KgNNcgK.',
-    '.KgggK..',
-    '..KKK...',
+    '.KwRkbK.',
+    'KwkRkRbK',
+    'KRkYGkRK',
+    'KkRGgRkK',
+    'KbRkRkbK',
+    '.KbkRbK.',
+    '..KKKK..',
   ],
   actBadge2: [
     '...KKKKKKKKKKKKKKKKKK...',
@@ -5399,5 +5402,99 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KKKOoKKC',
     '..KKoKCK',
     '...KK.K.',
+  ],
+  wheelTopper: [
+    '........KKKKKKKK........',
+    '......KKBBBBBBBBKK......',
+    '.....KBBYYYYYYYYBBK.....',
+    '....KBYYGKKKRRRGYYBK....',
+    '...KBYYRRKKKRRRKKYYbK...',
+    '..KBYGRRRGKKRRGKKKGGbK..',
+    '.KBYYKGRRggggggKKGTWGbK.',
+    '.KBYKKKGggggggggGRTtGbK.',
+    'KBYGKKKggYYggYYbbRRRGGbK',
+    'KBYRRGggYYYYYYGGbbGKKGbK',
+    'KBYRRRggYYYYYGGGbbKKKGbK',
+    'KBYRRRgggYYWWGGgbbKKKGbK',
+    'KBYKKKgggYYWWGGgbbRRRGbK',
+    'KBYKKKggYYGGGGGGbbRRRGbK',
+    'KBYKKGggYGGGGGGGbbGRRGbK',
+    'KBYGRRRgbGGggGGbbKKKGGbK',
+    '.KBYRRRGbbbbbbbbGKKKGbK.',
+    '.KBYYRGKKbbbbbbRRGKGGbK.',
+    '..KBYGKKKGRRKKGRRRGGbK..',
+    '...KbGGKKRRRKKKRRGGbK...',
+    '....KbGGGRRRKKKGGGbK....',
+    '.....KbbGGGGGGGGbbK.....',
+    '......KKbbbbbbbbKK......',
+    '........KKKKKKKK........',
+  ],
+  betChip: [
+    '....KKKK....',
+    '..KKRWWRKK..',
+    '.KMRRWWRRrK.',
+    'KMRRkkkkRrrK',
+    'KRRkkkkkkrrK',
+    'KWWkkWkkkWWK',
+    'KWWkkkkkkWWK',
+    'KRRkkkkkkrrK',
+    'KRRrkkkkrrrK',
+    '.KRrrrrrrrK.',
+    '..KKrWWrKK..',
+    '....KKKK....',
+  ],
+  betStack1: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '....KKKKKKKK....',
+    '...KMMMMMMMMK...',
+    '..KMWMMRRMMWrK..',
+    '..KMRRRRRRRRrK..',
+    '..KMWRRWRRWRrK..',
+    '..KddddddddddK..',
+    '...KKKKKKKKKK...',
+  ],
+  betStack2: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '....KKKKKKKK....',
+    '...KMMMMMMMMK...',
+    '..KMWMMRRMMWrK..',
+    '..KMRRRRRRRRrK..',
+    '..KMWRRWRRWRrK..',
+    '..KddddddddddK..',
+    '..KMRRRRRRRRrK..',
+    '..KMWRRWRRWRrK..',
+    '..KddddddddddK..',
+    '...KKKKKKKKKK...',
+  ],
+  betStack3: [
+    '................',
+    '................',
+    '................',
+    '....KKKKKKKK....',
+    '...KMMMMMMMMK...',
+    '..KMWMMRRMMWrK..',
+    '..KMRRRRRRRRrK..',
+    '..KMWRRWRRWRrK..',
+    '..KddddddddddK..',
+    '..KMRRRRRRRRrK..',
+    '..KMWRRWRRWRrK..',
+    '..KddddddddddK..',
+    '..KMRRRRRRRRrK..',
+    '..KMWRRWRRWRrK..',
+    '..KddddddddddK..',
+    '...KKKKKKKKKK...',
   ],
 };

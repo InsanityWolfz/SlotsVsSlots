@@ -1,11 +1,11 @@
 import type { Sounds } from '../audio/sounds';
 import type { MetaGain } from '../core/profile';
 import { challengeById, levelOf } from '../core/meta';
-import { defaultConfig, UNIT, type Enh, type GameConfig, type SymbolId } from '../core/config';
+import { defaultConfig, UNIT, unitsRound, type Enh, type GameConfig, type SymbolId } from '../core/config';
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
-import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../core/enemies';
-import { LEGENDARY, REFLECT_CAP, REFLECT_MIN, RELICS, relicText, RUSH, POT } from '../core/relics';
+import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, WHEEL_RULES, type EnemyDef } from '../core/enemies';
+import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
 import {
@@ -15,7 +15,6 @@ import {
   BIG,
   describeOption,
   enemyHp,
-  mirrorCopy,
   isRelicDraft,
   needsChoice,
   offerBets,
@@ -36,7 +35,7 @@ import {
   levelCap,
 } from '../core/run';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
-import { effectiveAbility, mirrorCanUse, STAKE, STAKES, stakeOf } from '../core/stakes';
+import { effectiveAbility, STAKE, STAKES, stakeOf } from '../core/stakes';
 import type { RelicId } from '../core/config';
 import { DANGER } from '../core/enemies';
 import type { Clock } from '../present/clock';
@@ -108,7 +107,7 @@ export const BADGE: Record<string, SpriteId> = {
   hexer: artId('mapBadgeHex'),
   vampire: artId('mapBadgeFang'),
   mimic: artId('mapBadgeMimic'),
-  mirror: artId('mapBadgeMirror'),
+  wheel: artId('mapBadgeWheel'),
   grounder: artId('mapBadgeGround'),
   counterfeiter: artId('mapBadgeFake'),
   sharp: artId('mapBadgeCard'),
@@ -173,7 +172,8 @@ const rounds = (turns: number) => { const n = Math.ceil(turns / 2); return `${n}
 function abilityWhat(e: EnemyDef, run?: RunState): string {
   if (!e.ability) return '';
   const p = e.ability.power;
-  const cap = run ? Math.max(REFLECT_MIN, Math.round(run.player.maxHp * REFLECT_CAP)) : p;
+  // THE WHEEL: what one chip left on your reels hits for at NO MORE BETS (as the fight does it).
+  const per = run ? Math.max(UNIT, unitsRound(run.player.maxHp * WHEEL_RULES.perChip)) : 0;
   const what: Record<string, string> = {
     flood: `SLIMES ${p} OF YOUR SYMBOLS`,
     smash: `HITS FOR ${p}`,
@@ -187,7 +187,7 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
     curse: `HEXES ${p} REEL${p > 1 ? 'S' : ''} FOR 3 TURNS`,
     bloodmoon: `HEALS ${p} HP`,
     gulp: `EATS ${p} OF YOUR CHIPS`,
-    reflect: `THROWS YOUR BEST HIT BACK (${REFLECT_MIN} TO ${cap})`,
+    bets: per ? `EACH CHIP LEFT ON YOUR REELS HITS ${per}` : 'EACH CHIP LEFT ON YOUR REELS HITS 5% OF YOUR HP',
     earth: `DRAINS ${p} FROM YOUR METER`,
     launder: `TAKES ${p} CHIPS, HEALS ${p * 3 * UNIT}`,
     mark: `MARKS ${p} OF YOUR CELLS`,
@@ -212,14 +212,14 @@ function abilityText(e: EnemyDef, every: number, run?: RunState): string {
 const STAGE_TINT: Record<string, string> = {
   slime: '#5ed15a', frost: '#5ad8e8', thief: '#c9a0ff', hexer: '#c9a0ff', golem: '#c9bba8', grounder: '#c9bba8',
   brute: '#ff9a3a', gremlin: '#ff9a3a', bomber: '#ff9a3a', vampire: '#ff6a5a', house: '#ff6a5a', pitboss: '#ff6a5a',
-  dealer: '#ff6a5a', mirror: '#c8f0ff', croupier: '#ffd23f', sharp: '#ffd23f', counterfeiter: '#ffd23f', mimic: '#ffd23f',
+  dealer: '#ff6a5a', wheel: '#ff3a2e', croupier: '#ffd23f', sharp: '#ffd23f', counterfeiter: '#ffd23f', mimic: '#ffd23f',
 };
 /** A shorter line for the front when a boss's blurb won't fit on one line (the full blurb is on the back). */
 const FRONT_BLURB: Record<string, string> = { dealer: 'THE HOUSE HAS A PARTNER' };
 /** A boss's one rule on the front of its card (the full paragraph is on the back). */
 const BOSS_HEADLINE: Record<string, string> = {
   house: 'JACKPOTS STEAL ITS POT',
-  mirror: 'CRACKED AT HALF HP: IT THROWS HALF',
+  wheel: 'YOUR PAIRS CLEAR ITS BETS',
   dealer: 'IT CAN NOT KILL YOU BEFORE ITS FIRST DEAL',
 };
 
@@ -1189,7 +1189,7 @@ export class RunScreens {
       this.buttons = run.paths[run.depth].map((_, i) => this.btn('FIGHT THIS ONE', CX + (i === 0 ? -238 : 238), 560, 260, 48, () => this.cb.onFight(i)));
     } else {
       const bossId = run.enemies[run.depth]?.boss;
-      const boss = run.depth >= actLength(run.act) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'mirror' ? 'FACE THE MIRROR' : 'FACE THE HOUSE') : 'FIGHT!';
+      const boss = run.depth >= actLength(run.act) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'wheel' ? 'FACE THE WHEEL' : 'FACE THE HOUSE') : 'FIGHT!';
       this.buttons = [this.btn(boss, CX, 560, boss === 'FIGHT!' ? 290 : 360, 56, () => this.cb.onFight(0))];
       this.addBetButtons(run);
       // With a side bet on the table, FIGHT steps right of its card.
@@ -1851,8 +1851,6 @@ export class RunScreens {
     const long = wrap(text, 20).length > 4;
     (long ? wrap(text, 27) : wrap(text, 20)).slice(0, 6).forEach((line, k) => drawText(ctx, line, 0, 30 + k * (long ? 15 : 20), long ? 1.5 : 2, COLORS.text));
     if (o.kind === 'relic' && LEGENDARY.has(o.relic)) this.legendTag(ctx, 0, -h / 2 + 14, time);
-    if (o.kind === 'relic' && this.run && this.run.stake >= STAKE.mirrorRelic && this.draftKind === 'legend')
-      drawText(ctx, mirrorCanUse(o.relic) ? 'THE MIRROR WILL COPY THIS' : 'THE MIRROR CAN\'T USE THIS', 0, h / 2 - 14, 1.5, mirrorCanUse(o.relic) ? '#ff8a7a' : '#7dff7a');
 
     ctx.restore();
   }
@@ -1967,9 +1965,6 @@ export class RunScreens {
       ctx.fillRect(-6, -6, w + 12, h + 12);
     }
     ctx.restore();
-    // The relic tip for the Mirror's copy uses screen coordinates (front only).
-    const copy = e.boss === 'mirror' && this.run ? mirrorCopy(this.run) : null;
-    if (copy && f < 0.1) this.tips.add(copy, x + w - 86, y + 228);
   }
 
   private drawPanelFront(ctx: CanvasRenderingContext2D, e: EnemyDef, w: number, _h: number, time: number, hover: boolean, fork: boolean): void {
@@ -2044,22 +2039,14 @@ export class RunScreens {
       drawText(ctx, fork ? `EVERY ${every}` : `EVERY ${every} TURNS`, px + 4, 138, fork ? 1.25 : 1.5, COLORS.textDim, { align: 'left' });
       const what = abilityWhat(e, run);
       drawText(ctx, what, tx, 166, what.length * 12 <= room ? 2 : 1.5, COLORS.text, { align: 'left' });
-    } else if (e.boss === 'mirror') {
-      // The Mirror has no timed ability: its shards are the threat, so they take the ability slot.
-      drawSprite(ctx, artId('icoReflect'), tx + 12, 138, 3);
-      drawText(ctx, 'REFLECTION', tx + 34, 138, 2.5, '#ff9a3a', { align: 'left' });
-      drawText(ctx, 'A THIRD OF YOUR LAST HIT, PER SHARD', tx, 166, 2, COLORS.text, { align: 'left' });
     }
     // Footer: which symbols it runs (icons only), or a boss's one rule.
     ctx.fillStyle = '#2a2140';
     ctx.fillRect(8, 197, w - 16, 2);
     if (e.isBoss) {
-      drawText(ctx, BOSS_HEADLINE[e.boss ?? ''] ?? '', 16, 228, 2, e.boss === 'mirror' ? '#c8f0ff' : COLORS.goldLight, { align: 'left' });
-      const copy = e.boss === 'mirror' ? mirrorCopy(run) : null;
-      if (copy) {
-        drawText(ctx, 'COPIES', w - 110, 228, 1.5, '#c8f0ff', { align: 'right' });
-        drawSprite(ctx, RELICS[copy].sprite as SpriteId, w - 86, 228, 2);
-      }
+      drawText(ctx, BOSS_HEADLINE[e.boss ?? ''] ?? '', 16, 228, 2, COLORS.goldLight, { align: 'left' });
+      // GREEN: THE WHEEL STARTS FAST (its rule, on the card that meets it).
+      if (e.boss === 'wheel' && run.stake >= STAKE.wheelFast) drawText(ctx, 'STARTS FAST', w - 24, 228, 1.5, '#ff8a7a', { align: 'right' });
     } else {
       let cx = 36;
       for (const [sym, n] of Object.entries(e.strips[0]) as [SymbolId, number][]) {
@@ -2107,13 +2094,11 @@ export class RunScreens {
       line(
         e.boss === 'dealer'
           ? 'DEALS: A CARD ON YOUR PAYLINE (ACE X2, JOKER WILD, DEUCE 0), ALL IN (ITS WHOLE HAND), RAISE (BOTH X2). NO KILL BEFORE ITS FIRST DEAL.'
-          : e.boss === 'mirror'
-          ? `EACH SHARD ON ITS PAYLINE THROWS A THIRD OF YOUR LAST HIT BACK. CRACKED AT HALF HP, A HALF. A TURN NEVER DEALS MORE THAN ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP.`
-          : `COINS FILL THE POT. EVERY ${this.houseEvery()} TURNS IT SKIMS HALF AT YOU. ANY JACKPOT YOU HIT STEALS THE POT! AT HALF HP IT DOUBLES DOWN.${dirty ? ' BLACK: IT BOMBS YOUR PAYLINE.' : ''}`,
-        e.boss === 'mirror' ? '#c8f0ff' : COLORS.goldLight,
+          : e.boss === 'wheel'
+          ? `PLACE YOUR BETS: EACH TURN IT DROPS ${run.stake >= STAKE.wheelFast ? WHEEL_RULES.fast : WHEEL_RULES.place} CHIPS ON YOUR REELS. A PAIR CLEARS ITS REELS, A JACKPOT CLEARS THEM ALL (+1 CHIP EACH). NO MORE BETS: EVERY 3RD TURN, EACH CHIP LEFT HITS ${Math.round(WHEEL_RULES.perChip * 100)}% OF YOUR MAX HP. ${run.stake >= STAKE.wheelFast ? 'GREEN: IT STARTS FAST.' : 'AT HALF HP THE WHEEL SPINS FASTER: 3 A TURN.'}`
+          : `COINS FILL THE POT. EVERY ${this.houseEvery()} TURNS IT SKIMS HALF AT YOU. ANY JACKPOT YOU HIT STEALS THE POT! AT HALF HP IT DOUBLES DOWN: THE POT DOUBLES. FROM TURN ${POT.lastCall}, LAST CALL: IT SKIMS EVERY TURN.${dirty ? ' BLACK: IT BOMBS YOUR PAYLINE.' : ''}`,
+        COLORS.goldLight,
       );
-      const copy = e.boss === 'mirror' ? mirrorCopy(run) : null;
-      if (copy) line(`COPIES YOUR ${RELICS[copy].name}`, '#c8f0ff');
     }
     // THEIR REELS with counts, along the bottom.
     ctx.fillStyle = '#2a2140';
@@ -2516,10 +2501,8 @@ export class RunScreens {
     const { title, text } = describeOption(o, this.run ?? undefined);
     const lines = wrap(text, 26);
     const legend = o.kind === 'relic' && LEGENDARY.has(o.relic);
-    const relicId = o.kind === 'relic' ? o.relic : null;
-    const mirrorNote = legend && relicId && this.run && this.run.stake >= STAKE.mirrorRelic && this.run.act === 2 ? (mirrorCanUse(relicId) ? 'THE MIRROR WILL COPY IT' : "THE MIRROR CAN'T USE IT") : '';
     const w = 340;
-    const tall = 46 + lines.length * 20 + (mirrorNote ? 18 : 0);
+    const tall = 46 + lines.length * 20;
     // The top shelf opens its card above the item (a side card covered the neighbours' prices); the relic shelf, to the side.
     const top = h.y < (SHELF.y[0] + SHELF.y[1]) / 2;
     const right = h.x + h.w / 2 + 14 + w <= W - 8;
@@ -2534,7 +2517,6 @@ export class RunScreens {
     const color = o.kind === 'gild' ? CHARM_COLOR[o.enh] : o.kind === 'relic' ? (legend ? '#ffd23f' : '#c9a0ff') : o.kind === 'symLevel' || o.kind === 'charmLevel' ? '#5ad8e8' : COLORS.goldLight;
     drawText(ctx, title, x + 12, y + 18, 2.5, color, { align: 'left' });
     lines.forEach((l, k) => drawText(ctx, l, x + 12, y + 46 + k * 20, 2, COLORS.text, { align: 'left' }));
-    if (mirrorNote && relicId) drawText(ctx, mirrorNote, x + 12, y + 46 + lines.length * 20, 1.5, mirrorCanUse(relicId) ? '#ff8a7a' : '#7dff7a', { align: 'left' });
   }
 
   /** One item on a shelf: just its picture and its chip price (hover it to read it). Relics sit on velvet. */
@@ -2739,7 +2721,7 @@ export class RunScreens {
     if (this.onlineLine) drawText(ctx, this.onlineLine, CX, 563, 1.5, COLORS.goldLight);
     const trueEnding = run.won && run.act >= 3;
     const busted = !!run.endless;
-    drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE MIRROR SHATTERS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
+    drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE WHEEL STOPS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     // DEATH RECAP: its own full-width line under the table (the most important line on a loss).
     const lastRec = run.records[run.records.length - 1];

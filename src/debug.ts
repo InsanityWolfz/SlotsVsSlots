@@ -1,5 +1,5 @@
 import type { RelicId, SideId, SymbolId } from './core/config';
-import { ARCHETYPES, BOSS, DEALER, makeEnemy, MIRROR, REPO_MAN } from './core/enemies';
+import { ARCHETYPES, BOSS, DEALER, makeEnemy, REPO_MAN, WHEEL } from './core/enemies';
 import { Rng } from './core/rng';
 import type { CombatEvent } from './core/events';
 import type { Game } from './game';
@@ -75,19 +75,14 @@ export function installDebug(game: Game): void {
       game.fight.dealt = true;
       game.fight.forceNext('player', ['sword', 'sword', 'sword']);
     },
-    /** Start a paused sandbox fight against an archetype ('slime', 'frost', 'thief', 'golem', 'gremlin', 'brute', 'house'). */
+    /** Start a paused sandbox fight against an archetype ('slime', 'frost', ..., or a boss: 'house', 'wheel', 'dealer'). */
     vs(id: string, player?: SymbolId[], enemy?: SymbolId[], relics: RelicId[] = []) {
-      const a = id === 'house' ? BOSS : id === 'mirror' ? MIRROR : id === 'dealer' ? DEALER : id === 'repo' ? REPO_MAN : ARCHETYPES.find((x) => x.id === id);
+      const a = id === 'house' ? BOSS : id === 'wheel' ? WHEEL : id === 'dealer' ? DEALER : id === 'repo' ? REPO_MAN : ARCHETYPES.find((x) => x.id === id);
       if (!a) throw new Error(`no archetype ${id}`);
-      const boss = id === 'house' || id === 'mirror' || id === 'dealer';
+      const boss = id === 'house' || id === 'wheel' || id === 'dealer';
       const e = makeEnemy(a, 2, new Rng(1), boss, a.acts?.includes(3) ? 3 : a.acts?.includes(2) ? 2 : 1);
       const cfg = structuredClone(game.cfg);
       cfg.enemy = { hp: e.hp, strips: e.strips, name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
-      if (id === 'mirror') {
-        cfg.enemy.strips = cfg.player.strips.map((x) => ({ ...x }));
-        cfg.enemy.gilded = (cfg.player.gilded ?? []).filter((g) => g.enh !== 'spiked' && g.enh !== 'keen').map((g) => ({ ...g }));
-        if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, power: Math.round(cfg.player.hp * 0.6) };
-      }
       cfg.relics = relics;
       game.newFight(true, null, cfg);
       pause();

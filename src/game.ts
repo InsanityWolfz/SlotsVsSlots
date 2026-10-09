@@ -8,7 +8,7 @@ import { Fight, highRollerMul } from './core/fight';
 import { betProfit, betProgress, describeBet, newTrack } from './core/bets';
 import { dailyCabinet, dailyKey, dailySeed, dailySpent } from './core/daily';
 import { turnRow, type TurnRow } from './core/log';
-import { REFLECT_MIN, RELICS } from './core/relics';
+import { RELICS } from './core/relics';
 import {
   applyOption,
   buy,
@@ -19,6 +19,7 @@ import {
   EDGE_TEXT,
   offerBets,
   fightConfig,
+  migrateRun,
   finishFight,
   isShopNow,
   takeLegend,
@@ -287,7 +288,6 @@ export class Game {
   private spinResolve: (() => void) | null = null;
   private audioStarted = false;
   private mouse = { x: -1, y: -1 };
-  private mirrorCopySpot: { x: number; y: number } | null = null;
   buttons: Button[] = [];
   private spinBtn!: Button;
   private autoBtn!: Button;
@@ -771,6 +771,8 @@ export class Game {
     // A game update may have removed a relic or Charm the save still holds (STEAM_QA_1 Q5): drop what no longer exists.
     if (Array.isArray(run.player.relics)) run.player.relics = run.player.relics.filter((r) => r in RELICS);
     if (Array.isArray(run.player.gilded)) run.player.gilded = run.player.gilded.filter((g) => g && g.enh in CHARM_VALUE);
+    // THE WHEEL replaced THE MIRROR (2026-10-09): a save holding the old act 2 boss meets the new one.
+    migrateRun(run);
     return { at: s.at === 'after' ? 'after' : s.at === 'fight' ? 'fight' : 'next', run };
   }
 
@@ -888,9 +890,10 @@ export class Game {
       }
       if (e.type === 'potWin' && e.to === 'player') add('THE POT', e.hpDamage);
       if (e.type === 'allInHit' && e.to === 'player') add('ALL IN', e.hpDamage);
+      if (e.type === 'noMoreBets' && e.to === 'player') add('NO MORE BETS', e.hpDamage);
       if (e.type === 'closingTime') add('CLOSING TIME', e.hp);
       if (e.type === 'attack' && e.to === 'player')
-        add(e.note === 'reflect' ? 'REFLECTION' : e.note === 'drain' ? 'DRAIN' : e.note === 'mimic' ? 'COPYCAT' : e.reels.length ? 'SPIN HITS' : this.fight.isBoss ? 'THE POT' : 'ABILITY', e.hpDamage);
+        add(e.note === 'drain' ? 'DRAIN' : e.note === 'mimic' ? 'COPYCAT' : e.reels.length ? 'SPIN HITS' : this.fight.isBoss ? 'THE POT' : 'ABILITY', e.hpDamage);
       else if (e.type === 'specialFire' && e.to === 'player') add('SPECIAL', e.hpDamage);
       else if (e.type === 'markedHit' && e.side === 'player') add(this.fight.isDealer ? "THE DEALER'S MARK" : this.run && currentEnemy(this.run).archetype === 'sharp' ? "THE SHARP'S MARK" : 'MARKED DECK', e.hpDamage);
       else if (e.type === 'blast' && e.side === 'player') add('BOMBS', e.hpDamage);
@@ -1100,8 +1103,6 @@ export class Game {
         });
         hud.hp = hud.ghost = c.hp;
         if (s === 'player') hud.chips = hud.chipsHeld = cfg.player.chipsHeld ?? 0;
-        // THE MIRROR: until you've hit it, its HUD says what its shards do.
-        if (s === 'enemy' && this.fight.isMirror) hud.hint = 'EACH SHARD THROWS BACK YOUR LAST HIT';
         if (c.ability) hud.charge = c.charge;
         return [s, hud];
       }),
@@ -1118,7 +1119,7 @@ export class Game {
       juice: this.prefs.juice,
       relics: [...cfg.relics],
       relicPops: {},
-      levels: { player: cfg.player.levels, ...(cfg.enemy.boss === 'mirror' ? { enemy: cfg.enemy.levels } : {}) },
+      levels: { player: cfg.player.levels },
       ticket: cfg.relics.includes('ticket'),
       enemyShield: TUNE.enemyShield,
       gutter: {
@@ -1130,9 +1131,7 @@ export class Game {
         fightLabel: this.run && inRun ? (this.run.depth >= actLength(this.run.act) ? (this.run.endless ? `LOOP ${this.run.endless.loop} BOSS` : 'BOSS') : this.run.endless ? `LOOP ${this.run.endless.loop} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}` : `${this.run.daily ? 'DAILY - ' : this.run.weekly ? 'WEEKLY - ' : this.run.challenge ? 'CHALLENGE - ' : ''}ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}`) : 'SANDBOX',
         twist: this.run && inRun ? [...(this.run.mods ?? []), ...(this.run.dailyEdge ? [this.run.dailyEdge] : [])].map((e) => EDGE_TEXT[e].title).join(' + ') : '',
         allIn: false,
-        reflect: 0,
-        turnDamage: 0,
-        cracked: false,
+        ...(this.fight.isWheel ? { bets: [...this.fight.bets], betsLeft: (this.fight.sides.enemy.ability?.every ?? 3) - this.fight.sides.enemy.charge, betPer: this.fight.betPer(), betPunch: 1, wheelFast: this.fight.fast, wheelAngle: 0, wheelSpeed: 0.6 } : {}),
         chipsEaten: 0,
         vouchers: [],
         ...(inRun && start && this.run?.bet ? { bet: this.run.bet, betTrack: newTrack() } : {}),
@@ -1261,7 +1260,7 @@ export class Game {
   private musicMood(): SongId {
     if (this.menus.isOpen || this.phase === 'title') return 'menu';
     if (this.phase !== 'fighting' && this.phase !== 'quick') return 'lounge';
-    // Each boss has its own theme (endless cycles them too): THE HOUSE, THE MIRROR, THE DEALER.
+    // Each boss has its own theme (endless cycles them too): THE HOUSE, THE WHEEL, THE DEALER.
     const boss = this.fight.cfg.enemy?.boss;
     if (boss) return boss;
     const act = this.run?.act ?? 1;
@@ -1511,6 +1510,13 @@ export class Game {
     const gdt = this.coach.active || this.pause.open ? 0 : this.stage.clock.tick(dt);
     this.camera.update(dt);
     this.particles.update(gdt);
+    // THE WHEEL's topper turns (it races when the ball drops, then settles back to its idle turn).
+    const gw = this.stage.gutter;
+    if (this.fight.isWheel && gw.wheelSpeed !== undefined) {
+      const idle = gw.wheelFast ? 1.2 : 0.6;
+      gw.wheelSpeed += (idle - gw.wheelSpeed) * Math.min(1, gdt * 1.2);
+      gw.wheelAngle = ((gw.wheelAngle ?? 0) + gw.wheelSpeed * gdt) % (Math.PI * 2);
+    }
     this.background.update(dt);
     for (const b of this.buttons) b.update(dt);
     const by = this.recap.buttonY - 30;
@@ -1543,7 +1549,9 @@ export class Game {
     s.huds.enemy.draw(ctx, t);
     s.machines.player.draw(ctx, s.clock.time);
     if (this.fight.isDealer) this.drawDealerTable(ctx, t);
+    if (this.fight.isWheel) this.drawWheelCabinet(ctx);
     s.machines.enemy.draw(ctx, s.clock.time);
+    if (this.fight.isWheel) this.drawWheelTopper(ctx);
     s.fx.draw(ctx, s.clock.time, -Infinity, 20);
     this.drawGutter(ctx, t);
     this.particles.draw(ctx);
@@ -1651,7 +1659,7 @@ export class Game {
       const shown = Math.max(0, this.run.player.chips - eaten + (hud ? hud.chips - hud.chipsHeld + hud.lucre : 0));
       drawText(ctx, `${shown}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
       if (this.run.stake > 0 && !(this.drawerLive() && this.drawerT > 0.05)) drawText(ctx, `STAKE ${this.run.stake} ${STAKES[this.run.stake].name}`, 30, 80, 1.5, STAKES[this.run.stake].color, { align: 'left' });
-      if ((this.fight.isBoss || this.fight.isMirror || this.fight.isDealer) && (this.fight.cfg.player.stackShield ?? 0) > 0) {
+      if ((this.fight.isBoss || this.fight.isWheel || this.fight.isDealer) && (this.fight.cfg.player.stackShield ?? 0) > 0) {
         // Sits after the chip count, however many digits it has (QA_1 B10).
         const cx = CHIP_SPOT.x + 24 + String(shown).length * 24 + 22;
         drawSprite(ctx, 'chipShield', cx, CHIP_SPOT.y, 2);
@@ -1714,10 +1722,6 @@ export class Game {
       drawRelicTip(ctx, relics[i], RELIC_X + 168, RELIC_Y - 19, Math.max(relicSlot(relics.length - 1).y + 19, RELIC_TIP_TOP), this.run?.cabinet);
       return;
     }
-    // The relic the Mirror copied from you (GREEN), under its pot.
-    const copied = this.fight.isMirror ? [...this.fight.sides.enemy.relics][0] : undefined;
-    const c = this.mirrorCopySpot;
-    if (copied && c && Math.abs(this.mouse.x - c.x) < 18 && Math.abs(this.mouse.y - c.y) < 18) drawRelicTip(ctx, copied, c.x, c.y - 18, c.y + 18, this.run?.cabinet);
   }
 
   /** Mirror the slime on the player's displayed strips into the HUD counter. */
@@ -1766,21 +1770,12 @@ export class Game {
       this.drawDeal(ctx, cx, cy + 118, t);
       this.drawBet(ctx, cx, cy + 40, t, true);
     }
-    else if (this.fight.isMirror) {
-      this.drawReflection(ctx, cx, cy + 118, t);
-      // GREEN stake: the relic it copied from you.
-      const copied = [...this.fight.sides.enemy.relics][0];
-      if (copied) {
-        drawSprite(ctx, RELICS[copied].sprite as SpriteId, cx - 70, cy + 196, 2);
-        this.mirrorCopySpot = { x: cx - 70, y: cy + 196 };
-        drawText(ctx, `COPIED ${RELICS[copied].name}`, cx - 50, cy + 196, 1.5, '#c8f0ff', { align: 'left' });
-      }
-    }
+    else if (this.fight.isWheel) this.drawTable(ctx, cx, cy + 118, t);
     else {
       drawText(ctx, 'VS', cx, cy + 70, 6, '#ff6a5a', { alpha: 0.35 + 0.1 * Math.sin(t * 2) });
       this.drawBet(ctx, cx, cy + 130, t);
     }
-    if (this.prefs.speed !== 2) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss || this.fight.isMirror || this.fight.isDealer ? cy - 136 : this.stage.gutter.bet ? cy + 196 : cy + 172, 2, COLORS.textDim);
+    if (this.prefs.speed !== 2) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss || this.fight.isWheel || this.fight.isDealer ? cy - 136 : this.stage.gutter.bet ? cy + 196 : cy + 172, 2, COLORS.textDim);
   }
 
   /** The House's progressive pot, front and centre: grows (and glows) with the stakes. */
@@ -1906,35 +1901,83 @@ export class Game {
     if (this.stage.gutter.allInArmed) drawText(ctx, `ALL IN! UP TO ${this.stage.gutter.allInCap ?? ''}`, cx, MACHINE_TOP + MACHINE_H + 46, 3, '#ff6a5a', { punch: 1 + 0.08 * Math.sin(t * 10) });
   }
 
-  /** The Mirror's next Reflection: what your last spin would bounce back, and when. */
-  private drawReflection(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
-    const e = this.fight.sides.enemy;
-    const ab = e.ability;
-    // Hide once the Mirror's presented HP hits 0 (not when the engine resolves the last turn).
-    if (!ab || this.stage.huds.enemy.hp <= 0) return;
-    const hud = this.stage.huds.enemy;
+  /**
+   * THE WHEEL's table, front and centre (built like the House's pot panel): the chips on you, what NO MORE BETS
+   * would hit for right now, and when it comes. The turn before, the panel pulses red.
+   */
+  private drawTable(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
     const g = this.stage.gutter;
-    const dmg = Math.max(REFLECT_MIN, Math.min(ab.power, Math.max(g.reflect ?? 0, g.turnDamage ?? 0)));
-    const left = Math.max(1, ab.every - hud.charge);
+    // Gone once either side's presented HP is 0 (the fight is decided).
+    if (this.stage.huds.enemy.hp <= 0 || this.stage.huds.player.hp <= 0) return;
+    const chips = (g.bets ?? []).reduce((a, b) => a + b, 0);
+    const per = g.betPer ?? 0;
+    const hit = chips * per;
+    const hud = this.stage.huds.player;
+    const left = Math.max(1, g.betsLeft ?? 3);
     const soon = left <= 1;
-    const glow = soon ? 0.4 + 0.3 * Math.sin(t * 10) : 0.15;
-    ctx.save();
-    ctx.globalAlpha = glow;
-    ctx.shadowColor = '#c8f0ff';
-    ctx.shadowBlur = 24;
-    ctx.fillStyle = '#c8f0ff';
-    ctx.fillRect(x - 110, y - 56, 220, 112);
-    ctx.restore();
+    const lethal = hit > 0 && hit >= hud.hp + hud.shield;
+    this.stage.huds.enemy.alarm = soon && lethal;
+    const glow = soon && chips > 0 ? 0.45 + 0.3 * Math.sin(t * 10) : chips >= 4 ? 0.2 + 0.1 * Math.sin(t * 4) : 0;
+    const hw = 132;
+    if (glow > 0) {
+      ctx.save();
+      ctx.globalAlpha = glow;
+      ctx.shadowColor = '#ff3a2e';
+      ctx.shadowBlur = 30;
+      ctx.fillStyle = '#ff3a2e';
+      ctx.fillRect(x - hw, y - 56, hw * 2, 112);
+      ctx.restore();
+    }
     ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(x - 110, y - 56, 220, 112);
-    ctx.fillStyle = '#7aa8c8';
-    ctx.fillRect(x - 106, y - 52, 212, 104);
-    ctx.fillStyle = '#10202e';
-    ctx.fillRect(x - 101, y - 47, 202, 94);
-    drawText(ctx, soon ? 'REFLECTS NEXT!' : `REFLECTION IN ${left}`, x, y - 32, 2, soon ? '#ff6a5a' : '#c8f0ff');
-    drawText(ctx, 'UP TO', x - 48, y + 10, 1.5, COLORS.textDim);
-    drawText(ctx, String(dmg), x + 38, y + 10, 6, soon ? '#ff6a5a' : '#c8f0ff');
-    drawText(ctx, 'BEST HIT SINCE ITS LAST', x, y + 36, 1.5, COLORS.textDim);
+    ctx.fillRect(x - hw, y - 56, hw * 2, 112);
+    ctx.fillStyle = soon ? '#ff6a5a' : COLORS.gold;
+    ctx.fillRect(x - hw + 4, y - 52, hw * 2 - 8, 104);
+    // Green felt.
+    ctx.fillStyle = '#0f3a22';
+    ctx.fillRect(x - hw + 9, y - 47, hw * 2 - 18, 94);
+    ctx.fillStyle = '#14502e';
+    for (let k = 0; k < 6; k++) ctx.fillRect(x - hw + 9 + k * 42, y - 47, 2, 94);
+    drawText(ctx, `THE TABLE: ${chips} ON YOU`, x, y - 32, 2, chips ? '#ffe08a' : '#c8f0c8', { punch: g.betPunch ?? 1 });
+    // What the wheel would take right now: the chips, then their hit.
+    drawSprite(ctx, artId(chips >= 3 ? 'betStack3' : chips === 2 ? 'betStack2' : 'betStack1'), x - 74, y + 4, 2.5, { alpha: chips ? 1 : 0.35 });
+    drawText(ctx, `X${chips}`, x - 40, y + 6, 3, chips ? '#ffffff' : COLORS.textDim, { align: 'left' });
+    drawText(ctx, hit ? `-${hit}` : '0', x + 80, y + 4, 4, lethal ? '#ff3a2e' : hit ? '#ff8a7a' : COLORS.textDim, { punch: g.betPunch ?? 1 });
+    if (soon) drawText(ctx, chips ? `NO MORE BETS NEXT TURN! -${hit}` : 'NO MORE BETS NEXT TURN!', x, y + 36, 1.5, Math.sin(t * 10) > 0 ? '#ffffff' : '#ff6a5a');
+    else drawText(ctx, `NO MORE BETS IN ${left}`, x, y + 36, 2, '#c8f0c8');
+    // Its one rule, where players look (like the House's YOUR JACKPOT TAKES IT), and the phase.
+    drawText(ctx, g.wheelFast ? 'THE WHEEL SPINS FASTER: 3 CHIPS A TURN' : 'YOUR PAIRS CLEAR THE BETS', x, y - 70, 1.5, g.wheelFast ? '#ff8a7a' : COLORS.goldLight);
+    drawText(ctx, per ? `EACH CHIP HITS ${per}. A JACKPOT CLEARS ALL` : '', x, y + 70, 1.5, COLORS.textDim);
+  }
+
+  /** THE WHEEL's slot machine: a red-and-black cabinet behind its reels, with a green felt apron. */
+  private drawWheelCabinet(ctx: CanvasRenderingContext2D): void {
+    const cx = MACHINE_CX.enemy;
+    const x0 = cx - 186;
+    const y0 = MACHINE_TOP - 26;
+    const w = 372;
+    const h = MACHINE_H + 52;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x0, y0, w, h);
+    // Red and black pockets around the frame.
+    const n = 12;
+    for (let i = 0; i < n; i++) {
+      ctx.fillStyle = i % 2 ? '#1a1018' : '#b0202e';
+      ctx.fillRect(x0 + 4 + (i * (w - 8)) / n, y0 + 4, (w - 8) / n, h - 8);
+    }
+    ctx.fillStyle = '#0f3a22';
+    ctx.fillRect(x0 + 12, y0 + 12, w - 24, h - 24);
+    ctx.strokeStyle = '#c9a040';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x0 + 16, y0 + 16, w - 32, h - 32);
+  }
+
+  /** The roulette wheel on top of THE WHEEL's machine: it turns slowly, and races when the ball drops. */
+  private drawWheelTopper(ctx: CanvasRenderingContext2D): void {
+    const g = this.stage.gutter;
+    const x = MACHINE_CX.enemy;
+    const y = MACHINE_TOP - 22;
+    drawSprite(ctx, artId('wheelTopper'), x, y, 2.5, { rot: g.wheelAngle ?? 0 });
+    drawSprite(ctx, artId('ball'), x + Math.cos((g.wheelAngle ?? 0) * -1.7) * 16, y + Math.sin((g.wheelAngle ?? 0) * -1.7) * 16, 0.6);
   }
 
   private arrow(ctx: CanvasRenderingContext2D, x: number, y: number, dir: number, s: number): void {

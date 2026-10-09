@@ -1101,7 +1101,7 @@ export class Menus {
       const result = e.won
         ? e.acts >= 3
           ? e.loops ? `BEAT THE DEALER + ${e.loops} ENDLESS LOOP${e.loops > 1 ? 'S' : ''}` : 'BEAT THE DEALER! TRUE ENDING'
-          : 'BEAT THE MIRROR! RUN CLEARED'
+          : 'THE WHEEL STOPS! RUN CLEARED'
         : `KILLED BY ${e.killer ?? '???'}, FIGHT ${e.killerFight ?? e.fights + 1}/${e.total}`;
       drawText(ctx, result, 188, y + 13, 1.5, e.won ? '#ffd23f' : '#ff8a7a', { align: 'left' });
       if (!e.won && e.killerPortrait) drawSprite(ctx, e.killerPortrait as SpriteId, 188 + result.length * 9 + 22, y + 4, 1.5);
