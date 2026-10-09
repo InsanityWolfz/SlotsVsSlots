@@ -1844,10 +1844,13 @@ export class RunScreens {
     const lv = this.run?.player.levels;
     if (o.kind === 'symLevel') drawSprite(ctx, o.symbol as SpriteId, x, y, scale);
     else {
-      // On one of THIS machine's symbols (attack first): a JUKEBOX gold level showed a sword (user playtest).
-      const cab = this.run ? CABINETS[this.run.cabinet] : null;
-      const on = (cab && [cab.attack, ...cab.symbols].find((sym) => CHARM_SYMBOLS[o.enh].includes(sym))) ?? CHARM_SYMBOLS[o.enh][0];
-      drawSprite(ctx, on as SpriteId, x, y, scale);
+      // The Charm alone on an empty cell, as in the build panel: on a symbol it read as that symbol's upgrade (user
+      // playtest), but a Charm level is for every Charm of the type, whatever it sits on.
+      const half = 8 * scale;
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(x - half - 2, y - half - 2, half * 2 + 4, half * 2 + 4);
+      ctx.fillStyle = '#4a3a66';
+      ctx.fillRect(x - half, y - half, half * 2, half * 2);
       drawSprite(ctx, ENH_SPRITE[o.enh], x, y, scale);
     }
     const cap = this.run ? levelCap(this.run) : 3;
