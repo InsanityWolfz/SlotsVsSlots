@@ -1,4 +1,5 @@
 import type { Enh, GameConfig, RelicId, SymbolId } from './config';
+import { DEAD } from './strip';
 
 export type Tier = 'none' | 'pair' | 'triple';
 
@@ -77,18 +78,21 @@ export interface ScoreOpts {
 
 /** The matched set and the symbol it pays as, or null. WILDs join whatever they complete. */
 function matchedRun(line: SymbolId[], cfg: GameConfig, alone: SymbolId): { symbol: SymbolId; reels: number[] } | null {
+  // A WILD never joins a dead symbol (a rock, slime, a dead card...): WILD + ROCK paired as rocks (user playtest).
+  const joins = (sym: SymbolId) => !DEAD.has(sym);
   if (cfg.pairRule === 'inOrder') {
     const head = line.find((s) => !isWild(s)) ?? alone;
     let k = 0;
-    while (k < line.length && (line[k] === head || isWild(line[k]))) k++;
+    while (k < line.length && (line[k] === head || (isWild(line[k]) && joins(head)))) k++;
     return k >= 2 ? { symbol: head, reels: Array.from({ length: k }, (_, i) => i) } : null;
   }
   let best: { symbol: SymbolId; reels: number[] } | null = null;
   const candidates: SymbolId[] = [...new Set(line.filter((s) => !isWild(s)))];
   if (!candidates.length) candidates.push(alone);
   for (const sym of candidates) {
-    const reels = line.flatMap((s, i) => (s === sym || isWild(s) ? [i] : []));
-    if (!best || reels.length > best.reels.length) best = { symbol: sym, reels };
+    const reels = line.flatMap((s, i) => (s === sym || (isWild(s) && joins(sym)) ? [i] : []));
+    // On a tie, a live symbol beats a dead one.
+    if (!best || reels.length > best.reels.length || (reels.length === best.reels.length && DEAD.has(best.symbol) && !DEAD.has(sym))) best = { symbol: sym, reels };
   }
   return best && best.reels.length >= 2 ? best : null;
 }

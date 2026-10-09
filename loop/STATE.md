@@ -1995,3 +1995,11 @@ Before the retune (with the new death rule): BRIAR 40.9 and JAX 36.6 WHITE.
 - Taking the GROUNDER out of their act 2 made KNIGHT 44.2 -> 41.4 and CASSIDY 42.5 -> 37.4 (Mirror 48.4 -> 42.8).
   BOSS_MUL knight mirror 1.45 -> 1.35, dealer 0.56 -> 0.6; midas mirror 4.2 -> 3.8, dealer 7 -> 7.5.
 - Official N1000: KNIGHT 43.9/17.9, TESLA 43.3/17.3, JUKEBOX 43.3/16.9, JAX 41.0/17.6, CASSIDY 42.3/18.8.
+
+## Iteration 95 (2026-10-09): playtest fixes
+- A WILD never joins a dead symbol (rock, slime, empty, dead card...): WILD + ROCK paired as rocks, and on a tie the
+  first symbol won. A live symbol now wins ties. JAX N1000: 40.9 / 16.3 (was 41.0 / 17.6), in the gates.
+- Relic audit (tools/sim/relics.ts, every relic A/B on every machine it fits): all work; ENCORE, WILD WHEEL, MELTDOWN,
+  LOADED REEL, TURNTABLE, COMPOUND, SUBWOOFER and LOOSE CHANGE worked without a pop: they pop now. TOWER SHIELD's kept
+  shield showed as 0 (display bug, fixed). LOOSE CHANGE is a trap: pair rains cost full chips at half damage
+  (CASSIDY with it from the start: 44.3 -> 30.5 WHITE). Flagged to the user.

@@ -25,3 +25,17 @@ describe('sound effects', () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe('WILDS and dead symbols', () => {
+  it('a WILD never pairs with a rock (it pairs with the live symbol instead)', async () => {
+    const { defaultConfig } = await import('../src/core/config');
+    const { scoreLine } = await import('../src/core/scoring');
+    const cfg = defaultConfig();
+    expect(scoreLine(['rock', 'wild', 'sword'], cfg).tier).toBe('none');
+    const any = { ...cfg, pairRule: 'anyTwo' as const };
+    const s = scoreLine(['rock', 'wild', 'sword'], any);
+    expect(s.tier).toBe('pair');
+    expect(s.tierSymbol).toBe('sword');
+    expect(scoreLine(['wild', 'rock', 'empty'], any).tier).toBe('none');
+  });
+});
