@@ -542,7 +542,8 @@ export class Director {
     this.decay(h, 'shieldShake', 4, 0.3);
     const b = h.shieldBar();
     this.s.particles.burst({ x: b.x + 40, y: b.y + b.h / 2, count: 14, colors: [COLORS.shield, '#9fd0ff'], speed: [40, 160], gravity: -80, life: [0.3, 0.6], size: [2, 4] });
-    await this.c.to(h, 'shield', 0, 0.3, sineIn);
+    // Only what was lost drains: TOWER SHIELD / SHIELD WALL keep the rest (the bar used to drop to 0 regardless).
+    await this.c.to(h, 'shield', Math.max(0, h.shield - e.lost), 0.3, sineIn);
   }
 
   private async spin(e: Ev<'spin'>): Promise<void> {

@@ -165,3 +165,19 @@ describe('THE GROUNDER is for TESLA only', () => {
     expect(seen('tesla')).toBeGreaterThan(0);
   });
 });
+
+describe('TOWER SHIELD', () => {
+  it('keeps 25% of the leftover shield (to the nearest 10, max 10% of max HP) and says how much it lost', async () => {
+    const { defaultConfig: dc, reels3: r3 } = await import('../src/core/config');
+    const c = fightConfig(createRun(dc(), 1, 'knight'), dc());
+    c.enemy = { hp: 99999, strips: r3({ empty: 12 } as never) };
+    c.relics = ['tower'];
+    c.player.bonusSymbols = false;
+    const f = new Fight(c, 3);
+    f.sides.player.shield = 80;
+    f.forceNext('enemy', ['empty', 'empty', 'empty'] as never);
+    // The player's turn starts: of the 80 left over, 20 stays (25%) and 60 is lost.
+    const reset = ofType(f.step().events, 'shieldReset')[0];
+    expect(reset.lost).toBe(60);
+  });
+});
