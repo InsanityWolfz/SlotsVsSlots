@@ -142,6 +142,7 @@ export class Menus {
       /** Name entry: claim the name; resolves to the claim result ('ok', 'taken', 'have:NAME', 'offline'). */
       needsName: () => boolean;
       onName: (name: string) => Promise<string>;
+      onNameSkip: () => void;
       playerName: () => string;
       setTitle: (title: string) => void;
       setTrim: (id: string) => void;
@@ -208,7 +209,6 @@ export class Menus {
 
   showMain(): void {
     // No name yet (first launch, or the one picked offline was taken): pick one first.
-    if (this.cb.needsName()) return this.showName();
     this.open('main');
     const x = W / 2;
     const first = !this.cb.tutorialDone();
@@ -454,6 +454,8 @@ export class Menus {
       b.toggled = this.tab === tab;
     });
     if (this.tab !== 'mine') {
+      // No name (skipped, or never asked): a way onto the boards.
+      if (online() && !this.profile().name) this.btn('SET YOUR NAME', W - 160, 44, 240, 44, () => this.showName(() => this.showHiscores()), 1.5);
       this.loadBoard(this.boardKey(this.tab));
       return;
     }
@@ -492,7 +494,10 @@ export class Menus {
 
   // ---- player name (first launch) -----------------------------------------------------
 
-  showName(): void {
+  /** Where the name screen goes after OK / SKIP. */
+  private afterName: () => void = () => this.showMain();
+  showName(after?: () => void): void {
+    this.afterName = after ?? (() => this.showMain());
     this.open('name');
     this.nameStatus = '';
     this.nameBusy = false;
@@ -537,14 +542,14 @@ export class Menus {
       setTimeout(() => el.focus(), 50);
     }
     this.btn('OK', W / 2, NAME_Y + 80, 200, 54, () => void this.submitName(), 3);
-    // Not everyone wants to type a name first (STEAM_READINESS S16): a random PLAYER name, changeable later.
+    // Optional: SKIP keeps you off the online boards (no name, nothing posted); HISCORES can set one later.
     this.btn('SKIP', W / 2, NAME_Y + 150, 140, 36, () => this.skipName(), 1.5).opts.quiet = true;
   }
 
   private skipName(): void {
-    if (!this.nameInput) return;
-    this.nameInput.value = `PLAYER${Math.floor(1000 + Math.random() * 9000)}`;
-    void this.submitName();
+    this.cb.onNameSkip();
+    this.sounds.click();
+    this.afterName();
   }
 
   private async submitName(): Promise<void> {
@@ -566,7 +571,7 @@ export class Menus {
       return;
     }
     this.sounds.fanfareJackpot();
-    this.showMain();
+    this.afterName();
   }
 
   private drawName(ctx: CanvasRenderingContext2D, t: number): void {
@@ -793,8 +798,7 @@ export class Menus {
     if (this.mode === 'loading') {
       if (this.ready) {
         this.sounds.fanfareJackpot();
-        if (this.cb.needsName()) this.showName();
-        else this.showMain();
+        this.showMain();
       }
       return true;
     }

@@ -76,6 +76,8 @@ export interface Profile {
   stats: MetaStats;
   /** The player's name on the leaderboards (later: the Steam name), and the title they show. */
   name?: string;
+  /** The name screen was offered after the first run and skipped: don't ask again (no name = no online scores). */
+  nameAsked?: boolean;
   title?: string;
   /** A random id for this player's scores (src/net/identity.ts). */
   pid?: string;
@@ -221,6 +223,7 @@ export function sanitizeProfile(raw: unknown): Profile {
     challenges,
     stats,
     ...(name ? { name } : {}),
+    ...(p.nameAsked === true ? { nameAsked: true } : {}),
     ...(title ? { title } : {}),
     ...(pid ? { pid } : {}),
     ...(trim ? { trim } : {}),

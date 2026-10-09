@@ -320,6 +320,11 @@ export class Game {
       onWeekly: () => this.startWeekly(),
       needsName: () => needsName(this.profile),
       onName: (name) => this.pickName(name),
+      onNameSkip: () => {
+        this.profile.nameAsked = true;
+        this.pendingPost = null;
+        this.saveProfile();
+      },
       playerName: () => playerName(this.profile),
       setTitle: (title) => {
         this.profile.title = title;
@@ -350,8 +355,9 @@ export class Game {
       onLegend: (r) => this.pickLegend(r),
       onChoice: (c) => this.pickChoice(c),
       onFight: (i) => this.beginRunFight(i),
-      onNewRun: () => this.chooseCabinet(),
-      onMenu: () => this.showMenu(),
+      // After the first run: offer the (optional) leaderboard name on the way out of the run-over screen.
+      onNewRun: () => this.afterNamePrompt(() => this.chooseCabinet()),
+      onMenu: () => this.afterNamePrompt(() => this.showMenu()),
       onLetItRide: () => this.letItRide(),
       onWheelCollect: (o) => {
         if (!this.run) return;
@@ -485,7 +491,30 @@ export class Game {
     for (const a of gain.achievements) steamUnlock(a.id);
     this.saveProfile();
     this.screens.setMeta(gain);
-    if (entry.tutorial || !online() || !playerName(this.profile)) return;
+    if (entry.tutorial || !online()) return;
+    // No name yet: the score waits for one (the name is offered as you leave this screen; SKIP drops it).
+    if (!playerName(this.profile)) {
+      this.pendingPost = { entry, ride };
+      return;
+    }
+    this.postScores(entry, ride);
+  }
+
+  /** A finished run's score, waiting for the player to pick a name (null: none). */
+  private pendingPost: { entry: RunEntry; ride: boolean } | null = null;
+
+  /** The run-over screen's way out: the name screen first if it's due (once, after the first run), then `go`. */
+  private afterNamePrompt(go: () => void): void {
+    if (online() && needsName(this.profile)) {
+      this.showMenu();
+      this.menus.showName(go);
+      return;
+    }
+    go();
+  }
+
+  /** Post a finished run to its boards (ALL TIME, the DAILY or the WEEKLY). */
+  private postScores(entry: RunEntry, ride: boolean): void {
     // ALL TIME takes standard runs (not the daily, weekly or challenges: EXPERT_PLAYTEST_9 D1). Scores post when the run
     // ends or at the Dealer win, never again from an endless ride (its pot would swamp every board). The daily keeps its one
     // score; the weekly takes every try (the board shows your best).
@@ -547,6 +576,12 @@ export class Game {
     this.profile.name = r.startsWith('have:') ? cleanName(r.slice(5)) || name : name;
     this.nameClaimed = r !== 'offline';
     this.saveProfile();
+    // The run that just ended goes up now.
+    if (this.pendingPost) {
+      const { entry, ride } = this.pendingPost;
+      this.pendingPost = null;
+      this.postScores(entry, ride);
+    }
     return r;
   }
 
@@ -1775,7 +1810,7 @@ export class Game {
     ctx.fillRect(x - 106, y - 52, 212, 104);
     ctx.fillStyle = '#3a0f1a';
     ctx.fillRect(x - 101, y - 47, 202, 94);
-    const label = lethal ? 'LETHAL!' : g.allIn ? 'ALL IN POT' : 'THE POT';
+    const label = lethal ? 'LETHAL!' : g.allIn ? 'DOUBLED POT' : 'THE POT';
     drawText(ctx, label, x, y - 32, 2, lethal || g.allIn ? '#ff6a5a' : COLORS.goldLight, { punch: lethal ? 1 + 0.1 * Math.sin(t * 14) : 1 });
     const sprite = tier === 4 ? 'potTier4' : tier === 3 ? 'potTier3' : tier === 2 ? 'potTier2' : 'potTier1';
     drawSprite(ctx, sprite, x - 52, y + 12, tier === 1 ? 3 : 2.5, { flash: glow * 0.5 });

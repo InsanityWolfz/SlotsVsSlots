@@ -12,6 +12,8 @@ export interface TurnRow {
   side: SideId;
   line: SymbolId[];
   tier: Tier;
+  /** The spin's math, group by group: BASE x MULT = PAY, and why (the banner's numbers, kept). */
+  math: string;
   nearMiss: boolean;
   lucky: boolean;
   frozenReels: number;
@@ -55,6 +57,7 @@ export function turnRow(fight: Fight, r: TurnResult, fightNo: number): TurnRow {
     side: r.side,
     line: [],
     tier: 'none',
+    math: '',
     nearMiss: false,
     lucky: false,
     frozenReels: 0,
@@ -93,6 +96,10 @@ export function turnRow(fight: Fight, r: TurnResult, fightNo: number): TurnRow {
       case 'spin':
         row.line = e.score.line;
         row.tier = e.score.tier;
+        row.math = e.score.groups
+          .filter((g) => g.base > 0)
+          .map((g) => `${ABBR[g.symbol] ?? g.symbol} ${g.base}x${Math.round(g.mult * 100) / 100}=${g.amount}${g.notes?.length ? ` (${g.notes.join(', ')})` : ''}`)
+          .join('; ');
         row.nearMiss = e.nearMiss;
         row.lucky = e.lucky !== null;
         row.frozenReels = e.frozen.filter(Boolean).length;
@@ -210,7 +217,7 @@ export function formatRow(r: TurnRow): string {
   if (r.potAdded) parts.push(`pot +${r.potAdded}`);
   if (r.potWon) parts.push(`POT ${r.potWon}!`);
   if (r.fizzled) parts.push(`${r.fizzled} dead`);
-  const tier = r.tier === 'none' ? '' : r.tier === 'pair' ? ' PAIR' : ' JACKPOT';
+  const tier = (r.tier === 'none' ? '' : r.tier === 'pair' ? ' PAIR' : ' JACKPOT') + (r.math ? ` [${r.math}]` : '');
   const near = r.nearMiss && r.tier !== 'triple' ? ' (near-miss)' : '';
   const status = `${r.frozenReels ? ` [${r.frozenReels} frozen]` : ''}${r.lockedReels ? ` [${r.lockedReels} jammed]` : ''}${r.lucky ? ' [LUCKY]' : ''}`;
   return (

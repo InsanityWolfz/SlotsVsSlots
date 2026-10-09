@@ -27,7 +27,7 @@ const rainHit = (f: Fight) => {
 describe('CASH CASSIDY / THE BANKROLL', () => {
   it('names and the HIGH ROLLER multiplier', () => {
     expect(CABINETS.midas.hero).toBe('CASH CASSIDY');
-    expect(CABINETS.midas.name).toBe('THE BANKROLL');
+    expect(CABINETS.midas.name).toBe('BANKROLL');
     expect(highRollerMul(10)).toBe(1.5);
     expect(highRollerMul(100)).toBe(3);
   });

@@ -738,6 +738,7 @@ export class Director {
     const g = matched!;
     const fmt = (x: number) => (Number.isInteger(x) ? String(x) : x.toFixed(1));
     const gross = Math.round(g.base * g.mult);
+    const bigMath = gross >= 150 || !!g.drop || g.mult >= 4;
     // THE MIRROR's shards aren't BASE x MULT: they throw back a share of your last hit (the same words as the popup).
     const effect = side === 'enemy' && WRITERS.has(sym) ? effectText(sym, g.amount) : side === 'enemy' && sym === 'shard' ? this.shardText(g.reels.length) : '';
     const parts = slimeCleanse
@@ -757,7 +758,8 @@ export class Director {
       this.shake(3, 0.15);
       this.s.camera.chromaPulse(0.15);
       // Non-blocking: the effects start while the banner is still up.
-      this.bg(this.banner('PAIR!', COLORS.pair, 1.15, 0.35, parts));
+      // A big hit's math stays up long enough to read (R13: 0.35 s for a 7,000 hit was gone before you saw it).
+      this.bg(this.banner('PAIR!', COLORS.pair, 1.15, bigMath ? 1.1 : 0.35, parts));
       await this.c.wait(0.3);
     } else {
       this.s.sounds.fanfareJackpot();
@@ -781,7 +783,7 @@ export class Director {
         size: [5, 9],
         kind: 'confetti',
       });
-      await this.banner('JACKPOT!', COLORS.triple, 1.5, 0.6, parts, BANNER_Y, 5);
+      await this.banner('JACKPOT!', COLORS.triple, 1.5, bigMath ? 1.2 : 0.6, parts, BANNER_Y, 5);
       this.s.camera.dimTarget = 0;
     }
   }
@@ -1639,7 +1641,7 @@ export class Director {
     await this.c.wait(0.5);
   }
 
-  /** Boss phase 2: the House goes ALL IN and doubles the pot. */
+  /** Boss phase 2: the House DOUBLES DOWN (the pot doubles). (ALL IN is the Dealer's word only.) */
   private async phase(e: Ev<'phase'>): Promise<void> {
     const g = this.s.gutter;
     const m = this.s.machines[e.side];
@@ -1651,7 +1653,7 @@ export class Director {
     this.s.camera.flashScreen(0.4, '#ff6a5a');
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.6, onUpdate: (v) => (m.flash = v * 0.6) }));
     g.allIn = true;
-    this.bg(this.banner('ALL IN!', '#ff3a2e', 1.2, 0.5, 'THE POT DOUBLES', BANNER_Y, 4));
+    this.bg(this.banner('DOUBLE DOWN!', '#ff3a2e', 1.2, 0.5, 'THE POT DOUBLES', BANNER_Y, 4));
     const from = g.pot;
     await this.c.tween({ from, to: e.pot, dur: 0.8, ease: sineOut, onUpdate: (v) => (g.pot = v) });
     this.bg(this.c.tween({ from: 1.8, to: 1, dur: 0.3, ease: backOut(3), onUpdate: (v) => (g.potPunch = v) }));

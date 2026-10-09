@@ -1867,7 +1867,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'devilsDue':
       return { title: "DEVIL'S DUE", rule: `EVERYTHING PAYS X${BIG.devilPay}`, cost: `-${Math.round(BIG.devilDecay * 100)}% MAX HP AFTER EVERY ROUND YOU WIN` };
     case 'allIn':
-      return { title: 'ALL IN', rule: `EVERY SHIELD ON YOUR REELS BECOMES ONE OF YOUR ${atk}`, cost: pct(run, BIG.allInHp) };
+      return { title: 'GO FOR BROKE', rule: `EVERY SHIELD ON YOUR REELS BECOMES ONE OF YOUR ${atk}`, cost: pct(run, BIG.allInHp) };
     case 'doubleOrNothing':
       return { title: 'DOUBLE OR NOTHING', rule: '+1 LEVEL TO EVERY SYMBOL AND CHARM', cost: 'THE NEXT BOSS HAS DOUBLE HP' };
     case 'cursedIdol':

@@ -20,5 +20,8 @@ export function playerId(p: Profile): string {
   if (s) return `steam:${s.steamId()}`;
   return (p.pid ??= crypto.randomUUID?.() ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`);
 }
-/** The Steam build names the player itself: no name screen. */
-export const needsName = (p: Profile) => !steam() && !p.name;
+/**
+ * Offer the name screen? Not at launch: after the first finished run, once, and it's optional (user, 2026-10-09).
+ * Skipped = no name = nothing goes online. The Steam build names the player itself: no name screen.
+ */
+export const needsName = (p: Profile) => !steam() && !p.name && !p.nameAsked && p.stats.runs >= 1;

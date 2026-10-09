@@ -303,8 +303,6 @@ export class RunScreens {
   private stakes: Partial<Record<CabinetId, number>> = {};
   private stakeSel = 0;
   private stakeUnlockedNow = '';
-  /** The slot machines that have beaten the Dealer (TRUE ENDING). */
-  private dealerBeaten: CabinetId[] = [];
   /** The stake track's chips (focus / click targets), the select pop (0..1) and a refused locked chip (shakes). */
   private stakeHits: Btn[] = [];
   private stakePop = 1;
@@ -337,9 +335,8 @@ export class RunScreens {
   ) {}
 
   /** Pick your starting machine (pre-run). Locked cabinets show how to unlock them. */
-  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0, _act3 = false, dealerBeaten: CabinetId[] = []): void {
+  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0, _act3 = false, _dealerBeaten: CabinetId[] = []): void {
     this.cabinetUnlocked = unlocked;
-    this.dealerBeaten = dealerBeaten;
     this.stakes = stakes;
     this.run = null;
     this.open('cabinet');
@@ -2103,7 +2100,7 @@ export class RunScreens {
           ? 'DEALS: A CARD ON YOUR PAYLINE (ACE X2, JOKER WILD, DEUCE 0), ALL IN (ITS WHOLE HAND), RAISE (BOTH X2). NO KILL BEFORE ITS FIRST DEAL.'
           : e.boss === 'mirror'
           ? `EACH SHARD ON ITS PAYLINE THROWS A THIRD OF YOUR LAST HIT BACK. CRACKED AT HALF HP, A HALF. A TURN NEVER DEALS MORE THAN ${Math.round(REFLECT_CAP * 100)}% OF YOUR MAX HP.`
-          : `COINS FILL THE POT. EVERY ${this.houseEvery()} TURNS IT SKIMS HALF AT YOU. ANY JACKPOT YOU HIT STEALS THE POT! AT HALF HP IT GOES ALL IN.${dirty ? ' BLACK: IT BOMBS YOUR PAYLINE.' : ''}`,
+          : `COINS FILL THE POT. EVERY ${this.houseEvery()} TURNS IT SKIMS HALF AT YOU. ANY JACKPOT YOU HIT STEALS THE POT! AT HALF HP IT DOUBLES DOWN.${dirty ? ' BLACK: IT BOMBS YOUR PAYLINE.' : ''}`,
         e.boss === 'mirror' ? '#c8f0ff' : COLORS.goldLight,
       );
       const copy = e.boss === 'mirror' ? mirrorCopy(run) : null;
@@ -2258,8 +2255,6 @@ export class RunScreens {
         ctx.fillRect(x - 3, y - 3, 2, 2);
       }
     }
-    // Beat the Dealer on this machine: his badge caps its ladder.
-    if (this.dealerBeaten.includes(id)) drawSprite(ctx, 'mapBadgeDealer', x0 + STAKES.length * dx + 6, y, 2);
   }
 
   /** HIGH STAKES: one track of 6 chips. The chosen one is raised and glowing; earned ones are lit; the rest are padlocked. */

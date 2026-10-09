@@ -95,7 +95,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     id: 'midas',
     hero: 'CASH CASSIDY',
     heroSprite: 'heroMidas',
-    name: 'THE BANKROLL',
+    name: 'BANKROLL',
     sprite: 'cabinetMidas',
     blurb: 'MAKE IT RAIN.',
     // 360 HP (was 300): MIDAS trailed every table, its GREEN deaths spread over the whole run (EXPERT_PLAYTEST_9 D6).
@@ -177,7 +177,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     id: 'jukebox',
     hero: 'DJ DECIBEL',
     heroSprite: 'heroJukebox',
-    name: 'THE JUKEBOX',
+    name: 'JUKEBOX',
     sprite: 'cabinetJukebox',
     blurb: 'TURN IT UP',
     hp: 32 * UNIT,
@@ -188,7 +188,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 2 * UNIT },
     symbols: ['note', 'shield'],
     attack: 'note',
-    rule: 'NOTES TURN UP THE VOLUME. NO NOTE, THE RECORD SKIPS. AT MAX THE BEAT DROPS: EVERY NOTE HITS. 320 HP.',
+    rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: EVERY NOTE HITS. 320 HP.',
     unlock: 'BEAT THE HOUSE',
   },
 };
