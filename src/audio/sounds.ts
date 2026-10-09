@@ -1,10 +1,18 @@
 import { Synth } from './synth';
 
+/** C major from C5 up two octaves (Hz): the tuned effects climb this, moved into the song's key. */
+const MAJOR = [523.25, 587.33, 659.25, 698.46, 783.99, 880, 987.77, 1046.5, 1174.66, 1318.51, 1396.91, 1567.98, 1760, 1975.53, 2093];
+
 /** Every named sound in the game. Pitch param `p` lets the enemy machine sit ~15% lower. */
 export class Sounds {
   readonly s: Synth;
   constructor(s: Synth) {
     this.s = s;
+  }
+
+  /** A tuned note: written in C major, played in the current song's key (Synth.tune). */
+  private k(f: number): number {
+    return f * this.s.tune;
   }
 
   // ---- UI / machine (juice §8) -------------------------------------------------------
@@ -25,7 +33,8 @@ export class Sounds {
   }
 
   ding(i: number): void {
-    const f = 880 * (1 + i * 0.12);
+    // Up the song's major scale (was a free glide that ignored the key).
+    const f = this.k(MAJOR[Math.min(i, MAJOR.length - 1)] * 2);
     this.s.tone({ freq: f, dur: 0.5, gain: 0.16 });
     this.s.tone({ freq: f * 2, dur: 0.3, gain: 0.07 });
     this.s.tone({ freq: f * 3, dur: 0.18, gain: 0.03 });
@@ -48,11 +57,12 @@ export class Sounds {
   }
 
   stingerSmall(): void {
-    this.arp([523.25, 659.25, 783.99], 0.05, 'triangle', 0.12);
+    this.arp([523.25, 659.25, 783.99].map((f) => this.k(f)), 0.05, 'triangle', 0.12);
+    this.s.duck(0.25, 0.6);
   }
 
   stingerMedium(): void {
-    this.arp([523.25, 659.25, 783.99, 1046.5], 0.06, 'triangle', 0.14, 0.35);
+    this.arp([523.25, 659.25, 783.99, 1046.5].map((f) => this.k(f)), 0.06, 'triangle', 0.14, 0.35);
     this.s.duck(0.35, 1.0);
   }
 
@@ -62,10 +72,10 @@ export class Sounds {
       this.s.tone({ type: 'sawtooth', freq: f, dur, gain: 0.08, at, attack: 0.02 });
       this.s.tone({ type: 'square', freq: f, dur, gain: 0.05, at, attack: 0.02, detune: 7 });
     };
-    brass(392, 0, 0.12);
-    brass(392, 0.14, 0.12);
-    brass(523.25, 0.28, 0.4);
-    [523.25, 659.25, 783.99, 1046.5].forEach((f) => brass(f, 0.72, 1.1));
+    brass(this.k(392), 0, 0.12);
+    brass(this.k(392), 0.14, 0.12);
+    brass(this.k(523.25), 0.28, 0.4);
+    [523.25, 659.25, 783.99, 1046.5].forEach((f) => brass(this.k(f), 0.72, 1.1));
     this.s.noise({ dur: 0.6, filter: 'highpass', freq: 6000, gain: 0.05, at: 0.72 });
     this.s.duck(0.8, 3.0);
   }
@@ -93,8 +103,8 @@ export class Sounds {
   }
 
   shieldGain(n: number): void {
-    this.s.tone({ type: 'triangle', freq: 660, dur: 0.12, gain: 0.12 });
-    this.s.tone({ type: 'sine', freq: 990 + n * 60, dur: 0.35, gain: 0.1, at: 0.05 });
+    this.s.tone({ type: 'triangle', freq: this.k(659.25), dur: 0.12, gain: 0.12 });
+    this.s.tone({ type: 'sine', freq: this.k(MAJOR[Math.min(4 + n, MAJOR.length - 1)] * 2), dur: 0.35, gain: 0.1, at: 0.05 });
     this.s.noise({ dur: 0.05, filter: 'bandpass', freq: 3500, q: 3, gain: 0.12 });
   }
 
@@ -104,7 +114,8 @@ export class Sounds {
   }
 
   energyPip(i: number): void {
-    const f = 700 * 2 ** (i / 6);
+    // Each pip one step up the song's major scale.
+    const f = this.k(MAJOR[Math.min(i, MAJOR.length - 1)]);
     this.s.tone({ type: 'square', freq: f, freqEnd: f * 1.5, dur: 0.08, gain: 0.07 });
     this.s.noise({ dur: 0.05, filter: 'highpass', freq: 5000, gain: 0.08 });
   }
@@ -145,7 +156,7 @@ export class Sounds {
     this.s.tone({ type: 'sine', freq: 110, freqEnd: 36, dur: 0.7, gain: 0.5, at: 0.3 });
     this.s.tone({ type: 'square', freq: 55, freqEnd: 40, dur: 0.4, gain: 0.12, at: 0.3 });
     this.s.noise({ dur: 0.18, filter: 'bandpass', freq: 1800, q: 1.2, gain: 0.3, at: 0.3 });
-    [523.25, 659.25, 783.99].forEach((f) => this.s.tone({ type: 'square', freq: f, dur: 0.25, gain: 0.05, at: 0.3 }));
+    [523.25, 659.25, 783.99].forEach((f) => this.s.tone({ type: 'square', freq: this.k(f), dur: 0.25, gain: 0.05, at: 0.3 }));
   }
 
   fizzle(): void {
@@ -154,7 +165,7 @@ export class Sounds {
 
   cleanse(): void {
     [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568, 2093].forEach((f, i) =>
-      this.s.tone({ type: 'triangle', freq: f, dur: 0.4, gain: 0.08, at: i * 0.05 }),
+      this.s.tone({ type: 'triangle', freq: this.k(f), dur: 0.4, gain: 0.08, at: i * 0.05 }),
     );
     this.s.noise({ dur: 0.8, filter: 'highpass', freq: 5000, gain: 0.08, attack: 0.1 });
   }
@@ -165,7 +176,7 @@ export class Sounds {
 
   turnCard(player: boolean): void {
     this.s.noise({ dur: 0.3, filter: 'bandpass', freq: 800, freqEnd: 3000, q: 1, gain: 0.08, attack: 0.1 });
-    this.s.tone({ type: 'triangle', freq: player ? 523.25 : 392, dur: 0.18, gain: 0.08, at: 0.12 });
+    this.s.tone({ type: 'triangle', freq: this.k(player ? 523.25 : 392), dur: 0.18, gain: 0.08, at: 0.12 });
   }
 
   victory(): void {
@@ -174,7 +185,7 @@ export class Sounds {
 
   defeat(): void {
     [392, 369.99, 349.23, 261.63].forEach((f, i) =>
-      this.s.tone({ type: 'triangle', freq: f, dur: i === 3 ? 1.2 : 0.3, gain: 0.14, at: i * 0.32 }),
+      this.s.tone({ type: 'triangle', freq: this.k(f), dur: i === 3 ? 1.2 : 0.3, gain: 0.14, at: i * 0.32 }),
     );
     this.s.duck(0.8, 3);
   }
@@ -216,7 +227,11 @@ export class Sounds {
   }
 
   coin(i = 0): void {
-    const f = 1568 * 2 ** (i / 12);
+    // i is in semitones: snapped down onto the major scale so a run of coins stays in key.
+    // (Counted from C: the coin starts on G.)
+    const n = 7 + i;
+    const snap = Math.floor(n / 12) * 12 + [0, 0, 2, 2, 4, 5, 5, 7, 7, 9, 9, 11][n % 12] - 7;
+    const f = this.k(1567.98) * 2 ** (snap / 12);
     this.s.tone({ type: 'square', freq: f, dur: 0.06, gain: 0.05 });
     this.s.tone({ type: 'square', freq: f * 1.335, dur: 0.18, gain: 0.05, at: 0.06 });
   }
@@ -233,11 +248,12 @@ export class Sounds {
   }
 
   heal(): void {
-    [659.25, 783.99, 987.77].forEach((f, i) => this.s.tone({ type: 'sine', freq: f, dur: 0.3, gain: 0.08, at: i * 0.06 }));
+    [659.25, 783.99, 987.77].forEach((f, i) => this.s.tone({ type: 'sine', freq: this.k(f), dur: 0.3, gain: 0.08, at: i * 0.06 }));
   }
 
   lucky(): void {
-    [1318.5, 1568, 2093, 2637].forEach((f, i) => this.s.tone({ type: 'triangle', freq: f, dur: 0.25, gain: 0.07, at: i * 0.05 }));
+    [1318.5, 1568, 2093, 2637].forEach((f, i) => this.s.tone({ type: 'triangle', freq: this.k(f), dur: 0.25, gain: 0.07, at: i * 0.05 }));
+    this.s.duck(0.25, 0.8);
     this.s.noise({ dur: 0.5, filter: 'highpass', freq: 6000, gain: 0.06 });
   }
 

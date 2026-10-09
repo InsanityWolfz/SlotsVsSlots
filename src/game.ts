@@ -57,7 +57,7 @@ import { Recap } from './ui/recap';
 import { BUILD, CHIP_SPOT, RunScreens } from './ui/runScreens';
 import { drawRelicTip } from './ui/relicTip';
 import { Pause } from './ui/pause';
-import { MusicPlayer, type SongId } from './audio/music';
+import { MusicPlayer, SONG_HOME, type SongId } from './audio/music';
 import { CHARM_VALUE } from './core/charms';
 import { Focus, type NavDir, type NavRect } from './ui/focus';
 import { desktop, steamUnlock, VERSION } from './build';
@@ -1273,8 +1273,15 @@ export class Game {
   /** Rendering (and so the game clock) pauses in a hidden tab; pause audio with it. */
   setHidden(hidden: boolean): void {
     if (!this.audioStarted) return;
-    if (hidden) void this.synth.ctx.suspend();
+    if (hidden) this.synth.suspend();
     else this.synth.resume();
+  }
+
+  /** The song for this moment; the tuned sound effects follow it into its key. */
+  private playMusic(): void {
+    const id = this.musicMood();
+    this.music?.play(id);
+    this.synth.tune = 2 ** (SONG_HOME[id] / 12);
   }
 
   private startAudio(): void {
@@ -1282,7 +1289,7 @@ export class Game {
     if (!this.audioStarted) {
       this.audioStarted = true;
       this.music = new MusicPlayer(this.synth.ctx, this.synth.music);
-      this.music.play(this.musicMood());
+      this.playMusic();
     }
   }
 
@@ -1463,7 +1470,7 @@ export class Game {
     // A tutorial callout freezes the fight where it is.
     this.pause.update(dt);
     // The soundtrack follows the screen (MUSIC): menus, the lounge between fights, each act, the bosses.
-    if (this.music) this.music.play(this.musicMood());
+    if (this.music) this.playMusic();
     const gdt = this.coach.active || this.pause.open ? 0 : this.stage.clock.tick(dt);
     this.camera.update(dt);
     this.particles.update(gdt);

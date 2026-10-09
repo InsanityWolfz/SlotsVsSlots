@@ -593,6 +593,12 @@ const DEALER: Song = (() => {
 })();
 
 /** The soundtrack. */
+/**
+ * Each song's home major scale, in semitones from C (minor and modal songs use their relative major: the same notes).
+ * The tuned sound effects move there so a stinger never clashes with the song under it.
+ */
+export const SONG_HOME: Record<SongId, number> = { menu: 5, lounge: 0, act1: -5, act2: 5, act3: -5, house: 3, mirror: 2, dealer: 0 };
+
 export const SONGS: Record<SongId, Song> = { menu: MENU, lounge: LOUNGE, act1: ACT1, act2: ACT2, act3: ACT3, house: HOUSE, mirror: MIRROR, dealer: DEALER };
 
 const midiHz = (m: number) => 440 * 2 ** ((m - 69) / 12);

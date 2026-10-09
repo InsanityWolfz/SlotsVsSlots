@@ -73,8 +73,23 @@ export class Synth {
     return this.ctx.currentTime;
   }
 
+  /**
+   * The sound effects' key: a pitch ratio that moves the tuned effects (stingers, fanfares, pips, coins) into the
+   * playing song's key, so they don't clash with the music (user playtest, 2026-10-09).
+   */
+  tune = 1;
+
+  /**
+   * Wake the audio. Phones refuse it outside a tap (and leave the context 'interrupted' after the app was minimized);
+   * the next tap tries again, so a refusal is not an error (it used to reach the crash panel).
+   */
   resume(): void {
-    if (this.ctx.state !== 'running') void this.ctx.resume();
+    if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
+  }
+
+  /** Pause the audio (a hidden tab). A context the platform already closed or interrupted refuses: fine. */
+  suspend(): void {
+    if (this.ctx.state === 'running') this.ctx.suspend().catch(() => {});
   }
 
   setMuted(m: boolean): void {
