@@ -1537,6 +1537,8 @@ export class RunScreens {
     else this.drawOver(ctx);
     // YOUR BUILD: one fixed panel at the bottom of every between-fights screen.
     if (this.run && this.mode !== 'cabinet' && this.mode !== 'bonus') this.drawBuild(ctx);
+    // THE RESULTS card sits over everything, the build panel too (drawn under it, it hid the card's left side).
+    if (this.mode === 'over' && this.results && this.run) this.drawResults(ctx, this.run);
     for (const f of this.flyers) {
       const x = f.x0 + (f.x1 - f.x0) * f.t;
       const y = f.y0 + (f.y1 - f.y0) * f.t - Math.sin(f.t * Math.PI) * 90;
@@ -2636,7 +2638,6 @@ export class RunScreens {
       if (r.rocksAdded) drawText(ctx, `+${r.rocksAdded} ROCK${r.rocksAdded > 1 ? 'S' : ''}`, 786, y + 13, 1.25, '#c9bba8');
     });
     for (const b of this.buttons) this.drawButton(ctx, b, 0);
-    if (this.results) this.drawResults(ctx, run);
   }
 
   /** THE RESULTS card: what the run earned outside the run. */
