@@ -11,7 +11,7 @@ const only = process.argv[3] as CabinetId | undefined;
 const f = (x: number, w = 5) => x.toFixed(1).padStart(w);
 const r = (x: number) => String(Math.round(x)).padStart(5);
 console.log(`N ${N} per row, greedy bot`);
-console.log('machine | WHITE  act1 House Mirror f4die hpH% hpM% | GREEN  Dealer hpD% a3die a3lost | jack% chips/f | power mirror act3 dealer');
+console.log('machine | WHITE  act1 House Wheel f4die hpH% hpM% | GREEN  Dealer hpD% a3die a3lost | jack% chips/f | power wheel act3 dealer');
 const tot = { w: 0, g: 0 };
 const cabs = only ? [only] : CABINET_ORDER;
 for (const cab of cabs) {
@@ -20,9 +20,9 @@ for (const cab of cabs) {
   tot.w += w.winPct;
   tot.g += g.winPct;
   console.log(
-    `${cab.padEnd(7)} | ${f(w.winPct)} ${f(w.act1Pct)} ${f(w.bossWinPct)} ${f(w.mirrorWinPct)} ${f(w.deathsAtDepth[3])} ${f(w.hpIntoHousePct)} ${f(w.hpIntoMirrorPct)} |` +
+    `${cab.padEnd(7)} | ${f(w.winPct)} ${f(w.act1Pct)} ${f(w.bossWinPct)} ${f(w.wheelWinPct)} ${f(w.deathsAtDepth[3])} ${f(w.hpIntoHousePct)} ${f(w.hpIntoWheelPct)} |` +
       ` ${f(g.winPct)} ${f(g.dealerWinPct)} ${f(g.hpIntoDealerPct)} ${f(g.act3Regular.diePct)} ${f(g.act3Regular.lostPct)} |` +
-      ` ${f(w.jackpotPct)} ${f(w.chipsPerFight, 7)} | ${r(g.power.mirror)} ${r(g.power.act3)} ${r(g.power.dealer)}`,
+      ` ${f(w.jackpotPct)} ${f(w.chipsPerFight, 7)} | ${r(g.power.wheel)} ${r(g.power.act3)} ${r(g.power.dealer)}`,
   );
 }
 console.log(`AVG     | ${f(tot.w / cabs.length)}${' '.repeat(43)}| ${f(tot.g / cabs.length)}`);

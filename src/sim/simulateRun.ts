@@ -33,13 +33,13 @@ export { CHOICE_LOG, choiceValue, greedyValue, SIM_BIAS, type DraftPolicy } from
 export interface RunSummary {
   runs: number;
   winPct: number;
-  /** % of runs that died at each fight across the run (index 5 = the House, 11 = the Mirror). */
+  /** % of runs that died at each fight across the run (index 5 = the House, 11 = THE WHEEL). */
   deathsAtDepth: number[];
   /** % of runs that beat the House (cleared act 1). */
   act1Pct: number;
-  reachedMirrorPct: number;
-  mirrorWinPct: number;
-  avgHpIntoMirror: number;
+  reachedWheelPct: number;
+  wheelWinPct: number;
+  avgHpIntoWheel: number;
   dealerWinPct: number;
   reachedDealerPct: number;
   /** Deaths per archetype / fights against that archetype. */
@@ -60,13 +60,16 @@ export interface RunSummary {
   jackpotPct: number;
   /** Chips earned per fight won (wins, jackpots, overkill, charms). */
   chipsPerFight: number;
-  /** Median measured machinePower going into the Mirror, act 3 regulars and the Dealer (what sizes them). */
-  power: { mirror: number; act3: number; dealer: number };
-  /** HP into the House and the Mirror, as a % of max HP. */
+  /** Median measured machinePower going into THE WHEEL, act 3 regulars and the Dealer (what sizes them). */
+  power: { wheel: number; act3: number; dealer: number };
+  /** HP into the House and THE WHEEL, as a % of max HP. */
   hpIntoHousePct: number;
-  hpIntoMirrorPct: number;
+  hpIntoWheelPct: number;
   /** ENDLESS (SIM_BIAS.ride): loops cleared by each rider, sorted. */
   endlessLoops: number[];
+  /** Average turns (both sides' spins) per boss fight, and the act 2 regulars' deaths per 100 runs. */
+  bossTurns: { house: number; act2: number; dealer: number };
+  act2RegularDeaths: number;
 }
 
 export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false, setup?: (run: RunState) => void): RunSummary {
@@ -77,9 +80,9 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
   let reachedDealer = 0;
   let dealerWins = 0;
   let act1 = 0;
-  let reachedMirror = 0;
-  let mirrorHp = 0;
-  let mirrorWins = 0;
+  let reachedWheel = 0;
+  let wheelHp = 0;
+  let wheelWins = 0;
   const faced: Record<string, number> = {};
   const killed: Record<string, number> = {};
   let fights = 0;
@@ -97,10 +100,12 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
   let jackpots = 0;
   let chips = 0;
   let wonFights = 0;
-  const pw = { mirror: [] as number[], act3: [] as number[], dealer: [] as number[] };
+  const pw = { wheel: [] as number[], act3: [] as number[], dealer: [] as number[] };
   let houseFrac = 0;
-  let mirrorFrac = 0;
+  let wheelFrac = 0;
   const loops: number[] = [];
+  const bt = { house: [0, 0], act2: [0, 0], dealer: [0, 0] };
+  let act2Deaths = 0;
 
   for (let i = 0; i < runs; i++) {
     const runSeed = seeds.int(0xffffffff);
@@ -128,10 +133,10 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
         houseFrac += run.player.hp / run.player.maxHp;
       }
       if (run.depth === actLength(2) && run.act === 2) {
-        reachedMirror++;
-        mirrorHp += run.player.hp;
-        mirrorFrac += run.player.hp / run.player.maxHp;
-        pw.mirror.push(machinePower(run));
+        reachedWheel++;
+        wheelHp += run.player.hp;
+        wheelFrac += run.player.hp / run.player.maxHp;
+        pw.wheel.push(machinePower(run));
       }
       if (run.act === 3 && !run.endless) (run.depth < actLength(3) ? pw.act3 : pw.dealer).push(machinePower(run));
       SIM_BIAS.onFight?.(run);
@@ -155,6 +160,12 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
         actTurns[act] += fight.turn;
         actFights[act]++;
       }
+      if (!regular && !run.endless) {
+        const k = act === 1 ? bt.house : act === 2 ? bt.act2 : bt.dealer;
+        k[0] += fight.turn;
+        k[1]++;
+      }
+      if (regular && act === 2 && fight.winner !== 'player') act2Deaths++;
       if (regular && act === 3) {
         a3.n++;
         a3.turns += fight.turn;
@@ -177,8 +188,8 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
         bossWins++;
         act1++;
       }
-      if (run.act === 3 && act === 2) mirrorWins++;
-      else if (run.won && act === 2) mirrorWins++;
+      if (run.act === 3 && act === 2) wheelWins++;
+      else if (run.won && act === 2) wheelWins++;
       if (run.won && act === 3) dealerWins++;
       while (!run.over && run.pendingChoice?.length) {
         const cs = run.pendingChoice;
@@ -233,9 +244,9 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
     winPct: (100 * wins) / runs,
     deathsAtDepth: deaths.map((d) => (100 * d) / runs),
     act1Pct: (100 * act1) / runs,
-    reachedMirrorPct: (100 * reachedMirror) / runs,
-    mirrorWinPct: reachedMirror ? (100 * mirrorWins) / reachedMirror : 0,
-    avgHpIntoMirror: reachedMirror ? mirrorHp / reachedMirror : 0,
+    reachedWheelPct: (100 * reachedWheel) / runs,
+    wheelWinPct: reachedWheel ? (100 * wheelWins) / reachedWheel : 0,
+    avgHpIntoWheel: reachedWheel ? wheelHp / reachedWheel : 0,
     dealerWinPct: reachedDealer ? (100 * dealerWins) / reachedDealer : 0,
     reachedDealerPct: (100 * reachedDealer) / runs,
     killRate: Object.fromEntries(Object.keys(faced).map((k) => [k, `${pct(killed[k] ?? 0, faced[k])} of ${faced[k]}`])),
@@ -250,10 +261,12 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
     turnsByAct: [1, 2, 3].map((a) => (actFights[a] ? actTurns[a] / actFights[a] : 0)),
     jackpotPct: spins ? (100 * jackpots) / spins : 0,
     chipsPerFight: wonFights ? chips / wonFights : 0,
-    power: { mirror: median(pw.mirror), act3: median(pw.act3), dealer: median(pw.dealer) },
+    power: { wheel: median(pw.wheel), act3: median(pw.act3), dealer: median(pw.dealer) },
     hpIntoHousePct: reachedBoss ? (100 * houseFrac) / reachedBoss : 0,
-    hpIntoMirrorPct: reachedMirror ? (100 * mirrorFrac) / reachedMirror : 0,
+    hpIntoWheelPct: reachedWheel ? (100 * wheelFrac) / reachedWheel : 0,
     endlessLoops: loops.sort((a, b) => a - b),
+    bossTurns: { house: bt.house[1] ? bt.house[0] / bt.house[1] : 0, act2: bt.act2[1] ? bt.act2[0] / bt.act2[1] : 0, dealer: bt.dealer[1] ? bt.dealer[0] / bt.dealer[1] : 0 },
+    act2RegularDeaths: (100 * act2Deaths) / runs,
   };
 }
 
@@ -262,9 +275,9 @@ const median = (a: number[]) => (a.length ? [...a].sort((x, y) => x - y)[Math.fl
 export function formatRunSummary(s: RunSummary): string {
   return [
     `run win ${s.winPct.toFixed(1)}%  | ACT 1: reached House ${s.reachedBossPct.toFixed(0)}%  House win ${s.bossWinPct.toFixed(0)}%  hp in ${s.avgHpIntoBoss.toFixed(1)}  cleared ${s.act1Pct.toFixed(1)}%`,
-    `ACT 2: reached Mirror ${s.reachedMirrorPct.toFixed(0)}%  Mirror win ${s.mirrorWinPct.toFixed(0)}%  hp in ${s.avgHpIntoMirror.toFixed(1)}${s.reachedDealerPct ? `  | ACT 3: reached Dealer ${s.reachedDealerPct.toFixed(0)}%  Dealer win ${s.dealerWinPct.toFixed(0)}%` : ''}`,
+    `ACT 2: reached Wheel ${s.reachedWheelPct.toFixed(0)}%  Wheel win ${s.wheelWinPct.toFixed(0)}%  hp in ${s.avgHpIntoWheel.toFixed(1)}${s.reachedDealerPct ? `  | ACT 3: reached Dealer ${s.reachedDealerPct.toFixed(0)}%  Dealer win ${s.dealerWinPct.toFixed(0)}%` : ''}`,
     `turns/fight ${s.avgTurnsPerFight.toFixed(1)}  rocks at end ${s.avgRocksAtEnd.toFixed(1)}`,
-    `deaths by fight: ${s.deathsAtDepth.map((d, i) => `${i === 5 ? 'HOUSE' : i === 11 ? 'MIRROR' : i === 15 ? 'DEALER' : i < 6 ? `A${i + 1}` : i < 12 ? `B${i - 5}` : `C${i - 11}`} ${d.toFixed(0)}%`).filter((_, i) => i < 12 || s.reachedDealerPct > 0).join(' ')}`,
+    `deaths by fight: ${s.deathsAtDepth.map((d, i) => `${i === 5 ? 'HOUSE' : i === 11 ? 'WHEEL' : i === 15 ? 'DEALER' : i < 6 ? `A${i + 1}` : i < 12 ? `B${i - 5}` : `C${i - 11}`} ${d.toFixed(0)}%`).filter((_, i) => i < 12 || s.reachedDealerPct > 0).join(' ')}`,
     `kill rate by enemy: ${Object.entries(s.killRate).map(([k, v]) => `${k} ${v}`).join(' | ')}`,
     `relics: ${Object.entries(s.relicWin).map(([k, v]) => `${k} ${v}`).join(' | ')}`,
   ].join('\n');

@@ -83,22 +83,22 @@ describe('counter-enemies', () => {
 });
 
 describe('Package P', () => {
-  it('the Mirror stops at half HP on the turn it cracks, and copies none of your charms', () => {
+  it('THE WHEEL holds at half HP on the turn it SPINS FASTER, and carries none of your charms', () => {
     const f = fight((c) => {
       c.player.strips = reels3({ sword: 12 });
-      c.enemy = { hp: 1000, strips: reels3({ shield: 12 }), ability: { kind: 'reflect', every: 3, power: 200 }, boss: 'mirror' };
+      c.enemy = { hp: 1000, strips: reels3({ shield: 12 }), ability: { kind: 'bets', every: 3, power: 2 }, boss: 'wheel' };
     });
     f.sides.enemy.hp = 520;
     f.forceNext('player', ['sword', 'sword', 'sword']); // 90 would take it to 430
     const { events } = f.step();
-    expect(ofType(events, 'shatter').length).toBe(1);
+    expect(ofType(events, 'wheelFast').length).toBe(1);
     expect(f.sides.enemy.hp).toBe(500);
 
     const run = createRun(base, 8);
     run.act = 2;
     run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen', n: 2 }, { reel: 1, symbol: 'shield', enh: 'gold', n: 2 }];
     run.depth = RUN_FIGHTS;
-    run.enemies[RUN_FIGHTS] = { ...run.enemies[RUN_FIGHTS], boss: 'mirror', isBoss: true };
+    run.enemies[RUN_FIGHTS] = { ...run.enemies[RUN_FIGHTS], boss: 'wheel', isBoss: true };
     expect(fightConfig(run, base).enemy.gilded ?? []).toEqual([]);
   });
 
@@ -115,36 +115,6 @@ describe('Package P', () => {
     const m = createRun(base, 10, 'joker');
     const k = createRun(base, 10, 'knight');
     expect(enemyHp(m, m.enemies[0])).toBeLessThan(enemyHp(k, k.enemies[0]));
-  });
-});
-
-describe('THE MIRROR: SHARDS', () => {
-  const mirror = (shards: string[], cracked = false) => {
-    const f = new Fight(
-      (() => {
-        const c = fightConfig(createRun(base, 3, 'knight'), base);
-        c.player.strips = reels3({ sword: 12 });
-        c.player.bonusSymbols = false;
-        c.enemy = { hp: 9999, strips: reels3({ sword: 4, shield: 4, shard: 4 }), ability: null, boss: 'mirror' };
-        return c;
-      })(),
-      5,
-    );
-    if (cracked) (f as unknown as { shattered: boolean }).shattered = true;
-    f.forceNext('player', ['sword', 'sword', 'sword']);
-    const dealt = ofType(f.step().events, 'attack')[0].amount;
-    f.forceNext('enemy', shards as never);
-    const hit = ofType(f.step().events, 'attack').find((a) => a.note === 'reflect')?.amount ?? 0;
-    return { dealt, hit };
-  };
-  it('each shard throws a third of your last hit back (a jackpot: all of it); cracked, a half each; at least 30', () => {
-    const one = mirror(['shard', 'sword', 'shield']);
-    expect(one.hit).toBe(Math.max(30, Math.round(one.dealt / 3 / 10) * 10));
-    const all = mirror(['shard', 'shard', 'shard']);
-    expect(all.hit).toBe(Math.max(30, Math.round(all.dealt / 10) * 10));
-    expect(all.hit).toBeGreaterThanOrEqual(one.hit);
-    const cracked = mirror(['shard', 'sword', 'shield'], true);
-    expect(cracked.hit).toBeGreaterThan(one.hit - 1);
   });
 });
 
@@ -169,22 +139,6 @@ describe('on-symbol numbers match the calculation (audit)', () => {
     expect(ok).toBeGreaterThan(0);
   });
 
-  it("THE MIRROR announces what each shard throws back after your spin", () => {
-    const c = fightConfig(createRun(base, 3, 'knight'), base);
-    c.player.strips = reels3({ sword: 12 });
-    c.player.bonusSymbols = false;
-    c.enemy = { hp: 9999, strips: reels3({ shard: 12 }), ability: null, boss: 'mirror' };
-    const f = new Fight(c, 5);
-    f.forceNext('player', ['sword', 'sword', 'sword']);
-    const ev = f.step().events;
-    const dealt = ofType(ev, 'attack')[0].amount;
-    const charge = ofType(ev, 'mirrorCharge')[0];
-    expect(charge.last).toBe(dealt);
-    expect(charge.each).toBe(Math.round(dealt / 3 / 10) * 10);
-    const shards = ofType(f.step().events, 'shardReflect')[0];
-    expect(shards.count).toBe(3);
-    expect(shards.amount).toBe(Math.max(30, Math.round(dealt / 10) * 10));
-  });
 });
 
 describe('THE HOUSE pot never goes negative (endless loop 4: user bug)', () => {

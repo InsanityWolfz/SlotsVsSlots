@@ -14,4 +14,4 @@ SIM_BIAS.onFight = (run) => {
   else if (run.act === 3) d.push(machinePower(run));
 };
 simulateRuns(defaultConfig(), Number(nArg ?? 150), 'greedy', 4242, 'thorn', 2, true);
-console.log(`[${edits}] power medians: mirror ${Math.round(med(m))} act3 ${Math.round(med(a3))} dealer ${Math.round(med(d))}`);
+console.log(`[${edits}] power medians: wheel ${Math.round(med(m))} act3 ${Math.round(med(a3))} dealer ${Math.round(med(d))}`);

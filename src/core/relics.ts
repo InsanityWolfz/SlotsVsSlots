@@ -253,14 +253,8 @@ export const SANDGLASS_SLOW = 1;
 export const OVERCHARGE_ECHO = 1 / 3;
 /** OVERCHARGE on TESLA: every lightning strike hits this much harder (not an echo per strike). */
 export const OVERCHARGE = { lightning: 0.3 };
-/** The Mirror's REFLECTION is capped at this share of your max HP (two from full kill you). */
-export const REFLECT_CAP = 0.6;
-/** The Mirror plays your build, so its hits are capped at this share of your max HP (your gold jackpots would one-shot you). */
-export const MIRROR_HIT_CAP = 0.4;
 /** Bomber bombs: fuse in the victim's turns, damage when it runs out (shield blocks). */
 export const BOMB = { fuse: 3, damage: 3 * UNIT };
-/** The Mirror's Reflection: never less than this. */
-export const REFLECT_MIN = 3 * UNIT;
 
 export const CLOVER_CHANCE = 0.3;
 export const BATTERY_ENERGY = 3 * UNIT;
@@ -310,6 +304,8 @@ export const ELITE_ONLY: ReadonlySet<RelicId> = new Set<RelicId>(['mirror']);
  * rest growing. It cashes out at the START of its turn (before it spins) so the LETHAL warning is
  * always true (playtest ITERATION_3).
  */
-export const POT = { seed: 8 * UNIT, houseCut: 2 * UNIT, cashEvery: 3, skim: 0.5, allInMin: 8 * UNIT };
+// 2026-10-09 (BOSS_REDESIGN 2): a shorter House with a fatter pot (seed 8 -> 12, cut 2 -> 3), and LAST CALL: from its
+// turn `lastCall` (both sides' spins) it skims every turn.
+export const POT = { seed: 12 * UNIT, houseCut: 3 * UNIT, cashEvery: 3, skim: 0.5, allInMin: 8 * UNIT, lastCall: 20 };
 /** Boss HP grows with the relics you bring in. */
 export const BOSS_HP_PER_RELIC = 3 * UNIT;

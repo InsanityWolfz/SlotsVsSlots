@@ -194,20 +194,20 @@ describe('boss: the progressive pot', () => {
     f.step();
     f.forceNext('player', ['shield', 'shield', 'shield']);
     const [win] = ofType(f.step().events, 'potWin');
-    expect(win).toMatchObject({ from: 'player', amount: 190, blocked: 0 });
+    expect(win).toMatchObject({ from: 'player', amount: 240, blocked: 0 }); // 120 seed + 90 coin jackpot + its 30 cut
     expect(f.pot).toBe(0);
 
     const g = boss((c) => (c.relics = ['crown']));
     g.forceNext('player', ['shield', 'shield', 'bolt']);
-    expect(ofType(g.step().events, 'potWin')[0]).toMatchObject({ from: 'player', amount: 40 }); // half of the 80 seed
+    expect(ofType(g.step().events, 'potWin')[0]).toMatchObject({ from: 'player', amount: 60 }); // half of the 120 seed
   });
 
-  it('at half HP the House goes ALL IN and doubles the pot', () => {
+  it('at half HP the House DOUBLES DOWN: the pot doubles', () => {
     const f = boss((c) => (c.enemy.hp = 180));
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const [ph] = ofType(f.step().events, 'phase');
     expect(f.allIn).toBe(true);
-    expect(ph.pot).toBe(160); // max(80 x 2, 80 + 80)
+    expect(ph.pot).toBe(240); // max(120 x 2, 120 + 80)
   });
 });
 

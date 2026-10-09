@@ -14,8 +14,6 @@ import {
   CACTUS_SHARE,
   KEY_MULT,
   MIDAS_TOUCH_CAP,
-  MIRROR_HIT_CAP,
-  REFLECT_CAP,
   OVERCHARGE_ECHO,
   OVERCHARGE,
   CLOVER_CHANCE,
@@ -28,24 +26,21 @@ import {
   ROD_MAX_BONUS,
   ROD_PER_CHARGED,
   ROD_SPECIAL_COST,
-  REFLECT_MIN,
   ROD_SPECIAL_DAMAGE,
 } from './relics';
 import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
-import { ENDLESS, GATEKEEPER, TUNE } from './enemies';
+import { ENDLESS, GATEKEEPER, TUNE, WHEEL_RULES } from './enemies';
 import { betPayout, betState, newTrack, trackEvent } from './bets';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
-export const MIDAS = { houseSkim: 2, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3 };
+// houseSkim 2 -> 0 (BOSS_REDESIGN 2): the House's hidden chip skim drained CASSIDY's rain (her House ran 32 turns).
+export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3 };
 /**
  * CASH CASSIDY's MAKE IT RAIN!: a chip jackpot with at least `cost` chips held hits for chips x `perChip` (base: the
  * jackpot, charms, relics and a full HIGH ROLLER bar multiply it), counted before it costs `cost` chips.
  * RAINMAKER halves the cost; LOOSE CHANGE lets a chip pair rain at half base; TIP JAR heals; SLUSH FUND refills the bar.
  */
 // Built at x2 / 10 chips (the user's draft), the rain cost more than it hit: CASSIDY 20.8 WHITE. x3 / 5 measured 39.6 / 18.8.
-/** THE MIRROR's shards: the share of your last spin's damage each one throws back (cracked: deeper). */
-export const SHARD_SHARE = 1 / 3;
-export const SHARD_CRACKED = 1 / 2;
 /** chipLess: a chip group pays (its size - chipLess) chips, at least 1. */
 // 2026-10-07 (no swords): chips now hit too and land 1.5x as often, and rain grows with chips held (uncapped), so
 // rain x3 + a chip per symbol made CASSIDY 83 / 63. Now x2, and a group pays its size - 1 chips (1, 1, 2).
@@ -106,10 +101,10 @@ const ALL_IN_FLOOR = 0.3;
 const FAKE_TURNS = 3;
 
 /** Symbols that act on the opponent when they're native to the caster's strips. */
-export const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake']);
+export const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake', 'ball']);
 /** HOLY WATER washes off these writes (not coins, drains or the Mimic's hit) and these abilities. */
-const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'bomb', 'hex', 'card', 'gavel', 'rake', 'ground', 'fake']);
-const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel']);
+const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'bomb', 'hex', 'card', 'gavel', 'rake', 'ground', 'fake', 'ball']);
+const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel', 'ball']);
 const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
 const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'thorn', 'goldbar', 'note']);
@@ -144,7 +139,7 @@ export interface Combatant {
   ability: AbilityDef | null;
   charge: number;
   relics: Set<RelicId>;
-  /** Symbol and charm levels (the player; the Mirror copies your symbol levels). */
+  /** Symbol and charm levels (the player). */
   levels?: Levels;
 }
 
@@ -222,6 +217,8 @@ export function effectText(sym: SymbolId, amount: number): string {
       return `FAKES ${s(2 * n, 'CHARM')}`;
     case 'mimicSym':
       return jackpot ? 'COPIES YOUR BEST HIT X2' : pair ? 'COPIES YOUR BEST HIT' : 'COPIES HALF YOUR BEST HIT';
+    case 'ball':
+      return pair ? `BETS ${s(jackpot ? 2 : 1, 'MORE CHIP', 'MORE CHIPS')}` : 'FIZZLES';
     default:
       return '';
   }
@@ -261,14 +258,12 @@ export class Fight {
   phoenixUsed = false;
   /** An act 3 regular fight (graded: its ability opens, its first attack takes a cover charge). */
   get act3Regular(): boolean {
-    return (this.cfg.enemy.act ?? 1) >= 3 && !this.isBoss && !this.isMirror && !this.isDealer;
+    return (this.cfg.enemy.act ?? 1) >= 3 && !this.isBoss && !this.isWheel && !this.isDealer;
   }
   /** ENDLESS: LAST CALL has been announced. */
   private lastCall = false;
   /** The act 3 cover charge has been taken this fight. */
   private coverTaken = false;
-  /** The Mirror's damage so far this turn (its whole turn is capped). */
-  private mirrorTurnDealt = 0;
   /** HP you've lost this turn (one-turn cap: regular enemies 40% of your max HP, bosses 60%). */
   private playerTurnHp = 0;
   /** This enemy turn was announced (ALL IN or RAISE). */
@@ -277,16 +272,22 @@ export class Fight {
   private thawShield = new Set<number>();
   /** Relics that act as the fight opens (Battery, Lightning Rod): popped on turn 1. */
   private openers: RelicId[] = [];
-  /** The Mirror cracked (phase 2). */
-  shattered = false;
-  /** The turn the Mirror cracked on: it takes no more HP damage that turn (the crack gate). */
-  private crackTurn = -1;
-  /** What each side did on its last spin: biggest group, and total damage sent (for Mimic / Reflection). */
+  /** THE WHEEL: chips (bets) on each of your reels. */
+  readonly bets: number[] = [0, 0, 0];
+  /** THE WHEEL SPINS FASTER (phase 2, or from the start at GREEN): it places WHEEL_RULES.fast chips a turn. */
+  fast = false;
+  /** GREEN: THE WHEEL STARTS FAST, so there is no half-HP phase (and no gate). */
+  private fastFromStart = false;
+  /** The turn THE WHEEL hit half HP on: it takes no more HP damage that turn (the half-HP gate). */
+  private gateTurn = -1;
+  /** THE WHEEL: chips your sweeps won this fight (paid if you win; CASSIDY's go straight into her hand). */
+  betChips = 0;
+  /** THE HOUSE: LAST CALL is on (it skims every turn). */
+  houseLastCall = false;
+  /** What each side did on its last spin: biggest group, and total damage sent (for the Mimic). */
   readonly last: Record<SideId, { best: number; damage: number }> = { player: { best: 0, damage: 0 }, enemy: { best: 0, damage: 0 } };
   /** BLAZE: extra special damage from the blaze cells you own. */
   readonly blaze: number;
-  /** The Mirror's Reflection: your best spin since its last one. */
-  reflectBank = 0;
   /** The Dealer: the card it will deal next, whether it has dealt yet, HOUSE RULES, and RAISE flags. */
   nextDeal: DealCard = 'shuffle';
   dealt = false;
@@ -374,8 +375,8 @@ export class Fight {
     // BLAZE: every blaze cell you own adds to your special.
     const blazeCells = p.reels.reduce((a, reel) => a + reel.cells.filter((c) => c.enh === 'blaze').length, 0);
     this.blaze = blazeCells * charmValue('blaze', this.charmLvl(p, 'blaze'));
-    // The Mirror plays your machine but never your junk (and fires no specials).
-    if (this.isMirror) e.casts.clear();
+    // GREEN: THE WHEEL STARTS FAST (3 chips a turn from its first turn; no half-HP phase).
+    if (this.isWheel && (this.cfg.stake ?? 0) >= STAKE.wheelFast) this.fast = this.fastFromStart = true;
     // ENDLESS: the loop House opens with a fatter pot.
     const loopHouse = this.isBoss && !!this.cfg.enemy.endless;
     if (this.isBoss) this.pot = loopHouse ? unitsUp(this.cfg.player.hp * ENDLESS.potSeed) : POT.seed;
@@ -423,9 +424,9 @@ export class Fight {
     return this.cfg.enemy.boss === 'house';
   }
 
-  /** The Mirror (act 2 boss). */
-  get isMirror(): boolean {
-    return this.cfg.enemy.boss === 'mirror';
+  /** THE WHEEL (act 2 boss): PLACE YOUR BETS. */
+  get isWheel(): boolean {
+    return this.cfg.enemy.boss === 'wheel';
   }
 
   /** The Dealer (act 3 boss). */
@@ -437,7 +438,7 @@ export class Fight {
   midasChips = 0;
   /** LUCRE: chips its groups paid this fight (paid on a win, up to its cap). */
   lucreChips = 0;
-  /** BRIAR: thorn volleys since her last spin (the Mirror reflects them as her hit). */
+  /** BRIAR: thorn volleys since her last spin (they count toward her spin's damage). */
   private volleyCarry = 0;
   /** TAX MAN: chips paid this fight. */
   private taxChips = 0;
@@ -517,11 +518,6 @@ export class Fight {
     this.resolving = true;
     const first = res.side === 'player' ? this.sides.enemy : this.sides.player;
     for (const c of [first, this.sides[res.side]]) this.checkDeath(c, res.events);
-    // THE MIRROR: say what each shard will throw back on its turn (your hit just now, cracked or not).
-    if (this.isMirror && res.side === 'player' && !this.over) {
-      const share = this.shattered ? SHARD_CRACKED : SHARD_SHARE;
-      res.events.push({ type: 'mirrorCharge', side: 'enemy', last: this.last.player.damage, share, each: Math.round((this.last.player.damage * share) / UNIT) * UNIT });
-    }
     this.resolving = false;
     for (const e of res.events) trackEvent(this.betTrack, e);
     // MIDAS: a side bet won mid-fight pays at once, as gold-bar chips (they fill the vault: EXPERT_PLAYTEST_7 E9).
@@ -548,7 +544,6 @@ export class Fight {
     // LAST CALL is announced as the enemy's turn begins (its scored hits carry the multiplier on their banner).
     else this.enemyDmgMul(events);
     events.push({ type: 'turnStart', turn: this.turn, side });
-    this.mirrorTurnDealt = 0;
     this.playerTurnHp = 0;
     if (side === 'player') this.thawShield.clear();
     // The Dealer's big turns are the announced ones (ALL IN, RAISE): only those may hit up to the boss cap.
@@ -560,8 +555,8 @@ export class Fight {
     if (this.cfg.shieldReset === 'ownTurnStart') this.resetShield(me, events);
     // STORM FRONT (big choice): your first spin of every fight opens with a lightning strike.
     if (side === 'player' && this.playerSpins === 1 && this.special && this.big.startStrike) this.gainEnergy(me, Math.max(0, this.cfg.specialCost - me.energy), [], events);
-    // Saved chips shield you at the start of each boss turn (the House and the Mirror).
-    if (side === 'enemy' && (this.isBoss || this.isMirror || this.isDealer)) {
+    // Saved chips shield you at the start of each boss turn.
+    if (side === 'enemy' && (this.isBoss || this.isWheel || this.isDealer)) {
       const p = this.sides.player;
       const stack = this.cfg.player.stackShield ?? 0;
       if (stack > 0) {
@@ -776,6 +771,8 @@ export class Fight {
       // ENDLESS: a jackpot takes only half the loop House's pot (it can't be farmed every spin).
       this.winPot(me, events, (score.tier === 'triple' ? 1 : 0.5) * (this.cfg.enemy.endless ? ENDLESS.potSteal : 1));
     }
+    // THE WHEEL: your pairs sweep the bets off their reels; a jackpot clears the table.
+    if (!this.over && side === 'player' && this.isWheel) this.sweepBets(me, score, events);
     // The house always takes its cut.
     if (!this.over && side === 'enemy' && this.isBoss) {
       const cut = this.potCut;
@@ -790,7 +787,7 @@ export class Fight {
       if (tripled || (THORNS.bloom > 0 && me.energy >= THORNS.bloom)) this.thorns(me, foe, events, 1, me.energy);
       else if (THORNS.shed > 0) this.thorns(me, foe, events, 1, Math.max(UNIT, unitsUp(me.energy * THORNS.shed)));
     }
-    // What this spin did (the Mimic and the Mirror copy it).
+    // What this spin did (the Mimic copies it).
     this.last[side] = {
       best: Math.max(0, ...score.groups.filter((g) => g.matched || !DEAD.has(g.symbol)).map((g) => g.amount)),
       damage:
@@ -798,7 +795,6 @@ export class Fight {
         (side === 'player' ? this.volleyCarry : 0),
     };
     if (side === 'player') this.volleyCarry = 0;
-    if (side === 'player') this.reflectBank = Math.max(this.reflectBank, this.last.player.damage);
     if (!this.over) this.defuse(me, events);
     if (!this.over && side === 'player') this.markedCards(me, events);
     if (!this.over) this.burnFuses(me, events);
@@ -898,8 +894,8 @@ export class Fight {
     const joker = player && this.cabinet?.jokerWilds && line.includes('wild');
     const pairRule = me.relics.has('mirror') || joker ? 'anyTwo' : this.cfg.pairRule;
     const cfg = { ...this.cfg, pairRule } as GameConfig;
-    // Your symbols are worth their level (the Mirror copies your levels).
-    const lv = player ? me.levels : this.isMirror ? me.levels : undefined;
+    // Your symbols are worth their level.
+    const lv = player ? me.levels : undefined;
     // Enemy shields are worth less than yours (your damage is mostly swords now; only TESLA pierces).
     const value = (s: SymbolId) => (lv ? playerSymValue(lv, s, this.cfg.base[s]) : s === 'shield' && !player ? Math.round(this.cfg.base[s] * TUNE.enemyShield) : this.cfg.base[s]);
     // 3 WILDS: the bonus reel picks one of your symbols and the line pays its jackpot.
@@ -1394,16 +1390,6 @@ export class Fight {
         // Sevens are the House's heavy hitters.
         this.hit(me, foe, g.amount, g.reels, events, false, undefined, true);
         return;
-      case 'shard': {
-        // THE MIRROR: each shard on its payline throws a third of your last spin's damage back (a half once cracked),
-        // at least REFLECT_MIN. Its whole turn stays under REFLECT_CAP of your max HP (hit()).
-        if (player || !this.isMirror) break;
-        const each = this.shattered ? SHARD_CRACKED : SHARD_SHARE;
-        const dmg = Math.max(REFLECT_MIN, Math.round((this.last.player.damage * each * g.reels.length) / UNIT) * UNIT);
-        events.push({ type: 'shardReflect', side: me.side, reels: g.reels, count: g.reels.length, share: each, last: this.last.player.damage, amount: dmg });
-        this.hit(me, foe, dmg, g.reels, events, false, 'reflect');
-        return;
-      }
       case 'shield':
         me.shield += g.amount;
         events.push({ type: 'shieldGain', side: me.side, reels: g.reels, amount: g.amount, total: me.shield });
@@ -1430,8 +1416,8 @@ export class Fight {
         }
         return;
       case 'bolt':
-        // The Mirror has no special of its own: it only reflects. Only TESLA (or the bare engine) has one.
-        if ((me.side === 'enemy' && this.isMirror) || (player && !this.special)) break;
+        // Only TESLA (or the bare engine) has a special.
+        if (player && !this.special) break;
         {
           // The Grounder: a grounded bolt on your payline earths its share of the energy.
           const grounded = player ? g.reels.filter((r) => this.isGrounded(me, r)).length : 0;
@@ -1792,30 +1778,21 @@ export class Fight {
     reels: number[],
     events: CombatEvent[],
     pierce = false,
-    note?: 'drain' | 'mimic' | 'reflect' | 'echo',
+    note?: 'drain' | 'mimic' | 'echo',
     scaled = false,
   ): number {
     // Nothing hits a machine that already fell this turn (its death resolves at the end of the turn).
     if (foe.hp <= 0) return 0;
     // ENDLESS (per loop, LAST CALL after enemy turn 40) and ATTRITION (act 3: +6% per enemy turn after the 2nd, max x2).
     // Scored swords and sevens carry it already (it shows on their banner).
-    if (me.side === 'enemy' && note !== 'reflect' && amount > 0 && !scaled) {
+    if (me.side === 'enemy' && amount > 0 && !scaled) {
       const mul = this.enemyDmgMul(events);
       if (mul !== 1) amount = Math.min(ENDLESS.clamp, Math.round((amount * mul) / UNIT) * UNIT || amount);
     }
     // RAISE: the Dealer's next hit pays double.
-    if (me.side === 'enemy' && this.raiseEnemy && amount > 0 && note !== 'reflect') {
+    if (me.side === 'enemy' && this.raiseEnemy && amount > 0) {
       amount *= 2;
       this.raiseEnemy = false;
-    }
-    // The Mirror copies your build: each hit is capped relative to you, and so is its WHOLE turn
-    // (reflection + attack together never exceed REFLECT_CAP of your max HP: EXPERT_PLAYTEST_2 F1).
-    if (me.side === 'enemy' && this.isMirror) {
-      if (note !== 'reflect') amount = Math.min(amount, Math.max(UNIT, Math.round(foe.maxHp * MIRROR_HIT_CAP)));
-      const budget = Math.max(0, Math.round(foe.maxHp * REFLECT_CAP) - this.mirrorTurnDealt);
-      amount = Math.min(amount, budget);
-      if (amount <= 0) return 0;
-      this.mirrorTurnDealt += amount;
     }
     const pierced = pierce && foe.shield > 0;
     // ACT 3 COVER CHARGE: the first enemy attack each fight puts at least 10% of your max HP through your shield.
@@ -1876,8 +1853,6 @@ export class Fight {
   }
 
   private gainEnergy(me: Combatant, amount: number, reels: number[], events: CombatEvent[], earthed = 0): void {
-    // The Mirror has no special (a copied Jackpot Bell must not make it throw lightning).
-    if (me.side === 'enemy' && this.isMirror) return;
     const foe = this.sides[other(me.side)];
     if (me.side === 'player') amount *= this.cfg.player.meterMul ?? 1;
     me.energy += amount;
@@ -1925,8 +1900,8 @@ export class Fight {
     // Every strike heals a little (TESLA's payoff heal), plus Vampire Fang: once per storm, for all its strikes (one heal
     // after each strike spammed through a LIGHTNING STORM: user playtest).
     // PULSE: once a fight, a storm right before their ability fires resets it (not the House's cash out, the Dealer's
-    // deal or the Mirror: their telegraphs are the drama).
-    if (strikes > 0 && me.side === 'player' && me.relics.has('pulse') && !this.pulsed && !this.over && foe.ability && foe.charge >= foe.ability.every - 1 && foe.ability.kind !== 'jackpot' && foe.ability.kind !== 'deal' && !this.isMirror) {
+    // deal or THE WHEEL's NO MORE BETS: their telegraphs are the drama).
+    if (strikes > 0 && me.side === 'player' && me.relics.has('pulse') && !this.pulsed && !this.over && foe.ability && foe.charge >= foe.ability.every - 1 && foe.ability.kind !== 'jackpot' && foe.ability.kind !== 'deal' && foe.ability.kind !== 'bets') {
       this.pulsed = true;
       foe.charge = 0;
       events.push({ type: 'relic', side: 'player', relic: 'pulse' });
@@ -1969,18 +1944,20 @@ export class Fight {
     let hpDamage = Math.min(target.hp, amount - blocked);
     // ONE-TURN CAP on you: no turn takes more than 40% of your max HP (60% for bosses): no turn-2 one-shots (EXPERT_PLAYTEST_3 E2).
     if (target.side === 'player') {
-      const capShare = this.isDealer && !this.bigTurn ? TUNE.dealerQuietCap : this.isBoss || this.isMirror || this.isDealer ? TUNE.bossTurnCap : TUNE.turnCap;
+      const capShare = this.isDealer && !this.bigTurn ? TUNE.dealerQuietCap : this.isBoss || this.isWheel || this.isDealer ? TUNE.bossTurnCap : TUNE.turnCap;
       const cap = Math.round(target.maxHp * capShare);
       hpDamage = Math.max(0, Math.min(hpDamage, cap - this.playerTurnHp));
       this.playerTurnHp += hpDamage;
     }
-    // The crack gate: the Mirror's glass holds at half HP for the rest of the turn it cracks on.
+    // The Dealer can't fall below half HP before its first deal.
     if (target.side === 'enemy' && this.isDealer && !this.dealt) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp / 2)));
     // The Dealer always plays his FINAL HAND: before it, no hit takes him below 15% (a burst one-shot skipped the climax).
     if (target.side === 'enemy' && this.isDealer && this.dealt && !this.finalHand) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp * FINAL_HAND_DEEP)));
-    if (target.side === 'enemy' && this.isMirror) {
-      if (this.crackTurn === this.turn) hpDamage = 0;
-      else if (!this.shattered) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp / 2)));
+    // THE WHEEL's half-HP gate (the Mirror's old crack gate): it holds at half HP for the rest of the turn it SPINS
+    // FASTER on, so both halves of the fight always play. (GREEN starts fast: no phase, no gate.)
+    if (target.side === 'enemy' && this.isWheel && !this.fastFromStart) {
+      if (this.gateTurn === this.turn) hpDamage = 0;
+      else if (!this.fast) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp / 2)));
     }
     target.hp -= hpDamage;
     if (target.hp <= 0 && target.side === 'enemy') this.overkill = amount - blocked - hpDamage;
@@ -2018,11 +1995,11 @@ export class Fight {
         events.push({ type: 'finalHand', side: c.side, cards: armed || deep ? ['allin', 'raise'] : ['raise', 'allin'] });
         events.push({ type: 'dealNext', side: c.side, card: this.nextDeal, then: [...this.finalHand] });
       }
-      // The Mirror cracks at half HP: its shards cut deeper (a half of your last hit each, not a third).
-      if (c.side === 'enemy' && this.isMirror && !this.shattered && c.hp <= c.maxHp / 2) {
-        this.shattered = true;
-        this.crackTurn = this.turn;
-        events.push({ type: 'shatter', side: c.side, every: 0 });
+      // THE WHEEL SPINS FASTER at half HP: it places 3 chips a turn from now on.
+      if (c.side === 'enemy' && this.isWheel && !this.fast && c.hp <= c.maxHp / 2) {
+        this.fast = true;
+        this.gateTurn = this.turn;
+        events.push({ type: 'wheelFast', side: c.side, per: WHEEL_RULES.fast });
       }
       return;
     }
@@ -2074,6 +2051,10 @@ export class Fight {
         // Rocks are permanent for the run: single rocks fizzle, doubles add 1, jackpots 2.
         if (amount < PAIR_PAY) return this.fizzle(me, 'rock', reels, events);
         return this.junk(me, foe, amount >= JACKPOT_PAY ? 2 : 1, reels, events);
+      case 'ball':
+        // THE WHEEL's ball: a pair bets 1 more chip on you, a jackpot 2 (singles fizzle).
+        if (amount < PAIR_PAY) return this.fizzle(me, sym, reels, events);
+        return this.placeBets(me, foe, amount >= JACKPOT_PAY ? 2 : 1, events, true);
       case 'coin':
         this.pot += amount;
         events.push({ type: 'pot', side: me.side, reels, amount, total: this.pot });
@@ -2526,6 +2507,26 @@ export class Fight {
   private chargeAbility(me: Combatant, events: CombatEvent[]): void {
     const ab = me.ability!;
     me.charge++;
+    // THE WHEEL: PLACE YOUR BETS on its turns, and NO MORE BETS when the countdown runs out (it places none that turn).
+    if (ab.kind === 'bets') {
+      if (me.charge >= ab.every) {
+        me.charge = 0;
+        events.push({ type: 'abilityCharge', side: me.side, charge: ab.every, every: ab.every, kind: ab.kind });
+        events.push({ type: 'ability', side: me.side, kind: ab.kind, power: ab.power });
+        this.noMoreBets(me, this.sides[other(me.side)], events);
+        if (this.over) return;
+      } else this.placeBets(me, this.sides[other(me.side)], this.fast ? WHEEL_RULES.fast : ab.power, events);
+      events.push({ type: 'abilityCharge', side: me.side, charge: me.charge, every: ab.every, kind: ab.kind });
+      return;
+    }
+    // THE HOUSE's LAST CALL: from turn POT.lastCall it skims every turn (no 30-turn House: BOSS_REDESIGN 2).
+    if (ab.kind === 'jackpot' && this.isBoss && !this.cfg.enemy.endless && this.turn + 2 >= POT.lastCall) {
+      if (!this.houseLastCall) {
+        this.houseLastCall = true;
+        events.push({ type: 'lastCall', side: me.side, house: true });
+      }
+      me.charge = Math.max(me.charge, ab.every);
+    }
     if (ab.kind === 'jackpot' && me.charge >= ab.every) {
       me.charge = ab.every;
       this.cashPending = true;
@@ -2609,14 +2610,69 @@ export class Fight {
         this.chipsEaten += ab.power;
         events.push({ type: 'gulp', from: me.side, chips: ab.power });
         return this.heal(me, ab.power * 3 * UNIT, 'ability', events);
-      case 'reflect': {
-        // The Mirror throws your last spin back at you (at least a little).
-        const dmg = Math.max(REFLECT_MIN, Math.min(ab.power, this.reflectBank));
-        this.reflectBank = 0;
-        this.hit(me, foe, dmg, [], events, false, 'reflect');
-        return;
-      }
     }
+  }
+
+  // ---- THE WHEEL: PLACE YOUR BETS ---------------------------------------------------------
+
+  /** What one chip hits for at NO MORE BETS: a share of your max HP (never less than 1 unit). */
+  betPer(foe: Combatant = this.sides.player): number {
+    return Math.max(UNIT, unitsRound(foe.maxHp * (this.cfg.enemy.endless ? WHEEL_RULES.endlessChip : WHEEL_RULES.perChip)));
+  }
+
+  /** Chips on your reels right now. */
+  get betTotal(): number {
+    return this.bets.reduce((a, b) => a + b, 0);
+  }
+
+  /** THE WHEEL drops `n` chips on your reels: different reels while it can (a reel holds WHEEL_RULES.maxPerReel). */
+  private placeBets(me: Combatant, foe: Combatant, n: number, events: CombatEvent[], ball = false): void {
+    const reels: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const open = [0, 1, 2].filter((r) => this.bets[r] < WHEEL_RULES.maxPerReel);
+      if (!open.length) break;
+      const fresh = open.filter((r) => !reels.includes(r));
+      const r = this.rng.pick(fresh.length ? fresh : open);
+      this.bets[r]++;
+      reels.push(r);
+    }
+    // Turns to NO MORE BETS once this turn ends (its ball writes land before the turn's charge: one more to count).
+    const ab = me.ability;
+    const left = ab ? Math.max(0, ab.every - me.charge - (ball ? 1 : 0)) : 0;
+    events.push({ type: 'betPlaced', side: foe.side, reels, bets: [...this.bets], left, per: this.betPer(foe), ...(ball ? { ball } : {}) });
+  }
+
+  /** Your spin's pairs sweep the bets off their reels; a jackpot (THE DROP's lit notes count as reels) clears the table. */
+  private sweepBets(me: Combatant, score: LineScore, events: CombatEvent[]): void {
+    if (this.betTotal <= 0) return;
+    // Dead symbols never sweep (rocks, slime, stolen cells...): only a live group does.
+    const live = score.groups.filter((g) => !DEAD.has(g.symbol) && ((g.matched && (g.reels.length >= 2 || !!g.jackpot)) || (!!g.drop && g.amount > 0)));
+    if (!live.length) return;
+    const lit = new Set(live.flatMap((g) => [...g.reels, ...(g.drop && this.dropOff ? this.dropOff.cells.map((c) => c.reel) : [])]));
+    const table = live.some((g) => (g.matched && g.reels.length >= 3) || !!g.jackpot) || lit.size >= 3;
+    const reels = (table ? [0, 1, 2] : [...lit]).filter((r) => this.bets[r] > 0).sort();
+    if (!reels.length) return;
+    const chips = reels.reduce((a, r) => a + this.bets[r], 0);
+    for (const r of reels) this.bets[r] = 0;
+    events.push({ type: 'betSwept', side: me.side, reels, chips, bets: [...this.bets], table });
+    // Every chip you sweep is yours (CASSIDY's land in her hand at once: HIGH ROLLER counts them).
+    const got = chips * WHEEL_RULES.sweepChips;
+    if (got > 0) {
+      this.betChips += got;
+      this.midasChips += got;
+      events.push({ type: 'midasChips', side: me.side, amount: got, total: this.midasChips });
+    }
+  }
+
+  /** NO MORE BETS: the ball drops. Every chip left on your reels hits for its share of your max HP (one shielded hit). */
+  private noMoreBets(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
+    const chips = this.betTotal;
+    const per = this.betPer(foe);
+    const amount = Math.min(ENDLESS.clamp, chips * per);
+    const h = this.damage(foe, amount, false);
+    events.push({ type: 'noMoreBets', from: me.side, to: foe.side, chips, per, amount, ...h });
+    for (let r = 0; r < 3; r++) this.bets[r] = 0;
+    this.checkDeath(foe, events);
   }
 
   // ---- boss: the progressive pot ------------------------------------------------------

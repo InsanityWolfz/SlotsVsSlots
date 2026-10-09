@@ -1,7 +1,7 @@
 import { ACT2_NEW } from '../src/core/enemies';
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type SymbolId } from '../src/core/config';
-import { ARCHETYPES, generateRunPaths, MIRROR, RUN_FIGHTS, TUNE } from '../src/core/enemies';
+import { ARCHETYPES, generateRunPaths, RUN_FIGHTS, TUNE, WHEEL } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { BOMB, LEGENDARY, SANDGLASS_SLOW } from '../src/core/relics';
@@ -242,14 +242,14 @@ describe('act structure', () => {
     expect(shelf.some((i) => i.option.kind === 'relic' && LEGENDARY.has(i.option.relic) && i.price === CHIPS.prices.legend)).toBe(true);
     leaveShop(run);
     expect(isShopNow(run)).toBe(false);
-    // The act 2 map ends with the Mirror and shows new faces at every fork.
-    expect(run.paths[RUN_FIGHTS][0].boss).toBe('mirror');
+    // The act 2 map ends with THE WHEEL and shows new faces at every fork.
+    expect(run.paths[RUN_FIGHTS][0].boss).toBe('wheel');
     // (fight 4 is THE GATEKEEPER, the REPO MAN)
     expect(run.paths.slice(0, RUN_FIGHTS).every((opts) => opts.some((e) => ACT2_NEW.has(e.archetype) || e.archetype === 'repo'))).toBe(true);
     expect(TOTAL_FIGHTS).toBe(12);
   });
 
-  it('beating the Mirror wins the run', () => {
+  it('beating THE WHEEL wins the run (WHITE)', () => {
     const run = createRun(base, 22);
     run.act = 2;
     run.paths = generateRunPaths(new Rng(4), 2);
@@ -261,7 +261,7 @@ describe('act structure', () => {
     expect(run.over && run.won).toBe(true);
   });
 
-  it('the Mirror plays its own reels (swords, shields, SHARDS) and is sized to your HP; it cracks at half HP', () => {
+  it('THE WHEEL plays its own reels (swords, shields, sevens, BALLS) and is sized to your machine; it SPINS FASTER at half HP', () => {
     const run = createRun(base, 23, 'midas');
     run.act = 2;
     run.paths = generateRunPaths(new Rng(5), 2);
@@ -269,29 +269,17 @@ describe('act structure', () => {
     run.depth = RUN_FIGHTS;
     run.player.relics = ['battery', 'fang'];
     const cfg = fightConfig(run, base);
-    expect(cfg.enemy.strips.every((st) => (st.shard ?? 0) > 0)).toBe(true);
+    expect(cfg.enemy.strips.every((st) => (st.ball ?? 0) > 0)).toBe(true);
     expect(cfg.enemy.gilded ?? []).toEqual([]);
     expect(cfg.enemy.hp).toBe(enemyHp(run, run.enemies[RUN_FIGHTS]));
-    expect(cfg.enemy.hp).toBe(Math.round((TUNE.mirrorPower * BOSS_MUL.midas.mirror * sizingPower(run, 'mirror')) / 10) * 10 + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length);
-    expect(cfg.enemy.ability ?? null).toBeNull();
-    expect(MIRROR.ability).toBeNull();
+    expect(cfg.enemy.hp).toBe(Math.round((TUNE.wheelPower * BOSS_MUL.midas.wheel * sizingPower(run, 'wheel')) / 10) * 10 + TUNE.wheelFlat + TUNE.bossPerRelic * run.player.relics.length);
+    expect(cfg.enemy.ability).toEqual(WHEEL.ability);
 
     const f = new Fight(cfg, 9);
     f.sides.enemy.hp = Math.floor(f.sides.enemy.maxHp / 2) + 1;
     f.forceNext('player', ['goldbar', 'goldbar', 'shield']);
     const { events } = f.step();
-    expect(ofType(events, 'shatter').length).toBe(1);
-  });
-
-  it('REFLECTION throws your last spin damage back (min 30)', () => {
-    const f = fight((c) => {
-      c.player.strips = reels3({ sword: 12 });
-      c.enemy = { hp: 9999, strips: reels3({ shield: 12 }), ability: { kind: 'reflect', every: 1, power: 200 }, boss: 'mirror' };
-    });
-    f.forceNext('player', ['sword', 'sword', 'sword']);
-    f.step();
-    const hit = ofType(f.step().events, 'attack').find((a) => a.note === 'reflect')!;
-    expect(hit.amount).toBe(90);
+    expect(ofType(events, 'wheelFast').length).toBe(1);
   });
 
   it('act 2 archetypes exist with art ids and only appear in act 2', () => {

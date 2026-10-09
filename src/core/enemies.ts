@@ -14,7 +14,7 @@ export interface Archetype {
   strip: StripCounts;
   /** HP multiplier on the depth curve. */
   hpMul: number;
-  /** null: no timed ability (THE MIRROR: its shards do the reflecting). */
+  /** null: no timed ability. */
   ability: AbilityDef | null;
   /** Only these slot machines ever meet it (THE GROUNDER answers TESLA's lightning; user, 2026-10-08). */
   only?: CabinetId[];
@@ -242,21 +242,27 @@ export const BOSS: Archetype = {
 };
 
 /**
- * Act 2 boss. Its own reels (it used to copy yours, and your special symbols did nothing on its side: sword builds
- * were crushed and the rest breezed through). Each SHARD on its payline throws a share of your last spin's damage
- * back at you (at least a little); cracked at half HP, the shards cut deeper.
+ * Act 2 boss: THE WHEEL (roulette; playtest/BOSS_REDESIGN.md 1A). PLACE YOUR BETS: each of its turns it drops chips
+ * (bets) on your reels; your pairs sweep their reels, a jackpot sweeps them all. NO MORE BETS: every 3rd turn the wheel
+ * spins and each chip left hits for 5% of your max HP (one shielded hit). At half HP it SPINS FASTER (3 chips a turn).
+ * Its damage is a share of YOUR max HP, never of your hit, so your build changes the odds, not the size.
  */
-export const MIRROR: Archetype = {
-  id: 'mirror',
-  name: 'THE MIRROR',
-  portrait: 'enemyMirror',
-  strip: { sword: 5, shield: 3, shard: 3 },
+export const WHEEL: Archetype = {
+  id: 'wheel',
+  name: 'THE WHEEL',
+  portrait: 'enemyWheel',
+  strip: { sword: 5, shield: 3, seven: 2, ball: 2 },
   hpMul: 1,
-  ability: null,
+  ability: { kind: 'bets', every: 3, power: 2 },
   minDepth: 5,
-  blurb: 'ITS SHARDS THROW YOUR LAST HIT BACK AT YOU',
+  blurb: 'PLACES BETS ON YOUR REELS. PAIRS CLEAR THEM. NO MORE BETS: EVERY CHIP LEFT HITS.',
   acts: [2],
 };
+/**
+ * THE WHEEL's numbers: chips a turn (fast: at half HP, or from the start at GREEN), the most a reel holds, what one chip
+ * hits for at NO MORE BETS (a share of your max HP; endless loops use `endlessChip`), chips you gain per chip swept.
+ */
+export const WHEEL_RULES = { place: 2, fast: 3, maxPerReel: 3, perChip: 0.05, endlessChip: 0.07, sweepChips: 1 };
 /**
  * Act 3 boss. THE HOUSE's partner: every few turns it deals a face-up card (shown a turn ahead) —
  * SHUFFLE your reels, CUT your commonest symbol, or RAISE the stakes (its next hit and your next
@@ -275,7 +281,7 @@ export const DEALER: Archetype = {
   blurb: 'DEALS FACE-UP CARDS ONTO YOUR PAYLINE, GOES ALL IN, RAISES. THE HOUSE HAS A PARTNER',
   acts: [3],
 };
-export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: MIRROR, 3: DEALER };
+export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: WHEEL, 3: DEALER };
 
 // (No 'GILDED' or 'WILD': those are mechanic names.)
 const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'MANGY', 'CURSED', 'HUNGRY', 'SPITEFUL', 'ANCIENT', 'BITTER', 'GREEDY'];
@@ -286,7 +292,7 @@ export const DEPTH_HP = [22, 28, 33, 36, 39].map((h) => h * UNIT);
 /** Act 2 curve: you arrive with a built machine and a legendary. */
 export const DEPTH_HP_2 = [52, 62, 73, 85, 97].map((h) => h * UNIT);
 /** Mutable so balance sweeps can tune it. */
-/** mirrorPower/mirrorFlat: the Mirror's HP = power × your expected damage per spin + flat (ITERATION_6 Package N). */
+/** wheelPower/wheelFlat: THE WHEEL's HP = power × your measured damage per spin + flat (+ per relic). */
 /** Act 3: 3 fights, then the Dealer. */
 /**
  * Act 3: 5 fights, then the Dealer. Regular act 3 enemies are sized to YOUR machine (like the bosses:
@@ -296,7 +302,7 @@ export const DEPTH_HP_3 = [120, 135, 150, 165, 180].map((h) => h * UNIT);
 export const ACT3_DEPTH_MUL = [1, 1.1, 1.2, 1.3, 1.4];
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5, 4: 3 };
 /** ENDLESS (act 4) tuning: per loop, enemy HP x hp^loop and damage x dmg^loop (EXPERT_PLAYTEST_3 D). */
-export const ENDLESS = { ramp: 0.15, hp: 1.45, hpBy: { knight: 1.05, tesla: 1.5, thorn: 1.3, joker: 1.2, midas: 1.7, jukebox: 1.2 } as Record<string, number>, dmgBy: { knight: 1.18, midas: 1.35 } as Record<string, number>, dmg: 1.35, houseHp: 3, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, bustKeep: 1 / 3, mirrorHp: 4, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
+export const ENDLESS = { ramp: 0.15, hp: 1.45, hpBy: { knight: 1.05, tesla: 1.5, thorn: 1.3, joker: 1.2, midas: 1.7, jukebox: 1.2 } as Record<string, number>, dmgBy: { knight: 1.18, midas: 1.35 } as Record<string, number>, dmg: 1.35, houseHp: 3, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, bustKeep: 1 / 3, wheelHp: 4, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
 /**
  * ENDLESS: each loop multiplies enemy HP (and damage) by its base, and the step itself grows by RAMP every loop,
  * so the climb accelerates: loop L totals base^L x (1 + ramp)^(L(L-1)/2). Only broken builds should see loop 5.
@@ -304,7 +310,7 @@ export const ENDLESS = { ramp: 0.15, hp: 1.45, hpBy: { knight: 1.05, tesla: 1.5,
 export const endlessMul = (base: number, loop: number) => Math.pow(base, loop) * Math.pow(1 + ENDLESS.ramp, (loop * (loop - 1)) / 2);
 export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
 /** Act 3 (ITERATION_12 playtest, commit at GREEN): Dealer HP = 7 x typical-spin power + 60 (+4/relic), less bursty strip -> ~62% Dealer win. */
-export const TUNE = { dailyAct3: 0.45, greenMirror: 0.5, coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, dealerQuietCap: 0.25, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, act2Power: 1.6, rampPerTurn: 0.06, act3Heal: 0.5, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act1Swords: 1, enemyShield: 0.5, act3Power: 4, act3Flat: 20 * UNIT, dealerPower: 10, dealerFlat: 50 * UNIT, act3Sevens: 4, bossHp: 95 * UNIT, act2Mul: 1.06, act2Swords: 2, mirrorPower: 3, mirrorFlat: 30 * UNIT, mirrorPerRelic: 4 * UNIT, mirrorSpecialWeight: 1, powerElastic: 0.5 };
+export const TUNE = { dailyAct3: 0.45, greenWheel: 0.85, coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, dealerQuietCap: 0.25, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, act2Power: 1.6, rampPerTurn: 0.06, act3Heal: 0.5, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act1Swords: 1, enemyShield: 0.5, act3Power: 4, act3Flat: 20 * UNIT, dealerPower: 10, dealerFlat: 50 * UNIT, act3Sevens: 4, bossHp: 75 * UNIT, act2Mul: 1.06, act2Swords: 2, wheelPower: 3, wheelFlat: 30 * UNIT, bossPerRelic: 4 * UNIT, powerElastic: 0.5 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
@@ -335,7 +341,7 @@ export const DANGER: Record<string, number> = {
   hexer: 12,
   vampire: 16,
   mimic: 15,
-  mirror: 45,
+  wheel: 35,
   sharp: 14,
   pitboss: 14,
   croupier: 13,
@@ -365,8 +371,8 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
   const hpMul = a.id === 'frost' && (depth >= 2 || act > 1) ? 1 : a.hpMul;
   const curve = act > 2 ? DEPTH_HP_3 : act > 1 ? DEPTH_HP_2.map((h) => h * TUNE.act2Mul) : DEPTH_HP;
   const opener = depth === 0 && act === 1 ? OPENER_HP_MUL : 1;
-  // (The Mirror's real HP is sized to your machine in run.enemyHp.)
-  const bossHp = a.id === 'mirror' ? 100 * UNIT : TUNE.bossHp;
+  // (THE WHEEL's real HP is sized to your machine in run.enemyHp.)
+  const bossHp = a.id === 'wheel' ? 100 * UNIT : TUNE.bossHp;
   const hp = isBoss ? bossHp : unitsRound(curve[Math.min(depth, curve.length - 1)] * hpMul * opener * TUNE.regularHp * (act === 2 ? TUNE.act2Hp : act === 1 ? TUNE.act1Hp : 1));
   // Act 1 regulars use their ability every 3 turns at most, so players see what each enemy does (EXPERT_PLAYTEST_2 G2).
   // Every regular uses its ability at least every 3 turns (31-40% of act 2-3 abilities never fired: EXPERT_PLAYTEST_2 A1).
@@ -385,7 +391,7 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
       isBoss ? st : act > 2 ? { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords, seven: (st.seven ?? 0) + TUNE.act3Sevens } : act > 1 ? { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords } : { ...st, sword: (st.sword ?? 0) + TUNE.act1Swords },
     ),
     ability: a.ability ? { ...a.ability, every } : null,
-    boss: isBoss ? (a.id === 'mirror' ? 'mirror' : a.id === 'dealer' ? 'dealer' : 'house') : null,
+    boss: isBoss ? (a.id === 'wheel' ? 'wheel' : a.id === 'dealer' ? 'dealer' : 'house') : null,
     act,
   };
 }
@@ -437,8 +443,8 @@ export function generateRunPaths(rng: Rng, act = 1, loop = 1, cabinet?: CabinetI
     out.push(opts);
     prev = new Set(picks.map((a) => a.id));
   }
-  // ENDLESS: the boss cycles THE HOUSE -> THE MIRROR -> THE DEALER.
-  const boss = act >= 4 ? [BOSS, MIRROR, DEALER][(Math.max(1, loop) - 1) % 3] : (BOSSES[act] ?? BOSS);
+  // ENDLESS: the boss cycles THE HOUSE -> THE WHEEL -> THE DEALER.
+  const boss = act >= 4 ? [BOSS, WHEEL, DEALER][(Math.max(1, loop) - 1) % 3] : (BOSSES[act] ?? BOSS);
   out.push([makeEnemy(boss, len, rng, true, act)]);
   return out;
 }

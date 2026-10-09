@@ -21,7 +21,7 @@ if (runs > 0) {
   console.log('\n=== HIGH STAKES ladder (knight, greedy) ===');
   for (let s = 0; s <= MAX_STAKE; s++) {
     const g = simulateRuns(defaultConfig(), runs, 'greedy', 4242, 'knight', s);
-    console.log(`stake ${s} ${STAKES[s].name.padEnd(6)} win ${g.winPct.toFixed(1)}%  act1 ${g.act1Pct.toFixed(1)}%  House ${g.bossWinPct.toFixed(0)}%  Mirror ${g.mirrorWinPct.toFixed(0)}%`);
+    console.log(`stake ${s} ${STAKES[s].name.padEnd(6)} win ${g.winPct.toFixed(1)}%  act1 ${g.act1Pct.toFixed(1)}%  House ${g.bossWinPct.toFixed(0)}%  Wheel ${g.wheelWinPct.toFixed(0)}%`);
   }
   console.log('\n=== ACT 3: THE DEALER (GREEN stake, act 3 unlocked, greedy) ===');
   for (const cab of CABINET_ORDER) {
@@ -32,7 +32,7 @@ if (runs > 0) {
   for (const cab of CABINET_ORDER) {
     const g = simulateRuns(defaultConfig(), runs, 'greedy', 4242, cab);
     const r = simulateRuns(defaultConfig(), runs, 'random', 4242, cab);
-    console.log(`${cab.padEnd(8)} greedy ${g.winPct.toFixed(1)}% (act1 ${g.act1Pct.toFixed(1)}%)  random ${r.winPct.toFixed(1)}% (act1 ${r.act1Pct.toFixed(1)}%)  House ${g.bossWinPct.toFixed(0)}%  Mirror ${g.mirrorWinPct.toFixed(0)}%`);
+    console.log(`${cab.padEnd(8)} greedy ${g.winPct.toFixed(1)}% (act1 ${g.act1Pct.toFixed(1)}%)  random ${r.winPct.toFixed(1)}% (act1 ${r.act1Pct.toFixed(1)}%)  House ${g.bossWinPct.toFixed(0)}%  Wheel ${g.wheelWinPct.toFixed(0)}%`);
   }
 } else {
   const n = arg('n', 20000);

@@ -1,4 +1,4 @@
-// Median measured machinePower at the Mirror, act 3 regulars and the Dealer (greedy, GREEN). npx tsx tools/sim/power_ref.ts [N]
+// Median measured machinePower at THE WHEEL, act 3 regulars and the Dealer (greedy, GREEN). npx tsx tools/sim/power_ref.ts [N]
 import { defaultConfig } from '../../src/core/config';
 import { CABINET_ORDER } from '../../src/core/cabinets';
 import { actLength } from '../../src/core/enemies';
@@ -17,5 +17,5 @@ for (const cab of (process.argv[3] ? [process.argv[3]] : CABINET_ORDER) as typeo
   };
   simulateRuns(defaultConfig(), N, 'greedy', 4242, cab, 2, true);
   const f = (a: number[]) => `${Math.round(med(a))} (p10 ${Math.round(q(a, 0.1))}, p90 ${Math.round(q(a, 0.9))})`;
-  console.log(`${cab.padEnd(7)} mirror ${f(m)} | act3 ${f(a3)} | dealer ${f(d)}`);
+  console.log(`${cab.padEnd(7)} wheel ${f(m)} | act3 ${f(a3)} | dealer ${f(d)}`);
 }

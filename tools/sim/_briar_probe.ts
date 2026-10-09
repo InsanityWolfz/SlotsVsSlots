@@ -28,4 +28,4 @@ const w = simulateRuns(cfg, N, 'greedy', 4242, machine as CabinetId, 0, false, s
 const g = simulateRuns(cfg, N, 'greedy', 4242, machine as CabinetId, 2, true, setup);
 if (give.length) console.log(`only ${give.join('+')}`);
 const f = (x: number) => x.toFixed(1).padStart(5);
-console.log(`${machine} N${N} [${edits}] WHITE ${f(w.winPct)} House ${f(w.bossWinPct)} Mirror ${f(w.mirrorWinPct)} f4die ${f(w.deathsAtDepth[3])} | GREEN ${f(g.winPct)} Dealer ${f(g.dealerWinPct)} | jack ${f(w.jackpotPct)} hpH ${f(w.hpIntoHousePct)} t1 ${w.turnsByAct[0].toFixed(1)} t2 ${w.turnsByAct[1].toFixed(1)} t3g ${g.turnsByAct[2].toFixed(1)} chips/f ${w.chipsPerFight.toFixed(1)}`);
+console.log(`${machine} N${N} [${edits}] WHITE ${f(w.winPct)} House ${f(w.bossWinPct)} Wheel ${f(w.wheelWinPct)} f4die ${f(w.deathsAtDepth[3])} | GREEN ${f(g.winPct)} Dealer ${f(g.dealerWinPct)} | jack ${f(w.jackpotPct)} hpH ${f(w.hpIntoHousePct)} t1 ${w.turnsByAct[0].toFixed(1)} t2 ${w.turnsByAct[1].toFixed(1)} t3g ${g.turnsByAct[2].toFixed(1)} chips/f ${w.chipsPerFight.toFixed(1)}`);

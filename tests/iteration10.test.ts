@@ -4,7 +4,7 @@ import { generateRunPaths, RUN_FIGHTS } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
 import { POT } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
-import { counterFor, createRun, fightConfig, finishFight, mirrorCopy, scarReel, takeLegend } from '../src/core/run';
+import { counterFor, createRun, fightConfig, finishFight, scarReel, takeLegend } from '../src/core/run';
 import { MAX_STAKE, STAKE, STAKES } from '../src/core/stakes';
 
 const base = defaultConfig();
@@ -53,29 +53,29 @@ describe('HIGH STAKES', () => {
     expect(scarReel(run)).toBe(1);
   });
 
-  it('BLACK: the House carries bombs and skims every 3 turns', () => {
+  it('BLACK: the House carries bombs and skims every 2 turns (the base is every 3)', () => {
     const run = createRun(base, 2, 'knight', STAKE.houseDirty);
     run.depth = RUN_FIGHTS;
     const cfg = fightConfig(run, base);
     expect(cfg.enemy.strips.every((s) => (s.bomb ?? 0) === STAKE.houseBombsPerReel)).toBe(true);
     expect(new Fight(cfg, 1).sides.enemy.ability!.every).toBe(STAKE.houseSkimEvery);
+    expect(STAKE.houseSkimEvery).toBeLessThan(POT.cashEvery);
     const plain = createRun(base, 2, 'knight', 1);
     plain.depth = RUN_FIGHTS;
     expect(new Fight(fightConfig(plain, base), 1).sides.enemy.ability!.every).toBe(POT.cashEvery);
   });
 
-  it('GREEN: the Mirror copies one of your relics; BLUE (act 2) / GOLD (all): abilities charge faster', () => {
-    const run = toAct2('knight', STAKE.mirrorRelic);
+  it('GREEN: THE WHEEL STARTS FAST (no relic copy); BLUE (act 2) / GOLD (all): abilities charge faster, not the boss clocks', () => {
+    const run = toAct2('knight', STAKE.wheelFast);
     run.player.relics = ['clover', 'key'];
     run.depth = RUN_FIGHTS;
     run.paths = generateRunPaths(new Rng(1), 2);
     run.enemies = run.paths.map((o) => o[0]);
-    expect(fightConfig(run, base).enemy.relics).toEqual(['key']);
-    // Your legendary comes first when the Mirror can use it (over ordinary relics).
-    run.player.relics = ['prism', 'phoenix'];
-    expect(mirrorCopy(run)).toBe('phoenix');
-    run.player.relics = ['prism', 'overcharge'];
-    expect(mirrorCopy(run)).toBe('prism');
+    const cfg = fightConfig(run, base);
+    expect(cfg.enemy.relics ?? []).toEqual([]);
+    expect(new Fight(cfg, 1).fast).toBe(true);
+    // BLUE / GOLD don't speed up THE WHEEL's NO MORE BETS countdown (the House's skim has its own BLACK rule).
+    expect(new Fight({ ...cfg, stake: STAKE.fasterAll }, 1).sides.enemy.ability!.every).toBe(3);
 
     const c = defaultConfig();
     c.enemy = { hp: 99, strips: reels3({ shield: 12 }), ability: { kind: 'smash', every: 3, power: 4 } };

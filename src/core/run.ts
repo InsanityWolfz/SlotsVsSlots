@@ -1,6 +1,6 @@
 import { BLADES, cloneConfig, defaultConfig, symLabel, emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_HP_MUL_2, GATEKEEPER, generateRunPaths, makeEnemy, REPO_MAN, TUNE, type EnemyDef, ENDLESS, endlessMul } from './enemies';
-import { MAX_STAKE, MIRROR_COPYABLE, mirrorCanUse, STAKE } from './stakes';
+import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_HP_MUL_2, GATEKEEPER, generateRunPaths, makeEnemy, REPO_MAN, TUNE, type EnemyDef, ENDLESS, endlessMul, WHEEL } from './enemies';
+import { MAX_STAKE, STAKE } from './stakes';
 import { Fight as FightCtor, type Fight } from './fight';
 import {
   BANDAGE_HEAL,
@@ -238,7 +238,7 @@ export interface RunState {
   shelfKeys?: string[];
   /** The starting machine. */
   cabinet: CabinetId;
-  /** Current act (1 = the House, 2 = the Mirror). */
+  /** Current act (1 = the House, 2 = THE WHEEL, 3 = the Dealer, 4+ endless). */
   act: number;
   /** An act's boss fell: choose 1 of these legendary relics. */
   pendingLegend: RelicId[] | null;
@@ -535,12 +535,18 @@ function offerCounter(run: RunState, rng: Rng): void {
   run.enemies = run.paths.map((o) => o[0]);
 }
 
-/** GREEN stake: the relic the Mirror copies — your legendary if it can use it, else your best usable relic. */
-export function mirrorCopy(run: RunState): RelicId | null {
-  if (run.stake < STAKE.mirrorRelic) return null;
-  const own = run.player.relics;
-  const legend = own.find((r) => LEGENDARY.has(r) && mirrorCanUse(r));
-  return legend ?? MIRROR_COPYABLE.find((r) => own.includes(r)) ?? null;
+/**
+ * Saved runs from before THE WHEEL replaced THE MIRROR (2026-10-09): a CONTINUE save mid-Act 2 holds `boss: 'mirror'`.
+ * Its act 2 boss becomes THE WHEEL (its real HP is sized when the fight starts, so nothing else carries over).
+ */
+export function migrateRun(run: RunState): RunState {
+  const fix = (e: EnemyDef | undefined): EnemyDef | undefined => {
+    if (!e || ((e.boss as string) !== 'mirror' && e.archetype !== 'mirror')) return e;
+    return { ...e, archetype: WHEEL.id, boss: 'wheel', name: WHEEL.name, portrait: WHEEL.portrait, blurb: WHEEL.blurb, strips: [0, 1, 2].map(() => ({ ...WHEEL.strip })), ability: WHEEL.ability ? { ...WHEEL.ability } : null };
+  };
+  if (Array.isArray(run.paths)) run.paths = run.paths.map((opts) => (Array.isArray(opts) ? opts.map((e) => fix(e)!) : opts));
+  if (Array.isArray(run.enemies)) run.enemies = run.enemies.map((e) => fix(e)!);
+  return run;
 }
 
 /** RED stake (SCARS): scar rocks land reel 3, then 2, then 1 (reel 1 carries every pair, so it's hit last). */
@@ -592,8 +598,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   };
   const hp = enemyHp(run, e);
   cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
-  // The Mirror plays its own reels (swords, shields, SHARDS): a turn never deals more than REFLECT_CAP of your max HP.
-  if (e.boss === 'mirror') cfg.player.stackShield = Math.min(MIRROR_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
+  // (A chip shield, if one ever comes back, stays capped against the bosses.)
+  if (e.boss === 'wheel') cfg.player.stackShield = Math.min(BOSS_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
   cfg.relics = [...run.player.relics];
   cfg.cabinet = run.cabinet;
   cfg.stake = run.stake;
@@ -601,13 +607,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // BLACK stake: the House plants bombs (even on your payline).
   if (e.boss === 'house' && run.stake >= STAKE.houseDirty) cfg.enemy.strips = cfg.enemy.strips.map((s) => ({ ...s, bomb: (s.bomb ?? 0) + STAKE.houseBombsPerReel }));
   if (e.boss === 'dealer') {
-    cfg.player.stackShield = Math.min(MIRROR_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
+    cfg.player.stackShield = Math.min(BOSS_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
     cfg.player.startMarks = run.deckMarks ?? 0;
-  }
-  // GREEN stake: the Mirror copies one of your relics.
-  if (e.boss === 'mirror' && run.stake >= STAKE.mirrorRelic) {
-    const copy = mirrorCopy(run);
-    if (copy) cfg.enemy.relics = [copy];
   }
   // HOUSE EDGES bend the fight: the ones taken in endless, and THE DAILY RUN's edge of the day.
   const edges = new Set<EdgeId>([...(run.endless?.edges ?? []), ...(run.dailyEdge ? [run.dailyEdge] : []), ...(run.mods ?? [])]);
@@ -776,7 +777,7 @@ export function letItRide(run: RunState): void {
   startEndlessLoop(run);
 }
 
-/** A new endless loop: 3 fights and a boss (cycling House, Mirror, Dealer), after a HOUSE EDGE pick. */
+/** A new endless loop: 3 fights and a boss (cycling House, THE WHEEL, Dealer), after a HOUSE EDGE pick. */
 function startEndlessLoop(run: RunState): void {
   const loop = run.endless!.loop;
   run.act = 4;
@@ -819,8 +820,8 @@ export const EDGE_TEXT: Record<EdgeId, { title: string; text: string }> = {
 };
 
 /**
- * An enemy's real HP for this run. Bosses grow with the relics you bring in; the Mirror is sized to
- * you (a mirror match needs your relics to win).
+ * An enemy's real HP for this run. Bosses grow with the relics you bring in; THE WHEEL and the Dealer are
+ * sized to your machine's measured power.
  */
 /** The tutorial's first opponent has this much of its HP (you're reading callouts, not building). */
 export const TUTORIAL_OPENER_MUL = 0.75;
@@ -851,7 +852,7 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
     const mul = (ACT3_DEPTH_MUL[Math.min(e.depth, ACT3_DEPTH_MUL.length - 1)] ?? 1) * (arch?.hpMul ?? 1) * (e.elite ? ELITE_HP_MUL_2 : 1);
     // Per machine: act 2 fight length (BRIAR ran ~30 turns, JAX ~9: EXPERT_PLAYTEST_3 E11).
     const m2 = BOSS_MUL[run.cabinet].act2 ?? 1;
-    return unitsRound(Math.max(e.hp, TUNE.act2Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'mirror') * mul) * m2);
+    return unitsRound(Math.max(e.hp, TUNE.act2Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'wheel') * mul) * m2);
   }
   // Per machine: act 1 regular HP (MIDAS is slow to start: EXPERT_PLAYTEST_5).
   const m1 = run.act === 1 ? (BOSS_MUL[run.cabinet].act1 ?? 1) : 1;
@@ -859,15 +860,15 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
   // ENDLESS: loop bosses are sized from your power (the loop House was a free win; the loop Dealer a sponge).
   if (run.endless) {
     const regular = TUNE.act3Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'act3') + TUNE.act3Flat;
-    const share = e.boss === 'house' ? ENDLESS.houseHp : e.boss === 'dealer' ? ENDLESS.dealerHp : ENDLESS.mirrorHp;
+    const share = e.boss === 'house' ? ENDLESS.houseHp : e.boss === 'dealer' ? ENDLESS.dealerHp : ENDLESS.wheelHp;
     return unitsRound(regular * share);
   }
-  // The Mirror grows with your machine and (like the House) with every relic you carry in.
+  // THE WHEEL grows with your machine and (like the House) with every relic you carry in.
   const cm = BOSS_MUL[run.cabinet];
-  // GREEN+: the Mirror copies one of your relics, so it gets less HP (it was the run's real wall: EXPERT_PLAYTEST_6 E10).
-  // THE DAILY RUN goes on to the Dealer too, so its Mirror is the eased one (without the copied relic).
-  if (e.boss === 'mirror') return unitsRound((unitsRound(TUNE.mirrorPower * cm.mirror * sizingPower(run, 'mirror')) + TUNE.mirrorFlat + TUNE.mirrorPerRelic * run.player.relics.length) * (run.stake >= STAKE.mirrorRelic || fixedRun(run) ? TUNE.greenMirror : 1));
-  if (e.boss === 'dealer') return unitsRound(TUNE.dealerPower * cm.dealer * sizingPower(run, 'dealer')) + TUNE.dealerFlat + TUNE.mirrorPerRelic * run.player.relics.length;
+  // GREEN+: THE WHEEL STARTS FAST (3 chips a turn), so it gets less HP (x0.85). THE DAILY RUN goes on to the Dealer
+  // too, so its WHEEL is the eased one too.
+  if (e.boss === 'wheel') return unitsRound((unitsRound(TUNE.wheelPower * cm.wheel * sizingPower(run, 'wheel')) + TUNE.wheelFlat + TUNE.bossPerRelic * run.player.relics.length) * (run.stake >= STAKE.wheelFast || fixedRun(run) ? TUNE.greenWheel : 1));
+  if (e.boss === 'dealer') return unitsRound(TUNE.dealerPower * cm.dealer * sizingPower(run, 'dealer')) + TUNE.dealerFlat + TUNE.bossPerRelic * run.player.relics.length;
   // BLACK+: the House cheats (faster skims, payline bombs, no chip shield) instead of just being tougher.
   const house = run.stake >= STAKE.houseDirty ? Math.sqrt(cm.house) : cm.house;
   return unitsRound(e.hp * house) + BOSS_HP_PER_RELIC * run.player.relics.length;
@@ -913,21 +914,22 @@ const POWER_SPINS = 40;
  * tools/balance/power_ref.ts). Late enemies are sized from REF x (your power / REF)^powerElastic, so
  * a build twice as strong as usual faces ~1.4x the HP, not 2x: getting stronger pays off.
  */
-export const POWER_REF: Record<CabinetId, { mirror: number; act3: number; dealer: number }> = {
-  knight: { mirror: 405, act3: 1578, dealer: 2375 },
-  midas: { mirror: 761, act3: 1494, dealer: 1851 },
-  thorn: { mirror: 159, act3: 317, dealer: 695 },
-  tesla: { mirror: 246, act3: 566, dealer: 872 },
-  joker: { mirror: 826, act3: 6465, dealer: 8499 },
+// `wheel`: the power at the act 2 boss (it was THE MIRROR's; the anchors stay, so act 2 regulars keep their HP).
+export const POWER_REF: Record<CabinetId, { wheel: number; act3: number; dealer: number }> = {
+  knight: { wheel: 405, act3: 1578, dealer: 2375 },
+  midas: { wheel: 761, act3: 1494, dealer: 1851 },
+  thorn: { wheel: 159, act3: 317, dealer: 695 },
+  tesla: { wheel: 246, act3: 566, dealer: 872 },
+  joker: { wheel: 826, act3: 6465, dealer: 8499 },
   // THE JUKEBOX (2026-10-08): measured with tools/sim/power_ref.ts 300 (GREEN, greedy).
-  jukebox: { mirror: 1077, act3: 2735, dealer: 4810 },
+  jukebox: { wheel: 1077, act3: 2735, dealer: 4810 },
 };
-export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): number {
+export function sizingPower(run: RunState, at: 'wheel' | 'act3' | 'dealer'): number {
   const ref = POWER_REF[run.cabinet][at];
   return ref * Math.pow(Math.max(1, machinePower(run)) / ref, TUNE.powerElastic);
 }
 /**
- * Per slot machine: how much of your measured power the Mirror, the Dealer and act 3 regulars are sized
+ * Per slot machine: how much of your measured power THE WHEEL, the Dealer and act 3 regulars are sized
  * to. Machines race differently (KNIGHT's shields, JAX's rare huge payoffs, BRIAR's thorns that need to
  * be hit), so the same HP formula would give each a different win rate.
  */
@@ -935,19 +937,19 @@ export function sizingPower(run: RunState, at: 'mirror' | 'act3' | 'dealer'): nu
 export const TOLL_PER_LIEN = 2;
 
 // Refit 2026-10-08 (big choices rework: 45 cards, LIMIT BREAK; before that the content audit batch: ROSE HIP retired, overkill chips out, LUCKY/BLAZE in act 1, CHARGED/BLAZE 10/20/30).
-export const BOSS_MUL: Record<CabinetId, { house: number; mirror: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
-  knight: { house: 1.1, mirror: 1.35, dealer: 0.6, act3: 0.5, gate: 1.3 },
+export const BOSS_MUL: Record<CabinetId, { house: number; wheel: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
+  knight: { house: 1.2, wheel: 1.35, dealer: 0.6, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
-  midas: { house: 3.5, mirror: 3.8, dealer: 7.5, act3: 1, gate: 0.8, act3Floor: 1 },
+  midas: { house: 2.2, wheel: 3.8, dealer: 7.5, act3: 1, gate: 0.8, act3Floor: 1 },
   // SHED (2026-10-07): her damage is finally visible to sizing, so the multipliers came back to a normal range.
-  thorn: { house: 1, mirror: 9.5, dealer: 2.3, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
-  tesla: { house: 0.85, mirror: 2.6, dealer: 2.2, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
-  joker: { house: 1.9, mirror: 3.4, dealer: 0.66, act3: 0.35, act2: 1.5, gate: 0.85 },
-  jukebox: { house: 1.1, mirror: 0.6, dealer: 0.33, act3: 0.3, gate: 2.4 },
+  thorn: { house: 1, wheel: 9.5, dealer: 2.3, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
+  tesla: { house: 1.05, wheel: 2.6, dealer: 2.2, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
+  joker: { house: 1.2, wheel: 3.4, dealer: 0.66, act3: 0.35, act2: 1.5, gate: 0.85 },
+  jukebox: { house: 1.25, wheel: 0.6, dealer: 0.33, act3: 0.3, gate: 2.4 },
 };
 const powerCache = new Map<string, number>();
-/** Saved chips shield at most this much per Mirror turn (hoarding guard). */
-export const MIRROR_CHIP_SHIELD_CAP = 4 * UNIT;
+/** Saved chips shield at most this much per boss turn (hoarding guard). */
+export const BOSS_CHIP_SHIELD_CAP = 4 * UNIT;
 /** Cabinets this fragile face a softer opener (ITERATION_8: 3-5% opener deaths). */
 const FRAGILE_HP = 26 * UNIT;
 const FRAGILE_OPENER_MUL = 0.85;
@@ -1022,7 +1024,8 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   const winChips = run.noWinChips ? 0 : CHIPS.win + (CABINETS[run.cabinet].chipsPerWin ?? 0) + (beaten.elite ? CHIPS.eliteBonus : 0) + fight.playerJackpots * CHIPS.perJackpot;
   const earned = interest + piggy + winChips + (run.trustFund ?? 0);
   run.player.chips += earned;
-  record.chips = earned + fight.lucreChips;
+  // (THE WHEEL: the chips your sweeps won came in with the fight's mid-fight chips; the line counts them.)
+  record.chips = earned + fight.lucreChips + fight.betChips;
   // SIDE BET: paid stake x pay if it came in (a lost fight ends the run, bet and all).
   if (run.bet) {
     const won = betState(run.bet, fight.betTrack, true) === 'won';
@@ -1056,7 +1059,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     run.player.chips += TOLL_PER_LIEN * run.liens.length;
     record.chips = (record.chips ?? 0) + TOLL_PER_LIEN * run.liens.length;
   }
-  // Act 2 elites pay chips (more relics made the Mirror a walkover: ITERATION_8).
+  // Act 2 elites pay chips (more relics made the act 2 boss a walkover: ITERATION_8).
   if (beaten.elite && run.act > 1) {
     run.player.chips += CHIPS.act2EliteChips;
     record.chips = (record.chips ?? 0) + CHIPS.act2EliteChips;
@@ -1678,7 +1681,7 @@ export const charmTagFor = (run: RunState, enh: Enh) => charmTag(enh, charmLevel
 // ---- post-boss BIG CHOICES (Tuesday Step E) ------------------------------------------------
 
 /**
- * After the House and the Mirror you pick 1 of 3 build-defining moves from one set (never the same set
+ * After the House and THE WHEEL you pick 1 of 3 build-defining moves from one set (never the same set
  * twice in a run). Strong options carry a real, visible cost; each set has one safe pick.
  */
 export type BigChoiceId =
@@ -1701,7 +1704,7 @@ export const levelCap = (run: RunState) => (run.endless ? LEVEL_CAP + 1 : LEVEL_
 /** RIDE AGAIN: each loop cleared adds this x loop to the pot; a bust banks half. */
 export const POT_PER_LOOP = 1500;
 /** Loop bosses by name (the RIDE card says who's next). */
-const BOSS_NAME: Record<string, string> = { house: 'THE HOUSE', mirror: 'THE MIRROR', dealer: 'THE DEALER' };
+const BOSS_NAME: Record<string, string> = { house: 'THE HOUSE', wheel: 'THE WHEEL', dealer: 'THE DEALER' };
 /** A cleared loop: the pot grows x1.5, plus POT_PER_LOOP. */
 export const nextPot = (pot: number) => Math.round(pot * ENDLESS.potGrowth) + POT_PER_LOOP;
 /** What a bust banks of the pot. */

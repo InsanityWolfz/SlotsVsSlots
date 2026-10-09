@@ -49,8 +49,8 @@ export type CombatEvent =
       to: SideId;
       reels: number[];
       amount: number;
-      /** KEEN: ignored shields. SPIKED: this is a reflected hit. Act 2: drain / mimic / reflect. */
-      note?: 'pierce' | 'thorns' | 'echo' | 'drain' | 'mimic' | 'reflect';
+      /** KEEN: ignored shields. SPIKED: this is a reflected hit. Act 2: drain / mimic. */
+      note?: 'pierce' | 'thorns' | 'echo' | 'drain' | 'mimic';
       blocked: number;
       hpDamage: number;
       targetHp: number;
@@ -119,7 +119,7 @@ export type CombatEvent =
   /** ALL IN telegraph: the Dealer's next attack is its whole hand. */
   | { type: 'allInArmed'; side: SideId; cap: number }
   /** ENDLESS: LAST CALL (the fight ran long; the enemy hits harder every turn now). */
-  | { type: 'lastCall'; side: SideId }
+  | { type: 'lastCall'; side: SideId; /** THE HOUSE: from now on it skims every turn. */ house?: boolean }
   /** ENDLESS: the House closes the table in N enemy turns (a stalled fight goes to the House). */
   | { type: 'closing'; side: SideId; left: number }
   /** ENDLESS: CLOSING TIME, the stalled fight goes to the House. */
@@ -160,12 +160,18 @@ export type CombatEvent =
   | { type: 'gulp'; from: SideId; chips: number }
   /** Phoenix Feather saved you from a lethal hit. */
   | { type: 'phoenix'; side: SideId; hp: number }
-  /** The Mirror cracked at half HP: it reflects faster. */
-  | { type: 'shatter'; side: SideId; every: number }
-  /** THE MIRROR: what each shard will throw back next turn (your last spin's damage x its share). */
-  | { type: 'mirrorCharge'; side: SideId; last: number; each: number; share: number }
-  /** THE MIRROR's shards land: `count` x `share` of your last spin's damage (`last`), at least the minimum. */
-  | { type: 'shardReflect'; side: SideId; reels: number[]; count: number; share: number; last: number; amount: number }
+  /**
+   * THE WHEEL places chips (bets) on your reels: `reels` got one chip each (a reel can be listed twice), `bets` is
+   * every reel's stack after, `left` its turns to NO MORE BETS (1 = next turn), `per` what one chip will hit for.
+   * `ball`: chips its BALL pair / jackpot added.
+   */
+  | { type: 'betPlaced'; side: SideId; reels: number[]; bets: number[]; left: number; per: number; ball?: boolean }
+  /** Your spin swept bets off these reels (a pair: its reels; a jackpot: all of them, TABLE CLEARED). */
+  | { type: 'betSwept'; side: SideId; reels: number[]; chips: number; bets: number[]; table: boolean }
+  /** NO MORE BETS: every chip left on your reels hits as one shielded hit, then the table clears. */
+  | { type: 'noMoreBets'; from: SideId; to: SideId; chips: number; per: number; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number }
+  /** THE WHEEL at half HP (THE WHEEL SPINS FASTER): 3 chips a turn now. Its HP holds at half for the rest of this turn. */
+  | { type: 'wheelFast'; side: SideId; per: number }
   | { type: 'steal'; from: SideId; to: SideId; reels: number[]; cells: CellRef[]; symbols: SymbolId[]; wasted: number; repo?: boolean }
   /** Rocks inserted into the target's strips (indices are post-insert, applied in order). */
   | { type: 'junk'; from: SideId; to: SideId; reels: number[]; inserts: CellRef[] }
@@ -179,7 +185,7 @@ export type CombatEvent =
   | { type: 'potWin'; from: SideId; to: SideId; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number; potLeft: number }
   /** A relic did something (the HUD pops its icon). Pay-changing relics ride on the spin's score instead. */
   | { type: 'relic'; side: SideId; relic: RelicId }
-  /** Boss phase 2 at half HP: the House goes ALL IN and doubles the pot. */
+  /** Boss phase 2 at half HP: the House DOUBLES DOWN (the pot doubles). */
   | { type: 'phase'; side: SideId; pot: number }
   | { type: 'death'; side: SideId }
   | { type: 'fightEnd'; winner: SideId; turns: number };

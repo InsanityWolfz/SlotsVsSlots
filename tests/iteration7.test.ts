@@ -59,34 +59,7 @@ describe('charm levels, hexes and level cards (Tuesday rework)', () => {
   });
 });
 
-describe('Package N: the Mirror and act 2 writers', () => {
-  it("the Mirror's bolts charge nothing and it never casts your rocks", () => {
-    const f = fight((c) => {
-      c.enemy = { hp: 9999, strips: reels3({ bolt: 10, rock: 2 }), ability: { kind: 'reflect', every: 3, power: 20 }, boss: 'mirror' };
-    });
-    expect(f.sides.enemy.casts.size).toBe(0);
-    f.next = 'enemy';
-    f.forceNext('enemy', ['bolt', 'bolt', 'bolt']);
-    const { events } = f.step();
-    expect(ofType(events, 'energyGain').length).toBe(0);
-    expect(ofType(events, 'specialFire').length).toBe(0);
-  });
-
-  it('REFLECTION throws your best hit since the last one', () => {
-    const f = fight((c) => {
-      c.player.strips = [{ sword: 6, shield: 6 }, { sword: 6, shield: 6 }, { sword: 6, shield: 6 }];
-      c.enemy = { hp: 9999, strips: reels3({ shield: 12 }), ability: { kind: 'reflect', every: 2, power: 200 }, boss: 'mirror' };
-    });
-    f.forceNext('player', ['sword', 'sword', 'sword']); // 90
-    f.step();
-    f.step(); // enemy: charge 1
-    f.forceNext('player', ['sword', 'shield', 'shield']); // 10
-    f.step();
-    const hit = ofType(f.step().events, 'attack').find((a) => a.note === 'reflect')!;
-    expect(hit.amount).toBe(90);
-    expect(f.reflectBank).toBe(0);
-  });
-
+describe('Package N: act 2 writers', () => {
   it('single hexes fizzle; bombs are never planted on the payline', () => {
     const f = fight((c) => (c.enemy = { hp: 9999, strips: [{ hex: 12 }, { shield: 12 }, { sword: 12 }] }));
     f.next = 'enemy';

@@ -224,18 +224,6 @@ describe('enemy effect symbols say what they do', () => {
 });
 
 describe('playtest bugs (2026-09-29)', () => {
-  it('the Mirror never throws lightning, even with a copied Jackpot Bell', () => {
-    const c = defaultConfig();
-    c.relics = [];
-    c.enemy = { hp: 9999, strips: reels3({ sword: 6, bolt: 6 }), boss: 'mirror', relics: ['bell'] };
-    const f = new Fight(c, 5);
-    f.step();
-    f.forceNext('enemy', ['bolt', 'bolt', 'bolt']);
-    const ev = f.step().events;
-    expect(ofType(ev, 'specialFire')).toHaveLength(0);
-    expect(ofType(ev, 'energyGain')).toHaveLength(0);
-  });
-
   it('3 WILDS: the wheel picks a symbol AND its charm, and the jackpot pays with that charm', () => {
     let seen = false;
     for (let seed = 1; seed < 40 && !seen; seed++) {

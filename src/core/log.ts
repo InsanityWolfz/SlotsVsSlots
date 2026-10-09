@@ -174,7 +174,7 @@ const ABBR: Record<SymbolId, string> = {
   goldbar: 'BAR',
   ace: 'ACE',
   thorn: 'THN',
-  shard: 'SHD',
+  ball: 'BAL',
   sword: 'SWD',
   shield: 'SHD',
   bolt: 'BLT',

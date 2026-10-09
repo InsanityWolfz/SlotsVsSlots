@@ -15,8 +15,8 @@ export type SymbolId =
   | 'lock'
   | 'coin'
   | 'seven'
-  /** THE MIRROR's own symbol: a shard throws your last hit back. */
-  | 'shard'
+  /** THE WHEEL's own symbol: the ivory BALL. A pair on its payline bets 1 more chip on you, a jackpot 2. */
+  | 'ball'
   | 'empty'
   | 'wild'
   // Act 2 writers
@@ -91,7 +91,6 @@ export type AbilityKind =
   | 'curse'
   | 'bloodmoon'
   | 'gulp'
-  | 'reflect'
   | 'earth'
   | 'launder'
   // Act 3
@@ -99,6 +98,8 @@ export type AbilityKind =
   | 'penalty'
   | 'houseTake'
   | 'deal'
+  // THE WHEEL (act 2 boss): PLACE YOUR BETS, and every few turns NO MORE BETS
+  | 'bets'
   // THE GATEKEEPER (fight 4 of every act): repossesses a cell until the act's boss falls
   | 'repo';
 export interface AbilityDef {
@@ -257,10 +258,10 @@ export interface SideConfig {
   portrait?: string;
   ability?: AbilityDef | null;
   /** Boss rule set, if any. */
-  boss?: 'house' | 'mirror' | 'dealer' | null;
+  boss?: 'house' | 'wheel' | 'dealer' | null;
   /** Charmed cells, dealt onto matching symbols on each reel at fight start. */
   gilded?: Gild[];
-  /** Symbol and charm levels (the player, and the Mirror's copy of your symbol levels). */
+  /** Symbol and charm levels (the player). */
   levels?: Levels;
   /** GLASS CANNON: every paying group pays this much more. */
   payMul?: number;
@@ -290,7 +291,7 @@ export interface SideConfig {
   sideBet?: import('./bets').PlacedBet;
   /** HOUSE EDGE "HOUSE CUT": your healing multiplier. */
   healMul?: number;
-  /** Relics this side carries (the Mirror copies one at GREEN stake). */
+  /** Relics this side carries. */
   relics?: RelicId[];
 }
 
@@ -332,7 +333,7 @@ export function defaultConfig(): GameConfig {
     player: { hp: 20 * UNIT, strips: reels3({ sword: 4, shield: 4, bolt: 4 }) },
     // Tuned from playtest/PLAYTEST_REPORT.md: ~65% player wins, ~24 turns, cleanse in ~half of fights.
     enemy: { hp: 30 * UNIT, strips: reels3({ sword: 5, shield: 2, slime: 5 }), name: 'SLIME KING', portrait: 'enemyPortrait' },
-    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, shard: UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, ground: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0, goldbar: UNIT, thorn: UNIT, ace: UNIT, note: UNIT },
+    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, ball: UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, ground: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0, goldbar: UNIT, thorn: UNIT, ace: UNIT, note: UNIT },
     pairMult: 2,
     tripleMult: 3,
     pairRule: 'inOrder',

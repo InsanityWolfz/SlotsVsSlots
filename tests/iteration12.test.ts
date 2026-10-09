@@ -33,7 +33,7 @@ describe('ACT 3: the run', () => {
     expect(paths[5][0].boss).toBe('dealer');
   });
 
-  it('beating the Mirror at GREEN goes to act 3 (full heal, Cashier, no legendary); beating the Dealer wins', () => {
+  it('beating THE WHEEL at GREEN goes to act 3 (full heal, Cashier, no legendary); beating the Dealer wins', () => {
     const run = createRun(base, 2, 'knight', STAKE.act3, true);
     run.act = 2;
     run.paths = generateRunPaths(new Rng(4), 2);

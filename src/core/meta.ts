@@ -253,7 +253,7 @@ const stakeOf = (lvl: number): AchievementDef => ({
 export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'first_win', name: 'FIRST BLOOD', text: 'WIN A FIGHT.', check: (c) => c.act > 1 || c.won || c.score > 0 },
   { id: 'house', name: 'HOUSE CALL', text: 'BEAT THE HOUSE.', check: (c) => c.act >= 2 || c.won },
-  { id: 'clear', name: 'MIRROR, MIRROR', text: 'CLEAR A RUN: BEAT THE MIRROR.', check: (c) => c.won },
+  { id: 'clear', name: 'NO MORE BETS', text: 'CLEAR A RUN: STOP THE WHEEL.', check: (c) => c.won },
   { id: 'dealer', name: 'THE HOUSE ALWAYS LOSES', text: 'BEAT THE DEALER (NOT IN THE DAILY OR WEEKLY).', check: (c) => c.won && c.acts >= 3 && !c.daily && !c.weekly },
   ...CABINET_ORDER.map(clearOf),
   {

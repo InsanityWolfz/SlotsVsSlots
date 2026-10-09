@@ -8,7 +8,7 @@ import { fmtNum } from '../src/render/text';
 const base = defaultConfig();
 
 describe('ENDLESS (LET IT RIDE)', () => {
-  it('only a won run can ride; a loop is 3 fights + a boss that cycles House, Mirror, Dealer', () => {
+  it('only a won run can ride; a loop is 3 fights + a boss that cycles House, THE WHEEL, Dealer', () => {
     const run = createRun(base, 21, 'knight', 2, true);
     letItRide(run);
     expect(run.endless).toBeUndefined();
@@ -36,7 +36,7 @@ describe('ENDLESS (LET IT RIDE)', () => {
     f.winner = 'player';
     finishFight(run, f);
     expect(run.endless!.loop).toBe(2);
-    expect(run.paths[3][0].boss).toBe('mirror');
+    expect(run.paths[3][0].boss).toBe('wheel');
     run.depth = 0;
     expect(enemyHp(run, currentEnemy(run))).toBeGreaterThan(0);
     void hp1;

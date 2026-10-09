@@ -4,7 +4,7 @@ import type { CabinetId } from '../src/core/cabinets';
 import { actLength, generateRunPaths } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
 import { Fight, RAIN, THORNS } from '../src/core/fight';
-import { MIRROR_HIT_CAP, SANDGLASS_SLOW } from '../src/core/relics';
+import { SANDGLASS_SLOW } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
 import {
   charmOptions,
@@ -176,7 +176,7 @@ function beatBoss(run: RunState): void {
 }
 
 describe('post-boss BIG CHOICES', () => {
-  it('after the House and the Mirror: 3 cards (one with a cost, one of your machine, one free), never repeated', () => {
+  it('after the House and THE WHEEL: 3 cards (one with a cost, one of your machine, one free), never repeated', () => {
     const run = createRun(base, 4, 'knight', STAKE.act3, true);
     beatBoss(run);
     const first = run.pendingChoice!;
@@ -220,7 +220,7 @@ describe('post-boss BIG CHOICES', () => {
   });
 });
 
-describe('act 3 and the Mirror', () => {
+describe('act 3', () => {
   it('act 3 has 5 fights; its regulars grow with your machine', () => {
     expect(actLength(3)).toBe(5);
     const run = createRun(base, 7, 'knight', STAKE.act3, true);
@@ -236,14 +236,4 @@ describe('act 3 and the Mirror', () => {
     expect(enemyHp(run, run.enemies[1])).toBeGreaterThan(weak);
   });
 
-  it("the Mirror's hits are capped at a share of your max HP", () => {
-    const c = defaultConfig();
-    c.player.hp = 300;
-    c.enemy = { hp: 9999, strips: reels3({ sword: 12 }), boss: 'mirror', gilded: [0, 1, 2].map((reel) => ({ reel, symbol: 'sword' as const, enh: 'gold' as const, n: 12 })) };
-    const f = new Fight(c, 3);
-    f.step();
-    f.forceNext('enemy', ['sword', 'sword', 'sword']);
-    const hit = ofType(f.step().events, 'attack')[0];
-    expect(hit.amount).toBe(Math.round(300 * MIRROR_HIT_CAP));
-  });
 });
