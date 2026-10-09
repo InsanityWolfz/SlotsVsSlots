@@ -259,7 +259,6 @@ export class RunScreens {
   private tips = new RelicTips();
   /** The enemy cards: flip (0 front, 1 back) and hover start, keyed by the card's x. */
   private flips = new Map<number, number>();
-  private hoverSince = new Map<number, number>();
   /** The last pointer was a finger: no hover-to-flip (a tap left a stuck "hover" that flipped the card). */
   touch = false;
   /** A tap flips a card for touch players (the card's x, or -1). */
@@ -1191,7 +1190,6 @@ export class RunScreens {
   /** The headliner card arrives: it rises in, the portrait lands, the skulls pop one by one, the pips fill. */
   private enemyEntrance(run: RunState): void {
     this.flips.clear();
-    this.hoverSince.clear();
     this.pinned = -1;
     this.panelIn = 0;
     this.portraitPop = 1.25;
@@ -1878,15 +1876,16 @@ export class RunScreens {
 
   /**
    * One enemy's scouting report: a casino "headliner card". The front is what you need at a glance (danger, HP,
-   * ability + cadence, one rule); hovering it for a moment flips it to the back (exact text, reels with counts).
+   * ability + cadence, one rule); its "?" tab turns it to the back (exact text, reels with counts). Only the tab flips
+   * it: hover-to-flip fought the tab and flipped cards under a resting mouse (user playtest, 2026-10-09).
    */
   private drawEnemyPanel(ctx: CanvasRenderingContext2D, e: EnemyDef, x: number, y: number, w: number, time: number, other = false): void {
     const h = 260;
     const m = this.mouse;
-    const inside = m.x >= x - 6 && m.x <= x + w + 6 && m.y >= y - 6 && m.y <= y + h + 6;
-    if (inside && !this.hoverSince.has(x)) this.hoverSince.set(x, time);
-    if (!inside) this.hoverSince.delete(x);
-    const want = (!this.touch && inside && time - (this.hoverSince.get(x) ?? time) >= 0.3) || this.pinned === x ? 1 : 0;
+    // A finger leaves its last spot behind: hover looks are for a mouse only (a tap lit the "?" at random).
+    const inside = !this.touch && m.x >= x - 6 && m.x <= x + w + 6 && m.y >= y - 6 && m.y <= y + h + 6;
+    const onTab = inside && m.x >= x + w - FLIP_TAB.w - 16 && m.y >= y + h - FLIP_TAB.h - 16;
+    const want = this.pinned === x ? 1 : 0;
     let f = this.flips.get(x) ?? 0;
     f += (want - f) * Math.min(1, this.frameDt * 12);
     this.flips.set(x, f);
@@ -1922,16 +1921,21 @@ export class RunScreens {
     }
     if (back) this.drawPanelBack(ctx, e, w, pips);
     else this.drawPanelFront(ctx, e, w, h, time, inside, fork);
-    // The "?" tab (both sides): tap or click it to turn the card over (hovering does it too, with a mouse).
+    // The "?" tab (both sides): tap or click it to turn the card over.
     {
       const tx0 = w - FLIP_TAB.w - 8;
       const ty0 = h - FLIP_TAB.h - 8;
-      const lit = inside || back;
+      const lit = onTab;
       ctx.fillStyle = COLORS.outline;
       ctx.fillRect(tx0 - 2, ty0 - 2, FLIP_TAB.w + 4, FLIP_TAB.h + 4);
-      ctx.fillStyle = lit ? COLORS.gold : COLORS.panelLight;
+      // Lit: a gold rim and white glyph (dark text on gold blurred into a blob).
+      if (lit) {
+        ctx.fillStyle = COLORS.gold;
+        ctx.fillRect(tx0 - 2, ty0 - 2, FLIP_TAB.w + 4, FLIP_TAB.h + 4);
+      }
+      ctx.fillStyle = lit ? '#4a3a66' : COLORS.panelLight;
       ctx.fillRect(tx0, ty0, FLIP_TAB.w, FLIP_TAB.h);
-      drawText(ctx, back ? 'X' : '?', tx0 + FLIP_TAB.w / 2, ty0 + FLIP_TAB.h / 2 + 1, 2.5, lit ? COLORS.outline : COLORS.goldLight);
+      drawText(ctx, back ? 'X' : '?', tx0 + FLIP_TAB.w / 2, ty0 + FLIP_TAB.h / 2 + 1, back ? 2 : 2.5, lit ? '#ffffff' : COLORS.goldLight);
     }
     // At a fork, the card you're not looking at sinks back under a shade (alpha turned it muddy).
     if (other) {
@@ -1968,13 +1972,14 @@ export class RunScreens {
     const badge = BADGE[e.archetype];
     if (badge) drawSprite(ctx, badge, sx + st - 8, sy + st - 8, fork ? 2.5 : 3);
     if (e.elite) {
-      // The ribbon sits along the stage floor (on top it covered the portrait's head); the relic reward is in the header.
+      // The ribbon sits along the stage floor (on top it covered the portrait's head); the relic reward sits in the
+      // stage's top corner (in the header it ran into long names: ELITE RAT THIEF).
       ctx.fillStyle = COLORS.outline;
       ctx.fillRect(sx, sy + st - 18, st, 18);
       ctx.fillStyle = '#8a3a10';
       ctx.fillRect(sx + 2, sy + st - 16, st - 4, 14);
       drawText(ctx, 'ELITE', sx + st / 2, sy + st - 9, 1.5, COLORS.goldLight);
-      drawSprite(ctx, artId('voucherRelic'), w - 24 - 2 * (fork ? 25 : 30) - 46, 20, 2);
+      drawSprite(ctx, artId('voucherRelic'), sx + st - 16, sy + 12, 1.5);
     }
     // Right column: one-line blurb, the HP bar, then the ability with its cadence.
     const tx = fork ? 124 : 148;
@@ -2115,7 +2120,7 @@ export class RunScreens {
     this.drawMap(ctx, 128, time);
     if (fork) {
       const xs = [CX - 464, CX + 12];
-      const over = xs.map((px) => this.mouse.x >= px && this.mouse.x <= px + 452 && this.mouse.y >= 222 && this.mouse.y <= 482);
+      const over = xs.map((px) => !this.touch && this.mouse.x >= px && this.mouse.x <= px + 452 && this.mouse.y >= 222 && this.mouse.y <= 482);
       opts.forEach((o, i) => this.drawEnemyPanel(ctx, o, xs[i], 222, 452, time, over[1 - i]));
       this.buttons.forEach((b, i) => (b.quiet = !over[i] && !b.hover));
       // "OR": a gold coin in the gap between the two cards.
