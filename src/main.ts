@@ -1,4 +1,5 @@
 import { Game, toggleFullscreen } from './game';
+import { DESKTOP } from './build';
 import { installCrashHandlers, reportCrash } from './ui/crash';
 import { H, W } from './present/layout';
 import { CombatLog } from './ui/combatLog';
@@ -115,9 +116,10 @@ window.addEventListener('keydown', (e) => {
 document.addEventListener('visibilitychange', () => game.setHidden(document.hidden));
 // Back in focus: wake the audio (some platforms leave it 'interrupted' after a sleep: S31).
 window.addEventListener('focus', () => !document.hidden && game.setHidden(false));
-// Losing focus mid-fight (alt-tab, the Steam overlay) pauses it (STEAM_READINESS S14).
+// Losing focus mid-fight (alt-tab, the Steam overlay) pauses it, on the desktop build only (STEAM_READINESS S14).
+// In a browser a click elsewhere on the page blurred it too (user playtest); a hidden tab already stops the clock.
 window.addEventListener('blur', () => {
-  if (game.phase === 'fighting' && game.pausable()) game.setPaused(true);
+  if (DESKTOP && game.phase === 'fighting' && game.pausable()) game.setPaused(true);
 });
 // No long-press menus or double-tap zoom over the game.
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
