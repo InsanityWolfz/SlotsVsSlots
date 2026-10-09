@@ -5,7 +5,7 @@ import { foundCount, runScore, shownTitle, shownTrim, type Profile, type RunEntr
 import { ACHIEVEMENTS, allTitles, TRIMS, CHALLENGES, challengeOpen, edgeLine, levelOf, titlesOwned, weekKey, weekly } from '../core/meta';
 import { online } from '../net/config';
 import { topScores, type ScoreRow } from '../net/leaderboard';
-import { dailyCabinet, dailyEdge, dailyKey, dailySpent } from '../core/daily';
+import { dailyCabinet, dailyKey, dailySpent } from '../core/daily';
 import { EDGE_TEXT } from '../core/run';
 import { LEGENDARY, RELICS, RELIC_TIER } from '../core/relics';
 import { CHARM_SYMBOLS, charmRuleText } from '../core/charms';
@@ -960,19 +960,14 @@ export class Menus {
     ctx.fillRect(W / 2 - pw / 2, top, pw, bottom - top);
     drawText(ctx, title, W / 2, top + 32, 3, COLORS.goldLight);
     ctx.restore();
-    const cap = (text: string, i: number, color: string = COLORS.textDim) => drawText(ctx, text, W / 2, Menus.SUB_Y + i * Menus.SUB_PITCH + 40, 1.25, color, { alpha: Math.max(0, Math.min(1, k)) });
-    if (this.mode === 'modes') {
-      cap(`TODAY: ${EDGE_TEXT[dailyEdge(dailyKey())].title}. ONE TRY, THE SAME RUN FOR EVERYONE`, 0);
-      cap('THIS WEEK\'S RULES. AS MANY TRIES AS YOU LIKE', 1);
-      cap('SET RUNS WITH A TWIST. EACH CLEAR EARNS A TITLE', 2);
-      cap('LEARN THE BASICS IN ONE FIGHT', 3);
-    } else if (this.mode === 'progress') {
+    // (PLAY MODES: just the buttons; the lines under them read as filler: user, 2026-10-09.)
+    if (this.mode === 'progress') {
       const p = this.profile();
       const found = foundCount(p);
       const total = RELIC_ORDER.length + CHARM_ORDER.length;
       const best = p.runs.reduce((m, e) => Math.max(m, runScore(e)), 0);
       drawText(ctx, `COLLECTION ${found}/${total}   RUNS ${p.stats.runs}   BEST ${best}`, W / 2, Menus.SUB_Y - 4, 1.5, COLORS.textDim, { alpha: Math.max(0, Math.min(1, k)) });
-    } else {
+    } else if (this.mode === 'settings') {
       // The M key and F11 change state outside the menu: keep the labels in step.
       for (const f of this.liveLabels) f();
       const scap = (text: string, y: number, color: string = COLORS.textDim) => drawText(ctx, text, W / 2, y, 1.25, color, { alpha: Math.max(0, Math.min(1, k)) });
