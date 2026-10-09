@@ -1414,6 +1414,8 @@ export class Game {
       if (t) this.pointerMove(t.x, t.y);
       return !!t;
     }
+    // The RESULTS card takes Enter / A / Space itself (PRESS TO CONTINUE).
+    if ((k === 'enter' || k === ' ') && this.screens.active && !this.menus.isOpen && this.screens.pressResults()) return true;
     // Enter / A with no focus yet: show it (on the screen's first target) instead of doing nothing.
     if (k === 'enter' && !this.focus.visible && !(this.menus.isOpen && (this.menus.mode === 'loading' || this.menus.mode === 'name'))) {
       const t = this.focus.move('down', this.navTargets());
@@ -1846,14 +1848,15 @@ export class Game {
     // In FINAL HAND each ALL IN after the first is weaker: say so on the card.
     const fade = this.fight.allInFade;
     const name = card === 'card' ? 'A CARD' : card === 'allin' ? (fade < 1 ? `ALL IN X${+fade.toFixed(2)}` : 'ALL IN') : card.toUpperCase();
-    drawText(ctx, name, x + 26, y + 2, 3, card === 'allin' ? '#ff6a5a' : '#ffffff');
+    drawText(ctx, name, x + 30, y + 2, name.length > 7 ? 2 : 3, card === 'allin' ? '#ff6a5a' : '#ffffff');
     const what =
       card === 'card' ? ['ON YOUR PAYLINE:', 'ACE, JOKER, DEUCE']
       : card === 'allin' ? ['ITS NEXT ATTACK', 'IS ITS WHOLE HAND']
       : card === 'shuffle' ? ['SWAPS 5 CELLS', 'BETWEEN 2 REELS']
       : card === 'cut' ? ['CUTS A CHARMED', 'CELL PER REEL']
       : ['ITS NEXT HIT X2', 'YOUR NEXT WIN X2'];
-    what.forEach((l, k) => drawText(ctx, l, x + 20, y + 22 + k * 14, 1.5, COLORS.text));
+    // Right of the card icon (centered, the long lines ran over it: R13 B1).
+    what.forEach((l, k) => drawText(ctx, l, x - 30, y + 22 + k * 13, 1.25, COLORS.text, { align: 'left' }));
     if (g.raised) drawText(ctx, 'RAISED!', x, y - 44 - 14, 2, '#ffd23f');
     else if (g.finalHand) drawText(ctx, g.then?.length ? `FINAL HAND, THEN: ${g.then.map((c) => (c === 'allin' ? 'ALL IN' : c.toUpperCase())).join(', ')}` : 'FINAL HAND', x, y - 44 - 14, 2, '#ff6a5a');
     else if (g.houseRules) drawText(ctx, 'HOUSE RULES', x, y - 44 - 14, 2, '#ff6a5a');

@@ -1187,7 +1187,8 @@ export class Director {
     this.s.sounds.drop();
     this.shake(7, 0.35);
     // Over the machine (not on the top row it lights), first; then the notes light up; the note group hits after.
-    await this.popText(e.encore ? 'ENCORE!' : 'THE DROP!', c.x, MACHINE_TOP - 26, 4, '#5ad8e8', 16, 0.25, true);
+    // Between the HUD and the machine (at scale 4 it ran over the HUD's border: R13 B3).
+    await this.popText(e.encore ? 'ENCORE!' : 'THE DROP!', c.x, MACHINE_TOP - 18, 3, '#5ad8e8', 10, 0.25, true);
     const wilds = e.cells.filter((x) => x.wild);
     if (wilds.length) await this.luckyWilds(e.side, wilds);
     this.dropCells = e.amount > 0 ? e.cells : null;

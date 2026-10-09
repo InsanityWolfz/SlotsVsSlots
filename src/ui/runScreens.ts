@@ -1384,6 +1384,12 @@ export class RunScreens {
   private resultsHit: Hit | null = null;
   /** THE DAILY RUN: COPY RESULT, on the RESULTS card under the share line. */
   private resultsCopy: Btn | null = null;
+  /** Enter / A on the RESULTS card: it says PRESS TO CONTINUE, so the first press continues (R13 B4). */
+  pressResults(): boolean {
+    if (this.mode !== 'over' || !this.results || !this.resultsHit) return false;
+    this.resultsHit.onClick();
+    return true;
+  }
   private openResults(): void {
     const g = this.meta;
     const worth = g && (g.xp > 0 || g.achievements.length || g.titles.length || g.trims.length || this.unlockedNow.length || this.shareLine);
@@ -1858,11 +1864,14 @@ export class RunScreens {
     else {
       // The Charm alone on an empty cell, as in the build panel: on a symbol it read as that symbol's upgrade (user
       // playtest), but a Charm level is for every Charm of the type, whatever it sits on.
+      // A tile in the Charm's own color (a plain dark cell read as a blob: R13).
       const half = 8 * scale;
       ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(x - half - 2, y - half - 2, half * 2 + 4, half * 2 + 4);
-      ctx.fillStyle = '#4a3a66';
-      ctx.fillRect(x - half, y - half, half * 2, half * 2);
+      ctx.fillRect(x - half - 3, y - half - 3, half * 2 + 6, half * 2 + 6);
+      ctx.fillStyle = CHARM_COLOR[o.enh];
+      ctx.fillRect(x - half - 1, y - half - 1, half * 2 + 2, half * 2 + 2);
+      ctx.fillStyle = '#2a2040';
+      ctx.fillRect(x - half + 2, y - half + 2, half * 2 - 4, half * 2 - 4);
       drawSprite(ctx, ENH_SPRITE[o.enh], x, y, scale);
     }
     const cap = this.run ? levelCap(this.run) : 3;
@@ -2596,9 +2605,24 @@ export class RunScreens {
       drawSprite(ctx, o.symbol as SpriteId, 0, iy, 4);
       drawSprite(ctx, 'minusBadge', 30, iy + 22, 3);
     } else drawSprite(ctx, 'heart', 0, iy, 5);
-    if (legend) this.legendTag(ctx, 0, -62, time);
+    // The ribbon sits on the case's top edge (above it, it met the upper shelf's name plates).
+    if (legend) this.legendTag(ctx, 0, -48, time);
     ctx.restore();
-    this.drawPriceTag(ctx, h, this.shopTags[this.shopHits.indexOf(h)], item, afford, time);
+    const tag = this.shopTags[this.shopHits.indexOf(h)];
+    this.drawPriceTag(ctx, h, tag, item, afford, time);
+    // Its name under the tag, always, on a dark plate (R13: the shelf was icons only until you hovered).
+    if (!item.sold && tag && h.scale > 0.5) {
+      const title = describeOption(o, this.run ?? undefined).title;
+      const color = o.kind === 'gild' || o.kind === 'charmLevel' ? CHARM_COLOR[o.enh] : o.kind === 'symLevel' ? '#5ad8e8' : relic ? (legend ? '#ffd23f' : '#e0c0ff') : COLORS.text;
+      // One line that fits the shelf spacing (the shelf is SHELF.gap wide per item).
+      const max = Math.floor((SHELF.gap - 16) / 7.5);
+      const text = title.length > max ? title.slice(0, max - 1) + '.' : title;
+      const tw = text.length * 7.5 + 10;
+      const ty = tag.y + TAG.h / 2 + 8;
+      ctx.fillStyle = 'rgba(16,10,26,0.88)';
+      ctx.fillRect(tag.x - tw / 2, ty - 7, tw, 14);
+      drawText(ctx, text, tag.x, ty, 1.25, color);
+    }
   }
 
   /** The price tag hanging off the shelf edge: a real tag (string, hole, notched end). Clicking it buys. */
@@ -2858,7 +2882,8 @@ export class RunScreens {
         ctx.fillRect(cx + 6, cy + 6, cw - 12, 104);
         if (hasSprite('trophySmall')) drawSprite(ctx, artId('trophySmall'), cx + cw / 2, cy + 26, 2);
         wrap(a.name, 18).slice(0, 2).forEach((l, k) => drawText(ctx, l, cx + cw / 2, cy + 52 + k * 15, 1.5, COLORS.goldLight));
-        wrap(a.text, 26).slice(0, 2).forEach((l, k) => drawText(ctx, l, cx + cw / 2, cy + 86 + k * 11, 1, COLORS.textDim));
+        // Line spacing to fit the font (11 px lines touched: R13 B2).
+        wrap(a.text, 26).slice(0, 2).forEach((l, k) => drawText(ctx, l, cx + cw / 2, cy + 84 + k * 14, 1, COLORS.textDim));
       });
       if (g.achievements.length > 4) drawText(ctx, `+${g.achievements.length - 4} MORE ON THE TROPHIES SCREEN`, W / 2, y + 156, 1.5, COLORS.textDim);
       y += 172;

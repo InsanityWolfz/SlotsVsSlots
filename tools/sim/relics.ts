@@ -3,7 +3,7 @@
 import { defaultConfig, type Enh, type RelicId } from '../../src/core/config';
 import { CABINET_ORDER, CABINETS, type CabinetId } from '../../src/core/cabinets';
 import { RELICS } from '../../src/core/relics';
-import { createRun, fightConfig, needsChoice, chooseEnemy, type RunState } from '../../src/core/run';
+import { createRun, fightConfig, needsChoice, chooseEnemy, relicFits, type RunState } from '../../src/core/run';
 import { CHARM_SYMBOLS } from '../../src/core/charms';
 import { Fight } from '../../src/core/fight';
 import type { CombatEvent } from '../../src/core/events';
@@ -41,7 +41,9 @@ function play(cab: CabinetId, seed: number, relic: RelicId | null): Stat {
       for (const e of evs) {
         s.kinds.add(e.type);
         if (e.type === 'relic' && e.relic === relic) s.fired++;
-        if (e.type === 'spin' && relic && e.score.relics?.includes(relic)) s.fired++;
+        if (e.type === 'spin' && relic && (e.score.relics?.includes(relic) || e.lucky === relic)) s.fired++;
+        // Relics with their own events / heal source (they pop through those).
+        if (relic && ((e.type === 'phoenix' && relic === 'phoenix') || (e.type === 'heal' && e.source === relic))) s.fired++;
         if (e.type === 'specialFire' && e.from === 'player') s.dealt += e.amount;
         if (e.type === 'attack' && e.from === 'player') s.dealt += e.amount;
         if (e.type === 'attack' && e.from === 'enemy') s.taken += e.amount;
@@ -54,12 +56,17 @@ function play(cab: CabinetId, seed: number, relic: RelicId | null): Stat {
   return s;
 }
 
+const BETWEEN = new Set<RelicId>(['bandage', 'vault', 'piggy', 'trophy', 'loaded', 'highlimit']);
 const out: string[] = [];
 for (const id of Object.keys(RELICS) as RelicId[]) {
   const def = RELICS[id];
   if (def.retired) continue;
+  // Between-fight relics (heals, chips, max HP, side bets): nothing to see in a fight.
+  if (BETWEEN.has(id)) continue;
   const cabs = def.machine ? [def.machine] : CABINET_ORDER;
   for (const cab of cabs) {
+    // Only where the game offers it (a mid-run build with Charms: some relics need one first).
+    if (!relicFits(runAt(cab, 1, 2, 2), id)) continue;
     const a = { fired: 0, dealt: 0, taken: 0, healed: 0, won: 0, turns: 0 };
     const b = { ...a };
     for (let k = 0; k < N; k++) {
