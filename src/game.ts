@@ -512,7 +512,7 @@ export class Game {
         ),
       );
       const r = ranks[boards.indexOf(main)];
-      const where = main === 'all' ? 'ALL TIME' : main.startsWith('daily') ? 'TODAY' : 'THIS WEEK';
+      const where = main === 'all' ? 'ALL TIME' : main.startsWith('daily') ? 'DAILY' : 'WEEKLY';
       this.screens.setOnline(r ? `RANK ${r} ${where}` : r === 0 ? 'SCORE POSTED' : "COULDN'T POST YOUR SCORE");
     });
   }

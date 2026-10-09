@@ -444,7 +444,7 @@ export class Menus {
     this.back = () => this.showProgress();
     this.btn('BACK', 100, 44, 140, 48, () => this.showProgress());
     (['mine', 'daily', 'weekly', 'all'] as ScoreTab[]).forEach((tab, i) => {
-      const b = this.btn({ mine: 'MY RUNS', daily: 'TODAY', weekly: 'THIS WEEK', all: 'ALL TIME' }[tab], W / 2 + (i - 1.5) * 168, 100, 160, 40, () => {
+      const b = this.btn({ mine: 'MY RUNS', daily: 'DAILY', weekly: 'WEEKLY', all: 'ALL TIME' }[tab], W / 2 + (i - 1.5) * 168, 100, 160, 40, () => {
         this.tab = tab;
         this.page = 0;
         if (tab !== 'mine') this.boards.delete(this.boardKey(tab));
@@ -1149,6 +1149,9 @@ export class Menus {
     }
     if (!rows.length) {
       drawText(ctx, 'NO SCORES YET. BE THE FIRST!', W / 2, H / 2, 3, COLORS.textDim);
+      // The DAILY and WEEKLY boards only take their own mode's runs.
+      const how = key.startsWith('daily') ? 'PLAY THE DAILY (PLAY MODES)' : key.startsWith('weekly') ? 'PLAY THE WEEKLY (PLAY MODES)' : '';
+      if (how) drawText(ctx, how, W / 2, H / 2 + 40, 1.5, COLORS.textDim);
       return;
     }
     const me = this.cb.playerName();
