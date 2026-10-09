@@ -908,6 +908,8 @@ export class Fight {
     const jackpots = player && me.armed && this.meter?.kind === 'jackpots';
     this.pickEnh.clear();
     let s = scoreLine(line, cfg, { value, wildAlone: pick?.symbol ?? this.wildAlone(me), loadedReel: player && me.relics.has('loadedreel') });
+    // LOADED REEL made a second pair out of a middle WILD (two matched pairs on a 3-reel line).
+    const loadedFired = player && me.relics.has('loadedreel') && line[1] === 'wild' && s.groups.filter((g) => g.matched && g.reels.length === 2).length === 2;
     if (pick) {
       s.wildPick = pick.symbol;
       if (pick.enh) {
@@ -933,6 +935,9 @@ export class Fight {
       s = { line, tier: 'triple', tierSymbol: null, groups, totals, jackpots: true, ...(picks.length ? { picks } : {}) };
     }
     const fired = new Set<RelicId>();
+    if (loadedFired) fired.add('loadedreel');
+    // WILD WHEEL spun for a pick this spin (3 WILDS, or JAX's all-jackpots wheel).
+    if (player && me.relics.has('wildwheel') && (pick || s.picks?.length)) fired.add('wildwheel');
     const has = (r: RelicId) => player && me.relics.has(r);
     const pays = (g: ScoreGroup) => g.base > 0 && (PAYING.has(g.symbol) || !!g.rain);
     const cellSym = (r: number) => me.reels[r].cells[me.reels[r].stop]?.symbol;
@@ -954,6 +959,7 @@ export class Fight {
       const g = s.groups.find((x) => x.symbol === 'goldbar' && x.matched && (x.reels.length >= 3 || (x.reels.length === 2 && (has('loosechange') || !!this.big.monsoon))));
       if (g) {
         g.rain = true;
+        if (g.reels.length === 2 && has('loosechange') && !this.big.monsoon) fired.add('loosechange');
         // MONSOON (big choice): a chip pair rains in full.
         g.base = Math.round((this.chipsNow() * RAIN.perChip) / (g.reels.length >= 3 || this.big.monsoon ? 1 : 2));
         // DOWNPOUR: each rain this fight makes the next one hit harder.
@@ -968,6 +974,7 @@ export class Fight {
       const g0 = s.groups.filter(pays).sort((a, b) => Number(!!b.rain) - Number(!!a.rain) || Number(this.isAttack(b.symbol)) - Number(this.isAttack(a.symbol)) || b.base * b.mult - a.base * a.mult)[0];
       if (g0) {
         const mul = this.vaultMul();
+        if (has('compound') && mul > MIDAS.maxMul) fired.add('compound');
         g0.mult *= mul;
         vaultGroup = g0;
         s.raised = true;
@@ -1036,7 +1043,10 @@ export class Fight {
           g.pierce = true;
           keen = true;
         }
-        if (me.relics.has('subwoofer')) g.pierce = true;
+        if (me.relics.has('subwoofer')) {
+          if (!g.pierce && foe.shield > 0) fired.add('subwoofer');
+          g.pierce = true;
+        }
         if (off.cells.length) notes.push(`DROP +${off.cells.length}`);
       }
       // MIDAS TOUCH: each gold touch on a sword or shield counts as a gold charm.
@@ -1552,6 +1562,7 @@ export class Fight {
         me.armed = false;
         // TURNTABLE wins over FEEDBACK's reset.
         me.energy = (me.relics.has('turntable') ? VOLUME.turntable : this.big.dropTo ?? VOLUME.after) * UNIT;
+        if (me.relics.has('turntable')) events.push({ type: 'relic', side: me.side, relic: 'turntable' });
       }
       events.push({ type: 'payoff', side: me.side, kind: 'volume', left: me.energy });
       this.payoffHeal(me, events);
@@ -1637,6 +1648,7 @@ export class Fight {
       me.armed = false;
       // ENCORE: the meter keeps a share after it pays.
       me.energy = me.side === 'player' && me.relics.has('encore') ? unitsUp(this.meterCost * NEW_RELIC.encoreKeep) : 0;
+      if (me.energy > 0) events.push({ type: 'relic', side: me.side, relic: 'encore' });
       events.push({ type: 'payoff', side: me.side, kind: 'jackpots' });
       return;
     }
@@ -1890,6 +1902,7 @@ export class Fight {
         overPopped = true;
         events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
       }
+      if (melt > 0 && strikes === 0) events.push({ type: 'relic', side: me.side, relic: 'meltdown' });
       const h = this.damage(foe, dmg, pierce);
       events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
       this.checkDeath(foe, events);
