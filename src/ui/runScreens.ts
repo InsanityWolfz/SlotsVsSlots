@@ -45,7 +45,7 @@ import { ABILITY_UI } from '../present/hud';
 import { ENH_SPRITE } from '../present/reel';
 import { COLORS, H, W } from '../present/layout';
 import { artId, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
-import { drawText, fmtNum } from '../render/text';
+import { drawText, fmtNum, textWidth } from '../render/text';
 import { heroSprite } from './menus';
 import { CHIP_SCORE, runEntry, runScore } from '../core/profile';
 import { dailyShare } from '../core/daily';
@@ -118,6 +118,8 @@ export const BADGE: Record<string, SpriteId> = {
 };
 
 const INPUT_GUARD_MS = 250;
+/** CHOOSE YOUR MACHINE: the HIGH STAKES chip track (chip 0's centre, spacing, row). */
+const TRACK = { x0: W / 2 - 165, dx: 66, y: 640 };
 /** YOUR BUILD: a fixed column on the left of every run screen (screens lay out to its right, around CX). */
 export const BUILD = { x: 16, y: 16, w: 284, h: H - 32 };
 /** The middle of the space right of YOUR BUILD: run screens center on it. */
@@ -303,6 +305,10 @@ export class RunScreens {
   private stakeUnlockedNow = '';
   /** The slot machines that have beaten the Dealer (TRUE ENDING). */
   private dealerBeaten: CabinetId[] = [];
+  /** The stake track's chips (focus / click targets), the select pop (0..1) and a refused locked chip (shakes). */
+  private stakeHits: Btn[] = [];
+  private stakePop = 1;
+  private stakeDeny = { level: -1, at: 0 };
 
   constructor(
     private ui: Clock,
@@ -338,19 +344,26 @@ export class RunScreens {
     this.run = null;
     this.open('cabinet');
     this.stakeSel = Math.min(stakeSel, this.maxStake());
-    // HIGH STAKES picker (only once some cabinet has a stake unlocked).
-    if (this.maxStake() > 0) {
-      const step = (d: number) => {
-        this.stakeSel = Math.max(0, Math.min(this.maxStake(), this.stakeSel + d));
-        this.sounds.click();
-        CABINET_ORDER.forEach((id, i) => {
-          if (this.cards[i]) this.cards[i].enabled = this.cabinetUnlocked.has(id) && this.stakeFor(id) >= this.stakeSel;
-        });
-        this.cb.onStake(this.stakeSel);
-      };
-      this.buttons = [this.minorBtn('LOWER', W / 2 - 430, 640, 110, 40, () => step(-1)), this.minorBtn('HIGHER', W / 2 + 430, 640, 110, 40, () => step(1))];
-    }
-    this.buttons.push(this.minorBtn('MENU', 90, 40, 130, 44, () => this.cb.onMenu()));
+    // HIGH STAKES: one track of 6 chips, always shown (new players see the whole ladder, locked).
+    // Every chip is a target: hovering or focusing one previews its rule, clicking an earned one selects it.
+    const pick = (level: number) => {
+      if (level > this.maxStake()) {
+        this.sounds.fizzle();
+        this.stakeDeny = { level, at: performance.now() };
+        return;
+      }
+      if (level === this.stakeSel) return;
+      this.stakeSel = level;
+      CABINET_ORDER.forEach((id, i) => {
+        if (this.cards[i]) this.cards[i].enabled = this.cabinetUnlocked.has(id) && this.stakeFor(id) >= this.stakeSel;
+      });
+      this.stakePop = 0;
+      void this.ui.tween({ from: 0, to: 1, dur: 0.35, ease: backOut(3), onUpdate: (v) => (this.stakePop = v) });
+      this.cb.onStake(this.stakeSel);
+    };
+    this.stakeHits = STAKES.map((s) => this.minorBtn('', TRACK.x0 + s.level * TRACK.dx, TRACK.y, 50, 44, () => pick(s.level)));
+    this.stakePop = 1;
+    this.buttons = [...this.stakeHits, this.minorBtn('MENU', 90, 40, 130, 44, () => this.cb.onMenu())];
     this.cards = CABINET_ORDER.map((id, i) => {
       const h = this.hit(W / 2 + (i - (CABINET_ORDER.length - 1) / 2) * 240, 380, 220, 420, () => {
         if (!this.cabinetUnlocked.has(id) || this.picked >= 0) return;
@@ -2154,11 +2167,15 @@ export class RunScreens {
     drawText(ctx, 'CHOOSE YOUR MACHINE', W / 2, 60, 5, COLORS.goldLight);
     drawText(ctx, 'WIN RUNS TO UNLOCK MORE.', W / 2, 104, 2, COLORS.textDim);
     this.drawStakePicker(ctx, time);
+    const sel = stakeOf(this.stakeSel);
     CABINET_ORDER.forEach((id, i) => {
       const h = this.cards[i];
       if (!h || h.scale <= 0.01) return;
       const cab = CABINETS[id];
       const open = this.cabinetUnlocked.has(id);
+      const best = this.stakeFor(id);
+      // Unlocked, but not up to the chosen stake yet: dimmed, behind a padlock in that stake's colour.
+      const barred = open && best < this.stakeSel;
       const dim = this.picked >= 0 && this.picked !== i;
       ctx.save();
       ctx.globalAlpha *= dim ? 0.3 : 1;
@@ -2174,19 +2191,12 @@ export class RunScreens {
         ctx.fillRect(-h.w / 2, -h.h / 2, h.w, h.h);
         ctx.restore();
       }
-      this.panel(ctx, -h.w / 2, -h.h / 2, h.w, h.h, hover ? COLORS.goldLight : open ? COLORS.gold : '#4a4058');
+      this.panel(ctx, -h.w / 2, -h.h / 2, h.w, h.h, hover ? COLORS.goldLight : open && !barred ? COLORS.gold : '#4a4058');
+      ctx.save();
+      if (barred) ctx.globalAlpha *= 0.4;
       drawSprite(ctx, (open ? cab.sprite : 'cabinetLocked') as SpriteId, 0, -h.h / 2 + 100 + (hover ? Math.sin(time * 4) * 3 : 0), 2.6);
-      drawText(ctx, open ? cab.name : '???', 0, 8, cab.name.length > 10 ? 2 : 3, open ? COLORS.goldLight : COLORS.textDim);
-      if (open && this.maxStake() > 0) {
-        const best = this.stakeFor(id);
-        this.stakeChip(ctx, h.w / 2 - 26, -h.h / 2 + 26, best, time, 14);
-        if (best < this.stakeSel) drawText(ctx, `NEEDS STAKE ${this.stakeSel}`, 0, h.h / 2 - 22, 2, '#ff8a7a');
-      }
-      if (open && this.dealerBeaten.includes(id)) {
-        ctx.strokeStyle = COLORS.goldLight;
-        ctx.lineWidth = 4;
-        ctx.strokeRect(-h.w / 2 + 6, -h.h / 2 + 6, h.w - 12, h.h - 12);
-      }
+      // "???" at one size: its size used to give away the hidden name's length.
+      drawText(ctx, open ? cab.name : '???', 0, 8, open && cab.name.length > 10 ? 2 : 3, open ? COLORS.goldLight : COLORS.textDim);
       if (open) {
         // The hero you play as on this machine.
         drawSprite(ctx, heroSprite(id), -h.w / 2 + 30, -h.h / 2 + 30, 1.5);
@@ -2203,33 +2213,193 @@ export class RunScreens {
         wrap(`UNLOCK: ${cab.unlock}`, 17).forEach((l, k) => drawText(ctx, l, 0, 70 + k * 18, 2, COLORS.textDim));
       }
       ctx.restore();
+      if (open) this.cardLadder(ctx, id, h.h / 2 - 20, time);
+      if (barred) this.ladderChip(ctx, 0, -h.h / 2 + 100, sel.level, 'locked', time, 22, sel.color);
+      ctx.restore();
     });
   }
 
-  /** HIGH STAKES picker under the cabinets: the chosen stake and every rule it stacks. */
+  /** A machine's own HIGH STAKES progress along its card's foot: the same 6 chips in miniature. */
+  private cardLadder(ctx: CanvasRenderingContext2D, id: CabinetId, y: number, time: number): void {
+    const best = this.stakeFor(id);
+    const dx = 22;
+    const x0 = -((STAKES.length - 1) * dx) / 2;
+    // The rail: lit up to this machine's best stake.
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x0 - 2, y - 3, (STAKES.length - 1) * dx + 4, 6);
+    for (const s of STAKES) {
+      const x = x0 + s.level * dx;
+      if (s.level > 0 && s.level <= best) {
+        ctx.fillStyle = s.color;
+        ctx.fillRect(x - dx, y - 1, dx, 2);
+      }
+    }
+    for (const s of STAKES) {
+      const x = x0 + s.level * dx;
+      const on = s.level <= best;
+      const here = s.level === this.stakeSel;
+      if (here) {
+        // The chosen stake's socket: a ring, so every card answers "can I play this one?".
+        ctx.fillStyle = on ? '#ffffff' : '#ff8a7a';
+        ctx.beginPath();
+        ctx.arc(x, y, 10 + (on ? Math.sin(time * 5) * 0.8 : 0), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = COLORS.outline;
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = on ? s.color : '#2a2238';
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      if (on) {
+        ctx.fillStyle = 'rgba(255,255,255,0.45)';
+        ctx.fillRect(x - 3, y - 3, 2, 2);
+      }
+    }
+    // Beat the Dealer on this machine: his badge caps its ladder.
+    if (this.dealerBeaten.includes(id)) drawSprite(ctx, 'mapBadgeDealer', x0 + STAKES.length * dx + 6, y, 2);
+  }
+
+  /** HIGH STAKES: one track of 6 chips. The chosen one is raised and glowing; earned ones are lit; the rest are padlocked. */
   private drawStakePicker(ctx: CanvasRenderingContext2D, time: number): void {
-    if (this.maxStake() <= 0) {
-      // New players see the ladder exists.
-      STAKES.slice(1).forEach((s, k) => this.stakeChip(ctx, W / 2 - 150 + k * 44, 626, s.level, time, 14, true));
-      drawText(ctx, 'HIGH STAKES: WIN A RUN TO RAISE THE STAKES', W / 2, 666, 2, COLORS.textDim);
-      for (const b of this.buttons) this.drawButton(ctx, b, time);
+    const max = this.maxStake();
+    const y = TRACK.y;
+    const xOf = (k: number) => TRACK.x0 + k * TRACK.dx;
+    const hov = this.stakeHits.findIndex((b) => b.hover);
+    drawText(ctx, 'HIGH STAKES', xOf(0) - 40, y, 2, COLORS.textDim, { align: 'right' });
+    // The rail: each stake stacks on the ones below it, so the chosen stake's colour fills back to WHITE.
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(xOf(0), y - 5, xOf(5) - xOf(0), 10);
+    for (let k = 1; k < STAKES.length; k++) {
+      ctx.fillStyle = k <= this.stakeSel ? STAKES[k].color : k <= max ? '#4a4058' : '#241c30';
+      ctx.fillRect(xOf(k - 1), y - 3, TRACK.dx, 6);
+    }
+    // ACT 3 (the Dealer) comes with GREEN and every stake above it: a bracket under those chips.
+    const ay = y + 32;
+    const act3On = this.stakeSel >= STAKE.act3;
+    const ac = act3On ? '#7dff7a' : '#4a4058';
+    const ax0 = xOf(STAKE.act3) - 14;
+    const ax1 = xOf(5) + 14;
+    const label = '+ ACT 3';
+    const lw = 84;
+    const mid = (ax0 + ax1) / 2;
+    ctx.fillStyle = ac;
+    ctx.fillRect(ax0, ay - 4, 2, 4);
+    ctx.fillRect(ax1 - 2, ay - 4, 2, 4);
+    ctx.fillRect(ax0, ay, mid - lw / 2 - ax0, 2);
+    ctx.fillRect(mid + lw / 2, ay, ax1 - mid - lw / 2, 2);
+    drawText(ctx, label, mid, ay + 1, 1.5, ac);
+    // The chips (the chosen one last, so its glow sits on top).
+    const order = STAKES.map((s) => s.level).sort((a, b) => (a === this.stakeSel ? 1 : b === this.stakeSel ? -1 : a - b));
+    for (const k of order) {
+      const b = this.stakeHits[k];
+      const chosen = k === this.stakeSel;
+      const state = k > max ? 'locked' : chosen ? 'chosen' : k < this.stakeSel ? 'stacked' : 'earned';
+      const deny = this.stakeDeny.level === k ? (performance.now() - this.stakeDeny.at) / 1000 : 9;
+      const shake = deny < 0.3 ? Math.sin(deny * 60) * 4 * (1 - deny / 0.3) : 0;
+      const sc = b ? b.scale : 1;
+      const r = chosen ? 15 + 6 * this.stakePop : 15;
+      const yy = y - (chosen ? 7 * this.stakePop : 0) - (b?.hover && !chosen ? 3 : 0);
+      ctx.save();
+      ctx.translate(xOf(k) + shake, yy);
+      ctx.scale(sc, sc);
+      this.ladderChip(ctx, 0, 0, k, state, time, r);
+      if (b?.hover && !chosen) {
+        ctx.strokeStyle = COLORS.goldLight;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, r + 7, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // One line: what the hovered (or chosen) stake adds, after pips for the stakes stacked under it.
+    const show = hov >= 0 ? hov : this.stakeSel;
+    const s = STAKES[show];
+    const locked = show > max;
+    const ly = 697;
+    const pip = 16;
+    const pips = STAKES.slice(1, show);
+    const nameW = textWidth(s.name, 2) + 12;
+    let ruleScale = 2;
+    if (textWidth(s.rule, 2) + nameW > 980) ruleScale = 1.5;
+    const ruleW = textWidth(s.rule, ruleScale);
+    const lockW = locked ? 26 : 0;
+    const pipsW = pips.length ? pips.length * pip + 20 : 0;
+    const total = lockW + pipsW + nameW + 14 + ruleW;
+    let x = W / 2 - total / 2;
+    ctx.save();
+    if (locked) {
+      ctx.globalAlpha *= 0.75;
+      drawSprite(ctx, 'icoLock', x + 9, ly, 2);
+      x += lockW;
+    }
+    for (const p of pips) {
+      ctx.fillStyle = COLORS.outline;
+      ctx.beginPath();
+      ctx.arc(x + 6, ly, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(x + 6, ly, 5, 0, Math.PI * 2);
+      ctx.fill();
+      x += pip;
+    }
+    if (pips.length) {
+      drawText(ctx, '+', x + 4, ly, 2, COLORS.textDim);
+      x += 20;
+    }
+    // The stake's name as a tag in its own colour.
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 2, ly - 12, nameW + 4, 24);
+    ctx.fillStyle = s.color;
+    ctx.fillRect(x, ly - 10, nameW, 20);
+    drawText(ctx, s.name, x + nameW / 2, ly + 1, 2, COLORS.outline, { outline: null });
+    x += nameW + 14;
+    drawText(ctx, s.rule, x, ly, ruleScale, locked ? COLORS.textDim : COLORS.text, { align: 'left' });
+    ctx.restore();
+    for (const b of this.buttons) if (!this.stakeHits.includes(b)) this.drawButton(ctx, b, time);
+  }
+
+  /**
+   * A HIGH STAKES chip on the track. chosen: glowing; stacked: below the chosen one (in play);
+   * earned: unlocked but above the chosen one; locked: dark, with a padlock (`tint` colours its rim).
+   */
+  private ladderChip(ctx: CanvasRenderingContext2D, x: number, y: number, level: number, state: 'chosen' | 'stacked' | 'earned' | 'locked', time: number, r: number, tint?: string): void {
+    const s = stakeOf(level);
+    ctx.save();
+    if (state === 'chosen') {
+      ctx.save();
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur = 16 + 6 * Math.sin(time * 4);
+      ctx.fillStyle = s.color;
+      ctx.beginPath();
+      ctx.arc(x, y, r + 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    if (state === 'locked') {
+      ctx.fillStyle = COLORS.outline;
+      ctx.beginPath();
+      ctx.arc(x, y, r + 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = tint ?? '#3a2e52';
+      ctx.beginPath();
+      ctx.arc(x, y, r + 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1a1428';
+      ctx.beginPath();
+      ctx.arc(x, y, r - (tint ? 3 : 1), 0, Math.PI * 2);
+      ctx.fill();
+      drawSprite(ctx, r >= 20 ? 'lock' : 'icoLock', x, y, 2, { alpha: tint ? 1 : 0.7 });
+      ctx.restore();
       return;
     }
-    const s = stakeOf(this.stakeSel);
-    this.stakeChip(ctx, W / 2 - 250, 622, s.level, time);
-    drawText(ctx, `STAKE ${s.level}: ${s.name}`, W / 2 - 226, 614, 2.5, s.color, { align: 'left' });
-    const rules = STAKES.slice(1, s.level + 1);
-    if (!rules.length) drawText(ctx, 'THE BASE GAME.', W / 2 - 226, 636, 1.5, COLORS.text, { align: 'left' });
-    // Its own row, below the rules (QA_1 B4).
-    const act3Y = 634 + Math.max(1, rules.length) * 13 + 4;
-    if (s.level >= STAKE.act3) drawText(ctx, '+ ACT 3: THE DEALER (16 FIGHTS)', W / 2 - 226, act3Y, 1.25, '#7dff7a', { align: 'left' });
-    rules.forEach((r, k) => {
-      const yy = 634 + k * 13;
-      ctx.fillStyle = r.color;
-      ctx.fillRect(W / 2 - 226, yy - 4, 8, 8);
-      drawText(ctx, r.rule, W / 2 - 212, yy, 1.25, COLORS.text, { align: 'left' });
-    });
-    for (const b of this.buttons) this.drawButton(ctx, b, time);
+    ctx.globalAlpha *= state === 'earned' ? 0.55 : 1;
+    this.stakeChip(ctx, x, y, level, state === 'chosen' ? time : 0, r);
+    ctx.restore();
   }
 
   /** A casino chip in the stake's colour, with its number. */
