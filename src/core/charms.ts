@@ -91,30 +91,33 @@ export function charmRuleText(enh: Enh, lvl: number): string {
   }
 }
 
-/** The same rule in a few words, for shop and draft cards (the collection and tooltips keep the long form). */
+/**
+ * The same rule in a few words, for shop and draft cards (the collection and tooltips keep the long form). The user's
+ * words from the content audit (Claude Doc, Charms "codex text" and the upgrade cards: "REEL 1 SWORDS: X2 PAY").
+ */
 export function charmShortText(enh: Enh, lvl: number): string {
   const v = charmValue(enh, lvl);
   switch (enh) {
     case 'gold':
-      return `X${v} PAY, GOLD STACKS`;
+      return `X${v} PAY`;
     case 'keen':
-      return `+${v} EACH, PIERCES`;
+      return `+${v} DAMAGE AND PIERCES SHIELDS`;
     case 'charged':
-      return `+${v} BOLT PAY`;
+      return `+${v} CHARGE ON BOLTS`;
     case 'vamp':
-      return `HEAL ${v} ON A HIT`;
+      return `+${v} HP`;
     case 'lucky':
-      return `${v}% TO BE WILD`;
+      return `${v}% CHANCE TO BE A WILD`;
     case 'blaze':
-      return `SPECIAL +${v}`;
+      return `+${v} LIGHTNING DAMAGE`;
     case 'spiked':
       return `HITS FOR ${v}% OF ITS SHIELD`;
     case 'thorny':
-      return `+${v} THORNS WHEN IT LANDS`;
+      return `+${v} DAMAGE ON THORNS`;
     case 'lucre':
-      return `+${LUCRE_CHIPS} CHIPS ON A HIT, MAX ${v}`;
+      return `+${LUCRE_CHIPS} CHIPS (MAX ${v} PER ROUND)`;
     case 'trick':
-      return `+${v} METER WHEN IT LANDS`;
+      return `+${v} TO YOUR JACKPOT METER`;
     case 'echo':
       return `DROP: HITS X${v}`;
   }

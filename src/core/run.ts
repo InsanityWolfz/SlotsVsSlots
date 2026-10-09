@@ -1640,13 +1640,13 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'swap':
       return { title: `${o.count} ${plural(o.from, o.count)} TO ${plural(o.to, o.count)}`, text: `ON REEL ${o.reel + 1}` };
     case 'clear':
-      return { title: 'CLEAR ROCKS', text: `SMASH EVERY ROCK ON REEL ${o.reel + 1}` };
+      return { title: 'CLEAR ROCKS', text: `REMOVE ROCKS ON REEL ${o.reel + 1}` };
     case 'relic':
       return { title: RELICS[o.relic].name, text: relicText(o.relic, run?.cabinet) };
     case 'heal':
-      return { title: `HEAL ${o.amount}`, text: `RESTORE ${o.amount} HP NOW` };
+      return { title: 'HEAL', text: `RESTORE ${o.amount} HP` };
     case 'maxHp':
-      return { title: `+${o.amount} MAX HP`, text: `GAIN ${o.amount} MAX HP (AND HEAL IT)` };
+      return { title: `+${o.amount} MAX HP`, text: `GAIN ${o.amount} MAX HP AND HEAL ${o.amount} HP` };
     case 'payLien': {
       const l = run?.liens?.[0];
       return { title: 'PAY OFF A LIEN', text: l ? `THE REPO MAN GIVES BACK ${lienText(l)}` : 'NOTHING OWED' };
@@ -1666,7 +1666,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'charmLevel': {
       const cap = run ? levelCap(run) : LEVEL_CAP;
       const next = Math.min(cap, charmLevel(lv, o.enh) + 1);
-      return { title: `${charmName(o.enh)} ${lvTag(next, cap)}`, text: `ALL ${charmName(o.enh)}: ${charmShortText(o.enh, next + (ticket ? 1 : 0))}` };
+      return { title: `${charmName(o.enh)} CHARM ${lvTag(next, cap)}`, text: charmShortText(o.enh, next + (ticket ? 1 : 0)) };
     }
     case 'remove':
       return { title: `-1 ${symLabel(o.symbol)}`, text: `REMOVE A ${symLabel(o.symbol)} FROM REEL ${o.reel + 1}` };
