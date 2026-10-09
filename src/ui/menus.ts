@@ -212,7 +212,7 @@ export class Menus {
     this.open('main');
     const x = W / 2;
     const first = !this.cb.tutorialDone();
-    // Three things on the main screen: NEW RUN (the one red button), the play modes, your progress.
+    // The main screen: NEW RUN (the one red button), the play modes, your profile and the hiscores.
     // A saved run (STEAM_READINESS S1): CONTINUE takes the red button; NEW RUN asks before throwing the save away.
     const saved = this.cb.savedRun();
     let y = 412;
@@ -249,7 +249,9 @@ export class Menus {
       y += 66;
     }
     this.icons.set(this.btn('PLAY MODES', x, y, 400, 54, () => this.showModes(), 3), 'chip');
-    this.icons.set(this.btn('PROGRESS', x, y + 66, 400, 54, () => this.showProgress(), 3), 'trophySmall');
+    this.icons.set(this.btn('PROFILE', x, y + 66, 400, 54, () => this.showProgress(), 3), 'iconCollection');
+    // HISCORES back on the main screen (user, 2026-10-09: the online boards are a front-door feature).
+    this.icons.set(this.btn('HISCORES', x, y + 132, 400, 54, () => this.showHiscores(), 3), 'iconHiscores');
     const settings = this.btn('SETTINGS', W - 90, H - 30, 150, 34, () => this.showSettings(), 1.5);
     settings.opts.quiet = true;
     // Desktop: a way out (STEAM_READINESS S5). Browsers close the tab.
@@ -342,14 +344,13 @@ export class Menus {
     this.slideIn();
   }
 
-  /** PROGRESS: the collection, trophies and hiscores. */
+  /** PROFILE: the collection and trophies (HISCORES moved to the main screen). */
   showProgress(): void {
     this.openSub('progress', () => this.showMain());
     const x = W / 2;
     const row = (i: number) => Menus.SUB_Y + 40 + i * Menus.SUB_PITCH;
     this.icons.set(this.btn('COLLECTION', x, row(0), 440, 54, () => this.showCollection(), 3), 'iconCollection');
     this.icons.set(this.btn('TROPHIES', x, row(1), 440, 54, () => this.showTrophies(), 3), 'trophySmall');
-    this.icons.set(this.btn('HISCORES', x, row(2), 440, 54, () => this.showHiscores(), 3), 'iconHiscores');
     this.slideIn();
   }
 
@@ -441,8 +442,8 @@ export class Menus {
 
   private hiscoreButtons(): void {
     this.buttons = [];
-    this.back = () => this.showProgress();
-    this.btn('BACK', 100, 44, 140, 48, () => this.showProgress());
+    this.back = () => this.showMain();
+    this.btn('BACK', 100, 44, 140, 48, () => this.showMain());
     (['mine', 'daily', 'weekly', 'all'] as ScoreTab[]).forEach((tab, i) => {
       const b = this.btn({ mine: 'MY RUNS', daily: 'DAILY', weekly: 'WEEKLY', all: 'ALL TIME' }[tab], W / 2 + (i - 1.5) * 168, 100, 160, 40, () => {
         this.tab = tab;
@@ -941,13 +942,13 @@ export class Menus {
     drawText(ctx, STEAM ? `V${VERSION.toUpperCase()}` : `PLAYTEST BUILD V${VERSION.toUpperCase()}`, 20, H - 20, 1.5, COLORS.textDim, { align: 'left' });
   }
 
-  /** A sub-menu (PLAY MODES, PROGRESS, SETTINGS): a small logo, the title, and a panel the rows sit in. */
+  /** A sub-menu (PLAY MODES, PROFILE, SETTINGS): a small logo, the title, and a panel the rows sit in. */
   private drawSub(ctx: CanvasRenderingContext2D, t: number): void {
-    const title = this.mode === 'modes' ? 'PLAY MODES' : this.mode === 'progress' ? 'PROGRESS' : 'SETTINGS';
+    const title = this.mode === 'modes' ? 'PLAY MODES' : this.mode === 'progress' ? 'PROFILE' : 'SETTINGS';
     if (hasSprite('logo')) drawSprite(ctx, artId('logo'), W / 2, 66 + Math.sin(t * 2) * 2, 2);
     const k = this.panelIn;
     const top = Menus.SUB_Y - 96;
-    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 2 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 6 * Menus.SET_PITCH + 48 : 7 * Menus.SET_PITCH + 70) : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
+    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 1 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 6 * Menus.SET_PITCH + 48 : 7 * Menus.SET_PITCH + 70) : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
     const pw = 540;
     // The panel rises in (no alpha on the layered frame: a half-faded gold rim tints the panel brown).
     ctx.save();
