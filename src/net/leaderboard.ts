@@ -34,7 +34,9 @@ async function call(path: string, init: RequestInit = {}, prefer?: string): Prom
       signal: ctl.signal,
       headers: {
         apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        // A legacy anon key is a JWT and goes in Authorization too; a new publishable key (sb_publishable_...) only
+        // goes in apikey (it isn't a JWT).
+        ...(SUPABASE_ANON_KEY.startsWith('eyJ') ? { Authorization: `Bearer ${SUPABASE_ANON_KEY}` } : {}),
         'Content-Type': 'application/json',
         ...(prefer ? { Prefer: prefer } : {}),
       },
