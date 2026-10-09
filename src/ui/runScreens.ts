@@ -1846,7 +1846,10 @@ export class RunScreens {
     const lv = this.run?.player.levels;
     if (o.kind === 'symLevel') drawSprite(ctx, o.symbol as SpriteId, x, y, scale);
     else {
-      drawSprite(ctx, CHARM_SYMBOLS[o.enh][0] as SpriteId, x, y, scale);
+      // On one of THIS machine's symbols (attack first): a JUKEBOX gold level showed a sword (user playtest).
+      const cab = this.run ? CABINETS[this.run.cabinet] : null;
+      const on = (cab && [cab.attack, ...cab.symbols].find((sym) => CHARM_SYMBOLS[o.enh].includes(sym))) ?? CHARM_SYMBOLS[o.enh][0];
+      drawSprite(ctx, on as SpriteId, x, y, scale);
       drawSprite(ctx, ENH_SPRITE[o.enh], x, y, scale);
     }
     const cap = this.run ? levelCap(this.run) : 3;
