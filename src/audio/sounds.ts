@@ -2,6 +2,8 @@ import { Synth } from './synth';
 
 /** C major from C5 up two octaves (Hz): the tuned effects climb this, moved into the song's key. */
 const MAJOR = [523.25, 587.33, 659.25, 698.46, 783.99, 880, 987.77, 1046.5, 1174.66, 1318.51, 1396.91, 1567.98, 1760, 1975.53, 2093];
+/** Step i of that scale: rounded and clamped (callers pass amounts like 1.3: an unrounded index played NaN Hz). */
+const deg = (i: number) => MAJOR[Math.max(0, Math.min(MAJOR.length - 1, Math.round(Number.isFinite(i) ? i : 0)))];
 
 /** Every named sound in the game. Pitch param `p` lets the enemy machine sit ~15% lower. */
 export class Sounds {
@@ -34,7 +36,7 @@ export class Sounds {
 
   ding(i: number): void {
     // Up the song's major scale (was a free glide that ignored the key).
-    const f = this.k(MAJOR[Math.min(i, MAJOR.length - 1)] * 2);
+    const f = this.k(deg(i) * 2);
     this.s.tone({ freq: f, dur: 0.5, gain: 0.16 });
     this.s.tone({ freq: f * 2, dur: 0.3, gain: 0.07 });
     this.s.tone({ freq: f * 3, dur: 0.18, gain: 0.03 });
@@ -104,7 +106,7 @@ export class Sounds {
 
   shieldGain(n: number): void {
     this.s.tone({ type: 'triangle', freq: this.k(659.25), dur: 0.12, gain: 0.12 });
-    this.s.tone({ type: 'sine', freq: this.k(MAJOR[Math.min(4 + n, MAJOR.length - 1)] * 2), dur: 0.35, gain: 0.1, at: 0.05 });
+    this.s.tone({ type: 'sine', freq: this.k(deg(4 + n) * 2), dur: 0.35, gain: 0.1, at: 0.05 });
     this.s.noise({ dur: 0.05, filter: 'bandpass', freq: 3500, q: 3, gain: 0.12 });
   }
 
@@ -115,7 +117,7 @@ export class Sounds {
 
   energyPip(i: number): void {
     // Each pip one step up the song's major scale.
-    const f = this.k(MAJOR[Math.min(i, MAJOR.length - 1)]);
+    const f = this.k(deg(i));
     this.s.tone({ type: 'square', freq: f, freqEnd: f * 1.5, dur: 0.08, gain: 0.07 });
     this.s.noise({ dur: 0.05, filter: 'highpass', freq: 5000, gain: 0.08 });
   }
@@ -229,7 +231,7 @@ export class Sounds {
   coin(i = 0): void {
     // i is in semitones: snapped down onto the major scale so a run of coins stays in key.
     // (Counted from C: the coin starts on G.)
-    const n = 7 + i;
+    const n = Math.max(0, 7 + Math.round(i));
     const snap = Math.floor(n / 12) * 12 + [0, 0, 2, 2, 4, 5, 5, 7, 7, 9, 9, 11][n % 12] - 7;
     const f = this.k(1567.98) * 2 ** (snap / 12);
     this.s.tone({ type: 'square', freq: f, dur: 0.06, gain: 0.05 });

@@ -116,6 +116,8 @@ export class Synth {
 
   tone(o: ToneOpts): void {
     if (!this.enabled) return;
+    // A bad pitch skips the note; it must never take the game down (a NaN reached the crash panel: playtest 2026-10-09).
+    if (!Number.isFinite(o.freq) || (o.freqEnd != null && !Number.isFinite(o.freqEnd))) return;
     const t0 = this.now + (o.at ?? 0);
     const osc = this.ctx.createOscillator();
     osc.type = o.type ?? 'sine';
