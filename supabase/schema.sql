@@ -19,11 +19,14 @@ create table if not exists public.scores (
   board text not null check (board ~ '^(all|daily:[0-9]{4}-[0-9]{2}-[0-9]{2}|weekly:[0-9]{4}-W[0-9]{2})$'),
   -- Caps per board: a daily or weekly run tops out near 6,000; a GOLD-stake clear near 15,000 (ALL TIME has no endless pots).
   score integer not null check (score >= 0 and score <= case when board = 'all' then 60000 else 8000 end),
-  cabinet text not null check (cabinet in ('knight', 'midas', 'thorn', 'tesla', 'joker')),
+  cabinet text not null check (cabinet in ('knight', 'tesla', 'jukebox', 'joker', 'midas', 'thorn')),
   stake smallint not null check (stake between 0 and 5),
   won boolean not null,
   level smallint not null check (level between 1 and 999)
 );
+-- Re-runs keep the machine list current (THE JUKEBOX replaced BRIAR; old BRIAR scores stay valid).
+alter table public.scores drop constraint if exists scores_cabinet_check;
+alter table public.scores add constraint scores_cabinet_check check (cabinet in ('knight', 'tesla', 'jukebox', 'joker', 'midas', 'thorn'));
 create index if not exists scores_board_score on public.scores (board, score desc);
 create index if not exists scores_board_pid on public.scores (board, pid);
 
