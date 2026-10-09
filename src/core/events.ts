@@ -41,7 +41,7 @@ export type CombatEvent =
       /** Per-fight bonus added to EACH cell of a symbol this spin (WAR DRUM on swords), so its number shows it. */
       symBonus?: Partial<Record<SymbolId, number>>;
       /** THE JUKEBOX: this spin is THE DROP (the notes it lights; the note group's hit, after). */
-      drop?: { cells: { reel: number; row: number; wild?: true }[]; amount: number; encore?: true };
+      drop?: { cells: { reel: number; row: number; v?: number; wild?: true }[]; amount: number; encore?: true };
     }
   | {
       type: 'attack';
@@ -80,7 +80,7 @@ export type CombatEvent =
   /** A meter paid off (MIDAS x4 group, JAX all-jackpots spin); it empties. */
   | { type: 'payoff'; side: SideId; kind: 'touch' | 'jackpots' | 'vault' | 'volume'; left?: number; mul?: number }
   /** THE JUKEBOX: THE DROP. Every NOTE in the 3x3 window off the payline hits (the payline scores as usual). */
-  | { type: 'drop'; side: SideId; cells: { reel: number; row: number; wild?: true }[]; amount: number; encore?: true }
+  | { type: 'drop'; side: SideId; cells: { reel: number; row: number; v?: number; wild?: true }[]; amount: number; encore?: true }
   /** MIDAS: gold bars paid chips mid-fight (they're yours if you win). */
   | { type: 'midasChips'; side: SideId; amount: number; total: number }
   /** LUCRE: chips its group paid (banked on a win). */

@@ -499,7 +499,7 @@ export class Fight {
   /** ENCORE (big choice): the second drop in a row is still to come. */
   private encorePending = false;
   /** THE DROP this spin: the notes off the payline that join the note group (vamp heals after). */
-  private dropOff: { cells: { reel: number; row: number; wild?: true }[]; vamp: number } | null = null;
+  private dropOff: { cells: { reel: number; row: number; v?: number; wild?: true }[]; vamp: number } | null = null;
 
   /** Debug: make the next spin of `side` land these payline symbols where the strip allows. */
   forceNext(side: SideId, line: SymbolId[]): void {
@@ -638,7 +638,7 @@ export class Fight {
     }
     const score = this.score(me, line);
     // THE DROP: every note you can see (the payline's too) lights up before the note group hits once.
-    let drop: { cells: { reel: number; row: number; wild?: true }[]; amount: number; encore?: true } | null = null;
+    let drop: { cells: { reel: number; row: number; v?: number; wild?: true }[]; amount: number; encore?: true } | null = null;
     if (side === 'player' && this.dropNow && this.dropOff) {
       const payline = line.flatMap((x, r) => (x === 'note' || (x === 'wild' && score.groups.some((g) => g.symbol === 'note' && g.reels.includes(r))) ? [{ reel: r, row: 1 }] : []));
       const g = score.groups.find((x) => x.symbol === 'note' && x.drop);
@@ -1510,8 +1510,8 @@ export class Fight {
    * already halves the group), and a counterfeit Charm does nothing. A grounded note still hits (the Grounder stops the
    * volume, not the damage). A LUCKY cell rolls: a WILD plays as a note (user, 2026-10-08).
    */
-  private dropNotes(me: Combatant, groupHexed = false): { cells: { reel: number; row: number; wild?: true }[]; base: number; echoes: number; keen: boolean; vamp: number } {
-    const out = { cells: [] as { reel: number; row: number; wild?: true }[], base: 0, echoes: 0, keen: false, vamp: 0 };
+  private dropNotes(me: Combatant, groupHexed = false): { cells: { reel: number; row: number; v?: number; wild?: true }[]; base: number; echoes: number; keen: boolean; vamp: number } {
+    const out = { cells: [] as { reel: number; row: number; v?: number; wild?: true }[], base: 0, echoes: 0, keen: false, vamp: 0 };
     const noteV = playerSymValue(me.levels, 'note', this.cfg.base.note);
     me.reels.forEach((reel, r) => {
       if (me.locked[r] > 0) return;
@@ -1533,7 +1533,7 @@ export class Fight {
         if (enh === 'echo') out.echoes++;
         if (enh === 'vamp') out.vamp = Math.max(out.vamp, charmValue('vamp', this.charmLvl(me, 'vamp')));
         out.base += hexed && !groupHexed ? Math.floor(v / 2) : v;
-        out.cells.push({ reel: r, row: d + 1, ...(wild ? { wild: true as const } : {}) });
+        out.cells.push({ reel: r, row: d + 1, v: hexed && !groupHexed ? Math.floor(v / 2) : v, ...(wild ? { wild: true as const } : {}) });
       }
     });
     return out;

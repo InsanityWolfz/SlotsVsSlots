@@ -14,7 +14,7 @@ import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
 import { fmtNum } from '../render/text';
 import { BOMB, REFLECT_MIN, RELICS } from '../core/relics';
-import { charmLevel, charmName, charmTag, CHARM_COLOR, playerSymValue } from '../core/charms';
+import { charmLevel, charmName, charmTag, charmValue, CHARM_COLOR, playerSymValue } from '../core/charms';
 import { defaultConfig } from '../core/config';
 import { DEAD } from '../core/strip';
 import { ENH_SPRITE } from './reel';
@@ -636,16 +636,26 @@ export class Director {
     if (!player && WRITERS.has(cell.symbol)) return;
     const base = BASE[cell.symbol] ?? 0;
     const bonus = this.symBonus[side]?.[cell.symbol] ?? 0;
-    // What the cell really adds to its group's BASE (the banner carries the multipliers):
-    // - CASH CASSIDY's chips hit like swords; in MAKE IT RAIN each chip shows its share of the rain.
-    // - THE MIRROR's shards throw back a share of your last hit (its HUD says the same).
-    let value: number;
-    const rain = player && cell.symbol === 'goldbar' ? this.lastScore?.groups.find((g) => g.rain && g.reels.includes(r)) : undefined;
-    if (rain) value = Math.round(rain.base / rain.reels.length);
-    else if (!player && cell.symbol === 'shard') value = this.mirrorEach;
-    else value = (lv ? playerSymValue(lv, cell.symbol, base) : !player && cell.symbol === 'shield' ? Math.round(base * this.s.enemyShield) : base) + bonus;
     const charm = cell.enh && !(cell.faked && cell.faked > 0) && m.hexed[r] <= 0 ? cell.enh : undefined;
     const lvl = charm ? (player ? charmLevel(lv, charm, this.s.ticket) : 1) : 1;
+    // What the cell really hits (or blocks) for: its share of its group's FINAL pay, after every multiplier, so the
+    // numbers on the line add up to the banner's total (user: the cells said 13 while the hit was 7,000).
+    // - THE MIRROR's shards throw back a share of your last hit (its HUD says the same).
+    const cellBase = (rr: number): number => {
+      const c = m.reels[rr].cellAtRow(1);
+      const b = (lv ? playerSymValue(lv, c.symbol, BASE[c.symbol] ?? 0) : !player && c.symbol === 'shield' ? Math.round((BASE[c.symbol] ?? 0) * this.s.enemyShield) : BASE[c.symbol] ?? 0) + (this.symBonus[side]?.[c.symbol] ?? 0);
+      const k = c.enh === 'keen' && !(c.faked && c.faked > 0) && m.hexed[rr] <= 0 ? charmValue('keen', player ? charmLevel(lv, 'keen', this.s.ticket) : 1) : 0;
+      return b + k;
+    };
+    let value: number;
+    const g = this.lastScore?.groups.find((x) => x.reels.includes(r) && x.base > 0);
+    if (!player && cell.symbol === 'shard') value = this.mirrorEach;
+    else if (g && g.amount > 0) {
+      const mine = cellBase(r);
+      // THE DROP's group counts its notes off the payline too (in its BASE); other groups split by their cells.
+      const denom = g.drop ? g.base : g.reels.reduce((a, rr) => a + cellBase(rr), 0);
+      value = g.reels.length === 1 && !g.drop ? g.amount : denom > 0 ? Math.round((g.amount * mine) / denom) : Math.round(g.amount / g.reels.length);
+    } else value = (lv ? playerSymValue(lv, cell.symbol, base) : !player && cell.symbol === 'shield' ? Math.round(base * this.s.enemyShield) : base) + bonus;
     if (!value && !charm) return;
     const tag = { value: value ? String(value) : '', ...(charm ? { charm: charmTag(charm, lvl), color: CHARM_COLOR[charm] } : {}), pop: 0, alpha: 1 };
     m.tags[r] = tag;
@@ -1192,6 +1202,7 @@ export class Director {
     const wilds = e.cells.filter((x) => x.wild);
     if (wilds.length) await this.luckyWilds(e.side, wilds);
     this.dropCells = e.amount > 0 ? e.cells : null;
+    const g = this.lastScore?.groups.find((x) => x.drop);
     const lights = e.cells.map(async (ref, i) => {
       await this.c.wait(i * 0.04);
       const fx = m.reels[ref.reel]?.rows[ref.row];
@@ -1201,6 +1212,8 @@ export class Director {
       }
       const p = cellCenter(e.side, ref.reel, ref.row);
       this.s.particles.burst({ x: p.x, y: p.y, count: 10, colors: ['#5ad8e8', '#ff9ec8', '#ffe45c'], speed: [60, 180], gravity: 0, life: [0.25, 0.45], size: [2, 4], kind: 'spark' });
+      // A note off the payline shows what it hits for: its share of the drop's final pay (the payline's tags do the same).
+      if (ref.row !== 1 && ref.v && g && g.base > 0) this.bg(this.popText(String(Math.round((g.amount * ref.v) / g.base)), p.x - 22, p.y + 22, 2, '#5ad8e8', 0, 0.9));
     });
     await Promise.all(lights);
     await this.c.wait(0.15);
