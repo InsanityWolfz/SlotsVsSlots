@@ -4,7 +4,7 @@ import { Synth } from './audio/synth';
 import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
 import { actLength, RUN_FIGHTS, TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
-import { Fight, highRollerMul } from './core/fight';
+import { allInRange, Fight, highRollerMul } from './core/fight';
 import { betProfit, betProgress, describeBet, newTrack } from './core/bets';
 import { dailyCabinet, dailyKey, dailySeed, dailySpent } from './core/daily';
 import { turnRow, type TurnRow } from './core/log';
@@ -52,7 +52,7 @@ import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
 import { Background } from './render/background';
 import { drawSprite, type SpriteId, artId } from './render/sprites';
-import { drawText } from './render/text';
+import { drawText, fmtNum } from './render/text';
 import { Button } from './ui/button';
 import { Recap } from './ui/recap';
 import { BUILD, CHIP_SPOT, RunScreens } from './ui/runScreens';
@@ -1820,7 +1820,7 @@ export class Game {
     }
   }
 
-  /** The Dealer's face-up next card and when it lands (HOUSE RULES / RAISE shown too). */
+  /** The Dealer's face-up next card and when it lands (FIRST HAND / FINAL HAND over it). */
   private drawDeal(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
     const e = this.fight.sides.enemy;
     const ab = e.ability;
@@ -1836,28 +1836,23 @@ export class Game {
     ctx.fillRect(x - 106, y - 52, 212, 104);
     ctx.fillStyle = '#0e2a18';
     ctx.fillRect(x - 101, y - 47, 202, 94);
-    drawText(ctx, soon ? 'DEALS NEXT TURN!' : `NEXT DEAL IN ${left}`, x, y - 32, 2, soon ? '#ff6a5a' : '#c8f0c8', { punch: soon ? 1 + 0.08 * Math.sin(t * 12) : 1 });
-    const card = g.nextDeal ?? 'card';
-    const sprite = card === 'shuffle' ? 'dealShuffle' : card === 'cut' || card === 'card' ? 'dealCut' : card === 'allin' ? 'dealShuffle' : 'dealRaise';
-    drawSprite(ctx, artId(sprite), x - 58, y + 12, 2.5);
-    // In FINAL HAND each ALL IN after the first is weaker: say so on the card.
-    const fade = this.fight.allInFade;
-    const name = card === 'card' ? 'A CARD' : card === 'allin' ? (fade < 1 ? `ALL IN X${+fade.toFixed(2)}` : 'ALL IN') : card.toUpperCase();
-    drawText(ctx, name, x + 30, y + 2, name.length > 7 ? 2 : 3, card === 'allin' ? '#ff6a5a' : '#ffffff');
-    const what =
-      card === 'card' ? ['ON YOUR PAYLINE:', 'ACE, JOKER, DEUCE']
-      : card === 'allin' ? ['ITS NEXT ATTACK', 'IS ITS WHOLE HAND']
-      : card === 'shuffle' ? ['SWAPS 5 CELLS', 'BETWEEN 2 REELS']
-      : card === 'cut' ? ['CUTS A CHARMED', 'CELL PER REEL']
-      : ['ITS NEXT HIT X2', 'YOUR NEXT WIN X2'];
-    // Right of the card icon (centered, the long lines ran over it: R13 B1).
-    what.forEach((l, k) => drawText(ctx, l, x - 30, y + 22 + k * 13, 1.25, COLORS.text, { align: 'left' }));
-    if (g.raised) drawText(ctx, 'RAISED!', x, y - 44 - 14, 2, '#ffd23f');
-    else if (g.finalHand) drawText(ctx, g.then?.length ? `FINAL HAND, THEN: ${g.then.map((c) => (c === 'allin' ? 'ALL IN' : c.toUpperCase())).join(', ')}` : 'FINAL HAND', x, y - 44 - 14, 2, '#ff6a5a');
-    else if (g.houseRules) drawText(ctx, 'HOUSE RULES', x, y - 44 - 14, 2, '#ff6a5a');
-    // Its marked cards are most of its damage: count them on YOUR reels.
-    const marks = this.stage.machines.player.reels.reduce((a, r) => a + r.cells.filter((c) => c.carded).length, 0);
-    if (marks) drawText(ctx, `MARKS ON YOU: ${marks}`, x, y + 72, 2, '#ff8aa0');
+    drawText(ctx, soon ? 'NEXT TURN!' : `NEXT CARD IN ${left}`, x, y - 32, 2, soon ? '#ff6a5a' : '#c8f0c8', { punch: soon ? 1 + 0.08 * Math.sin(t * 12) : 1 });
+    // Three cards, one rule each (BOSS_REDESIGN 3): the art in a column on the left, the text right of it.
+    const card = g.nextDeal ?? 'raise';
+    drawSprite(ctx, artId(card === 'raise' ? 'dealRaise' : card === 'allin' ? 'dealShuffle' : 'dealCut'), x - 76, y + 14, 2.5);
+    const hp = this.fight.sides.player.maxHp;
+    const range = `${fmtNum(allInRange(hp, 0))} TO ${fmtNum(allInRange(hp, Infinity))}`;
+    const [name, ...rule] = card === 'allin' ? ['ALL IN', range, 'NO SHIELDS'] : card === 'card' ? ['DEUCE', 'BEST REEL', 'PAYS NONE'] : ['RAISE', 'BOTH HITS', 'X2 NEXT'];
+    drawText(ctx, name, x - 46, y - 6, 3, card === 'allin' ? '#ff6a5a' : '#ffffff', { align: 'left' });
+    rule.forEach((l, k) => drawText(ctx, l, x - 46, y + 18 + k * 18, l.length > 10 ? 1.5 : 2, COLORS.text, { align: 'left' }));
+    // Which hand it's playing, over the box; in FINAL HAND, the card after this one under it.
+    drawText(ctx, g.finalHand ? 'FINAL HAND' : 'FIRST HAND', x, y - 44 - 14, 2, g.finalHand ? '#ff6a5a' : '#7dff7a');
+    if (g.finalHand && g.then?.length) {
+      const then = g.then[0] === 'allin' ? 'ALL IN' : 'RAISE';
+      ctx.fillStyle = 'rgba(10,6,18,0.85)';
+      ctx.fillRect(x - 70, y + 60, 140, 22);
+      drawText(ctx, `THEN: ${then}`, x, y + 71, 2, g.then[0] === 'allin' ? '#ff8a7a' : '#ffd23f');
+    }
   }
 
   /** SIDE BET tracker under the VS: the bet, then how it stands (information only: fights stay watch-only). */
@@ -1898,7 +1893,7 @@ export class Game {
     ctx.strokeStyle = '#c9a040';
     ctx.lineWidth = 2;
     ctx.strokeRect(cx - 174, MACHINE_TOP - 14, 348, MACHINE_H + 28);
-    if (this.stage.gutter.allInArmed) drawText(ctx, `ALL IN! UP TO ${this.stage.gutter.allInCap ?? ''}`, cx, MACHINE_TOP + MACHINE_H + 46, 3, '#ff6a5a', { punch: 1 + 0.08 * Math.sin(t * 10) });
+    if (this.stage.gutter.allInArmed) drawText(ctx, `ALL IN: ${fmtNum(this.stage.gutter.allInFloor ?? 0)} TO ${fmtNum(this.stage.gutter.allInCap ?? 0)}`, cx, MACHINE_TOP + MACHINE_H + 46, 3, '#ff6a5a', { punch: 1 + 0.08 * Math.sin(t * 10) });
   }
 
   /**

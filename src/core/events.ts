@@ -10,9 +10,10 @@ import type { CellRef } from './strip';
 export type VoucherKind = 'wheel' | 'rush';
 
 /** The Dealer's face-up cards. */
-export type DealCard = 'shuffle' | 'cut' | 'raise' | 'card' | 'allin';
+/** The Dealer's cards: RAISE, DEUCE ('card'), ALL IN. */
+export type DealCard = 'raise' | 'card' | 'allin';
 /** A card the Dealer lays face-up on one of your payline cells for your next spin. */
-export type LineCard = 'ace' | 'joker' | 'deuce';
+export type LineCard = 'deuce';
 
 export type HealSource = RelicId | 'special' | 'vamp' | 'drain' | 'ability' | 'payoff';
 
@@ -110,14 +111,14 @@ export type CombatEvent =
   | { type: 'voucher'; side: SideId; kind: VoucherKind }
   /** The Dealer shows the card it will deal next (telegraph). */
   | { type: 'dealNext'; side: SideId; card: DealCard; then?: DealCard[] }
-  /** The Dealer at a third of its HP: its FINAL HAND is dealt face up (RAISE, RAISE, ALL IN). */
-  | { type: 'finalHand'; side: SideId; cards: DealCard[] }
+  /** The Dealer at half HP: its FINAL HAND (ALL IN, RAISE, ALL IN... every `every` turns). */
+  | { type: 'finalHand'; side: SideId; cards: DealCard[]; every: number }
   /** The Dealer lays a card on one of YOUR payline cells (it applies to your next spin). */
   | { type: 'lineCard'; side: SideId; reel: number; card: LineCard }
   /** A laid card resolved on your spin (it's then taken back). */
   | { type: 'lineCardUsed'; side: SideId; reel: number; card: LineCard }
   /** ALL IN telegraph: the Dealer's next attack is its whole hand. */
-  | { type: 'allInArmed'; side: SideId; cap: number }
+  | { type: 'allInArmed'; side: SideId; cap: number; floor: number }
   /** ENDLESS: LAST CALL (the fight ran long; the enemy hits harder every turn now). */
   | { type: 'lastCall'; side: SideId; /** THE HOUSE: from now on it skims every turn. */ house?: boolean }
   /** ENDLESS: the House closes the table in N enemy turns (a stalled fight goes to the House). */
@@ -130,14 +131,8 @@ export type CombatEvent =
   | { type: 'hpCost'; side: SideId; amount: number; hp: number }
   /** ALL IN: the Dealer throws its whole visible hand at you. */
   | { type: 'allInHit'; from: SideId; to: SideId; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number }
-  /** SHUFFLE: cells swapped between two of the target's reels (index pairs: [in reel a, in reel b]). */
-  | { type: 'shuffle'; from: SideId; to: SideId; reels: [number, number]; swaps: [number, number][] }
-  /** CUT: cells removed from the target's reels (one per reel, indexes before removal). */
-  | { type: 'cut'; from: SideId; to: SideId; cells: CellRef[] }
-  /** RAISE: the Dealer's next hit and your next jackpot are doubled. */
+  /** RAISE: the Dealer's next hit and your next paying group are doubled. */
   | { type: 'raise'; from: SideId }
-  /** The Dealer at half HP: HOUSE RULES (deals faster). */
-  | { type: 'houseRules'; side: SideId; every: number }
   /** Hexed reels pay half for `turns` of their owner's turns. */
   | { type: 'hex'; from: SideId; to: SideId; reels: number[]; targets: number[]; turns: number }
   /** Bombs stuck onto the target's cells. */

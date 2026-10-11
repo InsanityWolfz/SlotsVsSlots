@@ -220,7 +220,8 @@ export class Director {
         this.s.gutter.allInArmed = true;
         this.s.sounds.stingerMedium();
         this.s.gutter.allInCap = e.cap;
-        return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, `ITS WHOLE HAND: UP TO ${e.cap}`, MACHINE_TOP + MACHINE_H / 2, 3);
+        this.s.gutter.allInFloor = e.floor;
+        return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, `${fmtNum(e.floor)} TO ${fmtNum(e.cap)}. SHIELDS WON'T STOP IT`, MACHINE_TOP + MACHINE_H / 2, 3);
       case 'closing': {
         const c = this.machineCenter('enemy');
         this.s.sounds.click();
@@ -274,19 +275,19 @@ export class Director {
         this.s.gutter.nextDeal = e.card;
         this.s.gutter.then = e.then;
         return Promise.resolve();
-      case 'finalHand':
+      case 'finalHand': {
         this.s.gutter.finalHand = true;
+        const hud = this.s.huds[e.side];
+        if (hud.ability) {
+          hud.ability = { ...hud.ability, every: e.every };
+          hud.charge = Math.min(hud.charge, e.every - 1);
+        }
         this.s.sounds.abilityFire();
         this.s.camera.chromaPulse(0.6);
-        return this.banner('FINAL HAND!', '#ff6a5a', 1.3, 0.5, e.cards[0] === 'allin' ? 'ALL IN, THEN IT RAISES. IT DEALS EVERY TURN' : 'RAISE, THEN ALL IN. IT DEALS EVERY TURN', MACHINE_TOP + MACHINE_H / 2, 4);
-      case 'shuffle':
-        return this.shuffle(e);
-      case 'cut':
-        return this.cut(e);
+        return this.banner('FINAL HAND!', '#ff6a5a', 1.3, 0.5, `IT DEALS EVERY ${e.every} TURNS: ALL IN, RAISE, ALL IN...`, MACHINE_TOP + MACHINE_H / 2, 4);
+      }
       case 'raise':
         return this.raise(e);
-      case 'houseRules':
-        return this.houseRules(e);
       case 'voucher':
         return this.voucher(e);
     }
@@ -303,8 +304,8 @@ export class Director {
     m.lineCard = { reel: e.reel, card: e.card, flip: 0 };
     const lc = m.lineCard;
     await this.c.tween({ from: 0, to: 1, dur: 0.35, ease: backOut(2), onUpdate: (v) => (lc.flip = v) });
-    const label = e.card === 'ace' ? 'ACE: THIS CELL PAYS X2' : e.card === 'joker' ? 'JOKER: THIS CELL IS WILD' : 'DEUCE: THIS CELL PAYS NOTHING';
-    await this.popText(label, p.x, MACHINE_TOP - 22, 2, e.card === 'deuce' ? '#ff8a7a' : '#7dff7a', 12, 0.6);
+    await this.banner('DEUCE!', '#ff8a7a', 1.1, 0.3, `REEL ${e.reel + 1} PAYS NOTHING NEXT SPIN`, MACHINE_TOP + MACHINE_H / 2, 4);
+    void p;
   }
 
   /** ALL IN: the Dealer throws its whole hand. */
@@ -1531,7 +1532,7 @@ export class Director {
 
   private async abilityCharge(e: Ev<'abilityCharge'>): Promise<void> {
     const h = this.s.huds[e.side];
-    // The pace can change mid-fight (HOUSE RULES, FINAL HAND): keep the HUD's countdown honest.
+    // The pace can change mid-fight (FINAL HAND): keep the HUD's countdown honest.
     if (h.ability && h.ability.every !== e.every) h.ability = { ...h.ability, every: e.every };
     if (e.charge === h.charge) return;
     const rising = e.charge > h.charge;
@@ -1928,61 +1929,13 @@ export class Director {
     if (e.reels.length) this.settle(e.from, e.reels);
   }
 
-  /** SHUFFLE: cells trade places between two of your reels. */
-  private async shuffle(e: Ev<'shuffle'>): Promise<void> {
-    const m = this.s.machines[e.to];
-    const [a, b] = e.reels;
-    this.s.sounds.whoosh();
-    this.shake(4, 0.3);
-    const pa = cellCenter(e.to, a, 1);
-    const pb = cellCenter(e.to, b, 1);
-    const cardsFx = [0, 1, 2].map(async (k) => {
-      const p = this.s.fx.add(new Projectile(artId('dealShuffle'), pa.x, pa.y - 60 + k * 40, 3));
-      await this.arc(p, pb.x, pb.y - 60 + k * 40, 0.3, 60, sineInOut);
-      this.s.fx.remove(p);
-    });
-    await Promise.all(cardsFx);
-    for (const [x, y] of e.swaps) {
-      const tmp = m.reels[a].cells[x];
-      m.reels[a].cells[x] = m.reels[b].cells[y];
-      m.reels[b].cells[y] = tmp;
-    }
-    const c = this.machineCenter(e.to);
-    await this.popText(`SHUFFLED REELS ${a + 1} + ${b + 1}`, c.x, MACHINE_TOP - 30, 3, '#c8f0ff', 16, 0.4);
-  }
-
-  /** CUT: a cell of your commonest symbol leaves each reel. */
-  private async cut(e: Ev<'cut'>): Promise<void> {
-    const m = this.s.machines[e.to];
-    this.s.sounds.shatter();
-    for (const ref of e.cells) {
-      const col = stripMapColumn(ref.reel);
-      this.s.particles.burst({ x: col.x, y: col.y, count: 10, colors: ['#ffffff', '#c8f0ff'], speed: [60, 200], gravity: 300, life: [0.2, 0.4], size: [2, 4] });
-      m.removeCell(ref.reel, ref.index);
-    }
-    const c = this.machineCenter(e.to);
-    await this.popText(`THE CUT: -${e.cells.length} CELL${e.cells.length === 1 ? '' : 'S'}`, c.x, MACHINE_TOP - 30, 3, '#ffffff', 16, 0.4);
-  }
-
   private async raise(e: Ev<'raise'>): Promise<void> {
     this.s.gutter.raised = true;
     this.s.gutter.raisedTurn = this.s.gutter.turn;
     this.s.sounds.coin(9);
     this.s.sounds.stingerMedium();
-    await this.banner('RAISE!', '#ffd23f', 1.3, 0.4, 'ITS NEXT HIT X2, YOUR NEXT WIN X2', MACHINE_TOP + MACHINE_H / 2, 4);
+    await this.banner('RAISE!', '#ffd23f', 1.3, 0.4, 'ITS NEXT HIT AND YOUR NEXT HIT X2', MACHINE_TOP + MACHINE_H / 2, 4);
     void e;
-  }
-
-  private async houseRules(e: Ev<'houseRules'>): Promise<void> {
-    const hud = this.s.huds[e.side];
-    if (hud.ability) {
-      hud.ability = { ...hud.ability, every: e.every };
-      hud.charge = Math.min(hud.charge, e.every - 1);
-    }
-    this.s.gutter.houseRules = true;
-    this.s.sounds.abilityFire();
-    this.s.camera.chromaPulse(0.6);
-    await this.banner('HOUSE RULES!', '#ff6a5a', 1.3, 0.5, `IT DEALS EVERY ${e.every} TURNS`, BANNER_Y, 4);
   }
 
   /** BONUS WHEEL / RELIC RUSH: the chase symbols lined up — bank a voucher, then the reels go again for free. */

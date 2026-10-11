@@ -79,7 +79,6 @@ export interface Stage {
     nextDeal?: import('../core/events').DealCard;
     raised?: boolean;
     raisedTurn?: number;
-    houseRules?: boolean;
     /** FINAL HAND: the Dealer's face-up cards after the next one. */
     then?: import('../core/events').DealCard[];
     finalHand?: boolean;
@@ -90,6 +89,7 @@ export interface Stage {
     /** The Dealer's ALL IN is armed (big red warning over its machine). */
     allInArmed?: boolean;
     allInCap?: number;
+    allInFloor?: number;
   };
   /** Symbol / charm levels per side (the payline numbers), and the Golden Ticket (charms one level up). */
   levels: Partial<Record<SideId, Levels>>;

@@ -58,7 +58,7 @@ export class MachineView {
   /** Payline numbers, one per reel (null = none shown). */
   tags: (PayTag | null)[] = [null, null, null];
   /** The Dealer's face-up card on a payline cell (flip 0..1). */
-  lineCard: { reel: number; card: 'ace' | 'joker' | 'deuce'; flip: number } | null = null;
+  lineCard: { reel: number; card: 'deuce'; flip: number } | null = null;
   private spun = false;
 
   constructor(
@@ -371,9 +371,8 @@ export class MachineView {
     ctx.fillStyle = lc.flip > 0.5 ? '#f4eee0' : '#5a1020';
     ctx.fillRect(-24, -34, 48, 68);
     if (lc.flip > 0.5) {
-      const deuce = lc.card === 'deuce';
-      drawText(ctx, lc.card === 'ace' ? 'A' : lc.card === 'joker' ? 'J' : '2', 0, -6, 5, deuce ? '#140c1c' : '#c8321f');
-      drawText(ctx, lc.card === 'ace' ? 'X2' : lc.card === 'joker' ? 'WILD' : 'ZERO', 0, 22, 1.5, deuce ? '#8e1f3a' : '#1f7d3c');
+      drawText(ctx, '2', 0, -6, 5, '#140c1c');
+      drawText(ctx, 'NO PAY', 0, 22, 1.5, '#8e1f3a');
     }
     ctx.restore();
   }

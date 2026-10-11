@@ -194,7 +194,7 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
     penalty: `HITS FOR ${p}`,
     repo: 'TAKES A CHARM FOR THE FIGHT',
     houseTake: `RAKES YOUR GROUPS FOR ${p} TURNS`,
-    deal: 'DEALS A CARD ON YOUR PAYLINE',
+    deal: 'DEALS RAISE OR DEUCE',
   };
   return what[e.ability.kind] ?? '';
 }
@@ -204,7 +204,7 @@ function abilityText(e: EnemyDef, every: number, run?: RunState): string {
   const ui = ABILITY_UI[e.ability.kind];
   // THE REPO MAN takes on his first turn, then every few.
   if (e.ability.kind === 'repo') return `${ui.label} FROM TURN 1, THEN EVERY ${every}: TAKES ONE OF YOUR CHARMS. YOU GET IT BACK AFTER THE FIGHT`;
-  if (e.ability.kind === 'deal') return `${ui.label} EVERY ${every} TURNS: A CARD ON YOUR PAYLINE, ALL IN, OR RAISE`;
+  if (e.ability.kind === 'deal') return `EVERY ${every} TURNS: RAISE OR DEUCE. FINAL HAND AT HALF HP`;
   return `${ui.label} EVERY ${every} TURNS: ${abilityWhat(e, run)}`;
 }
 
@@ -2093,7 +2093,7 @@ export class RunScreens {
       y += 2;
       line(
         e.boss === 'dealer'
-          ? 'DEALS: A CARD ON YOUR PAYLINE (ACE X2, JOKER WILD, DEUCE 0), ALL IN (ITS WHOLE HAND), RAISE (BOTH X2). NO KILL BEFORE ITS FIRST DEAL.'
+          ? 'EVERY 3 TURNS IT DEALS RAISE (BOTH NEXT HITS X2) OR DEUCE (YOUR BEST REEL PAYS NOTHING). AT HALF HP: FINAL HAND, ALL IN AND RAISE EVERY 2 TURNS. ALL IN IS 25-40% OF YOUR MAX HP, THROUGH SHIELDS.'
           : e.boss === 'wheel'
           ? `PLACE YOUR BETS: EACH TURN IT DROPS ${run.stake >= STAKE.wheelFast ? WHEEL_RULES.fast : WHEEL_RULES.place} CHIPS ON YOUR REELS. A PAIR CLEARS ITS REELS, A JACKPOT CLEARS THEM ALL (+1 CHIP EACH). NO MORE BETS: EVERY 3RD TURN, EACH CHIP LEFT HITS ${Math.round(wheelChipShare(run.cabinet) * 100)}% OF YOUR MAX HP. ${run.stake >= STAKE.wheelFast ? 'GREEN: IT STARTS FAST.' : 'AT HALF HP THE WHEEL SPINS FASTER: 3 A TURN.'}`
           : `COINS FILL THE POT. EVERY ${this.houseEvery()} TURNS IT SKIMS HALF AT YOU. ANY JACKPOT YOU HIT STEALS THE POT! AT HALF HP IT DOUBLES DOWN: THE POT DOUBLES. FROM TURN ${POT.lastCall}, LAST CALL: IT SKIMS EVERY TURN.${dirty ? ' BLACK: IT BOMBS YOUR PAYLINE.' : ''}`,
