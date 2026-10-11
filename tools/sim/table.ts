@@ -1,6 +1,6 @@
 // THE OFFICIAL TABLE (2026-10-07 sim rewrite). npx tsx tools/sim/table.ts [N] [machine|all] ["path=value;..." knob edits]
 // Per slot machine, greedy bot: WHITE (acts 1-2) and GREEN (act 3 + the Dealer), pacing, jackpot rate, chips per
-// fight won and the measured power that sizes the late bosses. Log its numbers in loop/STATE.md.
+// fight won and the measured power that sizes the late bosses.
 // Gates: WHITE 41-45, GREEN 16-19, fight-4 deaths 3-6% (WHITE).
 import { defaultConfig } from '../../src/core/config';
 import { CABINET_ORDER, type CabinetId } from '../../src/core/cabinets';

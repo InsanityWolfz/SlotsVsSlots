@@ -1,5 +1,5 @@
 // CONTENT AUDIT: every relic, Charm, upgrade card and big choice, with the exact text players see (per Slot Machine
-// where it differs). npx tsx tools/content/audit.ts > loop/CONTENT_AUDIT.md
+// where it differs). npx tsx tools/content/audit.ts > tools/out/content_audit.md
 import { defaultConfig, symLabel, type Enh, type RelicId, type SymbolId } from '../../src/core/config';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../../src/core/cabinets';
 import { RELICS, RELIC_TIER, LEGENDARY, MACHINE_EXCLUDE, WAVE1, BUILD_ENABLER, relicText } from '../../src/core/relics';
