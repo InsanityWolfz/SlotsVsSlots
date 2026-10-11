@@ -26,6 +26,8 @@ describe('SIDE BETS', () => {
     expect(betState({ kind: 'survive', target: 0, pay: 2 }, t, false)).toBe('live');
     t.finalHand = true;
     t.allIns = 1;
+    expect(betState({ kind: 'early', target: 0, pay: 3 }, t, false)).toBe('live');
+    t.allIns = 2;
     expect(betState({ kind: 'early', target: 0, pay: 3 }, t, false)).toBe('lost');
     expect(betState({ kind: 'survive', target: 0, pay: 2 }, t, false)).toBe('won');
   });

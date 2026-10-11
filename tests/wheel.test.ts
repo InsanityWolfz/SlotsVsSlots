@@ -77,7 +77,7 @@ describe('THE WHEEL: PLACE YOUR BETS', () => {
     expect(ofType(g.step().events, 'betSwept')).toHaveLength(0);
   });
 
-  it('NO MORE BETS (every 3rd turn): no chips placed; each chip left hits for 5% of your max HP as one shielded hit, then the table clears', () => {
+  it('NO MORE BETS (every 3rd turn): its last chips go down, then each chip left hits for 5% of your max HP as one shielded hit, and the table clears', () => {
     const f = wheel();
     for (let i = 0; i < 4; i++) f.step(); // you, it (2 chips), you, it (2 chips)
     expect(f.betTotal).toBe(4);
@@ -85,13 +85,13 @@ describe('THE WHEEL: PLACE YOUR BETS', () => {
     f.sides.player.shield = 30;
     const hp = f.sides.player.hp;
     const ev = f.step().events;
-    expect(ofType(ev, 'betPlaced')).toHaveLength(0);
+    expect(ofType(ev, 'betPlaced')).toHaveLength(1);
     const nmb = ofType(ev, 'noMoreBets')[0];
-    expect(nmb.chips).toBe(4);
+    expect(nmb.chips).toBe(6);
     expect(nmb.per).toBe(20);
-    expect(nmb.amount).toBe(80);
+    expect(nmb.amount).toBe(120);
     expect(nmb.blocked).toBe(30);
-    expect(hp - f.sides.player.hp).toBe(50);
+    expect(hp - f.sides.player.hp).toBe(90);
     expect(f.betTotal).toBe(0);
     expect(ofType(ev, 'ability')[0].kind).toBe('bets');
   });
