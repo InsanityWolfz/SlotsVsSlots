@@ -85,16 +85,15 @@ const PAIR_PAY = 4 * UNIT;
 const JACKPOT_PAY = 9 * UNIT;
 /** The Dealer's FIRST HAND (BOSS_REDESIGN 3): RAISE or DEUCE (a 2 over your best reel's payline), even odds. */
 const DEALS: DealCard[] = ['card', 'raise'];
-/** The Dealer plays its FINAL HAND at this share of its HP: ALL IN, RAISE, ALL IN... every `FINAL_HAND_EVERY` turns. */
-export const FINAL_HAND_AT = 0.5;
-export const FINAL_HAND_EVERY = 2;
-/** ALL IN is capped at this share of your max HP. */
-export const ALL_IN_CAP = 0.4;
+/**
+ * THE DEALER's numbers: it plays its FINAL HAND at `finalAt` of its HP (ALL IN, RAISE, ALL IN... every `finalEvery`
+ * turns); ALL IN hits for at least `allInFloor` and at most `allInCap` of your max HP.
+ */
+export const DEALER_RULES = { finalAt: 0.5, finalEvery: 2, allInFloor: 0.25, allInCap: 0.4 };
 /** ALL IN always lands at least this share of your max HP: the telegraphed hit is THE threat (EXPERT_PLAYTEST_4 C3). */
-export const ALL_IN_FLOOR = 0.25;
-/** ALL IN's hit for a visible hand worth `hand`: at least ALL_IN_FLOOR and at most ALL_IN_CAP of `maxHp`. */
+/** ALL IN's hit for a visible hand worth `hand`, clamped to DEALER_RULES' floor and cap of `maxHp`. */
 export const allInRange = (maxHp: number, hand: number): number =>
-  Math.max(UNIT, Math.round((maxHp * ALL_IN_FLOOR) / UNIT) * UNIT, Math.min(hand, Math.round((maxHp * ALL_IN_CAP) / UNIT) * UNIT));
+  Math.max(UNIT, Math.round((maxHp * DEALER_RULES.allInFloor) / UNIT) * UNIT, Math.min(hand, Math.round((maxHp * DEALER_RULES.allInCap) / UNIT) * UNIT));
 
 /** Counterfeit coins last this many of your turns. */
 const FAKE_TURNS = 3;
@@ -684,7 +683,7 @@ export class Fight {
           const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
           if (c.symbol === 'sword' || c.symbol === 'seven') hand += this.cfg.base[c.symbol] ?? 0;
         }
-      // At least ALL_IN_FLOOR and at most ALL_IN_CAP of your max HP. It's never raised.
+      // Within DEALER_RULES' floor and cap of your max HP. It's never raised.
       const amount = allInRange(foe.maxHp, hand);
       // ALL IN pierces shields: the telegraphed hit is the real threat (EXPERT_PLAYTEST_5 E6).
       const h = this.damage(foe, amount, true);
@@ -1941,7 +1940,7 @@ export class Fight {
     // HAND always plays.
     if (target.side === 'enemy' && this.isDealer) {
       if (this.gateTurn === this.turn) hpDamage = 0;
-      else if (!this.finalHand) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp * FINAL_HAND_AT)));
+      else if (!this.finalHand) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp * DEALER_RULES.finalAt)));
     }
     // THE WHEEL's half-HP gate (the Mirror's old crack gate): it holds at half HP for the rest of the turn it SPINS
     // FASTER on, so both halves of the fight always play. (GREEN starts fast: no phase, no gate.)
@@ -1966,13 +1965,13 @@ export class Fight {
       }
       // The Dealer at half HP: FINAL HAND. It deals every 2 turns now, in a fixed order: ALL IN, RAISE, ALL IN...
       // (A DEUCE still on your payline stays for your next spin.)
-      if (c.side === 'enemy' && this.isDealer && !this.finalHand && c.hp <= c.maxHp * FINAL_HAND_AT && c.ability) {
+      if (c.side === 'enemy' && this.isDealer && !this.finalHand && c.hp <= c.maxHp * DEALER_RULES.finalAt && c.ability) {
         this.finalHand = true;
         this.gateTurn = this.turn;
         this.nextDeal = 'allin';
-        c.ability = { ...c.ability, every: FINAL_HAND_EVERY };
-        c.charge = Math.min(c.charge, FINAL_HAND_EVERY - 1);
-        events.push({ type: 'finalHand', side: c.side, cards: ['allin', 'raise'], every: FINAL_HAND_EVERY });
+        c.ability = { ...c.ability, every: DEALER_RULES.finalEvery };
+        c.charge = Math.min(c.charge, DEALER_RULES.finalEvery - 1);
+        events.push({ type: 'finalHand', side: c.side, cards: ['allin', 'raise'], every: DEALER_RULES.finalEvery });
         events.push({ type: 'dealNext', side: c.side, card: this.nextDeal, then: ['raise'] });
       }
       // THE WHEEL SPINS FASTER at half HP: it places 3 chips a turn from now on.
