@@ -100,7 +100,7 @@ describe('ACT 3: enemies', () => {
 });
 
 describe('THE DEALER', () => {
-  it('telegraphs its first card, and cannot fall below half HP before it has dealt', () => {
+  it('telegraphs its first card; the hit that reaches half HP stops there and opens its FINAL HAND on ALL IN', () => {
     const f = fight((c) => {
       dealerCfg(c);
       c.player.strips = reels3({ sword: 12 });
@@ -108,33 +108,10 @@ describe('THE DEALER', () => {
     f.sides.enemy.hp = f.sides.enemy.maxHp / 2 + 20;
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const { events } = f.step();
-    expect(ofType(events, 'dealNext').length).toBe(1);
+    expect(ofType(events, 'dealNext')[0]).toBeTruthy();
+    expect(ofType(events, 'finalHand').length).toBe(1);
+    expect(f.nextDeal).toBe('allin');
     expect(f.sides.enemy.hp).toBe(f.sides.enemy.maxHp / 2);
-  });
-
-  it('SHUFFLE swaps cells between two reels (a live FULL SET is immune); CUT removes one cell per reel', () => {
-    const f = fight((c) => {
-      dealerCfg(c);
-      c.player.strips = [{ sword: 12 }, { bolt: 12 }, { shield: 12 }];
-    });
-    f.nextDeal = 'shuffle';
-    f.next = 'enemy';
-    const sh = ofType(f.step().events, 'shuffle')[0];
-    expect(sh.swaps.length).toBe(5);
-    const [a, b] = sh.reels;
-    expect(f.sides.player.reels[a].cells.some((c) => c.symbol !== f.sides.player.reels[a].cells[0].symbol || true)).toBe(true);
-    const mixed = f.sides.player.reels[a].cells.filter((c) => c.symbol === f.sides.player.reels[b].cells[sh.swaps[0][1]].symbol).length;
-    expect(mixed).toBeGreaterThan(0);
-
-    const g = fight((c) => {
-      dealerCfg(c);
-      c.player.strips = reels3({ sword: 8, shield: 4 });
-    });
-    g.nextDeal = 'cut';
-    g.next = 'enemy';
-    const cut = ofType(g.step().events, 'cut')[0];
-    expect(cut.cells.length).toBe(3);
-    expect(g.sides.player.reels.every((r) => r.cells.length === 11)).toBe(true);
   });
 
   it('RAISE doubles its next hit and your next paying group', () => {

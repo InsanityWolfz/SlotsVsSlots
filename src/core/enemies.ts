@@ -264,21 +264,21 @@ export const WHEEL: Archetype = {
  */
 export const WHEEL_RULES = { place: 2, fast: 3, maxPerReel: 3, perChip: 0.05, endlessChip: 0.07, sweepChips: 1 };
 /**
- * Act 3 boss. THE HOUSE's partner: every few turns it deals a face-up card (shown a turn ahead) —
- * SHUFFLE your reels, CUT your commonest symbol, or RAISE the stakes (its next hit and your next
- * jackpot pay double). It can't fall below half HP until it has dealt once; at half HP it plays
- * HOUSE RULES and deals faster.
+ * Act 3 boss (BOSS_REDESIGN 3). FIRST HAND: every 3 turns it deals RAISE (its next hit and your next paying group x2)
+ * or DEUCE (your best reel's payline cell pays nothing next spin). At half HP (the hit that gets it there stops there
+ * that turn) it plays its FINAL HAND: ALL IN, RAISE, ALL IN... every 2 turns. ALL IN: its whole visible hand,
+ * 25-40% of your max HP, through shields.
  */
 export const DEALER: Archetype = {
   id: 'dealer',
   name: 'THE DEALER',
   portrait: 'enemyDealer',
-  // The House's heavy hitters: sevens.
-  strip: { seven: 6, sword: 3, shield: 2, card: 4 },
+  // The House's heavy hitters: sevens. (No CARD: marks belong to the CARD SHARP.)
+  strip: { seven: 6, sword: 4, shield: 2 },
   hpMul: 1,
   ability: { kind: 'deal', every: 3, power: 0 },
   minDepth: 3,
-  blurb: 'DEALS FACE-UP CARDS ONTO YOUR PAYLINE, GOES ALL IN, RAISES. THE HOUSE HAS A PARTNER',
+  blurb: 'DEALS RAISE AND DEUCE. AT HALF HP IT PLAYS ITS FINAL HAND: ALL IN.',
   acts: [3],
 };
 export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: WHEEL, 3: DEALER };

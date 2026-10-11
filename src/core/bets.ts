@@ -108,7 +108,7 @@ export function betState(b: SideBet, t: BetTrack, done: boolean): 'live' | 'won'
     case 'big':
       return t.best >= b.target ? 'won' : done ? 'lost' : 'live';
     case 'early':
-      return t.finalHand ? 'lost' : done ? 'won' : 'live';
+      return (t.allIns ?? 0) >= 2 ? 'lost' : done ? 'won' : 'live';
     case 'survive':
       return t.allIns ? 'won' : done ? 'lost' : 'live';
   }
@@ -126,7 +126,7 @@ export function describeBet(b: SideBet): { name: string; rule: string } {
     case 'big':
       return { name: 'BIG HIT', rule: `DEAL ${num(b.target)}+ IN ONE TURN` };
     case 'early':
-      return { name: 'FOLD HIM EARLY', rule: 'WIN BEFORE HIS FINAL HAND' };
+      return { name: 'FOLD HIM', rule: 'WIN BEFORE HIS 2ND ALL IN' };
     case 'survive':
       return { name: 'TAKE THE HIT', rule: 'SURVIVE AN ALL IN' };
   }
@@ -144,7 +144,7 @@ export function betProgress(b: SideBet, t: BetTrack): string {
     case 'big':
       return `BEST ${num(t.best)}`;
     case 'early':
-      return t.finalHand ? 'FINAL HAND!' : 'NO FINAL HAND YET';
+      return `ALL INS: ${t.allIns ?? 0} OF 2`;
     case 'survive':
       return t.allIns ? 'SURVIVED!' : 'NO ALL IN YET';
   }
@@ -191,7 +191,7 @@ export function dealerBets(all: { t: BetTrack; won: boolean }[], rng: Rng, enemy
   const base = wins.length >= 3 ? wins : all.map((x) => x.t);
   const out: SideBet[] = [];
   for (const kind of DEALER_BETS) {
-    const p = base.filter((t) => (kind === 'early' ? !t.finalHand : !!t.allIns)).length / Math.max(1, base.length);
+    const p = base.filter((t) => (kind === 'early' ? (t.allIns ?? 0) < 2 : !!t.allIns)).length / Math.max(1, base.length);
     if (p < 0.12 || p > 0.8) continue;
     out.push({ kind, target: 0, pay: Math.max(1.5, Math.min(5, Math.round((2 * 1.05) / p) / 2)) });
   }
