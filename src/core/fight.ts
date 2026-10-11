@@ -30,7 +30,7 @@ import {
 } from './relics';
 import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
-import { ENDLESS, GATEKEEPER, TUNE, WHEEL_RULES } from './enemies';
+import { ENDLESS, GATEKEEPER, TUNE, WHEEL_RULES, wheelChipShare } from './enemies';
 import { betPayout, betState, newTrack, trackEvent } from './bets';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
 // houseSkim 2 -> 0 (BOSS_REDESIGN 2): the House's hidden chip skim drained CASSIDY's rain (her House ran 32 turns).
@@ -2507,9 +2507,11 @@ export class Fight {
   private chargeAbility(me: Combatant, events: CombatEvent[]): void {
     const ab = me.ability!;
     me.charge++;
-    // THE WHEEL: PLACE YOUR BETS on its turns, and NO MORE BETS when the countdown runs out (it places none that turn).
+    // THE WHEEL: PLACE YOUR BETS on its turns; NO MORE BETS when the countdown runs out (its last bets go down first).
     if (ab.kind === 'bets') {
       if (me.charge >= ab.every) {
+        // Its last bets go down as the ball drops: those can't be swept (every machine feels the drop).
+        if (WHEEL_RULES.betOnDrop) this.placeBets(me, this.sides[other(me.side)], this.fast ? WHEEL_RULES.fast : ab.power, events);
         me.charge = 0;
         events.push({ type: 'abilityCharge', side: me.side, charge: ab.every, every: ab.every, kind: ab.kind });
         events.push({ type: 'ability', side: me.side, kind: ab.kind, power: ab.power });
@@ -2617,7 +2619,7 @@ export class Fight {
 
   /** What one chip hits for at NO MORE BETS: a share of your max HP (never less than 1 unit). */
   betPer(foe: Combatant = this.sides.player): number {
-    return Math.max(UNIT, unitsRound(foe.maxHp * (this.cfg.enemy.endless ? WHEEL_RULES.endlessChip : WHEEL_RULES.perChip)));
+    return Math.max(UNIT, unitsRound(foe.maxHp * wheelChipShare(this.cfg.cabinet, !!this.cfg.enemy.endless)));
   }
 
   /** Chips on your reels right now. */
@@ -2671,7 +2673,7 @@ export class Fight {
     const amount = Math.min(ENDLESS.clamp, chips * per);
     const h = this.damage(foe, amount, false);
     events.push({ type: 'noMoreBets', from: me.side, to: foe.side, chips, per, amount, ...h });
-    for (let r = 0; r < 3; r++) this.bets[r] = 0;
+    if (WHEEL_RULES.clearOnDrop) for (let r = 0; r < 3; r++) this.bets[r] = 0;
     this.checkDeath(foe, events);
   }
 

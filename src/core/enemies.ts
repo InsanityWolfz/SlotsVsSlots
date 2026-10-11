@@ -262,7 +262,12 @@ export const WHEEL: Archetype = {
  * THE WHEEL's numbers: chips a turn (fast: at half HP, or from the start at GREEN), the most a reel holds, what one chip
  * hits for at NO MORE BETS (a share of your max HP; endless loops use `endlessChip`), chips you gain per chip swept.
  */
-export const WHEEL_RULES = { place: 2, fast: 3, maxPerReel: 3, perChip: 0.05, endlessChip: 0.07, sweepChips: 1 };
+export const WHEEL_RULES = { place: 2, fast: 3, maxPerReel: 3, perChip: 0.05, endlessChip: 0.07, sweepChips: 1, clearOnDrop: 1, betOnDrop: 1 };
+/** THE WHEEL's chip value per slot machine (x perChip): machines that pair a lot sweep almost every chip. */
+export const WHEEL_CHIP: Record<string, number> = { knight: 1, tesla: 1, jukebox: 1, joker: 1, midas: 1, thorn: 1 };
+/** What one chip hits for at NO MORE BETS, as a share of your max HP. */
+export const wheelChipShare = (cabinet: string | undefined, endless = false): number =>
+  (endless ? WHEEL_RULES.endlessChip : WHEEL_RULES.perChip) * (WHEEL_CHIP[cabinet ?? ''] ?? 1);
 /**
  * Act 3 boss. THE HOUSE's partner: every few turns it deals a face-up card (shown a turn ahead) —
  * SHUFFLE your reels, CUT your commonest symbol, or RAISE the stakes (its next hit and your next

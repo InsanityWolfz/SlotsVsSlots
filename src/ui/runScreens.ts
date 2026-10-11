@@ -4,7 +4,7 @@ import { challengeById, levelOf } from '../core/meta';
 import { defaultConfig, UNIT, unitsRound, type Enh, type GameConfig, type SymbolId } from '../core/config';
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
-import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, WHEEL_RULES, type EnemyDef } from '../core/enemies';
+import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, WHEEL_RULES, wheelChipShare, type EnemyDef } from '../core/enemies';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -173,7 +173,7 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
   if (!e.ability) return '';
   const p = e.ability.power;
   // THE WHEEL: what one chip left on your reels hits for at NO MORE BETS (as the fight does it).
-  const per = run ? Math.max(UNIT, unitsRound(run.player.maxHp * WHEEL_RULES.perChip)) : 0;
+  const per = run ? Math.max(UNIT, unitsRound(run.player.maxHp * wheelChipShare(run.cabinet))) : 0;
   const what: Record<string, string> = {
     flood: `SLIMES ${p} OF YOUR SYMBOLS`,
     smash: `HITS FOR ${p}`,
@@ -2095,7 +2095,7 @@ export class RunScreens {
         e.boss === 'dealer'
           ? 'DEALS: A CARD ON YOUR PAYLINE (ACE X2, JOKER WILD, DEUCE 0), ALL IN (ITS WHOLE HAND), RAISE (BOTH X2). NO KILL BEFORE ITS FIRST DEAL.'
           : e.boss === 'wheel'
-          ? `PLACE YOUR BETS: EACH TURN IT DROPS ${run.stake >= STAKE.wheelFast ? WHEEL_RULES.fast : WHEEL_RULES.place} CHIPS ON YOUR REELS. A PAIR CLEARS ITS REELS, A JACKPOT CLEARS THEM ALL (+1 CHIP EACH). NO MORE BETS: EVERY 3RD TURN, EACH CHIP LEFT HITS ${Math.round(WHEEL_RULES.perChip * 100)}% OF YOUR MAX HP. ${run.stake >= STAKE.wheelFast ? 'GREEN: IT STARTS FAST.' : 'AT HALF HP THE WHEEL SPINS FASTER: 3 A TURN.'}`
+          ? `PLACE YOUR BETS: EACH TURN IT DROPS ${run.stake >= STAKE.wheelFast ? WHEEL_RULES.fast : WHEEL_RULES.place} CHIPS ON YOUR REELS. A PAIR CLEARS ITS REELS, A JACKPOT CLEARS THEM ALL (+1 CHIP EACH). NO MORE BETS: EVERY 3RD TURN, EACH CHIP LEFT HITS ${Math.round(wheelChipShare(run.cabinet) * 100)}% OF YOUR MAX HP. ${run.stake >= STAKE.wheelFast ? 'GREEN: IT STARTS FAST.' : 'AT HALF HP THE WHEEL SPINS FASTER: 3 A TURN.'}`
           : `COINS FILL THE POT. EVERY ${this.houseEvery()} TURNS IT SKIMS HALF AT YOU. ANY JACKPOT YOU HIT STEALS THE POT! AT HALF HP IT DOUBLES DOWN: THE POT DOUBLES. FROM TURN ${POT.lastCall}, LAST CALL: IT SKIMS EVERY TURN.${dirty ? ' BLACK: IT BOMBS YOUR PAYLINE.' : ''}`,
         COLORS.goldLight,
       );
