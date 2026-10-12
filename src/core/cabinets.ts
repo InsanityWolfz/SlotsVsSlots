@@ -68,6 +68,7 @@ export interface Cabinet {
   rodDamage?: number;
 }
 
+// HP +30% on every machine (2026-10-12): the heal after each fight is gone, so HP is the run's resource.
 const r3 = (c: StripCounts): StripCounts[] => [{ ...c }, { ...c }, { ...c }];
 
 export const CABINETS: Record<CabinetId, Cabinet> = {
@@ -78,7 +79,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'KNIGHT',
     sprite: 'cabinetKnight',
     blurb: 'THE DEPENDABLE ONE',
-    hp: 30 * UNIT,
+    hp: 39 * UNIT,
     // FORGED STEEL: half swords, half shields, and they start at level 2.
     strips: r3({ sword: 6, shield: 6 }),
     gilded: [],
@@ -87,7 +88,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     symbols: ['sword', 'shield'],
     attack: 'sword',
     levels: { sym: { sword: 2, shield: 2 }, charm: {} },
-    rule: 'HALF SWORDS, HALF SHIELDS, BOTH AT LEVEL 2. NO METER. 300 HP.',
+    rule: 'HALF SWORDS, HALF SHIELDS, BOTH AT LEVEL 2. NO METER. 390 HP.',
     unlock: '',
   },
   midas: {
@@ -97,8 +98,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'BANKROLL',
     sprite: 'cabinetMidas',
     blurb: 'MAKE IT RAIN.',
-    // 360 HP (was 300): MIDAS trailed every table, its GREEN deaths spread over the whole run (EXPERT_PLAYTEST_9 D6).
-    hp: 36 * UNIT,
+    hp: 33 * UNIT,
     // No swords (2026-10-07): CASSIDY flings his chips. Each chip symbol hits, pays a chip and fills the bar.
     strips: r3({ shield: 6, goldbar: 6 }),
     // No gold-sword start (a leftover from MIDAS): 8 more chips instead (user playtest).
@@ -108,7 +108,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     startChips: 24,
     symbols: ['goldbar', 'shield'],
     attack: 'goldbar',
-    rule: 'MORE CHIPS, BIGGER PAYS. A CHIP JACKPOT MAKES IT RAIN! 360 HP.',
+    rule: 'MORE CHIPS, BIGGER PAYS. A CHIP JACKPOT MAKES IT RAIN! 330 HP.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },
@@ -119,7 +119,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'TESLA',
     sprite: 'cabinetTesla',
     blurb: 'IT HUMS WHEN YOU LOOK AT IT',
-    hp: 25 * UNIT,
+    hp: 33 * UNIT,
     // No swords (2026-10-07): bolts are TESLA's weapon, and their damage is the lightning.
     strips: r3({ shield: 6, bolt: 6 }),
     gilded: [{ reel: 0, symbol: 'bolt', enh: 'charged', n: 4 }],
@@ -128,7 +128,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: UNIT / 2 },
     symbols: ['bolt', 'shield'],
     attack: 'bolt',
-    rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE THROUGH SHIELDS. 250 HP.',
+    rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE THROUGH SHIELDS. 330 HP.',
     rodDamage: 9 * UNIT,
     unlock: 'REACH THE HOUSE',
     specialCost: 4 * UNIT,
@@ -141,7 +141,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'JOKER',
     sprite: 'cabinetJoker',
     blurb: 'NOTHING IS WHAT IT SEEMS',
-    hp: 22 * UNIT,
+    hp: 29 * UNIT,
     // Cards, not swords (2026-10-07): JAX throws playing cards. They hit like swords.
     strips: r3({ ace: 5, shield: 5, wild: 2 }),
     gilded: [],
@@ -149,7 +149,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 3 * UNIT, perWild: 2 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
-    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 220 HP.',
+    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 290 HP.',
     unlock: 'BEAT THE HOUSE WITH WILDS',
     jokerWilds: true,
   },
@@ -160,7 +160,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'JUKEBOX',
     sprite: 'cabinetJukebox',
     blurb: 'TURN IT UP',
-    hp: 32 * UNIT,
+    hp: 42 * UNIT,
     // Replaces BRIAR (user, 2026-10-08): notes and shields. NOTES turn up the volume; at the max the beat drops.
     strips: r3({ note: 6, shield: 6 }),
     gilded: [],
@@ -168,7 +168,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 2 * UNIT },
     symbols: ['note', 'shield'],
     attack: 'note',
-    rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: EVERY NOTE HITS. 320 HP.',
+    rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: EVERY NOTE HITS. 420 HP.',
     unlock: 'BEAT THE HOUSE',
   },
 };

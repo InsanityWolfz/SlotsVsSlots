@@ -30,7 +30,7 @@ import { effectiveAbility, STAKE } from './stakes';
 import { ENDLESS, GATEKEEPER, TUNE, WHEEL_RULES, wheelChipShare } from './enemies';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
 // houseSkim 2 -> 0 (BOSS_REDESIGN 2): the House's hidden chip skim drained CASSIDY's rain (her House ran 32 turns).
-export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3 };
+export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.5 };
 /**
  * CASH CASSIDY's MAKE IT RAIN!: a chip jackpot with at least `cost` chips held hits for chips x `perChip` (base: the
  * jackpot, charms, relics and a full HIGH ROLLER bar multiply it), counted before it costs `cost` chips.
@@ -44,8 +44,8 @@ export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3 
 export const POT_STEAL = { any: 1 };
 /** THE JUKEBOX: +20% note damage per volume level, max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
 export const VOLUME = { perLevel: 0.2, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5, battery: 3 };
-export const RAIN = { perChip: 2, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
-/** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x3 (quarter steps). */
+export const RAIN = { perChip: 1.5, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
+/** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x2.5 (quarter steps). */
 export const highRollerMul = (chips: number, cap = MIDAS.maxMul) => Math.min(cap, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
 import { isNearMiss, multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import {

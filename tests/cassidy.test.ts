@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
-import { Fight, RAIN, highRollerMul } from '../src/core/fight';
+import { Fight, MIDAS, RAIN, highRollerMul } from '../src/core/fight';
 import { charmOptions, createRun, fightConfig, RUN } from '../src/core/run';
 import { CABINETS } from '../src/core/cabinets';
 
@@ -29,10 +29,10 @@ describe('CASH CASSIDY / THE BANKROLL', () => {
     expect(CABINETS.midas.hero).toBe('CASH CASSIDY');
     expect(CABINETS.midas.name).toBe('BANKROLL');
     expect(highRollerMul(10)).toBe(1.5);
-    expect(highRollerMul(100)).toBe(3);
+    expect(highRollerMul(100)).toBe(MIDAS.maxMul);
   });
 
-  it('MAKE IT RAIN!: a chip jackpot with 5+ chips hits for chips x2 (x the jackpot), counted before it costs 5', () => {
+  it('MAKE IT RAIN!: a chip jackpot with 5+ chips hits for chips x RAIN.perChip (x the jackpot), counted before it costs 5', () => {
     const f = cassidy(20);
     const { rain, hit } = rainHit(f);
     expect(rain).toBeDefined();
