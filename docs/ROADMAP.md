@@ -2,15 +2,11 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-12):** done today (branch only, not on main yet): the new sim, honest HP, no heal after a
-fight, elites really hit harder (bug), the relic feed, BANKROLL's shield relics, machine HP +30%, ROD gone, GREATSWORD,
-random Charm offers, and the three-hand Dealer (THE DEAL / RAISE / ALL IN). Then TESLA's lightning went additive (GREEN
-43 -> 36). Then the Act 3 healing penalty went. Sim at GREEN
-(target 36): KNIGHT 38, JUKEBOX 39, TESLA 43, JOKER 52, BANKROLL 52; WHITE all 56-65. Dealer when reached: KNIGHT 62,
-JUKEBOX 72, BANKROLL 92, JOKER 93, TESLA 95 (TESLA 15-20 over is fine: user). Open: JOKER and BANKROLL barely lose in
-Act 3; more Dealer HP / damage / ALL IN only hurts KNIGHT and JUKEBOX, and every JOKER / BANKROLL knob tried moves
-WHITE and GREEN together (CAP AND BELLS, meter cost / heal, TRICK, HP, BANK VAULT every 2-3 wins, RAIN). Waiting on
-the user. Keep going through usage resets.
+**In progress (2026-10-12):** the 2026-10-12 balance work is on main (new sim, honest HP, no heal after a fight, the
+three-hand Dealer, additive lightning, no Act 3 heal penalty). GREEN tuning is paused (user): KNIGHT 38, JUKEBOX 39,
+TESLA 43, JOKER 52, BANKROLL 52 (target 36); JOKER / BANKROLL / TESLA are weak early and strong late, accepted for now.
+Now: the playtest bug list below, then two expert playtester runs into ENDLESS to hunt bugs there. Keep going through
+usage resets.
 
 ## Now, in order
 1. **The run map rework (agreed 2026-10-12).** Why: every human playtester takes the elite at every fork (a free
