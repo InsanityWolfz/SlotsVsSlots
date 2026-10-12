@@ -2,12 +2,14 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-12, user asleep):** done today (branch only, not on main yet): the new sim, honest HP, no heal
-after a fight, elites really hit harder (bug), the relic feed, BANKROLL's shield relics. An expert playtester pass is
-running. Now: tuning the machines to the stake targets (TARGETS in tools/sim/balance.ts) with HP carrying between
-fights, each machine's attack build AND shield build viable (`--style turtle`), then bosses (within 10 points across
-machines), then the stake ladder. Push to main once WHITE and GREEN are in range. User rules from today: keep rules
-simple (no COMBO/HEART-style mechanics); one attack and one shield build per machine. Keep going through usage resets.
+**In progress (2026-10-12):** done today (branch only, not on main yet): the new sim, honest HP, no heal after a
+fight, elites really hit harder (bug), the relic feed, BANKROLL's shield relics, machine HP +30%, BANKROLL / TESLA /
+KNIGHT / JOKER tuned. Sim at WHITE: every machine 55-63 (target 60). GREEN is uneven: KNIGHT ~24, JUKEBOX ~20,
+JOKER ~38, TESLA ~42, BANKROLL ~45 (target 36); the gap is the Dealer (KNIGHT / JUKEBOX ~50% vs TESLA / BANKROLL
+~80%): fast killers arrive healthier and end it before it hurts. Tried without effect: enemy shields, act 3's damage
+ramp, JUKEBOX volume, level caps, banning TESLA's / BANKROLL's top big choice. Open question for the user: a visible
+Dealer rule against burst (a TABLE LIMIT) vs slowing TESLA / BANKROLL's late scaling. An expert playtester pass is
+running. Keep going through usage resets.
 
 ## Now, in order
 1. **The run map rework (agreed 2026-10-12).** Why: every human playtester takes the elite at every fork (a free
