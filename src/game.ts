@@ -5,7 +5,6 @@ import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
 import { actLength, RUN_FIGHTS, TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { allInRange, Fight, highRollerMul } from './core/fight';
-import { betProfit, betProgress, describeBet, newTrack } from './core/bets';
 import { dailyCabinet, dailyKey, dailySeed, dailySpent } from './core/daily';
 import { turnRow, type TurnRow } from './core/log';
 import { RELICS } from './core/relics';
@@ -17,7 +16,6 @@ import {
   draftOffers,
   applyDaily,
   EDGE_TEXT,
-  offerBets,
   fightConfig,
   migrateRun,
   finishFight,
@@ -349,7 +347,7 @@ export class Game {
       setSetting: (k, v) => this.setSetting(k, v),
     });
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
-    this.screens = new RunScreens(this.ui, this.sounds, () => this.cfg, {
+    this.screens = new RunScreens(this.ui, this.sounds, {
       onPick: (o) => this.pickReward(o),
       onSpoils: (r) => this.pickSpoils(r),
       onLegend: (r) => this.pickLegend(r),
@@ -771,6 +769,11 @@ export class Game {
     // A game update may have removed a relic or Charm the save still holds (STEAM_QA_1 Q5): drop what no longer exists.
     if (Array.isArray(run.player.relics)) run.player.relics = run.player.relics.filter((r) => r in RELICS);
     if (Array.isArray(run.player.gilded)) run.player.gilded = run.player.gilded.filter((g) => g && g.enh in CHARM_VALUE);
+    // SIDE BETS are gone (2026-10-12): a save with a bet on the table gets its stake back.
+    const old = run as RunState & { bet?: { stake?: number } | null; bets?: unknown };
+    if (old.bet && typeof old.bet.stake === 'number' && Number.isFinite(old.bet.stake)) run.player.chips += Math.max(0, Math.floor(old.bet.stake));
+    delete old.bet;
+    delete old.bets;
     // THE WHEEL replaced THE MIRROR (2026-10-09): a save holding the old act 2 boss meets the new one.
     migrateRun(run);
     return { at: s.at === 'after' ? 'after' : s.at === 'fight' ? 'fight' : 'next', run };
@@ -859,11 +862,8 @@ export class Game {
     if (!this.run) return;
     if (needsChoice(this.run)) {
       chooseEnemy(this.run, option);
-      // SIDE BETS: the table opens once you've picked who you face.
-      if (offerBets(this.run, this.cfg).length) return this.showNextFight();
     }
-    // Snapshot with the opponent and the bet locked in: a quit mid-fight resumes into this same fight, so a
-    // side bet can't be re-placed after watching it (STEAM_QA_1 Q3).
+    // Snapshot with the opponent locked in: a quit mid-fight resumes into this same fight (STEAM_QA_1 Q3).
     this.checkpoint('fight');
     this.startRunFight();
   }
@@ -1134,7 +1134,6 @@ export class Game {
         ...(this.fight.isWheel ? { bets: [...this.fight.bets], betsLeft: (this.fight.sides.enemy.ability?.every ?? 3) - this.fight.sides.enemy.charge, betPer: this.fight.betPer(), betPunch: 1, wheelFast: this.fight.fast, wheelAngle: 0, wheelSpeed: 0.6 } : {}),
         chipsEaten: 0,
         vouchers: [],
-        ...(inRun && start && this.run?.bet ? { bet: this.run.bet, betTrack: newTrack() } : {}),
       },
     };
     this.director = new Director(this.stage);
@@ -1768,14 +1767,12 @@ export class Game {
     if (this.fight.isBoss) this.drawPot(ctx, cx, cy + 118, t);
     else if (this.fight.isDealer) {
       this.drawDeal(ctx, cx, cy + 118, t);
-      this.drawBet(ctx, cx, cy + 40, t, true);
     }
     else if (this.fight.isWheel) this.drawTable(ctx, cx, cy + 118, t);
     else {
       drawText(ctx, 'VS', cx, cy + 70, 6, '#ff6a5a', { alpha: 0.35 + 0.1 * Math.sin(t * 2) });
-      this.drawBet(ctx, cx, cy + 130, t);
     }
-    if (this.prefs.speed !== 2) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss || this.fight.isWheel || this.fight.isDealer ? cy - 136 : this.stage.gutter.bet ? cy + 196 : cy + 172, 2, COLORS.textDim);
+    if (this.prefs.speed !== 2) drawText(ctx, `${this.prefs.speed}X SPEED`, cx, this.fight.isBoss || this.fight.isWheel || this.fight.isDealer ? cy - 136 : cy + 172, 2, COLORS.textDim);
   }
 
   /** The House's progressive pot, front and centre: grows (and glows) with the stakes. */
@@ -1853,34 +1850,6 @@ export class Game {
       ctx.fillRect(x - 70, y + 60, 140, 22);
       drawText(ctx, `THEN: ${then}`, x, y + 71, 2, g.then[0] === 'allin' ? '#ff8a7a' : '#ffd23f');
     }
-  }
-
-  /** SIDE BET tracker under the VS: the bet, then how it stands (information only: fights stay watch-only). */
-  private drawBet(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, compact = false): void {
-    const g = this.stage.gutter;
-    if (!g.bet || !g.betTrack) return;
-    const d = describeBet(g.bet);
-    const done = g.betDone;
-    const col = done === 'won' ? '#ffd23f' : done === 'lost' ? '#ff8a7a' : '#c8f0c8';
-    const status = done === 'won' ? `WON +${betProfit(g.bet)}` : done === 'lost' ? `BUSTED -${g.bet.stake}` : betProgress(g.bet, g.betTrack);
-    // The Dealer's gutter holds its deal box: one line above it.
-    if (compact) {
-      ctx.fillStyle = 'rgba(10,6,18,0.85)';
-      ctx.fillRect(x - 130, y - 16, 260, 34);
-      drawText(ctx, `BET ${g.bet.stake}: ${d.name}`, x, y - 6, 1.5, COLORS.goldLight);
-      drawText(ctx, status, x, y + 8, 1.5, col);
-      return;
-    }
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(x - 112, y - 22, 224, 66);
-    ctx.fillStyle = done ? col : '#2a6a3a';
-    ctx.fillRect(x - 109, y - 19, 218, 60);
-    ctx.fillStyle = '#0e2a18';
-    ctx.fillRect(x - 105, y - 15, 210, 52);
-    drawText(ctx, `BET ${g.bet.stake}: ${d.name}`, x, y - 4, 1.75, COLORS.goldLight);
-    drawText(ctx, d.rule, x, y + 10, 1.25, COLORS.text);
-    const line = status;
-    drawText(ctx, line, x, y + 27, 2, col, { punch: done ? 1 : 1 + 0.04 * Math.sin(t * 6) });
   }
 
   /** The Dealer's table: green felt behind its machine, and the ALL IN warning over it. */

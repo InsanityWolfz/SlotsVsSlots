@@ -18,13 +18,11 @@ import {
   RELICS,
   RUSH,
   type Enabler,
-  LOADED_MUL,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
 import { BIG_CAP, CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { dailyEdge, dailyFightSeed } from './daily';
-import { BET_CAP, BETS, MARKER_REFUND, betPayout, betsFrom, dealerBets, betState, HOT_HAND, newTrack, trackEvent, type BetTrack, type PlacedBet, type SideBet } from './bets';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
 
@@ -198,8 +196,6 @@ export interface FightRecord {
   pick?: DraftOption;
   /** What was bought at the Cashier after this fight. */
   bought?: DraftOption[];
-  /** SIDE BET placed on this fight, and whether it paid. */
-  bet?: PlacedBet & { won: boolean; refunded?: boolean };
   /** The BIG CHOICE taken after this (boss) fight. */
   choice?: BigChoiceId;
 }
@@ -266,9 +262,6 @@ export interface RunState {
   glass?: boolean;
   /** BLOOD PACT: your meter fills twice as fast. */
   bloodPact?: boolean;
-  /** SIDE BETS on the next fight: the table's offer (keyed to the fight) and the bet you placed. */
-  bets?: { key: string; offer: SideBet[] } | null;
-  bet?: PlacedBet | null;
   /** THE REPO MAN's liens: cells (and charms) he holds until the act's boss falls. */
   liens?: Lien[];
   /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day), and the day's HOUSE EDGE. */
@@ -281,12 +274,6 @@ export interface RunState {
   mods?: EdgeId[];
   /** Liens paid off at the Cashier (achievements). */
   liensPaid?: number;
-  /** Side bets placed this run (the bet relics show up after the first). */
-  betsPlaced?: number;
-  /** MARKER: the act (and loop) whose first busted bet was refunded. */
-  markerUsed?: string;
-  /** HOT HAND: side bets won in a row (a bust resets it). */
-  betStreak?: number;
   /** MASTERWORK (until 2026-10-08): these symbols can't gain levels. Old saves only. */
   levelLock?: SymbolId[];
   /** BIG CHOICES (2026-10-08): cards offered so far this run (never twice), and the fight rules they added. */
@@ -592,7 +579,6 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // No bonus in the run's final fight: a voucher could never be spent (QA_1 B11).
     bonusSymbols: !(e.isBoss && run.act >= runActs(run)),
     chipsHeld: run.player.chips,
-    ...(run.bet ? { sideBet: { ...run.bet } } : {}),
     // Chips no longer shield you on bosses (2026-10-07, user: too noisy).
   };
   const hp = enemyHp(run, e);
@@ -689,81 +675,8 @@ function returnLien(run: RunState, l: Lien): void {
 /** A lien in words ("A GOLD CHARM ON A REEL 2 SWORD"). */
 export const lienText = (l: Lien) => (l.enh ? `A ${charmName(l.enh)} CHARM ON A REEL ${l.reel + 1} ${symLabel(l.symbol)}` : `A ${symLabel(l.symbol)} ON REEL ${l.reel + 1}`);
 
-/** SIDE BETS are offered before regular fights (not bosses, not the tutorial's first fight, not at a fork). */
-export function betsOpen(run: RunState): boolean {
-  const e = run.enemies[run.depth];
-  // Not on act 1's first fight: a new player meets the table after their first spins (EXPERT_PLAYTEST_9 D8).
-  return !run.over && !!e && (!e.isBoss || e.boss === 'dealer') && !needsChoice(run) && !(run.act === 1 && run.depth === 0 && !run.endless);
-}
-
-/** The Cashier's table for the next fight: 2 bets, sized by rehearsing this very fight on other seeds. */
-export function offerBets(run: RunState, base: GameConfig): SideBet[] {
-  if (!betsOpen(run)) return [];
-  const key = `${run.act}:${run.endless?.loop ?? 0}:${run.depth}:${run.betStreak ?? 0}`;
-  if (run.bets?.key === key) return run.bets.offer;
-  const cfg = fightConfig(run, base);
-  const rng = new Rng((run.seed ^ Math.imul(fightNumber(run) + 31 + (run.endless?.loop ?? 0) * 97, 0x27d4eb2f)) >>> 0);
-  const all: { t: BetTrack; won: boolean }[] = [];
-  // The Dealer (one fight a run, long odds) gets twice the rehearsals.
-  const samples = cfg.enemy.boss === 'dealer' ? BETS.samples * 2 : BETS.samples;
-  for (let i = 0; i < samples; i++) {
-    const f = new FightCtor(cfg, rng.int(0xffffffff));
-    const t = newTrack();
-    while (!f.over && f.turn < 400) for (const e of f.step().events) trackEvent(t, e);
-    all.push({ t, won: f.winner === 'player' });
-  }
-  // The Dealer has his own table (win before his FINAL HAND; survive an ALL IN).
-  // One bet a fight (2026-10-07): the Dealer's is his first (win before his FINAL HAND, when it makes a line).
-  const raw = cfg.enemy.boss === 'dealer'
-    ? dealerBets(all, rng, cfg.enemy.hp, run.player.maxHp).slice(0, 1)
-    : betsFrom(all.filter((x) => x.won).map((x) => x.t), BETS.samples, rng, cfg.enemy.hp, run.betStreak ?? 0, run.player.maxHp);
-  // LOADED DICE: every line pays more (shown on the card).
-  const offer = run.player.relics.includes('loaded') ? raw.map((b) => ({ ...b, pay: Math.round(b.pay * LOADED_MUL * 10) / 10 })) : raw;
-  run.bets = { key, offer };
-  return offer;
-}
-
-/** Stake chips on one of the table's bets (a new bet replaces the old one and refunds it). */
-export function placeBet(run: RunState, i: number, stake: number): boolean {
-  const b = run.bets?.offer[i];
-  if (!b) return false;
-  clearBet(run);
-  if (run.player.chips < stake) return false;
-  run.player.chips -= stake;
-  run.bet = { ...b, stake };
-  run.betsPlaced = (run.betsPlaced ?? 0) + 1;
-  return true;
-}
-
-/** MARKER refunds a bust up to this. */
-export const markerRefund = (run: RunState) => MARKER_REFUND * stakeMul(run);
-/** HIGH LIMIT doubles the stake cap. */
-export const stakeMul = (run: RunState) => (run.player.relics.includes('highlimit') ? 2 : 1);
-/** The most you may stake: 20 a run, 40 in endless (x2 with HIGH LIMIT). */
-export const stakeCap = (run: RunState) => (run.endless ? BET_CAP.endless : BET_CAP.run) * stakeMul(run);
-/** The most you can stake right now: the cap, or every chip you hold (counting the one on the table). */
-export const maxStake = (run: RunState) => Math.min(stakeCap(run), run.player.chips + (run.bet?.stake ?? 0));
-/** The stepper: move your stake on the fight's bet by `delta` (0 takes it off the table). Returns the new stake. */
-export function stepStake(run: RunState, delta: number): number {
-  const next = Math.max(0, Math.min(maxStake(run), (run.bet?.stake ?? 0) + delta));
-  if (next === 0) clearBet(run);
-  else if (next !== run.bet?.stake) {
-    const placed = !!run.bet;
-    placeBet(run, 0, next);
-    // Changing the stake isn't a new bet.
-    if (placed) run.betsPlaced = Math.max(0, (run.betsPlaced ?? 1) - 1);
-  }
-  return run.bet?.stake ?? 0;
-}
-
 /** Interest paid after a win on the chips you hold then (chips on the table don't count). */
 export const interestOn = (chips: number) => Math.min(CHIPS.interestCap, Math.floor(chips / CHIPS.interestPer));
-
-/** Take a placed bet back off the table. */
-export function clearBet(run: RunState): void {
-  if (run.bet) run.player.chips += run.bet.stake;
-  run.bet = null;
-}
 
 /** CASH OUT: the pot plus your unspent chips x10. */
 export const cashOutValue = (run: RunState) => (run.endless?.pot ?? 0) + run.player.chips * 10;
@@ -1026,24 +939,6 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   run.player.chips += earned;
   // (THE WHEEL: the chips your sweeps won came in with the fight's mid-fight chips; the line counts them.)
   record.chips = earned + fight.lucreChips + fight.betChips;
-  // SIDE BET: paid stake x pay if it came in (a lost fight ends the run, bet and all).
-  if (run.bet) {
-    const won = betState(run.bet, fight.betTrack, true) === 'won';
-    // (MIDAS was already paid mid-fight, with his gold-bar chips.)
-    if (won && !fight.betPaid) run.player.chips += betPayout(run.bet);
-    record.bet = { ...run.bet, won };
-    // MARKER: the first bust each act (each loop in endless) is refunded.
-    const act = `${run.act}:${run.endless?.loop ?? 0}`;
-    if (!won && run.player.relics.includes('marker') && run.markerUsed !== act) {
-      run.markerUsed = act;
-      // Up to a small stake (a big one was a free roll: EXPERT_PLAYTEST_7 E1).
-      run.player.chips += Math.min(run.bet.stake, markerRefund(run));
-      record.bet.refunded = true;
-    }
-    run.betStreak = won ? Math.min(HOT_HAND.max, (run.betStreak ?? 0) + 1) : 0;
-  }
-  run.bet = null;
-  run.bets = null;
   // THE REPO MAN fell: what he holds stays gone until the act's boss falls (or you pay it off).
   if (beaten.archetype === REPO_MAN.id) {
     const before = run.liens?.length ?? 0;
@@ -1561,14 +1456,11 @@ export function pickRelics(pool: RelicId[], n: number, rng: Rng): RelicId[] {
 }
 
 /** Build relics are only offered once you own what they amplify (and meter relics only to machines with a meter). */
-const BET_RELICS: ReadonlySet<RelicId> = new Set<RelicId>(['loaded', 'marker', 'highlimit']);
 
 export function relicFits(run: RunState, r: RelicId): boolean {
   const def = RELICS[r];
   // Slot machine relics only on their machine; charm relics once you own the charm (or your machine favours it).
   if (def.retired || MACHINE_EXCLUDE[r]?.includes(run.cabinet)) return false;
-  // Bet relics show up once you've placed a side bet this run (dead picks otherwise).
-  if (BET_RELICS.has(r) && !run.betsPlaced) return false;
   if (def.machine && def.machine !== run.cabinet) return false;
   if (def.charm && charmCount(run.player, def.charm) === 0) return false;
   const need = BUILD_ENABLER[r];

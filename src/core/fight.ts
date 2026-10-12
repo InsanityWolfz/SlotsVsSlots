@@ -31,7 +31,6 @@ import {
 import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
 import { ENDLESS, GATEKEEPER, TUNE, WHEEL_RULES, wheelChipShare } from './enemies';
-import { betPayout, betState, newTrack, trackEvent } from './bets';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
 // houseSkim 2 -> 0 (BOSS_REDESIGN 2): the House's hidden chip skim drained CASSIDY's rain (her House ran 32 turns).
 export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3 };
@@ -444,10 +443,6 @@ export class Fight {
   private pitJustFired = false;
   /** TESLA COIL: this spin's charge, waiting to join the bolt group's (or to go in alone after the groups). */
   private coilPending = 0;
-  /** SIDE BETS: what this fight has done so far (spins, damage taken, jackpots, best turn). */
-  readonly betTrack = newTrack();
-  /** MIDAS: the side bet was already paid mid-fight (finishFight mustn't pay it twice). */
-  betPaid = false;
   private vaultPaid = 0;
   /** MIDAS: the VAULT's resting level (from chips held). */
   vaultBase(): number {
@@ -514,17 +509,6 @@ export class Fight {
     const first = res.side === 'player' ? this.sides.enemy : this.sides.player;
     for (const c of [first, this.sides[res.side]]) this.checkDeath(c, res.events);
     this.resolving = false;
-    for (const e of res.events) trackEvent(this.betTrack, e);
-    // MIDAS: a side bet won mid-fight pays at once, as gold-bar chips (they fill the vault: EXPERT_PLAYTEST_7 E9).
-    const bet = this.cfg.player.sideBet;
-    if (bet && !this.betPaid && !this.over && this.meter?.kind === 'vault' && betState(bet, this.betTrack, false) === 'won') {
-      this.betPaid = true;
-      const got = betPayout(bet);
-      this.midasChips += got;
-      res.events.push({ type: 'midasChips', side: 'player', amount: got, total: this.midasChips });
-      const me = this.sides.player;
-      if (!me.armed) me.energy = Math.max(me.energy, this.vaultBase());
-    }
     return res;
   }
   /** True while end-of-turn deaths resolve (a 0 HP machine falls only then). */

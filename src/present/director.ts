@@ -9,7 +9,6 @@ import { Banner, Bubble, FloatText, Lightning, Projectile, SymbolWheel, TurnCard
 import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, PITCH, reelWindow, W } from './layout';
 import type { Stage } from './stage';
 import { ABILITY_UI } from './hud';
-import { betProfit, betState, trackEvent } from '../core/bets';
 import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
 import { fmtNum } from '../render/text';
@@ -70,7 +69,6 @@ export class Director {
         while (j < evs.length && STORM_PART(evs[j])) j++;
         const group = evs.slice(i, j);
         if (group.filter((x) => x.type === 'specialFire').length >= 2) {
-          for (const x of group) this.noteBet(x);
           await this.storm(group);
           i = j - 1;
           continue;
@@ -89,23 +87,7 @@ export class Director {
     this.c.boost = 1;
   }
 
-  /** SIDE BET: track what's been shown; the moment it's decided, say so. */
-  private noteBet(e: CombatEvent): void {
-    const g = this.s.gutter;
-    if (!g.bet || !g.betTrack || g.betDone) return;
-    trackEvent(g.betTrack, e);
-    const st = betState(g.bet, g.betTrack, e.type === 'fightEnd' && e.winner === 'player');
-    if (st === 'live' && e.type !== 'fightEnd') return;
-    g.betDone = st === 'won' ? 'won' : 'lost';
-    if (g.betDone === 'won') {
-      this.s.sounds.coin(6);
-      this.s.sounds.coin(11);
-    }
-    this.bg(this.popText(g.betDone === 'won' ? `BET WON +${betProfit(g.bet)}` : `BET BUSTED -${g.bet.stake}`, W / 2, MACHINE_TOP + MACHINE_H - 40, 2.5, g.betDone === 'won' ? '#ffd23f' : '#ff8a7a', 24, 0.6));
-  }
-
   private play(e: CombatEvent): Promise<void> {
-    this.noteBet(e);
     return this.playEvent(e);
   }
 

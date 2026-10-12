@@ -1,7 +1,7 @@
 import type { Sounds } from '../audio/sounds';
 import type { MetaGain } from '../core/profile';
 import { challengeById, levelOf } from '../core/meta';
-import { defaultConfig, UNIT, unitsRound, type Enh, type GameConfig, type SymbolId } from '../core/config';
+import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../core/config';
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, WHEEL_RULES, wheelChipShare, type EnemyDef } from '../core/enemies';
@@ -17,12 +17,7 @@ import {
   enemyHp,
   isRelicDraft,
   needsChoice,
-  offerBets,
   EDGE_TEXT,
-  maxStake,
-  markerRefund,
-  stakeCap,
-  stepStake,
   rerollCost,
   runActs,
   totalFights,
@@ -48,7 +43,6 @@ import { drawText, fmtNum, textWidth } from '../render/text';
 import { heroSprite } from './menus';
 import { CHIP_SCORE, runEntry, runScore } from '../core/profile';
 import { dailyShare } from '../core/daily';
-import { BET_STEPS, betProfit, describeBet, type SideBet } from '../core/bets';
 import { RelicTips } from './relicTip';
 
 
@@ -85,8 +79,6 @@ interface Hit {
 
 type Btn = Hit & {
   label: string;
-  /** A SIDE BET stepper button: its stake change. */
-  bet?: number;
   /** Secondary: a quiet button that never breathes (only the screen's next step does). */
   minor?: boolean;
   /** Primary, but not breathing right now (a fork's other path). */
@@ -127,13 +119,10 @@ const CX = (BUILD.x + BUILD.w + 12 + W) / 2;
 export const CHIP_SPOT = { x: 44, y: 46 };
 /** The Cashier's shelves: item centers per row (the counter, then the relics behind the glass). */
 const SHELF = { y: [262, 440], gap: 164 };
-/** The side bet card: under the enemy card, left of FIGHT. */
-const BET_X = CX - 200;
 /** The shop's price tags (they buy): size and offset under the item's centre. */
 const TAG = { w: 108, h: 40, y: 70 };
 /** The enemy card's flip tab (bottom-right): big enough for a thumb. */
 const FLIP_TAB = { w: 40, h: 32 };
-const BET_Y = 540;
 
 /** The casino floor behind every run screen: a dark carpet with a faint diamond weave (cached). */
 let carpet: HTMLCanvasElement | null = null;
@@ -254,8 +243,6 @@ export class RunScreens {
   private offers: DraftOption[] = [];
   private cards: Hit[] = [];
   private buttons: Btn[] = [];
-  /** SIDE BETS on the next fight (the table on the preview screen). */
-  private betOffer: SideBet[] = [];
   private fade = 0;
   private mouse = { x: -1, y: -1 };
   private tips = new RelicTips();
@@ -277,10 +264,6 @@ export class RunScreens {
   private lvSeen = new Map<string, number>();
   private lvPunch = new Map<string, number>();
   private lvRun: RunState | null = null;
-  /** The side bet's chip stack: the stake punches on each change; the top chip drops on (or lifts off). */
-  private betPunch = 1;
-  private betFall = 0;
-  private betDrop = 1;
   /** The map node under the pointer (its tip is drawn over everything on the screen). */
   private mapTip: { e: EnemyDef; x: number; y: number } | null = null;
   /** Shop purchases in flight to YOUR BUILD. */
@@ -311,7 +294,6 @@ export class RunScreens {
   constructor(
     private ui: Clock,
     private sounds: Sounds,
-    private base: () => GameConfig,
     private cb: {
       onPick: (o: DraftOption) => void;
       onSpoils: (relic: RelicId) => void;
@@ -1191,9 +1173,6 @@ export class RunScreens {
       const bossId = run.enemies[run.depth]?.boss;
       const boss = run.depth >= actLength(run.act) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'wheel' ? 'FACE THE WHEEL' : 'FACE THE HOUSE') : 'FIGHT!';
       this.buttons = [this.btn(boss, CX, 560, boss === 'FIGHT!' ? 290 : 360, 56, () => this.cb.onFight(0))];
-      this.addBetButtons(run);
-      // With a side bet on the table, FIGHT steps right of its card.
-      if (this.betOffer.length) this.buttons[0].x = CX + 170;
     }
   }
 
@@ -1224,73 +1203,6 @@ export class RunScreens {
         return this.ui.tween({ from: 1.3, to: 1, dur: 0.2, ease: backOut(2), onUpdate: (v) => (this.lastPip = v) });
       }),
     );
-  }
-
-  /** SIDE BET: the fight's one bet, staked with a -5 / -1 / +1 / +5 stepper (0 takes it off the table). */
-  private addBetButtons(run: RunState): void {
-    this.betOffer = offerBets(run, this.base());
-    if (!this.betOffer.length) return;
-    BET_STEPS.forEach((d) => {
-      const x = BET_X + (d < 0 ? -1 : 1) * (Math.abs(d) === 1 ? 54 : 102);
-      const b = this.btn(d > 0 ? `+${d}` : `${d}`, x, BET_Y + 102, Math.abs(d) === 1 ? 40 : 46, 30, () => this.stepBet(d));
-      b.bet = d;
-      this.buttons.push(b);
-    });
-  }
-
-  private stepBet(d: number): void {
-    const run = this.run!;
-    const before = run.bet?.stake ?? 0;
-    const after = stepStake(run, d);
-    if (after === before) this.sounds.fizzle();
-    else if (after > before) {
-      this.sounds.coin(4);
-      this.sounds.coin(8);
-    } else this.sounds.click();
-    if (after !== before) {
-      this.betDrop = after > before ? 1 : -1;
-      void this.ui.tween({ from: 1.3, to: 1, dur: 0.22, ease: backOut(2), onUpdate: (v) => (this.betPunch = v) });
-      void this.ui.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (this.betFall = v) });
-    }
-  }
-
-  /** The bet card: its name, its line, what it pays, and the stake stepper. */
-  private drawBets(ctx: CanvasRenderingContext2D, time: number): void {
-    const run = this.run!;
-    const b = this.betOffer[0];
-    const stake = run.bet?.stake ?? 0;
-    const cx = BET_X;
-    this.panel(ctx, cx - 130, BET_Y, 260, 128, stake ? COLORS.goldLight : '#2a6a3a');
-    const d = describeBet(b);
-    drawText(ctx, 'SIDE BET', cx, BET_Y + 14, 1.5, COLORS.textDim);
-    drawText(ctx, d.name, cx, BET_Y + 34, 2, stake ? COLORS.goldLight : '#c8f0c8');
-    drawText(ctx, d.rule, cx, BET_Y + 56, 1.5, COLORS.text);
-    const hot = !!b.hot;
-    drawText(ctx, `${hot ? 'HOT HAND! ' : ''}PAYS X${b.pay}  -  MAX ${stakeCap(run)}`, cx, BET_Y + 76, 1.5, hot ? '#ff8a3a' : COLORS.goldLight, { punch: hot ? 1 + 0.05 * Math.sin(time * 8) : 1 });
-    drawText(ctx, `${stake}`, cx, BET_Y + 103, stake ? 2.5 : 2, stake ? '#fff6c8' : COLORS.textDim, { punch: this.betPunch });
-    const top = maxStake(run);
-    // The stake as a chip stack beside the card: a chip drops on with each raise, lifts off with each cut.
-    const chips = Math.min(10, Math.ceil(stake / 2));
-    const sx = cx - 168;
-    const wob = stake >= top && stake > 0 && this.betFall > 0 ? Math.sin(this.betFall * Math.PI * 4) * 2 : 0;
-    for (let k = 0; k < chips; k++) {
-      const topChip = k === chips - 1 && this.betDrop > 0;
-      drawSprite(ctx, 'chip', sx + wob, BET_Y + 110 - k * 5 - (topChip ? this.betFall * 24 : 0), 1.5);
-    }
-    if (this.betDrop < 0 && this.betFall > 0) drawSprite(ctx, 'chip', sx, BET_Y + 110 - chips * 5 - (1 - this.betFall) * 18, 1.5, { alpha: this.betFall });
-    if (stake >= top && stake > 0) drawText(ctx, 'MAX', sx, BET_Y + 92 - chips * 5, 1.5, COLORS.goldLight, { punch: this.betPunch });
-    for (const btn of this.buttons) {
-      if (btn.bet === undefined) continue;
-      const ok = btn.bet > 0 ? stake < top : stake > 0;
-      ctx.save();
-      ctx.globalAlpha *= ok ? 1 : 0.35;
-      ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(btn.x - btn.w / 2 - 2, btn.y - btn.h / 2 - 2, btn.w + 4, btn.h + 4);
-      ctx.fillStyle = btn.hover && ok ? '#3a8a4a' : '#1e4a2a';
-      ctx.fillRect(btn.x - btn.w / 2, btn.y - btn.h / 2, btn.w, btn.h);
-      drawText(ctx, btn.label, btn.x, btn.y + 1, 2, '#fff6c8');
-      ctx.restore();
-    }
   }
 
   /** The Cashier: four priced slots, a reroll and a way out. */
@@ -1765,7 +1677,6 @@ export class RunScreens {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
       drawText(ctx, `${rounds(last.turns)}${chips}${rocks}`, CX, 60, 2, COLORS.textDim);
-      if (last.bet) drawText(ctx, last.bet.won ? `SIDE BET WON: +${betProfit(last.bet)} CHIPS` : last.bet.refunded ? `SIDE BET BUSTED: YOUR MARKER COVERS ${Math.min(last.bet.stake, markerRefund(this.run!))}` : `SIDE BET BUSTED: -${last.bet.stake} CHIPS`, CX, 80, 2, last.bet.won ? COLORS.goldLight : '#ff8a7a');
     }
     this.drawMap(ctx, 158, time);
     const spoils = this.draftKind === 'spoils';
@@ -2148,9 +2059,8 @@ export class RunScreens {
       drawText(ctx, 'OR', CX, 353, 2.5, COLORS.goldLight);
     } else {
       this.drawEnemyPanel(ctx, e, CX - 330, 214, 660, time);
-      if (this.betOffer.length) this.drawBets(ctx, time);
     }
-    for (const b of this.buttons) if (!b.bet) this.drawButton(ctx, b, time);
+    for (const b of this.buttons) this.drawButton(ctx, b, time);
     if (this.mapTip) this.drawNodeTip(ctx, this.mapTip);
   }
 
@@ -2745,11 +2655,9 @@ export class RunScreens {
       }
       drawText(ctx, text, CX, ly, shown.length > 1 || text.length > 90 ? 1.5 : 2, color);
     });
-    // Chips left (a won run scores them) and the side bets' record.
-    const bets = run.records.filter((r) => r.bet);
-    const betLine = bets.length ? `  -  SIDE BETS ${bets.filter((r) => r.bet!.won).length} OF ${bets.length}` : '';
+    // Chips left (a won run scores them).
     const chipLine = `  -  ${run.player.chips} CHIPS${run.won && !run.endless ? ` (+${run.player.chips * CHIP_SCORE * (1 + 0.5 * run.stake)} SCORE)` : ''}`;
-    drawText(ctx, (run.stake > 0 ? `${reached}  -  STAKE ${run.stake} ${stakeOf(run.stake).name}` : reached) + chipLine + betLine, CX, 88, run.stake > 0 ? 1.5 : 2, COLORS.textDim);
+    drawText(ctx, (run.stake > 0 ? `${reached}  -  STAKE ${run.stake} ${stakeOf(run.stake).name}` : reached) + chipLine, CX, 88, run.stake > 0 ? 1.5 : 2, COLORS.textDim);
     const unlockRow = !!this.stakeUnlockedNow;
     if (unlockRow) {
       this.stakeChip(ctx, 340, 116, run.stake + 1, performance.now() / 1000, 14);

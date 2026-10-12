@@ -287,8 +287,6 @@ export interface SideConfig {
   chipsHeld?: number;
   /** Boss sizing: your real max HP (the sizing dummy's HP is huge, so %-of-max-HP relics read this instead). */
   sizeHp?: number;
-  /** The side bet on this fight (MIDAS cashes it mid-fight, into the vault). */
-  sideBet?: import('./bets').PlacedBet;
   /** HOUSE EDGE "HOUSE CUT": your healing multiplier. */
   healMul?: number;
   /** Relics this side carries. */
