@@ -1,8 +1,7 @@
 // Median measured machinePower at THE WHEEL, act 3 regulars and the Dealer (greedy, GREEN). npx tsx tools/sim/power_ref.ts [N]
 import { defaultConfig } from '../../src/core/config';
 import { CABINET_ORDER } from '../../src/core/cabinets';
-import { actLength } from '../../src/core/enemies';
-import { machinePower } from '../../src/core/run';
+import { isBossNext, machinePower } from '../../src/core/run';
 import { SIM_BIAS, simulateRuns } from '../../src/sim/simulateRun';
 
 const N = Number(process.argv[2] ?? 300);
@@ -11,8 +10,8 @@ const q = (a: number[], p: number) => [...a].sort((x, y) => x - y)[Math.floor(a.
 for (const cab of (process.argv[3] ? [process.argv[3]] : CABINET_ORDER) as typeof CABINET_ORDER) {
   const m: number[] = [], a3: number[] = [], d: number[] = [];
   SIM_BIAS.onFight = (run) => {
-    if (run.act === 2 && run.depth === actLength(2)) m.push(machinePower(run));
-    else if (run.act === 3 && run.depth < actLength(3)) a3.push(machinePower(run));
+    if (run.act === 2 && isBossNext(run)) m.push(machinePower(run));
+    else if (run.act === 3 && !isBossNext(run)) a3.push(machinePower(run));
     else if (run.act === 3) d.push(machinePower(run));
   };
   simulateRuns(defaultConfig(), N, 'greedy', 4242, cab, 2, true);

@@ -2,6 +2,7 @@ import { UNIT, unitsRound, type AbilityDef, type SideConfig, type StripCounts, t
 import { POT } from './relics';
 import type { Rng } from './rng';
 import type { CabinetId } from './cabinets';
+import { ENCOUNTER_IDS } from './encounters';
 
 /** An enemy template. Every enemy writes something onto the player's machine. */
 export interface Archetype {
@@ -388,55 +389,96 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
   };
 }
 
-/** Fights 2–4 offer a fork: pick which of two enemies to face. */
-export const BRANCH_DEPTHS = new Set([1, 2, 3]);
+// ---- the act map (2026-10-12): pick a path, not an enemy ----------------------------------
+
+/** A stop on an act's map. FIGHT pays a draft and chips, ELITE a relic pick, SHOP is the Cashier, ENCOUNTER a gamble. */
+export type StopKind = 'fight' | 'elite' | 'shop' | 'encounter';
+export interface Stop {
+  kind: StopKind;
+  /** FIGHT / ELITE: who you face. */
+  enemy?: EnemyDef;
+  /** ENCOUNTER: which one (src/core/encounters.ts). */
+  encounter?: string;
+}
+/**
+ * An act: a shared opener fight, then you pick ONE of the routes (every stop shown up front), then the routes rejoin
+ * at the Cashier (acts 1-3) and the boss. Endless loops have a single route.
+ */
+export interface ActMap {
+  opener: EnemyDef;
+  routes: Stop[][];
+  shopBeforeBoss: boolean;
+  boss: EnemyDef;
+}
 
 /**
- * The run's map: per depth, the enemy options (1, or 2 at a fork), then the boss. Options at a
- * depth never repeat an archetype offered at the previous depth; the opener is always gentle.
+ * Route shapes for acts 1-3 (5 stops): F fight, E elite, S Cashier, ? encounter. Three different shapes are dealt
+ * per act, and never all with the same number of elites: a path is judged against YOUR run (your HP, your chips,
+ * who's on it), not ranked greedy-to-safe.
  */
-export function generateRunPaths(rng: Rng, act = 1, loop = 1, cabinet?: CabinetId): EnemyDef[][] {
-  const out: EnemyDef[][] = [];
-  let prev = new Set<string>();
-  // ENDLESS (act 4): regulars from acts 2 and 3. An archetype for certain slot machines only skips the rest.
+export const ROUTE_SHAPES = ['FE?FE', 'F?SF?', 'FES?F', '?FEFS', 'FF?E?', 'EFSF?', 'F?FSE', '?FFEF', 'FS?EF', 'F?E?F'];
+/** Endless loops: one route (3 fights and a Cashier, then the boss). */
+const ENDLESS_SHAPE = 'FSF';
+export const ROUTES_PER_ACT = 3;
+/** Elites hit this much harder than their regular selves (on top of their HP bump). */
+export const ELITE_DMG_MUL = 1.25;
+/** An act's regular HP curve has 5 steps after the opener; a route's stop i sits on step 1 + i*(len-1)/routeLen. */
+const routeDepth = (i: number, routeLen: number, act: number) => Math.min(actLength(act) - 1, 1 + Math.floor((i * (actLength(act) - 1)) / routeLen));
+
+
+/** The act's map (deterministic for a seed). */
+export function generateActMap(rng: Rng, act = 1, loop = 1, cabinet?: CabinetId): ActMap {
   const meets = (a: Archetype) => !a.only || (!!cabinet && a.only.includes(cabinet));
+  // ENDLESS (act 4): regulars from acts 2 and 3.
   const inAct = (act >= 4 ? ARCHETYPES.filter((a) => actsOf(a).some((x) => x >= 2)) : ARCHETYPES.filter((a) => actsOf(a).includes(act))).filter(meets);
-  const len = actLength(act);
-  for (let depth = 0; depth < len; depth++) {
-    // THE GATEKEEPER holds fight 4 of acts 1-2 (not act 3, not endless).
-    if (depth === GATEKEEPER.depth && act <= GATEKEEPER.acts) {
-      out.push([makeEnemy(REPO_MAN, depth, rng, false, act)]);
-      prev = new Set([REPO_MAN.id]);
-      continue;
-    }
-    let pool = inAct.filter((a) => a.minDepth <= depth && !prev.has(a.id));
-    if (depth === 0 && act < 4) pool = act === 1 ? inAct.filter((a) => a.id === 'slime' || a.id === 'frost') : act === 2 ? inAct.filter((a) => ACT2_NEW.has(a.id) && a.minDepth === 0) : inAct.filter((a) => ACT3_NEW.has(a.id));
-    if (pool.length === 0) pool = inAct.filter((a) => a.minDepth <= depth);
-    const branch = BRANCH_DEPTHS.has(depth);
-    const n = branch ? Math.min(2, pool.length) : 1;
-    let picks = rng.shuffle([...pool]).slice(0, n);
-    // Act 2 forks always show at least one of the new faces.
-    // Act 2 and 3 forks always show at least one of the act's new faces.
-    const NEW = act === 3 ? ACT3_NEW : ACT2_NEW;
-    if (act >= 2 && act < 4 && !picks.some((a) => NEW.has(a.id))) {
-      const fresh = pool.filter((a) => NEW.has(a.id));
-      if (fresh.length) picks = [rng.pick(fresh), ...picks].slice(0, n);
-    }
-    const opts = picks.map((a) => makeEnemy(a, depth, rng, false, act));
-    if (opts.length > 1) {
-      // The more dangerous option is the ELITE: tougher, but it pays a relic.
-      const elite = opts.reduce((a, b) => ((DANGER[b.archetype] ?? 0) > (DANGER[a.archetype] ?? 0) ? b : a));
-      elite.elite = true;
-      // The elite thief is already the deadliest node: a lighter bump.
-      // Act 2 elites are much tougher (they pay spoils and chips; ITERATION_7: always-elite was +11).
-      elite.hp = unitsRound(elite.hp * (act > 1 ? ELITE_HP_MUL_2 : elite.archetype === 'thief' ? 1.15 : ELITE_HP_MUL));
-      elite.name = `ELITE ${elite.name}`.replace(/^ELITE (\w+) /, 'ELITE ');
-    }
-    out.push(opts);
-    prev = new Set(picks.map((a) => a.id));
-  }
+  // THE REPO MAN joins the act 1-2 pool as a regular (he used to hold fight 4 of every act).
+  const pool = act <= GATEKEEPER.acts ? [...inAct, REPO_MAN] : inAct;
+  const NEW = act === 3 ? ACT3_NEW : ACT2_NEW;
+  // The opener is always gentle: act 1's slime or frost imp; acts 2-3 open on one of the act's new faces.
+  const openers = act === 1 ? inAct.filter((a) => a.id === 'slime' || a.id === 'frost') : act < 4 ? inAct.filter((a) => NEW.has(a.id) && a.minDepth === 0) : inAct;
+  const openerArch = rng.pick(openers.length ? openers : inAct);
+  const opener = makeEnemy(openerArch, 0, rng, false, act);
+  const shapes = act >= 4 ? [ENDLESS_SHAPE] : dealShapes(rng);
+  const routes = shapes.map((shape) => {
+    let prev = openerArch.id;
+    const seen = new Set<string>();
+    let sawNew = false;
+    return [...shape].map((ch, i): Stop => {
+      if (ch === 'S') return { kind: 'shop' };
+      if (ch === '?') return { kind: 'encounter', encounter: rng.pick(ENCOUNTER_IDS) };
+      const depth = routeDepth(i, shape.length, act);
+      let options = pool.filter((a) => a.minDepth <= depth && a.id !== prev && !seen.has(a.id));
+      // Acts 2-3: a route's first fight is one of the act's new faces.
+      if (act >= 2 && act < 4 && !sawNew) {
+        const fresh = options.filter((a) => NEW.has(a.id));
+        if (fresh.length) options = fresh;
+      }
+      if (!options.length) options = pool.filter((a) => a.minDepth <= depth && a.id !== prev);
+      const a = rng.pick(options.length ? options : inAct);
+      prev = a.id;
+      seen.add(a.id);
+      sawNew ||= NEW.has(a.id);
+      const enemy = makeEnemy(a, depth, rng, false, act);
+      if (ch !== 'E') return { kind: 'fight', enemy };
+      enemy.elite = true;
+      // The elite thief is already the deadliest regular: a lighter bump.
+      enemy.hp = unitsRound(enemy.hp * (act > 1 ? ELITE_HP_MUL_2 : a.id === 'thief' ? 1.15 : ELITE_HP_MUL));
+      enemy.name = `ELITE ${enemy.name}`.replace(/^ELITE (\w+) /, 'ELITE ');
+      return { kind: 'elite', enemy };
+    });
+  });
   // ENDLESS: the boss cycles THE HOUSE -> THE WHEEL -> THE DEALER.
-  const boss = act >= 4 ? [BOSS, WHEEL, DEALER][(Math.max(1, loop) - 1) % 3] : (BOSSES[act] ?? BOSS);
-  out.push([makeEnemy(boss, len, rng, true, act)]);
-  return out;
+  const bossArch = act >= 4 ? [BOSS, WHEEL, DEALER][(Math.max(1, loop) - 1) % 3] : (BOSSES[act] ?? BOSS);
+  const boss = makeEnemy(bossArch, actLength(act), rng, true, act);
+  return { opener, routes, shopBeforeBoss: act < 4, boss };
+}
+
+/** Three different route shapes whose elite counts aren't all the same. */
+function dealShapes(rng: Rng): string[] {
+  const elites = (s: string) => [...s].filter((c) => c === 'E').length;
+  for (let guard = 0; guard < 50; guard++) {
+    const picks = rng.shuffle([...ROUTE_SHAPES]).slice(0, ROUTES_PER_ACT);
+    if (new Set(picks.map(elites)).size > 1) return picks;
+  }
+  return ROUTE_SHAPES.slice(0, ROUTES_PER_ACT);
 }

@@ -8,14 +8,12 @@ import { effectiveSymbol } from '../src/core/strip';
 const base = defaultConfig();
 
 describe('package H', () => {
-  it('every fork has exactly one elite, with boosted HP', () => {
+  it('elite stops are named ELITE and have boosted HP; the opener and the boss never are', () => {
     for (let s = 0; s < 50; s++) {
       const run = createRun(base, s);
-      for (const opts of run.paths) {
-        const elites = opts.filter((e) => e.elite);
-        expect(elites.length).toBe(opts.length > 1 ? 1 : 0);
-        if (elites[0]) expect(elites[0].name?.startsWith('ELITE ')).toBe(true);
-      }
+      expect(run.map.opener.elite).toBeFalsy();
+      expect(run.map.boss.elite).toBeFalsy();
+      for (const st of run.map.routes.flat().filter((x) => x.kind === 'elite')) expect(st.enemy!.name?.startsWith('ELITE ')).toBe(true);
     }
     expect(ELITE_HP_MUL).toBeGreaterThan(1);
   });

@@ -1,7 +1,7 @@
 # Slots vs. Slots
 
 An 8-bit roguelike where two slot machines fight. You don't aim, hold or nudge: the reels decide each fight, and
-the enemy cheats by writing on your machine. Your choices come between fights: which enemy to take at a fork,
+the enemy cheats by writing on your machine. Your choices come between fights: which path to take through an act,
 which card to draft, what to buy at the Cashier, and which Charms and relics to build around.
 
 **Play:** https://insanitywolfz.github.io/SlotsVsSlots/

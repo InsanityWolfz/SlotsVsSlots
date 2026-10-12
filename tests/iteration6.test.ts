@@ -1,7 +1,7 @@
 import { ACT2_NEW } from '../src/core/enemies';
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type SymbolId } from '../src/core/config';
-import { ARCHETYPES, generateRunPaths, RUN_FIGHTS, TUNE, WHEEL } from '../src/core/enemies';
+import { ARCHETYPES, generateActMap, TUNE, WHEEL } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { BOMB, LEGENDARY, SANDGLASS_SLOW } from '../src/core/relics';
@@ -21,7 +21,8 @@ import {
   shopOffers,
   stripStats,
   takeLegend,
-  TOTAL_FIGHTS,
+  skipToBoss,
+  currentEnemy,
 } from '../src/core/run';
 
 const base = defaultConfig();
@@ -224,7 +225,7 @@ describe('legendary relics', () => {
 describe('act structure', () => {
   it('beating the House starts act 2: new map, full heal, a legendary pick and the Cashier', () => {
     const run = createRun(base, 21);
-    run.depth = RUN_FIGHTS;
+    skipToBoss(run);
     run.player.hp = 5;
     const f = new Fight(fightConfig(run, base), 3);
     f.winner = 'player';
@@ -242,19 +243,18 @@ describe('act structure', () => {
     expect(shelf.some((i) => i.option.kind === 'relic' && LEGENDARY.has(i.option.relic) && i.price === CHIPS.prices.legend)).toBe(true);
     leaveShop(run);
     expect(isShopNow(run)).toBe(false);
-    // The act 2 map ends with THE WHEEL and shows new faces at every fork.
-    expect(run.paths[RUN_FIGHTS][0].boss).toBe('wheel');
-    // (fight 4 is THE GATEKEEPER, the REPO MAN)
-    expect(run.paths.slice(0, RUN_FIGHTS).every((opts) => opts.some((e) => ACT2_NEW.has(e.archetype) || e.archetype === 'repo'))).toBe(true);
-    expect(TOTAL_FIGHTS).toBe(12);
+    // The act 2 map ends with THE WHEEL; it opens on a new face, and every route meets one.
+    expect(run.map.boss.boss).toBe('wheel');
+    expect(ACT2_NEW.has(run.map.opener.archetype)).toBe(true);
+    for (const route of run.map.routes) expect(route.some((st) => st.enemy && ACT2_NEW.has(st.enemy.archetype))).toBe(true);
   });
 
   it('beating THE WHEEL wins the run (WHITE)', () => {
     const run = createRun(base, 22);
     run.act = 2;
-    run.paths = generateRunPaths(new Rng(4), 2);
-    run.enemies = run.paths.map((o) => o[0]);
-    run.depth = RUN_FIGHTS;
+    run.map = generateActMap(new Rng(4), 2);
+    run.route = null;
+    skipToBoss(run);
     const f = new Fight(fightConfig(run, base), 3);
     f.winner = 'player';
     finishFight(run, f);
@@ -264,14 +264,14 @@ describe('act structure', () => {
   it('THE WHEEL plays its own reels (swords, shields, sevens, BALLS) and is sized to your machine; it SPINS FASTER at half HP', () => {
     const run = createRun(base, 23, 'midas');
     run.act = 2;
-    run.paths = generateRunPaths(new Rng(5), 2);
-    run.enemies = run.paths.map((o) => o[0]);
-    run.depth = RUN_FIGHTS;
+    run.map = generateActMap(new Rng(5), 2);
+    run.route = null;
+    skipToBoss(run);
     run.player.relics = ['battery', 'fang'];
     const cfg = fightConfig(run, base);
     expect(cfg.enemy.strips.every((st) => (st.ball ?? 0) > 0)).toBe(true);
     expect(cfg.enemy.gilded ?? []).toEqual([]);
-    expect(cfg.enemy.hp).toBe(enemyHp(run, run.enemies[RUN_FIGHTS]));
+    expect(cfg.enemy.hp).toBe(enemyHp(run, currentEnemy(run)));
     expect(cfg.enemy.hp).toBe(Math.round((TUNE.wheelPower * BOSS_MUL.midas.wheel * sizingPower(run, 'wheel')) / 10) * 10 + TUNE.wheelFlat + TUNE.bossPerRelic * run.player.relics.length);
     expect(cfg.enemy.ability).toEqual(WHEEL.ability);
 
@@ -284,7 +284,8 @@ describe('act structure', () => {
 
   it('act 2 archetypes exist with art ids and only appear in act 2', () => {
     for (const id of ['bomber', 'hexer', 'vampire', 'mimic']) expect(ARCHETYPES.find((a) => a.id === id)?.acts).toEqual([2]);
-    const act1 = generateRunPaths(new Rng(1), 1).flat().map((e) => e.archetype);
+    const m = generateActMap(new Rng(1), 1);
+    const act1 = [m.opener, ...m.routes.flat().map((st) => st.enemy).filter((e) => !!e)].map((e) => e!.archetype);
     expect(act1.some((a) => ['bomber', 'hexer', 'vampire', 'mimic'].includes(a))).toBe(false);
   });
 });

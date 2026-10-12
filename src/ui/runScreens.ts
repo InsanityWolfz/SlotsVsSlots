@@ -4,7 +4,8 @@ import { challengeById, levelOf } from '../core/meta';
 import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../core/config';
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
-import { actLength, ELITE_HP_MUL, ELITE_HP_MUL_2, WHEEL_RULES, wheelChipShare, type EnemyDef } from '../core/enemies';
+import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, WHEEL_RULES, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
+import { encounterOf, type EncounterResult } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -16,7 +17,11 @@ import {
   describeOption,
   enemyHp,
   isRelicDraft,
-  needsChoice,
+  needsRoute,
+  currentEnemy,
+  currentStop,
+  isBossNext,
+  actStops,
   EDGE_TEXT,
   rerollCost,
   runActs,
@@ -46,7 +51,7 @@ import { dailyShare } from '../core/daily';
 import { RelicTips } from './relicTip';
 
 
-export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus' | 'choice';
+export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus' | 'choice' | 'encounter';
 
 /** A lien in a few words ("GOLD SWORD R1"). */
 
@@ -113,6 +118,11 @@ const INPUT_GUARD_MS = 250;
 const TRACK = { x0: W / 2 - 165, dx: 66, y: 640 };
 /** YOUR BUILD: a fixed column on the left of every run screen (screens lay out to its right, around CX). */
 export const BUILD = { x: 16, y: 16, w: 284, h: H - 32 };
+/** CHOOSE YOUR PATH: the opener, the lanes (their stops' x, each lane's centre y and height), the Cashier, the boss. */
+const ROUTES = { opener: 370, x0: 500, gap: 104, y: [170, 320, 470], lane: 120, shop: 1080, boss: 1196 };
+const ROUTE_STOPS = 5;
+/** A map node's tip: an enemy's mini card, or a stop's name and line. */
+type MapTip = { e?: EnemyDef; title?: string; sub?: string; x: number; y: number };
 /** The middle of the space right of YOUR BUILD: run screens center on it. */
 const CX = (BUILD.x + BUILD.w + 12 + W) / 2;
 /** Your chips: the same spot in the fights (game.ts draws them there too). */
@@ -265,7 +275,14 @@ export class RunScreens {
   private lvPunch = new Map<string, number>();
   private lvRun: RunState | null = null;
   /** The map node under the pointer (its tip is drawn over everything on the screen). */
-  private mapTip: { e: EnemyDef; x: number; y: number } | null = null;
+  private mapTip: MapTip | null = null;
+  /** The route the player has tapped on the path pick (-1: none yet), and the one under the pointer. */
+  private routeSel = -1;
+  /** ENCOUNTER: how it went (null until a choice is played), and its reveal (0..1: the pull's reels land in turn). */
+  private encResult: EncounterResult | null = null;
+  private encT = 1;
+  /** The encounter on show (the run has moved past its stop once it's played). */
+  private encId: string | undefined;
   /** Shop purchases in flight to YOUR BUILD. */
   private flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   private picked = -1;
@@ -300,7 +317,13 @@ export class RunScreens {
       onLegend: (relic: RelicId) => void;
       /** A BIG CHOICE was taken after a boss. */
       onChoice: (c: BigChoice) => void;
-      onFight: (option: number) => void;
+      onFight: () => void;
+      /** The opener is done: take route `i` of the act's map. */
+      onRoute: (i: number) => void;
+      /** Play encounter choice `i` (the run applies it; the screen shows how it went). */
+      onEncounter: (i: number) => EncounterResult | null;
+      /** The encounter's result was seen: on along the map. */
+      onEncounterDone: () => void;
       onNewRun: () => void;
       onMenu: () => void;
       /** ENDLESS: keep going after the Dealer. */
@@ -1166,14 +1189,66 @@ export class RunScreens {
   showNext(run: RunState): void {
     this.run = run;
     this.open('next');
+    if (needsRoute(run)) return this.showRoutes(run);
     this.enemyEntrance(run);
-    if (needsChoice(run)) {
-      this.buttons = run.paths[run.depth].map((_, i) => this.btn('FIGHT THIS ONE', CX + (i === 0 ? -238 : 238), 560, 260, 48, () => this.cb.onFight(i)));
-    } else {
-      const bossId = run.enemies[run.depth]?.boss;
-      const boss = run.depth >= actLength(run.act) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'wheel' ? 'FACE THE WHEEL' : 'FACE THE HOUSE') : 'FIGHT!';
-      this.buttons = [this.btn(boss, CX, 560, boss === 'FIGHT!' ? 290 : 360, 56, () => this.cb.onFight(0))];
-    }
+    const bossId = currentEnemy(run)?.boss;
+    const boss = isBossNext(run) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'wheel' ? 'FACE THE WHEEL' : 'FACE THE HOUSE') : 'FIGHT!';
+    this.buttons = [this.btn(boss, CX, 560, boss === 'FIGHT!' ? 290 : 360, 56, () => this.cb.onFight())];
+  }
+
+  /** CHOOSE YOUR PATH: the act's routes as lanes (every stop shown). Tap a lane, then take it. */
+  private showRoutes(run: RunState): void {
+    this.routeSel = -1;
+    this.cards = run.map.routes.map((_, i) => {
+      const h = this.hit(ROUTES.x0 + ((ROUTE_STOPS - 1) * ROUTES.gap) / 2, ROUTES.y[i], ROUTE_STOPS * ROUTES.gap + 40, ROUTES.lane, () => {
+        this.routeSel = i;
+        take.enabled = true;
+        take.label = `TAKE PATH ${i + 1}`;
+      });
+      h.scale = 1;
+      return h;
+    });
+    const take = this.btn('PICK A PATH', CX, 588, 360, 52, () => this.routeSel >= 0 && this.cb.onRoute(this.routeSel));
+    take.enabled = false;
+    this.buttons = [take];
+  }
+
+  /** An ENCOUNTER stop: the gamble's choices, then how it went. */
+  showEncounter(run: RunState): void {
+    this.run = run;
+    this.open('encounter');
+    this.encResult = null;
+    this.encT = 1;
+    this.encId = currentStop(run)?.encounter;
+    const def = encounterOf(this.encId);
+    const choices = def.choices(run);
+    const w = 320;
+    const gap = 360;
+    this.buttons = choices.map((c, i) => {
+      const x = CX + (i - (choices.length - 1) / 2) * gap;
+      const b = i === choices.length - 1 ? this.minorBtn(c.label, x, 520, w, 56, () => this.playEncounter(i)) : this.btn(c.label, x, 520, w, 56, () => this.playEncounter(i));
+      b.enabled = !c.disabled;
+      return b;
+    });
+  }
+
+  private playEncounter(i: number): void {
+    const res = this.cb.onEncounter(i);
+    if (!res) return;
+    this.encResult = res;
+    this.buttons = [this.btn('CONTINUE', CX, 588, 300, 52, () => this.cb.onEncounterDone())];
+    const land = res.reels ? 3 : 0;
+    this.encT = 0;
+    void this.ui.tween({ from: 0, to: 1, dur: land ? 1.1 : 0.25, onUpdate: (v) => (this.encT = v) });
+    for (let k = 0; k < land; k++) void this.ui.wait(0.35 + k * 0.3).then(() => this.sounds.reelStop(k));
+    void this.ui.wait(land ? 1.1 : 0.15).then(() => {
+      if (res.good === true) {
+        this.sounds.coin(6);
+        this.sounds.coin(11);
+        if (res.reels && new Set(res.reels).size === 1) this.sounds.fanfareJackpot();
+      } else if (res.good === false) this.sounds.fizzle();
+      else this.sounds.click();
+    });
   }
 
   /** The headliner card arrives: it rises in, the portrait lands, the skulls pop one by one, the pips fill. */
@@ -1187,12 +1262,12 @@ export class RunScreens {
     this.lastPip = 1;
     void this.ui.tween({ from: 0, to: 1, dur: 0.3, ease: backOut(2), onUpdate: (v) => (this.panelIn = v) });
     void this.ui.wait(0.12).then(() => this.ui.tween({ from: 1.25, to: 1, dur: 0.18, ease: backOut(2), onUpdate: (v) => (this.portraitPop = v) }));
-    const e = run.enemies[run.depth];
-    const pips = needsChoice(run) ? 3 : this.dangerOf(e);
+    const e = currentEnemy(run);
+    const pips = this.dangerOf(e);
     for (let k = 0; k < 3; k++)
       void this.ui.wait(0.2 + k * 0.08).then(() => {
         if (k < pips) {
-          if (k === 2 && e.isBoss && !needsChoice(run)) this.sounds.stingerMedium();
+          if (k === 2 && e.isBoss) this.sounds.stingerMedium();
           else this.sounds.click();
         }
         return this.ui.tween({ from: 0, to: 1, dur: 0.22, ease: backOut(3), onUpdate: (v) => (this.skullPop[k] = v) });
@@ -1279,7 +1354,7 @@ export class RunScreens {
       this.rideOffer = true;
     }
     // THE DAILY RUN: a line to share, and a button that copies it.
-    this.shareLine = run.daily ? dailyShare(run.daily, CABINETS[run.cabinet].hero, run.dailyEdge ? EDGE_TEXT[run.dailyEdge].title : '-', runScore(runEntry(run, 0)), run.records, actLength) : '';
+    this.shareLine = run.daily ? dailyShare(run.daily, CABINETS[run.cabinet].hero, run.dailyEdge ? EDGE_TEXT[run.dailyEdge].title : '-', runScore(runEntry(run, 0)), run.records) : '';
     this.openResults();
   }
   /** THE DAILY RUN: the finished run's share line. */
@@ -1372,12 +1447,9 @@ export class RunScreens {
   navTargets(): { x: number; y: number; w: number; h: number }[] {
     if (!this.active || performance.now() - this.openedAt < INPUT_GUARD_MS) return [];
     const out: { x: number; y: number; w: number; h: number }[] = [...this.all().filter((h) => h.enabled), ...(this.mode !== 'cabinet' && this.mode !== 'bonus' ? this.relicRects : [])];
-    if (this.mode === 'next' && this.run) {
-      const fork = needsChoice(this.run);
-      const xs = fork ? [CX - 464, CX + 12] : [CX - 330];
-      const y0 = fork ? 222 : 214;
-      const cw = fork ? 452 : 660;
-      for (const px of xs) out.push({ x: px + cw - FLIP_TAB.w / 2 - 8, y: y0 + 260 - FLIP_TAB.h / 2 - 8, w: FLIP_TAB.w + 16, h: FLIP_TAB.h + 16 });
+    if (this.mode === 'next' && this.run && !needsRoute(this.run)) {
+      const px = CX - 330;
+      out.push({ x: px + 660 - FLIP_TAB.w / 2 - 8, y: 214 + 260 - FLIP_TAB.h / 2 - 8, w: FLIP_TAB.w + 16, h: FLIP_TAB.h + 16 });
     }
     return out;
   }
@@ -1412,14 +1484,10 @@ export class RunScreens {
     if (performance.now() - this.openedAt < INPUT_GUARD_MS) return this.active;
     const h = this.all().find((h) => this.inside(h, x, y));
     // Only the card's "?" tab flips it (picking is the FIGHT button): one spot per action, so taps never mix them up.
-    if (!h && this.mode === 'next' && this.run) {
-      const fork = needsChoice(this.run);
-      const xs = fork ? [CX - 464, CX + 12] : [CX - 330];
-      const y0 = fork ? 222 : 214;
-      const cw = fork ? 452 : 660;
-      const hitX = xs.find((px) => x >= px + cw - FLIP_TAB.w - 16 && x <= px + cw && y >= y0 + 260 - FLIP_TAB.h - 16 && y <= y0 + 260);
-      if (hitX !== undefined) {
-        this.pinned = this.pinned === hitX ? -1 : hitX;
+    if (!h && this.mode === 'next' && this.run && !needsRoute(this.run)) {
+      const px = CX - 330;
+      if (x >= px + 660 - FLIP_TAB.w - 16 && x <= px + 660 && y >= 214 + 260 - FLIP_TAB.h - 16 && y <= 214 + 260) {
+        this.pinned = this.pinned === px ? -1 : px;
         this.sounds.click();
         return true;
       }
@@ -1462,6 +1530,7 @@ export class RunScreens {
     else if (this.mode === 'cabinet') this.drawCabinets(ctx, time);
     else if (this.mode === 'bonus') this.drawBonus(ctx, time);
     else if (this.mode === 'choice') this.drawChoice(ctx, time);
+    else if (this.mode === 'encounter') this.drawEncounter(ctx, time);
     else this.drawOver(ctx);
     // YOUR BUILD: one fixed panel at the bottom of every between-fights screen.
     if (this.run && this.mode !== 'cabinet' && this.mode !== 'bonus') this.drawBuild(ctx);
@@ -1486,67 +1555,80 @@ export class RunScreens {
     ctx.fillRect(x, y, w, h);
   }
 
-  /** The run as a path of nodes (forks stacked) with portraits and writer badges. */
+  /** The act as a strip of stops (the opener, your route, the Cashier, the boss); a "?" holds the route until it's picked. */
   private drawMap(ctx: CanvasRenderingContext2D, y: number, time: number): void {
     const run = this.run!;
-    const n = run.paths.length;
-    const gap = Math.min(150, 880 / Math.max(1, n - 1));
+    const stops: (Stop | null)[] = actStops(run);
+    if (needsRoute(run) || (run.route === null && run.map.routes.length > 1)) stops.splice(1, 0, null);
+    const n = stops.length;
+    const gap = Math.min(130, 880 / Math.max(1, n - 1));
     const x0 = CX - ((n - 1) * gap) / 2;
+    const here = needsRoute(run) ? 1 : run.stop;
     ctx.fillStyle = '#3a2e52';
     ctx.fillRect(x0, y - 2, (n - 1) * gap, 4);
     ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(x0, y - 2, Math.min(run.depth, n - 1) * gap, 4);
-    // Hovering a node shows who it is (deep planners can read the whole act; nobody has to).
-    let tip: { e: EnemyDef; x: number; y: number } | null = null;
-    run.paths.forEach((opts, i) => {
+    ctx.fillRect(x0, y - 2, Math.min(here, n - 1) * gap, 4);
+    let tip: MapTip | null = null;
+    stops.forEach((st, i) => {
       const x = x0 + i * gap;
-      const done = i < run.depth;
-      const here = i === run.depth;
-      const fork = opts.length > 1;
-      if (fork) drawSprite(ctx, 'mapFork', x - 44, y, 2);
-      opts.forEach((e, k) => {
-        const ny = fork ? y + (k === 0 ? -30 : 30) : y;
-        const chosen = run.chosen[i] && run.enemies[i] === e;
-        const faded = fork && run.chosen[i] && !chosen;
-        const s = fork ? 22 : 28;
-        ctx.fillStyle = COLORS.outline;
-        ctx.fillRect(x - s, ny - s, s * 2, s * 2);
-        ctx.fillStyle = e.isBoss ? '#5a1a10' : here && !faded ? '#3a2a14' : COLORS.panelLight;
-        ctx.fillRect(x - s + 3, ny - s + 3, s * 2 - 6, s * 2 - 6);
-        drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, x, ny, fork ? 1.5 : 2, { dim: done || faded ? 0.65 : 0 });
-        const badge = BADGE[e.archetype];
-        if (badge) drawSprite(ctx, badge, x + s - 2, ny + s - 4, 2, { alpha: faded ? 0.4 : 1 });
-        if (e.elite) drawSprite(ctx, 'mapBadgeElite', x - s + 4, ny - s + 4, 2, { alpha: faded ? 0.4 : 1 });
-        if (done && chosen) drawSprite(ctx, 'nodeDone', x - s + 6, ny + s - 6, 2);
-        if (Math.abs(this.mouse.x - x) <= s && Math.abs(this.mouse.y - ny) <= s) tip = { e, x, y: ny + s };
-      });
-      if (here) drawSprite(ctx, 'nodeHere', x, y - (fork ? 70 : 44) + Math.sin(time * 6) * 4, 2);
-      if (opts[0].isBoss) drawSprite(ctx, 'nodeBoss', x, y - 38, 2);
-      drawText(ctx, opts[0].isBoss ? 'BOSS' : `${i + 1}`, x, y + (fork ? 64 : 42), 2, here ? COLORS.goldLight : done ? '#6a6078' : COLORS.textDim);
+      const t = this.drawStop(ctx, st, x, y, 26, { done: i < here, here: i === here });
+      tip ??= t;
+      if (i === here) drawSprite(ctx, 'nodeHere', x, y - 44 + Math.sin(time * 6) * 4, 2);
+      if (st?.enemy?.isBoss) drawSprite(ctx, 'nodeBoss', x, y - 38, 2);
     });
-    // Drawn last by drawNext (over the enemy card).
+    // Drawn last by the screen (over its cards).
     this.mapTip = tip;
   }
 
-  /** A map node's mini card: name, then its ability icon and name. */
-  private drawNodeTip(ctx: CanvasRenderingContext2D, t: { e: EnemyDef; x: number; y: number }): void {
-    const name = t.e.name ?? 'ENEMY';
-    const ab = t.e.ability ? ABILITY_UI[t.e.ability.kind] : null;
-    const w = Math.max(name.length * 12, ab ? ab.label.length * 9 + 30 : 0) + 24;
-    const h = ab ? 52 : 32;
+  /** One stop's node: a portrait (fights), the Cashier, a "?" ticket (encounters), or the unpicked route. Returns its tip when hovered. */
+  private drawStop(ctx: CanvasRenderingContext2D, st: Stop | null, x: number, y: number, s: number, o: { done?: boolean; here?: boolean; faded?: boolean } = {}): MapTip | null {
+    const e = st?.enemy;
+    const dim = o.done || o.faded ? 0.65 : 0;
+    // Elites wear an orange frame (the crown badge alone was easy to miss).
+    ctx.fillStyle = st?.kind === 'elite' && !o.faded ? '#ff9a3a' : COLORS.outline;
+    ctx.fillRect(x - s, y - s, s * 2, s * 2);
+    ctx.fillStyle = e?.isBoss ? '#5a1a10' : st?.kind === 'elite' ? '#4a2410' : st?.kind === 'encounter' ? '#3a1a4a' : st?.kind === 'shop' ? '#1e3a24' : o.here ? '#3a2a14' : COLORS.panelLight;
+    ctx.fillRect(x - s + 3, y - s + 3, s * 2 - 6, s * 2 - 6);
+    const k = s / 26;
+    if (e) {
+      drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, x, y, 2 * k, { dim });
+      const badge = BADGE[e.archetype];
+      if (badge) drawSprite(ctx, badge, x + s - 2, y + s - 4, 2 * k, { alpha: o.faded ? 0.4 : 1 });
+      if (e.elite) drawSprite(ctx, 'mapBadgeElite', x - s + 4, y - s + 4, 2 * k, { alpha: o.faded ? 0.4 : 1 });
+    } else if (st?.kind === 'shop') drawSprite(ctx, 'cashierPortrait', x, y, 1.8 * k, { dim });
+    else drawText(ctx, '?', x, y + 1, 3 * k, st ? '#e8b0ff' : COLORS.goldLight, { alpha: o.done || o.faded ? 0.5 : 1 });
+    if (o.done && e) drawSprite(ctx, 'nodeDone', x - s + 6, y + s - 6, 2 * k);
+    if (Math.abs(this.mouse.x - x) > s || Math.abs(this.mouse.y - y) > s) return null;
+    if (e) return { e, x, y: y + s };
+    if (st?.kind === 'shop') return { title: 'THE CASHIER', sub: 'SPEND YOUR CHIPS', x, y: y + s };
+    if (st?.kind === 'encounter') {
+      const def = encounterOf(st.encounter);
+      return { title: def.name, sub: def.blurb, x, y: y + s };
+    }
+    return { title: 'CHOOSE YOUR PATH', sub: 'AFTER THIS FIGHT', x, y: y + s };
+  }
+
+  /** A map node's mini card: name, then its ability icon and name (or a stop's name and line). */
+  private drawNodeTip(ctx: CanvasRenderingContext2D, t: MapTip): void {
+    const name = t.e ? (t.e.name ?? 'ENEMY') : (t.title ?? '');
+    const ab = t.e?.ability ? ABILITY_UI[t.e.ability.kind] : null;
+    const sub = t.e ? (ab?.label ?? '') : (t.sub ?? '');
+    const w = Math.max(name.length * 12, sub ? sub.length * 9 + (ab ? 30 : 0) : 0) + 24;
+    const h = sub ? 52 : 32;
     const x = Math.max(BUILD.x + BUILD.w + 12, Math.min(W - w - 8, t.x - w / 2));
     const y = t.y + 10;
+    const edge = t.e?.isBoss ? '#ff6a5a' : t.e?.elite ? '#ff9a3a' : COLORS.gold;
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
-    ctx.fillStyle = t.e.isBoss ? '#ff6a5a' : t.e.elite ? '#ff9a3a' : COLORS.gold;
+    ctx.fillStyle = edge;
     ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
     ctx.fillStyle = COLORS.panel;
     ctx.fillRect(x, y, w, h);
-    drawText(ctx, name, x + 12, y + 16, 2, t.e.isBoss ? '#ff6a5a' : COLORS.slime, { align: 'left' });
+    drawText(ctx, name, x + 12, y + 16, 2, t.e?.isBoss ? '#ff6a5a' : t.e ? COLORS.slime : COLORS.goldLight, { align: 'left' });
     if (ab) {
       drawSprite(ctx, ab.icon, x + 20, y + 38, 1.5);
       drawText(ctx, ab.label, x + 34, y + 38, 1.5, '#ff9a3a', { align: 'left' });
-    }
+    } else if (sub) drawText(ctx, sub, x + 12, y + 38, 1.5, COLORS.textDim, { align: 'left' });
   }
 
   /** YOUR BUILD: a fixed column on the left of every run screen. Chips (top-left, where the fights show them too), you,
@@ -1994,9 +2076,7 @@ export class RunScreens {
     }
     if (e.elite)
       line(
-        (e.act ?? 1) > 1
-          ? `ELITE: +${Math.round((ELITE_HP_MUL_2 - 1) * 100)}% HP. PAYS ${CHIPS.act2EliteChips + CHIPS.eliteBonus} CHIPS`
-          : `ELITE: +${e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP, RELIC PICK, +${CHIPS.eliteBonus} CHIPS`,
+        `ELITE: +${(e.act ?? 1) > 1 ? Math.round((ELITE_HP_MUL_2 - 1) * 100) : e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP, HITS ${Math.round((ELITE_DMG_MUL - 1) * 100)}% HARDER. RELIC PICK, +${CHIPS.eliteBonus} CHIPS`,
         '#ff9a3a',
       );
     const dirty = e.boss === 'house' && run.stake >= STAKE.houseDirty;
@@ -2030,38 +2110,121 @@ export class RunScreens {
     this.frameDt = this.lastDraw ? Math.min(0.1, Math.max(0, time - this.lastDraw)) : 0;
     this.lastDraw = time;
     const run = this.run!;
-    const opts = run.paths[run.depth];
-    const fork = needsChoice(run);
-    const e = run.enemies[run.depth];
+    if (needsRoute(run)) return this.drawRoutes(ctx, time);
+    const e = currentEnemy(run);
     const act = run.endless ? `LOOP ${run.endless.loop} - ` : `ACT ${run.act} - `;
-    const len = actLength(run.act);
-    const title = e.isBoss ? (run.act >= runActs(run) && !run.endless ? 'FINAL FIGHT' : `${act}BOSS FIGHT`) : fork ? `${act}FIGHT ${run.depth + 1} OF ${len} - CHOOSE YOUR PATH` : `${act}FIGHT ${run.depth + 1} OF ${len}`;
-    drawText(ctx, title, CX, 26, 3, e.isBoss && !fork ? '#ff6a5a' : fork ? COLORS.goldLight : run.act > 1 ? '#c8f0ff' : COLORS.textDim);
+    const title = e.isBoss ? (run.act >= runActs(run) && !run.endless ? 'FINAL FIGHT' : `${act}BOSS FIGHT`) : `${act}FIGHT ${run.depth + 1} OF ${run.route === null && run.map.routes.length > 1 ? '?' : run.enemies.length}`;
+    drawText(ctx, title, CX, 26, 3, e.isBoss ? '#ff6a5a' : run.act > 1 ? '#c8f0ff' : COLORS.textDim);
     this.drawMap(ctx, 128, time);
-    if (fork) {
-      const xs = [CX - 464, CX + 12];
-      const over = xs.map((px) => !this.touch && this.mouse.x >= px && this.mouse.x <= px + 452 && this.mouse.y >= 222 && this.mouse.y <= 482);
-      opts.forEach((o, i) => this.drawEnemyPanel(ctx, o, xs[i], 222, 452, time, over[1 - i]));
-      this.buttons.forEach((b, i) => (b.quiet = !over[i] && !b.hover));
-      // "OR": a gold coin in the gap between the two cards.
-      ctx.fillStyle = COLORS.outline;
-      ctx.beginPath();
-      ctx.arc(CX, 352, 25, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = COLORS.gold;
-      ctx.beginPath();
-      ctx.arc(CX, 352, 22, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = COLORS.outline;
-      ctx.beginPath();
-      ctx.arc(CX, 352, 19, 0, Math.PI * 2);
-      ctx.fill();
-      drawText(ctx, 'OR', CX, 353, 2.5, COLORS.goldLight);
-    } else {
-      this.drawEnemyPanel(ctx, e, CX - 330, 214, 660, time);
-    }
+    this.drawEnemyPanel(ctx, e, CX - 330, 214, 660, time);
     for (const b of this.buttons) this.drawButton(ctx, b, time);
     if (this.mapTip) this.drawNodeTip(ctx, this.mapTip);
+  }
+
+  /** CHOOSE YOUR PATH: the opener behind you, the routes as lanes, then the Cashier and the boss they share. */
+  private drawRoutes(ctx: CanvasRenderingContext2D, time: number): void {
+    const run = this.run!;
+    const m = run.map;
+    const act = run.endless ? `LOOP ${run.endless.loop}` : `ACT ${run.act}`;
+    drawText(ctx, `${act} - CHOOSE YOUR PATH`, CX, 30, 3, COLORS.goldLight);
+    drawText(ctx, 'EVERY STOP IS SHOWN. TAP A PATH, THEN TAKE IT.', CX, 62, 1.5, COLORS.textDim);
+    const midY = ROUTES.y[1];
+    const lastX = ROUTES.x0 + (ROUTE_STOPS - 1) * ROUTES.gap;
+    let tip: MapTip | null = null;
+    // The shared ends: the opener (done) on the left, the Cashier and the boss on the right.
+    const ends = [
+      { st: { kind: 'fight', enemy: m.opener } as Stop, x: ROUTES.opener, done: true },
+      ...(m.shopBeforeBoss ? [{ st: { kind: 'shop' } as Stop, x: ROUTES.shop, done: false }] : []),
+      { st: { kind: 'fight', enemy: m.boss } as Stop, x: ROUTES.boss, done: false },
+    ];
+    // Lanes: a panel per route (lit when hovered or picked), its line, its stops.
+    m.routes.forEach((route, i) => {
+      const y = ROUTES.y[i];
+      const card = this.cards[i];
+      const sel = this.routeSel === i;
+      const hot = sel || !!card?.hover;
+      const faded = this.routeSel >= 0 && !sel;
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(ROUTES.x0 - 52, y - ROUTES.lane / 2, lastX - ROUTES.x0 + 104, ROUTES.lane);
+      ctx.fillStyle = sel ? COLORS.goldLight : hot ? COLORS.gold : '#3a2e52';
+      ctx.fillRect(ROUTES.x0 - 49, y - ROUTES.lane / 2 + 3, lastX - ROUTES.x0 + 98, ROUTES.lane - 6);
+      ctx.fillStyle = sel ? '#3a2a14' : COLORS.panel;
+      ctx.fillRect(ROUTES.x0 - 46, y - ROUTES.lane / 2 + 6, lastX - ROUTES.x0 + 92, ROUTES.lane - 12);
+      // Lines out of the opener and into the Cashier.
+      ctx.fillStyle = sel ? COLORS.gold : faded ? '#2a2038' : '#4a3e62';
+      this.link(ctx, ROUTES.opener + 30, midY, ROUTES.x0 - 52, y);
+      this.link(ctx, lastX + 52, y, ROUTES.x0 + (ROUTE_STOPS - 1) * ROUTES.gap + 60 + (ROUTES.shop - lastX - 90), midY);
+      ctx.fillRect(ROUTES.x0, y - 2, lastX - ROUTES.x0, 4);
+      drawText(ctx, `PATH ${i + 1}`, ROUTES.x0 - 44, y - ROUTES.lane / 2 + 16, 1.5, sel ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
+      route.forEach((st, k) => {
+        const x = ROUTES.x0 + k * ROUTES.gap;
+        const lift = sel ? Math.sin(time * 4 + k) * 2 : 0;
+        const t = this.drawStop(ctx, st, x, y + 6 + lift, 28, { faded });
+        tip ??= t;
+      });
+    });
+    for (const end of ends) {
+      const t = this.drawStop(ctx, end.st, end.x, midY, 30, { done: end.done });
+      tip ??= t;
+      if (end.st.enemy?.isBoss) drawSprite(ctx, 'nodeBoss', end.x, midY - 46, 2);
+    }
+    drawText(ctx, 'DONE', ROUTES.opener, midY + 46, 1.5, '#6a6078');
+    for (const b of this.buttons) this.drawButton(ctx, b, time);
+    this.mapTip = tip;
+    if (tip) this.drawNodeTip(ctx, tip);
+  }
+
+  /** A straight connector between two points, drawn as a 4px pixel line. */
+  private link(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number): void {
+    const steps = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 4));
+    for (let i = 0; i <= steps; i++) ctx.fillRect(Math.round(x1 + ((x2 - x1) * i) / steps) - 2, Math.round(y1 + ((y2 - y1) * i) / steps) - 2, 4, 4);
+  }
+
+  /** An ENCOUNTER: its name and line, a table (the pull's reels land in turn), then how it went. */
+  private drawEncounter(ctx: CanvasRenderingContext2D, time: number): void {
+    const run = this.run!;
+    const def = encounterOf(this.encId);
+    drawText(ctx, def.name, CX, 64, 4, COLORS.goldLight, { punch: 1 + 0.02 * Math.sin(time * 3) });
+    drawText(ctx, def.blurb, CX, 106, 2, COLORS.textDim);
+    this.panel(ctx, CX - 330, 150, 660, 300, '#7a3aa8');
+    const res = this.encResult;
+    if (!res) {
+      // Before you choose: what each choice risks (no odds: the user's no-hints rule).
+      def.choices(run).forEach((c, i, all) => {
+        const x = CX + (i - (all.length - 1) / 2) * 360;
+        drawText(ctx, c.text, x, 420, 1.5, c.disabled ? '#6a6078' : COLORS.text);
+      });
+      // (Placeholder art until the encounters are designed: a gold-edged "?" ticket.)
+      const k = 1 + 0.03 * Math.sin(time * 2);
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(CX - 70 * k, 210 - 90 * k + 80, 140 * k, 180 * k);
+      ctx.fillStyle = COLORS.gold;
+      ctx.fillRect(CX - 64 * k, 210 - 84 * k + 80, 128 * k, 168 * k);
+      ctx.fillStyle = '#3a1a4a';
+      ctx.fillRect(CX - 56 * k, 210 - 76 * k + 80, 112 * k, 152 * k);
+      drawText(ctx, '?', CX, 290, 10 * k, '#e8b0ff');
+    } else {
+      const reels = res.reels;
+      if (reels) {
+        const syms = ['seven', 'coin', 'ace', 'note', 'bolt'];
+        reels.forEach((sym, k) => {
+          const x = CX + (k - 1) * 130;
+          const landed = this.encT >= (0.35 + k * 0.3) / 1.1;
+          ctx.fillStyle = COLORS.outline;
+          ctx.fillRect(x - 54, 190, 108, 120);
+          ctx.fillStyle = '#f4eee0';
+          ctx.fillRect(x - 50, 194, 100, 112);
+          const shown = landed ? sym : syms[Math.floor(time * 18 + k * 2) % syms.length];
+          drawSprite(ctx, shown as SpriteId, x, 250 + (landed ? 0 : Math.sin(time * 40 + k) * 6), 4);
+        });
+      }
+      if (this.encT >= 1) {
+        const col = res.good === true ? COLORS.goldLight : res.good === false ? '#ff8a7a' : COLORS.text;
+        drawText(ctx, res.title, CX, reels ? 350 : 270, 4, col, { punch: 1 + 0.03 * Math.sin(time * 6) });
+        drawText(ctx, res.text, CX, reels ? 400 : 330, 2.5, col);
+      }
+    }
+    for (const b of this.buttons) this.drawButton(ctx, b, time);
   }
 
   private drawCabinets(ctx: CanvasRenderingContext2D, time: number): void {
@@ -2563,8 +2726,10 @@ export class RunScreens {
 
   private drawButton(ctx: CanvasRenderingContext2D, b: Btn, time: number): void {
     // Only the screen's next step breathes; secondary buttons sit still.
-    const pulse = b.minor || b.quiet ? 1 : 1 + 0.02 + 0.02 * Math.sin((time * Math.PI * 2) / 1.6);
+    const pulse = b.minor || b.quiet || !b.enabled ? 1 : 1 + 0.02 + 0.02 * Math.sin((time * Math.PI * 2) / 1.6);
     ctx.save();
+    // A button you can't press looks it (juice: never inert-but-clickable-looking).
+    if (!b.enabled) ctx.globalAlpha *= 0.4;
     ctx.translate(b.x, b.y);
     ctx.scale(b.scale * pulse, b.scale * pulse);
     ctx.fillStyle = COLORS.outline;

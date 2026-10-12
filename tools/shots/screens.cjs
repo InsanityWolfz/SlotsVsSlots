@@ -48,19 +48,19 @@ const VETERAN = {
   await sleep(600);
   await shot('04_machine_select');
 
-  // THE REPO MAN's preview, then the between-fights screens with two liens held, then the boss preview.
-  await game(`g.menus.hide(); g.startRun(3, 'midas', 0); const r = g.run; r.pendingStart = null; r.chosen = r.chosen.map(() => true); r.depth = 3; g.screens.showNext(r);`);
+  // CHOOSE YOUR PATH (the opener done), the next fight on a picked route, then the boss preview.
+  await game(`g.menus.hide(); g.startRun(3, 'midas', 0); const r = g.run; r.pendingStart = null; r.depth = 1; r.stop = 1; g.screens.showNext(r);`);
   await sleep(700);
-  await shot('05_repo_preview');
-  await game(`const r = g.run; r.depth = 4; r.liens = [{ reel: 0, symbol: 'sword', enh: 'gold' }, { reel: 1, symbol: 'shield' }]; g.screens.showNext(r);`);
+  await shot('05_choose_path');
+  await game(`g.pickRoute(0);`);
   await sleep(700);
-  await shot('06_next_with_liens');
-  await game(`const r = g.run; r.depth = 5; g.screens.showNext(r);`);
+  await shot('06_next_on_route');
+  await game(`dbg.toBoss();`);
   await sleep(700);
-  await shot('07_boss_preview_liens');
+  await shot('07_boss_preview');
 
   // A loss at the House on a first-time-ish profile: the death recap + a machine unlock under the table, then RESULTS.
-  await game(`g.prefs.unlocked = ['knight']; g.menus.hide(); g.startRun(11, 'knight', 0); const r = g.run; r.pendingStart = null; r.chosen = r.chosen.map(() => true); r.depth = 5; g.beginRunFight(0);`);
+  await game(`g.prefs.unlocked = ['knight']; g.menus.hide(); g.startRun(11, 'knight', 0); g.run.pendingStart = null; dbg.toBoss(); g.beginRunFight();`);
   await sleep(1500);
   await game(`g.setSpeed(8); g.fight.sides.player.hp = 1; g.fight.sides.player.shield = 0; g.fight.sides.enemy.hp = 99999;`);
   for (let i = 0; i < 60; i++) {

@@ -2,7 +2,7 @@ import { Sounds } from './audio/sounds';
 import type { CombatEvent } from './core/events';
 import { Synth } from './audio/synth';
 import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
-import { actLength, RUN_FIGHTS, TUNE } from './core/enemies';
+import { TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { allInRange, Fight, highRollerMul } from './core/fight';
 import { dailyCabinet, dailyKey, dailySeed, dailySpent } from './core/daily';
@@ -11,12 +11,13 @@ import { RELICS } from './core/relics';
 import {
   applyOption,
   buy,
-  chooseEnemy,
+  chooseRoute,
   createRun,
   draftOffers,
   applyDaily,
   EDGE_TEXT,
   fightConfig,
+  fightLabel,
   migrateRun,
   finishFight,
   isShopNow,
@@ -26,7 +27,8 @@ import {
   currentEnemy,
   type BigChoice,
   leaveShop,
-  needsChoice,
+  isEncounterNow,
+  playEncounter,
   reroll,
   shopOffers,
   takeSpoils,
@@ -352,7 +354,10 @@ export class Game {
       onSpoils: (r) => this.pickSpoils(r),
       onLegend: (r) => this.pickLegend(r),
       onChoice: (c) => this.pickChoice(c),
-      onFight: (i) => this.beginRunFight(i),
+      onFight: () => this.beginRunFight(),
+      onRoute: (i) => this.pickRoute(i),
+      onEncounter: (i) => (this.run ? playEncounter(this.run, i) : null),
+      onEncounterDone: () => this.advance(),
       // After the first run: offer the (optional) leaderboard name on the way out of the run-over screen.
       onNewRun: () => this.afterNamePrompt(() => this.chooseCabinet()),
       onMenu: () => this.afterNamePrompt(() => this.showMenu()),
@@ -692,7 +697,7 @@ export class Game {
   /** Meta progression: check the finished run against each cabinet's unlock condition. */
   private checkUnlocks(run: RunState): CabinetId[] {
     const got: CabinetId[] = [];
-    const reachedBoss = run.records.length >= RUN_FIGHTS + 1 || run.won;
+    const reachedBoss = run.records.some((r) => r.archetype === 'house') || run.act > 1 || run.won;
     const beatHouse = run.act > 1 || run.won;
     // MIDAS is shelved (no unlock) while he's reworked; TESLA is the second machine.
     const cond: Record<CabinetId, boolean> = {
@@ -747,7 +752,7 @@ export class Game {
   private showRunStart(): void {
     if (!this.run) return;
     if (this.run.pendingStart?.length) this.screens.showDraft(this.run, this.run.pendingStart.map((relic) => ({ kind: 'relic', relic }) as DraftOption), null, 'start');
-    else this.screens.showNext(this.run);
+    else this.advance();
   }
 
   // ---- saved runs (STEAM_READINESS S1) ------------------------------------------------
@@ -764,7 +769,7 @@ export class Game {
   private loadRunSave(): { at: 'next' | 'after' | 'fight'; run: RunState } | null {
     const s = load<{ v?: number; at?: string; run?: RunState }>(RUN_KEY);
     const run = s?.run;
-    if (!s || s.v !== 1 || !run || typeof run.seed !== 'number' || !run.player || !Array.isArray(run.paths) || !Array.isArray(run.records)) return null;
+    if (!s || s.v !== 1 || !run || typeof run.seed !== 'number' || !run.player || !run.map || !Array.isArray(run.map.routes) || !Array.isArray(run.records)) return null;
     if (!(ALL_CABINETS as string[]).includes(run.cabinet) || run.over) return null;
     // A game update may have removed a relic or Charm the save still holds (STEAM_QA_1 Q5): drop what no longer exists.
     if (Array.isArray(run.player.relics)) run.player.relics = run.player.relics.filter((r) => r in RELICS);
@@ -858,11 +863,8 @@ export class Game {
     this.startRun();
   }
 
-  private beginRunFight(option = 0): void {
+  private beginRunFight(): void {
     if (!this.run) return;
-    if (needsChoice(this.run)) {
-      chooseEnemy(this.run, option);
-    }
     // Snapshot with the opponent locked in: a quit mid-fight resumes into this same fight (STEAM_QA_1 Q3).
     this.checkpoint('fight');
     this.startRunFight();
@@ -987,19 +989,14 @@ export class Game {
   private pickLegend(relic: RelicId): void {
     if (!this.run) return;
     takeLegend(this.run, relic);
-    if (isShopNow(this.run)) {
-      this.shelf = shopOffers(this.run);
-      this.screens.showShop(this.run, this.shelf);
-      return;
-    }
-    this.showNextFight();
+    this.advance();
   }
 
   private pickSpoils(relic: RelicId): void {
     if (!this.run) return;
     if (this.run.pendingStart) {
       takeStart(this.run, relic);
-      this.showNextFight();
+      this.advance();
       return;
     }
     takeSpoils(this.run, relic);
@@ -1033,7 +1030,7 @@ export class Game {
   private leaveCashier(): void {
     if (!this.run) return;
     leaveShop(this.run);
-    this.showNextFight();
+    this.advance();
   }
 
   private showNextFight(): void {
@@ -1054,14 +1051,36 @@ export class Game {
   private pickReward(o: DraftOption): void {
     if (!this.run) return;
     applyOption(this.run, o);
-    if (isShopNow(this.run)) {
-      this.shelf = shopOffers(this.run);
-      this.screens.showShop(this.run, this.shelf);
+    this.advance();
+  }
+
+  /** Walk the map to the next screen: a Cashier, an encounter, the route pick or the next fight. */
+  private advance(): void {
+    const run = this.run;
+    if (!run) return;
+    if (isShopNow(run)) {
+      this.shelf = shopOffers(run);
+      this.screens.showShop(run, this.shelf);
       this.tip('shop', 'shop');
+      this.checkpoint('next');
       this.syncButtons();
       return;
     }
+    if (isEncounterNow(run)) {
+      this.screens.showEncounter(run);
+      this.checkpoint('next');
+      this.syncButtons();
+      return;
+    }
+    // The route pick and the next fight share the preview screen (it draws the act's map).
     this.showNextFight();
+  }
+
+  /** The opener is done: take one of the act's routes. */
+  private pickRoute(i: number): void {
+    if (!this.run) return;
+    chooseRoute(this.run, i);
+    this.advance();
   }
 
   // ---- fight flow --------------------------------------------------------------------
@@ -1128,7 +1147,7 @@ export class Game {
         pulse: 0,
         pot: this.fight.pot,
         potPunch: 1,
-        fightLabel: this.run && inRun ? (this.run.depth >= actLength(this.run.act) ? (this.run.endless ? `LOOP ${this.run.endless.loop} BOSS` : 'BOSS') : this.run.endless ? `LOOP ${this.run.endless.loop} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}` : `${this.run.daily ? 'DAILY - ' : this.run.weekly ? 'WEEKLY - ' : this.run.challenge ? 'CHALLENGE - ' : ''}ACT ${this.run.act} FIGHT ${this.run.depth + 1}/${actLength(this.run.act)}`) : 'SANDBOX',
+        fightLabel: this.run && inRun ? fightLabel(this.run) : 'SANDBOX',
         twist: this.run && inRun ? [...(this.run.mods ?? []), ...(this.run.dailyEdge ? [this.run.dailyEdge] : [])].map((e) => EDGE_TEXT[e].title).join(' + ') : '',
         allIn: false,
         ...(this.fight.isWheel ? { bets: [...this.fight.bets], betsLeft: (this.fight.sides.enemy.ability?.every ?? 3) - this.fight.sides.enemy.charge, betPer: this.fight.betPer(), betPunch: 1, wheelFast: this.fight.fast, wheelAngle: 0, wheelSpeed: 0.6 } : {}),

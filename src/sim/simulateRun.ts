@@ -5,12 +5,10 @@
  */
 import type { GameConfig } from '../core/config';
 import type { CabinetId } from '../core/cabinets';
-import { actLength } from '../core/enemies';
 import { Fight } from '../core/fight';
 import { Rng } from '../core/rng';
 import {
   applyOption,
-  chooseEnemy,
   createRun,
   draftOffers,
   finishFight,
@@ -18,15 +16,14 @@ import {
   fightNumber,
   takeLegend,
   takeChoice,
-  isShopNow,
+  isBossNext,
   machinePower,
-  needsChoice,
   takeSpoils,
   takeStart,
   type RunState,
   letItRide,
 } from '../core/run';
-import { CHOICE_LOG, choiceValue, greedyValue, pickEnemy, RELIC_VALUE, shop, SIM_BIAS, type DraftPolicy } from './bot';
+import { CHOICE_LOG, choiceValue, greedyValue, RELIC_VALUE, SIM_BIAS, walkStops, type DraftPolicy } from './bot';
 
 export { CHOICE_LOG, choiceValue, greedyValue, SIM_BIAS, type DraftPolicy } from './bot';
 
@@ -122,23 +119,25 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
     // Fights draw from their own per-run stream, so a change in one run never desyncs the next (paired ladders).
     const fightSeeds = new Rng((runSeed ^ 0x5f3759df) >>> 0);
     while (!run.over) {
-      if (needsChoice(run)) chooseEnemy(run, pickEnemy(run, policy, pick));
-      if (run.depth === actLength(3) && run.act === 3) {
+      walkStops(run, policy, pick);
+      if (run.over) break;
+      const boss = isBossNext(run);
+      if (boss && run.act === 3) {
         reachedDealer++;
         dealerHpFrac += run.player.hp / run.player.maxHp;
       }
-      if (run.depth === actLength(1) && run.act === 1) {
+      if (boss && run.act === 1) {
         reachedBoss++;
         bossHp += run.player.hp;
         houseFrac += run.player.hp / run.player.maxHp;
       }
-      if (run.depth === actLength(2) && run.act === 2) {
+      if (boss && run.act === 2) {
         reachedWheel++;
         wheelHp += run.player.hp;
         wheelFrac += run.player.hp / run.player.maxHp;
         pw.wheel.push(machinePower(run));
       }
-      if (run.act === 3 && !run.endless) (run.depth < actLength(3) ? pw.act3 : pw.dealer).push(machinePower(run));
+      if (run.act === 3 && !run.endless) (!boss ? pw.act3 : pw.dealer).push(machinePower(run));
       SIM_BIAS.onFight?.(run);
       const arch = run.enemies[run.depth].archetype;
       faced[arch] = (faced[arch] ?? 0) + 1;
@@ -153,7 +152,7 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
       turns += fight.turn;
       const depth = fightNumber(run) - 1;
       const act = run.act;
-      const regular = run.depth < actLength(act);
+      const regular = !boss;
       const hpBefore = run.player.hp;
       const maxBefore = run.player.maxHp;
       if (regular) {
@@ -202,7 +201,6 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
         const lg = run.pendingLegend;
         if (lg.length) takeLegend(run, policy === 'random' ? pick.pick(lg) : lg.reduce((a, b) => (RELIC_VALUE[b] > RELIC_VALUE[a] ? b : a)));
         run.pendingLegend = null;
-        if (isShopNow(run)) shop(run, policy, pick);
         continue;
       }
       if (!run.over && run.pendingSpoils) {
@@ -219,7 +217,6 @@ export function simulateRuns(base: GameConfig, runs: number, policy: DraftPolicy
               ? relic
               : offers.reduce((a, b) => (greedyValue(run, b) > greedyValue(run, a) ? b : a));
         applyOption(run, o);
-        if (isShopNow(run)) shop(run, policy, pick);
       }
     }
     SIM_BIAS.onEnd?.(run);

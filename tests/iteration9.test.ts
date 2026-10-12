@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type SymbolId } from '../src/core/config';
-import { ARCHETYPES, RUN_FIGHTS } from '../src/core/enemies';
+import { ARCHETYPES } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { createRun, describeOption, enemyHp, fightConfig, levelOptions, shopOffers, stripsAfter } from '../src/core/run';
+import {
+  createRun,
+  describeOption,
+  enemyHp,
+  fightConfig,
+  levelOptions,
+  shopOffers,
+  stripsAfter,
+  skipToBoss,
+} from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -97,8 +106,8 @@ describe('Package P', () => {
     const run = createRun(base, 8);
     run.act = 2;
     run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen', n: 2 }, { reel: 1, symbol: 'shield', enh: 'gold', n: 2 }];
-    run.depth = RUN_FIGHTS;
-    run.enemies[RUN_FIGHTS] = { ...run.enemies[RUN_FIGHTS], boss: 'wheel', isBoss: true };
+    skipToBoss(run);
+    run.enemies[run.depth] = { ...run.enemies[run.depth], boss: 'wheel', isBoss: true };
     expect(fightConfig(run, base).enemy.gilded ?? []).toEqual([]);
   });
 

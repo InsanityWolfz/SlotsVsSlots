@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, UNIT } from '../src/core/config';
 import { ENDLESS } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
-import { createRun, currentEnemy, enemyHp, fightConfig, finishFight, letItRide, takeChoice } from '../src/core/run';
+import { actStops, createRun, currentEnemy, enemyHp, fightConfig, finishFight, letItRide, skipToBoss, takeChoice } from '../src/core/run';
 import { fmtNum } from '../src/render/text';
 
 const base = defaultConfig();
@@ -17,8 +17,11 @@ describe('ENDLESS (LET IT RIDE)', () => {
     letItRide(run);
     expect(run.endless?.loop).toBe(1);
     expect(run.over).toBe(false);
-    expect(run.paths.length).toBe(4);
-    expect(run.paths[3][0].boss).toBe('house');
+    // One route, picked for you: fight, fight, the Cashier, fight, then the boss.
+    expect(run.route).toBe(0);
+    expect(actStops(run).map((st) => st.kind)).toEqual(['fight', 'fight', 'shop', 'fight', 'fight']);
+    expect(run.enemies).toHaveLength(4);
+    expect(run.enemies[3].boss).toBe('house');
     expect(run.pendingChoice?.length).toBe(3);
     takeChoice(run, run.pendingChoice![0]);
     expect(run.endless!.edges.length).toBe(1);
@@ -30,13 +33,13 @@ describe('ENDLESS (LET IT RIDE)', () => {
     run.act = 3;
     letItRide(run);
     run.pendingChoice = null;
-    run.depth = 3;
+    skipToBoss(run);
     const hp1 = enemyHp(run, currentEnemy(run));
     const f = new Fight(fightConfig(run, base), 1);
     f.winner = 'player';
     finishFight(run, f);
     expect(run.endless!.loop).toBe(2);
-    expect(run.paths[3][0].boss).toBe('wheel');
+    expect(run.enemies.at(-1)!.boss).toBe('wheel');
     run.depth = 0;
     expect(enemyHp(run, currentEnemy(run))).toBeGreaterThan(0);
     void hp1;
@@ -70,7 +73,7 @@ describe('ENDLESS: RIDE AGAIN / CASH OUT', () => {
     letItRide(run);
     while (run.pendingChoice?.length) takeChoice(run, run.pendingChoice[0]);
     run.pendingLegend = null;
-    run.depth = 3;
+    skipToBoss(run);
     const f = new Fight(fightConfig(run, base), 1);
     f.winner = 'player';
     finishFight(run, f);

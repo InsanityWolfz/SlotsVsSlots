@@ -4,7 +4,6 @@ import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { createRun, fightConfig, finishFight } from '../src/core/run';
-import { GATEKEEPER } from '../src/core/enemies';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -74,8 +73,6 @@ describe('EXPERT_PLAYTEST_10: new relics', () => {
   it('TOLL BOOTH: each held lien pays a chip after a win', () => {
     const run = createRun(base, 5, 'knight');
     run.pendingStart = null;
-    run.chosen = run.chosen.map(() => true);
-    run.depth = GATEKEEPER.depth + 1;
     run.liens = [{ reel: 0, symbol: 'sword' }, { reel: 1, symbol: 'shield' }];
     run.player.relics.push('toll');
     const chips = run.player.chips;

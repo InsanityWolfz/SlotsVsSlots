@@ -6,17 +6,25 @@ Every number here is a starting point: balance is being redone (see `ROADMAP.md`
 ## The pitch
 An 8-bit roguelike where two slot machines fight. Fights are watch-only: the reels decide them. Enemies cheat by
 writing on your machine (slime, rocks, stolen cells, frozen reels, bombs...). Your agency is between fights: which
-enemy to take at a fork, which card to draft, what to buy at the Cashier, and which Charms and relics to build.
+path to take through an act, which card to draft, what to buy at the Cashier, what to gamble at an encounter, and
+which Charms and relics to build.
 
 ## A run
-- **Acts** are 5 fights plus a boss. Fights 2-4 offer a **fork** of two enemies, and the more dangerous one is an
-  **ELITE** with more HP. Beating an act 1 elite lets you pick 1 of 2 relics; an act 2 elite pays 6 chips instead.
-- In acts 1-2, fight 4 is always **THE REPO MAN** (the "Gatekeeper"): he repossesses cells until you beat the act's boss.
+- **An act is a map** (`generateActMap` in `src/core/enemies.ts`): a shared opener fight, then you **pick 1 of 3
+  paths** of 5 stops each, then the paths rejoin at the Cashier and the boss. Every stop and enemy is shown up
+  front; you never choose fights along the way. The three paths have different shapes (`ROUTE_SHAPES`) and never all
+  the same number of elites. Endless loops have a single path (fight, Cashier, fight).
+- **Stops:** FIGHT, ELITE (more HP and hits 25% harder; pays a pick of 2 relics, in every act), CASHIER, ENCOUNTER.
+- **Encounters** (`src/core/encounters.ts`) are gambles between fights: stake chips, HP, relics or upgrades, or walk
+  away. Seeded by the stop, so a quit can't re-roll one. **The three in the game are placeholders** (DOUBLE OR
+  NOTHING, THE ONE-ARMED BANDIT, THE BLOOD BANK) until the user's set is designed.
+- **THE REPO MAN** is a regular in acts 1-2 (he takes a Charm for his fight; it comes back after).
 - **After every win:** 25% of max HP comes back (a third of that in act 3), then a **draft** (pick 1 of 3 cards:
-  add, swap or remove symbols, Charms, Charm levels, heals). Drafts after fights 2 and 4 offer relics.
-- **The Cashier** (the shop) opens after fights 1, 3 and 5. Chips buy Charms, relics, wilds, removals, heals and
-  levels; rerolls cost 1, then 2, 3 and so on. Chips come from wins, elites, jackpots and interest (+1 per 5 banked, capped at 3).
-- **SIDE BETS:** before a regular fight you may stake chips on one long-shot bet about how the fight goes.
+  add, swap or remove symbols, Charms, Charm levels, heals). The drafts after an act's 2nd and 4th won fights offer
+  relics.
+- **The Cashier** is a stop: on some paths, and always right before the boss (plus a visit when a new act opens).
+  Chips buy Charms, relics, wilds, removals, heals and levels; rerolls cost 1, then 2, 3 and so on. Chips come from
+  wins, elites, jackpots and interest (+1 per 5 banked, capped at 3).
 - **After a boss:** a legendary relic pick (1 of 3), then **big choices** (3 cards from pools: one with a real
   cost, one for your Slot Machine, one free).
 - **BONUS WHEEL and RELIC RUSH:** rare bonus symbols drop a voucher mid-fight. It pays out only if you win that fight.
@@ -34,13 +42,15 @@ and the multiplier grows every loop, so it gets harder exponentially in theory. 
 so that isn't happening in practice (see ROADMAP).
 
 ## Enemies
-- **Act 1:** SLIME, BRUTE, FROST IMP, RAT THIEF, ROCK GOLEM, GREMLIN.
-- **Act 2 adds:** BOMBER, HEXER, VAMPIRE, MIMIC, GROUNDER (TESLA only), COUNTERFEITER (other machines with a meter).
+- **Act 1:** SLIME, BRUTE, FROST IMP, RAT THIEF, ROCK GOLEM, GREMLIN, THE REPO MAN. Any enemy's rocks crumble after
+  the fight; only an elite's (up to 2) stay.
+- **Act 2 adds:** BOMBER, HEXER, VAMPIRE, MIMIC, COUNTERFEITER. (The GROUNDER is retired; its mechanic is still in
+  the engine until the code cleanup.) BLUE stake puts your counter (the COUNTERFEITER) on every act 2 path.
 - **Act 3 adds:** CARD SHARP, PIT BOSS, CROUPIER. BOMBER, VAMPIRE, HEXER and MIMIC come back.
 - **Enemy HP:** acts 1-2 regulars use fixed curves by fight number. **Bosses and act 3 regulars are sized to YOUR
   machine:** HP = reference × (your measured power ÷ reference)^0.5, plus a little per relic, so a build twice as
   strong faces about 1.4× the HP. Code: `machinePower`, `sizingPower`, `POWER_REF` and `BOSS_MUL` in `src/core/run.ts`;
-  `TUNE`, `DEPTH_HP*`, `ENDLESS` and the fork/elite map in `src/core/enemies.ts`.
+  `TUNE`, `DEPTH_HP*`, `ENDLESS` and the act map (`generateActMap`) in `src/core/enemies.ts`.
 
 ## Slot Machines (`src/core/cabinets.ts`)
 Each machine except KNIGHT has one signature symbol and a meter.

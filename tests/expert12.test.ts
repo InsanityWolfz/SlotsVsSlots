@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { faceRepoMan } from './helpers';
 import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CabinetId } from '../src/core/cabinets';
 import { Fight, THORNS } from '../src/core/fight';
 import { createRun, fightConfig, finishFight, gildsFor, offerChoices } from '../src/core/run';
-import { GATEKEEPER } from '../src/core/enemies';
 import { Rng } from '../src/core/rng';
 
 const base = defaultConfig();
@@ -41,8 +41,7 @@ describe('EXPERT_PLAYTEST_12: THORNY (BRIAR)', () => {
   it('THE REPO MAN can take a THORNY charm, and it is back after the fight', () => {
     const run = createRun(base, 5, 'thorn');
     run.pendingStart = null;
-    run.chosen = run.chosen.map(() => true);
-    run.depth = GATEKEEPER.depth;
+    faceRepoMan(run);
     run.player.gilded = [{ reel: 1, symbol: 'thorn', enh: 'thorny', n: 2 }];
     const f = new Fight(fightConfig(run, base), 3);
     const cell = f.sides.player.reels[1].cells.find((c) => c.enh === 'thorny')!;

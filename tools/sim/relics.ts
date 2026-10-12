@@ -3,7 +3,9 @@
 import { defaultConfig, type Enh, type RelicId } from '../../src/core/config';
 import { CABINET_ORDER, CABINETS, type CabinetId } from '../../src/core/cabinets';
 import { RELICS } from '../../src/core/relics';
-import { createRun, fightConfig, needsChoice, chooseEnemy, relicFits, type RunState } from '../../src/core/run';
+import { chooseRoute, createRun, fightConfig, relicFits, skipToBoss, type RunState } from '../../src/core/run';
+import { generateActMap } from '../../src/core/enemies';
+import { Rng } from '../../src/core/rng';
 import { CHARM_SYMBOLS } from '../../src/core/charms';
 import { Fight } from '../../src/core/fight';
 import type { CombatEvent } from '../../src/core/events';
@@ -15,9 +17,13 @@ const ENHS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'lucre
 function runAt(cab: CabinetId, seed: number, act: number, depth: number): RunState {
   const r = createRun(base, seed, cab);
   r.pendingStart = null;
+  // This act's map, on its first route: depth 5 is the boss, anything less a regular on the route.
   r.act = act;
-  r.depth = depth;
-  if (needsChoice(r)) chooseEnemy(r, 0);
+  r.map = generateActMap(new Rng(seed ^ act), act, 1, cab);
+  r.route = null;
+  chooseRoute(r, 0);
+  if (depth >= 5) skipToBoss(r);
+  else r.depth = Math.min(depth, r.enemies.length - 2);
   // A mid-run build: 2 of every Charm this machine can hold, on its own symbols.
   const syms = [CABINETS[cab].attack, ...CABINETS[cab].symbols];
   for (const e of ENHS) {

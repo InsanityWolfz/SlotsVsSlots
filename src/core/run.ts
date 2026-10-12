@@ -1,5 +1,5 @@
 import { BLADES, cloneConfig, defaultConfig, symLabel, emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_HP_MUL_2, GATEKEEPER, generateRunPaths, makeEnemy, REPO_MAN, TUNE, type EnemyDef, ENDLESS, endlessMul, WHEEL } from './enemies';
+import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, ELITE_HP_MUL_2, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, WHEEL } from './enemies';
 import { MAX_STAKE, STAKE } from './stakes';
 import { Fight as FightCtor, type Fight } from './fight';
 import {
@@ -20,6 +20,7 @@ import {
   type Enabler,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
+import { encounterOf, encounterRng, type EncounterResult } from './encounters';
 import { BIG_CAP, CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { dailyEdge, dailyFightSeed } from './daily';
@@ -163,6 +164,8 @@ export interface RunPlayer {
 }
 
 export interface FightRecord {
+  /** An act's boss fight. */
+  boss?: boolean;
   /** DEATH RECAP (lost fights): the top sources of HP damage you took, e.g. [['SPIN HITS', 180], ['BOMBS', 60]]. */
   hurt?: [string, number][];
   /** Your spins this fight that had a frozen or jammed reel, of all your spins. */
@@ -212,14 +215,16 @@ export interface RunState {
   /** The seed the fights' spins come from (the run seed, unless set): THE WEEKLY rolls a fresh one each try, so its
    * map and offers are fixed but its spins are not. */
   spinSeed?: number;
-  /** Index of the next fight (0..5; 5 = boss). */
+  /** Index of the next fight in `enemies` (this act's fights, the boss last). */
   depth: number;
-  /** Enemy options per depth (2 at a fork). */
-  paths: EnemyDef[][];
-  /** The enemy chosen (or only option) per depth. */
+  /** This act's map: the opener, the routes to pick from, the boss. */
+  map: ActMap;
+  /** The route picked (null until you pick, right after the opener). */
+  route: number | null;
+  /** Index of the current stop in `actStops(run)` (0 = the opener). */
+  stop: number;
+  /** This act's fights in order: the opener, then (once a route is picked) its fights, then the boss. */
   enemies: EnemyDef[];
-  /** Whether the player has picked at a fork. */
-  chosen: boolean[];
   player: RunPlayer;
   records: FightRecord[];
   over: boolean;
@@ -295,18 +300,21 @@ export interface RunState {
   noWinChips?: boolean;
   /** TRUST FUND: chips after every win. */
   trustFund?: number;
+  /** Encounters played this run (what was chosen, how it went): for the run log and the sim. */
+  encounters?: { act: number; id: string; choice: number; good: boolean | null }[];
 }
 
 export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false): RunState {
   const rng = new Rng(seed);
-  const paths = generateRunPaths(rng, 1, 1, cabinet);
+  const map = generateActMap(rng, 1, 1, cabinet);
   const cab = CABINETS[cabinet];
   const run: RunState = {
     seed,
     depth: 0,
-    paths,
-    enemies: paths.map((opts) => opts[0]),
-    chosen: paths.map((opts) => opts.length === 1),
+    map,
+    route: null,
+    stop: 0,
+    enemies: [map.opener],
     player: {
       hp: cab.hp,
       maxHp: cab.hp,
@@ -471,23 +479,32 @@ const DECK_MARKS_CAP = 6;
 /** THE DAILY RUN and THE WEEKLY CHALLENGE: fights fixed by the day / week, base-stake numbers, through the Dealer. */
 export const fixedRun = (run: RunState) => !!(run.daily || run.weekly);
 export const runActs = (run: RunState) => (run.stake >= STAKE.act3 || fixedRun(run) ? 3 : ACTS);
-/** Fights in the base run (2 acts, bosses included) — the most fights any act 1-2 run can have. */
-export const TOTAL_FIGHTS = ACTS * (actLength(1) + 1);
-/** Fights in this run, bosses included. */
-export const totalFights = (run: RunState) => Array.from({ length: runActs(run) }, (_, i) => actLength(i + 1) + 1).reduce((a, b) => a + b, 0);
-/** 1-based fight number across the whole run. */
-export const fightNumber = (run: RunState) => Array.from({ length: run.act - 1 }, (_, i) => actLength(i + 1) + 1).reduce((a, b) => a + b, 0) + run.depth + 1;
+/** Fights an act holds on a typical route (the opener, 3 on the route, the boss): routes vary, so this is a guide. */
+export const TYPICAL_ACT_FIGHTS = 5;
+/** Fights in this run, bosses included: the acts behind you as fought, this act's as mapped, the rest typical. */
+export function totalFights(run: RunState): number {
+  const before = run.records.filter((r) => r.won && (r.act ?? 1) < run.act).length;
+  const here = run.route === null && run.map.routes.length > 1 ? TYPICAL_ACT_FIGHTS : run.enemies.length;
+  const after = Math.max(0, Math.min(runActs(run), 3) - Math.min(run.act, 3)) * TYPICAL_ACT_FIGHTS;
+  return run.endless ? before + here : before + here + after;
+}
+/** The HUD's fight label: ACT 2 FIGHT 3/6 (the act's fights on your route), BOSS, or the endless loop's. */
+export function fightLabel(run: RunState): string {
+  const n = `FIGHT ${run.depth + 1}/${run.route === null && run.map.routes.length > 1 ? '?' : run.enemies.length}`;
+  if (run.endless) return isBossNext(run) ? `LOOP ${run.endless.loop} BOSS` : `LOOP ${run.endless.loop} ${n}`;
+  if (isBossNext(run)) return 'BOSS';
+  return `${run.daily ? 'DAILY - ' : run.weekly ? 'WEEKLY - ' : run.challenge ? 'CHALLENGE - ' : ''}ACT ${run.act} ${n}`;
+}
+/** 1-based fight number across the whole run (the fight you're on, or the one you fell at). */
+export const fightNumber = (run: RunState) => run.records.filter((r) => r.won).length + 1;
 
 /** The act's boss fell: a new map, a full heal, and a legendary pick. */
 function startNextAct(run: RunState): void {
   run.act++;
-  run.depth = 0;
   const rng = new Rng((run.seed ^ Math.imul(run.act, 0x3c6ef372)) >>> 0);
-  run.paths = generateRunPaths(rng, run.act, 1, run.cabinet);
-  // BLUE stake: one act 2 fork is your counter (marked on its card).
+  setMap(run, generateActMap(rng, run.act, 1, run.cabinet));
+  // BLUE stake: your counter waits on every act 2 route (marked on its card).
   if (run.stake >= STAKE.counterForks) offerCounter(run, rng);
-  run.enemies = run.paths.map((opts) => opts[0]);
-  run.chosen = run.paths.map((opts) => opts.length === 1);
   run.player.hp = run.player.maxHp;
   run.actIntro = true;
   offerChoices(run, rng);
@@ -505,20 +522,68 @@ export function counterFor(run: RunState): string | null {
 }
 
 
-/** BLUE stake: your counter takes the non-elite slot of ONE act 2 fork (fight 3), marked YOUR COUNTER. */
+/** BLUE stake: your counter takes a regular fight on every act 2 route (after its first stop), marked YOUR COUNTER. */
 function offerCounter(run: RunState, rng: Rng): void {
   const id = counterFor(run);
   const arch = id ? ARCHETYPES.find((a) => a.id === id) : undefined;
-  if (!arch) return;
-  const depth = 2;
-  const opts = run.paths[depth];
-  if (!opts || opts.length < 2) return;
-  const had = opts.findIndex((e) => e.archetype === id);
-  const i = had >= 0 ? had : opts.findIndex((e) => !e.elite);
-  if (i < 0) return;
-  if (had < 0) opts[i] = makeEnemy(arch, depth, rng, false, run.act);
-  opts[i].counter = true;
-  run.enemies = run.paths.map((o) => o[0]);
+  if (!arch || run.act !== 2) return;
+  for (const route of run.map.routes) {
+    const had = route.findIndex((st) => st.kind === 'fight' && st.enemy?.archetype === id);
+    const i = had >= 0 ? had : route.findIndex((st, k) => k > 0 && st.kind === 'fight');
+    if (i < 0) continue;
+    if (had < 0) route[i] = { kind: 'fight', enemy: makeEnemy(arch, route[i].enemy!.depth, rng, false, run.act) };
+    route[i].enemy!.counter = true;
+  }
+}
+
+/** A new act's (or loop's) map: back to its opener. A single-route map (endless) is picked for you. */
+function setMap(run: RunState, map: ActMap): void {
+  run.map = map;
+  run.depth = 0;
+  run.stop = 0;
+  run.route = null;
+  run.enemies = [map.opener];
+  if (map.routes.length === 1) chooseRoute(run, 0);
+}
+
+/** Every stop of this act in order: the opener, the picked route (if any), the Cashier, the boss. */
+export function actStops(run: RunState): Stop[] {
+  const m = run.map;
+  const route = run.route === null ? [] : (m.routes[run.route] ?? []);
+  return [{ kind: 'fight', enemy: m.opener }, ...route, ...(m.shopBeforeBoss ? [{ kind: 'shop' as const }] : []), { kind: 'fight', enemy: m.boss }];
+}
+/** The stop you're at (null while a route waits to be picked). */
+export const currentStop = (run: RunState): Stop | null => (needsRoute(run) ? null : (actStops(run)[run.stop] ?? null));
+/** The opener is done and the act has routes to pick from. */
+export const needsRoute = (run: RunState) => !run.over && run.route === null && run.stop >= 1;
+/** Pick route `i`: its fights join the act's fight list (the opener first, the boss last). */
+export function chooseRoute(run: RunState, i: number): void {
+  run.route = Math.max(0, Math.min(run.map.routes.length - 1, i));
+  run.enemies = actStops(run).filter((st) => st.enemy).map((st) => st.enemy!);
+}
+/** Jump to this act's boss (tests and the dev console): the first route if none is picked yet. */
+export function skipToBoss(run: RunState): void {
+  if (run.route === null) chooseRoute(run, 0);
+  run.depth = run.enemies.length - 1;
+  run.stop = actStops(run).length - 1;
+  run.actIntro = false;
+}
+/** The stop is a gamble waiting to be played. */
+export const isEncounterNow = (run: RunState) => !run.over && !run.actIntro && currentStop(run)?.kind === 'encounter';
+/** Play the encounter at this stop (choice `i`; the last is WALK AWAY), then move on. Deterministic per stop. */
+export function playEncounter(run: RunState, i: number): EncounterResult | null {
+  const st = currentStop(run);
+  if (!isEncounterNow(run) || !st) return null;
+  const relics = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r));
+  const result = encounterOf(st.encounter).play(run, i, encounterRng(run), relics);
+  (run.encounters ??= []).push({ act: run.act, id: st.encounter ?? '?', choice: i, good: result.good });
+  passStop(run);
+  return result;
+}
+/** Leave a non-fight stop (a Cashier on the route, or an encounter): on to the next stop. */
+export function passStop(run: RunState): void {
+  const st = currentStop(run);
+  if (st && !st.enemy) run.stop++;
 }
 
 /**
@@ -530,7 +595,7 @@ export function migrateRun(run: RunState): RunState {
     if (!e || ((e.boss as string) !== 'mirror' && e.archetype !== 'mirror')) return e;
     return { ...e, archetype: WHEEL.id, boss: 'wheel', name: WHEEL.name, portrait: WHEEL.portrait, blurb: WHEEL.blurb, strips: [0, 1, 2].map(() => ({ ...WHEEL.strip })), ability: WHEEL.ability ? { ...WHEEL.ability } : null };
   };
-  if (Array.isArray(run.paths)) run.paths = run.paths.map((opts) => (Array.isArray(opts) ? opts.map((e) => fix(e)!) : opts));
+  if (run.map?.boss) run.map.boss = fix(run.map.boss)!;
   if (Array.isArray(run.enemies)) run.enemies = run.enemies.map((e) => fix(e)!);
   return run;
 }
@@ -552,15 +617,7 @@ export function takeLegend(run: RunState, relic: RelicId): void {
 }
 
 export const currentEnemy = (run: RunState): EnemyDef => run.enemies[Math.min(run.depth, run.enemies.length - 1)];
-export const isBossNext = (run: RunState) => run.depth >= actLength(run.act);
-/** The next fight is a fork the player hasn't chosen yet. */
-export const needsChoice = (run: RunState) => !run.over && !run.chosen[run.depth];
-
-export function chooseEnemy(run: RunState, option: number): void {
-  const opts = run.paths[run.depth];
-  run.enemies[run.depth] = opts[Math.max(0, Math.min(opts.length - 1, option))];
-  run.chosen[run.depth] = true;
-}
+export const isBossNext = (run: RunState) => !needsRoute(run) && !!currentEnemy(run)?.isBoss;
 
 /** The GameConfig for the run's next fight. */
 export function fightConfig(run: RunState, base: GameConfig): GameConfig {
@@ -583,6 +640,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   };
   const hp = enemyHp(run, e);
   cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
+  // Elites hit harder too (2026-10-12: they were a free relic for little risk).
+  if (e.elite) cfg.enemy.dmgMul = ELITE_DMG_MUL;
   // (A chip shield, if one ever comes back, stays capped against the bosses.)
   if (e.boss === 'wheel') cfg.player.stackShield = Math.min(BOSS_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
   cfg.relics = [...run.player.relics];
@@ -606,7 +665,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // The loop House is a race: it cashes its pot every 2 turns.
     if (e.boss === 'house' && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: ENDLESS.houseEvery };
     cfg.enemy.endless = true;
-    cfg.enemy.dmgMul = endlessMul(ENDLESS.dmgBy[run.cabinet] ?? ENDLESS.dmg, run.endless.loop);
+    cfg.enemy.dmgMul = (cfg.enemy.dmgMul ?? 1) * endlessMul(ENDLESS.dmgBy[run.cabinet] ?? ENDLESS.dmg, run.endless.loop);
   }
   // THE DAILY RUN: every fight is fixed by the day, so everyone meets the same fights.
   // The daily locks its spins too (one try: the purest comparison). The weekly locks the map, enemies and offers, but
@@ -693,11 +752,8 @@ export function letItRide(run: RunState): void {
 function startEndlessLoop(run: RunState): void {
   const loop = run.endless!.loop;
   run.act = 4;
-  run.depth = 0;
   const rng = new Rng((run.seed ^ Math.imul(loop + 40, 0x3c6ef372)) >>> 0);
-  run.paths = generateRunPaths(rng, 4, loop, run.cabinet);
-  run.enemies = run.paths.map((opts) => opts[0]);
-  run.chosen = run.paths.map((opts) => opts.length === 1);
+  setMap(run, generateActMap(rng, 4, loop, run.cabinet));
   // NO COMPS: a new loop heals only half your HP.
   run.player.hp = run.endless!.edges.includes('nocomps') ? Math.min(run.player.maxHp, run.player.hp + Math.round(run.player.maxHp / 2)) : run.player.maxHp;
   run.actIntro = false;
@@ -908,6 +964,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     hpAfter: p.hp,
     portrait: currentEnemy(run).portrait,
     act: run.act,
+    ...(currentEnemy(run).isBoss ? { boss: true } : {}),
     ...(scar !== undefined ? { scar } : {}),
     rocksAdded: Math.max(0, rocksIn(next) - rocksIn(old)),
     rocksCrumbled: crumbled,
@@ -954,14 +1011,8 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     run.player.chips += TOLL_PER_LIEN * run.liens.length;
     record.chips = (record.chips ?? 0) + TOLL_PER_LIEN * run.liens.length;
   }
-  // Act 2 elites pay chips (more relics made the act 2 boss a walkover: ITERATION_8).
-  if (beaten.elite && run.act > 1) {
-    run.player.chips += CHIPS.act2EliteChips;
-    record.chips = (record.chips ?? 0) + CHIPS.act2EliteChips;
-    record.eliteChips = CHIPS.act2EliteChips;
-  }
-  // Act 1 elites offer their spoils: choose 1 of 2 relics.
-  if (beaten.elite && run.act === 1) {
+  // Elites offer their spoils in every act: choose 1 of 2 relics (map rework 2026-10-12; act 2 elites paid chips).
+  if (beaten.elite) {
     const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && !LEGENDARY.has(r));
     const rng = new Rng((run.seed ^ Math.imul(run.depth + 7 + run.act * 100, 0x85ebca6b)) >>> 0);
     const spoils = pickRelics(pool, 2, rng);
@@ -1000,7 +1051,8 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   run.bonusLog = fight.vouchers.map((v) => payVoucher(run, v, !holdWheel));
   if (run.bonusLog.length) record.bonuses = run.bonusLog.map((b) => b.label);
   run.depth++;
-  if (run.depth > actLength(run.act)) {
+  run.stop++;
+  if (beaten.isBoss) {
     // The act's boss fell: THE REPO MAN gives everything back.
     for (const l of run.liens ?? []) returnLien(run, l);
     run.liens = [];
@@ -1135,6 +1187,7 @@ function similarKey(o: DraftOption): string {
   return keyOf(o);
 }
 
+/** Relic drafts follow the act's 2nd and 4th won fights (a route with fewer fights gets fewer of these). */
 export const isRelicDraft = (run: RunState) => RUN.relicDraftsAfter.includes(run.depth);
 
 /** Every CHARM card you could be offered: `n` charms on plain cells of one symbol on one reel. */
@@ -1365,8 +1418,8 @@ export function takeSpoils(run: RunState, relic: RelicId): void {
   run.pendingSpoils = null;
 }
 
-export const isShopNow = (run: RunState) => (run.endless ? !run.over && run.depth === 2 : isShopNowActs(run));
-const isShopNowActs = (run: RunState) => !run.over && (RUN.shopAfter.includes(run.depth) || run.actIntro);
+/** The Cashier is open: a new act's intro visit, or a Cashier stop on the map. */
+export const isShopNow = (run: RunState) => !run.over && (run.actIntro || currentStop(run)?.kind === 'shop');
 export const rerollCost = (run: RunState) => CHIPS.rerollBase + run.shopRerolls;
 /** Shield per House turn your current chips would give in the final fight. */
 export const chipShield = (chips: number) => Math.floor(chips / CHIPS.stackPer) * UNIT;
@@ -1496,7 +1549,9 @@ export function reroll(run: RunState): ShopItem[] | null {
 
 export function leaveShop(run: RunState): void {
   run.shopRerolls = 0;
-  run.actIntro = false;
+  // The act's intro visit isn't a stop on the map; a Cashier stop is.
+  if (run.actIntro) run.actIntro = false;
+  else passStop(run);
 }
 
 

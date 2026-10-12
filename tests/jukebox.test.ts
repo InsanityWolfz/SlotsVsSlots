@@ -153,16 +153,16 @@ describe('THE JUKEBOX in the profile', () => {
 
 describe('THE GROUNDER is retired', () => {
   it('no slot machine meets it, in any act', async () => {
-    const { generateRunPaths } = await import('../src/core/enemies');
+    const { generateActMap } = await import('../src/core/enemies');
     const { Rng } = await import('../src/core/rng');
-    const seen = (cab?: 'tesla' | 'jukebox' | 'knight') => {
-      let n = 0;
-      for (let s = 0; s < 60; s++) for (const act of [2, 4]) n += generateRunPaths(new Rng(s), act, 1, cab).flat().filter((e) => e.archetype === 'grounder').length;
-      return n;
-    };
-    expect(seen('jukebox')).toBe(0);
-    expect(seen('knight')).toBe(0);
-    expect(seen('tesla')).toBe(0);
+    let n = 0;
+    for (const cab of ['tesla', 'jukebox', 'knight'] as const)
+      for (let s = 0; s < 60; s++)
+        for (const act of [2, 4]) {
+          const m = generateActMap(new Rng(s), act, 1, cab);
+          n += [m.opener, ...m.routes.flat().map((st) => st.enemy)].filter((e) => e?.archetype === 'grounder').length;
+        }
+    expect(n).toBe(0);
   });
 });
 

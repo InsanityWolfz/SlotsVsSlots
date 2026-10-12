@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
-import { BOSSES, generateRunPaths, RUN_FIGHTS, TUNE, WHEEL, WHEEL_RULES } from '../src/core/enemies';
+import { BOSSES, generateActMap, TUNE, WHEEL, WHEEL_RULES } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
 import { Fight, MIDAS } from '../src/core/fight';
 import { POT } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
-import { createRun, enemyHp, fightConfig, migrateRun } from '../src/core/run';
+import { createRun, enemyHp, fightConfig, migrateRun, skipToBoss, currentEnemy } from '../src/core/run';
 import { STAKE, STAKES } from '../src/core/stakes';
 
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -24,7 +24,7 @@ function wheel(edit?: (c: GameConfig) => void): Fight {
 describe('THE WHEEL: PLACE YOUR BETS', () => {
   it('is the act 2 boss, and the endless cycle is HOUSE, WHEEL, DEALER', () => {
     expect(BOSSES[2].id).toBe('wheel');
-    const loops = [1, 2, 3].map((loop) => generateRunPaths(new Rng(loop), 4, loop).at(-1)![0].boss);
+    const loops = [1, 2, 3].map((loop) => generateActMap(new Rng(loop), 4, loop).boss.boss);
     expect(loops).toEqual(['house', 'wheel', 'dealer']);
   });
 
@@ -137,10 +137,10 @@ describe('THE WHEEL: PLACE YOUR BETS', () => {
     const at = (stake: number) => {
       const run = createRun(defaultConfig(), 11, 'knight', stake, stake >= STAKE.act3);
       run.act = 2;
-      run.paths = generateRunPaths(new Rng(3), 2);
-      run.enemies = run.paths.map((o) => o[0]);
-      run.depth = RUN_FIGHTS;
-      return enemyHp(run, run.enemies[RUN_FIGHTS]);
+      run.map = generateActMap(new Rng(3), 2);
+      run.route = null;
+      skipToBoss(run);
+      return enemyHp(run, currentEnemy(run));
     };
     expect(Math.abs(at(STAKE.wheelFast) - at(0) * TUNE.greenWheel)).toBeLessThanOrEqual(10);
   });
@@ -148,15 +148,15 @@ describe('THE WHEEL: PLACE YOUR BETS', () => {
   it('a saved run from before THE WHEEL loads its act 2 boss as THE WHEEL', () => {
     const run = createRun(defaultConfig(), 5, 'knight');
     run.act = 2;
-    run.paths = generateRunPaths(new Rng(9), 2);
-    run.enemies = run.paths.map((o) => o[0]);
+    run.map = generateActMap(new Rng(9), 2);
+    run.route = null;
+    skipToBoss(run);
     const old = JSON.parse(JSON.stringify(run));
-    old.paths[RUN_FIGHTS][0] = { ...old.paths[RUN_FIGHTS][0], archetype: 'mirror', boss: 'mirror', name: 'THE MIRROR', portrait: 'enemyMirror', strips: [{ sword: 5, shield: 3, shard: 3 }], ability: null };
-    old.enemies[RUN_FIGHTS] = old.paths[RUN_FIGHTS][0];
+    old.map.boss = { ...old.map.boss, archetype: 'mirror', boss: 'mirror', name: 'THE MIRROR', portrait: 'enemyMirror', strips: [{ sword: 5, shield: 3, shard: 3 }], ability: null };
+    old.enemies[old.enemies.length - 1] = old.map.boss;
     const fixed = migrateRun(old);
-    expect(fixed.enemies[RUN_FIGHTS].boss).toBe('wheel');
-    expect(fixed.paths[RUN_FIGHTS][0].name).toBe('THE WHEEL');
-    fixed.depth = RUN_FIGHTS;
+    expect(fixed.enemies.at(-1)!.boss).toBe('wheel');
+    expect(fixed.map.boss.name).toBe('THE WHEEL');
     const cfg = fightConfig(fixed, defaultConfig());
     expect(cfg.enemy.boss).toBe('wheel');
     expect(cfg.enemy.strips.every((s) => !('shard' in s))).toBe(true);

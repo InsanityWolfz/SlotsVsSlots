@@ -20,11 +20,11 @@ export function dailyKey(d = new Date()): string {
 export const dailySpent = (key: string, lastPlayed?: string) => !!lastPlayed && key <= lastPlayed;
 
 /** The share line for a finished daily: day, hero, score and each act's fights (W won, B boss won, L the loss). */
-export function dailyShare(key: string, hero: string, edge: string, score: number, records: { act?: number; won: boolean; depth: number }[], actLen: (act: number) => number): string {
+export function dailyShare(key: string, hero: string, edge: string, score: number, records: { act?: number; won: boolean; boss?: boolean }[]): string {
   const acts = new Map<number, string>();
   for (const r of records) {
     const a = r.act ?? 1;
-    acts.set(a, (acts.get(a) ?? '') + (!r.won ? 'L' : r.depth >= actLen(a) ? 'B' : 'W'));
+    acts.set(a, (acts.get(a) ?? '') + (!r.won ? 'L' : r.boss ? 'B' : 'W'));
   }
   return `SLOTS VS. SLOTS DAILY ${key.slice(5)} | ${hero} | ${edge} | ${score} | ${[...acts.values()].join(' ')}`;
 }

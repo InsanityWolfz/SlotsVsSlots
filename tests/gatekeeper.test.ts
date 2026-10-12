@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { faceRepoMan } from './helpers';
 import { defaultConfig } from '../src/core/config';
-import { GATEKEEPER } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
 import { createRun, fightConfig, finishFight, shopOffers } from '../src/core/run';
 
@@ -9,8 +9,7 @@ describe('THE GATEKEEPER: the REPO MAN', () => {
     const base = defaultConfig();
     const run = createRun(base, 5, 'knight');
     run.pendingStart = null;
-    run.chosen = run.chosen.map(() => true);
-    run.depth = GATEKEEPER.depth;
+    faceRepoMan(run);
     expect(run.enemies[run.depth].archetype).toBe('repo');
     run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 2 }];
     const f = new Fight(fightConfig(run, base), 3);
@@ -28,8 +27,7 @@ describe('THE GATEKEEPER: the REPO MAN', () => {
     const base = defaultConfig();
     const run = createRun(base, 5, 'knight');
     run.pendingStart = null;
-    run.chosen = run.chosen.map(() => true);
-    run.depth = GATEKEEPER.depth;
+    faceRepoMan(run);
     run.player.gilded = [];
     const f = new Fight(fightConfig(run, base), 3);
     for (let t = 0; t < 30 && !f.over; t++) {

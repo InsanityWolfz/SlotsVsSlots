@@ -5,8 +5,12 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
 ## Now, in order
 1. **The run map rework (agreed 2026-10-12).** Why: every human playtester takes the elite at every fork (a free
    relic for little risk), which snowballs. The old sim hid this by bending boss HP per machine.
-   - **Pick a path, not an enemy.** Each act: a shared opener fight → pick 1 of 3 paths of 5 stops each → the paths
-     rejoin at the Cashier → the boss. Every stop and enemy is shown up front; you don't choose fights along the way.
+   - **Built (2026-10-12):** paths of stops, elites that hit harder and pay relics in every act, Cashier and
+     encounter stops, the CHOOSE YOUR PATH screen, the encounter screen. SIDE BETS, the GROUNDER and normal
+     enemies' permanent rocks are gone. See GAME.md.
+   - **Next:** the user's encounter set replaces the 3 placeholders (and needs art); the roster audit below; play it.
+     Open questions to settle while playing: should elites keep the +2 chips; is the post-fight heal too generous now
+     that elites carry the risk; should a path have a crossing point mid-act.
    - **Stops:** FIGHT (a draft and chips), ELITE (a relic pick), CASHIER (spend chips), ENCOUNTER (a non-fight
      gamble: stake chips, HP, relics or upgrades; the user is designing these). Encounters replace SIDE BETS.
    - **No right answer (the user's concern with "greedy / safe / mixed").** A path is judged against YOUR run, not
@@ -18,9 +22,8 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
      - **Elites really hurt:** more damage, not just more HP. Taking two on low HP can end the run.
      - **Timing matters:** where the Cashier sits on a path decides whether your chips arrive in time to be useful.
      - So a weak build wants the gentle path, a strong one the elites, and most runs land somewhere in between.
-   - **Roster:** the GROUNDER goes (it countered lightning on every machine, which is gone). The ROCK GOLEM's rocks
-     crumble after the fight (permanent rocks cost far too much for a normal enemy). Check the COUNTERFEITER and
-     the rest against today's systems.
+   - **Roster:** done: the GROUNDER is gone; normal enemies' rocks crumble after the fight. To do: check the
+     COUNTERFEITER and the rest against today's systems.
    - **Honest HP:** the same enemy HP at the same stop for every machine. Machines get balanced by tuning the
      machines. Bosses stop being sized to your build (or keep only a mild part of it; decide with the new sim).
 2. **Finish THE WHEEL and THE DEALER reworks.** The user likes the ideas. Their rules are in, but neither is tuned.
@@ -46,6 +49,7 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
 
 ## Code cleanup
 - Remove BRIAR's thorns mechanic and the THORNY charm from the engine. Keep the `thorn` id so old saves load.
+- Remove the GROUNDER's dead mechanic (rods, EARTH) and the retired relics' code paths (`retired: true` in relics.ts).
 - Rename the tests by feature, not by iteration (`iteration6.test.ts`, `expert10.test.ts` and so on).
 - Merge `npm run sim` (`src/sim/runSim.ts`) and `tools/sim/*` into the new sim (part of Now, step 3).
 - Later: split the 2-3k-line files (`fight.ts`, `run.ts`, `runScreens.ts`, `director.ts`, `game.ts`).

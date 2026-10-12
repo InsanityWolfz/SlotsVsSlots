@@ -3,7 +3,7 @@ import { defaultConfig, reels3, type GameConfig, type RelicId } from '../src/cor
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { BOSS_HP_PER_RELIC } from '../src/core/relics';
-import { BOSS_MUL, buy, CHIPS, createRun, fightConfig, finishFight, isShopNow, reroll, rerollCost, shopOffers, takeSpoils } from '../src/core/run';
+import { BOSS_MUL, buy, CHIPS, createRun, fightConfig, finishFight, isShopNow, reroll, rerollCost, shopOffers, takeSpoils, skipToBoss, currentEnemy } from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -127,10 +127,8 @@ describe('run economy', () => {
   it('earns chips for winning, with interest, and elites offer 2 relics to choose from', () => {
     const run = createRun(base, 3);
     run.player.chips = 10;
-    run.depth = 1;
-    const elite = run.paths[1].find((e) => e.elite)!;
-    run.enemies[1] = elite;
-    run.chosen[1] = true;
+    const elite = run.map.routes.flat().find((st) => st.kind === 'elite')!.enemy!;
+    run.enemies[0] = elite;
     const f = new Fight(fightConfig(run, base), 1);
     f.winner = 'player';
     const rec = finishFight(run, f);
@@ -142,13 +140,12 @@ describe('run economy', () => {
     expect(run.pendingSpoils).toBeNull();
   });
 
-  it('the Cashier opens after fights 1, 3 and 5 and sells for chips; rerolls cost more each time', () => {
+  it('the Cashier is a stop (on routes, and before every boss) and sells for chips; rerolls cost more each time', () => {
     const run = createRun(base, 5);
-    run.depth = 1;
-    expect(isShopNow(run)).toBe(true);
-    run.depth = 2;
     expect(isShopNow(run)).toBe(false);
-    run.depth = 3;
+    skipToBoss(run);
+    run.stop--;
+    expect(isShopNow(run)).toBe(true);
     run.player.chips = 30;
     const items = shopOffers(run);
     expect(items.length).toBeGreaterThanOrEqual(3);
@@ -163,11 +160,11 @@ describe('run economy', () => {
 
   it('the boss gets tougher per relic (your chips no longer shield you)', () => {
     const run = createRun(base, 9);
-    run.depth = 5;
+    skipToBoss(run);
     run.player.relics = ['clover', 'fang'] as RelicId[];
     run.player.chips = 12;
     const cfg = fightConfig(run, base);
-    expect(cfg.enemy.hp).toBe(Math.round((run.enemies[5].hp * BOSS_MUL.knight.house) / 10) * 10 + 2 * BOSS_HP_PER_RELIC);
+    expect(cfg.enemy.hp).toBe(Math.round((currentEnemy(run).hp * BOSS_MUL.knight.house) / 10) * 10 + 2 * BOSS_HP_PER_RELIC);
     expect(cfg.player.stackShield ?? 0).toBe(0);
   });
 });

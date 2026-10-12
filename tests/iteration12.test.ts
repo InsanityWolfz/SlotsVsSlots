@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type SymbolId } from '../src/core/config';
-import { actLength, generateRunPaths } from '../src/core/enemies';
+import { generateActMap } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { Rng } from '../src/core/rng';
-import { createRun, enemyHp, fightConfig, fightNumber, finishFight, runActs, totalFights } from '../src/core/run';
+import { createRun, currentEnemy, enemyHp, fightConfig, finishFight, runActs, skipToBoss, totalFights, TYPICAL_ACT_FIGHTS } from '../src/core/run';
 import { STAKE } from '../src/core/stakes';
 
 const base = defaultConfig();
@@ -19,26 +19,27 @@ function fight(mut: (c: GameConfig) => void, seed = 7): Fight {
 const dealerCfg = (c: GameConfig) => (c.enemy = { hp: 100, strips: reels3({ shield: 12 }), ability: { kind: 'deal', every: 1, power: 0 }, boss: 'dealer' });
 
 describe('ACT 3: the run', () => {
-  it('act 3 comes with GREEN stake and up; it has 5 fights with forks like acts 1-2, and the Dealer', () => {
+  it('act 3 comes with GREEN stake and up; it has routes like acts 1-2 (no REPO MAN), and the Dealer', () => {
     expect(runActs(createRun(base, 1, 'knight', 1, true))).toBe(2);
     expect(runActs(createRun(base, 1, 'knight', STAKE.act3, false))).toBe(3);
     const run = createRun(base, 1, 'knight', STAKE.act3, true);
     expect(runActs(run)).toBe(3);
-    expect(totalFights(run)).toBe(18);
-    const paths = generateRunPaths(new Rng(3), 3);
-    expect(paths.length).toBe(actLength(3) + 1);
-    // THE REPO MAN holds fight 4 of acts 1-2 only: act 3's fight 4 is a fork again.
-    expect(paths.map((o) => o.length)).toEqual([1, 2, 2, 2, 1, 1]);
-    expect(paths[3].every((e) => e.archetype !== 'repo')).toBe(true);
-    expect(paths[5][0].boss).toBe('dealer');
+    // Routes vary, so the run's length is a guide until you've picked them.
+    expect(totalFights(run)).toBe(3 * TYPICAL_ACT_FIGHTS);
+    for (let seed = 0; seed < 20; seed++) {
+      const m = generateActMap(new Rng(seed), 3);
+      expect(m.routes).toHaveLength(3);
+      expect(m.routes.flat().every((st) => st.enemy?.archetype !== 'repo')).toBe(true);
+      expect(m.boss.boss).toBe('dealer');
+    }
   });
 
   it('beating THE WHEEL at GREEN goes to act 3 (full heal, Cashier, no legendary); beating the Dealer wins', () => {
     const run = createRun(base, 2, 'knight', STAKE.act3, true);
     run.act = 2;
-    run.paths = generateRunPaths(new Rng(4), 2);
-    run.enemies = run.paths.map((o) => o[0]);
-    run.depth = actLength(2);
+    run.map = generateActMap(new Rng(4), 2);
+    run.route = null;
+    skipToBoss(run);
     run.player.hp = 3;
     const f = new Fight(fightConfig(run, base), 1);
     f.winner = 'player';
@@ -48,11 +49,11 @@ describe('ACT 3: the run', () => {
     expect(run.player.hp).toBe(run.player.maxHp);
     expect(run.pendingLegend).toBeNull();
     expect(run.actIntro).toBe(true);
-    expect(fightNumber(run)).toBe(13);
-    run.depth = actLength(3);
+    expect(run.map.boss.boss).toBe('dealer');
+    skipToBoss(run);
     const cfg = fightConfig(run, base);
     expect(cfg.enemy.boss).toBe('dealer');
-    expect(cfg.enemy.hp).toBe(enemyHp(run, run.enemies[actLength(3)]));
+    expect(cfg.enemy.hp).toBe(enemyHp(run, currentEnemy(run)));
     const d = new Fight(cfg, 2);
     d.winner = 'player';
     finishFight(run, d);

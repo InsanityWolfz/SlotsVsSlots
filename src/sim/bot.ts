@@ -5,11 +5,19 @@
  */
 import type { Enh, RelicId, SymbolId } from '../core/config';
 import { CABINETS } from '../core/cabinets';
-import { actLength, DANGER } from '../core/enemies';
+import { DANGER, type Stop } from '../core/enemies';
+import { encounterOf } from '../core/encounters';
 import type { Rng } from '../core/rng';
 import {
   buy,
+  chooseRoute,
   CHIPS,
+  currentStop,
+  isBossNext,
+  isEncounterNow,
+  isShopNow,
+  needsRoute,
+  playEncounter,
   type BigChoice,
   type BigChoiceId,
   type DraftOption,
@@ -280,16 +288,38 @@ function choiceValueBase(run: RunState, c: BigChoice): number {
 }
 export const CHOICE_LOG: Record<string, [number, number]> = {};
 
-export function pickEnemy(run: RunState, policy: DraftPolicy, rng: Rng): number {
-  const opts = run.paths[run.depth];
-  if (policy === 'random') return rng.int(opts.length);
-  const score = (i: number) => {
-    const a = opts[i].archetype;
-    // Elites are tougher but pay a relic: take them when healthy.
-    const eliteBonus = opts[i].elite ? (run.player.hp / run.player.maxHp > 0.7 ? -4 : 3) : 0;
-    return (DANGER[a] ?? 8) * (opts[i].elite ? 1.25 : 1) + eliteBonus;
-  };
-  return opts.map((_, i) => i).reduce((best, i) => (score(i) < score(best) ? i : best), 0);
+/** Route policy: random picks any route; greedy weighs elites by how healthy you are, then danger, Cashiers, gambles. */
+export function pickRoute(run: RunState, policy: DraftPolicy, rng: Rng): number {
+  const routes = run.map.routes;
+  if (policy === 'random') return rng.int(routes.length);
+  const healthy = run.player.hp / run.player.maxHp > 0.7;
+  const score = (route: Stop[]) =>
+    route.reduce((a, st) => {
+      if (st.kind === 'elite') return a + (healthy ? 3 : -4) - (DANGER[st.enemy!.archetype] ?? 8) * 0.1;
+      if (st.kind === 'fight') return a + 1 - (DANGER[st.enemy!.archetype] ?? 8) * 0.05;
+      if (st.kind === 'shop') return a + (run.player.chips >= 10 ? 2 : 0.5);
+      return a + 0.5;
+    }, 0);
+  return routes.map((_, i) => i).reduce((best, i) => (score(routes[i]) > score(routes[best]) ? i : best), 0);
+}
+
+/** Encounter policy: random plays any open choice; greedy gambles when healthy and walks away when hurt. */
+export function pickEncounter(run: RunState, policy: DraftPolicy, rng: Rng): number {
+  const st = currentStop(run);
+  const choices = encounterOf(st?.encounter).choices(run);
+  const open = choices.map((c, i) => (c.disabled ? -1 : i)).filter((i) => i >= 0);
+  if (policy === 'random') return open.length ? rng.pick(open) : choices.length - 1;
+  return !choices[0]?.disabled && run.player.hp / run.player.maxHp > 0.5 ? 0 : choices.length - 1;
+}
+
+/** Walk the map up to the next fight: pick a route, visit Cashiers, play encounters. */
+export function walkStops(run: RunState, policy: DraftPolicy, rng: Rng): void {
+  for (let guard = 0; guard < 20 && !run.over; guard++) {
+    if (needsRoute(run)) chooseRoute(run, pickRoute(run, policy, rng));
+    else if (isShopNow(run)) shop(run, policy, rng);
+    else if (isEncounterNow(run)) playEncounter(run, pickEncounter(run, policy, rng));
+    else return;
+  }
 }
 
 /** Cashier policy: greedy buys the best value-per-chip items, keeping a reserve before the boss. */
@@ -298,7 +328,7 @@ export function shop(run: RunState, policy: DraftPolicy, rng: Rng): void {
   if (policy === 'random') {
     for (const it of items) if (rng.next() < 0.5) buy(run, it);
   } else {
-    const reserve = run.depth >= actLength(run.act) ? CHIPS.stackPer * 2 : 0;
+    const reserve = isBossNext(run) ? CHIPS.stackPer * 2 : 0;
     const sorted = [...items].sort((a, b) => greedyValue(run, b.option) / b.price - greedyValue(run, a.option) / a.price);
     for (const it of sorted) if (greedyValue(run, it.option) >= 5 && run.player.chips - it.price >= reserve) buy(run, it);
   }

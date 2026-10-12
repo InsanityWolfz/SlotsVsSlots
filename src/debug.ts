@@ -1,6 +1,7 @@
 import type { RelicId, SideId, SymbolId } from './core/config';
 import { ARCHETYPES, BOSS, DEALER, makeEnemy, REPO_MAN, WHEEL } from './core/enemies';
 import { Rng } from './core/rng';
+import { fightConfig, skipToBoss } from './core/run';
 import type { CombatEvent } from './core/events';
 import type { Game } from './game';
 
@@ -66,6 +67,15 @@ export function installDebug(game: Game): void {
       if (act3) game.prefs.act3 = true;
       game.startRun(seed, cabinet, stake);
     },
+    /** Jump the run to this act's boss (the first route if none is picked). */
+    toBoss() {
+      if (!game.run) return;
+      skipToBoss(game.run);
+      game.newFight(false, null, fightConfig(game.run, game.cfg), true);
+      game.screens.showNext(game.run);
+    },
+    /** The run's act map, as text: one line per route (F fight, E elite, S Cashier, ? encounter). */
+    map: () => game.run?.map.routes.map((r, i) => `PATH ${i + 1}: ${r.map((st) => (st.kind === 'fight' ? 'F' : st.kind === 'elite' ? 'E' : st.kind === 'shop' ? 'S' : '?') + (st.enemy ? `:${st.enemy.archetype}` : st.encounter ? `:${st.encounter}` : '')).join(' ')}`).join('\n'),
     /** The next player spin in a run fight triggers BONUS WHEEL ('wheel') or RELIC RUSH ('rush'). */
     bonus: (kind: 'wheel' | 'rush') => (game.fight.forceBonus = kind),
     /** Make the current fight end in a win on the player's next spin (for walking run screens). */

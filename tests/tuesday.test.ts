@@ -1,24 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CabinetId } from '../src/core/cabinets';
-import { actLength, generateRunPaths } from '../src/core/enemies';
+import { actLength, generateActMap } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
 import { Fight, RAIN, THORNS } from '../src/core/fight';
 import { SANDGLASS_SLOW } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
-import {
-  charmOptions,
-  createRun,
-  enemyHp,
-  fightConfig,
-  finishFight,
-  levelOptions,
-  machinePower,
-  takeChoice,
-  type RunState,
-  BIG_CARDS,
-  SAFE_CHOICES,
-} from '../src/core/run';
+import { charmOptions, createRun, enemyHp, fightConfig, finishFight, levelOptions, machinePower, takeChoice, type RunState, BIG_CARDS, SAFE_CHOICES, skipToBoss, chooseRoute } from '../src/core/run';
 import { STAKE } from '../src/core/stakes';
 
 const base = defaultConfig();
@@ -169,7 +157,7 @@ describe('charm and level cards', () => {
 
 /** Beat an act's boss (skips the fights in between). */
 function beatBoss(run: RunState): void {
-  run.depth = actLength(run.act);
+  skipToBoss(run);
   const f = new Fight(fightConfig(run, base), 1);
   f.winner = 'player';
   finishFight(run, f);
@@ -221,12 +209,13 @@ describe('post-boss BIG CHOICES', () => {
 });
 
 describe('act 3', () => {
-  it('act 3 has 5 fights; its regulars grow with your machine', () => {
+  it("act 3's HP curve has 5 steps; its regulars grow with your machine", () => {
     expect(actLength(3)).toBe(5);
     const run = createRun(base, 7, 'knight', STAKE.act3, true);
     run.act = 3;
-    run.paths = generateRunPaths(new Rng(2), 3);
-    run.enemies = run.paths.map((o) => o[0]);
+    run.map = generateActMap(new Rng(2), 3);
+    run.route = null;
+    chooseRoute(run, 0);
     const weak = enemyHp(run, run.enemies[1]);
     const p0 = machinePower(run);
     run.player.levels = { sym: { sword: 3, shield: 3 }, charm: { gold: 3 } };
