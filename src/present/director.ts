@@ -639,6 +639,8 @@ export class Director {
     const at = pool.findIndex((p) => key(p.symbol, p.enh) === key(pick, pickEnh));
     const cx = W / 2;
     const cy = MACHINE_TOP + MACHINE_H / 2 + 60;
+    // The Dealer's table panel sits where the wheel spins: it steps aside meanwhile (playtest).
+    this.s.gutter.wheelUp = true;
     const wheel = this.s.fx.add(new SymbolWheel(pool.map((p) => ({ sprite: p.symbol as SpriteId, ...(p.enh ? { charm: ENH_SPRITE[p.enh] } : {}) })), cx, cy, pool.length > 4 ? 90 : 70));
     await this.c.tween({ from: 0, to: 1, dur: 0.18, ease: backOut(2), onUpdate: (v) => (wheel.scale = v) });
     const end = wheel.stopAngle(at, 3);
@@ -662,7 +664,10 @@ export class Director {
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (wheel.flash = v) }));
     this.bg(this.popText(`WILD ${pickEnh ? `${pickEnh.toUpperCase()} ` : ''}${symLabel(pick)} JACKPOT!`, cx, cy - 120, 2.5, '#ff6ad5', 16, 0.4));
     await this.c.wait(0.4);
-    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.2, onUpdate: (v) => (wheel.alpha = v) }).then(() => this.s.fx.remove(wheel)));
+    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.2, onUpdate: (v) => (wheel.alpha = v) }).then(() => {
+      this.s.fx.remove(wheel);
+      this.s.gutter.wheelUp = false;
+    }));
   }
 
   /** Juice §3, mapped to tiers: none → small, pair → medium, triple → jackpot. */
@@ -705,8 +710,9 @@ export class Director {
     const slimeCleanse = sym === 'slime' && side === 'player';
     // BASE X MULT = TOTAL, built part by part (a red -N for what an enemy cut), no words.
     const g = matched!;
-    const fmt = (x: number) => (Number.isInteger(x) ? String(x) : x.toFixed(1));
     const gross = Math.round(g.base * g.mult);
+    // One decimal unless it makes the sum read wrong (39 x 11.3 = 439): then two.
+    const fmt = (x: number) => (Number.isInteger(x) ? String(x) : Math.round(g.base * Number(x.toFixed(1))) === gross ? x.toFixed(1) : String(Number(x.toFixed(2))));
     const bigMath = gross >= 150 || !!g.drop || g.mult >= 4;
     const effect = side === 'enemy' && WRITERS.has(sym) ? effectText(sym, g.amount) : '';
     const parts = slimeCleanse

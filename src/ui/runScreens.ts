@@ -14,6 +14,7 @@ import {
   describeChoice,
   type BigChoice,
   BIG,
+  bustPot,
   describeOption,
   fastHands,
   runEdges,
@@ -2248,7 +2249,7 @@ export class RunScreens {
     // Your reels: columns 1 2 3, a row per symbol (and charm).
     drawText(ctx, 'YOUR REELS', x + 12, y + 178, 2, COLORS.textDim, { align: 'left' });
     const table = runTable(p);
-    drawReelTable(ctx, x + 8, y + 190, table, { colW: 90, rowH: 28, scale: 1.5, text: 2, maxRows: 6, levels: p.levels, ticket: p.relics.includes('ticket'), cap: levelCap(run), maxH: 190, badges: false });
+    drawReelTable(ctx, x + 8, y + 190, table, { colW: 90, rowH: 28, scale: 1.5, text: 2, maxRows: 9, levels: p.levels, ticket: p.relics.includes('ticket'), cap: levelCap(run), maxH: 190, badges: false });
     rule(y + 386);
     // SYMBOLS and CHARMS (user, 2026-10-08): every type you own, its level and what one is worth right now.
     const cap = levelCap(run);
@@ -2797,10 +2798,13 @@ export class RunScreens {
       this.panel(ctx, CX - 330, 120, 660, 300, '#7a3aa8');
       if (!res) {
         // Each offer's terms under its own button (WALK AWAY needs none).
+        // One size for every caption, the biggest that fits a button's width (they used to differ, and nearly touch).
+        const caps = this.encChoices.filter((c, i, all) => !c.stake && i !== all.length - 1);
+        const capScale = [2, 1.5, 1].find((k) => caps.every((c) => textWidth(c.text, k) <= OFFER.w)) ?? 1;
         this.encChoices.forEach((c, i, all) => {
           if (c.stake || i === all.length - 1) return;
           const x = CX + (i - (all.length - 1) / 2) * OFFER.gap;
-          drawText(ctx, c.text, x, OFFER.y + 46, c.text.length > 26 ? 1.5 : 2, c.disabled ? '#6a6078' : COLORS.goldLight);
+          drawText(ctx, c.text, x, OFFER.y + 46, capScale, c.disabled ? '#6a6078' : COLORS.goldLight);
         });
         // The offer's character (a gentle bob), or a gold-edged "?" ticket until its art exists.
         const k = 1 + 0.03 * Math.sin(time * 2);
@@ -2851,13 +2855,18 @@ export class RunScreens {
       this.panel(ctx, x, y, b.w, b.h, b.hover && b.enabled ? COLORS.goldLight : COLORS.gold);
       drawText(ctx, 'PAY', b.x, y + 20, 2, COLORS.textDim, { punch: b.hover && b.enabled ? 1 + 0.04 * Math.sin(time * 8) : 1 });
       y0 = y + 6;
+      // The biggest size that fits the card (with the relic's icon beside it): PAY OVERCHARGE ran edge to edge.
+      const icon = c.relic ? 30 : 0;
+      const fit = (t: string, room: number) => [2.5, 2, 1.5, 1].find((k) => textWidth(t, k) <= room) ?? 1;
+      const ss = fit(c.stake, b.w - 20 - icon);
+      const sw = textWidth(c.stake, ss);
       if (c.relic) {
-        drawSprite(ctx, RELICS[c.relic].sprite as SpriteId, b.x - (c.stake.length * 9) / 2 - 16, y0 + 40, 1.5);
-        this.tips.add(c.relic, b.x - (c.stake.length * 9) / 2 - 16, y0 + 40, 14);
+        drawSprite(ctx, RELICS[c.relic].sprite as SpriteId, b.x - (sw + icon) / 2 + 12, y0 + 40, 1.5);
+        this.tips.add(c.relic, b.x - (sw + icon) / 2 + 12, y0 + 40, 14);
       }
-      drawText(ctx, c.stake, b.x + (c.relic ? 10 : 0), y0 + 40, c.stake.length > 14 ? 1.5 : 2.5, COLORS.text);
+      drawText(ctx, c.stake, b.x + icon / 2, y0 + 40, ss, COLORS.text);
       drawText(ctx, 'FOR', b.x, y0 + 64, 1.5, COLORS.textDim);
-      drawText(ctx, c.prize ?? '', b.x, y0 + 86, 2.5, COLORS.goldLight);
+      drawText(ctx, c.prize ?? '', b.x, y0 + 86, fit(c.prize ?? '', b.w - 20), COLORS.goldLight);
       ctx.restore();
     });
   }
@@ -3689,7 +3698,7 @@ export class RunScreens {
     if (this.onlineLine) drawText(ctx, this.onlineLine, CX, 563, 1.5, COLORS.goldLight);
     const trueEnding = run.won && run.act >= 3;
     const busted = !!run.endless;
-    drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE WHEEL STOPS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
+    drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}: BANKED ${fmtNum(bustPot(run.endless!.pot))}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE WHEEL STOPS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${busted ? `BEAT THE DEALER, THEN ${run.records.filter((r) => r.loop !== undefined).length} ENDLESS FIGHTS` : run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     // DEATH RECAP: its own full-width line under the table (the most important line on a loss).
     const lastRec = run.records[run.records.length - 1];

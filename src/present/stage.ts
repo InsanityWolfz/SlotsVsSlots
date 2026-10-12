@@ -78,6 +78,8 @@ export interface Stage {
     /** The Dealer's face-up next card, and the hand it's playing (1-3). */
     nextDeal?: import('../core/events').DealCard;
     dealerHand?: number;
+    /** A WILDS bonus wheel is spinning in the gutter (the Dealer's table panel hides under it). */
+    wheelUp?: boolean;
     /** The Dealer's ALL IN is armed (big red warning over its machine). */
     allInArmed?: boolean;
     allInCap?: number;

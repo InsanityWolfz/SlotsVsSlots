@@ -62,10 +62,8 @@ usage resets.
   card on a hand change, legendaries shown twice (endless picks, PAWN SHOP before the act's pick), the endless relic pick
   header, HOUSE CUT's text (fights only), LUCKY BREAK at the cap, FAST HANDS on the preview, card suits on a tie, the
   10, achievement text, MAD SCIENCE's +100% tag, dbg.forceWin() on the Dealer.
-- Open bugs: JOKER's all-jackpots wheel covers the Dealer's table panel; regular endless fights don't show the loop;
-  the loop's first legendary pick keeps "THE DEALER DEFEATED!" as its title; no LOOP dividers in the run-over table;
-  the bust screen doesn't show the banked pot; small overflows (PAY OVERCHARGE buy-in, PAWN SHOP captions, 33+ relics,
-  "+4" in YOUR REELS hides wilds and rocks); a pay banner once read 39 x 11.3 = 439 (rounding shown).
+- Also fixed: JOKER's wheel over the Dealer's table (it hides meanwhile), the banked pot on the bust screen, the loop
+  in every endless fight's label, buy-in and offer captions fit, YOUR REELS shows 9 rows a reel, banner decimals.
 - Design: endless loops 1-3 are 1-3-spin fights, then a wall (loop 4-5); the endless Dealer's ALL IN doesn't scale
   (70-110 vs 83K HP); SECOND WIND repeats every loop and late choice screens show one card; a path ending at the
   Cashier runs into the pre-boss Cashier; BANKROLL's act 1 fights take 47-49 spins; low HP with no heal on offer.

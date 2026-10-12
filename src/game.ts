@@ -1799,7 +1799,7 @@ export class Game {
     const cy = MACHINE_TOP + MACHINE_H / 2;
     if (this.phase === 'title') return;
     // Only a boss gets a label here (the map already said FIGHT n OF 5): ROUND and whose turn tell the story.
-    if (g.fightLabel.includes('BOSS') || g.fightLabel === 'SANDBOX') drawText(ctx, g.fightLabel, cx, cy - 112, 2, g.fightLabel === 'SANDBOX' ? COLORS.textDim : '#ff6a5a');
+    if (g.fightLabel.includes('BOSS') || g.fightLabel.startsWith('LOOP') || g.fightLabel === 'SANDBOX') drawText(ctx, g.fightLabel, cx, cy - 112, 2, g.fightLabel === 'SANDBOX' ? COLORS.textDim : g.fightLabel.includes('BOSS') ? '#ff6a5a' : COLORS.goldLight);
     if (g.twist) drawText(ctx, g.twist, cx, cy - 132, 1.25, '#ff9a3a');
     if (g.turn > 0) {
       drawText(ctx, `SPIN ${g.turn}`, cx, cy - 78, 3, COLORS.textDim, { punch: 1 + g.pulse * 0.3 });
@@ -1874,7 +1874,7 @@ export class Game {
     const ab = e.ability;
     const g = this.stage.gutter;
     // Gone once either side's presented HP is 0 (the fight is decided).
-    if (!ab || this.stage.huds.enemy.hp <= 0 || this.stage.huds.player.hp <= 0) return;
+    if (!ab || g.wheelUp || this.stage.huds.enemy.hp <= 0 || this.stage.huds.player.hp <= 0) return;
     // Count like the Dealer's panel does (the presented pace, not the engine's, which runs ahead).
     const left = Math.max(1, (this.stage.huds.enemy.ability?.every ?? ab.every) - this.stage.huds.enemy.charge);
     const soon = left <= 1;
