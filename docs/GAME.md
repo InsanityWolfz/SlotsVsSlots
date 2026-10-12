@@ -135,6 +135,9 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   in Act 3); its big hits were the multiplier (~25 GOLD Charms from BANK VAULT x HIGH ROLLER).
 - **JOKER (user, 2026-10-12):** 380 HP (was 320) and its jackpot payoff no longer heals. Its healing grew with its WILDS
   (5 HP a spin in Act 1, 16 in Act 3), so Act 3 never killed it: GREEN 53 -> 44, WHITE 56 -> 57.
+- **Boss clarity (user, 2026-10-12):** every boss's rules are short rows, each with the icon the fight uses, then a
+  green HOW TO WIN line (`src/ui/bossRules.ts`). The boss card's back shows them; in a boss fight, tap its HUD (the "?")
+  and the same card opens over the paused fight. ALL IN shows in two places (its banner, the table panel).
 - **Stake ladder (user, 2026-10-12):** the stakes after GREEN barely bit (2-7 points a step). Enemy damage +10% a stake
   from BLACK. Sim (1000 runs) BLACK 25-35, BLUE 14-22, GOLD 8-13 (targets 28 / 20 / 14).
 - **User calls, 2026-10-12 (late):** the Dealer's ALL IN grows 25% a loop in ENDLESS (up to 90% of your max HP; the

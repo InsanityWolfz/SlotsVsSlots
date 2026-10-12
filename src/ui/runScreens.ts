@@ -4,7 +4,7 @@ import { challengeById, levelOf } from '../core/meta';
 import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../core/config';
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
-import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, WHEEL_RULES, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
+import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
 import { bjState, bjTotal, BJ, DICE, diceMax, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
@@ -44,14 +44,14 @@ import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import { effectiveAbility, STAKE, STAKES, stakeOf } from '../core/stakes';
 import type { RelicId } from '../core/config';
 import { DANGER } from '../core/enemies';
-import { DEALER_RULES } from '../core/fight';
 import { Clock } from '../present/clock';
 import { backOut, sineOut } from '../present/ease';
 import { ABILITY_UI } from '../present/hud';
 import { ENH_SPRITE, ReelView, SPIN, type CellView } from '../present/reel';
 import { COLORS, H, PITCH, W } from '../present/layout';
-import { artId, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
+import { artId, drawSprite, hasSprite, spriteSize, type SpriteId } from '../render/sprites';
 import { drawText, fmtNum, textWidth } from '../render/text';
+import { bossRules, type BossRuleContext } from './bossRules';
 import { heroSprite } from './menus';
 import { CHIP_SCORE, runEntry, runScore } from '../core/profile';
 import { dailyShare } from '../core/daily';
@@ -356,12 +356,6 @@ const STAGE_TINT: Record<string, string> = {
 };
 /** A shorter line for the front when a boss's blurb won't fit on one line (the full blurb is on the back). */
 const FRONT_BLURB: Record<string, string> = { dealer: 'THE HOUSE HAS A PARTNER' };
-/** A boss's one rule on the front of its card (the full paragraph is on the back). */
-const BOSS_HEADLINE: Record<string, string> = {
-  house: 'JACKPOTS STEAL ITS POT',
-  wheel: 'YOUR PAIRS CLEAR ITS BETS',
-  dealer: 'BEAT ALL THREE HANDS TO WIN',
-};
 
 /** Every BIG CHOICE card looks the same: no tier, no hint which pick is strong or safe. The player decides. */
 
@@ -556,6 +550,12 @@ export class RunScreens {
   }
 
   /** The House's skim cadence for this run (BLACK makes it 3). */
+  /** What a boss's rules depend on (bossRules.ts). */
+  private bossCtx(): BossRuleContext {
+    const run = this.run;
+    return { stake: run?.stake ?? 0, cabinet: run?.cabinet, houseEvery: this.houseEvery(), loop: run?.endless?.loop };
+  }
+
   private houseEvery(): number {
     const run = this.run;
     return run ? effectiveAbility({ kind: 'jackpot', every: POT.cashEvery, power: 1 }, { stake: run.stake, act: 1, sandglass: run.player.relics.includes('sandglass') }).every : 4;
@@ -2641,7 +2641,8 @@ export class RunScreens {
     ctx.fillStyle = '#2a2140';
     ctx.fillRect(8, 197, w - 16, 2);
     if (e.isBoss) {
-      drawText(ctx, BOSS_HEADLINE[e.boss ?? ''] ?? '', 16, 228, 2, COLORS.goldLight, { align: 'left' });
+      const win = bossRules(e.boss ?? 'house', this.bossCtx()).win;
+      drawText(ctx, win, 16, 228, win.length * 12 <= w - 120 ? 2 : 1.5, '#7dff7a', { align: 'left' });
       // GREEN: THE WHEEL STARTS FAST (its rule, on the card that meets it).
       if (e.boss === 'wheel' && run.stake >= STAKE.wheelFast) drawText(ctx, 'STARTS FAST', w - 24, 228, 1.5, '#ff8a7a', { align: 'right' });
     } else {
@@ -2683,22 +2684,27 @@ export class RunScreens {
         `ELITE: +${(e.act ?? 1) > 1 ? Math.round((ELITE_HP_MUL_2 - 1) * 100) : e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP, HITS ${Math.round((ELITE_DMG_MUL - 1) * 100)}% HARDER. RELIC PICK, +${CHIPS.eliteBonus} CHIPS`,
         '#ff9a3a',
       );
-    const dirty = e.boss === 'house' && run.stake >= STAKE.houseDirty;
+    // A boss's rules, one row each with the icon the fight uses for it, then HOW TO WIN (bossRules.ts).
     if (e.isBoss) {
-      y += 2;
-      line(
-        e.boss === 'dealer'
-          ? `THREE HANDS, EACH WITH ITS OWN HP BAR. HAND 1, THE DEAL: EVERY 3 TURNS IT DEALS A BUST (YOUR BEST REEL'S PAYLINE PAYS NOTHING NEXT SPIN). HAND 2, RAISE: ITS HITS ARE X${DEALER_RULES.raiseMul} AND IT STILL DEALS BUSTS. HAND 3, ALL IN: EVERY 2 TURNS IT HITS FOR ${Math.round(DEALER_RULES.allInFloor*100)}-${Math.round(DEALER_RULES.allInCap*100)}% OF YOUR MAX HP, THROUGH SHIELDS.`
-          : e.boss === 'wheel'
-          ? `PLACE YOUR BETS: EACH TURN IT DROPS ${run.stake >= STAKE.wheelFast ? WHEEL_RULES.fast : WHEEL_RULES.place} CHIPS ON YOUR REELS. A PAIR CLEARS ITS REELS, A JACKPOT CLEARS THEM ALL (+1 CHIP EACH). NO MORE BETS: EVERY 3RD TURN, EACH CHIP LEFT HITS ${Math.round(wheelChipShare(run.cabinet) * 100)}% OF YOUR MAX HP. ${run.stake >= STAKE.wheelFast ? 'GREEN: IT STARTS FAST.' : 'AT HALF HP THE WHEEL SPINS FASTER: 3 A TURN.'}`
-          : `COINS FILL THE POT. EVERY ${this.houseEvery()} TURNS IT SKIMS HALF AT YOU. ANY JACKPOT YOU HIT STEALS THE POT! AT HALF HP IT DOUBLES DOWN: THE POT DOUBLES. FROM TURN ${POT.lastCall}, LAST CALL: IT SKIMS EVERY TURN.${dirty ? ' BLACK: IT BOMBS YOUR PAYLINE.' : ''}`,
-        COLORS.goldLight,
-      );
+      const br = bossRules(e.boss ?? 'house', this.bossCtx());
+      const rcols = Math.floor((w - 64) / (6 * sc));
+      for (const r of br.rules) {
+        // Icons come in 8-24 px: each fits one box, so a big pot doesn't cover the row under it.
+        const isz = spriteSize(r.icon);
+        drawSprite(ctx, r.icon, 28, y + 4 * sc, (11 * sc) / Math.max(isz.w, isz.h));
+        wrap(r.text, rcols).forEach((l) => {
+          drawText(ctx, l, 50, y, sc, COLORS.text, { align: 'left' });
+          y += 10 * sc;
+        });
+        y += 6;
+      }
+      drawText(ctx, `HOW TO WIN: ${br.win}`, 16, y + 2, sc, '#7dff7a', { align: 'left' });
     }
     // THEIR REELS with counts, along the bottom.
     ctx.fillStyle = '#2a2140';
     ctx.fillRect(8, 197, w - 16, 2);
     drawText(ctx, 'THEIR REELS', 16, 214, 1.5, COLORS.textDim, { align: 'left' });
+    const dirty = e.boss === 'house' && run.stake >= STAKE.houseDirty;
     const shown = dirty ? { ...e.strips[0], bomb: STAKE.houseBombsPerReel } : e.strips[0];
     let cx = 30;
     for (const [sym, n] of Object.entries(shown) as [SymbolId, number][]) {

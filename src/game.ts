@@ -45,17 +45,18 @@ import { Camera } from './present/camera';
 import { Clock } from './present/clock';
 import { Director, VOUCHER_GAP, VOUCHER_X, VOUCHER_Y } from './present/director';
 import { FxLayer } from './present/fx';
-import { HudView, type HudMeter } from './present/hud';
-import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, RELIC_FEED, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
+import { HUD_W, HudView, type HudMeter } from './present/hud';
+import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, HUD_TOP, RELIC_FEED, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
 import { MachineView } from './present/machine';
 import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
 import { Background } from './render/background';
-import { drawSprite, type SpriteId, artId } from './render/sprites';
+import { drawSprite, spriteSize, type SpriteId, artId } from './render/sprites';
+import { bossRules } from './ui/bossRules';
 import { drawText, fmtNum } from './render/text';
 import { Button } from './ui/button';
 import { Recap } from './ui/recap';
-import { BUILD, CHIP_SPOT, RunScreens } from './ui/runScreens';
+import { BUILD, CHIP_SPOT, RunScreens, wrap } from './ui/runScreens';
 import { drawRelicTip } from './ui/relicTip';
 import { Pause } from './ui/pause';
 import { MusicPlayer, SONG_HOME, type SongId } from './audio/music';
@@ -1356,6 +1357,12 @@ export class Game {
   pointerDown(x: number, y: number): void {
     this.startAudio();
     if (this.coach.active) return this.coach.hitsSkip(x, y) ? this.skipTutorial() : this.coach.advance();
+    // The boss card is open: any tap closes it (the fight was paused under it).
+    if (this.bossCard) {
+      this.bossCard = false;
+      this.sounds.click();
+      return;
+    }
     if (this.pause.open && !this.menus.isOpen) return this.pause.pointerDown(x, y);
     if (this.menus.isOpen) {
       // The SOUND toggle stays live on the main menu.
@@ -1386,6 +1393,12 @@ export class Game {
       return;
     }
     if (this.screens.active && this.screens.pointerDown(x, y)) return;
+    // Tap a boss's HUD: its rules card (BOSS CLARITY, user 2026-10-12). Reading, not playing: the fight pauses under it.
+    if (this.onBossHud(x, y)) {
+      this.bossCard = true;
+      this.sounds.click();
+      return;
+    }
     // A click no longer skips the fight's playback: spam-clicking skipped every turn and ended rounds in seconds.
     // The speed buttons (1X-8X) are the way to watch faster.
   }
@@ -1531,7 +1544,7 @@ export class Game {
     this.pause.update(dt);
     // The soundtrack follows the screen (MUSIC): menus, the lounge between fights, each act, the bosses.
     if (this.music) this.playMusic();
-    const gdt = this.coach.active || this.pause.open ? 0 : this.stage.clock.tick(dt);
+    const gdt = this.coach.active || this.pause.open || this.bossCard ? 0 : this.stage.clock.tick(dt);
     this.camera.update(dt);
     this.particles.update(gdt);
     // THE WHEEL's topper turns (it races when the ball drops, then settles back to its idle turn).
@@ -1580,6 +1593,8 @@ export class Game {
     this.particles.draw(ctx);
     s.fx.draw(ctx, s.clock.time, 20, Infinity);
     if (this.drawerT < 0.5) this.drawRelicFeed(ctx);
+    if (this.fight.cfg.enemy.boss && !this.screens.active) this.drawBossHint(ctx);
+    if (this.bossCard) this.drawBossCard(ctx);
     // The BUILD drawer: your whole build slides out over the left side (relics fire inside it), chips stay put on top.
     if (this.drawerLive()) {
       if (this.drawerT > 0.005) {
@@ -1900,6 +1915,59 @@ export class Game {
   }
 
   /** The Dealer's table: green felt behind its machine, and the ALL IN warning over it. */
+  /** The boss card is open (it pauses the fight). */
+  private bossCard = false;
+
+  private onBossHud(x: number, y: number): boolean {
+    if (!this.fight.cfg.enemy.boss || this.screens.active || this.fight.over) return false;
+    const hx = this.stage.huds.enemy.x;
+    return x >= hx && x <= hx + HUD_W && y >= HUD_TOP - 8 && y <= HUD_TOP + 140;
+  }
+
+  /** A small "?" on a boss's HUD: tap it for the rules. */
+  private drawBossHint(ctx: CanvasRenderingContext2D): void {
+    const hx = this.stage.huds.enemy.x + HUD_W - 18;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(hx - 12, HUD_TOP + 2, 24, 22);
+    ctx.fillStyle = '#3a2e52';
+    ctx.fillRect(hx - 10, HUD_TOP + 4, 20, 18);
+    drawText(ctx, '?', hx, HUD_TOP + 13, 2, COLORS.goldLight);
+  }
+
+  /** The boss's rules (bossRules.ts), over the paused fight. */
+  private drawBossCard(ctx: CanvasRenderingContext2D): void {
+    const e = this.fight.cfg.enemy;
+    const br = bossRules(e.boss ?? 'house', {
+      stake: this.run?.stake ?? 0,
+      cabinet: this.run?.cabinet,
+      houseEvery: this.fight.sides.enemy.ability?.every ?? 3,
+      loop: e.loop,
+    });
+    ctx.fillStyle = 'rgba(6,2,12,0.75)';
+    ctx.fillRect(0, 0, W, H);
+    const w = 720;
+    const lines = br.rules.map((r) => ({ icon: r.icon, rows: wrap(r.text, 46) }));
+    const h = 120 + lines.reduce((a, l) => a + l.rows.length * 24 + 12, 0) + 40;
+    const x = W / 2 - w / 2;
+    const y = H / 2 - h / 2;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 4, y - 4, w + 8, h + 8);
+    ctx.fillStyle = '#ff6a5a';
+    ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(x, y, w, h);
+    drawText(ctx, e.name ?? 'THE BOSS', W / 2, y + 30, 3.5, '#ff6a5a');
+    let ry = y + 74;
+    for (const l of lines) {
+      const sz = spriteSize(l.icon);
+      drawSprite(ctx, l.icon, x + 40, ry + 4, 24 / Math.max(sz.w, sz.h));
+      l.rows.forEach((row, k) => drawText(ctx, row, x + 68, ry + k * 24, 2, COLORS.text, { align: 'left' }));
+      ry += l.rows.length * 24 + 12;
+    }
+    drawText(ctx, `HOW TO WIN: ${br.win}`, W / 2, ry + 10, 2, '#7dff7a');
+    drawText(ctx, 'TAP TO CLOSE', W / 2, y + h - 16, 1.5, COLORS.textDim);
+  }
+
   private drawDealerTable(ctx: CanvasRenderingContext2D, t: number): void {
     const cx = MACHINE_CX.enemy;
     ctx.fillStyle = '#0a2416';
@@ -1909,7 +1977,8 @@ export class Game {
     ctx.strokeStyle = '#c9a040';
     ctx.lineWidth = 2;
     ctx.strokeRect(cx - 174, MACHINE_TOP - 14, 348, MACHINE_H + 28);
-    if (this.stage.gutter.allInArmed) drawText(ctx, `ALL IN: ${fmtNum(this.stage.gutter.allInFloor ?? 0)} TO ${fmtNum(this.stage.gutter.allInCap ?? 0)}`, cx, MACHINE_TOP + MACHINE_H + 46, 3, '#ff6a5a', { punch: 1 + 0.08 * Math.sin(t * 10) });
+    // (ALL IN's range lives in the table panel and its banner: a third copy under the reels was noise. Playtest.)
+    void t;
   }
 
   /**

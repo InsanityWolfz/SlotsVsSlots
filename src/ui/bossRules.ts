@@ -1,0 +1,61 @@
+/**
+ * BOSS CLARITY (user, 2026-10-12): every boss's rules as short rows, each with the icon the fight uses for it, and one
+ * HOW TO WIN line. The boss card's back and the in-fight card (tap the boss's HUD) both draw these, so a rule reads the
+ * same everywhere.
+ */
+import { DEALER_RULES } from '../core/fight';
+import { WHEEL_RULES, wheelChipShare } from '../core/enemies';
+import { POT } from '../core/relics';
+import { STAKE } from '../core/stakes';
+import type { SpriteId } from '../render/spriteData';
+import { artId } from '../render/sprites';
+
+export interface BossRules {
+  rules: { icon: SpriteId; text: string }[];
+  win: string;
+}
+
+export interface BossRuleContext {
+  stake: number;
+  cabinet?: string;
+  /** THE HOUSE's skim cadence as it will really play (stake, Golden Hourglass). */
+  houseEvery: number;
+  /** ENDLESS: the loop (the Dealer's ALL IN grows with it). */
+  loop?: number;
+}
+
+export function bossRules(boss: string, c: BossRuleContext): BossRules {
+  if (boss === 'dealer') {
+    const k = 1 + DEALER_RULES.loopStep * (c.loop ?? 0);
+    const pct = (x: number) => Math.round(Math.min(DEALER_RULES.loopMax, x * k) * 100);
+    return {
+      rules: [
+        { icon: artId('dealCut'), text: `HAND 1: EVERY ${DEALER_RULES.bustEvery} TURNS A BUST. YOUR BEST REEL PAYS NOTHING NEXT SPIN` },
+        { icon: artId('dealRaise'), text: `HAND 2: ITS HITS ARE X${DEALER_RULES.raiseMul}. STILL BUSTS` },
+        { icon: artId('dealShuffle'), text: `HAND 3: EVERY ${DEALER_RULES.allInEvery} TURNS ALL IN, ${pct(DEALER_RULES.allInFloor)}-${pct(DEALER_RULES.allInCap)}% OF YOUR MAX HP THROUGH SHIELDS` },
+      ],
+      win: 'EACH HAND HAS ITS OWN HP BAR. BEAT ALL THREE',
+    };
+  }
+  if (boss === 'wheel') {
+    const fast = c.stake >= STAKE.wheelFast;
+    return {
+      rules: [
+        { icon: artId('betChip'), text: `EACH TURN IT PUTS ${fast ? WHEEL_RULES.fast : WHEEL_RULES.place} CHIPS ON YOUR REELS` },
+        { icon: artId('icoBets'), text: `EVERY 3RD TURN, EACH CHIP LEFT HITS ${Math.round(wheelChipShare(c.cabinet, (c.loop ?? 0) > 0) * 100)}% OF YOUR MAX HP` },
+        { icon: artId('ball'), text: fast ? 'GREEN: IT STARTS FAST' : `AT HALF HP: ${WHEEL_RULES.fast} CHIPS A TURN` },
+      ],
+      win: 'YOUR PAIRS CLEAR THEIR REELS. A JACKPOT CLEARS THEM ALL',
+    };
+  }
+  const dirty = c.stake >= STAKE.houseDirty;
+  return {
+    rules: [
+      { icon: artId('coin'), text: 'COINS ON ITS REELS FILL THE POT' },
+      { icon: artId('icoCoin'), text: `EVERY ${c.houseEvery} TURNS IT SKIMS HALF THE POT AT YOU` },
+      { icon: artId('potTier4'), text: `AT HALF HP THE POT DOUBLES. FROM TURN ${POT.lastCall}, IT SKIMS EVERY TURN` },
+      ...(dirty ? [{ icon: artId('bomb'), text: 'BLACK: IT BOMBS YOUR PAYLINE' }] : []),
+    ],
+    win: 'YOUR JACKPOTS STEAL ITS POT',
+  };
+}
