@@ -3673,6 +3673,25 @@ S.relicArmoredCar = lit(16, 16, [
   '..kSSk....kSSk..',
   '..kkkk....kkkk..',
 ]);
+// relicGreatsword (16x16): GREATSWORD, an upright two-handed blade: long bright steel, dark edge, wide gold crossguard, leather grip, gold pommel
+S.relicGreatsword = lit(16, 16, [
+  '................',
+  '.......LS.......',
+  '......WLSD......',
+  '......WLSD......',
+  '......WLSD......',
+  '......WLSD......',
+  '......WLSD......',
+  '......WLSD......',
+  '......WLSD......',
+  '..g...WLSD...g..',
+  '.gYGGGGGGGGGGgg.',
+  '.gYYYYYYYYYYGgg.',
+  '..g...BbBb...g..',
+  '.......BbB......',
+  '.......BbB......',
+  '......gYYGg.....',
+]);
 // relicSafeDeposit (16x16): SAFE DEPOSIT, a steel strongbox with gold trim, a blue shield emblem and a keyhole
 S.relicSafeDeposit = lit(16, 16, [
   '................',
@@ -5706,7 +5725,7 @@ const DIMS = {
   hsSkull: 12, trophySmall: 12, coinSpin0: 16, coinSpin1: 16, coinSpin2: 16, coinSpin3: 16, tutorialPointer: 12,
   heroKnight: 24, heroMidas: 24, heroThorn: 24, heroTesla: 24, heroJoker: 24,
   goldbar: 16, thorn: 16, ace: 16, relicChalice: 16,
-  relicDrum: 16, relicChainmail: 16, relicVault: 16, relicArmoredCar: 16, relicSafeDeposit: 16, relicDecree: 16, relicRosehip: 16,
+  relicDrum: 16, relicChainmail: 16, relicVault: 16, relicArmoredCar: 16, relicGreatsword: 16, relicSafeDeposit: 16, relicDecree: 16, relicRosehip: 16,
   relicGraft: 16, relicFaraday: 16, relicStatic: 16, relicCapbells: 16, relicStacked: 16,
   relicGoldleaf: 16, relicExecutioner: 16, relicKiss: 16, relicHorseshoe: 16, relicUnderdog: 16,
   relicFirstblood: 16, relicPiggy: 16, relicTrophy: 16, relicHolywater: 16, relicBash: 16,
@@ -5845,7 +5864,7 @@ export type SpriteId =
   | 'heroTesla' | 'heroJoker'
   | 'goldbar' | 'thorn' | 'ace'                          // signature symbols: MIDAS gold bar, BRIAR thorn, 16x16
   | 'relicChalice'                               // BLOOD CHALICE relic, 16x16
-  | 'relicDrum' | 'relicChainmail' | 'relicVault' | 'relicArmoredCar' | 'relicSafeDeposit' | 'relicDecree' // charm-rework relics, 16x16
+  | 'relicDrum' | 'relicChainmail' | 'relicVault' | 'relicArmoredCar' | 'relicGreatsword' | 'relicSafeDeposit' | 'relicDecree' // charm-rework relics, 16x16
   | 'relicRosehip' | 'relicGraft' | 'relicFaraday' | 'relicStatic'
   | 'relicCapbells' | 'relicStacked' | 'relicGoldleaf' | 'relicExecutioner'
   | 'relicKiss' | 'relicHorseshoe' | 'relicUnderdog' | 'relicFirstblood'
