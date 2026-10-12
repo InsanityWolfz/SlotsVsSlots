@@ -1,25 +1,24 @@
 import { UNIT, type Enh, type Gild, type Levels, type StripCounts, type SymbolId } from './config';
 
-export type CabinetId = 'knight' | 'midas' | 'thorn' | 'tesla' | 'joker' | 'jukebox';
+export type CabinetId = 'knight' | 'midas' | 'tesla' | 'joker' | 'jukebox';
 
 /**
  * What a slot machine's signature symbol fills, and what the full meter does (the Tuesday rework):
  * - special (TESLA): bolts charge the lightning special, which fires at `cost` and ignores shields;
  * - touch (MIDAS): gold bars fill the meter (no cap); when full, the swords and shields on your next such spin
  *   gain a gold touch (x2 each, max 3 per cell) for the rest of the fight; every extra full meter touches one more cell;
- * - thorns (BRIAR): thorns bank their pay; the next time you're attacked the bank hits back, then clears;
  * - jackpots (JAX): each WILD on the payline fills the meter; when full, the next spin's three payline
  *   cells each pay as a jackpot of themselves.
  * - volume (THE JUKEBOX): each NOTE on the payline turns the volume up 1 (+10% damage each); a spin with no note drops it
  *   2; at the max the next spin is THE DROP: every NOTE you can see in the 3x3 window hits. Then it falls back to 2.
  * Every payoff also heals you a little (`heal`). KNIGHT has no meter.
  */
-export type MeterKind = 'special' | 'touch' | 'thorns' | 'jackpots' | 'vault' | 'volume';
+export type MeterKind = 'special' | 'touch' | 'jackpots' | 'vault' | 'volume';
 export interface Meter {
   kind: MeterKind;
   /** The symbol that fills it. */
   symbol: SymbolId;
-  /** Full at this much (x10 units; BRIAR's bank has no cap). */
+  /** Full at this much (x10 units). */
   cost: number;
   /** HP healed each time the payoff fires. */
   heal: number;
@@ -113,25 +112,6 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },
-  thorn: {
-    id: 'thorn',
-    hero: 'BRIAR',
-    heroSprite: 'heroThorn',
-    name: 'THORN',
-    sprite: 'cabinetThorn',
-    blurb: 'TOUCH IT. I DARE YOU.',
-    hp: 30 * UNIT,
-    // No swords (2026-10-07): BRIAR is all retaliation. Thorns bank; a hit that gets through fires the bank.
-    strips: r3({ shield: 6, thorn: 6 }),
-    gilded: [],
-    favors: 'thorny',
-    // No volley heal (her volleys fire so often now that 10 each kept her topped up); ROSE HIP is her sustain.
-    meter: { kind: 'thorns', symbol: 'thorn', cost: 0, heal: 0 },
-    symbols: ['thorn', 'shield'],
-    attack: 'thorn',
-    rule: 'THORNS ADD UP. EACH SPIN, HALF OF THEM LASH OUT. A HIT THAT GETS THROUGH FIRES THE REST. 300 HP.',
-    unlock: 'BEAT THE HOUSE',
-  },
   tesla: {
     id: 'tesla',
     hero: 'DOC VOLTZ',
@@ -194,10 +174,9 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
 };
 
 /** The playable lineup, in unlock order. MIDAS is shelved for a rework (2026-09-28): hidden, but kept in saves. */
-/** BRIAR ('thorn') is retired (2026-10-08): THE JUKEBOX takes her slot. Her id stays in saves (ALL_CABINETS). */
 export const CABINET_ORDER: CabinetId[] = ['knight', 'tesla', 'jukebox', 'joker', 'midas'];
 /** Every machine id a save may hold (shelved ones included), so loading a save never drops an unlock. */
-export const ALL_CABINETS: CabinetId[] = ['knight', 'midas', 'thorn', 'tesla', 'joker', 'jukebox'];
+export const ALL_CABINETS: CabinetId[] = ['knight', 'midas', 'tesla', 'joker', 'jukebox'];
 
 /** This machine has the lightning special (TESLA; also the bare engine with no machine, for tests). */
 export const hasSpecial = (c: Cabinet | null | undefined) => !c || c.meter?.kind === 'special';

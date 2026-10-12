@@ -51,13 +51,13 @@ export type CombatEvent =
       reels: number[];
       amount: number;
       /** KEEN: ignored shields. SPIKED: this is a reflected hit. Act 2: drain / mimic. */
-      note?: 'pierce' | 'thorns' | 'echo' | 'drain' | 'mimic';
+      note?: 'pierce' | 'echo' | 'drain' | 'mimic';
       blocked: number;
       hpDamage: number;
       targetHp: number;
       targetShield: number;
     }
-  | { type: 'shieldGain'; side: SideId; reels: number[]; amount: number; total: number; /** Not from a shield group: chips vs a boss, the Chalice's overheal, the Cactus. */ source?: 'chips' | 'chalice' | 'cactus' }
+  | { type: 'shieldGain'; side: SideId; reels: number[]; amount: number; total: number; /** Not from a shield group: chips vs a boss, the Chalice's overheal. */ source?: 'chips' | 'chalice' }
   | { type: 'energyGain'; side: SideId; reels: number[]; amount: number; total: number; /** Energy the Grounder's rods earthed away. */ earthed?: number }
   | {
       type: 'specialFire';
@@ -74,7 +74,7 @@ export type CombatEvent =
     }
   | { type: 'heal'; side: SideId; amount: number; hp: number; source: HealSource }
   /**
-   * A signature meter moved (MIDAS gold bars, BRIAR's thorn bank, JAX's wilds). `armed`: it's full and
+   * A signature meter moved (MIDAS gold bars, JAX's wilds). `armed`: it's full and
    * waiting to pay off; `wasted`: gold bars that landed while it was already full.
    */
   | { type: 'meter'; side: SideId; reels: number[]; amount: number; total: number; armed?: boolean; wasted?: number; earthed?: number; dropsNow?: boolean }

@@ -61,7 +61,6 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   // Build relics are worth a lot more once you own the gild they amplify.
   midas: 4,
   rod: 4,
-  cactus: 3,
   prism: 3,
   hone: 3,
   // Legendaries.
@@ -77,8 +76,6 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   chainmail: 8,
   vault: 8,
   decree: 8.5,
-  rosehip: 9,
-  bramble: 8.5,
   riposte: 8,
   tower: 7,
   headsman: 8,
@@ -90,13 +87,11 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   nestegg: 8,
   coup: 7.5,
   compound: 7,
-  hedge: 7.5,
   meltdown: 7.5,
   pulse: 7,
   deckdrum: 8,
   wildcard: 7.5,
   loadedreel: 7.5,
-  graft: 5,
   faraday: 7,
   static: 8.5,
   capbells: 8.5,
@@ -116,7 +111,6 @@ export const RELIC_VALUE: Record<RelicId, number> = {
 };
 const BUILD: Partial<Record<RelicId, (run: RunState) => boolean>> = {
   rod: (r) => r.player.gilded.some((g) => g.enh === 'charged'),
-  cactus: (r) => r.cabinet === 'thorn',
   chalice: (r) => r.player.gilded.some((g) => g.enh === 'vamp'),
   prism: (r) => r.player.strips.some((s) => (s.wild ?? 0) > 0),
 };
@@ -148,7 +142,7 @@ export function greedyValue(run: RunState, o: DraftOption): number {
     }
     case 'gild':
       if (SIM_BIAS.enh) return o.enh === SIM_BIAS.enh ? 9.5 : 0;
-      return { gold: 9, charged: 8.5, spiked: 6.5, keen: 6.5, vamp: 7, lucky: run.cabinet === 'joker' ? 8.5 : 7, blaze: 8, thorny: 8, lucre: 6.5, trick: 8, echo: 8 }[o.enh] + (p.gilded.some((g) => g.enh === o.enh) ? 0.5 : 0);
+      return { gold: 9, charged: 8.5, spiked: 6.5, keen: 6.5, vamp: 7, lucky: run.cabinet === 'joker' ? 8.5 : 7, blaze: 8, lucre: 6.5, trick: 8, echo: 8 }[o.enh] + (p.gilded.some((g) => g.enh === o.enh) ? 0.5 : 0);
     case 'symLevel':
       return o.symbol === attackOf(run) ? 8 : o.symbol === 'shield' ? 5 : 7.5;
     case 'charmLevel':
@@ -168,7 +162,6 @@ export function greedyValue(run: RunState, o: DraftOption): number {
 export const BIG_PICK_WIN: Record<string, Record<string, number>> = {
   knight: { luckyBreak: 53, excalibur: 31, sweepUp: 42, gildLot: 42, shieldWall: 47, crusade: 39, armsRace: 40, cursedIdol: 31, shieldSlam: 30, masterwork: 39, meltDown: 50, bloodPact: 42, pawnShop: 43, devilsDue: 60, doubleOrNothing: 36, squire: 48, cleanCut: 29, glassCannon: 39, bloodMoon: 42, whetted: 33, cashIn: 8, allIn: 27, treasure: 50 },
   tesla: { luckyBreak: 24, chainLightning: 28, sweepUp: 18, madScience: 22, gildLot: 33, meltDown: 42, cursedIdol: 15, supercell: 20, fourLeaf: 8, groundWire: 27, pawnShop: 13, doubleOrNothing: 26, overclock: 12, masterwork: 23, devilsDue: 45, cashIn: 3, cleanCut: 28, bloodPact: 41, stormFront: 19, glassCannon: 35, allIn: 33, quickening: 13, treasure: 16, armsRace: 15 },
-  thorn: { luckyBreak: 40, gildLot: 48, armsRace: 39, sweepUp: 35, cursedIdol: 26, meltDown: 54, masterwork: 49, devilsDue: 60, bloodPact: 32, glassCannon: 32, doubleOrNothing: 24, pawnShop: 22, cleanCut: 51, fourLeaf: 51, cashIn: 45, allIn: 60, quickening: 24, treasure: 29 },
   joker: { luckyBreak: 43, jokersReel: 45, highCard: 43, sweepUp: 29, cardShark: 46, doubleFeature: 41, meltDown: 33, gildLot: 38, cashIn: 9, trumpCard: 32, cursedIdol: 28, fourLeaf: 34, markedCards: 37, pawnShop: 35, bloodMoon: 29, devilsDue: 47, whetted: 26, glassCannon: 41, masterwork: 34, cleanCut: 14, doubleOrNothing: 14, bloodPact: 55 },
   midas: { luckyBreak: 45, noLimit: 38, sweepUp: 40, gildLot: 35, heist: 81, monsoon: 13, armsRace: 42, meltDown: 38, openBar: 42, cursedIdol: 30, devilsDue: 44, masterwork: 29, glassCannon: 42, pawnShop: 43, doubleOrNothing: 18, trustFund: 50, bloodPact: 54, cleanCut: 29, cashIn: 39 },
 };

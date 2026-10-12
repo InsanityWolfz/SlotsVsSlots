@@ -87,14 +87,15 @@ Each machine except KNIGHT has one signature symbol and a meter.
 | JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat the House with wilds |
 | BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill the vault; a chip jackpot makes it rain | clear a run |
 
-BRIAR / THORN is retired (the JUKEBOX replaced her). Her id `thorn` stays only so old saves load (`ALL_CABINETS`).
+BRIAR / THORN is retired and removed from the code (the JUKEBOX replaced her). Old saves map her unlock and stakes to
+the JUKEBOX; a saved BRIAR run or hiscore entry is dropped on load.
 Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
 
 ## Charms and relics
 - **Charms live on cells.** Levels live on the Charm TYPE (cap 3; endless +1; the LIMIT BREAK big choice goes to 5).
   Pay = BASE × MULT, and gold Charms in a group ADD. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
   machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER), ECHO (JUKEBOX) and BULWARK (`spiked`, KNIGHT).
-  THORNY is BRIAR's and retired with her. `src/core/charms.ts`.
+  `src/core/charms.ts`.
 - **Relics:** about 58, in common, uncommon and legendary tiers; some are machine identity relics. `src/core/relics.ts`.
   To list exactly what players read: `npx tsx tools/content/audit.ts`.
 

@@ -32,10 +32,6 @@ export const CHARM_VALUE: Record<Enh, number[]> = {
   /** BULWARK (id 'spiked'): a shield cell with it also deals this % of its share of the group as damage. Was 50/75/100: KNIGHT's own
    * charm cost KNIGHT runs. */
   spiked: [0, 100, 125, 150, 175, 200, 225],
-  /** THORNY (BRIAR only): banked into your thorns when it lands on the payline. BRIAR's charms were a trap: a no-charms
-   * drafter won +9 WHITE (EXPERT_PLAYTEST_12 D1). 20/30/40 measured 42.1/14.6 for BRIAR: a trap of its own (the round's
-   * prototype read LV4 from the start). */
-  thorny: [0, 50, 60, 70, 80, 90, 100],
   /** LUCRE: the per-fight chip cap (+LUCRE_CHIPS each time its group pays, paid on a win). +1 a hit measured under
    * taking no charm (CONTENT_13). */
   lucre: [0, 6, 9, 12, 15, 18, 21],
@@ -49,14 +45,13 @@ export const LUCRE_CHIPS = 3;
 
 /** Which symbols each charm can go on. */
 export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
-  gold: ['sword', 'ace', 'goldbar', 'thorn', 'shield', 'bolt', 'note'],
+  gold: ['sword', 'ace', 'goldbar', 'shield', 'bolt', 'note'],
   keen: ['sword', 'ace', 'note'],
   charged: ['bolt'],
   vamp: ['sword', 'ace', 'note'],
   lucky: ['sword', 'ace', 'shield', 'bolt', 'note'],
   blaze: ['bolt'],
   spiked: ['shield'],
-  thorny: ['thorn'],
   lucre: ['sword', 'ace', 'goldbar', 'shield', 'bolt', 'note'],
   trick: ['sword', 'ace', 'shield'],
   echo: ['note'],
@@ -80,8 +75,6 @@ export function charmRuleText(enh: Enh, lvl: number): string {
       return `YOUR LIGHTNING HITS +${v}`;
     case 'spiked':
       return `ALSO HITS FOR ${v}% OF ITS SHIELD`;
-    case 'thorny':
-      return `+${v} TO YOUR THORNS WHEN IT LANDS`;
     case 'lucre':
       return `+${LUCRE_CHIPS} CHIPS WHEN ITS GROUP PAYS (MAX ${v} A FIGHT, ON A WIN)`;
     case 'trick':
@@ -112,8 +105,6 @@ export function charmShortText(enh: Enh, lvl: number): string {
       return `+${v} LIGHTNING DAMAGE`;
     case 'spiked':
       return `HITS FOR ${v}% OF ITS SHIELD`;
-    case 'thorny':
-      return `+${v} DAMAGE ON THORNS`;
     case 'lucre':
       return `+${LUCRE_CHIPS} CHIPS (MAX ${v} PER ROUND)`;
     case 'trick':
@@ -140,7 +131,6 @@ export const CHARM_COLOR: Record<Enh, string> = {
   vamp: '#ff5a6a',
   lucky: '#7dff7a',
   blaze: '#ff9a3a',
-  thorny: '#ff9ec8',
   lucre: '#ffd23f',
   trick: '#c795f0',
   echo: '#5ad8e8',
@@ -154,7 +144,7 @@ export const symValue = (lvl: number) => SYM_VALUE[clampLvl(lvl, BIG_CAP)];
 export const charmValue = (enh: Enh, lvl: number) => CHARM_VALUE[enh][clampLvl(lvl, BIG_CAP + 1)];
 
 /** Symbols the player's levels apply to. */
-export const LEVELLED: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'goldbar', 'thorn', 'note']);
+export const LEVELLED: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'goldbar', 'note']);
 
 export const symLevel = (lv: Levels | undefined, s: SymbolId) => lv?.sym[s] ?? 1;
 /** The Golden Ticket makes every charm one level higher (past the cap). */

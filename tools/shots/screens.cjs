@@ -26,7 +26,7 @@ const VETERAN = {
   p.on('pageerror', (e) => errs.push(String(e)));
   await p.addInitScript((v) => {
     localStorage.setItem('slotvslot.profile.v1', JSON.stringify(v));
-    localStorage.setItem('slotvslot.prefs.v2', JSON.stringify({ tutorialDone: true, unlocked: ['knight', 'tesla', 'thorn', 'joker', 'midas'] }));
+    localStorage.setItem('slotvslot.prefs.v2', JSON.stringify({ tutorialDone: true, unlocked: ['knight', 'tesla', 'jukebox', 'joker', 'midas'] }));
   }, VETERAN);
   await p.goto(`http://localhost:${PORT}/`);
   await sleep(2500);

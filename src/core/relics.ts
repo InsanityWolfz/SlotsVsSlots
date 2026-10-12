@@ -30,7 +30,6 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
   midas: { id: 'midas', name: 'GOLD LEAF', text: 'GOLD ON A CELL THAT PAYS NOTHING JOINS YOUR BIGGEST GROUP', sprite: 'relicGoldleaf', charm: 'gold', retired: true },
   rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'WITH A CHARGED BOLT: LIGHTNING HITS 100 (NOT 60)', sprite: 'relicRod', machine: 'tesla' },
-  cactus: { id: 'cactus', name: 'CACTUS', text: 'THORNS ALSO SHIELD YOU 30% OF THE DAMAGE', sprite: 'relicCactus', machine: 'thorn', retired: true },
   prism: { id: 'prism', name: 'PRISM', text: 'A PAIR OR JACKPOT THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
   hone: { id: 'hone', name: 'EXECUTIONER', text: 'KEEN SWORDS PAY X3 VS ENEMIES UNDER HALF HP', sprite: 'relicExecutioner', charm: 'keen' },
   // Legendary (act 2): big, build-bending effects.
@@ -46,15 +45,11 @@ export const RELICS: Record<RelicId, RelicDef> = {
   chainmail: { id: 'chainmail', name: 'CHAINMAIL', text: '10% OF LEFTOVER SHIELD HEALS YOUR HP', sprite: 'relicChainmail', machine: 'knight' },
   vault: { id: 'vault', name: 'BANK VAULT', text: 'EACH ROUND YOU WIN GIVES ONE OF YOUR CHIP SYMBOLS A GOLD CHARM', sprite: 'relicVault', machine: 'midas' },
   decree: { id: 'decree', name: 'ROYAL DECREE', text: 'YOUR MIDAS TOUCH ALSO SPREADS TO THE CELLS ABOVE AND BELOW', sprite: 'relicDecree', machine: 'midas', retired: true },
-  rosehip: { id: 'rosehip', name: 'ROSE HIP', text: '10% OF THORNS DAMAGE HEALS YOU (MAX 20) WHEN A HIT GETS THROUGH', sprite: 'relicRosehip', machine: 'thorn', retired: true },
-  // GRAFT: retired 2026-10-07; gold and vamp fit BRIAR's thorns without it (thorns are his weapon).
-  graft: { id: 'graft', name: 'GRAFT', text: 'GOLD AND VAMP CHARMS FIT THORNS', sprite: 'relicGraft', machine: 'thorn', retired: true },
   faraday: { id: 'faraday', name: 'FARADAY CAGE', text: '25% OF SHIELD YOU GAIN ALSO CHARGES LIGHTNING', sprite: 'relicFaraday', machine: 'tesla' },
   static: { id: 'static', name: 'STATIC', text: 'LIGHTNING CHARGES 10 WHEN YOU ARE ATTACKED', sprite: 'relicStatic', machine: 'tesla' },
   capbells: { id: 'capbells', name: 'CAP AND BELLS', text: 'WILDS HEAL 10 HP', sprite: 'relicCapbells', machine: 'joker' },
   stacked: { id: 'stacked', name: 'STACKED DECK', text: 'WILDS TAKE GOLD, KEEN, VAMP. CHARMED WILDS FILL X2', sprite: 'relicStacked', machine: 'joker', retired: true },
   // CONTENT WAVE 1 (2026-10-07, playtest/CONTENT_WAVE1_REVIEW.md): slot machine relics, one hook each.
-  bramble: { id: 'bramble', name: 'BRAMBLE WALL', text: 'BLOCKED HITS FIRE 30% OF YOUR THORNS (MAX 10% HP)', sprite: 'relicBramble', machine: 'thorn', retired: true },
   riposte: { id: 'riposte', name: 'RIPOSTE', text: 'A BLOCKED HIT RETURNS HALF OF WHAT YOU BLOCKED', sprite: 'relicRiposte', machine: 'knight', retired: true },
   tower: { id: 'tower', name: 'TOWER SHIELD', text: 'RETAIN 25% OF YOUR SHIELD EACH SPIN (MAX 10% OF YOUR HP)', sprite: 'relicTower', machine: 'knight' },
   headsman: { id: 'headsman', name: 'HEADSMAN', text: 'SWORDS HIT FOR +2% OF YOUR MAX HP', sprite: 'relicHeadsman', machine: 'knight' },
@@ -67,7 +62,6 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // CONTENT WAVE 1, part 2.
   coup: { id: 'coup', name: 'COUP DE GRACE', text: 'SWORDS HIT X2 WHEN THE ENEMY IS UNDER 25% OF YOUR MAX HP', sprite: 'relicCoup', machine: 'knight' },
   compound: { id: 'compound', name: 'COMPOUND', text: 'HIGH ROLLER CAP INCREASES TO X4', sprite: 'relicCompound', machine: 'midas' },
-  hedge: { id: 'hedge', name: 'HEDGE', text: 'LOSING HP ADDS 10% OF IT TO YOUR THORNS', sprite: 'relicHedge', machine: 'thorn', retired: true },
   meltdown: { id: 'meltdown', name: 'MELTDOWN', text: 'LIGHTNING DAMAGE +1% FOR EACH HP YOU ARE MISSING (MAX 50%)', sprite: 'relicMeltdown', machine: 'tesla' },
   pulse: { id: 'pulse', name: 'PULSE', text: 'LIGHTNING RESETS THE ENEMY ABILITY COUNTDOWN ONCE PER FIGHT', sprite: 'relicPulse', machine: 'tesla' },
   deckdrum: { id: 'deckdrum', name: 'DECK DRUM', text: 'EACH PAIR AND JACKPOT INCREASES CARD DAMAGE BY +1 EACH FIGHT (MAX +5)', sprite: 'relicDeckdrum', machine: 'joker' },
@@ -101,8 +95,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   tipjar: { id: 'tipjar', name: 'TIP JAR', text: 'MAKE IT RAIN ALSO HEALS YOU 20 HP', sprite: 'relicTipJar', machine: 'midas', addon: true },
   loosechange: { id: 'loosechange', name: 'LOOSE CHANGE', text: 'CHIP PAIRS CAUSE MAKE IT RAIN AT HALF DAMAGE', sprite: 'relicLooseChange', machine: 'midas', addon: true },
   taxman: { id: 'taxman', name: 'TAX MAN', text: 'EACH GOLD BAR GROUP THAT PAYS: +1 CHIP (MAX 3)', sprite: 'relicTaxMan', machine: 'midas', retired: true },
-  // SHIELD BASH: KNIGHT's (it replaces the BULWARK charm) and BRIAR's (her Dealer fight leans on it: without it her GREEN
-  // fell 17.0 -> 2.4). Not offered to the others (MACHINE_EXCLUDE).
+  // SHIELD BASH: KNIGHT's (it replaces the BULWARK charm). Not offered to the others (MACHINE_EXCLUDE).
   bash: { id: 'bash', name: 'SHIELD BASH', text: 'LEFTOVER SHIELD EACH SPIN HITS THE ENEMY', sprite: 'relicBash' },
   // Side bets (EXPERT_PLAYTEST_6 E11). Retired with SIDE BETS (2026-10-12); the ids stay so old saves read.
   loaded: { id: 'loaded', name: 'LOADED DICE', text: 'YOUR SIDE BETS PAY 20% MORE', sprite: 'relicLoaded', retired: true },
@@ -116,20 +109,18 @@ export const RELICS: Record<RelicId, RelicDef> = {
 
 /**
  * A relic's card text on a given slot machine: meter relics speak your machine's language
- * (LIGHTNING, the HIGH ROLLER bar, the THORNS, the JACKPOT METER). Without a machine, the generic text.
+ * (LIGHTNING, the HIGH ROLLER bar, the JACKPOT METER). Without a machine, the generic text.
  */
 const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>> = {
   battery: {
     tesla: 'LIGHTNING STARTS 30/40 EACH FIGHT',
     midas: 'HIGH ROLLER STARTS AT 60/100 EACH FIGHT',
-    thorn: 'THORNS START EACH FIGHT AT 30',
     joker: 'JACKPOT METER STARTS AT 60/100 EACH FIGHT',
     jukebox: 'THE VOLUME STARTS EACH FIGHT AT 3',
   },
   fang: {
     tesla: 'LIGHTNING HEALS 5 HP',
     midas: 'HIGH ROLLER PAYOFFS HEAL 30 HP',
-    thorn: 'THORNS THAT TRIGGER WHEN YOU LOSE HP HEAL 20',
     joker: 'ALL-JACKPOT SPINS HEAL 30 HP',
     jukebox: 'THE DROP HEALS 30 HP',
   },
@@ -140,7 +131,6 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
   },
   wildcard: {
     tesla: 'EACH WILD ON YOUR PAYLINE CHARGES LIGHTNING 5',
-    thorn: 'EACH WILD ON YOUR PAYLINE ADDS 10 TO YOUR THORNS',
     joker: 'EACH WILD ON YOUR PAYLINE ADDS 10 TO YOUR JACKPOT METER',
     jukebox: 'EACH WILD ON YOUR PAYLINE TURNS THE VOLUME UP 1',
   },
@@ -148,13 +138,12 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
     knight: 'JACKPOTS PAY X2',
     tesla: 'JACKPOTS PAY X2 AND FULLY CHARGE YOUR LIGHTNING',
     midas: 'JACKPOTS PAY X2 AND FILL YOUR HIGH ROLLER BAR',
-    thorn: 'JACKPOTS PAY X2 AND ADD THEIR PAY TO YOUR THORNS',
     joker: 'JACKPOTS PAY X1.25 AND FILL YOUR JACKPOT METER',
     jukebox: 'JACKPOTS PAY X2 AND MAX YOUR VOLUME (NOT ON THE DROP)',
   },
 };
 /** Machines that attack with something other than swords: relic texts name their symbol instead. */
-const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP', tesla: 'BOLT', thorn: 'THORN', jukebox: 'NOTE' };
+const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP', tesla: 'BOLT', jukebox: 'NOTE' };
 export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
   const t = (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;
   const w = cabinet ? ATTACK_WORD[cabinet] : undefined;
@@ -162,8 +151,8 @@ export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
 };
 /** Relics that make no sense on a machine even reworded (never offered there). */
 /** Content wave 1: offered in drafts, shops and RELIC RUSH, but not in the starting pick (it keeps each machine's signature relics). */
-export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['bramble', 'riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg', 'coup', 'compound', 'hedge', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel']);
-export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['thorn', 'jukebox'], bash: ['tesla', 'midas', 'joker'], wildcard: ['knight', 'midas'] };
+export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel']);
+export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['jukebox'], bash: ['tesla', 'midas', 'joker'], wildcard: ['knight', 'midas'] };
 
 /** New-relic numbers (playtest/RELIC_PROPOSALS.md, tuned in the engine). */
 export const NEW_RELIC = {
@@ -179,9 +168,7 @@ export const NEW_RELIC = {
   drumCap: 5,
   chainmailShare: 0.1,
   // CONTENT WAVE 1.
-  brambleShare: 0.3,
   /** ...at most this share of your max HP a blocked hit. */
-  brambleCap: 0.1,
   riposteShare: 0.5,
   towerShare: 0.25,
   towerCap: 0.1,
@@ -197,18 +184,14 @@ export const NEW_RELIC = {
   /** ...the sword multiplier there. */
   coupBossMul: 2,
   compoundCap: 4,
-  hedgeShare: 0.1,
   meltdownCap: 0.5,
   /** ...lightning +1% per HP missing. */
   meltdownRate: 0.01,
   /** DECK DRUM: per stack on each card (WAR DRUM's half: cards land far more often than swords). */
   deckdrumStep: UNIT / 10,
   wildcardCharge: UNIT / 2,
-  /** WILD CARD on the thorns or JAX's jackpot meter. */
+  /** WILD CARD on JAX's jackpot meter. */
   wildcardMeter: UNIT,
-  rosehipShare: 0.1,
-  /** ...at most this much a volley (no swords: BRIAR's volleys got huge, and 10% of them healed everything). */
-  rosehipCap: 2 * UNIT,
   faradayShare: 0.25,
   staticCharge: UNIT,
   capbellsHeal: UNIT,
@@ -232,8 +215,8 @@ export const BONUS = { wheel: 0.028, rush: 0.012 };
 export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9, uncommonMax: 12, grandChips: 15 };
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
-  common: ['clover', 'battery', 'fang', 'bandage', 'graft', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar'],
-  uncommon: ['rod', 'cactus', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'rosehip', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll', 'bracelet', 'coil', 'loadedchips', 'rainmaker', 'slushfund', 'loosechange', 'bramble', 'riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg', 'coup', 'compound', 'hedge', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer'],
+  common: ['clover', 'battery', 'fang', 'bandage', 'firstblood', 'piggy', 'trophy', 'bash', 'loaded', 'marker', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar'],
+  uncommon: ['rod', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'decree', 'faraday', 'static', 'capbells', 'stacked', 'kiss', 'horseshoe', 'underdog', 'holywater', 'highlimit', 'belt', 'toll', 'bracelet', 'coil', 'loadedchips', 'rainmaker', 'slushfund', 'loosechange', 'riposte', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'nestegg', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
 };
 
@@ -260,13 +243,9 @@ export const BATTERY_ENERGY = 3 * UNIT;
 export const BATTERY_SHARE = 0.6;
 /** MIDAS TOUCH: a cell holds at most this many gold touches (+x6). */
 export const MIDAS_TOUCH_CAP = 3;
-/** Cactus: banking thorns shields you for this share of what you banked. */
-export const CACTUS_SHARE = 0.3;
 export const FANG_HEAL = 3 * UNIT;
 /** TESLA's lightning pays off often: a common heal of 30 there was 36.7% wins vs 9.2 (EXPERT_PLAYTEST_10). */
 export const FANG_TESLA_HEAL = UNIT / 2;
-/** BRIAR's thorns fire almost every enemy turn, so its Fang heal is smaller (35% win with 30, probe 2026-09-27). */
-export const FANG_THORN_HEAL = 2 * UNIT;
 export const BANDAGE_HEAL = 6 * UNIT;
 /** HIGH ROLLER: every double you land heals this much. */
 export const CROWN_HEAL = UNIT / 2;
@@ -277,7 +256,7 @@ export const ROD_PER_CHARGED = 1 * UNIT;
 export const ROD_MAX_BONUS = 1 * UNIT;
 
 /** What each build relic needs you to own before it's offered (playtest ITERATION_4). */
-export type Enabler = 'gold' | 'keen' | 'charged' | 'vamp' | 'wild' | 'charm' | 'meter' | 'thorns';
+export type Enabler = 'gold' | 'keen' | 'charged' | 'vamp' | 'wild' | 'charm' | 'meter';
 export const BUILD_ENABLER: Partial<Record<RelicId, Enabler | Enabler[]>> = {
   ticket: 'charm',
   bracelet: 'charm',

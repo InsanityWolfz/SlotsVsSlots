@@ -24,7 +24,7 @@ describe('CONTENT_13: charms', () => {
   });
 
   it('locks: TRICK is JOKER only; the CHIP charm (lucre) on every machine', () => {
-    for (const cab of ['knight', 'tesla', 'thorn', 'joker', 'midas'] as CabinetId[]) {
+    for (const cab of ['knight', 'tesla', 'jukebox', 'joker', 'midas'] as CabinetId[]) {
       const g = gildsFor(createRun(base, 3, cab));
       expect(g.includes('trick')).toBe(cab === 'joker');
       expect(g).toContain('lucre');

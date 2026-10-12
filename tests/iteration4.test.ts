@@ -57,20 +57,6 @@ describe('build relics & keen', () => {
     expect(fight((c) => (c.relics = ['rod'])).cfg.specialCost).toBe(50);
   });
 
-  it('CACTUS: banking thorns also shields you for 30% of them (BRIAR)', () => {
-    const c = defaultConfig();
-    c.enemy = { hp: 9999, strips: reels3({ sword: 12 }) };
-    c.cabinet = 'thorn';
-    c.player.strips = reels3({ sword: 4, shield: 4, thorn: 4 });
-    c.relics = ['cactus'];
-    const f = new Fight(c, 2);
-    f.forceNext('player', ['thorn', 'thorn', 'sword']);
-    const ev = f.step().events;
-    const bank = ofType(ev, 'meter')[0];
-    expect(bank.amount).toBe(40); // (10 + 10) x2
-    expect(ofType(ev, 'shieldGain').find((e) => e.source === 'cactus')?.amount).toBe(12);
-  });
-
   it('PRISM doubles a match that used a WILD', () => {
     const f = fight((c) => {
       c.player.strips = reels3({ sword: 6, wild: 6 });

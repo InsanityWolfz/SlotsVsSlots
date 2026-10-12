@@ -10,7 +10,7 @@ export const SHIELD_SOFT_CAP = 200;
 /** The signature meter on the player's HUD (none for KNIGHT). */
 export interface HudMeter {
   kind: MeterKind;
-  /** Pips (one per 10 of meter); 0 for BRIAR's thorn bank, which shows a number. */
+  /** Pips (one per 10 of meter). */
   pips: number;
   label: string;
   color: string;
@@ -56,9 +56,6 @@ export class HudView {
   /** Pips lit (can be fractional mid-fill). */
   energy = 0;
   energyMax: number;
-  /** BRIAR: the thorn bank (a number, not pips). */
-  bank = 0;
-  bankPunch = 1;
   /** MIDAS / JAX: the meter is full and waiting to pay off. */
   armed = false;
   hpShake = 0;
@@ -100,8 +97,7 @@ export class HudView {
     this.ghost = maxHp;
     this.energyMax = meter?.pips ?? 0;
     this.pipPunch = Array(Math.max(1, this.energyMax)).fill(1);
-    if (meter?.kind === 'thorns') this.bank = opts.energy ?? 0;
-    else this.energy = meter?.kind === 'touch' ? (opts.energy ?? 0) : Math.min(this.energyMax, opts.energy ?? 0);
+    this.energy = meter?.kind === 'touch' ? (opts.energy ?? 0) : Math.min(this.energyMax, opts.energy ?? 0);
   }
 
   get x(): number {
@@ -183,36 +179,31 @@ export class HudView {
     if (this.shield > 0.01)
       drawText(ctx, `${Math.round(this.shield)}`, sb.x + 6 + (sb.w - 6) / 2 + ss, sb.y + sb.h / 2 + 1, 2, COLORS.text);
 
-    // The signature meter: pips (TESLA, MIDAS, JAX) or BRIAR's thorn bank.
+    // The signature meter (TESLA, MIDAS, JAX, THE JUKEBOX).
     const m = this.meter;
     if (m) {
       drawSprite(ctx, m.icon, x + 64, y + 106, m.icon === 'boltIcon' ? 2 : 1.5);
-      if (m.kind === 'thorns') {
-        drawText(ctx, `${Math.round(this.bank)}`, x + 88, y + 106, 3, this.bank > 0 ? m.color : COLORS.textDim, { align: 'left', punch: this.bankPunch });
-        drawText(ctx, m.label, x + HUD_W - 4, y + 106, 2, this.bank > 0 ? m.color : COLORS.textDim, { align: 'right' });
-      } else {
-        // One bar with a number: how much you have / how much it takes.
-        const b = this.meterBar();
-        const full = this.energy >= this.energyMax - 0.01;
-        const pulse = full ? 0.3 + 0.3 * Math.sin(time * (this.armed ? 10 : 18)) : 0;
-        // Fixed size (no punch), and the glow only lights the filled part, so the text always reads.
-        const frac = Math.min(1, this.energy / Math.max(1, this.energyMax));
-        this.bar(ctx, b.x, b.y, b.w, b.h, [[frac, m.color]], 0);
-        const glow = Math.min(0.45, Math.max(pulse, this.energyFlash) * 0.55);
-        if (glow > 0 && frac > 0) {
-          ctx.globalAlpha = glow;
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(b.x, b.y, frac * b.w, b.h);
-          ctx.globalAlpha = 1;
-        }
-        const label = this.armed ? (m.kind === 'touch' ? 'TOUCH READY!' : `${m.label} READY!`) : m.label;
-        drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'left' });
-        // THE JUKEBOX counts its volume in levels (4/6), like its cards do.
-        const count = m.kind === 'volume' ? `${Math.floor(this.energy + 0.01)}/${this.energyMax}` : `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`;
-        drawText(ctx, count, b.x + b.w - 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'right' });
-        // The HIGH ROLLER bar: your chips and the payoff they make, on a line under the bar.
-        if (m.note) drawText(ctx, m.note(this.chips), b.x + b.w - 6, b.y + b.h + 9, 1.25, m.color, { align: 'right' });
+      // One bar with a number: how much you have / how much it takes.
+      const b = this.meterBar();
+      const full = this.energy >= this.energyMax - 0.01;
+      const pulse = full ? 0.3 + 0.3 * Math.sin(time * (this.armed ? 10 : 18)) : 0;
+      // Fixed size (no punch), and the glow only lights the filled part, so the text always reads.
+      const frac = Math.min(1, this.energy / Math.max(1, this.energyMax));
+      this.bar(ctx, b.x, b.y, b.w, b.h, [[frac, m.color]], 0);
+      const glow = Math.min(0.45, Math.max(pulse, this.energyFlash) * 0.55);
+      if (glow > 0 && frac > 0) {
+        ctx.globalAlpha = glow;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(b.x, b.y, frac * b.w, b.h);
+        ctx.globalAlpha = 1;
       }
+      const label = this.armed ? (m.kind === 'touch' ? 'TOUCH READY!' : `${m.label} READY!`) : m.label;
+      drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'left' });
+      // THE JUKEBOX counts its volume in levels (4/6), like its cards do.
+      const count = m.kind === 'volume' ? `${Math.floor(this.energy + 0.01)}/${this.energyMax}` : `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`;
+      drawText(ctx, count, b.x + b.w - 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'right' });
+      // The HIGH ROLLER bar: your chips and the payoff they make, on a line under the bar.
+      if (m.note) drawText(ctx, m.note(this.chips), b.x + b.w - 6, b.y + b.h + 9, 1.25, m.color, { align: 'right' });
     }
     if (this.ability) this.drawAbility(ctx, x, y + 106, time);
     else if (this.hint) drawText(ctx, this.hint, x + HUD_W - 4, y + 106, 1.5, '#c8f0ff', { align: 'right' });

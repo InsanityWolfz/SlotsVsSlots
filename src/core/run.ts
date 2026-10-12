@@ -69,26 +69,23 @@ export const RUN = {
 
 /** Charms by act (act 2 unlocks LUCKY and BLAZE). CHARGED and BLAZE feed the lightning: TESLA only. */
 // BULWARK (id 'spiked') retired 2026-10-07: SHIELD BASH (KNIGHT-only) is the shield-damage piece. The id stays for saves.
-export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'thorny', 'lucre', 'trick', 'lucky', 'blaze', 'echo'];
+export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'lucre', 'trick', 'lucky', 'blaze', 'echo'];
 /** Empty since 2026-10-08 (user: LUCKY and BLAZE from Act 1). */
 export const ACT2_GILDS: Enh[] = [];
 const TESLA_ONLY: ReadonlySet<Enh> = new Set(['charged', 'blaze']);
 /** BULWARK (id 'spiked') is KNIGHT's own charm. */
 const KNIGHT_ONLY: ReadonlySet<Enh> = new Set(['spiked']);
-/** THORNY is BRIAR's own charm. */
-const BRIAR_ONLY: ReadonlySet<Enh> = new Set(['thorny']);
 /** TRICK is JOKER's (CONTENT_13). */
 const JOKER_ONLY: ReadonlySet<Enh> = new Set(['trick']);
 /** ECHO is THE JUKEBOX's. */
 const JUKEBOX_ONLY: ReadonlySet<Enh> = new Set(['echo']);
 /** LUCKY is a later-machine charm (a wild barely changes KNIGHT's or MIDAS's two-symbol line). */
-export const LUCKY_MACHINES: ReadonlySet<CabinetId> = new Set(['thorn', 'tesla', 'joker', 'jukebox']);
+export const LUCKY_MACHINES: ReadonlySet<CabinetId> = new Set(['tesla', 'joker', 'jukebox']);
 export const gildsFor = (run: RunState): Enh[] =>
   [...ACT1_GILDS, ...(run.act > 1 ? ACT2_GILDS : [])].filter(
     (e) =>
       (run.cabinet === 'tesla' || !TESLA_ONLY.has(e)) &&
       (run.cabinet === 'knight' || !KNIGHT_ONLY.has(e)) &&
-      (run.cabinet === 'thorn' || !BRIAR_ONLY.has(e)) &&
       (run.cabinet === 'joker' || !JOKER_ONLY.has(e)) &&
       (run.cabinet === 'jukebox' || !JUKEBOX_ONLY.has(e)) &&
       (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)) &&
@@ -893,9 +890,7 @@ export function machinePower(run: RunState): number {
   const cfg = defaultConfig();
   cfg.player = { hp: 99999 * UNIT, strips: run.player.strips.map((s) => ({ ...s })), gilded: run.player.gilded.map((g) => ({ ...g })), levels: cloneLevels(run.player.levels), ...(run.glass || run.devil ? { payMul: (run.glass ? BIG.glassPay : 1) * (run.devil ? BIG.devilPay : 1) } : {}), ...(run.bloodPact ? { meterMul: 2 } : {}), ...(run.big ? { big: { ...run.big } } : {}), chipsHeld: Math.min(run.player.chips, 20), sizeHp: run.player.maxHp };
   cfg.enemy = { hp: 99999 * UNIT, strips: [{ sword: 8, shield: 4 }, { sword: 8, shield: 4 }, { sword: 8, shield: 4 }], ability: null };
-  // BRAMBLE WALL: BRIAR's bosses are fitted (BOSS_MUL.thorn) to a power that leaves her volleys out, and the dummy's
-  // blocked hits would fire it every turn; keep it out of sizing like her other thorns.
-  cfg.relics = run.player.relics.filter((r) => r !== 'phoenix' && r !== 'bramble');
+  cfg.relics = run.player.relics.filter((r) => r !== 'phoenix');
   cfg.cabinet = run.cabinet;
   const f = new FightCtor(cfg, (run.seed ^ Math.imul(run.act * 16 + run.depth + 1, 0x2545f491)) >>> 0);
   const turns: number[] = [];
@@ -924,7 +919,6 @@ const POWER_SPINS = 40;
 export const POWER_REF: Record<CabinetId, { wheel: number; act3: number; dealer: number }> = {
   knight: { wheel: 405, act3: 1578, dealer: 2375 },
   midas: { wheel: 761, act3: 1494, dealer: 1851 },
-  thorn: { wheel: 159, act3: 317, dealer: 695 },
   tesla: { wheel: 246, act3: 566, dealer: 872 },
   joker: { wheel: 826, act3: 6465, dealer: 8499 },
   // THE JUKEBOX (2026-10-08): measured with tools/sim/power_ref.ts 300 (GREEN, greedy).
@@ -936,8 +930,7 @@ export function sizingPower(run: RunState, at: 'wheel' | 'act3' | 'dealer'): num
 }
 /**
  * Per slot machine: how much of your measured power THE WHEEL, the Dealer and act 3 regulars are sized
- * to. Machines race differently (KNIGHT's shields, JAX's rare huge payoffs, BRIAR's thorns that need to
- * be hit), so the same HP formula would give each a different win rate.
+ * to. Machines race differently (KNIGHT's shields, JAX's rare huge payoffs), so the same HP formula would give each a different win rate.
  */
 /** TOLL BOOTH: chips per held lien per win (EXPERT_PLAYTEST_11 D5). */
 export const TOLL_PER_LIEN = 2;
@@ -947,8 +940,6 @@ export const BOSS_MUL: Record<CabinetId, { house: number; wheel: number; dealer:
   knight: { house: 1.2, wheel: 1.35, dealer: 0.6, act3: 0.5, gate: 1.3 },
   // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
   midas: { house: 2.2, wheel: 3.8, dealer: 7.5, act3: 1, gate: 0.8, act3Floor: 1 },
-  // SHED (2026-10-07): her damage is finally visible to sizing, so the multipliers came back to a normal range.
-  thorn: { house: 1, wheel: 9.5, dealer: 2.3, act3: 1.6, act2: 0.5, act1: 0.6, gate: 1.55 },
   tesla: { house: 1.05, wheel: 2.6, dealer: 2.2, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
   joker: { house: 1.2, wheel: 3.4, dealer: 0.66, act3: 0.35, act2: 1.5, gate: 0.85 },
   jukebox: { house: 1.25, wheel: 0.6, dealer: 0.33, act3: 0.3, gate: 2.4 },
@@ -1132,7 +1123,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
 export interface StripStats {
   /** Expected per spin, before shields. */
   damage: number;
-  /** Expected meter fill per spin (TESLA energy, MIDAS gold, BRIAR thorns, JAX wilds). */
+  /** Expected meter fill per spin (TESLA energy, MIDAS gold, JAX wilds). */
   meter: number;
   /** TESLA energy per spin (= meter for TESLA). */
   energy: number;
@@ -1253,11 +1244,10 @@ export const isRelicDraft = (run: RunState) => RUN.relicDraftsAfter.includes(run
 export function charmSymbols(run: RunState, enh: Enh): SymbolId[] {
   const has = (r: RelicId) => run.player.relics.includes(r);
   const out = new Set<SymbolId>(CHARM_SYMBOLS[enh]);
-  if ((enh === 'gold' || enh === 'vamp') && has('graft')) out.add('thorn');
   // LOADED CHIPS (CASH CASSIDY): gold and vamp fit chip symbols, so MAKE IT RAIN can be charmed.
   if ((enh === 'gold' || enh === 'vamp') && has('loadedchips')) out.add('goldbar');
   if ((enh === 'gold' || enh === 'keen' || enh === 'vamp') && has('stacked')) out.add('wild');
-  if (enh === 'vamp' && has('kiss')) for (const s of ['shield', 'bolt', 'goldbar', 'thorn'] as SymbolId[]) out.add(s);
+  if (enh === 'vamp' && has('kiss')) for (const s of ['shield', 'bolt', 'goldbar'] as SymbolId[]) out.add(s);
   return [...out];
 }
 
@@ -1580,7 +1570,6 @@ export function relicFits(run: RunState, r: RelicId): boolean {
     if (n === 'wild') return run.player.strips.some((s) => (s.wild ?? 0) > 0);
     if (n === 'charm') return run.player.gilded.length > 0;
     if (n === 'meter') return !!CABINETS[run.cabinet].meter;
-    if (n === 'thorns') return CABINETS[run.cabinet].meter?.kind === 'thorns';
     return charmCount(run.player, n) > 0;
   };
   return (Array.isArray(need) ? need : [need]).every(has);
@@ -1668,7 +1657,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
       const cap = run ? levelCap(run) : LEVEL_CAP;
       const next = Math.min(cap, symLevel(lv, o.symbol) + 1);
       // User, content audit 2026-10-08: level cards show the step, in the symbol's own currency.
-      const word = o.symbol === 'shield' ? 'SHIELD' : o.symbol === 'bolt' ? 'LIGHTNING CHARGE' : o.symbol === 'thorn' ? 'THORNS' : 'DAMAGE';
+      const word = o.symbol === 'shield' ? 'SHIELD' : o.symbol === 'bolt' ? 'LIGHTNING CHARGE' : 'DAMAGE';
       return { title: `${plural(o.symbol, 2)} ${lvTag(next, cap)}`, text: `${symValue(next - 1)} -> ${symValue(next)} ${word}` };
     }
     case 'charmLevel': {
@@ -1827,7 +1816,7 @@ const CONVERT: Partial<Record<BigChoiceId, Enh>> = { whetted: 'keen', bloodMoon:
 
 const SYM_NAME = (s: SymbolId) => `${symLabel(s)}S`;
 /** Each machine's meter by its own name. */
-const METER_NAME: Partial<Record<CabinetId, string>> = { tesla: 'LIGHTNING METER', thorn: 'THORNS', joker: 'JACKPOT METER', midas: 'HIGH ROLLER METER', jukebox: 'VOLUME' };
+const METER_NAME: Partial<Record<CabinetId, string>> = { tesla: 'LIGHTNING METER', joker: 'JACKPOT METER', midas: 'HIGH ROLLER METER', jukebox: 'VOLUME' };
 const pct = (run: RunState, share: number) => `-${unitsRound(run.player.maxHp * share)} MAX HP`;
 /** The level a Charm or symbol type lands on (shown on the card). */
 const bestCharmLevel = (run: RunState) => Math.max(1, ...run.player.gilded.map((g) => charmLevel(run.player.levels, g.enh)));

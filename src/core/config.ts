@@ -36,7 +36,6 @@ export type SymbolId =
   | 'relicSym'
   // Signature symbols (each fills its slot machine's meter)
   | 'goldbar'
-  | 'thorn'
   /** JESTER JAX's attack symbol: a playing card (shown as CARD; 'card' is the Dealer's mark). It hits like a sword. */
   | 'ace'
   /** DJ DECIBEL's attack symbol (THE JUKEBOX): a NOTE turns up the volume. It hits like a sword. */
@@ -50,9 +49,9 @@ export const symLabel = (s: SymbolId): string => (s === 'goldbar' ? 'CHIP' : s =
 /**
  * CHARMS live on single cells (code name: gild / enh). GOLD adds a multiplier, KEEN swords add base
  * and pierce, VAMP swords heal, LUCKY cells can land as WILDs, CHARGED / BLAZE bolts feed TESLA's
- * special. SPIKED is retired (BRIAR's thorns replaced it); the id stays so old saves still read.
+ * special. SPIKED is retired; the id stays so old saves still read.
  */
-export type Enh = 'gold' | 'keen' | 'charged' | 'spiked' | 'vamp' | 'lucky' | 'blaze' | 'thorny' | 'lucre' | 'trick' | 'echo';
+export type Enh = 'gold' | 'keen' | 'charged' | 'spiked' | 'vamp' | 'lucky' | 'blaze' | 'lucre' | 'trick' | 'echo';
 /** `n` cells of `symbol` on reel `reel` carry charm `enh` (at most one charm per cell). */
 export interface Gild {
   reel: number;
@@ -118,7 +117,6 @@ export type RelicId =
   | 'crown'
   | 'midas'
   | 'rod'
-  | 'cactus'
   | 'prism'
   | 'hone'
   // Legendary (act 2)
@@ -135,14 +133,11 @@ export type RelicId =
   | 'chainmail'
   | 'vault'
   | 'decree'
-  | 'rosehip'
-  | 'graft'
   | 'faraday'
   | 'static'
   | 'capbells'
   | 'stacked'
   // CONTENT WAVE 1 (2026-10-07): one hook each
-  | 'bramble'
   | 'riposte'
   | 'capacitor'
   | 'encore'
@@ -154,7 +149,6 @@ export type RelicId =
   | 'tower'
   | 'coup'
   | 'compound'
-  | 'hedge'
   | 'meltdown'
   | 'pulse'
   | 'wildcard'
@@ -331,7 +325,7 @@ export function defaultConfig(): GameConfig {
     player: { hp: 20 * UNIT, strips: reels3({ sword: 4, shield: 4, bolt: 4 }) },
     // Tuned from playtest/PLAYTEST_REPORT.md: ~65% player wins, ~24 turns, cleanse in ~half of fights.
     enemy: { hp: 30 * UNIT, strips: reels3({ sword: 5, shield: 2, slime: 5 }), name: 'SLIME KING', portrait: 'enemyPortrait' },
-    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, ball: UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, ground: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0, goldbar: UNIT, thorn: UNIT, ace: UNIT, note: UNIT },
+    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, ball: UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, ground: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0, goldbar: UNIT, ace: UNIT, note: UNIT },
     pairMult: 2,
     tripleMult: 3,
     pairRule: 'inOrder',

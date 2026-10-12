@@ -6,7 +6,7 @@ import { Rng } from '../src/core/rng';
 import type { CabinetId } from '../src/core/cabinets';
 
 const base = defaultConfig();
-const MACHINES: CabinetId[] = ['knight', 'tesla', 'thorn', 'joker', 'midas'];
+const MACHINES: CabinetId[] = ['knight', 'tesla', 'jukebox', 'joker', 'midas'];
 
 /** A mid-run state: some charms, relics and rocks, so every card has something to act on. */
 function midRun(cab: CabinetId, seed = 3) {

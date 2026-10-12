@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type RelicId } from '../src/core/config';
 import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
-import { Fight, THORNS } from '../src/core/fight';
+import { Fight } from '../src/core/fight';
 import { NEW_RELIC, RELICS } from '../src/core/relics';
-import { charmOptions, charmSymbols, createRun, draftOffers, fightConfig, finishFight, gildsFor, isRelicDraft, relicFits, startRelics, takeStart } from '../src/core/run';
+import { charmOptions, createRun, draftOffers, fightConfig, finishFight, gildsFor, isRelicDraft, relicFits, startRelics, takeStart } from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -44,7 +44,7 @@ describe('slot machine relics', () => {
     expect(ofType(ev, 'spin')).toHaveLength(0);
   });
 
-  it('charm relics need the charm; GOLD LEAF is retired; OVERCHARGE never shows on BRIAR', () => {
+  it('charm relics need the charm; GOLD LEAF is retired; OVERCHARGE never shows on THE JUKEBOX', () => {
     const run = createRun(base, 4, 'joker');
     run.act = 2;
     expect(relicFits(run, 'horseshoe')).toBe(false);
@@ -53,7 +53,7 @@ describe('slot machine relics', () => {
     const midas = createRun(base, 4, 'midas');
     midas.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'gold', n: 2 });
     expect(relicFits(midas, 'midas')).toBe(false);
-    expect(relicFits(createRun(base, 4, 'thorn'), 'overcharge')).toBe(false);
+    expect(relicFits(createRun(base, 4, 'jukebox'), 'overcharge')).toBe(false);
     expect(relicFits(createRun(base, 4, 'tesla'), 'overcharge')).toBe(true);
   });
 
@@ -66,21 +66,6 @@ describe('slot machine relics', () => {
     const ev = f.step().events;
     expect(ofType(ev, 'heal').find((h) => h.source === 'chainmail')?.amount).toBe(10);
     expect(playerAttack(ev)[0].amount).toBe(100); // full share (was half)
-  });
-
-  it('ROSE HIP: a thorn volley heals 10% of what it fired', () => {
-    const shed = THORNS.shed;
-    THORNS.shed = 0;
-    try {
-      const f = on('thorn', ['rosehip']);
-      f.sides.player.hp = 100;
-      f.sides.player.energy = 100;
-      f.step();
-      f.forceNext('enemy', ['sword', 'sword', 'sword']);
-      expect(ofType(f.step().events, 'heal').find((h) => h.source === 'rosehip')?.amount).toBe(10);
-    } finally {
-      THORNS.shed = shed;
-    }
   });
 
   it('FARADAY CAGE: shields charge lightning; STATIC: being attacked charges 5', () => {
@@ -162,15 +147,6 @@ describe('charm and general relics', () => {
     g.winner = 'player';
     expect(rec.chips! - finishFight(plain, g).chips!).toBe(4);
   });
-
-  it("gold fits BRIAR's thorns natively (GRAFT retired), vamp doesn't; VAMPIRE'S KISS widens vamp", () => {
-    const run = createRun(base, 3, 'thorn');
-    expect(charmSymbols(run, 'gold')).toContain('thorn');
-    expect(charmSymbols(run, 'vamp')).not.toContain('thorn');
-    expect(charmSymbols(run, 'keen')).not.toContain('thorn');
-    run.player.relics.push('kiss');
-    expect(charmSymbols(run, 'vamp')).toEqual(expect.arrayContaining(['shield', 'goldbar']));
-  });
 });
 
 describe('relic pools, the starting pick and lucky', () => {
@@ -202,8 +178,8 @@ describe('relic pools, the starting pick and lucky', () => {
     }
   });
 
-  it('LUCKY is a later-machine charm (BRIAR, TESLA, JAX)', () => {
-    for (const [cab, ok] of [['knight', false], ['midas', false], ['thorn', true], ['tesla', true], ['joker', true]] as [CabinetId, boolean][]) {
+  it('LUCKY is a later-machine charm (TESLA, JAX, THE JUKEBOX)', () => {
+    for (const [cab, ok] of [['knight', false], ['midas', false], ['tesla', true], ['joker', true]] as [CabinetId, boolean][]) {
       const run = createRun(base, 2, cab);
       run.act = 2;
       expect(gildsFor(run).includes('lucky')).toBe(ok);

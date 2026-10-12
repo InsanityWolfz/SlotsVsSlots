@@ -11,7 +11,6 @@ import {
   BELT_MAX,
   BELT_STEP,
   BOMB,
-  CACTUS_SHARE,
   KEY_MULT,
   MIDAS_TOUCH_CAP,
   OVERCHARGE_ECHO,
@@ -19,7 +18,6 @@ import {
   CLOVER_CHANCE,
   FANG_HEAL,
   FANG_TESLA_HEAL,
-  FANG_THORN_HEAL,
   CROWN_HEAL,
   NEW_RELIC,
   POT,
@@ -45,19 +43,8 @@ export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3 
 // rain x3 + a chip per symbol made CASSIDY 83 / 63. Now x2, and a group pays its size - 1 chips (1, 1, 2).
 /** Pot steals: 1 = any jackpot steals the boss pot, 0 = only a jackpot of your attack symbol (probe knob). */
 export const POT_STEAL = { any: 1 };
-/** BRIAR's volley: this share of the thorn bank hits back (2026-10-07, no swords). */
-/**
- * BRIAR's thorns. direct: the share of a thorn group that hits right away (the rest banks for volleys); blockShare /
- * blockCap: a fully blocked hit fires that share of the bank (capped at a share of her max HP). Probe knobs (2026-10-07:
- * with thorns only firing on hits that got through, a BRIAR who blocked everything never dealt damage).
- */
 /** THE JUKEBOX: +20% note damage per volume level, max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
 export const VOLUME = { perLevel: 0.2, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5, battery: 3 };
-export const THORNS = { volley: 1, onBlocked: 0, direct: 0, blockShare: 0, blockCap: 0.1, bloom: 0, shed: 0.5, parry: 0, triple: 0 };
-// BRIAR redesign probe knobs (playtest/BRIAR_REDESIGN.md), all 0 = today's rules:
-// bloom: at the end of her spin, a bank at or above this (game units) fires whole; shed: at the end of her spin this
-// share of the bank fires; parry: a fully blocked hit fires this share of what was blocked from the bank (bank-capped);
-// triple: 1 = a thorn jackpot on her spin fires the whole bank.
 export const RAIN = { perChip: 2, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x3 (quarter steps). */
 export const highRollerMul = (chips: number, cap = MIDAS.maxMul) => Math.min(cap, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
@@ -104,13 +91,13 @@ const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'roc
 const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel', 'ball']);
 const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
-const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'thorn', 'goldbar', 'note']);
+const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'goldbar', 'note']);
 /** A cell's charm as the WILD wheel shows it (only charms that change a jackpot's pay or heal). */
 export const wheelCharm = (cell: { enh?: Enh; faked?: number }): Enh | undefined =>
   cell.enh && (cell.enh === 'gold' || cell.enh === 'keen' || cell.enh === 'vamp' || cell.enh === 'charged') && !((cell.faked ?? 0) > 0) ? cell.enh : undefined;
 
 /** Symbols the 3-WILD bonus reel (and a WILD in JAX's payoff) can pick. */
-export const WHEEL_SYMBOLS: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'goldbar', 'thorn', 'note']);
+export const WHEEL_SYMBOLS: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'goldbar', 'note']);
 const JACKPOTABLE = WHEEL_SYMBOLS;
 
 export interface Combatant {
@@ -118,7 +105,7 @@ export interface Combatant {
   hp: number;
   maxHp: number;
   shield: number;
-  /** The signature meter: TESLA's energy, MIDAS's gold, BRIAR's thorn bank, JAX's wilds. */
+  /** The signature meter: TESLA's energy, MIDAS's gold, JAX's wilds. */
   energy: number;
   /** MIDAS / JAX: the meter is full and waiting to pay off. */
   armed: boolean;
@@ -300,8 +287,6 @@ export class Fight {
   private dealtRow: DealCard[] = [];
   /** ACE on your payline this spin: the group through this reel pays x2. */
   private aceReel = -1;
-  /** BRIAR: the thorn bank already hit back on this turn. */
-  private thornsTurn = -1;
   /** WAR DRUM stacks, KING'S VAULT gold, FIRST BLOOD / HOLY WATER used, STATIC's last turn (this fight). */
   drum = 0;
   /** MIDAS TOUCH: gold touches per cell (this fight), and how much meter the current touch spends. */
@@ -335,17 +320,17 @@ export class Fight {
     this.special = hasSpecial(this.cabinet);
     if (this.cabinet?.specialCost) this.cfg.specialCost = this.cabinet.specialCost;
     if (this.cabinet?.specialDamage) this.cfg.specialDamage = this.cabinet.specialDamage;
-    // Battery: your meter starts part-full (the special: 30 energy; a bank: 30; MIDAS / JAX: 60%).
+    // Battery: your meter starts part-full (the special: 30 energy; MIDAS / JAX: 60%).
     if (p.relics.has('battery') && (this.special || this.meter)) {
-      const start = this.special ? BATTERY_ENERGY : this.meter!.kind === 'thorns' ? BATTERY_ENERGY : this.meter!.kind === 'volume' ? VOLUME.battery * UNIT : unitsUp(this.meter!.cost * BATTERY_SHARE);
+      const start = this.special ? BATTERY_ENERGY : this.meter!.kind === 'volume' ? VOLUME.battery * UNIT : unitsUp(this.meter!.cost * BATTERY_SHARE);
       p.energy = this.special ? Math.min(this.cfg.specialCost - 1, p.energy + start) : Math.min(Math.max(0, this.meterCost - 1), p.energy + start);
       this.openers.push('battery');
     }
     // MIDAS: the VAULT starts pre-filled by the chips you hold (1 per 2 chips, never full).
     if (this.meter?.kind === 'vault') p.energy = Math.max(p.energy, this.vaultBase());
-    // QUICKENING (big choice): your meter starts every fight one short of full (thorns: a full bank of 60).
+    // QUICKENING (big choice): your meter starts every fight one short of full.
     if (this.big.startFull && (this.special || this.meter)) {
-      p.energy = this.special ? this.cfg.specialCost - 1 : this.meter!.kind === 'thorns' ? 2 * BATTERY_ENERGY : Math.max(0, this.meterCost - 1);
+      p.energy = this.special ? this.cfg.specialCost - 1 : Math.max(0, this.meterCost - 1);
       // THE JUKEBOX starts at max volume: the first spin is THE DROP.
       if (this.meter?.kind === 'volume') {
         p.energy = this.meterCost;
@@ -432,8 +417,6 @@ export class Fight {
   midasChips = 0;
   /** LUCRE: chips its groups paid this fight (paid on a win, up to its cap). */
   lucreChips = 0;
-  /** BRIAR: thorn volleys since her last spin (they count toward her spin's damage). */
-  private volleyCarry = 0;
   /** TAX MAN: chips paid this fight. */
   private taxChips = 0;
   /** Your spins this fight (METRONOME). */
@@ -704,13 +687,12 @@ export class Fight {
       this.gainEnergy(me, this.coilPending, [], events);
     }
     this.coilPending = 0;
-    // Jackpot Bell: a jackpot fills your meter (TESLA: a full special; BRIAR: the jackpot again into the bank).
+    // Jackpot Bell: a jackpot fills your meter (TESLA: a full special).
     // Not on JOKER's payoff spin: the payoff scores as a jackpot, so the Bell refilled the meter it had just emptied and it
     // never ran dry (EXPERT_PLAYTEST_11 D1: JOKER + BELL 63%).
     if (!this.over && score.tier === 'triple' && me.relics.has('bell') && (side !== 'player' || this.special || this.meter) && !(side === 'player' && score.jackpots) && !(side === 'player' && this.dropNow)) {
       events.push({ type: 'relic', side, relic: 'bell' });
       if (this.special || side !== 'player') this.gainEnergy(me, this.cfg.specialCost, [], events);
-      else if (this.meter!.kind === 'thorns') this.fillMeter(me, score.groups.find((g) => g.matched)?.amount ?? 0, [], events);
       else this.fillMeter(me, this.meterCost, [], events);
     }
     if (!this.over && side === 'player') {
@@ -718,10 +700,10 @@ export class Fight {
       if ((me.relics.has('drum') || me.relics.has('deckdrum')) && score.groups.some((g) => g.amount > 0 && PAYING.has(g.symbol))) this.drum = Math.min(NEW_RELIC.drumCap, this.drum + 1);
       // CAP AND BELLS: every WILD on your payline heals.
       const wilds = line.filter((s) => s === 'wild').length;
-      // WILD CARD: every WILD on your payline charges your meter (lightning, thorns or jackpots).
+      // WILD CARD: every WILD on your payline charges your meter (lightning or jackpots).
       if (me.relics.has('wildcard') && wilds && !this.over) {
         events.push({ type: 'relic', side, relic: 'wildcard' });
-        // 5 on the lightning, 10 on the thorns or the jackpot meter (user, content audit 2026-10-08).
+        // 5 on the lightning, 10 on the jackpot meter (user, content audit 2026-10-08).
         const q = wilds * (this.special ? NEW_RELIC.wildcardCharge : NEW_RELIC.wildcardMeter);
         if (this.special) this.gainEnergy(me, q, [], events);
         else if (this.meter && this.meter.kind !== 'vault' && this.meter.kind !== 'touch') this.fillMeter(me, q, [], events);
@@ -751,21 +733,12 @@ export class Fight {
       events.push({ type: 'pot', side, reels: [], amount: cut, total: this.pot });
     }
 
-    // (probe, BRIAR redesign) Her own-spin volleys: BLOOM / SHED / thorn jackpot. All off by default.
-    if (!this.over && side === 'player' && this.meter?.kind === 'thorns' && me.energy > 0) {
-      const foe = this.sides[other(side)];
-      const tripled = THORNS.triple > 0 && score.tier === 'triple' && score.groups.some((g) => g.symbol === 'thorn' && g.matched && g.reels.length >= 3);
-      if (tripled || (THORNS.bloom > 0 && me.energy >= THORNS.bloom)) this.thorns(me, foe, events, 1, me.energy);
-      else if (THORNS.shed > 0) this.thorns(me, foe, events, 1, Math.max(UNIT, unitsUp(me.energy * THORNS.shed)));
-    }
     // What this spin did (the Mimic copies it).
     this.last[side] = {
       best: Math.max(0, ...score.groups.filter((g) => g.matched || !DEAD.has(g.symbol)).map((g) => g.amount)),
       damage:
-        events.slice(sentBefore).reduce((a, e) => a + ((e.type === 'attack' || e.type === 'specialFire') && e.from === side && !(e.type === 'attack' && e.note === 'thorns') ? e.amount : 0), 0) +
-        (side === 'player' ? this.volleyCarry : 0),
+        events.slice(sentBefore).reduce((a, e) => a + ((e.type === 'attack' || e.type === 'specialFire') && e.from === side ? e.amount : 0), 0),
     };
-    if (side === 'player') this.volleyCarry = 0;
     if (!this.over) this.defuse(me, events);
     if (!this.over && side === 'player') this.markedCards(me, events);
     if (!this.over) this.burnFuses(me, events);
@@ -1404,7 +1377,6 @@ export class Fight {
         this.vampHeal(me, g, events);
         return;
       case 'goldbar':
-      case 'thorn':
         if (!player || this.meter?.symbol !== g.symbol) break;
         // CASH CASSIDY: every chip symbol pays a chip (1, 2 or 3; no cap: MAKE IT RAIN spends them).
         if (g.symbol === 'goldbar' && this.meter.kind === 'vault') {
@@ -1419,20 +1391,7 @@ export class Fight {
         {
           const grounded = g.reels.filter((r) => this.isGrounded(me, r)).length;
           const earthed = grounded ? Math.ceil((g.amount * grounded) / g.reels.length) : 0;
-          // BRIAR (probe): part of a thorn group hits right away; the rest banks.
-          const direct = g.symbol === 'thorn' && THORNS.direct > 0 ? unitsRound(g.amount * THORNS.direct) : 0;
-          if (direct > 0) {
-            this.hit(me, this.sides[other(me.side)], direct, g.reels, events);
-            if (this.over) return;
-          }
-          this.fillMeter(me, Math.max(0, g.amount - earthed - direct), g.reels, events, earthed);
-          // Cactus: banking thorns also shields you for a share of what you banked.
-          if (g.symbol === 'thorn' && me.relics.has('cactus') && g.amount > earthed) {
-            const sh = Math.max(1, Math.round((g.amount - earthed) * CACTUS_SHARE));
-            me.shield += sh;
-            events.push({ type: 'relic', side: me.side, relic: 'cactus' });
-            events.push({ type: 'shieldGain', side: me.side, reels: [], amount: sh, total: me.shield, source: 'cactus' });
-          }
+          this.fillMeter(me, Math.max(0, g.amount - earthed), g.reels, events, earthed);
         }
         this.vampHeal(me, g, events);
         return;
@@ -1457,8 +1416,6 @@ export class Fight {
   /** MAKE IT RAIN!: the hit (scored in score()), then its cost; TIP JAR heals, SLUSH FUND refills the bar. */
   /** PULSE: used this fight. */
   private pulsed = false;
-  /** BRAMBLE WALL: the enemy turn its partial volley last fired. */
-  private brambleTurn = -1;
   /** DOWNPOUR: rains so far this fight. */
   private rains = 0;
   /**
@@ -1560,14 +1517,12 @@ export class Fight {
   }
 
   /**
-   * Charms that act when their group lands: the meter charms (THORNY banks thorns: EXPERT_PLAYTEST_12 D1; TRICK fills
-   * JOKER's meter: CONTENT_13), LUCRE's chips, and TAX MAN on a paying gold bar group.
+   * Charms that act when their group lands: the meter charm (TRICK fills JOKER's meter), LUCRE's chips, and TAX MAN on a paying gold bar group.
    */
   private cellCharms(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
     const n = (e: Enh) => g.reels.filter((r) => this.enhsAt(me, r).includes(e)).length;
     const v = (e: Enh) => charmValue(e, this.charmLvl(me, e));
     const kind = this.meter?.kind;
-    if (kind === 'thorns' && n('thorny')) this.fillMeter(me, n('thorny') * v('thorny'), g.reels, events);
     if (kind === 'jackpots' && n('trick')) this.fillMeter(me, n('trick') * v('trick'), g.reels, events);
     const pays = g.amount > 0 && (PAYING.has(g.symbol) || g.symbol === 'goldbar');
     if (pays && n('lucre') && this.lucreChips < v('lucre')) {
@@ -1627,7 +1582,7 @@ export class Fight {
   /** After a payoff's groups resolved: its heal (+ Vampire Fang) and the Overcharge echo. */
   private payoffAfter(me: Combatant, _score: LineScore, events: CombatEvent[], from: number): void {
     const foe = this.sides[other(me.side)];
-    const dealt = events.slice(from).reduce((a, e) => a + (e.type === 'attack' && e.from === me.side && e.note !== 'thorns' ? e.amount : 0), 0);
+    const dealt = events.slice(from).reduce((a, e) => a + (e.type === 'attack' && e.from === me.side ? e.amount : 0), 0);
     this.payoffHeal(me, events);
     if (!this.over && me.relics.has('overcharge') && dealt > 0) {
       events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
@@ -1643,18 +1598,13 @@ export class Fight {
     if (heal > 0) this.heal(me, heal, 'payoff', events);
     // GROUND WIRE (big choice): every lightning strike heals more.
     if (this.special && this.big.strikeHeal && !this.over) this.heal(me, this.big.strikeHeal * times, 'payoff', events);
-    if (!this.over && me.relics.has('fang')) this.heal(me, (this.meter?.kind === 'thorns' ? FANG_THORN_HEAL : this.special ? FANG_TESLA_HEAL : FANG_HEAL) * times, 'fang', events);
+    if (!this.over && me.relics.has('fang')) this.heal(me, (this.special ? FANG_TESLA_HEAL : FANG_HEAL) * times, 'fang', events);
   }
 
-  /** MIDAS / JAX / BRIAR: fill the signature meter (a full MIDAS / JAX meter locks until it pays off). */
+  /** MIDAS / JAX: fill the signature meter (a full MIDAS / JAX meter locks until it pays off). */
   private fillMeter(me: Combatant, amount: number, reels: number[], events: CombatEvent[], earthed = 0): void {
     if (me.side !== 'player' || !this.meter) return;
     amount *= this.cfg.player.meterMul ?? 1;
-    if (this.meter.kind === 'thorns') {
-      me.energy += amount;
-      events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(earthed ? { earthed } : {}) });
-      return;
-    }
     // MIDAS VAULT: +1 pip per gold bar landed; locks when full.
     if (this.meter.kind === 'vault') {
       if (me.armed) return;
@@ -1678,53 +1628,6 @@ export class Fight {
     me.energy = Math.min(this.meterCost, me.energy + amount);
     if (me.energy >= this.meterCost) me.armed = true;
     events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(me.armed ? { armed: true } : {}), ...(earthed ? { earthed } : {}) });
-  }
-
-  /** BRIAR: when you're attacked, the thorn bank hits back through shields (once per enemy turn), then clears. */
-  private thorns(victim: Combatant, attacker: Combatant, events: CombatEvent[], share = 1, fixed = 0): void {
-    if (this.over || attacker.hp <= 0 || victim.side !== 'player' || this.meter?.kind !== 'thorns' || victim.energy <= 0) return;
-    // (probe) fixed: fire exactly this much of the bank (no turn guard; BRIAR redesign knobs only).
-    if (fixed > 0) {
-      share = Math.min(1, fixed / victim.energy) - 1e-9;
-    } else if (share >= 1) {
-      if (this.thornsTurn === this.turn) return;
-      this.thornsTurn = this.turn;
-    } else {
-      if (this.brambleTurn === this.turn) return;
-      this.brambleTurn = this.turn;
-    }
-    const banked = victim.energy;
-    // The volley is a share of the bank (the rest is spent too): with no swords BRIAR banks thorns every spin.
-    // BRAMBLE WALL fires only a share on a blocked hit; the rest stays banked.
-    const part = share < 1 ? share : THORNS.volley;
-    // (BRAMBLE WALL is capped too: against the Dealer her shields block everything and the bank grows without limit.)
-    const bank = fixed > 0 ? Math.min(banked, fixed) : part >= 1 ? banked : Math.min(banked, Math.max(UNIT, unitsUp(banked * part)), share < 1 ? Math.max(UNIT, unitsRound(victim.maxHp * (victim.relics.has('bramble') ? NEW_RELIC.brambleCap : THORNS.blockCap))) : Infinity);
-    victim.energy = share < 1 ? banked - bank : 0;
-    const h = this.damage(attacker, bank, true);
-    events.push({ type: 'attack', from: victim.side, to: attacker.side, reels: [], amount: bank, ...h, note: 'thorns' });
-    events.push({ type: 'meter', side: victim.side, reels: [], amount: -(share < 1 ? bank : banked), total: victim.energy });
-    this.checkDeath(attacker, events);
-    // BRIAR's volleys count toward her spin's damage (her spins never hit).
-    this.volleyCarry += bank;
-    // Payoff heals (VAMPIRE FANG) only when a hit gets through, not on SHED's per-spin lash (like ROSE HIP).
-    if (fixed <= 0) this.payoffHeal(victim, events);
-    // ROSE HIP: a volley heals you for a share of what it fired.
-    // (Not on SHED's per-spin lash: healing every spin made ROSE HIP carry the whole machine, 43 -> 11 WHITE without it.)
-    if (!this.over && fixed <= 0 && victim.relics.has('rosehip')) {
-      const h = Math.min(NEW_RELIC.rosehipCap, Math.round((bank * NEW_RELIC.rosehipShare) / 5) * 5);
-      if (h > 0) {
-        events.push({ type: 'relic', side: victim.side, relic: 'rosehip' });
-        this.heal(victim, h, 'rosehip', events);
-      }
-    }
-    if (!this.over && victim.relics.has('overcharge')) {
-      events.push({ type: 'relic', side: victim.side, relic: 'overcharge' });
-      const echo = Math.max(1, Math.round(bank * OVERCHARGE_ECHO));
-      const h2 = this.damage(attacker, echo, true);
-      events.push({ type: 'attack', from: victim.side, to: attacker.side, reels: [], amount: echo, ...h2, note: 'echo' });
-      this.checkDeath(attacker, events);
-      if (!this.over && victim.relics.has('fang')) this.heal(victim, FANG_THORN_HEAL, 'fang', events);
-    }
   }
 
   /** Enemy damage growth: ENDLESS (per loop, LAST CALL after enemy turn 40) x ATTRITION (act 3). */
@@ -1792,27 +1695,6 @@ export class Fight {
       const r = this.damage(me, back, false);
       events.push({ type: 'attack', from: 'player', to: me.side, reels: [], amount: back, ...r });
       this.checkDeath(me, events);
-    }
-    // BRIAR: being attacked sets the thorn bank off (THORNS.onBlocked 0: only when damage gets through).
-    if (!this.over && amount > 0 && (THORNS.onBlocked || h.hpDamage > 0)) this.thorns(foe, me, events);
-    // (probe) A fully blocked hit fires a capped share of the bank, built in.
-    else if (!this.over && THORNS.blockShare > 0 && amount > 0 && h.hpDamage === 0 && h.blocked > 0 && foe.side === 'player' && foe.energy > 0 && this.brambleTurn !== this.turn && this.thornsTurn !== this.turn)
-      this.thorns(foe, me, events, THORNS.blockShare);
-    // (probe, BRIAR redesign) PARRY: a fully blocked hit fires a share of what was blocked, out of the bank.
-    if (!this.over && THORNS.parry > 0 && amount > 0 && h.hpDamage === 0 && h.blocked > 0 && foe.side === 'player' && foe.energy > 0)
-      this.thorns(foe, me, events, 1, Math.max(UNIT, unitsUp(h.blocked * THORNS.parry)));
-    // HEDGE (BRIAR): HP you lose seeds the bank again (after the volley that hit cleared it).
-    if (!this.over && foe.side === 'player' && h.hpDamage > 0 && foe.relics.has('hedge') && this.meter?.kind === 'thorns') {
-      const q = unitsUp(h.hpDamage * NEW_RELIC.hedgeShare);
-      if (q > 0) {
-        events.push({ type: 'relic', side: 'player', relic: 'hedge' });
-        this.fillMeter(foe, q, [], events);
-      }
-    }
-    // BRAMBLE WALL: a fully blocked hit fires a share of the bank.
-    else if (!this.over && amount > 0 && h.hpDamage === 0 && h.blocked > 0 && foe.side === 'player' && foe.relics.has('bramble') && foe.energy > 0 && this.brambleTurn !== this.turn && this.thornsTurn !== this.turn) {
-      events.push({ type: 'relic', side: 'player', relic: 'bramble' });
-      this.thorns(foe, me, events, NEW_RELIC.brambleShare);
     }
     // STATIC: being attacked charges your lightning (once per enemy turn).
     if (!this.over && amount > 0 && foe.side === 'player' && this.special && foe.relics.has('static') && this.staticTurn !== this.turn) {
@@ -2615,8 +2497,6 @@ export class Fight {
     const h = this.damage(foe, amount, false);
     events.push({ type: 'potWin', from: me.side, to: foe.side, amount, ...h, potLeft: this.pot });
     this.checkDeath(foe, events);
-    // The House cashing out is an attack: BRIAR's thorns answer it.
-    if (!this.over && amount > 0) this.thorns(foe, me, events);
   }
 
   /** Any player jackpot steals the pot (a High Roller double steals half), ignoring shield. */

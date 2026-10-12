@@ -639,7 +639,7 @@ export class Director {
         seen.set(key(c.symbol, enh), { symbol: c.symbol, ...(enh ? { enh } : {}) });
       }
     if (!seen.has(key(pick, pickEnh))) seen.set(key(pick, pickEnh), { symbol: pick, ...(pickEnh ? { enh: pickEnh } : {}) });
-    const order = ['sword', 'ace', 'shield', 'bolt', 'goldbar', 'thorn'];
+    const order = ['sword', 'ace', 'shield', 'bolt', 'goldbar'];
     const pool = [...seen.values()].sort((a, b) => order.indexOf(a.symbol) - order.indexOf(b.symbol) || (a.enh ?? '').localeCompare(b.enh ?? ''));
     const at = pool.findIndex((p) => key(p.symbol, p.enh) === key(pick, pickEnh));
     const cx = W / 2;
@@ -808,10 +808,6 @@ export class Director {
     if (e.note === 'pierce') this.bg(this.popText('PIERCE!', target.x + 90, MACHINE_TOP - 22, 2, '#bff4ff', 14, 0.35));
     if (e.note === 'drain') this.bg(this.popText('DRAIN!', target.x - 90, MACHINE_TOP - 22, 2, '#ff5a7a', 14, 0.35));
     if (e.note === 'mimic') this.bg(this.popText('COPYCAT!', target.x - 90, MACHINE_TOP - 22, 2, '#ffb0ff', 14, 0.35));
-    if (e.note === 'thorns') {
-      this.s.sounds.block();
-      this.bg(this.popText('THORNS!', target.x - 90, MACHINE_TOP - 22, 3, '#9dff6a', 14, 0.35));
-    }
     if (e.note === 'echo') this.bg(this.popText('ECHO!', target.x + 90, MACHINE_TOP - 22, 2, '#fff27a', 14, 0.35));
     if (e.hpDamage > 0) this.bg(this.popText(`-${fmtNum(e.hpDamage)}`, target.x, MACHINE_TOP + 40, this.tierScale(), color, 60));
     else this.bg(this.popText('BLOCKED!', target.x, MACHINE_TOP + 40, 4, '#9fd0ff', 40));
@@ -820,11 +816,11 @@ export class Director {
   }
 
   private async shieldGain(e: Ev<'shieldGain'>): Promise<void> {
-    if (e.source === 'chalice' || e.source === 'cactus') {
+    if (e.source === 'chalice') {
       const h = this.s.huds[e.side];
       const sb = h.shieldBar();
       this.s.sounds.shieldGain(e.amount / UNIT);
-      this.bg(this.popText(`${e.source === 'chalice' ? 'OVERHEAL' : 'CACTUS'} +${e.amount} SHIELD`, sb.x + sb.w / 2 + 20, sb.y - 30, 2, '#9fd0ff', 12, 0.4));
+      this.bg(this.popText(`OVERHEAL +${e.amount} SHIELD`, sb.x + sb.w / 2 + 20, sb.y - 30, 2, '#9fd0ff', 12, 0.4));
       this.decay(h, 'shieldFlash', 1, 0.3);
       await this.c.to(h, 'shield', e.total, 0.25, sineOut);
       return;
@@ -1037,7 +1033,7 @@ export class Director {
     for (const x of group) if (x.type !== 'specialFire') await this.play(x);
   }
 
-  /** A signature meter moved: MIDAS gold bars / JAX wilds light pips, BRIAR's thorns fill the bank. */
+  /** A signature meter moved: MIDAS gold bars / JAX wilds light pips. */
   private async meter(e: Ev<'meter'>): Promise<void> {
     const h = this.s.huds[e.side];
     const m = h.meter;
@@ -1045,29 +1041,6 @@ export class Director {
     if (e.earthed) {
       const c = this.machineCenter(e.side);
       this.bg(this.popText(`EARTHED -${e.earthed}`, c.x, MACHINE_TOP - 30, 2, '#e0a070', 16, 0.5));
-    }
-    if (m.kind === 'thorns') {
-      if (e.amount < 0) {
-        // It fired: the bank empties.
-        await this.c.to(h, 'bank', 0, 0.2, sineIn);
-        return;
-      }
-      if (e.reels.length) await this.activate(e.side, e.reels, m.color);
-      const p0 = h.pipPos(0);
-      const hops = e.reels.map(async (r, i) => {
-        await this.c.wait(i * 0.05);
-        const from = cellCenter(e.side, r, 1);
-        const p = this.s.fx.add(new Projectile(m.icon, from.x, from.y - 14, 2.5, false, m.color));
-        await this.arc(p, p0.x + 10, p0.y, 0.25, 30, cubicIn);
-        this.s.fx.remove(p);
-      });
-      await Promise.all(hops);
-      this.s.sounds.energyPip(2);
-      this.bg(this.c.tween({ from: 1.6, to: 1, dur: 0.2, ease: backOut(), onUpdate: (v) => (h.bankPunch = v) }));
-      await this.c.to(h, 'bank', e.total, 0.2, sineOut);
-      if (e.amount > 0) this.bg(this.popText(`+${e.amount}`, p0.x + 70, p0.y - 22, 3, m.color, 24, 0.2));
-      if (e.reels.length) this.settle(e.side, e.reels);
-      return;
     }
     // THE JUKEBOX: a spin with no note skips the record (the volume falls).
     if (m.kind === 'volume' && e.amount < 0) {
@@ -1831,8 +1804,7 @@ export class Director {
       const p = h.pipPos(i);
       this.s.particles.burst({ x: p.x, y: p.y, count: 4, colors: ['#c87a3a', COLORS.energy], speed: [40, 120], angle: Math.PI / 2, spread: 0.8, gravity: 300, life: [0.3, 0.5], size: [2, 3] });
     }
-    if (h.meter?.kind === 'thorns') await this.c.to(h, 'bank', e.total, 0.3, sineIn);
-    else await this.c.to(h, 'energy', e.total / UNIT, 0.3, sineIn);
+    await this.c.to(h, 'energy', e.total / UNIT, 0.3, sineIn);
     const p0 = h.pipPos(0);
     await this.popText(e.amount ? `-${e.amount} METER` : 'NO METER', p0.x + 40, p0.y - 22, 2, '#e0a070', 16, 0.3);
   }

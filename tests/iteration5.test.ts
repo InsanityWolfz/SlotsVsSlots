@@ -96,7 +96,6 @@ describe('build-aware offers & the heal service', () => {
     expect(relicFits(knight, 'hone')).toBe(false);
     knight.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'keen', n: 2 });
     expect(relicFits(knight, 'hone')).toBe(true);
-    expect(relicFits(knight, 'rosehip')).toBe(false);
     expect(relicFits(createRun(base, 1, 'jukebox'), 'turntable')).toBe(true);
   });
 

@@ -44,7 +44,6 @@ export const ENH_SPRITE: Record<Enh, SpriteId> = {
   vamp: artId('enhVamp'),
   lucky: artId('enhLucky'),
   blaze: artId('enhBlaze'),
-  thorny: artId('enhThorny'),
   lucre: artId('enhLucre'),
   trick: artId('enhTrick'),
   echo: artId('enhEcho'),

@@ -11,9 +11,9 @@ import { ACHIEVEMENT_XP, CHALLENGES, levelOf, TRIMS, trimById, trimsOwned, newAc
  * history of finished runs for HISCORES. Pure data + helpers; the game owns persistence.
  */
 
-export const ALL_CHARMS: Enh[] = ['gold', 'keen', 'charged', 'vamp', 'lucky', 'blaze', 'thorny', 'lucre', 'trick', 'echo'];
-/** Charms no longer in the game (BULWARK went with the KNIGHT rework, THORNY with BRIAR): kept in old saves, not counted. */
-const RETIRED_CHARMS: ReadonlySet<Enh> = new Set<Enh>(['spiked', 'thorny']);
+export const ALL_CHARMS: Enh[] = ['gold', 'keen', 'charged', 'vamp', 'lucky', 'blaze', 'lucre', 'trick', 'echo'];
+/** Charms no longer in the game (BULWARK went with the KNIGHT rework): kept in old saves, not counted. */
+const RETIRED_CHARMS: ReadonlySet<Enh> = new Set<Enh>(['spiked']);
 /** What the player has found that still counts toward the COLLECTION. */
 export const foundCount = (p: { found: { relics: RelicId[]; charms: Enh[] } }) =>
   p.found.relics.filter((r) => RELICS[r] && !RELICS[r].retired).length + p.found.charms.filter((c) => !RETIRED_CHARMS.has(c)).length;
