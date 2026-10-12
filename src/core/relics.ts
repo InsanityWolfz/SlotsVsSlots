@@ -37,7 +37,6 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // Slot machine relics: each machine gets an identity relic and a heal that feeds off its own mechanic.
   drum: { id: 'drum', name: 'WAR DRUM', text: 'EACH PAIR AND JACKPOT INCREASES SWORD DAMAGE BY +2 EACH FIGHT (MAX +10)', sprite: 'relicDrum', machine: 'knight' },
   chainmail: { id: 'chainmail', name: 'CHAINMAIL', text: '10% OF LEFTOVER SHIELD HEALS YOUR HP', sprite: 'relicChainmail', machine: 'knight' },
-  vault: { id: 'vault', name: 'BANK VAULT', text: 'EACH ROUND YOU WIN GIVES ONE OF YOUR CHIP SYMBOLS A GOLD CHARM', sprite: 'relicVault', machine: 'midas' },
   faraday: { id: 'faraday', name: 'FARADAY CAGE', text: '25% OF SHIELD YOU GAIN ALSO CHARGES LIGHTNING', sprite: 'relicFaraday', machine: 'tesla' },
   static: { id: 'static', name: 'STATIC', text: 'LIGHTNING CHARGES 10 WHEN YOU ARE ATTACKED', sprite: 'relicStatic', machine: 'tesla' },
   capbells: { id: 'capbells', name: 'CAP AND BELLS', text: 'WILDS HEAL 10 HP', sprite: 'relicCapbells', machine: 'joker' },
@@ -204,7 +203,7 @@ export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
   common: ['clover', 'battery', 'fang', 'bandage', 'firstblood', 'piggy', 'trophy', 'bash', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar'],
-  uncommon: ['greatsword', 'armoredcar', 'safedeposit', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'faraday', 'static', 'capbells', 'horseshoe', 'underdog', 'holywater', 'belt', 'bracelet', 'coil', 'rainmaker', 'slushfund', 'loosechange', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer'],
+  uncommon: ['greatsword', 'armoredcar', 'safedeposit', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'faraday', 'static', 'capbells', 'horseshoe', 'underdog', 'holywater', 'belt', 'bracelet', 'coil', 'rainmaker', 'slushfund', 'loosechange', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
 };
 

@@ -71,7 +71,6 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   // Slot machine relics (only offered on their machine).
   drum: 8,
   chainmail: 8,
-  vault: 8,
   tower: 7,
   headsman: 8,
   capacitor: 8,

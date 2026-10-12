@@ -131,7 +131,9 @@ BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP).
   can come back, and in ENDLESS every card is open (the early-act ones too). HOUSE EDGES stack up to III (each level
   harder, paying a tier more). Legendary picks top up with normal relics when fewer than 3 legendaries are left.
 - **MAKE IT RAIN counts at most 100 chips (user, 2026-10-12).** The sim's BANKROLL rarely holds that many (median 34
-  in Act 3): its big hits are the multiplier (~25 GOLD Charms from BANK VAULT x HIGH ROLLER).
+  in Act 3); its big hits were the multiplier (~25 GOLD Charms from BANK VAULT x HIGH ROLLER).
+- **BANK VAULT is gone (user, 2026-10-12):** a GOLD Charm after every win. BANKROLL GREEN 50 -> 41, WHITE 59 -> 58;
+  its Act 3 fights in 2 spins or fewer 49% -> 38%.
 - **No healing penalty in Act 3 (user, 2026-10-12):** healing used to be halved there; it hit the slow machines'
   Dealer fights hardest (KNIGHT GREEN 29 -> 38, JUKEBOX 25 -> 39).
 

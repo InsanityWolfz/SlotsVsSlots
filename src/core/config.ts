@@ -126,7 +126,6 @@ export type RelicId =
   // Slot machine relics (only offered on that machine)
   | 'drum'
   | 'chainmail'
-  | 'vault'
   | 'faraday'
   | 'static'
   | 'capbells'

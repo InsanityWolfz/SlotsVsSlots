@@ -965,12 +965,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   // The Dealer's own marks don't carry on; the deck resets once it falls.
   run.deckMarks = beaten.boss === 'dealer' ? 0 : Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
   if (run.player.relics.includes('bandage') && !run.glass) hp += BANDAGE_HEAL;
-  // BANK VAULT (CASH CASSIDY): after each win, a plain chip (his attack symbol) gets a GOLD charm.
-  if (run.player.relics.includes('vault')) {
-    const atk = CABINETS[run.cabinet].attack;
-    const reels = [0, 1, 2].filter((r) => plainCells(run.player, r, atk) > 0);
-    if (reels.length) addCharms(run.player, new Rng((run.seed ^ Math.imul(fightNumber(run) + 11, 0x9e3779b1)) >>> 0).pick(reels), atk, 'gold', 1);
-  }
+  // (BANK VAULT is gone, user 2026-10-12: a GOLD Charm every win made BANKROLL's late fights one spin.)
   // TROPHY BELT: every win adds max HP.
   if (run.player.relics.includes('trophy')) {
     run.player.maxHp += NEW_RELIC.trophyHp;

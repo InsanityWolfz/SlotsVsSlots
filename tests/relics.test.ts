@@ -4,7 +4,7 @@ import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { NEW_RELIC, RELICS } from '../src/core/relics';
-import { charmOptions, createRun, draftOffers, fightConfig, finishFight, gildsFor, isRelicDraft, relicFits, startRelics, takeStart } from '../src/core/run';
+import { charmOptions, createRun, draftOffers, fightConfig, finishFight, gildsFor, isIdentityRelic, isRelicDraft, relicFits, startRelics, takeStart } from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -153,7 +153,7 @@ describe('relic pools, the starting pick and lucky', () => {
       const st = run.pendingStart!;
       expect(st).toHaveLength(3);
       expect(RELICS[st[0]].machine).toBe(cab);
-      expect(RELICS[st[2]].machine).toBeUndefined();
+      expect(isIdentityRelic(st[2])).toBe(false);
       takeStart(run, st[0]);
       expect(run.player.relics).toEqual([st[0]]);
       expect(run.pendingStart).toBeNull();
