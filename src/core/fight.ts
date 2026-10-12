@@ -42,8 +42,8 @@ export const POT_STEAL = { any: 1 };
  * multiplying each other (the pair / jackpot tier still multiplies). lightningAdd 1: only TESLA's bolts pool (their
  * charge), and the lightning's own boosts pool too (CHAIN LIGHTNING's second hit counts as +100%). Prototype switches. */
 export const PAY = { additive: 0, lightningAdd: 0 };
-/** THE JUKEBOX: +20% note damage per volume level, max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
-export const VOLUME = { perLevel: 0.2, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5, battery: 3 };
+/** THE JUKEBOX: +25% note damage per volume level (was +20%, 2026-10-12), max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
+export const VOLUME = { perLevel: 0.25, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5, battery: 3 };
 export const RAIN = { perChip: 1.5, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x2.5 (quarter steps). */
 export const highRollerMul = (chips: number, cap = MIDAS.maxMul) => Math.min(cap, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
@@ -987,7 +987,7 @@ export class Fight {
         g.base += (has('drum') ? NEW_RELIC.drumStep : NEW_RELIC.deckdrumStep) * this.drum * g.reels.length;
         fired.add(has('drum') ? 'drum' : 'deckdrum');
       }
-      // THE JUKEBOX: notes hit +20% per volume; at THE DROP an ECHO note hits again (HEADLINER: the drop hits x2);
+      // THE JUKEBOX: notes hit +25% per volume; at THE DROP an ECHO note hits again (HEADLINER: the drop hits x2);
       // HYPE MAN cuts notes off the drop.
       if (player && this.meter?.kind === 'volume' && g.symbol === 'note' && g.base > 0) {
         const vol = this.volume;
