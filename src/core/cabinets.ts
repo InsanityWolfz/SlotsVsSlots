@@ -79,16 +79,16 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'KNIGHT',
     sprite: 'cabinetKnight',
     blurb: 'THE DEPENDABLE ONE',
-    hp: 39 * UNIT,
-    // FORGED STEEL: half swords, half shields, and they start at level 2.
+    hp: 44 * UNIT,
+    // FORGED STEEL: half swords, half shields; swords start at level 3, shields at 2 (2026-10-12: honest HP).
     strips: r3({ sword: 6, shield: 6 }),
     gilded: [],
     favors: null,
     meter: null,
     symbols: ['sword', 'shield'],
     attack: 'sword',
-    levels: { sym: { sword: 2, shield: 2 }, charm: {} },
-    rule: 'HALF SWORDS, HALF SHIELDS, BOTH AT LEVEL 2. NO METER. 390 HP.',
+    levels: { sym: { sword: 3, shield: 2 }, charm: {} },
+    rule: 'HALF SWORDS, HALF SHIELDS. SWORDS START AT LEVEL 3, SHIELDS AT 2. NO METER. 440 HP.',
     unlock: '',
   },
   midas: {
