@@ -282,15 +282,16 @@ export const DEPTH_HP_2 = [52, 62, 73, 85, 97].map((h) => h * UNIT);
 export const DEPTH_HP_3 = [240, 270, 300, 330, 360].map((h) => h * UNIT);
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5, 4: 3 };
 /** ENDLESS (act 4) tuning: per loop, enemy HP x hp^loop and damage x dmg^loop (EXPERT_PLAYTEST_3 D). */
-export const ENDLESS = { ramp: 0.15, hp: 1.45, dmg: 1.35, houseHp: 3, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, bustKeep: 1 / 3, wheelHp: 4, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
+export const ENDLESS = { ramp: 0.05, hp: 2, dmg: 1.35, houseHp: 3, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, bustKeep: 1 / 3, wheelHp: 4, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
 /**
  * ENDLESS: each loop multiplies enemy HP (and damage) by its base, and the step itself grows by RAMP every loop,
  * so the climb accelerates: loop L totals base^L x (1 + ramp)^(L(L-1)/2). Only broken builds should see loop 5.
+ * 2026-10-12 (pacing): base 2, ramp 0.05 (was 1.45 / 0.15): loops 1-3 were 1-3-spin fights, then a cliff.
  */
 export const endlessMul = (base: number, loop: number) => Math.pow(base, loop) * Math.pow(1 + ENDLESS.ramp, (loop * (loop - 1)) / 2);
 export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
 /** Fixed boss HP (honest HP, 2026-10-12): the House (bossHp), THE WHEEL, the Dealer, and ENDLESS's loop bosses' base. */
-export const TUNE = { dailyAct3: 0.45, greenWheel: 0.85, coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, dealerQuietCap: 0.25, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, rampPerTurn: 0.06, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act1Swords: 1, enemyShield: 0.5, act3Sevens: 4, bossHp: 100 * UNIT, act2Mul: 1.06, act2Swords: 2, wheelHp: 350 * UNIT, dealerHp: 1300 * UNIT, endlessBossBase: 300 * UNIT, enemyDmg: 1 };
+export const TUNE = { dailyAct3: 0.45, greenWheel: 0.85, coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, dealerQuietCap: 0.25, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, rampPerTurn: 0.06, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act3Hp: 1.4, act1Swords: 1, enemyShield: 0.5, act3Sevens: 4, bossHp: 100 * UNIT, act2Mul: 1.06, act2Swords: 2, wheelHp: 350 * UNIT, dealerHp: 1300 * UNIT, endlessBossBase: 300 * UNIT, enemyDmg: 1 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;
@@ -352,7 +353,7 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
   const opener = depth === 0 && act === 1 ? OPENER_HP_MUL : 1;
   // (THE WHEEL's real HP is sized to your machine in run.enemyHp.)
   const bossHp = a.id === 'wheel' ? 100 * UNIT : TUNE.bossHp;
-  const hp = isBoss ? bossHp : unitsRound(curve[Math.min(depth, curve.length - 1)] * hpMul * opener * TUNE.regularHp * (act === 2 ? TUNE.act2Hp : act === 1 ? TUNE.act1Hp : 1));
+  const hp = isBoss ? bossHp : unitsRound(curve[Math.min(depth, curve.length - 1)] * hpMul * opener * TUNE.regularHp * (act === 2 ? TUNE.act2Hp : act === 1 ? TUNE.act1Hp : TUNE.act3Hp));
   // Act 1 regulars use their ability every 3 turns at most, so players see what each enemy does (EXPERT_PLAYTEST_2 G2).
   // Every regular uses its ability at least every 3 turns (31-40% of act 2-3 abilities never fired: EXPERT_PLAYTEST_2 A1).
   const every = !a.ability ? 0 : !isBoss ? Math.min(a.ability.every, TUNE.act1Every) : a.ability.every;

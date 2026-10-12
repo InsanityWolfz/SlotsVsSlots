@@ -120,6 +120,10 @@ BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP).
   lists win-rate lifts (inflated by survivorship).
 - **TESLA's lightning grows additively (2026-10-12, the user's idea):** its boosts (OVERCHARGE, LIVE WIRE, MELTDOWN,
   MAD SCIENCE, CHAIN LIGHTNING +100%) add up instead of multiplying; base bolt 60, BLAZE +5 a level. WHITE 56, GREEN 36.
+- **Pacing (2026-10-12):** Act 3 regulars and elites have x1.4 HP (TUNE.act3Hp), and ENDLESS grows x2 a loop with a
+  small ramp (was x1.45 with a big one). Act 3 fights ending in 2 spins or fewer: 20-55% -> 13-23% for every machine
+  but BANKROLL (49%: MAKE IT RAIN hits for the chips held). GREEN: KNIGHT 36, JUKEBOX 35, TESLA 42, JOKER 52,
+  BANKROLL 49.
 - **No healing penalty in Act 3 (user, 2026-10-12):** healing used to be halved there; it hit the slow machines'
   Dealer fights hardest (KNIGHT GREEN 29 -> 38, JUKEBOX 25 -> 39).
 
