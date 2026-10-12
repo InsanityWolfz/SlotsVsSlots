@@ -1669,7 +1669,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'sweepUp':
       return { title: 'SWEEP UP', rule: `+${BIG.sweepHeal / 2} MAX HP AND REMOVE ALL ROCKS`, cost: '' };
     case 'glassCannon':
-      return { title: 'GLASS CANNON', rule: `PAIRS AND JACKPOTS PAY X${BIG.glassPay}`, cost: 'NO HEAL CARDS, CASHIER HEALS OR BANDAGE' };
+      return { title: 'GLASS CANNON', rule: `PAIRS AND JACKPOTS PAY X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN ROUNDS' };
     case 'bloodPact':
       return hasMeter(run)
         ? { title: 'BLOOD PACT', rule: `YOUR ${meter} FILLS TWICE AS FAST`, cost: pct(run, BIG.bloodPactHp) }
