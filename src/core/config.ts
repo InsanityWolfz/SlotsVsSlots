@@ -173,7 +173,10 @@ export type RelicId =
   // THE JUKEBOX (2026-10-08)
   | 'turntable'
   | 'mixtape'
-  | 'subwoofer';
+  | 'subwoofer'
+  // CASH CASSIDY's shield build (user, 2026-10-12).
+  | 'armoredcar'
+  | 'safedeposit';
 
 /** The fight rules a BIG CHOICE can add (the player's side only; set on the run, passed to every fight). */
 export interface BigMods {

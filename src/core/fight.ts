@@ -428,10 +428,12 @@ export class Fight {
     return Math.min(this.meterCost - UNIT, Math.floor(chips / MIDAS.chipsPerPip) * UNIT);
   }
   /** MIDAS: the VAULT's payoff multiplier: 1 + chips held / 20, max x3. */
-  vaultMul(): number {
+  vaultMul(lineShield = 0): number {
     // COMPOUND raises the cap.
     // NO LIMIT (big choice): no cap at all.
-    return highRollerMul(this.chipsNow(), this.big.noHighRollerCap ? Infinity : this.sides.player.relics.has('compound') ? NEW_RELIC.compoundCap : MIDAS.maxMul);
+    // ARMORED CAR: this spin's shield counts as chips.
+    const armored = this.sides.player.relics.has('armoredcar') ? Math.floor(lineShield / NEW_RELIC.armoredShield) : 0;
+    return highRollerMul(this.chipsNow() + armored, this.big.noHighRollerCap ? Infinity : this.sides.player.relics.has('compound') ? NEW_RELIC.compoundCap : MIDAS.maxMul);
   }
   /** CASH CASSIDY: chips in hand right now (held at the start, plus what this fight paid or cost). */
   chipsNow(): number {
@@ -625,6 +627,7 @@ export class Fight {
       }));
       if (near) this.coilPending = NEW_RELIC.coilCharge;
     }
+    this.lastScoreShield = score.groups.filter((g) => g.symbol === 'shield').reduce((t, g) => t + g.amount, 0);
     for (const group of score.groups) {
       if (allIn && (group.symbol === 'sword' || group.symbol === 'seven')) continue;
       this.resolveGroup(me, group, score, events);
@@ -887,8 +890,11 @@ export class Fight {
       // Your best paying group: swords first, then the biggest (never a lone shield if anything better paid).
       const g0 = s.groups.filter(pays).sort((a, b) => Number(!!b.rain) - Number(!!a.rain) || Number(this.isAttack(b.symbol)) - Number(this.isAttack(a.symbol)) || b.base * b.mult - a.base * a.mult)[0];
       if (g0) {
-        const mul = this.vaultMul();
+        // (This spin's shield, for ARMORED CAR: the shield groups' pay before the multiplier lands.)
+        const lineShield = s.groups.filter((g) => g.symbol === 'shield').reduce((a, g) => a + g.base * g.mult, 0);
+        const mul = this.vaultMul(lineShield);
         if (has('compound') && mul > MIDAS.maxMul) fired.add('compound');
+        if (has('armoredcar') && lineShield >= NEW_RELIC.armoredShield) fired.add('armoredcar');
         g0.mult *= mul;
         vaultGroup = g0;
         s.raised = true;
@@ -1338,7 +1344,7 @@ export class Fight {
           events.push({ type: 'midasChips', side: me.side, amount: got, total: this.midasChips });
           // Chips are CASSIDY's weapon: a chip group hits for its pay (MAKE IT RAIN is the big version).
           if (g.rain) this.makeItRain(me, g, events);
-          else if (g.amount > 0) this.hit(me, this.sides[other(me.side)], g.amount, g.reels, events);
+          else if (g.amount > 0) this.hit(me, this.sides[other(me.side)], g.amount + this.depositOnce(me, events), g.reels, events);
           if (this.over) return;
         }
         this.fillMeter(me, g.amount, g.reels, events);
@@ -1442,6 +1448,16 @@ export class Fight {
     } else if (me.relics.has('mixtape') && me.energy > 0 && !me.armed) events.push({ type: 'relic', side: me.side, relic: 'mixtape' });
   }
 
+  /** This spin's shield groups' pay (SAFE DEPOSIT reads it when a chip group hits). */
+  private lastScoreShield = 0;
+  private depositSpin = -1;
+  /** SAFE DEPOSIT: your first chip hit each spin also deals this spin's shield (x safeDepositMul). */
+  private depositOnce(me: Combatant, events: CombatEvent[]): number {
+    if (me.side !== 'player' || !me.relics.has('safedeposit') || this.depositSpin === this.turn || this.lastScoreShield <= 0) return 0;
+    this.depositSpin = this.turn;
+    events.push({ type: 'relic', side: me.side, relic: 'safedeposit' });
+    return unitsRound(this.lastScoreShield * NEW_RELIC.safeDepositMul);
+  }
   private makeItRain(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
     this.rains++;
     if (me.relics.has('downpour') && this.rains > 1) events.push({ type: 'relic', side: me.side, relic: 'downpour' });
@@ -1449,7 +1465,7 @@ export class Fight {
     const cost = this.rainCost(me);
     events.push({ type: 'makeItRain', side: me.side, reels: g.reels, chips: this.chipsNow(), cost, total: this.midasChips - cost });
     if (me.relics.has('rainmaker')) events.push({ type: 'relic', side: me.side, relic: 'rainmaker' });
-    this.hit(me, foe, g.amount, g.reels, events);
+    this.hit(me, foe, g.amount + this.depositOnce(me, events), g.reels, events);
     this.midasChips -= cost;
     events.push({ type: 'midasChips', side: me.side, amount: -cost, total: this.midasChips });
     if (this.over) return;

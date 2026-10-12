@@ -38,6 +38,8 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   turntable: 8,
   mixtape: 7,
   subwoofer: 7,
+  armoredcar: 4,
+  safedeposit: 4,
   hotstreak: 6,
   belt: 6,
   bracelet: 6,
@@ -118,7 +120,7 @@ function styleValue(run: RunState, o: DraftOption): number | undefined {
   const p = run.player;
   switch (o.kind) {
     case 'swap':
-      if (o.to === 'shield') return (p.strips[o.reel].shield ?? 0) < 9 ? 8.5 : 2;
+      if (o.to === 'shield') return (p.strips[o.reel].shield ?? 0) < SIM_BIAS_TURTLE.cap ? 8.5 : 2;
       if (o.from === 'shield') return 0;
       return undefined;
     case 'symLevel':
@@ -127,9 +129,15 @@ function styleValue(run: RunState, o: DraftOption): number | undefined {
       return o.symbol === 'shield' ? 9 : undefined;
     case 'remove':
       return o.symbol === 'shield' ? 0 : undefined;
+    case 'relic':
+      return SHIELD_RELICS.has(o.relic) ? 9.5 : undefined;
   }
   return undefined;
 }
+/** The shield build swaps toward this many shields a reel (beyond it, it keeps its strip and invests in shields). */
+export const SIM_BIAS_TURTLE = { cap: 9 };
+/** Relics a shield build wants. */
+const SHIELD_RELICS: ReadonlySet<string> = new Set(['armoredcar', 'safedeposit', 'tower', 'chainmail', 'bash', 'faraday', 'capacitor', 'belt']);
 
 function baseValue(run: RunState, o: DraftOption): number {
   const p = run.player;

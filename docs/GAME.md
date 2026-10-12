@@ -96,8 +96,10 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   Pay = BASE × MULT, and gold Charms in a group ADD. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
   machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER), ECHO (JUKEBOX) and BULWARK (`spiked`, KNIGHT).
   `src/core/charms.ts`.
-- **Relics:** 56, in common, uncommon and legendary tiers; some are machine identity relics. `src/core/relics.ts`.
-  To list exactly what players read: `npx tsx tools/content/audit.ts`.
+- **Relics:** 58, in common, uncommon and legendary tiers; some are machine identity relics. `src/core/relics.ts`.
+  To list exactly what players read: `npx tsx tools/content/audit.ts`. Every machine should have a shield build:
+  BANKROLL's is ARMORED CAR (shield counts as chips for HIGH ROLLER), SAFE DEPOSIT (chips also hit for the shield
+  gained that spin) and SHIELD BASH (KNIGHT's, open to BANKROLL too).
 
 ## HIGH STAKES (`src/core/stakes.ts`)
 Each machine has its own ladder. Winning a run at your best stake unlocks the next one.

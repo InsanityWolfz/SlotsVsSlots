@@ -85,6 +85,9 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // THE JUKEBOX (2026-10-08).
   turntable: { id: 'turntable', name: 'TURNTABLE', text: 'AFTER THE DROP, THE VOLUME FALLS TO 5, NOT 3', sprite: 'relicTurntable', machine: 'jukebox' },
   mixtape: { id: 'mixtape', name: 'MIXTAPE', text: 'THE RECORD NEVER SKIPS: A SPIN WITH NO NOTE KEEPS THE VOLUME', sprite: 'relicMixtape', machine: 'jukebox' },
+  // CASH CASSIDY's shield build (user, 2026-10-12): relics that scale with the shield you hold.
+  armoredcar: { id: 'armoredcar', name: 'ARMORED CAR', text: 'HIGH ROLLER COUNTS 1 CHIP PER 5 SHIELD YOU GAIN THAT SPIN', sprite: 'relicArmoredCar', machine: 'midas' },
+  safedeposit: { id: 'safedeposit', name: 'SAFE DEPOSIT', text: 'YOUR CHIPS ALSO HIT FOR THE SHIELD YOU GAIN THAT SPIN', sprite: 'relicSafeDeposit', machine: 'midas' },
   subwoofer: { id: 'subwoofer', name: 'SUBWOOFER', text: 'THE DROP PIERCES SHIELDS', sprite: 'relicSubwoofer', machine: 'jukebox' },
 };
 
@@ -133,10 +136,14 @@ export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
 /** Relics that make no sense on a machine even reworded (never offered there). */
 /** Content wave 1: offered in drafts, shops and RELIC RUSH, but not in the starting pick (it keeps each machine's signature relics). */
 export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel']);
-export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['jukebox'], bash: ['tesla', 'midas', 'joker'], wildcard: ['knight', 'midas'] };
+export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['jukebox'], bash: ['tesla', 'joker'], wildcard: ['knight', 'midas'] };
 
 /** New-relic numbers (playtest/RELIC_PROPOSALS.md, tuned in the engine). */
 export const NEW_RELIC = {
+  /** ARMORED CAR: this much shield counts as one chip for HIGH ROLLER. */
+  armoredShield: UNIT / 2,
+  /** SAFE DEPOSIT: your first chip hit each spin also deals this many times this spin's shield. */
+  safeDepositMul: 1,
   /** CONTENT_13: CHARM BRACELET +5% per charm type; METRONOME every 3rd spin x1.5; SNAKE EYES heal; TESLA COIL charge
    * (once a spin: 5 per bolt gave TESLA 21%). */
   braceletPer: 0.05,
@@ -194,7 +201,7 @@ export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
   common: ['clover', 'battery', 'fang', 'bandage', 'firstblood', 'piggy', 'trophy', 'bash', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar'],
-  uncommon: ['rod', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'faraday', 'static', 'capbells', 'horseshoe', 'underdog', 'holywater', 'belt', 'bracelet', 'coil', 'rainmaker', 'slushfund', 'loosechange', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer'],
+  uncommon: ['armoredcar', 'safedeposit', 'rod', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'faraday', 'static', 'capbells', 'horseshoe', 'underdog', 'holywater', 'belt', 'bracelet', 'coil', 'rainmaker', 'slushfund', 'loosechange', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
 };
 

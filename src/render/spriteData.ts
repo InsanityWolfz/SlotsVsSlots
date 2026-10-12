@@ -162,7 +162,7 @@ export type SpriteId =
   | 'heroTesla' | 'heroJoker'
   | 'goldbar' | 'thorn' | 'ace'                          // signature symbols: MIDAS gold bar, BRIAR thorn, 16x16
   | 'relicChalice'                               // BLOOD CHALICE relic, 16x16
-  | 'relicDrum' | 'relicChainmail' | 'relicVault' | 'relicDecree' // charm-rework relics, 16x16
+  | 'relicDrum' | 'relicChainmail' | 'relicVault' | 'relicArmoredCar' | 'relicSafeDeposit' | 'relicDecree' // charm-rework relics, 16x16
   | 'relicRosehip' | 'relicGraft' | 'relicFaraday' | 'relicStatic'
   | 'relicCapbells' | 'relicStacked' | 'relicGoldleaf' | 'relicExecutioner'
   | 'relicKiss' | 'relicHorseshoe' | 'relicUnderdog' | 'relicFirstblood'
@@ -4246,6 +4246,42 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '..KISSSDDDDDIK..',
     '...KKSDDIDDKK...',
     '.....KKKKKK.....',
+  ],
+  relicArmoredCar: [
+    '................',
+    '.KKKKKKKKKK.....',
+    'KLLLLLLLLLLKKK..',
+    'KLSSSSSSSSSLLLK.',
+    'KLSkAkSSSSSLAASK',
+    'KLSkAkgGGgSSAASK',
+    'KLSSSSGYYGSSSSDK',
+    'KLSSSSGYYgSSSSDK',
+    'KLSSSSggggSSSSYK',
+    'KSSSSSSSSSSSSDDK',
+    'KDDDDDDDDDDDDDDK',
+    '.KkkkkKKKKkkkkK.',
+    '.KkSSkK..KkSSkK.',
+    '.KkSSkK..KkSSkK.',
+    '.KkkkkK..KkkkkK.',
+    '..KKKK....KKKK..',
+  ],
+  relicSafeDeposit: [
+    '................',
+    '.KKKKKKKKKKKKKK.',
+    'KLLLLLLLLLLLLLLK',
+    'KLGGGGGGGGGGGGDK',
+    'KLGSSSSSSSSSSgDK',
+    'KLGSSAUUUUNSSgDK',
+    'KLGSSAUUUUNSSgDK',
+    'KLGSSAUkkUNSSgDK',
+    'KLGSSAUkkUNSSgDK',
+    'KLGSSSNUUNSSSgDK',
+    'KLGSSSSNNSSSSgDK',
+    'KLGSSSSSSSSSSgDK',
+    'KSGGGGGGGGGGGgDK',
+    'KDDDDDDDDDDDDDDK',
+    '.KDDKKKKKKKKDDK.',
+    '..KK........KK..',
   ],
   relicDecree: [
     '..KKKKKKKKKKKK..',
