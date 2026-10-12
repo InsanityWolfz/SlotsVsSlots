@@ -95,4 +95,15 @@ export interface Stage {
   /** The player's relics (for the HUD column) and how hard each is popping (1 = just fired). */
   relics: string[];
   relicPops: Record<string, number>;
+  /** The relic feed (left of your machine): relics that just fired, newest on top. `born` is clock time; a relic that
+   * fires again while shown counts up instead of adding a row. */
+  relicFeed: RelicFeedRow[];
+}
+
+export interface RelicFeedRow {
+  relic: string;
+  born: number;
+  count: number;
+  /** Drawn y (eases toward its slot). */
+  y: number;
 }

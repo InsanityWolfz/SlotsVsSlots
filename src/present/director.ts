@@ -1,12 +1,11 @@
 import { symLabel, UNIT, type Enh, type SideId, type SymbolId } from '../core/config';
-import type { RelicId } from '../core/config';
 import type { CombatEvent } from '../core/events';
 import { effectText, other, WHEEL_SYMBOLS, wheelCharm, WRITERS, type TurnResult } from '../core/fight';
 import type { LineScore } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
 import { Banner, Bubble, FloatText, Lightning, Projectile, SymbolWheel, TurnCard } from './fx';
-import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, PITCH, reelWindow, W } from './layout';
+import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, PITCH, reelWindow, RELIC_FEED, W } from './layout';
 import type { Stage } from './stage';
 import { ABILITY_UI } from './hud';
 import { stripMapColumn } from './stripMap';
@@ -36,7 +35,6 @@ const STORM_PART = (e: CombatEvent) =>
 const BATCHABLE = new Set<CombatEvent['type']>(['attack', 'shieldGain', 'energyGain', 'fizzle', 'slime', 'freeze', 'lock', 'steal', 'pot', 'heal', 'bomb', 'hex']);
 
 /** Where a relic's name pops (the RELICS header row). */
-const RELIC_NAME_Y = 244;
 
 /** Banners sit in the top gutter between the HUD panels, never over the reels. */
 const BANNER_Y = 172;
@@ -307,12 +305,17 @@ export class Director {
     this.s.relicPops[relic] = 1;
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.8, ease: sineIn, onUpdate: (v) => (this.s.relicPops[relic] = v) }));
     this.s.sounds.coin(6 + (i % 6));
-    const name = RELICS[relic as RelicId]?.name ?? '';
-    const w = name.length * 9;
-    // Names line up in the header row (stacked upward if several fire at once).
-    const busy = Object.entries(this.s.relicPops).filter(([k, v]) => k !== relic && v > 0.4).length;
-    // Names read right of the firing icons, above your reels (stacked if several fire at once).
-    this.bg(this.popText(name, 330 + w / 2, RELIC_NAME_Y - busy * 16, 1.5, '#e0c0ff', 12, 0.45));
+    // The relic feed (game.ts drawRelicFeed): a new row on top, or the same relic counting up.
+    const feed = this.s.relicFeed;
+    const now = this.c.time;
+    const row = feed.find((r) => r.relic === relic);
+    if (row) {
+      row.count++;
+      row.born = now;
+    } else {
+      feed.unshift({ relic, born: now, count: 1, y: RELIC_FEED.y - RELIC_FEED.row });
+      if (feed.length > RELIC_FEED.max) feed.length = RELIC_FEED.max;
+    }
   }
 
   private get c() {

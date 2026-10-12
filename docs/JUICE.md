@@ -31,6 +31,11 @@ fx.ts, camera.ts) and `src/audio`; this file keeps the WHY, so new features feel
 - Press squashes, release overshoots, and every press clicks: no silent buttons. A disabled control must look disabled.
 - The screen never looks dead: idle shimmer, chase lights, pulsing rims, slow particles.
 
+## Callouts never collide
+- A callout that can fire in bursts gets a fixed home, not a floating text: relics that fire show in the RELIC FEED,
+  rows left of your machine drawn over everything, newest on top; the same relic again counts up (X2) instead of
+  adding a row. Floating texts pick a spot once and drift, so several at once pile up or hide behind panels.
+
 ## Skip and safety
 - **Every presentation can be skipped** (a wait that polls a skip flag), jumping straight to its end state.
 - A new presentation waits for the running one to finish. Two racing over the same visuals crashed the old build.

@@ -38,9 +38,9 @@ export const RELIC_Y = 606;
 export const RELIC_COLS = 8;
 export const RELIC_PITCH = 34;
 export const RELIC_SHOWN = 32;
-// ...closed, a firing relic hops up just above your reels, under your HP and shield.
-export const RELIC_FIRE_X = 196;
-export const RELIC_FIRE_Y = 244;
+// ...closed, a relic that fires shows in the RELIC FEED: a column in the gutter left of your machine (clear of the BUILD
+// handle, x 0-30), newest on top. Each row is the icon and the name (two short lines); it shows `life` seconds.
+export const RELIC_FEED = { x: 54, y: 150, row: 50, max: 6, life: 1.8, fade: 0.35 };
 export const relicSlot = (i: number) => ({ x: RELIC_X + (i % RELIC_COLS) * RELIC_PITCH, y: RELIC_Y + Math.floor(i / RELIC_COLS) * 30 });
 
 export const COLORS = {

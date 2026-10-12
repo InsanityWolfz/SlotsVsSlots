@@ -46,7 +46,7 @@ import { Clock } from './present/clock';
 import { Director, VOUCHER_GAP, VOUCHER_X, VOUCHER_Y } from './present/director';
 import { FxLayer } from './present/fx';
 import { HudView, type HudMeter } from './present/hud';
-import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, RELIC_FIRE_X, RELIC_FIRE_Y, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
+import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, RELIC_FEED, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
 import { MachineView } from './present/machine';
 import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
@@ -1143,6 +1143,7 @@ export class Game {
       juice: this.prefs.juice,
       relics: [...cfg.relics],
       relicPops: {},
+      relicFeed: [],
       levels: { player: cfg.player.levels },
       ticket: cfg.relics.includes('ticket'),
       enemyShield: TUNE.enemyShield,
@@ -1566,7 +1567,6 @@ export class Game {
     }
     this.background.drawMarquee(ctx, t);
     this.drawChips(ctx);
-    if (this.drawerT < 0.5) this.drawRelics(ctx);
     if (this.phase === 'fighting') this.drawVouchers(ctx, this.time);
     s.huds.player.draw(ctx, t);
     s.huds.enemy.draw(ctx, t);
@@ -1579,6 +1579,7 @@ export class Game {
     this.drawGutter(ctx, t);
     this.particles.draw(ctx);
     s.fx.draw(ctx, s.clock.time, 20, Infinity);
+    if (this.drawerT < 0.5) this.drawRelicFeed(ctx);
     // The BUILD drawer: your whole build slides out over the left side (relics fire inside it), chips stay put on top.
     if (this.drawerLive()) {
       if (this.drawerT > 0.005) {
@@ -1691,45 +1692,71 @@ export class Game {
     }
   }
 
-  /** Your relics in a fight: firing ones under the chips, or the whole grid in the BUILD pane. */
+  /** Your relics in a fight, as the whole grid in the BUILD pane (a relic that fires hops there too). */
   private drawRelics(ctx: CanvasRenderingContext2D): void {
     const relics = this.relicList();
-    if (!relics.length) return;
-    // BUILD closed: only a relic that's firing shows, in a row under your chips. Open: the whole grid, in the panel.
-    const open = this.drawerT >= 0.5;
-    let k0 = 0;
-    if (!open) {
-      // A dark plate under the hop row, so the icons read against the machine's frame.
-      const n = relics.filter((r) => (this.stage.relicPops[r] ?? 0) > 0.02).length;
-      if (n) {
-        ctx.fillStyle = 'rgba(20,12,28,0.85)';
-        ctx.fillRect(RELIC_FIRE_X - 22, RELIC_FIRE_Y - 22, (n - 1) * 36 + 44, 44);
-      }
-    }
     relics.forEach((r, i) => {
-      const firing = (this.stage.relicPops[r] ?? 0) > 0.02;
-      if (!open && !firing) return;
-      if (open && i >= RELIC_SHOWN) return;
-      const { x, y: y0 } = open ? relicSlot(i) : { x: RELIC_FIRE_X + (k0++) * 36, y: RELIC_FIRE_Y };
+      if (i >= RELIC_SHOWN) return;
+      const { x, y: y0 } = relicSlot(i);
       // A relic that just fired pops: it grows, hops up, wiggles and flashes gold.
       const pop = this.stage.relicPops[r] ?? 0;
       const y = y0 - Math.sin(pop * Math.PI) * 8;
       const k = 1 + 0.55 * pop;
-      const half = 16 * k;
-      if (pop > 0) {
-        ctx.save();
-        ctx.globalAlpha = pop * 0.8;
-        ctx.shadowColor = COLORS.goldLight;
-        ctx.shadowBlur = 18;
-        ctx.fillStyle = COLORS.goldLight;
-        ctx.fillRect(x - half - 3, y - half - 3, half * 2 + 6, half * 2 + 6);
-        ctx.restore();
+      this.relicBox(ctx, r, x, y, k, pop);
+    });
+  }
+
+  /** A relic's icon in its frame (k: scale, pop: the gold flash of one that just fired). */
+  private relicBox(ctx: CanvasRenderingContext2D, r: string, x: number, y: number, k: number, pop: number): void {
+    const half = 16 * k;
+    if (pop > 0) {
+      ctx.save();
+      ctx.globalAlpha *= pop * 0.8;
+      ctx.shadowColor = COLORS.goldLight;
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = COLORS.goldLight;
+      ctx.fillRect(x - half - 3, y - half - 3, half * 2 + 6, half * 2 + 6);
+      ctx.restore();
+    }
+    ctx.fillStyle = pop > 0.3 ? COLORS.goldLight : COLORS.outline;
+    ctx.fillRect(x - half, y - half, half * 2, half * 2);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(x - half + 2 * k, y - half + 2 * k, half * 2 - 4 * k, half * 2 - 4 * k);
+    drawSprite(ctx, RELICS[r as RelicId].sprite as SpriteId, x, y, 1.6 * k, { rot: Math.sin(pop * Math.PI * 3) * 0.25 * pop, flash: pop * 0.6 });
+  }
+
+  /**
+   * THE RELIC FEED (BUILD closed): relics that just fired, as rows in the gutter left of your machine, newest on top.
+   * Drawn over the machines and effects, so nothing hides it; rows slide into place, and a relic that fires again
+   * counts up (X2) instead of adding a row.
+   */
+  private drawRelicFeed(ctx: CanvasRenderingContext2D): void {
+    const F = RELIC_FEED;
+    const now = this.stage.clock.time;
+    const feed = this.stage.relicFeed;
+    for (let i = feed.length - 1; i >= 0; i--) if (now - feed[i].born > F.life || now < feed[i].born) feed.splice(i, 1);
+    feed.forEach((row, i) => {
+      const age = now - row.born;
+      row.y += (F.y + i * F.row - row.y) * 0.25;
+      const alpha = Math.min(1, age / 0.12, (F.life - age) / F.fade);
+      const pop = Math.max(0, 1 - age / 0.5);
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, alpha);
+      ctx.fillStyle = 'rgba(20,12,28,0.88)';
+      ctx.fillRect(F.x - 22, row.y - 22, 124, 44);
+      this.relicBox(ctx, row.relic, F.x, row.y, 1 + 0.3 * pop, pop);
+      const words = (RELICS[row.relic as RelicId]?.name ?? '').split(' ');
+      const lines = [''];
+      for (const w of words) {
+        const cur = lines[lines.length - 1];
+        if (cur && (cur + ' ' + w).length > 9) lines.push(w);
+        else lines[lines.length - 1] = cur ? `${cur} ${w}` : w;
       }
-      ctx.fillStyle = pop > 0.3 ? COLORS.goldLight : COLORS.outline;
-      ctx.fillRect(x - half, y - half, half * 2, half * 2);
-      ctx.fillStyle = COLORS.panel;
-      ctx.fillRect(x - half + 2 * k, y - half + 2 * k, half * 2 - 4 * k, half * 2 - 4 * k);
-      drawSprite(ctx, RELICS[r].sprite as SpriteId, x, y, 1.6 * k, { rot: Math.sin(pop * Math.PI * 3) * 0.25 * pop, flash: pop * 0.6 });
+      const top = row.y - (lines.length - 1) * 6;
+      lines.slice(0, 2).forEach((l, j) => drawText(ctx, l, F.x + 24, top + j * 12, 1.25, '#e0c0ff', { align: 'left' }));
+      // Fired again while shown: a count badge on the icon.
+      if (row.count > 1) drawText(ctx, `X${row.count}`, F.x + 18, row.y + 14, 1.5, COLORS.goldLight, { align: 'right', outline: COLORS.outline });
+      ctx.restore();
     });
   }
 
