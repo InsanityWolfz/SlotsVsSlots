@@ -5,7 +5,7 @@ import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../cor
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, WHEEL_RULES, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
-import { bjState, bjTotal, BJ, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
+import { bjState, bjTotal, BJ, DICE, diceMax, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -176,6 +176,33 @@ function drawPlayingCard(ctx: CanvasRenderingContext2D, x: number, y: number, ra
   drawText(ctx, RANK(rank), -38, -56, 3, col, { outline: '#f4eee0' });
   drawSuit(ctx, suit, -38, -30, 3);
   drawSuit(ctx, suit, 10, 16, 8);
+  ctx.restore();
+}
+/** A die (face 1-6) at (x, y), tilted by `rot` radians while it tumbles. */
+function drawDie(ctx: CanvasRenderingContext2D, x: number, y: number, face: number, rot: number): void {
+  const s = 96;
+  const pips: Record<number, [number, number][]> = {
+    1: [[0, 0]],
+    2: [[-1, -1], [1, 1]],
+    3: [[-1, -1], [0, 0], [1, 1]],
+    4: [[-1, -1], [1, -1], [-1, 1], [1, 1]],
+    5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]],
+    6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]],
+  };
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(-s / 2 + 6, -s / 2 + 8, s, s);
+  ctx.fillStyle = COLORS.outline;
+  ctx.fillRect(-s / 2 - 3, -s / 2 - 3, s + 6, s + 6);
+  ctx.fillStyle = '#f4eee0';
+  ctx.fillRect(-s / 2, -s / 2, s, s);
+  ctx.fillStyle = '#d3c8b0';
+  ctx.fillRect(-s / 2, s / 2 - 8, s, 8);
+  ctx.fillRect(s / 2 - 8, -s / 2, 8, s);
+  ctx.fillStyle = face === 1 ? '#e8374b' : '#1a1426';
+  for (const [px, py] of pips[face] ?? []) ctx.fillRect(px * 26 - 8, py * 26 - 8, 16, 16);
   ctx.restore();
 }
 /** RED OR BLACK: the wheel's centre, its offscreen size (drawn at half size, scaled x2), and the bet column's x. */
@@ -417,6 +444,10 @@ export class RunScreens {
   private bjDealerUp = 0;
   private bjMsg: EncounterResult | null = null;
   private bjWon: string[] = [];
+  /** UNDER OR OVER: the dice showing, the roll's progress (0..1; 1 = landed), and the last roll's word. */
+  private dcDice: [number, number] = [3, 4];
+  private dcT = 1;
+  private dcMsg: EncounterResult | null = null;
   /** Shop purchases in flight to YOUR BUILD. */
   private flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   private picked = -1;
@@ -1361,13 +1392,18 @@ export class RunScreens {
     this.encLanded = 0;
     this.encDone = false;
     this.slotWin = null;
-    if (this.encId === 'slot' || this.encId === 'roulette' || this.encId === 'hilo' || this.encId === 'bj') {
+    if (this.encId !== 'blood') {
       // The game's own clock follows the screens' (so it runs at their pace, and SKIP touches nothing else).
       this.slotClock = new Clock();
       this.ui.add({ update: (dt) => (this.slotClock.tick(dt), this.mode !== 'encounter'), finish: () => {} });
     }
     if (this.encId === 'slot') this.slotReels = SLOT_STRIPS.map((strip, r) => new ReelView(strip.map(slotCell), (r * 5) % strip.length));
     if (this.encId === 'roulette') return this.rouletteButtons();
+    if (this.encId === 'dice') {
+      this.dcMsg = null;
+      this.dcT = 1;
+      return this.diceButtons();
+    }
     if (this.encId === 'bj') {
       this.bjShow = null;
       this.bjMsg = null;
@@ -1406,6 +1442,7 @@ export class RunScreens {
     if (this.encId === 'roulette') return this.playRoulette(i);
     if (this.encId === 'hilo') return this.playHilo(i);
     if (this.encId === 'bj') return this.playBj(i);
+    if (this.encId === 'dice') return this.playDice(i);
     const res = this.cb.onEncounter(i);
     if (!res) return;
     this.encResult = res;
@@ -1504,6 +1541,71 @@ export class RunScreens {
       this.rlBet = next;
     };
     return [-5, -1, 1, 5].map((d, k) => this.minorBtn(d > 0 ? `+${d}` : `${d}`, RL.betX + (k - 1.5) * 66, 262, 58, 42, () => step(d)));
+  }
+
+  /** UNDER OR OVER's table: the bet stepper, UNDER 7 / SEVEN / OVER 7, WALK AWAY. */
+  private diceButtons(): void {
+    const run = this.run!;
+    const max = diceMax(run);
+    this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
+    this.rlSpinNo = (run.encounterPlays ?? 0) + 1;
+    this.encChoices = encounterChoices(run);
+    const steps = this.betStepper(() => diceMax(this.run!));
+    const under = this.btn('UNDER 7', RL.betX, 330, 260, 52, () => this.playDice(0));
+    const seven = this.btn('SEVEN', RL.betX, 392, 260, 52, () => this.playDice(1));
+    const over = this.btn('OVER 7', RL.betX, 454, 260, 52, () => this.playDice(2));
+    seven.tint = '#2a2234';
+    const walk = this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playDice(3));
+    for (const b of [...steps, under, seven, over]) b.enabled = max >= 1;
+    this.buttons = [...steps, under, seven, over, walk];
+  }
+
+  /** One roll: the dice tumble (faces flicker, bounces settle) and land, then the call is paid. */
+  private playDice(i: number): void {
+    const res = this.cb.onEncounter(i, this.rlBet);
+    if (!res) return;
+    if (!res.dice) {
+      this.dcMsg = res;
+      this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+      return;
+    }
+    const dice = res.dice;
+    this.dcMsg = null;
+    this.encSkip = false;
+    this.buttons = [
+      this.minorBtn('SKIP', CX, 636, 200, 44, () => {
+        this.encSkip = true;
+        this.slotClock.skip();
+      }),
+    ];
+    let lastFace = 0;
+    void this.slotClock
+      .tween({
+        from: 0,
+        to: 1,
+        dur: 1.1,
+        onUpdate: (t) => {
+          this.dcT = t;
+          // The faces flicker while they tumble (a new face every few hundredths), then hold the real roll.
+          if (t < 0.8 && t - lastFace > 0.06) {
+            lastFace = t;
+            this.dcDice = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
+            if (!this.encSkip) this.sounds.tick(t);
+          } else if (t >= 0.8) this.dcDice = dice;
+        },
+      })
+      .then(() => {
+        this.slotClock.skipping = false;
+        if (this.mode !== 'encounter') return;
+        this.dcDice = dice;
+        this.dcT = 1;
+        this.dcMsg = res;
+        this.sounds.reelStop(2);
+        if (res.text.endsWith('BACK')) this.sounds.click();
+        else this.encOutcomeSound(res);
+        if (res.more) this.diceButtons();
+        else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+      });
   }
 
   /** TWENTY-ONE mid-hand: HIT and STAND. */
@@ -2675,6 +2777,7 @@ export class RunScreens {
     else if (def.id === 'roulette') this.drawRoulette(ctx, time);
     else if (def.id === 'hilo') this.drawHilo(ctx, time);
     else if (def.id === 'bj') this.drawBj(ctx, time);
+    else if (def.id === 'dice') this.drawDice(ctx, time);
     else {
       this.panel(ctx, CX - 330, 120, 660, 300, '#7a3aa8');
       if (!res) {
@@ -2735,6 +2838,28 @@ export class RunScreens {
     ctx.fillRect(CX - 430, 104, 860, h);
     ctx.fillStyle = 'rgba(255,255,255,0.04)';
     for (let y = 104; y < 104 + h; y += 8) ctx.fillRect(CX - 430, y, 860, 2);
+  }
+
+  /** UNDER OR OVER: two dice on the felt (tumbling, then landed), your bet, the payouts, the last roll. */
+  private drawDice(ctx: CanvasRenderingContext2D, time: number): void {
+    this.felt(ctx);
+    drawText(ctx, `ROLL ${Math.min(this.rlSpinNo, DICE.rolls)} OF ${DICE.rolls}`, CX, 78, 2, COLORS.textDim);
+    const t = this.dcT;
+    const rolling = t < 1;
+    // While they tumble the dice hop (each bounce lower) and wobble; landed, they sit still.
+    const hop = rolling ? Math.abs(Math.sin(t * Math.PI * 4)) * 60 * (1 - t) : 0;
+    const total = this.dcDice[0] + this.dcDice[1];
+    this.dcDice.forEach((face, k) => {
+      const x = RL.wheelX - 70 + k * 140 + (rolling ? Math.sin(t * 30 + k) * 6 : 0);
+      drawDie(ctx, x, 290 - hop * (k ? 0.8 : 1), face, rolling ? Math.sin(t * 20 + k * 2) * 0.3 : 0);
+    });
+    if (!rolling) drawText(ctx, `${total}`, RL.wheelX, 390, 3, total === 7 ? COLORS.goldLight : COLORS.text);
+    drawText(ctx, 'YOUR BET', RL.betX, 150, 2, COLORS.textDim);
+    drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
+    drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
+    drawText(ctx, `UNDER / OVER PAY 1 TO 1.  SEVEN PAYS ${DICE.sevenPays} TO 1`, RL.betX, 500, 1.5, COLORS.textDim);
+    const m = this.dcMsg;
+    if (m && !rolling && m.dice) drawText(ctx, m.text, RL.wheelX, 440, 2.5, m.text.startsWith('+') ? COLORS.goldLight : m.text.startsWith('-') ? '#ff8a7a' : COLORS.text, { punch: 1 + 0.03 * Math.sin(time * 6) });
   }
 
   /** TWENTY-ONE: the dealer's row and yours with their totals, which hand this is, what you've won. Before the buy-in:

@@ -47,6 +47,8 @@ export interface EncounterResult {
   gains?: string[];
   /** RED OR BLACK: the pocket the ball found (0 is the green zero). */
   pocket?: number;
+  /** UNDER OR OVER: the two dice. */
+  dice?: [number, number];
   /** TWENTY-ONE: the hand that just finished (both sides' cards, how it ended), and which hand of how many it was. */
   hand?: { p: number[]; d: number[]; outcome: 'win' | 'natural' | 'lose' | 'bust'; no: number; of: number };
   /** HIGHER OR LOWER: the card that was showing, the one just turned, and the pot now. */
@@ -432,6 +434,42 @@ const TWENTY_ONE: EncounterDef = {
   },
 };
 
+// ---- UNDER OR OVER (2026-10-12) -----------------------------------------------------------------------------------
+
+/**
+ * UNDER OR OVER: dice. Set a chip bet and call UNDER 7, SEVEN or OVER 7; two dice roll. UNDER / OVER pay 1 to 1 and a
+ * seven gives the bet back; SEVEN pays 4 to 1 (the long shot, where the house's edge is). Up to 3 rolls a visit.
+ */
+export const DICE = { maxBet: 20, rolls: 3, sevenPays: 4 };
+export const diceMax = (run: RunState) => Math.min(DICE.maxBet, run.player.chips);
+
+const UNDER_OR_OVER: EncounterDef = {
+  id: 'dice',
+  name: 'UNDER OR OVER',
+  blurb: '',
+  kind: 'game',
+  plays: DICE.rolls,
+  choices: (run) => [
+    { label: 'UNDER 7', text: '', disabled: diceMax(run) < 1 },
+    { label: 'SEVEN', text: '', disabled: diceMax(run) < 1 },
+    { label: 'OVER 7', text: '', disabled: diceMax(run) < 1 },
+    WALK,
+  ],
+  play: (run, i, rng, _ctx, bet = 1) => {
+    if (i > 2 || diceMax(run) < 1) return walked();
+    const stake = Math.max(1, Math.min(diceMax(run), Math.floor(bet)));
+    const dice: [number, number] = [1 + rng.int(6), 1 + rng.int(6)];
+    const sum = dice[0] + dice[1];
+    let net: number;
+    if (i === 1) net = sum === 7 ? stake * DICE.sevenPays : -stake;
+    else if (sum === 7) net = 0;
+    else net = (i === 0 ? sum < 7 : sum > 7) ? stake : -stake;
+    run.player.chips += net;
+    const title = sum === 7 ? 'SEVEN!' : `${sum}`;
+    return { title, text: net > 0 ? `+${net} CHIPS` : net < 0 ? `${net} CHIPS` : 'YOUR BET COMES BACK', good: net > 0 ? true : net < 0 ? false : true, dice };
+  },
+};
+
 /** THE BLOOD BANK: sell some HP for chips. */
 const BLOOD_HP = 0.15;
 const BLOOD_CHIPS = 12;
@@ -454,7 +492,7 @@ const BLOOD: EncounterDef = {
 };
 const bloodHp = (run: RunState) => Math.max(UNIT, Math.round((run.player.maxHp * BLOOD_HP) / UNIT) * UNIT);
 
-export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, roulette: RED_OR_BLACK, hilo: HIGHER_OR_LOWER, bj: TWENTY_ONE, blood: BLOOD };
+export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, roulette: RED_OR_BLACK, hilo: HIGHER_OR_LOWER, bj: TWENTY_ONE, dice: UNDER_OR_OVER, blood: BLOOD };
 /** What the map deals onto ENCOUNTER stops. */
 export const ENCOUNTER_IDS = Object.keys(ENCOUNTERS);
 

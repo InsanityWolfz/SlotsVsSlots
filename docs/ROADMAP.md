@@ -17,7 +17,7 @@ balance; a boss may be up to ~10% easier or harder on one machine than another.
      mostly chips (70-80%), sometimes upgrades or relics; each game may pay its own prize type; staked relics are
      picked by the house (tooltip shown); encounters about as good as elites, elites slightly ahead (more risk);
      every game has SKIP. Done: LUCKY SEVENS (with its art), RED OR BLACK (roulette), HIGHER OR LOWER, TWENTY-ONE
-     (blackjack). Possible later: more paylines if the slot needs it. To build: DICE, then the offers: THE BLOOD BANK
+     (blackjack), UNDER OR OVER (dice). Possible later: more paylines if the slot needs it. To build: the offers: THE BLOOD BANK
      done properly, a PAWN SHOP, a LOAN SHARK.
      Then path shapes with 2-3 encounters.
    - **Next:** the encounters above; the roster audit below; play it.

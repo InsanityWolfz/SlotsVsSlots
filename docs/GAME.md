@@ -34,6 +34,8 @@ which Charms and relics to build.
   - TWENTY-ONE: blackjack, hit or stand only (no double, split or push: a tie goes to the dealer; the dealer stands
     on 17). Pay 6 chips / 15% HP / a relic for 1 / 3 / 5 hands. Each hand won pays an UPGRADE; a two-card 21 pays
     two. Cards drawn in code; the hand in play is saved with the run.
+  - UNDER OR OVER: dice. Bet chips, call UNDER 7 / SEVEN / OVER 7. Under/over pay 1 to 1 (a seven gives the bet
+    back: about even); SEVEN pays 4 to 1 (the long shot, with the house edge). Up to 3 rolls a visit. Chips only.
   - Placeholder: THE BLOOD BANK (until the real offers).
   - **Cards and words:** buy-in cards all look alike (no LOW / HIGH labels: the player judges the bet). A buy-in you
     can't win back says PAY, not STAKE. No flavour-text subtitles.

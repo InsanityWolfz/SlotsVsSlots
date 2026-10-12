@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, type RelicId } from '../src/core/config';
-import { BJ, bjState, bjTotal, ENCOUNTERS, hiloPot, hiloState, pocketColor, ROULETTE, rouletteMax, SLOT, slotLine, slotRun, SLOT_STRIPS, WHEEL_ORDER } from '../src/core/encounters';
+import { BJ, bjState, bjTotal, DICE, ENCOUNTERS, hiloPot, hiloState, pocketColor, ROULETTE, rouletteMax, SLOT, slotLine, slotRun, SLOT_STRIPS, WHEEL_ORDER } from '../src/core/encounters';
 import { Rng } from '../src/core/rng';
 import { chooseRoute, createRun, playEncounter } from '../src/core/run';
 
@@ -276,5 +276,46 @@ describe('TWENTY-ONE', () => {
     expect(seen.win).toBeGreaterThan(0);
     expect(seen.natural).toBeGreaterThan(0);
     expect(seen.tie).toBeGreaterThan(0);
+  });
+});
+
+describe('UNDER OR OVER', () => {
+  const atTable = (seed = 2) => {
+    const run = createRun(base, seed, 'knight');
+    run.pendingStart = null;
+    run.map.routes[0][0] = { kind: 'encounter', encounter: 'dice' };
+    run.depth = 1;
+    run.stop = 1;
+    chooseRoute(run, 0);
+    run.player.chips = 40;
+    return run;
+  };
+
+  it('UNDER / OVER pay 1 to 1 (a seven gives the bet back); SEVEN pays 4 to 1', () => {
+    for (let seed = 0; seed < 80; seed++)
+      for (const call of [0, 1, 2]) {
+        const run = atTable(seed);
+        const res = playEncounter(run, call, 5)!;
+        const sum = res.dice![0] + res.dice![1];
+        const net = run.player.chips - 40;
+        if (call === 1) expect(net).toBe(sum === 7 ? 5 * DICE.sevenPays : -5);
+        else if (sum === 7) expect(net).toBe(0);
+        else expect(net).toBe((call === 0 ? sum < 7 : sum > 7) ? 5 : -5);
+      }
+  });
+
+  it('UNDER is about even; SEVEN is the long shot with the house edge', () => {
+    const ret = (call: number) => {
+      let net = 0;
+      for (let seed = 0; seed < 3000; seed++) {
+        const run = atTable(seed);
+        playEncounter(run, call, 10);
+        net += run.player.chips - 40;
+      }
+      return 1 + net / 3000 / 10;
+    };
+    expect(ret(0)).toBeGreaterThan(0.9);
+    expect(ret(0)).toBeLessThan(1.1);
+    expect(ret(1)).toBeLessThan(ret(0));
   });
 });
