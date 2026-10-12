@@ -20,8 +20,13 @@ which Charms and relics to build.
   - **Games:** buy-in cards (LOW chips / MEDIUM HP / HIGH a relic the house picks), a bigger buy-in buys more plays.
     Mostly chip prizes (~80%), sometimes HP, upgrades or a relic. Each game can pay its own kind of prize.
   - **Offers:** take it at a cost, or walk.
-  - **In the game now:** THE PRIZE SLOT (5 reels; 3 / 6 / 10 pulls; every CHIP pays a chip, 3+ of a kind pays HP, an
-    upgrade or a relic; returns roughly its cost). Placeholders: DOUBLE OR NOTHING (until ROULETTE), THE BLOOD BANK.
+  - **In the game now:** LUCKY SEVENS, a 5x3 machine on the fight machines' own reels and bezel. Pay 7 chips / 20% HP /
+    a relic for 3 / 6 / 10 pulls. One payline; it pays 3, 4 or 5 in a row from the left (WILD stands in): sevens and
+    chips pay chips, the first-aid tin HP, the star an upgrade, the relic tile a relic. About 1 pull in 3 pays, about
+    73% of the value is chips, the chip buy-in returns about its cost. Placeholders: DOUBLE OR NOTHING (until
+    ROULETTE), THE BLOOD BANK.
+  - **Cards and words:** buy-in cards all look alike (no LOW / HIGH labels: the player judges the bet). A buy-in you
+    can't win back says PAY, not STAKE. No flavour-text subtitles.
 - **THE REPO MAN** is a regular in acts 1-2 (he takes a Charm for his fight; it comes back after).
 - **After every win:** 25% of max HP comes back (a third of that in act 3), then a **draft** (pick 1 of 3 cards:
   add, swap or remove symbols, Charms, Charm levels, heals). The drafts after an act's 2nd and 4th won fights offer

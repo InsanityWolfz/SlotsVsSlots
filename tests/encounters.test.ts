@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, type RelicId } from '../src/core/config';
-import { ENCOUNTERS, SLOT } from '../src/core/encounters';
+import { ENCOUNTERS, SLOT, slotLine, slotRun, SLOT_STRIPS } from '../src/core/encounters';
 import { Rng } from '../src/core/rng';
 import { createRun } from '../src/core/run';
 
@@ -8,12 +8,13 @@ const base = defaultConfig();
 const slot = ENCOUNTERS.slot;
 const ctx = (ups: string[] = []) => ({ relics: ['clover', 'battery', 'fang'] as RelicId[], upgrade: () => (ups.push('LEVEL'), 'LEVEL') });
 
-describe('THE PRIZE SLOT', () => {
-  it('offers LOW (chips), MEDIUM (HP) and HIGH (a relic the house names) buy-ins, then WALK AWAY', () => {
+describe('LUCKY SEVENS', () => {
+  it('offers three buy-ins (chips, HP, a relic the house names), then WALK AWAY', () => {
     const run = createRun(base, 3, 'knight');
     run.player.relics = ['drum', 'chainmail'];
     const c = slot.choices(run, new Rng(9));
-    expect(c.map((x) => x.label)).toEqual(['LOW', 'MEDIUM', 'HIGH', 'WALK AWAY']);
+    expect(c.filter((x) => x.stake)).toHaveLength(3);
+    expect(c.at(-1)!.label).toBe('WALK AWAY');
     expect(c[0].stake).toBe(`${SLOT.low.chips} CHIPS`);
     expect(c[2].relic && run.player.relics.includes(c[2].relic)).toBe(true);
     // No relic to stake: HIGH is off.
@@ -42,6 +43,16 @@ describe('THE PRIZE SLOT', () => {
     expect(play()).toEqual(play());
   });
 
+  it('pays only 3, 4 or 5 in a row from the left reel on the payline (WILDs stand in)', () => {
+    expect(slotRun(['chip', 'chip', 'chip', 'seven', 'star'])).toEqual({ sym: 'chip', count: 3 });
+    expect(slotRun(['wild', 'seven', 'wild', 'seven', 'heart'])).toEqual({ sym: 'seven', count: 4 });
+    expect(slotRun(['chip', 'chip', 'star', 'chip', 'chip']).count).toBe(0);
+    expect(slotRun(['star', 'chip', 'chip', 'chip', 'chip']).count).toBe(0);
+    expect(slotRun(['wild', 'wild', 'wild', 'wild', 'wild'])).toEqual({ sym: 'seven', count: 5 });
+    // The middle row of each reel's stop is the line.
+    expect(slotLine([0, 1, 2, 3, 4])).toEqual(SLOT_STRIPS.map((st, r) => st[r]));
+  });
+
   it('pays mostly chips, and roughly what a buy-in costs (a first pass: tune with the new sim)', () => {
     let chips = 0;
     let other = 0;
@@ -61,12 +72,14 @@ describe('THE PRIZE SLOT', () => {
       other += (ups.length + run.player.relics.length - r0) * 12;
     }
     const share = chips / (chips + other);
-    expect(share).toBeGreaterThan(0.7);
+    expect(share).toBeGreaterThan(0.65);
     expect(share).toBeLessThan(0.9);
     const back = (chips + other) / 1500 / SLOT.low.chips;
-    expect(back).toBeGreaterThan(0.85);
+    // (HP prizes aren't counted here, so this sits a little under the full return.)
+    expect(back).toBeGreaterThan(0.75);
     expect(back).toBeLessThan(1.15);
-    // Most pulls pay something (every CHIP on the line does): a pull is rarely dead air.
-    expect(paid / pulls).toBeGreaterThan(0.75);
+    // Like a real slot: about a third of the pulls pay.
+    expect(paid / pulls).toBeGreaterThan(0.2);
+    expect(paid / pulls).toBeLessThan(0.4);
   });
 });
