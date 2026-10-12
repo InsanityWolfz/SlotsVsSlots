@@ -16,6 +16,7 @@ import {
   BIG,
   bustPot,
   describeOption,
+  takenLabel,
   edgeLevel,
   edgeText,
   fastHands,
@@ -3798,16 +3799,16 @@ export class RunScreens {
       drawText(ctx, `${r.turns}`, 715, y, ts, COLORS.text);
       drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 821, y, ts, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
       if (compact) {
-        const parts = [...(r.bonuses ?? []), r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
+        const parts = [...(r.bonuses ?? []), r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? takenLabel(r.pick) : '', ...(r.bought ?? []).map((b) => takenLabel(b))].filter(Boolean);
         const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';
         drawText(ctx, what.length > 30 ? `${what.slice(0, 29)}...` : what, 919, y, rowH < 22 ? 1.25 : 1.5, r.won ? '#c9a0ff' : COLORS.danger, { align: 'left' });
         return;
       }
-      if (r.pick) drawText(ctx, describeOption(r.pick).title, 919, y - 6, 2, '#c9a0ff', { align: 'left' });
+      if (r.pick) drawText(ctx, takenLabel(r.pick), 919, y - 6, 2, '#c9a0ff', { align: 'left' });
       const extra = [
         ...(r.bonuses ?? []),
         r.eliteRelic ? `SPOILS: ${RELICS[r.eliteRelic].name}` : '',
-        ...(r.bought ?? []).map((b) => `BUY: ${describeOption(b).title}`),
+        ...(r.bought ?? []).map((b) => `BUY: ${takenLabel(b)}`),
         r.chips ? `+${r.chips} CHIPS` : '',
       ].filter(Boolean).join('  ');
       if (extra) drawText(ctx, extra, 919, y + 13, 1.25, COLORS.textDim, { align: 'left' });

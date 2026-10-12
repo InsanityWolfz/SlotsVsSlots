@@ -606,8 +606,11 @@ export function playEncounter(run: RunState, i: number, bet?: number): Encounter
     const opts = levelOptions(run);
     if (!opts.length) return null;
     const o = upRng.pick(opts);
+    // Named BEFORE it's applied: a level card names the level it gives (after, it named the one after that: a
+    // GOLD CHARM LV2 win read LV3. Playtest).
+    const title = describeOption(o, run).title;
     applyOption(run, o, false);
-    return describeOption(o, run).title;
+    return title;
   };
   const def = encounterOf(st.encounter);
   const result = def.play(run, i, encounterRng(run), { relics, upgrade }, bet);
@@ -1519,6 +1522,14 @@ const plural = (s: SymbolId, n: number) => `${symLabel(s)}${n > 1 ? 'S' : ''}`;
 export const charmRule = charmRuleText;
 /** LV2, or MAX at the cap. */
 const lvTag = (lvl: number, cap: number) => (lvl >= cap ? `LV${lvl} MAX` : `LV${lvl}`);
+
+/** A pick or buy already taken, for the run-over table and COPY RUN: a level card says +1 LEVEL (describeOption names
+ * the NEXT level, which after the pick is one too high). */
+export function takenLabel(o: DraftOption): string {
+  if (o.kind === 'charmLevel') return `${charmName(o.enh)} CHARM +1 LEVEL`;
+  if (o.kind === 'symLevel') return `${symLabel(o.symbol)} +1 LEVEL`;
+  return describeOption(o).title;
+}
 
 export function describeOption(o: DraftOption, run?: RunState): { title: string; text: string } {
   const lv = run?.player.levels;

@@ -6,7 +6,7 @@
 import { CABINETS } from './cabinets';
 import { charmLevel, charmName, symLevel } from './charms';
 import { RELICS } from './relics';
-import { describeOption, type RunState } from './run';
+import { takenLabel, type RunState } from './run';
 import { stakeOf } from './stakes';
 
 export function runSummary(run: RunState, version = ''): string {
@@ -27,9 +27,9 @@ export function runSummary(run: RunState, version = ''): string {
   run.records.forEach((r, i) => {
     const where = r.loop !== undefined ? `L${r.loop}` : `A${r.act ?? 1}`;
     const what = [
-      r.pick ? `PICK ${describeOption(r.pick, run).title}` : '',
+      r.pick ? `PICK ${takenLabel(r.pick)}` : '',
       r.eliteRelic ? `RELIC ${RELICS[r.eliteRelic]?.name ?? r.eliteRelic}` : '',
-      r.bought?.length ? `BOUGHT ${r.bought.map((o) => describeOption(o, run).title).join(', ')}` : '',
+      r.bought?.length ? `BOUGHT ${r.bought.map((o) => takenLabel(o)).join(', ')}` : '',
       r.choice ? `CHOICE ${r.choice}` : '',
       r.chips ? `+${r.chips} CHIPS` : '',
     ].filter(Boolean);
