@@ -1509,7 +1509,7 @@ export const EDGES: EdgeId[] = ['fast', 'marked', 'heal', 'rollers', 'nocomps', 
 /** How much each edge costs you, and so what it pays (EXPERT_PLAYTEST_4 C1: rewards sized to cost). */
 export const EDGE_TIER: Record<EdgeId, 'chips' | 'relic' | 'legend'> = { frail: 'chips', heal: 'relic', fast: 'chips', marked: 'legend', rollers: 'legend', nocomps: 'chips' };
 /** The endless Cashier sells levels past the cap. */
-export const levelCap = (run: RunState) => (run.endless ? LEVEL_CAP + 1 : LEVEL_CAP);
+export const levelCap = (run: RunState) => (run.endless ? LEVEL_CAP + 1 : LEVEL_CAP) + (CABINETS[run.cabinet].levelCapBonus ?? 0);
 /** RIDE AGAIN: each loop cleared adds this x loop to the pot; a bust banks half. */
 export const POT_PER_LOOP = 1500;
 /** Loop bosses by name (the RIDE card says who's next). */

@@ -106,13 +106,19 @@ describe('charm and level cards', () => {
     expect(opts.some((o) => o.kind === 'gild' && (o.enh === 'charged' || o.enh === 'blaze'))).toBe(false);
   });
 
-  it('charm level cards need a charm you own; symbol level cards stop at level 3', () => {
+  it('charm level cards need a charm you own; symbol level cards stop at level 3 (KNIGHT: 4)', () => {
     const run = createRun(base, 3, 'knight');
     expect(levelOptions(run).some((o) => o.kind === 'charmLevel')).toBe(false);
     run.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'keen', n: 1 });
     expect(levelOptions(run).some((o) => o.kind === 'charmLevel' && o.enh === 'keen')).toBe(true);
     run.player.levels.sym.sword = 3;
+    // KNIGHT's levels go to 4 (FORGED STEEL); everyone else's stop at 3.
+    expect(levelOptions(run).some((o) => o.kind === 'symLevel' && o.symbol === 'sword')).toBe(true);
+    run.player.levels.sym.sword = 4;
     expect(levelOptions(run).some((o) => o.kind === 'symLevel' && o.symbol === 'sword')).toBe(false);
+    const tesla = createRun(base, 3, 'tesla');
+    tesla.player.levels.sym.bolt = 3;
+    expect(levelOptions(tesla).some((o) => o.kind === 'symLevel' && o.symbol === 'bolt')).toBe(false);
   });
 });
 

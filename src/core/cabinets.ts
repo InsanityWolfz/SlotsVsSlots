@@ -64,6 +64,8 @@ export interface Cabinet {
   specialDamage?: number;
   /** A WILD anywhere on the line lets any two matching reels pay as a double. */
   jokerWilds?: boolean;
+  /** Levels on this machine go this much past the usual cap (KNIGHT's FORGED STEEL). */
+  levelCapBonus?: number;
   /** Lightning Rod special damage for this cabinet (default 12). */
   rodDamage?: number;
 }
@@ -87,8 +89,10 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: null,
     symbols: ['sword', 'shield'],
     attack: 'sword',
+    // FORGED STEEL: its symbol and Charm levels go to 4, not 3 (swords start at 3, so they can still grow).
+    levelCapBonus: 1,
     levels: { sym: { sword: 3, shield: 2 }, charm: {} },
-    rule: 'HALF SWORDS, HALF SHIELDS. SWORDS START AT LEVEL 3, SHIELDS AT 2. NO METER. 440 HP.',
+    rule: 'HALF SWORDS, HALF SHIELDS. SWORDS START AT LEVEL 3; LEVELS GO TO 4. NO METER. 440 HP.',
     unlock: '',
   },
   midas: {

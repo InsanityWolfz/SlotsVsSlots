@@ -81,7 +81,7 @@ so that isn't happening in practice (see ROADMAP).
 Each machine except KNIGHT has one signature symbol and a meter.
 | Machine | Hero | Attack symbol | Meter | Unlock |
 |---|---|---|---|---|
-| KNIGHT | SIR REGINALD | sword | none: half swords, half shields; swords start at level 3, shields at 2 | start |
+| KNIGHT | SIR REGINALD | sword | none: half swords, half shields; swords start at level 3; its levels go to 4, not 3 | start |
 | TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields | reach the House |
 | JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat the House |
 | JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat the House with wilds |
