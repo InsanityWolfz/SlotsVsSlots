@@ -6,7 +6,7 @@ import type { CombatEvent } from '../src/core/events';
 import { Fight, RAIN } from '../src/core/fight';
 import { SANDGLASS_SLOW } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
-import { charmOptions, createRun, enemyHp, fightConfig, finishFight, levelOptions, machinePower, takeChoice, type RunState, BIG_CARDS, SAFE_CHOICES, skipToBoss, chooseRoute } from '../src/core/run';
+import { charmOptions, createRun, enemyHp, fightConfig, finishFight, levelOptions, takeChoice, type RunState, BIG_CARDS, SAFE_CHOICES, skipToBoss, chooseRoute } from '../src/core/run';
 import { STAKE } from '../src/core/stakes';
 
 const base = defaultConfig();
@@ -170,7 +170,7 @@ describe('post-boss BIG CHOICES', () => {
 });
 
 describe('act 3', () => {
-  it("act 3's HP curve has 5 steps; its regulars grow with your machine", () => {
+  it("act 3's HP curve has 5 steps; honest HP: your build doesn't change an enemy's HP, and every machine meets the same", () => {
     expect(actLength(3)).toBe(5);
     const run = createRun(base, 7, 'knight', STAKE.act3, true);
     run.act = 3;
@@ -178,12 +178,11 @@ describe('act 3', () => {
     run.route = null;
     chooseRoute(run, 0);
     const weak = enemyHp(run, run.enemies[1]);
-    const p0 = machinePower(run);
     run.player.levels = { sym: { sword: 3, shield: 3 }, charm: { gold: 3 } };
     run.player.gilded = [0, 1, 2].map((reel) => ({ reel, symbol: 'sword' as const, enh: 'gold' as const, n: 6 }));
     run.player.relics = ['key', 'bell'];
-    expect(machinePower(run)).toBeGreaterThan(p0);
-    expect(enemyHp(run, run.enemies[1])).toBeGreaterThan(weak);
+    expect(enemyHp(run, run.enemies[1])).toBe(weak);
+    for (const cab of ['tesla', 'joker', 'midas', 'jukebox'] as const) expect(enemyHp({ ...run, cabinet: cab }, run.enemies[1])).toBe(weak);
   });
 
 });

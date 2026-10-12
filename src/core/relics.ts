@@ -260,5 +260,3 @@ export const ELITE_ONLY: ReadonlySet<RelicId> = new Set<RelicId>(['mirror']);
 // 2026-10-09 (BOSS_REDESIGN 2): a shorter House with a fatter pot (seed 8 -> 12, cut 2 -> 3), and LAST CALL: from its
 // turn `lastCall` (both sides' spins) it skims every turn.
 export const POT = { seed: 12 * UNIT, houseCut: 3 * UNIT, cashEvery: 3, skim: 0.5, allInMin: 8 * UNIT, lastCall: 20 };
-/** Boss HP grows with the relics you bring in. */
-export const BOSS_HP_PER_RELIC = 3 * UNIT;

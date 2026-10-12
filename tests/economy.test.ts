@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type RelicId } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { BOSS_HP_PER_RELIC } from '../src/core/relics';
-import { BOSS_MUL, buy, CHIPS, createRun, fightConfig, finishFight, isShopNow, reroll, rerollCost, shopOffers, takeSpoils, skipToBoss, currentEnemy } from '../src/core/run';
+import { buy, CHIPS, createRun, fightConfig, finishFight, isShopNow, reroll, rerollCost, shopOffers, takeSpoils, skipToBoss, currentEnemy } from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -129,13 +128,13 @@ describe('run economy', () => {
     expect(rerollCost(run)).toBe(cost + 1);
   });
 
-  it('the boss gets tougher per relic (your chips no longer shield you)', () => {
+  it("the boss's HP doesn't depend on your relics (honest HP), and your chips don't shield you", () => {
     const run = createRun(base, 9);
     skipToBoss(run);
     run.player.relics = ['clover', 'fang'] as RelicId[];
     run.player.chips = 12;
     const cfg = fightConfig(run, base);
-    expect(cfg.enemy.hp).toBe(Math.round((currentEnemy(run).hp * BOSS_MUL.knight.house) / 10) * 10 + 2 * BOSS_HP_PER_RELIC);
+    expect(cfg.enemy.hp).toBe(currentEnemy(run).hp);
     expect(cfg.player.stackShield ?? 0).toBe(0);
   });
 });

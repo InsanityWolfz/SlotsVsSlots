@@ -282,25 +282,20 @@ export const DEPTH_HP = [22, 28, 33, 36, 39].map((h) => h * UNIT);
 /** Act 2 curve: you arrive with a built machine and a legendary. */
 export const DEPTH_HP_2 = [52, 62, 73, 85, 97].map((h) => h * UNIT);
 /** Mutable so balance sweeps can tune it. */
-/** wheelPower/wheelFlat: THE WHEEL's HP = power × your measured damage per spin + flat (+ per relic). */
 /** Act 3: 3 fights, then the Dealer. */
-/**
- * Act 3: 5 fights, then the Dealer. Regular act 3 enemies are sized to YOUR machine (like the bosses:
- * act3Power x machinePower x the depth step, never below this curve) so their abilities get seen.
- */
-export const DEPTH_HP_3 = [120, 135, 150, 165, 180].map((h) => h * UNIT);
-export const ACT3_DEPTH_MUL = [1, 1.1, 1.2, 1.3, 1.4];
+/** Act 3: 5 fights, then the Dealer. */
+export const DEPTH_HP_3 = [240, 270, 300, 330, 360].map((h) => h * UNIT);
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5, 4: 3 };
 /** ENDLESS (act 4) tuning: per loop, enemy HP x hp^loop and damage x dmg^loop (EXPERT_PLAYTEST_3 D). */
-export const ENDLESS = { ramp: 0.15, hp: 1.45, hpBy: { knight: 1.05, tesla: 1.5, thorn: 1.3, joker: 1.2, midas: 1.7, jukebox: 1.2 } as Record<string, number>, dmgBy: { knight: 1.18, midas: 1.35 } as Record<string, number>, dmg: 1.35, houseHp: 3, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, bustKeep: 1 / 3, wheelHp: 4, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
+export const ENDLESS = { ramp: 0.15, hp: 1.45, dmg: 1.35, houseHp: 3, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, bustKeep: 1 / 3, wheelHp: 4, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
 /**
  * ENDLESS: each loop multiplies enemy HP (and damage) by its base, and the step itself grows by RAMP every loop,
  * so the climb accelerates: loop L totals base^L x (1 + ramp)^(L(L-1)/2). Only broken builds should see loop 5.
  */
 export const endlessMul = (base: number, loop: number) => Math.pow(base, loop) * Math.pow(1 + ENDLESS.ramp, (loop * (loop - 1)) / 2);
 export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
-/** Act 3 (ITERATION_12 playtest, commit at GREEN): Dealer HP = 7 x typical-spin power + 60 (+4/relic), less bursty strip -> ~62% Dealer win. */
-export const TUNE = { dailyAct3: 0.45, greenWheel: 0.85, coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, dealerQuietCap: 0.25, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, act2Power: 1.6, rampPerTurn: 0.06, act3Heal: 0.5, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act1Swords: 1, enemyShield: 0.5, act3Power: 4, act3Flat: 20 * UNIT, dealerPower: 10, dealerFlat: 50 * UNIT, act3Sevens: 4, bossHp: 75 * UNIT, act2Mul: 1.06, act2Swords: 2, wheelPower: 3, wheelFlat: 30 * UNIT, bossPerRelic: 4 * UNIT, powerElastic: 0.5 };
+/** Fixed boss HP (honest HP, 2026-10-12): the House (bossHp), THE WHEEL, the Dealer, and ENDLESS's loop bosses' base. */
+export const TUNE = { dailyAct3: 0.45, greenWheel: 0.85, coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, dealerQuietCap: 0.25, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, rampPerTurn: 0.06, act3Heal: 0.5, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act1Swords: 1, enemyShield: 0.5, act3Sevens: 4, bossHp: 100 * UNIT, act2Mul: 1.06, act2Swords: 2, wheelHp: 200 * UNIT, dealerHp: 1300 * UNIT, endlessBossBase: 300 * UNIT };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
 export const OPENER_HP_MUL = 0.85;

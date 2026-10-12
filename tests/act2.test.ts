@@ -8,14 +8,12 @@ import { BOMB, LEGENDARY, SANDGLASS_SLOW } from '../src/core/relics';
 import { CHARM_VALUE } from '../src/core/charms';
 import { Rng } from '../src/core/rng';
 import {
-  BOSS_MUL,
   CHIPS,
   createRun,
   draftOffers,
   enemyHp,
   fightConfig,
   finishFight,
-  sizingPower,
   isShopNow,
   leaveShop,
   shopOffers,
@@ -261,7 +259,7 @@ describe('act structure', () => {
     expect(run.over && run.won).toBe(true);
   });
 
-  it('THE WHEEL plays its own reels (swords, shields, sevens, BALLS) and is sized to your machine; it SPINS FASTER at half HP', () => {
+  it('THE WHEEL plays its own reels (swords, shields, sevens, BALLS) and has the same HP on every machine; it SPINS FASTER at half HP', () => {
     const run = createRun(base, 23, 'midas');
     run.act = 2;
     run.map = generateActMap(new Rng(5), 2);
@@ -272,7 +270,7 @@ describe('act structure', () => {
     expect(cfg.enemy.strips.every((st) => (st.ball ?? 0) > 0)).toBe(true);
     expect(cfg.enemy.gilded ?? []).toEqual([]);
     expect(cfg.enemy.hp).toBe(enemyHp(run, currentEnemy(run)));
-    expect(cfg.enemy.hp).toBe(Math.round((TUNE.wheelPower * BOSS_MUL.midas.wheel * sizingPower(run, 'wheel')) / 10) * 10 + TUNE.wheelFlat + TUNE.bossPerRelic * run.player.relics.length);
+    expect(cfg.enemy.hp).toBe(TUNE.wheelHp);
     expect(cfg.enemy.ability).toEqual(WHEEL.ability);
 
     const f = new Fight(cfg, 9);

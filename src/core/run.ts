@@ -1,12 +1,11 @@
-import { BLADES, cloneConfig, defaultConfig, symLabel, emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACT3_DEPTH_MUL, ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, ELITE_HP_MUL_2, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, WHEEL } from './enemies';
+import { BLADES, cloneConfig, symLabel, emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
+import { ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, WHEEL } from './enemies';
 import { MAX_STAKE, STAKE } from './stakes';
-import { Fight as FightCtor, type Fight } from './fight';
+import type { Fight } from './fight';
 import {
   BANDAGE_HEAL,
   BELL_MULT,
   KEY_MULT,
-  BOSS_HP_PER_RELIC,
   BUILD_ENABLER,
   ELITE_ONLY,
   NEW_RELIC,
@@ -685,7 +684,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // The loop House is a race: it cashes its pot every 2 turns.
     if (e.boss === 'house' && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: ENDLESS.houseEvery };
     cfg.enemy.endless = true;
-    cfg.enemy.dmgMul = (cfg.enemy.dmgMul ?? 1) * endlessMul(ENDLESS.dmgBy[run.cabinet] ?? ENDLESS.dmg, run.endless.loop);
+    cfg.enemy.dmgMul = (cfg.enemy.dmgMul ?? 1) * endlessMul(ENDLESS.dmg, run.endless.loop);
   }
   // THE DAILY RUN: every fight is fixed by the day, so everyone meets the same fights.
   // The daily locks its spins too (one try: the purest comparison). The weekly locks the map, enemies and offers, but
@@ -771,8 +770,8 @@ export const EDGE_TEXT: Record<EdgeId, { title: string; text: string }> = {
 };
 
 /**
- * An enemy's real HP for this run. Bosses grow with the relics you bring in; THE WHEEL and the Dealer are
- * sized to your machine's measured power.
+ * An enemy's real HP for this run. Honest HP (2026-10-12): the same enemy has the same HP at the same stop on every
+ * slot machine and every build. Machines are balanced by tuning the machines, not the enemies.
  */
 /** The tutorial's first opponent has this much of its HP (you're reading callouts, not building). */
 export const TUTORIAL_OPENER_MUL = 0.75;
@@ -780,122 +779,26 @@ export const TUTORIAL_OPENER_MUL = 0.75;
 export function enemyHp(run: RunState, e: EnemyDef): number {
   const gold = e.isBoss && run.stake >= STAKE.fasterAll ? STAKE.goldBossHp : 1;
   const tutorial = run.tutorial && run.act === 1 && e.depth === 0 ? TUTORIAL_OPENER_MUL : 1;
-  const loop = run.endless ? endlessMul(ENDLESS.hpBy[run.cabinet] ?? ENDLESS.hp, run.endless.loop) : 1;
+  const loop = run.endless ? endlessMul(ENDLESS.hp, run.endless.loop) : 1;
   // THE DAILY RUN plays act 3 at base-stake numbers: its act 3 (the Dealer included) is lighter.
   const daily = fixedRun(run) && run.act >= 3 && !run.endless ? TUNE.dailyAct3 : 1;
-  // Per machine: THE REPO MAN's HP (his liens cost machines differently: MIDAS loses its gold).
-  const gate = e.archetype === REPO_MAN.id ? (BOSS_MUL[run.cabinet].gate ?? 1) : 1;
   // DOUBLE OR NOTHING (big choice): the next boss has double HP.
   const dare = e.isBoss ? run.bossHpMul ?? 1 : 1;
-  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * gate * dare));
+  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * dare));
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {
-  // Act 3 regulars grow with your machine (never below their curve).
-  if (!e.isBoss && run.act >= 3) {
-    const arch = ARCHETYPES.find((a) => a.id === e.archetype);
-    const mul = (ACT3_DEPTH_MUL[Math.min(e.depth, ACT3_DEPTH_MUL.length - 1)] ?? 1) * (arch?.hpMul ?? 1) * (e.elite ? ELITE_HP_MUL_2 : 1);
-    return Math.max(unitsRound(e.hp * (BOSS_MUL[run.cabinet].act3Floor ?? 1)), unitsRound((TUNE.act3Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'act3') + TUNE.act3Flat) * mul));
-  }
-  // Act 2 regulars grow with your machine too (fixed HP turned them to paper for strong builds: EXPERT_PLAYTEST_2 G6).
-  if (!e.isBoss && run.act === 2) {
-    const arch = ARCHETYPES.find((a) => a.id === e.archetype);
-    const mul = (ACT3_DEPTH_MUL[Math.min(e.depth, ACT3_DEPTH_MUL.length - 1)] ?? 1) * (arch?.hpMul ?? 1) * (e.elite ? ELITE_HP_MUL_2 : 1);
-    // Per machine: act 2 fight length (BRIAR ran ~30 turns, JAX ~9: EXPERT_PLAYTEST_3 E11).
-    const m2 = BOSS_MUL[run.cabinet].act2 ?? 1;
-    return unitsRound(Math.max(e.hp, TUNE.act2Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'wheel') * mul) * m2);
-  }
-  // Per machine: act 1 regular HP (MIDAS is slow to start: EXPERT_PLAYTEST_5).
-  const m1 = run.act === 1 ? (BOSS_MUL[run.cabinet].act1 ?? 1) : 1;
-  if (!e.isBoss) return unitsRound((run.act === 1 && e.depth === 0 && CABINETS[run.cabinet].hp < FRAGILE_HP ? e.hp * FRAGILE_OPENER_MUL : e.hp) * m1);
-  // ENDLESS: loop bosses are sized from your power (the loop House was a free win; the loop Dealer a sponge).
-  if (run.endless) {
-    const regular = TUNE.act3Power * BOSS_MUL[run.cabinet].act3 * sizingPower(run, 'act3') + TUNE.act3Flat;
-    const share = e.boss === 'house' ? ENDLESS.houseHp : e.boss === 'dealer' ? ENDLESS.dealerHp : ENDLESS.wheelHp;
-    return unitsRound(regular * share);
-  }
-  // THE WHEEL grows with your machine and (like the House) with every relic you carry in.
-  const cm = BOSS_MUL[run.cabinet];
-  // GREEN+: THE WHEEL STARTS FAST (3 chips a turn), so it gets less HP (x0.85). THE DAILY RUN goes on to the Dealer
-  // too, so its WHEEL is the eased one too.
-  if (e.boss === 'wheel') return unitsRound((unitsRound(TUNE.wheelPower * cm.wheel * sizingPower(run, 'wheel')) + TUNE.wheelFlat + TUNE.bossPerRelic * run.player.relics.length) * (run.stake >= STAKE.wheelFast || fixedRun(run) ? TUNE.greenWheel : 1));
-  if (e.boss === 'dealer') return unitsRound(TUNE.dealerPower * cm.dealer * sizingPower(run, 'dealer')) + TUNE.dealerFlat + TUNE.bossPerRelic * run.player.relics.length;
-  // BLACK+: the House cheats (faster skims, payline bombs, no chip shield) instead of just being tougher.
-  const house = run.stake >= STAKE.houseDirty ? Math.sqrt(cm.house) : cm.house;
-  return unitsRound(e.hp * house) + BOSS_HP_PER_RELIC * run.player.relics.length;
+  // Regulars and elites: their act's curve (enemies.ts makeEnemy).
+  if (!e.isBoss) return e.hp;
+  // ENDLESS: the loop bosses are a multiple of an act 3 regular's HP (then x the loop's growth).
+  if (run.endless) return unitsRound(TUNE.endlessBossBase * (e.boss === 'house' ? ENDLESS.houseHp : e.boss === 'dealer' ? ENDLESS.dealerHp : ENDLESS.wheelHp));
+  // GREEN+: THE WHEEL STARTS FAST (3 chips a turn), so it gets less HP. THE DAILY RUN's WHEEL is the eased one too.
+  if (e.boss === 'wheel') return unitsRound(TUNE.wheelHp * (run.stake >= STAKE.wheelFast || fixedRun(run) ? TUNE.greenWheel : 1));
+  if (e.boss === 'dealer') return TUNE.dealerHp;
+  return e.hp;
 }
-
-/**
- * Your machine's damage per turn, MEASURED: the real engine plays POWER_SPINS of your turns (your strips,
- * charms, levels, relics and meter) against a dummy that attacks back, deterministic per run and fight.
- * Each turn is capped at the 90th percentile so one freak jackpot doesn't size a boss. Bosses and act 3
- * regulars are sized from it, so they keep up with any build without a fixed curve.
- */
-export function machinePower(run: RunState): number {
-  const key = `${run.seed}:${run.act}:${run.depth}:${JSON.stringify(run.player)}`;
-  const hit = powerCache.get(key);
-  if (hit !== undefined) return hit;
-  const cfg = defaultConfig();
-  cfg.player = { hp: 99999 * UNIT, strips: run.player.strips.map((s) => ({ ...s })), gilded: run.player.gilded.map((g) => ({ ...g })), levels: cloneLevels(run.player.levels), ...(run.glass || run.devil ? { payMul: (run.glass ? BIG.glassPay : 1) * (run.devil ? BIG.devilPay : 1) } : {}), ...(run.bloodPact ? { meterMul: 2 } : {}), ...(run.big ? { big: { ...run.big } } : {}), chipsHeld: Math.min(run.player.chips, 20), sizeHp: run.player.maxHp };
-  cfg.enemy = { hp: 99999 * UNIT, strips: [{ sword: 8, shield: 4 }, { sword: 8, shield: 4 }, { sword: 8, shield: 4 }], ability: null };
-  cfg.relics = run.player.relics.filter((r) => r !== 'phoenix');
-  cfg.cabinet = run.cabinet;
-  const f = new FightCtor(cfg, (run.seed ^ Math.imul(run.act * 16 + run.depth + 1, 0x2545f491)) >>> 0);
-  const turns: number[] = [];
-  for (let t = 0; t < POWER_SPINS * 2 && !f.over; t++) {
-    const { side, events } = f.step();
-    let d = 0;
-    for (const e of events) if ((e.type === 'attack' || e.type === 'specialFire') && e.from === 'player') d += e.hpDamage;
-    if (side === 'player') turns.push(d);
-    else if (turns.length) turns[turns.length - 1] += d;
-  }
-  const sorted = [...turns].sort((x, y) => x - y);
-  const cap = sorted[Math.floor(sorted.length * 0.9)] ?? 0;
-  const power = turns.reduce((a, d) => a + Math.min(d, cap), 0) / Math.max(1, turns.length);
-  if (powerCache.size > 5000) powerCache.clear();
-  powerCache.set(key, power);
-  return power;
-}
-const POWER_SPINS = 40;
-
-/**
- * Typical measured power at each late point, per slot machine (median greedy GREEN run,
- * tools/balance/power_ref.ts). Late enemies are sized from REF x (your power / REF)^powerElastic, so
- * a build twice as strong as usual faces ~1.4x the HP, not 2x: getting stronger pays off.
- */
-// `wheel`: the power at the act 2 boss (it was THE MIRROR's; the anchors stay, so act 2 regulars keep their HP).
-export const POWER_REF: Record<CabinetId, { wheel: number; act3: number; dealer: number }> = {
-  knight: { wheel: 405, act3: 1578, dealer: 2375 },
-  midas: { wheel: 761, act3: 1494, dealer: 1851 },
-  tesla: { wheel: 246, act3: 566, dealer: 872 },
-  joker: { wheel: 826, act3: 6465, dealer: 8499 },
-  // THE JUKEBOX (2026-10-08): measured with tools/sim/power_ref.ts 300 (GREEN, greedy).
-  jukebox: { wheel: 1077, act3: 2735, dealer: 4810 },
-};
-export function sizingPower(run: RunState, at: 'wheel' | 'act3' | 'dealer'): number {
-  const ref = POWER_REF[run.cabinet][at];
-  return ref * Math.pow(Math.max(1, machinePower(run)) / ref, TUNE.powerElastic);
-}
-/**
- * Per slot machine: how much of your measured power THE WHEEL, the Dealer and act 3 regulars are sized
- * to. Machines race differently (KNIGHT's shields, JAX's rare huge payoffs), so the same HP formula would give each a different win rate.
- */
-
-// Refit 2026-10-08 (big choices rework: 45 cards, LIMIT BREAK; before that the content audit batch: ROSE HIP retired, overkill chips out, LUCKY/BLAZE in act 1, CHARGED/BLAZE 10/20/30).
-export const BOSS_MUL: Record<CabinetId, { house: number; wheel: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
-  knight: { house: 1.2, wheel: 1.35, dealer: 0.6, act3: 0.5, gate: 1.3 },
-  // act3Floor: MIDAS's act-3 regulars may go below their curve (the act3 knob did nothing under the floor: EXPERT_PLAYTEST_11 D4).
-  midas: { house: 2.2, wheel: 3.8, dealer: 7.5, act3: 1, gate: 0.8, act3Floor: 1 },
-  tesla: { house: 1.05, wheel: 2.6, dealer: 2.2, act3: 1.45, act1: 1.35, act2: 1.2, gate: 1.0 },
-  joker: { house: 1.2, wheel: 3.4, dealer: 0.66, act3: 0.35, act2: 1.5, gate: 0.85 },
-  jukebox: { house: 1.25, wheel: 0.6, dealer: 0.33, act3: 0.3, gate: 2.4 },
-};
-const powerCache = new Map<string, number>();
 /** Saved chips shield at most this much per boss turn (hoarding guard). */
 export const BOSS_CHIP_SHIELD_CAP = 4 * UNIT;
-/** Cabinets this fragile face a softer opener (ITERATION_8: 3-5% opener deaths). */
-const FRAGILE_HP = 26 * UNIT;
-const FRAGILE_OPENER_MUL = 0.85;
 
 const rocksIn = (s: StripCounts[]) => s.reduce((a, x) => a + (x.rock ?? 0), 0);
 

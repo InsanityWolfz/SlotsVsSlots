@@ -5,7 +5,7 @@ import { CABINET_ORDER } from '../../src/core/cabinets';
 import { applyDaily, type RunState } from '../../src/core/run';
 import { applyChallenge, applyWeekly, CHALLENGES, levelOf, weekly } from '../../src/core/meta';
 import { emptyProfile, recordMeta, runEntry, runScore, sanitizeProfile } from '../../src/core/profile';
-import { SIM_BIAS, simulateRuns } from '../../src/sim/simulateRun';
+import { playRun } from '../../src/sim/play';
 
 const N = Number(process.argv[2] ?? 60);
 const bugs = new Map<string, { n: number; example: string }>();
@@ -52,12 +52,11 @@ const lienRuns = { took: 0 };
 for (const m of modes)
   for (const policy of ['greedy', 'random'] as const) {
     let fightNo = 0;
-    SIM_BIAS.ride = true;
-    SIM_BIAS.onFight = (run) => {
+    const onFight = (run: RunState) => {
       fightNo++;
       check(run, `fight ${fightNo} (act ${run.act} depth ${run.depth}${run.endless ? ` loop ${run.endless.loop}` : ''})`, `${m.tag}/${policy}`);
     };
-    SIM_BIAS.onEnd = (run) => {
+    const onEnd = (run: RunState) => {
       ended++;
       check(run, 'end', `${m.tag}/${policy}`);
       if (run.records.some((r) => r.enemy.endsWith('REPO MAN') && r.won)) lienRuns.took++;
@@ -79,7 +78,8 @@ for (const m of modes)
       }
     };
     try {
-      simulateRuns(defaultConfig(), N, policy, 777 + runs, m.cab, m.stake, m.act3, m.setup);
+      const base = defaultConfig();
+      for (let i = 0; i < N; i++) playRun(base, 777 + runs + i * 7919, m.cab, m.stake, { policy, act3: m.act3, ride: true, setup: m.setup, onFight, onEnd });
     } catch (err) {
       crashes++;
       bug('sim crashed', `${m.tag}/${policy}: ${(err as Error).stack?.split('\n').slice(0, 4).join(' | ')}`);
