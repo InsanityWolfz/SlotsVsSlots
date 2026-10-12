@@ -1,4 +1,4 @@
-import { BLADES, cloneConfig, symLabel, emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
+import { BLADES, cloneConfig, symLabel, emptyLevels, UNIT, unitsRound, type AbilityDef, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
 import { ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, WHEEL } from './enemies';
 import { MAX_STAKE, STAKE } from './stakes';
 import type { Fight } from './fight';
@@ -173,6 +173,8 @@ export interface FightRecord {
   portrait?: string;
   /** Which act this fight was in. */
   act?: number;
+  /** ENDLESS: which loop it was in. */
+  loop?: number;
   /** Chips the Mimic ate. */
   chipsEaten?: number;
   /** Chips an act 2 elite paid. */
@@ -502,11 +504,18 @@ function startNextAct(run: RunState): void {
   if (run.act > 2) return;
   const pool = [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
   run.pendingLegend = rng.shuffle(pool).slice(0, RUN.legendPick);
-  run.legendSeen = { key: legendKey(run), relics: [...run.pendingLegend] };
+  markLegends(run, run.pendingLegend);
 }
 
 const legendKey = (run: RunState) => `${run.act}:${run.endless?.loop ?? 0}`;
 /** A legendary the act's legendary pick already showed (playtest: it came back at the Cashier the same act). */
+/** Remember the legendaries a pick showed this act / loop (every pick: the act's, HOUSE EDGE's, a big choice's). */
+const markLegends = (run: RunState, relics: RelicId[] | null | undefined) => {
+  if (!relics?.length) return;
+  const key = legendKey(run);
+  if (run.legendSeen?.key !== key) run.legendSeen = { key, relics: [] };
+  for (const r of relics) if (LEGENDARY.has(r) && !run.legendSeen.relics.includes(r)) run.legendSeen.relics.push(r);
+};
 const legendShown = (run: RunState, r: RelicId) => run.legendSeen?.key === legendKey(run) && run.legendSeen.relics.includes(r);
 
 /** What answers your build: a charm build or any meter → the Counterfeiter. (The Grounder is retired, 2026-10-12.) */
@@ -638,12 +647,18 @@ export function takeLegend(run: RunState, relic: RelicId): void {
   // CURSED IDOL / TREASURE: a relic pick waiting behind this one (owned relics dropped from it).
   const next = run.legendQueue?.shift()?.filter((r) => !run.player.relics.includes(r));
   run.pendingLegend = next?.length ? next : null;
+  markLegends(run, run.pendingLegend);
 }
 
 export const currentEnemy = (run: RunState): EnemyDef => run.enemies[Math.min(run.depth, run.enemies.length - 1)];
 export const isBossNext = (run: RunState) => !needsRoute(run) && !!currentEnemy(run)?.isBoss;
 
 /** The GameConfig for the run's next fight. */
+/** The HOUSE EDGES in play: the ones taken in endless, THE DAILY RUN's edge of the day, a weekly's mods. */
+export const runEdges = (run: RunState) => new Set<EdgeId>([...(run.endless?.edges ?? []), ...(run.dailyEdge ? [run.dailyEdge] : []), ...(run.mods ?? [])]);
+/** FAST HANDS: abilities come 2 turns sooner (never under every 2). */
+export const fastHands = (ab: AbilityDef): AbilityDef => ({ ...ab, every: Math.max(2, ab.every - 2) });
+
 export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   const cfg = cloneConfig(base);
   const e = currentEnemy(run);
@@ -679,8 +694,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.player.stackShield = Math.min(BOSS_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
   }
   // HOUSE EDGES bend the fight: the ones taken in endless, and THE DAILY RUN's edge of the day.
-  const edges = new Set<EdgeId>([...(run.endless?.edges ?? []), ...(run.dailyEdge ? [run.dailyEdge] : []), ...(run.mods ?? [])]);
-  if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 2) };
+  const edges = runEdges(run);
+  if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = fastHands(cfg.enemy.ability);
   if (edges.has('marked')) cfg.player.startMarks = Math.max(cfg.player.startMarks ?? 0, 3);
   if (edges.has('heal')) cfg.player.healMul = 0.5;
   if (edges.has('rollers')) cfg.enemy.hp = unitsRound(cfg.enemy.hp * 1.3);
@@ -768,7 +783,7 @@ function startEndlessLoop(run: RunState): void {
 export const EDGE_TEXT: Record<EdgeId, { title: string; text: string }> = {
   fast: { title: 'FAST HANDS', text: 'ENEMY ABILITIES CHARGE 2 TURNS FASTER' },
   marked: { title: 'MARKED DECK', text: 'EVERY FIGHT OPENS WITH 1 MARK PER REEL ON YOU' },
-  heal: { title: 'HOUSE CUT', text: 'YOUR HEALING IS HALVED' },
+  heal: { title: 'HOUSE CUT', text: 'YOUR HEALING IN FIGHTS IS HALVED' },
   rollers: { title: 'HIGH ROLLERS', text: 'ENEMIES HAVE +30% HP' },
   nocomps: { title: 'NO COMPS', text: 'A NEW LOOP HEALS ONLY HALF YOUR HP' },
   frail: { title: 'GLASS JAW', text: '-10% MAX HP' },
@@ -847,6 +862,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     hpAfter: p.hp,
     portrait: currentEnemy(run).portrait,
     act: run.act,
+    ...(run.endless ? { loop: run.endless.loop } : {}),
     ...(currentEnemy(run).isBoss ? { boss: true } : {}),
     ...(scar !== undefined ? { scar } : {}),
     rocksAdded: Math.max(0, rocksIn(next) - rocksIn(old)),
@@ -1575,7 +1591,11 @@ const charmTotal = (run: RunState) => run.player.gilded.reduce((a, g) => a + g.n
 const legendsFor = (run: RunState) => [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
 const relicsFor = (run: RunState) => (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r) && relicFits(run, r));
 /** A Charm conversion: 3+ Charms, the Charm fits this machine, and not everything is that Charm already. */
-const convertOk = (enh: Enh) => (run: RunState) => charmTotal(run) >= 3 && gildsFor(run).includes(enh) && run.player.gilded.some((g) => g.enh !== enh);
+// (Playtest: BLOOD MOON turned TRICK-on-shields into GOLD, no VAMP at all. At least one Charm must be able to take it.)
+const convertOk = (enh: Enh) => (run: RunState) =>
+  charmTotal(run) >= 3 && gildsFor(run).includes(enh) && run.player.gilded.some((g) => g.enh !== enh && charmSymbols(run, enh).includes(g.symbol));
+/** The conversions that cost a shield level need one to lose (at LV1 the cost was free). */
+const shieldConvertOk = (enh: Enh) => (run: RunState) => convertOk(enh)(run) && symLevel(run.player.levels, 'shield') > 1;
 /** BIG CHOICES (user review 2026-10-08): general cards, Charm conversions, and five per Slot Machine. */
 export const BIG_CARDS: BigCard[] = [
   { id: 'armsRace', slot: 'cost' },
@@ -1594,11 +1614,11 @@ export const BIG_CARDS: BigCard[] = [
   { id: 'warded', slot: 'cost', when: 'HM', ok: (run) => !run.big?.wards },
   { id: 'pawnShop', slot: 'cost', when: 'HM', ok: (run) => legendsFor(run).length > 0 && run.player.relics.some((r) => !LEGENDARY.has(r)) },
   { id: 'whetted', slot: 'cost', ok: convertOk('keen') },
-  { id: 'bloodMoon', slot: 'cost', ok: convertOk('vamp') },
+  { id: 'bloodMoon', slot: 'cost', ok: shieldConvertOk('vamp') },
   // CASH IN: CHIP Charms only pay off on CASSIDY (3-9% win rate elsewhere: a trap).
   { id: 'cashIn', slot: 'cost', ok: (run) => run.cabinet === 'midas' && convertOk('lucre')(run) },
   { id: 'fourLeaf', slot: 'cost', ok: convertOk('lucky') },
-  { id: 'overclock', slot: 'cost', ok: convertOk('charged') },
+  { id: 'overclock', slot: 'cost', ok: shieldConvertOk('charged') },
   { id: 'markedCards', slot: 'cost', ok: convertOk('trick') },
   { id: 'temper', slot: 'free' },
   { id: 'luckyBreak', slot: 'free', ok: (run) => run.player.gilded.length > 0 },
@@ -1702,7 +1722,11 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'pawnShop':
       return { title: 'PAWN SHOP', rule: `TRADE ${RELICS[c.relic!].name} FOR ${RELICS[c.relic2!].name}`, cost: `${RELICS[c.relic!].name} IS GONE` };
     case 'luckyBreak':
-      return { title: 'LUCKY BREAK', rule: `+2 LEVELS TO ${what(c)}`, cost: '' };
+    {
+      // At the cap a level becomes 2 GOLD Charms: say so (playtest: +2 LEVELS gave +1).
+      const room = c.enh ? Math.max(0, Math.min(2, BIG_CAP - charmLevel(run.player.levels, c.enh))) : 2;
+      return { title: 'LUCKY BREAK', rule: room >= 2 ? `+2 LEVELS TO ${what(c)}` : `+${room} LEVEL TO ${what(c)}, ${(2 - room) * 2} GOLD CHARMS`, cost: '' };
+    }
     case 'treasure':
       return { title: 'TREASURE', rule: 'PICK 1 OF 3 RELICS', cost: '' };
     case 'houseMoney':
@@ -1716,7 +1740,9 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
       const enh = CONVERT[c.id]!;
       const title = { whetted: 'WHETTED', bloodMoon: 'BLOOD MOON', cashIn: 'CASH IN', fourLeaf: 'FOUR LEAF', overclock: 'OVERCLOCK', markedCards: 'MARKED CARDS' }[c.id];
       const cost = c.id === 'bloodMoon' || c.id === 'overclock' ? '-1 LEVEL TO SHIELDS' : c.id === 'cashIn' ? 'YOUR OTHER CHARM LEVELS ARE GONE' : pct(run, c.id === 'fourLeaf' ? BIG.fourLeafHp : BIG.convertHp);
-      return { title, rule: `EVERY CHARM BECOMES ${charmName(enh)} AT LV${bestCharmLevel(run)}`, cost };
+      // Charms on symbols it can't go on become GOLD: say so.
+      const misfit = run.player.gilded.some((g) => !charmSymbols(run, enh).includes(g.symbol));
+      return { title, rule: `EVERY CHARM BECOMES ${charmName(enh)} AT LV${bestCharmLevel(run)}${misfit ? ` (GOLD WHERE ${charmName(enh)} CAN'T GO)` : ''}`, cost };
     }
     case 'excalibur':
       return { title: 'EXCALIBUR', rule: 'SWORD PAIRS PAY AS JACKPOTS', cost: 'SHIELD PAIRS BLOCK NOTHING' };
@@ -1852,6 +1878,19 @@ export function rollChoices(run: RunState, _set: number, rng: Rng): BigChoice[] 
 }
 
 export function takeChoice(run: RunState, c: BigChoice): void {
+  takeChoiceInner(run, c);
+  // A legendary pick waiting behind the choice drops what the choice just gave you (playtest: PAWN SHOP's hourglass
+  // showed again in the act's pick, a wasted pick).
+  if (run.pendingLegend) {
+    const left = run.pendingLegend.filter((r) => !run.player.relics.includes(r));
+    const pool = run.pendingLegend.every((r) => LEGENDARY.has(r)) ? legendsFor(run) : relicsFor(run);
+    const refill = pool.filter((r) => !left.includes(r) && !run.pendingLegend!.includes(r));
+    while (left.length < run.pendingLegend.length && refill.length) left.push(refill.shift()!);
+    run.pendingLegend = left.length ? left : null;
+  }
+}
+
+function takeChoiceInner(run: RunState, c: BigChoice): void {
   if (!run.pendingChoice?.some((x) => x.id === c.id)) return;
   const p = run.player;
   const big = (run.big ??= {});
@@ -1889,7 +1928,10 @@ export function takeChoice(run: RunState, c: BigChoice): void {
   const queueLegend = (picks: RelicId[]) => {
     if (!picks.length) return;
     if (run.pendingLegend?.length) (run.legendQueue ??= []).push(picks);
-    else run.pendingLegend = picks;
+    else {
+      run.pendingLegend = picks;
+      markLegends(run, picks);
+    }
   };
   const atk = CABINETS[run.cabinet].attack;
   const rng = new Rng((run.seed ^ Math.imul(fightNumber(run) + 57, 0x2c1b3c6d)) >>> 0);
@@ -1916,6 +1958,7 @@ export function takeChoice(run: RunState, c: BigChoice): void {
       if (c.reward === 'legend' && legends.length) run.pendingLegend = erng.shuffle(legends).slice(0, RUN.legendPick);
       else if (c.reward === 'relic' && relics.length) run.pendingLegend = erng.shuffle(relics).slice(0, RUN.legendPick);
       else p.chips += ENDLESS.edgeChips;
+      markLegends(run, run.pendingLegend);
       break;
     }
     case 'cashOut':

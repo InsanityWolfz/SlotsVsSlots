@@ -1836,9 +1836,13 @@ export class Director {
     hud.hp = hud.ghost = e.hp;
     hud.shield = 0;
     this.s.gutter.dealerHand = e.hand;
+    // The table's card turns with the banner, not after it (playtest: HAND 3/3 over a BUST card).
+    this.s.gutter.nextDeal = e.hand >= 3 ? 'allin' : 'card';
     if (hud.ability) {
       hud.ability = { ...hud.ability, every: e.every };
       hud.charge = 0;
+      // Hand 3 goes ALL IN, not BUST (playtest: the HUD still said THE DEAL).
+      hud.abilityLabel = e.hand >= 3 ? 'ALL IN' : undefined;
     }
     this.s.sounds.abilityFire();
     this.s.camera.chromaPulse(0.6);

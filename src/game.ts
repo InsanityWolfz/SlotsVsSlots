@@ -791,7 +791,7 @@ export class Game {
 
   private savedRunLabel(): string | null {
     const s = this.loadRunSave();
-    return s ? `ACT ${s.run.act} ${CABINETS[s.run.cabinet].hero}` : null;
+    return s ? `${s.run.endless ? `LOOP ${s.run.endless.loop}` : `ACT ${s.run.act}`} ${CABINETS[s.run.cabinet].hero}` : null;
   }
 
   /** CONTINUE: the saved run, at the screen it was saved on. */

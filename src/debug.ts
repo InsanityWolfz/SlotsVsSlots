@@ -80,6 +80,8 @@ export function installDebug(game: Game): void {
     bonus: (kind: 'wheel' | 'rush') => (game.fight.forceBonus = kind),
     /** Make the current fight end in a win on the player's next spin (for walking run screens). */
     forceWin() {
+      // (THE DEALER: skip to its last hand, or 1 HP only ends the hand it's on.)
+      game.fight.dealerHand = 3;
       game.fight.sides.enemy.hp = 1;
       game.fight.sides.enemy.shield = 0;
       game.fight.dealt = true;

@@ -15,6 +15,8 @@ import {
   type BigChoice,
   BIG,
   describeOption,
+  fastHands,
+  runEdges,
   enemyHp,
   isRelicDraft,
   needsRoute,
@@ -148,8 +150,9 @@ function drawSuit(ctx: CanvasRenderingContext2D, suit: number, x: number, y: num
   ctx.fillStyle = suit < 2 ? '#e8374b' : '#1a1426';
   SUITS[suit].forEach((row, r) => [...row].forEach((ch, c) => ch === 'X' && ctx.fillRect(Math.round(x + (c - 2.5) * px), Math.round(y + (r - 2.5) * px), px, px)));
 }
-/** A playing card (rank 2-14; 0 = its back), `sx` its width scale (for the flip). The suit follows the rank (cosmetic). */
-function drawPlayingCard(ctx: CanvasRenderingContext2D, x: number, y: number, rank: number, sx: number, k = 1): void {
+/** A playing card (rank 2-14; 0 = its back), `sx` its width scale (for the flip). The suit is cosmetic: `slot` (the card's
+ * place on the table) shifts it, so two cards of one rank never look identical (playtest: a tie read as a rigged deck). */
+function drawPlayingCard(ctx: CanvasRenderingContext2D, x: number, y: number, rank: number, sx: number, k = 1, slot = 0): void {
   const w = 112 * k * Math.max(0.04, sx);
   const h = 156 * k;
   ctx.fillStyle = COLORS.outline;
@@ -167,13 +170,15 @@ function drawPlayingCard(ctx: CanvasRenderingContext2D, x: number, y: number, ra
   ctx.fillStyle = '#f4eee0';
   ctx.fillRect(x - w / 2, y - h / 2, w, h);
   if (sx < 0.35) return;
-  const suit = (rank * 7) % 4;
+  const suit = (rank * 7 + slot) % 4;
   const col = suit < 2 ? '#e8374b' : '#1a1426';
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(sx * k, k);
   // (Outlined in the card's own colour: the usual dark outline swallowed the black ranks.)
-  drawText(ctx, RANK(rank), -38, -56, 3, col, { outline: '#f4eee0' });
+  // (A two-digit 10 at full size ran off the card's edge.)
+  const r = RANK(rank);
+  drawText(ctx, r, r.length > 1 ? -34 : -38, -56, r.length > 1 ? 2.5 : 3, col, { outline: '#f4eee0' });
   drawSuit(ctx, suit, -38, -30, 3);
   drawSuit(ctx, suit, 10, 16, 8);
   ctx.restore();
@@ -1251,7 +1256,7 @@ export class RunScreens {
       case 'groundWire':
         drawSprite(ctx, 'bolt', x - (ch.id === 'chainLightning' ? s * 6 : 0), y - 6, s * (ch.id === 'chainLightning' ? 0.75 : 1));
         if (ch.id === 'chainLightning') drawSprite(ctx, 'bolt', x + s * 6, y - 6, s * 0.75);
-        if (ch.id === 'madScience') tag(`X${BIG.madMul}`, x + s * 9, y + 30, '#ff6a5a', 3);
+        if (ch.id === 'madScience') tag(`+${Math.round((BIG.madMul - 1) * 100)}%`, x + s * 9, y + 30, '#ff6a5a', 2.5);
         if (ch.id === 'stormFront') tag('START', x + s * 8, y + 30, LV, 2.5);
         if (ch.id === 'groundWire') drawSprite(ctx, 'heart', x + s * 10, y + 20, s * 0.45);
         break;
@@ -2362,7 +2367,7 @@ export class RunScreens {
     const heading = act3Arrival
       ? 'ACT 3: THE HOUSE HAS A PARTNER. FULLY HEALED.'
       : legend
-        ? this.run!.endless ? `LOOP ${this.run!.endless.loop}: A LEGENDARY RELIC` : 'ACT 2: FULLY HEALED. A LEGENDARY RELIC.'
+        ? this.run!.endless ? `LOOP ${this.run!.endless.loop}: ${this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic)) ? 'A LEGENDARY RELIC' : 'PICK A RELIC'}` : 'ACT 2: FULLY HEALED. A LEGENDARY RELIC.'
         : start
           ? 'PICK A STARTING RELIC'
           : spoils
@@ -2609,7 +2614,7 @@ export class RunScreens {
     ctx.fillRect(bx, 103, bw, 3);
     drawText(ctx, fmtNum(hp), bx + bw / 2, 96, 2, COLORS.text);
     if (e.ability) {
-      const every = effectiveAbility(e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
+      const every = effectiveAbility(runEdges(run).has('fast') ? fastHands(e.ability) : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
       const ui = ABILITY_UI[e.ability.kind];
       drawSprite(ctx, ui.icon, tx + 12, 138, fork ? 2.5 : 3);
       drawText(ctx, ui.label, tx + 34, 138, fork ? 2 : 2.5, '#ff9a3a', { align: 'left' });
@@ -2663,7 +2668,7 @@ export class RunScreens {
     if (!blurbFits) line(e.blurb, COLORS.textDim);
     if (e.ability && !e.isBoss) {
       // The ability sentence leads, big (a boss's rules paragraph below already says it): it's what the back is for.
-      const every = effectiveAbility(e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
+      const every = effectiveAbility(runEdges(run).has('fast') ? fastHands(e.ability) : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
       wrap(abilityText(e, every, run), Math.floor((w - 32) / (6 * big))).forEach((l) => {
         drawText(ctx, l, 16, y + 2, big, '#ff9a3a', { align: 'left' });
         y += 10 * big + 2;
@@ -2909,7 +2914,7 @@ export class RunScreens {
     const d = show ? show.d.slice(0, this.bjDealerUp) : st!.d;
     const x0 = CX - 340;
     const row = (cards: number[], y: number, label: string, hidden: boolean) => {
-      cards.forEach((c, k) => drawPlayingCard(ctx, x0 + 50 + k * 70, y, c, 1, 0.75));
+      cards.forEach((c, k) => drawPlayingCard(ctx, x0 + 50 + k * 70, y, c, 1, 0.75, k));
       if (hidden) drawPlayingCard(ctx, x0 + 50 + cards.length * 70, y, 0, 1, 0.75);
       const t = bjTotal(cards);
       drawText(ctx, `${label} ${t}`, x0 + 10, y - 76, 2, t > 21 ? '#ff8a7a' : COLORS.text, { align: 'left' });
@@ -2938,7 +2943,7 @@ export class RunScreens {
     // The next card: its back, or turning over (it narrows on its back, widens on its face).
     const f = this.hlFlip;
     const face = f > 0.5 && this.hlNext > 0;
-    drawPlayingCard(ctx, cx + 80, 300, face ? this.hlNext : 0, face ? (f - 0.5) * 2 : 1 - f * 2);
+    drawPlayingCard(ctx, cx + 80, 300, face ? this.hlNext : 0, face ? (f - 0.5) * 2 : 1 - f * 2, 1, 1);
     // The pot ladder: what each right call makes the pot (the one you're on lit).
     const bet = st?.bet ?? this.rlBet;
     const calls = st?.calls ?? 0;
@@ -2964,7 +2969,7 @@ export class RunScreens {
     const m = this.hlMsg;
     if (m && m.title) {
       drawText(ctx, m.title, cx, 460, 3, m.good === false ? '#ff8a7a' : COLORS.goldLight, { punch: 1 + 0.03 * Math.sin(time * 6) });
-      drawText(ctx, m.text, cx, 494, 2, m.good === false ? '#ff8a7a' : COLORS.goldLight);
+      drawText(ctx, m.text, cx, 494, m.text.length > 18 ? 1.5 : 2, m.good === false ? '#ff8a7a' : COLORS.goldLight);
     }
   }
 
@@ -3385,8 +3390,8 @@ export class RunScreens {
     drawText(ctx, 'THE CASHIER', CX - 330, 44, 4, COLORS.goldLight, { align: 'left' });
     const quips = ['PLACE YOUR BETS.', 'EVERYTHING HAS A PRICE, FRIEND.', 'THE HOUSE WILL HEAR ABOUT THIS.', 'CHIPS ARE FOR SPENDING... OR ARE THEY?'];
     drawText(ctx, quips[(run.depth + run.shopRerolls) % quips.length], CX - 330, 80, 2, COLORS.textDim, { align: 'left' });
-    if (run.act === 2) drawText(ctx, 'ACT 2: A LEGENDARY ON THE SHELF.', CX, 140, 2, COLORS.goldLight);
-    else if (run.act >= 3) drawText(ctx, 'ACT 3: NO HEALING AFTER FIGHTS.', CX, 140, 2, '#ff8a7a');
+    // (Fights heal in no act now: the old ACT 3 warning is gone. Playtest.)
+    if (this.shopItems.some((it) => !it.sold && it.option.kind === 'relic' && LEGENDARY.has(it.option.relic))) drawText(ctx, 'A LEGENDARY ON THE SHELF.', CX, 140, 2, COLORS.goldLight);
     this.drawShelves(ctx, time);
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
     for (const b of this.buttons) this.drawButton(ctx, b, time);
@@ -3642,9 +3647,7 @@ export class RunScreens {
    */
   private overRows(run: RunState): FightRecord[] {
     if (!run.endless || run.records.length <= 18) return run.records;
-    const last = run.records.slice(-3);
-    const rest = run.records.slice(0, -3);
-    const out: FightRecord[] = [];
+    const plural = (n: number) => `${n} FIGHT${n === 1 ? '' : 'S'}`;
     const sum = (list: FightRecord[], label: string, act: number): FightRecord => ({
       ...list[list.length - 1],
       enemy: label,
@@ -3659,18 +3662,25 @@ export class RunScreens {
       chips: undefined,
       rocksAdded: 0,
     });
+    // The acts, one row each; then each loop by the loop it was in (playtest: loops were guessed in fours and split),
+    // the last loop fight by fight.
+    const out: FightRecord[] = [];
+    const looped = run.records.filter((r) => r.loop !== undefined);
+    const acts = run.records.filter((r) => r.loop === undefined);
     for (const act of [1, 2, 3]) {
-      const list = rest.filter((r) => (r.act ?? 1) === act);
-      if (list.length) out.push(sum(list, `ACT ${act}: ${list.length} FIGHT${list.length > 1 ? 'S' : ''}`, act));
+      const list = acts.filter((r) => (r.act ?? 1) === act);
+      if (list.length) out.push(sum(list, `ACT ${act}: ${plural(list.length)}`, act));
     }
-    // Loops: group act 4 fights into loops of 4 (3 regulars + the boss).
-    const loops = rest.filter((r) => (r.act ?? 1) >= 4);
-    for (let i = 0; i < loops.length; i += 4) {
-      const chunk = loops.slice(i, i + 4);
-      const boss = chunk[chunk.length - 1];
-      out.push(sum(chunk, `LOOP ${i / 4 + 1}: ${chunk.length === 4 ? boss.enemy : `${chunk.length} FIGHTS`}`, 4));
+    const older = acts.filter((r) => (r.act ?? 1) > 3);
+    if (older.length) out.push(sum(older, `ENDLESS: ${plural(older.length)}`, 4));
+    const loops = [...new Set(looped.map((r) => r.loop!))];
+    const lastLoop = loops[loops.length - 1];
+    for (const n of loops) {
+      const list = looped.filter((r) => r.loop === n);
+      if (n === lastLoop) out.push(...list);
+      else out.push(sum(list, `LOOP ${n}: ${plural(list.length)}`, 4));
     }
-    return [...out, ...last];
+    return out;
   }
 
   private drawOver(ctx: CanvasRenderingContext2D): void {
@@ -3680,7 +3690,7 @@ export class RunScreens {
     const trueEnding = run.won && run.act >= 3;
     const busted = !!run.endless;
     drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE WHEEL STOPS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
-    const reached = `${CABINETS[run.cabinet].name}  -  ${run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
+    const reached = `${CABINETS[run.cabinet].name}  -  ${busted ? `BEAT THE DEALER, THEN ${run.records.filter((r) => r.loop !== undefined).length} ENDLESS FIGHTS` : run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     // DEATH RECAP: its own full-width line under the table (the most important line on a loss).
     const lastRec = run.records[run.records.length - 1];
     const loss = lastRec && !lastRec.won ? lastRec : undefined;
@@ -3735,7 +3745,7 @@ export class RunScreens {
         ctx.fillRect(328, y - rowH / 2 - 1, 916, 2);
         this.actPlaque(ctx, 1236, y - rowH / 2, 'ACT 2', '#c8f0ff');
       }
-      if (compact && r.act && r.act > 2 && run.records[i - 1]?.act === 2) {
+      if (compact && r.act && r.act > 2 && rows[i - 1]?.act === 2) {
         ctx.fillStyle = '#7dff7a';
         ctx.fillRect(328, y - rowH / 2 - 1, 916, 2);
         this.actPlaque(ctx, 1236, y - rowH / 2, 'ACT 3', '#7dff7a');
@@ -3819,9 +3829,9 @@ export class RunScreens {
         ctx.fillStyle = COLORS.panel;
         ctx.fillRect(cx + 6, cy + 6, cw - 12, 104);
         if (hasSprite('trophySmall')) drawSprite(ctx, artId('trophySmall'), cx + cw / 2, cy + 26, 2);
-        wrap(a.name, 18).slice(0, 2).forEach((l, k) => drawText(ctx, l, cx + cw / 2, cy + 52 + k * 15, 1.5, COLORS.goldLight));
+        wrap(a.name, Math.floor((cw - 16) / (textWidth('MM', 1.5) - textWidth('M', 1.5)))).slice(0, 2).forEach((l, k) => drawText(ctx, l, cx + cw / 2, cy + 52 + k * 15, 1.5, COLORS.goldLight));
         // Line spacing to fit the font (11 px lines touched: R13 B2).
-        wrap(a.text, 26).slice(0, 2).forEach((l, k) => drawText(ctx, l, cx + cw / 2, cy + 84 + k * 14, 1, COLORS.textDim));
+        wrap(a.text, Math.floor((cw - 16) / (textWidth('MM', 1) - textWidth('M', 1)))).slice(0, 2).forEach((l, k) => drawText(ctx, l, cx + cw / 2, cy + 84 + k * 14, 1, COLORS.textDim));
       });
       if (g.achievements.length > 4) drawText(ctx, `+${g.achievements.length - 4} MORE ON THE TROPHIES SCREEN`, W / 2, y + 156, 1.5, COLORS.textDim);
       y += 172;

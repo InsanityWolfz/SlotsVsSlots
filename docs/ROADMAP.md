@@ -56,6 +56,20 @@ usage resets.
   (29-33 spins); Cashier heals and THE BLOOD BANK are too cheap now that there's no heal after fights (chip-rich
   machines shrug off attrition); LUCKY BREAK is a free pick next to cards with costs.
 
+## From the ENDLESS playtests (2026-10-12)
+- Fixed 2026-10-12: BLOOD MOON / OVERCLOCK conversions (no fitting Charm, free shield cost), the endless run-over table
+  and its subtitle, CONTINUE: LOOP n, the stale Cashier ACT 3 line, the Dealer's HUD line (BUST, then ALL IN) and table
+  card on a hand change, legendaries shown twice (endless picks, PAWN SHOP before the act's pick), the endless relic pick
+  header, HOUSE CUT's text (fights only), LUCKY BREAK at the cap, FAST HANDS on the preview, card suits on a tie, the
+  10, achievement text, MAD SCIENCE's +100% tag, dbg.forceWin() on the Dealer.
+- Open bugs: JOKER's all-jackpots wheel covers the Dealer's table panel; regular endless fights don't show the loop;
+  the loop's first legendary pick keeps "THE DEALER DEFEATED!" as its title; no LOOP dividers in the run-over table;
+  the bust screen doesn't show the banked pot; small overflows (PAY OVERCHARGE buy-in, PAWN SHOP captions, 33+ relics,
+  "+4" in YOUR REELS hides wilds and rocks); a pay banner once read 39 x 11.3 = 439 (rounding shown).
+- Design: endless loops 1-3 are 1-3-spin fights, then a wall (loop 4-5); the endless Dealer's ALL IN doesn't scale
+  (70-110 vs 83K HP); SECOND WIND repeats every loop and late choice screens show one card; a path ending at the
+  Cashier runs into the pre-boss Cashier; BANKROLL's act 1 fights take 47-49 spins; low HP with no heal on offer.
+
 ## Open from earlier playtests (re-check after the reworks)
 - **Pacing:** early fights feel slow, late ones far too fast.
 - **Bimodal runs:** weak runs stay weak and die; strong ones snowball and one-shot everything.

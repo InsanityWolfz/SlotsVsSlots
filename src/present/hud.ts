@@ -38,7 +38,7 @@ export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> 
   penalty: { icon: artId('icoGavel'), label: 'PENALTY' },
   repo: { icon: artId('icoGavel'), label: 'REPO' },
   houseTake: { icon: artId('icoRake'), label: "HOUSE'S TAKE" },
-  deal: { icon: artId('icoShuffle'), label: 'THE DEAL' },
+  deal: { icon: artId('icoShuffle'), label: 'BUST' },
 };
 
 /** Displayed (tweened) values for one side's bars — never read from game state mid-animation. */
@@ -78,6 +78,8 @@ export class HudView {
   name: string;
   portrait: SpriteId;
   ability: AbilityDef | null;
+  /** The ability line's name when it changes mid-fight (the Dealer's hand 3: ALL IN). */
+  abilityLabel?: string;
   /** A line in the ability slot for an enemy without one. */
   hint = '';
 
@@ -225,7 +227,8 @@ export class HudView {
       ctx.fillStyle = i < this.charge ? (imminent ? '#ff5a4a' : '#ff9a3a') : '#2a2038';
       ctx.fillRect(px - 4, y - 4, 8, 8);
     }
-    const label = imminent ? `${ui.label} NEXT!` : `${ui.label} IN ${left}`;
+    const name = this.abilityLabel ?? ui.label;
+    const label = imminent ? `${name} NEXT!` : `${name} IN ${left}`;
     // A long label (NO MORE BETS NEXT!) steps down a size so it clears the pips.
     const size = label.length > 14 ? 1.5 : 2;
     drawText(ctx, label, x + HUD_W - 4, y, size, imminent ? (pulse > 0.5 ? '#ffffff' : '#ff6a5a') : COLORS.textDim, { align: 'right', punch: 1 + this.abilityFlash * 0.3 });
