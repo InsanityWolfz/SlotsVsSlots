@@ -125,13 +125,14 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     gilded: [{ reel: 0, symbol: 'bolt', enh: 'charged', n: 4 }],
     favors: 'charged',
     // Heal per strike 20 -> 5: with 6 bolts a reel lightning fires far more often, and 20 a strike made TESLA unkillable (94% WHITE).
-    meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: UNIT / 2 },
+    meter: { kind: 'special', symbol: 'bolt', cost: 5 * UNIT, heal: UNIT / 2 },
     symbols: ['bolt', 'shield'],
     attack: 'bolt',
     rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE THROUGH SHIELDS. 330 HP.',
     rodDamage: 9 * UNIT,
     unlock: 'REACH THE HOUSE',
-    specialCost: 4 * UNIT,
+    // 40 -> 50 (2026-10-12, honest HP: TESLA was +11 / +16 over the targets).
+    specialCost: 5 * UNIT,
     specialDamage: 6 * UNIT,
   },
   joker: {

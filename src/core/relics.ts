@@ -97,7 +97,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
  */
 const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>> = {
   battery: {
-    tesla: 'LIGHTNING STARTS 30/40 EACH FIGHT',
+    tesla: 'LIGHTNING STARTS 30/50 EACH FIGHT',
     midas: 'HIGH ROLLER STARTS AT 60/100 EACH FIGHT',
     joker: 'JACKPOT METER STARTS AT 60/100 EACH FIGHT',
     jukebox: 'THE VOLUME STARTS EACH FIGHT AT 3',
