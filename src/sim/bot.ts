@@ -315,7 +315,8 @@ export function walkStops(run: RunState, policy: DraftPolicy, rng: Rng): void {
   for (let guard = 0; guard < 20 && !run.over; guard++) {
     if (needsRoute(run)) chooseRoute(run, pickRoute(run, policy, rng));
     else if (isShopNow(run)) shop(run, policy, rng);
-    else if (isEncounterNow(run)) playEncounter(run, pickEncounter(run, policy, rng));
+    // (A chip bet, for the games that take one: a quarter of what you hold.)
+    else if (isEncounterNow(run)) playEncounter(run, pickEncounter(run, policy, rng), Math.max(1, Math.floor(run.player.chips / 4)));
     else return;
   }
 }

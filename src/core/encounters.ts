@@ -2,8 +2,7 @@
  * ENCOUNTERS (2026-10-12): the map's non-fight stops, where you gamble between fights (they replace SIDE BETS).
  * Fights stay watch-only; an encounter is a choice: stake chips, HP, relics or upgrades, or walk away.
  *
- * LUCKY SEVENS is the first real one (the template for the rest: buy-ins, then plays). DOUBLE OR NOTHING and THE
- * BLOOD BANK are placeholders until ROULETTE and the real offers. Each is deterministic per run seed, act and stop,
+ * LUCKY SEVENS and RED OR BLACK are the real ones so far. THE BLOOD BANK is a placeholder until the real offers. Each is deterministic per run seed, act and stop,
  * so a quit can't re-roll it.
  */
 import { UNIT, type RelicId } from './config';
@@ -46,6 +45,10 @@ export interface EncounterResult {
   pulls?: SlotPull[];
   /** What it all came to, one line each (+12 CHIPS, A LEVEL: GOLD 2, ...). */
   gains?: string[];
+  /** RED OR BLACK: the pocket the ball found (0 is the green zero). */
+  pocket?: number;
+  /** The game goes on at this stop (more plays left): the stop isn't passed yet. */
+  more?: boolean;
 }
 /** What the run lends an encounter: relics you could win, and an upgrade it can hand out. */
 export interface EncounterCtx {
@@ -60,35 +63,14 @@ export interface EncounterDef {
   /** A game of chance (buy-ins, then plays) or an offer (take it or walk). */
   kind: 'game' | 'offer';
   choices: (run: RunState, rng: Rng) => EncounterChoice[];
-  /** Play choice `i` (the last choice is always WALK AWAY). */
-  play: (run: RunState, i: number, rng: Rng, ctx: EncounterCtx) => EncounterResult;
+  /** Play choice `i` (the last choice is always WALK AWAY). `bet`: a chip bet, for games that take one. */
+  play: (run: RunState, i: number, rng: Rng, ctx: EncounterCtx, bet?: number) => EncounterResult;
+  /** A game you play more than once at the stop (RED OR BLACK's spins): how many plays it allows. */
+  plays?: number;
 }
 
 const WALK: EncounterChoice = { label: 'WALK AWAY', text: 'KEEP WHAT YOU HAVE' };
 const walked = (): EncounterResult => ({ title: 'WALKED AWAY', text: '', good: null });
-
-/** DOUBLE OR NOTHING: half your chips on one spin of the wheel. (Placeholder until ROULETTE.) */
-const DOUBLE: EncounterDef = {
-  id: 'double',
-  name: 'DOUBLE OR NOTHING',
-  blurb: 'ONE SPIN. RED OR BLACK.',
-  kind: 'game',
-  choices: (run) => {
-    const stake = Math.floor(run.player.chips / 2);
-    return [{ label: `BET ${stake}`, text: `DOUBLE IT, OR LOSE IT`, disabled: stake < 1 }, WALK];
-  },
-  play: (run, i, rng) => {
-    if (i !== 0) return walked();
-    const stake = Math.floor(run.player.chips / 2);
-    if (stake < 1) return walked();
-    if (rng.next() < 0.5) {
-      run.player.chips += stake;
-      return { title: 'RED!', text: `+${stake} CHIPS`, good: true };
-    }
-    run.player.chips -= stake;
-    return { title: 'BLACK...', text: `-${stake} CHIPS`, good: false };
-  },
-};
 
 // ---- LUCKY SEVENS (2026-10-12) -----------------------------------------------------------------------------------
 
@@ -225,6 +207,44 @@ const LUCKY_SEVENS: EncounterDef = {
   },
 };
 
+// ---- RED OR BLACK (2026-10-12) -----------------------------------------------------------------------------------
+
+/**
+ * RED OR BLACK: roulette. Set a chip bet, call red or black, watch the ball. A win pays the bet again; the green zero
+ * is the house's edge. Up to three spins a visit; walk away any time. Pays chips only.
+ */
+export const ROULETTE = { maxBet: 20, spins: 3 };
+/** A European wheel's pockets in wheel order (0 is green). */
+export const WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
+export const pocketColor = (n: number): 'red' | 'black' | 'green' => (n === 0 ? 'green' : REDS.has(n) ? 'red' : 'black');
+/** The most you can bet right now: the table's limit, or every chip you hold. */
+export const rouletteMax = (run: RunState) => Math.min(ROULETTE.maxBet, run.player.chips);
+
+const RED_OR_BLACK: EncounterDef = {
+  id: 'roulette',
+  name: 'RED OR BLACK',
+  blurb: '',
+  kind: 'game',
+  plays: ROULETTE.spins,
+  choices: (run) => [
+    { label: 'RED', text: '', disabled: rouletteMax(run) < 1 },
+    { label: 'BLACK', text: '', disabled: rouletteMax(run) < 1 },
+    WALK,
+  ],
+  play: (run, i, rng, _ctx, bet = 1) => {
+    if (i > 1) return walked();
+    const stake = Math.max(1, Math.min(rouletteMax(run), Math.floor(bet)));
+    if (rouletteMax(run) < 1) return walked();
+    const pocket = WHEEL_ORDER[rng.int(WHEEL_ORDER.length)];
+    const color = pocketColor(pocket);
+    const won = color === (i === 0 ? 'red' : 'black');
+    run.player.chips += won ? stake : -stake;
+    const name = `${color.toUpperCase()} ${pocket}`;
+    return { title: won ? `${name}!` : name, text: won ? `+${stake} CHIPS` : `-${stake} CHIPS`, good: won, pocket };
+  },
+};
+
 /** THE BLOOD BANK: sell some HP for chips. */
 const BLOOD_HP = 0.15;
 const BLOOD_CHIPS = 12;
@@ -247,12 +267,13 @@ const BLOOD: EncounterDef = {
 };
 const bloodHp = (run: RunState) => Math.max(UNIT, Math.round((run.player.maxHp * BLOOD_HP) / UNIT) * UNIT);
 
-export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, double: DOUBLE, blood: BLOOD };
+export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, roulette: RED_OR_BLACK, blood: BLOOD };
 /** What the map deals onto ENCOUNTER stops. */
 export const ENCOUNTER_IDS = Object.keys(ENCOUNTERS);
 
 /** The encounter at this stop, or a stand-in if a save names one that's gone. */
-export const encounterOf = (id: string | undefined): EncounterDef => (id && ENCOUNTERS[id]) || DOUBLE;
+export const encounterOf = (id: string | undefined): EncounterDef => (id && ENCOUNTERS[id]) || (id === 'double' ? RED_OR_BLACK : LUCKY_SEVENS);
 
-/** Deterministic per run, act and stop: a quit can't re-roll it. */
-export const encounterRng = (run: RunState) => new Rng((run.seed ^ Math.imul(run.act * 64 + run.stop + 5, 0x2f6b9a35) ^ ((run.endless?.loop ?? 0) * 0x61c88647)) >>> 0);
+/** Deterministic per run, act, stop and play (a game's 2nd spin draws its own stream): a quit can't re-roll it. */
+export const encounterRng = (run: RunState) =>
+  new Rng((run.seed ^ Math.imul(run.act * 64 + run.stop + 5, 0x2f6b9a35) ^ ((run.endless?.loop ?? 0) * 0x61c88647) ^ Math.imul(run.encounterPlays ?? 0, 0x7feb352d)) >>> 0);

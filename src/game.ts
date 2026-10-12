@@ -356,7 +356,13 @@ export class Game {
       onChoice: (c) => this.pickChoice(c),
       onFight: () => this.beginRunFight(),
       onRoute: (i) => this.pickRoute(i),
-      onEncounter: (i) => (this.run ? playEncounter(this.run, i) : null),
+      onEncounter: (i, bet) => {
+        if (!this.run) return null;
+        const res = playEncounter(this.run, i, bet);
+        // Saved after every play: a quit can't replay a spin you've seen (a game with plays left resumes at its table).
+        this.checkpoint('next');
+        return res;
+      },
       onEncounterDone: () => this.advance(),
       // After the first run: offer the (optional) leaderboard name on the way out of the run-over screen.
       onNewRun: () => this.afterNamePrompt(() => this.chooseCabinet()),

@@ -5427,6 +5427,91 @@ S.volumeIcon = [
   put(g, 18, 6, 'T'); put(g, 19, 7, 't'); put(g, 18, 7, 'T'); put(g, 19, 6, 'W');
   S.wheelTopper = toRows(outline(g));
 }
+// ================================================================ LUCKY SEVENS prize slot + RED OR BLACK (2026-10-12)
+// slotHeart (16x16): LUCKY SEVENS' prize symbol (pays HP), a big glossy red heart
+{
+  const g = grid(16, 16);
+  const mask = [
+    '................',
+    '................',
+    '...XXXX..XXXX...',
+    '..XXXXXXXXXXXX..',
+    '.XXXXXXXXXXXXXX.',
+    '.XXXXXXXXXXXXXX.',
+    '.XXXXXXXXXXXXXX.',
+    '.XXXXXXXXXXXXXX.',
+    '.XXXXXXXXXXXXXX.',
+    '..XXXXXXXXXXXX..',
+    '...XXXXXXXXXX...',
+    '....XXXXXXXX....',
+    '.....XXXXXX.....',
+    '......XXXX......',
+    '.......XX.......',
+    '................',
+  ];
+  const on = (x, y) => get(mask.map((r) => [...r]), x, y) === 'X';
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if (!on(x, y)) continue;
+    const lo = !on(x + 1, y) || !on(x, y + 1) || !on(x + 1, y + 1);
+    const hi = !on(x - 1, y) || !on(x, y - 1);
+    put(g, x, y, lo ? 'r' : hi ? 'M' : x + y >= 21 ? 'r' : 'R');
+  }
+  plot(g, [[3, 4, 'W'], [4, 3, 'W'], [3, 5, 'W'], [4, 4, 'M'], [5, 3, 'M'], [10, 3, 'M'], [11, 3, 'M']]);
+  S.slotHeart = toRows(outline(g));
+}
+// slotUp (16x16): LUCKY SEVENS' upgrade symbol, a bold green up-arrow on a round blue gem badge
+{
+  const g = grid(16, 16);
+  const spans = [[5, 10], [3, 12], [2, 13], [1, 14], [1, 14], [1, 14], [1, 14], [1, 14], [1, 14], [1, 14], [1, 14], [2, 13], [3, 12], [5, 10]];
+  shape(g, 1, spans, (x, y, has) =>
+    (!has(x + 1, y) || !has(x, y + 1)) ? 'N' : (!has(x - 1, y) || !has(x, y - 1)) ? 'A' : (x + y >= 18 ? 'U' : 'c'));
+  stamp(g, 4, 3, [
+    '   EE   ',
+    '  EEee  ',
+    ' EEEeee ',
+    'EEEEeeee',
+    '  EEee  ',
+    '  EEee  ',
+    '  EEee  ',
+    '  EEee  ',
+    '  EQQe  ',
+  ]);
+  plot(g, [[7, 3, 'W'], [7, 4, 'W'], [5, 6, 'W'], [3, 3, 'C'], [4, 2, 'C']]);
+  S.slotUp = toRows(outline(g));
+}
+// slotTopper (64x16): the marquee sign on top of the LUCKY SEVENS machine, three red 7s on a gold plate between
+// two rows of bulbs (lit gold / dim, alternating)
+{
+  const g = grid(64, 16);
+  for (let y = 1; y <= 14; y++) for (let x = 1; x <= 62; x++) {
+    let c;
+    if (y === 1 || y === 14) c = 'b';
+    else if (y === 2) c = 'Y';
+    else if (y === 13) c = 'g';
+    else c = x <= 2 ? 'Y' : x >= 61 ? 'g' : 'G';
+    put(g, x, y, c);
+  }
+  for (let k = 0; k < 15; k++) for (const y of [1, 14]) {
+    const c = k % 2 ? 'g' : 'Y';
+    put(g, 3 + 4 * k, y, c); put(g, 4 + 4 * k, y, c);
+    if (c === 'Y') put(g, 3 + 4 * k, y, 'W');
+  }
+  const seven = [
+    'RRRRRRRR',
+    'RWRRRRRr',
+    '.....RRr',
+    '....RRr.',
+    '...RRr..',
+    '...RRr..',
+    '..RRr...',
+    '..RRr...',
+  ];
+  for (const x0 of [12, 28, 44]) {
+    stamp(g, x0 + 1, 5, seven.map((r) => r.replace(/[RWr]/g, 'g')));
+    stamp(g, x0, 4, seven);
+  }
+  S.slotTopper = toRows(outline(g));
+}
 // betChip (12x12): THE WHEEL's bet chip from above — red with white inserts, a black centre and a white dot
 S.betChip = lit(12, 12, [
   '............',
@@ -5493,6 +5578,7 @@ const DIMS = {
   icoBomb: 8, icoHex: 8, icoDrain: 8, icoGulp: 8, icoBets: 8,
   mapBadgeBomb: 8, mapBadgeHex: 8, mapBadgeFang: 8, mapBadgeMimic: 8, mapBadgeWheel: 8,
   actBadge2: { w: 24, h: 12 },
+  slotHeart: 16, slotUp: 16, slotTopper: { w: 64, h: 16 },
   enemyGrounder: 24, enemyCounterfeiter: 24, ground: 16, fake: 16, groundOverlay: 16, fakeOverlay: 16,
   icoEarth: 8, icoLaunder: 8, mapBadgeGround: 8, mapBadgeFake: 8, setRibbon: { w: 44, h: 9 },
   enemyDealer: 24, enemySharp: 24, enemyPitBoss: 24, enemyCroupier: 24, enemyRepoMan: 24, card: 16, gavel: 16, rake: 16,
@@ -5612,6 +5698,7 @@ export type SpriteId =
   | 'mapBadgeBomb' | 'mapBadgeHex' | 'mapBadgeFang' // act 2 map badges, 8x8
   | 'mapBadgeMimic' | 'mapBadgeWheel'
   | 'actBadge2'                                    // act 2 map header plaque, 24x12 (non-square)
+  | 'slotHeart' | 'slotUp' | 'slotTopper' // LUCKY SEVENS prize symbols 16x16, topper 64x16
   | 'enemyGrounder' | 'enemyCounterfeiter'         // act 2 enemy portraits (batch 8), 24x24
   | 'ground' | 'fake'                              // their reel symbols, 16x16
   | 'groundOverlay' | 'fakeOverlay'                // their cell overlays, 16x16 (mostly transparent)

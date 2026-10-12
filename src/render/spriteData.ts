@@ -128,6 +128,7 @@ export type SpriteId =
   | 'mapBadgeBomb' | 'mapBadgeHex' | 'mapBadgeFang' // act 2 map badges, 8x8
   | 'mapBadgeMimic' | 'mapBadgeWheel'
   | 'actBadge2'                                    // act 2 map header plaque, 24x12 (non-square)
+  | 'slotHeart' | 'slotUp' | 'slotTopper' // LUCKY SEVENS prize symbols 16x16, topper 64x16
   | 'enemyGrounder' | 'enemyCounterfeiter'         // act 2 enemy portraits (batch 8), 24x24
   | 'ground' | 'fake'                              // their reel symbols, 16x16
   | 'groundOverlay' | 'fakeOverlay'                // their cell overlays, 16x16 (mostly transparent)
@@ -2795,6 +2796,60 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '..KYrrrrrrrrrrrrrrrrgK..',
     '..KGgggggggggggggggggK..',
     '...KKKKKKKKKKKKKKKKKK...',
+  ],
+  slotHeart: [
+    '................',
+    '...KKKK..KKKK...',
+    '..KMMMrKKMMMrK..',
+    '.KMRWMRMMRMMRrK.',
+    'KMRWMRRRRRRRRRrK',
+    'KMRWRRRRRRRRRRrK',
+    'KMRRRRRRRRRRRRrK',
+    'KMRRRRRRRRRRRRrK',
+    'KrRRRRRRRRRRRrrK',
+    '.KrRRRRRRRRRrrK.',
+    '..KrRRRRRRRrrK..',
+    '...KrRRRRRrrK...',
+    '....KrRRRrrK....',
+    '.....KrRrrK.....',
+    '......KrrK......',
+    '.......KK.......',
+  ],
+  slotUp: [
+    '.....KKKKKK.....',
+    '...KKAAAAANKK...',
+    '..KACccccccANK..',
+    '.KACcccWEccccNK.',
+    'KAccccEWeeccccNK',
+    'KAcccEEEeeeccUNK',
+    'KAccEWEEeeeeUUNK',
+    'KAccccEEeecUUUNK',
+    'KAccccEEeeUUUUNK',
+    'KAccccEEeeUUUUNK',
+    'KAccccEEeeUUUUNK',
+    'KNccccEQQeUUUUNK',
+    '.KNcccUUUUUUUNK.',
+    '..KNNUUUUUUNNK..',
+    '...KKNNNNNNKK...',
+    '.....KKKKKK.....',
+  ],
+  slotTopper: [
+    '.KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK.',
+    'KbbWYbbggbbWYbbggbbWYbbggbbWYbbggbbWYbbggbbWYbbggbbWYbbggbbWYbbK',
+    'KYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYK',
+    'KYYGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGggK',
+    'KYYGGGGGGGGGRRRRRRRRGGGGGGGGRRRRRRRRGGGGGGGGRRRRRRRRGGGGGGGGGggK',
+    'KYYGGGGGGGGGRWRRRRRrgGGGGGGGRWRRRRRrgGGGGGGGRWRRRRRrgGGGGGGGGggK',
+    'KYYGGGGGGGGGKKKKKRRrgGGGGGGGKKKKKRRrgGGGGGGGKKKKKRRrgGGGGGGGGggK',
+    'KYYGGGGGGGGGK..KRRrKgGGGGGGGK..KRRrKgGGGGGGGK..KRRrKgGGGGGGGGggK',
+    'KYYGGGGGGGGGK.KRRrK.KGGGGGGGK.KRRrK.KGGGGGGGK.KRRrK.KGGGGGGGGggK',
+    'KYYGGGGGGGGGK.KRRrK.KGGGGGGGK.KRRrK.KGGGGGGGK.KRRrK.KGGGGGGGGggK',
+    'KYYGGGGGGGGGKKRRrK..KGGGGGGGKKRRrK..KGGGGGGGKKRRrK..KGGGGGGGGggK',
+    'KYYGGGGGGGGGKKRRrK..KGGGGGGGKKRRrK..KGGGGGGGKKRRrK..KGGGGGGGGggK',
+    'KYYGGGGGGGGGGKKgggKKKGGGGGGGGKKgggKKKGGGGGGGGKKgggKKKGGGGGGGGggK',
+    'KggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggK',
+    'KbbWYbbggbbWYbbggbbWYbbggbbWYbbggbbWYbbggbbWYbbggbbWYbbggbbWYbbK',
+    '.KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK.',
   ],
   enemyGrounder: [
     '.......KKKKKK.....KKKKKK',

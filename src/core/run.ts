@@ -300,6 +300,8 @@ export interface RunState {
   noWinChips?: boolean;
   /** TRUST FUND: chips after every win. */
   trustFund?: number;
+  /** Plays already made at the current encounter stop (RED OR BLACK's spins). */
+  encounterPlays?: number;
   /** Encounters played this run (what was chosen, how it went): for the run log and the sim. */
   encounters?: { act: number; id: string; choice: number; good: boolean | null }[];
 }
@@ -570,8 +572,11 @@ export function skipToBoss(run: RunState): void {
 }
 /** The stop is a gamble waiting to be played. */
 export const isEncounterNow = (run: RunState) => !run.over && !run.actIntro && currentStop(run)?.kind === 'encounter';
-/** Play the encounter at this stop (choice `i`; the last is WALK AWAY), then move on. Deterministic per stop. */
-export function playEncounter(run: RunState, i: number): EncounterResult | null {
+/**
+ * Play the encounter at this stop (choice `i`; the last is WALK AWAY; `bet` for games that take a chip bet). A game
+ * with plays left keeps you at the stop (`more`); otherwise you move on. Deterministic per stop and play.
+ */
+export function playEncounter(run: RunState, i: number, bet?: number): EncounterResult | null {
   const st = currentStop(run);
   if (!isEncounterNow(run) || !st) return null;
   const relics = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r));
@@ -584,9 +589,19 @@ export function playEncounter(run: RunState, i: number): EncounterResult | null 
     applyOption(run, o, false);
     return describeOption(o, run).title;
   };
-  const result = encounterOf(st.encounter).play(run, i, encounterRng(run), { relics, upgrade });
+  const def = encounterOf(st.encounter);
+  const result = def.play(run, i, encounterRng(run), { relics, upgrade }, bet);
   (run.encounters ??= []).push({ act: run.act, id: st.encounter ?? '?', choice: i, good: result.good });
-  passStop(run);
+  // A game with plays left (and something to play with) keeps you here; walking away, or the last play, moves on.
+  const played = (run.encounterPlays ?? 0) + 1;
+  const open = def.plays && result.good !== null && played < def.plays && encounterChoices(run).some((c, k, all) => k < all.length - 1 && !c.disabled);
+  if (open) {
+    run.encounterPlays = played;
+    result.more = true;
+  } else {
+    run.encounterPlays = 0;
+    passStop(run);
+  }
   return result;
 }
 /** The encounter at this stop's choices (its buy-in cards), as the screen and the bot see them. */

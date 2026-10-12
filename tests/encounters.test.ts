@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, type RelicId } from '../src/core/config';
-import { ENCOUNTERS, SLOT, slotLine, slotRun, SLOT_STRIPS } from '../src/core/encounters';
+import { ENCOUNTERS, pocketColor, ROULETTE, rouletteMax, SLOT, slotLine, slotRun, SLOT_STRIPS, WHEEL_ORDER } from '../src/core/encounters';
 import { Rng } from '../src/core/rng';
-import { createRun } from '../src/core/run';
+import { chooseRoute, createRun, playEncounter } from '../src/core/run';
 
 const base = defaultConfig();
 const slot = ENCOUNTERS.slot;
@@ -81,5 +81,62 @@ describe('LUCKY SEVENS', () => {
     // Like a real slot: about a third of the pulls pay.
     expect(paid / pulls).toBeGreaterThan(0.2);
     expect(paid / pulls).toBeLessThan(0.4);
+  });
+});
+
+describe('RED OR BLACK', () => {
+  /** A run standing at a RED OR BLACK stop (the first stop of its first route). */
+  const atTable = (seed = 2) => {
+    const run = createRun(base, seed, 'knight');
+    run.pendingStart = null;
+    run.map.routes[0][0] = { kind: 'encounter', encounter: 'roulette' };
+    run.depth = 1;
+    run.stop = 1;
+    chooseRoute(run, 0);
+    run.player.chips = 40;
+    return run;
+  };
+
+  it('pays the bet again on the colour called; the green zero (and the other colour) takes it', () => {
+    for (let seed = 1; seed < 40; seed++) {
+      const run = atTable(seed);
+      const before = run.player.chips;
+      const res = playEncounter(run, 0, 5)!;
+      const col = pocketColor(res.pocket!);
+      expect(run.player.chips - before).toBe(col === 'red' ? 5 : -5);
+    }
+    expect(pocketColor(0)).toBe('green');
+    expect(WHEEL_ORDER).toHaveLength(37);
+  });
+
+  it('allows 3 spins at the stop; walking away (or the last spin) moves on', () => {
+    const run = atTable();
+    const stop = run.stop;
+    expect(playEncounter(run, 1, 2)!.more).toBe(true);
+    expect(playEncounter(run, 0, 2)!.more).toBe(true);
+    expect(run.stop).toBe(stop);
+    expect(playEncounter(run, 0, 2)!.more).toBeFalsy();
+    expect(run.stop).toBe(stop + 1);
+    const walk = atTable();
+    expect(playEncounter(walk, 2)!.good).toBeNull();
+    expect(walk.stop).toBe(stop + 1);
+  });
+
+  it('a bet is clamped to the table limit and to your chips', () => {
+    const run = atTable();
+    run.player.chips = 3;
+    const before = run.player.chips;
+    playEncounter(run, 0, 99);
+    expect(Math.abs(run.player.chips - before)).toBe(3);
+    expect(rouletteMax({ ...run, player: { ...run.player, chips: 500 } })).toBe(ROULETTE.maxBet);
+  });
+
+  it('a quit replays the same spin (the spin count is saved with the run)', () => {
+    const run = atTable(7);
+    playEncounter(run, 0, 1);
+    const saved = JSON.parse(JSON.stringify(run));
+    const a = playEncounter(run, 0, 1)!.pocket;
+    const b = playEncounter(saved, 1, 1)!.pocket;
+    expect(b).toBe(a);
   });
 });

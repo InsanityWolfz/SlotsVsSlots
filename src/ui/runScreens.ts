@@ -5,7 +5,7 @@ import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../cor
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, WHEEL_RULES, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
-import { encounterOf, SLOT, SLOT_STRIPS, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
+import { encounterOf, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -89,6 +89,8 @@ type Btn = Hit & {
   minor?: boolean;
   /** Primary, but not breathing right now (a fork's other path). */
   quiet?: boolean;
+  /** A primary button's face colour (RED OR BLACK's BLACK); the default is red. */
+  tint?: string;
 };
 
 
@@ -123,10 +125,10 @@ export const BUILD = { x: 16, y: 16, w: 284, h: H - 32 };
 const ROUTES = { opener: 370, x0: 500, gap: 104, y: [170, 320, 470], lane: 120, shop: 1080, boss: 1196 };
 const ROUTE_STOPS = 5;
 /** ENCOUNTER buy-in cards: their row, size and spacing. */
-const ENC = { cardY: 520, cardW: 210, cardH: 104, cardGap: 236 };
+const ENC = { cardY: 546, cardW: 210, cardH: 108, cardGap: 236 };
 /** LUCKY SEVENS: the reel art per symbol (16px reel symbols, like the fight machines'), and where the machine sits. */
-const SLOT_ART: Record<SlotSym, SpriteId> = { chip: 'goldbar', seven: 'seven', heart: 'shopHeal', star: 'setStar', relic: 'relicSym', wild: 'wild' };
-const SLOT_TOP = 108;
+const SLOT_ART: Record<SlotSym, SpriteId> = { chip: 'goldbar', seven: 'seven', heart: 'slotHeart', star: 'slotUp', relic: 'relicSym', wild: 'wild' };
+const SLOT_TOP = 132;
 const slotCell = (sym: SlotSym): CellView => ({ symbol: SLOT_ART[sym] as SymbolId, slimed: false, goo: 0, flash: 0 });
 /** The first two payline cells match (a WILD matches anything): the last reels slow down. */
 const isWildOr = (a: SlotSym, b: SlotSym) => a === b || a === 'wild' || b === 'wild';
@@ -134,6 +136,59 @@ const isWildOr = (a: SlotSym, b: SlotSym) => a === b || a === 'wild' || b === 'w
 type MapTip = { e?: EnemyDef; title?: string; sub?: string; x: number; y: number };
 /** The middle of the space right of YOUR BUILD: run screens center on it. */
 const CX = (BUILD.x + BUILD.w + 12 + W) / 2;
+/** RED OR BLACK: the wheel's centre, its offscreen size (drawn at half size, scaled x2), and the bet column's x. */
+const RL = { wheelX: CX - 170, wheelY: 300, px: 112, betX: CX + 220 };
+/** A roulette wheel at `angle` with its ball, drawn into a small canvas (pocket k sits at angle + k * step, 0 = up). */
+function drawWheel(g: CanvasRenderingContext2D, angle: number, ball: { a: number; r: number }): void {
+  const n = WHEEL_ORDER.length;
+  const c = RL.px / 2;
+  const step = (Math.PI * 2) / n;
+  const disc = (r: number, color: string) => {
+    g.fillStyle = color;
+    g.beginPath();
+    g.arc(c, c, r, 0, Math.PI * 2);
+    g.fill();
+  };
+  g.clearRect(0, 0, RL.px, RL.px);
+  disc(55, COLORS.outline);
+  disc(53, COLORS.gold);
+  disc(50, '#5a311c');
+  // The pockets: red, black, and the one green zero.
+  for (let k = 0; k < n; k++) {
+    const a = angle + k * step - Math.PI / 2;
+    const col = pocketColor(WHEEL_ORDER[k]);
+    g.fillStyle = col === 'red' ? '#e8374b' : col === 'green' ? '#4cc234' : '#1a1426';
+    g.beginPath();
+    g.arc(c, c, 48, a - step / 2, a + step / 2);
+    g.arc(c, c, 36, a + step / 2, a - step / 2, true);
+    g.fill();
+  }
+  disc(36, '#8f5a1f');
+  disc(33, '#5a311c');
+  // Gold spokes and the hub.
+  g.strokeStyle = COLORS.gold;
+  g.lineWidth = 3;
+  for (let k = 0; k < 4; k++) {
+    const a = angle + (k * Math.PI) / 2;
+    g.beginPath();
+    g.moveTo(c + Math.cos(a) * 6, c + Math.sin(a) * 6);
+    g.lineTo(c + Math.cos(a) * 30, c + Math.sin(a) * 30);
+    g.stroke();
+  }
+  disc(7, COLORS.gold);
+  disc(3, '#ffe45c');
+  // The ball (its radius: 51 on the track, 42 in a pocket, on this scale).
+  const bx = c + Math.cos(ball.a - Math.PI / 2) * (ball.r - 2);
+  const by = c + Math.sin(ball.a - Math.PI / 2) * (ball.r - 2);
+  g.fillStyle = COLORS.outline;
+  g.beginPath();
+  g.arc(bx, by, 3.5, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = '#ffffff';
+  g.beginPath();
+  g.arc(bx - 0.5, by - 0.5, 2.5, 0, Math.PI * 2);
+  g.fill();
+}
 /** Your chips: the same spot in the fights (game.ts draws them there too). */
 export const CHIP_SPOT = { x: 44, y: 46 };
 /** The Cashier's shelves: item centers per row (the counter, then the relics behind the glass). */
@@ -303,6 +358,13 @@ export class RunScreens {
   private encLanded = 0;
   private slotWin: { text: string; count: number; at: number } | null = null;
   private encDone = false;
+  /** RED OR BLACK: the bet on the stepper, the wheel's and ball's angles, the ball's radius, which spin this is, and the
+   * offscreen canvas the wheel is drawn on (small, then scaled up crisp so it reads as pixel art). */
+  private rlBet = 5;
+  private rlWheel = 0;
+  private rlBall = { a: -Math.PI / 2, r: 44 };
+  private rlSpinNo = 1;
+  private rlCanvas: HTMLCanvasElement | null = null;
   /** Shop purchases in flight to YOUR BUILD. */
   private flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   private picked = -1;
@@ -341,7 +403,7 @@ export class RunScreens {
       /** The opener is done: take route `i` of the act's map. */
       onRoute: (i: number) => void;
       /** Play encounter choice `i` (the run applies it; the screen shows how it went). */
-      onEncounter: (i: number) => EncounterResult | null;
+      onEncounter: (i: number, bet?: number) => EncounterResult | null;
       /** The encounter's result was seen: on along the map. */
       onEncounterDone: () => void;
       onNewRun: () => void;
@@ -1247,12 +1309,13 @@ export class RunScreens {
     this.encLanded = 0;
     this.encDone = false;
     this.slotWin = null;
-    if (this.encId === 'slot') {
+    if (this.encId === 'slot' || this.encId === 'roulette') {
+      // The game's own clock follows the screens' (so it runs at their pace, and SKIP touches nothing else).
       this.slotClock = new Clock();
-      this.slotReels = SLOT_STRIPS.map((strip, r) => new ReelView(strip.map(slotCell), (r * 5) % strip.length));
-      // The slot's own clock follows the screens' (so it runs at their pace, and SKIP touches nothing else).
       this.ui.add({ update: (dt) => (this.slotClock.tick(dt), this.mode !== 'encounter'), finish: () => {} });
     }
+    if (this.encId === 'slot') this.slotReels = SLOT_STRIPS.map((strip, r) => new ReelView(strip.map(slotCell), (r * 5) % strip.length));
+    if (this.encId === 'roulette') return this.rouletteButtons();
     const choices = this.encChoices;
     const cards = choices.filter((c) => c.stake);
     this.buttons = choices.map((c, i) => {
@@ -1266,7 +1329,7 @@ export class RunScreens {
       const rest = choices.length - cards.length;
       const k = i - cards.length;
       const x = CX + (k - (rest - 1) / 2) * 360;
-      const y = cards.length ? 636 : 520;
+      const y = cards.length ? 652 : 520;
       const last = i === choices.length - 1;
       const b = last ? this.minorBtn(c.label, x, y, cards.length ? 260 : 320, cards.length ? 44 : 56, () => this.playEncounter(i)) : this.btn(c.label, x, y, 320, 56, () => this.playEncounter(i));
       b.enabled = !c.disabled;
@@ -1275,6 +1338,7 @@ export class RunScreens {
   }
 
   private playEncounter(i: number): void {
+    if (this.encId === 'roulette') return this.playRoulette(i);
     const res = this.cb.onEncounter(i);
     if (!res) return;
     this.encResult = res;
@@ -1346,6 +1410,93 @@ export class RunScreens {
     if ((res.gains ?? []).some((g) => !g.endsWith('CHIPS') && !g.endsWith('HP'))) this.sounds.fanfareJackpot();
     else this.encOutcomeSound(res);
     this.buttons = [this.btn('CONTINUE', CX, 650, 300, 52, () => this.cb.onEncounterDone())];
+  }
+
+  /** RED OR BLACK's table: the bet stepper (-5 -1 +1 +5), RED and BLACK, and WALK AWAY. */
+  private rouletteButtons(): void {
+    const run = this.run!;
+    const max = rouletteMax(run);
+    this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
+    this.rlSpinNo = (run.encounterPlays ?? 0) + 1;
+    this.encChoices = encounterChoices(run);
+    const step = (d: number) => {
+      const next = Math.max(1, Math.min(rouletteMax(this.run!), this.rlBet + d));
+      if (next === this.rlBet) this.sounds.fizzle();
+      else d > 0 ? this.sounds.coin(4) : this.sounds.click();
+      this.rlBet = next;
+    };
+    const steps = [-5, -1, 1, 5].map((d, k) => this.minorBtn(d > 0 ? `+${d}` : `${d}`, RL.betX + (k - 1.5) * 66, 262, 58, 42, () => step(d)));
+    const red = this.btn('RED', RL.betX, 342, 280, 56, () => this.playRoulette(0));
+    const black = this.btn('BLACK', RL.betX, 410, 280, 56, () => this.playRoulette(1));
+    black.tint = '#2a2234';
+    const walk = this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playRoulette(2));
+    for (const b of [...steps, red, black]) b.enabled = max >= 1;
+    this.buttons = [...steps, red, black, walk];
+  }
+
+  /** One spin: the wheel turns one way and the ball the other; the ball drops, rattles and rides into its pocket. */
+  private playRoulette(i: number): void {
+    const res = this.cb.onEncounter(i, this.rlBet);
+    if (!res) return;
+    if (res.pocket === undefined) {
+      // Walked away.
+      this.encResult = res;
+      this.encT = 1;
+      this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+      return;
+    }
+    this.encResult = null;
+    const pocket = res.pocket;
+    const stepA = (Math.PI * 2) / WHEEL_ORDER.length;
+    const idx = WHEEL_ORDER.indexOf(pocket);
+    const w0 = this.rlWheel;
+    const w1 = w0 + Math.PI * 2 * (2 + Math.random());
+    const ease = (t: number) => 1 - (1 - t) ** 3;
+    const wheelAt = (t: number) => w0 + (w1 - w0) * ease(t);
+    const land = 0.72;
+    const landA = wheelAt(land) + idx * stepA;
+    const turn = Math.PI * 2;
+    const k = (((this.rlBall.a - landA) % turn) + turn) % turn + turn * 3;
+    let lastTick = 0;
+    this.buttons = [
+      this.minorBtn('SKIP', CX, 636, 200, 44, () => {
+        this.encSkip = true;
+        this.slotClock.skip();
+      }),
+    ];
+    this.encSkip = false;
+    void this.slotClock
+      .tween({
+        from: 0,
+        to: 1,
+        dur: 3.4,
+        onUpdate: (t) => {
+          this.rlWheel = wheelAt(t);
+          if (t < land) {
+            const u = t / land;
+            this.rlBall.a = landA + (1 - ease(u)) * k;
+            // On the track, then it falls in and rattles over the frets.
+            this.rlBall.r = u < 0.8 ? 51 : 44 + 7 * (1 - (u - 0.8) / 0.2) * Math.abs(Math.cos((u - 0.8) * 40));
+            if (u > 0.8 && t - lastTick > 0.03 && !this.encSkip) {
+              lastTick = t;
+              this.sounds.tick(u);
+            }
+          } else {
+            this.rlBall.a = this.rlWheel + idx * stepA;
+            this.rlBall.r = 44;
+          }
+        },
+      })
+      .then(() => {
+        this.slotClock.skipping = false;
+        if (this.mode !== 'encounter') return;
+        this.encResult = res;
+        this.encT = 1;
+        this.sounds.reelStop(1);
+        this.encOutcomeSound(res);
+        if (res.more) this.rouletteButtons();
+        else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+      });
   }
 
   private encOutcomeSound(res: EncounterResult): void {
@@ -2312,10 +2463,11 @@ export class RunScreens {
    * buy-in cards, the plays and how it went. */
   private drawEncounter(ctx: CanvasRenderingContext2D, time: number): void {
     const def = encounterOf(this.encId);
-    drawText(ctx, def.name, CX, 40, 4, COLORS.goldLight, { punch: 1 + 0.02 * Math.sin(time * 3) });
+    drawText(ctx, def.name, CX, 34, 4, COLORS.goldLight, { punch: 1 + 0.02 * Math.sin(time * 3) });
     if (def.blurb) drawText(ctx, def.blurb, CX, 80, 2, COLORS.textDim);
     const res = this.encResult;
     if (def.id === 'slot') this.drawSlotMachine(ctx, time);
+    else if (def.id === 'roulette') this.drawRoulette(ctx, time);
     else {
       this.panel(ctx, CX - 330, 120, 660, 300, '#7a3aa8');
       if (!res) {
@@ -2369,6 +2521,40 @@ export class RunScreens {
     });
   }
 
+  /** RED OR BLACK: the felt, the wheel (drawn small and scaled up crisp), your bet, the last spin's result. */
+  private drawRoulette(ctx: CanvasRenderingContext2D, time: number): void {
+    const run = this.run!;
+    const spinning = this.buttons.length === 1 && this.buttons[0].label === 'SKIP';
+    drawText(ctx, `SPIN ${Math.min(this.rlSpinNo, encounterOf('roulette').plays ?? 3)} OF ${encounterOf('roulette').plays ?? 3}`, CX, 78, 2, COLORS.textDim);
+    // The felt.
+    this.panel(ctx, CX - 430, 104, 860, 440, COLORS.gold);
+    ctx.fillStyle = '#0e3a20';
+    ctx.fillRect(CX - 430, 104, 860, 440);
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    for (let y = 104; y < 544; y += 8) ctx.fillRect(CX - 430, y, 860, 2);
+    // The wheel.
+    const c = (this.rlCanvas ??= Object.assign(document.createElement('canvas'), { width: RL.px, height: RL.px }));
+    const g = c.getContext('2d')!;
+    drawWheel(g, this.rlWheel, this.rlBall);
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(c, RL.wheelX - RL.px, RL.wheelY - RL.px, RL.px * 2, RL.px * 2);
+    ctx.restore();
+    // Your bet, beside the wheel.
+    drawText(ctx, 'YOUR BET', RL.betX, 150, 2, COLORS.textDim);
+    drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
+    drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
+    drawText(ctx, 'PAYS 1 TO 1', RL.betX, 470, 1.5, COLORS.textDim);
+    // The result of the spin that just landed.
+    const res = this.encResult;
+    if (res && !spinning && res.pocket !== undefined) {
+      const col = pocketColor(res.pocket);
+      drawText(ctx, res.title, RL.wheelX, 456, 3, col === 'red' ? '#ff6a5a' : col === 'green' ? COLORS.slime : COLORS.text, { punch: 1 + 0.03 * Math.sin(time * 6) });
+      drawText(ctx, res.text, RL.wheelX, 488, 2, res.good ? COLORS.goldLight : '#ff8a7a');
+    }
+    void run;
+  }
+
   /** LUCKY SEVENS: a 5x3 machine in the fight machines' bezel, its paytable under it, then each pull's win and the
    * totals. */
   private drawSlotMachine(ctx: CanvasRenderingContext2D, time: number): void {
@@ -2398,6 +2584,8 @@ export class RunScreens {
     ctx.fillStyle = COLORS.goldLight;
     ctx.fillRect(x0 - pad, y0 - pad, mw + pad * 2, 2);
     ctx.fillRect(x0 - pad, y0 - pad, 2, mh + pad * 2);
+    // Its marquee on top (the bulbs chase while it spins).
+    drawSprite(ctx, 'slotTopper', CX, y0 - pad - 22, 2.5, { flash: res && !this.encDone ? 0.15 * (0.5 + 0.5 * Math.sin(time * 12)) : 0 });
     // The window: the same gradient and payline band, the reels clipped inside, shaded top and bottom.
     const g = ctx.createLinearGradient(0, y0, 0, y0 + mh);
     g.addColorStop(0, '#2a1240');
@@ -2442,7 +2630,7 @@ export class RunScreens {
     const ty = y0 + mh + pad + 30;
     if (!res || !this.encDone) this.drawPaytable(ctx, ty);
     if (win) drawText(ctx, win.text, CX, ty + 46, 3, win.count >= 4 ? '#ff8a3a' : COLORS.goldLight, { punch: 1 + 0.1 * Math.max(0, 1 - (this.slotClock.time - win.at) * 3) });
-    if (res && !this.encDone) drawText(ctx, `PULL ${Math.max(1, this.encLanded + (this.slotReels.some((rv) => rv.spinning) ? 1 : 0))} OF ${res.pulls?.length ?? 0}`, CX, 78, 2, COLORS.textDim);
+    if (res && !this.encDone) drawText(ctx, `PULL ${Math.max(1, this.encLanded + (this.slotReels.some((rv) => rv.spinning) ? 1 : 0))} OF ${res.pulls?.length ?? 0}`, CX, ty + 92, 2, COLORS.textDim);
     if (res && this.encDone) {
       const gains = res.gains ?? [];
       drawText(ctx, res.title, CX, ty + 4, 4, gains.length ? COLORS.goldLight : '#ff8a7a', { punch: 1 + 0.03 * Math.sin(time * 6) });
@@ -2981,7 +3169,7 @@ export class RunScreens {
     ctx.fillRect(-b.w / 2 - 3, -b.h / 2 - 3, b.w + 6, b.h + 6);
     ctx.fillStyle = COLORS.gold;
     ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
-    ctx.fillStyle = b.minor ? (b.pressed ? '#1a1428' : b.hover ? '#3a2e52' : COLORS.panelLight) : b.pressed ? '#2a0806' : b.hover ? '#e04a2f' : '#c8321f';
+    ctx.fillStyle = b.minor ? (b.pressed ? '#1a1428' : b.hover ? '#3a2e52' : COLORS.panelLight) : b.pressed ? '#2a0806' : b.tint ? (b.hover ? '#4a3e5a' : b.tint) : b.hover ? '#e04a2f' : '#c8321f';
     ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, b.h - 8);
     ctx.fillStyle = b.minor ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.15)';
     ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, (b.h - 8) / 2);

@@ -23,8 +23,12 @@ which Charms and relics to build.
   - **In the game now:** LUCKY SEVENS, a 5x3 machine on the fight machines' own reels and bezel. Pay 7 chips / 20% HP /
     a relic for 3 / 6 / 10 pulls. One payline; it pays 3, 4 or 5 in a row from the left (WILD stands in): sevens and
     chips pay chips, the first-aid tin HP, the star an upgrade, the relic tile a relic. About 1 pull in 3 pays, about
-    73% of the value is chips, the chip buy-in returns about its cost. Placeholders: DOUBLE OR NOTHING (until
-    ROULETTE), THE BLOOD BANK.
+    73% of the value is chips, the chip buy-in returns about its cost. Its own art: a heart, an upgrade gem, a 777
+    marquee.
+  - RED OR BLACK: roulette. Set a chip bet (1 to 20, stepper), call RED or BLACK, watch the ball (the wheel is drawn in
+    code so the ball lands in the engine's pocket). Pays 1 to 1; the green zero is the house edge. Up to 3 spins a
+    visit, saved after each (a quit resumes at the table and can't replay a spin). Chips only.
+  - Placeholder: THE BLOOD BANK (until the real offers).
   - **Cards and words:** buy-in cards all look alike (no LOW / HIGH labels: the player judges the bet). A buy-in you
     can't win back says PAY, not STAKE. No flavour-text subtitles.
 - **THE REPO MAN** is a regular in acts 1-2 (he takes a Charm for his fight; it comes back after).

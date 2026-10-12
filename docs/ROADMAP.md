@@ -2,9 +2,10 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-12):** the LUCKY SEVENS art pass (new slot symbols: a heart, an upgrade symbol unlike the WILD,
-a topper), then ROULETTE (named RED OR BLACK: pick a colour, set a chip bet, up to 3 spins, walk away any time; green
-zero is the house's edge).
+**In progress (2026-10-12, overnight, user asleep):** the rest of the encounters (HIGHER OR LOWER, BLACKJACK, DICE,
+then the offers), then the new sim, target win rates per stake, and tuning. The user's standing instructions: keep
+going through usage resets; use their earlier answers to make calls; bosses may be moved or changed for clarity or
+balance; a boss may be up to ~10% easier or harder on one machine than another.
 
 ## Now, in order
 1. **The run map rework (agreed 2026-10-12).** Why: every human playtester takes the elite at every fork (a free
@@ -15,9 +16,8 @@ zero is the house's edge).
    - **Encounters, agreed 2026-10-12:** gold "?" on the map; buy-in tiers where a bigger buy-in buys more plays;
      mostly chips (70-80%), sometimes upgrades or relics; each game may pay its own prize type; staked relics are
      picked by the house (tooltip shown); encounters about as good as elites, elites slightly ahead (more risk);
-     every game has SKIP. Done: LUCKY SEVENS (art pass pending: its symbols borrow existing sprites, and the WILD and
-     upgrade stars look alike). Possible later: more paylines if the slot needs it. To build, each with its own art:
-     ROULETTE (red/black, adjustable chip bet), HIGHER OR LOWER, BLACKJACK (hit/stand only; a bigger buy-in buys
+     every game has SKIP. Done: LUCKY SEVENS (with its art), RED OR BLACK (roulette). Possible later: more paylines if
+     the slot needs it. To build, each with its own art: HIGHER OR LOWER, BLACKJACK (hit/stand only; a bigger buy-in buys
      more hands; pays upgrades), DICE, then the offers: THE BLOOD BANK done properly, a PAWN SHOP, a LOAN SHARK.
      Then path shapes with 2-3 encounters.
    - **Next:** the encounters above; the roster audit below; play it.
