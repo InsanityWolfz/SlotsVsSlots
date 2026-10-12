@@ -66,8 +66,6 @@ export interface Cabinet {
   jokerWilds?: boolean;
   /** Levels on this machine go this much past the usual cap (KNIGHT's FORGED STEEL). */
   levelCapBonus?: number;
-  /** Lightning Rod special damage for this cabinet (default 12). */
-  rodDamage?: number;
 }
 
 // HP +30% on every machine (2026-10-12): the heal after each fight is gone, so HP is the run's resource.
@@ -129,14 +127,13 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     gilded: [{ reel: 0, symbol: 'bolt', enh: 'charged', n: 4 }],
     favors: 'charged',
     // Heal per strike 20 -> 5: with 6 bolts a reel lightning fires far more often, and 20 a strike made TESLA unkillable (94% WHITE).
-    meter: { kind: 'special', symbol: 'bolt', cost: 5 * UNIT, heal: UNIT / 2 },
+    meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: UNIT / 2 },
     symbols: ['bolt', 'shield'],
     attack: 'bolt',
     rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE THROUGH SHIELDS. 330 HP.',
-    rodDamage: 9 * UNIT,
     unlock: 'REACH THE HOUSE',
-    // 40 -> 50 (2026-10-12, honest HP: TESLA was +11 / +16 over the targets).
-    specialCost: 5 * UNIT,
+    // 40 (2026-10-12): LIGHTNING ROD is gone (97% of TESLA runs took it; it set the cost to 40 and hit 90).
+    specialCost: 4 * UNIT,
     specialDamage: 6 * UNIT,
   },
   joker: {

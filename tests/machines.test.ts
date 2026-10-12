@@ -26,7 +26,7 @@ describe('cabinets', () => {
 
   it('TESLA changes the special; JOKER lets WILDs pair any two reels', () => {
     const t = new Fight(fightConfig(createRun(base, 2, 'tesla'), base), 1);
-    expect(t.cfg.specialCost).toBe(50);
+    expect(t.cfg.specialCost).toBe(40);
     expect(t.cfg.specialDamage).toBe(60);
 
     const c = fightConfig(createRun(base, 3, 'joker'), base);

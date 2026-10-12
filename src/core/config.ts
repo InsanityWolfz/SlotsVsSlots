@@ -112,7 +112,6 @@ export type RelicId =
   | 'mirror'
   | 'fang'
   | 'bandage'
-  | 'rod'
   | 'prism'
   | 'hone'
   // Legendary (act 2)

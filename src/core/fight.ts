@@ -20,10 +20,6 @@ import {
   FANG_TESLA_HEAL,
   NEW_RELIC,
   POT,
-  ROD_MAX_BONUS,
-  ROD_PER_CHARGED,
-  ROD_SPECIAL_COST,
-  ROD_SPECIAL_DAMAGE,
 } from './relics';
 import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
@@ -255,7 +251,7 @@ export class Fight {
   private bigTurn = false;
   /** E3: reels of yours that thawed on your last turn can't be frozen or jammed on the next enemy turn. */
   private thawShield = new Set<number>();
-  /** Relics that act as the fight opens (Battery, Lightning Rod): popped on turn 1. */
+  /** Relics that act as the fight opens (Battery): popped on turn 1. */
   private openers: RelicId[] = [];
   /** THE WHEEL: chips (bets) on each of your reels. */
   readonly bets: number[] = [0, 0, 0];
@@ -338,14 +334,6 @@ export class Fight {
         p.armed = true;
       }
       this.openers.push('battery');
-    }
-    // Lightning Rod: a charged-bolt build makes the special cheaper and harder-hitting.
-    if (this.special && p.relics.has('rod') && p.reels.some((r) => r.cells.some((c) => c.enh === 'charged'))) {
-      this.cfg.specialCost = ROD_SPECIAL_COST;
-      // ...and scales with the build: +ROD_PER_CHARGED per charged bolt you own (a flat 90 was dead: EXPERT_PLAYTEST_10).
-      const charged = p.reels.reduce((a, r) => a + r.cells.filter((c) => c.enh === 'charged').length, 0);
-      this.cfg.specialDamage = Math.max(this.cfg.specialDamage, this.cabinet?.rodDamage ?? ROD_SPECIAL_DAMAGE) + Math.min(ROD_MAX_BONUS, ROD_PER_CHARGED * charged);
-      this.openers.push('rod');
     }
     const e = this.sides.enemy;
     // BLAZE: every blaze cell you own adds to your special.

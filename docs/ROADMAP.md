@@ -78,7 +78,7 @@ running. Keep going through usage resets.
 - English only.
 
 ## Code cleanup
-- Unused sprites of removed content (BRIAR, THORNY, the GROUNDER's rods and EARTH, the 18 removed relics) in `tools/build-art.mjs`.
+- Unused sprites of removed content (BRIAR, THORNY, the GROUNDER's rods and EARTH, the 19 removed relics incl. LIGHTNING ROD) in `tools/build-art.mjs`.
 - Later: split the 2-3k-line files (`fight.ts`, `run.ts`, `runScreens.ts`, `director.ts`, `game.ts`).
 
 ## Held ideas

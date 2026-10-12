@@ -32,15 +32,6 @@ describe('build relics & keen', () => {
     expect(ofType(g.step().events, 'attack')[0].amount).toBe(150);
   });
 
-  it('LIGHTNING ROD makes the special cost 40 with a charged build', () => {
-    const f = fight((c) => {
-      c.player.gilded = [{ reel: 1, symbol: 'bolt', enh: 'charged', n: 4 }];
-      c.relics = ['rod'];
-    });
-    expect(f.cfg.specialCost).toBe(40);
-    expect(fight((c) => (c.relics = ['rod'])).cfg.specialCost).toBe(50);
-  });
-
   it('PRISM doubles a match that used a WILD', () => {
     const f = fight((c) => {
       c.player.strips = reels3({ sword: 6, wild: 6 });

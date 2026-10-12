@@ -24,7 +24,6 @@ export const RELICS: Record<RelicId, RelicDef> = {
   fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFFS HEAL 30 MORE', sprite: 'relicFang' },
   bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 60 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
-  rod: { id: 'rod', name: 'LIGHTNING ROD', text: 'WITH A CHARGED BOLT: LIGHTNING HITS 100 (NOT 60)', sprite: 'relicRod', machine: 'tesla' },
   prism: { id: 'prism', name: 'PRISM', text: 'A PAIR OR JACKPOT THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
   hone: { id: 'hone', name: 'EXECUTIONER', text: 'KEEN SWORDS PAY X3 VS ENEMIES UNDER HALF HP', sprite: 'relicExecutioner', charm: 'keen' },
   // Legendary (act 2): big, build-bending effects.
@@ -97,7 +96,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
  */
 const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>> = {
   battery: {
-    tesla: 'LIGHTNING STARTS 30/50 EACH FIGHT',
+    tesla: 'LIGHTNING STARTS 30/40 EACH FIGHT',
     midas: 'HIGH ROLLER STARTS AT 60/100 EACH FIGHT',
     joker: 'JACKPOT METER STARTS AT 60/100 EACH FIGHT',
     jukebox: 'THE VOLUME STARTS EACH FIGHT AT 3',
@@ -201,7 +200,7 @@ export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
   common: ['clover', 'battery', 'fang', 'bandage', 'firstblood', 'piggy', 'trophy', 'bash', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar'],
-  uncommon: ['armoredcar', 'safedeposit', 'rod', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'faraday', 'static', 'capbells', 'horseshoe', 'underdog', 'holywater', 'belt', 'bracelet', 'coil', 'rainmaker', 'slushfund', 'loosechange', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer'],
+  uncommon: ['armoredcar', 'safedeposit', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'faraday', 'static', 'capbells', 'horseshoe', 'underdog', 'holywater', 'belt', 'bracelet', 'coil', 'rainmaker', 'slushfund', 'loosechange', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
 };
 
@@ -232,18 +231,12 @@ export const FANG_HEAL = 3 * UNIT;
 /** TESLA's lightning pays off often: a common heal of 30 there was 36.7% wins vs 9.2 (EXPERT_PLAYTEST_10). */
 export const FANG_TESLA_HEAL = UNIT / 2;
 export const BANDAGE_HEAL = 6 * UNIT;
-export const ROD_SPECIAL_COST = 4 * UNIT;
-/** LIGHTNING ROD: extra lightning damage per charged bolt you own. */
-export const ROD_PER_CHARGED = 1 * UNIT;
-/** ...up to this much (TESLA owns many: +30 each made TESLA 66% WHITE). */
-export const ROD_MAX_BONUS = 1 * UNIT;
 
 /** What each build relic needs you to own before it's offered (playtest ITERATION_4). */
 export type Enabler = 'gold' | 'keen' | 'charged' | 'vamp' | 'wild' | 'charm' | 'meter';
 export const BUILD_ENABLER: Partial<Record<RelicId, Enabler | Enabler[]>> = {
   ticket: 'charm',
   bracelet: 'charm',
-  rod: 'charged',
   prism: 'wild',
   chalice: 'vamp',
   // Relics that feed a meter: every slot machine but KNIGHT.
@@ -254,7 +247,6 @@ export const BUILD_ENABLER: Partial<Record<RelicId, Enabler | Enabler[]>> = {
   wildcard: ['wild', 'meter'],
   loadedreel: 'wild',
 };
-export const ROD_SPECIAL_DAMAGE = 12 * UNIT;
 
 /** Too strong for drafts (best pick 92% of the time): only elites drop it. */
 export const ELITE_ONLY: ReadonlySet<RelicId> = new Set<RelicId>(['mirror']);

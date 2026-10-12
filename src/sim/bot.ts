@@ -57,7 +57,6 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   clover: 7.5,
   bandage: 6,
   // Build relics are worth a lot more once you own the gild they amplify.
-  rod: 4,
   prism: 3,
   hone: 3,
   // Legendaries.
@@ -99,7 +98,6 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   bash: 5.5,
 };
 const BUILD: Partial<Record<RelicId, (run: RunState) => boolean>> = {
-  rod: (r) => r.player.gilded.some((g) => g.enh === 'charged'),
   chalice: (r) => r.player.gilded.some((g) => g.enh === 'vamp'),
   prism: (r) => r.player.strips.some((s) => (s.wild ?? 0) > 0),
 };
