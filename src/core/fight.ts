@@ -1080,6 +1080,12 @@ export class Fight {
         notes.push('RAISE X2');
         this.raisePlayer = false;
       }
+      // GREATSWORD (KNIGHT): sword groups pay x1.5.
+      if (has('greatsword') && g.symbol === 'sword' && g.base > 0) {
+        fired.add('greatsword');
+        boost(g, NEW_RELIC.greatswordMul);
+        notes.push(`X${NEW_RELIC.greatswordMul}`);
+      }
       // UNDERDOG: under half HP, every paying group.
       if (has('underdog') && paying && me.hp < me.maxHp / 2) {
         fired.add('underdog');

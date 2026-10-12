@@ -175,6 +175,8 @@ export type RelicId =
   | 'subwoofer'
   // CASH CASSIDY's shield build (user, 2026-10-12).
   | 'armoredcar'
+  // KNIGHT's multiplier relic (2026-10-12).
+  | 'greatsword'
   | 'safedeposit';
 
 /** The fight rules a BIG CHOICE can add (the player's side only; set on the run, passed to every fight). */
