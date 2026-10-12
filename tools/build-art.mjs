@@ -5504,6 +5504,26 @@ S.relicMixtape = lit(16, 16, [
   S.relicSubwoofer = toRows(outline(g));
 }
 
+// relicSlowJam (16x16): SLOW JAM, two beamed teal notes (gold beam) whose note heads are red hearts (heals)
+S.relicSlowJam = lit(16, 16, [
+  '................',
+  '................',
+  '.....GGGGGGGGY..',
+  '.....GgggggggG..',
+  '.....iC.....iC..',
+  '.....iC.....iC..',
+  '.....iC.....iC..',
+  '.....ij.....ij..',
+  '.....ij.....ij..',
+  '.RR.RR..RR.RR...',
+  '.WRRRr..WRRRr...',
+  '.RRRRr..RRRRr...',
+  '..RRr....RRr....',
+  '...r......r.....',
+  '................',
+  '................',
+]);
+
 // echo (THE JUKEBOX's charm): cyan sound-wave rings radiating in from the bottom-right corner (two rings) and
 // the top-left (one), edged in deep teal rather than K so they stay light over the symbol underneath
 // (cool cyan so it reads on the apricot NOTE and on blue shields alike)
@@ -5740,7 +5760,7 @@ const DIMS = {
   trimClassic: 16, trimBronze: 16, trimSilver: 16, trimNeon: 16, trimVelvet: 16,
   trimEmerald: 16, trimDiamond: 16, trimObsidian: 16, trimHouse: 16,
   note: 16, cabinetJukebox: { w: 48, h: 64 }, heroJukebox: 24,
-  relicTurntable: 16, relicMixtape: 16, relicSubwoofer: 16, enhEcho: 16, volumeIcon: 8,
+  relicTurntable: 16, relicMixtape: 16, relicSubwoofer: 16, relicSlowJam: 16, enhEcho: 16, volumeIcon: 8,
   wheelTopper: 24, betChip: 12, betStack1: 16, betStack2: 16, betStack3: 16,
 };
 const errors = [];
@@ -5886,7 +5906,7 @@ export type SpriteId =
   | 'note'                                       // THE JUKEBOX attack symbol (NOTE), 16x16
   | 'cabinetJukebox'                             // THE JUKEBOX slot machine, 48x64 (non-square)
   | 'heroJukebox'                                // DJ DECIBEL hero portrait (faces RIGHT), 24x24
-  | 'relicTurntable' | 'relicMixtape' | 'relicSubwoofer' // THE JUKEBOX relics, 16x16
+  | 'relicTurntable' | 'relicMixtape' | 'relicSubwoofer' | 'relicSlowJam' // THE JUKEBOX relics, 16x16
   | 'enhEcho'                                    // ECHO charm overlay, 16x16 (mostly transparent)
   | 'volumeIcon'                                 // HUD volume meter icon, 8x8
   | 'wheelTopper'                                // THE WHEEL's roulette-wheel topper (top view), 24x24

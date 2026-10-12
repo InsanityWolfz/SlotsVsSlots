@@ -184,7 +184,7 @@ export type SpriteId =
   | 'note'                                       // THE JUKEBOX attack symbol (NOTE), 16x16
   | 'cabinetJukebox'                             // THE JUKEBOX slot machine, 48x64 (non-square)
   | 'heroJukebox'                                // DJ DECIBEL hero portrait (faces RIGHT), 24x24
-  | 'relicTurntable' | 'relicMixtape' | 'relicSubwoofer' // THE JUKEBOX relics, 16x16
+  | 'relicTurntable' | 'relicMixtape' | 'relicSubwoofer' | 'relicSlowJam' // THE JUKEBOX relics, 16x16
   | 'enhEcho'                                    // ECHO charm overlay, 16x16 (mostly transparent)
   | 'volumeIcon'                                 // HUD volume meter icon, 8x8
   | 'wheelTopper'                                // THE WHEEL's roulette-wheel topper (top view), 24x24
@@ -5562,6 +5562,24 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KlkkkkkOOkkkkkPK',
     'KlPPPPPPPPPPPPPK',
     '.KKKKKKKKKKKKKK.',
+  ],
+  relicSlowJam: [
+    '................',
+    '.....KKKKKKKKK..',
+    '....KGGGGGGGGYK.',
+    '....KGgggggggGK.',
+    '....KiCKKKKKiCK.',
+    '....KiCK...KiCK.',
+    '....KiCK...KiCK.',
+    '....KijK...KijK.',
+    '.KK.KijKKK.KijK.',
+    'KRRKRRKKRRKRRK..',
+    'KWRRRrKKWRRRrK..',
+    'KRRRRrKKRRRRrK..',
+    '.KRRrK..KRRrK...',
+    '..KrK....KrK....',
+    '...K......K.....',
+    '................',
   ],
   enhEcho: [
     'WCnCn...........',
