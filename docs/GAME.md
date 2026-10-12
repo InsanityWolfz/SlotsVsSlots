@@ -17,7 +17,7 @@ which Charms and relics to build.
 - **Stops:** FIGHT, ELITE (more HP and hits 25% harder; pays a pick of 2 relics, in every act), CASHIER, ENCOUNTER.
 - **Encounters** (`src/core/encounters.ts`) are gambles between fights. On the map they're gold "?" boxes: which one
   it is stays secret until you arrive. Seeded by the stop, so a quit can't re-roll one. Two kinds:
-  - **Games:** buy-in cards (LOW chips / MEDIUM HP / HIGH a relic the house picks), a bigger buy-in buys more plays.
+  - **Games:** buy-in cards (chips, HP, or a relic the house picks); a bigger buy-in buys more plays.
     Mostly chip prizes (~80%), sometimes HP, upgrades or a relic. Each game can pay its own kind of prize.
   - **Offers:** take it at a cost, or walk.
   - **In the game now:** LUCKY SEVENS, a 5x3 machine on the fight machines' own reels and bezel. Pay 7 chips / 20% HP /

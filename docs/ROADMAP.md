@@ -11,7 +11,8 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
    - **Encounters, agreed 2026-10-12:** gold "?" on the map; buy-in tiers where a bigger buy-in buys more plays;
      mostly chips (70-80%), sometimes upgrades or relics; each game may pay its own prize type; staked relics are
      picked by the house (tooltip shown); encounters about as good as elites, elites slightly ahead (more risk);
-     every game has SKIP. Done: THE PRIZE SLOT. To build, each with its own art:
+     every game has SKIP. Done: LUCKY SEVENS (art pass pending: its symbols borrow existing sprites, and the WILD and
+     upgrade stars look alike). Possible later: more paylines if the slot needs it. To build, each with its own art:
      ROULETTE (red/black, adjustable chip bet), HIGHER OR LOWER, BLACKJACK (hit/stand only; a bigger buy-in buys
      more hands; pays upgrades), DICE, then the offers: THE BLOOD BANK done properly, a PAWN SHOP, a LOAN SHARK.
      Then path shapes with 2-3 encounters.
