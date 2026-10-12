@@ -43,8 +43,9 @@ export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.
 /** Pot steals: 1 = any jackpot steals the boss pot, 0 = only a jackpot of your attack symbol (probe knob). */
 export const POT_STEAL = { any: 1 };
 /** additive 1: your MULT bonuses (GOLD, relics, big choices, HIGH ROLLER, volume) ADD into one pool instead of
- * multiplying each other (the pair / jackpot tier still multiplies). Prototype switch (2026-10-12). */
-export const PAY = { additive: 0 };
+ * multiplying each other (the pair / jackpot tier still multiplies). lightningAdd 1: only TESLA's bolts pool (their
+ * charge), and the lightning's own boosts pool too (CHAIN LIGHTNING's second hit counts as +100%). Prototype switches. */
+export const PAY = { additive: 0, lightningAdd: 0 };
 /** THE JUKEBOX: +20% note damage per volume level, max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
 export const VOLUME = { perLevel: 0.2, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5, battery: 3 };
 export const RAIN = { perChip: 1.5, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
@@ -866,7 +867,7 @@ export class Fight {
     // PAY.additive: your MULT bonuses pool (each adds what it's worth over x1), applied once after them all.
     const pool = new Map<ScoreGroup, number>();
     const boost = (g: ScoreGroup, m: number) => {
-      if (PAY.additive && player) pool.set(g, (pool.get(g) ?? 0) + (m - 1));
+      if ((PAY.additive || (PAY.lightningAdd && this.special && g.symbol === 'bolt')) && player) pool.set(g, (pool.get(g) ?? 0) + (m - 1));
       else g.mult *= m;
     };
     // MIDAS TOUCH: a full meter turns the swords and shields on this spin gold for the fight.
@@ -1684,7 +1685,11 @@ export class Fight {
       // MELTDOWN: +1% per 1% of HP you're missing (capped).
       const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, Math.max(0, me.maxHp - me.hp) * NEW_RELIC.meltdownRate) : 0;
       const mad = me.side === 'player' ? this.big.lightningMul ?? 1 : 1;
-      const dmg = unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1) * (1 + melt) * mad);
+      // PAY.lightningAdd: the lightning's boosts add up instead of multiplying (CHAIN LIGHTNING joins as +100%).
+      const twice = me.side === 'player' && this.big.strikeTwice;
+      const dmg = PAY.lightningAdd
+        ? unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0) + (live ? NEW_RELIC.livewireMul : 0) + melt + (mad - 1) + (twice ? 1 : 0)))
+        : unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1) * (1 + melt) * mad);
       if (over && !overPopped) {
         overPopped = true;
         events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
@@ -1695,7 +1700,7 @@ export class Fight {
       this.checkDeath(foe, events);
       strikes++;
       // CHAIN LIGHTNING (big choice): every strike hits twice.
-      if (me.side === 'player' && this.big.strikeTwice && !this.over && foe.hp > 0) {
+      if (me.side === 'player' && this.big.strikeTwice && !PAY.lightningAdd && !this.over && foe.hp > 0) {
         const h2 = this.damage(foe, dmg, pierce);
         events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h2, energyLeft: me.energy });
         this.checkDeath(foe, events);
