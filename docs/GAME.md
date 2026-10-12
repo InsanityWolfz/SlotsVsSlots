@@ -138,6 +138,9 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
 - **Boss clarity (user, 2026-10-12):** every boss's rules are short rows, each with the icon the fight uses, then a
   green HOW TO WIN line (`src/ui/bossRules.ts`). The boss card's back shows them; in a boss fight, tap its HUD (the "?")
   and the same card opens over the paused fight. ALL IN shows in two places (its banner, the table panel).
+- **COPY RUN (user, 2026-10-12):** the run-over screen's COPY RUN copies the whole run as text (machine, stake, seed,
+  every fight with spins and HP, picks, buys, big choices, the end build, encounters, what killed you; `src/core/runLog.ts`)
+  to paste into a chat for balance checks.
 - **Keywords (user, 2026-10-12):** 16 keywords (PAYLINE, PAIR, JACKPOT, WILD, SHIELD, THROUGH SHIELDS, HEAL, CHARM,
   LEVEL, METER, BUST, ALL IN, MARK, SLIME, ROCK, BOMB) each have one colour, drawn wherever they appear on draft cards,
   big choices, Cashier and relic tips and boss rules (`src/ui/keywords.ts`, drawRich). Hovering a draft card lists its

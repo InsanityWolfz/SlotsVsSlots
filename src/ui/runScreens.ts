@@ -52,6 +52,8 @@ import { COLORS, H, PITCH, W } from '../present/layout';
 import { artId, drawSprite, hasSprite, spriteSize, type SpriteId } from '../render/sprites';
 import { drawText, fmtNum, textWidth } from '../render/text';
 import { bossRules, type BossRuleContext } from './bossRules';
+import { runSummary } from '../core/runLog';
+import { VERSION } from '../build';
 import { drawKeywordBoxes, drawRich, keywordsIn } from './keywords';
 import { heroSprite } from './menus';
 import { CHIP_SCORE, runEntry, runScore } from '../core/profile';
@@ -1930,6 +1932,14 @@ export class RunScreens {
       this.rideOffer = true;
     }
     // THE DAILY RUN: a line to share, and a button that copies it.
+    // COPY RUN: the whole run as text, to paste into a chat for balance checks (runLog.ts).
+    const copyRun = this.minorBtn('COPY RUN', W - 130, H - 34, 210, 40, () => {
+      void navigator.clipboard?.writeText(runSummary(run, VERSION)).then(
+        () => (copyRun.label = 'COPIED!'),
+        () => (copyRun.label = 'COPY FAILED'),
+      );
+    });
+    this.buttons.push(copyRun);
     this.shareLine = run.daily ? dailyShare(run.daily, CABINETS[run.cabinet].hero, run.dailyEdge ? EDGE_TEXT[run.dailyEdge].title : '-', runScore(runEntry(run, 0)), run.records) : '';
     this.openResults();
   }
