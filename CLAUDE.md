@@ -8,6 +8,10 @@ Web build: https://insanitywolfz.github.io/SlotsVsSlots/ (deploys on every push 
 2. `docs/GAME.md`: what the game is today (runs, machines, enemies, bosses, stakes, code map).
 3. `docs/JUICE.md`: before any presentation work.
 
+**If a session stopped mid-task** (a usage limit, a crash): pick up where it left off without being asked. The
+"In progress" line at the top of `docs/ROADMAP.md` says what was being worked on; `git log` and `git status` show how
+far it got. Finish it, then carry on with the roadmap. Keep that line current while you work.
+
 Keep these current: when you ship or decide something, update GAME.md and ROADMAP.md in the same commit. Don't
 add new plan, report or log files to the repo. History lives in git (everything before the 2026-10-11 cleanup is
 at commit `c2f0ffb`). Scratch work goes in a scratchpad or `tools/out/` (gitignored).

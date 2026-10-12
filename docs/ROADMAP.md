@@ -2,6 +2,10 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
+**In progress (2026-10-12):** the LUCKY SEVENS art pass (new slot symbols: a heart, an upgrade symbol unlike the WILD,
+a topper), then ROULETTE (named RED OR BLACK: pick a colour, set a chip bet, up to 3 spins, walk away any time; green
+zero is the house's edge).
+
 ## Now, in order
 1. **The run map rework (agreed 2026-10-12).** Why: every human playtester takes the elite at every fork (a free
    relic for little risk), which snowballs. The old sim hid this by bending boss HP per machine.
