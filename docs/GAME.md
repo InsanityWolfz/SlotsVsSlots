@@ -15,9 +15,13 @@ which Charms and relics to build.
   front; you never choose fights along the way. The three paths have different shapes (`ROUTE_SHAPES`) and never all
   the same number of elites. Endless loops have a single path (fight, Cashier, fight).
 - **Stops:** FIGHT, ELITE (more HP and hits 25% harder; pays a pick of 2 relics, in every act), CASHIER, ENCOUNTER.
-- **Encounters** (`src/core/encounters.ts`) are gambles between fights: stake chips, HP, relics or upgrades, or walk
-  away. Seeded by the stop, so a quit can't re-roll one. **The three in the game are placeholders** (DOUBLE OR
-  NOTHING, THE ONE-ARMED BANDIT, THE BLOOD BANK) until the user's set is designed.
+- **Encounters** (`src/core/encounters.ts`) are gambles between fights. On the map they're gold "?" boxes: which one
+  it is stays secret until you arrive. Seeded by the stop, so a quit can't re-roll one. Two kinds:
+  - **Games:** buy-in cards (LOW chips / MEDIUM HP / HIGH a relic the house picks), a bigger buy-in buys more plays.
+    Mostly chip prizes (~80%), sometimes HP, upgrades or a relic. Each game can pay its own kind of prize.
+  - **Offers:** take it at a cost, or walk.
+  - **In the game now:** THE PRIZE SLOT (5 reels; 3 / 6 / 10 pulls; every CHIP pays a chip, 3+ of a kind pays HP, an
+    upgrade or a relic; returns roughly its cost). Placeholders: DOUBLE OR NOTHING (until ROULETTE), THE BLOOD BANK.
 - **THE REPO MAN** is a regular in acts 1-2 (he takes a Charm for his fight; it comes back after).
 - **After every win:** 25% of max HP comes back (a third of that in act 3), then a **draft** (pick 1 of 3 cards:
   add, swap or remove symbols, Charms, Charm levels, heals). The drafts after an act's 2nd and 4th won fights offer

@@ -5,7 +5,7 @@ import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../cor
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, WHEEL_RULES, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
-import { encounterOf, type EncounterResult } from '../core/encounters';
+import { encounterOf, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -18,6 +18,7 @@ import {
   enemyHp,
   isRelicDraft,
   needsRoute,
+  encounterChoices,
   currentEnemy,
   currentStop,
   isBossNext,
@@ -121,6 +122,21 @@ export const BUILD = { x: 16, y: 16, w: 284, h: H - 32 };
 /** CHOOSE YOUR PATH: the opener, the lanes (their stops' x, each lane's centre y and height), the Cashier, the boss. */
 const ROUTES = { opener: 370, x0: 500, gap: 104, y: [170, 320, 470], lane: 120, shop: 1080, boss: 1196 };
 const ROUTE_STOPS = 5;
+/** ENCOUNTER buy-in cards: their row, size and spacing. */
+const ENC = { cardY: 470, cardW: 210, cardH: 116, cardGap: 236 };
+/** THE PRIZE SLOT's faces: art and scale (the sprites come in different sizes). */
+const SLOT_ART: Record<SlotSym, { id: SpriteId; scale: number }> = {
+  chip: { id: 'chip', scale: 5 },
+  heart: { id: 'heart', scale: 7 },
+  star: { id: 'setStar', scale: 4 },
+  relic: { id: 'relicSym', scale: 4 },
+  skull: { id: 'skull', scale: 7 },
+};
+const SLOT_FACES: SlotSym[] = ['chip', 'heart', 'star', 'relic', 'skull'];
+/** How long the pulls take: 0.8 s each (SKIP jumps to the end). */
+const slotDuration = (n: number) => n * 0.8;
+/** The faces that paid on a pull: every CHIP, and any face 3 or more times. */
+const slotWinners = (p: SlotPull): SlotSym[] => SLOT_FACES.filter((f) => f !== 'skull' && (f === 'chip' ? p.cells.includes(f) : p.cells.filter((c) => c === f).length >= 3));
 /** A map node's tip: an enemy's mini card, or a stop's name and line. */
 type MapTip = { e?: EnemyDef; title?: string; sub?: string; x: number; y: number };
 /** The middle of the space right of YOUR BUILD: run screens center on it. */
@@ -283,6 +299,10 @@ export class RunScreens {
   private encT = 1;
   /** The encounter on show (the run has moved past its stop once it's played). */
   private encId: string | undefined;
+  /** The encounter's choices as dealt (buy-in cards first), SKIP pressed, and the sounds already played this reveal. */
+  private encChoices: EncounterChoice[] = [];
+  private encSkip = false;
+  private encFired = new Set<string>();
   /** Shop purchases in flight to YOUR BUILD. */
   private flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   private picked = -1;
@@ -1213,20 +1233,33 @@ export class RunScreens {
     this.buttons = [take];
   }
 
-  /** An ENCOUNTER stop: the gamble's choices, then how it went. */
+  /** An ENCOUNTER stop: a game's buy-in cards (LOW / MEDIUM / HIGH, each its stake and what it buys) or an offer's
+   * choices, then the plays, then how it went. */
   showEncounter(run: RunState): void {
     this.run = run;
     this.open('encounter');
     this.encResult = null;
     this.encT = 1;
+    this.encSkip = false;
+    this.encFired.clear();
     this.encId = currentStop(run)?.encounter;
-    const def = encounterOf(this.encId);
-    const choices = def.choices(run);
-    const w = 320;
-    const gap = 360;
+    this.encChoices = encounterChoices(run);
+    const choices = this.encChoices;
+    const cards = choices.filter((c) => c.stake);
     this.buttons = choices.map((c, i) => {
-      const x = CX + (i - (choices.length - 1) / 2) * gap;
-      const b = i === choices.length - 1 ? this.minorBtn(c.label, x, 520, w, 56, () => this.playEncounter(i)) : this.btn(c.label, x, 520, w, 56, () => this.playEncounter(i));
+      // Buy-in cards in a row over the table's foot; WALK AWAY (and offers' choices) as buttons below.
+      if (c.stake) {
+        const x = CX + (i - (cards.length - 1) / 2) * ENC.cardGap;
+        const b = this.btn(c.label, x, ENC.cardY, ENC.cardW, ENC.cardH, () => this.playEncounter(i));
+        b.enabled = !c.disabled;
+        return b;
+      }
+      const rest = choices.length - cards.length;
+      const k = i - cards.length;
+      const x = CX + (k - (rest - 1) / 2) * 360;
+      const y = cards.length ? 590 : 520;
+      const last = i === choices.length - 1;
+      const b = last ? this.minorBtn(c.label, x, y, cards.length ? 260 : 320, cards.length ? 44 : 56, () => this.playEncounter(i)) : this.btn(c.label, x, y, 320, 56, () => this.playEncounter(i));
       b.enabled = !c.disabled;
       return b;
     });
@@ -1236,19 +1269,29 @@ export class RunScreens {
     const res = this.cb.onEncounter(i);
     if (!res) return;
     this.encResult = res;
+    this.encT = 0;
+    this.encSkip = false;
+    if (res.pulls?.length) {
+      // THE PRIZE SLOT: the pulls play out one after another; SKIP jumps to the end.
+      const n = res.pulls.length;
+      this.buttons = [this.minorBtn('SKIP', CX, 650, 200, 44, () => (this.encSkip = true))];
+      void this.ui.tween({ from: 0, to: n, dur: slotDuration(n), onUpdate: (v) => (this.encT = this.encSkip ? n : v) });
+      return;
+    }
     this.buttons = [this.btn('CONTINUE', CX, 588, 300, 52, () => this.cb.onEncounterDone())];
     const land = res.reels ? 3 : 0;
-    this.encT = 0;
     void this.ui.tween({ from: 0, to: 1, dur: land ? 1.1 : 0.25, onUpdate: (v) => (this.encT = v) });
     for (let k = 0; k < land; k++) void this.ui.wait(0.35 + k * 0.3).then(() => this.sounds.reelStop(k));
-    void this.ui.wait(land ? 1.1 : 0.15).then(() => {
-      if (res.good === true) {
-        this.sounds.coin(6);
-        this.sounds.coin(11);
-        if (res.reels && new Set(res.reels).size === 1) this.sounds.fanfareJackpot();
-      } else if (res.good === false) this.sounds.fizzle();
-      else this.sounds.click();
-    });
+    void this.ui.wait(land ? 1.1 : 0.15).then(() => this.encOutcomeSound(res));
+  }
+
+  private encOutcomeSound(res: EncounterResult): void {
+    if (res.good === true) {
+      this.sounds.coin(6);
+      this.sounds.coin(11);
+      if (res.reels && new Set(res.reels).size === 1) this.sounds.fanfareJackpot();
+    } else if (res.good === false) this.sounds.fizzle();
+    else this.sounds.click();
   }
 
   /** The headliner card arrives: it rises in, the portrait lands, the skulls pop one by one, the pips fill. */
@@ -1587,7 +1630,12 @@ export class RunScreens {
     // Elites wear an orange frame (the crown badge alone was easy to miss).
     ctx.fillStyle = st?.kind === 'elite' && !o.faded ? '#ff9a3a' : COLORS.outline;
     ctx.fillRect(x - s, y - s, s * 2, s * 2);
-    ctx.fillStyle = e?.isBoss ? '#5a1a10' : st?.kind === 'elite' ? '#4a2410' : st?.kind === 'encounter' ? '#3a1a4a' : st?.kind === 'shop' ? '#1e3a24' : o.here ? '#3a2a14' : COLORS.panelLight;
+    // Encounters are gold boxes (the only "?" on the map); which one it is stays a secret until you get there.
+    if (st?.kind === 'encounter') {
+      ctx.fillStyle = o.faded || o.done ? '#7a6020' : COLORS.gold;
+      ctx.fillRect(x - s + 2, y - s + 2, s * 2 - 4, s * 2 - 4);
+    }
+    ctx.fillStyle = e?.isBoss ? '#5a1a10' : st?.kind === 'elite' ? '#4a2410' : st?.kind === 'encounter' ? '#5a3a10' : st?.kind === 'shop' ? '#1e3a24' : o.here ? '#3a2a14' : COLORS.panelLight;
     ctx.fillRect(x - s + 3, y - s + 3, s * 2 - 6, s * 2 - 6);
     const k = s / 26;
     if (e) {
@@ -1596,15 +1644,13 @@ export class RunScreens {
       if (badge) drawSprite(ctx, badge, x + s - 2, y + s - 4, 2 * k, { alpha: o.faded ? 0.4 : 1 });
       if (e.elite) drawSprite(ctx, 'mapBadgeElite', x - s + 4, y - s + 4, 2 * k, { alpha: o.faded ? 0.4 : 1 });
     } else if (st?.kind === 'shop') drawSprite(ctx, 'cashierPortrait', x, y, 1.8 * k, { dim });
-    else drawText(ctx, '?', x, y + 1, 3 * k, st ? '#e8b0ff' : COLORS.goldLight, { alpha: o.done || o.faded ? 0.5 : 1 });
+    else if (st) drawText(ctx, '?', x, y + 1, 3 * k, COLORS.goldLight, { alpha: o.done || o.faded ? 0.5 : 1 });
+    else drawSprite(ctx, 'mapFork', x, y, 2.5 * k);
     if (o.done && e) drawSprite(ctx, 'nodeDone', x - s + 6, y + s - 6, 2 * k);
     if (Math.abs(this.mouse.x - x) > s || Math.abs(this.mouse.y - y) > s) return null;
     if (e) return { e, x, y: y + s };
     if (st?.kind === 'shop') return { title: 'THE CASHIER', sub: 'SPEND YOUR CHIPS', x, y: y + s };
-    if (st?.kind === 'encounter') {
-      const def = encounterOf(st.encounter);
-      return { title: def.name, sub: def.blurb, x, y: y + s };
-    }
+    if (st?.kind === 'encounter') return { title: 'AN ENCOUNTER', sub: 'A GAMBLE. YOU FIND OUT WHICH WHEN YOU GET THERE', x, y: y + s };
     return { title: 'CHOOSE YOUR PATH', sub: 'AFTER THIS FIGHT', x, y: y + s };
   }
 
@@ -1654,7 +1700,7 @@ export class RunScreens {
     // CHIPS: big, always in the same spot.
     if (!inFight) {
       drawSprite(ctx, 'chip', CHIP_SPOT.x, CHIP_SPOT.y, 3);
-      drawText(ctx, `${p.chips}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, COLORS.energy, { align: 'left', punch: this.chipPulse });
+      drawText(ctx, `${this.shown().chips}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, COLORS.energy, { align: 'left', punch: this.chipPulse });
     }
     if (!inFight) drawText(ctx, 'CHIPS', x + w - 12, CHIP_SPOT.y + 4, 1.5, COLORS.textDim, { align: 'right' });
     rule(y + 58);
@@ -1739,8 +1785,27 @@ export class RunScreens {
     if (relics.length > slots) drawText(ctx, `+${relics.length - shown.length}`, x + 24 + ((slots - 1) % cols) * 34, y + 590 + 3 * 30, 1.5, COLORS.goldLight);
   }
 
-  private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
+  /**
+   * Chips and HP as the panel shows them: the run's, less what a PRIZE SLOT reveal hasn't landed yet (the run is paid
+   * at the buy-in so a quit can't re-roll it; the screen counts the prizes up pull by pull).
+   */
+  private shown(): { chips: number; hp: number; maxHp: number } {
     const p = this.run!.player;
+    const pulls = this.mode === 'encounter' ? this.encResult?.pulls : undefined;
+    if (!pulls) return p;
+    const out = { chips: p.chips, hp: p.hp, maxHp: p.maxHp };
+    pulls.forEach((pl, k) => {
+      // A pull's prizes land with its win line (three quarters into the pull).
+      if (this.encT >= k + 0.75) return;
+      out.chips -= pl.gain.chips;
+      out.hp -= pl.gain.hp;
+      out.maxHp -= pl.gain.maxHp;
+    });
+    return out;
+  }
+
+  private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
+    const p = this.shown();
     drawSprite(ctx, 'heart', x + 8, y, 2);
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(x + 22, y - 11, w + 4, 22);
@@ -2180,51 +2245,142 @@ export class RunScreens {
     for (let i = 0; i <= steps; i++) ctx.fillRect(Math.round(x1 + ((x2 - x1) * i) / steps) - 2, Math.round(y1 + ((y2 - y1) * i) / steps) - 2, 4, 4);
   }
 
-  /** An ENCOUNTER: its name and line, a table (the pull's reels land in turn), then how it went. */
+  /** An ENCOUNTER: its name and line, its table (THE PRIZE SLOT: the machine; others a "?" ticket for now), then the
+   * buy-in cards, the plays and how it went. */
   private drawEncounter(ctx: CanvasRenderingContext2D, time: number): void {
-    const run = this.run!;
     const def = encounterOf(this.encId);
-    drawText(ctx, def.name, CX, 64, 4, COLORS.goldLight, { punch: 1 + 0.02 * Math.sin(time * 3) });
-    drawText(ctx, def.blurb, CX, 106, 2, COLORS.textDim);
-    this.panel(ctx, CX - 330, 150, 660, 300, '#7a3aa8');
+    drawText(ctx, def.name, CX, 44, 4, COLORS.goldLight, { punch: 1 + 0.02 * Math.sin(time * 3) });
+    drawText(ctx, def.blurb, CX, 84, 2, COLORS.textDim);
     const res = this.encResult;
-    if (!res) {
-      // Before you choose: what each choice risks (no odds: the user's no-hints rule).
-      def.choices(run).forEach((c, i, all) => {
-        const x = CX + (i - (all.length - 1) / 2) * 360;
-        drawText(ctx, c.text, x, 420, 1.5, c.disabled ? '#6a6078' : COLORS.text);
-      });
-      // (Placeholder art until the encounters are designed: a gold-edged "?" ticket.)
-      const k = 1 + 0.03 * Math.sin(time * 2);
-      ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(CX - 70 * k, 210 - 90 * k + 80, 140 * k, 180 * k);
-      ctx.fillStyle = COLORS.gold;
-      ctx.fillRect(CX - 64 * k, 210 - 84 * k + 80, 128 * k, 168 * k);
-      ctx.fillStyle = '#3a1a4a';
-      ctx.fillRect(CX - 56 * k, 210 - 76 * k + 80, 112 * k, 152 * k);
-      drawText(ctx, '?', CX, 290, 10 * k, '#e8b0ff');
-    } else {
-      const reels = res.reels;
-      if (reels) {
-        const syms = ['seven', 'coin', 'ace', 'note', 'bolt'];
-        reels.forEach((sym, k) => {
-          const x = CX + (k - 1) * 130;
-          const landed = this.encT >= (0.35 + k * 0.3) / 1.1;
-          ctx.fillStyle = COLORS.outline;
-          ctx.fillRect(x - 54, 190, 108, 120);
-          ctx.fillStyle = '#f4eee0';
-          ctx.fillRect(x - 50, 194, 100, 112);
-          const shown = landed ? sym : syms[Math.floor(time * 18 + k * 2) % syms.length];
-          drawSprite(ctx, shown as SpriteId, x, 250 + (landed ? 0 : Math.sin(time * 40 + k) * 6), 4);
+    if (def.id === 'slot') this.drawPrizeSlot(ctx, time);
+    else {
+      this.panel(ctx, CX - 330, 120, 660, 300, '#7a3aa8');
+      if (!res) {
+        this.encChoices.forEach((c, i, all) => {
+          if (c.stake) return;
+          const x = CX + (i - (all.length - 1) / 2) * 360;
+          drawText(ctx, c.text, x, 400, 1.5, c.disabled ? '#6a6078' : COLORS.text);
         });
-      }
-      if (this.encT >= 1) {
+        // (Placeholder art until each encounter gets its own: a gold-edged "?" ticket.)
+        const k = 1 + 0.03 * Math.sin(time * 2);
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(CX - 70 * k, 270 - 90 * k, 140 * k, 180 * k);
+        ctx.fillStyle = COLORS.gold;
+        ctx.fillRect(CX - 64 * k, 270 - 84 * k, 128 * k, 168 * k);
+        ctx.fillStyle = '#3a1a4a';
+        ctx.fillRect(CX - 56 * k, 270 - 76 * k, 112 * k, 152 * k);
+        drawText(ctx, '?', CX, 270, 10 * k, '#e8b0ff');
+      } else if (this.encT >= 1) {
         const col = res.good === true ? COLORS.goldLight : res.good === false ? '#ff8a7a' : COLORS.text;
-        drawText(ctx, res.title, CX, reels ? 350 : 270, 4, col, { punch: 1 + 0.03 * Math.sin(time * 6) });
-        drawText(ctx, res.text, CX, reels ? 400 : 330, 2.5, col);
+        drawText(ctx, res.title, CX, 240, 4, col, { punch: 1 + 0.03 * Math.sin(time * 6) });
+        drawText(ctx, res.text, CX, 300, 2.5, col);
       }
     }
-    for (const b of this.buttons) this.drawButton(ctx, b, time);
+    if (!res) this.drawBuyIns(ctx, time);
+    for (const b of this.buttons) if (!this.encChoices.some((c, i) => c.stake && b === this.buttons[i]) || res) this.drawButton(ctx, b, time);
+  }
+
+  /** The buy-in cards: the tier, what you put up, what it buys. A staked relic shows its icon (its tooltip works). */
+  private drawBuyIns(ctx: CanvasRenderingContext2D, time: number): void {
+    this.encChoices.forEach((c, i) => {
+      if (!c.stake) return;
+      const b = this.buttons[i];
+      if (!b) return;
+      const x = b.x - b.w / 2;
+      const y = b.y - b.h / 2 - (b.hover && b.enabled ? 4 : 0);
+      const tier = ['#5ed15a', '#ffd23f', '#ff6a5a'][i] ?? COLORS.gold;
+      ctx.save();
+      if (!b.enabled) ctx.globalAlpha *= 0.4;
+      this.panel(ctx, x, y, b.w, b.h, b.hover && b.enabled ? COLORS.goldLight : tier);
+      drawText(ctx, c.label, b.x, y + 16, 2.5, tier, { punch: b.hover && b.enabled ? 1 + 0.04 * Math.sin(time * 8) : 1 });
+      drawText(ctx, 'STAKE', b.x, y + 40, 1.5, COLORS.textDim);
+      if (c.relic) {
+        drawSprite(ctx, RELICS[c.relic].sprite as SpriteId, b.x - (c.stake.length * 9) / 2 - 16, y + 60, 1.5);
+        this.tips.add(c.relic, b.x - (c.stake.length * 9) / 2 - 16, y + 60, 14);
+      }
+      drawText(ctx, c.stake, b.x + (c.relic ? 10 : 0), y + 60, c.stake.length > 14 ? 1.5 : 2, '#ff8a7a');
+      drawText(ctx, 'FOR', b.x, y + 80, 1.5, COLORS.textDim);
+      drawText(ctx, c.prize ?? '', b.x, y + 98, 2, COLORS.goldLight);
+      ctx.restore();
+    });
+  }
+
+  /** THE PRIZE SLOT: the cabinet, its five reels and paytable, then each bought pull landing in turn with what it paid. */
+  private drawPrizeSlot(ctx: CanvasRenderingContext2D, time: number): void {
+    const res = this.encResult;
+    const pulls = res?.pulls ?? [];
+    const n = pulls.length;
+    const k = Math.min(n - 1, Math.floor(this.encT));
+    const local = n ? (this.encT >= n ? 1 : this.encT - k) : 1;
+    const done = n > 0 && this.encT >= n;
+    // The cabinet: a gold frame with a chasing-bulb marquee.
+    const x0 = CX - 300;
+    const y0 = 110;
+    this.panel(ctx, x0, y0, 600, 250, COLORS.gold);
+    ctx.fillStyle = '#5a1a10';
+    ctx.fillRect(x0 + 8, y0 + 8, 584, 34);
+    for (let b = 0; b < 28; b++) {
+      ctx.fillStyle = (b + Math.floor(time * (res && !done ? 12 : 4))) % 3 === 0 ? COLORS.goldLight : '#7a4a20';
+      ctx.fillRect(x0 + 16 + b * 21, y0 + 12, 6, 6);
+      ctx.fillRect(x0 + 16 + b * 21, y0 + 32, 6, 6);
+    }
+    drawText(ctx, n ? `PULL ${Math.min(n, k + 1)} OF ${n}` : 'THE PRIZE SLOT', CX, y0 + 25, 2, '#fff6c8');
+    // Five reels: they spin, then land left to right; a landed cell that paid glows.
+    const pull = n ? pulls[k] : null;
+    const wonSyms = new Set(pull ? slotWinners(pull) : []);
+    for (let r = 0; r < 5; r++) {
+      const rx = CX + (r - 2) * 110;
+      const ry = y0 + 120;
+      const landAt = 0.15 + r * 0.12;
+      const landed = !pull || local >= landAt;
+      const sym: SlotSym = pull ? (landed ? pull.cells[r] : SLOT_FACES[Math.floor(time * 20 + r * 3) % SLOT_FACES.length]) : SLOT_FACES[r];
+      const hot = !!pull && landed && local > 0.75 && wonSyms.has(sym);
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(rx - 50, ry - 56, 100, 112);
+      ctx.fillStyle = hot ? '#fff0a0' : '#f4eee0';
+      ctx.fillRect(rx - 46, ry - 52, 92, 104);
+      const bob = landed ? 0 : Math.sin(time * 40 + r) * 6;
+      const pop = hot ? 1 + 0.08 * Math.sin(time * 10) : 1;
+      drawSprite(ctx, SLOT_ART[sym].id, rx, ry + bob, SLOT_ART[sym].scale * pop, { alpha: !pull ? 0.5 : 1 });
+      // Each reel's landing thunk, once.
+      const key = `${k}:${r}`;
+      if (pull && landed && !this.encFired.has(key) && !this.encSkip) {
+        this.encFired.add(key);
+        this.sounds.reelStop(r % 3);
+      }
+    }
+    // The payline across the window.
+    ctx.fillStyle = 'rgba(255,90,74,0.6)';
+    ctx.fillRect(x0 + 16, y0 + 120 - 1, 568, 3);
+    // Below the reels: the paytable before you buy; this pull's wins as they come; the totals at the end.
+    if (!res) {
+      drawText(ctx, 'EVERY CHIP PAYS A CHIP.   3 OR MORE ANYWHERE ON THE LINE:', CX, y0 + 202, 1.5, COLORS.textDim);
+      const pay: [SlotSym, string][] = [['heart', 'HP'], ['star', 'AN UPGRADE'], ['relic', 'A RELIC']];
+      pay.forEach(([sym, label], i) => {
+        const px = CX + (i - 1) * 190;
+        drawSprite(ctx, SLOT_ART[sym].id, px - 54, y0 + 228, SLOT_ART[sym].scale * 0.45);
+        drawText(ctx, label, px - 34, y0 + 228, 2, COLORS.goldLight, { align: 'left' });
+      });
+    } else if (!done && pull && local > 0.75) {
+      const line = pull.wins.join('  ') || 'NOTHING';
+      drawText(ctx, line, CX, y0 + 218, 2.5, pull.wins.length ? COLORS.goldLight : '#6a6078', { punch: 1 + 0.06 * Math.max(0, 1 - (local - 0.75) * 4) });
+      const key = `${k}:win`;
+      if (!this.encFired.has(key) && !this.encSkip) {
+        this.encFired.add(key);
+        if (pull.wins.length) this.sounds.coin(4 + (k % 6));
+      }
+    }
+    if (done && res) {
+      const gains = res.gains ?? [];
+      drawText(ctx, res.title, CX, y0 + 300, 4, gains.length ? COLORS.goldLight : '#ff8a7a', { punch: 1 + 0.03 * Math.sin(time * 6) });
+      gains.forEach((g, i) => drawText(ctx, g, CX, y0 + 346 + i * 26, 2.5, COLORS.goldLight));
+      if (!this.encFired.has('end')) {
+        this.encFired.add('end');
+        if (gains.some((g) => !g.endsWith('CHIPS') && !g.endsWith('HP'))) this.sounds.fanfareJackpot();
+        else this.encOutcomeSound(res);
+        this.buttons = [this.btn('CONTINUE', CX, 650, 300, 52, () => this.cb.onEncounterDone())];
+      }
+    }
   }
 
   private drawCabinets(ctx: CanvasRenderingContext2D, time: number): void {

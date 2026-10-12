@@ -8,7 +8,14 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
    - **Built (2026-10-12):** paths of stops, elites that hit harder and pay relics in every act, Cashier and
      encounter stops, the CHOOSE YOUR PATH screen, the encounter screen. SIDE BETS, the GROUNDER and normal
      enemies' permanent rocks are gone. See GAME.md.
-   - **Next:** the user's encounter set replaces the 3 placeholders (and needs art); the roster audit below; play it.
+   - **Encounters, agreed 2026-10-12:** gold "?" on the map; buy-in tiers where a bigger buy-in buys more plays;
+     mostly chips (70-80%), sometimes upgrades or relics; each game may pay its own prize type; staked relics are
+     picked by the house (tooltip shown); encounters about as good as elites, elites slightly ahead (more risk);
+     every game has SKIP. Done: THE PRIZE SLOT. To build, each with its own art:
+     ROULETTE (red/black, adjustable chip bet), HIGHER OR LOWER, BLACKJACK (hit/stand only; a bigger buy-in buys
+     more hands; pays upgrades), DICE, then the offers: THE BLOOD BANK done properly, a PAWN SHOP, a LOAN SHARK.
+     Then path shapes with 2-3 encounters.
+   - **Next:** the encounters above; the roster audit below; play it.
      Open questions to settle while playing: should elites keep the +2 chips; is the post-fight heal too generous now
      that elites carry the risk; should a path have a crossing point mid-act.
    - **Stops:** FIGHT (a draft and chips), ELITE (a relic pick), CASHIER (spend chips), ENCOUNTER (a non-fight

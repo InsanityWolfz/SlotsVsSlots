@@ -6,13 +6,12 @@
 import type { Enh, RelicId, SymbolId } from '../core/config';
 import { CABINETS } from '../core/cabinets';
 import { DANGER, type Stop } from '../core/enemies';
-import { encounterOf } from '../core/encounters';
 import type { Rng } from '../core/rng';
 import {
   buy,
   chooseRoute,
   CHIPS,
-  currentStop,
+  encounterChoices,
   isBossNext,
   isEncounterNow,
   isShopNow,
@@ -305,8 +304,7 @@ export function pickRoute(run: RunState, policy: DraftPolicy, rng: Rng): number 
 
 /** Encounter policy: random plays any open choice; greedy gambles when healthy and walks away when hurt. */
 export function pickEncounter(run: RunState, policy: DraftPolicy, rng: Rng): number {
-  const st = currentStop(run);
-  const choices = encounterOf(st?.encounter).choices(run);
+  const choices = encounterChoices(run);
   const open = choices.map((c, i) => (c.disabled ? -1 : i)).filter((i) => i >= 0);
   if (policy === 'random') return open.length ? rng.pick(open) : choices.length - 1;
   return !choices[0]?.disabled && run.player.hp / run.player.maxHp > 0.5 ? 0 : choices.length - 1;

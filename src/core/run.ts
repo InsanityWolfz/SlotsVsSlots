@@ -20,7 +20,7 @@ import {
   type Enabler,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
-import { encounterOf, encounterRng, type EncounterResult } from './encounters';
+import { encounterOf, encounterRng, type EncounterChoice, type EncounterResult } from './encounters';
 import { BIG_CAP, CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { dailyEdge, dailyFightSeed } from './daily';
@@ -575,11 +575,25 @@ export function playEncounter(run: RunState, i: number): EncounterResult | null 
   const st = currentStop(run);
   if (!isEncounterNow(run) || !st) return null;
   const relics = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r));
-  const result = encounterOf(st.encounter).play(run, i, encounterRng(run), relics);
+  // An upgrade: a level for a symbol or Charm you own (the same cards the drafts deal), picked from the stop's stream.
+  const upRng = encounterRng(run).fork().fork();
+  const upgrade = (): string | null => {
+    const opts = levelOptions(run);
+    if (!opts.length) return null;
+    const o = upRng.pick(opts);
+    applyOption(run, o, false);
+    return describeOption(o, run).title;
+  };
+  const result = encounterOf(st.encounter).play(run, i, encounterRng(run), { relics, upgrade });
   (run.encounters ??= []).push({ act: run.act, id: st.encounter ?? '?', choice: i, good: result.good });
   passStop(run);
   return result;
 }
+/** The encounter at this stop's choices (its buy-in cards), as the screen and the bot see them. */
+export const encounterChoices = (run: RunState): EncounterChoice[] => {
+  const st = currentStop(run);
+  return st?.kind === 'encounter' ? encounterOf(st.encounter).choices(run, encounterRng(run)) : [];
+};
 /** Leave a non-fight stop (a Cashier on the route, or an encounter): on to the next stop. */
 export function passStop(run: RunState): void {
   const st = currentStop(run);
