@@ -177,8 +177,6 @@ export type RelicId =
   | 'armoredcar'
   // KNIGHT's multiplier relic (2026-10-12).
   | 'greatsword'
-  // THE JUKEBOX's healing relic (2026-10-12).
-  | 'slowjam'
   | 'safedeposit';
 
 /** The fight rules a BIG CHOICE can add (the player's side only; set on the run, passed to every fight). */
