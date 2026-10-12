@@ -85,6 +85,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   turntable: { id: 'turntable', name: 'TURNTABLE', text: 'AFTER THE DROP, THE VOLUME FALLS TO 5, NOT 3', sprite: 'relicTurntable', machine: 'jukebox' },
   mixtape: { id: 'mixtape', name: 'MIXTAPE', text: 'THE RECORD NEVER SKIPS: A SPIN WITH NO NOTE KEEPS THE VOLUME', sprite: 'relicMixtape', machine: 'jukebox' },
   // KNIGHT has no meter, so this is its multiplier (2026-10-12: KNIGHT had the lowest multiplier of any machine).
+  slowjam: { id: 'slowjam', name: 'SLOW JAM', text: 'EACH NOTE ON YOUR PAYLINE HEALS 3 HP', sprite: 'relicSlowJam', machine: 'jukebox' },
   greatsword: { id: 'greatsword', name: 'GREATSWORD', text: 'YOUR SWORDS PAY X1.5', sprite: 'relicGreatsword', machine: 'knight' },
   // CASH CASSIDY's shield build (user, 2026-10-12): relics that scale with the shield you hold.
   armoredcar: { id: 'armoredcar', name: 'ARMORED CAR', text: 'HIGH ROLLER COUNTS 1 CHIP PER 5 SHIELD YOU GAIN THAT SPIN', sprite: 'relicArmoredCar', machine: 'midas' },
@@ -143,6 +144,8 @@ export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overchar
 export const NEW_RELIC = {
   /** GREATSWORD (KNIGHT): sword groups pay this much more. */
   greatswordMul: 1.5,
+  /** SLOW JAM (THE JUKEBOX): each note on your payline heals this much. */
+  slowjamHeal: 3,
   /** ARMORED CAR: this much shield counts as one chip for HIGH ROLLER. */
   armoredShield: UNIT / 2,
   /** SAFE DEPOSIT: your first chip hit each spin also deals this many times this spin's shield. */
@@ -204,7 +207,7 @@ export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
   common: ['clover', 'battery', 'fang', 'bandage', 'firstblood', 'piggy', 'trophy', 'bash', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar'],
-  uncommon: ['greatsword', 'armoredcar', 'safedeposit', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'faraday', 'static', 'capbells', 'horseshoe', 'underdog', 'holywater', 'belt', 'bracelet', 'coil', 'rainmaker', 'slushfund', 'loosechange', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer'],
+  uncommon: ['slowjam', 'greatsword', 'armoredcar', 'safedeposit', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'vault', 'faraday', 'static', 'capbells', 'horseshoe', 'underdog', 'holywater', 'belt', 'bracelet', 'coil', 'rainmaker', 'slushfund', 'loosechange', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
 };
 

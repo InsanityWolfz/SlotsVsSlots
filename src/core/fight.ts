@@ -1424,6 +1424,13 @@ export class Fight {
 
   /** THE JUKEBOX, after a spin: THE DROP plays out, or the volume goes up (notes) or skips down (no note). */
   private volumeAfterSpin(me: Combatant, line: SymbolId[], score: LineScore, events: CombatEvent[]): void {
+    // SLOW JAM: every note on the payline heals.
+    const notesOn = line.filter((s) => s === 'note').length;
+    if (notesOn && me.relics.has('slowjam')) {
+      events.push({ type: 'relic', side: me.side, relic: 'slowjam' });
+      this.heal(me, notesOn * NEW_RELIC.slowjamHeal, 'slowjam', events);
+      if (this.over) return;
+    }
     if (this.dropNow) {
       // THE DROP hit with the note group (score); the off-payline vamp heals now.
       const vamp = this.dropOff?.vamp ?? 0;

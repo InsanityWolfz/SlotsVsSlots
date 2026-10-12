@@ -1,4 +1,4 @@
-import { UNIT, type Enh, type Gild, type Levels, type StripCounts, type SymbolId } from './config';
+import { UNIT, type Gild, type Levels, type StripCounts, type SymbolId } from './config';
 
 export type CabinetId = 'knight' | 'midas' | 'tesla' | 'joker' | 'jukebox';
 
@@ -41,8 +41,6 @@ export interface Cabinet {
   hp: number;
   strips: StripCounts[];
   gilded: Gild[];
-  /** Gild offers lean toward this enhancement. */
-  favors: Enh | null;
   /** Rule text for the pick card. */
   rule: string;
   /** How to unlock it (shown while locked). */
@@ -83,7 +81,6 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     // FORGED STEEL: half swords, half shields; swords start at level 3, shields at 2 (2026-10-12: honest HP).
     strips: r3({ sword: 6, shield: 6 }),
     gilded: [],
-    favors: null,
     meter: null,
     symbols: ['sword', 'shield'],
     attack: 'sword',
@@ -105,7 +102,6 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     strips: r3({ shield: 6, goldbar: 6 }),
     // No gold-sword start (a leftover from MIDAS): 8 more chips instead (user playtest).
     gilded: [],
-    favors: 'gold',
     meter: { kind: 'vault', symbol: 'goldbar', cost: 10 * UNIT, heal: 2 * UNIT },
     startChips: 24,
     symbols: ['goldbar', 'shield'],
@@ -125,7 +121,6 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     // No swords (2026-10-07): bolts are TESLA's weapon, and their damage is the lightning.
     strips: r3({ shield: 6, bolt: 6 }),
     gilded: [{ reel: 0, symbol: 'bolt', enh: 'charged', n: 4 }],
-    favors: 'charged',
     // Heal per strike 20 -> 5: with 6 bolts a reel lightning fires far more often, and 20 a strike made TESLA unkillable (94% WHITE).
     meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: UNIT / 2 },
     symbols: ['bolt', 'shield'],
@@ -148,7 +143,6 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     // Cards, not swords (2026-10-07): JAX throws playing cards. They hit like swords.
     strips: r3({ ace: 5, shield: 5, wild: 2 }),
     gilded: [],
-    favors: 'lucky',
     meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 3 * UNIT, perWild: 2 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
@@ -167,7 +161,6 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     // Replaces BRIAR (user, 2026-10-08): notes and shields. NOTES turn up the volume; at the max the beat drops.
     strips: r3({ note: 6, shield: 6 }),
     gilded: [],
-    favors: 'echo',
     meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 2 * UNIT },
     symbols: ['note', 'shield'],
     attack: 'note',

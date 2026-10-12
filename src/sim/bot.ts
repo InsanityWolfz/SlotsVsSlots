@@ -40,6 +40,7 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   subwoofer: 7,
   armoredcar: 4,
   greatsword: 8,
+  slowjam: 7,
   safedeposit: 4,
   hotstreak: 6,
   belt: 6,

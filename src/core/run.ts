@@ -1154,11 +1154,11 @@ export function draftOffers(run: RunState): DraftOption[] {
       const own = charmOptions(run, n, [rng.pick(p.gilded).enh]).filter((o) => !taken(o));
       if (own.length) return rng.pick(own);
     }
-    const favored = CABINETS[run.cabinet].favors;
+    // Every Charm your machine can take is equally likely (2026-10-12, user: no machine leans to one Charm).
     const pool = gildsFor(run);
     // Act 2: the new charms show up half the time.
     const act2 = pool.filter((e) => ACT2_GILDS.includes(e));
-    const enh = favored && pool.includes(favored) && rng.next() < 0.5 ? favored : act2.length && rng.next() < 0.5 ? rng.pick(act2) : rng.pick(pool.filter((e) => !ACT2_GILDS.includes(e)));
+    const enh = act2.length && rng.next() < 0.5 ? rng.pick(act2) : rng.pick(pool.filter((e) => !ACT2_GILDS.includes(e)));
     const options = charmOptions(run, n, [enh]).filter((o) => !taken(o));
     return options.length ? rng.pick(options) : null;
   };
@@ -1313,8 +1313,7 @@ export function shopOffers(run: RunState): ShopItem[] {
   };
   const gildOptions = charmOptions(run, RUN.charmCellsShop).filter((o) => !prev.has(JSON.stringify(o)));
   // Prefer extending what you already own, so builds can be finished on purpose.
-  const favored = CABINETS[run.cabinet].favors;
-  const extend = gildOptions.filter((o) => o.kind === 'gild' && (p.gilded.some((g) => g.enh === o.enh) || o.enh === favored));
+  const extend = gildOptions.filter((o) => o.kind === 'gild' && p.gilded.some((g) => g.enh === o.enh));
   const levels = levelOptions(run);
   if (levels.length && rng.next() < 0.5) add(rng.pick(levels), P.level);
   else add(extend.length ? rng.pick(extend) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
