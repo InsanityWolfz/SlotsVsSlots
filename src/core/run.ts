@@ -303,7 +303,7 @@ export interface RunState {
   /** Plays already made at the current encounter stop (RED OR BLACK's spins). */
   encounterPlays?: number;
   /** A game in progress at this stop (HIGHER OR LOWER's showing card, bet and right calls). */
-  encounterState?: Record<string, number>;
+  encounterState?: Record<string, number | number[]>;
   /** Encounters played this run (what was chosen, how it went): for the run log and the sim. */
   encounters?: { act: number; id: string; choice: number; good: boolean | null }[];
 }

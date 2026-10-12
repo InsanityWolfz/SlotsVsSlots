@@ -16,9 +16,9 @@ balance; a boss may be up to ~10% easier or harder on one machine than another.
    - **Encounters, agreed 2026-10-12:** gold "?" on the map; buy-in tiers where a bigger buy-in buys more plays;
      mostly chips (70-80%), sometimes upgrades or relics; each game may pay its own prize type; staked relics are
      picked by the house (tooltip shown); encounters about as good as elites, elites slightly ahead (more risk);
-     every game has SKIP. Done: LUCKY SEVENS (with its art), RED OR BLACK (roulette), HIGHER OR LOWER. Possible later: more paylines if
-     the slot needs it. To build, each with its own art: BLACKJACK (hit/stand only; a bigger buy-in buys
-     more hands; pays upgrades), DICE, then the offers: THE BLOOD BANK done properly, a PAWN SHOP, a LOAN SHARK.
+     every game has SKIP. Done: LUCKY SEVENS (with its art), RED OR BLACK (roulette), HIGHER OR LOWER, TWENTY-ONE
+     (blackjack). Possible later: more paylines if the slot needs it. To build: DICE, then the offers: THE BLOOD BANK
+     done properly, a PAWN SHOP, a LOAN SHARK.
      Then path shapes with 2-3 encounters.
    - **Next:** the encounters above; the roster audit below; play it.
      Open questions to settle while playing: should elites keep the +2 chips; is the post-fight heal too generous now

@@ -5,7 +5,7 @@ import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../cor
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, WHEEL_RULES, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
-import { encounterOf, HILO, hiloMax, hiloPot, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
+import { bjState, bjTotal, BJ, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -149,9 +149,9 @@ function drawSuit(ctx: CanvasRenderingContext2D, suit: number, x: number, y: num
   SUITS[suit].forEach((row, r) => [...row].forEach((ch, c) => ch === 'X' && ctx.fillRect(Math.round(x + (c - 2.5) * px), Math.round(y + (r - 2.5) * px), px, px)));
 }
 /** A playing card (rank 2-14; 0 = its back), `sx` its width scale (for the flip). The suit follows the rank (cosmetic). */
-function drawPlayingCard(ctx: CanvasRenderingContext2D, x: number, y: number, rank: number, sx: number): void {
-  const w = 112 * Math.max(0.04, sx);
-  const h = 156;
+function drawPlayingCard(ctx: CanvasRenderingContext2D, x: number, y: number, rank: number, sx: number, k = 1): void {
+  const w = 112 * k * Math.max(0.04, sx);
+  const h = 156 * k;
   ctx.fillStyle = COLORS.outline;
   ctx.fillRect(x - w / 2 - 3, y - h / 2 - 3, w + 6, h + 6);
   if (!rank) {
@@ -161,7 +161,7 @@ function drawPlayingCard(ctx: CanvasRenderingContext2D, x: number, y: number, ra
     ctx.fillStyle = COLORS.gold;
     ctx.fillRect(x - w / 2 + 6, y - h / 2 + 6, Math.max(0, w - 12), 2);
     ctx.fillRect(x - w / 2 + 6, y + h / 2 - 8, Math.max(0, w - 12), 2);
-    for (let k = -3; k <= 3 && sx > 0.3; k++) ctx.fillRect(x + k * 12 * sx - 1, y - h / 2 + 12, 2, h - 24);
+    for (let j = -3; j <= 3 && sx > 0.3; j++) ctx.fillRect(x + j * 12 * k * sx - 1, y - h / 2 + 12, 2, h - 24);
     return;
   }
   ctx.fillStyle = '#f4eee0';
@@ -171,8 +171,9 @@ function drawPlayingCard(ctx: CanvasRenderingContext2D, x: number, y: number, ra
   const col = suit < 2 ? '#e8374b' : '#1a1426';
   ctx.save();
   ctx.translate(x, y);
-  ctx.scale(sx, 1);
-  drawText(ctx, RANK(rank), -38, -56, 3, col);
+  ctx.scale(sx * k, k);
+  // (Outlined in the card's own colour: the usual dark outline swallowed the black ranks.)
+  drawText(ctx, RANK(rank), -38, -56, 3, col, { outline: '#f4eee0' });
   drawSuit(ctx, suit, -38, -30, 3);
   drawSuit(ctx, suit, 10, 16, 8);
   ctx.restore();
@@ -411,6 +412,11 @@ export class RunScreens {
   private hlNext = 0;
   private hlFlip = 0;
   private hlMsg: EncounterResult | null = null;
+  /** TWENTY-ONE: a finished hand on show (the dealer's cards turn one by one), how many of them are up, its word. */
+  private bjShow: NonNullable<EncounterResult['hand']> | null = null;
+  private bjDealerUp = 0;
+  private bjMsg: EncounterResult | null = null;
+  private bjWon: string[] = [];
   /** Shop purchases in flight to YOUR BUILD. */
   private flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   private picked = -1;
@@ -1355,15 +1361,21 @@ export class RunScreens {
     this.encLanded = 0;
     this.encDone = false;
     this.slotWin = null;
-    if (this.encId === 'slot' || this.encId === 'roulette' || this.encId === 'hilo') {
+    if (this.encId === 'slot' || this.encId === 'roulette' || this.encId === 'hilo' || this.encId === 'bj') {
       // The game's own clock follows the screens' (so it runs at their pace, and SKIP touches nothing else).
       this.slotClock = new Clock();
       this.ui.add({ update: (dt) => (this.slotClock.tick(dt), this.mode !== 'encounter'), finish: () => {} });
     }
     if (this.encId === 'slot') this.slotReels = SLOT_STRIPS.map((strip, r) => new ReelView(strip.map(slotCell), (r * 5) % strip.length));
     if (this.encId === 'roulette') return this.rouletteButtons();
+    if (this.encId === 'bj') {
+      this.bjShow = null;
+      this.bjMsg = null;
+      this.bjWon = [];
+      if (bjState(run)) return this.bjButtons();
+    }
     if (this.encId === 'hilo') {
-      this.hlCard = run.encounterState?.card ?? 0;
+      this.hlCard = hiloState(run)?.card ?? 0;
       this.hlNext = 0;
       this.hlFlip = 0;
       this.hlMsg = null;
@@ -1393,6 +1405,7 @@ export class RunScreens {
   private playEncounter(i: number): void {
     if (this.encId === 'roulette') return this.playRoulette(i);
     if (this.encId === 'hilo') return this.playHilo(i);
+    if (this.encId === 'bj') return this.playBj(i);
     const res = this.cb.onEncounter(i);
     if (!res) return;
     this.encResult = res;
@@ -1493,11 +1506,71 @@ export class RunScreens {
     return [-5, -1, 1, 5].map((d, k) => this.minorBtn(d > 0 ? `+${d}` : `${d}`, RL.betX + (k - 1.5) * 66, 262, 58, 42, () => step(d)));
   }
 
+  /** TWENTY-ONE mid-hand: HIT and STAND. */
+  private bjButtons(): void {
+    this.encChoices = encounterChoices(this.run!);
+    const hit = this.btn('HIT', RL.betX, 300, 260, 56, () => this.playBj(0));
+    hit.enabled = !this.encChoices[0]?.disabled;
+    const stand = this.btn('STAND', RL.betX, 368, 260, 56, () => this.playBj(1));
+    stand.tint = '#2a2234';
+    this.buttons = [hit, stand];
+  }
+
+  /** A TWENTY-ONE move: the buy-in (the first hand is dealt), a hit, or a stand. A finished hand stays up while the
+   * dealer's cards turn one by one, then its word; then the next hand, or CONTINUE. */
+  private playBj(i: number): void {
+    const res = this.cb.onEncounter(i);
+    if (!res) return;
+    const done = () => {
+      if (this.mode !== 'encounter') return;
+      if (res.more) {
+        this.bjShow = null;
+        this.bjMsg = null;
+        this.bjButtons();
+      } else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+    };
+    if (!res.hand) {
+      if (res.more) {
+        this.sounds.turnCard(true);
+        this.bjButtons();
+      } else {
+        // Walked away.
+        this.bjMsg = res;
+        this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+      }
+      return;
+    }
+    const hand = res.hand;
+    this.bjShow = hand;
+    this.bjMsg = null;
+    this.bjDealerUp = 1;
+    this.buttons = [];
+    let chain: Promise<void> = this.slotClock.wait(0.3);
+    for (let k = 1; k < hand.d.length && hand.outcome !== 'bust' && hand.outcome !== 'natural'; k++)
+      chain = chain.then(() => {
+        this.bjDealerUp = k + 1;
+        this.sounds.turnCard(false);
+        return this.slotClock.wait(0.4);
+      });
+    void chain
+      .then(() => {
+        this.bjDealerUp = hand.d.length;
+        this.bjMsg = res;
+        this.bjWon.push(...(res.gains ?? []));
+        if (res.good) {
+          this.sounds.lucky();
+          this.sounds.coin(8);
+        } else this.sounds.fizzle();
+        return this.slotClock.wait(res.more ? 1.2 : 0);
+      })
+      .then(done);
+  }
+
   /** HIGHER OR LOWER's buttons: sitting down (the bet, DEAL, WALK AWAY), or mid-hand (HIGHER, LOWER, CASH OUT). */
   private hiloButtons(): void {
     const run = this.run!;
     this.encChoices = encounterChoices(run);
-    const st = run.encounterState;
+    const st = hiloState(run);
     if (!st) {
       const max = hiloMax(run);
       this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
@@ -1520,7 +1593,7 @@ export class RunScreens {
 
   /** A HIGHER OR LOWER move: deal (the card slides in), a call (the next card turns over), or cashing out. */
   private playHilo(i: number): void {
-    const before = this.run?.encounterState;
+    const before = this.run && hiloState(this.run);
     const res = this.cb.onEncounter(i, this.rlBet);
     if (!res) return;
     const done = () => {
@@ -2601,6 +2674,7 @@ export class RunScreens {
     if (def.id === 'slot') this.drawSlotMachine(ctx, time);
     else if (def.id === 'roulette') this.drawRoulette(ctx, time);
     else if (def.id === 'hilo') this.drawHilo(ctx, time);
+    else if (def.id === 'bj') this.drawBj(ctx, time);
     else {
       this.panel(ctx, CX - 330, 120, 660, 300, '#7a3aa8');
       if (!res) {
@@ -2655,18 +2729,58 @@ export class RunScreens {
   }
 
   /** The casino felt both card and wheel games sit on. */
-  private felt(ctx: CanvasRenderingContext2D): void {
-    this.panel(ctx, CX - 430, 104, 860, 440, COLORS.gold);
+  private felt(ctx: CanvasRenderingContext2D, h = 440): void {
+    this.panel(ctx, CX - 430, 104, 860, h, COLORS.gold);
     ctx.fillStyle = '#0e3a20';
-    ctx.fillRect(CX - 430, 104, 860, 440);
+    ctx.fillRect(CX - 430, 104, 860, h);
     ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    for (let y = 104; y < 544; y += 8) ctx.fillRect(CX - 430, y, 860, 2);
+    for (let y = 104; y < 104 + h; y += 8) ctx.fillRect(CX - 430, y, 860, 2);
+  }
+
+  /** TWENTY-ONE: the dealer's row and yours with their totals, which hand this is, what you've won. Before the buy-in:
+   * the house rules and the pay cards. */
+  private drawBj(ctx: CanvasRenderingContext2D, time: number): void {
+    const run = this.run!;
+    const st = bjState(run);
+    const show = this.bjShow;
+    const inPlay = !!st || !!show;
+    this.felt(ctx, inPlay || this.bjMsg ? 440 : 340);
+    if (!inPlay) {
+      // The table before you buy in: two face-down cards and the house rules.
+      drawPlayingCard(ctx, CX - 40, 250, 0, 1, 0.8);
+      drawPlayingCard(ctx, CX + 40, 250, 0, 1, 0.8);
+      drawText(ctx, 'WIN A HAND: AN UPGRADE.   21 OFF THE DEAL: TWO.', CX, 370, 2, COLORS.goldLight);
+      drawText(ctx, `THE DEALER STANDS ON ${BJ.standOn}. A TIE GOES TO THE DEALER.`, CX, 400, 1.5, COLORS.textDim);
+      if (this.bjMsg) drawText(ctx, this.bjMsg.title, CX, 470, 3, COLORS.text);
+      return;
+    }
+    const p = show ? show.p : st!.p;
+    const d = show ? show.d.slice(0, this.bjDealerUp) : st!.d;
+    const x0 = CX - 340;
+    const row = (cards: number[], y: number, label: string, hidden: boolean) => {
+      cards.forEach((c, k) => drawPlayingCard(ctx, x0 + 50 + k * 70, y, c, 1, 0.75));
+      if (hidden) drawPlayingCard(ctx, x0 + 50 + cards.length * 70, y, 0, 1, 0.75);
+      const t = bjTotal(cards);
+      drawText(ctx, `${label} ${t}`, x0 + 10, y - 76, 2, t > 21 ? '#ff8a7a' : COLORS.text, { align: 'left' });
+    };
+    row(d, 220, 'DEALER', !show);
+    row(p, 420, 'YOU', false);
+    // Right column: which hand, and what you've won so far.
+    const no = show ? show.no : st!.hand;
+    const of = show ? show.of : st!.hands;
+    drawText(ctx, `HAND ${no} OF ${of}`, RL.betX, 150, 2.5, COLORS.goldLight);
+    if (this.bjWon.length) drawText(ctx, `WON: ${this.bjWon.length === 1 ? this.bjWon[0] : `${this.bjWon.length} PRIZES`}`, RL.betX, 190, 1.5, COLORS.textDim);
+    const m = this.bjMsg;
+    if (m && m.title) {
+      drawText(ctx, m.title, RL.betX, 300, 2.5, m.good ? COLORS.goldLight : '#ff8a7a', { punch: 1 + 0.03 * Math.sin(time * 6) });
+      if (m.text) drawText(ctx, m.text, RL.betX, 336, m.text.length > 22 ? 1.5 : 2, COLORS.goldLight);
+    }
   }
 
   /** HIGHER OR LOWER: the card showing, the next one (face down, then turning), the pot ladder, your bet or the pot. */
   private drawHilo(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
-    const st = run.encounterState;
+    const st = hiloState(run);
     this.felt(ctx);
     const cx = CX - 200;
     drawPlayingCard(ctx, cx - 80, 300, this.hlCard, this.hlCard ? 1 : 0);

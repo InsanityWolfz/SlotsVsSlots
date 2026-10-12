@@ -47,6 +47,8 @@ export interface EncounterResult {
   gains?: string[];
   /** RED OR BLACK: the pocket the ball found (0 is the green zero). */
   pocket?: number;
+  /** TWENTY-ONE: the hand that just finished (both sides' cards, how it ended), and which hand of how many it was. */
+  hand?: { p: number[]; d: number[]; outcome: 'win' | 'natural' | 'lose' | 'bust'; no: number; of: number };
   /** HIGHER OR LOWER: the card that was showing, the one just turned, and the pot now. */
   card?: number;
   next?: number;
@@ -262,8 +264,9 @@ const drawCard = (rng: Rng) => 2 + rng.int(13);
 /** The pot after `calls` right calls on a bet. */
 export const hiloPot = (bet: number, calls: number) => Math.floor(bet * HILO.grow ** calls);
 export const hiloMax = (run: RunState) => Math.min(HILO.maxBet, run.player.chips);
-type HiloState = { card: number; bet: number; calls: number };
-const hiloState = (run: RunState): HiloState | null => (run.encounterState?.card ? (run.encounterState as HiloState) : null);
+export type HiloState = { card: number; bet: number; calls: number };
+/** HIGHER OR LOWER's hand in play (null before the deal). */
+export const hiloState = (run: RunState): HiloState | null => (run.encounterState?.card ? (run.encounterState as unknown as HiloState) : null);
 
 const HIGHER_OR_LOWER: EncounterDef = {
   id: 'hilo',
@@ -316,6 +319,119 @@ const HIGHER_OR_LOWER: EncounterDef = {
   },
 };
 
+// ---- TWENTY-ONE (2026-10-12) --------------------------------------------------------------------------------------
+
+/**
+ * TWENTY-ONE: blackjack, kept simple (the user's rules): hit or stand, nothing else (no double, split or push: a tie
+ * goes to the dealer). The dealer stands on 17. Pay for hands: a bigger buy-in buys more of them. Each hand you win
+ * pays an UPGRADE; a natural 21 pays two. Cards are drawn fresh each time (2-14, aces 11 or 1).
+ */
+export const BJ = { low: { chips: 6, hands: 1 }, mid: { hpShare: 0.15, hands: 3 }, high: { hands: 5 }, standOn: 17 };
+/** A hand's best total (aces count 11 unless that busts). */
+export function bjTotal(cards: number[]): number {
+  let t = 0;
+  let aces = 0;
+  for (const c of cards) {
+    if (c === 14) {
+      aces++;
+      t += 11;
+    } else t += Math.min(10, c);
+  }
+  while (t > 21 && aces-- > 0) t -= 10;
+  return t;
+}
+export type BjState = { hands: number; hand: number; won: number; p: number[]; d: number[] };
+/** TWENTY-ONE's hand in play (null before the buy-in). */
+export const bjState = (run: RunState): BjState | null => (run.encounterState && 'hands' in run.encounterState ? (run.encounterState as unknown as BjState) : null);
+const bjHp = (run: RunState) => Math.max(UNIT, Math.round((run.player.maxHp * BJ.mid.hpShare) / UNIT) * UNIT);
+const bjRelic = (run: RunState, rng: Rng): RelicId | null => (run.player.relics.length ? rng.fork().pick(run.player.relics) : null);
+
+/** Settle the hand in play (the dealer draws to 17 first unless you busted), pay it, and deal the next one. */
+function bjSettle(run: RunState, st: BjState, rng: Rng, ctx: EncounterCtx): EncounterResult {
+  const me = bjTotal(st.p);
+  // Any two-card 21 is a natural (the first hand's, or a later one's): it pays two, and the dealer doesn't draw.
+  const natural = st.p.length === 2 && me === 21;
+  const d = [...st.d];
+  if (me <= 21 && !natural) while (bjTotal(d) < BJ.standOn) d.push(drawCard(rng));
+  const dealer = bjTotal(d);
+  const outcome: 'win' | 'natural' | 'lose' | 'bust' = me > 21 ? 'bust' : natural ? 'natural' : dealer > 21 || me > dealer ? 'win' : 'lose';
+  const gains: string[] = [];
+  if (outcome === 'win' || outcome === 'natural') {
+    for (let k = 0; k < (outcome === 'natural' ? 2 : 1); k++) {
+      const up = ctx.upgrade();
+      if (up) gains.push(up);
+      else {
+        run.player.chips += 8;
+        gains.push('+8 CHIPS');
+      }
+    }
+  }
+  const won = st.won + (gains.length ? 1 : 0);
+  const hand = { p: [...st.p], d, outcome, no: st.hand, of: st.hands };
+  const more = st.hand < st.hands;
+  if (more) {
+    // The next hand is dealt now (two for you, one showing for the dealer).
+    const next: BjState = { hands: st.hands, hand: st.hand + 1, won, p: [drawCard(rng), drawCard(rng)], d: [drawCard(rng)] };
+    run.encounterState = next as unknown as Record<string, number | number[]>;
+  } else run.encounterState = undefined;
+  const title = outcome === 'natural' ? 'TWENTY-ONE!' : outcome === 'win' ? (dealer > 21 ? 'DEALER BUSTS!' : 'YOU WIN!') : outcome === 'bust' ? 'BUST' : dealer === me ? 'A TIE: THE DEALER TAKES IT' : 'THE DEALER WINS';
+  return { title, text: gains.join('  '), good: gains.length > 0, hand, gains, more };
+}
+
+const TWENTY_ONE: EncounterDef = {
+  id: 'bj',
+  name: 'TWENTY-ONE',
+  blurb: '',
+  kind: 'game',
+  choices: (run, rng) => {
+    const st = bjState(run);
+    // (On 21 there's nothing to hit for: STAND settles it, a two-card 21 as a natural.)
+    if (st) return [{ label: 'HIT', text: '', disabled: bjTotal(st.p) >= 21 }, { label: 'STAND', text: '' }];
+    const hp = bjHp(run);
+    const relic = bjRelic(run, rng);
+    const hands = (n: number) => `${n} HAND${n > 1 ? 'S' : ''}`;
+    return [
+      { label: 'A', text: '', stake: `${BJ.low.chips} CHIPS`, prize: hands(BJ.low.hands), disabled: run.player.chips < BJ.low.chips },
+      { label: 'B', text: '', stake: `${hp} HP`, prize: hands(BJ.mid.hands), disabled: run.player.hp <= hp },
+      { label: 'C', text: '', stake: relic ? RELICS[relic].name : 'A RELIC', prize: hands(BJ.high.hands), relic: relic ?? undefined, disabled: !relic },
+      WALK,
+    ];
+  },
+  play: (run, i, rng, ctx) => {
+    const p = run.player;
+    const st = bjState(run);
+    if (!st) {
+      let hands = 0;
+      if (i === 0 && p.chips >= BJ.low.chips) {
+        p.chips -= BJ.low.chips;
+        hands = BJ.low.hands;
+      } else if (i === 1 && p.hp > bjHp(run)) {
+        p.hp -= bjHp(run);
+        hands = BJ.mid.hands;
+      } else if (i === 2) {
+        const relic = bjRelic(run, rng);
+        if (!relic) return walked();
+        p.relics = p.relics.filter((r) => r !== relic);
+        hands = BJ.high.hands;
+      }
+      if (!hands) return walked();
+      const first: BjState = { hands, hand: 1, won: 0, p: [drawCard(rng), drawCard(rng)], d: [drawCard(rng)] };
+      run.encounterState = first as unknown as Record<string, number | number[]>;
+      // A natural 21 off the deal pays at once.
+      if (bjTotal(first.p) === 21) return bjSettle(run, first, rng, ctx);
+      return { title: '', text: '', good: null, more: true };
+    }
+    if (i === 0) {
+      // HIT: one more card; 21 stands for you, over 21 is a bust.
+      const next: BjState = { ...st, p: [...st.p, drawCard(rng)] };
+      run.encounterState = next as unknown as Record<string, number | number[]>;
+      if (bjTotal(next.p) >= 21) return bjSettle(run, next, rng, ctx);
+      return { title: '', text: '', good: null, more: true };
+    }
+    return bjSettle(run, st, rng, ctx);
+  },
+};
+
 /** THE BLOOD BANK: sell some HP for chips. */
 const BLOOD_HP = 0.15;
 const BLOOD_CHIPS = 12;
@@ -338,7 +454,7 @@ const BLOOD: EncounterDef = {
 };
 const bloodHp = (run: RunState) => Math.max(UNIT, Math.round((run.player.maxHp * BLOOD_HP) / UNIT) * UNIT);
 
-export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, roulette: RED_OR_BLACK, hilo: HIGHER_OR_LOWER, blood: BLOOD };
+export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, roulette: RED_OR_BLACK, hilo: HIGHER_OR_LOWER, bj: TWENTY_ONE, blood: BLOOD };
 /** What the map deals onto ENCOUNTER stops. */
 export const ENCOUNTER_IDS = Object.keys(ENCOUNTERS);
 

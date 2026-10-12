@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, type RelicId } from '../src/core/config';
-import { ENCOUNTERS, hiloPot, pocketColor, ROULETTE, rouletteMax, SLOT, slotLine, slotRun, SLOT_STRIPS, WHEEL_ORDER } from '../src/core/encounters';
+import { BJ, bjState, bjTotal, ENCOUNTERS, hiloPot, hiloState, pocketColor, ROULETTE, rouletteMax, SLOT, slotLine, slotRun, SLOT_STRIPS, WHEEL_ORDER } from '../src/core/encounters';
 import { Rng } from '../src/core/rng';
 import { chooseRoute, createRun, playEncounter } from '../src/core/run';
 
@@ -159,11 +159,11 @@ describe('HIGHER OR LOWER', () => {
       const dealt = playEncounter(run, 0, 10)!;
       expect(run.player.chips).toBe(30);
       expect(dealt.more).toBe(true);
-      const card = run.encounterState!.card;
+      const card = hiloState(run)!.card;
       const res = playEncounter(run, card <= 8 ? 0 : 1)!;
       const right = card <= 8 ? res.next! > card : res.next! < card;
       expect(res.good).toBe(right);
-      if (right) expect(run.encounterState!.calls).toBe(1);
+      if (right) expect(hiloState(run)!.calls).toBe(1);
       else {
         expect(run.encounterState).toBeUndefined();
         expect(run.player.chips).toBe(30);
@@ -178,7 +178,7 @@ describe('HIGHER OR LOWER', () => {
     for (let seed = 1; seed < 200 && !cashed; seed++) {
       const run = atTable(seed);
       playEncounter(run, 0, 10);
-      const c = run.encounterState!.card;
+      const c = hiloState(run)!.card;
       const r = playEncounter(run, c <= 8 ? 0 : 1)!;
       if (!r.good) continue;
       const stop = run.stop;
@@ -198,8 +198,8 @@ describe('HIGHER OR LOWER', () => {
       const run = atTable(seed);
       run.player.chips = 100;
       playEncounter(run, 0, 10);
-      for (let k = 0; k < 6 && run.encounterState; k++) {
-        const st = run.encounterState;
+      for (let k = 0; k < 6 && hiloState(run); k++) {
+        const st = hiloState(run)!;
         playEncounter(run, st.calls >= 2 ? 2 : st.card <= 8 ? 0 : 1);
       }
       back += run.player.chips - 90;
@@ -207,5 +207,74 @@ describe('HIGHER OR LOWER', () => {
     const ret = back / N / 10;
     expect(ret).toBeGreaterThan(0.85);
     expect(ret).toBeLessThan(1.1);
+  });
+});
+
+describe('TWENTY-ONE', () => {
+  const atTable = (seed = 2) => {
+    const run = createRun(base, seed, 'knight');
+    run.pendingStart = null;
+    run.map.routes[0][0] = { kind: 'encounter', encounter: 'bj' };
+    run.depth = 1;
+    run.stop = 1;
+    chooseRoute(run, 0);
+    run.player.chips = 40;
+    run.player.relics = ['drum', 'chainmail'];
+    return run;
+  };
+  /** Play every hand out, hitting below 17. Returns the results of the finished hands. */
+  const playOut = (run: ReturnType<typeof atTable>) => {
+    const hands = [];
+    for (let guard = 0; guard < 60 && bjState(run); guard++) {
+      const res = playEncounter(run, bjTotal(bjState(run)!.p) < 17 ? 0 : 1)!;
+      if (res.hand) hands.push(res);
+    }
+    return hands;
+  };
+
+  it('totals hands with aces as 11 or 1', () => {
+    expect(bjTotal([14, 13])).toBe(21);
+    expect(bjTotal([14, 14, 9])).toBe(21);
+    expect(bjTotal([14, 9, 5])).toBe(15);
+    expect(bjTotal([10, 12, 5])).toBe(25);
+  });
+
+  it('a buy-in buys hands (more for a bigger one); each hand is dealt, hit or stood, settled', () => {
+    for (const [i, n] of [[0, BJ.low.hands], [1, BJ.mid.hands], [2, BJ.high.hands]] as const) {
+      const run = atTable(i + 3);
+      const first = playEncounter(run, i)!;
+      const hands = [...(first.hand ? [first] : []), ...playOut(run)];
+      expect(hands).toHaveLength(n);
+      expect(hands.map((h) => h.hand!.no)).toEqual(Array.from({ length: n }, (_, k) => k + 1));
+      expect(run.encounterState).toBeUndefined();
+    }
+  });
+
+  it('a hand you win pays an upgrade (a natural 21 two); a tie goes to the dealer; the dealer stands on 17', () => {
+    let seen = { win: 0, natural: 0, tie: 0 };
+    for (let seed = 0; seed < 300; seed++) {
+      const run = atTable(seed);
+      const ups: string[] = [];
+      const first = playEncounter(run, 2)!;
+      for (const h of [...(first.hand ? [first] : []), ...playOut(run)]) {
+        const me = bjTotal(h.hand!.p);
+        const dealer = bjTotal(h.hand!.d);
+        if (h.hand!.outcome === 'natural') {
+          expect(h.gains).toHaveLength(2);
+          seen.natural++;
+        } else if (h.hand!.outcome === 'win') {
+          expect(h.gains).toHaveLength(1);
+          expect(dealer > 21 || me > dealer).toBe(true);
+          seen.win++;
+        } else if (h.hand!.outcome === 'lose') {
+          expect(dealer).toBeGreaterThanOrEqual(BJ.standOn);
+          if (dealer === me) seen.tie++;
+        }
+      }
+      void ups;
+    }
+    expect(seen.win).toBeGreaterThan(0);
+    expect(seen.natural).toBeGreaterThan(0);
+    expect(seen.tie).toBeGreaterThan(0);
   });
 });
