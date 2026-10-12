@@ -253,12 +253,7 @@ export const WHEEL_CHIP: Record<string, number> = { knight: 1, tesla: 1, jukebox
 /** What one chip hits for at NO MORE BETS, as a share of your max HP. */
 export const wheelChipShare = (cabinet: string | undefined, endless = false): number =>
   (endless ? WHEEL_RULES.endlessChip : WHEEL_RULES.perChip) * (WHEEL_CHIP[cabinet ?? ''] ?? 1);
-/**
- * Act 3 boss (BOSS_REDESIGN 3). FIRST HAND: every 3 turns it deals RAISE (its next hit and your next paying group x2)
- * or DEUCE (your best reel's payline cell pays nothing next spin). At half HP (the hit that gets it there stops there
- * that turn) it plays its FINAL HAND: ALL IN, RAISE, ALL IN... every 2 turns. ALL IN: its whole visible hand,
- * 25-40% of your max HP, through shields.
- */
+/** Act 3 boss: three hands, each with its own HP bar (fight.ts DEALER_RULES). */
 export const DEALER: Archetype = {
   id: 'dealer',
   name: 'THE DEALER',
@@ -268,7 +263,7 @@ export const DEALER: Archetype = {
   hpMul: 1,
   ability: { kind: 'deal', every: 3, power: 0 },
   minDepth: 3,
-  blurb: 'DEALS RAISE AND DEUCE. AT HALF HP IT PLAYS ITS FINAL HAND: ALL IN.',
+  blurb: 'THREE HANDS, THREE HP BARS. EACH HAND IS HARDER: BUST, RAISE, ALL IN.',
   acts: [3],
 };
 export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: WHEEL, 3: DEALER };

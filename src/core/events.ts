@@ -10,10 +10,9 @@ import type { CellRef } from './strip';
 export type VoucherKind = 'wheel' | 'rush';
 
 /** The Dealer's face-up cards. */
-/** The Dealer's cards: RAISE, DEUCE ('card'), ALL IN. */
-export type DealCard = 'raise' | 'card' | 'allin';
+export type DealCard = 'card' | 'allin';
 /** A card the Dealer lays face-up on one of your payline cells for your next spin. */
-export type LineCard = 'deuce';
+export type LineCard = 'bust';
 
 export type HealSource = RelicId | 'special' | 'vamp' | 'drain' | 'ability' | 'payoff';
 
@@ -108,9 +107,9 @@ export type CombatEvent =
   /** A bonus voucher was banked: it pays out if you win this fight. */
   | { type: 'voucher'; side: SideId; kind: VoucherKind }
   /** The Dealer shows the card it will deal next (telegraph). */
-  | { type: 'dealNext'; side: SideId; card: DealCard; then?: DealCard[] }
-  /** The Dealer at half HP: its FINAL HAND (ALL IN, RAISE, ALL IN... every `every` turns). */
-  | { type: 'finalHand'; side: SideId; cards: DealCard[]; every: number }
+  | { type: 'dealNext'; side: SideId; card: DealCard }
+  /** THE DEALER started its next hand (a new HP bar): 2 RAISE, 3 ALL IN. */
+  | { type: 'dealerHand'; side: SideId; hand: number; hp: number; every: number }
   /** The Dealer lays a card on one of YOUR payline cells (it applies to your next spin). */
   | { type: 'lineCard'; side: SideId; reel: number; card: LineCard }
   /** A laid card resolved on your spin (it's then taken back). */
@@ -130,7 +129,6 @@ export type CombatEvent =
   /** ALL IN: the Dealer throws its whole visible hand at you. */
   | { type: 'allInHit'; from: SideId; to: SideId; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number }
   /** RAISE: the Dealer's next hit and your next paying group are doubled. */
-  | { type: 'raise'; from: SideId }
   /** Hexed reels pay half for `turns` of their owner's turns. */
   | { type: 'hex'; from: SideId; to: SideId; reels: number[]; targets: number[]; turns: number }
   /** Bombs stuck onto the target's cells. */

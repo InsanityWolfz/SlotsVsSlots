@@ -101,34 +101,29 @@ describe('ACT 3: enemies', () => {
 });
 
 describe('THE DEALER', () => {
-  it('telegraphs its first card; the hit that reaches half HP stops there and opens its FINAL HAND on ALL IN', () => {
+  it('telegraphs its first card; its first hand has a share of its HP', () => {
     const f = fight((c) => {
       dealerCfg(c);
       c.player.strips = reels3({ sword: 12 });
     });
-    f.sides.enemy.hp = f.sides.enemy.maxHp / 2 + 20;
+    expect(f.sides.enemy.maxHp).toBeLessThan(100);
     f.forceNext('player', ['sword', 'sword', 'sword']);
-    const { events } = f.step();
-    expect(ofType(events, 'dealNext')[0]).toBeTruthy();
-    expect(ofType(events, 'finalHand').length).toBe(1);
-    expect(f.nextDeal).toBe('allin');
-    expect(f.sides.enemy.hp).toBe(f.sides.enemy.maxHp / 2);
+    expect(ofType(f.step().events, 'dealNext')[0]).toBeTruthy();
+    expect(f.nextDeal).toBe('card');
   });
 
-  it('RAISE doubles its next hit and your next paying group', () => {
+  it('BUST: your best reel pays nothing next spin', () => {
     const f = fight((c) => {
       dealerCfg(c);
       c.enemy!.strips = reels3({ sword: 12 });
       c.player.strips = reels3({ sword: 12 });
     });
-    f.nextDeal = 'raise';
     f.next = 'enemy';
     f.forceNext('enemy', ['sword', 'shield', 'shield']);
-    f.step(); // it swings (1), then deals RAISE
-    expect(f.raiseEnemy && f.raisePlayer).toBe(true);
+    const ev = f.step().events;
+    expect(ofType(ev, 'lineCard')[0]?.card).toBe('bust');
     f.forceNext('player', ['sword', 'sword', 'sword']);
-    const g = ofType(f.step().events, 'spin')[0].score.groups[0];
-    expect(g.notes).toContain('RAISE X2');
-    expect(g.amount).toBe(180);
+    const g = ofType(f.step().events, 'spin')[0].score.groups;
+    expect(g.every((x) => x.reels.length < 3)).toBe(true);
   });
 });

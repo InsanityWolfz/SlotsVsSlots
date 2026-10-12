@@ -3,13 +3,12 @@
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
 **In progress (2026-10-12):** done today (branch only, not on main yet): the new sim, honest HP, no heal after a
-fight, elites really hit harder (bug), the relic feed, BANKROLL's shield relics, machine HP +30%, BANKROLL / TESLA /
-KNIGHT / JOKER tuned. Sim at WHITE: every machine 55-63 (target 60). GREEN is uneven: KNIGHT ~24, JUKEBOX ~20,
-JOKER ~38, TESLA ~42, BANKROLL ~45 (target 36); the gap is the Dealer (KNIGHT / JUKEBOX ~50% vs TESLA / BANKROLL
-~80%): fast killers arrive healthier and end it before it hurts. Tried without effect: enemy shields, act 3's damage
-ramp, JUKEBOX volume, level caps, banning TESLA's / BANKROLL's top big choice. Open question for the user: a visible
-Dealer rule against burst (a TABLE LIMIT) vs slowing TESLA / BANKROLL's late scaling. An expert playtester pass is
-running. Keep going through usage resets.
+fight, elites really hit harder (bug), the relic feed, BANKROLL's shield relics, machine HP +30%, ROD gone, GREATSWORD,
+random Charm offers, and the three-hand Dealer (THE DEAL / RAISE / ALL IN). Sim at GREEN: KNIGHT 29, JUKEBOX 24,
+JOKER 41, TESLA 43, BANKROLL 48 (target 36). Dealer when reached: TESLA 91, BANKROLL 85, JOKER 73, KNIGHT 55,
+JUKEBOX 45. Dealer-side fixes don't close it (tried: lower HP, ALL IN on hand start, ALL IN blocked by shields, BLAZE
+halved, lightning cost up): TESLA clears it in ~3 spins. Next: KNIGHT / JUKEBOX late power up, TESLA / BANKROLL late
+power down, then the Dealer's HP to ~60-65% when reached. Keep going through usage resets.
 
 ## Now, in order
 1. **The run map rework (agreed 2026-10-12).** Why: every human playtester takes the elite at every fork (a free
@@ -54,8 +53,8 @@ running. Keep going through usage resets.
   banner; UNDERDOG's text overflows on the 4-card draft; visited "?" stops get no checkmark; a legendary can show twice
   in one act (legendary pick + Cashier / relic draft); LUCKY SEVENS shows only the last pull's pay, no session total;
   draft clicks during the card animation are dropped silently; flying shield icons hide the shield number; KNIGHT
-  showed SWORD LV5 at GREEN (cap is 4: check ARMS RACE and friends); "PRESS TO CONTINUE" too dim; "CAN NOT" -> "CANNOT".
-- Clarity: HIGH ROLLER isn't explained on BANKROLL's card; RAISE / DEUCE need a gloss; ROUND means two different
+  showed SWORD LV5 at GREEN (cap is 4: check ARMS RACE and friends); "PRESS TO CONTINUE" too dim.
+- Clarity: HIGH ROLLER isn't explained on BANKROLL's card; ROUND means two different
   things; HIGHER OR LOWER doesn't say aces are high; THE LOAN SHARK doesn't say when he collects; ALL IN is shown in
   three places; buying at the Cashier needs a click on the price tag, not the item.
 - Design: strong runs snowball into one-spin fights (BANKROLL's shield build reached 7000 shield); KNIGHT fights drag

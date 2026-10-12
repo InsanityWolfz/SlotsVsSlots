@@ -4,7 +4,7 @@ import { Synth } from './audio/synth';
 import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
 import { TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
-import { allInRange, Fight, highRollerMul } from './core/fight';
+import { allInRange, DEALER_HANDS, Fight, highRollerMul } from './core/fight';
 import { dailyCabinet, dailyKey, dailySeed, dailySpent } from './core/daily';
 import { turnRow, type TurnRow } from './core/log';
 import { RELICS } from './core/relics';
@@ -1868,7 +1868,7 @@ export class Game {
     }
   }
 
-  /** The Dealer's face-up next card and when it lands (FIRST HAND / FINAL HAND over it). */
+  /** The Dealer's face-up next card and the hand it's playing over it. */
   private drawDeal(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
     const e = this.fight.sides.enemy;
     const ab = e.ability;
@@ -1886,21 +1886,16 @@ export class Game {
     ctx.fillRect(x - 101, y - 47, 202, 94);
     drawText(ctx, soon ? 'NEXT TURN!' : `NEXT CARD IN ${left}`, x, y - 32, 2, soon ? '#ff6a5a' : '#c8f0c8', { punch: soon ? 1 + 0.08 * Math.sin(t * 12) : 1 });
     // Three cards, one rule each (BOSS_REDESIGN 3): the art in a column on the left, the text right of it.
-    const card = g.nextDeal ?? 'raise';
-    drawSprite(ctx, artId(card === 'raise' ? 'dealRaise' : card === 'allin' ? 'dealShuffle' : 'dealCut'), x - 76, y + 14, 2.5);
+    const card = g.nextDeal ?? 'card';
+    drawSprite(ctx, artId(card === 'allin' ? 'dealShuffle' : 'dealCut'), x - 76, y + 14, 2.5);
     const hp = this.fight.sides.player.maxHp;
     const range = `${fmtNum(allInRange(hp, 0))} TO ${fmtNum(allInRange(hp, Infinity))}`;
-    const [name, ...rule] = card === 'allin' ? ['ALL IN', range, 'NO SHIELDS'] : card === 'card' ? ['DEUCE', 'BEST REEL', 'PAYS NONE'] : ['RAISE', 'BOTH HITS', 'X2 NEXT'];
+    const [name, ...rule] = card === 'allin' ? ['ALL IN', range, 'NO SHIELDS'] : ['BUST', 'BEST REEL', 'PAYS NONE'];
     drawText(ctx, name, x - 46, y - 6, 3, card === 'allin' ? '#ff6a5a' : '#ffffff', { align: 'left' });
     rule.forEach((l, k) => drawText(ctx, l, x - 46, y + 18 + k * 18, l.length > 10 ? 1.5 : 2, COLORS.text, { align: 'left' }));
-    // Which hand it's playing, over the box; in FINAL HAND, the card after this one under it.
-    drawText(ctx, g.finalHand ? 'FINAL HAND' : 'FIRST HAND', x, y - 44 - 14, 2, g.finalHand ? '#ff6a5a' : '#7dff7a');
-    if (g.finalHand && g.then?.length) {
-      const then = g.then[0] === 'allin' ? 'ALL IN' : 'RAISE';
-      ctx.fillStyle = 'rgba(10,6,18,0.85)';
-      ctx.fillRect(x - 70, y + 60, 140, 22);
-      drawText(ctx, `THEN: ${then}`, x, y + 71, 2, g.then[0] === 'allin' ? '#ff8a7a' : '#ffd23f');
-    }
+    // Which hand it's playing (1-3), over the box.
+    const hand = g.dealerHand ?? 1;
+    drawText(ctx, `HAND ${hand}/3: ${DEALER_HANDS[hand - 1]}`, x, y - 44 - 14, 2, hand >= 2 ? '#ff6a5a' : '#7dff7a');
   }
 
   /** The Dealer's table: green felt behind its machine, and the ALL IN warning over it. */

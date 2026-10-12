@@ -39,6 +39,7 @@ import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import { effectiveAbility, STAKE, STAKES, stakeOf } from '../core/stakes';
 import type { RelicId } from '../core/config';
 import { DANGER } from '../core/enemies';
+import { DEALER_RULES } from '../core/fight';
 import { Clock } from '../present/clock';
 import { backOut, sineOut } from '../present/ease';
 import { ABILITY_UI } from '../present/hud';
@@ -324,7 +325,7 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
     penalty: `HITS FOR ${p}`,
     repo: 'TAKES A CHARM FOR THE FIGHT',
     houseTake: `RAKES YOUR GROUPS FOR ${p} TURNS`,
-    deal: 'DEALS RAISE OR DEUCE',
+    deal: 'DEALS A BUST',
   };
   return what[e.ability.kind] ?? '';
 }
@@ -334,7 +335,7 @@ function abilityText(e: EnemyDef, every: number, run?: RunState): string {
   const ui = ABILITY_UI[e.ability.kind];
   // THE REPO MAN takes on his first turn, then every few.
   if (e.ability.kind === 'repo') return `${ui.label} FROM TURN 1, THEN EVERY ${every}: TAKES ONE OF YOUR CHARMS. YOU GET IT BACK AFTER THE FIGHT`;
-  if (e.ability.kind === 'deal') return `EVERY ${every} TURNS: RAISE OR DEUCE. FINAL HAND AT HALF HP`;
+  if (e.ability.kind === 'deal') return `EVERY ${every} TURNS: BUST. THREE HANDS, EACH HARDER`;
   return `${ui.label} EVERY ${every} TURNS: ${abilityWhat(e, run)}`;
 }
 
@@ -350,7 +351,7 @@ const FRONT_BLURB: Record<string, string> = { dealer: 'THE HOUSE HAS A PARTNER' 
 const BOSS_HEADLINE: Record<string, string> = {
   house: 'JACKPOTS STEAL ITS POT',
   wheel: 'YOUR PAIRS CLEAR ITS BETS',
-  dealer: 'IT CAN NOT KILL YOU BEFORE ITS FIRST DEAL',
+  dealer: 'BEAT ALL THREE HANDS TO WIN',
 };
 
 /** Every BIG CHOICE card looks the same: no tier, no hint which pick is strong or safe. The player decides. */
@@ -2668,7 +2669,7 @@ export class RunScreens {
       y += 2;
       line(
         e.boss === 'dealer'
-          ? 'EVERY 3 TURNS IT DEALS RAISE (BOTH NEXT HITS X2) OR DEUCE (YOUR BEST REEL PAYS NOTHING). AT HALF HP: FINAL HAND, ALL IN AND RAISE EVERY 2 TURNS. ALL IN IS 25-40% OF YOUR MAX HP, THROUGH SHIELDS.'
+          ? `THREE HANDS, EACH WITH ITS OWN HP BAR. HAND 1, THE DEAL: EVERY 3 TURNS IT DEALS A BUST (YOUR BEST REEL'S PAYLINE PAYS NOTHING NEXT SPIN). HAND 2, RAISE: ITS HITS ARE X${DEALER_RULES.raiseMul} AND IT STILL DEALS BUSTS. HAND 3, ALL IN: EVERY 2 TURNS IT HITS FOR ${Math.round(DEALER_RULES.allInFloor*100)}-${Math.round(DEALER_RULES.allInCap*100)}% OF YOUR MAX HP, THROUGH SHIELDS.`
           : e.boss === 'wheel'
           ? `PLACE YOUR BETS: EACH TURN IT DROPS ${run.stake >= STAKE.wheelFast ? WHEEL_RULES.fast : WHEEL_RULES.place} CHIPS ON YOUR REELS. A PAIR CLEARS ITS REELS, A JACKPOT CLEARS THEM ALL (+1 CHIP EACH). NO MORE BETS: EVERY 3RD TURN, EACH CHIP LEFT HITS ${Math.round(wheelChipShare(run.cabinet) * 100)}% OF YOUR MAX HP. ${run.stake >= STAKE.wheelFast ? 'GREEN: IT STARTS FAST.' : 'AT HALF HP THE WHEEL SPINS FASTER: 3 A TURN.'}`
           : `COINS FILL THE POT. EVERY ${this.houseEvery()} TURNS IT SKIMS HALF AT YOU. ANY JACKPOT YOU HIT STEALS THE POT! AT HALF HP IT DOUBLES DOWN: THE POT DOUBLES. FROM TURN ${POT.lastCall}, LAST CALL: IT SKIMS EVERY TURN.${dirty ? ' BLACK: IT BOMBS YOUR PAYLINE.' : ''}`,

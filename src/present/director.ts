@@ -1,6 +1,6 @@
 import { symLabel, UNIT, type Enh, type SideId, type SymbolId } from '../core/config';
 import type { CombatEvent } from '../core/events';
-import { effectText, other, WHEEL_SYMBOLS, wheelCharm, WRITERS, type TurnResult } from '../core/fight';
+import { DEALER_HANDS, DEALER_RULES, effectText, other, WHEEL_SYMBOLS, wheelCharm, WRITERS, type TurnResult } from '../core/fight';
 import type { LineScore } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
@@ -249,21 +249,9 @@ export class Director {
         return this.allInHit(e);
       case 'dealNext':
         this.s.gutter.nextDeal = e.card;
-        this.s.gutter.then = e.then;
         return Promise.resolve();
-      case 'finalHand': {
-        this.s.gutter.finalHand = true;
-        const hud = this.s.huds[e.side];
-        if (hud.ability) {
-          hud.ability = { ...hud.ability, every: e.every };
-          hud.charge = Math.min(hud.charge, e.every - 1);
-        }
-        this.s.sounds.abilityFire();
-        this.s.camera.chromaPulse(0.6);
-        return this.banner('FINAL HAND!', '#ff6a5a', 1.3, 0.5, `IT DEALS EVERY ${e.every} TURNS: ALL IN, RAISE, ALL IN...`, MACHINE_TOP + MACHINE_H / 2, 4);
-      }
-      case 'raise':
-        return this.raise(e);
+      case 'dealerHand':
+        return this.dealerHand(e);
       case 'voucher':
         return this.voucher(e);
     }
@@ -280,7 +268,7 @@ export class Director {
     m.lineCard = { reel: e.reel, card: e.card, flip: 0 };
     const lc = m.lineCard;
     await this.c.tween({ from: 0, to: 1, dur: 0.35, ease: backOut(2), onUpdate: (v) => (lc.flip = v) });
-    await this.banner('DEUCE!', '#ff8a7a', 1.1, 0.3, `REEL ${e.reel + 1} PAYS NOTHING NEXT SPIN`, MACHINE_TOP + MACHINE_H / 2, 4);
+    await this.banner('BUST!', '#ff8a7a', 1.1, 0.3, `REEL ${e.reel + 1} PAYS NOTHING NEXT SPIN`, MACHINE_TOP + MACHINE_H / 2, 4);
     void p;
   }
 
@@ -490,7 +478,6 @@ export class Director {
     gutter.turn = e.turn;
     gutter.side = e.side;
     // RAISED! lasts until its raised spin has been played (the Dealer's next turn).
-    if (gutter.raised && e.side === 'enemy' && e.turn >= (gutter.raisedTurn ?? 0) + 4) gutter.raised = false;
     this.decay(gutter, 'pulse', 1, 0.4);
     this.bg(this.c.to(machines[e.side], 'active', 1, 0.25));
     this.bg(this.c.to(machines[e.side], 'dim', 0, 0.25));
@@ -761,7 +748,6 @@ export class Director {
   }
 
   private async attack(e: Ev<'attack'>): Promise<void> {
-    if (e.from === 'enemy' && this.s.gutter.raised) this.s.gutter.raised = false;
     const color = this.tierColor();
     await this.activate(e.from, e.reels, '#ffffff');
     const target = this.machineCenter(e.to);
@@ -1473,7 +1459,7 @@ export class Director {
 
   private async abilityCharge(e: Ev<'abilityCharge'>): Promise<void> {
     const h = this.s.huds[e.side];
-    // The pace can change mid-fight (FINAL HAND): keep the HUD's countdown honest.
+    // The pace can change mid-fight (the Dealer's hands): keep the HUD's countdown honest.
     if (h.ability && h.ability.every !== e.every) h.ability = { ...h.ability, every: e.every };
     if (e.charge === h.charge) return;
     const rising = e.charge > h.charge;
@@ -1833,13 +1819,21 @@ export class Director {
     if (e.reels.length) this.settle(e.from, e.reels);
   }
 
-  private async raise(e: Ev<'raise'>): Promise<void> {
-    this.s.gutter.raised = true;
-    this.s.gutter.raisedTurn = this.s.gutter.turn;
-    this.s.sounds.coin(9);
-    this.s.sounds.stingerMedium();
-    await this.banner('RAISE!', '#ffd23f', 1.3, 0.4, 'ITS NEXT HIT AND YOUR NEXT HIT X2', MACHINE_TOP + MACHINE_H / 2, 4);
-    void e;
+  /** THE DEALER beat: its next hand starts with a new HP bar (2 RAISE: its hits x1.5; 3 ALL IN every 2 turns). */
+  private async dealerHand(e: Ev<'dealerHand'>): Promise<void> {
+    const hud = this.s.huds[e.side];
+    hud.maxHp = e.hp;
+    hud.hp = hud.ghost = e.hp;
+    hud.shield = 0;
+    this.s.gutter.dealerHand = e.hand;
+    if (hud.ability) {
+      hud.ability = { ...hud.ability, every: e.every };
+      hud.charge = 0;
+    }
+    this.s.sounds.abilityFire();
+    this.s.camera.chromaPulse(0.6);
+    const rule = e.hand >= 3 ? `EVERY ${e.every} TURNS IT GOES ALL IN (THROUGH SHIELDS)` : `ITS HITS ARE X${DEALER_RULES.raiseMul} FROM NOW ON`;
+    await this.banner(`HAND ${e.hand}: ${DEALER_HANDS[e.hand - 1]}`, '#ff6a5a', 1.3, 0.6, rule, MACHINE_TOP + MACHINE_H / 2, 4);
   }
 
   /** BONUS WHEEL / RELIC RUSH: the chase symbols lined up — bank a voucher, then the reels go again for free. */

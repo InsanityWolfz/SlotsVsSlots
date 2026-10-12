@@ -68,14 +68,14 @@ const RAKE_CUT = UNIT;
 /** Writer tiers: what an enemy double / jackpot of one symbol pays. */
 const PAIR_PAY = 4 * UNIT;
 const JACKPOT_PAY = 9 * UNIT;
-/** The Dealer's FIRST HAND (BOSS_REDESIGN 3): RAISE or DEUCE (a 2 over your best reel's payline), even odds. */
-const DEALS: DealCard[] = ['card', 'raise'];
 /**
- * THE DEALER's numbers: it plays its FINAL HAND at `finalAt` of its HP (ALL IN, RAISE, ALL IN... every `finalEvery`
- * turns); ALL IN hits for at least `allInFloor` and at most `allInCap` of your max HP.
+ * THE DEALER plays three hands, each with its own HP bar (shares of its total HP); beating a hand starts the next,
+ * harder one. 1 THE DEAL: every 3 turns it deals a BUST (your best reel's payline cell pays nothing next spin).
+ * 2 RAISE: its hits are x1.5 from now on (still BUSTs). 3 ALL IN: every 2 turns, ALL IN (a share of your max HP,
+ * through shields). (2026-10-12, user: simpler, drawn out, the hardest boss.)
  */
-export const DEALER_RULES = { finalAt: 0.5, finalEvery: 2, allInFloor: 0.25, allInCap: 0.4 };
-/** ALL IN always lands at least this share of your max HP: the telegraphed hit is THE threat (EXPERT_PLAYTEST_4 C3). */
+export const DEALER_RULES = { hands: [0.27, 0.31, 0.42], raiseMul: 1.5, bustEvery: 3, allInEvery: 2, allInFloor: 0.25, allInCap: 0.4 };
+export const DEALER_HANDS = ['THE DEAL', 'RAISE', 'ALL IN'];
 /** ALL IN's hit for a visible hand worth `hand`, clamped to DEALER_RULES' floor and cap of `maxHp`. */
 export const allInRange = (maxHp: number, hand: number): number =>
   Math.max(UNIT, Math.round((maxHp * DEALER_RULES.allInFloor) / UNIT) * UNIT, Math.min(hand, Math.round((maxHp * DEALER_RULES.allInCap) / UNIT) * UNIT));
@@ -247,7 +247,7 @@ export class Fight {
   private coverTaken = false;
   /** HP you've lost this turn (one-turn cap: regular enemies 40% of your max HP, bosses 60%). */
   private playerTurnHp = 0;
-  /** This enemy turn was announced (ALL IN or RAISE). */
+  /** This enemy turn was announced (ALL IN). */
   private bigTurn = false;
   /** E3: reels of yours that thawed on your last turn can't be frozen or jammed on the next enemy turn. */
   private thawShield = new Set<number>();
@@ -269,21 +269,17 @@ export class Fight {
   readonly last: Record<SideId, { best: number; damage: number }> = { player: { best: 0, damage: 0 }, enemy: { best: 0, damage: 0 } };
   /** BLAZE: extra special damage from the blaze cells you own. */
   readonly blaze: number;
-  /** The Dealer: the card it will deal next, whether it has dealt yet, and RAISE flags. */
-  nextDeal: DealCard = 'raise';
+  /** The Dealer: the card it will deal next, and whether it has dealt yet. */
+  nextDeal: DealCard = 'card';
+  /** THE DEALER: the hand it's playing (1-3). */
+  dealerHand = 1;
+  /** THE DEALER's total HP (its hands share it). */
+  private dealerTotal = 0;
   dealt = false;
-  raiseEnemy = false;
-  raisePlayer = false;
   /** The Dealer's card on your payline (applies to your next spin). */
   lineCard: { reel: number; card: LineCard } | null = null;
   /** The Dealer's next attack is its whole hand. */
   dealerAllIn = false;
-  /** The Dealer's FINAL HAND is on (at half HP: ALL IN and RAISE take turns, every 2 turns). */
-  finalHand = false;
-  /** The FIRST HAND's last two deals (never 3 of a kind in a row). */
-  private dealtRow: DealCard[] = [];
-  /** ACE on your payline this spin: the group through this reel pays x2. */
-  private aceReel = -1;
   /** WAR DRUM stacks, KING'S VAULT gold, FIRST BLOOD / HOLY WATER used, STATIC's last turn (this fight). */
   drum = 0;
   /** MIDAS TOUCH: gold touches per cell (this fight), and how much meter the current touch spends. */
@@ -354,8 +350,12 @@ export class Fight {
     else if (this.sides.enemy.ability?.kind === 'repo') this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - GATEKEEPER.firstTurn);
     // THE DEALER deals first on its 2nd turn, then every 3.
     if (this.isDealer) {
-      this.nextDeal = this.rng.pick(DEALS);
-      if (this.sides.enemy.ability) this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - 2);
+      // Its first hand's bar: a share of its total HP.
+      const e = this.sides.enemy;
+      this.dealerTotal = e.maxHp;
+      e.maxHp = e.hp = unitsRound(this.dealerTotal * DEALER_RULES.hands[0]);
+      this.nextDeal = 'card';
+      if (e.ability) e.charge = Math.max(0, e.ability.every - 2);
     }
     // The chase symbols: one BONUS and one RELIC cell per reel, for this fight only.
     if (this.cfg.player.bonusSymbols)
@@ -493,9 +493,9 @@ export class Fight {
     events.push({ type: 'turnStart', turn: this.turn, side });
     this.playerTurnHp = 0;
     if (side === 'player') this.thawShield.clear();
-    // The Dealer's big turns are the announced ones (ALL IN, RAISE): only those may hit up to the boss cap.
+    // The Dealer's big turns are the announced ones (ALL IN): only those may hit up to the boss cap.
     // (Your own turn is never a big one: marks biting on your spin stay under the quiet cap.)
-    this.bigTurn = side === 'enemy' && (this.dealerAllIn || this.raiseEnemy);
+    this.bigTurn = side === 'enemy' && this.dealerAllIn;
     if (this.turn === 1) for (const relic of this.openers) events.push({ type: 'relic', side: 'player', relic });
     if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
@@ -552,9 +552,8 @@ export class Fight {
       me.reels.forEach((reel, i) => (reel.stop = stops[i]));
     }
     const line = paylineSymbols(me.reels).map((s, i) => (locked[i] ? 'lock' : s));
-    // The Dealer's DEUCE on your payline: that cell pays nothing this spin.
+    // The Dealer's BUST on your payline: that cell pays nothing this spin.
     const laid = side === 'player' ? this.lineCard : null;
-    this.aceReel = -1;
     if (laid) {
       line[laid.reel] = 'empty';
       this.lineCard = null;
@@ -1069,17 +1068,6 @@ export class Fight {
         boost(g, 2);
         notes.push('HOT X2');
       }
-      // ACE: the Dealer's card doubles the group through its reel.
-      if (player && this.aceReel >= 0 && paying && g.reels.includes(this.aceReel)) {
-        g.mult *= 2;
-        notes.push('ACE X2');
-      }
-      // RAISE is a fair coin: the Dealer's next hit and your next PAYING group pay double.
-      if (player && this.raisePlayer && paying) {
-        g.mult *= 2;
-        notes.push('RAISE X2');
-        this.raisePlayer = false;
-      }
       // GREATSWORD (KNIGHT): sword groups pay x1.5.
       if (has('greatsword') && g.symbol === 'sword' && g.base > 0) {
         fired.add('greatsword');
@@ -1119,8 +1107,11 @@ export class Fight {
         const elite = this.cfg.enemy.endless ? 1 : (this.cfg.enemy.dmgMul ?? 1);
         const late = all / elite;
         g.mult *= all;
+        const raise = this.isDealer && this.dealerHand >= 2 ? DEALER_RULES.raiseMul : 1;
         if (elite !== 1) notes.push(`X${Math.round(elite * 100) / 100} ELITE`);
-        if (Math.abs(late - 1) > 1e-9) notes.push(`X${Math.round(late * 100) / 100} LATE`);
+        if (raise !== 1) notes.push(`X${raise} RAISE`);
+        const rest = late / raise;
+        if (Math.abs(rest - 1) > 1e-9) notes.push(`X${Math.round(rest * 100) / 100} LATE`);
       }
     }
     for (const g of s.groups) {
@@ -1605,6 +1596,8 @@ export class Fight {
       }
       mul *= late > 0 ? 1 + ENDLESS.lastCallStep * late : 1;
     }
+    // THE DEALER's second and third hands: its hits are raised.
+    if (this.isDealer && this.dealerHand >= 2) mul *= DEALER_RULES.raiseMul;
     if ((this.cfg.enemy.act ?? 1) >= 3) mul *= Math.min(TUNE.rampMax, 1 + TUNE.rampPerTurn * Math.max(0, Math.floor(this.turn / 2) - 2));
     return mul;
   }
@@ -1626,11 +1619,6 @@ export class Fight {
     if (me.side === 'enemy' && amount > 0 && !scaled) {
       const mul = this.enemyDmgMul(events);
       if (mul !== 1) amount = Math.min(ENDLESS.clamp, Math.round((amount * mul) / UNIT) * UNIT || amount);
-    }
-    // RAISE: the Dealer's next hit pays double.
-    if (me.side === 'enemy' && this.raiseEnemy && amount > 0) {
-      amount *= 2;
-      this.raiseEnemy = false;
     }
     const pierced = pierce && foe.shield > 0;
     // ACT 3 COVER CHARGE: the first enemy attack each fight puts at least 10% of your max HP through your shield.
@@ -1760,12 +1748,6 @@ export class Fight {
       hpDamage = Math.max(0, Math.min(hpDamage, cap - this.playerTurnHp));
       this.playerTurnHp += hpDamage;
     }
-    // The Dealer's half-HP gate: the hit that reaches half HP stops there for the rest of that turn, so its FINAL
-    // HAND always plays.
-    if (target.side === 'enemy' && this.isDealer) {
-      if (this.gateTurn === this.turn) hpDamage = 0;
-      else if (!this.finalHand) hpDamage = Math.min(hpDamage, Math.max(0, target.hp - Math.floor(target.maxHp * DEALER_RULES.finalAt)));
-    }
     // THE WHEEL's half-HP gate (the Mirror's old crack gate): it holds at half HP for the rest of the turn it SPINS
     // FASTER on, so both halves of the fight always play. (GREEN starts fast: no phase, no gate.)
     if (target.side === 'enemy' && this.isWheel && !this.fastFromStart) {
@@ -1787,23 +1769,27 @@ export class Fight {
         this.pot = Math.max(this.pot * 2, this.pot + POT.allInMin);
         events.push({ type: 'phase', side: c.side, pot: this.pot });
       }
-      // The Dealer at half HP: FINAL HAND. It deals every 2 turns now, in a fixed order: ALL IN, RAISE, ALL IN...
-      // (A DEUCE still on your payline stays for your next spin.)
-      if (c.side === 'enemy' && this.isDealer && !this.finalHand && c.hp <= c.maxHp * DEALER_RULES.finalAt && c.ability) {
-        this.finalHand = true;
-        this.gateTurn = this.turn;
-        this.nextDeal = 'allin';
-        c.ability = { ...c.ability, every: DEALER_RULES.finalEvery };
-        c.charge = Math.min(c.charge, DEALER_RULES.finalEvery - 1);
-        events.push({ type: 'finalHand', side: c.side, cards: ['allin', 'raise'], every: DEALER_RULES.finalEvery });
-        events.push({ type: 'dealNext', side: c.side, card: this.nextDeal, then: ['raise'] });
-      }
       // THE WHEEL SPINS FASTER at half HP: it places 3 chips a turn from now on.
       if (c.side === 'enemy' && this.isWheel && !this.fast && c.hp <= c.maxHp / 2) {
         this.fast = true;
         this.gateTurn = this.turn;
         events.push({ type: 'wheelFast', side: c.side, per: WHEEL_RULES.fast });
       }
+      return;
+    }
+    // THE DEALER: beating a hand starts the next one (a new bar), until its third falls.
+    if (c.side === 'enemy' && this.isDealer && this.dealerHand < DEALER_HANDS.length) {
+      this.dealerHand++;
+      c.maxHp = c.hp = unitsRound(this.dealerTotal * DEALER_RULES.hands[this.dealerHand - 1]);
+      c.shield = 0;
+      const allIn = this.dealerHand >= 3;
+      this.nextDeal = allIn ? 'allin' : 'card';
+      if (c.ability) {
+        c.ability = { ...c.ability, every: allIn ? DEALER_RULES.allInEvery : DEALER_RULES.bustEvery };
+        c.charge = 0;
+      }
+      events.push({ type: 'dealerHand', side: c.side, hand: this.dealerHand, hp: c.hp, every: c.ability?.every ?? 0 });
+      events.push({ type: 'dealNext', side: c.side, card: this.nextDeal });
       return;
     }
     // Phoenix Feather: once per fight, a lethal hit leaves you at 1 HP.
@@ -2007,28 +1993,17 @@ export class Fight {
     const card = this.nextDeal;
     this.dealt = true;
     if (card === 'card') {
-      // DEUCE: a face-up 2 over the payline of your best reel (the most value on its strip): it pays nothing next spin.
+      // BUST: a card face-up over the payline of your best reel (the most value on its strip): it pays nothing next spin.
       const worth = foe.reels.map((reel) => reel.cells.reduce((a, c) => a + cellValue(c), 0));
       const reel = worth.indexOf(Math.max(...worth));
-      const kind: LineCard = 'deuce';
+      const kind: LineCard = 'bust';
       this.lineCard = { reel, card: kind };
       events.push({ type: 'lineCard', side: foe.side, reel, card: kind });
-    } else if (card === 'allin') {
+    } else {
       this.dealerAllIn = true;
       events.push({ type: 'allInArmed', side: me.side, cap: allInRange(foe.maxHp, Infinity), floor: allInRange(foe.maxHp, 0) });
-    } else {
-      this.raiseEnemy = true;
-      this.raisePlayer = true;
-      events.push({ type: 'raise', from: me.side });
     }
-    // FINAL HAND: ALL IN and RAISE take turns. FIRST HAND: RAISE or DEUCE, never 3 of a kind in a row.
-    if (this.finalHand) this.nextDeal = card === 'allin' ? 'raise' : 'allin';
-    else {
-      this.dealtRow = [...this.dealtRow, card].slice(-2);
-      const [a, b] = this.dealtRow;
-      this.nextDeal = a && a === b ? DEALS.find((d) => d !== a)! : this.rng.pick(DEALS);
-    }
-    events.push({ type: 'dealNext', side: me.side, card: this.nextDeal, ...(this.finalHand ? { then: [this.nextDeal === 'allin' ? 'raise' : 'allin'] as DealCard[] } : {}) });
+    events.push({ type: 'dealNext', side: me.side, card: this.nextDeal });
   }
 
   /** Slap counterfeit coins over the foe's charmed cells (visible first): their charms go plain for `turns`. */

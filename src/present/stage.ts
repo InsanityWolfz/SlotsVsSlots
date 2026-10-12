@@ -75,13 +75,9 @@ export interface Stage {
     bombs?: number;
     /** Bonus vouchers banked this fight (tiles bottom-left; they pay out if you win). */
     vouchers?: ('wheel' | 'rush')[];
-    /** The Dealer's face-up next card, and RAISE in play. */
+    /** The Dealer's face-up next card, and the hand it's playing (1-3). */
     nextDeal?: import('../core/events').DealCard;
-    raised?: boolean;
-    raisedTurn?: number;
-    /** FINAL HAND: the Dealer's face-up cards after the next one. */
-    then?: import('../core/events').DealCard[];
-    finalHand?: boolean;
+    dealerHand?: number;
     /** The Dealer's ALL IN is armed (big red warning over its machine). */
     allInArmed?: boolean;
     allInCap?: number;

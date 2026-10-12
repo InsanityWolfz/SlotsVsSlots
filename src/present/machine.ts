@@ -58,7 +58,7 @@ export class MachineView {
   /** Payline numbers, one per reel (null = none shown). */
   tags: (PayTag | null)[] = [null, null, null];
   /** The Dealer's face-up card on a payline cell (flip 0..1). */
-  lineCard: { reel: number; card: 'deuce'; flip: number } | null = null;
+  lineCard: { reel: number; card: 'bust'; flip: number } | null = null;
   private spun = false;
 
   constructor(
@@ -371,7 +371,7 @@ export class MachineView {
     ctx.fillStyle = lc.flip > 0.5 ? '#f4eee0' : '#5a1020';
     ctx.fillRect(-24, -34, 48, 68);
     if (lc.flip > 0.5) {
-      drawText(ctx, '2', 0, -6, 5, '#140c1c');
+      drawText(ctx, 'BUST', 0, -6, 2.5, '#8e1f3a');
       drawText(ctx, 'NO PAY', 0, 22, 1.5, '#8e1f3a');
     }
     ctx.restore();

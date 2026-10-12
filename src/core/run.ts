@@ -670,7 +670,6 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   if (e.boss === 'house' && run.stake >= STAKE.houseDirty) cfg.enemy.strips = cfg.enemy.strips.map((s) => ({ ...s, bomb: (s.bomb ?? 0) + STAKE.houseBombsPerReel }));
   if (e.boss === 'dealer') {
     cfg.player.stackShield = Math.min(BOSS_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
-    cfg.player.startMarks = run.deckMarks ?? 0;
   }
   // HOUSE EDGES bend the fight: the ones taken in endless, and THE DAILY RUN's edge of the day.
   const edges = new Set<EdgeId>([...(run.endless?.edges ?? []), ...(run.dailyEdge ? [run.dailyEdge] : []), ...(run.mods ?? [])]);

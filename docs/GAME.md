@@ -60,7 +60,7 @@ which Charms and relics to build.
 |---|---|---|---|
 | 1 | THE HOUSE | A growing pot. Every 3 turns it skims half the pot as a hit. Doubles down at half HP; LAST CALL skims every turn | Done |
 | 2 | THE WHEEL | Places bet chips on your reels. Your pairs sweep them. At NO MORE BETS, every chip left hits for a share of your max HP. Spins faster at half HP | Rework in progress, untuned |
-| 3 | THE DEALER | Deals RAISE / DEUCE. At half HP plays its FINAL HAND: ALL IN hits through shields | Rework in progress (two hands, three cards, half-HP gate), untuned |
+| 3 | THE DEALER | Three hands, each with its own HP bar (27/31/42% of its HP). 1 THE DEAL: every 3 turns a BUST (your best reel's payline pays nothing next spin). 2 RAISE: its hits x1.5, still BUSTs. 3 ALL IN: every 2 turns, 25-40% of your max HP through shields | Reworked 2026-10-12; spread by machine is still wide (see ROADMAP) |
 
 Act 3 is played at stake GREEN and up, and always in daily and weekly runs. **ENDLESS** comes after the Dealer:
 you either LET IT RIDE (play another loop for a growing pot) or cash out. Each loop multiplies enemy HP and damage,
