@@ -42,6 +42,9 @@ export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.
 // rain x3 + a chip per symbol made CASSIDY 83 / 63. Now x2, and a group pays its size - 1 chips (1, 1, 2).
 /** Pot steals: 1 = any jackpot steals the boss pot, 0 = only a jackpot of your attack symbol (probe knob). */
 export const POT_STEAL = { any: 1 };
+/** additive 1: your MULT bonuses (GOLD, relics, big choices, HIGH ROLLER, volume) ADD into one pool instead of
+ * multiplying each other (the pair / jackpot tier still multiplies). Prototype switch (2026-10-12). */
+export const PAY = { additive: 0 };
 /** THE JUKEBOX: +20% note damage per volume level, max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
 export const VOLUME = { perLevel: 0.2, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5, battery: 3 };
 export const RAIN = { perChip: 1.5, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
@@ -860,6 +863,12 @@ export class Fight {
     const pays = (g: ScoreGroup) => g.base > 0 && (PAYING.has(g.symbol) || !!g.rain);
     const cellSym = (r: number) => me.reels[r].cells[me.reels[r].stop]?.symbol;
     const notesOf = new Map<ScoreGroup, string[]>();
+    // PAY.additive: your MULT bonuses pool (each adds what it's worth over x1), applied once after them all.
+    const pool = new Map<ScoreGroup, number>();
+    const boost = (g: ScoreGroup, m: number) => {
+      if (PAY.additive && player) pool.set(g, (pool.get(g) ?? 0) + (m - 1));
+      else g.mult *= m;
+    };
     // MIDAS TOUCH: a full meter turns the swords and shields on this spin gold for the fight.
     const touchMeter = player && this.meter?.kind === 'touch';
     const touchable = (r: number) => {
@@ -895,7 +904,7 @@ export class Fight {
         const mul = this.vaultMul(lineShield);
         if (has('compound') && mul > MIDAS.maxMul) fired.add('compound');
         if (has('armoredcar') && lineShield >= NEW_RELIC.armoredShield) fired.add('armoredcar');
-        g0.mult *= mul;
+        boost(g0, mul);
         vaultGroup = g0;
         s.raised = true;
         this.vaultPaid = mul;
@@ -994,17 +1003,17 @@ export class Fight {
       if (player && this.meter?.kind === 'volume' && g.symbol === 'note' && g.base > 0) {
         const vol = this.volume;
         if (vol > 0) {
-          g.mult *= 1 + VOLUME.perLevel * vol;
+          boost(g, 1 + VOLUME.perLevel * vol);
           notes.push(`VOL +${Math.round(VOLUME.perLevel * vol * 100)}%`);
         }
         if (this.dropNow) {
           if (echoes && noteCells) {
             const ev = charmValue('echo', this.charmLvl(me, 'echo'));
-            g.mult *= 1 + ((ev - 1) * echoes) / noteCells;
+            boost(g, 1 + ((ev - 1) * echoes) / noteCells);
             notes.push('ECHO');
           }
           if (this.big.dropMul) {
-            g.mult *= this.big.dropMul;
+            boost(g, this.big.dropMul);
             notes.push(`X${this.big.dropMul} DROP`);
           }
         } else if (this.big.hype) g.mult *= VOLUME.hypePay;
@@ -1023,52 +1032,52 @@ export class Fight {
           notes.push('EXCALIBUR');
         }
         if (b.shieldPairsBlockNothing && pair && g.symbol === 'shield') g.base = 0;
-        if (b.pairMul && pair && PAYING.has(g.symbol)) g.mult *= b.pairMul;
+        if (b.pairMul && pair && PAYING.has(g.symbol)) boost(g, b.pairMul);
         if (b.jackpotMul && jack && PAYING.has(g.symbol)) {
-          g.mult *= b.jackpotMul;
+          boost(g, b.jackpotMul);
           notes.push(`X${b.jackpotMul}`);
         }
         if (b.pierce?.includes(g.symbol)) g.pierce = true;
       }
       // GOLD charms in a group ADD (x2 + x2 + x2 = x6), then multiply with the double/jackpot.
       if (gold) {
-        g.mult *= gold;
+        boost(g, gold);
         notes.push(`X${gold} GOLD`);
       }
       const paying = pays(g);
       // Prism: a match that used a WILD pays double.
       if (me.relics.has('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) {
         fired.add('prism');
-        g.mult *= 2;
+        boost(g, 2);
         notes.push('X2');
       }
       // HORSESHOE: a group with a lucky-born wild.
       if (has('horseshoe') && paying && g.reels.some((r) => line[r] === 'wild' && cellSym(r) !== 'wild' && this.paylineEnh(me, r) === 'lucky')) {
         fired.add('horseshoe');
-        g.mult *= NEW_RELIC.horseshoeMul;
+        boost(g, NEW_RELIC.horseshoeMul);
         notes.push(`X${NEW_RELIC.horseshoeMul}`);
       }
       // EXECUTIONER: keen swords against an enemy under half HP.
       if (has('hone') && keen && BLADES.has(g.symbol) && foe.hp < foe.maxHp / 2) {
         fired.add('hone');
-        g.mult *= NEW_RELIC.executionerMul;
+        boost(g, NEW_RELIC.executionerMul);
         notes.push(`X${NEW_RELIC.executionerMul}`);
       }
       // Legendaries: Skeleton Key (doubles) and Jackpot Bell (jackpots).
       if (me.relics.has('key') && g.matched && g.reels.length === 2) {
         fired.add('key');
-        g.mult *= KEY_MULT;
+        boost(g, KEY_MULT);
         notes.push(`X${KEY_MULT}`);
       }
       if (me.relics.has('bell') && g.matched && (g.reels.length === 3 || g.jackpot)) {
         fired.add('bell');
         const bell = this.meter?.kind === 'jackpots' ? BELL_MULT_JOKER : BELL_MULT;
-        g.mult *= bell;
+        boost(g, bell);
         notes.push(`X${bell}`);
       }
       if (player && this.hotStreak && g.matched) {
         fired.add('hotstreak');
-        g.mult *= 2;
+        boost(g, 2);
         notes.push('HOT X2');
       }
       // ACE: the Dealer's card doubles the group through its reel.
@@ -1085,27 +1094,27 @@ export class Fight {
       // UNDERDOG: under half HP, every paying group.
       if (has('underdog') && paying && me.hp < me.maxHp / 2) {
         fired.add('underdog');
-        g.mult *= NEW_RELIC.underdogMul;
+        boost(g, NEW_RELIC.underdogMul);
         notes.push(`X${NEW_RELIC.underdogMul}`);
       }
       if (bracelet > 1 && paying) {
         fired.add('bracelet');
-        g.mult *= bracelet;
+        boost(g, bracelet);
         notes.push(`X${Math.round(bracelet * 100) / 100}`);
       }
       if (metronome && paying) {
         fired.add('metronome');
-        g.mult *= NEW_RELIC.metronomeMul;
+        boost(g, NEW_RELIC.metronomeMul);
         notes.push(`X${NEW_RELIC.metronomeMul} BEAT`);
       }
       if (firstBlood && paying) {
         fired.add('firstblood');
-        g.mult *= NEW_RELIC.firstbloodMul;
+        boost(g, NEW_RELIC.firstbloodMul);
         notes.push(`X${NEW_RELIC.firstbloodMul} FIRST`);
       }
       // GLASS CANNON: every paying group pays x1.5.
       if (player && paying && this.cfg.player.payMul) {
-        g.mult *= this.cfg.player.payMul;
+        boost(g, this.cfg.player.payMul);
         notes.push(`X${this.cfg.player.payMul}`);
       }
       // Late in act 3 / an endless loop, enemy swords and sevens hit harder: on the banner, not a hidden multiplier.
@@ -1121,6 +1130,8 @@ export class Fight {
     }
     for (const g of s.groups) {
       const notes = notesOf.get(g)!;
+      const bonus = pool.get(g) ?? 0;
+      if (bonus) g.mult *= 1 + bonus;
       g.amount = Math.round(g.base * g.mult);
       // RAKE: the Croupier takes a cut of each group.
       if (me.raked > 0 && g.amount > 0) {
