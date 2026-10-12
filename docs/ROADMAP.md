@@ -61,7 +61,8 @@ usage resets.
 - **Bimodal runs:** weak runs stay weak and die; strong ones snowball and one-shot everything.
 - **Offers feel too fitted:** one Charm locks your offers in, and late rerolls barely change the pool.
 - **Boss clarity:** the mechanics are hard to follow.
-- **SLIME:** a jackpot should cleanse only your visible 3×3, not every slime on the strip.
+- **SLIME:** a jackpot should cleanse only your visible 3×3, not every slime on the strip. Measured 2026-10-12 (2000
+  runs, WHITE): JOKER 57 -> 51, BANKROLL 60 -> 54. Held for the user (it needs a JOKER / BANKROLL early buff with it).
 - **LOOSE CHANGE is a trap:** pair rains cost full chips at half damage.
 - **Keyword glossary:** the same words for the same things on every card, each in its own color. A draft is in git
   history: `loop/KEYWORDS_DRAFT.md` at `c2f0ffb`.
