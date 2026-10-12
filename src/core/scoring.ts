@@ -50,8 +50,6 @@ export interface LineScore {
   wildPickEnh?: Enh;
   /** JAX's all-jackpots spin: what each WILD's wheel landed on. */
   picks?: { reel: number; symbol: SymbolId; enh?: Enh }[];
-  /** SPREAD: three different symbols, each paid as a jackpot of itself. */
-  spread?: boolean;
   /** MIDAS TOUCH fired this spin (the meter pays off). */
   raised?: boolean;
   /** MIDAS TOUCH: cells touched this spin and their touch count after it. */
@@ -76,13 +74,7 @@ export interface ScoreOpts {
   wildAlone?: SymbolId;
   /** LOADED REEL: a WILD on the middle reel pairs with BOTH neighbours when they differ. */
   loadedReel?: boolean;
-  /** SPREAD (the player's line only): three different live symbols each pay x this. 0 = off. */
-  spread?: number;
 }
-
-/** Build variety (2026-10-12 prototype). spread: SPREAD's multiplier (0 = off); shields: each machine's shield payoff
- * (0 = off); heart: HEART cards in drafts (0 = off). Off in the game; the sim turns it on (VARIETY.spread=3...). */
-export const VARIETY = { spread: 0, shields: 0, heart: 0 };
 
 /** The matched set and the symbol it pays as, or null. WILDs join whatever they complete. */
 function matchedRun(line: SymbolId[], cfg: GameConfig, alone: SymbolId): { symbol: SymbolId; reels: number[] } | null {
@@ -128,14 +120,11 @@ export function scoreLine(line: SymbolId[], cfg: GameConfig, opts: ScoreOpts = {
     groups.push({ symbol, reels, amount: base * mult, base, mult, matched: true });
     extra.push(end);
   }
-  // SPREAD: no match, and three different live symbols: each pays as a jackpot of itself.
-  const spread = !run && (opts.spread ?? 0) > 0 && line.length === 3 && new Set(line).size === 3 && line.every((s) => !isWild(s) && !DEAD.has(s));
   line.forEach((raw, reel) => {
     if (matched.includes(reel) || extra.includes(reel)) return;
     const symbol = isWild(raw) ? alone : raw;
     const base = value(symbol);
-    const mult = spread ? opts.spread! : 1;
-    groups.push({ symbol, reels: [reel], amount: base * mult, base, mult, matched: false, ...(spread ? { notes: ['SPREAD'] } : {}) });
+    groups.push({ symbol, reels: [reel], amount: base, base, mult: 1, matched: false });
   });
   groups.sort((a, b) => a.reels[0] - b.reels[0]);
 
@@ -143,7 +132,7 @@ export function scoreLine(line: SymbolId[], cfg: GameConfig, opts: ScoreOpts = {
   for (const g of groups) totals[g.symbol] = (totals[g.symbol] ?? 0) + g.amount;
 
   const tier: Tier = matched.length >= 3 ? 'triple' : matched.length === 2 ? 'pair' : 'none';
-  return { line, tier, tierSymbol: run?.symbol ?? null, groups, totals, ...(spread ? { spread: true } : {}) };
+  return { line, tier, tierSymbol: run?.symbol ?? null, groups, totals };
 }
 
 /** First two reels match (a WILD matches anything): the last reel gets the slow near-miss stop. */

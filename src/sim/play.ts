@@ -71,7 +71,7 @@ export interface PlayOpts {
   /** Changes made to the run before it starts (probes: a forced relic, a charm...). */
   setup?: (run: RunState) => void;
   /** A forced build for the bot (bot.ts SIM_BIAS.style). */
-  style?: 'rush' | 'turtle' | 'spread';
+  style?: 'rush' | 'turtle';
   /** Called before every fight and once at the end (tools/sim/fuzz.ts checks invariants here). */
   onFight?: (run: RunState) => void;
   onEnd?: (run: RunState) => void;

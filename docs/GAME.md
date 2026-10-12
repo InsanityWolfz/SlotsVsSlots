@@ -108,7 +108,11 @@ BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP).
   BLUE 20, GOLD 14. Each boss's win rate (of runs that reach it) within 10 points across machines. Rough per-boss
   aims: House about 85, THE WHEEL about 85, the Dealer about 65.
 - The bot plays like a decent player (`src/sim/bot.ts`): elites when healthy, the best-valued card, sensible encounter
-  play. Real players (playtesters reached endless loop 5) are stronger than it; the targets account for that.
+  play (`--style rush`, the attack build, is the default). Real players (playtesters reached endless loop 5) are stronger than it; the targets account for that.
+- **Two builds per machine, no new rules (user, 2026-10-12):** an attack build and a shield build should both be
+  viable on every machine (`--style turtle` forces the shield build). Keep the rules simple: a mechanic players can't read
+  loses more players than it wins. (A prototype of mixed-line COMBOS, HEART and per-machine shield payoffs was measured
+  and dropped: shield builds already work.)
 - Relic / Charm / card values: `--ban <relic>` reruns the same seeds without it (the honest measure); `--detail`
   lists win-rate lifts (inflated by survivorship).
 

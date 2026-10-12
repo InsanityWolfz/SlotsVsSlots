@@ -45,7 +45,7 @@ export const LUCRE_CHIPS = 3;
 
 /** Which symbols each charm can go on. */
 export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
-  gold: ['sword', 'ace', 'goldbar', 'shield', 'bolt', 'note', 'heart'],
+  gold: ['sword', 'ace', 'goldbar', 'shield', 'bolt', 'note'],
   keen: ['sword', 'ace', 'note'],
   charged: ['bolt'],
   vamp: ['sword', 'ace', 'note'],
@@ -144,7 +144,7 @@ export const symValue = (lvl: number) => SYM_VALUE[clampLvl(lvl, BIG_CAP)];
 export const charmValue = (enh: Enh, lvl: number) => CHARM_VALUE[enh][clampLvl(lvl, BIG_CAP + 1)];
 
 /** Symbols the player's levels apply to. */
-export const LEVELLED: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'goldbar', 'note', 'heart']);
+export const LEVELLED: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'goldbar', 'note']);
 
 export const symLevel = (lv: Levels | undefined, s: SymbolId) => lv?.sym[s] ?? 1;
 /** The Golden Ticket makes every charm one level higher (past the cap). */

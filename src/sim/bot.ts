@@ -32,7 +32,7 @@ import {
 export type DraftPolicy = 'greedy' | 'random' | 'relic';
 
 /** Balance probes (tools/balance/builds.ts): start with a relic, draft only one charm, or force a big choice. */
-export const SIM_BIAS: { /** A forced build: rush (the default greedy), turtle (shields), spread (three symbol types). */ style?: 'rush' | 'turtle' | 'spread'; ride?: boolean; /** ENDLESS report: never cash out (measure the real wall). */ noCashOut?: boolean; onEnd?: (run: RunState) => void; startRelic?: RelicId; noStart?: boolean; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
+export const SIM_BIAS: { /** A forced build: rush (the attack build, the default) or turtle (the shield build). */ style?: 'rush' | 'turtle'; ride?: boolean; /** ENDLESS report: never cash out (measure the real wall). */ noCashOut?: boolean; onEnd?: (run: RunState) => void; startRelic?: RelicId; noStart?: boolean; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
 
 export const RELIC_VALUE: Record<RelicId, number> = {
   turntable: 8,
@@ -109,50 +109,24 @@ const plainAttack = (run: RunState, x: string) => x === attackOf(run) && x !== C
 
 /** A reasonable human-ish drafter, tuned against rollout values from playtest ITERATION_1. */
 export function greedyValue(run: RunState, o: DraftOption): number {
-  const styled = SIM_BIAS.style && SIM_BIAS.style !== 'rush' ? styleValue(run, o, SIM_BIAS.style) : undefined;
+  const styled = SIM_BIAS.style === 'turtle' ? styleValue(run, o) : undefined;
   return styled ?? baseValue(run, o);
 }
 
-/** The forced builds: what a TURTLE or a SPREAD drafter values differently (undefined: as usual). */
-function styleValue(run: RunState, o: DraftOption, style: 'turtle' | 'spread'): number | undefined {
+/** The forced builds: what a TURTLE drafter (a shield build) values differently (undefined: as usual). */
+function styleValue(run: RunState, o: DraftOption): number | undefined {
   const p = run.player;
-  const sig = attackOf(run);
-  if (style === 'turtle') {
-    switch (o.kind) {
-      case 'swap':
-        if (o.to === 'shield') return (p.strips[o.reel].shield ?? 0) < 9 ? 8.5 : 2;
-        if (o.from === 'shield') return 0;
-        return undefined;
-      case 'symLevel':
-        return o.symbol === 'shield' ? 9 : 6;
-      case 'gild':
-        return o.symbol === 'shield' ? 9 : undefined;
-      case 'remove':
-        return o.symbol === 'shield' ? 0 : undefined;
-      case 'add':
-        return o.symbol === 'heart' ? 0 : undefined;
-    }
-    return undefined;
-  }
-  // SPREAD: keep three symbol types even on every reel (your attack, shields, HEARTS).
-  const three: SymbolId[] = [sig, 'shield', 'heart'];
   switch (o.kind) {
-    case 'add': {
-      if (!three.includes(o.symbol)) return 1;
-      const s = p.strips[o.reel];
-      const mine = s[o.symbol] ?? 0;
-      return mine < Math.max(...three.map((x) => s[x] ?? 0)) ? 8.5 : 3;
-    }
-    case 'swap': {
-      if (o.to === 'wild') return 2;
-      const s = p.strips[o.reel];
-      if (!three.includes(o.to)) return 0;
-      return (s[o.from] ?? 0) - (s[o.to] ?? 0) >= 2 ? 8.5 : 1;
-    }
+    case 'swap':
+      if (o.to === 'shield') return (p.strips[o.reel].shield ?? 0) < 9 ? 8.5 : 2;
+      if (o.from === 'shield') return 0;
+      return undefined;
     case 'symLevel':
-      return three.includes(o.symbol) ? 8 : 5;
+      return o.symbol === 'shield' ? 9 : 6;
+    case 'gild':
+      return o.symbol === 'shield' ? 9 : undefined;
     case 'remove':
-      return o.symbol === 'rock' ? 5 : 0;
+      return o.symbol === 'shield' ? 0 : undefined;
   }
   return undefined;
 }
