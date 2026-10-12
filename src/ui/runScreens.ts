@@ -126,6 +126,8 @@ const ROUTES = { opener: 370, x0: 500, gap: 104, y: [170, 320, 470], lane: 120, 
 const ROUTE_STOPS = 5;
 /** ENCOUNTER buy-in cards: their row, size and spacing. */
 const ENC = { cardY: 546, cardW: 210, cardH: 108, cardGap: 236 };
+/** An offer's choice buttons: their row, width and spacing (three fit beside the build panel). */
+const OFFER = { y: 480, w: 270, gap: 296 };
 /** LUCKY SEVENS: the reel art per symbol (16px reel symbols, like the fight machines'), and where the machine sits. */
 const SLOT_ART: Record<SlotSym, SpriteId> = { chip: 'goldbar', seven: 'seven', heart: 'slotHeart', star: 'slotUp', relic: 'relicSym', wild: 'wild' };
 const SLOT_TOP = 132;
@@ -1429,10 +1431,10 @@ export class RunScreens {
       }
       const rest = choices.length - cards.length;
       const k = i - cards.length;
-      const x = CX + (k - (rest - 1) / 2) * 360;
-      const y = cards.length ? 652 : 520;
+      const x = CX + (k - (rest - 1) / 2) * (cards.length ? 360 : OFFER.gap);
+      const y = cards.length ? 652 : OFFER.y;
       const last = i === choices.length - 1;
-      const b = last ? this.minorBtn(c.label, x, y, cards.length ? 260 : 320, cards.length ? 44 : 56, () => this.playEncounter(i)) : this.btn(c.label, x, y, 320, 56, () => this.playEncounter(i));
+      const b = last ? this.minorBtn(c.label, x, y, cards.length ? 260 : OFFER.w, cards.length ? 44 : 56, () => this.playEncounter(i)) : this.btn(c.label, x, y, OFFER.w, 56, () => this.playEncounter(i));
       b.enabled = !c.disabled;
       return b;
     });
@@ -2223,7 +2225,7 @@ export class RunScreens {
       drawSprite(ctx, 'chip', CHIP_SPOT.x, CHIP_SPOT.y, 3);
       drawText(ctx, `${this.shown().chips}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, COLORS.energy, { align: 'left', punch: this.chipPulse });
     }
-    if (!inFight) drawText(ctx, 'CHIPS', x + w - 12, CHIP_SPOT.y + 4, 1.5, COLORS.textDim, { align: 'right' });
+    if (!inFight) drawText(ctx, run.debt ? `OWE ${run.debt}` : 'CHIPS', x + w - 12, CHIP_SPOT.y + 4, 1.5, run.debt ? '#ff8a7a' : COLORS.textDim, { align: 'right' });
     rule(y + 58);
     // Who you are and how you're doing.
     const cab = CABINETS[run.cabinet];
@@ -2781,20 +2783,33 @@ export class RunScreens {
     else {
       this.panel(ctx, CX - 330, 120, 660, 300, '#7a3aa8');
       if (!res) {
+        // Each offer's terms under its own button (WALK AWAY needs none).
         this.encChoices.forEach((c, i, all) => {
-          if (c.stake) return;
-          const x = CX + (i - (all.length - 1) / 2) * 360;
-          drawText(ctx, c.text, x, 400, 1.5, c.disabled ? '#6a6078' : COLORS.text);
+          if (c.stake || i === all.length - 1) return;
+          const x = CX + (i - (all.length - 1) / 2) * OFFER.gap;
+          drawText(ctx, c.text, x, OFFER.y + 46, c.text.length > 26 ? 1.5 : 2, c.disabled ? '#6a6078' : COLORS.goldLight);
         });
-        // (Placeholder art until each encounter gets its own: a gold-edged "?" ticket.)
+        // The offer's character (a gentle bob), or a gold-edged "?" ticket until its art exists.
         const k = 1 + 0.03 * Math.sin(time * 2);
-        ctx.fillStyle = COLORS.outline;
-        ctx.fillRect(CX - 70 * k, 270 - 90 * k, 140 * k, 180 * k);
-        ctx.fillStyle = COLORS.gold;
-        ctx.fillRect(CX - 64 * k, 270 - 84 * k, 128 * k, 168 * k);
-        ctx.fillStyle = '#3a1a4a';
-        ctx.fillRect(CX - 56 * k, 270 - 76 * k, 112 * k, 152 * k);
-        drawText(ctx, '?', CX, 270, 10 * k, '#e8b0ff');
+        if (def.art && hasSprite(def.art)) {
+          ctx.fillStyle = 'rgba(0,0,0,0.35)';
+          ctx.fillRect(CX - 60, 316, 120, 10);
+          drawSprite(ctx, def.art as SpriteId, CX, 240 + Math.sin(time * 2) * 3, 6);
+        } else {
+          ctx.fillStyle = COLORS.outline;
+          ctx.fillRect(CX - 70 * k, 250 - 90 * k, 140 * k, 180 * k);
+          ctx.fillStyle = COLORS.gold;
+          ctx.fillRect(CX - 64 * k, 250 - 84 * k, 128 * k, 168 * k);
+          ctx.fillStyle = '#3a1a4a';
+          ctx.fillRect(CX - 56 * k, 250 - 76 * k, 112 * k, 152 * k);
+          drawText(ctx, '?', CX, 250, 10 * k, '#e8b0ff');
+        }
+        // The relic an offer wants (THE PAWN SHOP): its icon, readable by tooltip.
+        const wanted = this.encChoices.find((c) => c.relic)?.relic;
+        if (wanted) {
+          drawSprite(ctx, RELICS[wanted].sprite as SpriteId, CX + 110, 200, 2.5);
+          this.tips.add(wanted, CX + 110, 200, 20);
+        }
       } else if (this.encT >= 1) {
         const col = res.good === true ? COLORS.goldLight : res.good === false ? '#ff8a7a' : COLORS.text;
         drawText(ctx, res.title, CX, 240, 4, col, { punch: 1 + 0.03 * Math.sin(time * 6) });

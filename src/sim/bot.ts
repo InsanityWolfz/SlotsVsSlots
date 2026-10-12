@@ -12,6 +12,7 @@ import {
   buy,
   chooseRoute,
   CHIPS,
+  currentStop,
   encounterChoices,
   isBossNext,
   isEncounterNow,
@@ -309,6 +310,11 @@ export function pickEncounter(run: RunState, policy: DraftPolicy, rng: Rng): num
   // HIGHER OR LOWER, played sensibly: higher on a low card, lower on a high one; bank the pot after two right calls.
   const hilo = hiloState(run);
   if (policy !== 'random' && choices[0]?.label === 'HIGHER' && hilo) return hilo.calls >= 2 ? 2 : hilo.card <= 8 ? 0 : 1;
+  // The offers, taken the way a sensible player would: blood only when healthy, keep relics, borrow small when broke.
+  const id = currentStop(run)?.encounter;
+  if (policy !== 'random' && id === 'blood') return run.player.hp / run.player.maxHp > 0.8 ? 0 : choices.length - 1;
+  if (policy !== 'random' && id === 'pawn') return choices.length - 1;
+  if (policy !== 'random' && id === 'shark') return run.player.chips < 10 && !choices[0]?.disabled ? 0 : choices.length - 1;
   // TWENTY-ONE: hit below 17, as the dealer does.
   const bj = bjState(run);
   if (policy !== 'random' && bj) return bjTotal(bj.p) < 17 ? 0 : 1;

@@ -36,7 +36,11 @@ which Charms and relics to build.
     two. Cards drawn in code; the hand in play is saved with the run.
   - UNDER OR OVER: dice. Bet chips, call UNDER 7 / SEVEN / OVER 7. Under/over pay 1 to 1 (a seven gives the bet
     back: about even); SEVEN pays 4 to 1 (the long shot, with the house edge). Up to 3 rolls a visit. Chips only.
-  - Placeholder: THE BLOOD BANK (until the real offers).
+  - Offers (each with its own portrait): THE BLOOD BANK (sell 20% of your HP for 12 chips, or 10% of your max HP for
+    good for 25); THE PAWN SHOP (the broker names one of your relics: pawn it for 16 chips, or trade it for a relic
+    unseen); THE LOAN SHARK (borrow 20, owe 30; or 40, owe 65: he takes it from your winnings after each fight, and
+    what's left when the act's boss falls comes out of your chips, then 2 max HP per chip). Debt shows under chips.
+  - Paths: 12 shapes now, two of them with three encounters (fewer fights, more gambles).
   - **Cards and words:** buy-in cards all look alike (no LOW / HIGH labels: the player judges the bet). A buy-in you
     can't win back says PAY, not STAKE. No flavour-text subtitles.
 - **THE REPO MAN** is a regular in acts 1-2 (he takes a Charm for his fight; it comes back after).

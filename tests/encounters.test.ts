@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, type RelicId } from '../src/core/config';
-import { BJ, bjState, bjTotal, DICE, ENCOUNTERS, hiloPot, hiloState, pocketColor, ROULETTE, rouletteMax, SLOT, slotLine, slotRun, SLOT_STRIPS, WHEEL_ORDER } from '../src/core/encounters';
+import { BJ, bjState, bjTotal, BLOOD, DICE, ENCOUNTERS, LOAN, PAWN, hiloPot, hiloState, pocketColor, ROULETTE, rouletteMax, SLOT, slotLine, slotRun, SLOT_STRIPS, WHEEL_ORDER } from '../src/core/encounters';
 import { Rng } from '../src/core/rng';
-import { chooseRoute, createRun, playEncounter } from '../src/core/run';
+import { chooseRoute, createRun, encounterChoices, fightConfig, finishFight, playEncounter, skipToBoss } from '../src/core/run';
+import { Fight } from '../src/core/fight';
 
 const base = defaultConfig();
 const slot = ENCOUNTERS.slot;
@@ -317,5 +318,71 @@ describe('UNDER OR OVER', () => {
     expect(ret(0)).toBeGreaterThan(0.9);
     expect(ret(0)).toBeLessThan(1.1);
     expect(ret(1)).toBeLessThan(ret(0));
+  });
+});
+
+describe('the offers', () => {
+  const at = (id: string, seed = 2) => {
+    const run = createRun(base, seed, 'knight');
+    run.pendingStart = null;
+    run.map.routes[0][0] = { kind: 'encounter', encounter: id };
+    run.depth = 1;
+    run.stop = 1;
+    chooseRoute(run, 0);
+    run.player.chips = 10;
+    run.player.relics = ['drum', 'chainmail', 'belt'];
+    return run;
+  };
+  const win = (run: ReturnType<typeof at>) => {
+    const f = new Fight(fightConfig(run, base), 1);
+    f.winner = 'player';
+    return finishFight(run, f);
+  };
+
+  it('THE BLOOD BANK buys HP now, or max HP for good (for more)', () => {
+    const a = at('blood');
+    const hp = a.player.hp;
+    playEncounter(a, 0);
+    expect(a.player.hp).toBeLessThan(hp);
+    expect(a.player.chips).toBe(10 + BLOOD.nowChips);
+    const b = at('blood');
+    const max = b.player.maxHp;
+    playEncounter(b, 1);
+    expect(b.player.maxHp).toBeLessThan(max);
+    expect(b.player.chips).toBe(10 + BLOOD.maxChips);
+  });
+
+  it('THE PAWN SHOP takes the relic it named: for chips, or for another relic unseen', () => {
+    const a = at('pawn');
+    const named = encounterChoices(a)[0].relic!;
+    playEncounter(a, 0);
+    expect(a.player.relics).not.toContain(named);
+    expect(a.player.chips).toBe(10 + PAWN.chips);
+    const b = at('pawn');
+    const named2 = encounterChoices(b)[1].relic!;
+    playEncounter(b, 1);
+    expect(b.player.relics).not.toContain(named2);
+    expect(b.player.relics).toHaveLength(3);
+  });
+
+  it("THE LOAN SHARK lends now, takes it back from winnings, and settles at the act's boss (max HP if chips run short)", () => {
+    const run = at('shark');
+    playEncounter(run, 1);
+    expect(run.player.chips).toBe(10 + LOAN.big.lend);
+    expect(run.debt).toBe(LOAN.big.owe);
+    const owed = run.debt!;
+    const rec = win(run);
+    expect(rec.debtPaid).toBeGreaterThan(0);
+    expect(run.debt).toBe(owed - rec.debtPaid!);
+    // At the boss: chips cover what they can; the rest costs max HP.
+    run.player.chips = 3;
+    const left = run.debt!;
+    const max = run.player.maxHp;
+    skipToBoss(run);
+    const boss = win(run);
+    expect(run.debt).toBe(0);
+    // Every owed chip was paid in chips or in max HP (2 each).
+    expect((boss.debtPaid ?? 0) + (boss.debtHp ?? 0) / LOAN.hpPerChip).toBe(left);
+    expect(max - run.player.maxHp).toBe(boss.debtHp ?? 0);
   });
 });

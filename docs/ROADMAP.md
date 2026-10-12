@@ -2,10 +2,10 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-12, overnight, user asleep):** the rest of the encounters (HIGHER OR LOWER, BLACKJACK, DICE,
-then the offers), then the new sim, target win rates per stake, and tuning. The user's standing instructions: keep
-going through usage resets; use their earlier answers to make calls; bosses may be moved or changed for clarity or
-balance; a boss may be up to ~10% easier or harder on one machine than another.
+**In progress (2026-10-12, overnight, user asleep):** the encounters are all in. Next: the roster audit and dead-code
+cleanup, then the new sim, target win rates per stake, and tuning. The user's standing instructions: keep going
+through usage resets; use their earlier answers to make calls; bosses may be moved or changed for clarity or balance;
+a boss may be up to ~10% easier or harder on one machine than another.
 
 ## Now, in order
 1. **The run map rework (agreed 2026-10-12).** Why: every human playtester takes the elite at every fork (a free
@@ -17,9 +17,8 @@ balance; a boss may be up to ~10% easier or harder on one machine than another.
      mostly chips (70-80%), sometimes upgrades or relics; each game may pay its own prize type; staked relics are
      picked by the house (tooltip shown); encounters about as good as elites, elites slightly ahead (more risk);
      every game has SKIP. Done: LUCKY SEVENS (with its art), RED OR BLACK (roulette), HIGHER OR LOWER, TWENTY-ONE
-     (blackjack), UNDER OR OVER (dice). Possible later: more paylines if the slot needs it. To build: the offers: THE BLOOD BANK
-     done properly, a PAWN SHOP, a LOAN SHARK.
-     Then path shapes with 2-3 encounters.
+     (blackjack), UNDER OR OVER (dice); offers THE BLOOD BANK, THE PAWN SHOP, THE LOAN SHARK; path shapes with three
+     encounters. Possible later: more paylines if the slot needs it.
    - **Next:** the encounters above; the roster audit below; play it.
      Open questions to settle while playing: should elites keep the +2 chips; is the post-fight heal too generous now
      that elites carry the risk; should a path have a crossing point mid-act.

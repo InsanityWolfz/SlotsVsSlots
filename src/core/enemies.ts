@@ -416,7 +416,8 @@ export interface ActMap {
  * per act, and never all with the same number of elites: a path is judged against YOUR run (your HP, your chips,
  * who's on it), not ranked greedy-to-safe.
  */
-export const ROUTE_SHAPES = ['FE?FE', 'F?SF?', 'FES?F', '?FEFS', 'FF?E?', 'EFSF?', 'F?FSE', '?FFEF', 'FS?EF', 'F?E?F'];
+// (2026-10-12: two shapes with three encounters, the casino path: fewer fights, more gambles.)
+export const ROUTE_SHAPES = ['FE?FE', 'F?SF?', 'FES?F', '?FEFS', 'FF?E?', 'EFSF?', 'F?FSE', '?FFEF', 'FS?EF', 'F?E?F', '?F?E?', 'E?F??'];
 /** Endless loops: one route (3 fights and a Cashier, then the boss). */
 const ENDLESS_SHAPE = 'FSF';
 export const ROUTES_PER_ACT = 3;

@@ -1662,6 +1662,83 @@ S.chip = lit(12, 12, [
   '....rttr....',
 ]);
 // cashier portrait (24x24): slick croupier — green eyeshade, pencil moustache, gold-tooth smirk, bow tie
+// --- NPC portraits (24x24): Blood Bank, Pawn Shop, Loan Shark
+S.npcBloodBank = lit(24, 24, [
+  '........................',
+  '........kkkkkkkk........',
+  '.......kllkkkkkkk.......',
+  '......kkllkkkkkkkk......',
+  '......kkuuuuuuuukk......',
+  '......uuuuuuuuuuuu......',
+  '......uSSSSuuSSSSu......',
+  '......uSWKSuuSWKSu......',
+  '......uSSSSuuSSSSu......',
+  '......uuuuuffuuuuu......',
+  '.......LuuuffuuuL.......',
+  '.......LKKTTTTKKL.......',
+  '........LuuuuuuL........',
+  '.........uuuuuu.........',
+  '......TTTuuuuuuTTT......',
+  '....TTTTTTTRRTTTTTTT....',
+  '..LTTTTTTTTRRTTTTTTTTL..',
+  '.LTTTTTTTTTRRTBBSSSBBTL.',
+  '.LTTTTTTTTTRRTBWWWWWBTL.',
+  'LTTTTTTTTTTTTTBWWRWWBTTL',
+  'LTTTTTTTTTTTuuBWRRRWBTTL',
+  'LTTTTTTTTTTTuuBWWRWWBTTL',
+  'LTTTTTTTTTTTTTBWWWWWBTTL',
+]);
+S.npcPawnBroker = lit(24, 24, [
+  '........................',
+  '........................',
+  '........FFFFFFFF........',
+  '.......FTFFFFFFFf.......',
+  '......FFFFFFFFFFFF......',
+  '.....LLFFFFFFFFFFLL.....',
+  '....LLSSSSFFFFSSSSLL....',
+  '....LLSFFFFFGGGGFSLL....',
+  '....LLSFWKFFGAKGFSLL....',
+  '.....LSFFFFFGGGGFSL.....',
+  '......FFFFFffFFFFF......',
+  '......fFLLLLLLLLFf......',
+  '.......fFFFFFFFFf.......',
+  '........fFFFFFFf........',
+  '.......TTfFFFFfTT.......',
+  '....BBBBTTTTTTTTBBBB....',
+  '...BBBBBBTTTTTTBBBBBB...',
+  '..BBBBBBBBTTTTBBBBBBBB..',
+  '.BBBBBBBBBBTTBBBBBBBBBB.',
+  'bBBBBBBBBBBTTBBBBBBBBBBb',
+  'bBBBBBBBBGgTTgGBBBBBBBBb',
+  'bBBBBBBBBBGGGGBBBBBBBBBb',
+  'bBBBBBBBBBGYYGBBBBBBBBBb',
+  'bBBBBBBBBBBGGBBBBBBBBBBb',
+]);
+S.npcLoanShark = lit(24, 24, [
+  '........................',
+  '........kkkkkkkk........',
+  '.......kllkkkkkkk.......',
+  '.......rRRrrrrrrr.......',
+  '....klllkkkkkkkkkkkk....',
+  '......LLLSSSSSSSDD......',
+  '.....LLSKWSSSSSKWSD.....',
+  '.....LSDSSSSSSSSDSD.....',
+  '.....LSSSSSDSSDSSSD.....',
+  '.....KKKKKKKKKKKKKK.....',
+  '.....KTTKTYTKTTKTTK.....',
+  '.....KTrTrrTrTrrTrK.....',
+  '......LSSSSSSSSSSD......',
+  '.......LLLLLLLLLD.......',
+  '.......DTTTRRTTTD.......',
+  '....kklkklTRRTklkklk....',
+  '...lkklkkPTRRTPlkklkk...',
+  '..klkklkkPTRRTPlkklkkl..',
+  '.kklkklkkPTRRTPlkklkklk.',
+  'lkklkTTkkPTRRTPlkklkklkk',
+  'lkklkTTkklPRRPklkklkklkk',
+  'lkklkklkklPRRPklkklkklkk',
+  'lkklkklkklPRRPklkklkklkk',
+]);
 S.cashierPortrait = lit(24, 24, [
   '........................',
   '........................',
@@ -5579,7 +5656,7 @@ const DIMS = {
   mapBadgeBomb: 8, mapBadgeHex: 8, mapBadgeFang: 8, mapBadgeMimic: 8, mapBadgeWheel: 8,
   actBadge2: { w: 24, h: 12 },
   slotHeart: 16, slotUp: 16, slotTopper: { w: 64, h: 16 },
-  enemyGrounder: 24, enemyCounterfeiter: 24, ground: 16, fake: 16, groundOverlay: 16, fakeOverlay: 16,
+  enemyGrounder: 24, enemyCounterfeiter: 24, npcBloodBank: 24, npcPawnBroker: 24, npcLoanShark: 24, ground: 16, fake: 16, groundOverlay: 16, fakeOverlay: 16,
   icoEarth: 8, icoLaunder: 8, mapBadgeGround: 8, mapBadgeFake: 8, setRibbon: { w: 44, h: 9 },
   enemyDealer: 24, enemySharp: 24, enemyPitBoss: 24, enemyCroupier: 24, enemyRepoMan: 24, card: 16, gavel: 16, rake: 16,
   icoShuffle: 8, icoCut: 8, icoRaise: 8, icoMark: 8, icoGavel: 8, icoRake: 8,
@@ -5699,6 +5776,7 @@ export type SpriteId =
   | 'mapBadgeMimic' | 'mapBadgeWheel'
   | 'actBadge2'                                    // act 2 map header plaque, 24x12 (non-square)
   | 'slotHeart' | 'slotUp' | 'slotTopper' // LUCKY SEVENS prize symbols 16x16, topper 64x16
+  | 'npcBloodBank' | 'npcPawnBroker' | 'npcLoanShark'      // NPC portraits, 24x24
   | 'enemyGrounder' | 'enemyCounterfeiter'         // act 2 enemy portraits (batch 8), 24x24
   | 'ground' | 'fake'                              // their reel symbols, 16x16
   | 'groundOverlay' | 'fakeOverlay'                // their cell overlays, 16x16 (mostly transparent)
