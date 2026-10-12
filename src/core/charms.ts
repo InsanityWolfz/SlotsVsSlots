@@ -28,7 +28,7 @@ export const CHARM_VALUE: Record<Enh, number[]> = {
   /** LUCKY: % chance the cell lands as a WILD. */
   lucky: [0, 40, 55, 70, 85, 95, 100],
   /** BLAZE: added to TESLA's special for every blaze cell you own. */
-  blaze: [0, 10, 20, 30, 40, 50, 60],
+  blaze: [0, 5, 10, 15, 20, 25, 30],
   /** BULWARK (id 'spiked'): a shield cell with it also deals this % of its share of the group as damage. Was 50/75/100: KNIGHT's own
    * charm cost KNIGHT runs. */
   spiked: [0, 100, 125, 150, 175, 200, 225],

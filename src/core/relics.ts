@@ -45,7 +45,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   tower: { id: 'tower', name: 'TOWER SHIELD', text: 'RETAIN 25% OF YOUR SHIELD EACH SPIN (MAX 10% OF YOUR HP)', sprite: 'relicTower', machine: 'knight' },
   headsman: { id: 'headsman', name: 'HEADSMAN', text: 'SWORDS HIT FOR +2% OF YOUR MAX HP', sprite: 'relicHeadsman', machine: 'knight' },
   capacitor: { id: 'capacitor', name: 'CAPACITOR', text: '25% OF LEFTOVER SHIELD CHARGES LIGHTNING', sprite: 'relicCapacitor', machine: 'tesla' },
-  livewire: { id: 'livewire', name: 'LIVE WIRE', text: 'LIGHTNING DAMAGE X1.3. EACH STORM COSTS 1 HP', sprite: 'relicLivewire', machine: 'tesla' },
+  livewire: { id: 'livewire', name: 'LIVE WIRE', text: 'LIGHTNING DAMAGE +30%. EACH STORM COSTS 1 HP', sprite: 'relicLivewire', machine: 'tesla' },
   encore: { id: 'encore', name: 'ENCORE', text: 'REFUND 30 TO YOUR JACKPOT METER AFTER IT PAYS', sprite: 'relicEncore', machine: 'joker' },
   wildwheel: { id: 'wildwheel', name: 'WILD WHEEL', text: 'WILD JACKPOTS SPIN TWICE AND KEEP THE BETTER RESULT', sprite: 'relicWildwheel', machine: 'joker' },
   downpour: { id: 'downpour', name: 'DOWNPOUR', text: 'MAKE IT RAIN CAUSES YOUR NEXT MAKE IT RAIN TO DO X1.4 DAMAGE', sprite: 'relicDownpour', machine: 'midas' },

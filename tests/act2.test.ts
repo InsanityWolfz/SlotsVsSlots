@@ -143,7 +143,7 @@ describe('act 2 gilds', () => {
       c.player.gilded = [0, 1].map((reel) => ({ reel, symbol: 'bolt' as SymbolId, enh: 'blaze' as const, n: 1 }));
     });
     g.forceNext('player', ['bolt', 'bolt', 'bolt']);
-    expect(ofType(g.step().events, 'specialFire')[0].amount).toBe(base.specialDamage + 20);
+    expect(ofType(g.step().events, 'specialFire')[0].amount).toBe(base.specialDamage + 10);
   });
 
   it('LUCKY cells sometimes land as a WILD', () => {

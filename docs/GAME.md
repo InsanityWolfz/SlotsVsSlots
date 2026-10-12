@@ -118,6 +118,8 @@ BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP).
   and dropped: shield builds already work.)
 - Relic / Charm / card values: `--ban <relic>` reruns the same seeds without it (the honest measure); `--detail`
   lists win-rate lifts (inflated by survivorship).
+- **TESLA's lightning grows additively (2026-10-12, the user's idea):** its boosts (OVERCHARGE, LIVE WIRE, MELTDOWN,
+  MAD SCIENCE, CHAIN LIGHTNING +100%) add up instead of multiplying; base bolt 60, BLAZE +5 a level. WHITE 56, GREEN 36.
 
 ## Modes and meta
 - **Modes:** the normal run, DAILY, WEEKLY and ENDLESS.

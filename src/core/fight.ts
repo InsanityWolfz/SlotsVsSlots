@@ -39,9 +39,10 @@ export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.
 /** Pot steals: 1 = any jackpot steals the boss pot, 0 = only a jackpot of your attack symbol (probe knob). */
 export const POT_STEAL = { any: 1 };
 /** additive 1: your MULT bonuses (GOLD, relics, big choices, HIGH ROLLER, volume) ADD into one pool instead of
- * multiplying each other (the pair / jackpot tier still multiplies). lightningAdd 1: only TESLA's bolts pool (their
- * charge), and the lightning's own boosts pool too (CHAIN LIGHTNING's second hit counts as +100%). Prototype switches. */
-export const PAY = { additive: 0, lightningAdd: 0 };
+ * multiplying each other (the pair / jackpot tier still multiplies). lightningAdd 1 (on since 2026-10-12, the user's
+ * call): TESLA's bolts pool (their charge), and the lightning's own boosts add up too (+30% and +100% make +130%, not
+ * x2.6; CHAIN LIGHTNING is +100%). Slows TESLA's late growth without a cap. */
+export const PAY = { additive: 0, lightningAdd: 1 };
 /** THE JUKEBOX: +25% note damage per volume level (was +20%, 2026-10-12), max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
 export const VOLUME = { perLevel: 0.25, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5, battery: 3 };
 export const RAIN = { perChip: 1.5, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };

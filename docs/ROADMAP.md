@@ -4,8 +4,8 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
 
 **In progress (2026-10-12):** done today (branch only, not on main yet): the new sim, honest HP, no heal after a
 fight, elites really hit harder (bug), the relic feed, BANKROLL's shield relics, machine HP +30%, ROD gone, GREATSWORD,
-random Charm offers, and the three-hand Dealer (THE DEAL / RAISE / ALL IN). Sim at GREEN: KNIGHT 29, JUKEBOX 24,
-JOKER 41, TESLA 43, BANKROLL 48 (target 36). Dealer when reached: TESLA 91, BANKROLL 85, JOKER 73, KNIGHT 55,
+random Charm offers, and the three-hand Dealer (THE DEAL / RAISE / ALL IN). Then TESLA's lightning went additive (GREEN
+43 -> 36). Sim at GREEN: KNIGHT 29, JUKEBOX 25, JOKER 42, TESLA 36, BANKROLL 48 (target 36). Dealer when reached: TESLA 91, BANKROLL 85, JOKER 73, KNIGHT 55,
 JUKEBOX 45. Dealer-side fixes don't close it (tried: lower HP, ALL IN on hand start, ALL IN blocked by shields, BLAZE
 halved, lightning cost up): TESLA clears it in ~3 spins. Next: KNIGHT / JUKEBOX late power up, TESLA / BANKROLL late
 power down, then the Dealer's HP to ~60-65% when reached. Keep going through usage resets.

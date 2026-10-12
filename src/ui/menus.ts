@@ -38,7 +38,7 @@ export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
   spiked: { name: 'BULWARK', text: `KNIGHT. SHIELDS. ${charmRuleText('spiked', 1)}.` },
   vamp: { name: 'VAMP', text: 'SWORDS, CARDS AND NOTES. HEALS +20/+30/+40 HP.' },
   lucky: { name: 'LUCKY', text: '40%/55%/70% CHANCE TO BE A WILD.' },
-  blaze: { name: 'BLAZE', text: "DOC VOLTZ'S BOLTS. +10/+20/+30 LIGHTNING DAMAGE." },
+  blaze: { name: 'BLAZE', text: "DOC VOLTZ'S BOLTS. +5/+10/+15 LIGHTNING DAMAGE." },
   lucre: { name: 'CHIP', text: 'YOUR ATTACK SYMBOLS AND SHIELDS. +3 CHIPS (MAX 6/9/12 PER ROUND).' },
   trick: { name: 'TRICK', text: "JAX'S CARDS AND SHIELDS. +30/+40/+55 TO YOUR JACKPOT METER." },
   echo: { name: 'ECHO', text: "DJ DECIBEL'S NOTES. AT THE DROP ITS NOTE HITS X2/X2.5/X3." },

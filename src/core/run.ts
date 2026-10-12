@@ -1722,9 +1722,9 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'squire':
       return { title: 'SQUIRE', rule: `EVERY REEL GETS ${BIG.squireCells} KEEN CHARMS`, cost: '' };
     case 'chainLightning':
-      return { title: 'CHAIN LIGHTNING', rule: 'LIGHTNING DAMAGE STRIKES TWICE', cost: pct(run, BIG.chainHp) };
+      return { title: 'CHAIN LIGHTNING', rule: 'LIGHTNING DAMAGE +100%', cost: pct(run, BIG.chainHp) };
     case 'madScience':
-      return { title: 'MAD SCIENCE', rule: `LIGHTNING DAMAGE X${BIG.madMul}`, cost: `EACH STORM COSTS ${unitsRound(run.player.maxHp * BIG.madCost)} HP` };
+      return { title: 'MAD SCIENCE', rule: `LIGHTNING DAMAGE +${Math.round((BIG.madMul - 1) * 100)}%`, cost: `EACH STORM COSTS ${unitsRound(run.player.maxHp * BIG.madCost)} HP` };
     case 'supercell':
       return { title: 'SUPERCELL', rule: 'EVERY CHARGED CHARM BECOMES A BLAZE CHARM', cost: 'NO MORE CHARGED CHARMS' };
     case 'stormFront':
