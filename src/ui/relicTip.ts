@@ -3,6 +3,7 @@ import type { RelicId } from '../core/config';
 import { RELICS, relicText } from '../core/relics';
 import { COLORS, H, W } from '../present/layout';
 import { drawText } from '../render/text';
+import { drawRich } from './keywords';
 import { wrap } from './runScreens';
 
 /**
@@ -44,6 +45,6 @@ export function drawRelicTip(ctx: CanvasRenderingContext2D, relic: RelicId, ax: 
   ctx.fillStyle = COLORS.panel;
   ctx.fillRect(x, y, w, h);
   drawText(ctx, def.name, x + 10, y + 14, 2, '#c9a0ff', { align: 'left' });
-  lines.forEach((l, k) => drawText(ctx, l, x + 10, y + 38 + k * 20, 2, COLORS.text, { align: 'left' }));
+  lines.forEach((l, k) => drawRich(ctx, l, x + 10, y + 38 + k * 20, 2, COLORS.text, { align: 'left' }));
   ctx.restore();
 }

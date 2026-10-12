@@ -138,6 +138,10 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
 - **Boss clarity (user, 2026-10-12):** every boss's rules are short rows, each with the icon the fight uses, then a
   green HOW TO WIN line (`src/ui/bossRules.ts`). The boss card's back shows them; in a boss fight, tap its HUD (the "?")
   and the same card opens over the paused fight. ALL IN shows in two places (its banner, the table panel).
+- **Keywords (user, 2026-10-12):** 16 keywords (PAYLINE, PAIR, JACKPOT, WILD, SHIELD, THROUGH SHIELDS, HEAL, CHARM,
+  LEVEL, METER, BUST, ALL IN, MARK, SLIME, ROCK, BOMB) each have one colour, drawn wherever they appear on draft cards,
+  big choices, Cashier and relic tips and boss rules (`src/ui/keywords.ts`, drawRich). Hovering a draft card lists its
+  keywords beside it; PAUSE -> GLOSSARY lists them all. Add a keyword there, not in the texts.
 - **Stake ladder (user, 2026-10-12):** the stakes after GREEN barely bit (2-7 points a step). Enemy damage +10% a stake
   from BLACK. Sim (1000 runs) BLACK 25-35, BLUE 14-22, GOLD 8-13 (targets 28 / 20 / 14).
 - **User calls, 2026-10-12 (late):** the Dealer's ALL IN grows 25% a loop in ENDLESS (up to 90% of your max HP; the

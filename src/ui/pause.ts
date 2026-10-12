@@ -3,6 +3,7 @@ import { Clock } from '../present/clock';
 import { COLORS, H, W } from '../present/layout';
 import { drawText } from '../render/text';
 import { Button } from './button';
+import { KEYWORDS } from './keywords';
 
 export interface PauseCallbacks {
   onResume: () => void;
@@ -24,19 +25,21 @@ export class Pause {
   private active: Button | null = null;
   private armed = 0;
   private abandon: Button;
+  /** The GLOSSARY page is up (any tap goes back to the menu). */
+  glossary = false;
 
   constructor(ui: Clock, click: () => void, cb: PauseCallbacks) {
     const x = W / 2;
-    const y0 = 270;
     const mk = (label: string, i: number, fn: () => void, primary = false) => {
-      const b = new Button(label, x, y0 + i * 66, 380, 52, fn, ui, click, { textScale: 3, primary });
+      const b = new Button(label, x, PAUSE_Y0 + i * PAUSE_STEP, 380, 52, fn, ui, click, { textScale: 3, primary });
       this.buttons.push(b);
       return b;
     };
     mk('RESUME', 0, () => cb.onResume(), true);
-    mk('SETTINGS', 1, () => cb.onSettings());
-    mk('QUIT TO MENU', 2, () => cb.onQuitToMenu());
-    this.abandon = mk('ABANDON RUN', 3, () => {
+    mk('GLOSSARY', 1, () => (this.glossary = true));
+    mk('SETTINGS', 2, () => cb.onSettings());
+    mk('QUIT TO MENU', 3, () => cb.onQuitToMenu());
+    this.abandon = mk('ABANDON RUN', 4, () => {
       if (this.armed && performance.now() - this.armed > 400) {
         this.armed = 0;
         cb.onAbandon();
@@ -51,11 +54,11 @@ export class Pause {
         }, 2500);
       }
     });
-    if (DESKTOP) mk('QUIT TO DESKTOP', 4, () => cb.onQuitToDesktop());
+    if (DESKTOP) mk('QUIT TO DESKTOP', 5, () => cb.onQuitToDesktop());
   }
 
   navTargets(): Button[] {
-    return this.open ? this.buttons : [];
+    return this.open && !this.glossary ? this.buttons : [];
   }
 
   show(): void {
@@ -66,6 +69,7 @@ export class Pause {
 
   hide(): void {
     this.open = false;
+    this.glossary = false;
     this.active = null;
   }
 
@@ -74,6 +78,10 @@ export class Pause {
   }
 
   pointerDown(x: number, y: number): void {
+    if (this.glossary) {
+      this.glossary = false;
+      return;
+    }
     const b = this.buttons.find((b) => b.contains(x, y));
     if (b) {
       this.active = b;
@@ -101,8 +109,9 @@ export class Pause {
     ctx.fillStyle = 'rgba(6,2,12,0.78)';
     ctx.fillRect(0, 0, W, H);
     const pw = 480;
-    const top = 170;
-    const bottom = 270 + (this.buttons.length - 1) * 66 + 50;
+    if (this.glossary) return this.drawGlossary(ctx);
+    const top = PAUSE_Y0 - 100;
+    const bottom = PAUSE_Y0 + (this.buttons.length - 1) * PAUSE_STEP + 50;
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(W / 2 - pw / 2 - 6, top - 6, pw + 12, bottom - top + 12);
     ctx.fillStyle = COLORS.gold;
@@ -113,4 +122,41 @@ export class Pause {
     for (const b of this.buttons) b.draw(ctx, t);
     drawText(ctx, 'ESC TO RESUME', W / 2, bottom + 30, 1.5, COLORS.textDim);
   }
+
+  /** GLOSSARY (user, 2026-10-12): every keyword in its colour, one line each, two columns. */
+  private drawGlossary(ctx: CanvasRenderingContext2D): void {
+    const pw = 1180;
+    const ph = 640;
+    const px = W / 2 - pw / 2;
+    const py = H / 2 - ph / 2;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(px - 6, py - 6, pw + 12, ph + 12);
+    ctx.fillStyle = COLORS.gold;
+    ctx.fillRect(px - 3, py - 3, pw + 6, ph + 6);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(px, py, pw, ph);
+    drawText(ctx, 'GLOSSARY', W / 2, py + 30, 3.5, COLORS.goldLight);
+    const per = Math.ceil(KEYWORDS.length / 2);
+    KEYWORDS.forEach((k, i) => {
+      const col = Math.floor(i / per);
+      const x = px + 24 + col * (pw / 2);
+      const y = py + 74 + (i % per) * 68;
+      drawText(ctx, k.word, x, y, 2, k.color, { align: 'left' });
+      const words = k.text.split(' ');
+      let line = '';
+      let ly = y + 22;
+      for (const w of words) {
+        if (line && (line + ' ' + w).length > 58) {
+          drawText(ctx, line, x, ly, 1.5, COLORS.text, { align: 'left' });
+          ly += 15;
+          line = w;
+        } else line = line ? `${line} ${w}` : w;
+      }
+      if (line) drawText(ctx, line, x, ly, 1.5, COLORS.text, { align: 'left' });
+    });
+    drawText(ctx, 'TAP TO GO BACK', W / 2, py + ph - 16, 1.5, COLORS.textDim);
+  }
 }
+
+const PAUSE_Y0 = 250;
+const PAUSE_STEP = 62;

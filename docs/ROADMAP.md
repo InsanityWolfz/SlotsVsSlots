@@ -15,8 +15,8 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
 ## Open design questions
 - ALL IN is shown in three places (banner, table panel, the line under its machine).
 - LUCKY BREAK is a free pick next to cards with costs.
-- **Boss clarity**, and a **keyword glossary** (the same words for the same things on every card, each in its own
-  color; a draft is in git history: `loop/KEYWORDS_DRAFT.md` at `c2f0ffb`).
+- **Keywords, next:** use the same words across all texts (the 2026-10-07 audit at `c2f0ffb`
+  `loop/KEYWORDS_DRAFT.md` lists the mismatches: DAMAGE vs HIT, SPIN vs TURN...); tap-a-word on phone.
 
 ## Before a Steam launch
 - The user audits the achievements. Steam leaderboards replace Supabase.

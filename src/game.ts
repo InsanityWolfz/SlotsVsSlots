@@ -53,6 +53,7 @@ import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
 import { Background } from './render/background';
 import { drawSprite, spriteSize, type SpriteId, artId } from './render/sprites';
 import { bossRules } from './ui/bossRules';
+import { drawRich } from './ui/keywords';
 import { drawText, fmtNum } from './render/text';
 import { Button } from './ui/button';
 import { Recap } from './ui/recap';
@@ -1961,7 +1962,7 @@ export class Game {
     for (const l of lines) {
       const sz = spriteSize(l.icon);
       drawSprite(ctx, l.icon, x + 40, ry + 4, 24 / Math.max(sz.w, sz.h));
-      l.rows.forEach((row, k) => drawText(ctx, row, x + 68, ry + k * 24, 2, COLORS.text, { align: 'left' }));
+      l.rows.forEach((row, k) => drawRich(ctx, row, x + 68, ry + k * 24, 2, COLORS.text, { align: 'left' }));
       ry += l.rows.length * 24 + 12;
     }
     drawText(ctx, `HOW TO WIN: ${br.win}`, W / 2, ry + 10, 2, '#7dff7a');

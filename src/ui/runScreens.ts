@@ -52,6 +52,7 @@ import { COLORS, H, PITCH, W } from '../present/layout';
 import { artId, drawSprite, hasSprite, spriteSize, type SpriteId } from '../render/sprites';
 import { drawText, fmtNum, textWidth } from '../render/text';
 import { bossRules, type BossRuleContext } from './bossRules';
+import { drawKeywordBoxes, drawRich, keywordsIn } from './keywords';
 import { heroSprite } from './menus';
 import { CHIP_SCORE, runEntry, runScore } from '../core/profile';
 import { dailyShare } from '../core/daily';
@@ -1022,7 +1023,7 @@ export class RunScreens {
     const big2 = wrap(effect, Math.floor((w - 24) / 12));
     const lines = big2.length <= 2 ? big2 : wrap(effect, Math.floor((w - 24) / 9)).slice(0, 3);
     const es = big2.length <= 2 ? 2 : 1.5;
-    lines.forEach((l, k) => drawText(ctx, l, 0, ey + (k - (lines.length - 1) / 2) * (es * 11), es, COLORS.text));
+    lines.forEach((l, k) => drawRich(ctx, l, 0, ey + (k - (lines.length - 1) / 2) * (es * 11), es, COLORS.text));
     // The cost strip (only when it costs something): it states the rule, the same look on every card.
     const top = h / 2 - 80;
     if (cost) {
@@ -2381,6 +2382,18 @@ export class RunScreens {
     if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), CX, 208, 3);
     drawText(ctx, heading, CX, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
     this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], i, time));
+    // The hovered card's keywords, explained beside it (GLOSSARY: the same words on every card).
+    const hov = this.picked < 0 ? this.cards.findIndex((c) => c.hover && c.scale > 0.9) : -1;
+    if (hov >= 0) {
+      const c = this.cards[hov];
+      const keys = keywordsIn(describeOption(this.offers[hov], this.run ?? undefined).text).slice(0, 3);
+      if (keys.length) {
+        const bw = 230;
+        const right = c.x + c.w / 2 + 14;
+        const bx = right + bw <= W - 8 ? right : c.x - c.w / 2 - 14 - bw;
+        drawKeywordBoxes(ctx, keys, bx, c.y - c.h / 2, bw);
+      }
+    }
   }
 
   private drawCard(ctx: CanvasRenderingContext2D, c: Hit, o: DraftOption, i: number, time: number): void {
@@ -2446,7 +2459,7 @@ export class RunScreens {
     // Wrapped to the card's own width (a 4-card draft is narrower: UNDERDOG ran off it).
     const cols = Math.min(20, Math.floor((w - 20) / 12));
     const long = wrap(text, cols).length > 4;
-    (long ? wrap(text, Math.floor((w - 20) / 9)) : wrap(text, cols)).slice(0, 6).forEach((line, k) => drawText(ctx, line, 0, 30 + k * (long ? 15 : 20), long ? 1.5 : 2, COLORS.text));
+    (long ? wrap(text, Math.floor((w - 20) / 9)) : wrap(text, cols)).slice(0, 6).forEach((line, k) => drawRich(ctx, line, 0, 30 + k * (long ? 15 : 20), long ? 1.5 : 2, COLORS.text));
     if (o.kind === 'relic' && LEGENDARY.has(o.relic)) this.legendTag(ctx, 0, -h / 2 + 14, time);
 
     ctx.restore();
@@ -2693,7 +2706,7 @@ export class RunScreens {
         const isz = spriteSize(r.icon);
         drawSprite(ctx, r.icon, 28, y + 4 * sc, (11 * sc) / Math.max(isz.w, isz.h));
         wrap(r.text, rcols).forEach((l) => {
-          drawText(ctx, l, 50, y, sc, COLORS.text, { align: 'left' });
+          drawRich(ctx, l, 50, y, sc, COLORS.text, { align: 'left' });
           y += 10 * sc;
         });
         y += 6;
@@ -3493,7 +3506,7 @@ export class RunScreens {
     ctx.fillRect(x, y, w, tall);
     const color = o.kind === 'gild' ? CHARM_COLOR[o.enh] : o.kind === 'relic' ? (legend ? '#ffd23f' : '#c9a0ff') : o.kind === 'symLevel' || o.kind === 'charmLevel' ? '#5ad8e8' : COLORS.goldLight;
     drawText(ctx, title, x + 12, y + 18, 2.5, color, { align: 'left' });
-    lines.forEach((l, k) => drawText(ctx, l, x + 12, y + 46 + k * 20, 2, COLORS.text, { align: 'left' }));
+    lines.forEach((l, k) => drawRich(ctx, l, x + 12, y + 46 + k * 20, 2, COLORS.text, { align: 'left' }));
     if (pinned) drawText(ctx, (this.run?.player.chips ?? 0) >= item.price ? 'CLICK AGAIN TO BUY' : 'NOT ENOUGH CHIPS', x + 12, y + 46 + lines.length * 20 + 4, 1.5, COLORS.textDim, { align: 'left' });
   }
 
