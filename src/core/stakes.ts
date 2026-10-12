@@ -42,8 +42,6 @@ export const STAKE = {
   goldBossHp: 1.08,
   /** ACT 3 (THE DEALER): runs at GREEN or higher continue after THE WHEEL. */
   act3: 2,
-  /** Tried and rejected (ITERATION_10 sweep): pot +8 helped the player; halved healing was -7.4 alone. */
-  halfHeal: 99,
 };
 
 /**

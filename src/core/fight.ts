@@ -1104,11 +1104,13 @@ export class Fight {
       }
       // Late in act 3 / an endless loop, enemy swords and sevens hit harder: on the banner, not a hidden multiplier.
       if (!player && (g.symbol === 'sword' || g.symbol === 'seven') && g.base > 0) {
-        const late = this.enemyDmgMul();
-        if (late !== 1) {
-          g.mult *= late;
-          notes.push(`X${Math.round(late * 100) / 100} LATE`);
-        }
+        const all = this.enemyDmgMul();
+        // An elite's x1.25 is its own note; endless loops and act 3's ramp are LATE.
+        const elite = this.cfg.enemy.endless ? 1 : (this.cfg.enemy.dmgMul ?? 1);
+        const late = all / elite;
+        g.mult *= all;
+        if (elite !== 1) notes.push(`X${Math.round(elite * 100) / 100} ELITE`);
+        if (Math.abs(late - 1) > 1e-9) notes.push(`X${Math.round(late * 100) / 100} LATE`);
       }
     }
     for (const g of s.groups) {
@@ -1569,16 +1571,17 @@ export class Fight {
     events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(me.armed ? { armed: true } : {}) });
   }
 
-  /** Enemy damage growth: ENDLESS (per loop, LAST CALL after enemy turn 40) x ATTRITION (act 3). */
+  /** Enemy damage: the fight's knob x ENDLESS (LAST CALL after enemy turn 40) x ATTRITION (act 3). */
   private enemyDmgMul(events?: CombatEvent[]): number {
-    let mul = 1;
+    // The fight's damage knob (TUNE.enemyDmg, elites hit harder, endless loops); it used to apply only in endless.
+    let mul = this.cfg.enemy.dmgMul ?? 1;
     if (this.cfg.enemy.endless) {
       const late = Math.floor(this.turn / 2) - ENDLESS.lastCall;
       if (late > 0 && !this.lastCall && events) {
         this.lastCall = true;
         events.push({ type: 'lastCall', side: 'enemy' });
       }
-      mul *= (this.cfg.enemy.dmgMul ?? 1) * (late > 0 ? 1 + ENDLESS.lastCallStep * late : 1);
+      mul *= late > 0 ? 1 + ENDLESS.lastCallStep * late : 1;
     }
     if ((this.cfg.enemy.act ?? 1) >= 3) mul *= Math.min(TUNE.rampMax, 1 + TUNE.rampPerTurn * Math.max(0, Math.floor(this.turn / 2) - 2));
     return mul;

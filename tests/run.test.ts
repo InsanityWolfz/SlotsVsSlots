@@ -48,7 +48,8 @@ describe('run', () => {
     f.vouchers.length = 0; // (a bonus voucher could pay a heal)
     finishFight(run, f);
     expect(run.depth).toBe(1);
-    expect(run.player.hp).toBe(Math.min(run.player.maxHp, hpAfter + Math.round((run.player.maxHp * RUN.postFightHeal) / 10) * 10));
+    // No heal after a fight: HP carries over.
+    expect(run.player.hp).toBe(hpAfter);
   });
 
   it('a loss ends the run', () => {

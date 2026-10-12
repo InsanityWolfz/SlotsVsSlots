@@ -29,11 +29,6 @@ import { BONUS_SYMBOLS, stripCounts } from './strip';
 /** Run-level tunables. */
 export const RUN = {
   startHp: 32 * UNIT,
-  /** Fraction of max HP restored after every won fight (low, so HP cards matter). */
-  /** 25% (was 20%): with stacked VAMP gone, sustain is more of a baseline and less a charm tax (EXPERT_PLAYTEST_10). */
-  postFightHeal: 0.25,
-  /** Act 3's share of the post-fight heal (it had none). */
-  act3HealMul: 0.33,
   healCard: 8 * UNIT,
   maxHpCard: 4 * UNIT,
   /** A strip can't be thinned below this many cells. */
@@ -660,7 +655,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   const hp = enemyHp(run, e);
   cfg.enemy = { hp, strips: e.strips.map((s) => ({ ...s })), name: e.name, portrait: e.portrait, ability: e.ability, boss: e.boss };
   // Elites hit harder too (2026-10-12: they were a free relic for little risk).
-  if (e.elite) cfg.enemy.dmgMul = ELITE_DMG_MUL;
+  // Enemy hits: x TUNE.enemyDmg (honest, the same for every machine), elites x ELITE_DMG_MUL on top.
+  cfg.enemy.dmgMul = TUNE.enemyDmg * (e.elite ? ELITE_DMG_MUL : 1);
   // (A chip shield, if one ever comes back, stays capped against the bosses.)
   if (e.boss === 'wheel') cfg.player.stackShield = Math.min(BOSS_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
   cfg.relics = [...run.player.relics];
@@ -894,9 +890,9 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     const spoils = pickRelics(pool, 2, rng);
     if (spoils.length) run.pendingSpoils = spoils;
   }
-  // Act 3: THE HOUSE DOESN'T COMP — no patch-up between fights.
-  // GLASS CANNON: no healing between fights at all.
-  let hp = p.hp + (run.glass ? 0 : unitsRound(run.player.maxHp * RUN.postFightHeal * (run.stake >= STAKE.halfHeal ? 0.5 : 1) * (run.act >= 3 ? RUN.act3HealMul : 1)));
+  // No heal after a fight (user, 2026-10-12): HP carries from fight to fight; the act's boss heals you fully.
+  // GLASS CANNON: no healing between fights at all (heal cards, the Cashier, BANDAGE).
+  let hp = p.hp;
   // THE DECK REMEMBERS: the Card Sharp's marks carry into the Dealer fight.
   // The Dealer's own marks don't carry on; the deck resets once it falls.
   run.deckMarks = beaten.boss === 'dealer' ? 0 : Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
@@ -1673,7 +1669,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'sweepUp':
       return { title: 'SWEEP UP', rule: `+${BIG.sweepHeal / 2} MAX HP AND REMOVE ALL ROCKS`, cost: '' };
     case 'glassCannon':
-      return { title: 'GLASS CANNON', rule: `PAIRS AND JACKPOTS PAY X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN ROUNDS' };
+      return { title: 'GLASS CANNON', rule: `PAIRS AND JACKPOTS PAY X${BIG.glassPay}`, cost: 'NO HEAL CARDS, CASHIER HEALS OR BANDAGE' };
     case 'bloodPact':
       return hasMeter(run)
         ? { title: 'BLOOD PACT', rule: `YOUR ${meter} FILLS TWICE AS FAST`, cost: pct(run, BIG.bloodPactHp) }

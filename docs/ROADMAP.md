@@ -21,8 +21,8 @@ bosses may be moved or changed for clarity or balance; a boss may be up to ~10% 
      (blackjack), UNDER OR OVER (dice); offers THE BLOOD BANK, THE PAWN SHOP, THE LOAN SHARK; path shapes with three
      encounters. Possible later: more paylines if the slot needs it.
    - **Next:** the encounters above; the roster audit below; play it.
-     Open questions to settle while playing: should elites keep the +2 chips; is the post-fight heal too generous now
-     that elites carry the risk; should a path have a crossing point mid-act.
+     Open questions to settle while playing: should elites keep the +2 chips; should a path have a crossing point
+     mid-act. (The post-fight heal is gone: user, 2026-10-12.)
    - **Stops:** FIGHT (a draft and chips), ELITE (a relic pick), CASHIER (spend chips), ENCOUNTER (a non-fight
      gamble: stake chips, HP, relics or upgrades; the user is designing these). Encounters replace SIDE BETS.
    - **No right answer (the user's concern with "greedy / safe / mixed").** A path is judged against YOUR run, not

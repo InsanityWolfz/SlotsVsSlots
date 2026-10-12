@@ -6,6 +6,7 @@
 import type { GameConfig, RelicId } from '../core/config';
 import type { CabinetId } from '../core/cabinets';
 import { Fight } from '../core/fight';
+import type { CombatEvent } from '../core/events';
 import { Rng } from '../core/rng';
 import {
   applyOption,
@@ -75,6 +76,8 @@ export interface PlayOpts {
   /** Called before every fight and once at the end (tools/sim/fuzz.ts checks invariants here). */
   onFight?: (run: RunState) => void;
   onEnd?: (run: RunState) => void;
+  /** Every fight step's events (probes: where the damage comes from). */
+  onEvents?: (events: CombatEvent[], run: RunState, fight: Fight) => void;
 }
 
 const best = <T>(xs: T[], v: (x: T) => number): T => xs.reduce((a, b) => (v(b) > v(a) ? b : a));
@@ -104,7 +107,10 @@ export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stak
     const enemyHp = fight.sides.enemy.maxHp;
     const act = run.act;
     const arch = run.enemies[run.depth]?.archetype ?? '?';
-    while (!fight.over && fight.turn < 2000) fight.step();
+    while (!fight.over && fight.turn < 2000) {
+      const { events } = fight.step();
+      opts.onEvents?.(events, run, fight);
+    }
     const won = fight.winner === 'player';
     log.fights.push({ act, kind: boss ? 'boss' : stop?.kind === 'elite' ? 'elite' : 'fight', archetype: arch, hp: enemyHp, turns: fight.turn, won, hpIn, hpOut: Math.max(0, fight.sides.player.hp) / run.player.maxHp });
     finishFight(run, fight);

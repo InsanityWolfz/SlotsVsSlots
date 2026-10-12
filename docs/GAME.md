@@ -14,7 +14,7 @@ which Charms and relics to build.
   paths** of 5 stops each, then the paths rejoin at the Cashier and the boss. Every stop and enemy is shown up
   front; you never choose fights along the way. The three paths have different shapes (`ROUTE_SHAPES`) and never all
   the same number of elites. Endless loops have a single path (fight, Cashier, fight).
-- **Stops:** FIGHT, ELITE (more HP and hits 25% harder; pays a pick of 2 relics, in every act), CASHIER, ENCOUNTER.
+- **Stops:** FIGHT, ELITE (more HP and hits 25% harder, shown as X1.25 ELITE on its hits; pays a pick of 2 relics, in every act), CASHIER, ENCOUNTER.
 - **Encounters** (`src/core/encounters.ts`) are gambles between fights. On the map they're gold "?" boxes: which one
   it is stays secret until you arrive. Seeded by the stop, so a quit can't re-roll one. Two kinds:
   - **Games:** buy-in cards (chips, HP, or a relic the house picks); a bigger buy-in buys more plays.
@@ -44,7 +44,8 @@ which Charms and relics to build.
   - **Cards and words:** buy-in cards all look alike (no LOW / HIGH labels: the player judges the bet). A buy-in you
     can't win back says PAY, not STAKE. No flavour-text subtitles.
 - **THE REPO MAN** is a regular in acts 1-2 (he takes a Charm for his fight; it comes back after).
-- **After every win:** 25% of max HP comes back (a third of that in act 3), then a **draft** (pick 1 of 3 cards:
+- **After every win:** no heal (user, 2026-10-12: HP carries from fight to fight, so survivability and VAMP matter;
+  the act's boss heals you fully). Then a **draft** (pick 1 of 3 cards:
   add, swap or remove symbols, Charms, Charm levels, heals). The drafts after an act's 2nd and 4th won fights offer
   relics.
 - **The Cashier** is a stop: on some paths, and always right before the boss (plus a visit when a new act opens).
