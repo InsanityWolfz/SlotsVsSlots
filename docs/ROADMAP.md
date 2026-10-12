@@ -46,15 +46,12 @@ usage resets.
    41-45%, GREEN 16-19%) never matched real play. The new bot must play like people do (take elites, chase relics,
    snowball, ride endless), report per relic, per Charm and per card, and be checked against real playtest runs.
 
-## From the expert playtest (2026-10-12, unverified until fixed)
-- Bugs: pay banners (PAIR!/JACKPOT!) cover both HUD panels; an enemy shield jackpot's cell numbers don't add up to its
-  banner; UNDERDOG's text overflows on the 4-card draft; visited "?" stops get no checkmark; a legendary can show twice
-  in one act (legendary pick + Cashier / relic draft); LUCKY SEVENS shows only the last pull's pay, no session total;
-  draft clicks during the card animation are dropped silently; flying shield icons hide the shield number; KNIGHT
-  showed SWORD LV5 at GREEN (cap is 4: check ARMS RACE and friends); "PRESS TO CONTINUE" too dim.
-- Clarity: HIGH ROLLER isn't explained on BANKROLL's card; ROUND means two different
-  things; HIGHER OR LOWER doesn't say aces are high; THE LOAN SHARK doesn't say when he collects; ALL IN is shown in
-  three places; buying at the Cashier needs a click on the price tag, not the item.
+## From the expert playtest (2026-10-12)
+- Fixed 2026-10-12: pay banners over the HP bars, enemy payline numbers, UNDERDOG overflow, "?" checkmarks, legendary
+  twice an act, LUCKY SEVENS total, draft clicks during the deal, flying shields over the number, PRESS TO CONTINUE,
+  HIGH ROLLER on BANKROLL's card, ROUND (fight length is SPINS now), aces high, the LOAN SHARK's terms, Cashier item
+  clicks. (SWORD LV5 at GREEN is LIMIT BREAK, by design.)
+- Clarity: ALL IN is shown in three places (banner, table panel, warning over its machine).
 - Design: strong runs snowball into one-spin fights (BANKROLL's shield build reached 7000 shield); KNIGHT fights drag
   (29-33 spins); Cashier heals and THE BLOOD BANK are too cheap now that there's no heal after fights (chip-rich
   machines shrug off attrition); LUCKY BREAK is a free pick next to cards with costs.

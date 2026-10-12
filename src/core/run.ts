@@ -227,6 +227,8 @@ export interface RunState {
   act: number;
   /** An act's boss fell: choose 1 of these legendary relics. */
   pendingLegend: RelicId[] | null;
+  /** The legendaries the act's legendary pick showed (`key` = act and endless loop): later offers that act skip them. */
+  legendSeen?: { key: string; relics: RelicId[] };
   /** A new act just began: the Cashier opens before its first fight. */
   actIntro: boolean;
   /** HIGH STAKES level (0 = base game). */
@@ -500,7 +502,12 @@ function startNextAct(run: RunState): void {
   if (run.act > 2) return;
   const pool = [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
   run.pendingLegend = rng.shuffle(pool).slice(0, RUN.legendPick);
+  run.legendSeen = { key: legendKey(run), relics: [...run.pendingLegend] };
 }
+
+const legendKey = (run: RunState) => `${run.act}:${run.endless?.loop ?? 0}`;
+/** A legendary the act's legendary pick already showed (playtest: it came back at the Cashier the same act). */
+const legendShown = (run: RunState, r: RelicId) => run.legendSeen?.key === legendKey(run) && run.legendSeen.relics.includes(r);
 
 /** What answers your build: a charm build or any meter → the Counterfeiter. (The Grounder is retired, 2026-10-12.) */
 export function counterFor(run: RunState): string | null {
@@ -1181,7 +1188,7 @@ export function draftOffers(run: RunState): DraftOption[] {
   const hpCard = (): DraftOption => (p.hp < p.maxHp * 0.75 && !run.glass ? { kind: 'heal', amount: RUN.healCard } : { kind: 'maxHp', amount: RUN.maxHpCard });
   const relicCard = (): DraftOption | null => {
     const pool = (Object.keys(RELICS) as RelicId[]).filter(
-      (r) => !p.relics.includes(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && (run.act > 1 || !LEGENDARY.has(r)) && !out.some((o) => o.kind === 'relic' && o.relic === r),
+      (r) => !p.relics.includes(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && (run.act > 1 || !LEGENDARY.has(r)) && !legendShown(run, r) && !out.some((o) => o.kind === 'relic' && o.relic === r),
     );
     // One relic card per draft is yours: your machine's or your charms' (while any are left).
     // The identity slot draws from each machine's signature relics; wave relics compete in the open slots (with them in
@@ -1327,7 +1334,7 @@ export function shopOffers(run: RunState): ShopItem[] {
     (r) => !p.relics.includes(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && !(lastShop && r === 'bandage') && !LEGENDARY.has(r),
   );
   // Act 2: the relic slot holds a legendary, priced like one.
-  const legends = run.act > 1 ? [...LEGENDARY].filter((r) => !p.relics.includes(r) && relicFits(run, r)) : [];
+  const legends = run.act > 1 ? [...LEGENDARY].filter((r) => !p.relics.includes(r) && relicFits(run, r) && !legendShown(run, r)) : [];
   if (legends.length) add({ kind: 'relic', relic: rng.pick(legends) }, P.legend);
   else add(relics.length ? { kind: 'relic', relic: rng.pick(relics) } : null, P.relic);
   const u = rng.next();

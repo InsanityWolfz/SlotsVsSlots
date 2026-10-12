@@ -89,7 +89,7 @@ export class Recap {
 
     const win = st.winner === 'player';
     drawText(ctx, win ? 'VICTORY' : 'DEFEAT', W / 2, y + 34, 6, win ? COLORS.goldLight : COLORS.danger);
-    drawText(ctx, `${Math.ceil(st.turns / 2)} ROUNDS  -  SEED ${st.seed}`, W / 2, y + 70, 2, COLORS.textDim);
+    drawText(ctx, `${st.turns} SPINS  -  SEED ${st.seed}`, W / 2, y + 70, 2, COLORS.textDim);
 
     const colP = x + 150;
     const colE = x + pw - 150;

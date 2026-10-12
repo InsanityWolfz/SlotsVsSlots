@@ -298,7 +298,8 @@ function drawBackdrop(ctx: CanvasRenderingContext2D): void {
   }
 }
 
-const rounds = (turns: number) => { const n = Math.ceil(turns / 2); return `${n} ROUND${n === 1 ? '' : 'S'}`; };
+// A fight's length in SPINS, as the fight's own counter shows it (ROUND means a fight on every card: playtest).
+const rounds = (turns: number) => `${turns} SPIN${turns === 1 ? '' : 'S'}`;
 
 /** The ability's effect in a few words (the panel's front shows this under the cadence pips). */
 function abilityWhat(e: EnemyDef, run?: RunState): string {
@@ -1859,10 +1860,13 @@ export class RunScreens {
       const row = premium(it) ? 1 : 0;
       const k = rows[row].indexOf(it);
       const n = rows[row].length;
-      // The item itself: a click or tap pins its card open (hover shows it too). The tag under it buys.
+      // The item itself: a click or tap pins its card open (hover shows it too); a second click on it buys, like the tag
+      // under it (playtest: clicking the item never bought).
       const x = CX + (k - (n - 1) / 2) * SHELF.gap;
       const h = this.hit(x, SHELF.y[row] - 8, 128, 100, () => {
-        this.shopSel = this.shopSel === i ? -1 : i;
+        if (this.shopSel === i) {
+          if (this.mode === 'shop') this.cb.onBuy(i);
+        } else this.shopSel = i;
       });
       h.scale = reopen ? 1 : 0;
       return h;
@@ -2043,9 +2047,14 @@ export class RunScreens {
   }
 
   pointerDown(x: number, y: number): boolean {
-    // A fresh screen ignores clicks for a moment, so a double-click can't buy on arrival (ITERATION_9 H8).
-    if (performance.now() - this.openedAt < INPUT_GUARD_MS) return this.active;
-    const h = this.all().find((h) => this.inside(h, x, y));
+    // A fresh screen ignores clicks for a moment, so a double-click can't buy on arrival (ITERATION_9 H8). A press that
+    // starts in that moment still counts if it's released after it (playtest: draft clicks during the deal were dropped).
+    // (A card still being dealt in, too small to see, can't be picked.)
+    const h = this.all().find((h) => this.inside(h, x, y) && !(this.cards.includes(h) && h.scale < 0.3));
+    if (performance.now() - this.openedAt < INPUT_GUARD_MS) {
+      if (h) h.pressed = true;
+      return this.active;
+    }
     // Only the card's "?" tab flips it (picking is the FIGHT button): one spot per action, so taps never mix them up.
     if (!h && this.mode === 'next' && this.run && !needsRoute(this.run)) {
       const px = CX - 330;
@@ -2065,7 +2074,7 @@ export class RunScreens {
     for (const h of this.all()) {
       if (!h.pressed) continue;
       h.pressed = false;
-      if (!this.inside(h, x, y)) {
+      if (!this.inside(h, x, y) || performance.now() - this.openedAt < INPUT_GUARD_MS) {
         void this.ui.to(h, 'scale', 1, 0.1);
         continue;
       }
@@ -2166,7 +2175,7 @@ export class RunScreens {
     } else if (st?.kind === 'shop') drawSprite(ctx, 'cashierPortrait', x, y, 1.8 * k, { dim });
     else if (st) drawText(ctx, '?', x, y + 1, 3 * k, COLORS.goldLight, { alpha: o.done || o.faded ? 0.5 : 1 });
     else drawSprite(ctx, 'mapFork', x, y, 2.5 * k);
-    if (o.done && e) drawSprite(ctx, 'nodeDone', x - s + 6, y + s - 6, 2 * k);
+    if (o.done && st) drawSprite(ctx, 'nodeDone', x - s + 6, y + s - 6, 2 * k);
     if (Math.abs(this.mouse.x - x) > s || Math.abs(this.mouse.y - y) > s) return null;
     if (e) return { e, x, y: y + s };
     if (st?.kind === 'shop') return { title: 'THE CASHIER', sub: 'SPEND YOUR CHIPS', x, y: y + s };
@@ -2426,8 +2435,10 @@ export class RunScreens {
       drawSprite(ctx, 'plusBadge', 30, iy + 22, 3);
     }
     drawText(ctx, title, 0, 2, title.length > 13 ? 2 : 3, accent);
-    const long = wrap(text, 20).length > 4;
-    (long ? wrap(text, 27) : wrap(text, 20)).slice(0, 6).forEach((line, k) => drawText(ctx, line, 0, 30 + k * (long ? 15 : 20), long ? 1.5 : 2, COLORS.text));
+    // Wrapped to the card's own width (a 4-card draft is narrower: UNDERDOG ran off it).
+    const cols = Math.min(20, Math.floor((w - 20) / 12));
+    const long = wrap(text, cols).length > 4;
+    (long ? wrap(text, Math.floor((w - 20) / 9)) : wrap(text, cols)).slice(0, 6).forEach((line, k) => drawText(ctx, line, 0, 30 + k * (long ? 15 : 20), long ? 1.5 : 2, COLORS.text));
     if (o.kind === 'relic' && LEGENDARY.has(o.relic)) this.legendTag(ctx, 0, -h / 2 + 14, time);
 
     ctx.restore();
@@ -2801,6 +2812,9 @@ export class RunScreens {
           ctx.fillRect(CX - 56 * k, 250 - 76 * k, 112 * k, 152 * k);
           drawText(ctx, '?', CX, 250, 10 * k, '#e8b0ff');
         }
+        // When THE LOAN SHARK collects (playtest: it never said).
+        if (def.id === 'shark')
+          ['HE TAKES WHAT YOU OWE OUT OF YOUR WINNINGS AFTER EACH FIGHT.', "WHAT'S LEFT AT THE ACT'S BOSS COMES OUT OF YOUR CHIPS, THEN MAX HP."].forEach((l, k) => drawText(ctx, l, CX, 366 + k * 22, 1.5, COLORS.textDim));
         // The relic an offer wants (THE PAWN SHOP): its icon, readable by tooltip.
         const wanted = this.encChoices.find((c) => c.relic)?.relic;
         if (wanted) {
@@ -2936,6 +2950,8 @@ export class RunScreens {
       drawText(ctx, `${hiloPot(bet, k)}`, cx + 200, y, 2, lit ? COLORS.goldLight : nextUp ? COLORS.text : COLORS.textDim, { punch: nextUp ? 1 + 0.05 * Math.sin(time * 6) : 1 });
     }
     drawText(ctx, 'POT', cx + 200, 470, 1.5, COLORS.textDim);
+    // The rules nobody guesses (playtest: is the ace high?).
+    drawText(ctx, 'ACES ARE HIGH. A TIE LOSES.', cx, 196, 1.5, COLORS.textDim);
     // Right column: your bet before the deal; the pot during the hand.
     if (!st) {
       drawText(ctx, 'YOUR BET', RL.betX, 150, 2, COLORS.textDim);
@@ -3057,6 +3073,12 @@ export class RunScreens {
     if (!res || !this.encDone) this.drawPaytable(ctx, ty);
     if (win) drawText(ctx, win.text, CX, ty + 46, 3, win.count >= 4 ? '#ff8a3a' : COLORS.goldLight, { punch: 1 + 0.1 * Math.max(0, 1 - (this.slotClock.time - win.at) * 3) });
     if (res && !this.encDone) drawText(ctx, `PULL ${Math.max(1, this.encLanded + (this.slotReels.some((rv) => rv.spinning) ? 1 : 0))} OF ${res.pulls?.length ?? 0}`, CX, ty + 92, 2, COLORS.textDim);
+    // The session so far (playtest: only the last pull's pay showed).
+    if (res && !this.encDone) {
+      const so = (res.pulls ?? []).slice(0, this.encLanded).reduce((a, pl) => ({ chips: a.chips + pl.gain.chips, hp: a.hp + pl.gain.hp, maxHp: a.maxHp + pl.gain.maxHp }), { chips: 0, hp: 0, maxHp: 0 });
+      const parts = [so.chips && `+${so.chips} CHIPS`, so.hp && `+${so.hp} HP`, so.maxHp && `+${so.maxHp} MAX HP`].filter(Boolean);
+      if (parts.length) drawText(ctx, `SO FAR: ${parts.join('  ')}`, CX, ty + 120, 2, COLORS.goldLight);
+    }
     if (res && this.encDone) {
       const gains = res.gains ?? [];
       drawText(ctx, res.title, CX, ty + 4, 4, gains.length ? COLORS.goldLight : '#ff8a7a', { punch: 1 + 0.03 * Math.sin(time * 6) });
@@ -3434,7 +3456,8 @@ export class RunScreens {
     const lines = wrap(text, 26);
     const legend = o.kind === 'relic' && LEGENDARY.has(o.relic);
     const w = 340;
-    const tall = 46 + lines.length * 20;
+    const pinned = this.shopSel === this.shopHits.indexOf(h);
+    const tall = 46 + lines.length * 20 + (pinned ? 22 : 0);
     // The top shelf opens its card above the item (a side card covered the neighbours' prices); the relic shelf, to the side.
     const top = h.y < (SHELF.y[0] + SHELF.y[1]) / 2;
     const right = h.x + h.w / 2 + 14 + w <= W - 8;
@@ -3449,6 +3472,7 @@ export class RunScreens {
     const color = o.kind === 'gild' ? CHARM_COLOR[o.enh] : o.kind === 'relic' ? (legend ? '#ffd23f' : '#c9a0ff') : o.kind === 'symLevel' || o.kind === 'charmLevel' ? '#5ad8e8' : COLORS.goldLight;
     drawText(ctx, title, x + 12, y + 18, 2.5, color, { align: 'left' });
     lines.forEach((l, k) => drawText(ctx, l, x + 12, y + 46 + k * 20, 2, COLORS.text, { align: 'left' }));
+    if (pinned) drawText(ctx, (this.run?.player.chips ?? 0) >= item.price ? 'CLICK AGAIN TO BUY' : 'NOT ENOUGH CHIPS', x + 12, y + 46 + lines.length * 20 + 4, 1.5, COLORS.textDim, { align: 'left' });
   }
 
   /** One item on a shelf: just its picture and its chip price (hover it to read it). Relics sit on velvet. */
@@ -3693,7 +3717,7 @@ export class RunScreens {
     const cut = twoLines ? 18 : 0;
     this.panel(ctx, 316, 120 + top, 940, 320 - top - cut);
     drawText(ctx, 'FIGHT', 350, 142 + top, 2, COLORS.textDim, { align: 'left' });
-    drawText(ctx, 'ROUNDS', 715, 142 + top, 2, COLORS.textDim);
+    drawText(ctx, 'SPINS', 715, 142 + top, 2, COLORS.textDim);
     drawText(ctx, 'HP', 821, 142 + top, 2, COLORS.textDim);
     drawText(ctx, 'THEN PICKED', 919, 142 + top, 2, COLORS.textDim, { align: 'left' });
     // Up to 16 fights: rows shrink (and drop the detail line) once they stop fitting.
@@ -3721,7 +3745,7 @@ export class RunScreens {
       const ts = rowH < 18 ? 1.25 : rowH < 22 ? 1.5 : 2;
       drawSprite(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 350, y, compact ? (rowH < 22 ? 0.65 : 0.9) : 1.4);
       drawText(ctx, r.enemy, 376, y, ts, r.won ? COLORS.text : COLORS.danger, { align: 'left' });
-      drawText(ctx, `${Math.ceil(r.turns / 2)}`, 715, y, ts, COLORS.text);
+      drawText(ctx, `${r.turns}`, 715, y, ts, COLORS.text);
       drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 821, y, ts, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
       if (compact) {
         const parts = [...(r.bonuses ?? []), r.eliteRelic ? RELICS[r.eliteRelic].name : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? describeOption(r.pick).title : '', ...(r.bought ?? []).map((b) => describeOption(b).title)].filter(Boolean);
@@ -3804,6 +3828,6 @@ export class RunScreens {
     }
     if (this.shareLine) drawText(ctx, this.shareLine, W / 2, 548, 1.5, '#7dff7a');
     if (this.resultsCopy) this.drawButton(ctx, this.resultsCopy, 0);
-    drawText(ctx, r.done ? 'PRESS TO CONTINUE' : 'PRESS TO SKIP', W / 2, 620, 1.5, COLORS.textDim, { alpha: 0.6 + 0.4 * Math.sin(performance.now() / 200) });
+    drawText(ctx, r.done ? 'PRESS TO CONTINUE' : 'PRESS TO SKIP', W / 2, 620, 2, r.done ? COLORS.text : COLORS.textDim, { alpha: 0.8 + 0.2 * Math.sin(performance.now() / 200) });
   }
 }

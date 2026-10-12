@@ -38,6 +38,8 @@ const BATCHABLE = new Set<CombatEvent['type']>(['attack', 'shieldGain', 'energyG
 
 /** Banners sit in the top gutter between the HUD panels, never over the reels. */
 const BANNER_Y = 172;
+/** PAIR! / JACKPOT!: mid-machine, like BUST! and ALL IN (at BANNER_Y they covered both HP bars as the hit landed). */
+const PAY_BANNER_Y = MACHINE_TOP + MACHINE_H / 2;
 /** Where your chip count sits (top left: runScreens CHIP_SPOT): swept bets fly there. */
 const CHIP_COUNTER = { x: 44, y: 46 };
 
@@ -47,6 +49,8 @@ const CHIP_COUNTER = { x: 44, y: 46 };
  */
 export class Director {
   private lastScore: LineScore | null = null;
+  /** The last spin's final stops per side (the payline numbers read the landed cells, not mid-spin ones). */
+  private lastStops: Partial<Record<SideId, number[]>> = {};
   /** THE DROP's lit cells: the next player attack flies a note from each. */
   private dropCells: { reel: number; row: number }[] | null = null;
   private lastSpin: Partial<Record<SideId, { frozen: boolean[]; locked: boolean[]; hexed: boolean[] }>> = {};
@@ -511,6 +515,7 @@ export class Director {
   private async spin(e: Ev<'spin'>): Promise<void> {
     const m = this.s.machines[e.side];
     this.lastScore = e.score;
+    this.lastStops[e.side] = e.stops;
     m.clearRowFx();
     const near = e.nearMiss && this.s.juice.nearMiss;
     this.lastSpin[e.side] = { frozen: e.frozen, locked: e.locked, hexed: e.hexed ?? [] };
@@ -592,8 +597,12 @@ export class Director {
     const lvl = charm ? (player ? charmLevel(lv, charm, this.s.ticket) : 1) : 1;
     // What the cell really hits (or blocks) for: its share of its group's FINAL pay, after every multiplier, so the
     // numbers on the line add up to the banner's total (user: the cells said 13 while the hit was 7,000).
+    // Each reel's LANDED payline cell: the reels to its right may still be spinning when this one's number pops (an
+    // enemy shield jackpot read 9 / 11 / 15 under a 15 x 3 banner).
+    const stops = this.lastStops[side];
     const cellBase = (rr: number): number => {
-      const c = m.reels[rr].cellAtRow(1);
+      const reel = m.reels[rr];
+      const c = stops ? reel.cells[((stops[rr] % reel.cells.length) + reel.cells.length) % reel.cells.length] : reel.cellAtRow(1);
       const b = (lv ? playerSymValue(lv, c.symbol, BASE[c.symbol] ?? 0) : !player && c.symbol === 'shield' ? Math.round((BASE[c.symbol] ?? 0) * this.s.enemyShield) : BASE[c.symbol] ?? 0) + (this.symBonus[side]?.[c.symbol] ?? 0);
       const k = c.enh === 'keen' && !(c.faked && c.faked > 0) && m.hexed[rr] <= 0 ? charmValue('keen', player ? charmLevel(lv, 'keen', this.s.ticket) : 1) : 0;
       return b + k;
@@ -718,7 +727,7 @@ export class Director {
       this.s.camera.chromaPulse(0.15);
       // Non-blocking: the effects start while the banner is still up.
       // A big hit's math stays up long enough to read (R13: 0.35 s for a 7,000 hit was gone before you saw it).
-      this.bg(this.banner('PAIR!', COLORS.pair, 1.15, bigMath ? 1.1 : 0.35, parts));
+      this.bg(this.banner('PAIR!', COLORS.pair, 1.15, bigMath ? 1.1 : 0.35, parts, PAY_BANNER_Y));
       await this.c.wait(0.3);
     } else {
       this.s.sounds.fanfareJackpot();
@@ -742,7 +751,7 @@ export class Director {
         size: [5, 9],
         kind: 'confetti',
       });
-      await this.banner('JACKPOT!', COLORS.triple, 1.5, bigMath ? 1.2 : 0.6, parts, BANNER_Y, 5);
+      await this.banner('JACKPOT!', COLORS.triple, 1.5, bigMath ? 1.2 : 0.6, parts, PAY_BANNER_Y, 5);
       this.s.camera.dimTarget = 0;
     }
   }
@@ -831,7 +840,8 @@ export class Director {
       await this.c.wait(i * 0.06);
       const from = cellCenter(e.side, r, 1);
       const p = this.s.fx.add(new Projectile('shield', from.x, from.y - 14, 2.5, false, COLORS.shield));
-      await this.arc(p, sb.x + 20 + i * 20, sb.y + sb.h / 2, 0.28, 40, sineInOut);
+      // Into the shield icon left of the bar, never over its number (playtest: the icons hid it).
+      await this.arc(p, sb.x - 12, sb.y + sb.h / 2, 0.28, 40, sineInOut);
       this.s.fx.remove(p);
       this.s.particles.burst({ x: p.x, y: p.y, count: 8, colors: [COLORS.shield, '#ffffff'], speed: [60, 200], gravity: 0, life: [0.2, 0.4], size: [2, 4] });
     });
@@ -1271,7 +1281,7 @@ export class Director {
         kind: 'confetti',
       });
     const b = this.s.fx.add(new Banner(win ? 'VICTORY!' : 'DEFEAT', win ? COLORS.goldLight : COLORS.danger, W / 2, H / 2 - 40, 9));
-    b.sub = `${Math.ceil(e.turns / 2)} ROUND${Math.ceil(e.turns / 2) === 1 ? '' : 'S'}`;
+    b.sub = `${e.turns} SPIN${e.turns === 1 ? '' : 'S'}`;
     await this.c.tween({ from: 0, to: 1.4, dur: 0.3, ease: backOut(2), onUpdate: (v) => (b.scale = v) });
     await this.c.tween({ from: 1.4, to: 1, dur: 0.2, ease: sineIn, onUpdate: (v) => (b.scale = v) });
     await this.c.wait(1.6);
