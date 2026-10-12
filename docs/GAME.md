@@ -124,6 +124,9 @@ BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP).
   small ramp (was x1.45 with a big one). Act 3 fights ending in 2 spins or fewer: 20-55% -> 13-23% for every machine
   but BANKROLL (49%: MAKE IT RAIN hits for the chips held). GREEN: KNIGHT 36, JUKEBOX 35, TESLA 42, JOKER 52,
   BANKROLL 49.
+- **Healing (2026-10-12):** under a quarter of max HP, every draft holds a heal of a quarter of max HP (a run at
+  17% HP once had none on offer); each Cashier heal in a run costs 6 chips more than the last (12, 18, 24...), so
+  chip-rich machines can't buy off attrition. WHITE +0-2, GREEN within 1.
 - **No healing penalty in Act 3 (user, 2026-10-12):** healing used to be halved there; it hit the slow machines'
   Dealer fights hardest (KNIGHT GREEN 29 -> 38, JUKEBOX 25 -> 39).
 

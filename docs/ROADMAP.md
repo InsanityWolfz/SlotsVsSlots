@@ -53,8 +53,7 @@ usage resets.
   clicks. (SWORD LV5 at GREEN is LIMIT BREAK, by design.)
 - Clarity: ALL IN is shown in three places (banner, table panel, warning over its machine).
 - Design: strong runs snowball into one-spin fights (BANKROLL's shield build reached 7000 shield); KNIGHT fights drag
-  (29-33 spins); Cashier heals and THE BLOOD BANK are too cheap now that there's no heal after fights (chip-rich
-  machines shrug off attrition); LUCKY BREAK is a free pick next to cards with costs.
+  (29-33 spins); Cashier heals now cost more each time (THE BLOOD BANK unchanged); LUCKY BREAK is a free pick next to cards with costs.
 
 ## From the ENDLESS playtests (2026-10-12)
 - Fixed 2026-10-12: BLOOD MOON / OVERCLOCK conversions (no fitting Charm, free shield cost), the endless run-over table

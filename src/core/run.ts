@@ -41,6 +41,12 @@ export const RUN = {
   /** Act 1 catch-up: a fight that cost at least this share of max HP adds a 4th card, a big heal. */
   catchUpLoss: 0.35,
   catchUpHeal: 0.35,
+  /** Under this share of max HP, every draft holds a heal card. */
+  lowHp: 0.25,
+  /** ... and that heal is this share of max HP. */
+  lowHeal: 0.25,
+  /** Each Cashier heal bought this run costs this much more than the last. */
+  healStep: 6,
   /** Rocks an ELITE adds during one fight that stay for the rest of the run; the rest (and every normal enemy's) crumble. */
   permanentRocksPerFight: 2,
   /** Drafts right after these fights (1-based) offer relics (2 relics + 1 other). */
@@ -255,6 +261,8 @@ export interface RunState {
   glass?: boolean;
   /** The Cashier's heal was bought this visit (it's once a visit). */
   healBought?: boolean;
+  /** Cashier heals bought this run (each costs more). */
+  healsBought?: number;
   /** BLOOD PACT: your meter fills twice as fast. */
   bloodPact?: boolean;
   /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day), and the day's HOUSE EDGE. */
@@ -1252,6 +1260,10 @@ export function draftOffers(run: RunState): DraftOption[] {
   }
   let guard = 0;
   while (out.length < RUN.draftSize && guard++ < 30) push(guard % 3 === 0 ? addCard() : guard % 3 === 1 ? swapCard() : { kind: 'maxHp', amount: RUN.maxHpCard });
+  // Low HP, any act: a heal is always on offer (playtest: 58/330 HP and no heal card, with fights no longer healing).
+  if (!run.glass && p.hp < p.maxHp * RUN.lowHp && !out.some((o) => o.kind === 'heal') && out.length) {
+    out[out.length - 1] = { kind: 'heal', amount: Math.max(UNIT, Math.round((p.maxHp * RUN.lowHeal) / UNIT) * UNIT) };
+  }
   return out;
 }
 
@@ -1385,7 +1397,7 @@ export function shopOffers(run: RunState): ShopItem[] {
   // HEAL is a permanent service slot, sized to what you're missing (hidden when nearly full).
   const missing = p.maxHp - p.hp;
   // Once a visit: a reroll doesn't bring it back after you bought it.
-  if (missing >= 3 * UNIT && !run.glass && !run.healBought) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal, sold: false });
+  if (missing >= 3 * UNIT && !run.glass && !run.healBought) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal + RUN.healStep * (run.healsBought ?? 0), sold: false });
   return shelf;
 }
 
@@ -1424,7 +1436,10 @@ export function buy(run: RunState, item: ShopItem): boolean {
   run.player.chips -= item.price;
   applyOption(run, item.option, false);
   item.sold = true;
-  if (item.option.kind === 'heal') run.healBought = true;
+  if (item.option.kind === 'heal') {
+    run.healBought = true;
+    run.healsBought = (run.healsBought ?? 0) + 1;
+  }
   const last = run.records.at(-1);
   if (last) (last.bought ??= []).push(item.option);
   return true;
