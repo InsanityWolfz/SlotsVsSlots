@@ -1720,8 +1720,6 @@ export class Fight {
   }
 
   private heal(me: Combatant, amount: number, source: HealSource, events: CombatEvent[]): void {
-    // ACT 3: the House doesn't comp. Your healing is halved, so you reach the Dealer worn down (EXPERT_PLAYTEST_2 G8).
-    if (me.side === 'player' && (this.cfg.enemy.act ?? 1) >= 3) amount = Math.max(1, Math.round(amount * TUNE.act3Heal));
     if (me.side === 'player' && this.cfg.player.healMul) amount = Math.max(1, Math.round(amount * this.cfg.player.healMul));
     const n = Math.min(amount, me.maxHp - me.hp);
     if (n > 0) {

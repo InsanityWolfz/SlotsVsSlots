@@ -120,6 +120,8 @@ BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP).
   lists win-rate lifts (inflated by survivorship).
 - **TESLA's lightning grows additively (2026-10-12, the user's idea):** its boosts (OVERCHARGE, LIVE WIRE, MELTDOWN,
   MAD SCIENCE, CHAIN LIGHTNING +100%) add up instead of multiplying; base bolt 60, BLAZE +5 a level. WHITE 56, GREEN 36.
+- **No healing penalty in Act 3 (user, 2026-10-12):** healing used to be halved there; it hit the slow machines'
+  Dealer fights hardest (KNIGHT GREEN 29 -> 38, JUKEBOX 25 -> 39).
 
 ## Modes and meta
 - **Modes:** the normal run, DAILY, WEEKLY and ENDLESS.
