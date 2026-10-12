@@ -48,7 +48,7 @@ export const RUN = {
   /** Act 1 catch-up: a fight that cost at least this share of max HP adds a 4th card, a big heal. */
   catchUpLoss: 0.35,
   catchUpHeal: 0.35,
-  /** Rocks added during one fight that stay for the rest of the run; the rest crumble. */
+  /** Rocks an ELITE adds during one fight that stay for the rest of the run; the rest (and every normal enemy's) crumble. */
   permanentRocksPerFight: 2,
   /** Drafts right after these fights (1-based) offer relics (2 relics + 1 other). */
   relicDraftsAfter: [2, 4],
@@ -510,10 +510,9 @@ function startNextAct(run: RunState): void {
   run.pendingLegend = rng.shuffle(pool).slice(0, RUN.legendPick);
 }
 
-/** What answers your build: TESLA's lightning → the Grounder (only TESLA meets it); a charm build or any other meter → the Counterfeiter. */
+/** What answers your build: a charm build or any meter → the Counterfeiter. (The Grounder is retired, 2026-10-12.) */
 export function counterFor(run: RunState): string | null {
   const charms = run.player.gilded.reduce((a, g) => a + g.n, 0);
-  if (run.cabinet === 'tesla') return 'grounder';
   if (charms >= 4) return 'counterfeiter';
   return CABINETS[run.cabinet].meter ? 'counterfeiter' : null;
 }
@@ -966,8 +965,9 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   const next = p.reels.map((r) => stripCounts(r));
   // The chase symbols only ride along for the fight.
   for (const s of next) for (const sym of BONUS_SYMBOLS) delete s[sym];
-  // Rocks are real cells, but only a couple per fight stay for good; the rest crumble.
-  let extra = rocksIn(next) - rocksIn(old) - RUN.permanentRocksPerFight;
+  // Rocks are real cells for the fight. Afterwards they crumble, except an elite's: a couple of those stay for good
+  // (user, 2026-10-12: permanent rocks cost far too much for a normal enemy).
+  let extra = rocksIn(next) - rocksIn(old) - (currentEnemy(run).elite ? RUN.permanentRocksPerFight : 0);
   let crumbled = 0;
   while (extra > 0) {
     const r = next.map((s, i) => ({ i, gained: (s.rock ?? 0) - (old[i]?.rock ?? 0) })).sort((a, b) => b.gained - a.gained)[0];

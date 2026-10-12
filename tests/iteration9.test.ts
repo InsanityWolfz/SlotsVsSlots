@@ -73,8 +73,8 @@ describe('counter-enemies', () => {
     expect(f.sides.player.reels[0].cells.some((c) => c.faked)).toBe(false);
   });
 
-  it('both join the act 2 pool from fight 2', () => {
-    for (const id of ['grounder', 'counterfeiter']) {
+  it('the counterfeiter joins the act 2 pool from fight 2', () => {
+    for (const id of ['counterfeiter']) {
       const a = ARCHETYPES.find((x) => x.id === id)!;
       expect(a.acts).toEqual([2]);
       expect(a.minDepth).toBe(1);

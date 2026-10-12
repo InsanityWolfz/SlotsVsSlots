@@ -151,8 +151,8 @@ describe('THE JUKEBOX in the profile', () => {
   });
 });
 
-describe('THE GROUNDER is for TESLA only', () => {
-  it('no other slot machine meets it, in any act', async () => {
+describe('THE GROUNDER is retired', () => {
+  it('no slot machine meets it, in any act', async () => {
     const { generateRunPaths } = await import('../src/core/enemies');
     const { Rng } = await import('../src/core/rng');
     const seen = (cab?: 'tesla' | 'jukebox' | 'knight') => {
@@ -162,7 +162,7 @@ describe('THE GROUNDER is for TESLA only', () => {
     };
     expect(seen('jukebox')).toBe(0);
     expect(seen('knight')).toBe(0);
-    expect(seen('tesla')).toBeGreaterThan(0);
+    expect(seen('tesla')).toBe(0);
   });
 });
 

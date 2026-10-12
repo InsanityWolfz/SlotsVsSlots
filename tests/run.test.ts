@@ -78,8 +78,19 @@ describe('run', () => {
     expect(run.player.maxHp).toBe(max + 6);
   });
 
-  it('only 2 rocks per fight stay permanently; the rest crumble', () => {
+  it("a normal enemy's rocks all crumble after the fight", () => {
     const run = createRun(base, 8);
+    const f = new Fight(fightConfig(run, base), 2);
+    for (let i = 0; i < 5; i++) f.sides.player.reels[i % 3].cells.push({ symbol: 'rock', slimed: false });
+    f.winner = 'player';
+    const rec = finishFight(run, f);
+    expect(rec.rocksCrumbled).toBe(5);
+    expect(run.player.strips.reduce((a, s) => a + (s.rock ?? 0), 0)).toBe(0);
+  });
+
+  it("an elite's rocks: 2 stay permanently, the rest crumble", () => {
+    const run = createRun(base, 8);
+    run.enemies[run.depth].elite = true;
     const f = new Fight(fightConfig(run, base), 2);
     for (let i = 0; i < 5; i++) f.sides.player.reels[i % 3].cells.push({ symbol: 'rock', slimed: false });
     f.winner = 'player';

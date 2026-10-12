@@ -78,7 +78,7 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 1.56,
     ability: { kind: 'quake', every: 4, power: 2 },
     minDepth: 2,
-    blurb: 'CLUTTERS YOUR STRIP WITH ROCKS (PERMANENT)',
+    blurb: "CLUTTERS YOUR STRIP WITH ROCKS. AN ELITE'S ROCKS STAY",
     acts: [1, 2],
   },
   {
@@ -137,19 +137,7 @@ export const ARCHETYPES: Archetype[] = [
     blurb: 'COPIES YOUR BEST HIT. EATS YOUR CHIPS',
     acts: [2],
   },
-  // ---- act 2 counter-enemies: each one answers a dominant build ----
-  {
-    id: 'grounder',
-    name: 'GROUNDER',
-    portrait: 'enemyGrounder',
-    strip: { sword: 5, shield: 5, ground: 3 },
-    hpMul: 1,
-    ability: { kind: 'earth', every: 4, power: 3 * UNIT },
-    minDepth: 1,
-    only: ['tesla'],
-    blurb: 'RODS IN YOUR BOLTS: A GROUNDED BOLT GIVES NO ENERGY',
-    acts: [2],
-  },
+  // ---- act 2 counter-enemy: answers a Charm or meter build (THE GROUNDER, TESLA's, retired 2026-10-12) ----
   {
     id: 'counterfeiter',
     name: 'COUNTERFEITER',
@@ -224,7 +212,7 @@ export const REPO_MAN: Archetype = {
 // persist false (2026-10-07, user: the liens were noise): what he takes comes back when his fight ends.
 export const GATEKEEPER = { depth: 3, maxTakes: 2, lienPrice: 3, bounty: 3, firstTurn: 1, acts: 2, persist: false };
 
-export const ACT2_NEW: ReadonlySet<string> = new Set(['bomber', 'hexer', 'vampire', 'mimic', 'grounder', 'counterfeiter']);
+export const ACT2_NEW: ReadonlySet<string> = new Set(['bomber', 'hexer', 'vampire', 'mimic', 'counterfeiter']);
 export const ACT3_NEW: ReadonlySet<string> = new Set(['sharp', 'pitboss', 'croupier']);
 /** Act 2's own enemies come back in act 3. */
 const ACT3_VETERANS: ReadonlySet<string> = new Set(['bomber', 'vampire', 'hexer', 'mimic']);
@@ -351,7 +339,6 @@ export const DANGER: Record<string, number> = {
   pitboss: 14,
   croupier: 13,
   dealer: 50,
-  grounder: 12,
   counterfeiter: 12,
 };
 export const ELITE_HP_MUL = 1.25;

@@ -31,9 +31,9 @@ describe('HIGH STAKES', () => {
   it('BLUE: one act 2 fork (fight 3) is your counter, marked', () => {
     for (let seed = 1; seed < 12; seed++) {
       const run = toAct2('tesla', STAKE.counterForks, seed);
-      expect(counterFor(run)).toBe('grounder');
+      expect(counterFor(run)).toBe('counterfeiter');
       const fork = run.paths[2];
-      const c = fork.find((e) => e.archetype === 'grounder');
+      const c = fork.find((e) => e.archetype === 'counterfeiter');
       expect(c?.counter).toBe(true);
       expect(run.paths.flat().filter((e) => e.counter).length).toBe(1);
     }
