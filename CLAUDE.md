@@ -23,7 +23,9 @@ at commit `c2f0ffb`). Scratch work goes in a scratchpad or `tools/out/` (gitigno
 - `npm run build`: the public build in `dist/`, with no dev tools (check: grep `dist/assets` for `dbg`/`TuningPanel`).
 - `npm run build:steam`: the desktop build (see `desktop/README.md`).
 - Art: `node tools/build-art.mjs` regenerates `src/render/spriteData.ts` (hand-authored pixel grids; 8-bit stays).
-- Sims: `npm run sim` and `tools/sim/*.ts` (`npx tsx`). **Their numbers aren't trusted**; a new sim is planned (ROADMAP).
+- Sim: `npm run sim -- --runs 500 --stakes 0,2 [--machines knight,tesla] [--detail] [--set "CABINETS.tesla.hp=300"] [--ban rod]`
+  (`tools/sim/balance.ts`: whole runs, every machine and stake, in parallel, against the targets). `tools/sim/fuzz.ts` checks
+  invariants. Bot policies live in `src/sim/bot.ts`, the run player in `src/sim/play.ts`.
 
 ## The user's rules (binding)
 - **Fights are watch-only:** no in-fight input, holds or nudges. Agency lives between fights. Enemies write on
@@ -37,7 +39,8 @@ at commit `c2f0ffb`). Scratch work goes in a scratchpad or `tools/out/` (gitigno
 - **Photosensitivity:** no full-screen white flashes. `FLASH_CAP` is 0.2. Keep the LIGHTNING: FULL/SOFT option.
 - **Pushing:** commit freely. `main` is the user's own test build (they play it on their phone via GitHub Pages);
   nobody else is playing. Pushing working builds to `main` is fine. Don't push broken or half-finished work there.
-- **Balance:** no tuning until the new sim exists (ROADMAP). After that, measure every gameplay change before and after.
+- **Balance:** measure every gameplay change before and after with the sim. Honest HP: an enemy has the same HP at the
+  same stop on every machine and build; balance the machines, never the enemies per machine.
 - **Held ideas:** the SLOTS VS. BOTS rename, 16-bit art, the Gambler character.
 - The user is direct and has strong game sense. Push back with reasons when you disagree. Keep summaries short.
 

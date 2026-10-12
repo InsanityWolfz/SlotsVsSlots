@@ -71,10 +71,10 @@ so that isn't happening in practice (see ROADMAP).
   the fight; only an elite's (up to 2) stay.
 - **Act 2 adds:** BOMBER, HEXER, VAMPIRE, MIMIC, COUNTERFEITER. (The GROUNDER is retired and removed from the code.) BLUE stake puts your counter (the COUNTERFEITER) on every act 2 path.
 - **Act 3 adds:** CARD SHARP, PIT BOSS, CROUPIER. BOMBER, VAMPIRE, HEXER and MIMIC come back.
-- **Enemy HP:** acts 1-2 regulars use fixed curves by fight number. **Bosses and act 3 regulars are sized to YOUR
-  machine:** HP = reference × (your measured power ÷ reference)^0.5, plus a little per relic, so a build twice as
-  strong faces about 1.4× the HP. Code: `machinePower`, `sizingPower`, `POWER_REF` and `BOSS_MUL` in `src/core/run.ts`;
-  `TUNE`, `DEPTH_HP*`, `ENDLESS` and the act map (`generateActMap`) in `src/core/enemies.ts`.
+- **Enemy HP is honest:** the same enemy has the same HP at the same stop on every machine and every build
+  (fixed curves by act and fight; elites x1.25 / x1.3; the House, THE WHEEL and the Dealer have fixed HP). Machines are
+  balanced by tuning the machines. Code: `makeEnemy`, `DEPTH_HP*`, `TUNE` and `ENDLESS` in `src/core/enemies.ts`,
+  `enemyHp` in `src/core/run.ts`.
 
 ## Slot Machines (`src/core/cabinets.ts`)
 Each machine except KNIGHT has one signature symbol and a meter.
@@ -103,6 +103,15 @@ Each machine has its own ladder. Winning a run at your best stake unlocks the ne
 WHITE (base) → RED (scar rocks) → GREEN (the Wheel starts fast, **Act 3 on**) → BLACK (the House cheats) →
 BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP).
 
+## Balance (`tools/sim/balance.ts`)
+- **Targets for the sim bot** (run win %, every machine within 5 points): WHITE 60, RED 50, GREEN 36, BLACK 28,
+  BLUE 20, GOLD 14. Each boss's win rate (of runs that reach it) within 10 points across machines. Rough per-boss
+  aims: House about 85, THE WHEEL about 85, the Dealer about 65.
+- The bot plays like a decent player (`src/sim/bot.ts`): elites when healthy, the best-valued card, sensible encounter
+  play. Real players (playtesters reached endless loop 5) are stronger than it; the targets account for that.
+- Relic / Charm / card values: `--ban <relic>` reruns the same seeds without it (the honest measure); `--detail`
+  lists win-rate lifts (inflated by survivorship).
+
 ## Modes and meta
 - **Modes:** the normal run, DAILY, WEEKLY and ENDLESS.
 - **Meta:** CONTINUE (saves between fights), unlocks, achievements, collection, hiscores, and online leaderboards
@@ -115,5 +124,5 @@ BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP).
   `CombatEvent`s), `run.ts` (run state, drafts, shop, big choices, boss sizing), `enemies.ts` (roster, map, HP curves, TUNE knobs).
 - `src/present`: the Director plays the events back with the juice (see `JUICE.md`).
 - `src/ui`: menus and run screens. `src/render`: sprite data and the pixel font. `src/audio`: the synth, SFX and code-composed music.
-- `src/sim` + `tools/sim`: the current bot and balance harnesses. They are being replaced (see ROADMAP).
+- `src/sim` + `tools/sim`: the sim bot (`bot.ts`), the run player (`play.ts`) and the sim (`tools/sim/balance.ts`, see Balance).
 - Art: `node tools/build-art.mjs` regenerates `src/render/spriteData.ts` from hand-authored pixel grids.

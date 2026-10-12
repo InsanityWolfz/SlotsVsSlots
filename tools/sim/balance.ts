@@ -6,6 +6,7 @@
  *   npx tsx tools/sim/balance.ts --runs 2000 --stakes 0,2 --machines knight,tesla
  *   npx tsx tools/sim/balance.ts --detail              + relics, Charms, big choices, encounters, enemies
  *   npx tsx tools/sim/balance.ts --ride                the bot lets it ride after the Dealer (endless loops)
+ *   npx tsx tools/sim/balance.ts --ban rod,static     those relics are never offered (what a relic is worth)
  *   npx tsx tools/sim/balance.ts --set "CABINETS.tesla.hp=300;TUNE.wheelHp=2200"   knob edits (object paths from an
  *                                                       export of cabinets, run, relics, enemies, fight, charms, bot)
  *
@@ -40,10 +41,15 @@ interface Job {
   seeds: number[];
   ride: boolean;
   set: string;
+  ban: string;
 }
 
-/** Knob edits: "CABINETS.tesla.hp=300;BASE.base.sword=12" (BASE is the fight config). */
-function applyEdits(edits: string, base: GameConfig): void {
+/** Knob edits: "CABINETS.tesla.hp=300;BASE.base.sword=12" (BASE is the fight config), and banned relics. */
+function applyEdits(edits: string, base: GameConfig, ban = ''): void {
+  for (const r of ban.split(',').filter(Boolean)) {
+    if (!(r in relics.RELICS)) throw new Error(`no relic ${r}`);
+    (relics.MACHINE_EXCLUDE as Record<string, string[]>)[r] = [...cabinets.ALL_CABINETS];
+  }
   const roots: Record<string, unknown> = { ...cabinets, ...runMod, ...relics, ...enemies, ...fight, ...charms, ...bot, BASE: base };
   for (const e of edits.split(';').filter(Boolean)) {
     const [path, val] = e.split('=');
@@ -61,7 +67,7 @@ if (process.send) {
   let applied = false;
   process.on('message', (job: Job | null) => {
     if (!job) process.exit(0);
-    if (!applied) applyEdits(job.set, base);
+    if (!applied) applyEdits(job.set, base, job.ban);
     applied = true;
     process.send!(job.seeds.map((s) => playRun(base, s, job.cabinet, job.stake, { ride: job.ride })));
   });
@@ -80,7 +86,8 @@ async function main(): Promise<void> {
   const ride = flag('ride');
   const detail = flag('detail');
   const set = arg('set', '');
-  applyEdits(set, defaultConfig());
+  const ban = arg('ban', '');
+  applyEdits(set, defaultConfig(), ban);
 
   // Every machine plays the same seeds at a stake (paired), split into chunks across the workers.
   const jobs: Job[] = [];
@@ -88,7 +95,7 @@ async function main(): Promise<void> {
   for (const stake of stakes) {
     const rng = new Rng((seed * 7919 + stake) >>> 0);
     const seeds = Array.from({ length: runs }, () => rng.int(0xffffffff));
-    for (const cabinet of machines) for (let i = 0; i < runs; i += chunk) jobs.push({ cabinet, stake, seeds: seeds.slice(i, i + chunk), ride, set });
+    for (const cabinet of machines) for (let i = 0; i < runs; i += chunk) jobs.push({ cabinet, stake, seeds: seeds.slice(i, i + chunk), ride, set, ban });
   }
   const self = fileURLToPath(import.meta.url);
   const started = Date.now();
@@ -112,7 +119,7 @@ async function main(): Promise<void> {
       go();
     });
   await Promise.all(Array.from({ length: Math.max(1, cpus().length) }, work));
-  if (set) console.log(`knobs: ${set}`);
+  if (set || ban) console.log(`knobs: ${set}${ban ? ` ban: ${ban}` : ''}`);
   console.log(report(logs, machines, stakes, detail));
   console.log(`\n${logs.length} runs in ${((Date.now() - started) / 1000).toFixed(0)}s`);
   mkdirSync('tools/out', { recursive: true });

@@ -62,7 +62,6 @@ bosses may be moved or changed for clarity or balance; a boss may be up to ~10% 
 - English only.
 
 ## Code cleanup
-- Merge `npm run sim` (`src/sim/runSim.ts`) and `tools/sim/*` into the new sim (part of Now, step 3).
 - Unused sprites of removed content (BRIAR, THORNY, the GROUNDER's rods and EARTH, the 18 removed relics) in `tools/build-art.mjs`.
 - Later: split the 2-3k-line files (`fight.ts`, `run.ts`, `runScreens.ts`, `director.ts`, `game.ts`).
 
