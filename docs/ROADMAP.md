@@ -2,10 +2,11 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-12, overnight, user asleep):** the encounters are all in. Next: the roster audit and dead-code
-cleanup, then the new sim, target win rates per stake, and tuning. The user's standing instructions: keep going
-through usage resets; use their earlier answers to make calls; bosses may be moved or changed for clarity or balance;
-a boss may be up to ~10% easier or harder on one machine than another.
+**In progress (2026-10-12, overnight, user asleep):** cleanup done; the new sim (`tools/sim/balance.ts`) and honest HP
+are in (on the branch, not yet on main). Now: tuning the machines to the stake targets (TARGETS in balance.ts), then
+the bosses (each within 10 points across machines), then the stake ladder. Push to main once WHITE and GREEN are in
+range. The user's standing instructions: keep going through usage resets; use their earlier answers to make calls;
+bosses may be moved or changed for clarity or balance; a boss may be up to ~10% easier or harder on one machine.
 
 ## Now, in order
 1. **The run map rework (agreed 2026-10-12).** Why: every human playtester takes the elite at every fork (a free
