@@ -28,6 +28,9 @@ which Charms and relics to build.
   - RED OR BLACK: roulette. Set a chip bet (1 to 20, stepper), call RED or BLACK, watch the ball (the wheel is drawn in
     code so the ball lands in the engine's pocket). Pays 1 to 1; the green zero is the house edge. Up to 3 spins a
     visit, saved after each (a quit resumes at the table and can't replay a spin). Chips only.
+  - HIGHER OR LOWER: bet chips (1 to 15), a card is dealt, call the next one. Each right call grows the pot x1.4 (a
+    ladder shows it); a wrong call or a tie loses it; cash out any time after a right call, 5 right calls cash out
+    for you. Played sensibly it's about even. Chips only.
   - Placeholder: THE BLOOD BANK (until the real offers).
   - **Cards and words:** buy-in cards all look alike (no LOW / HIGH labels: the player judges the bet). A buy-in you
     can't win back says PAY, not STAKE. No flavour-text subtitles.

@@ -5,7 +5,7 @@ import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../cor
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, WHEEL_RULES, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
-import { encounterOf, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
+import { encounterOf, HILO, hiloMax, hiloPot, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -136,6 +136,47 @@ const isWildOr = (a: SlotSym, b: SlotSym) => a === b || a === 'wild' || b === 'w
 type MapTip = { e?: EnemyDef; title?: string; sub?: string; x: number; y: number };
 /** The middle of the space right of YOUR BUILD: run screens center on it. */
 const CX = (BUILD.x + BUILD.w + 12 + W) / 2;
+/** Pixel suits (5x5): hearts, diamonds, clubs, spades. */
+const SUITS = [
+  ['.X.X.', 'XXXXX', 'XXXXX', '.XXX.', '..X..'],
+  ['..X..', '.XXX.', 'XXXXX', '.XXX.', '..X..'],
+  ['..X..', '.XXX.', 'XX.XX', '..X..', '.XXX.'],
+  ['..X..', '.XXX.', 'XXXXX', '..X..', '.XXX.'],
+];
+const RANK = (n: number) => (n === 14 ? 'A' : n === 13 ? 'K' : n === 12 ? 'Q' : n === 11 ? 'J' : `${n}`);
+function drawSuit(ctx: CanvasRenderingContext2D, suit: number, x: number, y: number, px: number): void {
+  ctx.fillStyle = suit < 2 ? '#e8374b' : '#1a1426';
+  SUITS[suit].forEach((row, r) => [...row].forEach((ch, c) => ch === 'X' && ctx.fillRect(Math.round(x + (c - 2.5) * px), Math.round(y + (r - 2.5) * px), px, px)));
+}
+/** A playing card (rank 2-14; 0 = its back), `sx` its width scale (for the flip). The suit follows the rank (cosmetic). */
+function drawPlayingCard(ctx: CanvasRenderingContext2D, x: number, y: number, rank: number, sx: number): void {
+  const w = 112 * Math.max(0.04, sx);
+  const h = 156;
+  ctx.fillStyle = COLORS.outline;
+  ctx.fillRect(x - w / 2 - 3, y - h / 2 - 3, w + 6, h + 6);
+  if (!rank) {
+    // The back: the house's red with a gold lattice.
+    ctx.fillStyle = '#8e1f3a';
+    ctx.fillRect(x - w / 2, y - h / 2, w, h);
+    ctx.fillStyle = COLORS.gold;
+    ctx.fillRect(x - w / 2 + 6, y - h / 2 + 6, Math.max(0, w - 12), 2);
+    ctx.fillRect(x - w / 2 + 6, y + h / 2 - 8, Math.max(0, w - 12), 2);
+    for (let k = -3; k <= 3 && sx > 0.3; k++) ctx.fillRect(x + k * 12 * sx - 1, y - h / 2 + 12, 2, h - 24);
+    return;
+  }
+  ctx.fillStyle = '#f4eee0';
+  ctx.fillRect(x - w / 2, y - h / 2, w, h);
+  if (sx < 0.35) return;
+  const suit = (rank * 7) % 4;
+  const col = suit < 2 ? '#e8374b' : '#1a1426';
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(sx, 1);
+  drawText(ctx, RANK(rank), -38, -56, 3, col);
+  drawSuit(ctx, suit, -38, -30, 3);
+  drawSuit(ctx, suit, 10, 16, 8);
+  ctx.restore();
+}
 /** RED OR BLACK: the wheel's centre, its offscreen size (drawn at half size, scaled x2), and the bet column's x. */
 const RL = { wheelX: CX - 170, wheelY: 300, px: 112, betX: CX + 220 };
 /** A roulette wheel at `angle` with its ball, drawn into a small canvas (pocket k sits at angle + k * step, 0 = up). */
@@ -365,6 +406,11 @@ export class RunScreens {
   private rlBall = { a: -Math.PI / 2, r: 44 };
   private rlSpinNo = 1;
   private rlCanvas: HTMLCanvasElement | null = null;
+  /** HIGHER OR LOWER: the card showing, the card being turned (and its flip 0..1), and the last call's word. */
+  private hlCard = 0;
+  private hlNext = 0;
+  private hlFlip = 0;
+  private hlMsg: EncounterResult | null = null;
   /** Shop purchases in flight to YOUR BUILD. */
   private flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   private picked = -1;
@@ -1309,13 +1355,20 @@ export class RunScreens {
     this.encLanded = 0;
     this.encDone = false;
     this.slotWin = null;
-    if (this.encId === 'slot' || this.encId === 'roulette') {
+    if (this.encId === 'slot' || this.encId === 'roulette' || this.encId === 'hilo') {
       // The game's own clock follows the screens' (so it runs at their pace, and SKIP touches nothing else).
       this.slotClock = new Clock();
       this.ui.add({ update: (dt) => (this.slotClock.tick(dt), this.mode !== 'encounter'), finish: () => {} });
     }
     if (this.encId === 'slot') this.slotReels = SLOT_STRIPS.map((strip, r) => new ReelView(strip.map(slotCell), (r * 5) % strip.length));
     if (this.encId === 'roulette') return this.rouletteButtons();
+    if (this.encId === 'hilo') {
+      this.hlCard = run.encounterState?.card ?? 0;
+      this.hlNext = 0;
+      this.hlFlip = 0;
+      this.hlMsg = null;
+      return this.hiloButtons();
+    }
     const choices = this.encChoices;
     const cards = choices.filter((c) => c.stake);
     this.buttons = choices.map((c, i) => {
@@ -1339,6 +1392,7 @@ export class RunScreens {
 
   private playEncounter(i: number): void {
     if (this.encId === 'roulette') return this.playRoulette(i);
+    if (this.encId === 'hilo') return this.playHilo(i);
     const res = this.cb.onEncounter(i);
     if (!res) return;
     this.encResult = res;
@@ -1419,19 +1473,97 @@ export class RunScreens {
     this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
     this.rlSpinNo = (run.encounterPlays ?? 0) + 1;
     this.encChoices = encounterChoices(run);
-    const step = (d: number) => {
-      const next = Math.max(1, Math.min(rouletteMax(this.run!), this.rlBet + d));
-      if (next === this.rlBet) this.sounds.fizzle();
-      else d > 0 ? this.sounds.coin(4) : this.sounds.click();
-      this.rlBet = next;
-    };
-    const steps = [-5, -1, 1, 5].map((d, k) => this.minorBtn(d > 0 ? `+${d}` : `${d}`, RL.betX + (k - 1.5) * 66, 262, 58, 42, () => step(d)));
+    const steps = this.betStepper(() => rouletteMax(this.run!));
     const red = this.btn('RED', RL.betX, 342, 280, 56, () => this.playRoulette(0));
     const black = this.btn('BLACK', RL.betX, 410, 280, 56, () => this.playRoulette(1));
     black.tint = '#2a2234';
     const walk = this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playRoulette(2));
     for (const b of [...steps, red, black]) b.enabled = max >= 1;
     this.buttons = [...steps, red, black, walk];
+  }
+
+  /** The chip bet stepper (-5 -1 +1 +5) under YOUR BET, shared by the games that take a chip bet. */
+  private betStepper(max: () => number): Btn[] {
+    const step = (d: number) => {
+      const next = Math.max(1, Math.min(max(), this.rlBet + d));
+      if (next === this.rlBet) this.sounds.fizzle();
+      else d > 0 ? this.sounds.coin(4) : this.sounds.click();
+      this.rlBet = next;
+    };
+    return [-5, -1, 1, 5].map((d, k) => this.minorBtn(d > 0 ? `+${d}` : `${d}`, RL.betX + (k - 1.5) * 66, 262, 58, 42, () => step(d)));
+  }
+
+  /** HIGHER OR LOWER's buttons: sitting down (the bet, DEAL, WALK AWAY), or mid-hand (HIGHER, LOWER, CASH OUT). */
+  private hiloButtons(): void {
+    const run = this.run!;
+    this.encChoices = encounterChoices(run);
+    const st = run.encounterState;
+    if (!st) {
+      const max = hiloMax(run);
+      this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
+      const steps = this.betStepper(() => hiloMax(this.run!));
+      const deal = this.btn('DEAL', RL.betX, 376, 280, 56, () => this.playHilo(0));
+      for (const b of [...steps, deal]) b.enabled = max >= 1;
+      this.buttons = [...steps, deal, this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playHilo(1))];
+      return;
+    }
+    const pot = hiloPot(st.bet, st.calls);
+    const hi = this.btn('HIGHER', RL.betX, 300, 280, 56, () => this.playHilo(0));
+    const lo = this.btn('LOWER', RL.betX, 368, 280, 56, () => this.playHilo(1));
+    lo.tint = '#2a2234';
+    hi.enabled = !this.encChoices[0]?.disabled;
+    lo.enabled = !this.encChoices[1]?.disabled;
+    const cash = this.minorBtn(st.calls ? `CASH OUT ${pot}` : 'CASH OUT', CX, 636, 300, 44, () => this.playHilo(2));
+    cash.enabled = st.calls > 0;
+    this.buttons = [hi, lo, cash];
+  }
+
+  /** A HIGHER OR LOWER move: deal (the card slides in), a call (the next card turns over), or cashing out. */
+  private playHilo(i: number): void {
+    const before = this.run?.encounterState;
+    const res = this.cb.onEncounter(i, this.rlBet);
+    if (!res) return;
+    const done = () => {
+      if (this.mode !== 'encounter') return;
+      if (res.more) this.hiloButtons();
+      else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+    };
+    if (!before) {
+      // Walked away, or sat down: the first card is dealt.
+      this.hlMsg = res.good === null && !res.more ? res : null;
+      this.hlCard = res.card ?? 0;
+      this.hlFlip = 0;
+      this.hlNext = 0;
+      if (res.more) this.sounds.turnCard(true);
+      return done();
+    }
+    if (res.next === undefined) {
+      // Cashed out.
+      this.hlMsg = res;
+      this.encOutcomeSound(res);
+      return done();
+    }
+    // A call: the next card turns over beside the one showing, then (if the hand goes on) takes its place.
+    this.hlMsg = null;
+    this.hlNext = res.next;
+    this.buttons = [];
+    this.sounds.turnCard(false);
+    void this.slotClock
+      .tween({ from: 0, to: 1, dur: 0.35, onUpdate: (v) => (this.hlFlip = v) })
+      .then(() => {
+        this.hlMsg = res;
+        this.encOutcomeSound(res);
+        return this.slotClock.wait(res.more ? 0.7 : 0);
+      })
+      .then(() => {
+        if (res.more) {
+          this.hlCard = res.next!;
+          this.hlNext = 0;
+          this.hlFlip = 0;
+          this.hlMsg = null;
+        }
+        done();
+      });
   }
 
   /** One spin: the wheel turns one way and the ball the other; the ball drops, rattles and rides into its pocket. */
@@ -2468,6 +2600,7 @@ export class RunScreens {
     const res = this.encResult;
     if (def.id === 'slot') this.drawSlotMachine(ctx, time);
     else if (def.id === 'roulette') this.drawRoulette(ctx, time);
+    else if (def.id === 'hilo') this.drawHilo(ctx, time);
     else {
       this.panel(ctx, CX - 330, 120, 660, 300, '#7a3aa8');
       if (!res) {
@@ -2521,17 +2654,59 @@ export class RunScreens {
     });
   }
 
-  /** RED OR BLACK: the felt, the wheel (drawn small and scaled up crisp), your bet, the last spin's result. */
-  private drawRoulette(ctx: CanvasRenderingContext2D, time: number): void {
-    const run = this.run!;
-    const spinning = this.buttons.length === 1 && this.buttons[0].label === 'SKIP';
-    drawText(ctx, `SPIN ${Math.min(this.rlSpinNo, encounterOf('roulette').plays ?? 3)} OF ${encounterOf('roulette').plays ?? 3}`, CX, 78, 2, COLORS.textDim);
-    // The felt.
+  /** The casino felt both card and wheel games sit on. */
+  private felt(ctx: CanvasRenderingContext2D): void {
     this.panel(ctx, CX - 430, 104, 860, 440, COLORS.gold);
     ctx.fillStyle = '#0e3a20';
     ctx.fillRect(CX - 430, 104, 860, 440);
     ctx.fillStyle = 'rgba(255,255,255,0.04)';
     for (let y = 104; y < 544; y += 8) ctx.fillRect(CX - 430, y, 860, 2);
+  }
+
+  /** HIGHER OR LOWER: the card showing, the next one (face down, then turning), the pot ladder, your bet or the pot. */
+  private drawHilo(ctx: CanvasRenderingContext2D, time: number): void {
+    const run = this.run!;
+    const st = run.encounterState;
+    this.felt(ctx);
+    const cx = CX - 200;
+    drawPlayingCard(ctx, cx - 80, 300, this.hlCard, this.hlCard ? 1 : 0);
+    // The next card: its back, or turning over (it narrows on its back, widens on its face).
+    const f = this.hlFlip;
+    const face = f > 0.5 && this.hlNext > 0;
+    drawPlayingCard(ctx, cx + 80, 300, face ? this.hlNext : 0, face ? (f - 0.5) * 2 : 1 - f * 2);
+    // The pot ladder: what each right call makes the pot (the one you're on lit).
+    const bet = st?.bet ?? this.rlBet;
+    const calls = st?.calls ?? 0;
+    for (let k = 1; k <= HILO.calls; k++) {
+      const y = 470 - k * 60;
+      const lit = k <= calls;
+      const nextUp = k === calls + 1 && !!st;
+      this.panel(ctx, cx + 200 - 40, y - 18, 80, 36, lit ? COLORS.goldLight : nextUp ? COLORS.gold : '#3a2e52');
+      drawText(ctx, `${hiloPot(bet, k)}`, cx + 200, y, 2, lit ? COLORS.goldLight : nextUp ? COLORS.text : COLORS.textDim, { punch: nextUp ? 1 + 0.05 * Math.sin(time * 6) : 1 });
+    }
+    drawText(ctx, 'POT', cx + 200, 470, 1.5, COLORS.textDim);
+    // Right column: your bet before the deal; the pot during the hand.
+    if (!st) {
+      drawText(ctx, 'YOUR BET', RL.betX, 150, 2, COLORS.textDim);
+      drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
+      drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
+    } else {
+      drawText(ctx, 'THE POT', RL.betX, 170, 2, COLORS.textDim);
+      drawText(ctx, `${hiloPot(st.bet, st.calls)}`, RL.betX, 220, 5, COLORS.energy);
+    }
+    const m = this.hlMsg;
+    if (m && m.title) {
+      drawText(ctx, m.title, cx, 460, 3, m.good === false ? '#ff8a7a' : COLORS.goldLight, { punch: 1 + 0.03 * Math.sin(time * 6) });
+      drawText(ctx, m.text, cx, 494, 2, m.good === false ? '#ff8a7a' : COLORS.goldLight);
+    }
+  }
+
+  /** RED OR BLACK: the felt, the wheel (drawn small and scaled up crisp), your bet, the last spin's result. */
+  private drawRoulette(ctx: CanvasRenderingContext2D, time: number): void {
+    const run = this.run!;
+    const spinning = this.buttons.length === 1 && this.buttons[0].label === 'SKIP';
+    drawText(ctx, `SPIN ${Math.min(this.rlSpinNo, encounterOf('roulette').plays ?? 3)} OF ${encounterOf('roulette').plays ?? 3}`, CX, 78, 2, COLORS.textDim);
+    this.felt(ctx);
     // The wheel.
     const c = (this.rlCanvas ??= Object.assign(document.createElement('canvas'), { width: RL.px, height: RL.px }));
     const g = c.getContext('2d')!;

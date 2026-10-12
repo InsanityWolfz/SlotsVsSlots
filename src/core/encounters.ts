@@ -47,6 +47,10 @@ export interface EncounterResult {
   gains?: string[];
   /** RED OR BLACK: the pocket the ball found (0 is the green zero). */
   pocket?: number;
+  /** HIGHER OR LOWER: the card that was showing, the one just turned, and the pot now. */
+  card?: number;
+  next?: number;
+  pot?: number;
   /** The game goes on at this stop (more plays left): the stop isn't passed yet. */
   more?: boolean;
 }
@@ -63,6 +67,7 @@ export interface EncounterDef {
   /** A game of chance (buy-ins, then plays) or an offer (take it or walk). */
   kind: 'game' | 'offer';
   choices: (run: RunState, rng: Rng) => EncounterChoice[];
+  /* (A game that plays out over several calls keeps its state on the run: run.encounterState, saved with it.) */
   /** Play choice `i` (the last choice is always WALK AWAY). `bet`: a chip bet, for games that take one. */
   play: (run: RunState, i: number, rng: Rng, ctx: EncounterCtx, bet?: number) => EncounterResult;
   /** A game you play more than once at the stop (RED OR BLACK's spins): how many plays it allows. */
@@ -245,6 +250,72 @@ const RED_OR_BLACK: EncounterDef = {
   },
 };
 
+// ---- HIGHER OR LOWER (2026-10-12) --------------------------------------------------------------------------------
+
+/**
+ * HIGHER OR LOWER: bet chips, a card is dealt; call whether the next card is higher or lower. Every right call grows the
+ * pot; a wrong call (or a tie) loses it. Cash out after any right call; five right calls cash out for you. Chips only.
+ * Cards run 2 to 14 (the ace is high), drawn fresh each time.
+ */
+export const HILO = { maxBet: 15, grow: 1.4, calls: 5 };
+const drawCard = (rng: Rng) => 2 + rng.int(13);
+/** The pot after `calls` right calls on a bet. */
+export const hiloPot = (bet: number, calls: number) => Math.floor(bet * HILO.grow ** calls);
+export const hiloMax = (run: RunState) => Math.min(HILO.maxBet, run.player.chips);
+type HiloState = { card: number; bet: number; calls: number };
+const hiloState = (run: RunState): HiloState | null => (run.encounterState?.card ? (run.encounterState as HiloState) : null);
+
+const HIGHER_OR_LOWER: EncounterDef = {
+  id: 'hilo',
+  name: 'HIGHER OR LOWER',
+  blurb: '',
+  kind: 'game',
+  choices: (run) => {
+    const st = hiloState(run);
+    if (!st) return [{ label: 'DEAL', text: '', disabled: hiloMax(run) < 1 }, WALK];
+    return [
+      { label: 'HIGHER', text: '', disabled: st.card >= 14 },
+      { label: 'LOWER', text: '', disabled: st.card <= 2 },
+      { label: 'CASH OUT', text: '', disabled: st.calls < 1 },
+    ];
+  },
+  play: (run, i, rng, _ctx, bet = 1) => {
+    const p = run.player;
+    const st = hiloState(run);
+    if (!st) {
+      // Sit down: the bet goes in the pot, the first card is dealt.
+      if (i !== 0 || hiloMax(run) < 1) return walked();
+      const stake = Math.max(1, Math.min(hiloMax(run), Math.floor(bet)));
+      p.chips -= stake;
+      const card = drawCard(rng);
+      run.encounterState = { card, bet: stake, calls: 0 };
+      return { title: 'DEALT', text: `POT ${stake}`, good: null, card, pot: stake, more: true };
+    }
+    const pot = hiloPot(st.bet, st.calls);
+    if (i === 2) {
+      if (st.calls < 1) return { title: '', text: '', good: null, card: st.card, pot, more: true };
+      p.chips += pot;
+      run.encounterState = undefined;
+      return { title: 'CASHED OUT', text: `+${pot} CHIPS`, good: true, card: st.card, pot, more: false };
+    }
+    const next = drawCard(rng);
+    const right = i === 0 ? next > st.card : next < st.card;
+    if (!right) {
+      run.encounterState = undefined;
+      return { title: next === st.card ? 'A TIE: THE HOUSE TAKES IT' : 'WRONG CALL', text: `-${st.bet} CHIPS`, good: false, card: st.card, next, pot: 0, more: false };
+    }
+    const calls = st.calls + 1;
+    const now = hiloPot(st.bet, calls);
+    if (calls >= HILO.calls) {
+      p.chips += now;
+      run.encounterState = undefined;
+      return { title: 'FIVE IN A ROW!', text: `+${now} CHIPS`, good: true, card: st.card, next, pot: now, more: false };
+    }
+    run.encounterState = { card: next, bet: st.bet, calls };
+    return { title: 'RIGHT!', text: `POT ${now}`, good: true, card: st.card, next, pot: now, more: true };
+  },
+};
+
 /** THE BLOOD BANK: sell some HP for chips. */
 const BLOOD_HP = 0.15;
 const BLOOD_CHIPS = 12;
@@ -267,7 +338,7 @@ const BLOOD: EncounterDef = {
 };
 const bloodHp = (run: RunState) => Math.max(UNIT, Math.round((run.player.maxHp * BLOOD_HP) / UNIT) * UNIT);
 
-export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, roulette: RED_OR_BLACK, blood: BLOOD };
+export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, roulette: RED_OR_BLACK, hilo: HIGHER_OR_LOWER, blood: BLOOD };
 /** What the map deals onto ENCOUNTER stops. */
 export const ENCOUNTER_IDS = Object.keys(ENCOUNTERS);
 

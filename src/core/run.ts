@@ -302,6 +302,8 @@ export interface RunState {
   trustFund?: number;
   /** Plays already made at the current encounter stop (RED OR BLACK's spins). */
   encounterPlays?: number;
+  /** A game in progress at this stop (HIGHER OR LOWER's showing card, bet and right calls). */
+  encounterState?: Record<string, number>;
   /** Encounters played this run (what was chosen, how it went): for the run log and the sim. */
   encounters?: { act: number; id: string; choice: number; good: boolean | null }[];
 }
@@ -594,12 +596,14 @@ export function playEncounter(run: RunState, i: number, bet?: number): Encounter
   (run.encounters ??= []).push({ act: run.act, id: st.encounter ?? '?', choice: i, good: result.good });
   // A game with plays left (and something to play with) keeps you here; walking away, or the last play, moves on.
   const played = (run.encounterPlays ?? 0) + 1;
-  const open = def.plays && result.good !== null && played < def.plays && encounterChoices(run).some((c, k, all) => k < all.length - 1 && !c.disabled);
+  // (A game that says for itself whether it goes on, like HIGHER OR LOWER, decides; others go by their play count.)
+  const open = result.more ?? (!!def.plays && result.good !== null && played < def.plays && encounterChoices(run).some((c, k, all) => k < all.length - 1 && !c.disabled));
   if (open) {
     run.encounterPlays = played;
     result.more = true;
   } else {
     run.encounterPlays = 0;
+    run.encounterState = undefined;
     passStop(run);
   }
   return result;

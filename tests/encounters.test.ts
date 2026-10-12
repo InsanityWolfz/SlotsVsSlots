@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, type RelicId } from '../src/core/config';
-import { ENCOUNTERS, pocketColor, ROULETTE, rouletteMax, SLOT, slotLine, slotRun, SLOT_STRIPS, WHEEL_ORDER } from '../src/core/encounters';
+import { ENCOUNTERS, hiloPot, pocketColor, ROULETTE, rouletteMax, SLOT, slotLine, slotRun, SLOT_STRIPS, WHEEL_ORDER } from '../src/core/encounters';
 import { Rng } from '../src/core/rng';
 import { chooseRoute, createRun, playEncounter } from '../src/core/run';
 
@@ -138,5 +138,74 @@ describe('RED OR BLACK', () => {
     const a = playEncounter(run, 0, 1)!.pocket;
     const b = playEncounter(saved, 1, 1)!.pocket;
     expect(b).toBe(a);
+  });
+});
+
+describe('HIGHER OR LOWER', () => {
+  const atTable = (seed = 2) => {
+    const run = createRun(base, seed, 'knight');
+    run.pendingStart = null;
+    run.map.routes[0][0] = { kind: 'encounter', encounter: 'hilo' };
+    run.depth = 1;
+    run.stop = 1;
+    chooseRoute(run, 0);
+    run.player.chips = 40;
+    return run;
+  };
+
+  it('deals for a bet, grows the pot on each right call, and loses it on a wrong one (or a tie)', () => {
+    for (let seed = 1; seed < 60; seed++) {
+      const run = atTable(seed);
+      const dealt = playEncounter(run, 0, 10)!;
+      expect(run.player.chips).toBe(30);
+      expect(dealt.more).toBe(true);
+      const card = run.encounterState!.card;
+      const res = playEncounter(run, card <= 8 ? 0 : 1)!;
+      const right = card <= 8 ? res.next! > card : res.next! < card;
+      expect(res.good).toBe(right);
+      if (right) expect(run.encounterState!.calls).toBe(1);
+      else {
+        expect(run.encounterState).toBeUndefined();
+        expect(run.player.chips).toBe(30);
+      }
+    }
+  });
+
+  it('cashing out pays the pot and moves on; five right calls cash out by themselves', () => {
+    expect(hiloPot(10, 0)).toBe(10);
+    expect(hiloPot(10, 2)).toBe(19);
+    let cashed = 0;
+    for (let seed = 1; seed < 200 && !cashed; seed++) {
+      const run = atTable(seed);
+      playEncounter(run, 0, 10);
+      const c = run.encounterState!.card;
+      const r = playEncounter(run, c <= 8 ? 0 : 1)!;
+      if (!r.good) continue;
+      const stop = run.stop;
+      const out = playEncounter(run, 2)!;
+      expect(out.text).toBe(`+${hiloPot(10, 1)} CHIPS`);
+      expect(run.player.chips).toBe(30 + hiloPot(10, 1));
+      expect(run.stop).toBe(stop + 1);
+      cashed++;
+    }
+    expect(cashed).toBe(1);
+  });
+
+  it('played sensibly it is about even (cash out after two right calls)', () => {
+    let back = 0;
+    const N = 4000;
+    for (let seed = 0; seed < N; seed++) {
+      const run = atTable(seed);
+      run.player.chips = 100;
+      playEncounter(run, 0, 10);
+      for (let k = 0; k < 6 && run.encounterState; k++) {
+        const st = run.encounterState;
+        playEncounter(run, st.calls >= 2 ? 2 : st.card <= 8 ? 0 : 1);
+      }
+      back += run.player.chips - 90;
+    }
+    const ret = back / N / 10;
+    expect(ret).toBeGreaterThan(0.85);
+    expect(ret).toBeLessThan(1.1);
   });
 });

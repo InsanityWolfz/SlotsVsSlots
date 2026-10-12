@@ -305,6 +305,9 @@ export function pickRoute(run: RunState, policy: DraftPolicy, rng: Rng): number 
 /** Encounter policy: random plays any open choice; greedy gambles when healthy and walks away when hurt. */
 export function pickEncounter(run: RunState, policy: DraftPolicy, rng: Rng): number {
   const choices = encounterChoices(run);
+  // HIGHER OR LOWER, played sensibly: higher on a low card, lower on a high one; bank the pot after two right calls.
+  const hilo = run.encounterState;
+  if (policy !== 'random' && choices[0]?.label === 'HIGHER' && hilo) return hilo.calls >= 2 ? 2 : hilo.card <= 8 ? 0 : 1;
   const open = choices.map((c, i) => (c.disabled ? -1 : i)).filter((i) => i >= 0);
   if (policy === 'random') return open.length ? rng.pick(open) : choices.length - 1;
   return !choices[0]?.disabled && run.player.hp / run.player.maxHp > 0.5 ? 0 : choices.length - 1;
