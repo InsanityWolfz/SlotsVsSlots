@@ -277,6 +277,9 @@ export interface RunState {
   levelLock?: SymbolId[];
   /** BIG CHOICES (2026-10-08): cards offered so far this run (never twice), and the fight rules they added. */
   choicesSeen?: BigChoiceId[];
+  /** Big choices taken this run (gone for good), the last offers' cards (they rest a while), and every card shown. */
+  choicesTaken?: BigChoiceId[];
+  choicesRecent?: BigChoiceId[][];
   big?: import('./config').BigMods;
   /** DEVIL'S DUE: everything pays x2; -5% max HP after each win. */
   devil?: boolean;
@@ -511,10 +514,17 @@ function startNextAct(run: RunState): void {
   // Act 3 (THE DEALER): a full heal, a big choice and the Cashier — the legendary pick stays act 2's decision.
   if (run.act > 2) return;
   const pool = [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
-  run.pendingLegend = rng.shuffle(pool).slice(0, RUN.legendPick);
+  run.pendingLegend = legendPick(run, rng, pool);
   markLegends(run, run.pendingLegend);
 }
 
+/** A legendary pick: 3 legendaries, topped up with normal relics when fewer are left (user, 2026-10-12: deep ENDLESS
+ * picks showed one card). */
+function legendPick(run: RunState, rng: Rng, legends: RelicId[]): RelicId[] {
+  const out = rng.shuffle(legends).slice(0, RUN.legendPick);
+  if (out.length < RUN.legendPick) out.push(...rng.shuffle(relicsFor(run).filter((r) => !out.includes(r))).slice(0, RUN.legendPick - out.length));
+  return out;
+}
 const legendKey = (run: RunState) => `${run.act}:${run.endless?.loop ?? 0}`;
 /** A legendary the act's legendary pick already showed (playtest: it came back at the Cashier the same act). */
 /** Remember the legendaries a pick showed this act / loop (every pick: the act's, HOUSE EDGE's, a big choice's). */
@@ -664,8 +674,11 @@ export const isBossNext = (run: RunState) => !needsRoute(run) && !!currentEnemy(
 /** The GameConfig for the run's next fight. */
 /** The HOUSE EDGES in play: the ones taken in endless, THE DAILY RUN's edge of the day, a weekly's mods. */
 export const runEdges = (run: RunState) => new Set<EdgeId>([...(run.endless?.edges ?? []), ...(run.dailyEdge ? [run.dailyEdge] : []), ...(run.mods ?? [])]);
-/** FAST HANDS: abilities come 2 turns sooner (never under every 2). */
-export const fastHands = (ab: AbilityDef): AbilityDef => ({ ...ab, every: Math.max(2, ab.every - 2) });
+/** How many times an edge is in play: HOUSE EDGES stack in ENDLESS (II, III), the daily's / a weekly's count once. */
+export const edgeLevel = (run: RunState, e: EdgeId) =>
+  (run.endless?.edges ?? []).filter((x) => x === e).length + (run.dailyEdge === e ? 1 : 0) + ((run.mods ?? []).includes(e) ? 1 : 0);
+/** FAST HANDS: abilities come 2 turns sooner per level (never under every 2). */
+export const fastHands = (ab: AbilityDef, level = 1): AbilityDef => ({ ...ab, every: Math.max(2, ab.every - 2 * level) });
 
 export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   const cfg = cloneConfig(base);
@@ -703,10 +716,11 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   }
   // HOUSE EDGES bend the fight: the ones taken in endless, and THE DAILY RUN's edge of the day.
   const edges = runEdges(run);
-  if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = fastHands(cfg.enemy.ability);
-  if (edges.has('marked')) cfg.player.startMarks = Math.max(cfg.player.startMarks ?? 0, 3);
-  if (edges.has('heal')) cfg.player.healMul = 0.5;
-  if (edges.has('rollers')) cfg.enemy.hp = unitsRound(cfg.enemy.hp * 1.3);
+  const lvl = (e: EdgeId) => edgeLevel(run, e);
+  if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = fastHands(cfg.enemy.ability, lvl('fast'));
+  if (edges.has('marked')) cfg.player.startMarks = Math.max(cfg.player.startMarks ?? 0, 3 * lvl('marked'));
+  if (edges.has('heal')) cfg.player.healMul = 0.5 ** lvl('heal');
+  if (edges.has('rollers')) cfg.enemy.hp = unitsRound(cfg.enemy.hp * (1 + EDGE_ROLLERS * lvl('rollers')));
   // ENDLESS: damage grows per loop.
   if (run.endless) {
     // The loop House is a race: it cashes its pot every 2 turns.
@@ -765,17 +779,21 @@ function startEndlessLoop(run: RunState): void {
   const rng = new Rng((run.seed ^ Math.imul(loop + 40, 0x3c6ef372)) >>> 0);
   setMap(run, generateActMap(rng, 4, loop, run.cabinet));
   // NO COMPS: a new loop heals only half your HP.
-  run.player.hp = run.endless!.edges.includes('nocomps') ? Math.min(run.player.maxHp, run.player.hp + Math.round(run.player.maxHp / 2)) : run.player.maxHp;
+  const comps = edgeLevel(run, 'nocomps');
+  run.player.hp = comps ? Math.min(run.player.maxHp, run.player.hp + Math.round(run.player.maxHp / 2 ** comps)) : run.player.maxHp;
   run.actIntro = false;
-  // Never offer an edge you already took (EXPERT_PLAYTEST_4 B4); 3 offered, pick 1, each paying for its cost.
-  const open = EDGES.filter((x) => !run.endless!.edges.includes(x));
+  // An edge you already took comes back one level up (II, III: harder, pays a tier more), up to EDGE_MAX (2026-10-12,
+  // user: ENDLESS ran out of edges by loop 7). 3 offered, pick 1, each paying for its cost.
+  const open = EDGES.filter((x) => edgeLevel(run, x) < EDGE_MAX);
   const pick = rng.shuffle(open).slice(0, 3);
   // The reward on the card is what you'll really get (no silent swap to chips: EXPERT_PLAYTEST_5 B7).
   const p = run.player;
   const hasLegend = [...LEGENDARY].some((x) => !p.relics.includes(x) && relicFits(run, x));
   const hasRelic = (Object.keys(RELICS) as RelicId[]).some((x) => !p.relics.includes(x) && !LEGENDARY.has(x) && !ELITE_ONLY.has(x) && relicFits(run, x));
   const pay = (t: 'chips' | 'relic' | 'legend'): 'chips' | 'relic' | 'legend' => (t === 'legend' && !hasLegend ? (hasRelic ? 'relic' : 'chips') : t === 'relic' && !hasRelic ? 'chips' : t);
-  const edges = pick.map((edge): BigChoice => ({ id: 'edge', edge, reward: pay(EDGE_TIER[edge]) }));
+  const tiers = ['chips', 'relic', 'legend'] as const;
+  const tierFor = (edge: EdgeId) => tiers[Math.min(2, tiers.indexOf(EDGE_TIER[edge]) + edgeLevel(run, edge))];
+  const edges = pick.map((edge): BigChoice => ({ id: 'edge', edge, reward: pay(tierFor(edge)) }));
   const queue: BigChoice[][] = [];
   // After a cleared loop: RIDE AGAIN or CASH OUT the pot, then a big choice set.
   if (loop > 1) {
@@ -788,6 +806,23 @@ function startEndlessLoop(run: RunState): void {
   run.choiceQueue = queue;
 }
 
+/** HIGH ROLLERS: enemy HP + this per level. A HOUSE EDGE stacks up to EDGE_MAX levels. */
+export const EDGE_ROLLERS = 0.3;
+export const EDGE_MAX = 3;
+/** An edge's card at a level (II, III say what the stack does in all). */
+export function edgeText(e: EdgeId, level: number): { title: string; text: string } {
+  const t = EDGE_TEXT[e];
+  if (level <= 1) return t;
+  const title = `${t.title} ${level === 2 ? 'II' : 'III'}`;
+  const text =
+    e === 'fast' ? `ENEMY ABILITIES CHARGE ${2 * level} TURNS FASTER`
+    : e === 'marked' ? `EVERY FIGHT OPENS WITH ${level} MARKS PER REEL ON YOU`
+    : e === 'heal' ? `YOUR HEALING IN FIGHTS IS CUT TO 1/${2 ** level}`
+    : e === 'rollers' ? `ENEMIES HAVE +${Math.round(EDGE_ROLLERS * level * 100)}% HP`
+    : e === 'nocomps' ? `A NEW LOOP HEALS ONLY 1/${2 ** level} OF YOUR HP`
+    : t.text;
+  return { title, text };
+}
 export const EDGE_TEXT: Record<EdgeId, { title: string; text: string }> = {
   fast: { title: 'FAST HANDS', text: 'ENEMY ABILITIES CHARGE 2 TURNS FASTER' },
   marked: { title: 'MARKED DECK', text: 'EVERY FIGHT OPENS WITH 1 MARK PER REEL ON YOU' },
@@ -1689,7 +1724,8 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
   const meter = METER_NAME[run.cabinet] ?? 'METER';
   switch (c.id) {
     case 'edge': {
-      const t = EDGE_TEXT[c.edge!];
+      // The level this card would make it (an edge you hold comes back one up).
+      const t = edgeText(c.edge!, edgeLevel(run, c.edge!) + 1);
       return { title: t.title, rule: c.reward === 'legend' ? 'PICK A LEGENDARY RELIC' : c.reward === 'relic' ? 'PICK A RELIC' : `+${ENDLESS.edgeChips} CHIPS`, cost: `HOUSE EDGE: ${t.text}` };
     }
     case 'cashOut':
@@ -1859,12 +1895,17 @@ function target(run: RunState, id: BigChoiceId, rng: Rng): BigChoice | null {
  * A boss fell: three cards, one from each slot (a card with a real cost, one of your Slot Machine's own, one with no
  * cost), shown in random order. Never a card you've seen this run; never one with nothing to act on.
  */
+/** A big choice you passed on sits out this many offers before it can come back. */
+export const CHOICE_REST = 2;
+
 export function rollOffer(run: RunState, rng: Rng): BigChoice[] {
-  const seen = new Set(run.choicesSeen ?? []);
+  // (2026-10-12, user: ENDLESS ran dry.) Only a card you TAKE is gone for the run; one you passed on rests for
+  // CHOICE_REST offers, then can come back. In ENDLESS every card is open, the ones held for earlier acts too.
+  const shown = new Set(run.choicesSeen ?? []);
+  const blocked = new Set([...(run.choicesTaken ?? []), ...(run.choicesRecent ?? []).flat()]);
   const stage = run.endless ? 'E' : run.act <= 2 ? 'H' : 'M';
-  const open = BIG_CARDS.filter(
-    (c) => !seen.has(c.id) && (!c.machine || c.machine === run.cabinet) && (!c.when || (c.when === 'H' ? stage === 'H' : stage !== 'E')) && (!c.ok || c.ok(run)),
-  );
+  const timing = (c: BigCard) => !c.when || stage === 'E' || (c.when === 'H' ? stage === 'H' : true);
+  const open = BIG_CARDS.filter((c) => !blocked.has(c.id) && (!c.machine || c.machine === run.cabinet) && timing(c) && (!c.ok || c.ok(run)));
   const out: BigChoice[] = [];
   const draw = (slot: BigCard['slot']) => {
     for (const c of rng.shuffle(open.filter((x) => x.slot === slot && !out.some((o) => o.id === x.id)))) {
@@ -1877,7 +1918,8 @@ export function rollOffer(run: RunState, rng: Rng): BigChoice[] {
   // No machine cards left (or none for this machine): another card with a cost.
   if (!draw('machine')) draw('cost');
   if (!draw('free')) out.push({ id: 'secondWind' });
-  run.choicesSeen = [...seen, ...out.map((c) => c.id)];
+  run.choicesSeen = [...new Set([...shown, ...out.map((c) => c.id)])];
+  run.choicesRecent = [...(run.choicesRecent ?? []), out.map((c) => c.id)].slice(-CHOICE_REST);
   return rng.shuffle(out);
 }
 
@@ -1907,6 +1949,7 @@ export function takeChoice(run: RunState, c: BigChoice): void {
 
 function takeChoiceInner(run: RunState, c: BigChoice): void {
   if (!run.pendingChoice?.some((x) => x.id === c.id)) return;
+  if (BIG_CARDS.some((b) => b.id === c.id)) run.choicesTaken = [...(run.choicesTaken ?? []), c.id];
   const p = run.player;
   const big = (run.big ??= {});
   // LIMIT BREAK: big choices level past the cap, up to LV5. A level with nowhere to go becomes 2 GOLD Charms there.
@@ -1970,7 +2013,7 @@ function takeChoiceInner(run: RunState, c: BigChoice): void {
       const erng = new Rng((run.seed ^ (run.endless?.loop ?? 1) * 977) >>> 0);
       const legends = legendsFor(run);
       const relics = relicsFor(run);
-      if (c.reward === 'legend' && legends.length) run.pendingLegend = erng.shuffle(legends).slice(0, RUN.legendPick);
+      if (c.reward === 'legend' && legends.length) run.pendingLegend = legendPick(run, erng, legends);
       else if (c.reward === 'relic' && relics.length) run.pendingLegend = erng.shuffle(relics).slice(0, RUN.legendPick);
       else p.chips += ENDLESS.edgeChips;
       markLegends(run, run.pendingLegend);
@@ -2067,7 +2110,7 @@ function takeChoiceInner(run: RunState, c: BigChoice): void {
       run.bossHpMul = 2;
       break;
     case 'cursedIdol':
-      queueLegend(rng.shuffle(legendsFor(run)).slice(0, RUN.legendPick));
+      queueLegend(legendPick(run, rng, legendsFor(run)));
       for (const s of p.strips) s.rock = (s.rock ?? 0) + 1;
       break;
     case 'quickening':

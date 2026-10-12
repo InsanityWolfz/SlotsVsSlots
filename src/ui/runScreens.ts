@@ -16,6 +16,8 @@ import {
   BIG,
   bustPot,
   describeOption,
+  edgeLevel,
+  edgeText,
   fastHands,
   runEdges,
   enemyHp,
@@ -371,7 +373,7 @@ function choiceShort(run: RunState, c: BigChoice): { effect: string; cost: strin
   const full = describeChoice(run, c);
   switch (c.id) {
     case 'edge':
-      return { effect: full.rule, cost: EDGE_TEXT[c.edge!].text };
+      return { effect: full.rule, cost: edgeText(c.edge!, edgeLevel(run, c.edge!) + 1).text };
     case 'cashOut':
       return { effect: `BANK ${/: (\d+) POINTS/.exec(full.rule)?.[1] ?? ''} POINTS. THE RUN ENDS`, cost: '' };
     case 'ride':
@@ -2368,7 +2370,7 @@ export class RunScreens {
     const heading = act3Arrival
       ? 'ACT 3: THE HOUSE HAS A PARTNER. FULLY HEALED.'
       : legend
-        ? this.run!.endless ? `LOOP ${this.run!.endless.loop}: ${this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic)) ? 'A LEGENDARY RELIC' : 'PICK A RELIC'}` : 'ACT 2: FULLY HEALED. A LEGENDARY RELIC.'
+        ? this.run!.endless ? `LOOP ${this.run!.endless.loop}: ${this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic)) ? 'A LEGENDARY RELIC' : 'PICK A RELIC'}` : `ACT 2: FULLY HEALED. ${this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic)) ? 'A LEGENDARY RELIC.' : 'PICK A RELIC.'}`
         : start
           ? 'PICK A STARTING RELIC'
           : spoils
@@ -2615,7 +2617,7 @@ export class RunScreens {
     ctx.fillRect(bx, 103, bw, 3);
     drawText(ctx, fmtNum(hp), bx + bw / 2, 96, 2, COLORS.text);
     if (e.ability) {
-      const every = effectiveAbility(runEdges(run).has('fast') ? fastHands(e.ability) : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
+      const every = effectiveAbility(runEdges(run).has('fast') ? fastHands(e.ability, edgeLevel(run, 'fast')) : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
       const ui = ABILITY_UI[e.ability.kind];
       drawSprite(ctx, ui.icon, tx + 12, 138, fork ? 2.5 : 3);
       drawText(ctx, ui.label, tx + 34, 138, fork ? 2 : 2.5, '#ff9a3a', { align: 'left' });
@@ -2669,7 +2671,7 @@ export class RunScreens {
     if (!blurbFits) line(e.blurb, COLORS.textDim);
     if (e.ability && !e.isBoss) {
       // The ability sentence leads, big (a boss's rules paragraph below already says it): it's what the back is for.
-      const every = effectiveAbility(runEdges(run).has('fast') ? fastHands(e.ability) : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
+      const every = effectiveAbility(runEdges(run).has('fast') ? fastHands(e.ability, edgeLevel(run, 'fast')) : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
       wrap(abilityText(e, every, run), Math.floor((w - 32) / (6 * big))).forEach((l) => {
         drawText(ctx, l, 16, y + 2, big, '#ff9a3a', { align: 'left' });
         y += 10 * big + 2;

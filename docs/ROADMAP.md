@@ -64,7 +64,7 @@ usage resets.
 - Also fixed: JOKER's wheel over the Dealer's table (it hides meanwhile), the banked pot on the bust screen, the loop
   in every endless fight's label, buy-in and offer captions fit, YOUR REELS shows 9 rows a reel, banner decimals.
 - Design: endless loops 1-3 are 1-3-spin fights, then a wall (loop 4-5); the endless Dealer's ALL IN doesn't scale
-  (70-110 vs 83K HP); SECOND WIND repeats every loop and late choice screens show one card; a path ending at the
+  (70-110 vs 83K HP); a path ending at the
   Cashier runs into the pre-boss Cashier; BANKROLL's act 1 fights take 47-49 spins; low HP with no heal on offer.
 
 ## Open from earlier playtests (re-check after the reworks)

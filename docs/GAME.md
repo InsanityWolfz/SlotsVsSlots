@@ -127,6 +127,11 @@ BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP).
 - **Healing (2026-10-12):** under a quarter of max HP, every draft holds a heal of a quarter of max HP (a run at
   17% HP once had none on offer); each Cashier heal in a run costs 6 chips more than the last (12, 18, 24...), so
   chip-rich machines can't buy off attrition. WHITE +0-2, GREEN within 1.
+- **ENDLESS variety (user, 2026-10-12):** only a big choice you TAKE leaves the run; one you pass on rests 2 offers and
+  can come back, and in ENDLESS every card is open (the early-act ones too). HOUSE EDGES stack up to III (each level
+  harder, paying a tier more). Legendary picks top up with normal relics when fewer than 3 legendaries are left.
+- **MAKE IT RAIN counts at most 100 chips (user, 2026-10-12).** The sim's BANKROLL rarely holds that many (median 34
+  in Act 3): its big hits are the multiplier (~25 GOLD Charms from BANK VAULT x HIGH ROLLER).
 - **No healing penalty in Act 3 (user, 2026-10-12):** healing used to be halved there; it hit the slow machines'
   Dealer fights hardest (KNIGHT GREEN 29 -> 38, JUKEBOX 25 -> 39).
 

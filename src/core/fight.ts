@@ -28,7 +28,7 @@ import { ENDLESS, GATEKEEPER, TUNE, WHEEL_RULES, wheelChipShare } from './enemie
 // houseSkim 2 -> 0 (BOSS_REDESIGN 2): the House's hidden chip skim drained CASSIDY's rain (her House ran 32 turns).
 export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.5 };
 /**
- * CASH CASSIDY's MAKE IT RAIN!: a chip jackpot with at least `cost` chips held hits for chips x `perChip` (base: the
+ * CASH CASSIDY's MAKE IT RAIN!: a chip jackpot with at least `cost` chips held hits for chips (up to `maxChips`, user 2026-10-12) x `perChip` (base: the
  * jackpot, charms, relics and a full HIGH ROLLER bar multiply it), counted before it costs `cost` chips.
  * RAINMAKER halves the cost; LOOSE CHANGE lets a chip pair rain at half base; TIP JAR heals; SLUSH FUND refills the bar.
  */
@@ -45,7 +45,7 @@ export const POT_STEAL = { any: 1 };
 export const PAY = { additive: 0, lightningAdd: 1 };
 /** THE JUKEBOX: +25% note damage per volume level (was +20%, 2026-10-12), max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
 export const VOLUME = { perLevel: 0.25, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5, battery: 3 };
-export const RAIN = { perChip: 1.5, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
+export const RAIN = { maxChips: 100, perChip: 1.5, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x2.5 (quarter steps). */
 export const highRollerMul = (chips: number, cap = MIDAS.maxMul) => Math.min(cap, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
 import { isNearMiss, multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
@@ -876,7 +876,7 @@ export class Fight {
         g.rain = true;
         if (g.reels.length === 2 && has('loosechange') && !this.big.monsoon) fired.add('loosechange');
         // MONSOON (big choice): a chip pair rains in full.
-        g.base = Math.round((this.chipsNow() * RAIN.perChip) / (g.reels.length >= 3 || this.big.monsoon ? 1 : 2));
+        g.base = Math.round(((RAIN.maxChips ? Math.min(RAIN.maxChips, this.chipsNow()) : this.chipsNow()) * RAIN.perChip) / (g.reels.length >= 3 || this.big.monsoon ? 1 : 2));
         // DOWNPOUR: each rain this fight makes the next one hit harder.
         if (has('downpour') && this.rains > 0) g.base = unitsRound(g.base * (1 + NEW_RELIC.downpourStep * this.rains));
       }
