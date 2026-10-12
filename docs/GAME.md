@@ -134,6 +134,11 @@ BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP).
   in Act 3); its big hits were the multiplier (~25 GOLD Charms from BANK VAULT x HIGH ROLLER).
 - **JOKER (user, 2026-10-12):** 380 HP (was 320) and its jackpot payoff no longer heals. Its healing grew with its WILDS
   (5 HP a spin in Act 1, 16 in Act 3), so Act 3 never killed it: GREEN 53 -> 44, WHITE 56 -> 57.
+- **User calls, 2026-10-12 (late):** the Dealer's ALL IN grows 25% a loop in ENDLESS (up to 90% of your max HP; the
+  60% boss turn cap still holds); a Cashier sits at a path's stop 3 or earlier; THE BLOOD BANK pays 10 chips for 20%
+  of your HP and 12 for 10% of max HP (was 8 / 25: selling max HP and buying it back was a profit); LOOSE CHANGE is
+  gone (a trap: BANKROLL WHITE 58 -> 62, GREEN 41 -> 45 without it); a slime jackpot keeps cleansing every slime;
+  Charm offers stay random.
 - **BANK VAULT is gone (user, 2026-10-12):** a GOLD Charm after every win. BANKROLL GREEN 50 -> 41, WHITE 59 -> 58;
   its Act 3 fights in 2 spins or fewer 49% -> 38%.
 - **No healing penalty in Act 3 (user, 2026-10-12):** healing used to be halved there; it hit the slow machines'

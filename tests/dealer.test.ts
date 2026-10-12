@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, UNIT } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
-import { DEALER_RULES, Fight } from '../src/core/fight';
+import { allInRange, DEALER_RULES, Fight } from '../src/core/fight';
 
 const dealerFight = () => {
   const c = defaultConfig();
@@ -85,5 +85,14 @@ describe('THE DEALER: three hands, three HP bars', () => {
       return ofType(f.step().events, 'attack')[0].amount;
     };
     expect(hit(2)).toBe(hit(1) * DEALER_RULES.raiseMul);
+  });
+});
+
+describe('THE DEALER in ENDLESS', () => {
+  it('ALL IN grows with the loop, never past loopMax of your max HP', () => {
+    expect(allInRange(1000, 0, 0)).toBe(250);
+    expect(allInRange(1000, 0, 2)).toBe(380);
+    expect(allInRange(1000, Infinity, 2)).toBe(600);
+    expect(allInRange(1000, Infinity, 20)).toBe(1000 * DEALER_RULES.loopMax);
   });
 });

@@ -166,7 +166,6 @@ export type RelicId =
   | 'rainmaker'
   | 'slushfund'
   | 'tipjar'
-  | 'loosechange'
   // Side bets
   // THE JUKEBOX (2026-10-08)
   | 'turntable'
@@ -262,6 +261,8 @@ export interface SideConfig {
   /** ENDLESS: enemy damage multiplier (1.12^loop), LAST CALL / 80-turn cap on, and a starting shield (HOUSE EDGE). */
   dmgMul?: number;
   endless?: boolean;
+  /** ENDLESS: the loop this fight is in (the Dealer's ALL IN grows with it). */
+  loop?: number;
   startShield?: number;
   /** HOUSE EDGE "EARLY BIRD": the enemy spins first. */
   first?: boolean;

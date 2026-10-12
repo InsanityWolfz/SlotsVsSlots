@@ -726,6 +726,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // The loop House is a race: it cashes its pot every 2 turns.
     if (e.boss === 'house' && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: ENDLESS.houseEvery };
     cfg.enemy.endless = true;
+    cfg.enemy.loop = run.endless.loop;
     cfg.enemy.dmgMul = (cfg.enemy.dmgMul ?? 1) * endlessMul(ENDLESS.dmg, run.endless.loop);
   }
   // THE DAILY RUN: every fight is fixed by the day, so everyone meets the same fights.

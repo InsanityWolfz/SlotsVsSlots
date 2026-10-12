@@ -30,7 +30,7 @@ export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.
 /**
  * CASH CASSIDY's MAKE IT RAIN!: a chip jackpot with at least `cost` chips held hits for chips (up to `maxChips`, user 2026-10-12) x `perChip` (base: the
  * jackpot, charms, relics and a full HIGH ROLLER bar multiply it), counted before it costs `cost` chips.
- * RAINMAKER halves the cost; LOOSE CHANGE lets a chip pair rain at half base; TIP JAR heals; SLUSH FUND refills the bar.
+ * RAINMAKER halves the cost; TIP JAR heals; SLUSH FUND refills the bar.
  */
 // Built at x2 / 10 chips (the user's draft), the rain cost more than it hit: CASSIDY 20.8 WHITE. x3 / 5 measured 39.6 / 18.8.
 /** chipLess: a chip group pays (its size - chipLess) chips, at least 1. */
@@ -75,11 +75,15 @@ const JACKPOT_PAY = 9 * UNIT;
  * 2 RAISE: its hits are x1.5 from now on (still BUSTs). 3 ALL IN: every 2 turns, ALL IN (a share of your max HP,
  * through shields). (2026-10-12, user: simpler, drawn out, the hardest boss.)
  */
-export const DEALER_RULES = { hands: [0.27, 0.31, 0.42], raiseMul: 1.5, bustEvery: 3, allInEvery: 2, allInFloor: 0.25, allInCap: 0.4 };
+export const DEALER_RULES = { hands: [0.27, 0.31, 0.42], raiseMul: 1.5, bustEvery: 3, allInEvery: 2, allInFloor: 0.25, allInCap: 0.4, loopStep: 0.25, loopMax: 0.9 };
 export const DEALER_HANDS = ['THE DEAL', 'RAISE', 'ALL IN'];
-/** ALL IN's hit for a visible hand worth `hand`, clamped to DEALER_RULES' floor and cap of `maxHp`. */
-export const allInRange = (maxHp: number, hand: number): number =>
-  Math.max(UNIT, Math.round((maxHp * DEALER_RULES.allInFloor) / UNIT) * UNIT, Math.min(hand, Math.round((maxHp * DEALER_RULES.allInCap) / UNIT) * UNIT));
+/** ALL IN's hit for a visible hand worth `hand`, clamped to DEALER_RULES' floor and cap of `maxHp`. In ENDLESS both
+ * shares grow by `loopStep` a loop (up to `loopMax` of your max HP): its hit kept pace with nothing (user, 2026-10-12). */
+export const allInRange = (maxHp: number, hand: number, loop = 0): number => {
+  const k = 1 + DEALER_RULES.loopStep * loop;
+  const share = (x: number) => Math.min(DEALER_RULES.loopMax, x * k);
+  return Math.max(UNIT, Math.round((maxHp * share(DEALER_RULES.allInFloor)) / UNIT) * UNIT, Math.min(hand, Math.round((maxHp * share(DEALER_RULES.allInCap)) / UNIT) * UNIT));
+};
 
 /** Counterfeit coins last this many of your turns. */
 const FAKE_TURNS = 3;
@@ -637,7 +641,7 @@ export class Fight {
           if (c.symbol === 'sword' || c.symbol === 'seven') hand += this.cfg.base[c.symbol] ?? 0;
         }
       // Within DEALER_RULES' floor and cap of your max HP. It's never raised.
-      const amount = allInRange(foe.maxHp, hand);
+      const amount = allInRange(foe.maxHp, hand, this.cfg.enemy.loop ?? 0);
       // ALL IN pierces shields: the telegraphed hit is the real threat (EXPERT_PLAYTEST_5 E6).
       const h = this.damage(foe, amount, true);
       events.push({ type: 'allInHit', from: side, to: foe.side, amount, ...h });
@@ -868,15 +872,14 @@ export class Fight {
       s.touched = this.midasTouch(me, line, touchable);
       s.raised = true;
     }
-    // CASH CASSIDY: MAKE IT RAIN! A chip jackpot (a chip pair with LOOSE CHANGE, at half base) with enough chips held
+    // CASH CASSIDY: MAKE IT RAIN! A chip jackpot (a chip pair with MONSOON) with enough chips held
     // hits for the chips in hand x2, counted before it costs them.
     if (player && this.meter?.kind === 'vault' && this.chipsNow() >= this.rainCost(me)) {
-      const g = s.groups.find((x) => x.symbol === 'goldbar' && x.matched && (x.reels.length >= 3 || (x.reels.length === 2 && (has('loosechange') || !!this.big.monsoon))));
+      const g = s.groups.find((x) => x.symbol === 'goldbar' && x.matched && (x.reels.length >= 3 || (x.reels.length === 2 && !!this.big.monsoon)));
       if (g) {
         g.rain = true;
-        if (g.reels.length === 2 && has('loosechange') && !this.big.monsoon) fired.add('loosechange');
         // MONSOON (big choice): a chip pair rains in full.
-        g.base = Math.round(((RAIN.maxChips ? Math.min(RAIN.maxChips, this.chipsNow()) : this.chipsNow()) * RAIN.perChip) / (g.reels.length >= 3 || this.big.monsoon ? 1 : 2));
+        g.base = Math.round((RAIN.maxChips ? Math.min(RAIN.maxChips, this.chipsNow()) : this.chipsNow()) * RAIN.perChip);
         // DOWNPOUR: each rain this fight makes the next one hit harder.
         if (has('downpour') && this.rains > 0) g.base = unitsRound(g.base * (1 + NEW_RELIC.downpourStep * this.rains));
       }
@@ -2000,7 +2003,7 @@ export class Fight {
       events.push({ type: 'lineCard', side: foe.side, reel, card: kind });
     } else {
       this.dealerAllIn = true;
-      events.push({ type: 'allInArmed', side: me.side, cap: allInRange(foe.maxHp, Infinity), floor: allInRange(foe.maxHp, 0) });
+      events.push({ type: 'allInArmed', side: me.side, cap: allInRange(foe.maxHp, Infinity, this.cfg.enemy.loop ?? 0), floor: allInRange(foe.maxHp, 0, this.cfg.enemy.loop ?? 0) });
     }
     events.push({ type: 'dealNext', side: me.side, card: this.nextDeal });
   }

@@ -404,7 +404,8 @@ export interface ActMap {
  * who's on it), not ranked greedy-to-safe.
  */
 // (2026-10-12: two shapes with three encounters, the casino path: fewer fights, more gambles.)
-export const ROUTE_SHAPES = ['FE?FE', 'F?SF?', 'FES?F', '?FEFS', 'FF?E?', 'EFSF?', 'F?FSE', '?FFEF', 'FS?EF', 'F?E?F', '?F?E?', 'E?F??'];
+/** (User, 2026-10-12: a Cashier sits at stop 3 or earlier, never 4 or 5: one at the end ran into the pre-boss Cashier.) */
+export const ROUTE_SHAPES = ['FE?FE', 'F?SF?', 'FES?F', '?FSEF', 'FF?E?', 'EFSF?', 'FS?FE', '?FFEF', 'FS?EF', 'F?E?F', '?F?E?', 'E?F??'];
 /** Endless loops: one route (3 fights and a Cashier, then the boss). */
 const ENDLESS_SHAPE = 'FSF';
 export const ROUTES_PER_ACT = 3;

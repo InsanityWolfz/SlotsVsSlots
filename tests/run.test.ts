@@ -23,6 +23,8 @@ describe('run', () => {
       expect(m.routes).toHaveLength(3);
       const shapes = m.routes.map((r) => r.map((st) => ({ fight: 'F', elite: 'E', shop: 'S', encounter: '?' })[st.kind]).join(''));
       for (const sh of shapes) expect(ROUTE_SHAPES).toContain(sh);
+      // A Cashier sits at stop 3 or earlier (user, 2026-10-12).
+      for (const sh of shapes) expect(sh.lastIndexOf('S')).toBeLessThan(3);
       expect(new Set(shapes).size).toBe(3);
       // Never three routes with the same number of elites: a path is judged against your run, not ranked.
       expect(new Set(shapes.map((sh) => [...sh].filter((c) => c === 'E').length)).size).toBeGreaterThan(1);

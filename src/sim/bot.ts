@@ -50,7 +50,6 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   rainmaker: 7,
   slushfund: 6.5,
   tipjar: 6,
-  loosechange: 7,
   coil: 6.5,
   mirror: 10,
   battery: 9,

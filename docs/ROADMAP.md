@@ -14,15 +14,8 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
    JOKER 44 (target 36: weak early, strong late, accepted for now). WHITE 57-59 and GREEN 34-41 for the rest.
 
 ## Open design questions
-- The ENDLESS Dealer's ALL IN doesn't grow with the loops (70-110 vs 83K HP).
-- A path ending at the Cashier runs straight into the pre-boss Cashier (same stock).
 - ALL IN is shown in three places (banner, table panel, the line under its machine).
 - LUCKY BREAK is a free pick next to cards with costs.
-- THE BLOOD BANK still sells HP cheap (Cashier heals now rise in price).
-- **SLIME:** a jackpot should cleanse only your visible 3x3. Measured (2000 runs, WHITE, before JOKER's change):
-  JOKER 57 -> 51, BANKROLL 60 -> 54. Held for the user.
-- **LOOSE CHANGE is a trap:** pair rains cost full chips at half damage.
-- **Offers feel too fitted:** one Charm locks your offers in, and late rerolls barely change the pool.
 - **Boss clarity**, and a **keyword glossary** (the same words for the same things on every card, each in its own
   color; a draft is in git history: `loop/KEYWORDS_DRAFT.md` at `c2f0ffb`).
 
