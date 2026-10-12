@@ -69,7 +69,7 @@ export class MachineView {
     this.reels = combatant.reels.map(
       (r) =>
         new ReelView(
-          r.cells.map((c): CellView => ({ symbol: c.symbol, slimed: c.slimed, goo: c.slimed ? 1 : 0, flash: 0, stolen: c.stolen ? 1 : 0, enh: c.enh, bomb: c.bomb, grounded: c.grounded, faked: c.faked, carded: c.carded, confiscated: c.confiscated })),
+          r.cells.map((c): CellView => ({ symbol: c.symbol, slimed: c.slimed, goo: c.slimed ? 1 : 0, flash: 0, stolen: c.stolen ? 1 : 0, enh: c.enh, bomb: c.bomb, faked: c.faked, carded: c.carded, confiscated: c.confiscated })),
           r.stop,
         ),
     );

@@ -40,33 +40,6 @@ describe('ITERATION_8 G1: previews are pure', () => {
 });
 
 describe('counter-enemies', () => {
-  it('GROUNDER: a grounded bolt on your payline earths its energy, and your special hits shields', () => {
-    const f = fight((c) => {
-      c.player.strips = reels3({ bolt: 12 });
-      c.enemy = { hp: 9999, strips: reels3({ shield: 12 }) };
-    });
-    f.sides.enemy.shield = 50;
-    for (const cell of f.sides.player.reels[0].cells) cell.grounded = true;
-    f.forceNext('player', ['bolt', 'bolt', 'bolt']);
-    const { events } = f.step();
-    // A 90-energy jackpot with 1 of 3 bolts grounded: 30 earthed, 60 gained.
-    expect(ofType(events, 'energyGain')[0]).toMatchObject({ amount: 60, earthed: 30 });
-    const fire = ofType(events, 'specialFire')[0];
-    expect(fire.grounded).toBe(true);
-    expect(fire.blocked).toBe(50);
-  });
-
-  it('GROUNDER writes rods onto bolt cells; EARTH drains energy', () => {
-    const f = fight((c) => (c.enemy = { hp: 9999, strips: [{ ground: 12 }, { ground: 12 }, { shield: 12 }], ability: { kind: 'earth', every: 1, power: 30 } }));
-    f.sides.player.energy = 40;
-    f.next = 'enemy';
-    f.forceNext('enemy', ['ground', 'ground', 'shield']);
-    const { events } = f.step();
-    const g = ofType(events, 'ground')[0];
-    expect(g.cells.length).toBe(3);
-    for (const ref of g.cells) expect(f.sides.player.reels[ref.reel].cells[ref.index].symbol).toBe('bolt');
-    expect(ofType(events, 'earth')[0]).toMatchObject({ amount: 30, total: 10 });
-  });
 
   it('COUNTERFEITER: a faked charm pays plain until it wears off', () => {
     const f = fight((c) => {

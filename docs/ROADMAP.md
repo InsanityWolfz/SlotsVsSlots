@@ -59,10 +59,10 @@ a boss may be up to ~10% easier or harder on one machine than another.
 - English only.
 
 ## Code cleanup
-- Remove the GROUNDER's dead mechanic (rods, EARTH) and the retired relics' code paths (`retired: true` in relics.ts).
+- Remove the retired relics' code paths (`retired: true` in relics.ts).
 - Rename the tests by feature, not by iteration (`iteration6.test.ts`, `expert10.test.ts` and so on).
 - Merge `npm run sim` (`src/sim/runSim.ts`) and `tools/sim/*` into the new sim (part of Now, step 3).
-- Unused sprites of removed content (BRIAR, THORNY, her relics) in `tools/build-art.mjs`.
+- Unused sprites of removed content (BRIAR, THORNY, her relics, the GROUNDER's rods and EARTH) in `tools/build-art.mjs`.
 - Later: split the 2-3k-line files (`fight.ts`, `run.ts`, `runScreens.ts`, `director.ts`, `game.ts`).
 
 ## Held ideas

@@ -58,7 +58,7 @@ export type CombatEvent =
       targetShield: number;
     }
   | { type: 'shieldGain'; side: SideId; reels: number[]; amount: number; total: number; /** Not from a shield group: chips vs a boss, the Chalice's overheal. */ source?: 'chips' | 'chalice' }
-  | { type: 'energyGain'; side: SideId; reels: number[]; amount: number; total: number; /** Energy the Grounder's rods earthed away. */ earthed?: number }
+  | { type: 'energyGain'; side: SideId; reels: number[]; amount: number; total: number }
   | {
       type: 'specialFire';
       from: SideId;
@@ -69,15 +69,13 @@ export type CombatEvent =
       targetHp: number;
       targetShield: number;
       energyLeft: number;
-      /** A grounded cell on the payline: this special hit shields. */
-      grounded?: boolean;
     }
   | { type: 'heal'; side: SideId; amount: number; hp: number; source: HealSource }
   /**
    * A signature meter moved (MIDAS gold bars, JAX's wilds). `armed`: it's full and
    * waiting to pay off; `wasted`: gold bars that landed while it was already full.
    */
-  | { type: 'meter'; side: SideId; reels: number[]; amount: number; total: number; armed?: boolean; wasted?: number; earthed?: number; dropsNow?: boolean }
+  | { type: 'meter'; side: SideId; reels: number[]; amount: number; total: number; armed?: boolean; wasted?: number; dropsNow?: boolean }
   /** A meter paid off (MIDAS x4 group, JAX all-jackpots spin); it empties. */
   | { type: 'payoff'; side: SideId; kind: 'touch' | 'jackpots' | 'vault' | 'volume'; left?: number; mul?: number }
   /** THE JUKEBOX: THE DROP. Every NOTE in the 3x3 window off the payline hits (the payline scores as usual). */
@@ -143,14 +141,10 @@ export type CombatEvent =
   | { type: 'defuse'; side: SideId; cells: CellRef[] }
   /** Every live bomb on this side's strips burned one turn of fuse. */
   | { type: 'fuse'; side: SideId; cells: CellRef[]; fuses: number[] }
-  /** The Grounder drove rods into bolt cells. */
-  | { type: 'ground'; from: SideId; to: SideId; reels: number[]; cells: CellRef[] }
   /** The Counterfeiter faked gilded cells (plain for `turns`). */
   | { type: 'fake'; from: SideId; to: SideId; reels: number[]; cells: CellRef[]; turns: number; /** The gild types counterfeited. */ enhs: Enh[] }
   /** Faked cells burned a turn; `left` 0 = the fake wore off. */
   | { type: 'fakeTick'; side: SideId; cells: CellRef[]; left: number[] }
-  /** EARTH: energy drained from the target. */
-  | { type: 'earth'; from: SideId; to: SideId; amount: number; total: number }
   /** The Mimic ate some of your chips. */
   | { type: 'gulp'; from: SideId; chips: number }
   /** Phoenix Feather saved you from a lethal hit. */

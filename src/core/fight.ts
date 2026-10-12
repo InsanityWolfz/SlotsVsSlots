@@ -85,9 +85,9 @@ export const allInRange = (maxHp: number, hand: number): number =>
 const FAKE_TURNS = 3;
 
 /** Symbols that act on the opponent when they're native to the caster's strips. */
-export const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake', 'ball']);
+export const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'coin', 'bomb', 'hex', 'fangs', 'mimicSym', 'fake', 'card', 'gavel', 'rake', 'ball']);
 /** HOLY WATER washes off these writes (not coins, drains or the Mimic's hit) and these abilities. */
-const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'bomb', 'hex', 'card', 'gavel', 'rake', 'ground', 'fake', 'ball']);
+const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'bomb', 'hex', 'card', 'gavel', 'rake', 'fake', 'ball']);
 const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel', 'ball']);
 const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
@@ -195,8 +195,6 @@ export function effectText(sym: SymbolId, amount: number): string {
       return pair ? `SEIZES ${jackpot ? 4 : 2} CHARMS` : 'FIZZLES';
     case 'rake':
       return `RAKES YOUR PAY FOR ${s(n, 'TURN')}`;
-    case 'ground':
-      return `GROUNDS ${s(n + 1, 'BOLT')}`;
     case 'fake':
       return `FAKES ${s(2 * n, 'CHARM')}`;
     case 'mimicSym':
@@ -662,12 +660,11 @@ export class Fight {
     if (!this.over && side === 'player' && this.meter?.kind === 'volume') this.volumeAfterSpin(me, line, score, events);
     // JAX: every WILD on the payline fills the meter (lucky wilds too).
     if (!this.over && side === 'player' && this.meter?.kind === 'jackpots') {
-      const wilds = line.flatMap((s, r) => (s === 'wild' && !this.isGrounded(me, r) ? [r] : []));
-      const earthed = line.filter((s, r) => s === 'wild' && this.isGrounded(me, r)).length * (this.meter.perWild ?? 0);
+      const wilds = line.flatMap((s, r) => (s === 'wild' ? [r] : []));
       // STACKED DECK: a charmed WILD fills double.
       const charmed = me.relics.has('stacked') ? wilds.filter((r) => me.reels[r].cells[me.reels[r].stop]?.symbol === 'wild' && this.paylineEnh(me, r)).length : 0;
       if (charmed) events.push({ type: 'relic', side, relic: 'stacked' });
-      if (wilds.length || earthed) this.fillMeter(me, (wilds.length + charmed) * (this.meter.perWild ?? 0), wilds, events, earthed);
+      if (wilds.length) this.fillMeter(me, (wilds.length + charmed) * (this.meter.perWild ?? 0), wilds, events);
     }
     // HOT STREAK: a jackpot makes your next spin pay x2 (any other spin ends it).
     if (side === 'player') this.hotStreak = me.relics.has('hotstreak') && score.tier === 'triple';
@@ -1208,10 +1205,6 @@ export class Fight {
     return cell.enh;
   }
 
-  private isGrounded(c: Combatant, r: number): boolean {
-    return c.side === 'player' && !!c.reels[r].cells[c.reels[r].stop]?.grounded;
-  }
-
   private resetShield(c: Combatant, events: CombatEvent[]): void {
     if (c.shield <= 0) return;
     if (c.side === 'player' && !this.over) {
@@ -1363,16 +1356,13 @@ export class Fight {
         // Only TESLA (or the bare engine) has a special.
         if (player && !this.special) break;
         {
-          // The Grounder: a grounded bolt on your payline earths its share of the energy.
-          const grounded = player ? g.reels.filter((r) => this.isGrounded(me, r)).length : 0;
-          const earthed = grounded ? unitsUp((g.amount * grounded) / g.reels.length) : 0;
           // TESLA COIL: its charge joins this group's, so it feeds the same strike (it fired a strike of its own after).
           const coil = player ? this.coilPending : 0;
           if (coil) {
             this.coilPending = 0;
             events.push({ type: 'relic', side: me.side, relic: 'coil' });
           }
-          this.gainEnergy(me, Math.max(0, g.amount - earthed) + coil, g.reels, events, earthed);
+          this.gainEnergy(me, g.amount + coil, g.reels, events);
         }
         this.vampHeal(me, g, events);
         return;
@@ -1388,11 +1378,7 @@ export class Fight {
           else if (g.amount > 0) this.hit(me, this.sides[other(me.side)], g.amount, g.reels, events);
           if (this.over) return;
         }
-        {
-          const grounded = g.reels.filter((r) => this.isGrounded(me, r)).length;
-          const earthed = grounded ? Math.ceil((g.amount * grounded) / g.reels.length) : 0;
-          this.fillMeter(me, Math.max(0, g.amount - earthed), g.reels, events, earthed);
-        }
+        this.fillMeter(me, g.amount, g.reels, events);
         this.vampHeal(me, g, events);
         return;
     }
@@ -1421,8 +1407,7 @@ export class Fight {
   /**
    * THE DROP: the notes off the payline (rows above and below). What enemies wrote counts: a slimed, stolen or dead-card
    * cell isn't a note, a jammed reel sits out, a hexed reel pays half with its Charm dark (unless the payline's hex
-   * already halves the group), and a counterfeit Charm does nothing. A grounded note still hits (the Grounder stops the
-   * volume, not the damage). A LUCKY cell rolls: a WILD plays as a note (user, 2026-10-08).
+   * already halves the group), and a counterfeit Charm does nothing. A LUCKY cell rolls: a WILD plays as a note (user, 2026-10-08).
    */
   private dropNotes(me: Combatant, groupHexed = false): { cells: { reel: number; row: number; v?: number; wild?: true }[]; base: number; echoes: number; keen: boolean; vamp: number } {
     const out = { cells: [] as { reel: number; row: number; v?: number; wild?: true }[], base: 0, echoes: 0, keen: false, vamp: 0 };
@@ -1484,8 +1469,7 @@ export class Fight {
     }
     // Notes on the payline turn it up; a WILD counts only when it pairs as a note (user, 2026-10-08).
     const noteGroups = score.groups.filter((g) => g.symbol === 'note');
-    // The Grounder: a rod in a note earths it (it doesn't turn the volume up).
-    const reels = line.flatMap((s, r) => ((s === 'note' || (s === 'wild' && noteGroups.some((g) => g.reels.includes(r)))) && !this.isGrounded(me, r) ? [r] : []));
+    const reels = line.flatMap((s, r) => (s === 'note' || (s === 'wild' && noteGroups.some((g) => g.reels.includes(r))) ? [r] : []));
     if (reels.length) this.turnUp(me, reels.length, reels, events);
     else if (me.energy > 0 && !me.armed && !this.big.noSkip && !me.relics.has('mixtape')) {
       // The record skips.
@@ -1602,7 +1586,7 @@ export class Fight {
   }
 
   /** MIDAS / JAX: fill the signature meter (a full MIDAS / JAX meter locks until it pays off). */
-  private fillMeter(me: Combatant, amount: number, reels: number[], events: CombatEvent[], earthed = 0): void {
+  private fillMeter(me: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
     if (me.side !== 'player' || !this.meter) return;
     amount *= this.cfg.player.meterMul ?? 1;
     // MIDAS VAULT: +1 pip per gold bar landed; locks when full.
@@ -1618,7 +1602,7 @@ export class Fight {
     if (this.meter.kind === 'touch') {
       me.energy += amount;
       if (me.energy >= this.meterCost) me.armed = true;
-      events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(me.armed ? { armed: true } : {}), ...(earthed ? { earthed } : {}) });
+      events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(me.armed ? { armed: true } : {}) });
       return;
     }
     if (me.armed) {
@@ -1627,7 +1611,7 @@ export class Fight {
     }
     me.energy = Math.min(this.meterCost, me.energy + amount);
     if (me.energy >= this.meterCost) me.armed = true;
-    events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(me.armed ? { armed: true } : {}), ...(earthed ? { earthed } : {}) });
+    events.push({ type: 'meter', side: me.side, reels, amount, total: me.energy, ...(me.armed ? { armed: true } : {}) });
   }
 
   /** Enemy damage growth: ENDLESS (per loop, LAST CALL after enemy turn 40) x ATTRITION (act 3). */
@@ -1705,14 +1689,12 @@ export class Fight {
     return h.hpDamage;
   }
 
-  private gainEnergy(me: Combatant, amount: number, reels: number[], events: CombatEvent[], earthed = 0): void {
+  private gainEnergy(me: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
     const foe = this.sides[other(me.side)];
     if (me.side === 'player') amount *= this.cfg.player.meterMul ?? 1;
     me.energy += amount;
-    events.push({ type: 'energyGain', side: me.side, reels, amount, total: me.energy, ...(earthed ? { earthed } : {}) });
-    // The Grounder: a grounded cell on your payline makes your special hit shields.
-    const grounded = me.reels.some((reel) => reel.cells[reel.stop]?.grounded);
-    const pierce = this.cfg.specialIgnoresShield && !grounded;
+    events.push({ type: 'energyGain', side: me.side, reels, amount, total: me.energy });
+    const pierce = this.cfg.specialIgnoresShield;
     // OVERCHARGE (TESLA): every strike hits 30% harder. It used to fire an echo strike after each one, which spammed
     // through a LIGHTNING STORM (user playtest); it pops once per storm now.
     const over = me.relics.has('overcharge');
@@ -1732,13 +1714,13 @@ export class Fight {
       }
       if (melt > 0 && strikes === 0) events.push({ type: 'relic', side: me.side, relic: 'meltdown' });
       const h = this.damage(foe, dmg, pierce);
-      events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
+      events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy });
       this.checkDeath(foe, events);
       strikes++;
       // CHAIN LIGHTNING (big choice): every strike hits twice.
       if (me.side === 'player' && this.big.strikeTwice && !this.over && foe.hp > 0) {
         const h2 = this.damage(foe, dmg, pierce);
-        events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h2, energyLeft: me.energy, ...(grounded ? { grounded } : {}) });
+        events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h2, energyLeft: me.energy });
         this.checkDeath(foe, events);
       }
     }
@@ -1928,9 +1910,6 @@ export class Fight {
       case 'rake':
         // 1 turn, a double 2, a jackpot 3.
         return this.applyRake(me, foe, statusSize(amount), reels, events);
-      case 'ground':
-        // 1 rod, a double 2, a jackpot 3 (onto your bolt cells).
-        return this.plantGround(me, foe, statusSize(amount) + 1, reels, events);
       case 'fake':
         // 1 cell, a double 2, a jackpot 3 (gilded cells, visible first), plain for 2 turns.
         return this.fakeGilds(me, foe, 2 * statusSize(amount), FAKE_TURNS, reels, events);
@@ -2074,20 +2053,6 @@ export class Fight {
       this.nextDeal = a && a === b ? DEALS.find((d) => d !== a)! : this.rng.pick(DEALS);
     }
     events.push({ type: 'dealNext', side: me.side, card: this.nextDeal, ...(this.finalHand ? { then: [this.nextDeal === 'allin' ? 'raise' : 'allin'] as DealCard[] } : {}) });
-  }
-
-  /** Drive grounding rods into the foe's bolt cells (visible first). */
-  private plantGround(me: Combatant, foe: Combatant, count: number, reels: number[], events: CombatEvent[]): void {
-    const vis = new Set(visibleCells(foe.reels).map((r) => `${r.reel}:${r.index}`));
-    const all: CellRef[] = [];
-    // It grounds your signature symbol (TESLA's bolts, MIDAS's gold bars, BRIAR's thorns, JAX's wilds).
-    const sig: SymbolId = foe.side === 'player' && this.meter ? this.meter.symbol : 'bolt';
-    foe.reels.forEach((reel, r) => reel.cells.forEach((c, i) => c.symbol === sig && !c.grounded && !c.stolen && all.push({ reel: r, index: i })));
-    const pool = [...this.rng.shuffle(all.filter((x) => vis.has(`${x.reel}:${x.index}`))), ...this.rng.shuffle(all.filter((x) => !vis.has(`${x.reel}:${x.index}`)))];
-    const cells = pool.slice(0, count);
-    if (!cells.length) return this.fizzle(me, 'ground', reels, events);
-    for (const ref of cells) foe.reels[ref.reel].cells[ref.index].grounded = true;
-    events.push({ type: 'ground', from: me.side, to: foe.side, reels, cells });
   }
 
   /** Slap counterfeit coins over the foe's charmed cells (visible first): their charms go plain for `turns`. */
@@ -2401,12 +2366,6 @@ export class Fight {
         return this.repossess(me, foe, events);
       case 'deal':
         return this.deal(me, foe, events);
-      case 'earth': {
-        const amount = foe.armed ? 0 : Math.min(foe.energy, ab.power);
-        foe.energy -= amount;
-        events.push({ type: 'earth', from: me.side, to: foe.side, amount, total: foe.energy });
-        return;
-      }
       case 'launder':
         // Takes your chips and turns them into its HP (x3).
         this.chipsEaten += ab.power;

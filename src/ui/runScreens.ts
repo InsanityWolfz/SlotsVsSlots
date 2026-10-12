@@ -108,7 +108,6 @@ export const BADGE: Record<string, SpriteId> = {
   vampire: artId('mapBadgeFang'),
   mimic: artId('mapBadgeMimic'),
   wheel: artId('mapBadgeWheel'),
-  grounder: artId('mapBadgeGround'),
   counterfeiter: artId('mapBadgeFake'),
   sharp: artId('mapBadgeCard'),
   pitboss: artId('mapBadgeGavel'),
@@ -322,7 +321,6 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
     bloodmoon: `HEALS ${p} HP`,
     gulp: `EATS ${p} OF YOUR CHIPS`,
     bets: per ? `EACH CHIP LEFT ON YOUR REELS HITS ${per}` : 'EACH CHIP LEFT ON YOUR REELS HITS 5% OF YOUR HP',
-    earth: `DRAINS ${p} FROM YOUR METER`,
     launder: `TAKES ${p} CHIPS, HEALS ${p * 3 * UNIT}`,
     mark: `MARKS ${p} OF YOUR CELLS`,
     penalty: `HITS FOR ${p}`,
@@ -344,7 +342,7 @@ function abilityText(e: EnemyDef, every: number, run?: RunState): string {
 
 /** The stage light behind each enemy's portrait (the panel's front). */
 const STAGE_TINT: Record<string, string> = {
-  slime: '#5ed15a', frost: '#5ad8e8', thief: '#c9a0ff', hexer: '#c9a0ff', golem: '#c9bba8', grounder: '#c9bba8',
+  slime: '#5ed15a', frost: '#5ad8e8', thief: '#c9a0ff', hexer: '#c9a0ff', golem: '#c9bba8',
   brute: '#ff9a3a', gremlin: '#ff9a3a', bomber: '#ff9a3a', vampire: '#ff6a5a', house: '#ff6a5a', pitboss: '#ff6a5a',
   dealer: '#ff6a5a', wheel: '#ff3a2e', croupier: '#ffd23f', sharp: '#ffd23f', counterfeiter: '#ffd23f', mimic: '#ffd23f',
 };

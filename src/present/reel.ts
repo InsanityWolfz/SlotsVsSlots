@@ -22,8 +22,6 @@ export interface CellView {
   enh?: Enh;
   /** MIDAS TOUCH: gold touches this fight (1-3). */
   touch?: number;
-  /** The Grounder's rod. */
-  grounded?: boolean;
   /** The Card Sharp's marked card. */
   carded?: boolean;
   /** The Pit Boss confiscated this cell's gild. */
@@ -310,20 +308,6 @@ export function drawCell(
       ctx.globalAlpha = 0.45 * alpha;
       ctx.fillStyle = '#8a8a8a';
       ctx.fillRect(x - 30, y - 30, 60, 60);
-      ctx.restore();
-    }
-  }
-  // Grounding rod driven into the cell.
-  if (cell.grounded && stolen < 1) {
-    if (hasSprite('groundOverlay')) drawSprite(ctx, artId('groundOverlay'), x, y, ART_SCALE, { sx, sy, alpha });
-    else {
-      ctx.save();
-      ctx.strokeStyle = '#c87a3a';
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(x + 28, y - 28);
-      ctx.lineTo(x - 6, y + 10);
-      ctx.stroke();
       ctx.restore();
     }
   }

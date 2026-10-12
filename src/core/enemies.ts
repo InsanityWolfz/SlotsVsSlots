@@ -17,7 +17,7 @@ export interface Archetype {
   hpMul: number;
   /** null: no timed ability. */
   ability: AbilityDef | null;
-  /** Only these slot machines ever meet it (THE GROUNDER answers TESLA's lightning; user, 2026-10-08). */
+  /** Only these slot machines ever meet it. */
   only?: CabinetId[];
   /** Earliest fight (0-based) this archetype can appear at. */
   minDepth: number;
@@ -138,7 +138,7 @@ export const ARCHETYPES: Archetype[] = [
     blurb: 'COPIES YOUR BEST HIT. EATS YOUR CHIPS',
     acts: [2],
   },
-  // ---- act 2 counter-enemy: answers a Charm or meter build (THE GROUNDER, TESLA's, retired 2026-10-12) ----
+  // ---- act 2 counter-enemy: answers a Charm or meter build ----
   {
     id: 'counterfeiter',
     name: 'COUNTERFEITER',

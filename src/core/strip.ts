@@ -11,8 +11,6 @@ export interface StripCell {
   enh?: Enh;
   /** A Bomber's bomb: turns left on its fuse. Landing it on your payline defuses it. */
   bomb?: number;
-  /** The Grounder's rod: while on your payline, your special can't ignore shields. */
-  grounded?: boolean;
   /** The Counterfeiter's fake coin: this cell's gild counts as plain for this many of your turns. */
   faked?: number;
   /** The Card Sharp marked this cell: it's a dead CARD for the fight, and it bites when it lands on your payline. */
@@ -64,7 +62,7 @@ export function effectiveSymbol(cell: StripCell): SymbolId {
 }
 
 /** Symbols that do nothing on the player's own payline (WILD is very much alive). */
-export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'lock', 'ice', 'claw', 'bomb', 'hex', 'fangs', 'mimicSym', 'ground', 'fake', 'card', 'gavel', 'rake', 'ball', 'bonusSym', 'relicSym']);
+export const DEAD: ReadonlySet<SymbolId> = new Set(['slime', 'rock', 'empty', 'lock', 'ice', 'claw', 'bomb', 'hex', 'fangs', 'mimicSym', 'fake', 'card', 'gavel', 'rake', 'ball', 'bonusSym', 'relicSym']);
 /** The chase symbols: added for the fight, never part of your strips. */
 export const BONUS_SYMBOLS: ReadonlySet<SymbolId> = new Set(['bonusSym', 'relicSym']);
 

@@ -33,7 +33,6 @@ export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> 
   bloodmoon: { icon: artId('icoDrain'), label: 'BLOOD MOON' },
   gulp: { icon: artId('icoGulp'), label: 'GULP' },
   bets: { icon: artId('icoBets'), label: 'NO MORE BETS' },
-  earth: { icon: artId('icoEarth'), label: 'EARTH' },
   launder: { icon: artId('icoLaunder'), label: 'LAUNDER' },
   mark: { icon: artId('icoMark'), label: 'STACKED DECK' },
   penalty: { icon: artId('icoGavel'), label: 'PENALTY' },

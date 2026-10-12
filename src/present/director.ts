@@ -177,14 +177,10 @@ export class Director {
         return this.noMoreBets(e);
       case 'wheelFast':
         return this.wheelFast(e);
-      case 'ground':
-        return this.ground(e);
       case 'fake':
         return this.fake(e);
       case 'fakeTick':
         return this.fakeTick(e);
-      case 'earth':
-        return this.earth(e);
       case 'mark':
         return this.markCells(e);
       case 'markedHit':
@@ -876,11 +872,6 @@ export class Director {
   }
 
   private async energyGain(e: Ev<'energyGain'>): Promise<void> {
-    if (e.earthed) {
-      const c = this.machineCenter(e.side);
-      this.s.sounds.shieldFizz();
-      this.bg(this.popText(`EARTHED -${e.earthed}`, c.x, MACHINE_TOP - 30, 2, '#e0a070', 16, 0.5));
-    }
     await this.activate(e.side, e.reels, COLORS.energy);
     const h = this.s.huds[e.side];
     const before = Math.floor((e.total - e.amount) / UNIT);
@@ -910,10 +901,6 @@ export class Director {
   }
 
   private async specialFire(e: Ev<'specialFire'>): Promise<void> {
-    if (e.grounded) {
-      const c = this.machineCenter(e.from);
-      this.bg(this.popText('GROUNDED: HITS SHIELDS', c.x, MACHINE_TOP - 30, 2, '#e0a070', 16, 0.5));
-    }
     const h = this.s.huds[e.from];
     const cam = this.s.camera;
     // Charge.
@@ -1038,10 +1025,6 @@ export class Director {
     const h = this.s.huds[e.side];
     const m = h.meter;
     if (!m) return;
-    if (e.earthed) {
-      const c = this.machineCenter(e.side);
-      this.bg(this.popText(`EARTHED -${e.earthed}`, c.x, MACHINE_TOP - 30, 2, '#e0a070', 16, 0.5));
-    }
     // THE JUKEBOX: a spin with no note skips the record (the volume falls).
     if (m.kind === 'volume' && e.amount < 0) {
       const p0 = h.pipPos(Math.max(0, Math.floor(h.energy) - 1));
@@ -1740,29 +1723,6 @@ export class Director {
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (icon.alpha = v) }).then(() => this.s.fx.remove(icon)));
   }
 
-  /** The Grounder hammers rods into your bolts. */
-  private async ground(e: Ev<'ground'>): Promise<void> {
-    const to = this.s.machines[e.to];
-    if (e.reels.length) await this.activate(e.from, e.reels, '#c87a3a');
-    const hits = e.cells.map(async (ref, i) => {
-      await this.c.wait(i * 0.1);
-      const src = this.srcPoint(e.from, e.reels, i);
-      const row = this.rowOf(e.to, ref);
-      const dst = row >= 0 ? cellCenter(e.to, ref.reel, row) : stripMapColumn(ref.reel);
-      const p = this.s.fx.add(new Projectile(artId('ground'), src.x, src.y, 3, false, '#c87a3a'));
-      await this.arc(p, dst.x, dst.y, 0.35, 90, sineIn);
-      this.s.fx.remove(p);
-      to.reels[ref.reel].cells[ref.index].grounded = true;
-      this.s.sounds.rockThud();
-      this.s.particles.burst({ x: dst.x, y: dst.y, count: 12, colors: ['#c87a3a', '#ffd23f', '#5a3a20'], speed: [60, 220], gravity: 500, life: [0.2, 0.4], size: [2, 4] });
-    });
-    await Promise.all(hits);
-    const c = this.machineCenter(e.to);
-    this.bg(this.popText(`GROUNDED x${e.cells.length}`, c.x, MACHINE_TOP - 30, 2, '#e0a070', 16, 0.4));
-    if (e.reels.length) this.settle(e.from, e.reels);
-    await this.c.wait(0.15);
-  }
-
   /** The Counterfeiter slaps fake coins over your gilds. */
   private async fake(e: Ev<'fake'>): Promise<void> {
     const to = this.s.machines[e.to];
@@ -1794,19 +1754,6 @@ export class Director {
     const m = this.s.machines[e.side];
     e.cells.forEach((ref, i) => (m.reels[ref.reel].cells[ref.index].faked = e.left[i]));
     await this.c.wait(0.02);
-  }
-
-  /** EARTH: your energy drains into the ground. */
-  private async earth(e: Ev<'earth'>): Promise<void> {
-    const h = this.s.huds[e.to];
-    this.s.sounds.shieldFizz();
-    for (let i = 0; i < h.energyMax; i++) {
-      const p = h.pipPos(i);
-      this.s.particles.burst({ x: p.x, y: p.y, count: 4, colors: ['#c87a3a', COLORS.energy], speed: [40, 120], angle: Math.PI / 2, spread: 0.8, gravity: 300, life: [0.3, 0.5], size: [2, 3] });
-    }
-    await this.c.to(h, 'energy', e.total / UNIT, 0.3, sineIn);
-    const p0 = h.pipPos(0);
-    await this.popText(e.amount ? `-${e.amount} METER` : 'NO METER', p0.x + 40, p0.y - 22, 2, '#e0a070', 16, 0.3);
   }
 
   // ---- act 3 -----------------------------------------------------------------------------

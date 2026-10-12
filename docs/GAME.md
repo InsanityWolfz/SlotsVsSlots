@@ -69,8 +69,7 @@ so that isn't happening in practice (see ROADMAP).
 ## Enemies
 - **Act 1:** SLIME, BRUTE, FROST IMP, RAT THIEF, ROCK GOLEM, GREMLIN, THE REPO MAN. Any enemy's rocks crumble after
   the fight; only an elite's (up to 2) stay.
-- **Act 2 adds:** BOMBER, HEXER, VAMPIRE, MIMIC, COUNTERFEITER. (The GROUNDER is retired; its mechanic is still in
-  the engine until the code cleanup.) BLUE stake puts your counter (the COUNTERFEITER) on every act 2 path.
+- **Act 2 adds:** BOMBER, HEXER, VAMPIRE, MIMIC, COUNTERFEITER. (The GROUNDER is retired and removed from the code.) BLUE stake puts your counter (the COUNTERFEITER) on every act 2 path.
 - **Act 3 adds:** CARD SHARP, PIT BOSS, CROUPIER. BOMBER, VAMPIRE, HEXER and MIMIC come back.
 - **Enemy HP:** acts 1-2 regulars use fixed curves by fight number. **Bosses and act 3 regulars are sized to YOUR
   machine:** HP = reference × (your measured power ÷ reference)^0.5, plus a little per relic, so a build twice as
