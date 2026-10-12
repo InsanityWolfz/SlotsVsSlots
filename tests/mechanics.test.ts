@@ -187,7 +187,7 @@ describe('boss: the progressive pot', () => {
   const boss = (mut?: (c: GameConfig) => void) =>
     vs({ sword: 2, coin: 10 }, { ability: { kind: 'jackpot', every: 2, power: 1 }, mut: (c) => ((c.enemy.boss = 'house'), mut?.(c)) });
 
-  it('a player jackpot steals the pot, ignoring shield; crown steals on doubles', () => {
+  it('a player jackpot steals the pot, ignoring shield', () => {
     const f = boss();
     f.step();
     f.forceNext('enemy', ['coin', 'coin', 'coin']);
@@ -196,10 +196,6 @@ describe('boss: the progressive pot', () => {
     const [win] = ofType(f.step().events, 'potWin');
     expect(win).toMatchObject({ from: 'player', amount: 240, blocked: 0 }); // 120 seed + 90 coin jackpot + its 30 cut
     expect(f.pot).toBe(0);
-
-    const g = boss((c) => (c.relics = ['crown']));
-    g.forceNext('player', ['shield', 'shield', 'bolt']);
-    expect(ofType(g.step().events, 'potWin')[0]).toMatchObject({ from: 'player', amount: 60 }); // half of the 120 seed
   });
 
   it('at half HP the House DOUBLES DOWN: the pot doubles', () => {

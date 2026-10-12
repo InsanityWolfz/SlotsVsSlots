@@ -95,7 +95,7 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   Pay = BASE × MULT, and gold Charms in a group ADD. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
   machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER), ECHO (JUKEBOX) and BULWARK (`spiked`, KNIGHT).
   `src/core/charms.ts`.
-- **Relics:** about 58, in common, uncommon and legendary tiers; some are machine identity relics. `src/core/relics.ts`.
+- **Relics:** 56, in common, uncommon and legendary tiers; some are machine identity relics. `src/core/relics.ts`.
   To list exactly what players read: `npx tsx tools/content/audit.ts`.
 
 ## HIGH STAKES (`src/core/stakes.ts`)

@@ -16,7 +16,7 @@ export const ALL_CHARMS: Enh[] = ['gold', 'keen', 'charged', 'vamp', 'lucky', 'b
 const RETIRED_CHARMS: ReadonlySet<Enh> = new Set<Enh>(['spiked']);
 /** What the player has found that still counts toward the COLLECTION. */
 export const foundCount = (p: { found: { relics: RelicId[]; charms: Enh[] } }) =>
-  p.found.relics.filter((r) => RELICS[r] && !RELICS[r].retired).length + p.found.charms.filter((c) => !RETIRED_CHARMS.has(c)).length;
+  p.found.relics.filter((r) => RELICS[r]).length + p.found.charms.filter((c) => !RETIRED_CHARMS.has(c)).length;
 export const MAX_ENTRIES = 60;
 
 export interface CharmEntry {

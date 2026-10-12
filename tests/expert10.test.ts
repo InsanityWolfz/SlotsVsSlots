@@ -3,7 +3,7 @@ import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { createRun, fightConfig, finishFight } from '../src/core/run';
+import { createRun, fightConfig } from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -68,19 +68,6 @@ describe('EXPERT_PLAYTEST_10: new relics', () => {
     const plain = ofType(g.step().events, 'attack')[0].amount;
     f.forceNext('player', ['sword', 'sword', 'sword']);
     expect(ofType(f.step().events, 'attack')[0].amount).toBe(plain + 20 * 3 * 3);
-  });
-
-  it('TOLL BOOTH: each held lien pays a chip after a win', () => {
-    const run = createRun(base, 5, 'knight');
-    run.pendingStart = null;
-    run.liens = [{ reel: 0, symbol: 'sword' }, { reel: 1, symbol: 'shield' }];
-    run.player.relics.push('toll');
-    const chips = run.player.chips;
-    const f = new Fight(fightConfig(run, base), 3);
-    f.winner = 'player';
-    const rec = finishFight(run, f);
-    expect(run.player.chips - chips).toBeGreaterThanOrEqual(2);
-    expect(rec.chips).toBeGreaterThanOrEqual(2);
   });
 });
 

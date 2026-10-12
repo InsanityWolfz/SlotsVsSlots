@@ -112,8 +112,6 @@ export type RelicId =
   | 'mirror'
   | 'fang'
   | 'bandage'
-  | 'crown'
-  | 'midas'
   | 'rod'
   | 'prism'
   | 'hone'
@@ -130,17 +128,13 @@ export type RelicId =
   | 'drum'
   | 'chainmail'
   | 'vault'
-  | 'decree'
   | 'faraday'
   | 'static'
   | 'capbells'
-  | 'stacked'
   // CONTENT WAVE 1 (2026-10-07): one hook each
-  | 'riposte'
   | 'capacitor'
   | 'encore'
   | 'downpour'
-  | 'nestegg'
   | 'wildwheel'
   | 'livewire'
   | 'headsman'
@@ -152,8 +146,7 @@ export type RelicId =
   | 'wildcard'
   | 'loadedreel'
   | 'deckdrum'
-  // Charm relics (hone = EXECUTIONER, midas = GOLD LEAF keep their old ids for saves)
-  | 'kiss'
+  // Charm relics (hone = EXECUTIONER keeps its old id for saves)
   | 'horseshoe'
   // General
   | 'underdog'
@@ -165,24 +158,18 @@ export type RelicId =
   // EXPERT_PLAYTEST_10's new relics
   | 'hotstreak'
   | 'belt'
-  | 'toll'
   // CONTENT_13
   | 'bracelet'
   | 'metronome'
   | 'snakeeyes'
   | 'pitboss'
   | 'coil'
-  | 'taxman'
   // CASH CASSIDY (MAKE IT RAIN)
-  | 'loadedchips'
   | 'rainmaker'
   | 'slushfund'
   | 'tipjar'
   | 'loosechange'
   // Side bets
-  | 'loaded'
-  | 'marker'
-  | 'highlimit'
   // THE JUKEBOX (2026-10-08)
   | 'turntable'
   | 'mixtape'

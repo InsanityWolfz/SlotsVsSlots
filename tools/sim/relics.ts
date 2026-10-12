@@ -62,7 +62,7 @@ function play(cab: CabinetId, seed: number, relic: RelicId | null): Stat {
   return s;
 }
 
-const BETWEEN = new Set<RelicId>(['bandage', 'vault', 'piggy', 'trophy', 'loaded', 'highlimit']);
+const BETWEEN = new Set<RelicId>(['bandage', 'vault', 'piggy', 'trophy']);
 const out: string[] = [];
 for (const id of Object.keys(RELICS) as RelicId[]) {
   const def = RELICS[id];

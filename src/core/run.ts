@@ -351,7 +351,7 @@ export function startRelics(run: RunState): RelicId[] {
   const rng = new Rng((run.seed ^ 0x51a27) >>> 0);
   const fits = (r: RelicId) => relicFits(run, r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r) && !WAVE1.has(r);
   const mine = rng.shuffle((Object.keys(RELICS) as RelicId[]).filter((r) => RELICS[r].machine === run.cabinet && !RELICS[r].addon && fits(r))).slice(0, 2);
-  const general = RELIC_TIER.common.filter((r) => !isIdentityRelic(r) && fits(r) && r !== 'crown');
+  const general = RELIC_TIER.common.filter((r) => !isIdentityRelic(r) && fits(r));
   return [...mine, ...rng.shuffle(general)].slice(0, 3);
 }
 
@@ -464,7 +464,7 @@ export function payVoucher(run: RunState, v: { kind: 'wheel' | 'rush'; seed: num
   let relic: RelicId | null = null;
   for (const t of order) {
     // High Roller only matters against the House.
-    const pool = RELIC_TIER[t].filter((r) => !owned(r) && relicFits(run, r) && !(r === 'crown' && (run.act > 1 || run.depth >= actLength(1))));
+    const pool = RELIC_TIER[t].filter((r) => !owned(r) && relicFits(run, r));
     if (pool.length) {
       relic = rng.pick(pool);
       break;
@@ -798,7 +798,7 @@ function startEndlessLoop(run: RunState): void {
   // The reward on the card is what you'll really get (no silent swap to chips: EXPERT_PLAYTEST_5 B7).
   const p = run.player;
   const hasLegend = [...LEGENDARY].some((x) => !p.relics.includes(x) && relicFits(run, x));
-  const hasRelic = (Object.keys(RELICS) as RelicId[]).some((x) => !p.relics.includes(x) && !LEGENDARY.has(x) && !ELITE_ONLY.has(x) && relicFits(run, x) && !RELICS[x].retired);
+  const hasRelic = (Object.keys(RELICS) as RelicId[]).some((x) => !p.relics.includes(x) && !LEGENDARY.has(x) && !ELITE_ONLY.has(x) && relicFits(run, x));
   const pay = (t: 'chips' | 'relic' | 'legend'): 'chips' | 'relic' | 'legend' => (t === 'legend' && !hasLegend ? (hasRelic ? 'relic' : 'chips') : t === 'relic' && !hasRelic ? 'chips' : t);
   const edges = pick.map((edge): BigChoice => ({ id: 'edge', edge, reward: pay(EDGE_TIER[edge]) }));
   const queue: BigChoice[][] = [];
@@ -932,8 +932,6 @@ export function sizingPower(run: RunState, at: 'wheel' | 'act3' | 'dealer'): num
  * Per slot machine: how much of your measured power THE WHEEL, the Dealer and act 3 regulars are sized
  * to. Machines race differently (KNIGHT's shields, JAX's rare huge payoffs), so the same HP formula would give each a different win rate.
  */
-/** TOLL BOOTH: chips per held lien per win (EXPERT_PLAYTEST_11 D5). */
-export const TOLL_PER_LIEN = 2;
 
 // Refit 2026-10-08 (big choices rework: 45 cards, LIMIT BREAK; before that the content audit batch: ROSE HIP retired, overkill chips out, LUCKY/BLAZE in act 1, CHARGED/BLAZE 10/20/30).
 export const BOSS_MUL: Record<CabinetId, { house: number; wheel: number; dealer: number; act3: number; act2?: number; act1?: number; gate?: number; act3Floor?: number }> = {
@@ -1041,11 +1039,6 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     // His bounty (the fork he replaced could have paid an elite's spoils).
     run.player.chips += GATEKEEPER.bounty;
     record.chips = (record.chips ?? 0) + GATEKEEPER.bounty;
-  }
-  // TOLL BOOTH: every lien THE REPO MAN holds pays 2 chips after each win (keep them, or pay them off). 1 was dead weight.
-  if (record.won && run.player.relics.includes('toll') && run.liens?.length) {
-    run.player.chips += TOLL_PER_LIEN * run.liens.length;
-    record.chips = (record.chips ?? 0) + TOLL_PER_LIEN * run.liens.length;
   }
   // Elites offer their spoils in every act: choose 1 of 2 relics (map rework 2026-10-12; act 2 elites paid chips).
   if (beaten.elite) {
@@ -1240,15 +1233,9 @@ function similarKey(o: DraftOption): string {
 export const isRelicDraft = (run: RunState) => RUN.relicDraftsAfter.includes(run.depth);
 
 /** Every CHARM card you could be offered: `n` charms on plain cells of one symbol on one reel. */
-/** Symbols a charm can go on for this run (relics bend it: charms on your signature symbol). */
-export function charmSymbols(run: RunState, enh: Enh): SymbolId[] {
-  const has = (r: RelicId) => run.player.relics.includes(r);
-  const out = new Set<SymbolId>(CHARM_SYMBOLS[enh]);
-  // LOADED CHIPS (CASH CASSIDY): gold and vamp fit chip symbols, so MAKE IT RAIN can be charmed.
-  if ((enh === 'gold' || enh === 'vamp') && has('loadedchips')) out.add('goldbar');
-  if ((enh === 'gold' || enh === 'keen' || enh === 'vamp') && has('stacked')) out.add('wild');
-  if (enh === 'vamp' && has('kiss')) for (const s of ['shield', 'bolt', 'goldbar'] as SymbolId[]) out.add(s);
-  return [...out];
+/** Symbols a charm can go on for this run. */
+export function charmSymbols(_run: RunState, enh: Enh): SymbolId[] {
+  return [...CHARM_SYMBOLS[enh]];
 }
 
 export function charmOptions(run: RunState, n: number, enhs: Enh[] = gildsFor(run)): DraftOption[] {
@@ -1561,7 +1548,7 @@ export function pickRelics(pool: RelicId[], n: number, rng: Rng): RelicId[] {
 export function relicFits(run: RunState, r: RelicId): boolean {
   const def = RELICS[r];
   // Slot machine relics only on their machine; charm relics once you own the charm (or your machine favours it).
-  if (def.retired || MACHINE_EXCLUDE[r]?.includes(run.cabinet)) return false;
+  if (MACHINE_EXCLUDE[r]?.includes(run.cabinet)) return false;
   if (def.machine && def.machine !== run.cabinet) return false;
   if (def.charm && charmCount(run.player, def.charm) === 0) return false;
   const need = BUILD_ENABLER[r];
@@ -1747,7 +1734,7 @@ interface BigCard {
 const hasMeter = (run: RunState) => !!CABINETS[run.cabinet].meter;
 const charmTotal = (run: RunState) => run.player.gilded.reduce((a, g) => a + g.n, 0);
 const legendsFor = (run: RunState) => [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
-const relicsFor = (run: RunState) => (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && !RELICS[r].retired);
+const relicsFor = (run: RunState) => (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r) && relicFits(run, r));
 /** A Charm conversion: 3+ Charms, the Charm fits this machine, and not everything is that Charm already. */
 const convertOk = (enh: Enh) => (run: RunState) => charmTotal(run) >= 3 && gildsFor(run).includes(enh) && run.player.gilded.some((g) => g.enh !== enh);
 /** BIG CHOICES (user review 2026-10-08): general cards, Charm conversions, and five per Slot Machine. */

@@ -33,21 +33,6 @@ describe('build relics & keen', () => {
     expect(ofType(g.step().events, 'attack')[0].amount).toBe(150);
   });
 
-  it('GOLD LEAF (midas): gold on a cell that pays nothing joins your biggest group', () => {
-    const mk = (relics: RelicId[]) =>
-      fight((c) => {
-        c.player.strips = reels3({ sword: 6, rock: 6 });
-        c.player.gilded = [{ reel: 2, symbol: 'rock', enh: 'gold', n: 6 }];
-        c.relics = relics;
-      });
-    const plain = mk([]);
-    plain.forceNext('player', ['sword', 'sword', 'rock']);
-    const a = ofType(plain.step().events, 'attack')[0].amount;
-    const leaf = mk(['midas']);
-    leaf.forceNext('player', ['sword', 'sword', 'rock']);
-    expect(ofType(leaf.step().events, 'attack')[0].amount).toBe(a * 2);
-  });
-
   it('LIGHTNING ROD makes the special cost 40 with a charged build', () => {
     const f = fight((c) => {
       c.player.gilded = [{ reel: 1, symbol: 'bolt', enh: 'charged', n: 4 }];

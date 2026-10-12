@@ -44,15 +44,12 @@ describe('slot machine relics', () => {
     expect(ofType(ev, 'spin')).toHaveLength(0);
   });
 
-  it('charm relics need the charm; GOLD LEAF is retired; OVERCHARGE never shows on THE JUKEBOX', () => {
+  it('charm relics need the charm; OVERCHARGE never shows on THE JUKEBOX', () => {
     const run = createRun(base, 4, 'joker');
     run.act = 2;
     expect(relicFits(run, 'horseshoe')).toBe(false);
     run.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'lucky', n: 2 });
     expect(relicFits(run, 'horseshoe')).toBe(true);
-    const midas = createRun(base, 4, 'midas');
-    midas.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'gold', n: 2 });
-    expect(relicFits(midas, 'midas')).toBe(false);
     expect(relicFits(createRun(base, 4, 'jukebox'), 'overcharge')).toBe(false);
     expect(relicFits(createRun(base, 4, 'tesla'), 'overcharge')).toBe(true);
   });
@@ -79,8 +76,8 @@ describe('slot machine relics', () => {
     expect(ofType(s.step().events, 'energyGain').find((e) => e.side === 'player')?.amount).toBe(NEW_RELIC.staticCharge);
   });
 
-  it('CAP AND BELLS heals per wild; STACKED DECK: a charmed wild fills double', () => {
-    const f = on('joker', ['capbells', 'stacked'], (c) => {
+  it('CAP AND BELLS heals per wild', () => {
+    const f = on('joker', ['capbells'], (c) => {
       c.player.strips = reels3({ sword: 4, shield: 4, wild: 4 });
       c.player.gilded = [{ reel: 0, symbol: 'wild', enh: 'gold', n: 4 }];
     });
@@ -88,7 +85,7 @@ describe('slot machine relics', () => {
     f.forceNext('player', ['wild', 'shield', 'wild']);
     const ev = f.step().events;
     expect(ofType(ev, 'heal').find((h) => h.source === 'capbells')?.amount).toBe(2 * NEW_RELIC.capbellsHeal);
-    expect(ofType(ev, 'meter')[0].amount).toBe(60);
+    expect(ofType(ev, 'meter')[0].amount).toBe(40);
   });
 });
 

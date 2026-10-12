@@ -59,7 +59,7 @@ export const RELIC_ORDER: RelicId[] = (() => {
         out.push(r);
       }
   for (const r of Object.keys(RELICS) as RelicId[]) if (!seen.has(r)) out.push(r);
-  return out.filter((r) => !RELICS[r].retired);
+  return out;
 })();
 
 /** Collection size (relics + charms), for the COLLECTOR achievements. */
