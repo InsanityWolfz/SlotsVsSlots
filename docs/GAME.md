@@ -36,7 +36,7 @@ which Charms and relics to build.
     two. Cards drawn in code; the hand in play is saved with the run.
   - UNDER OR OVER: dice. Bet chips, call UNDER 7 / SEVEN / OVER 7. Under/over pay 1 to 1 (a seven gives the bet
     back: about even); SEVEN pays 4 to 1 (the long shot, with the house edge). Up to 3 rolls a visit. Chips only.
-  - Offers (each with its own portrait): THE BLOOD BANK (sell 20% of your HP for 12 chips, or 10% of your max HP for
+  - Offers (each with its own portrait): THE BLOOD BANK (sell 20% of your HP for 8 chips, or 10% of your max HP for
     good for 25); THE PAWN SHOP (the broker names one of your relics: pawn it for 16 chips, or trade it for a relic
     unseen); THE LOAN SHARK (borrow 20, owe 30; or 40, owe 65: he takes it from your winnings after each fight, and
     what's left when the act's boss falls comes out of your chips, then 2 max HP per chip). Debt shows under chips.
@@ -49,7 +49,7 @@ which Charms and relics to build.
   add, swap or remove symbols, Charms, Charm levels, heals). The drafts after an act's 2nd and 4th won fights offer
   relics.
 - **The Cashier** is a stop: on some paths, and always right before the boss (plus a visit when a new act opens).
-  Chips buy Charms, relics, wilds, removals, heals and levels; rerolls cost 1, then 2, 3 and so on. Chips come from
+  Chips buy Charms, relics, wilds, removals, a heal (12 chips, once a visit) and levels; rerolls cost 1, then 2, 3 and so on. Chips come from
   wins, elites, jackpots and interest (+1 per 5 banked, capped at 3).
 - **After a boss:** a legendary relic pick (1 of 3), then **big choices** (3 cards from pools: one with a real
   cost, one for your Slot Machine, one free).

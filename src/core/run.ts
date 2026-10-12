@@ -114,7 +114,8 @@ export const CHIPS = {
   stackPer: 8,
   /** Every run starts with a little float so shop 1 is a real visit. */
   start: 8,
-  prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 5, legend: 20, level: 12 },
+  // heal 5 -> 12, once a visit (2026-10-12: no heal after fights now, so HP is worth more; user).
+  prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 12, maxHp: 5, legend: 20, level: 12 },
   /** First reroll per visit costs 1, then +1 each time. */
   rerollBase: 1,
 };
@@ -248,6 +249,8 @@ export interface RunState {
   choiceSets?: number[];
   /** GLASS CANNON: paying groups x1.5, no healing between fights. */
   glass?: boolean;
+  /** The Cashier's heal was bought this visit (it's once a visit). */
+  healBought?: boolean;
   /** BLOOD PACT: your meter fills twice as fast. */
   bloodPact?: boolean;
   /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day), and the day's HOUSE EDGE. */
@@ -1354,13 +1357,14 @@ export function shopOffers(run: RunState): ShopItem[] {
     add(o, P.level);
   }
   if (items.length < 4 && relics.length) add({ kind: 'relic', relic: rng.pick(relics) }, P.relic);
-  if (items.length < 4) add({ kind: 'maxHp', amount: RUN.maxHpCard }, P.heal);
+  if (items.length < 4) add({ kind: 'maxHp', amount: RUN.maxHpCard }, P.maxHp);
   // Rerolls also redraw the layout: the four slots come in a new order.
   const shelf = run.shopRerolls > 0 ? rng.shuffle(items.slice(0, 4)) : items.slice(0, 4);
   run.shelfKeys = shelf.map((i) => JSON.stringify(i.option));
   // HEAL is a permanent service slot, sized to what you're missing (hidden when nearly full).
   const missing = p.maxHp - p.hp;
-  if (missing >= 3 * UNIT && !run.glass) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal, sold: false });
+  // Once a visit: a reroll doesn't bring it back after you bought it.
+  if (missing >= 3 * UNIT && !run.glass && !run.healBought) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal, sold: false });
   return shelf;
 }
 
@@ -1399,6 +1403,7 @@ export function buy(run: RunState, item: ShopItem): boolean {
   run.player.chips -= item.price;
   applyOption(run, item.option, false);
   item.sold = true;
+  if (item.option.kind === 'heal') run.healBought = true;
   const last = run.records.at(-1);
   if (last) (last.bought ??= []).push(item.option);
   return true;
@@ -1415,6 +1420,7 @@ export function reroll(run: RunState): ShopItem[] | null {
 
 export function leaveShop(run: RunState): void {
   run.shopRerolls = 0;
+  run.healBought = false;
   // The act's intro visit isn't a stop on the map; a Cashier stop is.
   if (run.actIntro) run.actIntro = false;
   else passStop(run);

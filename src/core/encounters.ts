@@ -476,7 +476,7 @@ const UNDER_OR_OVER: EncounterDef = {
 // ---- the offers (2026-10-12): take it at a cost, or walk --------------------------------------------------------
 
 /** THE BLOOD BANK: sell HP for chips (some of what you have now, or some of your max HP for good, for more). */
-export const BLOOD = { nowShare: 0.2, nowChips: 12, maxShare: 0.1, maxChips: 25 };
+export const BLOOD = { nowShare: 0.2, nowChips: 8, maxShare: 0.1, maxChips: 25 };
 const bloodNow = (run: RunState) => Math.max(UNIT, Math.round((run.player.hp * BLOOD.nowShare) / UNIT) * UNIT);
 const bloodMax = (run: RunState) => Math.max(UNIT, Math.round((run.player.maxHp * BLOOD.maxShare) / UNIT) * UNIT);
 const BLOOD_BANK: EncounterDef = {
