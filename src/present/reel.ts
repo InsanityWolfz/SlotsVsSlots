@@ -276,7 +276,7 @@ export function drawCell(
   const dim = Math.min(1, (fx?.dim ?? 0) + (cell.goo > 0 ? 0.45 * cell.goo : 0));
   const flash = Math.max(fx?.flash ?? 0, cell.flash);
   const pop = cell.pop ?? 1;
-  drawSprite(ctx, cell.symbol as SpriteId, x, y, ART_SCALE, { sx: sx * pop, sy: sy * pop, alpha: alpha * (1 - stolen), dim, flash });
+  drawSprite(ctx, (cell.symbol === 'heart' ? artId('slotHeart') : cell.symbol) as SpriteId, x, y, ART_SCALE, { sx: sx * pop, sy: sy * pop, alpha: alpha * (1 - stolen), dim, flash });
   // Gilded cells wear their enhancement (shimmering gently).
   if (cell.enh && !cell.slimed) {
     const shimmer = 0.85 + 0.15 * Math.sin(time * 4 + x * 0.05 + y * 0.03);

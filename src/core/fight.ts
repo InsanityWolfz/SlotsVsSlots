@@ -42,12 +42,14 @@ export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 3 
 // rain x3 + a chip per symbol made CASSIDY 83 / 63. Now x2, and a group pays its size - 1 chips (1, 1, 2).
 /** Pot steals: 1 = any jackpot steals the boss pot, 0 = only a jackpot of your attack symbol (probe knob). */
 export const POT_STEAL = { any: 1 };
+/** Build variety prototype: a shield pair's machine payoff is this share of its shield (KNIGHT's bash, TESLA's charge). */
+export const SHIELD_PAYOFF = { share: 0.25 };
 /** THE JUKEBOX: +20% note damage per volume level, max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
 export const VOLUME = { perLevel: 0.2, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5, battery: 3 };
 export const RAIN = { perChip: 2, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x3 (quarter steps). */
 export const highRollerMul = (chips: number, cap = MIDAS.maxMul) => Math.min(cap, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
-import { isNearMiss, multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
+import { isNearMiss, multFor, scoreLine, VARIETY, type LineScore, type ScoreGroup } from './scoring';
 import {
   BONUS_SYMBOLS,
   buildReel,
@@ -822,7 +824,7 @@ export class Fight {
     const pick = allWild ? this.wildPick(me) : undefined;
     const jackpots = player && me.armed && this.meter?.kind === 'jackpots';
     this.pickEnh.clear();
-    let s = scoreLine(line, cfg, { value, wildAlone: pick?.symbol ?? this.wildAlone(me), loadedReel: player && me.relics.has('loadedreel') });
+    let s = scoreLine(line, cfg, { value, wildAlone: pick?.symbol ?? this.wildAlone(me), loadedReel: player && me.relics.has('loadedreel'), spread: player ? VARIETY.spread : 0 });
     // LOADED REEL made a second pair out of a middle WILD (two matched pairs on a 3-reel line).
     const loadedFired = player && me.relics.has('loadedreel') && line[1] === 'wild' && s.groups.filter((g) => g.matched && g.reels.length === 2).length === 2;
     if (pick) {
@@ -1284,6 +1286,10 @@ export class Fight {
         this.vampHeal(me, g, events);
         return;
       }
+      case 'heart':
+        // HEART (prototype): it heals for its pay.
+        if (player && g.amount > 0) this.heal(me, g.amount, 'heart', events);
+        return;
       case 'seven':
         // Sevens are the House's heavy hitters.
         this.hit(me, foe, g.amount, g.reels, events, false, undefined, true);
@@ -1307,6 +1313,8 @@ export class Fight {
           const dmg = Math.round((share * pct) / 100 / UNIT) * UNIT;
           if (dmg > 0) this.hit(me, foe, dmg, g.reels, events);
         }
+        // Every machine's shields do something of its own when they pair (build variety prototype, 2026-10-12).
+        if (player && VARIETY.shields && g.matched && g.amount > 0 && !this.over) this.shieldPayoff(me, foe, g, events);
         // SHIELD SLAM (big choice): every shield also hits for a share of what it blocks.
         if (player && this.big.shieldSlam && g.amount > 0 && !this.over) {
           const dmg = Math.round((g.amount * this.big.shieldSlam) / UNIT) * UNIT;
@@ -1431,8 +1439,10 @@ export class Fight {
     // Notes on the payline turn it up; a WILD counts only when it pairs as a note (user, 2026-10-08).
     const noteGroups = score.groups.filter((g) => g.symbol === 'note');
     const reels = line.flatMap((s, r) => (s === 'note' || (s === 'wild' && noteGroups.some((g) => g.reels.includes(r))) ? [r] : []));
-    if (reels.length) this.turnUp(me, reels.length, reels, events);
-    else if (me.energy > 0 && !me.armed && !this.big.noSkip && !me.relics.has('mixtape')) {
+    // A shield pair holds the volume; a shield jackpot turns it up 1 (build variety prototype).
+    const shields = VARIETY.shields ? Math.max(0, ...score.groups.filter((g) => g.symbol === 'shield' && g.matched).map((g) => g.reels.length)) : 0;
+    if (reels.length || shields >= 3) this.turnUp(me, reels.length + (shields >= 3 ? 1 : 0), reels, events);
+    else if (me.energy > 0 && !me.armed && !this.big.noSkip && !me.relics.has('mixtape') && !shields) {
       // The record skips.
       const drop = Math.min(me.energy, VOLUME.skip * UNIT);
       me.energy -= drop;
@@ -1475,6 +1485,22 @@ export class Fight {
       this.lucreChips += got;
       events.push({ type: 'lucreChips', side: me.side, reels: g.reels, amount: got, total: this.lucreChips });
     }
+  }
+
+  /**
+   * A shield pair or jackpot's machine payoff: KNIGHT's shields bash for a quarter of their shield, TESLA's charge the
+   * lightning a quarter, CASSIDY's pay chips (1, a jackpot 2), JAX's jackpot adds a WILD to the meter. (THE JUKEBOX's
+   * hold the volume: volumeAfterSpin.)
+   */
+  private shieldPayoff(me: Combatant, foe: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
+    const q = Math.round((g.amount * SHIELD_PAYOFF.share) / UNIT) * UNIT;
+    if (this.cabinet?.id === 'knight' && q > 0) this.hit(me, foe, q, g.reels, events);
+    else if (this.cabinet?.meter?.kind === 'special' && q > 0) this.gainEnergy(me, q, g.reels, events);
+    else if (this.meter?.kind === 'vault') {
+      const got = g.reels.length - 1;
+      this.midasChips += got;
+      events.push({ type: 'midasChips', side: me.side, amount: got, total: this.midasChips });
+    } else if (this.meter?.kind === 'jackpots' && g.reels.length >= 3) this.fillMeter(me, this.meter.perWild ?? 0, g.reels, events);
   }
 
   /** VAMP: vamp cells in a group that pays heal you (once per group). */

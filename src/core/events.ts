@@ -15,7 +15,7 @@ export type DealCard = 'raise' | 'card' | 'allin';
 /** A card the Dealer lays face-up on one of your payline cells for your next spin. */
 export type LineCard = 'deuce';
 
-export type HealSource = RelicId | 'special' | 'vamp' | 'drain' | 'ability' | 'payoff';
+export type HealSource = RelicId | 'special' | 'vamp' | 'drain' | 'ability' | 'payoff' | 'heart';
 
 
 export type CombatEvent =

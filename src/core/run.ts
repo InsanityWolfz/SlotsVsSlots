@@ -23,7 +23,7 @@ import { encounterOf, encounterRng, LOAN, type EncounterChoice, type EncounterRe
 import { BIG_CAP, CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { dailyEdge, dailyFightSeed } from './daily';
-import { scoreLine } from './scoring';
+import { scoreLine, VARIETY } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
 
 /** Run-level tunables. */
@@ -32,6 +32,8 @@ export const RUN = {
   /** Fraction of max HP restored after every won fight (low, so HP cards matter). */
   /** 25% (was 20%): with stacked VAMP gone, sustain is more of a baseline and less a charm tax (EXPERT_PLAYTEST_10). */
   postFightHeal: 0.25,
+  /** Build variety prototype: the chance a regular draft's third card adds HEARTS. */
+  heartChance: 0.25,
   /** Act 3's share of the post-fight heal (it had none). */
   act3HealMul: 0.33,
   healCard: 8 * UNIT,
@@ -93,7 +95,8 @@ export const gildsFor = (run: RunState): Enh[] =>
       charmSymbols(run, e).some((sym) => run.player.strips.some((st) => (st[sym] ?? 0) > 0)),
   );
 /** Symbols this machine's swap cards move between. */
-export const swappable = (run: RunState): SymbolId[] => CABINETS[run.cabinet].symbols;
+/** Your machine's symbols, plus HEART when it's in the game (build variety prototype). */
+export const swappable = (run: RunState): SymbolId[] => [...CABINETS[run.cabinet].symbols, ...(VARIETY.heart ? (['heart'] as SymbolId[]) : [])];
 /** What a WILD card can turn into wilds: shields and your attack symbol. */
 const wildFrom = (run: RunState): SymbolId[] => [...new Set<SymbolId>(['shield', CABINETS[run.cabinet].attack])];
 /** A removal never takes a reel's shields or attack symbols below this many. */
@@ -1025,7 +1028,7 @@ export function stripStats(
         const line = [a, b, c];
         const enh = [ea, eb, ec];
         // (A 3-WILD line pays a jackpot of one of your symbols: counted as a sword jackpot here.)
-        const sc = scoreLine(line, cfg, { value, wildAlone: alone });
+        const sc = scoreLine(line, cfg, { value, wildAlone: alone, spread: VARIETY.spread });
         let dmg = 0;
         for (const g of sc.groups) {
           let gold = 0;
@@ -1096,7 +1099,7 @@ export function levelOptions(run: RunState): DraftOption[] {
   const p = run.player;
   const out: DraftOption[] = [];
   const owned = new Set(p.strips.flatMap((s) => Object.keys(s).filter((k) => (s[k as SymbolId] ?? 0) > 0)));
-  for (const symbol of CABINETS[run.cabinet].symbols)
+  for (const symbol of swappable(run))
     if (owned.has(symbol) && symLevel(p.levels, symbol) < levelCap(run) && !run.levelLock?.includes(symbol)) out.push({ kind: 'symLevel', symbol });
   for (const enh of new Set(p.gilded.map((g) => g.enh))) if (charmLevel(p.levels, enh) < levelCap(run)) out.push({ kind: 'charmLevel', enh });
   return out;
@@ -1217,7 +1220,9 @@ export function draftOffers(run: RunState): DraftOption[] {
     push((rng.next() < RUN.levelCardChance ? levelCard() : null) ?? gildCard() ?? swapCard());
     const r = rng.next();
     push((r < 0.35 ? wildCard() : r < 0.65 ? swapCard() : null) ?? clearCard() ?? gildCard() ?? levelCard() ?? addCard());
-    push((rng.next() < 0.6 ? anySwapCard() : null) ?? hpCard());
+    // HEART (build variety prototype): sometimes the third card adds hearts to a reel.
+    const heart = VARIETY.heart && rng.next() < RUN.heartChance;
+    push(heart ? { kind: 'add', symbol: 'heart', reel: rng.int(3), count: RUN.addCount } : (rng.next() < 0.6 ? anySwapCard() : null) ?? hpCard());
   }
   if (size > RUN.draftSize) {
     // The catch-up heal replaces a smaller heal card already in the draft (HEAL 80 sat next to HEAL 170: EXPERT_PLAYTEST_10 D7).
@@ -1768,7 +1773,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
 const secondWindHp = (run: RunState) => Math.max(BIG.secondWindHp, unitsRound(run.player.maxHp * BIG.secondWindShare));
 
 /** Your symbols (on your strips) that levels apply to. */
-const levelSyms = (run: RunState) => CABINETS[run.cabinet].symbols.filter((s) => run.player.strips.some((x) => (x[s] ?? 0) > 0));
+const levelSyms = (run: RunState) => swappable(run).filter((s) => run.player.strips.some((x) => (x[s] ?? 0) > 0));
 
 /** Resolve a card's target (picked at random among ties, shown on the card). */
 function target(run: RunState, id: BigChoiceId, rng: Rng): BigChoice | null {

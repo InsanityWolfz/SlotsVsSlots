@@ -6,6 +6,7 @@
  *   npx tsx tools/sim/balance.ts --runs 2000 --stakes 0,2 --machines knight,tesla
  *   npx tsx tools/sim/balance.ts --detail              + relics, Charms, big choices, encounters, enemies
  *   npx tsx tools/sim/balance.ts --ride                the bot lets it ride after the Dealer (endless loops)
+ *   npx tsx tools/sim/balance.ts --style turtle        a forced build: rush (default), turtle (shields), spread (3 types)
  *   npx tsx tools/sim/balance.ts --ban rod,static     those relics are never offered (what a relic is worth)
  *   npx tsx tools/sim/balance.ts --set "CABINETS.tesla.hp=300;TUNE.wheelHp=2200"   knob edits (object paths from an
  *                                                       export of cabinets, run, relics, enemies, fight, charms, bot)
@@ -23,6 +24,7 @@ import * as relics from '../../src/core/relics';
 import * as enemies from '../../src/core/enemies';
 import * as fight from '../../src/core/fight';
 import * as charms from '../../src/core/charms';
+import * as scoring from '../../src/core/scoring';
 import * as bot from '../../src/sim/bot';
 import { CABINET_ORDER, type CabinetId } from '../../src/core/cabinets';
 import { STAKES } from '../../src/core/stakes';
@@ -42,6 +44,7 @@ interface Job {
   ride: boolean;
   set: string;
   ban: string;
+  style?: 'rush' | 'turtle' | 'spread';
 }
 
 /** Knob edits: "CABINETS.tesla.hp=300;BASE.base.sword=12" (BASE is the fight config), and banned relics. */
@@ -50,7 +53,7 @@ function applyEdits(edits: string, base: GameConfig, ban = ''): void {
     if (!(r in relics.RELICS)) throw new Error(`no relic ${r}`);
     (relics.MACHINE_EXCLUDE as Record<string, string[]>)[r] = [...cabinets.ALL_CABINETS];
   }
-  const roots: Record<string, unknown> = { ...cabinets, ...runMod, ...relics, ...enemies, ...fight, ...charms, ...bot, BASE: base };
+  const roots: Record<string, unknown> = { ...cabinets, ...runMod, ...relics, ...enemies, ...fight, ...charms, ...scoring, ...bot, BASE: base };
   for (const e of edits.split(';').filter(Boolean)) {
     const [path, val] = e.split('=');
     const keys = path.trim().split('.');
@@ -69,7 +72,7 @@ if (process.send) {
     if (!job) process.exit(0);
     if (!applied) applyEdits(job.set, base, job.ban);
     applied = true;
-    process.send!(job.seeds.map((s) => playRun(base, s, job.cabinet, job.stake, { ride: job.ride })));
+    process.send!(job.seeds.map((s) => playRun(base, s, job.cabinet, job.stake, { ride: job.ride, style: job.style })));
   });
 }
 
@@ -87,6 +90,7 @@ async function main(): Promise<void> {
   const detail = flag('detail');
   const set = arg('set', '');
   const ban = arg('ban', '');
+  const style = arg('style', 'rush') as Job['style'];
   applyEdits(set, defaultConfig(), ban);
 
   // Every machine plays the same seeds at a stake (paired), split into chunks across the workers.
@@ -95,7 +99,7 @@ async function main(): Promise<void> {
   for (const stake of stakes) {
     const rng = new Rng((seed * 7919 + stake) >>> 0);
     const seeds = Array.from({ length: runs }, () => rng.int(0xffffffff));
-    for (const cabinet of machines) for (let i = 0; i < runs; i += chunk) jobs.push({ cabinet, stake, seeds: seeds.slice(i, i + chunk), ride, set, ban });
+    for (const cabinet of machines) for (let i = 0; i < runs; i += chunk) jobs.push({ cabinet, stake, seeds: seeds.slice(i, i + chunk), ride, set, ban, style });
   }
   const self = fileURLToPath(import.meta.url);
   const started = Date.now();

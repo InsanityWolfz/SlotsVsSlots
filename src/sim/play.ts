@@ -27,7 +27,7 @@ import {
   takeStart,
   type RunState,
 } from '../core/run';
-import { choiceValue, greedyValue, pickEncounter, pickRoute, RELIC_VALUE, shop, type DraftPolicy } from './bot';
+import { choiceValue, greedyValue, pickEncounter, pickRoute, RELIC_VALUE, shop, SIM_BIAS, type DraftPolicy } from './bot';
 
 export interface FightLog {
   act: number;
@@ -70,6 +70,8 @@ export interface PlayOpts {
   ride?: boolean;
   /** Changes made to the run before it starts (probes: a forced relic, a charm...). */
   setup?: (run: RunState) => void;
+  /** A forced build for the bot (bot.ts SIM_BIAS.style). */
+  style?: 'rush' | 'turtle' | 'spread';
   /** Called before every fight and once at the end (tools/sim/fuzz.ts checks invariants here). */
   onFight?: (run: RunState) => void;
   onEnd?: (run: RunState) => void;
@@ -79,6 +81,7 @@ const best = <T>(xs: T[], v: (x: T) => number): T => xs.reduce((a, b) => (v(b) >
 
 export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stake: number, opts: PlayOpts = {}): RunLog {
   const policy = opts.policy ?? 'greedy';
+  SIM_BIAS.style = opts.style;
   const run = createRun(base, seed, cabinet, stake, opts.act3 ?? stake >= 2);
   opts.setup?.(run);
   const pick = new Rng((seed ^ 0x5eed) >>> 0);
