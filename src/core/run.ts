@@ -1,6 +1,6 @@
 import { BLADES, cloneConfig, symLabel, emptyLevels, UNIT, unitsRound, type AbilityDef, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
 import { ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, WHEEL } from './enemies';
-import { MAX_STAKE, STAKE } from './stakes';
+import { MAX_STAKE, STAKE, stakeDmg } from './stakes';
 import type { Fight } from './fight';
 import {
   BANDAGE_HEAL,
@@ -715,6 +715,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.player.stackShield = Math.min(BOSS_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
   }
   // HOUSE EDGES bend the fight: the ones taken in endless, and THE DAILY RUN's edge of the day.
+  // BLACK and up: enemies hit harder (stakes.ts stakeDmg).
+  if (stakeDmg(run.stake) !== 1) cfg.enemy.stakeDmg = stakeDmg(run.stake);
   const edges = runEdges(run);
   const lvl = (e: EdgeId) => edgeLevel(run, e);
   if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = fastHands(cfg.enemy.ability, lvl('fast'));

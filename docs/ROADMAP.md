@@ -9,8 +9,7 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
    ENDLESS), healing (a heal card under 25% HP, rising Cashier heal prices), ENDLESS variety (passed big choices come
    back, edges stack to III, legendary picks top up), BANK VAULT gone, JOKER at 380 HP with no payoff heal. Then one
    expert playtester pass on it.
-2. **Higher stakes.** RED, BLACK, BLUE and GOLD were never measured on the new sim (targets 50 / 28 / 20 / 14).
-3. **Balance left over** (sim, 1000 runs): WHITE KNIGHT 66, JUKEBOX 68 (target 60, a little easy); GREEN TESLA 42,
+2. **Balance left over** (sim, 1000 runs): WHITE KNIGHT 66, JUKEBOX 68 (target 60, a little easy); GREEN TESLA 42,
    JOKER 44 (target 36: weak early, strong late, accepted for now). WHITE 57-59 and GREEN 34-41 for the rest.
 
 ## Open design questions

@@ -260,6 +260,8 @@ export interface SideConfig {
   act?: number;
   /** ENDLESS: enemy damage multiplier (1.12^loop), LAST CALL / 80-turn cap on, and a starting shield (HOUSE EDGE). */
   dmgMul?: number;
+  /** BLACK and up: enemies hit this much harder (stakes.ts stakeDmg; its own note on the banner). */
+  stakeDmg?: number;
   endless?: boolean;
   /** ENDLESS: the loop this fight is in (the Dealer's ALL IN grows with it). */
   loop?: number;

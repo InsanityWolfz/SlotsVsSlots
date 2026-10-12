@@ -22,7 +22,7 @@ import {
   POT,
 } from './relics';
 import { Rng } from './rng';
-import { effectiveAbility, STAKE } from './stakes';
+import { effectiveAbility, STAKE, stakeOf } from './stakes';
 import { ENDLESS, GATEKEEPER, TUNE, WHEEL_RULES, wheelChipShare } from './enemies';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
 // houseSkim 2 -> 0 (BOSS_REDESIGN 2): the House's hidden chip skim drained CASSIDY's rain (her House ran 32 turns).
@@ -1109,10 +1109,12 @@ export class Fight {
         const all = this.enemyDmgMul();
         // An elite's x1.25 is its own note; endless loops and act 3's ramp are LATE.
         const elite = this.cfg.enemy.endless ? 1 : (this.cfg.enemy.dmgMul ?? 1);
-        const late = all / elite;
+        const stake = this.cfg.enemy.stakeDmg ?? 1;
+        const late = all / elite / stake;
         g.mult *= all;
         const raise = this.isDealer && this.dealerHand >= 2 ? DEALER_RULES.raiseMul : 1;
         if (elite !== 1) notes.push(`X${Math.round(elite * 100) / 100} ELITE`);
+        if (stake !== 1) notes.push(`X${Math.round(stake * 100) / 100} ${stakeOf(this.cfg.stake ?? 0).name}`);
         if (raise !== 1) notes.push(`X${raise} RAISE`);
         const rest = late / raise;
         if (Math.abs(rest - 1) > 1e-9) notes.push(`X${Math.round(rest * 100) / 100} LATE`);
@@ -1591,7 +1593,7 @@ export class Fight {
   /** Enemy damage: the fight's knob x ENDLESS (LAST CALL after enemy turn 40) x ATTRITION (act 3). */
   private enemyDmgMul(events?: CombatEvent[]): number {
     // The fight's damage knob (TUNE.enemyDmg, elites hit harder, endless loops); it used to apply only in endless.
-    let mul = this.cfg.enemy.dmgMul ?? 1;
+    let mul = (this.cfg.enemy.dmgMul ?? 1) * (this.cfg.enemy.stakeDmg ?? 1);
     if (this.cfg.enemy.endless) {
       const late = Math.floor(this.turn / 2) - ENDLESS.lastCall;
       if (late > 0 && !this.lastCall && events) {
