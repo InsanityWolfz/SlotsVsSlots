@@ -190,9 +190,8 @@ ARCHETYPES.push(
 );
 
 /**
- * THE GATEKEEPER (EXPERT_PLAYTEST_8 E11): fight 4 of every act (no fork; the Cashier opens before the boss) is THE REPO MAN. Every 3 turns he repossesses
- * your best cell (a charmed one first) and what he holds when he falls STAYS GONE until the act's boss falls, unless
- * you pay it off at the Cashier. His writes outlast the fight, the game's hook between bosses.
+ * THE REPO MAN: a regular in acts 1-2. Every 3 turns he repossesses your best cell (a charmed one first) for the
+ * fight; everything comes back when it ends.
  */
 export const REPO_MAN: Archetype = {
   id: 'repo',
@@ -207,11 +206,8 @@ export const REPO_MAN: Archetype = {
   blurb: 'TAKES A CHARM FOR THE FIGHT.',
   acts: [],
 };
-/** The gatekeeper's fight (0-based depth), how many cells he can take in one fight, a lien's price, his bounty, the turn of
- * his first take, the acts he holds (act 3 has the Pit Boss's confiscates), and whether his liens outlast his fight (a
- * measuring knob: false returns them at once). */
-// persist false (2026-10-07, user: the liens were noise): what he takes comes back when his fight ends.
-export const GATEKEEPER = { depth: 3, maxTakes: 2, lienPrice: 3, bounty: 3, firstTurn: 1, acts: 2, persist: false };
+/** THE REPO MAN: at most this many takes a fight, his bounty in chips, the turn of his first take, the acts he's in. */
+export const GATEKEEPER = { maxTakes: 2, bounty: 3, firstTurn: 1, acts: 2 };
 
 export const ACT2_NEW: ReadonlySet<string> = new Set(['bomber', 'hexer', 'vampire', 'mimic', 'counterfeiter']);
 export const ACT3_NEW: ReadonlySet<string> = new Set(['sharp', 'pitboss', 'croupier']);

@@ -55,10 +55,9 @@ export interface RunEntry {
   /** ENDLESS: loops cleared after LET IT RIDE, and the points banked (all of it on CASH OUT, half on a bust). */
   loops?: number;
   pot?: number;
-  /** A CHALLENGE run (its id, or "weekly"), THE WEEKLY CHALLENGE's week, and liens paid off. */
+  /** A CHALLENGE run (its id, or "weekly") and THE WEEKLY CHALLENGE's week. */
   challenge?: string;
   weekly?: string;
-  liensPaid?: number;
 }
 
 /** A daily key: YYYY-MM-DD. */
@@ -119,7 +118,6 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
     ...(run.endless ? { loops: run.endless.loop - 1, pot: run.endless.cashed ? run.endless.pot : bustPot(run.endless.pot) + run.player.chips * 10 } : {}),
     ...(run.challenge ? { challenge: run.challenge } : {}),
     ...(run.weekly ? { weekly: run.weekly } : {}),
-    ...(run.liensPaid ? { liensPaid: run.liensPaid } : {}),
   };
 }
 
@@ -192,7 +190,6 @@ export function sanitizeProfile(raw: unknown): Profile {
         ...(typeof e.pot === 'number' ? { pot: num(e.pot, 0, 1e9) } : {}),
         ...(typeof e.challenge === 'string' && (e.challenge === 'weekly' || CHALLENGES.some((c) => c.id === e.challenge)) ? { challenge: e.challenge } : {}),
         ...(typeof e.weekly === 'string' && WEEK_KEY.test(e.weekly) ? { weekly: e.weekly } : {}),
-        ...(typeof e.liensPaid === 'number' ? { liensPaid: num(e.liensPaid, 0, 99) } : {}),
       });
     }
   const lastDaily = typeof p.lastDaily === 'string' && DATE_KEY.test(p.lastDaily) ? p.lastDaily : undefined;
@@ -261,7 +258,6 @@ function achievementCtx(p: Profile, e: RunEntry, collectionTotal = Infinity) {
     daily: !!e.daily,
     weekly: !!e.weekly,
     challenge: e.challenge,
-    liensPaid: e.liensPaid ?? 0,
     tutorial: !!e.tutorial,
     stats: p.stats,
     have: p.achievements,

@@ -54,8 +54,6 @@ import { RelicTips } from './relicTip';
 
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus' | 'choice' | 'encounter';
 
-/** A lien in a few words ("GOLD SWORD R1"). */
-
 /** Greedy word wrap for the pixel font. */
 export function wrap(text: string, maxChars: number): string[] {
   const lines: string[] = [];

@@ -199,7 +199,6 @@ export interface AchievementCtx {
   daily: boolean;
   weekly: boolean;
   challenge?: string;
-  liensPaid: number;
   tutorial: boolean;
   stats: MetaStats;
   /** Achievements already earned (for "all of them" checks). */

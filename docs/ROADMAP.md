@@ -33,8 +33,10 @@ a boss may be up to ~10% easier or harder on one machine than another.
      - **Elites really hurt:** more damage, not just more HP. Taking two on low HP can end the run.
      - **Timing matters:** where the Cashier sits on a path decides whether your chips arrive in time to be useful.
      - So a weak build wants the gentle path, a strong one the elites, and most runs land somewhere in between.
-   - **Roster:** done: the GROUNDER is gone; normal enemies' rocks crumble after the fight. To do: check the
-     COUNTERFEITER and the rest against today's systems.
+   - **Roster:** done: the GROUNDER is gone; normal enemies' rocks crumble after the fight; THE REPO MAN's liens
+     (off since 2026-10-07) are out of the code. Audit 2026-10-12: every enemy still works with today's machines.
+     Four of them answer Charms (HEXER, COUNTERFEITER, THE REPO MAN, PIT BOSS) and none answers a no-Charm build;
+     the new sim decides whether that's a problem (it's also the visible-matchup lever for picking paths).
    - **Honest HP:** the same enemy HP at the same stop for every machine. Machines get balanced by tuning the
      machines. Bosses stop being sized to your build (or keep only a mild part of it; decide with the new sim).
 2. **Finish THE WHEEL and THE DEALER reworks.** The user likes the ideas. Their rules are in, but neither is tuned.

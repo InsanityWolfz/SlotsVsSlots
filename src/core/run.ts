@@ -137,8 +137,6 @@ export type DraftOption =
   /** LEVEL cards: +1 level to a symbol type, or to a charm type. */
   | { kind: 'symLevel'; symbol: SymbolId }
   | { kind: 'charmLevel'; enh: Enh }
-  /** The Cashier: pay off THE REPO MAN's oldest lien. */
-  | { kind: 'payLien' }
   | { kind: 'remove'; symbol: SymbolId; reel: number };
 
 export interface ShopItem {
@@ -189,8 +187,6 @@ export interface FightRecord {
   /** Bonus prizes won in this fight. */
   bonuses?: string[];
   rocksAdded: number;
-  /** THE REPO MAN: cells and charms he took that stay gone until the act's boss falls. */
-  liens?: number;
   rocksCrumbled: number;
   /** Relic taken from an elite's spoils. */
   eliteRelic?: RelicId;
@@ -201,13 +197,6 @@ export interface FightRecord {
   bought?: DraftOption[];
   /** The BIG CHOICE taken after this (boss) fight. */
   choice?: BigChoiceId;
-}
-
-/** A cell THE REPO MAN holds: its reel and symbol, and its charm if it had one. */
-export interface Lien {
-  reel: number;
-  symbol: SymbolId;
-  enh?: Enh;
 }
 
 export interface RunState {
@@ -267,8 +256,6 @@ export interface RunState {
   glass?: boolean;
   /** BLOOD PACT: your meter fills twice as fast. */
   bloodPact?: boolean;
-  /** THE REPO MAN's liens: cells (and charms) he holds until the act's boss falls. */
-  liens?: Lien[];
   /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day), and the day's HOUSE EDGE. */
   daily?: string;
   dailyEdge?: EdgeId;
@@ -277,8 +264,6 @@ export interface RunState {
   /** A CHALLENGE run (its id, or "weekly"), and the HOUSE EDGES it plays under. */
   challenge?: string;
   mods?: EdgeId[];
-  /** Liens paid off at the Cashier (achievements). */
-  liensPaid?: number;
   /** MASTERWORK (until 2026-10-08): these symbols can't gain levels. Old saves only. */
   levelLock?: SymbolId[];
   /** BIG CHOICES (2026-10-08): cards offered so far this run (never twice), and the fight rules they added. */
@@ -732,43 +717,6 @@ export function applyDaily(run: RunState, key: string): void {
   startEdges(run, [run.dailyEdge]);
 }
 
-/** THE REPO MAN's takes (confiscated charms, repossessed cells) leave your machine as liens. */
-function takeLiens(run: RunState, fight: Fight): void {
-  const p = run.player;
-  const liens: Lien[] = [];
-  fight.sides.player.reels.forEach((reel, r) =>
-    reel.cells.forEach((c) => {
-      // His second take can steal the cell his first one stripped: the cell goes first, then its charm (paying off
-      // in that order puts the cell back before the charm needs it).
-      if (c.stolen) liens.push({ reel: r, symbol: c.symbol });
-      if (c.confiscated) liens.push({ reel: r, symbol: c.symbol, enh: c.confiscated });
-    }),
-  );
-  for (const l of liens.slice(0, GATEKEEPER.maxTakes)) {
-    if (l.enh) {
-      const g = p.gilded.find((x) => x.reel === l.reel && x.symbol === l.symbol && x.enh === l.enh);
-      if (!g) continue;
-      g.n--;
-      p.gilded = p.gilded.filter((x) => x.n > 0);
-    } else {
-      const n = p.strips[l.reel][l.symbol] ?? 0;
-      if (n <= 0) continue;
-      p.strips[l.reel][l.symbol] = n - 1;
-    }
-    (run.liens ??= []).push(l);
-  }
-}
-
-/** A lien comes back: the cell, or the charm onto its cell. */
-function returnLien(run: RunState, l: Lien): void {
-  const p = run.player;
-  if (l.enh) addCharms(p, l.reel, l.symbol, l.enh, 1);
-  else p.strips[l.reel][l.symbol] = (p.strips[l.reel][l.symbol] ?? 0) + 1;
-}
-
-/** A lien in words ("A GOLD CHARM ON A REEL 2 SWORD"). */
-export const lienText = (l: Lien) => (l.enh ? `A ${charmName(l.enh)} CHARM ON A REEL ${l.reel + 1} ${symLabel(l.symbol)}` : `A ${symLabel(l.symbol)} ON REEL ${l.reel + 1}`);
-
 /** Interest paid after a win on the chips you hold then (chips on the table don't count). */
 export const interestOn = (chips: number) => Math.min(CHIPS.interestCap, Math.floor(chips / CHIPS.interestPer));
 
@@ -1030,12 +978,8 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     run.debt -= paid;
     record.debtPaid = paid;
   }
-  // THE REPO MAN fell: what he holds stays gone until the act's boss falls (or you pay it off).
+  // THE REPO MAN fell: his bounty.
   if (beaten.archetype === REPO_MAN.id) {
-    const before = run.liens?.length ?? 0;
-    if (GATEKEEPER.persist) takeLiens(run, fight);
-    const taken = (run.liens?.length ?? 0) - before;
-    if (taken) record.liens = taken;
     // His bounty (the fork he replaced could have paid an elite's spoils).
     run.player.chips += GATEKEEPER.bounty;
     record.chips = (record.chips ?? 0) + GATEKEEPER.bounty;
@@ -1095,9 +1039,6 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
       record.debtPaid = (record.debtPaid ?? 0) + fromChips;
       run.debt = 0;
     }
-    // The act's boss fell: THE REPO MAN gives everything back.
-    for (const l of run.liens ?? []) returnLien(run, l);
-    run.liens = [];
     if (run.endless) {
       run.endless.pot = nextPot(run.endless.pot);
       run.endless.loop++;
@@ -1430,12 +1371,6 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
       p.maxHp += o.amount;
       p.hp += o.amount;
       break;
-    case 'payLien':
-      if (run.liens?.length) {
-        returnLien(run, run.liens.shift()!);
-        run.liensPaid = (run.liensPaid ?? 0) + 1;
-      }
-      break;
   }
   // A charm lasts while its cell is on the reel.
   normalizeCharms(p);
@@ -1527,8 +1462,6 @@ export function shopOffers(run: RunState): ShopItem[] {
   // HEAL is a permanent service slot, sized to what you're missing (hidden when nearly full).
   const missing = p.maxHp - p.hp;
   if (missing >= 3 * UNIT && !run.glass) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal, sold: false });
-  // THE REPO MAN's liens: pay one off (a service slot, like the heal).
-  if (run.liens?.length) shelf.push({ option: { kind: 'payLien' }, price: GATEKEEPER.lienPrice, sold: false });
   return shelf;
 }
 
@@ -1631,10 +1564,6 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
       return { title: 'HEAL', text: `RESTORE ${o.amount} HP` };
     case 'maxHp':
       return { title: `+${o.amount} MAX HP`, text: `GAIN ${o.amount} MAX HP AND HEAL ${o.amount} HP` };
-    case 'payLien': {
-      const l = run?.liens?.[0];
-      return { title: 'PAY OFF A LIEN', text: l ? `THE REPO MAN GIVES BACK ${lienText(l)}` : 'NOTHING OWED' };
-    }
     case 'gild':
       return {
         title: `${o.n} ${charmName(o.enh)} CHARM${o.n > 1 ? 'S' : ''}`,

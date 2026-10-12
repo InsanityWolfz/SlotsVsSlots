@@ -28,9 +28,6 @@ function check(run: RunState, where: string, tag: string): void {
   if (p.hp > p.maxHp) bug('hp > maxHp', `${tag} ${where} ${p.hp}/${p.maxHp}`);
   if (p.chips < 0 || !Number.isFinite(p.chips)) bug('bad chips', `${tag} ${where} ${p.chips}`);
   if (!Number.isFinite(p.hp) || !Number.isFinite(p.maxHp)) bug('bad hp', `${tag} ${where}`);
-  for (const l of run.liens ?? []) if (l.reel < 0 || l.reel >= p.strips.length) bug('lien on a missing reel', `${tag} ${where}`);
-  // Liens are given back when an act's boss falls: none may survive into a new act's first fight.
-  if (run.depth === 0 && run.records.length && (run.liens?.length ?? 0) > 0) bug('liens kept past the act boss', `${tag} ${where} act ${run.act} liens ${run.liens!.length}`);
 }
 
 type Mode = { tag: string; cab: (typeof CABINET_ORDER)[number]; stake: number; act3: boolean; setup?: (r: RunState) => void };
@@ -51,7 +48,7 @@ const profile = emptyProfile();
 let runs = 0;
 let crashes = 0;
 let ended = 0;
-const lienRuns = { took: 0, paid: 0 };
+const lienRuns = { took: 0 };
 for (const m of modes)
   for (const policy of ['greedy', 'random'] as const) {
     let fightNo = 0;
@@ -63,7 +60,6 @@ for (const m of modes)
     SIM_BIAS.onEnd = (run) => {
       ended++;
       check(run, 'end', `${m.tag}/${policy}`);
-      if (run.liensPaid) lienRuns.paid++;
       if (run.records.some((r) => r.enemy.endsWith('REPO MAN') && r.won)) lienRuns.took++;
       try {
         const e = runEntry(run, Date.now());
@@ -90,7 +86,7 @@ for (const m of modes)
     }
     runs += N;
   }
-console.log(`runs ${runs} (ended ${ended}), crashes ${crashes}, modes ${modes.length}; REPO MAN beaten in ${lienRuns.took} runs, a lien paid off in ${lienRuns.paid}`);
+console.log(`runs ${runs} (ended ${ended}), crashes ${crashes}, modes ${modes.length}; REPO MAN beaten in ${lienRuns.took} runs`);
 console.log(`profile after: level ${levelOf(profile.xp).level}, ${Object.keys(profile.achievements).length} achievements, stats ${JSON.stringify(profile.stats)}`);
 if (!bugs.size) console.log('NO INVARIANT BREAKS');
 for (const [k, v] of bugs) console.log(`BUG x${v.n}: ${k}\n   e.g. ${v.example}`);

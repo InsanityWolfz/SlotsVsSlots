@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { faceRepoMan } from './helpers';
 import { defaultConfig } from '../src/core/config';
 import { Fight } from '../src/core/fight';
-import { createRun, fightConfig, finishFight, shopOffers } from '../src/core/run';
+import { createRun, fightConfig, finishFight } from '../src/core/run';
 
 describe('THE GATEKEEPER: the REPO MAN', () => {
-  it('takes a charm for the fight only: it is back after, and nothing is held (no liens)', () => {
+  it('takes a charm for the fight only: it is back after', () => {
     const base = defaultConfig();
     const run = createRun(base, 5, 'knight');
     run.pendingStart = null;
@@ -18,9 +18,7 @@ describe('THE GATEKEEPER: the REPO MAN', () => {
     delete gold.enh;
     f.winner = 'player';
     finishFight(run, f);
-    expect(run.liens ?? []).toEqual([]);
     expect(run.player.gilded).toEqual([{ reel: 0, symbol: 'sword', enh: 'gold', n: 2 }]);
-    expect(shopOffers(run).some((i) => i.option.kind === 'payLien')).toBe(false);
   });
 
   it('with no charms on your reels his take fizzles (he never steals a cell)', () => {
