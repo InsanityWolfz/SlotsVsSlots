@@ -32,8 +32,9 @@ which Charms and relics to build.
     ladder shows it); a wrong call or a tie loses it; cash out any time after a right call, 5 right calls cash out
     for you. Played sensibly it's about even. Chips only.
   - TWENTY-ONE: blackjack, hit or stand only (no double, split or push: a tie goes to the dealer; the dealer stands
-    on 17). Pay 6 chips / 15% HP / a relic for 1 / 3 / 5 hands. Each hand won pays an UPGRADE; a two-card 21 pays
-    two. Cards drawn in code; the hand in play is saved with the run.
+    on 17). A chip table (user, 2026-10-13: upgrades from cards felt wrong): bet up to 20, 3 hands a visit; a win
+    pays 1 to 1, a two-card 21 pays 2 to 1. Cards drawn in code; the hand in play is saved with the run (sim: run win
+    -1 to 0).
   - UNDER OR OVER: dice. Bet chips, call UNDER 7 / SEVEN / OVER 7. Under/over pay 1 to 1 (a seven gives the bet
     back: about even); SEVEN pays 4 to 1 (the long shot, with the house edge). Up to 3 rolls a visit. Chips only.
   - Offers (each with its own portrait): THE BLOOD BANK (sell 20% of your HP for 8 chips, or 10% of your max HP for

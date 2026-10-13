@@ -5,7 +5,7 @@ import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../cor
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
-import { bjState, bjTotal, BJ, DICE, diceMax, ROULETTE, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
+import { bjMax, bjState, bjTotal, BJ, DICE, diceMax, ROULETTE, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -453,7 +453,6 @@ export class RunScreens {
   private bjShow: NonNullable<EncounterResult['hand']> | null = null;
   private bjDealerUp = 0;
   private bjMsg: EncounterResult | null = null;
-  private bjWon: string[] = [];
   /** UNDER OR OVER: the dice showing, the roll's progress (0..1; 1 = landed), and the last roll's word. */
   private dcDice: [number, number] = [3, 4];
   private dcT = 1;
@@ -1423,8 +1422,7 @@ export class RunScreens {
     if (this.encId === 'bj') {
       this.bjShow = null;
       this.bjMsg = null;
-      this.bjWon = [];
-      if (bjState(run)) return this.bjButtons();
+      return bjState(run) ? this.bjButtons() : this.bjDealButtons();
     }
     if (this.encId === 'hilo') {
       this.hlCard = hiloState(run)?.card ?? 0;
@@ -1637,21 +1635,39 @@ export class RunScreens {
     this.buttons = [hit, stand];
   }
 
-  /** A TWENTY-ONE move: the buy-in (the first hand is dealt), a hit, or a stand. A finished hand stays up while the
-   * dealer's cards turn one by one, then its word; then the next hand, or CONTINUE. */
+  /** TWENTY-ONE between hands: the bet, DEAL, WALK AWAY (the chip table the other games use). */
+  private bjDealButtons(): void {
+    const run = this.run!;
+    const max = bjMax(run);
+    this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
+    this.encChoices = encounterChoices(run);
+    const steps = this.betStepper(() => bjMax(this.run!));
+    const deal = this.btn('DEAL', RL.betX, 342, 280, 56, () => this.playBj(0));
+    const walk = this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playBj(1));
+    for (const b of [...steps, deal]) b.enabled = max >= 1;
+    this.buttons = [...steps, deal, walk];
+  }
+
+  /** A TWENTY-ONE move: the deal, a hit, or a stand. A finished hand stays up while the dealer's cards turn one by one,
+   * then its word and its chips; then the next hand's bet, or CONTINUE. */
   private playBj(i: number): void {
-    const res = this.cb.onEncounter(i);
+    const before = this.run?.player.chips ?? 0;
+    const res = this.cb.onEncounter(i, this.rlBet);
     if (!res) return;
     const done = () => {
       if (this.mode !== 'encounter') return;
       if (res.more) {
         this.bjShow = null;
-        this.bjMsg = null;
-        this.bjButtons();
+        if (bjState(this.run!)) {
+          this.bjMsg = null;
+          this.bjButtons();
+        } else this.bjDealButtons();
       } else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
     };
     if (!res.hand) {
       if (res.more) {
+        // Dealt: the bet goes down now.
+        this.bjMsg = null;
         this.sounds.turnCard(true);
         this.bjButtons();
       } else {
@@ -1661,6 +1677,8 @@ export class RunScreens {
       }
       return;
     }
+    // The hand's chips land with its word, after the dealer's cards turn.
+    this.chipsLanding = (this.run?.player.chips ?? 0) - before;
     const hand = res.hand;
     this.bjShow = hand;
     this.bjMsg = null;
@@ -1677,7 +1695,7 @@ export class RunScreens {
       .then(() => {
         this.bjDealerUp = hand.d.length;
         this.bjMsg = res;
-        this.bjWon.push(...(res.gains ?? []));
+        this.landChips();
         if (res.good) {
           this.sounds.lucky();
           this.sounds.coin(8);
@@ -2978,14 +2996,24 @@ export class RunScreens {
     const st = bjState(run);
     const show = this.bjShow;
     const inPlay = !!st || !!show;
-    this.felt(ctx, inPlay || this.bjMsg ? 440 : 340);
+    const dealt = show ? show.no : st ? st.dealt : Number((run.encounterState as { dealt?: number } | undefined)?.dealt ?? 0) + 1;
+    drawText(ctx, `HAND ${Math.min(dealt, BJ.hands)} OF ${BJ.hands}`, CX, 78, 2, COLORS.textDim);
+    this.felt(ctx);
+    const m = this.bjMsg;
     if (!inPlay) {
-      // The table before you buy in: two face-down cards and the house rules.
-      drawPlayingCard(ctx, CX - 40, 250, 0, 1, 0.8);
-      drawPlayingCard(ctx, CX + 40, 250, 0, 1, 0.8);
-      drawText(ctx, 'WIN A HAND: AN UPGRADE.   21 OFF THE DEAL: TWO.', CX, 370, 2, COLORS.goldLight);
-      drawText(ctx, `THE DEALER STANDS ON ${BJ.standOn}. A TIE GOES TO THE DEALER.`, CX, 400, 1.5, COLORS.textDim);
-      if (this.bjMsg) drawText(ctx, this.bjMsg.title, CX, 470, 3, COLORS.text);
+      // Between hands: two face-down cards and the house rules on the left, your bet on the right.
+      drawPlayingCard(ctx, RL.wheelX - 40, 260, 0, 1, 0.8);
+      drawPlayingCard(ctx, RL.wheelX + 40, 260, 0, 1, 0.8);
+      drawText(ctx, 'A WIN PAYS 1 TO 1. 21 OFF THE DEAL PAYS 2 TO 1.', RL.wheelX, 380, 1.5, COLORS.goldLight);
+      drawText(ctx, `THE DEALER STANDS ON ${BJ.standOn}. A TIE GOES TO THE DEALER.`, RL.wheelX, 404, 1.5, COLORS.textDim);
+      if (m) {
+        drawText(ctx, m.title, RL.betX, 470, 3, m.good ? COLORS.goldLight : m.good === false ? '#ff8a7a' : COLORS.text);
+        if (m.text) drawText(ctx, m.text, RL.betX, 506, 2, m.good ? COLORS.goldLight : '#ff8a7a');
+      }
+      if (m && m.good === null) return;
+      drawText(ctx, `YOUR BET (MAX ${bjMax(run)})`, RL.betX, 150, 2, COLORS.textDim);
+      drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
+      drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
       return;
     }
     const p = show ? show.p : st!.p;
@@ -2999,15 +3027,12 @@ export class RunScreens {
     };
     row(d, 220, 'DEALER', !show);
     row(p, 420, 'YOU', false);
-    // Right column: which hand, and what you've won so far.
-    const no = show ? show.no : st!.hand;
-    const of = show ? show.of : st!.hands;
-    drawText(ctx, `HAND ${no} OF ${of}`, RL.betX, 150, 2.5, COLORS.goldLight);
-    if (this.bjWon.length) drawText(ctx, `WON: ${this.bjWon.length === 1 ? this.bjWon[0] : `${this.bjWon.length} PRIZES`}`, RL.betX, 190, 1.5, COLORS.textDim);
-    const m = this.bjMsg;
+    // Right column: the bet riding on this hand, then how it went.
+    drawSprite(ctx, 'chip', RL.betX - 70, 190, 3);
+    drawText(ctx, `${st?.bet ?? this.rlBet} ON THIS HAND`, RL.betX - 46, 190, 2, COLORS.energy, { align: 'left' });
     if (m && m.title) {
       drawText(ctx, m.title, RL.betX, 300, 2.5, m.good ? COLORS.goldLight : '#ff8a7a', { punch: 1 + 0.03 * Math.sin(time * 6) });
-      if (m.text) drawText(ctx, m.text, RL.betX, 336, m.text.length > 22 ? 1.5 : 2, COLORS.goldLight);
+      if (m.text) drawText(ctx, m.text, RL.betX, 336, 2, m.good ? COLORS.goldLight : '#ff8a7a');
     }
   }
 
