@@ -146,7 +146,8 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
 - **Slime pair cleanses (user, 2026-10-13):** a slime pair cleanses the slime on its two reels; a slime jackpot still
   cleanses everything (1500 runs: WHITE / GREEN KNIGHT 66->67 / 34, TESLA 59 / 42, JUKEBOX 68 / 36, JOKER 58->59 /
   42->44, BANKROLL 63->64 / 43->45). THE HOUSE's countdown counts the turn it waits after its bar fills (it read IN 3,
-  IN 2, NEXT, NEXT; now IN 4, IN 3, IN 2, NEXT).
+  IN 2, NEXT, NEXT; now IN 4, IN 3, IN 2, NEXT). RED OR BLACK and the dice pay at the call (a quit can't re-roll), but
+  the chip count changes when the ball / dice land (it went up mid-spin, so a win looked unpaid).
 - **Heals explained (user, 2026-10-13):** machine cards name the base payoff heal (TESLA 5 a lightning strike,
   BANKROLL 20 a full HIGH ROLLER bar, JUKEBOX 20 a DROP; JOKER none). A payoff heal is one number; made of several
   (the meter's, VAMPIRE FANG, GROUND WIRE) it names each under the HP bar ("+15 LIGHTNING +15 FANG"). A storm's heal

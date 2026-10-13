@@ -437,6 +437,9 @@ export class RunScreens {
   /** RED OR BLACK: the bet on the stepper, the wheel's and ball's angles, the ball's radius, which spin this is, and the
    * offscreen canvas the wheel is drawn on (small, then scaled up crisp so it reads as pixel art). */
   private rlBet = 5;
+  /** RED OR BLACK / DICE: the bet's win or loss, paid at the call (a quit can't re-roll it) but shown when the ball or
+   * dice land (it counted up while the wheel still spun, so the landing looked unpaid: user playtest). */
+  private chipsLanding = 0;
   private rlWheel = 0;
   private rlBall = { a: -Math.PI / 2, r: 44 };
   private rlSpinNo = 1;
@@ -1575,8 +1578,10 @@ export class RunScreens {
 
   /** One roll: the dice tumble (faces flicker, bounces settle) and land, then the call is paid. */
   private playDice(i: number): void {
+    const before = this.run?.player.chips ?? 0;
     const res = this.cb.onEncounter(i, this.rlBet);
     if (!res) return;
+    this.chipsLanding = (this.run?.player.chips ?? 0) - before;
     if (!res.dice) {
       this.dcMsg = res;
       this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
@@ -1609,6 +1614,7 @@ export class RunScreens {
       })
       .then(() => {
         this.slotClock.skipping = false;
+        this.landChips();
         if (this.mode !== 'encounter') return;
         this.dcDice = dice;
         this.dcT = 1;
@@ -1756,8 +1762,10 @@ export class RunScreens {
 
   /** One spin: the wheel turns one way and the ball the other; the ball drops, rattles and rides into its pocket. */
   private playRoulette(i: number): void {
+    const before = this.run?.player.chips ?? 0;
     const res = this.cb.onEncounter(i, this.rlBet);
     if (!res) return;
+    this.chipsLanding = (this.run?.player.chips ?? 0) - before;
     if (res.pocket === undefined) {
       // Walked away.
       this.encResult = res;
@@ -1809,6 +1817,7 @@ export class RunScreens {
       })
       .then(() => {
         this.slotClock.skipping = false;
+        this.landChips();
         if (this.mode !== 'encounter') return;
         this.encResult = res;
         this.encT = 1;
@@ -1896,6 +1905,12 @@ export class RunScreens {
         (c, i) =>
           void this.ui.wait(0.1 + i * 0.07).then(() => this.ui.tween({ from: 0, to: 1, dur: 0.28, ease: backOut(2), onUpdate: (v) => (c.scale = v) })),
       );
+  }
+
+  /** A bet's chips land: the counter changes now, with a bounce. */
+  private landChips(): void {
+    if (this.chipsLanding) void this.ui.tween({ from: 1.6, to: 1, dur: 0.3, ease: backOut(3), onUpdate: (v) => (this.chipPulse = v) });
+    this.chipsLanding = 0;
   }
 
   /** Called after a purchase: bounce the chip counter and refresh the shelf. */
@@ -2342,8 +2357,10 @@ export class RunScreens {
   private shown(): { chips: number; hp: number; maxHp: number } {
     const p = this.run!.player;
     const pulls = this.mode === 'encounter' ? this.encResult?.pulls : undefined;
-    if (!pulls) return p;
-    const out = { chips: p.chips, hp: p.hp, maxHp: p.maxHp };
+    const landing = this.mode === 'encounter' ? this.chipsLanding : 0;
+    if (!pulls && !landing) return p;
+    const out = { chips: p.chips - landing, hp: p.hp, maxHp: p.maxHp };
+    if (!pulls) return out;
     pulls.forEach((pl, k) => {
       // A pull's prizes land when its reels do.
       if (k < this.encLanded) return;
