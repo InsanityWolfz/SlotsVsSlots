@@ -106,7 +106,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     startChips: 24,
     symbols: ['goldbar', 'shield'],
     attack: 'goldbar',
-    rule: 'GOLD BARS FILL HIGH ROLLER: YOUR NEXT PAY MULTIPLIES, MORE WITH MORE CHIPS. A CHIP JACKPOT MAKES IT RAIN: IT HITS FOR YOUR CHIPS (UP TO 100). 330 HP.',
+    rule: 'CHIPS HIT, WIN CHIPS AND FILL HIGH ROLLER: IT MULTIPLIES YOUR NEXT HIT, MORE WITH MORE CHIPS HELD. A CHIP JACKPOT MAKES IT RAIN: A HIT FOR YOUR CHIPS (MAX 100). 330 HP.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },

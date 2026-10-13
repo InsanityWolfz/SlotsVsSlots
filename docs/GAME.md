@@ -85,7 +85,7 @@ Each machine except KNIGHT has one signature symbol and a meter.
 | TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields | reach the House |
 | JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat the House |
 | JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat the House with wilds |
-| BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill the vault; a chip jackpot makes it rain | clear a run |
+| BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER; a chip jackpot makes it rain | clear a run |
 
 BRIAR / THORN is retired and removed from the code (the JUKEBOX replaced her). Old saves map her unlock and stakes to
 the JUKEBOX; a saved BRIAR run or hiscore entry is dropped on load.
@@ -147,6 +147,7 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   never after encounters); relics name your meter (LIGHTNING, VOLUME, JACKPOT METER, HIGH ROLLER), not YOUR METER;
   PAYS XN for multipliers, HITS FOR N for flat damage; SABOTAGE is a keyword. COUP DE GRACE: swords pay x2 while your
   current HP is higher than the enemy's (KNIGHT WHITE 67 -> 66, GREEN 35 -> 34: noise).
+  BANKROLL's card calls its symbol CHIP (it said GOLD BARS) and says chips hit, win chips and fill HIGH ROLLER.
 - **Keywords (user, 2026-10-12):** 17 keywords (PAYLINE, PAIR, JACKPOT, WILD, SHIELD, PIERCE, HEAL, CHARM,
   LEVEL, METER, BUST, ALL IN, SABOTAGE, MARK, SLIME, ROCK, BOMB) each have one colour, drawn wherever they appear on draft cards,
   big choices, Cashier and relic tips and boss rules (`src/ui/keywords.ts`, drawRich). Hovering a draft card lists its
