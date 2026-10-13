@@ -306,7 +306,7 @@ export interface RunState {
   /** A game in progress at this stop (HIGHER OR LOWER's showing card, bet and right calls). */
   encounterState?: Record<string, number | number[]>;
   /** Encounters played this run (what was chosen, how it went): for the run log and the sim. */
-  encounters?: { act: number; id: string; choice: number; good: boolean | null; what?: string }[];
+  encounters?: { act: number; id: string; choice: number; good: boolean | null; what?: string; more?: boolean }[];
   /** The relic picked at the start (COPY RUN). */
   startRelic?: RelicId;
 }
@@ -619,7 +619,7 @@ export function playEncounter(run: RunState, i: number, bet?: number): Encounter
   };
   const def = encounterOf(st.encounter);
   const result = def.play(run, i, encounterRng(run), { relics, upgrade }, bet);
-  (run.encounters ??= []).push({ act: run.act, id: st.encounter ?? '?', choice: i, good: result.good, what: [result.title, result.text].filter(Boolean).join(' ') });
+  (run.encounters ??= []).push({ act: run.act, id: st.encounter ?? '?', choice: i, good: result.good, what: [result.title, result.text].filter(Boolean).join(' '), ...(result.more ? { more: true } : {}) });
   // A game with plays left (and something to play with) keeps you here; walking away, or the last play, moves on.
   const played = (run.encounterPlays ?? 0) + 1;
   // (A game that says for itself whether it goes on, like HIGHER OR LOWER, decides; others go by their play count.)

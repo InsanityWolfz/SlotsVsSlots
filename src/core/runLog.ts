@@ -52,7 +52,7 @@ export function runSummary(run: RunState, version = ''): string {
     `CHARMS: ${p.gilded.map((g) => `${charmName(g.enh)} LV${charmLevel(p.levels, g.enh)} x${g.n} on reel ${g.reel + 1} ${symLabel(g.symbol)}`).join(', ') || 'NONE'}`,
     `REELS: ${p.strips.map((s, i) => `${i + 1}: ${Object.entries(s).filter(([, n]) => n).map(([k, n]) => `${symLabel(k as SymbolId)} ${n}`).join(' ')}`).join(' / ')}`,
     `BIG CHOICES: ${run.records.flatMap((r) => (r.choice ? [r.choice] : [])).join(', ') || 'NONE'}`,
-    `ENCOUNTERS: ${(run.encounters ?? []).map((e) => `A${e.act} ${encounterOf(e.id).name}: ${e.what || (e.good === true ? 'WON' : e.good === false ? 'LOST' : 'WALKED AWAY')}`).join(', ') || 'NONE'}`,
+    `ENCOUNTERS: ${(run.encounters ?? []).filter((e) => !e.more).map((e) => `A${e.act} ${encounterOf(e.id).name}: ${e.what || (e.good === true ? 'WON' : e.good === false ? 'LOST' : 'WALKED AWAY')}`).join(', ') || 'NONE'}`,
   );
   // Each edge once, at the level it reached (MARKED DECK III, not marked, marked, marked).
   const edges = run.endless?.edges ?? [];
