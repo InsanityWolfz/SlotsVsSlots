@@ -1571,7 +1571,9 @@ export class Game {
     this.pause.update(dt);
     // The soundtrack follows the screen (MUSIC): menus, the lounge between fights, each act, the bosses.
     if (this.music) this.playMusic();
-    const gdt = this.coach.active || this.pause.open || this.bossCard ? 0 : this.stage.clock.tick(dt);
+    const frozen = this.coach.active || this.pause.open || this.bossCard;
+    this.synth.holdLoops(frozen);
+    const gdt = frozen ? 0 : this.stage.clock.tick(dt);
     this.camera.update(dt);
     this.particles.update(gdt);
     // THE WHEEL's topper turns (it races when the ball drops, then settles back to its idle turn).

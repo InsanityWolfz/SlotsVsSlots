@@ -103,7 +103,15 @@ export class Synth {
     this.master.gain.setTargetAtTime(this.muted ? 0 : 0.7 * master, this.now, 0.02);
     this.music.gain.setTargetAtTime(db(-14) * music, this.now, 0.02);
     this.sfx.gain.setTargetAtTime(sfx, this.now, 0.02);
-    this.loops.gain.setTargetAtTime(db(-9) * sfx, this.now, 0.02);
+    this.loops.gain.setTargetAtTime(this.loopsHeld ? 0 : db(-9) * sfx, this.now, 0.02);
+  }
+
+  /** PAUSE (or anything that freezes the fight): the reel loops go quiet until it goes on (they droned on: user). */
+  private loopsHeld = false;
+  holdLoops(on: boolean): void {
+    if (on === this.loopsHeld) return;
+    this.loopsHeld = on;
+    this.loops.gain.setTargetAtTime(on ? 0 : db(-9) * this.vol.sfx, this.now, 0.02);
   }
 
   private env(g: GainNode, t0: number, peak: number, attack: number, dur: number, release: number): void {
