@@ -201,7 +201,7 @@ export class Director {
         this.s.sounds.stingerMedium();
         this.s.gutter.allInCap = e.cap;
         this.s.gutter.allInFloor = e.floor;
-        return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, `${fmtNum(e.floor)} TO ${fmtNum(e.cap)}. SHIELDS WON'T STOP IT`, MACHINE_TOP + MACHINE_H / 2, 3);
+        return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, `${fmtNum(e.floor)} TO ${fmtNum(e.cap)}. IT PIERCES SHIELDS`, MACHINE_TOP + MACHINE_H / 2, 3);
       case 'closing': {
         const c = this.machineCenter('enemy');
         this.s.sounds.click();
@@ -1852,7 +1852,7 @@ export class Director {
     }
     this.s.sounds.abilityFire();
     this.s.camera.chromaPulse(0.6);
-    const rule = e.hand >= 3 ? `EVERY ${e.every} TURNS IT GOES ALL IN (THROUGH SHIELDS)` : `ITS HITS ARE X${DEALER_RULES.raiseMul} FROM NOW ON`;
+    const rule = e.hand >= 3 ? `EVERY ${e.every} TURNS IT GOES ALL IN. IT PIERCES SHIELDS` : `ITS HITS ARE X${DEALER_RULES.raiseMul} FROM NOW ON`;
     await this.banner(`HAND ${e.hand}: ${DEALER_HANDS[e.hand - 1]}`, '#ff6a5a', 1.3, 0.6, rule, MACHINE_TOP + MACHINE_H / 2, 4);
   }
 

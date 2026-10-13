@@ -5,7 +5,7 @@ import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../cor
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
-import { bjState, bjTotal, BJ, DICE, diceMax, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
+import { bjState, bjTotal, BJ, DICE, diceMax, ROULETTE, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -2926,7 +2926,8 @@ export class RunScreens {
       drawDie(ctx, x, 290 - hop * (k ? 0.8 : 1), face, rolling ? Math.sin(t * 20 + k * 2) * 0.3 : 0);
     });
     if (!rolling) drawText(ctx, `${total}`, RL.wheelX, 390, 3, total === 7 ? COLORS.goldLight : COLORS.text);
-    drawText(ctx, 'YOUR BET', RL.betX, 150, 2, COLORS.textDim);
+    // The table's limit, said up front (playtest: HIGHER OR LOWER's cap wasn't).
+    drawText(ctx, `YOUR BET (MAX ${DICE.maxBet})`, RL.betX, 150, 2, COLORS.textDim);
     drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
     drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
     drawText(ctx, `UNDER / OVER PAY 1 TO 1.  SEVEN PAYS ${DICE.sevenPays} TO 1`, RL.betX, 500, 1.5, COLORS.textDim);
@@ -3000,7 +3001,8 @@ export class RunScreens {
     drawText(ctx, 'ACES ARE HIGH. A TIE LOSES.', cx, 196, 1.5, COLORS.textDim);
     // Right column: your bet before the deal; the pot during the hand.
     if (!st) {
-      drawText(ctx, 'YOUR BET', RL.betX, 150, 2, COLORS.textDim);
+      // The table's limit, said up front (playtest: HIGHER OR LOWER's cap wasn't).
+      drawText(ctx, `YOUR BET (MAX ${HILO.maxBet})`, RL.betX, 150, 2, COLORS.textDim);
       drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
       drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
     } else {
@@ -3029,7 +3031,8 @@ export class RunScreens {
     ctx.drawImage(c, RL.wheelX - RL.px, RL.wheelY - RL.px, RL.px * 2, RL.px * 2);
     ctx.restore();
     // Your bet, beside the wheel.
-    drawText(ctx, 'YOUR BET', RL.betX, 150, 2, COLORS.textDim);
+    // The table's limit, said up front (playtest: HIGHER OR LOWER's cap wasn't).
+    drawText(ctx, `YOUR BET (MAX ${ROULETTE.maxBet})`, RL.betX, 150, 2, COLORS.textDim);
     drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
     drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
     drawText(ctx, 'PAYS 1 TO 1', RL.betX, 470, 1.5, COLORS.textDim);

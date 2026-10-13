@@ -32,7 +32,7 @@ export function bossRules(boss: string, c: BossRuleContext): BossRules {
       rules: [
         { icon: artId('dealCut'), text: `HAND 1: EVERY ${DEALER_RULES.bustEvery} TURNS A BUST. YOUR BEST REEL PAYS NOTHING NEXT SPIN` },
         { icon: artId('dealRaise'), text: `HAND 2: ITS HITS ARE X${DEALER_RULES.raiseMul}. STILL BUSTS` },
-        { icon: artId('dealShuffle'), text: `HAND 3: EVERY ${DEALER_RULES.allInEvery} TURNS ALL IN, ${pct(DEALER_RULES.allInFloor)}-${pct(DEALER_RULES.allInCap)}% OF YOUR MAX HP THROUGH SHIELDS` },
+        { icon: artId('dealShuffle'), text: `HAND 3: EVERY ${DEALER_RULES.allInEvery} TURNS ALL IN, ${pct(DEALER_RULES.allInFloor)}-${pct(DEALER_RULES.allInCap)}% OF YOUR MAX HP. IT PIERCES SHIELDS` },
       ],
       win: 'EACH HAND HAS ITS OWN HP BAR. BEAT ALL THREE',
     };

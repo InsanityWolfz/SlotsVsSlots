@@ -1937,7 +1937,7 @@ export class Game {
     const hp = this.fight.sides.player.maxHp;
     const loop = this.fight.cfg.enemy.loop ?? 0;
     const range = `${fmtNum(allInRange(hp, 0, loop))} TO ${fmtNum(allInRange(hp, Infinity, loop))}`;
-    const [name, ...rule] = card === 'allin' ? ['ALL IN', range, 'NO SHIELDS'] : ['BUST', 'BEST REEL', 'PAYS NONE'];
+    const [name, ...rule] = card === 'allin' ? ['ALL IN', range, 'PIERCES'] : ['BUST', 'BEST REEL', 'PAYS NONE'];
     drawText(ctx, name, x - 46, y - 6, 3, card === 'allin' ? '#ff6a5a' : '#ffffff', { align: 'left' });
     rule.forEach((l, k) => drawText(ctx, l, x - 46, y + 18 + k * 18, l.length > 10 ? 1.5 : 2, COLORS.text, { align: 'left' }));
     // Which hand it's playing (1-3), over the box.

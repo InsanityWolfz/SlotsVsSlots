@@ -143,7 +143,7 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   to paste into a chat for balance checks.
   The main menu's COPY LAST RUN copies the last finished run's text (it survives a refresh; key `slotvslot.lastrun.v1`).
   Beating the Dealer saves the LET IT RIDE / CASH OUT choice: a refresh there CONTINUEs back to it.
-- **Keywords (user, 2026-10-12):** 16 keywords (PAYLINE, PAIR, JACKPOT, WILD, SHIELD, THROUGH SHIELDS, HEAL, CHARM,
+- **Keywords (user, 2026-10-12):** 16 keywords (PAYLINE, PAIR, JACKPOT, WILD, SHIELD, PIERCE, HEAL, CHARM,
   LEVEL, METER, BUST, ALL IN, MARK, SLIME, ROCK, BOMB) each have one colour, drawn wherever they appear on draft cards,
   big choices, Cashier and relic tips and boss rules (`src/ui/keywords.ts`, drawRich). Hovering a draft card lists its
   keywords beside it; PAUSE -> GLOSSARY lists them all. Add a keyword there, not in the texts.

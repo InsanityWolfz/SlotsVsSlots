@@ -125,7 +125,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: UNIT / 2 },
     symbols: ['bolt', 'shield'],
     attack: 'bolt',
-    rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE THROUGH SHIELDS. 330 HP.',
+    rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE THAT PIERCES SHIELDS. 330 HP.',
     unlock: 'REACH THE HOUSE',
     // 40 (2026-10-12): LIGHTNING ROD is gone (97% of TESLA runs took it; it set the cost to 40 and hit 90).
     specialCost: 4 * UNIT,

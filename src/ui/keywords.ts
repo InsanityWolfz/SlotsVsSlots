@@ -19,20 +19,20 @@ export const KEYWORDS: Keyword[] = [
   { word: 'JACKPOT', forms: ['JACKPOTS'], color: '#ff6a4a', text: 'ALL 3 PAYLINE SYMBOLS MATCH: PAYS FAR MORE THAN A PAIR' },
   { word: 'WILD', forms: ['WILDS'], color: '#ff9ab0', text: 'STANDS IN FOR ANY SYMBOL' },
   { word: 'SHIELD', forms: ['SHIELDS'], color: '#6ab4ff', text: 'BLOCKS HITS BEFORE THEY REACH YOUR HP' },
-  { word: 'THROUGH SHIELDS', color: '#bff4ff', text: 'IGNORES SHIELDS: STRAIGHT TO HP' },
+  { word: 'PIERCE', forms: ['PIERCES', 'PIERCING', 'PIERCES SHIELDS', 'PIERCE SHIELDS'], color: '#bff4ff', text: 'GOES PAST SHIELDS, STRAIGHT TO HP' },
   { word: 'HEAL', forms: ['HEALS', 'HEALED', 'HEALING'], color: '#7dff7a', text: 'HP BACK, UP TO YOUR MAX HP' },
   { word: 'CHARM', forms: ['CHARMS'], color: '#c9a0ff', text: 'A PERK ON ONE CELL OF A REEL. ITS LEVEL COUNTS FOR EVERY CELL OF ITS KIND' },
   { word: 'LEVEL', forms: ['LEVELS'], color: '#5ad8e8', text: 'A SYMBOL OR CHARM KIND PAYS MORE PER LEVEL, ON EVERY CELL YOU OWN' },
   { word: 'METER', color: '#ffd23f', text: "YOUR SLOT MACHINE'S BAR: IT FILLS AS YOU SPIN AND PAYS OFF WHEN FULL" },
   { word: 'BUST', color: '#ff8a7a', text: "THE DEALER'S CARD: YOUR BEST REEL'S PAYLINE PAYS NOTHING NEXT SPIN" },
-  { word: 'ALL IN', color: '#ff6a5a', text: "THE DEALER'S BIG HIT: A SHARE OF YOUR MAX HP, THROUGH SHIELDS" },
+  { word: 'ALL IN', color: '#ff6a5a', text: "THE DEALER'S BIG HIT: A SHARE OF YOUR MAX HP THAT PIERCES SHIELDS" },
   { word: 'MARK', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED CELL ON YOUR PAYLINE HITS YOU' },
   { word: 'SLIME', forms: ['SLIMED', 'SLIMES'], color: COLORS.slime, text: 'A SLIMED CELL PAYS NOTHING. A SLIME JACKPOT CLEANSES IT ALL' },
   { word: 'ROCK', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD CELL: IT PAYS NOTHING' },
   { word: 'BOMB', forms: ['BOMBS'], color: '#ff9a3a', text: 'TICKS DOWN, THEN HITS YOU. LAND IT ON YOUR PAYLINE TO DEFUSE IT' },
 ];
 
-/** Every spelling, longest first (so THROUGH SHIELDS wins over SHIELDS). */
+/** Every spelling, longest first (so PIERCES SHIELDS wins over SHIELDS). */
 const FORMS = KEYWORDS.flatMap((k) => [k.word, ...(k.forms ?? [])].map((f) => ({ f, k }))).sort((a, b) => b.f.length - a.f.length);
 const RE = new RegExp(`(?<![A-Z])(${FORMS.map((x) => x.f.replace(/ /g, '\\s')).join('|')})(?![A-Z])`, 'g');
 const byForm = new Map(FORMS.map((x) => [x.f, x.k]));
