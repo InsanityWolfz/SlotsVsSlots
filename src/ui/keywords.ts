@@ -26,6 +26,7 @@ export const KEYWORDS: Keyword[] = [
   { word: 'METER', color: '#ffd23f', text: "YOUR SLOT MACHINE'S BAR: IT FILLS AS YOU SPIN AND PAYS OFF WHEN FULL" },
   { word: 'BUST', color: '#ff8a7a', text: "THE DEALER'S CARD: YOUR BEST REEL'S PAYLINE PAYS NOTHING NEXT SPIN" },
   { word: 'ALL IN', color: '#ff6a5a', text: "THE DEALER'S BIG HIT: A SHARE OF YOUR MAX HP THAT PIERCES SHIELDS" },
+  { word: 'SABOTAGE', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY PUTS ON YOUR REELS: SLIME, ROCKS, BOMBS, FREEZES, JAMS, HEXES, MARKS' },
   { word: 'MARK', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED CELL ON YOUR PAYLINE HITS YOU' },
   { word: 'SLIME', forms: ['SLIMED', 'SLIMES'], color: COLORS.slime, text: 'A SLIMED CELL PAYS NOTHING. A SLIME JACKPOT CLEANSES IT ALL' },
   { word: 'ROCK', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD CELL: IT PAYS NOTHING' },

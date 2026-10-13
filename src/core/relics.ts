@@ -20,7 +20,7 @@ export interface RelicDef {
 export const RELICS: Record<RelicId, RelicDef> = {
   clover: { id: 'clover', name: 'LUCKY CLOVER', text: '30% CHANCE A NEAR-MISS BECOMES A JACKPOT', sprite: 'relicClover' },
   battery: { id: 'battery', name: 'BATTERY', text: 'YOUR METER STARTS EACH FIGHT OVER HALF FULL', sprite: 'relicBattery' },
-  mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS COUNTS AS A PAIR', sprite: 'relicMirror' },
+  mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS COUNT AS A PAIR', sprite: 'relicMirror' },
   fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFFS HEAL 30 MORE', sprite: 'relicFang' },
   bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 60 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
@@ -47,9 +47,9 @@ export const RELICS: Record<RelicId, RelicDef> = {
   livewire: { id: 'livewire', name: 'LIVE WIRE', text: 'LIGHTNING DAMAGE +30%. EACH STORM COSTS 1 HP', sprite: 'relicLivewire', machine: 'tesla' },
   encore: { id: 'encore', name: 'ENCORE', text: 'REFUND 30 TO YOUR JACKPOT METER AFTER IT PAYS', sprite: 'relicEncore', machine: 'joker' },
   wildwheel: { id: 'wildwheel', name: 'WILD WHEEL', text: 'WILD JACKPOTS SPIN TWICE AND KEEP THE BETTER RESULT', sprite: 'relicWildwheel', machine: 'joker' },
-  downpour: { id: 'downpour', name: 'DOWNPOUR', text: 'MAKE IT RAIN CAUSES YOUR NEXT MAKE IT RAIN TO DO X1.4 DAMAGE', sprite: 'relicDownpour', machine: 'midas' },
+  downpour: { id: 'downpour', name: 'DOWNPOUR', text: 'MAKE IT RAIN MAKES YOUR NEXT MAKE IT RAIN PAY X1.4', sprite: 'relicDownpour', machine: 'midas' },
   // CONTENT WAVE 1, part 2.
-  coup: { id: 'coup', name: 'COUP DE GRACE', text: 'SWORDS HIT X2 WHEN THE ENEMY IS UNDER 25% OF YOUR MAX HP', sprite: 'relicCoup', machine: 'knight' },
+  coup: { id: 'coup', name: 'COUP DE GRACE', text: 'SWORDS PAY X2 WHILE YOU HAVE MORE HP LEFT THAN THE ENEMY', sprite: 'relicCoup', machine: 'knight' },
   compound: { id: 'compound', name: 'COMPOUND', text: 'HIGH ROLLER CAP INCREASES TO X4', sprite: 'relicCompound', machine: 'midas' },
   meltdown: { id: 'meltdown', name: 'MELTDOWN', text: 'LIGHTNING DAMAGE +1% FOR EACH HP YOU ARE MISSING (MAX 50%)', sprite: 'relicMeltdown', machine: 'tesla' },
   pulse: { id: 'pulse', name: 'PULSE', text: 'LIGHTNING RESETS THE ENEMY ABILITY COUNTDOWN ONCE PER FIGHT', sprite: 'relicPulse', machine: 'tesla' },
@@ -61,7 +61,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // General.
   underdog: { id: 'underdog', name: 'UNDERDOG', text: 'EVERYTHING PAYS X1.5 WHEN YOU ARE UNDER HALF HP', sprite: 'relicUnderdog' },
   firstblood: { id: 'firstblood', name: 'FIRST BLOOD', text: 'YOUR FIRST PAIR OR JACKPOT PAYS X3', sprite: 'relicFirstblood' },
-  piggy: { id: 'piggy', name: 'PIGGY BANK', text: 'GAIN 1 INTEREST FOR EACH 5 CHIPS YOU HAVE AFTER EACH FIGHT (MAX 4)', sprite: 'relicPiggy' },
+  piggy: { id: 'piggy', name: 'PIGGY BANK', text: 'AFTER EACH FIGHT: +1 CHIP FOR EVERY 5 YOU HOLD (MAX +4)', sprite: 'relicPiggy' },
   trophy: { id: 'trophy', name: 'TROPHY BELT', text: '+10 MAX HP FOR EVERY FIGHT YOU WIN', sprite: 'relicTrophy' },
   holywater: { id: 'holywater', name: 'HOLY WATER', text: 'IGNORE THE FIRST SABOTAGE EACH FIGHT', sprite: 'relicHolywater' },
   // EXPERT_PLAYTEST_10: relics that make a choice (streaky vs steady, turtle-and-counter, keep the liens or pay them).
@@ -127,10 +127,14 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
 };
 /** Machines that attack with something other than swords: relic texts name their symbol instead. */
 const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP', tesla: 'BOLT', jukebox: 'NOTE' };
+const METER_WORD: Partial<Record<CabinetId, string>> = { tesla: 'LIGHTNING', midas: 'HIGH ROLLER', joker: 'JACKPOT METER', jukebox: 'VOLUME' };
 export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
   const t = (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;
   const w = cabinet ? ATTACK_WORD[cabinet] : undefined;
-  return w ? t.replace(/SWORD/g, w) : t;
+  // "YOUR METER" names the machine's own meter (wording pass, user 2026-10-13).
+  const m = cabinet ? METER_WORD[cabinet] : undefined;
+  const named = m ? t.replace(/YOUR METER/g, `YOUR ${m}`) : t;
+  return w ? named.replace(/SWORD/g, w) : named;
 };
 /** Relics that make no sense on a machine even reworded (never offered there). */
 /** Content wave 1: offered in drafts, shops and RELIC RUSH, but not in the starting pick (it keeps each machine's signature relics). */
@@ -166,7 +170,6 @@ export const NEW_RELIC = {
   livewireCost: 1,
   encoreKeep: 0.3,
   downpourStep: 0.4,
-  coupPct: 0.25,
   /** ...the sword multiplier there. */
   coupBossMul: 2,
   compoundCap: 4,

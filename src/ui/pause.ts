@@ -140,7 +140,7 @@ export class Pause {
     KEYWORDS.forEach((k, i) => {
       const col = Math.floor(i / per);
       const x = px + 24 + col * (pw / 2);
-      const y = py + 74 + (i % per) * 68;
+      const y = py + 74 + (i % per) * Math.min(68, (ph - 120) / per);
       drawText(ctx, k.word, x, y, 2, k.color, { align: 'left' });
       const words = k.text.split(' ');
       let line = '';

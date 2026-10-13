@@ -1287,8 +1287,9 @@ export class Fight {
       case 'note':
       case 'ace': {
         // COUP DE GRACE (KNIGHT): swords hit x2 a foe under 25% of YOUR max HP. (An instant finish measured worse.)
-        const coupLine = player && g.symbol === 'sword' && me.relics.has('coup') ? Math.round(me.maxHp * NEW_RELIC.coupPct) : 0;
-        const amount = coupLine && foe.hp <= coupLine ? unitsUp(g.amount * NEW_RELIC.coupBossMul) : g.amount;
+        // COUP DE GRACE (user, 2026-10-13): swords pay x2 while your current HP is higher than the enemy's.
+        const coup = player && g.symbol === 'sword' && me.relics.has('coup') && me.hp > foe.hp;
+        const amount = coup ? unitsUp(g.amount * NEW_RELIC.coupBossMul) : g.amount;
         if (amount !== g.amount) events.push({ type: 'relic', side: me.side, relic: 'coup' });
         // KEEN: a keen sword in the group pierces shields. (An enemy's LATE multiplier is already in its amount.)
         this.hit(me, foe, amount, g.reels, events, !!g.pierce, undefined, true);

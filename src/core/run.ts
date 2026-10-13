@@ -1760,7 +1760,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'sweepUp':
       return { title: 'SWEEP UP', rule: `+${BIG.sweepHeal / 2} MAX HP AND REMOVE ALL ROCKS`, cost: '' };
     case 'glassCannon':
-      return { title: 'GLASS CANNON', rule: `PAIRS AND JACKPOTS PAY X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN ROUNDS' };
+      return { title: 'GLASS CANNON', rule: `PAIRS AND JACKPOTS PAY X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS' };
     case 'bloodPact':
       return hasMeter(run)
         ? { title: 'BLOOD PACT', rule: `YOUR ${meter} FILLS TWICE AS FAST`, cost: pct(run, BIG.bloodPactHp) }
@@ -1768,7 +1768,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'secondWind':
       return { title: 'SECOND WIND', rule: `+${secondWindHp(run)} MAX HP AND +1 LEVEL TO SHIELDS`, cost: '' };
     case 'devilsDue':
-      return { title: "DEVIL'S DUE", rule: `EVERYTHING PAYS X${BIG.devilPay}`, cost: `-${Math.round(BIG.devilDecay * 100)}% MAX HP AFTER EVERY ROUND YOU WIN` };
+      return { title: "DEVIL'S DUE", rule: `EVERYTHING PAYS X${BIG.devilPay}`, cost: `-${Math.round(BIG.devilDecay * 100)}% MAX HP AFTER EVERY FIGHT YOU WIN` };
     case 'allIn':
       return { title: 'GO FOR BROKE', rule: `EVERY SHIELD ON YOUR REELS BECOMES ONE OF YOUR ${atk}`, cost: pct(run, BIG.allInHp) };
     case 'doubleOrNothing':
@@ -1776,9 +1776,9 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'cursedIdol':
       return { title: 'CURSED IDOL', rule: 'PICK A LEGENDARY RELIC', cost: 'EACH REEL GETS A ROCK' };
     case 'quickening':
-      return { title: 'QUICKENING', rule: `YOUR ${meter} STARTS EVERY ROUND FULL`, cost: 'ENEMY ABILITIES CHARGE 1 SPIN FASTER' };
+      return { title: 'QUICKENING', rule: `YOUR ${meter} STARTS EVERY FIGHT FULL`, cost: 'ENEMY ABILITIES CHARGE 1 SPIN FASTER' };
     case 'warded':
-      return { title: 'WARDED', rule: `IGNORE THE FIRST ${BIG.wards} SABOTAGES EACH ROUND`, cost: pct(run, BIG.wardedHp) };
+      return { title: 'WARDED', rule: `IGNORE THE FIRST ${BIG.wards} SABOTAGES EACH FIGHT`, cost: pct(run, BIG.wardedHp) };
     case 'pawnShop':
       return { title: 'PAWN SHOP', rule: `TRADE ${RELICS[c.relic!].name} FOR ${RELICS[c.relic2!].name}`, cost: `${RELICS[c.relic!].name} IS GONE` };
     case 'luckyBreak':
@@ -1811,7 +1811,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'shieldSlam':
       return { title: 'SHIELD SLAM', rule: 'EVERY SHIELD ALSO HITS FOR HALF WHAT IT BLOCKS', cost: '' };
     case 'crusade':
-      return { title: 'CRUSADE', rule: `+${BIG.crusadeStep} DAMAGE TO SWORDS EACH ROUND YOU WIN, FOR THE REST OF THE RUN`, cost: pct(run, BIG.crusadeHp) };
+      return { title: 'CRUSADE', rule: `+${BIG.crusadeStep} DAMAGE TO SWORDS EACH FIGHT YOU WIN, FOR THE REST OF THE RUN`, cost: pct(run, BIG.crusadeHp) };
     case 'squire':
       return { title: 'SQUIRE', rule: `EVERY REEL GETS ${BIG.squireCells} KEEN CHARMS`, cost: '' };
     case 'chainLightning':
@@ -1821,7 +1821,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'supercell':
       return { title: 'SUPERCELL', rule: 'EVERY CHARGED CHARM BECOMES A BLAZE CHARM', cost: 'NO MORE CHARGED CHARMS' };
     case 'stormFront':
-      return { title: 'STORM FRONT', rule: 'EACH ROUND STARTS WITH A LIGHTNING STRIKE', cost: '' };
+      return { title: 'STORM FRONT', rule: 'EACH FIGHT STARTS WITH A LIGHTNING STRIKE', cost: '' };
     case 'groundWire':
       return { title: 'GROUND WIRE', rule: `EACH LIGHTNING STRIKE HEALS ${BIG.groundHeal} HP`, cost: '' };
     case 'jokersReel':
@@ -1853,7 +1853,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'backupDancers':
       return { title: 'BACKUP DANCERS', rule: `+${BIG.dancers} NOTES ON EVERY REEL`, cost: '' };
     case 'trustFund':
-      return { title: 'TRUST FUND', rule: `+${BIG.trustChips} CHIPS AFTER EVERY ROUND YOU WIN`, cost: '' };
+      return { title: 'TRUST FUND', rule: `+${BIG.trustChips} CHIPS AFTER EVERY FIGHT YOU WIN`, cost: '' };
   }
 }
 
