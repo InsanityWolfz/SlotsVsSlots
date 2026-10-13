@@ -199,6 +199,17 @@ describe('fight resolution', () => {
     expect(f.sides.player.reels.every((r) => r.cells.every((c) => !c.slimed))).toBe(true);
   });
 
+  it('player slime pair cleanses the slime on its two reels only', () => {
+    const f = fight();
+    f.sides.player.reels.forEach((r) => r.cells.forEach((c, i) => (c.slimed = i % 2 === 0)));
+    f.forceNext('player', ['slime', 'slime', 'sword']);
+    const [cl] = ofType(f.step().events, 'cleanse');
+    expect(cl).toBeTruthy();
+    const [r1, r2, r3] = f.sides.player.reels;
+    expect([r1, r2].every((r) => r.cells.every((c) => !c.slimed))).toBe(true);
+    expect(r3.cells.some((c) => c.slimed)).toBe(true);
+  });
+
   it('a 0 HP machine falls at the END of the turn: the rest of the turn still resolves first', () => {
     const f = fight((c) => (c.enemy.hp = 30));
     f.forceNext('player', ['sword', 'sword', 'bolt']);

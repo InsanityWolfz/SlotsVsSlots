@@ -28,7 +28,7 @@ export const KEYWORDS: Keyword[] = [
   { word: 'ALL IN', color: '#ff6a5a', text: "THE DEALER'S BIG HIT: A SHARE OF YOUR MAX HP THAT PIERCES SHIELDS" },
   { word: 'SABOTAGE', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY PUTS ON YOUR REELS: SLIME, ROCKS, BOMBS, FREEZES, JAMS, HEXES, MARKS' },
   { word: 'MARK', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED CELL ON YOUR PAYLINE HITS YOU' },
-  { word: 'SLIME', forms: ['SLIMED', 'SLIMES'], color: COLORS.slime, text: 'A SLIMED CELL PAYS NOTHING. A SLIME JACKPOT CLEANSES IT ALL' },
+  { word: 'SLIME', forms: ['SLIMED', 'SLIMES'], color: COLORS.slime, text: 'A SLIMED CELL PAYS NOTHING. A SLIME PAIR CLEANSES ITS REELS; A JACKPOT CLEANSES IT ALL' },
   { word: 'ROCK', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD CELL: IT PAYS NOTHING' },
   { word: 'BOMB', forms: ['BOMBS'], color: '#ff9a3a', text: 'TICKS DOWN, THEN HITS YOU. LAND IT ON YOUR PAYLINE TO DEFUSE IT' },
 ];

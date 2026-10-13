@@ -1367,8 +1367,9 @@ export class Fight {
       this.write(me, foe, g.symbol, g.amount, g.reels, events);
       return;
     }
-    if (g.symbol === 'slime' && g.matched && this.cfg.cleanseOnSlimeTriple && g.reels.length >= 3) {
-      this.cleanse(me, g.reels, events);
+    // A slime jackpot cleanses every slimed cell; a slime pair cleanses the slime on its own reels (user, 2026-10-13).
+    if (g.symbol === 'slime' && g.matched && this.cfg.cleanseOnSlimeTriple && g.reels.length >= 2) {
+      this.cleanse(me, g.reels, events, g.reels.length < 3);
       return;
     }
     // A jackpot of stolen (empty) cells gets EVERYTHING back, the way slime's cleanse does.
@@ -2227,11 +2228,11 @@ export class Fight {
     events.push({ type: 'recover', side: me.side, cells });
   }
 
-  private cleanse(me: Combatant, reels: number[], events: CombatEvent[]): void {
+  private cleanse(me: Combatant, reels: number[], events: CombatEvent[], onlyThese = false): void {
     const cells: CellRef[] = [];
     me.reels.forEach((reel, r) =>
       reel.cells.forEach((cell, i) => {
-        if (!cell.slimed) return;
+        if (!cell.slimed || (onlyThese && !reels.includes(r))) return;
         cell.slimed = false;
         cells.push({ reel: r, index: i });
       }),

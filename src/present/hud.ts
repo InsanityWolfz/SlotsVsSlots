@@ -214,7 +214,9 @@ export class HudView {
   private drawAbility(ctx: CanvasRenderingContext2D, x: number, y: number, time: number): void {
     const ab = this.ability!;
     const ui = ABILITY_UI[ab.kind];
-    const left = ab.every - this.charge;
+    // THE HOUSE cashes out on the turn AFTER its bar fills (cashPending), so it's a turn further off than the pips say:
+    // the count read IN 3, IN 2, NEXT, NEXT (user playtest). Counting that turn: IN 4, IN 3, IN 2, NEXT.
+    const left = ab.every - this.charge + (ab.kind === 'jackpot' ? 1 : 0);
     const imminent = left <= 1 || this.alarm;
     const pulse = imminent ? 0.5 + 0.5 * Math.sin(time * 10) : 0;
     if (this.alarm) x += Math.sin(time * 40) * 2;
