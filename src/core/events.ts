@@ -69,7 +69,8 @@ export type CombatEvent =
       targetShield: number;
       energyLeft: number;
     }
-  | { type: 'heal'; side: SideId; amount: number; hp: number; source: HealSource }
+  /** `parts`: a payoff heal made of several (the meter's own, VAMPIRE FANG, GROUND WIRE), each named for the popup. */
+  | { type: 'heal'; side: SideId; amount: number; hp: number; source: HealSource; parts?: { label: string; amount: number }[] }
   /**
    * A signature meter moved (MIDAS gold bars, JAX's wilds). `armed`: it's full and
    * waiting to pay off; `wasted`: gold bars that landed while it was already full.

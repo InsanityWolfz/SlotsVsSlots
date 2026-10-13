@@ -86,6 +86,9 @@ export const allInRange = (maxHp: number, hand: number, loop = 0): number => {
   return Math.max(UNIT, Math.round((maxHp * share(DEALER_RULES.allInFloor)) / UNIT) * UNIT, Math.min(hand, Math.round((maxHp * share(DEALER_RULES.allInCap)) / UNIT) * UNIT));
 };
 
+/** A meter payoff's heal, named for the popup. */
+const PAYOFF_WORD: Record<string, string> = { special: 'LIGHTNING', vault: 'HIGH ROLLER', volume: 'THE DROP', jackpots: 'JACKPOT' };
+
 /** Counterfeit coins last this many of your turns. */
 const FAKE_TURNS = 3;
 
@@ -1560,11 +1563,16 @@ export class Fight {
   /** Every meter payoff heals (the machine's own heal, plus Vampire Fang). */
   private payoffHeal(me: Combatant, events: CombatEvent[], times = 1): void {
     if (me.side !== 'player' || this.over) return;
-    const heal = (this.meter?.heal ?? 0) * times;
-    if (heal > 0) this.heal(me, heal, 'payoff', events);
-    // GROUND WIRE (big choice): every lightning strike heals more.
-    if (this.special && this.big.strikeHeal && !this.over) this.heal(me, this.big.strikeHeal * times, 'payoff', events);
-    if (!this.over && me.relics.has('fang')) this.heal(me, (this.special ? FANG_TESLA_HEAL : FANG_HEAL) * times, 'fang', events);
+    // One heal, its parts named (user, 2026-10-13: "what's healing me 15?"): the meter's own, GROUND WIRE (big choice:
+    // every lightning strike heals more), VAMPIRE FANG.
+    const parts = [
+      { label: PAYOFF_WORD[this.meter?.kind ?? ''] ?? 'METER', amount: (this.meter?.heal ?? 0) * times },
+      { label: 'GROUND WIRE', amount: this.special ? (this.big.strikeHeal ?? 0) * times : 0 },
+      { label: 'FANG', amount: me.relics.has('fang') ? (this.special ? FANG_TESLA_HEAL : FANG_HEAL) * times : 0 },
+    ].filter((x) => x.amount > 0);
+    if (!parts.length) return;
+    if (me.relics.has('fang')) events.push({ type: 'relic', side: me.side, relic: 'fang' });
+    this.heal(me, parts.reduce((a, x) => a + x.amount, 0), 'payoff', events, parts.length > 1 ? parts : undefined);
   }
 
   /** MIDAS / JAX: fill the signature meter (a full MIDAS / JAX meter locks until it pays off). */
@@ -1730,12 +1738,14 @@ export class Fight {
     if (me.side === 'player' && strikes > 0) this.payoffHeal(me, events, strikes);
   }
 
-  private heal(me: Combatant, amount: number, source: HealSource, events: CombatEvent[]): void {
+  private heal(me: Combatant, amount: number, source: HealSource, events: CombatEvent[], parts?: { label: string; amount: number }[]): void {
+    const full = amount;
     if (me.side === 'player' && this.cfg.player.healMul) amount = Math.max(1, Math.round(amount * this.cfg.player.healMul));
     const n = Math.min(amount, me.maxHp - me.hp);
     if (n > 0) {
       me.hp += n;
-      events.push({ type: 'heal', side: me.side, amount: n, hp: me.hp, source });
+      // (The parts only when they add up to what landed: capped at max HP or halved, they'd read wrong.)
+      events.push({ type: 'heal', side: me.side, amount: n, hp: me.hp, source, ...(parts && n === full ? { parts } : {}) });
     }
     // Blood Chalice: healing past full HP becomes shield.
     const over = amount - Math.max(0, n);

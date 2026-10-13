@@ -143,6 +143,10 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   to paste into a chat for balance checks.
   The main menu's COPY LAST RUN copies the last finished run's text (it survives a refresh; key `slotvslot.lastrun.v1`).
   Beating the Dealer saves the LET IT RIDE / CASH OUT choice: a refresh there CONTINUEs back to it.
+- **Heals explained (user, 2026-10-13):** machine cards name the base payoff heal (TESLA 5 a lightning strike,
+  BANKROLL 20 a full HIGH ROLLER bar, JUKEBOX 20 a DROP; JOKER none). A payoff heal is one number; made of several
+  (the meter's, VAMPIRE FANG, GROUND WIRE) it names each under the HP bar ("+15 LIGHTNING +15 FANG"). A storm's heal
+  is per strike, so a 3-strike storm heals 15 with no relic. COPY RUN lists BONUS WHEEL / RELIC RUSH prizes. No sim change.
 - **Playtest C fixes (2026-10-13):** a refresh between the Dealer win and an ENDLESS bust no longer records the run
   twice (the hiscore entry is found by `run.rideAt`, not held in memory); in a run the small QUIT button is now PAUSE
   (phone had no Escape: GLOSSARY, SETTINGS, QUIT, ABANDON live there); PAUSE takes taps before the boss card, and

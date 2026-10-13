@@ -33,6 +33,8 @@ export function runSummary(run: RunState, version = ''): string {
       r.eliteRelic ? `RELIC ${RELICS[r.eliteRelic]?.name ?? r.eliteRelic}` : '',
       r.bought?.length ? `BOUGHT ${r.bought.map((o) => takenLabel(o)).join(', ')}` : '',
       r.choice ? `CHOICE ${r.choice}` : '',
+      // BONUS WHEEL / RELIC RUSH prizes (a rush relic was missing from the log: user's TESLA run).
+      r.bonuses?.length ? r.bonuses.join(', ') : '',
       r.chips ? `+${r.chips} CHIPS` : '',
     ].filter(Boolean);
     out.push(

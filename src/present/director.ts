@@ -1317,6 +1317,8 @@ export class Director {
     const b = h.hpBar();
     this.s.particles.burst({ x: b.x + b.w * (e.hp / h.maxHp), y: b.y + b.h / 2, count: 16, colors: ['#7dff7a', '#ffffff'], speed: [40, 160], gravity: -200, life: [0.4, 0.7], size: [2, 4] });
     this.bg(this.popText(`+${e.amount}`, b.x + b.w - 30, b.y - 4, 3, '#7dff7a', 20, 0.3));
+    // A heal made of several: what each part was, small, under the number.
+    if (e.parts) this.bg(this.popText(e.parts.map((p) => `+${p.amount} ${p.label}`).join('  '), b.x + b.w / 2, b.y + b.h + 16, 1.5, '#c8f0c8', 12, 0.6));
     this.bg(this.c.to(h, 'ghost', e.hp, 0.3));
     await this.c.to(h, 'hp', e.hp, 0.3, sineOut);
   }

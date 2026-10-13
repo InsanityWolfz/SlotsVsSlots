@@ -157,8 +157,11 @@ describe('relics', () => {
   it('fang heals when the special fires', () => {
     const f = vs({ sword: 12 }, { relics: ['fang'], mut: (c) => (c.player.startHp = 10) });
     f.forceNext('player', ['bolt', 'bolt', 'bolt']);
-    const [h] = ofType(f.step().events, 'heal');
-    expect(h).toMatchObject({ amount: 5, hp: 15, source: 'fang' }); // TESLA's special: FANG_TESLA_HEAL
+    const ev = f.step().events;
+    const [h] = ofType(ev, 'heal');
+    // TESLA's special: FANG_TESLA_HEAL, in the one payoff heal (its parts named when there are several).
+    expect(h).toMatchObject({ amount: 5, hp: 15, source: 'payoff' });
+    expect(ofType(ev, 'relic').some((e) => e.relic === 'fang')).toBe(true);
   });
 
   it('clover sometimes converts a near-miss into a jackpot (and only then)', () => {
@@ -218,13 +221,23 @@ describe('step A quick fixes', () => {
     expect(p.reels.every((r) => r.cells.every((c) => !c.stolen))).toBe(true);
   });
 
-  it('TESLA: one Vampire Fang heal per lightning storm, worth every strike (no heal spam)', () => {
+  it('TESLA: one payoff heal per lightning storm, worth every strike (no heal spam)', () => {
     const f = vs({ sword: 4, shield: 8 }, { relics: ['fang', 'overcharge'], hp: 200 });
     f.sides.player.hp = 5;
     f.forceNext('player', ['bolt', 'bolt', 'bolt']);
     const ev = f.step().events;
-    const heals = ofType(ev, 'heal').filter((e) => e.source === 'fang');
+    const heals = ofType(ev, 'heal').filter((e) => e.source === 'payoff');
     expect(heals).toHaveLength(1);
+    expect(ofType(ev, 'relic').filter((e) => e.relic === 'fang')).toHaveLength(1);
     expect(ofType(ev, 'specialFire').length).toBeGreaterThan(0);
+  });
+
+  it('a payoff heal of several parts names each (the meter, FANG, GROUND WIRE)', () => {
+    const f = vs({ sword: 4, shield: 8 }, { relics: ['fang'], hp: 400, mut: (c) => (c.cabinet = 'tesla') });
+    f.sides.player.hp = 5;
+    f.forceNext('player', ['bolt', 'bolt', 'bolt']);
+    const [h] = ofType(f.step().events, 'heal').filter((e) => e.source === 'payoff');
+    expect(h.parts?.map((p) => p.label)).toEqual(['LIGHTNING', 'FANG']);
+    expect(h.parts!.reduce((a, p) => a + p.amount, 0)).toBe(h.amount);
   });
 });
