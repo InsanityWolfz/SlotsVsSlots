@@ -53,6 +53,7 @@ import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
 import { Background } from './render/background';
 import { drawSprite, spriteSize, type SpriteId, artId } from './render/sprites';
 import { bossRules } from './ui/bossRules';
+import { runSummary } from './core/runLog';
 import { drawRich } from './ui/keywords';
 import { drawText, fmtNum } from './render/text';
 import { Button } from './ui/button';
@@ -213,6 +214,9 @@ function load<T>(key: string): T | null {
   }
 }
 
+/** The last finished run's COPY RUN text (a new key; the save keys are never renamed). */
+const LASTRUN_KEY = 'slotvslot.lastrun.v1';
+
 function save(key: string, v: unknown): void {
   try {
     const prev = localStorage.getItem(key);
@@ -347,6 +351,13 @@ export class Game {
       muted: () => this.prefs.muted,
       setMuted: (on) => this.setMuted(on),
       savedRun: () => this.savedRunLabel(),
+      lastRun: () => {
+        try {
+          return localStorage.getItem(LASTRUN_KEY);
+        } catch {
+          return null;
+        }
+      },
       onContinue: () => this.continueRun(),
       setting: (k) => this.setting(k),
       setSetting: (k, v) => this.setSetting(k, v),
@@ -368,7 +379,11 @@ export class Game {
       },
       onEncounterDone: () => this.advance(),
       // After the first run: offer the (optional) leaderboard name on the way out of the run-over screen.
-      onNewRun: () => this.afterNamePrompt(() => this.chooseCabinet()),
+      // (CASH OUT / NEW RUN from the run-over screen: the Dealer's saved LET IT RIDE choice is spent.)
+      onNewRun: () => {
+        if (this.phase === 'over') clearRunSave();
+        this.afterNamePrompt(() => this.chooseCabinet());
+      },
       onMenu: () => this.afterNamePrompt(() => this.showMenu()),
       onLetItRide: () => this.letItRide(),
       onWheelCollect: (o) => {
@@ -481,6 +496,12 @@ export class Game {
   /** The hiscore entry of a Dealer win you LET RIDE (endless updates it instead of adding a second one). */
   private rideEntry: ReturnType<typeof runEntry> | null = null;
   private recordRun(run: RunState): void {
+    // COPY LAST RUN (main menu): the finished run's text survives a refresh.
+    try {
+      localStorage.setItem(LASTRUN_KEY, runSummary(run, VERSION));
+    } catch {
+      /* private mode / full storage: the run-over screen's COPY RUN still works */
+    }
     if (run.endless && this.rideEntry) {
       const prev = runScore(this.rideEntry);
       Object.assign(this.rideEntry, runEntry(run, this.rideEntry.at, !!run.tutorial), { won: true });
@@ -773,11 +794,11 @@ export class Game {
     save(RUN_KEY, { v: 1, at, version: VERSION, run });
   }
 
-  private loadRunSave(): { at: 'next' | 'after' | 'fight'; run: RunState } | null {
+  private loadRunSave(): { at: 'next' | 'after' | 'fight' | 'ride'; run: RunState } | null {
     const s = load<{ v?: number; at?: string; run?: RunState }>(RUN_KEY);
     const run = s?.run;
     if (!s || s.v !== 1 || !run || typeof run.seed !== 'number' || !run.player || !run.map || !Array.isArray(run.map.routes) || !Array.isArray(run.records)) return null;
-    if (!(ALL_CABINETS as string[]).includes(run.cabinet) || run.over) return null;
+    if (!(ALL_CABINETS as string[]).includes(run.cabinet) || (run.over && s.at !== 'ride')) return null;
     // A game update may have removed a relic or Charm the save still holds (STEAM_QA_1 Q5): drop what no longer exists.
     if (Array.isArray(run.player.relics)) run.player.relics = run.player.relics.filter((r) => r in RELICS);
     if (Array.isArray(run.player.gilded)) run.player.gilded = run.player.gilded.filter((g) => g && g.enh in CHARM_VALUE);
@@ -788,7 +809,7 @@ export class Game {
     delete old.bets;
     // THE WHEEL replaced THE MIRROR (2026-10-09): a save holding the old act 2 boss meets the new one.
     migrateRun(run);
-    return { at: s.at === 'after' ? 'after' : s.at === 'fight' ? 'fight' : 'next', run };
+    return { at: s.at === 'after' ? 'after' : s.at === 'fight' ? 'fight' : s.at === 'ride' ? 'ride' : 'next', run };
   }
 
   private savedRunLabel(): string | null {
@@ -817,6 +838,13 @@ export class Game {
     this.token++;
     this.synth.stopLoops();
     this.recap.hide();
+    // Back at the Dealer's LET IT RIDE / CASH OUT (the run was already recorded when it was won).
+    if (s.at === 'ride') {
+      this.phase = 'over';
+      this.screens.showOver(this.run);
+      this.syncButtons();
+      return;
+    }
     this.newFight(false, null, fightConfig(this.run, this.cfg), true);
     this.phase = 'between';
     const last = this.run.records[this.run.records.length - 1];
@@ -926,6 +954,8 @@ export class Game {
     this.phase = run.over ? 'over' : 'between';
     if (run.over) {
       clearRunSave();
+      // Beat the Dealer: the LET IT RIDE / CASH OUT choice is saved, so a refresh there comes back to it (playtest).
+      if (run.won && run.act >= 3 && !run.endless) save(RUN_KEY, { v: 1, at: 'ride', version: VERSION, run });
       this.noteDiscoveries();
       this.recordRun(run);
       this.skipTutorial();

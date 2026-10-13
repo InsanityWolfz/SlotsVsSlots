@@ -154,6 +154,8 @@ export class Menus {
       setMuted: (on: boolean) => void;
       /** A run saved mid-way (its short label), or null. */
       savedRun: () => string | null;
+      /** The last finished run's COPY RUN text, if any. */
+      lastRun: () => string | null;
       onContinue: () => void;
       setting: (k: SettingKey) => number | boolean;
       setSetting: (k: SettingKey, v: number | boolean) => void;
@@ -253,6 +255,17 @@ export class Menus {
     this.icons.set(this.btn('HISCORES', x, y + 132, 400, 54, () => this.showHiscores(), 3), 'iconHiscores');
     const settings = this.btn('SETTINGS', W - 90, H - 30, 150, 34, () => this.showSettings(), 1.5);
     settings.opts.quiet = true;
+    // COPY LAST RUN: the finished run's text, for a balance check in a chat (it survives a refresh).
+    const last = this.cb.lastRun();
+    if (last) {
+      const copy = this.btn('COPY LAST RUN', W - 270, H - 30, 190, 34, () => {
+        void navigator.clipboard?.writeText(last).then(
+          () => (copy.label = 'COPIED!'),
+          () => (copy.label = 'COPY FAILED'),
+        );
+      }, 1.5);
+      copy.opts.quiet = true;
+    }
     // Desktop: a way out (STEAM_READINESS S5). Browsers close the tab.
     if (DESKTOP) this.btn('QUIT', 70, H - 56, 100, 34, () => desktop()?.quit(), 1.5).opts.quiet = true;
     this.slideIn();
