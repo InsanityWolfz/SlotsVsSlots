@@ -216,13 +216,10 @@ export interface BigMods {
   startFull?: boolean;
   /** WARDED: this many sabotages a fight wash off. */
   wards?: number;
-  /** THE JUKEBOX: HEADLINER (THE DROP hits this much harder; the volume max is volumeMax), FEEDBACK (no skips; THE DROP
-   * leaves the volume at dropTo), HYPE MAN (+1 volume at every spin's start; notes pay half off the drop), ENCORE
+  /** THE JUKEBOX: HEADLINER (THE DROP hits this much harder; the volume max is volumeMax), HYPE MAN (+1 volume at every spin's start; notes pay half off the drop), ENCORE
    * (THE DROP plays twice in a row). */
   dropMul?: number;
   volumeMax?: number;
-  noSkip?: boolean;
-  dropTo?: number;
   hype?: boolean;
   encoreDrop?: boolean;
 }

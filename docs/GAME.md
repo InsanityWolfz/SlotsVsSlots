@@ -144,6 +144,7 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   to paste into a chat for balance checks.
   The main menu's COPY LAST RUN copies the last finished run's text (it survives a refresh; key `slotvslot.lastrun.v1`).
   Beating the Dealer saves the LET IT RIDE / CASH OUT choice: a refresh there CONTINUEs back to it.
+- **FEEDBACK is gone (user, 2026-10-13):** MIXTAPE already keeps the record from skipping. JUKEBOX WHITE 68 -> 67, GREEN 36.
 - **The rooms (user, 2026-10-13):** `src/render/rooms.ts` draws each act as a place, in chunky pixels (320x180 x4):
   act 1 a back-alley den (bricks, a swaying bulb), act 2 the casino floor (neon signs, a row of slot machines,
   casino carpet), act 3 the VIP room (curtains, chandeliers); ENDLESS goes round them, darker and more gold each loop.

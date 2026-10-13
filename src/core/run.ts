@@ -656,6 +656,11 @@ export function migrateRun(run: RunState): RunState {
   };
   if (run.map?.boss) run.map.boss = fix(run.map.boss)!;
   if (Array.isArray(run.enemies)) run.enemies = run.enemies.map((e) => fix(e)!);
+  // FEEDBACK is gone (user, 2026-10-13: MIXTAPE already keeps the record from skipping): a save offering it drops it.
+  const gone = (c: { id: string }) => c.id !== 'feedback';
+  if (Array.isArray(run.pendingChoice)) run.pendingChoice = run.pendingChoice.filter(gone);
+  if (Array.isArray(run.choiceQueue)) run.choiceQueue = run.choiceQueue.map((q) => q.filter(gone)).filter((q) => q.length);
+  if (run.pendingChoice && !run.pendingChoice.length) run.pendingChoice = run.choiceQueue?.shift() ?? null;
   return run;
 }
 
@@ -1601,7 +1606,7 @@ export type BigChoiceId =
   | 'chainLightning' | 'madScience' | 'supercell' | 'stormFront' | 'groundWire'
   | 'jokersReel' | 'doubleFeature' | 'highCard' | 'cardShark' | 'trumpCard'
   | 'noLimit' | 'openBar' | 'heist' | 'monsoon' | 'trustFund'
-  | 'headliner' | 'feedback' | 'hypeMan' | 'encoreDrop' | 'backupDancers';
+  | 'headliner' | 'hypeMan' | 'encoreDrop' | 'backupDancers';
 /** HOUSE EDGES: endless-mode rules you take on, each paying a reward. */
 export type EdgeId = 'fast' | 'marked' | 'heal' | 'rollers' | 'nocomps' | 'frail';
 export const EDGES: EdgeId[] = ['fast', 'marked', 'heal', 'rollers', 'nocomps', 'frail'];
@@ -1645,7 +1650,7 @@ export const BIG = {
   armsRaceHp: 0.15, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.2, gildLotCells: 3, glassPay: 1.5,
   devilPay: 1.75, devilDecay: 0.08, allInHp: 0.2, allInShare: 0.5, wardedHp: 0.15, wards: 3, houseMoney: 40, heist: 30, heistHp: 0.3, crusadeStep: 5, crusadeHp: 0.2,
   chainHp: 0.3, madMul: 2, madCost: 0.05, groundHeal: 5, jokerHp: 0.5, featureHp: 0.2, noLimitHp: 0.25, monsoonCost: 10, trustChips: 2,
-  convertHp: 0.15, highCardMul: 1.5, headlinerMul: 2, headlinerMax: 8, feedbackTo: 1, encoreHp: 0.25, dancers: 2, fourLeafHp: 0.2, shieldWallKeep: 0.3, slamShare: 0.5, squireCells: 2, sharkWilds: 2, quickeningHp: 0,
+  convertHp: 0.15, highCardMul: 1.5, headlinerMul: 2, headlinerMax: 8, encoreHp: 0.25, dancers: 2, fourLeafHp: 0.2, shieldWallKeep: 0.3, slamShare: 0.5, squireCells: 2, sharkWilds: 2, quickeningHp: 0,
 };
 
 /** One card of the pool: who it's for and when it shows up. */
@@ -1724,7 +1729,6 @@ export const BIG_CARDS: BigCard[] = [
   { id: 'trustFund', slot: 'machine', machine: 'midas' },
   // DJ DECIBEL
   { id: 'headliner', slot: 'machine', machine: 'jukebox' },
-  { id: 'feedback', slot: 'machine', machine: 'jukebox' },
   { id: 'hypeMan', slot: 'machine', machine: 'jukebox' },
   { id: 'encoreDrop', slot: 'machine', machine: 'jukebox' },
   { id: 'backupDancers', slot: 'machine', machine: 'jukebox' },
@@ -1857,8 +1861,6 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
       return { title: 'MONSOON', rule: 'CHIP PAIRS CAUSE MAKE IT RAIN AT FULL DAMAGE', cost: `MAKE IT RAIN COSTS ${BIG.monsoonCost} CHIPS` };
     case 'headliner':
       return { title: 'HEADLINER', rule: `THE DROP HITS X${BIG.headlinerMul}`, cost: `THE VOLUME MAX GOES UP TO ${BIG.headlinerMax}` };
-    case 'feedback':
-      return { title: 'FEEDBACK', rule: 'THE RECORD NEVER SKIPS', cost: `THE DROP RESETS THE VOLUME TO ${BIG.feedbackTo}` };
     case 'hypeMan':
       return { title: 'HYPE MAN', rule: '+1 VOLUME BEFORE EVERY OTHER SPIN', cost: 'NOTES PAY HALF WHEN IT ISN\'T THE DROP' };
     case 'encoreDrop':
@@ -2268,10 +2270,6 @@ function takeChoiceInner(run: RunState, c: BigChoice): void {
     case 'headliner':
       big.dropMul = BIG.headlinerMul;
       big.volumeMax = BIG.headlinerMax;
-      break;
-    case 'feedback':
-      big.noSkip = true;
-      big.dropTo = BIG.feedbackTo;
       break;
     case 'hypeMan':
       big.hype = true;

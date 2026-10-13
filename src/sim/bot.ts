@@ -287,7 +287,6 @@ function choiceValueBase(run: RunState, c: BigChoice): number {
     case 'headliner':
     case 'encoreDrop':
       return 7;
-    case 'feedback':
     case 'hypeMan':
     case 'backupDancers':
       return 6;

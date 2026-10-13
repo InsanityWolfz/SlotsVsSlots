@@ -1287,12 +1287,11 @@ export class RunScreens {
         tag(ch.id === 'highCard' ? 'X2' : 'PIERCE', x + s * 8, y + 30, ch.id === 'highCard' ? COLORS.goldLight : LV, 2.5);
         break;
       case 'headliner':
-      case 'feedback':
       case 'hypeMan':
       case 'encoreDrop':
       case 'backupDancers':
         drawSprite(ctx, 'note' as SpriteId, x, y - 6, s);
-        tag(ch.id === 'headliner' ? 'X2' : ch.id === 'feedback' ? 'HOLD' : ch.id === 'hypeMan' ? '+1' : ch.id === 'encoreDrop' ? 'AGAIN' : `+${BIG.dancers}`, x + s * 8, y + 30, '#5ad8e8', 2.5);
+        tag(ch.id === 'headliner' ? 'X2' : ch.id === 'hypeMan' ? '+1' : ch.id === 'encoreDrop' ? 'AGAIN' : `+${BIG.dancers}`, x + s * 8, y + 30, '#5ad8e8', 2.5);
         break;
       case 'noLimit':
       case 'openBar':

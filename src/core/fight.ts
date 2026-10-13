@@ -1441,8 +1441,7 @@ export class Fight {
       else {
         this.encorePending = false;
         me.armed = false;
-        // TURNTABLE wins over FEEDBACK's reset.
-        me.energy = (me.relics.has('turntable') ? VOLUME.turntable : this.big.dropTo ?? VOLUME.after) * UNIT;
+        me.energy = (me.relics.has('turntable') ? VOLUME.turntable : VOLUME.after) * UNIT;
         if (me.relics.has('turntable')) events.push({ type: 'relic', side: me.side, relic: 'turntable' });
       }
       events.push({ type: 'payoff', side: me.side, kind: 'volume', left: me.energy });
@@ -1453,7 +1452,7 @@ export class Fight {
     const noteGroups = score.groups.filter((g) => g.symbol === 'note');
     const reels = line.flatMap((s, r) => (s === 'note' || (s === 'wild' && noteGroups.some((g) => g.reels.includes(r))) ? [r] : []));
     if (reels.length) this.turnUp(me, reels.length, reels, events);
-    else if (me.energy > 0 && !me.armed && !this.big.noSkip && !me.relics.has('mixtape')) {
+    else if (me.energy > 0 && !me.armed && !me.relics.has('mixtape')) {
       // The record skips.
       const drop = Math.min(me.energy, VOLUME.skip * UNIT);
       me.energy -= drop;
