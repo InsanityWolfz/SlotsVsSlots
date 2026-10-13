@@ -1,4 +1,5 @@
 import { COLORS, H, W } from '../present/layout';
+import { Rooms, type Scene } from './rooms';
 import { drawText } from './text';
 
 interface Mote {
@@ -10,9 +11,12 @@ interface Mote {
   a: number;
 }
 
-/** Idle-state ambient juice (juice §9): drifting gradient, vignette, motes, marquee chase lights. */
+/** Idle-state ambient juice (juice §9): the room (rooms.ts), drifting motes, vignette, marquee chase lights. */
 export class Background {
   private motes: Mote[] = [];
+  readonly rooms = new Rooms();
+  /** Where we are: set by the game every frame (the act's room, the boss, the loop, your HP). */
+  scene: Scene = { room: 'floor', boss: null, loop: 0, hp: 1, fight: false };
   private vignette: HTMLCanvasElement;
 
   constructor() {
@@ -33,6 +37,7 @@ export class Background {
   }
 
   update(dt: number): void {
+    this.rooms.update(dt);
     for (const m of this.motes) {
       m.y += m.vy * dt;
       m.x += m.vx * dt;
@@ -42,30 +47,9 @@ export class Background {
 
   draw(ctx: CanvasRenderingContext2D, time: number): void {
     const pad = 40;
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, COLORS.bgTop);
-    g.addColorStop(1, COLORS.bgBottom);
-    ctx.fillStyle = g;
+    ctx.fillStyle = COLORS.bgBottom;
     ctx.fillRect(-pad, -pad, W + pad * 2, H + pad * 2);
-
-    // Slow light drift: two soft blobs wandering.
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    for (const [i, col] of ['rgba(120,60,200,0.10)', 'rgba(200,80,140,0.07)'].entries()) {
-      const x = W / 2 + Math.sin(time * 0.13 + i * 2) * W * 0.35;
-      const y = H / 2 + Math.cos(time * 0.09 + i) * H * 0.3;
-      const rg = ctx.createRadialGradient(x, y, 0, x, y, 420);
-      rg.addColorStop(0, col);
-      rg.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = rg;
-      ctx.fillRect(-pad, -pad, W + pad * 2, H + pad * 2);
-    }
-    ctx.restore();
-
-    // Pixel floor grid for depth.
-    ctx.fillStyle = 'rgba(255,255,255,0.025)';
-    for (let x = 0; x < W; x += 32) ctx.fillRect(x, 0, 1, H);
-    for (let y = 0; y < H; y += 32) ctx.fillRect(0, y, W, 1);
+    this.rooms.draw(ctx, this.scene, time);
 
     for (const m of this.motes) {
       ctx.globalAlpha = m.a * (0.6 + 0.4 * Math.sin(time * 2 + m.x));

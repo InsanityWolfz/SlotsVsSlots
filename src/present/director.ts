@@ -692,6 +692,7 @@ export class Director {
       return;
     }
 
+    if (tier === 'triple') this.s.cheer?.(side === 'player');
     // Per-symbol glow + punch along the matched run, 60ms apart, with ascending dings.
     for (const [i, r] of matched!.reels.entries()) {
       const fx = m.reels[r].rows[1];
@@ -1537,6 +1538,7 @@ export class Director {
       return;
     }
     g.pot = e.amount + e.potLeft;
+    this.s.cheer?.(playerWins);
     const big = Math.min(1, e.amount / (15 * UNIT));
     if (e.amount >= 8 * UNIT || playerWins) this.s.sounds.fanfareJackpot();
     else this.s.sounds.stingerMedium();

@@ -144,6 +144,12 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   to paste into a chat for balance checks.
   The main menu's COPY LAST RUN copies the last finished run's text (it survives a refresh; key `slotvslot.lastrun.v1`).
   Beating the Dealer saves the LET IT RIDE / CASH OUT choice: a refresh there CONTINUEs back to it.
+- **The rooms (user, 2026-10-13):** `src/render/rooms.ts` draws each act as a place, in chunky pixels (320x180 x4):
+  act 1 a back-alley den (bricks, a swaying bulb), act 2 the casino floor (neon signs, a row of slot machines,
+  casino carpet), act 3 the VIP room (curtains, chandeliers); ENDLESS goes round them, darker and more gold each loop.
+  Boss set pieces: the House's vault door, THE WHEEL's giant wheel, the Dealer's lamp and felt table. Reactions: the
+  lights chase and a corner crowd jumps on your jackpots (theirs tints the room red); a slow red edge pulse under 30%
+  HP. Tints stay under 0.1 (no flashes).
 - **GO FOR BROKE converts half the shields (user, 2026-10-13),** rounded down on each reel, not all: all of them made
   one-symbol reels, every spin a jackpot (a friend's JUKEBOX won acts 2-3 in 1 spin). GREEN, 1500 runs, taking it vs
   not: TESLA 75% -> 55% (40% without), JUKEBOX 56% -> 40% (34%); run win TESLA GREEN 42 -> 40, the rest +-1.

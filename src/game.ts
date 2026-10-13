@@ -5,6 +5,7 @@ import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
 import { TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { allInRange, DEALER_HANDS, DEALER_RULES, Fight, highRollerMul } from './core/fight';
+import { roomFor, type Scene } from './render/rooms';
 import { dailyCabinet, dailyKey, dailySeed, dailySpent } from './core/daily';
 import { turnRow, type TurnRow } from './core/log';
 import { RELICS } from './core/relics';
@@ -1162,6 +1163,7 @@ export class Game {
       machines,
       huds,
       juice: this.prefs.juice,
+      cheer: (ours) => this.background.rooms.cheer(ours),
       relics: [...cfg.relics],
       relicPops: {},
       relicFeed: [],
@@ -1595,6 +1597,7 @@ export class Game {
     this.syncOoze();
     ctx.save();
     this.camera.apply(ctx);
+    this.background.scene = this.sceneNow();
     this.background.draw(ctx, t);
     if (this.camera.dim > 0.001) {
       ctx.fillStyle = `rgba(0,0,0,${this.camera.dim})`;
@@ -1963,6 +1966,22 @@ export class Game {
     ctx.fillStyle = '#3a2e52';
     ctx.fillRect(hx - 10, HUD_TOP + 4, 20, 18);
     drawText(ctx, '?', hx, HUD_TOP + 13, 2, COLORS.goldLight);
+  }
+
+  /** THE ROOMS: where the fight is (the act's room, the boss's set piece, the loop, your HP). Menus: the casino floor. */
+  private sceneNow(): Scene {
+    const run = this.run;
+    const inRun = !!run && !this.menus.isOpen && this.phase !== 'title';
+    const fight = inRun && (this.phase === 'fighting' || this.phase === 'recap');
+    const boss = this.fight.cfg.enemy.boss;
+    const p = this.fight.sides.player;
+    return {
+      room: inRun ? roomFor(run!.act, run!.endless?.loop ?? 0) : 'floor',
+      boss: fight && (boss === 'house' || boss === 'wheel' || boss === 'dealer') ? boss : null,
+      loop: inRun ? (run!.endless?.loop ?? 0) : 0,
+      hp: fight && p.maxHp > 0 ? Math.max(0, p.hp) / p.maxHp : 1,
+      fight,
+    };
   }
 
   /** The boss's rules (bossRules.ts), over the paused fight. */

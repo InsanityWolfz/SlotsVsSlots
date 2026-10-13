@@ -49,6 +49,8 @@ export interface Stage {
   machines: Record<SideId, MachineView>;
   huds: Record<SideId, HudView>;
   juice: JuiceToggles;
+  /** THE ROOMS react to a jackpot: yours cheers the crowd (gold), theirs makes the room wince (red). */
+  cheer?: (ours: boolean) => void;
   /** Shown in the center gutter. */
   gutter: {
     turn: number;
