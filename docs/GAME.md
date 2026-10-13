@@ -147,7 +147,7 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   never after encounters); relics name your meter (LIGHTNING, VOLUME, JACKPOT METER, HIGH ROLLER), not YOUR METER;
   PAYS XN for multipliers, HITS FOR N for flat damage; SABOTAGE is a keyword. COUP DE GRACE: swords pay x2 while your
   current HP is higher than the enemy's (KNIGHT WHITE 67 -> 66, GREEN 35 -> 34: noise).
-  BANKROLL's card calls its symbol CHIP (it said GOLD BARS) and says chips hit, win chips and fill HIGH ROLLER.
+  Machine cards are a short gist, not exact numbers (user): BANKROLL's says chips hit, win chips, hit harder the more you hold, and jackpots make it rain.
 - **Keywords (user, 2026-10-12):** 17 keywords (PAYLINE, PAIR, JACKPOT, WILD, SHIELD, PIERCE, HEAL, CHARM,
   LEVEL, METER, BUST, ALL IN, SABOTAGE, MARK, SLIME, ROCK, BOMB) each have one colour, drawn wherever they appear on draft cards,
   big choices, Cashier and relic tips and boss rules (`src/ui/keywords.ts`, drawRich). Hovering a draft card lists its
