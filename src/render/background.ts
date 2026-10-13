@@ -16,7 +16,7 @@ export class Background {
   private motes: Mote[] = [];
   readonly rooms = new Rooms();
   /** Where we are: set by the game every frame (the act's room, the boss, the loop, your HP). */
-  scene: Scene = { room: 'floor', boss: null, loop: 0, hp: 1, fight: false };
+  scene: Scene = { room: 'floor', boss: null, loop: 0, hp: 1, foeHp: 1, turn: null, fight: false };
   private vignette: HTMLCanvasElement;
 
   constructor() {

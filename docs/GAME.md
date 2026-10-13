@@ -145,15 +145,21 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   The main menu's COPY LAST RUN copies the last finished run's text (it survives a refresh; key `slotvslot.lastrun.v1`).
   Beating the Dealer saves the LET IT RIDE / CASH OUT choice: a refresh there CONTINUEs back to it.
 - **FEEDBACK is gone (user, 2026-10-13):** MIXTAPE already keeps the record from skipping. JUKEBOX WHITE 68 -> 67, GREEN 36.
-- **The rooms (user, 2026-10-13; v2 after the playtesters loved v1):** `src/render/rooms.ts`, chunky pixels (320x180
-  x4). Act 1 THE ALLEY (rain and puddle rings, laundry on a line, a cat on the dumpster, a doorman smoking by the DEN
-  door, steam from a grate, a swaying bulb), act 2 THE FLOOR (vertical neon CASINO / LUCKY 7, a 777 JACKPOT sign with
-  chase bulbs, gamblers pulling levers, a waitress crossing, searchlights), act 3 THE VIP ROOM (curtains, marble
-  pillars, a grand chandelier, a champagne tower, a piano, velvet ropes, gold dust); ENDLESS goes round them, darker
-  and more gold each loop. Bosses take the open column between the HUDs: the House's vault door, THE WHEEL's wheel
-  and ball, the Dealer's lamp and felt. The room stays behind the Cashier, the encounters and the drafts (dimmed).
-  Your jackpot: lights chase, the corner crowd jumps, confetti; theirs: a red cast; under 30% HP a red edge pulse.
-  Tints stay under 0.1 (no flashes).
+- **The rooms (user, 2026-10-13; v2 and v3 after the playtesters loved v1):** `src/render/rooms.ts`, chunky pixels
+  (320x180 x4), drawn where the fight leaves the screen open (the side strips, the column between the HUDs, the
+  floor), with a quiet zone (a shadow pool) behind the turn text. Act 1 THE ALLEY: rain and puddle rings, pigeons on
+  the laundry line (they scatter on your jackpot), a cat (it leaps up the fire escape), a doorman and the DEN door (the
+  peephole slides; it swings open on your jackpot), the DEN neon in a puddle, window tenants, a rat, a gutter, a
+  bookie's board, car headlights. Act 2 THE FLOOR: vertical neon CASINO / LUCKY 7, a neon cowboy waving (no words:
+  a 777 JACKPOT sign read as UI), camera domes that turn to whoever spins, gamblers with stories (coins spill; a sore
+  loser bonks his machine), a waitress (drops her tray on their jackpot), balloons on yours. Act 3 THE VIP ROOM: a
+  three-tier chandelier (it swings on your jackpot), portraits of the House and THE WHEEL whose eyes follow the play
+  (a boss's own frame is empty in its fight), Slot Machines under glass, a pianist, a champagne tower that fills on
+  your jackpot, velvet ropes, cigar haze. ENDLESS goes round them, darker and more gold each loop. Bosses take the
+  column: the House's vault (loses rivets with its HP, ajar under 30%; guards; gold on the floor), THE WHEEL's table
+  at an angle with its croupier, the Dealer in person behind his felt. The corner crowd dresses for the room: your
+  jackpot they jump, theirs hands on heads; under 30% HP one can't look. The room stays behind the Cashier, the
+  encounters and the drafts (dimmed). Tints stay under 0.1 (no flashes).
 - **GO FOR BROKE converts half the shields (user, 2026-10-13),** rounded down on each reel, not all: all of them made
   one-symbol reels, every spin a jackpot (a friend's JUKEBOX won acts 2-3 in 1 spin). GREEN, 1500 runs, taking it vs
   not: TESLA 75% -> 55% (40% without), JUKEBOX 56% -> 40% (34%); run win TESLA GREEN 42 -> 40, the rest +-1.

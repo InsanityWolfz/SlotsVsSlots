@@ -2154,7 +2154,7 @@ export class RunScreens {
     if (this.roomBackdrop && this.mode !== 'cabinet') {
       drawBackdrop(ctx);
       this.roomBackdrop(ctx, time);
-      ctx.fillStyle = 'rgba(6,3,12,0.5)';
+      ctx.fillStyle = 'rgba(6,3,12,0.58)';
       ctx.fillRect(0, 0, W, H);
     } else drawBackdrop(ctx);
     ctx.restore();

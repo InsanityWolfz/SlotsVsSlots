@@ -1977,11 +1977,14 @@ export class Game {
     const fight = !this.menus.isOpen && (this.phase === 'fighting' || this.phase === 'recap');
     const boss = this.fight.cfg.enemy.boss;
     const p = this.fight.sides.player;
+    const e = this.fight.sides.enemy;
     return {
       room: inRun ? roomFor(run!.act, run!.endless?.loop ?? 0) : 'floor',
       boss: fight && (boss === 'house' || boss === 'wheel' || boss === 'dealer') ? boss : null,
       loop: inRun ? (run!.endless?.loop ?? 0) : 0,
       hp: fight && p.maxHp > 0 ? Math.max(0, p.hp) / p.maxHp : 1,
+      foeHp: fight && e.maxHp > 0 ? Math.max(0, e.hp) / e.maxHp : 1,
+      turn: fight ? this.stage.gutter.side : null,
       fight,
     };
   }
