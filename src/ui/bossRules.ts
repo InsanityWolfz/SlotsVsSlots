@@ -22,17 +22,24 @@ export interface BossRuleContext {
   houseEvery: number;
   /** ENDLESS: the loop (the Dealer's ALL IN grows with it). */
   loop?: number;
+  /** THE DEALER: its BUST clock in hand 1 (FAST HANDS, QUICKENING and the stakes speed it up; the same cut runs in every hand). */
+  dealerEvery?: number;
 }
 
 export function bossRules(boss: string, c: BossRuleContext): BossRules {
   if (boss === 'dealer') {
     const k = 1 + DEALER_RULES.loopStep * (c.loop ?? 0);
     const pct = (x: number) => Math.round(Math.min(DEALER_RULES.loopMax, x * k) * 100);
+    const cut = DEALER_RULES.bustEvery - (c.dealerEvery ?? DEALER_RULES.bustEvery);
+    const bust = Math.max(2, DEALER_RULES.bustEvery - cut);
+    const allIn = Math.max(2, DEALER_RULES.allInEvery - cut);
+    const lo = pct(DEALER_RULES.allInFloor);
+    const hi = pct(DEALER_RULES.allInCap);
     return {
       rules: [
-        { icon: artId('dealCut'), text: `HAND 1: EVERY ${DEALER_RULES.bustEvery} TURNS A BUST. YOUR BEST REEL PAYS NOTHING NEXT SPIN` },
+        { icon: artId('dealCut'), text: `HAND 1: EVERY ${bust} TURNS A BUST. YOUR BEST REEL PAYS NOTHING NEXT SPIN` },
         { icon: artId('dealRaise'), text: `HAND 2: ITS HITS ARE X${DEALER_RULES.raiseMul}. STILL BUSTS` },
-        { icon: artId('dealShuffle'), text: `HAND 3: EVERY ${DEALER_RULES.allInEvery} TURNS ALL IN, ${pct(DEALER_RULES.allInFloor)}-${pct(DEALER_RULES.allInCap)}% OF YOUR MAX HP. IT PIERCES SHIELDS` },
+        { icon: artId('dealShuffle'), text: `HAND 3: EVERY ${allIn} TURNS ALL IN, ${lo === hi ? lo : `${lo}-${hi}`}% OF YOUR MAX HP. IT PIERCES SHIELDS` },
       ],
       win: 'EACH HAND HAS ITS OWN HP BAR. BEAT ALL THREE',
     };

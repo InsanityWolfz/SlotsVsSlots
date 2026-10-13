@@ -201,7 +201,7 @@ export class Director {
         this.s.sounds.stingerMedium();
         this.s.gutter.allInCap = e.cap;
         this.s.gutter.allInFloor = e.floor;
-        return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, `${fmtNum(e.floor)} TO ${fmtNum(e.cap)}. IT PIERCES SHIELDS`, MACHINE_TOP + MACHINE_H / 2, 3);
+        return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, `${e.floor === e.cap ? fmtNum(e.cap) : `${fmtNum(e.floor)} TO ${fmtNum(e.cap)}`}. IT PIERCES SHIELDS`, MACHINE_TOP + MACHINE_H / 2, 3);
       case 'closing': {
         const c = this.machineCenter('enemy');
         this.s.sounds.click();
@@ -1499,7 +1499,7 @@ export class Director {
     const dealt = e.kind === 'deal' ? this.s.gutter.nextDeal : undefined;
     // THE WHEEL: the ball drops, the wheel on its topper races.
     if (e.kind === 'bets') this.s.gutter.wheelSpeed = 16;
-    await this.banner(dealt ? `THE DEAL: ${dealt.toUpperCase()}!` : `${ABILITY_UI[e.kind].label}!`, '#ff6a5a', 1.35, 0.25);
+    await this.banner(dealt ? `THE DEAL: ${dealt === 'allin' ? 'ALL IN' : 'BUST'}!` : `${ABILITY_UI[e.kind].label}!`, '#ff6a5a', 1.35, 0.25);
   }
 
   private potPos() {

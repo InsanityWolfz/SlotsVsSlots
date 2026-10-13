@@ -143,6 +143,16 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   to paste into a chat for balance checks.
   The main menu's COPY LAST RUN copies the last finished run's text (it survives a refresh; key `slotvslot.lastrun.v1`).
   Beating the Dealer saves the LET IT RIDE / CASH OUT choice: a refresh there CONTINUEs back to it.
+- **Playtest C fixes (2026-10-13):** a refresh between the Dealer win and an ENDLESS bust no longer records the run
+  twice (the hiscore entry is found by `run.rideAt`, not held in memory); in a run the small QUIT button is now PAUSE
+  (phone had no Escape: GLOSSARY, SETTINGS, QUIT, ABANDON live there); PAUSE takes taps before the boss card, and
+  Escape / Space / Enter close the card; the Dealer's card back fits (no blurb, smaller rows when needed); deal banners
+  read BUST and ALL IN; ALL IN's ENDLESS growth stops at 60% (the boss one-turn cap: the shown range promised more);
+  the Dealer keeps a faster clock (FAST HANDS, QUICKENING, BLUE/GOLD) in hands 2 and 3, and its rules say the real
+  cadence (BLUE run win -1/-1/0/-1/0, Dealer -3 to -7); COPY RUN uses card titles (big choices, every one a stop
+  took, edges once at their level, encounters by name and result, CHIP not goldbar, the start relic); PAIR's glossary
+  line says reels 1 and 2; BUSTS and LV count as keywords; bets show MAX min(limit, chips); keyword boxes sit under
+  the hovered card; CONTINUE after a Dealer win reads RIDE OR CASH OUT; "ALL IN IN 2" reads "ALL IN: 2 TURNS".
 - **Wording (user, 2026-10-13):** FIGHT, never ROUND, for a fight (every "each fight" effect triggers on fights only,
   never after encounters); relics name your meter (LIGHTNING, VOLUME, JACKPOT METER, HIGH ROLLER), not YOUR METER;
   PAYS XN for multipliers, HITS FOR N for flat damage; SABOTAGE is a keyword. COUP DE GRACE: swords pay x2 while your

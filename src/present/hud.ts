@@ -228,7 +228,8 @@ export class HudView {
       ctx.fillRect(px - 4, y - 4, 8, 8);
     }
     const name = this.abilityLabel ?? ui.label;
-    const label = imminent ? `${name} NEXT!` : `${name} IN ${left}`;
+    // "ALL IN IN 2" read badly (playtest C): a name ending in IN reads "ALL IN: 2 TURNS".
+    const label = imminent ? `${name} NEXT!` : / IN$/.test(name) ? `${name}: ${left} TURN${left === 1 ? '' : 'S'}` : `${name} IN ${left}`;
     // A long label (NO MORE BETS NEXT!) steps down a size so it clears the pips.
     const size = label.length > 14 ? 1.5 : 2;
     drawText(ctx, label, x + HUD_W - 4, y, size, imminent ? (pulse > 0.5 ? '#ffffff' : '#ff6a5a') : COLORS.textDim, { align: 'right', punch: 1 + this.abilityFlash * 0.3 });

@@ -75,10 +75,11 @@ const JACKPOT_PAY = 9 * UNIT;
  * 2 RAISE: its hits are x1.5 from now on (still BUSTs). 3 ALL IN: every 2 turns, ALL IN (a share of your max HP,
  * through shields). (2026-10-12, user: simpler, drawn out, the hardest boss.)
  */
-export const DEALER_RULES = { hands: [0.27, 0.31, 0.42], raiseMul: 1.5, bustEvery: 3, allInEvery: 2, allInFloor: 0.25, allInCap: 0.4, loopStep: 0.25, loopMax: 0.9 };
+export const DEALER_RULES = { hands: [0.27, 0.31, 0.42], raiseMul: 1.5, bustEvery: 3, allInEvery: 2, allInFloor: 0.25, allInCap: 0.4, loopStep: 0.25, loopMax: 0.6 };
 export const DEALER_HANDS = ['THE DEAL', 'RAISE', 'ALL IN'];
 /** ALL IN's hit for a visible hand worth `hand`, clamped to DEALER_RULES' floor and cap of `maxHp`. In ENDLESS both
- * shares grow by `loopStep` a loop (up to `loopMax` of your max HP): its hit kept pace with nothing (user, 2026-10-12). */
+ * shares grow by `loopStep` a loop (up to `loopMax` of your max HP): its hit kept pace with nothing (user, 2026-10-12).
+ * loopMax is the boss one-turn cap (TUNE.bossTurnCap): past it the shown range promised hits that couldn't land (playtest C). */
 export const allInRange = (maxHp: number, hand: number, loop = 0): number => {
   const k = 1 + DEALER_RULES.loopStep * loop;
   const share = (x: number) => Math.min(DEALER_RULES.loopMax, x * k);
@@ -278,6 +279,8 @@ export class Fight {
   nextDeal: DealCard = 'card';
   /** THE DEALER: the hand it's playing (1-3). */
   dealerHand = 1;
+  /** THE DEALER: turns its clock runs faster than DEALER_RULES (a new hand used to reset it: playtest C). */
+  dealerCut = 0;
   /** THE DEALER's total HP (its hands share it). */
   private dealerTotal = 0;
   dealt = false;
@@ -382,6 +385,8 @@ export class Fight {
     }
     // The Golden Hourglass and HIGH STAKES change enemy cadence (the same helper feeds the cards).
     if (e.ability) e.ability = effectiveAbility(e.ability, { stake: this.cfg.stake ?? 0, act: this.cfg.enemy.act ?? 1, sandglass: p.relics.has('sandglass') });
+    // THE DEALER: how much faster than its rulebook it plays (FAST HANDS, QUICKENING, the stakes), kept for every hand.
+    if (this.isDealer && e.ability) this.dealerCut = DEALER_RULES.bustEvery - e.ability.every;
   }
 
   get seed(): number {
@@ -1790,7 +1795,8 @@ export class Fight {
       const allIn = this.dealerHand >= 3;
       this.nextDeal = allIn ? 'allin' : 'card';
       if (c.ability) {
-        c.ability = { ...c.ability, every: allIn ? DEALER_RULES.allInEvery : DEALER_RULES.bustEvery };
+        const base = allIn ? DEALER_RULES.allInEvery : DEALER_RULES.bustEvery;
+        c.ability = { ...c.ability, every: Math.max(Math.min(2, base), base - this.dealerCut) };
         c.charge = 0;
       }
       events.push({ type: 'dealerHand', side: c.side, hand: this.dealerHand, hp: c.hp, every: c.ability?.every ?? 0 });

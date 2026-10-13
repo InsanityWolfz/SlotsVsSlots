@@ -4,7 +4,7 @@ import { Synth } from './audio/synth';
 import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
 import { TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
-import { allInRange, DEALER_HANDS, Fight, highRollerMul } from './core/fight';
+import { allInRange, DEALER_HANDS, DEALER_RULES, Fight, highRollerMul } from './core/fight';
 import { dailyCabinet, dailyKey, dailySeed, dailySpent } from './core/daily';
 import { turnRow, type TurnRow } from './core/log';
 import { RELICS } from './core/relics';
@@ -447,9 +447,9 @@ export class Game {
     this.autoBtn.toggled = this.prefs.auto;
     this.speedBtns.forEach((b) => (b.label = `SPEED ${this.prefs.speed}X`));
     this.spinBtn.enabled = this.awaitingSpin;
-    // START RUN on the title; in a run it's a small QUIT on the right (asks SURE? first).
+    // START RUN on the title; in a run it's a small PAUSE on the right (RESUME, GLOSSARY, SETTINGS, QUIT, ABANDON).
     const title = this.phase === 'title';
-    this.startBtn.label = title ? 'START RUN' : this.abandonArmed ? 'SURE?' : 'QUIT';
+    this.startBtn.label = title ? 'START RUN' : 'PAUSE';
     this.startBtn.opts.idlePulse = title;
     this.startBtn.opts.textScale = title ? 3 : undefined;
     Object.assign(this.startBtn, title ? { x: W / 2 + 10, w: 196, h: 56 } : { x: MACHINE_CX.enemy + 220, w: 70, h: 36 });
@@ -493,8 +493,6 @@ export class Game {
   }
 
   /** HISCORES: log the finished run (keeps the newest entries, but never drops a top-10 score). */
-  /** The hiscore entry of a Dealer win you LET RIDE (endless updates it instead of adding a second one). */
-  private rideEntry: ReturnType<typeof runEntry> | null = null;
   private recordRun(run: RunState): void {
     // COPY LAST RUN (main menu): the finished run's text survives a refresh.
     try {
@@ -502,14 +500,16 @@ export class Game {
     } catch {
       /* private mode / full storage: the run-over screen's COPY RUN still works */
     }
-    if (run.endless && this.rideEntry) {
-      const prev = runScore(this.rideEntry);
-      Object.assign(this.rideEntry, runEntry(run, this.rideEntry.at, !!run.tutorial), { won: true });
-      this.afterRecord(this.rideEntry, recordMeta(this.profile, this.rideEntry, collectionTotal(), prev), true);
+    // The entry lives on the run (rideAt), not in memory: a refresh mid-ENDLESS used to record the run twice (playtest C).
+    const ride = run.endless && run.rideAt !== undefined ? this.profile.runs.find((e) => e.at === run.rideAt) : undefined;
+    if (ride) {
+      const prev = runScore(ride);
+      Object.assign(ride, runEntry(run, ride.at, !!run.tutorial), { won: true });
+      this.afterRecord(ride, recordMeta(this.profile, ride, collectionTotal(), prev), true);
       return;
     }
     const entry = runEntry(run, Date.now(), !!run.tutorial);
-    this.rideEntry = run.won ? entry : null;
+    if (run.won && !run.endless) run.rideAt = entry.at;
     this.profile.runs.push(entry);
     while (this.profile.runs.length > MAX_ENTRIES) {
       const top = new Set([...this.profile.runs].sort((a, b) => runScore(b) - runScore(a)).slice(0, 10));
@@ -689,26 +689,12 @@ export class Game {
   }
 
   /** NEW RUN mid-run throws the run away: it needs a second press within 2 s (QA_1 B1). */
-  private abandonArmed = false;
-  private abandonArmedAt = 0;
-  private abandonTimer: ReturnType<typeof setTimeout> | null = null;
   private newRunPressed(): void {
-    const midRun = !!this.run && !this.run.over && this.phase !== 'title';
-    // A spam-clicked FIGHT! button can't confirm: the confirming press must come 0.4 s after arming (QA_2 B17).
-    if (midRun && this.abandonArmed && performance.now() - this.abandonArmedAt < 400) return;
-    if (midRun && !this.abandonArmed) {
-      this.abandonArmed = true;
-      this.abandonArmedAt = performance.now();
-      this.sounds.fizzle();
-      if (this.abandonTimer) clearTimeout(this.abandonTimer);
-      this.abandonTimer = setTimeout(() => {
-        this.abandonArmed = false;
-        this.syncButtons();
-      }, 2000);
-      this.syncButtons();
+    // In a run it's PAUSE (playtest C: a phone had no Escape, so no GLOSSARY; ABANDON RUN lives in the pause menu).
+    if (this.run && !this.run.over && this.phase !== 'title') {
+      if (this.pausable()) this.setPaused(true);
       return;
     }
-    this.abandonArmed = false;
     this.chooseCabinet();
   }
 
@@ -814,7 +800,10 @@ export class Game {
 
   private savedRunLabel(): string | null {
     const s = this.loadRunSave();
-    return s ? `${s.run.endless ? `LOOP ${s.run.endless.loop}` : `ACT ${s.run.act}`} ${CABINETS[s.run.cabinet].hero}` : null;
+    if (!s) return null;
+    // Beat the Dealer: the RIDE / CASH OUT choice is what's waiting (playtest C: it read ACT 3, like a run mid-act).
+    if (s.at === 'ride') return 'RIDE OR CASH OUT';
+    return `${s.run.endless ? `LOOP ${s.run.endless.loop}` : `ACT ${s.run.act}`} ${CABINETS[s.run.cabinet].hero}`;
   }
 
   /** CONTINUE: the saved run, at the screen it was saved on. */
@@ -955,9 +944,9 @@ export class Game {
     if (run.over) {
       clearRunSave();
       // Beat the Dealer: the LET IT RIDE / CASH OUT choice is saved, so a refresh there comes back to it (playtest).
-      if (run.won && run.act >= 3 && !run.endless) save(RUN_KEY, { v: 1, at: 'ride', version: VERSION, run });
       this.noteDiscoveries();
       this.recordRun(run);
+      if (run.won && run.act >= 3 && !run.endless) save(RUN_KEY, { v: 1, at: 'ride', version: VERSION, run });
       this.skipTutorial();
       if (run.endless) this.screens.setStakeUnlockedNow('');
       // The daily, the weekly and challenges are side roads: no unlocks from them.
@@ -1388,13 +1377,14 @@ export class Game {
   pointerDown(x: number, y: number): void {
     this.startAudio();
     if (this.coach.active) return this.coach.hitsSkip(x, y) ? this.skipTutorial() : this.coach.advance();
+    // PAUSE first: opened over the boss card, its first tap went to the card (playtest C).
+    if (this.pause.open && !this.menus.isOpen) return this.pause.pointerDown(x, y);
     // The boss card is open: any tap closes it (the fight was paused under it).
     if (this.bossCard) {
       this.bossCard = false;
       this.sounds.click();
       return;
     }
-    if (this.pause.open && !this.menus.isOpen) return this.pause.pointerDown(x, y);
     if (this.menus.isOpen) {
       // The SOUND toggle stays live on the main menu.
       if (this.muteBtn.visible && this.muteBtn.contains(x, y)) {
@@ -1490,6 +1480,12 @@ export class Game {
         this.pointerMove(t.x, t.y);
         return true;
       }
+    }
+    // The boss card: Escape, Space or Enter closes it (keyboard and pad had no way out but a click).
+    if (this.bossCard && !this.pause.open && (k === 'escape' || k === ' ' || k === 'enter')) {
+      this.bossCard = false;
+      this.sounds.click();
+      return true;
     }
     // Space presses the focused button too (outside a fight, where Space spins).
     if (k === ' ' && this.focus.visible && this.phase !== 'fighting') k = 'enter';
@@ -1936,7 +1932,9 @@ export class Game {
     drawSprite(ctx, artId(card === 'allin' ? 'dealShuffle' : 'dealCut'), x - 76, y + 14, 2.5);
     const hp = this.fight.sides.player.maxHp;
     const loop = this.fight.cfg.enemy.loop ?? 0;
-    const range = `${fmtNum(allInRange(hp, 0, loop))} TO ${fmtNum(allInRange(hp, Infinity, loop))}`;
+    const lo = allInRange(hp, 0, loop);
+    const hi = allInRange(hp, Infinity, loop);
+    const range = lo === hi ? fmtNum(hi) : `${fmtNum(lo)} TO ${fmtNum(hi)}`;
     const [name, ...rule] = card === 'allin' ? ['ALL IN', range, 'PIERCES'] : ['BUST', 'BEST REEL', 'PAYS NONE'];
     drawText(ctx, name, x - 46, y - 6, 3, card === 'allin' ? '#ff6a5a' : '#ffffff', { align: 'left' });
     rule.forEach((l, k) => drawText(ctx, l, x - 46, y + 18 + k * 18, l.length > 10 ? 1.5 : 2, COLORS.text, { align: 'left' }));
@@ -1973,6 +1971,7 @@ export class Game {
       cabinet: this.run?.cabinet,
       houseEvery: this.fight.sides.enemy.ability?.every ?? 3,
       loop: e.loop,
+      dealerEvery: DEALER_RULES.bustEvery - this.fight.dealerCut,
     });
     ctx.fillStyle = 'rgba(6,2,12,0.75)';
     ctx.fillRect(0, 0, W, H);

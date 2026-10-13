@@ -76,6 +76,19 @@ describe('THE DEALER: three hands, three HP bars', () => {
     }
   });
 
+  it('a faster clock (FAST HANDS, QUICKENING, the stakes) stays faster in every hand', () => {
+    const c = defaultConfig();
+    c.player.hp = c.player.startHp = 20000;
+    c.enemy = { hp: 3000, strips: [{ sword: 6 }, { sword: 6 }, { sword: 6 }], ability: { kind: 'deal', every: 2, power: 0 }, boss: 'dealer', name: 'THE DEALER' };
+    const f = new Fight(c, 11);
+    const all: CombatEvent[] = [];
+    for (let i = 0; i < 600 && !f.over; i++) {
+      f.forceNext('player', ['sword', 'sword', 'sword']);
+      all.push(...f.step().events);
+    }
+    expect(ofType(all, 'dealerHand').map((e) => e.every)).toEqual([2, 2]);
+  });
+
   it('RAISE: from hand 2 its hits are bigger', () => {
     const hit = (hand: number) => {
       const f = run(99999, 99999, 3);

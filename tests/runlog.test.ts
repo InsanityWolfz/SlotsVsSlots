@@ -13,3 +13,13 @@ describe('COPY RUN', () => {
     expect(text).toContain('CHARMS:');
   });
 });
+
+describe('COPY RUN reads as the game does', () => {
+  it('says CHIP, not goldbar, and names encounters', () => {
+    let text = '';
+    playRun(defaultConfig(), 7, 'midas', 2, { onEnd: (run) => (text = runSummary(run, 'v')) });
+    expect(text).not.toMatch(/goldbar|GOLDBAR/);
+    expect(text).not.toMatch(/#\d/);
+    expect(text).toContain('START RELIC:');
+  });
+});

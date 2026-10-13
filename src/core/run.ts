@@ -1,6 +1,6 @@
 import { BLADES, cloneConfig, symLabel, emptyLevels, UNIT, unitsRound, type AbilityDef, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
 import { ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, WHEEL } from './enemies';
-import { MAX_STAKE, STAKE, stakeDmg } from './stakes';
+import { effectiveAbility, MAX_STAKE, STAKE, stakeDmg } from './stakes';
 import type { Fight } from './fight';
 import {
   BANDAGE_HEAL,
@@ -198,12 +198,14 @@ export interface FightRecord {
   pick?: DraftOption;
   /** What was bought at the Cashier after this fight. */
   bought?: DraftOption[];
-  /** The BIG CHOICE taken after this (boss) fight. */
-  choice?: BigChoiceId;
+  /** The BIG CHOICES taken after this fight, by their card titles (an ENDLESS stop can take several). */
+  choice?: string;
 }
 
 export interface RunState {
   seed: number;
+  /** A Dealer win you LET RIDE: its hiscore entry's `at`, so ENDLESS updates that entry (even after a refresh). */
+  rideAt?: number;
   /** The seed the fights' spins come from (the run seed, unless set): THE WEEKLY rolls a fresh one each try, so its
    * map and offers are fixed but its spins are not. */
   spinSeed?: number;
@@ -304,7 +306,9 @@ export interface RunState {
   /** A game in progress at this stop (HIGHER OR LOWER's showing card, bet and right calls). */
   encounterState?: Record<string, number | number[]>;
   /** Encounters played this run (what was chosen, how it went): for the run log and the sim. */
-  encounters?: { act: number; id: string; choice: number; good: boolean | null }[];
+  encounters?: { act: number; id: string; choice: number; good: boolean | null; what?: string }[];
+  /** The relic picked at the start (COPY RUN). */
+  startRelic?: RelicId;
 }
 
 export function createRun(_base: GameConfig, seed = Rng.randomSeed(), cabinet: CabinetId = 'knight', stake = 0, act3 = false): RunState {
@@ -355,6 +359,7 @@ export function startRelics(run: RunState): RelicId[] {
 export function takeStart(run: RunState, relic: RelicId): void {
   if (!run.pendingStart?.includes(relic)) return;
   if (!run.player.relics.includes(relic)) run.player.relics.push(relic);
+  run.startRelic = relic;
   run.pendingStart = null;
 }
 
@@ -614,7 +619,7 @@ export function playEncounter(run: RunState, i: number, bet?: number): Encounter
   };
   const def = encounterOf(st.encounter);
   const result = def.play(run, i, encounterRng(run), { relics, upgrade }, bet);
-  (run.encounters ??= []).push({ act: run.act, id: st.encounter ?? '?', choice: i, good: result.good });
+  (run.encounters ??= []).push({ act: run.act, id: st.encounter ?? '?', choice: i, good: result.good, what: [result.title, result.text].filter(Boolean).join(' ') });
   // A game with plays left (and something to play with) keeps you here; walking away, or the last play, moves on.
   const played = (run.encounterPlays ?? 0) + 1;
   // (A game that says for itself whether it goes on, like HIGHER OR LOWER, decides; others go by their play count.)
@@ -743,6 +748,14 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // QUICKENING (big choice): enemy abilities charge one spin faster.
   if (run.abilityFaster && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
   return cfg;
+}
+
+/** THE DEALER's BUST clock (turns) in this run, as fightConfig and the fight set it: FAST HANDS, QUICKENING, the stakes. */
+export function dealerEvery(run: RunState): number {
+  let ab: AbilityDef = { kind: 'deal', every: 3, power: 0 };
+  if (runEdges(run).has('fast')) ab = fastHands(ab, edgeLevel(run, 'fast'));
+  if (run.abilityFaster) ab = { ...ab, every: Math.max(2, ab.every - 1) };
+  return effectiveAbility(ab, { stake: run.stake, act: 3, sandglass: run.player.relics.includes('sandglass') }).every;
 }
 
 /** Enemy symbols that write on your machine (for the WRITER house edge). */
@@ -1958,6 +1971,8 @@ export function takeChoice(run: RunState, c: BigChoice): void {
 
 function takeChoiceInner(run: RunState, c: BigChoice): void {
   if (!run.pendingChoice?.some((x) => x.id === c.id)) return;
+  // Its title as the card showed it (before it's applied: a HOUSE EDGE names the level it gives), for COPY RUN.
+  const title = describeChoice(run, c).title;
   if (BIG_CARDS.some((b) => b.id === c.id)) run.choicesTaken = [...(run.choicesTaken ?? []), c.id];
   const p = run.player;
   const big = (run.big ??= {});
@@ -2265,6 +2280,6 @@ function takeChoiceInner(run: RunState, c: BigChoice): void {
   for (const s of p.strips) for (const k of Object.keys(s) as SymbolId[]) if ((s[k] ?? 0) <= 0) delete s[k];
   normalizeCharms(p);
   const last = run.records.at(-1);
-  if (last) last.choice = c.id;
+  if (last) last.choice = last.choice ? `${last.choice}, ${title}` : title;
   run.pendingChoice = run.over ? null : (run.choiceQueue?.shift() ?? null);
 }

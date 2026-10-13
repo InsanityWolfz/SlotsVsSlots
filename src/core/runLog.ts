@@ -6,7 +6,9 @@
 import { CABINETS } from './cabinets';
 import { charmLevel, charmName, symLevel } from './charms';
 import { RELICS } from './relics';
-import { takenLabel, type RunState } from './run';
+import { symLabel, type SymbolId } from './config';
+import { encounterOf } from './encounters';
+import { edgeText, takenLabel, type EdgeId, type RunState } from './run';
 import { stakeOf } from './stakes';
 
 export function runSummary(run: RunState, version = ''): string {
@@ -42,13 +44,16 @@ export function runSummary(run: RunState, version = ''): string {
   out.push(
     '',
     `END: HP ${p.hp}/${p.maxHp}, ${p.chips} CHIPS`,
+    `START RELIC: ${run.startRelic ? (RELICS[run.startRelic]?.name ?? run.startRelic) : 'NONE'}`,
     `RELICS: ${p.relics.map((r) => RELICS[r]?.name ?? r).join(', ') || 'NONE'}`,
-    `SYMBOL LEVELS: ${Object.keys(p.levels.sym).map((s) => `${s.toUpperCase()} ${symLevel(p.levels, s as never)}`).join(', ') || 'ALL 1'}`,
-    `CHARMS: ${p.gilded.map((g) => `${charmName(g.enh)} LV${charmLevel(p.levels, g.enh)} x${g.n} on reel ${g.reel + 1} ${g.symbol.toUpperCase()}`).join(', ') || 'NONE'}`,
-    `REELS: ${p.strips.map((s, i) => `${i + 1}: ${Object.entries(s).filter(([, n]) => n).map(([k, n]) => `${k} ${n}`).join(' ')}`).join(' / ')}`,
-    `BIG CHOICES: ${(run.choicesTaken ?? []).join(', ') || 'NONE'}`,
-    `ENCOUNTERS: ${(run.encounters ?? []).map((e) => `A${e.act} ${e.id} #${e.choice + 1}${e.good === true ? ' +' : e.good === false ? ' -' : ''}`).join(', ') || 'NONE'}`,
+    `SYMBOL LEVELS: ${Object.keys(p.levels.sym).map((s) => `${symLabel(s as SymbolId)} ${symLevel(p.levels, s as never)}`).join(', ') || 'ALL 1'}`,
+    `CHARMS: ${p.gilded.map((g) => `${charmName(g.enh)} LV${charmLevel(p.levels, g.enh)} x${g.n} on reel ${g.reel + 1} ${symLabel(g.symbol)}`).join(', ') || 'NONE'}`,
+    `REELS: ${p.strips.map((s, i) => `${i + 1}: ${Object.entries(s).filter(([, n]) => n).map(([k, n]) => `${symLabel(k as SymbolId)} ${n}`).join(' ')}`).join(' / ')}`,
+    `BIG CHOICES: ${run.records.flatMap((r) => (r.choice ? [r.choice] : [])).join(', ') || 'NONE'}`,
+    `ENCOUNTERS: ${(run.encounters ?? []).map((e) => `A${e.act} ${encounterOf(e.id).name}: ${e.what || (e.good === true ? 'WON' : e.good === false ? 'LOST' : 'WALKED AWAY')}`).join(', ') || 'NONE'}`,
   );
-  if (run.endless?.edges.length) out.push(`HOUSE EDGES: ${run.endless.edges.join(', ')}`);
+  // Each edge once, at the level it reached (MARKED DECK III, not marked, marked, marked).
+  const edges = run.endless?.edges ?? [];
+  if (edges.length) out.push(`HOUSE EDGES: ${[...new Set(edges)].map((e) => edgeText(e as EdgeId, edges.filter((x) => x === e).length).title).join(', ')}`);
   return out.join('\n');
 }

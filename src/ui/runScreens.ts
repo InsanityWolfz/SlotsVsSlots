@@ -40,6 +40,7 @@ import {
   type RunState,
   type ShopItem,
   levelCap,
+  dealerEvery,
 } from '../core/run';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import { effectiveAbility, STAKE, STAKES, stakeOf } from '../core/stakes';
@@ -557,7 +558,7 @@ export class RunScreens {
   /** What a boss's rules depend on (bossRules.ts). */
   private bossCtx(): BossRuleContext {
     const run = this.run;
-    return { stake: run?.stake ?? 0, cabinet: run?.cabinet, houseEvery: this.houseEvery(), loop: run?.endless?.loop };
+    return { stake: run?.stake ?? 0, cabinet: run?.cabinet, houseEvery: this.houseEvery(), loop: run?.endless?.loop, dealerEvery: run ? dealerEvery(run) : undefined };
   }
 
   private houseEvery(): number {
@@ -2400,9 +2401,15 @@ export class RunScreens {
       const keys = keywordsIn(describeOption(this.offers[hov], this.run ?? undefined).text).slice(0, 3);
       if (keys.length) {
         const bw = 230;
-        const right = c.x + c.w / 2 + 14;
-        const bx = right + bw <= W - 8 ? right : c.x - c.w / 2 - 14 - bw;
-        drawKeywordBoxes(ctx, keys, bx, c.y - c.h / 2, bw);
+        // Under the card when there's room (beside it, the boxes covered the next card: playtest C), else beside it.
+        const below = c.y + c.h / 2 + 12;
+        if (below + keys.length * 74 <= H - 8) {
+          drawKeywordBoxes(ctx, keys, Math.max(8, Math.min(W - bw - 8, c.x - bw / 2)), below, bw);
+        } else {
+          const right = c.x + c.w / 2 + 14;
+          const bx = right + bw <= W - 8 ? right : c.x - c.w / 2 - 14 - bw;
+          drawKeywordBoxes(ctx, keys, bx, c.y - c.h / 2, bw);
+        }
       }
     }
   }
@@ -2693,7 +2700,8 @@ export class RunScreens {
       y += 4;
     };
     const blurbFits = !FRONT_BLURB[e.boss ?? ''] && e.blurb.length * 9 <= w - (w < 600 ? 140 : 164);
-    if (!blurbFits) line(e.blurb, COLORS.textDim);
+    // (Not the Dealer's: its rules below say the same, and they need the room.)
+    if (!blurbFits && e.boss !== 'dealer') line(e.blurb, COLORS.textDim);
     if (e.ability && !e.isBoss) {
       // The ability sentence leads, big (a boss's rules paragraph below already says it): it's what the back is for.
       const every = effectiveAbility(runEdges(run).has('fast') ? fastHands(e.ability, edgeLevel(run, 'fast')) : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
@@ -2711,18 +2719,28 @@ export class RunScreens {
     // A boss's rules, one row each with the icon the fight uses for it, then HOW TO WIN (bossRules.ts).
     if (e.isBoss) {
       const br = bossRules(e.boss ?? 'house', this.bossCtx());
-      const rcols = Math.floor((w - 64) / (6 * sc));
+      // Everything above the THEIR REELS line (y 197): a step down a size when the rules don't fit (the Dealer's ran
+      // over it: playtest C).
+      const fit = (k: number) => {
+        const rows = br.rules.reduce((a, r) => a + wrap(r.text, Math.floor((w - 64) / (6 * k))).length * 10 * k + 6, 0);
+        return y + rows + wrap(`HOW TO WIN: ${br.win}`, Math.floor((w - 32) / (6 * k))).length * 10 * k <= 192;
+      };
+      const k = fit(sc) ? sc : fit(1.5) ? 1.5 : 1.25;
+      const rcols = Math.floor((w - 64) / (6 * k));
       for (const r of br.rules) {
         // Icons come in 8-24 px: each fits one box, so a big pot doesn't cover the row under it.
         const isz = spriteSize(r.icon);
-        drawSprite(ctx, r.icon, 28, y + 4 * sc, (11 * sc) / Math.max(isz.w, isz.h));
+        drawSprite(ctx, r.icon, 28, y + 4 * k, (11 * k) / Math.max(isz.w, isz.h));
         wrap(r.text, rcols).forEach((l) => {
-          drawRich(ctx, l, 50, y, sc, COLORS.text, { align: 'left' });
-          y += 10 * sc;
+          drawRich(ctx, l, 50, y, k, COLORS.text, { align: 'left' });
+          y += 10 * k;
         });
         y += 6;
       }
-      drawText(ctx, `HOW TO WIN: ${br.win}`, 16, y + 2, sc, '#7dff7a', { align: 'left' });
+      wrap(`HOW TO WIN: ${br.win}`, Math.floor((w - 32) / (6 * k))).forEach((l) => {
+        drawText(ctx, l, 16, y + 2, k, '#7dff7a', { align: 'left' });
+        y += 10 * k;
+      });
     }
     // THEIR REELS with counts, along the bottom.
     ctx.fillStyle = '#2a2140';
@@ -2927,7 +2945,7 @@ export class RunScreens {
     });
     if (!rolling) drawText(ctx, `${total}`, RL.wheelX, 390, 3, total === 7 ? COLORS.goldLight : COLORS.text);
     // The table's limit, said up front (playtest: HIGHER OR LOWER's cap wasn't).
-    drawText(ctx, `YOUR BET (MAX ${DICE.maxBet})`, RL.betX, 150, 2, COLORS.textDim);
+    drawText(ctx, `YOUR BET (MAX ${Math.min(DICE.maxBet, this.run?.player.chips ?? DICE.maxBet)})`, RL.betX, 150, 2, COLORS.textDim);
     drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
     drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
     drawText(ctx, `UNDER / OVER PAY 1 TO 1.  SEVEN PAYS ${DICE.sevenPays} TO 1`, RL.betX, 500, 1.5, COLORS.textDim);
@@ -3002,7 +3020,7 @@ export class RunScreens {
     // Right column: your bet before the deal; the pot during the hand.
     if (!st) {
       // The table's limit, said up front (playtest: HIGHER OR LOWER's cap wasn't).
-      drawText(ctx, `YOUR BET (MAX ${HILO.maxBet})`, RL.betX, 150, 2, COLORS.textDim);
+      drawText(ctx, `YOUR BET (MAX ${Math.min(HILO.maxBet, this.run?.player.chips ?? HILO.maxBet)})`, RL.betX, 150, 2, COLORS.textDim);
       drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
       drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
     } else {
@@ -3032,7 +3050,7 @@ export class RunScreens {
     ctx.restore();
     // Your bet, beside the wheel.
     // The table's limit, said up front (playtest: HIGHER OR LOWER's cap wasn't).
-    drawText(ctx, `YOUR BET (MAX ${ROULETTE.maxBet})`, RL.betX, 150, 2, COLORS.textDim);
+    drawText(ctx, `YOUR BET (MAX ${Math.min(ROULETTE.maxBet, this.run?.player.chips ?? ROULETTE.maxBet)})`, RL.betX, 150, 2, COLORS.textDim);
     drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
     drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
     drawText(ctx, 'PAYS 1 TO 1', RL.betX, 470, 1.5, COLORS.textDim);
