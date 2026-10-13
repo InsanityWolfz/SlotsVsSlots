@@ -2904,7 +2904,7 @@ export class RunScreens {
       }
     }
     if (!res) this.drawBuyIns(ctx, time);
-    for (const b of this.buttons) if (!this.encChoices.some((c, i) => c.stake && b === this.buttons[i]) || res) this.drawButton(ctx, b, time);
+    for (const b of this.buttons) if (!this.encChoices.some((c, i) => c.stake && b === this.buttons[i] && b.label === c.label) || res) this.drawButton(ctx, b, time);
   }
 
   /** The buy-in cards: the tier, what you put up, what it buys. A staked relic shows its icon (its tooltip works). */
@@ -2912,7 +2912,8 @@ export class RunScreens {
     this.encChoices.forEach((c, i) => {
       if (!c.stake) return;
       const b = this.buttons[i];
-      if (!b) return;
+      // (Only a buy-in button: after TWENTY-ONE's WALK AWAY the only button is CONTINUE, and it was drawn as card A.)
+      if (!b || b.label !== c.label) return;
       const x = b.x - b.w / 2;
       const y = b.y - b.h / 2 - (b.hover && b.enabled ? 4 : 0);
       let y0 = y;
