@@ -1643,7 +1643,7 @@ export const BIG_SET_NAMES = ['THE FORGE', 'THE MELT', 'SURGERY', "DEVIL'S BARGA
 export const SAFE_CHOICES: ReadonlySet<BigChoiceId> = new Set(['whetstone', 'polish', 'sweepUp', 'secondWind', 'temper', 'luckyBreak', 'treasure', 'houseMoney']);
 export const BIG = {
   armsRaceHp: 0.15, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.2, gildLotCells: 3, glassPay: 1.5,
-  devilPay: 1.75, devilDecay: 0.08, allInHp: 0.2, wardedHp: 0.15, wards: 3, houseMoney: 40, heist: 30, heistHp: 0.3, crusadeStep: 5, crusadeHp: 0.2,
+  devilPay: 1.75, devilDecay: 0.08, allInHp: 0.2, allInShare: 0.5, wardedHp: 0.15, wards: 3, houseMoney: 40, heist: 30, heistHp: 0.3, crusadeStep: 5, crusadeHp: 0.2,
   chainHp: 0.3, madMul: 2, madCost: 0.05, groundHeal: 5, jokerHp: 0.5, featureHp: 0.2, noLimitHp: 0.25, monsoonCost: 10, trustChips: 2,
   convertHp: 0.15, highCardMul: 1.5, headlinerMul: 2, headlinerMax: 8, feedbackTo: 1, encoreHp: 0.25, dancers: 2, fourLeafHp: 0.2, shieldWallKeep: 0.3, slamShare: 0.5, squireCells: 2, sharkWilds: 2, quickeningHp: 0,
 };
@@ -1783,7 +1783,7 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
     case 'devilsDue':
       return { title: "DEVIL'S DUE", rule: `EVERYTHING PAYS X${BIG.devilPay}`, cost: `-${Math.round(BIG.devilDecay * 100)}% MAX HP AFTER EVERY FIGHT YOU WIN` };
     case 'allIn':
-      return { title: 'GO FOR BROKE', rule: `EVERY SHIELD ON YOUR REELS BECOMES ONE OF YOUR ${atk}`, cost: pct(run, BIG.allInHp) };
+      return { title: 'GO FOR BROKE', rule: `HALF THE SHIELDS ON EACH REEL BECOME ${atk}`, cost: pct(run, BIG.allInHp) };
     case 'doubleOrNothing':
       return { title: 'DOUBLE OR NOTHING', rule: '+1 LEVEL TO EVERY SYMBOL AND CHARM', cost: 'THE NEXT BOSS HAS DOUBLE HP' };
     case 'cursedIdol':
@@ -2119,15 +2119,25 @@ function takeChoiceInner(run: RunState, c: BigChoice): void {
     case 'devilsDue':
       run.devil = true;
       break;
-    case 'allIn':
-      for (const s of p.strips) {
-        s[atk] = (s[atk] ?? 0) + (s.shield ?? 0);
-        s.shield = 0;
-      }
-      // Charms on the old shields move to the new attack symbols when they fit there.
-      p.gilded = p.gilded.flatMap((g) => (g.symbol !== 'shield' ? [g] : CHARM_SYMBOLS[g.enh].includes(atk) ? [{ ...g, symbol: atk }] : []));
+    case 'allIn': {
+      // Half the shields on each reel (rounded down), not all (user, 2026-10-13: all of them made one-symbol reels, every
+      // spin a jackpot: TESLA won 75% of GREEN runs that took it, 40% without).
+      const moved = p.strips.map((s) => {
+        const n = Math.floor((s.shield ?? 0) * BIG.allInShare);
+        s[atk] = (s[atk] ?? 0) + n;
+        s.shield = (s.shield ?? 0) - n;
+        return n;
+      });
+      // Charms on the moved shields go with them when they fit there (the rest stay on the shields left).
+      p.gilded = p.gilded.flatMap((g) => {
+        if (g.symbol !== 'shield' || !CHARM_SYMBOLS[g.enh].includes(atk) || moved[g.reel] <= 0) return [g];
+        const k = Math.min(g.n, moved[g.reel]);
+        moved[g.reel] -= k;
+        return [{ ...g, symbol: atk, n: k }, ...(g.n > k ? [{ ...g, n: g.n - k }] : [])];
+      });
       losePct(BIG.allInHp);
       break;
+    }
     case 'doubleOrNothing':
       levelSyms(run).forEach((s) => up(s));
       [...new Set(p.gilded.map((g) => g.enh))].forEach((e) => upCharm(e));

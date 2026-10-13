@@ -143,6 +143,9 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   to paste into a chat for balance checks.
   The main menu's COPY LAST RUN copies the last finished run's text (it survives a refresh; key `slotvslot.lastrun.v1`).
   Beating the Dealer saves the LET IT RIDE / CASH OUT choice: a refresh there CONTINUEs back to it.
+- **GO FOR BROKE converts half the shields (user, 2026-10-13),** rounded down on each reel, not all: all of them made
+  one-symbol reels, every spin a jackpot (a friend's JUKEBOX won acts 2-3 in 1 spin). GREEN, 1500 runs, taking it vs
+  not: TESLA 75% -> 55% (40% without), JUKEBOX 56% -> 40% (34%); run win TESLA GREEN 42 -> 40, the rest +-1.
 - **Slime pair cleanses (user, 2026-10-13):** a slime pair cleanses the slime on its two reels; a slime jackpot still
   cleanses everything (1500 runs: WHITE / GREEN KNIGHT 66->67 / 34, TESLA 59 / 42, JUKEBOX 68 / 36, JOKER 58->59 /
   42->44, BANKROLL 63->64 / 43->45). THE HOUSE's countdown counts the turn it waits after its bar fills (it read IN 3,
