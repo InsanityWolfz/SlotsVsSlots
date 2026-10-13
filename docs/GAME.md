@@ -154,6 +154,8 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   the chip count changes when the ball / dice land (it went up mid-spin, so a win looked unpaid).
   PAUSE, the boss card and the tutorial callouts mute the reel-spin loop until the fight goes on (it droned on).
   TWENTY-ONE's WALK AWAY shows CONTINUE (it was drawn as the first buy-in card, PAY 6 CHIPS, and led on to the shop).
+  A 4-card draft uses the full width (cards 222 wide, taller); card titles take the biggest size that fits. CHIP
+  Charm text says PER FIGHT (it still said PER ROUND).
 - **Heals explained (user, 2026-10-13):** machine cards name the base payoff heal (TESLA 5 a lightning strike,
   BANKROLL 20 a full HIGH ROLLER bar, JUKEBOX 20 a DROP; JOKER none). A payoff heal is one number; made of several
   (the meter's, VAMPIRE FANG, GROUND WIRE) it names each under the HP bar ("+15 LIGHTNING +15 FANG"). A storm's heal

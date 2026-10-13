@@ -106,7 +106,7 @@ export function charmShortText(enh: Enh, lvl: number): string {
     case 'spiked':
       return `HITS FOR ${v}% OF ITS SHIELD`;
     case 'lucre':
-      return `+${LUCRE_CHIPS} CHIPS (MAX ${v} PER ROUND)`;
+      return `+${LUCRE_CHIPS} CHIPS (MAX ${v} PER FIGHT)`;
     case 'trick':
       return `+${v} TO YOUR JACKPOT METER`;
     case 'echo':

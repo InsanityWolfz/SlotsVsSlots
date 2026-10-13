@@ -39,7 +39,7 @@ export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
   vamp: { name: 'VAMP', text: 'SWORDS, CARDS AND NOTES. HEALS +20/+30/+40 HP.' },
   lucky: { name: 'LUCKY', text: '40%/55%/70% CHANCE TO BE A WILD.' },
   blaze: { name: 'BLAZE', text: "DOC VOLTZ'S BOLTS. +5/+10/+15 LIGHTNING DAMAGE." },
-  lucre: { name: 'CHIP', text: 'YOUR ATTACK SYMBOLS AND SHIELDS. +3 CHIPS (MAX 6/9/12 PER ROUND).' },
+  lucre: { name: 'CHIP', text: 'YOUR ATTACK SYMBOLS AND SHIELDS. +3 CHIPS (MAX 6/9/12 PER FIGHT).' },
   trick: { name: 'TRICK', text: "JAX'S CARDS AND SHIELDS. +30/+40/+55 TO YOUR JACKPOT METER." },
   echo: { name: 'ECHO', text: "DJ DECIBEL'S NOTES. AT THE DROP ITS NOTE HITS X2/X2.5/X3." },
 };

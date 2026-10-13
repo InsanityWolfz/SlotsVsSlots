@@ -1341,9 +1341,10 @@ export class RunScreens {
     this.lastRecord = last;
     this.open('draft');
     const n = offers.length;
-    const gap = n > 3 ? 232 : 300;
+    // Four cards use the whole width beside the build panel, a little taller (they were cramped: user).
+    const gap = n > 3 ? 238 : 300;
     this.cards = offers.map((o, i) =>
-      this.hit(CX + (i - (n - 1) / 2) * gap, 384, gap - 30, 222, () => {
+      this.hit(CX + (i - (n - 1) / 2) * gap, n > 3 ? 396 : 384, n > 3 ? gap - 16 : gap - 30, n > 3 ? 246 : 222, () => {
         if (this.picked >= 0) return;
         this.picked = i;
         this.sounds.stingerMedium();
@@ -2508,7 +2509,8 @@ export class RunScreens {
       drawSprite(ctx, 'heart', 0, iy, 5);
       drawSprite(ctx, 'plusBadge', 30, iy + 22, 3);
     }
-    drawText(ctx, title, 0, 2, title.length > 13 ? 2 : 3, accent);
+    // The biggest size that fits the card (2 CHIP CHARMS ran off a 4-card draft's card).
+    drawText(ctx, title, 0, 2, [3, 2.5, 2, 1.5].find((k) => textWidth(title, k) <= w - 6) ?? 1.5, accent);
     // Wrapped to the card's own width (a 4-card draft is narrower: UNDERDOG ran off it).
     const cols = Math.min(20, Math.floor((w - 20) / 12));
     const long = wrap(text, cols).length > 4;
