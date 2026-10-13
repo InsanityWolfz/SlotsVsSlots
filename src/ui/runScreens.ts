@@ -2140,13 +2140,23 @@ export class RunScreens {
 
   // ---- drawing -----------------------------------------------------------------------
 
+  /** THE ROOMS: draws the run's room (set by the game), behind the screens between fights. */
+  roomBackdrop: ((ctx: CanvasRenderingContext2D, time: number) => void) | null = null;
+
   draw(ctx: CanvasRenderingContext2D, time: number): void {
     if (!this.active || (!this.run && this.mode !== 'cabinet')) return;
     this.tips.begin();
-    // A solid casino-floor backdrop: the fight scene never shows through a menu.
+    // The act's room stays behind every screen of the run (playtesters: the Cashier and the encounters should be in the
+    // same place as the fights), dimmed so the cards read; the machine select keeps the plain casino carpet. Either
+    // way it's solid: the fight scene never shows through.
     ctx.save();
     ctx.globalAlpha = this.fade;
-    drawBackdrop(ctx);
+    if (this.roomBackdrop && this.mode !== 'cabinet') {
+      drawBackdrop(ctx);
+      this.roomBackdrop(ctx, time);
+      ctx.fillStyle = 'rgba(6,3,12,0.5)';
+      ctx.fillRect(0, 0, W, H);
+    } else drawBackdrop(ctx);
     ctx.restore();
     ctx.save();
     ctx.globalAlpha = this.fade;

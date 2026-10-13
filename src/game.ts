@@ -1599,6 +1599,7 @@ export class Game {
     this.camera.apply(ctx);
     this.background.scene = this.sceneNow();
     this.background.draw(ctx, t);
+    this.screens.roomBackdrop ??= (c, time) => this.background.draw(c, time);
     if (this.camera.dim > 0.001) {
       ctx.fillStyle = `rgba(0,0,0,${this.camera.dim})`;
       ctx.fillRect(-40, -40, W + 80, H + 80);
@@ -1972,7 +1973,8 @@ export class Game {
   private sceneNow(): Scene {
     const run = this.run;
     const inRun = !!run && !this.menus.isOpen && this.phase !== 'title';
-    const fight = inRun && (this.phase === 'fighting' || this.phase === 'recap');
+    // (A sandbox fight has no run: it's still a fight, on the casino floor.)
+    const fight = !this.menus.isOpen && (this.phase === 'fighting' || this.phase === 'recap');
     const boss = this.fight.cfg.enemy.boss;
     const p = this.fight.sides.player;
     return {
