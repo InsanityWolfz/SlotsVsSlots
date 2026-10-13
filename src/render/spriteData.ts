@@ -74,7 +74,6 @@ export type SpriteId =
   | 'sword' | 'shield' | 'bolt' | 'slime'          // reel symbols, 16x16
   | 'goo'                                          // slime-over overlay, 16x16
   | 'heart' | 'shieldIcon' | 'boltIcon'            // HUD bar icons, 8x8
-  | 'pipFull' | 'pipEmpty'                         // special-energy pips, 8x8
   | 'swordProjectile'                              // 12x12, points RIGHT
   | 'slimeBlob'                                    // 8x8 flying goo glob
   | 'spark'                                        // 5x5 hit spark
@@ -84,15 +83,15 @@ export type SpriteId =
   | 'ice' | 'claw' | 'rock' | 'lock'               // enemy reel symbols, 16x16
   | 'coin' | 'seven' | 'ball'                     // boss reel symbols, 16x16 (ball: THE WHEEL's BALL)
   | 'frozenOverlay' | 'lockOverlay'               // cell overlays, 16x16 (mostly transparent)
-  | 'relicClover' | 'relicWhetstone' | 'relicSoap'  // relic icons, 16x16
+  | 'relicClover'  // relic icons, 16x16
   | 'relicBattery' | 'relicMirror' | 'relicFang'
-  | 'relicBandage' | 'relicHourglass' | 'relicMagnet'
+  | 'relicBandage' 
   | 'icoFlood' | 'icoSmash' | 'icoFreeze'        // intent / UI icons, 8x8
   | 'icoSteal' | 'icoLock' | 'icoRock' | 'icoCoin'
   | 'plusBadge' | 'minusBadge' | 'skull'
   | 'nodeFight' | 'nodeBoss' | 'nodeDone' | 'nodeHere' // map nodes, 12x12
-  | 'relicMittens' | 'relicLockpick' | 'relicMousetrap' // counter relics, 16x16
-  | 'relicPickaxe' | 'relicDice' | 'relicCrown'
+  | 'relicLockpick' // counter relics, 16x16
+  | 'relicPickaxe' | 'relicDice' 
   | 'cardSwap' | 'cardClear' | 'potTier1'          // card / pot icons, 16x16
   | 'arrowRight'                                   // 8x8
   | 'potTier2' | 'potTier3'                        // 24x24
@@ -104,13 +103,9 @@ export type SpriteId =
   | 'cardPrep'                                     // card icon, 16x16
   | 'wild'                                         // WILD reel symbol, 16x16
   | 'enhGold' | 'enhKeen' | 'enhCharged' | 'enhSpiked' // enhanced-cell overlays, 16x16 (mostly transparent)
-  | 'cardGild'                                     // card icon, 16x16
-  | 'relicMidas' | 'relicRod' | 'relicCactus'      // build relics, 16x16
   | 'relicPrism' | 'relicHone'
-  | 'stampX2'                                      // gilded-score pop stamp, 12x8 (non-square)
-  | 'tickGold' | 'tickKeen' | 'tickCharged' | 'tickSpiked' // strip-map enhancement ticks, 5x5
   | 'potSkim' | 'chip'                             // pot skim hand / chip currency, 12x12
-  | 'cashierPortrait' | 'shopSlot'                 // cashier NPC / shop display cushion, 24x24
+  | 'cashierPortrait'                 // cashier NPC / shop display cushion, 24x24
   | 'chipShield'                                   // saved chips -> shield vs the House, 12x12
   | 'tagBuild'                                     // green "FITS" build tag, 20x7 (non-square)
   | 'shopHeal' | 'setStar'                         // cashier first-aid tin / full-set bonus star, 16x16
@@ -130,19 +125,19 @@ export type SpriteId =
   | 'actBadge2'                                    // act 2 map header plaque, 24x12 (non-square)
   | 'slotHeart' | 'slotUp' | 'slotTopper' // LUCKY SEVENS prize symbols 16x16, topper 64x16
   | 'npcBloodBank' | 'npcPawnBroker' | 'npcLoanShark'      // NPC portraits, 24x24
-  | 'enemyGrounder' | 'enemyCounterfeiter'         // act 2 enemy portraits (batch 8), 24x24
-  | 'ground' | 'fake'                              // their reel symbols, 16x16
+  | 'enemyCounterfeiter'         // act 2 enemy portraits (batch 8), 24x24
+  | 'fake'                              // their reel symbols, 16x16
   | 'groundOverlay' | 'fakeOverlay'                // their cell overlays, 16x16 (mostly transparent)
-  | 'icoEarth' | 'icoLaunder'                      // their ability icons, 8x8
-  | 'mapBadgeGround' | 'mapBadgeFake'              // their map badges, 8x8
+  | 'icoLaunder'                      // their ability icons, 8x8
+  | 'mapBadgeFake'              // their map badges, 8x8
   | 'setRibbon'                                    // 'SET!' completes-set ribbon, 44x9 (non-square)
   | 'enemySharp' | 'enemyPitBoss' | 'enemyCroupier' | 'enemyRepoMan' // act 3 enemy portraits + the gatekeeper, 24x24
   | 'enemyDealer'                                  // (enemyDealer = act 3 final boss)
   | 'card' | 'gavel' | 'rake'                      // act 3 enemy reel symbols, 16x16
-  | 'icoShuffle' | 'icoCut' | 'icoRaise'           // act 3 ability icons, 8x8
+  | 'icoShuffle'           // act 3 ability icons, 8x8
   | 'icoMark' | 'icoGavel' | 'icoRake'
   | 'mapBadgeCard' | 'mapBadgeGavel' | 'mapBadgeRake' | 'mapBadgeDealer' // act 3 map badges, 8x8
-  | 'dealShuffle' | 'dealCut' | 'dealRaise' | 'dealBack' // Dealer's face-up deal cards, 16x22 (non-square)
+  | 'dealShuffle' | 'dealCut' | 'dealRaise' // Dealer's face-up deal cards, 16x22 (non-square)
   | 'cardBack'                                     // face-down card: MARKED cell overlay, 16x16
   | 'confiscatedOverlay'                           // confiscated-gild cell overlay, 16x16 (mostly transparent)
   | 'actPlaque3'                                   // act 3 map header plaque, 24x12 (non-square)
@@ -158,28 +153,27 @@ export type SpriteId =
   | 'hsSkull' | 'trophySmall'                     // hiscore killed-by / victory markers, 12x12
   | 'coinSpin0' | 'coinSpin1' | 'coinSpin2' | 'coinSpin3' // loading-screen coin spin frames, 16x16
   | 'tutorialPointer'                             // tutorial callout arrow, points DOWN, 12x12
-  | 'heroKnight' | 'heroMidas' | 'heroThorn'      // player hero portraits (face RIGHT), 24x24
+  | 'heroKnight' | 'heroMidas'      // player hero portraits (face RIGHT), 24x24
   | 'heroTesla' | 'heroJoker'
   | 'goldbar' | 'thorn' | 'ace'                          // signature symbols: MIDAS gold bar, BRIAR thorn, 16x16
   | 'relicChalice'                               // BLOOD CHALICE relic, 16x16
-  | 'relicDrum' | 'relicChainmail' | 'relicVault' | 'relicArmoredCar' | 'relicGreatsword' | 'relicSafeDeposit' | 'relicDecree' // charm-rework relics, 16x16
-  | 'relicRosehip' | 'relicGraft' | 'relicFaraday' | 'relicStatic'
+  | 'relicDrum' | 'relicChainmail' | 'relicArmoredCar' | 'relicGreatsword' | 'relicSafeDeposit' // charm-rework relics, 16x16
+  | 'relicGraft' | 'relicFaraday' | 'relicStatic'
   | 'relicCapbells' | 'relicStacked' | 'relicGoldleaf' | 'relicExecutioner'
-  | 'relicKiss' | 'relicHorseshoe' | 'relicUnderdog' | 'relicFirstblood'
+  | 'relicHorseshoe' | 'relicUnderdog' | 'relicFirstblood'
   | 'relicPiggy' | 'relicTrophy' | 'relicHolywater' | 'relicBash'
-  | 'relicLoaded' | 'relicMarker' | 'relicHighLimit'
   | 'trimClassic' | 'trimBronze' | 'trimSilver'  // slot machine trim crests, 16x16
   | 'trimNeon' | 'trimVelvet' | 'trimEmerald'
   | 'trimDiamond' | 'trimObsidian' | 'trimHouse'
-  | 'relicHotStreak' | 'relicBelt' | 'relicToll' // relics, 16x16
+  | 'relicHotStreak' | 'relicBelt' // relics, 16x16
   | 'relicBracelet' | 'relicMetronome' | 'relicSnakeEyes'
   | 'relicPitBoss' | 'relicCoil' | 'relicTaxMan'
-  | 'relicLoadedChips' | 'relicRainmaker' | 'relicSlushFund' // THE BANKROLL relics, 16x16
-  | 'relicTipJar' | 'relicLooseChange'
-  | 'relicBramble' | 'relicRiposte' | 'relicTower' | 'relicHeadsman' // per-character relics, 16x16
+  | 'relicRainmaker' | 'relicSlushFund' // THE BANKROLL relics, 16x16
+  | 'relicTipJar' 
+  | 'relicTower' | 'relicHeadsman' // per-character relics, 16x16
   | 'relicCapacitor' | 'relicLivewire' | 'relicEncore' | 'relicWildwheel'
-  | 'relicDownpour' | 'relicNestegg'
-  | 'relicCoup' | 'relicCompound' | 'relicHedge' | 'relicMeltdown' | 'relicPulse'
+  | 'relicDownpour' 
+  | 'relicCoup' | 'relicCompound' | 'relicMeltdown' | 'relicPulse'
   | 'relicDeckdrum' | 'relicWildcard' | 'relicLoadedreel'
   | 'note'                                       // THE JUKEBOX attack symbol (NOTE), 16x16
   | 'cabinetJukebox'                             // THE JUKEBOX slot machine, 48x64 (non-square)
@@ -311,26 +305,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '..KYoK..',
     '.KYoK...',
     '..KK....',
-  ],
-  pipFull: [
-    '...KK...',
-    '..KWYK..',
-    '.KWYYYK.',
-    'KYYYYYOK',
-    'KYYYYOOK',
-    '.KYYOoK.',
-    '..KOoK..',
-    '...KK...',
-  ],
-  pipEmpty: [
-    '...KK...',
-    '..KKPK..',
-    '.KKPPpK.',
-    'KKPPPppK',
-    'KPPPpppK',
-    '.KPpppK.',
-    '..KppK..',
-    '...KK...',
   ],
   swordProjectile: [
     '............',
@@ -751,42 +725,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '..KQQQK..KqQQK..',
     '...KKK....KKK...',
   ],
-  relicWhetstone: [
-    '...........K....',
-    '..........KYK...',
-    '.........KKWKK..',
-    '........KYWWWYK.',
-    '........KKKWKK..',
-    '.......KYKKYK...',
-    '....KKKWKKKKKKK.',
-    '...KWLLLLLLLLLSK',
-    '..KLLLLLLLLLLSSD',
-    '.KSSSSSSSSSSSDDK',
-    '.KSSDSSSSDSSSDK.',
-    '.KSSSSSDSSSSDDK.',
-    '.KDDDDDDDDDDDK..',
-    '..KKKKKKKKKKK...',
-    '................',
-    '................',
-  ],
-  relicSoap: [
-    '...........KK...',
-    '..KK......KAAK..',
-    '.KAAK....KAWAAK.',
-    'KAWAK....KAAAAK.',
-    '.KAK...KK.KAAK..',
-    '..K...KAWK.KK...',
-    '....KKKAAKKKKK..',
-    '...KWMMMMMMMMMK.',
-    '..KMMWMMMMMMMMmK',
-    '.KMMMMMMMMMMMmmK',
-    'KmmmmmmmmmmmmmmK',
-    'KmmmmmmmmmmmmmrK',
-    'KmmmmmmmmmmmmrK.',
-    'KrrrrrrrrrrrrK..',
-    '.KKKKKKKKKKKK...',
-    '................',
-  ],
   relicBattery: [
     '......KKK.......',
     '....KKWLSKKK....',
@@ -857,42 +795,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '.......KtTTTTtK.',
     '........KttttK..',
     '.........KKKK...',
-    '................',
-  ],
-  relicHourglass: [
-    '.KKKKKKKKKKKKKK.',
-    'KYYGGGGGGGGGGGgK',
-    'KggggggggggggggK',
-    '.KGKWAAAAAAAKgK.',
-    '.KGKAKKKKKKAKgK.',
-    '.KGKKAYYYYAKKgK.',
-    '.KGK.KAYOAK.KgK.',
-    '.KGK..KYOK..KgK.',
-    '.KGK..KYKK..KgK.',
-    '.KGK.KAOKAK.KgK.',
-    '.KGKKAKYKKAKKgK.',
-    '.KGKAKYYOOKAKgK.',
-    '.KGKAYYYOOOAKgK.',
-    'KYYGGGGGGGGGGGgK',
-    'KggggggggggggggK',
-    '.KKKKKKKKKKKKKK.',
-  ],
-  relicMagnet: [
-    '..KKKK....KKKK..',
-    '.KWLLSK..KLLLSK.',
-    '.KLLSDK..KLLSDK.',
-    '.KRRRrK..KRRRrK.',
-    '.KRWRrK..KRRRrK.',
-    '.KRRRrK..KRRRrK.',
-    '.KRRRrK..KRRrrK.',
-    '.KRRRrK..KRRrrK.',
-    '.KRRRRrKKrRRrrK.',
-    '.KRRRRRrrrRRrrK.',
-    '..KRRRRRRRRrrK..',
-    '...KrrrrrrrrK...',
-    '....KKKKKKKK....',
-    '................',
-    '................',
     '................',
   ],
   icoFlood: [
@@ -1051,24 +953,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '.....KK.....',
     '............',
   ],
-  relicMittens: [
-    '...KKK....KKK...',
-    '..KRRRK..KRRRK..',
-    '.KRWRRrKKRRRRrK.',
-    '.KRRRRrKKRRRRrK.',
-    '.KRRRRrKKRRRRrK.',
-    '.KTRTRTKKTRTRtK.',
-    'KRKTRTrKKRTRTKrK',
-    'KRKRRRrKKRRRRKrK',
-    'KRRRRRrKKRRRRrrK',
-    '.KRRRRrKKRRRRrK.',
-    '.KrrrrrKKrrrrrK.',
-    '.KWTTTtKKWTTTtK.',
-    '.KTtTttKKTtTttK.',
-    '.KTtTttKKTtTttK.',
-    '.KtttttKKtttttK.',
-    '..KKKKK..KKKKK..',
-  ],
   relicLockpick: [
     '............K...',
     '...........KLK..',
@@ -1086,24 +970,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KGGGgKKLSSSSSSK.',
     '.KggK..KKKKKKK..',
     '..KK............',
-  ],
-  relicMousetrap: [
-    '................',
-    '................',
-    '..KKKKKK........',
-    '.KWLLLLSK.......',
-    '.KLKKKKDK..KK...',
-    '.KLK..KDKKKYYK..',
-    '.KLK..KDKYWYYGK.',
-    '.KLK..KDYYYYGGgK',
-    '.KLK..KDYgYYGggK',
-    '.KSKKKKDGGGgGggK',
-    'KwwLSLSDwwwwwwww',
-    'KwwwwwwwwwwwwwwB',
-    'KBBBBBBBBBBBBBBb',
-    'Kbbbbbbbbbbbbbbb',
-    '.KKKKKKKKKKKKKKK',
-    '................',
   ],
   relicPickaxe: [
     '................',
@@ -1140,24 +1006,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KMRWRRWrK....K..',
     '.KrrrrrK........',
     '..KKKKK.........',
-  ],
-  relicCrown: [
-    '................',
-    '..K....KK....K..',
-    '.KWK..KWYK..KYK.',
-    '.KYK..KYGK..KGK.',
-    '.KYGKKYGGgKKGgK.',
-    '.KYGGKYGGgKGGgK.',
-    '.KYGGGGGGGGGGgK.',
-    '.KYGGGGRRGGGGgK.',
-    '.KYGGGRWRrGGGgK.',
-    '.KYGGGRRrrGGGgK.',
-    '.KYGGGGrrGGGGgK.',
-    '.KggggggggggggK.',
-    '.KYWYYYYYYYYYGK.',
-    '.KGRGGGAAGGGRgK.',
-    '.KggggggggggggK.',
-    '..KKKKKKKKKKKK..',
   ],
   cardSwap: [
     '................',
@@ -1513,78 +1361,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KDDK..KLDK..KDDK',
     'DKK...KDDK...KKD',
   ],
-  cardGild: [
-    '...........KK...',
-    '.....KKKKKKwwK..',
-    '..K.KWLLSwwBBK..',
-    '.KYKKLLSDBBKK...',
-    'KYWYKLSSDKKK....',
-    '.KYKKSDDDKKGK...',
-    '..KKKKKKKKKYKK..',
-    '.KWWLLLLLLLLLSK.',
-    '..KKLSSSSSSSSDK.',
-    '....KKSSSSSDKK..',
-    '......KSSSDK....',
-    '.....KKSDDDKK...',
-    '....KLSSSSSDDK..',
-    '...KSSSSSSSSDDK.',
-    '....KKKKKKKKKK..',
-    '................',
-  ],
-  relicMidas: [
-    '..K.............',
-    '.KYK...KK.......',
-    'KYWYK.KYGK......',
-    '.KYKKKKYGKKK....',
-    '..KKWGKYGKYGK...',
-    '...KYGKYGKYGKKK.',
-    '...KYGKYGKYGKGgK',
-    '.KKKYGKYGKYGKGgK',
-    'KYGKYGKYGKYGKGgK',
-    'KYGGYWGYWGYGGGgK',
-    '.KYGGGGGGGGGGGgK',
-    '.KYYGGGGgGGGGGgK',
-    '..KYGGGGGgGGGgK.',
-    '...KYGGGGGGGggK.',
-    '....KRMRRRRRrK..',
-    '....KrrrrrrrrK..',
-  ],
-  relicRod: [
-    '...........KK...',
-    '..........KWYK..',
-    '.........KWYK...',
-    '........KWYYYK..',
-    '.......K.KYOKK..',
-    '......KYKYKKKYK.',
-    '.......KKWK..K..',
-    '.......KaOoK....',
-    '.......KaOoK....',
-    '.......KaOoK....',
-    '.......KaOoK....',
-    '.......KaOoK....',
-    '.....KKLLSSDK...',
-    '....KWLLSSSSDKK.',
-    '...KSSSSSSSSSDDK',
-    '....KKKKKKKKKKK.',
-  ],
-  relicCactus: [
-    '.......KK.......',
-    '......KMMK......',
-    '.....KMWMmK.....',
-    '......KMmK......',
-    '.....KEeeQK.....',
-    '..KK.KTeeQK..KK.',
-    '.KEQKKEeeTK.KEQK',
-    '.KTQKKEeeQK.KeTK',
-    '.KEeeeEeTQKKKeQK',
-    '..KQQQEeeQeeeeQK',
-    '...KKKTeeQQQQQK.',
-    '....KKEeeQKKKK..',
-    '...KaOOOOOOoK...',
-    '...KooooooooK...',
-    '....KaOOOOoK....',
-    '....KOOOOooK....',
-  ],
   relicPrism: [
     '................',
     '.......K........',
@@ -1620,44 +1396,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '................',
     '................',
     '................',
-  ],
-  stampX2: [
-    '.KK.KK.KKKK.',
-    'KWYKYGKWYYGK',
-    '.KYYGK.KKYGK',
-    '.KYGGK.KYGgK',
-    '.KYGgKKYGgK.',
-    'KYGKGgKYGKK.',
-    'KGgKggKGGggK',
-    '.KK.KK.KKKK.',
-  ],
-  tickGold: [
-    'KKKKK',
-    'KWYGK',
-    'KYGgK',
-    'KGggK',
-    'KKKKK',
-  ],
-  tickKeen: [
-    '...KW',
-    '..KCK',
-    '.KCK.',
-    'KcK..',
-    'cK...',
-  ],
-  tickCharged: [
-    '..KWK',
-    '.KYK.',
-    'KYYYK',
-    '.KYK.',
-    'KOK..',
-  ],
-  tickSpiked: [
-    '.KLK.',
-    'KKLKK',
-    'LLWSD',
-    'KKSKK',
-    '.KDK.',
   ],
   potSkim: [
     '...KKK......',
@@ -1712,32 +1450,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KJVVVVVTRrTTTTRrTvvvvvvK',
     'KJVTMVVVVTTTTTTvvvvvvvvK',
     'KVVVVVVVVGTTTTGvvvvvvvvK',
-  ],
-  shopSlot: [
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-    '.....KKKKKKKKKKKKKKK....',
-    '...KKMMRRRRRRRRRRRRrKK..',
-    '..KMMRRRRRRRRRRRRRRRRrK.',
-    '.KMRRRGRRRRRRRRRRGRRRrK.',
-    '.KMRRRRrrrrrrrrrrRRRRrK.',
-    '.KRRRRRrrrrrrrrrrRRRrrK.',
-    '.KYYGGGGGGGGGGGGGGGGGgK.',
-    'KGRRRrrrrGrrrrrGrrrrrdGK',
-    'KYRrrrrrrrrrrrrrrrrrddgK',
-    'YGgrrrdddddddddddddddgYg',
-    'GgKGGGGGGGGGGGGGGGGggKGg',
-    'gK.KKKKYGGGGGGGGGgKKKKgK',
-    'K....KKKYGGGGGGggKKK..K.',
-    '....KYYYGGGGGGGGGGggK...',
-    '....KggggggggggggggggK..',
-    '.....KKKKKKKKKKKKKKKK...',
   ],
   chipShield: [
     '..KKKKK.....',
@@ -2852,32 +2564,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KbbWYbbggbbWYbbggbbWYbbggbbWYbbggbbWYbbggbbWYbbggbbWYbbggbbWYbbK',
     '.KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK.',
   ],
-  enemyGrounder: [
-    '.......KKKKKK.....KKKKKK',
-    '.....KKaaOOOoKK..KawwwwO',
-    '....KaWaaOOOOOoK.KaWwwBo',
-    '...KaaaaaYGOOOooKKOwBBBo',
-    '..KKaaaaaGgOOoooKKOBBBbo',
-    '.KaaaOOOOOOOOOoooKobbbbo',
-    '..KKbffffffffffbK.KKwBKK',
-    '...KbFbbbFFbbbfbK..KwBK.',
-    '...KbFWKFFFFWKfbK..KwBK.',
-    '...KBFFFFMRFFffBK..KwBK.',
-    '...KBwBBMRRrBBbbK.KFFFfK',
-    '...KwwBBBbBBBBbbK.KfFffK',
-    '..KKBBBBKrrKBBBbKKaOOoK.',
-    '.KeQwBBBbKKbBBbbQQeQQqK.',
-    'KeeQQBBwBBBBBbbQQQeQQqK.',
-    'EeeQQBBBwBBBbbbQQqeQQqK.',
-    'EeeQOQBBBBBbbbQOQqeQQqK.',
-    'EeeQOQQBBBbbbQQOQqQQQqK.',
-    'EeeQOQQQBaObQQQOQQQQQqK.',
-    'EeeQOQQQQQQQQQQOQQQQqqK.',
-    'EeeQOQQQQqqQQQQOQQQQqqK.',
-    'wwwBaBBBBYGBBBBaBBBBbbK.',
-    'QQQqqqqqqqqqqqqqqqqqqqK.',
-    'QQqqqqqqqqqqqqqqqqqqqqK.',
-  ],
   enemyCounterfeiter: [
     '......KKKKKKK...........',
     '.....KIIHHHHhK..........',
@@ -2982,24 +2668,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'lkklkklkklPRRPklkklkklkk',
     'KKKKKKKKKKKKKKKKKKKKKKKK',
   ],
-  ground: [
-    '......KKKK......',
-    '.....KaWOoK.....',
-    '......KaoK......',
-    '.....KLLSDK.....',
-    '.....KSSDDK.....',
-    '......KaoK......',
-    '.KKKKKKaoKKKKKK.',
-    'KaaaaaaaaOOOOOOK',
-    'KOOOOOOOOOOOOooK',
-    '.KKKKKKKKKKKKKK.',
-    '...KaaaaOOOOK...',
-    '...KOOOOOOooK...',
-    '....KKKKKKKK....',
-    '.....KaOOoK.....',
-    '.....KOOooK.....',
-    '......KKKK......',
-  ],
   fake: [
     '.....KKKK.......',
     '...KKIIIIK......',
@@ -3054,16 +2722,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '.KhhhK.....I.HHH',
     '..KKK...h...hHHh',
   ],
-  icoEarth: [
-    '...KK...',
-    '.KKaOKK.',
-    'KaaaOOoK',
-    '.KKKKKK.',
-    '.KaOOoK.',
-    '..KKKK..',
-    '..KOoK..',
-    '...KK...',
-  ],
   icoLaunder: [
     '..KKKK..',
     '.KYGGgK.',
@@ -3073,16 +2731,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KgccccgK',
     '.KggggK.',
     '..KKKK..',
-  ],
-  mapBadgeGround: [
-    '..KKKK..',
-    '.KaWOoK.',
-    '..KaoK..',
-    '..KaoK..',
-    '.KKaoKK.',
-    'KEeaoeQK',
-    'KbbbbbbK',
-    '.KKKKKK.',
   ],
   mapBadgeFake: [
     '..KKKK..',
@@ -3299,26 +2947,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KYK.KAAK',
     '.K...KK.',
   ],
-  icoCut: [
-    '..K..K..',
-    '.KSKKLK.',
-    '..KSLK..',
-    '..KWSK..',
-    '.KRKKRK.',
-    'KRKRRKRK',
-    '.KRKKRK.',
-    '..K..K..',
-  ],
-  icoRaise: [
-    '...KK...',
-    '..KWYK..',
-    '.KYYYGK.',
-    '..KYGK..',
-    '.KKYGKK.',
-    'KRWRRWrK',
-    'KrrdrrrK',
-    '.KKKKKK.',
-  ],
   icoMark: [
     '.KKKKK..',
     'KWTTTtK.',
@@ -3459,30 +3087,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KWTTTTTTTTTTGTtK',
     'KWTTTTTTTTTTTTtK',
     '.KttttttttttttK.',
-    '..KKKKKKKKKKKK..',
-  ],
-  dealBack: [
-    '..KKKKKKKKKKKK..',
-    '.KRRRRRRRRRRRRK.',
-    'KRYYYYYYYYYYYYdK',
-    'KRYGrGrGrGrGrGdK',
-    'KRYrYrrrYrrrYGdK',
-    'KRYGrGrGrGrGrGdK',
-    'KRYrrrYrrrYrrGdK',
-    'KRYGrGrGrGrGrGdK',
-    'KRYrYrrrYrrrYGdK',
-    'KRYGrGrGrGrGrGdK',
-    'KRYrrrYrrrYrrGdK',
-    'KRYGrGrGrGrGrGdK',
-    'KRYrYrrrYrrrYGdK',
-    'KRYGrGrGrGrGrGdK',
-    'KRYrrrYrrrYrrGdK',
-    'KRYGrGrGrGrGrGdK',
-    'KRYrYrrrYrrrYGdK',
-    'KRYGrGrGrGrGrGdK',
-    'KRYrrrYrrrYrrGdK',
-    'KRYGGGGGGGGGGGdK',
-    '.KddddddddddddK.',
     '..KKKKKKKKKKKK..',
   ],
   cardBack: [
@@ -4043,32 +3647,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'lkRWRkkkklQQTTQQQkkkkkkk',
     'kkkkkkkkklQQGTGQQkkkkkkk',
   ],
-  heroThorn: [
-    '...K....................',
-    '..KwK....KKKKK..........',
-    '..KQwK.KKQQQQQKK........',
-    '..KQQQKQEQQQQQQqK.K.....',
-    '...KQQQQEQQQQQQQqKwK....',
-    '..KwQQEQQQQQQQQQqqK.....',
-    '...KQQeeQQQQQQQQQqwK....',
-    '...KQQQQeeQQqqqqqqqK....',
-    '..KwQQQQMMeeqqqqqqqK....',
-    '...KQQQMWMqeefffffqK....',
-    '...KQQQmMmqffFFFFffqK...',
-    '...KQQQQQqfFFFFWKFfqK...',
-    '..KwQQQQqfFFFFFFFFFFK...',
-    '...KQQQQqfFFFFFFFFFqK...',
-    '...KQQQQqfFFFFFfFFfqK...',
-    '...KQeQQqfFFFFKKKffqK...',
-    '..KwQeQQqqfFFFFffqqwK...',
-    '...KQQeQQqqffffqqQeK....',
-    '.KKQQQQeeQQqqqqQQeeQKK..',
-    'KEEQQQQQQeeQQQQeeQQQQeK.',
-    'EeeEEeQQQQwQQQeeQQeQQQqK',
-    'eQQeeQQQQQBwQQQQQeeQQqqq',
-    'QQQQQQQQeQQBwQQQQQQQQqqq',
-    'QQQQQeQQQQQQBwQQQQqqqqqq',
-  ],
   heroTesla: [
     '.K..KYK..K.KWK...K......',
     'KWKK.KYKKWKKLWK.KYK.....',
@@ -4229,24 +3807,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '...KKKKKKKKKK...',
     '................',
   ],
-  relicVault: [
-    '.....KKKKKK.....',
-    '...KKLLWLLSKK...',
-    '..KLLLLLLLLSSK..',
-    '.KLLLkkkkkkSSSK.',
-    'KLLkWkkkkkkIkSDK',
-    'KWLkkLkkkkSkkSIK',
-    'KLLkkkLLLSkkkSDK',
-    'KLLkkkLWLSkkkSDK',
-    'KLLkkkLLSDkkkSDK',
-    'KLLkkkSSDDkkkDDK',
-    'KSLkkSkkkkDkkDDK',
-    'KSSkIkkkkkkSkDDK',
-    '.KSSSkkkkkkDDDK.',
-    '..KISSSDDDDDIK..',
-    '...KKSDDIDDKK...',
-    '.....KKKKKK.....',
-  ],
   relicArmoredCar: [
     '................',
     '.KKKKKKKKKK.....',
@@ -4300,42 +3860,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'KDDDDDDDDDDDDDDK',
     '.KDDKKKKKKKKDDK.',
     '..KK........KK..',
-  ],
-  relicDecree: [
-    '..KKKKKKKKKKKK..',
-    '.KTwwwwwwwwwwBK.',
-    '.KBBBBBBBBBBBbK.',
-    '..KTTTTTTTTTIK..',
-    '..KTttttttTTIK..',
-    '..KTTTTTTTTTIK..',
-    '..KTtttttttTIK..',
-    '..KTTTTTTTTTIK..',
-    '..KTtttMRRRrK...',
-    '..KTTTMYRYRYrK..',
-    '.KwwwwRYYYYYrK..',
-    '.KBBBBRGGGGgrK..',
-    '..KKKKKrrrrrK...',
-    '.......KKKKK....',
-    '................',
-    '................',
-  ],
-  relicRosehip: [
-    '.KK.........KKK.',
-    'KEeK.......KEEEK',
-    'KWEeKK....KEeeQK',
-    '.KKEeWK..KEeQQK.',
-    '...KEeKKKEeQKK..',
-    '...KWEeeQKKK....',
-    '....KKeQKK......',
-    '....KMRRRrKK....',
-    '...KMWRRRRRrK...',
-    '...KRMRRRRRrK...',
-    '...KRRRRRRrrK...',
-    '...KRRRRRrrrK...',
-    '....KrRRrrrK....',
-    '.....KQqQKK.....',
-    '......KKK.......',
-    '................',
   ],
   relicGraft: [
     '.............K..',
@@ -4463,24 +3987,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '....KkkK........',
     '.....KK.........',
   ],
-  relicKiss: [
-    '................',
-    '................',
-    '................',
-    '...KKK....KKK...',
-    '..KMRRK..KRRrK..',
-    '.KMRRRRKKRRRRrK.',
-    'KMRRRRRRRRRRRRrK',
-    'KrrdddddddWWdrrK',
-    '.KMRRRRRRRWRrrK.',
-    '.KRRRMMRRRRRrrK.',
-    '..KrRRRRRRRrrK..',
-    '...KKrrrrrrKK...',
-    '.....KKKKKRK....',
-    '..........K.....',
-    '................',
-    '................',
-  ],
   relicHorseshoe: [
     '................',
     '.KKKKK.K..KKKKK.',
@@ -4607,60 +4113,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '........KKK.....',
     '................',
   ],
-  relicLoaded: [
-    '................',
-    '.....KKKKKKKKK..',
-    '....KTWWWWWWWTK.',
-    '...KTWWWKKWWTIK.',
-    '..KTTTTTTTTTIHK.',
-    '.KTTTTTTTTTIHHK.',
-    '.KTKTTTTTKIHHHK.',
-    '.KTTTTTTTTIHMHK.',
-    '.KTTTTMTTTIHRHK.',
-    '.KTTTMRRTTIHrHK.',
-    '.KTTTTrTTTIHHHK.',
-    '.KTTTTTTTTIHHhK.',
-    '.KTKTTTTTKIHhK..',
-    '..KIIIIIIIHhK...',
-    '...KKKKKKKKK....',
-    '................',
-  ],
-  relicMarker: [
-    '..........KKK...',
-    '.........KYTGK..',
-    '..KKKKKKKYWGGgK.',
-    '.KWWWWWWWYGYGgK.',
-    '.KWTTTTTTYGGggK.',
-    '.KWTTTTTTTgggK..',
-    '.KWTHHHHHHTIK...',
-    '.KWTTTTTTTTIK...',
-    '.KWTHHHHTTTIK...',
-    '.KWTTTTTRRTIK...',
-    '.KWTTTTRTTrIK...',
-    '.KWNTNTRTTrIK...',
-    '.KWTNTTTrrTIK...',
-    '.KIIIIIIIIIIK...',
-    '..KKKKKKKKKK....',
-    '................',
-  ],
-  relicHighLimit: [
-    '.....K.KK.K.....',
-    '....KYKYYKGK....',
-    '....KYYRRGGK....',
-    '....KGGGGggK....',
-    '...KJJJJJJJVK...',
-    '...KJYVVVVYvK...',
-    '...KVvvvvvvvK...',
-    '...KYVGGGGVgK...',
-    '...KGgggggggK...',
-    '....KJYVVVVYvK..',
-    '....KVvvvvvvvK..',
-    '...KYVGGGGVgK...',
-    '...KGgggggggK...',
-    '...KJYVVVVYvK...',
-    '...KvvvvvvvvK...',
-    '....KKKKKKKK....',
-  ],
   relicHotStreak: [
     '..........K.....',
     '....K....KYK....',
@@ -4696,42 +4148,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '.KKKKKKwBBBBbK..',
     '......KbbbbbbK..',
     '.......KKKKKK...',
-  ],
-  relicToll: [
-    '...........KKK..',
-    '.KKKKKK...KYYGK.',
-    'KRRRRRrK.KYWGGgK',
-    'RMRRRRrrKKYGgGgK',
-    'KTTTTTtK.KYGGGgK',
-    'KTCCCAtK..KgggK.',
-    'KTCWCAtK...KKK..',
-    'KTAAActK........',
-    'KTTTTTtKKKKKKKK.',
-    'KTTTTTtWRRTTRRTK',
-    'KTTTTTtrrrttrrtK',
-    'KtttttttKKKKKKK.',
-    'KIIIIIHK........',
-    'KHHHHHhK........',
-    '.KKKKKK.........',
-    '................',
-  ],
-  relicLoadedChips: [
-    '............K...',
-    '...........KYK..',
-    '....KKKKKKKYWYK.',
-    '..KKRMWWRrKKYK..',
-    '.KMRRRWWRRRrK...',
-    'KWWRRYWYRRRWWK..',
-    'KRRRRRYGRRRrrK..',
-    'KTRRrrWWrrRRtK..',
-    'KTrrTTrrTTrrtK..',
-    'KddddddddddddK..',
-    '.KAUUAAUUAAUUNK.',
-    '.KNNNNNNNNNNNNK.',
-    'KTrrTTrrTTrrtK..',
-    'KrrrrrrrrrrrdK..',
-    '.KdddddddddddK..',
-    '..KKKKKKKKKKK...',
   ],
   relicRainmaker: [
     '.....KKK........',
@@ -4785,60 +4201,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '..KAYGGYGGYgNK..',
     '...KAAAAAAANK...',
     '....KKKKKKKK....',
-    '................',
-  ],
-  relicLooseChange: [
-    '...........KK...',
-    '...KKKK...KYgK..',
-    '..KYYYGK.KYWgK..',
-    '.KYWYYYGKKYYgK..',
-    'KYWGGGGYgKKggK..',
-    'KYGYYYYGgK.KK...',
-    'KYGYYYYGgK......',
-    'KYYGGGGggKKKKK..',
-    '.KGYYGggKKRWWrK.',
-    '..KggggKKRRrrRrK',
-    '..KKKKK.KWrYGrWK',
-    '.KYYK.KKKRrGgrdK',
-    'KGYYgKYYKrRRRRdK',
-    '.KKKKGYYgKTrTdK.',
-    '.....KKKK.KKKK..',
-    '................',
-  ],
-  relicBramble: [
-    '................',
-    '....K......K....',
-    '...KRK....KRK...',
-    '..KEeRK..KEeRK..',
-    '.KREeeQKKEEeeQK.',
-    '.KEeWeQQEeWeeQRK',
-    'KREeeRQqEeeeRQqK',
-    '.KeeQQqQeeRQQqqK',
-    'KReQReeqQQeeQqrK',
-    '.KQQqQQqqQqQqqK.',
-    'KIIIHIIIIHIIIIHK',
-    'KHHHhHHHHhHHHHhK',
-    'KIHIIIIHIIIIHIhK',
-    'KhhhhhhhhhhhhhhK',
-    '.KKKKKKKKKKKKKK.',
-    '................',
-  ],
-  relicRiposte: [
-    '.............KK.',
-    '............KWSK',
-    '...........KLSK.',
-    '.....KKKKKKLSK..',
-    '....KLLLLSLSK...',
-    '...KLAUUUUDK....',
-    '..KLAUUUUUNDK...',
-    '..KLUUYGgUNDK...',
-    '..KLUUGGgUNDK...',
-    '..KLUUgggNNDK...',
-    '.KYSUUUUNNNDK...',
-    '..KGSNNNNNDK....',
-    '.KBbgDDDDDK.....',
-    'KGgKKKKKKK......',
-    '.KK.............',
     '................',
   ],
   relicTower: [
@@ -4967,24 +4329,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '.KWrWK..........',
     '..KKK...........',
   ],
-  relicNestegg: [
-    '................',
-    '......KKKK......',
-    '.....KYYYGK.....',
-    '....KYWYYGGK....',
-    '....KYWYYGgK....',
-    '...KYYYYGGGgK...',
-    '.K.KYYYGGGggK.K.',
-    'KwKKYYGGGGggKKbK',
-    'KwBwBBwBBwBBwBbK',
-    'KBbBwBbBBwBbBBbK',
-    '.KbBBbBwBBbBBbK.',
-    '..KbbBbbBbbBbK..',
-    '...KKbbbbbbKK...',
-    '.....KKKKKK.....',
-    '................',
-    '................',
-  ],
   relicCoup: [
     '......KKK.......',
     '.....KYGgK......',
@@ -5020,24 +4364,6 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '.KgGgGgGggKKKK..',
     '..KKKKKKKK......',
     '................',
-  ],
-  relicHedge: [
-    '................',
-    '.....KKKKK......',
-    '...KKEEEeeKKK...',
-    '..KREWEeeeeQRK..',
-    '..KEEWEeeReQQK..',
-    '.KREEEeeeeeQQK..',
-    '..KEeeReeeQQqRK.',
-    '.KEeeeeeQQReQqK.',
-    '.KReeeQQeeQQqqK.',
-    '..KeQReQQqQqqK..',
-    '...KQQqQqqRqK...',
-    '....KqqqqqqKRK..',
-    '.....KKKKKKMRrK.',
-    '..........KRrrK.',
-    '...........KrK..',
-    '............K...',
   ],
   relicMeltdown: [
     '.....KKKKKK.....',

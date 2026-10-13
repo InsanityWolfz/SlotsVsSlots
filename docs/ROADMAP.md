@@ -24,7 +24,6 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
 - English only.
 
 ## Code cleanup
-- Unused sprites of removed content (BRIAR, THORNY, the GROUNDER's rods and EARTH, the removed relics incl. LIGHTNING ROD and BANK VAULT) in `tools/build-art.mjs`.
 - Later: split the 2-3k-line files (`fight.ts`, `run.ts`, `runScreens.ts`, `director.ts`, `game.ts`).
 
 ## Held ideas

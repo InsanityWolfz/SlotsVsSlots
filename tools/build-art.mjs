@@ -253,26 +253,6 @@ S.boltIcon = [
   '.KYoK...',
   '..KK....',
 ];
-S.pipFull = [
-  '...KK...',
-  '..KWYK..',
-  '.KWYYYK.',
-  'KYYYYYOK',
-  'KYYYYOOK',
-  '.KYYOoK.',
-  '..KOoK..',
-  '...KK...',
-];
-S.pipEmpty = [
-  '...KK...',
-  '..KKPK..',
-  '.KKPPpK.',
-  'KKPPPppK',
-  'KPPPpppK',
-  '.KPpppK.',
-  '..KppK..',
-  '...KK...',
-];
 
 // ---------------------------------------------------------------- projectiles / fx
 {
@@ -587,37 +567,6 @@ S.lock = lit(16, 16, [
   put(g, 8, 10, 'Q'); put(g, 8, 11, 'Q'); put(g, 8, 12, 'Q'); put(g, 9, 13, 'Q'); put(g, 10, 14, 'q');
   S.relicClover = toRows(outline(g));
 }
-S.relicWhetstone = lit(16, 16, [
-  '................',
-  '...........Y....',
-  '...........W....',
-  '.........YWWWY..',
-  '...........W....',
-  '........Y..Y....',
-  '.......W........',
-  '....WLLLLLLLLLS.',
-  '...LLLLLLLLLLSSD',
-  '..SSSSSSSSSSSDD.',
-  '..SSDSSSSDSSSD..',
-  '..SSSSSDSSSSDD..',
-  '..DDDDDDDDDDD...',
-]);
-S.relicSoap = lit(16, 16, [
-  '................',
-  '...........AA...',
-  '..AA......AWAA..',
-  '.AWA......AAAA..',
-  '..A........AA...',
-  '.......AW.......',
-  '.......AA.......',
-  '....WMMMMMMMMM..',
-  '...MMWMMMMMMMMm.',
-  '..MMMMMMMMMMMmm.',
-  '.mmmmmmmmmmmmmm.',
-  '.mmmmmmmmmmmmmr.',
-  '.mmmmmmmmmmmmr..',
-  '.rrrrrrrrrrrr...',
-]);
 S.relicBattery = lit(16, 16, [
   '................',
   '......WLS.......',
@@ -695,37 +644,6 @@ S.relicBandage = lit(16, 16, [
   '.........TTTRTT.',
   '........tTTTTt..',
   '.........tttt...',
-]);
-S.relicHourglass = lit(16, 16, [
-  '................',
-  '.YYGGGGGGGGGGGg.',
-  '.gggggggggggggg.',
-  '..G.WAAAAAAA.g..',
-  '..G.A......A.g..',
-  '..G..AYYYYA..g..',
-  '..G...AYOA...g..',
-  '..G....YO....g..',
-  '..G....Y.....g..',
-  '..G...AO.A...g..',
-  '..G..A.Y..A..g..',
-  '..G.A.YYOO.A.g..',
-  '..G.AYYYOOOA.g..',
-  '.YYGGGGGGGGGGGg.',
-  '.gggggggggggggg.',
-]);
-S.relicMagnet = lit(16, 16, [
-  '................',
-  '..WLLS....LLLS..',
-  '..LLSD....LLSD..',
-  '..RRRr....RRRr..',
-  '..RWRr....RRRr..',
-  '..RRRr....RRRr..',
-  '..RRRr....RRrr..',
-  '..RRRr....RRrr..',
-  '..RRRRr..rRRrr..',
-  '..RRRRRrrrRRrr..',
-  '...RRRRRRRRrr...',
-  '....rrrrrrrr....',
 ]);
 
 // ---------------------------------------------------------------- small icons (8x8)
@@ -1005,23 +923,6 @@ S.enemyBoss = lit(24, 24, [
 
 // ================================================================ RELICS / CARDS / MAP BADGES (batch 2)
 // ---------------------------------------------------------------- counter relics (16x16)
-S.relicMittens = lit(16, 16, [
-  '................',
-  '...RRR....RRR...',
-  '..RWRRr..RRRRr..',
-  '..RRRRr..RRRRr..',
-  '..RRRRr..RRRRr..',
-  '..TRTRT..TRTRt..',
-  '.RKTRTr..RTRTKr.',
-  '.RKRRRr..RRRRKr.',
-  '.RRRRRr..RRRRrr.',
-  '..RRRRr..RRRRr..',
-  '..rrrrr..rrrrr..',
-  '..WTTTt..WTTTt..',
-  '..TtTtt..TtTtt..',
-  '..TtTtt..TtTtt..',
-  '..ttttt..ttttt..',
-]);
 {
   const g = grid(16, 16);
   // tension wrench: slim L lying behind, bottom-right
@@ -1044,22 +945,6 @@ S.relicMittens = lit(16, 16, [
   put(g, 3, 10, 'W');
   S.relicLockpick = toRows(outline(g));
 }
-S.relicMousetrap = lit(16, 16, [
-  '................',
-  '................',
-  '................',
-  '..WLLLLS........',
-  '..L....D........',
-  '..L....D...YY...',
-  '..L....D.YWYYG..',
-  '..L....DYYYYGGg.',
-  '..L....DYgYYGgg.',
-  '..S....DGGGgGgg.',
-  '.wwLSLSDwwwwwwww',
-  '.wwwwwwwwwwwwwwB',
-  '.BBBBBBBBBBBBBBb',
-  '.bbbbbbbbbbbbbbb',
-]);
 {
   const g = grid(16, 16);
   // steel head: thick arc bowed away from the handle, lit on its outer edge
@@ -1098,23 +983,6 @@ S.relicMousetrap = lit(16, 16, [
   put(g, 13, 12, 'Y');
   S.relicDice = toRows(outline(g));
 }
-S.relicCrown = lit(16, 16, [
-  '................',
-  '................',
-  '..W....WY....Y..',
-  '..Y....YG....G..',
-  '..YG..YGGg..Gg..',
-  '..YGG.YGGg.GGg..',
-  '..YGGGGGGGGGGg..',
-  '..YGGGGRRGGGGg..',
-  '..YGGGRWRrGGGg..',
-  '..YGGGRRrrGGGg..',
-  '..YGGGGrrGGGGg..',
-  '..gggggggggggg..',
-  '..YWYYYYYYYYYG..',
-  '..GRGGGAAGGGRg..',
-  '..gggggggggggg..',
-]);
 
 // ---------------------------------------------------------------- card icons (16x16)
 {
@@ -1462,81 +1330,9 @@ S.dangerPip = lit(8, 8, ['', '..WWWL', '.WWWWWL', '.WKWWKL', '.WWWWWL', '..WLWL'
 }
 
 // ---------------------------------------------------------------- card: gild (16x16) — anvil, hammer, gold spark
-S.cardGild = lit(16, 16, [
-  '................',
-  '...........ww...',
-  '.....WLLSwwBB...',
-  '..Y..LLSDBB.....',
-  '.YWY.LSSD.......',
-  '..Y..SDDD..G....',
-  '...........Y....',
-  '..WWLLLLLLLLLS..',
-  '....LSSSSSSSSD..',
-  '......SSSSSD....',
-  '.......SSSD.....',
-  '.......SDDD.....',
-  '.....LSSSSSDD...',
-  '....SSSSSSSSDD..',
-]);
 
 // ================================================================ BUILD RELICS / GILD READABILITY / CASHIER (batch 5)
 // ---------------------------------------------------------------- build relics (16x16)
-// midas: golden open hand in a royal red cuff, sparkle at the index fingertip
-S.relicMidas = lit(16, 16, [
-  '................',
-  '..Y.............',
-  '.YWY...YG.......',
-  '..Y....YG.......',
-  '....WG.YG.YG....',
-  '....YG.YG.YG....',
-  '....YG.YG.YG.Gg.',
-  '....YG.YG.YG.Gg.',
-  '.YG.YG.YG.YG.Gg.',
-  '.YGGYWGYWGYGGGg.',
-  '..YGGGGGGGGGGGg.',
-  '..YYGGGGgGGGGGg.',
-  '...YGGGGGgGGGg..',
-  '....YGGGGGGGgg..',
-  '.....RMRRRRRr...',
-  '.....rrrrrrrr...',
-]);
-// lightning rod: copper spike on a steel base, a small bolt striking the tip
-S.relicRod = lit(16, 16, [
-  '................',
-  '...........WY...',
-  '..........WY....',
-  '.........WYYY...',
-  '..........YO....',
-  '.......Y.Y...Y..',
-  '.........W......',
-  '........aOo.....',
-  '........aOo.....',
-  '........aOo.....',
-  '........aOo.....',
-  '........aOo.....',
-  '.......LLSSD....',
-  '.....WLLSSSSD...',
-  '....SSSSSSSSSDD.',
-]);
-// cactus: spiky green cactus in a terracotta pot, tiny pink flower on top
-S.relicCactus = lit(16, 16, [
-  '................',
-  '.......MM.......',
-  '......MWMm......',
-  '.......Mm.......',
-  '......EeeQ......',
-  '......TeeQ......',
-  '..EQ..EeeT...EQ.',
-  '..TQ..EeeQ...eT.',
-  '..EeeeEeTQ...eQ.',
-  '...QQQEeeQeeeeQ.',
-  '......TeeQQQQQ..',
-  '......EeeQ......',
-  '....aOOOOOOo....',
-  '....oooooooo....',
-  '.....aOOOOo.....',
-  '.....OOOOoo.....',
-]);
 // prism: glass triangle splitting a white ray (left) into a rainbow fan (right)
 {
   const g = grid(16, 16);
@@ -1590,46 +1386,6 @@ S.relicCactus = lit(16, 16, [
 }
 
 // ---------------------------------------------------------------- gild readability
-// X2 stamp (12x8): chunky gold glyphs, auto-outlined
-S.stampX2 = lit(12, 8, [
-  '............',
-  '.WY.YG.WYYG.',
-  '..YYG....YG.',
-  '..YGG...YGg.',
-  '..YGg..YGg..',
-  '.YG.Gg.YG...',
-  '.Gg.gg.GGgg.',
-  '............',
-]);
-// strip-map ticks (5x5): distinct silhouettes
-S.tickGold = [
-  'KKKKK',
-  'KWYGK',
-  'KYGgK',
-  'KGggK',
-  'KKKKK',
-];
-S.tickKeen = [
-  '...KW',
-  '..KCK',
-  '.KCK.',
-  'KcK..',
-  'cK...',
-];
-S.tickCharged = [
-  '..KWK',
-  '.KYK.',
-  'KYYYK',
-  '.KYK.',
-  'KOK..',
-];
-S.tickSpiked = [
-  '.KLK.',
-  'KKLKK',
-  'LLWSD',
-  'KKSKK',
-  '.KDK.',
-];
 
 // ---------------------------------------------------------------- cashier / shop
 // skim (12x12): purple-gloved fist closing around a gold coin
@@ -1764,32 +1520,6 @@ S.cashierPortrait = lit(24, 24, [
   '.JVVVVVTRrTTTTRrTvvvvvv.',
   '.JVTMVVVVTTTTTTvvvvvvvv.',
   '.VVVVVVVVGTTTTGvvvvvvvv.',
-]);
-// shop slot (24x24): tufted velvet cushion with gold piping + tassels on a small gold pedestal
-S.shopSlot = lit(24, 24, [
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '.....MMRRRRRRRRRRRRr....',
-  '...MMRRRRRRRRRRRRRRRRr..',
-  '..MRRRGRRRRRRRRRRGRRRr..',
-  '..MRRRRrrrrrrrrrrRRRRr..',
-  '..RRRRRrrrrrrrrrrRRRrr..',
-  '..YYGGGGGGGGGGGGGGGGGg..',
-  '.GRRRrrrrGrrrrrGrrrrrdG.',
-  '.YRrrrrrrrrrrrrrrrrrddg.',
-  'YGgrrrdddddddddddddddgYg',
-  'Gg.GGGGGGGGGGGGGGGGgg.Gg',
-  'g......YGGGGGGGGGg....g.',
-  '........YGGGGGGgg.......',
-  '.....YYYGGGGGGGGGGgg....',
-  '.....gggggggggggggggg...',
 ]);
 
 // ================================================================ ECONOMY UI / CABINETS / FULL SET (batch 6)
@@ -2890,34 +2620,6 @@ S.mapBadgeWheel = lit(8, 8, ['', '..wRkb', '.wkRkRb', '.RkYGkR', '.kRGgRk', '.bR
 
 // ================================================================ ACT 2 (batch 8): grounder + counterfeiter
 // ---------------------------------------------------------------- enemy portraits (24x24)
-// grounder: stocky dwarf lineworker — copper hard hat, ruddy nose, big brown beard, green work jacket with
-// copper suspenders, raising a copper-banded mallet
-S.enemyGrounder = lit(24, 24, [
-  '........................',
-  '.......aaOOOo.....awwwwO',
-  '.....aWaaOOOOOo...aWwwBo',
-  '....aaaaaYGOOOoo..OwBBBo',
-  '....aaaaaGgOOooo..OBBBbo',
-  '..aaaOOOOOOOOOooo.obbbbo',
-  '....bffffffffffb....wB..',
-  '....bFbbbFFbbbfb....wB..',
-  '....bFWKFFFFWKfb....wB..',
-  '....BFFFFMRFFffB....wB..',
-  '....BwBBMRRrBBbb...FFFf.',
-  '....wwBBBbBBBBbb...fFff.',
-  '....BBBBKrrKBBBb..aOOo..',
-  '..eQwBBBbKKbBBbbQQeQQq..',
-  '.eeQQBBwBBBBBbbQQQeQQq..',
-  'EeeQQBBBwBBBbbbQQqeQQq..',
-  'EeeQOQBBBBBbbbQOQqeQQq..',
-  'EeeQOQQBBBbbbQQOQqQQQq..',
-  'EeeQOQQQBaObQQQOQQQQQq..',
-  'EeeQOQQQQQQQQQQOQQQQqq..',
-  'EeeQOQQQQqqQQQQOQQQQqq..',
-  'wwwBaBBBBYGBBBBaBBBBbb..',
-  'QQQqqqqqqqqqqqqqqqqqqq..',
-  'QQqqqqqqqqqqqqqqqqqqqq..',
-]);
 // counterfeiter: shifty forger — green eyeshade, black loupe magnifying one eye, pencil moustache,
 // olive coat over a grey vest, holding a dull brass coin up for inspection
 S.enemyCounterfeiter = lit(24, 24, [
@@ -2948,24 +2650,6 @@ S.enemyCounterfeiter = lit(24, 24, [
 ]);
 
 // ---------------------------------------------------------------- reel symbols (16x16)
-// ground: the earth sign itself — a copper grounding rod with a steel clamp, driven into three copper bars
-S.ground = lit(16, 16, [
-  '................',
-  '......aWOo......',
-  '.......ao.......',
-  '......LLSD......',
-  '......SSDD......',
-  '.......ao.......',
-  '.......ao.......',
-  '.aaaaaaaaOOOOOO.',
-  '.OOOOOOOOOOOOoo.',
-  '................',
-  '....aaaaOOOO....',
-  '....OOOOOOoo....',
-  '................',
-  '......aOOo......',
-  '......OOoo......',
-]);
 // fake: dull grey lead coin, crude "$" stamp, chipped at the top-right with a crack
 {
   const g = grid(16, 16);
@@ -3037,11 +2721,9 @@ S.ground = lit(16, 16, [
 }
 
 // ---------------------------------------------------------------- ability icons (8x8)
-S.icoEarth = lit(8, 8, ['', '...aO', '.aaaOOo', '', '..aOOo', '', '...Oo']);
 S.icoLaunder = lit(8, 8, ['', '..YGGg', '.YCCCCg', '.GGGGcg', '.GCcGcg', '.gccccg', '..gggg']);
 
 // ---------------------------------------------------------------- map badges (8x8)
-S.mapBadgeGround = lit(8, 8, ['', '..aWOo', '...ao', '...ao', '...ao', '.EeaoeQ', '.bbbbbb']);
 S.mapBadgeFake = lit(8, 8, ['', '..IIHh', '.IHHkkh', '.IHHkhh', '.HHkkhh', '..hhhh']);
 
 // ---------------------------------------------------------------- set ribbon (44x9): big "SET!" on a gold ribbon
@@ -3325,8 +3007,6 @@ S.rake = lit(16, 16, [
 
 // ---------------------------------------------------------------- ability icons (8x8)
 S.icoShuffle = lit(8, 8, ['', '.A...YY', '..A..YY', '...AY', '...YA', '..Y..AA', '.Y...AA']);
-S.icoCut = lit(8, 8, ['', '..S..L', '...SL', '...WS', '..R..R', '.R.RR.R', '..R..R']);
-S.icoRaise = lit(8, 8, ['', '...WY', '..YYYG', '...YG', '...YG', '.RWRRWr', '.rrdrrr']);
 S.icoMark = lit(8, 8, ['', '.WTTTt', '.TKTKt', '.TTKTt', '.TKTKt', '.TTTTt', '.ttttt']);
 S.icoGavel = lit(8, 8, ['', '.YwwwwG', '.GBBBBg', '.gbbbbg', '...wB', '...wB', '...wB']);
 S.icoRake = lit(8, 8, ['', '.Wwwwwb', '.bbbbbb', '...Gg', '...wB', '.RR.wB', '.rr.wB']);
@@ -3394,7 +3074,6 @@ S.dealRaise = dealCard(false, [
   '   YYGg   ',
   '   gggg   ',
 ], 3, 5, 'G');
-S.dealBack = dealCard(true);
 // cardBack (16x16): a face-down playing card, tilted clockwise (rows step left going down), used as the
 // "MARKED by the enemy" cell overlay. Gold rim (lit top-left), deep red back, dark-red diamond lattice with
 // gold studs where the lines cross, a bright gold centre diamond.
@@ -3636,25 +3315,6 @@ S.relicDrum = lit(16, 16, [
   stamp(g, 5, 7, ['MR RR', 'RRRRr', ' RRr ', '  r  ']);
   S.relicChainmail = toRows(outline(g));
 }
-// relicVault (16x16): BANK VAULT, a round steel vault door with a riveted rim and a spoked wheel handle
-S.relicVault = lit(16, 16, [
-  '................',
-  '.....LLWLLS.....',
-  '...LLLLLLLLSS...',
-  '..LLLkkkkkkSSS..',
-  '.LLkWkkkkkkIkSD.',
-  '.WLkkLkkkkSkkSI.',
-  '.LLkkkLLLSkkkSD.',
-  '.LLkkkLWLSkkkSD.',
-  '.LLkkkLLSDkkkSD.',
-  '.LLkkkSSDDkkkDD.',
-  '.SLkkSkkkkDkkDD.',
-  '.SSkIkkkkkkSkDD.',
-  '..SSSkkkkkkDDD..',
-  '...ISSSDDDDDI...',
-  '.....SDDIDD.....',
-  '................',
-]);
 // relicArmoredCar (16x16): ARMORED CAR, a side-on steel-blue money truck: barred window, gold chip emblem, two black wheels
 S.relicArmoredCar = lit(16, 16, [
   '................',
@@ -3709,39 +3369,6 @@ S.relicSafeDeposit = lit(16, 16, [
   '.SGGGGGGGGGGGgD.',
   '.DDDDDDDDDDDDDD.',
   '..DD........DD..',
-]);
-// relicDecree (16x16): ROYAL DECREE, a cream scroll with a red wax seal stamped with a gold crown
-S.relicDecree = lit(16, 16, [
-  '................',
-  '..TwwwwwwwwwwB..',
-  '..BBBBBBBBBBBb..',
-  '...TTTTTTTTTI...',
-  '...TttttttTTI...',
-  '...TTTTTTTTTI...',
-  '...TtttttttTI...',
-  '...TTTTTTTTTI...',
-  '...TtttMRRRr....',
-  '...TTTMYRYRYr...',
-  '..wwwwRYYYYYr...',
-  '..BBBBRGGGGgr...',
-  '.......rrrrr....',
-]);
-// relicRosehip (16x16): ROSE HIP, a glossy red hip hanging from a thorny green stem
-S.relicRosehip = lit(16, 16, [
-  '................',
-  '.Ee.........EEE.',
-  '.WEe.......EeeQ.',
-  '...EeW....EeQQ..',
-  '....Ee...EeQ....',
-  '....WEeeQ.......',
-  '......eQ........',
-  '.....MRRRr......',
-  '....MWRRRRRr....',
-  '....RMRRRRRr....',
-  '....RRRRRRrr....',
-  '....RRRRRrrr....',
-  '.....rRRrrr.....',
-  '......QqQ.......',
 ]);
 // relicGraft (16x16): GRAFT, a thorny vine spear, a small sword blade lashed to its tip with twine
 {
@@ -3862,22 +3489,6 @@ S.relicExecutioner = lit(16, 16, [
   '.....Bb.........',
   '.....kk.........',
 ]);
-// relicKiss (16x16): VAMPIRE'S KISS, glossy red lips with one white fang
-S.relicKiss = lit(16, 16, [
-  '................',
-  '................',
-  '................',
-  '................',
-  '...MRR....RRr...',
-  '..MRRRR..RRRRr..',
-  '.MRRRRRRRRRRRRr.',
-  '.rrdddddddWWdrr.',
-  '..MRRRRRRRWRrr..',
-  '..RRRMMRRRRRrr..',
-  '...rRRRRRRRrr...',
-  '.....rrrrrr.....',
-  '..........R.....',
-]);
 // relicHorseshoe (16x16): HORSESHOE, a green lucky horseshoe with nail holes and a sparkle
 {
   const g = grid(16, 16);
@@ -3984,58 +3595,6 @@ S.relicHolywater = lit(16, 16, [
   for (const y of [5, 8, 11]) { put(g, 1, y, 'S'); put(g, 2, y, 'L'); }
   S.relicBash = toRows(outline(g));
 }
-// relicLoaded (16x16): LOADED DICE, one chunky ivory die at an angle, a glowing red centre pip and a red weight in its side
-S.relicLoaded = lit(16, 16, [
-  '................',
-  '................',
-  '.....TWWWWWWWT..',
-  '....TWWWKKWWTI..',
-  '...TTTTTTTTTIH..',
-  '..TTTTTTTTTIHH..',
-  '..TKTTTTTKIHHH..',
-  '..TTTTTTTTIHMH..',
-  '..TTTTMTTTIHRH..',
-  '..TTTMRRTTIHrH..',
-  '..TTTTrTTTIHHH..',
-  '..TTTTTTTTIHHh..',
-  '..TKTTTTTKIHh...',
-  '...IIIIIIIHh....',
-]);
-// relicMarker (16x16): MARKER, a cream IOU slip with ink lines, a blue signature, a red stamp and a gold chip clipped on
-S.relicMarker = lit(16, 16, [
-  '................',
-  '..........YTG...',
-  '.........YWGGg..',
-  '..WWWWWWWYGYGg..',
-  '..WTTTTTTYGGgg..',
-  '..WTTTTTTTggg...',
-  '..WTHHHHHHTI....',
-  '..WTTTTTTTTI....',
-  '..WTHHHHTTTI....',
-  '..WTTTTTRRTI....',
-  '..WTTTTRTTrI....',
-  '..WNTNTRTTrI....',
-  '..WTNTTTrrTI....',
-  '..IIIIIIIIII....',
-]);
-// relicHighLimit (16x16): HIGH LIMIT, a tall purple-and-gold chip stack (one chip askew) crowned in gold
-S.relicHighLimit = lit(16, 16, [
-  '................',
-  '.....Y.YY.G.....',
-  '.....YYRRGG.....',
-  '.....GGGGgg.....',
-  '....JJJJJJJV....',
-  '....JYVVVVYv....',
-  '....Vvvvvvvv....',
-  '....YVGGGGVg....',
-  '....Gggggggg....',
-  '.....JYVVVVYv...',
-  '.....Vvvvvvvv...',
-  '....YVGGGGVg....',
-  '....Gggggggg....',
-  '....JYVVVVYv....',
-  '....vvvvvvvv....',
-]);
 // relicHotStreak (16x16): HOT STREAK, a red 7 on fire (flames licking up off its top bar)
 S.relicHotStreak = lit(16, 16, [
   '................',
@@ -4072,42 +3631,6 @@ S.relicBelt = lit(16, 16, [
   '.GGGgg.wBBBBb...',
   '.......wBBBBb...',
   '.......bbbbbb...',
-]);
-// relicToll (16x16): TOLL BOOTH, a little red-roofed booth with a striped barrier arm and a gold coin
-S.relicToll = lit(16, 16, [
-  '................',
-  '...........YYG..',
-  '.RRRRRr...YWGGg.',
-  'RMRRRRrr..YGgGg.',
-  '.TTTTTt...YGGGg.',
-  '.TCCCAt....ggg..',
-  '.TCWCAt.........',
-  '.TAAAct.........',
-  '.TTTTTt.........',
-  '.TTTTTtWRRTTRRT.',
-  '.TTTTTtrrrttrrt.',
-  '.ttttttt........',
-  '.IIIIIH.........',
-  '.HHHHHh.........',
-]);
-// relicLoadedChips (16x16): LOADED CHIPS, a short leaning stack of casino chips (red / blue / red) with a charm sparkle on top
-S.relicLoadedChips = lit(16, 16, [
-  '................',
-  '............Y...',
-  '...........YWY..',
-  '....RMWWRr..Y...',
-  '..MRRRWWRRRr....',
-  '.WWRRYWYRRRWW...',
-  '.RRRRRYGRRRrr...',
-  '.TRRrrWWrrRRt...',
-  '.TrrTTrrTTrrt...',
-  '.dddddddddddd...',
-  '..AUUAAUUAAUUN..',
-  '..NNNNNNNNNNNN..',
-  '.TrrTTrrTTrrt...',
-  '.rrrrrrrrrrrd...',
-  '..ddddddddddd...',
-  '................',
 ]);
 // relicRainmaker (16x16): RAINMAKER, a little storm cloud raining green banknotes and gold coins
 S.relicRainmaker = lit(16, 16, [
@@ -4166,64 +3689,7 @@ S.relicTipJar = lit(16, 16, [
   '................',
   '................',
 ]);
-// relicLooseChange (16x16): LOOSE CHANGE, coins tumbling every which way (one face-on, one on its edge, flat ones) and a red chip
-S.relicLooseChange = lit(16, 16, [
-  '................',
-  '...........Yg...',
-  '...YYYG...YWg...',
-  '..YWYYYG..YYg...',
-  '.YWGGGGYg..gg...',
-  '.YGYYYYGg.......',
-  '.YGYYYYGg.......',
-  '.YYGGGGgg.......',
-  '..GYYGgg..RWWr..',
-  '...gggg..RRrrRr.',
-  '.........WrYGrW.',
-  '..YY.....RrGgrd.',
-  '.GYYg.YY.rRRRRd.',
-  '.....GYYg.TrTd..',
-  '................',
-  '................',
-]);
 // ---------------------------------------------------------------- per-character relics (16x16)
-// relicBramble (16x16): BRAMBLE WALL, a hedge of green brambles bristling with red thorns on a low stone wall
-S.relicBramble = lit(16, 16, [
-  '................',
-  '................',
-  '....R......R....',
-  '...EeR....EeR...',
-  '..REeeQ..EEeeQ..',
-  '..EeWeQQEeWeeQR.',
-  '.REeeRQqEeeeRQq.',
-  '..eeQQqQeeRQQqq.',
-  '.ReQReeqQQeeQqr.',
-  '..QQqQQqqQqQqq..',
-  '.IIIHIIIIHIIIIH.',
-  '.HHHhHHHHhHHHHh.',
-  '.IHIIIIHIIIIHIh.',
-  '.hhhhhhhhhhhhhh.',
-  '................',
-  '................',
-]);
-// relicRiposte (16x16): RIPOSTE, a round blue buckler with a gold boss, a sword crossing behind it thrusting up-right
-S.relicRiposte = lit(16, 16, [
-  '................',
-  '.............WS.',
-  '............LS..',
-  '...........LS...',
-  '.....LLLLSLS....',
-  '....LAUUUUD.....',
-  '...LAUUUUUND....',
-  '...LUUYGgUND....',
-  '...LUUGGgUND....',
-  '...LUUgggNND....',
-  '..YSUUUUNNND....',
-  '...GSNNNNND.....',
-  '..BbgDDDDD......',
-  '.Gg.............',
-  '................',
-  '................',
-]);
 // relicTower (16x16): TOWER SHIELD, a tall blue tower shield with a gold rim and a gold cross
 S.relicTower = lit(16, 16, [
   '................',
@@ -4354,25 +3820,6 @@ S.relicDownpour = lit(16, 16, [
   '..WrW...........',
   '................',
 ]);
-// relicNestegg (16x16): NEST EGG, a gold egg sitting in a brown twig nest
-S.relicNestegg = lit(16, 16, [
-  '................',
-  '................',
-  '......YYYG......',
-  '.....YWYYGG.....',
-  '.....YWYYGg.....',
-  '....YYYYGGGg....',
-  '....YYYGGGgg....',
-  '.w..YYGGGGgg..b.',
-  '.wBwBBwBBwBBwBb.',
-  '.BbBwBbBBwBbBBb.',
-  '..bBBbBwBBbBBb..',
-  '...bbBbbBbbBb...',
-  '.....bbbbbb.....',
-  '................',
-  '................',
-  '................',
-]);
 // relicCoup (16x16): COUP DE GRACE, a sword plunging point-down, a red-gold spark flaring at its tip
 S.relicCoup = lit(16, 16, [
   '................',
@@ -4409,25 +3856,6 @@ S.relicCompound = lit(16, 16, [
   '..YYYYYYYG.EQQ..',
   '..gGgGgGgg......',
   '................',
-  '................',
-]);
-// relicHedge (16x16): HEDGE, a round green hedge bush pricked with red thorns, a red droplet falling from it
-S.relicHedge = lit(16, 16, [
-  '................',
-  '................',
-  '.....EEEee......',
-  '...REWEeeeeQR...',
-  '...EEWEeeReQQ...',
-  '..REEEeeeeeQQ...',
-  '...EeeReeeQQqR..',
-  '..EeeeeeQQReQq..',
-  '..ReeeQQeeQQqq..',
-  '...eQReQQqQqq...',
-  '....QQqQqqRq....',
-  '.....qqqqqq.R...',
-  '...........MRr..',
-  '...........Rrr..',
-  '............r...',
   '................',
 ]);
 // relicMeltdown (16x16): MELTDOWN, a cracked, overheating orange-red core bulb on a steel base, a yellow bolt inside
@@ -5236,34 +4664,6 @@ S.heroMidas = lit(24, 24, [
   segRow(24, 0, 'lkRWRkkkklQQ', 12, 'TT', 14, 'QQQkkkkkkk'),
   segRow(24, 0, 'kkkkkkkkklQQG', 13, 'T', 14, 'GQQkkkkkkk'),
 ]);
-// heroThorn: briar ranger -- deep green hood peaked back, a thorned vine wound round it (with a rose),
-// shadowed face with one lime eye glaring right, leaf-mail shoulders
-S.heroThorn = lit(24, 24, [
-  segRow(24),
-  segRow(24, 3, 'w'),
-  segRow(24, 3, 'Qw', 9, 'QQQQQ'),
-  segRow(24, 3, 'QQQ', 7, 'QEQQQQQQq'),
-  segRow(24, 4, 'QQQQEQQQQQQQq', 18, 'w'),
-  segRow(24, 3, 'wQQEQQQQQQQQQqq'),
-  segRow(24, 4, 'QQeeQQQQQQQQQqw'),
-  segRow(24, 4, 'QQQQeeQQqqqqqqq'),
-  segRow(24, 3, 'wQQQQMMeeqqqqqqq'),
-  segRow(24, 4, 'QQQMWMqeefffffq'),
-  segRow(24, 4, 'QQQmMmqffFFFFffq'),
-  segRow(24, 4, 'QQQQQqfFFFFWKFfq'),
-  segRow(24, 3, 'wQQQQqfFFFFFFFFFF'),
-  segRow(24, 4, 'QQQQqfFFFFFFFFFq'),
-  segRow(24, 4, 'QQQQqfFFFFFfFFfq'),
-  segRow(24, 4, 'QeQQqfFFFFKKKffq'),
-  segRow(24, 3, 'wQeQQqqfFFFFffqq', 19, 'w'),
-  segRow(24, 4, 'QQeQQqqffffqqQe'),
-  segRow(24, 3, 'QQQQeeQQqqqqQQeeQ'),
-  segRow(24, 1, 'EEQQQQQQeeQQQQeeQQQQe'),
-  segRow(24, 0, 'EeeEEeQQQQwQQQeeQQeQQQq'),
-  segRow(24, 0, 'eQQeeQQQQQBwQQQQQeeQQqqq'),
-  segRow(24, 0, 'QQQQQQQQeQQBwQQQQQQQQqqq'),
-  segRow(24, 0, 'QQQQQeQQQQQQBwQQQQqqqqqq'),
-]);
 // heroTesla: mad scientist -- wild white hair bursting back, brass goggles with a big cyan lens facing right,
 // manic toothy grin, sparks crackling in the hair, lab coat with an orange collar
 S.heroTesla = lit(24, 24, [
@@ -5681,24 +5081,23 @@ S.betChip = lit(12, 12, [
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
-  heart: 8, shieldIcon: 8, boltIcon: 8, pipFull: 8, pipEmpty: 8,
+  heart: 8, shieldIcon: 8, boltIcon: 8, 
   swordProjectile: 12, slimeBlob: 8, spark: 5, playerPortrait: 24, enemyPortrait: 24,
   enemyBrute: 24, enemyFrost: 24, enemyThief: 24, enemyGolem: 24, enemyGremlin: 24, enemyBoss: 24,
   ice: 16, claw: 16, rock: 16, lock: 16, coin: 16, seven: 16, ball: 16,
   frozenOverlay: 16, lockOverlay: 16,
-  relicClover: 16, relicWhetstone: 16, relicSoap: 16, relicBattery: 16, relicMirror: 16,
-  relicFang: 16, relicBandage: 16, relicHourglass: 16, relicMagnet: 16,
+  relicClover: 16, relicBattery: 16, relicMirror: 16,
+  relicFang: 16, relicBandage: 16, 
   icoFlood: 8, icoSmash: 8, icoFreeze: 8, icoSteal: 8, icoLock: 8, icoRock: 8, icoCoin: 8,
   plusBadge: 8, minusBadge: 8, skull: 8,
   nodeFight: 12, nodeBoss: 12, nodeDone: 12, nodeHere: 12,
-  relicMittens: 16, relicLockpick: 16, relicMousetrap: 16, relicPickaxe: 16, relicDice: 16, relicCrown: 16,
+  relicLockpick: 16, relicPickaxe: 16, relicDice: 16, 
   cardSwap: 16, cardClear: 16, arrowRight: 8, potTier1: 16, potTier2: 24, potTier3: 24, mapFork: 12,
   mapBadgeSlime: 8, mapBadgeIce: 8, mapBadgeClaw: 8, mapBadgeRock: 8, mapBadgeLock: 8, mapBadgeFist: 8, mapBadgeCoin: 8,
   potTier4: 24, mapBadgeElite: 8, dangerPip: 8, cardPrep: 16,
-  wild: 16, enhGold: 16, enhKeen: 16, enhCharged: 16, enhSpiked: 16, cardGild: 16,
-  relicMidas: 16, relicRod: 16, relicCactus: 16, relicPrism: 16, relicHone: 16,
-  stampX2: { w: 12, h: 8 }, tickGold: 5, tickKeen: 5, tickCharged: 5, tickSpiked: 5,
-  potSkim: 12, chip: 12, cashierPortrait: 24, shopSlot: 24,
+  wild: 16, enhGold: 16, enhKeen: 16, enhCharged: 16, enhSpiked: 16, 
+  relicPrism: 16, relicHone: 16,
+  potSkim: 12, chip: 12, cashierPortrait: 24, 
   chipShield: 12, tagBuild: { w: 20, h: 7 }, shopHeal: 16, setStar: 16,
   cabinetKnight: { w: 48, h: 64 }, cabinetMidas: { w: 48, h: 64 }, cabinetThorn: { w: 48, h: 64 },
   cabinetTesla: { w: 48, h: 64 }, cabinetJoker: { w: 48, h: 64 }, cabinetLocked: { w: 48, h: 64 },
@@ -5711,30 +5110,29 @@ const DIMS = {
   mapBadgeBomb: 8, mapBadgeHex: 8, mapBadgeFang: 8, mapBadgeMimic: 8, mapBadgeWheel: 8,
   actBadge2: { w: 24, h: 12 },
   slotHeart: 16, slotUp: 16, slotTopper: { w: 64, h: 16 },
-  enemyGrounder: 24, enemyCounterfeiter: 24, npcBloodBank: 24, npcPawnBroker: 24, npcLoanShark: 24, ground: 16, fake: 16, groundOverlay: 16, fakeOverlay: 16,
-  icoEarth: 8, icoLaunder: 8, mapBadgeGround: 8, mapBadgeFake: 8, setRibbon: { w: 44, h: 9 },
+  enemyCounterfeiter: 24, npcBloodBank: 24, npcPawnBroker: 24, npcLoanShark: 24, fake: 16, groundOverlay: 16, fakeOverlay: 16,
+  icoLaunder: 8, mapBadgeFake: 8, setRibbon: { w: 44, h: 9 },
   enemyDealer: 24, enemySharp: 24, enemyPitBoss: 24, enemyCroupier: 24, enemyRepoMan: 24, card: 16, gavel: 16, rake: 16,
-  icoShuffle: 8, icoCut: 8, icoRaise: 8, icoMark: 8, icoGavel: 8, icoRake: 8,
+  icoShuffle: 8, icoMark: 8, icoGavel: 8, icoRake: 8,
   mapBadgeCard: 8, mapBadgeGavel: 8, mapBadgeRake: 8, mapBadgeDealer: 8,
-  dealShuffle: { w: 16, h: 22 }, dealCut: { w: 16, h: 22 }, dealRaise: { w: 16, h: 22 }, dealBack: { w: 16, h: 22 }, cardBack: 16,
+  dealShuffle: { w: 16, h: 22 }, dealCut: { w: 16, h: 22 }, dealRaise: { w: 16, h: 22 }, cardBack: 16,
   confiscatedOverlay: 16, actPlaque3: { w: 24, h: 12 },
   bonusSym: 16, relicSym: 16, voucherBonus: { w: 24, h: 16 }, voucherRelic: { w: 24, h: 16 },
   rushEmpty: 16, rushJunk: 16, tierCommon: 12, tierUncommon: 12, tierLegendary: 12, wheelPointer: 12,
   logo: { w: 160, h: 44 }, menuBackdrop: { w: 64, h: 40 },
   iconNewRun: 16, iconTutorial: 16, iconCollection: 16, iconHiscores: 16, mysterySlot: 16,
   hsSkull: 12, trophySmall: 12, coinSpin0: 16, coinSpin1: 16, coinSpin2: 16, coinSpin3: 16, tutorialPointer: 12,
-  heroKnight: 24, heroMidas: 24, heroThorn: 24, heroTesla: 24, heroJoker: 24,
+  heroKnight: 24, heroMidas: 24, heroTesla: 24, heroJoker: 24,
   goldbar: 16, thorn: 16, ace: 16, relicChalice: 16,
-  relicDrum: 16, relicChainmail: 16, relicVault: 16, relicArmoredCar: 16, relicGreatsword: 16, relicSafeDeposit: 16, relicDecree: 16, relicRosehip: 16,
+  relicDrum: 16, relicChainmail: 16, relicArmoredCar: 16, relicGreatsword: 16, relicSafeDeposit: 16, 
   relicGraft: 16, relicFaraday: 16, relicStatic: 16, relicCapbells: 16, relicStacked: 16,
-  relicGoldleaf: 16, relicExecutioner: 16, relicKiss: 16, relicHorseshoe: 16, relicUnderdog: 16,
+  relicGoldleaf: 16, relicExecutioner: 16, relicHorseshoe: 16, relicUnderdog: 16,
   relicFirstblood: 16, relicPiggy: 16, relicTrophy: 16, relicHolywater: 16, relicBash: 16,
-  relicLoaded: 16, relicMarker: 16, relicHighLimit: 16,
-  relicHotStreak: 16, relicBelt: 16, relicToll: 16,
-  relicLoadedChips: 16, relicRainmaker: 16, relicSlushFund: 16, relicTipJar: 16, relicLooseChange: 16,
-  relicBramble: 16, relicRiposte: 16, relicTower: 16, relicHeadsman: 16, relicCapacitor: 16,
-  relicLivewire: 16, relicEncore: 16, relicWildwheel: 16, relicDownpour: 16, relicNestegg: 16,
-  relicCoup: 16, relicCompound: 16, relicHedge: 16, relicMeltdown: 16, relicPulse: 16,
+  relicHotStreak: 16, relicBelt: 16, 
+  relicRainmaker: 16, relicSlushFund: 16, relicTipJar: 16, 
+  relicTower: 16, relicHeadsman: 16, relicCapacitor: 16,
+  relicLivewire: 16, relicEncore: 16, relicWildwheel: 16, relicDownpour: 16, 
+  relicCoup: 16, relicCompound: 16, relicMeltdown: 16, relicPulse: 16,
   relicDeckdrum: 16, relicWildcard: 16, relicLoadedreel: 16,
   relicBracelet: 16, relicMetronome: 16, relicSnakeEyes: 16, relicPitBoss: 16, relicCoil: 16, relicTaxMan: 16,
   trimClassic: 16, trimBronze: 16, trimSilver: 16, trimNeon: 16, trimVelvet: 16,
@@ -5776,7 +5174,6 @@ export type SpriteId =
   | 'sword' | 'shield' | 'bolt' | 'slime'          // reel symbols, 16x16
   | 'goo'                                          // slime-over overlay, 16x16
   | 'heart' | 'shieldIcon' | 'boltIcon'            // HUD bar icons, 8x8
-  | 'pipFull' | 'pipEmpty'                         // special-energy pips, 8x8
   | 'swordProjectile'                              // 12x12, points RIGHT
   | 'slimeBlob'                                    // 8x8 flying goo glob
   | 'spark'                                        // 5x5 hit spark
@@ -5786,15 +5183,15 @@ export type SpriteId =
   | 'ice' | 'claw' | 'rock' | 'lock'               // enemy reel symbols, 16x16
   | 'coin' | 'seven' | 'ball'                     // boss reel symbols, 16x16 (ball: THE WHEEL's BALL)
   | 'frozenOverlay' | 'lockOverlay'               // cell overlays, 16x16 (mostly transparent)
-  | 'relicClover' | 'relicWhetstone' | 'relicSoap'  // relic icons, 16x16
+  | 'relicClover'  // relic icons, 16x16
   | 'relicBattery' | 'relicMirror' | 'relicFang'
-  | 'relicBandage' | 'relicHourglass' | 'relicMagnet'
+  | 'relicBandage' 
   | 'icoFlood' | 'icoSmash' | 'icoFreeze'        // intent / UI icons, 8x8
   | 'icoSteal' | 'icoLock' | 'icoRock' | 'icoCoin'
   | 'plusBadge' | 'minusBadge' | 'skull'
   | 'nodeFight' | 'nodeBoss' | 'nodeDone' | 'nodeHere' // map nodes, 12x12
-  | 'relicMittens' | 'relicLockpick' | 'relicMousetrap' // counter relics, 16x16
-  | 'relicPickaxe' | 'relicDice' | 'relicCrown'
+  | 'relicLockpick' // counter relics, 16x16
+  | 'relicPickaxe' | 'relicDice' 
   | 'cardSwap' | 'cardClear' | 'potTier1'          // card / pot icons, 16x16
   | 'arrowRight'                                   // 8x8
   | 'potTier2' | 'potTier3'                        // 24x24
@@ -5806,13 +5203,9 @@ export type SpriteId =
   | 'cardPrep'                                     // card icon, 16x16
   | 'wild'                                         // WILD reel symbol, 16x16
   | 'enhGold' | 'enhKeen' | 'enhCharged' | 'enhSpiked' // enhanced-cell overlays, 16x16 (mostly transparent)
-  | 'cardGild'                                     // card icon, 16x16
-  | 'relicMidas' | 'relicRod' | 'relicCactus'      // build relics, 16x16
   | 'relicPrism' | 'relicHone'
-  | 'stampX2'                                      // gilded-score pop stamp, 12x8 (non-square)
-  | 'tickGold' | 'tickKeen' | 'tickCharged' | 'tickSpiked' // strip-map enhancement ticks, 5x5
   | 'potSkim' | 'chip'                             // pot skim hand / chip currency, 12x12
-  | 'cashierPortrait' | 'shopSlot'                 // cashier NPC / shop display cushion, 24x24
+  | 'cashierPortrait'                 // cashier NPC / shop display cushion, 24x24
   | 'chipShield'                                   // saved chips -> shield vs the House, 12x12
   | 'tagBuild'                                     // green "FITS" build tag, 20x7 (non-square)
   | 'shopHeal' | 'setStar'                         // cashier first-aid tin / full-set bonus star, 16x16
@@ -5832,19 +5225,19 @@ export type SpriteId =
   | 'actBadge2'                                    // act 2 map header plaque, 24x12 (non-square)
   | 'slotHeart' | 'slotUp' | 'slotTopper' // LUCKY SEVENS prize symbols 16x16, topper 64x16
   | 'npcBloodBank' | 'npcPawnBroker' | 'npcLoanShark'      // NPC portraits, 24x24
-  | 'enemyGrounder' | 'enemyCounterfeiter'         // act 2 enemy portraits (batch 8), 24x24
-  | 'ground' | 'fake'                              // their reel symbols, 16x16
+  | 'enemyCounterfeiter'         // act 2 enemy portraits (batch 8), 24x24
+  | 'fake'                              // their reel symbols, 16x16
   | 'groundOverlay' | 'fakeOverlay'                // their cell overlays, 16x16 (mostly transparent)
-  | 'icoEarth' | 'icoLaunder'                      // their ability icons, 8x8
-  | 'mapBadgeGround' | 'mapBadgeFake'              // their map badges, 8x8
+  | 'icoLaunder'                      // their ability icons, 8x8
+  | 'mapBadgeFake'              // their map badges, 8x8
   | 'setRibbon'                                    // 'SET!' completes-set ribbon, 44x9 (non-square)
   | 'enemySharp' | 'enemyPitBoss' | 'enemyCroupier' | 'enemyRepoMan' // act 3 enemy portraits + the gatekeeper, 24x24
   | 'enemyDealer'                                  // (enemyDealer = act 3 final boss)
   | 'card' | 'gavel' | 'rake'                      // act 3 enemy reel symbols, 16x16
-  | 'icoShuffle' | 'icoCut' | 'icoRaise'           // act 3 ability icons, 8x8
+  | 'icoShuffle'           // act 3 ability icons, 8x8
   | 'icoMark' | 'icoGavel' | 'icoRake'
   | 'mapBadgeCard' | 'mapBadgeGavel' | 'mapBadgeRake' | 'mapBadgeDealer' // act 3 map badges, 8x8
-  | 'dealShuffle' | 'dealCut' | 'dealRaise' | 'dealBack' // Dealer's face-up deal cards, 16x22 (non-square)
+  | 'dealShuffle' | 'dealCut' | 'dealRaise' // Dealer's face-up deal cards, 16x22 (non-square)
   | 'cardBack'                                     // face-down card: MARKED cell overlay, 16x16
   | 'confiscatedOverlay'                           // confiscated-gild cell overlay, 16x16 (mostly transparent)
   | 'actPlaque3'                                   // act 3 map header plaque, 24x12 (non-square)
@@ -5860,28 +5253,27 @@ export type SpriteId =
   | 'hsSkull' | 'trophySmall'                     // hiscore killed-by / victory markers, 12x12
   | 'coinSpin0' | 'coinSpin1' | 'coinSpin2' | 'coinSpin3' // loading-screen coin spin frames, 16x16
   | 'tutorialPointer'                             // tutorial callout arrow, points DOWN, 12x12
-  | 'heroKnight' | 'heroMidas' | 'heroThorn'      // player hero portraits (face RIGHT), 24x24
+  | 'heroKnight' | 'heroMidas'      // player hero portraits (face RIGHT), 24x24
   | 'heroTesla' | 'heroJoker'
   | 'goldbar' | 'thorn' | 'ace'                          // signature symbols: MIDAS gold bar, BRIAR thorn, 16x16
   | 'relicChalice'                               // BLOOD CHALICE relic, 16x16
-  | 'relicDrum' | 'relicChainmail' | 'relicVault' | 'relicArmoredCar' | 'relicGreatsword' | 'relicSafeDeposit' | 'relicDecree' // charm-rework relics, 16x16
-  | 'relicRosehip' | 'relicGraft' | 'relicFaraday' | 'relicStatic'
+  | 'relicDrum' | 'relicChainmail' | 'relicArmoredCar' | 'relicGreatsword' | 'relicSafeDeposit' // charm-rework relics, 16x16
+  | 'relicGraft' | 'relicFaraday' | 'relicStatic'
   | 'relicCapbells' | 'relicStacked' | 'relicGoldleaf' | 'relicExecutioner'
-  | 'relicKiss' | 'relicHorseshoe' | 'relicUnderdog' | 'relicFirstblood'
+  | 'relicHorseshoe' | 'relicUnderdog' | 'relicFirstblood'
   | 'relicPiggy' | 'relicTrophy' | 'relicHolywater' | 'relicBash'
-  | 'relicLoaded' | 'relicMarker' | 'relicHighLimit'
   | 'trimClassic' | 'trimBronze' | 'trimSilver'  // slot machine trim crests, 16x16
   | 'trimNeon' | 'trimVelvet' | 'trimEmerald'
   | 'trimDiamond' | 'trimObsidian' | 'trimHouse'
-  | 'relicHotStreak' | 'relicBelt' | 'relicToll' // relics, 16x16
+  | 'relicHotStreak' | 'relicBelt' // relics, 16x16
   | 'relicBracelet' | 'relicMetronome' | 'relicSnakeEyes'
   | 'relicPitBoss' | 'relicCoil' | 'relicTaxMan'
-  | 'relicLoadedChips' | 'relicRainmaker' | 'relicSlushFund' // THE BANKROLL relics, 16x16
-  | 'relicTipJar' | 'relicLooseChange'
-  | 'relicBramble' | 'relicRiposte' | 'relicTower' | 'relicHeadsman' // per-character relics, 16x16
+  | 'relicRainmaker' | 'relicSlushFund' // THE BANKROLL relics, 16x16
+  | 'relicTipJar' 
+  | 'relicTower' | 'relicHeadsman' // per-character relics, 16x16
   | 'relicCapacitor' | 'relicLivewire' | 'relicEncore' | 'relicWildwheel'
-  | 'relicDownpour' | 'relicNestegg'
-  | 'relicCoup' | 'relicCompound' | 'relicHedge' | 'relicMeltdown' | 'relicPulse'
+  | 'relicDownpour' 
+  | 'relicCoup' | 'relicCompound' | 'relicMeltdown' | 'relicPulse'
   | 'relicDeckdrum' | 'relicWildcard' | 'relicLoadedreel'
   | 'note'                                       // THE JUKEBOX attack symbol (NOTE), 16x16
   | 'cabinetJukebox'                             // THE JUKEBOX slot machine, 48x64 (non-square)
