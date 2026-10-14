@@ -78,13 +78,18 @@ export interface ScoreOpts {
 
 /** The matched set and the symbol it pays as, or null. WILDs join whatever they complete. */
 function matchedRun(line: SymbolId[], cfg: GameConfig, alone: SymbolId): { symbol: SymbolId; reels: number[] } | null {
-  // A WILD never joins a dead symbol (a rock, slime, a dead card...): WILD + ROCK paired as rocks (user playtest).
-  const joins = (sym: SymbolId) => !DEAD.has(sym);
+  // A WILD never joins a dead symbol (a rock, a dead card...): WILD + ROCK paired as rocks (user playtest). SLIME is the
+  // exception: a slime pair or jackpot cleanses, so a WILD helps it (user, 2026-10-14: slime and wilds didn't work).
+  const joins = (sym: SymbolId) => !DEAD.has(sym) || sym === 'slime';
   if (cfg.pairRule === 'inOrder') {
     const head = line.find((s) => !isWild(s)) ?? alone;
     let k = 0;
     while (k < line.length && (line[k] === head || (isWild(line[k]) && joins(head)))) k++;
-    return k >= 2 ? { symbol: head, reels: Array.from({ length: k }, (_, i) => i) } : null;
+    if (k >= 2) return { symbol: head, reels: Array.from({ length: k }, (_, i) => i) };
+    // WILDs leading into a dead symbol still pair with each other, as a lone WILD pays.
+    let w = 0;
+    while (w < line.length && isWild(line[w])) w++;
+    return w >= 2 ? { symbol: alone, reels: Array.from({ length: w }, (_, i) => i) } : null;
   }
   let best: { symbol: SymbolId; reels: number[] } | null = null;
   const candidates: SymbolId[] = [...new Set(line.filter((s) => !isWild(s)))];

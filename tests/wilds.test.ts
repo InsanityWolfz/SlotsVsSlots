@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { defaultConfig, reels3 } from '../src/core/config';
+import { defaultConfig, reels3, type SymbolId } from '../src/core/config';
+import { scoreLine } from '../src/core/scoring';
 import { ELITE_HP_MUL } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
 import { applyOption, createRun, RUN } from '../src/core/run';
@@ -106,5 +107,19 @@ describe('wilds and gilds', () => {
     expect(run.player.gilded[0].n).toBe(1);
     applyOption(run, { kind: 'swap', from: 'shield', to: 'sword', count: 1, reel: 0 });
     expect(run.player.gilded).toHaveLength(0);
+  });
+});
+
+describe('WILDs and SLIME (user, 2026-10-14)', () => {
+  const cfg = defaultConfig();
+  const run = (line: SymbolId[]) => scoreLine(line, cfg, { wildAlone: 'sword' });
+  it('a WILD joins slime: a slime pair or jackpot (it cleanses)', () => {
+    expect(run(['slime', 'wild', 'sword']).groups.find((g) => g.matched)).toMatchObject({ symbol: 'slime', reels: [0, 1] });
+    expect(run(['wild', 'slime', 'sword']).groups.find((g) => g.matched)).toMatchObject({ symbol: 'slime', reels: [0, 1] });
+    expect(run(['slime', 'wild', 'slime']).tier).toBe('triple');
+  });
+  it('WILDs before a dead symbol still pair with each other; a WILD never joins a rock', () => {
+    expect(run(['wild', 'wild', 'rock']).groups.find((g) => g.matched)).toMatchObject({ symbol: 'sword', reels: [0, 1] });
+    expect(run(['rock', 'wild', 'sword']).tier).toBe('none');
   });
 });

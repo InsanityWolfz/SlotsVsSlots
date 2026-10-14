@@ -81,7 +81,6 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   capacitor: 8,
   livewire: 8.5,
   encore: 8,
-  wildwheel: 8,
   downpour: 7.5,
   coup: 7.5,
   compound: 7,

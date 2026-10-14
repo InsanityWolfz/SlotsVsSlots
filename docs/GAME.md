@@ -119,6 +119,10 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   Pay = BASE × MULT, and gold Charms in a group ADD. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
   machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER), ECHO (JUKEBOX) and BULWARK (`spiked`, KNIGHT).
   `src/core/charms.ts`.
+- **WILDs and SLIME (user, 2026-10-14):** a WILD joins slime (a slime pair or jackpot cleanses, so [slime, WILD, x] and
+  [WILD, slime, x] now cleanse); it still never joins a rock or other dead symbol, and WILDs ahead of one still pair with
+  each other (WILD, WILD, ROCK paid nothing). WILD WHEEL (JOKER relic) is gone: "keeps the better result" was a
+  judgement call, not a rule. Sim 1000 runs WHITE / GREEN: no change (JOKER GREEN 34 -> 35).
 - **Balance pass after the content wave (2026-10-14):** enemy damage from BLACK is +7% a stake (was +10%: BLUE and GOLD
   had fallen to 6-19 / 6-13 for most machines); KNIGHT 440 -> 430 HP (WHITE / RED were +10 / +12); JUKEBOX 420 -> 380
   HP but +32% note damage a volume level (was +25%: it was easy early, hopeless late). 1000 runs, WHITE / RED / GREEN /

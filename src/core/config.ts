@@ -135,7 +135,6 @@ export type RelicId =
   | 'capacitor'
   | 'encore'
   | 'downpour'
-  | 'wildwheel'
   | 'livewire'
   | 'headsman'
   | 'tower'

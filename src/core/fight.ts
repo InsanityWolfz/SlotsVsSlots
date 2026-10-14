@@ -885,13 +885,6 @@ export class Fight {
   private wildPick(c: Combatant): { symbol: SymbolId; enh?: Enh } {
     const pool = c.reels.flatMap((reel) => reel.cells.filter((cell) => !cell.slimed && !cell.stolen && !cell.carded && !cell.bomb && JACKPOTABLE.has(cell.symbol)).map((cell) => ({ symbol: cell.symbol, ...(wheelCharm(cell) ? { enh: wheelCharm(cell) } : {}) })));
     if (c.side !== 'player' || !pool.length) return { symbol: this.wildAlone(c) };
-    // WILD WHEEL: it spins twice and keeps the better pick (base pay, plus any charm).
-    if (c.relics.has('wildwheel')) {
-      const a = this.rng.pick(pool);
-      const b = this.rng.pick(pool);
-      const worth = (p: { symbol: SymbolId; enh?: Enh }) => (this.cfg.base[p.symbol] ?? 0) * (p.enh ? 2 : 1);
-      return worth(b) > worth(a) ? b : a;
-    }
     return this.rng.pick(pool);
   }
   /** Charms a WILD's pick brings to its reel this spin (on top of the cell's own). */
@@ -940,8 +933,6 @@ export class Fight {
     }
     const fired = new Set<RelicId>();
     if (loadedFired) fired.add('loadedreel');
-    // WILD WHEEL spun for a pick this spin (3 WILDS, or JAX's all-jackpots wheel).
-    if (player && me.relics.has('wildwheel') && (pick || s.picks?.length)) fired.add('wildwheel');
     const has = (r: RelicId) => player && me.relics.has(r);
     const pays = (g: ScoreGroup) => g.base > 0 && (PAYING.has(g.symbol) || !!g.rain);
     const cellSym = (r: number) => me.reels[r].cells[me.reels[r].stop]?.symbol;
