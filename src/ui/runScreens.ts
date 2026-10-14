@@ -1699,7 +1699,8 @@ export class RunScreens {
         if (res.good) {
           this.sounds.lucky();
           this.sounds.coin(8);
-        } else this.sounds.fizzle();
+        } else if (res.good === false) this.sounds.fizzle();
+        else this.sounds.coin(2);
         return this.slotClock.wait(res.more ? 1.2 : 0);
       })
       .then(done);
@@ -3016,12 +3017,13 @@ export class RunScreens {
       drawPlayingCard(ctx, RL.wheelX - 40, 260, 0, 1, 0.8);
       drawPlayingCard(ctx, RL.wheelX + 40, 260, 0, 1, 0.8);
       drawText(ctx, 'A WIN PAYS 1 TO 1. 21 OFF THE DEAL PAYS 2 TO 1.', RL.wheelX, 380, 1.5, COLORS.goldLight);
-      drawText(ctx, `THE DEALER STANDS ON ${BJ.standOn}. A TIE GOES TO THE DEALER.`, RL.wheelX, 404, 1.5, COLORS.textDim);
+      drawText(ctx, `THE DEALER STANDS ON ${BJ.standOn}. A TIE IS A PUSH: DEAL AGAIN.`, RL.wheelX, 404, 1.5, COLORS.textDim);
       if (m) {
         drawText(ctx, m.title, RL.betX, 470, 3, m.good ? COLORS.goldLight : m.good === false ? '#ff8a7a' : COLORS.text);
-        if (m.text) drawText(ctx, m.text, RL.betX, 506, 2, m.good ? COLORS.goldLight : '#ff8a7a');
+        if (m.text) drawText(ctx, m.text, RL.betX, 506, 2, m.good ? COLORS.goldLight : m.good === false ? '#ff8a7a' : COLORS.text);
       }
-      if (m && m.good === null) return;
+      // Walked away: no more bets (a push keeps the table open).
+      if (m && !m.hand) return;
       drawText(ctx, `YOUR BET (MAX ${bjMax(run)})`, RL.betX, 150, 2, COLORS.textDim);
       drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
       drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });

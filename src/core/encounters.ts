@@ -51,7 +51,7 @@ export interface EncounterResult {
   /** UNDER OR OVER: the two dice. */
   dice?: [number, number];
   /** TWENTY-ONE: the hand that just finished (both sides' cards, how it ended), and which hand of how many it was. */
-  hand?: { p: number[]; d: number[]; outcome: 'win' | 'natural' | 'lose' | 'bust'; no: number; of: number };
+  hand?: { p: number[]; d: number[]; outcome: 'win' | 'natural' | 'lose' | 'bust' | 'push'; no: number; of: number };
   /** HIGHER OR LOWER: the card that was showing, the one just turned, and the pot now. */
   card?: number;
   next?: number;
@@ -327,8 +327,8 @@ const HIGHER_OR_LOWER: EncounterDef = {
 // ---- TWENTY-ONE (2026-10-12; chips, 2026-10-13) -----------------------------------------------------------------
 
 /**
- * TWENTY-ONE: blackjack, kept simple (the user's rules): hit or stand, nothing else (no double, split or push: a tie
- * goes to the dealer). The dealer stands on 17. A chip table like the others (user, 2026-10-13: winning upgrades at
+ * TWENTY-ONE: blackjack, kept simple (the user's rules): hit or stand, nothing else (no double or split). A tie is a
+ * push (user, 2026-10-14): the bet comes back and the hand doesn't count, so it's dealt again. The dealer stands on 17. A chip table like the others (user, 2026-10-13: winning upgrades at
  * cards felt wrong): set a bet, up to 3 hands a visit; a win pays the bet 1 to 1, a two-card 21 pays 2 to 1. Cards are
  * drawn fresh each time (2-14, aces 11 or 1).
  */
@@ -363,15 +363,20 @@ function bjSettle(run: RunState, st: BjState, rng: Rng): EncounterResult {
   const d = [...st.d];
   if (me <= 21 && !natural) while (bjTotal(d) < BJ.standOn) d.push(drawCard(rng));
   const dealer = bjTotal(d);
-  const outcome: 'win' | 'natural' | 'lose' | 'bust' = me > 21 ? 'bust' : natural ? 'natural' : dealer > 21 || me > dealer ? 'win' : 'lose';
-  // The bet was taken at the deal: a win gives it back with the winnings.
+  const outcome: 'win' | 'natural' | 'lose' | 'bust' | 'push' =
+    me > 21 ? 'bust' : natural ? 'natural' : dealer > 21 || me > dealer ? 'win' : dealer === me ? 'push' : 'lose';
+  // The bet was taken at the deal: a win gives it back with the winnings, a push gives it back.
   const won = outcome === 'natural' ? st.bet * BJ.naturalPays : outcome === 'win' ? st.bet : 0;
   if (won) run.player.chips += st.bet + won;
-  run.encounterState = { dealt: st.dealt };
-  const more = st.dealt < BJ.hands && bjMax(run) >= 1;
+  if (outcome === 'push') run.player.chips += st.bet;
+  // A push doesn't use up a hand: the same hand is dealt again.
+  const dealt = outcome === 'push' ? st.dealt - 1 : st.dealt;
+  run.encounterState = { dealt };
+  const more = dealt < BJ.hands && bjMax(run) >= 1;
   const hand = { p: [...st.p], d, outcome, no: st.dealt, of: BJ.hands };
-  const title = outcome === 'natural' ? 'TWENTY-ONE!' : outcome === 'win' ? (dealer > 21 ? 'DEALER BUSTS!' : 'YOU WIN!') : outcome === 'bust' ? 'BUST' : dealer === me ? 'A TIE: THE DEALER TAKES IT' : 'THE DEALER WINS';
-  return { title, text: won ? `+${won} CHIPS` : `-${st.bet} CHIPS`, good: won > 0, hand, more };
+  const title = outcome === 'natural' ? 'TWENTY-ONE!' : outcome === 'win' ? (dealer > 21 ? 'DEALER BUSTS!' : 'YOU WIN!') : outcome === 'bust' ? 'BUST' : outcome === 'push' ? 'PUSH: DEAL AGAIN' : 'THE DEALER WINS';
+  const text = won ? `+${won} CHIPS` : outcome === 'push' ? 'BET BACK' : `-${st.bet} CHIPS`;
+  return { title, text, good: won > 0 ? true : outcome === 'push' ? null : false, hand, more };
 }
 
 const TWENTY_ONE: EncounterDef = {

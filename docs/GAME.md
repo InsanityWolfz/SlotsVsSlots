@@ -31,8 +31,8 @@ which Charms and relics to build.
   - HIGHER OR LOWER: bet chips (1 to 15), a card is dealt, call the next one. Each right call grows the pot x1.4 (a
     ladder shows it); a wrong call or a tie loses it; cash out any time after a right call, 5 right calls cash out
     for you. Played sensibly it's about even. Chips only.
-  - TWENTY-ONE: blackjack, hit or stand only (no double, split or push: a tie goes to the dealer; the dealer stands
-    on 17). A chip table (user, 2026-10-13: upgrades from cards felt wrong): bet up to 20, 3 hands a visit; a win
+  - TWENTY-ONE: blackjack, hit or stand only (no double or split; the dealer stands on 17). A tie is a push
+    (user, 2026-10-14): the bet comes back and the hand is dealt again, without using up one of the 3 (sim, 1000 runs: no change). A chip table (user, 2026-10-13: upgrades from cards felt wrong): bet up to 20, 3 hands a visit; a win
     pays 1 to 1, a two-card 21 pays 2 to 1. Cards drawn in code; the hand in play is saved with the run (sim: run win
     -1 to 0).
   - UNDER OR OVER: dice. Bet chips, call UNDER 7 / SEVEN / OVER 7. Under/over pay 1 to 1 (a seven gives the bet

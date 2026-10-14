@@ -243,13 +243,14 @@ describe('TWENTY-ONE', () => {
 
   it(`a visit plays ${BJ.hands} hands, each a chip bet: dealt, hit or stood, settled`, () => {
     const run = atTable(3);
-    const hands = playOut(run);
+    // A push is dealt again: it doesn't use up a hand.
+    const hands = playOut(run).filter((h) => h.hand!.outcome !== 'push');
     expect(hands).toHaveLength(BJ.hands);
     expect(hands.map((h) => h.hand!.no)).toEqual(Array.from({ length: BJ.hands }, (_, k) => k + 1));
     expect(run.encounterState).toBeUndefined();
   });
 
-  it('a win pays the bet 1 to 1, a natural 2 to 1, a loss costs it; a tie goes to the dealer; the dealer stands on 17', () => {
+  it('a win pays the bet 1 to 1, a natural 2 to 1, a loss costs it; a tie is a push (bet back, dealt again); the dealer stands on 17', () => {
     const seen = { win: 0, natural: 0, tie: 0 };
     for (let seed = 0; seed < 300; seed++) {
       const run = atTable(seed);
@@ -263,10 +264,15 @@ describe('TWENTY-ONE', () => {
           expect(h.text).toBe('+5 CHIPS');
           expect(dealer > 21 || me > dealer).toBe(true);
           seen.win++;
+        } else if (h.hand!.outcome === 'push') {
+          expect(h.text).toBe('BET BACK');
+          expect(dealer).toBe(me);
+          expect(h.more).toBe(true);
+          seen.tie++;
         } else {
           expect(h.text).toBe('-5 CHIPS');
           if (h.hand!.outcome === 'lose') expect(dealer).toBeGreaterThanOrEqual(BJ.standOn);
-          if (h.hand!.outcome === 'lose' && dealer === me) seen.tie++;
+          if (h.hand!.outcome === 'lose') expect(dealer).not.toBe(me);
         }
       }
     }
