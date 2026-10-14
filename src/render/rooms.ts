@@ -11,7 +11,9 @@
  *   act 3 THE VIP ROOM: a grand chandelier with candle flames (it sways on your jackpot), past bosses' portraits whose
  *     eyes follow the play, Slot Machines under glass, a pianist, a champagne tower that fills on your jackpot,
  *     velvet ropes, cigar haze, gold dust in the light.
- *   ENDLESS goes round the three, darker and more gold each loop.
+ *   ENDLESS goes round the three, darker and more gold each loop, and the room escalates (user, 2026-10-14): a back
+ *   row of fans fills in, loose bills drift down the strips, spotlights sweep from loop 3, and THE TURBO brings red
+ *   beacons.
  * Bosses take the open column between the HUDs: the House's vault door (it loses rivets as the House loses HP and
  * stands ajar near the end), THE WHEEL's table seen at an angle with its croupier, the Dealer himself behind his felt.
  * The crowd at the corners dresses for the room; your jackpot makes them jump, theirs puts their hands on their heads,
@@ -41,6 +43,8 @@ export interface Scene {
   turn: 'player' | 'enemy' | null;
   /** In a fight (the crowd only shows there; between fights the room is a backdrop under the screens). */
   fight: boolean;
+  /** ENDLESS loop 5: THE TURBO is in the room (red beacons, the crowd backs off). */
+  turbo?: boolean;
 }
 
 export const LW = 320;
@@ -400,6 +404,11 @@ const FANS: Fan[] = (() => {
   const skins = ['#e8b48a', '#a8704a', '#6a4028', '#f0c8a0', '#c8946a', '#8a5a3a'];
   return [5, 16, 27, 293, 304, 315].map((x, i) => ({ x, h: 20 + Math.floor(rnd() * 6), phase: rnd() * Math.PI * 2, skin: skins[i % skins.length] }));
 })();
+/** ENDLESS's back row: between and behind the front six, filled in two a loop. */
+const BACK_ROW: Fan[] = (() => {
+  const rnd = seeded(9);
+  return [10, 310, 22, 298, 33, 287, 0, 320].map((x) => ({ x, h: 18 + Math.floor(rnd() * 6), phase: rnd() * Math.PI * 2, skin: '#3a2a2a' }));
+})();
 const DRESS: Record<RoomId, { look: Look; coat: string; hair: string }[]> = {
   alley: [
     { look: 'hood', coat: '#2a2a3a', hair: '#1a1008' },
@@ -435,7 +444,7 @@ interface Bit {
   c: string;
   life: number;
   /** Balloons fall slowly and are bigger; coins bounce; birds flap. */
-  kind?: 'balloon' | 'coin' | 'bird';
+  kind?: 'balloon' | 'coin' | 'bird' | 'bill';
 }
 
 /** The live layer: lights, people, weather, the boss's set piece, the reactions. */
@@ -451,6 +460,8 @@ export class Rooms {
   /** The pigeons on the line flew off (they come back after a while). */
   private flown = 0;
   private time = 0;
+  /** The loop being drawn (update spawns ENDLESS's falling bills from it). */
+  private loopNow = 0;
 
   constructor() {
     [this.live, this.g] = canvas();
@@ -482,10 +493,15 @@ export class Rooms {
 
   update(dt: number): void {
     this.time += dt;
+    // ENDLESS: loose bills drift down the side strips, more each loop.
+    if (this.loopNow >= 2 && Math.random() < dt * Math.min(3, 0.4 * this.loopNow)) {
+      const left = Math.random() < 0.5;
+      this.bits.push({ x: left ? 2 + Math.random() * 34 : LW - 36 + Math.random() * 34, y: -4, vx: (Math.random() - 0.5) * 4, vy: 7 + Math.random() * 5, c: '#4a8a3a', life: 30, kind: 'bill' });
+    }
     this.cheerT = Math.max(0, this.cheerT - dt / 1.6);
     this.groanT = Math.max(0, this.groanT - dt / 2.2);
     for (const b of this.bits) {
-      if (b.kind === 'balloon') b.x += Math.sin(b.y * 0.1 + b.life) * 4 * dt;
+      if (b.kind === 'balloon' || b.kind === 'bill') b.x += Math.sin(b.y * 0.1 + b.life) * 4 * dt;
       else if (!b.kind) b.x += Math.sin(b.y * 0.2) * 6 * dt;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
@@ -504,6 +520,7 @@ export class Rooms {
 
   draw(ctx: CanvasRenderingContext2D, s: Scene, time: number): void {
     const art = room(s.room);
+    this.loopNow = s.loop;
     if (this.lastRoom !== s.room) {
       this.lastRoom = s.room;
       this.bits = [];
@@ -519,6 +536,9 @@ export class Rooms {
     if (s.boss === 'house') this.vault(g, time, cheer, s.foeHp);
     else if (s.boss === 'wheel') this.wheel(g, time);
     else if (s.boss === 'dealer') this.dealer(g, time, s.room);
+    if (s.loop >= 3) this.spotlights(g, time, s.loop);
+    if (s.turbo) this.beacons(g, time);
+    if (s.fight && s.loop > 0) this.backRow(g, s, time, cheer);
     if (s.fight) this.crowd(g, s, time, cheer);
     for (const b of this.bits) {
       g.globalAlpha = Math.min(1, b.life);
@@ -533,6 +553,10 @@ export class Rooms {
         rect(g, b.x - 1, b.y, 3, 1, b.c);
         rect(g, b.x - 2, b.y - (up ? 1 : -1), 1, 1, b.c);
         rect(g, b.x + 2, b.y - (up ? 1 : -1), 1, 1, b.c);
+      } else if (b.kind === 'bill') {
+        const flip = Math.sin(time * 5 + b.x) > 0;
+        rect(g, b.x, b.y, flip ? 3 : 2, 2, '#4a8a3a');
+        rect(g, b.x + 1, b.y, 1, flip ? 2 : 1, '#8ad06a');
       } else rect(g, b.x, b.y, b.kind === 'coin' || Math.sin(time * 9 + b.x) > 0 ? 2 : 1, 1, b.c);
     }
     g.globalAlpha = 1;
@@ -549,6 +573,7 @@ export class Rooms {
       full(`rgba(4,2,8,${Math.min(0.4, 0.08 * s.loop)})`);
       full(`rgba(201,162,39,${Math.min(0.08, 0.02 * s.loop)})`);
     }
+    if (s.turbo) full(`rgba(255,30,30,${0.04 + 0.02 * Math.sin(time * 5)})`);
     if (cheer > 0) full(hexA('#ffd23f', 0.05 * cheer));
     if (this.groanT > 0) full(hexA('#ff4a3a', 0.07 * this.groanT));
     if (s.fight && s.hp < 0.3) {
@@ -559,6 +584,61 @@ export class Rooms {
       rg.addColorStop(1, `rgba(255,40,40,${a})`);
       ctx.fillStyle = rg;
       ctx.fillRect(-40, -40, LW * 4 + 80, LH * 4 + 80);
+    }
+  }
+
+  // ---- ENDLESS escalation (user, 2026-10-14) ----------------------------------------------------------------------
+
+  /** Loop 3 on: two spotlights sweep down the side strips, like a headliner's walk-on. */
+  private spotlights(g: CanvasRenderingContext2D, t: number, loop: number): void {
+    const a = Math.min(0.1, 0.03 * (loop - 1));
+    for (const [x0, ph] of [[20, 0], [LW - 20, 2.1]] as const) {
+      const sway = Math.sin(t * 0.7 + ph) * 14;
+      g.fillStyle = `rgba(255,240,200,${a})`;
+      g.beginPath();
+      g.moveTo(x0 - 2, 0);
+      g.lineTo(x0 + 2, 0);
+      g.lineTo(x0 + sway + 12, LH);
+      g.lineTo(x0 + sway - 12, LH);
+      g.closePath();
+      g.fill();
+      rect(g, x0 - 3, 0, 6, 3, '#2a2a34');
+    }
+  }
+
+  /** THE TURBO: red beacons spin at the top of both strips. */
+  private beacons(g: CanvasRenderingContext2D, t: number): void {
+    for (const x of [8, LW - 8]) {
+      const ang = t * 5 + (x > MID ? Math.PI : 0);
+      const dx = Math.cos(ang);
+      g.fillStyle = `rgba(255,40,30,${0.3 * Math.max(0, Math.sin(ang)) + 0.06})`;
+      g.beginPath();
+      g.moveTo(x, 8);
+      g.lineTo(x + dx * 50 - 12, 90);
+      g.lineTo(x + dx * 50 + 12, 90);
+      g.closePath();
+      g.fill();
+      rect(g, x - 4, 2, 8, 7, Math.sin(ang) > 0.3 ? '#ff5a4a' : '#9a1a1a');
+      rect(g, x - 2, 3, 2, 2, '#ffd0c8');
+      rect(g, x - 5, 9, 10, 2, '#3a3a44');
+    }
+  }
+
+  /** ENDLESS: a back row of fans fills in behind the front six, 2 more a loop (up to 8). */
+  private backRow(g: CanvasRenderingContext2D, s: Scene, t: number, cheer: number): void {
+    const n = Math.min(BACK_ROW.length, s.loop * 2);
+    const shade = ['#2a2238', '#34284a', '#262034', '#30263e'];
+    for (let i = 0; i < n; i++) {
+      const f = BACK_ROW[i];
+      const jump = cheer > 0 ? Math.abs(Math.sin(t * 8 + f.phase)) * 4 * cheer : 0;
+      const top = LH - f.h - 9 - Math.sin(t * 1.1 + f.phase) * 0.6 - jump + (s.turbo ? 2 : 0);
+      const c = shade[i % shade.length];
+      rect(g, f.x - 4, top + 7, 8, f.h, c);
+      rect(g, f.x - 3, top, 6, 7, '#5a4038');
+      if (jump > 1 || (s.turbo && Math.sin(t * 3 + f.phase) > 0.7)) {
+        rect(g, f.x - 6, top - 3, 2, 9, c);
+        rect(g, f.x + 4, top - 3, 2, 9, c);
+      }
     }
   }
 

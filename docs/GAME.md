@@ -166,7 +166,9 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   loser bonks his machine), a waitress (drops her tray on their jackpot), balloons on yours. Act 3 THE VIP ROOM: a
   three-tier chandelier (it swings on your jackpot), portraits of the House and THE WHEEL whose eyes follow the play
   (a boss's own frame is empty in its fight), Slot Machines under glass, a pianist, a champagne tower that fills on
-  your jackpot, velvet ropes, cigar haze. ENDLESS goes round them, darker and more gold each loop. Bosses take the
+  your jackpot, velvet ropes, cigar haze. ENDLESS goes round them, darker and more gold each loop, and escalates (user, 2026-10-14): a
+  back row of fans fills in (2 a loop), loose bills drift down the strips from loop 2, spotlights sweep from loop 3, and
+  THE TURBO brings spinning red beacons and a faint red pulse (under 0.06). Bosses take the
   column: the House's vault (loses rivets with its HP, ajar under 30%; guards; gold on the floor), THE WHEEL's table
   at an angle with its croupier, the Dealer in person behind his felt. The corner crowd dresses for the room: your
   jackpot they jump, theirs hands on heads; under 30% HP one can't look. The room stays behind the Cashier, the
