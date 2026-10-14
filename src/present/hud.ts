@@ -39,6 +39,7 @@ export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> 
   repo: { icon: artId('icoGavel'), label: 'REPO' },
   houseTake: { icon: artId('icoRake'), label: "HOUSE'S TAKE" },
   deal: { icon: artId('icoShuffle'), label: 'BUST' },
+  owner: { icon: artId('icoGavel'), label: 'EVERY TRICK' },
 };
 
 /** Displayed (tweened) values for one side's bars — never read from game state mid-animation. */

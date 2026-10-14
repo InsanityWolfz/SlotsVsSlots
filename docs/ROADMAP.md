@@ -2,11 +2,8 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-14), the user's picks from the content list, in this order:** remove THE BLOOD BANK, PAWN SHOP
-and LOAN SHARK; ENDLESS with no cash out (play until you bust, scored then), act-style maps with 2 paths and
-encounters; TONIGHT'S RULE each loop; a TURBO boss at loop 5 (~0.1% clear, beating it ends the run); the rooms
-escalate each loop; relics DRY SPELL, PUNCH CARD, GOLDEN SPIN, INSURANCE (100 shield), HOUSE TAX, REGULAR, CERTIFIED
-HITMAKER (JUKEBOX), HOUSE OF CARDS (JOKER), GOLDEN PARACHUTE (BANKROLL; with PHOENIX FEATHER it saves twice); the GLASS
+**In progress (2026-10-14), the user's picks from the content list.** Done: the offers removed, ENDLESS reworked (no
+cash out, 2 paths, encounters, TONIGHT'S RULE, THE OWNER at loop 5, the rooms escalate), the 9 new relics. Next: the GLASS
 Charm (x5, 1 in 4 to break when it pays); encounters RAT RACE, SCRATCH-OFF, CLAW MACHINE; big choices SECOND PAYLINE
 and THE LONG GAME. Talk later: STEEL / MAGNET scaling, HOT / GROWTH (activate-style Charms), more than one Charm on a
 cell.

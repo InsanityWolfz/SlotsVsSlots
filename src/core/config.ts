@@ -98,7 +98,9 @@ export type AbilityKind =
   // THE WHEEL (act 2 boss): PLACE YOUR BETS, and every few turns NO MORE BETS
   | 'bets'
   // THE GATEKEEPER (fight 4 of every act): repossesses a cell until the act's boss falls
-  | 'repo';
+  | 'repo'
+  // THE OWNER (ENDLESS loop 5): EVERY TRICK IN THE BOOK, a different enemy's trick each time
+  | 'owner';
 export interface AbilityDef {
   kind: AbilityKind;
   /** Enemy turns per charge. */
@@ -175,7 +177,17 @@ export type RelicId =
   | 'armoredcar'
   // KNIGHT's multiplier relic (2026-10-12).
   | 'greatsword'
-  | 'safedeposit';
+  | 'safedeposit'
+  // The user's picks from the content list (2026-10-14).
+  | 'dryspell'
+  | 'punchcard'
+  | 'goldenspin'
+  | 'insurance'
+  | 'housetax'
+  | 'regular'
+  | 'hitmaker'
+  | 'houseofcards'
+  | 'parachute';
 
 /** The fight rules a BIG CHOICE can add (the player's side only; set on the run, passed to every fight). */
 export interface BigMods {
@@ -236,7 +248,7 @@ export interface SideConfig {
   portrait?: string;
   ability?: AbilityDef | null;
   /** Boss rule set, if any. */
-  boss?: 'house' | 'wheel' | 'dealer' | null;
+  boss?: 'house' | 'wheel' | 'dealer' | 'owner' | null;
   /** Charmed cells, dealt onto matching symbols on each reel at fight start. */
   gilded?: Gild[];
   /** Symbol and charm levels (the player). */

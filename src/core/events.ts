@@ -56,7 +56,7 @@ export type CombatEvent =
       targetHp: number;
       targetShield: number;
     }
-  | { type: 'shieldGain'; side: SideId; reels: number[]; amount: number; total: number; /** Not from a shield group: chips vs a boss, the Chalice's overheal. */ source?: 'chips' | 'chalice' }
+  | { type: 'shieldGain'; side: SideId; reels: number[]; amount: number; total: number; /** Not from a shield group: chips vs a boss, the Chalice's overheal. */ source?: 'chips' | 'chalice' | 'insurance' }
   | { type: 'energyGain'; side: SideId; reels: number[]; amount: number; total: number }
   | {
       type: 'specialFire';

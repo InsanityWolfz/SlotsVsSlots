@@ -28,7 +28,7 @@
 import { drawText } from './text';
 
 export type RoomId = 'alley' | 'floor' | 'vip';
-export type BossSet = 'house' | 'wheel' | 'dealer' | null;
+export type BossSet = 'house' | 'wheel' | 'dealer' | 'owner' | null;
 
 export interface Scene {
   room: RoomId;
@@ -536,6 +536,7 @@ export class Rooms {
     if (s.boss === 'house') this.vault(g, time, cheer, s.foeHp);
     else if (s.boss === 'wheel') this.wheel(g, time);
     else if (s.boss === 'dealer') this.dealer(g, time, s.room);
+    else if (s.boss === 'owner') this.owner(g, time, cheer, s.foeHp);
     if (s.loop >= 3) this.spotlights(g, time, s.loop);
     if (s.turbo) this.beacons(g, time);
     if (s.fight && s.loop > 0) this.backRow(g, s, time, cheer);
@@ -1274,6 +1275,59 @@ export class Rooms {
       rect(g, cxk + 1, 49 - Math.abs(k - 1.5), 2, 2, k % 2 ? '#141018' : '#c81a2a');
     }
     for (const [cx, col] of [[x + 14, '#7a1a22'], [x + 20, '#141018'], [x + 26, '#a8861e']] as const) chipStack(g, cx - 2, 54, 3, col);
+  }
+
+  /** THE OWNER: his office in the open column. A gold desk, a high-backed chair, the man himself with his cigar, a
+   * wall safe behind him. As his HP falls he leans in, then stands. Your jackpot: the ember flares and the ash drops. */
+  private owner(g: CanvasRenderingContext2D, t: number, cheer: number, hp: number): void {
+    const x = MID;
+    // The office wall: dark panelling and a gold-rimmed safe.
+    rect(g, x - 34, 14, 68, 46, '#1a0e12');
+    for (let k = 0; k < 5; k++) rect(g, x - 32 + k * 14, 16, 1, 42, '#24141a');
+    rect(g, x + 14, 18, 16, 14, '#3a3a44');
+    rect(g, x + 14, 18, 16, 1, '#c9a227');
+    rect(g, x + 21, 23, 3, 3, '#c9a227');
+    rect(g, x + 22, 24, 1, 1, '#1a1a1a');
+    // The chair: oxblood leather, tall back.
+    rect(g, x - 10, 18, 20, 26, '#5a1418');
+    rect(g, x - 10, 18, 20, 1, '#8a2a2a');
+    for (let k = 0; k < 3; k++) rect(g, x - 6 + k * 6, 22, 1, 1, '#c9a227');
+    // The man: he sits back at full HP, leans in under 60%, stands under 25%.
+    const lean = hp < 0.25 ? -6 : hp < 0.6 ? 2 : 0;
+    const by = 30 + lean;
+    rect(g, x - 9, by, 18, 14, '#141018');
+    for (let k = 0; k < 4; k++) rect(g, x - 7 + k * 4, by + 1, 1, 13, '#2a2430');
+    rect(g, x - 1, by, 2, 8, '#f0ece6');
+    rect(g, x, by + 1, 1, 6, '#a8121a');
+    rect(g, x, by + 3, 1, 1, '#ffd23f');
+    rect(g, x - 5, by - 9, 10, 9, '#e0a880');
+    rect(g, x - 5, by - 10, 10, 2, '#c8c8d0');
+    rect(g, x - 4, by - 6, 3, 2, '#3a2a10');
+    rect(g, x + 1, by - 6, 3, 2, '#3a2a10');
+    rect(g, x - 4, by - 7, 8, 1, '#c9a227');
+    rect(g, x - 2, by - 2, 4, 1, '#7a3a2a');
+    // The cigar and its ember (it flares on your jackpot), the smoke curling up.
+    rect(g, x + 3, by - 3, 5, 1, '#6a3a1a');
+    const ember = cheer > 0.2 ? '#fff0a0' : Math.sin(t * 2) > 0 ? '#ff5a2a' : '#c83a1a';
+    rect(g, x + 8, by - 3, 1, 1, ember);
+    for (let k = 0; k < 4; k++) {
+      const p = (t * 0.3 + k / 4) % 1;
+      g.globalAlpha = 0.28 * (1 - p);
+      rect(g, x + 8 + Math.sin(p * 5 + k) * 3, by - 4 - p * 14, 2, 2, '#c8c8d0');
+    }
+    g.globalAlpha = 1;
+    // The pinky ring on the desk hand.
+    rect(g, x - 12, by + 10, 3, 2, '#e0a880');
+    rect(g, x - 11, by + 10, 1, 1, '#bff6ff');
+    // The desk: gold-trimmed mahogany, a stack of chips, a gold pen set.
+    rect(g, x - 30, 44, 60, 14, '#4a1e10');
+    rect(g, x - 30, 44, 60, 1, '#c9a227');
+    rect(g, x - 30, 57, 60, 1, '#c9a227');
+    for (let k = 0; k < 3; k++) rect(g, x - 24 + k * 18, 48, 12, 6, '#3a160c');
+    chipStack(g, x + 18, 41, 4, '#c9a227');
+    chipStack(g, x + 23, 41, 3, '#7a1a22');
+    rect(g, x - 22, 41, 6, 3, '#c9a227');
+    rect(g, x - 20, 38, 1, 3, '#141018');
   }
 
   // ---- the crowd -------------------------------------------------------------------------------------------------

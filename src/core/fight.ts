@@ -23,7 +23,7 @@ import {
 } from './relics';
 import { Rng } from './rng';
 import { effectiveAbility, STAKE, stakeOf } from './stakes';
-import { ENDLESS, GATEKEEPER, TUNE, WHEEL_RULES, wheelChipShare } from './enemies';
+import { ENDLESS, GATEKEEPER, OWNER_TRICKS, TUNE, WHEEL_RULES, wheelChipShare } from './enemies';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
 // houseSkim 2 -> 0 (BOSS_REDESIGN 2): the House's hidden chip skim drained CASSIDY's rain (her House ran 32 turns).
 export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.5 };
@@ -258,6 +258,22 @@ export class Fight {
   private playerTurnHp = 0;
   /** THE TURBO: HP it lost this turn (no turn takes more than its cap). */
   private enemyTurnHp = 0;
+  /** THE OWNER: tricks played so far (the next one is OWNER_TRICKS[n % length]). */
+  private ownerTricks = 0;
+  /** DRY SPELL: your spins in a row with no pair or jackpot (each adds +25% to the next one). */
+  private drySpell = 0;
+  /** GOLDEN SPIN: this spin is golden (everything pays x3). */
+  private goldenNow = false;
+  /** INSURANCE POLICY: used this fight; waiting to pay out (the hit landed, the shield comes after). */
+  private insuranceUsed = false;
+  private insurancePending = false;
+  /** HOUSE TAX: chips the enemy's jackpots paid you (banked after the fight). */
+  taxChips = 0;
+  /** CERTIFIED HITMAKER: drops played this fight. */
+  private drops = 0;
+  /** GOLDEN PARACHUTE: used this fight (its chips come off after). */
+  private parachuteUsed = false;
+  parachuteChips = 0;
   /** This enemy turn was announced (ALL IN). */
   private bigTurn = false;
   /** E3: reels of yours that thawed on your last turn can't be frozen or jammed on the next enemy turn. */
@@ -587,6 +603,8 @@ export class Fight {
     const drumNow = side === 'player' && (me.relics.has('drum') || me.relics.has('deckdrum')) ? (me.relics.has('drum') ? NEW_RELIC.drumStep : NEW_RELIC.deckdrumStep) * this.drum : 0;
     // THE JUKEBOX: HYPE MAN turns the volume up before every other spin; a full volume makes this spin THE DROP.
     this.dropNow = false;
+    // GOLDEN SPIN: 1 spin in 10 pays x3 (rolled before the score, from the fight's own seed).
+    this.goldenNow = side === 'player' && me.relics.has('goldenspin') && this.rng.next() < NEW_RELIC.goldenChance;
     if (side === 'player' && this.meter?.kind === 'volume') {
       if (this.big.hype && !me.armed && this.playerSpins % 2 === 1) this.turnUp(me, 1, [], events, true);
       this.dropNow = me.armed;
@@ -668,6 +686,18 @@ export class Fight {
     }
     // HOT STREAK: a jackpot makes your next spin pay x2 (any other spin ends it).
     if (side === 'player') this.hotStreak = me.relics.has('hotstreak') && score.tier === 'triple';
+    // DRY SPELL: a spin with no pair or jackpot adds a stack; one that has one spends them.
+    if (side === 'player' && me.relics.has('dryspell')) {
+      const hit = score.groups.some((g) => g.matched && (g.reels.length >= 2 || !!g.jackpot) && g.base > 0);
+      this.drySpell = hit ? 0 : Math.min(NEW_RELIC.dryMax, this.drySpell + 1);
+    }
+    // CERTIFIED HITMAKER: count the drops.
+    if (side === 'player' && this.dropNow) this.drops++;
+    // HOUSE TAX: an enemy jackpot pays you.
+    if (side === 'enemy' && score.tier === 'triple' && this.sides.player.relics.has('housetax')) {
+      this.taxChips += NEW_RELIC.taxChips;
+      events.push({ type: 'relic', side: 'player', relic: 'housetax' });
+    }
     if (this.pitJustFired) {
       this.pitJustFired = false;
       events.push({ type: 'relic', side: 'player', relic: 'pitboss' });
@@ -1110,6 +1140,26 @@ export class Fight {
         boost(g, NEW_RELIC.firstbloodMul);
         notes.push(`X${NEW_RELIC.firstbloodMul} FIRST`);
       }
+      // DRY SPELL: the stacks from dry spins on this pair or jackpot.
+      if (has('dryspell') && this.drySpell > 0 && paying && g.matched && (g.reels.length >= 2 || !!g.jackpot)) {
+        fired.add('dryspell');
+        const k = 1 + NEW_RELIC.dryStep * this.drySpell;
+        boost(g, k);
+        notes.push(`X${Math.round(k * 100) / 100} DRY`);
+      }
+      // GOLDEN SPIN: everything pays x3.
+      if (player && this.goldenNow && paying) {
+        fired.add('goldenspin');
+        boost(g, NEW_RELIC.goldenMul);
+        notes.push(`X${NEW_RELIC.goldenMul} GOLDEN`);
+      }
+      // CERTIFIED HITMAKER: each drop this fight hits harder than the last.
+      if (has('hitmaker') && this.dropNow && this.drops > 0 && g.symbol === 'note' && g.base > 0) {
+        fired.add('hitmaker');
+        const k = 1 + NEW_RELIC.hitmakerStep * this.drops;
+        boost(g, k);
+        notes.push(`X${Math.round(k * 100) / 100} HIT`);
+      }
       // GLASS CANNON: every paying group pays x1.5.
       if (player && paying && this.cfg.player.payMul) {
         boost(g, this.cfg.player.payMul);
@@ -1546,6 +1596,11 @@ export class Fight {
       me.energy = me.side === 'player' && me.relics.has('encore') ? unitsUp(this.meterCost * NEW_RELIC.encoreKeep) : 0;
       if (me.energy > 0) events.push({ type: 'relic', side: me.side, relic: 'encore' });
       events.push({ type: 'payoff', side: me.side, kind: 'jackpots' });
+      // HOUSE OF CARDS: each payoff adds a WILD to reel 2 for the rest of the fight.
+      if (me.side === 'player' && me.relics.has('houseofcards')) {
+        insertOffscreen(me.reels[1], { symbol: 'wild', slimed: false }, this.rng);
+        events.push({ type: 'relic', side: me.side, relic: 'houseofcards' });
+      }
       return;
     }
     if (this.meter?.kind === 'vault') {
@@ -1798,10 +1853,21 @@ export class Fight {
     }
     target.hp -= hpDamage;
     if (target.hp <= 0 && target.side === 'enemy') this.overkill = amount - blocked - hpDamage;
+    // INSURANCE POLICY: the first drop under 25% HP each fight pays out (the shield lands when the hit is settled).
+    if (target.side === 'player' && target.hp > 0 && target.relics.has('insurance') && !this.insuranceUsed && target.hp < target.maxHp * NEW_RELIC.insuranceShare) {
+      this.insuranceUsed = true;
+      this.insurancePending = true;
+    }
     return { blocked, hpDamage, targetHp: target.hp, targetShield: target.shield };
   }
 
   private checkDeath(c: Combatant, events: CombatEvent[]): void {
+    if (this.insurancePending && c.side === 'player' && c.hp > 0) {
+      this.insurancePending = false;
+      c.shield += NEW_RELIC.insuranceShield;
+      events.push({ type: 'relic', side: 'player', relic: 'insurance' });
+      events.push({ type: 'shieldGain', side: 'player', reels: [], amount: NEW_RELIC.insuranceShield, total: c.shield, source: 'insurance' });
+    }
     if (this.over) return;
     if (c.hp > 0 || !this.resolving) {
       if (c.hp <= 0) return;
@@ -1839,6 +1905,16 @@ export class Fight {
     if (c.relics.has('phoenix') && !this.phoenixUsed) {
       this.phoenixUsed = true;
       c.hp = 1;
+      events.push({ type: 'phoenix', side: c.side, hp: 1 });
+      return;
+    }
+    // GOLDEN PARACHUTE (BANKROLL): pay chips to survive at 1 HP, once a fight (with PHOENIX FEATHER: two saves).
+    const held = (this.cfg.player.chipsHeld ?? 0) + this.midasChips - this.parachuteChips;
+    if (c.side === 'player' && c.relics.has('parachute') && !this.parachuteUsed && held >= NEW_RELIC.parachuteCost) {
+      this.parachuteUsed = true;
+      this.parachuteChips = NEW_RELIC.parachuteCost;
+      c.hp = 1;
+      events.push({ type: 'relic', side: c.side, relic: 'parachute' });
       events.push({ type: 'phoenix', side: c.side, hp: 1 });
       return;
     }
@@ -2299,8 +2375,10 @@ export class Fight {
       events.push({ type: 'abilityCharge', side: me.side, charge: ab.every, every: ab.every, kind: ab.kind });
       // The Hourglass slowed this one down.
       if (me.side === 'enemy' && this.sides.player.relics.has('sandglass') && ab.kind !== 'deal') events.push({ type: 'relic', side: 'player', relic: 'sandglass' });
-      events.push({ type: 'ability', side: me.side, kind: ab.kind, power: ab.power });
-      this.fireAbility(me, ab, events);
+      // THE OWNER: EVERY TRICK IN THE BOOK, the next trick each time (it's announced as that trick).
+      const fire = ab.kind === 'owner' ? { ...ab, ...OWNER_TRICKS[this.ownerTricks++ % OWNER_TRICKS.length] } : ab;
+      events.push({ type: 'ability', side: me.side, kind: fire.kind, power: fire.power });
+      this.fireAbility(me, fire, events);
       if (this.over) return;
     }
     events.push({ type: 'abilityCharge', side: me.side, charge: me.charge, every: ab.every, kind: ab.kind });

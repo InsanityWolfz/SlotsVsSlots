@@ -19,7 +19,7 @@ import {
   type Enabler,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
-import { encounterOf, encounterRng, type EncounterChoice, type EncounterResult } from './encounters';
+import { encounterOf, encounterRng, extraPlays, type EncounterChoice, type EncounterResult } from './encounters';
 import { BIG_CAP, CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { dailyEdge, dailyFightSeed } from './daily';
@@ -286,6 +286,8 @@ export interface RunState {
   bossHpMul?: number;
   /** Relic picks waiting behind the current one (CURSED IDOL / TREASURE after the act's legendary). */
   legendQueue?: RelicId[][];
+  /** PUNCH CARD: fights won since the last legendary it paid. */
+  punches?: number;
   /** QUICKENING: enemy abilities charge one spin faster. */
   abilityFaster?: boolean;
   /** SUPERCELL: Charms never offered again. */
@@ -516,8 +518,17 @@ function startNextAct(run: RunState): void {
   // Act 3 (THE DEALER): a full heal, a big choice and the Cashier — the legendary pick stays act 2's decision.
   if (run.act > 2) return;
   const pool = [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
-  run.pendingLegend = legendPick(run, rng, pool);
-  markLegends(run, run.pendingLegend);
+  queueLegendPick(run, legendPick(run, rng, pool));
+}
+
+/** A relic pick to show: now, or after the one already waiting (PUNCH CARD's can land on the same win). */
+function queueLegendPick(run: RunState, picks: RelicId[]): void {
+  if (!picks.length) return;
+  if (run.pendingLegend?.length) (run.legendQueue ??= []).push(picks);
+  else {
+    run.pendingLegend = picks;
+    markLegends(run, picks);
+  }
 }
 
 /** A legendary pick: 3 legendaries, topped up with normal relics when fewer are left (user, 2026-10-12: deep ENDLESS
@@ -620,7 +631,7 @@ export function playEncounter(run: RunState, i: number, bet?: number): Encounter
   // A game with plays left (and something to play with) keeps you here; walking away, or the last play, moves on.
   const played = (run.encounterPlays ?? 0) + 1;
   // (A game that says for itself whether it goes on, like HIGHER OR LOWER, decides; others go by their play count.)
-  const open = result.more ?? (!!def.plays && result.good !== null && played < def.plays && encounterChoices(run).some((c, k, all) => k < all.length - 1 && !c.disabled));
+  const open = result.more ?? (!!def.plays && result.good !== null && played < def.plays + extraPlays(run) && encounterChoices(run).some((c, k, all) => k < all.length - 1 && !c.disabled));
   if (open) {
     run.encounterPlays = played;
     result.more = true;
@@ -746,11 +757,10 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.enemy.endless = true;
     cfg.enemy.loop = run.endless.loop;
     cfg.enemy.dmgMul = (cfg.enemy.dmgMul ?? 1) * endlessMul(ENDLESS.dmg, run.endless.loop);
-    // THE TURBO: hits harder and charges faster on top of the loop's growth.
+    // THE OWNER (the TURBO boss): hits harder on top of the loop's growth; no turn takes more than turnCap of his HP.
     if (e.turbo) {
       cfg.enemy.dmgMul *= TURBO.dmg;
       cfg.enemy.turboCap = TURBO.turnCap;
-      if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - TURBO.faster) };
     }
     // TONIGHT'S RULE, for both machines.
     const night = run.endless.night;
@@ -891,15 +901,14 @@ export function enemyHp(run: RunState, e: EnemyDef): number {
   const daily = fixedRun(run) && run.act >= 3 && !run.endless ? TUNE.dailyAct3 : 1;
   // DOUBLE OR NOTHING (big choice): the next boss has double HP.
   const dare = e.isBoss ? run.bossHpMul ?? 1 : 1;
-  const turbo = e.turbo ? TURBO.hp : 1;
-  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * dare * turbo));
+  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * dare));
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {
   // Regulars and elites: their act's curve (enemies.ts makeEnemy).
   if (!e.isBoss) return e.hp;
   // ENDLESS: the loop bosses are a multiple of an act 3 regular's HP (then x the loop's growth).
-  if (run.endless) return unitsRound(TUNE.endlessBossBase * (e.boss === 'house' ? ENDLESS.houseHp : e.boss === 'dealer' ? ENDLESS.dealerHp : ENDLESS.wheelHp));
+  if (run.endless) return unitsRound(TUNE.endlessBossBase * (e.turbo ? TURBO.hp : e.boss === 'house' ? ENDLESS.houseHp : e.boss === 'dealer' ? ENDLESS.dealerHp : ENDLESS.wheelHp));
   // GREEN+: THE WHEEL STARTS FAST (3 chips a turn), so it gets less HP. THE DAILY RUN's WHEEL is the eased one too.
   if (e.boss === 'wheel') return unitsRound(TUNE.wheelHp * (run.stake >= STAKE.wheelFast || fixedRun(run) ? TUNE.greenWheel : 1));
   if (e.boss === 'dealer') return TUNE.dealerHp;
@@ -972,6 +981,20 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   if (fight.midasChips) run.player.chips = Math.max(0, run.player.chips + fight.midasChips);
   // LUCRE: the chips its groups paid this fight (a win only: a lost fight ends the run).
   if (fight.lucreChips) run.player.chips += fight.lucreChips;
+  // HOUSE TAX: the enemy's jackpots paid you. GOLDEN PARACHUTE: its price.
+  if (fight.taxChips) run.player.chips += fight.taxChips;
+  if (fight.parachuteChips) run.player.chips = Math.max(0, run.player.chips - fight.parachuteChips);
+  // PUNCH CARD: every 10th fight you win, a legendary pick.
+  if (run.player.relics.includes('punchcard')) {
+    run.punches = (run.punches ?? 0) + 1;
+    if (run.punches >= NEW_RELIC.punchEvery) {
+      run.punches = 0;
+      const legends = legendsFor(run);
+      if (legends.length) {
+        queueLegendPick(run, legendPick(run, new Rng((run.seed ^ Math.imul(run.records.length + 7, 0x9e3779b9)) >>> 0), legends));
+      }
+    }
+  }
   // Chips: interest on what you banked, then the win, elite bonus and jackpots (overkill chips removed 2026-10-08: nothing explained them).
   const beaten = currentEnemy(run);
   const interest = interestOn(run.player.chips);
@@ -982,7 +1005,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   const earned = interest + piggy + winChips + (run.trustFund ?? 0);
   run.player.chips += earned;
   // (THE WHEEL: the chips your sweeps won came in with the fight's mid-fight chips; the line counts them.)
-  record.chips = earned + fight.lucreChips + fight.betChips;
+  record.chips = earned + fight.lucreChips + fight.betChips + fight.taxChips - fight.parachuteChips;
   // THE REPO MAN fell: his bounty.
   if (beaten.archetype === REPO_MAN.id) {
     // His bounty (the fork he replaced could have paid an elite's spoils).
@@ -1027,7 +1050,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   run.stop++;
   if (beaten.isBoss) {
     if (run.endless && beaten.turbo) {
-      // THE TURBO falls: the run is over, and won (its pot pays TURBO.potMul times).
+      // THE OWNER falls: the run is over, and won (the pot pays TURBO.potMul times).
       run.endless.pot = nextPot(run.endless.pot) * TURBO.potMul;
       run.endless.loop++;
       run.endless.turbo = true;
@@ -2057,10 +2080,9 @@ function takeChoiceInner(run: RunState, c: BigChoice): void {
       const erng = new Rng((run.seed ^ (run.endless?.loop ?? 1) * 977) >>> 0);
       const legends = legendsFor(run);
       const relics = relicsFor(run);
-      if (c.reward === 'legend' && legends.length) run.pendingLegend = legendPick(run, erng, legends);
-      else if (c.reward === 'relic' && relics.length) run.pendingLegend = erng.shuffle(relics).slice(0, RUN.legendPick);
+      if (c.reward === 'legend' && legends.length) queueLegendPick(run, legendPick(run, erng, legends));
+      else if (c.reward === 'relic' && relics.length) queueLegendPick(run, erng.shuffle(relics).slice(0, RUN.legendPick));
       else p.chips += ENDLESS.edgeChips;
-      markLegends(run, run.pendingLegend);
       break;
     }
     case 'armsRace':

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, UNIT } from '../src/core/config';
-import { ENDLESS, TURBO } from '../src/core/enemies';
+import { ENDLESS, OWNER_TRICKS, TURBO } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
 import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, enemyHp, fightConfig, fightLabel, NIGHT, NIGHTS, finishFight, letItRide, skipToBoss, takeChoice } from '../src/core/run';
 import { fmtNum } from '../src/render/text';
@@ -125,8 +125,8 @@ describe("ENDLESS: TONIGHT'S RULE", () => {
   });
 });
 
-describe('ENDLESS: THE TURBO', () => {
-  it("loop 5's boss runs in TURBO (more HP, a turn cap on its HP); beating it ends the run, won", () => {
+describe('ENDLESS: THE OWNER (the TURBO boss)', () => {
+  it("loop 5's boss is THE OWNER (a turn cap on his HP, a new trick each time); beating him ends the run, won", () => {
     const run = createRun(base, 33, 'knight', 2, true);
     run.over = run.won = true;
     run.act = 3;
@@ -144,7 +144,8 @@ describe('ENDLESS: THE TURBO', () => {
     }
     expect(run.endless!.loop).toBe(TURBO.loop);
     expect(run.map.boss.turbo).toBe(true);
-    expect(run.map.boss.name).toMatch(/^TURBO /);
+    expect(run.map.boss.boss).toBe('owner');
+    expect(run.map.boss.name).toBe('THE OWNER');
     run.pendingChoice = null;
     run.choiceQueue = [];
     run.pendingLegend = null;
@@ -159,5 +160,24 @@ describe('ENDLESS: THE TURBO', () => {
     expect(run.won).toBe(true);
     expect(run.endless!.turbo).toBe(true);
     expect(run.endless!.pot).toBeGreaterThan(pot);
+  });
+});
+
+describe('THE OWNER: EVERY TRICK IN THE BOOK', () => {
+  it('plays a different trick each time his ability fires, in order', () => {
+    const run = createRun(base, 34, 'knight', 2, true);
+    run.over = run.won = true;
+    run.act = 3;
+    letItRide(run);
+    run.endless!.loop = TURBO.loop;
+    const cfg = fightConfig(run, base);
+    cfg.enemy = { ...cfg.enemy, ...run.map.boss, hp: 1e9, ability: { kind: 'owner', every: 2, power: 0 }, boss: 'owner' };
+    cfg.enemy.turboCap = TURBO.turnCap;
+    cfg.player = { ...cfg.player, hp: 1e9, startHp: 1e9 };
+    const f = new Fight(cfg, 5);
+    const kinds: string[] = [];
+    for (let i = 0; i < 40 && !f.over; i++) for (const e of f.step().events) if (e.type === 'ability' && e.side === 'enemy') kinds.push(e.kind);
+    expect(kinds.length).toBeGreaterThanOrEqual(3);
+    expect(kinds.slice(0, 3)).toEqual(OWNER_TRICKS.slice(0, 3).map((t) => t.kind));
   });
 });

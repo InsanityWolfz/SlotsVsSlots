@@ -32,6 +32,15 @@ export type DraftPolicy = 'greedy' | 'random' | 'relic';
 export const SIM_BIAS: { /** A forced build: rush (the attack build, the default) or turtle (the shield build). */ style?: 'rush' | 'turtle'; ride?: boolean; onEnd?: (run: RunState) => void; startRelic?: RelicId; noStart?: boolean; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
 
 export const RELIC_VALUE: Record<RelicId, number> = {
+  dryspell: 6,
+  punchcard: 6,
+  goldenspin: 7,
+  insurance: 6,
+  housetax: 4,
+  regular: 3,
+  hitmaker: 7,
+  houseofcards: 7,
+  parachute: 6,
   turntable: 8,
   mixtape: 7,
   subwoofer: 7,

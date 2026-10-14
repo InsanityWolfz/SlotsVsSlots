@@ -5078,6 +5078,248 @@ S.betChip = lit(12, 12, [
   S.betStack3 = stack(3);
 }
 
+// ================================================================ ENDLESS: THE OWNER + relics (batch 12)
+/** Paint a set of cells with a 1px K ring first (only around the set), so overlapping parts stay separated. */
+function ringPaint(g, cells, ringC = 'K') {
+  const key = new Set(cells.map(([x, y]) => `${x},${y}`));
+  for (const [x, y] of cells) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]])
+    if (!key.has(`${x + dx},${y + dy}`)) put(g, x + dx, y + dy, ringC);
+  for (const [x, y, c] of cells) put(g, x, y, c);
+}
+/** Literal rows -> [x, y, c] cells at (x0, y0); '.' and ' ' skipped. */
+const cellsOf = (x0, y0, rows) => rows.flatMap((r, dy) => [...r].map((c, dx) => [x0 + dx, y0 + dy, c]).filter(([, , c]) => c !== '.' && c !== ' '));
+
+// owner: ENDLESS final boss, the man who owns the casino. Heavy-set old tycoon: slicked-back silver hair,
+// heavy silver brows, gold-rimmed purple-tinted glasses, jowls, a smug one-sided smirk round a fat cigar with a
+// red ember and a curl of smoke; black pinstripe suit, white shirt, red tie with a gold pin, diamond pinky ring
+{
+  const g = grid(24, 24);
+  // broad shoulders, pinstripe suit
+  for (let y = 14; y <= 23; y++) {
+    const [x0, x1] = y === 14 ? [3, 18] : y === 15 ? [1, 20] : [0, 21];
+    const half = 2.5 - (y - 14) * 0.45;
+    for (let x = x0; x <= x1; x++) {
+      const d = Math.abs(x - 10.5);
+      let c;
+      if (d <= 0.6 && y >= 15) c = x === 10 ? 'R' : 'r';                          // tie
+      else if (d <= half + 0.01) c = x < 10 ? 'T' : 't';                           // shirt V
+      else if (d <= half + 1.6) c = x < 10 ? 'l' : 'P';                           // lapels
+      else c = x === x0 ? 'l' : (x % 3 === 0 && y > 15) ? (x < 10 ? 'l' : 'h') : (x >= 18 ? 'P' : 'k'); // pinstripes
+      put(g, x, y, c);
+    }
+  }
+  plot(g, [[10, 14, 'R'], [11, 14, 'r'], [9, 19, 'Y'], [10, 19, 'G'], [11, 19, 'G'], [12, 19, 'g']]); // knot, gold tie pin
+  plot(g, [[4, 18, 'T'], [5, 18, 'R'], [4, 17, 'M']]);                                          // pocket square
+  stamp(g, 4, 1, [
+    '    LLLLLS',
+    '  LLWWLLLSSS',
+    ' LLLSSSSSSSSD',
+    ' SFFFFFFFFFFD',
+    ' SLLLFFFLLLfD',
+    ' GGGGGFFGGGGG',
+    ' GJvvGGGGJvvG',
+    ' GvvvGffGvvvG',
+    'fFGGGFFfFGGGFf',
+    'fFFfFFFFFFkK',
+    'fFFFfFkkkFF',
+    ' fFFFFFFFFFff',
+    '  ffFFFFFfff',
+  ]);
+  plot(g, [[7, 14, 'T'], [8, 15, 'T'], [13, 14, 't'], [12, 15, 't']]);                              // collar points
+  // the cigar from the right corner of the smirk, gold band, ash + ember, a curl of smoke
+  stamp(g, 15, 10, ['BGBBBHO', 'bgbbbhR']);
+  stamp(g, 20, 5, [' L', 'L', ' S']);
+  // a heavy fist on the right with the diamond pinky ring
+  ringPaint(g, cellsOf(17, 17, ['FFFf', 'fFFf', 'FFFf', 'CWff', 'TTt']));
+  S.enemyOwner = toRows(outline(g));
+}
+
+// relicDrySpell (16x16): DRY SPELL, a slab of cracked desert earth under one blue water drop
+{
+  const g = grid(16, 16);
+  stamp(g, 5, 0, [
+    '  A  ',
+    '  AU ',
+    ' AAAU',
+    'AWAAUN',
+    'AWAUUN',
+    'AAUUNN',
+    ' UNNN',
+  ]);
+  stamp(g, 1, 8, [
+    'aaaaaaabaaaaaa',
+    'aOOOOOObOOOOOo',
+    'aOObbbOObOOOOo',
+    'abbOOObbObbOOo',
+    'aOOOOObOOOObbo',
+    'ooooobooooobob',
+    'bbbbbbbbbbbbbb',
+  ]);
+  S.relicDrySpell = toRows(outline(g));
+}
+// relicPunchCard (16x16): PUNCH CARD, a cream loyalty card, red stripe, three holes punched and one to go
+S.relicPunchCard = lit(16, 16, [
+  '................',
+  '................',
+  '................',
+  '.WTTTTTTTTTTTTt.',
+  '.TRRRRRRRRRRRRt.',
+  '.Trrrrrrrrrrrrt.',
+  '.TTTTTTTTTTTTTt.',
+  '.TPPTPPTPPTttTt.',
+  '.TPPTPPTPPTttTt.',
+  '.TTTTTTTTTTTTTt.',
+  '.TttttttTTTTGTt.',
+  '.TTTTTTTTTTTTTt.',
+  '.tttttttttttttt.',
+]);
+// relicGoldenSpin (16x16): GOLDEN SPIN, a gold coin caught mid-spin (its reeded edge showing), a 7 struck on
+// the face, speed lines trailing left and sparkles
+{
+  const g = grid(16, 16);
+  const inE = (x, y, cx, rx) => ((x - cx) / rx) ** 2 + ((y - 7.5) / 6.4) ** 2 <= 1;
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if (inE(x, y, 7.2, 3.9)) {
+      const inner = inE(x, y, 7.2, 2.9) && ((y - 7.5) / 5.4) ** 2 + ((x - 7.2) / 2.9) ** 2 <= 1;
+      put(g, x, y, inner ? 'Y' : (x - 7.2) + (y - 7.5) < 0 ? 'Y' : 'G');
+      if (!inner) put(g, x, y, (x - 7.2) + (y - 7.5) * 0.6 < 0 ? 'W' : 'G');
+    } else if (inE(x, y, 9.0, 3.9)) put(g, x, y, y % 2 ? 'g' : 'G');                 // reeded edge
+  }
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if (get(g, x, y) === 'W' && (x + y) % 3) put(g, x, y, 'Y');
+  stamp(g, 5, 4, ['GGGG', '   G', '  G', '  G', ' G', ' G']);                      // the 7
+  plot(g, [[5, 3, 'W'], [4, 4, 'W']]);
+  plot(g, [[0, 5, 'G'], [1, 5, 'Y'], [0, 9, 'G'], [1, 9, 'Y'], [1, 12, 'G']]);        // speed lines
+  plot(g, [[14, 0, 'W'], [13, 1, 'W'], [14, 1, 'W'], [15, 1, 'W'], [14, 2, 'W'], [13, 14, 'Y']]); // sparkles
+  S.relicGoldenSpin = toRows(outline(g));
+}
+// relicInsurance (16x16): INSURANCE POLICY, a dog-eared policy with a blue shield and a red wax seal
+{
+  const g = grid(16, 16);
+  stamp(g, 2, 1, [
+    'WTTTTTTTu',
+    'TTTTTTTTuu',
+    'TTTTTTTTtuu',
+    'TTTTTTTTTTTt',
+    'TTTAAUUUNTTt',
+    'TTTAWUUUNTTt',
+    'TTTAUUUUNTTt',
+    'TTTAUUUNNTTt',
+    'TTTTUUNNTTTt',
+    'TTTTTNNTTTTt',
+    'TttttttTTTTt',
+    'TTTTTTTTTTTt',
+    'TttttTTTTTTt',
+    'tttttttttttt',
+  ]);
+  ringPaint(g, cellsOf(10, 10, [' RRR ', 'RMRRr', 'RRrRr', 'RRRrr', ' rrr ']));
+  S.relicInsurance = toRows(outline(g));
+}
+// relicHouseTax (16x16): HOUSE TAX, a perforated red-and-gold tax stamp, a red percent sign on cream
+{
+  const g = grid(16, 16);
+  for (let y = 1; y <= 14; y++) for (let x = 1; x <= 14; x++) {
+    const edge = x === 1 || x === 14 || y === 1 || y === 14;
+    const corner = (x === 1 || x === 14) && (y === 1 || y === 14);
+    if (edge && !corner && (x + y) % 2 === 1) continue;                         // perforations
+    let c;
+    if (x <= 2 || y <= 2) c = 'M';
+    else if (x >= 13 || y >= 13) c = 'r';
+    else if (x === 3 || y === 3) c = 'Y';
+    else if (x === 12 || y === 12) c = 'g';
+    else c = x === 4 || y === 4 ? 'W' : 'T';
+    put(g, x, y, c);
+  }
+  for (let y = 1; y <= 13; y++) for (let x = 1; x <= 13; x++) if ((x <= 2 || y <= 2) && get(g, x, y) !== '.' && x + y > 5) put(g, x, y, 'R');
+  stamp(g, 5, 5, [
+    'RR  R ',
+    'Rr R  ',
+    '  R   ',
+    ' R  RR',
+    'R   Rr',
+  ]);
+  S.relicHouseTax = toRows(outline(g));
+}
+// relicRegular (16x16): REGULAR, a gold VIP membership card, black stripe, white star
+{
+  const g = grid(16, 16);
+  for (let y = 2; y <= 13; y++) for (let x = 1; x <= 14; x++)
+    put(g, x, y, y === 4 ? 'k' : y === 2 ? (x === 1 ? 'W' : x === 14 ? 'G' : 'Y') : y === 13 ? 'g' : x === 1 ? 'Y' : x === 14 ? 'g' : 'G');
+  ringPaint(g, cellsOf(3, 6, [
+    '   W   ',
+    '  WTT  ',
+    'WTTTTTt',
+    ' TTTTt ',
+    '  TTt  ',
+    ' TT Tt ',
+    ' T   t ',
+  ]), 'g');
+  for (const y of [7, 9, 11]) hline(g, 11, 12, y, 'g');
+  S.relicRegular = toRows(outline(g));
+}
+// relicHitmaker (16x16): CERTIFIED HITMAKER, a framed gold record (red label) with a gold name plate
+{
+  const g = grid(16, 16);
+  for (let y = 1; y <= 14; y++) for (let x = 1; x <= 14; x++) {
+    const rim = x === 1 || y === 1 || x === 14 || y === 14;
+    put(g, x, y, rim ? (x === 1 || y === 1 ? 'w' : 'b') : 'P');
+  }
+  const cx = 7.5, cy = 6.5;
+  for (let y = 2; y < 12; y++) for (let x = 2; x < 14; x++) {
+    const r = Math.hypot(x - cx, y - cy);
+    if (r > 5.0) continue;
+    let c;
+    if (r <= 0.75) c = 'K';
+    else if (r <= 1.9) c = x + y < cx + cy ? 'R' : 'r';
+    else if (r > 4.4 || Math.abs(r - 3.2) < 0.4) c = 'g';
+    else c = (x - cx) + (y - cy) < -1 ? 'Y' : 'G';
+    put(g, x, y, c);
+  }
+  plot(g, [[4, 4, 'W'], [5, 3, 'W'], [4, 5, 'W'], [10, 9, 'Y'], [11, 8, 'Y']]);              // glare
+  stamp(g, 5, 13, ['YGGGGg']);
+  S.relicHitmaker = toRows(outline(g));
+}
+// relicHouseOfCards (16x16): HOUSE OF CARDS, two cards leaning into a peak on top of a flat third one;
+// the left shows its face (a red heart), the right its red back
+{
+  const g = grid(16, 16);
+  const card = (cx, cy, ang, face) => {
+    const cs = Math.cos(ang), sn = Math.sin(ang), cells = [];
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const dx = x - cx, dy = y - cy;
+      const u = dx * cs + dy * sn, v = -dx * sn + dy * cs;
+      if (Math.abs(u) > 2.6 || Math.abs(v) > 5.2) continue;
+      const edge = Math.abs(u) > 1.7 || Math.abs(v) > 4.4;
+      let c;
+      if (face) c = edge ? (u < 0 ? 'W' : 't') : 'T';
+      else c = edge ? (u < 0 ? 'M' : 'r') : ((x + y) % 2 ? 'R' : 'r');
+      cells.push([x, y, c]);
+    }
+    return cells;
+  };
+  ringPaint(g, card(10.2, 6.3, -0.42, false));
+  ringPaint(g, card(4.8, 6.3, 0.42, true));
+  plot(g, [[3, 5, 'R'], [5, 5, 'R'], [3, 6, 'R'], [4, 6, 'R'], [5, 6, 'r'], [4, 7, 'r']]);       // heart pip
+  ringPaint(g, cellsOf(1, 12, ['WTTTTTTTTTTTTt', 'TRTTTTTTTTTTRt', 'tttttttttttttt']));
+  S.relicHouseOfCards = toRows(outline(g));
+}
+// relicParachute (16x16): GOLDEN PARACHUTE, a gold canopy, shroud lines down to a little money bag
+{
+  const g = grid(16, 16);
+  for (let y = 0; y <= 6; y++) for (let x = 0; x <= 15; x++) {
+    const r = Math.hypot((x - 7.5) / 7.0, (y - 6.6) / 6.2);
+    if (r > 1) continue;
+    const panel = Math.floor(x / 4) % 2;
+    put(g, x, y, y === 6 ? (panel ? 'g' : 'G') : (x + y < 7 ? 'W' : panel ? 'G' : 'Y'));
+  }
+  plot(g, [[3, 6, '.'], [4, 6, '.'], [11, 6, '.'], [12, 6, '.']]);       // scalloped hem
+  stamp(g, 5, 9, ['  wb', ' bbbb', 'wBBBBb', 'wBYGBb', 'wBGBBb', ' BBbb']);
+  S.relicParachute = toRows(outline(g));
+  // shroud lines (unoutlined, pale) from the hem down to the bag's neck
+  for (const [x, y] of [[2, 8], [3, 9], [13, 8], [12, 9], [6, 8], [9, 8]]) {
+    const row = [...S.relicParachute[y]]; if (row[x] === '.') row[x] = 'u'; S.relicParachute[y] = row.join('');
+  }
+}
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -5140,6 +5382,8 @@ const DIMS = {
   note: 16, cabinetJukebox: { w: 48, h: 64 }, heroJukebox: 24,
   relicTurntable: 16, relicMixtape: 16, relicSubwoofer: 16, enhEcho: 16, volumeIcon: 8,
   wheelTopper: 24, betChip: 12, betStack1: 16, betStack2: 16, betStack3: 16,
+  enemyOwner: 24, relicDrySpell: 16, relicPunchCard: 16, relicGoldenSpin: 16, relicInsurance: 16,
+  relicHouseTax: 16, relicRegular: 16, relicHitmaker: 16, relicHouseOfCards: 16, relicParachute: 16,
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -5283,7 +5527,11 @@ export type SpriteId =
   | 'volumeIcon'                                 // HUD volume meter icon, 8x8
   | 'wheelTopper'                                // THE WHEEL's roulette-wheel topper (top view), 24x24
   | 'betChip'                                    // THE WHEEL's bet chip (top view), 12x12
-  | 'betStack1' | 'betStack2' | 'betStack3';     // bet chip stacks on your reels (side view), 16x16
+  | 'betStack1' | 'betStack2' | 'betStack3'      // bet chip stacks on your reels (side view), 16x16
+  | 'enemyOwner'                                 // THE OWNER, ENDLESS final boss portrait, 24x24
+  | 'relicDrySpell' | 'relicPunchCard' | 'relicGoldenSpin' | 'relicInsurance' // relics, 16x16
+  | 'relicHouseTax' | 'relicRegular'
+  | 'relicHitmaker' | 'relicHouseOfCards' | 'relicParachute'; // per-character relics (JUKEBOX, JOKER, BANKROLL), 16x16
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

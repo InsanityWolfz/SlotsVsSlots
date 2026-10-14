@@ -1309,7 +1309,8 @@ export class Game {
     if (this.phase !== 'fighting' && this.phase !== 'quick') return 'lounge';
     // Each boss has its own theme (endless cycles them too): THE HOUSE, THE WHEEL, THE DEALER.
     const boss = this.fight.cfg.enemy?.boss;
-    if (boss) return boss;
+    // (THE OWNER plays under the Dealer's theme.)
+    if (boss) return boss === 'owner' ? 'dealer' : boss;
     const act = this.run?.act ?? 1;
     return act >= 3 || this.run?.endless ? 'act3' : act === 2 ? 'act2' : 'act1';
   }
@@ -1980,7 +1981,7 @@ export class Game {
     const e = this.fight.sides.enemy;
     return {
       room: inRun ? roomFor(run!.act, run!.endless?.loop ?? 0) : 'floor',
-      boss: fight && (boss === 'house' || boss === 'wheel' || boss === 'dealer') ? boss : null,
+      boss: fight && (boss === 'house' || boss === 'wheel' || boss === 'dealer' || boss === 'owner') ? boss : null,
       loop: inRun ? (run!.endless?.loop ?? 0) : 0,
       hp: fight && p.maxHp > 0 ? Math.max(0, p.hp) / p.maxHp : 1,
       foeHp: fight && e.maxHp > 0 ? Math.max(0, e.hp) / e.maxHp : 1,
@@ -1999,7 +2000,6 @@ export class Game {
       houseEvery: this.fight.sides.enemy.ability?.every ?? 3,
       loop: e.loop,
       dealerEvery: DEALER_RULES.bustEvery - this.fight.dealerCut,
-      turbo: !!e.turboCap,
     });
     ctx.fillStyle = 'rgba(6,2,12,0.75)';
     ctx.fillRect(0, 0, W, H);

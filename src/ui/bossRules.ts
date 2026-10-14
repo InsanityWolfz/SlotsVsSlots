@@ -24,17 +24,20 @@ export interface BossRuleContext {
   loop?: number;
   /** THE DEALER: its BUST clock in hand 1 (FAST HANDS, QUICKENING and the stakes speed it up; the same cut runs in every hand). */
   dealerEvery?: number;
-  /** ENDLESS loop 5: THE TURBO (its own row on top). */
-  turbo?: boolean;
 }
 
 export function bossRules(boss: string, c: BossRuleContext): BossRules {
-  const base = rulesOf(boss, c);
-  if (!c.turbo) return base;
-  return {
-    rules: [{ icon: artId('icoSmash'), text: `TURBO: X${TURBO.hp} HP, HITS X${TURBO.dmg}, ABILITIES ${TURBO.faster} TURN FASTER. NO TURN TAKES MORE THAN ${Math.round(TURBO.turnCap * 100)}% OF ITS HP` }, ...base.rules],
-    win: `${base.win}. BEAT IT AND THE RUN IS WON`,
-  };
+  // THE OWNER (ENDLESS loop 5): the TURBO boss.
+  if (boss === 'owner')
+    return {
+      rules: [
+        { icon: artId('icoGavel'), text: 'EVERY 2 TURNS HE CHEATS, A NEW WAY EACH TIME: SLIME, THEFT, FREEZE, ROCKS, HEX, BOMBS' },
+        { icon: artId('icoSmash'), text: `HIS HITS ARE X${TURBO.dmg}, AND YOUR ONE-TURN CAP DOESN'T HOLD THEM` },
+        { icon: 'shieldIcon', text: `NO TURN TAKES MORE THAN ${Math.round(TURBO.turnCap * 100)}% OF HIS HP` },
+      ],
+      win: 'OUTLAST HIM. BEAT HIM AND THE RUN IS WON',
+    };
+  return rulesOf(boss, c);
 }
 
 function rulesOf(boss: string, c: BossRuleContext): BossRules {

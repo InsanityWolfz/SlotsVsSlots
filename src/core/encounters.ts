@@ -189,9 +189,9 @@ const LUCKY_SEVENS: EncounterDef = {
     const hp = slotHp(run);
     const relic = slotRelic(run, rng);
     return [
-      { label: 'A', text: '', stake: `${SLOT.low.chips} CHIPS`, prize: `${SLOT.low.pulls} PULLS`, disabled: run.player.chips < SLOT.low.chips },
-      { label: 'B', text: '', stake: `${hp} HP`, prize: `${SLOT.mid.pulls} PULLS`, disabled: run.player.hp <= hp },
-      { label: 'C', text: '', stake: relic ? RELICS[relic].name : 'A RELIC', prize: `${SLOT.high.pulls} PULLS`, relic: relic ?? undefined, disabled: !relic },
+      { label: 'A', text: '', stake: `${SLOT.low.chips} CHIPS`, prize: `${SLOT.low.pulls + extraPlays(run)} PULLS`, disabled: run.player.chips < SLOT.low.chips },
+      { label: 'B', text: '', stake: `${hp} HP`, prize: `${SLOT.mid.pulls + extraPlays(run)} PULLS`, disabled: run.player.hp <= hp },
+      { label: 'C', text: '', stake: relic ? RELICS[relic].name : 'A RELIC', prize: `${SLOT.high.pulls + extraPlays(run)} PULLS`, relic: relic ?? undefined, disabled: !relic },
       WALK,
     ];
   },
@@ -211,6 +211,7 @@ const LUCKY_SEVENS: EncounterDef = {
       pulls = SLOT.high.pulls;
     }
     if (!pulls) return walked();
+    pulls += extraPlays(run);
     // The stake's pick drew from a fork of the stop's stream; the pulls draw from the stream itself.
     const tally = new Map<string, number>();
     const out = Array.from({ length: pulls }, () => pullSlot(run, rng, ctx, tally));
@@ -231,6 +232,8 @@ export const WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 
 const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
 export const pocketColor = (n: number): 'red' | 'black' | 'green' => (n === 0 ? 'green' : REDS.has(n) ? 'red' : 'black');
 /** The most you can bet right now: the table's limit, or every chip you hold. */
+/** REGULAR (relic): one more play at every encounter game (a pull, a spin, a roll, a hand). */
+export const extraPlays = (run: RunState) => (run.player.relics.includes('regular') ? 1 : 0);
 /** ENDLESS raises every table's limit by half again each loop (chips buy more late, so bets must too). */
 export const tableLimit = (run: RunState, base: number) => Math.round(base * (1 + 0.5 * (run.endless?.loop ?? 0)));
 export const rouletteMax = (run: RunState) => Math.min(tableLimit(run, ROULETTE.maxBet), run.player.chips);
@@ -374,8 +377,8 @@ function bjSettle(run: RunState, st: BjState, rng: Rng): EncounterResult {
   // A push doesn't use up a hand: the same hand is dealt again.
   const dealt = outcome === 'push' ? st.dealt - 1 : st.dealt;
   run.encounterState = { dealt };
-  const more = dealt < BJ.hands && bjMax(run) >= 1;
-  const hand = { p: [...st.p], d, outcome, no: st.dealt, of: BJ.hands };
+  const more = dealt < BJ.hands + extraPlays(run) && bjMax(run) >= 1;
+  const hand = { p: [...st.p], d, outcome, no: st.dealt, of: BJ.hands + extraPlays(run) };
   const title = outcome === 'natural' ? 'TWENTY-ONE!' : outcome === 'win' ? (dealer > 21 ? 'DEALER BUSTS!' : 'YOU WIN!') : outcome === 'bust' ? 'BUST' : outcome === 'push' ? 'PUSH: DEAL AGAIN' : 'THE DEALER WINS';
   const text = won ? `+${won} CHIPS` : outcome === 'push' ? 'BET BACK' : `-${st.bet} CHIPS`;
   return { title, text, good: won > 0 ? true : outcome === 'push' ? null : false, hand, more };

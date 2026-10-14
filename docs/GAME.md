@@ -70,11 +70,14 @@ running (`NIGHTS` in `src/core/run.ts`): HAPPY HOUR (jackpots pay x2), HIGH LIMI
 LUCKY NIGHT (2 more wilds a reel), SHOWDOWN (every hit x1.5), IRON NIGHT (shields block x2), FAST NIGHT (abilities 1
 turn faster, meters fill x1.5). Shown on the HOUSE EDGE screen, the path pick, the side panel and the fight label.
 Sim GREEN: loops cleared median 4 -> 5.
-**THE TURBO** (user, 2026-10-14): loop 5's boss (whichever the cycle gives) runs in TURBO: x3 HP, hits x1.5,
-abilities 1 turn faster, its hits skip the one-turn cap on you, and no turn takes more than 5% of its HP (so no build
-one-shots it). Beating it ends the run, won (YOU BROKE THE BANK; the pot pays x3; achievement BROKE THE BANK): a broken
-build or a bug can't go on forever. Aim ~0.1% of the runs that reach it; the bot (GREEN, 399 reached) beat it 0
-times (x3 HP / x2 hits / no cap: 50%; HP alone up to x100: still 3.6%, BANKROLL; the turn cap is what holds). Each loop multiplies enemy HP and damage,
+**THE OWNER, the TURBO boss** (user, 2026-10-14: a new boss, insanely hard): loop 5's boss is THE OWNER, the man who
+owns the casino (`OWNER` in `src/core/enemies.ts`, his office in the room's column). EVERY TRICK IN THE BOOK: every 2
+turns he cheats a new way (slime, a theft, a freeze, rocks, a hex, bombs, in turn). His HP is 8 loop bosses' worth
+(TURBO.hp, x the loop's growth), his hits x1.2 and they skip the one-turn cap on you, and no turn takes more than 6% of
+his HP (so no build one-shots him). Beating him ends the run, won (YOU BROKE THE BANK, the pot pays x3, achievement
+BROKE THE BANK): a broken build or a bug can't go on forever. Aim ~0.1% of the runs that reach him: the bot (GREEN,
+399 reached) beat him 0 times (a souped-up loop boss first: x3 HP / x2 hits, no cap: 50%; HP alone up to x100: 3.6%,
+BANKROLL; the turn cap is what holds). Each loop multiplies enemy HP and damage,
 and the multiplier grows every loop, so it gets harder exponentially in theory. Playtesters still reached loop 5,
 so that isn't happening in practice (see ROADMAP).
 
@@ -107,7 +110,17 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   Pay = BASE × MULT, and gold Charms in a group ADD. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
   machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER), ECHO (JUKEBOX) and BULWARK (`spiked`, KNIGHT).
   `src/core/charms.ts`.
-- **Relics:** 58, in common, uncommon and legendary tiers; some are machine identity relics. `src/core/relics.ts`.
+- **New relics (user's picks, 2026-10-14):** DRY SPELL (each spin with no pair: the next pair or jackpot pays +25%,
+  stacking to x3), PUNCH CARD (every 10th fight won: a legendary pick), GOLDEN SPIN (1 spin in 10 pays x3, with its own
+  banner), INSURANCE POLICY (first drop under 25% HP a fight: 100 shield), HOUSE TAX (each enemy jackpot pays you 2
+  chips), REGULAR (one more play at every encounter game), and machine relics CERTIFIED HITMAKER (JUKEBOX: each DROP in
+  a fight +25% on the last), HOUSE OF CARDS (JOKER: each jackpot meter payoff adds a WILD to reel 2 for the fight),
+  GOLDEN PARACHUTE (BANKROLL: a lethal hit costs 20 chips instead, once a fight; with PHOENIX FEATHER, two saves).
+  REGULAR, HOUSE TAX and PUNCH CARD never sit in the starting pick. Sim (1000 runs WHITE / GREEN, before -> after):
+  KNIGHT 69 -> 64 / 34 -> 32, TESLA 58 -> 54 / 40 -> 36, JUKEBOX 68 -> 62 / 35 -> 30, JOKER 58 -> 56 / 44 -> 37,
+  BANKROLL 60 -> 58 / 44 -> 41. Alone each costs 0-3 (noise); together they thin the stronger relics out of the offers.
+  It moved WHITE onto its 60 target; GREEN JUKEBOX (30) is now the low one.
+- **Relics:** 65, in common, uncommon and legendary tiers; some are machine identity relics. `src/core/relics.ts`.
   To list exactly what players read: `npx tsx tools/content/audit.ts`. Every machine should have a shield build:
   BANKROLL's is ARMORED CAR (shield counts as chips for HIGH ROLLER), SAFE DEPOSIT (chips also hit for the shield
   gained that spin) and SHIELD BASH (KNIGHT's, open to BANKROLL too).
@@ -168,7 +181,7 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   (a boss's own frame is empty in its fight), Slot Machines under glass, a pianist, a champagne tower that fills on
   your jackpot, velvet ropes, cigar haze. ENDLESS goes round them, darker and more gold each loop, and escalates (user, 2026-10-14): a
   back row of fans fills in (2 a loop), loose bills drift down the strips from loop 2, spotlights sweep from loop 3, and
-  THE TURBO brings spinning red beacons and a faint red pulse (under 0.06). Bosses take the
+  THE OWNER brings spinning red beacons and a faint red pulse (under 0.06), and his office takes the column. Bosses take the
   column: the House's vault (loses rivets with its HP, ajar under 30%; guards; gold on the floor), THE WHEEL's table
   at an angle with its croupier, the Dealer in person behind his felt. The corner crowd dresses for the room: your
   jackpot they jump, theirs hands on heads; under 30% HP one can't look. The room stays behind the Cashier, the

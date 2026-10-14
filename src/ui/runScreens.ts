@@ -4,8 +4,8 @@ import { challengeById, levelOf } from '../core/meta';
 import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../core/config';
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
-import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, TURBO, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
-import { bjMax, bjState, bjTotal, BJ, DICE, diceMax, ROULETTE, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
+import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
+import { bjMax, bjState, bjTotal, BJ, DICE, diceMax, extraPlays, ROULETTE, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -343,6 +343,7 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
     repo: 'TAKES A CHARM FOR THE FIGHT',
     houseTake: `RAKES YOUR GROUPS FOR ${p} TURNS`,
     deal: 'DEALS A BUST',
+    owner: 'CHEATS A NEW WAY EACH TIME',
   };
   return what[e.ability.kind] ?? '';
 }
@@ -360,7 +361,7 @@ function abilityText(e: EnemyDef, every: number, run?: RunState): string {
 const STAGE_TINT: Record<string, string> = {
   slime: '#5ed15a', frost: '#5ad8e8', thief: '#c9a0ff', hexer: '#c9a0ff', golem: '#c9bba8',
   brute: '#ff9a3a', gremlin: '#ff9a3a', bomber: '#ff9a3a', vampire: '#ff6a5a', house: '#ff6a5a', pitboss: '#ff6a5a',
-  dealer: '#ff6a5a', wheel: '#ff3a2e', croupier: '#ffd23f', sharp: '#ffd23f', counterfeiter: '#ffd23f', mimic: '#ffd23f',
+  dealer: '#ff6a5a', owner: '#ffd23f', wheel: '#ff3a2e', croupier: '#ffd23f', sharp: '#ffd23f', counterfeiter: '#ffd23f', mimic: '#ffd23f',
 };
 /** A shorter line for the front when a boss's blurb won't fit on one line (the full blurb is on the back). */
 const FRONT_BLURB: Record<string, string> = { dealer: 'THE HOUSE HAS A PARTNER' };
@@ -1369,7 +1370,7 @@ export class RunScreens {
     if (needsRoute(run)) return this.showRoutes(run);
     this.enemyEntrance(run);
     const bossId = currentEnemy(run)?.boss;
-    const boss = isBossNext(run) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'wheel' ? 'FACE THE WHEEL' : 'FACE THE HOUSE') : 'FIGHT!';
+    const boss = isBossNext(run) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'wheel' ? 'FACE THE WHEEL' : bossId === 'owner' ? 'FACE THE OWNER' : 'FACE THE HOUSE') : 'FIGHT!';
     this.buttons = [this.btn(boss, CX, 560, boss === 'FIGHT!' ? 290 : 360, 56, () => this.cb.onFight())];
   }
 
@@ -2715,9 +2716,8 @@ export class RunScreens {
     ctx.fillStyle = '#2a2140';
     ctx.fillRect(8, 197, w - 16, 2);
     if (e.isBoss) {
-      // THE TURBO: its footer says what it is (the ? card has the full rules).
-      const win = e.turbo ? `TURBO: X${TURBO.hp} HP, HITS X${TURBO.dmg}. TAP ? FOR ITS RULES` : bossRules(e.boss ?? 'house', this.bossCtx()).win;
-      drawText(ctx, win, 16, 228, win.length * 12 <= w - 120 ? 2 : 1.5, e.turbo ? '#ff6a5a' : '#7dff7a', { align: 'left' });
+      const win = bossRules(e.boss ?? 'house', this.bossCtx()).win;
+      drawText(ctx, win, 16, 228, win.length * 12 <= w - 120 ? 2 : 1.5, '#7dff7a', { align: 'left' });
       // GREEN: THE WHEEL STARTS FAST (its rule, on the card that meets it).
       if (e.boss === 'wheel' && run.stake >= STAKE.wheelFast) drawText(ctx, 'STARTS FAST', w - 24, 228, 1.5, '#ff8a7a', { align: 'right' });
     } else {
@@ -2762,7 +2762,7 @@ export class RunScreens {
       );
     // A boss's rules, one row each with the icon the fight uses for it, then HOW TO WIN (bossRules.ts).
     if (e.isBoss) {
-      const br = bossRules(e.boss ?? 'house', { ...this.bossCtx(), turbo: e.turbo });
+      const br = bossRules(e.boss ?? 'house', this.bossCtx());
       // Everything above the THEIR REELS line (y 197): a step down a size when the rules don't fit (the Dealer's ran
       // over it: playtest C).
       const fit = (k: number) => {
@@ -2977,7 +2977,7 @@ export class RunScreens {
   /** UNDER OR OVER: two dice on the felt (tumbling, then landed), your bet, the payouts, the last roll. */
   private drawDice(ctx: CanvasRenderingContext2D, time: number): void {
     this.felt(ctx);
-    drawText(ctx, `ROLL ${Math.min(this.rlSpinNo, DICE.rolls)} OF ${DICE.rolls}`, CX, 78, 2, COLORS.textDim);
+    drawText(ctx, `ROLL ${Math.min(this.rlSpinNo, DICE.rolls + extraPlays(this.run!))} OF ${DICE.rolls + extraPlays(this.run!)}`, CX, 78, 2, COLORS.textDim);
     const t = this.dcT;
     const rolling = t < 1;
     // While they tumble the dice hop (each bounce lower) and wobble; landed, they sit still.
@@ -3005,7 +3005,7 @@ export class RunScreens {
     const show = this.bjShow;
     const inPlay = !!st || !!show;
     const dealt = show ? show.no : st ? st.dealt : Number((run.encounterState as { dealt?: number } | undefined)?.dealt ?? 0) + 1;
-    drawText(ctx, `HAND ${Math.min(dealt, BJ.hands)} OF ${BJ.hands}`, CX, 78, 2, COLORS.textDim);
+    drawText(ctx, `HAND ${Math.min(dealt, BJ.hands + extraPlays(run))} OF ${BJ.hands + extraPlays(run)}`, CX, 78, 2, COLORS.textDim);
     this.felt(ctx);
     const m = this.bjMsg;
     if (!inPlay) {
@@ -3090,7 +3090,7 @@ export class RunScreens {
   private drawRoulette(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
     const spinning = this.buttons.length === 1 && this.buttons[0].label === 'SKIP';
-    drawText(ctx, `SPIN ${Math.min(this.rlSpinNo, encounterOf('roulette').plays ?? 3)} OF ${encounterOf('roulette').plays ?? 3}`, CX, 78, 2, COLORS.textDim);
+    drawText(ctx, `SPIN ${Math.min(this.rlSpinNo, (encounterOf('roulette').plays ?? 3) + extraPlays(this.run!))} OF ${(encounterOf('roulette').plays ?? 3) + extraPlays(this.run!)}`, CX, 78, 2, COLORS.textDim);
     this.felt(ctx);
     // The wheel.
     const c = (this.rlCanvas ??= Object.assign(document.createElement('canvas'), { width: RL.px, height: RL.px }));

@@ -546,6 +546,11 @@ export class Director {
       await this.luckyPop(e.side);
     }
     for (const r of e.score.relics ?? []) this.relicPop(e.side, r);
+    // GOLDEN SPIN: its own moment, a gold banner over a soft flash of the machine (never the screen).
+    if (e.score.relics?.includes('goldenspin')) {
+      this.flashMachine(e.side, 0.5, 0.4);
+      await this.banner('GOLDEN SPIN!', '#ffd23f', 1.2, 0.25, 'EVERYTHING PAYS X3', MACHINE_TOP + MACHINE_H / 2, 3);
+    }
     if (e.luckyWilds?.length) await this.luckyWilds(e.side, e.luckyWilds.map((reel) => ({ reel, row: 1 })));
     // 3 WILDS: a little bonus reel picks one of your symbols, and that jackpot pays.
     if (e.score.wildPick) await this.bonusReel(e.side, e.score.wildPick, e.score.wildPickEnh);

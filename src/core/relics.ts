@@ -88,6 +88,16 @@ export const RELICS: Record<RelicId, RelicDef> = {
   armoredcar: { id: 'armoredcar', name: 'ARMORED CAR', text: 'HIGH ROLLER COUNTS 1 CHIP PER 5 SHIELD YOU GAIN THAT SPIN', sprite: 'relicArmoredCar', machine: 'midas' },
   safedeposit: { id: 'safedeposit', name: 'SAFE DEPOSIT', text: 'YOUR CHIPS ALSO HIT FOR THE SHIELD YOU GAIN THAT SPIN', sprite: 'relicSafeDeposit', machine: 'midas' },
   subwoofer: { id: 'subwoofer', name: 'SUBWOOFER', text: 'THE DROP PIERCES SHIELDS', sprite: 'relicSubwoofer', machine: 'jukebox' },
+  // The user's picks from the content list (2026-10-14).
+  dryspell: { id: 'dryspell', name: 'DRY SPELL', text: 'EACH SPIN WITH NO PAIR: YOUR NEXT PAIR OR JACKPOT PAYS +25% (STACKS)', sprite: 'relicDrySpell' },
+  punchcard: { id: 'punchcard', name: 'PUNCH CARD', text: 'EVERY 10TH FIGHT YOU WIN: PICK A LEGENDARY RELIC', sprite: 'relicPunchCard' },
+  goldenspin: { id: 'goldenspin', name: 'GOLDEN SPIN', text: '1 SPIN IN 10 IS GOLDEN: EVERYTHING PAYS X3', sprite: 'relicGoldenSpin' },
+  insurance: { id: 'insurance', name: 'INSURANCE POLICY', text: 'THE FIRST TIME EACH FIGHT YOU DROP UNDER 25% HP: GAIN 100 SHIELD', sprite: 'relicInsurance' },
+  housetax: { id: 'housetax', name: 'HOUSE TAX', text: 'EVERY ENEMY JACKPOT PAYS YOU 2 CHIPS', sprite: 'relicHouseTax' },
+  regular: { id: 'regular', name: 'REGULAR', text: 'ENCOUNTER GAMES GIVE YOU ONE MORE PLAY', sprite: 'relicRegular' },
+  hitmaker: { id: 'hitmaker', name: 'CERTIFIED HITMAKER', text: 'EACH DROP IN A FIGHT HITS +25% MORE THAN THE LAST', sprite: 'relicHitmaker', machine: 'jukebox' },
+  houseofcards: { id: 'houseofcards', name: 'HOUSE OF CARDS', text: 'EACH JACKPOT METER PAYOFF ADDS A WILD TO REEL 2 FOR THE FIGHT', sprite: 'relicHouseOfCards', machine: 'joker' },
+  parachute: { id: 'parachute', name: 'GOLDEN PARACHUTE', text: 'A HIT THAT WOULD KILL YOU: PAY 20 CHIPS, SURVIVE AT 1 HP (ONCE PER FIGHT)', sprite: 'relicParachute', machine: 'midas' },
 };
 
 /**
@@ -138,7 +148,9 @@ export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
 };
 /** Relics that make no sense on a machine even reworded (never offered there). */
 /** Content wave 1: offered in drafts, shops and RELIC RUSH, but not in the starting pick (it keeps each machine's signature relics). */
-export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel']);
+export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel',
+  // (2026-10-14) Slow or economy relics: a trap as the one relic you start with.
+  'regular', 'housetax', 'punchcard']);
 export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['jukebox'], bash: ['tesla', 'joker'], wildcard: ['knight', 'midas'] };
 
 /** New-relic numbers (playtest/RELIC_PROPOSALS.md, tuned in the engine). */
@@ -192,6 +204,18 @@ export const NEW_RELIC = {
   piggyMax: 4,
   trophyHp: UNIT,
   bashShare: 1,
+  // The user's picks (2026-10-14).
+  /** DRY SPELL: +25% a dry spin, up to 8 stacks (x3). */
+  dryStep: 0.25,
+  dryMax: 8,
+  goldenChance: 0.1,
+  goldenMul: 3,
+  insuranceShare: 0.25,
+  insuranceShield: 10 * UNIT,
+  taxChips: 2,
+  punchEvery: 10,
+  hitmakerStep: 0.25,
+  parachuteCost: 20,
 };
 
 /**
@@ -204,8 +228,8 @@ export const BONUS = { wheel: 0.028, rush: 0.012 };
 export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9, uncommonMax: 12, grandChips: 15 };
 /** Relic rarity for RELIC RUSH prizes. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
-  common: ['clover', 'battery', 'fang', 'bandage', 'firstblood', 'piggy', 'trophy', 'bash', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar'],
-  uncommon: ['greatsword', 'armoredcar', 'safedeposit', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'faraday', 'static', 'capbells', 'horseshoe', 'underdog', 'holywater', 'belt', 'bracelet', 'coil', 'rainmaker', 'slushfund', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer'],
+  common: ['clover', 'battery', 'fang', 'bandage', 'firstblood', 'piggy', 'trophy', 'bash', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar', 'housetax', 'regular', 'punchcard', 'dryspell'],
+  uncommon: ['greatsword', 'armoredcar', 'safedeposit', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'faraday', 'static', 'capbells', 'horseshoe', 'underdog', 'holywater', 'belt', 'bracelet', 'coil', 'rainmaker', 'slushfund', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'wildwheel', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer', 'goldenspin', 'insurance', 'hitmaker', 'houseofcards', 'parachute'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
 };
 

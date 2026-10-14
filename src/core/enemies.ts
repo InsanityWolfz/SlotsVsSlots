@@ -266,6 +266,30 @@ export const DEALER: Archetype = {
   blurb: 'THREE HANDS, THREE HP BARS. EACH HAND IS HARDER: BUST, RAISE, ALL IN.',
   acts: [3],
 };
+/**
+ * THE OWNER (user, 2026-10-14): the man who owns the casino, met at ENDLESS loop 5 (TURBO below). EVERY TRICK IN THE
+ * BOOK: every 2 turns he cheats, a different enemy's trick each time (slime, a theft, a freeze, rocks, a hex, bombs).
+ */
+export const OWNER: Archetype = {
+  id: 'owner',
+  name: 'THE OWNER',
+  portrait: 'enemyOwner',
+  strip: { seven: 5, sword: 5, shield: 2 },
+  hpMul: 1,
+  ability: { kind: 'owner', every: 2, power: 0 },
+  minDepth: 5,
+  blurb: 'HE OWNS THE PLACE. EVERY TRICK IN THE BOOK.',
+  acts: [4],
+};
+/** THE OWNER's tricks, in the order he plays them (each at this power). */
+export const OWNER_TRICKS: { kind: AbilityDef['kind']; power: number }[] = [
+  { kind: 'flood', power: 3 },
+  { kind: 'pilfer', power: 1 },
+  { kind: 'blizzard', power: 1 },
+  { kind: 'quake', power: 2 },
+  { kind: 'curse', power: 2 },
+  { kind: 'carpet', power: 2 },
+];
 export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: WHEEL, 3: DEALER };
 
 // (No 'GILDED' or 'WILD': those are mechanic names.)
@@ -307,15 +331,16 @@ export interface EnemyDef extends SideConfig {
   act?: number;
   /** HIGH STAKES BLUE: this fork option was placed as the counter to your build. */
   counter?: boolean;
-  /** ENDLESS loop 5: THE TURBO boss (TURBO below). */
+  /** ENDLESS loop 5: THE OWNER, the TURBO boss (TURBO below). */
   turbo?: boolean;
 }
 
 /**
- * THE TURBO (user, 2026-10-14): loop 5's boss runs in TURBO, built to be all but unbeatable (aim: ~0.1% of the runs that
- * reach it). Beating it ends the run, so a broken build or a bug can't go on forever. Its HP and hits multiply the loop's.
+ * THE TURBO boss (user, 2026-10-14): THE OWNER at loop 5, built to be all but unbeatable (aim: ~0.1% of the runs that
+ * reach it). Beating him ends the run, so a broken build or a bug can't go on forever. `hp` is his HP in loop bosses'
+ * terms (ENDLESS.houseHp etc.), `dmg` his hits on top of the loop's, `turnCap` the most of his HP one turn can take.
  */
-export const TURBO = { loop: 5, hp: 3, dmg: 1.5, faster: 1, potMul: 3, turnCap: 0.05 };
+export const TURBO = { loop: 5, hp: 8, dmg: 1.2, potMul: 3, turnCap: 0.06 };
 
 /** Rough single-fight danger per archetype (playtest ITERATION_2), used to pick the elite at a fork. */
 export const DANGER: Record<string, number> = {
@@ -379,7 +404,7 @@ export function makeEnemy(a: Archetype, depth: number, rng: Rng, isBoss = false,
       isBoss ? st : act > 2 ? { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords, seven: (st.seven ?? 0) + TUNE.act3Sevens } : act > 1 ? { ...st, sword: (st.sword ?? 0) + TUNE.act2Swords } : { ...st, sword: (st.sword ?? 0) + TUNE.act1Swords },
     ),
     ability: a.ability ? { ...a.ability, every } : null,
-    boss: isBoss ? (a.id === 'wheel' ? 'wheel' : a.id === 'dealer' ? 'dealer' : 'house') : null,
+    boss: isBoss ? (a.id === 'wheel' ? 'wheel' : a.id === 'dealer' ? 'dealer' : a.id === 'owner' ? 'owner' : 'house') : null,
     act,
   };
 }
@@ -465,12 +490,11 @@ export function generateActMap(rng: Rng, act = 1, loop = 1, cabinet?: CabinetId)
     });
   });
   // ENDLESS: the boss cycles THE HOUSE -> THE WHEEL -> THE DEALER.
-  const bossArch = act >= 4 ? [BOSS, WHEEL, DEALER][(Math.max(1, loop) - 1) % 3] : (BOSSES[act] ?? BOSS);
+  // Loop 5: THE OWNER.
+  const owner = act >= 4 && loop === TURBO.loop;
+  const bossArch = owner ? OWNER : act >= 4 ? [BOSS, WHEEL, DEALER][(Math.max(1, loop) - 1) % 3] : (BOSSES[act] ?? BOSS);
   const boss = makeEnemy(bossArch, actLength(act), rng, true, act);
-  if (act >= 4 && loop === TURBO.loop) {
-    boss.turbo = true;
-    boss.name = `TURBO ${boss.name}`.replace('TURBO THE ', 'TURBO ');
-  }
+  if (owner) boss.turbo = true;
   return { opener, routes, shopBeforeBoss: true, boss };
 }
 
