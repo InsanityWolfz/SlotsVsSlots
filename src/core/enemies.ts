@@ -282,7 +282,7 @@ export const DEPTH_HP_2 = [52, 62, 73, 85, 97].map((h) => h * UNIT);
 export const DEPTH_HP_3 = [240, 270, 300, 330, 360].map((h) => h * UNIT);
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5, 4: 3 };
 /** ENDLESS (act 4) tuning: per loop, enemy HP x hp^loop and damage x dmg^loop (EXPERT_PLAYTEST_3 D). */
-export const ENDLESS = { ramp: 0.05, hp: 2, dmg: 1.35, houseHp: 3, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, bustKeep: 1 / 3, wheelHp: 4, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
+export const ENDLESS = { ramp: 0.05, hp: 2, dmg: 1.35, houseHp: 3, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, wheelHp: 4, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
 /**
  * ENDLESS: each loop multiplies enemy HP (and damage) by its base, and the step itself grows by RAMP every loop,
  * so the climb accelerates: loop L totals base^L x (1 + ramp)^(L(L-1)/2). Only broken builds should see loop 5.
@@ -406,9 +406,9 @@ export interface ActMap {
 // (2026-10-12: two shapes with three encounters, the casino path: fewer fights, more gambles.)
 /** (User, 2026-10-12: a Cashier sits at stop 3 or earlier, never 4 or 5: one at the end ran into the pre-boss Cashier.) */
 export const ROUTE_SHAPES = ['FE?FE', 'F?SF?', 'FES?F', '?FSEF', 'FF?E?', 'EFSF?', 'FS?FE', '?FFEF', 'FS?EF', 'F?E?F', '?F?E?', 'E?F??'];
-/** Endless loops: one route (3 fights and a Cashier, then the boss). */
-const ENDLESS_SHAPE = 'FSF';
+/** ENDLESS loops pick from 2 paths shaped like the acts' (user, 2026-10-14: they had one short route and no encounters). */
 export const ROUTES_PER_ACT = 3;
+export const ROUTES_PER_LOOP = 2;
 /** Elites hit this much harder than their regular selves (on top of their HP bump). */
 export const ELITE_DMG_MUL = 1.25;
 /** An act's regular HP curve has 5 steps after the opener; a route's stop i sits on step 1 + i*(len-1)/routeLen. */
@@ -427,7 +427,7 @@ export function generateActMap(rng: Rng, act = 1, loop = 1, cabinet?: CabinetId)
   const openers = act === 1 ? inAct.filter((a) => a.id === 'slime' || a.id === 'frost') : act < 4 ? inAct.filter((a) => NEW.has(a.id) && a.minDepth === 0) : inAct;
   const openerArch = rng.pick(openers.length ? openers : inAct);
   const opener = makeEnemy(openerArch, 0, rng, false, act);
-  const shapes = act >= 4 ? [ENDLESS_SHAPE] : dealShapes(rng);
+  const shapes = dealShapes(rng, act >= 4 ? ROUTES_PER_LOOP : ROUTES_PER_ACT);
   const routes = shapes.map((shape) => {
     let prev = openerArch.id;
     const seen = new Set<string>();
@@ -459,15 +459,15 @@ export function generateActMap(rng: Rng, act = 1, loop = 1, cabinet?: CabinetId)
   // ENDLESS: the boss cycles THE HOUSE -> THE WHEEL -> THE DEALER.
   const bossArch = act >= 4 ? [BOSS, WHEEL, DEALER][(Math.max(1, loop) - 1) % 3] : (BOSSES[act] ?? BOSS);
   const boss = makeEnemy(bossArch, actLength(act), rng, true, act);
-  return { opener, routes, shopBeforeBoss: act < 4, boss };
+  return { opener, routes, shopBeforeBoss: true, boss };
 }
 
-/** Three different route shapes whose elite counts aren't all the same. */
-function dealShapes(rng: Rng): string[] {
+/** Different route shapes whose elite counts aren't all the same. */
+function dealShapes(rng: Rng, n: number): string[] {
   const elites = (s: string) => [...s].filter((c) => c === 'E').length;
   for (let guard = 0; guard < 50; guard++) {
-    const picks = rng.shuffle([...ROUTE_SHAPES]).slice(0, ROUTES_PER_ACT);
+    const picks = rng.shuffle([...ROUTE_SHAPES]).slice(0, n);
     if (new Set(picks.map(elites)).size > 1) return picks;
   }
-  return ROUTE_SHAPES.slice(0, ROUTES_PER_ACT);
+  return ROUTE_SHAPES.slice(0, n);
 }

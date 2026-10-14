@@ -22,8 +22,6 @@ import {
   type BigChoiceId,
   type DraftOption,
   leaveShop,
-  nextPot,
-  bustPot,
   type RunState,
   shopOffers,
 } from '../core/run';
@@ -31,7 +29,7 @@ import {
 export type DraftPolicy = 'greedy' | 'random' | 'relic';
 
 /** Balance probes (tools/balance/builds.ts): start with a relic, draft only one charm, or force a big choice. */
-export const SIM_BIAS: { /** A forced build: rush (the attack build, the default) or turtle (the shield build). */ style?: 'rush' | 'turtle'; ride?: boolean; /** ENDLESS report: never cash out (measure the real wall). */ noCashOut?: boolean; onEnd?: (run: RunState) => void; startRelic?: RelicId; noStart?: boolean; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
+export const SIM_BIAS: { /** A forced build: rush (the attack build, the default) or turtle (the shield build). */ style?: 'rush' | 'turtle'; ride?: boolean; onEnd?: (run: RunState) => void; startRelic?: RelicId; noStart?: boolean; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
 
 export const RELIC_VALUE: Record<RelicId, number> = {
   turntable: 8,
@@ -181,7 +179,7 @@ export const BIG_PICK_WIN: Record<string, Record<string, number>> = {
 /** Big choices: strong picks are worth more, but the costs bite when you're low or already built. */
 export function choiceValue(run: RunState, c: BigChoice): number {
   const learned = BIG_PICK_WIN[run.cabinet]?.[c.id];
-  if (learned !== undefined && c.id !== 'edge' && c.id !== 'cashOut' && c.id !== 'ride') return learned / 5;
+  if (learned !== undefined && c.id !== 'edge') return learned / 5;
   return choiceValueBase(run, c);
 }
 
@@ -216,17 +214,6 @@ function choiceValueBase(run: RunState, c: BigChoice): number {
       return 6.5;
     case 'secondWind':
       return 4 + (1 - hp) * 6;
-    case 'cashOut': {
-      if (SIM_BIAS.noCashOut) return -99;
-      // Cash out when riding is worth less than the pot in hand: p(clear) x the grown pot + p(bust) x a third
-      // (HP proxies p(clear); later loops are harder).
-      const L = run.endless?.loop ?? 1;
-      const pot = run.endless?.pot ?? 0;
-      const pClear = (run.player.hp / run.player.maxHp) * Math.pow(0.8, L - 1);
-      return pClear * nextPot(pot) + (1 - pClear) * bustPot(pot) < pot ? 2 : -1;
-    }
-    case 'ride':
-      return 1;
     case 'edge':
       // Endless house edges: legendaries beat chips; the harsh edges cost more.
       return (c.reward === 'legend' ? 6 : 3) - (c.edge === 'frail' || c.edge === 'heal' ? 2 : c.edge === 'fast' ? 1 : 0);

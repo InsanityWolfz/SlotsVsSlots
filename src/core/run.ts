@@ -251,7 +251,7 @@ export interface RunState {
   /** A boss fell: pick 1 of these BIG CHOICES (before the legendary pick). */
   pendingChoice?: BigChoice[] | null;
   /** ENDLESS (LET IT RIDE after the Dealer): the loop you're on and the HOUSE EDGES you've taken. */
-  endless?: { loop: number; edges: EdgeId[]; pot: number; cashed?: boolean };
+  endless?: { loop: number; edges: EdgeId[]; pot: number };
   /** Choices waiting behind the current one (after a loop boss: RIDE?, then a big choice, then the edge). */
   choiceQueue?: BigChoice[][];
   /** Big-choice sets already offered this run. */
@@ -651,8 +651,9 @@ export function migrateRun(run: RunState): RunState {
   };
   if (run.map?.boss) run.map.boss = fix(run.map.boss)!;
   if (Array.isArray(run.enemies)) run.enemies = run.enemies.map((e) => fix(e)!);
-  // FEEDBACK is gone (user, 2026-10-13: MIXTAPE already keeps the record from skipping): a save offering it drops it.
-  const gone = (c: { id: string }) => c.id !== 'feedback';
+  // FEEDBACK is gone (user, 2026-10-13: MIXTAPE already keeps the record from skipping), and RIDE AGAIN / CASH OUT
+  // (user, 2026-10-14: ENDLESS goes on until you bust): a save offering one drops it.
+  const gone = (c: { id: string }) => c.id !== 'feedback' && c.id !== 'cashOut' && c.id !== 'ride';
   if (Array.isArray(run.pendingChoice)) run.pendingChoice = run.pendingChoice.filter(gone);
   if (Array.isArray(run.choiceQueue)) run.choiceQueue = run.choiceQueue.map((q) => q.filter(gone)).filter((q) => q.length);
   if (run.pendingChoice && !run.pendingChoice.length) run.pendingChoice = run.choiceQueue?.shift() ?? null;
@@ -785,8 +786,8 @@ export function applyDaily(run: RunState, key: string): void {
 /** Interest paid after a win on the chips you hold then (chips on the table don't count). */
 export const interestOn = (chips: number) => Math.min(CHIPS.interestCap, Math.floor(chips / CHIPS.interestPer));
 
-/** CASH OUT: the pot plus your unspent chips x10. */
-export const cashOutValue = (run: RunState) => (run.endless?.pot ?? 0) + run.player.chips * 10;
+/** ENDLESS score (user, 2026-10-14: no cash out, you play until you bust): the pot of the loops cleared plus your chips x10. */
+export const endlessScore = (run: RunState) => (run.endless?.pot ?? 0) + run.player.chips * 10;
 
 /** LET IT RIDE: after beating the Dealer, keep going (the win is already recorded). */
 export function letItRide(run: RunState): void {
@@ -819,9 +820,8 @@ function startEndlessLoop(run: RunState): void {
   const tierFor = (edge: EdgeId) => tiers[Math.min(2, tiers.indexOf(EDGE_TIER[edge]) + edgeLevel(run, edge))];
   const edges = pick.map((edge): BigChoice => ({ id: 'edge', edge, reward: pay(tierFor(edge)) }));
   const queue: BigChoice[][] = [];
-  // After a cleared loop: RIDE AGAIN or CASH OUT the pot, then a big choice set.
+  // After a cleared loop: a big choice set (no RIDE / CASH OUT: user, 2026-10-14, you play until you bust).
   if (loop > 1) {
-    queue.push([{ id: 'cashOut' }, { id: 'ride' }]);
     const set = rng.int(BIG_SETS.length);
     queue.push(rollChoices(run, set, rng));
   }
@@ -1579,7 +1579,7 @@ export const charmTagFor = (run: RunState, enh: Enh) => charmTag(enh, charmLevel
  * twice in a run). Strong options carry a real, visible cost; each set has one safe pick.
  */
 export type BigChoiceId =
-  | 'edge' | 'cashOut' | 'ride'
+  | 'edge'
   | 'armsRace' | 'masterwork' | 'whetstone' | 'meltDown' | 'gildLot' | 'polish' | 'cleanCut' | 'twinReel' | 'sweepUp' | 'glassCannon' | 'bloodPact' | 'secondWind'
   | 'devilsDue' | 'allIn' | 'doubleOrNothing' | 'cursedIdol' | 'quickening' | 'warded' | 'pawnShop' | 'temper' | 'luckyBreak' | 'treasure' | 'houseMoney'
   | 'whetted' | 'bloodMoon' | 'cashIn' | 'fourLeaf' | 'overclock' | 'markedCards'
@@ -1595,14 +1595,10 @@ export const EDGES: EdgeId[] = ['fast', 'marked', 'heal', 'rollers', 'nocomps', 
 export const EDGE_TIER: Record<EdgeId, 'chips' | 'relic' | 'legend'> = { frail: 'chips', heal: 'relic', fast: 'chips', marked: 'relic', rollers: 'legend', nocomps: 'chips' };
 /** The endless Cashier sells levels past the cap. */
 export const levelCap = (run: RunState) => (run.endless ? LEVEL_CAP + 1 : LEVEL_CAP) + (CABINETS[run.cabinet].levelCapBonus ?? 0);
-/** RIDE AGAIN: each loop cleared adds this x loop to the pot; a bust banks half. */
+/** Each loop cleared grows the pot (the ENDLESS score) by this, on top of x1.5. */
 export const POT_PER_LOOP = 1500;
-/** Loop bosses by name (the RIDE card says who's next). */
-const BOSS_NAME: Record<string, string> = { house: 'THE HOUSE', wheel: 'THE WHEEL', dealer: 'THE DEALER' };
 /** A cleared loop: the pot grows x1.5, plus POT_PER_LOOP. */
 export const nextPot = (pot: number) => Math.round(pot * ENDLESS.potGrowth) + POT_PER_LOOP;
-/** What a bust banks of the pot. */
-export const bustPot = (pot: number) => Math.floor(pot * ENDLESS.bustKeep);
 
 export interface BigChoice {
   id: BigChoiceId;
@@ -1735,10 +1731,6 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
       const t = edgeText(c.edge!, edgeLevel(run, c.edge!) + 1);
       return { title: t.title, rule: c.reward === 'legend' ? 'PICK A LEGENDARY RELIC' : c.reward === 'relic' ? 'PICK A RELIC' : `+${ENDLESS.edgeChips} CHIPS`, cost: `HOUSE EDGE: ${t.text}` };
     }
-    case 'cashOut':
-      return { title: 'CASH OUT', rule: `BANK THE POT: ${cashOutValue(run)} POINTS (INCLUDES ${run.player.chips} CHIPS X10). THE RUN ENDS.`, cost: '' };
-    case 'ride':
-      return { title: 'RIDE AGAIN', rule: `LOOP ${run.endless?.loop ?? 1}: ${BOSS_NAME[run.enemies[run.enemies.length - 1]?.boss ?? 'house'] ?? 'THE HOUSE'}. YOU ${run.player.hp}/${run.player.maxHp} HP. CLEAR IT AND THE POT GROWS TO ${nextPot(run.endless?.pot ?? 0)}.`, cost: `BUST AND YOU BANK A THIRD OF THE POT: ${bustPot(run.endless?.pot ?? 0)} (YOUR CHIPS ARE SAFE)` };
     case 'armsRace':
       return { title: 'ARMS RACE', rule: '+1 LEVEL TO ALL YOUR SYMBOLS', cost: pct(run, BIG.armsRaceHp) };
     case 'masterwork':
@@ -2026,16 +2018,6 @@ function takeChoiceInner(run: RunState, c: BigChoice): void {
       markLegends(run, run.pendingLegend);
       break;
     }
-    case 'cashOut':
-      if (run.endless) {
-        run.endless.pot = cashOutValue(run);
-        run.endless.cashed = true;
-      }
-      run.over = true;
-      run.choiceQueue = [];
-      break;
-    case 'ride':
-      break;
     case 'armsRace':
       levelSyms(run).forEach((s) => up(s));
       losePct(BIG.armsRaceHp);

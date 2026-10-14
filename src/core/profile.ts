@@ -2,7 +2,7 @@ import { ALL_CABINETS, type CabinetId } from './cabinets';
 import type { Enh, RelicId } from './config';
 import { RELICS } from './relics';
 import { MAX_STAKE } from './stakes';
-import { charmCount, fightNumber, runActs, totalFights, type RunState, bustPot } from './run';
+import { charmCount, fightNumber, runActs, totalFights, type RunState, endlessScore } from './run';
 import { charmLevel } from './charms';
 import { ACHIEVEMENT_XP, CHALLENGES, levelOf, TRIMS, trimById, trimsOwned, newAchievements, titlesOwned, WEEK_KEY, type AchievementDef, type ChallengeRecord, type MetaStats } from './meta';
 
@@ -115,7 +115,7 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
     chips: run.player.chips,
     ...(tutorial ? { tutorial: true } : {}),
     ...(run.daily ? { daily: run.daily, hpLeft: Math.max(0, run.player.hp) } : {}),
-    ...(run.endless ? { loops: run.endless.loop - 1, pot: run.endless.cashed ? run.endless.pot : bustPot(run.endless.pot) + run.player.chips * 10 } : {}),
+    ...(run.endless ? { loops: run.endless.loop - 1, pot: endlessScore(run) } : {}),
     ...(run.challenge ? { challenge: run.challenge } : {}),
     ...(run.weekly ? { weekly: run.weekly } : {}),
   };

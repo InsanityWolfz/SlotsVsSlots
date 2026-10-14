@@ -803,7 +803,7 @@ export class Game {
     const s = this.loadRunSave();
     if (!s) return null;
     // Beat the Dealer: the RIDE / CASH OUT choice is what's waiting (playtest C: it read ACT 3, like a run mid-act).
-    if (s.at === 'ride') return 'RIDE OR CASH OUT';
+    if (s.at === 'ride') return 'KEEP PLAYING: ENDLESS';
     return `${s.run.endless ? `LOOP ${s.run.endless.loop}` : `ACT ${s.run.act}`} ${CABINETS[s.run.cabinet].hero}`;
   }
 

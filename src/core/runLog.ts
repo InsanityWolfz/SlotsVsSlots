@@ -8,15 +8,13 @@ import { charmLevel, charmName, symLevel } from './charms';
 import { RELICS } from './relics';
 import { symLabel, type SymbolId } from './config';
 import { encounterOf } from './encounters';
-import { edgeText, takenLabel, type EdgeId, type RunState } from './run';
+import { edgeText, endlessScore, takenLabel, type EdgeId, type RunState } from './run';
 import { stakeOf } from './stakes';
 
 export function runSummary(run: RunState, version = ''): string {
   const p = run.player;
   const end = run.endless
-    ? run.endless.cashed
-      ? `CASHED OUT ON LOOP ${run.endless.loop} (POT ${run.endless.pot})`
-      : `BUSTED ON LOOP ${run.endless.loop} (POT ${run.endless.pot})`
+    ? `BUSTED ON LOOP ${run.endless.loop} (SCORE ${endlessScore(run)})`
     : run.won
       ? 'WON'
       : `LOST IN ACT ${run.act}`;

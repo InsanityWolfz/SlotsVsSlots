@@ -231,7 +231,9 @@ export const WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 
 const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
 export const pocketColor = (n: number): 'red' | 'black' | 'green' => (n === 0 ? 'green' : REDS.has(n) ? 'red' : 'black');
 /** The most you can bet right now: the table's limit, or every chip you hold. */
-export const rouletteMax = (run: RunState) => Math.min(ROULETTE.maxBet, run.player.chips);
+/** ENDLESS raises every table's limit by half again each loop (chips buy more late, so bets must too). */
+export const tableLimit = (run: RunState, base: number) => Math.round(base * (1 + 0.5 * (run.endless?.loop ?? 0)));
+export const rouletteMax = (run: RunState) => Math.min(tableLimit(run, ROULETTE.maxBet), run.player.chips);
 
 const RED_OR_BLACK: EncounterDef = {
   id: 'roulette',
@@ -268,7 +270,7 @@ export const HILO = { maxBet: 15, grow: 1.4, calls: 5 };
 const drawCard = (rng: Rng) => 2 + rng.int(13);
 /** The pot after `calls` right calls on a bet. */
 export const hiloPot = (bet: number, calls: number) => Math.floor(bet * HILO.grow ** calls);
-export const hiloMax = (run: RunState) => Math.min(HILO.maxBet, run.player.chips);
+export const hiloMax = (run: RunState) => Math.min(tableLimit(run, HILO.maxBet), run.player.chips);
 export type HiloState = { card: number; bet: number; calls: number };
 /** HIGHER OR LOWER's hand in play (null before the deal). */
 export const hiloState = (run: RunState): HiloState | null => (run.encounterState?.card ? (run.encounterState as unknown as HiloState) : null);
@@ -334,7 +336,7 @@ const HIGHER_OR_LOWER: EncounterDef = {
  */
 export const BJ = { maxBet: 20, hands: 3, naturalPays: 2, standOn: 17 };
 /** The most you can bet right now: the table's limit, or every chip you hold. */
-export const bjMax = (run: RunState) => Math.min(BJ.maxBet, run.player.chips);
+export const bjMax = (run: RunState) => Math.min(tableLimit(run, BJ.maxBet), run.player.chips);
 /** A hand's best total (aces count 11 unless that busts). */
 export function bjTotal(cards: number[]): number {
   let t = 0;
@@ -420,7 +422,7 @@ const TWENTY_ONE: EncounterDef = {
  * seven gives the bet back; SEVEN pays 4 to 1 (the long shot, where the house's edge is). Up to 3 rolls a visit.
  */
 export const DICE = { maxBet: 20, rolls: 3, sevenPays: 4 };
-export const diceMax = (run: RunState) => Math.min(DICE.maxBet, run.player.chips);
+export const diceMax = (run: RunState) => Math.min(tableLimit(run, DICE.maxBet), run.player.chips);
 
 const UNDER_OR_OVER: EncounterDef = {
   id: 'dice',

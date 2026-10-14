@@ -13,7 +13,8 @@ which Charms and relics to build.
 - **An act is a map** (`generateActMap` in `src/core/enemies.ts`): a shared opener fight, then you **pick 1 of 3
   paths** of 5 stops each, then the paths rejoin at the Cashier and the boss. Every stop and enemy is shown up
   front; you never choose fights along the way. The three paths have different shapes (`ROUTE_SHAPES`) and never all
-  the same number of elites. Endless loops have a single path (fight, Cashier, fight).
+  the same number of elites. ENDLESS loops are maps like the acts' with 2 paths (user, 2026-10-14), so they have encounters too; table limits
+  grow by half each loop.
 - **Stops:** FIGHT, ELITE (more HP and hits 25% harder, shown as X1.25 ELITE on its hits; pays a pick of 2 relics, in every act), CASHIER, ENCOUNTER.
 - **Encounters** (`src/core/encounters.ts`) are gambles between fights. On the map they're gold "?" boxes: which one
   it is stays secret until you arrive. Seeded by the stop, so a quit can't re-roll one. All are games now:
@@ -62,7 +63,8 @@ which Charms and relics to build.
 | 3 | THE DEALER | Three hands, each with its own HP bar (27/31/42% of its HP). 1 THE DEAL: every 3 turns a BUST (your best reel's payline pays nothing next spin). 2 RAISE: its hits x1.5, still BUSTs. 3 ALL IN: every 2 turns, 25-40% of your max HP through shields | Reworked 2026-10-12; spread by machine is still wide (see ROADMAP) |
 
 Act 3 is played at stake GREEN and up, and always in daily and weekly runs. **ENDLESS** comes after the Dealer:
-you either LET IT RIDE (play another loop for a growing pot) or cash out. Each loop multiplies enemy HP and damage,
+KEEP PLAYING goes on into loops until you bust (user, 2026-10-14: no RIDE AGAIN / CASH OUT); your score is the pot
+(x1.5 + 1500 a loop cleared) plus your chips x10. Sim (GREEN, the bot never stopping): loops cleared median 4, 5+ 44%. Each loop multiplies enemy HP and damage,
 and the multiplier grows every loop, so it gets harder exponentially in theory. Playtesters still reached loop 5,
 so that isn't happening in practice (see ROADMAP).
 
@@ -142,7 +144,7 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   every fight with spins and HP, picks, buys, big choices, the end build, encounters, what killed you; `src/core/runLog.ts`)
   to paste into a chat for balance checks.
   The main menu's COPY LAST RUN copies the last finished run's text (it survives a refresh; key `slotvslot.lastrun.v1`).
-  Beating the Dealer saves the LET IT RIDE / CASH OUT choice: a refresh there CONTINUEs back to it.
+  Beating the Dealer saves the KEEP PLAYING screen: a refresh there CONTINUEs back to it.
 - **FEEDBACK is gone (user, 2026-10-13):** MIXTAPE already keeps the record from skipping. JUKEBOX WHITE 68 -> 67, GREEN 36.
 - **The rooms (user, 2026-10-13; v2 and v3 after the playtesters loved v1):** `src/render/rooms.ts`, chunky pixels
   (320x180 x4), drawn where the fight leaves the screen open (the side strips, the column between the HUDs, the
@@ -184,7 +186,7 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   cadence (BLUE run win -1/-1/0/-1/0, Dealer -3 to -7); COPY RUN uses card titles (big choices, every one a stop
   took, edges once at their level, encounters by name and result, CHIP not goldbar, the start relic); PAIR's glossary
   line says reels 1 and 2; BUSTS and LV count as keywords; bets show MAX min(limit, chips); keyword boxes sit under
-  the hovered card; CONTINUE after a Dealer win reads RIDE OR CASH OUT; "ALL IN IN 2" reads "ALL IN: 2 TURNS".
+  the hovered card; CONTINUE after a Dealer win reads KEEP PLAYING: ENDLESS; "ALL IN IN 2" reads "ALL IN: 2 TURNS".
 - **Wording (user, 2026-10-13):** FIGHT, never ROUND, for a fight (every "each fight" effect triggers on fights only,
   never after encounters); relics name your meter (LIGHTNING, VOLUME, JACKPOT METER, HIGH ROLLER), not YOUR METER;
   PAYS XN for multipliers, HITS FOR N for flat damage; SABOTAGE is a keyword. COUP DE GRACE: swords pay x2 while your

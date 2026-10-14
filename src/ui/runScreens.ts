@@ -14,11 +14,11 @@ import {
   describeChoice,
   type BigChoice,
   BIG,
-  bustPot,
   describeOption,
   takenLabel,
   edgeLevel,
   edgeText,
+  endlessScore,
   fastHands,
   runEdges,
   enemyHp,
@@ -132,6 +132,8 @@ export const BUILD = { x: 16, y: 16, w: 284, h: H - 32 };
 /** CHOOSE YOUR PATH: the opener, the lanes (their stops' x, each lane's centre y and height), the Cashier, the boss. */
 const ROUTES = { opener: 370, x0: 500, gap: 104, y: [170, 320, 470], lane: 120, shop: 1080, boss: 1196 };
 const ROUTE_STOPS = 5;
+/** A lane's row: three paths fill the rows, two (ENDLESS) take the outer ones. */
+const laneY = (i: number, n: number) => (n === 2 ? ROUTES.y[i * 2] : ROUTES.y[i]);
 /** ENCOUNTER buy-in cards: their row, size and spacing. */
 const ENC = { cardY: 546, cardW: 210, cardH: 108, cardGap: 236 };
 /** An offer's choice buttons: their row, width and spacing (three fit beside the build panel). */
@@ -373,10 +375,6 @@ function choiceShort(run: RunState, c: BigChoice): { effect: string; cost: strin
   switch (c.id) {
     case 'edge':
       return { effect: full.rule, cost: edgeText(c.edge!, edgeLevel(run, c.edge!) + 1).text };
-    case 'cashOut':
-      return { effect: `BANK ${/: (\d+) POINTS/.exec(full.rule)?.[1] ?? ''} POINTS. THE RUN ENDS`, cost: '' };
-    case 'ride':
-      return { effect: `THE POT GROWS TO ${/GROWS TO (\d+)/.exec(full.rule)?.[1] ?? ''}`, cost: `BUST: BANK ${/POT: (\d+)/.exec(full.cost)?.[1] ?? ''}` };
     default:
       // The card says exactly what the rule says (the user's wording, 2026-10-08).
       return { effect: full.rule, cost: full.cost };
@@ -969,9 +967,8 @@ export class RunScreens {
 
   private drawChoice(ctx: CanvasRenderingContext2D, time: number): void {
     const edge = this.choices[0]?.id === 'edge';
-    const rideQ = this.choices[0]?.id === 'cashOut';
-    drawText(ctx, rideQ ? `LOOP ${(this.run?.endless?.loop ?? 2) - 1} CLEARED! POT ${this.run?.endless?.pot ?? 0}` : edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'BONUS ROUND', CX, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
-    drawText(ctx, rideQ ? 'RIDE AGAIN OR CASH OUT. YOUR WIN IS SAFE EITHER WAY.' : edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : '', CX, 110, 2, COLORS.textDim);
+    drawText(ctx, edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'BONUS ROUND', CX, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
+    drawText(ctx, edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : '', CX, 110, 2, COLORS.textDim);
     let tip = -1;
     this.cards.forEach((c, i) => {
       const ch = this.choices[i];
@@ -1303,12 +1300,6 @@ export class RunScreens {
       case 'edge':
         drawSprite(ctx, (ch.reward === 'legend' ? artId('tierLegendary') : ch.reward === 'relic' ? artId('voucherRelic') : 'chip') as SpriteId, x, y, ch.reward === 'chips' ? s * 1.5 : s);
         break;
-      case 'cashOut':
-        [2, 1, 0].forEach((k) => drawSprite(ctx, 'chip', x - k * 8, y + 10 - k * 14, s * 0.8));
-        break;
-      case 'ride':
-        drawSprite(ctx, 'relicDrum', x, y, s);
-        break;
     }
   }
 
@@ -1380,7 +1371,7 @@ export class RunScreens {
   private showRoutes(run: RunState): void {
     this.routeSel = -1;
     this.cards = run.map.routes.map((_, i) => {
-      const h = this.hit(ROUTES.x0 + ((ROUTE_STOPS - 1) * ROUTES.gap) / 2, ROUTES.y[i], ROUTE_STOPS * ROUTES.gap + 40, ROUTES.lane, () => {
+      const h = this.hit(ROUTES.x0 + ((ROUTE_STOPS - 1) * ROUTES.gap) / 2, laneY(i, run.map.routes.length), ROUTE_STOPS * ROUTES.gap + 40, ROUTES.lane, () => {
         this.routeSel = i;
         take.enabled = true;
         take.label = `TAKE PATH ${i + 1}`;
@@ -1958,12 +1949,11 @@ export class RunScreens {
     this.run = run;
     this.open('over');
     this.buttons = [this.minorBtn('MENU', CX - 140, 528, 240, 52, () => this.cb.onMenu()), this.btn('NEW RUN', CX + 140, 528, 240, 52, () => this.cb.onNewRun())];
-    // Beat the Dealer: CASH OUT (the two buttons above) or LET IT RIDE into endless loops.
+    // Beat the Dealer: the win is banked, and ENDLESS goes on until you bust (user, 2026-10-14: no cash out).
     if (run.won && run.act >= 3 && !run.endless) {
       this.buttons = [
-        this.minorBtn('MENU', CX - 300, 528, 200, 52, () => this.cb.onMenu()),
-        this.btn('CASH OUT', CX - 60, 528, 220, 52, () => this.cb.onNewRun()),
-        this.btn('LET IT RIDE', CX + 220, 528, 280, 52, () => this.cb.onLetItRide()),
+        this.minorBtn('MENU', CX - 200, 528, 200, 52, () => this.cb.onMenu()),
+        this.btn('KEEP PLAYING', CX + 120, 528, 320, 52, () => this.cb.onLetItRide()),
       ];
       this.rideOffer = true;
     }
@@ -2838,7 +2828,7 @@ export class RunScreens {
     ];
     // Lanes: a panel per route (lit when hovered or picked), its line, its stops.
     m.routes.forEach((route, i) => {
-      const y = ROUTES.y[i];
+      const y = laneY(i, m.routes.length);
       const card = this.cards[i];
       const sel = this.routeSel === i;
       const hot = sel || !!card?.hover;
@@ -2990,7 +2980,7 @@ export class RunScreens {
     });
     if (!rolling) drawText(ctx, `${total}`, RL.wheelX, 390, 3, total === 7 ? COLORS.goldLight : COLORS.text);
     // The table's limit, said up front (playtest: HIGHER OR LOWER's cap wasn't).
-    drawText(ctx, `YOUR BET (MAX ${Math.min(DICE.maxBet, this.run?.player.chips ?? DICE.maxBet)})`, RL.betX, 150, 2, COLORS.textDim);
+    drawText(ctx, `YOUR BET (MAX ${this.run ? diceMax(this.run) : DICE.maxBet})`, RL.betX, 150, 2, COLORS.textDim);
     drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
     drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
     drawText(ctx, `UNDER / OVER PAY 1 TO 1.  SEVEN PAYS ${DICE.sevenPays} TO 1`, RL.betX, 500, 1.5, COLORS.textDim);
@@ -3073,7 +3063,7 @@ export class RunScreens {
     // Right column: your bet before the deal; the pot during the hand.
     if (!st) {
       // The table's limit, said up front (playtest: HIGHER OR LOWER's cap wasn't).
-      drawText(ctx, `YOUR BET (MAX ${Math.min(HILO.maxBet, this.run?.player.chips ?? HILO.maxBet)})`, RL.betX, 150, 2, COLORS.textDim);
+      drawText(ctx, `YOUR BET (MAX ${this.run ? hiloMax(this.run) : HILO.maxBet})`, RL.betX, 150, 2, COLORS.textDim);
       drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
       drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
     } else {
@@ -3103,7 +3093,7 @@ export class RunScreens {
     ctx.restore();
     // Your bet, beside the wheel.
     // The table's limit, said up front (playtest: HIGHER OR LOWER's cap wasn't).
-    drawText(ctx, `YOUR BET (MAX ${Math.min(ROULETTE.maxBet, this.run?.player.chips ?? ROULETTE.maxBet)})`, RL.betX, 150, 2, COLORS.textDim);
+    drawText(ctx, `YOUR BET (MAX ${this.run ? rouletteMax(this.run) : ROULETTE.maxBet})`, RL.betX, 150, 2, COLORS.textDim);
     drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
     drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
     drawText(ctx, 'PAYS 1 TO 1', RL.betX, 470, 1.5, COLORS.textDim);
@@ -3804,7 +3794,7 @@ export class RunScreens {
     if (this.onlineLine) drawText(ctx, this.onlineLine, CX, 563, 1.5, COLORS.goldLight);
     const trueEnding = run.won && run.act >= 3;
     const busted = !!run.endless;
-    drawText(ctx, busted ? (run.endless!.cashed ? `CASHED OUT: ${run.endless!.pot} POINTS` : `BUSTED ON LOOP ${run.endless!.loop}: BANKED ${fmtNum(bustPot(run.endless!.pot))}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE WHEEL STOPS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
+    drawText(ctx, busted ? `BUSTED ON LOOP ${run.endless!.loop}: SCORE ${fmtNum(endlessScore(run))}` : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE WHEEL STOPS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${busted ? `BEAT THE DEALER, THEN ${run.records.filter((r) => r.loop !== undefined).length} ENDLESS FIGHTS` : run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     // DEATH RECAP: its own full-width line under the table (the most important line on a loss).
     const lastRec = run.records[run.records.length - 1];
@@ -3814,7 +3804,7 @@ export class RunScreens {
     const lines: [string, string][] = [];
     if (recap) lines.push([recap, COLORS.danger]);
     if (this.unlockedNow.length) lines.push([`NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, COLORS.goldLight]);
-    if (this.rideOffer) lines.push(['YOUR WIN IS BANKED. LET IT RIDE FOR ENDLESS LOOPS, OR CASH OUT.', COLORS.goldLight]);
+    if (this.rideOffer) lines.push(['YOUR WIN IS BANKED. ENDLESS GOES ON UNTIL YOU BUST: YOUR SCORE GROWS WITH EVERY LOOP.', COLORS.goldLight]);
     const shown = lines.slice(0, 2);
     shown.forEach(([text, color], k) => {
       const ly = shown.length > 1 ? 462 + k * 18 : 472;

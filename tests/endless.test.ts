@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, UNIT } from '../src/core/config';
 import { ENDLESS } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
-import { actStops, createRun, currentEnemy, enemyHp, fightConfig, finishFight, letItRide, skipToBoss, takeChoice } from '../src/core/run';
+import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, enemyHp, fightConfig, finishFight, letItRide, skipToBoss, takeChoice } from '../src/core/run';
 import { fmtNum } from '../src/render/text';
 
 const base = defaultConfig();
 
 describe('ENDLESS (LET IT RIDE)', () => {
-  it('only a won run can ride; a loop is 3 fights + a boss that cycles House, THE WHEEL, Dealer', () => {
+  it('only a won run can ride; a loop is an act-style map (2 paths, a Cashier, a boss that cycles House, THE WHEEL, Dealer)', () => {
     const run = createRun(base, 21, 'knight', 2, true);
     letItRide(run);
     expect(run.endless).toBeUndefined();
@@ -17,11 +17,14 @@ describe('ENDLESS (LET IT RIDE)', () => {
     letItRide(run);
     expect(run.endless?.loop).toBe(1);
     expect(run.over).toBe(false);
-    // One route, picked for you: fight, fight, the Cashier, fight, then the boss.
-    expect(run.route).toBe(0);
-    expect(actStops(run).map((st) => st.kind)).toEqual(['fight', 'fight', 'shop', 'fight', 'fight']);
-    expect(run.enemies).toHaveLength(4);
-    expect(run.enemies[3].boss).toBe('house');
+    // Two paths shaped like the acts' (user, 2026-10-14), picked after the opener; the Cashier before the boss.
+    expect(run.map.routes).toHaveLength(2);
+    expect(run.route).toBe(null);
+    chooseRoute(run, 0);
+    const kinds = actStops(run).map((st) => st.kind);
+    expect(kinds).toHaveLength(8);
+    expect(kinds.slice(-2)).toEqual(['shop', 'fight']);
+    expect(run.enemies.at(-1)!.boss).toBe('house');
     expect(run.pendingChoice?.length).toBe(3);
     takeChoice(run, run.pendingChoice![0]);
     expect(run.endless!.edges.length).toBe(1);
@@ -33,13 +36,14 @@ describe('ENDLESS (LET IT RIDE)', () => {
     run.act = 3;
     letItRide(run);
     run.pendingChoice = null;
+    chooseRoute(run, 0);
     skipToBoss(run);
     const hp1 = enemyHp(run, currentEnemy(run));
     const f = new Fight(fightConfig(run, base), 1);
     f.winner = 'player';
     finishFight(run, f);
     expect(run.endless!.loop).toBe(2);
-    expect(run.enemies.at(-1)!.boss).toBe('wheel');
+    expect(run.map.boss.boss).toBe('wheel');
     run.depth = 0;
     expect(enemyHp(run, currentEnemy(run))).toBeGreaterThan(0);
     void hp1;
@@ -65,8 +69,8 @@ describe('ENDLESS (LET IT RIDE)', () => {
   });
 });
 
-describe('ENDLESS: RIDE AGAIN / CASH OUT', () => {
-  it('after a cleared loop: RIDE or CASH OUT first, then a big choice, then the edge; cashing out banks the pot and ends', () => {
+describe('ENDLESS: no cash out', () => {
+  it('a cleared loop grows the pot; the score is the pot plus chips x10', () => {
     const run = createRun(base, 24, 'knight', 2, true);
     run.over = run.won = true;
     run.act = 3;
@@ -79,18 +83,8 @@ describe('ENDLESS: RIDE AGAIN / CASH OUT', () => {
     finishFight(run, f);
     expect(run.endless!.loop).toBe(2);
     expect(run.endless!.pot).toBe(1500);
-    expect(run.pendingChoice!.map((c) => c.id)).toEqual(['cashOut', 'ride']);
-    takeChoice(run, { id: 'ride' });
-    expect(run.pendingChoice?.[0].id).not.toBe('cashOut');
-    const run2 = createRun(base, 25, 'knight', 2, true);
-    run2.over = run2.won = true;
-    run2.act = 3;
-    letItRide(run2);
-    run2.endless!.pot = 3000;
-    run2.pendingChoice = [{ id: 'cashOut' }, { id: 'ride' }];
-    takeChoice(run2, { id: 'cashOut' });
-    expect(run2.over).toBe(true);
-    expect(run2.endless!.cashed).toBe(true);
-    expect(run2.endless!.pot).toBe(3000 + run2.player.chips * 10);
+    // No RIDE AGAIN / CASH OUT (user, 2026-10-14): ENDLESS goes on until you bust, scored then.
+    expect(run.pendingChoice!.map((c) => c.id)).not.toContain('cashOut');
+    expect(endlessScore(run)).toBe(1500 + run.player.chips * 10);
   });
 });
