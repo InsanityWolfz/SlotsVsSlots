@@ -19,7 +19,7 @@ import {
   type Enabler,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
-import { encounterOf, encounterRng, LOAN, type EncounterChoice, type EncounterResult } from './encounters';
+import { encounterOf, encounterRng, type EncounterChoice, type EncounterResult } from './encounters';
 import { BIG_CAP, CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { dailyEdge, dailyFightSeed } from './daily';
@@ -162,9 +162,6 @@ export interface RunPlayer {
 export interface FightRecord {
   /** An act's boss fight. */
   boss?: boolean;
-  /** THE LOAN SHARK: chips he took after this fight, and max HP he took when the act's boss fell. */
-  debtPaid?: number;
-  debtHp?: number;
   /** DEATH RECAP (lost fights): the top sources of HP damage you took, e.g. [['SPIN HITS', 180], ['BOMBS', 60]]. */
   hurt?: [string, number][];
   /** Your spins this fight that had a frozen or jammed reel, of all your spins. */
@@ -299,8 +296,6 @@ export interface RunState {
   noWinChips?: boolean;
   /** TRUST FUND: chips after every win. */
   trustFund?: number;
-  /** THE LOAN SHARK: chips owed (taken from winnings after each fight; settled when the act's boss falls). */
-  debt?: number;
   /** Plays already made at the current encounter stop (RED OR BLACK's spins). */
   encounterPlays?: number;
   /** A game in progress at this stop (HIGHER OR LOWER's showing card, bet and right calls). */
@@ -661,6 +656,10 @@ export function migrateRun(run: RunState): RunState {
   if (Array.isArray(run.pendingChoice)) run.pendingChoice = run.pendingChoice.filter(gone);
   if (Array.isArray(run.choiceQueue)) run.choiceQueue = run.choiceQueue.map((q) => q.filter(gone)).filter((q) => q.length);
   if (run.pendingChoice && !run.pendingChoice.length) run.pendingChoice = run.choiceQueue?.shift() ?? null;
+  // THE BLOOD BANK, PAWN SHOP and LOAN SHARK are gone (user, 2026-10-14): their stops become LUCKY SEVENS, a debt is forgiven.
+  const offers = new Set(['blood', 'pawn', 'shark']);
+  for (const route of run.map?.routes ?? []) for (const st of route) if (st.encounter && offers.has(st.encounter)) st.encounter = 'slot';
+  delete (run as { debt?: number }).debt;
   return run;
 }
 
@@ -964,13 +963,6 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   run.player.chips += earned;
   // (THE WHEEL: the chips your sweeps won came in with the fight's mid-fight chips; the line counts them.)
   record.chips = earned + fight.lucreChips + fight.betChips;
-  // THE LOAN SHARK takes what you owe out of this fight's winnings.
-  if (run.debt) {
-    const paid = Math.min(run.debt, Math.max(0, record.chips), run.player.chips);
-    run.player.chips -= paid;
-    run.debt -= paid;
-    record.debtPaid = paid;
-  }
   // THE REPO MAN fell: his bounty.
   if (beaten.archetype === REPO_MAN.id) {
     // His bounty (the fork he replaced could have paid an elite's spoils).
@@ -1014,19 +1006,6 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   run.depth++;
   run.stop++;
   if (beaten.isBoss) {
-    // THE LOAN SHARK settles up: what's still owed comes out of your chips, and what they can't cover costs max HP.
-    if (run.debt) {
-      const fromChips = Math.min(run.debt, run.player.chips);
-      run.player.chips -= fromChips;
-      const short = run.debt - fromChips;
-      if (short > 0) {
-        run.player.maxHp = Math.max(UNIT, run.player.maxHp - short * LOAN.hpPerChip);
-        run.player.hp = Math.min(run.player.hp, run.player.maxHp);
-        record.debtHp = short * LOAN.hpPerChip;
-      }
-      record.debtPaid = (record.debtPaid ?? 0) + fromChips;
-      run.debt = 0;
-    }
     if (run.endless) {
       run.endless.pot = nextPot(run.endless.pot);
       run.endless.loop++;

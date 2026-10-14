@@ -16,10 +16,9 @@ which Charms and relics to build.
   the same number of elites. Endless loops have a single path (fight, Cashier, fight).
 - **Stops:** FIGHT, ELITE (more HP and hits 25% harder, shown as X1.25 ELITE on its hits; pays a pick of 2 relics, in every act), CASHIER, ENCOUNTER.
 - **Encounters** (`src/core/encounters.ts`) are gambles between fights. On the map they're gold "?" boxes: which one
-  it is stays secret until you arrive. Seeded by the stop, so a quit can't re-roll one. Two kinds:
+  it is stays secret until you arrive. Seeded by the stop, so a quit can't re-roll one. All are games now:
   - **Games:** buy-in cards (chips, HP, or a relic the house picks); a bigger buy-in buys more plays.
     Mostly chip prizes (~80%), sometimes HP, upgrades or a relic. Each game can pay its own kind of prize.
-  - **Offers:** take it at a cost, or walk.
   - **In the game now:** LUCKY SEVENS, a 5x3 machine on the fight machines' own reels and bezel. Pay 7 chips / 20% HP /
     a relic for 3 / 6 / 10 pulls. One payline; it pays 3, 4 or 5 in a row from the left (WILD stands in): sevens and
     chips pay chips, the first-aid tin HP, the star an upgrade, the relic tile a relic. About 1 pull in 3 pays, about
@@ -37,10 +36,9 @@ which Charms and relics to build.
     -1 to 0).
   - UNDER OR OVER: dice. Bet chips, call UNDER 7 / SEVEN / OVER 7. Under/over pay 1 to 1 (a seven gives the bet
     back: about even); SEVEN pays 4 to 1 (the long shot, with the house edge). Up to 3 rolls a visit. Chips only.
-  - Offers (each with its own portrait): THE BLOOD BANK (sell 20% of your HP for 8 chips, or 10% of your max HP for
-    good for 25); THE PAWN SHOP (the broker names one of your relics: pawn it for 16 chips, or trade it for a relic
-    unseen); THE LOAN SHARK (borrow 20, owe 30; or 40, owe 65: he takes it from your winnings after each fight, and
-    what's left when the act's boss falls comes out of your chips, then 2 max HP per chip). Debt shows under chips.
+  - The offers (THE BLOOD BANK, THE PAWN SHOP, THE LOAN SHARK) are gone (user, 2026-10-14: nobody liked them; a saved
+    stop becomes LUCKY SEVENS, a debt is forgiven). Sim, 1000 runs WHITE / GREEN: KNIGHT 66->69 / 34, TESLA 59->58 / 40,
+    JUKEBOX 67->68 / 36->35, JOKER 58 / 45->44, BANKROLL 62->60 / 44.
   - Paths: 12 shapes now, two of them with three encounters (fewer fights, more gambles).
   - **Cards and words:** buy-in cards all look alike (no LOW / HIGH labels: the player judges the bet). A buy-in you
     can't win back says PAY, not STAKE. No flavour-text subtitles.

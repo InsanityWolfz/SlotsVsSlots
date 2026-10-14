@@ -1407,7 +1407,7 @@ export class RunScreens {
     this.encLanded = 0;
     this.encDone = false;
     this.slotWin = null;
-    if (this.encId !== 'blood') {
+    {
       // The game's own clock follows the screens' (so it runs at their pace, and SKIP touches nothing else).
       this.slotClock = new Clock();
       this.ui.add({ update: (dt) => (this.slotClock.tick(dt), this.mode !== 'encounter'), finish: () => {} });
@@ -2296,7 +2296,7 @@ export class RunScreens {
       drawSprite(ctx, 'chip', CHIP_SPOT.x, CHIP_SPOT.y, 3);
       drawText(ctx, `${this.shown().chips}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, COLORS.energy, { align: 'left', punch: this.chipPulse });
     }
-    if (!inFight) drawText(ctx, run.debt ? `OWE ${run.debt}` : 'CHIPS', x + w - 12, CHIP_SPOT.y + 4, 1.5, run.debt ? '#ff8a7a' : COLORS.textDim, { align: 'right' });
+    if (!inFight) drawText(ctx, 'CHIPS', x + w - 12, CHIP_SPOT.y + 4, 1.5, COLORS.textDim, { align: 'right' });
     rule(y + 58);
     // Who you are and how you're doing.
     const cab = CABINETS[run.cabinet];
@@ -2918,9 +2918,6 @@ export class RunScreens {
           ctx.fillRect(CX - 56 * k, 250 - 76 * k, 112 * k, 152 * k);
           drawText(ctx, '?', CX, 250, 10 * k, '#e8b0ff');
         }
-        // When THE LOAN SHARK collects (playtest: it never said).
-        if (def.id === 'shark')
-          ['HE TAKES WHAT YOU OWE OUT OF YOUR WINNINGS AFTER EACH FIGHT.', "WHAT'S LEFT AT THE ACT'S BOSS COMES OUT OF YOUR CHIPS, THEN MAX HP."].forEach((l, k) => drawText(ctx, l, CX, 366 + k * 22, 1.5, COLORS.textDim));
         // The relic an offer wants (THE PAWN SHOP): its icon, readable by tooltip.
         const wanted = this.encChoices.find((c) => c.relic)?.relic;
         if (wanted) {

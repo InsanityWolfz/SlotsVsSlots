@@ -2,8 +2,8 @@
  * ENCOUNTERS (2026-10-12): the map's non-fight stops, where you gamble between fights (they replace SIDE BETS).
  * Fights stay watch-only; an encounter is a choice: stake chips, HP, relics or upgrades, or walk away.
  *
- * Games: LUCKY SEVENS, RED OR BLACK, HIGHER OR LOWER, TWENTY-ONE, UNDER OR OVER. Offers: THE BLOOD BANK, THE PAWN
- * SHOP, THE LOAN SHARK. Each is deterministic per run seed, act and stop,
+ * Games: LUCKY SEVENS, RED OR BLACK, HIGHER OR LOWER, TWENTY-ONE, UNDER OR OVER. (The offers, THE BLOOD BANK, THE PAWN
+ * SHOP and THE LOAN SHARK, are gone: user, 2026-10-14, nobody liked them.) Each is deterministic per run seed, act and stop,
  * so a quit can't re-roll it.
  */
 import { UNIT, type RelicId } from './config';
@@ -449,102 +449,7 @@ const UNDER_OR_OVER: EncounterDef = {
   },
 };
 
-// ---- the offers (2026-10-12): take it at a cost, or walk --------------------------------------------------------
-
-/** THE BLOOD BANK: sell HP for chips (some of what you have now, or some of your max HP for good, for more). */
-export const BLOOD = { nowShare: 0.2, nowChips: 10, maxShare: 0.1, maxChips: 12 };
-const bloodNow = (run: RunState) => Math.max(UNIT, Math.round((run.player.hp * BLOOD.nowShare) / UNIT) * UNIT);
-const bloodMax = (run: RunState) => Math.max(UNIT, Math.round((run.player.maxHp * BLOOD.maxShare) / UNIT) * UNIT);
-const BLOOD_BANK: EncounterDef = {
-  id: 'blood',
-  name: 'THE BLOOD BANK',
-  blurb: '',
-  kind: 'offer',
-  art: 'npcBloodBank',
-  choices: (run) => [
-    { label: `SELL ${bloodNow(run)} HP`, text: `+${BLOOD.nowChips} CHIPS`, disabled: run.player.hp <= bloodNow(run) },
-    { label: `SELL ${bloodMax(run)} MAX HP`, text: `+${BLOOD.maxChips} CHIPS`, disabled: run.player.maxHp - bloodMax(run) < 10 * UNIT },
-    WALK,
-  ],
-  play: (run, i) => {
-    const p = run.player;
-    if (i === 0 && p.hp > bloodNow(run)) {
-      const hp = bloodNow(run);
-      p.hp -= hp;
-      p.chips += BLOOD.nowChips;
-      return { title: 'SOLD', text: `-${hp} HP, +${BLOOD.nowChips} CHIPS`, good: true };
-    }
-    if (i === 1) {
-      const hp = bloodMax(run);
-      p.maxHp -= hp;
-      p.hp = Math.min(p.hp, p.maxHp);
-      p.chips += BLOOD.maxChips;
-      return { title: 'SOLD', text: `-${hp} MAX HP, +${BLOOD.maxChips} CHIPS`, good: true };
-    }
-    return walked();
-  },
-};
-
-/** THE PAWN SHOP: the broker names one of your relics. Pawn it for chips, or trade it for a relic sight unseen. */
-export const PAWN = { chips: 16 };
-const pawnRelic = (run: RunState, rng: Rng): RelicId | null => (run.player.relics.length ? rng.fork().pick(run.player.relics) : null);
-const PAWN_SHOP: EncounterDef = {
-  id: 'pawn',
-  name: 'THE PAWN SHOP',
-  blurb: '',
-  kind: 'offer',
-  art: 'npcPawnBroker',
-  choices: (run, rng) => {
-    const relic = pawnRelic(run, rng);
-    const name = relic ? RELICS[relic].name : 'A RELIC';
-    return [
-      { label: 'PAWN IT', text: `${name} FOR ${PAWN.chips} CHIPS`, relic: relic ?? undefined, disabled: !relic },
-      { label: 'TRADE IT', text: `${name} FOR A RELIC, UNSEEN`, relic: relic ?? undefined, disabled: !relic },
-      WALK,
-    ];
-  },
-  play: (run, i, rng, ctx) => {
-    const relic = pawnRelic(run, rng);
-    if (!relic || i > 1) return walked();
-    const p = run.player;
-    p.relics = p.relics.filter((r) => r !== relic);
-    if (i === 0) {
-      p.chips += PAWN.chips;
-      return { title: 'PAWNED', text: `${RELICS[relic].name} FOR +${PAWN.chips} CHIPS`, good: true };
-    }
-    const pool = ctx.relics.filter((r) => r !== relic && !p.relics.includes(r));
-    const got = pool.length ? rng.pick(pool) : relic;
-    p.relics.push(got);
-    return { title: 'TRADED', text: `YOU GET ${RELICS[got].name}`, good: true, gains: [RELICS[got].name] };
-  },
-};
-
-/**
- * THE LOAN SHARK: chips now, more owed. He takes what you owe out of your winnings after each fight; whatever is
- * still owed when the act's boss falls comes out of your chips, and what they can't cover costs max HP.
- */
-export const LOAN = { small: { lend: 20, owe: 30 }, big: { lend: 40, owe: 65 }, hpPerChip: 2 };
-const LOAN_SHARK: EncounterDef = {
-  id: 'shark',
-  name: 'THE LOAN SHARK',
-  blurb: '',
-  kind: 'offer',
-  art: 'npcLoanShark',
-  choices: (run) => [
-    { label: `BORROW ${LOAN.small.lend}`, text: `OWE ${LOAN.small.owe}`, disabled: (run.debt ?? 0) > 0 },
-    { label: `BORROW ${LOAN.big.lend}`, text: `OWE ${LOAN.big.owe}`, disabled: (run.debt ?? 0) > 0 },
-    WALK,
-  ],
-  play: (run, i) => {
-    if (i > 1 || (run.debt ?? 0) > 0) return walked();
-    const loan = i === 0 ? LOAN.small : LOAN.big;
-    run.player.chips += loan.lend;
-    run.debt = loan.owe;
-    return { title: 'DEAL', text: `+${loan.lend} CHIPS. YOU OWE ${loan.owe}`, good: true };
-  },
-};
-
-export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, roulette: RED_OR_BLACK, hilo: HIGHER_OR_LOWER, bj: TWENTY_ONE, dice: UNDER_OR_OVER, blood: BLOOD_BANK, pawn: PAWN_SHOP, shark: LOAN_SHARK };
+export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, roulette: RED_OR_BLACK, hilo: HIGHER_OR_LOWER, bj: TWENTY_ONE, dice: UNDER_OR_OVER };
 /** What the map deals onto ENCOUNTER stops. */
 export const ENCOUNTER_IDS = Object.keys(ENCOUNTERS);
 
