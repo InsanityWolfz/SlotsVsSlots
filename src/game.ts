@@ -1998,6 +1998,7 @@ export class Game {
       houseEvery: this.fight.sides.enemy.ability?.every ?? 3,
       loop: e.loop,
       dealerEvery: DEALER_RULES.bustEvery - this.fight.dealerCut,
+      turbo: !!e.turboCap,
     });
     ctx.fillStyle = 'rgba(6,2,12,0.75)';
     ctx.fillRect(0, 0, W, H);

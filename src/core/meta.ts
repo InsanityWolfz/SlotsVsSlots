@@ -271,6 +271,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'challenge_all', name: 'NO CHALLENGE', text: 'CLEAR EVERY CHALLENGE.', check: (c) => c.challengesWon >= CHALLENGES.length, progress: (c) => [c.challengesWon, CHALLENGES.length] },
   { id: 'endless_1', name: 'LET IT RIDE', text: 'CLEAR AN ENDLESS LOOP.', check: (c) => c.loops >= 1 },
   { id: 'endless_3', name: 'ON A HEATER', text: 'CLEAR 3 ENDLESS LOOPS IN ONE RUN.', check: (c) => c.loops >= 3 },
+  { id: 'turbo', name: 'BROKE THE BANK', text: 'BEAT THE TURBO BOSS.', check: (c) => c.loops >= 5 },
   { id: 'chips_50', name: 'MONEYBAGS', text: 'WIN A RUN HOLDING 50 CHIPS OR MORE.', check: (c) => c.won && c.chips >= 50 },
   { id: 'relics_12', name: 'MAGPIE', text: 'FINISH A RUN WITH 12 RELICS OR MORE.', check: (c) => c.relics >= 12 },
   { id: 'score_5k', name: 'BIG WINNER', text: 'SCORE 5,000 IN ONE RUN.', check: (c) => c.score >= 5000 },

@@ -14,7 +14,9 @@ import { stakeOf } from './stakes';
 export function runSummary(run: RunState, version = ''): string {
   const p = run.player;
   const end = run.endless
-    ? `BUSTED ON LOOP ${run.endless.loop} (SCORE ${endlessScore(run)})`
+    ? run.endless.turbo
+      ? `BEAT THE TURBO (SCORE ${endlessScore(run)})`
+      : `BUSTED ON LOOP ${run.endless.loop} (SCORE ${endlessScore(run)})`
     : run.won
       ? 'WON'
       : `LOST IN ACT ${run.act}`;

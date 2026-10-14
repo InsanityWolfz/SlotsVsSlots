@@ -307,7 +307,15 @@ export interface EnemyDef extends SideConfig {
   act?: number;
   /** HIGH STAKES BLUE: this fork option was placed as the counter to your build. */
   counter?: boolean;
+  /** ENDLESS loop 5: THE TURBO boss (TURBO below). */
+  turbo?: boolean;
 }
+
+/**
+ * THE TURBO (user, 2026-10-14): loop 5's boss runs in TURBO, built to be all but unbeatable (aim: ~0.1% of the runs that
+ * reach it). Beating it ends the run, so a broken build or a bug can't go on forever. Its HP and hits multiply the loop's.
+ */
+export const TURBO = { loop: 5, hp: 3, dmg: 1.5, faster: 1, potMul: 3, turnCap: 0.05 };
 
 /** Rough single-fight danger per archetype (playtest ITERATION_2), used to pick the elite at a fork. */
 export const DANGER: Record<string, number> = {
@@ -459,6 +467,10 @@ export function generateActMap(rng: Rng, act = 1, loop = 1, cabinet?: CabinetId)
   // ENDLESS: the boss cycles THE HOUSE -> THE WHEEL -> THE DEALER.
   const bossArch = act >= 4 ? [BOSS, WHEEL, DEALER][(Math.max(1, loop) - 1) % 3] : (BOSSES[act] ?? BOSS);
   const boss = makeEnemy(bossArch, actLength(act), rng, true, act);
+  if (act >= 4 && loop === TURBO.loop) {
+    boss.turbo = true;
+    boss.name = `TURBO ${boss.name}`.replace('TURBO THE ', 'TURBO ');
+  }
   return { opener, routes, shopBeforeBoss: true, boss };
 }
 

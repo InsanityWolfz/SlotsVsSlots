@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, UNIT } from '../src/core/config';
-import { ENDLESS } from '../src/core/enemies';
+import { ENDLESS, TURBO } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
 import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, enemyHp, fightConfig, fightLabel, NIGHT, NIGHTS, finishFight, letItRide, skipToBoss, takeChoice } from '../src/core/run';
 import { fmtNum } from '../src/render/text';
@@ -122,5 +122,42 @@ describe("ENDLESS: TONIGHT'S RULE", () => {
     const hp = fightConfig(run, base).enemy.hp;
     run.endless!.night = 'iron';
     expect(hp).toBeGreaterThan(fightConfig(run, base).enemy.hp);
+  });
+});
+
+describe('ENDLESS: THE TURBO', () => {
+  it("loop 5's boss runs in TURBO (more HP, a turn cap on its HP); beating it ends the run, won", () => {
+    const run = createRun(base, 33, 'knight', 2, true);
+    run.over = run.won = true;
+    run.act = 3;
+    letItRide(run);
+    for (let loop = 1; loop < TURBO.loop; loop++) {
+      expect(run.map.boss.turbo).toBeFalsy();
+      run.pendingChoice = null;
+      run.choiceQueue = [];
+      run.pendingLegend = null;
+      chooseRoute(run, 0);
+      skipToBoss(run);
+      const f = new Fight(fightConfig(run, base), loop);
+      f.winner = 'player';
+      finishFight(run, f);
+    }
+    expect(run.endless!.loop).toBe(TURBO.loop);
+    expect(run.map.boss.turbo).toBe(true);
+    expect(run.map.boss.name).toMatch(/^TURBO /);
+    run.pendingChoice = null;
+    run.choiceQueue = [];
+    run.pendingLegend = null;
+    chooseRoute(run, 0);
+    skipToBoss(run);
+    expect(fightConfig(run, base).enemy.turboCap).toBe(TURBO.turnCap);
+    const pot = run.endless!.pot;
+    const f = new Fight(fightConfig(run, base), 9);
+    f.winner = 'player';
+    finishFight(run, f);
+    expect(run.over).toBe(true);
+    expect(run.won).toBe(true);
+    expect(run.endless!.turbo).toBe(true);
+    expect(run.endless!.pot).toBeGreaterThan(pot);
   });
 });

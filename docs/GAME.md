@@ -69,7 +69,12 @@ KEEP PLAYING goes on into loops until you bust (user, 2026-10-14: no RIDE AGAIN 
 running (`NIGHTS` in `src/core/run.ts`): HAPPY HOUR (jackpots pay x2), HIGH LIMIT (wins pay x2 chips, enemies +15% HP),
 LUCKY NIGHT (2 more wilds a reel), SHOWDOWN (every hit x1.5), IRON NIGHT (shields block x2), FAST NIGHT (abilities 1
 turn faster, meters fill x1.5). Shown on the HOUSE EDGE screen, the path pick, the side panel and the fight label.
-Sim GREEN: loops cleared median 4 -> 5. Each loop multiplies enemy HP and damage,
+Sim GREEN: loops cleared median 4 -> 5.
+**THE TURBO** (user, 2026-10-14): loop 5's boss (whichever the cycle gives) runs in TURBO: x3 HP, hits x1.5,
+abilities 1 turn faster, its hits skip the one-turn cap on you, and no turn takes more than 5% of its HP (so no build
+one-shots it). Beating it ends the run, won (YOU BROKE THE BANK; the pot pays x3; achievement BROKE THE BANK): a broken
+build or a bug can't go on forever. Aim ~0.1% of the runs that reach it; the bot (GREEN, 399 reached) beat it 0
+times (x3 HP / x2 hits / no cap: 50%; HP alone up to x100: still 3.6%, BANKROLL; the turn cap is what holds). Each loop multiplies enemy HP and damage,
 and the multiplier grows every loop, so it gets harder exponentially in theory. Playtesters still reached loop 5,
 so that isn't happening in practice (see ROADMAP).
 

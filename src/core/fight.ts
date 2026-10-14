@@ -256,6 +256,8 @@ export class Fight {
   private coverTaken = false;
   /** HP you've lost this turn (one-turn cap: regular enemies 40% of your max HP, bosses 60%). */
   private playerTurnHp = 0;
+  /** THE TURBO: HP it lost this turn (no turn takes more than its cap). */
+  private enemyTurnHp = 0;
   /** This enemy turn was announced (ALL IN). */
   private bigTurn = false;
   /** E3: reels of yours that thawed on your last turn can't be frozen or jammed on the next enemy turn. */
@@ -505,6 +507,7 @@ export class Fight {
     else this.enemyDmgMul(events);
     events.push({ type: 'turnStart', turn: this.turn, side });
     this.playerTurnHp = 0;
+    this.enemyTurnHp = 0;
     if (side === 'player') this.thawShield.clear();
     // The Dealer's big turns are the announced ones (ALL IN): only those may hit up to the boss cap.
     // (Your own turn is never a big one: marks biting on your spin stay under the quiet cap.)
@@ -1775,10 +1778,17 @@ export class Fight {
     let hpDamage = Math.min(target.hp, amount - blocked);
     // ONE-TURN CAP on you: no turn takes more than 40% of your max HP (60% for bosses): no turn-2 one-shots (EXPERT_PLAYTEST_3 E2).
     if (target.side === 'player') {
-      const capShare = this.isDealer && !this.bigTurn ? TUNE.dealerQuietCap : this.isBoss || this.isWheel || this.isDealer ? TUNE.bossTurnCap : TUNE.turnCap;
+      // (THE TURBO isn't held to it: it's built to end runs.)
+      const capShare = this.cfg.enemy.turboCap ? 1 : this.isDealer && !this.bigTurn ? TUNE.dealerQuietCap : this.isBoss || this.isWheel || this.isDealer ? TUNE.bossTurnCap : TUNE.turnCap;
       const cap = Math.round(target.maxHp * capShare);
       hpDamage = Math.max(0, Math.min(hpDamage, cap - this.playerTurnHp));
       this.playerTurnHp += hpDamage;
+    }
+    // THE TURBO: no turn takes more than its cap of its max HP (user, 2026-10-14: a broken build can't one-shot it).
+    if (target.side === 'enemy' && this.cfg.enemy.turboCap) {
+      const cap = Math.round(target.maxHp * this.cfg.enemy.turboCap);
+      hpDamage = Math.max(0, Math.min(hpDamage, cap - this.enemyTurnHp));
+      this.enemyTurnHp += hpDamage;
     }
     // THE WHEEL's half-HP gate (the Mirror's old crack gate): it holds at half HP for the rest of the turn it SPINS
     // FASTER on, so both halves of the fight always play. (GREEN starts fast: no phase, no gate.)

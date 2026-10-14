@@ -1,5 +1,5 @@
 import { BLADES, cloneConfig, symLabel, emptyLevels, UNIT, unitsRound, type AbilityDef, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, WHEEL } from './enemies';
+import { ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, TURBO, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, WHEEL } from './enemies';
 import { effectiveAbility, MAX_STAKE, STAKE, stakeDmg } from './stakes';
 import type { Fight } from './fight';
 import {
@@ -251,7 +251,7 @@ export interface RunState {
   /** A boss fell: pick 1 of these BIG CHOICES (before the legendary pick). */
   pendingChoice?: BigChoice[] | null;
   /** ENDLESS (LET IT RIDE after the Dealer): the loop you're on and the HOUSE EDGES you've taken. */
-  endless?: { loop: number; edges: EdgeId[]; pot: number; night?: NightId };
+  endless?: { loop: number; edges: EdgeId[]; pot: number; night?: NightId; /** Beat THE TURBO: the run's true end. */ turbo?: boolean };
   /** Choices waiting behind the current one (after a loop boss: RIDE?, then a big choice, then the edge). */
   choiceQueue?: BigChoice[][];
   /** Big-choice sets already offered this run. */
@@ -746,6 +746,12 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.enemy.endless = true;
     cfg.enemy.loop = run.endless.loop;
     cfg.enemy.dmgMul = (cfg.enemy.dmgMul ?? 1) * endlessMul(ENDLESS.dmg, run.endless.loop);
+    // THE TURBO: hits harder and charges faster on top of the loop's growth.
+    if (e.turbo) {
+      cfg.enemy.dmgMul *= TURBO.dmg;
+      cfg.enemy.turboCap = TURBO.turnCap;
+      if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - TURBO.faster) };
+    }
     // TONIGHT'S RULE, for both machines.
     const night = run.endless.night;
     cfg.night = night;
@@ -885,7 +891,8 @@ export function enemyHp(run: RunState, e: EnemyDef): number {
   const daily = fixedRun(run) && run.act >= 3 && !run.endless ? TUNE.dailyAct3 : 1;
   // DOUBLE OR NOTHING (big choice): the next boss has double HP.
   const dare = e.isBoss ? run.bossHpMul ?? 1 : 1;
-  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * dare));
+  const turbo = e.turbo ? TURBO.hp : 1;
+  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * dare * turbo));
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {
@@ -1019,7 +1026,14 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   run.depth++;
   run.stop++;
   if (beaten.isBoss) {
-    if (run.endless) {
+    if (run.endless && beaten.turbo) {
+      // THE TURBO falls: the run is over, and won (its pot pays TURBO.potMul times).
+      run.endless.pot = nextPot(run.endless.pot) * TURBO.potMul;
+      run.endless.loop++;
+      run.endless.turbo = true;
+      run.over = true;
+      run.won = true;
+    } else if (run.endless) {
       run.endless.pot = nextPot(run.endless.pot);
       run.endless.loop++;
       startEndlessLoop(run);

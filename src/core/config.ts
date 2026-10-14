@@ -263,6 +263,8 @@ export interface SideConfig {
   /** ENDLESS: the loop this fight is in (the Dealer's ALL IN grows with it). */
   loop?: number;
   startShield?: number;
+  /** THE TURBO: no turn takes more than this share of its max HP. */
+  turboCap?: number;
   /** HOUSE EDGE "EARLY BIRD": the enemy spins first. */
   first?: boolean;
   /** MIDAS: chips held when the fight starts (the VAULT pre-fills from them). */

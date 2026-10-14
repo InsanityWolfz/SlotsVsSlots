@@ -4,7 +4,7 @@ import { challengeById, levelOf } from '../core/meta';
 import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../core/config';
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
-import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
+import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, TURBO, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
 import { bjMax, bjState, bjTotal, BJ, DICE, diceMax, ROULETTE, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
@@ -2715,8 +2715,9 @@ export class RunScreens {
     ctx.fillStyle = '#2a2140';
     ctx.fillRect(8, 197, w - 16, 2);
     if (e.isBoss) {
-      const win = bossRules(e.boss ?? 'house', this.bossCtx()).win;
-      drawText(ctx, win, 16, 228, win.length * 12 <= w - 120 ? 2 : 1.5, '#7dff7a', { align: 'left' });
+      // THE TURBO: its footer says what it is (the ? card has the full rules).
+      const win = e.turbo ? `TURBO: X${TURBO.hp} HP, HITS X${TURBO.dmg}. TAP ? FOR ITS RULES` : bossRules(e.boss ?? 'house', this.bossCtx()).win;
+      drawText(ctx, win, 16, 228, win.length * 12 <= w - 120 ? 2 : 1.5, e.turbo ? '#ff6a5a' : '#7dff7a', { align: 'left' });
       // GREEN: THE WHEEL STARTS FAST (its rule, on the card that meets it).
       if (e.boss === 'wheel' && run.stake >= STAKE.wheelFast) drawText(ctx, 'STARTS FAST', w - 24, 228, 1.5, '#ff8a7a', { align: 'right' });
     } else {
@@ -2761,7 +2762,7 @@ export class RunScreens {
       );
     // A boss's rules, one row each with the icon the fight uses for it, then HOW TO WIN (bossRules.ts).
     if (e.isBoss) {
-      const br = bossRules(e.boss ?? 'house', this.bossCtx());
+      const br = bossRules(e.boss ?? 'house', { ...this.bossCtx(), turbo: e.turbo });
       // Everything above the THEIR REELS line (y 197): a step down a size when the rules don't fit (the Dealer's ran
       // over it: playtest C).
       const fit = (k: number) => {
@@ -3802,7 +3803,7 @@ export class RunScreens {
     if (this.onlineLine) drawText(ctx, this.onlineLine, CX, 563, 1.5, COLORS.goldLight);
     const trueEnding = run.won && run.act >= 3;
     const busted = !!run.endless;
-    drawText(ctx, busted ? `BUSTED ON LOOP ${run.endless!.loop}: SCORE ${fmtNum(endlessScore(run))}` : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE WHEEL STOPS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
+    drawText(ctx, busted ? (run.endless!.turbo ? `YOU BROKE THE BANK! ${fmtNum(endlessScore(run))}` : `BUSTED ON LOOP ${run.endless!.loop}: SCORE ${fmtNum(endlessScore(run))}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE WHEEL STOPS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${busted ? `BEAT THE DEALER, THEN ${run.records.filter((r) => r.loop !== undefined).length} ENDLESS FIGHTS` : run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     // DEATH RECAP: its own full-width line under the table (the most important line on a loss).
     const lastRec = run.records[run.records.length - 1];

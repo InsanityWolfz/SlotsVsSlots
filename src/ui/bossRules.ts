@@ -4,7 +4,7 @@
  * same everywhere.
  */
 import { DEALER_RULES } from '../core/fight';
-import { WHEEL_RULES, wheelChipShare } from '../core/enemies';
+import { TURBO, WHEEL_RULES, wheelChipShare } from '../core/enemies';
 import { POT } from '../core/relics';
 import { STAKE } from '../core/stakes';
 import type { SpriteId } from '../render/spriteData';
@@ -24,9 +24,20 @@ export interface BossRuleContext {
   loop?: number;
   /** THE DEALER: its BUST clock in hand 1 (FAST HANDS, QUICKENING and the stakes speed it up; the same cut runs in every hand). */
   dealerEvery?: number;
+  /** ENDLESS loop 5: THE TURBO (its own row on top). */
+  turbo?: boolean;
 }
 
 export function bossRules(boss: string, c: BossRuleContext): BossRules {
+  const base = rulesOf(boss, c);
+  if (!c.turbo) return base;
+  return {
+    rules: [{ icon: artId('icoSmash'), text: `TURBO: X${TURBO.hp} HP, HITS X${TURBO.dmg}, ABILITIES ${TURBO.faster} TURN FASTER. NO TURN TAKES MORE THAN ${Math.round(TURBO.turnCap * 100)}% OF ITS HP` }, ...base.rules],
+    win: `${base.win}. BEAT IT AND THE RUN IS WON`,
+  };
+}
+
+function rulesOf(boss: string, c: BossRuleContext): BossRules {
   if (boss === 'dealer') {
     const k = 1 + DEALER_RULES.loopStep * (c.loop ?? 0);
     const pct = (x: number) => Math.round(Math.min(DEALER_RULES.loopMax, x * k) * 100);
