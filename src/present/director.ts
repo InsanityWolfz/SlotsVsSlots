@@ -128,6 +128,8 @@ export class Director {
         return this.fizzle(e);
       case 'glassBreak':
         return this.glassBreak(e);
+      case 'secondLine':
+        return this.secondLine(e);
       case 'death':
         return this.death(e);
       case 'fightEnd':
@@ -1257,6 +1259,21 @@ export class Director {
       this.bg(this.popText('...', c.x, c.y - 30, 3, COLORS.textDim, 16, 0.1));
     }
     await this.c.wait(0.2);
+  }
+
+  /** SECOND PAYLINE: the row above lights up and says what it pays (its hits follow as usual). */
+  private async secondLine(e: Ev<'secondLine'>): Promise<void> {
+    const m = this.s.machines[e.side];
+    for (const g of e.groups)
+      for (const r of g.reels) {
+        const fx = m.reels[r].rows[0];
+        fx.glowColor = COLORS.goldLight;
+        this.bg(this.c.tween({ from: 1, to: 0, dur: 0.9, onUpdate: (v) => (fx.glow = v) }));
+        this.bg(this.c.tween({ from: 1.25, to: 1, dur: 0.3, onUpdate: (v) => (fx.punch = v) }));
+      }
+    this.s.sounds.coin(4);
+    const c = cellCenter(e.side, 1, 0);
+    await this.popText(`2ND LINE +${e.groups.reduce((a, g) => a + g.amount, 0)}`, c.x, c.y - 40, 2.5, COLORS.goldLight, 30, 0.3, true);
   }
 
   /** GLASS shattered: the charm leaves the cell for good, with a crack and shards. */

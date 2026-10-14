@@ -219,6 +219,11 @@ function choiceValueBase(run: RunState, c: BigChoice): number {
       return 6.5 + (1 - hp) * 4 + p.strips.reduce((a, s) => a + (s.rock ?? 0), 0);
     case 'glassCannon':
       return 7;
+    case 'secondLine':
+      return 6.5;
+    case 'longGame':
+      // Worth more the more fights are left.
+      return run.endless ? 7 : run.act <= 1 ? 6.5 : 4;
     case 'bloodPact':
       return 6.5;
     case 'secondWind':

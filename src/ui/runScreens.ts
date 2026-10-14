@@ -1184,6 +1184,18 @@ export class RunScreens {
         drawSprite(ctx, atk, x, y - 6, s);
         tag(`X${BIG.glassPay}`, x + s * 9, y + 30, COLORS.goldLight, 3);
         break;
+      case 'secondLine':
+        // Two rows of your symbol: the payline and the one above it.
+        [-1, 0, 1].forEach((k) => {
+          drawSprite(ctx, atk, x + k * s * 7, y - s * 5, s * 0.55);
+          drawSprite(ctx, atk, x + k * s * 7, y + s * 3, s * 0.55);
+        });
+        tag('X2 LINES', x, y + 34, COLORS.goldLight, 2.5);
+        break;
+      case 'longGame':
+        drawSprite(ctx, atk, x, y - 6, s);
+        tag(`+${Math.round(BIG.longStep * 100)}% A WIN`, x, y + 34, COLORS.goldLight, 2.5);
+        break;
       case 'bloodPact': {
         const m = cab.meter?.symbol as SpriteId | undefined;
         if (m) {

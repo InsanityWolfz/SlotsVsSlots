@@ -119,6 +119,12 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   Pay = BASE × MULT, and gold Charms in a group ADD. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
   machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER), ECHO (JUKEBOX) and BULWARK (`spiked`, KNIGHT).
   `src/core/charms.ts`.
+- **Big choices SECOND PAYLINE and THE LONG GAME (user's picks, 2026-10-14; the first step to more paylines):**
+  SECOND PAYLINE: the row above your payline pays its own pairs and jackpots at half (they hit, block and fill your
+  meter, but pay no chips and heal nothing; Charms and relics stay the main line's), and enemies hit 15% harder (X1.15
+  2ND LINE on their hits). THE LONG GAME: everything pays 15% less now, +4% for every fight you win after. Forced from
+  act 2 (300 runs, GREEN): SECOND PAYLINE KNIGHT +2, TESLA +9, JUKEBOX -2, JOKER -3, BANKROLL +8 (it was +17 when its
+  chip groups paid chips); THE LONG GAME WHITE -1 to -5 (short runs), GREEN 0 to +13 (long ones).
 - **GLASS (user, 2026-10-14):** a Charm for attack symbols and shields: X5 / X6 / X7 (up to X10), added into its
   group like GOLD, but each time its group pays it has a 1 in 4 chance to shatter for good (SHATTERED!, and the run's
   build loses that Charm). Sim 1000 runs WHITE / GREEN: KNIGHT 64 -> 70 / 32 -> 31, TESLA 54 -> 60 / 36 -> 39, JUKEBOX

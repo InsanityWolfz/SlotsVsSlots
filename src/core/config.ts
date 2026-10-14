@@ -234,6 +234,8 @@ export interface BigMods {
   volumeMax?: number;
   hype?: boolean;
   encoreDrop?: boolean;
+  /** SECOND PAYLINE: the row above the payline pays its pairs and jackpots at half. */
+  secondLine?: boolean;
 }
 
 export interface SideConfig {
@@ -275,6 +277,8 @@ export interface SideConfig {
   /** ENDLESS: the loop this fight is in (the Dealer's ALL IN grows with it). */
   loop?: number;
   startShield?: number;
+  /** SECOND PAYLINE (big choice): the enemy's hits are this much harder. */
+  lineDmg?: number;
   /** THE TURBO: no turn takes more than this share of its max HP. */
   turboCap?: number;
   /** HOUSE EDGE "EARLY BIRD": the enemy spins first. */

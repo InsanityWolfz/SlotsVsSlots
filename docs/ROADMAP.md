@@ -2,10 +2,11 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-14), the user's picks from the content list.** Done: the offers removed, ENDLESS reworked (no
-cash out, 2 paths, encounters, TONIGHT'S RULE, THE OWNER at loop 5, the rooms escalate), the 9 new relics, the GLASS Charm. Next: encounters RAT RACE, SCRATCH-OFF, CLAW MACHINE; big choices SECOND PAYLINE
-and THE LONG GAME. Talk later: STEEL / MAGNET scaling, HOT / GROWTH (activate-style Charms), more than one Charm on a
-cell.
+**In progress (2026-10-14), the user's picks from the content list.** All built: the offers removed, ENDLESS
+reworked (no cash out, 2 paths, encounters, TONIGHT'S RULE, THE OWNER at loop 5, the rooms escalate), 9 relics, the
+GLASS Charm, RAT RACE / SCRATCH-OFF / CLAW MACHINE, SECOND PAYLINE and THE LONG GAME. Next: playtest and balance it
+all, then the playtesters play ENDLESS for feedback. Talk later: STEEL / MAGNET scaling, HOT / GROWTH (activate-style
+Charms), more than one Charm on a cell.
 
 ## Now, in order
 1. **Play the new build.** Playtest C's bugs are fixed (see GAME.md). The level card's "18 -> 25 DAMAGE" stays

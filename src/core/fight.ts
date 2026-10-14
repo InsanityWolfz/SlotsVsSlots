@@ -56,6 +56,7 @@ import {
   DEAD,
   effectiveSymbol,
   insertOffscreen,
+  wrap,
   paylineSymbols,
   symbolValue,
   visibleCells,
@@ -262,6 +263,8 @@ export class Fight {
   private ownerTricks = 0;
   /** GLASS: payline reels whose GLASS shattered this spin (the cells lose it once the spin settles). */
   private glassBreaks: number[] = [];
+  /** SECOND PAYLINE's groups are resolving (no chips, no heals). */
+  private lineTwo = false;
   /** GLASS Charms shattered this fight, by reel and symbol (the run loses them after). */
   readonly shattered: { reel: number; symbol: SymbolId }[] = [];
   /** DRY SPELL: your spins in a row with no pair or jackpot (each adds +25% to the next one). */
@@ -663,6 +666,8 @@ export class Fight {
       if (!this.over && side === 'player') this.cellCharms(me, group, events);
       if (this.over) break;
     }
+    // SECOND PAYLINE (big choice): the row above pays its pairs and jackpots at half.
+    if (!this.over && side === 'player' && this.big.secondLine) this.secondLine(me, events);
     if (allIn && !this.over) {
       this.dealerAllIn = false;
       const foe = this.sides[other(side)];
@@ -833,6 +838,32 @@ export class Fight {
     }
     this.touchSpend = k * this.meterCost;
     return [...out.values()];
+  }
+
+  /** SECOND PAYLINE: score the row above your payline (its own matches; singles don't pay there) and resolve its pairs
+   * and jackpots at half. Meters, Charms and relics stay the main payline's. */
+  private secondLine(me: Combatant, events: CombatEvent[]): void {
+    const line = me.reels.map((reel) => effectiveSymbol(reel.cells[wrap(reel.stop - 1, reel.cells.length)]));
+    const lv = me.levels;
+    const value = (s: SymbolId) => playerSymValue(lv, s, this.cfg.base[s]);
+    const s = scoreLine(line, this.cfg, { value, wildAlone: this.wildAlone(me) });
+    const groups = s.groups.filter((g) => g.matched && g.reels.length >= 2 && PAYING.has(g.symbol) && g.amount > 0);
+    if (!groups.length) return;
+    for (const g of groups) {
+      g.amount = Math.max(UNIT, unitsRound(g.amount / 2));
+      g.notes = [...(g.notes ?? []), 'X0.5 2ND LINE'];
+    }
+    events.push({ type: 'secondLine', side: me.side, line, groups: groups.map((g) => ({ symbol: g.symbol, reels: g.reels, amount: g.amount })) });
+    // The second line hits, blocks and fills your meter; it pays no chips and heals nothing.
+    this.lineTwo = true;
+    try {
+      for (const g of groups) {
+        this.resolveGroup(me, g, s, events);
+        if (this.over) return;
+      }
+    } finally {
+      this.lineTwo = false;
+    }
   }
 
   /** A charm's level for this side (the player's charm levels; the Golden Ticket adds one). */
@@ -1206,11 +1237,13 @@ export class Fight {
         // An elite's x1.25 is its own note; endless loops and act 3's ramp are LATE.
         const elite = this.cfg.enemy.endless ? 1 : (this.cfg.enemy.dmgMul ?? 1);
         const stake = this.cfg.enemy.stakeDmg ?? 1;
-        const late = all / elite / stake;
+        const line2 = this.cfg.enemy.lineDmg ?? 1;
+        const late = all / elite / stake / line2;
         g.mult *= all;
         const raise = this.isDealer && this.dealerHand >= 2 ? DEALER_RULES.raiseMul : 1;
         if (elite !== 1) notes.push(`X${Math.round(elite * 100) / 100} ELITE`);
         if (stake !== 1) notes.push(`X${Math.round(stake * 100) / 100} ${stakeOf(this.cfg.stake ?? 0).name}`);
+        if (line2 !== 1) notes.push(`X${Math.round(line2 * 100) / 100} 2ND LINE`);
         if (raise !== 1) notes.push(`X${raise} RAISE`);
         const rest = late / raise;
         if (Math.abs(rest - 1) > 1e-9) notes.push(`X${Math.round(rest * 100) / 100} LATE`);
@@ -1439,9 +1472,12 @@ export class Fight {
         if (!player || this.meter?.symbol !== g.symbol) break;
         // CASH CASSIDY: every chip symbol pays a chip (1, 2 or 3; no cap: MAKE IT RAIN spends them).
         if (g.symbol === 'goldbar' && this.meter.kind === 'vault') {
-          const got = Math.max(1, g.reels.length - RAIN.chipLess);
-          this.midasChips += got;
-          events.push({ type: 'midasChips', side: me.side, amount: got, total: this.midasChips });
+          // (SECOND PAYLINE's chips hit, but pay no chips.)
+          const got = this.lineTwo ? 0 : Math.max(1, g.reels.length - RAIN.chipLess);
+          if (got) {
+            this.midasChips += got;
+            events.push({ type: 'midasChips', side: me.side, amount: got, total: this.midasChips });
+          }
           // Chips are CASSIDY's weapon: a chip group hits for its pay (MAKE IT RAIN is the big version).
           if (g.rain) this.makeItRain(me, g, events);
           else if (g.amount > 0) this.hit(me, this.sides[other(me.side)], g.amount + this.depositOnce(me, events), g.reels, events);
@@ -1597,7 +1633,7 @@ export class Fight {
 
   /** VAMP: vamp cells in a group that pays heal you (once per group). */
   private vampHeal(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
-    if (this.over || g.amount <= 0) return;
+    if (this.over || g.amount <= 0 || this.lineTwo) return;
     // Once per group (a one-cell jackpot too: JOKER's payoff cells healed x3, EXPERT_PLAYTEST_11 D2), however many vamp cells it holds (stacked vamp was the auto-pick: EXPERT_PLAYTEST_10 D1).
     const any = g.reels.some((r) => this.enhsAt(me, r).includes('vamp'));
     const vamp = any ? charmValue('vamp', this.charmLvl(me, 'vamp')) : 0;
@@ -1700,7 +1736,7 @@ export class Fight {
   /** Enemy damage: the fight's knob x ENDLESS (LAST CALL after enemy turn 40) x ATTRITION (act 3). */
   private enemyDmgMul(events?: CombatEvent[]): number {
     // The fight's damage knob (TUNE.enemyDmg, elites hit harder, endless loops); it used to apply only in endless.
-    let mul = (this.cfg.enemy.dmgMul ?? 1) * (this.cfg.enemy.stakeDmg ?? 1);
+    let mul = (this.cfg.enemy.dmgMul ?? 1) * (this.cfg.enemy.stakeDmg ?? 1) * (this.cfg.enemy.lineDmg ?? 1);
     if (this.cfg.enemy.endless) {
       const late = Math.floor(this.turn / 2) - ENDLESS.lastCall;
       if (late > 0 && !this.lastCall && events) {

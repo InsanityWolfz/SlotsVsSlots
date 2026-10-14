@@ -286,6 +286,8 @@ export interface RunState {
   bossHpMul?: number;
   /** Relic picks waiting behind the current one (CURSED IDOL / TREASURE after the act's legendary). */
   legendQueue?: RelicId[][];
+  /** THE LONG GAME (big choice): fights won since it was taken. */
+  longGame?: number;
   /** PUNCH CARD: fights won since the last legendary it paid. */
   punches?: number;
   /** QUICKENING: enemy abilities charge one spin faster. */
@@ -725,7 +727,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     strips: run.player.strips.map((s) => ({ ...s })),
     gilded: run.player.gilded.map((g) => ({ ...g })),
     levels: cloneLevels(run.player.levels),
-    ...(run.glass || run.devil ? { payMul: (run.glass ? BIG.glassPay : 1) * (run.devil ? BIG.devilPay : 1) } : {}),
+    ...(run.glass || run.devil || run.longGame !== undefined ? { payMul: (run.glass ? BIG.glassPay : 1) * (run.devil ? BIG.devilPay : 1) * longGameMul(run) } : {}),
     ...(run.bloodPact ? { meterMul: 2 } : {}),
     ...(run.big ? { big: { ...run.big } } : {}),
     // No bonus in the run's final fight: a voucher could never be spent (QA_1 B11).
@@ -752,6 +754,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // HOUSE EDGES bend the fight: the ones taken in endless, and THE DAILY RUN's edge of the day.
   // BLACK and up: enemies hit harder (stakes.ts stakeDmg).
   if (stakeDmg(run.stake) !== 1) cfg.enemy.stakeDmg = stakeDmg(run.stake);
+  // SECOND PAYLINE (big choice): its price, on the enemy's hits (its own note on the banner).
+  if (run.big?.secondLine) cfg.enemy.lineDmg = BIG.lineDmg;
   const edges = runEdges(run);
   const lvl = (e: EdgeId) => edgeLevel(run, e);
   if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = fastHands(cfg.enemy.ability, lvl('fast'));
@@ -822,6 +826,8 @@ export function applyDaily(run: RunState, key: string): void {
 /** Interest paid after a win on the chips you hold then (chips on the table don't count). */
 export const interestOn = (chips: number) => Math.min(CHIPS.interestCap, Math.floor(chips / CHIPS.interestPer));
 
+/** THE LONG GAME: what it multiplies your pay by now (-20%, +2% a win since). */
+export const longGameMul = (run: RunState) => (run.longGame === undefined ? 1 : BIG.longStart + BIG.longStep * run.longGame);
 /** ENDLESS score (user, 2026-10-14: no cash out, you play until you bust): the pot of the loops cleared plus your chips x10. */
 export const endlessScore = (run: RunState) => (run.endless?.pot ?? 0) + run.player.chips * 10;
 
@@ -999,6 +1005,8 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   // HOUSE TAX: the enemy's jackpots paid you. GOLDEN PARACHUTE: its price.
   if (fight.taxChips) run.player.chips += fight.taxChips;
   if (fight.parachuteChips) run.player.chips = Math.max(0, run.player.chips - fight.parachuteChips);
+  // THE LONG GAME: every win adds to its pay.
+  if (run.longGame !== undefined) run.longGame++;
   // PUNCH CARD: every 10th fight you win, a legendary pick.
   if (run.player.relics.includes('punchcard')) {
     run.punches = (run.punches ?? 0) + 1;
@@ -1645,6 +1653,7 @@ export const charmTagFor = (run: RunState, enh: Enh) => charmTag(enh, charmLevel
  */
 export type BigChoiceId =
   | 'edge'
+  | 'secondLine' | 'longGame'
   | 'armsRace' | 'masterwork' | 'whetstone' | 'meltDown' | 'gildLot' | 'polish' | 'cleanCut' | 'twinReel' | 'sweepUp' | 'glassCannon' | 'bloodPact' | 'secondWind'
   | 'devilsDue' | 'allIn' | 'doubleOrNothing' | 'cursedIdol' | 'quickening' | 'warded' | 'pawnShop' | 'temper' | 'luckyBreak' | 'treasure' | 'houseMoney'
   | 'whetted' | 'bloodMoon' | 'cashIn' | 'fourLeaf' | 'overclock' | 'markedCards'
@@ -1707,6 +1716,7 @@ export const BIG_SET_NAMES = ['THE FORGE', 'THE MELT', 'SURGERY', "DEVIL'S BARGA
 /** The picks with no cost. */
 export const SAFE_CHOICES: ReadonlySet<BigChoiceId> = new Set(['whetstone', 'polish', 'sweepUp', 'secondWind', 'temper', 'luckyBreak', 'treasure', 'houseMoney']);
 export const BIG = {
+  lineDmg: 1.15, longStart: 0.85, longStep: 0.04,
   armsRaceHp: 0.15, sweepHeal: 10 * UNIT, secondWindHp: 4 * UNIT, secondWindShare: 0.2, bloodPactHp: 0.25, gildLotHp: 0.2, gildLotCells: 3, glassPay: 1.5,
   devilPay: 1.75, devilDecay: 0.08, allInHp: 0.2, allInShare: 0.5, wardedHp: 0.15, wards: 3, houseMoney: 40, heist: 30, heistHp: 0.3, crusadeStep: 5, crusadeHp: 0.2,
   chainHp: 0.3, madMul: 2, madCost: 0.05, groundHeal: 5, jokerHp: 0.5, featureHp: 0.2, noLimitHp: 0.25, monsoonCost: 10, trustChips: 2,
@@ -1738,6 +1748,9 @@ export const BIG_CARDS: BigCard[] = [
   { id: 'armsRace', slot: 'cost' },
   { id: 'masterwork', slot: 'cost', ok: (run) => CABINETS[run.cabinet].attack !== 'shield' },
   { id: 'glassCannon', slot: 'cost', when: 'H', ok: (run) => !run.glass },
+  // The user's picks (2026-10-14): the first step into more paylines, and a slow-burn bet.
+  { id: 'secondLine', slot: 'cost', ok: (run) => !run.big?.secondLine },
+  { id: 'longGame', slot: 'cost', ok: (run) => run.longGame === undefined },
   { id: 'bloodPact', slot: 'cost', ok: (run) => !run.bloodPact },
   { id: 'devilsDue', slot: 'cost', when: 'H', ok: (run) => !run.devil },
   { id: 'allIn', slot: 'cost', ok: (run) => run.player.strips.some((s) => (s.shield ?? 0) > 0) },
@@ -1834,6 +1847,10 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
       return { title: 'SWEEP UP', rule: `+${BIG.sweepHeal / 2} MAX HP AND REMOVE ALL ROCKS`, cost: '' };
     case 'glassCannon':
       return { title: 'GLASS CANNON', rule: `PAIRS AND JACKPOTS PAY X${BIG.glassPay}`, cost: 'NO MORE HEALING BETWEEN FIGHTS' };
+    case 'secondLine':
+      return { title: 'SECOND PAYLINE', rule: 'THE ROW ABOVE YOUR PAYLINE PAYS TOO: ITS PAIRS AND JACKPOTS AT HALF', cost: `ENEMIES HIT ${Math.round((BIG.lineDmg - 1) * 100)}% HARDER` };
+    case 'longGame':
+      return { title: 'THE LONG GAME', rule: `+${Math.round(BIG.longStep * 100)}% PAY FOR EVERY FIGHT YOU WIN FROM NOW ON`, cost: `EVERYTHING PAYS ${Math.round((1 - BIG.longStart) * 100)}% LESS NOW` };
     case 'bloodPact':
       return hasMeter(run)
         ? { title: 'BLOOD PACT', rule: `YOUR ${meter} FILLS TWICE AS FAST`, cost: pct(run, BIG.bloodPactHp) }
@@ -2147,6 +2164,12 @@ function takeChoiceInner(run: RunState, c: BigChoice): void {
       break;
     case 'glassCannon':
       run.glass = true;
+      break;
+    case 'secondLine':
+      big.secondLine = true;
+      break;
+    case 'longGame':
+      run.longGame = 0;
       break;
     case 'bloodPact':
       if (hasMeter(run)) run.bloodPact = true;
