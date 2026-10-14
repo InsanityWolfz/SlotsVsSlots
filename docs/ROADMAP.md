@@ -2,11 +2,8 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-14), the user's picks from the content list.** All built: the offers removed, ENDLESS
-reworked (no cash out, 2 paths, encounters, TONIGHT'S RULE, THE OWNER at loop 5, the rooms escalate), 9 relics, the
-GLASS Charm, RAT RACE / SCRATCH-OFF / CLAW MACHINE, SECOND PAYLINE and THE LONG GAME. Next: playtest and balance it
-all, then the playtesters play ENDLESS for feedback. Talk later: STEEL / MAGNET scaling, HOT / GROWTH (activate-style
-Charms), more than one Charm on a cell.
+**In progress (2026-10-14):** nothing mid-task. The content wave and both ENDLESS playtests are in; waiting on the
+user's calls below.
 
 ## Now, in order
 1. **Play the new build.** Playtest C's bugs are fixed (see GAME.md). The level card's "18 -> 25 DAMAGE" stays
@@ -17,6 +14,15 @@ Charms), more than one Charm on a cell.
    JOKER 44 (target 36: weak early, strong late, accepted for now). WHITE 57-59 and GREEN 34-41 for the rest.
 
 ## Open design questions
+- **ENDLESS, from the two playtests (2026-10-14), for the user to pick:** THE OWNER is a wall, not a fight (he kills in
+  2-4 hits: score each 10% of his HP taken, soften his hits so a fight runs 12-20 turns and raise his HP, phases at
+  75/50/25%); chips x10 makes the score a chip count (try x2-3); loops don't escalate (loop 3 Dealer is the wall, loop
+  4 is easier; reach THE OWNER KNIGHT 11-20% vs BANKROLL 86-88%); dead new relics (CERTIFIED HITMAKER, HOUSE OF CARDS,
+  GOLDEN PARACHUTE, PUNCH CARD, HOUSE TAX, REGULAR worth ~0; DRY SPELL a trap on BANKROLL); THE LONG GAME always right
+  in ENDLESS; encounters stop mattering late (fixed prices vs 100-300 chips; HIGHER OR LOWER +12% for an expert; CLAW
+  chips +95%); a night per path; telegraph THE OWNER's big hits. Small UI left: callouts over the HP rows, GOLDEN
+  TICKET level cards, the HOUSE EDGE screen doesn't list held edges, phone-size RAT RACE / SCRATCH-OFF, LUCKY SEVENS'
+  off-line rows.
 - ALL IN is shown in three places (banner, table panel, the line under its machine).
 - LUCKY BREAK is a free pick next to cards with costs.
 - **Keywords, next:** use the same words across all texts (the 2026-10-07 audit at `c2f0ffb`
