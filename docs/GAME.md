@@ -28,7 +28,7 @@ which Charms and relics to build.
   - RED OR BLACK: roulette. Set a chip bet (1 to 20, stepper), call RED or BLACK, watch the ball (the wheel is drawn in
     code so the ball lands in the engine's pocket). Pays 1 to 1; the green zero is the house edge. Up to 3 spins a
     visit, saved after each (a quit resumes at the table and can't replay a spin). Chips only.
-  - HIGHER OR LOWER: bet chips (1 to 15), a card is dealt, call the next one. Each right call grows the pot x1.4 (a
+  - HIGHER OR LOWER: bet chips (1 to 15), a card is dealt, call the next one. Each right call grows the pot x1.35 (a
     ladder shows it); a wrong call or a tie loses it; cash out any time after a right call, 5 right calls cash out
     for you. Played sensibly it's about even. Chips only.
   - TWENTY-ONE: blackjack, hit or stand only (no double or split; the dealer stands on 17). A tie is a push
@@ -124,6 +124,9 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   TESLA from 0 HP, 23% of its runs: TESLA GREEN 39 -> 37); a LIGHTNING STORM stops once THE OWNER's turn cap is reached
   (it fired thousands of 0-damage strikes, each healing); PUNCH CARD tops up with normal relics once the legendaries
   are gone.
+- **Encounter stakes grow with the loop (user, 2026-10-14):** in ENDLESS every price, chip prize and table limit is x(1 +
+  loop) (x2 at loop 1, x5 at loop 4: fixed prices stopped mattering against 100-300 chips). HIGHER OR LOWER grows the pot
+  x1.35 a call (x1.4 gave an expert +12%); the CLAW's chip prize is 10 (15 was +95% on a 5-chip go).
 - **Relic buffs (user, 2026-10-14: the playtest found them worth ~0):** DRY SPELL +50% a dry spin (to x4), PUNCH CARD
   every 6th win, HOUSE TAX 5 chips, REGULAR two more plays, CERTIFIED HITMAKER +60% a drop, HOUSE OF CARDS a WILD on
   every reel, GOLDEN PARACHUTE 10 chips and you land at 25% HP. THE LONG GAME nerfed: -20% now, +3% a win. Sim 1000 runs

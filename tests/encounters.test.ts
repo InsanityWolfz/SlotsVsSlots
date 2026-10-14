@@ -173,7 +173,7 @@ describe('HIGHER OR LOWER', () => {
 
   it('cashing out pays the pot and moves on; five right calls cash out by themselves', () => {
     expect(hiloPot(10, 0)).toBe(10);
-    expect(hiloPot(10, 2)).toBe(19);
+    expect(hiloPot(10, 2)).toBe(18);
     let cashed = 0;
     for (let seed = 1; seed < 200 && !cashed; seed++) {
       const run = atTable(seed);

@@ -152,7 +152,7 @@ function pullSlot(run: RunState, rng: Rng, ctx: EncounterCtx, tally: Map<string,
   };
   const tier = count - 3;
   if (count) {
-    const pay = SLOT.chips[sym];
+    const pay = SLOT.chips[sym]?.map((n) => atStakes(run, n));
     if (pay) chips(pay[tier]);
     else if (sym === 'heart') {
       if (count === 5) {
@@ -197,7 +197,7 @@ const LUCKY_SEVENS: EncounterDef = {
     const hp = slotHp(run);
     const relic = slotRelic(run, rng);
     return [
-      { label: 'A', text: '', stake: `${SLOT.low.chips} CHIPS`, prize: `${SLOT.low.pulls + extraPlays(run)} PULLS`, disabled: run.player.chips < SLOT.low.chips },
+      { label: 'A', text: '', stake: `${atStakes(run, SLOT.low.chips)} CHIPS`, prize: `${SLOT.low.pulls + extraPlays(run)} PULLS`, disabled: run.player.chips < atStakes(run, SLOT.low.chips) },
       { label: 'B', text: '', stake: `${hp} HP`, prize: `${SLOT.mid.pulls + extraPlays(run)} PULLS`, disabled: run.player.hp <= hp },
       { label: 'C', text: '', stake: relic ? RELICS[relic].name : 'A RELIC', prize: `${SLOT.high.pulls + extraPlays(run)} PULLS`, relic: relic ?? undefined, disabled: !relic },
       WALK,
@@ -206,8 +206,8 @@ const LUCKY_SEVENS: EncounterDef = {
   play: (run, i, rng, ctx) => {
     const p = run.player;
     let pulls = 0;
-    if (i === 0 && p.chips >= SLOT.low.chips) {
-      p.chips -= SLOT.low.chips;
+    if (i === 0 && p.chips >= atStakes(run, SLOT.low.chips)) {
+      p.chips -= atStakes(run, SLOT.low.chips);
       pulls = SLOT.low.pulls;
     } else if (i === 1 && p.hp > slotHp(run)) {
       p.hp -= slotHp(run);
@@ -243,7 +243,12 @@ export const pocketColor = (n: number): 'red' | 'black' | 'green' => (n === 0 ? 
 /** REGULAR (relic): one more play at every encounter game (a pull, a spin, a roll, a hand). */
 export const extraPlays = (run: RunState) => (run.player.relics.includes('regular') ? NEW_RELIC.regularPlays : 0);
 /** ENDLESS raises every table's limit by half again each loop (chips buy more late, so bets must too). */
-export const tableLimit = (run: RunState, base: number) => Math.round(base * (1 + 0.5 * (run.endless?.loop ?? 0)));
+/** ENDLESS: encounter stakes grow with the loop (user, 2026-10-14: fixed prices stopped mattering against 100-300 chips). x2 at loop 1, x5 at loop 4. */
+export const stakesMul = (run: RunState) => 1 + (run.endless?.loop ?? 0);
+/** A table's bet limit at this loop. */
+export const tableLimit = (run: RunState, base: number) => Math.round(base * stakesMul(run));
+/** A fixed price or chip prize at this loop. */
+export const atStakes = (run: RunState, n: number) => Math.round(n * stakesMul(run));
 export const rouletteMax = (run: RunState) => Math.min(tableLimit(run, ROULETTE.maxBet), run.player.chips);
 
 const RED_OR_BLACK: EncounterDef = {
@@ -277,7 +282,8 @@ const RED_OR_BLACK: EncounterDef = {
  * pot; a wrong call (or a tie) loses it. Cash out after any right call; five right calls cash out for you. Chips only.
  * Cards run 2 to 14 (the ace is high), drawn fresh each time.
  */
-export const HILO = { maxBet: 15, grow: 1.4, calls: 5 };
+/** (grow 1.4 gave an expert +12%: ENDLESS playtest. 1.35: sensible play returns about 0.9.) */
+export const HILO = { maxBet: 15, grow: 1.35, calls: 5 };
 const drawCard = (rng: Rng) => 2 + rng.int(13);
 /** The pot after `calls` right calls on a bet. */
 export const hiloPot = (bet: number, calls: number) => Math.floor(bet * HILO.grow ** calls);
@@ -531,14 +537,14 @@ const SCRATCH_OFF: EncounterDef = {
   choices: (run) => {
     const st = scratchState(run);
     if (st) return [...Array.from({ length: 9 }, (_, k) => ({ label: `${k + 1}`, text: '', disabled: st.picked.includes(k) })), WALK];
-    return [{ label: 'BUY A TICKET', text: `${SCRATCH.price} CHIPS`, disabled: run.player.chips < SCRATCH.price }, WALK];
+    return [{ label: 'BUY A TICKET', text: `${atStakes(run, SCRATCH.price)} CHIPS`, disabled: run.player.chips < atStakes(run, SCRATCH.price) }, WALK];
   },
   play: (run, i, rng, ctx) => {
     const st = scratchState(run);
     const bought = scratchBought(run);
     if (!st) {
-      if (i !== 0 || run.player.chips < SCRATCH.price) return walked();
-      run.player.chips -= SCRATCH.price;
+      if (i !== 0 || run.player.chips < atStakes(run, SCRATCH.price)) return walked();
+      run.player.chips -= atStakes(run, SCRATCH.price);
       // Print the ticket: which prize it pays (or -1, none).
       let roll = rng.next();
       let win = -1;
@@ -574,8 +580,8 @@ const SCRATCH_OFF: EncounterDef = {
       const prize = SCRATCH_PRIZES[st.win].id;
       title = 'WINNER!';
       const chips = (c: number) => ((run.player.chips += c), `+${c} CHIPS`);
-      if (prize === 'chips') text = chips(SCRATCH.smallChips);
-      else if (prize === 'bigchips') text = chips(SCRATCH.bigChips);
+      if (prize === 'chips') text = chips(atStakes(run, SCRATCH.smallChips));
+      else if (prize === 'bigchips') text = chips(atStakes(run, SCRATCH.bigChips));
       else if (prize === 'heal') {
         const p = run.player;
         const hp = Math.min(p.maxHp - p.hp, Math.round((p.maxHp * SCRATCH.healShare) / UNIT) * UNIT);
@@ -583,18 +589,18 @@ const SCRATCH_OFF: EncounterDef = {
         if (hp > 0) {
           p.hp += hp;
           text = `+${hp} HP`;
-        } else text = chips(SCRATCH.smallChips);
-      } else if (prize === 'star') text = ctx.upgrade() ?? chips(SCRATCH.smallChips);
+        } else text = chips(atStakes(run, SCRATCH.smallChips));
+      } else if (prize === 'star') text = ctx.upgrade() ?? chips(atStakes(run, SCRATCH.smallChips));
       else {
         const pool = ctx.relics.filter((r) => !run.player.relics.includes(r));
         if (pool.length) {
           const got = rng.pick(pool);
           run.player.relics.push(got);
           text = RELICS[got].name;
-        } else text = chips(SCRATCH.bigChips);
+        } else text = chips(atStakes(run, SCRATCH.bigChips));
       }
     }
-    const more = bought < SCRATCH.tickets + extraPlays(run) && run.player.chips >= SCRATCH.price;
+    const more = bought < SCRATCH.tickets + extraPlays(run) && run.player.chips >= atStakes(run, SCRATCH.price);
     run.encounterState = { bought } as unknown as Record<string, number | number[]>;
     return { title, text, good: st.win >= 0, more, scratch: { panel, sym, grid } };
   },
@@ -607,12 +613,14 @@ const SCRATCH_OFF: EncounterDef = {
  * go and pick one to aim at: the easy grab holds most of the time, the relic rarely. A prize you win leaves the pit.
  * Three goes a visit.
  */
-export const CLAW = { price: 5, tries: 3, chips: 15 };
+export const CLAW = { price: 5, tries: 3, chips: 10 };
 export const CLAW_PRIZES = [
-  { id: 'chips', name: '15 CHIPS', hold: 0.65, grip: 'EASY GRAB' },
+  { id: 'chips', name: 'CHIPS', hold: 0.65, grip: 'EASY GRAB' },
   { id: 'charm', name: '2 CHARMS', hold: 0.4, grip: 'TRICKY GRAB' },
   { id: 'relic', name: 'A RELIC', hold: 0.2, grip: 'HARD GRAB' },
 ] as const;
+/** A prize's name at this loop (the chips one says how many). */
+export const clawPrizeName = (run: RunState, k: number) => (CLAW_PRIZES[k].id === 'chips' ? `${atStakes(run, CLAW.chips)} CHIPS` : CLAW_PRIZES[k].name);
 /** Prizes already won at this stop (they're gone from the pit). */
 export const clawWon = (run: RunState): number[] => ((run.encounterState as { won?: number[] } | undefined)?.won ?? []) as number[];
 const CLAW_MACHINE: EncounterDef = {
@@ -621,25 +629,25 @@ const CLAW_MACHINE: EncounterDef = {
   blurb: '',
   kind: 'game',
   plays: CLAW.tries,
-  choices: (run) => [...CLAW_PRIZES.map((p, k) => ({ label: p.name, text: p.grip, disabled: run.player.chips < CLAW.price || clawWon(run).includes(k) })), WALK],
+  choices: (run) => [...CLAW_PRIZES.map((p, k) => ({ label: clawPrizeName(run, k), text: p.grip, disabled: run.player.chips < atStakes(run, CLAW.price) || clawWon(run).includes(k) })), WALK],
   play: (run, i, rng, ctx) => {
     const won = clawWon(run);
-    if (i >= CLAW_PRIZES.length || run.player.chips < CLAW.price || won.includes(i)) return walked();
-    run.player.chips -= CLAW.price;
+    if (i >= CLAW_PRIZES.length || run.player.chips < atStakes(run, CLAW.price) || won.includes(i)) return walked();
+    run.player.chips -= atStakes(run, CLAW.price);
     const prize = CLAW_PRIZES[i];
     const held = rng.next() < prize.hold;
     let text = 'IT SLIPPED';
     if (held) {
       const chips = (c: number) => ((run.player.chips += c), `+${c} CHIPS`);
-      if (prize.id === 'chips') text = chips(CLAW.chips);
-      else if (prize.id === 'charm') text = ctx.charm() ?? chips(CLAW.chips);
+      if (prize.id === 'chips') text = chips(atStakes(run, CLAW.chips));
+      else if (prize.id === 'charm') text = ctx.charm() ?? chips(atStakes(run, CLAW.chips));
       else {
         const pool = ctx.relics.filter((r) => !run.player.relics.includes(r));
         if (pool.length) {
           const got = rng.pick(pool);
           run.player.relics.push(got);
           text = RELICS[got].name;
-        } else text = chips(CLAW.chips * 2);
+        } else text = chips(atStakes(run, CLAW.chips * 2));
       }
       run.encounterState = { won: [...won, i] } as unknown as Record<string, number | number[]>;
     }

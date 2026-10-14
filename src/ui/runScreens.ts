@@ -5,7 +5,7 @@ import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../cor
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
-import { bjMax, bjState, bjTotal, BJ, CLAW, CLAW_PRIZES, clawWon, DICE, diceMax, extraPlays, RACE, raceMax, RATS, SCRATCH, scratchState, ROULETTE, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
+import { atStakes, bjMax, bjState, bjTotal, BJ, CLAW, CLAW_PRIZES, clawPrizeName, clawWon, DICE, diceMax, extraPlays, RACE, raceMax, RATS, SCRATCH, scratchState, ROULETTE, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -3159,8 +3159,8 @@ export class RunScreens {
     const st = scratchState(run);
     this.encChoices = encounterChoices(run);
     if (!st) {
-      const buy = this.btn(`BUY A TICKET: ${SCRATCH.price} CHIPS`, RL.betX, 420, 340, 56, () => this.playScratch(0));
-      buy.enabled = run.player.chips >= SCRATCH.price;
+      const buy = this.btn(`BUY A TICKET: ${atStakes(run, SCRATCH.price)} CHIPS`, RL.betX, 420, 340, 56, () => this.playScratch(0));
+      buy.enabled = run.player.chips >= atStakes(run, SCRATCH.price);
       this.buttons = [buy, this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playScratch(9))];
       return;
     }
@@ -3190,13 +3190,13 @@ export class RunScreens {
         this.encOutcomeSound(res);
         if (res.more) {
           const run = this.run!;
-          const again = this.btn(`BUY ANOTHER: ${SCRATCH.price} CHIPS`, RL.betX, 420, 340, 56, () => {
+          const again = this.btn(`BUY ANOTHER: ${atStakes(run, SCRATCH.price)} CHIPS`, RL.betX, 420, 340, 56, () => {
             this.scReveal = {};
             this.scGrid = null;
             this.scMsg = null;
             this.playScratch(0);
           });
-          again.enabled = run.player.chips >= SCRATCH.price;
+          again.enabled = run.player.chips >= atStakes(run, SCRATCH.price);
           this.buttons = [again, this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playScratch(9))];
         } else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
         return;
@@ -3255,7 +3255,7 @@ export class RunScreens {
     if (!st && !this.scGrid) drawSprite(ctx, artId('scratchCoin'), tx + tw - 20, ty + th - 20, 3);
     // The prizes, on the right.
     drawText(ctx, 'THREE OF A KIND WINS', RL.betX, 140, 2, COLORS.goldLight);
-    const names = [`${SCRATCH.smallChips} CHIPS`, `${SCRATCH.bigChips} CHIPS`, 'A HEAL', 'AN UPGRADE', 'A RELIC'];
+    const names = [`${atStakes(run, SCRATCH.smallChips)} CHIPS`, `${atStakes(run, SCRATCH.bigChips)} CHIPS`, 'A HEAL', 'AN UPGRADE', 'A RELIC'];
     names.forEach((n, k) => {
       drawSprite(ctx, art[k], RL.betX - 110, 186 + k * 38, 2);
       drawText(ctx, n, RL.betX - 80, 186 + k * 38, 1.75, COLORS.text, { align: 'left' });
@@ -3273,8 +3273,8 @@ export class RunScreens {
     const run = this.run!;
     this.rlSpinNo = (run.encounterPlays ?? 0) + 1;
     this.encChoices = encounterChoices(run);
-    const aims = CLAW_PRIZES.map((p, k) => {
-      const b = this.btn(`GO FOR ${p.name}`, RL.betX, 300 + k * 74, 320, 50, () => this.playClaw(k));
+    const aims = CLAW_PRIZES.map((_p, k) => {
+      const b = this.btn(`GO FOR ${clawPrizeName(run, k)}`, RL.betX, 300 + k * 74, 320, 50, () => this.playClaw(k));
       b.enabled = !this.encChoices[k]?.disabled;
       return b;
     });
@@ -3347,7 +3347,7 @@ export class RunScreens {
   private drawClaw(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
     this.felt(ctx);
-    drawText(ctx, `GO ${Math.min(this.rlSpinNo, CLAW.tries + extraPlays(run))} OF ${CLAW.tries + extraPlays(run)}  -  ${CLAW.price} CHIPS A GO`, CX, 78, 2, COLORS.textDim);
+    drawText(ctx, `GO ${Math.min(this.rlSpinNo, CLAW.tries + extraPlays(run))} OF ${CLAW.tries + extraPlays(run)}  -  ${atStakes(run, CLAW.price)} CHIPS A GO`, CX, 78, 2, COLORS.textDim);
     // The cabinet.
     const cx0 = CW.x0 - 100;
     const cw = CW.gap * 2 + 200;
@@ -3374,7 +3374,7 @@ export class RunScreens {
       drawSprite(ctx, artId('prizeBall'), x, y, 5);
       drawSprite(ctx, art[k], x, y - 4, 2);
       if (!carried) {
-        drawText(ctx, p.name, x, CW.pitY + 52, 1.5, COLORS.text);
+        drawText(ctx, clawPrizeName(run, k), x, CW.pitY + 52, 1.5, COLORS.text);
         drawText(ctx, p.grip, x, CW.pitY + 72, 1.25, k === 0 ? '#7dff7a' : k === 1 ? '#ffd23f' : '#ff8a7a');
       }
     });
@@ -3620,8 +3620,8 @@ export class RunScreens {
   /** LUCKY SEVENS' paytable: each symbol and what 3 / 4 / 5 in a row pays (WILD stands in for any). */
   private drawPaytable(ctx: CanvasRenderingContext2D, y: number): void {
     const cols: [SlotSym, string][] = [
-      ['seven', SLOT.chips.seven!.join(' / ')],
-      ['chip', SLOT.chips.chip!.join(' / ')],
+      ['seven', SLOT.chips.seven!.map((n) => (this.run ? atStakes(this.run, n) : n)).join(' / ')],
+      ['chip', SLOT.chips.chip!.map((n) => (this.run ? atStakes(this.run, n) : n)).join(' / ')],
       ['heart', 'HP'],
       ['star', 'UPGRADE'],
       ['relic', 'RELIC'],
