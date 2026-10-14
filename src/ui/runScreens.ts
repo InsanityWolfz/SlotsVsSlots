@@ -3804,7 +3804,7 @@ export class RunScreens {
     const lines: [string, string][] = [];
     if (recap) lines.push([recap, COLORS.danger]);
     if (this.unlockedNow.length) lines.push([`NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, COLORS.goldLight]);
-    if (this.rideOffer) lines.push(['YOUR WIN IS BANKED. ENDLESS GOES ON UNTIL YOU BUST: YOUR SCORE GROWS WITH EVERY LOOP.', COLORS.goldLight]);
+    if (this.rideOffer) lines.push(['YOUR WIN IS BANKED. ENDLESS GOES ON UNTIL YOU BUST.', COLORS.goldLight]);
     const shown = lines.slice(0, 2);
     shown.forEach(([text, color], k) => {
       const ly = shown.length > 1 ? 462 + k * 18 : 472;
