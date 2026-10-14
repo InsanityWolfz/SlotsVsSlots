@@ -50,7 +50,7 @@ export const symLabel = (s: SymbolId): string => (s === 'goldbar' ? 'CHIP' : s =
  * and pierce, VAMP swords heal, LUCKY cells can land as WILDs, CHARGED / BLAZE bolts feed TESLA's
  * special. SPIKED is retired; the id stays so old saves still read.
  */
-export type Enh = 'gold' | 'keen' | 'charged' | 'spiked' | 'vamp' | 'lucky' | 'blaze' | 'lucre' | 'trick' | 'echo';
+export type Enh = 'gold' | 'keen' | 'charged' | 'spiked' | 'vamp' | 'lucky' | 'blaze' | 'lucre' | 'trick' | 'echo' | 'glass';
 /** `n` cells of `symbol` on reel `reel` carry charm `enh` (at most one charm per cell). */
 export interface Gild {
   reel: number;

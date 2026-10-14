@@ -1,6 +1,6 @@
 import { BLADES, cloneConfig, UNIT, unitsRound, unitsUp, type AbilityDef, type Enh, type GameConfig, type Levels, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
 import { CABINETS, hasSpecial, type Cabinet, type Meter } from './cabinets';
-import { charmLevel, charmValue, LUCRE_CHIPS, playerSymValue } from './charms';
+import { charmLevel, charmValue, GLASS_BREAK, LUCRE_CHIPS, playerSymValue } from './charms';
 import type { CombatEvent, DealCard, HealSource, LineCard, VoucherKind } from './events';
 import {
   BATTERY_SHARE,
@@ -260,6 +260,10 @@ export class Fight {
   private enemyTurnHp = 0;
   /** THE OWNER: tricks played so far (the next one is OWNER_TRICKS[n % length]). */
   private ownerTricks = 0;
+  /** GLASS: payline reels whose GLASS shattered this spin (the cells lose it once the spin settles). */
+  private glassBreaks: number[] = [];
+  /** GLASS Charms shattered this fight, by reel and symbol (the run loses them after). */
+  readonly shattered: { reel: number; symbol: SymbolId }[] = [];
   /** DRY SPELL: your spins in a row with no pair or jackpot (each adds +25% to the next one). */
   private drySpell = 0;
   /** GOLDEN SPIN: this spin is golden (everything pays x3). */
@@ -684,6 +688,20 @@ export class Fight {
       const wilds = line.flatMap((s, r) => (s === 'wild' ? [r] : []));
       if (wilds.length) this.fillMeter(me, wilds.length * (this.meter.perWild ?? 0), wilds, events);
     }
+    // GLASS: what shattered this spin is gone for good.
+    if (side === 'player' && this.glassBreaks.length) {
+      const reels = [...new Set(this.glassBreaks)];
+      this.glassBreaks = [];
+      const cells: CellRef[] = [];
+      for (const r of reels) {
+        const cell = me.reels[r].cells[me.reels[r].stop];
+        if (cell?.enh !== 'glass') continue;
+        cell.enh = undefined;
+        this.shattered.push({ reel: r, symbol: cell.symbol });
+        cells.push({ reel: r, index: me.reels[r].stop });
+      }
+      if (cells.length) events.push({ type: 'glassBreak', side, cells });
+    }
     // HOT STREAK: a jackpot makes your next spin pay x2 (any other spin ends it).
     if (side === 'player') this.hotStreak = me.relics.has('hotstreak') && score.tier === 'triple';
     // DRY SPELL: a spin with no pair or jackpot adds a stack; one that has one spends them.
@@ -994,6 +1012,11 @@ export class Fight {
         }
         if (enh === 'charged' && g.symbol === 'bolt') g.base += v;
         if (enh === 'gold') gold += v;
+        // GLASS: adds in like GOLD; when its group pays, 1 in 4 it shatters (the cell loses it after this spin).
+        if (enh === 'glass') {
+          gold += v;
+          if (pays(g) && this.rng.next() < GLASS_BREAK) this.glassBreaks.push(r);
+        }
       }
       let echoes = g.reels.filter((r) => this.enhsAt(me, r).includes('echo')).length;
       let noteCells = g.reels.length;

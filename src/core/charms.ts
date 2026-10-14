@@ -39,7 +39,11 @@ export const CHARM_VALUE: Record<Enh, number[]> = {
   trick: [0, 30, 40, 55, 65, 75, 85],
   /** ECHO (THE JUKEBOX): at THE DROP its NOTE hits this many times (x2 at LV1). */
   echo: [0, 2, 2.5, 3, 3.5, 4, 4.5],
+  /** GLASS (user, 2026-10-14): GOLD's big brother, added into the group like GOLD, but 1 in 4 to shatter for good when it pays. */
+  glass: [0, 5, 6, 7, 8, 9, 10],
 };
+/** GLASS: the chance it shatters each time its group pays. */
+export const GLASS_BREAK = 0.25;
 /** LUCRE: chips each time its group pays (up to its cap). */
 export const LUCRE_CHIPS = 3;
 
@@ -55,6 +59,7 @@ export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
   lucre: ['sword', 'ace', 'goldbar', 'shield', 'bolt', 'note'],
   trick: ['sword', 'ace', 'shield'],
   echo: ['note'],
+  glass: ['sword', 'ace', 'goldbar', 'shield', 'bolt', 'note'],
 };
 
 /** One charm's rule at a level, as plain card text (never an expected value). */
@@ -81,6 +86,8 @@ export function charmRuleText(enh: Enh, lvl: number): string {
       return `+${v} TO YOUR JACKPOT METER WHEN IT LANDS`;
     case 'echo':
       return `AT THE DROP, ITS NOTE HITS X${v}`;
+    case 'glass':
+      return `X${v} TO ITS GROUP (ADDS UP LIKE GOLD). 1 IN 4 TO SHATTER FOR GOOD WHEN IT PAYS`;
   }
 }
 
@@ -111,6 +118,8 @@ export function charmShortText(enh: Enh, lvl: number): string {
       return `+${v} TO YOUR JACKPOT METER`;
     case 'echo':
       return `DROP: HITS X${v}`;
+    case 'glass':
+      return `X${v} PAY. 1 IN 4 TO SHATTER`;
   }
 }
 
@@ -121,7 +130,7 @@ export const charmName = (enh: Enh): string => (enh === 'spiked' ? 'BULWARK' : e
 export function charmTag(enh: Enh, lvl: number): string {
   const v = charmValue(enh, lvl);
   // LUCRE's number is its cap; its tag shows what a hit pays.
-  return enh === 'gold' || enh === 'echo' ? `X${v}` : enh === 'lucky' || enh === 'spiked' ? `${v}%` : enh === 'lucre' ? `+${LUCRE_CHIPS}` : `+${v}`;
+  return enh === 'gold' || enh === 'echo' || enh === 'glass' ? `X${v}` : enh === 'lucky' || enh === 'spiked' ? `${v}%` : enh === 'lucre' ? `+${LUCRE_CHIPS}` : `+${v}`;
 }
 
 export const CHARM_COLOR: Record<Enh, string> = {
@@ -135,6 +144,7 @@ export const CHARM_COLOR: Record<Enh, string> = {
   trick: '#c795f0',
   echo: '#5ad8e8',
   spiked: '#c9d0dc',
+  glass: '#d8f6ff',
 };
 
 const clampLvl = (l: number, max: number) => Math.max(1, Math.min(max, Math.floor(l)));

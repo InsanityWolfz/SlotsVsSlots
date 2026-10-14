@@ -107,3 +107,29 @@ describe('new relics (2026-10-14)', () => {
     expect(spins).toBe(4);
   });
 });
+
+describe('GLASS Charm (2026-10-14)', () => {
+  it('adds into the group like GOLD (x5 at LV1), and shatters for good about 1 time in 4 it pays', () => {
+    let pays = 0;
+    let breaks = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const f = fight((c) => {
+        c.player.strips = reels3({ sword: 12 });
+        c.player.gilded = [0, 1, 2].map((reel) => ({ reel, symbol: 'sword' as const, enh: 'glass' as const, n: 12 }));
+        c.enemy = { hp: 1e9, strips: reels3({ shield: 12 }) };
+      }, seed);
+      for (let i = 0; i < 6 && !f.over; i++) {
+        const { side, events } = f.step();
+        if (side !== 'player') continue;
+        const spin = ofType(events, 'spin')[0];
+        if (spin?.score.groups.some((g) => g.symbol === 'sword' && g.mult >= 5)) pays++;
+        breaks += ofType(events, 'glassBreak').reduce((a, e) => a + e.cells.length, 0);
+      }
+      expect(f.shattered.length).toBeGreaterThanOrEqual(0);
+    }
+    expect(pays).toBeGreaterThan(50);
+    // Three glass cells in a jackpot: each rolls 1 in 4.
+    expect(breaks / (pays * 3)).toBeGreaterThan(0.15);
+    expect(breaks / (pays * 3)).toBeLessThan(0.35);
+  });
+});

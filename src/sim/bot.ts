@@ -161,7 +161,7 @@ function baseValue(run: RunState, o: DraftOption): number {
     }
     case 'gild':
       if (SIM_BIAS.enh) return o.enh === SIM_BIAS.enh ? 9.5 : 0;
-      return { gold: 9, charged: 8.5, spiked: 6.5, keen: 6.5, vamp: 7, lucky: run.cabinet === 'joker' ? 8.5 : 7, blaze: 8, lucre: 6.5, trick: 8, echo: 8 }[o.enh] + (p.gilded.some((g) => g.enh === o.enh) ? 0.5 : 0);
+      return { gold: 9, glass: 8.5, charged: 8.5, spiked: 6.5, keen: 6.5, vamp: 7, lucky: run.cabinet === 'joker' ? 8.5 : 7, blaze: 8, lucre: 6.5, trick: 8, echo: 8 }[o.enh] + (p.gilded.some((g) => g.enh === o.enh) ? 0.5 : 0);
     case 'symLevel':
       return o.symbol === attackOf(run) ? 8 : o.symbol === 'shield' ? 5 : 7.5;
     case 'charmLevel':

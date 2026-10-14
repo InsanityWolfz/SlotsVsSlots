@@ -110,6 +110,10 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   Pay = BASE × MULT, and gold Charms in a group ADD. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
   machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER), ECHO (JUKEBOX) and BULWARK (`spiked`, KNIGHT).
   `src/core/charms.ts`.
+- **GLASS (user, 2026-10-14):** a Charm for attack symbols and shields: X5 / X6 / X7 (up to X10), added into its
+  group like GOLD, but each time its group pays it has a 1 in 4 chance to shatter for good (SHATTERED!, and the run's
+  build loses that Charm). Sim 1000 runs WHITE / GREEN: KNIGHT 64 -> 70 / 32 -> 31, TESLA 54 -> 60 / 36 -> 39, JUKEBOX
+  62 -> 66 / 30, JOKER 56 -> 57 / 37 -> 34, BANKROLL 58 -> 63 / 41 -> 40 (a big early burst that runs out).
 - **New relics (user's picks, 2026-10-14):** DRY SPELL (each spin with no pair: the next pair or jackpot pays +25%,
   stacking to x3), PUNCH CARD (every 10th fight won: a legendary pick), GOLDEN SPIN (1 spin in 10 pays x3, with its own
   banner), INSURANCE POLICY (first drop under 25% HP a fight: 100 shield), HOUSE TAX (each enemy jackpot pays you 2

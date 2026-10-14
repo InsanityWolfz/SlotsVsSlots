@@ -126,6 +126,8 @@ export class Director {
         return this.recover(e);
       case 'fizzle':
         return this.fizzle(e);
+      case 'glassBreak':
+        return this.glassBreak(e);
       case 'death':
         return this.death(e);
       case 'fightEnd':
@@ -1255,6 +1257,21 @@ export class Director {
       this.bg(this.popText('...', c.x, c.y - 30, 3, COLORS.textDim, 16, 0.1));
     }
     await this.c.wait(0.2);
+  }
+
+  /** GLASS shattered: the charm leaves the cell for good, with a crack and shards. */
+  private async glassBreak(e: Ev<'glassBreak'>): Promise<void> {
+    const m = this.s.machines[e.side];
+    this.s.sounds.fizzle();
+    for (const ref of e.cells) {
+      const cell = m.reels[ref.reel].cells[ref.index];
+      cell.enh = undefined;
+      const fx = m.reels[ref.reel].rows[1];
+      this.bg(this.c.tween({ from: 0.8, to: 0, dur: 0.35, onUpdate: (v) => (fx.wobble = v) }));
+      const c = cellCenter(e.side, ref.reel, 1);
+      this.bg(this.popText('SHATTERED!', c.x, c.y - 30, 2, '#d8f6ff', 30, 0.4, true));
+    }
+    await this.c.wait(0.35);
   }
 
   private async death(e: Ev<'death'>): Promise<void> {

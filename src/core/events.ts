@@ -56,6 +56,8 @@ export type CombatEvent =
       targetHp: number;
       targetShield: number;
     }
+  /** GLASS Charms on these payline reels shattered (gone for the run). */
+  | { type: 'glassBreak'; side: SideId; cells: CellRef[] }
   | { type: 'shieldGain'; side: SideId; reels: number[]; amount: number; total: number; /** Not from a shield group: chips vs a boss, the Chalice's overheal. */ source?: 'chips' | 'chalice' | 'insurance' }
   | { type: 'energyGain'; side: SideId; reels: number[]; amount: number; total: number }
   | {

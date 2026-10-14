@@ -5320,6 +5320,139 @@ S.relicPunchCard = lit(16, 16, [
   }
 }
 
+// enhGlass (GLASS charm overlay, 16x16, centre clear): a pale cyan cut gem tucked in the top-right corner, a big
+// white glint off its crown and a dark hairline crack through it (precious but fragile), two glass chips bottom-left
+{
+  const g = grid(16, 16);
+  stamp(g, 8, 1, [
+    ' WWCCA ',
+    'WWCWCAc',
+    'CCCCCcc',
+    ' CWCAc ',
+    '  CAc  ',
+    '   c   ',
+  ]);
+  plot(g, [[10, 1, 'n'], [11, 2, 'n'], [11, 3, 'n'], [12, 4, 'n'], [11, 5, 'n']]);        // the crack
+  outline(g);
+  plot(g, [[5, 0, 'C'], [5, 1, 'W'], [4, 2, 'C'], [5, 2, 'W'], [6, 2, 'C'], [5, 3, 'C']]);  // glint
+  plot(g, [[1, 13, 'C'], [2, 14, 'W'], [1, 14, 'A'], [3, 12, 'C']]);                      // glass chips
+  S.enhGlass = toRows(g);
+}
+
+// ================================================================ encounter games: RAT RACE, SCRATCH-OFF, CLAW
+// ratRacer / ratRacer2 (16x16): a grey racing rat in side view running RIGHT, two gallop frames
+// (legs stretched / legs gathered), with a plain red saddle cloth (its number is drawn by code)
+{
+  const body = [
+    '                ',
+    '                ',
+    '                ',
+    '                ',
+    '          Mh    ',
+    '     RRRRIMIH   ',
+    '    IRRRRrIIIH  ',
+    '   IHRRRRrHKHHM ',
+    '  IHHHHHHHHHHh  ',
+    '  hHHHHHHHHHhh  ',
+    '   hhhhhhhhh    ',
+  ];
+  const frame = (legs, tail) => {
+    const g = grid(16, 16);
+    stamp(g, 0, 0, body);
+    put(g, 11, 6, 'W');
+    plot(g, legs); plot(g, tail);
+    return toRows(outline(g));
+  };
+  S.ratRacer = frame(
+    [[3, 11, 'h'], [2, 12, 'h'], [1, 12, 'M'], [11, 11, 'h'], [12, 12, 'h'], [13, 12, 'M']],
+    [[1, 8, 'M'], [1, 7, 'm'], [2, 6, 'm']]);
+  S.ratRacer2 = frame(
+    [[6, 11, 'h'], [6, 12, 'M'], [5, 12, 'M'], [8, 11, 'h'], [9, 12, 'M'], [10, 12, 'M']],
+    [[1, 9, 'M'], [1, 10, 'm'], [2, 11, 'm']]);
+}
+// scratchTicket (24x24): a scratch-off ticket, gold border, red LUCKY header, a 3x3 grid of silver panels
+{
+  const g = grid(24, 24);
+  for (let y = 1; y <= 22; y++) for (let x = 1; x <= 22; x++) {
+    const rim = x === 1 || y === 1 || x === 22 || y === 22;
+    put(g, x, y, rim ? (x === 1 || y === 1 ? 'Y' : 'g') : y <= 8 ? (y === 8 ? 'r' : 'R') : 'T');
+  }
+  hline(g, 2, 21, 2, 'M');
+  const font = {
+    L: ['Y  ', 'Y  ', 'Y  ', 'Y  ', 'YYY'], U: ['Y Y', 'Y Y', 'Y Y', 'Y Y', 'YYY'], C: ['YYY', 'Y  ', 'Y  ', 'Y  ', 'YYY'],
+    K: ['Y Y', 'Y Y', 'YY ', 'Y Y', 'Y Y'], Y: ['Y Y', 'Y Y', ' Y ', ' Y ', ' Y '],
+  };
+  [...'LUCKY'].forEach((ch, i) => stamp(g, 2 + i * 4, 3, font[ch]));
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+    const x0 = 4 + c * 6, y0 = 10 + r * 4;
+    for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 4; dx++)
+      put(g, x0 + dx, y0 + dy, dx === 0 && dy === 0 ? 'W' : dy === 0 || dx === 0 ? 'L' : dx === 3 || dy === 2 ? 'D' : 'S');
+  }
+  hline(g, 3, 20, 21, 't');
+  plot(g, [[21, 9, 'W'], [2, 21, 'W']]);
+  S.scratchTicket = toRows(outline(g));
+}
+// scratchCoin (12x12): the coin you scratch with, worn gold with a struck star
+{
+  const g = grid(12, 12);
+  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) {
+    const r = Math.hypot(x - 5.5, y - 5.5);
+    if (r > 4.9) continue;
+    put(g, x, y, r > 3.9 ? ((x + y) < 11 ? 'Y' : 'g') : (x + y) < 10 ? 'Y' : 'G');
+  }
+  plot(g, [[5, 3, 'g'], [6, 3, 'g'], [4, 5, 'g'], [5, 5, 'g'], [6, 5, 'g'], [7, 5, 'g'], [5, 6, 'g'], [6, 6, 'g'], [4, 7, 'g'], [7, 7, 'g'], [5, 4, 'g'], [6, 4, 'g']]);
+  plot(g, [[3, 2, 'W'], [2, 3, 'W']]);
+  S.scratchCoin = toRows(outline(g));
+}
+// clawGrabber / clawGrabberShut (24x24): an arcade claw on a cable stub, three steel prongs, open / closed
+{
+  const prong = (pts) => {
+    const cells = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+      const n = Math.max(Math.abs(bx - ax), Math.abs(by - ay));
+      for (let k = 0; k <= n; k++) {
+        const x = Math.round(ax + (bx - ax) * k / n), y = Math.round(ay + (by - ay) * k / n);
+        cells.push([x, y, 'L'], [x + 1, y, 'S']);
+      }
+    }
+    const seen = new Map();
+    for (const c of cells) { const k = `${c[0]},${c[1]}`; if (!seen.has(k) || c[2] === 'L') seen.set(k, c); }
+    return [...seen.values()];
+  };
+  const claw = (side, mid) => {
+    const g = grid(24, 24);
+    for (let y = 0; y <= 4; y++) put(g, 11, y, 'L'), put(g, 12, y, 'D');               // cable stub
+    const L = prong(side), R = prong(side.map(([x, y]) => [22 - x, y]));
+    ringPaint(g, L); ringPaint(g, R);
+    ringPaint(g, prong(mid));
+    ringPaint(g, cellsOf(7, 4, [
+      ' LLLLLLLS ',
+      'LWLLLLLLSD',
+      'LSSSRSSSSD',
+      'SDDDDDDDDD',
+    ]));
+    return toRows(outline(g));
+  };
+  S.clawGrabber = claw([[8, 8], [5, 11], [3, 15], [3, 19], [5, 21]], [[11, 8], [11, 16], [10, 18]]);
+  S.clawGrabberShut = claw([[7, 8], [5, 12], [6, 16], [9, 19]], [[11, 8], [11, 19]]);
+}
+// prizeBall (12x12): a claw-machine prize capsule, red top half, clear bottom half with a glint
+{
+  const g = grid(12, 12);
+  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) {
+    const r = Math.hypot(x - 5.5, y - 5.5);
+    if (r > 4.9) continue;
+    let c;
+    if (y <= 5) c = r > 3.9 && x + y >= 11 ? 'r' : x + y < 7 ? 'M' : 'R';
+    else if (y === 6) c = 'S';
+    else c = r > 3.9 ? (x < 6 ? 'C' : 'A') : 'u';
+    put(g, x, y, c);
+  }
+  plot(g, [[3, 2, 'W'], [2, 3, 'W'], [3, 8, 'W'], [8, 9, 'c']]);
+  S.prizeBall = toRows(outline(g));
+}
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -5384,6 +5517,8 @@ const DIMS = {
   wheelTopper: 24, betChip: 12, betStack1: 16, betStack2: 16, betStack3: 16,
   enemyOwner: 24, relicDrySpell: 16, relicPunchCard: 16, relicGoldenSpin: 16, relicInsurance: 16,
   relicHouseTax: 16, relicRegular: 16, relicHitmaker: 16, relicHouseOfCards: 16, relicParachute: 16,
+  enhGlass: 16, ratRacer: 16, ratRacer2: 16, scratchTicket: 24, scratchCoin: 12, clawGrabber: 24, clawGrabberShut: 24,
+  prizeBall: 12,
 };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
@@ -5531,7 +5666,12 @@ export type SpriteId =
   | 'enemyOwner'                                 // THE OWNER, ENDLESS final boss portrait, 24x24
   | 'relicDrySpell' | 'relicPunchCard' | 'relicGoldenSpin' | 'relicInsurance' // relics, 16x16
   | 'relicHouseTax' | 'relicRegular'
-  | 'relicHitmaker' | 'relicHouseOfCards' | 'relicParachute'; // per-character relics (JUKEBOX, JOKER, BANKROLL), 16x16
+  | 'relicHitmaker' | 'relicHouseOfCards' | 'relicParachute' // per-character relics (JUKEBOX, JOKER, BANKROLL), 16x16
+  | 'enhGlass'                                   // GLASS charm overlay, 16x16 (mostly transparent)
+  | 'ratRacer' | 'ratRacer2'                     // RAT RACE runner, two gallop frames (faces RIGHT), 16x16
+  | 'scratchTicket' | 'scratchCoin'              // SCRATCH-OFF ticket 24x24, scratching coin 12x12
+  | 'clawGrabber' | 'clawGrabberShut'            // CLAW game claw, open / closed, 24x24
+  | 'prizeBall';                                 // CLAW game prize capsule, 12x12
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;

@@ -42,9 +42,10 @@ export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
   lucre: { name: 'CHIP', text: 'YOUR ATTACK SYMBOLS AND SHIELDS. +3 CHIPS (MAX 6/9/12 PER FIGHT).' },
   trick: { name: 'TRICK', text: "JAX'S CARDS AND SHIELDS. +30/+40/+55 TO YOUR JACKPOT METER." },
   echo: { name: 'ECHO', text: "DJ DECIBEL'S NOTES. AT THE DROP ITS NOTE HITS X2/X2.5/X3." },
+  glass: { name: 'GLASS', text: 'YOUR ATTACK SYMBOLS AND SHIELDS. X5/X6/X7 PAY, ADDS UP LIKE GOLD. 1 IN 4 TO SHATTER WHEN IT PAYS.' },
 };
 /** Charms in the COLLECTION (SPIKED retired). */
-const CHARM_ORDER: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'lucre', 'trick', 'echo'];
+const CHARM_ORDER: Enh[] = ['gold', 'glass', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'lucre', 'trick', 'echo'];
 
 const TIER_COLOR = { common: '#c9c9d9', uncommon: '#5ad8e8', legendary: '#ffd23f', other: '#9a8fb0' };
 

@@ -69,7 +69,7 @@ export const RUN = {
 
 /** Charms by act (act 2 unlocks LUCKY and BLAZE). CHARGED and BLAZE feed the lightning: TESLA only. */
 // BULWARK (id 'spiked') retired 2026-10-07: SHIELD BASH (KNIGHT-only) is the shield-damage piece. The id stays for saves.
-export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'lucre', 'trick', 'lucky', 'blaze', 'echo'];
+export const ACT1_GILDS: Enh[] = ['gold', 'keen', 'vamp', 'charged', 'lucre', 'trick', 'lucky', 'blaze', 'echo', 'glass'];
 /** Empty since 2026-10-08 (user: LUCKY and BLAZE from Act 1). */
 export const ACT2_GILDS: Enh[] = [];
 const TESLA_ONLY: ReadonlySet<Enh> = new Set(['charged', 'blaze']);
@@ -981,6 +981,12 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   if (fight.midasChips) run.player.chips = Math.max(0, run.player.chips + fight.midasChips);
   // LUCRE: the chips its groups paid this fight (a win only: a lost fight ends the run).
   if (fight.lucreChips) run.player.chips += fight.lucreChips;
+  // GLASS: the Charms that shattered are gone for good.
+  for (const b of fight.shattered) {
+    const g = run.player.gilded.find((x) => x.enh === 'glass' && x.reel === b.reel && x.symbol === b.symbol && x.n > 0);
+    if (g) g.n--;
+  }
+  run.player.gilded = run.player.gilded.filter((g) => g.n > 0);
   // HOUSE TAX: the enemy's jackpots paid you. GOLDEN PARACHUTE: its price.
   if (fight.taxChips) run.player.chips += fight.taxChips;
   if (fight.parachuteChips) run.player.chips = Math.max(0, run.player.chips - fight.parachuteChips);

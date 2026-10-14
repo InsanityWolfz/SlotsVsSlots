@@ -3,8 +3,7 @@
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
 **In progress (2026-10-14), the user's picks from the content list.** Done: the offers removed, ENDLESS reworked (no
-cash out, 2 paths, encounters, TONIGHT'S RULE, THE OWNER at loop 5, the rooms escalate), the 9 new relics. Next: the GLASS
-Charm (x5, 1 in 4 to break when it pays); encounters RAT RACE, SCRATCH-OFF, CLAW MACHINE; big choices SECOND PAYLINE
+cash out, 2 paths, encounters, TONIGHT'S RULE, THE OWNER at loop 5, the rooms escalate), the 9 new relics, the GLASS Charm. Next: encounters RAT RACE, SCRATCH-OFF, CLAW MACHINE; big choices SECOND PAYLINE
 and THE LONG GAME. Talk later: STEEL / MAGNET scaling, HOT / GROWTH (activate-style Charms), more than one Charm on a
 cell.
 
