@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, UNIT } from '../src/core/config';
 import { ENDLESS } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
-import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, enemyHp, fightConfig, finishFight, letItRide, skipToBoss, takeChoice } from '../src/core/run';
+import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, enemyHp, fightConfig, fightLabel, NIGHT, NIGHTS, finishFight, letItRide, skipToBoss, takeChoice } from '../src/core/run';
 import { fmtNum } from '../src/render/text';
 
 const base = defaultConfig();
@@ -86,5 +86,41 @@ describe('ENDLESS: no cash out', () => {
     // No RIDE AGAIN / CASH OUT (user, 2026-10-14): ENDLESS goes on until you bust, scored then.
     expect(run.pendingChoice!.map((c) => c.id)).not.toContain('cashOut');
     expect(endlessScore(run)).toBe(1500 + run.player.chips * 10);
+  });
+});
+
+describe("ENDLESS: TONIGHT'S RULE", () => {
+  it('each loop draws a rule (never the last one), shown in the fight label and passed to the fight', () => {
+    const run = createRun(base, 31, 'knight', 2, true);
+    run.over = run.won = true;
+    run.act = 3;
+    letItRide(run);
+    const first = run.endless!.night!;
+    expect(first).toBeTruthy();
+    run.pendingChoice = null;
+    expect(fightConfig(run, base).night).toBe(first);
+    expect(fightLabel(run)).toContain(NIGHTS[first].title);
+    chooseRoute(run, 0);
+    skipToBoss(run);
+    const f = new Fight(fightConfig(run, base), 1);
+    f.winner = 'player';
+    finishFight(run, f);
+    expect(run.endless!.night).not.toBe(first);
+  });
+
+  it('LUCKY NIGHT adds wilds to both machines; HIGH LIMIT raises enemy HP', () => {
+    const run = createRun(base, 32, 'knight', 2, true);
+    run.over = run.won = true;
+    run.act = 3;
+    letItRide(run);
+    run.pendingChoice = null;
+    run.endless!.night = 'lucky';
+    const lucky = fightConfig(run, base);
+    expect(lucky.player.strips.every((s) => (s.wild ?? 0) >= NIGHT.luckyWilds)).toBe(true);
+    expect(lucky.enemy.strips.every((s) => (s.wild ?? 0) >= NIGHT.luckyWilds)).toBe(true);
+    run.endless!.night = 'limit';
+    const hp = fightConfig(run, base).enemy.hp;
+    run.endless!.night = 'iron';
+    expect(hp).toBeGreaterThan(fightConfig(run, base).enemy.hp);
   });
 });

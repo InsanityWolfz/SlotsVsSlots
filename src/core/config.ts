@@ -294,6 +294,8 @@ export interface GameConfig {
   cabinet?: import('./cabinets').CabinetId;
   /** HIGH STAKES level of the run (0 = base game). */
   stake?: number;
+  /** ENDLESS: TONIGHT'S RULE, for both machines (run.ts NIGHTS). */
+  night?: 'happy' | 'limit' | 'lucky' | 'showdown' | 'iron' | 'fast';
   /** null = new random seed each fight. */
   seed: number | null;
 }

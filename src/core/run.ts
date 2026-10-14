@@ -251,7 +251,7 @@ export interface RunState {
   /** A boss fell: pick 1 of these BIG CHOICES (before the legendary pick). */
   pendingChoice?: BigChoice[] | null;
   /** ENDLESS (LET IT RIDE after the Dealer): the loop you're on and the HOUSE EDGES you've taken. */
-  endless?: { loop: number; edges: EdgeId[]; pot: number };
+  endless?: { loop: number; edges: EdgeId[]; pot: number; night?: NightId };
   /** Choices waiting behind the current one (after a loop boss: RIDE?, then a big choice, then the edge). */
   choiceQueue?: BigChoice[][];
   /** Big-choice sets already offered this run. */
@@ -494,7 +494,9 @@ export function totalFights(run: RunState): number {
 /** The HUD's fight label: ACT 2 FIGHT 3/6 (the act's fights on your route), BOSS, or the endless loop's. */
 export function fightLabel(run: RunState): string {
   const n = `FIGHT ${run.depth + 1}/${run.route === null && run.map.routes.length > 1 ? '?' : run.enemies.length}`;
-  if (run.endless) return isBossNext(run) ? `LOOP ${run.endless.loop} BOSS` : `LOOP ${run.endless.loop} ${n}`;
+  // ENDLESS: TONIGHT'S RULE rides along, so it's on screen in every fight.
+  const night = nightOf(run);
+  if (run.endless) return `${isBossNext(run) ? `LOOP ${run.endless.loop} BOSS` : `LOOP ${run.endless.loop} ${n}`}${night ? ` - ${night.title}` : ''}`;
   if (isBossNext(run)) return 'BOSS';
   return `${run.daily ? 'DAILY - ' : run.weekly ? 'WEEKLY - ' : run.challenge ? 'CHALLENGE - ' : ''}ACT ${run.act} ${n}`;
 }
@@ -744,6 +746,15 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.enemy.endless = true;
     cfg.enemy.loop = run.endless.loop;
     cfg.enemy.dmgMul = (cfg.enemy.dmgMul ?? 1) * endlessMul(ENDLESS.dmg, run.endless.loop);
+    // TONIGHT'S RULE, for both machines.
+    const night = run.endless.night;
+    cfg.night = night;
+    if (night === 'limit') cfg.enemy.hp = unitsRound(cfg.enemy.hp * NIGHT.limitHp);
+    if (night === 'lucky') for (const side of [cfg.player, cfg.enemy]) side.strips = side.strips.map((s) => ({ ...s, wild: (s.wild ?? 0) + NIGHT.luckyWilds }));
+    if (night === 'fast') {
+      if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
+      cfg.player.meterMul = (cfg.player.meterMul ?? 1) * NIGHT.fastMeter;
+    }
   }
   // THE DAILY RUN: every fight is fixed by the day, so everyone meets the same fights.
   // The daily locks its spins too (one try: the purest comparison). The weekly locks the map, enemies and offers, but
@@ -802,6 +813,8 @@ function startEndlessLoop(run: RunState): void {
   const loop = run.endless!.loop;
   run.act = 4;
   const rng = new Rng((run.seed ^ Math.imul(loop + 40, 0x3c6ef372)) >>> 0);
+  // TONIGHT'S RULE: a new one each loop, never last loop's.
+  run.endless!.night = rng.fork().pick(NIGHT_IDS.filter((n) => n !== run.endless!.night));
   setMap(run, generateActMap(rng, 4, loop, run.cabinet));
   // NO COMPS: a new loop heals only half your HP.
   const comps = edgeLevel(run, 'nocomps');
@@ -958,7 +971,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   // PIGGY BANK: more interest on what you hold.
   const piggy = run.player.relics.includes('piggy') ? Math.min(NEW_RELIC.piggyMax, Math.floor(run.player.chips / NEW_RELIC.piggyPer)) : 0;
   // OPEN BAR (big choice): wins pay no chips (interest still does). TRUST FUND: chips on top.
-  const winChips = run.noWinChips ? 0 : CHIPS.win + (CABINETS[run.cabinet].chipsPerWin ?? 0) + (beaten.elite ? CHIPS.eliteBonus : 0) + fight.playerJackpots * CHIPS.perJackpot;
+  const winChips = (run.noWinChips ? 0 : CHIPS.win + (CABINETS[run.cabinet].chipsPerWin ?? 0) + (beaten.elite ? CHIPS.eliteBonus : 0) + fight.playerJackpots * CHIPS.perJackpot) * (run.endless?.night === 'limit' ? 2 : 1);
   const earned = interest + piggy + winChips + (run.trustFund ?? 0);
   run.player.chips += earned;
   // (THE WHEEL: the chips your sweeps won came in with the fight's mid-fight chips; the line counts them.)
@@ -1588,6 +1601,24 @@ export type BigChoiceId =
   | 'jokersReel' | 'doubleFeature' | 'highCard' | 'cardShark' | 'trumpCard'
   | 'noLimit' | 'openBar' | 'heist' | 'monsoon' | 'trustFund'
   | 'headliner' | 'hypeMan' | 'encoreDrop' | 'backupDancers';
+/**
+ * TONIGHT'S RULE (user, 2026-10-14): each ENDLESS loop plays under one rule, the same for both machines, never the
+ * same two loops running.
+ */
+export type NightId = NonNullable<GameConfig['night']>;
+/** TONIGHT'S RULE numbers (fight.ts reads happy / showdown / iron). */
+export const NIGHT = { limitHp: 1.15, luckyWilds: 2, fastMeter: 1.5 };
+export const NIGHTS: Record<NightId, { title: string; text: string }> = {
+  happy: { title: 'HAPPY HOUR', text: 'JACKPOTS PAY X2' },
+  limit: { title: 'HIGH LIMIT', text: 'WINS PAY X2 CHIPS. ENEMIES HAVE +15% HP' },
+  lucky: { title: 'LUCKY NIGHT', text: 'EVERY REEL HAS 2 MORE WILDS' },
+  showdown: { title: 'SHOWDOWN', text: 'EVERY HIT PAYS X1.5' },
+  iron: { title: 'IRON NIGHT', text: 'SHIELDS BLOCK X2' },
+  fast: { title: 'FAST NIGHT', text: 'ABILITIES CHARGE 1 TURN FASTER. METERS FILL X1.5' },
+};
+export const NIGHT_IDS = Object.keys(NIGHTS) as NightId[];
+/** TONIGHT'S RULE: what the loop plays under, for both machines. */
+export const nightOf = (run: RunState) => (run.endless?.night ? NIGHTS[run.endless.night] : null);
 /** HOUSE EDGES: endless-mode rules you take on, each paying a reward. */
 export type EdgeId = 'fast' | 'marked' | 'heal' | 'rollers' | 'nocomps' | 'frail';
 export const EDGES: EdgeId[] = ['fast', 'marked', 'heal', 'rollers', 'nocomps', 'frail'];

@@ -19,6 +19,7 @@ import {
   edgeLevel,
   edgeText,
   endlessScore,
+  nightOf,
   fastHands,
   runEdges,
   enemyHp,
@@ -969,6 +970,11 @@ export class RunScreens {
     const edge = this.choices[0]?.id === 'edge';
     drawText(ctx, edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'BONUS ROUND', CX, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
     drawText(ctx, edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : '', CX, 110, 2, COLORS.textDim);
+    const night = this.run && edge ? nightOf(this.run) : null;
+    if (night) {
+      drawText(ctx, `TONIGHT'S RULE: ${night.title}`, CX, 150, 2.5, '#ffd23f');
+      drawText(ctx, `${night.text}, FOR BOTH MACHINES.`, CX, 182, 1.5, '#ffd23f');
+    }
     let tip = -1;
     this.cards.forEach((c, i) => {
       const ch = this.choices[i];
@@ -2292,7 +2298,7 @@ export class RunScreens {
     const cab = CABINETS[run.cabinet];
     if (hasSprite(cab.heroSprite)) drawSprite(ctx, cab.heroSprite as SpriteId, x + 30, y + 94, 2);
     drawText(ctx, cab.hero, x + 60, y + 86, 2, COLORS.goldLight, { align: 'left' });
-    drawText(ctx, run.endless ? `LOOP ${run.endless.loop}` : `ACT ${run.act}${run.stake ? `  -  ${stakeOf(run.stake).name}` : ''}`, x + 60, y + 106, 1.5, COLORS.textDim, { align: 'left' });
+    drawText(ctx, run.endless ? `LOOP ${run.endless.loop}${nightOf(run) ? ` - ${nightOf(run)!.title}` : ''}` : `ACT ${run.act}${run.stake ? `  -  ${stakeOf(run.stake).name}` : ''}`, x + 60, y + 106, 1.5, COLORS.textDim, { align: 'left' });
     this.drawHp(ctx, x + 2, y + 138, w - 44);
     rule(y + 160);
     // Your reels: columns 1 2 3, a row per symbol (and charm).
@@ -2816,7 +2822,9 @@ export class RunScreens {
     const m = run.map;
     const act = run.endless ? `LOOP ${run.endless.loop}` : `ACT ${run.act}`;
     drawText(ctx, `${act} - CHOOSE YOUR PATH`, CX, 30, 3, COLORS.goldLight);
-    drawText(ctx, 'EVERY STOP IS SHOWN. TAP A PATH, THEN TAKE IT.', CX, 62, 1.5, COLORS.textDim);
+    const night = nightOf(run);
+    if (night) drawText(ctx, `TONIGHT'S RULE: ${night.title}. ${night.text}, FOR BOTH MACHINES.`, CX, 62, 1.5, '#ffd23f');
+    else drawText(ctx, 'EVERY STOP IS SHOWN. TAP A PATH, THEN TAKE IT.', CX, 62, 1.5, COLORS.textDim);
     const midY = ROUTES.y[1];
     const lastX = ROUTES.x0 + (ROUTE_STOPS - 1) * ROUTES.gap;
     let tip: MapTip | null = null;

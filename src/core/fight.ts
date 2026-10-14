@@ -1112,6 +1112,18 @@ export class Fight {
         boost(g, this.cfg.player.payMul);
         notes.push(`X${this.cfg.player.payMul}`);
       }
+      // TONIGHT'S RULE (ENDLESS), for both machines.
+      const night = this.cfg.night;
+      if (night === 'happy' && g.matched && (g.reels.length >= 3 || !!g.jackpot) && g.base > 0) {
+        boost(g, 2);
+        notes.push('X2 HAPPY HOUR');
+      } else if (night === 'showdown' && paying && g.symbol !== 'shield') {
+        boost(g, 1.5);
+        notes.push('X1.5 SHOWDOWN');
+      } else if (night === 'iron' && g.symbol === 'shield' && g.base > 0) {
+        boost(g, 2);
+        notes.push('X2 IRON NIGHT');
+      }
       // Late in act 3 / an endless loop, enemy swords and sevens hit harder: on the banner, not a hidden multiplier.
       if (!player && (g.symbol === 'sword' || g.symbol === 'seven') && g.base > 0) {
         const all = this.enemyDmgMul();
