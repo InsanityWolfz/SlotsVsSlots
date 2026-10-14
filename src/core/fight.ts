@@ -1801,7 +1801,10 @@ export class Fight {
     const live = me.side === 'player' && me.relics.has('livewire');
     let overPopped = false;
     let strikes = 0;
-    while (me.energy >= this.cfg.specialCost && !this.over && foe.hp > 0) {
+    // (Against THE OWNER the storm stops once his turn cap is reached, keeping the charge: it fired thousands of 0-damage
+    // strikes, each one healing.)
+    const capped = () => foe.side === 'enemy' && !!this.cfg.enemy.turboCap && this.enemyTurnHp >= Math.round(foe.maxHp * this.cfg.enemy.turboCap);
+    while (me.energy >= this.cfg.specialCost && !this.over && foe.hp > 0 && !capped()) {
       me.energy -= this.cfg.specialCost;
       const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
       // MELTDOWN: +1% per 1% of HP you're missing (capped).
@@ -1860,6 +1863,9 @@ export class Fight {
 
   private heal(me: Combatant, amount: number, source: HealSource, events: CombatEvent[], parts?: { label: string; amount: number }[]): void {
     const full = amount;
+    // A side at 0 HP is dead when the turn settles: no heal brings it back (a storm's heals on the enemy's turn used to
+    // revive TESLA from 0 HP: ENDLESS playtest, 2026-10-14).
+    if (me.hp <= 0) return;
     if (me.side === 'player' && this.cfg.player.healMul) amount = Math.max(1, Math.round(amount * this.cfg.player.healMul));
     const n = Math.min(amount, me.maxHp - me.hp);
     if (n > 0) {

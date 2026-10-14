@@ -73,7 +73,7 @@ which Charms and relics to build.
 
 Act 3 is played at stake GREEN and up, and always in daily and weekly runs. **ENDLESS** comes after the Dealer:
 KEEP PLAYING goes on into loops until you bust (user, 2026-10-14: no RIDE AGAIN / CASH OUT); your score is the pot
-(x1.5 + 1500 a loop cleared) plus your chips x10. Sim (GREEN, the bot never stopping): loops cleared median 4, 5+ 44%.
+(x1.5 + 1500 a loop cleared) plus your chips x10. Sim (GREEN, the bot never stopping, before THE OWNER): loops cleared median 4.
 **TONIGHT'S RULE** (user, 2026-10-14): each loop plays under one rule for both machines, never the same two loops
 running (`NIGHTS` in `src/core/run.ts`): HAPPY HOUR (jackpots pay x2), HIGH LIMIT (wins pay x2 chips, enemies +15% HP),
 LUCKY NIGHT (2 more wilds a reel), SHOWDOWN (every hit x1.5), IRON NIGHT (shields block x2), FAST NIGHT (abilities 1
@@ -85,8 +85,9 @@ turns he cheats a new way (slime, a theft, a freeze, rocks, a hex, bombs, in tur
 (TURBO.hp, x the loop's growth), his hits x1.2 and they skip the one-turn cap on you, and no turn takes more than 6% of
 his HP (so no build one-shots him). Beating him ends the run, won (YOU BROKE THE BANK, the pot pays x3, achievement
 BROKE THE BANK): a broken build or a bug can't go on forever. Aim ~0.1% of the runs that reach him: the bot (GREEN,
-399 reached) beat him 0 times (a souped-up loop boss first: x3 HP / x2 hits, no cap: 50%; HP alone up to x100: 3.6%,
-BANKROLL; the turn cap is what holds). Each loop multiplies enemy HP and damage,
+399 reached) beat him 0 times. His damage is what holds him (playtest: he kills in 2-4 hits; with his damage cut to a
+third a few TESLA builds win); the turn cap stops one-shots. Reach rate by machine (GREEN riders): KNIGHT 20%, JUKEBOX
+35%, JOKER 62%, TESLA 84%, BANKROLL 86% (the loop 3 Dealer is the wall). Each loop multiplies enemy HP and damage,
 and the multiplier grows every loop, so it gets harder exponentially in theory. Playtesters still reached loop 5,
 so that isn't happening in practice (see ROADMAP).
 
@@ -119,6 +120,10 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   Pay = BASE × MULT, and gold Charms in a group ADD. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
   machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER), ECHO (JUKEBOX) and BULWARK (`spiked`, KNIGHT).
   `src/core/charms.ts`.
+- **ENDLESS playtest fixes (2026-10-14):** a side at 0 HP can't be healed (a storm's heals on the enemy's turn revived
+  TESLA from 0 HP, 23% of its runs: TESLA GREEN 39 -> 37); a LIGHTNING STORM stops once THE OWNER's turn cap is reached
+  (it fired thousands of 0-damage strikes, each healing); PUNCH CARD tops up with normal relics once the legendaries
+  are gone.
 - **WILDs and SLIME (user, 2026-10-14):** a WILD joins slime (a slime pair or jackpot cleanses, so [slime, WILD, x] and
   [WILD, slime, x] now cleanse); it still never joins a rock or other dead symbol, and WILDs ahead of one still pair with
   each other (WILD, WILD, ROCK paid nothing). WILD WHEEL (JOKER relic) is gone: "keeps the better result" was a

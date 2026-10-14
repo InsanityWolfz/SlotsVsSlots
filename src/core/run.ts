@@ -1012,10 +1012,8 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     run.punches = (run.punches ?? 0) + 1;
     if (run.punches >= NEW_RELIC.punchEvery) {
       run.punches = 0;
-      const legends = legendsFor(run);
-      if (legends.length) {
-        queueLegendPick(run, legendPick(run, new Rng((run.seed ^ Math.imul(run.records.length + 7, 0x9e3779b9)) >>> 0), legends));
-      }
+      // (Once every legendary is yours, it tops up with normal relics like the act's pick does.)
+      queueLegendPick(run, legendPick(run, new Rng((run.seed ^ Math.imul(run.records.length + 7, 0x9e3779b9)) >>> 0), legendsFor(run)));
     }
   }
   // Chips: interest on what you banked, then the win, elite bonus and jackpots (overkill chips removed 2026-10-08: nothing explained them).
