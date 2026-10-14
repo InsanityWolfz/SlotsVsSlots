@@ -16,9 +16,11 @@ import {
   BIG,
   describeOption,
   takenLabel,
+  ACT1_GILDS,
   edgeLevel,
   edgeText,
   endlessScore,
+  scaledAbility,
   nightOf,
   fastHands,
   runEdges,
@@ -326,7 +328,8 @@ const rounds = (turns: number) => `${turns} SPIN${turns === 1 ? '' : 'S'}`;
 /** The ability's effect in a few words (the panel's front shows this under the cadence pips). */
 function abilityWhat(e: EnemyDef, run?: RunState): string {
   if (!e.ability) return '';
-  const p = e.ability.power;
+  // (ENDLESS grows the flat numbers with the loop: the card says what the fight will do.)
+  const p = (run ? scaledAbility(run, e.ability, true) : e.ability)?.power ?? e.ability.power;
   // THE WHEEL: what one chip left on your reels hits for at NO MORE BETS (as the fight does it).
   const per = run ? Math.max(UNIT, unitsRound(run.player.maxHp * wheelChipShare(run.cabinet))) : 0;
   const what: Record<string, string> = {
@@ -480,6 +483,8 @@ export class RunScreens {
   private cwCarry = false;
   private cwTarget = -1;
   private cwMsg: EncounterResult | null = null;
+  /** Prizes won at this stop, as the screen shows them (the run's list moves before the claw lands, and clears after the last go). */
+  private cwWon: number[] = [];
   /** Shop purchases in flight to YOUR BUILD. */
   private flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   private picked = -1;
@@ -1470,6 +1475,7 @@ export class RunScreens {
       this.cwX = CW.home;
       this.cwY = 0;
       this.cwMsg = null;
+      this.cwWon = [...clawWon(run)];
       return this.clawButtons();
     }
     if (this.encId === 'bj') {
@@ -2414,7 +2420,11 @@ export class RunScreens {
     drawText(ctx, 'CHARMS', x + 12, cy0, 2, COLORS.textDim, { align: 'left' });
     const charmEntries = entries.filter((e) => e.enh);
     if (!charmEntries.length) drawText(ctx, 'NONE YET', x + 26, cy0 + 24, 1.5, '#4a4058', { align: 'left' });
-    charmEntries.slice(0, 4).forEach((e, i) => drawEntry(e, x + 26 + (i % 2) * 134, cy0 + 24 + Math.floor(i / 2) * 24));
+    // Past 4 types the last slot says how many more (GLASS went missing: playtest), in a fixed order.
+    charmEntries.sort((a, b) => ACT1_GILDS.indexOf(a.enh!) - ACT1_GILDS.indexOf(b.enh!));
+    const showN = charmEntries.length > 4 ? 3 : 4;
+    charmEntries.slice(0, showN).forEach((e, i) => drawEntry(e, x + 26 + (i % 2) * 134, cy0 + 24 + Math.floor(i / 2) * 24));
+    if (charmEntries.length > 4) drawText(ctx, `+${charmEntries.length - 3} MORE`, x + 26 + 134, cy0 + 48, 1.5, COLORS.textDim, { align: 'left' });
     rule(y + 546);
     // Your relics: a fixed grid; past its size the last cell says how many more.
     const relics = p.relics;
@@ -2470,7 +2480,9 @@ export class RunScreens {
   private drawDraft(ctx: CanvasRenderingContext2D, time: number): void {
     const last = this.lastRecord;
     const start = this.draftKind === 'start';
-    drawText(ctx, last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${this.run.dailyEdge ? `: ${EDGE_TEXT[this.run.dailyEdge].title}` : ''}` : this.run?.weekly ? `WEEKLY: ${(this.run.mods ?? []).map((e) => EDGE_TEXT[e].title).join(' + ')}` : this.run?.challenge ? `CHALLENGE: ${challengeById(this.run.challenge)?.name ?? ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
+    // ENDLESS: the pick after a loop's boss is the new loop's (its HOUSE EDGE reward): say the loop was cleared.
+    const loopDone = !!last && !!this.run?.endless && last.loop !== undefined && last.loop < this.run.endless.loop;
+    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! POT ${fmtNum(this.run!.endless!.pot)}` : last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${this.run.dailyEdge ? `: ${EDGE_TEXT[this.run.dailyEdge].title}` : ''}` : this.run?.weekly ? `WEEKLY: ${(this.run.mods ?? []).map((e) => EDGE_TEXT[e].title).join(' + ')}` : this.run?.challenge ? `CHALLENGE: ${challengeById(this.run.challenge)?.name ?? ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
@@ -2884,6 +2896,8 @@ export class RunScreens {
     const night = nightOf(run);
     if (night) drawText(ctx, `TONIGHT'S RULE: ${night.title}. ${night.text}, FOR BOTH MACHINES.`, CX, 62, 1.5, '#ffd23f');
     else drawText(ctx, 'EVERY STOP IS SHOWN. TAP A PATH, THEN TAKE IT.', CX, 62, 1.5, COLORS.textDim);
+    // ENDLESS: the score so far, on screen (playtest: it only showed on the bust screen).
+    if (run.endless) drawText(ctx, `POT ${fmtNum(run.endless.pot)} + ${run.player.chips} CHIPS X10 = SCORE ${fmtNum(endlessScore(run))}`, CX, 86, 1.5, COLORS.goldLight);
     const midY = ROUTES.y[1];
     const lastX = ROUTES.x0 + (ROUTE_STOPS - 1) * ROUTES.gap;
     let tip: MapTip | null = null;
@@ -3101,15 +3115,17 @@ export class RunScreens {
     const run = this.run!;
     this.felt(ctx);
     drawText(ctx, `RACE ${Math.min(this.rlSpinNo, RACE.races + extraPlays(run))} OF ${RACE.races + extraPlays(run)}`, CX, 78, 2, COLORS.textDim);
-    const x0 = CX - 400;
+    // Names in a column on the left, the track to their right (the names sat on the rats: playtest).
+    const nx = CX - 404;
+    const x0 = CX - 250;
     const x1 = CX - 50;
     const cloth = ['#ff4a3a', '#4fa3ff', '#ffd23f', '#5aff7a'];
     RATS.forEach((r, k) => {
       const y = 170 + k * 80;
-      ctx.fillStyle = k % 2 ? '#0c3420' : '#10401f';
-      ctx.fillRect(x0 - 10, y - 30, x1 - x0 + 40, 60);
+      ctx.fillStyle = this.rrPick === k ? '#2a5a2a' : k % 2 ? '#0c3420' : '#10401f';
+      ctx.fillRect(nx - 6, y - 30, x1 - nx + 46, 60);
       ctx.fillStyle = 'rgba(255,255,255,0.12)';
-      ctx.fillRect(x0 - 10, y + 29, x1 - x0 + 40, 2);
+      ctx.fillRect(nx - 6, y + 29, x1 - nx + 46, 2);
       const p = this.rrPos[k] ?? 0;
       const x = x0 + p * (x1 - x0);
       const running = p > 0 && p < 1;
@@ -3118,7 +3134,8 @@ export class RunScreens {
       ctx.fillStyle = cloth[k];
       ctx.fillRect(x - 9, y - 16, 15, 9);
       drawText(ctx, `${k + 1}`, x - 2, y - 12, 1.25, '#140c1c');
-      drawText(ctx, `${r.name}  X${r.pays}`, x0 - 4, y - 22, 1.25, this.rrPick === k ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
+      drawText(ctx, r.name, nx, y - 8, 1.5, this.rrPick === k ? COLORS.goldLight : COLORS.text, { align: 'left' });
+      drawText(ctx, `PAYS X${r.pays}`, nx, y + 12, 1.25, this.rrPick === k ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
     });
     // The finish line: a checkered post.
     for (let y = 140; y < 500; y += 10) {
@@ -3128,7 +3145,7 @@ export class RunScreens {
     drawText(ctx, `YOUR BET (MAX ${raceMax(run)})`, RL.betX, 150, 2, COLORS.textDim);
     drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
     drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
-    drawText(ctx, 'YOUR RAT FIRST PAYS YOUR BET TIMES ITS ODDS', RL.betX, 530, 1.25, COLORS.textDim);
+    drawText(ctx, 'YOUR RAT WINS: YOU GET YOUR BET TIMES ITS ODDS', RL.betX, 530, 1.25, COLORS.textDim);
     const m = this.rrMsg;
     if (m) {
       drawText(ctx, m.title, CX - 200, 478, 2.5, m.good ? COLORS.goldLight : COLORS.text, { punch: 1 + 0.03 * Math.sin(time * 6) });
@@ -3243,7 +3260,7 @@ export class RunScreens {
       drawSprite(ctx, art[k], RL.betX - 110, 186 + k * 38, 2);
       drawText(ctx, n, RL.betX - 80, 186 + k * 38, 1.75, COLORS.text, { align: 'left' });
     });
-    if (st) drawText(ctx, `SCRATCH ${SCRATCH.scratches - st.picked.length} MORE`, RL.betX, 400, 2.5, COLORS.goldLight, { punch: 1 + 0.03 * Math.sin(time * 6) });
+    if (st) drawText(ctx, `SCRATCH ${SCRATCH.scratches - st.picked.length} PANEL${SCRATCH.scratches - st.picked.length === 1 ? '' : 'S'}`, RL.betX, 400, 2.5, COLORS.goldLight, { punch: 1 + 0.03 * Math.sin(time * 6) });
     const m = this.scMsg;
     if (m) {
       drawText(ctx, m.title, RL.betX, 490, 3, m.good ? COLORS.goldLight : m.good === false ? '#ff8a7a' : COLORS.text);
@@ -3316,6 +3333,7 @@ export class RunScreens {
         this.cwY = 0;
         this.cwShut = false;
         this.cwCarry = false;
+        if (claw.held) this.cwWon.push(claw.prize);
         this.landChips();
         if (this.mode !== 'encounter') return;
         this.cwMsg = res;
@@ -3346,7 +3364,7 @@ export class RunScreens {
     const clawY = 200 + this.cwY * 230;
     ctx.fillStyle = '#5a5a6a';
     ctx.fillRect(this.cwX - 2, 170, 4, clawY - 186);
-    const won = clawWon(run);
+    const won = this.cwWon;
     const art: SpriteId[] = ['chip', artId('enhGold'), artId('relicSym')];
     CLAW_PRIZES.forEach((p, k) => {
       const x = CW.x0 + k * CW.gap;
@@ -3365,7 +3383,7 @@ export class RunScreens {
     if (m) {
       drawText(ctx, m.title, RL.betX, 200, 3, m.good ? COLORS.goldLight : '#ff8a7a', { punch: 1 + 0.03 * Math.sin(time * 6) });
       if (m.text) drawText(ctx, m.text, RL.betX, 240, 2, m.good ? COLORS.goldLight : COLORS.textDim);
-    } else drawText(ctx, 'PICK A PRIZE TO GO FOR', RL.betX, 220, 2, COLORS.textDim);
+    } else if (this.cwY === 0 && this.cwX === CW.home) drawText(ctx, 'PICK A PRIZE TO GO FOR', RL.betX, 220, 2, COLORS.textDim);
   }
 
   /** UNDER OR OVER: two dice on the felt (tumbling, then landed), your bet, the payouts, the last roll. */
@@ -3585,7 +3603,7 @@ export class RunScreens {
     const ty = y0 + mh + pad + 30;
     if (!res || !this.encDone) this.drawPaytable(ctx, ty);
     if (win) drawText(ctx, win.text, CX, ty + 46, 3, win.count >= 4 ? '#ff8a3a' : COLORS.goldLight, { punch: 1 + 0.1 * Math.max(0, 1 - (this.slotClock.time - win.at) * 3) });
-    if (res && !this.encDone) drawText(ctx, `PULL ${Math.max(1, this.encLanded + (this.slotReels.some((rv) => rv.spinning) ? 1 : 0))} OF ${res.pulls?.length ?? 0}`, CX, ty + 92, 2, COLORS.textDim);
+    if (res?.pulls?.length && !this.encDone) drawText(ctx, `PULL ${Math.max(1, this.encLanded + (this.slotReels.some((rv) => rv.spinning) ? 1 : 0))} OF ${res.pulls?.length ?? 0}`, CX, ty + 92, 2, COLORS.textDim);
     // The session so far (playtest: only the last pull's pay showed).
     if (res && !this.encDone) {
       const so = (res.pulls ?? []).slice(0, this.encLanded).reduce((a, pl) => ({ chips: a.chips + pl.gain.chips, hp: a.hp + pl.gain.hp, maxHp: a.maxHp + pl.gain.maxHp }), { chips: 0, hp: 0, maxHp: 0 });
@@ -4209,6 +4227,7 @@ export class RunScreens {
     if (recap) lines.push([recap, COLORS.danger]);
     if (this.unlockedNow.length) lines.push([`NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, COLORS.goldLight]);
     if (this.rideOffer) lines.push(['YOUR WIN IS BANKED. ENDLESS GOES ON UNTIL YOU BUST.', COLORS.goldLight]);
+    if (busted) lines.push([`POT ${fmtNum(run.endless!.pot)} + ${run.player.chips} CHIPS X10`, COLORS.goldLight]);
     const shown = lines.slice(0, 2);
     shown.forEach(([text, color], k) => {
       const ly = shown.length > 1 ? 462 + k * 18 : 472;

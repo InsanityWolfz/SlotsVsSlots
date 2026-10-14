@@ -500,7 +500,8 @@ export function fightLabel(run: RunState): string {
   const n = `FIGHT ${run.depth + 1}/${run.route === null && run.map.routes.length > 1 ? '?' : run.enemies.length}`;
   // ENDLESS: TONIGHT'S RULE rides along, so it's on screen in every fight.
   const night = nightOf(run);
-  if (run.endless) return `${isBossNext(run) ? `LOOP ${run.endless.loop} BOSS` : `LOOP ${run.endless.loop} ${n}`}${night ? ` - ${night.title}` : ''}`;
+  // (Short: the long form ran across both reel frames. Playtest.)
+  if (run.endless) return `LOOP ${run.endless.loop}${isBossNext(run) ? ' BOSS' : ''}${night ? `: ${night.title}` : ''}`;
   if (isBossNext(run)) return 'BOSS';
   return `${run.daily ? 'DAILY - ' : run.weekly ? 'WEEKLY - ' : run.challenge ? 'CHALLENGE - ' : ''}ACT ${run.act} ${n}`;
 }
@@ -762,7 +763,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // MARKED DECK: one mark a fight, never more (user, 2026-10-14: it doesn't stack).
   if (edges.has('marked')) cfg.player.startMarks = Math.max(cfg.player.startMarks ?? 0, 1);
   if (edges.has('heal')) cfg.player.healMul = 0.5 ** lvl('heal');
-  if (edges.has('rollers')) cfg.enemy.hp = unitsRound(cfg.enemy.hp * (1 + EDGE_ROLLERS * lvl('rollers')));
+  // (HIGH ROLLERS and HIGH LIMIT are in enemyHp, so the cards show the HP the fight has.)
   // ENDLESS: damage grows per loop.
   if (run.endless) {
     // The loop House is a race: it cashes its pot every 2 turns.
@@ -770,6 +771,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.enemy.endless = true;
     cfg.enemy.loop = run.endless.loop;
     cfg.enemy.dmgMul = (cfg.enemy.dmgMul ?? 1) * endlessMul(ENDLESS.dmg, run.endless.loop);
+    cfg.enemy.ability = scaledAbility(run, cfg.enemy.ability);
     // THE OWNER (the TURBO boss): hits harder on top of the loop's growth; no turn takes more than turnCap of his HP.
     if (e.turbo) {
       cfg.enemy.dmgMul *= TURBO.dmg;
@@ -778,7 +780,6 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // TONIGHT'S RULE, for both machines.
     const night = run.endless.night;
     cfg.night = night;
-    if (night === 'limit') cfg.enemy.hp = unitsRound(cfg.enemy.hp * NIGHT.limitHp);
     if (night === 'lucky') for (const side of [cfg.player, cfg.enemy]) side.strips = side.strips.map((s) => ({ ...s, wild: (s.wild ?? 0) + NIGHT.luckyWilds }));
     if (night === 'fast') {
       if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
@@ -826,6 +827,17 @@ export function applyDaily(run: RunState, key: string): void {
 /** Interest paid after a win on the chips you hold then (chips on the table don't count). */
 export const interestOn = (chips: number) => Math.min(CHIPS.interestCap, Math.floor(chips / CHIPS.interestPer));
 
+/**
+ * ENDLESS: an enemy ability's flat heal or shield grows with the loop's HP (playtest: a loop 4 "HEALS 80" on a 50K-HP
+ * elite did nothing). Its hits already grow in the fight (the loop's damage); `shown` also scales those, for the card.
+ */
+export function scaledAbility(run: RunState, ab: AbilityDef | null | undefined, shown = false): AbilityDef | null {
+  if (!ab) return null;
+  if (!run.endless) return ab;
+  const loop = run.endless.loop;
+  const k = ab.kind === 'bloodmoon' || ab.kind === 'fortify' ? endlessMul(ENDLESS.hp, loop) : shown && (ab.kind === 'smash' || ab.kind === 'penalty') ? endlessMul(ENDLESS.dmg, loop) : 1;
+  return k === 1 ? ab : { ...ab, power: unitsRound(ab.power * k) };
+}
 /** THE LONG GAME: what it multiplies your pay by now (-20%, +2% a win since). */
 export const longGameMul = (run: RunState) => (run.longGame === undefined ? 1 : BIG.longStart + BIG.longStep * run.longGame);
 /** ENDLESS score (user, 2026-10-14: no cash out, you play until you bust): the pot of the loops cleared plus your chips x10. */
@@ -916,7 +928,10 @@ export function enemyHp(run: RunState, e: EnemyDef): number {
   const daily = fixedRun(run) && run.act >= 3 && !run.endless ? TUNE.dailyAct3 : 1;
   // DOUBLE OR NOTHING (big choice): the next boss has double HP.
   const dare = e.isBoss ? run.bossHpMul ?? 1 : 1;
-  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * dare));
+  // HOUSE EDGE HIGH ROLLERS and TONIGHT'S RULE HIGH LIMIT (playtest: the cards showed the HP without them).
+  const rollers = runEdges(run).has('rollers') ? 1 + EDGE_ROLLERS * edgeLevel(run, 'rollers') : 1;
+  const limit = run.endless?.night === 'limit' ? NIGHT.limitHp : 1;
+  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * dare * rollers * limit));
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {

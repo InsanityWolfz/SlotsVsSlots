@@ -124,6 +124,16 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   TESLA from 0 HP, 23% of its runs: TESLA GREEN 39 -> 37); a LIGHTNING STORM stops once THE OWNER's turn cap is reached
   (it fired thousands of 0-damage strikes, each healing); PUNCH CARD tops up with normal relics once the legendaries
   are gone.
+- **ENDLESS playtest, the real game (2026-10-14):** cards show the HP the fight has (HIGH ROLLERS and HIGH LIMIT are in
+  enemyHp); an enemy's flat heal / shield ability grows with the loop's HP (a loop 4 HEALS 80 did nothing), and its
+  hits show their loop size on the card; the reward after a loop's boss reads LOOP N CLEARED! POT X (it said THE
+  DEALER DEFEATED! on the next loop's pick); the path screen shows POT + CHIPS X10 = SCORE, and the bust screen the
+  breakdown; the fight label is short (LOOP 1: FAST NIGHT; it ran across both reels); the side panel shows 3 Charm
+  types and +N MORE past 4, in a fixed order (GLASS went missing); a won CLAW prize stays gone (it came back after
+  the last go, and vanished before the claw landed); LUCKY SEVENS' walk-away no longer says PULL 1 OF 0; RAT RACE
+  has a names column and lights your rat's lane; the death recap no longer scales damage down to your starting HP
+  (THE OWNER's one-spin kill from full read 199); the menu says CONTINUE: ENDLESS. Sim: no change; ENDLESS (GREEN,
+  518 riders): 1 beat THE OWNER (0.2%).
 - **WILDs and SLIME (user, 2026-10-14):** a WILD joins slime (a slime pair or jackpot cleanses, so [slime, WILD, x] and
   [WILD, slime, x] now cleanse); it still never joins a rock or other dead symbol, and WILDs ahead of one still pair with
   each other (WILD, WILD, ROCK paid nothing). WILD WHEEL (JOKER relic) is gone: "keeps the better result" was a

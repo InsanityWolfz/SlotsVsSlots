@@ -803,7 +803,7 @@ export class Game {
     const s = this.loadRunSave();
     if (!s) return null;
     // Beat the Dealer: the RIDE / CASH OUT choice is what's waiting (playtest C: it read ACT 3, like a run mid-act).
-    if (s.at === 'ride') return 'KEEP PLAYING: ENDLESS';
+    if (s.at === 'ride') return 'ENDLESS';
     return `${s.run.endless ? `LOOP ${s.run.endless.loop}` : `ACT ${s.run.act}`} ${CABINETS[s.run.cabinet].hero}`;
   }
 
@@ -932,10 +932,9 @@ export class Game {
     const run = this.run!;
     const record = finishFight(run, this.fight, true);
     if (!record.won) {
-      // Clamp to the HP you actually lost (overkill past 0 isn't damage you felt).
-      const total = [...this.hurt.values()].reduce((a, b) => a + b, 0);
-      const k = total > record.hpBefore && total > 0 ? record.hpBefore / total : 1;
-      record.hurt = [...this.hurt].map(([s, n]) => [s, Math.round(n * k)] as [string, number]).filter(([, n]) => n >= UNIT).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      // The HP damage each source did (never past 0: no overkill). It isn't scaled to the HP you started with: heals in
+      // between made that read low (THE OWNER's one-spin kill from full HP showed as 199: playtest).
+      record.hurt = [...this.hurt].map(([s, n]) => [s, Math.round(n)] as [string, number]).filter(([, n]) => n >= UNIT).sort((a, b) => b[1] - a[1]).slice(0, 3);
       if (this.spins[0] >= 2) record.stuck = [this.spins[0], this.spins[1]];
     }
     this.hurt.clear();
