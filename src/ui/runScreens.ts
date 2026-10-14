@@ -21,6 +21,7 @@ import {
   edgeText,
   endlessScore,
   scaledAbility,
+  NIGHTS,
   nightOf,
   fastHands,
   runEdges,
@@ -999,8 +1000,13 @@ export class RunScreens {
     const edge = this.choices[0]?.id === 'edge';
     drawText(ctx, edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'BONUS ROUND', CX, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
     drawText(ctx, edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : '', CX, 110, 2, COLORS.textDim);
-    const night = this.run && edge ? nightOf(this.run) : null;
-    if (night) {
+    // TONIGHT'S RULE: each path has its own; you pick one with your path (the loop's opener plays without one).
+    const nights = this.run && edge ? (this.run.endless?.nights ?? []) : [];
+    const night = this.run && edge && !nights.length ? nightOf(this.run) : null;
+    if (nights.length) {
+      drawText(ctx, `TONIGHT: ${nights.map((n) => NIGHTS[n].title).join(' OR ')}`, CX, 150, 2.5, '#ffd23f');
+      drawText(ctx, 'EACH PATH HAS ITS OWN RULE FOR BOTH MACHINES: YOU PICK ONE WITH YOUR PATH.', CX, 182, 1.5, '#ffd23f');
+    } else if (night) {
       drawText(ctx, `TONIGHT'S RULE: ${night.title}`, CX, 150, 2.5, '#ffd23f');
       drawText(ctx, `${night.text}, FOR BOTH MACHINES.`, CX, 182, 1.5, '#ffd23f');
     }
@@ -2894,7 +2900,8 @@ export class RunScreens {
     const act = run.endless ? `LOOP ${run.endless.loop}` : `ACT ${run.act}`;
     drawText(ctx, `${act} - CHOOSE YOUR PATH`, CX, 30, 3, COLORS.goldLight);
     const night = nightOf(run);
-    if (night) drawText(ctx, `TONIGHT'S RULE: ${night.title}. ${night.text}, FOR BOTH MACHINES.`, CX, 62, 1.5, '#ffd23f');
+    if (run.endless?.nights?.length) drawText(ctx, "EACH PATH HAS ITS OWN RULE FOR BOTH MACHINES (TONIGHT'S RULE). TAP A PATH, THEN TAKE IT.", CX, 62, 1.5, '#ffd23f');
+    else if (night) drawText(ctx, `TONIGHT'S RULE: ${night.title}. ${night.text}, FOR BOTH MACHINES.`, CX, 62, 1.5, '#ffd23f');
     else drawText(ctx, 'EVERY STOP IS SHOWN. TAP A PATH, THEN TAKE IT.', CX, 62, 1.5, COLORS.textDim);
     // ENDLESS: the score so far, on screen (playtest: it only showed on the bust screen).
     if (run.endless) drawText(ctx, `POT ${fmtNum(run.endless.pot)} + ${run.player.chips} CHIPS X10 = SCORE ${fmtNum(endlessScore(run))}`, CX, 86, 1.5, COLORS.goldLight);
@@ -2925,7 +2932,9 @@ export class RunScreens {
       this.link(ctx, ROUTES.opener + 30, midY, ROUTES.x0 - 52, y);
       this.link(ctx, lastX + 52, y, ROUTES.x0 + (ROUTE_STOPS - 1) * ROUTES.gap + 60 + (ROUTES.shop - lastX - 90), midY);
       ctx.fillRect(ROUTES.x0, y - 2, lastX - ROUTES.x0, 4);
-      drawText(ctx, `PATH ${i + 1}`, ROUTES.x0 - 44, y - ROUTES.lane / 2 + 16, 1.5, sel ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
+      const pn = run.endless?.nights?.[i];
+      if (pn) drawText(ctx, `PATH ${i + 1}: ${NIGHTS[pn].title} - ${NIGHTS[pn].text}`, ROUTES.x0 - 44, y - ROUTES.lane / 2 + 16, 1.25, sel ? COLORS.goldLight : '#ffd23f', { align: 'left' });
+      else drawText(ctx, `PATH ${i + 1}`, ROUTES.x0 - 44, y - ROUTES.lane / 2 + 16, 1.5, sel ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
       route.forEach((st, k) => {
         const x = ROUTES.x0 + k * ROUTES.gap;
         const lift = sel ? Math.sin(time * 4 + k) * 2 : 0;

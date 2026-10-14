@@ -90,22 +90,27 @@ describe('ENDLESS: no cash out', () => {
 });
 
 describe("ENDLESS: TONIGHT'S RULE", () => {
-  it('each loop draws a rule (never the last one), shown in the fight label and passed to the fight', () => {
+  it('each loop deals a rule per path (two different ones); picking a path picks its rule, shown in the fight label', () => {
     const run = createRun(base, 31, 'knight', 2, true);
     run.over = run.won = true;
     run.act = 3;
     letItRide(run);
-    const first = run.endless!.night!;
-    expect(first).toBeTruthy();
+    const nights = run.endless!.nights!;
+    expect(nights).toHaveLength(2);
+    expect(nights[0]).not.toBe(nights[1]);
+    // The loop's opener plays without one.
+    expect(run.endless!.night).toBeUndefined();
     run.pendingChoice = null;
+    chooseRoute(run, 1);
+    const first = run.endless!.night!;
+    expect(first).toBe(nights[1]);
     expect(fightConfig(run, base).night).toBe(first);
     expect(fightLabel(run)).toContain(NIGHTS[first].title);
-    chooseRoute(run, 0);
     skipToBoss(run);
     const f = new Fight(fightConfig(run, base), 1);
     f.winner = 'player';
     finishFight(run, f);
-    expect(run.endless!.night).not.toBe(first);
+    expect(run.endless!.nights).not.toContain(first);
   });
 
   it('LUCKY NIGHT adds wilds to both machines; HIGH LIMIT raises enemy HP', () => {

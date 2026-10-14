@@ -1,5 +1,5 @@
 import { BLADES, cloneConfig, symLabel, emptyLevels, UNIT, unitsRound, type AbilityDef, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, TURBO, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, WHEEL } from './enemies';
+import { ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, TURBO, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, ROUTES_PER_LOOP, WHEEL } from './enemies';
 import { effectiveAbility, MAX_STAKE, STAKE, stakeDmg } from './stakes';
 import type { Fight } from './fight';
 import {
@@ -251,7 +251,7 @@ export interface RunState {
   /** A boss fell: pick 1 of these BIG CHOICES (before the legendary pick). */
   pendingChoice?: BigChoice[] | null;
   /** ENDLESS (LET IT RIDE after the Dealer): the loop you're on and the HOUSE EDGES you've taken. */
-  endless?: { loop: number; edges: EdgeId[]; pot: number; night?: NightId; /** Beat THE TURBO: the run's true end. */ turbo?: boolean };
+  endless?: { loop: number; edges: EdgeId[]; pot: number; night?: NightId; /** TONIGHT'S RULE per path (user, 2026-10-14): picking a path picks its rule. */ nights?: NightId[]; /** Beat THE TURBO: the run's true end. */ turbo?: boolean };
   /** Choices waiting behind the current one (after a loop boss: RIDE?, then a big choice, then the edge). */
   choiceQueue?: BigChoice[][];
   /** Big-choice sets already offered this run. */
@@ -598,6 +598,8 @@ export const needsRoute = (run: RunState) => !run.over && run.route === null && 
 export function chooseRoute(run: RunState, i: number): void {
   run.route = Math.max(0, Math.min(run.map.routes.length - 1, i));
   run.enemies = actStops(run).filter((st) => st.enemy).map((st) => st.enemy!);
+  // ENDLESS: the path's rule is tonight's.
+  if (run.endless?.nights?.[run.route]) run.endless.night = run.endless.nights[run.route];
 }
 /** Jump to this act's boss (tests and the dev console): the first route if none is picked yet. */
 export function skipToBoss(run: RunState): void {
@@ -856,8 +858,11 @@ function startEndlessLoop(run: RunState): void {
   const loop = run.endless!.loop;
   run.act = 4;
   const rng = new Rng((run.seed ^ Math.imul(loop + 40, 0x3c6ef372)) >>> 0);
-  // TONIGHT'S RULE: a new one each loop, never last loop's.
-  run.endless!.night = rng.fork().pick(NIGHT_IDS.filter((n) => n !== run.endless!.night));
+  // TONIGHT'S RULE: one per path (user, 2026-10-14: the night is part of the route choice), never last loop's; it
+  // starts when you pick your path (the loop's opener plays without one).
+  const nrng = rng.fork();
+  run.endless!.nights = nrng.shuffle(NIGHT_IDS.filter((n) => n !== run.endless!.night)).slice(0, ROUTES_PER_LOOP);
+  run.endless!.night = undefined;
   setMap(run, generateActMap(rng, 4, loop, run.cabinet));
   // NO COMPS: a new loop heals only half your HP.
   const comps = edgeLevel(run, 'nocomps');
