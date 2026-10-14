@@ -284,12 +284,26 @@ export const OWNER: Archetype = {
 /** THE OWNER's tricks, in the order he plays them (each at this power). */
 export const OWNER_TRICKS: { kind: AbilityDef['kind']; power: number }[] = [
   { kind: 'flood', power: 3 },
+  { kind: 'hammer', power: 0 },
   { kind: 'pilfer', power: 1 },
+  { kind: 'hammer', power: 0 },
   { kind: 'blizzard', power: 1 },
+  { kind: 'hammer', power: 0 },
   { kind: 'quake', power: 2 },
+  { kind: 'hammer', power: 0 },
   { kind: 'curse', power: 2 },
+  { kind: 'hammer', power: 0 },
   { kind: 'carpet', power: 2 },
+  { kind: 'hammer', power: 0 },
 ];
+/**
+ * THE OWNER as a fight (user, 2026-10-14: he was a one-shot wall). THE HAMMER (every other trick, telegraphed on his HUD)
+ * hits `hammer` of your max HP through shields; no turn of his takes more than `capOnYou` of your max HP; at 75 / 50 /
+ * 25% of his HP he gets `phaseDmg` harder each time (a banner says so). Every turn of his raises his hits and his cap on you
+ * by `rise` (so a fight lasts about 12-25 turns: TESLA out-healed him for 160).
+ */
+export const OWNER_RULES = { hammer: 0.4, capOnYou: 0.45, phaseDmg: 0.15, phases: [0.75, 0.5, 0.25], rise: 0.06 };
+/** THE OWNER's turns so far raise his hits and his cap on you by OWNER_RULES.rise each (the fight can't stall). */
 export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: WHEEL, 3: DEALER };
 
 // (No 'GILDED' or 'WILD': those are mechanic names.)
@@ -306,7 +320,7 @@ export const DEPTH_HP_2 = [52, 62, 73, 85, 97].map((h) => h * UNIT);
 export const DEPTH_HP_3 = [240, 270, 300, 330, 360].map((h) => h * UNIT);
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5, 4: 3 };
 /** ENDLESS (act 4) tuning: per loop, enemy HP x hp^loop and damage x dmg^loop (EXPERT_PLAYTEST_3 D). */
-export const ENDLESS = { ramp: 0.05, hp: 2, dmg: 1.35, houseHp: 3, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, wheelHp: 4, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
+export const ENDLESS = { ramp: 0.1, hp: 2, dmg: 1.35, houseHp: 5, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, wheelHp: 5, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
 /**
  * ENDLESS: each loop multiplies enemy HP (and damage) by its base, and the step itself grows by RAMP every loop,
  * so the climb accelerates: loop L totals base^L x (1 + ramp)^(L(L-1)/2). Only broken builds should see loop 5.
@@ -340,7 +354,7 @@ export interface EnemyDef extends SideConfig {
  * reach it). Beating him ends the run, so a broken build or a bug can't go on forever. `hp` is his HP in loop bosses'
  * terms (ENDLESS.houseHp etc.), `dmg` his hits on top of the loop's, `turnCap` the most of his HP one turn can take.
  */
-export const TURBO = { loop: 5, hp: 8, dmg: 1.2, potMul: 3, turnCap: 0.06 };
+export const TURBO = { loop: 5, hp: 12, dmg: 1.2, potMul: 3, turnCap: 0.1 };
 
 /** Rough single-fight danger per archetype (playtest ITERATION_2), used to pick the elite at a fork. */
 export const DANGER: Record<string, number> = {

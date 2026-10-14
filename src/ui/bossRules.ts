@@ -4,7 +4,7 @@
  * same everywhere.
  */
 import { DEALER_RULES } from '../core/fight';
-import { TURBO, WHEEL_RULES, wheelChipShare } from '../core/enemies';
+import { OWNER_RULES, TURBO, WHEEL_RULES, wheelChipShare } from '../core/enemies';
 import { POT } from '../core/relics';
 import { STAKE } from '../core/stakes';
 import type { SpriteId } from '../render/spriteData';
@@ -31,11 +31,11 @@ export function bossRules(boss: string, c: BossRuleContext): BossRules {
   if (boss === 'owner')
     return {
       rules: [
-        { icon: artId('icoGavel'), text: 'EVERY 2 TURNS HE CHEATS, A NEW WAY EACH TIME: SLIME, THEFT, FREEZE, ROCKS, HEX, BOMBS' },
-        { icon: artId('icoSmash'), text: `HIS HITS ARE X${TURBO.dmg}, AND YOUR ONE-TURN CAP DOESN'T HOLD THEM` },
-        { icon: 'shieldIcon', text: `NO TURN TAKES MORE THAN ${Math.round(TURBO.turnCap * 100)}% OF HIS HP` },
+        { icon: artId('icoGavel'), text: 'EVERY 2 TURNS HE CHEATS. EVERY OTHER TIME IT IS A NEW TRICK (SLIME, THEFT, FREEZE, ROCKS, HEX, BOMBS)' },
+        { icon: artId('icoSmash'), text: `THE REST IS THE HAMMER: ${Math.round(OWNER_RULES.hammer * 100)}% OF YOUR MAX HP THROUGH SHIELDS. NO TURN OF HIS TAKES MORE THAN ${Math.round(OWNER_RULES.capOnYou * 100)}%` },
+        { icon: 'shieldIcon', text: `NO TURN TAKES MORE THAN ${Math.round(TURBO.turnCap * 100)}% OF HIS HP. AT 75 / 50 / 25% HE HITS ${Math.round(OWNER_RULES.phaseDmg * 100)}% HARDER EACH TIME` },
       ],
-      win: 'OUTLAST HIM. BEAT HIM AND THE RUN IS WON',
+      win: 'EVERY 10% OF HIS HP YOU TAKE SCORES. BEAT HIM AND THE RUN IS WON',
     };
   return rulesOf(boss, c);
 }

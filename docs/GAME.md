@@ -79,15 +79,19 @@ route choice; the loop's opener plays without one), for both machines, never las
 LUCKY NIGHT (2 more wilds a reel), SHOWDOWN (every hit x1.5), IRON NIGHT (shields block x2), FAST NIGHT (abilities 1
 turn faster, meters fill x1.5). Shown on the HOUSE EDGE screen, the path pick, the side panel and the fight label.
 Sim GREEN: loops cleared median 4 -> 5.
-**THE OWNER, the TURBO boss** (user, 2026-10-14: a new boss, insanely hard): loop 5's boss is THE OWNER, the man who
-owns the casino (`OWNER` in `src/core/enemies.ts`, his office in the room's column). EVERY TRICK IN THE BOOK: every 2
-turns he cheats a new way (slime, a theft, a freeze, rocks, a hex, bombs, in turn). His HP is 8 loop bosses' worth
-(TURBO.hp, x the loop's growth), his hits x1.2 and they skip the one-turn cap on you, and no turn takes more than 6% of
-his HP (so no build one-shots him). Beating him ends the run, won (YOU BROKE THE BANK, the pot pays x3, achievement
-BROKE THE BANK): a broken build or a bug can't go on forever. Aim ~0.1% of the runs that reach him: the bot (GREEN,
-399 reached) beat him 0 times. His damage is what holds him (playtest: he kills in 2-4 hits; with his damage cut to a
-third a few TESLA builds win); the turn cap stops one-shots. Reach rate by machine (GREEN riders): KNIGHT 20%, JUKEBOX
-35%, JOKER 62%, TESLA 84%, BANKROLL 86% (the loop 3 Dealer is the wall). Each loop multiplies enemy HP and damage,
+**THE OWNER, the TURBO boss** (user, 2026-10-14: a new boss, insanely hard; then: make him a fight, not a wall): loop
+5's boss, the man who owns the casino (`OWNER`, `OWNER_RULES`, `TURBO` in `src/core/enemies.ts`; his office in the room's
+column). Every 2 turns he cheats: every other time a new trick (slime, a theft, a freeze, rocks, a hex, bombs), the rest
+THE HAMMER, 40% of your max HP through shields, named on his HUD before it lands (THE HAMMER IN 2). No turn of his takes
+more than 45% of your max HP, but every turn he takes raises that cap and his hits by 6%, and at 75 / 50 / 25% of his
+HP he hits 15% harder each time (a banner: HE LOOSENS HIS TIE, HE STANDS UP, HE GOES ALL IN). No turn takes more than
+10% of his HP. His HP is 12 loop bosses' worth. Beating him ends the run, won (YOU BROKE THE BANK, achievement BROKE
+THE BANK); each 10% of his HP you take scores. Sim (GREEN, 300 meetings): beaten 0, fights 16 turns median, his HP left
+74% median (40% at the 10th percentile). Reach him (GREEN riders): KNIGHT 12%, JUKEBOX 32%, JOKER 66%, TESLA 84%,
+BANKROLL 86% (the loop 3 Dealer is the wall for KNIGHT and JUKEBOX).
+**Loops get harder (user, 2026-10-14):** ENDLESS growth ramps faster (ramp 0.05 -> 0.1) and the loop HOUSE and WHEEL are
+as big as the loop Dealer (5 / 5 / 6 loop bosses' base). Loops cleared (GREEN riders, L1-4): KNIGHT 80/79/31/60, TESLA
+91/95/99/98, JUKEBOX 81/79/77/64, JOKER 94/91/93/82, BANKROLL 97/98/96/94 (was ~90/90/82/91 overall). Each loop multiplies enemy HP and damage,
 and the multiplier grows every loop, so it gets harder exponentially in theory. Playtesters still reached loop 5,
 so that isn't happening in practice (see ROADMAP).
 

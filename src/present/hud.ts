@@ -40,6 +40,7 @@ export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> 
   houseTake: { icon: artId('icoRake'), label: "HOUSE'S TAKE" },
   deal: { icon: artId('icoShuffle'), label: 'BUST' },
   owner: { icon: artId('icoGavel'), label: 'EVERY TRICK' },
+  hammer: { icon: artId('icoSmash'), label: 'THE HAMMER' },
 };
 
 /** Displayed (tweened) values for one side's bars — never read from game state mid-animation. */

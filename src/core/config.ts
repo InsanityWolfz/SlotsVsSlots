@@ -99,8 +99,9 @@ export type AbilityKind =
   | 'bets'
   // THE GATEKEEPER (fight 4 of every act): repossesses a cell until the act's boss falls
   | 'repo'
-  // THE OWNER (ENDLESS loop 5): EVERY TRICK IN THE BOOK, a different enemy's trick each time
-  | 'owner';
+  // THE OWNER (ENDLESS loop 5): EVERY TRICK IN THE BOOK, a different enemy's trick each time; every other one is THE HAMMER
+  | 'owner'
+  | 'hammer';
 export interface AbilityDef {
   kind: AbilityKind;
   /** Enemy turns per charge. */

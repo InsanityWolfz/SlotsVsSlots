@@ -23,7 +23,7 @@ import {
 } from './relics';
 import { Rng } from './rng';
 import { effectiveAbility, STAKE, stakeOf } from './stakes';
-import { ENDLESS, GATEKEEPER, OWNER_TRICKS, TUNE, WHEEL_RULES, wheelChipShare } from './enemies';
+import { ENDLESS, GATEKEEPER, OWNER_RULES, OWNER_TRICKS, TUNE, WHEEL_RULES, wheelChipShare } from './enemies';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
 // houseSkim 2 -> 0 (BOSS_REDESIGN 2): the House's hidden chip skim drained CASSIDY's rain (her House ran 32 turns).
 export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.5 };
@@ -261,6 +261,8 @@ export class Fight {
   private enemyTurnHp = 0;
   /** THE OWNER: tricks played so far (the next one is OWNER_TRICKS[n % length]). */
   private ownerTricks = 0;
+  /** THE OWNER's phase (0, then 1-3 at 75 / 50 / 25% of his HP). */
+  ownerPhase = 0;
   /** GLASS: payline reels whose GLASS shattered this spin (the cells lose it once the spin settles). */
   private glassBreaks: number[] = [];
   /** SECOND PAYLINE's groups are resolving (no chips, no heals). */
@@ -1727,7 +1729,9 @@ export class Fight {
   /** Enemy damage: the fight's knob x ENDLESS (LAST CALL after enemy turn 40) x ATTRITION (act 3). */
   private enemyDmgMul(events?: CombatEvent[]): number {
     // The fight's damage knob (TUNE.enemyDmg, elites hit harder, endless loops); it used to apply only in endless.
-    let mul = (this.cfg.enemy.dmgMul ?? 1) * (this.cfg.enemy.stakeDmg ?? 1) * (this.cfg.enemy.lineDmg ?? 1);
+    let mul = (this.cfg.enemy.dmgMul ?? 1) * (this.cfg.enemy.stakeDmg ?? 1) * (this.cfg.enemy.lineDmg ?? 1) * (1 + OWNER_RULES.phaseDmg * this.ownerPhase);
+    // THE OWNER escalates every turn (OWNER_RULES.rise).
+    if (this.cfg.enemy.turboCap) mul *= 1 + OWNER_RULES.rise * Math.floor(this.turn / 2);
     if (this.cfg.enemy.endless) {
       const late = Math.floor(this.turn / 2) - ENDLESS.lastCall;
       if (late > 0 && !this.lastCall && events) {
@@ -1889,8 +1893,8 @@ export class Fight {
     let hpDamage = Math.min(target.hp, amount - blocked);
     // ONE-TURN CAP on you: no turn takes more than 40% of your max HP (60% for bosses): no turn-2 one-shots (EXPERT_PLAYTEST_3 E2).
     if (target.side === 'player') {
-      // (THE TURBO isn't held to it: it's built to end runs.)
-      const capShare = this.cfg.enemy.turboCap ? 1 : this.isDealer && !this.bigTurn ? TUNE.dealerQuietCap : this.isBoss || this.isWheel || this.isDealer ? TUNE.bossTurnCap : TUNE.turnCap;
+      // (THE OWNER has his own, higher cap: OWNER_RULES.capOnYou.)
+      const capShare = this.cfg.enemy.turboCap ? OWNER_RULES.capOnYou + OWNER_RULES.rise * Math.floor(this.turn / 2) : this.isDealer && !this.bigTurn ? TUNE.dealerQuietCap : this.isBoss || this.isWheel || this.isDealer ? TUNE.bossTurnCap : TUNE.turnCap;
       const cap = Math.round(target.maxHp * capShare);
       hpDamage = Math.max(0, Math.min(hpDamage, cap - this.playerTurnHp));
       this.playerTurnHp += hpDamage;
@@ -1918,6 +1922,14 @@ export class Fight {
   }
 
   private checkDeath(c: Combatant, events: CombatEvent[]): void {
+    // THE OWNER's phases: each threshold he passes, he gets harder (once each).
+    if (c.side === 'enemy' && this.cfg.enemy.turboCap && c.hp > 0) {
+      const phase = OWNER_RULES.phases.filter((t) => c.hp <= c.maxHp * t).length;
+      if (phase > this.ownerPhase) {
+        this.ownerPhase = phase;
+        events.push({ type: 'ownerPhase', side: 'enemy', phase });
+      }
+    }
     if (this.insurancePending && c.side === 'player' && c.hp > 0) {
       this.insurancePending = false;
       c.shield += NEW_RELIC.insuranceShield;
@@ -2428,7 +2440,7 @@ export class Fight {
     }
     if (me.charge >= ab.every) {
       me.charge = 0;
-      events.push({ type: 'abilityCharge', side: me.side, charge: ab.every, every: ab.every, kind: ab.kind });
+      events.push({ type: 'abilityCharge', side: me.side, charge: ab.every, every: ab.every, kind: this.shownKind(ab) });
       // The Hourglass slowed this one down.
       if (me.side === 'enemy' && this.sides.player.relics.has('sandglass') && ab.kind !== 'deal') events.push({ type: 'relic', side: 'player', relic: 'sandglass' });
       // THE OWNER: EVERY TRICK IN THE BOOK, the next trick each time (it's announced as that trick).
@@ -2437,7 +2449,12 @@ export class Fight {
       this.fireAbility(me, fire, events);
       if (this.over) return;
     }
-    events.push({ type: 'abilityCharge', side: me.side, charge: me.charge, every: ab.every, kind: ab.kind });
+    events.push({ type: 'abilityCharge', side: me.side, charge: me.charge, every: ab.every, kind: this.shownKind(ab) });
+  }
+
+  /** The ability as its HUD shows it: THE OWNER's is his next trick (THE HAMMER is telegraphed this way). */
+  private shownKind(ab: AbilityDef): AbilityDef['kind'] {
+    return ab.kind === 'owner' ? OWNER_TRICKS[this.ownerTricks % OWNER_TRICKS.length].kind : ab.kind;
   }
 
   private fireAbility(me: Combatant, ab: AbilityDef, events: CombatEvent[]): void {
@@ -2494,6 +2511,12 @@ export class Fight {
         return this.repossess(me, foe, events);
       case 'deal':
         return this.deal(me, foe, events);
+      case 'hammer': {
+        // THE OWNER's HAMMER: a share of your max HP, through shields (his phase raises it with his other hits).
+        const amount = unitsRound(foe.maxHp * OWNER_RULES.hammer * (1 + OWNER_RULES.phaseDmg * this.ownerPhase));
+        this.hit(me, foe, amount, [], events, true, undefined, true);
+        return;
+      }
       case 'launder':
         // Takes your chips and turns them into its HP (x3).
         this.chipsEaten += ab.power;

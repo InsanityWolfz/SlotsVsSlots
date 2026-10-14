@@ -354,6 +354,7 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
     houseTake: `RAKES YOUR GROUPS FOR ${p} TURNS`,
     deal: 'DEALS A BUST',
     owner: 'CHEATS A NEW WAY EACH TIME',
+    hammer: 'HITS 40% OF YOUR MAX HP THROUGH SHIELDS',
   };
   return what[e.ability.kind] ?? '';
 }

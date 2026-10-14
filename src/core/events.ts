@@ -169,6 +169,8 @@ export type CombatEvent =
   | { type: 'junk'; from: SideId; to: SideId; reels: number[]; inserts: CellRef[] }
   | { type: 'fizzle'; side: SideId; reels: number[]; symbol: SymbolId }
   /** Enemy special meter after this turn: `charge` of `every`. */
+  /** THE OWNER passed 75 / 50 / 25% of his HP (phase 1 / 2 / 3): his hits are harder from here. */
+  | { type: 'ownerPhase'; side: SideId; phase: number }
   | { type: 'abilityCharge'; side: SideId; charge: number; every: number; kind: AbilityKind }
   /** Header for an ability firing; its effects follow as regular events. */
   | { type: 'ability'; side: SideId; kind: AbilityKind; power: number }
