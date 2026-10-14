@@ -5,7 +5,7 @@ import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../cor
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
-import { bjMax, bjState, bjTotal, BJ, DICE, diceMax, extraPlays, ROULETTE, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
+import { bjMax, bjState, bjTotal, BJ, CLAW, CLAW_PRIZES, clawWon, DICE, diceMax, extraPlays, RACE, raceMax, RATS, SCRATCH, scratchState, ROULETTE, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -101,6 +101,8 @@ type Btn = Hit & {
   quiet?: boolean;
   /** A primary button's face colour (RED OR BLACK's BLACK); the default is red. */
   tint?: string;
+  /** Only a hit area (the screen draws what's under it: SCRATCH-OFF's panels). */
+  ghost?: boolean;
 };
 
 
@@ -223,6 +225,10 @@ function drawDie(ctx: CanvasRenderingContext2D, x: number, y: number, face: numb
 }
 /** RED OR BLACK: the wheel's centre, its offscreen size (drawn at half size, scaled x2), and the bet column's x. */
 const RL = { wheelX: CX - 170, wheelY: 300, px: 112, betX: CX + 220 };
+/** SCRATCH-OFF's ticket: the first panel's centre, the panel step and size. */
+const SC = { x: CX - 300, y: 250, gap: 104, cell: 92 };
+/** CLAW MACHINE: the first prize's x, the step between prizes, the pit's y, the claw's resting x. */
+const CW = { x0: CX - 300, gap: 130, pitY: 450, home: CX - 170 };
 /** A roulette wheel at `angle` with its ball, drawn into a small canvas (pocket k sits at angle + k * step, 0 = up). */
 function drawWheel(g: CanvasRenderingContext2D, angle: number, ball: { a: number; r: number }): void {
   const n = WHEEL_ORDER.length;
@@ -457,6 +463,23 @@ export class RunScreens {
   private dcDice: [number, number] = [3, 4];
   private dcT = 1;
   private dcMsg: EncounterResult | null = null;
+  /** RAT RACE: each rat's run (0 start .. 1 the line), the rat you backed, the last race. */
+  private rrPos: number[] = [0, 0, 0, 0];
+  private rrPick = -1;
+  private rrMsg: EncounterResult | null = null;
+  /** SCRATCH-OFF: panels you've scratched (panel -> prize), the whole printed grid once done, the pop on the last one. */
+  private scReveal: Record<number, number> = {};
+  private scGrid: number[] | null = null;
+  private scMsg: EncounterResult | null = null;
+  private scPop = -1;
+  private scT = 1;
+  /** CLAW MACHINE: where the claw is (x, and 0 up .. 1 down), shut or open, carrying its target, the last go. */
+  private cwX = CW.home;
+  private cwY = 0;
+  private cwShut = false;
+  private cwCarry = false;
+  private cwTarget = -1;
+  private cwMsg: EncounterResult | null = null;
   /** Shop purchases in flight to YOUR BUILD. */
   private flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   private picked = -1;
@@ -1417,6 +1440,26 @@ export class RunScreens {
       this.dcT = 1;
       return this.diceButtons();
     }
+    if (this.encId === 'rats') {
+      this.rrPos = [0, 0, 0, 0];
+      this.rrPick = -1;
+      this.rrMsg = null;
+      return this.ratButtons();
+    }
+    if (this.encId === 'scratch') {
+      this.scReveal = {};
+      this.scGrid = null;
+      this.scMsg = null;
+      const st = scratchState(run);
+      if (st) st.picked.forEach((pk, k) => (this.scReveal[pk] = st.shown[k]));
+      return this.scratchButtons();
+    }
+    if (this.encId === 'claw') {
+      this.cwX = CW.home;
+      this.cwY = 0;
+      this.cwMsg = null;
+      return this.clawButtons();
+    }
     if (this.encId === 'bj') {
       this.bjShow = null;
       this.bjMsg = null;
@@ -1455,6 +1498,9 @@ export class RunScreens {
     if (this.encId === 'hilo') return this.playHilo(i);
     if (this.encId === 'bj') return this.playBj(i);
     if (this.encId === 'dice') return this.playDice(i);
+    if (this.encId === 'rats') return this.playRats(i);
+    if (this.encId === 'scratch') return this.playScratch(i);
+    if (this.encId === 'claw') return this.playClaw(i);
     const res = this.cb.onEncounter(i);
     if (!res) return;
     this.encResult = res;
@@ -2890,6 +2936,9 @@ export class RunScreens {
     else if (def.id === 'hilo') this.drawHilo(ctx, time);
     else if (def.id === 'bj') this.drawBj(ctx, time);
     else if (def.id === 'dice') this.drawDice(ctx, time);
+    else if (def.id === 'rats') this.drawRats(ctx, time);
+    else if (def.id === 'scratch') this.drawScratch(ctx, time);
+    else if (def.id === 'claw') this.drawClaw(ctx, time);
     else {
       this.panel(ctx, CX - 330, 120, 660, 300, '#7a3aa8');
       if (!res) {
@@ -2972,6 +3021,339 @@ export class RunScreens {
     ctx.fillRect(CX - 430, 104, 860, h);
     ctx.fillStyle = 'rgba(255,255,255,0.04)';
     for (let y = 104; y < 104 + h; y += 8) ctx.fillRect(CX - 430, y, 860, 2);
+  }
+
+  // ---- RAT RACE, SCRATCH-OFF, CLAW MACHINE (user's picks, 2026-10-14) -----------------------------------------------
+
+  /** RAT RACE: the bet stepper, a button per rat (its odds on it), WALK AWAY. */
+  private ratButtons(): void {
+    const run = this.run!;
+    const max = raceMax(run);
+    this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
+    this.rlSpinNo = (run.encounterPlays ?? 0) + 1;
+    const steps = this.betStepper(() => raceMax(this.run!));
+    const rats = RATS.map((r, k) => this.btn(`${r.name} X${r.pays}`, RL.betX, 330 + k * 56, 300, 46, () => this.playRats(k)));
+    const walk = this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playRats(RATS.length));
+    for (const b of [...steps, ...rats]) b.enabled = max >= 1;
+    this.buttons = [...steps, ...rats, walk];
+  }
+
+  /** One race: the rats run (the engine has already picked the winner; it crosses first), then the bet pays. */
+  private playRats(i: number): void {
+    const before = this.run?.player.chips ?? 0;
+    const res = this.cb.onEncounter(i, this.rlBet);
+    if (!res) return;
+    this.chipsLanding = (this.run?.player.chips ?? 0) - before;
+    if (!res.race) {
+      this.rrMsg = res;
+      this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+      return;
+    }
+    const race = res.race;
+    this.rrMsg = null;
+    this.rrPick = race.pick;
+    this.encSkip = false;
+    this.buttons = [
+      this.minorBtn('SKIP', CX, 636, 200, 44, () => {
+        this.encSkip = true;
+        this.slotClock.skip();
+      }),
+    ];
+    // Each rat's pace: bursts and stalls; the winner's pace is scaled so it crosses first, at the end.
+    const ends = RATS.map((_, k) => (k === race.winner ? 1 : 0.78 + Math.random() * 0.18));
+    const wob = RATS.map(() => [Math.random() * 6, 2 + Math.random() * 3]);
+    void this.slotClock
+      .tween({
+        from: 0,
+        to: 1,
+        dur: 3.2,
+        onUpdate: (t) => {
+          this.rrPos = ends.map((e, k) => Math.min(1, e * (t + 0.05 * Math.sin(t * wob[k][1] * 6 + wob[k][0]) * t * (1 - t) * 4)));
+          if (!this.encSkip && Math.random() < 0.08) this.sounds.tick(t);
+        },
+      })
+      .then(() => {
+        this.slotClock.skipping = false;
+        this.rrPos = ends;
+        this.landChips();
+        if (this.mode !== 'encounter') return;
+        this.rrMsg = res;
+        this.encOutcomeSound(res);
+        if (res.more) this.ratButtons();
+        else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+      });
+  }
+
+  /** RAT RACE: four lanes on the felt, the rats, the finish line, your bet and the last result. */
+  private drawRats(ctx: CanvasRenderingContext2D, time: number): void {
+    const run = this.run!;
+    this.felt(ctx);
+    drawText(ctx, `RACE ${Math.min(this.rlSpinNo, RACE.races + extraPlays(run))} OF ${RACE.races + extraPlays(run)}`, CX, 78, 2, COLORS.textDim);
+    const x0 = CX - 400;
+    const x1 = CX - 50;
+    const cloth = ['#ff4a3a', '#4fa3ff', '#ffd23f', '#5aff7a'];
+    RATS.forEach((r, k) => {
+      const y = 170 + k * 80;
+      ctx.fillStyle = k % 2 ? '#0c3420' : '#10401f';
+      ctx.fillRect(x0 - 10, y - 30, x1 - x0 + 40, 60);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(x0 - 10, y + 29, x1 - x0 + 40, 2);
+      const p = this.rrPos[k] ?? 0;
+      const x = x0 + p * (x1 - x0);
+      const running = p > 0 && p < 1;
+      const frame = running && Math.floor(time * 12 + k) % 2 ? 'ratRacer2' : 'ratRacer';
+      drawSprite(ctx, artId(frame), x, y - 4, 3);
+      ctx.fillStyle = cloth[k];
+      ctx.fillRect(x - 9, y - 16, 15, 9);
+      drawText(ctx, `${k + 1}`, x - 2, y - 12, 1.25, '#140c1c');
+      drawText(ctx, `${r.name}  X${r.pays}`, x0 - 4, y - 22, 1.25, this.rrPick === k ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
+    });
+    // The finish line: a checkered post.
+    for (let y = 140; y < 500; y += 10) {
+      ctx.fillStyle = Math.floor(y / 10) % 2 ? '#f0ece6' : '#141018';
+      ctx.fillRect(x1 + 26, y, 6, 10);
+    }
+    drawText(ctx, `YOUR BET (MAX ${raceMax(run)})`, RL.betX, 150, 2, COLORS.textDim);
+    drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
+    drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
+    drawText(ctx, 'YOUR RAT FIRST PAYS YOUR BET TIMES ITS ODDS', RL.betX, 530, 1.25, COLORS.textDim);
+    const m = this.rrMsg;
+    if (m) {
+      drawText(ctx, m.title, CX - 200, 478, 2.5, m.good ? COLORS.goldLight : COLORS.text, { punch: 1 + 0.03 * Math.sin(time * 6) });
+      if (m.text) drawText(ctx, m.text, CX - 200, 516, 2, m.good ? COLORS.goldLight : '#ff8a7a');
+    }
+  }
+
+  /** SCRATCH-OFF: BUY A TICKET, or the panels of the ticket in hand. */
+  private scratchButtons(): void {
+    const run = this.run!;
+    const st = scratchState(run);
+    this.encChoices = encounterChoices(run);
+    if (!st) {
+      const buy = this.btn(`BUY A TICKET: ${SCRATCH.price} CHIPS`, RL.betX, 420, 340, 56, () => this.playScratch(0));
+      buy.enabled = run.player.chips >= SCRATCH.price;
+      this.buttons = [buy, this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playScratch(9))];
+      return;
+    }
+    // The nine panels, laid over the ticket.
+    this.buttons = Array.from({ length: 9 }, (_, k) => {
+      const b = this.btn('', SC.x + (k % 3) * SC.gap, SC.y + Math.floor(k / 3) * SC.gap, SC.cell, SC.cell, () => this.playScratch(k));
+      b.enabled = !st.picked.includes(k);
+      b.ghost = true;
+      return b;
+    });
+  }
+
+  private playScratch(i: number): void {
+    const before = this.run?.player.chips ?? 0;
+    const res = this.cb.onEncounter(i);
+    if (!res) return;
+    this.chipsLanding = (this.run?.player.chips ?? 0) - before;
+    this.landChips();
+    if (res.scratch) {
+      this.scReveal[res.scratch.panel] = res.scratch.sym;
+      this.scPop = res.scratch.panel;
+      void this.ui.tween({ from: 0, to: 1, dur: 0.35, onUpdate: (v) => (this.scT = v) });
+      this.sounds.tick(0.5);
+      if (res.scratch.grid) {
+        this.scGrid = res.scratch.grid;
+        this.scMsg = res;
+        this.encOutcomeSound(res);
+        if (res.more) {
+          const run = this.run!;
+          const again = this.btn(`BUY ANOTHER: ${SCRATCH.price} CHIPS`, RL.betX, 420, 340, 56, () => {
+            this.scReveal = {};
+            this.scGrid = null;
+            this.scMsg = null;
+            this.playScratch(0);
+          });
+          again.enabled = run.player.chips >= SCRATCH.price;
+          this.buttons = [again, this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playScratch(9))];
+        } else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+        return;
+      }
+      return this.scratchButtons();
+    }
+    if (res.more) {
+      // A ticket bought: scratch it.
+      this.scReveal = {};
+      this.scGrid = null;
+      this.scMsg = null;
+      return this.scratchButtons();
+    }
+    this.scMsg = res;
+    this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+  }
+
+  /** SCRATCH-OFF: the ticket (silver panels; scratched ones show their prize), the prize list, the result. */
+  private drawScratch(ctx: CanvasRenderingContext2D, time: number): void {
+    const run = this.run!;
+    this.felt(ctx);
+    const st = scratchState(run);
+    const art: SpriteId[] = ['chip', 'goldbar', artId('slotHeart'), artId('slotUp'), artId('relicSym')];
+    // The ticket.
+    const tx = SC.x - SC.cell / 2 - 26;
+    const ty = SC.y - SC.cell / 2 - 70;
+    const tw = SC.gap * 2 + SC.cell + 52;
+    const th = SC.gap * 2 + SC.cell + 100;
+    ctx.fillStyle = COLORS.gold;
+    ctx.fillRect(tx - 6, ty - 6, tw + 12, th + 12);
+    ctx.fillStyle = '#f4ead0';
+    ctx.fillRect(tx, ty, tw, th);
+    ctx.fillStyle = '#c81a2a';
+    ctx.fillRect(tx, ty, tw, 46);
+    drawText(ctx, 'LUCKY SCRATCH', tx + tw / 2, ty + 24, 2.5, COLORS.goldLight);
+    for (let k = 0; k < 9; k++) {
+      const x = SC.x + (k % 3) * SC.gap;
+      const y = SC.y + Math.floor(k / 3) * SC.gap;
+      const sym = this.scReveal[k] ?? (this.scGrid ? this.scGrid[k] : undefined);
+      const scratched = this.scReveal[k] !== undefined;
+      if (sym === undefined) {
+        ctx.fillStyle = '#9a9aaa';
+        ctx.fillRect(x - SC.cell / 2, y - SC.cell / 2, SC.cell, SC.cell);
+        ctx.fillStyle = '#c8c8d4';
+        for (let s = 0; s < 5; s++) ctx.fillRect(x - SC.cell / 2 + 6 + s * 16, y - SC.cell / 2 + 8, 8, SC.cell - 16);
+        if (st) drawText(ctx, '?', x, y, 3, '#6a6a7a');
+      } else {
+        ctx.fillStyle = scratched ? '#fffaf0' : '#e8e0c8';
+        ctx.fillRect(x - SC.cell / 2, y - SC.cell / 2, SC.cell, SC.cell);
+        const pop = this.scPop === k ? 0.6 + 0.4 * this.scT : 1;
+        ctx.globalAlpha = scratched ? 1 : 0.45;
+        drawSprite(ctx, art[sym], x, y, 3 * pop);
+        ctx.globalAlpha = 1;
+      }
+    }
+    if (!st && !this.scGrid) drawSprite(ctx, artId('scratchCoin'), tx + tw - 20, ty + th - 20, 3);
+    // The prizes, on the right.
+    drawText(ctx, 'THREE OF A KIND WINS', RL.betX, 140, 2, COLORS.goldLight);
+    const names = [`${SCRATCH.smallChips} CHIPS`, `${SCRATCH.bigChips} CHIPS`, 'A HEAL', 'AN UPGRADE', 'A RELIC'];
+    names.forEach((n, k) => {
+      drawSprite(ctx, art[k], RL.betX - 110, 186 + k * 38, 2);
+      drawText(ctx, n, RL.betX - 80, 186 + k * 38, 1.75, COLORS.text, { align: 'left' });
+    });
+    if (st) drawText(ctx, `SCRATCH ${SCRATCH.scratches - st.picked.length} MORE`, RL.betX, 400, 2.5, COLORS.goldLight, { punch: 1 + 0.03 * Math.sin(time * 6) });
+    const m = this.scMsg;
+    if (m) {
+      drawText(ctx, m.title, RL.betX, 490, 3, m.good ? COLORS.goldLight : m.good === false ? '#ff8a7a' : COLORS.text);
+      if (m.text) drawText(ctx, m.text, RL.betX, 530, 2, m.good ? COLORS.goldLight : COLORS.text);
+    }
+  }
+
+  /** CLAW MACHINE: a button per prize still in the pit (its grip under it), WALK AWAY. */
+  private clawButtons(): void {
+    const run = this.run!;
+    this.rlSpinNo = (run.encounterPlays ?? 0) + 1;
+    this.encChoices = encounterChoices(run);
+    const aims = CLAW_PRIZES.map((p, k) => {
+      const b = this.btn(`GO FOR ${p.name}`, RL.betX, 300 + k * 74, 320, 50, () => this.playClaw(k));
+      b.enabled = !this.encChoices[k]?.disabled;
+      return b;
+    });
+    this.buttons = [...aims, this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playClaw(CLAW_PRIZES.length))];
+  }
+
+  /** One go: the claw slides over, drops, shuts and lifts; the prize rides up, and holds or slips. */
+  private playClaw(i: number): void {
+    const before = this.run?.player.chips ?? 0;
+    const res = this.cb.onEncounter(i);
+    if (!res) return;
+    this.chipsLanding = (this.run?.player.chips ?? 0) - before;
+    if (!res.claw) {
+      this.cwMsg = res;
+      this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+      return;
+    }
+    const claw = res.claw;
+    this.cwMsg = null;
+    this.cwTarget = claw.prize;
+    this.encSkip = false;
+    this.buttons = [
+      this.minorBtn('SKIP', CX, 636, 200, 44, () => {
+        this.encSkip = true;
+        this.slotClock.skip();
+      }),
+    ];
+    const targetX = CW.x0 + claw.prize * CW.gap;
+    void this.slotClock
+      .tween({
+        from: 0,
+        to: 1,
+        dur: 3,
+        onUpdate: (t) => {
+          // 0-0.3 slide, 0.3-0.5 drop, 0.5-0.6 shut, 0.6-0.85 lift (it slips at 0.75 if it doesn't hold), 0.85-1 home.
+          const home = CW.home;
+          if (t < 0.3) {
+            this.cwX = home + (targetX - home) * (t / 0.3);
+            this.cwY = 0;
+          } else if (t < 0.5) {
+            this.cwX = targetX;
+            this.cwY = (t - 0.3) / 0.2;
+          } else if (t < 0.6) this.cwY = 1;
+          else if (t < 0.85) this.cwY = 1 - (t - 0.6) / 0.25;
+          else {
+            this.cwY = 0;
+            this.cwX = targetX + (home - targetX) * ((t - 0.85) / 0.15);
+          }
+          this.cwShut = t >= 0.5 && t < 0.97;
+          this.cwCarry = t >= 0.55 && (claw.held ? t < 0.97 : t < 0.75);
+        },
+      })
+      .then(() => {
+        this.slotClock.skipping = false;
+        this.cwX = CW.home;
+        this.cwY = 0;
+        this.cwShut = false;
+        this.cwCarry = false;
+        this.landChips();
+        if (this.mode !== 'encounter') return;
+        this.cwMsg = res;
+        this.encOutcomeSound(res);
+        if (res.more) this.clawButtons();
+        else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+      });
+  }
+
+  /** CLAW MACHINE: the glass cabinet, the prizes in the pit (won ones gone), the claw, the result. */
+  private drawClaw(ctx: CanvasRenderingContext2D, time: number): void {
+    const run = this.run!;
+    this.felt(ctx);
+    drawText(ctx, `GO ${Math.min(this.rlSpinNo, CLAW.tries + extraPlays(run))} OF ${CLAW.tries + extraPlays(run)}  -  ${CLAW.price} CHIPS A GO`, CX, 78, 2, COLORS.textDim);
+    // The cabinet.
+    const cx0 = CW.x0 - 100;
+    const cw = CW.gap * 2 + 200;
+    ctx.fillStyle = '#c81a2a';
+    ctx.fillRect(cx0 - 10, 120, cw + 20, 420);
+    ctx.fillStyle = '#1a1030';
+    ctx.fillRect(cx0, 150, cw, 380);
+    ctx.fillStyle = 'rgba(160,220,255,0.06)';
+    ctx.fillRect(cx0, 150, cw, 380);
+    drawText(ctx, 'GRAB-A-PRIZE', cx0 + cw / 2, 136, 2, COLORS.goldLight);
+    // The rail and the claw.
+    ctx.fillStyle = '#8a8a9a';
+    ctx.fillRect(cx0, 166, cw, 6);
+    const clawY = 200 + this.cwY * 230;
+    ctx.fillStyle = '#5a5a6a';
+    ctx.fillRect(this.cwX - 2, 170, 4, clawY - 186);
+    const won = clawWon(run);
+    const art: SpriteId[] = ['chip', artId('enhGold'), artId('relicSym')];
+    CLAW_PRIZES.forEach((p, k) => {
+      const x = CW.x0 + k * CW.gap;
+      const carried = this.cwCarry && this.cwTarget === k;
+      if (won.includes(k) && !carried) return;
+      const y = carried ? clawY + 46 : CW.pitY;
+      drawSprite(ctx, artId('prizeBall'), x, y, 5);
+      drawSprite(ctx, art[k], x, y - 4, 2);
+      if (!carried) {
+        drawText(ctx, p.name, x, CW.pitY + 52, 1.5, COLORS.text);
+        drawText(ctx, p.grip, x, CW.pitY + 72, 1.25, k === 0 ? '#7dff7a' : k === 1 ? '#ffd23f' : '#ff8a7a');
+      }
+    });
+    drawSprite(ctx, artId(this.cwShut ? 'clawGrabberShut' : 'clawGrabber'), this.cwX, clawY, 4);
+    const m = this.cwMsg;
+    if (m) {
+      drawText(ctx, m.title, RL.betX, 200, 3, m.good ? COLORS.goldLight : '#ff8a7a', { punch: 1 + 0.03 * Math.sin(time * 6) });
+      if (m.text) drawText(ctx, m.text, RL.betX, 240, 2, m.good ? COLORS.goldLight : COLORS.textDim);
+    } else drawText(ctx, 'PICK A PRIZE TO GO FOR', RL.betX, 220, 2, COLORS.textDim);
   }
 
   /** UNDER OR OVER: two dice on the felt (tumbling, then landed), your bet, the payouts, the last roll. */
@@ -3727,6 +4109,7 @@ export class RunScreens {
 
 
   private drawButton(ctx: CanvasRenderingContext2D, b: Btn, time: number): void {
+    if (b.ghost) return;
     // Only the screen's next step breathes; secondary buttons sit still.
     const pulse = b.minor || b.quiet || !b.enabled ? 1 : 1 + 0.02 + 0.02 * Math.sin((time * Math.PI * 2) / 1.6);
     ctx.save();

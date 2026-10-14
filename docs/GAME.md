@@ -37,6 +37,15 @@ which Charms and relics to build.
     -1 to 0).
   - UNDER OR OVER: dice. Bet chips, call UNDER 7 / SEVEN / OVER 7. Under/over pay 1 to 1 (a seven gives the bet
     back: about even); SEVEN pays 4 to 1 (the long shot, with the house edge). Up to 3 rolls a visit. Chips only.
+  - RAT RACE (user's pick, 2026-10-14): bet chips (1 to 15) on one of four rats, odds on each (WHISKERS X2, CHEDDAR X3,
+    SEWER KING X5, LONGSHOT LOU X10; about a 10% edge in the odds), and watch them run. Two races a visit.
+  - SCRATCH-OFF: a ticket costs 6 chips; scratch 3 of its 9 panels (you pick which). Three of a kind wins: 12 or 25
+    chips, a heal of a quarter of your max HP (chips at full HP), an upgrade or a relic; about 1 ticket in 2 wins. The
+    ticket is printed when bought (a quit can't re-roll it). Two tickets a visit.
+  - CLAW MACHINE: 5 chips a go, three goes. The pit shows its three prizes up front: 15 CHIPS (EASY GRAB), 2 CHARMS
+    (TRICKY), A RELIC (HARD); pick one to go for. A won prize leaves the pit.
+  - Sim (1000 runs WHITE / GREEN, with the three in the encounter pool): KNIGHT 70 / 31 -> 32, TESLA 60 -> 61 / 39 -> 40,
+    JUKEBOX 66 -> 67 / 30 -> 34, JOKER 57 -> 60 / 34, BANKROLL 63 -> 64 / 40 -> 41.
   - The offers (THE BLOOD BANK, THE PAWN SHOP, THE LOAN SHARK) are gone (user, 2026-10-14: nobody liked them; a saved
     stop becomes LUCKY SEVENS, a debt is forgiven). Sim, 1000 runs WHITE / GREEN: KNIGHT 66->69 / 34, TESLA 59->58 / 40,
     JUKEBOX 67->68 / 36->35, JOKER 58 / 45->44, BANKROLL 62->60 / 44.

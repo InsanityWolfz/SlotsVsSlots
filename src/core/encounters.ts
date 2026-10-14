@@ -58,12 +58,20 @@ export interface EncounterResult {
   pot?: number;
   /** The game goes on at this stop (more plays left): the stop isn't passed yet. */
   more?: boolean;
+  /** RAT RACE: which rat won, and the one you backed. */
+  race?: { winner: number; pick: number };
+  /** SCRATCH-OFF: the panel just scratched and what it showed; when the ticket's done, the whole grid. */
+  scratch?: { panel: number; sym: number; grid?: number[] };
+  /** CLAW MACHINE: the prize the claw went for, and whether it held on. */
+  claw?: { prize: number; held: boolean };
 }
 /** What the run lends an encounter: relics you could win, and an upgrade it can hand out. */
 export interface EncounterCtx {
   relics: RelicId[];
   /** Apply one upgrade (a level for a symbol or Charm you own); returns its name, or null if there's none to give. */
   upgrade: () => string | null;
+  /** Put 2 Charms on plain cells (a CHARM card the drafts could deal); returns its name, or null if none fits. */
+  charm: () => string | null;
 }
 export interface EncounterDef {
   id: string;
@@ -454,7 +462,192 @@ const UNDER_OR_OVER: EncounterDef = {
   },
 };
 
-export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, roulette: RED_OR_BLACK, hilo: HIGHER_OR_LOWER, bj: TWENTY_ONE, dice: UNDER_OR_OVER };
+// ---- RAT RACE (user's pick, 2026-10-14) ---------------------------------------------------------------------------
+
+/**
+ * RAT RACE (the alley's own): four rats, each with its odds on its card. Bet chips on one and watch them run; your rat
+ * first pays the bet times its odds. The house's edge is in the odds (about 10%). Two races a visit.
+ */
+export const RATS = [
+  { name: 'WHISKERS', pays: 2, p: 0.46 },
+  { name: 'CHEDDAR', pays: 3, p: 0.3 },
+  { name: 'SEWER KING', pays: 5, p: 0.16 },
+  { name: 'LONGSHOT LOU', pays: 10, p: 0.08 },
+];
+export const RACE = { maxBet: 15, races: 2 };
+export const raceMax = (run: RunState) => Math.min(tableLimit(run, RACE.maxBet), run.player.chips);
+const RAT_RACE: EncounterDef = {
+  id: 'rats',
+  name: 'RAT RACE',
+  blurb: '',
+  kind: 'game',
+  plays: RACE.races,
+  choices: (run) => [...RATS.map((r) => ({ label: r.name, text: `PAYS X${r.pays}`, disabled: raceMax(run) < 1 })), WALK],
+  play: (run, i, rng, _ctx, bet = 1) => {
+    if (i >= RATS.length || raceMax(run) < 1) return walked();
+    const stake = Math.max(1, Math.min(raceMax(run), Math.floor(bet)));
+    let roll = rng.next();
+    let winner = RATS.length - 1;
+    for (let k = 0; k < RATS.length; k++) {
+      if (roll < RATS[k].p) {
+        winner = k;
+        break;
+      }
+      roll -= RATS[k].p;
+    }
+    const won = winner === i;
+    const net = won ? stake * (RATS[i].pays - 1) : -stake;
+    run.player.chips += net;
+    return { title: `${RATS[winner].name} WINS!`, text: net > 0 ? `+${net} CHIPS` : `${net} CHIPS`, good: won, race: { winner, pick: i } };
+  },
+};
+
+// ---- SCRATCH-OFF (user's pick, 2026-10-14) -------------------------------------------------------------------------
+
+/**
+ * SCRATCH-OFF: buy a ticket, scratch 3 of its 9 panels. Three of a kind wins that prize (chips, a heal, an upgrade, a
+ * relic). The ticket is printed when you buy it (a quit can't re-roll it); which panels you scratch is up to you.
+ * Two tickets a visit. Chips back about what they cost, plus the rare prizes.
+ */
+export const SCRATCH = { price: 6, tickets: 2, scratches: 3, smallChips: 12, bigChips: 25, healShare: 0.25 };
+/** The prizes a panel can show, and how often a ticket wins each (the rest lose). */
+export const SCRATCH_PRIZES = [
+  { id: 'chips', p: 0.28 },
+  { id: 'bigchips', p: 0.08 },
+  { id: 'heal', p: 0.08 },
+  { id: 'star', p: 0.06 },
+  { id: 'relic', p: 0.02 },
+] as const;
+type ScratchState = { win: number; shown: number[]; picked: number[] };
+export const scratchState = (run: RunState): ScratchState | null =>
+  run.encounterState && 'picked' in run.encounterState ? (run.encounterState as unknown as ScratchState) : null;
+/** Tickets bought at this stop. */
+const scratchBought = (run: RunState) => Number((run.encounterState as { bought?: number } | undefined)?.bought ?? 0);
+const SCRATCH_OFF: EncounterDef = {
+  id: 'scratch',
+  name: 'SCRATCH-OFF',
+  blurb: '',
+  kind: 'game',
+  choices: (run) => {
+    const st = scratchState(run);
+    if (st) return [...Array.from({ length: 9 }, (_, k) => ({ label: `${k + 1}`, text: '', disabled: st.picked.includes(k) })), WALK];
+    return [{ label: 'BUY A TICKET', text: `${SCRATCH.price} CHIPS`, disabled: run.player.chips < SCRATCH.price }, WALK];
+  },
+  play: (run, i, rng, ctx) => {
+    const st = scratchState(run);
+    const bought = scratchBought(run);
+    if (!st) {
+      if (i !== 0 || run.player.chips < SCRATCH.price) return walked();
+      run.player.chips -= SCRATCH.price;
+      // Print the ticket: which prize it pays (or -1, none).
+      let roll = rng.next();
+      let win = -1;
+      for (let k = 0; k < SCRATCH_PRIZES.length; k++) {
+        if (roll < SCRATCH_PRIZES[k].p) {
+          win = k;
+          break;
+        }
+        roll -= SCRATCH_PRIZES[k].p;
+      }
+      run.encounterState = { win, shown: [], picked: [], bought: bought + 1 } as unknown as Record<string, number | number[]>;
+      return { title: '', text: '', good: null, more: true };
+    }
+    // Scratching a panel (WALK AWAY mid-ticket scratches the next one for you).
+    const panel = i < 9 && !st.picked.includes(i) ? i : [0, 1, 2, 3, 4, 5, 6, 7, 8].find((k) => !st.picked.includes(k))!;
+    const n = SCRATCH_PRIZES.length;
+    let sym: number;
+    if (st.win >= 0) sym = st.win;
+    else if (st.shown.length < 2) sym = rng.int(n);
+    // A losing ticket's third panel never makes three of a kind.
+    else sym = st.shown[0] === st.shown[1] ? (st.shown[0] + 1 + rng.int(n - 1)) % n : rng.int(n);
+    const shown = [...st.shown, sym];
+    const picked = [...st.picked, panel];
+    run.encounterState = { win: st.win, shown, picked, bought } as unknown as Record<string, number | number[]>;
+    if (picked.length < SCRATCH.scratches) return { title: '', text: '', good: null, more: true, scratch: { panel, sym } };
+    // Done: the rest of the grid prints, and the prize pays.
+    const grid = Array.from({ length: 9 }, () => -1);
+    picked.forEach((pk, k) => (grid[pk] = shown[k]));
+    for (let k = 0; k < 9; k++) if (grid[k] < 0) grid[k] = rng.int(n);
+    let title = 'NO LUCK';
+    let text = '';
+    if (st.win >= 0) {
+      const prize = SCRATCH_PRIZES[st.win].id;
+      title = 'WINNER!';
+      const chips = (c: number) => ((run.player.chips += c), `+${c} CHIPS`);
+      if (prize === 'chips') text = chips(SCRATCH.smallChips);
+      else if (prize === 'bigchips') text = chips(SCRATCH.bigChips);
+      else if (prize === 'heal') {
+        const p = run.player;
+        const hp = Math.min(p.maxHp - p.hp, Math.round((p.maxHp * SCRATCH.healShare) / UNIT) * UNIT);
+        // (At full HP a heal is nothing: it pays chips.)
+        if (hp > 0) {
+          p.hp += hp;
+          text = `+${hp} HP`;
+        } else text = chips(SCRATCH.smallChips);
+      } else if (prize === 'star') text = ctx.upgrade() ?? chips(SCRATCH.smallChips);
+      else {
+        const pool = ctx.relics.filter((r) => !run.player.relics.includes(r));
+        if (pool.length) {
+          const got = rng.pick(pool);
+          run.player.relics.push(got);
+          text = RELICS[got].name;
+        } else text = chips(SCRATCH.bigChips);
+      }
+    }
+    const more = bought < SCRATCH.tickets + extraPlays(run) && run.player.chips >= SCRATCH.price;
+    run.encounterState = { bought } as unknown as Record<string, number | number[]>;
+    return { title, text, good: st.win >= 0, more, scratch: { panel, sym, grid } };
+  },
+};
+
+// ---- CLAW MACHINE (user's pick, 2026-10-14) ------------------------------------------------------------------------
+
+/**
+ * CLAW MACHINE: three prizes in the pit (shown before you pay): chips, a pair of Charms and a relic. Pay chips for a
+ * go and pick one to aim at: the easy grab holds most of the time, the relic rarely. A prize you win leaves the pit.
+ * Three goes a visit.
+ */
+export const CLAW = { price: 5, tries: 3, chips: 15 };
+export const CLAW_PRIZES = [
+  { id: 'chips', name: '15 CHIPS', hold: 0.65, grip: 'EASY GRAB' },
+  { id: 'charm', name: '2 CHARMS', hold: 0.4, grip: 'TRICKY GRAB' },
+  { id: 'relic', name: 'A RELIC', hold: 0.2, grip: 'HARD GRAB' },
+] as const;
+/** Prizes already won at this stop (they're gone from the pit). */
+export const clawWon = (run: RunState): number[] => ((run.encounterState as { won?: number[] } | undefined)?.won ?? []) as number[];
+const CLAW_MACHINE: EncounterDef = {
+  id: 'claw',
+  name: 'CLAW MACHINE',
+  blurb: '',
+  kind: 'game',
+  plays: CLAW.tries,
+  choices: (run) => [...CLAW_PRIZES.map((p, k) => ({ label: p.name, text: p.grip, disabled: run.player.chips < CLAW.price || clawWon(run).includes(k) })), WALK],
+  play: (run, i, rng, ctx) => {
+    const won = clawWon(run);
+    if (i >= CLAW_PRIZES.length || run.player.chips < CLAW.price || won.includes(i)) return walked();
+    run.player.chips -= CLAW.price;
+    const prize = CLAW_PRIZES[i];
+    const held = rng.next() < prize.hold;
+    let text = 'IT SLIPPED';
+    if (held) {
+      const chips = (c: number) => ((run.player.chips += c), `+${c} CHIPS`);
+      if (prize.id === 'chips') text = chips(CLAW.chips);
+      else if (prize.id === 'charm') text = ctx.charm() ?? chips(CLAW.chips);
+      else {
+        const pool = ctx.relics.filter((r) => !run.player.relics.includes(r));
+        if (pool.length) {
+          const got = rng.pick(pool);
+          run.player.relics.push(got);
+          text = RELICS[got].name;
+        } else text = chips(CLAW.chips * 2);
+      }
+      run.encounterState = { won: [...won, i] } as unknown as Record<string, number | number[]>;
+    }
+    return { title: held ? 'GOT IT!' : 'SO CLOSE', text, good: held, claw: { prize: i, held } };
+  },
+};
+
+export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, roulette: RED_OR_BLACK, hilo: HIGHER_OR_LOWER, bj: TWENTY_ONE, dice: UNDER_OR_OVER, rats: RAT_RACE, scratch: SCRATCH_OFF, claw: CLAW_MACHINE };
 /** What the map deals onto ENCOUNTER stops. */
 export const ENCOUNTER_IDS = Object.keys(ENCOUNTERS);
 

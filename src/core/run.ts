@@ -625,8 +625,17 @@ export function playEncounter(run: RunState, i: number, bet?: number): Encounter
     applyOption(run, o, false);
     return title;
   };
+  // A pair of Charms (CLAW MACHINE): a CHARM card the drafts could deal, from the same stream.
+  const charm = (): string | null => {
+    const opts = charmOptions(run, 2);
+    if (!opts.length) return null;
+    const o = upRng.pick(opts);
+    const title = describeOption(o, run).title;
+    applyOption(run, o, false);
+    return title;
+  };
   const def = encounterOf(st.encounter);
-  const result = def.play(run, i, encounterRng(run), { relics, upgrade }, bet);
+  const result = def.play(run, i, encounterRng(run), { relics, upgrade, charm }, bet);
   (run.encounters ??= []).push({ act: run.act, id: st.encounter ?? '?', choice: i, good: result.good, what: [result.title, result.text].filter(Boolean).join(' '), ...(result.more ? { more: true } : {}) });
   // A game with plays left (and something to play with) keeps you here; walking away, or the last play, moves on.
   const played = (run.encounterPlays ?? 0) + 1;

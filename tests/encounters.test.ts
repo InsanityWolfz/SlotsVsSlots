@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, type RelicId } from '../src/core/config';
-import { BJ, bjState, bjTotal, DICE, ENCOUNTERS, hiloPot, hiloState, pocketColor, ROULETTE, rouletteMax, SLOT, slotLine, slotRun, SLOT_STRIPS, WHEEL_ORDER } from '../src/core/encounters';
+import { BJ, bjState, bjTotal, CLAW, DICE, RACE, RATS, ENCOUNTERS, hiloPot, hiloState, pocketColor, ROULETTE, rouletteMax, SLOT, slotLine, slotRun, SLOT_STRIPS, WHEEL_ORDER } from '../src/core/encounters';
 import { Rng } from '../src/core/rng';
-import { chooseRoute, createRun, currentStop, migrateRun, playEncounter } from '../src/core/run';
+import { chooseRoute, createRun, currentStop, encounterChoices, migrateRun, playEncounter } from '../src/core/run';
 
 const base = defaultConfig();
 const slot = ENCOUNTERS.slot;
-const ctx = (ups: string[] = []) => ({ relics: ['clover', 'battery', 'fang'] as RelicId[], upgrade: () => (ups.push('LEVEL'), 'LEVEL') });
+const ctx = (ups: string[] = []) => ({ relics: ['clover', 'battery', 'fang'] as RelicId[], upgrade: () => (ups.push('LEVEL'), 'LEVEL'), charm: () => (ups.push('CHARM'), '2 GOLD CHARMS') });
 
 describe('LUCKY SEVENS', () => {
   it('offers three buy-ins (chips, HP, a relic the house names), then WALK AWAY', () => {
@@ -338,5 +338,63 @@ describe('the offers are gone (user, 2026-10-14)', () => {
     expect(run.map.routes[0][1].encounter).toBe('slot');
     expect('debt' in run).toBe(false);
     expect(Object.keys(ENCOUNTERS)).not.toContain('blood');
+  });
+});
+
+describe('RAT RACE, SCRATCH-OFF, CLAW MACHINE (2026-10-14)', () => {
+  const at = (id: string, seed = 2) => {
+    const run = createRun(base, seed, 'knight');
+    run.pendingStart = null;
+    run.map.routes[0][0] = { kind: 'encounter', encounter: id };
+    run.depth = 1;
+    run.stop = 1;
+    chooseRoute(run, 0);
+    run.player.chips = 100;
+    return run;
+  };
+
+  it('RAT RACE: your rat first pays the bet times its odds; two races a visit', () => {
+    let races = 0;
+    for (let seed = 0; seed < 60; seed++) {
+      const run = at('rats', seed);
+      const stop = run.stop;
+      for (let guard = 0; guard < 10 && run.stop === stop; guard++) {
+        const before = run.player.chips;
+        const res = playEncounter(run, 1, 5)!;
+        races++;
+        const won = res.race!.winner === 1;
+        expect(run.player.chips - before).toBe(won ? 5 * (RATS[1].pays - 1) : -5);
+      }
+    }
+    expect(races).toBe(60 * RACE.races);
+  });
+
+  it('SCRATCH-OFF: buy, scratch 3 panels; three of a kind is a win, and a loser never shows three alike', () => {
+    let wins = 0;
+    for (let seed = 0; seed < 200; seed++) {
+      const run = at('scratch', seed);
+      const res0 = playEncounter(run, 0)!;
+      expect(res0.more).toBe(true);
+      let last = res0;
+      for (const panel of [2, 4, 6]) last = playEncounter(run, panel)!;
+      const g = last.scratch!.grid!;
+      const shown = [g[2], g[4], g[6]];
+      const three = shown.every((x) => x === shown[0]);
+      expect(three).toBe(!!last.good);
+      if (last.good) wins++;
+    }
+    expect(wins).toBeGreaterThan(60);
+    expect(wins).toBeLessThan(140);
+  });
+
+  it('CLAW MACHINE: a held prize leaves the pit; each go costs its price', () => {
+    const run = at('claw', 5);
+    const before = run.player.chips;
+    const res = playEncounter(run, 0)!;
+    expect(res.claw!.prize).toBe(0);
+    if (res.claw!.held) {
+      expect(run.player.chips).toBe(before - CLAW.price + CLAW.chips);
+      expect(encounterChoices(run)[0].disabled).toBe(true);
+    } else expect(run.player.chips).toBe(before - CLAW.price);
   });
 });
