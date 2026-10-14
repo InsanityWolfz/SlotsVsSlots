@@ -2,7 +2,7 @@ import { ALL_CABINETS, type CabinetId } from './cabinets';
 import type { Enh, RelicId } from './config';
 import { RELICS } from './relics';
 import { MAX_STAKE } from './stakes';
-import { charmCount, fightNumber, runActs, totalFights, type RunState, endlessScore } from './run';
+import { charmCount, fightNumber, runActs, runScoreOf, scoreParts, totalFights, type RunState } from './run';
 import { charmLevel } from './charms';
 import { ACHIEVEMENT_XP, CHALLENGES, levelOf, TRIMS, trimById, trimsOwned, newAchievements, titlesOwned, WEEK_KEY, type AchievementDef, type ChallengeRecord, type MetaStats } from './meta';
 
@@ -52,9 +52,12 @@ export interface RunEntry {
   /** THE DAILY RUN: its day, and the HP it finished with (a won daily scores it). */
   daily?: string;
   hpLeft?: number;
-  /** ENDLESS: loops cleared after LET IT RIDE, and the points banked (all of it on CASH OUT, half on a bust). */
+  /** ENDLESS: loops cleared after LET IT RIDE (and, on entries from before the run score, the points banked). */
   loops?: number;
   pot?: number;
+  /** THE RUN SCORE (2026-10-14 on) and its parts before the stake; older entries score by the old formula. */
+  score?: number;
+  parts?: [string, number][];
   /** A CHALLENGE run (its id, or "weekly") and THE WEEKLY CHALLENGE's week. */
   challenge?: string;
   weekly?: string;
@@ -115,7 +118,10 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
     chips: run.player.chips,
     ...(tutorial ? { tutorial: true } : {}),
     ...(run.daily ? { daily: run.daily, hpLeft: Math.max(0, run.player.hp) } : {}),
-    ...(run.endless ? { loops: run.endless.loop - 1, pot: endlessScore(run) } : {}),
+    ...(run.endless ? { loops: run.endless.loop - 1 } : {}),
+    // THE RUN SCORE (2026-10-14): worked out at the end, with its parts.
+    score: runScoreOf(run),
+    parts: scoreParts(run),
     ...(run.challenge ? { challenge: run.challenge } : {}),
     ...(run.weekly ? { weekly: run.weekly } : {}),
   };
@@ -125,6 +131,7 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
  * won run (endless banks chips x10 in its pot instead); x1.5 per stake level. */
 export const CHIP_SCORE = 5;
 export function runScore(e: RunEntry): number {
+  if (typeof e.score === 'number') return e.score;
   const chips = e.won && e.pot == null ? (e.chips ?? 0) * CHIP_SCORE : 0;
   // THE DAILY RUN: +1 per HP left on a win (winners aren't ranked only by chips they hoarded).
   const hp = e.won && e.daily ? (e.hpLeft ?? 0) : 0;
@@ -188,6 +195,8 @@ export function sanitizeProfile(raw: unknown): Profile {
         ...(typeof e.daily === 'string' && DATE_KEY.test(e.daily) ? { daily: e.daily, hpLeft: num(e.hpLeft, 0, 99999) } : {}),
         ...(typeof e.loops === 'number' ? { loops: num(e.loops, 0, 999) } : {}),
         ...(typeof e.pot === 'number' ? { pot: num(e.pot, 0, 1e9) } : {}),
+        ...(typeof e.score === 'number' ? { score: num(e.score, 0, 1e12) } : {}),
+        ...(Array.isArray(e.parts) ? { parts: (e.parts as unknown[]).filter((x): x is [string, number] => Array.isArray(x) && typeof x[0] === 'string' && typeof x[1] === 'number').slice(0, 12).map(([k, n]) => [k.slice(0, 16), num(n, 0, 1e12)] as [string, number]) } : {}),
         ...(typeof e.challenge === 'string' && (e.challenge === 'weekly' || CHALLENGES.some((c) => c.id === e.challenge)) ? { challenge: e.challenge } : {}),
         ...(typeof e.weekly === 'string' && WEEK_KEY.test(e.weekly) ? { weekly: e.weekly } : {}),
       });

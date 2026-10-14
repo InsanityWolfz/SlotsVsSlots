@@ -8,15 +8,15 @@ import { charmLevel, charmName, symLevel } from './charms';
 import { RELICS } from './relics';
 import { symLabel, type SymbolId } from './config';
 import { encounterOf } from './encounters';
-import { edgeText, endlessScore, takenLabel, type EdgeId, type RunState } from './run';
+import { edgeText, runScoreOf, takenLabel, type EdgeId, type RunState } from './run';
 import { stakeOf } from './stakes';
 
 export function runSummary(run: RunState, version = ''): string {
   const p = run.player;
   const end = run.endless
     ? run.endless.turbo
-      ? `BEAT THE TURBO (SCORE ${endlessScore(run)})`
-      : `BUSTED ON LOOP ${run.endless.loop} (SCORE ${endlessScore(run)})`
+      ? `BEAT THE OWNER (SCORE ${runScoreOf(run)})`
+      : `BUSTED ON LOOP ${run.endless.loop} (SCORE ${runScoreOf(run)})`
     : run.won
       ? 'WON'
       : `LOST IN ACT ${run.act}`;

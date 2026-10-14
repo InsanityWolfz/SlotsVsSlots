@@ -162,6 +162,8 @@ export interface RunPlayer {
 export interface FightRecord {
   /** An act's boss fight. */
   boss?: boolean;
+  /** An elite (the run score counts them).*/
+  elite?: boolean;
   /** DEATH RECAP (lost fights): the top sources of HP damage you took, e.g. [['SPIN HITS', 180], ['BOMBS', 60]]. */
   hurt?: [string, number][];
   /** Your spins this fight that had a frozen or jammed reel, of all your spins. */
@@ -251,7 +253,7 @@ export interface RunState {
   /** A boss fell: pick 1 of these BIG CHOICES (before the legendary pick). */
   pendingChoice?: BigChoice[] | null;
   /** ENDLESS (LET IT RIDE after the Dealer): the loop you're on and the HOUSE EDGES you've taken. */
-  endless?: { loop: number; edges: EdgeId[]; pot: number; night?: NightId; /** TONIGHT'S RULE per path (user, 2026-10-14): picking a path picks its rule. */ nights?: NightId[]; /** Beat THE TURBO: the run's true end. */ turbo?: boolean };
+  endless?: { loop: number; edges: EdgeId[]; pot: number; /** THE OWNER: the most of his HP you've taken (0-1). */ ownerTaken?: number; night?: NightId; /** TONIGHT'S RULE per path (user, 2026-10-14): picking a path picks its rule. */ nights?: NightId[]; /** Beat THE TURBO: the run's true end. */ turbo?: boolean };
   /** Choices waiting behind the current one (after a loop boss: RIDE?, then a big choice, then the edge). */
   choiceQueue?: BigChoice[][];
   /** Big-choice sets already offered this run. */
@@ -288,6 +290,8 @@ export interface RunState {
   legendQueue?: RelicId[][];
   /** THE LONG GAME (big choice): fights won since it was taken. */
   longGame?: number;
+  /** THE RUN SCORE: every chip the run paid you (fights, encounters), spent or not. */
+  chipsEarned?: number;
   /** PUNCH CARD: fights won since the last legendary it paid. */
   punches?: number;
   /** QUICKENING: enemy abilities charge one spin faster. */
@@ -640,7 +644,10 @@ export function playEncounter(run: RunState, i: number, bet?: number): Encounter
     return title;
   };
   const def = encounterOf(st.encounter);
+  const chipsBefore = run.player.chips;
   const result = def.play(run, i, encounterRng(run), { relics, upgrade, charm }, bet);
+  // THE RUN SCORE counts chips an encounter paid out (net of its stake).
+  if (run.player.chips > chipsBefore) run.chipsEarned = (run.chipsEarned ?? 0) + run.player.chips - chipsBefore;
   (run.encounters ??= []).push({ act: run.act, id: st.encounter ?? '?', choice: i, good: result.good, what: [result.title, result.text].filter(Boolean).join(' '), ...(result.more ? { more: true } : {}) });
   // A game with plays left (and something to play with) keeps you here; walking away, or the last play, moves on.
   const played = (run.encounterPlays ?? 0) + 1;
@@ -842,8 +849,48 @@ export function scaledAbility(run: RunState, ab: AbilityDef | null | undefined, 
 }
 /** THE LONG GAME: what it multiplies your pay by now (-20%, +2% a win since). */
 export const longGameMul = (run: RunState) => (run.longGame === undefined ? 1 : BIG.longStart + BIG.longStep * run.longGame);
-/** ENDLESS score (user, 2026-10-14: no cash out, you play until you bust): the pot of the loops cleared plus your chips x10. */
-export const endlessScore = (run: RunState) => (run.endless?.pot ?? 0) + run.player.chips * 10;
+/**
+ * THE RUN SCORE (user, 2026-10-14: a score from everything a run did, not chips held): fights won, elites and bosses
+ * beaten, chips EARNED (spending never costs score), levels gained, relics and Charms held, THE OWNER's HP taken and
+ * beating him, clearing the run; all x(1 + 0.5 a stake). The same formula for every run, ENDLESS or not.
+ */
+export const SCORE = { fight: 100, elite: 300, boss: 1000, chip: 2, level: 100, relic: 100, legendary: 250, charm: 25, owner10: 1000, ownerBeat: 10000, clear: 2000, stakeStep: 0.5 };
+/** Levels gained over the run: your symbols above their start, and every Charm type's levels past 1. */
+export function levelsGained(run: RunState): number {
+  const start = CABINETS[run.cabinet].levels;
+  const p = run.player.levels;
+  const sym = Object.entries(p.sym).reduce((a, [s, lv]) => a + Math.max(0, (lv ?? 1) - ((start?.sym as Record<string, number> | undefined)?.[s] ?? 1)), 0);
+  const owned = new Set(run.player.gilded.map((g) => g.enh));
+  const charm = [...owned].reduce((a, e) => a + Math.max(0, (p.charm[e] ?? 1) - 1), 0);
+  return sym + charm;
+}
+/** The score's parts (label, points before the stake), in the order the run-over screen lists them. */
+export function scoreParts(run: RunState): [string, number][] {
+  const won = run.records.filter((r) => r.won);
+  const bosses = won.filter((r) => r.boss).length;
+  const elites = won.filter((r) => r.elite).length;
+  const relics = run.player.relics.length;
+  const legends = run.player.relics.filter((r) => LEGENDARY.has(r)).length;
+  const charms = run.player.gilded.reduce((a, g) => a + g.n, 0);
+  const owner = run.endless?.ownerTaken ?? 0;
+  const parts: [string, number][] = [
+    ['FIGHTS', (won.length - bosses - elites) * SCORE.fight],
+    ['ELITES', elites * SCORE.elite],
+    ['BOSSES', bosses * SCORE.boss],
+    ['CHIPS EARNED', (run.chipsEarned ?? 0) * SCORE.chip],
+    ['LEVELS', levelsGained(run) * SCORE.level],
+    ['RELICS', (relics - legends) * SCORE.relic + legends * SCORE.legendary],
+    ['CHARMS', charms * SCORE.charm],
+    ['THE OWNER', Math.floor(owner * 10) * SCORE.owner10 + (run.endless?.turbo ? SCORE.ownerBeat : 0)],
+    ['CLEARED', run.won || run.endless ? SCORE.clear : 0],
+  ];
+  if (run.daily && run.won) parts.push(['HP LEFT', Math.max(0, run.player.hp)]);
+  return parts.filter(([, n]) => n > 0);
+}
+/** The run's score: its parts x the stake. */
+export const runScoreOf = (run: RunState) => Math.round(scoreParts(run).reduce((a, [, n]) => a + n, 0) * (1 + SCORE.stakeStep * run.stake));
+/** (Kept for the ENDLESS screens: the same score.) */
+export const endlessScore = runScoreOf;
 
 /** LET IT RIDE: after beating the Dealer, keep going (the win is already recorded). */
 export function letItRide(run: RunState): void {
@@ -996,11 +1043,17 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
     act: run.act,
     ...(run.endless ? { loop: run.endless.loop } : {}),
     ...(currentEnemy(run).isBoss ? { boss: true } : {}),
+    ...(currentEnemy(run).elite ? { elite: true } : {}),
     ...(scar !== undefined ? { scar } : {}),
     rocksAdded: Math.max(0, rocksIn(next) - rocksIn(old)),
     rocksCrumbled: crumbled,
   };
   run.records.push(record);
+  // THE OWNER: how much of him you took (the score counts each 10%).
+  if (run.endless && currentEnemy(run).turbo) {
+    const e = fight.sides.enemy;
+    run.endless.ownerTaken = Math.max(run.endless.ownerTaken ?? 0, Math.min(1, 1 - Math.max(0, e.hp) / Math.max(1, e.maxHp)));
+  }
   if (!won) {
     run.player.hp = 0;
     run.over = true;
@@ -1047,6 +1100,7 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   run.player.chips += earned;
   // (THE WHEEL: the chips your sweeps won came in with the fight's mid-fight chips; the line counts them.)
   record.chips = earned + fight.lucreChips + fight.betChips + fight.taxChips - fight.parachuteChips;
+  run.chipsEarned = (run.chipsEarned ?? 0) + Math.max(0, record.chips) + Math.max(0, fight.midasChips);
   // THE REPO MAN fell: his bounty.
   if (beaten.archetype === REPO_MAN.id) {
     // His bounty (the fork he replaced could have paid an elite's spoils).

@@ -21,6 +21,9 @@ import {
   edgeText,
   endlessScore,
   scaledAbility,
+  runScoreOf,
+  scoreParts,
+  SCORE,
   NIGHTS,
   nightOf,
   fastHands,
@@ -2489,7 +2492,7 @@ export class RunScreens {
     const start = this.draftKind === 'start';
     // ENDLESS: the pick after a loop's boss is the new loop's (its HOUSE EDGE reward): say the loop was cleared.
     const loopDone = !!last && !!this.run?.endless && last.loop !== undefined && last.loop < this.run.endless.loop;
-    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! POT ${fmtNum(this.run!.endless!.pot)}` : last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${this.run.dailyEdge ? `: ${EDGE_TEXT[this.run.dailyEdge].title}` : ''}` : this.run?.weekly ? `WEEKLY: ${(this.run.mods ?? []).map((e) => EDGE_TEXT[e].title).join(' + ')}` : this.run?.challenge ? `CHALLENGE: ${challengeById(this.run.challenge)?.name ?? ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
+    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${this.run.dailyEdge ? `: ${EDGE_TEXT[this.run.dailyEdge].title}` : ''}` : this.run?.weekly ? `WEEKLY: ${(this.run.mods ?? []).map((e) => EDGE_TEXT[e].title).join(' + ')}` : this.run?.challenge ? `CHALLENGE: ${challengeById(this.run.challenge)?.name ?? ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
@@ -2905,7 +2908,7 @@ export class RunScreens {
     else if (night) drawText(ctx, `TONIGHT'S RULE: ${night.title}. ${night.text}, FOR BOTH MACHINES.`, CX, 62, 1.5, '#ffd23f');
     else drawText(ctx, 'EVERY STOP IS SHOWN. TAP A PATH, THEN TAKE IT.', CX, 62, 1.5, COLORS.textDim);
     // ENDLESS: the score so far, on screen (playtest: it only showed on the bust screen).
-    if (run.endless) drawText(ctx, `POT ${fmtNum(run.endless.pot)} + ${run.player.chips} CHIPS X10 = SCORE ${fmtNum(endlessScore(run))}`, CX, 86, 1.5, COLORS.goldLight);
+    if (run.endless) drawText(ctx, `SCORE SO FAR ${fmtNum(endlessScore(run))}`, CX, 86, 1.5, COLORS.goldLight);
     const midY = ROUTES.y[1];
     const lastX = ROUTES.x0 + (ROUTE_STOPS - 1) * ROUTES.gap;
     let tip: MapTip | null = null;
@@ -4235,9 +4238,12 @@ export class RunScreens {
     // The lines between the table and the reels panel: stacked so they never overlap it or each other.
     const lines: [string, string][] = [];
     if (recap) lines.push([recap, COLORS.danger]);
+    // THE RUN SCORE and its biggest parts (x the stake), right under the recap.
+    const parts = scoreParts(run).sort((x, y) => y[1] - x[1]);
+    lines.push([`SCORE ${fmtNum(runScoreOf(run))} = ${parts.slice(0, 4).map(([k, n]) => `${k} ${fmtNum(n)}`).join(' + ')}${parts.length > 4 ? ' + MORE' : ''}${run.stake ? `, X${1 + SCORE.stakeStep * run.stake}` : ''}`, COLORS.goldLight]);
     if (this.unlockedNow.length) lines.push([`NEW SLOT MACHINE UNLOCKED: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}!`, COLORS.goldLight]);
     if (this.rideOffer) lines.push(['YOUR WIN IS BANKED. ENDLESS GOES ON UNTIL YOU BUST.', COLORS.goldLight]);
-    if (busted) lines.push([`POT ${fmtNum(run.endless!.pot)} + ${run.player.chips} CHIPS X10`, COLORS.goldLight]);
+
     const shown = lines.slice(0, 2);
     shown.forEach(([text, color], k) => {
       const ly = shown.length > 1 ? 462 + k * 18 : 472;

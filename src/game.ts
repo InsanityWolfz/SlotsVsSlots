@@ -1,3 +1,4 @@
+import { OWNER_TRICKS } from './core/enemies';
 import { Sounds } from './audio/sounds';
 import type { CombatEvent } from './core/events';
 import { Synth } from './audio/synth';
@@ -1143,7 +1144,8 @@ export class Game {
         const hud = new HudView(s, c.maxHp, meter, {
           name: s === 'player' ? (hero ? CABINETS[hero].hero : 'HERO') : sc.name,
           portrait: hero ? heroSprite(hero) : sc.portrait,
-          ability: c.ability,
+          // THE OWNER's HUD names his next trick from the start (EVERY TRICK said nothing).
+          ability: c.ability?.kind === 'owner' ? { ...c.ability, kind: OWNER_TRICKS[0].kind } : c.ability,
           energy: c.energy / UNIT,
         });
         hud.hp = hud.ghost = c.hp;

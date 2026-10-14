@@ -290,6 +290,17 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
 - **No healing penalty in Act 3 (user, 2026-10-12):** healing used to be halved there; it hit the slow machines'
   Dealer fights hardest (KNIGHT GREEN 29 -> 38, JUKEBOX 25 -> 39).
 
+## The run score (user, 2026-10-14)
+Every run, ENDLESS or not, scores the same way (`SCORE`, `scoreParts`, `runScoreOf` in `src/core/run.ts`):
+100 a fight won, 300 an elite, 1,000 a boss (act and loop bosses), 2 a chip EARNED (fights and encounters; spending never
+costs score), 100 a level gained (symbols above their start, Charm levels past 1), 100 a relic (250 a legendary), 25 a
+Charm on your reels, 1,000 for each 10% of THE OWNER's HP you take and 10,000 for beating him, 2,000 for clearing the run
+(the daily adds HP left on a win); all x(1 + 0.5 a stake). The path screen shows the score so far, a cleared loop says
+LOOP N CLEARED! SCORE X, and the run-over screen shows it with its biggest parts. Entries saved before it keep the old
+formula. Sim (GREEN, 200 runs a machine, bot riding): medians KNIGHT 13.9K, TESLA 11.7K, JUKEBOX 12.2K, JOKER 14.7K,
+BANKROLL 17.6K; ENDLESS riders 33-54K. Share of all points: bosses 28%, relics 19%, elites 11%, fights 11%, cleared 7%,
+levels 7%, chips earned 7%, Charms 5%, THE OWNER 4%. (The pot and chips x10 are gone.)
+
 ## Modes and meta
 - **Modes:** the normal run, DAILY, WEEKLY and ENDLESS.
 - **Meta:** CONTINUE (saves between fights), unlocks, achievements, collection, hiscores, and online leaderboards

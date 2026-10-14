@@ -48,10 +48,13 @@ describe('public playtest shell', () => {
     expect(e.killerFight).toBe(1);
     expect(e.relics).toEqual(['clover']);
     expect(e.charms.map((c) => c.enh)).toContain('gold');
-    expect(runScore(e)).toBe(0);
-    expect(runScore({ ...e, won: true, fights: 12, acts: 2, stake: 0, chips: 0 })).toBe(2200);
-    // A won run scores the chips it kept (+5 each).
-    expect(runScore({ ...e, won: true, fights: 12, acts: 2, stake: 0, chips: 20 })).toBe(2300);
+    // THE RUN SCORE (2026-10-14): a relic 100 + 4 Charms x25, x1.5 for stake 1.
+    expect(runScore(e)).toBe(300);
+    expect(e.parts).toEqual([['RELICS', 100], ['CHARMS', 100]]);
+    // An entry from before it scores by the old formula.
+    const old = { ...e, score: undefined, parts: undefined };
+    expect(runScore({ ...old, won: true, fights: 12, acts: 2, stake: 0, chips: 0 })).toBe(2200);
+    expect(runScore({ ...old, won: true, fights: 12, acts: 2, stake: 0, chips: 20 })).toBe(2300);
     const p = emptyProfile();
     expect(discover(p, run)).toBe(true);
     expect(p.found.relics).toEqual(['clover']);

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, UNIT } from '../src/core/config';
 import { ENDLESS, OWNER_TRICKS, TURBO } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
-import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, enemyHp, fightConfig, fightLabel, NIGHT, NIGHTS, finishFight, letItRide, skipToBoss, takeChoice } from '../src/core/run';
+import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, enemyHp, runScoreOf, scoreParts, fightConfig, fightLabel, NIGHT, NIGHTS, finishFight, letItRide, skipToBoss, takeChoice } from '../src/core/run';
 import { fmtNum } from '../src/render/text';
 
 const base = defaultConfig();
@@ -70,7 +70,7 @@ describe('ENDLESS (LET IT RIDE)', () => {
 });
 
 describe('ENDLESS: no cash out', () => {
-  it('a cleared loop grows the pot; the score is the pot plus chips x10', () => {
+  it('a cleared loop counts in the run score', () => {
     const run = createRun(base, 24, 'knight', 2, true);
     run.over = run.won = true;
     run.act = 3;
@@ -85,7 +85,9 @@ describe('ENDLESS: no cash out', () => {
     expect(run.endless!.pot).toBe(1500);
     // No RIDE AGAIN / CASH OUT (user, 2026-10-14): ENDLESS goes on until you bust, scored then.
     expect(run.pendingChoice!.map((c) => c.id)).not.toContain('cashOut');
-    expect(endlessScore(run)).toBe(1500 + run.player.chips * 10);
+    // THE RUN SCORE: every boss beaten counts (the loop's boss here), and clearing the Dealer.
+    expect(scoreParts(run).find(([k]) => k === 'BOSSES')?.[1]).toBe(1000);
+    expect(endlessScore(run)).toBe(runScoreOf(run));
   });
 });
 
