@@ -1648,7 +1648,7 @@ export class Fight {
       events.push({ type: 'payoff', side: me.side, kind: 'jackpots' });
       // HOUSE OF CARDS: each payoff adds a WILD to reel 2 for the rest of the fight.
       if (me.side === 'player' && me.relics.has('houseofcards')) {
-        insertOffscreen(me.reels[1], { symbol: 'wild', slimed: false }, this.rng);
+        for (const reel of me.reels) insertOffscreen(reel, { symbol: 'wild', slimed: false }, this.rng);
         events.push({ type: 'relic', side: me.side, relic: 'houseofcards' });
       }
       return;
@@ -1969,9 +1969,9 @@ export class Fight {
     if (c.side === 'player' && c.relics.has('parachute') && !this.parachuteUsed && held >= NEW_RELIC.parachuteCost) {
       this.parachuteUsed = true;
       this.parachuteChips = NEW_RELIC.parachuteCost;
-      c.hp = 1;
+      c.hp = Math.max(1, unitsRound(c.maxHp * NEW_RELIC.parachuteHp));
       events.push({ type: 'relic', side: c.side, relic: 'parachute' });
-      events.push({ type: 'phoenix', side: c.side, hp: 1 });
+      events.push({ type: 'phoenix', side: c.side, hp: c.hp });
       return;
     }
     this.winner = other(c.side);

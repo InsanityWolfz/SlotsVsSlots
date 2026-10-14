@@ -89,15 +89,15 @@ export const RELICS: Record<RelicId, RelicDef> = {
   safedeposit: { id: 'safedeposit', name: 'SAFE DEPOSIT', text: 'YOUR CHIPS ALSO HIT FOR THE SHIELD YOU GAIN THAT SPIN', sprite: 'relicSafeDeposit', machine: 'midas' },
   subwoofer: { id: 'subwoofer', name: 'SUBWOOFER', text: 'THE DROP PIERCES SHIELDS', sprite: 'relicSubwoofer', machine: 'jukebox' },
   // The user's picks from the content list (2026-10-14).
-  dryspell: { id: 'dryspell', name: 'DRY SPELL', text: 'EACH SPIN WITH NO PAIR: YOUR NEXT PAIR OR JACKPOT PAYS +25% (STACKS)', sprite: 'relicDrySpell' },
-  punchcard: { id: 'punchcard', name: 'PUNCH CARD', text: 'EVERY 10TH FIGHT YOU WIN: PICK A LEGENDARY RELIC', sprite: 'relicPunchCard' },
+  dryspell: { id: 'dryspell', name: 'DRY SPELL', text: 'EACH SPIN WITH NO PAIR: YOUR NEXT PAIR OR JACKPOT PAYS +50% (STACKS TO X4)', sprite: 'relicDrySpell' },
+  punchcard: { id: 'punchcard', name: 'PUNCH CARD', text: 'EVERY 6TH FIGHT YOU WIN: PICK A LEGENDARY RELIC', sprite: 'relicPunchCard' },
   goldenspin: { id: 'goldenspin', name: 'GOLDEN SPIN', text: '1 SPIN IN 10 IS GOLDEN: EVERYTHING PAYS X3', sprite: 'relicGoldenSpin' },
   insurance: { id: 'insurance', name: 'INSURANCE POLICY', text: 'THE FIRST TIME EACH FIGHT YOU DROP UNDER 25% HP: GAIN 100 SHIELD', sprite: 'relicInsurance' },
-  housetax: { id: 'housetax', name: 'HOUSE TAX', text: 'EVERY ENEMY JACKPOT PAYS YOU 2 CHIPS', sprite: 'relicHouseTax' },
-  regular: { id: 'regular', name: 'REGULAR', text: 'ENCOUNTER GAMES GIVE YOU ONE MORE PLAY', sprite: 'relicRegular' },
-  hitmaker: { id: 'hitmaker', name: 'CERTIFIED HITMAKER', text: 'EACH DROP IN A FIGHT HITS +25% MORE THAN THE LAST', sprite: 'relicHitmaker', machine: 'jukebox' },
-  houseofcards: { id: 'houseofcards', name: 'HOUSE OF CARDS', text: 'EACH JACKPOT METER PAYOFF ADDS A WILD TO REEL 2 FOR THE FIGHT', sprite: 'relicHouseOfCards', machine: 'joker' },
-  parachute: { id: 'parachute', name: 'GOLDEN PARACHUTE', text: 'A HIT THAT WOULD KILL YOU: PAY 20 CHIPS, SURVIVE AT 1 HP (ONCE PER FIGHT)', sprite: 'relicParachute', machine: 'midas' },
+  housetax: { id: 'housetax', name: 'HOUSE TAX', text: 'EVERY ENEMY JACKPOT PAYS YOU 5 CHIPS', sprite: 'relicHouseTax' },
+  regular: { id: 'regular', name: 'REGULAR', text: 'ENCOUNTER GAMES GIVE YOU TWO MORE PLAYS', sprite: 'relicRegular' },
+  hitmaker: { id: 'hitmaker', name: 'CERTIFIED HITMAKER', text: 'EACH DROP IN A FIGHT HITS +60% MORE THAN THE LAST', sprite: 'relicHitmaker', machine: 'jukebox' },
+  houseofcards: { id: 'houseofcards', name: 'HOUSE OF CARDS', text: 'EACH JACKPOT METER PAYOFF ADDS A WILD TO EVERY REEL FOR THE FIGHT', sprite: 'relicHouseOfCards', machine: 'joker' },
+  parachute: { id: 'parachute', name: 'GOLDEN PARACHUTE', text: 'A HIT THAT WOULD KILL YOU: PAY 10 CHIPS, LAND AT 25% HP (ONCE PER FIGHT)', sprite: 'relicParachute', machine: 'midas' },
 };
 
 /**
@@ -206,16 +206,20 @@ export const NEW_RELIC = {
   bashShare: 1,
   // The user's picks (2026-10-14).
   /** DRY SPELL: +25% a dry spin, up to 8 stacks (x3). */
-  dryStep: 0.25,
-  dryMax: 8,
+  dryStep: 0.5,
+  dryMax: 6,
   goldenChance: 0.1,
   goldenMul: 3,
   insuranceShare: 0.25,
   insuranceShield: 10 * UNIT,
-  taxChips: 2,
-  punchEvery: 10,
-  hitmakerStep: 0.25,
-  parachuteCost: 20,
+  taxChips: 5,
+  punchEvery: 6,
+  hitmakerStep: 0.6,
+  parachuteCost: 10,
+  /** GOLDEN PARACHUTE: you land at this share of your max HP. */
+  parachuteHp: 0.25,
+  /** REGULAR: more plays at each encounter game. */
+  regularPlays: 2,
 };
 
 /**

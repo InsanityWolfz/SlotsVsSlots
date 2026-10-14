@@ -8,7 +8,7 @@
  */
 import { UNIT, type RelicId } from './config';
 import { Rng } from './rng';
-import { RELICS } from './relics';
+import { NEW_RELIC, RELICS } from './relics';
 import type { RunState } from './run';
 
 export interface EncounterChoice {
@@ -241,7 +241,7 @@ const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32,
 export const pocketColor = (n: number): 'red' | 'black' | 'green' => (n === 0 ? 'green' : REDS.has(n) ? 'red' : 'black');
 /** The most you can bet right now: the table's limit, or every chip you hold. */
 /** REGULAR (relic): one more play at every encounter game (a pull, a spin, a roll, a hand). */
-export const extraPlays = (run: RunState) => (run.player.relics.includes('regular') ? 1 : 0);
+export const extraPlays = (run: RunState) => (run.player.relics.includes('regular') ? NEW_RELIC.regularPlays : 0);
 /** ENDLESS raises every table's limit by half again each loop (chips buy more late, so bets must too). */
 export const tableLimit = (run: RunState, base: number) => Math.round(base * (1 + 0.5 * (run.endless?.loop ?? 0)));
 export const rouletteMax = (run: RunState) => Math.min(tableLimit(run, ROULETTE.maxBet), run.player.chips);

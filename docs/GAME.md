@@ -124,6 +124,11 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   TESLA from 0 HP, 23% of its runs: TESLA GREEN 39 -> 37); a LIGHTNING STORM stops once THE OWNER's turn cap is reached
   (it fired thousands of 0-damage strikes, each healing); PUNCH CARD tops up with normal relics once the legendaries
   are gone.
+- **Relic buffs (user, 2026-10-14: the playtest found them worth ~0):** DRY SPELL +50% a dry spin (to x4), PUNCH CARD
+  every 6th win, HOUSE TAX 5 chips, REGULAR two more plays, CERTIFIED HITMAKER +60% a drop, HOUSE OF CARDS a WILD on
+  every reel, GOLDEN PARACHUTE 10 chips and you land at 25% HP. THE LONG GAME nerfed: -20% now, +3% a win. Sim 1000 runs
+  WHITE / GREEN (the seven banned -> in): KNIGHT 70 -> 68 / 33 -> 32, TESLA 60 -> 58 / 40 -> 37, JUKEBOX 66 -> 64 / 33,
+  JOKER 62 -> 64 / 42 -> 47, BANKROLL 67 / 44 -> 47.
 - **ENDLESS playtest, the real game (2026-10-14):** cards show the HP the fight has (HIGH ROLLERS and HIGH LIMIT are in
   enemyHp); an enemy's flat heal / shield ability grows with the loop's HP (a loop 4 HEALS 80 did nothing), and its
   hits show their loop size on the card; the reward after a loop's boss reads LOOP N CLEARED! POT X (it said THE

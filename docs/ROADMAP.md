@@ -2,8 +2,10 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-14):** nothing mid-task. The content wave and both ENDLESS playtests are in; waiting on the
-user's calls below.
+**In progress (2026-10-14), the user's calls on the ENDLESS playtests, in order:** buff the weak new relics and nerf
+THE LONG GAME; encounter stakes grow with the loop; a TONIGHT'S RULE per path; harder loops; THE OWNER as a fight
+(capped hits, a telegraphed HAMMER, phases, score per 10% of his HP); a multi-part run score (fights, elites, bosses,
+chips earned, levels, relics, Charms, THE OWNER's HP taken, the win, the stake).
 
 ## Now, in order
 1. **Play the new build.** Playtest C's bugs are fixed (see GAME.md). The level card's "18 -> 25 DAMAGE" stays

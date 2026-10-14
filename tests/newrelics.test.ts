@@ -89,7 +89,7 @@ describe('new relics (2026-10-14)', () => {
     expect(run.pendingLegend?.length).toBeGreaterThan(0);
   });
 
-  it('REGULAR: RED OR BLACK allows one more spin', () => {
+  it('REGULAR: RED OR BLACK allows two more spins', () => {
     const base = defaultConfig();
     const run = createRun(base, 2, 'knight');
     run.pendingStart = null;
@@ -104,7 +104,7 @@ describe('new relics (2026-10-14)', () => {
       playEncounter(run, 0, 1);
       spins++;
     }
-    expect(spins).toBe(4);
+    expect(spins).toBe(5);
   });
 });
 
@@ -148,16 +148,16 @@ describe('big choices SECOND PAYLINE and THE LONG GAME (2026-10-14)', () => {
     expect(line2.groups[0].amount).toBe(Math.max(10, Math.round(main.amount / 2 / 10) * 10));
   });
 
-  it('THE LONG GAME: pays x0.85 at first, +4% for every fight won after', () => {
+  it('THE LONG GAME: pays x0.8 at first, +3% for every fight won after', () => {
     const base = defaultConfig();
     const run = createRun(base, 51, 'knight', 0);
     run.pendingStart = null;
     run.longGame = 0;
-    expect(fightConfig(run, base).player.payMul).toBeCloseTo(0.85);
+    expect(fightConfig(run, base).player.payMul).toBeCloseTo(0.8);
     const f = new Fight(fightConfig(run, base), 1);
     f.winner = 'player';
     finishFight(run, f);
     expect(run.longGame).toBe(1);
-    expect(fightConfig(run, base).player.payMul).toBeCloseTo(0.89);
+    expect(fightConfig(run, base).player.payMul).toBeCloseTo(0.83);
   });
 });
