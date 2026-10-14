@@ -131,7 +131,8 @@ stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
   chip-rich machines can't buy off attrition. WHITE +0-2, GREEN within 1.
 - **ENDLESS variety (user, 2026-10-12):** only a big choice you TAKE leaves the run; one you pass on rests 2 offers and
   can come back, and in ENDLESS every card is open (the early-act ones too). HOUSE EDGES stack up to III (each level
-  harder, paying a tier more). Legendary picks top up with normal relics when fewer than 3 legendaries are left.
+  harder, paying a tier more), except MARKED DECK: one mark on your reels a fight, and it never stacks (user,
+  2026-10-14; it was 1 mark per reel a level, so 9 at III; it pays a relic now, not a legendary). Legendary picks top up with normal relics when fewer than 3 legendaries are left.
 - **MAKE IT RAIN counts at most 100 chips (user, 2026-10-12).** The sim's BANKROLL rarely holds that many (median 34
   in Act 3); its big hits were the multiplier (~25 GOLD Charms from BANK VAULT x HIGH ROLLER).
 - **JOKER (user, 2026-10-12):** 380 HP (was 320) and its jackpot payoff no longer heals. Its healing grew with its WILDS

@@ -733,7 +733,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   const edges = runEdges(run);
   const lvl = (e: EdgeId) => edgeLevel(run, e);
   if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = fastHands(cfg.enemy.ability, lvl('fast'));
-  if (edges.has('marked')) cfg.player.startMarks = Math.max(cfg.player.startMarks ?? 0, 3 * lvl('marked'));
+  // MARKED DECK: one mark a fight, never more (user, 2026-10-14: it doesn't stack).
+  if (edges.has('marked')) cfg.player.startMarks = Math.max(cfg.player.startMarks ?? 0, 1);
   if (edges.has('heal')) cfg.player.healMul = 0.5 ** lvl('heal');
   if (edges.has('rollers')) cfg.enemy.hp = unitsRound(cfg.enemy.hp * (1 + EDGE_ROLLERS * lvl('rollers')));
   // ENDLESS: damage grows per loop.
@@ -808,7 +809,7 @@ function startEndlessLoop(run: RunState): void {
   run.actIntro = false;
   // An edge you already took comes back one level up (II, III: harder, pays a tier more), up to EDGE_MAX (2026-10-12,
   // user: ENDLESS ran out of edges by loop 7). 3 offered, pick 1, each paying for its cost.
-  const open = EDGES.filter((x) => edgeLevel(run, x) < EDGE_MAX);
+  const open = EDGES.filter((x) => edgeLevel(run, x) < edgeMax(x));
   const pick = rng.shuffle(open).slice(0, 3);
   // The reward on the card is what you'll really get (no silent swap to chips: EXPERT_PLAYTEST_5 B7).
   const p = run.player;
@@ -833,14 +834,15 @@ function startEndlessLoop(run: RunState): void {
 /** HIGH ROLLERS: enemy HP + this per level. A HOUSE EDGE stacks up to EDGE_MAX levels. */
 export const EDGE_ROLLERS = 0.3;
 export const EDGE_MAX = 3;
+/** MARKED DECK doesn't stack (user, 2026-10-14): one mark a fight is all it ever does. */
+export const edgeMax = (e: EdgeId) => (e === 'marked' ? 1 : EDGE_MAX);
 /** An edge's card at a level (II, III say what the stack does in all). */
 export function edgeText(e: EdgeId, level: number): { title: string; text: string } {
   const t = EDGE_TEXT[e];
-  if (level <= 1) return t;
+  if (level <= 1 || level > edgeMax(e)) return t;
   const title = `${t.title} ${level === 2 ? 'II' : 'III'}`;
   const text =
     e === 'fast' ? `ENEMY ABILITIES CHARGE ${2 * level} TURNS FASTER`
-    : e === 'marked' ? `EVERY FIGHT OPENS WITH ${level} MARKS PER REEL ON YOU`
     : e === 'heal' ? `YOUR HEALING IN FIGHTS IS CUT TO 1/${2 ** level}`
     : e === 'rollers' ? `ENEMIES HAVE +${Math.round(EDGE_ROLLERS * level * 100)}% HP`
     : e === 'nocomps' ? `A NEW LOOP HEALS ONLY 1/${2 ** level} OF YOUR HP`
@@ -849,7 +851,7 @@ export function edgeText(e: EdgeId, level: number): { title: string; text: strin
 }
 export const EDGE_TEXT: Record<EdgeId, { title: string; text: string }> = {
   fast: { title: 'FAST HANDS', text: 'ENEMY ABILITIES CHARGE 2 TURNS FASTER' },
-  marked: { title: 'MARKED DECK', text: 'EVERY FIGHT OPENS WITH 1 MARK PER REEL ON YOU' },
+  marked: { title: 'MARKED DECK', text: 'EVERY FIGHT OPENS WITH 1 MARK ON YOUR REELS' },
   heal: { title: 'HOUSE CUT', text: 'YOUR HEALING IN FIGHTS IS HALVED' },
   rollers: { title: 'HIGH ROLLERS', text: 'ENEMIES HAVE +30% HP' },
   nocomps: { title: 'NO COMPS', text: 'A NEW LOOP HEALS ONLY HALF YOUR HP' },
@@ -1611,7 +1613,7 @@ export type BigChoiceId =
 export type EdgeId = 'fast' | 'marked' | 'heal' | 'rollers' | 'nocomps' | 'frail';
 export const EDGES: EdgeId[] = ['fast', 'marked', 'heal', 'rollers', 'nocomps', 'frail'];
 /** How much each edge costs you, and so what it pays (EXPERT_PLAYTEST_4 C1: rewards sized to cost). */
-export const EDGE_TIER: Record<EdgeId, 'chips' | 'relic' | 'legend'> = { frail: 'chips', heal: 'relic', fast: 'chips', marked: 'legend', rollers: 'legend', nocomps: 'chips' };
+export const EDGE_TIER: Record<EdgeId, 'chips' | 'relic' | 'legend'> = { frail: 'chips', heal: 'relic', fast: 'chips', marked: 'relic', rollers: 'legend', nocomps: 'chips' };
 /** The endless Cashier sells levels past the cap. */
 export const levelCap = (run: RunState) => (run.endless ? LEVEL_CAP + 1 : LEVEL_CAP) + (CABINETS[run.cabinet].levelCapBonus ?? 0);
 /** RIDE AGAIN: each loop cleared adds this x loop to the pot; a bust banks half. */
