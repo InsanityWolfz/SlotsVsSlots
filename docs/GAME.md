@@ -290,6 +290,11 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
 - **No healing penalty in Act 3 (user, 2026-10-12):** healing used to be halved there; it hit the slow machines'
   Dealer fights hardest (KNIGHT GREEN 29 -> 38, JUKEBOX 25 -> 39).
 
+**Re-tune after the ENDLESS calls (2026-10-14):** HOUSE OF CARDS adds its WILD to 2 reels (every reel was +5 GREEN for
+JOKER); JOKER 380 -> 360 HP, BANKROLL 330 -> 290 HP (both rose 6-12 on GREEN once THE LONG GAME stopped costing the bot).
+1000 runs, WHITE / RED / GREEN / BLACK / BLUE / GOLD: KNIGHT 68 / 61 / 31 / 27 / 15 / 12, TESLA 58 / 51 / 37 / 29 / 21 /
+13, JUKEBOX 64 / 56 / 32 / 24 / 14 / 11, JOKER 59 / 57 / 41 / 30 / 22 / 16, BANKROLL 64 / 61 / 42 / 33 / 24 / 19.
+
 ## The run score (user, 2026-10-14)
 Every run, ENDLESS or not, scores the same way (`SCORE`, `scoreParts`, `runScoreOf` in `src/core/run.ts`):
 100 a fight won, 300 an elite, 1,000 a boss (act and loop bosses), 2 a chip EARNED (fights and encounters; spending never

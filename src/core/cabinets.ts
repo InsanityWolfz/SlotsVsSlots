@@ -97,7 +97,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'BANKROLL',
     sprite: 'cabinetMidas',
     blurb: 'MAKE IT RAIN.',
-    hp: 33 * UNIT,
+    hp: 29 * UNIT,
     // No swords (2026-10-07): CASSIDY flings his chips. Each chip symbol hits, pays a chip and fills the bar.
     strips: r3({ shield: 6, goldbar: 6 }),
     // No gold-sword start (a leftover from MIDAS): 8 more chips instead (user playtest).
@@ -106,7 +106,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     startChips: 24,
     symbols: ['goldbar', 'shield'],
     attack: 'goldbar',
-    rule: 'CHIPS HIT AND WIN CHIPS. FULL BAR: HIT HARDER, HEAL 20. JACKPOTS MAKE IT RAIN. 330 HP.',
+    rule: 'CHIPS HIT AND WIN CHIPS. FULL BAR: HIT HARDER, HEAL 20. JACKPOTS MAKE IT RAIN. 290 HP.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },
@@ -140,14 +140,14 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     sprite: 'cabinetJoker',
     blurb: 'NOTHING IS WHAT IT SEEMS',
     // 2026-10-12 (user): 380 HP and its jackpot payoff no longer heals (its healing grew with its WILDS: GREEN 53).
-    hp: 38 * UNIT,
+    hp: 36 * UNIT,
     // Cards, not swords (2026-10-07): JAX throws playing cards. They hit like swords.
     strips: r3({ ace: 5, shield: 5, wild: 2 }),
     gilded: [],
     meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 0, perWild: 2 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
-    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 380 HP.',
+    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 360 HP.',
     unlock: 'BEAT THE HOUSE WITH WILDS',
     jokerWilds: true,
   },

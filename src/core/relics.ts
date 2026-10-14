@@ -96,7 +96,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   housetax: { id: 'housetax', name: 'HOUSE TAX', text: 'EVERY ENEMY JACKPOT PAYS YOU 5 CHIPS', sprite: 'relicHouseTax' },
   regular: { id: 'regular', name: 'REGULAR', text: 'ENCOUNTER GAMES GIVE YOU TWO MORE PLAYS', sprite: 'relicRegular' },
   hitmaker: { id: 'hitmaker', name: 'CERTIFIED HITMAKER', text: 'EACH DROP IN A FIGHT HITS +60% MORE THAN THE LAST', sprite: 'relicHitmaker', machine: 'jukebox' },
-  houseofcards: { id: 'houseofcards', name: 'HOUSE OF CARDS', text: 'EACH JACKPOT METER PAYOFF ADDS A WILD TO EVERY REEL FOR THE FIGHT', sprite: 'relicHouseOfCards', machine: 'joker' },
+  houseofcards: { id: 'houseofcards', name: 'HOUSE OF CARDS', text: 'EACH JACKPOT METER PAYOFF ADDS A WILD TO 2 REELS FOR THE FIGHT', sprite: 'relicHouseOfCards', machine: 'joker' },
   parachute: { id: 'parachute', name: 'GOLDEN PARACHUTE', text: 'A HIT THAT WOULD KILL YOU: PAY 10 CHIPS, LAND AT 25% HP (ONCE PER FIGHT)', sprite: 'relicParachute', machine: 'midas' },
 };
 
