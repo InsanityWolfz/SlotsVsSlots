@@ -44,7 +44,7 @@ export const STAKE = {
   act3: 2,
   /** BLACK and up: enemy damage +10% a stake. */
   dmgFrom: 3,
-  dmgStep: 0.1,
+  dmgStep: 0.07,
 };
 
 /**

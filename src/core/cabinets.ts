@@ -77,7 +77,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'KNIGHT',
     sprite: 'cabinetKnight',
     blurb: 'THE DEPENDABLE ONE',
-    hp: 44 * UNIT,
+    hp: 43 * UNIT,
     // FORGED STEEL: half swords, half shields; swords start at level 3, shields at 2 (2026-10-12: honest HP).
     strips: r3({ sword: 6, shield: 6 }),
     gilded: [],
@@ -87,7 +87,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     // FORGED STEEL: its symbol and Charm levels go to 4, not 3 (swords start at 3, so they can still grow).
     levelCapBonus: 1,
     levels: { sym: { sword: 3, shield: 2 }, charm: {} },
-    rule: 'HALF SWORDS, HALF SHIELDS. SWORDS START AT LEVEL 3; LEVELS GO TO 4. NO METER. 440 HP.',
+    rule: 'HALF SWORDS, HALF SHIELDS. SWORDS START AT LEVEL 3; LEVELS GO TO 4. NO METER. 430 HP.',
     unlock: '',
   },
   midas: {
@@ -158,14 +158,14 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'JUKEBOX',
     sprite: 'cabinetJukebox',
     blurb: 'TURN IT UP',
-    hp: 42 * UNIT,
+    hp: 38 * UNIT,
     // Replaces BRIAR (user, 2026-10-08): notes and shields. NOTES turn up the volume; at the max the beat drops.
     strips: r3({ note: 6, shield: 6 }),
     gilded: [],
     meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 2 * UNIT },
     symbols: ['note', 'shield'],
     attack: 'note',
-    rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: NOTES HIT, YOU HEAL 20. 420 HP.',
+    rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: NOTES HIT, YOU HEAL 20. 380 HP.',
     unlock: 'BEAT THE HOUSE',
   },
 };

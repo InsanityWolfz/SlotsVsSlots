@@ -104,7 +104,7 @@ so that isn't happening in practice (see ROADMAP).
 Each machine except KNIGHT has one signature symbol and a meter.
 | Machine | Hero | Attack symbol | Meter | Unlock |
 |---|---|---|---|---|
-| KNIGHT | SIR REGINALD | sword | none: half swords, half shields; swords start at level 3; its levels go to 4, not 3 | start |
+| KNIGHT | SIR REGINALD | sword | none: half swords, half shields; swords start at level 3; its levels go to 4, not 3 (430 HP) | start |
 | TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields | reach the House |
 | JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat the House |
 | JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat the House with wilds |
@@ -119,6 +119,13 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   Pay = BASE × MULT, and gold Charms in a group ADD. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
   machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER), ECHO (JUKEBOX) and BULWARK (`spiked`, KNIGHT).
   `src/core/charms.ts`.
+- **Balance pass after the content wave (2026-10-14):** enemy damage from BLACK is +7% a stake (was +10%: BLUE and GOLD
+  had fallen to 6-19 / 6-13 for most machines); KNIGHT 440 -> 430 HP (WHITE / RED were +10 / +12); JUKEBOX 420 -> 380
+  HP but +32% note damage a volume level (was +25%: it was easy early, hopeless late). 1000 runs, WHITE / RED / GREEN /
+  BLACK / BLUE / GOLD: KNIGHT 68 / 62 / 32 / 26 / 15 / 11, TESLA 59 / 52 / 39 / 30 / 23 / 14, JUKEBOX 64 / 55 / 31 / 23 /
+  12 / 10, JOKER 58 / 52 / 34 / 25 / 17 / 11, BANKROLL 61 / 58 / 41 / 34 / 22 / 18. Left: KNIGHT's early ease, JUKEBOX's
+  late, and the Dealer's spread by machine (TESLA 83-91% when reached, KNIGHT / JUKEBOX 34-64%: BUST blanks a payline
+  reel, and TESLA's lightning charges off the payline).
 - **Big choices SECOND PAYLINE and THE LONG GAME (user's picks, 2026-10-14; the first step to more paylines):**
   SECOND PAYLINE: the row above your payline pays its own pairs and jackpots at half (they hit, block and fill your
   meter, but pay no chips and heal nothing; Charms and relics stay the main line's), and enemies hit 15% harder (X1.15
@@ -147,8 +154,8 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
 ## HIGH STAKES (`src/core/stakes.ts`)
 Each machine has its own ladder. Winning a run at your best stake unlocks the next one.
 WHITE (base) → RED (scar rocks) → GREEN (the Wheel starts fast, **Act 3 on**) → BLACK (the House cheats) →
-BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP). From BLACK, enemies also hit 10% harder a
-stake (BLACK +10%, BLUE +20%, GOLD +30%; shown as X1.1 BLACK on their hits).
+BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP). From BLACK, enemies also hit 7% harder a
+stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
 
 ## Balance (`tools/sim/balance.ts`)
 - **Targets for the sim bot** (run win %, every machine within 5 points): WHITE 60, RED 50, GREEN 36, BLACK 28,
