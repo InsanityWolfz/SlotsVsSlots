@@ -4,7 +4,7 @@ import { RELICS } from './relics';
 import { MAX_STAKE } from './stakes';
 import { charmCount, fightNumber, runActs, runScoreOf, scoreParts, totalFights, type RunState } from './run';
 import { charmLevel } from './charms';
-import { ACHIEVEMENT_XP, CHALLENGES, levelOf, TRIMS, trimById, trimsOwned, newAchievements, titlesOwned, WEEK_KEY, type AchievementDef, type ChallengeRecord, type MetaStats } from './meta';
+import { ACHIEVEMENT_XP, levelOf, TRIMS, trimById, trimsOwned, newAchievements, titlesOwned, WEEK_KEY, type AchievementDef, type ChallengeRecord, type MetaStats } from './meta';
 
 /**
  * The player's profile (saved locally): what they've discovered for the COLLECTION log, and a
@@ -122,8 +122,6 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
     // THE RUN SCORE (2026-10-14): worked out at the end, with its parts.
     score: runScoreOf(run),
     parts: scoreParts(run),
-    ...(run.challenge ? { challenge: run.challenge } : {}),
-    ...(run.weekly ? { weekly: run.weekly } : {}),
   };
 }
 
@@ -197,7 +195,7 @@ export function sanitizeProfile(raw: unknown): Profile {
         ...(typeof e.pot === 'number' ? { pot: num(e.pot, 0, 1e9) } : {}),
         ...(typeof e.score === 'number' ? { score: num(e.score, 0, 1e12) } : {}),
         ...(Array.isArray(e.parts) ? { parts: (e.parts as unknown[]).filter((x): x is [string, number] => Array.isArray(x) && typeof x[0] === 'string' && typeof x[1] === 'number').slice(0, 12).map(([k, n]) => [k.slice(0, 16), num(n, 0, 1e12)] as [string, number]) } : {}),
-        ...(typeof e.challenge === 'string' && (e.challenge === 'weekly' || CHALLENGES.some((c) => c.id === e.challenge)) ? { challenge: e.challenge } : {}),
+        ...(typeof e.challenge === 'string' && /^[a-z]{1,12}$/.test(e.challenge) ? { challenge: e.challenge } : {}),
         ...(typeof e.weekly === 'string' && WEEK_KEY.test(e.weekly) ? { weekly: e.weekly } : {}),
       });
     }
@@ -205,13 +203,8 @@ export function sanitizeProfile(raw: unknown): Profile {
   const achievements: Record<string, number> = {};
   if (p.achievements && typeof p.achievements === 'object')
     for (const [k, v] of Object.entries(p.achievements as Record<string, unknown>)) if (/^[a-z0-9_]{1,24}$/.test(k)) achievements[k] = num(v, 0, 8.64e15);
+  // CHALLENGES and THE WEEKLY are gone (user, 2026-10-15): their records are dropped (the field stays, empty).
   const challenges: Record<string, ChallengeRecord> = {};
-  if (p.challenges && typeof p.challenges === 'object')
-    for (const [k, v] of Object.entries(p.challenges as Record<string, unknown>)) {
-      if (!(CHALLENGES.some((c) => c.id === k) || /^weekly:\d{4}-W\d{2}$/.test(k)) || !v || typeof v !== 'object') continue;
-      const r = v as Record<string, unknown>;
-      challenges[k] = { best: num(r.best, 0, 1e9), won: r.won === true, tries: num(r.tries, 0, 1e6) };
-    }
   const st = (p.stats && typeof p.stats === 'object' ? p.stats : {}) as Record<string, unknown>;
   // Old saves: their runs count towards XP and the counters once.
   const stats: MetaStats = p.stats ? { runs: num(st.runs, 0, 1e7), wins: num(st.wins, 0, 1e7), dailies: num(st.dailies, 0, 1e7) } : { runs: runs.filter((r) => !r.tutorial).length, wins: runs.filter((r) => r.won && !r.tutorial).length, dailies: runs.filter((r) => r.daily).length };
@@ -265,14 +258,11 @@ function achievementCtx(p: Profile, e: RunEntry, collectionTotal = Infinity) {
     loops: e.loops ?? 0,
     killer: e.killer,
     daily: !!e.daily,
-    weekly: !!e.weekly,
-    challenge: e.challenge,
     tutorial: !!e.tutorial,
     stats: p.stats,
     have: p.achievements,
     found: foundCount(p),
     collection: collectionTotal,
-    challengesWon: CHALLENGES.filter((c) => p.challenges[c.id]?.won).length,
   };
 }
 
@@ -298,40 +288,28 @@ export interface MetaGain {
   titles: string[];
   /** Slot machine TRIMS this run's levels unlocked. */
   trims: string[];
-  /** A challenge or weekly: this run beat its best. */
-  newBest: boolean;
 }
 
-/** Log a finished run on the meta layers: counters, challenge bests, achievements, XP (mutates the profile). */
+/** Log a finished run on the meta layers: counters, achievements, XP (mutates the profile). */
 /** prevScore: an endless run updating the entry its Dealer win already logged (no new run, XP for the gain only). */
 export function recordMeta(p: Profile, e: RunEntry, collectionTotal: number, prevScore?: number): MetaGain {
   const xpBefore = p.xp;
   const before = levelOf(p.xp).level;
-  const titlesBefore = new Set(titlesOwned(before, p.challenges));
+  const titlesBefore = new Set(titlesOwned(before));
   const score = runScore(e);
-  let newBest = false;
   if (!e.tutorial && prevScore == null) {
     p.stats.runs++;
     if (e.won) p.stats.wins++;
     if (e.daily) p.stats.dailies++;
-    const key = e.weekly ? `weekly:${e.weekly}` : e.challenge;
-    if (key) {
-      const r = (p.challenges[key] ??= { best: 0, won: false, tries: 0 });
-      r.tries++;
-      // A first try is no "new best" (a fight-2 death got the banner: EXPERT_PLAYTEST_10 D8).
-      newBest = r.tries > 1 && score > r.best;
-      r.best = Math.max(r.best, score);
-      r.won ||= e.won;
-    }
   }
   const got = newAchievements(achievementCtx(p, e, collectionTotal));
   for (const a of got) p.achievements[a.id] = e.at || Date.now();
   const xp = e.tutorial ? 0 : Math.max(0, score - (prevScore ?? 0)) + got.length * ACHIEVEMENT_XP;
   p.xp += xp;
   const after = levelOf(p.xp).level;
-  const titles = titlesOwned(after, p.challenges).filter((t) => !titlesBefore.has(t));
+  const titles = titlesOwned(after).filter((t) => !titlesBefore.has(t));
   const trims = trimsOwned(after).filter((t) => t.level > before).map((t) => t.name);
-  return { xp, xpBefore, xpAfter: p.xp, levelBefore: before, levelAfter: after, achievements: got, titles, trims, newBest };
+  return { xp, xpBefore, xpAfter: p.xp, levelBefore: before, levelAfter: after, achievements: got, titles, trims };
 }
 
 /** The TRIM the player wears: their pick while their level holds it, else CLASSIC. */
@@ -342,6 +320,6 @@ export function shownTrim(p: Profile) {
 
 /** The title the player shows: their pick if they still hold it, else their best level title. */
 export function shownTitle(p: Profile): string {
-  const owned = titlesOwned(levelOf(p.xp).level, p.challenges);
-  return p.title && owned.includes(p.title) ? p.title : owned.filter((t) => !CHALLENGES.some((c) => c.title === t)).pop() ?? 'ROOKIE';
+  const owned = titlesOwned(levelOf(p.xp).level);
+  return p.title && owned.includes(p.title) ? p.title : owned.pop() ?? 'ROOKIE';
 }

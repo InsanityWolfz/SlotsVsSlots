@@ -2,11 +2,10 @@ import type { Sounds } from '../audio/sounds';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import type { Enh, RelicId } from '../core/config';
 import { foundCount, runScore, shownTitle, shownTrim, type Profile, type RunEntry } from '../core/profile';
-import { ACHIEVEMENTS, allTitles, TRIMS, CHALLENGES, challengeOpen, edgeLine, levelOf, titlesOwned, weekKey, weekly } from '../core/meta';
+import { ACHIEVEMENTS, allTitles, TRIMS, levelOf, titlesOwned } from '../core/meta';
 import { online } from '../net/config';
 import { topScores, type ScoreRow } from '../net/leaderboard';
 import { dailyCabinet, dailyKey, dailySpent } from '../core/daily';
-import { EDGE_TEXT } from '../core/run';
 import { LEGENDARY, RELICS, RELIC_TIER } from '../core/relics';
 import { CHARM_SYMBOLS, charmRuleText } from '../core/charms';
 import { desktop, DESKTOP, STEAM, VERSION } from '../build';
@@ -27,9 +26,9 @@ import { wrap } from './runScreens';
  * Out-of-run screens: LOADING (warms the sprite cache, then asks for a click so audio can start),
  * the MAIN MENU, the COLLECTION log and personal HISCORES.
  */
-export type MenuMode = 'none' | 'loading' | 'name' | 'main' | 'modes' | 'progress' | 'settings' | 'collection' | 'hiscores' | 'challenges' | 'trophies';
+export type MenuMode = 'none' | 'loading' | 'name' | 'main' | 'modes' | 'progress' | 'settings' | 'collection' | 'hiscores' | 'trophies';
 /** HISCORES tabs: your own runs, or the online boards. */
-export type ScoreTab = 'mine' | 'daily' | 'weekly' | 'all';
+export type ScoreTab = 'mine' | 'daily' | 'all';
 
 export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
   gold: { name: 'GOLD', text: 'YOUR ATTACK SYMBOLS AND SHIELDS. X2/X3/X4 PAY.' },
@@ -74,22 +73,13 @@ export const heroSprite = (id: CabinetId): SpriteId => (hasSprite(CABINETS[id].h
 const LOAD_MIN = 1.3;
 const TOUCH = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches ?? false);
 const ROWS_PER_PAGE = 7;
-/** Name entry box centre; challenge rows; achievement grid top. */
+/** Name entry box centre; achievement grid top. */
 const NAME_Y = 360;
-const CH_Y = 272;
-const CH_ROW = 54;
 const TR_Y = 384;
 /** TROPHIES: the trim picker row. */
 const TRIM_Y = 302;
 const TRIM_X = 90;
 const TRIM_PITCH = 70;
-
-/** Time until the next weekly (Monday 00:00 UTC), e.g. "3D 4H". */
-function untilMonday(now = new Date()): string {
-  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + ((8 - (now.getUTCDay() || 7)) % 7 || 7)));
-  const h = Math.max(0, Math.floor((next.getTime() - now.getTime()) / 3600000));
-  return h >= 24 ? `${Math.floor(h / 24)}D ${h % 24}H` : `${h}H`;
-}
 
 export class Menus {
   mode: MenuMode = 'none';
@@ -136,9 +126,6 @@ export class Menus {
       onTutorial: () => void;
       /** THE DAILY RUN (one try a day). */
       onDaily: () => void;
-      /** A CHALLENGE (by id), or THE WEEKLY CHALLENGE. */
-      onChallenge: (id: string) => void;
-      onWeekly: () => void;
       /** Name entry: claim the name; resolves to the claim result ('ok', 'taken', 'have:NAME', 'offline'). */
       needsName: () => boolean;
       onName: (name: string) => Promise<string>;
@@ -328,7 +315,7 @@ export class Menus {
   private liveLabels: (() => void)[] = [];
   private settingsMidRun = false;
 
-  /** PLAY MODES: the daily, the weekly, the challenges and the tutorial. */
+  /** PLAY MODES: the daily and the tutorial (WEEKLY and CHALLENGES are gone: user, 2026-10-15). */
   showModes(): void {
     this.openSub('modes', () => this.showMain());
     const x = W / 2;
@@ -342,16 +329,8 @@ export class Menus {
     const daily = this.btn(label, x, row(0), 440, 54, () => !done && this.cb.onDaily(), label.length > 17 ? 2 : 3);
     daily.toggled = done;
     this.icons.set(daily, 'chip');
-    // THE WEEKLY CHALLENGE: the machine (or your best); its rules are on the CHALLENGES screen and the run's first card.
-    const key = weekKey();
-    const best = this.profile().challenges[`weekly:${key}`];
-    const wl = best ? `WEEKLY: BEST ${best.best}` : `WEEKLY: ${CABINETS[weekly(key).cabinet].name}`;
     if (!done) this.guardSaved(daily);
-    const wb = this.btn(wl, x, row(1), 440, 54, () => this.cb.onWeekly(), wl.length > 17 ? 2 : 3);
-    this.icons.set(wb, 'voucherBonus');
-    this.guardSaved(wb);
-    this.icons.set(this.btn('CHALLENGES', x, row(2), 440, 54, () => this.showChallenges(), 3), 'trophySmall');
-    const tb = this.btn('TUTORIAL', x, row(3), 440, 54, () => this.cb.onTutorial(), 3);
+    const tb = this.btn('TUTORIAL', x, row(1), 440, 54, () => this.cb.onTutorial(), 3);
     this.icons.set(tb, 'iconTutorial');
     this.guardSaved(tb);
     this.slideIn();
@@ -444,7 +423,7 @@ export class Menus {
 
   /** The online board a tab shows. */
   private boardKey(tab: ScoreTab): string {
-    return tab === 'daily' ? `daily:${dailyKey()}` : tab === 'weekly' ? `weekly:${weekKey()}` : 'all';
+    return tab === 'daily' ? `daily:${dailyKey()}` : 'all';
   }
 
   private loadBoard(key: string): void {
@@ -457,8 +436,8 @@ export class Menus {
     this.buttons = [];
     this.back = () => this.showMain();
     this.btn('BACK', 100, 44, 140, 48, () => this.showMain());
-    (['mine', 'daily', 'weekly', 'all'] as ScoreTab[]).forEach((tab, i) => {
-      const b = this.btn({ mine: 'MY RUNS', daily: 'DAILY', weekly: 'WEEKLY', all: 'ALL TIME' }[tab], W / 2 + (i - 1.5) * 168, 100, 160, 40, () => {
+    (['mine', 'daily', 'all'] as ScoreTab[]).forEach((tab, i) => {
+      const b = this.btn({ mine: 'MY RUNS', daily: 'DAILY', all: 'ALL TIME' }[tab], W / 2 + (i - 1) * 168, 100, 160, 40, () => {
         this.tab = tab;
         this.page = 0;
         if (tab !== 'mine') this.boards.delete(this.boardKey(tab));
@@ -592,7 +571,7 @@ export class Menus {
     ctx.fillRect(0, 0, W, H);
     this.logo(ctx, 150, t, 3);
     drawText(ctx, 'PICK YOUR NAME', W / 2, NAME_Y - 110, 4, COLORS.goldLight);
-    drawText(ctx, online() ? 'IT GOES ON THE LEADERBOARDS: THE DAILY, THE WEEKLY AND ALL TIME' : STEAM ? 'YOUR NAME FOR THE HISCORES' : 'YOUR NAME FOR THE HISCORES (ONLINE BOARDS OPENING SOON)', W / 2, NAME_Y - 66, 1.5, COLORS.textDim);
+    drawText(ctx, online() ? 'IT GOES ON THE LEADERBOARDS: THE DAILY AND ALL TIME' : STEAM ? 'YOUR NAME FOR THE HISCORES' : 'YOUR NAME FOR THE HISCORES (ONLINE BOARDS OPENING SOON)', W / 2, NAME_Y - 66, 1.5, COLORS.textDim);
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(W / 2 - 214, NAME_Y - 32, 428, 64);
     ctx.fillStyle = COLORS.gold;
@@ -630,65 +609,6 @@ export class Menus {
     drawText(ctx, `${lv.into}/${lv.need} XP`, x + bw / 2 + 8, y + 15, 1, COLORS.textDim, { align: 'left' });
   }
 
-  // ---- challenges -----------------------------------------------------------------------
-
-  showChallenges(): void {
-    this.open('challenges');
-    this.back = () => this.showModes();
-    this.btn('BACK', 100, 44, 140, 48, () => this.showModes());
-    this.btn('PLAY', W - 170, 150, 180, 54, () => this.cb.onWeekly(), 3);
-    const rec = this.profile().challenges;
-    CHALLENGES.forEach((c, i) => {
-      const b = this.btn(rec[c.id]?.won ? 'AGAIN' : 'PLAY', W - 130, CH_Y + i * CH_ROW, 140, 40, () => this.cb.onChallenge(c.id));
-      this.guardSaved(b);
-      b.enabled = challengeOpen(rec, i);
-    });
-  }
-
-  private drawChallenges(ctx: CanvasRenderingContext2D, t: number): void {
-    const p = this.profile();
-    drawText(ctx, 'CHALLENGES', W / 2, 44, 5, COLORS.goldLight);
-    // THE WEEKLY CHALLENGE.
-    const key = weekKey();
-    const wk = weekly(key);
-    const best = p.challenges[`weekly:${key}`];
-    this.panel(ctx, 60, 92, W - 120, 118, '#7dff7a');
-    drawText(ctx, `THE WEEKLY CHALLENGE  ${key}`, 90, 112, 2.5, '#7dff7a', { align: 'left' });
-    drawSprite(ctx, heroSprite(wk.cabinet), 120, 162, 2.5, { rot: Math.sin(t * 2) * 0.03 });
-    drawText(ctx, `${CABINETS[wk.cabinet].hero} - ${CABINETS[wk.cabinet].name}. SAME FIGHTS FOR EVERYONE, THROUGH THE DEALER. AS MANY TRIES AS YOU LIKE.`, 160, 144, 1.25, COLORS.text, { align: 'left' });
-    wrap([edgeLine(wk.edges), wk.chips === 0 ? 'START WITH 0 CHIPS' : ''].filter(Boolean).join('. '), 96).slice(0, 2).forEach((l, k) => drawText(ctx, l, 160, 164 + k * 16, 1.25, COLORS.goldLight, { align: 'left' }));
-    drawText(ctx, best ? `YOUR BEST ${best.best}${best.won ? ' - CLEARED' : ''} - ${best.tries} TR${best.tries > 1 ? 'IES' : 'Y'}` : 'NOT PLAYED YET', 160, 198, 1.25, best?.won ? '#ffd23f' : COLORS.textDim, { align: 'left' });
-    drawText(ctx, `NEW ONE IN ${untilMonday()}`, W - 170, 194, 1.25, COLORS.textDim);
-    // The ladder.
-    drawText(ctx, 'EACH CLEAR OPENS THE NEXT TWO AND EARNS A TITLE.', W / 2, CH_Y - 40, 1.5, COLORS.textDim);
-    CHALLENGES.forEach((c, i) => {
-      const y = CH_Y + i * CH_ROW;
-      const open = challengeOpen(p.challenges, i);
-      const r = p.challenges[c.id];
-      ctx.fillStyle = i % 2 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)';
-      ctx.fillRect(60, y - CH_ROW / 2 + 2, W - 120, CH_ROW - 4);
-      drawText(ctx, String(i + 1), 84, y, 2.5, r?.won ? '#ffd23f' : COLORS.textDim);
-      drawSprite(ctx, open ? heroSprite(c.cabinet) : 'playerPortrait', 130, y, 1.5, open ? {} : { variant: 'black', alpha: 0.5 });
-      // Names always show (the next row's "CLEAR X TO OPEN" gave them away); a locked one hides only its setup.
-      drawText(ctx, c.name, 160, y - 10, 2, open ? COLORS.goldLight : COLORS.textDim, { align: 'left' });
-      const stake = c.stake ? ` - ${STAKES[c.stake].name} STAKE, THROUGH THE DEALER` : '';
-      // One edge reads in full; several list their names (three didn't fit and ran through the title: EXPERT_PLAYTEST_10 D2).
-      const rule = [c.edges.length > 1 ? c.edges.map((e) => EDGE_TEXT[e].title).join(' + ') : edgeLine(c.edges), c.chips === 0 ? 'START WITH 0 CHIPS' : ''].filter(Boolean).join('. ');
-      drawText(ctx, open ? `${CABINETS[c.cabinet].name}${stake}. ${rule || c.text}` : `CLEAR ${CHALLENGES[i - 2].name} OR ${CHALLENGES[i - 1].name} TO OPEN`, 160, y + 10, 1.25, COLORS.textDim, { align: 'left' });
-      drawText(ctx, r?.won ? `CLEARED - BEST ${r.best}` : r ? `BEST ${r.best}` : '', W - 220, y - 6, 1.5, r?.won ? '#ffd23f' : COLORS.text, { align: 'right' });
-      drawText(ctx, `TITLE: ${c.title}`, W - 220, y + 12, 1.25, r?.won ? COLORS.goldLight : COLORS.textDim, { align: 'right' });
-    });
-  }
-
-  private panel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, border: string): void {
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
-    ctx.fillStyle = border;
-    ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = COLORS.panel;
-    ctx.fillRect(x + 3, y + 3, w - 6, h - 6);
-  }
-
   // ---- trophies --------------------------------------------------------------------------
 
   showTrophies(): void {
@@ -701,7 +621,7 @@ export class Menus {
     this.back = () => this.showProgress();
     this.btn('BACK', 100, 44, 140, 48, () => this.showProgress());
     const p = this.profile();
-    const owned = new Set(titlesOwned(levelOf(p.xp).level, p.challenges));
+    const owned = new Set(titlesOwned(levelOf(p.xp).level));
     const shown = shownTitle(p);
     this.titleTips = [];
     let x = 70;
@@ -781,7 +701,6 @@ export class Menus {
       have: p.achievements,
       found: foundCount(p),
       collection: collectionTotal(),
-      challengesWon: CHALLENGES.filter((c) => p.challenges[c.id]?.won).length,
     };
     // Two columns, every achievement with its text and (where it counts up) its progress.
     const cols = 2;
@@ -888,7 +807,6 @@ export class Menus {
       this.drawHiscores(ctx, t);
     }
     else if (this.mode === 'name') this.drawName(ctx, t);
-    else if (this.mode === 'challenges') this.drawChallenges(ctx, t);
     else if (this.mode === 'trophies') this.drawTrophies(ctx);
     for (const b of this.buttons) b.draw(ctx, t);
     if (this.mode === 'trophies') this.drawTrimRow(ctx);
@@ -1108,7 +1026,7 @@ export class Menus {
       // Result.
       const icon = e.won ? 'trophySmall' : 'hsSkull';
       if (hasSprite(icon)) drawSprite(ctx, artId(icon), 172, y + 13, 1.5);
-      const tag = e.daily ? `DAILY ${e.daily.slice(5)}` : e.weekly ? `WEEKLY ${e.weekly}` : e.challenge ? `CHALLENGE: ${CHALLENGES.find((c) => c.id === e.challenge)?.name ?? ''}` : '';
+      const tag = e.daily ? `DAILY ${e.daily.slice(5)}` : e.weekly ? `WEEKLY ${e.weekly}` : e.challenge ? 'CHALLENGE' : '';
       // On the hero's line, after the machine (it sat on the row's border).
       if (tag) drawText(ctx, tag, subX + sub.length * 7.5 + 16, y - 12, 1.25, '#7dff7a', { align: 'left' });
       const result = e.won
@@ -1149,7 +1067,7 @@ export class Menus {
   /** An online board: the top players (their best), you highlighted. */
   private drawBoard(ctx: CanvasRenderingContext2D, t: number): void {
     const key = this.boardKey(this.tab);
-    const sub = this.tab === 'daily' ? `THE DAILY RUN ${dailyKey().slice(5)} - ONE TRY EACH` : this.tab === 'weekly' ? `THE WEEKLY CHALLENGE ${weekKey()} - YOUR BEST TRY` : 'REGULAR RUNS, ANY STAKE (NO ENDLESS) - YOUR BEST';
+    const sub = this.tab === 'daily' ? `THE DAILY RUN ${dailyKey().slice(5)} - ONE TRY EACH` : 'REGULAR RUNS, ANY STAKE (NO ENDLESS) - YOUR BEST';
     drawText(ctx, sub, W / 2, 140, 1.5, COLORS.textDim);
     if (!online()) {
       drawText(ctx, STEAM ? 'THE ONLINE BOARDS ARE OFF' : 'THE ONLINE BOARDS ARE NOT OPEN YET', W / 2, H / 2 - 16, 3, COLORS.textDim);
@@ -1168,7 +1086,7 @@ export class Menus {
     if (!rows.length) {
       drawText(ctx, 'NO SCORES YET. BE THE FIRST!', W / 2, H / 2, 3, COLORS.textDim);
       // The DAILY and WEEKLY boards only take their own mode's runs.
-      const how = key.startsWith('daily') ? 'PLAY THE DAILY (PLAY MODES)' : key.startsWith('weekly') ? 'PLAY THE WEEKLY (PLAY MODES)' : '';
+      const how = key.startsWith('daily') ? 'PLAY THE DAILY (PLAY MODES)' : '';
       if (how) drawText(ctx, how, W / 2, H / 2 + 40, 1.5, COLORS.textDim);
       return;
     }

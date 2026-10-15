@@ -21,7 +21,7 @@ import { CABINETS, type CabinetId } from './cabinets';
 import { ENCOUNTERS, encounterOf, encounterRng, extraPlays, type EncounterChoice, type EncounterResult } from './encounters';
 import { BIG_CAP, CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
-import { dailyEdge, dailyFightSeed } from './daily';
+import { dailyFightSeed, dailyNight } from './daily';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
 
@@ -249,9 +249,9 @@ export interface RunState {
   tutorial?: boolean;
   /** A boss fell: pick 1 of these BIG CHOICES (before the legendary pick). */
   pendingChoice?: BigChoice[] | null;
-  /** ENDLESS (LET IT RIDE after the Dealer): the loop you're on and the HOUSE EDGES you've taken. */
-  endless?: { loop: number; edges: EdgeId[]; pot: number; /** THE OWNER: the most of his HP you've taken (0-1). */ ownerTaken?: number; night?: NightId; /** TONIGHT'S RULE per path (user, 2026-10-14): picking a path picks its rule. */ nights?: NightId[]; /** Beat THE TURBO: the run's true end. */ turbo?: boolean };
-  /** Choices waiting behind the current one (after a loop boss: RIDE?, then a big choice, then the edge). */
+  /** ENDLESS (LET IT RIDE after the Dealer): the loop you're on and its score pot. */
+  endless?: { loop: number; pot: number; /** THE OWNER: the most of his HP you've taken (0-1). */ ownerTaken?: number; night?: NightId; /** TONIGHT'S RULE per path (user, 2026-10-14): picking a path picks its rule. */ nights?: NightId[]; /** Beat THE TURBO: the run's true end. */ turbo?: boolean };
+  /** Choices waiting behind the current one. */
   choiceQueue?: BigChoice[][];
   /** Big-choice sets already offered this run. */
   choiceSets?: number[];
@@ -263,14 +263,9 @@ export interface RunState {
   healsBought?: number;
   /** BLOOD PACT: your meter fills twice as fast. */
   bloodPact?: boolean;
-  /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day), and the day's HOUSE EDGE. */
+  /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day), and the day's TONIGHT'S RULE. */
   daily?: string;
-  dailyEdge?: EdgeId;
-  /** THE WEEKLY CHALLENGE (its ISO week key, e.g. 2026-W40): fights fixed by the week, like the daily. */
-  weekly?: string;
-  /** A CHALLENGE run (its id, or "weekly"), and the HOUSE EDGES it plays under. */
-  challenge?: string;
-  mods?: EdgeId[];
+  dailyNight?: NightId;
   /** MASTERWORK (until 2026-10-08): these symbols can't gain levels. Old saves only. */
   levelLock?: SymbolId[];
   /** BIG CHOICES (2026-10-08): cards offered so far this run (never twice), and the fight rules they added. */
@@ -408,8 +403,8 @@ const DECK_MARKS_CAP = 6;
 /** Acts in this run: GREEN stake and up adds act 3 (THE DEALER). */
 /** GREEN and up always go on to ACT 3 (the Dealer). */
 /** Acts in this run: GREEN+ and THE DAILY RUN go on to the Dealer (act 3). */
-/** THE DAILY RUN and THE WEEKLY CHALLENGE: fights fixed by the day / week, base-stake numbers, through the Dealer. */
-export const fixedRun = (run: RunState) => !!(run.daily || run.weekly);
+/** THE DAILY RUN: fights fixed by the day, base-stake numbers, through the Dealer. */
+export const fixedRun = (run: RunState) => !!run.daily;
 export const runActs = (run: RunState) => (run.stake >= STAKE.act3 || fixedRun(run) ? 3 : ACTS);
 /** Fights an act holds on a typical route (the opener, 3 on the route, the boss): routes vary, so this is a guide. */
 export const TYPICAL_ACT_FIGHTS = 5;
@@ -428,7 +423,7 @@ export function fightLabel(run: RunState): string {
   // (Short: the long form ran across both reel frames. Playtest.)
   if (run.endless) return `LOOP ${run.endless.loop}${isBossNext(run) ? ' BOSS' : ''}${night ? `: ${night.title}` : ''}`;
   if (isBossNext(run)) return 'BOSS';
-  return `${run.daily ? 'DAILY - ' : run.weekly ? 'WEEKLY - ' : run.challenge ? 'CHALLENGE - ' : ''}ACT ${run.act} ${n}`;
+  return `${run.daily ? 'DAILY - ' : ''}ACT ${run.act} ${n}`;
 }
 /** 1-based fight number across the whole run (the fight you're on, or the one you fell at). */
 export const fightNumber = (run: RunState) => run.records.filter((r) => r.won).length + 1;
@@ -621,6 +616,16 @@ export function migrateRun(run: RunState): RunState {
         st.encounter = 'slot';
       }
   delete (run as { debt?: number }).debt;
+  // HOUSE EDGES, THE WEEKLY and CHALLENGES are gone (user, 2026-10-15): a saved one plays on as a normal run.
+  const old = run as { weekly?: string; challenge?: string; mods?: string[]; dailyEdge?: string; endless?: { edges?: string[] } };
+  delete old.weekly;
+  delete old.challenge;
+  delete old.mods;
+  delete old.dailyEdge;
+  if (old.endless) delete old.endless.edges;
+  if (Array.isArray(run.pendingChoice)) run.pendingChoice = run.pendingChoice.filter((c) => (c.id as string) !== 'edge');
+  if (Array.isArray(run.choiceQueue)) run.choiceQueue = run.choiceQueue.map((q) => q.filter((c) => (c.id as string) !== 'edge')).filter((q) => q.length);
+  if (run.pendingChoice && !run.pendingChoice.length) run.pendingChoice = run.choiceQueue?.shift() ?? null;
   return run;
 }
 
@@ -645,11 +650,6 @@ export const currentEnemy = (run: RunState): EnemyDef => run.enemies[Math.min(ru
 export const isBossNext = (run: RunState) => !needsRoute(run) && !!currentEnemy(run)?.isBoss;
 
 /** The GameConfig for the run's next fight. */
-/** The HOUSE EDGES in play: the ones taken in endless, THE DAILY RUN's edge of the day, a weekly's mods. */
-export const runEdges = (run: RunState) => new Set<EdgeId>([...(run.endless?.edges ?? []), ...(run.dailyEdge ? [run.dailyEdge] : []), ...(run.mods ?? [])]);
-/** How many times an edge is in play: HOUSE EDGES stack in ENDLESS (II, III), the daily's / a weekly's count once. */
-export const edgeLevel = (run: RunState, e: EdgeId) =>
-  (run.endless?.edges ?? []).filter((x) => x === e).length + (run.dailyEdge === e ? 1 : 0) + ((run.mods ?? []).includes(e) ? 1 : 0);
 /** FAST HANDS: abilities come 2 turns sooner per level (never under every 2). */
 export const fastHands = (ab: AbilityDef, level = 1): AbilityDef => ({ ...ab, every: Math.max(2, ab.every - 2 * level) });
 
@@ -685,18 +685,11 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   if (e.boss === 'dealer') {
     cfg.player.stackShield = Math.min(BOSS_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
   }
-  // HOUSE EDGES bend the fight: the ones taken in endless, and THE DAILY RUN's edge of the day.
   // BLACK and up: enemies hit harder (stakes.ts stakeDmg).
   if (stakeDmg(run.stake) !== 1) cfg.enemy.stakeDmg = stakeDmg(run.stake);
   // SECOND PAYLINE (big choice): its price, on the enemy's hits (its own note on the banner).
   if (run.big?.secondLine) cfg.enemy.lineDmg = BIG.lineDmg;
-  const edges = runEdges(run);
-  const lvl = (e: EdgeId) => edgeLevel(run, e);
-  if (edges.has('fast') && cfg.enemy.ability) cfg.enemy.ability = fastHands(cfg.enemy.ability, lvl('fast'));
-  // MARKED DECK: one mark a fight, never more (user, 2026-10-14: it doesn't stack).
-  if (edges.has('marked')) cfg.player.startMarks = Math.max(cfg.player.startMarks ?? 0, 1);
-  if (edges.has('heal')) cfg.player.healMul = 0.5 ** lvl('heal');
-  // (HIGH ROLLERS and HIGH LIMIT are in enemyHp, so the cards show the HP the fight has.)
+  // (HIGH LIMIT is in enemyHp, so the cards show the HP the fight has.)
   // ENDLESS: damage grows per loop.
   if (run.endless) {
     // The loop House is a race: it cashes its pot every 2 turns.
@@ -714,18 +707,17 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     const cleared = run.endless.loop - 1;
     if (run.cabinet === 'knight' && cleared > 0) cfg.player.veteranMul = 1 + LOOP_GROWTH.veteran * cleared;
     if (run.cabinet === 'jukebox') cfg.player.volumeStart = LOOP_GROWTH.warmUp * run.endless.loop;
-    // TONIGHT'S RULE, for both machines.
-    const night = run.endless.night;
-    cfg.night = night;
-    if (night === 'lucky') for (const side of [cfg.player, cfg.enemy]) side.strips = side.strips.map((s) => ({ ...s, wild: (s.wild ?? 0) + NIGHT.luckyWilds }));
-    if (night === 'fast') {
-      if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
-      cfg.player.meterMul = (cfg.player.meterMul ?? 1) * NIGHT.fastMeter;
-    }
+  }
+  // TONIGHT'S RULE (ENDLESS: the path's; THE DAILY RUN: the day's), for both machines.
+  const night = nightId(run);
+  cfg.night = night;
+  if (night === 'lucky') for (const side of [cfg.player, cfg.enemy]) side.strips = side.strips.map((s) => ({ ...s, wild: (s.wild ?? 0) + NIGHT.luckyWilds }));
+  if (night === 'fast') {
+    if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
+    cfg.player.meterMul = (cfg.player.meterMul ?? 1) * NIGHT.fastMeter;
   }
   // THE DAILY RUN: every fight is fixed by the day, so everyone meets the same fights.
-  // The daily locks its spins too (one try: the purest comparison). The weekly locks the map, enemies and offers, but
-  // its spins are fresh every try: a retry used to replay the same spins (user playtest).
+  // The daily locks its spins too (one try: the purest comparison).
   // Every run fight is seeded from the run (was: the daily only). A run resumed after a quit replays the same fight,
   // so quitting can't re-roll a loss (STEAM_READINESS S1). The sim seeds its own fights.
   cfg.seed = dailyFightSeed(run.daily ? run.seed : (run.spinSeed ?? run.seed), run.act, run.depth, run.endless?.loop ?? 0);
@@ -734,10 +726,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   return cfg;
 }
 
-/** THE DEALER's BUST clock (turns) in this run, as fightConfig and the fight set it: FAST HANDS, QUICKENING, the stakes. */
+/** THE DEALER's BUST clock (turns) in this run, as fightConfig and the fight set it: QUICKENING, the stakes. */
 export function dealerEvery(run: RunState): number {
   let ab: AbilityDef = { kind: 'deal', every: 3, power: 0 };
-  if (runEdges(run).has('fast')) ab = fastHands(ab, edgeLevel(run, 'fast'));
   if (run.abilityFaster) ab = { ...ab, every: Math.max(2, ab.every - 1) };
   return effectiveAbility(ab, { stake: run.stake, act: 3, sandglass: run.player.relics.includes('sandglass') }).every;
 }
@@ -745,20 +736,10 @@ export function dealerEvery(run: RunState): number {
 /** Enemy symbols that write on your machine (for the WRITER house edge). */
 
 
-/** HOUSE EDGES that act at the start of a run: GLASS JAW takes its 10% of max HP. */
-export function startEdges(run: RunState, edges: EdgeId[]): void {
-  for (const e of edges)
-    if (e === 'frail') {
-      run.player.maxHp = Math.max(UNIT, run.player.maxHp - Math.round((run.player.maxHp * 0.1) / UNIT) * UNIT);
-      run.player.hp = Math.min(run.player.hp, run.player.maxHp);
-    }
-}
-
-/** Make a fresh run THE DAILY RUN of this day: fights fixed by the day, and the day's HOUSE EDGE. */
+/** Make a fresh run THE DAILY RUN of this day: fights fixed by the day, and the day's TONIGHT'S RULE. */
 export function applyDaily(run: RunState, key: string): void {
   run.daily = key;
-  run.dailyEdge = dailyEdge(key);
-  startEdges(run, [run.dailyEdge]);
+  run.dailyNight = dailyNight(key);
 }
 
 /** Interest paid after a win on the chips you hold then (chips on the table don't count). */
@@ -824,11 +805,11 @@ export const endlessScore = runScoreOf;
 export function letItRide(run: RunState): void {
   if (!run.won || run.endless) return;
   run.over = false;
-  run.endless = { loop: 1, edges: [], pot: 0 };
+  run.endless = { loop: 1, pot: 0 };
   startEndlessLoop(run);
 }
 
-/** A new endless loop: 3 fights and a boss (cycling House, THE WHEEL, Dealer), after a HOUSE EDGE pick. */
+/** A new endless loop: an act-style map and a boss (cycling House, THE WHEEL, Dealer). */
 function startEndlessLoop(run: RunState): void {
   const loop = run.endless!.loop;
   run.act = 4;
@@ -839,59 +820,17 @@ function startEndlessLoop(run: RunState): void {
   run.endless!.nights = nrng.shuffle(NIGHT_IDS.filter((n) => n !== run.endless!.night)).slice(0, ROUTES_PER_LOOP);
   run.endless!.night = undefined;
   setMap(run, generateActMap(rng, 4, loop, run.cabinet));
-  // NO COMPS: a new loop heals only half your HP.
-  const comps = edgeLevel(run, 'nocomps');
-  run.player.hp = comps ? Math.min(run.player.maxHp, run.player.hp + Math.round(run.player.maxHp / 2 ** comps)) : run.player.maxHp;
+  run.player.hp = run.player.maxHp;
   run.actIntro = false;
-  // An edge you already took comes back one level up (II, III: harder, pays a tier more), up to EDGE_MAX (2026-10-12,
-  // user: ENDLESS ran out of edges by loop 7). 3 offered, pick 1, each paying for its cost.
-  const open = EDGES.filter((x) => edgeLevel(run, x) < edgeMax(x));
-  const pick = rng.shuffle(open).slice(0, 3);
-  // The reward on the card is what you'll really get (no silent swap to chips: EXPERT_PLAYTEST_5 B7).
-  const p = run.player;
-  const hasLegend = [...LEGENDARY].some((x) => !p.relics.includes(x) && relicFits(run, x));
-  const hasRelic = (Object.keys(RELICS) as RelicId[]).some((x) => !p.relics.includes(x) && !LEGENDARY.has(x) && !ELITE_ONLY.has(x) && relicFits(run, x));
-  const pay = (t: 'chips' | 'relic' | 'legend'): 'chips' | 'relic' | 'legend' => (t === 'legend' && !hasLegend ? (hasRelic ? 'relic' : 'chips') : t === 'relic' && !hasRelic ? 'chips' : t);
-  const tiers = ['chips', 'relic', 'legend'] as const;
-  const tierFor = (edge: EdgeId) => tiers[Math.min(2, tiers.indexOf(EDGE_TIER[edge]) + edgeLevel(run, edge))];
-  const edges = pick.map((edge): BigChoice => ({ id: 'edge', edge, reward: pay(tierFor(edge)) }));
   const queue: BigChoice[][] = [];
   // After a cleared loop: a big choice set (no RIDE / CASH OUT: user, 2026-10-14, you play until you bust).
   if (loop > 1) {
     const set = rng.int(BIG_SETS.length);
     queue.push(rollChoices(run, set, rng));
   }
-  if (edges.length) queue.push(edges);
   run.pendingChoice = queue.shift() ?? null;
   run.choiceQueue = queue;
 }
-
-/** HIGH ROLLERS: enemy HP + this per level. A HOUSE EDGE stacks up to EDGE_MAX levels. */
-export const EDGE_ROLLERS = 0.3;
-export const EDGE_MAX = 3;
-/** MARKED DECK doesn't stack (user, 2026-10-14): one mark a fight is all it ever does. */
-export const edgeMax = (e: EdgeId) => (e === 'marked' ? 1 : EDGE_MAX);
-/** An edge's card at a level (II, III say what the stack does in all). */
-export function edgeText(e: EdgeId, level: number): { title: string; text: string } {
-  const t = EDGE_TEXT[e];
-  if (level <= 1 || level > edgeMax(e)) return t;
-  const title = `${t.title} ${level === 2 ? 'II' : 'III'}`;
-  const text =
-    e === 'fast' ? `ENEMY ABILITIES CHARGE ${2 * level} TURNS FASTER`
-    : e === 'heal' ? `YOUR HEALING IN FIGHTS IS CUT TO 1/${2 ** level}`
-    : e === 'rollers' ? `ENEMIES HAVE +${Math.round(EDGE_ROLLERS * level * 100)}% HP`
-    : e === 'nocomps' ? `A NEW LOOP HEALS ONLY 1/${2 ** level} OF YOUR HP`
-    : t.text;
-  return { title, text };
-}
-export const EDGE_TEXT: Record<EdgeId, { title: string; text: string }> = {
-  fast: { title: 'FAST HANDS', text: 'ENEMY ABILITIES CHARGE 2 TURNS FASTER' },
-  marked: { title: 'MARKED DECK', text: 'EVERY FIGHT OPENS WITH 1 MARK ON YOUR REELS' },
-  heal: { title: 'HOUSE CUT', text: 'YOUR HEALING IN FIGHTS IS HALVED' },
-  rollers: { title: 'HIGH ROLLERS', text: 'ENEMIES HAVE +30% HP' },
-  nocomps: { title: 'NO COMPS', text: 'A NEW LOOP HEALS ONLY HALF YOUR HP' },
-  frail: { title: 'GLASS JAW', text: '-10% MAX HP' },
-};
 
 /**
  * An enemy's real HP for this run. Honest HP (2026-10-12): the same enemy has the same HP at the same stop on every
@@ -910,10 +849,9 @@ export function enemyHp(run: RunState, e: EnemyDef): number {
   const daily = fixedRun(run) && run.act >= 3 && !run.endless ? TUNE.dailyAct3 : 1;
   // DOUBLE OR NOTHING (big choice): the next boss has double HP.
   const dare = e.isBoss ? run.bossHpMul ?? 1 : 1;
-  // HOUSE EDGE HIGH ROLLERS and TONIGHT'S RULE HIGH LIMIT (playtest: the cards showed the HP without them).
-  const rollers = runEdges(run).has('rollers') ? 1 + EDGE_ROLLERS * edgeLevel(run, 'rollers') : 1;
-  const limit = run.endless?.night === 'limit' ? NIGHT.limitHp : 1;
-  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * dare * rollers * limit));
+  // TONIGHT'S RULE HIGH LIMIT (playtest: the cards showed the HP without it).
+  const limit = nightId(run) === 'limit' ? NIGHT.limitHp : 1;
+  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * dare * limit));
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {
@@ -1024,7 +962,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   // PIGGY BANK: more interest on what you hold.
   const piggy = run.player.relics.includes('piggy') ? Math.min(NEW_RELIC.piggyMax, Math.floor(run.player.chips / NEW_RELIC.piggyPer)) : 0;
   // OPEN BAR (big choice): wins pay no chips (interest still does). TRUST FUND: chips on top.
-  const winChips = (run.noWinChips ? 0 : CHIPS.win + (CABINETS[run.cabinet].chipsPerWin ?? 0) + (beaten.elite ? CHIPS.eliteBonus : 0) + fight.playerJackpots * CHIPS.perJackpot) * (run.endless?.night === 'limit' ? 2 : 1);
+  const winChips = (run.noWinChips ? 0 : CHIPS.win + (CABINETS[run.cabinet].chipsPerWin ?? 0) + (beaten.elite ? CHIPS.eliteBonus : 0) + fight.playerJackpots * CHIPS.perJackpot) * (nightId(run) === 'limit' ? 2 : 1);
   const earned = interest + piggy + winChips + (run.trustFund ?? 0);
   run.player.chips += earned;
   // (THE WHEEL: the chips your sweeps won came in with the fight's mid-fight chips; the line counts them.)
@@ -1649,7 +1587,6 @@ export const charmTagFor = (run: RunState, enh: Enh) => charmTag(enh, charmLevel
  * twice in a run). Strong options carry a real, visible cost; each set has one safe pick.
  */
 export type BigChoiceId =
-  | 'edge'
   | 'secondLine' | 'longGame'
   | 'armsRace' | 'masterwork' | 'whetstone' | 'meltDown' | 'gildLot' | 'polish' | 'cleanCut' | 'twinReel' | 'sweepUp' | 'glassCannon' | 'bloodPact' | 'secondWind'
   | 'devilsDue' | 'allIn' | 'doubleOrNothing' | 'cursedIdol' | 'quickening' | 'warded' | 'pawnShop' | 'temper' | 'luckyBreak' | 'treasure' | 'houseMoney'
@@ -1676,12 +1613,9 @@ export const NIGHTS: Record<NightId, { title: string; text: string }> = {
 };
 export const NIGHT_IDS = Object.keys(NIGHTS) as NightId[];
 /** TONIGHT'S RULE: what the loop plays under, for both machines. */
-export const nightOf = (run: RunState) => (run.endless?.night ? NIGHTS[run.endless.night] : null);
-/** HOUSE EDGES: endless-mode rules you take on, each paying a reward. */
-export type EdgeId = 'fast' | 'marked' | 'heal' | 'rollers' | 'nocomps' | 'frail';
-export const EDGES: EdgeId[] = ['fast', 'marked', 'heal', 'rollers', 'nocomps', 'frail'];
-/** How much each edge costs you, and so what it pays (EXPERT_PLAYTEST_4 C1: rewards sized to cost). */
-export const EDGE_TIER: Record<EdgeId, 'chips' | 'relic' | 'legend'> = { frail: 'chips', heal: 'relic', fast: 'chips', marked: 'relic', rollers: 'legend', nocomps: 'chips' };
+/** TONIGHT'S RULE in play: the ENDLESS path's, or THE DAILY RUN's of the day. */
+export const nightId = (run: RunState): NightId | undefined => run.endless?.night ?? run.dailyNight;
+export const nightOf = (run: RunState) => { const n = nightId(run); return n ? NIGHTS[n] : null; };
 /** The endless Cashier sells levels past the cap. */
 export const levelCap = (run: RunState) => (run.endless ? LEVEL_CAP + 1 : LEVEL_CAP) + (CABINETS[run.cabinet].levelCapBonus ?? 0);
 /** Each loop cleared grows the pot (the ENDLESS score) by this, on top of x1.5. */
@@ -1691,9 +1625,6 @@ export const nextPot = (pot: number) => Math.round(pot * ENDLESS.potGrowth) + PO
 
 export interface BigChoice {
   id: BigChoiceId;
-  /** HOUSE EDGE picks: the edge and its reward. */
-  edge?: EdgeId;
-  reward?: 'chips' | 'relic' | 'legend';
   /** Rolled target: a symbol, a charm or a reel. */
   symbol?: SymbolId;
   enh?: Enh;
@@ -1819,11 +1750,6 @@ export function describeChoice(run: RunState, c: BigChoice): { title: string; ru
   const atk = SYM_NAME(CABINETS[run.cabinet].attack);
   const meter = METER_NAME[run.cabinet] ?? 'METER';
   switch (c.id) {
-    case 'edge': {
-      // The level this card would make it (an edge you hold comes back one up).
-      const t = edgeText(c.edge!, edgeLevel(run, c.edge!) + 1);
-      return { title: t.title, rule: c.reward === 'legend' ? 'PICK A LEGENDARY RELIC' : c.reward === 'relic' ? 'PICK A RELIC' : `+${ENDLESS.edgeChips} CHIPS`, cost: `HOUSE EDGE: ${t.text}` };
-    }
     case 'armsRace':
       return { title: 'ARMS RACE', rule: '+1 LEVEL TO ALL YOUR SYMBOLS', cost: pct(run, BIG.armsRaceHp) };
     case 'masterwork':
@@ -2103,17 +2029,6 @@ function takeChoiceInner(run: RunState, c: BigChoice): void {
     p.levels.charm = { [enh]: best, ...(merged.some((g) => g.enh === 'gold') ? { gold: best } : {}) };
   };
   switch (c.id) {
-    case 'edge': {
-      run.endless?.edges.push(c.edge!);
-      if (c.edge === 'frail') loseMax(Math.round(p.maxHp * 0.1 / UNIT) * UNIT);
-      const erng = new Rng((run.seed ^ (run.endless?.loop ?? 1) * 977) >>> 0);
-      const legends = legendsFor(run);
-      const relics = relicsFor(run);
-      if (c.reward === 'legend' && legends.length) queueLegendPick(run, legendPick(run, erng, legends));
-      else if (c.reward === 'relic' && relics.length) queueLegendPick(run, erng.shuffle(relics).slice(0, RUN.legendPick));
-      else p.chips += ENDLESS.edgeChips;
-      break;
-    }
     case 'armsRace':
       levelSyms(run).forEach((s) => up(s));
       losePct(BIG.armsRaceHp);

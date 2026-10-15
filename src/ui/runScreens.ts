@@ -1,6 +1,6 @@
 import type { Sounds } from '../audio/sounds';
 import type { MetaGain } from '../core/profile';
-import { challengeById, levelOf } from '../core/meta';
+import { levelOf } from '../core/meta';
 import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../core/config';
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
@@ -17,17 +17,14 @@ import {
   describeOption,
   takenLabel,
   ACT1_GILDS,
-  edgeLevel,
-  edgeText,
   endlessScore,
   scaledAbility,
   runScoreOf,
   scoreParts,
   SCORE,
   NIGHTS,
+  nightId,
   nightOf,
-  fastHands,
-  runEdges,
   enemyHp,
   isRelicDraft,
   needsRoute,
@@ -36,7 +33,6 @@ import {
   currentStop,
   isBossNext,
   actStops,
-  EDGE_TEXT,
   rerollCost,
   runActs,
   totalFights,
@@ -310,8 +306,6 @@ const FRONT_BLURB: Record<string, string> = { dealer: 'THE HOUSE HAS A PARTNER' 
 function choiceShort(run: RunState, c: BigChoice): { effect: string; cost: string } {
   const full = describeChoice(run, c);
   switch (c.id) {
-    case 'edge':
-      return { effect: full.rule, cost: edgeText(c.edge!, edgeLevel(run, c.edge!) + 1).text };
     default:
       // The card says exactly what the rule says (the user's wording, 2026-10-08).
       return { effect: full.rule, cost: full.cost };
@@ -617,7 +611,7 @@ export class RunScreens {
   }
 
   private drawChoice(ctx: CanvasRenderingContext2D, time: number): void {
-    const edge = this.choices[0]?.id === 'edge';
+    const edge = false; // (HOUSE EDGES are gone; this screen goes with the big choices)
     drawText(ctx, edge ? `HOUSE EDGE: LOOP ${this.run?.endless?.loop ?? 1}` : 'BONUS ROUND', CX, 60, edge ? 5 : 6, edge ? '#ff8a7a' : COLORS.goldLight);
     drawText(ctx, edge ? 'PICK A NEW HOUSE RULE. EACH ONE PAYS.' : '', CX, 110, 2, COLORS.textDim);
     // TONIGHT'S RULE: each path has its own; you pick one with your path (the loop's opener plays without one).
@@ -969,9 +963,6 @@ export class RunScreens {
       case 'trustFund':
         drawSprite(ctx, (ch.id === 'monsoon' ? 'goldbar' : 'chip') as SpriteId, x, y - 6, s);
         tag(ch.id === 'noLimit' ? 'NO MAX' : ch.id === 'openBar' ? 'FREE' : ch.id === 'monsoon' ? 'RAIN' : `+${BIG.trustChips}`, x + s * 8, y + 30, COLORS.goldLight, 2.5);
-        break;
-      case 'edge':
-        drawSprite(ctx, (ch.reward === 'legend' ? artId('tierLegendary') : ch.reward === 'relic' ? artId('voucherRelic') : 'chip') as SpriteId, x, y, ch.reward === 'chips' ? s * 1.5 : s);
         break;
     }
   }
@@ -1422,7 +1413,7 @@ export class RunScreens {
       );
     });
     this.buttons.push(copyRun);
-    this.shareLine = run.daily ? dailyShare(run.daily, CABINETS[run.cabinet].hero, run.dailyEdge ? EDGE_TEXT[run.dailyEdge].title : '-', runScore(runEntry(run, 0)), run.records) : '';
+    this.shareLine = run.daily ? dailyShare(run.daily, CABINETS[run.cabinet].hero, nightOf(run)?.title ?? '-', runScore(runEntry(run, 0)), run.records) : '';
     this.openResults();
   }
   /** THE DAILY RUN: the finished run's share line. */
@@ -1617,7 +1608,7 @@ export class RunScreens {
     // YOUR BUILD: one fixed panel at the bottom of every between-fights screen.
     if (this.run && this.mode !== 'cabinet') this.drawBuild(ctx);
     // THE RESULTS card sits over everything, the build panel too (drawn under it, it hid the card's left side).
-    if (this.mode === 'over' && this.results && this.run) this.drawResults(ctx, this.run);
+    if (this.mode === 'over' && this.results && this.run) this.drawResults(ctx);
     for (const f of this.flyers) {
       const x = f.x0 + (f.x1 - f.x0) * f.t;
       const y = f.y0 + (f.y1 - f.y0) * f.t - Math.sin(f.t * Math.PI) * 90;
@@ -1864,9 +1855,9 @@ export class RunScreens {
   private drawDraft(ctx: CanvasRenderingContext2D, time: number): void {
     const last = this.lastRecord;
     const start = this.draftKind === 'start';
-    // ENDLESS: the pick after a loop's boss is the new loop's (its HOUSE EDGE reward): say the loop was cleared.
+    // ENDLESS: the pick after a loop's boss is the new loop's: say the loop was cleared.
     const loopDone = !!last && !!this.run?.endless && last.loop !== undefined && last.loop < this.run.endless.loop;
-    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${this.run.dailyEdge ? `: ${EDGE_TEXT[this.run.dailyEdge].title}` : ''}` : this.run?.weekly ? `WEEKLY: ${(this.run.mods ?? []).map((e) => EDGE_TEXT[e].title).join(' + ')}` : this.run?.challenge ? `CHALLENGE: ${challengeById(this.run.challenge)?.name ?? ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
+    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${nightOf(this.run) ? `: ${nightOf(this.run)!.title}` : ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
@@ -2149,7 +2140,7 @@ export class RunScreens {
     ctx.fillRect(bx, 103, bw, 3);
     drawText(ctx, fmtNum(hp), bx + bw / 2, 96, 2, COLORS.text);
     if (e.ability) {
-      const every = effectiveAbility(runEdges(run).has('fast') ? fastHands(e.ability, edgeLevel(run, 'fast')) : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
+      const every = effectiveAbility(nightId(run) === 'fast' ? { ...e.ability, every: Math.max(2, e.ability.every - 1) } : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
       const ui = ABILITY_UI[e.ability.kind];
       drawSprite(ctx, ui.icon, tx + 12, 138, fork ? 2.5 : 3);
       drawText(ctx, ui.label, tx + 34, 138, fork ? 2 : 2.5, '#ff9a3a', { align: 'left' });
@@ -2205,7 +2196,7 @@ export class RunScreens {
     if (!blurbFits && e.boss !== 'dealer') line(e.blurb, COLORS.textDim);
     if (e.ability && !e.isBoss) {
       // The ability sentence leads, big (a boss's rules paragraph below already says it): it's what the back is for.
-      const every = effectiveAbility(runEdges(run).has('fast') ? fastHands(e.ability, edgeLevel(run, 'fast')) : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
+      const every = effectiveAbility(nightId(run) === 'fast' ? { ...e.ability, every: Math.max(2, e.ability.every - 1) } : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
       wrap(abilityText(e, every, run), Math.floor((w - 32) / (6 * big))).forEach((l) => {
         drawText(ctx, l, 16, y + 2, big, '#ff9a3a', { align: 'left' });
         y += 10 * big + 2;
@@ -3602,7 +3593,7 @@ export class RunScreens {
   }
 
   /** THE RESULTS card: what the run earned outside the run. */
-  private drawResults(ctx: CanvasRenderingContext2D, run: RunState): void {
+  private drawResults(ctx: CanvasRenderingContext2D): void {
     const g = this.meta!;
     const r = this.results!;
     ctx.fillStyle = 'rgba(6,2,12,0.75)';
@@ -3631,7 +3622,6 @@ export class RunScreens {
     if (this.unlockedNow.length) notes.push([`NEW SLOT MACHINE: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}`, '#7dff7a']);
     for (const t of g.titles) notes.push([`NEW TITLE: ${t}`, '#ffd23f']);
     for (const t of g.trims) notes.push([`NEW TRIM: ${t} (WEAR IT FROM TROPHIES)`, '#ff9ec8']);
-    if (g.newBest) notes.push([run.weekly ? 'NEW WEEKLY BEST!' : 'NEW CHALLENGE BEST!', COLORS.goldLight]);
     for (const [text, color] of notes.slice(0, 3)) {
       drawText(ctx, text, W / 2, y, 2.5, color);
       y += 34;

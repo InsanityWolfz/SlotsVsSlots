@@ -187,7 +187,7 @@ export const BIG_PICK_WIN: Record<string, Record<string, number>> = {
 /** Big choices: strong picks are worth more, but the costs bite when you're low or already built. */
 export function choiceValue(run: RunState, c: BigChoice): number {
   const learned = BIG_PICK_WIN[run.cabinet]?.[c.id];
-  if (learned !== undefined && c.id !== 'edge') return learned / 5;
+  if (learned !== undefined) return learned / 5;
   return choiceValueBase(run, c);
 }
 
@@ -227,9 +227,6 @@ function choiceValueBase(run: RunState, c: BigChoice): number {
       return 6.5;
     case 'secondWind':
       return 4 + (1 - hp) * 6;
-    case 'edge':
-      // Endless house edges: legendaries beat chips; the harsh edges cost more.
-      return (c.reward === 'legend' ? 6 : 3) - (c.edge === 'frail' || c.edge === 'heal' ? 2 : c.edge === 'fast' ? 1 : 0);
     // BIG CHOICES (2026-10-08): rough values; the forced-pick probe measures them properly.
     case 'temper':
       return 5.5;

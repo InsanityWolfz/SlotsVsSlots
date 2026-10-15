@@ -8,7 +8,7 @@ import { charmLevel, charmName, symLevel } from './charms';
 import { RELICS } from './relics';
 import { symLabel, type SymbolId } from './config';
 import { encounterOf } from './encounters';
-import { edgeText, runScoreOf, takenLabel, type EdgeId, type RunState } from './run';
+import { runScoreOf, takenLabel, type RunState } from './run';
 import { stakeOf } from './stakes';
 
 export function runSummary(run: RunState, version = ''): string {
@@ -54,8 +54,5 @@ export function runSummary(run: RunState, version = ''): string {
     `BIG CHOICES: ${run.records.flatMap((r) => (r.choice ? [r.choice] : [])).join(', ') || 'NONE'}`,
     `ENCOUNTERS: ${(run.encounters ?? []).filter((e) => !e.more).map((e) => `A${e.act} ${encounterOf(e.id).name}: ${e.what || (e.good === true ? 'WON' : e.good === false ? 'LOST' : 'WALKED AWAY')}`).join(', ') || 'NONE'}`,
   );
-  // Each edge once, at the level it reached (MARKED DECK III, not marked, marked, marked).
-  const edges = run.endless?.edges ?? [];
-  if (edges.length) out.push(`HOUSE EDGES: ${[...new Set(edges)].map((e) => edgeText(e as EdgeId, edges.filter((x) => x === e).length).title).join(', ')}`);
   return out.join('\n');
 }

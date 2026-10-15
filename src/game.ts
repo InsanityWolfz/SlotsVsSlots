@@ -17,7 +17,7 @@ import {
   createRun,
   draftOffers,
   applyDaily,
-  EDGE_TEXT,
+  nightOf,
   fightConfig,
   fightLabel,
   migrateRun,
@@ -73,7 +73,7 @@ const RELIC_TIP_TOP = 232;
 import { Coach, TUTORIAL } from './ui/coach';
 import { collectionTotal, heroSprite, Menus } from './ui/menus';
 import { cleanName, nameBlocked, shownTrim, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type MetaGain, type Profile, type RunEntry } from './core/profile';
-import { applyChallenge, applyWeekly, challengeById, challengeOpen, CHALLENGES, levelOf, weekKey, weekly } from './core/meta';
+import { levelOf } from './core/meta';
 import { needsName, playerId, playerName } from './net/identity';
 import { claimName, submitScore } from './net/leaderboard';
 import { online } from './net/config';
@@ -325,8 +325,6 @@ export class Game {
       onNewRun: () => this.chooseCabinet(),
       onTutorial: () => this.startTutorial(),
       onDaily: () => this.startDaily(),
-      onChallenge: (id) => this.startChallenge(id),
-      onWeekly: () => this.startWeekly(),
       needsName: () => needsName(this.profile),
       onName: (name) => this.pickName(name),
       onNameSkip: () => {
@@ -855,30 +853,6 @@ export class Game {
     this.checkpoint('next');
   }
 
-  /** A CHALLENGE: its machine and stake, its edges (open ones only). */
-  startChallenge(id: string): void {
-    const c = challengeById(id);
-    const i = CHALLENGES.findIndex((x) => x.id === id);
-    if (!c || !challengeOpen(this.profile.challenges, i)) return;
-    this.startRun(undefined, c.cabinet, c.stake);
-    if (!this.run) return;
-    applyChallenge(this.run, c);
-    this.newFight(false, null, fightConfig(this.run, this.cfg), true);
-    this.checkpoint('next');
-  }
-
-  /** THE WEEKLY CHALLENGE: the week's seed, machine and edges, fights fixed by the week. As many tries as you like. */
-  startWeekly(): void {
-    const key = weekKey();
-    const w = weekly(key);
-    this.startRun(w.seed, w.cabinet, 0);
-    if (!this.run) return;
-    applyWeekly(this.run, key);
-    // The first fight was set up before the run knew it was the weekly: rebuild it on the week's seed.
-    this.newFight(false, null, fightConfig(this.run, this.cfg), true);
-    this.checkpoint('next');
-  }
-
   /** Tuning panel "apply": restart with the new base config. */
   restart(): void {
     this.startRun();
@@ -945,9 +919,9 @@ export class Game {
       if (run.won && run.act >= 3 && !run.endless) save(RUN_KEY, { v: 1, at: 'ride', version: VERSION, run });
       this.skipTutorial();
       if (run.endless) this.screens.setStakeUnlockedNow('');
-      // The daily, the weekly and challenges are side roads: no unlocks from them.
-      if (run.daily || run.challenge) this.screens.setStakeUnlockedNow('');
-      this.screens.setUnlockedNow(run.endless || run.daily || run.challenge ? [] : this.checkUnlocks(run));
+      // The daily is a side road: no unlocks from it.
+      if (run.daily) this.screens.setStakeUnlockedNow('');
+      this.screens.setUnlockedNow(run.endless || run.daily ? [] : this.checkUnlocks(run));
       this.screens.showOver(run);
     }
     else this.afterBonus(record);
@@ -1168,7 +1142,8 @@ export class Game {
         pot: this.fight.pot,
         potPunch: 1,
         fightLabel: this.run && inRun ? fightLabel(this.run) : 'SANDBOX',
-        twist: this.run && inRun ? [...(this.run.mods ?? []), ...(this.run.dailyEdge ? [this.run.dailyEdge] : [])].map((e) => EDGE_TEXT[e].title).join(' + ') : '',
+        // THE DAILY RUN's TONIGHT'S RULE, shown all run (ENDLESS names its rule in the fight label).
+        twist: this.run && inRun && this.run.daily ? (nightOf(this.run)?.title ?? '') : '',
         allIn: false,
         ...(this.fight.isWheel ? { bets: [...this.fight.bets], betsLeft: (this.fight.sides.enemy.ability?.every ?? 3) - this.fight.sides.enemy.charge, betPer: this.fight.betPer(), betPunch: 1, wheelFast: this.fight.fast, wheelAngle: 0, wheelSpeed: 0.6 } : {}),
         chipsEaten: 0,

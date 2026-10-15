@@ -1,130 +1,19 @@
-import { Rng } from './rng';
 /**
- * The META LAYERS around runs: CHALLENGES (fixed twists, unlocked in order), THE WEEKLY CHALLENGE (one seed, machine
- * and two HOUSE EDGES a week, as many tries as you like), ACHIEVEMENTS, and the player LEVEL (XP from every run's
- * score) with its TITLES. Pure data + helpers; the game owns persistence. Cosmetic only: nothing here changes balance
- * outside the challenge runs themselves.
+ * The META LAYERS around runs: ACHIEVEMENTS, and the player LEVEL (XP from every run's score) with its TITLES. Pure
+ * data + helpers; the game owns persistence. Cosmetic only: nothing here changes balance. (CHALLENGES and THE WEEKLY
+ * CHALLENGE are gone: user, 2026-10-15.)
  */
 import { CABINETS, CABINET_ORDER, type CabinetId } from './cabinets';
-import { dailySeed } from './daily';
-import { EDGE_TEXT, startEdges, type EdgeId, type RunState } from './run';
 import { MAX_STAKE, STAKES } from './stakes';
 
-// ---- CHALLENGES ---------------------------------------------------------------------------------
-
-export interface ChallengeDef {
-  id: string;
-  name: string;
-  cabinet: CabinetId;
-  /** 0 = WHITE (acts 1-2); 2 = GREEN (through the Dealer). */
-  stake: number;
-  edges: EdgeId[];
-  /** Start with this many chips instead of the machine's own. */
-  chips?: number;
-  /** The title a clear earns. */
-  title: string;
-  /** Flavour line (the edges are listed separately). */
-  text: string;
-}
-
-export const CHALLENGES: ChallengeDef[] = [
-  // Ordered by measured difficulty (challenges.ts 400 greedy, EXPERT_PLAYTEST_9 D4): 34 / 30 / 29 / 27 / 25 / 13.5 / 11.
-  { id: 'glass', name: 'GLASS JAW', cabinet: 'joker', stake: 0, edges: ['frail', 'fast'], title: 'WILD CARD', text: 'ONE GOOD HIT AND IT IS OVER.' },
-  { id: 'rollers', name: 'HEAVY HITTERS', cabinet: 'tesla', stake: 0, edges: ['rollers'], title: 'LIVE WIRE', text: 'EVERYONE AT THIS TABLE CAME TO STAY.' },
-  { id: 'fast', name: 'FAST COMPANY', cabinet: 'knight', stake: 0, edges: ['fast'], title: 'QUICK DRAW', text: 'THE TABLE PLAYS FAST TONIGHT.' },
-  { id: 'broke', name: 'SHORT STACK', cabinet: 'midas', stake: 0, edges: [], chips: 0, title: 'SELF-MADE', text: 'CASH CASSIDY WALKS IN WITH EMPTY POCKETS.' },
-  // (Was HOUSE CUT: it attacked BRIAR's identity, 50.7 -> 13.7, and walled the ladder: EXPERT_PLAYTEST_9 D4.)
-  // BAD BLOOD was BRIAR's; remade for THE JUKEBOX when it replaced BRIAR (user, 2026-10-08). Same id: records carry over.
-  { id: 'cut', name: 'TOUGH CROWD', cabinet: 'jukebox', stake: 0, edges: ['rollers', 'frail', 'fast'], title: 'ONE-HIT WONDER', text: 'EVERY TABLE CAME TO STAY. PLAY THEM OFF THE STAGE.' },
-  { id: 'all', name: 'ALL OF IT', cabinet: 'midas', stake: 2, edges: ['fast'], title: 'HIGH ROLLER', text: 'THE WHOLE HOUSE PLAYS FAST. ALL THE WAY TO THE DEALER.' },
-  { id: 'night', name: 'THE LONG NIGHT', cabinet: 'knight', stake: 2, edges: ['heal'], title: 'NIGHT OWL', text: 'ALL THE WAY TO THE DEALER, ON HALF HEALS.' },
-];
-export const challengeById = (id: string) => CHALLENGES.find((c) => c.id === id);
-export const edgeLine = (edges: EdgeId[]) => (edges.length ? edges.map((e) => `${EDGE_TEXT[e].title}: ${EDGE_TEXT[e].text}`).join('. ') : '');
-
-/** Best result per challenge (and per weekly key). */
+/** Best result per challenge / weekly (both gone, user 2026-10-15; the profile field stays so saves keep their shape). */
 export interface ChallengeRecord {
   best: number;
   won: boolean;
   tries: number;
 }
-/** The first two are open; each clear opens the next two, so one hard step never walls off the rest (EXPERT_PLAYTEST_9 D4). */
-export const challengeOpen = (records: Record<string, ChallengeRecord>, i: number) =>
-  i <= 1 || !!records[CHALLENGES[i].id]?.won || !!records[CHALLENGES[i - 1].id]?.won || !!records[CHALLENGES[i - 2].id]?.won;
-
-/** Set up a fresh run (made with the challenge's machine and stake) as this challenge. */
-export function applyChallenge(run: RunState, c: ChallengeDef): void {
-  run.challenge = c.id;
-  run.mods = [...c.edges];
-  if (c.chips != null) run.player.chips = c.chips;
-  startEdges(run, c.edges);
-}
-
-// ---- THE WEEKLY CHALLENGE -----------------------------------------------------------------------
-
-/** The ISO week key (UTC), e.g. "2026-W40": everyone shares the week. */
-export function weekKey(d = new Date()): string {
-  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const day = t.getUTCDay() || 7;
-  t.setUTCDate(t.getUTCDate() + 4 - day);
-  const year = t.getUTCFullYear();
-  const week = Math.ceil(((t.getTime() - Date.UTC(year, 0, 1)) / 86400000 + 1) / 7);
-  return `${year}-W${String(week).padStart(2, '0')}`;
-}
+/** An ISO week key, e.g. "2026-W40" (old WEEKLY hiscore entries keep their tag). */
 export const WEEK_KEY = /^\d{4}-W\d{2}$/;
-
-/**
- * The weekly's setups: a pair of HOUSE EDGES, or one edge and an empty wallet. No HOUSE CUT pairs (3-6% weeks), no HIGH
- * ROLLERS + GLASS JAW (5%), and never a challenge's exact setup (EXPERT_PLAYTEST_10 D6: 2 pairs, FAST in every week).
- */
-export interface WeeklySetup {
-  edges: EdgeId[];
-  chips?: number;
-}
-export const WEEKLY_SETUPS: WeeklySetup[] = [
-  { edges: ['fast', 'rollers'] },
-  { edges: ['fast', 'frail'] },
-  { edges: ['rollers'], chips: 0 },
-  { edges: ['frail'], chips: 0 },
-  { edges: ['heal'] },
-  { edges: ['fast'], chips: 0 },
-];
-/** Reads like a challenge: its machine plus any of its edges (W40 was GLASS JAW minus one edge: EXPERT_PLAYTEST_11 D8). */
-const sameSetup = (cab: CabinetId, w: WeeklySetup, c: ChallengeDef) => c.cabinet === cab && c.edges.some((e) => w.edges.includes(e));
-
-/** The week's machine and setup (the next setup along if it would copy a challenge). */
-export function weekly(key: string): { cabinet: CabinetId; edges: EdgeId[]; chips?: number; seed: number } {
-  const seed = dailySeed(`weekly:${key}`);
-  const m0 = dailySeed(`weekly:${key}:machine`) % CABINET_ORDER.length;
-  const pick = dailySeed(`weekly:${key}:edge`);
-  const e0 = pick % WEEKLY_SETUPS.length;
-  // Any setup for the week's machine that doesn't read like a challenge, picked evenly (the next one along made two
-  // setups 43% of weeks: EXPERT_PLAYTEST_12 D2); none left, the next machine along.
-  let cabinet = CABINET_ORDER[m0];
-  let w = WEEKLY_SETUPS[e0];
-  for (let m = 0; m < CABINET_ORDER.length; m++) {
-    const cab = CABINET_ORDER[(m0 + m) % CABINET_ORDER.length];
-    const allowed = WEEKLY_SETUPS.filter((setup) => !CHALLENGES.some((c) => sameSetup(cab, setup, c)));
-    if (allowed.length) {
-      cabinet = cab;
-      w = allowed[pick % allowed.length];
-      break;
-    }
-  }
-  return { cabinet, edges: [...w.edges], ...(w.chips != null ? { chips: w.chips } : {}), seed };
-}
-
-/** Make a fresh run (seeded with weekly(key).seed) THE WEEKLY CHALLENGE: fights fixed by the week, through the Dealer. */
-export function applyWeekly(run: RunState, key: string): void {
-  const w = weekly(key);
-  run.weekly = key;
-  run.challenge = 'weekly';
-  run.mods = [...w.edges];
-  // Fresh spins every try (user playtest: a retry replayed the same spins); fixed for the try, so a quit can't re-roll.
-  run.spinSeed = Rng.randomSeed();
-  if (w.chips != null) run.player.chips = w.chips;
-  startEdges(run, w.edges);
-}
 
 // ---- LEVELS AND TITLES --------------------------------------------------------------------------
 
@@ -197,8 +86,6 @@ export interface AchievementCtx {
   loops: number;
   killer?: string;
   daily: boolean;
-  weekly: boolean;
-  challenge?: string;
   tutorial: boolean;
   stats: MetaStats;
   /** Achievements already earned (for "all of them" checks). */
@@ -206,7 +93,6 @@ export interface AchievementCtx {
   /** Collection found / total. */
   found: number;
   collection: number;
-  challengesWon: number;
 }
 
 export interface MetaStats {
@@ -232,43 +118,39 @@ export interface ProgressCtx {
   have: Record<string, number>;
   found: number;
   collection: number;
-  challengesWon: number;
 }
 
 const clearOf = (cab: CabinetId): AchievementDef => ({
   id: `clear_${cab}`,
   name: `${CABINETS[cab].hero} CASHES IN`,
   text: `CLEAR A RUN WITH ${CABINETS[cab].name}.`,
-  // Full numbers only: THE DAILY and THE WEEKLY ease act 3 and lend you machines you haven't unlocked (EXPERT_PLAYTEST_9 D5).
-  check: (c) => c.won && c.cabinet === cab && !c.daily && !c.weekly,
+  // Full numbers only: THE DAILY eases act 3 and lends you machines you haven't unlocked (EXPERT_PLAYTEST_9 D5).
+  check: (c) => c.won && c.cabinet === cab && !c.daily,
 });
 const stakeOf = (lvl: number): AchievementDef => ({
   id: `stake_${lvl}`,
   name: `${STAKES[lvl].name} STAKE`,
   text: `CLEAR A RUN ON STAKE ${lvl} (${STAKES[lvl].name}) OR HIGHER.`,
-  check: (c) => c.won && c.stake >= lvl && !c.challenge,
+  check: (c) => c.won && c.stake >= lvl && !c.daily,
 });
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'first_win', name: 'FIRST BLOOD', text: 'WIN A FIGHT.', check: (c) => c.act > 1 || c.won || c.score > 0 },
   { id: 'house', name: 'HOUSE CALL', text: 'BEAT THE HOUSE.', check: (c) => c.act >= 2 || c.won },
   { id: 'clear', name: 'NO MORE BETS', text: 'CLEAR A RUN: STOP THE WHEEL.', check: (c) => c.won },
-  { id: 'dealer', name: 'THE HOUSE ALWAYS LOSES', text: 'BEAT THE DEALER (NOT IN THE DAILY OR WEEKLY).', check: (c) => c.won && c.acts >= 3 && !c.daily && !c.weekly },
+  { id: 'dealer', name: 'THE HOUSE ALWAYS LOSES', text: 'BEAT THE DEALER (NOT IN THE DAILY).', check: (c) => c.won && c.acts >= 3 && !c.daily },
   ...CABINET_ORDER.map(clearOf),
   {
     id: 'all_machines',
     name: 'FULL HOUSE',
     text: 'CLEAR A RUN WITH EVERY SLOT MACHINE.',
-    check: (c) => CABINET_ORDER.every((m) => c.have[`clear_${m}`] || (c.won && c.cabinet === m && !c.daily && !c.weekly)),
+    check: (c) => CABINET_ORDER.every((m) => c.have[`clear_${m}`] || (c.won && c.cabinet === m && !c.daily)),
     progress: (c) => [CABINET_ORDER.filter((m) => c.have[`clear_${m}`]).length, CABINET_ORDER.length],
   },
   ...Array.from({ length: MAX_STAKE }, (_, i) => stakeOf(i + 1)),
   { id: 'daily_play', name: 'DAILY BREAD', text: 'PLAY THE DAILY RUN.', check: (c) => c.daily },
   { id: 'daily_win', name: 'DAILY DOUBLE', text: 'WIN THE DAILY RUN.', check: (c) => c.daily && c.won },
   { id: 'daily_7', name: 'CREATURE OF HABIT', text: 'PLAY 7 DAILY RUNS.', check: (c) => c.stats.dailies >= 7, progress: (c) => [c.stats.dailies, 7] },
-  { id: 'weekly_win', name: 'WEEK IN, WEEK OUT', text: 'CLEAR THE WEEKLY CHALLENGE.', check: (c) => c.weekly && c.won },
-  { id: 'challenge_1', name: 'CHALLENGER', text: 'CLEAR A CHALLENGE.', check: (c) => c.challengesWon >= 1 },
-  { id: 'challenge_all', name: 'NO CHALLENGE', text: 'CLEAR EVERY CHALLENGE.', check: (c) => c.challengesWon >= CHALLENGES.length, progress: (c) => [c.challengesWon, CHALLENGES.length] },
   { id: 'endless_1', name: 'LET IT RIDE', text: 'CLEAR AN ENDLESS LOOP.', check: (c) => c.loops >= 1 },
   { id: 'endless_3', name: 'ON A HEATER', text: 'CLEAR 3 ENDLESS LOOPS IN ONE RUN.', check: (c) => c.loops >= 3 },
   { id: 'turbo', name: 'BROKE THE BANK', text: 'BEAT THE TURBO BOSS.', check: (c) => c.loops >= 5 },
@@ -298,10 +180,10 @@ export function newAchievements(c: AchievementCtx): AchievementDef[] {
 
 /** Every title and how it's earned (for the TROPHIES screen's locked ones). */
 export function allTitles(): { title: string; how: string; level?: number }[] {
-  return [...LEVEL_TITLES.map((t) => ({ title: t.title, how: `REACH LEVEL ${t.level}`, level: t.level })), ...CHALLENGES.map((c) => ({ title: c.title, how: `CLEAR THE ${c.name} CHALLENGE` }))];
+  return LEVEL_TITLES.map((t) => ({ title: t.title, how: `REACH LEVEL ${t.level}`, level: t.level }));
 }
 
-/** Every title the player holds: by level, and one per cleared challenge. */
-export function titlesOwned(level: number, records: Record<string, ChallengeRecord>): string[] {
-  return [...LEVEL_TITLES.filter((t) => level >= t.level).map((t) => t.title), ...CHALLENGES.filter((c) => records[c.id]?.won).map((c) => c.title)];
+/** Every title the player holds (by level). */
+export function titlesOwned(level: number): string[] {
+  return LEVEL_TITLES.filter((t) => level >= t.level).map((t) => t.title);
 }

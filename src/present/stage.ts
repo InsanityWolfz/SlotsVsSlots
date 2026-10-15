@@ -59,7 +59,7 @@ export interface Stage {
     pot: number;
     potPunch: number;
     fightLabel: string;
-    /** A challenge / weekly / daily run's HOUSE EDGES, shown all run (EXPERT_PLAYTEST_10 D8). */
+    /** THE DAILY RUN's TONIGHT'S RULE, shown all run. */
     twist?: string;
     allIn: boolean;
     /** THE WHEEL (presented): chips on your reels, turns to NO MORE BETS, what one chip hits for, SPINS FASTER, and the

@@ -25,9 +25,8 @@ describe('ENDLESS (LET IT RIDE)', () => {
     expect(kinds).toHaveLength(8);
     expect(kinds.slice(-2)).toEqual(['shop', 'fight']);
     expect(run.enemies.at(-1)!.boss).toBe('house');
-    expect(run.pendingChoice?.length).toBe(3);
-    takeChoice(run, run.pendingChoice![0]);
-    expect(run.endless!.edges.length).toBe(1);
+    // HOUSE EDGES are gone (user, 2026-10-15): the first loop opens with no choice to make.
+    expect(run.pendingChoice ?? null).toBe(null);
   });
 
   it('beating a loop boss starts the next loop (harder, next boss); losing ends it', () => {
