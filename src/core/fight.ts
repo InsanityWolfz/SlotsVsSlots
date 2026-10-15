@@ -382,6 +382,9 @@ export class Fight {
     if (this.act3Regular && this.sides.enemy.ability) this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - 1);
     // THE REPO MAN takes on his first turn, then every 3 (half of MIDAS's fights ended before his 3rd: EXPERT_PLAYTEST_9 D3).
     else if (this.sides.enemy.ability?.kind === 'repo') this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - GATEKEEPER.firstTurn);
+    // ACT 1-2 regulars and elites get a head start: the enemy's trick (writing on your machine) shows in nearly every
+    // fight, not only the long ones (the feel playtest: BLIZZARD and PILFER never fired before the enemy died).
+    else if (this.sides.enemy.ability && !this.isBoss && !this.isWheel && !this.isDealer && !this.cfg.enemy.endless) this.sides.enemy.charge = Math.min(this.sides.enemy.ability.every - 1, TUNE.headStart);
     // THE DEALER deals first on its 2nd turn, then every 3.
     if (this.isDealer) {
       // Its first hand's bar: a share of its total HP.

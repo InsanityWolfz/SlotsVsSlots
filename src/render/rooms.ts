@@ -5,7 +5,7 @@
  *   act 1 THE ALLEY: night, rain. Pigeons on the laundry line (they scatter on your jackpot), a cat on the dumpster,
  *     a bookie's chalkboard, a rat, a gutter pouring, a doorman by the DEN door (it swings open on your jackpot, the
  *     peephole slides now and then), the DEN neon in the puddle, car headlights sweeping past.
- *   act 2 THE FLOOR: neon CASINO / LUCKY 7 down the walls, a neon cowboy waving over the floor, eye-in-the-sky cameras
+ *   act 2 THE FLOOR: neon CASINO / LUCKY 7 down the walls, a neon cherries sign over the floor, eye-in-the-sky cameras
  *     that watch whichever machine is spinning, gamblers with their own stories (one wins a bucket of coins, one
  *     bonks his machine), a waitress crossing, a balloon drop on your jackpot.
  *   act 3 THE VIP ROOM: a grand chandelier with candle flames (it sways on your jackpot), past bosses' portraits whose
@@ -889,7 +889,7 @@ export class Rooms {
       rect(g, cx + aim, 10, 1, 1, '#4a4a6a');
       if (Math.floor(t * 1.5) % 2) rect(g, cx - 3, 8, 1, 1, '#ff2a2a');
     }
-    if (mid) this.cowboy(g, t, cheer);
+    if (mid) this.cherries(g, t, cheer);
     this.machineLights(g, art.machines, t, cheer, '#ffe9a0');
     this.gamblers(g, art.machines, t);
     this.waitress(g, t);
@@ -952,31 +952,51 @@ export class Rooms {
     }
   }
 
-  /** The floor's big sign: a neon cowboy in outline tubes, waving his hat, winking. No words (playtest: a 777 JACKPOT
-   * sign read as the game telling you something). Your jackpot runs his colors. */
-  private cowboy(g: CanvasRenderingContext2D, t: number, cheer: number): void {
+  /** The floor's big sign: neon cherries on a bulb-lit board. No words (playtest: a 777 JACKPOT sign read as the game
+   * telling you something). Your jackpot runs its colors. */
+  private cherries(g: CanvasRenderingContext2D, t: number, cheer: number): void {
     const x = MID;
     const y = 18;
     const c = cheer > 0 ? NEON[Math.floor(t * 8) % NEON.length] : '#ffd23f';
     const c2 = cheer > 0 ? NEON[(Math.floor(t * 8) + 2) % NEON.length] : '#ff4fa3';
-    glow(g, x, y + 20, 34, '255,210,63', 0.1 + cheer * 0.1);
-    g.globalAlpha = 0.65;
-    const wave = Math.floor(t * 1.5) % 2;
-    const hatY = wave ? y - 2 : y + 2;
-    const hatX = wave ? x + 14 : x;
-    line(g, [[hatX - 8, hatY + 6], [hatX + 8, hatY + 6]], c);
-    line(g, [[hatX - 4, hatY + 6], [hatX - 3, hatY], [hatX + 3, hatY], [hatX + 4, hatY + 6]], c);
-    line(g, [[x - 4, y + 8], [x - 4, y + 15], [x + 4, y + 15], [x + 4, y + 8], [x - 4, y + 8]], c2);
-    rect(g, x - 2, y + 11, 1, 1, c2);
-    if (Math.sin(t * 0.9) > 0.9) rect(g, x + 1, y + 11, 2, 1, c2);
-    else rect(g, x + 2, y + 11, 1, 1, c2);
-    line(g, [[x - 1, y + 13], [x + 1, y + 14]], c2);
-    line(g, [[x - 6, y + 17], [x + 6, y + 17], [x + 5, y + 30], [x - 5, y + 30], [x - 6, y + 17]], c);
-    line(g, [[x - 5, y + 30], [x - 6, y + 42], [x - 9, y + 42]], c);
-    line(g, [[x + 5, y + 30], [x + 6, y + 42], [x + 9, y + 42]], c);
-    line(g, [[x - 6, y + 19], [x - 12, y + 26], [x - 12, y + 30]], c);
-    line(g, wave ? [[x + 6, y + 19], [x + 12, y + 12], [x + 14, y + 6]] : [[x + 6, y + 19], [x + 12, y + 24], [x + 14, y + 22]], c);
-    g.globalAlpha = 1;
+    // A real sign, not a doodle (feel playtest: the bare tubes read as placeholder art): a dark backboard on two
+    // brackets, a chase of bulbs round its edge, and every tube lit over its own soft glow.
+    const bx = x - 22;
+    const by = y - 7;
+    const bw = 44;
+    const bh = 54;
+    rect(g, x - 15, by - 4, 1, 4, '#2a1f30');
+    rect(g, x + 14, by - 4, 1, 4, '#2a1f30');
+    rect(g, bx, by, bw, bh, '#120a18');
+    rect(g, bx + 1, by + 1, bw - 2, bh - 2, '#1c1026');
+    const bulbs = [] as [number, number][];
+    for (let k = 0; k <= bw - 2; k += 4) bulbs.push([bx + 1 + k, by + 1], [bx + bw - 2 - k, by + bh - 2]);
+    for (let k = 4; k <= bh - 6; k += 4) bulbs.push([bx + 1, by + bh - 2 - k], [bx + bw - 2, by + 1 + k]);
+    bulbs.forEach(([px, py], k) => rect(g, px, py, 1, 1, (Math.floor(t * (cheer > 0 ? 14 : 5)) + k) % 3 === 0 ? '#fff2b0' : '#5a4020'));
+    glow(g, x, y + 20, 34, '255,210,63', 0.14 + cheer * 0.12);
+    const tube = (pts: [number, number][], col: string) => {
+      g.globalAlpha = 0.28;
+      line(g, pts, col, 3);
+      g.globalAlpha = 1;
+      line(g, pts, col);
+    };
+    // The neon itself: a pair of cherries (the oldest slot symbol there is), the stems swaying, one cherry then the
+    // other bobbing. (Was a waving cowboy in bare outline: it read as a stick figure.)
+    const ring = (cx: number, cy: number, r: number): [number, number][] =>
+      Array.from({ length: 17 }, (_, k) => [Math.round(cx + r * Math.cos((k / 16) * Math.PI * 2)), Math.round(cy + r * Math.sin((k / 16) * Math.PI * 2))] as [number, number]);
+    const beat = Math.floor(t * 1.5) % 2;
+    const sway = Math.round(Math.sin(t * 1.2));
+    const red = cheer > 0 ? c : '#ff4a5a';
+    const green = cheer > 0 ? c2 : '#5aff7a';
+    const top: [number, number] = [x + 3 + sway, y + 4];
+    tube([top, [x - 2, y + 14], [x - 7, y + 27 - beat]], green);
+    tube([top, [x + 6, y + 15], [x + 8, y + 26 - (1 - beat)]], green);
+    tube([top, [x + 9, y + 1], [x + 14, y + 3], [x + 9, y + 6], top], green);
+    tube(ring(x - 7, y + 32 - beat, 6), red);
+    tube(ring(x + 8, y + 31 - (1 - beat), 6), red);
+    // A glint on each cherry.
+    rect(g, x - 10, y + 29 - beat, 1, 1, '#fff2f2');
+    rect(g, x + 5, y + 28 - (1 - beat), 1, 1, '#fff2f2');
   }
 
   private machineLights(g: CanvasRenderingContext2D, machines: Machine[], t: number, cheer: number, bulbOn: string): void {

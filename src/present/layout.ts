@@ -61,4 +61,7 @@ export const COLORS = {
   danger: '#ff3b30',
   pair: '#ffc93c',
   triple: '#ff3a2e',
+  /** THE PAYOUT LADDER above JACKPOT: BIG WIN (electric cyan) and MEGA WIN (hot pink), each its own colour. */
+  bigWin: '#52f0ff',
+  mega: '#ff6ad5',
 };

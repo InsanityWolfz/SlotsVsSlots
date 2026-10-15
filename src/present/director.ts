@@ -2,7 +2,7 @@ import { OWNER_RULES } from '../core/enemies';
 import { symLabel, UNIT, type Enh, type SideId, type SymbolId } from '../core/config';
 import type { CombatEvent } from '../core/events';
 import { DEALER_HANDS, DEALER_RULES, effectText, other, WHEEL_SYMBOLS, wheelCharm, WRITERS, type TurnResult } from '../core/fight';
-import type { LineScore } from '../core/scoring';
+import type { LineScore, ScoreGroup, Tier } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
 import { Banner, Bubble, FloatText, Lightning, Projectile, SymbolWheel, TurnCard } from './fx';
@@ -11,7 +11,7 @@ import type { Stage } from './stage';
 import { ABILITY_UI } from './hud';
 import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
-import { fmtNum } from '../render/text';
+import { fmtNum, textWidth } from '../render/text';
 import { BOMB, RELICS } from '../core/relics';
 import { charmLevel, charmName, charmTag, charmValue, CHARM_COLOR, playerSymValue } from '../core/charms';
 import { defaultConfig } from '../core/config';
@@ -37,6 +37,53 @@ const BATCHABLE = new Set<CombatEvent['type']>(['attack', 'shieldGain', 'energyG
 const BANNER_Y = 172;
 /** PAIR! / JACKPOT!: mid-machine, like BUST! and ALL IN (at BANNER_Y they covered both HP bars as the hit landed). */
 const PAY_BANNER_Y = MACHINE_TOP + MACHINE_H / 2;
+/** THE PAYOUT LADDER: a pay this share of the HP bar it lands on is a BIG WIN, this much a MEGA WIN. */
+export const LADDER = { big: 0.3, mega: 0.65 };
+/** An enemy turn whose hits come to at most this share of your max HP plays at double speed. */
+const QUIET_ENEMY_HIT = 0.08;
+const TIER_MUL = { pair: defaultConfig().pairMult, triple: defaultConfig().tripleMult };
+/** One step of THE CLIMB: what it says and the running pay after it. */
+interface ClimbStep {
+  label: string;
+  value: number;
+}
+/** An engine note as a multiplier step: "X1.5 DRY", "HOT X2", "HIGH ROLLER X2", "VOL +32%". Flat notes (+N, ECHO,
+ * RAKE, HALF) aren't steps: their effect is already in the base or shows as the red cut. */
+export function noteStep(n: string): { f: number; text: string } | null {
+  let m = /^X(\d+(?:\.\d+)?)\s*(.*)$/.exec(n);
+  if (m) return { f: Number(m[1]), text: `×${m[1]}${m[2] ? ` ${m[2]}` : ''}` };
+  m = /^(.+?)\s+X(\d+(?:\.\d+)?)$/.exec(n);
+  if (m) return { f: Number(m[2]), text: `×${m[2]} ${m[1]}` };
+  m = /^(.+?)\s*\+(\d+)%$/.exec(n);
+  if (m) return { f: 1 + Number(m[2]) / 100, text: n };
+  return null;
+}
+/**
+ * THE CLIMB for a paying group: the base, then the line (PAIR / JACKPOT), then each multiplier the engine noted, ending
+ * on the engine's exact total. Where the notes don't multiply out to the total exactly (TESLA's pooled lightning, a
+ * rounding), the gap is spread evenly over the steps, so the count only ever lands on the true number.
+ */
+export function climbSteps(g: ScoreGroup, tier: Tier): ClimbStep[] {
+  const gross = Math.round(g.base * g.mult);
+  const raw: { f: number; text: string }[] = [];
+  const count = g.reels.length;
+  if (g.matched && count >= 2 && tier !== 'none') raw.push(count >= 3 ? { f: TIER_MUL.triple, text: `×${TIER_MUL.triple} JACKPOT` } : { f: TIER_MUL.pair, text: `×${TIER_MUL.pair} PAIR` });
+  for (const n of g.notes ?? []) {
+    const st = noteStep(n);
+    if (st && st.f !== 1) raw.push(st);
+  }
+  if (!raw.length && gross !== g.base && g.base > 0) raw.push({ f: gross / g.base, text: '' });
+  const prod = raw.reduce((a, st) => a * st.f, Math.max(1, g.base));
+  const k = raw.length && prod > 0 ? (gross / prod) ** (1 / raw.length) : 1;
+  const out: ClimbStep[] = [{ label: '', value: g.base }];
+  let v = g.base;
+  raw.forEach((st, i) => {
+    v *= st.f * k;
+    out.push({ label: st.text, value: i === raw.length - 1 ? gross : v });
+  });
+  if (out.length === 1) out.push({ label: '', value: gross });
+  return out;
+}
 /** Where your chip count sits (top left: runScreens CHIP_SPOT): swept bets fly there. */
 const CHIP_COUNTER = { x: 44, y: 46 };
 
@@ -59,8 +106,13 @@ export class Director {
     // A quiet turn (no jackpot, ability, special, bonus or death, and little damage) plays 1.5x faster.
     const loud = new Set<CombatEvent['type']>(['ability', 'specialFire', 'death', 'fightEnd', 'noMoreBets', 'wheelFast', 'phoenix', 'potWin', 'payoff' as CombatEvent['type']]);
     const dealt = evs.reduce((a, e) => a + (e.type === 'attack' ? e.amount : 0), 0);
-    const quiet = !evs.some((e) => loud.has(e.type) || (e.type === 'spin' && e.score.tier === 'triple')) && dealt <= 2 * UNIT;
-    this.c.boost = quiet ? 1.5 : 1;
+    const calm = !evs.some((e) => loud.has(e.type) || (e.type === 'spin' && e.score.tier === 'triple'));
+    // The enemy's routine turns are the waiting half of a fight (feel playtest: dead air): one that does little plays
+    // at double speed; a quiet turn of yours at 1.5x. Anything that matters (an ability, a jackpot, a real hit) plays
+    // at full length.
+    const enemyTurn = evs.find((e) => e.type === 'turnStart')?.side === 'enemy';
+    const small = enemyTurn ? dealt <= this.s.huds.player.maxHp * QUIET_ENEMY_HIT : dealt <= 2 * UNIT;
+    this.c.boost = calm && small ? (enemyTurn ? 2 : 1.5) : 1;
     for (let i = 0; i < evs.length; i++) {
       // More than one lightning strike in a turn plays as ONE storm (length grows with the log of the count).
       if (evs[i].type === 'specialFire') {
@@ -710,47 +762,71 @@ export class Director {
 
     const sym = matched!.symbol;
     const slimeCleanse = sym === 'slime' && side === 'player';
-    // BASE X MULT = TOTAL, built part by part (a red -N for what an enemy cut), no words.
     const g = matched!;
     const gross = Math.round(g.base * g.mult);
     // One decimal unless it makes the sum read wrong (39 x 11.3 = 439): then two.
     const fmt = (x: number) => (Number.isInteger(x) ? String(x) : Math.round(g.base * Number(x.toFixed(1))) === gross ? x.toFixed(1) : String(Number(x.toFixed(2))));
-    const bigMath = gross >= 150 || !!g.drop || g.mult >= 4;
     const effect = side === 'enemy' && WRITERS.has(sym) ? effectText(sym, g.amount) : '';
-    const parts = slimeCleanse
+    // THE PAYOUT LADDER (feel playtest, 2026-10-15: "JACKPOT!" every two spins meant nothing). A pay is sized by the HP
+    // bar it lands on: a hit by the enemy's (a block by your own), so a small jackpot stays small and BIG WIN / MEGA WIN
+    // are earned. PAIR and JACKPOT still name the line; the size names the moment.
+    const attack = sym !== 'shield';
+    const bar = this.s.huds[attack ? other(side) : side].maxHp;
+    const share = slimeCleanse || effect ? 0 : gross / Math.max(1, bar);
+    const size: 'small' | 'big' | 'mega' = share >= LADDER.mega ? 'mega' : share >= LADDER.big ? 'big' : 'small';
+    const mine = side === 'player';
+    const title = size === 'mega' ? (mine ? 'MEGA WIN!' : 'HUGE HIT!') : size === 'big' ? (mine ? 'BIG WIN!' : 'BIG HIT!') : tier === 'triple' ? 'JACKPOT!' : 'PAIR!';
+    const color = size === 'mega' ? (mine ? COLORS.mega : '#ff4a4a') : size === 'big' ? (mine ? COLORS.bigWin : '#ff7a5a') : tier === 'triple' ? COLORS.triple : COLORS.pair;
+    const fixed = slimeCleanse
       ? [{ text: 'CLEANSE!', color: COLORS.slime }]
       : effect
         ? [{ text: effect, color: '#ff8a7a' }]
-        : [
-          { text: `${g.base}`, color: '#ffffff' },
-          { text: ' × ', color: COLORS.goldLight },
-          { text: fmt(g.mult), color: COLORS.goldLight },
-          { text: ' = ', color: '#ffffff' },
-          { text: `${gross}!`, color: tier === 'triple' ? '#ff8a5a' : COLORS.goldLight },
-          ...(g.cut ? [{ text: ` -${g.cut}`, color: '#ff5a5a' }] : []),
-        ];
-    if (tier === 'pair') {
-      this.s.sounds.stingerMedium();
-      this.shake(3, 0.15);
-      this.s.camera.chromaPulse(0.15);
-      // Non-blocking: the effects start while the banner is still up.
-      // A big hit's math stays up long enough to read (R13: 0.35 s for a 7,000 hit was gone before you saw it).
-      this.bg(this.banner('PAIR!', COLORS.pair, 1.15, bigMath ? 1.1 : 0.35, parts, PAY_BANNER_Y));
-      await this.c.wait(0.3);
+        : null;
+    // THE CLIMB: your pay builds on screen, one multiplier at a time (the line, then each Charm and relic as it fires),
+    // counting up to the total. The enemy's pays show the short sum (its turns are the waiting half of a fight).
+    const climb = !fixed && mine ? climbSteps(g, tier) : null;
+    const parts = fixed ?? [
+      { text: `${g.base}`, color: '#ffffff' },
+      { text: ' × ', color: COLORS.goldLight },
+      { text: fmt(g.mult), color: COLORS.goldLight },
+      { text: ' = ', color: '#ffffff' },
+      { text: `${gross}!`, color: tier === 'triple' ? '#ff8a5a' : COLORS.goldLight },
+      ...(g.cut ? [{ text: ` -${g.cut}`, color: '#ff5a5a' }] : []),
+    ];
+    const hold = size === 'mega' ? 1.3 : size === 'big' ? 0.9 : tier === 'triple' ? 0.45 : 0.3;
+    if (size === 'small') {
+      // A small pay: quick and light (a small jackpot still glows orange, without the confetti storm).
+      if (tier === 'pair') this.s.sounds.stingerMedium();
+      else {
+        this.s.sounds.stingerMedium();
+        this.s.sounds.coin(3);
+      }
+      this.shake(tier === 'triple' ? 5 : 3, 0.18);
+      this.s.camera.chromaPulse(tier === 'triple' ? 0.3 : 0.15);
+      if (tier === 'triple') {
+        const c = this.machineCenter(side);
+        this.s.particles.burst({ x: c.x, y: c.y - 60, count: 40, colors: ['#ff8a5a', '#ffd23f', '#ffffff'], speed: [180, 420], angle: -Math.PI / 2, spread: Math.PI * 0.9, gravity: 700, drag: 1.2, life: [0.6, 1.1], size: [4, 7], kind: 'confetti' });
+      }
+      const show = this.payBanner(title, color, tier === 'triple' ? 1.25 : 1.15, hold, parts, climb, tier === 'triple' ? 4.5 : 4, 'small');
+      if (climb) await show;
+      else {
+        this.bg(show);
+        await this.c.wait(0.3);
+      }
     } else {
       this.s.sounds.fanfareJackpot();
-      this.hitstop(4);
-      this.shake(9, 0.5);
-      this.s.camera.punchZoom(0.05, 0.45);
+      this.hitstop(size === 'mega' ? 8 : 4);
+      this.shake(size === 'mega' ? 12 : 9, size === 'mega' ? 0.7 : 0.5);
+      this.s.camera.punchZoom(size === 'mega' ? 0.08 : 0.05, size === 'mega' ? 0.6 : 0.45);
       this.s.camera.chromaPulse(0.85);
       this.s.camera.dimTarget = 0.35;
       const c = this.machineCenter(side);
       this.s.particles.burst({
         x: c.x,
         y: c.y - 60,
-        count: 200,
+        count: size === 'mega' ? 320 : 200,
         colors: ['#ff3a2e', '#ffd23f', '#3b8ef0', '#5ed15a', '#ffffff', '#ff6ad5'],
-        speed: [250, 750],
+        speed: [250, size === 'mega' ? 900 : 750],
         angle: -Math.PI / 2,
         spread: Math.PI * 1.2,
         gravity: 700,
@@ -759,9 +835,46 @@ export class Director {
         size: [5, 9],
         kind: 'confetti',
       });
-      await this.banner('JACKPOT!', COLORS.triple, 1.5, bigMath ? 1.2 : 0.6, parts, PAY_BANNER_Y, 5);
+      await this.payBanner(title, color, size === 'mega' ? 1.7 : 1.5, hold, parts, climb, size === 'mega' ? 6 : 5, size);
       this.s.camera.dimTarget = 0;
     }
+  }
+
+  /**
+   * The pay banner. With a climb, the sub line counts up through each step (LABEL VALUE), a rising ding a step, then
+   * slams on the total; without one it builds the short sum part by part.
+   */
+  private async payBanner(title: string, color: string, overshoot: number, hold: number, parts: { text: string; color: string }[], climb: ClimbStep[] | null, textScale: number, size: 'small' | 'big' | 'mega'): Promise<void> {
+    if (!climb) return this.banner(title, color, overshoot, hold, parts, PAY_BANNER_Y, textScale);
+    if (!this.s.juice.banners) return;
+    const b = this.s.fx.add(new Banner(title, color, W / 2, PAY_BANNER_Y, textScale));
+    // Wide enough for the longest step, so the panel doesn't twitch as the labels change.
+    b.minW = Math.max(...climb.map((st) => textWidth(`${st.label}  ${fmtNum(st.value)}`, 4))) + 60;
+    const show = (label: string, value: number, end = false) =>
+      (b.subParts = [
+        ...(label ? [{ text: `${label}  `, color: COLORS.goldLight }] : []),
+        { text: `${fmtNum(Math.round(value))}${end ? '!' : ''}`, color: end ? color : '#ffffff' },
+      ]);
+    show(climb[0].label, climb[0].value);
+    await this.c.tween({ from: 0, to: overshoot, dur: 0.22, ease: backOut(2), onUpdate: (v) => (b.scale = v) });
+    await this.c.tween({ from: overshoot, to: 1, dur: 0.12, ease: sineIn, onUpdate: (v) => (b.scale = v) });
+    // Each step: count from the last value to this one; bigger moments climb slower.
+    const per = size === 'mega' ? 0.24 : size === 'big' ? 0.18 : 0.11;
+    for (let i = 1; i < climb.length; i++) {
+      const from = climb[i - 1].value;
+      const st = climb[i];
+      this.s.sounds.ding(i + 1);
+      await this.c.tween({ from, to: st.value, dur: per, ease: cubicOut, onUpdate: (v) => show(st.label, v) });
+      this.bg(this.c.tween({ from: 1.08, to: 1, dur: 0.12, onUpdate: (v) => (b.scale = v) }));
+    }
+    // The slam: the total, in the banner's colour.
+    const total = climb[climb.length - 1].value;
+    show('', total, true);
+    this.s.sounds.coin(5);
+    this.bg(this.c.tween({ from: 1.2, to: 1, dur: 0.18, ease: backOut(3), onUpdate: (v) => (b.scale = v) }));
+    await this.c.wait(hold);
+    await this.c.tween({ from: 1, to: 0, dur: 0.15, ease: cubicIn, onUpdate: (v) => ((b.scale = 0.6 + 0.4 * v), (b.alpha = v)) });
+    this.s.fx.remove(b);
   }
 
   private async attack(e: Ev<'attack'>): Promise<void> {

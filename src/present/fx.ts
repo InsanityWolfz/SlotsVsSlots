@@ -93,6 +93,8 @@ export class Banner implements FxItem {
   /** A coloured sub line built part by part (BASE X MULT = TOTAL): `reveal` parts are shown. */
   subParts: { text: string; color: string }[] = [];
   reveal = 99;
+  /** The panel is at least this wide (a climbing pay changes its text every step: no twitching). */
+  minW = 0;
   constructor(
     public text: string,
     public color: string,
@@ -111,7 +113,7 @@ export class Banner implements FxItem {
     const hasSub = !!this.sub || this.subParts.length > 0;
     const subText = this.sub || partsText;
     const subScale = subText && textWidth(subText, 4) <= 520 && this.subParts.length ? 4 : subText && textWidth(subText, 3) > 520 ? 2 : 3;
-    const pw = Math.max(tw, hasSub ? textWidth(subText, subScale) : 0) + 60;
+    const pw = Math.max(this.minW, Math.max(tw, hasSub ? textWidth(subText, subScale) : 0) + 60);
     const ph = this.textScale * 7 + (hasSub ? 50 + (subScale - 3) * 7 : 36);
     // Solid dark panel + border frame that scales with it (juice §3.6).
     ctx.fillStyle = COLORS.outline;
