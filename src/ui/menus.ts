@@ -136,6 +136,9 @@ export class Menus {
       onReset: () => void;
       tutorialDone: () => boolean;
       /** SOFT LIGHTNING option. */
+      /** HOLD (experiment). */
+      holdsOn: () => boolean;
+      setHolds: (on: boolean) => void;
       softLightning: () => boolean;
       setSoftLightning: (on: boolean) => void;
       muted: () => boolean;
@@ -310,7 +313,7 @@ export class Menus {
   private static readonly SUB_PITCH = 84;
   /** SETTINGS has more rows: a tighter grid in a taller panel. */
   private static readonly SET_Y = 276;
-  private static readonly SET_PITCH = 46;
+  private static readonly SET_PITCH = 42;
   /** Labels that follow live state (the M key mutes; fullscreen can change outside the menu). */
   private liveLabels: (() => void)[] = [];
   private settingsMidRun = false;
@@ -381,10 +384,11 @@ export class Menus {
     toggle(4, (on) => (on ? 'MOTION: REDUCED' : 'MOTION: FULL'), () => this.cb.setting('motion') as boolean, (on) => this.cb.setSetting('motion', on));
     toggle(5, (on) => (on ? 'LIGHTNING: SOFT' : 'LIGHTNING: FULL'), () => this.cb.softLightning(), (on) => this.cb.setSoftLightning(on));
     toggle(6, (on) => (on ? 'FULLSCREEN: ON' : 'FULLSCREEN: OFF'), () => this.cb.setting('fullscreen') as boolean, (on) => this.cb.setSetting('fullscreen', on));
+    toggle(7, (on) => (on ? 'HOLD (NEW): ON' : 'HOLD (NEW): OFF'), () => this.cb.holdsOn(), (on) => this.cb.setHolds(on), true);
     this.resetArmed = 0;
     this.settingsMidRun = midRun;
     if (midRun) return this.slideIn();
-    const reset = this.btn('RESET SAVE', x, row(7) + 22, 300, 40, () => {
+    const reset = this.btn('RESET SAVE', x, row(8) + 22, 300, 40, () => {
       if (performance.now() - this.resetArmed < 400) return;
       if (!this.resetArmed) {
         this.resetArmed = performance.now();
@@ -883,7 +887,7 @@ export class Menus {
     if (hasSprite('logo')) drawSprite(ctx, artId('logo'), W / 2, 66 + Math.sin(t * 2) * 2, 2);
     const k = this.panelIn;
     const top = Menus.SUB_Y - 96;
-    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 1 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 6 * Menus.SET_PITCH + 48 : 7 * Menus.SET_PITCH + 70) : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
+    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 1 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 7 * Menus.SET_PITCH + 48 : 8 * Menus.SET_PITCH + 70) : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
     const pw = 540;
     // The panel rises in (no alpha on the layered frame: a half-faded gold rim tints the panel brown).
     ctx.save();
@@ -907,8 +911,8 @@ export class Menus {
       // The M key and F11 change state outside the menu: keep the labels in step.
       for (const f of this.liveLabels) f();
       const scap = (text: string, y: number, color: string = COLORS.textDim) => drawText(ctx, text, W / 2, y, 1.25, color, { alpha: Math.max(0, Math.min(1, k)) });
-      scap('CLICK MASTER (OR PRESS M) TO MUTE. F11: FULLSCREEN', Menus.SET_Y + 6 * Menus.SET_PITCH + 30);
-      if (!this.settingsMidRun) scap('ERASES YOUR UNLOCKS, COLLECTION AND SCORES', Menus.SET_Y + 7 * Menus.SET_PITCH + 52, '#ff8a7a');
+      scap('CLICK MASTER (OR PRESS M) TO MUTE. F11: FULLSCREEN', Menus.SET_Y + 7 * Menus.SET_PITCH + 30);
+      if (!this.settingsMidRun) scap('ERASES YOUR UNLOCKS, COLLECTION AND SCORES', Menus.SET_Y + 8 * Menus.SET_PITCH + 52, '#ff8a7a');
       // The keys (STEAM_READINESS S29), under the panel.
       drawText(ctx, 'SPACE SPIN   A AUTO   1-4 SPEED   M MUTE   ESC PAUSE   ARROWS + ENTER: MENUS', W / 2, H - 22, 1.5, COLORS.textDim, { alpha: Math.max(0, Math.min(1, k)) });
     }

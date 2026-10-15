@@ -590,7 +590,8 @@ export class Director {
           this.setTag(e.side, r, e.locked[r]);
         },
       },
-      e.frozen,
+      // A HELD reel (HOLD, experiment) stays still like a frozen one.
+      e.frozen.map((z, r) => z || !!e.held?.[r]),
     );
     for (const r of e.score.relics ?? []) this.relicPop(e.side, r);
     // GOLDEN SPIN: its own moment, a gold banner over a soft flash of the machine (never the screen).

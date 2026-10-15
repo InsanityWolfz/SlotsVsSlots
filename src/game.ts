@@ -48,7 +48,7 @@ import { Clock } from './present/clock';
 import { Director } from './present/director';
 import { FxLayer } from './present/fx';
 import { HUD_W, HudView, type HudMeter } from './present/hud';
-import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, HUD_TOP, RELIC_FEED, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
+import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, HUD_TOP, PITCH, reelWindow, RELIC_FEED, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
 import { MachineView } from './present/machine';
 import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
@@ -82,6 +82,8 @@ const CFG_KEY = 'slotvslot.config.v3';
 const PREFS_KEY = 'slotvslot.prefs.v2';
 const PROFILE_KEY = 'slotvslot.profile.v1';
 const AUTO_DELAY = 0.35;
+/** HOLD (experiment): HOLDs a fight. */
+export const HOLD_PER_FIGHT = 2;
 
 /** Speed buttons (keys 1-4). The new 1X is half of the old 1X, so the clock runs at speed / 2. */
 const SPEEDS = [1, 2, 4, 8];
@@ -92,6 +94,8 @@ interface Prefs {
   /** 2 = speeds are on the 1/2/4/8 scale (older saves stored 1/2/4 on the old scale). */
   speedV: number;
   auto: boolean;
+  /** HOLD (experiment, 2026-10-15): tap reels between your spins to hold them. */
+  holds: boolean;
   juice: JuiceToggles;
   muted: boolean;
   /** Meta progression: cabinets unlocked across runs. */
@@ -145,6 +149,7 @@ function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
     speed: p.speedV === 2 ? (SPEEDS.includes(p.speed as number) ? (p.speed as number) : 2) : [1, 2, 4].includes(p.speed as number) ? (p.speed as number) * 2 : 2,
     speedV: 2,
     auto: typeof p.auto === 'boolean' ? p.auto : true,
+    holds: typeof p.holds === 'boolean' ? p.holds : true,
     juice: { ...defaultJuice(), ...juice },
     muted: p.muted === true,
     unlocked,
@@ -284,6 +289,9 @@ export class Game {
   phase: Phase = 'title';
   presenting = false;
   awaitingSpin = false;
+  /** HOLD (experiment): your last spin paid a PAIR; the fight is waiting on a HOLD CHANCE. */
+  private lastPair = false;
+  private holdPrompt = false;
   rows: TurnRow[] = [];
   fightNo = 0;
   /** Seed to replay on Rematch (quick fights). */
@@ -343,6 +351,11 @@ export class Game {
       },
       onReset: () => this.resetSave(),
       tutorialDone: () => this.prefs.tutorialDone,
+      holdsOn: () => this.prefs.holds,
+      setHolds: (on) => {
+        this.prefs.holds = on;
+        this.savePrefs();
+      },
       softLightning: () => this.prefs.juice.softLightning,
       setSoftLightning: (on) => {
         this.prefs.juice.softLightning = on;
@@ -1066,6 +1079,10 @@ export class Game {
     this.synth.stopLoops();
     this.synth.enabled = true;
     this.camera.dimTarget = 0;
+    // HOLD (experiment, setting): this fight's HOLDs.
+    if (this.prefs.holds) cfg = { ...cfg, player: { ...cfg.player, holds: HOLD_PER_FIGHT } };
+    this.lastPair = false;
+    this.holdPrompt = false;
     this.fight = new Fight(cfg, seed ?? cfg.seed ?? undefined);
     this.hurt.clear();
     this.spins = [0, 0];
@@ -1149,17 +1166,23 @@ export class Game {
     await clock.wait(0.3);
     while (!this.fight.over) {
       if (token !== this.token) return;
-      if (this.fight.next === 'player' && !this.prefs.auto) {
+      // HOLD CHANCE: your last spin paid a PAIR and you have HOLDs left: even on AUTO the fight waits for you (tap a
+      // reel to hold it, then SPIN). Without AUTO every spin waits, and you can hold before any of them.
+      const holdChance = this.prefs.holds && this.fight.next === 'player' && this.fight.holdsLeft > 0 && this.lastPair;
+      if (this.fight.next === 'player' && (!this.prefs.auto || holdChance)) {
+        this.holdPrompt = holdChance;
         this.awaitingSpin = true;
         this.syncButtons();
         await new Promise<void>((r) => (this.spinResolve = r));
         this.awaitingSpin = false;
+        this.holdPrompt = false;
         this.syncButtons();
       } else {
         await clock.wait(AUTO_DELAY);
       }
       if (token !== this.token) return;
       const result = this.fight.step();
+      for (const e of result.events) if (e.type === 'spin' && e.side === 'player') this.lastPair = e.score.tier === 'pair';
       this.noteHurt(result.events);
       this.tracker.record(result.events);
       this.rows.push(turnRow(this.fight, result, this.fightNo));
@@ -1346,6 +1369,18 @@ export class Game {
     }
     // Run screens get first pick: the tool buttons (TUNE/LOG/SOUND) sit under them (ITERATION_8 G3).
     if (this.screens.active && this.screens.pointerDown(x, y)) return;
+    // HOLD (experiment): while the fight waits on your spin, tap one of your reels to hold it (tap again to let go).
+    if (this.awaitingSpin && this.prefs.holds && !this.screens.active) {
+      const win = reelWindow('player');
+      if (x >= win.x && x < win.x + win.w && y >= win.y && y < win.y + win.h) {
+        const r = Math.floor((x - win.x) / PITCH);
+        const was = this.fight.held[r];
+        const now = this.fight.hold(r);
+        if (now !== was) this.sounds.reelStop(r, now ? 1.4 : 0.8);
+        else this.sounds.fizzle();
+        return;
+      }
+    }
     // The BUILD drawer's handle: pull it out, push it back in.
     if (this.drawerLive() && this.onHandle(x, y)) {
       this.buildOpen = !this.buildOpen;
@@ -1569,6 +1604,7 @@ export class Game {
     this.drawGutter(ctx, t);
     this.particles.draw(ctx);
     s.fx.draw(ctx, s.clock.time, 20, Infinity);
+    if (this.fight.holdsLeft > 0 || this.fight.held.some(Boolean)) this.drawHolds(ctx, t);
     if (this.drawerT < 0.5) this.drawRelicFeed(ctx);
     if (this.fight.cfg.enemy.boss && !this.screens.active) this.drawBossHint(ctx);
     if (this.bossCard) this.drawBossCard(ctx);
@@ -1609,6 +1645,29 @@ export class Game {
 
   private relicList() {
     return this.fight.cfg.relics;
+  }
+
+  /** HOLD (experiment): a HELD tag on each held reel, your HOLDs left under your machine, and the HOLD CHANCE call. */
+  private drawHolds(ctx: CanvasRenderingContext2D, t: number): void {
+    if (!this.prefs.holds || (this.phase !== 'fighting' && this.phase !== 'quick')) return;
+    const f = this.fight;
+    for (let r = 0; r < 3; r++) {
+      if (!f.held[r]) continue;
+      const c = cellCenter('player', r, 1);
+      ctx.strokeStyle = '#ffd23f';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(c.x - PITCH / 2 + 4, MACHINE_TOP + 4, PITCH - 8, MACHINE_H - 8);
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(c.x - 40, c.y + PITCH / 2 + 4, 80, 26);
+      drawText(ctx, 'HELD', c.x, c.y + PITCH / 2 + 17, 2, '#ffd23f');
+    }
+    const win = reelWindow('player');
+    const left = f.holdsLeft - f.held.filter(Boolean).length;
+    drawText(ctx, `HOLDS ${left}`, win.x + win.w / 2, win.y + win.h + 18, 1.75, left > 0 ? '#ffd23f' : COLORS.textDim);
+    if (this.awaitingSpin && (this.holdPrompt || f.held.some(Boolean))) {
+      const pulse = 0.75 + 0.25 * Math.sin(t * 6);
+      drawText(ctx, this.holdPrompt && !f.held.some(Boolean) ? 'HOLD CHANCE! TAP A REEL TO KEEP IT' : 'NOW SPIN', win.x + win.w / 2, win.y - 22, 2, '#ffd23f', { alpha: pulse });
+    }
   }
 
   /** LOW HP (feel playtest: nothing said you were in trouble): under 30% HP the screen's edges breathe red, slowly,
