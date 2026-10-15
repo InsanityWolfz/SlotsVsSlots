@@ -388,7 +388,13 @@ tray), `drawScoreboard`, `useTool`.
   THE HOUSE's cash-out. **THE HOUSE:** its pot (its coins and its cut each spin) cashes 1/2 into its score every 3
   spins, and its last spin cashes the whole pot; your jackpot steals the pot into your score. Sim (300 runs): races
   won by enemy 55-98% (BRUTE and GOLEM hardest, SLIME and GREMLIN easiest); THE HOUSE 49-83%.
-- Not yet race-native (step 3): VAMP, heals, the HEAL and MAX HP at the Cashier, and the HP relics do nothing.
+- **Relics, Charms and the Cashier in a race** (`RACE_RELIC_TEXT` in relics.ts; tooltips and cards use it): UNDERDOG x1.5
+  while behind; COUP DE GRACE swords x2 while ahead; PHOENIX once a run saves you from a lost race (no win chips or
+  spoils; the side panel says PHOENIX: ONE SAVE); BANDAGE starts each race holding 30 shield; VAMPIRE FANG's meter
+  payoffs give a HOLD; INSURANCE gives a NUDGE the first time you fall 30% behind; TOWER SHIELD keeps your shield until a
+  block spends it; GOLDEN PARACHUTE is one more RESPIN a race; MELTDOWN +10% lightning per spin played. Nobody heals; a
+  VAMP cell takes its heal out of the enemy's score. KEEN's +damage is score (its pierce does nothing). The Cashier
+  sells +1 HOLD / NUDGE / RESPIN for the run (8 / 10 / 12 chips; `run.raceTools`) instead of HEAL and MAX HP.
 
 ## Modes and meta
 - **Modes:** the normal run, THE DAILY RUN and ENDLESS (THE WEEKLY and CHALLENGES are cut, 2026-10-15; old hiscore

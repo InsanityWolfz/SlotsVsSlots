@@ -1206,7 +1206,7 @@ export class RunScreens {
       drawSprite(ctx, f.sprite, x, y, 4 - 2.5 * f.t, { rot: f.t * Math.PI * 2 * 0.5 });
     }
     // Over everything: what the relic under the pointer does (cards that already say it don't add spots).
-    if (!this.results) this.tips.draw(ctx, this.mouse.x, this.mouse.y, this.run?.cabinet);
+    if (!this.results) this.tips.draw(ctx, this.mouse.x, this.mouse.y, this.run?.cabinet, !!this.run?.race);
     ctx.restore();
   }
 
@@ -1433,7 +1433,7 @@ export class RunScreens {
     // THE SCORE RACE: no HP; one lost race ends the run.
     if (this.run?.race) {
       drawText(ctx, 'SCORE RACE', x + 8, y + 1, 2, COLORS.goldLight, { align: 'left' });
-      drawText(ctx, `${SCORE_RACE.holds} HOLD  ${SCORE_RACE.nudges} NUDGE  ${SCORE_RACE.respins} RESPIN`, x + 8 + w, y + 1, 1.25, COLORS.textDim, { align: 'right' });
+      drawText(ctx, this.run.player.relics.includes('phoenix') && !this.run.racePhoenix ? 'PHOENIX: ONE SAVE' : 'ONE LOSS ENDS IT', x + 24 + w, y + 1, 1.25, COLORS.textDim, { align: 'right' });
       return;
     }
     const p = this.shown();
@@ -2984,6 +2984,14 @@ export class RunScreens {
     } else if (o.kind === 'remove') {
       drawSprite(ctx, o.symbol as SpriteId, 0, iy, 4);
       drawSprite(ctx, 'minusBadge', 30, iy + 22, 3);
+    } else if (o.kind === 'tool') {
+      // THE SCORE RACE: a spin tool, drawn as its tray chip.
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(-46, iy - 18, 92, 36);
+      ctx.fillStyle = '#3a2d52';
+      ctx.fillRect(-43, iy - 15, 86, 30);
+      drawText(ctx, o.tool.toUpperCase(), 0, iy, 2, '#ffd23f');
+      drawText(ctx, '+1', 34, iy - 22, 2, COLORS.goldLight);
     } else drawSprite(ctx, 'heart', 0, iy, 5);
     // The ribbon sits on the case's top edge (above it, it met the upper shelf's name plates).
     if (legend) this.legendTag(ctx, 0, -48, time);

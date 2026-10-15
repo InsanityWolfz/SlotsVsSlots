@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3 } from '../src/core/config';
 import { Fight, RACE_RULES } from '../src/core/fight';
-import { createRun, fightConfig, finishFight, RACE } from '../src/core/run';
+import { applyOption, createRun, fightConfig, finishFight, RACE, shopOffers } from '../src/core/run';
 
 const race = (enemy: Parameters<typeof reels3>[0], ability?: { kind: 'blizzard'; every: number; power: number }, spins = 3) => {
   const c = defaultConfig();
@@ -98,5 +98,17 @@ describe('THE SCORE RACE (sandbox)', () => {
     if (a.type !== 'spin' || b.type !== 'spin') throw new Error('no spin');
     const total = (s: typeof a.score) => s.groups.reduce((x, y) => x + y.amount, 0);
     expect(total(b.score)).toBeLessThan(total(a.score));
+  });
+  it("a race run's Cashier sells spin tools, not HEAL or MAX HP; a tool bought is one more every race", () => {
+    const base = defaultConfig();
+    const run = createRun(base, 6, 'tesla', 0);
+    run.pendingStart = null;
+    run.race = true;
+    run.player.hp = 10;
+    const shelf = shopOffers(run);
+    expect(shelf.some((i) => i.option.kind === 'heal' || i.option.kind === 'maxHp')).toBe(false);
+    expect(shelf.filter((i) => i.option.kind === 'tool').length).toBe(3);
+    applyOption(run, { kind: 'tool', tool: 'nudge' });
+    expect(fightConfig(run, base).player.nudges).toBe(RACE.nudges + 1);
   });
 });

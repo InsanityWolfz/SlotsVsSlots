@@ -97,7 +97,7 @@ const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'g
  * THE SCORE RACE's enemy rules (race act 1, user 2026-10-15): a frozen reel of yours scores at frozenPay; THE THIEF's
  * ability steals thiefShare of your score; THE BRUTE's SMASH scores smashMul x its hit. A shield blocks any of these.
  */
-export const RACE_RULES = { frozenPay: 0.5, thiefShare: 0.25, smashMul: 3 };
+export const RACE_RULES = { frozenPay: 0.5, thiefShare: 0.25, smashMul: 3, meltdownPerSpin: 0.1, insuranceBehind: 1.3 };
 const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
 const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'goldbar', 'note']);
@@ -377,6 +377,7 @@ export class Fight {
     if (loopHouse) this.potCut = unitsUp(this.cfg.player.hp * ENDLESS.potCut);
     // ENDLESS house edges: bosses start shielded; enemies spin first.
     if (this.cfg.enemy.startShield) this.sides.enemy.shield = this.cfg.enemy.startShield;
+    if (this.cfg.player.startShield) this.sides.player.shield = this.cfg.player.startShield;
     if (this.cfg.enemy.first) this.next = 'enemy';
     // ACT 3 regulars open with their ability on their first turn (it never fired in 38% of act 3 fights: EXPERT_PLAYTEST_3 C3).
     if (this.act3Regular && this.sides.enemy.ability) this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - 1);
@@ -848,6 +849,12 @@ export class Fight {
 
   /** THE SCORE RACE: report the turn's score; after the enemy's last spin, the higher score wins (a tie is yours). */
   private raceTurnEnd(side: SideId, events: CombatEvent[]): void {
+    // INSURANCE POLICY: the first time you fall 30% behind, a NUDGE.
+    if (side === 'enemy' && this.sides.player.relics.has('insurance') && !this.insuranceUsed && this.raceScore.enemy > this.raceScore.player * RACE_RULES.insuranceBehind + UNIT) {
+      this.insuranceUsed = true;
+      this.nudgesLeft++;
+      events.push({ type: 'relic', side: 'player', relic: 'insurance' });
+    }
     // GOLEM: every rock on your reels scores for it, each of its spins.
     if (side === 'enemy' && this.cfg.race?.perRock) {
       const rocks = this.sides.player.reels.reduce((a, r) => a + r.cells.filter((c) => c.symbol === 'rock').length, 0);
@@ -1189,13 +1196,15 @@ export class Fight {
       // COUP DE GRACE (KNIGHT, user 2026-10-13): swords pay x2 while your HP is higher than the enemy's. In the score,
       // so the climb and the banner show the real hit (it was doubled after them: feel playtest #2, MEGA WIN 264 that
       // killed a 340 HP enemy).
-      if (has('coup') && g.symbol === 'sword' && g.base > 0 && me.hp > foe.hp) {
+      // (THE SCORE RACE: while you're ahead.)
+      if (has('coup') && g.symbol === 'sword' && g.base > 0 && (this.cfg.race ? this.raceScore[me.side] > this.raceScore[foe.side] : me.hp > foe.hp)) {
         fired.add('coup');
         boost(g, NEW_RELIC.coupBossMul);
         notes.push(`X${NEW_RELIC.coupBossMul} COUP`);
       }
       // UNDERDOG: under half HP, every paying group.
-      if (has('underdog') && paying && me.hp < me.maxHp / 2) {
+      // (THE SCORE RACE: while you're behind.)
+      if (has('underdog') && paying && (this.cfg.race ? this.raceScore[me.side] < this.raceScore[foe.side] : me.hp < me.maxHp / 2)) {
         fired.add('underdog');
         boost(g, NEW_RELIC.underdogMul);
         notes.push(`X${NEW_RELIC.underdogMul} UNDERDOG`);
@@ -1338,6 +1347,11 @@ export class Fight {
         }
       }
       if (this.over) return;
+      // THE SCORE RACE: TOWER SHIELD keeps your whole shield until a block spends it.
+      if (c.relics.has('tower') && this.cfg.race && held > 0) {
+        events.push({ type: 'relic', side: 'player', relic: 'tower' });
+        return;
+      }
       // TOWER SHIELD (KNIGHT): half the leftover shield stays (capped, since SHIELD BASH reads it again next turn).
       if (c.relics.has('tower')) {
         const keep = Math.min(unitsRound(held * NEW_RELIC.towerShare), unitsRound(c.maxHp * NEW_RELIC.towerCap));
@@ -1601,6 +1615,14 @@ export class Fight {
       { label: PAYOFF_WORD[this.meter?.kind ?? ''] ?? 'METER', amount: (this.meter?.heal ?? 0) * times },
       { label: 'FANG', amount: me.relics.has('fang') ? (this.special ? FANG_TESLA_HEAL : FANG_HEAL) * times : 0 },
     ].filter((x) => x.amount > 0);
+    // THE SCORE RACE: no heals; VAMPIRE FANG gives you a HOLD instead.
+    if (this.cfg.race) {
+      if (me.relics.has('fang')) {
+        this.holdsLeft += times;
+        events.push({ type: 'relic', side: me.side, relic: 'fang' });
+      }
+      return;
+    }
     if (!parts.length) return;
     if (me.relics.has('fang')) events.push({ type: 'relic', side: me.side, relic: 'fang' });
     this.heal(me, parts.reduce((a, x) => a + x.amount, 0), 'payoff', events, parts.length > 1 ? parts : undefined);
@@ -1710,7 +1732,8 @@ export class Fight {
       me.energy -= this.cfg.specialCost;
       const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
       // MELTDOWN: +1% per 1% of HP you're missing (capped).
-      const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, Math.max(0, me.maxHp - me.hp) * NEW_RELIC.meltdownRate) : 0;
+      // (THE SCORE RACE: +10% for every spin you've played.)
+      const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, this.cfg.race ? this.playerSpins * RACE_RULES.meltdownPerSpin : Math.max(0, me.maxHp - me.hp) * NEW_RELIC.meltdownRate) : 0;
       // CHAIN LIGHTNING (legendary relic): +100%.
       const chain = me.side === 'player' && me.relics.has('chainlightning') ? LEGEND_RELIC.chainAdd : 0;
       // PAY.lightningAdd: the lightning's boosts add up instead of multiplying.
@@ -1749,6 +1772,15 @@ export class Fight {
     if (me.hp <= 0) return;
     // THE OWNER never heals: his HP is a count of hits.
     if (me.side === 'enemy' && this.cfg.enemy.owner) return;
+    // THE SCORE RACE: nobody heals; a VAMP cell takes its heal out of the enemy's score.
+    if (this.cfg.race) {
+      if (me.side !== 'player' || source !== 'vamp') return;
+      const n = Math.min(amount, this.raceScore.enemy);
+      if (n <= 0) return;
+      this.raceScore.enemy -= n;
+      events.push({ type: 'raceScore', side: 'enemy', amount: -n, total: this.raceScore.enemy });
+      return;
+    }
     if (me.side === 'player' && this.cfg.player.healMul) amount = Math.max(1, Math.round(amount * this.cfg.player.healMul));
     const n = Math.min(amount, me.maxHp - me.hp);
     if (n > 0) {

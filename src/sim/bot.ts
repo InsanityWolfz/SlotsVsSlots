@@ -136,6 +136,8 @@ function baseValue(run: RunState, o: DraftOption): number {
       return (1 - p.hp / p.maxHp) * 14;
     case 'maxHp':
       return 3.5;
+    case 'tool':
+      return o.tool === 'respin' ? 7 : o.tool === 'nudge' ? 6.5 : 5.5;
     case 'swap': {
       if (o.to === 'wild') return (run.cabinet === 'joker' ? 8 : 6) - (o.from === attackOf(run) ? 3 : 0);
       // Shields are the weakest symbol, your signature symbol the strongest.

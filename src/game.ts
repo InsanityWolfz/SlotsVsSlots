@@ -1974,7 +1974,7 @@ export class Game {
     });
     if (i >= 0) {
       // Below your machine's panel, over the YOUR REELS box: beside the icon it covered your HP bar.
-      drawRelicTip(ctx, relics[i], RELIC_X + 168, RELIC_Y - 19, Math.max(relicSlot(relics.length - 1).y + 19, RELIC_TIP_TOP), this.run?.cabinet);
+      drawRelicTip(ctx, relics[i], RELIC_X + 168, RELIC_Y - 19, Math.max(relicSlot(relics.length - 1).y + 19, RELIC_TIP_TOP), this.run?.cabinet, !!this.run?.race);
       return;
     }
   }

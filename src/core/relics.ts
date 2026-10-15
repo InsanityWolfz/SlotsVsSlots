@@ -141,8 +141,20 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
 /** Machines that attack with something other than swords: relic texts name their symbol instead. */
 const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP', tesla: 'BOLT', jukebox: 'NOTE' };
 const METER_WORD: Partial<Record<CabinetId, string>> = { tesla: 'LIGHTNING', midas: 'HIGH ROLLER', joker: 'JACKPOT METER', jukebox: 'VOLUME' };
-export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
-  const t = (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;
+/** THE SCORE RACE: what an HP relic does in a race (fight.ts RACE_RULES, run.ts RACE). */
+export const RACE_RELIC_TEXT: Partial<Record<RelicId, string>> = {
+  underdog: 'EVERYTHING PAYS X1.5 WHILE YOU ARE BEHIND',
+  coup: 'SWORDS PAY X2 WHILE YOU ARE AHEAD',
+  phoenix: 'ONCE A RUN, A LOST RACE DOES NOT END IT',
+  bandage: 'START EVERY RACE HOLDING 30 SHIELD',
+  fang: 'YOUR METER PAYOFFS GIVE YOU A HOLD',
+  insurance: 'THE FIRST TIME YOU FALL 30% BEHIND: A NUDGE',
+  tower: 'YOUR SHIELD STAYS UNTIL A BLOCK SPENDS IT',
+  parachute: 'ONE MORE RESPIN EVERY RACE',
+  meltdown: 'LIGHTNING +10% FOR EVERY SPIN YOU HAVE PLAYED (MAX 50%)',
+};
+export const relicText = (r: RelicId, cabinet?: CabinetId | null, race = false) => {
+  const t = (race ? RACE_RELIC_TEXT[r] : undefined) ?? (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;
   const w = cabinet ? ATTACK_WORD[cabinet] : undefined;
   // "YOUR METER" names the machine's own meter (wording pass, user 2026-10-13).
   const m = cabinet ? METER_WORD[cabinet] : undefined;

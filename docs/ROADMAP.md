@@ -2,7 +2,7 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-15):** the race act 1 vertical slice (below): steps 1 (rules, tools, HUD) and 2 (act 1 enemies, THE HOUSE) are in; next, step 3.
+**In progress (2026-10-15):** the race act 1 vertical slice (below): steps 1-3 (rules, tools, HUD; act 1 enemies, THE HOUSE; relics, Charms, the Cashier) are in; next, step 4.
 
 ## Now, in order
 1. **Race act 1, a vertical slice** (user, 2026-10-15; behind PLAY MODES, the normal game untouched; it ends at
@@ -11,11 +11,6 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
      run (no lives). Each race: 3 HOLDs, 2 NUDGEs, 1 RESPIN, used as you see fit. HOLD keeps a reel before a spin; NUDGE
      and RESPIN act after your spin lands and before it scores (NUDGE moves a reel one cell, RESPIN spins one reel
      again). A shield you hold blocks the next sabotage.
-   - **Step 3:** HP relics get race versions (UNDERDOG: x1.5 while behind; COUP: swords x2 while ahead; PHOENIX: once a
-     run, survive a lost race; BANDAGE: start with a shield; FANG: meter payoffs +1 HOLD; INSURANCE: 30% behind, +1
-     NUDGE; TOWER: shields last 2 enemy spins; BASH: unspent shield scores; PARACHUTE: 10 chips for an extra spin when
-     you'd lose; MELTDOWN / LIVE WIRE: by spins left). VAMP steals score, KEEN ignores slime and jams. The Cashier sells
-     tools (+1 HOLD / NUDGE / RESPIN for the run) instead of HEAL and MAX HP. BANKROLL's chips count as score.
    - **Step 4:** sim targets (act 1 races ~85%, elites 75%, THE HOUSE 70%, first race 90%), an expert playtester pass.
 2. **Left from the second feel playtest:** act 2 fights run 74-95 s. Small UI: GOLD / GLASS icons blank in the side panel's
    Charm grid, REPO MAN's subtitle repeats his ability text, the WHEEL card has no

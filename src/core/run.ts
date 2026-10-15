@@ -124,6 +124,8 @@ export type DraftOption =
   | { kind: 'relic'; relic: RelicId }
   | { kind: 'heal'; amount: number }
   | { kind: 'maxHp'; amount: number }
+  /** THE SCORE RACE (Cashier): one more of a spin tool every race, for the rest of the run. */
+  | { kind: 'tool'; tool: 'hold' | 'nudge' | 'respin' }
   /** CHARM card: `n` <enh> charms onto plain <symbol> cells of one reel. */
   | { kind: 'gild'; enh: Enh; symbol: SymbolId; reel: number; n: number }
   /** LEVEL cards: +1 level to a symbol type, or to a charm type. */
@@ -201,7 +203,7 @@ export interface FightRecord {
  * (elites and bosses more), you first and the enemy last, its pay x enemyMul; the higher score wins and one lost race
  * ends the run (user: no lives). Spin tools a race (user: 3 HOLDs, 2 NUDGEs, 1 RESPIN). PLAY MODES > SCORE RACE (TEST).
  */
-export const RACE = { spins: { fight: 5, elite: 6, boss: 7 }, enemyMul: 1.6, refHp: 200, hpExp: 0.65, bossMul: 1.3, openerMul: 0.7, golemPerRock: UNIT, holds: 3, nudges: 2, respins: 1 };
+export const RACE = { spins: { fight: 5, elite: 6, boss: 7 }, enemyMul: 1.6, refHp: 200, hpExp: 0.65, bossMul: 1.3, openerMul: 0.7, golemPerRock: UNIT, holds: 3, nudges: 2, respins: 1, bandageShield: 3 * UNIT, toolPrice: { hold: 8, nudge: 10, respin: 12 } };
 
 export interface RunState {
   seed: number;
@@ -259,8 +261,10 @@ export interface RunState {
   /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day), and the day's TONIGHT'S RULE. */
   daily?: string;
   dailyNight?: NightId;
-  /** THE SCORE RACE: every fight is a race. */
+  /** THE SCORE RACE: every fight is a race; spin tools bought at the Cashier (for the run); PHOENIX spent. */
   race?: boolean;
+  raceTools?: { hold?: number; nudge?: number; respin?: number };
+  racePhoenix?: boolean;
   /** Relic picks waiting behind the current one (PUNCH CARD's can land on the act's legendary pick). */
   legendQueue?: RelicId[][];
   /** THE LONG GAME (legendary relic): fights won since you got it. */
@@ -759,9 +763,13 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   if (run.race) {
     // The enemy's score grows with its HP (HP tracked your power; honest HP keeps it the same on every machine).
     cfg.race = { ...(e.archetype === 'golem' ? { perRock: RACE.golemPerRock } : {}), spins: e.isBoss ? RACE.spins.boss : e.elite ? RACE.spins.elite : RACE.spins.fight, enemyMul: RACE.enemyMul * (cfg.enemy.hp / RACE.refHp) ** RACE.hpExp * (e.isBoss ? RACE.bossMul : 1) * (run.act === 1 && run.depth === 0 ? RACE.openerMul : 1) };
-    cfg.player.holds = RACE.holds;
-    cfg.player.nudges = RACE.nudges;
-    cfg.player.respins = RACE.respins;
+    // The tools, plus any bought at the Cashier (for the run) and the relics' race versions: BANDAGE starts you holding
+    // a shield, GOLDEN PARACHUTE is a RESPIN.
+    const has = (r: RelicId) => run.player.relics.includes(r);
+    cfg.player.holds = RACE.holds + (run.raceTools?.hold ?? 0);
+    cfg.player.nudges = RACE.nudges + (run.raceTools?.nudge ?? 0);
+    cfg.player.respins = RACE.respins + (run.raceTools?.respin ?? 0) + (has('parachute') ? 1 : 0);
+    if (has('bandage')) cfg.player.startShield = RACE.bandageShield;
   }
   return cfg;
 }
@@ -900,6 +908,9 @@ const rocksIn = (s: StripCounts[]) => s.reduce((a, x) => a + (x.rock ?? 0), 0);
 /** Fold a finished fight back into the run: HP carry-over, capped permanent rocks, healing. */
 export function finishFight(run: RunState, fight: Fight): FightRecord {
   const p = fight.sides.player;
+  // THE SCORE RACE: PHOENIX FEATHER saves the run from one lost race (no win chips or spoils).
+  const phoenix = !!run.race && fight.winner !== 'player' && run.player.relics.includes('phoenix') && !run.racePhoenix;
+  if (phoenix) run.racePhoenix = true;
   const won = fight.winner === 'player';
   const before = run.player.hp;
   const old = run.player.strips;
@@ -956,7 +967,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     const e = fight.sides.enemy;
     run.endless.ownerTaken = Math.max(run.endless.ownerTaken ?? 0, Math.min(1, 1 - Math.max(0, e.hp) / Math.max(1, e.maxHp)));
   }
-  if (!won) {
+  if (!won && !phoenix) {
     run.player.hp = 0;
     run.over = true;
     return record;
@@ -996,7 +1007,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   const beaten = currentEnemy(run);
   const interest = interestOn(run.player.chips);
   // OPEN BAR (legendary relic): wins pay no chips (interest still does).
-  const winChips = (run.player.relics.includes('openbar') ? 0 : CHIPS.win + (CABINETS[run.cabinet].chipsPerWin ?? 0) + (beaten.elite ? CHIPS.eliteBonus : 0) + fight.playerJackpots * CHIPS.perJackpot) * (nightId(run) === 'limit' ? 2 : 1);
+  const winChips = (run.player.relics.includes('openbar') || phoenix ? 0 : CHIPS.win + (CABINETS[run.cabinet].chipsPerWin ?? 0) + (beaten.elite ? CHIPS.eliteBonus : 0) + fight.playerJackpots * CHIPS.perJackpot) * (nightId(run) === 'limit' ? 2 : 1);
   const earned = interest + winChips;
   run.player.chips += earned;
   // (THE WHEEL: the chips your sweeps won came in with the fight's mid-fight chips; the line counts them.)
@@ -1009,7 +1020,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     record.chips = (record.chips ?? 0) + GATEKEEPER.bounty;
   }
   // Elites offer their spoils in every act: choose 1 of 2 relics (map rework 2026-10-12; act 2 elites paid chips).
-  if (beaten.elite) {
+  if (beaten.elite && !phoenix) {
     const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && !LEGENDARY.has(r));
     const rng = new Rng((run.seed ^ Math.imul(run.depth + 7 + run.act * 100, 0x85ebca6b)) >>> 0);
     const spoils = pickRelics(pool, 2, rng);
@@ -1346,6 +1357,9 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
       p.maxHp += o.amount;
       p.hp += o.amount;
       break;
+    case 'tool':
+      run.raceTools = { ...run.raceTools, [o.tool]: (run.raceTools?.[o.tool] ?? 0) + 1 };
+      break;
   }
   // A charm lasts while its cell is on the reel.
   normalizeCharms(p);
@@ -1401,7 +1415,9 @@ export function shopOffers(run: RunState): ShopItem[] {
     if (items.length >= 2) break;
     add(o, levelPrice);
   }
-  add({ kind: 'maxHp', amount: RUN.maxHpCard }, P.maxHp);
+  // THE SCORE RACE: no HP to buy; the counter sells spin tools instead (for the run).
+  if (run.race) for (const tool of ['hold', 'nudge', 'respin'] as const) add({ kind: 'tool', tool }, RACE.toolPrice[tool]);
+  else add({ kind: 'maxHp', amount: RUN.maxHpCard }, P.maxHp);
   // BEHIND THE GLASS: two relics, then THE BIG ONE in the middle.
   const lastShop = run.act === runActs(run) && run.depth >= Math.min(actLength(run.act), RUN.shopAfter[RUN.shopAfter.length - 1]);
   const relics = (Object.keys(RELICS) as RelicId[]).filter(
@@ -1418,7 +1434,7 @@ export function shopOffers(run: RunState): ShopItem[] {
   // HEAL is a permanent service slot, sized to what you're missing (hidden when nearly full).
   const missing = p.maxHp - p.hp;
   // Once a visit: a reroll doesn't bring it back after you bought it.
-  if (missing >= 3 * UNIT && !noHealing(run) && !run.healBought) items.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal + RUN.healStep * (run.healsBought ?? 0), sold: false });
+  if (!run.race && missing >= 3 * UNIT && !noHealing(run) && !run.healBought) items.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal + RUN.healStep * (run.healsBought ?? 0), sold: false });
   return items;
 }
 
@@ -1529,15 +1545,17 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
       return { title: 'CLEAR ROCKS', text: `REMOVE ROCKS ON REEL ${o.reel + 1}` };
     case 'relic':
       // (An old save's record can name a relic that was cut: its id stands in.)
-      return RELICS[o.relic] ? { title: RELICS[o.relic].name, text: relicText(o.relic, run?.cabinet) } : { title: String(o.relic).toUpperCase(), text: '' };
+      return RELICS[o.relic] ? { title: RELICS[o.relic].name, text: relicText(o.relic, run?.cabinet, !!run?.race) } : { title: String(o.relic).toUpperCase(), text: '' };
     case 'heal':
       return { title: 'HEAL', text: `RESTORE ${o.amount} HP` };
     case 'maxHp':
       return { title: `+${o.amount} MAX HP`, text: `GAIN ${o.amount} MAX HP AND HEAL ${o.amount} HP` };
+    case 'tool':
+      return { title: `+1 ${o.tool.toUpperCase()}`, text: `ONE MORE ${o.tool.toUpperCase()} EVERY RACE, FOR THE REST OF THE RUN` };
     case 'gild':
       return {
         title: `${o.n} ${charmName(o.enh)} CHARM${o.n > 1 ? 'S' : ''}`,
-        text: `REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${charmShortText(o.enh, charmLevel(lv, o.enh, ticket))}`,
+        text: `REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${run?.race && o.enh === 'vamp' ? `TAKES ${charmValue('vamp', charmLevel(lv, o.enh, ticket))} FROM THE ENEMY'S SCORE` : charmShortText(o.enh, charmLevel(lv, o.enh, ticket))}`,
       };
     case 'symLevel': {
       const now = symLevel(lv, o.symbol);
