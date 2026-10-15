@@ -349,8 +349,6 @@ export class Fight {
     }
     // WARM-UP (JUKEBOX, ENDLESS): the volume starts at the loop, never at THE DROP itself.
     if (this.meter?.kind === 'volume' && this.cfg.player.volumeStart && !p.armed) p.energy = Math.max(p.energy, Math.min(this.meterCost - UNIT, this.cfg.player.volumeStart * UNIT));
-    // HOLD (experiment): this fight's HOLDs.
-    this.holdsLeft = this.cfg.player.holds ?? 0;
     const e = this.sides.enemy;
     // BLAZE: every blaze cell you own adds to your special.
     const blazeCells = p.reels.reduce((a, reel) => a + reel.cells.filter((c) => c.enh === 'blaze').length, 0);
@@ -470,25 +468,6 @@ export class Fight {
   /** THE DROP this spin: the notes off the payline that join the note group (vamp heals after). */
   private dropOff: { cells: { reel: number; row: number; v?: number; wild?: true }[]; vamp: number } | null = null;
 
-  /** HOLD (experiment, 2026-10-15): your HOLDs left this fight, and the reels you've held for your next spin. */
-  holdsLeft = 0;
-  held: boolean[] = [false, false, false];
-  /**
-   * HOLD a reel (or let it go) for your next spin: a held reel keeps its symbol for that spin. Only between your spins
-   * (the fight waits on your SPIN), never during one; each held reel costs a HOLD. Returns whether it's held now.
-   */
-  hold(reel: number): boolean {
-    if (this.over || this.next !== 'player' || reel < 0 || reel > 2) return false;
-    if (this.held[reel]) {
-      this.held[reel] = false;
-      return false;
-    }
-    const used = this.held.filter(Boolean).length;
-    if (used >= this.holdsLeft || this.sides.player.frozen[reel] > 0) return false;
-    this.held[reel] = true;
-    return true;
-  }
-
   /** Debug: make the next spin of `side` land these payline symbols where the strip allows. */
   forceNext(side: SideId, line: SymbolId[]): void {
     this.forced[side] = line;
@@ -561,13 +540,7 @@ export class Fight {
     const frozen = me.frozen.map((t) => t > 0);
     const locked = me.locked.map((t) => t > 0);
     const forcedLine = this.forced[side];
-    // HOLD: your held reels keep their stop this spin (like ice, but yours), then the holds are spent.
-    const held = side === 'player' ? this.held.map((h, r) => h && !frozen[r]) : [false, false, false];
-    if (side === 'player') {
-      this.holdsLeft -= held.filter(Boolean).length;
-      this.held = [false, false, false];
-    }
-    const stops = this.rollStops(me, frozen.map((z, r) => z || held[r]), forcedLine);
+    const stops = this.rollStops(me, frozen, forcedLine);
     delete this.forced[side];
     me.reels.forEach((reel, i) => (reel.stop = stops[i]));
     const line = paylineSymbols(me.reels).map((s, i) => (locked[i] ? 'lock' : s));
@@ -617,7 +590,6 @@ export class Fight {
       nearMiss,
       frozen,
       locked,
-      ...(held.some(Boolean) ? { held } : {}),
       ...(luckyWilds.length ? { luckyWilds } : {}),
       ...(hexed.some(Boolean) ? { hexed } : {}),
       ...(drumNow ? { symBonus: { sword: drumNow, ace: drumNow } } : {}),

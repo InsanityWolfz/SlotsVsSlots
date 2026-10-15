@@ -208,8 +208,6 @@ export interface SideConfig {
   stackShield?: number;
   /** THE DECK REMEMBERS: marked cards waiting on this side's reels when the fight starts. */
   startMarks?: number;
-  /** HOLD (experiment): HOLDs you get this fight (0 = off). */
-  holds?: number;
   /** Which act this side comes from (enemy). */
   act?: number;
   /** ENDLESS: enemy damage multiplier (1.12^loop), LAST CALL / 80-turn cap on, and a starting shield (HOUSE EDGE). */

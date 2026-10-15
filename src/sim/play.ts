@@ -4,7 +4,7 @@
  * seed: fights draw from their own per-run stream, so a change in one run never desyncs another (paired ladders).
  */
 import type { GameConfig, RelicId } from '../core/config';
-import { CABINETS, type CabinetId } from '../core/cabinets';
+import type { CabinetId } from '../core/cabinets';
 import { Fight } from '../core/fight';
 import type { CombatEvent } from '../core/events';
 import { Rng } from '../core/rng';
@@ -75,21 +75,6 @@ export interface PlayOpts {
   onEnd?: (run: RunState) => void;
   /** Every fight step's events (probes: where the damage comes from). */
   onEvents?: (events: CombatEvent[], run: RunState, fight: Fight) => void;
-  /** HOLD (experiment): HOLDs a fight, played by holdPolicy. */
-  holds?: number;
-}
-
-/**
- * The bot's HOLD play: after a spin that paid a PAIR of your attack symbol (or shields at low HP), hold that pair for
- * a jackpot try, if the HOLDs cover it. A decent player's habit, not the best play.
- */
-export function holdPolicy(fight: Fight, last: { line: string[]; tier: string; groups: { reels: number[]; matched: boolean; symbol: string }[] } | null, attack: string): void {
-  if (!last || last.tier !== 'pair' || fight.holdsLeft < 2) return;
-  const g = last.groups.find((x) => x.matched && x.reels.length === 2);
-  if (!g) return;
-  const lowHp = fight.sides.player.hp < fight.sides.player.maxHp * 0.35;
-  if (g.symbol !== attack && !(lowHp && g.symbol === 'shield')) return;
-  for (const r of g.reels) fight.hold(r);
 }
 
 const best = <T>(xs: T[], v: (x: T) => number): T => xs.reduce((a, b) => (v(b) > v(a) ? b : a));
@@ -114,17 +99,13 @@ export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stak
     const boss = isBossNext(run);
     const stop = currentStop(run);
     const cfg = fightConfig(run, base);
-    if (opts.holds) cfg.player.holds = opts.holds;
     const fight = new Fight(cfg, fightSeeds.int(0xffffffff));
     const hpIn = run.player.hp / run.player.maxHp;
     const enemyHp = fight.sides.enemy.maxHp;
     const act = run.act;
     const arch = run.enemies[run.depth]?.archetype ?? '?';
-    let lastSpin: Parameters<typeof holdPolicy>[1] = null;
     while (!fight.over && fight.turn < 2000) {
-      if (opts.holds && fight.next === 'player') holdPolicy(fight, lastSpin, CABINETS[run.cabinet].attack);
       const { events } = fight.step();
-      for (const e of events) if (e.type === 'spin' && e.side === 'player') lastSpin = e.score;
       opts.onEvents?.(events, run, fight);
     }
     const won = fight.winner === 'player';

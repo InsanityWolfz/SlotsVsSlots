@@ -27,13 +27,10 @@ was tuned for feel from two fresh-eyes playtests.
   JUKEBOX are 6-8 under from GREEN up (KNIGHT's Dealer spread); see ROADMAP.
 - **Never a portrait / "turn your phone" screen (user, 2026-09-24, bd4d7b4):** it got stuck and locked players out.
   It came back by mistake on 2026-10-15 (64618c0) and was removed again. The game always starts, in any orientation.
-- **HOLD (experiment, 2026-10-15; SETTINGS > HOLD (NEW), on by default):** after a spin that made a PAIR, the fight
-  waits (even on AUTO) on HOLD CHANCE!: tap a reel to keep it for the next spin, then tap again to spin. 2 HOLDs a fight.
-  Held reels show a gold HELD frame. It is input between spins, which the watch-only rule bans, so it is the user's
-  call to keep or cut. Code: `Fight.hold(reel)` / `holdsLeft` (fight.ts), `HOLD_PER_FIGHT` and `drawHolds` (game.ts),
-  the bot's `holdPolicy` (play.ts: hold an attack-symbol pair, or shields at low HP; `tools/out/hold.ts`). The bot with
-  2 HOLDs: KNIGHT / TESLA / JUKEBOX +3 to +6 WHITE and +3 to +4 GREEN, JOKER and BANKROLL within 2. The ladder above is
-  without HOLD.
+- **HOLD was tried and cut (2026-10-15):** tap a reel to keep it for your next spin after a PAIR, 2 a fight (commit
+  f7708bb, reverted). It played fine, but a good build ends fights in a spin or two, so it fades as the run goes on,
+  and capping damage to keep it alive would kill the payoff. Fights stay watch-only, and one-spin kills are the
+  payoff of a good build, not a problem (user).
 - **Feel (act 1):**
   - THE PAYOUT LADDER: a pay is sized by the HP bar it lands on. Under 30% it's a quick PAIR! / JACKPOT!; 30% is
     BIG WIN! (cyan), 65% MEGA WIN! (pink), each with more confetti, hitstop and zoom. The enemy's read BIG HIT! /

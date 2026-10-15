@@ -29,8 +29,6 @@ export type CombatEvent =
       /** Reels whose payline scored nothing this turn (jammed). */
       locked: boolean[];
       /** Reels whose LUCKY cell turned into a WILD this spin. */
-      /** HOLD: the reels you held for this spin (they kept their symbol). */
-      held?: boolean[];
       luckyWilds?: number[];
       /** Reels that were hexed this spin (pay half). */
       hexed?: boolean[];

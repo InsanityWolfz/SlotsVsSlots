@@ -2,23 +2,19 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-15):** the cut, the act 1 feel pass, the second feel playtest's fixes and the HOLD experiment are
-in (GAME.md "The cut and the act 1 feel pass"). Waiting on the user to play it.
+**In progress (2026-10-15):** the cut, the act 1 feel pass, and the second feel playtest's fixes are in; HOLD was
+tried and cut (GAME.md "The cut and the act 1 feel pass"). Waiting on the user to play it.
 
 ## Now, in order
-1. **The user plays the cut build** and decides cut list #8: the draft after every win vs the Cashier as the one
-   build moment (held until the playtests were in).
-2. **HOLD: keep or cut (the user's call).** Built behind SETTINGS > HOLD (NEW), on by default (GAME.md). It breaks the
-   watch-only rule. If kept: the rule in CLAUDE.md changes, the ladder gets measured with HOLD, and the tutorial
-   teaches it.
-3. **Left from the second feel playtest (design, needs the sim):** the catch-up heal (the larger of 35% or all missing
-   HP) undoes low-HP danger, try a flat 35%; THE HOUSE (act 1 boss) wins too easily (91% of meetings); regulars
-   that die in one spin (GREMLIN); act 2 fights run 74-95 s. Small UI: GOLD / GLASS icons blank in the side panel's
+1. **Draft vs Cashier (cut list #8, the user's call; proposed 2026-10-15):** the draft after a win only edits the reels (symbols,
+   Charms); the Cashier is where you save up for levels, relics, heals, rerolls and one rare big buy a visit.
+2. **Left from the second feel playtest (design, needs the sim):** the catch-up heal (the larger of 35% or all missing
+   HP) undoes low-HP danger, try a flat 35%; THE HOUSE (act 1 boss) is too easy (beaten in 91% of meetings); act 2 fights run 74-95 s. Small UI: GOLD / GLASS icons blank in the side panel's
    Charm grid, REPO MAN's subtitle repeats his ability text, PLAY MODES has half a panel of space, the WHEEL card has no
    tagline, the REGULAR title shares a relic's name.
-4. **Balance left over** (sim, 800 runs): KNIGHT and JUKEBOX 6-8 under target from GREEN up (KNIGHT's Dealer spread);
+3. **Balance left over** (sim, 800 runs): KNIGHT and JUKEBOX 6-8 under target from GREEN up (KNIGHT's Dealer spread);
    RED JUKEBOX 60 / JOKER 58 / BANKROLL 61 (target 50).
-5. **Encounters that touch your machine** (first feel playtest): prizes and costs as reel edits, Charms or curses, not
+4. **Encounters that touch your machine** (first feel playtest): prizes and costs as reel edits, Charms or curses, not
    only chips.
 
 ## Open design questions
