@@ -89,22 +89,22 @@ describe('new relics (2026-10-14)', () => {
     expect(run.pendingLegend?.length).toBeGreaterThan(0);
   });
 
-  it('REGULAR: RED OR BLACK allows two more spins', () => {
+  it('REGULAR: RAT RACE allows two more races', () => {
     const base = defaultConfig();
     const run = createRun(base, 2, 'knight');
     run.pendingStart = null;
-    run.map.routes[0][0] = { kind: 'encounter', encounter: 'roulette' };
+    run.map.routes[0][0] = { kind: 'encounter', encounter: 'rats' };
     run.depth = 1;
     run.stop = 1;
     chooseRoute(run, 0);
     run.player.chips = 200;
     run.player.relics = ['regular'];
     let spins = 0;
-    for (let guard = 0; guard < 20 && currentStop(run)?.encounter === 'roulette'; guard++) {
+    for (let guard = 0; guard < 20 && currentStop(run)?.encounter === 'rats'; guard++) {
       playEncounter(run, 0, 1);
       spins++;
     }
-    expect(spins).toBe(5);
+    expect(spins).toBe(4);
   });
 });
 

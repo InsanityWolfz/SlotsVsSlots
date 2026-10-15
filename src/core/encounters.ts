@@ -228,18 +228,8 @@ const LUCKY_SEVENS: EncounterDef = {
   },
 };
 
-// ---- RED OR BLACK (2026-10-12) -----------------------------------------------------------------------------------
+// ---- Table helpers ------------------------------------------------------------------------------------------
 
-/**
- * RED OR BLACK: roulette. Set a chip bet, call red or black, watch the ball. A win pays the bet again; the green zero
- * is the house's edge. Up to three spins a visit; walk away any time. Pays chips only.
- */
-export const ROULETTE = { maxBet: 20, spins: 3 };
-/** A European wheel's pockets in wheel order (0 is green). */
-export const WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
-const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
-export const pocketColor = (n: number): 'red' | 'black' | 'green' => (n === 0 ? 'green' : REDS.has(n) ? 'red' : 'black');
-/** The most you can bet right now: the table's limit, or every chip you hold. */
 /** REGULAR (relic): one more play at every encounter game (a pull, a spin, a roll, a hand). */
 export const extraPlays = (run: RunState) => (run.player.relics.includes('regular') ? NEW_RELIC.regularPlays : 0);
 /** ENDLESS raises every table's limit by half again each loop (chips buy more late, so bets must too). */
@@ -249,101 +239,11 @@ export const stakesMul = (run: RunState) => 1 + (run.endless?.loop ?? 0);
 export const tableLimit = (run: RunState, base: number) => Math.round(base * stakesMul(run));
 /** A fixed price or chip prize at this loop. */
 export const atStakes = (run: RunState, n: number) => Math.round(n * stakesMul(run));
-export const rouletteMax = (run: RunState) => Math.min(tableLimit(run, ROULETTE.maxBet), run.player.chips);
-
-const RED_OR_BLACK: EncounterDef = {
-  id: 'roulette',
-  name: 'RED OR BLACK',
-  blurb: '',
-  kind: 'game',
-  plays: ROULETTE.spins,
-  choices: (run) => [
-    { label: 'RED', text: '', disabled: rouletteMax(run) < 1 },
-    { label: 'BLACK', text: '', disabled: rouletteMax(run) < 1 },
-    WALK,
-  ],
-  play: (run, i, rng, _ctx, bet = 1) => {
-    if (i > 1) return walked();
-    const stake = Math.max(1, Math.min(rouletteMax(run), Math.floor(bet)));
-    if (rouletteMax(run) < 1) return walked();
-    const pocket = WHEEL_ORDER[rng.int(WHEEL_ORDER.length)];
-    const color = pocketColor(pocket);
-    const won = color === (i === 0 ? 'red' : 'black');
-    run.player.chips += won ? stake : -stake;
-    const name = `${color.toUpperCase()} ${pocket}`;
-    return { title: won ? `${name}!` : name, text: won ? `+${stake} CHIPS` : `-${stake} CHIPS`, good: won, pocket };
-  },
-};
-
-// ---- HIGHER OR LOWER (2026-10-12) --------------------------------------------------------------------------------
-
-/**
- * HIGHER OR LOWER: bet chips, a card is dealt; call whether the next card is higher or lower. Every right call grows the
- * pot; a wrong call (or a tie) loses it. Cash out after any right call; five right calls cash out for you. Chips only.
- * Cards run 2 to 14 (the ace is high), drawn fresh each time.
- */
-/** (grow 1.4 gave an expert +12%: ENDLESS playtest. 1.35: sensible play returns about 0.9.) */
-export const HILO = { maxBet: 15, grow: 1.35, calls: 5 };
-const drawCard = (rng: Rng) => 2 + rng.int(13);
-/** The pot after `calls` right calls on a bet. */
-export const hiloPot = (bet: number, calls: number) => Math.floor(bet * HILO.grow ** calls);
-export const hiloMax = (run: RunState) => Math.min(tableLimit(run, HILO.maxBet), run.player.chips);
-export type HiloState = { card: number; bet: number; calls: number };
-/** HIGHER OR LOWER's hand in play (null before the deal). */
-export const hiloState = (run: RunState): HiloState | null => (run.encounterState?.card ? (run.encounterState as unknown as HiloState) : null);
-
-const HIGHER_OR_LOWER: EncounterDef = {
-  id: 'hilo',
-  name: 'HIGHER OR LOWER',
-  blurb: '',
-  kind: 'game',
-  choices: (run) => {
-    const st = hiloState(run);
-    if (!st) return [{ label: 'DEAL', text: '', disabled: hiloMax(run) < 1 }, WALK];
-    return [
-      { label: 'HIGHER', text: '', disabled: st.card >= 14 },
-      { label: 'LOWER', text: '', disabled: st.card <= 2 },
-      { label: 'CASH OUT', text: '', disabled: st.calls < 1 },
-    ];
-  },
-  play: (run, i, rng, _ctx, bet = 1) => {
-    const p = run.player;
-    const st = hiloState(run);
-    if (!st) {
-      // Sit down: the bet goes in the pot, the first card is dealt.
-      if (i !== 0 || hiloMax(run) < 1) return walked();
-      const stake = Math.max(1, Math.min(hiloMax(run), Math.floor(bet)));
-      p.chips -= stake;
-      const card = drawCard(rng);
-      run.encounterState = { card, bet: stake, calls: 0 };
-      return { title: 'DEALT', text: `POT ${stake}`, good: null, card, pot: stake, more: true };
-    }
-    const pot = hiloPot(st.bet, st.calls);
-    if (i === 2) {
-      if (st.calls < 1) return { title: '', text: '', good: null, card: st.card, pot, more: true };
-      p.chips += pot;
-      run.encounterState = undefined;
-      return { title: 'CASHED OUT', text: `+${pot} CHIPS`, good: true, card: st.card, pot, more: false };
-    }
-    const next = drawCard(rng);
-    const right = i === 0 ? next > st.card : next < st.card;
-    if (!right) {
-      run.encounterState = undefined;
-      return { title: next === st.card ? 'A TIE: THE HOUSE TAKES IT' : 'WRONG CALL', text: `-${st.bet} CHIPS`, good: false, card: st.card, next, pot: 0, more: false };
-    }
-    const calls = st.calls + 1;
-    const now = hiloPot(st.bet, calls);
-    if (calls >= HILO.calls) {
-      p.chips += now;
-      run.encounterState = undefined;
-      return { title: 'FIVE IN A ROW!', text: `+${now} CHIPS`, good: true, card: st.card, next, pot: now, more: false };
-    }
-    run.encounterState = { card: next, bet: st.bet, calls };
-    return { title: 'RIGHT!', text: `POT ${now}`, good: true, card: st.card, next, pot: now, more: true };
-  },
-};
 
 // ---- TWENTY-ONE (2026-10-12; chips, 2026-10-13) -----------------------------------------------------------------
+
+/** A card, 2 to 14 (the ace high), drawn fresh each time. */
+const drawCard = (rng: Rng) => 2 + rng.int(13);
 
 /**
  * TWENTY-ONE: blackjack, kept simple (the user's rules): hit or stand, nothing else (no double or split). A tie is a
@@ -433,40 +333,6 @@ const TWENTY_ONE: EncounterDef = {
 };
 
 // ---- UNDER OR OVER (2026-10-12) -----------------------------------------------------------------------------------
-
-/**
- * UNDER OR OVER: dice. Set a chip bet and call UNDER 7, SEVEN or OVER 7; two dice roll. UNDER / OVER pay 1 to 1 and a
- * seven gives the bet back; SEVEN pays 4 to 1 (the long shot, where the house's edge is). Up to 3 rolls a visit.
- */
-export const DICE = { maxBet: 20, rolls: 3, sevenPays: 4 };
-export const diceMax = (run: RunState) => Math.min(tableLimit(run, DICE.maxBet), run.player.chips);
-
-const UNDER_OR_OVER: EncounterDef = {
-  id: 'dice',
-  name: 'UNDER OR OVER',
-  blurb: '',
-  kind: 'game',
-  plays: DICE.rolls,
-  choices: (run) => [
-    { label: 'UNDER 7', text: '', disabled: diceMax(run) < 1 },
-    { label: 'SEVEN', text: '', disabled: diceMax(run) < 1 },
-    { label: 'OVER 7', text: '', disabled: diceMax(run) < 1 },
-    WALK,
-  ],
-  play: (run, i, rng, _ctx, bet = 1) => {
-    if (i > 2 || diceMax(run) < 1) return walked();
-    const stake = Math.max(1, Math.min(diceMax(run), Math.floor(bet)));
-    const dice: [number, number] = [1 + rng.int(6), 1 + rng.int(6)];
-    const sum = dice[0] + dice[1];
-    let net: number;
-    if (i === 1) net = sum === 7 ? stake * DICE.sevenPays : -stake;
-    else if (sum === 7) net = 0;
-    else net = (i === 0 ? sum < 7 : sum > 7) ? stake : -stake;
-    run.player.chips += net;
-    const title = sum === 7 ? 'SEVEN!' : `${sum}`;
-    return { title, text: net > 0 ? `+${net} CHIPS` : net < 0 ? `${net} CHIPS` : 'YOUR BET COMES BACK', good: net > 0 ? true : net < 0 ? false : true, dice };
-  },
-};
 
 // ---- RAT RACE (user's pick, 2026-10-14) ---------------------------------------------------------------------------
 
@@ -655,12 +521,12 @@ const CLAW_MACHINE: EncounterDef = {
   },
 };
 
-export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, roulette: RED_OR_BLACK, hilo: HIGHER_OR_LOWER, bj: TWENTY_ONE, dice: UNDER_OR_OVER, rats: RAT_RACE, scratch: SCRATCH_OFF, claw: CLAW_MACHINE };
+export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, bj: TWENTY_ONE, rats: RAT_RACE, scratch: SCRATCH_OFF, claw: CLAW_MACHINE };
 /** What the map deals onto ENCOUNTER stops. */
 export const ENCOUNTER_IDS = Object.keys(ENCOUNTERS);
 
 /** The encounter at this stop, or a stand-in if a save names one that's gone. */
-export const encounterOf = (id: string | undefined): EncounterDef => (id && ENCOUNTERS[id]) || (id === 'double' ? RED_OR_BLACK : LUCKY_SEVENS);
+export const encounterOf = (id: string | undefined): EncounterDef => (id && ENCOUNTERS[id]) || LUCKY_SEVENS;
 
 /** Deterministic per run, act, stop and play (a game's 2nd spin draws its own stream): a quit can't re-roll it. */
 export const encounterRng = (run: RunState) =>

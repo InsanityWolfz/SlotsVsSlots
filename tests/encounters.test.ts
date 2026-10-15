@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, type RelicId } from '../src/core/config';
-import { BJ, bjState, bjTotal, CLAW, DICE, RACE, RATS, ENCOUNTERS, hiloPot, hiloState, pocketColor, ROULETTE, rouletteMax, SLOT, slotLine, slotRun, SLOT_STRIPS, WHEEL_ORDER } from '../src/core/encounters';
+import { BJ, bjState, bjTotal, CLAW, RACE, RATS, ENCOUNTERS, SLOT, slotLine, slotRun, SLOT_STRIPS } from '../src/core/encounters';
 import { Rng } from '../src/core/rng';
 import { chooseRoute, createRun, currentStop, encounterChoices, migrateRun, playEncounter } from '../src/core/run';
 
@@ -84,132 +84,6 @@ describe('LUCKY SEVENS', () => {
   });
 });
 
-describe('RED OR BLACK', () => {
-  /** A run standing at a RED OR BLACK stop (the first stop of its first route). */
-  const atTable = (seed = 2) => {
-    const run = createRun(base, seed, 'knight');
-    run.pendingStart = null;
-    run.map.routes[0][0] = { kind: 'encounter', encounter: 'roulette' };
-    run.depth = 1;
-    run.stop = 1;
-    chooseRoute(run, 0);
-    run.player.chips = 40;
-    return run;
-  };
-
-  it('pays the bet again on the colour called; the green zero (and the other colour) takes it', () => {
-    for (let seed = 1; seed < 40; seed++) {
-      const run = atTable(seed);
-      const before = run.player.chips;
-      const res = playEncounter(run, 0, 5)!;
-      const col = pocketColor(res.pocket!);
-      expect(run.player.chips - before).toBe(col === 'red' ? 5 : -5);
-    }
-    expect(pocketColor(0)).toBe('green');
-    expect(WHEEL_ORDER).toHaveLength(37);
-  });
-
-  it('allows 3 spins at the stop; walking away (or the last spin) moves on', () => {
-    const run = atTable();
-    const stop = run.stop;
-    expect(playEncounter(run, 1, 2)!.more).toBe(true);
-    expect(playEncounter(run, 0, 2)!.more).toBe(true);
-    expect(run.stop).toBe(stop);
-    expect(playEncounter(run, 0, 2)!.more).toBeFalsy();
-    expect(run.stop).toBe(stop + 1);
-    const walk = atTable();
-    expect(playEncounter(walk, 2)!.good).toBeNull();
-    expect(walk.stop).toBe(stop + 1);
-  });
-
-  it('a bet is clamped to the table limit and to your chips', () => {
-    const run = atTable();
-    run.player.chips = 3;
-    const before = run.player.chips;
-    playEncounter(run, 0, 99);
-    expect(Math.abs(run.player.chips - before)).toBe(3);
-    expect(rouletteMax({ ...run, player: { ...run.player, chips: 500 } })).toBe(ROULETTE.maxBet);
-  });
-
-  it('a quit replays the same spin (the spin count is saved with the run)', () => {
-    const run = atTable(7);
-    playEncounter(run, 0, 1);
-    const saved = JSON.parse(JSON.stringify(run));
-    const a = playEncounter(run, 0, 1)!.pocket;
-    const b = playEncounter(saved, 1, 1)!.pocket;
-    expect(b).toBe(a);
-  });
-});
-
-describe('HIGHER OR LOWER', () => {
-  const atTable = (seed = 2) => {
-    const run = createRun(base, seed, 'knight');
-    run.pendingStart = null;
-    run.map.routes[0][0] = { kind: 'encounter', encounter: 'hilo' };
-    run.depth = 1;
-    run.stop = 1;
-    chooseRoute(run, 0);
-    run.player.chips = 40;
-    return run;
-  };
-
-  it('deals for a bet, grows the pot on each right call, and loses it on a wrong one (or a tie)', () => {
-    for (let seed = 1; seed < 60; seed++) {
-      const run = atTable(seed);
-      const dealt = playEncounter(run, 0, 10)!;
-      expect(run.player.chips).toBe(30);
-      expect(dealt.more).toBe(true);
-      const card = hiloState(run)!.card;
-      const res = playEncounter(run, card <= 8 ? 0 : 1)!;
-      const right = card <= 8 ? res.next! > card : res.next! < card;
-      expect(res.good).toBe(right);
-      if (right) expect(hiloState(run)!.calls).toBe(1);
-      else {
-        expect(run.encounterState).toBeUndefined();
-        expect(run.player.chips).toBe(30);
-      }
-    }
-  });
-
-  it('cashing out pays the pot and moves on; five right calls cash out by themselves', () => {
-    expect(hiloPot(10, 0)).toBe(10);
-    expect(hiloPot(10, 2)).toBe(18);
-    let cashed = 0;
-    for (let seed = 1; seed < 200 && !cashed; seed++) {
-      const run = atTable(seed);
-      playEncounter(run, 0, 10);
-      const c = hiloState(run)!.card;
-      const r = playEncounter(run, c <= 8 ? 0 : 1)!;
-      if (!r.good) continue;
-      const stop = run.stop;
-      const out = playEncounter(run, 2)!;
-      expect(out.text).toBe(`+${hiloPot(10, 1)} CHIPS`);
-      expect(run.player.chips).toBe(30 + hiloPot(10, 1));
-      expect(run.stop).toBe(stop + 1);
-      cashed++;
-    }
-    expect(cashed).toBe(1);
-  });
-
-  it('played sensibly it is about even (cash out after two right calls)', () => {
-    let back = 0;
-    const N = 4000;
-    for (let seed = 0; seed < N; seed++) {
-      const run = atTable(seed);
-      run.player.chips = 100;
-      playEncounter(run, 0, 10);
-      for (let k = 0; k < 6 && hiloState(run); k++) {
-        const st = hiloState(run)!;
-        playEncounter(run, st.calls >= 2 ? 2 : st.card <= 8 ? 0 : 1);
-      }
-      back += run.player.chips - 90;
-    }
-    const ret = back / N / 10;
-    expect(ret).toBeGreaterThan(0.85);
-    expect(ret).toBeLessThan(1.1);
-  });
-});
-
 describe('TWENTY-ONE', () => {
   const atTable = (seed = 2) => {
     const run = createRun(base, seed, 'knight');
@@ -288,47 +162,6 @@ describe('TWENTY-ONE', () => {
   });
 });
 
-describe('UNDER OR OVER', () => {
-  const atTable = (seed = 2) => {
-    const run = createRun(base, seed, 'knight');
-    run.pendingStart = null;
-    run.map.routes[0][0] = { kind: 'encounter', encounter: 'dice' };
-    run.depth = 1;
-    run.stop = 1;
-    chooseRoute(run, 0);
-    run.player.chips = 40;
-    return run;
-  };
-
-  it('UNDER / OVER pay 1 to 1 (a seven gives the bet back); SEVEN pays 4 to 1', () => {
-    for (let seed = 0; seed < 80; seed++)
-      for (const call of [0, 1, 2]) {
-        const run = atTable(seed);
-        const res = playEncounter(run, call, 5)!;
-        const sum = res.dice![0] + res.dice![1];
-        const net = run.player.chips - 40;
-        if (call === 1) expect(net).toBe(sum === 7 ? 5 * DICE.sevenPays : -5);
-        else if (sum === 7) expect(net).toBe(0);
-        else expect(net).toBe((call === 0 ? sum < 7 : sum > 7) ? 5 : -5);
-      }
-  });
-
-  it('UNDER is about even; SEVEN is the long shot with the house edge', () => {
-    const ret = (call: number) => {
-      let net = 0;
-      for (let seed = 0; seed < 3000; seed++) {
-        const run = atTable(seed);
-        playEncounter(run, call, 10);
-        net += run.player.chips - 40;
-      }
-      return 1 + net / 3000 / 10;
-    };
-    expect(ret(0)).toBeGreaterThan(0.9);
-    expect(ret(0)).toBeLessThan(1.1);
-    expect(ret(1)).toBeLessThan(ret(0));
-  });
-});
-
 describe('the offers are gone (user, 2026-10-14)', () => {
   it('a saved map with one becomes LUCKY SEVENS, and a debt is forgiven', () => {
     const run = createRun(base, 2, 'knight');
@@ -396,5 +229,12 @@ describe('RAT RACE, SCRATCH-OFF, CLAW MACHINE (2026-10-14)', () => {
       expect(run.player.chips).toBe(before - CLAW.price + CLAW.chips);
       expect(encounterChoices(run)[0].disabled).toBe(true);
     } else expect(run.player.chips).toBe(before - CLAW.price);
+  });
+});
+
+describe('the coin-flip games are gone (user, 2026-10-15)', () => {
+  it('RED OR BLACK, HIGHER OR LOWER and UNDER OR OVER are out of the pool; a saved one plays as LUCKY SEVENS', () => {
+    for (const id of ['roulette', 'hilo', 'dice']) expect(ENCOUNTERS[id]).toBeUndefined();
+    expect(Object.keys(ENCOUNTERS).sort()).toEqual(['bj', 'claw', 'rats', 'scratch', 'slot']);
   });
 });

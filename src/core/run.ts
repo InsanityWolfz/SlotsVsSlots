@@ -18,7 +18,7 @@ import {
   type Enabler,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
-import { encounterOf, encounterRng, extraPlays, type EncounterChoice, type EncounterResult } from './encounters';
+import { ENCOUNTERS, encounterOf, encounterRng, extraPlays, type EncounterChoice, type EncounterResult } from './encounters';
 import { BIG_CAP, CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { dailyEdge, dailyFightSeed } from './daily';
@@ -612,9 +612,14 @@ export function migrateRun(run: RunState): RunState {
   if (Array.isArray(run.pendingChoice)) run.pendingChoice = run.pendingChoice.filter(gone);
   if (Array.isArray(run.choiceQueue)) run.choiceQueue = run.choiceQueue.map((q) => q.filter(gone)).filter((q) => q.length);
   if (run.pendingChoice && !run.pendingChoice.length) run.pendingChoice = run.choiceQueue?.shift() ?? null;
-  // THE BLOOD BANK, PAWN SHOP and LOAN SHARK are gone (user, 2026-10-14): their stops become LUCKY SEVENS, a debt is forgiven.
-  const offers = new Set(['blood', 'pawn', 'shark']);
-  for (const route of run.map?.routes ?? []) for (const st of route) if (st.encounter && offers.has(st.encounter)) st.encounter = 'slot';
+  // Encounters that are gone become LUCKY SEVENS: the offers (THE BLOOD BANK, PAWN SHOP, LOAN SHARK; 2026-10-14, a debt is
+  // forgiven) and the coin flips (RED OR BLACK, HIGHER OR LOWER, UNDER OR OVER; 2026-10-15). A game in play starts over.
+  for (const route of run.map?.routes ?? [])
+    for (const st of route)
+      if (st.encounter && !ENCOUNTERS[st.encounter]) {
+        if (st === currentStop(run)) run.encounterState = undefined;
+        st.encounter = 'slot';
+      }
   delete (run as { debt?: number }).debt;
   return run;
 }

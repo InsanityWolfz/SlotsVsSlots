@@ -5,7 +5,7 @@ import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../cor
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
-import { atStakes, bjMax, bjState, bjTotal, BJ, CLAW, CLAW_PRIZES, clawPrizeName, clawWon, DICE, diceMax, extraPlays, RACE, raceMax, RATS, SCRATCH, scratchState, ROULETTE, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
+import { atStakes, bjMax, bjState, bjTotal, BJ, CLAW, CLAW_PRIZES, clawPrizeName, clawWon, extraPlays, RACE, raceMax, RATS, SCRATCH, scratchState, encounterOf, SLOT, SLOT_STRIPS, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
 import { LEGENDARY, RELICS, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -201,90 +201,12 @@ function drawPlayingCard(ctx: CanvasRenderingContext2D, x: number, y: number, ra
   drawSuit(ctx, suit, 10, 16, 8);
   ctx.restore();
 }
-/** A die (face 1-6) at (x, y), tilted by `rot` radians while it tumbles. */
-function drawDie(ctx: CanvasRenderingContext2D, x: number, y: number, face: number, rot: number): void {
-  const s = 96;
-  const pips: Record<number, [number, number][]> = {
-    1: [[0, 0]],
-    2: [[-1, -1], [1, 1]],
-    3: [[-1, -1], [0, 0], [1, 1]],
-    4: [[-1, -1], [1, -1], [-1, 1], [1, 1]],
-    5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]],
-    6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]],
-  };
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(rot);
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.fillRect(-s / 2 + 6, -s / 2 + 8, s, s);
-  ctx.fillStyle = COLORS.outline;
-  ctx.fillRect(-s / 2 - 3, -s / 2 - 3, s + 6, s + 6);
-  ctx.fillStyle = '#f4eee0';
-  ctx.fillRect(-s / 2, -s / 2, s, s);
-  ctx.fillStyle = '#d3c8b0';
-  ctx.fillRect(-s / 2, s / 2 - 8, s, 8);
-  ctx.fillRect(s / 2 - 8, -s / 2, 8, s);
-  ctx.fillStyle = face === 1 ? '#e8374b' : '#1a1426';
-  for (const [px, py] of pips[face] ?? []) ctx.fillRect(px * 26 - 8, py * 26 - 8, 16, 16);
-  ctx.restore();
-}
 /** RED OR BLACK: the wheel's centre, its offscreen size (drawn at half size, scaled x2), and the bet column's x. */
 const RL = { wheelX: CX - 170, wheelY: 300, px: 112, betX: CX + 220 };
 /** SCRATCH-OFF's ticket: the first panel's centre, the panel step and size. */
 const SC = { x: CX - 300, y: 250, gap: 104, cell: 92 };
 /** CLAW MACHINE: the first prize's x, the step between prizes, the pit's y, the claw's resting x. */
 const CW = { x0: CX - 300, gap: 130, pitY: 450, home: CX - 170 };
-/** A roulette wheel at `angle` with its ball, drawn into a small canvas (pocket k sits at angle + k * step, 0 = up). */
-function drawWheel(g: CanvasRenderingContext2D, angle: number, ball: { a: number; r: number }): void {
-  const n = WHEEL_ORDER.length;
-  const c = RL.px / 2;
-  const step = (Math.PI * 2) / n;
-  const disc = (r: number, color: string) => {
-    g.fillStyle = color;
-    g.beginPath();
-    g.arc(c, c, r, 0, Math.PI * 2);
-    g.fill();
-  };
-  g.clearRect(0, 0, RL.px, RL.px);
-  disc(55, COLORS.outline);
-  disc(53, COLORS.gold);
-  disc(50, '#5a311c');
-  // The pockets: red, black, and the one green zero.
-  for (let k = 0; k < n; k++) {
-    const a = angle + k * step - Math.PI / 2;
-    const col = pocketColor(WHEEL_ORDER[k]);
-    g.fillStyle = col === 'red' ? '#e8374b' : col === 'green' ? '#4cc234' : '#1a1426';
-    g.beginPath();
-    g.arc(c, c, 48, a - step / 2, a + step / 2);
-    g.arc(c, c, 36, a + step / 2, a - step / 2, true);
-    g.fill();
-  }
-  disc(36, '#8f5a1f');
-  disc(33, '#5a311c');
-  // Gold spokes and the hub.
-  g.strokeStyle = COLORS.gold;
-  g.lineWidth = 3;
-  for (let k = 0; k < 4; k++) {
-    const a = angle + (k * Math.PI) / 2;
-    g.beginPath();
-    g.moveTo(c + Math.cos(a) * 6, c + Math.sin(a) * 6);
-    g.lineTo(c + Math.cos(a) * 30, c + Math.sin(a) * 30);
-    g.stroke();
-  }
-  disc(7, COLORS.gold);
-  disc(3, '#ffe45c');
-  // The ball (its radius: 51 on the track, 42 in a pocket, on this scale).
-  const bx = c + Math.cos(ball.a - Math.PI / 2) * (ball.r - 2);
-  const by = c + Math.sin(ball.a - Math.PI / 2) * (ball.r - 2);
-  g.fillStyle = COLORS.outline;
-  g.beginPath();
-  g.arc(bx, by, 3.5, 0, Math.PI * 2);
-  g.fill();
-  g.fillStyle = '#ffffff';
-  g.beginPath();
-  g.arc(bx - 0.5, by - 0.5, 2.5, 0, Math.PI * 2);
-  g.fill();
-}
 /** Your chips: the same spot in the fights (game.ts draws them there too). */
 export const CHIP_SPOT = { x: 44, y: 46 };
 /** The Cashier's shelves: item centers per row (the counter, then the relics behind the glass). */
@@ -453,23 +375,11 @@ export class RunScreens {
   /** RED OR BLACK / DICE: the bet's win or loss, paid at the call (a quit can't re-roll it) but shown when the ball or
    * dice land (it counted up while the wheel still spun, so the landing looked unpaid: user playtest). */
   private chipsLanding = 0;
-  private rlWheel = 0;
-  private rlBall = { a: -Math.PI / 2, r: 44 };
   private rlSpinNo = 1;
-  private rlCanvas: HTMLCanvasElement | null = null;
-  /** HIGHER OR LOWER: the card showing, the card being turned (and its flip 0..1), and the last call's word. */
-  private hlCard = 0;
-  private hlNext = 0;
-  private hlFlip = 0;
-  private hlMsg: EncounterResult | null = null;
   /** TWENTY-ONE: a finished hand on show (the dealer's cards turn one by one), how many of them are up, its word. */
   private bjShow: NonNullable<EncounterResult['hand']> | null = null;
   private bjDealerUp = 0;
   private bjMsg: EncounterResult | null = null;
-  /** UNDER OR OVER: the dice showing, the roll's progress (0..1; 1 = landed), and the last roll's word. */
-  private dcDice: [number, number] = [3, 4];
-  private dcT = 1;
-  private dcMsg: EncounterResult | null = null;
   /** RAT RACE: each rat's run (0 start .. 1 the line), the rat you backed, the last race. */
   private rrPos: number[] = [0, 0, 0, 0];
   private rrPick = -1;
@@ -1167,12 +1077,6 @@ export class RunScreens {
       this.ui.add({ update: (dt) => (this.slotClock.tick(dt), this.mode !== 'encounter'), finish: () => {} });
     }
     if (this.encId === 'slot') this.slotReels = SLOT_STRIPS.map((strip, r) => new ReelView(strip.map(slotCell), (r * 5) % strip.length));
-    if (this.encId === 'roulette') return this.rouletteButtons();
-    if (this.encId === 'dice') {
-      this.dcMsg = null;
-      this.dcT = 1;
-      return this.diceButtons();
-    }
     if (this.encId === 'rats') {
       this.rrPos = [0, 0, 0, 0];
       this.rrPick = -1;
@@ -1199,13 +1103,6 @@ export class RunScreens {
       this.bjMsg = null;
       return bjState(run) ? this.bjButtons() : this.bjDealButtons();
     }
-    if (this.encId === 'hilo') {
-      this.hlCard = hiloState(run)?.card ?? 0;
-      this.hlNext = 0;
-      this.hlFlip = 0;
-      this.hlMsg = null;
-      return this.hiloButtons();
-    }
     const choices = this.encChoices;
     const cards = choices.filter((c) => c.stake);
     this.buttons = choices.map((c, i) => {
@@ -1228,10 +1125,7 @@ export class RunScreens {
   }
 
   private playEncounter(i: number): void {
-    if (this.encId === 'roulette') return this.playRoulette(i);
-    if (this.encId === 'hilo') return this.playHilo(i);
     if (this.encId === 'bj') return this.playBj(i);
-    if (this.encId === 'dice') return this.playDice(i);
     if (this.encId === 'rats') return this.playRats(i);
     if (this.encId === 'scratch') return this.playScratch(i);
     if (this.encId === 'claw') return this.playClaw(i);
@@ -1308,22 +1202,6 @@ export class RunScreens {
     this.buttons = [this.btn('CONTINUE', CX, 650, 300, 52, () => this.cb.onEncounterDone())];
   }
 
-  /** RED OR BLACK's table: the bet stepper (-5 -1 +1 +5), RED and BLACK, and WALK AWAY. */
-  private rouletteButtons(): void {
-    const run = this.run!;
-    const max = rouletteMax(run);
-    this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
-    this.rlSpinNo = (run.encounterPlays ?? 0) + 1;
-    this.encChoices = encounterChoices(run);
-    const steps = this.betStepper(() => rouletteMax(this.run!));
-    const red = this.btn('RED', RL.betX, 342, 280, 56, () => this.playRoulette(0));
-    const black = this.btn('BLACK', RL.betX, 410, 280, 56, () => this.playRoulette(1));
-    black.tint = '#2a2234';
-    const walk = this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playRoulette(2));
-    for (const b of [...steps, red, black]) b.enabled = max >= 1;
-    this.buttons = [...steps, red, black, walk];
-  }
-
   /** The chip bet stepper (-5 -1 +1 +5) under YOUR BET, shared by the games that take a chip bet. */
   private betStepper(max: () => number): Btn[] {
     const step = (d: number) => {
@@ -1333,74 +1211,6 @@ export class RunScreens {
       this.rlBet = next;
     };
     return [-5, -1, 1, 5].map((d, k) => this.minorBtn(d > 0 ? `+${d}` : `${d}`, RL.betX + (k - 1.5) * 66, 262, 58, 42, () => step(d)));
-  }
-
-  /** UNDER OR OVER's table: the bet stepper, UNDER 7 / SEVEN / OVER 7, WALK AWAY. */
-  private diceButtons(): void {
-    const run = this.run!;
-    const max = diceMax(run);
-    this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
-    this.rlSpinNo = (run.encounterPlays ?? 0) + 1;
-    this.encChoices = encounterChoices(run);
-    const steps = this.betStepper(() => diceMax(this.run!));
-    const under = this.btn('UNDER 7', RL.betX, 330, 260, 52, () => this.playDice(0));
-    const seven = this.btn('SEVEN', RL.betX, 392, 260, 52, () => this.playDice(1));
-    const over = this.btn('OVER 7', RL.betX, 454, 260, 52, () => this.playDice(2));
-    seven.tint = '#2a2234';
-    const walk = this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playDice(3));
-    for (const b of [...steps, under, seven, over]) b.enabled = max >= 1;
-    this.buttons = [...steps, under, seven, over, walk];
-  }
-
-  /** One roll: the dice tumble (faces flicker, bounces settle) and land, then the call is paid. */
-  private playDice(i: number): void {
-    const before = this.run?.player.chips ?? 0;
-    const res = this.cb.onEncounter(i, this.rlBet);
-    if (!res) return;
-    this.chipsLanding = (this.run?.player.chips ?? 0) - before;
-    if (!res.dice) {
-      this.dcMsg = res;
-      this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
-      return;
-    }
-    const dice = res.dice;
-    this.dcMsg = null;
-    this.encSkip = false;
-    this.buttons = [
-      this.minorBtn('SKIP', CX, 636, 200, 44, () => {
-        this.encSkip = true;
-        this.slotClock.skip();
-      }),
-    ];
-    let lastFace = 0;
-    void this.slotClock
-      .tween({
-        from: 0,
-        to: 1,
-        dur: 1.1,
-        onUpdate: (t) => {
-          this.dcT = t;
-          // The faces flicker while they tumble (a new face every few hundredths), then hold the real roll.
-          if (t < 0.8 && t - lastFace > 0.06) {
-            lastFace = t;
-            this.dcDice = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
-            if (!this.encSkip) this.sounds.tick(t);
-          } else if (t >= 0.8) this.dcDice = dice;
-        },
-      })
-      .then(() => {
-        this.slotClock.skipping = false;
-        this.landChips();
-        if (this.mode !== 'encounter') return;
-        this.dcDice = dice;
-        this.dcT = 1;
-        this.dcMsg = res;
-        this.sounds.reelStop(2);
-        if (res.text.endsWith('BACK')) this.sounds.click();
-        else this.encOutcomeSound(res);
-        if (res.more) this.diceButtons();
-        else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
-      });
   }
 
   /** TWENTY-ONE mid-hand: HIT and STAND. */
@@ -1482,147 +1292,6 @@ export class RunScreens {
         return this.slotClock.wait(res.more ? 1.2 : 0);
       })
       .then(done);
-  }
-
-  /** HIGHER OR LOWER's buttons: sitting down (the bet, DEAL, WALK AWAY), or mid-hand (HIGHER, LOWER, CASH OUT). */
-  private hiloButtons(): void {
-    const run = this.run!;
-    this.encChoices = encounterChoices(run);
-    const st = hiloState(run);
-    if (!st) {
-      const max = hiloMax(run);
-      this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
-      const steps = this.betStepper(() => hiloMax(this.run!));
-      const deal = this.btn('DEAL', RL.betX, 376, 280, 56, () => this.playHilo(0));
-      for (const b of [...steps, deal]) b.enabled = max >= 1;
-      this.buttons = [...steps, deal, this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playHilo(1))];
-      return;
-    }
-    const pot = hiloPot(st.bet, st.calls);
-    const hi = this.btn('HIGHER', RL.betX, 300, 280, 56, () => this.playHilo(0));
-    const lo = this.btn('LOWER', RL.betX, 368, 280, 56, () => this.playHilo(1));
-    lo.tint = '#2a2234';
-    hi.enabled = !this.encChoices[0]?.disabled;
-    lo.enabled = !this.encChoices[1]?.disabled;
-    const cash = this.minorBtn(st.calls ? `CASH OUT ${pot}` : 'CASH OUT', CX, 636, 300, 44, () => this.playHilo(2));
-    cash.enabled = st.calls > 0;
-    this.buttons = [hi, lo, cash];
-  }
-
-  /** A HIGHER OR LOWER move: deal (the card slides in), a call (the next card turns over), or cashing out. */
-  private playHilo(i: number): void {
-    const before = this.run && hiloState(this.run);
-    const res = this.cb.onEncounter(i, this.rlBet);
-    if (!res) return;
-    const done = () => {
-      if (this.mode !== 'encounter') return;
-      if (res.more) this.hiloButtons();
-      else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
-    };
-    if (!before) {
-      // Walked away, or sat down: the first card is dealt.
-      this.hlMsg = res.good === null && !res.more ? res : null;
-      this.hlCard = res.card ?? 0;
-      this.hlFlip = 0;
-      this.hlNext = 0;
-      if (res.more) this.sounds.turnCard(true);
-      return done();
-    }
-    if (res.next === undefined) {
-      // Cashed out.
-      this.hlMsg = res;
-      this.encOutcomeSound(res);
-      return done();
-    }
-    // A call: the next card turns over beside the one showing, then (if the hand goes on) takes its place.
-    this.hlMsg = null;
-    this.hlNext = res.next;
-    this.buttons = [];
-    this.sounds.turnCard(false);
-    void this.slotClock
-      .tween({ from: 0, to: 1, dur: 0.35, onUpdate: (v) => (this.hlFlip = v) })
-      .then(() => {
-        this.hlMsg = res;
-        this.encOutcomeSound(res);
-        return this.slotClock.wait(res.more ? 0.7 : 0);
-      })
-      .then(() => {
-        if (res.more) {
-          this.hlCard = res.next!;
-          this.hlNext = 0;
-          this.hlFlip = 0;
-          this.hlMsg = null;
-        }
-        done();
-      });
-  }
-
-  /** One spin: the wheel turns one way and the ball the other; the ball drops, rattles and rides into its pocket. */
-  private playRoulette(i: number): void {
-    const before = this.run?.player.chips ?? 0;
-    const res = this.cb.onEncounter(i, this.rlBet);
-    if (!res) return;
-    this.chipsLanding = (this.run?.player.chips ?? 0) - before;
-    if (res.pocket === undefined) {
-      // Walked away.
-      this.encResult = res;
-      this.encT = 1;
-      this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
-      return;
-    }
-    this.encResult = null;
-    const pocket = res.pocket;
-    const stepA = (Math.PI * 2) / WHEEL_ORDER.length;
-    const idx = WHEEL_ORDER.indexOf(pocket);
-    const w0 = this.rlWheel;
-    const w1 = w0 + Math.PI * 2 * (2 + Math.random());
-    const ease = (t: number) => 1 - (1 - t) ** 3;
-    const wheelAt = (t: number) => w0 + (w1 - w0) * ease(t);
-    const land = 0.72;
-    const landA = wheelAt(land) + idx * stepA;
-    const turn = Math.PI * 2;
-    const k = (((this.rlBall.a - landA) % turn) + turn) % turn + turn * 3;
-    let lastTick = 0;
-    this.buttons = [
-      this.minorBtn('SKIP', CX, 636, 200, 44, () => {
-        this.encSkip = true;
-        this.slotClock.skip();
-      }),
-    ];
-    this.encSkip = false;
-    void this.slotClock
-      .tween({
-        from: 0,
-        to: 1,
-        dur: 3.4,
-        onUpdate: (t) => {
-          this.rlWheel = wheelAt(t);
-          if (t < land) {
-            const u = t / land;
-            this.rlBall.a = landA + (1 - ease(u)) * k;
-            // On the track, then it falls in and rattles over the frets.
-            this.rlBall.r = u < 0.8 ? 51 : 44 + 7 * (1 - (u - 0.8) / 0.2) * Math.abs(Math.cos((u - 0.8) * 40));
-            if (u > 0.8 && t - lastTick > 0.03 && !this.encSkip) {
-              lastTick = t;
-              this.sounds.tick(u);
-            }
-          } else {
-            this.rlBall.a = this.rlWheel + idx * stepA;
-            this.rlBall.r = 44;
-          }
-        },
-      })
-      .then(() => {
-        this.slotClock.skipping = false;
-        this.landChips();
-        if (this.mode !== 'encounter') return;
-        this.encResult = res;
-        this.encT = 1;
-        this.sounds.reelStop(1);
-        this.encOutcomeSound(res);
-        if (res.more) this.rouletteButtons();
-        else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
-      });
   }
 
   private encOutcomeSound(res: EncounterResult): void {
@@ -2679,10 +2348,7 @@ export class RunScreens {
     if (def.blurb) drawText(ctx, def.blurb, CX, 80, 2, COLORS.textDim);
     const res = this.encResult;
     if (def.id === 'slot') this.drawSlotMachine(ctx, time);
-    else if (def.id === 'roulette') this.drawRoulette(ctx, time);
-    else if (def.id === 'hilo') this.drawHilo(ctx, time);
     else if (def.id === 'bj') this.drawBj(ctx, time);
-    else if (def.id === 'dice') this.drawDice(ctx, time);
     else if (def.id === 'rats') this.drawRats(ctx, time);
     else if (def.id === 'scratch') this.drawScratch(ctx, time);
     else if (def.id === 'claw') this.drawClaw(ctx, time);
@@ -3107,29 +2773,6 @@ export class RunScreens {
     } else if (this.cwY === 0 && this.cwX === CW.home) drawText(ctx, 'PICK A PRIZE TO GO FOR', RL.betX, 220, 2, COLORS.textDim);
   }
 
-  /** UNDER OR OVER: two dice on the felt (tumbling, then landed), your bet, the payouts, the last roll. */
-  private drawDice(ctx: CanvasRenderingContext2D, time: number): void {
-    this.felt(ctx);
-    drawText(ctx, `ROLL ${Math.min(this.rlSpinNo, DICE.rolls + extraPlays(this.run!))} OF ${DICE.rolls + extraPlays(this.run!)}`, CX, 78, 2, COLORS.textDim);
-    const t = this.dcT;
-    const rolling = t < 1;
-    // While they tumble the dice hop (each bounce lower) and wobble; landed, they sit still.
-    const hop = rolling ? Math.abs(Math.sin(t * Math.PI * 4)) * 60 * (1 - t) : 0;
-    const total = this.dcDice[0] + this.dcDice[1];
-    this.dcDice.forEach((face, k) => {
-      const x = RL.wheelX - 70 + k * 140 + (rolling ? Math.sin(t * 30 + k) * 6 : 0);
-      drawDie(ctx, x, 290 - hop * (k ? 0.8 : 1), face, rolling ? Math.sin(t * 20 + k * 2) * 0.3 : 0);
-    });
-    if (!rolling) drawText(ctx, `${total}`, RL.wheelX, 390, 3, total === 7 ? COLORS.goldLight : COLORS.text);
-    // The table's limit, said up front (playtest: HIGHER OR LOWER's cap wasn't).
-    drawText(ctx, `YOUR BET (MAX ${this.run ? diceMax(this.run) : DICE.maxBet})`, RL.betX, 150, 2, COLORS.textDim);
-    drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
-    drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
-    drawText(ctx, `UNDER / OVER PAY 1 TO 1.  SEVEN PAYS ${DICE.sevenPays} TO 1`, RL.betX, 500, 1.5, COLORS.textDim);
-    const m = this.dcMsg;
-    if (m && !rolling && m.dice) drawText(ctx, m.text, RL.wheelX, 440, 2.5, m.text.startsWith('+') ? COLORS.goldLight : m.text.startsWith('-') ? '#ff8a7a' : COLORS.text, { punch: 1 + 0.03 * Math.sin(time * 6) });
-  }
-
   /** TWENTY-ONE: the dealer's row and yours with their totals, which hand this is, what you've won. Before the buy-in:
    * the house rules and the pay cards. */
   private drawBj(ctx: CanvasRenderingContext2D, time: number): void {
@@ -3176,77 +2819,6 @@ export class RunScreens {
       drawText(ctx, m.title, RL.betX, 300, 2.5, m.good ? COLORS.goldLight : '#ff8a7a', { punch: 1 + 0.03 * Math.sin(time * 6) });
       if (m.text) drawText(ctx, m.text, RL.betX, 336, 2, m.good ? COLORS.goldLight : '#ff8a7a');
     }
-  }
-
-  /** HIGHER OR LOWER: the card showing, the next one (face down, then turning), the pot ladder, your bet or the pot. */
-  private drawHilo(ctx: CanvasRenderingContext2D, time: number): void {
-    const run = this.run!;
-    const st = hiloState(run);
-    this.felt(ctx);
-    const cx = CX - 200;
-    drawPlayingCard(ctx, cx - 80, 300, this.hlCard, this.hlCard ? 1 : 0);
-    // The next card: its back, or turning over (it narrows on its back, widens on its face).
-    const f = this.hlFlip;
-    const face = f > 0.5 && this.hlNext > 0;
-    drawPlayingCard(ctx, cx + 80, 300, face ? this.hlNext : 0, face ? (f - 0.5) * 2 : 1 - f * 2, 1, 1);
-    // The pot ladder: what each right call makes the pot (the one you're on lit).
-    const bet = st?.bet ?? this.rlBet;
-    const calls = st?.calls ?? 0;
-    for (let k = 1; k <= HILO.calls; k++) {
-      const y = 470 - k * 60;
-      const lit = k <= calls;
-      const nextUp = k === calls + 1 && !!st;
-      this.panel(ctx, cx + 200 - 40, y - 18, 80, 36, lit ? COLORS.goldLight : nextUp ? COLORS.gold : '#3a2e52');
-      drawText(ctx, `${hiloPot(bet, k)}`, cx + 200, y, 2, lit ? COLORS.goldLight : nextUp ? COLORS.text : COLORS.textDim, { punch: nextUp ? 1 + 0.05 * Math.sin(time * 6) : 1 });
-    }
-    drawText(ctx, 'POT', cx + 200, 470, 1.5, COLORS.textDim);
-    // The rules nobody guesses (playtest: is the ace high?).
-    drawText(ctx, 'ACES ARE HIGH. A TIE LOSES.', cx, 196, 1.5, COLORS.textDim);
-    // Right column: your bet before the deal; the pot during the hand.
-    if (!st) {
-      // The table's limit, said up front (playtest: HIGHER OR LOWER's cap wasn't).
-      drawText(ctx, `YOUR BET (MAX ${this.run ? hiloMax(this.run) : HILO.maxBet})`, RL.betX, 150, 2, COLORS.textDim);
-      drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
-      drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
-    } else {
-      drawText(ctx, 'THE POT', RL.betX, 170, 2, COLORS.textDim);
-      drawText(ctx, `${hiloPot(st.bet, st.calls)}`, RL.betX, 220, 5, COLORS.energy);
-    }
-    const m = this.hlMsg;
-    if (m && m.title) {
-      drawText(ctx, m.title, cx, 460, 3, m.good === false ? '#ff8a7a' : COLORS.goldLight, { punch: 1 + 0.03 * Math.sin(time * 6) });
-      drawText(ctx, m.text, cx, 494, m.text.length > 18 ? 1.5 : 2, m.good === false ? '#ff8a7a' : COLORS.goldLight);
-    }
-  }
-
-  /** RED OR BLACK: the felt, the wheel (drawn small and scaled up crisp), your bet, the last spin's result. */
-  private drawRoulette(ctx: CanvasRenderingContext2D, time: number): void {
-    const run = this.run!;
-    const spinning = this.buttons.length === 1 && this.buttons[0].label === 'SKIP';
-    drawText(ctx, `SPIN ${Math.min(this.rlSpinNo, (encounterOf('roulette').plays ?? 3) + extraPlays(this.run!))} OF ${(encounterOf('roulette').plays ?? 3) + extraPlays(this.run!)}`, CX, 78, 2, COLORS.textDim);
-    this.felt(ctx);
-    // The wheel.
-    const c = (this.rlCanvas ??= Object.assign(document.createElement('canvas'), { width: RL.px, height: RL.px }));
-    const g = c.getContext('2d')!;
-    drawWheel(g, this.rlWheel, this.rlBall);
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(c, RL.wheelX - RL.px, RL.wheelY - RL.px, RL.px * 2, RL.px * 2);
-    ctx.restore();
-    // Your bet, beside the wheel.
-    // The table's limit, said up front (playtest: HIGHER OR LOWER's cap wasn't).
-    drawText(ctx, `YOUR BET (MAX ${this.run ? rouletteMax(this.run) : ROULETTE.maxBet})`, RL.betX, 150, 2, COLORS.textDim);
-    drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
-    drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
-    drawText(ctx, 'PAYS 1 TO 1', RL.betX, 470, 1.5, COLORS.textDim);
-    // The result of the spin that just landed.
-    const res = this.encResult;
-    if (res && !spinning && res.pocket !== undefined) {
-      const col = pocketColor(res.pocket);
-      drawText(ctx, res.title, RL.wheelX, 456, 3, col === 'red' ? '#ff6a5a' : col === 'green' ? COLORS.slime : COLORS.text, { punch: 1 + 0.03 * Math.sin(time * 6) });
-      drawText(ctx, res.text, RL.wheelX, 488, 2, res.good ? COLORS.goldLight : '#ff8a7a');
-    }
-    void run;
   }
 
   /** LUCKY SEVENS: a 5x3 machine in the fight machines' bezel, its paytable under it, then each pull's win and the

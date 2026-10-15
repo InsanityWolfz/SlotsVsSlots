@@ -6,7 +6,7 @@
 import type { Enh, RelicId, SymbolId } from '../core/config';
 import { CABINETS } from '../core/cabinets';
 import { DANGER, type Stop } from '../core/enemies';
-import { bjState, bjTotal, hiloState } from '../core/encounters';
+import { bjState, bjTotal } from '../core/encounters';
 import type { Rng } from '../core/rng';
 import {
   buy,
@@ -311,9 +311,6 @@ export function pickRoute(run: RunState, policy: DraftPolicy, rng: Rng): number 
 /** Encounter policy: random plays any open choice; greedy gambles when healthy and walks away when hurt. */
 export function pickEncounter(run: RunState, policy: DraftPolicy, rng: Rng): number {
   const choices = encounterChoices(run);
-  // HIGHER OR LOWER, played sensibly: higher on a low card, lower on a high one; bank the pot after two right calls.
-  const hilo = hiloState(run);
-  if (policy !== 'random' && choices[0]?.label === 'HIGHER' && hilo) return hilo.calls >= 2 ? 2 : hilo.card <= 8 ? 0 : 1;
   // TWENTY-ONE: hit below 17, as the dealer does.
   const bj = bjState(run);
   if (policy !== 'random' && bj) return bjTotal(bj.p) < 17 ? 0 : 1;
