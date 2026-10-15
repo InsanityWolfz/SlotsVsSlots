@@ -84,6 +84,11 @@ export class HudView {
   abilityLabel?: string;
   /** A line in the ability slot for an enemy without one. */
   hint = '';
+  /** THE SCORE RACE (sandbox): the HP bar is a score bar, filled against the rival's score. */
+  race = false;
+  score = 0;
+  rival = 0;
+  scorePunch = 1;
 
   constructor(
     readonly side: SideId,
@@ -141,7 +146,7 @@ export class HudView {
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(x - 8, y - 8, HUD_W + 16, h + 16);
     // Low HP: your frame pulses red (with the screen's red edges and the heartbeat: feel playtest).
-    const lowHp = this.side === 'player' && this.hp > 0 && this.hp < this.maxHp * 0.3;
+    const lowHp = !this.race && this.side === 'player' && this.hp > 0 && this.hp < this.maxHp * 0.3;
     ctx.fillStyle = lowHp ? mixHex(COLORS.gold, COLORS.danger, 0.55 + 0.45 * Math.sin(time * Math.PI * 1.8)) : COLORS.gold;
     ctx.fillRect(x - 5, y - 5, HUD_W + 10, h + 10);
     ctx.fillStyle = COLORS.panel;
@@ -167,14 +172,22 @@ export class HudView {
     const hb = this.hpBar();
     const sh = this.hpShake * (Math.random() * 2 - 1);
     const hx = hb.x + sh;
-    // Heart and shield sit in one column between the portrait box and the bars.
-    drawSprite(ctx, 'heart', x + 68 + sh, hb.y + hb.h / 2, 2);
-    this.bar(ctx, hx + 6, hb.y, hb.w - 6, hb.h, [
-      [this.ghost / this.maxHp, COLORS.hpGhost],
-      [this.hp / this.maxHp, COLORS.hp],
-    ], this.hpFlash);
-    const low = this.hp / this.maxHp <= 0.25 && this.hp > 0;
-    drawText(ctx, `${fmtNum(Math.ceil(this.hp))}/${fmtNum(this.maxHp)}`, hx + 6 + (hb.w - 6) / 2, hb.y + hb.h / 2 + 1, 2, low && Math.sin(time * 10) > 0 ? '#ffb0b0' : COLORS.text);
+    if (this.race) {
+      // THE SCORE RACE: the bar fills against whoever leads; the leader's bar is full.
+      this.scorePunch += (1 - this.scorePunch) * 0.15;
+      const lead = this.score >= this.rival && this.score > 0;
+      this.bar(ctx, hx + 6, hb.y, hb.w - 6, hb.h, [[this.score / Math.max(1, this.score, this.rival), this.side === 'player' ? COLORS.gold : COLORS.hp]], this.hpFlash);
+      drawText(ctx, `SCORE ${fmtNum(this.score)}`, hx + 6 + (hb.w - 6) / 2, hb.y + hb.h / 2 + 1, 2, lead ? '#fff6c0' : COLORS.text, { punch: this.scorePunch });
+    } else {
+      // Heart and shield sit in one column between the portrait box and the bars.
+      drawSprite(ctx, 'heart', x + 68 + sh, hb.y + hb.h / 2, 2);
+      this.bar(ctx, hx + 6, hb.y, hb.w - 6, hb.h, [
+        [this.ghost / this.maxHp, COLORS.hpGhost],
+        [this.hp / this.maxHp, COLORS.hp],
+      ], this.hpFlash);
+      const low = this.hp / this.maxHp <= 0.25 && this.hp > 0;
+      drawText(ctx, `${fmtNum(Math.ceil(this.hp))}/${fmtNum(this.maxHp)}`, hx + 6 + (hb.w - 6) / 2, hb.y + hb.h / 2 + 1, 2, low && Math.sin(time * 10) > 0 ? '#ffb0b0' : COLORS.text);
+    }
 
     // Shield bar (no max; fills to a soft cap).
     const sb = this.shieldBar();

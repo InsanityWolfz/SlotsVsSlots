@@ -196,6 +196,15 @@ export interface FightRecord {
   choice?: string;
 }
 
+/**
+ * THE SCORE RACE (sandbox, user 2026-10-15: "instead of HP, competing scores"): every fight is a race of `spins` spins
+ * each (elites and bosses more), the enemy's pay x enemyMul, the higher score wins; a lost race ends the run. HOLDs a
+ * fight. PLAY MODES > SCORE RACE (TEST).
+ */
+export const RACE = { spins: { fight: 5, elite: 6, boss: 7 }, enemyMul: 1.1, refHp: 200, hpExp: 0.65, bossMul: 1.3, openerMul: 0.7, holds: 2, lives: 3 };
+/** THE SCORE RACE: LIVES left. */
+export const raceLives = (run: RunState) => run.raceLives ?? RACE.lives;
+
 export interface RunState {
   seed: number;
   /** A Dealer win you LET RIDE: its hiscore entry's `at`, so ENDLESS updates that entry (even after a refresh). */
@@ -252,6 +261,9 @@ export interface RunState {
   /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day), and the day's TONIGHT'S RULE. */
   daily?: string;
   dailyNight?: NightId;
+  /** THE SCORE RACE (sandbox): every fight is a race; LIVES left (a lost race costs one). */
+  race?: boolean;
+  raceLives?: number;
   /** Relic picks waiting behind the current one (PUNCH CARD's can land on the act's legendary pick). */
   legendQueue?: RelicId[][];
   /** THE LONG GAME (legendary relic): fights won since you got it. */
@@ -745,6 +757,12 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   cfg.seed = dailyFightSeed(run.daily ? run.seed : (run.spinSeed ?? run.seed), run.act, run.depth, run.endless?.loop ?? 0);
   // QUICKENING (legendary relic): enemy abilities charge one spin faster.
   if (quickening(run) && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
+  // THE SCORE RACE (sandbox): a fixed number of spins, the higher score wins, and HOLDs to play them with.
+  if (run.race) {
+    // The enemy's score grows with its HP (HP tracked your power; honest HP keeps it the same on every machine).
+    cfg.race = { spins: e.isBoss ? RACE.spins.boss : e.elite ? RACE.spins.elite : RACE.spins.fight, enemyMul: RACE.enemyMul * (cfg.enemy.hp / RACE.refHp) ** RACE.hpExp * (e.isBoss ? RACE.bossMul : 1) * (run.act === 1 && run.depth === 0 ? RACE.openerMul : 1) };
+    cfg.player.holds = RACE.holds;
+  }
   return cfg;
 }
 
@@ -883,6 +901,9 @@ const rocksIn = (s: StripCounts[]) => s.reduce((a, x) => a + (x.rock ?? 0), 0);
 export function finishFight(run: RunState, fight: Fight): FightRecord {
   const p = fight.sides.player;
   const won = fight.winner === 'player';
+  // THE SCORE RACE: a lost race costs a LIFE (the run goes on, no win chips); a lost boss race, or the last life, ends it.
+  const lostLife = !!run.race && !won && !currentEnemy(run).isBoss && raceLives(run) > 1;
+  if (lostLife) run.raceLives = raceLives(run) - 1;
   const before = run.player.hp;
   const old = run.player.strips;
   const next = p.reels.map((r) => stripCounts(r));
@@ -938,7 +959,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     const e = fight.sides.enemy;
     run.endless.ownerTaken = Math.max(run.endless.ownerTaken ?? 0, Math.min(1, 1 - Math.max(0, e.hp) / Math.max(1, e.maxHp)));
   }
-  if (!won) {
+  if (!won && !lostLife) {
     run.player.hp = 0;
     run.over = true;
     return record;
@@ -978,7 +999,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   const beaten = currentEnemy(run);
   const interest = interestOn(run.player.chips);
   // OPEN BAR (legendary relic): wins pay no chips (interest still does).
-  const winChips = (run.player.relics.includes('openbar') ? 0 : CHIPS.win + (CABINETS[run.cabinet].chipsPerWin ?? 0) + (beaten.elite ? CHIPS.eliteBonus : 0) + fight.playerJackpots * CHIPS.perJackpot) * (nightId(run) === 'limit' ? 2 : 1);
+  const winChips = (run.player.relics.includes('openbar') || lostLife ? 0 : CHIPS.win + (CABINETS[run.cabinet].chipsPerWin ?? 0) + (beaten.elite ? CHIPS.eliteBonus : 0) + fight.playerJackpots * CHIPS.perJackpot) * (nightId(run) === 'limit' ? 2 : 1);
   const earned = interest + winChips;
   run.player.chips += earned;
   // (THE WHEEL: the chips your sweeps won came in with the fight's mid-fight chips; the line counts them.)
@@ -991,7 +1012,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     record.chips = (record.chips ?? 0) + GATEKEEPER.bounty;
   }
   // Elites offer their spoils in every act: choose 1 of 2 relics (map rework 2026-10-12; act 2 elites paid chips).
-  if (beaten.elite) {
+  if (beaten.elite && !lostLife) {
     const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && !LEGENDARY.has(r));
     const rng = new Rng((run.seed ^ Math.imul(run.depth + 7 + run.act * 100, 0x85ebca6b)) >>> 0);
     const spoils = pickRelics(pool, 2, rng);

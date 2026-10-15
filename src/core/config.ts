@@ -208,6 +208,8 @@ export interface SideConfig {
   stackShield?: number;
   /** THE DECK REMEMBERS: marked cards waiting on this side's reels when the fight starts. */
   startMarks?: number;
+  /** HOLD (experiment): HOLDs you get this fight (0 = off). */
+  holds?: number;
   /** Which act this side comes from (enemy). */
   act?: number;
   /** ENDLESS: enemy damage multiplier (1.12^loop), LAST CALL / 80-turn cap on, and a starting shield (HOUSE EDGE). */
@@ -257,6 +259,11 @@ export interface GameConfig {
   night?: 'happy' | 'limit' | 'lucky' | 'showdown' | 'iron' | 'fast';
   /** null = new random seed each fight. */
   seed: number | null;
+  /**
+   * THE SCORE RACE (sandbox, user 2026-10-15): no HP. Both machines spin `spins` times; what a spin pays is its score
+   * (the enemy's x enemyMul), and the higher score wins. A shield you hold when the enemy's ability fires blocks it.
+   */
+  race?: { spins: number; enemyMul: number };
 }
 
 /** Every number in the game is on a x10 scale (a plain symbol pays 10). The presentation divides by this where it counts pips. */

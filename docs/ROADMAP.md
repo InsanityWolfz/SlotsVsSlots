@@ -2,17 +2,19 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-15):** the draft/Cashier split is in (GAME.md "After every win" and "The Cashier"); next, bosses
-with teeth, then one balance pass for both.
+**In progress (2026-10-15):** THE SCORE RACE sandbox is in (GAME.md "THE SCORE RACE"): the user plays it and decides
+whether fights become score races. Bosses with teeth is parked on branch `boss-teeth-wip` (HP-game numbers; THE OWNER
+was beaten 4.6%, over the user's 2% bar), and moot if the race stays.
 
 ## Now, in order
-1. **Bosses with teeth** (user, 2026-10-15): THE HOUSE is beaten in 86-95% of meetings at WHITE, THE WHEEL 88-97%.
-   Each boss should be a run-ending threat you can see coming. Then rebalance the machines.
+1. **THE SCORE RACE: keep or drop (the user's call).** If kept: the watch-only rule in CLAUDE.md changes; combat
+   relics (VAMP, heals, shields) get spin jobs; NUDGE / RESPIN join HOLD; bosses become race twists; BANKROLL reworked.
+   If dropped: back to bosses with teeth (`boss-teeth-wip`).
 2. **Left from the second feel playtest:** act 2 fights run 74-95 s. Small UI: GOLD / GLASS icons blank in the side panel's
-   Charm grid, REPO MAN's subtitle repeats his ability text, PLAY MODES has half a panel of space, the WHEEL card has no
+   Charm grid, REPO MAN's subtitle repeats his ability text, the WHEEL card has no
    tagline, the REGULAR title shares a relic's name.
-3. **Balance left over** (sim, 800 runs): KNIGHT and JUKEBOX 6-8 under target from GREEN up (KNIGHT's Dealer spread);
-   RED JUKEBOX 60 / JOKER 58 / BANKROLL 61 (target 50).
+3. **Balance left over** (HP game, after the draft/Cashier split; sim 1000 runs): RED runs high (KNIGHT 63, BANKROLL
+   66, JUKEBOX 57; target 50), KNIGHT WHITE 70 (60), JUKEBOX BLUE / GOLD 12 / 6 (20 / 14), TESLA GREEN 42 (36).
 4. **Encounters that touch your machine** (first feel playtest): prizes and costs as reel edits, Charms or curses, not
    only chips.
 

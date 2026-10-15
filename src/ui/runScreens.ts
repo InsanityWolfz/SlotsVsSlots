@@ -10,6 +10,8 @@ import { LEGENDARY, RELICS, POT } from '../core/relics';
 import { CHARM_COLOR, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
 import {
+  RACE as SCORE_RACE,
+  raceLives,
   CHIPS,
   describeOption,
   takenLabel,
@@ -1407,6 +1409,13 @@ export class RunScreens {
   }
 
   private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
+    // THE SCORE RACE (sandbox): no HP, LIVES.
+    if (this.run?.race) {
+      const n = raceLives(this.run);
+      for (let i = 0; i < SCORE_RACE.lives; i++) drawSprite(ctx, 'heart', x + 8 + i * 30, y, 2, { alpha: i < n ? 1 : 0.25 });
+      drawText(ctx, `${n} ${n === 1 ? 'LIFE' : 'LIVES'}`, x + 24 + w / 2 + 30, y + 1, 2, COLORS.text);
+      return;
+    }
     const p = this.shown();
     drawSprite(ctx, 'heart', x + 8, y, 2);
     ctx.fillStyle = COLORS.outline;
@@ -1423,7 +1432,7 @@ export class RunScreens {
     const start = this.draftKind === 'start';
     // ENDLESS: the pick after a loop's boss is the new loop's: say the loop was cleared.
     const loopDone = !!last && !!this.run?.endless && last.loop !== undefined && last.loop < this.run.endless.loop;
-    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${nightOf(this.run) ? `: ${nightOf(this.run)!.title}` : ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
+    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? (last.won ? `${last.enemy} DEFEATED!` : `RACE LOST: ${raceLives(this.run!)} ${raceLives(this.run!) === 1 ? 'LIFE' : 'LIVES'} LEFT`) : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${nightOf(this.run) ? `: ${nightOf(this.run)!.title}` : ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';

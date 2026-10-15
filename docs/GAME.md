@@ -20,11 +20,10 @@ was tuned for feel from two fresh-eyes playtests.
   PAYLINE, DEVIL'S DUE, THE LONG GAME, QUICKENING (not KNIGHT), GLASS CANNON, CRUSADE (KNIGHT), CHAIN LIGHTNING (TESLA),
   HIGH CARD (JOKER), HYPE MAN (JUKEBOX), OPEN BAR (BANKROLL).
 - **Levels:** no Charm levels; uncapped symbol levels, +6 a level; each boss pays your attack symbol one; STAR CHART.
-- **Balance after the cut** (the cuts took ~2 upgrades, a relic and a big choice a run): the boss level, KNIGHT 470 HP
-  with swords from level 2, TESLA 315, JOKER 335 (meter 50 a WILD), JUKEBOX 395. Sim 800 runs, WHITE / RED / GREEN / BLACK / BLUE / GOLD
-  (targets 60 / 50 / 36 / 28 / 20 / 14): KNIGHT 66 / 53 / 29 / 22 / 13 / 7, TESLA 56 / 46 / 41 / 28 / 21 / 15, JUKEBOX
-  64 / 60 / 33 / 21 / 13 / 8, JOKER 56 / 58 / 37 / 30 / 19 / 15, BANKROLL 63 / 61 / 37 / 28 / 21 / 14. KNIGHT and
-  JUKEBOX are 6-8 under from GREEN up (KNIGHT's Dealer spread); see ROADMAP.
+- **Balance after the cut and the draft/Cashier split** (2026-10-15): the boss level (KNIGHT: 3), KNIGHT 390 HP,
+  TESLA 315, JOKER 390 (meter 50 a WILD), JUKEBOX 395, BANKROLL 290; 6 chips a win. Sim 1000 runs, WHITE / RED / GREEN /
+  BLACK / BLUE / GOLD (targets 60 / 50 / 36 / 28 / 20 / 14): KNIGHT 70 / 63 / 32 / 25 / 13 / 9, TESLA 59 / 52 / 42 / 32 /
+  20 / 17, JUKEBOX 62 / 57 / 35 / 24 / 12 / 6, JOKER 58 / 51 / 35 / 30 / 16 / 12, BANKROLL 67 / 66 / 41 / 32 / 22 / 17.
 - **Never a portrait / "turn your phone" screen (user, 2026-09-24, bd4d7b4):** it got stuck and locked players out.
   It came back by mistake on 2026-10-15 (64618c0) and was removed again. The game always starts, in any orientation.
 - **HOLD was tried and cut (2026-10-15):** tap a reel to keep it for your next spin after a PAIR, 2 a fight (commit
@@ -361,6 +360,25 @@ LOOP N CLEARED! SCORE X, and the run-over screen shows it with its biggest parts
 formula. Sim (GREEN, 200 runs a machine, bot riding): medians KNIGHT 13.9K, TESLA 11.7K, JUKEBOX 12.2K, JOKER 14.7K,
 BANKROLL 17.6K; ENDLESS riders 33-54K. Share of all points: bosses 28%, relics 19%, elites 11%, fights 11%, cleared 7%,
 levels 7%, chips earned 7%, Charms 5%, THE OWNER 4%. (The pot and chips x10 are gone.)
+
+## THE SCORE RACE (sandbox, user 2026-10-15)
+The user's idea: HP and uncapped damage compete (your power has no cap, the enemy hits back, and HP never keeps up), so
+try fights as **competing scores**, like Balatro's blinds. PLAY MODES > SCORE RACE (TEST): a normal run, but every fight
+is a race (`cfg.race`, `RACE` and `raceLives` in `src/core/run.ts`; the fight engine's `raceScore`, `raceLeft`,
+`raceTurnEnd`).
+- Both machines spin 5 times (elites 6, bosses 7); a hit is score for whoever landed it, nobody loses HP. The higher
+  score wins (a tie is yours). The HP bars are score bars, filled against the leader; the final score is a banner.
+- The enemy's pay counts x 1.1 x (its HP / 200)^0.65 (bosses x1.3, the run's first race x0.7): honest HP, the same on
+  every machine. Its sabotage still lands (slime, freeze, rocks...).
+- A shield you're holding blocks the next sabotage on your reels, a symbol's or an ability's (BLOCKED!), and is spent.
+- 2 HOLDs a race (the HOLD code from f7708bb): before any spin, tap a reel to keep it. The race waits for your SPIN.
+- 3 LIVES: a lost race costs one (no win chips, no elite spoils; the run goes on); a lost boss race, or the last life,
+  ends the run. The side panel shows LIVES. Race runs never post to the boards.
+- Sim (`tools/out/race.ts`, 200 runs, WHITE, the bot holding pairs): runs won KNIGHT 50, TESLA 42, JUKEBOX 69, JOKER
+  55, BANKROLL 31; act 1 races 80-93%, act 1 boss 64-86%; first race 75-88%. BANKROLL is weakest (its kit is chips,
+  shields and heals). Not tuned further: it's for feel.
+- The main game is unchanged (watch-only, HP). If the race stays: combat relics become spin relics, shields and heals
+  get new jobs, HOLD / NUDGE / RESPIN become the spin tools, and AUTO's top speeds can go.
 
 ## Modes and meta
 - **Modes:** the normal run, THE DAILY RUN and ENDLESS (THE WEEKLY and CHALLENGES are cut, 2026-10-15; old hiscore

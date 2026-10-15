@@ -181,6 +181,11 @@ export class Director {
         return this.banner(['', 'HE LOOSENS HIS TIE', 'HE STANDS UP', 'HE GOES ALL IN'][e.phase] ?? '', '#ff6a5a', 1.3, 0.35, `THE OWNER AT ${[100, 75, 50, 25][e.phase]}%: HIS HITS ARE ${Math.round(OWNER_RULES.phaseDmg * e.phase * 100)}% HARDER`, BANNER_Y, 3);
       case 'secondLine':
         return this.secondLine(e);
+      case 'raceScore':
+        return this.raceScore(e);
+      case 'sabotageBlocked':
+        this.s.sounds.block();
+        return this.banner('BLOCKED!', '#9fd0ff', 1.2, 0.3, 'YOUR SHIELD STOPPED ITS ABILITY', MACHINE_TOP + MACHINE_H / 2, 4);
       case 'death':
         return this.death(e);
       case 'fightEnd':
@@ -517,6 +522,18 @@ export class Director {
     }
   }
 
+  /** THE SCORE RACE: a side's turn scored: its total punches up, the rival's bar re-fills against it. */
+  private async raceScore(e: Extract<CombatEvent, { type: 'raceScore' }>): Promise<void> {
+    const h = this.s.huds[e.side];
+    const rival = this.s.huds[e.side === 'player' ? 'enemy' : 'player'];
+    h.score = e.total;
+    h.scorePunch = 1.6;
+    rival.rival = e.total;
+    this.s.sounds.coin(e.side === 'player' ? 2 : 0);
+    const m = MACHINE_CX[e.side];
+    await this.popText(`+${fmtNum(e.amount)}`, m, MACHINE_TOP + 40, this.tierScale(), e.side === 'player' ? COLORS.goldLight : '#ff8a7a', 60);
+  }
+
   private damageHud(side: SideId, hp: number, shield: number, amount: number): void {
     const h = this.s.huds[side];
     this.bg(this.c.to(h, 'hp', hp, 0.08));
@@ -590,7 +607,8 @@ export class Director {
           this.setTag(e.side, r, e.locked[r]);
         },
       },
-      e.frozen,
+      // A HELD reel (HOLD, experiment) stays still like a frozen one.
+      e.frozen.map((z, r) => z || !!e.held?.[r]),
     );
     for (const r of e.score.relics ?? []) this.relicPop(e.side, r);
     // GOLDEN SPIN: its own moment, a gold banner over a soft flash of the machine (never the screen).
@@ -911,6 +929,12 @@ export class Director {
     if (e.amount >= 4 * UNIT) this.hitstop(e.amount >= 9 * UNIT ? 3 : 1);
 
     const h = this.s.huds[e.to];
+    // THE SCORE RACE: nobody loses HP; the score lands on the HUD (raceScore), so no damage numbers here.
+    if (h.race) {
+      this.settle(e.from, e.reels);
+      await this.c.wait(0.2);
+      return;
+    }
     if (e.blocked > 0) {
       this.s.sounds.block();
       const sb = h.shieldBar();
@@ -1408,6 +1432,8 @@ export class Director {
 
   private async fightEnd(e: Ev<'fightEnd'>): Promise<void> {
     const win = e.winner === 'player';
+    // THE SCORE RACE: the final score, big.
+    if (this.s.huds.player.race) void this.banner(win ? 'RACE WON!' : 'RACE LOST', win ? COLORS.goldLight : '#ff6a5a', 1.4, 0.8, `${fmtNum(this.s.huds.player.score)} TO ${fmtNum(this.s.huds.enemy.score)}`, MACHINE_TOP + MACHINE_H / 2, 5);
     if (win) this.s.sounds.victory();
     else this.s.sounds.defeat();
     if (win)

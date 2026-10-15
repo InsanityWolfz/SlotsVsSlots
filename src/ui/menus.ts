@@ -130,6 +130,7 @@ export class Menus {
       onTutorial: () => void;
       /** THE DAILY RUN (one try a day). */
       onDaily: () => void;
+      onRace: () => void;
       /** Name entry: claim the name; resolves to the claim result ('ok', 'taken', 'have:NAME', 'offline'). */
       needsName: () => boolean;
       onName: (name: string) => Promise<string>;
@@ -337,6 +338,10 @@ export class Menus {
     const tb = this.btn('TUTORIAL', x, row(1), 440, 54, () => this.cb.onTutorial(), 3);
     this.icons.set(tb, 'iconTutorial');
     this.guardSaved(tb);
+    // THE SCORE RACE (sandbox, 2026-10-15): a run where every fight is a race of spins, highest score wins.
+    const race = this.btn('SCORE RACE (TEST)', x, row(2), 440, 54, () => this.cb.onRace(), 2.5);
+    this.icons.set(race, 'chip');
+    this.guardSaved(race);
     this.slideIn();
   }
 

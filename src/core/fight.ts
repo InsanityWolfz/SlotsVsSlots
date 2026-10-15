@@ -221,6 +221,13 @@ export class Fight {
   turn = 0;
   next: SideId = 'player';
   winner: SideId | null = null;
+  /** THE SCORE RACE: each side's score, and what it scored on the turn being played (one raceScore event a turn). */
+  raceScore: Record<SideId, number> = { player: 0, enemy: 0 };
+  private turnScore: Record<SideId, number> = { player: 0, enemy: 0 };
+  /** THE SCORE RACE: your spins left (the enemy spins as many). */
+  get raceLeft(): number {
+    return this.cfg.race ? Math.max(0, this.cfg.race.spins - this.playerSpins) : 0;
+  }
   /** The House's progressive pot (boss fight). */
   pot = 0;
   /** ENDLESS: the loop House's pot is sized to your max HP (a flat pot is nothing to a late build). */
@@ -349,6 +356,8 @@ export class Fight {
     }
     // WARM-UP (JUKEBOX, ENDLESS): the volume starts at the loop, never at THE DROP itself.
     if (this.meter?.kind === 'volume' && this.cfg.player.volumeStart && !p.armed) p.energy = Math.max(p.energy, Math.min(this.meterCost - UNIT, this.cfg.player.volumeStart * UNIT));
+    // HOLD (experiment): this fight's HOLDs.
+    this.holdsLeft = this.cfg.player.holds ?? 0;
     const e = this.sides.enemy;
     // BLAZE: every blaze cell you own adds to your special.
     const blazeCells = p.reels.reduce((a, reel) => a + reel.cells.filter((c) => c.enh === 'blaze').length, 0);
@@ -468,6 +477,25 @@ export class Fight {
   /** THE DROP this spin: the notes off the payline that join the note group (vamp heals after). */
   private dropOff: { cells: { reel: number; row: number; v?: number; wild?: true }[]; vamp: number } | null = null;
 
+  /** HOLD (experiment, 2026-10-15): your HOLDs left this fight, and the reels you've held for your next spin. */
+  holdsLeft = 0;
+  held: boolean[] = [false, false, false];
+  /**
+   * HOLD a reel (or let it go) for your next spin: a held reel keeps its symbol for that spin. Only between your spins
+   * (the fight waits on your SPIN), never during one; each held reel costs a HOLD. Returns whether it's held now.
+   */
+  hold(reel: number): boolean {
+    if (this.over || this.next !== 'player' || reel < 0 || reel > 2) return false;
+    if (this.held[reel]) {
+      this.held[reel] = false;
+      return false;
+    }
+    const used = this.held.filter(Boolean).length;
+    if (used >= this.holdsLeft || this.sides.player.frozen[reel] > 0) return false;
+    this.held[reel] = true;
+    return true;
+  }
+
   /** Debug: make the next spin of `side` land these payline symbols where the strip allows. */
   forceNext(side: SideId, line: SymbolId[]): void {
     this.forced[side] = line;
@@ -540,7 +568,13 @@ export class Fight {
     const frozen = me.frozen.map((t) => t > 0);
     const locked = me.locked.map((t) => t > 0);
     const forcedLine = this.forced[side];
-    const stops = this.rollStops(me, frozen, forcedLine);
+    // HOLD: your held reels keep their stop this spin (like ice, but yours), then the holds are spent.
+    const held = side === 'player' ? this.held.map((h, r) => h && !frozen[r]) : [false, false, false];
+    if (side === 'player') {
+      this.holdsLeft -= held.filter(Boolean).length;
+      this.held = [false, false, false];
+    }
+    const stops = this.rollStops(me, frozen.map((z, r) => z || held[r]), forcedLine);
     delete this.forced[side];
     me.reels.forEach((reel, i) => (reel.stop = stops[i]));
     const line = paylineSymbols(me.reels).map((s, i) => (locked[i] ? 'lock' : s));
@@ -590,6 +624,7 @@ export class Fight {
       nearMiss,
       frozen,
       locked,
+      ...(held.some(Boolean) ? { held } : {}),
       ...(luckyWilds.length ? { luckyWilds } : {}),
       ...(hexed.some(Boolean) ? { hexed } : {}),
       ...(drumNow ? { symBonus: { sword: drumNow, ace: drumNow } } : {}),
@@ -727,8 +762,21 @@ export class Fight {
         events.push({ type: 'fightEnd', winner: 'enemy', turns: this.turn });
       } else if (left <= ENDLESS.closingWarn) events.push({ type: 'closing', side: 'enemy', left });
     }
+    if (this.cfg.race) this.raceTurnEnd(side, events);
     this.next = other(side);
     return { turn: this.turn, side, events };
+  }
+
+  /** THE SCORE RACE: report the turn's score; after the enemy's last spin, the higher score wins (a tie is yours). */
+  private raceTurnEnd(side: SideId, events: CombatEvent[]): void {
+    for (const s of ['player', 'enemy'] as SideId[]) {
+      if (this.turnScore[s] > 0) events.push({ type: 'raceScore', side: s, amount: this.turnScore[s], total: this.raceScore[s] });
+      this.turnScore[s] = 0;
+    }
+    if (this.over || side !== 'enemy' || this.raceLeft > 0) return;
+    this.winner = this.raceScore.player >= this.raceScore.enemy ? 'player' : 'enemy';
+    events.push({ type: 'death', side: other(this.winner) });
+    events.push({ type: 'fightEnd', winner: this.winner, turns: this.turn });
   }
 
   /** MIDAS TOUCH fires: each sword and shield on the payline gains a gold touch, and every extra full meter touches one more sword or shield anywhere on your reels. */
@@ -1618,6 +1666,14 @@ export class Fight {
   }
 
   private damage(target: Combatant, amount: number, ignoreShield: boolean) {
+    // THE SCORE RACE: a hit is score for the side that landed it; nobody loses HP, shields don't block hits.
+    if (this.cfg.race) {
+      const by = other(target.side);
+      const n = Math.max(0, Math.round(Math.min(ENDLESS.clamp, amount) * (by === 'enemy' ? this.cfg.race.enemyMul : 1)));
+      this.raceScore[by] += n;
+      this.turnScore[by] += n;
+      return { blocked: 0, hpDamage: 0, targetHp: target.hp, targetShield: target.shield };
+    }
     const blocked = ignoreShield ? 0 : Math.min(target.shield, amount);
     target.shield -= blocked;
     amount = Math.min(ENDLESS.clamp, amount);
@@ -1744,6 +1800,13 @@ export class Fight {
       this.holyWater = true;
       events.push({ type: 'relic', side: 'player', relic: 'holywater' });
       return this.fizzle(me, sym, reels, events);
+    }
+    // THE SCORE RACE: a shield you're holding blocks the next sabotage on your reels (a symbol's or an ability's), and is spent.
+    if (this.cfg.race && foe.side === 'player' && foe.shield > 0 && REEL_WRITES.has(sym) && !(FIZZLE_SINGLES.has(sym) && amount < PAIR_PAY)) {
+      events.push({ type: 'sabotageBlocked', side: 'player', kind: sym, shield: foe.shield });
+      events.push({ type: 'shieldReset', side: 'player', lost: foe.shield });
+      foe.shield = 0;
+      return;
     }
     switch (sym) {
       case 'slime':
@@ -2197,6 +2260,13 @@ export class Fight {
     if (foe.side === 'player' && foe.relics.has('holywater') && !this.holyWater && WRITER_ABILITIES.has(ab.kind)) {
       this.holyWater = true;
       events.push({ type: 'relic', side: 'player', relic: 'holywater' });
+      return;
+    }
+    // THE SCORE RACE: a shield you're holding blocks the enemy's ability too, and is spent.
+    if (this.cfg.race && foe.side === 'player' && foe.shield > 0) {
+      events.push({ type: 'sabotageBlocked', side: 'player', kind: ab.kind, shield: foe.shield });
+      events.push({ type: 'shieldReset', side: 'player', lost: foe.shield });
+      foe.shield = 0;
       return;
     }
     switch (ab.kind) {

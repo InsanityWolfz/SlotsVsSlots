@@ -29,6 +29,8 @@ export type CombatEvent =
       /** Reels whose payline scored nothing this turn (jammed). */
       locked: boolean[];
       /** Reels whose LUCKY cell turned into a WILD this spin. */
+      /** HOLD: the reels you held for this spin (they kept their symbol). */
+      held?: boolean[];
       luckyWilds?: number[];
       /** Reels that were hexed this spin (pay half). */
       hexed?: boolean[];
@@ -175,6 +177,10 @@ export type CombatEvent =
   /** Boss phase 2 at half HP: the House DOUBLES DOWN (the pot doubles). */
   | { type: 'phase'; side: SideId; pot: number }
   | { type: 'death'; side: SideId }
+  /** THE SCORE RACE: what a side scored (a hit's worth), its total, and the spins left in the race. */
+  | { type: 'raceScore'; side: SideId; amount: number; total: number }
+  /** THE SCORE RACE: your shield blocked the enemy's ability (the shield is spent). */
+  | { type: 'sabotageBlocked'; side: SideId; kind: string; shield: number }
   | { type: 'fightEnd'; winner: SideId; turns: number };
 
 export type CombatEventType = CombatEvent['type'];

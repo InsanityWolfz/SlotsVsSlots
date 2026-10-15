@@ -48,7 +48,7 @@ import { Clock } from './present/clock';
 import { Director } from './present/director';
 import { FxLayer } from './present/fx';
 import { HUD_W, HudView, type HudMeter } from './present/hud';
-import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, HUD_TOP, RELIC_FEED, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
+import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, HUD_TOP, PITCH, reelWindow, RELIC_FEED, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
 import { MachineView } from './present/machine';
 import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
@@ -82,6 +82,7 @@ const CFG_KEY = 'slotvslot.config.v3';
 const PREFS_KEY = 'slotvslot.prefs.v2';
 const PROFILE_KEY = 'slotvslot.profile.v1';
 const AUTO_DELAY = 0.35;
+/** HOLD (experiment): HOLDs a fight. */
 
 /** Speed buttons (keys 1-4). The new 1X is half of the old 1X, so the clock runs at speed / 2. */
 const SPEEDS = [1, 2, 4, 8];
@@ -284,6 +285,12 @@ export class Game {
   phase: Phase = 'title';
   presenting = false;
   awaitingSpin = false;
+  /** HOLD (experiment): your last spin paid a PAIR; the fight is waiting on a HOLD CHANCE. */
+  private lastPair = false;
+  /** THE SCORE RACE (sandbox): this fight is a race; the next run picked on the machine screen will be one. */
+  private race = false;
+  private raceNext = false;
+  private holdPrompt = false;
   rows: TurnRow[] = [];
   fightNo = 0;
   /** Seed to replay on Rematch (quick fights). */
@@ -322,7 +329,14 @@ export class Game {
     // Steam: re-grant everything already earned (players who started before the Steam build get credit).
     for (const id of Object.keys(this.profile.achievements)) steamUnlock(id);
     this.menus = new Menus(this.ui, this.sounds, () => this.profile, () => this.unlockedCabinets(), {
-      onNewRun: () => this.chooseCabinet(),
+      onNewRun: () => {
+        this.raceNext = false;
+        this.chooseCabinet();
+      },
+      onRace: () => {
+        this.raceNext = true;
+        this.chooseCabinet();
+      },
       onTutorial: () => this.startTutorial(),
       onDaily: () => this.startDaily(),
       needsName: () => needsName(this.profile),
@@ -388,7 +402,16 @@ export class Game {
       onBuy: (i) => this.buyItem(i),
       onReroll: () => this.rerollShop(),
       onLeave: () => this.leaveCashier(),
-      onCabinet: (id) => this.startRun(undefined, id, Math.min(this.prefs.stakeSel, this.stakesNow()[id] ?? 0)),
+      onCabinet: (id) => {
+        this.startRun(undefined, id, Math.min(this.prefs.stakeSel, this.stakesNow()[id] ?? 0));
+        if (this.raceNext && this.run) {
+          // THE SCORE RACE (sandbox): the run is a race run; rebuild its first fight as one.
+          this.raceNext = false;
+          this.run.race = true;
+          this.newFight(false, null, fightConfig(this.run, this.cfg), true);
+          this.checkpoint('next');
+        }
+      },
       onStake: (level) => {
         this.prefs.stakeSel = level;
         this.savePrefs();
@@ -518,7 +541,8 @@ export class Game {
     for (const a of gain.achievements) steamUnlock(a.id);
     this.saveProfile();
     this.screens.setMeta(gain);
-    if (entry.tutorial || !online()) return;
+    // (THE SCORE RACE sandbox never posts to the boards.)
+    if (entry.tutorial || this.run?.race || !online()) return;
     // No name yet: the score waits for one (the name is offered as you leave this screen; SKIP drops it).
     if (!playerName(this.profile)) {
       this.pendingPost = { entry, ride };
@@ -1066,6 +1090,10 @@ export class Game {
     this.synth.stopLoops();
     this.synth.enabled = true;
     this.camera.dimTarget = 0;
+    // THE SCORE RACE (sandbox): a race fight has HOLDs (fightConfig sets them) and waits on every spin of yours.
+    this.race = !!cfg.race;
+    this.lastPair = false;
+    this.holdPrompt = false;
     this.fight = new Fight(cfg, seed ?? cfg.seed ?? undefined);
     this.hurt.clear();
     this.spins = [0, 0];
@@ -1094,6 +1122,8 @@ export class Game {
         hud.hp = hud.ghost = c.hp;
         if (s === 'player') hud.chips = hud.chipsHeld = cfg.player.chipsHeld ?? 0;
         if (c.ability) hud.charge = c.charge;
+        // THE SCORE RACE: the HP bar is a score bar.
+        if (cfg.race) hud.race = true;
         return [s, hud];
       }),
     ) as Stage['huds'];
@@ -1149,17 +1179,23 @@ export class Game {
     await clock.wait(0.3);
     while (!this.fight.over) {
       if (token !== this.token) return;
-      if (this.fight.next === 'player' && !this.prefs.auto) {
+      // HOLD CHANCE: your last spin paid a PAIR and you have HOLDs left: even on AUTO the fight waits for you (tap a
+      // reel to hold it, then SPIN). Without AUTO every spin waits, and you can hold before any of them.
+      const holdChance = this.race && this.fight.next === 'player' && this.fight.holdsLeft > 0 && this.lastPair;
+      if (this.fight.next === 'player' && (!this.prefs.auto || holdChance || this.race)) {
+        this.holdPrompt = holdChance;
         this.awaitingSpin = true;
         this.syncButtons();
         await new Promise<void>((r) => (this.spinResolve = r));
         this.awaitingSpin = false;
+        this.holdPrompt = false;
         this.syncButtons();
       } else {
         await clock.wait(AUTO_DELAY);
       }
       if (token !== this.token) return;
       const result = this.fight.step();
+      for (const e of result.events) if (e.type === 'spin' && e.side === 'player') this.lastPair = e.score.tier === 'pair';
       this.noteHurt(result.events);
       this.tracker.record(result.events);
       this.rows.push(turnRow(this.fight, result, this.fightNo));
@@ -1346,6 +1382,18 @@ export class Game {
     }
     // Run screens get first pick: the tool buttons (TUNE/LOG/SOUND) sit under them (ITERATION_8 G3).
     if (this.screens.active && this.screens.pointerDown(x, y)) return;
+    // HOLD (experiment): while the fight waits on your spin, tap one of your reels to hold it (tap again to let go).
+    if (this.awaitingSpin && this.race && !this.screens.active) {
+      const win = reelWindow('player');
+      if (x >= win.x && x < win.x + win.w && y >= win.y && y < win.y + win.h) {
+        const r = Math.floor((x - win.x) / PITCH);
+        const was = this.fight.held[r];
+        const now = this.fight.hold(r);
+        if (now !== was) this.sounds.reelStop(r, now ? 1.4 : 0.8);
+        else this.sounds.fizzle();
+        return;
+      }
+    }
     // The BUILD drawer's handle: pull it out, push it back in.
     if (this.drawerLive() && this.onHandle(x, y)) {
       this.buildOpen = !this.buildOpen;
@@ -1569,6 +1617,7 @@ export class Game {
     this.drawGutter(ctx, t);
     this.particles.draw(ctx);
     s.fx.draw(ctx, s.clock.time, 20, Infinity);
+    if (this.fight.holdsLeft > 0 || this.fight.held.some(Boolean)) this.drawHolds(ctx, t);
     if (this.drawerT < 0.5) this.drawRelicFeed(ctx);
     if (this.fight.cfg.enemy.boss && !this.screens.active) this.drawBossHint(ctx);
     if (this.bossCard) this.drawBossCard(ctx);
@@ -1609,6 +1658,31 @@ export class Game {
 
   private relicList() {
     return this.fight.cfg.relics;
+  }
+
+  /** HOLD (experiment): a HELD tag on each held reel, your HOLDs left under your machine, and the HOLD CHANCE call. */
+  private drawHolds(ctx: CanvasRenderingContext2D, t: number): void {
+    if (!this.race || (this.phase !== 'fighting' && this.phase !== 'quick')) return;
+    const f = this.fight;
+    for (let r = 0; r < 3; r++) {
+      if (!f.held[r]) continue;
+      const c = cellCenter('player', r, 1);
+      ctx.strokeStyle = '#ffd23f';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(c.x - PITCH / 2 + 4, MACHINE_TOP + 4, PITCH - 8, MACHINE_H - 8);
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(c.x - 40, c.y + PITCH / 2 + 4, 80, 26);
+      drawText(ctx, 'HELD', c.x, c.y + PITCH / 2 + 17, 2, '#ffd23f');
+    }
+    const win = reelWindow('player');
+    const left = f.holdsLeft - f.held.filter(Boolean).length;
+    drawText(ctx, `HOLDS ${left}`, win.x + win.w / 2, win.y + win.h + 18, 1.75, left > 0 ? '#ffd23f' : COLORS.textDim);
+    if (this.awaitingSpin) {
+      const pulse = 0.75 + 0.25 * Math.sin(t * 6);
+      const any = f.held.some(Boolean);
+      const text = any ? 'NOW SPIN' : left <= 0 ? '' : this.holdPrompt ? 'A PAIR! TAP A REEL TO HOLD IT, OR SPIN' : 'TAP A REEL TO HOLD IT, OR SPIN';
+      if (text) drawText(ctx, text, win.x + win.w / 2, win.y - 22, 2, any || this.holdPrompt ? '#ffd23f' : COLORS.textDim, { alpha: pulse });
+    }
   }
 
   /** LOW HP (feel playtest: nothing said you were in trouble): under 30% HP the screen's edges breathe red, slowly,
@@ -1801,6 +1875,12 @@ export class Game {
     if (g.twist) drawText(ctx, g.twist, cx, cy - 132, 1.25, '#ff9a3a');
     if (g.turn > 0) {
       drawText(ctx, `SPIN ${g.turn}`, cx, cy - 78, 3, COLORS.textDim, { punch: 1 + g.pulse * 0.3 });
+      // THE SCORE RACE: its rules under the VS, and the spins you have left.
+      if (this.race) {
+        drawText(ctx, 'HIGHER SCORE WINS', cx, cy + 118, 1.5, COLORS.textDim);
+        drawText(ctx, 'A SHIELD BLOCKS THEIR NEXT SABOTAGE', cx, cy + 136, 1.25, '#9fd0ff');
+      }
+      if (this.race) drawText(ctx, this.fight.over ? 'RACE OVER' : `${this.fight.raceLeft} SPIN${this.fight.raceLeft === 1 ? '' : 'S'} LEFT`, cx, cy - 104, 2, this.fight.raceLeft <= 1 ? '#ff9a3a' : COLORS.goldLight);
       if (g.side)
         drawText(ctx, g.side === 'player' ? "HERO'S TURN" : 'ENEMY TURN', cx, cy - 46, 2, g.side === 'player' ? COLORS.goldLight : COLORS.slime, { punch: 1 + g.pulse * 0.5 });
       if (g.side) {

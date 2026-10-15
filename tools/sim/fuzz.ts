@@ -37,6 +37,8 @@ for (const cab of CABINET_ORDER) {
   modes.push({ tag: `${cab} green`, cab, stake: 2, act3: true });
   modes.push({ tag: `${cab} gold`, cab, stake: 5, act3: true });
   modes.push({ tag: `${cab} daily`, cab, stake: 0, act3: false, setup: (r) => applyDaily(r, '2026-10-02') });
+  // THE SCORE RACE (sandbox).
+  modes.push({ tag: `${cab} race`, cab, stake: 2, act3: true, setup: (r) => (r.race = true) });
 }
 
 const profile = emptyProfile();
