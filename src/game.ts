@@ -43,7 +43,9 @@ import {
 import type { RelicId } from './core/config';
 import { ALL_CABINETS, CABINETS, CABINET_ORDER, type CabinetId } from './core/cabinets';
 import { StatsTracker } from './core/stats';
-import { Camera } from './present/camera';
+import { Camera, FLASH_CAP } from './present/camera';
+/** Under this share of your max HP the screen's edges breathe red and a heartbeat opens the enemy's turns. */
+const DANGER_HP = 0.3;
 import { Clock } from './present/clock';
 import { Director } from './present/director';
 import { FxLayer } from './present/fx';
@@ -1610,6 +1612,7 @@ export class Game {
       this.drawHandle(ctx);
     }
     ctx.restore();
+    if ((this.phase === 'fighting' || this.phase === 'quick') && !this.screens.active) this.drawDanger(ctx, t);
 
     if (this.camera.flash > 0) {
       ctx.globalAlpha = Math.min(1, this.camera.flash);
@@ -1629,6 +1632,21 @@ export class Game {
 
   private relicList() {
     return this.fight.cfg.relics;
+  }
+
+  /** LOW HP (feel playtest: nothing said you were in trouble): under 30% HP the screen's edges breathe red, slowly,
+   * stronger under 15%. An edge vignette, never a flash (it stays under FLASH_CAP at its strongest). */
+  private drawDanger(ctx: CanvasRenderingContext2D, t: number): void {
+    const h = this.stage.huds.player;
+    const share = h.maxHp > 0 ? Math.max(0, h.hp) / h.maxHp : 1;
+    if (share >= DANGER_HP || h.hp <= 0) return;
+    const pulse = (Math.sin(t * Math.PI * 1.8) + 1) / 2;
+    const a = Math.min(FLASH_CAP, (share < DANGER_HP / 2 ? 0.14 : 0.09) + 0.06 * pulse);
+    const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, W * 0.55);
+    g.addColorStop(0, 'rgba(255,40,40,0)');
+    g.addColorStop(1, `rgba(255,40,40,${a.toFixed(3)})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
   }
 
   /** The drawer exists in a run, between no run screens (they always show the build). */

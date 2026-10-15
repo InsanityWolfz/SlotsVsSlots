@@ -140,7 +140,9 @@ export class HudView {
     // Panel.
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(x - 8, y - 8, HUD_W + 16, h + 16);
-    ctx.fillStyle = COLORS.gold;
+    // Low HP: your frame pulses red (with the screen's red edges and the heartbeat: feel playtest).
+    const lowHp = this.side === 'player' && this.hp > 0 && this.hp < this.maxHp * 0.3;
+    ctx.fillStyle = lowHp ? mixHex(COLORS.gold, COLORS.danger, 0.55 + 0.45 * Math.sin(time * Math.PI * 1.8)) : COLORS.gold;
     ctx.fillRect(x - 5, y - 5, HUD_W + 10, h + 10);
     ctx.fillStyle = COLORS.panel;
     ctx.fillRect(x - 2, y - 2, HUD_W + 4, h + 4);
@@ -262,4 +264,11 @@ export class HudView {
       ctx.globalAlpha = 1;
     }
   }
+}
+
+/** Mix two #rrggbb colours (k 0 = a, 1 = b). */
+function mixHex(a: string, b: string, k: number): string {
+  const t = Math.max(0, Math.min(1, k));
+  const ch = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+  return `rgb(${[0, 1, 2].map((i) => Math.round(ch(a, i) + (ch(b, i) - ch(a, i)) * t)).join(',')})`;
 }

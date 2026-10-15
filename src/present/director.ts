@@ -534,6 +534,9 @@ export class Director {
     const { machines, gutter } = this.s;
     gutter.turn = e.turn;
     gutter.side = e.side;
+    // Low HP: a heartbeat as the enemy's turn opens (the screen's edges breathe red too: game.ts drawDanger).
+    const you = this.s.huds.player;
+    if (e.side === 'enemy' && you.hp > 0 && you.hp < you.maxHp * 0.3) this.s.sounds.heartbeat();
     // RAISED! lasts until its raised spin has been played (the Dealer's next turn).
     this.decay(gutter, 'pulse', 1, 0.4);
     this.bg(this.c.to(machines[e.side], 'active', 1, 0.25));

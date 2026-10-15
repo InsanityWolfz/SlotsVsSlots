@@ -40,6 +40,11 @@ export function installDebug(game: Game): void {
       return hit;
     },
     force: (side: SideId, line: SymbolId[]) => game.fight.forceNext(side, line),
+    /** Set your HP in the current fight (and on the HUD), e.g. to see the low-HP warning. */
+    hp: (n: number) => {
+      game.fight.sides.player.hp = n;
+      game.stage.huds.player.hp = n;
+    },
     /**
      * Run the whole game loop (UI clock, game clock, camera, particles) for `sec` seconds without
      * requestAnimationFrame — works even when the browser pane isn't painting.

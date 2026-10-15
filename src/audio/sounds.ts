@@ -249,6 +249,12 @@ export class Sounds {
     this.s.duck(0.5, 1.2);
   }
 
+  /** Low HP: two soft low thumps (lub-dub), under the music. */
+  heartbeat(): void {
+    this.s.tone({ type: 'sine', freq: 62, freqEnd: 44, dur: 0.16, gain: 0.32 });
+    this.s.tone({ type: 'sine', freq: 56, freqEnd: 40, dur: 0.14, gain: 0.22, at: 0.2 });
+  }
+
   heal(): void {
     [659.25, 783.99, 987.77].forEach((f, i) => this.s.tone({ type: 'sine', freq: this.k(f), dur: 0.3, gain: 0.08, at: i * 0.06 }));
   }
