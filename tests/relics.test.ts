@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type RelicId } from '../src/core/config';
-import type { CabinetId } from '../src/core/cabinets';
+import { CABINETS, type CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { NEW_RELIC, RELICS } from '../src/core/relics';
@@ -84,7 +84,7 @@ describe('slot machine relics', () => {
     f.forceNext('player', ['wild', 'shield', 'wild']);
     const ev = f.step().events;
     expect(ofType(ev, 'heal').find((h) => h.source === 'capbells')?.amount).toBe(2 * NEW_RELIC.capbellsHeal);
-    expect(ofType(ev, 'meter')[0].amount).toBe(40);
+    expect(ofType(ev, 'meter')[0].amount).toBe(2 * CABINETS.joker.meter!.perWild!);
   });
 });
 

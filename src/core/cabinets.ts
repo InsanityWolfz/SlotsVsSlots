@@ -144,7 +144,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     // Cards, not swords (2026-10-07): JAX throws playing cards. They hit like swords.
     strips: r3({ ace: 5, shield: 5, wild: 2 }),
     gilded: [],
-    meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 0, perWild: 2 * UNIT },
+    // A WILD fills 40 of 100 (was 20: in act 1 the meter rarely filled, so JAX's payoff never showed: feel playtest).
+    meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 0, perWild: 4 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
     rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 360 HP.',
