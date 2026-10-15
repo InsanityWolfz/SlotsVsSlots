@@ -2,19 +2,23 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-15):** the cut and the act 1 feel pass are in (GAME.md "The cut and the act 1 feel pass"); a
-second feel playtest is checking them. Next: its findings, then the HOLD experiment (below).
+**In progress (2026-10-15):** the cut, the act 1 feel pass, the second feel playtest's fixes and the HOLD experiment are
+in (GAME.md "The cut and the act 1 feel pass"). Waiting on the user to play it.
 
 ## Now, in order
 1. **The user plays the cut build** and decides cut list #8: the draft after every win vs the Cashier as the one
    build moment (held until the playtests were in).
-2. **A play intervention, to try (user, 2026-10-15: "more symbols, a mechanics change, or some kind of play
-   intervention: experiment"):** HOLD, the fruit-machine classic. Between your spins, tap a reel to hold it for the next
-   spin (2 HOLDs a fight). Agency between spins, never during one; a near-miss becomes a decision. It breaks the
-   watch-only rule, so it's the user's call: prototype behind a setting, measure with a bot hold policy.
-3. **Balance left over** (sim, 800 runs): KNIGHT and JUKEBOX 6-8 under target from GREEN up (KNIGHT's Dealer spread);
-   KNIGHT WHITE 66 (target 60), JOKER WHITE 53, RED JUKEBOX 60 / BANKROLL 61 (target 50).
-4. **Encounters that touch your machine** (first feel playtest): prizes and costs as reel edits, Charms or curses, not
+2. **HOLD: keep or cut (the user's call).** Built behind SETTINGS > HOLD (NEW), on by default (GAME.md). It breaks the
+   watch-only rule. If kept: the rule in CLAUDE.md changes, the ladder gets measured with HOLD, and the tutorial
+   teaches it.
+3. **Left from the second feel playtest (design, needs the sim):** the catch-up heal (the larger of 35% or all missing
+   HP) undoes low-HP danger, try a flat 35%; THE HOUSE (act 1 boss) wins too easily (91% of meetings); regulars
+   that die in one spin (GREMLIN); act 2 fights run 74-95 s. Small UI: GOLD / GLASS icons blank in the side panel's
+   Charm grid, REPO MAN's subtitle repeats his ability text, PLAY MODES has half a panel of space, the WHEEL card has no
+   tagline, the REGULAR title shares a relic's name.
+4. **Balance left over** (sim, 800 runs): KNIGHT and JUKEBOX 6-8 under target from GREEN up (KNIGHT's Dealer spread);
+   RED JUKEBOX 60 / JOKER 58 / BANKROLL 61 (target 50).
+5. **Encounters that touch your machine** (first feel playtest): prizes and costs as reel edits, Charms or curses, not
    only chips.
 
 ## Open design questions

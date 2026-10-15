@@ -21,10 +21,17 @@ was tuned for feel from two fresh-eyes playtests.
   HIGH CARD (JOKER), HYPE MAN (JUKEBOX), OPEN BAR (BANKROLL).
 - **Levels:** no Charm levels; uncapped symbol levels, +6 a level; each boss pays your attack symbol one; STAR CHART.
 - **Balance after the cut** (the cuts took ~2 upgrades, a relic and a big choice a run): the boss level, KNIGHT 470 HP
-  with swords from level 2, TESLA 315, JOKER 335, JUKEBOX 395. Sim 800 runs, WHITE / RED / GREEN / BLACK / BLUE / GOLD
+  with swords from level 2, TESLA 315, JOKER 335 (meter 50 a WILD), JUKEBOX 395. Sim 800 runs, WHITE / RED / GREEN / BLACK / BLUE / GOLD
   (targets 60 / 50 / 36 / 28 / 20 / 14): KNIGHT 66 / 53 / 29 / 22 / 13 / 7, TESLA 56 / 46 / 41 / 28 / 21 / 15, JUKEBOX
-  64 / 60 / 33 / 21 / 13 / 8, JOKER 53 / 49 / 42 / 32 / 25 / 16, BANKROLL 63 / 61 / 37 / 28 / 21 / 14. KNIGHT and
+  64 / 60 / 33 / 21 / 13 / 8, JOKER 56 / 58 / 37 / 30 / 19 / 15, BANKROLL 63 / 61 / 37 / 28 / 21 / 14. KNIGHT and
   JUKEBOX are 6-8 under from GREEN up (KNIGHT's Dealer spread); see ROADMAP.
+- **HOLD (experiment, 2026-10-15; SETTINGS > HOLD (NEW), on by default):** after a spin that made a PAIR, the fight
+  waits (even on AUTO) on HOLD CHANCE!: tap a reel to keep it for the next spin, then tap again to spin. 2 HOLDs a fight.
+  Held reels show a gold HELD frame. It is input between spins, which the watch-only rule bans, so it is the user's
+  call to keep or cut. Code: `Fight.hold(reel)` / `holdsLeft` (fight.ts), `HOLD_PER_FIGHT` and `drawHolds` (game.ts),
+  the bot's `holdPolicy` (play.ts: hold an attack-symbol pair, or shields at low HP; `tools/out/hold.ts`). The bot with
+  2 HOLDs: KNIGHT / TESLA / JUKEBOX +3 to +6 WHITE and +3 to +4 GREEN, JOKER and BANKROLL within 2. The ladder above is
+  without HOLD.
 - **Feel (act 1):**
   - THE PAYOUT LADDER: a pay is sized by the HP bar it lands on. Under 30% it's a quick PAIR! / JACKPOT!; 30% is
     BIG WIN! (cyan), 65% MEGA WIN! (pink), each with more confetti, hitstop and zoom. The enemy's read BIG HIT! /
@@ -39,7 +46,7 @@ was tuned for feel from two fresh-eyes playtests.
     below took HOUSE OF CARDS' leftover WILDS away: sim 45 / 25 -> 57 / 35 WHITE / GREEN).
   - Feel playtest #2 fixes: WILDS a fight adds (HOUSE OF CARDS, LUCKY NIGHT) end with the fight (they were kept for
     good); COUP DE GRACE shows on the pay (X2 COUP) and every relic boost names itself (X2 PRISM, X1.5 UNDERDOG...);
-    shields stay off the BIG WIN ladder; BLOCKED! / SHATTERED! no longer cover the reels; the CLAW counts goes left;
+    shields stay off the BIG WIN ladder; BLOCKED! / SHATTERED! no longer cover the reels; the CLAW counts the goes left;
     "1 TURN" plurals; the slime meter reads SLIME n/m; the Charm codex and glossary come from the live rules.
   - Fixes: no relic draft right after an elite's spoils; WALK AWAY leaves an encounter at once; TWENTY-ONE's hand
     counter; FIGHT 1 (not FIGHT 1 OF ?) before the path pick; danger skulls from each enemy's sim kill rate; TURN YOUR
