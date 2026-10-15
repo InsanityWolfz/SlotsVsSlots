@@ -6,7 +6,7 @@ import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../cor
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
 import { atStakes, bjMax, bjState, bjTotal, BJ, CLAW, CLAW_PRIZES, clawPrizeName, clawWon, DICE, diceMax, extraPlays, RACE, raceMax, RATS, SCRATCH, scratchState, ROULETTE, encounterOf, HILO, hiloMax, hiloPot, hiloState, pocketColor, rouletteMax, SLOT, SLOT_STRIPS, WHEEL_ORDER, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
-import { LEGENDARY, RELICS, relicText, RUSH, POT } from '../core/relics';
+import { LEGENDARY, RELICS, POT } from '../core/relics';
 import { CHARM_COLOR, CHARM_SYMBOLS, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
 import {
@@ -40,8 +40,6 @@ import {
   rerollCost,
   runActs,
   totalFights,
-  rushTier,
-  type BonusPayout,
   type DraftOption,
   type FightRecord,
   type RunState,
@@ -71,7 +69,7 @@ import { dailyShare } from '../core/daily';
 import { RelicTips } from './relicTip';
 
 
-export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'bonus' | 'choice' | 'encounter';
+export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'choice' | 'encounter';
 
 /** Greedy word wrap for the pixel font. */
 export function wrap(text: string, maxChars: number): string[] {
@@ -536,8 +534,6 @@ export class RunScreens {
       onMenu: () => void;
       /** ENDLESS: keep going after the Dealer. */
       onLetItRide: () => void;
-      /** BONUS WHEEL: the player took the prize (PASS just moves on). */
-      onWheelCollect: (o: DraftOption) => void;
       onBuy: (index: number) => void;
       onReroll: () => void;
       onLeave: () => void;
@@ -613,297 +609,6 @@ export class RunScreens {
   /** "STAKE 2 UNLOCKED FOR KNIGHT" (shown on the run-over screen). */
   setStakeUnlockedNow(text: string): void {
     this.stakeUnlockedNow = text;
-  }
-
-  // ---- BONUS WHEEL & RELIC RUSH payouts ------------------------------------------------
-
-  private bonusList: BonusPayout[] = [];
-  private bonusIdx = 0;
-  private bonusDone: () => void = () => {};
-  /** Wheel: current angle (radians) and whether it has landed. Rush: stuck cells (pop 0..1), respins left, revealed. */
-  private wheelAngle = 0;
-  private bonusLanded = false;
-  private rushCells: number[] = [];
-  private rushFlicker: number[] = [];
-  private rushRespins = 0;
-  /** RELIC RUSH juice: per-cell landing pop, screen shake, respin counter pulse (+ gold / - red), tier banner. */
-  private rushPop: number[] = [];
-  private rushShake = 0;
-  private rushPulse = 0;
-  private rushPulseGood = true;
-  private rushBanner: { text: string; color: string; t: number } | null = null;
-
-  /** Cash the vouchers from the fight you just won: each plays out, then `done`. */
-  showBonus(run: RunState, list: BonusPayout[], done: () => void): void {
-    this.run = run;
-    this.bonusList = list;
-    this.bonusIdx = 0;
-    this.bonusDone = done;
-    this.open('bonus');
-    this.playBonus();
-  }
-
-  private playBonus(): void {
-    const b = this.bonusList[this.bonusIdx];
-    this.buttons = [];
-    this.bonusLanded = false;
-    if (!b) return this.bonusDone();
-    if (b.kind === 'wheel') {
-      // Spin several turns and land the picked slice under the pointer (top).
-      const n = b.options.length;
-      const slice = (Math.PI * 2) / n;
-      const target = Math.PI * 2 * 5 - (b.pick + 0.5) * slice;
-      this.wheelAngle = 0;
-      let lastTick = 0;
-      void this.ui
-        .tween({
-          from: 0,
-          to: target,
-          dur: 4.2,
-          ease: (t) => 1 - Math.pow(1 - t, 3),
-          onUpdate: (v) => {
-            this.wheelAngle = v;
-            const tick = Math.floor(v / slice);
-            if (tick !== lastTick) {
-              lastTick = tick;
-              this.sounds.click();
-            }
-          },
-        })
-        .then(() => this.bonusReveal());
-    } else {
-      this.rushCells = Array(15).fill(0);
-      this.rushFlicker = Array(15).fill(0);
-      this.rushPop = Array(15).fill(0);
-      this.rushBanner = null;
-      this.rushRespins = 3;
-      void this.playRushFrames(b);
-    }
-  }
-
-  /**
-   * RELIC RUSH, short: the engine plays the full hold-and-respin (same odds), and the screen shows it as three spins:
-   * the opening cells, then everything later respins landed, split over two more spins.
-   */
-  private async playRushFrames(b: Extract<BonusPayout, { kind: 'rush' }>): Promise<void> {
-    const later = b.frames.slice(1).flat();
-    const half = Math.ceil(later.length / 2);
-    const spins = [b.frames[0] ?? [], later.slice(0, half), later.slice(half)];
-    await this.ui.wait(0.3);
-    for (const [k, cells] of spins.entries()) {
-      this.rushRespins = spins.length - k;
-      if (k === spins.length - 1) this.flashRushBanner('LAST SPIN!', '#ff6a5a');
-      // The empty cells spin: they tick fast, then slow down as the spin settles.
-      let next = 0;
-      const dur = 0.7;
-      await this.ui.tween({
-        from: 0,
-        to: 1,
-        dur,
-        onUpdate: (v) => {
-          if (v * dur < next) return;
-          next = v * dur + 0.04 + 0.16 * v * v;
-          this.rushFlicker = this.rushCells.map((c) => (c ? 0 : Math.random() < 0.45 ? 1 : 0));
-          this.sounds.click();
-        },
-      });
-      this.rushFlicker = Array(15).fill(0);
-      // New relics slam in, quickly.
-      for (const i of cells) {
-        const before = rushTier(this.rushCells.filter(Boolean).length);
-        this.rushCells[i] = 1;
-        const count = this.rushCells.filter(Boolean).length;
-        void this.ui.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (this.rushPop[i] = v) });
-        void this.ui.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (this.rushShake = v) });
-        this.sounds.coin(Math.min(14, 2 + count));
-        const now = rushTier(count);
-        if (now !== before) {
-          this.sounds.fanfareJackpot();
-          this.flashRushBanner(now === 'legendary' ? 'LEGENDARY!' : 'UNCOMMON!', now === 'legendary' ? '#ffd23f' : '#5ad8e8');
-        } else if (count === RUSH.cells) this.flashRushBanner('GRAND!', '#ffd23f');
-        await this.ui.wait(0.12);
-      }
-      this.rushPulseGood = cells.length > 0;
-      if (k > 0) {
-        if (cells.length) this.sounds.stingerMedium();
-        else this.sounds.fizzle();
-      }
-      void this.ui.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (this.rushPulse = v) });
-      await this.ui.wait(0.3);
-    }
-    this.rushRespins = 0;
-    await this.ui.wait(0.3);
-    this.bonusReveal();
-  }
-
-  private flashRushBanner(text: string, color: string): void {
-    const banner = { text, color, t: 1 };
-    this.rushBanner = banner;
-    void this.ui.tween({ from: 1, to: 0, dur: 1.1, onUpdate: (v) => (banner.t = v) });
-  }
-
-  private bonusReveal(): void {
-    this.bonusLanded = true;
-    this.sounds.fanfareJackpot();
-    const last = this.bonusIdx >= this.bonusList.length - 1;
-    const advance = () => {
-      this.bonusIdx++;
-      if (this.bonusIdx >= this.bonusList.length) this.bonusDone();
-      else this.playBonus();
-    };
-    const b = this.bonusList[this.bonusIdx];
-    if (b?.kind === 'wheel') {
-      // The wheel's prize is yours to take or leave.
-      this.buttons = [
-        this.minorBtn('PASS', W / 2 - 160, 660, 260, 56, () => {
-          this.sounds.fizzle();
-          advance();
-        }),
-        this.btn('COLLECT', W / 2 + 160, 660, 260, 56, () => {
-          this.cb.onWheelCollect(b.options[b.pick]);
-          this.sounds.coin(9);
-          advance();
-        }),
-      ];
-      return;
-    }
-    this.buttons = [this.btn(last ? 'COLLECT' : 'NEXT VOUCHER', W / 2, 650, 280, 56, advance)];
-  }
-
-  private drawBonus(ctx: CanvasRenderingContext2D, time: number): void {
-    const b = this.bonusList[this.bonusIdx];
-    if (!b) return;
-    const wheel = b.kind === 'wheel';
-    drawText(ctx, wheel ? 'BONUS WHEEL' : 'RELIC RUSH', W / 2, 50, 6, wheel ? '#ffd23f' : '#c080ff');
-    drawText(ctx, `VOUCHER ${this.bonusIdx + 1} OF ${this.bonusList.length}`, W - 40, 60, 2, COLORS.textDim, { align: 'right' });
-    if (b.kind === 'wheel') this.drawWheel(ctx, b, time);
-    else this.drawRush(ctx, b, time);
-    for (const btn of this.buttons) this.drawButton(ctx, btn, time);
-  }
-
-  private optionIcon(o: DraftOption): SpriteId {
-    if (o.kind === 'gild') return ENH_SPRITE[o.enh];
-    if (o.kind === 'swap') return (o.to === 'wild' ? 'wild' : o.to) as SpriteId;
-    if (o.kind === 'clear') return 'cardClear';
-    if (o.kind === 'add') return o.symbol as SpriteId;
-    if (o.kind === 'heal') return 'shopHeal';
-    if (o.kind === 'maxHp') return 'heart';
-    return 'cardSwap';
-  }
-
-  private drawWheel(ctx: CanvasRenderingContext2D, b: Extract<BonusPayout, { kind: 'wheel' }>, time: number): void {
-    const cx = W / 2;
-    const cy = 320;
-    const R = 190;
-    const n = b.options.length;
-    const slice = (Math.PI * 2) / n;
-    ctx.save();
-    ctx.fillStyle = COLORS.outline;
-    ctx.beginPath();
-    ctx.arc(cx, cy, R + 10, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = COLORS.gold;
-    ctx.beginPath();
-    ctx.arc(cx, cy, R + 6, 0, Math.PI * 2);
-    ctx.fill();
-    for (let i = 0; i < n; i++) {
-      // Slice i spans [a0, a1] measured from the top, clockwise.
-      const a0 = -Math.PI / 2 + this.wheelAngle + i * slice;
-      const won = this.bonusLanded && i === b.pick;
-      ctx.fillStyle = won ? '#ffd23f' : i % 2 ? '#3a2458' : '#5a2a3a';
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, R, a0, a0 + slice);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = COLORS.outline;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      const mid = a0 + slice / 2;
-      const ix = cx + Math.cos(mid) * R * 0.72;
-      const iy = cy + Math.sin(mid) * R * 0.72;
-      const o = b.options[i];
-      // A charm shows its symbol wearing the charm.
-      if (o.kind === 'gild') drawSprite(ctx, o.symbol as SpriteId, ix, iy, 2.2);
-      drawSprite(ctx, this.optionIcon(o), ix, iy, 2.2);
-    }
-    ctx.fillStyle = COLORS.outline;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 34, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = COLORS.gold;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 28, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-    // Pointer at the top.
-    if (hasSprite('wheelPointer')) drawSprite(ctx, artId('wheelPointer'), cx, cy - R - 14, 4);
-    else {
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.moveTo(cx - 14, cy - R - 26);
-      ctx.lineTo(cx + 14, cy - R - 26);
-      ctx.lineTo(cx, cy - R + 4);
-      ctx.fill();
-    }
-    if (this.bonusLanded) {
-      const { title, text } = describeOption(b.options[b.pick], this.run ?? undefined);
-      this.panel(ctx, W / 2 - 320, 540, 640, 64);
-      drawText(ctx, `YOU WIN: ${title}`, W / 2, 560, 3, COLORS.goldLight, { punch: 1 + 0.05 * Math.sin(time * 6) });
-      drawText(ctx, text, W / 2, 588, 1.5, COLORS.text);
-    }
-  }
-
-  private drawRush(ctx: CanvasRenderingContext2D, b: Extract<BonusPayout, { kind: 'rush' }>, time: number): void {
-    const cols = 5;
-    const size = 96;
-    const x0 = W / 2 - (cols * size) / 2 + size / 2;
-    const y0 = 190;
-    ctx.save();
-    if (this.rushShake > 0) ctx.translate((Math.random() * 2 - 1) * 6 * this.rushShake, (Math.random() * 2 - 1) * 6 * this.rushShake);
-    this.panel(ctx, W / 2 - (cols * size) / 2 - 10, y0 - size / 2 - 10, cols * size + 20, 3 * size + 20, '#c080ff');
-    for (let i = 0; i < 15; i++) {
-      const x = x0 + (i % cols) * size;
-      const y = y0 + Math.floor(i / cols) * size;
-      ctx.fillStyle = '#140a22';
-      ctx.fillRect(x - size / 2 + 4, y - size / 2 + 4, size - 8, size - 8);
-      const pop = this.rushPop[i] ?? 0;
-      if (pop > 0) {
-        // Landing burst behind the cell.
-        ctx.fillStyle = `rgba(255,210,63,${0.55 * pop})`;
-        ctx.fillRect(x - size / 2 - 6 * pop, y - size / 2 - 6 * pop, size + 12 * pop, size + 12 * pop);
-      }
-      if (this.rushCells[i]) drawSprite(ctx, artId('relicSym'), x, y, 4.5 * (1 + 0.5 * pop), { flash: Math.max(0.15 + 0.15 * Math.sin(time * 5 + i), pop) });
-      else if (this.rushFlicker[i]) drawSprite(ctx, artId('relicSym'), x, y, 4, { alpha: 0.35 });
-      else drawSprite(ctx, artId(hasSprite('rushJunk') ? 'rushJunk' : 'rushEmpty'), x, y, 3.5, { alpha: 0.6 });
-    }
-    const count = this.rushCells.filter(Boolean).length;
-    drawText(ctx, `RELICS ${count} / 15`, W / 2 - 120, 500, 3, '#c080ff');
-    ctx.restore();
-    const pulseCol = this.rushPulse > 0.05 ? (this.rushPulseGood ? '#ffd23f' : '#ff6a5a') : this.rushRespins <= 1 && !this.bonusLanded ? '#ff6a5a' : COLORS.text;
-    drawText(ctx, this.bonusLanded ? 'DONE' : `SPINS LEFT ${this.rushRespins}`, W / 2 + 140, 500, 3, pulseCol, { punch: 1 + 0.35 * this.rushPulse });
-    if (this.rushBanner && this.rushBanner.t > 0) {
-      const t = this.rushBanner.t;
-      // On its own plate, clear of the grid's frame.
-      const bw = this.rushBanner.text.length * 30 + 24;
-      ctx.save();
-      ctx.globalAlpha *= Math.min(1, t * 2.5);
-      ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(W / 2 - bw / 2, 100 - 28, bw, 56);
-      ctx.restore();
-      drawText(ctx, this.rushBanner.text, W / 2, 100, 5, this.rushBanner.color, { punch: 1 + 0.4 * Math.max(0, t - 0.7) * 3, alpha: Math.min(1, t * 2.5) });
-    }
-    drawText(ctx, `UP TO ${RUSH.commonMax} COMMON  -  ${RUSH.commonMax + 1}-${RUSH.uncommonMax} UNCOMMON  -  ${RUSH.uncommonMax + 1}+ LEGENDARY`, W / 2, 530, 1.5, COLORS.textDim);
-    if (this.bonusLanded) {
-      const tierColor = b.tier === 'legendary' ? '#ffd23f' : b.tier === 'uncommon' ? '#5ad8e8' : '#c9c9d9';
-      const badge = b.tier === 'legendary' ? 'tierLegendary' : b.tier === 'uncommon' ? 'tierUncommon' : 'tierCommon';
-      if (hasSprite(badge)) drawSprite(ctx, artId(badge), W / 2 - 250, 580, 3);
-      if (b.relic) {
-        drawSprite(ctx, RELICS[b.relic].sprite as SpriteId, W / 2 - 200, 580, 3);
-        drawText(ctx, `${b.tier.toUpperCase()}: ${RELICS[b.relic].name}${b.count >= 15 ? `  +  GRAND! +${b.chips} CHIPS` : ''}`, W / 2 - 170, 568, 2.5, tierColor, { align: 'left' });
-        drawText(ctx, relicText(b.relic, this.run?.cabinet), W / 2 - 170, 596, 1.5, COLORS.text, { align: 'left' });
-      } else drawText(ctx, `NO RELIC LEFT FOR YOU: +${b.chips} CHIPS`, W / 2, 580, 2.5, tierColor);
-    }
   }
 
   /** Cabinets unlocked by the run that just ended (shown on the run-over screen). */
@@ -2140,7 +1845,7 @@ export class RunScreens {
   /** Keyboard / gamepad focus targets (STEAM_READINESS S3): everything clickable, plus the cards' "?" flip tabs. */
   navTargets(): { x: number; y: number; w: number; h: number }[] {
     if (!this.active || performance.now() - this.openedAt < INPUT_GUARD_MS) return [];
-    const out: { x: number; y: number; w: number; h: number }[] = [...this.all().filter((h) => h.enabled), ...(this.mode !== 'cabinet' && this.mode !== 'bonus' ? this.relicRects : [])];
+    const out: { x: number; y: number; w: number; h: number }[] = [...this.all().filter((h) => h.enabled), ...(this.mode !== 'cabinet' ? this.relicRects : [])];
     if (this.mode === 'next' && this.run && !needsRoute(this.run)) {
       const px = CX - 330;
       out.push({ x: px + 660 - FLIP_TAB.w / 2 - 8, y: 214 + 260 - FLIP_TAB.h / 2 - 8, w: FLIP_TAB.w + 16, h: FLIP_TAB.h + 16 });
@@ -2237,12 +1942,11 @@ export class RunScreens {
     else if (this.mode === 'next') this.drawNext(ctx, time);
     else if (this.mode === 'shop') this.drawShop(ctx, time);
     else if (this.mode === 'cabinet') this.drawCabinets(ctx, time);
-    else if (this.mode === 'bonus') this.drawBonus(ctx, time);
     else if (this.mode === 'choice') this.drawChoice(ctx, time);
     else if (this.mode === 'encounter') this.drawEncounter(ctx, time);
     else this.drawOver(ctx);
     // YOUR BUILD: one fixed panel at the bottom of every between-fights screen.
-    if (this.run && this.mode !== 'cabinet' && this.mode !== 'bonus') this.drawBuild(ctx);
+    if (this.run && this.mode !== 'cabinet') this.drawBuild(ctx);
     // THE RESULTS card sits over everything, the build panel too (drawn under it, it hid the card's left side).
     if (this.mode === 'over' && this.results && this.run) this.drawResults(ctx, this.run);
     for (const f of this.flyers) {

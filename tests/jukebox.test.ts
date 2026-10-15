@@ -11,7 +11,6 @@ const ofType = <T extends CombatEvent['type']>(evs: CombatEvent[], t: T) => evs.
 function juke(mut?: (c: GameConfig) => void, seed = 7): Fight {
   const c = fightConfig(createRun(base, 1, 'jukebox'), base);
   c.enemy = { hp: 99999, strips: reels3({ shield: 12 }) };
-  c.player.bonusSymbols = false;
   mut?.(c);
   return new Fight(c, seed);
 }
@@ -173,7 +172,6 @@ describe('TOWER SHIELD', () => {
     const c = fightConfig(createRun(dc(), 1, 'knight'), dc());
     c.enemy = { hp: 99999, strips: r3({ empty: 12 } as never) };
     c.relics = ['tower'];
-    c.player.bonusSymbols = false;
     const f = new Fight(c, 3);
     f.sides.player.shield = 80;
     f.forceNext('enemy', ['empty', 'empty', 'empty'] as never);

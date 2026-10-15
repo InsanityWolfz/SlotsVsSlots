@@ -14,7 +14,6 @@ const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
 function on(cabinet: CabinetId, relics: RelicId[], mut?: (c: GameConfig) => void, seed = 7): Fight {
   const c = fightConfig(createRun(base, 1, cabinet), base);
   c.enemy = { hp: 9999, strips: reels3({ sword: 6, shield: 6 }) };
-  c.player.bonusSymbols = false;
   c.relics = relics;
   mut?.(c);
   return new Fight(c, seed);

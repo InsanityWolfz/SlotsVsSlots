@@ -47,7 +47,6 @@ describe('run', () => {
       f = playFight(run, ++seed);
     }
     const hpAfter = f.sides.player.hp;
-    f.vouchers.length = 0; // (a bonus voucher could pay a heal)
     finishFight(run, f);
     expect(run.depth).toBe(1);
     // No heal after a fight: HP carries over.

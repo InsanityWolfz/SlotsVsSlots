@@ -222,15 +222,7 @@ export const NEW_RELIC = {
   regularPlays: 2,
 };
 
-/**
- * BONUS WHEEL / RELIC RUSH (the user's chase features). Each player spin in a run fight rolls for a
- * bonus (natural triples of the chase symbols count too); the voucher pays out after a won fight.
- * Aim: ~2 wheels and ~1 rush per run on average.
- */
-export const BONUS = { wheel: 0.028, rush: 0.012 };
-/** RELIC RUSH: a 5x3 hold-and-spin grid. */
-export const RUSH = { cells: 15, start: 3, respins: 3, stick: 0.07, commonMax: 9, uncommonMax: 12, grandChips: 15 };
-/** Relic rarity for RELIC RUSH prizes. */
+/** Relic rarity. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
   common: ['clover', 'battery', 'fang', 'bandage', 'firstblood', 'piggy', 'trophy', 'bash', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar', 'housetax', 'regular', 'punchcard', 'dryspell'],
   uncommon: ['greatsword', 'armoredcar', 'safedeposit', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'faraday', 'static', 'capbells', 'horseshoe', 'underdog', 'holywater', 'belt', 'bracelet', 'coil', 'rainmaker', 'slushfund', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer', 'goldenspin', 'insurance', 'hitmaker', 'houseofcards', 'parachute'],

@@ -13,7 +13,6 @@ const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
 function on(cabinet: CabinetId, mut?: (c: GameConfig) => void, seed = 7): Fight {
   const c = fightConfig(createRun(base, 1, cabinet), base);
   c.enemy = { hp: 9999, strips: reels3({ sword: 6, shield: 6 }) };
-  c.player.bonusSymbols = false;
   mut?.(c);
   return new Fight(c, seed);
 }
@@ -36,7 +35,6 @@ describe('CONTENT_13: charms', () => {
     run.player.gilded = [0, 1, 2].map((reel) => ({ reel, symbol: 'sword' as const, enh: 'lucre' as const, n: 4 }));
     const cfg = fightConfig(run, base);
     cfg.enemy = { hp: 9999, strips: reels3({ sword: 6, shield: 6 }) };
-    cfg.player.bonusSymbols = false;
     const f = new Fight(cfg, 3);
     for (let i = 0; i < 3; i++) {
       f.forceNext('player', ['sword', 'sword', 'sword']);
@@ -127,7 +125,6 @@ describe('TESLA COIL feeds the strike it lands with', () => {
     const run = (relics: string[]) => {
       const c = fightConfig(createRun(base, 2, 'tesla'), base);
       c.enemy = { hp: 99999, strips: reels3({ sword: 6, shield: 6 }) };
-      c.player.bonusSymbols = false;
       c.player.strips = reels3({ bolt: 12 });
       c.relics = relics as GameConfig['relics'];
       const f = new Fight(c, 7);

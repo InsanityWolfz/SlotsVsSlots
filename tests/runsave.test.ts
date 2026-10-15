@@ -9,7 +9,7 @@ describe('saved runs', () => {
     const base = defaultConfig();
     const f = new Fight(fightConfig(run, base), fightConfig(run, base).seed ?? undefined);
     for (let i = 0; i < 400 && !f.over; i++) f.step();
-    return finishFight(run, f, true);
+    return finishFight(run, f);
   };
 
   it('round-trips through JSON: same fights, same drafts, same shop', () => {

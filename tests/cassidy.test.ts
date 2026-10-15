@@ -12,7 +12,6 @@ const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
 function cassidy(chips: number, mut?: (c: GameConfig) => void): Fight {
   const c = fightConfig(createRun(base, 1, 'midas'), base);
   c.enemy = { hp: 99999, strips: reels3({ sword: 6, shield: 6 }) };
-  c.player.bonusSymbols = false;
   c.player.gilded = [];
   c.player.chipsHeld = chips;
   mut?.(c);

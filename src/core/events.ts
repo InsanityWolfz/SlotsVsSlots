@@ -6,8 +6,6 @@ import type { CellRef } from './strip';
  * Everything that happens in a fight, in order. The presentation layer plays these back;
  * the combat log and recap stats are derived from them. Values are post-event state.
  */
-/** Bonus vouchers: BONUS WHEEL (a free upgrade) or RELIC RUSH (a free relic). */
-export type VoucherKind = 'wheel' | 'rush';
 
 /** The Dealer's face-up cards. */
 export type DealCard = 'card' | 'allin';
@@ -37,7 +35,6 @@ export type CombatEvent =
       /** Reels that were hexed this spin (pay half). */
       hexed?: boolean[];
       /** This spin landed a bonus (three chase symbols): it pays nothing and the reels spin again. */
-      bonus?: VoucherKind;
       /** Per-fight bonus added to EACH cell of a symbol this spin (WAR DRUM on swords), so its number shows it. */
       symBonus?: Partial<Record<SymbolId, number>>;
       /** THE JUKEBOX: this spin is THE DROP (the notes it lights; the note group's hit, after). */
@@ -109,8 +106,6 @@ export type CombatEvent =
   | { type: 'confiscate'; from: SideId; to: SideId; reels: number[]; cells: CellRef[]; enhs: Enh[]; repo?: boolean }
   /** The Croupier rakes your winnings: your groups pay less for `turns` of your turns. */
   | { type: 'rake'; from: SideId; to: SideId; reels: number[]; turns: number; cut: number }
-  /** A bonus voucher was banked: it pays out if you win this fight. */
-  | { type: 'voucher'; side: SideId; kind: VoucherKind }
   /** The Dealer shows the card it will deal next (telegraph). */
   | { type: 'dealNext'; side: SideId; card: DealCard }
   /** THE DEALER started its next hand (a new HP bar): 2 RAISE, 3 ALL IN. */

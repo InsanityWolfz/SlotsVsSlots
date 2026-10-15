@@ -267,8 +267,6 @@ export interface SideConfig {
   big?: BigMods;
   /** Boss fight: chips carried in grant this much shield at the start of each House turn. */
   stackShield?: number;
-  /** BONUS WHEEL / RELIC RUSH symbols ride on this side's reels (run fights only). */
-  bonusSymbols?: boolean;
   /** THE DECK REMEMBERS: marked cards waiting on this side's reels when the fight starts. */
   startMarks?: number;
   /** Which act this side comes from (enemy). */

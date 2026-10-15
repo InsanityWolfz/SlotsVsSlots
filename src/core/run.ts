@@ -15,7 +15,6 @@ import {
   LEGENDARY,
   RELIC_TIER,
   RELICS,
-  RUSH,
   type Enabler,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
@@ -246,8 +245,6 @@ export interface RunState {
   act3: boolean;
   /** THE DECK REMEMBERS: marked cards the Card Sharp placed this act (they follow you to the Dealer). */
   deckMarks?: number;
-  /** Bonus vouchers paid out after the last fight (the screens animate these). */
-  bonusLog?: BonusPayout[];
   /** The TUTORIAL run: its first fight is a little softer. */
   tutorial?: boolean;
   /** A boss fell: pick 1 of these BIG CHOICES (before the legendary pick). */
@@ -403,83 +400,7 @@ export function normalizeCharms(p: RunPlayer): void {
 }
 
 
-// ---- BONUS WHEEL & RELIC RUSH ------------------------------------------------------------
-
 export type RelicTier = 'common' | 'uncommon' | 'legendary';
-export type BonusPayout =
-  | { kind: 'wheel'; options: DraftOption[]; pick: number; label: string }
-  | { kind: 'rush'; frames: number[][]; count: number; tier: RelicTier; relic: RelicId | null; chips: number; label: string };
-
-/** Up to 15 distinct upgrades for the BONUS WHEEL, from the same pool as drafts. */
-export function wheelOptions(run: RunState, rng: Rng): DraftOption[] {
-  const p = run.player;
-  const out: DraftOption[] = [];
-  const push = (o: DraftOption) => {
-    if (!out.some((x) => similarKey(x) === similarKey(o))) out.push(o);
-  };
-  for (const o of charmOptions(run, RUN.charmCells)) push(o);
-  for (const o of levelOptions(run)) push(o);
-  p.strips.forEach((s, reel) => {
-    if ((s.rock ?? 0) > 0) push({ kind: 'clear', symbol: 'rock', reel });
-    if ((s.shield ?? 0) > RUN.wildCount) push({ kind: 'swap', from: 'shield', to: 'wild', count: RUN.wildCount, reel });
-    const sig = sigSymbol(run);
-    if (sig !== 'shield' && (s.shield ?? 0) >= 2) push({ kind: 'swap', from: 'shield', to: sig, count: Math.min(RUN.swapCount, s.shield ?? 0), reel });
-  });
-  push({ kind: 'add', symbol: sigSymbol(run), reel: rng.int(3), count: RUN.addCount });
-  push({ kind: 'maxHp', amount: RUN.maxHpCard });
-  if (p.hp < p.maxHp && !run.glass) push({ kind: 'heal', amount: RUN.healCard });
-  return rng.shuffle(out).slice(0, 15);
-}
-
-
-/** RELIC RUSH: 5x3 hold-and-spin. The 3 trigger symbols start stuck; 3 respins, reset by every new stick. */
-export function playRush(rng: Rng): { frames: number[][]; count: number } {
-  const stuck = new Set<number>();
-  const first = rng.shuffle(Array.from({ length: RUSH.cells }, (_, i) => i)).slice(0, RUSH.start);
-  first.forEach((i) => stuck.add(i));
-  const frames: number[][] = [first];
-  let respins = RUSH.respins;
-  while (respins > 0 && stuck.size < RUSH.cells) {
-    const fresh: number[] = [];
-    for (let i = 0; i < RUSH.cells; i++) if (!stuck.has(i) && rng.next() < RUSH.stick) fresh.push(i);
-    fresh.forEach((i) => stuck.add(i));
-    frames.push(fresh);
-    respins = fresh.length ? RUSH.respins : respins - 1;
-  }
-  return { frames, count: stuck.size };
-}
-
-export const rushTier = (count: number): RelicTier => (count <= RUSH.commonMax ? 'common' : count <= RUSH.uncommonMax ? 'uncommon' : 'legendary');
-
-/** Pay a voucher: the prize is decided by its seed and applied to the run right away. */
-/** collectWheel: apply the wheel's prize now (sims, tests). The game holds it for the player's COLLECT / PASS. */
-export function payVoucher(run: RunState, v: { kind: 'wheel' | 'rush'; seed: number }, collectWheel = true): BonusPayout {
-  const rng = new Rng(v.seed >>> 0);
-  if (v.kind === 'wheel') {
-    const options = wheelOptions(run, rng);
-    const pick = rng.int(options.length);
-    if (collectWheel) applyOption(run, options[pick], false);
-    return { kind: 'wheel', options, pick, label: `WHEEL: ${describeOption(options[pick], run).title}` };
-  }
-  const { frames, count } = playRush(rng);
-  const tier = rushTier(count);
-  const owned = (r: RelicId) => run.player.relics.includes(r);
-  // Your tier first; if you own them all, the next tier up, then down.
-  const order: RelicTier[] = tier === 'common' ? ['common', 'uncommon', 'legendary'] : tier === 'uncommon' ? ['uncommon', 'legendary', 'common'] : ['legendary', 'uncommon', 'common'];
-  let relic: RelicId | null = null;
-  for (const t of order) {
-    // High Roller only matters against the House.
-    const pool = RELIC_TIER[t].filter((r) => !owned(r) && relicFits(run, r));
-    if (pool.length) {
-      relic = rng.pick(pool);
-      break;
-    }
-  }
-  if (relic) run.player.relics.push(relic);
-  const chips = (count >= RUSH.cells ? RUSH.grandChips : 0) + (relic ? 0 : 10);
-  run.player.chips += chips;
-  return { kind: 'rush', frames, count, tier, relic, chips, label: relic ? `RUSH: ${RELICS[relic].name}` : `RUSH: +${chips} CHIPS` };
-}
 
 /** The deck can't remember more marks than this. */
 const DECK_MARKS_CAP = 6;
@@ -740,8 +661,6 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     ...(run.glass || run.devil || run.longGame !== undefined ? { payMul: (run.glass ? BIG.glassPay : 1) * (run.devil ? BIG.devilPay : 1) * longGameMul(run) } : {}),
     ...(run.bloodPact ? { meterMul: 2 } : {}),
     ...(run.big ? { big: { ...run.big } } : {}),
-    // No bonus in the run's final fight: a voucher could never be spent (QA_1 B11).
-    bonusSymbols: !(e.isBoss && run.act >= runActs(run)),
     chipsHeld: run.player.chips,
     // Chips no longer shield you on bosses (2026-10-07, user: too noisy).
   };
@@ -1008,8 +927,7 @@ export const BOSS_CHIP_SHIELD_CAP = 4 * UNIT;
 const rocksIn = (s: StripCounts[]) => s.reduce((a, x) => a + (x.rock ?? 0), 0);
 
 /** Fold a finished fight back into the run: HP carry-over, capped permanent rocks, healing. */
-/** holdWheel: BONUS WHEEL prizes wait for the player to COLLECT or PASS them (the game); sims collect. */
-export function finishFight(run: RunState, fight: Fight, holdWheel = false): FightRecord {
+export function finishFight(run: RunState, fight: Fight): FightRecord {
   const p = fight.sides.player;
   const won = fight.winner === 'player';
   const before = run.player.hp;
@@ -1143,10 +1061,6 @@ export function finishFight(run: RunState, fight: Fight, holdWheel = false): Fig
   }
   if (beaten.isBoss) run.bossHpMul = undefined;
   run.player.hp = Math.min(run.player.maxHp, hp);
-  // Bonus vouchers from this fight pay out now that you've won it (after the HP settles, so a
-  // wheel HEAL / MAX HP isn't overwritten — QA_1 B2).
-  run.bonusLog = fight.vouchers.map((v) => payVoucher(run, v, !holdWheel));
-  if (run.bonusLog.length) record.bonuses = run.bonusLog.map((b) => b.label);
   run.depth++;
   run.stop++;
   if (beaten.isBoss) {

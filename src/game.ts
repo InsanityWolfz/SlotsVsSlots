@@ -45,7 +45,7 @@ import { ALL_CABINETS, CABINETS, CABINET_ORDER, type CabinetId } from './core/ca
 import { StatsTracker } from './core/stats';
 import { Camera } from './present/camera';
 import { Clock } from './present/clock';
-import { Director, VOUCHER_GAP, VOUCHER_X, VOUCHER_Y } from './present/director';
+import { Director } from './present/director';
 import { FxLayer } from './present/fx';
 import { HUD_W, HudView, type HudMeter } from './present/hud';
 import { COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, HUD_TOP, RELIC_FEED, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from './present/layout';
@@ -388,11 +388,6 @@ export class Game {
       },
       onMenu: () => this.afterNamePrompt(() => this.showMenu()),
       onLetItRide: () => this.letItRide(),
-      onWheelCollect: (o) => {
-        if (!this.run) return;
-        applyOption(this.run, o, false);
-        this.noteDiscoveries();
-      },
       onBuy: (i) => this.buyItem(i),
       onReroll: () => this.rerollShop(),
       onLeave: () => this.leaveCashier(),
@@ -912,7 +907,7 @@ export class Game {
   private noteHurt(events: CombatEvent[]): void {
     const add = (k: string, n: number) => n > 0 && this.hurt.set(k, (this.hurt.get(k) ?? 0) + n);
     for (const e of events) {
-      if (e.type === 'spin' && e.side === 'player' && !e.bonus) {
+      if (e.type === 'spin' && e.side === 'player') {
         this.spins[1]++;
         if (e.frozen.some(Boolean) || e.locked.some(Boolean)) this.spins[0]++;
       }
@@ -931,7 +926,7 @@ export class Game {
 
   private afterRunFight(): void {
     const run = this.run!;
-    const record = finishFight(run, this.fight, true);
+    const record = finishFight(run, this.fight);
     if (!record.won) {
       // The HP damage each source did (never past 0: no overkill). It isn't scaled to the HP you started with: heals in
       // between made that read low (THE OWNER's one-spin kill from full HP showed as 199: playtest).
@@ -955,12 +950,7 @@ export class Game {
       this.screens.setUnlockedNow(run.endless || run.daily || run.challenge ? [] : this.checkUnlocks(run));
       this.screens.showOver(run);
     }
-    else if (run.bonusLog?.length) {
-      // Cash the vouchers first: the wheel / the rush play out, then the usual screens.
-      const log = run.bonusLog;
-      run.bonusLog = [];
-      this.screens.showBonus(run, log, () => this.afterBonus(record));
-    } else this.afterBonus(record);
+    else this.afterBonus(record);
     if (this.screens.mode === 'draft') this.tip('draft', 'draft');
     this.syncButtons();
   }
@@ -1182,7 +1172,6 @@ export class Game {
         allIn: false,
         ...(this.fight.isWheel ? { bets: [...this.fight.bets], betsLeft: (this.fight.sides.enemy.ability?.every ?? 3) - this.fight.sides.enemy.charge, betPer: this.fight.betPer(), betPunch: 1, wheelFast: this.fight.fast, wheelAngle: 0, wheelSpeed: 0.6 } : {}),
         chipsEaten: 0,
-        vouchers: [],
       },
     };
     this.director = new Director(this.stage);
@@ -1615,7 +1604,6 @@ export class Game {
     }
     this.background.drawMarquee(ctx, t);
     this.drawChips(ctx);
-    if (this.phase === 'fighting') this.drawVouchers(ctx, this.time);
     s.huds.player.draw(ctx, t);
     s.huds.enemy.draw(ctx, t);
     s.machines.player.draw(ctx, s.clock.time);
@@ -1666,16 +1654,6 @@ export class Game {
 
   private relicList() {
     return this.fight.cfg.relics;
-  }
-
-  /** Banked bonus vouchers (bottom-left): they pay out if you win this fight. */
-  private drawVouchers(ctx: CanvasRenderingContext2D, t: number): void {
-    const list = this.stage.gutter.vouchers ?? [];
-    list.forEach((k, i) => {
-      const bob = Math.sin(t * 3 + i) * 2;
-      drawSprite(ctx, artId(k === 'wheel' ? 'voucherBonus' : 'voucherRelic'), VOUCHER_X + i * VOUCHER_GAP, VOUCHER_Y + bob, 2.5);
-    });
-    if (list.length) drawText(ctx, 'VOUCHERS: WIN TO CASH', 14, VOUCHER_Y - 30, 1.25, '#ffd23f', { align: 'left' });
   }
 
   /** The drawer exists in a run, between no run screens (they always show the build). */

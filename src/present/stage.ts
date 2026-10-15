@@ -75,8 +75,6 @@ export interface Stage {
     chipsEaten?: number;
     /** Bombs presented on the player's strips. */
     bombs?: number;
-    /** Bonus vouchers banked this fight (tiles bottom-left; they pay out if you win). */
-    vouchers?: ('wheel' | 'rush')[];
     /** The Dealer's face-up next card, and the hand it's playing (1-3). */
     nextDeal?: import('../core/events').DealCard;
     dealerHand?: number;

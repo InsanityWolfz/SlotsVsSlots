@@ -1,11 +1,10 @@
 import { BLADES, cloneConfig, UNIT, unitsRound, unitsUp, type AbilityDef, type Enh, type GameConfig, type Levels, type RelicId, type SideConfig, type SideId, type SymbolId } from './config';
 import { CABINETS, hasSpecial, type Cabinet, type Meter } from './cabinets';
 import { charmLevel, charmValue, GLASS_BREAK, LUCRE_CHIPS, playerSymValue } from './charms';
-import type { CombatEvent, DealCard, HealSource, LineCard, VoucherKind } from './events';
+import type { CombatEvent, DealCard, HealSource, LineCard } from './events';
 import {
   BATTERY_SHARE,
   BATTERY_ENERGY,
-  BONUS,
   BELL_MULT,
   BELL_MULT_JOKER,
   BELT_MAX,
@@ -331,10 +330,6 @@ export class Fight {
   private staticTurn = -1;
   /** Card Sharp marks placed this fight (THE DECK REMEMBERS). */
   marksPlaced = 0;
-  /** Bonus vouchers banked this fight (they pay out if you win). */
-  readonly vouchers: { kind: VoucherKind; seed: number }[] = [];
-  /** Debug/tests: the next player spin triggers this bonus. */
-  forceBonus: VoucherKind | null = null;
   private forced: Partial<Record<SideId, SymbolId[]>> = {};
 
   constructor(cfg: GameConfig, seed: number = cfg.seed ?? Rng.randomSeed()) {
@@ -396,10 +391,6 @@ export class Fight {
       this.nextDeal = 'card';
       if (e.ability) e.charge = Math.max(0, e.ability.every - 2);
     }
-    // The chase symbols: one BONUS and one RELIC cell per reel, for this fight only.
-    if (this.cfg.player.bonusSymbols)
-      for (const reel of p.reels)
-        for (const symbol of ['bonusSym', 'relicSym'] as SymbolId[]) insertOffscreen(reel, { symbol, slimed: false }, this.rng);
     // THE DECK REMEMBERS: marked cards you carried in from the Card Sharp.
     const carried = this.cfg.player.startMarks ?? 0;
     if (carried > 0) {
@@ -578,20 +569,6 @@ export class Fight {
     let { stops, lucky } = this.rollStops(me, frozen, forcedLine);
     delete this.forced[side];
     me.reels.forEach((reel, i) => (reel.stop = stops[i]));
-    // BONUS WHEEL / RELIC RUSH: a natural triple, or the hidden bonus roll, lands three chase symbols.
-    // The voucher is banked and the reels spin again for free, so a bonus never costs your turn.
-    const bonus = side === 'player' && this.cfg.player.bonusSymbols && !forcedLine ? this.bonusTrigger(me, frozen, locked) : null;
-    if (bonus) {
-      const sym: SymbolId = bonus === 'wheel' ? 'bonusSym' : 'relicSym';
-      const bstops = me.reels.map((reel) => Math.max(0, reel.cells.findIndex((c) => c.symbol === sym)));
-      me.reels.forEach((reel, i) => (reel.stop = bstops[i]));
-      const bline = paylineSymbols(me.reels);
-      events.push({ type: 'spin', side, stops: bstops, score: scoreLine(bline, this.cfg), nearMiss: false, frozen, locked, lucky: null, bonus });
-      this.vouchers.push({ kind: bonus, seed: this.rng.int(0x7fffffff) });
-      events.push({ type: 'voucher', side, kind: bonus });
-      ({ stops, lucky } = this.rollStops(me, frozen));
-      me.reels.forEach((reel, i) => (reel.stop = stops[i]));
-    }
     const line = paylineSymbols(me.reels).map((s, i) => (locked[i] ? 'lock' : s));
     // The Dealer's BUST on your payline: that cell pays nothing this spin.
     const laid = side === 'player' ? this.lineCard : null;
@@ -1355,23 +1332,6 @@ export class Fight {
     c.shield = 0;
   }
 
-  /** Did this spin trigger a bonus? A natural triple on the payline, or the hidden roll (reels must be free to move). */
-  private bonusTrigger(me: Combatant, frozen: boolean[], locked: boolean[]): VoucherKind | null {
-    const line = paylineSymbols(me.reels);
-    if (line.every((s) => s === 'bonusSym')) return 'wheel';
-    if (line.every((s) => s === 'relicSym')) return 'rush';
-    if (this.forceBonus) {
-      const k = this.forceBonus;
-      this.forceBonus = null;
-      return k;
-    }
-    if (frozen.some(Boolean) || locked.some(Boolean)) return null;
-    const roll = this.rng.next();
-    if (roll < BONUS.wheel) return 'wheel';
-    if (roll < BONUS.wheel + BONUS.rush) return 'rush';
-    return null;
-  }
-
   private rollStops(c: Combatant, frozen: boolean[], forced?: SymbolId[]): { stops: number[]; lucky: RelicId | null } {
     const stops = c.reels.map((reel, r) => {
       if (frozen[r]) return reel.stop;
@@ -1379,12 +1339,6 @@ export class Fight {
       if (want) {
         const hits = reel.cells.flatMap((cell, i) => (effectiveSymbol(cell) === want ? [i] : []));
         if (hits.length) return this.rng.pick(hits);
-      }
-      // The chase symbols only ever land when a bonus triggers: normal spins stop on the real cells,
-      // so the odds are exactly what they would be without them (they still scroll by as teases).
-      if (c.side === 'player' && this.cfg.player.bonusSymbols) {
-        const real = reel.cells.flatMap((cell, i) => (BONUS_SYMBOLS.has(cell.symbol) ? [] : [i]));
-        return this.rng.pick(real);
       }
       return this.rng.int(reel.cells.length);
     });

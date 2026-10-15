@@ -24,10 +24,6 @@ const BASE = defaultConfig().base;
 type Ev<T extends CombatEvent['type']> = Extract<CombatEvent, { type: T }>;
 
 
-/** Where banked vouchers sit (bottom-left, above the SPIN row). */
-export const VOUCHER_X = 52;
-export const VOUCHER_Y = 612;
-export const VOUCHER_GAP = 66;
 
 /** Events that ride inside a lightning storm (strikes, their echoes, Fang / payoff heals). */
 const STORM_PART = (e: CombatEvent) =>
@@ -61,9 +57,9 @@ export class Director {
   async playTurn(result: TurnResult): Promise<void> {
     const evs = result.events;
     // A quiet turn (no jackpot, ability, special, bonus or death, and little damage) plays 1.5x faster.
-    const loud = new Set<CombatEvent['type']>(['ability', 'specialFire', 'death', 'fightEnd', 'voucher', 'noMoreBets', 'wheelFast', 'phoenix', 'potWin', 'payoff' as CombatEvent['type']]);
+    const loud = new Set<CombatEvent['type']>(['ability', 'specialFire', 'death', 'fightEnd', 'noMoreBets', 'wheelFast', 'phoenix', 'potWin', 'payoff' as CombatEvent['type']]);
     const dealt = evs.reduce((a, e) => a + (e.type === 'attack' ? e.amount : 0), 0);
-    const quiet = !evs.some((e) => loud.has(e.type) || (e.type === 'spin' && (e.score.tier === 'triple' || !!e.bonus))) && dealt <= 2 * UNIT;
+    const quiet = !evs.some((e) => loud.has(e.type) || (e.type === 'spin' && e.score.tier === 'triple')) && dealt <= 2 * UNIT;
     this.c.boost = quiet ? 1.5 : 1;
     for (let i = 0; i < evs.length; i++) {
       // More than one lightning strike in a turn plays as ONE storm (length grows with the log of the count).
@@ -263,8 +259,6 @@ export class Director {
         return Promise.resolve();
       case 'dealerHand':
         return this.dealerHand(e);
-      case 'voucher':
-        return this.voucher(e);
     }
   }
 
@@ -538,16 +532,11 @@ export class Director {
         },
         // The payline numbers pop in as each symbol lands.
         onReelStop: (r) => {
-          if (!e.bonus) this.setTag(e.side, r, e.locked[r]);
+          this.setTag(e.side, r, e.locked[r]);
         },
       },
       e.frozen,
     );
-    // A bonus spin: the chase symbols lined up. Its celebration plays on the voucher event.
-    if (e.bonus) {
-      this.lastScore = null;
-      return;
-    }
     if (e.lucky) {
       this.relicPop(e.side, e.lucky);
       await this.luckyPop(e.side);
@@ -1902,36 +1891,6 @@ export class Director {
     this.s.camera.chromaPulse(0.6);
     const rule = e.hand >= 3 ? `EVERY ${e.every} TURNS IT GOES ALL IN. IT PIERCES SHIELDS` : `ITS HITS ARE X${DEALER_RULES.raiseMul} FROM NOW ON`;
     await this.banner(`HAND ${e.hand}: ${DEALER_HANDS[e.hand - 1]}`, '#ff6a5a', 1.3, 0.6, rule, MACHINE_TOP + MACHINE_H / 2, 4);
-  }
-
-  /** BONUS WHEEL / RELIC RUSH: the chase symbols lined up — bank a voucher, then the reels go again for free. */
-  private async voucher(e: Ev<'voucher'>): Promise<void> {
-    const wheel = e.kind === 'wheel';
-    const m = this.s.machines[e.side];
-    const color = wheel ? '#ffd23f' : '#c080ff';
-    this.s.sounds.fanfareJackpot();
-    this.hitstop(6);
-    this.shake(8, 0.5);
-    this.s.camera.chromaPulse(0.8);
-    this.s.camera.flashScreen(0.5, color);
-    for (let r = 0; r < 3; r++) {
-      const fx = m.reels[r].rows[1];
-      fx.glowColor = color;
-      this.bg(this.c.tween({ from: 1, to: 0, dur: 1.2, onUpdate: (v) => (fx.glow = v) }));
-      const p = cellCenter(e.side, r, 1);
-      this.s.particles.burst({ x: p.x, y: p.y, count: 40, colors: [color, '#ffffff', '#fff6c8'], speed: [150, 500], kind: 'confetti', gravity: 500, life: [0.6, 1.2], size: [4, 7] });
-    }
-    await this.banner(wheel ? 'BONUS WHEEL!' : 'RELIC RUSH!', color, 1.5, 0.6, 'WIN THIS FIGHT TO CASH YOUR VOUCHER', BANNER_Y, 5);
-    // The voucher tile flies to the corner.
-    const c = this.machineCenter(e.side);
-    const tile = this.s.fx.add(new Projectile(artId(wheel ? 'voucherBonus' : 'voucherRelic'), c.x, c.y, 5));
-    const g = this.s.gutter;
-    const slot = (g.vouchers ?? []).length;
-    await this.arc(tile, VOUCHER_X + slot * VOUCHER_GAP, VOUCHER_Y, 0.5, 120, sineInOut);
-    this.bg(this.c.tween({ from: 5, to: 3, dur: 0.2, onUpdate: (v) => (tile.scale = v) }).then(() => this.s.fx.remove(tile)));
-    g.vouchers = [...(g.vouchers ?? []), e.kind];
-    this.s.sounds.coin(8);
-    await this.popText('FREE RESPIN!', c.x, MACHINE_TOP + 48, 3, '#7dff7a', 30, 0.3, true);
   }
 
   // ---- THE WHEEL: PLACE YOUR BETS ------------------------------------------------------
