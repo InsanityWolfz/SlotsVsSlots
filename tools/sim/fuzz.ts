@@ -3,7 +3,7 @@
 import { defaultConfig, type Enh, type SymbolId } from '../../src/core/config';
 import { CABINET_ORDER } from '../../src/core/cabinets';
 import { applyDaily, type RunState } from '../../src/core/run';
-import { applyChallenge, applyWeekly, CHALLENGES, levelOf, weekly } from '../../src/core/meta';
+import { levelOf } from '../../src/core/meta';
 import { emptyProfile, recordMeta, runEntry, runScore, sanitizeProfile } from '../../src/core/profile';
 import { playRun } from '../../src/sim/play';
 
@@ -37,11 +37,6 @@ for (const cab of CABINET_ORDER) {
   modes.push({ tag: `${cab} green`, cab, stake: 2, act3: true });
   modes.push({ tag: `${cab} gold`, cab, stake: 5, act3: true });
   modes.push({ tag: `${cab} daily`, cab, stake: 0, act3: false, setup: (r) => applyDaily(r, '2026-10-02') });
-}
-for (const c of CHALLENGES) modes.push({ tag: `challenge ${c.id}`, cab: c.cabinet, stake: c.stake, act3: c.stake >= 2, setup: (r) => applyChallenge(r, c) });
-for (const k of ['2026-W40', '2026-W41', '2026-W53']) {
-  const w = weekly(k);
-  modes.push({ tag: `weekly ${k}`, cab: w.cabinet, stake: 0, act3: false, setup: (r) => applyWeekly(r, k) });
 }
 
 const profile = emptyProfile();
