@@ -1452,7 +1452,7 @@ export class RunScreens {
     const start = this.draftKind === 'start';
     // ENDLESS: the pick after a loop's boss is the new loop's: say the loop was cleared.
     const loopDone = !!last && !!this.run?.endless && last.loop !== undefined && last.loop < this.run.endless.loop;
-    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${nightOf(this.run) ? `: ${nightOf(this.run)!.title}` : ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
+    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? (last.race ? `${fmtNum(last.race[0])} TO ${fmtNum(last.race[1])}: RACE WON!` : `${last.enemy} DEFEATED!`) : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${nightOf(this.run) ? `: ${nightOf(this.run)!.title}` : ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
@@ -3178,7 +3178,7 @@ export class RunScreens {
     this.panel(ctx, 316, 120 + top, 940, 320 - top - cut);
     drawText(ctx, 'FIGHT', 350, 142 + top, 2, COLORS.textDim, { align: 'left' });
     drawText(ctx, 'SPINS', 715, 142 + top, 2, COLORS.textDim);
-    drawText(ctx, 'HP', 821, 142 + top, 2, COLORS.textDim);
+    drawText(ctx, run.race ? 'SCORE' : 'HP', 821, 142 + top, 2, COLORS.textDim);
     drawText(ctx, 'THEN PICKED', 919, 142 + top, 2, COLORS.textDim, { align: 'left' });
     // Up to 16 fights: rows shrink (and drop the detail line) once they stop fitting.
     const rows = this.overRows(run);
@@ -3206,7 +3206,9 @@ export class RunScreens {
       drawSprite(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 350, y, compact ? (rowH < 22 ? 0.65 : 0.9) : 1.4);
       drawText(ctx, r.enemy, 376, y, ts, r.won ? COLORS.text : COLORS.danger, { align: 'left' });
       drawText(ctx, `${r.turns}`, 715, y, ts, COLORS.text);
-      drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 821, y, ts, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
+      // (THE SCORE RACE: the final score, yours to its.)
+      if (r.race) drawText(ctx, `${fmtNum(r.race[0])}-${fmtNum(r.race[1])}`, 821, y, ts, r.won ? COLORS.text : COLORS.danger);
+      else drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 821, y, ts, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
       if (compact) {
         const parts = [...(r.bonuses ?? []), r.eliteRelic ? (RELICS[r.eliteRelic]?.name ?? r.eliteRelic) : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? takenLabel(r.pick) : '', ...(r.bought ?? []).map((b) => takenLabel(b))].filter(Boolean);
         const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';

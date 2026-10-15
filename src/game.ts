@@ -295,6 +295,8 @@ export class Game {
   private armed: 'nudge' | 'respin' | null = null;
   private toolRects: { id: 'nudge' | 'respin'; x: number; y: number; w: number; h: number }[] = [];
   private toolBusy = false;
+  /** A short note over your machine (a NUDGE on a frozen reel). */
+  private toolNote: { text: string; at: number } | null = null;
   private raceNext = false;
   private holdPrompt = false;
   rows: TurnRow[] = [];
@@ -1195,6 +1197,8 @@ export class Game {
       if (this.fight.next === 'player' && (!this.prefs.auto || holdChance || this.race)) {
         this.holdPrompt = holdChance;
         this.racePhase = this.race ? 'pre' : null;
+        // (The arrow points at you while the race waits on you: it showed ENEMY TURN through your HOLD and NUDGE steps.)
+        if (this.race) this.stage.gutter.side = 'player';
         this.awaitingSpin = true;
         this.syncButtons();
         await new Promise<void>((r) => (this.spinResolve = r));
@@ -1219,6 +1223,7 @@ export class Game {
             }
           }
           this.racePhase = null;
+          this.syncButtons();
         }
       } else {
         await clock.wait(AUTO_DELAY);
@@ -1740,6 +1745,11 @@ export class Game {
       const x = win.x + win.w / 2 + (k - 1) * (cw + 6);
       const armed = post && this.armed === c.id;
       const on = c.live && c.n > 0;
+      // HOLD isn't a button (you tap a reel to hold it): a plain counter, lit while you can hold.
+      if (c.id === 'hold') {
+        drawText(ctx, `${c.label} ${c.n}`, x, y, 1.5, on ? '#ffd23f' : COLORS.textDim);
+        return;
+      }
       ctx.fillStyle = COLORS.outline;
       ctx.fillRect(x - cw / 2 - 2, y - 13, cw + 4, 26);
       ctx.fillStyle = armed ? '#ffd23f' : on ? '#3a2d52' : '#1a1226';
@@ -1749,12 +1759,16 @@ export class Game {
         ctx.fillRect(x - cw / 2 + 2, y - 9, cw - 4, 18);
       }
       drawText(ctx, `${c.label} ${c.n}`, x, y, 1.5, armed ? '#fff6c0' : on ? '#ffd23f' : COLORS.textDim);
-      if (c.id !== 'hold') this.toolRects.push({ id: c.id, x: x - cw / 2, y: y - 13, w: cw, h: 26 });
+      this.toolRects.push({ id: c.id, x: x - cw / 2, y: y - 13, w: cw, h: 26 });
     });
     if (!this.awaitingSpin) return;
     const pulse = 0.75 + 0.25 * Math.sin(t * 6);
     const any = f.held.some(Boolean);
     let text = '';
+    if (this.toolNote && performance.now() - this.toolNote.at < 1500) {
+      drawText(ctx, this.toolNote.text, win.x + win.w / 2, win.y - 22, 2, '#9fd0ff');
+      return;
+    }
     if (pre) text = any ? 'NOW SPIN' : holds <= 0 ? '' : this.holdPrompt ? 'A PAIR! TAP A REEL TO HOLD IT, OR SPIN' : 'TAP A REEL TO HOLD IT, OR SPIN';
     else if (post) text = this.armed === 'nudge' ? 'TAP A REEL TO NUDGE IT, OR PAY' : this.armed === 'respin' ? 'TAP A REEL TO RESPIN IT, OR PAY' : 'PAY';
     if (text) drawText(ctx, text, win.x + win.w / 2, win.y - 22, 2, any || this.holdPrompt || post ? '#ffd23f' : COLORS.textDim, { alpha: pulse });
@@ -1808,6 +1822,8 @@ export class Game {
     const ok = tool === 'nudge' ? f.nudge(r) : tool === 'respin' ? f.respin(r) : false;
     if (!ok) {
       this.sounds.fizzle();
+      // (A frozen reel can't be moved: say so, it only fizzled.)
+      if (f.sides.player.frozen[r] > 0) this.toolNote = { text: 'A FROZEN REEL CAN\'T MOVE', at: performance.now() };
       return;
     }
     this.toolBusy = true;
@@ -2004,7 +2020,7 @@ export class Game {
     const cy = MACHINE_TOP + MACHINE_H / 2;
     if (this.phase === 'title') return;
     // Only a boss gets a label here (the map already said FIGHT n OF 5): ROUND and whose turn tell the story.
-    if (g.fightLabel.includes('BOSS') || g.fightLabel.startsWith('LOOP') || g.fightLabel === 'SANDBOX') drawText(ctx, g.fightLabel, cx, this.race ? cy - 168 : cy - 112, 2, g.fightLabel === 'SANDBOX' ? COLORS.textDim : g.fightLabel.includes('BOSS') ? '#ff6a5a' : COLORS.goldLight);
+    if (g.fightLabel.includes('BOSS') || g.fightLabel.startsWith('LOOP') || g.fightLabel === 'SANDBOX') drawText(ctx, g.fightLabel, cx, this.race ? cy - 180 : cy - 112, 2, g.fightLabel === 'SANDBOX' ? COLORS.textDim : g.fightLabel.includes('BOSS') ? '#ff6a5a' : COLORS.goldLight);
     if (g.twist) drawText(ctx, g.twist, cx, cy - 132, 1.25, '#ff9a3a');
     // THE SCORE RACE: the scoreboard is up from the first spin.
     if (this.race) this.drawScoreboard(ctx, cx, cy, t);
@@ -2039,9 +2055,12 @@ export class Game {
     const g = this.stage.gutter;
     const pot = Math.round(g.pot);
     const hud = this.stage.huds.player;
-    const cashOut = Math.ceil(pot / 2);
+    // (THE SCORE RACE: its last spin cashes all of it.)
+    const lastCash = this.race && this.fight.raceLeft <= 1;
+    const cashOut = lastCash ? pot : Math.ceil(pot / 2);
     const stack = this.fight.cfg.player.stackShield ?? 0;
-    const lethal = pot > 0 && cashOut >= hud.hp + hud.shield + stack;
+    // (THE SCORE RACE: nobody dies; the alarm is the next cash-out putting THE HOUSE ahead.)
+    const lethal = this.race ? pot > 0 && hud.score > this.stage.huds.enemy.score && this.stage.huds.enemy.score + cashOut > hud.score : pot > 0 && cashOut >= hud.hp + hud.shield + stack;
     this.stage.huds.enemy.alarm = lethal;
     const tier = lethal ? 4 : pot >= 12 * UNIT ? 3 : pot >= 6 * UNIT ? 2 : 1;
     const glow = tier >= 3 ? 0.5 + 0.3 * Math.sin(t * (lethal ? 14 : 8)) : tier === 2 ? 0.25 + 0.1 * Math.sin(t * 4) : 0;
@@ -2062,16 +2081,16 @@ export class Game {
     ctx.fillRect(x - 106, y - 52, 212, 104);
     ctx.fillStyle = '#3a0f1a';
     ctx.fillRect(x - 101, y - 47, 202, 94);
-    const label = lethal ? 'LETHAL!' : g.allIn ? 'DOUBLED POT' : 'THE POT';
+    const label = lethal ? (this.race ? 'TAKES THE LEAD!' : 'LETHAL!') : g.allIn ? 'DOUBLED POT' : 'THE POT';
     drawText(ctx, label, x, y - 32, 2, lethal || g.allIn ? '#ff6a5a' : COLORS.goldLight, { punch: lethal ? 1 + 0.1 * Math.sin(t * 14) : 1 });
     const sprite = tier === 4 ? 'potTier4' : tier === 3 ? 'potTier3' : tier === 2 ? 'potTier2' : 'potTier1';
     drawSprite(ctx, sprite, x - 52, y + 12, tier === 1 ? 3 : 2.5, { flash: glow * 0.5 });
     drawText(ctx, String(pot), x + 34, y + 12, 6, tier >= 3 ? '#ff6a5a' : COLORS.energy, { punch: g.potPunch });
     if (pot > 0) {
       drawSprite(ctx, 'potSkim', x - 70, y + 64, 2);
-      drawText(ctx, `NEXT SKIM ${cashOut}`, x - 52, y + 64, 2, lethal ? '#ff6a5a' : COLORS.textDim, { align: 'left' });
+      drawText(ctx, lastCash ? `LAST SPIN: ALL ${cashOut}` : `NEXT SKIM ${cashOut}`, x - 52, y + 64, 2, lethal ? '#ff6a5a' : COLORS.textDim, { align: 'left' });
       // The House's key rule, where players look (EXPERT_PLAYTEST_2 E): your jackpot takes the pot.
-      drawText(ctx, 'YOUR JACKPOT TAKES IT', x, y - 70, 1.5, COLORS.goldLight);
+      drawText(ctx, this.race ? 'YOUR JACKPOT TAKES HALF' : 'YOUR JACKPOT TAKES IT', x, y - 70, 1.5, COLORS.goldLight);
     }
   }
 

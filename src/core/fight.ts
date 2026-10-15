@@ -97,7 +97,7 @@ const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'g
  * THE SCORE RACE's enemy rules (race act 1, user 2026-10-15): a frozen reel of yours scores at frozenPay; THE THIEF's
  * ability steals thiefShare of your score; THE BRUTE's SMASH scores smashMul x its hit. A shield blocks any of these.
  */
-export const RACE_RULES = { frozenPay: 0.5, thiefShare: 0.25, smashMul: 3, meltdownPerSpin: 0.1, insuranceBehind: 1.3 };
+export const RACE_RULES = { frozenPay: 0.5, thiefShare: 0.25, smashMul: 3, meltdownPerSpin: 0.1, insuranceBehind: 1.3, potSteal: 0.5 };
 const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
 const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'goldbar', 'note']);
@@ -373,7 +373,7 @@ export class Fight {
     if (this.isWheel && (this.cfg.stake ?? 0) >= STAKE.wheelFast) this.fast = this.fastFromStart = true;
     // ENDLESS: the loop House opens with a fatter pot.
     const loopHouse = this.isBoss && !!this.cfg.enemy.endless;
-    if (this.isBoss) this.pot = loopHouse ? unitsUp(this.cfg.player.hp * ENDLESS.potSeed) : POT.seed;
+    if (this.isBoss) this.pot = loopHouse ? unitsUp(this.cfg.player.hp * ENDLESS.potSeed) : Math.round(POT.seed * this.potScale);
     if (loopHouse) this.potCut = unitsUp(this.cfg.player.hp * ENDLESS.potCut);
     // ENDLESS house edges: bosses start shielded; enemies spin first.
     if (this.cfg.enemy.startShield) this.sides.enemy.shield = this.cfg.enemy.startShield;
@@ -385,7 +385,7 @@ export class Fight {
     else if (this.sides.enemy.ability?.kind === 'repo') this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - GATEKEEPER.firstTurn);
     // ACT 1-2 regulars and elites get a head start: the enemy's trick (writing on your machine) shows in nearly every
     // fight, not only the long ones (the feel playtest: BLIZZARD and PILFER never fired before the enemy died).
-    else if (this.sides.enemy.ability && !this.isBoss && !this.isWheel && !this.isDealer && !this.cfg.enemy.endless) this.sides.enemy.charge = Math.min(this.sides.enemy.ability.every - 1, TUNE.headStart);
+    else if (this.sides.enemy.ability && !this.isBoss && !this.isWheel && !this.isDealer && !this.cfg.enemy.endless && !this.cfg.race) this.sides.enemy.charge = Math.min(this.sides.enemy.ability.every - 1, TUNE.headStart);
     // THE DEALER deals first on its 2nd turn, then every 3.
     if (this.isDealer) {
       // Its first hand's bar: a share of its total HP.
@@ -674,6 +674,9 @@ export class Fight {
       this.dropNow = me.armed;
     }
     const score = this.score(me, line);
+    // THE SCORE RACE: the enemy's spin pays in score units (x its race multiplier), so its PAIR! math shows what it scores.
+    // (Only its hits: its slime, ice and coins count cells or feed the pot from their raw pay.)
+    if (this.cfg.race && side === 'enemy') for (const g of score.groups) if (BLADES.has(g.symbol) || g.symbol === 'seven') g.amount = Math.round(g.amount * this.cfg.race.enemyMul);
     // THE SCORE RACE: a frozen reel of yours scores at half (FROST's bite now that nobody loses HP).
     if (this.cfg.race && side === 'player')
       for (const g of score.groups) if (g.amount > 0 && g.reels.some((r) => frozen[r])) g.amount = Math.round(g.amount * RACE_RULES.frozenPay);
@@ -790,13 +793,13 @@ export class Fight {
     const atkJackpot = score.tier === 'triple' && (POT_STEAL.any || score.groups.some((g) => g.matched && g.reels.length >= 3 && (this.isAttack(g.symbol) || g.symbol === 'wild' || !!g.rain)));
     if (!this.over && side === 'player' && this.isBoss && atkJackpot) {
       // ENDLESS: a jackpot takes only half the loop House's pot (it can't be farmed every spin).
-      this.winPot(me, events, this.cfg.enemy.endless ? ENDLESS.potSteal : 1);
+      this.winPot(me, events, this.cfg.enemy.endless ? ENDLESS.potSteal : this.cfg.race ? RACE_RULES.potSteal : 1);
     }
     // THE WHEEL: your pairs sweep the bets off their reels; a jackpot clears the table.
     if (!this.over && side === 'player' && this.isWheel) this.sweepBets(me, score, events);
     // The house always takes its cut.
     if (!this.over && side === 'enemy' && this.isBoss) {
-      const cut = this.potCut;
+      const cut = Math.round(this.potCut * this.potScale);
       this.pot += cut;
       events.push({ type: 'pot', side, reels: [], amount: cut, total: this.pot });
     }
@@ -835,6 +838,11 @@ export class Fight {
     if (this.cfg.race) this.raceTurnEnd(side, events);
     this.next = other(side);
     return { turn: this.turn, side, events };
+  }
+
+  /** THE SCORE RACE: THE HOUSE's pot is kept in score units (x its race multiplier). */
+  private get potScale(): number {
+    return this.cfg.race?.enemyMul ?? 1;
   }
 
   /** THE SCORE RACE: THE THIEF takes a share of your score into its own. */
@@ -1793,8 +1801,9 @@ export class Fight {
   private damage(target: Combatant, amount: number, ignoreShield: boolean) {
     // THE SCORE RACE: a hit is score for the side that landed it; nobody loses HP, shields don't block hits.
     if (this.cfg.race) {
+      // (The enemy's pay is already in score units: its spins scale in turnBody, its pot as it grows, SMASH as it fires.)
       const by = other(target.side);
-      const n = Math.max(0, Math.round(Math.min(ENDLESS.clamp, amount) * (by === 'enemy' ? this.cfg.race.enemyMul : 1)));
+      const n = Math.max(0, Math.round(Math.min(ENDLESS.clamp, amount)));
       this.raceScore[by] += n;
       this.turnScore[by] += n;
       return { blocked: 0, hpDamage: 0, targetHp: target.hp, targetShield: target.shield };
@@ -1955,9 +1964,12 @@ export class Fight {
         // THE WHEEL's ball: a pair bets 1 more chip on you, a jackpot 2 (singles fizzle).
         if (amount < PAIR_PAY) return this.fizzle(me, sym, reels, events);
         return this.placeBets(me, foe, amount >= JACKPOT_PAY ? 2 : 1, events, true);
-      case 'coin':
-        this.pot += amount;
-        events.push({ type: 'pot', side: me.side, reels, amount, total: this.pot });
+      case 'coin': {
+        // (THE SCORE RACE: the pot holds score, so what it shows is what it cashes, or what your jackpot steals.)
+        const add = Math.round(amount * this.potScale);
+        this.pot += add;
+        events.push({ type: 'pot', side: me.side, reels, amount: add, total: this.pot });
+      }
         return;
       case 'bomb':
         // 1 bomb, a double 2, a jackpot 3.
@@ -2399,7 +2411,7 @@ export class Fight {
         return this.applySlime(me, foe, ab.power, [], events);
       case 'smash':
         // THE SCORE RACE: THE BRUTE's wind-up scores big (unless a shield blocked it above).
-        this.hit(me, foe, ab.power * (this.cfg.race ? RACE_RULES.smashMul : 1), [], events);
+        this.hit(me, foe, Math.round(ab.power * (this.cfg.race ? RACE_RULES.smashMul * this.cfg.race.enemyMul : 1)), [], events);
         return;
       case 'fortify':
         me.shield += ab.power;

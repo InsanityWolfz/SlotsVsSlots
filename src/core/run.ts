@@ -155,6 +155,8 @@ export interface RunPlayer {
 }
 
 export interface FightRecord {
+  /** THE SCORE RACE: the final score, yours then the enemy's. */
+  race?: [number, number];
   /** An act's boss fight. */
   boss?: boolean;
   /** An elite (the run score counts them).*/
@@ -203,7 +205,7 @@ export interface FightRecord {
  * (elites and bosses more), you first and the enemy last, its pay x enemyMul; the higher score wins and one lost race
  * ends the run (user: no lives). Spin tools a race (user: 3 HOLDs, 2 NUDGEs, 1 RESPIN). PLAY MODES > SCORE RACE (TEST).
  */
-export const RACE = { spins: { fight: 5, elite: 6, boss: 7 }, enemyMul: 1.75, refHp: 200, hpExp: 0.65, bossMul: 1.4, openerMul: 0.7, golemPerRock: UNIT, holds: 3, nudges: 2, respins: 1, bandageShield: 3 * UNIT, toolPrice: { hold: 8, nudge: 10, respin: 12 },
+export const RACE = { spins: { fight: 5, elite: 6, boss: 7 }, enemyMul: 1.75, refHp: 200, hpExp: 0.65, bossMul: 1.8, openerMul: 0.7, golemPerRock: UNIT, holds: 3, nudges: 2, respins: 1, bandageShield: 3 * UNIT, toolPrice: { hold: 8, nudge: 10, respin: 12 },
   /** Each machine's race pay (its payline pay x this): machines are balanced on their own, never the enemies. */
   // (Race act 1 balance, 2026-10-15, 500 runs: act 1 cleared 32-42% on every machine.)
   machineMul: { knight: 1.05, tesla: 1.15, jukebox: 1, joker: 1.4, midas: 1.8 } as Record<CabinetId, number>,
@@ -964,6 +966,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     ...(currentEnemy(run).isBoss ? { boss: true } : {}),
     ...(currentEnemy(run).elite ? { elite: true } : {}),
     ...(scar !== undefined ? { scar } : {}),
+    ...(fight.cfg.race ? { race: [fight.raceScore.player, fight.raceScore.enemy] as [number, number] } : {}),
     rocksAdded: Math.max(0, rocksIn(next) - rocksIn(old)),
     rocksCrumbled: crumbled,
   };
@@ -1561,7 +1564,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'gild':
       return {
         title: `${o.n} ${charmName(o.enh)} CHARM${o.n > 1 ? 'S' : ''}`,
-        text: `REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${run?.race && o.enh === 'vamp' ? `TAKES ${charmValue('vamp', charmLevel(lv, o.enh, ticket))} FROM THE ENEMY'S SCORE` : charmShortText(o.enh, charmLevel(lv, o.enh, ticket))}`,
+        text: `REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${run?.race && o.enh === 'vamp' ? `TAKES ${charmValue('vamp', charmLevel(lv, o.enh, ticket))} FROM THE ENEMY'S SCORE` : run?.race && o.enh === 'keen' ? `+${charmValue('keen', charmLevel(lv, o.enh, ticket))} SCORE` : charmShortText(o.enh, charmLevel(lv, o.enh, ticket))}`,
       };
     case 'symLevel': {
       const now = symLevel(lv, o.symbol);

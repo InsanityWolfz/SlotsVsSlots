@@ -1717,7 +1717,7 @@ export class Director {
     const big = Math.min(1, e.amount / (15 * UNIT));
     if (e.amount >= 8 * UNIT || playerWins) this.s.sounds.fanfareJackpot();
     else this.s.sounds.stingerMedium();
-    this.bg(this.banner(playerWins ? 'POT STOLEN!' : 'CASH OUT!', playerWins ? COLORS.goldLight : '#ff6a5a', 1.2 + 0.3 * big, 0.4, `${e.amount} DAMAGE`, BANNER_Y, 4));
+    this.bg(this.banner(playerWins ? 'POT STOLEN!' : 'CASH OUT!', playerWins ? COLORS.goldLight : '#ff6a5a', 1.2 + 0.3 * big, 0.4, `${e.amount} ${this.s.huds.player.race ? 'SCORE' : 'DAMAGE'}`, BANNER_Y, 4));
     const n = Math.min(24, 6 + Math.round(e.amount / UNIT));
     const coins = Array.from({ length: n }, async (_, i) => {
       await this.c.wait(i * 0.03);

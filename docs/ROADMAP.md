@@ -2,7 +2,8 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-15):** the race act 1 vertical slice (below): steps 1-3 (rules, tools, HUD; act 1 enemies, THE HOUSE; relics, Charms, the Cashier) are in; next, step 4.
+**In progress (2026-10-15):** the race act 1 slice is built (steps 1-4) and playtested; waiting on the user to play it
+and decide, and on the open design calls below.
 
 ## Now, in order
 1. **Race act 1, a vertical slice** (user, 2026-10-15; behind PLAY MODES, the normal game untouched; it ends at
@@ -11,7 +12,12 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
      run (no lives). Each race: 3 HOLDs, 2 NUDGEs, 1 RESPIN, used as you see fit. HOLD keeps a reel before a spin; NUDGE
      and RESPIN act after your spin lands and before it scores (NUDGE moves a reel one cell, RESPIN spins one reel
      again). A shield you hold blocks the next sabotage.
-   - **Step 4:** sim targets (act 1 races ~85%, elites 75%, THE HOUSE 70%, first race 90%), an expert playtester pass.
+   - **Open design calls (expert playtest):** (a) a shield blocks a whole ability whatever its size, so shield levels
+     and Charms barely matter in a race: block up to its value instead? (b) NUDGE is usually a solved puzzle (the
+     symbol above is in sight): both directions, or lean on nudging for a shield before SMASH / STEAL? (c) races are
+     mostly blowouts (median margins +167% to +332%): show an enemy pace or a SCORE TO BEAT? (d) HOLD adds only 4-7
+     points: 2 HOLDs that also guard a reel from FROST / GREMLIN? (e) GOLEM needs a visible rock counter; FROST /
+     GREMLIN / SLIME all read as "your spin scored less".
 2. **Left from the second feel playtest:** act 2 fights run 74-95 s. Small UI: GOLD / GLASS icons blank in the side panel's
    Charm grid, REPO MAN's subtitle repeats his ability text, the WHEEL card has no
    tagline, the REGULAR title shares a relic's name.

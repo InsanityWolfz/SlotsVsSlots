@@ -375,21 +375,30 @@ tray), `drawScoreboard`, `useTool`.
   RESPIN in the tray under your machine, then a reel (NUDGE steps it down one cell, the symbol above drops onto the
   payline; RESPIN spins it again). PAY scores it. The race always waits for you (AUTO doesn't play races).
 - **Shields** block the next sabotage on your reels (a symbol's or an ability's: BLOCKED!), then they're spent.
-- **The enemy's score:** its pay x 1.75 x (its HP / 200)^0.65 (THE HOUSE x1.4, the run's first race x0.7): honest HP.
+- **The enemy's score:** its hits (swords, sevens) pay x 1.75 x (its HP / 200)^0.65 (THE HOUSE x1.8, the run's first race
+  x0.7): honest HP. Its PAIR! math, payline numbers and SMASH show that real score. No head start on its ability in a
+  race (BRUTE's SMASH fired on its first spin, before you could hold a shield).
 - **Machines are balanced on their own** (no HP in a race): their payline pays x `RACE.machineMul` (KNIGHT 1.05, TESLA
   1.15, JUKEBOX 1, JOKER 1.4, BANKROLL 1.8). THE HOUSE no longer skims BANKROLL's chips in a race.
+- **Playtest fixes (expert playtest, 2026-10-15):** the turn arrow points at you while the race waits on you; the
+  button goes back to SPIN after PAY; a NUDGE on a frozen reel says A FROZEN REEL CAN'T MOVE; HOLD in the tray is a
+  counter, not a button; CASH OUT says SCORE, not DAMAGE; the RUN OVER table shows each race's score; the draft says
+  312 TO 140: RACE WON!; KEEN reads +40 SCORE.
 - **The HUD:** a scoreboard between the machines (both scores, YOU LEAD BY / BEHIND BY, a pip per spin each), score
   bars on the HUDs, the rules under the VS, a RACE WON / RACE LOST banner with the final score.
-- **Sim** (`tools/out/race.ts`, 500 runs, the bot holding pairs, nudging when it pays more, respinning a pair's odd
-  reel, buying tools): act 1 cleared KNIGHT 42%, TESLA 40, JUKEBOX 40, JOKER 32, BANKROLL 37; races won 86-94%, elites
-  72-83%, THE HOUSE 72-79% (BANKROLL 55%), the first race 92-98% (targets 85 / 75 / 70 / 90).
+- **Sim** (`tools/out/race.ts`, 400 runs, after the playtest fixes): act 1 cleared KNIGHT 51%, TESLA 45, JUKEBOX 51,
+  JOKER 49, BANKROLL 53; races won 93-97%, elites 77-87%, THE HOUSE 70-85%, the first race 96-99%. (One loss ends the
+  run, so ~88% a race compounded to ~40%: the expert playtest called that too harsh; normal act 1 is cleared 70-85%.)
 - **Act 1 enemies race their own way** (`RACE_RULES` in fight.ts; their cards say so, `RACE_BLURB` in runScreens):
   SLIME (slimed cells score nothing), FROST (a frozen reel of yours scores half), GOLEM (each of its spins scores 10 x
   its multiplier per rock on your reels), GREMLIN (a jammed reel scores nothing), THIEF (its ability steals 25% of your
   score: STOLEN!), BRUTE (its SMASH scores x3), REPO MAN (takes a Charm). A shield blocks any of their abilities, never
   THE HOUSE's cash-out. **THE HOUSE:** its pot (its coins and its cut each spin) cashes 1/2 into its score every 3
-  spins, and its last spin cashes the whole pot; your jackpot steals the pot into your score. Sim (300 runs): races
-  won by enemy 55-98% (BRUTE and GOLEM hardest, SLIME and GREMLIN easiest); THE HOUSE 49-83%.
+  spins, and its last spin cashes the whole pot; your jackpot steals half the pot into your score. In a race the pot holds
+  score (it grows x THE HOUSE's multiplier), so what it shows is what it cashes or you steal; it reads TAKES THE LEAD!
+  when its next cash-out would put THE HOUSE ahead, and LAST SPIN: ALL n before its last spin. Sim (500 runs, step
+  4): races won by enemy BRUTE 68-93%, GOLEM 80-86, FROST 81-91, THIEF 79-87, REPO MAN 80-87, GREMLIN 90-98, SLIME
+  91-97; THE HOUSE 55-79.
 - **Relics, Charms and the Cashier in a race** (`RACE_RELIC_TEXT` in relics.ts; tooltips and cards use it): UNDERDOG x1.5
   while behind; COUP DE GRACE swords x2 while ahead; PHOENIX once a run saves you from a lost race (no win chips or
   spoils; the side panel says PHOENIX: ONE SAVE); BANDAGE starts each race holding 30 shield; VAMPIRE FANG's meter
