@@ -1,11 +1,11 @@
-// CONTENT AUDIT: every relic, Charm, upgrade card and big choice, with the exact text players see (per Slot Machine
+// CONTENT AUDIT: every relic, Charm and upgrade card, with the exact text players see (per Slot Machine
 // where it differs). npx tsx tools/content/audit.ts > tools/out/content_audit.md
 import { defaultConfig, symLabel, type Enh, type RelicId, type SymbolId } from '../../src/core/config';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../../src/core/cabinets';
 import { RELICS, RELIC_TIER, LEGENDARY, MACHINE_EXCLUDE, WAVE1, BUILD_ENABLER, relicText } from '../../src/core/relics';
 import { CHARM_SYMBOLS, charmName, charmRuleText } from '../../src/core/charms';
 import { ALL_CHARMS } from '../../src/core/profile';
-import { createRun, describeOption, describeChoice, BIG_CARDS, type BigChoice, type BigChoiceId, type DraftOption } from '../../src/core/run';
+import { createRun, describeOption, type DraftOption } from '../../src/core/run';
 import { CHARM_INFO } from '../../src/ui/menus';
 
 const base = defaultConfig();
@@ -15,7 +15,7 @@ const out: string[] = [];
 const p = (s = '') => out.push(s);
 const tierOf = (r: RelicId) => (LEGENDARY.has(r) ? 'LEGENDARY' : RELIC_TIER.uncommon.includes(r) ? 'UNCOMMON' : RELIC_TIER.common.includes(r) ? 'COMMON' : 'OTHER');
 
-p('# Content audit: every relic, Charm, upgrade and big choice');
+p('# Content audit: every relic, Charm and upgrade');
 p();
 p('Generated from the game code (`npx tsx tools/content/audit.ts`), so this is exactly what players read today.');
 p('Where a text changes by Slot Machine, each machine\'s version is listed.');
@@ -96,27 +96,4 @@ for (const c of CABINET_ORDER) {
   }
 }
 
-p();
-p('## Big choices');
-p();
-p('Three cards after each boss (one with a cost, one of your Slot Machine, one free). Targets are filled in from a fresh run on each machine.');
-p();
-p('| Choice | Machine | Effect | Cost |');
-p('|---|---|---|---|');
-for (const card of BIG_CARDS) {
-  const seen = new Map<string, string[]>();
-  for (const c of CABINET_ORDER) {
-    if (card.machine && card.machine !== c) continue;
-    const run = runs[c];
-    const atk = CABINETS[c].attack;
-    const ch: BigChoice = { id: card.id as BigChoiceId, symbol: atk, enh: 'gold', reel: 0, relic: 'clover', relic2: 'key' };
-    const d = describeChoice(run, ch);
-    const key = `${d.title}|${d.rule}|${d.cost}`;
-    seen.set(key, [...(seen.get(key) ?? []), CABINETS[c].hero]);
-  }
-  for (const [key, cs] of seen) {
-    const [title, rule, cost] = key.split('|');
-    p(`| ${title} | ${card.machine ? cs.join(', ') : seen.size > 1 ? cs.join(', ') : 'all'} | ${rule} | ${cost || '—'} |`);
-  }
-}
 console.log(out.join('\n'));

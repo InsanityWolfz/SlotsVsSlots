@@ -1098,14 +1098,14 @@ export class Director {
     const c = this.machineCenter(e.side);
     // Nothing to play: a small callout, no boom.
     if (!e.cells.length) {
-      await this.popText(e.encore ? 'ENCORE... NO NOTES' : 'THE DROP... NO NOTES', c.x, MACHINE_TOP - 24, 2, COLORS.textDim, 12, 0.4);
+      await this.popText('THE DROP... NO NOTES', c.x, MACHINE_TOP - 24, 2, COLORS.textDim, 12, 0.4);
       return;
     }
     this.s.sounds.drop();
     this.shake(7, 0.35);
     // Over the machine (not on the top row it lights), first; then the notes light up; the note group hits after.
     // Between the HUD and the machine (at scale 4 it ran over the HUD's border: R13 B3).
-    await this.popText(e.encore ? 'ENCORE!' : 'THE DROP!', c.x, MACHINE_TOP - 18, 3, '#5ad8e8', 10, 0.25, true);
+    await this.popText('THE DROP!', c.x, MACHINE_TOP - 18, 3, '#5ad8e8', 10, 0.25, true);
     const wilds = e.cells.filter((x) => x.wild);
     if (wilds.length) await this.luckyWilds(e.side, wilds);
     this.dropCells = e.amount > 0 ? e.cells : null;

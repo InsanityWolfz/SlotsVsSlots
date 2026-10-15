@@ -187,56 +187,18 @@ export type RelicId =
   | 'regular'
   | 'hitmaker'
   | 'houseofcards'
-  | 'parachute';
-
-/** The fight rules a BIG CHOICE can add (the player's side only; set on the run, passed to every fight). */
-export interface BigMods {
-  /** EXCALIBUR: sword pairs pay as jackpots... */
-  swordPairJackpot?: boolean;
-  /** ...and shield pairs block nothing. */
-  shieldPairsBlockNothing?: boolean;
-  /** SHIELD WALL: your shield never resets, up to this share of your max HP. */
-  shieldKeep?: number;
-  /** SHIELD SLAM: shields also hit for this share of what they block. */
-  shieldSlam?: number;
-  /** CRUSADE: each sword hits for this much more. */
-  swordBonus?: number;
-  /** CHAIN LIGHTNING: every lightning strike hits twice. */
-  strikeTwice?: boolean;
-  /** MAD SCIENCE: lightning damage multiplier... */
-  lightningMul?: number;
-  /** ...and each storm costs this share of your max HP. */
-  stormCost?: number;
-  /** STORM FRONT: a lightning strike opens every fight. */
-  startStrike?: boolean;
-  /** GROUND WIRE: each lightning strike heals this much more. */
-  strikeHeal?: number;
-  /** DOUBLE FEATURE: the jackpot meter pays two spins in a row. */
-  doublePayoff?: boolean;
-  /** HIGH CARD: jackpots (and meter payoffs) pay this much more; pairs pay this much. */
-  jackpotMul?: number;
-  pairMul?: number;
-  /** TRUMP CARD: these symbols' damage pierces shields. */
-  pierce?: SymbolId[];
-  /** NO LIMIT: HIGH ROLLER has no max. */
-  noHighRollerCap?: boolean;
-  /** OPEN BAR / MONSOON: what MAKE IT RAIN costs. */
-  rainCost?: number;
-  /** MONSOON: every chip pair makes it rain, at full damage. */
-  monsoon?: boolean;
-  /** QUICKENING: your meter starts every fight full. */
-  startFull?: boolean;
-  /** WARDED: this many sabotages a fight wash off. */
-  wards?: number;
-  /** THE JUKEBOX: HEADLINER (THE DROP hits this much harder; the volume max is volumeMax), HYPE MAN (+1 volume at every spin's start; notes pay half off the drop), ENCORE
-   * (THE DROP plays twice in a row). */
-  dropMul?: number;
-  volumeMax?: number;
-  hype?: boolean;
-  encoreDrop?: boolean;
-  /** SECOND PAYLINE: the row above the payline pays its pairs and jackpots at half. */
-  secondLine?: boolean;
-}
+  | 'parachute'
+  // The BIG CHOICES that stayed, as legendary relics (user, 2026-10-15): each keeps its trade-off.
+  | 'secondline'
+  | 'devilsdue'
+  | 'longgame'
+  | 'quickening'
+  | 'glasscannon'
+  | 'crusade'
+  | 'chainlightning'
+  | 'highcard'
+  | 'hypeman'
+  | 'openbar';
 
 export interface SideConfig {
   hp: number;
@@ -255,16 +217,16 @@ export interface SideConfig {
   gilded?: Gild[];
   /** Symbol and charm levels (the player). */
   levels?: Levels;
-  /** GLASS CANNON: every paying group pays this much more. */
+  /** GLASS CANNON / DEVIL'S DUE / THE LONG GAME: every paying group pays this much (run.ts legendPayMul). */
   payMul?: number;
+  /** CRUSADE: each sword hits for this much more (it grows with every win). */
+  swordBonus?: number;
   /** ENDLESS, KNIGHT's VETERAN: swords and shields pay this much more (grows each loop cleared). */
   veteranMul?: number;
   /** ENDLESS, JUKEBOX's WARM-UP: the volume each fight starts at. */
   volumeStart?: number;
-  /** BLOOD PACT: your meter fills this many times faster. */
+  /** FAST NIGHT: your meter fills this many times faster. */
   meterMul?: number;
-  /** BIG CHOICES that change the fight itself (the player only). */
-  big?: BigMods;
   /** Boss fight: chips carried in grant this much shield at the start of each House turn. */
   stackShield?: number;
   /** THE DECK REMEMBERS: marked cards waiting on this side's reels when the fight starts. */
@@ -279,7 +241,7 @@ export interface SideConfig {
   /** ENDLESS: the loop this fight is in (the Dealer's ALL IN grows with it). */
   loop?: number;
   startShield?: number;
-  /** SECOND PAYLINE (big choice): the enemy's hits are this much harder. */
+  /** SECOND PAYLINE (legendary relic): the enemy's hits are this much harder. */
   lineDmg?: number;
   /** THE OWNER: TURBO.hp HP, every hit takes 1 (TURBO in enemies.ts). */
   owner?: boolean;

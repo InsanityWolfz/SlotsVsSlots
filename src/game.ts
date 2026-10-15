@@ -24,10 +24,8 @@ import {
   finishFight,
   isShopNow,
   takeLegend,
-  takeChoice,
   letItRide,
   currentEnemy,
-  type BigChoice,
   leaveShop,
   isEncounterNow,
   playEncounter,
@@ -367,7 +365,6 @@ export class Game {
       onPick: (o) => this.pickReward(o),
       onSpoils: (r) => this.pickSpoils(r),
       onLegend: (r) => this.pickLegend(r),
-      onChoice: (c) => this.pickChoice(c),
       onFight: () => this.beginRunFight(),
       onRoute: (i) => this.pickRoute(i),
       onEncounter: (i, bet) => {
@@ -767,7 +764,7 @@ export class Game {
   // ---- saved runs (STEAM_READINESS S1) ------------------------------------------------
   // The run is plain data and every draft, shop and fight is seeded from it, so a snapshot taken at a between-fight
   // screen plays on exactly as it would have. Taken at the next-fight preview ('next') and after a fight's payouts
-  // ('after': spoils, legend, big choice or draft). Quitting anywhere else resumes at the last snapshot.
+  // ('after': spoils, legend or draft). Quitting anywhere else resumes at the last snapshot.
 
   private checkpoint(at: 'next' | 'after' | 'fight'): void {
     const run = this.run;
@@ -944,36 +941,16 @@ export class Game {
     const run = this.run;
     if (!run) return;
     this.checkpoint('after');
-    if (run.pendingChoice?.length || run.pendingLegend) {
+    if (run.pendingLegend) {
       // A boss is gone: set up the idle machines for the next act so its HUD doesn't linger behind.
       this.newFight(false, null, fightConfig(run, this.cfg), true);
       this.phase = 'between';
     }
-    if (run.pendingChoice?.length) this.screens.showChoice(run, run.pendingChoice);
-    else if (run.pendingLegend) this.screens.showLegend(run, run.pendingLegend, record);
+    if (run.pendingLegend) this.screens.showLegend(run, run.pendingLegend, record);
     else if (run.pendingSpoils) this.screens.showSpoils(run, run.pendingSpoils, record);
     else this.screens.showDraft(run, draftOffers(run), record);
     if (this.screens.mode === 'draft') this.tip('draft', 'draft');
     this.syncButtons();
-  }
-
-  /** A boss fell: take the BIG CHOICE, then the legendary pick (act 2) or the act's draft. */
-  private pickChoice(c: BigChoice): void {
-    const run = this.run;
-    if (!run) return;
-    takeChoice(run, c);
-    // CASH OUT ends an endless run: bank the pot and show the run-over screen.
-    if (run.over) {
-      clearRunSave();
-      this.phase = 'over';
-      this.recordRun(run);
-      this.screens.setStakeUnlockedNow('');
-      this.screens.setUnlockedNow([]);
-      this.screens.showOver(run);
-      this.syncButtons();
-      return;
-    }
-    this.afterBonus(this.lastRecord ?? run.records[run.records.length - 1]);
   }
 
   /** An act's boss fell: take the legendary, then the new act's Cashier opens. */

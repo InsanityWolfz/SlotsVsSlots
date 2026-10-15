@@ -4,7 +4,7 @@
  *
  *   npx tsx tools/sim/balance.ts                       500 runs per machine per stake, all stakes
  *   npx tsx tools/sim/balance.ts --runs 2000 --stakes 0,2 --machines knight,tesla
- *   npx tsx tools/sim/balance.ts --detail              + relics, Charms, big choices, encounters, enemies
+ *   npx tsx tools/sim/balance.ts --detail              + relics, Charms, encounters, enemies
  *   npx tsx tools/sim/balance.ts --ride                the bot lets it ride after the Dealer (endless loops)
  *   npx tsx tools/sim/balance.ts --style turtle        a forced build: rush (the attack build, default) or turtle (the shield build)
  *   npx tsx tools/sim/balance.ts --ban rod,static     those relics are never offered (what a relic is worth)
@@ -198,7 +198,7 @@ function report(logs: RunLog[], machines: CabinetId[], stakes: number[], detail:
     out.push(`  ${pad(id, 8)} ${String(es.length).padStart(6)}  ${f0(pct(es.filter((e) => e.chips === 0 && e.hp === 0).length, es.length))}%  chips ${avg(es.map((e) => e.chips)).toFixed(1).padStart(6)}  hp ${avg(es.map((e) => e.hp)).toFixed(1).padStart(6)}`);
   }
 
-  // 5. Relics, Charms and big choices: win rate when held at the end vs that machine and stake's baseline.
+  // 5. Relics and Charms: win rate when held at the end vs that machine and stake's baseline.
   const lift = (has: (l: RunLog) => boolean) => {
     let n = 0;
     let d = 0;
@@ -220,7 +220,6 @@ function report(logs: RunLog[], machines: CabinetId[], stakes: number[], detail:
   };
   table('RELICS', [...new Set(logs.flatMap((l) => l.relics))], (k) => (l) => l.relics.includes(k as RunLog['relics'][number]));
   table('CHARMS', [...new Set(logs.flatMap((l) => Object.keys(l.charms)))], (k) => (l) => (l.charms[k] ?? 0) > 0);
-  table('BIG CHOICES', [...new Set(logs.flatMap((l) => l.choices))], (k) => (l) => l.choices.includes(k));
 
   // 6. Enemies: median HP and turns by act and kind; kill rate by archetype.
   out.push('\nENEMIES: median HP / turns by act and kind');

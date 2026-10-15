@@ -16,6 +16,31 @@ export interface RelicDef {
   charm?: Enh;
 }
 
+/**
+ * The legendary relics that were BIG CHOICES until 2026-10-15 (user: cut the choice screen, keep these ten with their
+ * trade-offs). Their numbers are the big choices' own.
+ */
+export const LEGEND_RELIC = {
+  /** SECOND PAYLINE: the enemy's hits are this much harder. */
+  lineDmg: 1.15,
+  /** THE LONG GAME: pay starts at this, +longStep for every fight you win after you get it. */
+  longStart: 0.8,
+  longStep: 0.03,
+  /** GLASS CANNON: paying groups pay this much (and no healing between fights). */
+  glassPay: 1.5,
+  /** DEVIL'S DUE: everything pays this much; every win takes devilDecay of your max HP. */
+  devilPay: 1.75,
+  devilDecay: 0.08,
+  /** CRUSADE: sword damage per fight won after you get it. */
+  crusadeStep: 5,
+  /** CHAIN LIGHTNING: lightning damage +this (adds with the other lightning boosts). */
+  chainAdd: 1,
+  /** HIGH CARD: jackpots (and jackpot meter payoffs) pay this much; pairs pay pairMul. */
+  highCardMul: 1.5,
+  highCardPairMul: 0.5,
+};
+const pct = (x: number) => Math.round(x * 100);
+
 /** Passive rule changes. None of them ask for input mid-fight. */
 export const RELICS: Record<RelicId, RelicDef> = {
   clover: { id: 'clover', name: 'LUCKY CLOVER', text: '30% CHANCE A NEAR-MISS BECOMES A JACKPOT', sprite: 'relicClover' },
@@ -98,6 +123,17 @@ export const RELICS: Record<RelicId, RelicDef> = {
   hitmaker: { id: 'hitmaker', name: 'CERTIFIED HITMAKER', text: 'EACH DROP IN A FIGHT HITS +60% MORE THAN THE LAST', sprite: 'relicHitmaker', machine: 'jukebox' },
   houseofcards: { id: 'houseofcards', name: 'HOUSE OF CARDS', text: 'EACH JACKPOT METER PAYOFF ADDS A WILD TO 2 REELS FOR THE FIGHT', sprite: 'relicHouseOfCards', machine: 'joker' },
   parachute: { id: 'parachute', name: 'GOLDEN PARACHUTE', text: 'A HIT THAT WOULD KILL YOU: PAY 10 CHIPS, LAND AT 25% HP (ONCE PER FIGHT)', sprite: 'relicParachute', machine: 'midas' },
+  // The BIG CHOICES that stayed, as legendary relics (user, 2026-10-15). Each keeps its price, said on the card.
+  secondline: { id: 'secondline', name: 'SECOND PAYLINE', text: `THE ROW ABOVE YOUR PAYLINE PAYS ITS PAIRS AND JACKPOTS AT HALF. ENEMIES HIT ${pct(LEGEND_RELIC.lineDmg - 1)}% HARDER`, sprite: 'relicLoadedreel' },
+  devilsdue: { id: 'devilsdue', name: "DEVIL'S DUE", text: `EVERYTHING PAYS X${LEGEND_RELIC.devilPay}. -${pct(LEGEND_RELIC.devilDecay)}% MAX HP AFTER EVERY FIGHT YOU WIN`, sprite: 'relicChalice' },
+  longgame: { id: 'longgame', name: 'THE LONG GAME', text: `EVERYTHING PAYS ${pct(1 - LEGEND_RELIC.longStart)}% LESS, +${pct(LEGEND_RELIC.longStep)}% FOR EVERY FIGHT YOU WIN`, sprite: 'relicMetronome' },
+  quickening: { id: 'quickening', name: 'QUICKENING', text: 'YOUR METER STARTS EVERY FIGHT FULL. ENEMY ABILITIES CHARGE 1 SPIN FASTER', sprite: 'relicBattery' },
+  glasscannon: { id: 'glasscannon', name: 'GLASS CANNON', text: `PAIRS AND JACKPOTS PAY X${LEGEND_RELIC.glassPay}. NO HEALING BETWEEN FIGHTS`, sprite: 'relicFirstblood' },
+  crusade: { id: 'crusade', name: 'CRUSADE', text: `+${LEGEND_RELIC.crusadeStep} SWORD DAMAGE FOR EVERY FIGHT YOU WIN`, sprite: 'relicDrum', machine: 'knight' },
+  chainlightning: { id: 'chainlightning', name: 'CHAIN LIGHTNING', text: `LIGHTNING DAMAGE +${pct(LEGEND_RELIC.chainAdd)}%`, sprite: 'relicCoil', machine: 'tesla' },
+  highcard: { id: 'highcard', name: 'HIGH CARD', text: `JACKPOTS AND JACKPOT METER PAYOFFS PAY X${LEGEND_RELIC.highCardMul}. PAIRS PAY HALF`, sprite: 'relicWildcard', machine: 'joker' },
+  hypeman: { id: 'hypeman', name: 'HYPE MAN', text: "+1 VOLUME BEFORE EVERY OTHER SPIN. NOTES PAY HALF WHEN IT ISN'T THE DROP", sprite: 'relicPulse', machine: 'jukebox' },
+  openbar: { id: 'openbar', name: 'OPEN BAR', text: 'MAKE IT RAIN COSTS NOTHING. WINS PAY NO CHIPS', sprite: 'relicTipJar', machine: 'midas' },
 };
 
 /**
@@ -222,14 +258,16 @@ export const NEW_RELIC = {
   regularPlays: 2,
 };
 
+/** The ten legendaries that were BIG CHOICES. */
+export const BIG_LEGENDS: RelicId[] = ['secondline', 'devilsdue', 'longgame', 'quickening', 'glasscannon', 'crusade', 'chainlightning', 'highcard', 'hypeman', 'openbar'];
 /** Relic rarity. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
   common: ['clover', 'battery', 'fang', 'bandage', 'firstblood', 'piggy', 'trophy', 'bash', 'hotstreak', 'metronome', 'snakeeyes', 'tipjar', 'housetax', 'regular', 'punchcard', 'dryspell'],
   uncommon: ['greatsword', 'armoredcar', 'safedeposit', 'prism', 'hone', 'mirror', 'chalice', 'drum', 'chainmail', 'faraday', 'static', 'capbells', 'horseshoe', 'underdog', 'holywater', 'belt', 'bracelet', 'coil', 'rainmaker', 'slushfund', 'tower', 'headsman', 'capacitor', 'livewire', 'encore', 'downpour', 'coup', 'compound', 'meltdown', 'pulse', 'deckdrum', 'wildcard', 'loadedreel', 'turntable', 'mixtape', 'subwoofer', 'goldenspin', 'insurance', 'hitmaker', 'houseofcards', 'parachute'],
-  legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss'],
+  legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss', ...BIG_LEGENDS],
 };
 
-export const LEGENDARY: ReadonlySet<RelicId> = new Set<RelicId>(['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss']);
+export const LEGENDARY: ReadonlySet<RelicId> = new Set<RelicId>(RELIC_TIER.legendary);
 /** WHETSTONE BELT: per blocked hit, every sword in your next sword group gets this much more (up to BELT_MAX stacks). */
 export const BELT_STEP = 2 * UNIT;
 export const BELT_MAX = 1;
@@ -268,6 +306,8 @@ export const BUILD_ENABLER: Partial<Record<RelicId, Enabler | Enabler[]>> = {
   battery: 'meter',
   overcharge: 'meter',
   fang: 'meter',
+  // QUICKENING fills a meter: every machine but KNIGHT.
+  quickening: 'meter',
   // Wave 1: wild relics wait until you have wilds.
   wildcard: ['wild', 'meter'],
   loadedreel: 'wild',

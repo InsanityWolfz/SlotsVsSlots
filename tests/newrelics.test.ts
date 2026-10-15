@@ -133,31 +133,3 @@ describe('GLASS Charm (2026-10-14)', () => {
     expect(breaks / (pays * 3)).toBeLessThan(0.35);
   });
 });
-
-describe('big choices SECOND PAYLINE and THE LONG GAME (2026-10-14)', () => {
-  it('SECOND PAYLINE: a pair on the row above pays at half; enemies hit 15% harder', () => {
-    const f = fight((c) => {
-      c.player.strips = reels3({ sword: 12 });
-      c.player.big = { secondLine: true };
-      c.enemy = { hp: 1e9, strips: reels3({ shield: 12 }), lineDmg: 1.15 };
-    });
-    const { events } = f.step();
-    const line2 = ofType(events, 'secondLine')[0];
-    expect(line2).toBeTruthy();
-    const main = ofType(events, 'spin')[0].score.groups.find((g) => g.symbol === 'sword')!;
-    expect(line2.groups[0].amount).toBe(Math.max(10, Math.round(main.amount / 2 / 10) * 10));
-  });
-
-  it('THE LONG GAME: pays x0.8 at first, +3% for every fight won after', () => {
-    const base = defaultConfig();
-    const run = createRun(base, 51, 'knight', 0);
-    run.pendingStart = null;
-    run.longGame = 0;
-    expect(fightConfig(run, base).player.payMul).toBeCloseTo(0.8);
-    const f = new Fight(fightConfig(run, base), 1);
-    f.winner = 'player';
-    finishFight(run, f);
-    expect(run.longGame).toBe(1);
-    expect(fightConfig(run, base).player.payMul).toBeCloseTo(0.83);
-  });
-});

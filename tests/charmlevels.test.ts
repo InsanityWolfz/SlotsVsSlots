@@ -69,20 +69,3 @@ describe('EXPERT_PLAYTEST_10: new relics', () => {
     expect(ofType(f.step().events, 'attack')[0].amount).toBe(plain + 20 * 3 * 3);
   });
 });
-
-describe('charm levels: no dead level picks', () => {
-  it('LIMIT BREAK: big-choice level picks go past LV3 (up to LV5), so they are never dead', async () => {
-    const { takeChoice } = await import('../src/core/run');
-    const run = createRun(base, 5, 'knight');
-    for (const s of ['sword', 'shield'] as const) run.player.levels.sym[s] = 3;
-    run.pendingChoice = [{ id: 'temper', symbol: 'sword' }];
-    takeChoice(run, { id: 'temper', symbol: 'sword' });
-    expect(run.player.levels.sym.sword).toBe(4);
-    // At LV5 a level has nowhere to go: it becomes 2 GOLD Charms on that symbol.
-    run.player.levels.sym.sword = 5;
-    run.pendingChoice = [{ id: 'temper', symbol: 'sword' }];
-    takeChoice(run, { id: 'temper', symbol: 'sword' });
-    expect(run.player.levels.sym.sword).toBe(5);
-    expect(run.player.gilded.filter((g) => g.symbol === 'sword' && g.enh === 'gold').reduce((a, g) => a + g.n, 0)).toBe(2);
-  });
-});
