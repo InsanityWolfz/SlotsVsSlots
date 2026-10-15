@@ -1147,7 +1147,9 @@ function similarKey(o: DraftOption): string {
 }
 
 /** Relic drafts follow the act's 2nd and 4th won fights (a route with fewer fights gets fewer of these). */
-export const isRelicDraft = (run: RunState) => RUN.relicDraftsAfter.includes(run.depth);
+/** The drafts after an act's 2nd and 4th won fights offer relics, unless that fight was an elite: its spoils were
+ * already a relic pick, and two relic picks back to back made each relic feel small (feel playtest, 2026-10-15). */
+export const isRelicDraft = (run: RunState) => RUN.relicDraftsAfter.includes(run.depth) && !run.records.at(-1)?.elite;
 
 /** Every CHARM card you could be offered: `n` charms on plain cells of one symbol on one reel. */
 /** Symbols a charm can go on for this run. */
