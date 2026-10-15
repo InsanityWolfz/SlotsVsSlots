@@ -29,7 +29,8 @@ import { BONUS_SYMBOLS, stripCounts } from './strip';
 /** Run-level tunables. */
 export const RUN = {
   startHp: 32 * UNIT,
-  healCard: 8 * UNIT,
+  /** The Cashier's HEAL: up to this much (it's the one heal between bosses since the draft split, 2026-10-15). */
+  healCard: 12 * UNIT,
   maxHpCard: 4 * UNIT,
   /** A strip can't be thinned below this many cells. */
   minStrip: 6,
@@ -38,29 +39,17 @@ export const RUN = {
   extendChance: 0.3,
   /** Drafts: chance a charm card is a charm type you DON'T own yet (a pivot), when you own some. */
   pivotChance: 0.5,
-  /** Act 1 catch-up: a fight that cost at least this share of max HP adds a 4th card, a big heal. */
-  catchUpLoss: 0.35,
-  catchUpHeal: 0.35,
-  /** Under this share of max HP, every draft holds a heal card. */
-  lowHp: 0.25,
-  /** ... and that heal is this share of max HP. */
-  lowHeal: 0.25,
   /** Each Cashier heal bought this run costs this much more than the last. */
-  healStep: 6,
+  healStep: 3,
   /** Rocks an ELITE adds during one fight that stay for the rest of the run; the rest (and every normal enemy's) crumble. */
   permanentRocksPerFight: 2,
-  /** Drafts right after these fights (1-based) offer relics (2 relics + 1 other). */
-  relicDraftsAfter: [2, 4],
   swapCount: 3,
   addCount: 2,
   wildCount: 2,
   /** Any-direction swap cards move this many cells. */
   anySwapCount: 2,
-  /** Charm cards: cells charmed by a draft / wheel card, and by a Cashier item. */
+  /** Charm cards: cells charmed by a draft card. */
   charmCells: 2,
-  charmCellsShop: 3,
-  /** Chance a draft's first card is a LEVEL card (when one can be offered). */
-  levelCardChance: 0.35,
   /** Levels an act boss (and a loop boss) pays your attack symbol. */
   bossLevels: 1,
   /** The Cashier opens after these fights (1-based), after the draft. */
@@ -98,8 +87,6 @@ export const gildsFor = (run: RunState): Enh[] =>
 export const swappable = (run: RunState): SymbolId[] => CABINETS[run.cabinet].symbols;
 /** What a WILD card can turn into wilds: shields and your attack symbol. */
 const wildFrom = (run: RunState): SymbolId[] => [...new Set<SymbolId>(['shield', CABINETS[run.cabinet].attack])];
-/** A removal never takes a reel's shields or attack symbols below this many. */
-const REMOVE_FLOOR = 2;
 /** The symbol +2 / rock-swap cards give (the signature symbol, or swords for KNIGHT and JAX). */
 export const sigSymbol = (run: RunState): SymbolId => {
   const m = CABINETS[run.cabinet].meter;
@@ -109,7 +96,8 @@ export const sigSymbol = (run: RunState): SymbolId => {
 /** Chip economy (earning is passive, spending happens only at the Cashier). */
 export const CHIPS = {
   /** Was 2 + up to 3 overkill chips; overkill removed 2026-10-08 (unexplained), +1 a fight folded in here (+2 overshot: chips/fight above the old economy). */
-  win: 3,
+  // 3 -> 6 with the draft/Cashier split (2026-10-15): relics, levels and heals left the free draft for the Cashier.
+  win: 6,
   eliteBonus: 2,
   /** Act 2 elites pay these chips instead of a relic. */
   act2EliteChips: 6,
@@ -122,7 +110,7 @@ export const CHIPS = {
   /** Every run starts with a little float so shop 1 is a real visit. */
   start: 8,
   // heal 5 -> 12, once a visit (2026-10-12: no heal after fights now, so HP is worth more; user).
-  prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 12, maxHp: 5, legend: 20, level: 12 },
+  prices: { relic: 10, heal: 6, maxHp: 5, legend: 20, showcase: 24, level: 10 },
   /** Each level gained this run adds this to the Cashier's level price. */
   levelStep: 4,
   /** First reroll per visit costs 1, then +1 each time. */
@@ -147,6 +135,8 @@ export interface ShopItem {
   option: DraftOption;
   price: number;
   sold: boolean;
+  /** THE BIG ONE: the visit's one big buy (a legendary relic), centre stage behind the glass. */
+  showcase?: boolean;
 }
 
 export interface RunPlayer {
@@ -1025,9 +1015,10 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   if (beaten.isBoss) {
     // A BOSS PAYS A PLANET (2026-10-15): your attack symbol goes up a level (two with STAR CHART). Uncapped levels are
     // the run's long scaling now, and every act's boss is a step up it.
-    if (!beaten.turbo && RUN.bossLevels > 0) {
+    const bossLevels = CABINETS[run.cabinet].bossLevels ?? RUN.bossLevels;
+    if (!beaten.turbo && bossLevels > 0) {
       const atk = CABINETS[run.cabinet].attack;
-      run.player.levels.sym[atk] = symLevel(run.player.levels, atk) + RUN.bossLevels * levelStep(run);
+      run.player.levels.sym[atk] = symLevel(run.player.levels, atk) + bossLevels * levelStep(run);
       record.bossLevel = atk;
     }
     if (run.endless && beaten.turbo) {
@@ -1171,7 +1162,6 @@ function similarKey(o: DraftOption): string {
 /** Relic drafts follow the act's 2nd and 4th won fights (a route with fewer fights gets fewer of these). */
 /** The drafts after an act's 2nd and 4th won fights offer relics, unless that fight was an elite: its spoils were
  * already a relic pick, and two relic picks back to back made each relic feel small (feel playtest, 2026-10-15). */
-export const isRelicDraft = (run: RunState) => RUN.relicDraftsAfter.includes(run.depth) && !run.records.at(-1)?.elite;
 
 /** Every CHARM card you could be offered: `n` charms on plain cells of one symbol on one reel. */
 /** Symbols a charm can go on for this run. */
@@ -1214,10 +1204,7 @@ export function draftOffers(run: RunState): DraftOption[] {
   const push = (o: DraftOption | null) => {
     if (o && out.length < size && !out.some((x) => keyOf(x) === keyOf(o) || similarKey(x) === similarKey(o))) out.push(o);
   };
-  // ACT 1 CATCH-UP: a costly win adds a 4th card, a big heal (deaths at fights 2-3 were the run killer).
-  const last = run.records[run.records.length - 1];
-  const costly = run.act === 1 && !!last?.won && last.hpBefore - last.hpAfter >= p.maxHp * RUN.catchUpLoss && p.hp < p.maxHp;
-  const size = RUN.draftSize + (costly ? 1 : 0);
+  const size = RUN.draftSize;
   const sig = sigSymbol(run);
 
   const swapCard = (): DraftOption | null => {
@@ -1264,11 +1251,6 @@ export function draftOffers(run: RunState): DraftOption[] {
     const options = charmOptions(run, n, [enh]).filter((o) => !taken(o));
     return options.length ? rng.pick(options) : null;
   };
-  /** LEVEL: +1 level to a symbol type or a charm you own. */
-  const levelCard = (): DraftOption | null => {
-    const options = levelOptions(run).filter((o) => !out.some((x) => keyOf(x) === keyOf(o)));
-    return options.length ? rng.pick(options) : null;
-  };
   /** WILD: turn a shield (or rock) on a reel into a WILD. */
   const wildCard = (): DraftOption | null => {
     const options: DraftOption[] = [];
@@ -1280,21 +1262,6 @@ export function draftOffers(run: RunState): DraftOption[] {
           if (plainCells(p, reel, from) >= RUN.wildCount && (s[from] ?? 0) > RUN.wildCount) options.push({ kind: 'swap', from, to: 'wild', count: RUN.wildCount, reel });
     });
     return options.length ? rng.pick(options) : null;
-  };
-  const hpCard = (): DraftOption => (p.hp < p.maxHp * 0.75 && !noHealing(run) ? { kind: 'heal', amount: RUN.healCard } : { kind: 'maxHp', amount: RUN.maxHpCard });
-  const relicCard = (): DraftOption | null => {
-    const pool = (Object.keys(RELICS) as RelicId[]).filter(
-      (r) => !p.relics.includes(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && (run.act > 1 || !LEGENDARY.has(r)) && !legendShown(run, r) && !out.some((o) => o.kind === 'relic' && o.relic === r),
-    );
-    // One relic card per draft is yours: your machine's or your charms' (while any are left).
-    // The identity slot draws from each machine's signature relics; wave relics compete in the open slots (with them in
-  // the identity slot, BRIAR and JAX lost ~10 WHITE: their build-defining relics showed up half as often).
-  const ident = pool.filter((r) => isIdentityRelic(r) && !WAVE1.has(r));
-    if (ident.length && !out.some((o) => o.kind === 'relic')) return { kind: 'relic', relic: rng.pick(ident) };
-    // Act 2 relic drafts lean legendary.
-    const legends = pool.filter((r) => LEGENDARY.has(r));
-    if (legends.length && rng.next() < 0.4) return { kind: 'relic', relic: rng.pick(legends) };
-    return pool.length ? { kind: 'relic', relic: rng.pick(pool) } : null;
   };
   /** SWAP, any direction: turn a few of one of your symbols into another (small counts). */
   const anySwapCard = (): DraftOption | null => {
@@ -1310,32 +1277,14 @@ export function draftOffers(run: RunState): DraftOption[] {
     return options.length ? rng.pick(options) : null;
   };
 
-  if (isRelicDraft(run)) {
-    push(relicCard());
-    push(relicCard());
-    push(rng.next() < 0.5 ? hpCard() : swapCard() ?? hpCard());
-  } else {
-    push((rng.next() < RUN.levelCardChance ? levelCard() : null) ?? gildCard() ?? swapCard());
-    const r = rng.next();
-    push((r < 0.35 ? wildCard() : r < 0.65 ? swapCard() : null) ?? clearCard() ?? gildCard() ?? levelCard() ?? addCard());
-    push((rng.next() < 0.6 ? anySwapCard() : null) ?? hpCard());
-  }
-  if (size > RUN.draftSize) {
-    // The catch-up heal replaces a smaller heal card already in the draft (HEAL 80 sat next to HEAL 170: EXPERT_PLAYTEST_10 D7).
-    const catchUp: DraftOption = { kind: 'heal', amount: Math.max(UNIT, Math.round(Math.max(p.maxHp * RUN.catchUpHeal, p.maxHp - p.hp) / UNIT) * UNIT) };
-    const i = out.findIndex((o) => o.kind === 'heal');
-    if (i < 0) out.push(catchUp);
-    else {
-      out[i] = catchUp;
-      out.push({ kind: 'maxHp', amount: RUN.maxHpCard });
-    }
-  }
+  // The draft only edits your reels: symbols in, out and across, WILDS and Charms (user, 2026-10-15: the draft and the
+  // Cashier did the same job). Levels, relics and heals are the Cashier's.
+  push(gildCard() ?? swapCard());
+  const r = rng.next();
+  push((r < 0.35 ? wildCard() : r < 0.7 ? swapCard() : null) ?? clearCard() ?? gildCard() ?? addCard());
+  push((rng.next() < 0.6 ? anySwapCard() : null) ?? gildCard() ?? addCard());
   let guard = 0;
-  while (out.length < RUN.draftSize && guard++ < 30) push(guard % 3 === 0 ? addCard() : guard % 3 === 1 ? swapCard() : { kind: 'maxHp', amount: RUN.maxHpCard });
-  // Low HP, any act: a heal is always on offer (playtest: 58/330 HP and no heal card, with fights no longer healing).
-  if (!noHealing(run) && p.hp < p.maxHp * RUN.lowHp && !out.some((o) => o.kind === 'heal') && out.length) {
-    out[out.length - 1] = { kind: 'heal', amount: Math.max(UNIT, Math.round((p.maxHp * RUN.lowHeal) / UNIT) * UNIT) };
-  }
+  while (out.length < RUN.draftSize && guard++ < 30) push(guard % 3 === 0 ? addCard() : guard % 3 === 1 ? swapCard() : anySwapCard());
   return out;
 }
 
@@ -1403,76 +1352,56 @@ export const rerollCost = (run: RunState) => CHIPS.rerollBase + run.shopRerolls;
 export const chipShield = (chips: number) => Math.floor(chips / CHIPS.stackPer) * UNIT;
 
 /**
- * The Cashier's four slots: a level or charm (extending what you own), another charm, a relic, and a
- * utility (WILDs, remove a symbol), plus the HEAL service. Deterministic per run seed + depth + rerolls.
+ * The Cashier (2026-10-15 split, user): what you save chips for. The counter: two symbol LEVELS (the price climbs with
+ * every level this run) and MAX HP, plus the HEAL service. Behind the glass: two relics (the first one of yours) and THE
+ * BIG ONE, a legendary at a high-roller price. Charms and reel edits are the draft's. Deterministic per run seed +
+ * depth + rerolls.
  */
 export function shopOffers(run: RunState): ShopItem[] {
   const rng = new Rng((run.seed ^ Math.imul(run.depth + 31 + run.act * 64, 0x27d4eb2f) ^ Math.imul(run.shopRerolls + 1, 0x165667b1)) >>> 0);
   const p = run.player;
   const items: ShopItem[] = [];
   const P = CHIPS.prices;
-  // A reroll never deals what was just on the shelf.
+  // A reroll never deals what was just on the shelf (while there's anything else to deal).
   const prev = new Set(run.shopRerolls > 0 ? (run.shelfKeys ?? []) : []);
-  const add = (option: DraftOption | null, price: number) => {
-    // MIDAS: the Cashier gives him 20% off.
-    if (option && !prev.has(JSON.stringify(option)) && !items.some((i) => JSON.stringify(i.option) === JSON.stringify(option))) items.push({ option, price: run.cabinet === 'midas' ? Math.max(1, Math.ceil(price * 0.8)) : price, sold: false });
+  const fresh = <T extends DraftOption>(os: T[]) => {
+    const f = os.filter((o) => !prev.has(JSON.stringify(o)));
+    return f.length ? f : os;
   };
-  const gildOptions = charmOptions(run, RUN.charmCellsShop).filter((o) => !prev.has(JSON.stringify(o)));
-  // Prefer extending what you already own, so builds can be finished on purpose.
-  const extend = gildOptions.filter((o) => o.kind === 'gild' && p.gilded.some((g) => g.enh === o.enh));
-  const levels = levelOptions(run);
-  // Levels cost more the more you've gained (user, 2026-10-15: planets with no cap, hard to stack unless you build for it).
+  const add = (option: DraftOption | null, price: number, showcase = false) => {
+    // MIDAS: the Cashier gives him 20% off.
+    if (option && !items.some((i) => JSON.stringify(i.option) === JSON.stringify(option)))
+      items.push({ option, price: run.cabinet === 'midas' ? Math.max(1, Math.ceil(price * 0.8)) : price, sold: false, ...(showcase ? { showcase } : {}) });
+  };
+  // THE COUNTER. Levels cost more the more you've gained (user, 2026-10-15: planets with no cap, hard to stack unless
+  // you build for it). Your attack symbol is one of the two most visits.
   const levelPrice = P.level + CHIPS.levelStep * levelsGained(run);
-  if (levels.length && rng.next() < 0.5) add(rng.pick(levels), levelPrice);
-  else add(extend.length ? rng.pick(extend) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
-  // Slot 2: a DIFFERENT charm type from slot 1, leaning to types you don't own.
-  const first = items.map((i) => i.option).find((o) => o.kind === 'gild' || o.kind === 'charmLevel');
-  const firstEnh = first && (first.kind === 'gild' || first.kind === 'charmLevel') ? first.enh : undefined;
-  const other = gildOptions.filter((o) => o.kind === 'gild' && o.enh !== firstEnh);
-  const fresh = other.filter((o) => o.kind === 'gild' && !p.gilded.some((g) => g.enh === o.enh));
-  add(fresh.length && rng.next() < 0.6 ? rng.pick(fresh) : other.length ? rng.pick(other) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
+  const levels = fresh(levelOptions(run));
+  const atk = levels.find((o) => o.kind === 'symLevel' && o.symbol === CABINETS[run.cabinet].attack);
+  if (atk && rng.next() < 0.6) add(atk, levelPrice);
+  for (const o of rng.shuffle(levels)) {
+    if (items.length >= 2) break;
+    add(o, levelPrice);
+  }
+  add({ kind: 'maxHp', amount: RUN.maxHpCard }, P.maxHp);
+  // BEHIND THE GLASS: two relics, then THE BIG ONE in the middle.
   const lastShop = run.act === runActs(run) && run.depth >= Math.min(actLength(run.act), RUN.shopAfter[RUN.shopAfter.length - 1]);
   const relics = (Object.keys(RELICS) as RelicId[]).filter(
     (r) => !p.relics.includes(r) && !ELITE_ONLY.has(r) && relicFits(run, r) && !(lastShop && r === 'bandage') && !LEGENDARY.has(r),
   );
-  // Act 2: the relic slot holds a legendary, priced like one.
-  const legends = run.act > 1 ? [...LEGENDARY].filter((r) => !p.relics.includes(r) && relicFits(run, r) && !legendShown(run, r)) : [];
-  if (legends.length) add({ kind: 'relic', relic: rng.pick(legends) }, P.legend);
-  else add(relics.length ? { kind: 'relic', relic: rng.pick(relics) } : null, P.relic);
-  const u = rng.next();
-  if (u < 0.35) {
-    const wilds = p.strips.flatMap((s, reel) => wildFrom(run).filter((from) => (s[from] ?? 0) > RUN.wildCount && plainCells(p, reel, from) >= RUN.wildCount).map((from) => ({ kind: 'swap' as const, from, to: 'wild' as SymbolId, count: RUN.wildCount, reel })));
-    add(wilds.length ? rng.pick(wilds) : null, P.wild);
-  } else if (u < 0.7) {
-    // Removals: rocks first, then a shield or one of your attack symbols (thin the strip either way).
-    const atk = CABINETS[run.cabinet].attack;
-    const junk = p.strips.flatMap((s, reel) => (['rock', 'shield', atk] as SymbolId[]).filter((sym) => (s[sym] ?? 0) > (sym === 'rock' ? 0 : REMOVE_FLOOR)).map((symbol) => ({ kind: 'remove' as const, symbol, reel })));
-    add(junk.length ? (junk.find((j) => j.symbol === 'rock') ?? rng.pick(junk)) : null, P.remove);
-  } else if (levels.length) add(rng.pick(levels), levelPrice);
-  // Never a thin shelf: top up with charms, then a rock/shield removal.
-  for (const o of rng.shuffle(gildOptions)) {
-    if (items.length >= 4) break;
-    add(o, P.gild);
-  }
-  if (items.length < 4) {
-    const junk = p.strips.flatMap((s, reel) => (['rock', 'shield'] as SymbolId[]).filter((sym) => (s[sym] ?? 0) > 1).map((symbol) => ({ kind: 'remove' as const, symbol, reel })));
-    if (junk.length) add(rng.pick(junk), P.remove);
-  }
-  // Never a thin shelf late: levels, a second relic, then max HP (EXPERT_PLAYTEST_3 B6).
-  for (const o of rng.shuffle(levels)) {
-    if (items.length >= 4) break;
-    add(o, levelPrice);
-  }
-  if (items.length < 4 && relics.length) add({ kind: 'relic', relic: rng.pick(relics) }, P.relic);
-  if (items.length < 4) add({ kind: 'maxHp', amount: RUN.maxHpCard }, P.maxHp);
-  // Rerolls also redraw the layout: the four slots come in a new order.
-  const shelf = run.shopRerolls > 0 ? rng.shuffle(items.slice(0, 4)) : items.slice(0, 4);
-  run.shelfKeys = shelf.map((i) => JSON.stringify(i.option));
+  const two = pickRelics(fresh(relics.map((relic) => ({ kind: 'relic' as const, relic }))).map((o) => o.relic), 2, rng);
+  const legends = [...LEGENDARY].filter((r) => !p.relics.includes(r) && relicFits(run, r) && !legendShown(run, r));
+  const big = fresh(legends.map((relic) => ({ kind: 'relic' as const, relic })));
+  if (two[0]) add({ kind: 'relic', relic: two[0] }, P.relic);
+  // Act 1's big one costs more: a legendary before the first boss is a saved-up buy.
+  if (big.length) add(rng.pick(big), run.act === 1 ? P.showcase : P.legend, true);
+  if (two[1]) add({ kind: 'relic', relic: two[1] }, P.relic);
+  run.shelfKeys = items.map((i) => JSON.stringify(i.option));
   // HEAL is a permanent service slot, sized to what you're missing (hidden when nearly full).
   const missing = p.maxHp - p.hp;
   // Once a visit: a reroll doesn't bring it back after you bought it.
-  if (missing >= 3 * UNIT && !noHealing(run) && !run.healBought) shelf.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal + RUN.healStep * (run.healsBought ?? 0), sold: false });
-  return shelf;
+  if (missing >= 3 * UNIT && !noHealing(run) && !run.healBought) items.push({ option: { kind: 'heal', amount: Math.min(RUN.healCard, missing) }, price: P.heal + RUN.healStep * (run.healsBought ?? 0), sold: false });
+  return items;
 }
 
 /** Your identity relics: your machine's and your charms' (one relic card per draft comes from here). */

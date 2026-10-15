@@ -311,7 +311,7 @@ describe('ITERATION_5 fixes', () => {
     }
   });
 
-  it('act 2 drafts can offer the new gilds and legendaries', () => {
+  it('act 2 drafts can offer the new gilds, and its Cashier legendaries', () => {
     let newGild = false;
     let legend = false;
     for (let s = 0; s < 60; s++) {
@@ -319,10 +319,8 @@ describe('ITERATION_5 fixes', () => {
       run.act = 2;
       for (const d of [1, 2, 3, 4]) {
         run.depth = d;
-        for (const o of draftOffers(run)) {
-          if (o.kind === 'gild' && ['vamp', 'lucky', 'blaze'].includes(o.enh)) newGild = true;
-          if (o.kind === 'relic' && LEGENDARY.has(o.relic)) legend = true;
-        }
+        for (const o of draftOffers(run)) if (o.kind === 'gild' && ['vamp', 'lucky', 'blaze'].includes(o.enh)) newGild = true;
+        for (const i of shopOffers(run)) if (i.option.kind === 'relic' && LEGENDARY.has(i.option.relic)) legend = true;
       }
     }
     expect(newGild && legend).toBe(true);

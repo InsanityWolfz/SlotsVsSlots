@@ -23,7 +23,6 @@ import {
   nightId,
   nightOf,
   enemyHp,
-  isRelicDraft,
   needsRoute,
   encounterChoices,
   currentEnemy,
@@ -902,7 +901,7 @@ export class RunScreens {
       this.minorBtn(`REROLL - ${rerollCost(run)}`, CX - 160, 574, 260, 50, () => this.cb.onReroll()),
       this.btn('LEAVE', CX + 160, 574, 260, 50, () => this.cb.onLeave()),
     ];
-    // Two shelves: the counter (charms, swaps, levels, heals) and, behind the glass, the relics.
+    // Two shelves: the counter (levels, max HP, the heal) and, behind the glass, the relics and THE BIG ONE.
     const premium = (it: ShopItem) => it.option.kind === 'relic';
     const rows = [items.filter((it) => !premium(it)), items.filter(premium)];
     this.shopHits = items.map((it, i) => {
@@ -1439,7 +1438,6 @@ export class RunScreens {
     this.drawMap(ctx, 158, time);
     const spoils = this.draftKind === 'spoils';
     const legend = this.draftKind === 'legend';
-    const relicDraft = !spoils && !legend && isRelicDraft(this.run!);
     const act3Arrival = !legend && !spoils && this.run!.act >= 3 && this.run!.depth === 0 && this.run!.actIntro;
     // The boss's heal says what it gave (feel playtest: FULLY HEALED read as nothing at 94%).
     const healedBy = last?.won ? Math.max(0, this.run!.player.maxHp - last.hpAfter) : 0;
@@ -1452,11 +1450,9 @@ export class RunScreens {
           ? 'PICK A STARTING RELIC'
           : spoils
           ? 'ELITE SPOILS'
-          : relicDraft
-            ? 'RELIC DRAFT'
-            : '';
+          : '';
     if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), CX, 208, 3);
-    drawText(ctx, heading, CX, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : relicDraft ? '#c9a0ff' : COLORS.text);
+    drawText(ctx, heading, CX, legend ? 236 : 244, 3, legend ? COLORS.goldLight : spoils ? '#ff9a3a' : COLORS.text);
     this.cards.forEach((c, i) => this.drawCard(ctx, c, this.offers[i], i, time));
     // The hovered card's keywords, explained beside it (GLOSSARY: the same words on every card).
     const hov = this.picked < 0 ? this.cards.findIndex((c) => c.hover && c.scale > 0.9) : -1;
@@ -2782,7 +2778,8 @@ export class RunScreens {
     const quips = ['PLACE YOUR BETS.', 'EVERYTHING HAS A PRICE, FRIEND.', 'THE HOUSE WILL HEAR ABOUT THIS.', 'CHIPS ARE FOR SPENDING... OR ARE THEY?'];
     drawText(ctx, quips[(run.depth + run.shopRerolls) % quips.length], CX - 330, 80, 2, COLORS.textDim, { align: 'left' });
     // (Fights heal in no act now: the old ACT 3 warning is gone. Playtest.)
-    if (this.shopItems.some((it) => !it.sold && it.option.kind === 'relic' && LEGENDARY.has(it.option.relic))) drawText(ctx, 'A LEGENDARY ON THE SHELF.', CX, 140, 2, COLORS.goldLight);
+    // THE BIG ONE (the draft/Cashier split, 2026-10-15): one legendary a visit, centre stage behind the glass.
+    if (this.shopItems.some((it) => !it.sold && it.showcase)) drawText(ctx, 'THE BIG ONE IS IN THE CASE.', CX, 140, 2.5, COLORS.goldLight);
     this.drawShelves(ctx, time);
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
     for (const b of this.buttons) this.drawButton(ctx, b, time);
@@ -2881,7 +2878,21 @@ export class RunScreens {
     ctx.save();
     ctx.globalAlpha *= item.sold ? 0.3 : 1;
     ctx.translate(h.x, h.y + h.lift - (h.hover && !item.sold ? 6 : 0));
-    ctx.scale(h.scale, h.scale);
+    ctx.scale(h.scale * (item.showcase ? 1.15 : 1), h.scale * (item.showcase ? 1.15 : 1));
+    if (item.showcase && !item.sold) {
+      // THE BIG ONE: a spotlight beam from the top of the case (soft, slow sway; no flash).
+      const sway = Math.sin(time * 0.8) * 6;
+      const beam = ctx.createLinearGradient(0, -62, 0, 44);
+      beam.addColorStop(0, 'rgba(255,236,150,0.32)');
+      beam.addColorStop(1, 'rgba(255,236,150,0)');
+      ctx.fillStyle = beam;
+      ctx.beginPath();
+      ctx.moveTo(-26 + sway, -62);
+      ctx.lineTo(26 + sway, -62);
+      ctx.lineTo(80, 40);
+      ctx.lineTo(-80, 40);
+      ctx.fill();
+    }
     if (relic) {
       // Velvet cushion in a gold frame, under a spotlight; a legendary shimmers.
       const glow = ctx.createRadialGradient(0, -20, 4, 0, -20, 90);

@@ -90,12 +90,15 @@ was tuned for feel from two fresh-eyes playtests.
     can't win back says PAY, not STAKE. No flavour-text subtitles.
 - **THE REPO MAN** is a regular in acts 1-2 (he takes a Charm for his fight; it comes back after).
 - **After every win:** no heal (user, 2026-10-12: HP carries from fight to fight, so survivability and VAMP matter;
-  the act's boss heals you fully). Then a **draft** (pick 1 of 3 cards:
-  add, swap or remove symbols, Charms, symbol levels, heals). The drafts after an act's 2nd and 4th won fights offer
-  relics, unless that fight was an elite (its spoils were a relic pick already: 2026-10-15).
-- **The Cashier** is a stop: on some paths, and always right before the boss (plus a visit when a new act opens).
-  Chips buy Charms, relics, wilds, removals, a heal (12 chips, once a visit) and levels; rerolls cost 1, then 2, 3 and so on. Chips come from
-  wins, elites, jackpots and interest (+1 per 5 banked, capped at 3).
+  the act's boss heals you fully). Then a **draft** (pick 1 of 3 cards). **The draft only edits your reels** (user,
+  2026-10-15, cut list #8: the draft and the Cashier did the same job): add, swap or clear symbols, WILDS, Charms. No
+  relics, levels or heals in a draft.
+- **The Cashier** is a stop: on some paths, and always right before the boss (plus a visit when a new act opens). It
+  is what you save chips for. The counter: two symbol LEVELS (10 chips + 4 a level gained this run; your attack symbol
+  is one of the two most visits), MAX HP +40 (5) and the HEAL (up to 120 HP, 6 chips + 3 a heal bought this run, once a
+  visit). Behind the glass: two relics (10; the first one of your machine's or your Charms') and **THE BIG ONE**, a
+  legendary relic under a spotlight (24 in act 1, 20 after). Rerolls cost 1, then 2, 3... Chips: 6 a win (was 3 before
+  the split), elites +2, jackpots +1, interest +1 per 5 banked (max 3). `shopOffers` in `src/core/run.ts`.
 - **After a boss:** your attack symbol goes up a level (two with STAR CHART: "SWORDS LEVEL UP: LV3" on the next
   screen), then a legendary relic pick (1 of 3). (The BIG CHOICES bonus round and BONUS WHEEL / RELIC RUSH are cut:
   see THE CUT below.)
@@ -173,9 +176,8 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
 - **Charms live on cells** and have **no levels** (user, 2026-10-15): each has one value (GOLDEN TICKET: one step
   stronger). Pay = BASE × MULT, and gold Charms in a group ADD.
 - **Symbol levels live on the symbol TYPE, with no cap** (user, 2026-10-15: like Balatro's planets): a symbol is worth
-  10 + 6 a level above 1 (`SYM` in `src/core/charms.ts`). Hard to stack: a level card is a sometimes draft card (35% of
-  normal drafts), the Cashier's level costs 12 + 4 a level gained this run, and each act boss pays your attack symbol
-  one. STAR CHART (uncommon relic) doubles every level you gain. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
+  10 + 6 a level above 1 (`SYM` in `src/core/charms.ts`). Hard to stack: levels are only sold at the Cashier (10 + 4 a level
+  gained this run), and each act boss pays your attack symbol one (KNIGHT: three). STAR CHART (uncommon relic) doubles every level you gain. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
   machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER), ECHO (JUKEBOX) and BULWARK (`spiked`, KNIGHT).
   `src/core/charms.ts`.
 - **ENDLESS playtest fixes (2026-10-14):** a side at 0 HP can't be healed (a storm's heals on the enemy's turn revived
@@ -260,9 +262,9 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
   small ramp (was x1.45 with a big one). Act 3 fights ending in 2 spins or fewer: 20-55% -> 13-23% for every machine
   but BANKROLL (49%: MAKE IT RAIN hits for the chips held). GREEN: KNIGHT 36, JUKEBOX 35, TESLA 42, JOKER 52,
   BANKROLL 49.
-- **Healing (2026-10-12):** under a quarter of max HP, every draft holds a heal of a quarter of max HP (a run at
-  17% HP once had none on offer); each Cashier heal in a run costs 6 chips more than the last (12, 18, 24...), so
-  chip-rich machines can't buy off attrition. WHITE +0-2, GREEN within 1.
+- **Healing (2026-10-15, the draft/Cashier split):** the act boss heals you fully; between bosses the Cashier's HEAL is
+  the only heal (up to 120 HP, once a visit, 6 chips + 3 a heal bought this run), plus VAMP, relics and meters. Drafts
+  no longer heal (the low-HP heal card and the act 1 catch-up heal are gone).
 - **ENDLESS variety (user, 2026-10-12):** only a big choice you TAKE leaves the run; one you pass on rests 2 offers and
   can come back, and in ENDLESS every card is open (the early-act ones too). HOUSE EDGES stack up to III (each level
   harder, paying a tier more), except MARKED DECK: one mark on your reels a fight, and it never stacks (user,

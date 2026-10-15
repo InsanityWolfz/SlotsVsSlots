@@ -113,13 +113,13 @@ describe('run', () => {
     expect(run.player.strips.reduce((a, s) => a + (s.rock ?? 0), 0)).toBeLessThan(2);
   });
 
-  it('relic cards only appear in the drafts after fights 2 and 4 (two of them)', () => {
+  it('drafts never offer relics (they are the Cashier\'s and the elites\')', () => {
     for (let s = 0; s < 40; s++) {
       const run = createRun(base, s);
       for (let d = 1; d <= 5; d++) {
         run.depth = d;
         const relics = draftOffers(run).filter((o) => o.kind === 'relic').length;
-        expect(relics).toBe(d === 2 || d === 4 ? 2 : 0);
+        expect(relics).toBe(0);
       }
     }
   });

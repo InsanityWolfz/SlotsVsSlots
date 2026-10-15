@@ -82,6 +82,12 @@ export function installDebug(game: Game): void {
     /** The run's act map, as text: one line per route (F fight, E elite, S Cashier, ? encounter). */
     map: () => game.run?.map.routes.map((r, i) => `PATH ${i + 1}: ${r.map((st) => (st.kind === 'fight' ? 'F' : st.kind === 'elite' ? 'E' : st.kind === 'shop' ? 'S' : '?') + (st.enemy ? `:${st.enemy.archetype}` : st.encounter ? `:${st.encounter}` : '')).join(' ')}`).join('\n'),
     /** Make the current fight end in a win on the player's next spin (for walking run screens). */
+    /** Open the Cashier now (as the act's intro visit). */
+    shop() {
+      if (!game.run) return;
+      game.run.actIntro = true;
+      (game as unknown as { advance(): void }).advance();
+    },
     forceWin() {
       // (THE DEALER: skip to its last hand, or 1 HP only ends the hand it's on.)
       game.fight.dealerHand = 3;

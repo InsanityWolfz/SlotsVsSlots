@@ -2,14 +2,13 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-15):** the cut, the act 1 feel pass, and the second feel playtest's fixes are in; HOLD was
-tried and cut (GAME.md "The cut and the act 1 feel pass"). Waiting on the user to play it.
+**In progress (2026-10-15):** the draft/Cashier split is in (GAME.md "After every win" and "The Cashier"); next, bosses
+with teeth, then one balance pass for both.
 
 ## Now, in order
-1. **Draft vs Cashier (cut list #8, the user's call; proposed 2026-10-15):** the draft after a win only edits the reels (symbols,
-   Charms); the Cashier is where you save up for levels, relics, heals, rerolls and one rare big buy a visit.
-2. **Left from the second feel playtest (design, needs the sim):** the catch-up heal (the larger of 35% or all missing
-   HP) undoes low-HP danger, try a flat 35%; THE HOUSE (act 1 boss) is too easy (beaten in 91% of meetings); act 2 fights run 74-95 s. Small UI: GOLD / GLASS icons blank in the side panel's
+1. **Bosses with teeth** (user, 2026-10-15): THE HOUSE is beaten in 86-95% of meetings at WHITE, THE WHEEL 88-97%.
+   Each boss should be a run-ending threat you can see coming. Then rebalance the machines.
+2. **Left from the second feel playtest:** act 2 fights run 74-95 s. Small UI: GOLD / GLASS icons blank in the side panel's
    Charm grid, REPO MAN's subtitle repeats his ability text, PLAY MODES has half a panel of space, the WHEEL card has no
    tagline, the REGULAR title shares a relic's name.
 3. **Balance left over** (sim, 800 runs): KNIGHT and JUKEBOX 6-8 under target from GREEN up (KNIGHT's Dealer spread);

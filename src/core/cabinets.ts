@@ -55,6 +55,8 @@ export interface Cabinet {
   /** Starting symbol / charm levels. */
   levels?: Levels;
   chipsPerWin?: number;
+  /** Levels an act boss pays this machine's attack symbol (default RUN.bossLevels). */
+  bossLevels?: number;
   /** Chips this machine starts a run with (default CHIPS.start). */
   startChips?: number;
   enemyAbilityMinus?: number;
@@ -75,15 +77,18 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'KNIGHT',
     sprite: 'cabinetKnight',
     blurb: 'THE DEPENDABLE ONE',
-    hp: 47 * UNIT,
-    // FORGED STEEL: half swords, half shields, both from level 2 (2026-10-15: levels have no cap; 470 HP).
+    hp: 39 * UNIT,
+    // FORGED STEEL: half swords, half shields, both from level 2 (2026-10-15: levels have no cap).
     strips: r3({ sword: 6, shield: 6 }),
+    // No meter, so KNIGHT's late game is levels: each act boss pays its swords 3 (draft/Cashier split, 2026-10-15:
+    // 470 HP and 1 level was 73 / 20 WHITE / GREEN, 390 HP and 3 levels 69 / 30).
+    bossLevels: 3,
     gilded: [],
     meter: null,
     symbols: ['sword', 'shield'],
     attack: 'sword',
     levels: { sym: { sword: 2, shield: 2 }, charm: {} },
-    rule: 'HALF SWORDS, HALF SHIELDS. NO METER. 470 HP.',
+    rule: 'HALF SWORDS, HALF SHIELDS. NO METER: EACH BOSS PAYS 3 SWORD LEVELS. 390 HP.',
     unlock: '',
   },
   midas: {
@@ -136,7 +141,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     sprite: 'cabinetJoker',
     blurb: 'NOTHING IS WHAT IT SEEMS',
     // 2026-10-12 (user): 380 HP and its jackpot payoff no longer heals (its healing grew with its WILDS: GREEN 53).
-    hp: 33.5 * UNIT,
+    // 335 -> 390 with the draft/Cashier split (2026-10-15: it bought WILDS at the Cashier; sim 44 / 26 -> 57 / 35).
+    hp: 39 * UNIT,
     // Cards, not swords (2026-10-07): JAX throws playing cards. They hit like swords.
     strips: r3({ ace: 5, shield: 5, wild: 2 }),
     gilded: [],
@@ -144,7 +150,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 0, perWild: 5 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
-    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 335 HP.',
+    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 390 HP.',
     unlock: 'BEAT THE HOUSE WITH WILDS',
     jokerWilds: true,
   },

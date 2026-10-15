@@ -58,7 +58,7 @@ describe('charm levels, hexes and level cards (Tuesday rework)', () => {
     expect(levelOptions(run).some((o) => o.kind === 'symLevel' && o.symbol === 'goldbar')).toBe(true);
     expect(levelOptions(run).some((o) => o.kind === 'charmLevel')).toBe(false);
     run.depth = 1;
-    expect(shopOffers(run).length).toBeLessThanOrEqual(5);
+    expect(shopOffers(run).length).toBeLessThanOrEqual(6);
   });
 });
 

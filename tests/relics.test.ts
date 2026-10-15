@@ -3,8 +3,8 @@ import { defaultConfig, reels3, type GameConfig, type RelicId } from '../src/cor
 import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { NEW_RELIC, RELICS } from '../src/core/relics';
-import { charmOptions, createRun, draftOffers, fightConfig, gildsFor, isIdentityRelic, isRelicDraft, migrateRun, relicFits, startRelics, takeStart } from '../src/core/run';
+import { LEGENDARY, NEW_RELIC, RELICS } from '../src/core/relics';
+import { charmOptions, createRun, draftOffers, fightConfig, gildsFor, isIdentityRelic, migrateRun, shopOffers, relicFits, startRelics, takeStart } from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -112,16 +112,37 @@ describe('relic pools, the starting pick and lucky', () => {
     }
   });
 
-  it('relic drafts put one of your identity relics first; other machines never show up', () => {
-    for (let s = 0; s < 30; s++) {
-      const run = createRun(base, s, 'jukebox');
+  it('the Cashier puts one of your identity relics first; other machines never show up', () => {
+    for (let seed = 0; seed < 30; seed++) {
+      const run = createRun(base, seed, 'jukebox');
       run.pendingStart = null;
       for (let d = 0; d < 6; d++) {
         run.depth = d;
-        if (!isRelicDraft(run)) continue;
-        const relics = draftOffers(run).flatMap((o) => (o.kind === 'relic' ? [o.relic] : []));
+        const relics = shopOffers(run).flatMap((i) => (i.option.kind === 'relic' && !i.showcase ? [i.option.relic] : []));
         for (const r of relics) expect([undefined, 'jukebox']).toContain(RELICS[r].machine);
         expect(RELICS[relics[0]].machine === 'jukebox' || !!RELICS[relics[0]].charm).toBe(true);
+      }
+    }
+  });
+
+  it('the draft only edits reels; the Cashier sells levels, relics, max HP, a heal and THE BIG ONE', () => {
+    const edits = new Set(['add', 'swap', 'clear', 'gild']);
+    for (let seed = 0; seed < 40; seed++) {
+      const run = createRun(base, seed, (['knight', 'tesla', 'joker', 'jukebox', 'midas'] as const)[seed % 5]);
+      run.pendingStart = null;
+      run.player.hp = Math.round(run.player.maxHp * 0.2);
+      for (let d = 0; d < 6; d++) {
+        run.depth = d;
+        const draft = draftOffers(run);
+        expect(draft.length).toBe(3);
+        for (const o of draft) expect(edits.has(o.kind)).toBe(true);
+        const shelf = shopOffers(run);
+        for (const i of shelf) expect(['symLevel', 'relic', 'maxHp', 'heal']).toContain(i.option.kind);
+        const big = shelf.filter((i) => i.showcase);
+        expect(big.length).toBe(1);
+        expect(big[0].option.kind === 'relic' && LEGENDARY.has(big[0].option.relic)).toBe(true);
+        expect(shelf.some((i) => i.option.kind === 'symLevel')).toBe(true);
+        expect(shelf.some((i) => i.option.kind === 'heal')).toBe(true);
       }
     }
   });
