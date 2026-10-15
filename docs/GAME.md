@@ -9,6 +9,39 @@ writing on your machine (slime, rocks, stolen cells, frozen reels, bombs...). Yo
 path to take through an act, which card to draft, what to buy at the Cashier, what to gamble at an encounter, and
 which Charms and relics to build.
 
+## The cut and the act 1 feel pass (user, 2026-10-15)
+The game had too many systems to feel like one game, so it was cut down (the user's picks from a cut list), then act 1
+was tuned for feel from two fresh-eyes playtests.
+- **Cut:** BONUS WHEEL and RELIC RUSH; the BIG CHOICES bonus round after bosses (10 became legendary relics, below);
+  24 relics (74 -> 50: 8 common, 26 uncommon, 17 legendary); RED OR BLACK, HIGHER OR LOWER, UNDER OR OVER; HOUSE EDGES
+  (ENDLESS keeps TONIGHT'S RULE; the daily gets a rule of the day); THE WEEKLY and CHALLENGES (and their titles and
+  achievements). Saves: anything cut is dropped or converted on load (a taken big choice becomes its relic).
+- **Big choices kept as legendary relics** (each keeps its trade-off; `LEGEND_RELIC` in `src/core/relics.ts`): SECOND
+  PAYLINE, DEVIL'S DUE, THE LONG GAME, QUICKENING (not KNIGHT), GLASS CANNON, CRUSADE (KNIGHT), CHAIN LIGHTNING (TESLA),
+  HIGH CARD (JOKER), HYPE MAN (JUKEBOX), OPEN BAR (BANKROLL).
+- **Levels:** no Charm levels; uncapped symbol levels, +6 a level; each boss pays your attack symbol one; STAR CHART.
+- **Balance after the cut** (the cuts took ~2 upgrades, a relic and a big choice a run): the boss level, KNIGHT 470 HP
+  with swords from level 2, TESLA 315, JOKER 335, JUKEBOX 395. Sim 800 runs, WHITE / RED / GREEN / BLACK / BLUE / GOLD
+  (targets 60 / 50 / 36 / 28 / 20 / 14): KNIGHT 66 / 53 / 29 / 22 / 13 / 7, TESLA 56 / 46 / 41 / 28 / 21 / 15, JUKEBOX
+  64 / 60 / 33 / 21 / 13 / 8, JOKER 53 / 49 / 42 / 32 / 25 / 16, BANKROLL 63 / 61 / 37 / 28 / 21 / 14. KNIGHT and
+  JUKEBOX are 6-8 under from GREEN up (KNIGHT's Dealer spread); see ROADMAP.
+- **Feel (act 1):**
+  - THE PAYOUT LADDER: a pay is sized by the HP bar it lands on. Under 30% it's a quick PAIR! / JACKPOT!; 30% is
+    BIG WIN! (cyan), 65% MEGA WIN! (pink), each with more confetti, hitstop and zoom. The enemy's read BIG HIT! /
+    HUGE HIT! (`LADDER` in `src/present/director.ts`).
+  - THE CLIMB: your pay builds on screen from the base, through the line (x3 JACKPOT) and each multiplier the engine
+    noted (x1.5 DRY, VOL +32%...), with a rising ding a step, then slams on the engine's exact total (`climbSteps`).
+  - Pace: an enemy turn that hits for under 8% of your max HP plays at double speed. Act 1-2 regulars and elites
+    start their ability two charges in, so it fires in 93-99% of act 1 fights (was 69-92%).
+  - Danger: under 30% HP the screen's edges breathe red (under FLASH_CAP), your HUD frame pulses red and a heartbeat
+    opens each enemy turn.
+  - JOKER: a WILD fills 40 of its 100 meter (was 20: in act 1 the payoff never showed).
+  - Fixes: no relic draft right after an elite's spoils; WALK AWAY leaves an encounter at once; TWENTY-ONE's hand
+    counter; FIGHT 1 (not FIGHT 1 OF ?) before the path pick; danger skulls from each enemy's sim kill rate; TURN YOUR
+    PHONE SIDEWAYS in portrait; the first tap on a phone counts (fullscreen resized the canvas mid-tap); the boss
+    heading says what the heal gave; the act 2 cowboy (read as a placeholder stick figure) is now neon cherries on a
+    bulb-lit board.
+
 ## A run
 - **An act is a map** (`generateActMap` in `src/core/enemies.ts`): a shared opener fight, then you **pick 1 of 3
   paths** of 5 stops each, then the paths rejoin at the Cashier and the boss. Every stop and enemy is shown up
@@ -20,23 +53,16 @@ which Charms and relics to build.
   it is stays secret until you arrive. Seeded by the stop, so a quit can't re-roll one. All are games now:
   - **Games:** buy-in cards (chips, HP, or a relic the house picks); a bigger buy-in buys more plays.
     Mostly chip prizes (~80%), sometimes HP, upgrades or a relic. Each game can pay its own kind of prize.
-  - **In the game now:** LUCKY SEVENS, a 5x3 machine on the fight machines' own reels and bezel. Pay 7 chips / 20% HP /
+  - **The five games (2026-10-15: RED OR BLACK, HIGHER OR LOWER and UNDER OR OVER are cut, three near-identical chip
+    coin flips; a saved one becomes LUCKY SEVENS):** LUCKY SEVENS, a 5x3 machine on the fight machines' own reels and bezel. Pay 7 chips / 20% HP /
     a relic for 3 / 6 / 10 pulls. One payline; it pays 3, 4 or 5 in a row from the left (WILD stands in): sevens and
     chips pay chips, the first-aid tin HP, the star an upgrade, the relic tile a relic. About 1 pull in 3 pays, about
     73% of the value is chips, the chip buy-in returns about its cost. Its own art: a heart, an upgrade gem, a 777
     marquee.
-  - RED OR BLACK: roulette. Set a chip bet (1 to 20, stepper), call RED or BLACK, watch the ball (the wheel is drawn in
-    code so the ball lands in the engine's pocket). Pays 1 to 1; the green zero is the house edge. Up to 3 spins a
-    visit, saved after each (a quit resumes at the table and can't replay a spin). Chips only.
-  - HIGHER OR LOWER: bet chips (1 to 15), a card is dealt, call the next one. Each right call grows the pot x1.35 (a
-    ladder shows it); a wrong call or a tie loses it; cash out any time after a right call, 5 right calls cash out
-    for you. Played sensibly it's about even. Chips only.
   - TWENTY-ONE: blackjack, hit or stand only (no double or split; the dealer stands on 17). A tie is a push
     (user, 2026-10-14): the bet comes back and the hand is dealt again, without using up one of the 3 (sim, 1000 runs: no change). A chip table (user, 2026-10-13: upgrades from cards felt wrong): bet up to 20, 3 hands a visit; a win
     pays 1 to 1, a two-card 21 pays 2 to 1. Cards drawn in code; the hand in play is saved with the run (sim: run win
     -1 to 0).
-  - UNDER OR OVER: dice. Bet chips, call UNDER 7 / SEVEN / OVER 7. Under/over pay 1 to 1 (a seven gives the bet
-    back: about even); SEVEN pays 4 to 1 (the long shot, with the house edge). Up to 3 rolls a visit. Chips only.
   - RAT RACE (user's pick, 2026-10-14): bet chips (1 to 15) on one of four rats, odds on each (WHISKERS X2, CHEDDAR X3,
     SEWER KING X5, LONGSHOT LOU X10; about a 10% edge in the odds), and watch them run. Two races a visit.
   - SCRATCH-OFF: a ticket costs 6 chips; scratch 3 of its 9 panels (you pick which). Three of a kind wins: 12 or 25
@@ -55,14 +81,14 @@ which Charms and relics to build.
 - **THE REPO MAN** is a regular in acts 1-2 (he takes a Charm for his fight; it comes back after).
 - **After every win:** no heal (user, 2026-10-12: HP carries from fight to fight, so survivability and VAMP matter;
   the act's boss heals you fully). Then a **draft** (pick 1 of 3 cards:
-  add, swap or remove symbols, Charms, Charm levels, heals). The drafts after an act's 2nd and 4th won fights offer
-  relics.
+  add, swap or remove symbols, Charms, symbol levels, heals). The drafts after an act's 2nd and 4th won fights offer
+  relics, unless that fight was an elite (its spoils were a relic pick already: 2026-10-15).
 - **The Cashier** is a stop: on some paths, and always right before the boss (plus a visit when a new act opens).
   Chips buy Charms, relics, wilds, removals, a heal (12 chips, once a visit) and levels; rerolls cost 1, then 2, 3 and so on. Chips come from
   wins, elites, jackpots and interest (+1 per 5 banked, capped at 3).
-- **After a boss:** a legendary relic pick (1 of 3), then **big choices** (3 cards from pools: one with a real
-  cost, one for your Slot Machine, one free).
-- **BONUS WHEEL and RELIC RUSH:** rare bonus symbols drop a voucher mid-fight. It pays out only if you win that fight.
+- **After a boss:** your attack symbol goes up a level (two with STAR CHART: "SWORDS LEVEL UP: LV3" on the next
+  screen), then a legendary relic pick (1 of 3). (The BIG CHOICES bonus round and BONUS WHEEL / RELIC RUSH are cut:
+  see THE CUT below.)
 
 ## Acts and bosses
 | Act | Boss | Mechanic | State |
@@ -71,13 +97,14 @@ which Charms and relics to build.
 | 2 | THE WHEEL | Places bet chips on your reels. Your pairs sweep them. At NO MORE BETS, every chip left hits for a share of your max HP. Spins faster at half HP | Rework in progress, untuned |
 | 3 | THE DEALER | Three hands, each with its own HP bar (27/31/42% of its HP). 1 THE DEAL: every 3 turns a BUST (your best reel's payline pays nothing next spin). 2 RAISE: its hits x1.5, still BUSTs. 3 ALL IN: every 2 turns, 25-40% of your max HP through shields | Reworked 2026-10-12; spread by machine is still wide (see ROADMAP) |
 
-Act 3 is played at stake GREEN and up, and always in daily and weekly runs. **ENDLESS** comes after the Dealer:
+Act 3 is played at stake GREEN and up, and always in THE DAILY RUN. **ENDLESS** comes after the Dealer:
 KEEP PLAYING goes on into loops until you bust (user, 2026-10-14: no RIDE AGAIN / CASH OUT); your score is the pot
 (x1.5 + 1500 a loop cleared) plus your chips x10. Sim (GREEN, the bot never stopping, before THE OWNER): loops cleared median 4.
 **TONIGHT'S RULE** (user, 2026-10-14): each loop deals two different rules, one per path (user: the rule is part of the
 route choice; the loop's opener plays without one), for both machines, never last loop's (`NIGHTS` in `src/core/run.ts`): HAPPY HOUR (jackpots pay x2), HIGH LIMIT (wins pay x2 chips, enemies +15% HP),
 LUCKY NIGHT (2 more wilds a reel), SHOWDOWN (every hit x1.5), IRON NIGHT (shields block x2), FAST NIGHT (abilities 1
-turn faster, meters fill x1.5). Shown on the HOUSE EDGE screen, the path pick, the side panel and the fight label.
+turn faster, meters fill x1.5). Shown on the path pick, the side panel and the fight label. TONIGHT'S RULE is ENDLESS's
+only twist now (HOUSE EDGES are cut, 2026-10-15); THE DAILY RUN plays all run under a rule of the day (any but HIGH LIMIT).
 Sim GREEN: loops cleared median 4 -> 5.
 **THE OWNER, the TURBO boss** (user, 2026-10-14: a new boss, insanely hard; then: make him a fight, not a wall): loop
 5's boss, the man who owns the casino (`OWNER`, `OWNER_RULES`, `TURBO` in `src/core/enemies.ts`; his office in the room's
@@ -122,7 +149,7 @@ so that isn't happening in practice (see ROADMAP).
 Each machine except KNIGHT has one signature symbol and a meter.
 | Machine | Hero | Attack symbol | Meter | Unlock |
 |---|---|---|---|---|
-| KNIGHT | SIR REGINALD | sword | none: half swords, half shields; swords start at level 3; its levels go to 4, not 3 (430 HP) | start |
+| KNIGHT | SIR REGINALD | sword | none: half swords, half shields, both from level 2 (470 HP) | start |
 | TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields | reach the House |
 | JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat the House |
 | JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat the House with wilds |
@@ -133,8 +160,12 @@ the JUKEBOX; a saved BRIAR run or hiscore entry is dropped on load.
 Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
 
 ## Charms and relics
-- **Charms live on cells.** Levels live on the Charm TYPE (cap 3; endless +1; the LIMIT BREAK big choice goes to 5).
-  Pay = BASE × MULT, and gold Charms in a group ADD. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
+- **Charms live on cells** and have **no levels** (user, 2026-10-15): each has one value (GOLDEN TICKET: one step
+  stronger). Pay = BASE × MULT, and gold Charms in a group ADD.
+- **Symbol levels live on the symbol TYPE, with no cap** (user, 2026-10-15: like Balatro's planets): a symbol is worth
+  10 + 6 a level above 1 (`SYM` in `src/core/charms.ts`). Hard to stack: a level card is a sometimes draft card (35% of
+  normal drafts), the Cashier's level costs 12 + 4 a level gained this run, and each act boss pays your attack symbol
+  one. STAR CHART (uncommon relic) doubles every level you gain. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
   machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER), ECHO (JUKEBOX) and BULWARK (`spiked`, KNIGHT).
   `src/core/charms.ts`.
 - **ENDLESS playtest fixes (2026-10-14):** a side at 0 HP can't be healed (a storm's heals on the enemy's turn revived
@@ -311,7 +342,7 @@ JOKER); JOKER 380 -> 360 HP, BANKROLL 330 -> 290 HP (both rose 6-12 on GREEN onc
 ## The run score (user, 2026-10-14)
 Every run, ENDLESS or not, scores the same way (`SCORE`, `scoreParts`, `runScoreOf` in `src/core/run.ts`):
 100 a fight won, 300 an elite, 1,000 a boss (act and loop bosses), 2 a chip EARNED (fights and encounters; spending never
-costs score), 100 a level gained (symbols above their start, Charm levels past 1), 100 a relic (250 a legendary), 25 a
+costs score), 100 a level gained (your symbols above their start), 100 a relic (250 a legendary), 25 a
 Charm on your reels, 1,000 for each of THE OWNER's 11 HP you take and 10,000 for beating him, 2,000 for clearing the run
 (the daily adds HP left on a win); all x(1 + 0.5 a stake). The path screen shows the score so far, a cleared loop says
 LOOP N CLEARED! SCORE X, and the run-over screen shows it with its biggest parts. Entries saved before it keep the old
@@ -320,7 +351,8 @@ BANKROLL 17.6K; ENDLESS riders 33-54K. Share of all points: bosses 28%, relics 1
 levels 7%, chips earned 7%, Charms 5%, THE OWNER 4%. (The pot and chips x10 are gone.)
 
 ## Modes and meta
-- **Modes:** the normal run, DAILY, WEEKLY and ENDLESS.
+- **Modes:** the normal run, THE DAILY RUN and ENDLESS (THE WEEKLY and CHALLENGES are cut, 2026-10-15; old hiscore
+  entries keep their tags).
 - **Meta:** CONTINUE (saves between fights), unlocks, achievements, collection, hiscores, and online leaderboards
   (Supabase: `src/net`, `supabase/schema.sql`; Steam leaderboards replace them at the Steam launch).
 - **Saves:** localStorage keys `slotvslot.prefs.v2` and `slotvslot.profile.v1`. **Never rename them.** Saves are cleaned on load.
@@ -328,7 +360,7 @@ levels 7%, chips earned 7%, Charms 5%, THE OWNER 4%. (The pot and chips x10 are 
 
 ## Code map
 - `src/core`: the pure, deterministic rules engine (seeded RNG). `fight.ts` (`Fight.step()` emits ordered
-  `CombatEvent`s), `run.ts` (run state, drafts, shop, big choices, boss sizing), `enemies.ts` (roster, map, HP curves, TUNE knobs).
+  `CombatEvent`s), `run.ts` (run state, drafts, shop, levels, boss sizing), `enemies.ts` (roster, map, HP curves, TUNE knobs).
 - `src/present`: the Director plays the events back with the juice (see `JUICE.md`).
 - `src/ui`: menus and run screens. `src/render`: sprite data and the pixel font. `src/audio`: the synth, SFX and code-composed music.
 - `src/sim` + `tools/sim`: the sim bot (`bot.ts`), the run player (`play.ts`) and the sim (`tools/sim/balance.ts`, see Balance).

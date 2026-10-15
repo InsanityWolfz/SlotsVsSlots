@@ -2,23 +2,26 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-15):** nothing mid-task. The user's ENDLESS calls are in (see GAME.md).
+**In progress (2026-10-15):** the cut and the act 1 feel pass are in (GAME.md "The cut and the act 1 feel pass"); a
+second feel playtest is checking them. Next: its findings, then the HOLD experiment (below).
 
 ## Now, in order
-1. **Play the new build.** Playtest C's bugs are fixed (see GAME.md). The level card's "18 -> 25 DAMAGE" stays
-   (user: fine) and PAUSE is fights-only (user: fine). Left open: HOUSE EDGE cost lines stay all red (no keyword colours); the
-   Dealer's front card shows its total HP (13K) though the fight has three bars; X1.1 BLACK / X1.5 RAISE notes show
-   only in the LOG; on the ALL IN turn the Dealer's payline numbers still show.
-2. **Balance left over** (sim, 1000 runs): WHITE KNIGHT 66, JUKEBOX 68 (target 60, a little easy); GREEN TESLA 42,
-   JOKER 44 (target 36: weak early, strong late, accepted for now). WHITE 57-59 and GREEN 34-41 for the rest.
+1. **The user plays the cut build** and decides cut list #8: the draft after every win vs the Cashier as the one
+   build moment (held until the playtests were in).
+2. **A play intervention, to try (user, 2026-10-15: "more symbols, a mechanics change, or some kind of play
+   intervention: experiment"):** HOLD, the fruit-machine classic. Between your spins, tap a reel to hold it for the next
+   spin (2 HOLDs a fight). Agency between spins, never during one; a near-miss becomes a decision. It breaks the
+   watch-only rule, so it's the user's call: prototype behind a setting, measure with a bot hold policy.
+3. **Balance left over** (sim, 800 runs): KNIGHT and JUKEBOX 6-8 under target from GREEN up (KNIGHT's Dealer spread);
+   KNIGHT WHITE 66 (target 60), JOKER WHITE 53, RED JUKEBOX 60 / BANKROLL 61 (target 50).
+4. **Encounters that touch your machine** (first feel playtest): prizes and costs as reel edits, Charms or curses, not
+   only chips.
 
 ## Open design questions
 - **ENDLESS, left from the playtests:** JUKEBOX's ENDLESS sustain (reach THE OWNER 40% with WARM-UP vs KNIGHT 51%,
-  JOKER 61%, TESLA and BANKROLL 84%: it dies to attrition and the loop 1 HOUSE, see GAME.md VETERAN and WARM-UP). Small UI: callouts over the HP rows, GOLDEN
-  TICKET level cards, the HOUSE EDGE screen doesn't list held edges, phone-size RAT RACE / SCRATCH-OFF, LUCKY SEVENS'
-  off-line rows.
+  JOKER 61%, TESLA and BANKROLL 84%: it dies to attrition and the loop 1 HOUSE, see GAME.md VETERAN and WARM-UP). Small UI: callouts over the HP rows, phone-size RAT
+  RACE / SCRATCH-OFF, LUCKY SEVENS' off-line rows.
 - ALL IN is shown in three places (banner, table panel, the line under its machine).
-- LUCKY BREAK is a free pick next to cards with costs.
 - **Keywords, next:** use the same words across all texts (the 2026-10-07 audit at `c2f0ffb`
   `loop/KEYWORDS_DRAFT.md` lists the mismatches: DAMAGE vs HIT, SPIN vs TURN...); tap-a-word on phone.
 
