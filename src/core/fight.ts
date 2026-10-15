@@ -2525,7 +2525,8 @@ export class Fight {
     this.pot -= taken;
     const amount = unitsUp(taken * (this.cfg.enemy.dmgMul ?? 1) * (this.cfg.enemy.endless ? ENDLESS.housePot : 1));
     // MIDAS's rival: the House skims his chips too (2 per cash-out).
-    if (foe.side === 'player' && this.meter?.kind === 'vault') {
+    // (Not in THE SCORE RACE: there it cut BANKROLL's whole score engine, and the House race went 52%.)
+    if (foe.side === 'player' && this.meter?.kind === 'vault' && !this.cfg.race) {
       const took = Math.min(MIDAS.houseSkim, (this.cfg.player.chipsHeld ?? 0) + this.midasChips);
       if (took > 0) {
         this.midasChips -= took;

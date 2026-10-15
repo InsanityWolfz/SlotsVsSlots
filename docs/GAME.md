@@ -375,12 +375,14 @@ tray), `drawScoreboard`, `useTool`.
   RESPIN in the tray under your machine, then a reel (NUDGE steps it down one cell, the symbol above drops onto the
   payline; RESPIN spins it again). PAY scores it. The race always waits for you (AUTO doesn't play races).
 - **Shields** block the next sabotage on your reels (a symbol's or an ability's: BLOCKED!), then they're spent.
-- **The enemy's score:** its pay x 1.6 x (its HP / 200)^0.65 (THE HOUSE x1.3, the run's first race x0.7): honest HP.
+- **The enemy's score:** its pay x 1.75 x (its HP / 200)^0.65 (THE HOUSE x1.4, the run's first race x0.7): honest HP.
+- **Machines are balanced on their own** (no HP in a race): their payline pays x `RACE.machineMul` (KNIGHT 1.05, TESLA
+  1.15, JUKEBOX 1, JOKER 1.4, BANKROLL 1.8). THE HOUSE no longer skims BANKROLL's chips in a race.
 - **The HUD:** a scoreboard between the machines (both scores, YOU LEAD BY / BEHIND BY, a pip per spin each), score
   bars on the HUDs, the rules under the VS, a RACE WON / RACE LOST banner with the final score.
-- **Sim** (`tools/out/race.ts`, 300 runs, the bot holding pairs, nudging when it pays more, respinning a pair's odd
-  reel): act 1 cleared KNIGHT 56%, TESLA 44, JUKEBOX 55, JOKER 28, BANKROLL 28; races won 85-97%, elites 64-86%, THE
-  HOUSE 61-90%. Step 4 tunes it (JOKER and BANKROLL are weakest).
+- **Sim** (`tools/out/race.ts`, 500 runs, the bot holding pairs, nudging when it pays more, respinning a pair's odd
+  reel, buying tools): act 1 cleared KNIGHT 42%, TESLA 40, JUKEBOX 40, JOKER 32, BANKROLL 37; races won 86-94%, elites
+  72-83%, THE HOUSE 72-79% (BANKROLL 55%), the first race 92-98% (targets 85 / 75 / 70 / 90).
 - **Act 1 enemies race their own way** (`RACE_RULES` in fight.ts; their cards say so, `RACE_BLURB` in runScreens):
   SLIME (slimed cells score nothing), FROST (a frozen reel of yours scores half), GOLEM (each of its spins scores 10 x
   its multiplier per rock on your reels), GREMLIN (a jammed reel scores nothing), THIEF (its ability steals 25% of your

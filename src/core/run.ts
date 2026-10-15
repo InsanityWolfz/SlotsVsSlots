@@ -203,7 +203,11 @@ export interface FightRecord {
  * (elites and bosses more), you first and the enemy last, its pay x enemyMul; the higher score wins and one lost race
  * ends the run (user: no lives). Spin tools a race (user: 3 HOLDs, 2 NUDGEs, 1 RESPIN). PLAY MODES > SCORE RACE (TEST).
  */
-export const RACE = { spins: { fight: 5, elite: 6, boss: 7 }, enemyMul: 1.6, refHp: 200, hpExp: 0.65, bossMul: 1.3, openerMul: 0.7, golemPerRock: UNIT, holds: 3, nudges: 2, respins: 1, bandageShield: 3 * UNIT, toolPrice: { hold: 8, nudge: 10, respin: 12 } };
+export const RACE = { spins: { fight: 5, elite: 6, boss: 7 }, enemyMul: 1.75, refHp: 200, hpExp: 0.65, bossMul: 1.4, openerMul: 0.7, golemPerRock: UNIT, holds: 3, nudges: 2, respins: 1, bandageShield: 3 * UNIT, toolPrice: { hold: 8, nudge: 10, respin: 12 },
+  /** Each machine's race pay (its payline pay x this): machines are balanced on their own, never the enemies. */
+  // (Race act 1 balance, 2026-10-15, 500 runs: act 1 cleared 32-42% on every machine.)
+  machineMul: { knight: 1.05, tesla: 1.15, jukebox: 1, joker: 1.4, midas: 1.8 } as Record<CabinetId, number>,
+};
 
 export interface RunState {
   seed: number;
@@ -770,6 +774,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     cfg.player.nudges = RACE.nudges + (run.raceTools?.nudge ?? 0);
     cfg.player.respins = RACE.respins + (run.raceTools?.respin ?? 0) + (has('parachute') ? 1 : 0);
     if (has('bandage')) cfg.player.startShield = RACE.bandageShield;
+    const mul = RACE.machineMul[run.cabinet] ?? 1;
+    if (mul !== 1) cfg.player.payMul = (cfg.player.payMul ?? 1) * mul;
   }
   return cfg;
 }
