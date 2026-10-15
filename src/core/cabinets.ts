@@ -75,15 +75,15 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'KNIGHT',
     sprite: 'cabinetKnight',
     blurb: 'THE DEPENDABLE ONE',
-    hp: 43 * UNIT,
-    // FORGED STEEL: half swords, half shields; swords start at level 3, shields at 2 (2026-10-12: honest HP).
+    hp: 47 * UNIT,
+    // FORGED STEEL: half swords, half shields, both from level 2 (2026-10-15: levels have no cap; 470 HP).
     strips: r3({ sword: 6, shield: 6 }),
     gilded: [],
     meter: null,
     symbols: ['sword', 'shield'],
     attack: 'sword',
-    levels: { sym: { sword: 3, shield: 2 }, charm: {} },
-    rule: 'HALF SWORDS, HALF SHIELDS. SWORDS START AT LEVEL 3. NO METER. 430 HP.',
+    levels: { sym: { sword: 2, shield: 2 }, charm: {} },
+    rule: 'HALF SWORDS, HALF SHIELDS. NO METER. 470 HP.',
     unlock: '',
   },
   midas: {
@@ -113,7 +113,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'TESLA',
     sprite: 'cabinetTesla',
     blurb: 'IT HUMS WHEN YOU LOOK AT IT',
-    hp: 33 * UNIT,
+    hp: 31.5 * UNIT,
     // No swords (2026-10-07): bolts are TESLA's weapon, and their damage is the lightning.
     strips: r3({ shield: 6, bolt: 6 }),
     gilded: [{ reel: 0, symbol: 'bolt', enh: 'charged', n: 4 }],
@@ -121,7 +121,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: UNIT / 2 },
     symbols: ['bolt', 'shield'],
     attack: 'bolt',
-    rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE, PIERCES SHIELDS, HEALS 5. 330 HP.',
+    rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE, PIERCES SHIELDS, HEALS 5. 315 HP.',
     unlock: 'REACH THE HOUSE',
     // 40 (2026-10-12): LIGHTNING ROD is gone (97% of TESLA runs took it; it set the cost to 40 and hit 90).
     specialCost: 4 * UNIT,
@@ -136,7 +136,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     sprite: 'cabinetJoker',
     blurb: 'NOTHING IS WHAT IT SEEMS',
     // 2026-10-12 (user): 380 HP and its jackpot payoff no longer heals (its healing grew with its WILDS: GREEN 53).
-    hp: 36 * UNIT,
+    hp: 33.5 * UNIT,
     // Cards, not swords (2026-10-07): JAX throws playing cards. They hit like swords.
     strips: r3({ ace: 5, shield: 5, wild: 2 }),
     gilded: [],
@@ -144,7 +144,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 0, perWild: 4 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
-    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 360 HP.',
+    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 335 HP.',
     unlock: 'BEAT THE HOUSE WITH WILDS',
     jokerWilds: true,
   },
@@ -155,14 +155,14 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'JUKEBOX',
     sprite: 'cabinetJukebox',
     blurb: 'TURN IT UP',
-    hp: 38 * UNIT,
+    hp: 39.5 * UNIT,
     // Replaces BRIAR (user, 2026-10-08): notes and shields. NOTES turn up the volume; at the max the beat drops.
     strips: r3({ note: 6, shield: 6 }),
     gilded: [],
     meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 2 * UNIT },
     symbols: ['note', 'shield'],
     attack: 'note',
-    rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: NOTES HIT, YOU HEAL 20. 380 HP.',
+    rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: NOTES HIT, YOU HEAL 20. 395 HP.',
     unlock: 'BEAT THE HOUSE',
   },
 };

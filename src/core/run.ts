@@ -61,6 +61,8 @@ export const RUN = {
   charmCellsShop: 3,
   /** Chance a draft's first card is a LEVEL card (when one can be offered). */
   levelCardChance: 0.35,
+  /** Levels an act boss (and a loop boss) pays your attack symbol. */
+  bossLevels: 1,
   /** The Cashier opens after these fights (1-based), after the draft. */
   shopAfter: [1, 3, 5],
   /** Legendary relics offered when an act's boss falls. */
@@ -165,6 +167,8 @@ export interface FightRecord {
   boss?: boolean;
   /** An elite (the run score counts them).*/
   elite?: boolean;
+  /** A boss paid this symbol a level (shown on the next screen). */
+  bossLevel?: SymbolId;
   /** DEATH RECAP (lost fights): the top sources of HP damage you took, e.g. [['SPIN HITS', 180], ['BOMBS', 60]]. */
   hurt?: [string, number][];
   /** Your spins this fight that had a frozen or jammed reel, of all your spins. */
@@ -1012,6 +1016,13 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   run.depth++;
   run.stop++;
   if (beaten.isBoss) {
+    // A BOSS PAYS A PLANET (2026-10-15): your attack symbol goes up a level (two with STAR CHART). Uncapped levels are
+    // the run's long scaling now, and every act's boss is a step up it.
+    if (!beaten.turbo && RUN.bossLevels > 0) {
+      const atk = CABINETS[run.cabinet].attack;
+      run.player.levels.sym[atk] = symLevel(run.player.levels, atk) + RUN.bossLevels * levelStep(run);
+      record.bossLevel = atk;
+    }
     if (run.endless && beaten.turbo) {
       // THE OWNER falls: the run is over, and won (the pot pays TURBO.potMul times).
       run.endless.pot = nextPot(run.endless.pot) * TURBO.potMul;

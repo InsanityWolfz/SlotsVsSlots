@@ -102,8 +102,8 @@ describe('charm and level cards', () => {
     expect(levelOptions(run).some((o) => o.kind === 'charmLevel')).toBe(false);
     run.player.levels.sym.sword = 9;
     expect(levelOptions(run).some((o) => o.kind === 'symLevel' && o.symbol === 'sword')).toBe(true);
-    // Levels gained over the start (KNIGHT: swords 3, shields 2).
-    expect(levelsGained(run)).toBe(6);
+    // Levels gained over the start (KNIGHT: swords and shields from 2).
+    expect(levelsGained(run)).toBe(7);
     applyOption(run, { kind: 'symLevel', symbol: 'sword' });
     expect(run.player.levels.sym.sword).toBe(10);
     run.player.relics.push('starchart');

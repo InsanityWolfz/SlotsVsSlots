@@ -1,7 +1,7 @@
 import type { Sounds } from '../audio/sounds';
 import type { MetaGain } from '../core/profile';
 import { levelOf } from '../core/meta';
-import { defaultConfig, UNIT, unitsRound, type Enh, type SymbolId } from '../core/config';
+import { defaultConfig, symLabel, UNIT, unitsRound, type Enh, type SymbolId } from '../core/config';
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
@@ -1431,7 +1431,10 @@ export class RunScreens {
       // VETERAN (KNIGHT) and WARM-UP (JUKEBOX) grow with each loop cleared: say so where the loop ends.
       const L = this.run!.endless?.loop ?? 0;
       const grow = !loopDone ? '' : this.run!.cabinet === 'knight' ? `  -  VETERAN: SWORDS AND SHIELDS X${1 + LOOP_GROWTH.veteran * (L - 1)}` : this.run!.cabinet === 'jukebox' ? `  -  WARM-UP: FIGHTS START AT VOLUME ${Math.min(VOLUME.max - 1, LOOP_GROWTH.warmUp * L)}` : '';
+      // A boss pays a level to your attack symbol: say so, in gold.
+      const planet = last.bossLevel ? `${symLabel(last.bossLevel)}S LEVEL UP: LV${symLevel(this.run!.player.levels, last.bossLevel)}` : '';
       drawText(ctx, `${rounds(last.turns)}${chips}${rocks}${grow}`, CX, 60, 2, COLORS.textDim);
+      if (planet) drawText(ctx, planet, CX, 84, 2.5, COLORS.goldLight);
     }
     this.drawMap(ctx, 158, time);
     const spoils = this.draftKind === 'spoils';
