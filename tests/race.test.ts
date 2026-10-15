@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3 } from '../src/core/config';
-import { Fight } from '../src/core/fight';
+import { Fight, RACE_RULES } from '../src/core/fight';
 import { createRun, fightConfig, finishFight, RACE } from '../src/core/run';
 
 const race = (enemy: Parameters<typeof reels3>[0], ability?: { kind: 'blizzard'; every: number; power: number }, spins = 3) => {
@@ -73,5 +73,30 @@ describe('THE SCORE RACE (sandbox)', () => {
     expect(spin && spin.type === 'spin' ? spin.held : undefined).toEqual([true, true, true]);
     expect(f.landed).toBeNull();
     expect([f.nudgesLeft, f.respinsLeft]).toEqual([1, 0]);
+  });
+  it('THE THIEF steals a share of your score; THE BRUTE scores big; a shield blocks either', () => {
+    const thief = race({ shield: 12 }, { kind: 'pilfer', every: 1, power: 1 } as never);
+    thief.step();
+    const before = thief.raceScore.player;
+    expect(before).toBeGreaterThan(0);
+    thief.sides.player.shield = 0;
+    const ev = thief.step().events;
+    expect(ev.some((e) => e.type === 'raceScore' && e.side === 'player' && e.amount < 0)).toBe(true);
+    expect(thief.raceScore.player).toBe(before - Math.round(before * RACE_RULES.thiefShare));
+    const brute = race({ shield: 12 }, { kind: 'smash', every: 1, power: 40 } as never);
+    brute.step();
+    brute.sides.player.shield = 10;
+    expect(brute.step().events.some((e) => e.type === 'sabotageBlocked')).toBe(true);
+    expect(brute.raceScore.enemy).toBe(0);
+  });
+  it('a frozen reel of yours scores half', () => {
+    const f = race({ shield: 12 });
+    const g = race({ shield: 12 });
+    g.sides.player.frozen[0] = 5;
+    const a = f.step().events.find((e) => e.type === 'spin')!;
+    const b = g.step().events.find((e) => e.type === 'spin')!;
+    if (a.type !== 'spin' || b.type !== 'spin') throw new Error('no spin');
+    const total = (s: typeof a.score) => s.groups.reduce((x, y) => x + y.amount, 0);
+    expect(total(b.score)).toBeLessThan(total(a.score));
   });
 });

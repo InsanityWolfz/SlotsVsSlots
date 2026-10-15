@@ -44,7 +44,7 @@ import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import { effectiveAbility, STAKE, STAKES, stakeOf } from '../core/stakes';
 import type { RelicId } from '../core/config';
 import { LOOP_GROWTH } from '../core/enemies';
-import { VOLUME } from '../core/fight';
+import { RACE_RULES, VOLUME } from '../core/fight';
 import { Clock } from '../present/clock';
 import { backOut, sineOut } from '../present/ease';
 import { ABILITY_UI } from '../present/hud';
@@ -253,6 +253,17 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
   const p = (run ? scaledAbility(run, e.ability, true) : e.ability)?.power ?? e.ability.power;
   // THE WHEEL: what one chip left on your reels hits for at NO MORE BETS (as the fight does it).
   const per = run ? Math.max(UNIT, unitsRound(run.player.maxHp * wheelChipShare(run.cabinet))) : 0;
+  // THE SCORE RACE: what an act 1 ability does in a race (fight.ts RACE_RULES).
+  if (run?.race) {
+    const race: Record<string, string> = {
+      smash: `SCORES ${fmtNum(p * RACE_RULES.smashMul)}. A SHIELD BLOCKS IT`,
+      blizzard: `FREEZES A REEL: IT SCORES HALF`,
+      pilfer: `STEALS ${Math.round(RACE_RULES.thiefShare * 100)}% OF YOUR SCORE`,
+      quake: `ADDS ${p} ROCKS. EACH ROCK SCORES FOR IT`,
+      jackpot: 'CASHES ITS POT INTO ITS SCORE. ITS LAST SPIN CASHES IT ALL',
+    };
+    if (race[e.ability.kind]) return race[e.ability.kind];
+  }
   const what: Record<string, string> = {
     flood: `SLIMES ${p} OF YOUR SYMBOLS`,
     smash: `HITS FOR ${p}`,
@@ -294,6 +305,17 @@ const STAGE_TINT: Record<string, string> = {
   brute: '#ff9a3a', gremlin: '#ff9a3a', bomber: '#ff9a3a', vampire: '#ff6a5a', house: '#ff6a5a', pitboss: '#ff6a5a',
   dealer: '#ff6a5a', owner: '#ffd23f', wheel: '#ff3a2e', croupier: '#ffd23f', sharp: '#ffd23f', counterfeiter: '#ffd23f', mimic: '#ffd23f',
 };
+/** THE SCORE RACE: an act 1 enemy's one line, as it races. */
+const RACE_BLURB: Record<string, string> = {
+  slime: 'SLIMED CELLS SCORE NOTHING',
+  frost: 'FROZEN REELS SCORE HALF',
+  golem: 'SCORES OFF YOUR ROCKS',
+  gremlin: 'JAMMED REELS SCORE NOTHING',
+  thief: 'STEALS YOUR SCORE',
+  brute: 'ONE HUGE SPIN',
+  house: 'THE POT IS ITS SCORE',
+};
+
 /** A shorter line for the front when a boss's blurb won't fit on one line (the full blurb is on the back). */
 const FRONT_BLURB: Record<string, string> = { dealer: 'THE HOUSE HAS A PARTNER' };
 
@@ -1700,11 +1722,16 @@ export class RunScreens {
     // Right column: one-line blurb, the HP bar, then the ability with its cadence.
     const tx = fork ? 124 : 148;
     const room = w - tx - 16;
-    const blurb = FRONT_BLURB[e.boss ?? ''] ?? e.blurb;
+    const blurb = (run.race ? RACE_BLURB[e.archetype] : undefined) ?? FRONT_BLURB[e.boss ?? ''] ?? e.blurb;
     const blurbScale = blurb.length * 12 <= room ? 2 : blurb.length * 9 <= room ? 1.5 : 0;
     if (blurbScale) drawText(ctx, blurb, tx, 62, blurbScale, COLORS.textDim, { align: 'left' });
     const hp = enemyHp(run, e);
     const bw = fork ? Math.min(200, room - 24) : 280;
+    // THE SCORE RACE: no HP: the race's length instead.
+    if (run.race) {
+      const spins = e.isBoss ? SCORE_RACE.spins.boss : e.elite ? SCORE_RACE.spins.elite : SCORE_RACE.spins.fight;
+      drawText(ctx, `A RACE OF ${spins} SPINS`, tx, 96, 2, COLORS.goldLight, { align: 'left' });
+    } else {
     drawSprite(ctx, 'heart', tx + 8, 96, 2);
     const bx = tx + 24;
     ctx.fillStyle = COLORS.outline;
@@ -1716,6 +1743,7 @@ export class RunScreens {
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.fillRect(bx, 103, bw, 3);
     drawText(ctx, fmtNum(hp), bx + bw / 2, 96, 2, COLORS.text);
+    }
     if (e.ability) {
       const every = effectiveAbility(nightId(run) === 'fast' ? { ...e.ability, every: Math.max(2, e.ability.every - 1) } : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
       const ui = ABILITY_UI[e.ability.kind];

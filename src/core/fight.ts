@@ -93,6 +93,11 @@ export const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', '
 /** HOLY WATER washes off these writes (not coins, drains or the Mimic's hit) and these abilities. */
 const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'bomb', 'hex', 'card', 'gavel', 'rake', 'fake', 'ball']);
 const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel', 'ball']);
+/**
+ * THE SCORE RACE's enemy rules (race act 1, user 2026-10-15): a frozen reel of yours scores at frozenPay; THE THIEF's
+ * ability steals thiefShare of your score; THE BRUTE's SMASH scores smashMul x its hit. A shield blocks any of these.
+ */
+export const RACE_RULES = { frozenPay: 0.5, thiefShare: 0.25, smashMul: 3 };
 const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
 const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'goldbar', 'note']);
@@ -668,6 +673,9 @@ export class Fight {
       this.dropNow = me.armed;
     }
     const score = this.score(me, line);
+    // THE SCORE RACE: a frozen reel of yours scores at half (FROST's bite now that nobody loses HP).
+    if (this.cfg.race && side === 'player')
+      for (const g of score.groups) if (g.amount > 0 && g.reels.some((r) => frozen[r])) g.amount = Math.round(g.amount * RACE_RULES.frozenPay);
     // THE DROP: every note you can see (the payline's too) lights up before the note group hits once.
     let drop: { cells: { reel: number; row: number; v?: number; wild?: true }[]; amount: number } | null = null;
     if (side === 'player' && this.dropNow && this.dropOff) {
@@ -828,8 +836,32 @@ export class Fight {
     return { turn: this.turn, side, events };
   }
 
+  /** THE SCORE RACE: THE THIEF takes a share of your score into its own. */
+  private raceSteal(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
+    const n = Math.round(this.raceScore[foe.side] * RACE_RULES.thiefShare);
+    if (n <= 0) return this.fizzle(me, 'claw', [], events);
+    this.raceScore[foe.side] -= n;
+    events.push({ type: 'raceScore', side: foe.side, amount: -n, total: this.raceScore[foe.side] });
+    this.raceScore[me.side] += n;
+    this.turnScore[me.side] += n;
+  }
+
   /** THE SCORE RACE: report the turn's score; after the enemy's last spin, the higher score wins (a tie is yours). */
   private raceTurnEnd(side: SideId, events: CombatEvent[]): void {
+    // GOLEM: every rock on your reels scores for it, each of its spins.
+    if (side === 'enemy' && this.cfg.race?.perRock) {
+      const rocks = this.sides.player.reels.reduce((a, r) => a + r.cells.filter((c) => c.symbol === 'rock').length, 0);
+      const n = Math.round(rocks * this.cfg.race.perRock * this.cfg.race.enemyMul);
+      this.raceScore.enemy += n;
+      this.turnScore.enemy += n;
+    }
+    // THE HOUSE: its last spin cashes the whole pot into its score.
+    if (side === 'enemy' && this.isBoss && this.raceLeft <= 0 && this.pot > 0 && !this.over) {
+      const taken = this.pot;
+      this.pot = 0;
+      const h = this.damage(this.sides.player, taken, true);
+      events.push({ type: 'potWin', from: 'enemy', to: 'player', amount: taken, ...h, potLeft: 0 });
+    }
     for (const s of ['player', 'enemy'] as SideId[]) {
       if (this.turnScore[s] > 0) events.push({ type: 'raceScore', side: s, amount: this.turnScore[s], total: this.raceScore[s] });
       this.turnScore[s] = 0;
@@ -2323,8 +2355,8 @@ export class Fight {
       events.push({ type: 'relic', side: 'player', relic: 'holywater' });
       return;
     }
-    // THE SCORE RACE: a shield you're holding blocks the enemy's ability too, and is spent.
-    if (this.cfg.race && foe.side === 'player' && foe.shield > 0) {
+    // THE SCORE RACE: a shield you're holding blocks the enemy's sabotage too (not THE HOUSE's cash-out), and is spent.
+    if (this.cfg.race && foe.side === 'player' && foe.shield > 0 && (WRITER_ABILITIES.has(ab.kind) || ab.kind === 'smash')) {
       events.push({ type: 'sabotageBlocked', side: 'player', kind: ab.kind, shield: foe.shield });
       events.push({ type: 'shieldReset', side: 'player', lost: foe.shield });
       foe.shield = 0;
@@ -2334,7 +2366,8 @@ export class Fight {
       case 'flood':
         return this.applySlime(me, foe, ab.power, [], events);
       case 'smash':
-        this.hit(me, foe, ab.power, [], events);
+        // THE SCORE RACE: THE BRUTE's wind-up scores big (unless a shield blocked it above).
+        this.hit(me, foe, ab.power * (this.cfg.race ? RACE_RULES.smashMul : 1), [], events);
         return;
       case 'fortify':
         me.shield += ab.power;
@@ -2345,6 +2378,7 @@ export class Fight {
       case 'jam':
         return this.applyStatus(me, foe, 'locked', 1, ab.power, [], events);
       case 'pilfer':
+        if (this.cfg.race) return this.raceSteal(me, foe, events);
         return this.steal(me, foe, ab.power, [], events);
       case 'quake':
         return this.junk(me, foe, ab.power, [], events);

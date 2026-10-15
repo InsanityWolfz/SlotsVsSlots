@@ -201,7 +201,7 @@ export interface FightRecord {
  * (elites and bosses more), you first and the enemy last, its pay x enemyMul; the higher score wins and one lost race
  * ends the run (user: no lives). Spin tools a race (user: 3 HOLDs, 2 NUDGEs, 1 RESPIN). PLAY MODES > SCORE RACE (TEST).
  */
-export const RACE = { spins: { fight: 5, elite: 6, boss: 7 }, enemyMul: 1.6, refHp: 200, hpExp: 0.65, bossMul: 1.3, openerMul: 0.7, holds: 3, nudges: 2, respins: 1 };
+export const RACE = { spins: { fight: 5, elite: 6, boss: 7 }, enemyMul: 1.6, refHp: 200, hpExp: 0.65, bossMul: 1.3, openerMul: 0.7, golemPerRock: UNIT, holds: 3, nudges: 2, respins: 1 };
 
 export interface RunState {
   seed: number;
@@ -758,7 +758,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // THE SCORE RACE (sandbox): a fixed number of spins, the higher score wins, and HOLDs to play them with.
   if (run.race) {
     // The enemy's score grows with its HP (HP tracked your power; honest HP keeps it the same on every machine).
-    cfg.race = { spins: e.isBoss ? RACE.spins.boss : e.elite ? RACE.spins.elite : RACE.spins.fight, enemyMul: RACE.enemyMul * (cfg.enemy.hp / RACE.refHp) ** RACE.hpExp * (e.isBoss ? RACE.bossMul : 1) * (run.act === 1 && run.depth === 0 ? RACE.openerMul : 1) };
+    cfg.race = { ...(e.archetype === 'golem' ? { perRock: RACE.golemPerRock } : {}), spins: e.isBoss ? RACE.spins.boss : e.elite ? RACE.spins.elite : RACE.spins.fight, enemyMul: RACE.enemyMul * (cfg.enemy.hp / RACE.refHp) ** RACE.hpExp * (e.isBoss ? RACE.bossMul : 1) * (run.act === 1 && run.depth === 0 ? RACE.openerMul : 1) };
     cfg.player.holds = RACE.holds;
     cfg.player.nudges = RACE.nudges;
     cfg.player.respins = RACE.respins;

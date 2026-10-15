@@ -548,6 +548,12 @@ export class Director {
     rival.rival = e.total;
     this.s.sounds.coin(e.side === 'player' ? 2 : 0);
     const m = MACHINE_CX[e.side];
+    // (A THIEF's take shows as a loss on your machine.)
+    if (e.amount < 0) {
+      this.s.sounds.steal();
+      await this.popText(`-${fmtNum(-e.amount)} STOLEN!`, m, MACHINE_TOP + 40, 3, '#ff6a5a', 60, 0.5);
+      return;
+    }
     await this.popText(`+${fmtNum(e.amount)}`, m, MACHINE_TOP + 40, this.tierScale(), e.side === 'player' ? COLORS.goldLight : '#ff8a7a', 60);
   }
 

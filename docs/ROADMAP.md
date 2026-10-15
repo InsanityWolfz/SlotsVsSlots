@@ -2,7 +2,7 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-15):** the race act 1 vertical slice (below): step 1 (rules, tools, HUD) is in; next, step 2.
+**In progress (2026-10-15):** the race act 1 vertical slice (below): steps 1 (rules, tools, HUD) and 2 (act 1 enemies, THE HOUSE) are in; next, step 3.
 
 ## Now, in order
 1. **Race act 1, a vertical slice** (user, 2026-10-15; behind PLAY MODES, the normal game untouched; it ends at
@@ -11,11 +11,6 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
      run (no lives). Each race: 3 HOLDs, 2 NUDGEs, 1 RESPIN, used as you see fit. HOLD keeps a reel before a spin; NUDGE
      and RESPIN act after your spin lands and before it scores (NUDGE moves a reel one cell, RESPIN spins one reel
      again). A shield you hold blocks the next sabotage.
-   - **Step 2:** act 1 enemies made for racing: SLIME (slimed cells score nothing), FROST (a frozen reel scores half),
-     GOLEM (its score grows with your rocks), GREMLIN (a jammed reel scores nothing), THIEF (every 3 spins steals 25% of
-     your score), BRUTE (a telegraphed WIND-UP spin scores huge; a shield halves it), REPO MAN (as now). THE HOUSE: its
-     pot builds on its reels, cashes into its score every 3 spins and all of it on its last spin; your jackpot steals the
-     pot into your score.
    - **Step 3:** HP relics get race versions (UNDERDOG: x1.5 while behind; COUP: swords x2 while ahead; PHOENIX: once a
      run, survive a lost race; BANDAGE: start with a shield; FANG: meter payoffs +1 HOLD; INSURANCE: 30% behind, +1
      NUDGE; TOWER: shields last 2 enemy spins; BASH: unspent shield scores; PARACHUTE: 10 chips for an extra spin when

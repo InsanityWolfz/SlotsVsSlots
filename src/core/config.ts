@@ -265,7 +265,7 @@ export interface GameConfig {
    * THE SCORE RACE (sandbox, user 2026-10-15): no HP. Both machines spin `spins` times; what a spin pays is its score
    * (the enemy's x enemyMul), and the higher score wins. A shield you hold when the enemy's ability fires blocks it.
    */
-  race?: { spins: number; enemyMul: number };
+  race?: { spins: number; enemyMul: number; /** GOLEM: its score each spin per rock on your reels. */ perRock?: number };
 }
 
 /** Every number in the game is on a x10 scale (a plain symbol pays 10). The presentation divides by this where it counts pips. */

@@ -381,8 +381,14 @@ tray), `drawScoreboard`, `useTool`.
 - **Sim** (`tools/out/race.ts`, 300 runs, the bot holding pairs, nudging when it pays more, respinning a pair's odd
   reel): act 1 cleared KNIGHT 56%, TESLA 44, JUKEBOX 55, JOKER 28, BANKROLL 28; races won 85-97%, elites 64-86%, THE
   HOUSE 61-90%. Step 4 tunes it (JOKER and BANKROLL are weakest).
-- Not yet race-native (steps 2-3): the enemies and THE HOUSE run their HP-game rules as score; VAMP, heals, the HEAL
-  and MAX HP at the Cashier, and the HP relics do nothing.
+- **Act 1 enemies race their own way** (`RACE_RULES` in fight.ts; their cards say so, `RACE_BLURB` in runScreens):
+  SLIME (slimed cells score nothing), FROST (a frozen reel of yours scores half), GOLEM (each of its spins scores 10 x
+  its multiplier per rock on your reels), GREMLIN (a jammed reel scores nothing), THIEF (its ability steals 25% of your
+  score: STOLEN!), BRUTE (its SMASH scores x3), REPO MAN (takes a Charm). A shield blocks any of their abilities, never
+  THE HOUSE's cash-out. **THE HOUSE:** its pot (its coins and its cut each spin) cashes 1/2 into its score every 3
+  spins, and its last spin cashes the whole pot; your jackpot steals the pot into your score. Sim (300 runs): races
+  won by enemy 55-98% (BRUTE and GOLEM hardest, SLIME and GREMLIN easiest); THE HOUSE 49-83%.
+- Not yet race-native (step 3): VAMP, heals, the HEAL and MAX HP at the Cashier, and the HP relics do nothing.
 
 ## Modes and meta
 - **Modes:** the normal run, THE DAILY RUN and ENDLESS (THE WEEKLY and CHALLENGES are cut, 2026-10-15; old hiscore
