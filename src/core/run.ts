@@ -784,7 +784,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // THE OWNER (the TURBO boss): hits harder on top of the loop's growth; no turn takes more than turnCap of his HP.
     if (e.turbo) {
       cfg.enemy.dmgMul *= TURBO.dmg;
-      cfg.enemy.turboCap = TURBO.turnCap;
+      cfg.enemy.owner = true;
     }
     // VETERAN (KNIGHT) and WARM-UP (JUKEBOX): machine growth for the machines with no late multiplier (honest HP: enemies don't change).
     const cleared = run.endless.loop - 1;
@@ -858,7 +858,7 @@ export const longGameMul = (run: RunState) => (run.longGame === undefined ? 1 : 
  * beaten, chips EARNED (spending never costs score), levels gained, relics and Charms held, THE OWNER's HP taken and
  * beating him, clearing the run; all x(1 + 0.5 a stake). The same formula for every run, ENDLESS or not.
  */
-export const SCORE = { fight: 100, elite: 300, boss: 1000, chip: 2, level: 100, relic: 100, legendary: 250, charm: 25, owner10: 1000, ownerBeat: 10000, clear: 2000, stakeStep: 0.5 };
+export const SCORE = { fight: 100, elite: 300, boss: 1000, chip: 2, level: 100, relic: 100, legendary: 250, charm: 25, ownerHit: 1000, ownerBeat: 10000, clear: 2000, stakeStep: 0.5 };
 /** Levels gained over the run: your symbols above their start, and every Charm type's levels past 1. */
 export function levelsGained(run: RunState): number {
   const start = CABINETS[run.cabinet].levels;
@@ -885,7 +885,7 @@ export function scoreParts(run: RunState): [string, number][] {
     ['LEVELS', levelsGained(run) * SCORE.level],
     ['RELICS', (relics - legends) * SCORE.relic + legends * SCORE.legendary],
     ['CHARMS', charms * SCORE.charm],
-    ['THE OWNER', Math.floor(owner * 10) * SCORE.owner10 + (run.endless?.turbo ? SCORE.ownerBeat : 0)],
+    ['THE OWNER', Math.round(owner * TURBO.hp) * SCORE.ownerHit + (run.endless?.turbo ? SCORE.ownerBeat : 0)],
     ['CLEARED', run.won || run.endless ? SCORE.clear : 0],
   ];
   if (run.daily && run.won) parts.push(['HP LEFT', Math.max(0, run.player.hp)]);
@@ -977,6 +977,8 @@ export const EDGE_TEXT: Record<EdgeId, { title: string; text: string }> = {
 export const TUTORIAL_OPENER_MUL = 0.75;
 
 export function enemyHp(run: RunState, e: EnemyDef): number {
+  // THE OWNER: 11 HP, a hit each (no growth, no edges).
+  if (run.endless && e.turbo) return TURBO.hp;
   const gold = e.isBoss && run.stake >= STAKE.fasterAll ? STAKE.goldBossHp : 1;
   const tutorial = run.tutorial && run.act === 1 && e.depth === 0 ? TUTORIAL_OPENER_MUL : 1;
   const loop = run.endless ? endlessMul(ENDLESS.hp, run.endless.loop) : 1;
@@ -994,7 +996,7 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
   // Regulars and elites: their act's curve (enemies.ts makeEnemy).
   if (!e.isBoss) return e.hp;
   // ENDLESS: the loop bosses are a multiple of an act 3 regular's HP (then x the loop's growth).
-  if (run.endless) return unitsRound(TUNE.endlessBossBase * (e.turbo ? TURBO.hp : e.boss === 'house' ? ENDLESS.houseHp : e.boss === 'dealer' ? ENDLESS.dealerHp : ENDLESS.wheelHp));
+  if (run.endless) return unitsRound(TUNE.endlessBossBase * (e.boss === 'house' ? ENDLESS.houseHp : e.boss === 'dealer' ? ENDLESS.dealerHp : ENDLESS.wheelHp));
   // GREEN+: THE WHEEL STARTS FAST (3 chips a turn), so it gets less HP. THE DAILY RUN's WHEEL is the eased one too.
   if (e.boss === 'wheel') return unitsRound(TUNE.wheelHp * (run.stake >= STAKE.wheelFast || fixedRun(run) ? TUNE.greenWheel : 1));
   if (e.boss === 'dealer') return TUNE.dealerHp;

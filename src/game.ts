@@ -1988,7 +1988,7 @@ export class Game {
       foeHp: fight && e.maxHp > 0 ? Math.max(0, e.hp) / e.maxHp : 1,
       turn: fight ? this.stage.gutter.side : null,
       fight,
-      turbo: fight && !!this.fight.cfg.enemy.turboCap,
+      turbo: fight && !!this.fight.cfg.enemy.owner,
     };
   }
 

@@ -300,9 +300,9 @@ export const OWNER_TRICKS: { kind: AbilityDef['kind']; power: number }[] = [
  * THE OWNER as a fight (user, 2026-10-14: he was a one-shot wall). THE HAMMER (every other trick, telegraphed on his HUD)
  * hits `hammer` of your max HP through shields; no turn of his takes more than `capOnYou` of your max HP; at 75 / 50 /
  * 25% of his HP he gets `phaseDmg` harder each time (a banner says so). Every turn of his raises his hits and his cap on you
- * by `rise` (so a fight lasts about 12-25 turns: TESLA out-healed him for 160).
+ * by `rise` (0.06 -> 0.07 with the 11-HP OWNER, 2026-10-15: at 0.06 JOKER beat him 13% and BANKROLL 8%).
  */
-export const OWNER_RULES = { hammer: 0.4, capOnYou: 0.45, phaseDmg: 0.15, phases: [0.75, 0.5, 0.25], rise: 0.06 };
+export const OWNER_RULES = { hammer: 0.4, capOnYou: 0.45, phaseDmg: 0.15, phases: [0.75, 0.5, 0.25], rise: 0.07 };
 /** THE OWNER's turns so far raise his hits and his cap on you by OWNER_RULES.rise each (the fight can't stall). */
 export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: WHEEL, 3: DEALER };
 
@@ -355,9 +355,11 @@ export interface EnemyDef extends SideConfig {
 /**
  * THE TURBO boss (user, 2026-10-14): THE OWNER at loop 5, built to be all but unbeatable (aim: ~0.1% of the runs that
  * reach it). Beating him ends the run, so a broken build or a bug can't go on forever. `hp` is his HP in loop bosses'
- * terms (ENDLESS.houseHp etc.), `dmg` his hits on top of the loop's, `turnCap` the most of his HP one turn can take.
+ * `hp` is his real HP (user, 2026-10-15): every hit of yours takes exactly 1, whatever it would have done (shields,
+ * multipliers and caps don't matter; he never heals), so the fight is about surviving 11 hits. `dmg` is
+ * his hits on top of the loop's.
  */
-export const TURBO = { loop: 5, hp: 12, dmg: 1.2, potMul: 3, turnCap: 0.08 };
+export const TURBO = { loop: 5, hp: 11, dmg: 1.2, potMul: 3 };
 
 /** Rough single-fight danger per archetype (playtest ITERATION_2), used to pick the elite at a fork. */
 export const DANGER: Record<string, number> = {

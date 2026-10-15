@@ -13,7 +13,7 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
    JOKER 44 (target 36: weak early, strong late, accepted for now). WHITE 57-59 and GREEN 34-41 for the rest.
 
 ## Open design questions
-- **ENDLESS, left from the playtests:** JUKEBOX's ENDLESS sustain (reach THE OWNER 44% with WARM-UP vs KNIGHT 56%,
+- **ENDLESS, left from the playtests:** JUKEBOX's ENDLESS sustain (reach THE OWNER 40% with WARM-UP vs KNIGHT 51%,
   JOKER 61%, TESLA and BANKROLL 84%: it dies to attrition and the loop 1 HOUSE, see GAME.md VETERAN and WARM-UP). Small UI: callouts over the HP rows, GOLDEN
   TICKET level cards, the HOUSE EDGE screen doesn't list held edges, phone-size RAT RACE / SCRATCH-OFF, LUCKY SEVENS'
   off-line rows.

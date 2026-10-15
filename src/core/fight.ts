@@ -258,7 +258,6 @@ export class Fight {
   /** HP you've lost this turn (one-turn cap: regular enemies 40% of your max HP, bosses 60%). */
   private playerTurnHp = 0;
   /** THE TURBO: HP it lost this turn (no turn takes more than its cap). */
-  private enemyTurnHp = 0;
   /** THE OWNER: tricks played so far (the next one is OWNER_TRICKS[n % length]). */
   private ownerTricks = 0;
   /** THE OWNER's phase (0, then 1-3 at 75 / 50 / 25% of his HP). */
@@ -534,7 +533,6 @@ export class Fight {
     else this.enemyDmgMul(events);
     events.push({ type: 'turnStart', turn: this.turn, side });
     this.playerTurnHp = 0;
-    this.enemyTurnHp = 0;
     if (side === 'player') this.thawShield.clear();
     // The Dealer's big turns are the announced ones (ALL IN): only those may hit up to the boss cap.
     // (Your own turn is never a big one: marks biting on your spin stay under the quiet cap.)
@@ -1738,7 +1736,7 @@ export class Fight {
     // The fight's damage knob (TUNE.enemyDmg, elites hit harder, endless loops); it used to apply only in endless.
     let mul = (this.cfg.enemy.dmgMul ?? 1) * (this.cfg.enemy.stakeDmg ?? 1) * (this.cfg.enemy.lineDmg ?? 1) * (1 + OWNER_RULES.phaseDmg * this.ownerPhase);
     // THE OWNER escalates every turn (OWNER_RULES.rise).
-    if (this.cfg.enemy.turboCap) mul *= 1 + OWNER_RULES.rise * Math.floor(this.turn / 2);
+    if (this.cfg.enemy.owner) mul *= 1 + OWNER_RULES.rise * Math.floor(this.turn / 2);
     if (this.cfg.enemy.endless) {
       const late = Math.floor(this.turn / 2) - ENDLESS.lastCall;
       if (late > 0 && !this.lastCall && events) {
@@ -1812,10 +1810,9 @@ export class Fight {
     const live = me.side === 'player' && me.relics.has('livewire');
     let overPopped = false;
     let strikes = 0;
-    // (Against THE OWNER the storm stops once his turn cap is reached, keeping the charge: it fired thousands of 0-damage
-    // strikes, each one healing.)
-    const capped = () => foe.side === 'enemy' && !!this.cfg.enemy.turboCap && this.enemyTurnHp >= Math.round(foe.maxHp * this.cfg.enemy.turboCap);
-    while (me.energy >= this.cfg.specialCost && !this.over && foe.hp > 0 && !capped()) {
+    // (Against THE OWNER the storm stops once he's been hit this turn, keeping the charge: 0-damage strikes still heal.)
+    const spent = () => foe.side === 'enemy' && !!this.cfg.enemy.owner && this.ownerHitTurn === this.turn;
+    while (me.energy >= this.cfg.specialCost && !this.over && foe.hp > 0 && !spent()) {
       me.energy -= this.cfg.specialCost;
       const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
       // MELTDOWN: +1% per 1% of HP you're missing (capped).
@@ -1877,6 +1874,8 @@ export class Fight {
     // A side at 0 HP is dead when the turn settles: no heal brings it back (a storm's heals on the enemy's turn used to
     // revive TESLA from 0 HP: ENDLESS playtest, 2026-10-14).
     if (me.hp <= 0) return;
+    // THE OWNER never heals: his HP is a count of hits.
+    if (me.side === 'enemy' && this.cfg.enemy.owner) return;
     if (me.side === 'player' && this.cfg.player.healMul) amount = Math.max(1, Math.round(amount * this.cfg.player.healMul));
     const n = Math.min(amount, me.maxHp - me.hp);
     if (n > 0) {
@@ -1901,16 +1900,15 @@ export class Fight {
     // ONE-TURN CAP on you: no turn takes more than 40% of your max HP (60% for bosses): no turn-2 one-shots (EXPERT_PLAYTEST_3 E2).
     if (target.side === 'player') {
       // (THE OWNER has his own, higher cap: OWNER_RULES.capOnYou.)
-      const capShare = this.cfg.enemy.turboCap ? OWNER_RULES.capOnYou + OWNER_RULES.rise * Math.floor(this.turn / 2) : this.isDealer && !this.bigTurn ? TUNE.dealerQuietCap : this.isBoss || this.isWheel || this.isDealer ? TUNE.bossTurnCap : TUNE.turnCap;
+      const capShare = this.cfg.enemy.owner ? OWNER_RULES.capOnYou + OWNER_RULES.rise * Math.floor(this.turn / 2) : this.isDealer && !this.bigTurn ? TUNE.dealerQuietCap : this.isBoss || this.isWheel || this.isDealer ? TUNE.bossTurnCap : TUNE.turnCap;
       const cap = Math.round(target.maxHp * capShare);
       hpDamage = Math.max(0, Math.min(hpDamage, cap - this.playerTurnHp));
       this.playerTurnHp += hpDamage;
     }
-    // THE TURBO: no turn takes more than its cap of its max HP (user, 2026-10-14: a broken build can't one-shot it).
-    if (target.side === 'enemy' && this.cfg.enemy.turboCap) {
-      const cap = Math.round(target.maxHp * this.cfg.enemy.turboCap);
-      hpDamage = Math.max(0, Math.min(hpDamage, cap - this.enemyTurnHp));
-      this.enemyTurnHp += hpDamage;
+    // THE OWNER (user, 2026-10-15): a turn that hits him takes exactly 1 of his HP, however big or many the hits; shields don't matter.
+    if (target.side === 'enemy' && this.cfg.enemy.owner) {
+      target.shield += blocked;
+      return { blocked: 0, hpDamage: amount > 0 ? this.ownerHit(target) : 0, targetHp: target.hp, targetShield: target.shield };
     }
     // THE WHEEL's half-HP gate (the Mirror's old crack gate): it holds at half HP for the rest of the turn it SPINS
     // FASTER on, so both halves of the fight always play. (GREEN starts fast: no phase, no gate.)
@@ -1928,9 +1926,20 @@ export class Fight {
     return { blocked, hpDamage, targetHp: target.hp, targetShield: target.shield };
   }
 
+  /** THE OWNER loses 1 HP a turn that hits him (a storm's 10 strikes are one hit). */
+  private ownerHitTurn = 0;
+  private ownerHit(target: Combatant): number {
+    if (this.ownerHitTurn === this.turn) return 0;
+    this.ownerHitTurn = this.turn;
+    const n = Math.min(1, target.hp);
+    target.hp -= n;
+    if (target.hp <= 0) this.overkill = 0;
+    return n;
+  }
+
   private checkDeath(c: Combatant, events: CombatEvent[]): void {
     // THE OWNER's phases: each threshold he passes, he gets harder (once each).
-    if (c.side === 'enemy' && this.cfg.enemy.turboCap && c.hp > 0) {
+    if (c.side === 'enemy' && this.cfg.enemy.owner && c.hp > 0) {
       const phase = OWNER_RULES.phases.filter((t) => c.hp <= c.maxHp * t).length;
       if (phase > this.ownerPhase) {
         this.ownerPhase = phase;

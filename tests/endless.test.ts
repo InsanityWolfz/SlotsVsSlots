@@ -158,7 +158,8 @@ describe('ENDLESS: THE OWNER (the TURBO boss)', () => {
     run.pendingLegend = null;
     chooseRoute(run, 0);
     skipToBoss(run);
-    expect(fightConfig(run, base).enemy.turboCap).toBe(TURBO.turnCap);
+    expect(fightConfig(run, base).enemy.owner).toBe(true);
+    expect(fightConfig(run, base).enemy.hp).toBe(TURBO.hp);
     const pot = run.endless!.pot;
     const f = new Fight(fightConfig(run, base), 9);
     f.winner = 'player';
@@ -179,12 +180,34 @@ describe('THE OWNER: EVERY TRICK IN THE BOOK', () => {
     run.endless!.loop = TURBO.loop;
     const cfg = fightConfig(run, base);
     cfg.enemy = { ...cfg.enemy, ...run.map.boss, hp: 1e9, ability: { kind: 'owner', every: 2, power: 0 }, boss: 'owner' };
-    cfg.enemy.turboCap = TURBO.turnCap;
+    cfg.enemy.owner = true;
     cfg.player = { ...cfg.player, hp: 1e9, startHp: 1e9 };
     const f = new Fight(cfg, 5);
     const kinds: string[] = [];
     for (let i = 0; i < 40 && !f.over; i++) for (const e of f.step().events) if (e.type === 'ability' && e.side === 'enemy') kinds.push(e.kind);
     expect(kinds.length).toBeGreaterThanOrEqual(3);
     expect(kinds.slice(0, 3)).toEqual(OWNER_TRICKS.slice(0, 3).map((t) => t.kind));
+  });
+});
+
+describe('THE OWNER: 11 HP, a hit each', () => {
+  it('loses at most 1 HP a turn, however big the hits, and never heals', () => {
+    const run = createRun(base, 34, 'knight', 2, true);
+    run.over = run.won = true;
+    run.act = 3;
+    letItRide(run);
+    run.endless!.loop = TURBO.loop;
+    const cfg = fightConfig(run, base);
+    cfg.enemy = { ...cfg.enemy, ...run.map.boss, hp: TURBO.hp, ability: null, boss: 'owner', owner: true };
+    cfg.player = { ...cfg.player, hp: 1e9, startHp: 1e9 };
+    const f = new Fight(cfg, 5);
+    for (let i = 0; i < 400 && !f.over; i++) {
+      const before = f.sides.enemy.hp;
+      const evs = f.step().events;
+      void evs;
+      expect(before - f.sides.enemy.hp).toBeGreaterThanOrEqual(0);
+      expect(before - f.sides.enemy.hp).toBeLessThanOrEqual(1);
+    }
+    expect(f.winner).toBe('player');
   });
 });

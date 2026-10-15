@@ -33,9 +33,9 @@ export function bossRules(boss: string, c: BossRuleContext): BossRules {
       rules: [
         { icon: artId('icoGavel'), text: 'EVERY 2 TURNS HE CHEATS. EVERY OTHER TIME IT IS A NEW TRICK (SLIME, THEFT, FREEZE, ROCKS, HEX, BOMBS)' },
         { icon: artId('icoSmash'), text: `THE REST IS THE HAMMER: ${Math.round(OWNER_RULES.hammer * 100)}% OF YOUR MAX HP THROUGH SHIELDS. NO TURN OF HIS TAKES MORE THAN ${Math.round(OWNER_RULES.capOnYou * 100)}%` },
-        { icon: 'shieldIcon', text: `NO TURN TAKES MORE THAN ${Math.round(TURBO.turnCap * 100)}% OF HIS HP. AT 75 / 50 / 25% HE HITS ${Math.round(OWNER_RULES.phaseDmg * 100)}% HARDER EACH TIME` },
+        { icon: 'shieldIcon', text: `HE HAS ${TURBO.hp} HP: A SPIN THAT HITS HIM TAKES 1, HOWEVER BIG. AT 75 / 50 / 25% OF IT HE HITS ${Math.round(OWNER_RULES.phaseDmg * 100)}% HARDER EACH TIME` },
       ],
-      win: 'EVERY 10% OF HIS HP YOU TAKE SCORES. BEAT HIM AND THE RUN IS WON',
+      win: 'EVERY HP YOU TAKE SCORES. BEAT HIM AND THE RUN IS WON',
     };
   return rulesOf(boss, c);
 }

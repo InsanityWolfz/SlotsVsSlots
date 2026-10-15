@@ -283,8 +283,8 @@ export interface SideConfig {
   startShield?: number;
   /** SECOND PAYLINE (big choice): the enemy's hits are this much harder. */
   lineDmg?: number;
-  /** THE TURBO: no turn takes more than this share of its max HP. */
-  turboCap?: number;
+  /** THE OWNER: TURBO.hp HP, every hit takes 1 (TURBO in enemies.ts). */
+  owner?: boolean;
   /** HOUSE EDGE "EARLY BIRD": the enemy spins first. */
   first?: boolean;
   /** MIDAS: chips held when the fight starts (the VAULT pre-fills from them). */

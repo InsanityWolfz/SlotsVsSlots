@@ -83,12 +83,16 @@ Sim GREEN: loops cleared median 4 -> 5.
 5's boss, the man who owns the casino (`OWNER`, `OWNER_RULES`, `TURBO` in `src/core/enemies.ts`; his office in the room's
 column). Every 2 turns he cheats: every other time a new trick (slime, a theft, a freeze, rocks, a hex, bombs), the rest
 THE HAMMER, 40% of your max HP through shields, named on his HUD before it lands (THE HAMMER IN 2). No turn of his takes
-more than 45% of your max HP, but every turn he takes raises that cap and his hits by 6%, and at 75 / 50 / 25% of his
-HP he hits 15% harder each time (a banner: HE LOOSENS HIS TIE, HE STANDS UP, HE GOES ALL IN). No turn takes more than
-8% of his HP (was 10%, 2026-10-15: BANKROLL beat him 4.5% of the time, and WARM-UP JUKEBOX 4%; 8% puts both at 0). His HP is 12 loop bosses' worth. Beating him ends the run, won (YOU BROKE THE BANK, achievement BROKE
-THE BANK); each 10% of his HP you take scores. Sim (GREEN, 300 meetings): beaten 0, fights 16 turns median, his HP left
-74% median (40% at the 10th percentile). Reach him (GREEN riders): KNIGHT 12%, JUKEBOX 32%, JOKER 66%, TESLA 84%,
-BANKROLL 86% (the loop 3 Dealer is the wall for KNIGHT and JUKEBOX).
+more than 45% of your max HP, but every turn he takes raises that cap and his hits by 7%, and at 75 / 50 / 25% of his
+HP he hits 15% harder each time (a banner: HE LOOSENS HIS TIE, HE STANDS UP, HE GOES ALL IN).
+**11 HP, a hit each (user, 2026-10-15):** he has 11 HP and a turn that hits him takes exactly 1, however big or many the
+hits (a LIGHTNING STORM is one hit; it stops after it lands and keeps its charge). Shields, multipliers and VETERAN don't
+matter against him and he never heals: the fight is surviving long enough to land 11 hits. Beating him ends the run,
+won (YOU BROKE THE BANK, achievement BROKE THE BANK); every HP you take scores 1,000. (Taken literally, "every hit"
+let TESLA's storm kill him on turn 1: 72% of meetings lost. At 1 HP a turn: 10 HP lost 9.6% (JOKER 18%), 11 HP 7%
+(JOKER 13%), so his rise went 6% -> 7%; the user's bar: no machine over 2%.) Sim (1000 runs, GREEN riders): met 1026,
+beaten 1.3% (BANKROLL 1.5%, TESLA 1.3%, KNIGHT 1.2%, JOKER 0.9%, JUKEBOX 0%), fights 10 turns median, 45% of his HP
+left median. Reach him: KNIGHT 51%, JUKEBOX 40%, JOKER 60%, TESLA 80%, BANKROLL 84%.
 **VETERAN and WARM-UP (user, 2026-10-15):** KNIGHT and JUKEBOX had no late growth in ENDLESS (making the loop 3 Dealer
 easier only moved KNIGHT's death to loop 4: his HP 6 -> 3 took loop 3 from 30% to 52% and loop 4 from 56% to 43%).
 VETERAN: in ENDLESS, KNIGHT's swords and shields pay +100% for every loop cleared (X2 in loop 2, X5 at THE OWNER).
@@ -308,7 +312,7 @@ JOKER); JOKER 380 -> 360 HP, BANKROLL 330 -> 290 HP (both rose 6-12 on GREEN onc
 Every run, ENDLESS or not, scores the same way (`SCORE`, `scoreParts`, `runScoreOf` in `src/core/run.ts`):
 100 a fight won, 300 an elite, 1,000 a boss (act and loop bosses), 2 a chip EARNED (fights and encounters; spending never
 costs score), 100 a level gained (symbols above their start, Charm levels past 1), 100 a relic (250 a legendary), 25 a
-Charm on your reels, 1,000 for each 10% of THE OWNER's HP you take and 10,000 for beating him, 2,000 for clearing the run
+Charm on your reels, 1,000 for each of THE OWNER's 11 HP you take and 10,000 for beating him, 2,000 for clearing the run
 (the daily adds HP left on a win); all x(1 + 0.5 a stake). The path screen shows the score so far, a cleared loop says
 LOOP N CLEARED! SCORE X, and the run-over screen shows it with its biggest parts. Entries saved before it keep the old
 formula. Sim (GREEN, 200 runs a machine, bot riding): medians KNIGHT 13.9K, TESLA 11.7K, JUKEBOX 12.2K, JOKER 14.7K,
