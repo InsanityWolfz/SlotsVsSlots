@@ -770,9 +770,10 @@ export class Director {
     // THE PAYOUT LADDER (feel playtest, 2026-10-15: "JACKPOT!" every two spins meant nothing). A pay is sized by the HP
     // bar it lands on: a hit by the enemy's (a block by your own), so a small jackpot stays small and BIG WIN / MEGA WIN
     // are earned. PAIR and JACKPOT still name the line; the size names the moment.
+    // (Blocks stay off the ladder: BIG WIN and MEGA WIN mean damage. Feel playtest #2: shield jackpots took 3 of 5.)
     const attack = sym !== 'shield';
-    const bar = this.s.huds[attack ? other(side) : side].maxHp;
-    const share = slimeCleanse || effect ? 0 : gross / Math.max(1, bar);
+    const bar = this.s.huds[other(side)].maxHp;
+    const share = slimeCleanse || effect || !attack ? 0 : gross / Math.max(1, bar);
     const size: 'small' | 'big' | 'mega' = share >= LADDER.mega ? 'mega' : share >= LADDER.big ? 'big' : 'small';
     const mine = side === 'player';
     const title = size === 'mega' ? (mine ? 'MEGA WIN!' : 'HUGE HIT!') : size === 'big' ? (mine ? 'BIG WIN!' : 'BIG HIT!') : tier === 'triple' ? 'JACKPOT!' : 'PAIR!';
@@ -925,7 +926,8 @@ export class Director {
     if (e.note === 'mimic') this.bg(this.popText('COPYCAT!', target.x - 90, MACHINE_TOP - 22, 2, '#ffb0ff', 14, 0.35));
     if (e.note === 'echo') this.bg(this.popText('ECHO!', target.x + 90, MACHINE_TOP - 22, 2, '#fff27a', 14, 0.35));
     if (e.hpDamage > 0) this.bg(this.popText(`-${fmtNum(e.hpDamage)}`, target.x, MACHINE_TOP + 40, this.tierScale(), color, 60));
-    else this.bg(this.popText('BLOCKED!', target.x, MACHINE_TOP + 40, 4, '#9fd0ff', 40));
+    // (Higher than the damage numbers: a blocked hit then a landed one in the same spin read BLC-10D!.)
+    else this.bg(this.popText('BLOCKED!', target.x, MACHINE_TOP + 2, 3, '#9fd0ff', 40));
     this.settle(e.from, e.reels);
     await this.c.wait(0.25);
   }
@@ -1382,7 +1384,8 @@ export class Director {
       const fx = m.reels[ref.reel].rows[1];
       this.bg(this.c.tween({ from: 0.8, to: 0, dur: 0.35, onUpdate: (v) => (fx.wobble = v) }));
       const c = cellCenter(e.side, ref.reel, 1);
-      this.bg(this.popText('SHATTERED!', c.x, c.y - 30, 2, '#d8f6ff', 30, 0.4, true));
+      // Over the machine's top edge, above its reel (inside the cell it clipped).
+      this.bg(this.popText('SHATTERED!', c.x, MACHINE_TOP - 22, 2, '#d8f6ff', 30, 0.4, true));
     }
     await this.c.wait(0.35);
   }

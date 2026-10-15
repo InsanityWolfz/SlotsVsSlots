@@ -956,6 +956,8 @@ export class Fight {
       // A jackpot of one cell counts that cell's charm three times.
       const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
       let gold = 0;
+      let anyGold = false;
+      let anyGlass = false;
       for (const r of g.reels)
         for (const enh of this.enhsAt(me, r)) {
         const v = charmValue(enh, this.charmLvl(me, enh)) * copies;
@@ -965,10 +967,14 @@ export class Fight {
           g.pierce = true;
         }
         if (enh === 'charged' && g.symbol === 'bolt') g.base += v;
-        if (enh === 'gold') gold += v;
+        if (enh === 'gold') {
+          gold += v;
+          anyGold = true;
+        }
         // GLASS: adds in like GOLD; when its group pays, 1 in 4 it shatters (the cell loses it after this spin).
         if (enh === 'glass') {
           gold += v;
+          anyGlass = true;
           if (pays(g) && this.rng.next() < GLASS_BREAK) this.glassBreaks.push(r);
         }
       }
@@ -1021,39 +1027,40 @@ export class Fight {
           fired.add('highcard');
           if (g.reels.length >= 3 || !!g.jackpot) {
             boost(g, LEGEND_RELIC.highCardMul);
-            notes.push(`X${LEGEND_RELIC.highCardMul}`);
+            notes.push(`X${LEGEND_RELIC.highCardMul} HIGH CARD`);
           } else if (g.reels.length === 2) boost(g, LEGEND_RELIC.highCardPairMul);
         }
       }
       // GOLD charms in a group ADD (x2 + x2 + x2 = x6), then multiply with the double/jackpot.
       if (gold) {
         boost(g, gold);
-        notes.push(`X${gold} GOLD`);
+        // (The climb names it: GOLD, GLASS, or both.)
+        notes.push(`X${gold} ${anyGlass ? (anyGold ? 'GOLD+GLASS' : 'GLASS') : 'GOLD'}`);
       }
       const paying = pays(g);
       // Prism: a match that used a WILD pays double.
       if (me.relics.has('prism') && g.matched && g.reels.some((r) => line[r] === 'wild')) {
         fired.add('prism');
         boost(g, 2);
-        notes.push('X2');
+        notes.push('X2 PRISM');
       }
       // HORSESHOE: a group with a lucky-born wild.
       if (has('horseshoe') && paying && g.reels.some((r) => line[r] === 'wild' && cellSym(r) !== 'wild' && this.paylineEnh(me, r) === 'lucky')) {
         fired.add('horseshoe');
         boost(g, NEW_RELIC.horseshoeMul);
-        notes.push(`X${NEW_RELIC.horseshoeMul}`);
+        notes.push(`X${NEW_RELIC.horseshoeMul} HORSESHOE`);
       }
       // Legendaries: Skeleton Key (doubles) and Jackpot Bell (jackpots).
       if (me.relics.has('key') && g.matched && g.reels.length === 2) {
         fired.add('key');
         boost(g, KEY_MULT);
-        notes.push(`X${KEY_MULT}`);
+        notes.push(`X${KEY_MULT} KEY`);
       }
       if (me.relics.has('bell') && g.matched && (g.reels.length === 3 || g.jackpot)) {
         fired.add('bell');
         const bell = this.meter?.kind === 'jackpots' ? BELL_MULT_JOKER : BELL_MULT;
         boost(g, bell);
-        notes.push(`X${bell}`);
+        notes.push(`X${bell} BELL`);
       }
       if (player && this.hotStreak && g.matched) {
         fired.add('hotstreak');
@@ -1064,13 +1071,21 @@ export class Fight {
       if (has('greatsword') && g.symbol === 'sword' && g.base > 0) {
         fired.add('greatsword');
         boost(g, NEW_RELIC.greatswordMul);
-        notes.push(`X${NEW_RELIC.greatswordMul}`);
+        notes.push(`X${NEW_RELIC.greatswordMul} GREATSWORD`);
+      }
+      // COUP DE GRACE (KNIGHT, user 2026-10-13): swords pay x2 while your HP is higher than the enemy's. In the score,
+      // so the climb and the banner show the real hit (it was doubled after them: feel playtest #2, MEGA WIN 264 that
+      // killed a 340 HP enemy).
+      if (has('coup') && g.symbol === 'sword' && g.base > 0 && me.hp > foe.hp) {
+        fired.add('coup');
+        boost(g, NEW_RELIC.coupBossMul);
+        notes.push(`X${NEW_RELIC.coupBossMul} COUP`);
       }
       // UNDERDOG: under half HP, every paying group.
       if (has('underdog') && paying && me.hp < me.maxHp / 2) {
         fired.add('underdog');
         boost(g, NEW_RELIC.underdogMul);
-        notes.push(`X${NEW_RELIC.underdogMul}`);
+        notes.push(`X${NEW_RELIC.underdogMul} UNDERDOG`);
       }
       // DRY SPELL: the stacks from dry spins on this pair or jackpot.
       if (has('dryspell') && this.drySpell > 0 && paying && g.matched && (g.reels.length >= 2 || !!g.jackpot)) {
@@ -1244,13 +1259,9 @@ export class Fight {
       case 'sword':
       case 'note':
       case 'ace': {
-        // COUP DE GRACE (KNIGHT): swords hit x2 a foe under 25% of YOUR max HP. (An instant finish measured worse.)
-        // COUP DE GRACE (user, 2026-10-13): swords pay x2 while your current HP is higher than the enemy's.
-        const coup = player && g.symbol === 'sword' && me.relics.has('coup') && me.hp > foe.hp;
-        const amount = coup ? unitsUp(g.amount * NEW_RELIC.coupBossMul) : g.amount;
-        if (amount !== g.amount) events.push({ type: 'relic', side: me.side, relic: 'coup' });
-        // KEEN: a keen sword in the group pierces shields. (An enemy's LATE multiplier is already in its amount.)
-        this.hit(me, foe, amount, g.reels, events, !!g.pierce, undefined, true);
+        // (COUP DE GRACE is in the score now.) KEEN: a keen sword in the group pierces shields. (An enemy's LATE
+        // multiplier is already in its amount.)
+        this.hit(me, foe, g.amount, g.reels, events, !!g.pierce, undefined, true);
         this.vampHeal(me, g, events);
         return;
       }
