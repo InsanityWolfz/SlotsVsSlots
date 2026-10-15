@@ -8,7 +8,7 @@ import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from 
 import { Banner, Bubble, FloatText, Lightning, Projectile, SymbolWheel, TurnCard } from './fx';
 import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, PITCH, reelWindow, RELIC_FEED, W } from './layout';
 import type { Stage } from './stage';
-import { ABILITY_UI } from './hud';
+import { abilityName } from './hud';
 import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
 import { fmtNum, textWidth } from '../render/text';
@@ -183,9 +183,11 @@ export class Director {
         return this.secondLine(e);
       case 'raceScore':
         return this.raceScore(e);
+      case 'scatter':
+        return this.scatter(e);
       case 'sabotageBlocked':
         this.s.sounds.block();
-        return this.banner('BLOCKED!', '#9fd0ff', 1.2, 0.3, 'YOUR SHIELD STOPPED ITS ABILITY', MACHINE_TOP + MACHINE_H / 2, 4);
+        return this.banner('GUARDED!', '#9fd0ff', 1.2, 0.3, 'A GUARD STOPPED THE CHEAT', MACHINE_TOP + MACHINE_H / 2, 4);
       case 'death':
         return this.death(e);
       case 'fightEnd':
@@ -522,11 +524,36 @@ export class Director {
     }
   }
 
+  /** CHERRIES: each cherry in sight lights up and pops, then the total pays. */
+  private async scatter(e: Extract<CombatEvent, { type: 'scatter' }>): Promise<void> {
+    const m = this.s.machines[e.side];
+    for (const [k, ref] of e.cells.entries()) {
+      const reel = m.reels[ref.reel];
+      const n = reel.cells.length;
+      const row = (((ref.index - reel.stop + 1) % n) + n) % n;
+      if (row > 2) continue;
+      const fx = reel.rows[row];
+      fx.glowColor = '#ff4a6a';
+      this.bg(this.c.tween({ from: 0, to: 1, dur: 0.18, ease: sineOut, onUpdate: (v) => (fx.glow = v) }));
+      this.s.sounds.ding(Math.min(5, k));
+      const c = cellCenter(e.side, ref.reel, row);
+      this.s.particles.burst({ x: c.x, y: c.y, count: 10, colors: ['#ff4a6a', '#ffffff', '#5ed15a'], speed: [80, 260], kind: 'spark', gravity: 200, life: [0.2, 0.4], size: [2, 4] });
+      await this.c.wait(0.12);
+    }
+    const mc = this.machineCenter(e.side);
+    await this.popText(`CHERRIES X${e.cells.length}! +${fmtNum(e.amount)}`, mc.x, MACHINE_TOP - 22, 2.5, '#ff8aa0', 30, 0.5);
+  }
+
   /** THE SCORE RACE: your spin lands (HELD reels stay put); it scores later, after any NUDGE or RESPIN. */
   async landSpin(stops: number[], moved: boolean[]): Promise<void> {
     const m = this.s.machines.player;
     m.clearRowFx();
     await m.spin(stops, false, this.c, { onReelStop: (r) => this.setTag('player', r) }, moved.map((x) => !x));
+  }
+
+  /** THE SCORE RACE: a HOLD freed an iced or jammed reel of yours. */
+  async freeReel(r: number, status: 'frozen' | 'locked'): Promise<void> {
+    await this.thaw({ type: 'thaw', side: 'player', reels: [r], status });
   }
 
   /** THE SCORE RACE: a NUDGE (the reel steps down one cell) or a RESPIN of one landed reel. */
@@ -1012,7 +1039,8 @@ export class Director {
     this.decay(h, 'shieldFlash', 1, 0.3);
     this.bg(this.c.to(h, 'shield', e.total, 0.25, sineOut));
     // Right-aligned inside the HUD (at 3x a big number spilled past its border).
-    const gain = `+${e.amount}`;
+    // (THE SCORE RACE: shields are GUARDS: +1 GUARD, or GUARDS FULL.)
+    const gain = h.race && e.side === 'player' ? (e.amount > 0 ? `+${e.amount} GUARD${e.amount > 1 ? 'S' : ''}` : 'GUARDS FULL') : `+${e.amount}`;
     this.bg(this.popText(gain, sb.x + sb.w - 6 - gain.length * 7.5, sb.y + sb.h / 2, 2.5, '#9fd0ff', 16, 0.3));
     const c = this.machineCenter(e.side);
     const bubble = this.s.fx.add(new Bubble(c.x, c.y, '#7fc0ff'));
@@ -1677,7 +1705,7 @@ export class Director {
     const dealt = e.kind === 'deal' ? this.s.gutter.nextDeal : undefined;
     // THE WHEEL: the ball drops, the wheel on its topper races.
     if (e.kind === 'bets') this.s.gutter.wheelSpeed = 16;
-    await this.banner(dealt ? `THE DEAL: ${dealt === 'allin' ? 'ALL IN' : 'BUST'}!` : `${ABILITY_UI[e.kind].label}!`, '#ff6a5a', 1.35, 0.25);
+    await this.banner(dealt ? `THE DEAL: ${dealt === 'allin' ? 'ALL IN' : 'BUST'}!` : `${abilityName(e.kind, this.s.huds.player.race)}!`, '#ff6a5a', 1.35, 0.25);
   }
 
   private potPos() {

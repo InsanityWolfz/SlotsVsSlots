@@ -43,6 +43,8 @@ export interface Cabinet {
   gilded: Gild[];
   /** Rule text for the pick card. */
   rule: string;
+  /** THE SCORE RACE: the rule as it races (no HP, no hits: pay). */
+  raceRule?: string;
   /** How to unlock it (shown while locked). */
   unlock: string;
   // Rules (read by run.ts / fight.ts):
@@ -89,6 +91,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     attack: 'sword',
     levels: { sym: { sword: 2, shield: 2 }, charm: {} },
     rule: 'HALF SWORDS, HALF SHIELDS. NO METER: EACH BOSS PAYS 3 SWORD LEVELS. 390 HP.',
+    raceRule: 'SWORDS PAY, SHIELDS GUARD. NO METER: EACH BOSS PAYS 3 SWORD LEVELS.',
     unlock: '',
   },
   midas: {
@@ -108,6 +111,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     symbols: ['goldbar', 'shield'],
     attack: 'goldbar',
     rule: 'CHIPS HIT AND WIN CHIPS. FULL BAR: HIT HARDER, HEAL 20. JACKPOTS MAKE IT RAIN. 290 HP.',
+    raceRule: 'CHIPS PAY AND WIN CHIPS. FULL BAR: THEY PAY MORE. CHIP JACKPOTS MAKE IT RAIN.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },
@@ -127,6 +131,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     symbols: ['bolt', 'shield'],
     attack: 'bolt',
     rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE, PIERCES SHIELDS, HEALS 5. 315 HP.',
+    raceRule: 'BOLTS CHARGE THE LIGHTNING: WHEN IT FILLS IT STRIKES FOR 60.',
     unlock: 'REACH THE HOUSE',
     // 40 (2026-10-12): LIGHTNING ROD is gone (97% of TESLA runs took it; it set the cost to 40 and hit 90).
     specialCost: 4 * UNIT,
@@ -151,6 +156,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     symbols: ['ace', 'shield'],
     attack: 'ace',
     rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 390 HP.',
+    raceRule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS.',
     unlock: 'BEAT THE HOUSE WITH WILDS',
     jokerWilds: true,
   },
@@ -169,6 +175,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     symbols: ['note', 'shield'],
     attack: 'note',
     rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: NOTES HIT, YOU HEAL 20. 395 HP.',
+    raceRule: 'NOTES RAISE THE VOLUME: LOUDER PAYS MORE. AT MAX THE BEAT DROPS: EVERY NOTE IN SIGHT PAYS.',
     unlock: 'BEAT THE HOUSE',
   },
 };

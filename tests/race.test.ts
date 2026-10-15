@@ -8,6 +8,7 @@ const race = (enemy: Parameters<typeof reels3>[0], ability?: { kind: 'blizzard';
   c.player.strips = reels3({ sword: 12 });
   c.enemy = { hp: 500, strips: reels3(enemy), ...(ability ? { ability } : {}) };
   c.race = { spins, enemyMul: 1 };
+  c.player.holds = 3;
   return new Fight(c, 3);
 };
 
@@ -27,14 +28,26 @@ describe('THE SCORE RACE (sandbox)', () => {
     expect(f.winner).toBe('player');
     expect(f.raceLeft).toBe(0);
   });
-  it('a shield you hold when its ability fires blocks it, and is spent', () => {
+  it('a GUARD you hold when its cheat fires blocks it, and one guard is spent', () => {
     const f = race({ shield: 12 }, { kind: 'blizzard', every: 1, power: 1 });
     f.step();
-    f.sides.player.shield = 30;
+    f.sides.player.shield = 2;
     const ev = f.step().events;
     expect(ev.some((e) => e.type === 'sabotageBlocked')).toBe(true);
     expect(ev.some((e) => e.type === 'freeze')).toBe(false);
-    expect(f.sides.player.shield).toBe(0);
+    expect(f.sides.player.shield).toBe(1);
+  });
+  it('shields on your payline give GUARDS: one per shield, up to the cap, kept from spin to spin', () => {
+    const c = defaultConfig();
+    c.player.strips = reels3({ shield: 12 });
+    c.enemy = { hp: 500, strips: reels3({ shield: 12 }) };
+    c.race = { spins: 5, enemyMul: 1 };
+    const f = new Fight(c, 3);
+    f.step();
+    expect(f.sides.player.shield).toBe(3);
+    f.step();
+    f.step();
+    expect(f.sides.player.shield).toBe(f.guardCap);
   });
   it('a race run: its tools come from RACE, and one lost race ends the run', () => {
     const base = defaultConfig();
@@ -99,6 +112,25 @@ describe('THE SCORE RACE (sandbox)', () => {
     const total = (s: typeof a.score) => s.groups.reduce((x, y) => x + y.amount, 0);
     expect(total(b.score)).toBeLessThan(total(a.score));
   });
+  it('a HOLD on an iced or jammed reel frees it, holds it, and it pays in full', () => {
+    const f = race({ shield: 12 });
+    const g = race({ shield: 12 });
+    g.sides.player.frozen[0] = 5;
+    g.sides.player.locked[1] = 2;
+    expect(g.hold(0)).toBe(true);
+    expect(g.hold(1)).toBe(true);
+    expect(g.sides.player.frozen[0]).toBe(0);
+    expect(g.sides.player.locked[1]).toBe(0);
+    // A freed reel can't be let go (that would keep the thaw for free).
+    expect(g.hold(0)).toBe(true);
+    expect(g.held[0]).toBe(true);
+    const a = f.step().events.find((e) => e.type === 'spin')!;
+    const b = g.step().events.find((e) => e.type === 'spin')!;
+    if (a.type !== 'spin' || b.type !== 'spin') throw new Error('no spin');
+    const total = (s: typeof a.score) => s.groups.reduce((x, y) => x + y.amount, 0);
+    expect(total(b.score)).toBe(total(a.score));
+  });
+
   it("a race run's Cashier sells spin tools, not HEAL or MAX HP; a tool bought is one more every race", () => {
     const base = defaultConfig();
     const run = createRun(base, 6, 'tesla', 0);
@@ -110,5 +142,29 @@ describe('THE SCORE RACE (sandbox)', () => {
     expect(shelf.filter((i) => i.option.kind === 'tool').length).toBe(3);
     applyOption(run, { kind: 'tool', tool: 'nudge' });
     expect(fightConfig(run, base).player.nudges).toBe(RACE.nudges + 1);
+  });
+  it('X2 on your payline doubles the spin; every CHERRY in sight pays (3+ double)', () => {
+    const make = () => {
+      const c = defaultConfig();
+      c.player.strips = reels3({ sword: 6, double: 3, cherry: 3 });
+      c.enemy = { hp: 500, strips: reels3({ shield: 12 }) };
+      c.race = { spins: 5, enemyMul: 1 };
+      return new Fight(c, 11);
+    };
+    const pay = (line: Parameters<Fight['forceNext']>[1]) => {
+      const f = make();
+      f.forceNext('player', line);
+      const ev = f.step().events;
+      const spin = ev.find((e) => e.type === 'spin')!;
+      if (spin.type !== 'spin') throw new Error('no spin');
+      const scat = ev.find((e) => e.type === 'scatter');
+      return { groups: spin.score.groups.reduce((a, g) => a + g.amount, 0), scatter: scat && scat.type === 'scatter' ? scat : null, f };
+    };
+    const plain = pay(['sword', 'sword', 'cherry']);
+    const doubled = pay(['sword', 'sword', 'double']);
+    expect(doubled.groups).toBe(plain.groups * 2);
+    expect(plain.scatter).not.toBeNull();
+    const n = plain.scatter!.cells.length;
+    expect(plain.scatter!.amount).toBe(n * RACE_RULES.cherryPay * (n >= 3 ? 2 : 1));
   });
 });

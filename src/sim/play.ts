@@ -86,6 +86,10 @@ export interface PlayOpts {
  * a jackpot try, if the HOLDs cover it. A decent player's habit, not the best play.
  */
 export function holdPolicy(fight: Fight, last: { line: string[]; tier: string; groups: { reels: number[]; matched: boolean; symbol: string }[] } | null, attack: string): void {
+  // THE SCORE RACE: free an iced or jammed reel first (a HOLD does).
+  if (fight.cfg.race)
+    for (let r = 0; r < 3; r++)
+      if (fight.holdsLeft - fight.held.filter(Boolean).length > 0 && (fight.sides.player.frozen[r] > 0 || fight.sides.player.locked[r] > 0)) fight.hold(r);
   if (!last || last.tier !== 'pair' || fight.holdsLeft < 2) return;
   const g = last.groups.find((x) => x.matched && x.reels.length === 2);
   if (!g) return;

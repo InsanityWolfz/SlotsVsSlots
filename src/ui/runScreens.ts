@@ -11,6 +11,7 @@ import { CHARM_COLOR, charmLevel, charmTag, playerSymValue, symLevel } from '../
 import { drawReelTable, runTable } from './reelTable';
 import {
   RACE as SCORE_RACE,
+  raceEnemyMul,
   CHIPS,
   describeOption,
   takenLabel,
@@ -47,7 +48,7 @@ import { LOOP_GROWTH } from '../core/enemies';
 import { RACE_RULES, VOLUME } from '../core/fight';
 import { Clock } from '../present/clock';
 import { backOut, sineOut } from '../present/ease';
-import { ABILITY_UI } from '../present/hud';
+import { ABILITY_UI, abilityName } from '../present/hud';
 import { ENH_SPRITE, ReelView, SPIN, type CellView } from '../present/reel';
 import { COLORS, H, PITCH, W } from '../present/layout';
 import { artId, drawSprite, hasSprite, spriteSize, type SpriteId } from '../render/sprites';
@@ -255,12 +256,15 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
   const per = run ? Math.max(UNIT, unitsRound(run.player.maxHp * wheelChipShare(run.cabinet))) : 0;
   // THE SCORE RACE: what an act 1 ability does in a race (fight.ts RACE_RULES).
   if (run?.race) {
+    const mul = raceEnemyMul(run, e);
     const race: Record<string, string> = {
-      smash: `SCORES ${fmtNum(p * RACE_RULES.smashMul)}. A SHIELD BLOCKS IT`,
-      blizzard: `FREEZES A REEL: IT SCORES HALF`,
-      pilfer: `STEALS ${Math.round(RACE_RULES.thiefShare * 100)}% OF YOUR SCORE`,
-      quake: `ADDS ${p} ROCKS. EACH ROCK SCORES FOR IT`,
-      jackpot: 'CASHES ITS POT INTO ITS SCORE. ITS LAST SPIN CASHES IT ALL',
+      smash: `BETS BIG: SCORES ${fmtNum(Math.round(p * RACE_RULES.smashMul * mul))}. A GUARD STOPS IT`,
+      blizzard: 'ICES A REEL: IT PAYS HALF. A HOLD FREES IT',
+      jam: 'JAMS A REEL: IT PAYS NOTHING. A HOLD FREES IT',
+      flood: `GUNKS ${p} OF YOUR CELLS: THEY PAY NOTHING`,
+      pilfer: `STEALS ${Math.round(RACE_RULES.thiefShare * 100)}% OF YOUR SCORE. A GUARD STOPS IT`,
+      quake: `DROPS ${p} ROCKS ON YOU. EACH SCORES ${fmtNum(Math.round(SCORE_RACE.golemPerRock * mul))} FOR IT A SPIN`,
+      jackpot: 'CASHES HALF ITS POT EVERY 3 SPINS, ALL OF IT ON ITS LAST',
     };
     if (race[e.ability.kind]) return race[e.ability.kind];
   }
@@ -292,7 +296,7 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
 
 function abilityText(e: EnemyDef, every: number, run?: RunState): string {
   if (!e.ability) return '';
-  const ui = ABILITY_UI[e.ability.kind];
+  const ui = { ...ABILITY_UI[e.ability.kind], label: abilityName(e.ability.kind, !!run?.race) };
   // THE REPO MAN takes on his first turn, then every few.
   if (e.ability.kind === 'repo') return `${ui.label} FROM TURN 1, THEN EVERY ${every}: TAKES ONE OF YOUR CHARMS. YOU GET IT BACK AFTER THE FIGHT`;
   if (e.ability.kind === 'deal') return `EVERY ${every} TURNS: BUST. THREE HANDS, EACH HARDER`;
@@ -307,12 +311,13 @@ const STAGE_TINT: Record<string, string> = {
 };
 /** THE SCORE RACE: an act 1 enemy's one line, as it races. */
 const RACE_BLURB: Record<string, string> = {
-  slime: 'SLIMED CELLS SCORE NOTHING',
-  frost: 'FROZEN REELS SCORE HALF',
-  golem: 'SCORES OFF YOUR ROCKS',
-  gremlin: 'JAMMED REELS SCORE NOTHING',
-  thief: 'STEALS YOUR SCORE',
-  brute: 'ONE HUGE SPIN',
+  slime: 'A RIVAL THAT GUNKS YOUR CELLS',
+  frost: 'A RIVAL THAT ICES YOUR REELS',
+  golem: 'A RIVAL THAT SCORES OFF YOUR ROCKS',
+  gremlin: 'A RIVAL THAT JAMS YOUR REELS',
+  thief: 'A PICKPOCKET: STEALS YOUR SCORE',
+  brute: 'A HIGH ROLLER: ONE HUGE BET',
+  repo: 'REPOSSESSES A CHARM FOR THE RACE',
   house: 'THE POT IS ITS SCORE',
 };
 
@@ -406,6 +411,8 @@ export class RunScreens {
   private flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   private picked = -1;
   private lastRecord: FightRecord | null = null;
+  /** THE SCORE RACE: the machine screen is picking a race run's machine. */
+  private raceSelect = false;
   /** 'spoils' = an elite's relic choice (1 of 2) shown with the draft layout. */
   private draftKind: 'draft' | 'spoils' | 'legend' | 'start' = 'draft';
   private shopItems: ShopItem[] = [];
@@ -455,7 +462,8 @@ export class RunScreens {
   ) {}
 
   /** Pick your starting machine (pre-run). Locked cabinets show how to unlock them. */
-  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0, _act3 = false, _dealerBeaten: CabinetId[] = []): void {
+  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0, _act3 = false, _dealerBeaten: CabinetId[] = [], race = false): void {
+    this.raceSelect = race;
     this.cabinetUnlocked = unlocked;
     this.stakes = stakes;
     this.run = null;
@@ -1279,7 +1287,7 @@ export class RunScreens {
   private drawNodeTip(ctx: CanvasRenderingContext2D, t: MapTip): void {
     const name = t.e ? (t.e.name ?? 'ENEMY') : (t.title ?? '');
     const ab = t.e?.ability ? ABILITY_UI[t.e.ability.kind] : null;
-    const sub = t.e ? (ab?.label ?? '') : (t.sub ?? '');
+    const sub = t.e ? (t.e.ability ? abilityName(t.e.ability.kind, !!this.run?.race) : '') : (t.sub ?? '');
     const w = Math.max(name.length * 12, sub ? sub.length * 9 + (ab ? 30 : 0) : 0) + 24;
     const h = sub ? 52 : 32;
     const x = Math.max(BUILD.x + BUILD.w + 12, Math.min(W - w - 8, t.x - w / 2));
@@ -1746,7 +1754,7 @@ export class RunScreens {
     }
     if (e.ability) {
       const every = effectiveAbility(nightId(run) === 'fast' ? { ...e.ability, every: Math.max(2, e.ability.every - 1) } : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
-      const ui = ABILITY_UI[e.ability.kind];
+      const ui = { ...ABILITY_UI[e.ability.kind], label: abilityName(e.ability.kind, !!run.race) };
       drawSprite(ctx, ui.icon, tx + 12, 138, fork ? 2.5 : 3);
       drawText(ctx, ui.label, tx + 34, 138, fork ? 2 : 2.5, '#ff9a3a', { align: 'left' });
       let px = tx + 34 + ui.label.length * (fork ? 12 : 15) + 16;
@@ -2575,9 +2583,11 @@ export class RunScreens {
         drawText(ctx, `PLAY AS ${cab.hero}`, 0, 28, 1.25, '#c9a0ff');
         drawText(ctx, cab.blurb, 0, 42, 1, COLORS.textDim);
         // The rule at the big size if it fits 5 lines, else smaller (MIDAS's was cut off: EXPERT_PLAYTEST_10 D2).
-        const big = wrap(cab.rule, 17);
+        // (THE SCORE RACE: the rule as it races.)
+        const rule = (this.raceSelect && cab.raceRule) || cab.rule;
+        const big = wrap(rule, 17);
         const fits = big.length <= 5;
-        const lines = fits ? big : wrap(cab.rule, 23).slice(0, 8);
+        const lines = fits ? big : wrap(rule, 23).slice(0, 8);
         const lh = fits ? 18 : 14;
         lines.forEach((l, k) => drawText(ctx, l, 0, 64 + k * lh, fits ? 2 : 1.5, COLORS.text));
       } else {

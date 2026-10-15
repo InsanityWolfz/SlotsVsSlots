@@ -82,6 +82,7 @@ export type SpriteId =
   | 'enemyGolem' | 'enemyGremlin' | 'enemyBoss'
   | 'ice' | 'claw' | 'rock' | 'lock'               // enemy reel symbols, 16x16
   | 'coin' | 'seven' | 'ball'                     // boss reel symbols, 16x16 (ball: THE WHEEL's BALL)
+  | 'cherry' | 'double'                          // CHERRY scatter and X2 multiplier reel symbols, 16x16
   | 'frozenOverlay' | 'lockOverlay'               // cell overlays, 16x16 (mostly transparent)
   | 'relicClover'  // relic icons, 16x16
   | 'relicBattery' | 'relicMirror' | 'relicFang'
@@ -679,6 +680,42 @@ export const SPRITES: Record<SpriteId, string[]> = {
     'kkkkGRRRRRRGkkkk',
     'KKKKGrrrrrrGKKKK',
     '.KKKKKKKKKKKKKK.',
+  ],
+  cherry: [
+    '.........KKKKK..',
+    '........KQqEEeK.',
+    '........KeeEeeeK',
+    '.......KeKeKeQK.',
+    '.......KeKKeKK..',
+    '......KeK.KeKK..',
+    '.....KeK.KRRRRK.',
+    '....KeK.KRWMRRRK',
+    '..KKeK..KRMRRRrK',
+    '.KRRRRK.KRRRRrrK',
+    'KRWMRRRKKRRRrrrK',
+    'KRMRRRrK.KRrrrK.',
+    'KRRRRrrK..KKKK..',
+    'KRRRrrrK........',
+    '.KRrrrK.........',
+    '..KKKK..........',
+  ],
+  double: [
+    '.....KKKKKK.....',
+    '...KKMMMMMMKK...',
+    '..KMMWWVVVMMMK..',
+    '.KMMVVVVVVVVMmK.',
+    '.KMWVVVVVVVVVmK.',
+    'KMYYVYYVYYYYVmmK',
+    'KMYYvYYvVvvYYVmK',
+    'KMVYYYvvVVYYvvmK',
+    'KMVYYYvVVYYvvVmK',
+    'KMGGvGGVGGvvVvmK',
+    'KMGGvGGvGGGGGmmK',
+    '.KMvvVvvVvvvvmK.',
+    '.KMMVVVVVVvvmmK.',
+    '..KmmmVVVvmmmK..',
+    '...KKmmmmmmKK...',
+    '.....KKKKKK.....',
   ],
   frozenOverlay: [
     'cccccccccccccccc',

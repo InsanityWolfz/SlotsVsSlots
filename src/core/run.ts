@@ -80,6 +80,8 @@ export const gildsFor = (run: RunState): Enh[] =>
       (run.cabinet === 'joker' || !JOKER_ONLY.has(e)) &&
       (run.cabinet === 'jukebox' || !JUKEBOX_ONLY.has(e)) &&
       (e !== 'lucky' || LUCKY_MACHINES.has(run.cabinet)) &&
+      // (THE SCORE RACE: BULWARK was shield damage; shields are GUARDS there.)
+      !(run.race && e === 'spiked') &&
       // A charm with nothing on your reels to go on is never offered (KEEN on a machine with no swords).
       charmSymbols(run, e).some((sym) => run.player.strips.some((st) => (st[sym] ?? 0) > 0)),
   );
@@ -200,15 +202,25 @@ export interface FightRecord {
   choice?: string;
 }
 
+/** THE SCORE RACE: what an enemy's pay counts for in a race (its HP's share; honest HP: the same on every machine). */
+export function raceEnemyMul(run: RunState, e: EnemyDef, hp = enemyHp(run, e)): number {
+  return RACE.enemyMul * (hp / RACE.refHp) ** RACE.hpExp * (e.isBoss ? RACE.bossMul : 1) * (run.act === 1 && run.depth === 0 ? RACE.openerMul : 1);
+}
+
+/** THE SCORE RACE: relics with no job in a race (they read shield amounts or pierce shields). */
+const RACE_NO_RELIC: ReadonlySet<RelicId> = new Set<RelicId>(['armoredcar', 'safedeposit', 'subwoofer']);
+
 /**
  * THE SCORE RACE (user 2026-10-15: "instead of HP, competing scores"): every fight is a race of `spins` spins each
  * (elites and bosses more), you first and the enemy last, its pay x enemyMul; the higher score wins and one lost race
  * ends the run (user: no lives). Spin tools a race (user: 3 HOLDs, 2 NUDGEs, 1 RESPIN). PLAY MODES > SCORE RACE (TEST).
  */
-export const RACE = { spins: { fight: 5, elite: 6, boss: 7 }, enemyMul: 1.75, refHp: 200, hpExp: 0.65, bossMul: 1.8, openerMul: 0.7, golemPerRock: UNIT, holds: 3, nudges: 2, respins: 1, bandageShield: 3 * UNIT, toolPrice: { hold: 8, nudge: 10, respin: 12 },
+export const RACE = { spins: { fight: 5, elite: 6, boss: 7 }, enemyMul: 2.2, refHp: 200, hpExp: 0.65, bossMul: 1.8, openerMul: 0.7, golemPerRock: UNIT, holds: 3, nudges: 2, respins: 1, bandageShield: 1,
+  /** Chance a race draft offers a CHERRY or X2 card. */
+  newSymbolChance: 0.45, toolPrice: { hold: 8, nudge: 10, respin: 12 },
   /** Each machine's race pay (its payline pay x this): machines are balanced on their own, never the enemies. */
   // (Race act 1 balance, 2026-10-15, 500 runs: act 1 cleared 32-42% on every machine.)
-  machineMul: { knight: 1.05, tesla: 1.15, jukebox: 1, joker: 1.4, midas: 1.8 } as Record<CabinetId, number>,
+  machineMul: { knight: 1.05, tesla: 1.1, jukebox: 1, joker: 1.45, midas: 1.8 } as Record<CabinetId, number>,
 };
 
 export interface RunState {
@@ -768,7 +780,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // THE SCORE RACE (sandbox): a fixed number of spins, the higher score wins, and HOLDs to play them with.
   if (run.race) {
     // The enemy's score grows with its HP (HP tracked your power; honest HP keeps it the same on every machine).
-    cfg.race = { ...(e.archetype === 'golem' ? { perRock: RACE.golemPerRock } : {}), spins: e.isBoss ? RACE.spins.boss : e.elite ? RACE.spins.elite : RACE.spins.fight, enemyMul: RACE.enemyMul * (cfg.enemy.hp / RACE.refHp) ** RACE.hpExp * (e.isBoss ? RACE.bossMul : 1) * (run.act === 1 && run.depth === 0 ? RACE.openerMul : 1) };
+    cfg.race = { ...(e.archetype === 'golem' ? { perRock: RACE.golemPerRock } : {}), spins: e.isBoss ? RACE.spins.boss : e.elite ? RACE.spins.elite : RACE.spins.fight, enemyMul: raceEnemyMul(run, e, cfg.enemy.hp) };
     // The tools, plus any bought at the Cashier (for the run) and the relics' race versions: BANDAGE starts you holding
     // a shield, GOLDEN PARACHUTE is a RESPIN.
     const has = (r: RelicId) => run.player.relics.includes(r);
@@ -1211,7 +1223,8 @@ export function charmOptions(run: RunState, n: number, enhs: Enh[] = gildsFor(ru
   const p = run.player;
   const out: DraftOption[] = [];
   for (const enh of enhs)
-    for (const symbol of charmSymbols(run, enh))
+    // (THE SCORE RACE: shields are GUARDS, a count: no Charms on them.)
+    for (const symbol of charmSymbols(run, enh).filter((sym) => !(run.race && sym === 'shield')))
       for (let reel = 0; reel < p.strips.length; reel++) if (plainCells(p, reel, symbol) >= n) out.push({ kind: 'gild', enh, symbol, reel, n });
   return out;
 }
@@ -1220,7 +1233,8 @@ export function charmOptions(run: RunState, n: number, enhs: Enh[] = gildsFor(ru
 export function levelOptions(run: RunState): DraftOption[] {
   const p = run.player;
   const owned = new Set(p.strips.flatMap((s) => Object.keys(s).filter((k) => (s[k as SymbolId] ?? 0) > 0)));
-  return CABINETS[run.cabinet].symbols.filter((symbol) => owned.has(symbol)).map((symbol): DraftOption => ({ kind: 'symLevel', symbol }));
+  // (THE SCORE RACE: shields are GUARDS, a count: no shield levels.)
+  return CABINETS[run.cabinet].symbols.filter((symbol) => owned.has(symbol) && !(run.race && symbol === 'shield')).map((symbol): DraftOption => ({ kind: 'symLevel', symbol }));
 }
 
 /** Levels a symbol card gives: 1, or 2 with STAR CHART. */
@@ -1317,6 +1331,8 @@ export function draftOffers(run: RunState): DraftOption[] {
 
   // The draft only edits your reels: symbols in, out and across, WILDS and Charms (user, 2026-10-15: the draft and the
   // Cashier did the same job). Levels, relics and heals are the Cashier's.
+  // THE SCORE RACE: its own slot symbols, CHERRIES (a scatter) and X2, come in drafts.
+  if (run.race && rng.next() < RACE.newSymbolChance) push(rng.next() < 0.6 ? { kind: 'add', symbol: 'cherry', reel: rng.int(3), count: 2 } : { kind: 'add', symbol: 'double', reel: rng.int(3), count: 1 });
   push(gildCard() ?? swapCard());
   const r = rng.next();
   push((r < 0.35 ? wildCard() : r < 0.7 ? swapCard() : null) ?? clearCard() ?? gildCard() ?? addCard());
@@ -1462,6 +1478,8 @@ export function pickRelics(pool: RelicId[], n: number, rng: Rng): RelicId[] {
 
 export function relicFits(run: RunState, r: RelicId): boolean {
   const def = RELICS[r];
+  // THE SCORE RACE: relics with no job there (shield amounts, piercing) aren't offered.
+  if (run.race && RACE_NO_RELIC.has(r)) return false;
   // Slot machine relics only on their machine; charm relics once you own the charm (or your machine favours it).
   if (MACHINE_EXCLUDE[r]?.includes(run.cabinet)) return false;
   if (def.machine && def.machine !== run.cabinet) return false;
@@ -1527,7 +1545,7 @@ export function stripsAfter(run: RunState, o: DraftOption): StripCounts[] {
   return copy.player.strips;
 }
 
-const plural = (s: SymbolId, n: number) => `${symLabel(s)}${n > 1 ? 'S' : ''}`;
+const plural = (s: SymbolId, n: number) => (s === 'cherry' && n > 1 ? 'CHERRIES' : `${symLabel(s)}${n > 1 ? 'S' : ''}`);
 
 export const charmRule = charmRuleText;
 /** LV2, or MAX at the cap. */
@@ -1546,7 +1564,9 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
   switch (o.kind) {
     case 'add': {
       const n = o.count ?? 1;
-      return { title: `+${n} ${plural(o.symbol, n)}`, text: `ADD ${n} ${plural(o.symbol, n)} TO REEL ${o.reel + 1}` };
+      // (THE SCORE RACE's new symbols say what they do.)
+      const what = o.symbol === 'cherry' ? '. EVERY CHERRY IN SIGHT PAYS' : o.symbol === 'double' ? '. ON THE PAYLINE: THE SPIN PAYS X2' : '';
+      return { title: `+${n} ${plural(o.symbol, n)}`, text: `ADD ${n} ${plural(o.symbol, n)} TO REEL ${o.reel + 1}${what}` };
     }
     case 'swap':
       return { title: `${o.count} ${plural(o.from, o.count)} TO ${plural(o.to, o.count)}`, text: `ON REEL ${o.reel + 1}` };

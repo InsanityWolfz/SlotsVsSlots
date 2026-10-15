@@ -735,7 +735,7 @@ export class Game {
     this.synth.stopLoops();
     this.recap.hide();
     this.phase = 'between';
-    this.screens.showCabinets(this.unlockedCabinets(), this.stakesNow(), this.prefs.stakeSel, this.prefs.act3 || this.prefs.unlockAll, this.prefs.dealerBeaten);
+    this.screens.showCabinets(this.unlockedCabinets(), this.stakesNow(), this.prefs.stakeSel, this.prefs.act3 || this.prefs.unlockAll, this.prefs.dealerBeaten, this.raceNext);
     this.syncButtons();
   }
 
@@ -1135,7 +1135,19 @@ export class Game {
         if (s === 'player') hud.chips = hud.chipsHeld = cfg.player.chipsHeld ?? 0;
         if (c.ability) hud.charge = c.charge;
         // THE SCORE RACE: the HP bar is a score bar.
-        if (cfg.race) hud.race = true;
+        if (cfg.race) {
+          hud.race = true;
+          hud.guardCap = this.fight.guardCap;
+          // GOLEM: its rocks on your reels score for it every spin; say how many and how much.
+          const race = cfg.race;
+          if (s === 'enemy' && race.perRock) {
+            const fight = this.fight;
+            hud.raceNote = () => {
+              const rocks = fight.sides.player.reels.reduce((a, r) => a + r.cells.filter((c) => c.symbol === 'rock').length, 0);
+              return rocks ? `${rocks} ROCK${rocks === 1 ? '' : 'S'}: +${fmtNum(Math.round(rocks * race.perRock! * race.enemyMul))} A SPIN` : 'NO ROCKS ON YOU';
+            };
+          }
+        }
         return [s, hud];
       }),
     ) as Stage['huds'];
@@ -1438,7 +1450,10 @@ export class Game {
           return;
         }
         const was = this.fight.held[r];
+        // (THE SCORE RACE: holding an iced or jammed reel frees it.)
+        const status = this.fight.sides.player.frozen[r] > 0 ? 'frozen' : this.fight.sides.player.locked[r] > 0 ? 'locked' : null;
         const now = this.fight.hold(r);
+        if (now && status) void this.director.freeReel(r, status);
         if (now !== was) this.sounds.reelStop(r, now ? 1.4 : 0.8);
         else this.sounds.fizzle();
         return;
@@ -1810,7 +1825,7 @@ export class Game {
     }
     if (!this.fight.isBoss) {
       drawText(ctx, 'HIGHER SCORE WINS', cx, cy + 118, 1.5, COLORS.textDim);
-      drawText(ctx, 'A SHIELD BLOCKS THEIR NEXT SABOTAGE', cx, cy + 136, 1.25, '#9fd0ff', { alpha: 0.8 + 0.2 * Math.sin(t * 2) });
+      drawText(ctx, 'SHIELDS GIVE GUARDS. A GUARD STOPS A CHEAT', cx, cy + 136, 1.25, '#9fd0ff', { alpha: 0.8 + 0.2 * Math.sin(t * 2) });
     }
   }
 

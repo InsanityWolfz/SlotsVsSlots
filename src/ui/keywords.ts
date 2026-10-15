@@ -27,6 +27,11 @@ export const KEYWORDS: Keyword[] = [
   { word: 'BUST', forms: ['BUSTS'], color: '#ff8a7a', text: "THE DEALER'S CARD: YOUR BEST REEL'S PAYLINE PAYS NOTHING NEXT SPIN" },
   { word: 'ALL IN', color: '#ff6a5a', text: "THE DEALER'S BIG HIT: A SHARE OF YOUR MAX HP THAT PIERCES SHIELDS" },
   { word: 'SABOTAGE', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY PUTS ON YOUR REELS: SLIME, ROCKS, BOMBS, FREEZES, JAMS, HEXES, MARKS' },
+  // THE SCORE RACE's words.
+  { word: 'GUARD', forms: ['GUARDS', 'GUARDED'], color: '#9fd0ff', text: 'EACH SHIELD ON YOUR PAYLINE GIVES ONE (UP TO 3). A GUARD STOPS ONE CHEAT, THEN IT IS GONE' },
+  { word: 'CHEAT', forms: ['CHEATS'], color: '#d0a0ff', text: "A RIVAL MACHINE'S DIRTY TRICK ON YOUR REELS OR YOUR SCORE. A GUARD STOPS IT" },
+  { word: 'CHERRY', forms: ['CHERRIES'], color: '#ff8aa0', text: 'EVERY CHERRY YOU CAN SEE PAYS, PAYLINE OR NOT. 3 OR MORE PAY DOUBLE' },
+  { word: 'X2', color: '#e080ff', text: 'ON YOUR PAYLINE, THE WHOLE SPIN PAYS DOUBLE. IT PAYS NOTHING ITSELF' },
   { word: 'MARK', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED CELL ON YOUR PAYLINE HITS YOU' },
   { word: 'SLIME', forms: ['SLIMED', 'SLIMES'], color: COLORS.slime, text: 'A SLIMED CELL PAYS NOTHING. A SLIME PAIR CLEANSES ITS REELS; A JACKPOT CLEANSES IT ALL' },
   { word: 'ROCK', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD CELL: IT PAYS NOTHING' },

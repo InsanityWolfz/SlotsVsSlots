@@ -155,6 +155,9 @@ function baseValue(run: RunState, o: DraftOption): number {
     case 'clear':
       return 3 + (p.strips[o.reel].rock ?? 0) * 2;
     case 'add':
+      // (THE SCORE RACE: CHERRIES and X2.)
+      if (o.symbol === 'cherry') return 6;
+      if (o.symbol === 'double') return 7;
       return plainAttack(run, o.symbol) ? 3 : 4;
     case 'remove':
       return o.symbol === 'rock' ? 5 : o.symbol === 'shield' ? 3 : 0;

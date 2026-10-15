@@ -2,8 +2,8 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-15):** the race act 1 slice is built (steps 1-4) and playtested; waiting on the user to play it
-and decide, and on the open design calls below.
+**In progress (2026-10-15):** the race act 1 slice is built, playtested and re-themed (GUARDS, cheats, CHERRY and X2,
+HOLD frees a reel); waiting on the user to play it against normal act 1 and decide.
 
 ## Now, in order
 1. **Race act 1, a vertical slice** (user, 2026-10-15; behind PLAY MODES, the normal game untouched; it ends at
@@ -11,13 +11,11 @@ and decide, and on the open design calls below.
    - **Rules (user):** races alternate spins, you first, the enemy last, then the scores compare. One lost race ends the
      run (no lives). Each race: 3 HOLDs, 2 NUDGEs, 1 RESPIN, used as you see fit. HOLD keeps a reel before a spin; NUDGE
      and RESPIN act after your spin lands and before it scores (NUDGE moves a reel one cell, RESPIN spins one reel
-     again). A shield you hold blocks the next sabotage.
-   - **Open design calls (expert playtest):** (a) a shield blocks a whole ability whatever its size, so shield levels
-     and Charms barely matter in a race: block up to its value instead? (b) NUDGE is usually a solved puzzle (the
-     symbol above is in sight): both directions, or lean on nudging for a shield before SMASH / STEAL? (c) races are
-     mostly blowouts (median margins +167% to +332%): show an enemy pace or a SCORE TO BEAT? (d) HOLD adds only 4-7
-     points: 2 HOLDs that also guard a reel from FROST / GREMLIN? (e) GOLEM needs a visible rock counter; FROST /
-     GREMLIN / SLIME all read as "your spin scored less".
+     again). A GUARD you hold stops the next cheat.
+   - **Re-theme done (user):** GUARDS (a count) instead of shield points, rivals that cheat, PAY/SCORE words, machine
+     race rules, CHERRY and X2, HOLD frees an iced or jammed reel, GOLEM's rock counter.
+   - **Still open (expert playtest):** NUDGE is usually a solved puzzle (the symbol above is in sight): both
+     directions? Races are mostly blowouts: an enemy pace or SCORE TO BEAT (careful: no decision hints)?
 2. **Left from the second feel playtest:** act 2 fights run 74-95 s. Small UI: GOLD / GLASS icons blank in the side panel's
    Charm grid, REPO MAN's subtitle repeats his ability text, the WHEEL card has no
    tagline, the REGULAR title shares a relic's name.

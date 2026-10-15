@@ -484,6 +484,53 @@ S.lock = lit(16, 16, [
   rim.forEach(([x, y]) => put(g, x, y, (y <= 2 || x <= 3 || (x + y <= 13)) ? 'Y' : (x + y >= 17 ? 'g' : 'G')));
   S.seven = toRows(outline(g));
 }
+// cherry: classic fruit-machine pair of red cherries on green stems, with a leaf (the CHERRY scatter)
+{
+  const g = grid(16, 16);
+  const berry = (x0, y0) => {
+    const spans = [[1, 4], [0, 5], [0, 5], [0, 5], [0, 5], [1, 4]].map(([a, b]) => [x0 + a, x0 + b]);
+    shape(g, y0, spans, (x, y, has) => {
+      const lx = x - x0, ly = y - y0;
+      return (lx + ly >= 7 || (!has(x + 1, y) && ly >= 2) || (!has(x, y + 1) && lx >= 2)) ? 'r' : 'R';
+    });
+    put(g, x0 + 1, y0 + 1, 'W'); put(g, x0 + 2, y0 + 1, 'M'); put(g, x0 + 1, y0 + 2, 'M');
+  };
+  berry(1, 9);   // front cherry, lower left
+  berry(9, 6);   // back cherry, upper right
+  // stems: both rise to a knot at the top
+  [[4, 8], [5, 7], [6, 6], [7, 5], [8, 4], [8, 3], [9, 2]].forEach(([x, y]) => put(g, x, y, 'e'));
+  [[11, 5], [11, 4], [10, 3], [10, 2]].forEach(([x, y]) => put(g, x, y, 'e'));
+  put(g, 9, 1, 'Q'); put(g, 10, 1, 'q');
+  // leaf off the knot, lit top-left
+  stamp(g, 11, 1, ['EEe', 'Eeee', ' eQ']);
+  S.cherry = toRows(outline(g));
+}
+// double: the X2 token, bold gold "X2" on a round purple badge with a light pink rim
+{
+  const g = grid(16, 16);
+  const spans = [[5, 10], [3, 12], [2, 13], [2, 13], [1, 14], [1, 14], [1, 14], [1, 14], [1, 14], [1, 14], [2, 13], [2, 13], [3, 12], [5, 10]];
+  shape(g, 1, spans, (x, y, has) => {
+    const rim = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].some(([dx, dy]) => !has(x + dx, y + dy));
+    if (rim) return x + y >= 16 ? 'm' : 'M';
+    return x + y >= 22 ? 'v' : 'V';
+  });
+  const text = [
+    'YY.YY.YYYY.',
+    'YY.YY....YY',
+    '.YYY....YY.',
+    '.YYY...YY..',
+    'YY.YY.YY...',
+    'YY.YY.YYYYY',
+  ];
+  const x0 = 2, y0 = 5;
+  // drop shadow (down-right, only on the badge face), then the gold lettering, shaded gold on its bottom rows
+  text.forEach((r, dy) => [...r].forEach((c, dx) => {
+    if (c === 'Y' && 'Vv'.includes(get(g, x0 + dx + 1, y0 + dy + 1))) put(g, x0 + dx + 1, y0 + dy + 1, 'v');
+  }));
+  text.forEach((r, dy) => [...r].forEach((c, dx) => { if (c === 'Y') put(g, x0 + dx, y0 + dy, dy >= 4 ? 'G' : 'Y'); }));
+  put(g, 5, 2, 'W'); put(g, 6, 2, 'W'); put(g, 3, 4, 'W'); // gloss on the rim
+  S.double = toRows(outline(g));
+}
 // ball: THE WHEEL's reel symbol (BALL): the big ivory roulette ball, resting on a strip of the wheel's pocket ring
 // (black | red | black, gold frets between).
 {
@@ -5480,7 +5527,7 @@ const DIMS = {
   heart: 8, shieldIcon: 8, boltIcon: 8, 
   swordProjectile: 12, slimeBlob: 8, spark: 5, playerPortrait: 24, enemyPortrait: 24,
   enemyBrute: 24, enemyFrost: 24, enemyThief: 24, enemyGolem: 24, enemyGremlin: 24, enemyBoss: 24,
-  ice: 16, claw: 16, rock: 16, lock: 16, coin: 16, seven: 16, ball: 16,
+  ice: 16, claw: 16, rock: 16, lock: 16, coin: 16, seven: 16, ball: 16, cherry: 16, double: 16,
   frozenOverlay: 16, lockOverlay: 16,
   relicClover: 16, relicBattery: 16, relicMirror: 16,
   relicFang: 16, relicBandage: 16, 
@@ -5582,6 +5629,7 @@ export type SpriteId =
   | 'enemyGolem' | 'enemyGremlin' | 'enemyBoss'
   | 'ice' | 'claw' | 'rock' | 'lock'               // enemy reel symbols, 16x16
   | 'coin' | 'seven' | 'ball'                     // boss reel symbols, 16x16 (ball: THE WHEEL's BALL)
+  | 'cherry' | 'double'                          // CHERRY scatter and X2 multiplier reel symbols, 16x16
   | 'frozenOverlay' | 'lockOverlay'               // cell overlays, 16x16 (mostly transparent)
   | 'relicClover'  // relic icons, 16x16
   | 'relicBattery' | 'relicMirror' | 'relicFang'

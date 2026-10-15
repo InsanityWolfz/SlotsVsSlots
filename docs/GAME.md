@@ -374,26 +374,38 @@ tray), `drawScoreboard`, `useTool`.
   (gold HELD frame). SPIN lands the reels; then, while you have NUDGEs or RESPINs, the button reads PAY: tap NUDGE or
   RESPIN in the tray under your machine, then a reel (NUDGE steps it down one cell, the symbol above drops onto the
   payline; RESPIN spins it again). PAY scores it. The race always waits for you (AUTO doesn't play races).
-- **Shields** block the next sabotage on your reels (a symbol's or an ability's: BLOCKED!), then they're spent.
-- **The enemy's score:** its hits (swords, sevens) pay x 1.75 x (its HP / 200)^0.65 (THE HOUSE x1.8, the run's first race
+- **The re-theme (user, 2026-10-15: "swords don't make sense without attacks, shield numbers neither"):** in a race
+  the enemies are **rival Slot Machines that CHEAT** (their abilities are cheats: GUNK, ICE UP, ROCK DROP, JAM,
+  PICKPOCKET, BIG BET, REPO, CASH OUT; `RACE_CHEAT` / `abilityName` in hud.ts), the words are PAY and SCORE, and each
+  machine's card on the select screen says how it scores (`raceRule` in cabinets.ts; KNIGHT stays medieval: swords pay,
+  shields guard).
+- **GUARDS, not shield points:** each shield on your payline gives a GUARD (a count, up to 3; TOWER SHIELD 4), kept
+  from spin to spin. A GUARD stops one cheat (GUARDED! A GUARD STOPPED THE CHEAT) and is spent. The HUD shows a pip per
+  GUARD. Shield Charms and the spiked Charm aren't offered in a race; ARMORED CAR, SAFE DEPOSIT and SUBWOOFER aren't
+  either (`RACE_NO_RELIC`).
+- **HOLD frees a reel:** a HOLD on an iced (FROST) or jammed (GREMLIN) reel thaws it and holds it (it can't be let go).
+- **New symbols in a race's draft** (45% a draft, `RACE.newSymbolChance`): **CHERRY** (2 a card) is a scatter: every
+  cherry in sight pays 30, 3 or more pay double. **X2** (1 a card) on your payline doubles the spin (two: x4).
+- **The enemy's score:** its hits (swords, sevens) pay x 2.2 x (its HP / 200)^0.65 (THE HOUSE x1.8, the run's first race
   x0.7): honest HP. Its PAIR! math, payline numbers and SMASH show that real score. No head start on its ability in a
   race (BRUTE's SMASH fired on its first spin, before you could hold a shield).
 - **Machines are balanced on their own** (no HP in a race): their payline pays x `RACE.machineMul` (KNIGHT 1.05, TESLA
-  1.15, JUKEBOX 1, JOKER 1.4, BANKROLL 1.8). THE HOUSE no longer skims BANKROLL's chips in a race.
+  1.1, JUKEBOX 1, JOKER 1.45, BANKROLL 1.8). THE HOUSE no longer skims BANKROLL's chips in a race.
 - **Playtest fixes (expert playtest, 2026-10-15):** the turn arrow points at you while the race waits on you; the
   button goes back to SPIN after PAY; a NUDGE on a frozen reel says A FROZEN REEL CAN'T MOVE; HOLD in the tray is a
   counter, not a button; CASH OUT says SCORE, not DAMAGE; the RUN OVER table shows each race's score; the draft says
   312 TO 140: RACE WON!; KEEN reads +40 SCORE.
 - **The HUD:** a scoreboard between the machines (both scores, YOU LEAD BY / BEHIND BY, a pip per spin each), score
   bars on the HUDs, the rules under the VS, a RACE WON / RACE LOST banner with the final score.
-- **Sim** (`tools/out/race.ts`, 400 runs, after the playtest fixes): act 1 cleared KNIGHT 51%, TESLA 45, JUKEBOX 51,
-  JOKER 49, BANKROLL 53; races won 93-97%, elites 77-87%, THE HOUSE 70-85%, the first race 96-99%. (One loss ends the
+- **Sim** (`tools/out/race.ts`, 500 runs, after the re-theme; GUARDS, CHERRY and HOLD-frees made races easier, so the
+  enemy's x1.75 went to x2.2): act 1 cleared KNIGHT 53%, TESLA 53, JUKEBOX 49, JOKER 52, BANKROLL 57; races won 92-97%,
+  elites 80-89%, THE HOUSE 74-87%, the first race 94-98%. The normal game's sim is unchanged. (One loss ends the
   run, so ~88% a race compounded to ~40%: the expert playtest called that too harsh; normal act 1 is cleared 70-85%.)
 - **Act 1 enemies race their own way** (`RACE_RULES` in fight.ts; their cards say so, `RACE_BLURB` in runScreens):
   SLIME (slimed cells score nothing), FROST (a frozen reel of yours scores half), GOLEM (each of its spins scores 10 x
-  its multiplier per rock on your reels), GREMLIN (a jammed reel scores nothing), THIEF (its ability steals 25% of your
-  score: STOLEN!), BRUTE (its SMASH scores x3), REPO MAN (takes a Charm). A shield blocks any of their abilities, never
-  THE HOUSE's cash-out. **THE HOUSE:** its pot (its coins and its cut each spin) cashes 1/2 into its score every 3
+  its multiplier per rock on your reels; its HUD counts them: 4 ROCKS: +N A SPIN), GREMLIN (a jammed reel scores nothing), THIEF (its ability steals 25% of your
+  score: STOLEN!), BRUTE (its SMASH scores x3), REPO MAN (takes a Charm). A GUARD stops any of their cheats, never
+  THE HOUSE's cash-out. Their cards name the cheat and its real number (BETS BIG: SCORES n. A GUARD STOPS IT). **THE HOUSE:** its pot (its coins and its cut each spin) cashes 1/2 into its score every 3
   spins, and its last spin cashes the whole pot; your jackpot steals half the pot into your score. In a race the pot holds
   score (it grows x THE HOUSE's multiplier), so what it shows is what it cashes or you steal; it reads TAKES THE LEAD!
   when its next cash-out would put THE HOUSE ahead, and LAST SPIN: ALL n before its last spin. Sim (500 runs, step
@@ -401,9 +413,9 @@ tray), `drawScoreboard`, `useTool`.
   91-97; THE HOUSE 55-79.
 - **Relics, Charms and the Cashier in a race** (`RACE_RELIC_TEXT` in relics.ts; tooltips and cards use it): UNDERDOG x1.5
   while behind; COUP DE GRACE swords x2 while ahead; PHOENIX once a run saves you from a lost race (no win chips or
-  spoils; the side panel says PHOENIX: ONE SAVE); BANDAGE starts each race holding 30 shield; VAMPIRE FANG's meter
-  payoffs give a HOLD; INSURANCE gives a NUDGE the first time you fall 30% behind; TOWER SHIELD keeps your shield until a
-  block spends it; GOLDEN PARACHUTE is one more RESPIN a race; MELTDOWN +10% lightning per spin played. Nobody heals; a
+  spoils; the side panel says PHOENIX: ONE SAVE); BANDAGE starts each race holding a GUARD; VAMPIRE FANG's meter
+  payoffs give a HOLD; INSURANCE gives a NUDGE the first time you fall 30% behind; TOWER SHIELD holds one more GUARD; SHIELD BASH scores 30 a GUARD
+  each spin; CAPACITOR charges lightning 20 a GUARD; GOLDEN PARACHUTE is one more RESPIN a race; MELTDOWN +10% lightning per spin played. Nobody heals; a
   VAMP cell takes its heal out of the enemy's score. KEEN's +damage is score (its pierce does nothing). The Cashier
   sells +1 HOLD / NUDGE / RESPIN for the run (8 / 10 / 12 chips; `run.raceTools`) instead of HEAL and MAX HP.
 
