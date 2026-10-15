@@ -22,13 +22,12 @@ import {
   letItRide,
   needsRoute,
   playEncounter,
-  takeChoice,
   takeLegend,
   takeSpoils,
   takeStart,
   type RunState,
 } from '../core/run';
-import { choiceValue, greedyValue, pickEncounter, pickRoute, RELIC_VALUE, shop, SIM_BIAS, type DraftPolicy } from './bot';
+import { greedyValue, pickEncounter, pickRoute, RELIC_VALUE, shop, SIM_BIAS, type DraftPolicy } from './bot';
 
 export interface FightLog {
   act: number;
@@ -53,8 +52,6 @@ export interface RunLog {
   relics: RelicId[];
   /** Charms owned at the end: type -> cells. */
   charms: Record<string, number>;
-  /** Big choices taken. */
-  choices: string[];
   /** Encounters: id, the choice taken, chips and HP before and after. */
   encounters: { id: string; choice: number; chips: number; hp: number }[];
   /** Elites taken / elites offered on the chosen routes' alternatives (route picks with an elite in them). */
@@ -89,7 +86,7 @@ export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stak
   opts.setup?.(run);
   const pick = new Rng((seed ^ 0x5eed) >>> 0);
   const fightSeeds = new Rng((seed ^ 0x5f3759df) >>> 0);
-  const log: RunLog = { cabinet, stake, won: false, act: 1, fights: [], relics: [], charms: {}, choices: [], encounters: [], routes: [], chipsEnd: 0 };
+  const log: RunLog = { cabinet, stake, won: false, act: 1, fights: [], relics: [], charms: {}, encounters: [], routes: [], chipsEnd: 0 };
   if (run.pendingStart?.length) {
     const st = run.pendingStart;
     takeStart(run, policy === 'random' ? pick.pick(st) : best(st, (r) => RELIC_VALUE[r] ?? 5));
@@ -120,11 +117,6 @@ export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stak
       letItRide(run);
     }
     if (run.endless && run.endless.loop > 30) run.over = true;
-    while (!run.over && run.pendingChoice?.length) {
-      const c = policy === 'random' ? pick.pick(run.pendingChoice) : best(run.pendingChoice, (x) => choiceValue(run, x));
-      takeChoice(run, c);
-      log.choices.push(c.id);
-    }
     if (!run.over && run.pendingLegend) {
       const lg = run.pendingLegend;
       if (lg.length) takeLegend(run, policy === 'random' ? pick.pick(lg) : best(lg, (r) => RELIC_VALUE[r] ?? 5));

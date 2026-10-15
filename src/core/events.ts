@@ -28,17 +28,15 @@ export type CombatEvent =
       frozen: boolean[];
       /** Reels whose payline scored nothing this turn (jammed). */
       locked: boolean[];
-      /** A relic turned a near-miss into a jackpot. */
-      lucky: RelicId | null;
       /** Reels whose LUCKY cell turned into a WILD this spin. */
       luckyWilds?: number[];
       /** Reels that were hexed this spin (pay half). */
       hexed?: boolean[];
       /** This spin landed a bonus (three chase symbols): it pays nothing and the reels spin again. */
-      /** Per-fight bonus added to EACH cell of a symbol this spin (WAR DRUM on swords), so its number shows it. */
+      /** Per-fight bonus added to EACH cell of a symbol this spin (DECK DRUM on cards), so its number shows it. */
       symBonus?: Partial<Record<SymbolId, number>>;
       /** THE JUKEBOX: this spin is THE DROP (the notes it lights; the note group's hit, after). */
-      drop?: { cells: { reel: number; row: number; v?: number; wild?: true }[]; amount: number; encore?: true };
+      drop?: { cells: { reel: number; row: number; v?: number; wild?: true }[]; amount: number };
     }
   | {
       type: 'attack';
@@ -57,7 +55,7 @@ export type CombatEvent =
   | { type: 'secondLine'; side: SideId; line: SymbolId[]; groups: { symbol: SymbolId; reels: number[]; amount: number }[] }
   /** GLASS Charms on these payline reels shattered (gone for the run). */
   | { type: 'glassBreak'; side: SideId; cells: CellRef[] }
-  | { type: 'shieldGain'; side: SideId; reels: number[]; amount: number; total: number; /** Not from a shield group: chips vs a boss, the Chalice's overheal. */ source?: 'chips' | 'chalice' | 'insurance' }
+  | { type: 'shieldGain'; side: SideId; reels: number[]; amount: number; total: number; /** Not from a shield group: chips vs a boss, INSURANCE. */ source?: 'chips' | 'insurance' }
   | { type: 'energyGain'; side: SideId; reels: number[]; amount: number; total: number }
   | {
       type: 'specialFire';
@@ -80,7 +78,7 @@ export type CombatEvent =
   /** A meter paid off (MIDAS x4 group, JAX all-jackpots spin); it empties. */
   | { type: 'payoff'; side: SideId; kind: 'touch' | 'jackpots' | 'vault' | 'volume'; left?: number; mul?: number }
   /** THE JUKEBOX: THE DROP. Every NOTE in the 3x3 window off the payline hits (the payline scores as usual). */
-  | { type: 'drop'; side: SideId; cells: { reel: number; row: number; v?: number; wild?: true }[]; amount: number; encore?: true }
+  | { type: 'drop'; side: SideId; cells: { reel: number; row: number; v?: number; wild?: true }[]; amount: number }
   /** MIDAS: gold bars paid chips mid-fight (they're yours if you win). */
   | { type: 'midasChips'; side: SideId; amount: number; total: number }
   /** LUCRE: chips its group paid (banked on a win). */

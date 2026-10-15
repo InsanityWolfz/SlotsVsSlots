@@ -3,21 +3,17 @@ import { CABINETS, hasSpecial, type Cabinet, type Meter } from './cabinets';
 import { charmLevel, charmValue, GLASS_BREAK, LUCRE_CHIPS, playerSymValue } from './charms';
 import type { CombatEvent, DealCard, HealSource, LineCard } from './events';
 import {
-  BATTERY_SHARE,
-  BATTERY_ENERGY,
   BELL_MULT,
   BELL_MULT_JOKER,
-  BELT_MAX,
-  BELT_STEP,
   BOMB,
   KEY_MULT,
   MIDAS_TOUCH_CAP,
   OVERCHARGE_ECHO,
   OVERCHARGE,
-  CLOVER_CHANCE,
   FANG_HEAL,
   FANG_TESLA_HEAL,
   NEW_RELIC,
+  LEGEND_RELIC,
   POT,
 } from './relics';
 import { Rng } from './rng';
@@ -29,7 +25,7 @@ export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.
 /**
  * CASH CASSIDY's MAKE IT RAIN!: a chip jackpot with at least `cost` chips held hits for chips (up to `maxChips`, user 2026-10-12) x `perChip` (base: the
  * jackpot, charms, relics and a full HIGH ROLLER bar multiply it), counted before it costs `cost` chips.
- * RAINMAKER halves the cost; TIP JAR heals; SLUSH FUND refills the bar.
+ * RAINMAKER lowers the cost; OPEN BAR makes it free.
  */
 // Built at x2 / 10 chips (the user's draft), the rain cost more than it hit: CASSIDY 20.8 WHITE. x3 / 5 measured 39.6 / 18.8.
 /** chipLess: a chip group pays (its size - chipLess) chips, at least 1. */
@@ -37,14 +33,14 @@ export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.
 // rain x3 + a chip per symbol made CASSIDY 83 / 63. Now x2, and a group pays its size - 1 chips (1, 1, 2).
 /** Pot steals: 1 = any jackpot steals the boss pot, 0 = only a jackpot of your attack symbol (probe knob). */
 export const POT_STEAL = { any: 1 };
-/** additive 1: your MULT bonuses (GOLD, relics, big choices, HIGH ROLLER, volume) ADD into one pool instead of
+/** additive 1: your MULT bonuses (GOLD, relics, HIGH ROLLER, volume) ADD into one pool instead of
  * multiplying each other (the pair / jackpot tier still multiplies). lightningAdd 1 (on since 2026-10-12, the user's
  * call): TESLA's bolts pool (their charge), and the lightning's own boosts add up too (+30% and +100% make +130%, not
  * x2.6; CHAIN LIGHTNING is +100%). Slows TESLA's late growth without a cap. */
 export const PAY = { additive: 0, lightningAdd: 1 };
 /** THE JUKEBOX: +25% note damage per volume level (was +20%, 2026-10-12), max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
-export const VOLUME = { perLevel: 0.32, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5, battery: 3 };
-export const RAIN = { maxChips: 100, perChip: 1.5, cost: 5, rainmakerCost: 2, tipJarHeal: 2 * UNIT, slushFund: 5, chipLess: 1 };
+export const VOLUME = { perLevel: 0.32, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5 };
+export const RAIN = { maxChips: 100, perChip: 1.5, cost: 5, rainmakerCost: 2, chipLess: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x2.5 (quarter steps). */
 export const highRollerMul = (chips: number, cap = MIDAS.maxMul) => Math.min(cap, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
 import { isNearMiss, multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
@@ -316,18 +312,12 @@ export class Fight {
   lineCard: { reel: number; card: LineCard } | null = null;
   /** The Dealer's next attack is its whole hand. */
   dealerAllIn = false;
-  /** WAR DRUM stacks, KING'S VAULT gold, FIRST BLOOD / HOLY WATER used, STATIC's last turn (this fight). */
+  /** DECK DRUM stacks (this fight). */
   drum = 0;
   /** MIDAS TOUCH: gold touches per cell (this fight), and how much meter the current touch spends. */
   readonly touches = new Map<object, number>();
   private touchSpend = 0;
-  private firstBlood = false;
   private holyWater = false;
-  /** WARDED (big choice): sabotages washed off this fight. */
-  private wards = 0;
-  /** DOUBLE FEATURE: the first of the two payoff spins has played. */
-  private encoreSecond = false;
-  private staticTurn = -1;
   /** Card Sharp marks placed this fight (THE DECK REMEMBERS). */
   marksPlaced = 0;
   private forced: Partial<Record<SideId, SymbolId[]>> = {};
@@ -345,23 +335,17 @@ export class Fight {
     this.special = hasSpecial(this.cabinet);
     if (this.cabinet?.specialCost) this.cfg.specialCost = this.cabinet.specialCost;
     if (this.cabinet?.specialDamage) this.cfg.specialDamage = this.cabinet.specialDamage;
-    // Battery: your meter starts part-full (the special: 30 energy; MIDAS / JAX: 60%).
-    if (p.relics.has('battery') && (this.special || this.meter)) {
-      const start = this.special ? BATTERY_ENERGY : this.meter!.kind === 'volume' ? VOLUME.battery * UNIT : unitsUp(this.meter!.cost * BATTERY_SHARE);
-      p.energy = this.special ? Math.min(this.cfg.specialCost - 1, p.energy + start) : Math.min(Math.max(0, this.meterCost - 1), p.energy + start);
-      this.openers.push('battery');
-    }
     // MIDAS: the VAULT starts pre-filled by the chips you hold (1 per 2 chips, never full).
     if (this.meter?.kind === 'vault') p.energy = Math.max(p.energy, this.vaultBase());
-    // QUICKENING (big choice): your meter starts every fight one short of full.
-    if (this.big.startFull && (this.special || this.meter)) {
+    // QUICKENING (legendary relic): your meter starts every fight one short of full.
+    if (p.relics.has('quickening') && (this.special || this.meter)) {
       p.energy = this.special ? this.cfg.specialCost - 1 : Math.max(0, this.meterCost - 1);
       // THE JUKEBOX starts at max volume: the first spin is THE DROP.
       if (this.meter?.kind === 'volume') {
         p.energy = this.meterCost;
         p.armed = true;
       }
-      this.openers.push('battery');
+      this.openers.push('quickening');
     }
     // WARM-UP (JUKEBOX, ENDLESS): the volume starts at the loop, never at THE DROP itself.
     if (this.meter?.kind === 'volume' && this.cfg.player.volumeStart && !p.armed) p.energy = Math.max(p.energy, Math.min(this.meterCost - UNIT, this.cfg.player.volumeStart * UNIT));
@@ -441,13 +425,11 @@ export class Fight {
   midasChips = 0;
   /** LUCRE: chips its groups paid this fight (paid on a win, up to its cap). */
   lucreChips = 0;
-  /** Your spins this fight (METRONOME). */
+  /** Your spins this fight (HYPE MAN). */
   private playerSpins = 0;
   /** PIT BOSS: the enemy's first jackpot was already cut. */
   private pitUsed = false;
   private pitJustFired = false;
-  /** TESLA COIL: this spin's charge, waiting to join the bolt group's (or to go in alone after the groups). */
-  private coilPending = 0;
   private vaultPaid = 0;
   /** MIDAS: the VAULT's resting level (from chips held). */
   vaultBase(): number {
@@ -457,30 +439,23 @@ export class Fight {
   /** MIDAS: the VAULT's payoff multiplier: 1 + chips held / 20, max x3. */
   vaultMul(lineShield = 0): number {
     // COMPOUND raises the cap.
-    // NO LIMIT (big choice): no cap at all.
     // ARMORED CAR: this spin's shield counts as chips.
     const armored = this.sides.player.relics.has('armoredcar') ? Math.floor(lineShield / NEW_RELIC.armoredShield) : 0;
-    return highRollerMul(this.chipsNow() + armored, this.big.noHighRollerCap ? Infinity : this.sides.player.relics.has('compound') ? NEW_RELIC.compoundCap : MIDAS.maxMul);
+    return highRollerMul(this.chipsNow() + armored, this.sides.player.relics.has('compound') ? NEW_RELIC.compoundCap : MIDAS.maxMul);
   }
   /** CASH CASSIDY: chips in hand right now (held at the start, plus what this fight paid or cost). */
   chipsNow(): number {
     return (this.cfg.player.chipsHeld ?? 0) + this.midasChips;
   }
   private rainCost(me: Combatant): number {
-    // OPEN BAR / MONSOON (big choices) set the price outright.
-    if (me.side === 'player' && this.big.rainCost !== undefined) return this.big.rainCost;
+    // OPEN BAR (legendary relic): it costs nothing.
+    if (me.side === 'player' && me.relics.has('openbar')) return 0;
     return me.relics.has('rainmaker') ? RAIN.rainmakerCost : RAIN.cost;
-  }
-
-  /** The run's BIG CHOICE fight rules (player only). */
-  get big(): import('./config').BigMods {
-    return this.cfg.player.big ?? {};
   }
 
   /** How full the player's meter has to be (the special's cost for TESLA). */
   get meterCost(): number {
-    // THE JUKEBOX: HEADLINER raises the volume's max.
-    if (this.meter?.kind === 'volume') return (this.big.volumeMax ?? VOLUME.max) * UNIT;
+    if (this.meter?.kind === 'volume') return VOLUME.max * UNIT;
     return this.special ? this.cfg.specialCost : this.meter?.cost ?? 0;
   }
 
@@ -490,8 +465,6 @@ export class Fight {
   }
   /** THE JUKEBOX: this spin is THE DROP. */
   private dropNow = false;
-  /** ENCORE (big choice): the second drop in a row is still to come. */
-  private encorePending = false;
   /** THE DROP this spin: the notes off the payline that join the note group (vamp heals after). */
   private dropOff: { cells: { reel: number; row: number; v?: number; wild?: true }[]; vamp: number } | null = null;
 
@@ -535,8 +508,6 @@ export class Fight {
     if (this.turn === 1 && this.isDealer) events.push({ type: 'dealNext', side: 'enemy', card: this.nextDeal });
 
     if (this.cfg.shieldReset === 'ownTurnStart') this.resetShield(me, events);
-    // STORM FRONT (big choice): your first spin of every fight opens with a lightning strike.
-    if (side === 'player' && this.playerSpins === 1 && this.special && this.big.startStrike) this.gainEnergy(me, Math.max(0, this.cfg.specialCost - me.energy), [], events);
     // Saved chips shield you at the start of each boss turn.
     if (side === 'enemy' && (this.isBoss || this.isWheel || this.isDealer)) {
       const p = this.sides.player;
@@ -569,7 +540,7 @@ export class Fight {
     const frozen = me.frozen.map((t) => t > 0);
     const locked = me.locked.map((t) => t > 0);
     const forcedLine = this.forced[side];
-    let { stops, lucky } = this.rollStops(me, frozen, forcedLine);
+    const stops = this.rollStops(me, frozen, forcedLine);
     delete this.forced[side];
     me.reels.forEach((reel, i) => (reel.stop = stops[i]));
     const line = paylineSymbols(me.reels).map((s, i) => (locked[i] ? 'lock' : s));
@@ -589,22 +560,25 @@ export class Fight {
       }
     });
     const hexed = me.hexed.map((t) => t > 0);
-    const drumNow = side === 'player' && (me.relics.has('drum') || me.relics.has('deckdrum')) ? (me.relics.has('drum') ? NEW_RELIC.drumStep : NEW_RELIC.deckdrumStep) * this.drum : 0;
+    const drumNow = side === 'player' && me.relics.has('deckdrum') ? NEW_RELIC.deckdrumStep * this.drum : 0;
     // THE JUKEBOX: HYPE MAN turns the volume up before every other spin; a full volume makes this spin THE DROP.
     this.dropNow = false;
     // GOLDEN SPIN: 1 spin in 10 pays x3 (rolled before the score, from the fight's own seed).
     this.goldenNow = side === 'player' && me.relics.has('goldenspin') && this.rng.next() < NEW_RELIC.goldenChance;
     if (side === 'player' && this.meter?.kind === 'volume') {
-      if (this.big.hype && !me.armed && this.playerSpins % 2 === 1) this.turnUp(me, 1, [], events, true);
+      if (me.relics.has('hypeman') && !me.armed && this.playerSpins % 2 === 1) {
+        events.push({ type: 'relic', side, relic: 'hypeman' });
+        this.turnUp(me, 1, [], events, true);
+      }
       this.dropNow = me.armed;
     }
     const score = this.score(me, line);
     // THE DROP: every note you can see (the payline's too) lights up before the note group hits once.
-    let drop: { cells: { reel: number; row: number; v?: number; wild?: true }[]; amount: number; encore?: true } | null = null;
+    let drop: { cells: { reel: number; row: number; v?: number; wild?: true }[]; amount: number } | null = null;
     if (side === 'player' && this.dropNow && this.dropOff) {
       const payline = line.flatMap((x, r) => (x === 'note' || (x === 'wild' && score.groups.some((g) => g.symbol === 'note' && g.reels.includes(r))) ? [{ reel: r, row: 1 }] : []));
       const g = score.groups.find((x) => x.symbol === 'note' && x.drop);
-      drop = { cells: [...payline, ...this.dropOff.cells], amount: g?.amount ?? 0, ...(this.encorePending ? { encore: true as const } : {}) };
+      drop = { cells: [...payline, ...this.dropOff.cells], amount: g?.amount ?? 0 };
     }
     // Dead symbols lining up isn't a tease — except slime, which can cleanse.
     const nearMiss = isNearMiss(line) && (me.casts.has(line[0]) || line[0] === 'slime' || !DEAD.has(line[0]));
@@ -616,7 +590,6 @@ export class Fight {
       nearMiss,
       frozen,
       locked,
-      lucky,
       ...(luckyWilds.length ? { luckyWilds } : {}),
       ...(hexed.some(Boolean) ? { hexed } : {}),
       ...(drumNow ? { symBonus: { sword: drumNow, ace: drumNow } } : {}),
@@ -632,15 +605,6 @@ export class Fight {
     if (side === 'player' && (score.raised || score.jackpots)) this.payoff(me, score, events);
     if (laid) events.push({ type: 'lineCardUsed', side, reel: laid.reel, card: laid.card });
     const allIn = side === 'enemy' && this.isDealer && this.dealerAllIn;
-    // TESLA COIL: a bolt just above or below your payline charges your lightning (once a spin).
-    this.coilPending = 0;
-    if (side === 'player' && this.special && me.relics.has('coil')) {
-      const near = me.reels.some((reel) => [-1, 1].some((d) => {
-        const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
-        return c.symbol === 'bolt' && !c.slimed && !c.stolen;
-      }));
-      if (near) this.coilPending = NEW_RELIC.coilCharge;
-    }
     this.lastScoreShield = score.groups.filter((g) => g.symbol === 'shield').reduce((t, g) => t + g.amount, 0);
     for (const group of score.groups) {
       if (allIn && (group.symbol === 'sword' || group.symbol === 'seven')) continue;
@@ -648,8 +612,8 @@ export class Fight {
       if (!this.over && side === 'player') this.cellCharms(me, group, events);
       if (this.over) break;
     }
-    // SECOND PAYLINE (big choice): the row above pays its pairs and jackpots at half.
-    if (!this.over && side === 'player' && this.big.secondLine) this.secondLine(me, events);
+    // SECOND PAYLINE (legendary relic): the row above pays its pairs and jackpots at half.
+    if (!this.over && side === 'player' && me.relics.has('secondline')) this.secondLine(me, events);
     if (allIn && !this.over) {
       this.dealerAllIn = false;
       const foe = this.sides[other(side)];
@@ -707,18 +671,6 @@ export class Fight {
       this.pitJustFired = false;
       events.push({ type: 'relic', side: 'player', relic: 'pitboss' });
     }
-    // SNAKE EYES: an enemy jackpot heals you.
-    const you = this.sides.player;
-    if (!this.over && side === 'enemy' && score.tier === 'triple' && you.relics.has('snakeeyes') && you.hp > 0) {
-      events.push({ type: 'relic', side: 'player', relic: 'snakeeyes' });
-      this.heal(you, NEW_RELIC.snakeHeal, 'snakeeyes', events);
-    }
-    // TESLA COIL with no paying bolt group: its charge goes in on its own.
-    if (!this.over && this.coilPending > 0) {
-      events.push({ type: 'relic', side, relic: 'coil' });
-      this.gainEnergy(me, this.coilPending, [], events);
-    }
-    this.coilPending = 0;
     // Jackpot Bell: a jackpot fills your meter (TESLA: a full special).
     // Not on JOKER's payoff spin: the payoff scores as a jackpot, so the Bell refilled the meter it had just emptied and it
     // never ran dry (EXPERT_PLAYTEST_11 D1: JOKER + BELL 63%).
@@ -727,24 +679,8 @@ export class Fight {
       if (this.special || side !== 'player') this.gainEnergy(me, this.cfg.specialCost, [], events);
       else this.fillMeter(me, this.meterCost, [], events);
     }
-    if (!this.over && side === 'player') {
-      // WAR DRUM: a spin that pays adds a stack (max 5) for the rest of the fight.
-      if ((me.relics.has('drum') || me.relics.has('deckdrum')) && score.groups.some((g) => g.amount > 0 && PAYING.has(g.symbol))) this.drum = Math.min(NEW_RELIC.drumCap, this.drum + 1);
-      // CAP AND BELLS: every WILD on your payline heals.
-      const wilds = line.filter((s) => s === 'wild').length;
-      // WILD CARD: every WILD on your payline charges your meter (lightning or jackpots).
-      if (me.relics.has('wildcard') && wilds && !this.over) {
-        events.push({ type: 'relic', side, relic: 'wildcard' });
-        // 5 on the lightning, 10 on the jackpot meter (user, content audit 2026-10-08).
-        const q = wilds * (this.special ? NEW_RELIC.wildcardCharge : NEW_RELIC.wildcardMeter);
-        if (this.special) this.gainEnergy(me, q, [], events);
-        else if (this.meter && this.meter.kind !== 'vault' && this.meter.kind !== 'touch') this.fillMeter(me, q, [], events);
-      }
-      if (me.relics.has('capbells') && wilds) {
-        events.push({ type: 'relic', side, relic: 'capbells' });
-        this.heal(me, wilds * NEW_RELIC.capbellsHeal, 'capbells', events);
-      }
-    }
+    // DECK DRUM: a spin that pays adds a stack (max 5) for the rest of the fight.
+    if (!this.over && side === 'player' && me.relics.has('deckdrum') && score.groups.some((g) => g.amount > 0 && PAYING.has(g.symbol))) this.drum = Math.min(NEW_RELIC.drumCap, this.drum + 1);
     // Only a jackpot of your attack symbol (or wilds) steals the pot (2026-10-07: two-symbol reels made jackpots 3x as common).
     const atkJackpot = score.tier === 'triple' && (POT_STEAL.any || score.groups.some((g) => g.matched && g.reels.length >= 3 && (this.isAttack(g.symbol) || g.symbol === 'wild' || !!g.rain)));
     if (!this.over && side === 'player' && this.isBoss && atkJackpot) {
@@ -886,9 +822,7 @@ export class Fight {
     const pick = allWild ? this.wildPick(me) : undefined;
     const jackpots = player && me.armed && this.meter?.kind === 'jackpots';
     this.pickEnh.clear();
-    let s = scoreLine(line, cfg, { value, wildAlone: pick?.symbol ?? this.wildAlone(me), loadedReel: player && me.relics.has('loadedreel') });
-    // LOADED REEL made a second pair out of a middle WILD (two matched pairs on a 3-reel line).
-    const loadedFired = player && me.relics.has('loadedreel') && line[1] === 'wild' && s.groups.filter((g) => g.matched && g.reels.length === 2).length === 2;
+    let s = scoreLine(line, cfg, { value, wildAlone: pick?.symbol ?? this.wildAlone(me) });
     if (pick) {
       s.wildPick = pick.symbol;
       if (pick.enh) {
@@ -914,7 +848,6 @@ export class Fight {
       s = { line, tier: 'triple', tierSymbol: null, groups, totals, jackpots: true, ...(picks.length ? { picks } : {}) };
     }
     const fired = new Set<RelicId>();
-    if (loadedFired) fired.add('loadedreel');
     const has = (r: RelicId) => player && me.relics.has(r);
     const pays = (g: ScoreGroup) => g.base > 0 && (PAYING.has(g.symbol) || !!g.rain);
     const cellSym = (r: number) => me.reels[r].cells[me.reels[r].stop]?.symbol;
@@ -935,16 +868,13 @@ export class Fight {
       s.touched = this.midasTouch(me, line, touchable);
       s.raised = true;
     }
-    // CASH CASSIDY: MAKE IT RAIN! A chip jackpot (a chip pair with MONSOON) with enough chips held
+    // CASH CASSIDY: MAKE IT RAIN! A chip jackpot with enough chips held
     // hits for the chips in hand x2, counted before it costs them.
     if (player && this.meter?.kind === 'vault' && this.chipsNow() >= this.rainCost(me)) {
-      const g = s.groups.find((x) => x.symbol === 'goldbar' && x.matched && (x.reels.length >= 3 || (x.reels.length === 2 && !!this.big.monsoon)));
+      const g = s.groups.find((x) => x.symbol === 'goldbar' && x.matched && x.reels.length >= 3);
       if (g) {
         g.rain = true;
-        // MONSOON (big choice): a chip pair rains in full.
         g.base = Math.round((RAIN.maxChips ? Math.min(RAIN.maxChips, this.chipsNow()) : this.chipsNow()) * RAIN.perChip);
-        // DOWNPOUR: each rain this fight makes the next one hit harder.
-        if (has('downpour') && this.rains > 0) g.base = unitsRound(g.base * (1 + NEW_RELIC.downpourStep * this.rains));
       }
     }
     let vaultGroup: ScoreGroup | null = null;
@@ -965,12 +895,6 @@ export class Fight {
         this.vaultPaid = mul;
       }
     }
-    // FIRST BLOOD: your first paying spin each fight.
-    const firstBlood = has('firstblood') && !this.firstBlood && s.groups.some(pays);
-    if (firstBlood) this.firstBlood = true;
-    // CHARM BRACELET: the charm types on your reels; METRONOME: every 3rd spin.
-    const bracelet = has('bracelet') ? 1 + NEW_RELIC.braceletPer * new Set(me.reels.flatMap((r) => r.cells.map((c) => c.enh).filter(Boolean))).size : 1;
-    const metronome = has('metronome') && this.playerSpins % NEW_RELIC.metronomeEvery === 0;
     const foe = this.sides[other(me.side)];
     // THE DROP: every note off the payline joins your biggest note group (or hits as a group of its own).
     this.dropOff = null;
@@ -1004,7 +928,6 @@ export class Fight {
       // A jackpot of one cell counts that cell's charm three times.
       const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
       let gold = 0;
-      let keen = false;
       for (const r of g.reels)
         for (const enh of this.enhsAt(me, r)) {
         const v = charmValue(enh, this.charmLvl(me, enh)) * copies;
@@ -1012,7 +935,6 @@ export class Fight {
         if (enh === 'keen' && BLADES.has(g.symbol)) {
           g.base += v * g.reels.length;
           g.pierce = true;
-          keen = true;
         }
         if (enh === 'charged' && g.symbol === 'bolt') g.base += v;
         if (enh === 'gold') gold += v;
@@ -1028,10 +950,7 @@ export class Fight {
         g.base += off.base;
         echoes += off.echoes;
         noteCells += off.cells.length;
-        if (off.keen) {
-          g.pierce = true;
-          keen = true;
-        }
+        if (off.keen) g.pierce = true;
         if (me.relics.has('subwoofer')) {
           if (!g.pierce && foe.shield > 0) fired.add('subwoofer');
           g.pierce = true;
@@ -1041,22 +960,10 @@ export class Fight {
       // MIDAS TOUCH: each gold touch on a sword or shield counts as a gold charm.
       if (touchMeter && (g.symbol === 'sword' || g.symbol === 'shield'))
         for (const r of g.reels) if (touchable(r)) gold += (this.touches.get(me.reels[r].cells[me.reels[r].stop]) ?? 0) * charmValue('gold', this.charmLvl(me, 'gold')) * copies;
-      // WHETSTONE BELT: blocked hits sharpen every sword in your next sword group (then it's spent).
-      if (player && has('belt') && BLADES.has(g.symbol) && this.belt > 0 && g.base > 0) {
-        g.base += BELT_STEP * this.belt * g.reels.length;
-        notes.push(`BELT +${BELT_STEP * this.belt}`);
-        this.belt = 0;
-      }
-      // HEADSMAN (KNIGHT): each sword hits for a share of your max HP (boss sizing passes your real HP).
-      if (player && has('headsman') && g.symbol === 'sword' && g.base > 0) {
-        g.base += Math.round(((this.cfg.player.sizeHp ?? me.maxHp) * NEW_RELIC.headsmanPct) / 5) * 5 * g.reels.length;
-        fired.add('headsman');
-      }
-      // WAR DRUM: every paying spin this fight adds to EACH sword (shown on the sword's number).
-      // (DECK DRUM is WAR DRUM on JAX: the same stacks, on cards.)
-      if ((has('drum') || has('deckdrum')) && BLADES.has(g.symbol) && this.drum > 0 && g.base > 0) {
-        g.base += (has('drum') ? NEW_RELIC.drumStep : NEW_RELIC.deckdrumStep) * this.drum * g.reels.length;
-        fired.add(has('drum') ? 'drum' : 'deckdrum');
+      // DECK DRUM (JAX): every paying spin this fight adds to EACH card (shown on the card's number).
+      if (has('deckdrum') && BLADES.has(g.symbol) && this.drum > 0 && g.base > 0) {
+        g.base += NEW_RELIC.deckdrumStep * this.drum * g.reels.length;
+        fired.add('deckdrum');
       }
       // THE JUKEBOX: notes hit +25% per volume; at THE DROP an ECHO note hits again (HEADLINER: the drop hits x2);
       // HYPE MAN cuts notes off the drop.
@@ -1072,32 +979,23 @@ export class Fight {
             boost(g, 1 + ((ev - 1) * echoes) / noteCells);
             notes.push('ECHO');
           }
-          if (this.big.dropMul) {
-            boost(g, this.big.dropMul);
-            notes.push(`X${this.big.dropMul} DROP`);
-          }
-        } else if (this.big.hype) g.mult *= VOLUME.hypePay;
+        } else if (me.relics.has('hypeman')) g.mult *= VOLUME.hypePay;
       }
-      // BIG CHOICES on your groups: CRUSADE, EXCALIBUR, HIGH CARD, TRUMP CARD.
+      // CRUSADE and HIGH CARD (legendary relics) on your groups.
       if (player && g.base > 0) {
-        const b = this.big;
-        if (b.swordBonus && g.symbol === 'sword') {
-          g.base += b.swordBonus * g.reels.length;
-          notes.push(`CRUSADE +${b.swordBonus}`);
+        const crusade = this.cfg.player.swordBonus ?? 0;
+        if (crusade && g.symbol === 'sword') {
+          g.base += crusade * g.reels.length;
+          notes.push(`CRUSADE +${crusade}`);
+          if (has('crusade')) fired.add('crusade');
         }
-        const pair = g.matched && g.reels.length === 2 && !g.jackpot;
-        const jack = g.matched && (g.reels.length >= 3 || !!g.jackpot);
-        if (b.swordPairJackpot && pair && g.symbol === 'sword') {
-          g.mult *= multFor(3, this.cfg) / multFor(2, this.cfg);
-          notes.push('EXCALIBUR');
+        if (has('highcard') && PAYING.has(g.symbol) && g.matched) {
+          fired.add('highcard');
+          if (g.reels.length >= 3 || !!g.jackpot) {
+            boost(g, LEGEND_RELIC.highCardMul);
+            notes.push(`X${LEGEND_RELIC.highCardMul}`);
+          } else if (g.reels.length === 2) boost(g, LEGEND_RELIC.highCardPairMul);
         }
-        if (b.shieldPairsBlockNothing && pair && g.symbol === 'shield') g.base = 0;
-        if (b.pairMul && pair && PAYING.has(g.symbol)) boost(g, b.pairMul);
-        if (b.jackpotMul && jack && PAYING.has(g.symbol)) {
-          boost(g, b.jackpotMul);
-          notes.push(`X${b.jackpotMul}`);
-        }
-        if (b.pierce?.includes(g.symbol)) g.pierce = true;
       }
       // GOLD charms in a group ADD (x2 + x2 + x2 = x6), then multiply with the double/jackpot.
       if (gold) {
@@ -1116,12 +1014,6 @@ export class Fight {
         fired.add('horseshoe');
         boost(g, NEW_RELIC.horseshoeMul);
         notes.push(`X${NEW_RELIC.horseshoeMul}`);
-      }
-      // EXECUTIONER: keen swords against an enemy under half HP.
-      if (has('hone') && keen && BLADES.has(g.symbol) && foe.hp < foe.maxHp / 2) {
-        fired.add('hone');
-        boost(g, NEW_RELIC.executionerMul);
-        notes.push(`X${NEW_RELIC.executionerMul}`);
       }
       // Legendaries: Skeleton Key (doubles) and Jackpot Bell (jackpots).
       if (me.relics.has('key') && g.matched && g.reels.length === 2) {
@@ -1151,21 +1043,6 @@ export class Fight {
         fired.add('underdog');
         boost(g, NEW_RELIC.underdogMul);
         notes.push(`X${NEW_RELIC.underdogMul}`);
-      }
-      if (bracelet > 1 && paying) {
-        fired.add('bracelet');
-        boost(g, bracelet);
-        notes.push(`X${Math.round(bracelet * 100) / 100}`);
-      }
-      if (metronome && paying) {
-        fired.add('metronome');
-        boost(g, NEW_RELIC.metronomeMul);
-        notes.push(`X${NEW_RELIC.metronomeMul} BEAT`);
-      }
-      if (firstBlood && paying) {
-        fired.add('firstblood');
-        boost(g, NEW_RELIC.firstbloodMul);
-        notes.push(`X${NEW_RELIC.firstbloodMul} FIRST`);
       }
       // DRY SPELL: the stacks from dry spins on this pair or jackpot.
       if (has('dryspell') && this.drySpell > 0 && paying && g.matched && (g.reels.length >= 2 || !!g.jackpot)) {
@@ -1296,14 +1173,6 @@ export class Fight {
           this.hit(c, this.sides.enemy, amt, [], events);
         }
       }
-      // CHAINMAIL: leftover shield heals you for a share of it.
-      if (!this.over && c.relics.has('chainmail')) {
-        const h = Math.round((held * NEW_RELIC.chainmailShare) / 5) * 5;
-        if (h > 0) {
-          events.push({ type: 'relic', side: 'player', relic: 'chainmail' });
-          this.heal(c, h, 'chainmail', events);
-        }
-      }
       // CAPACITOR (TESLA): leftover shield charges lightning before it resets.
       if (!this.over && this.special && c.relics.has('capacitor')) {
         const q = unitsRound(held * NEW_RELIC.capacitorShare);
@@ -1313,13 +1182,6 @@ export class Fight {
         }
       }
       if (this.over) return;
-      // SHIELD WALL (big choice): the shield never resets, up to a share of your max HP.
-      if (this.big.shieldKeep) {
-        const keep = Math.min(held, unitsRound(c.maxHp * this.big.shieldKeep));
-        if (keep < held) events.push({ type: 'shieldReset', side: c.side, lost: held - keep });
-        c.shield = keep;
-        return;
-      }
       // TOWER SHIELD (KNIGHT): half the leftover shield stays (capped, since SHIELD BASH reads it again next turn).
       if (c.relics.has('tower')) {
         const keep = Math.min(unitsRound(held * NEW_RELIC.towerShare), unitsRound(c.maxHp * NEW_RELIC.towerCap));
@@ -1335,8 +1197,8 @@ export class Fight {
     c.shield = 0;
   }
 
-  private rollStops(c: Combatant, frozen: boolean[], forced?: SymbolId[]): { stops: number[]; lucky: RelicId | null } {
-    const stops = c.reels.map((reel, r) => {
+  private rollStops(c: Combatant, frozen: boolean[], forced?: SymbolId[]): number[] {
+    return c.reels.map((reel, r) => {
       if (frozen[r]) return reel.stop;
       const want = forced?.[r];
       if (want) {
@@ -1345,22 +1207,6 @@ export class Fight {
       }
       return this.rng.int(reel.cells.length);
     });
-    // Lucky Clover: a near-miss sometimes lands the third symbol after all.
-    let lucky: RelicId | null = null;
-    if (c.relics.has('clover') && stops.length >= 3 && !frozen[2] && !c.locked.some((t) => t > 0)) {
-      const sym = stops.map((s, r) => effectiveSymbol(c.reels[r].cells[s]));
-      const head = sym[0] === 'wild' ? (sym[1] === 'wild' ? 'bolt' : sym[1]) : sym[0];
-      const firstTwo = (sym[0] === head || sym[0] === 'wild') && (sym[1] === head || sym[1] === 'wild');
-      if (firstTwo && sym[2] !== head && sym[2] !== 'wild' && !DEAD.has(head)) {
-        const roll = this.rng.next();
-        const hits = c.reels[2].cells.flatMap((cell, i) => (effectiveSymbol(cell) === head || effectiveSymbol(cell) === 'wild' ? [i] : []));
-        if (roll < CLOVER_CHANCE && hits.length) {
-          stops[2] = this.rng.pick(hits);
-          lucky = 'clover';
-        }
-      }
-    }
-    return { stops, lucky };
   }
 
   private resolveGroup(me: Combatant, g: ScoreGroup, score: LineScore, events: CombatEvent[]): void {
@@ -1387,14 +1233,6 @@ export class Fight {
       case 'shield':
         me.shield += g.amount;
         events.push({ type: 'shieldGain', side: me.side, reels: g.reels, amount: g.amount, total: me.shield });
-        // FARADAY CAGE: shield you gain also charges your lightning.
-        if (player && this.special && me.relics.has('faraday') && g.amount > 0 && !this.over) {
-          const e = Math.round((g.amount * NEW_RELIC.faradayShare) / UNIT) * UNIT;
-          if (e > 0) {
-            events.push({ type: 'relic', side: me.side, relic: 'faraday' });
-            this.gainEnergy(me, e, g.reels, events);
-          }
-        }
         this.vampHeal(me, g, events);
         // BULWARK: each bulwark shield also deals a share of its shield as damage.
         if (player && g.amount > 0 && !this.over) {
@@ -1403,24 +1241,11 @@ export class Fight {
           const dmg = Math.round((share * pct) / 100 / UNIT) * UNIT;
           if (dmg > 0) this.hit(me, foe, dmg, g.reels, events);
         }
-        // SHIELD SLAM (big choice): every shield also hits for a share of what it blocks.
-        if (player && this.big.shieldSlam && g.amount > 0 && !this.over) {
-          const dmg = Math.round((g.amount * this.big.shieldSlam) / UNIT) * UNIT;
-          if (dmg > 0) this.hit(me, foe, dmg, g.reels, events);
-        }
         return;
       case 'bolt':
         // Only TESLA (or the bare engine) has a special.
         if (player && !this.special) break;
-        {
-          // TESLA COIL: its charge joins this group's, so it feeds the same strike (it fired a strike of its own after).
-          const coil = player ? this.coilPending : 0;
-          if (coil) {
-            this.coilPending = 0;
-            events.push({ type: 'relic', side: me.side, relic: 'coil' });
-          }
-          this.gainEnergy(me, g.amount + coil, g.reels, events);
-        }
+        this.gainEnergy(me, g.amount, g.reels, events);
         this.vampHeal(me, g, events);
         return;
       case 'goldbar':
@@ -1460,11 +1285,6 @@ export class Fight {
     events.push({ type: 'fizzle', side: me.side, reels: g.reels, symbol: g.symbol });
   }
 
-  /** MAKE IT RAIN!: the hit (scored in score()), then its cost; TIP JAR heals, SLUSH FUND refills the bar. */
-  /** PULSE: used this fight. */
-  private pulsed = false;
-  /** DOWNPOUR: rains so far this fight. */
-  private rains = 0;
   /**
    * THE DROP: the notes off the payline (rows above and below). What enemies wrote counts: a slimed, stolen or dead-card
    * cell isn't a note, a jammed reel sits out, a hexed reel pays half with its Charm dark (unless the payline's hex
@@ -1515,14 +1335,9 @@ export class Fight {
       const vamp = this.dropOff?.vamp ?? 0;
       if (vamp) this.heal(me, vamp, 'vamp', events);
       if (this.over) return;
-      // ENCORE (big choice): the beat drops once more before the volume falls.
-      if (this.big.encoreDrop && !this.encorePending) this.encorePending = true;
-      else {
-        this.encorePending = false;
-        me.armed = false;
-        me.energy = (me.relics.has('turntable') ? VOLUME.turntable : VOLUME.after) * UNIT;
-        if (me.relics.has('turntable')) events.push({ type: 'relic', side: me.side, relic: 'turntable' });
-      }
+      me.armed = false;
+      me.energy = (me.relics.has('turntable') ? VOLUME.turntable : VOLUME.after) * UNIT;
+      if (me.relics.has('turntable')) events.push({ type: 'relic', side: me.side, relic: 'turntable' });
       events.push({ type: 'payoff', side: me.side, kind: 'volume', left: me.energy });
       this.payoffHeal(me, events);
       return;
@@ -1550,8 +1365,6 @@ export class Fight {
     return unitsRound(this.lastScoreShield * NEW_RELIC.safeDepositMul);
   }
   private makeItRain(me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
-    this.rains++;
-    if (me.relics.has('downpour') && this.rains > 1) events.push({ type: 'relic', side: me.side, relic: 'downpour' });
     const foe = this.sides[other(me.side)];
     const cost = this.rainCost(me);
     events.push({ type: 'makeItRain', side: me.side, reels: g.reels, chips: this.chipsNow(), cost, total: this.midasChips - cost });
@@ -1559,15 +1372,6 @@ export class Fight {
     this.hit(me, foe, g.amount + this.depositOnce(me, events), g.reels, events);
     this.midasChips -= cost;
     events.push({ type: 'midasChips', side: me.side, amount: -cost, total: this.midasChips });
-    if (this.over) return;
-    if (me.relics.has('tipjar')) {
-      events.push({ type: 'relic', side: me.side, relic: 'tipjar' });
-      this.heal(me, RAIN.tipJarHeal, 'tipjar', events);
-    }
-    if (me.relics.has('slushfund') && !me.armed) {
-      events.push({ type: 'relic', side: me.side, relic: 'slushfund' });
-      this.fillMeter(me, 0, Array.from({ length: RAIN.slushFund }, () => g.reels[0]), events);
-    }
   }
 
   /**
@@ -1598,13 +1402,6 @@ export class Fight {
   /** MIDAS / JAX: the full meter pays off this spin — it empties, and you heal. */
   private payoff(me: Combatant, score: LineScore, events: CombatEvent[]): void {
     if (score.jackpots) {
-      // DOUBLE FEATURE (big choice): the jackpot meter pays a second spin in a row.
-      if (me.side === 'player' && this.big.doublePayoff && !this.encoreSecond) {
-        this.encoreSecond = true;
-        events.push({ type: 'payoff', side: me.side, kind: 'jackpots' });
-        return;
-      }
-      this.encoreSecond = false;
       me.armed = false;
       // ENCORE: the meter keeps a share after it pays.
       me.energy = me.side === 'player' && me.relics.has('encore') ? unitsUp(this.meterCost * NEW_RELIC.encoreKeep) : 0;
@@ -1647,11 +1444,9 @@ export class Fight {
   /** Every meter payoff heals (the machine's own heal, plus Vampire Fang). */
   private payoffHeal(me: Combatant, events: CombatEvent[], times = 1): void {
     if (me.side !== 'player' || this.over) return;
-    // One heal, its parts named (user, 2026-10-13: "what's healing me 15?"): the meter's own, GROUND WIRE (big choice:
-    // every lightning strike heals more), VAMPIRE FANG.
+    // One heal, its parts named (user, 2026-10-13: "what's healing me 15?"): the meter's own and VAMPIRE FANG.
     const parts = [
       { label: PAYOFF_WORD[this.meter?.kind ?? ''] ?? 'METER', amount: (this.meter?.heal ?? 0) * times },
-      { label: 'GROUND WIRE', amount: this.special ? (this.big.strikeHeal ?? 0) * times : 0 },
       { label: 'FANG', amount: me.relics.has('fang') ? (this.special ? FANG_TESLA_HEAL : FANG_HEAL) * times : 0 },
     ].filter((x) => x.amount > 0);
     if (!parts.length) return;
@@ -1741,17 +1536,7 @@ export class Fight {
     }
     const h = this.damage(foe, amount, pierce);
     events.push({ type: 'attack', from: me.side, to: foe.side, reels, amount, ...h, ...(pierced ? { note: 'pierce' as const } : note ? { note } : {}) });
-    if (foe.side === 'player' && foe.relics.has('belt') && h.blocked > 0 && this.belt < BELT_MAX) {
-      this.belt++;
-      events.push({ type: 'relic', side: foe.side, relic: 'belt' });
-    }
     this.checkDeath(foe, events);
-    // STATIC: being attacked charges your lightning (once per enemy turn).
-    if (!this.over && amount > 0 && foe.side === 'player' && this.special && foe.relics.has('static') && this.staticTurn !== this.turn) {
-      this.staticTurn = this.turn;
-      events.push({ type: 'relic', side: 'player', relic: 'static' });
-      this.gainEnergy(foe, NEW_RELIC.staticCharge, [], events);
-    }
     return h.hpDamage;
   }
 
@@ -1774,46 +1559,25 @@ export class Fight {
       const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
       // MELTDOWN: +1% per 1% of HP you're missing (capped).
       const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, Math.max(0, me.maxHp - me.hp) * NEW_RELIC.meltdownRate) : 0;
-      const mad = me.side === 'player' ? this.big.lightningMul ?? 1 : 1;
-      // PAY.lightningAdd: the lightning's boosts add up instead of multiplying (CHAIN LIGHTNING joins as +100%).
-      const twice = me.side === 'player' && this.big.strikeTwice;
+      // CHAIN LIGHTNING (legendary relic): +100%.
+      const chain = me.side === 'player' && me.relics.has('chainlightning') ? LEGEND_RELIC.chainAdd : 0;
+      // PAY.lightningAdd: the lightning's boosts add up instead of multiplying.
       const dmg = PAY.lightningAdd
-        ? unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0) + (live ? NEW_RELIC.livewireMul : 0) + melt + (mad - 1) + (twice ? 1 : 0)))
-        : unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1) * (1 + melt) * mad);
+        ? unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0) + (live ? NEW_RELIC.livewireMul : 0) + melt + chain))
+        : unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1) * (1 + melt) * (1 + chain));
       if (over && !overPopped) {
         overPopped = true;
         events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
       }
       if (melt > 0 && strikes === 0) events.push({ type: 'relic', side: me.side, relic: 'meltdown' });
+      if (chain && strikes === 0) events.push({ type: 'relic', side: me.side, relic: 'chainlightning' });
       const h = this.damage(foe, dmg, pierce);
       events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy });
       this.checkDeath(foe, events);
       strikes++;
-      // CHAIN LIGHTNING (big choice): every strike hits twice.
-      if (me.side === 'player' && this.big.strikeTwice && !PAY.lightningAdd && !this.over && foe.hp > 0) {
-        const h2 = this.damage(foe, dmg, pierce);
-        events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h2, energyLeft: me.energy });
-        this.checkDeath(foe, events);
-      }
-    }
-    // MAD SCIENCE (big choice): each storm costs a share of your max HP (never lethal).
-    if (me.side === 'player' && this.big.stormCost && strikes > 0 && !this.over) {
-      const cost = Math.min(me.hp - 1, unitsRound(me.maxHp * this.big.stormCost));
-      if (cost > 0) {
-        me.hp -= cost;
-        events.push({ type: 'hpCost', side: 'player', amount: cost, hp: me.hp });
-      }
     }
     // Every strike heals a little (TESLA's payoff heal), plus Vampire Fang: once per storm, for all its strikes (one heal
     // after each strike spammed through a LIGHTNING STORM: user playtest).
-    // PULSE: once a fight, a storm right before their ability fires resets it (not the House's cash out, the Dealer's
-    // deal or THE WHEEL's NO MORE BETS: their telegraphs are the drama).
-    if (strikes > 0 && me.side === 'player' && me.relics.has('pulse') && !this.pulsed && !this.over && foe.ability && foe.charge >= foe.ability.every - 1 && foe.ability.kind !== 'jackpot' && foe.ability.kind !== 'deal' && foe.ability.kind !== 'bets') {
-      this.pulsed = true;
-      foe.charge = 0;
-      events.push({ type: 'relic', side: 'player', relic: 'pulse' });
-      events.push({ type: 'abilityCharge', side: foe.side, charge: 0, every: foe.ability.every, kind: foe.ability.kind });
-    }
     // LIVE WIRE: each storm costs HP, once a storm (never per strike), never lethal, outside damage() and its turn cap.
     if (live && strikes > 0 && !this.over) {
       const cost = Math.min(me.hp - 1, NEW_RELIC.livewireCost);
@@ -1839,13 +1603,6 @@ export class Fight {
       me.hp += n;
       // (The parts only when they add up to what landed: capped at max HP or halved, they'd read wrong.)
       events.push({ type: 'heal', side: me.side, amount: n, hp: me.hp, source, ...(parts && n === full ? { parts } : {}) });
-    }
-    // Blood Chalice: healing past full HP becomes shield.
-    const over = amount - Math.max(0, n);
-    if (over > 0 && me.relics.has('chalice') && source !== 'drain' && source !== 'ability') {
-      me.shield += over;
-      events.push({ type: 'relic', side: me.side, relic: 'chalice' });
-      events.push({ type: 'shieldGain', side: me.side, reels: [], amount: over, total: me.shield, source: 'chalice' });
     }
   }
 
@@ -1975,11 +1732,6 @@ export class Fight {
     if (foe.side === 'player' && foe.relics.has('holywater') && !this.holyWater && REEL_WRITES.has(sym) && !(FIZZLE_SINGLES.has(sym) && amount < PAIR_PAY)) {
       this.holyWater = true;
       events.push({ type: 'relic', side: 'player', relic: 'holywater' });
-      return this.fizzle(me, sym, reels, events);
-    }
-    // WARDED (big choice): the first few sabotages each fight wash off.
-    if (foe.side === 'player' && this.wards < (this.big.wards ?? 0) && REEL_WRITES.has(sym) && !(FIZZLE_SINGLES.has(sym) && amount < PAIR_PAY)) {
-      this.wards++;
       return this.fizzle(me, sym, reels, events);
     }
     switch (sym) {
@@ -2115,9 +1867,8 @@ export class Fight {
     events.push({ type: 'confiscate', from: me.side, to: foe.side, reels, cells, enhs: [...enhs] });
   }
 
-  /** HOT STREAK: your last spin was a jackpot, so this one pays x2. WHETSTONE BELT: stacks from blocked hits. */
+  /** HOT STREAK: your last spin was a jackpot, so this one pays x2. */
   private hotStreak = false;
-  private belt = 0;
     /** THE REPO MAN: repossess your best cell (a charmed one first), up to GATEKEEPER.maxTakes a fight. */
   private repoTaken = 0;
   private repossess(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
@@ -2435,10 +2186,6 @@ export class Fight {
     if (foe.side === 'player' && foe.relics.has('holywater') && !this.holyWater && WRITER_ABILITIES.has(ab.kind)) {
       this.holyWater = true;
       events.push({ type: 'relic', side: 'player', relic: 'holywater' });
-      return;
-    }
-    if (foe.side === 'player' && this.wards < (this.big.wards ?? 0) && WRITER_ABILITIES.has(ab.kind)) {
-      this.wards++;
       return;
     }
     switch (ab.kind) {

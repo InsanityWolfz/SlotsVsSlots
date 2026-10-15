@@ -6,12 +6,12 @@ import { chooseRoute, createRun, currentStop, encounterChoices, migrateRun, play
 
 const base = defaultConfig();
 const slot = ENCOUNTERS.slot;
-const ctx = (ups: string[] = []) => ({ relics: ['clover', 'battery', 'fang'] as RelicId[], upgrade: () => (ups.push('LEVEL'), 'LEVEL'), charm: () => (ups.push('CHARM'), '2 GOLD CHARMS') });
+const ctx = (ups: string[] = []) => ({ relics: ['bandage', 'hotstreak', 'fang'] as RelicId[], upgrade: () => (ups.push('LEVEL'), 'LEVEL'), charm: () => (ups.push('CHARM'), '2 GOLD CHARMS') });
 
 describe('LUCKY SEVENS', () => {
   it('offers three buy-ins (chips, HP, a relic the house names), then WALK AWAY', () => {
     const run = createRun(base, 3, 'knight');
-    run.player.relics = ['drum', 'chainmail'];
+    run.player.relics = ['greatsword', 'tower'];
     const c = slot.choices(run, new Rng(9));
     expect(c.filter((x) => x.stake)).toHaveLength(3);
     expect(c.at(-1)!.label).toBe('WALK AWAY');
@@ -27,7 +27,7 @@ describe('LUCKY SEVENS', () => {
     run.player.chips = 20;
     const low = slot.play(run, 0, new Rng(1), ctx());
     expect(low.pulls).toHaveLength(SLOT.low.pulls);
-    run.player.relics = ['drum', 'chainmail', 'belt'];
+    run.player.relics = ['greatsword', 'tower', 'coup'];
     const named = slot.choices(run, new Rng(5))[2].relic;
     const high = slot.play(run, 2, new Rng(5), { ...ctx(), relics: [] });
     expect(high.pulls).toHaveLength(SLOT.high.pulls);
@@ -93,7 +93,7 @@ describe('TWENTY-ONE', () => {
     run.stop = 1;
     chooseRoute(run, 0);
     run.player.chips = 40;
-    run.player.relics = ['drum', 'chainmail'];
+    run.player.relics = ['greatsword', 'tower'];
     return run;
   };
   /** Play a visit out: deal (bet 5), hit below 17, stand, until the table lets you go. Returns the finished hands. */

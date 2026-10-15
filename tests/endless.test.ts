@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, UNIT } from '../src/core/config';
 import { ENDLESS, OWNER_TRICKS, TURBO } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
-import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, enemyHp, runScoreOf, scoreParts, fightConfig, fightLabel, NIGHT, NIGHTS, finishFight, letItRide, skipToBoss, takeChoice } from '../src/core/run';
+import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, enemyHp, runScoreOf, scoreParts, fightConfig, fightLabel, NIGHT, NIGHTS, finishFight, letItRide, skipToBoss } from '../src/core/run';
 import { fmtNum } from '../src/render/text';
 
 const base = defaultConfig();
@@ -25,8 +25,8 @@ describe('ENDLESS (LET IT RIDE)', () => {
     expect(kinds).toHaveLength(8);
     expect(kinds.slice(-2)).toEqual(['shop', 'fight']);
     expect(run.enemies.at(-1)!.boss).toBe('house');
-    // HOUSE EDGES are gone (user, 2026-10-15): the first loop opens with no choice to make.
-    expect(run.pendingChoice ?? null).toBe(null);
+    // HOUSE EDGES and BIG CHOICES are gone (user, 2026-10-15): the first loop opens with no choice to make.
+    expect('pendingChoice' in run).toBe(false);
   });
 
   it('beating a loop boss starts the next loop (harder, next boss); losing ends it', () => {
@@ -34,7 +34,6 @@ describe('ENDLESS (LET IT RIDE)', () => {
     run.over = run.won = true;
     run.act = 3;
     letItRide(run);
-    run.pendingChoice = null;
     chooseRoute(run, 0);
     skipToBoss(run);
     const hp1 = enemyHp(run, currentEnemy(run));
@@ -74,7 +73,6 @@ describe('ENDLESS: no cash out', () => {
     run.over = run.won = true;
     run.act = 3;
     letItRide(run);
-    while (run.pendingChoice?.length) takeChoice(run, run.pendingChoice[0]);
     run.pendingLegend = null;
     skipToBoss(run);
     const f = new Fight(fightConfig(run, base), 1);
@@ -83,7 +81,9 @@ describe('ENDLESS: no cash out', () => {
     expect(run.endless!.loop).toBe(2);
     expect(run.endless!.pot).toBe(1500);
     // No RIDE AGAIN / CASH OUT (user, 2026-10-14): ENDLESS goes on until you bust, scored then.
-    expect(run.pendingChoice!.map((c) => c.id)).not.toContain('cashOut');
+    expect(run.over).toBe(false);
+    // ...and no big choice after a cleared loop (user, 2026-10-15).
+    expect('pendingChoice' in run).toBe(false);
     // THE RUN SCORE: every boss beaten counts (the loop's boss here), and clearing the Dealer.
     expect(scoreParts(run).find(([k]) => k === 'BOSSES')?.[1]).toBe(1000);
     expect(endlessScore(run)).toBe(runScoreOf(run));
@@ -101,7 +101,6 @@ describe("ENDLESS: TONIGHT'S RULE", () => {
     expect(nights[0]).not.toBe(nights[1]);
     // The loop's opener plays without one.
     expect(run.endless!.night).toBeUndefined();
-    run.pendingChoice = null;
     chooseRoute(run, 1);
     const first = run.endless!.night!;
     expect(first).toBe(nights[1]);
@@ -119,7 +118,6 @@ describe("ENDLESS: TONIGHT'S RULE", () => {
     run.over = run.won = true;
     run.act = 3;
     letItRide(run);
-    run.pendingChoice = null;
     run.endless!.night = 'lucky';
     const lucky = fightConfig(run, base);
     expect(lucky.player.strips.every((s) => (s.wild ?? 0) >= NIGHT.luckyWilds)).toBe(true);
@@ -139,8 +137,6 @@ describe('ENDLESS: THE OWNER (the TURBO boss)', () => {
     letItRide(run);
     for (let loop = 1; loop < TURBO.loop; loop++) {
       expect(run.map.boss.turbo).toBeFalsy();
-      run.pendingChoice = null;
-      run.choiceQueue = [];
       run.pendingLegend = null;
       chooseRoute(run, 0);
       skipToBoss(run);
@@ -152,8 +148,6 @@ describe('ENDLESS: THE OWNER (the TURBO boss)', () => {
     expect(run.map.boss.turbo).toBe(true);
     expect(run.map.boss.boss).toBe('owner');
     expect(run.map.boss.name).toBe('THE OWNER');
-    run.pendingChoice = null;
-    run.choiceQueue = [];
     run.pendingLegend = null;
     chooseRoute(run, 0);
     skipToBoss(run);

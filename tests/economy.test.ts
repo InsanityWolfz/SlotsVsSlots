@@ -16,20 +16,10 @@ function fight(mut: (c: GameConfig) => void, seed = 7): Fight {
 }
 
 describe('build relics & keen', () => {
-  it('KEEN swords add +40 to their group (CONTENT_13); EXECUTIONER (hone) makes them x3 once the enemy is under half HP', () => {
+  it('KEEN swords add +40 to their group (CONTENT_13)', () => {
     const f = fight((c) => (c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen', n: 4 }]));
     f.forceNext('player', ['sword', 'bolt', 'shield']);
     expect(ofType(f.step().events, 'attack')[0].amount).toBe(50);
-    const g = fight((c) => {
-      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'keen', n: 4 }];
-      c.relics = ['hone'];
-    });
-    g.forceNext('player', ['sword', 'bolt', 'shield']);
-    expect(ofType(g.step().events, 'attack')[0].amount).toBe(50);
-    g.step();
-    g.sides.enemy.hp = 100;
-    g.forceNext('player', ['sword', 'bolt', 'shield']);
-    expect(ofType(g.step().events, 'attack')[0].amount).toBe(150);
   });
 
   it('PRISM doubles a match that used a WILD', () => {
@@ -122,7 +112,7 @@ describe('run economy', () => {
   it("the boss's HP doesn't depend on your relics (honest HP), and your chips don't shield you", () => {
     const run = createRun(base, 9);
     skipToBoss(run);
-    run.player.relics = ['clover', 'fang'] as RelicId[];
+    run.player.relics = ['bandage', 'fang'] as RelicId[];
     run.player.chips = 12;
     const cfg = fightConfig(run, base);
     expect(cfg.enemy.hp).toBe(currentEnemy(run).hp);

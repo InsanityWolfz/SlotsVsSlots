@@ -592,10 +592,6 @@ export class Director {
       },
       e.frozen,
     );
-    if (e.lucky) {
-      this.relicPop(e.side, e.lucky);
-      await this.luckyPop(e.side);
-    }
     for (const r of e.score.relics ?? []) this.relicPop(e.side, r);
     // GOLDEN SPIN: its own moment, a gold banner over a soft flash of the machine (never the screen).
     if (e.score.relics?.includes('goldenspin')) {
@@ -634,7 +630,7 @@ export class Director {
     }
   }
 
-  /** Per-fight bonuses on each cell of a symbol this spin (WAR DRUM), added to the shown number. */
+  /** Per-fight bonuses on each cell of a symbol this spin (DECK DRUM), added to the shown number. */
   private symBonus: Partial<Record<SideId, Partial<Record<SymbolId, number>>>> = {};
 
   /** The numbers on a landed payline symbol: its value (bottom-left) and its charm's tag (top-right). */
@@ -934,15 +930,6 @@ export class Director {
   }
 
   private async shieldGain(e: Ev<'shieldGain'>): Promise<void> {
-    if (e.source === 'chalice') {
-      const h = this.s.huds[e.side];
-      const sb = h.shieldBar();
-      this.s.sounds.shieldGain(e.amount / UNIT);
-      this.bg(this.popText(`OVERHEAL +${e.amount} SHIELD`, sb.x + sb.w / 2 + 20, sb.y - 30, 2, '#9fd0ff', 12, 0.4));
-      this.decay(h, 'shieldFlash', 1, 0.3);
-      await this.c.to(h, 'shield', e.total, 0.25, sineOut);
-      return;
-    }
     if (e.side === 'player' && !e.reels.length) {
       // Saved chips paying out as shield vs the House.
       const h = this.s.huds.player;
@@ -1214,14 +1201,14 @@ export class Director {
     const c = this.machineCenter(e.side);
     // Nothing to play: a small callout, no boom.
     if (!e.cells.length) {
-      await this.popText(e.encore ? 'ENCORE... NO NOTES' : 'THE DROP... NO NOTES', c.x, MACHINE_TOP - 24, 2, COLORS.textDim, 12, 0.4);
+      await this.popText('THE DROP... NO NOTES', c.x, MACHINE_TOP - 24, 2, COLORS.textDim, 12, 0.4);
       return;
     }
     this.s.sounds.drop();
     this.shake(7, 0.35);
     // Over the machine (not on the top row it lights), first; then the notes light up; the note group hits after.
     // Between the HUD and the machine (at scale 4 it ran over the HUD's border: R13 B3).
-    await this.popText(e.encore ? 'ENCORE!' : 'THE DROP!', c.x, MACHINE_TOP - 18, 3, '#5ad8e8', 10, 0.25, true);
+    await this.popText('THE DROP!', c.x, MACHINE_TOP - 18, 3, '#5ad8e8', 10, 0.25, true);
     const wilds = e.cells.filter((x) => x.wild);
     if (wilds.length) await this.luckyWilds(e.side, wilds);
     this.dropCells = e.amount > 0 ? e.cells : null;
@@ -1443,21 +1430,6 @@ export class Director {
   }
 
   // ---- writers, abilities, boss --------------------------------------------------------
-
-  private async luckyPop(side: SideId): Promise<void> {
-    const m = this.s.machines[side];
-    const p = cellCenter(side, 2, 1);
-    this.s.sounds.lucky();
-    const fx = m.reels[2].rows[1];
-    fx.glowColor = '#7dff7a';
-    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.8, onUpdate: (v) => (fx.glow = v) }));
-    this.s.particles.burst({ x: p.x, y: p.y, count: 30, colors: ['#7dff7a', '#ffffff', '#3fbf3a'], speed: [80, 300], gravity: -120, life: [0.4, 0.8], size: [3, 5] });
-    const clover = this.s.fx.add(new Projectile('relicClover', p.x, p.y - 50, 4));
-    await this.c.tween({ from: 0, to: 1, dur: 0.2, ease: backOut(3), onUpdate: (v) => (clover.scale = 4 * v) });
-    this.bg(this.popText('LUCKY!', p.x, p.y - 90, 3, '#7dff7a', 20, 0.3));
-    await this.c.wait(0.25);
-    this.bg(this.c.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (clover.alpha = v) }).then(() => this.s.fx.remove(clover)));
-  }
 
   private async heal(e: Ev<'heal'>): Promise<void> {
     const h = this.s.huds[e.side];

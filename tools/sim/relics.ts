@@ -47,7 +47,7 @@ function play(cab: CabinetId, seed: number, relic: RelicId | null): Stat {
       for (const e of evs) {
         s.kinds.add(e.type);
         if (e.type === 'relic' && e.relic === relic) s.fired++;
-        if (e.type === 'spin' && relic && (e.score.relics?.includes(relic) || e.lucky === relic)) s.fired++;
+        if (e.type === 'spin' && relic && e.score.relics?.includes(relic)) s.fired++;
         // Relics with their own events / heal source (they pop through those).
         if (relic && ((e.type === 'phoenix' && relic === 'phoenix') || (e.type === 'heal' && e.source === relic))) s.fired++;
         if (e.type === 'specialFire' && e.from === 'player') s.dealt += e.amount;
@@ -62,7 +62,7 @@ function play(cab: CabinetId, seed: number, relic: RelicId | null): Stat {
   return s;
 }
 
-const BETWEEN = new Set<RelicId>(['bandage', 'piggy', 'trophy']);
+const BETWEEN = new Set<RelicId>(['bandage']);
 const out: string[] = [];
 for (const id of Object.keys(RELICS) as RelicId[]) {
   const def = RELICS[id];

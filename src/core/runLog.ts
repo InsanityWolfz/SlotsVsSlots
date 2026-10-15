@@ -51,7 +51,8 @@ export function runSummary(run: RunState, version = ''): string {
     `SYMBOL LEVELS: ${Object.keys(p.levels.sym).map((s) => `${symLabel(s as SymbolId)} ${symLevel(p.levels, s as never)}`).join(', ') || 'ALL 1'}`,
     `CHARMS: ${p.gilded.map((g) => `${charmName(g.enh)} LV${charmLevel(p.levels, g.enh)} x${g.n} on reel ${g.reel + 1} ${symLabel(g.symbol)}`).join(', ') || 'NONE'}`,
     `REELS: ${p.strips.map((s, i) => `${i + 1}: ${Object.entries(s).filter(([, n]) => n).map(([k, n]) => `${symLabel(k as SymbolId)} ${n}`).join(' ')}`).join(' / ')}`,
-    `BIG CHOICES: ${run.records.flatMap((r) => (r.choice ? [r.choice] : [])).join(', ') || 'NONE'}`,
+    // (Old saves only: BIG CHOICES are gone, 2026-10-15. A run that took some still lists them.)
+    ...(run.records.some((r) => r.choice) ? [`BIG CHOICES: ${run.records.flatMap((r) => (r.choice ? [r.choice] : [])).join(', ')}`] : []),
     `ENCOUNTERS: ${(run.encounters ?? []).filter((e) => !e.more).map((e) => `A${e.act} ${encounterOf(e.id).name}: ${e.what || (e.good === true ? 'WON' : e.good === false ? 'LOST' : 'WALKED AWAY')}`).join(', ') || 'NONE'}`,
   );
   return out.join('\n');

@@ -69,37 +69,7 @@ describe('CONTENT_13: relics', () => {
       c.relics = relics as GameConfig['relics'];
     });
 
-  it('CHARM BRACELET: +5% per charm type you own', () => {
-    const g = [{ reel: 0, symbol: 'sword' as const, enh: 'gold' as const, n: 1 }, { reel: 1, symbol: 'shield' as const, enh: 'vamp' as const, n: 1 }];
-    const plain = sword3([], g);
-    plain.forceNext('player', ['sword', 'sword', 'shield']);
-    const a = ofType(plain.step().events, 'attack')[0].amount;
-    const br = sword3(['bracelet'], g);
-    br.forceNext('player', ['sword', 'sword', 'shield']);
-    expect(ofType(br.step().events, 'attack')[0].amount).toBe(Math.round(a * 1.1));
-  });
-
-  it('METRONOME: your 3rd spin pays x1.5', () => {
-    const plain = sword3([]);
-    const m = sword3(['metronome']);
-    const amounts = (f: Fight) =>
-      [0, 1, 2].map(() => {
-        f.forceNext('player', ['sword', 'sword', 'shield']);
-        const a = ofType(f.step().events, 'attack')[0]?.amount ?? 0;
-        f.step();
-        return a;
-      });
-    const [p, q] = [amounts(plain), amounts(m)];
-    expect(q[0]).toBe(p[0]);
-    expect(q[2]).toBe(Math.round(p[2] * 1.5));
-  });
-
-  it('SNAKE EYES heals on an enemy jackpot; PIT BOSS cancels the first one', () => {
-    const s = sword3(['snakeeyes']);
-    s.sides.player.hp -= 100;
-    s.next = 'enemy';
-    s.forceNext('enemy', ['shield', 'shield', 'shield']);
-    expect(ofType(s.step().events, 'heal').some((h) => h.source === 'snakeeyes')).toBe(true);
+  it("PIT BOSS cancels the enemy's first jackpot", () => {
     const hitBy = (relics: string[]) => {
       const f = sword3(relics);
       f.next = 'enemy';
@@ -108,36 +78,5 @@ describe('CONTENT_13: relics', () => {
     };
     expect(hitBy([])).toBeGreaterThan(0);
     expect(hitBy(['pitboss'])).toBe(0);
-  });
-
-  it('TESLA COIL: a bolt next to the payline charges 5', () => {
-    const t = on('tesla', (c) => {
-      c.player.strips = reels3({ bolt: 12 });
-      c.relics = ['coil'];
-    });
-    t.forceNext('player', ['bolt', 'bolt', 'bolt']);
-    expect(ofType(t.step().events, 'relic').some((e) => e.relic === 'coil')).toBe(true);
-  });
-});
-
-describe('TESLA COIL feeds the strike it lands with', () => {
-  it('its charge joins the bolt group, before the lightning fires (no strike of its own after)', () => {
-    const run = (relics: string[]) => {
-      const c = fightConfig(createRun(base, 2, 'tesla'), base);
-      c.enemy = { hp: 99999, strips: reels3({ sword: 6, shield: 6 }) };
-      c.player.strips = reels3({ bolt: 12 });
-      c.relics = relics as GameConfig['relics'];
-      const f = new Fight(c, 7);
-      f.forceNext('player', ['bolt', 'bolt', 'bolt']);
-      return f.step().events;
-    };
-    const plain = ofType(run([]), 'energyGain');
-    const coil = run(['coil']);
-    const gains = ofType(coil, 'energyGain');
-    expect(gains).toHaveLength(plain.length);
-    expect(gains[0].amount).toBe(plain[0].amount + 5);
-    // The relic pops before the charge it adds to.
-    const idx = (t: string) => coil.findIndex((e) => e.type === t && (t !== 'relic' || (e as { relic?: string }).relic === 'coil'));
-    expect(idx('relic')).toBeLessThan(idx('energyGain'));
   });
 });

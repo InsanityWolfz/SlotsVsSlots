@@ -15,7 +15,6 @@ export interface TurnRow {
   /** The spin's math, group by group: BASE x MULT = PAY, and why (the banner's numbers, kept). */
   math: string;
   nearMiss: boolean;
-  lucky: boolean;
   frozenReels: number;
   lockedReels: number;
   shieldReset: number;
@@ -59,7 +58,6 @@ export function turnRow(fight: Fight, r: TurnResult, fightNo: number): TurnRow {
     tier: 'none',
     math: '',
     nearMiss: false,
-    lucky: false,
     frozenReels: 0,
     lockedReels: 0,
     shieldReset: 0,
@@ -101,7 +99,6 @@ export function turnRow(fight: Fight, r: TurnResult, fightNo: number): TurnRow {
           .map((g) => `${ABBR[g.symbol] ?? g.symbol} ${g.base}x${Math.round(g.mult * 100) / 100}=${g.amount}${g.notes?.length ? ` (${g.notes.join(', ')})` : ''}`)
           .join('; ');
         row.nearMiss = e.nearMiss;
-        row.lucky = e.lucky !== null;
         row.frozenReels = e.frozen.filter(Boolean).length;
         row.lockedReels = e.locked.filter(Boolean).length;
         break;
@@ -217,7 +214,7 @@ export function formatRow(r: TurnRow): string {
   if (r.fizzled) parts.push(`${r.fizzled} dead`);
   const tier = (r.tier === 'none' ? '' : r.tier === 'pair' ? ' PAIR' : ' JACKPOT') + (r.math ? ` [${r.math}]` : '');
   const near = r.nearMiss && r.tier !== 'triple' ? ' (near-miss)' : '';
-  const status = `${r.frozenReels ? ` [${r.frozenReels} frozen]` : ''}${r.lockedReels ? ` [${r.lockedReels} jammed]` : ''}${r.lucky ? ' [LUCKY]' : ''}`;
+  const status = `${r.frozenReels ? ` [${r.frozenReels} frozen]` : ''}${r.lockedReels ? ` [${r.lockedReels} jammed]` : ''}`;
   return (
     `T${r.turn} ${r.side === 'player' ? 'HERO ' : 'ENEMY'} ${r.line.map((s) => ABBR[s]).join(' ')}${tier}${near}${status}` +
     ` → ${parts.join(', ') || 'nothing'} | P ${r.playerHp}hp ${r.playerShield}sh ${r.playerEnergy}en · E ${r.enemyHp}hp ${r.enemyShield}sh` +

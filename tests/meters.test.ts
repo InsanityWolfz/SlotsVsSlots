@@ -6,7 +6,7 @@ import type { CombatEvent } from '../src/core/events';
 import { Fight, RAIN } from '../src/core/fight';
 import { SANDGLASS_SLOW } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
-import { charmOptions, createRun, enemyHp, fightConfig, finishFight, levelOptions, takeChoice, type RunState, BIG_CARDS, SAFE_CHOICES, skipToBoss, chooseRoute } from '../src/core/run';
+import { charmOptions, createRun, enemyHp, fightConfig, levelOptions, chooseRoute } from '../src/core/run';
 import { STAKE } from '../src/core/stakes';
 
 const base = defaultConfig();
@@ -79,16 +79,6 @@ describe('signature meters (one per slot machine)', () => {
     expect(s.groups[0].symbol).toBe(s.wildPick);
   });
 
-  it('Blood Chalice: healing past full HP becomes shield', () => {
-    const f = on('knight', (c) => {
-      c.relics = ['chalice'];
-      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'vamp', n: 6 }];
-    });
-    f.forceNext('player', ['sword', 'shield', 'shield']);
-    const ev = f.step().events;
-    expect(ofType(ev, 'shieldGain').find((e) => e.source === 'chalice')?.amount).toBe(20);
-  });
-
   it('the Golden Hourglass slows enemy abilities by 1 turn', () => {
     expect(SANDGLASS_SLOW).toBe(1);
   });
@@ -121,58 +111,6 @@ describe('charm and level cards', () => {
   });
 });
 
-/** Beat an act's boss (skips the fights in between). */
-function beatBoss(run: RunState): void {
-  skipToBoss(run);
-  const f = new Fight(fightConfig(run, base), 1);
-  f.winner = 'player';
-  finishFight(run, f);
-}
-
-describe('post-boss BIG CHOICES', () => {
-  it('after the House and THE WHEEL: 3 cards (one with a cost, one of your machine, one free), never repeated', () => {
-    const run = createRun(base, 4, 'knight', STAKE.act3, true);
-    beatBoss(run);
-    const first = run.pendingChoice!;
-    expect(first).toHaveLength(3);
-    const ids = first.map((c) => c.id);
-    expect(ids.some((id) => BIG_CARDS.find((c) => c.id === id)?.machine === 'knight')).toBe(true);
-    expect(ids.some((id) => SAFE_CHOICES.has(id))).toBe(true);
-    takeChoice(run, first[2]);
-    expect(run.pendingChoice).toBeNull();
-    beatBoss(run);
-    const second = run.pendingChoice!.map((c) => c.id);
-    expect(second.some((id) => ids.includes(id))).toBe(false);
-  });
-
-  it('ARMS RACE: +1 level to all your symbols for -60 max HP; TWIN REEL copies reel 1 onto reel 3', () => {
-    const run = createRun(base, 5, 'midas');
-    run.player.gilded = [{ reel: 0, symbol: 'goldbar', enh: 'gold', n: 4 }];
-    const hp = run.player.maxHp;
-    run.pendingChoice = [{ id: 'armsRace' }, { id: 'masterwork', symbol: 'goldbar' }, { id: 'whetstone', symbol: 'shield' }];
-    takeChoice(run, { id: 'armsRace' });
-    expect(run.player.levels.sym).toEqual({ shield: 2, goldbar: 2 });
-    expect(run.player.maxHp).toBe(hp - Math.round((hp * 0.15) / 10) * 10);
-
-    run.pendingChoice = [{ id: 'cleanCut', reel: 0 }, { id: 'twinReel' }, { id: 'sweepUp' }];
-    takeChoice(run, { id: 'twinReel' });
-    expect(run.player.strips[2]).toEqual(run.player.strips[0]);
-    expect(run.player.gilded.filter((g) => g.reel === 2)).toEqual([{ reel: 2, symbol: 'goldbar', enh: 'gold', n: 4 }]);
-  });
-
-  it('GLASS CANNON: paying groups x1.5, and no healing between fights', () => {
-    const run = createRun(base, 6, 'knight');
-    run.pendingChoice = [{ id: 'glassCannon' }, { id: 'bloodPact' }, { id: 'secondWind' }];
-    takeChoice(run, { id: 'glassCannon' });
-    const cfg = fightConfig(run, base);
-    expect(cfg.player.payMul).toBe(1.5);
-    run.player.hp = 100;
-    const f = new Fight(cfg, 1);
-    f.winner = 'player';
-    finishFight(run, f);
-    expect(run.player.hp).toBe(f.sides.player.hp);
-  });
-});
 
 describe('act 3', () => {
   it("act 3's HP curve has 5 steps; honest HP: your build doesn't change an enemy's HP, and every machine meets the same", () => {

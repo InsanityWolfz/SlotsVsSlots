@@ -1,5 +1,5 @@
 /**
- * THE SIM BOT (2026-10-07 rewrite, step 1): how the headless player drafts, shops, picks fights and big choices.
+ * THE SIM BOT (2026-10-07 rewrite, step 1): how the headless player drafts, shops and picks fights.
  * It reads each slot machine's ATTACK symbol (cabinets.ts `attack`) instead of assuming swords, so it keeps working
  * when machines fight with their own signature symbols. Step 2 (with the content wave) adds archetype-aware bots.
  */
@@ -18,8 +18,6 @@ import {
   isShopNow,
   needsRoute,
   playEncounter,
-  type BigChoice,
-  type BigChoiceId,
   type DraftOption,
   leaveShop,
   type RunState,
@@ -28,8 +26,8 @@ import {
 
 export type DraftPolicy = 'greedy' | 'random' | 'relic';
 
-/** Balance probes (tools/balance/builds.ts): start with a relic, draft only one charm, or force a big choice. */
-export const SIM_BIAS: { /** A forced build: rush (the attack build, the default) or turtle (the shield build). */ style?: 'rush' | 'turtle'; ride?: boolean; onEnd?: (run: RunState) => void; startRelic?: RelicId; noStart?: boolean; enh?: Enh; choice?: BigChoiceId; onFight?: (run: RunState) => void } = {};
+/** Balance probes (tools/balance/builds.ts): start with a relic, or draft only one charm. */
+export const SIM_BIAS: { /** A forced build: rush (the attack build, the default) or turtle (the shield build). */ style?: 'rush' | 'turtle'; ride?: boolean; onEnd?: (run: RunState) => void; startRelic?: RelicId; noStart?: boolean; enh?: Enh; onFight?: (run: RunState) => void } = {};
 
 export const RELIC_VALUE: Record<RelicId, number> = {
   dryspell: 6,
@@ -48,23 +46,13 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   greatsword: 8,
   safedeposit: 4,
   hotstreak: 6,
-  belt: 6,
-  bracelet: 6,
-  metronome: 6,
-  snakeeyes: 7,
   pitboss: 8,
   rainmaker: 7,
-  slushfund: 6.5,
-  tipjar: 6,
-  coil: 6.5,
   mirror: 10,
-  battery: 9,
   fang: 9,
-  clover: 7.5,
   bandage: 6,
   // Build relics are worth a lot more once you own the gild they amplify.
   prism: 3,
-  hone: 3,
   // Legendaries.
   ticket: 8,
   bell: 8,
@@ -72,37 +60,32 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   overcharge: 9.5,
   key: 9,
   sandglass: 8.5,
-  chalice: 3,
   // Slot machine relics (only offered on their machine).
-  drum: 8,
-  chainmail: 8,
   tower: 7,
-  headsman: 8,
   capacitor: 8,
   livewire: 8.5,
   encore: 8,
-  downpour: 7.5,
   coup: 7.5,
   compound: 7,
   meltdown: 7.5,
-  pulse: 7,
   deckdrum: 8,
-  wildcard: 7.5,
-  loadedreel: 7.5,
-  faraday: 7,
-  static: 8.5,
-  capbells: 8.5,
   horseshoe: 8,
   underdog: 8,
-  firstblood: 7.5,
-  piggy: 5,
-  // The official sim doesn't bet: the bet relics are dead picks for it.
-  trophy: 6,
   holywater: 6,
   bash: 5.5,
+  // The legendaries that were BIG CHOICES (2026-10-15).
+  secondline: 7,
+  devilsdue: 8,
+  longgame: 7,
+  quickening: 7,
+  glasscannon: 7.5,
+  crusade: 8,
+  chainlightning: 8.5,
+  highcard: 8,
+  hypeman: 7.5,
+  openbar: 7,
 };
 const BUILD: Partial<Record<RelicId, (run: RunState) => boolean>> = {
-  chalice: (r) => r.player.gilded.some((g) => g.enh === 'vamp'),
   prism: (r) => r.player.strips.some((s) => (s.wild ?? 0) > 0),
 };
 
@@ -139,7 +122,7 @@ function styleValue(run: RunState, o: DraftOption): number | undefined {
 /** The shield build swaps toward this many shields a reel (beyond it, it keeps its strip and invests in shields). */
 export const SIM_BIAS_TURTLE = { cap: 9 };
 /** Relics a shield build wants. */
-const SHIELD_RELICS: ReadonlySet<string> = new Set(['armoredcar', 'safedeposit', 'tower', 'chainmail', 'bash', 'faraday', 'capacitor', 'belt']);
+const SHIELD_RELICS: ReadonlySet<string> = new Set(['armoredcar', 'safedeposit', 'tower', 'bash', 'capacitor']);
 
 function baseValue(run: RunState, o: DraftOption): number {
   const p = run.player;
@@ -174,121 +157,6 @@ function baseValue(run: RunState, o: DraftOption): number {
       return o.symbol === 'rock' ? 5 : o.symbol === 'shield' ? 3 : 0;
   }
 }
-
-/** BIG CHOICES: each card's win rate on each machine when the bot took it (table.ts N1000, 2026-10-08). The bot
- * prefers what wins on its machine, the way a player learns to; cards under 20 picks keep their default value. */
-export const BIG_PICK_WIN: Record<string, Record<string, number>> = {
-  knight: { luckyBreak: 53, excalibur: 31, sweepUp: 42, gildLot: 42, shieldWall: 47, crusade: 39, armsRace: 40, cursedIdol: 31, shieldSlam: 30, masterwork: 39, meltDown: 50, bloodPact: 42, pawnShop: 43, devilsDue: 60, doubleOrNothing: 36, squire: 48, cleanCut: 29, glassCannon: 39, bloodMoon: 42, whetted: 33, cashIn: 8, allIn: 27, treasure: 50 },
-  tesla: { luckyBreak: 24, chainLightning: 28, sweepUp: 18, madScience: 22, gildLot: 33, meltDown: 42, cursedIdol: 15, supercell: 20, fourLeaf: 8, groundWire: 27, pawnShop: 13, doubleOrNothing: 26, overclock: 12, masterwork: 23, devilsDue: 45, cashIn: 3, cleanCut: 28, bloodPact: 41, stormFront: 19, glassCannon: 35, allIn: 33, quickening: 13, treasure: 16, armsRace: 15 },
-  joker: { luckyBreak: 43, jokersReel: 45, highCard: 43, sweepUp: 29, cardShark: 46, doubleFeature: 41, meltDown: 33, gildLot: 38, cashIn: 9, trumpCard: 32, cursedIdol: 28, fourLeaf: 34, markedCards: 37, pawnShop: 35, bloodMoon: 29, devilsDue: 47, whetted: 26, glassCannon: 41, masterwork: 34, cleanCut: 14, doubleOrNothing: 14, bloodPact: 55 },
-  midas: { luckyBreak: 45, noLimit: 38, sweepUp: 40, gildLot: 35, heist: 81, monsoon: 13, armsRace: 42, meltDown: 38, openBar: 42, cursedIdol: 30, devilsDue: 44, masterwork: 29, glassCannon: 42, pawnShop: 43, doubleOrNothing: 18, trustFund: 50, bloodPact: 54, cleanCut: 29, cashIn: 39 },
-};
-
-/** Big choices: strong picks are worth more, but the costs bite when you're low or already built. */
-export function choiceValue(run: RunState, c: BigChoice): number {
-  const learned = BIG_PICK_WIN[run.cabinet]?.[c.id];
-  if (learned !== undefined) return learned / 5;
-  return choiceValueBase(run, c);
-}
-
-function choiceValueBase(run: RunState, c: BigChoice): number {
-  const p = run.player;
-  const hp = p.hp / p.maxHp;
-  const charms = p.gilded.reduce((a, g) => a + g.n, 0);
-  const gold = p.gilded.reduce((a, g) => a + (g.enh === 'gold' ? g.n : 0), 0);
-  switch (c.id) {
-    case 'armsRace':
-      return 8 - (p.maxHp < 300 ? 2 : 0);
-    case 'masterwork':
-      return c.symbol === 'shield' ? 4 : 7;
-    case 'whetstone':
-      return c.symbol === 'shield' ? 4 : 6;
-    case 'meltDown':
-      return 4 + (charms - gold) * 0.5;
-    case 'gildLot':
-      return 8;
-    case 'polish':
-      return 5 + Math.min(3, charms / 3);
-    case 'cleanCut':
-      return 6.5;
-    case 'twinReel':
-      return 5;
-    case 'sweepUp':
-      // Forced in THE SURGERY it won 28.6% vs CLEAN CUT 24.8 (EXPERT_PLAYTEST_12 D3): 3 made the bot skip it (0.6% of picks).
-      return 6.5 + (1 - hp) * 4 + p.strips.reduce((a, s) => a + (s.rock ?? 0), 0);
-    case 'glassCannon':
-      return 7;
-    case 'secondLine':
-      return 6.5;
-    case 'longGame':
-      // Worth more the more fights are left.
-      return run.endless ? 7 : run.act <= 1 ? 6.5 : 4;
-    case 'bloodPact':
-      return 6.5;
-    case 'secondWind':
-      return 4 + (1 - hp) * 6;
-    // BIG CHOICES (2026-10-08): rough values; the forced-pick probe measures them properly.
-    case 'temper':
-      return 5.5;
-    case 'luckyBreak':
-      return 5 + Math.min(3, charms / 3);
-    case 'treasure':
-      return 6;
-    case 'houseMoney':
-      return 5;
-    case 'devilsDue':
-      return 7.5;
-    case 'allIn':
-      return 6;
-    case 'doubleOrNothing':
-      return 6.5;
-    case 'cursedIdol':
-      return 7;
-    case 'quickening':
-      return 6;
-    case 'warded':
-      return 4.5;
-    case 'pawnShop':
-      return 6.5;
-    case 'whetted':
-    case 'bloodMoon':
-    case 'cashIn':
-    case 'fourLeaf':
-    case 'overclock':
-    case 'markedCards':
-      return 4 + (charms - gold) * 0.3;
-    case 'excalibur':
-    case 'chainLightning':
-    case 'highCard':
-    case 'noLimit':
-    case 'jokersReel':
-      return 7.5;
-    case 'shieldWall':
-    case 'crusade':
-    case 'madScience':
-    case 'doubleFeature':
-    case 'cardShark':
-    case 'monsoon':
-    case 'heist':
-    case 'openBar':
-      return 6.5;
-    case 'shieldSlam':
-    case 'squire':
-    case 'supercell':
-    case 'stormFront':
-    case 'groundWire':
-    case 'trumpCard':
-    case 'trustFund':
-      return 6;
-    case 'headliner':
-    case 'encoreDrop':
-      return 7;
-    case 'hypeMan':
-    case 'backupDancers':
-      return 6;
-  }
-}
-export const CHOICE_LOG: Record<string, [number, number]> = {};
 
 /** Route policy: random picks any route; greedy weighs elites by how healthy you are, then danger, Cashiers, gambles. */
 export function pickRoute(run: RunState, policy: DraftPolicy, rng: Rng): number {

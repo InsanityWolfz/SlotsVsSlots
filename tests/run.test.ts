@@ -79,8 +79,8 @@ describe('run', () => {
     expect(run.player.strips[1].sword).toBe(7);
     applyOption(run, { kind: 'swap', from: 'shield', to: 'sword', count: 2, reel: 0 });
     expect(run.player.strips[0]).toMatchObject({ shield: 4, sword: 8 });
-    applyOption(run, { kind: 'relic', relic: 'clover' });
-    expect(run.player.relics).toEqual(['clover']);
+    applyOption(run, { kind: 'relic', relic: 'bandage' });
+    expect(run.player.relics).toEqual(['bandage']);
     run.player.hp = 10;
     applyOption(run, { kind: 'heal', amount: RUN.healCard });
     expect(run.player.hp).toBe(10 + RUN.healCard);

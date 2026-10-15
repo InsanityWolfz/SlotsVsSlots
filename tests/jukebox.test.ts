@@ -97,20 +97,8 @@ describe('THE JUKEBOX (DJ DECIBEL)', () => {
     }
   });
 
-  it('HEADLINER doubles the whole drop (the payline notes too); the drop ignores what enemies wrote', () => {
-    const mk = (big?: object) =>
-      juke((c) => {
-        c.player.strips = reels3({ note: 12 });
-        if (big) c.player.big = big;
-      });
-    const amt = (f: Fight) => {
-      f.sides.player.energy = f.meterCost;
-      f.sides.player.armed = true;
-      return ofType(round(f, ['note', 'note', 'note']), 'drop')[0].amount;
-    };
-    const plain = amt(mk());
-    // (Within rounding: the volume's step leaves fractions.)
-    expect(Math.abs(amt(mk({ dropMul: 2 })) - plain * 2)).toBeLessThanOrEqual(2);
+  it('the drop ignores what enemies wrote', () => {
+    const mk = () => juke((c) => (c.player.strips = reels3({ note: 12 })));
     // A jammed reel sits the drop out; a grounded note off the payline too.
     const j = mk();
     j.sides.player.locked[0] = 2;
@@ -128,18 +116,16 @@ describe('THE JUKEBOX (DJ DECIBEL)', () => {
     expect(ofType(evs, 'attack').filter((a) => a.from === 'player').length).toBe(1);
   });
 
-  it('BATTERY starts at 3; QUICKENING starts at max (the first spin drops)', () => {
-    expect(juke((c) => (c.relics = ['battery'])).volume).toBe(3);
+  it('QUICKENING starts at max (the first spin drops)', () => {
     const q = juke((c) => {
       c.player.strips = reels3({ note: 12 });
-      c.player.big = { startFull: true };
+      c.relics = ['quickening'];
     });
     expect(ofType(round(q, ['note', 'note', 'note']), 'drop').length).toBe(1);
   });
 
-  it('the volume meter is full at 6 (HEADLINER raises it to 8)', () => {
+  it('the volume meter is full at 6', () => {
     expect(juke().meterCost).toBe(6 * UNIT);
-    expect(juke((c) => (c.player.big = { volumeMax: 8 })).meterCost).toBe(8 * UNIT);
   });
 });
 

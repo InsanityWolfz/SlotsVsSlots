@@ -10,10 +10,10 @@ import { UNIT, type Enh, type Levels, type SymbolId } from './config';
 export const LEVEL_CAP = 3;
 /** A symbol's value by level (1..3): the step grows so early levels don't snowball (user: +1 then bigger). */
 export const SYM_VALUE = [0, 10, 13, 18, 25, 34];
-/** BIG CHOICES are the only thing that levels past LEVEL_CAP ("LIMIT BREAK"), up to this. */
+/** The highest level anything reads (the endless Cashier and GOLDEN TICKET go past LEVEL_CAP; old saves' big choices did too). */
 export const BIG_CAP = 5;
 
-/** Each charm's number by level (1..6: past 3 only through big choices, +1 with the Golden Ticket). */
+/** Each charm's number by level (1..6: past 3 only in ENDLESS and old saves, +1 with the Golden Ticket). */
 export const CHARM_VALUE: Record<Enh, number[]> = {
   /** GOLD: this cell's share of the group multiplier (x2 plain). */
   gold: [0, 2, 3, 4, 5, 6, 7],
