@@ -110,13 +110,10 @@ export interface AbilityDef {
 }
 
 export type RelicId =
-  | 'clover'
-  | 'battery'
   | 'mirror'
   | 'fang'
   | 'bandage'
   | 'prism'
-  | 'hone'
   // Legendary (act 2)
   | 'ticket'
   | 'bell'
@@ -125,49 +122,28 @@ export type RelicId =
   | 'key'
   | 'sandglass'
   // Charm relic
-  | 'chalice'
   // Slot machine relics (only offered on that machine)
-  | 'drum'
-  | 'chainmail'
-  | 'faraday'
-  | 'static'
-  | 'capbells'
   // CONTENT WAVE 1 (2026-10-07): one hook each
   | 'capacitor'
   | 'encore'
-  | 'downpour'
   | 'livewire'
-  | 'headsman'
   | 'tower'
   | 'coup'
   | 'compound'
   | 'meltdown'
-  | 'pulse'
-  | 'wildcard'
-  | 'loadedreel'
   | 'deckdrum'
-  // Charm relics (hone = EXECUTIONER keeps its old id for saves)
+  // Charm relics
   | 'horseshoe'
   // General
   | 'underdog'
-  | 'firstblood'
-  | 'piggy'
-  | 'trophy'
   | 'holywater'
   | 'bash'
   // EXPERT_PLAYTEST_10's new relics
   | 'hotstreak'
-  | 'belt'
   // CONTENT_13
-  | 'bracelet'
-  | 'metronome'
-  | 'snakeeyes'
   | 'pitboss'
-  | 'coil'
   // CASH CASSIDY (MAKE IT RAIN)
   | 'rainmaker'
-  | 'slushfund'
-  | 'tipjar'
   // Side bets
   // THE JUKEBOX (2026-10-08)
   | 'turntable'

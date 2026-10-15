@@ -116,8 +116,7 @@ describe('THE JUKEBOX (DJ DECIBEL)', () => {
     expect(ofType(evs, 'attack').filter((a) => a.from === 'player').length).toBe(1);
   });
 
-  it('BATTERY starts at 3; QUICKENING starts at max (the first spin drops)', () => {
-    expect(juke((c) => (c.relics = ['battery'])).volume).toBe(3);
+  it('QUICKENING starts at max (the first spin drops)', () => {
     const q = juke((c) => {
       c.player.strips = reels3({ note: 12 });
       c.relics = ['quickening'];

@@ -40,13 +40,13 @@ describe('public playtest shell', () => {
   it('hiscores record the run, the killer and the build; collection discovers relics and charms', () => {
     const run = createRun(base, 9, 'midas', 1);
     run.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'gold', n: 4 }];
-    run.player.relics.push('clover');
+    run.player.relics.push('bandage');
     run.records.push({ depth: 0, enemy: 'SLIME', archetype: 'slime', won: false, turns: 3, hpBefore: 20, hpAfter: 0, rocksAdded: 0, rocksCrumbled: 0, portrait: 'enemyPortrait' });
     run.over = true;
     const e = runEntry(run, 1000);
     expect(e.killer).toBe('SLIME');
     expect(e.killerFight).toBe(1);
-    expect(e.relics).toEqual(['clover']);
+    expect(e.relics).toEqual(['bandage']);
     expect(e.charms.map((c) => c.enh)).toContain('gold');
     // THE RUN SCORE (2026-10-14): a relic 100 + 4 Charms x25, x1.5 for stake 1.
     expect(runScore(e)).toBe(300);
@@ -57,14 +57,15 @@ describe('public playtest shell', () => {
     expect(runScore({ ...old, won: true, fights: 12, acts: 2, stake: 0, chips: 20 })).toBe(2300);
     const p = emptyProfile();
     expect(discover(p, run)).toBe(true);
-    expect(p.found.relics).toEqual(['clover']);
+    expect(p.found.relics).toEqual(['bandage']);
     expect(p.found.charms).toEqual(['gold']);
     expect(discover(p, run)).toBe(false);
   });
 
   it('a hand-edited profile save is cleaned up, not trusted', () => {
-    const p = sanitizeProfile({ found: { relics: ['clover', 'nope', 'clover'], charms: ['gold', 'x'] }, runs: [{ cabinet: 'hacker' }, { cabinet: 'knight', stake: 99, fights: 'lots', relics: ['bell', 3] }, null] });
-    expect(p.found.relics).toEqual(['clover']);
+    // (CLOVER was cut on 2026-10-15: an old save's found relic or hiscore relic is dropped, like any unknown id.)
+    const p = sanitizeProfile({ found: { relics: ['bandage', 'nope', 'bandage', 'clover'], charms: ['gold', 'x'] }, runs: [{ cabinet: 'hacker' }, { cabinet: 'knight', stake: 99, fights: 'lots', relics: ['bell', 3, 'drum'] }, null] });
+    expect(p.found.relics).toEqual(['bandage']);
     expect(p.found.charms).toEqual(['gold']);
     expect(p.runs.length).toBe(1);
     expect(p.runs[0].stake).toBe(MAX_STAKE);
@@ -82,14 +83,14 @@ describe('relic activations are visible', () => {
   it('opening relics fire on turn 1, and pay-changing relics ride on the score', async () => {
     const { Fight } = await import('../src/core/fight');
     const run = createRun(base, 11, 'tesla');
-    run.player.relics.push('battery', 'key', 'bell', 'prism');
+    run.player.relics.push('quickening', 'key', 'bell', 'prism');
     const { fightConfig } = await import('../src/core/run');
     const cfg = fightConfig(run, base);
     cfg.enemy.hp = 99999;
     cfg.player.hp = cfg.player.startHp = 99999;
     const f = new Fight(cfg, 3);
     const first = f.step().events;
-    expect(first.some((e) => e.type === 'relic' && e.relic === 'battery')).toBe(true);
+    expect(first.some((e) => e.type === 'relic' && e.relic === 'quickening')).toBe(true);
     let paid = false;
     for (let i = 0; i < 80 && !f.over; i++) {
       for (const e of f.step().events) if (e.type === 'spin' && e.side === 'player' && e.score.relics?.length) paid = true;
@@ -99,18 +100,18 @@ describe('relic activations are visible', () => {
 });
 
 describe('relic audit fixes', () => {
-  it('WAR DRUM adds to EACH sword and the spin reports it so the sword numbers can show it', async () => {
+  it('DECK DRUM adds to EACH card and the spin reports it so the card numbers can show it', async () => {
     const { Fight } = await import('../src/core/fight');
     const { fightConfig } = await import('../src/core/run');
-    const run = createRun(base, 11, 'knight');
-    run.player.relics.push('drum');
+    const run = createRun(base, 11, 'joker');
+    run.player.relics.push('deckdrum');
     const cfg = fightConfig(run, base);
     cfg.enemy.hp = 99999;
     cfg.player.hp = cfg.player.startHp = 99999;
     const f = new Fight(cfg, 5);
     let shown = 0;
     for (let i = 0; i < 60 && !f.over; i++)
-      for (const e of f.step().events) if (e.type === 'spin' && e.side === 'player' && (e.symBonus?.sword ?? 0) > 0) shown = Math.max(shown, e.symBonus!.sword!);
+      for (const e of f.step().events) if (e.type === 'spin' && e.side === 'player' && (e.symBonus?.ace ?? 0) > 0) shown = Math.max(shown, e.symBonus!.ace!);
     expect(shown).toBeGreaterThan(0);
     expect(shown).toBeLessThanOrEqual(10);
   });

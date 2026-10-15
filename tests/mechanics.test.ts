@@ -142,9 +142,6 @@ describe('enemy abilities (telegraphed)', () => {
 });
 
 describe('relics', () => {
-  it('battery starts with 30 energy', () => {
-    expect(vs({ sword: 12 }, { relics: ['battery'] }).sides.player.energy).toBe(30);
-  });
 
   it('mirror makes reels 2+3 a double', () => {
     const f = vs({ sword: 12 }, { relics: ['mirror'] });
@@ -162,26 +159,6 @@ describe('relics', () => {
     // TESLA's special: FANG_TESLA_HEAL, in the one payoff heal (its parts named when there are several).
     expect(h).toMatchObject({ amount: 5, hp: 15, source: 'payoff' });
     expect(ofType(ev, 'relic').some((e) => e.relic === 'fang')).toBe(true);
-  });
-
-  it('clover sometimes converts a near-miss into a jackpot (and only then)', () => {
-    let lucky = 0;
-    let trials = 0;
-    for (let s = 0; s < 400; s++) {
-      const c = defaultConfig();
-      c.enemy = { hp: 600, strips: reels3({ shield: 12 }) };
-      c.relics = ['clover'];
-      const f = new Fight(c, s);
-      f.forceNext('player', ['sword', 'sword', 'shield']);
-      const [spin] = ofType(f.step().events, 'spin');
-      trials++;
-      if (spin.lucky) {
-        lucky++;
-        expect(spin.score.tier).toBe('triple');
-      } else expect(spin.score.tier).toBe('pair');
-    }
-    expect(lucky / trials).toBeGreaterThan(0.2);
-    expect(lucky / trials).toBeLessThan(0.4);
   });
 
 });

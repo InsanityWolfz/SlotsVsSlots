@@ -46,23 +46,13 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   greatsword: 8,
   safedeposit: 4,
   hotstreak: 6,
-  belt: 6,
-  bracelet: 6,
-  metronome: 6,
-  snakeeyes: 7,
   pitboss: 8,
   rainmaker: 7,
-  slushfund: 6.5,
-  tipjar: 6,
-  coil: 6.5,
   mirror: 10,
-  battery: 9,
   fang: 9,
-  clover: 7.5,
   bandage: 6,
   // Build relics are worth a lot more once you own the gild they amplify.
   prism: 3,
-  hone: 3,
   // Legendaries.
   ticket: 8,
   bell: 8,
@@ -70,32 +60,17 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   overcharge: 9.5,
   key: 9,
   sandglass: 8.5,
-  chalice: 3,
   // Slot machine relics (only offered on their machine).
-  drum: 8,
-  chainmail: 8,
   tower: 7,
-  headsman: 8,
   capacitor: 8,
   livewire: 8.5,
   encore: 8,
-  downpour: 7.5,
   coup: 7.5,
   compound: 7,
   meltdown: 7.5,
-  pulse: 7,
   deckdrum: 8,
-  wildcard: 7.5,
-  loadedreel: 7.5,
-  faraday: 7,
-  static: 8.5,
-  capbells: 8.5,
   horseshoe: 8,
   underdog: 8,
-  firstblood: 7.5,
-  piggy: 5,
-  // The official sim doesn't bet: the bet relics are dead picks for it.
-  trophy: 6,
   holywater: 6,
   bash: 5.5,
   // The legendaries that were BIG CHOICES (2026-10-15).
@@ -111,7 +86,6 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   openbar: 7,
 };
 const BUILD: Partial<Record<RelicId, (run: RunState) => boolean>> = {
-  chalice: (r) => r.player.gilded.some((g) => g.enh === 'vamp'),
   prism: (r) => r.player.strips.some((s) => (s.wild ?? 0) > 0),
 };
 
@@ -148,7 +122,7 @@ function styleValue(run: RunState, o: DraftOption): number | undefined {
 /** The shield build swaps toward this many shields a reel (beyond it, it keeps its strip and invests in shields). */
 export const SIM_BIAS_TURTLE = { cap: 9 };
 /** Relics a shield build wants. */
-const SHIELD_RELICS: ReadonlySet<string> = new Set(['armoredcar', 'safedeposit', 'tower', 'chainmail', 'bash', 'faraday', 'capacitor', 'belt']);
+const SHIELD_RELICS: ReadonlySet<string> = new Set(['armoredcar', 'safedeposit', 'tower', 'bash', 'capacitor']);
 
 function baseValue(run: RunState, o: DraftOption): number {
   const p = run.player;

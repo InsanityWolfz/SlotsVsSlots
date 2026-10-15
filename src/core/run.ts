@@ -590,6 +590,20 @@ export function migrateRun(run: RunState): RunState {
   delete old.dailyEdge;
   if (old.endless) delete old.endless.edges;
   migrateBigChoices(run);
+  // 24 relics were cut (user, 2026-10-15): a save holding one drops it, from its relics and from any pick waiting.
+  const real = (r: RelicId) => r in RELICS;
+  if (Array.isArray(run.player?.relics)) run.player.relics = run.player.relics.filter(real);
+  const pick = (list: RelicId[] | null | undefined) => (Array.isArray(list) ? list.filter(real) : list);
+  run.pendingSpoils = pick(run.pendingSpoils) ?? null;
+  if (run.pendingSpoils && !run.pendingSpoils.length) run.pendingSpoils = null;
+  if (Array.isArray(run.legendQueue)) run.legendQueue = run.legendQueue.map((q) => q.filter(real)).filter((q) => q.length);
+  run.pendingLegend = pick(run.pendingLegend) ?? null;
+  if (run.pendingLegend && !run.pendingLegend.length) run.pendingLegend = run.legendQueue?.shift() ?? null;
+  if (Array.isArray(run.pendingStart)) {
+    run.pendingStart = run.pendingStart.filter(real);
+    if (!run.pendingStart.length) run.pendingStart = startRelics(run);
+  }
+  if (run.startRelic && !real(run.startRelic)) delete run.startRelic;
   return run;
 }
 
@@ -968,11 +982,9 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   // Chips: interest on what you banked, then the win, elite bonus and jackpots (overkill chips removed 2026-10-08: nothing explained them).
   const beaten = currentEnemy(run);
   const interest = interestOn(run.player.chips);
-  // PIGGY BANK: more interest on what you hold.
-  const piggy = run.player.relics.includes('piggy') ? Math.min(NEW_RELIC.piggyMax, Math.floor(run.player.chips / NEW_RELIC.piggyPer)) : 0;
   // OPEN BAR (legendary relic): wins pay no chips (interest still does).
   const winChips = (run.player.relics.includes('openbar') ? 0 : CHIPS.win + (CABINETS[run.cabinet].chipsPerWin ?? 0) + (beaten.elite ? CHIPS.eliteBonus : 0) + fight.playerJackpots * CHIPS.perJackpot) * (nightId(run) === 'limit' ? 2 : 1);
-  const earned = interest + piggy + winChips;
+  const earned = interest + winChips;
   run.player.chips += earned;
   // (THE WHEEL: the chips your sweeps won came in with the fight's mid-fight chips; the line counts them.)
   record.chips = earned + fight.lucreChips + fight.betChips + fight.taxChips - fight.parachuteChips;
@@ -998,11 +1010,6 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   run.deckMarks = beaten.boss === 'dealer' ? 0 : Math.min(DECK_MARKS_CAP, (run.deckMarks ?? 0) + fight.marksPlaced);
   if (run.player.relics.includes('bandage') && !noHealing(run)) hp += BANDAGE_HEAL;
   // (BANK VAULT is gone, user 2026-10-12: a GOLD Charm every win made BANKROLL's late fights one spin.)
-  // TROPHY BELT: every win adds max HP.
-  if (run.player.relics.includes('trophy')) {
-    run.player.maxHp += NEW_RELIC.trophyHp;
-    hp += NEW_RELIC.trophyHp;
-  }
   // DEVIL'S DUE (legendary relic): every win takes its toll.
   if (run.player.relics.includes('devilsdue')) {
     run.player.maxHp = Math.max(UNIT, run.player.maxHp - unitsRound(run.player.maxHp * LEGEND_RELIC.devilDecay));
@@ -1555,7 +1562,8 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'clear':
       return { title: 'CLEAR ROCKS', text: `REMOVE ROCKS ON REEL ${o.reel + 1}` };
     case 'relic':
-      return { title: RELICS[o.relic].name, text: relicText(o.relic, run?.cabinet) };
+      // (An old save's record can name a relic that was cut: its id stands in.)
+      return RELICS[o.relic] ? { title: RELICS[o.relic].name, text: relicText(o.relic, run?.cabinet) } : { title: String(o.relic).toUpperCase(), text: '' };
     case 'heal':
       return { title: 'HEAL', text: `RESTORE ${o.amount} HP` };
     case 'maxHp':

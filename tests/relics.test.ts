@@ -4,7 +4,7 @@ import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { NEW_RELIC, RELICS } from '../src/core/relics';
-import { charmOptions, createRun, draftOffers, fightConfig, finishFight, gildsFor, isIdentityRelic, isRelicDraft, relicFits, startRelics, takeStart } from '../src/core/run';
+import { charmOptions, createRun, draftOffers, fightConfig, gildsFor, isIdentityRelic, isRelicDraft, migrateRun, relicFits, startRelics, takeStart } from '../src/core/run';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
@@ -21,14 +21,13 @@ function on(cabinet: CabinetId, relics: RelicId[], mut?: (c: GameConfig) => void
 const playerAttack = (ev: CombatEvent[]) => ofType(ev, 'attack').filter((a) => a.from === 'player');
 
 describe('slot machine relics', () => {
-  it('WAR DRUM: each paying spin adds +5 to swords this fight (max 5 stacks)', () => {
-    const f = on('knight', ['drum']);
-    f.sides.player.levels = { sym: { sword: 1, shield: 1 }, charm: {} };
-    f.forceNext('player', ['sword', 'shield', 'shield']);
+  it('DECK DRUM: each paying spin adds to every card this fight', () => {
+    const f = on('joker', ['deckdrum']);
+    f.forceNext('player', ['ace', 'shield', 'shield']);
     const first = playerAttack(f.step().events)[0].amount;
     f.step();
-    f.forceNext('player', ['sword', 'shield', 'shield']);
-    expect(playerAttack(f.step().events)[0].amount).toBe(first + NEW_RELIC.drumStep);
+    f.forceNext('player', ['ace', 'shield', 'shield']);
+    expect(playerAttack(f.step().events)[0].amount).toBeGreaterThan(first);
     expect(f.drum).toBe(2);
   });
 
@@ -53,38 +52,14 @@ describe('slot machine relics', () => {
     expect(relicFits(createRun(base, 4, 'tesla'), 'overcharge')).toBe(true);
   });
 
-  it('CHAINMAIL heals 10% of leftover shield; SHIELD BASH hits for all of it', () => {
-    const f = on('knight', ['chainmail', 'bash']);
+  it('SHIELD BASH hits for all of the leftover shield', () => {
+    const f = on('knight', ['bash']);
     f.sides.player.hp = 100;
     f.step();
     f.step();
     f.sides.player.shield = 100;
     const ev = f.step().events;
-    expect(ofType(ev, 'heal').find((h) => h.source === 'chainmail')?.amount).toBe(10);
     expect(playerAttack(ev)[0].amount).toBe(100); // full share (was half)
-  });
-
-  it('FARADAY CAGE: shields charge lightning; STATIC: being attacked charges 5', () => {
-    const f = on('tesla', ['faraday']);
-    f.forceNext('player', ['shield', 'shield', 'sword']);
-    const ev = f.step().events;
-    expect(ofType(ev, 'energyGain').some((e) => e.amount > 0)).toBe(true);
-    const s = on('tesla', ['static']);
-    s.step();
-    s.forceNext('enemy', ['sword', 'sword', 'sword']);
-    expect(ofType(s.step().events, 'energyGain').find((e) => e.side === 'player')?.amount).toBe(NEW_RELIC.staticCharge);
-  });
-
-  it('CAP AND BELLS heals per wild', () => {
-    const f = on('joker', ['capbells'], (c) => {
-      c.player.strips = reels3({ sword: 4, shield: 4, wild: 4 });
-      c.player.gilded = [{ reel: 0, symbol: 'wild', enh: 'gold', n: 4 }];
-    });
-    f.sides.player.hp = 100;
-    f.forceNext('player', ['wild', 'shield', 'wild']);
-    const ev = f.step().events;
-    expect(ofType(ev, 'heal').find((h) => h.source === 'capbells')?.amount).toBe(2 * NEW_RELIC.capbellsHeal);
-    expect(ofType(ev, 'meter')[0].amount).toBe(40);
   });
 });
 
@@ -105,13 +80,7 @@ describe('charm and general relics', () => {
     expect(hits).toBeGreaterThan(0);
   });
 
-  it('UNDERDOG pays x1.5 under half HP; FIRST BLOOD pays x3 once', () => {
-    const f = on('knight', ['firstblood']);
-    f.forceNext('player', ['sword', 'shield', 'shield']);
-    expect(ofType(f.step().events, 'spin')[0].score.groups[0].notes).toContain(`X${NEW_RELIC.firstbloodMul} FIRST`);
-    f.step();
-    f.forceNext('player', ['sword', 'shield', 'shield']);
-    expect(ofType(f.step().events, 'spin')[0].score.groups[0].notes ?? []).not.toContain(`X${NEW_RELIC.firstbloodMul} FIRST`);
+  it('UNDERDOG pays x1.5 under half HP', () => {
     const u = on('knight', ['underdog']);
     u.sides.player.hp = 10;
     u.forceNext('player', ['sword', 'shield', 'shield']);
@@ -125,23 +94,6 @@ describe('charm and general relics', () => {
     const ev = f.step().events;
     expect(ofType(ev, 'relic').some((r) => r.relic === 'holywater')).toBe(true);
     expect(f.sides.player.reels.every((r) => r.cells.every((c) => !c.slimed))).toBe(true);
-  });
-
-  it('TROPHY BELT adds max HP per win; PIGGY BANK adds interest', () => {
-    const run = createRun(base, 3, 'knight');
-    run.pendingStart = null;
-    run.player.relics = ['trophy', 'piggy'];
-    run.player.chips = 20;
-    const max = run.player.maxHp;
-    const f = new Fight(fightConfig(run, base), 1);
-    f.winner = 'player';
-    const rec = finishFight(run, f);
-    expect(run.player.maxHp).toBe(max + NEW_RELIC.trophyHp);
-    const plain = createRun(base, 3, 'knight');
-    plain.player.chips = 20;
-    const g = new Fight(fightConfig(plain, base), 1);
-    g.winner = 'player';
-    expect(rec.chips! - finishFight(plain, g).chips!).toBe(4);
   });
 });
 
@@ -211,5 +163,41 @@ describe('playtest bugs (2026-09-29)', () => {
       seen = true;
     }
     expect(seen).toBe(true);
+  });
+});
+
+describe('the relic cut (2026-10-15)', () => {
+  const CUT = ['clover', 'battery', 'chalice', 'hone', 'wildcard', 'loadedreel', 'metronome', 'firstblood', 'snakeeyes', 'bracelet', 'drum', 'chainmail', 'headsman', 'faraday', 'static', 'coil', 'capbells', 'downpour', 'slushfund', 'tipjar', 'piggy', 'belt', 'pulse', 'trophy'];
+
+  it('the cut relics are gone, and ~50 are left', () => {
+    for (const r of CUT) expect(r in RELICS).toBe(false);
+    expect(Object.keys(RELICS).length).toBeLessThanOrEqual(52);
+  });
+
+  it('every machine still starts with a pick of 3, two of them its own relics', () => {
+    for (const cab of ['knight', 'tesla', 'jukebox', 'joker', 'midas'] as CabinetId[])
+      for (let seed = 1; seed <= 20; seed++) {
+        const run = createRun(base, seed, cab);
+        const pick = run.pendingStart!;
+        expect(pick).toHaveLength(3);
+        expect(pick.every((r) => r in RELICS && relicFits(run, r))).toBe(true);
+        expect(pick.filter((r) => RELICS[r].machine === cab)).toHaveLength(2);
+      }
+  });
+
+  it('a saved run holding a cut relic drops it (its relics and any pick waiting)', () => {
+    const run = createRun(base, 5, 'knight');
+    const old = CUT.slice(0, 3) as RelicId[];
+    run.player.relics = ['bandage', ...old];
+    run.pendingSpoils = ['drum', 'greatsword'] as RelicId[];
+    run.pendingLegend = ['clover'] as unknown as RelicId[];
+    run.legendQueue = [['key', 'coil'] as RelicId[]];
+    run.pendingStart = ['belt', 'chainmail'] as unknown as RelicId[];
+    migrateRun(run);
+    expect(run.player.relics).toEqual(['bandage']);
+    expect(run.pendingSpoils).toEqual(['greatsword']);
+    expect(run.pendingLegend).toEqual(['key']);
+    expect(run.pendingStart!.every((r) => r in RELICS)).toBe(true);
+    expect(run.pendingStart!.length).toBeGreaterThan(0);
   });
 });

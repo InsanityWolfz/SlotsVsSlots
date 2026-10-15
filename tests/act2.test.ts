@@ -265,7 +265,7 @@ describe('act structure', () => {
     run.map = generateActMap(new Rng(5), 2);
     run.route = null;
     skipToBoss(run);
-    run.player.relics = ['battery', 'fang'];
+    run.player.relics = ['bandage', 'fang'];
     const cfg = fightConfig(run, base);
     expect(cfg.enemy.strips.every((st) => (st.ball ?? 0) > 0)).toBe(true);
     expect(cfg.enemy.gilded ?? []).toEqual([]);

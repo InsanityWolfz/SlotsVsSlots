@@ -51,21 +51,4 @@ describe('EXPERT_PLAYTEST_10: new relics', () => {
     f.forceNext('player', ['sword', 'sword', 'sword']);
     expect(ofType(f.step().events, 'attack')[0].amount).toBe(first * 2);
   });
-
-  it('WHETSTONE BELT: a blocked hit sharpens every sword in the next sword group', () => {
-    const f = on('knight', (c) => {
-      c.player.strips = reels3({ sword: 6, shield: 6 });
-      c.relics = ['belt'];
-    });
-    f.sides.player.shield = 50;
-    f.next = 'enemy';
-    f.forceNext('enemy', ['sword', 'sword', 'shield']);
-    const ev = f.step().events;
-    expect(ofType(ev, 'relic').some((e) => e.relic === 'belt')).toBe(true);
-    const g = on('knight', (c) => (c.player.strips = reels3({ sword: 6, shield: 6 })));
-    g.forceNext('player', ['sword', 'sword', 'sword']);
-    const plain = ofType(g.step().events, 'attack')[0].amount;
-    f.forceNext('player', ['sword', 'sword', 'sword']);
-    expect(ofType(f.step().events, 'attack')[0].amount).toBe(plain + 20 * 3 * 3);
-  });
 });

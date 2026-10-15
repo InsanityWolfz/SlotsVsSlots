@@ -29,7 +29,6 @@ export interface SideStats {
   abilities: number;
   potWon: number;
   healed: number;
-  lucky: number;
 }
 
 export interface FightStats {
@@ -65,7 +64,6 @@ const emptySide = (): SideStats => ({
   abilities: 0,
   potWon: 0,
   healed: 0,
-  lucky: 0,
 });
 
 export class StatsTracker {
@@ -97,7 +95,6 @@ export class StatsTracker {
           s.nearMisses++;
           if (e.score.tier === 'triple') s.nearMissHits++;
         }
-        if (e.lucky) s.lucky++;
         this.dry[e.side] = e.score.tier === 'none' ? this.dry[e.side] + 1 : 0;
         s.longestDrySpell = Math.max(s.longestDrySpell, this.dry[e.side]);
         break;

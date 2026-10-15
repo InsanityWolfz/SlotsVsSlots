@@ -91,11 +91,11 @@ describe('build-aware offers & the heal service', () => {
       run.depth = 3;
       for (const it of shopOffers(run)) if (it.option.kind === 'relic' && BUILD_ENABLER[it.option.relic]) expect(relicFits(run, it.option.relic)).toBe(true);
     }
-    // Charm relics (EXECUTIONER = hone) need the charm; machine relics stay home.
-    const knight = createRun(base, 1);
-    expect(relicFits(knight, 'hone')).toBe(false);
-    knight.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'keen', n: 2 });
-    expect(relicFits(knight, 'hone')).toBe(true);
+    // Charm relics (HORSESHOE) need the charm; machine relics stay home.
+    const tesla = createRun(base, 1, 'tesla');
+    expect(relicFits(tesla, 'horseshoe')).toBe(false);
+    tesla.player.gilded.push({ reel: 0, symbol: 'bolt', enh: 'lucky', n: 2 });
+    expect(relicFits(tesla, 'horseshoe')).toBe(true);
     expect(relicFits(createRun(base, 1, 'jukebox'), 'turntable')).toBe(true);
   });
 

@@ -79,16 +79,6 @@ describe('signature meters (one per slot machine)', () => {
     expect(s.groups[0].symbol).toBe(s.wildPick);
   });
 
-  it('Blood Chalice: healing past full HP becomes shield', () => {
-    const f = on('knight', (c) => {
-      c.relics = ['chalice'];
-      c.player.gilded = [{ reel: 0, symbol: 'sword', enh: 'vamp', n: 6 }];
-    });
-    f.forceNext('player', ['sword', 'shield', 'shield']);
-    const ev = f.step().events;
-    expect(ofType(ev, 'shieldGain').find((e) => e.source === 'chalice')?.amount).toBe(20);
-  });
-
   it('the Golden Hourglass slows enemy abilities by 1 turn', () => {
     expect(SANDGLASS_SLOW).toBe(1);
   });
