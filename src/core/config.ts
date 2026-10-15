@@ -208,8 +208,10 @@ export interface SideConfig {
   stackShield?: number;
   /** THE DECK REMEMBERS: marked cards waiting on this side's reels when the fight starts. */
   startMarks?: number;
-  /** HOLD (experiment): HOLDs you get this fight (0 = off). */
+  /** THE SCORE RACE's spin tools this fight: HOLD (keep a reel before a spin), NUDGE and RESPIN (after it lands). */
   holds?: number;
+  nudges?: number;
+  respins?: number;
   /** Which act this side comes from (enemy). */
   act?: number;
   /** ENDLESS: enemy damage multiplier (1.12^loop), LAST CALL / 80-turn cap on, and a starting shield (HOUSE EDGE). */

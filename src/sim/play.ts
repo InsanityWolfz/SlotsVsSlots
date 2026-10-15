@@ -94,6 +94,36 @@ export function holdPolicy(fight: Fight, last: { line: string[]; tier: string; g
   for (const r of g.reels) fight.hold(r);
 }
 
+/**
+ * The bot's NUDGE / RESPIN play once its spin has landed: take the NUDGE that pays most (if it pays more), else RESPIN
+ * the odd reel out of a pair. A decent player's habit, not the best play.
+ */
+export function landPolicy(fight: Fight): void {
+  for (let guard = 0; guard < 4 && fight.landed; guard++) {
+    const now = fight.previewPay(fight.landed);
+    let bestReel = -1;
+    let bestPay = now;
+    if (fight.nudgesLeft > 0)
+      for (let r = 0; r < 3; r++) {
+        if (fight.sides.player.frozen[r] > 0) continue;
+        const n = fight.sides.player.reels[r].cells.length;
+        const stops = fight.landed.map((x, i) => (i === r ? (x - 1 + n) % n : x));
+        const pay = fight.previewPay(stops);
+        if (pay > bestPay) [bestReel, bestPay] = [r, pay];
+      }
+    if (bestReel >= 0) {
+      fight.nudge(bestReel);
+      continue;
+    }
+    if (fight.respinsLeft > 0) {
+      const line = fight.sides.player.reels.map((reel, r) => reel.cells[fight.landed![r]].symbol);
+      const odd = line[0] === line[1] && line[2] !== line[0] ? 2 : line[1] === line[2] && line[0] !== line[1] ? 0 : line[0] === line[2] && line[1] !== line[0] ? 1 : -1;
+      if (odd >= 0 && fight.sides.player.frozen[odd] === 0) fight.respin(odd);
+    }
+    return;
+  }
+}
+
 const best = <T>(xs: T[], v: (x: T) => number): T => xs.reduce((a, b) => (v(b) > v(a) ? b : a));
 
 export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stake: number, opts: PlayOpts = {}): RunLog {
@@ -126,6 +156,8 @@ export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stak
     let lastSpin: Parameters<typeof holdPolicy>[1] = null;
     while (!fight.over && fight.turn < 2000) {
       if ((opts.holds || cfg.race) && fight.next === 'player') holdPolicy(fight, lastSpin, CABINETS[run.cabinet].attack);
+      // THE SCORE RACE: the spin lands, the bot may NUDGE or RESPIN, then it scores.
+      if (cfg.race && fight.next === 'player' && fight.land()) landPolicy(fight);
       const { events } = fight.step();
       for (const e of events) if (e.type === 'spin' && e.side === 'player') lastSpin = e.score;
       opts.onEvents?.(events, run, fight);

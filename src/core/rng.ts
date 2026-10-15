@@ -8,6 +8,14 @@ export class Rng {
     this.state = this.seed;
   }
 
+  /** The generator's position, to look ahead without changing what comes next (the sim bot's previews). */
+  snapshot(): number {
+    return this.state;
+  }
+  restore(state: number): void {
+    this.state = state >>> 0;
+  }
+
   static randomSeed(): number {
     return Math.floor(Math.random() * 0xffffffff) >>> 0;
   }

@@ -289,6 +289,12 @@ export class Game {
   private lastPair = false;
   /** THE SCORE RACE (sandbox): this fight is a race; the next run picked on the machine screen will be one. */
   private race = false;
+  /** THE SCORE RACE: where your turn is (before the spin, or landed and waiting on PAY), the tool a reel tap uses, the
+   * tray's tap targets, and a tool animating (PAY waits for it). */
+  private racePhase: 'pre' | 'post' | null = null;
+  private armed: 'nudge' | 'respin' | null = null;
+  private toolRects: { id: 'nudge' | 'respin'; x: number; y: number; w: number; h: number }[] = [];
+  private toolBusy = false;
   private raceNext = false;
   private holdPrompt = false;
   rows: TurnRow[] = [];
@@ -403,7 +409,8 @@ export class Game {
       onReroll: () => this.rerollShop(),
       onLeave: () => this.leaveCashier(),
       onCabinet: (id) => {
-        this.startRun(undefined, id, Math.min(this.prefs.stakeSel, this.stakesNow()[id] ?? 0));
+        // (THE SCORE RACE slice plays at WHITE.)
+        this.startRun(undefined, id, this.raceNext ? 0 : Math.min(this.prefs.stakeSel, this.stakesNow()[id] ?? 0));
         if (this.raceNext && this.run) {
           // THE SCORE RACE (sandbox): the run is a race run; rebuild its first fight as one.
           this.raceNext = false;
@@ -464,6 +471,8 @@ export class Game {
     this.autoBtn.toggled = this.prefs.auto;
     this.speedBtns.forEach((b) => (b.label = `SPEED ${this.prefs.speed}X`));
     this.spinBtn.enabled = this.awaitingSpin;
+    // THE SCORE RACE: once your spin has landed, the button pays it out.
+    this.spinBtn.label = this.racePhase === 'post' ? 'PAY' : 'SPIN';
     // START RUN on the title; in a run it's a small PAUSE on the right (RESUME, GLOSSARY, SETTINGS, QUIT, ABANDON).
     const title = this.phase === 'title';
     this.startBtn.label = title ? 'START RUN' : 'PAUSE';
@@ -525,7 +534,8 @@ export class Game {
       this.afterRecord(ride, recordMeta(this.profile, ride, collectionTotal(), prev), true);
       return;
     }
-    const entry = runEntry(run, Date.now(), !!run.tutorial);
+    // THE SCORE RACE slice is filed like the tutorial: no stats, XP, achievements or boards.
+    const entry = runEntry(run, Date.now(), !!run.tutorial || !!run.race);
     if (run.won && !run.endless) run.rideAt = entry.at;
     this.profile.runs.push(entry);
     while (this.profile.runs.length > MAX_ENTRIES) {
@@ -541,8 +551,7 @@ export class Game {
     for (const a of gain.achievements) steamUnlock(a.id);
     this.saveProfile();
     this.screens.setMeta(gain);
-    // (THE SCORE RACE sandbox never posts to the boards.)
-    if (entry.tutorial || this.run?.race || !online()) return;
+    if (entry.tutorial || !online()) return;
     // No name yet: the score waits for one (the name is offered as you leave this screen; SKIP drops it).
     if (!playerName(this.profile)) {
       this.pendingPost = { entry, ride };
@@ -943,8 +952,9 @@ export class Game {
       this.skipTutorial();
       if (run.endless) this.screens.setStakeUnlockedNow('');
       // The daily is a side road: no unlocks from it.
-      if (run.daily) this.screens.setStakeUnlockedNow('');
-      this.screens.setUnlockedNow(run.endless || run.daily ? [] : this.checkUnlocks(run));
+      // (The daily and THE SCORE RACE slice are side roads: no unlocks from them.)
+      if (run.daily || run.race) this.screens.setStakeUnlockedNow('');
+      this.screens.setUnlockedNow(run.endless || run.daily || run.race ? [] : this.checkUnlocks(run));
       this.screens.showOver(run);
     }
     else this.afterBonus(record);
@@ -1184,12 +1194,32 @@ export class Game {
       const holdChance = this.race && this.fight.next === 'player' && this.fight.holdsLeft > 0 && this.lastPair;
       if (this.fight.next === 'player' && (!this.prefs.auto || holdChance || this.race)) {
         this.holdPrompt = holdChance;
+        this.racePhase = this.race ? 'pre' : null;
         this.awaitingSpin = true;
         this.syncButtons();
         await new Promise<void>((r) => (this.spinResolve = r));
         this.awaitingSpin = false;
         this.holdPrompt = false;
         this.syncButtons();
+        // THE SCORE RACE: the spin lands first; with NUDGEs or RESPINs left, it waits on PAY before it scores.
+        if (this.race && token === this.token) {
+          const landed = this.fight.land();
+          if (landed) {
+            this.racePhase = null;
+            await this.director.landSpin(landed.stops, landed.moved);
+            if (token !== this.token) return;
+            if (this.fight.nudgesLeft > 0 || this.fight.respinsLeft > 0) {
+              this.racePhase = 'post';
+              this.armed = this.fight.nudgesLeft > 0 ? 'nudge' : 'respin';
+              this.awaitingSpin = true;
+              this.syncButtons();
+              await new Promise<void>((r) => (this.spinResolve = r));
+              this.awaitingSpin = false;
+              this.syncButtons();
+            }
+          }
+          this.racePhase = null;
+        }
       } else {
         await clock.wait(AUTO_DELAY);
       }
@@ -1224,7 +1254,7 @@ export class Game {
   }
 
   requestSpin(): void {
-    if (!this.awaitingSpin || !this.spinResolve) return;
+    if (!this.awaitingSpin || !this.spinResolve || this.toolBusy) return;
     const r = this.spinResolve;
     this.spinResolve = null;
     r();
@@ -1384,9 +1414,24 @@ export class Game {
     if (this.screens.active && this.screens.pointerDown(x, y)) return;
     // HOLD (experiment): while the fight waits on your spin, tap one of your reels to hold it (tap again to let go).
     if (this.awaitingSpin && this.race && !this.screens.active) {
+      // The tray: pick NUDGE or RESPIN (after your spin lands).
+      if (this.racePhase === 'post') {
+        const chip = this.toolRects.find((b) => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
+        if (chip) {
+          if ((chip.id === 'nudge' ? this.fight.nudgesLeft : this.fight.respinsLeft) > 0) {
+            this.armed = chip.id;
+            this.sounds.click();
+          } else this.sounds.fizzle();
+          return;
+        }
+      }
       const win = reelWindow('player');
       if (x >= win.x && x < win.x + win.w && y >= win.y && y < win.y + win.h) {
         const r = Math.floor((x - win.x) / PITCH);
+        if (this.racePhase === 'post') {
+          void this.useTool(r);
+          return;
+        }
         const was = this.fight.held[r];
         const now = this.fight.hold(r);
         if (now !== was) this.sounds.reelStop(r, now ? 1.4 : 0.8);
@@ -1617,7 +1662,7 @@ export class Game {
     this.drawGutter(ctx, t);
     this.particles.draw(ctx);
     s.fx.draw(ctx, s.clock.time, 20, Infinity);
-    if (this.fight.holdsLeft > 0 || this.fight.held.some(Boolean)) this.drawHolds(ctx, t);
+    if (this.race) this.drawHolds(ctx, t);
     if (this.drawerT < 0.5) this.drawRelicFeed(ctx);
     if (this.fight.cfg.enemy.boss && !this.screens.active) this.drawBossHint(ctx);
     if (this.bossCard) this.drawBossCard(ctx);
@@ -1661,6 +1706,10 @@ export class Game {
   }
 
   /** HOLD (experiment): a HELD tag on each held reel, your HOLDs left under your machine, and the HOLD CHANCE call. */
+  /**
+   * THE SCORE RACE's spin tools: HELD frames, the tool tray under your machine (HOLD / NUDGE / RESPIN and their counts;
+   * tap NUDGE or RESPIN to pick it once your spin has landed) and the prompt over it.
+   */
   private drawHolds(ctx: CanvasRenderingContext2D, t: number): void {
     if (!this.race || (this.phase !== 'fighting' && this.phase !== 'quick')) return;
     const f = this.fight;
@@ -1675,14 +1724,98 @@ export class Game {
       drawText(ctx, 'HELD', c.x, c.y + PITCH / 2 + 17, 2, '#ffd23f');
     }
     const win = reelWindow('player');
-    const left = f.holdsLeft - f.held.filter(Boolean).length;
-    drawText(ctx, `HOLDS ${left}`, win.x + win.w / 2, win.y + win.h + 18, 1.75, left > 0 ? '#ffd23f' : COLORS.textDim);
-    if (this.awaitingSpin) {
-      const pulse = 0.75 + 0.25 * Math.sin(t * 6);
-      const any = f.held.some(Boolean);
-      const text = any ? 'NOW SPIN' : left <= 0 ? '' : this.holdPrompt ? 'A PAIR! TAP A REEL TO HOLD IT, OR SPIN' : 'TAP A REEL TO HOLD IT, OR SPIN';
-      if (text) drawText(ctx, text, win.x + win.w / 2, win.y - 22, 2, any || this.holdPrompt ? '#ffd23f' : COLORS.textDim, { alpha: pulse });
+    const holds = f.holdsLeft - f.held.filter(Boolean).length;
+    const pre = this.racePhase === 'pre' && this.awaitingSpin;
+    const post = this.racePhase === 'post' && this.awaitingSpin;
+    // The tray: three chips. HOLD is live before your spin, NUDGE and RESPIN after it lands.
+    const chips: { id: 'hold' | 'nudge' | 'respin'; label: string; n: number; live: boolean }[] = [
+      { id: 'hold', label: 'HOLD', n: holds, live: pre },
+      { id: 'nudge', label: 'NUDGE', n: f.nudgesLeft, live: post },
+      { id: 'respin', label: 'RESPIN', n: f.respinsLeft, live: post },
+    ];
+    const cw = 96;
+    const y = win.y + win.h + 18;
+    this.toolRects = [];
+    chips.forEach((c, k) => {
+      const x = win.x + win.w / 2 + (k - 1) * (cw + 6);
+      const armed = post && this.armed === c.id;
+      const on = c.live && c.n > 0;
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(x - cw / 2 - 2, y - 13, cw + 4, 26);
+      ctx.fillStyle = armed ? '#ffd23f' : on ? '#3a2d52' : '#1a1226';
+      ctx.fillRect(x - cw / 2, y - 11, cw, 22);
+      if (armed) {
+        ctx.fillStyle = '#5a3d08';
+        ctx.fillRect(x - cw / 2 + 2, y - 9, cw - 4, 18);
+      }
+      drawText(ctx, `${c.label} ${c.n}`, x, y, 1.5, armed ? '#fff6c0' : on ? '#ffd23f' : COLORS.textDim);
+      if (c.id !== 'hold') this.toolRects.push({ id: c.id, x: x - cw / 2, y: y - 13, w: cw, h: 26 });
+    });
+    if (!this.awaitingSpin) return;
+    const pulse = 0.75 + 0.25 * Math.sin(t * 6);
+    const any = f.held.some(Boolean);
+    let text = '';
+    if (pre) text = any ? 'NOW SPIN' : holds <= 0 ? '' : this.holdPrompt ? 'A PAIR! TAP A REEL TO HOLD IT, OR SPIN' : 'TAP A REEL TO HOLD IT, OR SPIN';
+    else if (post) text = this.armed === 'nudge' ? 'TAP A REEL TO NUDGE IT, OR PAY' : this.armed === 'respin' ? 'TAP A REEL TO RESPIN IT, OR PAY' : 'PAY';
+    if (text) drawText(ctx, text, win.x + win.w / 2, win.y - 22, 2, any || this.holdPrompt || post ? '#ffd23f' : COLORS.textDim, { alpha: pulse });
+  }
+
+  /**
+   * THE SCORE RACE's scoreboard (between the machines): both scores, who leads and by how much, and a pip for every spin
+   * each machine gets (lit once spun). Its rules sit under the VS (a boss's pot takes that spot).
+   */
+  private drawScoreboard(ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number): void {
+    const h = this.stage.huds;
+    const you = Math.round(h.player.score);
+    const it = Math.round(h.enemy.score);
+    const x0 = cx - 120;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x0 - 4, cy - 162, 248, 108);
+    ctx.fillStyle = COLORS.gold;
+    ctx.fillRect(x0 - 2, cy - 160, 244, 104);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(x0, cy - 158, 240, 100);
+    drawText(ctx, fmtNum(you), cx - 58, cy - 128, 3.5, COLORS.goldLight, { punch: h.player.scorePunch });
+    drawText(ctx, fmtNum(it), cx + 58, cy - 128, 3.5, '#ff8a7a', { punch: h.enemy.scorePunch });
+    drawText(ctx, '-', cx, cy - 128, 3, COLORS.textDim);
+    const d = you - it;
+    const lead = this.fight.over ? (this.fight.winner === 'player' ? 'YOU WIN THE RACE' : 'YOU LOSE THE RACE') : d > 0 ? `YOU LEAD BY ${fmtNum(d)}` : d < 0 ? `BEHIND BY ${fmtNum(-d)}` : 'TIED';
+    drawText(ctx, lead, cx, cy - 98, 1.5, d > 0 ? COLORS.goldLight : d < 0 ? '#ff8a7a' : COLORS.text);
+    // The spin pips: yours on the left, theirs on the right.
+    const spins = this.fight.cfg.race?.spins ?? 0;
+    const used = spins - this.fight.raceLeft;
+    const theirs = Math.max(0, this.fight.turn - used);
+    for (const [side, n, x] of [['player', used, cx - 58], ['enemy', theirs, cx + 58]] as const) {
+      for (let k = 0; k < spins; k++) {
+        const px = x + (k - (spins - 1) / 2) * 14;
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(px - 5, cy - 77, 10, 10);
+        ctx.fillStyle = k < n ? (side === 'player' ? '#ffd23f' : '#ff6a5a') : '#2a2038';
+        ctx.fillRect(px - 4, cy - 76, 8, 8);
+      }
     }
+    if (!this.fight.isBoss) {
+      drawText(ctx, 'HIGHER SCORE WINS', cx, cy + 118, 1.5, COLORS.textDim);
+      drawText(ctx, 'A SHIELD BLOCKS THEIR NEXT SABOTAGE', cx, cy + 136, 1.25, '#9fd0ff', { alpha: 0.8 + 0.2 * Math.sin(t * 2) });
+    }
+  }
+
+  /** THE SCORE RACE: a NUDGE or RESPIN on a landed reel (animated; PAY waits for it). */
+  private async useTool(r: number): Promise<void> {
+    const f = this.fight;
+    if (this.toolBusy || !f.landed) return;
+    const tool = this.armed;
+    const ok = tool === 'nudge' ? f.nudge(r) : tool === 'respin' ? f.respin(r) : false;
+    if (!ok) {
+      this.sounds.fizzle();
+      return;
+    }
+    this.toolBusy = true;
+    if (tool === 'nudge') await this.director.nudgeReel(r);
+    else await this.director.respinReel(r, f.landed![r]);
+    this.toolBusy = false;
+    if (this.armed === 'nudge' && f.nudgesLeft <= 0) this.armed = f.respinsLeft > 0 ? 'respin' : null;
+    else if (this.armed === 'respin' && f.respinsLeft <= 0) this.armed = f.nudgesLeft > 0 ? 'nudge' : null;
   }
 
   /** LOW HP (feel playtest: nothing said you were in trouble): under 30% HP the screen's edges breathe red, slowly,
@@ -1871,16 +2004,12 @@ export class Game {
     const cy = MACHINE_TOP + MACHINE_H / 2;
     if (this.phase === 'title') return;
     // Only a boss gets a label here (the map already said FIGHT n OF 5): ROUND and whose turn tell the story.
-    if (g.fightLabel.includes('BOSS') || g.fightLabel.startsWith('LOOP') || g.fightLabel === 'SANDBOX') drawText(ctx, g.fightLabel, cx, cy - 112, 2, g.fightLabel === 'SANDBOX' ? COLORS.textDim : g.fightLabel.includes('BOSS') ? '#ff6a5a' : COLORS.goldLight);
+    if (g.fightLabel.includes('BOSS') || g.fightLabel.startsWith('LOOP') || g.fightLabel === 'SANDBOX') drawText(ctx, g.fightLabel, cx, this.race ? cy - 168 : cy - 112, 2, g.fightLabel === 'SANDBOX' ? COLORS.textDim : g.fightLabel.includes('BOSS') ? '#ff6a5a' : COLORS.goldLight);
     if (g.twist) drawText(ctx, g.twist, cx, cy - 132, 1.25, '#ff9a3a');
+    // THE SCORE RACE: the scoreboard is up from the first spin.
+    if (this.race) this.drawScoreboard(ctx, cx, cy, t);
     if (g.turn > 0) {
-      drawText(ctx, `SPIN ${g.turn}`, cx, cy - 78, 3, COLORS.textDim, { punch: 1 + g.pulse * 0.3 });
-      // THE SCORE RACE: its rules under the VS, and the spins you have left.
-      if (this.race) {
-        drawText(ctx, 'HIGHER SCORE WINS', cx, cy + 118, 1.5, COLORS.textDim);
-        drawText(ctx, 'A SHIELD BLOCKS THEIR NEXT SABOTAGE', cx, cy + 136, 1.25, '#9fd0ff');
-      }
-      if (this.race) drawText(ctx, this.fight.over ? 'RACE OVER' : `${this.fight.raceLeft} SPIN${this.fight.raceLeft === 1 ? '' : 'S'} LEFT`, cx, cy - 104, 2, this.fight.raceLeft <= 1 ? '#ff9a3a' : COLORS.goldLight);
+      if (!this.race) drawText(ctx, `SPIN ${g.turn}`, cx, cy - 78, 3, COLORS.textDim, { punch: 1 + g.pulse * 0.3 });
       if (g.side)
         drawText(ctx, g.side === 'player' ? "HERO'S TURN" : 'ENEMY TURN', cx, cy - 46, 2, g.side === 'player' ? COLORS.goldLight : COLORS.slime, { punch: 1 + g.pulse * 0.5 });
       if (g.side) {

@@ -143,6 +143,23 @@ export class MachineView {
     stopLoop();
   }
 
+  /** THE SCORE RACE's NUDGE: one reel steps down a cell. */
+  async nudgeReel(r: number, clock: Clock): Promise<void> {
+    this.tags[r] = null;
+    await this.reels[r].nudge(clock);
+    this.sounds.reelStop(r, this.pitchMul);
+  }
+
+  /** THE SCORE RACE's RESPIN: one reel spins again, to `target`. */
+  async spinOne(r: number, target: number, clock: Clock): Promise<void> {
+    this.tags[r] = null;
+    const stopLoop = clock.skipping ? () => {} : this.sounds.spinLoop(this.pitchMul);
+    await this.reels[r].spin({ target, windup: false, decelAt: SPIN.accel + SPIN.minSpin, decelDur: SPIN.decel }, clock, () => {
+      this.sounds.reelStop(r, this.pitchMul);
+      stopLoop();
+    });
+  }
+
   /** Dim every row except the payline (juice §3 step 1). */
   focusPayline(clock: Clock, on: boolean): Promise<void> {
     const to = on ? 0.4 : 0;

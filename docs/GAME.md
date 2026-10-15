@@ -361,24 +361,28 @@ formula. Sim (GREEN, 200 runs a machine, bot riding): medians KNIGHT 13.9K, TESL
 BANKROLL 17.6K; ENDLESS riders 33-54K. Share of all points: bosses 28%, relics 19%, elites 11%, fights 11%, cleared 7%,
 levels 7%, chips earned 7%, Charms 5%, THE OWNER 4%. (The pot and chips x10 are gone.)
 
-## THE SCORE RACE (sandbox, user 2026-10-15)
+## THE SCORE RACE (the race act 1 slice, user 2026-10-15)
 The user's idea: HP and uncapped damage compete (your power has no cap, the enemy hits back, and HP never keeps up), so
-try fights as **competing scores**, like Balatro's blinds. PLAY MODES > SCORE RACE (TEST): a normal run, but every fight
-is a race (`cfg.race`, `RACE` and `raceLives` in `src/core/run.ts`; the fight engine's `raceScore`, `raceLeft`,
-`raceTurnEnd`).
-- Both machines spin 5 times (elites 6, bosses 7); a hit is score for whoever landed it, nobody loses HP. The higher
-  score wins (a tie is yours). The HP bars are score bars, filled against the leader; the final score is a banner.
-- The enemy's pay counts x 1.1 x (its HP / 200)^0.65 (bosses x1.3, the run's first race x0.7): honest HP, the same on
-  every machine. Its sabotage still lands (slime, freeze, rocks...).
-- A shield you're holding blocks the next sabotage on your reels, a symbol's or an ability's (BLOCKED!), and is spent.
-- 2 HOLDs a race (the HOLD code from f7708bb): before any spin, tap a reel to keep it. The race waits for your SPIN.
-- 3 LIVES: a lost race costs one (no win chips, no elite spoils; the run goes on); a lost boss race, or the last life,
-  ends the run. The side panel shows LIVES. Race runs never post to the boards.
-- Sim (`tools/out/race.ts`, 200 runs, WHITE, the bot holding pairs): runs won KNIGHT 50, TESLA 42, JUKEBOX 69, JOKER
-  55, BANKROLL 31; act 1 races 80-93%, act 1 boss 64-86%; first race 75-88%. BANKROLL is weakest (its kit is chips,
-  shields and heals). Not tuned further: it's for feel.
-- The main game is unchanged (watch-only, HP). If the race stays: combat relics become spin relics, shields and heals
-  get new jobs, HOLD / NUDGE / RESPIN become the spin tools, and AUTO's top speeds can go.
+fights become **competing scores**, like Balatro's blinds. PLAY MODES > SCORE RACE (TEST) plays **act 1 only** (it ends
+at ACT 1 CLEARED! after THE HOUSE), at WHITE, filed like the tutorial (no stats, XP, achievements, unlocks or boards).
+Code: `RACE` in `src/core/run.ts` (`fightConfig` sets `cfg.race` and the tools; `runActs` is 1), the fight engine's
+`raceScore`, `raceLeft`, `raceTurnEnd`, `land`, `nudge`, `respin`, `previewPay`; game.ts `racePhase`, `drawHolds` (the
+tray), `drawScoreboard`, `useTool`.
+- **A race (user):** both machines spin 5 times (elites 6, THE HOUSE 7), you first and the enemy last, then the scores
+  compare (a tie is yours). A hit is score for whoever landed it; nobody loses HP. **One lost race ends the run.**
+- **Spin tools (user: 3 HOLDs, 2 NUDGEs, 1 RESPIN a race, used as you see fit).** Before a spin, tap a reel to HOLD it
+  (gold HELD frame). SPIN lands the reels; then, while you have NUDGEs or RESPINs, the button reads PAY: tap NUDGE or
+  RESPIN in the tray under your machine, then a reel (NUDGE steps it down one cell, the symbol above drops onto the
+  payline; RESPIN spins it again). PAY scores it. The race always waits for you (AUTO doesn't play races).
+- **Shields** block the next sabotage on your reels (a symbol's or an ability's: BLOCKED!), then they're spent.
+- **The enemy's score:** its pay x 1.6 x (its HP / 200)^0.65 (THE HOUSE x1.3, the run's first race x0.7): honest HP.
+- **The HUD:** a scoreboard between the machines (both scores, YOU LEAD BY / BEHIND BY, a pip per spin each), score
+  bars on the HUDs, the rules under the VS, a RACE WON / RACE LOST banner with the final score.
+- **Sim** (`tools/out/race.ts`, 300 runs, the bot holding pairs, nudging when it pays more, respinning a pair's odd
+  reel): act 1 cleared KNIGHT 56%, TESLA 44, JUKEBOX 55, JOKER 28, BANKROLL 28; races won 85-97%, elites 64-86%, THE
+  HOUSE 61-90%. Step 4 tunes it (JOKER and BANKROLL are weakest).
+- Not yet race-native (steps 2-3): the enemies and THE HOUSE run their HP-game rules as score; VAMP, heals, the HEAL
+  and MAX HP at the Cashier, and the HP relics do nothing.
 
 ## Modes and meta
 - **Modes:** the normal run, THE DAILY RUN and ENDLESS (THE WEEKLY and CHALLENGES are cut, 2026-10-15; old hiscore

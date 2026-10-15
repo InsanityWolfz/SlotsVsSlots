@@ -11,7 +11,6 @@ import { CHARM_COLOR, charmLevel, charmTag, playerSymValue, symLevel } from '../
 import { drawReelTable, runTable } from './reelTable';
 import {
   RACE as SCORE_RACE,
-  raceLives,
   CHIPS,
   describeOption,
   takenLabel,
@@ -1409,11 +1408,10 @@ export class RunScreens {
   }
 
   private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
-    // THE SCORE RACE (sandbox): no HP, LIVES.
+    // THE SCORE RACE: no HP; one lost race ends the run.
     if (this.run?.race) {
-      const n = raceLives(this.run);
-      for (let i = 0; i < SCORE_RACE.lives; i++) drawSprite(ctx, 'heart', x + 8 + i * 30, y, 2, { alpha: i < n ? 1 : 0.25 });
-      drawText(ctx, `${n} ${n === 1 ? 'LIFE' : 'LIVES'}`, x + 24 + w / 2 + 30, y + 1, 2, COLORS.text);
+      drawText(ctx, 'SCORE RACE', x + 8, y + 1, 2, COLORS.goldLight, { align: 'left' });
+      drawText(ctx, `${SCORE_RACE.holds} HOLD  ${SCORE_RACE.nudges} NUDGE  ${SCORE_RACE.respins} RESPIN`, x + 8 + w, y + 1, 1.25, COLORS.textDim, { align: 'right' });
       return;
     }
     const p = this.shown();
@@ -1432,7 +1430,7 @@ export class RunScreens {
     const start = this.draftKind === 'start';
     // ENDLESS: the pick after a loop's boss is the new loop's: say the loop was cleared.
     const loopDone = !!last && !!this.run?.endless && last.loop !== undefined && last.loop < this.run.endless.loop;
-    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? (last.won ? `${last.enemy} DEFEATED!` : `RACE LOST: ${raceLives(this.run!)} ${raceLives(this.run!) === 1 ? 'LIFE' : 'LIVES'} LEFT`) : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${nightOf(this.run) ? `: ${nightOf(this.run)!.title}` : ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
+    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${nightOf(this.run) ? `: ${nightOf(this.run)!.title}` : ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
@@ -3101,7 +3099,7 @@ export class RunScreens {
     if (this.onlineLine) drawText(ctx, this.onlineLine, CX, 563, 1.5, COLORS.goldLight);
     const trueEnding = run.won && run.act >= 3;
     const busted = !!run.endless;
-    drawText(ctx, busted ? (run.endless!.turbo ? `YOU BROKE THE BANK! ${fmtNum(endlessScore(run))}` : `BUSTED ON LOOP ${run.endless!.loop}: SCORE ${fmtNum(endlessScore(run))}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE WHEEL STOPS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
+    drawText(ctx, busted ? (run.endless!.turbo ? `YOU BROKE THE BANK! ${fmtNum(endlessScore(run))}` : `BUSTED ON LOOP ${run.endless!.loop}: SCORE ${fmtNum(endlessScore(run))}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? (run.race ? 'ACT 1 CLEARED!' : 'THE WHEEL STOPS!') : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${busted ? `BEAT THE DEALER, THEN ${run.records.filter((r) => r.loop !== undefined).length} ENDLESS FIGHTS` : run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     // DEATH RECAP: its own full-width line under the table (the most important line on a loss).
     const lastRec = run.records[run.records.length - 1];

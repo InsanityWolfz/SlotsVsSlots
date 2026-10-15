@@ -358,6 +358,8 @@ export class Fight {
     if (this.meter?.kind === 'volume' && this.cfg.player.volumeStart && !p.armed) p.energy = Math.max(p.energy, Math.min(this.meterCost - UNIT, this.cfg.player.volumeStart * UNIT));
     // HOLD (experiment): this fight's HOLDs.
     this.holdsLeft = this.cfg.player.holds ?? 0;
+    this.nudgesLeft = this.cfg.player.nudges ?? 0;
+    this.respinsLeft = this.cfg.player.respins ?? 0;
     const e = this.sides.enemy;
     // BLAZE: every blaze cell you own adds to your special.
     const blazeCells = p.reels.reduce((a, reel) => a + reel.cells.filter((c) => c.enh === 'blaze').length, 0);
@@ -477,7 +479,16 @@ export class Fight {
   /** THE DROP this spin: the notes off the payline that join the note group (vamp heals after). */
   private dropOff: { cells: { reel: number; row: number; v?: number; wild?: true }[]; vamp: number } | null = null;
 
-  /** HOLD (experiment, 2026-10-15): your HOLDs left this fight, and the reels you've held for your next spin. */
+  /**
+   * THE SCORE RACE's spin tools (user, 2026-10-15: 3 HOLDs, 2 NUDGEs, 1 RESPIN a race, used as you see fit). HOLD keeps
+   * reels before your spin; land() then stops your reels, and before step() scores them you may NUDGE a reel one cell
+   * (the symbol above drops onto the payline) or RESPIN it.
+   */
+  nudgesLeft = 0;
+  respinsLeft = 0;
+  /** Your landed stops, waiting to score (null: not landed). */
+  landed: number[] | null = null;
+  /** HOLD: your HOLDs left this fight, and the reels you've held for your next spin. */
   holdsLeft = 0;
   held: boolean[] = [false, false, false];
   /**
@@ -494,6 +505,53 @@ export class Fight {
     if (used >= this.holdsLeft || this.sides.player.frozen[reel] > 0) return false;
     this.held[reel] = true;
     return true;
+  }
+
+  /** Your spin lands (HOLDs apply) without scoring yet: NUDGE and RESPIN can change it, then step() scores it. */
+  land(): { stops: number[]; moved: boolean[] } | null {
+    if (this.over || this.next !== 'player' || this.landed) return null;
+    const me = this.sides.player;
+    const frozen = me.frozen.map((t) => t > 0);
+    const held = this.held.map((h, r) => h && !frozen[r]);
+    this.holdsLeft -= held.filter(Boolean).length;
+    this.held = [false, false, false];
+    const keep = frozen.map((z, r) => z || held[r]);
+    const stops = this.rollStops(me, keep, this.forced.player);
+    delete this.forced.player;
+    me.reels.forEach((reel, i) => (reel.stop = stops[i]));
+    this.landed = stops;
+    return { stops, moved: keep.map((k) => !k) };
+  }
+
+  /** NUDGE a landed reel one cell (the symbol above drops onto the payline). False if you can't. */
+  nudge(reel: number): boolean {
+    const me = this.sides.player;
+    if (!this.landed || this.nudgesLeft <= 0 || reel < 0 || reel > 2 || me.frozen[reel] > 0) return false;
+    const n = me.reels[reel].cells.length;
+    this.landed[reel] = (this.landed[reel] - 1 + n) % n;
+    me.reels[reel].stop = this.landed[reel];
+    this.nudgesLeft--;
+    return true;
+  }
+
+  /** RESPIN a landed reel. False if you can't. */
+  respin(reel: number): boolean {
+    const me = this.sides.player;
+    if (!this.landed || this.respinsLeft <= 0 || reel < 0 || reel > 2 || me.frozen[reel] > 0) return false;
+    this.landed[reel] = this.rng.int(me.reels[reel].cells.length);
+    me.reels[reel].stop = this.landed[reel];
+    this.respinsLeft--;
+    return true;
+  }
+
+  /** What your payline would pay at these stops, for the sim bot's choices (no effects; the RNG is put back). */
+  previewPay(stops: number[]): number {
+    const me = this.sides.player;
+    const saved = this.rng.snapshot();
+    const line = me.reels.map((reel, r) => effectiveSymbol(reel.cells[stops[r]]));
+    const s = this.score(me, line);
+    this.rng.restore(saved);
+    return s.groups.reduce((a, g) => a + (this.isAttack(g.symbol) || g.symbol === 'wild' ? g.amount : 0), 0);
   }
 
   /** Debug: make the next spin of `side` land these payline symbols where the strip allows. */
@@ -569,12 +627,15 @@ export class Fight {
     const locked = me.locked.map((t) => t > 0);
     const forcedLine = this.forced[side];
     // HOLD: your held reels keep their stop this spin (like ice, but yours), then the holds are spent.
-    const held = side === 'player' ? this.held.map((h, r) => h && !frozen[r]) : [false, false, false];
-    if (side === 'player') {
+    // A spin that already landed (land(), then maybe NUDGE / RESPIN) scores where it stopped: no reel spins now.
+    const landed = side === 'player' ? this.landed : null;
+    this.landed = null;
+    const held = landed ? [true, true, true] : side === 'player' ? this.held.map((h, r) => h && !frozen[r]) : [false, false, false];
+    if (side === 'player' && !landed) {
       this.holdsLeft -= held.filter(Boolean).length;
       this.held = [false, false, false];
     }
-    const stops = this.rollStops(me, frozen.map((z, r) => z || held[r]), forcedLine);
+    const stops = landed ?? this.rollStops(me, frozen.map((z, r) => z || held[r]), forcedLine);
     delete this.forced[side];
     me.reels.forEach((reel, i) => (reel.stop = stops[i]));
     const line = paylineSymbols(me.reels).map((s, i) => (locked[i] ? 'lock' : s));

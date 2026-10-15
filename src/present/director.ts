@@ -522,6 +522,23 @@ export class Director {
     }
   }
 
+  /** THE SCORE RACE: your spin lands (HELD reels stay put); it scores later, after any NUDGE or RESPIN. */
+  async landSpin(stops: number[], moved: boolean[]): Promise<void> {
+    const m = this.s.machines.player;
+    m.clearRowFx();
+    await m.spin(stops, false, this.c, { onReelStop: (r) => this.setTag('player', r) }, moved.map((x) => !x));
+  }
+
+  /** THE SCORE RACE: a NUDGE (the reel steps down one cell) or a RESPIN of one landed reel. */
+  async nudgeReel(r: number): Promise<void> {
+    await this.s.machines.player.nudgeReel(r, this.c);
+    this.setTag('player', r);
+  }
+  async respinReel(r: number, target: number): Promise<void> {
+    await this.s.machines.player.spinOne(r, target, this.c);
+    this.setTag('player', r);
+  }
+
   /** THE SCORE RACE: a side's turn scored: its total punches up, the rival's bar re-fills against it. */
   private async raceScore(e: Extract<CombatEvent, { type: 'raceScore' }>): Promise<void> {
     const h = this.s.huds[e.side];
@@ -593,7 +610,9 @@ export class Director {
     const near = e.nearMiss && this.s.juice.nearMiss;
     this.lastSpin[e.side] = { frozen: e.frozen, locked: e.locked, hexed: e.hexed ?? [] };
     this.symBonus[e.side] = e.symBonus ?? {};
-    await m.spin(
+    // THE SCORE RACE: a spin that already landed (and maybe got NUDGEd / RESPUN) scores where it stands.
+    if (e.held?.every(Boolean)) for (let r = 0; r < 3; r++) this.setTag(e.side, r, e.locked[r]);
+    else await m.spin(
       e.stops,
       near,
       this.c,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3 } from '../src/core/config';
 import { Fight } from '../src/core/fight';
-import { createRun, fightConfig, finishFight, RACE, raceLives } from '../src/core/run';
+import { createRun, fightConfig, finishFight, RACE } from '../src/core/run';
 
 const race = (enemy: Parameters<typeof reels3>[0], ability?: { kind: 'blizzard'; every: number; power: number }, spins = 3) => {
   const c = defaultConfig();
@@ -36,18 +36,42 @@ describe('THE SCORE RACE (sandbox)', () => {
     expect(ev.some((e) => e.type === 'freeze')).toBe(false);
     expect(f.sides.player.shield).toBe(0);
   });
-  it('a race run: a lost race costs a life (the run goes on); a lost boss race ends it', () => {
+  it('a race run: its tools come from RACE, and one lost race ends the run', () => {
     const base = defaultConfig();
     const run = createRun(base, 4, 'knight', 0);
     run.pendingStart = null;
     run.race = true;
     const cfg = fightConfig(run, base);
     expect(cfg.race?.spins).toBe(RACE.spins.fight);
-    expect(cfg.player.holds).toBe(RACE.holds);
+    expect([cfg.player.holds, cfg.player.nudges, cfg.player.respins]).toEqual([RACE.holds, RACE.nudges, RACE.respins]);
     const f = new Fight(cfg, 1);
     f.winner = 'enemy';
     finishFight(run, f);
-    expect(run.over).toBe(false);
-    expect(raceLives(run)).toBe(RACE.lives - 1);
+    expect(run.over).toBe(true);
+  });
+  it('land, then NUDGE (the symbol above drops in) and RESPIN, then the spin scores where it stopped', () => {
+    const c = defaultConfig();
+    c.player.strips = reels3({ sword: 4, shield: 4, bolt: 4 });
+    c.player.nudges = 2;
+    c.player.respins = 1;
+    c.enemy = { hp: 500, strips: reels3({ shield: 12 }) };
+    c.race = { spins: 3, enemyMul: 1 };
+    const f = new Fight(c, 9);
+    expect(f.nudge(0)).toBe(false); // nothing has landed yet
+    const l = f.land()!;
+    expect(l.moved).toEqual([true, true, true]);
+    expect(f.land()).toBeNull();
+    const n = f.sides.player.reels[0].cells.length;
+    const before = f.landed![0];
+    expect(f.nudge(0)).toBe(true);
+    expect(f.landed![0]).toBe((before - 1 + n) % n);
+    expect(f.respin(1)).toBe(true);
+    expect(f.respin(2)).toBe(false); // one RESPIN
+    const stops = [...f.landed!];
+    const spin = f.step().events.find((e) => e.type === 'spin' && e.side === 'player');
+    expect(f.sides.player.reels.map((r) => r.stop)).toEqual(stops);
+    expect(spin && spin.type === 'spin' ? spin.held : undefined).toEqual([true, true, true]);
+    expect(f.landed).toBeNull();
+    expect([f.nudgesLeft, f.respinsLeft]).toEqual([1, 0]);
   });
 });
