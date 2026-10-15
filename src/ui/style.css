@@ -250,3 +250,38 @@ body {
 .crash textarea { width: 100%; height: 140px; box-sizing: border-box; background: #07030d; color: #f4eee0; border: 1px solid #3a2d52; font: 11px ui-monospace, Consolas, monospace; }
 .crash div { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .crash button { background: #3a2d52; color: #ffe45c; border: 2px solid #d9a640; padding: 6px 12px; font: bold 13px ui-monospace, Consolas, monospace; cursor: pointer; }
+
+/* Portrait on a touch screen: the game is landscape-only, so say so instead of showing a 390x220 letterbox. */
+#rotate {
+  display: none;
+}
+@media (orientation: portrait) and (pointer: coarse) {
+  #rotate {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    background: #07030d;
+    color: #ffe08a;
+    font: bold 20px/1.4 monospace;
+    letter-spacing: 2px;
+    text-align: center;
+  }
+  #rotate .phone {
+    width: 46px;
+    height: 80px;
+    border: 5px solid #ffe08a;
+    border-radius: 8px;
+    box-shadow: 0 0 0 4px #140c1c, 0 0 24px rgba(255, 210, 63, 0.35);
+    animation: rotate-hint 1.8s ease-in-out infinite;
+  }
+}
+@keyframes rotate-hint {
+  0%, 25% { transform: rotate(0deg); }
+  55%, 85% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}

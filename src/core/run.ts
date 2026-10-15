@@ -417,7 +417,8 @@ export function totalFights(run: RunState): number {
 }
 /** The HUD's fight label: ACT 2 FIGHT 3/6 (the act's fights on your route), BOSS, or the endless loop's. */
 export function fightLabel(run: RunState): string {
-  const n = `FIGHT ${run.depth + 1}/${run.route === null && run.map.routes.length > 1 ? '?' : run.enemies.length}`;
+  // Before the path is picked the act's length isn't known yet: just FIGHT 1 (it read FIGHT 1/?: feel playtest).
+  const n = run.route === null && run.map.routes.length > 1 ? `FIGHT ${run.depth + 1}` : `FIGHT ${run.depth + 1}/${run.enemies.length}`;
   // ENDLESS: TONIGHT'S RULE rides along, so it's on screen in every fight.
   const night = nightOf(run);
   // (Short: the long form ran across both reel frames. Playtest.)

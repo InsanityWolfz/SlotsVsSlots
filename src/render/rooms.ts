@@ -744,7 +744,7 @@ export class Rooms {
   /** The DEN's door: its neon (and that in the puddle), the peephole, the doorman; it swings open on your jackpot. */
   private den(g: CanvasRenderingContext2D, t: number, cheer: number): void {
     const buzz = Math.sin(t * 7.3) * Math.sin(t * 2.1) > 0.8;
-    neon(g, 'DEN', 303, 58, '#ff8a5a', !buzz || cheer > 0);
+    neon(g, 'DEN', 301, 58, '#ff8a5a', !buzz || cheer > 0);
     if (!buzz) for (let k = 0; k < 4; k++) rect(g, 296 + Math.sin(t * 3 + k) * 2, 148 + k, 12 - k * 2, 1, `rgba(255,138,90,${0.35 - k * 0.07})`);
     if (cheer > 0.15) {
       // Open: warm light spills onto the asphalt, and arms go up inside.

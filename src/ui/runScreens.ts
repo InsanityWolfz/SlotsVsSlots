@@ -46,7 +46,7 @@ import {
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import { effectiveAbility, STAKE, STAKES, stakeOf } from '../core/stakes';
 import type { RelicId } from '../core/config';
-import { DANGER, LOOP_GROWTH } from '../core/enemies';
+import { LOOP_GROWTH } from '../core/enemies';
 import { VOLUME } from '../core/fight';
 import { Clock } from '../present/clock';
 import { backOut, sineOut } from '../present/ease';
@@ -214,6 +214,9 @@ const FLIP_TAB = { w: 40, h: 32 };
 
 /** The casino floor behind every run screen: a dark carpet with a faint diamond weave (cached). */
 let carpet: HTMLCanvasElement | null = null;
+/** % of fights each enemy wins (the sim's kill rate), for the danger skulls on its card. */
+const KILL_RATE: Record<string, number> = { slime: 1.9, frost: 1.8, golem: 1.8, gremlin: 2.4, thief: 2.7, brute: 3.1, bomber: 4.8, hexer: 4.2, vampire: 4.0, mimic: 11.1, counterfeiter: 3.8, repo: 7.7, sharp: 8.7, pitboss: 6.3, croupier: 1.9 };
+
 function drawBackdrop(ctx: CanvasRenderingContext2D): void {
   if (!carpet && typeof document !== 'undefined') {
     carpet = document.createElement('canvas');
@@ -372,6 +375,8 @@ export class RunScreens {
   private rlSpinNo = 1;
   /** TWENTY-ONE: a finished hand on show (the dealer's cards turn one by one), how many of them are up, its word. */
   private bjShow: NonNullable<EncounterResult['hand']> | null = null;
+  /** TWENTY-ONE: the hand the counter last showed. */
+  private bjNo = 1;
   private bjDealerUp = 0;
   private bjMsg: EncounterResult | null = null;
   /** RAT RACE: each rat's run (0 start .. 1 the line), the rat you backed, the last race. */
@@ -1115,6 +1120,13 @@ export class RunScreens {
     });
   }
 
+  /** WALK AWAY leaves at once (feel playtest: walking away, then pressing CONTINUE too, was a click for nothing). */
+  private leaveOnWalk(res: EncounterResult): boolean {
+    if (res.title !== 'WALKED AWAY') return false;
+    this.cb.onEncounterDone();
+    return true;
+  }
+
   private playEncounter(i: number): void {
     if (this.encId === 'bj') return this.playBj(i);
     if (this.encId === 'rats') return this.playRats(i);
@@ -1136,6 +1148,7 @@ export class RunScreens {
       void this.runPulls(res, res.pulls);
       return;
     }
+    if (this.leaveOnWalk(res)) return;
     this.buttons = [this.btn('CONTINUE', CX, 588, 300, 52, () => this.cb.onEncounterDone())];
     const land = res.reels ? 3 : 0;
     void this.ui.tween({ from: 0, to: 1, dur: land ? 1.1 : 0.25, onUpdate: (v) => (this.encT = v) });
@@ -1241,7 +1254,7 @@ export class RunScreens {
           this.bjMsg = null;
           this.bjButtons();
         } else this.bjDealButtons();
-      } else this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+      } else if (!this.leaveOnWalk(res)) this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
     };
     if (!res.hand) {
       if (res.more) {
@@ -1871,10 +1884,13 @@ export class RunScreens {
     const legend = this.draftKind === 'legend';
     const relicDraft = !spoils && !legend && isRelicDraft(this.run!);
     const act3Arrival = !legend && !spoils && this.run!.act >= 3 && this.run!.depth === 0 && this.run!.actIntro;
+    // The boss's heal says what it gave (feel playtest: FULLY HEALED read as nothing at 94%).
+    const healedBy = last?.won ? Math.max(0, this.run!.player.maxHp - last.hpAfter) : 0;
+    const healed = healedBy >= UNIT ? `HEALED +${fmtNum(healedBy)} HP.` : 'FULL HP.';
     const heading = act3Arrival
-      ? 'ACT 3: THE HOUSE HAS A PARTNER. FULLY HEALED.'
+      ? `ACT 3: THE HOUSE HAS A PARTNER. ${healed}`
       : legend
-        ? this.run!.endless ? `LOOP ${this.run!.endless.loop}: ${this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic)) ? 'A LEGENDARY RELIC' : 'PICK A RELIC'}` : `ACT 2: FULLY HEALED. ${this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic)) ? 'A LEGENDARY RELIC.' : 'PICK A RELIC.'}`
+        ? this.run!.endless ? `LOOP ${this.run!.endless.loop}: ${this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic)) ? 'A LEGENDARY RELIC' : 'PICK A RELIC'}` : `ACT 2: ${healed} ${this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic)) ? 'A LEGENDARY RELIC.' : 'PICK A RELIC.'}`
         : start
           ? 'PICK A STARTING RELIC'
           : spoils
@@ -2012,8 +2028,11 @@ export class RunScreens {
   /** How many danger skulls (1-3) a fight shows. */
   private dangerOf(e: EnemyDef): number {
     if (e.isBoss) return 3;
-    const d = (DANGER[e.archetype] ?? 8) * (e.elite ? 1.25 : 1);
-    return d >= 20 ? 3 : d >= 9 ? 2 : 1;
+    // Skulls from how often each enemy really wins its fights (sim, 1000 runs a machine, WHITE + GREEN, 2026-10-15),
+    // an elite x1.6 (it hits 25% harder with ~1.3x HP). The old hand-set table rated a 230 HP brute above a 280 HP
+    // elite thief (feel playtest).
+    const d = (KILL_RATE[e.archetype] ?? 4) * (e.elite ? 1.6 : 1);
+    return d >= 5 ? 3 : d >= 2.5 ? 2 : 1;
   }
 
   /**
@@ -2257,7 +2276,7 @@ export class RunScreens {
     if (needsRoute(run)) return this.drawRoutes(ctx, time);
     const e = currentEnemy(run);
     const act = run.endless ? `LOOP ${run.endless.loop} - ` : `ACT ${run.act} - `;
-    const title = e.isBoss ? (run.act >= runActs(run) && !run.endless ? 'FINAL FIGHT' : `${act}BOSS FIGHT`) : `${act}FIGHT ${run.depth + 1} OF ${run.route === null && run.map.routes.length > 1 ? '?' : run.enemies.length}`;
+    const title = e.isBoss ? (run.act >= runActs(run) && !run.endless ? 'FINAL FIGHT' : `${act}BOSS FIGHT`) : run.route === null && run.map.routes.length > 1 ? `${act}FIGHT ${run.depth + 1}` : `${act}FIGHT ${run.depth + 1} OF ${run.enemies.length}`;
     drawText(ctx, title, CX, 26, 3, e.isBoss ? '#ff6a5a' : run.act > 1 ? '#c8f0ff' : COLORS.textDim);
     this.drawMap(ctx, 128, time);
     this.drawEnemyPanel(ctx, e, CX - 330, 214, 660, time);
@@ -2450,6 +2469,7 @@ export class RunScreens {
     this.chipsLanding = (this.run?.player.chips ?? 0) - before;
     if (!res.race) {
       this.rrMsg = res;
+      if (this.leaveOnWalk(res)) return;
       this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
       return;
     }
@@ -2589,6 +2609,7 @@ export class RunScreens {
       return this.scratchButtons();
     }
     this.scMsg = res;
+    if (this.leaveOnWalk(res)) return;
     this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
   }
 
@@ -2667,6 +2688,7 @@ export class RunScreens {
     this.chipsLanding = (this.run?.player.chips ?? 0) - before;
     if (!res.claw) {
       this.cwMsg = res;
+      if (this.leaveOnWalk(res)) return;
       this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
       return;
     }
@@ -2771,7 +2793,9 @@ export class RunScreens {
     const st = bjState(run);
     const show = this.bjShow;
     const inPlay = !!st || !!show;
-    const dealt = show ? show.no : st ? st.dealt : Number((run.encounterState as { dealt?: number } | undefined)?.dealt ?? 0) + 1;
+    // (After the last hand or a walk-away the stop's state is cleared: keep showing the hand you got to, not HAND 1.)
+    const dealt = show ? show.no : st ? st.dealt : this.bjMsg ? this.bjNo : Number((run.encounterState as { dealt?: number } | undefined)?.dealt ?? 0) + 1;
+    this.bjNo = dealt;
     drawText(ctx, `HAND ${Math.min(dealt, BJ.hands + extraPlays(run))} OF ${BJ.hands + extraPlays(run)}`, CX, 78, 2, COLORS.textDim);
     this.felt(ctx);
     const m = this.bjMsg;

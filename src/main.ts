@@ -72,7 +72,16 @@ function toLogical(e: PointerEvent): [number, number] {
   const r = canvas.getBoundingClientRect();
   return [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H];
 }
+/** Where the last press landed (logical) and the canvas box then. The first tap on a phone goes fullscreen, which
+ * resizes the canvas mid-tap: its release then mapped to a different spot and missed the button (feel playtest: the
+ * first tap on a card did nothing). If the box moved, the release counts where the press was. */
+let down: { at: [number, number]; box: string } | null = null;
+const boxKey = () => {
+  const r = canvas.getBoundingClientRect();
+  return `${r.left},${r.top},${r.width},${r.height}`;
+};
 canvas.addEventListener('pointerdown', (e) => {
+  down = { at: toLogical(e), box: boxKey() };
   goFullscreen();
   canvas.setPointerCapture(e.pointerId);
   // Touch has no hover: a tap first "hovers" where it lands (tooltips, collection tiles).
@@ -81,7 +90,11 @@ canvas.addEventListener('pointerdown', (e) => {
   if (e.pointerType !== 'mouse') game.pointerMove(...toLogical(e));
   game.pointerDown(...toLogical(e));
 });
-canvas.addEventListener('pointerup', (e) => game.pointerUp(...toLogical(e)));
+canvas.addEventListener('pointerup', (e) => {
+  const at = down && down.box !== boxKey() ? down.at : toLogical(e);
+  down = null;
+  game.pointerUp(...at);
+});
 let lastMouse = { x: -1, y: -1 };
 canvas.addEventListener('pointermove', (e) => {
   if (e.pointerType === 'mouse') game.setTouch(false);
