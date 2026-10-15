@@ -25,6 +25,8 @@ was tuned for feel from two fresh-eyes playtests.
   (targets 60 / 50 / 36 / 28 / 20 / 14): KNIGHT 66 / 53 / 29 / 22 / 13 / 7, TESLA 56 / 46 / 41 / 28 / 21 / 15, JUKEBOX
   64 / 60 / 33 / 21 / 13 / 8, JOKER 56 / 58 / 37 / 30 / 19 / 15, BANKROLL 63 / 61 / 37 / 28 / 21 / 14. KNIGHT and
   JUKEBOX are 6-8 under from GREEN up (KNIGHT's Dealer spread); see ROADMAP.
+- **Never a portrait / "turn your phone" screen (user, 2026-09-24, bd4d7b4):** it got stuck and locked players out.
+  It came back by mistake on 2026-10-15 (64618c0) and was removed again. The game always starts, in any orientation.
 - **HOLD (experiment, 2026-10-15; SETTINGS > HOLD (NEW), on by default):** after a spin that made a PAIR, the fight
   waits (even on AUTO) on HOLD CHANCE!: tap a reel to keep it for the next spin, then tap again to spin. 2 HOLDs a fight.
   Held reels show a gold HELD frame. It is input between spins, which the watch-only rule bans, so it is the user's
@@ -49,9 +51,8 @@ was tuned for feel from two fresh-eyes playtests.
     shields stay off the BIG WIN ladder; BLOCKED! / SHATTERED! no longer cover the reels; the CLAW counts the goes left;
     "1 TURN" plurals; the slime meter reads SLIME n/m; the Charm codex and glossary come from the live rules.
   - Fixes: no relic draft right after an elite's spoils; WALK AWAY leaves an encounter at once; TWENTY-ONE's hand
-    counter; FIGHT 1 (not FIGHT 1 OF ?) before the path pick; danger skulls from each enemy's sim kill rate; TURN YOUR
-    PHONE SIDEWAYS in portrait; the first tap on a phone counts (fullscreen resized the canvas mid-tap); the boss
-    heading says what the heal gave; the act 2 cowboy (read as a placeholder stick figure) is now neon cherries on a
+    counter; FIGHT 1 (not FIGHT 1 OF ?) before the path pick; danger skulls from each enemy's sim kill rate;
+    the first tap on a phone counts (fullscreen resized the canvas mid-tap); the boss heading says what the heal gave; the act 2 cowboy (read as a placeholder stick figure) is now neon cherries on a
     bulb-lit board.
 
 ## A run
