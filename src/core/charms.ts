@@ -7,13 +7,15 @@ import { UNIT, type Enh, type Levels, type SymbolId } from './config';
  * Pay math, per group on the payline: BASE (sum of its symbols' values, plus keen/charged) x MULT
  * (the double/jackpot multiplier x the group's gold, where gold charms ADD: x2 + x2 + x2 = x6).
  */
-export const LEVEL_CAP = 3;
-/** A symbol's value by level (1..3): the step grows so early levels don't snowball (user: +1 then bigger). */
-export const SYM_VALUE = [0, 10, 13, 18, 25, 34];
-/** The highest level anything reads (the endless Cashier and GOLDEN TICKET go past LEVEL_CAP; old saves' big choices did too). */
-export const BIG_CAP = 5;
+/**
+ * SYMBOL LEVELS (user, 2026-10-15: like Balatro's planets): no cap, and every level adds the same step. They're hard to
+ * stack: a level card is a sometimes draft card, and the Cashier's price climbs with every level you've gained, unless
+ * you build for them (STAR CHART doubles each one).
+ */
+export const SYM = { base: 10, step: 6 };
 
-/** Each charm's number by level (1..6: past 3 only in ENDLESS and old saves, +1 with the Golden Ticket). */
+/** Each charm's number (index 1; index 2 with the GOLDEN TICKET). CHARMS HAVE NO LEVELS (user, 2026-10-15); the rest of
+ * each row is the old level table, kept for reference. */
 export const CHARM_VALUE: Record<Enh, number[]> = {
   /** GOLD: this cell's share of the group multiplier (x2 plain). */
   gold: [0, 2, 3, 4, 5, 6, 7],
@@ -147,18 +149,17 @@ export const CHARM_COLOR: Record<Enh, string> = {
   glass: '#d8f6ff',
 };
 
-const clampLvl = (l: number, max: number) => Math.max(1, Math.min(max, Math.floor(l)));
-
-/** A symbol's value at a level (the base game's symbols; enemy symbols use the config base). */
-export const symValue = (lvl: number) => SYM_VALUE[clampLvl(lvl, BIG_CAP)];
-export const charmValue = (enh: Enh, lvl: number) => CHARM_VALUE[enh][clampLvl(lvl, BIG_CAP + 1)];
+/** A symbol's value at a level (the base game's symbols; enemy symbols use the config base): no cap. */
+export const symValue = (lvl: number) => SYM.base + SYM.step * (Math.max(1, Math.floor(lvl)) - 1);
+export const charmValue = (enh: Enh, lvl: number) => CHARM_VALUE[enh][Math.max(1, Math.min(CHARM_VALUE[enh].length - 1, Math.floor(lvl)))];
 
 /** Symbols the player's levels apply to. */
 export const LEVELLED: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'goldbar', 'note']);
 
 export const symLevel = (lv: Levels | undefined, s: SymbolId) => lv?.sym[s] ?? 1;
-/** The Golden Ticket makes every charm one level higher (past the cap). */
-export const charmLevel = (lv: Levels | undefined, e: Enh, ticket = false) => (lv?.charm[e] ?? 1) + (ticket ? 1 : 0);
+/** Charms have no levels (user, 2026-10-15): a charm reads its one value, a step up with the GOLDEN TICKET. (An old
+ * save's charm levels are ignored.) */
+export const charmLevel = (_lv: Levels | undefined, _e: Enh, ticket = false) => 1 + (ticket ? 1 : 0);
 
 /** Value of one player symbol on the payline. */
 export function playerSymValue(lv: Levels | undefined, s: SymbolId, base: number): number {

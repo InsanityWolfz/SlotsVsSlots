@@ -67,7 +67,7 @@ describe('pay math: BASE x MULT (charms on cells, levels on types)', () => {
     expect([three.base, three.mult, three.amount]).toEqual([30, 18, 540]);
   });
 
-  it('symbol levels raise every cell of the type (10 -> 13 -> 18); charm levels raise every charm (gold x2 -> x3)', () => {
+  it('symbol levels raise every cell of the type (10, 16, 22... +6 a level, no cap); Charms have no levels (gold is x2)', () => {
     const c = defaultConfig();
     c.enemy = { hp: 9999, strips: reels3({ shield: 12 }) };
     c.player.levels = { sym: { sword: 3 }, charm: { gold: 2 } };
@@ -75,8 +75,8 @@ describe('pay math: BASE x MULT (charms on cells, levels on types)', () => {
     const f = new Fight(c, 1);
     f.forceNext('player', ['sword', 'sword', 'shield']);
     const pair = ofType(f.step().events, 'spin')[0].score.groups[0];
-    // Two level-3 swords (18 each), one gold at level 2 (x3): 36 x (2 x 3).
-    expect([pair.base, pair.mult, pair.amount]).toEqual([36, 6, 216]);
+    // Two level-3 swords (22 each), one gold (x2, an old save's level ignored): 44 x (2 x 2).
+    expect([pair.base, pair.mult, pair.amount]).toEqual([44, 4, 176]);
   });
 });
 

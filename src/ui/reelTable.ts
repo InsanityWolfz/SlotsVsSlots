@@ -1,4 +1,4 @@
-import { charmLevel, charmTag, CHARM_COLOR, LEVEL_CAP, symLevel } from '../core/charms';
+import { charmLevel, charmTag, CHARM_COLOR, symLevel } from '../core/charms';
 import type { Enh, Levels, SymbolId } from '../core/config';
 import type { RunPlayer } from '../core/run';
 import { ENH_SPRITE, type CellView } from '../present/reel';
@@ -72,8 +72,6 @@ export interface TableOpts {
   /** Charm tags shown at these levels (X2, +5...), and symbol levels as a small LV badge. */
   levels?: Levels;
   ticket?: boolean;
-  /** The level cap (MAX shows at it); the base game's by default. */
-  cap?: number;
   header?: boolean;
   /** false: no level badges under the table (YOUR BUILD has its own LEVELS pane). */
   badges?: boolean;
@@ -130,10 +128,9 @@ export function drawReelTable(ctx: CanvasRenderingContext2D, x: number, y: numbe
     }
     maxH = Math.max(maxH, (shown.length + (shown.length < rows.length ? 1 : 0)) * o.rowH);
   });
-  // Levels: symbols above 1, and every charm type you own (LV1 too), so a level card's effect shows; MAX at the cap.
+  // Levels: symbols above 1 (no cap), then each Charm type you own (Charms have no levels: their tag shows instead).
   if (o.levels && o.badges !== false) {
     const badges = levelBadges(o.levels, cols);
-    const cap = o.cap ?? LEVEL_CAP;
     const width = o.colW * cols.length;
     let lx = x;
     let ly = top + maxH + 12;
@@ -145,8 +142,7 @@ export function drawReelTable(ctx: CanvasRenderingContext2D, x: number, y: numbe
       }
       drawSprite(ctx, b.symbol as SpriteId, lx + 6, ly, 0.75);
       if (b.enh) drawSprite(ctx, ENH_SPRITE[b.enh], lx + 6, ly, 0.75);
-      const max = b.level >= cap;
-      drawText(ctx, max ? 'MAX' : `LV${b.level}`, lx + 14, ly, 1.25, max ? '#ff9a3a' : b.enh ? CHARM_COLOR[b.enh] : COLORS.goldLight, { align: 'left' });
+      drawText(ctx, b.enh ? charmTag(b.enh, b.level) : `LV${b.level}`, lx + 14, ly, 1.25, b.enh ? CHARM_COLOR[b.enh] : COLORS.goldLight, { align: 'left' });
       lx += BADGE_W;
     }
     if (badges.length) maxH += 20;

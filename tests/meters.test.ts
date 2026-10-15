@@ -6,7 +6,8 @@ import type { CombatEvent } from '../src/core/events';
 import { Fight, RAIN } from '../src/core/fight';
 import { SANDGLASS_SLOW } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
-import { charmOptions, createRun, enemyHp, fightConfig, levelOptions, chooseRoute } from '../src/core/run';
+import { applyOption, charmOptions, createRun, enemyHp, fightConfig, levelOptions, levelsGained, chooseRoute } from '../src/core/run';
+import { symValue } from '../src/core/charms';
 import { STAKE } from '../src/core/stakes';
 
 const base = defaultConfig();
@@ -95,19 +96,20 @@ describe('charm and level cards', () => {
     expect(opts.some((o) => o.kind === 'gild' && (o.enh === 'charged' || o.enh === 'blaze'))).toBe(false);
   });
 
-  it('charm level cards need a charm you own; symbol level cards stop at level 3 (KNIGHT: 4)', () => {
+  it('no charm level cards; symbol level cards have no cap; the Cashier\'s level price climbs; STAR CHART doubles them', () => {
     const run = createRun(base, 3, 'knight');
-    expect(levelOptions(run).some((o) => o.kind === 'charmLevel')).toBe(false);
     run.player.gilded.push({ reel: 0, symbol: 'sword', enh: 'keen', n: 1 });
-    expect(levelOptions(run).some((o) => o.kind === 'charmLevel' && o.enh === 'keen')).toBe(true);
-    run.player.levels.sym.sword = 3;
-    // KNIGHT's levels go to 4 (FORGED STEEL); everyone else's stop at 3.
+    expect(levelOptions(run).some((o) => o.kind === 'charmLevel')).toBe(false);
+    run.player.levels.sym.sword = 9;
     expect(levelOptions(run).some((o) => o.kind === 'symLevel' && o.symbol === 'sword')).toBe(true);
-    run.player.levels.sym.sword = 4;
-    expect(levelOptions(run).some((o) => o.kind === 'symLevel' && o.symbol === 'sword')).toBe(false);
-    const tesla = createRun(base, 3, 'tesla');
-    tesla.player.levels.sym.bolt = 3;
-    expect(levelOptions(tesla).some((o) => o.kind === 'symLevel' && o.symbol === 'bolt')).toBe(false);
+    // Levels gained over the start (KNIGHT: swords 3, shields 2).
+    expect(levelsGained(run)).toBe(6);
+    applyOption(run, { kind: 'symLevel', symbol: 'sword' });
+    expect(run.player.levels.sym.sword).toBe(10);
+    run.player.relics.push('starchart');
+    applyOption(run, { kind: 'symLevel', symbol: 'sword' });
+    expect(run.player.levels.sym.sword).toBe(12);
+    expect(symValue(12)).toBe(10 + 6 * 11);
   });
 });
 

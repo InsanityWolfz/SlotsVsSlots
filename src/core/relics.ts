@@ -49,7 +49,9 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
   prism: { id: 'prism', name: 'PRISM', text: 'A PAIR OR JACKPOT THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
   // Legendary (act 2): big, build-bending effects.
-  ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'EVERY CHARM IS ONE LEVEL HIGHER', sprite: 'relicTicket' },
+  ticket: { id: 'ticket', name: 'GOLDEN TICKET', text: 'EVERY CHARM IS ONE STEP STRONGER', sprite: 'relicTicket' },
+  // STAR CHART (2026-10-15): the build for uncapped symbol levels (Balatro's Telescope, in spirit).
+  starchart: { id: 'starchart', name: 'STAR CHART', text: 'EVERY SYMBOL LEVEL YOU GAIN IS DOUBLED', sprite: 'relicStarchart' },
   bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND FILL YOUR METER', sprite: 'relicBell' },
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'SURVIVE LETHAL DAMAGE AT 1 HP ONCE PER FIGHT', sprite: 'relicPhoenix' },
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR METER PAYOFF ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
@@ -152,7 +154,7 @@ export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
  * relic you start with (2026-10-14). (Content wave 1's machine relics were kept out too, to leave room for each
  * machine's signature relics; those were cut on 2026-10-15, so wave 1's are the start picks now.)
  */
-export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['regular', 'housetax', 'punchcard']);
+export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['regular', 'housetax', 'punchcard', 'starchart']);
 /** Relics that make no sense on a machine even reworded (never offered there). */
 export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['jukebox'], bash: ['tesla', 'joker'] };
 
@@ -209,7 +211,7 @@ export const BIG_LEGENDS: RelicId[] = ['secondline', 'devilsdue', 'longgame', 'q
 /** Relic rarity. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
   common: ['fang', 'bandage', 'bash', 'hotstreak', 'housetax', 'regular', 'punchcard', 'dryspell'],
-  uncommon: ['greatsword', 'armoredcar', 'safedeposit', 'prism', 'mirror', 'horseshoe', 'underdog', 'holywater', 'rainmaker', 'tower', 'capacitor', 'livewire', 'encore', 'coup', 'compound', 'meltdown', 'deckdrum', 'turntable', 'mixtape', 'subwoofer', 'goldenspin', 'insurance', 'hitmaker', 'houseofcards', 'parachute'],
+  uncommon: ['starchart', 'greatsword', 'armoredcar', 'safedeposit', 'prism', 'mirror', 'horseshoe', 'underdog', 'holywater', 'rainmaker', 'tower', 'capacitor', 'livewire', 'encore', 'coup', 'compound', 'meltdown', 'deckdrum', 'turntable', 'mixtape', 'subwoofer', 'goldenspin', 'insurance', 'hitmaker', 'houseofcards', 'parachute'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss', ...BIG_LEGENDS],
 };
 

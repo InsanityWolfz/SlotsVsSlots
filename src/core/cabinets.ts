@@ -62,8 +62,6 @@ export interface Cabinet {
   specialDamage?: number;
   /** A WILD anywhere on the line lets any two matching reels pay as a double. */
   jokerWilds?: boolean;
-  /** Levels on this machine go this much past the usual cap (KNIGHT's FORGED STEEL). */
-  levelCapBonus?: number;
 }
 
 // HP +30% on every machine (2026-10-12): the heal after each fight is gone, so HP is the run's resource.
@@ -84,10 +82,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: null,
     symbols: ['sword', 'shield'],
     attack: 'sword',
-    // FORGED STEEL: its symbol and Charm levels go to 4, not 3 (swords start at 3, so they can still grow).
-    levelCapBonus: 1,
     levels: { sym: { sword: 3, shield: 2 }, charm: {} },
-    rule: 'HALF SWORDS, HALF SHIELDS. SWORDS START AT LEVEL 3; LEVELS GO TO 4. NO METER. 430 HP.',
+    rule: 'HALF SWORDS, HALF SHIELDS. SWORDS START AT LEVEL 3. NO METER. 430 HP.',
     unlock: '',
   },
   midas: {

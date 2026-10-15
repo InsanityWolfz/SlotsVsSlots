@@ -20,7 +20,7 @@ import {
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
 import { ENCOUNTERS, encounterOf, encounterRng, extraPlays, type EncounterChoice, type EncounterResult } from './encounters';
-import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, LEVEL_CAP, playerSymValue, symLevel, symValue, charmName } from './charms';
+import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { dailyFightSeed, dailyNight } from './daily';
 import { scoreLine } from './scoring';
@@ -121,6 +121,8 @@ export const CHIPS = {
   start: 8,
   // heal 5 -> 12, once a visit (2026-10-12: no heal after fights now, so HP is worth more; user).
   prices: { gild: 10, relic: 12, wild: 6, remove: 4, heal: 12, maxHp: 5, legend: 20, level: 12 },
+  /** Each level gained this run adds this to the Cashier's level price. */
+  levelStep: 4,
   /** First reroll per visit costs 1, then +1 each time. */
   rerollBase: 1,
 };
@@ -797,15 +799,6 @@ export const noHealing = (run: RunState) => run.player.relics.includes('glasscan
  * beating him, clearing the run; all x(1 + 0.5 a stake). The same formula for every run, ENDLESS or not.
  */
 export const SCORE = { fight: 100, elite: 300, boss: 1000, chip: 2, level: 100, relic: 100, legendary: 250, charm: 25, ownerHit: 1000, ownerBeat: 10000, clear: 2000, stakeStep: 0.5 };
-/** Levels gained over the run: your symbols above their start, and every Charm type's levels past 1. */
-export function levelsGained(run: RunState): number {
-  const start = CABINETS[run.cabinet].levels;
-  const p = run.player.levels;
-  const sym = Object.entries(p.sym).reduce((a, [s, lv]) => a + Math.max(0, (lv ?? 1) - ((start?.sym as Record<string, number> | undefined)?.[s] ?? 1)), 0);
-  const owned = new Set(run.player.gilded.map((g) => g.enh));
-  const charm = [...owned].reduce((a, e) => a + Math.max(0, (p.charm[e] ?? 1) - 1), 0);
-  return sym + charm;
-}
 /** The score's parts (label, points before the stake), in the order the run-over screen lists them. */
 export function scoreParts(run: RunState): [string, number][] {
   const won = run.records.filter((r) => r.won);
@@ -1177,15 +1170,19 @@ export function charmOptions(run: RunState, n: number, enhs: Enh[] = gildsFor(ru
   return out;
 }
 
-/** LEVEL cards you could be offered: your machine's symbols, and charms you own, below the cap. */
+/** LEVEL cards you could be offered: your machine's symbols on your reels (no cap; Charms have no levels). */
 export function levelOptions(run: RunState): DraftOption[] {
   const p = run.player;
-  const out: DraftOption[] = [];
   const owned = new Set(p.strips.flatMap((s) => Object.keys(s).filter((k) => (s[k as SymbolId] ?? 0) > 0)));
-  for (const symbol of CABINETS[run.cabinet].symbols)
-    if (owned.has(symbol) && symLevel(p.levels, symbol) < levelCap(run)) out.push({ kind: 'symLevel', symbol });
-  for (const enh of new Set(p.gilded.map((g) => g.enh))) if (charmLevel(p.levels, enh) < levelCap(run)) out.push({ kind: 'charmLevel', enh });
-  return out;
+  return CABINETS[run.cabinet].symbols.filter((symbol) => owned.has(symbol)).map((symbol): DraftOption => ({ kind: 'symLevel', symbol }));
+}
+
+/** Levels a symbol card gives: 1, or 2 with STAR CHART. */
+export const levelStep = (run: RunState) => (run.player.relics.includes('starchart') ? 2 : 1);
+/** Levels gained this run over the machine's starting levels (the Cashier's level price climbs with them). */
+export function levelsGained(run: RunState): number {
+  const start = CABINETS[run.cabinet].levels?.sym ?? {};
+  return CABINETS[run.cabinet].symbols.reduce((a, s) => a + Math.max(0, symLevel(run.player.levels, s) - (start[s] ?? 1)), 0);
 }
 
 /**
@@ -1347,10 +1344,10 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
       addCharms(p, o.reel, o.symbol, o.enh, o.n);
       break;
     case 'symLevel':
-      p.levels.sym[o.symbol] = Math.min(levelCap(run), symLevel(p.levels, o.symbol) + 1);
+      p.levels.sym[o.symbol] = symLevel(p.levels, o.symbol) + levelStep(run);
       break;
     case 'charmLevel':
-      p.levels.charm[o.enh] = Math.min(levelCap(run), charmLevel(p.levels, o.enh) + 1);
+      // (Charms have no levels now: an old save's charm level card does nothing.)
       break;
     case 'remove': {
       const n = p.strips[o.reel][o.symbol] ?? 0;
@@ -1406,7 +1403,9 @@ export function shopOffers(run: RunState): ShopItem[] {
   // Prefer extending what you already own, so builds can be finished on purpose.
   const extend = gildOptions.filter((o) => o.kind === 'gild' && p.gilded.some((g) => g.enh === o.enh));
   const levels = levelOptions(run);
-  if (levels.length && rng.next() < 0.5) add(rng.pick(levels), P.level);
+  // Levels cost more the more you've gained (user, 2026-10-15: planets with no cap, hard to stack unless you build for it).
+  const levelPrice = P.level + CHIPS.levelStep * levelsGained(run);
+  if (levels.length && rng.next() < 0.5) add(rng.pick(levels), levelPrice);
   else add(extend.length ? rng.pick(extend) : gildOptions.length ? rng.pick(gildOptions) : null, P.gild);
   // Slot 2: a DIFFERENT charm type from slot 1, leaning to types you don't own.
   const first = items.map((i) => i.option).find((o) => o.kind === 'gild' || o.kind === 'charmLevel');
@@ -1431,7 +1430,7 @@ export function shopOffers(run: RunState): ShopItem[] {
     const atk = CABINETS[run.cabinet].attack;
     const junk = p.strips.flatMap((s, reel) => (['rock', 'shield', atk] as SymbolId[]).filter((sym) => (s[sym] ?? 0) > (sym === 'rock' ? 0 : REMOVE_FLOOR)).map((symbol) => ({ kind: 'remove' as const, symbol, reel })));
     add(junk.length ? (junk.find((j) => j.symbol === 'rock') ?? rng.pick(junk)) : null, P.remove);
-  } else if (levels.length) add(rng.pick(levels), P.level);
+  } else if (levels.length) add(rng.pick(levels), levelPrice);
   // Never a thin shelf: top up with charms, then a rock/shield removal.
   for (const o of rng.shuffle(gildOptions)) {
     if (items.length >= 4) break;
@@ -1444,7 +1443,7 @@ export function shopOffers(run: RunState): ShopItem[] {
   // Never a thin shelf late: levels, a second relic, then max HP (EXPERT_PLAYTEST_3 B6).
   for (const o of rng.shuffle(levels)) {
     if (items.length >= 4) break;
-    add(o, P.level);
+    add(o, levelPrice);
   }
   if (items.length < 4 && relics.length) add({ kind: 'relic', relic: rng.pick(relics) }, P.relic);
   if (items.length < 4) add({ kind: 'maxHp', amount: RUN.maxHpCard }, P.maxHp);
@@ -1542,7 +1541,6 @@ const plural = (s: SymbolId, n: number) => `${symLabel(s)}${n > 1 ? 'S' : ''}`;
 
 export const charmRule = charmRuleText;
 /** LV2, or MAX at the cap. */
-const lvTag = (lvl: number, cap: number) => (lvl >= cap ? `LV${lvl} MAX` : `LV${lvl}`);
 
 /** A pick or buy already taken, for the run-over table and COPY RUN: a level card says +1 LEVEL (describeOption names
  * the NEXT level, which after the pick is one too high). */
@@ -1577,17 +1575,14 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
         text: `REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${charmShortText(o.enh, charmLevel(lv, o.enh, ticket))}`,
       };
     case 'symLevel': {
-      const cap = run ? levelCap(run) : LEVEL_CAP;
-      const next = Math.min(cap, symLevel(lv, o.symbol) + 1);
+      const now = symLevel(lv, o.symbol);
+      const next = now + (run ? levelStep(run) : 1);
       // User, content audit 2026-10-08: level cards show the step, in the symbol's own currency.
       const word = o.symbol === 'shield' ? 'SHIELD' : o.symbol === 'bolt' ? 'LIGHTNING CHARGE' : 'DAMAGE';
-      return { title: `${plural(o.symbol, 2)} ${lvTag(next, cap)}`, text: `${symValue(next - 1)} -> ${symValue(next)} ${word}` };
+      return { title: `${plural(o.symbol, 2)} LV${next}`, text: `${symValue(now)} -> ${symValue(next)} ${word}` };
     }
-    case 'charmLevel': {
-      const cap = run ? levelCap(run) : LEVEL_CAP;
-      const next = Math.min(cap, charmLevel(lv, o.enh) + 1);
-      return { title: `${charmName(o.enh)} CHARM ${lvTag(next, cap)}`, text: charmShortText(o.enh, next + (ticket ? 1 : 0)) };
-    }
+    case 'charmLevel':
+      return { title: `${charmName(o.enh)} CHARM`, text: 'CHARMS HAVE NO LEVELS NOW' };
     case 'remove':
       return { title: `-1 ${symLabel(o.symbol)}`, text: `REMOVE A ${symLabel(o.symbol)} FROM REEL ${o.reel + 1}` };
   }
@@ -1617,8 +1612,6 @@ export const NIGHT_IDS = Object.keys(NIGHTS) as NightId[];
 /** TONIGHT'S RULE in play: the ENDLESS path's, or THE DAILY RUN's of the day. */
 export const nightId = (run: RunState): NightId | undefined => run.endless?.night ?? run.dailyNight;
 export const nightOf = (run: RunState) => { const n = nightId(run); return n ? NIGHTS[n] : null; };
-/** The endless Cashier sells levels past the cap. */
-export const levelCap = (run: RunState) => (run.endless ? LEVEL_CAP + 1 : LEVEL_CAP) + (CABINETS[run.cabinet].levelCapBonus ?? 0);
 /** Each loop cleared grows the pot (the ENDLESS score) by this, on top of x1.5. */
 export const POT_PER_LOOP = 1500;
 /** A cleared loop: the pot grows x1.5, plus POT_PER_LOOP. */

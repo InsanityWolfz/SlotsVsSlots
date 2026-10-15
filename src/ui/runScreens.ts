@@ -37,7 +37,7 @@ import {
   type FightRecord,
   type RunState,
   type ShopItem,
-  levelCap,
+  levelStep,
   dealerEvery,
 } from '../core/run';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
@@ -1313,10 +1313,9 @@ export class RunScreens {
     // Your reels: columns 1 2 3, a row per symbol (and charm).
     drawText(ctx, 'YOUR REELS', x + 12, y + 178, 2, COLORS.textDim, { align: 'left' });
     const table = runTable(p);
-    drawReelTable(ctx, x + 8, y + 190, table, { colW: 90, rowH: 28, scale: 1.5, text: 2, maxRows: 9, levels: p.levels, ticket: p.relics.includes('ticket'), cap: levelCap(run), maxH: 190, badges: false });
+    drawReelTable(ctx, x + 8, y + 190, table, { colW: 90, rowH: 28, scale: 1.5, text: 2, maxRows: 9, levels: p.levels, ticket: p.relics.includes('ticket'), maxH: 190, badges: false });
     rule(y + 386);
     // SYMBOLS and CHARMS (user, 2026-10-08): every type you own, its level and what one is worth right now.
-    const cap = levelCap(run);
     const ticket = p.relics.includes('ticket');
     const syms = CABINETS[run.cabinet].symbols.filter((sym) => p.strips.some((st) => (st[sym] ?? 0) > 0));
     const charms = [...new Map(table.flat().filter((r) => r.enh).map((r) => [r.enh!, r.symbol as SymbolId])).entries()];
@@ -1345,16 +1344,15 @@ export class RunScreens {
           ctx.fillRect(ex + 40 + Math.cos(a) * 20 * pt - 2, ey + Math.sin(a) * 20 * pt - 2, 4, 4);
           ctx.globalAlpha = 1;
         }
-      // LV 1 sits dim, so what you've upgraded stands out; at the draft cap (or past it) the level turns orange.
-      const top = e.level >= cap;
-      const base = e.level <= 1;
+      // LV 1 sits dim, so what you've upgraded stands out (levels have no cap; Charms have none at all).
+      const base = !e.enh && e.level <= 1;
       // A Charm is drawn alone on an empty cell (it can sit on several symbols: the symbol isn't part of it).
       if (e.enh) {
         ctx.fillStyle = '#4a3a66';
         ctx.fillRect(ex - 12, ey - 12, 24, 24);
         drawSprite(ctx, ENH_SPRITE[e.enh], ex, ey, 1.5, { dim: base ? 0.4 : 0 });
       } else drawSprite(ctx, e.sprite as SpriteId, ex, ey, 1.5, { dim: base ? 0.4 : 0 });
-      drawText(ctx, `LV${e.level}`, ex + 18, ey, 2, top ? '#ff9a3a' : base ? COLORS.textDim : e.enh ? CHARM_COLOR[e.enh] : COLORS.goldLight, { align: 'left', punch });
+      if (!e.enh) drawText(ctx, `LV${e.level}`, ex + 18, ey, 2, base ? COLORS.textDim : COLORS.goldLight, { align: 'left', punch });
       // What one pays right now (a symbol's number, a Charm's tag).
       drawText(ctx, e.value, ex + 108, ey, 1.5, COLORS.text, { align: 'right' });
     };
@@ -1564,12 +1562,10 @@ export class RunScreens {
       ctx.fillRect(x - half + 2, y - half + 2, half * 2 - 4, half * 2 - 4);
       drawSprite(ctx, ENH_SPRITE[o.enh], x, y, scale);
     }
-    const cap = this.run ? levelCap(this.run) : 3;
-    const next = Math.min(cap, (o.kind === 'symLevel' ? symLevel(lv, o.symbol) : charmLevel(lv, o.enh)) + 1);
+    const next = o.kind === 'symLevel' ? symLevel(lv, o.symbol) + (this.run ? levelStep(this.run) : 1) : 1;
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(x + 22, y + 8, 50, 24);
-    // The last level a type can take says MAX (no card is offered past it).
-    drawText(ctx, next >= cap ? 'MAX' : `LV${next}`, x + 47, y + 20, 2, next >= cap ? '#ff9a3a' : '#5ad8e8');
+    drawText(ctx, `LV${next}`, x + 47, y + 20, 2, '#5ad8e8');
   }
 
   /** Violet/gold LEGENDARY ribbon inside the top of a card. */

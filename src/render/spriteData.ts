@@ -187,7 +187,7 @@ export type SpriteId =
   | 'enemyOwner'                                 // THE OWNER, ENDLESS final boss portrait, 24x24
   | 'relicDrySpell' | 'relicPunchCard' | 'relicGoldenSpin' | 'relicInsurance' // relics, 16x16
   | 'relicHouseTax' | 'relicRegular'
-  | 'relicHitmaker' | 'relicHouseOfCards' | 'relicParachute' // per-character relics (JUKEBOX, JOKER, BANKROLL), 16x16
+  | 'relicHitmaker' | 'relicHouseOfCards' | 'relicParachute' | 'relicStarchart' // per-character relics (JUKEBOX, JOKER, BANKROLL), 16x16
   | 'enhGlass'                                   // GLASS charm overlay, 16x16 (mostly transparent)
   | 'ratRacer' | 'ratRacer2'                     // RAT RACE runner, two gallop frames (faces RIGHT), 16x16
   | 'scratchTicket' | 'scratchCoin'              // SCRATCH-OFF ticket 24x24, scratching coin 12x12
@@ -5207,6 +5207,24 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '....KwBGBBbK....',
     '.....KBBbbK.....',
     '......KKKK......',
+  ],
+  relicStarchart: [
+    '.KKKKKKKKKKKKKK.',
+    'KwTTTTTTTTTTTTBK',
+    'KBIIIIIIIIIIIIbK',
+    '.KNYNNNNNNNNYNK.',
+    '.KYWYANNNNNYWYK.',
+    '.KNYNNAANAANYNK.',
+    '.KNNNNNNWNNNNNK.',
+    '.KNNNNNANNNNNNK.',
+    '.KNNNNANNNaONNK.',
+    '.KNNNWNNNaOOoNK.',
+    '.KNNNNNGYYYGGgK.',
+    '.KNCNNNNNOOooNK.',
+    '.KNNNNNNNNooNNK.',
+    'KwTTTTTTTTTTTTBK',
+    'KBIIIIIIIIIIIIbK',
+    '.KKKKKKKKKKKKKK.',
   ],
   enhGlass: [
     '.....C...KKKKK..',

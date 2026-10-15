@@ -15,7 +15,7 @@ function fight(mut: (c: GameConfig) => void, seed = 7): Fight {
   return new Fight(c, seed);
 }
 describe('charm levels, hexes and level cards (Tuesday rework)', () => {
-  it('GOLD: x2 plain, x3 at level 2; gold in a group adds up', () => {
+  it('GOLD: x2, whatever an old save says its level is (Charms have no levels: 2026-10-15)', () => {
     const single = (lvl: number) => {
       const f = fight((c) => {
         c.player.strips = [{ sword: 12 }, { shield: 12 }, { bolt: 12 }];
@@ -26,7 +26,7 @@ describe('charm levels, hexes and level cards (Tuesday rework)', () => {
       return ofType(f.step().events, 'attack')[0].amount;
     };
     expect(single(1)).toBe(20);
-    expect(single(2)).toBe(30);
+    expect(single(2)).toBe(20);
   });
 
   it("a hex darkens its reel's charm and halves the group", () => {
@@ -43,17 +43,20 @@ describe('charm levels, hexes and level cards (Tuesday rework)', () => {
     expect(g.cut).toBe(180);
   });
 
-  it('level cards: symbol and charm levels live on the TYPE, capped at 3', () => {
+  it('level cards: symbol levels live on the TYPE with no cap; an old charm level card does nothing', () => {
     const run = createRun(base, 3, 'midas');
     applyOption(run, { kind: 'charmLevel', enh: 'gold' });
     applyOption(run, { kind: 'symLevel', symbol: 'sword' });
-    expect(run.player.levels).toEqual({ sym: { sword: 2 }, charm: { gold: 2 } });
-    for (let i = 0; i < 4; i++) applyOption(run, { kind: 'symLevel', symbol: 'sword' });
-    expect(run.player.levels.sym.sword).toBe(3);
-    // A new gold charm comes in at the type's level (levels aren't stored on cells).
+    expect(run.player.levels).toEqual({ sym: { sword: 2 }, charm: {} });
+    for (let i = 0; i < 6; i++) applyOption(run, { kind: 'symLevel', symbol: 'sword' });
+    expect(run.player.levels.sym.sword).toBe(8);
     applyOption(run, { kind: 'gild', enh: 'gold', symbol: 'shield', reel: 1, n: 2 });
     expect(run.player.gilded.find((g) => g.symbol === 'shield')).toEqual({ reel: 1, symbol: 'shield', enh: 'gold', n: 2 });
-    expect(levelOptions(run).some((o) => o.kind === 'symLevel' && o.symbol === 'sword')).toBe(false);
+    // No cap: a level card is still on offer, and never a charm level.
+    // (BANKROLL levels its own symbols: its chips at any level.)
+    run.player.levels.sym.goldbar = 9;
+    expect(levelOptions(run).some((o) => o.kind === 'symLevel' && o.symbol === 'goldbar')).toBe(true);
+    expect(levelOptions(run).some((o) => o.kind === 'charmLevel')).toBe(false);
     run.depth = 1;
     expect(shopOffers(run).length).toBeLessThanOrEqual(5);
   });

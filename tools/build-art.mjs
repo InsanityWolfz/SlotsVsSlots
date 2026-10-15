@@ -5453,6 +5453,27 @@ S.relicPunchCard = lit(16, 16, [
   S.prizeBall = toRows(outline(g));
 }
 
+// relicStarchart (16x16): STAR CHART, a navy star map on a parchment scroll (rolled top and bottom, wooden knobs):
+// three bright stars joined by constellation lines, and a little ringed planet
+S.relicStarchart = lit(16, 16, [
+  '................',
+  '.wTTTTTTTTTTTTB.',
+  '.BIIIIIIIIIIIIb.',
+  '..NYNNNNNNNNYN..',
+  '..YWYANNNNNYWY..',
+  '..NYNNAANAANYN..',
+  '..NNNNNNWNNNNN..',
+  '..NNNNNANNNNNN..',
+  '..NNNNANNNaONN..',
+  '..NNNWNNNaOOoN..',
+  '..NNNNNGYYYGGg..',
+  '..NCNNNNNOOooN..',
+  '..NNNNNNNNooNN..',
+  '.wTTTTTTTTTTTTB.',
+  '.BIIIIIIIIIIIIb.',
+  '................',
+]);
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -5516,7 +5537,7 @@ const DIMS = {
   relicTurntable: 16, relicMixtape: 16, relicSubwoofer: 16, enhEcho: 16, volumeIcon: 8,
   wheelTopper: 24, betChip: 12, betStack1: 16, betStack2: 16, betStack3: 16,
   enemyOwner: 24, relicDrySpell: 16, relicPunchCard: 16, relicGoldenSpin: 16, relicInsurance: 16,
-  relicHouseTax: 16, relicRegular: 16, relicHitmaker: 16, relicHouseOfCards: 16, relicParachute: 16,
+  relicHouseTax: 16, relicRegular: 16, relicHitmaker: 16, relicHouseOfCards: 16, relicParachute: 16, relicStarchart: 16,
   enhGlass: 16, ratRacer: 16, ratRacer2: 16, scratchTicket: 24, scratchCoin: 12, clawGrabber: 24, clawGrabberShut: 24,
   prizeBall: 12,
 };
@@ -5666,7 +5687,7 @@ export type SpriteId =
   | 'enemyOwner'                                 // THE OWNER, ENDLESS final boss portrait, 24x24
   | 'relicDrySpell' | 'relicPunchCard' | 'relicGoldenSpin' | 'relicInsurance' // relics, 16x16
   | 'relicHouseTax' | 'relicRegular'
-  | 'relicHitmaker' | 'relicHouseOfCards' | 'relicParachute' // per-character relics (JUKEBOX, JOKER, BANKROLL), 16x16
+  | 'relicHitmaker' | 'relicHouseOfCards' | 'relicParachute' | 'relicStarchart' // per-character relics (JUKEBOX, JOKER, BANKROLL), 16x16
   | 'enhGlass'                                   // GLASS charm overlay, 16x16 (mostly transparent)
   | 'ratRacer' | 'ratRacer2'                     // RAT RACE runner, two gallop frames (faces RIGHT), 16x16
   | 'scratchTicket' | 'scratchCoin'              // SCRATCH-OFF ticket 24x24, scratching coin 12x12

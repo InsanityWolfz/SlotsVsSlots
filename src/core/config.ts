@@ -116,6 +116,7 @@ export type RelicId =
   | 'prism'
   // Legendary (act 2)
   | 'ticket'
+  | 'starchart'
   | 'bell'
   | 'phoenix'
   | 'overcharge'
