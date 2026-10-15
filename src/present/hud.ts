@@ -157,7 +157,7 @@ export class HudView {
     });
     if (this.ooze > 0) {
       const pct = this.ooze / Math.max(1, this.oozeTotal);
-      drawText(ctx, `OOZE ${this.ooze}/${this.oozeTotal}`, x + HUD_W - 4, y + 12, 2, pct >= 0.5 && Math.sin(time * 8) > 0 ? '#b6ff9a' : COLORS.slime, {
+      drawText(ctx, `SLIME ${this.ooze}/${this.oozeTotal}`, x + HUD_W - 4, y + 12, 2, pct >= 0.5 && Math.sin(time * 8) > 0 ? '#b6ff9a' : COLORS.slime, {
         align: 'right',
         punch: this.oozePunch,
       });

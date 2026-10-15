@@ -35,7 +35,12 @@ was tuned for feel from two fresh-eyes playtests.
     start their ability two charges in, so it fires in 93-99% of act 1 fights (was 69-92%).
   - Danger: under 30% HP the screen's edges breathe red (under FLASH_CAP), your HUD frame pulses red and a heartbeat
     opens each enemy turn.
-  - JOKER: a WILD fills 40 of its 100 meter (was 20: in act 1 the payoff never showed).
+  - JOKER: a WILD fills 50 of its 100 meter (was 20: in act 1 the payoff never showed; 40 -> 50 after the WILDS fix
+    below took HOUSE OF CARDS' leftover WILDS away: sim 45 / 25 -> 57 / 35 WHITE / GREEN).
+  - Feel playtest #2 fixes: WILDS a fight adds (HOUSE OF CARDS, LUCKY NIGHT) end with the fight (they were kept for
+    good); COUP DE GRACE shows on the pay (X2 COUP) and every relic boost names itself (X2 PRISM, X1.5 UNDERDOG...);
+    shields stay off the BIG WIN ladder; BLOCKED! / SHATTERED! no longer cover the reels; the CLAW counts goes left;
+    "1 TURN" plurals; the slime meter reads SLIME n/m; the Charm codex and glossary come from the live rules.
   - Fixes: no relic draft right after an elite's spoils; WALK AWAY leaves an encounter at once; TWENTY-ONE's hand
     counter; FIGHT 1 (not FIGHT 1 OF ?) before the path pick; danger skulls from each enemy's sim kill rate; TURN YOUR
     PHONE SIDEWAYS in portrait; the first tap on a phone counts (fullscreen resized the canvas mid-tap); the boss

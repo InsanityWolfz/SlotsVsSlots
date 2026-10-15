@@ -898,6 +898,13 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   const next = p.reels.map((r) => stripCounts(r));
   // The chase symbols only ride along for the fight.
   for (const s of next) for (const sym of BONUS_SYMBOLS) delete s[sym];
+  // WILDS a fight adds are for that fight only: HOUSE OF CARDS' and LUCKY NIGHT's (TONIGHT'S RULE) were kept for good
+  // (feel playtest #2: HOUSE OF CARDS took JOKER from 2 WILDS a reel to 9-13 in one act).
+  next.forEach((s, i) => {
+    const had = old[i]?.wild ?? 0;
+    if ((s.wild ?? 0) > had) s.wild = had || undefined;
+    if (!s.wild) delete s.wild;
+  });
   // Rocks are real cells for the fight. Afterwards they crumble, except an elite's: a couple of those stay for good
   // (user, 2026-10-12: permanent rocks cost far too much for a normal enemy).
   let extra = rocksIn(next) - rocksIn(old) - (currentEnemy(run).elite ? RUN.permanentRocksPerFight : 0);

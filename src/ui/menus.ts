@@ -7,7 +7,7 @@ import { online } from '../net/config';
 import { topScores, type ScoreRow } from '../net/leaderboard';
 import { dailyCabinet, dailyKey, dailySpent } from '../core/daily';
 import { LEGENDARY, RELICS, RELIC_TIER } from '../core/relics';
-import { CHARM_SYMBOLS, charmRuleText } from '../core/charms';
+import { CHARM_SYMBOLS, charmName, charmRuleText } from '../core/charms';
 import { desktop, DESKTOP, STEAM, VERSION } from '../build';
 import type { SettingKey } from '../game';
 import { STAKES } from '../core/stakes';
@@ -30,19 +30,23 @@ export type MenuMode = 'none' | 'loading' | 'name' | 'main' | 'modes' | 'progres
 /** HISCORES tabs: your own runs, or the online boards. */
 export type ScoreTab = 'mine' | 'daily' | 'all';
 
-export const CHARM_INFO: Record<Enh, { name: string; text: string }> = {
-  gold: { name: 'GOLD', text: 'YOUR ATTACK SYMBOLS AND SHIELDS. X2/X3/X4 PAY.' },
-  keen: { name: 'KEEN', text: 'SWORDS, CARDS AND NOTES. +40/+50/+60 DAMAGE AND PIERCES SHIELDS.' },
-  charged: { name: 'CHARGED', text: "DOC VOLTZ'S BOLTS. +10/+20/+30 CHARGE ON BOLTS." },
-  spiked: { name: 'BULWARK', text: `KNIGHT. SHIELDS. ${charmRuleText('spiked', 1)}.` },
-  vamp: { name: 'VAMP', text: 'SWORDS, CARDS AND NOTES. HEALS +20/+30/+40 HP.' },
-  lucky: { name: 'LUCKY', text: '40%/55%/70% CHANCE TO BE A WILD.' },
-  blaze: { name: 'BLAZE', text: "DOC VOLTZ'S BOLTS. +5/+10/+15 LIGHTNING DAMAGE." },
-  lucre: { name: 'CHIP', text: 'YOUR ATTACK SYMBOLS AND SHIELDS. +3 CHIPS (MAX 6/9/12 PER FIGHT).' },
-  trick: { name: 'TRICK', text: "JAX'S CARDS AND SHIELDS. +30/+40/+55 TO YOUR JACKPOT METER." },
-  echo: { name: 'ECHO', text: "DJ DECIBEL'S NOTES. AT THE DROP ITS NOTE HITS X2/X2.5/X3." },
-  glass: { name: 'GLASS', text: 'YOUR ATTACK SYMBOLS AND SHIELDS. X5/X6/X7 PAY, ADDS UP LIKE GOLD. 1 IN 4 TO SHATTER WHEN IT PAYS.' },
+// One value each now (Charms have no levels, user 2026-10-15): the text comes from the rule itself, so it can't drift.
+const who: Record<Enh, string> = {
+  gold: 'YOUR ATTACK SYMBOLS AND SHIELDS',
+  keen: 'SWORDS, CARDS AND NOTES',
+  charged: "DOC VOLTZ'S BOLTS",
+  spiked: 'KNIGHT. SHIELDS',
+  vamp: 'SWORDS, CARDS AND NOTES',
+  lucky: 'YOUR ATTACK SYMBOLS AND SHIELDS',
+  blaze: "DOC VOLTZ'S BOLTS",
+  lucre: 'YOUR ATTACK SYMBOLS AND SHIELDS',
+  trick: "JAX'S CARDS AND SHIELDS",
+  echo: "DJ DECIBEL'S NOTES",
+  glass: 'YOUR ATTACK SYMBOLS AND SHIELDS',
 };
+export const CHARM_INFO: Record<Enh, { name: string; text: string }> = Object.fromEntries(
+  (Object.keys(who) as Enh[]).map((e) => [e, { name: charmName(e), text: `${who[e]}. ${charmRuleText(e, 1)}.` }]),
+) as Record<Enh, { name: string; text: string }>;
 /** Charms in the COLLECTION (SPIKED retired). */
 const CHARM_ORDER: Enh[] = ['gold', 'glass', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'lucre', 'trick', 'echo'];
 
@@ -1004,7 +1008,7 @@ export class Menus {
     }
     const rows = list.slice(this.page * ROWS_PER_PAGE, (this.page + 1) * ROWS_PER_PAGE);
     const bestScore = runScore([...list].sort((a, b) => runScore(b) - runScore(a))[0]);
-    drawText(ctx, 'SCORE: 100 PER FIGHT WON, +1000 FOR A CLEAR, +1000 FOR THE DEALER, +5 PER CHIP LEFT. X1.5 PER STAKE.', W / 2, 132, 1.25, COLORS.textDim);
+    drawText(ctx, 'SCORE: FIGHTS, ELITES AND BOSSES WON, CHIPS EARNED, LEVELS, RELICS AND CHARMS, A CLEAR. +50% PER STAKE.', W / 2, 132, 1.25, COLORS.textDim);
     rows.forEach((e, i) => {
       // Rows stop above the global SOUND button (bottom right).
       const y = 176 + i * 66;
@@ -1061,7 +1065,7 @@ export class Menus {
     });
     const pages = Math.ceil(list.length / ROWS_PER_PAGE);
     if (pages > 1) drawText(ctx, `PAGE ${this.page + 1}/${pages}`, W / 2, H - 36, 2, COLORS.textDim);
-    drawText(ctx, 'N: CHARMED CELLS   L2: CHARM LEVEL', 60, H - 30, 1.25, COLORS.textDim, { align: 'left' });
+    drawText(ctx, 'N: CHARMED CELLS', 60, H - 30, 1.25, COLORS.textDim, { align: 'left' });
   }
 
   /** An online board: the top players (their best), you highlighted. */

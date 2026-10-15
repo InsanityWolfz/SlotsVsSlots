@@ -260,7 +260,7 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
     blizzard: `FREEZES ${p} REEL${p === 1 ? '' : 'S'} FOR 2 TURNS`,
     pilfer: `STEALS ${p} SYMBOL${p > 1 ? 'S' : ''}`,
     quake: `ADDS ${p} ROCKS TO YOUR STRIPS`,
-    jam: `JAMS A REEL FOR ${p} TURNS`,
+    jam: `JAMS A REEL FOR ${p} TURN${p === 1 ? '' : 'S'}`,
     jackpot: 'SKIMS HALF THE POT AT YOU',
     carpet: `STICKS ${p} BOMBS ON YOUR CELLS`,
     curse: `HEXES ${p} REEL${p > 1 ? 'S' : ''} FOR 3 TURNS`,
@@ -271,7 +271,7 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
     mark: `MARKS ${p} OF YOUR CELLS`,
     penalty: `HITS FOR ${p}`,
     repo: 'TAKES A CHARM FOR THE FIGHT',
-    houseTake: `RAKES YOUR GROUPS FOR ${p} TURNS`,
+    houseTake: `RAKES YOUR GROUPS FOR ${p} TURN${p === 1 ? '' : 'S'}`,
     deal: 'DEALS A BUST',
     owner: 'CHEATS A NEW WAY EACH TIME',
     hammer: 'HITS 40% OF YOUR MAX HP THROUGH SHIELDS',
@@ -2302,7 +2302,9 @@ export class RunScreens {
   private drawClaw(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
     this.felt(ctx);
-    drawText(ctx, `GO ${Math.min(this.rlSpinNo, CLAW.tries + extraPlays(run))} OF ${CLAW.tries + extraPlays(run)}  -  ${atStakes(run, CLAW.price)} CHIPS A GO`, CX, 78, 2, COLORS.textDim);
+    // Goes left, live (it read GO 1 OF 3 after that go was spent: feel playtest #2).
+    const goes = Math.max(0, CLAW.tries + extraPlays(run) - (run.encounterPlays ?? 0));
+    drawText(ctx, `${goes} GO${goes === 1 ? '' : 'ES'} LEFT  -  ${atStakes(run, CLAW.price)} CHIPS A GO`, CX, 78, 2, COLORS.textDim);
     // The cabinet.
     const cx0 = CW.x0 - 100;
     const cw = CW.gap * 2 + 200;

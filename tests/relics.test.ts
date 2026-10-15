@@ -74,7 +74,7 @@ describe('charm and general relics', () => {
     for (let i = 0; i < 12 && !hits; i++) {
       f.forceNext('player', ['sword', 'shield', 'sword']);
       const spin = ofType(f.step().events, 'spin')[0];
-      if (spin.luckyWilds?.length) hits = spin.score.groups.filter((g) => g.notes?.includes(`X${NEW_RELIC.horseshoeMul}`)).length;
+      if (spin.luckyWilds?.length) hits = spin.score.groups.filter((g) => g.notes?.includes(`X${NEW_RELIC.horseshoeMul} HORSESHOE`)).length;
       if (!f.over) f.step();
     }
     expect(hits).toBeGreaterThan(0);
@@ -84,7 +84,7 @@ describe('charm and general relics', () => {
     const u = on('knight', ['underdog']);
     u.sides.player.hp = 10;
     u.forceNext('player', ['sword', 'shield', 'shield']);
-    expect(ofType(u.step().events, 'spin')[0].score.groups[0].notes).toContain(`X${NEW_RELIC.underdogMul}`);
+    expect(ofType(u.step().events, 'spin')[0].score.groups[0].notes).toContain(`X${NEW_RELIC.underdogMul} UNDERDOG`);
   });
 
   it('HOLY WATER washes off the first cheat each fight', () => {
