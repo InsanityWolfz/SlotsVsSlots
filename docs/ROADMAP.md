@@ -2,7 +2,7 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (2026-10-14):** nothing mid-task. The user's ENDLESS calls are in (see GAME.md).
+**In progress (2026-10-15):** nothing mid-task. The user's ENDLESS calls are in (see GAME.md).
 
 ## Now, in order
 1. **Play the new build.** Playtest C's bugs are fixed (see GAME.md). The level card's "18 -> 25 DAMAGE" stays
@@ -13,8 +13,8 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
    JOKER 44 (target 36: weak early, strong late, accepted for now). WHITE 57-59 and GREEN 34-41 for the rest.
 
 ## Open design questions
-- **ENDLESS, left from the playtests:** the machine spread in ENDLESS (reach THE OWNER: KNIGHT 12%, JUKEBOX 32% vs TESLA
-  84%, BANKROLL 86%; the loop 3 Dealer is KNIGHT's and JUKEBOX's wall). Small UI: callouts over the HP rows, GOLDEN
+- **ENDLESS, left from the playtests:** JUKEBOX's ENDLESS sustain (reach THE OWNER 44% with WARM-UP vs KNIGHT 56%,
+  JOKER 61%, TESLA and BANKROLL 84%: it dies to attrition and the loop 1 HOUSE, see GAME.md VETERAN and WARM-UP). Small UI: callouts over the HP rows, GOLDEN
   TICKET level cards, the HOUSE EDGE screen doesn't list held edges, phone-size RAT RACE / SCRATCH-OFF, LUCKY SEVENS'
   off-line rows.
 - ALL IN is shown in three places (banner, table panel, the line under its machine).

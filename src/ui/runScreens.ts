@@ -52,7 +52,8 @@ import {
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import { effectiveAbility, STAKE, STAKES, stakeOf } from '../core/stakes';
 import type { RelicId } from '../core/config';
-import { DANGER } from '../core/enemies';
+import { DANGER, LOOP_GROWTH } from '../core/enemies';
+import { VOLUME } from '../core/fight';
 import { Clock } from '../present/clock';
 import { backOut, sineOut } from '../present/ease';
 import { ABILITY_UI } from '../present/hud';
@@ -2496,7 +2497,10 @@ export class RunScreens {
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
-      drawText(ctx, `${rounds(last.turns)}${chips}${rocks}`, CX, 60, 2, COLORS.textDim);
+      // VETERAN (KNIGHT) and WARM-UP (JUKEBOX) grow with each loop cleared: say so where the loop ends.
+      const L = this.run!.endless?.loop ?? 0;
+      const grow = !loopDone ? '' : this.run!.cabinet === 'knight' ? `  -  VETERAN: SWORDS AND SHIELDS X${1 + LOOP_GROWTH.veteran * (L - 1)}` : this.run!.cabinet === 'jukebox' ? `  -  WARM-UP: FIGHTS START AT VOLUME ${Math.min(VOLUME.max - 1, LOOP_GROWTH.warmUp * L)}` : '';
+      drawText(ctx, `${rounds(last.turns)}${chips}${rocks}${grow}`, CX, 60, 2, COLORS.textDim);
     }
     this.drawMap(ctx, 158, time);
     const spoils = this.draftKind === 'spoils';

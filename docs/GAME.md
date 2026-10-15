@@ -85,10 +85,19 @@ column). Every 2 turns he cheats: every other time a new trick (slime, a theft, 
 THE HAMMER, 40% of your max HP through shields, named on his HUD before it lands (THE HAMMER IN 2). No turn of his takes
 more than 45% of your max HP, but every turn he takes raises that cap and his hits by 6%, and at 75 / 50 / 25% of his
 HP he hits 15% harder each time (a banner: HE LOOSENS HIS TIE, HE STANDS UP, HE GOES ALL IN). No turn takes more than
-10% of his HP. His HP is 12 loop bosses' worth. Beating him ends the run, won (YOU BROKE THE BANK, achievement BROKE
+8% of his HP (was 10%, 2026-10-15: BANKROLL beat him 4.5% of the time, and WARM-UP JUKEBOX 4%; 8% puts both at 0). His HP is 12 loop bosses' worth. Beating him ends the run, won (YOU BROKE THE BANK, achievement BROKE
 THE BANK); each 10% of his HP you take scores. Sim (GREEN, 300 meetings): beaten 0, fights 16 turns median, his HP left
 74% median (40% at the 10th percentile). Reach him (GREEN riders): KNIGHT 12%, JUKEBOX 32%, JOKER 66%, TESLA 84%,
 BANKROLL 86% (the loop 3 Dealer is the wall for KNIGHT and JUKEBOX).
+**VETERAN and WARM-UP (user, 2026-10-15):** KNIGHT and JUKEBOX had no late growth in ENDLESS (making the loop 3 Dealer
+easier only moved KNIGHT's death to loop 4: his HP 6 -> 3 took loop 3 from 30% to 52% and loop 4 from 56% to 43%).
+VETERAN: in ENDLESS, KNIGHT's swords and shields pay +100% for every loop cleared (X2 in loop 2, X5 at THE OWNER).
+WARM-UP: in ENDLESS, every JUKEBOX fight starts at volume 3 x the loop, never past 5 (one note short of THE DROP).
+Both are named on the LOOP CLEARED screen, and VETERAN on every payout it boosts. Enemies don't change (honest HP).
+Sim (400 runs, GREEN riders, reach THE OWNER): KNIGHT 10% -> 56% (loops 1-4 79/98/84/85), JUKEBOX 33% -> 44%
+(82/87/85/72). WARM-UP is weaker than it sounds: JUKEBOX's ENDLESS deaths are attrition (it walks into fights at
+14-40% HP, often with max HP sold) and the loop 1 HOUSE, not a slow start; even volume 5 every fight only made 48%.
+The main game is untouched (1000 runs WHITE / GREEN identical).
 **Loops get harder (user, 2026-10-14):** ENDLESS growth ramps faster (ramp 0.05 -> 0.1) and the loop HOUSE and WHEEL are
 as big as the loop Dealer (5 / 5 / 6 loop bosses' base). Loops cleared (GREEN riders, L1-4): KNIGHT 80/79/31/60, TESLA
 91/95/99/98, JUKEBOX 81/79/77/64, JOKER 94/91/93/82, BANKROLL 97/98/96/94 (was ~90/90/82/91 overall). Each loop multiplies enemy HP and damage,

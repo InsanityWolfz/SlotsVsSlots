@@ -257,6 +257,10 @@ export interface SideConfig {
   levels?: Levels;
   /** GLASS CANNON: every paying group pays this much more. */
   payMul?: number;
+  /** ENDLESS, KNIGHT's VETERAN: swords and shields pay this much more (grows each loop cleared). */
+  veteranMul?: number;
+  /** ENDLESS, JUKEBOX's WARM-UP: the volume each fight starts at. */
+  volumeStart?: number;
   /** BLOOD PACT: your meter fills this many times faster. */
   meterMul?: number;
   /** BIG CHOICES that change the fight itself (the player only). */

@@ -369,6 +369,8 @@ export class Fight {
       }
       this.openers.push('battery');
     }
+    // WARM-UP (JUKEBOX, ENDLESS): the volume starts at the loop, never at THE DROP itself.
+    if (this.meter?.kind === 'volume' && this.cfg.player.volumeStart && !p.armed) p.energy = Math.max(p.energy, Math.min(this.meterCost - UNIT, this.cfg.player.volumeStart * UNIT));
     const e = this.sides.enemy;
     // BLAZE: every blaze cell you own adds to your special.
     const blazeCells = p.reels.reduce((a, reel) => a + reel.cells.filter((c) => c.enh === 'blaze').length, 0);
@@ -1211,6 +1213,11 @@ export class Fight {
       if (player && paying && this.cfg.player.payMul) {
         boost(g, this.cfg.player.payMul);
         notes.push(`X${this.cfg.player.payMul}`);
+      }
+      // VETERAN (KNIGHT, ENDLESS): every loop cleared, swords and shields pay more.
+      if (player && paying && this.cfg.player.veteranMul) {
+        boost(g, this.cfg.player.veteranMul);
+        notes.push(`X${Math.round(this.cfg.player.veteranMul * 100) / 100} VETERAN`);
       }
       // TONIGHT'S RULE (ENDLESS), for both machines.
       const night = this.cfg.night;

@@ -329,6 +329,9 @@ export const ENDLESS = { ramp: 0.1, hp: 2, dmg: 1.35, houseHp: 5, housePot: 1.5,
 export const endlessMul = (base: number, loop: number) => Math.pow(base, loop) * Math.pow(1 + ENDLESS.ramp, (loop * (loop - 1)) / 2);
 export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
 /** Fixed boss HP (honest HP, 2026-10-12): the House (bossHp), THE WHEEL, the Dealer, and ENDLESS's loop bosses' base. */
+/** ENDLESS help for the machines with no late multiplier (user, 2026-10-15): KNIGHT's VETERAN (swords and shields pay
+ * +veteran for every loop cleared) and JUKEBOX's WARM-UP (each fight starts at volume warmUp x the loop, below THE DROP). */
+export const LOOP_GROWTH = { veteran: 1, warmUp: 3 };
 export const TUNE = { dailyAct3: 0.45, greenWheel: 0.85, coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, dealerQuietCap: 0.25, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, rampPerTurn: 0.06, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act3Hp: 1.4, act1Swords: 1, enemyShield: 0.5, act3Sevens: 4, bossHp: 100 * UNIT, act2Mul: 1.06, act2Swords: 2, wheelHp: 350 * UNIT, dealerHp: 1300 * UNIT, endlessBossBase: 300 * UNIT, enemyDmg: 1 };
 export const ACTS = 2;
 /** The opener is always gentle, and a bit softer. */
@@ -354,7 +357,7 @@ export interface EnemyDef extends SideConfig {
  * reach it). Beating him ends the run, so a broken build or a bug can't go on forever. `hp` is his HP in loop bosses'
  * terms (ENDLESS.houseHp etc.), `dmg` his hits on top of the loop's, `turnCap` the most of his HP one turn can take.
  */
-export const TURBO = { loop: 5, hp: 12, dmg: 1.2, potMul: 3, turnCap: 0.1 };
+export const TURBO = { loop: 5, hp: 12, dmg: 1.2, potMul: 3, turnCap: 0.08 };
 
 /** Rough single-fight danger per archetype (playtest ITERATION_2), used to pick the elite at a fork. */
 export const DANGER: Record<string, number> = {

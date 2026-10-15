@@ -1,5 +1,5 @@
 import { BLADES, cloneConfig, symLabel, emptyLevels, UNIT, unitsRound, type AbilityDef, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, TURBO, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, ROUTES_PER_LOOP, WHEEL } from './enemies';
+import { ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, TURBO, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, ROUTES_PER_LOOP, WHEEL, LOOP_GROWTH } from './enemies';
 import { effectiveAbility, MAX_STAKE, STAKE, stakeDmg } from './stakes';
 import type { Fight } from './fight';
 import {
@@ -786,6 +786,10 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
       cfg.enemy.dmgMul *= TURBO.dmg;
       cfg.enemy.turboCap = TURBO.turnCap;
     }
+    // VETERAN (KNIGHT) and WARM-UP (JUKEBOX): machine growth for the machines with no late multiplier (honest HP: enemies don't change).
+    const cleared = run.endless.loop - 1;
+    if (run.cabinet === 'knight' && cleared > 0) cfg.player.veteranMul = 1 + LOOP_GROWTH.veteran * cleared;
+    if (run.cabinet === 'jukebox') cfg.player.volumeStart = LOOP_GROWTH.warmUp * run.endless.loop;
     // TONIGHT'S RULE, for both machines.
     const night = run.endless.night;
     cfg.night = night;
