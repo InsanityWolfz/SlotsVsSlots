@@ -4,6 +4,7 @@ import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { indexAtRow, insertOffscreen, buildReel } from '../src/core/strip';
 import { Rng } from '../src/core/rng';
+import { TUNE } from '../src/core/enemies';
 
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>
   events.filter((e): e is Extract<CombatEvent, { type: T }> => e.type === t);
@@ -126,6 +127,8 @@ describe('enemy writers', () => {
 describe('enemy abilities (telegraphed)', () => {
   it('charges once per enemy turn and fires on the Nth', () => {
     const f = vs({ sword: 1, shield: 11 }, { ability: { kind: 'smash', every: 3, power: 5 } });
+    // (A regular starts with a head start: from empty, to test the clock itself.)
+    f.sides.enemy.charge = 0;
     const charges: number[] = [];
     let fired = 0;
     for (let i = 0; i < 6; i++) {
@@ -137,6 +140,18 @@ describe('enemy abilities (telegraphed)', () => {
     }
     expect(charges).toEqual([1, 2, 0]);
     expect(fired).toBe(1);
+  });
+
+  it('a regular starts its ability with a head start, so its trick shows (feel playtest, 2026-10-15)', () => {
+    const f = vs({ sword: 1, shield: 11 }, { ability: { kind: 'smash', every: 3, power: 5 } });
+    expect(f.sides.enemy.charge).toBe(Math.min(2, TUNE.headStart));
+    let firstFire = -1;
+    for (let i = 0; i < 6 && firstFire < 0; i++) {
+      const { events, side } = f.step();
+      if (side === 'enemy' && ofType(events, 'ability').length) firstFire = i;
+    }
+    expect(firstFire).toBeGreaterThanOrEqual(0);
+    expect(firstFire).toBeLessThanOrEqual(3);
   });
 
 });
