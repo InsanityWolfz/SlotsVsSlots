@@ -146,6 +146,42 @@ are listed as fact.
   entering a boss with spare candles drops you to one and hands you "smoke" cards. Lives can be traded for power.
   [W] [TechRaptor boss guide](https://Techraptor.net/gaming/guides/inscryption-boss-battle-guide)
 
+### Telegraphed interference (intents, boss rules, status effects)
+- **Slay the Spire intents:** every enemy shows its next action (attack with exact damage, block, buff, debuff,
+  unknown) the turn before it happens. Reviewers call it the game's central innovation, the thing that makes
+  combat planning instead of luck. Mega Crit's own rationale wasn't found online. [F] [LessWrong review](https://www.lesswrong.com/posts/MEimkSwwuRgiPaZaY/review-slay-the-spire),
+  [Nintendo Life](https://www.nintendolife.com/reviews/switch-eshop/slay_the_spire)
+- **StS rule-changers that punish a habit:** Gremlin Nob gains Strength whenever you play a Skill (Enrage), so it
+  changes what's correct rather than just hitting harder. Players split: "bad for the fun" vs "teaches you".
+  [W] [StS wiki: Gremlin Nob](https://slaythespire.wiki.gg/wiki/Gremlin_Nob), [F] [Steam](https://steamcommunity.com/app/646570/discussions/0/3953658299620443875)
+- **Into the Breach:** every enemy attack is shown (target tiles) at the start of the turn and resolved after yours,
+  with no random attack choice; Subset says this is what makes it feel like a puzzle. [P] [Game Developer: Road to
+  the IGF](https://gamedeveloper.com/game-platforms/road-to-the-igf-subset-games-i-into-the-breach-i-),
+  [GDC 2019 postmortem listing](https://www.gdconf.com/news/get-inside-look-making-breach-gdc-2019)
+- **Balatro boss blinds:** one rule per ante (e.g. The Needle: 1 hand; The Plant: face cards debuffed; The Arm:
+  lowers the played hand's level). The next boss is shown as soon as the current one is beaten, giving ~3 shop
+  visits to prepare; Director's Cut ($10) rerolls it once an ante, Retcon unlimited, Boss Tag rerolls; Luchador
+  disables one. [F] [Insider Gaming](https://insider-gaming.com/?p=83317), [Dot Esports: vouchers](https://dotesports.com/indies/news/all-balatro-vouchers-effects-how-to-unlock-and-more)
+- **Which Balatro bosses players hate, and why:** The Hook (discards 2 random held cards after each hand) in Ante 1,
+  "discards run out before I can get 2 hands"; The Arm (permanent level loss, hard to recover); Violet Vessel
+  (final, huge score) called "the only boss blind that is non-interactive, just kills a run". The Pillar (only
+  cards already played this ante) is called the easiest. Pattern: hated bosses are random, permanent, or pure
+  number checks; tolerated ones change which play is best and can be planned for. [F] [Steam: Worst Boss Blind?](https://steamcommunity.com/app/2379780/discussions/0/4201364759908462013/),
+  [Steam: boss complaints](https://steamcommunity.com/app/2379780/discussions/0/4694531145715173333)
+- **Dicey Dungeons status effects** hit your resources, each with a price to clear: Shock locks one of your
+  equipment cards unless you spend a die to unlock it; Freeze turns your highest die into a 1; Burn sets dice on
+  fire (using one costs health; numbers changed in development, verify); a die can't be both locked and burning
+  (v1.11). The cheat becomes a choice of what to pay. [F] [Steam strategy](https://steamcommunity.com/app/861540/discussions/0/3185654583878473735),
+  [P] [Cavanagh devlog](https://terrycavanagh.itch.io/dicey-dungeons/devlog/50288/dicey-dungeons-v013)
+- **LBAL pressure** is a visible clock (rent due in N spins) plus clutter; answers (removal tokens, rerolls,
+  essences) come in bundles each payment, halved on floor 4+. [F] [Twinfinite](https://twinfinite.net/guides/how-remove-symbols-luck-be-a-landlord/)
+- **The Bazaar freeze/slow:** opponent items that freeze or slow yours are visible on its board before combat;
+  complaints are about stacks reapplied every attack (no window to act), not about the effect existing.
+  [F, one anecdote] [RPGHQ](https://rpghq.org/forums/viewtopic.php?p=169981)
+- **Fair vs cheap, the shared pattern** (opinion, from the above): shown before the decision it affects; at least
+  one answer with the player's normal tools, at a price; changes which play is best rather than only subtracting;
+  temporary rather than permanent; on a rhythm the player can learn.
+
 ### Shops, drafts and economy
 - (Empty: consult when the Cashier/shop step starts.)
 
@@ -221,6 +257,17 @@ Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP,
   risks reroll-for-luck grinding; Bazaar avoids that by escalating cost.
 - **Opinion:** 3 credits is in line. Biggest risk is losing a credit to an act-1 race decided by one spin; consider
   (later, Cashier step) the SAP move: one early lost credit refunded, rather than adding credits.
+
+### Rival cheats (open; the parked "telegraphed cheats" idea)
+- **Precedent:** StS intents and Into the Breach show the threat before your turn; Balatro shows the boss an ante
+  ahead and offers rerolls; Dicey Dungeons lets you pay a die to clear Shock. Our order (rival spins first each
+  round) already puts any cheat it makes on its turn in front of your HOLD choice: a full telegraph with no extra
+  "next spin" UI.
+- **Pitfall:** the old game's cheats were watch-only taxes and were answered by GUARDS (a flat shield) that the user
+  found retrofitted; Balatro's most-hated bosses are random (The Hook), permanent (The Arm) or non-interactive
+  (Violet Vessel).
+- **Opinion:** a cheat should target your standing payline (what HOLD would keep), be visible before HOLD, be
+  answerable by not holding or by NUDGE, and last at most the race.
 
 ### KNIGHT's SWORD / SHARP (non-paying, +20 to every later paying spin)
 - **Precedent:** Balatro's scaling Jokers that grow per hand played; Buffalo Gold's collect-to-upgrade; Hold & Spin's
