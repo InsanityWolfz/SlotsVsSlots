@@ -45,9 +45,23 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
 - Known risk: with the rival first, some last spins are already decided (need nothing, or need the impossible).
   That's the rival's scoring to tune (below), not a reason to drop the visible target.
 
+## What symbols are for (DECIDED 2026-10-16)
+- **Every symbol is score.** Nothing attacks, defends or guards: a symbol pays, or changes how score is made.
+  Shields leave KNIGHT (GUARDS felt retrofitted, and two symbols on three reels make every spin a pair, so HOLD and
+  NUDGE would have nothing to chase).
+- **A paytable ladder:** each Slot Machine has 3-4 paying symbols from common and cheap to rare and rich (rarity =
+  cells on the strip). A pair pays something; three of a kind pays a lot more, with a big gap. KNIGHT gets about 3
+  rungs in step 2; names and numbers are settled when it's built.
+- **Special symbols come later, one at a time (step 3):** symbols that change how score is made (X2, a scatter, WILD,
+  a builder like the Whetstone). They're the content, not the core.
+- Why: the ladder is what gives HOLD and NUDGE their choices (hold a rare pair and chase the third, or take the sure
+  common pair?); a rare three of a kind is the comeback in a race; symbols are the base the run multiplies; a paytable
+  is the oldest slot convention there is.
+- Known risk: more symbols, more spins that pay nothing. Fix with strip counts and NUDGE first; if that's not enough,
+  pairs pay more.
+
 ## Open questions (to answer together, one at a time)
 - How does the rival's score grow exponentially across a run? How much luck does it get inside a race?
-- What are a Slot Machine's symbols for, now that nothing is attacked or defended?
 - How does a run end (one lost race, strikes, a target)?
 - Which of the old binding rules carry over (see CLAUDE.md "Suspended")?
 
