@@ -1,6 +1,6 @@
 /**
  * THE SIM (2026-10-12): plays one whole run with the sim bot (bot.ts) and returns a log of it. tools/sim/balance.ts
- * runs thousands of these in parallel and reports win rates against the targets in docs/GAME.md. Deterministic per
+ * runs thousands of these in parallel and reports win rates against the targets in docs/legacy/HP_GAME.md (the old game). Deterministic per
  * seed: fights draw from their own per-run stream, so a change in one run never desyncs another (paired ladders).
  */
 import type { GameConfig, RelicId } from '../core/config';

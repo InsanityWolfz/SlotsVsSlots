@@ -1,12 +1,12 @@
 # Slots vs. Slots
 
-An 8-bit roguelike where two slot machines fight. You don't aim, hold or nudge: the reels decide each fight, and
-the enemy cheats by writing on your machine. Your choices come between fights: which path to take through an act,
-which card to draft, what to buy at the Cashier, and which Charms and relics to build around.
+An 8-bit roguelike where two slot machines face off. The game is being rebuilt (2026-10-16): fights are becoming a
+race for the top score, played one spin at a time, instead of watch-only HP battles. The live build is still the old
+game while the new one is designed.
 
 **Play:** https://insanitywolfz.github.io/SlotsVsSlots/
 
-What's in the game: [docs/GAME.md](docs/GAME.md). What's next: [docs/ROADMAP.md](docs/ROADMAP.md).
+The new game's design: [docs/VISION.md](docs/VISION.md). The old game: [docs/legacy/HP_GAME.md](docs/legacy/HP_GAME.md). What's next: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Develop
 

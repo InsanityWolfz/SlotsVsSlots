@@ -1,6 +1,6 @@
 /**
  * THE SIM (2026-10-12): plays runs for every slot machine at every stake in parallel and reports them against the
- * targets (TARGETS below, docs/GAME.md). One worker per core; deterministic per --seed.
+ * targets (TARGETS below, docs/legacy/HP_GAME.md: the old game). One worker per core; deterministic per --seed.
  *
  *   npx tsx tools/sim/balance.ts                       500 runs per machine per stake, all stakes
  *   npx tsx tools/sim/balance.ts --runs 2000 --stakes 0,2 --machines knight,tesla
