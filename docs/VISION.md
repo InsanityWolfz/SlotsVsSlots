@@ -32,9 +32,21 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
 - Big scores still feel good.
 - Easier balance and horizontal content (more symbols, enemies and bosses with their own scoring tricks).
 
+## The race and your options (DECIDED 2026-10-16)
+- **The race:** both Slot Machines get the same fixed number of spins (about 5 to start; tuned in play). Turns
+  alternate and **the rival spins first each round**, so the race always ends on your spin with a known target
+  (NEED 140). The higher score wins; a tie is yours.
+- **Your options: HOLD and NUDGE**, each a fixed count a race (no refills inside a race; the run can grow them).
+  HOLD (before a spin): keep reels, spin the rest. NUDGE (after a spin lands): move one reel one cell.
+- **No RESPIN:** HOLD two and spin already re-rolls one reel; a third button adds reading, not a new choice.
+- Why: every spin has a choice before (HOLD) and after (NUDGE), and the reveal in between; the counts make
+  now-or-later choices across a race; a fixed spin count means the tools never fade the way HOLD did in the old
+  game; fruit-machine heritage, so it reads as a slot machine with no rules screen.
+- Known risk: with the rival first, some last spins are already decided (need nothing, or need the impossible).
+  That's the rival's scoring to tune (below), not a reason to drop the visible target.
+
 ## Open questions (to answer together, one at a time)
 - How does the rival's score grow exponentially across a run? How much luck does it get inside a race?
-- What can the player do during a race (HOLD / NUDGE / RESPIN were the race slice's answer)?
 - What are a Slot Machine's symbols for, now that nothing is attacked or defended?
 - How does a run end (one lost race, strikes, a target)?
 - Which of the old binding rules carry over (see CLAUDE.md "Suspended")?

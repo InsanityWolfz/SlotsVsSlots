@@ -3,7 +3,9 @@
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record). The old
 game's roadmap is in git on branch `hp-game-final`.
 
-**In progress (2026-10-16):** step 1, writing `docs/VISION.md` with the user. Nothing gets built until it's signed off.
+**In progress (2026-10-16):** step 1, writing `docs/VISION.md` with the user, one question at a time (decided: the
+race and your options; next: what symbols are for, then the rival's score growth, how a run ends, CLAUDE.md's
+rules). Nothing gets built until it's signed off; the expert playtester reviews the whole vision before sign-off.
 
 ## The rebuild, in order (user, 2026-10-16)
 1. **The vision, together.** Turn `docs/VISION.md` from a draft into decisions, and rewrite CLAUDE.md's binding
