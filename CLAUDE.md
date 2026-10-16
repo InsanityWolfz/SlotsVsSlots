@@ -6,6 +6,7 @@ Web build: https://insanitywolfz.github.io/SlotsVsSlots/ (deploys on every push 
 ## The project is being rebuilt (2026-10-16)
 The old game (HP fights you watch) is being replaced by a new one (a race for the top score, played one spin at a
 time). It's a new game on the old chassis, not a fix. The live build stays the old game until the new one is better.
+The vision (`docs/VISION.md`) was signed off on 2026-10-16.
 
 ## Read first, every session
 1. `docs/ROADMAP.md`: the rebuild's steps and what's in progress.
@@ -54,10 +55,11 @@ far it got. Keep that line current while you work.
 - **The race:** both Slot Machines get a fixed number of spins; the rival spins first each round, so the race ends on
   your spin with a visible target. A tie is yours.
 - **Your tools are HOLD and NUDGE,** a fixed count each a race. A new tool (or RESPIN back) is the user's call.
+  HOLD: one HOLD a held reel, at most 2 reels a spin, first spin included. NUDGE: down one cell, one a spin.
 - **Every symbol is score:** nothing attacks, defends or guards. Paying symbols are classic (CHERRY, BAR, COIN, SEVEN)
   and shared across Slot Machines; a machine's theme lives in special symbols that DO something.
 - **Honest rival:** its spins are real, never faked or rubber-banded to your score. Its strength is one number, its
-  **BET** (x6 on its machine, growing by stop); its danger is its cheat (cheats mess with your machine).
+  **BET** (x6 on its machine, for example; it grows by stop); its danger is its cheat (cheats mess with your machine).
 - **Pay = BASE x MULT, and the player's growth multiplies:** the paytable is the base, the run grows the MULT.
   Growth that only adds can't keep up with the BET curve.
 - **CREDITS:** a lost race costs a credit and its prize; a lost boss race is played again; no credits is GAME OVER.

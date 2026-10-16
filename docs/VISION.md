@@ -1,8 +1,8 @@
-# Vision: the new game (DRAFT, not signed off)
+# Vision: the new game
 
-**Status:** draft. Nothing here is decided until the user signs it off; this file is written WITH the user, step 1 of
-the rebuild (`docs/ROADMAP.md`). Until then, don't build from it. When a section is decided, mark it **DECIDED** with
-the date.
+**Status: SIGNED OFF by the user, 2026-10-16** (step 1 of the rebuild, `docs/ROADMAP.md`). The sections marked
+**DECIDED** are the design; build from them. Anything not covered is open: decide it with the user, one system at a
+time, and mark it DECIDED with the date.
 
 ## Why we're rebuilding (user, 2026-10-16)
 The old game had four levers: player damage, player HP, enemy attacks and enemy HP. You can't scale all four
@@ -38,20 +38,35 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
   (NEED 140). The higher score wins; a tie is yours.
 - **Your options: HOLD and NUDGE**, each a fixed count a race (no refills inside a race; the run can grow them).
   HOLD (before a spin): keep reels, spin the rest. NUDGE (after a spin lands): move one reel one cell.
+- **HOLD rules (user, 2026-10-16):** each held reel costs one HOLD; at most 2 reels held a spin (never all 3, or a
+  held jackpot just repeats). HOLD works on your first spin too (the start position is as random as any landing).
+  Held reels keep the symbols they last landed on (they stay as landed through the rival's turn), so a held pair
+  pays again plus a chance at the third: the choice is WHEN to spend the HOLDs.
+- **NUDGE rules:** down only, one cell (the symbol you can see above the payline drops onto it); one NUDGE a spin,
+  so they can't all be saved for the last spin.
 - **No RESPIN:** HOLD two and spin already re-rolls one reel; a third button adds reading, not a new choice.
+- **Step 2's starting counts (tuned in play, not balanced):** 5 spins, 2 HOLDs, 2 NUDGEs, rival BET x1. Note that
+  holding a pair spends both HOLDs; if that feels stingy, raise HOLDs before anything else.
+- **Always show the gap:** YOU LEAD BY / BEHIND BY on every spin, and NEED on your last.
 - Why: every spin has a choice before (HOLD) and after (NUDGE), and the reveal in between; the counts make
   now-or-later choices across a race; a fixed spin count means the tools never fade the way HOLD did in the old
-  game; fruit-machine heritage, so it reads as a slot machine with no rules screen.
+  game; HOLD and NUDGE are real slot-machine buttons (old pub fruit machines had them), so they read with no rules
+  screen.
 - Known risk: with the rival first, some last spins are already decided (need nothing, or need the impossible).
-  That's the rival's scoring to tune (below), not a reason to drop the visible target.
+  The expert playtest guesses about half of races, mostly because you already lead. Step 2 logs "decided before the
+  last spin"; the likely fix is later: the prize grows with the winning margin, so a won last spin is a greed spin.
 
 ## What symbols are for (DECIDED 2026-10-16)
 - **Every symbol is score.** Nothing attacks, defends or guards: a symbol pays, or changes how score is made.
   Shields leave KNIGHT (GUARDS felt retrofitted, and two symbols on three reels make every spin a pair, so HOLD and
   NUDGE would have nothing to chase).
 - **A paytable ladder:** each Slot Machine has 3-4 paying symbols from common and cheap to rare and rich (rarity =
-  cells on the strip). A pair pays something; three of a kind pays a lot more, with a big gap. KNIGHT gets about 3
-  rungs in step 2; names and numbers are settled when it's built.
+  cells on the strip). A pair pays something; three of a kind pays a lot more, with a big gap.
+- **Step 2's strip (user, 2026-10-16):** all four classic payers, no blanks: CHERRY 8, BAR 6, COIN 4, SEVEN 2 of 20
+  cells on each reel. Nothing pays 30% of spins, a pair 60%, a triple 10%; a fresh SEVEN triple is 1 in 1000, a held
+  SEVEN pair finds the third 1 in 10. (Three symbols with no blanks paid 82% of spins: HOLD and NUDGE had nothing
+  to chase. Blanks would leave 65% paying nothing.) Pay values are set when it's built. The rival's strip is steadier
+  and its SEVEN about 1 cell, so a rival jackpot times its BET almost never happens.
 - **Classic payers, themed specials (user, 2026-10-16):** the paying ladder is classic slot symbols (CHERRY, BAR,
   COIN, SEVEN), shared across Slot Machines, so anyone reads it (a 7 beats a cherry) and two machines compare at a
   glance. A machine's theme lives in its art, its hero and its special symbols, which DO something (KNIGHT's sword
@@ -83,6 +98,8 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
 - **CREDITS: you start with 3; out of credits is GAME OVER.** A lost race costs a credit and that race's prize, and
   you move on. A lost boss race costs a credit and you play it again (INSERT COIN to continue): bosses can't be
   skipped. Beating the final boss wins the run (how many acts is the run's structure, later).
+- 3 credits means the third lost race ends the run; the game shows LAST CREDIT. A replayed boss race is a fresh
+  roll.
 - Getting a credit back is rare and never cheap (whether and how: the Cashier and relics steps).
 - Why: a run is lost to a build that fell behind, not one bad spin (one loss ending the run read as random in the
   race slice, and slot luck swings harder than a Balatro hand). A loss still bites twice: the credit, and the lost

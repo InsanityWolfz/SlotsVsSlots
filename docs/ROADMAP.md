@@ -3,14 +3,9 @@
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record). The old
 game's roadmap is in git on branch `hp-game-final`.
 
-**In progress (2026-10-16):** step 1, writing `docs/VISION.md` with the user, one question at a time (decided: the
-race and your options, what symbols are for, the rival's score growth, how a run ends, CLAUDE.md's
-rules; next: the expert playtester reviews the whole vision, then the user's final sign-off). Nothing gets built
-until then.
+**In progress (2026-10-16):** nothing; step 1 (the vision) is signed off. Next: step 2.
 
 ## The rebuild, in order (user, 2026-10-16)
-1. **The vision, together.** Turn `docs/VISION.md` from a draft into decisions, and rewrite CLAUDE.md's binding
-   rules for the new game. The user signs it off.
 2. **The smallest playable core.** One Slot Machine (KNIGHT), one plain rival, a fixed number of spins, the player's
    in-race options. No Charms, relics, cheats or Cashier. The only question: is one race fun, spin by spin?
 3. **One system at a time,** each played and judged on feel before the next starts: the symbols, then rival cheats,
