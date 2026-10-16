@@ -69,6 +69,22 @@ are listed as fact.
 - **Collect / persistent meters (Buffalo Gold):** gold buffalo heads collected in free spins (up to 15) upgrade other
   animal symbols into buffaloes: a build that changes what the reels pay, inside one feature. [F]
   [WSN](https://www.wsn.com/online-casinos/slots/buffalo-gold/), [urcomped](https://urcomped.com/blog/details/1055013/urcompeds-top-5-slot-video-jackpots-of-the-week-june-09-2019)
+- **Collect symbols (Big Bass Bonanza, Pragmatic/Reel Kingdom):** in free spins, fish symbols show a cash value
+  on the symbol; a fisherman wild landing collects every visible fish value. Every 4th fisherman retriggers and
+  raises the collect multiplier (sources agree on x2, x3, x10). The value is printed on the symbol, so the pay is
+  read before it's paid. [F, affiliate reviews only; verify on the game's help screen]
+  [gambling.com: Bigger Bass Bonanza](https://www.gambling.com/us/online-casinos/slots/bigger-bass-bonanza)
+- **Persistent symbols (Money Train 2/3, Relax):** in the respin bonus, Persistent Payer adds a value to every
+  bonus symbol now and on every later respin; Persistent Collector gathers all visible values into its own total
+  each respin; Persistent Sniper doubles 3-8 symbols each respin. Each pays something the moment it lands AND keeps
+  working. [F] [gambling.com: Money Cart 2](https://www.gambling.com/us/online-casinos/slots/money-cart-2)
+- **Multiplier symbols:** Double Diamond (IGT): one on the line doubles the win, two quadruple it (it's also wild).
+  Sweet Bonanza: free-spin bombs show 2x-100x on the symbol, summed and applied at the end of the tumble, reset each
+  spin. The number is on the symbol. [F] [FanDuel: Double Diamond](https://www.fanduel.com/research/theduel/double-diamond-fanduel-casino-review-01f1a6cqr1rh),
+  [sigma.world: Sweet Bonanza](https://sigma.world/play/games/pragmatic-play/sweet-bonanza/)
+- **The common thread** (opinion, from the above): modern feature symbols that build almost always pay or show a
+  value the moment they land (Collector, Payer, bombs, fish), and the build lives inside a short window. A symbol
+  that pays nothing now and only adds later is rare outside scatters, and scatters pay a small amount on their own.
 - **Reach (pachinko/pachislot):** two reels stopped on a match and the last still spinning is "reach"; the machine
   spins that reel longer to build expectation, escalating to "super reach". Patents note long reach sequences
   (over a minute stacked) frustrate players. [P] [JP2011036701A](https://patents.google.com/patent/JP2011036701A/en)
@@ -101,6 +117,16 @@ are listed as fact.
   destroy others (deck thinning). [W] [LBAL wiki: Farmer](https://luck-be-a-landlord.fandom.com/wiki/Farmer),
   [Wikipedia](https://en.wikipedia.org/wiki/Luck_Be_a_Landlord), [F] [Steam guide](https://steamcommunity.com/sharedfiles/filedetails/?id=2404409704).
   LBAL was designed as a slot game without predatory monetisation. [W] [Wikipedia](https://en.wikipedia.org/wiki/Luck_Be_a_Landlord)
+- **LBAL delayed-payoff symbols:** Thief (Uncommon) gives -1 coin a spin and, when destroyed, 4 coins for each spin
+  it survived (a changelog mentions a change, verify). Coal becomes Diamond after 20 spins, while rent comes every
+  6-8 spins, so it's a long-game pick. Both are niche picks, not the core: LBAL's delayed builders are optional
+  symbols you choose to add, and they pay out in one visible burst (the destroy). [W] [LBAL wiki: Thief](https://luck-be-a-landlord.fandom.com/wiki/Thief),
+  [F] [GamesAsylum review](https://www.gamesasylum.com/?p=60243)
+- **Balatro scaling Jokers:** Ride the Bus gains +1 Mult for each consecutive hand with no scoring face card and
+  resets on one; its current value shows on the card. Players call it reliable once built but too slow for high
+  stakes; the scaler debate is about how fast they arrive, not whether they're fun. Scalers cost no card in the
+  hand: the build is free on the turn. [F] [Steam thread](https://steamcommunity.com/app/2379780/discussions/0/4346606879507418212),
+  [PocketGamer tier list](https://www.pocketgamer.com/balatro/joker-tier-list/)
 
 ### Run structure, scaling and difficulty
 - **Balatro blind curve (White stake), base chips per ante 1-8:** 300, 800, 2,000, 5,000, 11,000, 20,000, 35,000,
@@ -202,6 +228,13 @@ Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP,
 - **Pitfall (computed):** +20 flat flattens the ladder. At SHARP 2 a CHERRY pair pays 50, a SEVEN pair 120: x2.4
   apart instead of x8. Flat adds swamp small bases (Balatro's +Chips are weakest late for this reason). It also
   doesn't scale with the rival's BET, so its relative worth shrinks each stop unless the run's MULT multiplies it.
-- **Opinion:** right for KNIGHT's identity and the race arc. Watch two things in play: whether high SHARP makes
-  CHERRY and SEVEN pairs feel the same (kills the HOLD-the-rare-pair choice), and confirm the MULT step multiplies
-  SHARP's +20, as VISION says.
+- **Played (user):** "plays like crap". Diagnosis (computed from YOUR_STRIP, 22 cells, 2 swords a reel): a sword is
+  on your line in ~25% of spins; with one sword the line pays only if the other two reels pair (~25%), so a sword
+  spin pays nothing ~3 times in 4: it lands as a blank. A spin-1 sword is worth roughly +48 spread as +20 slivers
+  over the next ~2.4 paying spins; a spin-4 sword ~+12; a last-spin sword 0. About 1.4 swords land a race.
+- **Pitfall vs precedent:** the slot features that build (Money Train persistents, Big Bass collect, Sweet Bonanza
+  bombs) all pay or show a value the instant they land; Balatro's scalers cost nothing on the turn; LBAL's Thief
+  (cost now, pay later) is a niche pick, not a machine's identity. SHARP costs the spin AND pays late, in small
+  slices, as an add-on to other symbols' pays.
+- **Opinion:** the build-then-cash-in arc is worth keeping; the delivery isn't. A replacement should pay the moment it
+  lands, show its value on the symbol, grow inside the race, and not add to every other pay (keeps the ladder).
