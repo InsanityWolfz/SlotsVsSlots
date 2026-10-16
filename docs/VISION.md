@@ -65,8 +65,21 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
 - Known risk: more symbols, more spins that pay nothing. Fix with strip counts and NUDGE first; if that's not enough,
   pairs pay more.
 
+## How the rival's score grows (DECIDED 2026-10-16)
+- **A real Slot Machine, scaled by one number:** the rival spins the classic ladder for real (no faked outcomes), and
+  everything it scores is multiplied by its **stake**, shown on its machine (x2, x6, x20). The stake grows
+  geometrically by stop, with a jump for bosses: Balatro's blind curve on a machine that actually spins.
+- **The rival plays steady, you play swingy:** its strip leans toward common pairs (rarely nothing, rarely a
+  jackpot). Your machine has the variance, and HOLD and NUDGE to manage it. A rival jackpot can happen, rarely.
+- **Rivals differ by their cheats (step 3), not their numbers:** a cheat messes with your machine; it doesn't scale.
+- Why: exponential rival growth is what the two-lever rebuild needs; a fixed pressure curve keeps the late game from
+  going trivial. Luck against luck read as random in the race slice; a steady rival makes its pace predictable
+  (and you see it first each round), so a race is won or lost on your swings. The stake reads with no explaining.
+- Known risks: steady rival spins can be dull (spin them fast; cheats add character). The player's growth must
+  multiply, not add, or the stake curve outruns every build (the Charms and relics step must deliver that). The
+  curve's numbers wait for balancing.
+
 ## Open questions (to answer together, one at a time)
-- How does the rival's score grow exponentially across a run? How much luck does it get inside a race?
 - How does a run end (one lost race, strikes, a target)?
 - Which of the old binding rules carry over (see CLAUDE.md "Suspended")?
 
