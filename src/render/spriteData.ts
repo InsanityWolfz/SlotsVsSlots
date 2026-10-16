@@ -82,7 +82,7 @@ export type SpriteId =
   | 'enemyGolem' | 'enemyGremlin' | 'enemyBoss'
   | 'ice' | 'claw' | 'rock' | 'lock'               // enemy reel symbols, 16x16
   | 'coin' | 'seven' | 'ball'                     // boss reel symbols, 16x16 (ball: THE WHEEL's BALL)
-  | 'cherry' | 'double'                          // CHERRY scatter and X2 multiplier reel symbols, 16x16
+  | 'cherry' | 'double' | 'bar'                  // CHERRY scatter and X2 multiplier reel symbols, 16x16
   | 'frozenOverlay' | 'lockOverlay'               // cell overlays, 16x16 (mostly transparent)
   | 'relicClover'  // relic icons, 16x16
   | 'relicBattery' | 'relicMirror' | 'relicFang'
@@ -716,6 +716,24 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '..KmmmVVVvmmmK..',
     '...KKmmmmmmKK...',
     '.....KKKKKK.....',
+  ],
+  bar: [
+    '................',
+    '.KKKKKKKKKKKKKKK',
+    'KYYYYYYYYYYYYYYY',
+    'KYPPPPPPPPPPPPPg',
+    'KYPPPPPPPPPPPPPg',
+    'KYPWTPPPWPPWTPPg',
+    'KYPTPTPTPTPTPTPg',
+    'KYPTTPPTTTPTTPPg',
+    'KYPTPTPTPTPTPTPg',
+    'KYPTTPPTPTPTPTPg',
+    'KYPPPPPPPPPPPPPg',
+    'KYPPPPPPPPPPPPPg',
+    'Kggggggggggggggg',
+    '.KKKKKKKKKKKKKKK',
+    '................',
+    '................',
   ],
   frozenOverlay: [
     'cccccccccccccccc',

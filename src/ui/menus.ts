@@ -131,6 +131,8 @@ export class Menus {
       /** THE DAILY RUN (one try a day). */
       onDaily: () => void;
       onRace: () => void;
+      /** THE NEW GAME (the rebuild's step 2): one race, spin by spin. */
+      onNewGame: () => void;
       /** Name entry: claim the name; resolves to the claim result ('ok', 'taken', 'have:NAME', 'offline'). */
       needsName: () => boolean;
       onName: (name: string) => Promise<string>;
@@ -342,6 +344,9 @@ export class Menus {
     const race = this.btn('SCORE RACE (TEST)', x, row(2), 440, 54, () => this.cb.onRace(), 2.5);
     this.icons.set(race, 'chip');
     this.guardSaved(race);
+    // THE NEW GAME (the rebuild, step 2: docs/VISION.md): one race against a plain rival, HOLD and NUDGE.
+    const ng = this.btn('NEW GAME (TEST)', x, row(3), 440, 54, () => this.cb.onNewGame(), 2.5);
+    this.icons.set(ng, 'chip');
     this.slideIn();
   }
 

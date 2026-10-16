@@ -505,6 +505,22 @@ S.lock = lit(16, 16, [
   stamp(g, 11, 1, ['EEe', 'Eeee', ' eQ']);
   S.cherry = toRows(outline(g));
 }
+// bar (16x16): THE NEW GAME's classic BAR payer, a black plate with white BAR letters in a gold rim
+S.bar = lit(16, 16, [
+  '................',
+  '................',
+  '.YYYYYYYYYYYYYYY',
+  '.YPPPPPPPPPPPPPg',
+  '.YPPPPPPPPPPPPPg',
+  '.YPWTPPPWPPWTPPg',
+  '.YPTPTPTPTPTPTPg',
+  '.YPTTPPTTTPTTPPg',
+  '.YPTPTPTPTPTPTPg',
+  '.YPTTPPTPTPTPTPg',
+  '.YPPPPPPPPPPPPPg',
+  '.YPPPPPPPPPPPPPg',
+  '.ggggggggggggggg',
+]);
 // double: the X2 token, bold gold "X2" on a round purple badge with a light pink rim
 {
   const g = grid(16, 16);
@@ -5527,7 +5543,7 @@ const DIMS = {
   heart: 8, shieldIcon: 8, boltIcon: 8, 
   swordProjectile: 12, slimeBlob: 8, spark: 5, playerPortrait: 24, enemyPortrait: 24,
   enemyBrute: 24, enemyFrost: 24, enemyThief: 24, enemyGolem: 24, enemyGremlin: 24, enemyBoss: 24,
-  ice: 16, claw: 16, rock: 16, lock: 16, coin: 16, seven: 16, ball: 16, cherry: 16, double: 16,
+  ice: 16, claw: 16, rock: 16, lock: 16, coin: 16, seven: 16, ball: 16, cherry: 16, double: 16, bar: 16,
   frozenOverlay: 16, lockOverlay: 16,
   relicClover: 16, relicBattery: 16, relicMirror: 16,
   relicFang: 16, relicBandage: 16, 
@@ -5629,7 +5645,7 @@ export type SpriteId =
   | 'enemyGolem' | 'enemyGremlin' | 'enemyBoss'
   | 'ice' | 'claw' | 'rock' | 'lock'               // enemy reel symbols, 16x16
   | 'coin' | 'seven' | 'ball'                     // boss reel symbols, 16x16 (ball: THE WHEEL's BALL)
-  | 'cherry' | 'double'                          // CHERRY scatter and X2 multiplier reel symbols, 16x16
+  | 'cherry' | 'double' | 'bar'                  // CHERRY scatter and X2 multiplier reel symbols, 16x16
   | 'frozenOverlay' | 'lockOverlay'               // cell overlays, 16x16 (mostly transparent)
   | 'relicClover'  // relic icons, 16x16
   | 'relicBattery' | 'relicMirror' | 'relicFang'

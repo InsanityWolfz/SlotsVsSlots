@@ -63,7 +63,7 @@ export class MachineView {
 
   constructor(
     readonly side: SideId,
-    combatant: Combatant,
+    combatant: Pick<Combatant, 'reels' | 'frozen' | 'locked' | 'hexed'>,
     private sounds: Sounds,
   ) {
     this.reels = combatant.reels.map(
@@ -104,7 +104,7 @@ export class MachineView {
    * Near-miss: first two reels match → the last reel keeps blurring past the others,
    * then does the slow 0.7s decel (juice §2, 3-reel version).
    */
-  async spin(stops: number[], nearMiss: boolean, clock: Clock, cb: SpinCallbacks = {}, frozen: boolean[] = []): Promise<void> {
+  async spin(stops: number[], nearMiss: boolean, clock: Clock, cb: SpinCallbacks = {}, frozen: boolean[] = [], held: boolean[] = []): Promise<void> {
     this.tags = [null, null, null];
     this.payline.alpha = 0;
     this.payline.progress = 0;
@@ -112,7 +112,8 @@ export class MachineView {
     this.spun = true;
     const tw = windup ? SPIN.windup : 0;
     const base = tw + SPIN.accel + SPIN.minSpin;
-    const plans = stops.map((target, i) => ({ target, windup, decelAt: base + i * SPIN.stagger, decelDur: SPIN.decel, frozen: !!frozen[i] }));
+    // (THE NEW GAME's HOLD: a held reel stays put like ice, but thunks like a reel, not an ice clink.)
+    const plans = stops.map((target, i) => ({ target, windup, decelAt: base + i * SPIN.stagger, decelDur: SPIN.decel, frozen: !!frozen[i] || !!held[i] }));
     const last = REELS - 1;
     if (nearMiss && !plans[last].frozen) {
       const prevLand = plans[last - 1].decelAt + SPIN.decel;
@@ -125,7 +126,8 @@ export class MachineView {
     await Promise.all(
       this.reels.map((reel, i) =>
         reel.spin(plans[i], clock, () => {
-          if (plans[i].frozen) this.sounds.iceClink();
+          if (held[i]) this.sounds.reelStop(i, this.pitchMul * 0.8);
+          else if (plans[i].frozen) this.sounds.iceClink();
           else this.sounds.reelStop(i, this.pitchMul);
           if (i === last) stopLoop();
           if (nearMiss && i === last - 1) {

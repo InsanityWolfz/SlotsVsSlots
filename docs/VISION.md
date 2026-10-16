@@ -45,7 +45,8 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
 - **NUDGE rules:** down only, one cell (the symbol you can see above the payline drops onto it); one NUDGE a spin,
   so they can't all be saved for the last spin.
 - **No RESPIN:** HOLD two and spin already re-rolls one reel; a third button adds reading, not a new choice.
-- **Step 2's starting counts (tuned in play, not balanced):** 5 spins, 2 HOLDs, 2 NUDGEs, rival BET x1. Note that
+- **Step 2's starting counts (tuned in play, not balanced):** 5 spins, 2 HOLDs, 2 NUDGEs, rival BET x2 (at x1 the
+  tools roughly doubled your score and a simple bot won 90%; at x2 it wins about 60%). Note that
   holding a pair spends both HOLDs; if that feels stingy, raise HOLDs before anything else.
 - **Always show the gap:** YOU LEAD BY / BEHIND BY on every spin, and NEED on your last.
 - Why: every spin has a choice before (HOLD) and after (NUDGE), and the reveal in between; the counts make
@@ -65,7 +66,8 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
 - **Step 2's strip (user, 2026-10-16):** all four classic payers, no blanks: CHERRY 8, BAR 6, COIN 4, SEVEN 2 of 20
   cells on each reel. Nothing pays 30% of spins, a pair 60%, a triple 10%; a fresh SEVEN triple is 1 in 1000, a held
   SEVEN pair finds the third 1 in 10. (Three symbols with no blanks paid 82% of spins: HOLD and NUDGE had nothing
-  to chase. Blanks would leave 65% paying nothing.) Pay values are set when it's built. The rival's strip is steadier
+  to chase. Blanks would leave 65% paying nothing.) Step 2's pays (pair / three): CHERRY 10/50, BAR 20/100, COIN
+  40/200, SEVEN 80/777. Any two of the three payline symbols matching is a pair. The rival's strip is steadier
   and its SEVEN about 1 cell, so a rival jackpot times its BET almost never happens.
 - **Classic payers, themed specials (user, 2026-10-16):** the paying ladder is classic slot symbols (CHERRY, BAR,
   COIN, SEVEN), shared across Slot Machines, so anyone reads it (a 7 beats a cherry) and two machines compare at a

@@ -41,6 +41,8 @@ export type SymbolId =
   | 'note'
   /** THE SCORE RACE: the CHERRY scatter (pays for every cherry in sight, payline or not). */
   | 'cherry'
+  /** THE NEW GAME's classic BAR payer. */
+  | 'bar'
   /** THE SCORE RACE: X2 on your payline doubles the spin's pay (it pays nothing itself). */
   | 'double';
 
@@ -287,7 +289,7 @@ export function defaultConfig(): GameConfig {
     player: { hp: 20 * UNIT, strips: reels3({ sword: 4, shield: 4, bolt: 4 }) },
     // Tuned from playtest/PLAYTEST_REPORT.md: ~65% player wins, ~24 turns, cleanse in ~half of fights.
     enemy: { hp: 30 * UNIT, strips: reels3({ sword: 5, shield: 2, slime: 5 }), name: 'SLIME KING', portrait: 'enemyPortrait' },
-    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, ball: UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0, goldbar: UNIT, ace: UNIT, note: UNIT, cherry: 0, double: 0 },
+    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, ball: UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0, goldbar: UNIT, ace: UNIT, note: UNIT, cherry: 0, double: 0, bar: 0 },
     pairMult: 2,
     tripleMult: 3,
     pairRule: 'inOrder',

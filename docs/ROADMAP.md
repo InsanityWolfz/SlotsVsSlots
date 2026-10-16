@@ -3,7 +3,9 @@
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record). The old
 game's roadmap is in git on branch `hp-game-final`.
 
-**In progress (2026-10-16):** nothing; step 1 (the vision) is signed off. Next: step 2.
+**In progress (2026-10-16):** step 2 is built and waiting on the user's play: PLAY MODES > NEW GAME (TEST), one race
+against a plain rival (`src/race/race.ts` the rules, `src/race/scene.ts` the screen). The question: is one race fun,
+spin by spin? The result screen tallies races won and decided before your last spin.
 
 ## The rebuild, in order (user, 2026-10-16)
 2. **The smallest playable core.** One Slot Machine (KNIGHT), one plain rival, a fixed number of spins, the player's
