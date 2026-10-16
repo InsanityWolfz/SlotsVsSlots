@@ -3,8 +3,8 @@
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record). The old
 game's roadmap is in git on branch `hp-game-final`.
 
-**In progress (2026-10-16):** step 3, its first system: KNIGHT's SWORD that sharpens is built and waiting on the user's
-play (VISION.md).
+**In progress (2026-10-16):** step 3, its first system: KNIGHT's SWORD now pays its EDGE (it replaced the SWORD that
+sharpens, which played badly); built and waiting on the user's play (VISION.md).
 Step 2 is proven (user, 2026-10-16: "core loop is proven... I have agency on whether I win based on nudge and hold. it
 didn't feel unfair or broken"). The race is PLAY MODES > NEW GAME (TEST): `src/race/race.ts` the rules,
 `src/race/scene.ts` the screen.

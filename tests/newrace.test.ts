@@ -118,39 +118,63 @@ describe('the new race (step 2)', () => {
     expect(r.lastSpinGap).not.toBeNull();
   });
 
-  it('SWORD: never pays or matches; each on the line is +1 SHARP from the next paying spin on', () => {
+  it('SWORD: never matches a payer; scoreLine lists the swords', () => {
     expect(scoreLine(['sword', 'sword', 'cherry'])).toMatchObject({ tier: 'none', pay: 0, swords: [0, 1] });
     expect(scoreLine(['sword', 'coin', 'coin'])).toMatchObject({ tier: 'pair', pay: PAYTABLE.coin.pair, swords: [0] });
-    // SHARP adds to a paying line, never to a dead one.
-    expect(scoreLine(['cherry', 'cherry', 'bar'], 1, 2)).toMatchObject({ pay: PAYTABLE.cherry.pair + 2 * RACE.sharpPay, sharp: 2 * RACE.sharpPay });
-    expect(scoreLine(['cherry', 'coin', 'bar'], 1, 2)).toMatchObject({ pay: 0, sharp: 0 });
   });
 
-  it('SWORD: the race counts SHARP after the spin pays, and a held sword sharpens again', () => {
-    const r = new Race({ seed: 11, holds: 4 });
-    // Put a sword on reel 0's payline and a coin pair on reels 1 and 2.
+  /** A race on its first spin with your reels set to `line` (held reels stay put; unheld ones are pinned too). */
+  const landed = (line: string[], held: number[] = [], seed = 12) => {
+    const r = new Race({ seed, holds: 4 });
     const at = (reel: number, s: string) => r.you.reels[reel].indexOf(s as never);
-    r.you.stops = [at(0, 'sword'), at(1, 'coin'), at(2, 'coin')];
+    r.you.stops = line.map((s, i) => at(i, s));
     r.rivalSpin();
-    r.toggleHold(0);
-    r.toggleHold(1);
-    r.toggleHold(2); // (never all 3)
+    held.forEach((i) => r.toggleHold(i));
+    const stops = r.you.stops.slice();
     r.spin();
-    expect(symbolAt(r.you, 0)).toBe('sword');
-    // Hold reels 0 and 1 kept the sword and a coin; reel 2 spun.
-    const p1 = r.pay();
-    expect(p1.sharp).toBe(0); // this spin's sword sharpens after it pays
-    expect(p1.swords).toContain(0);
-    expect(r.sharp).toBe(p1.swords.length);
-    const before = r.sharp;
-    r.rivalSpin();
-    r.toggleHold(0);
-    r.spin();
-    const line = payline(r.you);
-    const p2 = r.pay();
-    expect(p2.swords).toContain(0);
-    expect(r.sharp).toBe(before + p2.swords.length);
-    expect(p2.pay).toBe(scoreLine(line, 1, before).pay);
+    r.you.stops = stops;
+    return r;
+  };
+
+  it('SWORD: a fresh sword pays the EDGE on top of a pair, then doubles it', () => {
+    const r = landed(['sword', 'coin', 'coin']);
+    const p = r.pay();
+    expect(p.pay).toBe(PAYTABLE.coin.pair + RACE.edge);
+    expect(p.strikes).toEqual([{ reel: 0, pay: RACE.edge, sharpened: true }]);
+    expect(r.edge).toBe(RACE.edge * 2);
+  });
+
+  it('SWORD: two fresh swords strike left to right (10 then 20), leaving the EDGE at 40', () => {
+    const r = landed(['sword', 'cherry', 'sword']);
+    const p = r.pay();
+    expect(p.strikes.map((s) => s.pay)).toEqual([RACE.edge, RACE.edge * 2]);
+    expect(p.pay).toBe(RACE.edge * 3);
+    expect(r.edge).toBe(RACE.edge * 4);
+  });
+
+  it('SWORD: a held sword strikes but does not sharpen; a nudged sword does', () => {
+    const r = landed(['sword', 'coin', 'bar'], [0]);
+    const p = r.pay();
+    expect(p.strikes).toEqual([{ reel: 0, pay: RACE.edge, sharpened: false }]);
+    expect(r.edge).toBe(RACE.edge);
+    // A NUDGE that drops a sword onto the line: fresh.
+    const n = new Race({ seed: 13 });
+    n.rivalSpin();
+    n.spin();
+    const strip = n.you.reels[1];
+    n.you.stops[1] = (strip.indexOf('sword') + 1) % strip.length; // the sword sits just above the line
+    n.you.stops[0] = n.you.reels[0].indexOf('cherry');
+    n.you.stops[2] = n.you.reels[2].indexOf('bar');
+    expect(n.nudge(1)).toBe(true);
+    expect(n.pay().strikes).toEqual([{ reel: 1, pay: RACE.edge, sharpened: true }]);
+    expect(n.edge).toBe(RACE.edge * 2);
+  });
+
+  it('SWORD: three swords are the jackpot, and the EDGE sharpens', () => {
+    const r = landed(['sword', 'sword', 'sword']);
+    const p = r.pay();
+    expect(p).toMatchObject({ tier: 'triple', symbol: 'sword', pay: RACE.swordJackpot });
+    expect(r.edge).toBe(RACE.edge * 2);
   });
 
   it('is deterministic for a seed', () => {

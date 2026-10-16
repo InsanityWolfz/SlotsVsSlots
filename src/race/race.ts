@@ -15,8 +15,10 @@ export type Payer = (typeof PAYERS)[number];
 export const PAYER_NAME: Record<Payer, string> = { cherry: 'CHERRY', bar: 'BAR', coin: 'COIN', seven: 'SEVEN' };
 
 /**
- * A reel symbol: a payer, or KNIGHT's SWORD (step 3, VISION "the SWORD that sharpens"): a SWORD never pays; each one on
- * your payline is +1 SHARP for the rest of the race, and every PAYING spin after it pays RACE.sharpPay more a SHARP.
+ * A reel symbol: a payer, or KNIGHT's SWORD (step 3, VISION "the SWORD pays its EDGE"): each SWORD on your payline
+ * pays its EDGE now (on top of a pair the other reels make); a sword that spun or was nudged onto the line then
+ * doubles the EDGE for the rest of the race. A held sword strikes but doesn't sharpen. Three SWORDs pay
+ * RACE.swordJackpot. A sword never matches, so it breaks three of a kind.
  */
 export type Sym = Payer | 'sword';
 
@@ -33,9 +35,8 @@ export const PAYTABLE: Record<Payer, { pair: number; triple: number }> = {
 export const YOUR_STRIP: Partial<Record<Sym, number>> = { cherry: 8, bar: 6, coin: 4, seven: 2, sword: 2 };
 export const RIVAL_STRIP: Partial<Record<Sym, number>> = { cherry: 10, bar: 6, coin: 3, seven: 1 };
 
-/** Starting counts (tuned in play, not balanced). sharpPay: what a SHARP adds to every paying spin (+10 cost KNIGHT
- * more pairs than it paid back: expert playtest, 2026-10-16). */
-export const RACE = { spins: 5, holds: 2, nudges: 2, maxHeld: 2, bet: 1, sharpPay: 20 };
+/** Starting counts (tuned in play, not balanced). edge: a SWORD's first strike (it doubles as it sharpens). */
+export const RACE = { spins: 5, holds: 2, nudges: 2, maxHeld: 2, bet: 1, edge: 10, swordJackpot: 777 };
 
 export interface SlotMachine {
   /** Each reel's strip, top to bottom. */
@@ -61,33 +62,41 @@ export function symbolAt(m: SlotMachine, reel: number, row = 1): Sym {
 
 export const payline = (m: SlotMachine): Sym[] => [0, 1, 2].map((r) => symbolAt(m, r));
 
-export interface LinePay {
-  tier: 'none' | 'pair' | 'triple';
-  symbol: Payer | null;
-  /** The reels that matched. */
-  reels: number[];
-  /** The whole pay: the paytable's (times the BET) plus SHARP's. */
+/** One SWORD's strike: what it paid, and whether it sharpened (doubled the EDGE) after. */
+export interface Strike {
+  reel: number;
   pay: number;
-  /** SHARP's part of the pay (0 on a spin that pays nothing). */
-  sharp: number;
-  /** The reels with a SWORD on the payline (each is +1 SHARP, from the next paying spin on). */
-  swords: number[];
+  sharpened: boolean;
 }
 
-/** What a payline pays. SWORDs never match; `sharp` (SHARP points) adds sharp x RACE.sharpPay to a paying line. */
-export function scoreLine(line: Sym[], bet = 1, sharp = 0): LinePay {
+export interface LinePay {
+  tier: 'none' | 'pair' | 'triple';
+  /** What made the pair or three of a kind ('sword': three SWORDs, KNIGHT's jackpot). */
+  symbol: Payer | 'sword' | null;
+  /** The reels that matched. */
+  reels: number[];
+  /** The whole pay: the paytable's (times the BET) plus the swords' strikes. */
+  pay: number;
+  /** The swords' part of the pay (their strikes). */
+  edge: number;
+  /** The reels with a SWORD on the payline. */
+  swords: number[];
+  /** Each sword's strike, left to right (filled in by the race, which knows the EDGE). */
+  strikes: Strike[];
+}
+
+/** What a payline's payers pay (SWORDs never match; their strikes are the race's: Race.pay). */
+export function scoreLine(line: Sym[], bet = 1): LinePay {
   const swords = line.flatMap((s, i) => (s === 'sword' ? [i] : []));
   for (const tier of ['triple', 'pair'] as const) {
     const need = tier === 'triple' ? 3 : 2;
     // The richest match wins (two pairs can't happen on three reels, but keep it honest).
     for (const p of [...PAYERS].reverse()) {
       const reels = line.flatMap((s, i) => (s === p ? [i] : []));
-      if (reels.length < need) continue;
-      const bonus = sharp * RACE.sharpPay;
-      return { tier, symbol: p, reels, pay: PAYTABLE[p][tier] * bet + bonus, sharp: bonus, swords };
+      if (reels.length >= need) return { tier, symbol: p, reels, pay: PAYTABLE[p][tier] * bet, edge: 0, swords, strikes: [] };
     }
   }
-  return { tier: 'none', symbol: null, reels: [], pay: 0, sharp: 0, swords };
+  return { tier: 'none', symbol: null, reels: [], pay: 0, edge: 0, swords, strikes: [] };
 }
 
 /**
@@ -123,8 +132,11 @@ export class Race {
   held = [false, false, false];
   /** You've used this spin's NUDGE. */
   nudged = false;
-  /** KNIGHT's SHARP: SWORDs that have landed on your payline this race. */
-  sharp = 0;
+  /** KNIGHT's EDGE: what the next SWORD strike pays (it doubles each time a sword sharpens). */
+  edge = RACE.edge;
+  /** The reels held for the spin that just landed, and the reel nudged (a nudged sword is fresh: it sharpens). */
+  private spunHeld = [false, false, false];
+  private nudgedReel = -1;
   /** Each side's pays, spin by spin. */
   log: { you: LinePay[]; rival: LinePay[] } = { you: [], rival: [] };
   /** Your lead (+) or deficit (-) when your last spin started: was the race decided before it? (VISION's watch number.) */
@@ -192,6 +204,8 @@ export class Race {
   spin(): void {
     if (this.phase !== 'hold') throw new Error(`spin in phase ${this.phase}`);
     this.holdsLeft -= this.heldCount;
+    this.spunHeld = this.held.slice();
+    this.nudgedReel = -1;
     this.spinTo(this.you, this.held);
     this.nudged = false;
     this.phase = 'landed';
@@ -208,6 +222,7 @@ export class Race {
     this.you.stops[reel] = wrap(this.you.stops[reel] - 1, strip.length);
     this.nudgesLeft--;
     this.nudged = true;
+    this.nudgedReel = reel;
     return true;
   }
 
@@ -219,9 +234,21 @@ export class Race {
   /** Score your landed spin, then on to the next round (or the end). */
   pay(): LinePay {
     if (this.phase !== 'landed') throw new Error(`pay in phase ${this.phase}`);
-    // SHARP counts from the next paying spin on: this spin's swords sharpen after it pays.
-    const pay = scoreLine(payline(this.you), 1, this.sharp);
-    this.sharp += pay.swords.length;
+    const pay = scoreLine(payline(this.you));
+    if (pay.swords.length === 3) {
+      // Three SWORDs: KNIGHT's jackpot (as rare as three SEVENs), and the EDGE sharpens.
+      Object.assign(pay, { tier: 'triple', symbol: 'sword', reels: [0, 1, 2], pay: RACE.swordJackpot });
+      this.edge *= 2;
+    } else {
+      // Each sword strikes for the EDGE, left to right; a fresh one (spun or nudged in, not held) then doubles it.
+      for (const reel of pay.swords) {
+        const sharpened = !this.spunHeld[reel] || this.nudgedReel === reel;
+        pay.strikes.push({ reel, pay: this.edge, sharpened });
+        pay.edge += this.edge;
+        if (sharpened) this.edge *= 2;
+      }
+      pay.pay += pay.edge;
+    }
     this.score.you += pay.pay;
     this.log.you.push(pay);
     this.held = [false, false, false];

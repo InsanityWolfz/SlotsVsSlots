@@ -18,7 +18,7 @@ const STEP2_BET = 2;
 const CX = W / 2;
 const LEAD = '#7dff7a';
 const BEHIND = '#ff6a5a';
-/** KNIGHT's SWORD and SHARP (steel blue). */
+/** KNIGHT's SWORD and its EDGE (steel blue). */
 const STEEL = '#a8e8ff';
 
 /** The machine view's shape, built from a race machine (no slime, ice or locks in the new game). */
@@ -43,9 +43,11 @@ export class RaceScene {
   private machines!: Record<SideId, MachineView>;
   /** The scores on screen (they count up to the real ones). */
   private shown = { you: 0, rival: 0 };
-  /** KNIGHT's SHARP on screen (it ticks up as each sword stamps), and the meter's punch. */
-  private shownSharp = 0;
-  private sharpPunch = 1;
+  /** KNIGHT's EDGE on screen (it doubles as each fresh sword strikes), and its punch. */
+  private shownEdge = RACE.edge;
+  private edgePunch = 1;
+  /** Your spin's pay is on screen (the race has already moved on to the rival's turn). */
+  private payingYou = false;
   /** A presentation is running: input waits (a tap skips it). */
   private busy = false;
   private buttons: Button[] = [];
@@ -89,7 +91,8 @@ export class RaceScene {
       enemy: new MachineView('enemy', viewOf(this.race.rival), this.sounds),
     };
     this.shown = { you: 0, rival: 0 };
-    this.shownSharp = 0;
+    this.shownEdge = RACE.edge;
+    this.payingYou = false;
     this.busy = false;
     void this.rivalTurn();
   }
@@ -154,9 +157,9 @@ export class RaceScene {
     const tok = this.token;
     this.busy = true;
     const pay = this.race.pay();
+    this.payingYou = true;
     await this.showPay('player', pay);
-    if (tok !== this.token) return;
-    await this.sharpen(pay);
+    this.payingYou = false;
     if (tok !== this.token) return;
     if (this.race.phase === 'over') this.finish();
     else void this.rivalTurn();
@@ -187,14 +190,15 @@ export class RaceScene {
     for (const s of ['player', 'enemy'] as const) void this.clock.to(this.machines[s], 'active', side === s ? 1 : 0, 0.25);
   }
 
-  /** Dim the losers, draw the payline, punch each winning symbol with climbing dings, count the score up. */
+  /**
+   * Dim the losers, draw the payline, punch each winning symbol with climbing dings, then each SWORD strikes for its
+   * EDGE (a fresh one sharpens it), then count the score up.
+   */
   private async showPay(side: SideId, pay: LinePay): Promise<void> {
     const m = this.machines[side];
     const win = reelWindow(side);
     const key = side === 'player' ? 'you' : 'rival';
-    if (pay.tier === 'none') {
-      // (A dead spin with a sword on it isn't dead: its +1 SHARP stamps next.)
-      if (pay.swords.length) return;
+    if (pay.pay <= 0) {
       const t = this.fx.add(new FloatText('NO PAY', win.x + MACHINE_W / 2, win.y + MACHINE_H + 34, 2.5, COLORS.textDim));
       t.plate = true;
       await this.clock.wait(0.45);
@@ -202,31 +206,63 @@ export class RaceScene {
       return;
     }
     const triple = pay.tier === 'triple';
+    const swordJackpot = pay.symbol === 'sword';
     await m.focusPayline(this.clock, true);
-    m.payline.color = triple ? COLORS.triple : COLORS.pair;
+    m.payline.color = triple ? COLORS.triple : pay.tier === 'pair' ? COLORS.pair : STEEL;
     m.payline.alpha = 1;
     await this.clock.tween({ from: 0, to: 1, dur: 0.2, onUpdate: (v) => (m.payline.progress = v) });
     for (const [i, r] of pay.reels.entries()) {
       const fx = m.reels[r].rows[1];
-      fx.glowColor = triple ? '#ff9a5a' : COLORS.goldLight;
+      fx.glowColor = swordJackpot ? STEEL : triple ? '#ff9a5a' : COLORS.goldLight;
       fx.glow = 0.9;
       void this.clock.tween({ from: 1.25, to: 1, dur: 0.18, ease: sineOut, onUpdate: (v) => (fx.punch = v) });
       this.sounds.ding(i);
       await this.clock.wait(0.09);
     }
+    // Each SWORD strikes for its EDGE, left to right; a fresh one (spun or nudged in) then doubles the EDGE.
+    const stamps: FloatText[] = [];
+    for (const st of pay.strikes) {
+      const fx = m.reels[st.reel].rows[1];
+      fx.glowColor = STEEL;
+      fx.glow = 0.9;
+      void this.clock.tween({ from: 1.35, to: 1, dur: 0.2, ease: sineOut, onUpdate: (v) => (fx.punch = v) });
+      const t = this.fx.add(new FloatText(`+${fmtNum(st.pay)}`, win.x + PITCH * (st.reel + 0.5), win.y + PITCH * 0.5, 3, STEEL));
+      t.plate = true;
+      stamps.push(t);
+      void this.clock.tween({ from: 0.4, to: 1, dur: 0.2, ease: backOut(2), onUpdate: (v) => (t.punch = v) });
+      this.sounds.block();
+      this.camera.shake(3 + Math.min(8, st.pay / 20), 0.2);
+      await this.clock.wait(0.25);
+      if (st.sharpened) {
+        this.shownEdge *= 2;
+        this.sounds.shieldGain(Math.min(6, Math.log2(this.shownEdge / RACE.edge)));
+        void this.clock.tween({ from: 1.4, to: 1, dur: 0.3, ease: sineOut, onUpdate: (v) => (this.edgePunch = v) });
+        await this.clock.wait(0.15);
+      }
+    }
     const x = win.x + MACHINE_W / 2;
-    const label = triple ? (pay.symbol === 'seven' ? '777 JACKPOT!' : 'JACKPOT!') : 'PAIR!';
-    const color = triple ? COLORS.triple : COLORS.pair;
+    // The call shows a pay's parts, so the sword's share is seen (and wanted).
+    const base = pay.pay - pay.edge;
+    const strikes = pay.strikes.map((s) => fmtNum(s.pay)).join(' + ');
+    let text: string;
+    if (swordJackpot) text = `THREE SWORDS! +${fmtNum(pay.pay)}`;
+    else if (triple) text = `${pay.symbol === 'seven' ? '777 JACKPOT!' : 'JACKPOT!'} +${fmtNum(pay.pay)}`;
+    else if (pay.tier === 'pair' && pay.edge) text = `PAIR ${fmtNum(base)} + EDGE ${strikes} = ${fmtNum(pay.pay)}`;
+    else if (pay.tier === 'pair') text = `PAIR! +${fmtNum(pay.pay)}`;
+    else text = pay.strikes.length > 1 ? `EDGE ${strikes} = ${fmtNum(pay.pay)}` : `SWORD STRIKE! +${fmtNum(pay.pay)}`;
+    const color = swordJackpot ? STEEL : triple ? COLORS.triple : pay.tier === 'pair' ? COLORS.pair : STEEL;
     if (triple) {
       this.sounds.fanfareJackpot();
-      this.camera.shake(pay.symbol === 'seven' ? 16 : 9, 0.4);
+      this.camera.shake(pay.symbol === 'seven' || swordJackpot ? 16 : 9, 0.4);
       this.camera.punchZoom(0.04);
       this.clock.hitstop(6);
-      this.particles.burst({ x, y: win.y + PITCH * 1.5, count: 50, colors: ['#ff3a2e', '#ffd23f', '#ffffff'], speed: [180, 520], gravity: 500 });
-    } else this.sounds.stingerSmall();
-    // A sharpened pay shows its parts, so the bonus is seen (and wanted).
-    const text = pay.sharp ? `${label} ${fmtNum(pay.pay - pay.sharp)} + SHARP ${fmtNum(pay.sharp)} = ${fmtNum(pay.pay)}` : `${label} +${fmtNum(pay.pay)}`;
-    const call = this.fx.add(new FloatText(text, x, win.y + MACHINE_H + 34, pay.sharp ? 2.5 : triple ? 3.5 : 3, color));
+      this.particles.burst({ x, y: win.y + PITCH * 1.5, count: 50, colors: swordJackpot ? [STEEL, '#ffffff', '#5ad8e8'] : ['#ff3a2e', '#ffd23f', '#ffffff'], speed: [180, 520], gravity: 500 });
+      if (swordJackpot) {
+        this.shownEdge *= 2;
+        void this.clock.tween({ from: 1.4, to: 1, dur: 0.3, ease: sineOut, onUpdate: (v) => (this.edgePunch = v) });
+      }
+    } else if (pay.tier === 'pair') this.sounds.stingerSmall();
+    const call = this.fx.add(new FloatText(text, x, win.y + MACHINE_H + 34, text.length > 22 ? 2.5 : triple ? 3.5 : 3, color));
     call.plate = true;
     void this.clock.tween({ from: 0.4, to: 1, dur: 0.22, ease: backOut(2), onUpdate: (v) => (call.punch = v) });
     // Count up (never snap a number).
@@ -244,34 +280,10 @@ export class RaceScene {
     });
     await this.clock.wait(triple ? 0.6 : 0.3);
     this.fx.remove(call);
+    for (const t of stamps) this.fx.remove(t);
     m.payline.alpha = 0;
     await m.focusPayline(this.clock, false);
-    for (const r of pay.reels) m.reels[r].rows[1].glow = 0;
-  }
-
-  /** Each SWORD on your payline stamps +1 SHARP (after the spin pays: SHARP counts from the next paying spin). */
-  private async sharpen(pay: LinePay): Promise<void> {
-    if (!pay.swords.length) return;
-    const m = this.machines.player;
-    const win = reelWindow('player');
-    const stamps: FloatText[] = [];
-    for (const r of pay.swords) {
-      const fx = m.reels[r].rows[1];
-      fx.glowColor = STEEL;
-      fx.glow = 0.9;
-      void this.clock.tween({ from: 1.3, to: 1, dur: 0.2, ease: sineOut, onUpdate: (v) => (fx.punch = v) });
-      const t = this.fx.add(new FloatText('+1 SHARP', win.x + PITCH * (r + 0.5), win.y + PITCH * 0.5, 2.5, STEEL));
-      t.plate = true;
-      stamps.push(t);
-      void this.clock.tween({ from: 0.4, to: 1, dur: 0.2, ease: backOut(2), onUpdate: (v) => (t.punch = v) });
-      this.sounds.block();
-      this.shownSharp++;
-      void this.clock.tween({ from: 1.35, to: 1, dur: 0.25, ease: sineOut, onUpdate: (v) => (this.sharpPunch = v) });
-      await this.clock.wait(0.3);
-    }
-    await this.clock.wait(0.4);
-    for (const t of stamps) this.fx.remove(t);
-    for (const r of pay.swords) m.reels[r].rows[1].glow = 0;
+    for (const r of [...pay.reels, ...pay.swords]) m.reels[r].rows[1].glow = 0;
   }
 
   // ---- input --------------------------------------------------------------------------
@@ -363,6 +375,7 @@ export class RaceScene {
     this.drawSide(ctx, 'enemy');
     this.machines.player.draw(ctx, this.clock.time);
     this.machines.enemy.draw(ctx, this.clock.time);
+    this.drawEdges(ctx);
     this.drawHolds(ctx, t);
     this.drawScoreboard(ctx);
     this.drawPaytable(ctx);
@@ -395,12 +408,8 @@ export class RaceScene {
       ctx.fillStyle = i < spun ? (you ? COLORS.goldLight : '#9dff6a') : COLORS.panelLight;
       ctx.fillRect(px - 6, 217, 12, 12);
     }
-    // KNIGHT's SHARP meter: what it does, not just a count.
-    if (you) {
-      const n = this.shownSharp;
-      const text = n ? `SHARP ${n}: EVERY PAY +${n * RACE.sharpPay}` : `SHARP 0: EACH SWORD +${RACE.sharpPay} TO EVERY PAY`;
-      drawText(ctx, text, x, 247, (n ? 2 : 1.5) * this.sharpPunch, n ? STEEL : COLORS.textDim);
-    }
+    // KNIGHT's EDGE: what the next sword strike pays.
+    if (you) drawText(ctx, `SWORD EDGE ${fmtNum(this.shownEdge)}`, x, 247, 2 * this.edgePunch, STEEL);
   }
 
   /** The middle: whose spin it is, and the gap (NEED on your last spin). */
@@ -423,7 +432,7 @@ export class RaceScene {
     ctx.fillStyle = color;
     ctx.fillRect(CX - pw / 2, 146, pw, 3);
     drawText(ctx, text, CX, 169, text.length > 16 ? 2.5 : 3, color);
-    drawText(ctx, r.phase === 'rival' || (this.busy && r.phase === 'hold') ? "RIVAL'S SPIN" : 'YOUR SPIN', CX, 216, 2, COLORS.textDim);
+    drawText(ctx, (r.phase === 'rival' && !this.payingYou) || (this.busy && r.phase === 'hold') ? "RIVAL'S SPIN" : 'YOUR SPIN', CX, 216, 2, COLORS.textDim);
   }
 
   /** What each payer pays: a pair and three of a kind (the rival's pays are times its BET). */
@@ -444,12 +453,30 @@ export class RaceScene {
       drawText(ctx, String(PAYTABLE[p].pair), CX + 40, y, 2, COLORS.text);
       drawText(ctx, String(PAYTABLE[p].triple), CX + 100, y, 2, COLORS.text);
     });
-    // KNIGHT's SWORD: it never pays, it sharpens.
+    // KNIGHT's SWORD: it pays its EDGE (and a fresh one doubles it).
     const sy = top + 62 + 4 * 44;
     drawSprite(ctx, 'sword', CX - 100, sy, 2.6);
     drawText(ctx, 'SWORD', CX - 74, sy, 2, STEEL, { align: 'left' });
-    drawText(ctx, '+1 SHARP', CX + 70, sy, 2, STEEL);
+    drawText(ctx, 'EDGE X2', CX + 70, sy, 2, STEEL);
     drawText(ctx, `RIVAL PAYS X${this.race.bet}`, CX, top + 272, 1.5, '#9dff6a');
+  }
+
+  /** Every SWORD in sight wears what it would pay now (off the line too, so a NUDGE onto it reads). */
+  private drawEdges(ctx: CanvasRenderingContext2D): void {
+    const win = reelWindow('player');
+    const text = fmtNum(this.shownEdge);
+    const w = text.length * 12 + 8;
+    this.machines.player.reels.forEach((reel, i) => {
+      if (reel.spinning) return;
+      for (let row = 0; row < 3; row++) {
+        if (reel.cellAtRow(row).symbol !== 'sword') continue;
+        const x = win.x + PITCH * (i + 1) - 6 - w;
+        const y = win.y + PITCH * row + PITCH - 24 + reel.bounce;
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(x, y, w, 20);
+        drawText(ctx, text, x + w / 2, y + 10, 2, STEEL);
+      }
+    });
   }
 
   /** HELD frames on held reels; while a NUDGE is live, an arrow on each reel (the symbol above drops). */
