@@ -52,6 +52,11 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
 - **A paytable ladder:** each Slot Machine has 3-4 paying symbols from common and cheap to rare and rich (rarity =
   cells on the strip). A pair pays something; three of a kind pays a lot more, with a big gap. KNIGHT gets about 3
   rungs in step 2; names and numbers are settled when it's built.
+- **Classic payers, themed specials (user, 2026-10-16):** the paying ladder is classic slot symbols (CHERRY, BAR,
+  COIN, SEVEN), shared across Slot Machines, so anyone reads it (a 7 beats a cherry) and two machines compare at a
+  glance. A machine's theme lives in its art, its hero and its special symbols, which DO something (KNIGHT's sword
+  that sharpens), never in a themed picture that just pays. Themed objects imply verbs (swords attack) the game
+  doesn't have.
 - **Special symbols come later, one at a time (step 3):** symbols that change how score is made (X2, a scatter, WILD,
   a builder like the Whetstone). They're the content, not the core.
 - Why: the ladder is what gives HOLD and NUDGE their choices (hold a rare pair and chase the third, or take the sure
