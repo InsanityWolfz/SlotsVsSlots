@@ -102,6 +102,23 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
   doubling was the old trap again (the sword cells cost as many pairs as they paid).
 - Known risk: EDGE's base (10) doesn't grow with the rival's BET; the run's MULT has to carry it.
 
+## Rival cheats, and the first one: GUNK (DECIDED 2026-10-16)
+- **The rule for every cheat (user, 2026-10-16):** a cheat is visible before the decision it affects, and the player
+  can answer it at a price smaller than the hit, so it changes which play is best instead of vetoing it ("just don't
+  do it" is not an answer). The rival-first order shows cheats in time; no need to show them a spin early.
+- **GUNK = HALF PAY** (the plain rival's cheat): on its turns of spins 2 and 4, after its own spin, the rival gunks one
+  cell of your pair on your standing payline (the leftmost; your best single payer if there's no pair; never a
+  SWORD; nothing to gunk: GUNK MISSED). The gunked symbol still matches, but any pay it's part of is halved (rounded
+  down: 777 -> 388, a CHERRY pair 5). Sword strikes are never halved. The gunk washes off after your next spin, held
+  or not; NUDGEd off the line, it goes with its symbol. Screen: the rival's machine says CHEAT: GUNK ON SPIN 2, 4;
+  you watch it splat your symbol (still visible under the goo) with a 1/2 badge; a cut pay reads SEVEN PAIR 80 -> 40.
+- Why: the answer is priced by the symbol (expert playtest, best-play bot: holds a gunked SEVEN pair 92%, COIN 28%,
+  BAR 1%, CHERRY never). Mild on purpose (about 1.5-3 points of win rate); the BET carries the first rival's strength.
+- Tried and rejected: GUNK that kills a pay (a veto: the only answer was dropping the pair, a tax like Balatro's
+  hated bosses); NUDGE scrubbing gunk before the spin (user: too confusing, NUDGE keeps one meaning).
+- Known risk: only COIN is a real call, and it barely matters; players may learn "hold sevens, drop the rest".
+  Later rivals bring sharper cheats under the same rule.
+
 ## How the rival's score grows (DECIDED 2026-10-16)
 - **A real Slot Machine, scaled by one number:** the rival spins the classic ladder for real (no faked outcomes), and
   everything it scores is multiplied by its **BET**, shown on its machine (BET x2, x6, x20). The BET grows
@@ -135,7 +152,6 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
   playtester's notes: build should ADD to base, not multiply (no snowball); the signature symbol pays and the new
   symbol feeds the meter the machine already has.
 - **Fold:** if the rival can't catch up, it folds and the race ends early (brings back the one-shot feeling).
-- **Telegraphed cheats:** the rival's next cheat is shown a spin early, so the player's tools can answer it.
 - **Rival score as a blind:** the rival's score target scales by stop like a Balatro blind, with bounded swings.
 - What the race slice taught: the scoring felt good; shields as GUARDS felt retrofitted (a flat count that doesn't
   scale); one-loss runs at ~95% per race read as random.

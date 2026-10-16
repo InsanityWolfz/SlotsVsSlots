@@ -10,7 +10,7 @@ import { drawSprite, type SpriteId } from '../render/sprites';
 import { drawText, fmtNum } from '../render/text';
 import { Button } from '../ui/button';
 import type { SideId } from '../core/config';
-import { PAYER_NAME, PAYERS, PAYTABLE, payline, Race, RACE, type LinePay, type SlotMachine } from './race';
+import { GUNK, PAYER_NAME, PAYERS, PAYTABLE, payline, Race, RACE, type Gunk, type LinePay, type SlotMachine } from './race';
 
 /** Step 2's rival BET: at x1 your HOLDs and NUDGEs roughly doubled your score and the race was never close. */
 const STEP2_BET = 2;
@@ -20,6 +20,8 @@ const LEAD = '#7dff7a';
 const BEHIND = '#ff6a5a';
 /** KNIGHT's SWORD and its EDGE (steel blue). */
 const STEEL = '#a8e8ff';
+/** The rival's GUNK (slime green). */
+const GUNK_GREEN = '#7dd85a';
 
 /** The machine view's shape, built from a race machine (no slime, ice or locks in the new game). */
 function viewOf(m: SlotMachine) {
@@ -48,6 +50,10 @@ export class RaceScene {
   private edgePunch = 1;
   /** Your spin's pay is on screen (the race has already moved on to the rival's turn). */
   private payingYou = false;
+  /** The gunked cell on your Slot Machine's view (it washes off after your spin pays). */
+  private gunkView: Gunk | null = null;
+  /** 0..1: how much gunk is on that cell (it splats in and washes off). */
+  private gunkFx = 0;
   /** A presentation is running: input waits (a tap skips it). */
   private busy = false;
   private buttons: Button[] = [];
@@ -93,6 +99,7 @@ export class RaceScene {
     this.shown = { you: 0, rival: 0 };
     this.shownEdge = RACE.edge;
     this.payingYou = false;
+    this.gunkView = null;
     this.busy = false;
     void this.rivalTurn();
   }
@@ -111,6 +118,9 @@ export class RaceScene {
     await this.machines.enemy.spin(this.race.rival.stops, line[0] === line[1], this.clock);
     if (tok !== this.token) return;
     await this.showPay('enemy', pay);
+    if (tok !== this.token) return;
+    if (this.race.gunk) await this.gunkIt(this.race.gunk);
+    else if (GUNK.on.includes(this.race.round + 1)) await this.callout('GUNK MISSED', MACHINE_CX.player, GUNK_GREEN);
     if (tok !== this.token) return;
     this.setActive('player');
     this.idle();
@@ -160,6 +170,8 @@ export class RaceScene {
     this.payingYou = true;
     await this.showPay('player', pay);
     this.payingYou = false;
+    if (tok !== this.token) return;
+    await this.washGunk();
     if (tok !== this.token) return;
     if (this.race.phase === 'over') this.finish();
     else void this.rivalTurn();
@@ -244,8 +256,13 @@ export class RaceScene {
     // The call shows a pay's parts, so the sword's share is seen (and wanted).
     const base = pay.pay - pay.edge;
     const strikes = pay.strikes.map((s) => fmtNum(s.pay)).join(' + ');
+    // GUNK's cut shows as the full pay going to half (SEVEN PAIR 80 -> 40).
+    const payPart = pay.cut ? `${fmtNum(base + pay.cut)} -> ${fmtNum(base)}` : fmtNum(base);
     let text: string;
-    if (swordJackpot) text = `THREE SWORDS! +${fmtNum(pay.pay)}`;
+    if (pay.cut && triple) text = `JACKPOT! ${payPart}`;
+    else if (pay.cut && pay.edge) text = `PAIR ${payPart} + EDGE ${strikes}`;
+    else if (pay.cut) text = `${PAYER_NAME[pay.symbol as keyof typeof PAYER_NAME]} PAIR ${payPart}`;
+    else if (swordJackpot) text = `THREE SWORDS! +${fmtNum(pay.pay)}`;
     else if (triple) text = `${pay.symbol === 'seven' ? '777 JACKPOT!' : 'JACKPOT!'} +${fmtNum(pay.pay)}`;
     else if (pay.tier === 'pair' && pay.edge) text = `PAIR ${fmtNum(base)} + EDGE ${strikes} = ${fmtNum(pay.pay)}`;
     else if (pay.tier === 'pair') text = `PAIR! +${fmtNum(pay.pay)}`;
@@ -410,6 +427,8 @@ export class RaceScene {
     }
     // KNIGHT's EDGE: what the next sword strike pays.
     if (you) drawText(ctx, `SWORD EDGE ${fmtNum(this.shownEdge)}`, x, 247, 2 * this.edgePunch, STEEL);
+    // The rival's cheat, and when it comes.
+    else drawText(ctx, `CHEAT: GUNK ON SPIN ${GUNK.on.join(', ')}`, x, 247, 1.5, GUNK_GREEN);
   }
 
   /** The middle: whose spin it is, and the gap (NEED on your last spin). */
@@ -461,9 +480,66 @@ export class RaceScene {
     drawText(ctx, `RIVAL PAYS X${this.race.bet}`, CX, top + 272, 1.5, '#9dff6a');
   }
 
+  /** The rival reaches over: GUNK lands on one of your cells (it pays half while it's there). */
+  private async gunkIt(g: Gunk): Promise<void> {
+    const win = reelWindow('player');
+    const x = win.x + PITCH * (g.reel + 0.5);
+    const y = win.y + PITCH * 1.5;
+    this.sounds.slimeLaunch();
+    await this.callout('GUNK!', MACHINE_CX.enemy, GUNK_GREEN, 0.35);
+    this.sounds.slimeSplat();
+    this.camera.shake(5, 0.25);
+    this.particles.burst({ x, y, count: 26, colors: [GUNK_GREEN, '#4cc234', '#b8f25a'], speed: [120, 360], gravity: 700 });
+    this.gunkView = g;
+    await this.clock.tween({ from: 0, to: 1, dur: 0.3, ease: sineOut, onUpdate: (v) => (this.gunkFx = v) });
+    await this.callout('HALF PAY', x, GUNK_GREEN, 0.5, y - 60);
+  }
+
+  /** The gunk washes off after your spin pays (held or not). */
+  private async washGunk(): Promise<void> {
+    if (!this.gunkView) return;
+    await this.clock.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (this.gunkFx = v) });
+    this.gunkView = null;
+  }
+
+  /** A short plated callout (it pops, holds, and goes). */
+  private async callout(text: string, x: number, color: string, hold = 0.45, y = MACHINE_TOP + MACHINE_H + 34): Promise<void> {
+    const t = this.fx.add(new FloatText(text, x, y, 3, color));
+    t.plate = true;
+    void this.clock.tween({ from: 0.4, to: 1, dur: 0.2, ease: backOut(2), onUpdate: (v) => (t.punch = v) });
+    await this.clock.wait(hold);
+    this.fx.remove(t);
+  }
+
   /** Every SWORD in sight wears what it would pay now (off the line too, so a NUDGE onto it reads). */
   private drawEdges(ctx: CanvasRenderingContext2D): void {
     const win = reelWindow('player');
+    // The gunked cell: green goo over it (the symbol still shows through: you see what got gunked) and a 1/2 badge.
+    const g = this.gunkView;
+    if (g) {
+      const reel = this.machines.player.reels[g.reel];
+      for (let row = 0; row < 3 && !reel.spinning; row++) {
+        if (reel.indexAtRow(row) !== g.cell) continue;
+        const bx = win.x + PITCH * g.reel + 6;
+        const by = win.y + PITCH * row + 6 + reel.bounce;
+        const k = this.gunkFx;
+        ctx.save();
+        ctx.globalAlpha = 0.38 * k;
+        ctx.fillStyle = GUNK_GREEN;
+        ctx.fillRect(bx, by, PITCH - 12, (PITCH - 12) * k);
+        // Drips off the bottom edge.
+        ctx.globalAlpha = 0.6 * k;
+        for (let d = 0; d < 4; d++) ctx.fillRect(bx + 8 + d * 20, by + (PITCH - 12) * k - 2, 8, 6 + ((d * 7) % 11));
+        ctx.globalAlpha = k;
+        ctx.strokeStyle = GUNK_GREEN;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(bx, by, PITCH - 12, PITCH - 12);
+        ctx.restore();
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(bx, by, 44, 22);
+        drawText(ctx, '1/2', bx + 22, by + 11, 2, GUNK_GREEN);
+      }
+    }
     const text = fmtNum(this.shownEdge);
     const w = text.length * 12 + 8;
     this.machines.player.reels.forEach((reel, i) => {
@@ -535,11 +611,12 @@ export class RaceScene {
       drawText(ctx, `${label} ${n}`, cx, y + 1, 2.5, n > 0 ? color : COLORS.textDim);
     };
     const yourMove = !this.busy;
-    chip('HOLD', r.holdsLeft - r.heldCount, x - 80, COLORS.goldLight, yourMove && r.phase === 'hold');
+    chip('HOLD', r.phase === 'hold' ? r.holdsLeft - r.heldCount : r.holdsLeft, x - 80, COLORS.goldLight, yourMove && r.phase === 'hold');
     chip('NUDGE', r.nudgesLeft, x + 80, '#5ad8e8', yourMove && r.canStillNudge);
     let hint = '';
     if (yourMove && r.phase === 'hold') hint = r.holdsLeft - r.heldCount > 0 && r.heldCount < 2 ? 'TAP A REEL TO HOLD IT' : r.heldCount ? 'HELD REELS KEEP THEIR SYMBOL' : 'NO HOLDS LEFT';
     else if (yourMove && r.canStillNudge) hint = 'TAP A REEL TO NUDGE IT DOWN, OR PAY';
+    if (yourMove && r.phase === 'hold' && r.gunkOnLine) hint = 'GUNKED: IT STILL MATCHES, BUT PAYS HALF';
     if (hint) drawText(ctx, hint, x, y + 42, 1.5, COLORS.text, { alpha: 0.75 + 0.25 * Math.sin(t * 3) });
   }
 }

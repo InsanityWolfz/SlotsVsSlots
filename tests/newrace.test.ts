@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PAYTABLE, Race, RACE, RIVAL_STRIP, YOUR_STRIP, payline, scoreLine, symbolAt } from '../src/race/race';
+import { GUNK, PAYTABLE, Race, RACE, RIVAL_STRIP, YOUR_STRIP, payline, scoreLine, symbolAt } from '../src/race/race';
 
 /** Play a whole race with no tools. */
 function plain(seed: number): Race {
@@ -175,6 +175,66 @@ describe('the new race (step 2)', () => {
     const p = r.pay();
     expect(p).toMatchObject({ tier: 'triple', symbol: 'sword', pay: RACE.swordJackpot });
     expect(r.edge).toBe(RACE.edge * 2);
+  });
+
+  /** A race at the rival's turn of spin `spin`, your standing payline set to `line`. */
+  const atRival = (line: string[], spin = GUNK.on[0], seed = 14) => {
+    const r = new Race({ seed, holds: 9, nudges: 9 });
+    for (let i = 1; i < spin; i++) {
+      r.rivalSpin();
+      r.spin();
+      r.pay();
+    }
+    const at = (reel: number, s: string) => r.you.reels[reel].indexOf(s as never);
+    r.you.stops = line.map((s, i) => at(i, s));
+    return r;
+  };
+
+  it('GUNK: on its spins, the rival gunks the leftmost cell of your pair (else your best payer, never a sword)', () => {
+    const a = atRival(['cherry', 'seven', 'seven']);
+    a.rivalSpin();
+    expect(a.gunk).toEqual({ reel: 1, cell: a.you.stops[1] });
+    const b = atRival(['coin', 'sword', 'bar']);
+    b.rivalSpin();
+    expect(b.gunk?.reel).toBe(0);
+    const c = atRival(['sword', 'sword', 'sword']);
+    c.rivalSpin();
+    expect(c.gunk).toBeNull();
+    // Not on other spins.
+    const d = new Race({ seed: 15 });
+    d.rivalSpin();
+    expect(d.gunk).toBeNull();
+  });
+
+  it('GUNK: a held gunked pair still matches but pays half (rounded down); it washes off after your spin', () => {
+    const r = atRival(['seven', 'seven', 'cherry']);
+    r.rivalSpin();
+    r.toggleHold(0);
+    r.toggleHold(1);
+    const third = r.you.stops[2];
+    r.spin();
+    r.you.stops[2] = r.you.reels[2].indexOf('cherry'); // pin the spun reel: a pair, not three
+    const p = r.pay();
+    expect(p.tier).toBe('pair');
+    expect(p.pay).toBe(Math.floor(PAYTABLE.seven.pair / 2));
+    expect(p.cut).toBe(PAYTABLE.seven.pair - p.pay);
+    expect(r.gunk).toBeNull();
+    expect(third).toBeGreaterThanOrEqual(0);
+  });
+
+  it('GUNK: a gunked cell spun off the line costs nothing; a sword strike is never halved', () => {
+    const r = atRival(['coin', 'coin', 'bar']);
+    r.rivalSpin();
+    const g = r.gunk!;
+    r.spin();
+    // Another COIN cell on the gunked reel lands: the gunk is off the line.
+    const other = r.you.reels[0].findIndex((s, i) => s === 'coin' && i !== g.cell);
+    r.you.stops = [other, r.you.reels[1].indexOf('coin'), r.you.reels[2].indexOf('sword')];
+    expect(r.gunkOnLine).toBe(false);
+    const p = r.pay();
+    expect(p.cut).toBe(0);
+    expect(p.pay).toBe(PAYTABLE.coin.pair + p.edge);
+    expect(p.edge).toBe(r.edge / 2);
   });
 
   it('is deterministic for a seed', () => {
