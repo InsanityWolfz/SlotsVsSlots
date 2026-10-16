@@ -1,7 +1,7 @@
 # Roadmap: the rebuild
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record). The old
-game's roadmap is in git at tag `hp-game-final`.
+game's roadmap is in git on branch `hp-game-final`.
 
 **In progress (2026-10-16):** step 1, writing `docs/VISION.md` with the user. Nothing gets built until it's signed off.
 
@@ -17,4 +17,4 @@ game's roadmap is in git at tag `hp-game-final`.
 ## Where things are
 - The live build (`main`, GitHub Pages) is the old game, with the race slice behind PLAY MODES > SCORE RACE (TEST).
   It stays playable and untouched until the new game is better.
-- Tag `hp-game-final`: the last build of the old game plus the race slice.
+- Branch `hp-game-final`: the last build of the old game plus the race slice.

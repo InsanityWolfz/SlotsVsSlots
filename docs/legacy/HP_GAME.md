@@ -1,5 +1,5 @@
 > **LEGACY: reference only, not the design.** This is the OLD game (HP fights, watch-only) plus the SCORE RACE
-> experiment bolted onto it, as of tag `hp-game-final` (2026-10-16). The project is being rebuilt around a new vision
+> experiment bolted onto it, as of branch `hp-game-final` (2026-10-16). The project is being rebuilt around a new vision
 > (`docs/VISION.md`). Use this file to find how existing code works. Do NOT treat its rules, numbers, sim targets or
 > per-machine designs as requirements for the new game, and don't update it.
 
