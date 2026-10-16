@@ -50,13 +50,19 @@ far it got. Keep that line current while you work.
 - **Held ideas:** the SLOTS VS. BOTS rename, 16-bit art, the Gambler character.
 - The user is direct and has strong game sense. Push back with reasons when you disagree. Keep summaries short.
 
-## Suspended: old-game rules, until the vision decides
-These bound the old game. They don't bind the new one unless VISION.md brings them back.
-- Fights are watch-only (no in-fight input, holds or nudges); enemies write on the player's machine.
-- Charms live on CELLS, levels on the symbol type; Pay = BASE x MULT; gold Charms in a group ADD.
-- Every Slot Machine except KNIGHT has one signature symbol and a meter.
-- GREEN stake and up always include Act 3 (the Dealer).
-- Honest HP: an enemy has the same HP at the same stop on every machine; measure every gameplay change with the sim.
+## The new game's rules (binding; user, 2026-10-16, see docs/VISION.md)
+- **The race:** both Slot Machines get a fixed number of spins; the rival spins first each round, so the race ends on
+  your spin with a visible target. A tie is yours.
+- **Your tools are HOLD and NUDGE,** a fixed count each a race. A new tool (or RESPIN back) is the user's call.
+- **Every symbol is score:** nothing attacks, defends or guards. Paying symbols are classic (CHERRY, BAR, COIN, SEVEN)
+  and shared across Slot Machines; a machine's theme lives in special symbols that DO something.
+- **Honest rival:** its spins are real, never faked or rubber-banded to your score. Its strength is one number, its
+  **BET** (x6 on its machine, growing by stop); its danger is its cheat (cheats mess with your machine).
+- **Pay = BASE x MULT, and the player's growth multiplies:** the paytable is the base, the run grows the MULT.
+  Growth that only adds can't keep up with the BET curve.
+- **CREDITS:** a lost race costs a credit and its prize; a lost boss race is played again; no credits is GAME OVER.
+- Dropped from the old game: watch-only fights, Charms on cells and gold Charms ADD (the Charms step decides), one
+  signature symbol and meter a machine, Act 3 at GREEN, honest HP.
 
 ## Agents
 - **Expert playtester:** a general-purpose subagent briefed as an expert roguelike and slot-machine designer.
