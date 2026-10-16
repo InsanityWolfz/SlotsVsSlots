@@ -4,7 +4,7 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
 game's roadmap is in git on branch `hp-game-final`.
 
 **In progress (2026-10-16):** step 1, writing `docs/VISION.md` with the user, one question at a time (decided: the
-race and your options, what symbols are for, the rival's score growth; next: how a run ends, CLAUDE.md's
+race and your options, what symbols are for, the rival's score growth, how a run ends; next: CLAUDE.md's
 rules). Nothing gets built until it's signed off; the expert playtester reviews the whole vision before sign-off.
 
 ## The rebuild, in order (user, 2026-10-16)

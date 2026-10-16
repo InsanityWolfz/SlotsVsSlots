@@ -79,8 +79,19 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
   multiply, not add, or the stake curve outruns every build (the Charms and relics step must deliver that). The
   curve's numbers wait for balancing.
 
+## How a run ends (DECIDED 2026-10-16)
+- **CREDITS: you start with 3; out of credits is GAME OVER.** A lost race costs a credit and that race's prize, and
+  you move on. A lost boss race costs a credit and you play it again (INSERT COIN to continue): bosses can't be
+  skipped. Beating the final boss wins the run (how many acts is the run's structure, later).
+- Getting a credit back is rare and never cheap (whether and how: the Cashier and relics steps).
+- Why: a run is lost to a build that fell behind, not one bad spin (one loss ending the run read as random in the
+  race slice, and slot luck swings harder than a Balatro hand). A loss still bites twice: the credit, and the lost
+  prize leaves you weaker against a geometric stake curve. Last credit + boss + NEED 140 on the final spin is the
+  game's peak tension. Credits and INSERT COIN need no explaining.
+- Known risks: with 3 credits early races may feel low-stakes (if players shrug off losses, 2 credits). Boss
+  replays could feel like grinding for luck; credits cap that.
+
 ## Open questions (to answer together, one at a time)
-- How does a run end (one lost race, strikes, a target)?
 - Which of the old binding rules carry over (see CLAUDE.md "Suspended")?
 
 ## Parked ideas (from the race slice discussion, 2026-10-15/16; NOT decided, don't build)
