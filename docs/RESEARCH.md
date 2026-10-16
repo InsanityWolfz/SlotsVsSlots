@@ -142,6 +142,26 @@ are listed as fact.
 - **Slay the Spire Ascension:** 20 stacked modifiers, each "adjusting a number or two"; about half raise enemy
   damage/HP. Players call A0-A14 easy and A20 brutal. [F/W] [DRMacIver](https://notebook.drmaciver.com/posts/2021-04-19-10:16.html),
   [Steam](https://steamcommunity.com/app/646570/discussions/0/1649917420738438378)
+- **Slay the Spire map:** 3 acts of 17 floors; floor 1 is an easy fight, floor 9 always treasure (a mid-act relic),
+  floor 15 always a rest site, floor 16 the boss, 17 the boss chest (pick 1 of 3 relics or skip). The boss is the
+  act's last fight and the player gets a guaranteed breather right before it. [W] [StS wiki: Map Generation](https://slaythespire.wiki.gg/wiki/Map_Generation),
+  [Map Locations](https://slaythespire.wiki.gg/wiki/Map_Locations)
+- **Dicey Dungeons episode:** 6 floors, boss on floor 6, harder enemy pools per floor; players report ~20-40 minutes an
+  episode (early episodes ~20). [F] [Tildes thread](https://tildes.net/~games/glf/dicey_dungeons_launch_trailer),
+  [Giant Bomb blog](https://Www.Giantbomb.com/profile/laughingman/blog/ranking-of-roguelikes-3-dicey-dungeons/260870/)
+- **Run lengths (anecdote, no measured source found):** Super Auto Pets 10-20 min a run [F] [games-genie](https://www.games-genie.com/games/super-auto-pets);
+  Dicey Dungeons 20-40 min (above). Balatro: no per-run figure found; HowLongToBeat "main" 7.5 h is to a first win
+  across many runs [F] [Dekudeals/HLTB](https://www.dekudeals.com/items/balatro?format=all). Short battlers sit at
+  10-20 minutes; deckbuilders at 30-60+.
+- **Power curve vs difficulty curve:** within a run the difficulty curve is typically exponential: early fights
+  build, late fights test the build [F] [Abratabia](https://www.abratabia.com/game-design/difficulty-curves.php).
+  Enemies that only grow numbers are "bloated bags-of-hitpoints"; a less predictable, staggered power curve (plateau,
+  then jump) is more interesting than smooth matched scaling [F] [How to Make an RPG](https://howtomakeanrpg.com/r/a/power-progression.html),
+  [Kill Ten Rats](https://www.killtenrats.com/2008/01/04/powerdifficulty-curves/).
+- **Climb vs treadmill, the pattern** (opinion, from Balatro's x2.7-early/x1.4-late curve and the above): a run reads
+  as a climb when the player's growth per step beats the ordinary fight's growth (you feel stronger between bosses,
+  often overkill) and the boss is the spike that checks the build. If target and power grow at the same rate every
+  fight, nothing changes in feel: a treadmill.
 - **Inscryption Act 1 candles:** 2 lit candles are your lives (a third can be earned); losing a fight snuffs one;
   entering a boss with spare candles drops you to one and hands you "smoke" cards. Lives can be traded for power.
   [W] [TechRaptor boss guide](https://Techraptor.net/gaming/guides/inscryption-boss-battle-guide)
@@ -183,7 +203,20 @@ are listed as fact.
   temporary rather than permanent; on a rhythm the player can learn.
 
 ### Shops, drafts and economy
-- (Empty: consult when the Cashier/shop step starts.)
+- **Balatro win payout:** Small blind $3, Big $4, Boss $5, Ante 8 boss $8; +$1 per unused hand; interest $1 per $5
+  held, capped at $5 (vouchers raise it to $10/$20). [F, community guides and a student paper] [PC Gamer tips](https://www.pcgamer.com/balatro-tips/),
+  [ITB paper](https://informatika.stei.itb.ac.id/~rinaldi.munir/Matdis/2024-2025-2/Makalah2025/Makalah-Matdis-2025-IF-ITB%20(10).pdf)
+- **Balatro planets level one hand type** (e.g. Pair), so growth is per-hand, and focusing one hand is the standard
+  build. See Scoring engines for base values.
+- **Slay the Spire win reward:** every normal fight gives gold and a card reward: pick 1 of 3 or skip (normal fights
+  ~3% rare / 37% uncommon / 60% common; elites ~10/40/50 and a guaranteed relic); boss: pick 1 of 3 relics or skip.
+  [W] [StS fandom: Card Rewards](https://slay-the-spire.fandom.com/wiki/Card_Rewards)
+- **LBAL:** pick 1 of 3 symbols (or skip) after every spin (see Scoring engines).
+- **Super Auto Pets shop tiers** unlock every odd turn (tier 2 on turn 3, tier 3 on turn 5 ... tier 6 on turn 11),
+  so the pool itself climbs on a clock. [W] [SAP wiki: The Basics](https://superautopets.wiki.gg/wiki/The_Basics),
+  [TwoAverageGamers](https://www.twoaveragegamers.com/ultimate-guide-to-super-auto-pets-game-mechanics/)
+- **The shared minimum** (opinion, from the above): a win pays one pick of three (skippable) from a small pool; the
+  boss pays a better pick. Currency and shops come on top of that, not instead of it.
 
 ## Battlers
 ### Head-to-head and async races (Super Auto Pets, Backpack Battles, The Bazaar)
@@ -218,7 +251,7 @@ Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP,
   same but the target is built live by a real opponent. Pachinko "reach" shows a visible last-reel decision is the
   peak moment. Bazaar/SAP show async opponents work when their strength is predictable.
 - **Pitfall:** a target known early can make the last tries dead (already won / can't win); Balatro softens this
-  because extra hands left become money. (Balatro's leftover-hands payout is from memory; verify.)
+  because each hand left over pays $1 (see Shops, drafts and economy).
 - **Opinion:** sound. VISION's own fix (prize grows with margin) is the Balatro answer and I'd back it.
 
 ### HOLD (one a reel, at most 2 a spin)
@@ -257,6 +290,15 @@ Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP,
   risks reroll-for-luck grinding; Bazaar avoids that by escalating cost.
 - **Opinion:** 3 credits is in line. Biggest risk is losing a credit to an act-1 race decided by one spin; consider
   (later, Cashier step) the SAP move: one early lost credit refunded, rather than adding credits.
+
+### The run's smallest shape (open)
+- **Precedent:** boss last in each act/ante (StS floor 16, Balatro blind 3, Dicey floor 6); a won fight pays one pick
+  of 3 (StS, LBAL); per-type growth (Balatro planets) makes focus the build; SAP refunds an early lost life.
+- **Opinion (researcher's recommendation):** 3 stops x 3 races (race, race, boss) = 9 races, ~2 min each, ~20 min
+  a run. BET x2, 2.5, 4 | 4, 5, 8 | 8, 10, 16 (x1.25 a race, boss x1.6, next stop starts at the boss's BET; x8 over
+  the run). Prize: pick 1 of 3 "SYMBOL x2" (CHERRY, BAR, COIN, SEVEN, SWORD EDGE): per-symbol MULT, so focus
+  compounds. Boss = BET jump only for now. A credit lost in stop 1 comes back when the stop-1 boss falls.
+- **Main risk:** 5-spin variance swamps the build (a strong build still loses ~1 race in 3), so credits drain to luck.
 
 ### Rival cheats (open; the parked "telegraphed cheats" idea)
 - **Precedent:** StS intents and Into the Breach show the threat before your turn; Balatro shows the boss an ante
