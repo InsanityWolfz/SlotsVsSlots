@@ -29,9 +29,11 @@ far it got. Keep that line current while you work.
 - **Think it through before proposing.** Judge an idea on the macro (run), meso (race) and micro (spin) levels, on
   incentive, feel, greed, payoff and excitement, and on readability for a new player. Bring one recommendation with
   its reasons, not a menu of half-thought options, and not "want me to build it?".
-- Design changes go past the expert playtester (below) before code.
+- **Every new feature or mechanic goes past the researcher, then the expert playtester (below), before the user signs
+  it off** (user, 2026-10-16). Consult the researcher while designing, so the recommendation already carries what
+  other games learned; the playtester then reviews the design before code.
 - Keep docs current: when something is decided, mark it in VISION.md; when it ships, update ROADMAP.md, in the same
-  commit. Don't add new plan, report or log files. Scratch work goes in a scratchpad or `tools/out/` (gitignored).
+  commit. Don't add new plan, report or log files (`docs/RESEARCH.md`, the researcher's reference, is the one exception). Scratch work goes in a scratchpad or `tools/out/` (gitignored).
 
 ## Commands
 - `npm install`, then `npm test` (vitest; keep it green) and `npx tsc --noEmit -p .` (`noUnusedLocals` is on).
@@ -70,4 +72,8 @@ far it got. Keep that line current while you work.
 - **Expert playtester:** a general-purpose subagent briefed as an expert roguelike and slot-machine designer.
   Give it CLAUDE.md, docs/VISION.md, the binding rules above, and the question. It separates bugs, balance and
   design opinions, cites exact numbers, screens and text, and doesn't edit `src/`. It reports back in chat.
+- **Researcher** (`.claude/agents/researcher.md`): researches slot machine, roguelike and battler mechanics online and
+  keeps `docs/RESEARCH.md`, the team's knowledge base (it reads it first and adds to it every consult; it edits
+  nothing else). It brings precedents, pitfalls and sources; it never decides. If the `researcher` agent type isn't
+  listed, run a general-purpose agent told to follow that file.
 - **Art agent:** edits only `tools/build-art.mjs`, then regenerates.
