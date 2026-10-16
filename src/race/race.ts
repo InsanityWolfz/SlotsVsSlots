@@ -109,7 +109,7 @@ export function scoreLine(line: Sym[], bet = 1): LinePay {
     // The richest match wins (two pairs can't happen on three reels, but keep it honest).
     for (const p of [...PAYERS].reverse()) {
       const reels = line.flatMap((s, i) => (s === p ? [i] : []));
-      if (reels.length >= need) return { tier, symbol: p, reels, pay: PAYTABLE[p][tier] * bet, edge: 0, swords, strikes: [], cut: 0 };
+      if (reels.length >= need) return { tier, symbol: p, reels, pay: Math.floor(PAYTABLE[p][tier] * bet), edge: 0, swords, strikes: [], cut: 0 };
     }
   }
   return { tier: 'none', symbol: null, reels: [], pay: 0, edge: 0, swords, strikes: [], cut: 0 };
@@ -130,6 +130,9 @@ export interface RaceOpts {
   holds?: number;
   nudges?: number;
   bet?: number;
+  /** Your per-symbol MULTs from the run's picks (CHERRY x2...): a symbol's pays are times its MULT; the SWORD's MULT
+   * scales its EDGE (and its 777). */
+  mults?: Partial<Record<Sym, number>>;
 }
 
 export class Race {
@@ -149,7 +152,9 @@ export class Race {
   /** You've used this spin's NUDGE. */
   nudged = false;
   /** KNIGHT's EDGE: what the next SWORD strike pays (it doubles each time a sword sharpens). */
-  edge = RACE.edge;
+  edge: number;
+  /** Your per-symbol MULTs (1 unless the run's picks doubled them). */
+  readonly mults: Partial<Record<Sym, number>>;
   /** The rival's GUNK on one of your cells, until your next spin pays (null: none). */
   gunk: Gunk | null = null;
   /** The reels held for the spin that just landed, and the reel nudged (a nudged sword is fresh: it sharpens). */
@@ -166,6 +171,8 @@ export class Race {
     this.holdsLeft = o.holds ?? RACE.holds;
     this.nudgesLeft = o.nudges ?? RACE.nudges;
     this.bet = o.bet ?? RACE.bet;
+    this.mults = { ...o.mults };
+    this.edge = RACE.edge * this.mult('sword');
     this.you = buildMachine(YOUR_STRIP, this.rng);
     this.rival = buildMachine(RIVAL_STRIP, this.rng);
   }
@@ -218,6 +225,10 @@ export class Race {
   get gunkOnLine(): boolean {
     const g = this.gunk;
     return !!g && this.you.stops[g.reel] === g.cell;
+  }
+
+  mult(s: Sym): number {
+    return this.mults[s] ?? 1;
   }
 
   /** Reels held right now. */
@@ -274,6 +285,7 @@ export class Race {
   pay(): LinePay {
     if (this.phase !== 'landed') throw new Error(`pay in phase ${this.phase}`);
     const pay = scoreLine(payline(this.you));
+    if (pay.symbol && pay.symbol !== 'sword') pay.pay *= this.mult(pay.symbol);
     // GUNK: a pay the gunked cell is part of is halved (the swords' strikes never are).
     if (this.gunkOnLine && pay.reels.includes(this.gunk!.reel)) {
       pay.cut = pay.pay - Math.floor(pay.pay / 2);
@@ -282,7 +294,7 @@ export class Race {
     this.gunk = null;
     if (pay.swords.length === 3) {
       // Three SWORDs: KNIGHT's jackpot (as rare as three SEVENs), and the EDGE sharpens.
-      Object.assign(pay, { tier: 'triple', symbol: 'sword', reels: [0, 1, 2], pay: RACE.swordJackpot });
+      Object.assign(pay, { tier: 'triple', symbol: 'sword', reels: [0, 1, 2], pay: RACE.swordJackpot * this.mult('sword') });
       this.edge *= 2;
     } else {
       // Each sword strikes for the EDGE, left to right; a fresh one (spun or nudged in, not held) then doubles it.

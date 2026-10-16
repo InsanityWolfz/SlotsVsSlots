@@ -10,10 +10,11 @@ import { drawSprite, type SpriteId } from '../render/sprites';
 import { drawText, fmtNum } from '../render/text';
 import { Button } from '../ui/button';
 import type { SideId } from '../core/config';
-import { GUNK, PAYER_NAME, PAYERS, PAYTABLE, payline, Race, RACE, type Gunk, type LinePay, type SlotMachine } from './race';
+import { GUNK, PAYER_NAME, PAYERS, PAYTABLE, payline, Race, RACE, type Gunk, type LinePay, type SlotMachine, type Sym } from './race';
+import { PICKS, Run, RUN } from './run';
 
-/** Step 2's rival BET: at x1 your HOLDs and NUDGEs roughly doubled your score and the race was never close. */
-const STEP2_BET = 2;
+/** A pick card's and the build's name for a symbol. */
+const SYM_NAME = (s: Sym): string => (s === 'sword' ? 'SWORD' : PAYER_NAME[s]);
 
 const CX = W / 2;
 const LEAD = '#7dff7a';
@@ -33,12 +34,20 @@ function viewOf(m: SlotMachine) {
   };
 }
 
+/** Where the scene is: a race, a race's result, the run screen between races (and the PRIZE pick), the run's end. */
+type Mode = 'race' | 'result' | 'between' | 'end';
+
 /**
- * THE NEW GAME, step 2: one race on one screen. KNIGHT (you) against a plain rival; the race engine (race.ts) decides
+ * THE NEW GAME: a run of races (run.ts), one race on screen at a time. KNIGHT (you) against a plain rival; the race engine (race.ts) decides
  * every outcome before a reel moves, this plays it (juice: outcome first, then animate toward it).
  */
 export class RaceScene {
+  run!: Run;
   race!: Race;
+  mode: Mode = 'between';
+  /** The PRIZE cards' tap targets on the run screen. */
+  private cards: { sym: Sym; x: number; y: number; w: number; h: number }[] = [];
+  private hoverCard = -1;
   private clock = new Clock();
   private fx = new FxLayer();
   private particles = new Particles();
@@ -58,13 +67,13 @@ export class RaceScene {
   private busy = false;
   private buttons: Button[] = [];
   private spinBtn: Button;
-  private againBtn: Button;
+  private continueBtn: Button;
+  private raceBtn: Button;
+  private newRunBtn: Button;
   private menuBtn: Button;
   private pressed: Button | null = null;
   private token = 0;
   private time = 0;
-  /** This session's races: won, and decided before your last spin (VISION's watch number for step 2). */
-  private tally = { races: 0, won: 0, decided: 0 };
   /** The reel the pointer is over (hover cue). */
   private hoverReel = -1;
 
@@ -81,23 +90,35 @@ export class RaceScene {
       return b;
     };
     this.spinBtn = btn('SPIN', CX, 640, 220, 72, () => this.pressSpin(), true);
-    this.againBtn = btn('RACE AGAIN', CX - 130, 640, 240, 64, () => this.start(), true);
-    this.menuBtn = btn('MENU', CX + 140, 640, 160, 64, () => this.onExit());
+    this.continueBtn = btn('CONTINUE', CX, 640, 260, 72, () => this.afterResult(), true);
+    this.raceBtn = btn('RACE', CX, 650, 260, 72, () => this.startRace(), true);
+    this.newRunBtn = btn('NEW RUN', CX - 130, 650, 240, 64, () => this.start(), true);
+    this.menuBtn = btn('MENU', CX + 140, 650, 160, 64, () => this.onExit());
     this.start();
   }
 
+  /** A new run: the run screen first (race 1's BET, the boss's, your build). */
   start(): void {
+    this.run = new Run();
+    this.race = this.run.newRace();
+    this.mode = 'between';
+  }
+
+  /** The run screen's RACE: the next race (a lost boss: the same race again, fresh roll). */
+  private startRace(): void {
+    if (this.run.offer) return void this.sounds.fizzle();
+    this.mode = 'race';
     this.token++;
     this.clock.skip();
     this.clock.endSkip();
     this.fx.clear();
-    this.race = new Race({ bet: STEP2_BET });
+    this.race = this.run.newRace();
     this.machines = {
       player: new MachineView('player', viewOf(this.race.you), this.sounds),
       enemy: new MachineView('enemy', viewOf(this.race.rival), this.sounds),
     };
     this.shown = { you: 0, rival: 0 };
-    this.shownEdge = RACE.edge;
+    this.shownEdge = this.race.edge;
     this.payingYou = false;
     this.gunkView = null;
     this.busy = false;
@@ -179,14 +200,14 @@ export class RaceScene {
 
   private finish(): void {
     const won = this.race.won;
-    // Decided before your last spin: you already led (or tied), or needed more than a SEVEN jackpot.
-    const gap = this.race.lastSpinGap ?? 0;
-    this.tally.races++;
-    if (won) this.tally.won++;
-    if (gap >= 0 || -gap > PAYTABLE.seven.triple) this.tally.decided++;
+    const run = this.run;
+    run.finish(this.race);
     this.setActive(null);
-    const b = this.fx.add(new Banner(won ? 'RACE WON!' : 'RACE LOST', won ? COLORS.goldLight : BEHIND, CX, 360, 7));
-    b.sub = `${fmtNum(this.race.score.you)} TO ${fmtNum(this.race.score.rival)}`;
+    this.mode = 'result';
+    const title = run.won ? 'RUN WON!' : won ? 'RACE WON!' : run.over ? 'GAME OVER' : 'RACE LOST';
+    const b = this.fx.add(new Banner(title, won ? COLORS.goldLight : BEHIND, CX, 360, 7));
+    const score = `${fmtNum(this.race.score.you)} TO ${fmtNum(this.race.score.rival)}`;
+    b.sub = won || run.over ? score : `${score}: -1 CREDIT${run.replay ? ', REPLAY THE BOSS' : ''}`;
     b.z = 40;
     void this.clock.tween({ from: 0, to: 1, dur: 0.35, ease: backOut(1.8), onUpdate: (v) => (b.scale = v) });
     if (won) {
@@ -194,6 +215,20 @@ export class RaceScene {
       this.particles.burst({ x: CX, y: 360, count: 70, colors: ['#ffe08a', '#ffd23f', '#ffffff', '#ff6ad5'], speed: [200, 600], gravity: 500 });
     } else this.sounds.defeat();
     this.idle();
+  }
+
+  /** CONTINUE after a race: the run's end, or the run screen (with the PRIZE pick after a win). */
+  private afterResult(): void {
+    this.fx.clear();
+    this.mode = this.run.over ? 'end' : 'between';
+  }
+
+  /** Take a PRIZE card. */
+  private pick(sym: Sym): void {
+    this.run.pick(sym);
+    this.sounds.coin(2);
+    this.sounds.stingerSmall();
+    this.particles.burst({ x: CX, y: 330, count: 30, colors: ['#ffe08a', '#ffd23f', '#ffffff'], speed: [150, 420], gravity: 500 });
   }
 
   // ---- presentation -------------------------------------------------------------------
@@ -247,7 +282,7 @@ export class RaceScene {
       await this.clock.wait(0.25);
       if (st.sharpened) {
         this.shownEdge *= 2;
-        this.sounds.shieldGain(Math.min(6, Math.log2(this.shownEdge / RACE.edge)));
+        this.sounds.shieldGain(Math.min(6, Math.log2(this.shownEdge / (RACE.edge * this.race.mult('sword')))));
         void this.clock.tween({ from: 1.4, to: 1, dur: 0.3, ease: sineOut, onUpdate: (v) => (this.edgePunch = v) });
         await this.clock.wait(0.15);
       }
@@ -312,16 +347,26 @@ export class RaceScene {
   }
 
   private visibleButtons(): Button[] {
-    const over = this.race.phase === 'over' && !this.busy;
-    this.spinBtn.visible = !over;
+    const m = this.mode;
+    this.spinBtn.visible = m === 'race';
     this.spinBtn.enabled = !this.busy && (this.race.phase === 'hold' || this.race.phase === 'landed');
     this.spinBtn.label = this.race.phase === 'landed' ? 'PAY' : 'SPIN';
-    this.againBtn.visible = this.menuBtn.visible = over;
+    this.continueBtn.visible = m === 'result';
+    this.continueBtn.enabled = !this.busy;
+    this.raceBtn.visible = m === 'between';
+    this.raceBtn.enabled = !this.run.offer;
+    this.raceBtn.label = this.run.replay ? 'REPLAY' : this.run.isBoss ? 'BOSS RACE' : 'RACE';
+    this.newRunBtn.visible = this.menuBtn.visible = m === 'end';
     return this.buttons.filter((b) => b.visible);
   }
 
+  private cardAt(x: number, y: number): number {
+    if (this.mode !== 'between' || !this.run.offer) return -1;
+    return this.cards.findIndex((c) => x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h);
+  }
+
   private tapReel(r: number): void {
-    if (this.busy) return;
+    if (this.busy || this.mode !== 'race') return;
     if (this.race.phase === 'hold') {
       if (!this.race.canHold(r)) return void this.sounds.fizzle();
       const now = this.race.toggleHold(r);
@@ -336,6 +381,8 @@ export class RaceScene {
       b.down();
       return;
     }
+    const c = this.cardAt(x, y);
+    if (c >= 0) return this.pick(this.cards[c].sym);
     // A tap during a presentation skips to where the race waits on you again.
     if (this.busy) return void this.clock.skip();
     const r = this.reelAt(x, y);
@@ -354,8 +401,9 @@ export class RaceScene {
       b.hover = b.contains(x, y);
       any ||= b.hover && b.enabled;
     }
-    this.hoverReel = this.reelAt(x, y);
-    return any || (this.hoverReel >= 0 && !this.busy && (this.race.phase === 'hold' || this.race.canStillNudge));
+    this.hoverReel = this.mode === 'race' ? this.reelAt(x, y) : -1;
+    this.hoverCard = this.cardAt(x, y);
+    return any || this.hoverCard >= 0 || (this.hoverReel >= 0 && !this.busy && (this.race.phase === 'hold' || this.race.canStillNudge));
   }
 
   key(k: string): boolean {
@@ -365,12 +413,16 @@ export class RaceScene {
     }
     if (k === ' ' || k === 'enter') {
       if (this.busy) this.clock.skip();
-      else if (this.race.phase === 'over') this.start();
+      else if (this.mode === 'result') this.afterResult();
+      else if (this.mode === 'between') this.startRace();
+      else if (this.mode === 'end') this.start();
       else this.pressSpin();
       return true;
     }
     if (k === '1' || k === '2' || k === '3') {
-      this.tapReel(Number(k) - 1);
+      const i = Number(k) - 1;
+      if (this.mode === 'between' && this.run.offer?.[i]) this.pick(this.run.offer[i]);
+      else this.tapReel(i);
       return true;
     }
     return false;
@@ -388,6 +440,13 @@ export class RaceScene {
   /** The table (inside the camera's shake). */
   drawWorld(ctx: CanvasRenderingContext2D): void {
     const t = this.time;
+    if (this.mode === 'between' || this.mode === 'end') {
+      if (this.mode === 'between') this.drawBetween(ctx, t);
+      else this.drawEnd(ctx);
+      this.particles.draw(ctx);
+      return;
+    }
+    this.drawRunLine(ctx);
     this.drawSide(ctx, 'player');
     this.drawSide(ctx, 'enemy');
     this.machines.player.draw(ctx, this.clock.time);
@@ -404,10 +463,102 @@ export class RaceScene {
   /** Buttons (steady: outside the shake). */
   drawUi(ctx: CanvasRenderingContext2D): void {
     for (const b of this.visibleButtons()) b.draw(ctx, this.time);
-    if (this.race.phase === 'over' && !this.busy && this.tally.races) {
-      const { races, won, decided } = this.tally;
-      drawText(ctx, `THIS SESSION: WON ${won} OF ${races}   DECIDED BEFORE YOUR LAST SPIN: ${decided}`, CX, 694, 1.5, COLORS.textDim);
+  }
+
+  /** Over the race: which race of the run, and your credits. */
+  private drawRunLine(ctx: CanvasRenderingContext2D): void {
+    const r = this.run;
+    const tag = r.replay ? '  BOSS REPLAY' : r.isBoss ? '  BOSS' : '';
+    drawText(ctx, `RACE ${r.index + 1} OF ${Run.races}${tag}   CREDITS ${r.credits}`, CX, 64, 2, r.isBoss ? BEHIND : COLORS.textDim);
+  }
+
+  /** A titled panel (the run screens). */
+  private panel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, title: string, color = COLORS.gold): void {
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 6, y - 6, w + 12, h + 12);
+    ctx.fillStyle = color;
+    ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+    ctx.fillStyle = COLORS.panel;
+    ctx.fillRect(x, y, w, h);
+    if (title) drawText(ctx, title, x + w / 2, y + 26, 2.5, COLORS.goldLight);
+  }
+
+  /** The run screen between races: where you are, what's next, your build, and the PRIZE pick after a win. */
+  private drawBetween(ctx: CanvasRenderingContext2D, t: number): void {
+    const r = this.run;
+    const boss = r.isBoss;
+    drawText(ctx, r.replay ? 'REPLAY THE BOSS' : `RACE ${r.index + 1} OF ${Run.races}${boss ? ': BOSS' : ''}`, CX, 70, 5, boss ? BEHIND : COLORS.goldLight);
+    // Credits, as coins.
+    drawText(ctx, 'CREDITS', CX - 70, 122, 2.5, COLORS.text);
+    for (let i = 0; i < RUN.credits; i++) drawSprite(ctx, 'coin' as SpriteId, CX + 30 + i * 40, 122, 2.2, { alpha: i < r.credits ? 1 : 0.2 });
+    // The road: every race's BET, bosses marked, yours lit.
+    const bets = RUN.bets.flat();
+    bets.forEach((b, i) => {
+      const x = CX + (i - (bets.length - 1) / 2) * 104;
+      const isBoss = i % 3 === 2;
+      const here = i === r.index;
+      ctx.fillStyle = here ? (isBoss ? BEHIND : COLORS.goldLight) : i < r.index ? COLORS.panelLight : COLORS.outline;
+      ctx.fillRect(x - 44, 160, 88, 52);
+      ctx.fillStyle = COLORS.panel;
+      ctx.fillRect(x - 41, 163, 82, 46);
+      drawText(ctx, isBoss ? 'BOSS' : `RACE ${i + 1}`, x, 177, 1.5, isBoss ? BEHIND : COLORS.textDim);
+      drawText(ctx, `BET X${b}`, x, 197, 2, i < r.index ? COLORS.textDim : '#9dff6a');
+    });
+    // Your build: each symbol's MULT.
+    const bx = 120;
+    this.panel(ctx, bx, 250, 330, 330, 'YOUR KNIGHT');
+    PICKS.slice().reverse().forEach((s, i) => {
+      const y = 310 + i * 52;
+      drawSprite(ctx, s as SpriteId, bx + 46, y, 2.6);
+      drawText(ctx, SYM_NAME(s), bx + 80, y, 2.5, s === 'sword' ? STEEL : COLORS.text, { align: 'left' });
+      const m = r.mult(s);
+      drawText(ctx, `X${m}`, bx + 290, y, 3, m > 1 ? COLORS.goldLight : COLORS.textDim, { align: 'right' });
+    });
+    // The PRIZE: pick one card (or what's next).
+    const px = 500;
+    this.cards = [];
+    if (r.offer) {
+      this.panel(ctx, px, 250, 660, 330, 'PRIZE: PICK ONE');
+      r.offer.forEach((s, i) => {
+        const w = 190;
+        const h = 240;
+        const x = px + 22 + i * (w + 18);
+        const y = 300;
+        this.cards.push({ sym: s, x, y, w, h });
+        const hover = this.hoverCard === i;
+        const lift = hover ? -6 : 0;
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(x - 3, y - 3 + lift, w + 6, h + 6);
+        ctx.fillStyle = hover ? COLORS.goldLight : COLORS.gold;
+        ctx.fillRect(x, y + lift, w, h);
+        ctx.fillStyle = COLORS.panelLight;
+        ctx.fillRect(x + 5, y + 5 + lift, w - 10, h - 10);
+        drawSprite(ctx, s as SpriteId, x + w / 2, y + 90 + lift + Math.sin(t * 3 + i) * 3, 5);
+        drawText(ctx, SYM_NAME(s), x + w / 2, y + 170 + lift, 2.5, s === 'sword' ? STEEL : COLORS.text);
+        drawText(ctx, 'X2', x + w / 2, y + 208 + lift, 4, COLORS.goldLight);
+      });
+    } else {
+      this.panel(ctx, px, 250, 660, 330, boss ? 'NEXT: THE BOSS' : 'NEXT');
+      drawText(ctx, `RIVAL BET X${r.bet}`, px + 330, 340, 4, boss ? BEHIND : '#9dff6a');
+      drawText(ctx, `CHEAT: GUNK ON SPIN ${GUNK.on.join(', ')}`, px + 330, 400, 2, GUNK_GREEN);
+      if (!boss) drawText(ctx, `THIS STOP'S BOSS: BET X${r.bossBet}`, px + 330, 450, 2, COLORS.textDim);
+      drawText(ctx, r.replay ? 'A LOST BOSS IS PLAYED AGAIN' : 'WIN TO PICK A PRIZE. LOSE: -1 CREDIT', px + 330, 520, 1.5, COLORS.textDim);
     }
+  }
+
+  /** The run's end: won or GAME OVER, and every race. */
+  private drawEnd(ctx: CanvasRenderingContext2D): void {
+    const r = this.run;
+    drawText(ctx, r.won ? 'RUN WON!' : 'GAME OVER', CX, 80, 7, r.won ? COLORS.goldLight : BEHIND);
+    this.panel(ctx, CX - 330, 140, 660, 450, '');
+    r.history.forEach((h, i) => {
+      const y = 170 + i * 36;
+      const c = h.won ? LEAD : BEHIND;
+      drawText(ctx, `RACE ${h.race + 1}${h.boss ? ' BOSS' : ''}`, CX - 300, y, 2, COLORS.text, { align: 'left' });
+      drawText(ctx, `BET X${h.bet}`, CX - 60, y, 2, '#9dff6a', { align: 'left' });
+      drawText(ctx, `${fmtNum(h.you)} TO ${fmtNum(h.rival)}`, CX + 160, y, 2, COLORS.text);
+      drawText(ctx, h.won ? 'WON' : 'LOST', CX + 300, y, 2, c, { align: 'right' });
+    });
   }
 
   /** A machine's name, its score and a pip per spin, over it. */
@@ -468,9 +619,12 @@ export class RaceScene {
     [...PAYERS].reverse().forEach((p, i) => {
       const y = top + 62 + i * 44;
       drawSprite(ctx, p as SpriteId, CX - 100, y, 2.6);
-      drawText(ctx, PAYER_NAME[p], CX - 74, y, 2, COLORS.text, { align: 'left' });
-      drawText(ctx, String(PAYTABLE[p].pair), CX + 40, y, 2, COLORS.text);
-      drawText(ctx, String(PAYTABLE[p].triple), CX + 100, y, 2, COLORS.text);
+      // Your pays, times your MULT (gold when a pick doubled them).
+      const m = this.race.mult(p);
+      const c = m > 1 ? COLORS.goldLight : COLORS.text;
+      drawText(ctx, PAYER_NAME[p], CX - 74, y, 2, c, { align: 'left' });
+      drawText(ctx, fmtNum(PAYTABLE[p].pair * m), CX + 40, y, 2, c);
+      drawText(ctx, fmtNum(PAYTABLE[p].triple * m), CX + 100, y, 2, c);
     });
     // KNIGHT's SWORD: it pays its EDGE (and a fresh one doubles it).
     const sy = top + 62 + 4 * 44;

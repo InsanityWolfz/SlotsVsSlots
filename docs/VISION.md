@@ -102,6 +102,26 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
   doubling was the old trap again (the sword cells cost as many pairs as they paid).
 - Known risk: EDGE's base (10) doesn't grow with the rival's BET; the run's MULT has to carry it.
 
+## The run (DECIDED 2026-10-16)
+- **9 races in 3 stops of race, race, boss.** The rival's BET by race: x1.5, x2, boss x3 | x2.5, x3, boss x4.5 | x4,
+  x5, boss x8 (still geometric; starting numbers for play). The run screen shows the whole road, the next BET and
+  the stop's boss BET a race ahead.
+- **PRIZE (a won race, bosses too):** pick 1 of 3 different cards from CHERRY, BAR, COIN, SEVEN and SWORD, each
+  "[SYMBOL] X2": that symbol's pays double for the run, and picks stack (CHERRY twice: x4). SWORD X2 doubles its
+  EDGE (it starts at 20) and its 777. **A card says only "CHERRY X2", no numbers (user, 2026-10-16).** Your paytable
+  in a race shows your pays with your MULTs. A lost race gives no pick.
+- **CREDITS:** 3; a lost race costs one and its prize; a lost boss is replayed (REPLAY, a fresh roll); no credits is
+  GAME OVER; beating race 9's boss wins the run. No free early-credit refund (it would break "getting a credit back
+  is rare and never cheap").
+- **Bosses:** a bigger BET and the same GUNK for now (boss cheats are a later step).
+- Why (expert playtest, 3,000 simulated runs a setting): the researcher's steeper curve (x2 ... x16) walled the first
+  boss (10% run wins for a decent bot, 45% of runs dead at boss 1); this one wins about 30% (22% with random picks;
+  no prizes: 0%), with races dipping at bosses and recovering (a sawtooth, not a wall). Doubling one symbol isn't
+  dominant (3-6 points worse than picking by value).
+- Known risks: the first boss is the run's most random cut (about 22% of runs end there before a build exists);
+  stacking CHERRY may become the default line; a pick adds +15-25% of score until one symbol dominates, so later
+  Charms and relics must multiply harder.
+
 ## Rival cheats, and the first one: GUNK (DECIDED 2026-10-16)
 - **The rule for every cheat (user, 2026-10-16):** a cheat is visible before the decision it affects, and the player
   can answer it at a price smaller than the hit, so it changes which play is best instead of vetoing it ("just don't
