@@ -10,7 +10,7 @@ import { drawSprite, type SpriteId } from '../render/sprites';
 import { drawText, fmtNum } from '../render/text';
 import { Button } from '../ui/button';
 import type { SideId } from '../core/config';
-import { PAYER_NAME, PAYERS, PAYTABLE, payline, Race, type LinePay, type SlotMachine } from './race';
+import { PAYER_NAME, PAYERS, PAYTABLE, payline, Race, RACE, type LinePay, type SlotMachine } from './race';
 
 /** Step 2's rival BET: at x1 your HOLDs and NUDGEs roughly doubled your score and the race was never close. */
 const STEP2_BET = 2;
@@ -18,6 +18,8 @@ const STEP2_BET = 2;
 const CX = W / 2;
 const LEAD = '#7dff7a';
 const BEHIND = '#ff6a5a';
+/** KNIGHT's SWORD and SHARP (steel blue). */
+const STEEL = '#a8e8ff';
 
 /** The machine view's shape, built from a race machine (no slime, ice or locks in the new game). */
 function viewOf(m: SlotMachine) {
@@ -41,6 +43,9 @@ export class RaceScene {
   private machines!: Record<SideId, MachineView>;
   /** The scores on screen (they count up to the real ones). */
   private shown = { you: 0, rival: 0 };
+  /** KNIGHT's SHARP on screen (it ticks up as each sword stamps), and the meter's punch. */
+  private shownSharp = 0;
+  private sharpPunch = 1;
   /** A presentation is running: input waits (a tap skips it). */
   private busy = false;
   private buttons: Button[] = [];
@@ -84,6 +89,7 @@ export class RaceScene {
       enemy: new MachineView('enemy', viewOf(this.race.rival), this.sounds),
     };
     this.shown = { you: 0, rival: 0 };
+    this.shownSharp = 0;
     this.busy = false;
     void this.rivalTurn();
   }
@@ -150,6 +156,8 @@ export class RaceScene {
     const pay = this.race.pay();
     await this.showPay('player', pay);
     if (tok !== this.token) return;
+    await this.sharpen(pay);
+    if (tok !== this.token) return;
     if (this.race.phase === 'over') this.finish();
     else void this.rivalTurn();
   }
@@ -185,6 +193,8 @@ export class RaceScene {
     const win = reelWindow(side);
     const key = side === 'player' ? 'you' : 'rival';
     if (pay.tier === 'none') {
+      // (A dead spin with a sword on it isn't dead: its +1 SHARP stamps next.)
+      if (pay.swords.length) return;
       const t = this.fx.add(new FloatText('NO PAY', win.x + MACHINE_W / 2, win.y + MACHINE_H + 34, 2.5, COLORS.textDim));
       t.plate = true;
       await this.clock.wait(0.45);
@@ -214,7 +224,9 @@ export class RaceScene {
       this.clock.hitstop(6);
       this.particles.burst({ x, y: win.y + PITCH * 1.5, count: 50, colors: ['#ff3a2e', '#ffd23f', '#ffffff'], speed: [180, 520], gravity: 500 });
     } else this.sounds.stingerSmall();
-    const call = this.fx.add(new FloatText(`${label} +${fmtNum(pay.pay)}`, x, win.y + MACHINE_H + 34, triple ? 3.5 : 3, color));
+    // A sharpened pay shows its parts, so the bonus is seen (and wanted).
+    const text = pay.sharp ? `${label} ${fmtNum(pay.pay - pay.sharp)} + SHARP ${fmtNum(pay.sharp)} = ${fmtNum(pay.pay)}` : `${label} +${fmtNum(pay.pay)}`;
+    const call = this.fx.add(new FloatText(text, x, win.y + MACHINE_H + 34, pay.sharp ? 2.5 : triple ? 3.5 : 3, color));
     call.plate = true;
     void this.clock.tween({ from: 0.4, to: 1, dur: 0.22, ease: backOut(2), onUpdate: (v) => (call.punch = v) });
     // Count up (never snap a number).
@@ -235,6 +247,31 @@ export class RaceScene {
     m.payline.alpha = 0;
     await m.focusPayline(this.clock, false);
     for (const r of pay.reels) m.reels[r].rows[1].glow = 0;
+  }
+
+  /** Each SWORD on your payline stamps +1 SHARP (after the spin pays: SHARP counts from the next paying spin). */
+  private async sharpen(pay: LinePay): Promise<void> {
+    if (!pay.swords.length) return;
+    const m = this.machines.player;
+    const win = reelWindow('player');
+    const stamps: FloatText[] = [];
+    for (const r of pay.swords) {
+      const fx = m.reels[r].rows[1];
+      fx.glowColor = STEEL;
+      fx.glow = 0.9;
+      void this.clock.tween({ from: 1.3, to: 1, dur: 0.2, ease: sineOut, onUpdate: (v) => (fx.punch = v) });
+      const t = this.fx.add(new FloatText('+1 SHARP', win.x + PITCH * (r + 0.5), win.y + PITCH * 0.5, 2.5, STEEL));
+      t.plate = true;
+      stamps.push(t);
+      void this.clock.tween({ from: 0.4, to: 1, dur: 0.2, ease: backOut(2), onUpdate: (v) => (t.punch = v) });
+      this.sounds.block();
+      this.shownSharp++;
+      void this.clock.tween({ from: 1.35, to: 1, dur: 0.25, ease: sineOut, onUpdate: (v) => (this.sharpPunch = v) });
+      await this.clock.wait(0.3);
+    }
+    await this.clock.wait(0.4);
+    for (const t of stamps) this.fx.remove(t);
+    for (const r of pay.swords) m.reels[r].rows[1].glow = 0;
   }
 
   // ---- input --------------------------------------------------------------------------
@@ -358,6 +395,12 @@ export class RaceScene {
       ctx.fillStyle = i < spun ? (you ? COLORS.goldLight : '#9dff6a') : COLORS.panelLight;
       ctx.fillRect(px - 6, 217, 12, 12);
     }
+    // KNIGHT's SHARP meter: what it does, not just a count.
+    if (you) {
+      const n = this.shownSharp;
+      const text = n ? `SHARP ${n}: EVERY PAY +${n * RACE.sharpPay}` : `SHARP 0: EACH SWORD +${RACE.sharpPay} TO EVERY PAY`;
+      drawText(ctx, text, x, 247, (n ? 2 : 1.5) * this.sharpPunch, n ? STEEL : COLORS.textDim);
+    }
   }
 
   /** The middle: whose spin it is, and the gap (NEED on your last spin). */
@@ -395,12 +438,17 @@ export class RaceScene {
     drawText(ctx, 'X2', CX + 40, top + 22, 2, COLORS.pair);
     drawText(ctx, 'X3', CX + 100, top + 22, 2, COLORS.triple);
     [...PAYERS].reverse().forEach((p, i) => {
-      const y = top + 66 + i * 52;
+      const y = top + 62 + i * 44;
       drawSprite(ctx, p as SpriteId, CX - 100, y, 2.6);
       drawText(ctx, PAYER_NAME[p], CX - 74, y, 2, COLORS.text, { align: 'left' });
       drawText(ctx, String(PAYTABLE[p].pair), CX + 40, y, 2, COLORS.text);
       drawText(ctx, String(PAYTABLE[p].triple), CX + 100, y, 2, COLORS.text);
     });
+    // KNIGHT's SWORD: it never pays, it sharpens.
+    const sy = top + 62 + 4 * 44;
+    drawSprite(ctx, 'sword', CX - 100, sy, 2.6);
+    drawText(ctx, 'SWORD', CX - 74, sy, 2, STEEL, { align: 'left' });
+    drawText(ctx, '+1 SHARP', CX + 70, sy, 2, STEEL);
     drawText(ctx, `RIVAL PAYS X${this.race.bet}`, CX, top + 272, 1.5, '#9dff6a');
   }
 

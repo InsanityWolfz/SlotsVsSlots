@@ -14,6 +14,12 @@ export type Payer = (typeof PAYERS)[number];
 
 export const PAYER_NAME: Record<Payer, string> = { cherry: 'CHERRY', bar: 'BAR', coin: 'COIN', seven: 'SEVEN' };
 
+/**
+ * A reel symbol: a payer, or KNIGHT's SWORD (step 3, VISION "the SWORD that sharpens"): a SWORD never pays; each one on
+ * your payline is +1 SHARP for the rest of the race, and every PAYING spin after it pays RACE.sharpPay more a SHARP.
+ */
+export type Sym = Payer | 'sword';
+
 /** What a pair and three of a kind pay (any two of the three payline symbols matching is a pair). */
 export const PAYTABLE: Record<Payer, { pair: number; triple: number }> = {
   cherry: { pair: 10, triple: 50 },
@@ -22,55 +28,66 @@ export const PAYTABLE: Record<Payer, { pair: number; triple: number }> = {
   seven: { pair: 80, triple: 777 },
 };
 
-/** Cells a symbol takes on each reel's 20-cell strip. Yours swings; the rival's is steadier (more pairs, a rare SEVEN). */
-export const YOUR_STRIP: Record<Payer, number> = { cherry: 8, bar: 6, coin: 4, seven: 2 };
-export const RIVAL_STRIP: Record<Payer, number> = { cherry: 10, bar: 6, coin: 3, seven: 1 };
+/** Cells a symbol takes on each reel's strip. Yours swings (KNIGHT: 20 payers + 2 SWORDs); the rival's is steadier
+ * (more pairs, a rare SEVEN, no swords). */
+export const YOUR_STRIP: Partial<Record<Sym, number>> = { cherry: 8, bar: 6, coin: 4, seven: 2, sword: 2 };
+export const RIVAL_STRIP: Partial<Record<Sym, number>> = { cherry: 10, bar: 6, coin: 3, seven: 1 };
 
-/** Step 2's starting counts (tuned in play, not balanced). */
-export const RACE = { spins: 5, holds: 2, nudges: 2, maxHeld: 2, bet: 1 };
+/** Starting counts (tuned in play, not balanced). sharpPay: what a SHARP adds to every paying spin (+10 cost KNIGHT
+ * more pairs than it paid back: expert playtest, 2026-10-16). */
+export const RACE = { spins: 5, holds: 2, nudges: 2, maxHeld: 2, bet: 1, sharpPay: 20 };
 
 export interface SlotMachine {
   /** Each reel's strip, top to bottom. */
-  reels: Payer[][];
+  reels: Sym[][];
   /** The strip index on the payline, per reel. */
   stops: number[];
 }
 
-export function buildMachine(counts: Record<Payer, number>, rng: Rng): SlotMachine {
+export function buildMachine(counts: Partial<Record<Sym, number>>, rng: Rng): SlotMachine {
   const reels = [0, 1, 2].map(() => {
-    const strip: Payer[] = [];
-    for (const p of PAYERS) for (let i = 0; i < counts[p]; i++) strip.push(p);
+    const strip: Sym[] = [];
+    for (const p of [...PAYERS, 'sword' as const]) for (let i = 0; i < (counts[p] ?? 0); i++) strip.push(p);
     return rng.shuffle(strip);
   });
   return { reels, stops: reels.map((r) => rng.int(r.length)) };
 }
 
 /** The symbol on a reel's row (0 = top, 1 = payline, 2 = bottom). */
-export function symbolAt(m: SlotMachine, reel: number, row = 1): Payer {
+export function symbolAt(m: SlotMachine, reel: number, row = 1): Sym {
   const strip = m.reels[reel];
   return strip[wrap(m.stops[reel] + row - 1, strip.length)];
 }
 
-export const payline = (m: SlotMachine): Payer[] => [0, 1, 2].map((r) => symbolAt(m, r));
+export const payline = (m: SlotMachine): Sym[] => [0, 1, 2].map((r) => symbolAt(m, r));
 
 export interface LinePay {
   tier: 'none' | 'pair' | 'triple';
   symbol: Payer | null;
   /** The reels that matched. */
   reels: number[];
+  /** The whole pay: the paytable's (times the BET) plus SHARP's. */
   pay: number;
+  /** SHARP's part of the pay (0 on a spin that pays nothing). */
+  sharp: number;
+  /** The reels with a SWORD on the payline (each is +1 SHARP, from the next paying spin on). */
+  swords: number[];
 }
 
-export function scoreLine(line: Payer[], bet = 1): LinePay {
+/** What a payline pays. SWORDs never match; `sharp` (SHARP points) adds sharp x RACE.sharpPay to a paying line. */
+export function scoreLine(line: Sym[], bet = 1, sharp = 0): LinePay {
+  const swords = line.flatMap((s, i) => (s === 'sword' ? [i] : []));
   for (const tier of ['triple', 'pair'] as const) {
     const need = tier === 'triple' ? 3 : 2;
     // The richest match wins (two pairs can't happen on three reels, but keep it honest).
     for (const p of [...PAYERS].reverse()) {
       const reels = line.flatMap((s, i) => (s === p ? [i] : []));
-      if (reels.length >= need) return { tier, symbol: p, reels, pay: PAYTABLE[p][tier] * bet };
+      if (reels.length < need) continue;
+      const bonus = sharp * RACE.sharpPay;
+      return { tier, symbol: p, reels, pay: PAYTABLE[p][tier] * bet + bonus, sharp: bonus, swords };
     }
   }
-  return { tier: 'none', symbol: null, reels: [], pay: 0 };
+  return { tier: 'none', symbol: null, reels: [], pay: 0, sharp: 0, swords };
 }
 
 /**
@@ -106,6 +123,8 @@ export class Race {
   held = [false, false, false];
   /** You've used this spin's NUDGE. */
   nudged = false;
+  /** KNIGHT's SHARP: SWORDs that have landed on your payline this race. */
+  sharp = 0;
   /** Each side's pays, spin by spin. */
   log: { you: LinePay[]; rival: LinePay[] } = { you: [], rival: [] };
   /** Your lead (+) or deficit (-) when your last spin started: was the race decided before it? (VISION's watch number.) */
@@ -200,7 +219,9 @@ export class Race {
   /** Score your landed spin, then on to the next round (or the end). */
   pay(): LinePay {
     if (this.phase !== 'landed') throw new Error(`pay in phase ${this.phase}`);
-    const pay = scoreLine(payline(this.you));
+    // SHARP counts from the next paying spin on: this spin's swords sharpen after it pays.
+    const pay = scoreLine(payline(this.you), 1, this.sharp);
+    this.sharp += pay.swords.length;
     this.score.you += pay.pay;
     this.log.you.push(pay);
     this.held = [false, false, false];

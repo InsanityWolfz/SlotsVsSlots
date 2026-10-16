@@ -20,12 +20,13 @@ describe('the new race (step 2)', () => {
     expect(scoreLine(['coin', 'coin', 'bar'], 3).pay).toBe(PAYTABLE.coin.pair * 3);
   });
 
-  it('builds 20-cell strips with the signed-off counts', () => {
+  it('builds strips with the signed-off counts (KNIGHT: 20 payers + 2 SWORDs)', () => {
     const r = new Race({ seed: 1 });
     const count = (strip: string[], s: string) => strip.filter((x) => x === s).length;
     for (const strip of r.you.reels) for (const [s, n] of Object.entries(YOUR_STRIP)) expect(count(strip, s)).toBe(n);
     for (const strip of r.rival.reels) for (const [s, n] of Object.entries(RIVAL_STRIP)) expect(count(strip, s)).toBe(n);
-    expect(r.you.reels[0].length).toBe(20);
+    expect(r.you.reels[0].length).toBe(22);
+    expect(r.rival.reels[0].length).toBe(20);
   });
 
   it('the rival spins first each round, you last; both spin RACE.spins times', () => {
@@ -115,6 +116,41 @@ describe('the new race (step 2)', () => {
   it('records the gap before your last spin', () => {
     const r = plain(9);
     expect(r.lastSpinGap).not.toBeNull();
+  });
+
+  it('SWORD: never pays or matches; each on the line is +1 SHARP from the next paying spin on', () => {
+    expect(scoreLine(['sword', 'sword', 'cherry'])).toMatchObject({ tier: 'none', pay: 0, swords: [0, 1] });
+    expect(scoreLine(['sword', 'coin', 'coin'])).toMatchObject({ tier: 'pair', pay: PAYTABLE.coin.pair, swords: [0] });
+    // SHARP adds to a paying line, never to a dead one.
+    expect(scoreLine(['cherry', 'cherry', 'bar'], 1, 2)).toMatchObject({ pay: PAYTABLE.cherry.pair + 2 * RACE.sharpPay, sharp: 2 * RACE.sharpPay });
+    expect(scoreLine(['cherry', 'coin', 'bar'], 1, 2)).toMatchObject({ pay: 0, sharp: 0 });
+  });
+
+  it('SWORD: the race counts SHARP after the spin pays, and a held sword sharpens again', () => {
+    const r = new Race({ seed: 11, holds: 4 });
+    // Put a sword on reel 0's payline and a coin pair on reels 1 and 2.
+    const at = (reel: number, s: string) => r.you.reels[reel].indexOf(s as never);
+    r.you.stops = [at(0, 'sword'), at(1, 'coin'), at(2, 'coin')];
+    r.rivalSpin();
+    r.toggleHold(0);
+    r.toggleHold(1);
+    r.toggleHold(2); // (never all 3)
+    r.spin();
+    expect(symbolAt(r.you, 0)).toBe('sword');
+    // Hold reels 0 and 1 kept the sword and a coin; reel 2 spun.
+    const p1 = r.pay();
+    expect(p1.sharp).toBe(0); // this spin's sword sharpens after it pays
+    expect(p1.swords).toContain(0);
+    expect(r.sharp).toBe(p1.swords.length);
+    const before = r.sharp;
+    r.rivalSpin();
+    r.toggleHold(0);
+    r.spin();
+    const line = payline(r.you);
+    const p2 = r.pay();
+    expect(p2.swords).toContain(0);
+    expect(r.sharp).toBe(before + p2.swords.length);
+    expect(p2.pay).toBe(scoreLine(line, 1, before).pay);
   });
 
   it('is deterministic for a seed', () => {

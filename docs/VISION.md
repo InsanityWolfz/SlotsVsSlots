@@ -82,6 +82,23 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
 - Known risk: more symbols, more spins that pay nothing. Fix with strip counts and NUDGE first; if that's not enough,
   pairs pay more.
 
+## KNIGHT's special symbol: the SWORD that sharpens (DECIDED 2026-10-16)
+- **A SWORD never pays; each SWORD on your payline is +1 SHARP for the rest of the race. Each SHARP adds +20 to
+  every PAYING spin after it** (2 SHARP: a CHERRY pair pays 50; a spin that pays nothing gets nothing). SHARP counts
+  from the next paying spin, so a sword on your last spin is worth nothing. Two or three swords on one line are +2
+  or +3 SHARP; a held sword sharpens again; a NUDGE onto a sword counts. 2 SWORDs a reel (22-cell strips). KNIGHT only; the rival
+  and the paytable don't change. (The name SHARP works for the demo; the user isn't married to it.)
+- Why: a sword on the line costs that spin's three of a kind, so NUDGE becomes "a pair now, or more on every pay
+  later?" and HOLDing the sword reel sharpens again (a HOLD a spin). Early swords pay off, a last-spin sword is
+  worthless: the race gets an arc (build, then cash in). It's KNIGHT's identity and a hook for Charms later.
+  SHARP adds to the BASE inside a race; the run's growth still multiplies.
+- Not a WILD sword: that's a better slot with no new choice, and any machine could have it.
+- Starting numbers, judged in play: 2 swords a reel, +20 a SHARP (expert playtest: at +10 the two extra cells cost
+  more pairs than SHARP paid back, so building was a trap; at +20 a spin-1 sword beats a COIN pair and loses to a
+  SEVEN pair, and by spin 3 it's worth about a BAR pair: the right call moves with the race).
+- The screen: a SHARP meter under KNIGHT's score that says what it does (SHARP 2: EVERY PAY +40), a +1 SHARP stamp
+  on each sword, and a sharpened pay shows its parts (PAIR! 10 + SHARP 40 = 50).
+
 ## How the rival's score grows (DECIDED 2026-10-16)
 - **A real Slot Machine, scaled by one number:** the rival spins the classic ladder for real (no faked outcomes), and
   everything it scores is multiplied by its **BET**, shown on its machine (BET x2, x6, x20). The BET grows
