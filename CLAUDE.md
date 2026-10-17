@@ -4,9 +4,9 @@ An 8-bit roguelike where two slot machines face off. TypeScript + Vite + Canvas,
 Web build: https://insanitywolfz.github.io/SlotsVsSlots/ (deploys on every push to `main`).
 
 ## The project is being rebuilt (2026-10-16)
-The old game (HP fights you watch) is being replaced by a new one (a race for the top score, played one spin at a
-time). It's a new game on the old chassis, not a fix. The live build stays the old game until the new one is better.
-The vision (`docs/VISION.md`) was signed off on 2026-10-16.
+The old game (HP fights you watch, damage per spin) is being rebuilt as METER COMBAT (symbols fill meters; you choose
+when to FIRE or BLOCK). It's the old chassis with new rules. The live build stays the old game until the new one is
+better; the prototype is PLAY MODES > METERS (TEST). The score race tried on 2026-10-16 was dropped.
 
 ## Read first, every session
 1. `docs/ROADMAP.md`: the rebuild's steps and what's in progress.
@@ -53,20 +53,17 @@ far it got. Keep that line current while you work.
 - **Held ideas:** the SLOTS VS. BOTS rename, 16-bit art, the Gambler character.
 - The user is direct and has strong game sense. Push back with reasons when you disagree. Keep summaries short.
 
-## The new game's rules (binding; user, 2026-10-16, see docs/VISION.md)
-- **The race:** both Slot Machines get a fixed number of spins; the rival spins first each round, so the race ends on
-  your spin with a visible target. A tie is yours.
-- **Your tools are HOLD and NUDGE,** a fixed count each a race. A new tool (or RESPIN back) is the user's call.
-  HOLD: one HOLD a held reel, at most 2 reels a spin, first spin included. NUDGE: down one cell, one a spin.
-- **Every symbol is score:** nothing attacks, defends or guards. Paying symbols are classic (CHERRY, BAR, COIN, SEVEN)
-  and shared across Slot Machines; a machine's theme lives in special symbols that DO something.
-- **Honest rival:** its spins are real, never faked or rubber-banded to your score. Its strength is one number, its
-  **BET** (x6 on its machine, for example; it grows by stop); its danger is its cheat (cheats mess with your machine).
-- **Pay = BASE x MULT, and the player's growth multiplies:** the paytable is the base, the run grows the MULT.
-  Growth that only adds can't keep up with the BET curve.
-- **CREDITS:** a lost race costs a credit and its prize; a lost boss race is played again; no credits is GAME OVER.
-- Dropped from the old game: watch-only fights, Charms on cells and gold Charms ADD (the Charms step decides), one
-  signature symbol and meter a machine, Act 3 at GREEN, honest HP.
+## The new game's rules (binding; user, 2026-10-17, see docs/VISION.md "The model: METER COMBAT")
+- **Power builds up over a fight; no flat per-spin damage.** Symbols fill meters; you choose when to spend them.
+- **Two meters a side, SWORD and SHIELD,** filled by every matching symbol in sight. One action a turn after your
+  spin: FIRE or BLOCK (if full), or end the turn. Keep the screen this lean: a new meter or button is the user's call.
+- **Paylines set the worth, not the fill count:** plain / gold (pair) / red-hot (jackpot) sword segments; shields
+  fill faster on a line win. Hearts and coins pay instantly (no meter).
+- **The enemy plays the same meters, visibly,** so its sword meter is the telegraph. Its sabotage is a symbol on its
+  reels whose line win does something to your meters (the slime: gunks your sword meter to 5 bars until you fire).
+- **Each Slot Machine except KNIGHT keeps its signature meter** (one more meter), which the player can trigger.
+- The score race (`src/race/`, NEW GAME (TEST)) is dropped; don't build on it. HOLD, NUDGE, BET and CREDITS were its
+  rules, not this game's.
 
 ## Agents
 - **Expert playtester:** a general-purpose subagent briefed as an expert roguelike and slot-machine designer.

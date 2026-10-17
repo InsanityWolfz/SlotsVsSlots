@@ -1,8 +1,8 @@
 # Vision: the new game
 
-**Status: SIGNED OFF by the user, 2026-10-16** (step 1 of the rebuild, `docs/ROADMAP.md`). The sections marked
-**DECIDED** are the design; build from them. Anything not covered is open: decide it with the user, one system at a
-time, and mark it DECIDED with the date.
+**Status (2026-10-17): the model is METER COMBAT** (below). The score race the user signed off on 2026-10-16 was built
+and played, and dropped: it felt better only because it copied a familiar slot machine (user). Its sections are kept
+under "Superseded" for the record; don't build from them. Sections marked **DECIDED** are the design.
 
 ## Why we're rebuilding (user, 2026-10-16)
 The old game had four levers: player damage, player HP, enemy attacks and enemy HP. You can't scale all four
@@ -17,9 +17,9 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
 ## Old vision -> new vision
 | | Old | New |
 |---|---|---|
-| The pitch | Slot vs. slot roguelike where your reels battle theirs | Slot vs. slot roguelike where you battle another Slot Machine for the top score |
-| A fight | Automatic: you just watch | One spin at a time, with options to improve your luck |
-| Length | As many spins as it takes to reach 0 HP | A fixed number of spins, so the top-score race works |
+| The pitch | Slot vs. slot roguelike where your reels battle theirs | The same, but your reels charge meters and you choose when to strike |
+| A fight | Automatic: you just watch | You spin, then FIRE, BLOCK or wait; the enemy's meters show what's coming |
+| Damage | Every spin, a flat number (one-spin kills or 30-turn fights) | Built up over spins in meters, released when you choose |
 
 ## What we lose
 - One-shotting an annoying enemy or boss.
@@ -32,7 +32,32 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
 - Big scores still feel good.
 - Easier balance and horizontal content (more symbols, enemies and bosses with their own scoring tricks).
 
-## The race and your options (DECIDED 2026-10-16)
+## The model: METER COMBAT (DECIDED 2026-10-17, played in PLAY MODES > METERS (TEST))
+The combat game is back (the user: new, so worth the readability cost), rebuilt around the root problem: damage came
+as one spin's flat number (slime: 30-turn fights; a build: one-spin kills). Now power BUILDS UP over a fight.
+- **Two meters a side, SWORD and SHIELD (10 to fill)**, beside each Slot Machine. Every sword and shield in sight
+  (anywhere on the 3x3) fills its meter. After your spin you use ONE full meter: **FIRE** (hit for the meter's worth)
+  or **BLOCK** (negates the enemy's attack on its next turn), or end the turn. The enemy plays the same meters and
+  fires as soon as its sword is full, so you read its meter and decide: block, or race it (user: "if the slime
+  shielded you'd save your attack; if it was halfway to attacking you'd block").
+- **Three paylines (top, middle, bottom rows) set the worth.** SWORD segments: plain off a winning line (1), gold in a
+  line pair (2), red-hot in a line jackpot (3); a full sword meter keeps upgrading (a better segment replaces the
+  weakest), so you can save it until it's red. SHIELD fills faster instead (a pair 5, a jackpot all of it): a block is
+  all-or-nothing, so empowering it made no sense (user).
+- **HEART and COIN have no meter:** they heal / pay coins the moment they land (x2 in a line pair, x3 in a jackpot).
+  A meter for each, with a HEAL button, was too much on screen (user, 2026-10-17: "we went backwards").
+- **Enemy sabotage is a symbol on its reels:** the slime's SLIME line win gunks your SWORD meter down to 5 bars until
+  you fire (a weak attack next time; user). Enemies heal from their hearts too.
+- **Each Slot Machine's signature meter stays** (TESLA's lightning, JOKER's jackpots, BANKROLL's high roller,
+  JUKEBOX's volume; KNIGHT has none) as ONE more meter, and the player can trigger it, e.g. to multiply a big FIRE
+  (user, 2026-10-17). Not designed yet.
+- Prototype numbers (tuned so a fight runs about 9 turns, simulated): 10-segment meters, FIRE = worth x10 (100-300),
+  KNIGHT 200 HP, SLIME 300 HP hitting x8, strips 5 swords / 4 shields / 3 hearts / 3 coins (slime: 2 slimes).
+
+## Superseded: the score race (built and dropped, 2026-10-16/17)
+Kept for the record. Don't build from these.
+
+### The race and your options (DECIDED 2026-10-16)
 - **The race:** both Slot Machines get the same fixed number of spins (about 5 to start; tuned in play). Turns
   alternate and **the rival spins first each round**, so the race always ends on your spin with a known target
   (NEED 140). The higher score wins; a tie is yours.
@@ -57,7 +82,7 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
   The expert playtest guesses about half of races, mostly because you already lead. Step 2 logs "decided before the
   last spin"; the likely fix is later: the prize grows with the winning margin, so a won last spin is a greed spin.
 
-## What symbols are for (DECIDED 2026-10-16)
+### What symbols are for (DECIDED 2026-10-16)
 - **Every symbol is score.** Nothing attacks, defends or guards: a symbol pays, or changes how score is made.
   Shields leave KNIGHT (GUARDS felt retrofitted, and two symbols on three reels make every spin a pair, so HOLD and
   NUDGE would have nothing to chase).
@@ -82,7 +107,7 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
 - Known risk: more symbols, more spins that pay nothing. Fix with strip counts and NUDGE first; if that's not enough,
   pairs pay more.
 
-## KNIGHT's special symbol: the SWORD pays its EDGE (DECIDED 2026-10-16)
+### KNIGHT's special symbol: the SWORD pays its EDGE (DECIDED 2026-10-16)
 - **Each SWORD on your payline pays its EDGE now** (on top of a pair the other two reels make). **A sword that spun or
   was NUDGEd onto the line then doubles the EDGE for the rest of the race** (10, 20, 40, 80, 160); **a HELD sword
   strikes but doesn't sharpen.** Two swords strike left to right (10 then 20). Three SWORDs are KNIGHT's jackpot:
@@ -102,7 +127,7 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
   doubling was the old trap again (the sword cells cost as many pairs as they paid).
 - Known risk: EDGE's base (10) doesn't grow with the rival's BET; the run's MULT has to carry it.
 
-## The run (DECIDED 2026-10-16)
+### The run (DECIDED 2026-10-16)
 - **9 races in 3 stops of race, race, boss.** The rival's BET by race: x1.5, x2, boss x3 | x2.5, x3, boss x4.5 | x4,
   x5, boss x8 (still geometric; starting numbers for play). The run screen shows the whole road, the next BET and
   the stop's boss BET a race ahead.
@@ -122,7 +147,7 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
   stacking CHERRY may become the default line; a pick adds +15-25% of score until one symbol dominates, so later
   Charms and relics must multiply harder.
 
-## Rival cheats, and the first one: GUNK (DECIDED 2026-10-16)
+### Rival cheats, and the first one: GUNK (DECIDED 2026-10-16)
 - **The rule for every cheat (user, 2026-10-16):** a cheat is visible before the decision it affects, and the player
   can answer it at a price smaller than the hit, so it changes which play is best instead of vetoing it ("just don't
   do it" is not an answer). The rival-first order shows cheats in time; no need to show them a spin early.
@@ -139,7 +164,7 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
 - Known risk: only COIN is a real call, and it barely matters; players may learn "hold sevens, drop the rest".
   Later rivals bring sharper cheats under the same rule.
 
-## How the rival's score grows (DECIDED 2026-10-16)
+### How the rival's score grows (DECIDED 2026-10-16)
 - **A real Slot Machine, scaled by one number:** the rival spins the classic ladder for real (no faked outcomes), and
   everything it scores is multiplied by its **BET**, shown on its machine (BET x2, x6, x20). The BET grows
   geometrically by stop, with a jump for bosses: Balatro's blind curve on a machine that actually spins.
@@ -153,7 +178,7 @@ map, the Cashier, saves, the sim harness) and rebuilds the rules from a small co
   multiply, not add, or the BET curve outruns every build (the Charms and relics step must deliver that). The
   curve's numbers wait for balancing.
 
-## How a run ends (DECIDED 2026-10-16)
+### How a run ends (DECIDED 2026-10-16)
 - **CREDITS: you start with 3; out of credits is GAME OVER.** A lost race costs a credit and that race's prize, and
   you move on. A lost boss race costs a credit and you play it again (INSERT COIN to continue): bosses can't be
   skipped. Beating the final boss wins the run (how many acts is the run's structure, later).
