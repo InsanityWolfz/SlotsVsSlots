@@ -48,9 +48,17 @@ as one spin's flat number (slime: 30-turn fights; a build: one-spin kills). Now 
   A meter for each, with a HEAL button, was too much on screen (user, 2026-10-17: "we went backwards").
 - **Enemy sabotage is a symbol on its reels:** the slime's SLIME line win gunks your SWORD meter down to 5 bars until
   you fire (a weak attack next time; user). Enemies heal from their hearts too.
-- **Each Slot Machine's signature meter stays** (TESLA's lightning, JOKER's jackpots, BANKROLL's high roller,
-  JUKEBOX's volume; KNIGHT has none) as ONE more meter, and the player can trigger it, e.g. to multiply a big FIRE
-  (user, 2026-10-17). Not designed yet.
+- **Each Slot Machine is its ATTACK METER's rule** (user, 2026-10-17, replacing "one more signature meter": TESLA's
+  lightning or JUKEBOX's volume would just be its attack meter, so a third meter changed nothing). Everyone shares
+  SHIELD, hearts and coins; the attack meter decides how the machine wins, the way Slay the Spire's characters share
+  block and attack but win through Strength, poison or orbs. Sketches (only KNIGHT is built; each is designed in turn):
+  - KNIGHT, SWORD (patience): save a full meter while it upgrades, then strike big.
+  - TESLA, CHARGE (tempo): a small meter; firing on back-to-back turns builds a CHAIN (x2, x3...), a turn without a
+    FIRE breaks it. It can't chain forever: it has to block sometime, unless a low-HP, live-on-the-edge build wants
+    to take the hits (user).
+  - JUKEBOX, VOLUME (ramp): never empties; plays every turn for its volume; DROP THE BEAT spends it all at once.
+  - JOKER, JACKPOT (swing): only line wins fill it.
+  - BANKROLL, CHIPS (economy): you fire with your coins.
 - Prototype numbers (tuned so a fight runs about 9 turns, simulated): 10-segment meters, FIRE = worth x10 (100-300),
   KNIGHT 200 HP, SLIME 300 HP hitting x8, strips 5 swords / 4 shields / 3 hearts / 3 coins (slime: 2 slimes).
 

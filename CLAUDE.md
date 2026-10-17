@@ -61,7 +61,9 @@ far it got. Keep that line current while you work.
   fill faster on a line win. Hearts and coins pay instantly (no meter).
 - **The enemy plays the same meters, visibly,** so its sword meter is the telegraph. Its sabotage is a symbol on its
   reels whose line win does something to your meters (the slime: gunks your sword meter to 5 bars until you fire).
-- **Each Slot Machine except KNIGHT keeps its signature meter** (one more meter), which the player can trigger.
+- **Machines differ by their ATTACK METER's rule, not by extra meters** (user, 2026-10-17). Everyone shares the
+  SHIELD meter, hearts and coins; each Slot Machine's attack meter works its own way (KNIGHT's SWORD: save it while it
+  upgrades). No third meter a side.
 - The score race (`src/race/`, NEW GAME (TEST)) is dropped; don't build on it. HOLD, NUDGE, BET and CREDITS were its
   rules, not this game's.
 
