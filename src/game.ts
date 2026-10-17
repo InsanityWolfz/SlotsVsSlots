@@ -68,6 +68,7 @@ import { CHARM_VALUE } from './core/charms';
 import { Focus, type NavDir, type NavRect } from './ui/focus';
 import { desktop, steamUnlock, VERSION } from './build';
 import { RaceScene } from './race/scene';
+import { MeterScene } from './meter/scene';
 
 /** The fight HUD's relic tooltip starts under the player panel (EXPERT_PLAYTEST_12). */
 const RELIC_TIP_TOP = 232;
@@ -330,7 +331,7 @@ export class Game {
   private muteBtn!: Button;
   toolButtons: { tune: Button; log: Button } | null = null;
   /** THE NEW GAME (the rebuild, step 2): while a race is on, it has the screen and the input. */
-  newRace: RaceScene | null = null;
+  newRace: RaceScene | MeterScene | null = null;
 
   /** publicBuild: no TUNE panel, no saved tuning overrides, no dev unlocks (the hosted playtest). */
   constructor(readonly publicBuild = false) {
@@ -349,6 +350,7 @@ export class Game {
         this.chooseCabinet();
       },
       onNewGame: () => this.startNewGame(),
+      onMeters: () => this.startMeters(),
       onTutorial: () => this.startTutorial(),
       onDaily: () => this.startDaily(),
       needsName: () => needsName(this.profile),
@@ -668,6 +670,16 @@ export class Game {
     this.menus.hide();
     this.syncButtons();
     this.newRace = new RaceScene(this.sounds, this.camera, this.ui, () => {
+      this.sounds.click();
+      this.showMenu();
+    });
+  }
+
+  /** THE METERS PROTOTYPE: KNIGHT vs SLIME on its own screen (the same slot as the race scene). */
+  private startMeters(): void {
+    this.menus.hide();
+    this.syncButtons();
+    this.newRace = new MeterScene(this.sounds, this.camera, this.ui, () => {
       this.sounds.click();
       this.showMenu();
     });

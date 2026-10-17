@@ -133,6 +133,8 @@ export class Menus {
       onRace: () => void;
       /** THE NEW GAME (the rebuild's step 2): one race, spin by spin. */
       onNewGame: () => void;
+      /** THE METERS PROTOTYPE: KNIGHT vs SLIME with a SWORD and a SHIELD meter. */
+      onMeters: () => void;
       /** Name entry: claim the name; resolves to the claim result ('ok', 'taken', 'have:NAME', 'offline'). */
       needsName: () => boolean;
       onName: (name: string) => Promise<string>;
@@ -347,6 +349,9 @@ export class Menus {
     // THE NEW GAME (the rebuild, step 2: docs/VISION.md): one race against a plain rival, HOLD and NUDGE.
     const ng = this.btn('NEW GAME (TEST)', x, row(3), 440, 54, () => this.cb.onNewGame(), 2.5);
     this.icons.set(ng, 'chip');
+    // THE METERS PROTOTYPE (user, 2026-10-17): the combat game with build-up meters.
+    const mt = this.btn('METERS (TEST)', x, row(4), 440, 54, () => this.cb.onMeters(), 2.5);
+    this.icons.set(mt, 'chip');
     this.slideIn();
   }
 
@@ -897,7 +902,7 @@ export class Menus {
     if (hasSprite('logo')) drawSprite(ctx, artId('logo'), W / 2, 66 + Math.sin(t * 2) * 2, 2);
     const k = this.panelIn;
     const top = Menus.SUB_Y - 96;
-    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 1 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 6 * Menus.SET_PITCH + 48 : 7 * Menus.SET_PITCH + 70) : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
+    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 1 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 6 * Menus.SET_PITCH + 48 : 7 * Menus.SET_PITCH + 70) : Menus.SUB_Y + 4 * Menus.SUB_PITCH + 58;
     const pw = 540;
     // The panel rises in (no alpha on the layered frame: a half-faded gold rim tints the panel brown).
     ctx.save();
