@@ -128,6 +128,48 @@ are listed as fact.
   hand: the build is free on the turn. [F] [Steam thread](https://steamcommunity.com/app/2379780/discussions/0/4346606879507418212),
   [PocketGamer tier list](https://www.pocketgamer.com/balatro/joker-tier-list/)
 
+### Streaks, chains and tempo (reward acting every turn, punish the pause)
+- **Slay the Spire Wrath (Watcher):** "deal double damage and take double damage"; you enter with cards (Eruption deals
+  its damage first, then enters Wrath) and must leave by card too. The skill players name is knowing which turns are
+  unsafe to end in Wrath (exit, or kill first). Watcher is widely called the strongest character (Calm-to-Wrath loop),
+  so a two-way multiplier with a known exit is strong, not a trap. [W] [StS wiki: Stance](https://slaythespire.wiki.gg/wiki/Stance),
+  [F] [Steam](https://steamcommunity.com/app/646570/discussions/0/3886100869055194457), [Choost tier list](https://choostgames.com/blog/slay-the-spire-tier-list/)
+- **StS scaling attacks:** Rampage (Ironclad) deals 8, +5 each time it's played this combat (upgrade +8; patched from
+  +4). Claw (Defect, 0 cost) deals 3, and every Claw in the deck gains +2 per Claw played this combat. Both grow
+  additively and never reset inside a fight: the cost is deck slots and early weakness, not a streak to protect.
+  [W] [fandom: Rampage](https://slay-the-spire.fandom.com/wiki/Rampage), [fandom: Claw](https://slay-the-spire.fandom.com/wiki/Claw)
+- **StS low-HP payoffs:** Red Skull (Ironclad, common): +3 Strength while HP is at or below 50%. Meat on the Bone: heal
+  12 after combat if at or below 50%. The low-HP reward is a relic you choose, not the base character.
+  [W] [fandom: Relics](https://slay-the-spire.fandom.com/wiki/Relics). Hades: Positive Outlook (Hermes) cuts damage
+  taken at 40% HP or below. [W] [Fextralife](https://hades.wiki.fextralife.com/Positive+Outlook)
+- **Balatro streak Jokers:** Green Joker (common) +1 Mult per hand played, -1 per discard (decays, doesn't reset);
+  Ride the Bus +1 Mult per consecutive hand with no scoring face card, resets to 0 on one; Obelisk grows xMult per
+  consecutive hand that isn't your most-played hand and resets when you play it (players dislike that a tie for
+  most-played also resets it; reported nerf of its step, numbers conflict). The current value shows on the card. Full
+  resets are tolerated when the player controls the trigger (what you play); disliked when an edge case triggers it.
+  [F] [Steam: Obelisk](https://steamcommunity.com/app/2379780/discussions/0/4346607305577986686),
+  [Pro Game Guides](https://progameguides.com/balatro/balatro-joker-tier-list/), [kosgames](https://kosgames.com/balatro-every-joker-with-full-description-53298/)
+- **Crypt of the NecroDancer coin multiplier ("groove chain"):** each kill without a missed beat raises the gold
+  multiplier; a missed beat resets it, but doesn't hurt you directly. Cadence of Hyrule's version also resets on taking
+  damage. The streak is a bonus layer on top of survival, so breaking it never kills you. [W] [Wikipedia](https://en.wikipedia.org/wiki/Crypt_of_the_NecroDancer),
+  [F] [cadence.link](https://cadence.link/general/coin-multiplier)
+- **Gonzo's Quest (NetEnt) avalanche multiplier:** consecutive cascades in one spin step x1, x2, x3, x5 (free falls
+  x3, x6, x9, x15), capped, and reset each spin. A short, capped, visible ladder is the slot-industry form of a chain.
+  [F, affiliate] [gambling.com](https://www.gambling.com/uk/online-casinos/slots/games/gonzo-s-quest)
+- **Fighting-game damage scaling (proration):** each later hit in a combo deals less, so an 11-hit and a 69-hit combo
+  land about the same; designers use it because unforeseen long combos can't be balanced otherwise. Combo length is
+  capped by math, not a hard stop. [W] [Dustloop: GGXrd Damage](https://dustloop.com/w/GGXRD/Damage),
+  [F] [Super Jump](https://www.superjumpmagazine.com/how-damage-scaling-holds-fighting-games-together/)
+- **Hearthstone Combo:** a card's bonus applies if it isn't the first card played this turn; cards in hand glow
+  orange once it's on. A tempo bonus read from a highlight, no counter. [W] [Hearthstone wiki: Keywords](https://hearthstone.wiki.gg/wiki/Keywords)
+- **Dicey Dungeons Robot:** a CPU counter you push toward a limit; going over destroys your equipment, hitting it
+  exactly pays a bonus (push-your-luck, not a streak). [F] [steamah guide](https://steamah.com/dicey-dungeons-all-characters-guide/)
+- **The pattern** (opinion, from the above): chains that feel good show the number where you look, escalate in sight
+  and sound each step, are capped or flattened (Gonzo, proration), and break on something the player chose (Ride the
+  Bus, Obelisk, Wrath's exit). Pure-luck breaks are tolerated only when the streak is a bonus on top (NecroDancer
+  gold), and hated when an edge case triggers them (Obelisk ties). Two-way multipliers (Wrath) make the low-HP edge a
+  decision, and low-HP payoffs live in optional relics.
+
 ### Run structure, scaling and difficulty
 - **Balatro blind curve (White stake), base chips per ante 1-8:** 300, 800, 2,000, 5,000, 11,000, 20,000, 35,000,
   50,000. Small blind = base, Big = 1.5x, Boss = 2x (Ante 8 boss: 100,000). Green stake Ante 8 base 100,000, Purple
@@ -310,6 +352,18 @@ Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP,
   (Violet Vessel).
 - **Opinion:** a cheat should target your standing payline (what HOLD would keep), be visible before HOLD, be
   answerable by not holding or by NUDGE, and last at most the race.
+
+### TESLA's CHARGE / CHAIN (open; METER COMBAT)
+- **Precedent:** see Streaks, chains and tempo. Closest fits: Wrath (two-way risk, chosen exit), Gonzo's capped
+  x1-x2-x3-x5 ladder, Ride the Bus (full reset on a trigger you control), proration (cap the payoff of long chains).
+- **Numbers (computed by hand, binomial approximation, not simulated):** with KNIGHT's prototype strip shape (5 of 15
+  cells the attack symbol) about 3 bolts are in sight a spin. A 4-cell meter fills from empty on ~35% of spins from
+  bolts alone (P(X>=4), X~Bin(9,1/3)); if a bolt on a winning line counts double, ~60%. At ~60% a turn, a chain
+  reaches x3 about 36% of the time from a first FIRE and x4 about 22%.
+- **Pitfall:** if continuation is near 100%, blocking is never worth it and the chain is inevitable; near 35%, the
+  chain is a lottery the player can't steer, and the break reads as random (Obelisk-tie complaint).
+- **Opinion:** break on a turn without a FIRE (user's rule) and NOT on being hit, so the block-or-keep-chain call is
+  the Wrath decision; cap the ladder; meter size is the tuning knob (3/4/5).
 
 ### KNIGHT's SWORD / SHARP (non-paying, +20 to every later paying spin)
 - **Precedent:** Balatro's scaling Jokers that grow per hand played; Buffalo Gold's collect-to-upgrade; Hold & Spin's
