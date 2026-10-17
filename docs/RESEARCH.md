@@ -170,6 +170,54 @@ are listed as fact.
   gold), and hated when an edge case triggers them (Obelisk ties). Two-way multipliers (Wrath) make the low-HP edge a
   decision, and low-HP payoffs live in optional relics.
 
+### Damage over time, ramps and cash-outs (poison, frostbite, hangover)
+- **Slay the Spire poison:** stacks deal their number in damage at the start of the enemy's turn, ignoring block, then
+  drop by 1 (well-known rule; wiki not reachable to quote). Bouncing Flask (2 energy) applies 3 poison three times to
+  random enemies (upgrade: four times). Catalyst doubles an enemy's poison (upgrade: triples); Noxious Fumes adds
+  poison to all enemies every turn (2, upgraded 3, per forum). [W] [StS wiki: Bouncing Flask](https://slaythespire.wiki.gg/wiki/Bouncing_Flask),
+  [F] [Catalyst guide](https://www.magicgameworld.com/slay-the-spire-catalyst-achievement-guide),
+  [Steam: Fumes stacking](https://steamcommunity.com/app/646570/discussions/0/1694917906665098406)
+- **How poison plays (players):** "slow without Catalyst", losing races where you must kill before you're killed; its
+  upside is that it "mostly stacks itself" while you spend your turns on block, so it's the defensive, reliable route
+  ("win more often with Poison, more consistently with Shivs"). The burst cash-out (Catalyst, Burst) is what makes it
+  a win condition. [F, 2017-19 threads] [Steam](https://steamcommunity.com/app/646570/discussions/0/1620599015906317709),
+  [Steam](https://steamcommunity.com/app/646570/discussions/0/1699416432424672548)
+- **Monster Train Frostbite:** stacks deal damage at the end of the turn and decay; it can't finish a unit before it
+  acts. Players: good on bosses, weak on tanky normal units, lacks multiplicative stacking. [F] [Steam](https://steamcommunity.com/app/1102190/discussions/0/2299597907738161639),
+  [ProGameGuides](https://progameguides.com/monster-train/combos-in-monster-train-and-how-they-work/)
+- **Hades Hangover (Dionysus):** ticks every 0.5 s, stacks to 5 (8 with Low Tolerance), stacks fall off over time
+  (sources say ~4 s); it's Dionysus's main damage. [F] [Steam math thread](https://steamcommunity.com/app/1145360/discussions/0/2932364348258805660),
+  [Rogueranker](https://rogueranker.com/hades-2-status-effects/)
+- **Metal: Hellsinger Fury:** a music meter x1-x16 (steps x2, x4, x8, x16) scaling damage and score; on-beat actions
+  raise it, off-beat hits and taking damage drop it; the music gains layers as it rises (full arrangement at x16).
+  [W/F] [wiki: Tutorials](https://metalhellsinger.wiki.gg/wiki/Tutorials), [GameSkinny](https://www.gameskinny.com/tips/metal-hellsinger-how-to-increase-fury-to-get-high-scores/)
+- **The pattern** (opinion, from the above): a DoT ramp is the slow, safe archetype because it keeps working while you
+  defend; it needs a burst cash-out to close fights (Catalyst); and it reads well when the tick is a visible number
+  every turn. If the tick also runs on defend turns, defending costs the ramp nothing.
+
+### Money as power, and swing meters
+- **Balatro Bull:** +2 Chips per $1 held (nothing at $0); Bootstraps: +2 Mult per $5 held. Guides: skip Bull if you
+  spend a lot; the Green Deck (spend as you earn) works poorly with both; The Ox boss can set money to $0. Interest is
+  $1 per $5 held at round end, capped at $5 ($10/$20 with vouchers; To the Moon adds $1 per $5). Players argue
+  saving to $25 vs buying now is situational. [F] [PocketGamer](https://www.pocketgamer.com/balatro/joker-tier-list/),
+  [games.gg money build](https://games.gg/balatro/guides/balatro-money-build/),
+  [Steam: interest](https://steamcommunity.com/app/2379780/discussions/0/4357869401129596810)
+- **The Bazaar Cash Cannon (Pygmalien):** a weapon whose damage scales with gold *gained* over the run (1:1 at Silver,
+  x2/x3 at higher tiers), not gold held, so spending isn't punished. [F] [Mobalytics](https://mobalytics.gg/the-bazaar/builds/cash-cannon-pygmalien)
+- **Gil Toss / Zeninage (Final Fantasy):** FFVII's Coin lets you choose the amount and deals about a tenth of it;
+  Crisis Core's Gil Toss deals a fixed share (20% mastered) of ~1% of your gil; FFVI's cost is Level x30. Money as a
+  weapon is usually a costly late-game sink, not a main attack. [W] [FF wiki: Gil (mirror)](https://breezewiki.discard.no/finalfantasy/wiki/Gil)
+- **Slay the Spire Hand of Greed:** 20 damage, +20 gold if fatal (StS2 figures; upgrade 25/25): damage that pays,
+  the reverse direction. [F] [dood.jp](https://dood.jp/en/sts2/colorless/cards/強欲の手)
+- **Inscryption bones:** a second currency gained when your own cards die (1 each), spent to play bone-cost cards; a
+  loss becomes fuel. [W] [Inscryption wiki: Bones](https://inscryption.fandom.com/wiki/Bones)
+- **"Must hit by" mystery progressives:** the meter climbs between a set start and a guaranteed ceiling; play rises
+  sharply as it nears the ceiling. A visible ceiling turns a swing into anticipation. [F, industry column]
+  [CDC Gaming](https://cdcgaming.com/commentary/frank-floor-talk-the-progress-of-progressives/)
+- **Pattern** (opinion): currency-as-weapon designs avoid a death spiral by scaling with money earned (Cash Cannon)
+  or by being a sink on top of a main attack (Gil Toss); "spend your savings" designs punish the run's economy when
+  fights go badly. Swing meters feel fair when the near-miss is visible and close (a ceiling, a "one short").
+
 ### Run structure, scaling and difficulty
 - **Balatro blind curve (White stake), base chips per ante 1-8:** 300, 800, 2,000, 5,000, 11,000, 20,000, 35,000,
   50,000. Small blind = base, Big = 1.5x, Boss = 2x (Ante 8 boss: 100,000). Green stake Ante 8 base 100,000, Purple
@@ -364,6 +412,19 @@ Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP,
   chain is a lottery the player can't steer, and the break reads as random (Obelisk-tie complaint).
 - **Opinion:** break on a turn without a FIRE (user's rule) and NOT on being hit, so the block-or-keep-chain call is
   the Wrath decision; cap the ladder; meter size is the tuning knob (3/4/5).
+
+### JUKEBOX's VOLUME, JOKER's JACKPOT, BANKROLL's CHIPS (open; METER COMBAT sketches)
+- **Numbers (computed by hand from the 15-cell strip shape, 5 attack symbols, binomial, not simulated):** ~3 attack
+  symbols in sight a spin. A row shows an exact pair of one 5-cell symbol 6/27 (22%) of the time and a jackpot 1/27
+  (3.7%); across 3 rows, ~0.67 pairs and ~0.11 jackpots a spin, and ~59% of spins have at least one line win of
+  that symbol (41% none).
+- **JUKEBOX precedent:** StS poison + Catalyst (ramp, then burst), Hellsinger Fury (music meter). Pitfall: if the
+  tick runs on BLOCK turns, blocking costs the ramp nothing (poison's "stacks itself while you defend"); a capped
+  ramp where the burst always beats holding collapses into "fill and fire".
+- **JOKER precedent:** line-only fill = slot volatility; must-hit-by meters. Pitfall (ours, from SHARP): a symbol
+  that lands and does nothing reads as a blank; with line-only fill, ~2 in 3 landed CARDS do nothing.
+- **BANKROLL precedent:** Balatro Bull/interest, Cash Cannon, Gil Toss. Pitfall: spending the run's savings as
+  damage makes a bad fight a weaker shop (a death spiral); the Bull is skipped by players who spend.
 
 ### KNIGHT's SWORD / SHARP (non-paying, +20 to every later paying spin)
 - **Precedent:** Balatro's scaling Jokers that grow per hand played; Buffalo Gold's collect-to-upgrade; Hold & Spin's
