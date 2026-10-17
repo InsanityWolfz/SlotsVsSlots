@@ -342,16 +342,8 @@ export class Menus {
     const tb = this.btn('TUTORIAL', x, row(1), 440, 54, () => this.cb.onTutorial(), 3);
     this.icons.set(tb, 'iconTutorial');
     this.guardSaved(tb);
-    // THE SCORE RACE (sandbox, 2026-10-15): a run where every fight is a race of spins, highest score wins.
-    const race = this.btn('SCORE RACE (TEST)', x, row(2), 440, 54, () => this.cb.onRace(), 2.5);
-    this.icons.set(race, 'chip');
-    this.guardSaved(race);
-    // THE NEW GAME (the rebuild, step 2: docs/VISION.md): one race against a plain rival, HOLD and NUDGE.
-    const ng = this.btn('NEW GAME (TEST)', x, row(3), 440, 54, () => this.cb.onNewGame(), 2.5);
-    this.icons.set(ng, 'chip');
-    // THE METERS PROTOTYPE (user, 2026-10-17): the combat game with build-up meters.
-    const mt = this.btn('METERS (TEST)', x, row(4), 440, 54, () => this.cb.onMeters(), 2.5);
-    this.icons.set(mt, 'chip');
+    // (The test modes, SCORE RACE / NEW GAME / METERS, are off the menu: the project is paused, user 2026-10-17. Their
+    // code stays: the callbacks below, src/race/ and src/meter/.)
     this.slideIn();
   }
 
@@ -902,7 +894,7 @@ export class Menus {
     if (hasSprite('logo')) drawSprite(ctx, artId('logo'), W / 2, 66 + Math.sin(t * 2) * 2, 2);
     const k = this.panelIn;
     const top = Menus.SUB_Y - 96;
-    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 1 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 6 * Menus.SET_PITCH + 48 : 7 * Menus.SET_PITCH + 70) : Menus.SUB_Y + 4 * Menus.SUB_PITCH + 58;
+    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 1 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 6 * Menus.SET_PITCH + 48 : 7 * Menus.SET_PITCH + 70) : Menus.SUB_Y + 2 * Menus.SUB_PITCH + 58;
     const pw = 540;
     // The panel rises in (no alpha on the layered frame: a half-faded gold rim tints the panel brown).
     ctx.save();

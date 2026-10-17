@@ -3,9 +3,14 @@
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record). The old
 game's roadmap is in git on branch `hp-game-final`.
 
-**In progress (2026-10-17):** the other Slot Machines' attack meters, JUKEBOX (VOLUME), JOKER (JACKPOT) and BANKROLL
-(CHIPS), designing them together (researcher, then playtester, then the user's sign-off), to build into METERS
-(TEST)'s pick. TESLA's CHAIN is done (user: "feels fine").
+**Paused (2026-10-17): the user has set Slots vs. Slots aside for another project.** The test modes (SCORE RACE,
+NEW GAME, METERS) are off PLAY MODES, so the live build is the original game; their code stays (`src/race/`,
+`src/meter/`, the menu callbacks). Where the rebuild stood: METER COMBAT is the model (VISION.md); KNIGHT and TESLA are
+built in `src/meter/`. Next, if it resumes: build JOKER (playtested: only card line wins fill a 10-cell JACKPOT meter,
+a line pair +5, a jackpot fills it; FIRE at any amount for meter x7, doubled when full; a gunk-capped meter doesn't
+count as full; waiting on the user's sign-off), redesign JUKEBOX (a fast-refilling meter can't be a ramp: DROP every
+turn dominated), and build BANKROLL after the Cashier (banking is no choice until coins buy something). The sims are in
+`tools/out/` (gitignored, so local only).
 
 ## Next, one at a time (each played and judged before the next; proposed 2026-10-17)
 1. **TESLA and its CHAIN** (a tempo attack meter, the opposite of KNIGHT's patience): proves machines can play
