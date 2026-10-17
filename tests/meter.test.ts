@@ -1,108 +1,137 @@
 import { describe, expect, it } from 'vitest';
-import { addSeg, Duel, METER, power, symAt, type MSym, type Seg } from '../src/meter/duel';
+import { addSeg, Duel, METER, worth, type MSym, type Seg } from '../src/meter/duel';
 
-/** A duel whose next spin for `side` lands exactly these rows (top, payline, bottom: three symbols each). */
-function rigged(rows: MSym[][], seed = 1): Duel {
-  const d = new Duel(seed);
-  const f = d.you;
-  f.reels = [0, 1, 2].map((r) => [rows[0][r], rows[1][r], rows[2][r]]);
-  // Every stop lands the same 3-cell strip: row 0 is index stop-1, the payline is stop.
+/** Set a side's reels so its next spin lands exactly these rows (top, middle, bottom: three symbols each). */
+function rig(d: Duel, side: 'you' | 'enemy', rows: MSym[][]): void {
+  d[side].reels = [0, 1, 2].map((r) => [rows[0][r], rows[1][r], rows[2][r]]);
   (d as unknown as { rng: { int: () => number } }).rng.int = () => 1;
-  return d;
 }
+const full = (s: Seg = 1): Seg[] => Array(METER.size).fill(s);
 
 describe('the meters prototype', () => {
-  it('every sword and shield in sight fills its meter; COIN fills nothing', () => {
-    const d = rigged([
+  it('every symbol in sight fills its meter (off a line: plain segments)', () => {
+    const d = new Duel(1);
+    rig(d, 'you', [
       ['sword', 'coin', 'shield'],
-      ['coin', 'sword', 'shield'],
-      ['sword', 'sword', 'coin'],
+      ['heart', 'sword', 'shield'],
+      ['coin', 'heart', 'sword'],
     ]);
     const log = d.spin();
-    expect(log.line).toBeNull();
-    expect(d.you.sword).toEqual([1, 1, 1, 1]);
-    expect(d.you.shield).toBe(2);
-    expect(log.fills.every((f) => symAt(d.you, f.reel, f.row) === f.meter)).toBe(true);
+    expect(log.lines).toEqual([]);
+    expect(d.you.meters.sword).toEqual([1, 1, 1]);
+    expect(d.you.meters.shield).toEqual([1, 1]);
+    expect(d.you.meters.heart).toEqual([1, 1]);
+    expect(d.you.meters.coin).toEqual([1, 1]);
   });
 
-  it('a payline sword PAIR fills gold, a JACKPOT red-hot; off-line swords stay orange', () => {
-    const pair = rigged([
-      ['sword', 'coin', 'coin'],
+  it('three paylines: a pair on any row fills gold, three red-hot (QUALITY meters)', () => {
+    const d = new Duel(2);
+    rig(d, 'you', [
       ['sword', 'sword', 'coin'],
-      ['coin', 'coin', 'coin'],
+      ['heart', 'heart', 'heart'],
+      ['coin', 'shield', 'sword'],
     ]);
-    expect(pair.spin().line).toEqual({ tier: 'pair', sym: 'sword' });
-    expect(pair.you.sword).toEqual([2, 2, 1]);
-    const jack = rigged([
-      ['coin', 'coin', 'coin'],
-      ['sword', 'sword', 'sword'],
-      ['coin', 'coin', 'coin'],
+    const log = d.spin();
+    expect(log.lines).toEqual([
+      { row: 0, tier: 'pair', sym: 'sword' },
+      { row: 1, tier: 'jackpot', sym: 'heart' },
     ]);
-    expect(jack.spin().line).toEqual({ tier: 'jackpot', sym: 'sword' });
-    expect(jack.you.sword).toEqual([3, 3, 3]);
+    expect(d.you.meters.sword).toEqual([2, 2, 1]);
+    expect(d.you.meters.heart).toEqual([3, 3, 3]);
   });
 
-  it('a payline shield PAIR fills 5, a JACKPOT fills the meter', () => {
-    const pair = rigged([
-      ['coin', 'coin', 'coin'],
-      ['shield', 'shield', 'coin'],
-      ['coin', 'coin', 'coin'],
+  it('a SHIELD line pair fills 5, a jackpot all of it (FAST meters)', () => {
+    const d = new Duel(3);
+    rig(d, 'you', [
+      ['coin', 'heart', 'coin'],
+      ['shield', 'shield', 'heart'],
+      ['heart', 'coin', 'heart'],
     ]);
-    pair.spin();
-    expect(pair.you.shield).toBe(METER.shieldPair);
-    const jack = rigged([
-      ['coin', 'coin', 'coin'],
-      ['shield', 'shield', 'shield'],
-      ['coin', 'coin', 'coin'],
-    ]);
-    jack.spin();
-    expect(jack.you.shield).toBe(METER.size);
+    d.spin();
+    expect(d.you.meters.shield).toHaveLength(METER.pairFill);
   });
 
-  it('a full sword meter upgrades: a better segment replaces the weakest', () => {
-    const m: Seg[] = Array(METER.size).fill(1);
+  it('a full meter upgrades: a better segment replaces the weakest', () => {
+    const m = full();
     expect(addSeg(m, 1)).toBe(false);
     expect(addSeg(m, 3)).toBe(true);
     expect(m[0]).toBe(3);
-    expect(m.filter((s) => s === 1)).toHaveLength(METER.size - 1);
   });
 
-  it('FIRE hits for the segments times your hit, and empties; one action a turn', () => {
-    const d = new Duel(2);
+  it('a full COIN meter cashes out on its own', () => {
+    const d = new Duel(4);
+    d.you.meters.coin = [...Array(METER.size - 1).fill(1), 1] as Seg[];
+    d.you.meters.coin.pop();
+    rig(d, 'you', [
+      ['coin', 'heart', 'shield'],
+      ['heart', 'sword', 'shield'],
+      ['sword', 'heart', 'sword'],
+    ]);
+    const log = d.spin();
+    expect(log.cashed).toBe(METER.size * METER.you.coin);
+    expect(d.you.coins).toBe(log.cashed);
+    expect(d.you.meters.coin).toEqual([]);
+  });
+
+  it('FIRE hits for its total, HEAL heals for its total (only when hurt), one action a turn', () => {
+    const d = new Duel(5);
     d.spin();
-    d.you.sword = [3, 3, 2, 2, 1, 1, 1, 1, 1, 1];
-    d.you.shield = METER.size;
-    expect(power(d.you)).toBe(16 * METER.you.hit);
+    d.you.meters.sword = [3, 3, 2, 2, 1, 1, 1, 1, 1, 1];
+    d.you.meters.heart = full();
+    expect(d.canAct('you', 'heart')).toBe(false); // full HP
     const log = d.act('sword')!;
     expect(log.damage).toBe(16 * METER.you.hit);
-    expect(d.enemy.hp).toBe(METER.slime.hp - 16 * METER.you.hit);
-    expect(d.you.sword).toEqual([]);
-    expect(d.act('shield')).toBeNull();
+    expect(d.act('heart')).toBeNull();
+    d.phase = 'act';
+    d.you.hp = 50;
+    const h = d.act('heart')!;
+    expect(h.healed).toBe(worth({ ...d.you, meters: { ...d.you.meters, heart: full() } }, 'heart'));
   });
 
-  it("a raised SHIELD negates the enemy's attack on its next turn, then drops", () => {
-    const d = new Duel(3);
+  it("a raised SHIELD negates the slime's next attack", () => {
+    const d = new Duel(6);
     d.spin();
-    d.you.shield = METER.size;
+    d.you.meters.shield = full();
     d.act('shield');
-    d.enemy.sword = Array(METER.size).fill(1);
+    d.enemy.meters.sword = full();
     const logs = d.enemyTurn();
-    expect(logs.at(-1)).toMatchObject({ action: 'fire', blocked: true, damage: 0 });
+    expect(logs.at(-1)).toMatchObject({ action: 'sword', blocked: true, damage: 0 });
     expect(d.you.hp).toBe(METER.you.hp);
-    expect(d.you.guard).toBe(false);
   });
 
-  it('the enemy shield blocks your next fire', () => {
-    const d = new Duel(4);
+  it('a full SLIME meter gunks your SWORD meter to 5 bars (the best stay) until you fire', () => {
+    const d = new Duel(7);
     d.spin();
     d.pass();
-    d.enemy.shield = METER.size;
-    d.enemy.reels = d.enemy.reels.map((r) => r.map(() => 'coin' as const));
-    d.enemyTurn();
-    expect(d.enemy.guard).toBe(true);
+    d.you.meters.sword = [3, 2, 2, 1, 1, 1, 1];
+    d.enemy.meters.slime = full();
+    d.enemy.meters.slime.pop();
+    rig(d, 'enemy', [
+      ['slime', 'heart', 'shield'],
+      ['heart', 'sword', 'shield'],
+      ['sword', 'heart', 'sword'],
+    ]);
+    const logs = d.enemyTurn();
+    expect(logs[0].gunked).toBe(true);
+    expect(d.you.swordCap).toBe(METER.gunkCap);
+    expect(d.you.meters.sword).toEqual([3, 2, 2, 1, 1]);
+    expect(d.full('you', 'sword')).toBe(true);
+    expect(d.enemy.meters.slime).toEqual([]);
+    // A weak fire: 5 bars; then the meter is back to full size.
     d.spin();
-    d.you.sword = Array(METER.size).fill(1);
-    expect(d.act('sword')).toMatchObject({ blocked: true, damage: 0 });
-    expect(d.enemy.hp).toBe(METER.slime.hp);
+    d.you.meters.sword = [3, 2, 2, 1, 1];
+    expect(d.act('sword')!.power).toBe(9 * METER.you.hit);
+    expect(d.you.swordCap).toBe(METER.size);
+  });
+
+  it('the slime fires, else blocks, else heals (when hurt)', () => {
+    const d = new Duel(8);
+    d.spin();
+    d.pass();
+    d.enemy.meters.shield = full();
+    d.enemy.meters.heart = full();
+    d.enemy.hp = 100;
+    const logs = d.enemyTurn();
+    expect(logs.at(-1)!.action).toBe('shield');
   });
 });
