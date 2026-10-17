@@ -11,9 +11,16 @@ import { wrap } from '../core/strip';
  * - HEART and COIN have no meter: they pay the moment they land (heal / coins, x2 in a line pair, x3 in a jackpot).
  * - SLIME (the slime's reels) has no meter: a SLIME line win gunks your SWORD meter down to METER.gunkCap bars (the
  *   best stay) until you fire.
- * After your spin you FIRE or BLOCK (one a turn, if full) or end the turn; the slime fires, else blocks. Pure rules.
+ * After your spin you FIRE or BLOCK (one a turn, if full) or end the turn; the slime fires, else blocks.
+ *
+ * Slot Machines differ by their ATTACK METER's rule (user, 2026-10-17). KNIGHT's SWORD is above (patience). TESLA's
+ * CHARGE (tempo; researcher + playtest, signed off 2026-10-17): a 3-cell meter of BOLTS (+1 each, +2 in a line pair, a
+ * jackpot fills it); TESLA can FIRE with any charge, for charge x hit x CHAIN. The CHAIN steps x1 -> x4 on back-to-back
+ * FIRE turns and breaks to x1 on any turn without a FIRE (a BLOCK, or ending the turn). A FIRE into a raised shield
+ * holds it; the slime's gunk shorts the coil (the chain drops to x1). Pure rules, no drawing.
  */
-export type MSym = 'sword' | 'shield' | 'heart' | 'coin' | 'slime';
+export type MSym = 'sword' | 'shield' | 'heart' | 'coin' | 'slime' | 'bolt';
+export type Machine = 'knight' | 'tesla' | 'slime';
 export type Seg = 1 | 2 | 3;
 
 export const QUALITY: readonly MSym[] = ['sword', 'heart', 'coin'];
@@ -29,6 +36,11 @@ export const METER = {
   // Strips and heals tuned so a fight runs about 9 turns (simulated; the 4-symbol version ran 19, healing and gunking
   // every other turn).
   you: { hp: 200, hit: 10, heal: 4, coin: 1, strip: { sword: 5, shield: 4, heart: 3, coin: 3 } as Partial<Record<MSym, number>> },
+  /** TESLA: hit is per charge, times the CHAIN. */
+  tesla: { hp: 200, hit: 12, heal: 4, coin: 1, strip: { bolt: 5, shield: 4, heart: 3, coin: 3 } as Partial<Record<MSym, number>> },
+  /** TESLA's CHARGE meter size and the CHAIN's cap. */
+  charge: 3,
+  chainCap: 4,
   slime: { hp: 300, hit: 8, heal: 3, coin: 0, strip: { sword: 5, shield: 4, heart: 3, slime: 2 } as Partial<Record<MSym, number>> },
 };
 
@@ -38,6 +50,7 @@ export type Phase = 'spin' | 'act' | 'enemy' | 'over';
 export type Action = 'sword' | 'shield';
 
 export interface Fighter {
+  machine: Machine;
   hp: number;
   maxHp: number;
   stats: (typeof METER)['you'];
@@ -51,6 +64,9 @@ export interface Fighter {
   /** The SWORD meter's size: METER.size, or METER.gunkCap while it's gunked (until it fires). */
   swordCap: number;
   coins: number;
+  /** TESLA: the CHAIN the next FIRE uses (x1-x4), and whether this turn has fired. */
+  chain: number;
+  fired: boolean;
 }
 
 export interface Fill {
@@ -82,28 +98,33 @@ export interface TurnLog {
   /** FIRE: what it dealt (0 if blocked) and its power. A spin: what its HEARTs healed. */
   damage: number;
   power: number;
+  /** TESLA: the CHAIN this FIRE used. */
+  chain: number;
   healed: number;
   blocked: boolean;
 }
 
-const newLog = (side: Side): TurnLog => ({ side, lines: [], fills: [], cashed: 0, gunked: false, action: null, damage: 0, power: 0, healed: 0, blocked: false });
+const newLog = (side: Side): TurnLog => ({ side, lines: [], fills: [], cashed: 0, gunked: false, action: null, damage: 0, power: 0, chain: 1, healed: 0, blocked: false });
 
-function fighter(stats: Fighter['stats'], rng: Rng): Fighter {
+function fighter(machine: Machine, stats: Fighter['stats'], rng: Rng): Fighter {
   const reels = [0, 1, 2].map(() => {
     const strip: MSym[] = [];
     for (const [s, n] of Object.entries(stats.strip) as [MSym, number][]) for (let i = 0; i < n; i++) strip.push(s);
     return rng.shuffle(strip);
   });
   return {
+    machine,
     hp: stats.hp,
     maxHp: stats.hp,
     stats,
     reels,
     stops: reels.map((r) => rng.int(r.length)),
-    meters: { sword: [], shield: [], heart: [], coin: [], slime: [] },
+    meters: { sword: [], shield: [], heart: [], coin: [], slime: [], bolt: [] },
     guard: false,
     swordCap: METER.size,
     coins: 0,
+    chain: 1,
+    fired: false,
   };
 }
 
@@ -121,9 +142,13 @@ export function addSeg(meter: Seg[], seg: Seg, cap = METER.size): boolean {
 }
 
 export const total = (m: Seg[]) => m.reduce((a, s) => a + s, 0);
-/** What a full meter does: SWORD's hit, HEART's heal, COIN's cash-out. */
+/** A machine's attack meter: KNIGHT's (and the slime's) SWORD, TESLA's CHARGE (bolts). */
+export const attackOf = (f: Fighter): MSym => (f.machine === 'tesla' ? 'bolt' : 'sword');
+
+/** What a meter does now: the attack meter's FIRE (TESLA: x its CHAIN), HEART's heal, COIN's cash-out. */
 export function worth(f: Fighter, m: MSym): number {
   const t = total(f.meters[m]);
+  if (m === 'bolt') return t * f.stats.hit * f.chain;
   return m === 'sword' ? t * f.stats.hit : m === 'heart' ? t * f.stats.heal : m === 'coin' ? t * f.stats.coin : 0;
 }
 
@@ -135,15 +160,15 @@ export class Duel {
   turn = 1;
   winner: Side | null = null;
 
-  constructor(seed = Rng.randomSeed()) {
+  constructor(seed = Rng.randomSeed(), machine: Machine = 'knight') {
     this.rng = new Rng(seed);
-    this.you = fighter(METER.you, this.rng);
-    this.enemy = fighter(METER.slime as Fighter['stats'], this.rng);
+    this.you = fighter(machine, machine === 'tesla' ? METER.tesla : METER.you, this.rng);
+    this.enemy = fighter('slime', METER.slime as Fighter['stats'], this.rng);
   }
 
-  /** A meter's size (the SWORD's shrinks while gunked). */
+  /** A meter's size (the SWORD's shrinks while gunked; TESLA's CHARGE is small). */
   cap(side: Side, m: MSym): number {
-    return m === 'sword' ? this[side].swordCap : METER.size;
+    return m === 'sword' ? this[side].swordCap : m === 'bolt' ? METER.charge : METER.size;
   }
 
   full(side: Side, m: MSym): boolean {
@@ -188,6 +213,15 @@ export class Duel {
       }
       // SLIME has no meter either: only a line win counts (it gunks, below).
       if (c.sym === 'slime') continue;
+      // TESLA's BOLTS: +1 each, +2 each in a line pair; a line jackpot fills the CHARGE.
+      if (c.sym === 'bolt') {
+        const room = METER.charge - meter.length;
+        const amount = Math.min(room, c.line ? (c.line.tier === 'jackpot' ? METER.charge : 2) : 1);
+        if (amount <= 0) continue;
+        for (let i = 0; i < amount; i++) meter.push(1);
+        log.fills.push({ reel: c.reel, row: c.row, meter: c.sym, seg: 1, amount });
+        continue;
+      }
       if (isQuality(c.sym)) {
         const seg: Seg = c.line ? (c.line.tier === 'jackpot' ? 3 : 2) : 1;
         if (addSeg(meter, seg, this.cap(side, c.sym))) log.fills.push({ reel: c.reel, row: c.row, meter: c.sym, seg, amount: 1 });
@@ -205,11 +239,15 @@ export class Duel {
     }
     f.hp += log.healed;
     f.coins += log.cashed;
-    // A SLIME line win (pair or jackpot) gunks the other side's SWORD meter.
+    // A SLIME line win (pair or jackpot) gunks the other side's attack: KNIGHT's SWORD meter shrinks to 5 bars;
+    // TESLA's coil shorts (its CHAIN drops to x1).
     if (log.lines.some((l) => l.sym === 'slime')) {
       const o = this[side === 'you' ? 'enemy' : 'you'];
-      o.swordCap = METER.gunkCap;
-      o.meters.sword = o.meters.sword.slice(0, METER.gunkCap);
+      if (o.machine === 'tesla') o.chain = 1;
+      else {
+        o.swordCap = METER.gunkCap;
+        o.meters.sword = o.meters.sword.slice(0, METER.gunkCap);
+      }
       log.gunked = true;
     }
     return log;
@@ -223,21 +261,33 @@ export class Duel {
     return log;
   }
 
-  /** Can this action go now (its meter is full)? */
+  /** Can this action go now? FIRE: the attack meter is full (TESLA: any charge). BLOCK: the shield is full. */
   canAct(side: Side, a: Action): boolean {
-    return this.full(side, a);
+    const f = this[side];
+    if (a === 'shield') return this.full(side, 'shield');
+    return f.machine === 'tesla' ? f.meters.bolt.length > 0 : this.full(side, 'sword');
   }
 
   /** FIRE the sword or raise the SHIELD (one a turn). */
   act(a: Action): TurnLog | null {
     if (this.phase !== 'act' || !this.canAct('you', a)) return null;
     const log = this.use('you', a);
+    this.endYourTurn();
     this.phase = this.winner ? 'over' : 'enemy';
     return log;
   }
 
   pass(): void {
-    if (this.phase === 'act') this.phase = 'enemy';
+    if (this.phase !== 'act') return;
+    this.endYourTurn();
+    this.phase = 'enemy';
+  }
+
+  /** TESLA: a turn without a FIRE breaks the CHAIN. */
+  private endYourTurn(): void {
+    const f = this.you;
+    if (!f.fired) f.chain = 1;
+    f.fired = false;
   }
 
   private use(side: Side, a: Action): TurnLog {
@@ -245,19 +295,26 @@ export class Duel {
     const other = this[side === 'you' ? 'enemy' : 'you'];
     const log = newLog(side);
     log.action = a;
-    if (a === 'shield') f.guard = true;
-    else {
-      log.power = worth(f, 'sword');
-      if (other.guard) log.blocked = true;
-      else {
-        log.damage = Math.min(other.hp, log.power);
-        other.hp -= log.damage;
-        if (other.hp <= 0) this.winner = side;
-      }
+    if (a === 'shield') {
+      f.guard = true;
+      f.meters.shield = [];
+      return log;
     }
-    f.meters[a] = [];
+    const m = attackOf(f);
+    log.power = worth(f, m);
+    log.chain = f.chain;
+    if (other.guard) log.blocked = true;
+    else {
+      log.damage = Math.min(other.hp, log.power);
+      other.hp -= log.damage;
+      if (other.hp <= 0) this.winner = side;
+      // TESLA: a FIRE that lands steps the CHAIN (one into a raised shield holds it).
+      if (f.machine === 'tesla') f.chain = Math.min(METER.chainCap, f.chain + 1);
+    }
+    f.fired = true;
+    f.meters[m] = [];
     // Firing clears a gunked SWORD meter.
-    if (a === 'sword') f.swordCap = METER.size;
+    f.swordCap = METER.size;
     return log;
   }
 

@@ -10,7 +10,7 @@ import { Particles } from '../present/particles';
 import { drawSprite, type SpriteId } from '../render/sprites';
 import { drawText, fmtNum } from '../render/text';
 import { Button } from '../ui/button';
-import { addSeg, Duel, isQuality, METER, total, type Action, type Fighter, type MSym, type Seg, type Side, type TurnLog } from './duel';
+import { addSeg, attackOf, Duel, isQuality, METER, total, worth, type Action, type Fighter, type Machine, type MSym, type Seg, type Side, type TurnLog } from './duel';
 
 const CX = W / 2;
 type Tone = { hi: string; mid: string; lo: string; glow: string };
@@ -21,6 +21,7 @@ const TONE: Record<MSym, Tone> = {
   heart: { hi: '#ffc4e8', mid: '#ff5aa8', lo: '#9c1f5c', glow: '#ff8ac8' },
   coin: { hi: '#f4f6fa', mid: '#b8c2d0', lo: '#5a6474', glow: '#dfe6f0' },
   slime: { hi: '#c8ff9a', mid: '#5ed15a', lo: '#2a6e2a', glow: '#8aff7a' },
+  bolt: { hi: '#fffbd0', mid: '#ffe34a', lo: '#a8820c', glow: '#fff3a0' },
 };
 /** A QUALITY meter's better segments: gold (a line pair), red-hot (a line jackpot). */
 const GOLD: Tone = { hi: '#fff3a8', mid: '#ffd23f', lo: '#a8741a', glow: '#ffe08a' };
@@ -40,7 +41,8 @@ const MW = 36;
 function meterRect(side: Side, m: MSym) {
   const win = reelWindow(sideId(side));
   const { left, right } = LAYOUT[side];
-  const i = left.indexOf(m);
+  // (TESLA's CHARGE sits where KNIGHT's SWORD does: the attack meter is always on the left.)
+  const i = left.indexOf(m === 'bolt' ? 'sword' : m);
   const x = i >= 0 ? win.x - 26 - MW - i * (MW + 14) : win.x + MACHINE_W + 26 + right.indexOf(m) * (MW + 14);
   return { x, y: win.y, w: MW, h: MACHINE_H };
 }
@@ -66,7 +68,7 @@ export class MeterScene {
   private particles = new Particles();
   private machines!: Record<SideId, MachineView>;
   /** Meters, HP and coins on screen (they tick toward the real ones as the presentation plays). */
-  private shown!: Record<Side, { meters: Record<MSym, Seg[]>; hp: number; coins: number }>;
+  private shown!: Record<Side, { meters: Record<MSym, Seg[]>; hp: number; coins: number; chain: number }>;
   private punch: Record<Side, Partial<Record<MSym, number>>> = { you: {}, enemy: {} };
   /** A winning line being drawn across a machine (rows 0-2). */
   private lineFx: { side: Side; row: number; color: string; progress: number; alpha: number } | null = null;
@@ -77,7 +79,12 @@ export class MeterScene {
   private actBtns: Record<Action, Button>;
   private spinBtn: Button;
   private againBtn: Button;
+  private switchBtn: Button;
   private menuBtn: Button;
+  /** The machine-pick screen (before a fight), its buttons, and the machine picked. */
+  private picking = true;
+  private pickBtns: Record<'knight' | 'tesla', Button>;
+  private machine: Machine = 'knight';
   private pressed: Button | null = null;
   private token = 0;
   private time = 0;
@@ -99,8 +106,19 @@ export class MeterScene {
       shield: btn('BLOCK', 330, 640, 160, 60, () => void this.act('shield')),
     };
     this.spinBtn = btn('SPIN', 640, 650, 220, 72, () => this.pressSpin(), true);
-    this.againBtn = btn('REMATCH', CX - 130, 650, 240, 64, () => this.start(), true);
-    this.menuBtn = btn('MENU', CX + 140, 650, 160, 64, () => this.onExit());
+    this.againBtn = btn('REMATCH', CX - 250, 650, 220, 64, () => this.start(), true);
+    this.switchBtn = btn('MACHINES', CX - 10, 650, 230, 64, () => (this.picking = true));
+    this.menuBtn = btn('MENU', CX + 210, 650, 160, 64, () => this.onExit());
+    this.pickBtns = {
+      knight: btn('KNIGHT', CX - 220, 560, 300, 80, () => this.pick('knight'), true),
+      tesla: btn('TESLA', CX + 220, 560, 300, 80, () => this.pick('tesla'), true),
+    };
+    this.start();
+  }
+
+  private pick(m: Machine): void {
+    this.machine = m;
+    this.picking = false;
     this.start();
   }
 
@@ -110,12 +128,12 @@ export class MeterScene {
     this.clock.endSkip();
     this.fx.clear();
     this.lineFx = null;
-    this.duel = new Duel();
+    this.duel = new Duel(undefined, this.machine);
     this.machines = {
       player: new MachineView('player', viewOf(this.duel.you), this.sounds),
       enemy: new MachineView('enemy', viewOf(this.duel.enemy), this.sounds),
     };
-    const s = (f: Fighter) => ({ meters: { sword: [], shield: [], heart: [], coin: [], slime: [] } as Record<MSym, Seg[]>, hp: f.hp, coins: 0 });
+    const s = (f: Fighter) => ({ meters: { sword: [], shield: [], heart: [], coin: [], slime: [], bolt: [] } as Record<MSym, Seg[]>, hp: f.hp, coins: 0, chain: 1 });
     this.shown = { you: s(this.duel.you), enemy: s(this.duel.enemy) };
     this.gunkFx = { you: 0, enemy: 0 };
     this.busy = false;
@@ -158,6 +176,12 @@ export class MeterScene {
   private async enemyTurn(): Promise<void> {
     const tok = this.token;
     this.busy = true;
+    // TESLA: a turn without a FIRE broke the CHAIN.
+    if (this.shown.you.chain > 1 && this.duel.you.chain === 1) {
+      this.shown.you.chain = 1;
+      this.sounds.fizzle();
+      await this.callout('CHAIN BROKEN', MACHINE_CX.player, TONE.bolt.hi, 0.45);
+    }
     this.setActive('enemy');
     await this.clock.wait(0.35);
     if (tok !== this.token) return;
@@ -244,12 +268,12 @@ export class MeterScene {
       }
       const meter = sh.meters[f.meter];
       if (isQuality(f.meter)) addSeg(meter, f.seg, this.duel.cap(side, f.meter));
-      else for (let i = 0; i < f.amount && meter.length < METER.size; i++) meter.push(1);
+      else for (let i = 0; i < f.amount && meter.length < this.duel.cap(side, f.meter); i++) meter.push(1);
       const p = this.punch[side];
       void this.clock.tween({ from: 1.25, to: 1, dur: 0.16, ease: sineOut, onUpdate: (v) => (p[f.meter] = v) });
       const r = meterRect(side, f.meter);
       this.particles.burst({ x: win.x + PITCH * (f.reel + 0.5), y: win.y + PITCH * (f.row + 0.5), count: 5, colors: [col.hi, col.mid], speed: [60, 160], gravity: 200, life: [0.2, 0.4] });
-      this.particles.burst({ x: r.x + r.w / 2, y: r.y + r.h - (meter.length - 0.5) * (r.h / METER.size), count: 5 + f.seg * 3, colors: [col.hi, '#ffffff'], speed: [40, 140], gravity: -60, life: [0.25, 0.5] });
+      this.particles.burst({ x: r.x + r.w / 2, y: r.y + r.h - (meter.length - 0.5) * (r.h / this.segCount(f.meter)), count: 5 + f.seg * 3, colors: [col.hi, '#ffffff'], speed: [40, 140], gravity: -60, life: [0.25, 0.5] });
       this.sounds.ding(Math.min(6, meter.length));
       await this.clock.wait(0.06);
     }
@@ -268,6 +292,15 @@ export class MeterScene {
     await this.clock.wait(0.2);
     this.sounds.slimeSplat();
     this.camera.shake(6, 0.25);
+    // TESLA: the gunk shorts the coil; the CHAIN drops to x1.
+    if (this.duel[other].machine === 'tesla') {
+      const r = meterRect(other, 'bolt');
+      this.particles.burst({ x: r.x + r.w / 2, y: r.y + r.h / 2, count: 30, colors: [TONE.slime.hi, TONE.slime.mid, TONE.bolt.hi], speed: [100, 300], gravity: 600 });
+      this.shown[other].chain = 1;
+      this.sounds.fizzle();
+      await this.callout('COIL SHORTED: CHAIN X1', MACHINE_CX[sideId(other)], TONE.slime.hi, 0.7);
+      return;
+    }
     const r = meterRect(other, 'sword');
     this.particles.burst({ x: r.x + r.w / 2, y: r.y + r.h / 4, count: 30, colors: [TONE.slime.hi, TONE.slime.mid], speed: [100, 300], gravity: 600 });
     this.shown[other].meters.sword = this.shown[other].meters.sword.slice(0, METER.gunkCap);
@@ -281,7 +314,7 @@ export class MeterScene {
     const other: Side = side === 'you' ? 'enemy' : 'you';
     const from = reelWindow(sideId(side));
     const to = reelWindow(sideId(other));
-    this.shown[side].meters[log.action!] = [];
+    this.shown[side].meters[log.action === 'sword' ? attackOf(this.duel[side]) : 'shield'] = [];
     if (log.action === 'sword' && this.gunkFx[side] > 0) void this.clock.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (this.gunkFx[side] = v) });
     if (log.action === 'shield') {
       this.sounds.shieldGain(2);
@@ -291,7 +324,8 @@ export class MeterScene {
     const sx = from.x + MACHINE_W / 2;
     const tx = to.x + MACHINE_W / 2;
     const y = from.y + MACHINE_H / 2;
-    const p = this.fx.add(new Projectile('swordProjectile', sx, y, 5, side === 'enemy', TONE.sword.glow));
+    const tesla = this.duel[side].machine === 'tesla';
+    const p = this.fx.add(new Projectile(tesla ? 'bolt' : 'swordProjectile', sx, y, tesla ? 3.5 : 5, side === 'enemy', tesla ? TONE.bolt.glow : TONE.sword.glow));
     this.sounds.whoosh();
     await this.clock.tween({
       from: 0,
@@ -307,9 +341,10 @@ export class MeterScene {
     if (log.blocked) {
       this.sounds.block();
       this.particles.burst({ x: tx, y, count: 24, colors: [TONE.shield.hi, TONE.shield.mid, '#ffffff'], speed: [150, 400], gravity: 300 });
-      await this.callout('BLOCKED!', tx, TONE.shield.hi, 0.5);
+      await this.callout(tesla ? 'BLOCKED! CHAIN HOLDS' : 'BLOCKED!', tx, TONE.shield.hi, 0.5);
       return;
     }
+    if (tesla) this.sounds.thunder();
     const target = this.machines[sideId(other)];
     this.sounds.hit(log.damage / 12);
     this.camera.shake(Math.min(18, 6 + log.damage / 20), 0.3);
@@ -324,6 +359,17 @@ export class MeterScene {
     await this.clock.tween({ from: hp0, to: this.duel[other].hp, dur: 0.45, onUpdate: (v) => (this.shown[other].hp = Math.round(v)) });
     await this.clock.wait(0.25);
     this.fx.remove(dmg);
+    // TESLA: a FIRE that lands steps the CHAIN.
+    if (tesla && this.duel[side].chain > this.shown[side].chain) {
+      this.shown[side].chain = this.duel[side].chain;
+      this.sounds.energyPip(this.shown[side].chain);
+      await this.callout(`CHAIN X${this.shown[side].chain}!`, from.x + MACHINE_W / 2, TONE.bolt.hi, 0.4);
+    }
+  }
+
+  /** Segments a meter is drawn with (TESLA's CHARGE is small). */
+  private segCount(m: MSym): number {
+    return m === 'bolt' ? METER.charge : METER.size;
   }
 
   private async callout(text: string, x: number, color: string, hold: number, y = MACHINE_TOP + MACHINE_H + 30): Promise<void> {
@@ -338,9 +384,16 @@ export class MeterScene {
 
   private visibleButtons(): Button[] {
     const d = this.duel;
+    for (const b of Object.values(this.pickBtns)) b.visible = this.picking;
+    if (this.picking) {
+      for (const b of [this.spinBtn, this.againBtn, this.switchBtn, this.menuBtn, ...Object.values(this.actBtns)]) b.visible = false;
+      return this.buttons.filter((b) => b.visible);
+    }
     const over = d.phase === 'over' && !this.busy;
     const acting = d.phase === 'act' && !this.busy;
     this.spinBtn.visible = !over;
+    // FIRE shows what it hits for (TESLA: charge x hit x CHAIN).
+    this.actBtns.sword.label = acting && d.canAct('you', 'sword') ? `FIRE ${fmtNum(worth(d.you, attackOf(d.you)))}` : 'FIRE';
     this.spinBtn.enabled = !this.busy && (d.phase === 'spin' || d.phase === 'act');
     this.spinBtn.label = d.phase === 'act' ? 'END TURN' : 'SPIN';
     for (const a of ['sword', 'shield'] as const) {
@@ -348,14 +401,14 @@ export class MeterScene {
       b.visible = !over;
       b.enabled = acting && d.canAct('you', a);
     }
-    this.againBtn.visible = this.menuBtn.visible = over;
+    this.againBtn.visible = this.switchBtn.visible = this.menuBtn.visible = over;
     return this.buttons.filter((b) => b.visible);
   }
 
   /** Tapping a usable meter uses it (the same as its button). */
   private meterAt(x: number, y: number): Action | null {
     for (const m of ['sword', 'shield'] as const) {
-      const r = meterRect('you', m);
+      const r = meterRect('you', m === 'sword' ? attackOf(this.duel.you) : m);
       if (x >= r.x - 6 && x < r.x + r.w + 6 && y >= r.y && y < r.y + r.h) return m;
     }
     return null;
@@ -368,6 +421,7 @@ export class MeterScene {
       b.down();
       return;
     }
+    if (this.picking) return;
     if (this.busy) return void this.clock.skip();
     const m = this.meterAt(x, y);
     if (m) void this.act(m);
@@ -385,6 +439,7 @@ export class MeterScene {
       b.hover = b.contains(x, y);
       any ||= b.hover && b.enabled;
     }
+    if (this.picking) return any;
     const m = this.meterAt(x, y);
     return any || (!!m && this.duel.phase === 'act' && this.duel.canAct('you', m));
   }
@@ -392,6 +447,11 @@ export class MeterScene {
   key(k: string): boolean {
     if (k === 'escape') {
       this.onExit();
+      return true;
+    }
+    if (this.picking) {
+      if (k === '1') this.pick('knight');
+      else if (k === '2') this.pick('tesla');
       return true;
     }
     if (k === ' ' || k === 'enter') {
@@ -419,10 +479,13 @@ export class MeterScene {
 
   drawWorld(ctx: CanvasRenderingContext2D): void {
     const t = this.time;
+    if (this.picking) return this.drawPick(ctx, t);
     for (const s of ['you', 'enemy'] as const) {
       this.drawHud(ctx, s);
-      for (const m of [...LAYOUT[s].left, ...LAYOUT[s].right]) this.drawMeter(ctx, s, m, t);
+      this.drawMeter(ctx, s, attackOf(this.duel[s]), t);
+      this.drawMeter(ctx, s, 'shield', t);
     }
+    this.drawChain(ctx, t);
     this.machines.player.draw(ctx, this.clock.time);
     this.machines.enemy.draw(ctx, this.clock.time);
     this.drawLine(ctx);
@@ -441,7 +504,7 @@ export class MeterScene {
     const x = MACHINE_CX[sideId(side)];
     const f = this.duel[side];
     const hp = this.shown[side].hp;
-    drawText(ctx, side === 'you' ? 'KNIGHT' : 'SLIME', x, 112, 4, side === 'you' ? COLORS.goldLight : '#9dff6a');
+    drawText(ctx, side === 'you' ? this.duel.you.machine.toUpperCase() : 'SLIME', x, 112, 4, side === 'you' ? COLORS.goldLight : '#9dff6a');
     const w = 300;
     const y = 150;
     ctx.fillStyle = COLORS.outline;
@@ -482,8 +545,8 @@ export class MeterScene {
     ctx.fillRect(r.x - 4, r.y - 4, r.w + 8, r.h + 8);
     ctx.fillStyle = '#120a1c';
     ctx.fillRect(r.x, r.y, r.w, r.h);
-    const seg = r.h / METER.size;
-    for (let i = 0; i < METER.size; i++) {
+    const seg = r.h / this.segCount(m);
+    for (let i = 0; i < this.segCount(m); i++) {
       const y = r.y + r.h - (i + 1) * seg;
       if (i < n) {
         const c = segTone(m, segs[i]);
@@ -524,8 +587,41 @@ export class MeterScene {
     // Under it: what a full one does (FIRE 160, HEAL 80...), else its count.
     const f = this.duel[side];
     const amount = total(segs) * (m === 'sword' ? f.stats.hit : m === 'heart' ? f.stats.heal : m === 'coin' ? f.stats.coin : 0);
-    const label = full ? (m === 'sword' ? `${fmtNum(amount)}` : m === 'heart' ? `+${fmtNum(amount)}` : m === 'shield' ? 'UP' : 'GO') : `${n}${cap < METER.size ? `/${cap}` : ''}`;
+    const label = m === 'bolt' ? `${n}/${cap}` : full ? (m === 'sword' ? `${fmtNum(amount)}` : m === 'heart' ? `+${fmtNum(amount)}` : m === 'shield' ? 'UP' : 'GO') : `${n}${cap < METER.size ? `/${cap}` : ''}`;
     drawText(ctx, label, r.x + r.w / 2, r.y + r.h + 14, 1.5, full ? base.hi : COLORS.textDim, { alpha: full ? 0.75 + 0.25 * Math.sin(t * 6) : 1 });
+  }
+
+  /** TESLA: the CHAIN badge over the FIRE button (x1 dim; x2+ crackles). */
+  private drawChain(ctx: CanvasRenderingContext2D, t: number): void {
+    const d = this.duel;
+    if (d.you.machine !== 'tesla') return;
+    const c = this.shown.you.chain;
+    const live = c > 1;
+    const x = 150;
+    const y = 596;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 70, y - 14, 140, 28);
+    ctx.fillStyle = live ? TONE.bolt.mid : COLORS.panelLight;
+    ctx.fillRect(x - 70, y - 14, 140, 3);
+    drawText(ctx, `CHAIN X${c}`, x, y + 1, 2.5, live ? TONE.bolt.hi : COLORS.textDim, { alpha: live ? 0.8 + 0.2 * Math.sin(t * 9) : 1 });
+  }
+
+  /** The pick: KNIGHT (patience) or TESLA (tempo), each in a line. */
+  private drawPick(ctx: CanvasRenderingContext2D, t: number): void {
+    drawText(ctx, 'CHOOSE YOUR SLOT MACHINE', CX, 120, 4, COLORS.goldLight);
+    const card = (x: number, name: string, sprite: SpriteId, lines: string[], tone: Tone) => {
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(x - 156, 190, 312, 310);
+      ctx.fillStyle = tone.mid;
+      ctx.fillRect(x - 153, 193, 306, 304);
+      ctx.fillStyle = COLORS.panel;
+      ctx.fillRect(x - 149, 197, 298, 296);
+      drawSprite(ctx, sprite, x, 262 + Math.sin(t * 2) * 3, 5);
+      drawText(ctx, name, x, 336, 3, tone.hi);
+      lines.forEach((l, i) => drawText(ctx, l, x, 376 + i * 26, 1.5, COLORS.text));
+    };
+    card(CX - 220, 'SWORD: PATIENCE', 'sword', ['A FULL SWORD KEEPS UPGRADING:', 'GOLD, THEN RED HOT.', 'SAVE IT, THEN STRIKE BIG.'], TONE.sword);
+    card(CX + 220, 'CHARGE: TEMPO', 'bolt', ['FIRE WITH ANY CHARGE.', 'FIRE TURN AFTER TURN FOR A', 'CHAIN: X2, X3, X4.', 'A TURN WITHOUT A FIRE BREAKS IT.'], TONE.bolt);
   }
 
   /** A winning line drawn across its row. */
@@ -567,6 +663,7 @@ export class MeterScene {
     let text = "SLIME'S TURN";
     if (!this.busy && d.phase === 'spin') text = 'SPIN';
     if (!this.busy && d.phase === 'act') text = (['sword', 'shield'] as const).some((a) => d.canAct('you', a)) ? 'USE A METER' : 'END TURN';
+    if (!this.busy && d.phase === 'act' && d.you.machine === 'tesla' && d.you.chain > 1) text = 'NO FIRE BREAKS THE CHAIN';
     if (this.busy && (d.phase === 'act' || d.phase === 'spin')) text = '';
     if (text) drawText(ctx, text, x, 646, 2.5, COLORS.text);
     if (!this.busy && d.phase === 'act') {

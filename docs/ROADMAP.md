@@ -3,8 +3,8 @@
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record). The old
 game's roadmap is in git on branch `hp-game-final`.
 
-**In progress (2026-10-17):** step 1, TESLA's CHAIN: designing it (researcher, then playtester, then the user's
-sign-off). Machines differ by their attack meter's rule (VISION.md).
+**In progress (2026-10-17):** step 1, TESLA's CHAIN, is built and waiting on the user's play: METERS (TEST) now opens
+on a KNIGHT / TESLA pick. Machines differ by their attack meter's rule (VISION.md).
 
 ## Next, one at a time (each played and judged before the next; proposed 2026-10-17)
 1. **TESLA and its CHAIN** (a tempo attack meter, the opposite of KNIGHT's patience): proves machines can play

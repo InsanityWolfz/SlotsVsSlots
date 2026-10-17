@@ -53,9 +53,16 @@ as one spin's flat number (slime: 30-turn fights; a build: one-spin kills). Now 
   SHIELD, hearts and coins; the attack meter decides how the machine wins, the way Slay the Spire's characters share
   block and attack but win through Strength, poison or orbs. Sketches (only KNIGHT is built; each is designed in turn):
   - KNIGHT, SWORD (patience): save a full meter while it upgrades, then strike big.
-  - TESLA, CHARGE (tempo): a small meter; firing on back-to-back turns builds a CHAIN (x2, x3...), a turn without a
-    FIRE breaks it. It can't chain forever: it has to block sometime, unless a low-HP, live-on-the-edge build wants
-    to take the hits (user).
+  - **TESLA, CHARGE (tempo) (DECIDED 2026-10-17, built):** a 3-cell CHARGE meter of BOLTS (+1 each, +2 each in a
+    line pair, a line jackpot fills it). TESLA can FIRE with ANY charge, for charge x 12 x CHAIN. The CHAIN steps
+    x1 -> x4 (cap) on back-to-back FIRE turns and breaks to x1 on any turn without a FIRE (a BLOCK, or ending the
+    turn). A FIRE into a raised shield holds the chain (no step); the slime's gunk shorts the coil (chain to x1). It
+    can't chain forever: it has to block sometime, unless a low-HP, live-on-the-edge build wants to take the hits
+    (user; that payoff belongs to a relic or Charm later). Why fire-any-charge (playtest, 20,000 fights a variant):
+    with a full-meter rule, breaks came 62% from bad fills and the block-or-chain choice came up 0.5 times a fight;
+    with fire-any-charge, half the breaks are chosen, the choice comes up 1.6 times a fight, and careful play (70%)
+    beats always firing (51%). Fights run about 12 turns played carefully (KNIGHT: 9). The meter barely matters yet
+    (it's nearly always full); upgrades and relics can make it matter (user).
   - JUKEBOX, VOLUME (ramp): never empties; plays every turn for its volume; DROP THE BEAT spends it all at once.
   - JOKER, JACKPOT (swing): only line wins fill it.
   - BANKROLL, CHIPS (economy): you fire with your coins.

@@ -142,4 +142,82 @@ describe('the meters prototype', () => {
     const logs = d.enemyTurn();
     expect(logs.at(-1)!.action).toBe('shield');
   });
+
+  describe('TESLA: CHARGE and the CHAIN', () => {
+    const tesla = (seed = 20) => new Duel(seed, 'tesla');
+
+    it('bolts fill a 3-cell CHARGE: +1 each, +2 in a line pair, a jackpot fills it', () => {
+      const d = tesla();
+      rig(d, 'you', [
+        ['bolt' as MSym, 'coin', 'shield'],
+        ['heart', 'heart', 'shield'],
+        ['coin', 'heart', 'coin'],
+      ]);
+      d.spin();
+      expect(d.you.meters.bolt).toHaveLength(1);
+      const p = tesla(21);
+      rig(p, 'you', [
+        ['bolt' as MSym, 'bolt' as MSym, 'shield'],
+        ['heart', 'coin', 'shield'],
+        ['coin', 'heart', 'coin'],
+      ]);
+      p.spin();
+      expect(p.you.meters.bolt).toHaveLength(METER.charge);
+    });
+
+    it('fires with any charge for charge x hit x CHAIN; back-to-back fires step the chain to the cap', () => {
+      const d = tesla();
+      const fire = (charge: number) => {
+        d.phase = 'act';
+        d.enemy.guard = false;
+        d.you.meters.bolt = Array(charge).fill(1);
+        const log = d.act('sword')!;
+        d.phase = 'act';
+        return log;
+      };
+      expect(fire(1)).toMatchObject({ power: 1 * METER.tesla.hit * 1, chain: 1 });
+      expect(fire(3)).toMatchObject({ power: 3 * METER.tesla.hit * 2, chain: 2 });
+      fire(1);
+      fire(1);
+      expect(d.you.chain).toBe(METER.chainCap);
+      fire(1);
+      expect(d.you.chain).toBe(METER.chainCap);
+    });
+
+    it('a turn without a FIRE breaks the chain (BLOCK or end turn); a FIRE into a shield holds it', () => {
+      const d = tesla();
+      d.spin();
+      d.you.chain = 3;
+      d.you.meters.shield = full();
+      d.act('shield');
+      expect(d.you.chain).toBe(1);
+      const e = tesla(22);
+      e.spin();
+      e.you.chain = 3;
+      e.pass();
+      expect(e.you.chain).toBe(1);
+      const g = tesla(23);
+      g.spin();
+      g.you.chain = 3;
+      g.enemy.guard = true;
+      g.you.meters.bolt = [1];
+      expect(g.act('sword')).toMatchObject({ blocked: true });
+      expect(g.you.chain).toBe(3);
+    });
+
+    it("the slime's gunk shorts the coil: the chain drops to x1", () => {
+      const d = tesla();
+      d.spin();
+      d.you.meters.bolt = [1];
+      d.act('sword');
+      d.you.chain = 3;
+      rig(d, 'enemy', [
+        ['slime', 'slime', 'shield'],
+        ['heart', 'sword', 'shield'],
+        ['sword', 'heart', 'sword'],
+      ]);
+      expect(d.enemyTurn()[0].gunked).toBe(true);
+      expect(d.you.chain).toBe(1);
+    });
+  });
 });
