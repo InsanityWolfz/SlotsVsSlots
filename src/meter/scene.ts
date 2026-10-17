@@ -10,17 +10,21 @@ import { drawSprite } from '../render/sprites';
 import { drawText, fmtNum } from '../render/text';
 import { Button } from '../ui/button';
 import type { SideId } from '../core/config';
-import { Duel, METER, type Fighter, type MSym, type Side, type TurnLog } from './duel';
+import { addSeg, Duel, METER, type Fighter, type Meter, type Seg, type Side, type TurnLog } from './duel';
 
 const CX = W / 2;
 /** The SWORD meter: shiny orange. The SHIELD meter: blue. */
 const ORANGE = { hi: '#ffd08a', mid: '#ff8a1c', lo: '#b34a0c', glow: '#ffb347' };
 const BLUE = { hi: '#a8dcff', mid: '#3b8ef0', lo: '#1d3a8c', glow: '#7cc4ff' };
-const tone = (m: MSym) => (m === 'sword' ? ORANGE : BLUE);
+const tone = (m: Meter) => (m === 'sword' ? ORANGE : BLUE);
+/** Sword segments by worth: orange (off the payline), gold (a payline pair), red-hot (a payline jackpot). */
+const GOLD = { hi: '#fff3a8', mid: '#ffd23f', lo: '#a8741a', glow: '#ffe08a' };
+const HOT = { hi: '#ffb0a0', mid: '#ff3a2e', lo: '#8e1f1a', glow: '#ff6a4a' };
+const segTone = (s: Seg) => (s === 3 ? HOT : s === 2 ? GOLD : ORANGE);
 const sideId = (s: Side): SideId => (s === 'you' ? 'player' : 'enemy');
 
 /** A meter's spot: beside its machine (SWORD on the left, SHIELD on the right). */
-function meterRect(side: Side, m: MSym) {
+function meterRect(side: Side, m: Meter) {
   const win = reelWindow(sideId(side));
   const w = side === 'you' ? 40 : 30;
   const x = m === 'sword' ? win.x - 24 - w - 12 : win.x + MACHINE_W + 24 + 12;
@@ -47,8 +51,8 @@ export class MeterScene {
   private particles = new Particles();
   private machines!: Record<SideId, MachineView>;
   /** Meters and HP on screen (they tick toward the real ones as the presentation plays). */
-  private shown!: Record<Side, { sword: number; shield: number; hp: number }>;
-  private punch: Record<Side, Record<MSym, number>> = { you: { sword: 1, shield: 1 }, enemy: { sword: 1, shield: 1 } };
+  private shown!: Record<Side, { sword: Seg[]; shield: number; hp: number }>;
+  private punch: Record<Side, Record<Meter, number>> = { you: { sword: 1, shield: 1 }, enemy: { sword: 1, shield: 1 } };
   private busy = false;
   private buttons: Button[] = [];
   private spinBtn: Button;
@@ -92,7 +96,7 @@ export class MeterScene {
       player: new MachineView('player', viewOf(this.duel.you), this.sounds),
       enemy: new MachineView('enemy', viewOf(this.duel.enemy), this.sounds),
     };
-    const s = (f: Fighter) => ({ sword: 0, shield: 0, hp: f.hp });
+    const s = (f: Fighter) => ({ sword: [] as Seg[], shield: 0, hp: f.hp });
     this.shown = { you: s(this.duel.you), enemy: s(this.duel.enemy) };
     this.busy = false;
     this.machines.player.active = 1;
@@ -119,7 +123,7 @@ export class MeterScene {
     this.clock.endSkip();
   }
 
-  private async act(m: MSym): Promise<void> {
+  private async act(m: Meter): Promise<void> {
     if (this.busy || this.duel.phase !== 'act') return;
     if (!this.duel.full('you', m)) return void this.sounds.fizzle();
     const tok = this.token;
@@ -171,33 +175,52 @@ export class MeterScene {
     for (const s of ['you', 'enemy'] as const) void this.clock.to(this.machines[sideId(s)], 'active', side === s ? 1 : 0, 0.25);
   }
 
-  /** The reels land, then every sword and shield in sight lights up and pops into its meter, one by one. */
+  /**
+   * The reels land; a payline PAIR or JACKPOT calls out first (it decides the fill's worth), then every sword and
+   * shield in sight lights up and pops into its meter, one by one, in its colour.
+   */
   private async playSpin(side: Side, log: TurnLog): Promise<void> {
     const m = this.machines[sideId(side)];
     m.clearRowFx();
     await m.spin(this.duel[side].stops, false, this.clock);
     const win = reelWindow(sideId(side));
-    for (const c of log.counted) {
-      const fx = m.reels[c.reel].rows[c.row];
-      const sh = this.shown[side];
-      const fills = sh[c.sym] < METER.size;
-      fx.glowColor = tone(c.sym).glow;
-      fx.glow = fills ? 0.85 : 0.3;
-      void this.clock.tween({ from: 1.2, to: 1, dur: 0.14, ease: sineOut, onUpdate: (v) => (fx.punch = v) });
-      if (fills) {
-        sh[c.sym]++;
-        const p = this.punch[side];
-        void this.clock.tween({ from: 1.25, to: 1, dur: 0.16, ease: sineOut, onUpdate: (v) => (p[c.sym] = v) });
-        const r = meterRect(side, c.sym);
-        this.particles.burst({ x: win.x + PITCH * (c.reel + 0.5), y: win.y + PITCH * (c.row + 0.5), count: 5, colors: [tone(c.sym).hi, tone(c.sym).mid], speed: [60, 160], gravity: 200, life: [0.2, 0.4] });
-        this.particles.burst({ x: r.x + r.w / 2, y: r.y + r.h - (sh[c.sym] - 0.5) * (r.h / METER.size), count: 6, colors: [tone(c.sym).hi, '#ffffff'], speed: [40, 140], gravity: -60, life: [0.25, 0.5] });
-        this.sounds.ding(Math.min(6, sh[c.sym]));
-        if (sh[c.sym] === METER.size) this.sounds.stingerSmall();
-      }
-      await this.clock.wait(fills ? 0.07 : 0.02);
+    const cx = win.x + MACHINE_W / 2;
+    if (log.line) {
+      const jackpot = log.line.tier === 'jackpot';
+      const sword = log.line.sym === 'sword';
+      const col = sword ? (jackpot ? HOT : GOLD) : BLUE;
+      m.payline.color = col.mid;
+      m.payline.alpha = 1;
+      await this.clock.tween({ from: 0, to: 1, dur: 0.18, onUpdate: (v) => (m.payline.progress = v) });
+      const text = sword ? (jackpot ? 'SWORD JACKPOT! RED HOT' : 'SWORD PAIR! GOLD') : jackpot ? 'SHIELD JACKPOT! FULL' : `SHIELD PAIR! +${METER.shieldPair}`;
+      if (jackpot) {
+        this.sounds.fanfareJackpot();
+        this.camera.shake(8, 0.3);
+      } else this.sounds.stingerSmall();
+      // Over the machine (under its HP bar): the meters' labels sit under it.
+      await this.callout(text, cx, col.hi, jackpot ? 0.6 : 0.4, win.y - 30);
+      m.payline.alpha = 0;
     }
-    await this.clock.wait(0.2);
+    const sh = this.shown[side];
+    for (const f of log.fills) {
+      const fx = m.reels[f.reel].rows[f.row];
+      const col = f.meter === 'sword' ? segTone(f.seg) : BLUE;
+      fx.glowColor = col.glow;
+      fx.glow = 0.85;
+      void this.clock.tween({ from: 1.2, to: 1, dur: 0.14, ease: sineOut, onUpdate: (v) => (fx.punch = v) });
+      if (f.meter === 'sword') addSeg(sh.sword, f.seg);
+      else sh.shield = Math.min(METER.size, sh.shield + f.amount);
+      const n = f.meter === 'sword' ? sh.sword.length : sh.shield;
+      const p = this.punch[side];
+      void this.clock.tween({ from: 1.25, to: 1, dur: 0.16, ease: sineOut, onUpdate: (v) => (p[f.meter] = v) });
+      const r = meterRect(side, f.meter);
+      this.particles.burst({ x: win.x + PITCH * (f.reel + 0.5), y: win.y + PITCH * (f.row + 0.5), count: 5, colors: [col.hi, col.mid], speed: [60, 160], gravity: 200, life: [0.2, 0.4] });
+      this.particles.burst({ x: r.x + r.w / 2, y: r.y + r.h - (n - 0.5) * (r.h / METER.size), count: 6 + f.seg * 3, colors: [col.hi, '#ffffff'], speed: [40, 140], gravity: -60, life: [0.25, 0.5] });
+      this.sounds.ding(Math.min(6, n));
+      await this.clock.wait(0.07);
+    }
     for (const reel of m.reels) for (const r of reel.rows) r.glow = 0;
+    await this.clock.wait(0.15);
   }
 
   /** FIRE: the sword flies and hits (or bounces off a raised shield). SHIELD: it goes up. */
@@ -206,7 +229,8 @@ export class MeterScene {
     const other: Side = side === 'you' ? 'enemy' : 'you';
     const from = reelWindow(sideId(side));
     const to = reelWindow(sideId(other));
-    this.shown[side][log.action === 'fire' ? 'sword' : 'shield'] = 0;
+    if (log.action === 'fire') this.shown[side].sword = [];
+    else this.shown[side].shield = 0;
     if (log.action === 'shield') {
       this.sounds.shieldGain(2);
       await this.callout('SHIELD UP', from.x + MACHINE_W / 2, BLUE.hi, 0.45);
@@ -252,8 +276,8 @@ export class MeterScene {
     this.fx.remove(dmg);
   }
 
-  private async callout(text: string, x: number, color: string, hold: number): Promise<void> {
-    const t = this.fx.add(new FloatText(text, x, MACHINE_TOP + MACHINE_H + 30, 3, color));
+  private async callout(text: string, x: number, color: string, hold: number, y = MACHINE_TOP + MACHINE_H + 30): Promise<void> {
+    const t = this.fx.add(new FloatText(text, x, y, 3, color));
     t.plate = true;
     void this.clock.tween({ from: 0.4, to: 1, dur: 0.2, ease: backOut(2), onUpdate: (v) => (t.punch = v) });
     await this.clock.wait(hold);
@@ -276,7 +300,7 @@ export class MeterScene {
   }
 
   /** Tapping a meter uses it (the same as its button). */
-  private meterAt(x: number, y: number): MSym | null {
+  private meterAt(x: number, y: number): Meter | null {
     for (const m of ['sword', 'shield'] as const) {
       const r = meterRect('you', m);
       if (x >= r.x - 8 && x < r.x + r.w + 8 && y >= r.y && y < r.y + r.h) return m;
@@ -373,14 +397,14 @@ export class MeterScene {
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.fillRect(x - w / 2, y, (w * Math.max(0, hp)) / f.maxHp, 6);
     drawText(ctx, `${fmtNum(Math.max(0, hp))} / ${fmtNum(f.maxHp)}`, x, y + 12, 2, COLORS.text);
-    drawText(ctx, `HITS FOR ${fmtNum(f.hit)}`, x, 222, 1.5, COLORS.textDim);
   }
 
   /** A meter: 5 bubbly segments that fill bottom-up; full, it glows and says what it does. */
-  private drawMeter(ctx: CanvasRenderingContext2D, side: Side, m: MSym, t: number): void {
+  private drawMeter(ctx: CanvasRenderingContext2D, side: Side, m: Meter, t: number): void {
     const r = meterRect(side, m);
     const c = tone(m);
-    const n = this.shown[side][m];
+    const segs = this.shown[side].sword;
+    const n = m === 'sword' ? segs.length : this.shown[side].shield;
     const full = n >= METER.size;
     const k = this.punch[side][m];
     ctx.save();
@@ -404,7 +428,9 @@ export class MeterScene {
     for (let i = 0; i < METER.size; i++) {
       const y = r.y + r.h - (i + 1) * seg;
       if (i < n) {
-        // A shiny segment: dark edge, bright body, a highlight stripe, and a bubble that drifts up inside.
+        // A shiny segment: dark edge, bright body, a highlight stripe, and a bubble that drifts up inside. Sword
+        // segments wear their worth (best at the bottom): orange, gold, red-hot.
+        const c = m === 'sword' ? segTone(segs[i]) : tone(m);
         ctx.fillStyle = c.lo;
         ctx.fillRect(r.x + 2, y + 2, r.w - 4, seg - 4);
         ctx.fillStyle = c.mid;
@@ -425,7 +451,8 @@ export class MeterScene {
     // Its symbol over it, and what a full one does under it.
     const iconScale = side === 'you' ? 2.5 : 2;
     drawSprite(ctx, m, r.x + r.w / 2, r.y - 26, iconScale);
-    const label = full ? (m === 'sword' ? 'FIRE!' : 'BLOCK!') : `${n}/${METER.size}`;
+    // A full sword says what it hits for (its segments' worth).
+    const label = full ? (m === 'sword' ? `FIRE ${fmtNum(segs.reduce((a, s) => a + s, 0) * this.duel[side].hit)}` : 'BLOCK!') : `${n}/${METER.size}`;
     drawText(ctx, label, r.x + r.w / 2, r.y + r.h + 18, side === 'you' ? 2 : 1.5, full ? c.hi : COLORS.textDim, { alpha: full ? 0.75 + 0.25 * Math.sin(t * 6) : 1 });
   }
 
@@ -438,7 +465,7 @@ export class MeterScene {
     ctx.lineWidth = 6;
     ctx.strokeRect(win.x - 26, win.y - 26, MACHINE_W + 52, MACHINE_H + 52);
     ctx.restore();
-    drawSprite(ctx, 'shield', win.x - 26, win.y - 26, 3);
+    drawSprite(ctx, 'shield', win.x + MACHINE_W / 2, win.y - 26, 3);
   }
 
   /** The middle: whose turn it is and what to do. */
@@ -453,7 +480,7 @@ export class MeterScene {
     if (text) drawText(ctx, text, CX, 320, 2.5, COLORS.text);
     if (!this.busy && d.phase === 'act' && d.enemy.guard) drawText(ctx, 'SLIME SHIELD UP', CX, 360, 2, BLUE.hi);
     if (!this.busy && d.phase === 'act') {
-      const e = d.enemy.meter.sword;
+      const e = d.enemy.sword.length;
       if (e >= METER.size - 2) drawText(ctx, `SLIME SWORD ${e}/${METER.size}`, CX, 400, 2, COLORS.danger);
     }
   }
