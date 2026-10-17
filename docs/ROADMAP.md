@@ -4,8 +4,8 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
 game's roadmap is in git on branch `hp-game-final`.
 
 **In progress (2026-10-17): the METERS prototype** (the combat game with build-up meters; user's spec). PLAY MODES >
-METERS (TEST): KNIGHT vs SLIME, swords and shields only; every sword/shield anywhere on the 3x3 fills its meter (5 to
-fill); after your spin you use ONE full meter: FIRE the sword (100) or raise the SHIELD (negates the slime's attack on
+METERS (TEST): KNIGHT vs SLIME, swords and shields only; every sword/shield anywhere on the 3x3 fills its meter (10 to
+fill; 5 filled in about a spin); after your spin you use ONE full meter: FIRE the sword (100) or raise the SHIELD (negates the slime's attack on
 its next turn); the slime plays the same meters (fires a full sword at once). KNIGHT 200 HP, SLIME 180 HP / hits 50.
 `src/meter/duel.ts` the rules, `src/meter/scene.ts` the screen. Waiting on the user's play. The score race (NEW GAME
 (TEST), `src/race/`) stays as an experiment; don't build on it.

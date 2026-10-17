@@ -3,7 +3,7 @@ import { wrap } from '../core/strip';
 
 /**
  * THE METERS PROTOTYPE (user, 2026-10-17): KNIGHT vs SLIME, swords and shields only. Every SWORD and SHIELD in sight
- * (anywhere on the 3x3, not just the payline) fills its meter; a meter is full at METER.size. After your spin you may
+ * (anywhere on the 3x3, not just the payline) fills its meter; a meter is full at METER.size (10). After your spin you may
  * use ONE full meter: fire the SWORD (hit for your damage) or raise the SHIELD (it negates the enemy's attack on its
  * next turn, if it attacks). The enemy plays the same meters: it fires a full SWORD at once, else raises a full SHIELD.
  * Pure rules, no drawing.
@@ -11,8 +11,8 @@ import { wrap } from '../core/strip';
 export type MSym = 'sword' | 'shield';
 
 export const METER = {
-  /** Symbols to fill a meter. */
-  size: 5,
+  /** Symbols to fill a meter (5 filled in about one spin: user, 2026-10-17). */
+  size: 10,
   strip: { sword: 6, shield: 6 } as Record<MSym, number>,
   you: { hp: 200, hit: 100 },
   slime: { hp: 180, hit: 50 },

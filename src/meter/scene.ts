@@ -438,7 +438,7 @@ export class MeterScene {
     ctx.lineWidth = 6;
     ctx.strokeRect(win.x - 26, win.y - 26, MACHINE_W + 52, MACHINE_H + 52);
     ctx.restore();
-    drawSprite(ctx, 'shield', win.x + MACHINE_W / 2, win.y - 34, 3);
+    drawSprite(ctx, 'shield', win.x - 26, win.y - 26, 3);
   }
 
   /** The middle: whose turn it is and what to do. */
