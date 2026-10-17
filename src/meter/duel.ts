@@ -2,16 +2,16 @@ import { Rng } from '../core/rng';
 import { wrap } from '../core/strip';
 
 /**
- * THE METERS PROTOTYPE (user, 2026-10-17): KNIGHT vs SLIME. Every symbol in sight (anywhere on the 3x3) fills its
- * meter; a meter is full at METER.size. THREE PAYLINES (top, middle, bottom rows) decide how good the fill is:
- * - QUALITY meters (SWORD, HEART, COIN): a symbol off a winning line fills a plain segment (worth 1); in a line PAIR,
- *   gold (2); in a line JACKPOT (three), red-hot (3). A full meter keeps upgrading: a better segment replaces the
- *   weakest. SWORD fires for its total x hit; HEART heals its total x heal; COIN cashes out its total in coins.
- * - FAST meters (SHIELD, SLIME): a line pair fills METER.pairFill at once, a jackpot fills it all.
- * You: SWORD (FIRE), SHIELD (BLOCK: negates the slime's next attack) and HEART (HEAL) are buttons, one a turn after
- * your spin; COIN cashes out on its own. The SLIME: it fires a full SWORD, else raises a full SHIELD, else heals with a
- * full HEART (when hurt), one a turn; its SLIME meter, full, GUNKS your SWORD meter down to METER.gunkCap bars (the
- * best ones stay): your next FIRE can only be that weak; firing clears the gunk (user, 2026-10-17). Pure rules.
+ * THE METERS PROTOTYPE (user, 2026-10-17): KNIGHT vs SLIME. Two meters a side, SWORD and SHIELD (10 to fill), fed by
+ * every sword and shield in sight (anywhere on the 3x3). THREE PAYLINES (top, middle, bottom rows) set the worth:
+ * - SWORD: off a winning line, a plain segment (worth 1); in a line PAIR, gold (2); in a line JACKPOT, red-hot (3). A
+ *   full meter keeps upgrading (a better segment replaces the weakest). FIRE hits for its total x hit.
+ * - SHIELD: fills faster: a line pair fills METER.pairFill at once, a jackpot fills it all. A raised shield negates
+ *   the other side's attack on its next turn.
+ * - HEART and COIN have no meter: they pay the moment they land (heal / coins, x2 in a line pair, x3 in a jackpot).
+ * - SLIME (the slime's reels) has no meter: a SLIME line win gunks your SWORD meter down to METER.gunkCap bars (the
+ *   best stay) until you fire.
+ * After your spin you FIRE or BLOCK (one a turn, if full) or end the turn; the slime fires, else blocks. Pure rules.
  */
 export type MSym = 'sword' | 'shield' | 'heart' | 'coin' | 'slime';
 export type Seg = 1 | 2 | 3;
@@ -22,18 +22,20 @@ export const isQuality = (s: MSym) => QUALITY.includes(s);
 export const METER = {
   /** Segments to fill a meter. */
   size: 10,
-  /** A line pair fills a FAST meter (SHIELD, SLIME) by this many; a jackpot fills it all. */
+  /** A line pair fills the SHIELD meter by this many; a jackpot fills it all. */
   pairFill: 5,
-  /** A full SLIME meter gunks the other side's SWORD meter down to this many bars, until it fires. */
+  /** A SLIME line win gunks the other side's SWORD meter down to this many bars, until it fires. */
   gunkCap: 5,
-  you: { hp: 200, hit: 10, heal: 5, coin: 1, strip: { sword: 4, shield: 4, heart: 4, coin: 4 } as Partial<Record<MSym, number>> },
-  slime: { hp: 300, hit: 8, heal: 4, coin: 0, strip: { sword: 4, shield: 4, heart: 4, slime: 4 } as Partial<Record<MSym, number>> },
+  // Strips and heals tuned so a fight runs about 9 turns (simulated; the 4-symbol version ran 19, healing and gunking
+  // every other turn).
+  you: { hp: 200, hit: 10, heal: 4, coin: 1, strip: { sword: 5, shield: 4, heart: 3, coin: 3 } as Partial<Record<MSym, number>> },
+  slime: { hp: 300, hit: 8, heal: 3, coin: 0, strip: { sword: 5, shield: 4, heart: 3, slime: 2 } as Partial<Record<MSym, number>> },
 };
 
 export type Side = 'you' | 'enemy';
 export type Phase = 'spin' | 'act' | 'enemy' | 'over';
 /** The actions a full meter can take (one a turn). */
-export type Action = 'sword' | 'shield' | 'heart';
+export type Action = 'sword' | 'shield';
 
 export interface Fighter {
   hp: number;
@@ -72,12 +74,12 @@ export interface TurnLog {
   side: Side;
   lines: LineWin[];
   fills: Fill[];
-  /** A full COIN meter cashed out (coins). */
+  /** Coins the spin's COINs paid. */
   cashed: number;
-  /** A full SLIME meter gunked the other side's SWORD meter. */
+  /** A SLIME line win gunked the other side's SWORD meter. */
   gunked: boolean;
   action: Action | null;
-  /** FIRE: what it dealt (0 if blocked) and its power. HEAL: what it healed. */
+  /** FIRE: what it dealt (0 if blocked) and its power. A spin: what its HEARTs healed. */
   damage: number;
   power: number;
   healed: number;
@@ -173,6 +175,19 @@ export class Duel {
     const bonusDone = new Set<LineWin>();
     for (const c of cells) {
       const meter = f.meters[c.sym];
+      // HEART and COIN have no meter: they pay the moment they land (a line win pays 2x or 3x).
+      if (c.sym === 'heart' || c.sym === 'coin') {
+        const seg: Seg = c.line ? (c.line.tier === 'jackpot' ? 3 : 2) : 1;
+        let amount = seg * (c.sym === 'heart' ? f.stats.heal : f.stats.coin);
+        if (c.sym === 'heart') amount = Math.min(amount, f.maxHp - f.hp - log.healed);
+        if (amount <= 0) continue;
+        if (c.sym === 'heart') log.healed += amount;
+        else log.cashed += amount;
+        log.fills.push({ reel: c.reel, row: c.row, meter: c.sym, seg, amount });
+        continue;
+      }
+      // SLIME has no meter either: only a line win counts (it gunks, below).
+      if (c.sym === 'slime') continue;
       if (isQuality(c.sym)) {
         const seg: Seg = c.line ? (c.line.tier === 'jackpot' ? 3 : 2) : 1;
         if (addSeg(meter, seg, this.cap(side, c.sym))) log.fills.push({ reel: c.reel, row: c.row, meter: c.sym, seg, amount: 1 });
@@ -188,18 +203,14 @@ export class Duel {
         log.fills.push({ reel: c.reel, row: c.row, meter: c.sym, seg: 1, amount });
       }
     }
-    // The automatic meters: COIN cashes out, SLIME gunks the other side's SWORD meter.
-    if (this.full(side, 'coin')) {
-      log.cashed = worth(f, 'coin');
-      f.coins += log.cashed;
-      f.meters.coin = [];
-    }
-    if (this.full(side, 'slime')) {
+    f.hp += log.healed;
+    f.coins += log.cashed;
+    // A SLIME line win (pair or jackpot) gunks the other side's SWORD meter.
+    if (log.lines.some((l) => l.sym === 'slime')) {
       const o = this[side === 'you' ? 'enemy' : 'you'];
       o.swordCap = METER.gunkCap;
       o.meters.sword = o.meters.sword.slice(0, METER.gunkCap);
       log.gunked = true;
-      f.meters.slime = [];
     }
     return log;
   }
@@ -212,12 +223,12 @@ export class Duel {
     return log;
   }
 
-  /** Can this action go now (its meter is full; HEAL only when hurt)? */
+  /** Can this action go now (its meter is full)? */
   canAct(side: Side, a: Action): boolean {
-    return this.full(side, a) && (a !== 'heart' || this[side].hp < this[side].maxHp);
+    return this.full(side, a);
   }
 
-  /** FIRE the sword, raise the SHIELD or HEAL (one a turn). */
+  /** FIRE the sword or raise the SHIELD (one a turn). */
   act(a: Action): TurnLog | null {
     if (this.phase !== 'act' || !this.canAct('you', a)) return null;
     const log = this.use('you', a);
@@ -235,10 +246,7 @@ export class Duel {
     const log = newLog(side);
     log.action = a;
     if (a === 'shield') f.guard = true;
-    else if (a === 'heart') {
-      log.healed = Math.min(f.maxHp - f.hp, worth(f, 'heart'));
-      f.hp += log.healed;
-    } else {
+    else {
       log.power = worth(f, 'sword');
       if (other.guard) log.blocked = true;
       else {
@@ -258,7 +266,7 @@ export class Duel {
     if (this.phase !== 'enemy') throw new Error(`enemyTurn in phase ${this.phase}`);
     this.enemy.guard = false;
     const logs = [this.spinAndFill('enemy')];
-    const act = (['sword', 'shield', 'heart'] as const).find((a) => this.canAct('enemy', a));
+    const act = (['sword', 'shield'] as const).find((a) => this.canAct('enemy', a));
     if (act) logs.push(this.use('enemy', act));
     this.you.guard = false;
     this.turn++;

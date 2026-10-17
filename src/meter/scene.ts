@@ -32,10 +32,10 @@ const art = (s: MSym): SpriteId => (s === 'heart' ? 'slotHeart' : s) as SpriteId
 
 /** Each side's meters, left of the machine then right (innermost first). */
 const LAYOUT: Record<Side, { left: MSym[]; right: MSym[] }> = {
-  you: { left: ['sword', 'coin'], right: ['shield', 'heart'] },
-  enemy: { left: ['sword', 'slime'], right: ['shield', 'heart'] },
+  you: { left: ['sword'], right: ['shield'] },
+  enemy: { left: ['sword'], right: ['shield'] },
 };
-const MW = 30;
+const MW = 36;
 
 function meterRect(side: Side, m: MSym) {
   const win = reelWindow(sideId(side));
@@ -95,9 +95,8 @@ export class MeterScene {
       return b;
     };
     this.actBtns = {
-      sword: btn('FIRE', 120, 640, 130, 56, () => void this.act('sword')),
-      shield: btn('BLOCK', 265, 640, 140, 56, () => void this.act('shield')),
-      heart: btn('HEAL', 410, 640, 130, 56, () => void this.act('heart')),
+      sword: btn('FIRE', 150, 640, 150, 60, () => void this.act('sword')),
+      shield: btn('BLOCK', 330, 640, 160, 60, () => void this.act('shield')),
     };
     this.spinBtn = btn('SPIN', 640, 650, 220, 72, () => this.pressSpin(), true);
     this.againBtn = btn('REMATCH', CX - 130, 650, 240, 64, () => this.start(), true);
@@ -213,7 +212,8 @@ export class MeterScene {
       this.lineFx = fx;
       await this.clock.tween({ from: 0, to: 1, dur: 0.16, onUpdate: (v) => (fx.progress = v) });
       const name = l.sym.toUpperCase();
-      const what = isQuality(l.sym) ? (jackpot ? 'RED HOT' : 'GOLD') : jackpot ? 'FULL' : `+${METER.pairFill}`;
+      const what =
+        l.sym === 'sword' ? (jackpot ? 'RED HOT' : 'GOLD') : l.sym === 'shield' ? (jackpot ? 'FULL' : `+${METER.pairFill}`) : l.sym === 'slime' ? 'GUNK' : jackpot ? 'X3' : 'X2';
       if (jackpot) {
         this.sounds.fanfareJackpot();
         this.camera.shake(8, 0.3);
@@ -228,6 +228,20 @@ export class MeterScene {
       fx.glowColor = col.glow;
       fx.glow = 0.85;
       void this.clock.tween({ from: 1.2, to: 1, dur: 0.14, ease: sineOut, onUpdate: (v) => (fx.punch = v) });
+      // HEART and COIN pay at once: a little number pops off the cell and the HP or COINS ticks up.
+      if (f.meter === 'heart' || f.meter === 'coin') {
+        const heart = f.meter === 'heart';
+        if (heart) sh.hp = Math.min(this.duel[side].maxHp, sh.hp + f.amount);
+        else sh.coins += f.amount;
+        const t = this.fx.add(new FloatText(`+${fmtNum(f.amount)}`, win.x + PITCH * (f.reel + 0.5), win.y + PITCH * (f.row + 0.5) - 20, 2.5, col.hi));
+        t.plate = true;
+        void this.clock.tween({ from: 0, to: 1, dur: 0.5, onUpdate: (v) => ((t.y = win.y + PITCH * (f.row + 0.5) - 20 - v * 30), (t.alpha = 1 - v * v)) }).then(() => this.fx.remove(t));
+        if (heart) this.sounds.heal();
+        else this.sounds.coin(Math.min(3, f.seg));
+        this.particles.burst({ x: win.x + PITCH * (f.reel + 0.5), y: win.y + PITCH * (f.row + 0.5), count: 6, colors: [col.hi, col.mid], speed: [60, 160], gravity: -80, life: [0.25, 0.45] });
+        await this.clock.wait(0.06);
+        continue;
+      }
       const meter = sh.meters[f.meter];
       if (isQuality(f.meter)) addSeg(meter, f.seg, this.duel.cap(side, f.meter));
       else for (let i = 0; i < f.amount && meter.length < METER.size; i++) meter.push(1);
@@ -240,16 +254,9 @@ export class MeterScene {
       await this.clock.wait(0.06);
     }
     for (const reel of m.reels) for (const r of reel.rows) r.glow = 0;
-    // COIN: a full meter cashes out on its own.
-    if (log.cashed) {
-      const r = meterRect(side, 'coin');
-      sh.meters.coin = [];
-      for (let i = 0; i < 4; i++) this.sounds.coin(i);
-      this.particles.burst({ x: r.x + r.w / 2, y: r.y + r.h / 2, count: 40, colors: [GOLD.hi, GOLD.mid, '#ffffff'], speed: [150, 420], gravity: 500 });
-      await this.callout(`CASH OUT! +${fmtNum(log.cashed)} COINS`, cx, GOLD.hi, 0.5, win.y - 30);
-      sh.coins = this.duel[side].coins;
-    }
-    // SLIME: a full meter gunks the other side's cells.
+    sh.hp = this.duel[side].hp;
+    sh.coins = this.duel[side].coins;
+    // SLIME: a line win gunks the other side's SWORD meter.
     if (log.gunked) await this.playGunk(side);
     await this.clock.wait(0.12);
   }
@@ -257,9 +264,8 @@ export class MeterScene {
   /** SLIME: goo pours over the other side's SWORD meter; only its bottom METER.gunkCap bars are left. */
   private async playGunk(side: Side): Promise<void> {
     const other: Side = side === 'you' ? 'enemy' : 'you';
-    this.shown[side].meters.slime = [];
     this.sounds.slimeLaunch();
-    await this.callout('SLIME!', MACHINE_CX[sideId(side)], TONE.slime.hi, 0.35, reelWindow(sideId(side)).y - 30);
+    await this.clock.wait(0.2);
     this.sounds.slimeSplat();
     this.camera.shake(6, 0.25);
     const r = meterRect(other, 'sword');
@@ -280,17 +286,6 @@ export class MeterScene {
     if (log.action === 'shield') {
       this.sounds.shieldGain(2);
       await this.callout('SHIELD UP', from.x + MACHINE_W / 2, TONE.shield.hi, 0.45);
-      return;
-    }
-    if (log.action === 'heart') {
-      this.sounds.heal();
-      this.particles.burst({ x: from.x + MACHINE_W / 2, y: from.y + MACHINE_H / 2, count: 30, colors: [TONE.heart.hi, TONE.heart.mid, '#ffffff'], speed: [80, 260], gravity: -120 });
-      const t = this.fx.add(new FloatText(`+${fmtNum(log.healed)}`, from.x + MACHINE_W / 2, from.y - 30, 5, TONE.heart.hi));
-      t.plate = true;
-      const hp0 = this.shown[side].hp;
-      await this.clock.tween({ from: hp0, to: this.duel[side].hp, dur: 0.45, onUpdate: (v) => (this.shown[side].hp = Math.round(v)) });
-      await this.clock.wait(0.25);
-      this.fx.remove(t);
       return;
     }
     const sx = from.x + MACHINE_W / 2;
@@ -348,7 +343,7 @@ export class MeterScene {
     this.spinBtn.visible = !over;
     this.spinBtn.enabled = !this.busy && (d.phase === 'spin' || d.phase === 'act');
     this.spinBtn.label = d.phase === 'act' ? 'END TURN' : 'SPIN';
-    for (const a of ['sword', 'shield', 'heart'] as const) {
+    for (const a of ['sword', 'shield'] as const) {
       const b = this.actBtns[a];
       b.visible = !over;
       b.enabled = acting && d.canAct('you', a);
@@ -359,7 +354,7 @@ export class MeterScene {
 
   /** Tapping a usable meter uses it (the same as its button). */
   private meterAt(x: number, y: number): Action | null {
-    for (const m of ['sword', 'shield', 'heart'] as const) {
+    for (const m of ['sword', 'shield'] as const) {
       const r = meterRect('you', m);
       if (x >= r.x - 6 && x < r.x + r.w + 6 && y >= r.y && y < r.y + r.h) return m;
     }
@@ -405,7 +400,7 @@ export class MeterScene {
       else this.pressSpin();
       return true;
     }
-    const a: Action | null = k === '1' || k === 'f' ? 'sword' : k === '2' || k === 'b' ? 'shield' : k === '3' || k === 'h' ? 'heart' : null;
+    const a: Action | null = k === '1' || k === 'f' ? 'sword' : k === '2' || k === 'b' ? 'shield' : null;
     if (a) {
       void this.act(a);
       return true;
@@ -571,7 +566,7 @@ export class MeterScene {
     drawText(ctx, `TURN ${d.turn}`, x, 616, 2, COLORS.textDim);
     let text = "SLIME'S TURN";
     if (!this.busy && d.phase === 'spin') text = 'SPIN';
-    if (!this.busy && d.phase === 'act') text = (['sword', 'shield', 'heart'] as const).some((a) => d.canAct('you', a)) ? 'USE A METER' : 'END TURN';
+    if (!this.busy && d.phase === 'act') text = (['sword', 'shield'] as const).some((a) => d.canAct('you', a)) ? 'USE A METER' : 'END TURN';
     if (this.busy && (d.phase === 'act' || d.phase === 'spin')) text = '';
     if (text) drawText(ctx, text, x, 646, 2.5, COLORS.text);
     if (!this.busy && d.phase === 'act') {
