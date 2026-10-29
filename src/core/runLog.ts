@@ -38,7 +38,7 @@ export function runSummary(run: RunState, version = ''): string {
       r.chips ? `+${r.chips} CHIPS` : '',
     ].filter(Boolean);
     out.push(
-      `${String(i + 1).padStart(2)}. ${where} ${r.boss ? 'BOSS ' : ''}${r.enemy}: ${r.won ? 'WON' : 'LOST'} in ${r.turns} spins, HP ${r.hpBefore} -> ${r.hpAfter}${what.length ? ` | ${what.join(' | ')}` : ''}`,
+      `${String(i + 1).padStart(2)}. ${where} ${r.boss ? 'BOSS ' : ''}${r.enemy}: ${r.won ? 'WON' : 'LOST'} in ${r.turns} ${r.turns === 1 ? 'spin' : 'spins'}, HP ${r.hpBefore} -> ${r.hpAfter}${what.length ? ` | ${what.join(' | ')}` : ''}`,
     );
   });
   const last = run.records[run.records.length - 1];
@@ -53,7 +53,23 @@ export function runSummary(run: RunState, version = ''): string {
     `REELS: ${p.strips.map((s, i) => `${i + 1}: ${Object.entries(s).filter(([, n]) => n).map(([k, n]) => `${symLabel(k as SymbolId)} ${n}`).join(' ')}`).join(' / ')}`,
     // (Old saves only: BIG CHOICES are gone, 2026-10-15. A run that took some still lists them.)
     ...(run.records.some((r) => r.choice) ? [`BIG CHOICES: ${run.records.flatMap((r) => (r.choice ? [r.choice] : [])).join(', ')}`] : []),
-    `ENCOUNTERS: ${(run.encounters ?? []).filter((e) => !e.more).map((e) => `A${e.act} ${encounterOf(e.id).name}: ${e.what || (e.good === true ? 'WON' : e.good === false ? 'LOST' : 'WALKED AWAY')}`).join(', ') || 'NONE'}`,
+    `ENCOUNTERS: ${encounterLines(run) || 'NONE'}`,
   );
   return out.join('\n');
+}
+
+/** One entry a visit, with every result in it: a lost ticket and then WALK AWAY read "NO LUCK" (it read WALKED AWAY). */
+function encounterLines(run: RunState): string {
+  const visits: { act: number; id: string; what: string[]; open: boolean }[] = [];
+  for (const e of run.encounters ?? []) {
+    // A step inside a play (a scratched panel, a dealt card) has no result yet.
+    if (e.more && !e.what) continue;
+    const what = e.what || (e.good === true ? 'WON' : e.good === false ? 'LOST' : 'WALKED AWAY');
+    let v = visits[visits.length - 1];
+    if (!v?.open || v.act !== e.act || v.id !== e.id) visits.push((v = { act: e.act, id: e.id, what: [], open: false }));
+    // Walking away after playing is how a visit ends: only a visit with no plays says WALKED AWAY.
+    if (!(what === 'WALKED AWAY' && v.what.length)) v.what.push(what);
+    v.open = !!e.more;
+  }
+  return visits.map((v) => `A${v.act} ${encounterOf(v.id).name}: ${v.what.join('; ')}`).join(', ');
 }

@@ -23,3 +23,21 @@ describe('COPY RUN reads as the game does', () => {
     expect(text).toContain('START RELIC:');
   });
 });
+
+describe('COPY RUN encounters', () => {
+  it('keeps a played result when the visit ends with WALK AWAY', () => {
+    let text = '';
+    playRun(defaultConfig(), 42, 'knight', 0, {
+      onEnd: (run) => {
+        run.encounters = [
+          { act: 2, id: 'scratch', choice: 0, good: null, what: '', more: true },
+          { act: 2, id: 'scratch', choice: 0, good: null, what: 'NO LUCK', more: true },
+          { act: 2, id: 'scratch', choice: 1, good: null, what: 'WALKED AWAY' },
+          { act: 2, id: 'claw', choice: 3, good: null, what: 'WALKED AWAY' },
+        ];
+        text = runSummary(run, 'v');
+      },
+    });
+    expect(text).toContain('A2 SCRATCH-OFF: NO LUCK, A2 CLAW MACHINE: WALKED AWAY');
+  });
+});
