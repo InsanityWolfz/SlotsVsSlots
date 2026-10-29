@@ -1,7 +1,8 @@
 import { canvas, px, span, paint, prop, propOver, out } from './jinx_r4.mjs';
 // THE JINX, 32x32 bust (round 4). Outline added by outline().
-// the dyed rabbit's foot: gold cap, furry shank, crooked paw with its toes
-const FOOT = [' GYg ', ' Mxs ', ' Mxs ', ' Mxs ', ' Mxxs', 'MMxxs', 'Mxsxs', ' s s '];
+// the rabbit's foot: gold cap with a magenta jinx glint, cream fur teardrop with tufted edge,
+// bending slightly at the bottom, toe marks along the bottom edge
+const FOOT = [' GxG  ', ' TTI  ', 'TTTI  ', ' TTII ', 'TTTII ', ' TTIII', '  hIhI'];
 export function jinx32() {
   const g = canvas(32);
   // --- jacket: loud, shabby mustard check, shoulders off the bottom, right shoulder sloping like the left
