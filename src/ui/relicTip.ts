@@ -24,16 +24,16 @@ export class RelicTips {
   }
 
   /** The tip for the relic under (mx, my), if any. */
-  draw(ctx: CanvasRenderingContext2D, mx: number, my: number, cabinet?: CabinetId | null, race = false): void {
+  draw(ctx: CanvasRenderingContext2D, mx: number, my: number, cabinet?: CabinetId | null): void {
     const s = this.spots.find((s) => Math.abs(mx - s.x) < s.r && Math.abs(my - s.y) < s.r);
-    if (s) drawRelicTip(ctx, s.relic, s.x, s.y - s.r, s.y + s.r, s.cabinet ?? cabinet, race);
+    if (s) drawRelicTip(ctx, s.relic, s.x, s.y - s.r, s.y + s.r, s.cabinet ?? cabinet);
   }
 }
 
 /** A name + rule box under the icon (above it near the bottom edge), kept on screen. */
-export function drawRelicTip(ctx: CanvasRenderingContext2D, relic: RelicId, ax: number, top: number, bottom: number, cabinet?: CabinetId | null, race = false): void {
+export function drawRelicTip(ctx: CanvasRenderingContext2D, relic: RelicId, ax: number, top: number, bottom: number, cabinet?: CabinetId | null): void {
   const def = RELICS[relic];
-  const lines = wrap(relicText(relic, cabinet, race), 26);
+  const lines = wrap(relicText(relic, cabinet), 26);
   const w = 336;
   const h = 34 + lines.length * 20;
   const x = Math.max(8, Math.min(W - w - 8, ax - w / 2));

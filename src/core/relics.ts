@@ -141,28 +141,8 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
 /** Machines that attack with something other than swords: relic texts name their symbol instead. */
 const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP', tesla: 'BOLT', jukebox: 'NOTE' };
 const METER_WORD: Partial<Record<CabinetId, string>> = { tesla: 'LIGHTNING', midas: 'HIGH ROLLER', joker: 'JACKPOT METER', jukebox: 'VOLUME' };
-/** THE SCORE RACE: what an HP relic does in a race (fight.ts RACE_RULES, run.ts RACE). */
-export const RACE_RELIC_TEXT: Partial<Record<RelicId, string>> = {
-  underdog: 'EVERYTHING PAYS X1.5 WHILE YOU ARE BEHIND',
-  coup: 'SWORDS PAY X2 WHILE YOU ARE AHEAD',
-  phoenix: 'ONCE A RUN, A LOST RACE DOES NOT END IT',
-  bandage: 'START EVERY RACE HOLDING A GUARD',
-  fang: 'YOUR METER PAYOFFS GIVE YOU A HOLD',
-  insurance: 'THE FIRST TIME YOU FALL 30% BEHIND: A NUDGE',
-  tower: 'YOU CAN HOLD ONE MORE GUARD',
-  bash: 'EVERY GUARD YOU HOLD SCORES 30 AT THE START OF YOUR SPIN',
-  capacitor: 'EVERY GUARD YOU HOLD CHARGES YOUR LIGHTNING 20 EACH SPIN',
-  parachute: 'ONE MORE RESPIN EVERY RACE',
-  meltdown: 'LIGHTNING +10% FOR EVERY SPIN YOU HAVE PLAYED (MAX 50%)',
-  overcharge: 'YOUR METER PAYOFF PAYS 1/3 MORE (TESLA: LIGHTNING +30%)',
-  livewire: 'YOUR LIGHTNING PAYS 30% MORE',
-  deckdrum: 'EACH PAIR AND JACKPOT ADDS +1 TO YOUR CARDS\' PAY THIS RACE (MAX +5)',
-  hitmaker: 'EACH DROP IN A RACE PAYS 60% MORE THAN THE LAST',
-};
-export const relicText = (r: RelicId, cabinet?: CabinetId | null, race = false) => {
-  const base = (race ? RACE_RELIC_TEXT[r] : undefined) ?? (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;
-  // (THE SCORE RACE: a fight is a race, and hits are pay.)
-  const t = race ? base.replace(/EACH FIGHT/g, 'EACH RACE').replace(/PER FIGHT/g, 'PER RACE').replace(/ DAMAGE/g, ' PAY') : base;
+export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
+  const t = (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;
   const w = cabinet ? ATTACK_WORD[cabinet] : undefined;
   // "YOUR METER" names the machine's own meter (wording pass, user 2026-10-13).
   const m = cabinet ? METER_WORD[cabinet] : undefined;

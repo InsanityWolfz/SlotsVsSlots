@@ -31,11 +31,6 @@ export const KEYWORDS: Keyword[] = [
   { word: 'HOLD', forms: ['HELD'], color: '#ffe28a', text: `TAP ONE OF YOUR REELS BEFORE YOUR SPIN OR WHILE THE ENEMY SPINS: IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. ${HOLD.perFight} A FIGHT` },
   { word: 'OVERTIME', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF A FIGHT, EVERY HIT ON BOTH MACHINES PAYS X${1 + OVERTIME.step}, +${OVERTIME.step} WITH EACH OF YOUR SPINS. SHIELDS DON'T GROW` },
   { word: 'SABOTAGE', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY PUTS ON YOUR REELS: SLIME, ROCKS, BOMBS, FREEZES, JAMS, HEXES, MARKS' },
-  // THE SCORE RACE's words.
-  { word: 'GUARD', forms: ['GUARDS', 'GUARDED'], color: '#9fd0ff', text: 'EACH SHIELD ON YOUR PAYLINE GIVES ONE (UP TO 3). A GUARD STOPS ONE CHEAT, THEN IT IS GONE' },
-  { word: 'CHEAT', forms: ['CHEATS'], color: '#d0a0ff', text: "A RIVAL MACHINE'S DIRTY TRICK ON YOUR REELS OR YOUR SCORE. A GUARD STOPS IT" },
-  { word: 'CHERRY', forms: ['CHERRIES'], color: '#ff8aa0', text: 'EVERY CHERRY YOU CAN SEE PAYS, PAYLINE OR NOT. 3 OR MORE PAY DOUBLE' },
-  { word: 'X2', color: '#e080ff', text: 'ON YOUR PAYLINE, THE WHOLE SPIN PAYS DOUBLE. IT PAYS NOTHING ITSELF' },
   { word: 'MARK', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED CELL ON YOUR PAYLINE HITS YOU' },
   { word: 'SLIME', forms: ['SLIMED', 'SLIMES'], color: COLORS.slime, text: 'A SLIMED CELL PAYS NOTHING. A SLIME PAIR CLEANSES ITS REELS; A JACKPOT CLEANSES IT ALL' },
   { word: 'ROCK', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD CELL: IT PAYS NOTHING' },

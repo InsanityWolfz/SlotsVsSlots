@@ -181,13 +181,6 @@ export class Director {
         return this.banner(['', 'HE LOOSENS HIS TIE', 'HE STANDS UP', 'HE GOES ALL IN'][e.phase] ?? '', '#ff6a5a', 1.3, 0.35, `THE OWNER AT ${[100, 75, 50, 25][e.phase]}%: HIS HITS ARE ${Math.round(OWNER_RULES.phaseDmg * e.phase * 100)}% HARDER`, BANNER_Y, 3);
       case 'secondLine':
         return this.secondLine(e);
-      case 'raceScore':
-        return this.raceScore(e);
-      case 'scatter':
-        return this.scatter(e);
-      case 'sabotageBlocked':
-        this.s.sounds.block();
-        return this.banner('GUARDED!', '#9fd0ff', 1.2, 0.3, 'A GUARD STOPPED THE CHEAT', MACHINE_TOP + MACHINE_H / 2, 4);
       case 'death':
         return this.death(e);
       case 'fightEnd':
@@ -527,66 +520,6 @@ export class Director {
     }
   }
 
-  /** CHERRIES: each cherry in sight lights up and pops, then the total pays. */
-  private async scatter(e: Extract<CombatEvent, { type: 'scatter' }>): Promise<void> {
-    const m = this.s.machines[e.side];
-    for (const [k, ref] of e.cells.entries()) {
-      const reel = m.reels[ref.reel];
-      const n = reel.cells.length;
-      const row = (((ref.index - reel.stop + 1) % n) + n) % n;
-      if (row > 2) continue;
-      const fx = reel.rows[row];
-      fx.glowColor = '#ff4a6a';
-      this.bg(this.c.tween({ from: 0, to: 1, dur: 0.18, ease: sineOut, onUpdate: (v) => (fx.glow = v) }));
-      this.s.sounds.ding(Math.min(5, k));
-      const c = cellCenter(e.side, ref.reel, row);
-      this.s.particles.burst({ x: c.x, y: c.y, count: 10, colors: ['#ff4a6a', '#ffffff', '#5ed15a'], speed: [80, 260], kind: 'spark', gravity: 200, life: [0.2, 0.4], size: [2, 4] });
-      await this.c.wait(0.12);
-    }
-    const mc = this.machineCenter(e.side);
-    await this.popText(`CHERRIES X${e.cells.length}! +${fmtNum(e.amount)}`, mc.x, MACHINE_TOP - 22, 2.5, '#ff8aa0', 30, 0.5);
-  }
-
-  /** THE SCORE RACE: your spin lands (HELD reels stay put); it scores later, after any NUDGE or RESPIN. */
-  async landSpin(stops: number[], moved: boolean[]): Promise<void> {
-    const m = this.s.machines.player;
-    m.clearRowFx();
-    await m.spin(stops, false, this.c, { onReelStop: (r) => this.setTag('player', r) }, moved.map((x) => !x));
-  }
-
-  /** THE SCORE RACE: a HOLD freed an iced or jammed reel of yours. */
-  async freeReel(r: number, status: 'frozen' | 'locked'): Promise<void> {
-    await this.thaw({ type: 'thaw', side: 'player', reels: [r], status });
-  }
-
-  /** THE SCORE RACE: a NUDGE (the reel steps down one cell) or a RESPIN of one landed reel. */
-  async nudgeReel(r: number): Promise<void> {
-    await this.s.machines.player.nudgeReel(r, this.c);
-    this.setTag('player', r);
-  }
-  async respinReel(r: number, target: number): Promise<void> {
-    await this.s.machines.player.spinOne(r, target, this.c);
-    this.setTag('player', r);
-  }
-
-  /** THE SCORE RACE: a side's turn scored: its total punches up, the rival's bar re-fills against it. */
-  private async raceScore(e: Extract<CombatEvent, { type: 'raceScore' }>): Promise<void> {
-    const h = this.s.huds[e.side];
-    const rival = this.s.huds[e.side === 'player' ? 'enemy' : 'player'];
-    h.score = e.total;
-    h.scorePunch = 1.6;
-    rival.rival = e.total;
-    this.s.sounds.coin(e.side === 'player' ? 2 : 0);
-    const m = MACHINE_CX[e.side];
-    // (A THIEF's take shows as a loss on your machine.)
-    if (e.amount < 0) {
-      this.s.sounds.steal();
-      await this.popText(`-${fmtNum(-e.amount)} STOLEN!`, m, MACHINE_TOP + 40, 3, '#ff6a5a', 60, 0.5);
-      return;
-    }
-    await this.popText(`+${fmtNum(e.amount)}`, m, MACHINE_TOP + 40, this.tierScale(), e.side === 'player' ? COLORS.goldLight : '#ff8a7a', 60);
-  }
-
   private damageHud(side: SideId, hp: number, shield: number, amount: number): void {
     const h = this.s.huds[side];
     this.bg(this.c.to(h, 'hp', hp, 0.08));
@@ -646,9 +579,7 @@ export class Director {
     const near = e.nearMiss && this.s.juice.nearMiss;
     this.lastSpin[e.side] = { frozen: e.frozen, locked: e.locked, hexed: e.hexed ?? [] };
     this.symBonus[e.side] = e.symBonus ?? {};
-    // THE SCORE RACE: a spin that already landed (and maybe got NUDGEd / RESPUN) scores where it stands.
-    if (e.held?.every(Boolean)) for (let r = 0; r < 3; r++) this.setTag(e.side, r, e.locked[r]);
-    else await m.spin(
+    await m.spin(
       e.stops,
       near,
       this.c,
@@ -984,12 +915,6 @@ export class Director {
     if (e.amount >= 4 * UNIT) this.hitstop(e.amount >= 9 * UNIT ? 3 : 1);
 
     const h = this.s.huds[e.to];
-    // THE SCORE RACE: nobody loses HP; the score lands on the HUD (raceScore), so no damage numbers here.
-    if (h.race) {
-      this.settle(e.from, e.reels);
-      await this.c.wait(0.2);
-      return;
-    }
     if (e.blocked > 0) {
       this.s.sounds.block();
       const sb = h.shieldBar();
@@ -1042,8 +967,7 @@ export class Director {
     this.decay(h, 'shieldFlash', 1, 0.3);
     this.bg(this.c.to(h, 'shield', e.total, 0.25, sineOut));
     // Right-aligned inside the HUD (at 3x a big number spilled past its border).
-    // (THE SCORE RACE: shields are GUARDS: +1 GUARD, or GUARDS FULL.)
-    const gain = h.race && e.side === 'player' ? (e.amount > 0 ? `+${e.amount} GUARD${e.amount > 1 ? 'S' : ''}` : 'GUARDS FULL') : `+${e.amount}`;
+    const gain = `+${e.amount}`;
     this.bg(this.popText(gain, sb.x + sb.w - 6 - gain.length * 7.5, sb.y + sb.h / 2, 2.5, '#9fd0ff', 16, 0.3));
     const c = this.machineCenter(e.side);
     const bubble = this.s.fx.add(new Bubble(c.x, c.y, '#7fc0ff'));
@@ -1488,8 +1412,6 @@ export class Director {
 
   private async fightEnd(e: Ev<'fightEnd'>): Promise<void> {
     const win = e.winner === 'player';
-    // THE SCORE RACE: the final score, big.
-    if (this.s.huds.player.race) void this.banner(win ? 'RACE WON!' : 'RACE LOST', win ? COLORS.goldLight : '#ff6a5a', 1.4, 0.8, `${fmtNum(this.s.huds.player.score)} TO ${fmtNum(this.s.huds.enemy.score)}`, MACHINE_TOP + MACHINE_H / 2, 5);
     if (win) this.s.sounds.victory();
     else this.s.sounds.defeat();
     if (win)
@@ -1708,7 +1630,7 @@ export class Director {
     const dealt = e.kind === 'deal' ? this.s.gutter.nextDeal : undefined;
     // THE WHEEL: the ball drops, the wheel on its topper races.
     if (e.kind === 'bets') this.s.gutter.wheelSpeed = 16;
-    await this.banner(dealt ? `THE DEAL: ${dealt === 'allin' ? 'ALL IN' : 'BUST'}!` : `${abilityName(e.kind, this.s.huds.player.race)}!`, '#ff6a5a', 1.35, 0.25);
+    await this.banner(dealt ? `THE DEAL: ${dealt === 'allin' ? 'ALL IN' : 'BUST'}!` : `${abilityName(e.kind)}!`, '#ff6a5a', 1.35, 0.25);
   }
 
   private potPos() {
@@ -1748,7 +1670,7 @@ export class Director {
     const big = Math.min(1, e.amount / (15 * UNIT));
     if (e.amount >= 8 * UNIT || playerWins) this.s.sounds.fanfareJackpot();
     else this.s.sounds.stingerMedium();
-    this.bg(this.banner(playerWins ? 'POT STOLEN!' : 'CASH OUT!', playerWins ? COLORS.goldLight : '#ff6a5a', 1.2 + 0.3 * big, 0.4, `${e.amount} ${this.s.huds.player.race ? 'SCORE' : 'DAMAGE'}`, BANNER_Y, 4));
+    this.bg(this.banner(playerWins ? 'POT STOLEN!' : 'CASH OUT!', playerWins ? COLORS.goldLight : '#ff6a5a', 1.2 + 0.3 * big, 0.4, `${e.amount} DAMAGE`, BANNER_Y, 4));
     const n = Math.min(24, 6 + Math.round(e.amount / UNIT));
     const coins = Array.from({ length: n }, async (_, i) => {
       await this.c.wait(i * 0.03);

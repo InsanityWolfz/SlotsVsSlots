@@ -179,12 +179,6 @@ export type CombatEvent =
   /** Boss phase 2 at half HP: the House DOUBLES DOWN (the pot doubles). */
   | { type: 'phase'; side: SideId; pot: number }
   | { type: 'death'; side: SideId }
-  /** CHERRY scatter: these cells (in the 3x3 window) paid this much. */
-  | { type: 'scatter'; side: SideId; cells: { reel: number; index: number }[]; amount: number }
-  /** THE SCORE RACE: what a side scored (a hit's worth), its total, and the spins left in the race. */
-  | { type: 'raceScore'; side: SideId; amount: number; total: number }
-  /** THE SCORE RACE: your shield blocked the enemy's ability (the shield is spent). */
-  | { type: 'sabotageBlocked'; side: SideId; kind: string; shield: number }
   | { type: 'fightEnd'; winner: SideId; turns: number };
 
 export type CombatEventType = CombatEvent['type'];

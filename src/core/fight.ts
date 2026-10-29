@@ -93,11 +93,6 @@ export const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', '
 /** HOLY WATER washes off these writes (not coins, drains or the Mimic's hit) and these abilities. */
 const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'bomb', 'hex', 'card', 'gavel', 'rake', 'fake', 'ball']);
 const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel', 'ball']);
-/**
- * THE SCORE RACE's enemy rules (race act 1, user 2026-10-15): a frozen reel of yours scores at frozenPay; THE THIEF's
- * ability steals thiefShare of your score; THE BRUTE's SMASH scores smashMul x its hit. A shield blocks any of these.
- */
-export const RACE_RULES = { frozenPay: 0.5, thiefShare: 0.25, smashMul: 3, meltdownPerSpin: 0.1, insuranceBehind: 1.3, potSteal: 0.5, guardCap: 3, bashPerGuard: 3 * UNIT, capacitorPerGuard: 2 * UNIT, cherryPay: 3 * UNIT };
 const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
 const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'goldbar', 'note']);
@@ -228,13 +223,6 @@ export class Fight {
   turn = 0;
   next: SideId = 'player';
   winner: SideId | null = null;
-  /** THE SCORE RACE: each side's score, and what it scored on the turn being played (one raceScore event a turn). */
-  raceScore: Record<SideId, number> = { player: 0, enemy: 0 };
-  private turnScore: Record<SideId, number> = { player: 0, enemy: 0 };
-  /** THE SCORE RACE: your spins left (the enemy spins as many). */
-  get raceLeft(): number {
-    return this.cfg.race ? Math.max(0, this.cfg.race.spins - this.playerSpins) : 0;
-  }
   /** The House's progressive pot (boss fight). */
   pot = 0;
   /** ENDLESS: the loop House's pot is sized to your max HP (a flat pot is nothing to a late build). */
@@ -363,10 +351,8 @@ export class Fight {
     }
     // WARM-UP (JUKEBOX, ENDLESS): the volume starts at the loop, never at THE DROP itself.
     if (this.meter?.kind === 'volume' && this.cfg.player.volumeStart && !p.armed) p.energy = Math.max(p.energy, Math.min(this.meterCost - UNIT, this.cfg.player.volumeStart * UNIT));
-    // HOLD (experiment): this fight's HOLDs.
+    // HOLD: this fight's HOLDs.
     this.holdsLeft = this.cfg.player.holds ?? 0;
-    this.nudgesLeft = this.cfg.player.nudges ?? 0;
-    this.respinsLeft = this.cfg.player.respins ?? 0;
     const e = this.sides.enemy;
     // BLAZE: every blaze cell you own adds to your special.
     const blazeCells = p.reels.reduce((a, reel) => a + reel.cells.filter((c) => c.enh === 'blaze').length, 0);
@@ -375,7 +361,7 @@ export class Fight {
     if (this.isWheel && (this.cfg.stake ?? 0) >= STAKE.wheelFast) this.fast = this.fastFromStart = true;
     // ENDLESS: the loop House opens with a fatter pot.
     const loopHouse = this.isBoss && !!this.cfg.enemy.endless;
-    if (this.isBoss) this.pot = loopHouse ? unitsUp(this.cfg.player.hp * ENDLESS.potSeed) : Math.round(POT.seed * this.potScale);
+    if (this.isBoss) this.pot = loopHouse ? unitsUp(this.cfg.player.hp * ENDLESS.potSeed) : POT.seed;
     if (loopHouse) this.potCut = unitsUp(this.cfg.player.hp * ENDLESS.potCut);
     // ENDLESS house edges: bosses start shielded; enemies spin first.
     if (this.cfg.enemy.startShield) this.sides.enemy.shield = this.cfg.enemy.startShield;
@@ -387,7 +373,7 @@ export class Fight {
     else if (this.sides.enemy.ability?.kind === 'repo') this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - GATEKEEPER.firstTurn);
     // ACT 1-2 regulars and elites get a head start: the enemy's trick (writing on your machine) shows in nearly every
     // fight, not only the long ones (the feel playtest: BLIZZARD and PILFER never fired before the enemy died).
-    else if (this.sides.enemy.ability && !this.isBoss && !this.isWheel && !this.isDealer && !this.cfg.enemy.endless && !this.cfg.race) this.sides.enemy.charge = Math.min(this.sides.enemy.ability.every - 1, TUNE.headStart);
+    else if (this.sides.enemy.ability && !this.isBoss && !this.isWheel && !this.isDealer && !this.cfg.enemy.endless) this.sides.enemy.charge = Math.min(this.sides.enemy.ability.every - 1, TUNE.headStart);
     // THE DEALER deals first on its 2nd turn, then every 3.
     if (this.isDealer) {
       // Its first hand's bar: a share of its total HP.
@@ -487,94 +473,23 @@ export class Fight {
   /** THE DROP this spin: the notes off the payline that join the note group (vamp heals after). */
   private dropOff: { cells: { reel: number; row: number; v?: number; wild?: true }[]; vamp: number } | null = null;
 
-  /**
-   * THE SCORE RACE's spin tools (user, 2026-10-15: 3 HOLDs, 2 NUDGEs, 1 RESPIN a race, used as you see fit). HOLD keeps
-   * reels before your spin; land() then stops your reels, and before step() scores them you may NUDGE a reel one cell
-   * (the symbol above drops onto the payline) or RESPIN it.
-   */
-  nudgesLeft = 0;
-  respinsLeft = 0;
-  /** Your landed stops, waiting to score (null: not landed). */
-  landed: number[] | null = null;
   /** HOLD: your HOLDs left this fight, and the reels you've held for your next spin. */
   holdsLeft = 0;
   held: boolean[] = [false, false, false];
-  /** THE SCORE RACE: reels a HOLD freed from ice or a jam this turn. */
-  private freed: boolean[] = [false, false, false];
   /**
-   * HOLD a reel (or let it go) for your next spin: a held reel keeps its symbol for that spin. Only between your spins
-   * (the fight waits on your SPIN), never during one; each held reel costs a HOLD. Returns whether it's held now.
+   * HOLD a reel (or let it go) for your next spin: a held reel keeps its symbol for that spin. Only while it's your
+   * spin next (the game takes taps during the enemy's turn too: the engine is on your turn by then); each held reel
+   * costs a HOLD when you spin. A frozen reel can't be held. Returns whether it's held now.
    */
   hold(reel: number): boolean {
     if (this.over || this.next !== 'player' || reel < 0 || reel > 2) return false;
     if (this.held[reel]) {
-      // (A reel a HOLD freed stays held: letting go would keep the thaw for free.)
-      if (this.freed[reel]) return true;
       this.held[reel] = false;
       return false;
     }
-    const used = this.held.filter(Boolean).length;
-    const me = this.sides.player;
-    if (used >= this.holdsLeft) return false;
-    // THE SCORE RACE: a HOLD on an iced or jammed reel frees it (FROST's and GREMLIN's counter), and holds it.
-    if (this.cfg.race && (me.frozen[reel] > 0 || me.locked[reel] > 0)) {
-      me.frozen[reel] = 0;
-      me.locked[reel] = 0;
-      this.held[reel] = true;
-      this.freed[reel] = true;
-      return true;
-    }
-    if (me.frozen[reel] > 0) return false;
+    if (this.held.filter(Boolean).length >= this.holdsLeft || this.sides.player.frozen[reel] > 0) return false;
     this.held[reel] = true;
     return true;
-  }
-
-  /** Your spin lands (HOLDs apply) without scoring yet: NUDGE and RESPIN can change it, then step() scores it. */
-  land(): { stops: number[]; moved: boolean[] } | null {
-    if (this.over || this.next !== 'player' || this.landed) return null;
-    const me = this.sides.player;
-    const frozen = me.frozen.map((t) => t > 0);
-    const held = this.held.map((h, r) => h && !frozen[r]);
-    this.holdsLeft -= held.filter(Boolean).length;
-    this.held = [false, false, false];
-    this.freed = [false, false, false];
-    const keep = frozen.map((z, r) => z || held[r]);
-    const stops = this.rollStops(me, keep, this.forced.player);
-    delete this.forced.player;
-    me.reels.forEach((reel, i) => (reel.stop = stops[i]));
-    this.landed = stops;
-    return { stops, moved: keep.map((k) => !k) };
-  }
-
-  /** NUDGE a landed reel one cell (the symbol above drops onto the payline). False if you can't. */
-  nudge(reel: number): boolean {
-    const me = this.sides.player;
-    if (!this.landed || this.nudgesLeft <= 0 || reel < 0 || reel > 2 || me.frozen[reel] > 0) return false;
-    const n = me.reels[reel].cells.length;
-    this.landed[reel] = (this.landed[reel] - 1 + n) % n;
-    me.reels[reel].stop = this.landed[reel];
-    this.nudgesLeft--;
-    return true;
-  }
-
-  /** RESPIN a landed reel. False if you can't. */
-  respin(reel: number): boolean {
-    const me = this.sides.player;
-    if (!this.landed || this.respinsLeft <= 0 || reel < 0 || reel > 2 || me.frozen[reel] > 0) return false;
-    this.landed[reel] = this.rng.int(me.reels[reel].cells.length);
-    me.reels[reel].stop = this.landed[reel];
-    this.respinsLeft--;
-    return true;
-  }
-
-  /** What your payline would pay at these stops, for the sim bot's choices (no effects; the RNG is put back). */
-  previewPay(stops: number[]): number {
-    const me = this.sides.player;
-    const saved = this.rng.snapshot();
-    const line = me.reels.map((reel, r) => effectiveSymbol(reel.cells[stops[r]]));
-    const s = this.score(me, line);
-    this.rng.restore(saved);
-    return s.groups.reduce((a, g) => a + (this.isAttack(g.symbol) || g.symbol === 'wild' ? g.amount : 0), 0);
   }
 
   /** Debug: make the next spin of `side` land these payline symbols where the strip allows. */
@@ -621,8 +536,7 @@ export class Fight {
 
     if (this.cfg.shieldReset === 'ownTurnStart') this.resetShield(me, events);
     // Saved chips shield you at the start of each boss turn.
-    // (Not in THE SCORE RACE: shields there are GUARDS, a count.)
-    if (side === 'enemy' && (this.isBoss || this.isWheel || this.isDealer) && !this.cfg.race) {
+    if (side === 'enemy' && (this.isBoss || this.isWheel || this.isDealer)) {
       const p = this.sides.player;
       const stack = this.cfg.player.stackShield ?? 0;
       if (stack > 0) {
@@ -654,16 +568,12 @@ export class Fight {
     const locked = me.locked.map((t) => t > 0);
     const forcedLine = this.forced[side];
     // HOLD: your held reels keep their stop this spin (like ice, but yours), then the holds are spent.
-    // A spin that already landed (land(), then maybe NUDGE / RESPIN) scores where it stopped: no reel spins now.
-    const landed = side === 'player' ? this.landed : null;
-    this.landed = null;
-    const held = landed ? [true, true, true] : side === 'player' ? this.held.map((h, r) => h && !frozen[r]) : [false, false, false];
-    if (side === 'player' && !landed) {
+    const held = side === 'player' ? this.held.map((h, r) => h && !frozen[r]) : [false, false, false];
+    if (side === 'player') {
       this.holdsLeft -= held.filter(Boolean).length;
       this.held = [false, false, false];
-      this.freed = [false, false, false];
     }
-    const stops = landed ?? this.rollStops(me, frozen.map((z, r) => z || held[r]), forcedLine);
+    const stops = this.rollStops(me, frozen.map((z, r) => z || held[r]), forcedLine);
     delete this.forced[side];
     me.reels.forEach((reel, i) => (reel.stop = stops[i]));
     const line = paylineSymbols(me.reels).map((s, i) => (locked[i] ? 'lock' : s));
@@ -696,20 +606,6 @@ export class Fight {
       this.dropNow = me.armed;
     }
     const score = this.score(me, line);
-    // THE SCORE RACE: the enemy's spin pays in score units (x its race multiplier), so its PAIR! math shows what it scores.
-    // (Only its hits: its slime, ice and coins count cells or feed the pot from their raw pay.)
-    if (this.cfg.race && side === 'enemy') for (const g of score.groups) if (BLADES.has(g.symbol) || g.symbol === 'seven') g.amount = Math.round(g.amount * this.cfg.race.enemyMul);
-    // X2: each one on your payline doubles the spin's pay (CHERRIES included); it pays nothing itself.
-    const doubles = side === 'player' ? line.filter((s) => s === 'double').length : 0;
-    if (doubles)
-      for (const g of score.groups)
-        if (g.amount > 0) {
-          g.amount *= 2 ** doubles;
-          (g.notes ??= []).push(`X${2 ** doubles} DOUBLE`);
-        }
-    // THE SCORE RACE: a frozen reel of yours scores at half (FROST's bite now that nobody loses HP).
-    if (this.cfg.race && side === 'player')
-      for (const g of score.groups) if (g.amount > 0 && g.reels.some((r) => frozen[r])) g.amount = Math.round(g.amount * RACE_RULES.frozenPay);
     // THE DROP: every note you can see (the payline's too) lights up before the note group hits once.
     let drop: { cells: { reel: number; row: number; v?: number; wild?: true }[]; amount: number } | null = null;
     if (side === 'player' && this.dropNow && this.dropOff) {
@@ -752,8 +648,6 @@ export class Fight {
     }
     // SECOND PAYLINE (legendary relic): the row above pays its pairs and jackpots at half.
     if (!this.over && side === 'player' && me.relics.has('secondline')) this.secondLine(me, events);
-    // CHERRIES: every cherry you can see pays, payline or not (3+ pay double).
-    if (!this.over && side === 'player') this.cherries(me, 2 ** doubles, events);
     if (allIn && !this.over) {
       this.dealerAllIn = false;
       const foe = this.sides[other(side)];
@@ -825,13 +719,13 @@ export class Fight {
     const atkJackpot = score.tier === 'triple' && (POT_STEAL.any || score.groups.some((g) => g.matched && g.reels.length >= 3 && (this.isAttack(g.symbol) || g.symbol === 'wild' || !!g.rain)));
     if (!this.over && side === 'player' && this.isBoss && atkJackpot) {
       // ENDLESS: a jackpot takes only half the loop House's pot (it can't be farmed every spin).
-      this.winPot(me, events, this.cfg.enemy.endless ? ENDLESS.potSteal : this.cfg.race ? RACE_RULES.potSteal : 1);
+      this.winPot(me, events, this.cfg.enemy.endless ? ENDLESS.potSteal : 1);
     }
     // THE WHEEL: your pairs sweep the bets off their reels; a jackpot clears the table.
     if (!this.over && side === 'player' && this.isWheel) this.sweepBets(me, score, events);
     // The house always takes its cut.
     if (!this.over && side === 'enemy' && this.isBoss) {
-      const cut = Math.round(this.potCut * this.potScale);
+      const cut = this.potCut;
       this.pot += cut;
       events.push({ type: 'pot', side, reels: [], amount: cut, total: this.pot });
     }
@@ -867,73 +761,8 @@ export class Fight {
         events.push({ type: 'fightEnd', winner: 'enemy', turns: this.turn });
       } else if (left <= ENDLESS.closingWarn) events.push({ type: 'closing', side: 'enemy', left });
     }
-    if (this.cfg.race) this.raceTurnEnd(side, events);
     this.next = other(side);
     return { turn: this.turn, side, events };
-  }
-
-  /** THE SCORE RACE: the most GUARDS you can hold (TOWER SHIELD: one more). */
-  get guardCap(): number {
-    return RACE_RULES.guardCap + (this.sides.player.relics.has('tower') ? 1 : 0);
-  }
-
-  /** THE SCORE RACE: THE HOUSE's pot is kept in score units (x its race multiplier). */
-  private get potScale(): number {
-    return this.cfg.race?.enemyMul ?? 1;
-  }
-
-  /** CHERRY, the scatter: every cherry in your 3x3 window pays, wherever it is; 3 or more pay double. */
-  private cherries(me: Combatant, mul: number, events: CombatEvent[]): void {
-    const cells = visibleCells(me.reels).filter((ref) => {
-      const c = me.reels[ref.reel].cells[ref.index];
-      return c.symbol === 'cherry' && !c.slimed && !c.stolen;
-    });
-    if (!cells.length) return;
-    const amount = cells.length * RACE_RULES.cherryPay * (cells.length >= 3 ? 2 : 1) * mul;
-    events.push({ type: 'scatter', side: me.side, cells, amount });
-    this.hit(me, this.sides[other(me.side)], amount, [], events, false, undefined, true);
-  }
-
-  /** THE SCORE RACE: THE THIEF takes a share of your score into its own. */
-  private raceSteal(me: Combatant, foe: Combatant, events: CombatEvent[]): void {
-    const n = Math.round(this.raceScore[foe.side] * RACE_RULES.thiefShare);
-    if (n <= 0) return this.fizzle(me, 'claw', [], events);
-    this.raceScore[foe.side] -= n;
-    events.push({ type: 'raceScore', side: foe.side, amount: -n, total: this.raceScore[foe.side] });
-    this.raceScore[me.side] += n;
-    this.turnScore[me.side] += n;
-  }
-
-  /** THE SCORE RACE: report the turn's score; after the enemy's last spin, the higher score wins (a tie is yours). */
-  private raceTurnEnd(side: SideId, events: CombatEvent[]): void {
-    // INSURANCE POLICY: the first time you fall 30% behind, a NUDGE.
-    if (side === 'enemy' && this.sides.player.relics.has('insurance') && !this.insuranceUsed && this.raceScore.enemy > this.raceScore.player * RACE_RULES.insuranceBehind + UNIT) {
-      this.insuranceUsed = true;
-      this.nudgesLeft++;
-      events.push({ type: 'relic', side: 'player', relic: 'insurance' });
-    }
-    // GOLEM: every rock on your reels scores for it, each of its spins.
-    if (side === 'enemy' && this.cfg.race?.perRock) {
-      const rocks = this.sides.player.reels.reduce((a, r) => a + r.cells.filter((c) => c.symbol === 'rock').length, 0);
-      const n = Math.round(rocks * this.cfg.race.perRock * this.cfg.race.enemyMul);
-      this.raceScore.enemy += n;
-      this.turnScore.enemy += n;
-    }
-    // THE HOUSE: its last spin cashes the whole pot into its score.
-    if (side === 'enemy' && this.isBoss && this.raceLeft <= 0 && this.pot > 0 && !this.over) {
-      const taken = this.pot;
-      this.pot = 0;
-      const h = this.damage(this.sides.player, taken, true);
-      events.push({ type: 'potWin', from: 'enemy', to: 'player', amount: taken, ...h, potLeft: 0 });
-    }
-    for (const s of ['player', 'enemy'] as SideId[]) {
-      if (this.turnScore[s] > 0) events.push({ type: 'raceScore', side: s, amount: this.turnScore[s], total: this.raceScore[s] });
-      this.turnScore[s] = 0;
-    }
-    if (this.over || side !== 'enemy' || this.raceLeft > 0) return;
-    this.winner = this.raceScore.player >= this.raceScore.enemy ? 'player' : 'enemy';
-    events.push({ type: 'death', side: other(this.winner) });
-    events.push({ type: 'fightEnd', winner: this.winner, turns: this.turn });
   }
 
   /** MIDAS TOUCH fires: each sword and shield on the payline gains a gold touch, and every extra full meter touches one more sword or shield anywhere on your reels. */
@@ -1253,15 +1082,13 @@ export class Fight {
       // COUP DE GRACE (KNIGHT, user 2026-10-13): swords pay x2 while your HP is higher than the enemy's. In the score,
       // so the climb and the banner show the real hit (it was doubled after them: feel playtest #2, MEGA WIN 264 that
       // killed a 340 HP enemy).
-      // (THE SCORE RACE: while you're ahead.)
-      if (has('coup') && g.symbol === 'sword' && g.base > 0 && (this.cfg.race ? this.raceScore[me.side] > this.raceScore[foe.side] : me.hp > foe.hp)) {
+      if (has('coup') && g.symbol === 'sword' && g.base > 0 && me.hp > foe.hp) {
         fired.add('coup');
         boost(g, NEW_RELIC.coupBossMul);
         notes.push(`X${NEW_RELIC.coupBossMul} COUP`);
       }
       // UNDERDOG: under half HP, every paying group.
-      // (THE SCORE RACE: while you're behind.)
-      if (has('underdog') && paying && (this.cfg.race ? this.raceScore[me.side] < this.raceScore[foe.side] : me.hp < me.maxHp / 2)) {
+      if (has('underdog') && paying && me.hp < me.maxHp / 2) {
         fired.add('underdog');
         boost(g, NEW_RELIC.underdogMul);
         notes.push(`X${NEW_RELIC.underdogMul} UNDERDOG`);
@@ -1394,18 +1221,6 @@ export class Fight {
 
   private resetShield(c: Combatant, events: CombatEvent[]): void {
     if (c.shield <= 0) return;
-    // THE SCORE RACE: GUARDS stay until a cheat spends them. SHIELD BASH scores per guard you hold; CAPACITOR charges.
-    if (this.cfg.race && c.side === 'player') {
-      if (!this.over && c.relics.has('bash')) {
-        events.push({ type: 'relic', side: 'player', relic: 'bash' });
-        this.hit(c, this.sides.enemy, c.shield * RACE_RULES.bashPerGuard, [], events);
-      }
-      if (!this.over && this.special && c.relics.has('capacitor')) {
-        events.push({ type: 'relic', side: 'player', relic: 'capacitor' });
-        this.gainEnergy(c, c.shield * RACE_RULES.capacitorPerGuard, [], events);
-      }
-      return;
-    }
     if (c.side === 'player' && !this.over) {
       const held = c.shield;
       // SHIELD BASH: leftover shield hits back for half before it resets.
@@ -1470,13 +1285,6 @@ export class Fight {
         this.hit(me, foe, g.amount, g.reels, events, false, undefined, true);
         return;
       case 'shield':
-        // THE SCORE RACE: your shields are GUARDS: one per shield in the group, up to the cap; each blocks one cheat.
-        if (this.cfg.race && player) {
-          const add = Math.max(0, Math.min(this.guardCap - me.shield, g.reels.length));
-          me.shield += add;
-          events.push({ type: 'shieldGain', side: me.side, reels: g.reels, amount: add, total: me.shield });
-          return;
-        }
         me.shield += g.amount;
         events.push({ type: 'shieldGain', side: me.side, reels: g.reels, amount: g.amount, total: me.shield });
         this.vampHeal(me, g, events);
@@ -1695,14 +1503,6 @@ export class Fight {
       { label: PAYOFF_WORD[this.meter?.kind ?? ''] ?? 'METER', amount: (this.meter?.heal ?? 0) * times },
       { label: 'FANG', amount: me.relics.has('fang') ? (this.special ? FANG_TESLA_HEAL : FANG_HEAL) * times : 0 },
     ].filter((x) => x.amount > 0);
-    // THE SCORE RACE: no heals; VAMPIRE FANG gives you a HOLD instead.
-    if (this.cfg.race) {
-      if (me.relics.has('fang')) {
-        this.holdsLeft += times;
-        events.push({ type: 'relic', side: me.side, relic: 'fang' });
-      }
-      return;
-    }
     if (!parts.length) return;
     if (me.relics.has('fang')) events.push({ type: 'relic', side: me.side, relic: 'fang' });
     this.heal(me, parts.reduce((a, x) => a + x.amount, 0), 'payoff', events, parts.length > 1 ? parts : undefined);
@@ -1813,8 +1613,7 @@ export class Fight {
       me.energy -= this.cfg.specialCost;
       const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
       // MELTDOWN: +1% per 1% of HP you're missing (capped).
-      // (THE SCORE RACE: +10% for every spin you've played.)
-      const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, this.cfg.race ? this.playerSpins * RACE_RULES.meltdownPerSpin : Math.max(0, me.maxHp - me.hp) * NEW_RELIC.meltdownRate) : 0;
+      const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, Math.max(0, me.maxHp - me.hp) * NEW_RELIC.meltdownRate) : 0;
       // CHAIN LIGHTNING (legendary relic): +100%.
       const chain = me.side === 'player' && me.relics.has('chainlightning') ? LEGEND_RELIC.chainAdd : 0;
       // PAY.lightningAdd: the lightning's boosts add up instead of multiplying.
@@ -1855,15 +1654,6 @@ export class Fight {
     if (me.hp <= 0) return;
     // THE OWNER never heals: his HP is a count of hits.
     if (me.side === 'enemy' && this.cfg.enemy.owner) return;
-    // THE SCORE RACE: nobody heals; a VAMP cell takes its heal out of the enemy's score.
-    if (this.cfg.race) {
-      if (me.side !== 'player' || source !== 'vamp') return;
-      const n = Math.min(amount, this.raceScore.enemy);
-      if (n <= 0) return;
-      this.raceScore.enemy -= n;
-      events.push({ type: 'raceScore', side: 'enemy', amount: -n, total: this.raceScore.enemy });
-      return;
-    }
     if (me.side === 'player' && this.cfg.player.healMul) amount = Math.max(1, Math.round(amount * this.cfg.player.healMul));
     const n = Math.min(amount, me.maxHp - me.hp);
     if (n > 0) {
@@ -1874,15 +1664,6 @@ export class Fight {
   }
 
   private damage(target: Combatant, amount: number, ignoreShield: boolean) {
-    // THE SCORE RACE: a hit is score for the side that landed it; nobody loses HP, shields don't block hits.
-    if (this.cfg.race) {
-      // (The enemy's pay is already in score units: its spins scale in turnBody, its pot as it grows, SMASH as it fires.)
-      const by = other(target.side);
-      const n = Math.max(0, Math.round(Math.min(ENDLESS.clamp, amount)));
-      this.raceScore[by] += n;
-      this.turnScore[by] += n;
-      return { blocked: 0, hpDamage: 0, targetHp: target.hp, targetShield: target.shield };
-    }
     const blocked = ignoreShield ? 0 : Math.min(target.shield, amount);
     target.shield -= blocked;
     amount = Math.min(ENDLESS.clamp, amount);
@@ -2010,13 +1791,6 @@ export class Fight {
       events.push({ type: 'relic', side: 'player', relic: 'holywater' });
       return this.fizzle(me, sym, reels, events);
     }
-    // THE SCORE RACE: a shield you're holding blocks the next sabotage on your reels (a symbol's or an ability's), and is spent.
-    if (this.cfg.race && foe.side === 'player' && foe.shield > 0 && REEL_WRITES.has(sym) && !(FIZZLE_SINGLES.has(sym) && amount < PAIR_PAY)) {
-      events.push({ type: 'sabotageBlocked', side: 'player', kind: sym, shield: foe.shield });
-      events.push({ type: 'shieldReset', side: 'player', lost: 1 });
-      foe.shield -= 1;
-      return;
-    }
     switch (sym) {
       case 'slime':
         // One slimed cell per UNIT of slime pay (a double slimes 4, a jackpot 9).
@@ -2040,10 +1814,8 @@ export class Fight {
         if (amount < PAIR_PAY) return this.fizzle(me, sym, reels, events);
         return this.placeBets(me, foe, amount >= JACKPOT_PAY ? 2 : 1, events, true);
       case 'coin': {
-        // (THE SCORE RACE: the pot holds score, so what it shows is what it cashes, or what your jackpot steals.)
-        const add = Math.round(amount * this.potScale);
-        this.pot += add;
-        events.push({ type: 'pot', side: me.side, reels, amount: add, total: this.pot });
+        this.pot += amount;
+        events.push({ type: 'pot', side: me.side, reels, amount, total: this.pot });
       }
         return;
       case 'bomb':
@@ -2474,19 +2246,11 @@ export class Fight {
       events.push({ type: 'relic', side: 'player', relic: 'holywater' });
       return;
     }
-    // THE SCORE RACE: a shield you're holding blocks the enemy's sabotage too (not THE HOUSE's cash-out), and is spent.
-    if (this.cfg.race && foe.side === 'player' && foe.shield > 0 && (WRITER_ABILITIES.has(ab.kind) || ab.kind === 'smash')) {
-      events.push({ type: 'sabotageBlocked', side: 'player', kind: ab.kind, shield: foe.shield });
-      events.push({ type: 'shieldReset', side: 'player', lost: 1 });
-      foe.shield -= 1;
-      return;
-    }
     switch (ab.kind) {
       case 'flood':
         return this.applySlime(me, foe, ab.power, [], events);
       case 'smash':
-        // THE SCORE RACE: THE BRUTE's wind-up scores big (unless a shield blocked it above).
-        this.hit(me, foe, Math.round(ab.power * (this.cfg.race ? RACE_RULES.smashMul * this.cfg.race.enemyMul : 1)), [], events);
+        this.hit(me, foe, ab.power, [], events);
         return;
       case 'fortify':
         me.shield += ab.power;
@@ -2497,7 +2261,6 @@ export class Fight {
       case 'jam':
         return this.applyStatus(me, foe, 'locked', 1, ab.power, [], events);
       case 'pilfer':
-        if (this.cfg.race) return this.raceSteal(me, foe, events);
         return this.steal(me, foe, ab.power, [], events);
       case 'quake':
         return this.junk(me, foe, ab.power, [], events);
@@ -2612,8 +2375,7 @@ export class Fight {
     this.pot -= taken;
     const amount = unitsUp(taken * (this.cfg.enemy.dmgMul ?? 1) * (this.cfg.enemy.endless ? ENDLESS.housePot : 1));
     // MIDAS's rival: the House skims his chips too (2 per cash-out).
-    // (Not in THE SCORE RACE: there it cut BANKROLL's whole score engine, and the House race went 52%.)
-    if (foe.side === 'player' && this.meter?.kind === 'vault' && !this.cfg.race) {
+    if (foe.side === 'player' && this.meter?.kind === 'vault') {
       const took = Math.min(MIDAS.houseSkim, (this.cfg.player.chipsHeld ?? 0) + this.midasChips);
       if (took > 0) {
         this.midasChips -= took;

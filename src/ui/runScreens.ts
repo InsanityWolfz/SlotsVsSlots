@@ -10,8 +10,6 @@ import { LEGENDARY, RELICS, POT } from '../core/relics';
 import { CHARM_COLOR, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
 import {
-  RACE as SCORE_RACE,
-  raceEnemyMul,
   CHIPS,
   describeOption,
   takenLabel,
@@ -45,7 +43,7 @@ import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import { effectiveAbility, STAKE, STAKES, stakeOf } from '../core/stakes';
 import type { RelicId } from '../core/config';
 import { LOOP_GROWTH } from '../core/enemies';
-import { RACE_RULES, VOLUME } from '../core/fight';
+import { VOLUME } from '../core/fight';
 import { Clock } from '../present/clock';
 import { backOut, sineOut } from '../present/ease';
 import { ABILITY_UI, abilityName } from '../present/hud';
@@ -252,20 +250,6 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
   const p = (run ? scaledAbility(run, e.ability, true) : e.ability)?.power ?? e.ability.power;
   // THE WHEEL: what one chip left on your reels hits for at NO MORE BETS (as the fight does it).
   const per = run ? Math.max(UNIT, unitsRound(run.player.maxHp * wheelChipShare(run.cabinet))) : 0;
-  // THE SCORE RACE: what an act 1 ability does in a race (fight.ts RACE_RULES).
-  if (run?.race) {
-    const mul = raceEnemyMul(run, e);
-    const race: Record<string, string> = {
-      smash: `BETS BIG: SCORES ${fmtNum(Math.round(p * RACE_RULES.smashMul * mul))}. A GUARD STOPS IT`,
-      blizzard: 'ICES A REEL: IT PAYS HALF. A HOLD FREES IT',
-      jam: 'JAMS A REEL: IT PAYS NOTHING. A HOLD FREES IT',
-      flood: `GUNKS ${p} OF YOUR CELLS: THEY PAY NOTHING`,
-      pilfer: `STEALS ${Math.round(RACE_RULES.thiefShare * 100)}% OF YOUR SCORE. A GUARD STOPS IT`,
-      quake: `DROPS ${p} ROCKS ON YOU. EACH SCORES ${fmtNum(Math.round(SCORE_RACE.golemPerRock * mul))} FOR IT A SPIN`,
-      jackpot: 'CASHES HALF ITS POT EVERY 3 SPINS, ALL OF IT ON ITS LAST',
-    };
-    if (race[e.ability.kind]) return race[e.ability.kind];
-  }
   const what: Record<string, string> = {
     flood: `SLIMES ${p} OF YOUR SYMBOLS`,
     smash: `HITS FOR ${p}`,
@@ -294,7 +278,7 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
 
 function abilityText(e: EnemyDef, every: number, run?: RunState): string {
   if (!e.ability) return '';
-  const ui = { ...ABILITY_UI[e.ability.kind], label: abilityName(e.ability.kind, !!run?.race) };
+  const ui = { ...ABILITY_UI[e.ability.kind], label: abilityName(e.ability.kind) };
   // THE REPO MAN takes on his first turn, then every few.
   if (e.ability.kind === 'repo') return `${ui.label} FROM TURN 1, THEN EVERY ${every}: TAKES ONE OF YOUR CHARMS. YOU GET IT BACK AFTER THE FIGHT`;
   if (e.ability.kind === 'deal') return `EVERY ${every} TURNS: BUST. THREE HANDS, EACH HARDER`;
@@ -307,18 +291,6 @@ const STAGE_TINT: Record<string, string> = {
   brute: '#ff9a3a', gremlin: '#ff9a3a', bomber: '#ff9a3a', vampire: '#ff6a5a', house: '#ff6a5a', pitboss: '#ff6a5a',
   dealer: '#ff6a5a', owner: '#ffd23f', wheel: '#ff3a2e', croupier: '#ffd23f', sharp: '#ffd23f', counterfeiter: '#ffd23f', mimic: '#ffd23f',
 };
-/** THE SCORE RACE: an act 1 enemy's one line, as it races. */
-const RACE_BLURB: Record<string, string> = {
-  slime: 'A RIVAL THAT GUNKS YOUR CELLS',
-  frost: 'A RIVAL THAT ICES YOUR REELS',
-  golem: 'A RIVAL THAT SCORES OFF YOUR ROCKS',
-  gremlin: 'A RIVAL THAT JAMS YOUR REELS',
-  thief: 'A PICKPOCKET: STEALS YOUR SCORE',
-  brute: 'A HIGH ROLLER: ONE HUGE BET',
-  repo: 'REPOSSESSES A CHARM FOR THE RACE',
-  house: 'THE POT IS ITS SCORE',
-};
-
 /** A shorter line for the front when a boss's blurb won't fit on one line (the full blurb is on the back). */
 const FRONT_BLURB: Record<string, string> = { dealer: 'THE HOUSE HAS A PARTNER' };
 
@@ -398,8 +370,6 @@ export class RunScreens {
   private flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   private picked = -1;
   private lastRecord: FightRecord | null = null;
-  /** THE SCORE RACE: the machine screen is picking a race run's machine. */
-  private raceSelect = false;
   /** 'spoils' = an elite's relic choice (1 of 2) shown with the draft layout. */
   private draftKind: 'draft' | 'spoils' | 'legend' | 'start' = 'draft';
   private shopItems: ShopItem[] = [];
@@ -449,8 +419,7 @@ export class RunScreens {
   ) {}
 
   /** Pick your starting machine (pre-run). Locked cabinets show how to unlock them. */
-  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0, _act3 = false, _dealerBeaten: CabinetId[] = [], race = false): void {
-    this.raceSelect = race;
+  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0, _act3 = false, _dealerBeaten: CabinetId[] = []): void {
     this.cabinetUnlocked = unlocked;
     this.stakes = stakes;
     this.run = null;
@@ -1185,7 +1154,7 @@ export class RunScreens {
       drawSprite(ctx, f.sprite, x, y, 4 - 2.5 * f.t, { rot: f.t * Math.PI * 2 * 0.5 });
     }
     // Over everything: what the relic under the pointer does (cards that already say it don't add spots).
-    if (!this.results) this.tips.draw(ctx, this.mouse.x, this.mouse.y, this.run?.cabinet, !!this.run?.race);
+    if (!this.results) this.tips.draw(ctx, this.mouse.x, this.mouse.y, this.run?.cabinet);
     ctx.restore();
   }
 
@@ -1258,7 +1227,7 @@ export class RunScreens {
   private drawNodeTip(ctx: CanvasRenderingContext2D, t: MapTip): void {
     const name = t.e ? (t.e.name ?? 'ENEMY') : (t.title ?? '');
     const ab = t.e?.ability ? ABILITY_UI[t.e.ability.kind] : null;
-    const sub = t.e ? (t.e.ability ? abilityName(t.e.ability.kind, !!this.run?.race) : '') : (t.sub ?? '');
+    const sub = t.e ? (t.e.ability ? abilityName(t.e.ability.kind) : '') : (t.sub ?? '');
     const w = Math.max(name.length * 12, sub ? sub.length * 9 + (ab ? 30 : 0) : 0) + 24;
     const h = sub ? 52 : 32;
     const x = Math.max(BUILD.x + BUILD.w + 12, Math.min(W - w - 8, t.x - w / 2));
@@ -1409,12 +1378,6 @@ export class RunScreens {
   }
 
   private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
-    // THE SCORE RACE: no HP; one lost race ends the run.
-    if (this.run?.race) {
-      drawText(ctx, 'SCORE RACE', x + 8, y + 1, 2, COLORS.goldLight, { align: 'left' });
-      drawText(ctx, this.run.player.relics.includes('phoenix') && !this.run.racePhoenix ? 'PHOENIX: ONE SAVE' : 'ONE LOSS ENDS IT', x + 24 + w, y + 1, 1.25, COLORS.textDim, { align: 'right' });
-      return;
-    }
     const p = this.shown();
     drawSprite(ctx, 'heart', x + 8, y, 2);
     ctx.fillStyle = COLORS.outline;
@@ -1431,7 +1394,7 @@ export class RunScreens {
     const start = this.draftKind === 'start';
     // ENDLESS: the pick after a loop's boss is the new loop's: say the loop was cleared.
     const loopDone = !!last && !!this.run?.endless && last.loop !== undefined && last.loop < this.run.endless.loop;
-    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? (last.race ? `${fmtNum(last.race[0])} TO ${fmtNum(last.race[1])}: RACE WON!` : `${last.enemy} DEFEATED!`) : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${nightOf(this.run) ? `: ${nightOf(this.run)!.title}` : ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
+    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${nightOf(this.run) ? `: ${nightOf(this.run)!.title}` : ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
@@ -1701,16 +1664,11 @@ export class RunScreens {
     // Right column: one-line blurb, the HP bar, then the ability with its cadence.
     const tx = fork ? 124 : 148;
     const room = w - tx - 16;
-    const blurb = (run.race ? RACE_BLURB[e.archetype] : undefined) ?? FRONT_BLURB[e.boss ?? ''] ?? e.blurb;
+    const blurb = FRONT_BLURB[e.boss ?? ''] ?? e.blurb;
     const blurbScale = blurb.length * 12 <= room ? 2 : blurb.length * 9 <= room ? 1.5 : 0;
     if (blurbScale) drawText(ctx, blurb, tx, 62, blurbScale, COLORS.textDim, { align: 'left' });
     const hp = enemyHp(run, e);
     const bw = fork ? Math.min(200, room - 24) : 280;
-    // THE SCORE RACE: no HP: the race's length instead.
-    if (run.race) {
-      const spins = e.isBoss ? SCORE_RACE.spins.boss : e.elite ? SCORE_RACE.spins.elite : SCORE_RACE.spins.fight;
-      drawText(ctx, `A RACE OF ${spins} SPINS`, tx, 96, 2, COLORS.goldLight, { align: 'left' });
-    } else {
     drawSprite(ctx, 'heart', tx + 8, 96, 2);
     const bx = tx + 24;
     ctx.fillStyle = COLORS.outline;
@@ -1722,10 +1680,9 @@ export class RunScreens {
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.fillRect(bx, 103, bw, 3);
     drawText(ctx, fmtNum(hp), bx + bw / 2, 96, 2, COLORS.text);
-    }
     if (e.ability) {
       const every = effectiveAbility(nightId(run) === 'fast' ? { ...e.ability, every: Math.max(2, e.ability.every - 1) } : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
-      const ui = { ...ABILITY_UI[e.ability.kind], label: abilityName(e.ability.kind, !!run.race) };
+      const ui = { ...ABILITY_UI[e.ability.kind], label: abilityName(e.ability.kind) };
       drawSprite(ctx, ui.icon, tx + 12, 138, fork ? 2.5 : 3);
       drawText(ctx, ui.label, tx + 34, 138, fork ? 2 : 2.5, '#ff9a3a', { align: 'left' });
       let px = tx + 34 + ui.label.length * (fork ? 12 : 15) + 16;
@@ -2332,8 +2289,7 @@ export class RunScreens {
         drawText(ctx, `PLAY AS ${cab.hero}`, 0, 28, 1.25, '#c9a0ff');
         drawText(ctx, cab.blurb, 0, 42, 1, COLORS.textDim);
         // The rule at the big size if it fits 5 lines, else smaller (MIDAS's was cut off: EXPERT_PLAYTEST_10 D2).
-        // (THE SCORE RACE: the rule as it races.)
-        const rule = (this.raceSelect && cab.raceRule) || cab.rule;
+        const rule = cab.rule;
         const big = wrap(rule, 17);
         const fits = big.length <= 5;
         const lines = fits ? big : wrap(rule, 23).slice(0, 8);
@@ -2743,14 +2699,6 @@ export class RunScreens {
     } else if (o.kind === 'remove') {
       drawSprite(ctx, o.symbol as SpriteId, 0, iy, 4);
       drawSprite(ctx, 'minusBadge', 30, iy + 22, 3);
-    } else if (o.kind === 'tool') {
-      // THE SCORE RACE: a spin tool, drawn as its tray chip.
-      ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(-46, iy - 18, 92, 36);
-      ctx.fillStyle = '#3a2d52';
-      ctx.fillRect(-43, iy - 15, 86, 30);
-      drawText(ctx, o.tool.toUpperCase(), 0, iy, 2, '#ffd23f');
-      drawText(ctx, '+1', 34, iy - 22, 2, COLORS.goldLight);
     } else drawSprite(ctx, 'heart', 0, iy, 5);
     // The ribbon sits on the case's top edge (above it, it met the upper shelf's name plates).
     if (legend) this.legendTag(ctx, 0, -48, time);
@@ -2894,7 +2842,7 @@ export class RunScreens {
     if (this.onlineLine) drawText(ctx, this.onlineLine, CX, 563, 1.5, COLORS.goldLight);
     const trueEnding = run.won && run.act >= 3;
     const busted = !!run.endless;
-    drawText(ctx, busted ? (run.endless!.turbo ? `YOU BROKE THE BANK! ${fmtNum(endlessScore(run))}` : `BUSTED ON LOOP ${run.endless!.loop}: SCORE ${fmtNum(endlessScore(run))}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? (run.race ? 'ACT 1 CLEARED!' : 'THE WHEEL STOPS!') : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
+    drawText(ctx, busted ? (run.endless!.turbo ? `YOU BROKE THE BANK! ${fmtNum(endlessScore(run))}` : `BUSTED ON LOOP ${run.endless!.loop}: SCORE ${fmtNum(endlessScore(run))}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE WHEEL STOPS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
     const reached = `${CABINETS[run.cabinet].name}  -  ${busted ? `BEAT THE DEALER, THEN ${run.records.filter((r) => r.loop !== undefined).length} ENDLESS FIGHTS` : run.won ? `BEAT ALL ${totalFights(run)} FIGHTS${trueEnding ? ' - TRUE ENDING' : ''}` : `FELL AT FIGHT ${run.records.length} OF ${totalFights(run)} (ACT ${run.act})`}`;
     // DEATH RECAP: its own full-width line under the table (the most important line on a loss).
     const lastRec = run.records[run.records.length - 1];
@@ -2937,7 +2885,7 @@ export class RunScreens {
     this.panel(ctx, 316, 120 + top, 940, 320 - top - cut);
     drawText(ctx, 'FIGHT', 350, 142 + top, 2, COLORS.textDim, { align: 'left' });
     drawText(ctx, 'SPINS', 715, 142 + top, 2, COLORS.textDim);
-    drawText(ctx, run.race ? 'SCORE' : 'HP', 821, 142 + top, 2, COLORS.textDim);
+    drawText(ctx, 'HP', 821, 142 + top, 2, COLORS.textDim);
     drawText(ctx, 'THEN PICKED', 919, 142 + top, 2, COLORS.textDim, { align: 'left' });
     // Up to 16 fights: rows shrink (and drop the detail line) once they stop fitting.
     const rows = this.overRows(run);
@@ -2965,9 +2913,7 @@ export class RunScreens {
       drawSprite(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 350, y, compact ? (rowH < 22 ? 0.65 : 0.9) : 1.4);
       drawText(ctx, r.enemy, 376, y, ts, r.won ? COLORS.text : COLORS.danger, { align: 'left' });
       drawText(ctx, `${r.turns}`, 715, y, ts, COLORS.text);
-      // (THE SCORE RACE: the final score, yours to its.)
-      if (r.race) drawText(ctx, `${fmtNum(r.race[0])}-${fmtNum(r.race[1])}`, 821, y, ts, r.won ? COLORS.text : COLORS.danger);
-      else drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 821, y, ts, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
+      drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 821, y, ts, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
       if (compact) {
         const parts = [...(r.bonuses ?? []), r.eliteRelic ? (RELICS[r.eliteRelic]?.name ?? r.eliteRelic) : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', r.pick ? takenLabel(r.pick) : '', ...(r.bought ?? []).map((b) => takenLabel(b))].filter(Boolean);
         const what = parts.length ? parts.join(', ') : r.won ? '' : 'DEFEATED';

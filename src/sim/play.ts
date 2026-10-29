@@ -75,10 +75,8 @@ export interface PlayOpts {
   onEnd?: (run: RunState) => void;
   /** Every fight step's events (probes: where the damage comes from). */
   onEvents?: (events: CombatEvent[], run: RunState, fight: Fight) => void;
-  /** HOLD (experiment): HOLDs a fight, played by holdPolicy. */
+  /** HOLDs a fight, if not the live game's (run.ts HOLD); played by holdPolicy. */
   holds?: number;
-  /** THE SCORE RACE (sandbox): every fight is a race (its HOLDs played by holdPolicy). */
-  race?: boolean;
 }
 
 /**
@@ -86,10 +84,6 @@ export interface PlayOpts {
  * a jackpot try, if the HOLDs cover it. A decent player's habit, not the best play.
  */
 export function holdPolicy(fight: Fight, last: { line: string[]; tier: string; groups: { reels: number[]; matched: boolean; symbol: string }[] } | null, attack: string): void {
-  // THE SCORE RACE: free an iced or jammed reel first (a HOLD does).
-  if (fight.cfg.race)
-    for (let r = 0; r < 3; r++)
-      if (fight.holdsLeft - fight.held.filter(Boolean).length > 0 && (fight.sides.player.frozen[r] > 0 || fight.sides.player.locked[r] > 0)) fight.hold(r);
   if (!last || last.tier !== 'pair' || fight.holdsLeft < 2) return;
   const g = last.groups.find((x) => x.matched && x.reels.length === 2);
   if (!g) return;
@@ -98,43 +92,12 @@ export function holdPolicy(fight: Fight, last: { line: string[]; tier: string; g
   for (const r of g.reels) fight.hold(r);
 }
 
-/**
- * The bot's NUDGE / RESPIN play once its spin has landed: take the NUDGE that pays most (if it pays more), else RESPIN
- * the odd reel out of a pair. A decent player's habit, not the best play.
- */
-export function landPolicy(fight: Fight): void {
-  for (let guard = 0; guard < 4 && fight.landed; guard++) {
-    const now = fight.previewPay(fight.landed);
-    let bestReel = -1;
-    let bestPay = now;
-    if (fight.nudgesLeft > 0)
-      for (let r = 0; r < 3; r++) {
-        if (fight.sides.player.frozen[r] > 0) continue;
-        const n = fight.sides.player.reels[r].cells.length;
-        const stops = fight.landed.map((x, i) => (i === r ? (x - 1 + n) % n : x));
-        const pay = fight.previewPay(stops);
-        if (pay > bestPay) [bestReel, bestPay] = [r, pay];
-      }
-    if (bestReel >= 0) {
-      fight.nudge(bestReel);
-      continue;
-    }
-    if (fight.respinsLeft > 0) {
-      const line = fight.sides.player.reels.map((reel, r) => reel.cells[fight.landed![r]].symbol);
-      const odd = line[0] === line[1] && line[2] !== line[0] ? 2 : line[1] === line[2] && line[0] !== line[1] ? 0 : line[0] === line[2] && line[1] !== line[0] ? 1 : -1;
-      if (odd >= 0 && fight.sides.player.frozen[odd] === 0) fight.respin(odd);
-    }
-    return;
-  }
-}
-
 const best = <T>(xs: T[], v: (x: T) => number): T => xs.reduce((a, b) => (v(b) > v(a) ? b : a));
 
 export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stake: number, opts: PlayOpts = {}): RunLog {
   const policy = opts.policy ?? 'greedy';
   SIM_BIAS.style = opts.style;
   const run = createRun(base, seed, cabinet, stake, opts.act3 ?? stake >= 2);
-  if (opts.race) run.race = true;
   opts.setup?.(run);
   const pick = new Rng((seed ^ 0x5eed) >>> 0);
   const fightSeeds = new Rng((seed ^ 0x5f3759df) >>> 0);
@@ -159,9 +122,7 @@ export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stak
     const arch = run.enemies[run.depth]?.archetype ?? '?';
     let lastSpin: Parameters<typeof holdPolicy>[1] = null;
     while (!fight.over && fight.turn < 2000) {
-      if ((cfg.player.holds || cfg.race) && fight.next === 'player') holdPolicy(fight, lastSpin, CABINETS[run.cabinet].attack);
-      // THE SCORE RACE: the spin lands, the bot may NUDGE or RESPIN, then it scores.
-      if (cfg.race && fight.next === 'player' && fight.land()) landPolicy(fight);
+      if (cfg.player.holds && fight.next === 'player') holdPolicy(fight, lastSpin, CABINETS[run.cabinet].attack);
       const { events } = fight.step();
       for (const e of events) if (e.type === 'spin' && e.side === 'player') lastSpin = e.score;
       opts.onEvents?.(events, run, fight);

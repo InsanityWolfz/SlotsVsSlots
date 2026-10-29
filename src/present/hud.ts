@@ -19,10 +19,8 @@ export interface HudMeter {
   note?: (chips: number) => string;
 }
 
-/** THE SCORE RACE: an enemy's ability is a CHEAT, named as one (the rival machines cheat; they don't attack). */
-export const RACE_CHEAT: Partial<Record<AbilityKind, string>> = { flood: 'GUNK', blizzard: 'ICE UP', quake: 'ROCK DROP', jam: 'JAM', pilfer: 'PICKPOCKET', smash: 'BIG BET', repo: 'REPO', jackpot: 'CASH OUT' };
-/** An ability's name on screen (its cheat name in a race). */
-export const abilityName = (kind: AbilityKind, race = false): string => (race ? RACE_CHEAT[kind] : undefined) ?? ABILITY_UI[kind].label;
+/** An ability's name on screen. */
+export const abilityName = (kind: AbilityKind): string => ABILITY_UI[kind].label;
 export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> = {
   flood: { icon: 'icoFlood', label: 'FLOOD' },
   smash: { icon: 'icoSmash', label: 'SMASH' },
@@ -88,15 +86,6 @@ export class HudView {
   abilityLabel?: string;
   /** A line in the ability slot for an enemy without one. */
   hint = '';
-  /** THE SCORE RACE (sandbox): the HP bar is a score bar, filled against the rival's score. */
-  race = false;
-  /** THE SCORE RACE: the most GUARDS you can hold (the shield field counts them). */
-  guardCap = 3;
-  score = 0;
-  rival = 0;
-  scorePunch = 1;
-  /** THE SCORE RACE: a live line in the rival's guard row (GOLEM: its rocks on your reels and what they score). */
-  raceNote?: () => string;
 
   constructor(
     readonly side: SideId,
@@ -154,7 +143,7 @@ export class HudView {
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(x - 8, y - 8, HUD_W + 16, h + 16);
     // Low HP: your frame pulses red (with the screen's red edges and the heartbeat: feel playtest).
-    const lowHp = !this.race && this.side === 'player' && this.hp > 0 && this.hp < this.maxHp * 0.3;
+    const lowHp = this.side === 'player' && this.hp > 0 && this.hp < this.maxHp * 0.3;
     ctx.fillStyle = lowHp ? mixHex(COLORS.gold, COLORS.danger, 0.55 + 0.45 * Math.sin(time * Math.PI * 1.8)) : COLORS.gold;
     ctx.fillRect(x - 5, y - 5, HUD_W + 10, h + 10);
     ctx.fillStyle = COLORS.panel;
@@ -180,46 +169,22 @@ export class HudView {
     const hb = this.hpBar();
     const sh = this.hpShake * (Math.random() * 2 - 1);
     const hx = hb.x + sh;
-    if (this.race) {
-      // THE SCORE RACE: the bar fills against whoever leads; the leader's bar is full.
-      this.scorePunch += (1 - this.scorePunch) * 0.15;
-      const lead = this.score >= this.rival && this.score > 0;
-      this.bar(ctx, hx + 6, hb.y, hb.w - 6, hb.h, [[this.score / Math.max(1, this.score, this.rival), this.side === 'player' ? COLORS.gold : COLORS.hp]], this.hpFlash);
-      drawText(ctx, `SCORE ${fmtNum(this.score)}`, hx + 6 + (hb.w - 6) / 2, hb.y + hb.h / 2 + 1, 2, lead ? '#fff6c0' : COLORS.text, { punch: this.scorePunch });
-    } else {
-      // Heart and shield sit in one column between the portrait box and the bars.
-      drawSprite(ctx, 'heart', x + 68 + sh, hb.y + hb.h / 2, 2);
-      this.bar(ctx, hx + 6, hb.y, hb.w - 6, hb.h, [
-        [this.ghost / this.maxHp, COLORS.hpGhost],
-        [this.hp / this.maxHp, COLORS.hp],
-      ], this.hpFlash);
-      const low = this.hp / this.maxHp <= 0.25 && this.hp > 0;
-      drawText(ctx, `${fmtNum(Math.ceil(this.hp))}/${fmtNum(this.maxHp)}`, hx + 6 + (hb.w - 6) / 2, hb.y + hb.h / 2 + 1, 2, low && Math.sin(time * 10) > 0 ? '#ffb0b0' : COLORS.text);
-    }
+    // Heart and shield sit in one column between the portrait box and the bars.
+    drawSprite(ctx, 'heart', x + 68 + sh, hb.y + hb.h / 2, 2);
+    this.bar(ctx, hx + 6, hb.y, hb.w - 6, hb.h, [
+      [this.ghost / this.maxHp, COLORS.hpGhost],
+      [this.hp / this.maxHp, COLORS.hp],
+    ], this.hpFlash);
+    const low = this.hp / this.maxHp <= 0.25 && this.hp > 0;
+    drawText(ctx, `${fmtNum(Math.ceil(this.hp))}/${fmtNum(this.maxHp)}`, hx + 6 + (hb.w - 6) / 2, hb.y + hb.h / 2 + 1, 2, low && Math.sin(time * 10) > 0 ? '#ffb0b0' : COLORS.text);
 
     // Shield bar (no max; fills to a soft cap).
     const sb = this.shieldBar();
     const ss = this.shieldShake * (Math.random() * 2 - 1);
-    // (In a race the rival holds no guards: its row is a note, or empty.)
-    if (!this.race || this.side === 'player') drawSprite(ctx, 'shieldIcon', x + 68 + ss, sb.y + sb.h / 2, 2, { alpha: this.shield > 0 ? 1 : 0.4 });
-    if (this.race && this.side === 'player') {
-      // THE SCORE RACE: GUARDS, a pip each (lit while held); each blocks one cheat.
-      for (let k = 0; k < this.guardCap; k++) {
-        const px = sb.x + 14 + k * 22 + ss;
-        ctx.fillStyle = COLORS.outline;
-        ctx.fillRect(px - 8, sb.y, 16, sb.h);
-        ctx.fillStyle = k < Math.round(this.shield) ? COLORS.shield : '#1a2a3a';
-        ctx.fillRect(px - 6, sb.y + 2, 12, sb.h - 4);
-      }
-      drawText(ctx, this.shield >= 1 ? 'GUARDED' : 'NO GUARD', sb.x + 14 + this.guardCap * 22 + 4 + ss, sb.y + sb.h / 2 + 1, 1.5, this.shield >= 1 ? '#9fd0ff' : COLORS.textDim, { align: 'left' });
-    } else if (this.race && this.raceNote) {
-      const note = this.raceNote();
-      if (note) drawText(ctx, note, sb.x + 8 + ss, sb.y + sb.h / 2 + 1, 1.5, COLORS.text, { align: 'left' });
-    } else if (!this.race) {
-      this.bar(ctx, sb.x + 6 + ss, sb.y, sb.w - 6, sb.h, [[Math.min(1, this.shield / SHIELD_SOFT_CAP), COLORS.shield]], this.shieldFlash);
-      if (this.shield > 0.01)
-        drawText(ctx, `${Math.round(this.shield)}`, sb.x + 6 + (sb.w - 6) / 2 + ss, sb.y + sb.h / 2 + 1, 2, COLORS.text);
-    }
+    drawSprite(ctx, 'shieldIcon', x + 68 + ss, sb.y + sb.h / 2, 2, { alpha: this.shield > 0 ? 1 : 0.4 });
+    this.bar(ctx, sb.x + 6 + ss, sb.y, sb.w - 6, sb.h, [[Math.min(1, this.shield / SHIELD_SOFT_CAP), COLORS.shield]], this.shieldFlash);
+    if (this.shield > 0.01)
+      drawText(ctx, `${Math.round(this.shield)}`, sb.x + 6 + (sb.w - 6) / 2 + ss, sb.y + sb.h / 2 + 1, 2, COLORS.text);
 
     // The signature meter (TESLA, MIDAS, JAX, THE JUKEBOX).
     const m = this.meter;
@@ -270,7 +235,7 @@ export class HudView {
       ctx.fillStyle = i < this.charge ? (imminent ? '#ff5a4a' : '#ff9a3a') : '#2a2038';
       ctx.fillRect(px - 4, y - 4, 8, 8);
     }
-    const name = this.abilityLabel ?? abilityName(ab.kind, this.race);
+    const name = this.abilityLabel ?? abilityName(ab.kind);
     // "ALL IN IN 2" read badly (playtest C): a name ending in IN reads "ALL IN: 2 TURNS".
     const label = imminent ? `${name} NEXT!` : / IN$/.test(name) ? `${name}: ${left} TURN${left === 1 ? '' : 'S'}` : `${name} IN ${left}`;
     // A long label (NO MORE BETS NEXT!) steps down a size so it clears the pips.

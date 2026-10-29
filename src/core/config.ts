@@ -38,18 +38,12 @@ export type SymbolId =
   /** JESTER JAX's attack symbol: a playing card (shown as CARD; 'card' is the Dealer's mark). It hits like a sword. */
   | 'ace'
   /** DJ DECIBEL's attack symbol (THE JUKEBOX): a NOTE turns up the volume. It hits like a sword. */
-  | 'note'
-  /** THE SCORE RACE: the CHERRY scatter (pays for every cherry in sight, payline or not). */
-  | 'cherry'
-  /** THE NEW GAME's classic BAR payer. */
-  | 'bar'
-  /** THE SCORE RACE: X2 on your payline doubles the spin's pay (it pays nothing itself). */
-  | 'double';
+  | 'note';
 
 /** The player's sword-like symbols: they hit, take KEEN and VAMP, and feed the sword relics. */
 export const BLADES: ReadonlySet<SymbolId> = new Set<SymbolId>(['sword', 'ace', 'note']);
 /** A symbol's name on screen (code ids that read differently: goldbar is a CHIP, ace is a CARD). */
-export const symLabel = (s: SymbolId): string => (s === 'goldbar' ? 'CHIP' : s === 'ace' ? 'CARD' : s === 'double' ? 'X2' : s.toUpperCase());
+export const symLabel = (s: SymbolId): string => (s === 'goldbar' ? 'CHIP' : s === 'ace' ? 'CARD' : s.toUpperCase());
 
 /**
  * CHARMS live on single cells (code name: gild / enh). GOLD adds a multiplier, KEEN swords add base
@@ -214,10 +208,8 @@ export interface SideConfig {
   stackShield?: number;
   /** THE DECK REMEMBERS: marked cards waiting on this side's reels when the fight starts. */
   startMarks?: number;
-  /** THE SCORE RACE's spin tools this fight: HOLD (keep a reel before a spin), NUDGE and RESPIN (after it lands). */
+  /** HOLDs this fight (run.ts HOLD): keep a reel for your next spin. */
   holds?: number;
-  nudges?: number;
-  respins?: number;
   /** Which act this side comes from (enemy). */
   act?: number;
   /** ENDLESS: enemy damage multiplier (1.12^loop), LAST CALL / 80-turn cap on, and a starting shield (HOUSE EDGE). */
@@ -269,11 +261,6 @@ export interface GameConfig {
   overtime?: boolean;
   /** null = new random seed each fight. */
   seed: number | null;
-  /**
-   * THE SCORE RACE (sandbox, user 2026-10-15): no HP. Both machines spin `spins` times; what a spin pays is its score
-   * (the enemy's x enemyMul), and the higher score wins. A shield you hold when the enemy's ability fires blocks it.
-   */
-  race?: { spins: number; enemyMul: number; /** GOLEM: its score each spin per rock on your reels. */ perRock?: number };
 }
 
 /** Every number in the game is on a x10 scale (a plain symbol pays 10). The presentation divides by this where it counts pips. */
@@ -291,7 +278,7 @@ export function defaultConfig(): GameConfig {
     player: { hp: 20 * UNIT, strips: reels3({ sword: 4, shield: 4, bolt: 4 }) },
     // Tuned from playtest/PLAYTEST_REPORT.md: ~65% player wins, ~24 turns, cleanse in ~half of fights.
     enemy: { hp: 30 * UNIT, strips: reels3({ sword: 5, shield: 2, slime: 5 }), name: 'SLIME KING', portrait: 'enemyPortrait' },
-    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, ball: UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0, goldbar: UNIT, ace: UNIT, note: UNIT, cherry: 0, double: 0, bar: 0 },
+    base: { sword: UNIT, shield: UNIT, bolt: UNIT, slime: UNIT, ice: UNIT, claw: UNIT, rock: UNIT, lock: UNIT, coin: UNIT, seven: 2 * UNIT, ball: UNIT, empty: 0, wild: UNIT, bomb: UNIT, hex: UNIT, fangs: UNIT, mimicSym: UNIT, fake: UNIT, card: UNIT, gavel: UNIT, rake: UNIT, bonusSym: 0, relicSym: 0, goldbar: UNIT, ace: UNIT, note: UNIT },
     pairMult: 2,
     tripleMult: 3,
     pairRule: 'inOrder',

@@ -70,13 +70,11 @@ describe('OVERTIME', () => {
     expect(late(true)).toBe(1);
   });
 
-  it('every run fight has the clock and two HOLDs; the parked race has neither', () => {
+  it('every run fight has the clock and two HOLDs', () => {
     const run = createRun(defaultConfig(), 5, 'knight', 0);
     const cfg = fightConfig(run, defaultConfig());
     expect(cfg.overtime).toBe(true);
     expect(cfg.player.holds).toBe(HOLD.perFight);
-    run.race = true;
-    expect(fightConfig(run, defaultConfig()).overtime).toBeUndefined();
   });
 });
 

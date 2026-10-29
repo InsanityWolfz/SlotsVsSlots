@@ -130,7 +130,6 @@ export class Menus {
       onTutorial: () => void;
       /** THE DAILY RUN (one try a day). */
       onDaily: () => void;
-      onRace: () => void;
       /** Name entry: claim the name; resolves to the claim result ('ok', 'taken', 'have:NAME', 'offline'). */
       needsName: () => boolean;
       onName: (name: string) => Promise<string>;
@@ -338,8 +337,7 @@ export class Menus {
     const tb = this.btn('TUTORIAL', x, row(1), 440, 54, () => this.cb.onTutorial(), 3);
     this.icons.set(tb, 'iconTutorial');
     this.guardSaved(tb);
-    // (The parked rebuild's test modes, SCORE RACE / NEW GAME / METERS, stay off the menu: user 2026-10-17 and
-    // 2026-10-29. Their code stays until phase 2: the callbacks below, src/race/ and src/meter/.)
+    // (The parked rebuild's test modes, SCORE RACE / NEW GAME / METERS, are on the parked-rebuild branch: phase 2.)
     this.slideIn();
   }
 

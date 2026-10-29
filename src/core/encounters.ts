@@ -58,10 +58,6 @@ export interface EncounterResult {
   pot?: number;
   /** The game goes on at this stop (more plays left): the stop isn't passed yet. */
   more?: boolean;
-  /** RAT RACE: which rat won, and the one you backed. */
-  race?: { winner: number; pick: number };
-  /** SCRATCH-OFF: the panel just scratched and what it showed; when the ticket's done, the whole grid. */
-  scratch?: { panel: number; sym: number; grid?: number[] };
   /** CLAW MACHINE: the prize the claw went for, and whether it held on. */
   claw?: { prize: number; held: boolean };
 }

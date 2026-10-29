@@ -116,18 +116,6 @@ export class ReelView {
     return wrap(this.stop + row - 1, this.cells.length);
   }
 
-  /** THE SCORE RACE's NUDGE: the strip steps down one cell (the symbol above drops onto the payline), with a bump. */
-  nudge(clock: Clock): Promise<void> {
-    this.spinning = true;
-    return clock.tween({ from: 0, to: 1, dur: 0.2, ease: backOut(1.6), onUpdate: (v) => (this.q = v) }).then(() => {
-      this.q = 0;
-      this.stop = wrap(this.stop - 1, this.cells.length);
-      this.tape = this.staticTape();
-      this.spinning = false;
-      this.landingJuice(clock);
-    });
-  }
-
   /** Runs the 6-phase spin. Resolves the instant the reel reaches rest (before the bounce). */
   spin(plan: SpinPlan, clock: Clock, onStop: () => void): Promise<void> {
     if (plan.frozen) {
