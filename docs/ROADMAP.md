@@ -2,8 +2,9 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress:** phase 2, splitting the big files (`runScreens.ts`, `fight.ts`, `game.ts`, `run.ts`). Phase 1 (OVERTIME,
-HOLD, AUTO off) is live; its gate is the next outside playtest.
+**In progress:** nothing. Phase 2's trim is done; left in it: THE DAILY RUN and online boards to after launch, and the
+other big files split as they're touched. Phase 1 (OVERTIME, HOLD, AUTO off) is live; its gate is the next outside
+playtest.
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
 fight changes (OVERTIME and HOLD), frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
@@ -80,8 +81,9 @@ the same sim gives identical results without them); HOLD works from the keyboard
 Left:
 - THE DAILY RUN and the Supabase leaderboards (`src/net`) to after launch; Steam's achievements and leaderboards
   take their place.
-- Split the files over about 1,000 lines: `runScreens.ts` (2,999), `fight.ts` (2,400), `game.ts` (2,169), `run.ts`
-  (1,579). Check each split with the sim (identical results) and a browser run.
+- Split the files over about 1,000 lines as they're touched: `runScreens.ts` (2,999), `game.ts` (2,169), `run.ts`
+  (1,579). Check each split with the sim (identical results) and a browser run. (`fight.ts` is split: its rules,
+  a spin's scoring and the enemies' tricks are their own modules; the class with the turn loop is 1,234 lines.)
 
 **Gate:** the scope is signed, and everything on it is built.
 
