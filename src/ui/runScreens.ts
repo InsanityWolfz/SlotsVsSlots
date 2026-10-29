@@ -1482,7 +1482,7 @@ export class RunScreens {
     const heading = act3Arrival
       ? `ACT 3: THE HOUSE HAS A PARTNER. ${healed}`
       : legend
-        ? this.run!.endless ? `LOOP ${this.run!.endless.loop}: ${this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic)) ? 'A LEGENDARY RELIC' : 'PICK A RELIC'}` : `ACT 2: ${healed} ${this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic)) ? 'A LEGENDARY RELIC.' : 'PICK A RELIC.'}`
+        ? this.run!.endless ? `LOOP ${this.run!.endless.loop}: ${this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic)) ? 'A LEGENDARY RELIC' : 'PICK A RELIC'}` : `${last?.boss ? `ACT ${this.run!.act}: ${healed}` : 'PUNCH CARD:'} ${this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic)) ? 'A LEGENDARY RELIC.' : 'PICK A RELIC.'}`
         : start
           ? 'PICK A STARTING RELIC'
           : spoils
