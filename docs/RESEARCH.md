@@ -333,6 +333,66 @@ are listed as fact.
   mattering. [P] [arXiv 2012.03309 citing Gerling et al.](https://arxiv.org/pdf/2012.03309),
   [W] [Giant Bomb: Rubber Band AI](https://giantbomb.com/wiki/Concepts/Rubber_Band_AI)
 
+### Fight clocks (overtime, fatigue, sandstorm, enrage)
+- **Backpack Battles fatigue (both sides, flat damage):** at 17 s the screen shows "Fatigue sets in..." (night falls)
+  and both players take 1 damage, then 2 at 18 s, 3, 4 ... (+1 a tick; sources disagree on a growth change after 60 s).
+  Typical fights last 10-20 s, so the clock starts at the long end of a normal fight. Items (Mr. Struggles, Corrupted
+  Crystal) deal fatigue early and raise its value. Players built "fatigue builds": no weapons, heals and regen, win by
+  outlasting fatigue ("beat the game without doing any damage, other than fatigue"); one poster reports healing is capped
+  at the damage being taken. [W/F] [Wikipedia](https://en.wikipedia.org/wiki/Backpack_Battles),
+  [BB wiki: Fatigue (via search)](https://backpackbattles.wiki.gg/wiki/Fatigue), [itch.io comment](https://itch.io/post/8211269),
+  [Steam: fatigue builds](https://steamcommunity.com/app/2427700/discussions/0/4290313152640235930),
+  [GamesFuze](https://gamesfuze.com/guides/backpack-battles-ultimate-beginners-guide-tips-and-tricks/)
+- **The Bazaar sandstorm (both sides, flat damage that shields absorb):** arrives 30 s into every fight and deals
+  escalating damage to both players. Exact per-tick numbers not found. Shields block it, so shield builds use the storm
+  as their win condition; shield mirrors past 100,000 shield drag "for a long, long time" and can end in draws after
+  minutes; a Steam thread asks for fast-forward. Items exist to start the storm early (Bottled Tornado, Windmill). A
+  search snippet of the wiki's Version 0.1.3 page says storm ticks were made much more frequent to end fights faster
+  (not read directly). [F] [TV Tropes](https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/TheBazaar),
+  [TheGamer](https://www.thegamer.com/the-bazaar-beginner-tips-tricks-mechanics-explained-guide/),
+  [Steam: speed up the game](https://steamcommunity.com/app/1617400/discussions/0/591780152569132935/),
+  [W] [Version 0.1.3](https://thebazaar.wiki.gg/wiki/Version_0.1.3)
+- **Teamfight Tactics overtime (both sides, offence up and defence down):** patch 9.16 (2019) added "URF Overtime" at
+  30 s into combat: a sudden, huge buff (300% attack speed, 200% or 400% ability damage by source, 66% less CC, 66%
+  healing reduction) for 15 s, because Riot "didn't like draws"; draws became rarer, not impossible. Patch 13.22 (2023)
+  replaced the step with a stack every second: +10% damage and attack speed, -10% healing and shielding received and
+  -10% CC duration (reductions capped at 70%). The lesson Riot acted on: a gradual ramp over a sudden step, and the
+  ramp cuts defence rather than multiplying it. [P/W] [LoL wiki: V9.16](https://wiki.leagueoflegends.com/en-us/V9.16_(Teamfight_Tactics)),
+  [Riot: 13.22 notes](https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-13-22-notes/),
+  [Sportskeeda summary](https://sportskeeda.com/esports/teamfight-tactics-tft-patch-13-22-official-notes-ryze-buffs-loot-drops-reworks-new-player-onboard-system)
+- **Clash Royale (both sides, resource ramp, then a hard stop):** 3 minutes; elixir x2 in the last minute; tied games
+  go to overtime (sudden death: first tower wins) with x2 then x3 elixir; if still tied, a tiebreaker drains all towers
+  and the lowest-HP tower loses (added 2019 after esports showed it made tense finishes; the old flat 4-minute x2
+  overtime and the timer were among Reddit's most complained-about items). The ramp speeds play; the hard stop
+  guarantees an end. [P] [Supercell: November update](https://supercell.com/en/games/clashroyale/blog/release-notes/november-update),
+  [Supercell: Elixir](https://support.clashroyale.com/hc/en-us/articles/49484936933403-Elixir),
+  [W] [Wikipedia](https://en.wikipedia.org/wiki/Clash_Royale)
+- **Hearthstone fatigue (the side that runs out, linear):** each draw from an empty deck deals 1, then 2, 3 ... and
+  never resets. Most games end before it; control and mill decks use it as a win condition, and heavy-draw decks risk
+  reaching it early. It was added (per a secondhand account of a Ben Brode interview) after a playtester's reaction to
+  losing a very long game; before it, running out of cards was an instant loss. [W] [Hearthstone wiki: Fatigue](https://hearthstone.wiki.gg/wiki/Fatigue),
+  [F] [Icy Veins: Brode answers](https://www.icy-veins.com/forums/topic/37018-ben-brode-answers-unsolved-hearthstone-mysteries/)
+- **Inscryption Starvation (the stalled side's opponent gains attackers):** once you start a turn with nothing to draw,
+  a Starvation card (1/1, each later one +1/+1, Airborne from the 5th) is played against you every turn. An anti-stall
+  backstop, not a pacing clock. [W] [Inscryption wiki: Starvation](https://inscryption.fandom.com/wiki/Starvation)
+- **Slay the Spire has no global clock;** pressure lives in individual enemies, shown by intents and buff icons:
+  the Corrupt Heart (750 HP, Invincible 300, Beat of Death: 1 damage per card you play) buffs itself on a cycle that
+  ends at +50 Strength; Time Eater ends your turn every 12 cards you play and heals/cleanses once (Haste) below half HP;
+  the Transient (999 HP) hits 30, 40, 50 ... and fades after 5 turns (a reverse clock: survive it). [F/W]
+  [HighGround: Heart](https://www.highgroundgaming.com/slay-the-spire-corrupt-heart-guide/),
+  [ProGameGuides: Time Eater](https://progameguides.com/slay-the-spire/how-to-beat-the-time-eater-boss-in-slay-the-spire-strategies-deck-synergies-and-more/),
+  [slaythespire.gg: Transient](https://slaythespire.gg/monsters/Transient)
+- **Balatro and LBAL use a count, not a ramp:** a fixed number of hands a blind, a fixed number of spins a rent; the
+  target is visible from the start and nothing escalates inside the round. (See Run structure.)
+- **The pattern** (opinion, from the above): (1) a clock that hurts both sides equally becomes a win condition for
+  whatever survives it best (BB fatigue builds, Bazaar shield builds, Hearthstone control), so the build that defends
+  best is rewarded, not punished; (2) a clock that multiplies defence as well as offence can't break a stall where
+  defence keeps up (Bazaar shield mirrors); TFT's fix was to cut healing and shielding as the ramp grows; (3) gradual
+  beats sudden (TFT 9.16 -> 13.22); (4) clocks start near the long end of a normal fight (BB 17 s vs 10-20 s fights;
+  Hearthstone after 30 cards), so most fights never see one; (5) they're announced as a named event with a visual
+  change (night falls, "x2 Elixir"), and the long tail gets a hard stop or tiebreaker (Clash), since a ramp alone
+  makes draws rarer, not impossible (TFT).
+
 ## Our mechanics, cross-checked
 Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP, PAYTABLE), no tools used.
 
@@ -425,6 +485,19 @@ Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP,
   that lands and does nothing reads as a blank; with line-only fill, ~2 in 3 landed CARDS do nothing.
 - **BANKROLL precedent:** Balatro Bull/interest, Cash Cannon, Gil Toss. Pitfall: spending the run's savings as
   damage makes a bad fight a weaker shop (a death spiral); the Bull is skipped by players who spend.
+
+### OVERTIME (open; phase 1 of the roadmap: a pay multiplier on both sides from about your 8th spin)
+- **Precedent:** TFT 13.22 (both sides, stacks gradually, cuts healing/shielding), Backpack Battles fatigue and The
+  Bazaar sandstorm (both sides, flat damage), Clash Royale (both-sides ramp, then a tiebreaker). Enemy-only pressure in
+  single-player games is usually a per-enemy rule shown on that enemy (StS Heart, Time Eater), not a global clock.
+  See Battlers > Fight clocks.
+- **Pitfalls (opinion, applying the above to our rules):** a multiplier scales pays, so it can't shorten a fight's dry
+  stretches (sabotage blanking reels, an enemy at 10-20 HP that any hit kills: phase 0's documented slog); it shortens
+  fights that are already trading (big-HP elites, THE DEALER's hands). If shields and heals are multiplied too, a fight
+  where defence keeps up with offence stays a stall (the Bazaar's shield mirrors). With the one-turn caps kept (40%,
+  bosses 60%), late overtime turns the enemy's hits into cap-sized hits while yours stay uncapped, so in practice the
+  clock tilts toward the player, and HP carries into the next fight. The HUD's SPINS counter counts both machines, so
+  "your 8th spin" reads as SPINS 16.
 
 ### KNIGHT's SWORD / SHARP (non-paying, +20 to every later paying spin)
 - **Precedent:** Balatro's scaling Jokers that grow per hand played; Buffalo Gold's collect-to-upgrade; Hold & Spin's

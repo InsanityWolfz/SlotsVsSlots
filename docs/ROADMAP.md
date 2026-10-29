@@ -2,7 +2,8 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress:** nothing. Phase 0 is done (below); phase 1 waits on the user's call on its proposed changes.
+**In progress:** phase 1. OVERTIME (TEST) is built and waits on play (the user, then outside players); HOLD waits
+on the user's call on its rules.
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with three
 fight changes, frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
@@ -52,19 +53,24 @@ is one of yours; the game's SPINS counter counts both machines, so it reads abou
   stops buying them; SCRATCH-OFF's panels are a blind pick and LUCKY SEVENS plays itself, while TWENTY-ONE (on the
   cut list) has real choices.
 
-**Gate:** the user confirms phase 1's three changes, or changes them.
+**Gate:** met (user, 2026-10-29): OVERTIME yes; AUTO off by default (done); certain intents dropped; HOLD waits on
+its rules (the user's worry: asking every round would annoy players who blast through).
 
 ## Phase 1: fix the fights
-Each is a rule change: built behind PLAY MODES (TEST), played by the user and outside players, then made live. One
-at a time, in this order.
-1. **OVERTIME, a visible fight clock in every act.** Extend the act 3 ramp to every act and show it on screen
-   (for example "OVERTIME x1.2" from turn 6, growing each turn). Aim: no fight past about 12 turns; one-spin kills
-   stay. Open for the user: does it raise both sides' pays, or only the enemy's?
-2. **Certain enemy intents.** Every enemy shows its next hit or trick, and it always happens as shown (today only
-   some do: THE HAMMER IN 2, THE HOUSE's countdown). A guess is not an intent.
-3. **HOLD back.** The old game's HOLD (commit `f7708bb`, reverted 2026-10-15: tap a reel to keep it for your next
-   spin after a pair, 2 a fight). It "played fine" and fades as a build gets strong, which is right: the choice shows
-   up in hard fights, and easy ones stay fast.
+Each is a rule change: built behind PLAY MODES (TEST), played by the user and outside players, then made live.
+1. **OVERTIME (built: PLAY MODES > OVERTIME (TEST), filed like the tutorial).** From round 8 (a round is your spin
+   and the enemy's; SPIN 15 on the counter), every hit on both machines pays x1.25, +0.25 each round after; shields
+   don't grow (a clock that grows defence can't break a shield stall: the researcher's TFT and Bazaar precedents, and
+   the sim). The one-turn caps stay; it replaces act 3's enemy-only ramp. The HUD counts OVERTIME IN 3 / 2 / 1, then
+   OVERTIME X1.25..., a banner when it starts, and each pay's climb shows it (`OVERTIME` in `src/core/enemies.ts`).
+   Sim, 300 runs, fights past 12 of your spins (regular / boss), attack build: WHITE 655 / 95 -> 323 / 37, GREEN
+   921 / 206 -> 500 / 138; shield build GREEN 1857 / 569 -> 1034 / 383. Run wins move -8 to +9 points (the balance
+   pass in phase 5 takes it in). It can't fix dry stretches (no pay to grow): those are HOLD's job. To check with players:
+   do heal stalls (TESLA's storms) still happen, and does it read.
+2. **HOLD (proposed rules, the user's call):** 2 HOLDs a fight. Before any spin of yours, tap a reel to keep its
+   symbol for that spin. Nothing ever waits for it: with AUTO on, the fight never stops to offer one (the old HOLD
+   stopped on every pair, which is the user's worry). Its uses: keep a pair and roll for the jackpot, keep a shield
+   on the payline before a countdown lands. The engine part is still in `fight.ts` (`hold`, `holdsLeft`).
 
 **Gate:** outside players stop calling the fights slow or watch-only.
 

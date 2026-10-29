@@ -18,7 +18,7 @@ import {
 } from './relics';
 import { Rng } from './rng';
 import { effectiveAbility, STAKE, stakeOf } from './stakes';
-import { ENDLESS, GATEKEEPER, OWNER_RULES, OWNER_TRICKS, TUNE, WHEEL_RULES, wheelChipShare } from './enemies';
+import { ENDLESS, GATEKEEPER, OVERTIME, overtimeMul, overtimeRound, OWNER_RULES, OWNER_TRICKS, TUNE, WHEEL_RULES, wheelChipShare } from './enemies';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
 // houseSkim 2 -> 0 (BOSS_REDESIGN 2): the House's hidden chip skim drained CASSIDY's rain (her House ran 32 turns).
 export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.5 };
@@ -606,6 +606,9 @@ export class Fight {
     // LAST CALL is announced as the enemy's turn begins (its scored hits carry the multiplier on their banner).
     else this.enemyDmgMul(events);
     events.push({ type: 'turnStart', turn: this.turn, side });
+    // OVERTIME (TEST): announced on the first turn of its first round.
+    if (this.cfg.overtime && overtimeRound(this.turn) === OVERTIME.from && overtimeRound(this.turn - 1) < OVERTIME.from)
+      events.push({ type: 'overtime', side, mul: overtimeMul(this.turn) });
     this.playerTurnHp = 0;
     if (side === 'player') this.thawShield.clear();
     // The Dealer's big turns are the announced ones (ALL IN): only those may hit up to the boss cap.
@@ -1303,6 +1306,13 @@ export class Fight {
         boost(g, 2);
         notes.push('X2 IRON NIGHT');
       }
+      // OVERTIME (TEST): every paying group on both machines but shields, a true multiplier (never pooled with TESLA's
+      // boosts). Shields don't grow: a clock that grows defence too can't break a shield stall (sim 2026-10-29).
+      const ot = this.cfg.overtime ? overtimeMul(this.turn) : 1;
+      if (ot > 1 && g.base > 0 && g.symbol !== 'shield') {
+        g.mult *= ot;
+        notes.push(`X${ot} OVERTIME`);
+      }
       // Late in act 3 / an endless loop, enemy swords and sevens hit harder: on the banner, not a hidden multiplier.
       if (!player && (g.symbol === 'sword' || g.symbol === 'seven') && g.base > 0) {
         const all = this.enemyDmgMul();
@@ -1739,7 +1749,8 @@ export class Fight {
     }
     // THE DEALER's second and third hands: its hits are raised.
     if (this.isDealer && this.dealerHand >= 2) mul *= DEALER_RULES.raiseMul;
-    if ((this.cfg.enemy.act ?? 1) >= 3) mul *= Math.min(TUNE.rampMax, 1 + TUNE.rampPerTurn * Math.max(0, Math.floor(this.turn / 2) - 2));
+    // (OVERTIME replaces act 3's ramp: it grows both machines' pays instead.)
+    if ((this.cfg.enemy.act ?? 1) >= 3 && !this.cfg.overtime) mul *= Math.min(TUNE.rampMax, 1 + TUNE.rampPerTurn * Math.max(0, Math.floor(this.turn / 2) - 2));
     return mul;
   }
 

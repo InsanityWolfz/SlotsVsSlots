@@ -281,6 +281,8 @@ export interface RunState {
   dailyNight?: NightId;
   /** THE SCORE RACE: every fight is a race; spin tools bought at the Cashier (for the run); PHOENIX spent. */
   race?: boolean;
+  /** OVERTIME (TEST): every fight has the clock (enemies.ts OVERTIME). Filed like the tutorial. */
+  overtime?: boolean;
   raceTools?: { hold?: number; nudge?: number; respin?: number };
   racePhoenix?: boolean;
   /** Relic picks waiting behind the current one (PUNCH CARD's can land on the act's legendary pick). */
@@ -765,6 +767,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // TONIGHT'S RULE (ENDLESS: the path's; THE DAILY RUN: the day's), for both machines.
   const night = nightId(run);
   cfg.night = night;
+  if (run.overtime) cfg.overtime = true;
   if (night === 'lucky') for (const side of [cfg.player, cfg.enemy]) side.strips = side.strips.map((s) => ({ ...s, wild: (s.wild ?? 0) + NIGHT.luckyWilds }));
   if (night === 'fast') {
     if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };

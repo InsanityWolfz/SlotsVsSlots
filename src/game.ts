@@ -3,7 +3,7 @@ import { Sounds } from './audio/sounds';
 import type { CombatEvent } from './core/events';
 import { Synth } from './audio/synth';
 import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
-import { TUNE } from './core/enemies';
+import { OVERTIME, overtimeMul, overtimeRound, TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { allInRange, DEALER_HANDS, DEALER_RULES, Fight, highRollerMul } from './core/fight';
 import { roomFor, type Scene } from './render/rooms';
@@ -300,6 +300,8 @@ export class Game {
   /** A short note over your machine (a NUDGE on a frozen reel). */
   private toolNote: { text: string; at: number } | null = null;
   private raceNext = false;
+  /** OVERTIME (TEST): the next run picked plays with the fight clock. */
+  private overtimeNext = false;
   private holdPrompt = false;
   rows: TurnRow[] = [];
   fightNo = 0;
@@ -343,10 +345,16 @@ export class Game {
     this.menus = new Menus(this.ui, this.sounds, () => this.profile, () => this.unlockedCabinets(), {
       onNewRun: () => {
         this.raceNext = false;
+        this.overtimeNext = false;
         this.chooseCabinet();
       },
       onRace: () => {
         this.raceNext = true;
+        this.chooseCabinet();
+      },
+      onOvertime: () => {
+        this.raceNext = false;
+        this.overtimeNext = true;
         this.chooseCabinet();
       },
       onNewGame: () => this.startNewGame(),
@@ -423,6 +431,12 @@ export class Game {
           // THE SCORE RACE (sandbox): the run is a race run; rebuild its first fight as one.
           this.raceNext = false;
           this.run.race = true;
+          this.newFight(false, null, fightConfig(this.run, this.cfg), true);
+          this.checkpoint('next');
+        }
+        if (this.overtimeNext && this.run) {
+          this.overtimeNext = false;
+          this.run.overtime = true;
           this.newFight(false, null, fightConfig(this.run, this.cfg), true);
           this.checkpoint('next');
         }
@@ -542,8 +556,8 @@ export class Game {
       this.afterRecord(ride, recordMeta(this.profile, ride, collectionTotal(), prev), true);
       return;
     }
-    // THE SCORE RACE slice is filed like the tutorial: no stats, XP, achievements or boards.
-    const entry = runEntry(run, Date.now(), !!run.tutorial || !!run.race);
+    // THE SCORE RACE slice and OVERTIME (TEST) are filed like the tutorial: no stats, XP, achievements or boards.
+    const entry = runEntry(run, Date.now(), !!run.tutorial || !!run.race || !!run.overtime);
     if (run.won && !run.endless) run.rideAt = entry.at;
     this.profile.runs.push(entry);
     while (this.profile.runs.length > MAX_ENTRIES) {
@@ -762,7 +776,7 @@ export class Game {
     this.synth.stopLoops();
     this.recap.hide();
     this.phase = 'between';
-    this.screens.showCabinets(this.unlockedCabinets(), this.stakesNow(), this.prefs.stakeSel, this.prefs.act3 || this.prefs.unlockAll, this.prefs.dealerBeaten, this.raceNext);
+    this.screens.showCabinets(this.unlockedCabinets(), this.stakesNow(), this.prefs.stakeSel, this.prefs.act3 || this.prefs.unlockAll, this.prefs.dealerBeaten, this.raceNext, this.overtimeNext);
     this.syncButtons();
   }
 
@@ -982,8 +996,8 @@ export class Game {
       if (run.endless) this.screens.setStakeUnlockedNow('');
       // The daily is a side road: no unlocks from it.
       // (The daily and THE SCORE RACE slice are side roads: no unlocks from them.)
-      if (run.daily || run.race) this.screens.setStakeUnlockedNow('');
-      this.screens.setUnlockedNow(run.endless || run.daily || run.race ? [] : this.checkUnlocks(run));
+      if (run.daily || run.race || run.overtime) this.screens.setStakeUnlockedNow('');
+      this.screens.setUnlockedNow(run.endless || run.daily || run.race || run.overtime ? [] : this.checkUnlocks(run));
       this.screens.showOver(run);
     }
     else this.afterBonus(record);
@@ -2085,6 +2099,13 @@ export class Game {
     // Only a boss gets a label here (the map already said FIGHT n OF 5): ROUND and whose turn tell the story.
     if (g.fightLabel.includes('BOSS') || g.fightLabel.startsWith('LOOP') || g.fightLabel === 'SANDBOX') drawText(ctx, g.fightLabel, cx, this.race ? cy - 180 : cy - 112, 2, g.fightLabel === 'SANDBOX' ? COLORS.textDim : g.fightLabel.includes('BOSS') ? '#ff6a5a' : COLORS.goldLight);
     if (g.twist) drawText(ctx, g.twist, cx, cy - 132, 1.25, '#ff9a3a');
+    // OVERTIME (TEST): its countdown, then its multiplier, from the turn on screen (the engine runs ahead of it).
+    if (this.fight.cfg.overtime && g.turn > 0 && !this.race) {
+      const left = OVERTIME.from - overtimeRound(g.turn);
+      const mul = overtimeMul(g.turn);
+      if (left <= 0) drawText(ctx, `OVERTIME X${mul}`, cx, cy - 140, 2, '#ff9a3a', { alpha: 0.8 + 0.2 * Math.sin(t * 5) });
+      else if (left <= OVERTIME.warn) drawText(ctx, `OVERTIME IN ${left}`, cx, cy - 140, 1.5, '#c9824a');
+    }
     // THE SCORE RACE: the scoreboard is up from the first spin.
     if (this.race) this.drawScoreboard(ctx, cx, cy, t);
     if (g.turn > 0) {

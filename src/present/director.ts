@@ -294,6 +294,9 @@ export class Director {
         this.s.sounds.coin(8);
         return this.popText(`CHIP CHARM +${e.amount}`, c.x + 80, MACHINE_TOP - 22, 2, '#ffd23f', 14, 0.35);
       }
+      case 'overtime':
+        this.s.sounds.stingerMedium();
+        return this.banner('OVERTIME!', '#ff9a3a', 1.2, 0.3, 'BOTH MACHINES HIT HARDER EVERY ROUND', BANNER_Y, 3);
       case 'lastCall':
         this.s.sounds.stingerMedium();
         return this.banner('LAST CALL!', '#ff6a5a', 1.2, 0.3, e.house ? 'THE HOUSE SKIMS EVERY TURN NOW' : 'THE HOUSE HITS HARDER EVERY TURN NOW', BANNER_Y, 3);

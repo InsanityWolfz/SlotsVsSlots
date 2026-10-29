@@ -1,6 +1,6 @@
 // Fight length (roadmap phase 0, 2026-10-29): spins a fight by act and kind, the long fights (who and what build), the
 // biggest enemy turn as a share of your max HP, and spins a decision. A "spin" is one of yours (fight.turn counts both).
-//   npx tsx tools/sim/length.ts [runs] [stakes] [rush|turtle]
+//   npx tsx tools/sim/length.ts [runs] [stakes] [rush|turtle] [overtime]
 import { defaultConfig } from '../../src/core/config';
 import { CABINET_ORDER } from '../../src/core/cabinets';
 import { playRun } from '../../src/sim/play';
@@ -8,6 +8,7 @@ import { playRun } from '../../src/sim/play';
 const runs = +(process.argv[2] ?? 300);
 const stakes = (process.argv[3] ?? '0,2').split(',').map(Number);
 const style = (process.argv[4] ?? 'rush') as 'rush' | 'turtle';
+const overtime = process.argv[5] === 'overtime';
 const base = defaultConfig();
 type F = { cab: string; stake: number; act: number; kind: string; arch: string; spins: number; won: boolean; shieldShare: number; heal: number; shield: number; maxHit: number; dealt: number };
 const fights: F[] = [];
@@ -19,6 +20,7 @@ for (const cab of CABINET_ORDER) for (const stake of stakes) for (let i = 0; i <
   const log = playRun(base, 10_000 + i, cab, stake, {
     act3: stake >= 2,
     style,
+    setup: overtime ? (run) => (run.overtime = true) : undefined,
     onFight: (run) => {
       const cells = run.player.strips.reduce((a, s) => a + Object.values(s).reduce((x, y) => x + (y ?? 0), 0), 0);
       const sh = run.player.strips.reduce((a, s) => a + (s.shield ?? 0), 0);
