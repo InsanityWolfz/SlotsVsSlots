@@ -147,7 +147,7 @@ function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
     // Old saves: 1/2/4 on the old scale become 2/4/8 (the same real speed).
     speed: p.speedV === 2 ? (SPEEDS.includes(p.speed as number) ? (p.speed as number) : 2) : [1, 2, 4].includes(p.speed as number) ? (p.speed as number) * 2 : 2,
     speedV: 2,
-    auto: typeof p.auto === 'boolean' ? p.auto : true,
+    auto: typeof p.auto === 'boolean' ? p.auto : false,
     juice: { ...defaultJuice(), ...juice },
     muted: p.muted === true,
     unlocked,

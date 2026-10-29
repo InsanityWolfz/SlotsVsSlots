@@ -38,7 +38,7 @@ is one of yours; the game's SPINS counter counts both machines, so it reads abou
   In play the long fights were dry stretches: an enemy at 10–20 HP for 2–3 spins, sabotage blanking reels, act 2
   elites with 2,000–3,000 HP.
 - **Watching: agrees, and it's the bigger fault.** 3–5 spins a decision, but in lumps: a draft, then 1–2 minutes
-  (up to 127 s) with nothing to press. AUTO is on by default, so a new player never presses SPIN.
+  (up to 127 s) with nothing to press. AUTO was on by default, so a new player never pressed SPIN (now off by default, user 2026-10-29).
 - **Certain intents: mostly already in.** Every enemy trick runs on a fixed countdown its HUD shows (FLOOD NEXT!,
   JAM IN 3, NO MORE BETS IN 2) and fires as shown (`fight.ts` `chargeAbility`). The hits come from the enemy's
   reels; making them certain would stop the enemy being a slot machine. A warning you can't act on changes nothing.
