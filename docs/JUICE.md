@@ -48,7 +48,7 @@ fx.ts, camera.ts) and `src/audio`; this file keeps the WHY, so new features feel
 
 ## Art rules (approved by the user, 2026-10-29)
 Character portraits are **32×32**, still 8-bit (a bigger canvas, not a new style); reel symbols stay 16×16, icons
-12×12. The set the rest are matched against: THE COOLER and THE LOAN SHARK.
+12×12. The set the rest are matched against: the eleven approved portraits (the Alley and the Floor, 2026-10-29).
 1. **One palette:** only `PALETTE` in `tools/build-art.mjs`. A new colour is added there for everything, never slipped
    into one sprite.
 2. **Light from the top-left:** a lit edge, a mid tone, a shadow edge, shaded by form. No gradients, no anti-aliasing,
@@ -59,7 +59,13 @@ Character portraits are **32×32**, still 8-bit (a bigger canvas, not a new styl
    the prop.
 5. **One prop and one accent colour that name the mechanic** (THE BARFLY's amber SPILL, THE COOLER's ice FREEZE, THE
    LOAN SHARK's gold MARKERS): a player should guess the trick from the portrait.
-6. **Faces read at game size** (×3): eyes with a white and a pupil, one clear expression.
+6. **Faces read at game size** (×3): eyes with a white and a pupil, a clear nose and mouth, one clear expression.
+   Beards are solid or absent, never a checker of stubble.
 7. **Casino town only:** suits, hats, chips, cards, drinks, neon. No fantasy creatures, no robots.
-Process: each portrait gets ~15-20 draw, render and critique passes, then goes to the user as an artifact (a gallery
+8. **Anatomy, from the user's notes on the first eleven:** shoulders end the same distance from the head's centre
+   line; the hand sits straight on its forearm (no sideways wrist); a forearm with no elbow showing is forearm-length,
+   so a raised hand sits at chin-to-cheek height; no arm bending back on itself like a hose; no arm entering from
+   outside the frame; a slim character gets slim arms; clothes go over the shoulder; anything that can't be named
+   goes; check every prop for a rude read.
+Process: each portrait gets 20 draw, render and critique passes, then goes to the user as an artifact (a gallery
 next to today's sprite); the user approves it or sends notes before it goes into `build-art.mjs`.
