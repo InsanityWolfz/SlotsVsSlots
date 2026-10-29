@@ -3,7 +3,8 @@ import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { NEW_RELIC } from '../src/core/relics';
-import { chooseRoute, createRun, currentStop, finishFight, fightConfig, playEncounter } from '../src/core/run';
+import { chooseRoute, createRun, currentStop, encounterChoices, finishFight, fightConfig, playEncounter } from '../src/core/run';
+import { CLAW } from '../src/core/encounters';
 
 /** The user's relic picks from the content list (2026-10-14). */
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) => events.filter((e): e is Extract<CombatEvent, { type: T }> => e.type === t);
@@ -89,22 +90,24 @@ describe('new relics (2026-10-14)', () => {
     expect(run.pendingLegend?.length).toBeGreaterThan(0);
   });
 
-  it('REGULAR: RAT RACE allows two more races', () => {
+  it('REGULAR: the CLAW MACHINE allows two more goes', () => {
     const base = defaultConfig();
     const run = createRun(base, 2, 'knight');
     run.pendingStart = null;
-    run.map.routes[0][0] = { kind: 'encounter', encounter: 'rats' };
+    run.map.routes[0][0] = { kind: 'encounter', encounter: 'claw' };
     run.depth = 1;
     run.stop = 1;
     chooseRoute(run, 0);
     run.player.chips = 200;
     run.player.relics = ['regular'];
-    let spins = 0;
-    for (let guard = 0; guard < 20 && currentStop(run)?.encounter === 'rats'; guard++) {
-      playEncounter(run, 0, 1);
-      spins++;
+    let goes = 0;
+    for (let guard = 0; guard < 20 && currentStop(run)?.encounter === 'claw'; guard++) {
+      // Go for the first prize still in the pit (a won prize leaves it).
+      const pick = encounterChoices(run).findIndex((c) => !c.disabled);
+      playEncounter(run, pick, 1);
+      goes++;
     }
-    expect(spins).toBe(4);
+    expect(goes).toBe(CLAW.tries + 2);
   });
 });
 

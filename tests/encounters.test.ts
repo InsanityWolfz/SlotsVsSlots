@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, type RelicId } from '../src/core/config';
-import { BJ, bjState, bjTotal, CLAW, RACE, RATS, ENCOUNTERS, SLOT, slotLine, slotRun, SLOT_STRIPS } from '../src/core/encounters';
+import { BJ, bjState, bjTotal, CLAW, ENCOUNTERS, SLOT, slotLine, slotRun, SLOT_STRIPS } from '../src/core/encounters';
 import { Rng } from '../src/core/rng';
 import { chooseRoute, createRun, currentStop, encounterChoices, migrateRun, playEncounter } from '../src/core/run';
 
@@ -174,7 +174,7 @@ describe('the offers are gone (user, 2026-10-14)', () => {
   });
 });
 
-describe('RAT RACE, SCRATCH-OFF, CLAW MACHINE (2026-10-14)', () => {
+describe('CLAW MACHINE (2026-10-14)', () => {
   const at = (id: string, seed = 2) => {
     const run = createRun(base, seed, 'knight');
     run.pendingStart = null;
@@ -185,40 +185,6 @@ describe('RAT RACE, SCRATCH-OFF, CLAW MACHINE (2026-10-14)', () => {
     run.player.chips = 100;
     return run;
   };
-
-  it('RAT RACE: your rat first pays the bet times its odds; two races a visit', () => {
-    let races = 0;
-    for (let seed = 0; seed < 60; seed++) {
-      const run = at('rats', seed);
-      const stop = run.stop;
-      for (let guard = 0; guard < 10 && run.stop === stop; guard++) {
-        const before = run.player.chips;
-        const res = playEncounter(run, 1, 5)!;
-        races++;
-        const won = res.race!.winner === 1;
-        expect(run.player.chips - before).toBe(won ? 5 * (RATS[1].pays - 1) : -5);
-      }
-    }
-    expect(races).toBe(60 * RACE.races);
-  });
-
-  it('SCRATCH-OFF: buy, scratch 3 panels; three of a kind is a win, and a loser never shows three alike', () => {
-    let wins = 0;
-    for (let seed = 0; seed < 200; seed++) {
-      const run = at('scratch', seed);
-      const res0 = playEncounter(run, 0)!;
-      expect(res0.more).toBe(true);
-      let last = res0;
-      for (const panel of [2, 4, 6]) last = playEncounter(run, panel)!;
-      const g = last.scratch!.grid!;
-      const shown = [g[2], g[4], g[6]];
-      const three = shown.every((x) => x === shown[0]);
-      expect(three).toBe(!!last.good);
-      if (last.good) wins++;
-    }
-    expect(wins).toBeGreaterThan(60);
-    expect(wins).toBeLessThan(140);
-  });
 
   it('CLAW MACHINE: a held prize leaves the pit; each go costs its price', () => {
     const run = at('claw', 5);
@@ -235,6 +201,18 @@ describe('RAT RACE, SCRATCH-OFF, CLAW MACHINE (2026-10-14)', () => {
 describe('the coin-flip games are gone (user, 2026-10-15)', () => {
   it('RED OR BLACK, HIGHER OR LOWER and UNDER OR OVER are out of the pool; a saved one plays as LUCKY SEVENS', () => {
     for (const id of ['roulette', 'hilo', 'dice']) expect(ENCOUNTERS[id]).toBeUndefined();
-    expect(Object.keys(ENCOUNTERS).sort()).toEqual(['bj', 'claw', 'rats', 'scratch', 'slot']);
+    expect(Object.keys(ENCOUNTERS).sort()).toEqual(['bj', 'claw', 'slot']);
+  });
+});
+
+describe('v1.0 scope: RAT RACE and SCRATCH-OFF go to after launch (user, 2026-10-29)', () => {
+  it('they are out of the pool, and a saved stop of either plays as LUCKY SEVENS', () => {
+    for (const id of ['rats', 'scratch']) {
+      expect(ENCOUNTERS[id]).toBeUndefined();
+      const run = createRun(base, 4, 'knight');
+      run.map.routes[0][1] = { kind: 'encounter', encounter: id };
+      migrateRun(run);
+      expect(run.map.routes[0][1].encounter).toBe('slot');
+    }
   });
 });
