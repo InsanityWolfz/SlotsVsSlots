@@ -2,7 +2,7 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress:** nothing yet. The next session starts with phase 0.
+**In progress:** phase 0 (2026-10-29, second session): the game runs here now; my KNIGHT WHITE run and the sim pass are done, the expert playtester is playing KNIGHT and TESLA at GREEN.
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with three
 fight changes, frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
