@@ -2,7 +2,7 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress:** phase 0 (2026-10-29, second session): the game runs here now; my KNIGHT WHITE run and the sim pass are done, the expert playtester is playing KNIGHT and TESLA at GREEN.
+**In progress:** nothing. Phase 0 is done (below); phase 1 waits on the user's call on its proposed changes.
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with three
 fight changes, frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
@@ -23,16 +23,34 @@ dates: the user sets the pace.
 - **The biggest risk is restarting,** not the combat: content waves before the core was settled, a 1,000-run sim
   after most tweaks, then a mass cut and two rebuilds in three days, all on `main`.
 
-The review was done by reading only: that session couldn't run this repo (installing its packages was blocked, and
-its network policy refused `github.io`). Phase 0 checks it against the real game.
+The review was done by reading only; phase 0 checked it against the real game.
 
-## Phase 0: play it and check the review (the next session)
-1. `npm install`, `npm test`, `npm run dev`. Play full runs yourself through `window.dbg`, and have the expert
-   playtester play too: at least KNIGHT and TESLA, at WHITE and GREEN. Never report a run nobody played.
-2. Measure with the sim, without tuning anything: fight length by act (turns; the share ending in 2 spins or fewer;
-   the share past 12 turns), which builds make the long fights, and how many spins pass between decisions.
-3. Tell the user, briefly, where the real game agrees with the review and where it doesn't. Push back where it
-   doesn't.
+## Phase 0: done (2026-10-29), waiting on the gate
+Played: KNIGHT and TESLA at WHITE (Claude) and GREEN (the expert playtester); all four runs won. Sim: 300 runs a
+machine at WHITE and GREEN, attack and shield builds (`npx tsx tools/sim/length.ts 300 0,2 turtle`). A "spin" below
+is one of yours; the game's SPINS counter counts both machines, so it reads about double.
+- **One-shots: agrees.** In ~25,000 sim fights no enemy turn passed 40% of max HP (bosses 60%); the playtester saw
+  the cap cut a 319 hit to 190. But HP carries between fights, so a capped hit after a grind still reads as a
+  one-shot (KNIGHT went into THE WHEEL at 264 and left at 24).
+- **No clock: half right.** Most fights are short: median 4–7 spins, 0–7% of regular fights past 12 (attack build). The slog is in
+  three places: BANKROLL (12–19% past 12), the shield build (long fights double; THE DEALER past 12 in 33–66%) and
+  THE DEALER for everyone (5–42%). Heal builds don't cause it (heal a spin is the same in long and short fights).
+  In play the long fights were dry stretches: an enemy at 10–20 HP for 2–3 spins, sabotage blanking reels, act 2
+  elites with 2,000–3,000 HP.
+- **Watching: agrees, and it's the bigger fault.** 3–5 spins a decision, but in lumps: a draft, then 1–2 minutes
+  (up to 127 s) with nothing to press. AUTO is on by default, so a new player never presses SPIN.
+- **Certain intents: mostly already in.** Every enemy trick runs on a fixed countdown its HUD shows (FLOOD NEXT!,
+  JAM IN 3, NO MORE BETS IN 2) and fires as shown (`fight.ts` `chargeAbility`). The hits come from the enemy's
+  reels; making them certain would stop the enemy being a slot machine. A warning you can't act on changes nothing.
+- **Proposed for phase 1 (the user's call):** HOLD first (the only change that adds a choice inside a fight, and it
+  gives the countdowns a use; the reason it was cut, fights ending in a spin or two, holds for only 5–24% of
+  fights). Then OVERTIME, counted in your spins and shown on the HUD, starting late (about your 8th spin) and raising
+  both sides' pays, so it shortens fights without punishing the shield build, which already wins fewer runs (KNIGHT
+  GREEN 26% -> 19%). Certain intents leave the list.
+- **For later phases:** KNIGHT snowballs after THE HOUSE (three sword levels; act 2 fights end in 2–4 spins until
+  THE WHEEL); TESLA's storm heals out-heal act 3; Cashier symbol levels count boss levels in their price, so KNIGHT
+  stops buying them; SCRATCH-OFF's panels are a blind pick and LUCKY SEVENS plays itself, while TWENTY-ONE (on the
+  cut list) has real choices.
 
 **Gate:** the user confirms phase 1's three changes, or changes them.
 
