@@ -6,7 +6,7 @@
 import type { Enh, RelicId, SymbolId } from '../core/config';
 import { CABINETS } from '../core/cabinets';
 import { DANGER, type Stop } from '../core/enemies';
-import { bjState, bjTotal } from '../core/encounters';
+import { bjState, bjTotal, hiloState } from '../core/encounters';
 import type { Rng } from '../core/rng';
 import {
   buy,
@@ -180,6 +180,9 @@ export function pickEncounter(run: RunState, policy: DraftPolicy, rng: Rng): num
   // TWENTY-ONE: hit below 17, as the dealer does.
   const bj = bjState(run);
   if (policy !== 'random' && bj) return bjTotal(bj.p) < 17 ? 0 : 1;
+  // HIGHER OR LOWER: call the likelier side (HIGHER under an 8); cash out after 3 right calls, or 2 with a middling card.
+  const hilo = hiloState(run);
+  if (policy !== 'random' && hilo) return hilo.right >= 3 || (hilo.right >= 2 && hilo.card >= 6 && hilo.card <= 10) ? 2 : hilo.card < 8 ? 0 : 1;
   const open = choices.map((c, i) => (c.disabled ? -1 : i)).filter((i) => i >= 0);
   if (policy === 'random') return open.length ? rng.pick(open) : choices.length - 1;
   return !choices[0]?.disabled && run.player.hp / run.player.maxHp > 0.5 ? 0 : choices.length - 1;

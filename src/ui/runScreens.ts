@@ -5,7 +5,7 @@ import { defaultConfig, symLabel, UNIT, unitsRound, type Enh, type SymbolId } fr
 /** Base symbol values (a symbol's number in the build panel). */
 const CFG_BASE = defaultConfig().base;
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, wheelChipShare, type EnemyDef, type Stop } from '../core/enemies';
-import { atStakes, bjMax, bjState, bjTotal, BJ, CLAW, CLAW_PRIZES, clawPrizeName, clawWon, extraPlays, encounterOf, SLOT, SLOT_STRIPS, type EncounterChoice, type EncounterResult, type SlotPull, type SlotSym } from '../core/encounters';
+import { atStakes, bjMax, bjState, bjTotal, BJ, CLAW, CLAW_PRIZES, clawPrizeName, clawWon, extraPlays, encounterOf, HILO, hiloMax, hiloState, type EncounterChoice, type EncounterResult } from '../core/encounters';
 import { LEGENDARY, RELICS, POT } from '../core/relics';
 import { CHARM_COLOR, charmLevel, charmTag, playerSymValue, symLevel } from '../core/charms';
 import { drawReelTable, runTable } from './reelTable';
@@ -47,8 +47,8 @@ import { VOLUME } from '../core/fight';
 import { Clock } from '../present/clock';
 import { backOut, sineOut } from '../present/ease';
 import { ABILITY_UI, abilityName } from '../present/hud';
-import { ENH_SPRITE, ReelView, SPIN, type CellView } from '../present/reel';
-import { COLORS, H, PITCH, W } from '../present/layout';
+import { ENH_SPRITE } from '../present/reel';
+import { COLORS, H, W } from '../present/layout';
 import { artId, drawSprite, hasSprite, spriteSize, type SpriteId } from '../render/sprites';
 import { drawText, fmtNum, textWidth } from '../render/text';
 import { bossRules, type BossRuleContext } from './bossRules';
@@ -137,12 +137,6 @@ const laneY = (i: number, n: number) => (n === 2 ? ROUTES.y[i * 2] : ROUTES.y[i]
 const ENC = { cardY: 546, cardW: 210, cardH: 108, cardGap: 236 };
 /** An offer's choice buttons: their row, width and spacing (three fit beside the build panel). */
 const OFFER = { y: 480, w: 270, gap: 296 };
-/** LUCKY SEVENS: the reel art per symbol (16px reel symbols, like the fight machines'), and where the machine sits. */
-const SLOT_ART: Record<SlotSym, SpriteId> = { chip: 'goldbar', seven: 'seven', heart: 'slotHeart', star: 'slotUp', relic: 'relicSym', wild: 'wild' };
-const SLOT_TOP = 132;
-const slotCell = (sym: SlotSym): CellView => ({ symbol: SLOT_ART[sym] as SymbolId, slimed: false, goo: 0, flash: 0 });
-/** The first two payline cells match (a WILD matches anything): the last reels slow down. */
-const isWildOr = (a: SlotSym, b: SlotSym) => a === b || a === 'wild' || b === 'wild';
 /** A map node's tip: an enemy's mini card, or a stop's name and line. */
 type MapTip = { e?: EnemyDef; title?: string; sub?: string; x: number; y: number };
 /** The middle of the space right of YOUR BUILD: run screens center on it. */
@@ -328,22 +322,16 @@ export class RunScreens {
   private mapTip: MapTip | null = null;
   /** The route the player has tapped on the path pick (-1: none yet), and the one under the pointer. */
   private routeSel = -1;
-  /** ENCOUNTER: how it went (null until a choice is played), and its reveal (0..1: the pull's reels land in turn). */
+  /** ENCOUNTER: how it went (null until a choice is played), and its reveal (0..1). */
   private encResult: EncounterResult | null = null;
   private encT = 1;
   /** The encounter on show (the run has moved past its stop once it's played). */
   private encId: string | undefined;
-  /** The encounter's choices as dealt (buy-in cards first), SKIP pressed, and the sounds already played this reveal. */
+  /** The encounter's choices as dealt (buy-in cards first), and the sounds already played this reveal. */
   private encChoices: EncounterChoice[] = [];
-  private encSkip = false;
   private encFired = new Set<string>();
-  /** LUCKY SEVENS: its five reels (the fight machines' own reel views), the clock they spin on (SKIP fast-forwards
-   * only them), how many pulls have landed (the build panel counts their prizes up), the win on show, and done. */
-  private slotReels: ReelView[] = [];
-  private slotClock = new Clock();
-  private encLanded = 0;
-  private slotWin: { text: string; count: number; at: number } | null = null;
-  private encDone = false;
+  /** The games' own clock (the dealer's cards, the claw, a turning card): SKIP fast-forwards only it. */
+  private encClock = new Clock();
   /** RED OR BLACK: the bet on the stepper, the wheel's and ball's angles, the ball's radius, which spin this is, and the
    * offscreen canvas the wheel is drawn on (small, then scaled up crisp so it reads as pixel art). */
   private rlBet = 5;
@@ -356,6 +344,13 @@ export class RunScreens {
   private bjNo = 1;
   private bjDealerUp = 0;
   private bjMsg: EncounterResult | null = null;
+  /** HIGHER OR LOWER, as the screen shows it (it holds while a finished call is up; the run's state moves at the call):
+   * the card showing, the next one (0: still face down) and how far it has turned and slid over (0..1), the cards turned
+   * this game (each its own suit), the right calls, the bet, the pot and its punch, which game this is, and whether a
+   * game is on the table. */
+  private hl = { card: 0, next: 0, flip: 0, slide: 0, turned: 0, right: 0, bet: 0, pot: 0, potPop: 1, game: 1 };
+  private hlLive = false;
+  private hlMsg: EncounterResult | null = null;
   /** CLAW MACHINE: where the claw is (x, and 0 up .. 1 down), shut or open, carrying its target, the last go. */
   private cwX = CW.home;
   private cwY = 0;
@@ -602,19 +597,14 @@ export class RunScreens {
     this.open('encounter');
     this.encResult = null;
     this.encT = 1;
-    this.encSkip = false;
     this.encFired.clear();
     this.encId = currentStop(run)?.encounter;
     this.encChoices = encounterChoices(run);
-    this.encLanded = 0;
-    this.encDone = false;
-    this.slotWin = null;
     {
       // The game's own clock follows the screens' (so it runs at their pace, and SKIP touches nothing else).
-      this.slotClock = new Clock();
-      this.ui.add({ update: (dt) => (this.slotClock.tick(dt), this.mode !== 'encounter'), finish: () => {} });
+      this.encClock = new Clock();
+      this.ui.add({ update: (dt) => (this.encClock.tick(dt), this.mode !== 'encounter'), finish: () => {} });
     }
-    if (this.encId === 'slot') this.slotReels = SLOT_STRIPS.map((strip, r) => new ReelView(strip.map(slotCell), (r * 5) % strip.length));
     if (this.encId === 'claw') {
       this.cwX = CW.home;
       this.cwY = 0;
@@ -626,6 +616,14 @@ export class RunScreens {
       this.bjShow = null;
       this.bjMsg = null;
       return bjState(run) ? this.bjButtons() : this.bjDealButtons();
+    }
+    if (this.encId === 'hilo') {
+      // (A game in play resumes at the table: its card, its pot.)
+      const st = hiloState(run);
+      this.hlMsg = null;
+      this.hlLive = !!st;
+      this.hl = { card: st?.card ?? 0, next: 0, flip: 0, slide: 0, turned: 0, right: st?.right ?? 0, bet: st?.bet ?? 0, pot: st?.pot ?? 0, potPop: 1, game: st?.game ?? Number((run.encounterState as { games?: number } | undefined)?.games ?? 0) + 1 };
+      return st ? this.hiloButtons() : this.hiloDealButtons();
     }
     const choices = this.encChoices;
     const cards = choices.filter((c) => c.stake);
@@ -658,78 +656,17 @@ export class RunScreens {
   private playEncounter(i: number): void {
     if (this.encId === 'bj') return this.playBj(i);
     if (this.encId === 'claw') return this.playClaw(i);
+    if (this.encId === 'hilo') return this.playHilo(i);
     const res = this.cb.onEncounter(i);
     if (!res) return;
     this.encResult = res;
     this.encT = 0;
-    this.encSkip = false;
-    if (res.pulls?.length) {
-      // LUCKY SEVENS: the pulls spin one after another; SKIP fast-forwards the rest.
-      this.buttons = [
-        this.minorBtn('SKIP', CX, 650, 200, 44, () => {
-          this.encSkip = true;
-          this.slotClock.skip();
-        }),
-      ];
-      void this.runPulls(res, res.pulls);
-      return;
-    }
     if (this.leaveOnWalk(res)) return;
     this.buttons = [this.btn('CONTINUE', CX, 588, 300, 52, () => this.cb.onEncounterDone())];
     const land = res.reels ? 3 : 0;
     void this.ui.tween({ from: 0, to: 1, dur: land ? 1.1 : 0.25, onUpdate: (v) => (this.encT = v) });
     for (let k = 0; k < land; k++) void this.ui.wait(0.35 + k * 0.3).then(() => this.sounds.reelStop(k));
     void this.ui.wait(land ? 1.1 : 0.15).then(() => this.encOutcomeSound(res));
-  }
-
-  /** Spin each bought pull on the real reels: they stop left to right (the last three slow down when the first two
-   * match, the near-miss tease), a paying run glows along the line, then the next pull. */
-  private async runPulls(res: EncounterResult, pulls: SlotPull[]): Promise<void> {
-    const reels = this.slotReels;
-    for (let k = 0; k < pulls.length; k++) {
-      if (this.mode !== 'encounter' || this.encResult !== res) return;
-      const pull = pulls[k];
-      const tease = isWildOr(pull.line[0], pull.line[1]);
-      for (const rv of reels) rv.rows.forEach((r) => (r.glow = 0));
-      this.slotWin = null;
-      await Promise.all(
-        reels.map((rv, r) =>
-          rv.spin(
-            {
-              target: pull.stops[r],
-              windup: k === 0,
-              decelAt: SPIN.minSpin + r * SPIN.stagger + (tease && r >= 2 ? (r - 1) * 0.2 : 0),
-              decelDur: tease && r >= 2 ? SPIN.nearMissDecel : SPIN.decel,
-            },
-            this.slotClock,
-            () => !this.encSkip && this.sounds.reelStop(r % 3),
-          ),
-        ),
-      );
-      this.encLanded = k + 1;
-      if (pull.count) {
-        for (let r = 0; r < pull.count; r++) {
-          const row = reels[r].rows[1];
-          row.glow = 1;
-          row.glowColor = pull.count >= 4 ? '#ff8a3a' : '#ffe08a';
-          void this.slotClock.tween({ from: 1.25, to: 1, dur: 0.25, ease: backOut(2), onUpdate: (v) => (row.punch = v) });
-        }
-        this.slotWin = { text: pull.wins.join('  '), count: pull.count, at: this.slotClock.time };
-        if (!this.encSkip) {
-          this.sounds.coin(4 + pull.count);
-          if (pull.count >= 4) this.sounds.stingerMedium();
-        }
-      }
-      await this.slotClock.wait(pull.count ? 0.9 : 0.3);
-    }
-    if (this.mode !== 'encounter' || this.encResult !== res) return;
-    this.slotClock.skipping = false;
-    this.encDone = true;
-    for (const rv of this.slotReels) rv.rows.forEach((r) => (r.glow = 0));
-    this.slotWin = null;
-    if ((res.gains ?? []).some((g) => !g.endsWith('CHIPS') && !g.endsWith('HP'))) this.sounds.fanfareJackpot();
-    else this.encOutcomeSound(res);
-    this.buttons = [this.btn('CONTINUE', CX, 650, 300, 52, () => this.cb.onEncounterDone())];
   }
 
   /** The chip bet stepper (-5 -1 +1 +5) under YOUR BET, shared by the games that take a chip bet. */
@@ -802,12 +739,12 @@ export class RunScreens {
     this.bjMsg = null;
     this.bjDealerUp = 1;
     this.buttons = [];
-    let chain: Promise<void> = this.slotClock.wait(0.3);
+    let chain: Promise<void> = this.encClock.wait(0.3);
     for (let k = 1; k < hand.d.length && hand.outcome !== 'bust' && hand.outcome !== 'natural'; k++)
       chain = chain.then(() => {
         this.bjDealerUp = k + 1;
         this.sounds.turnCard(false);
-        return this.slotClock.wait(0.4);
+        return this.encClock.wait(0.4);
       });
     void chain
       .then(() => {
@@ -819,9 +756,117 @@ export class RunScreens {
           this.sounds.coin(8);
         } else if (res.good === false) this.sounds.fizzle();
         else this.sounds.coin(2);
-        return this.slotClock.wait(res.more ? 1.2 : 0);
+        return this.encClock.wait(res.more ? 1.2 : 0);
       })
       .then(done);
+  }
+
+  // ---- HIGHER OR LOWER (back, user 2026-10-29) --------------------------------------------------------------------
+
+  /** HIGHER OR LOWER between games: the bet, DEAL, WALK AWAY (TWENTY-ONE's chip table). */
+  private hiloDealButtons(): void {
+    const run = this.run!;
+    const max = hiloMax(run);
+    this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
+    this.encChoices = encounterChoices(run);
+    const steps = this.betStepper(() => hiloMax(this.run!));
+    const deal = this.btn('DEAL', RL.betX, 342, 280, 56, () => this.playHilo(0));
+    const walk = this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playHilo(1));
+    for (const b of [...steps, deal]) b.enabled = max >= 1;
+    this.buttons = [...steps, deal, walk];
+  }
+
+  /** HIGHER OR LOWER mid-game: HIGHER, LOWER and CASH OUT (off until a right call; nothing beats an ace). */
+  private hiloButtons(): void {
+    this.encChoices = encounterChoices(this.run!);
+    const [hi, lo, cash] = this.encChoices;
+    const up = this.btn('HIGHER', RL.betX, 300, 260, 56, () => this.playHilo(0));
+    up.enabled = !hi?.disabled;
+    const down = this.btn('LOWER', RL.betX, 368, 260, 56, () => this.playHilo(1));
+    down.enabled = !lo?.disabled;
+    const out = this.btn('CASH OUT', RL.betX, 448, 260, 56, () => this.playHilo(2));
+    out.tint = '#2a2234';
+    out.enabled = !cash?.disabled;
+    this.buttons = [up, down, out];
+  }
+
+  /** A HIGHER OR LOWER move: the deal, a call or CASH OUT. A call turns the next card, then its word; a right call or a
+   * push slides it over to be the card to beat, and the calls come back; a lost or paid game shows its word, then the
+   * next game's bet, or CONTINUE. */
+  private playHilo(i: number): void {
+    const run = this.run!;
+    const before = run.player.chips;
+    const live = !!hiloState(run);
+    const res = this.cb.onEncounter(i, this.rlBet);
+    if (!res) return;
+    if (!live) {
+      if (this.leaveOnWalk(res)) return;
+      // Dealt: the bet goes down and the first card turns.
+      const st = hiloState(run);
+      if (!st) return;
+      this.hl = { card: st.card, next: 0, flip: 0, slide: 0, turned: 0, right: 0, bet: st.bet, pot: st.pot, potPop: 1, game: st.game };
+      this.hlLive = true;
+      this.hlMsg = null;
+      this.sounds.turnCard(true);
+      this.hiloButtons();
+      return;
+    }
+    // (A refused CASH OUT, before a right call: nothing happened.)
+    if (!res.title) return this.hiloButtons();
+    // A paid game's chips land with its word.
+    this.chipsLanding = run.player.chips - before;
+    this.buttons = [];
+    this.hlMsg = null;
+    const h = this.hl;
+    const word = () => {
+      if (this.mode !== 'encounter') return;
+      this.hlMsg = res;
+      this.landChips();
+      if (res.good === false) {
+        h.pot = 0;
+        this.sounds.fizzle();
+      } else if (res.good) {
+        if (res.next !== undefined) h.right++;
+        h.pot = res.pot ?? h.pot;
+        void this.encClock.tween({ from: 1.5, to: 1, dur: 0.3, ease: backOut(3), onUpdate: (v) => (h.potPop = v) });
+        this.sounds.lucky();
+        this.sounds.coin(res.more && hiloState(run) ? 6 : 10);
+        if (h.right >= HILO.calls) this.sounds.fanfareJackpot();
+      } else this.sounds.click();
+    };
+    const after = () => {
+      if (this.mode !== 'encounter') return;
+      if (hiloState(run)) {
+        // Still in play (a right call or a push): the turned card slides over to be the one to beat.
+        return this.encClock.wait(0.6).then(() =>
+          this.encClock.tween({ from: 0, to: 1, dur: 0.22, onUpdate: (v) => (h.slide = v) }).then(() => {
+            Object.assign(h, { card: h.next, next: 0, flip: 0, slide: 0, turned: h.turned + 1 });
+            if (this.mode === 'encounter') this.hiloButtons();
+          }),
+        );
+      }
+      if (res.more)
+        return this.encClock.wait(1.4).then(() => {
+          if (this.mode !== 'encounter') return;
+          this.hlLive = false;
+          h.game++;
+          this.hiloDealButtons();
+        });
+      this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+    };
+    if (res.next === undefined) {
+      // CASHED OUT: no card to turn.
+      word();
+      void after();
+      return;
+    }
+    h.next = res.next;
+    h.flip = 0;
+    this.sounds.turnCard(false);
+    void this.encClock
+      .tween({ from: 0, to: 1, dur: 0.4, onUpdate: (v) => (h.flip = v) })
+      .then(word)
+      .then(after);
   }
 
   private encOutcomeSound(res: EncounterResult): void {
@@ -1334,24 +1379,13 @@ export class RunScreens {
   }
 
   /**
-   * Chips and HP as the panel shows them: the run's, less what a PRIZE SLOT reveal hasn't landed yet (the run is paid
-   * at the buy-in so a quit can't re-roll it; the screen counts the prizes up pull by pull).
+   * Chips and HP as the panel shows them: the run's, less a game's win that hasn't landed yet (the run is paid at the
+   * call so a quit can't re-roll it; the screen pays it when the cards or the claw land).
    */
   private shown(): { chips: number; hp: number; maxHp: number } {
     const p = this.run!.player;
-    const pulls = this.mode === 'encounter' ? this.encResult?.pulls : undefined;
     const landing = this.mode === 'encounter' ? this.chipsLanding : 0;
-    if (!pulls && !landing) return p;
-    const out = { chips: p.chips - landing, hp: p.hp, maxHp: p.maxHp };
-    if (!pulls) return out;
-    pulls.forEach((pl, k) => {
-      // A pull's prizes land when its reels do.
-      if (k < this.encLanded) return;
-      out.chips -= pl.gain.chips;
-      out.hp -= pl.gain.hp;
-      out.maxHp -= pl.gain.maxHp;
-    });
-    return out;
+    return landing ? { chips: p.chips - landing, hp: p.hp, maxHp: p.maxHp } : p;
   }
 
   private drawHp(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
@@ -1849,14 +1883,14 @@ export class RunScreens {
     for (let i = 0; i <= steps; i++) ctx.fillRect(Math.round(x1 + ((x2 - x1) * i) / steps) - 2, Math.round(y1 + ((y2 - y1) * i) / steps) - 2, 4, 4);
   }
 
-  /** An ENCOUNTER: its name and line, its table (THE PRIZE SLOT: the machine; others a "?" ticket for now), then the
+  /** An ENCOUNTER: its name and line, its table (TWENTY-ONE's and HIGHER OR LOWER's felt, the CLAW's cabinet), then the
    * buy-in cards, the plays and how it went. */
   private drawEncounter(ctx: CanvasRenderingContext2D, time: number): void {
     const def = encounterOf(this.encId);
     drawText(ctx, def.name, CX, 34, 4, COLORS.goldLight, { punch: 1 + 0.02 * Math.sin(time * 3) });
     if (def.blurb) drawText(ctx, def.blurb, CX, 80, 2, COLORS.textDim);
     const res = this.encResult;
-    if (def.id === 'slot') this.drawSlotMachine(ctx, time);
+    if (def.id === 'hilo') this.drawHilo(ctx, time);
     else if (def.id === 'bj') this.drawBj(ctx, time);
     else if (def.id === 'claw') this.drawClaw(ctx, time);
     else {
@@ -1972,15 +2006,13 @@ export class RunScreens {
     const claw = res.claw;
     this.cwMsg = null;
     this.cwTarget = claw.prize;
-    this.encSkip = false;
     this.buttons = [
       this.minorBtn('SKIP', CX, 636, 200, 44, () => {
-        this.encSkip = true;
-        this.slotClock.skip();
+        this.encClock.skip();
       }),
     ];
     const targetX = CW.x0 + claw.prize * CW.gap;
-    void this.slotClock
+    void this.encClock
       .tween({
         from: 0,
         to: 1,
@@ -2005,7 +2037,7 @@ export class RunScreens {
         },
       })
       .then(() => {
-        this.slotClock.skipping = false;
+        this.encClock.skipping = false;
         this.cwX = CW.home;
         this.cwY = 0;
         this.cwShut = false;
@@ -2065,6 +2097,67 @@ export class RunScreens {
     } else if (this.cwY === 0 && this.cwX === CW.home) drawText(ctx, 'PICK A PRIZE TO GO FOR', RL.betX, 220, 2, COLORS.textDim);
   }
 
+  /** HIGHER OR LOWER: the card to beat and the deck (the next card turns over on a call), the right calls as chips
+   * under them, the word; the pot, the bet and the calls on the right. Before the deal: the house rules and your bet. */
+  private drawHilo(ctx: CanvasRenderingContext2D, time: number): void {
+    const run = this.run!;
+    const h = this.hl;
+    const m = this.hlMsg;
+    const col = (r: EncounterResult) => (r.good ? COLORS.goldLight : r.good === false ? '#ff8a7a' : COLORS.text);
+    const games = HILO.games + extraPlays(run);
+    if (games > 1) drawText(ctx, `GAME ${Math.min(h.game, games)} OF ${games}`, CX, 78, 2, COLORS.textDim);
+    this.felt(ctx);
+    const ax = RL.wheelX - 80;
+    const bx = RL.wheelX + 80;
+    const cy = 250;
+    drawText(ctx, 'THE CARD', ax, 148, 2, COLORS.textDim);
+    drawText(ctx, 'NEXT', bx, 148, 2, COLORS.textDim);
+    if (!this.hlLive) {
+      // Between games: two face-down cards and the house rules on the left, your bet on the right.
+      drawPlayingCard(ctx, ax, cy, 0, 1);
+      drawPlayingCard(ctx, bx, cy, 0, 1);
+      drawText(ctx, 'CALL THE NEXT CARD: HIGHER OR LOWER.', RL.wheelX, 380, 1.5, COLORS.goldLight);
+      drawText(ctx, `RIGHT: THE POT GROWS X${HILO.grow}. WRONG: IT'S GONE.`, RL.wheelX, 404, 1.5, COLORS.goldLight);
+      drawText(ctx, 'THE SAME CARD IS A PUSH: CALL AGAIN.', RL.wheelX, 428, 1.5, COLORS.textDim);
+      drawText(ctx, 'CASH OUT ANY TIME AFTER A RIGHT CALL.', RL.wheelX, 452, 1.5, COLORS.textDim);
+      drawText(ctx, `${HILO.calls} RIGHT CALLS PAY THE POT OUT.`, RL.wheelX, 476, 1.5, COLORS.textDim);
+      if (m) {
+        drawText(ctx, m.title, RL.betX, 470, 3, col(m));
+        if (m.text) drawText(ctx, m.text, RL.betX, 506, 2, col(m));
+      }
+      drawText(ctx, `YOUR BET (MAX ${hiloMax(run)})`, RL.betX, 150, 2, COLORS.textDim);
+      drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
+      drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
+      return;
+    }
+    // The card to beat; the deck, its top card turning (a back that narrows, then the face that widens) and sliding over.
+    drawPlayingCard(ctx, ax, cy, h.card, 1, 1, h.turned);
+    if (!h.next || h.slide > 0) drawPlayingCard(ctx, bx, cy, 0, 1);
+    if (h.next) {
+      const x = bx + (ax - bx) * h.slide;
+      if (h.flip < 0.5) drawPlayingCard(ctx, x, cy, 0, 1 - h.flip * 2);
+      else drawPlayingCard(ctx, x, cy, h.next, h.flip * 2 - 1, 1, h.turned + 1);
+    }
+    // The right calls so far, as chips (lit) against the cap.
+    for (let k = 0; k < HILO.calls; k++) {
+      ctx.save();
+      if (k >= h.right) ctx.globalAlpha *= 0.25;
+      drawSprite(ctx, 'chip', RL.wheelX + (k - (HILO.calls - 1) / 2) * 36, 372, 2);
+      ctx.restore();
+    }
+    const left = HILO.calls - h.right;
+    drawText(ctx, `${left} CALL${left === 1 ? '' : 'S'} LEFT`, RL.wheelX, 404, 2, COLORS.textDim);
+    if (m) {
+      drawText(ctx, m.title, RL.wheelX, 456, 3, col(m), { punch: 1 + 0.03 * Math.sin(time * 6) });
+      if (m.text) drawText(ctx, m.text, RL.wheelX, 494, 2, col(m));
+    }
+    // Right column: the pot riding on the next call, and the bet it grew from.
+    drawText(ctx, 'THE POT', RL.betX, 150, 2, COLORS.textDim);
+    drawSprite(ctx, 'chip', RL.betX - 44, 196, 4);
+    drawText(ctx, `${h.pot}`, RL.betX - 14, 196, 5, m?.good === false ? '#ff8a7a' : COLORS.energy, { align: 'left', punch: h.potPop });
+    drawText(ctx, `YOUR BET ${h.bet}`, RL.betX, 240, 1.5, COLORS.textDim);
+  }
+
   /** TWENTY-ONE: the dealer's row and yours with their totals, which hand this is, what you've won. Before the buy-in:
    * the house rules and the pay cards. */
   private drawBj(ctx: CanvasRenderingContext2D, time: number): void {
@@ -2113,117 +2206,6 @@ export class RunScreens {
       drawText(ctx, m.title, RL.betX, 300, 2.5, m.good ? COLORS.goldLight : '#ff8a7a', { punch: 1 + 0.03 * Math.sin(time * 6) });
       if (m.text) drawText(ctx, m.text, RL.betX, 336, 2, m.good ? COLORS.goldLight : '#ff8a7a');
     }
-  }
-
-  /** LUCKY SEVENS: a 5x3 machine in the fight machines' bezel, its paytable under it, then each pull's win and the
-   * totals. */
-  private drawSlotMachine(ctx: CanvasRenderingContext2D, time: number): void {
-    const res = this.encResult;
-    const mw = PITCH * 5;
-    const mh = PITCH * 3;
-    const x0 = CX - mw / 2;
-    const y0 = SLOT_TOP;
-    const pad = 14;
-    // The bezel, as the fight machines wear it: outline, gold rim, dark gold, panel, a top-left highlight.
-    const pulse = 0.5 + 0.5 * Math.sin(time * 2.2);
-    ctx.save();
-    ctx.shadowColor = '#ffcf5a';
-    ctx.shadowBlur = 18 + (res && !this.encDone ? 14 : 0);
-    ctx.globalAlpha = 0.2 + 0.2 * pulse;
-    ctx.fillStyle = '#ffcf5a';
-    ctx.fillRect(x0 - pad, y0 - pad, mw + pad * 2, mh + pad * 2);
-    ctx.restore();
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(x0 - pad - 4, y0 - pad - 4, mw + pad * 2 + 8, mh + pad * 2 + 8);
-    ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(x0 - pad, y0 - pad, mw + pad * 2, mh + pad * 2);
-    ctx.fillStyle = '#8a5a1c';
-    ctx.fillRect(x0 - pad + 4, y0 - pad + 4, mw + pad * 2 - 8, mh + pad * 2 - 8);
-    ctx.fillStyle = COLORS.panel;
-    ctx.fillRect(x0 - pad + 8, y0 - pad + 8, mw + pad * 2 - 16, mh + pad * 2 - 16);
-    ctx.fillStyle = COLORS.goldLight;
-    ctx.fillRect(x0 - pad, y0 - pad, mw + pad * 2, 2);
-    ctx.fillRect(x0 - pad, y0 - pad, 2, mh + pad * 2);
-    // Its marquee on top (the bulbs chase while it spins).
-    drawSprite(ctx, 'slotTopper', CX, y0 - pad - 22, 2.5, { flash: res && !this.encDone ? 0.15 * (0.5 + 0.5 * Math.sin(time * 12)) : 0 });
-    // The window: the same gradient and payline band, the reels clipped inside, shaded top and bottom.
-    const g = ctx.createLinearGradient(0, y0, 0, y0 + mh);
-    g.addColorStop(0, '#2a1240');
-    g.addColorStop(0.5, '#1c0b2e');
-    g.addColorStop(1, '#0c0418');
-    ctx.fillStyle = g;
-    ctx.fillRect(x0, y0, mw, mh);
-    ctx.fillStyle = 'rgba(255,224,138,0.06)';
-    ctx.fillRect(x0, y0 + PITCH, mw, PITCH);
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x0, y0, mw, mh);
-    ctx.clip();
-    this.slotReels.forEach((rv, r) => rv.draw(ctx, x0 + PITCH * (r + 0.5), y0 + PITCH * 1.5, time));
-    const shade = ctx.createLinearGradient(0, y0, 0, y0 + mh);
-    shade.addColorStop(0, 'rgba(8,2,16,0.75)');
-    shade.addColorStop(0.18, 'rgba(8,2,16,0)');
-    shade.addColorStop(0.82, 'rgba(8,2,16,0)');
-    shade.addColorStop(1, 'rgba(8,2,16,0.75)');
-    ctx.fillStyle = shade;
-    ctx.fillRect(x0, y0, mw, mh);
-    ctx.restore();
-    ctx.fillStyle = COLORS.gold;
-    for (let i = 1; i < 5; i++) ctx.fillRect(x0 + PITCH * i - 1, y0 + 4, 2, mh - 8);
-    // Payline arrows, and the line itself lit along a paying run.
-    const my = y0 + PITCH * 1.5;
-    ctx.fillStyle = 'rgba(255,224,138,0.9)';
-    for (const [ax, dir] of [[x0 - pad + 2, 1], [x0 + mw + pad - 2, -1]] as const) {
-      ctx.beginPath();
-      ctx.moveTo(ax, my - 8);
-      ctx.lineTo(ax + dir * 8, my);
-      ctx.lineTo(ax, my + 8);
-      ctx.fill();
-    }
-    const win = this.slotWin;
-    if (win) {
-      const w = Math.min(1, (this.slotClock.time - win.at) / 0.2) * PITCH * win.count;
-      ctx.fillStyle = win.count >= 4 ? '#ff8a3a' : COLORS.goldLight;
-      ctx.fillRect(x0 + 8, my - 2, Math.max(0, w - 16), 4);
-    }
-    // Under the machine: the paytable (3 / 4 / 5 in a row); a pull's win; then the totals.
-    const ty = y0 + mh + pad + 30;
-    if (!res || !this.encDone) this.drawPaytable(ctx, ty);
-    if (win) drawText(ctx, win.text, CX, ty + 46, 3, win.count >= 4 ? '#ff8a3a' : COLORS.goldLight, { punch: 1 + 0.1 * Math.max(0, 1 - (this.slotClock.time - win.at) * 3) });
-    if (res?.pulls?.length && !this.encDone) drawText(ctx, `PULL ${Math.max(1, this.encLanded + (this.slotReels.some((rv) => rv.spinning) ? 1 : 0))} OF ${res.pulls?.length ?? 0}`, CX, ty + 92, 2, COLORS.textDim);
-    // The session so far (playtest: only the last pull's pay showed).
-    if (res && !this.encDone) {
-      const so = (res.pulls ?? []).slice(0, this.encLanded).reduce((a, pl) => ({ chips: a.chips + pl.gain.chips, hp: a.hp + pl.gain.hp, maxHp: a.maxHp + pl.gain.maxHp }), { chips: 0, hp: 0, maxHp: 0 });
-      const parts = [so.chips && `+${so.chips} CHIPS`, so.hp && `+${so.hp} HP`, so.maxHp && `+${so.maxHp} MAX HP`].filter(Boolean);
-      if (parts.length) drawText(ctx, `SO FAR: ${parts.join('  ')}`, CX, ty + 120, 2, COLORS.goldLight);
-    }
-    if (res && this.encDone) {
-      const gains = res.gains ?? [];
-      drawText(ctx, res.title, CX, ty + 4, 4, gains.length ? COLORS.goldLight : '#ff8a7a', { punch: 1 + 0.03 * Math.sin(time * 6) });
-      gains.forEach((gn, i) => drawText(ctx, gn, CX, ty + 50 + i * 28, 2.5, COLORS.goldLight));
-    }
-  }
-
-  /** LUCKY SEVENS' paytable: each symbol and what 3 / 4 / 5 in a row pays (WILD stands in for any). */
-  private drawPaytable(ctx: CanvasRenderingContext2D, y: number): void {
-    const cols: [SlotSym, string][] = [
-      ['seven', SLOT.chips.seven!.map((n) => (this.run ? atStakes(this.run, n) : n)).join(' / ')],
-      ['chip', SLOT.chips.chip!.map((n) => (this.run ? atStakes(this.run, n) : n)).join(' / ')],
-      ['heart', 'HP'],
-      ['star', 'UPGRADE'],
-      ['relic', 'RELIC'],
-      ['wild', 'ANY'],
-    ];
-    // Laid out by width (the chip numbers are longer than the words), centred under the machine.
-    const icon = 40;
-    const gap = 30;
-    const widths = cols.map(([, label]) => icon + textWidth(label, 1.75));
-    let x = CX - (widths.reduce((a, b) => a + b, 0) + gap * (cols.length - 1)) / 2;
-    cols.forEach(([sym, label], i) => {
-      drawSprite(ctx, SLOT_ART[sym], x + 16, y, 2);
-      drawText(ctx, label, x + icon, y, 1.75, sym === 'wild' ? COLORS.textDim : COLORS.goldLight, { align: 'left' });
-      x += widths[i] + gap;
-    });
   }
 
   private drawCabinets(ctx: CanvasRenderingContext2D, time: number): void {

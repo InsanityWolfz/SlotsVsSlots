@@ -112,7 +112,9 @@ the user can review to the pixel. Art and UI go to the user as artifacts (galler
 7. **The user, now:** open Steamworks (the $100 fee, identity and tax checks take days) so the page can go up when the
    art is ready.
 
-Open: LUCKY SEVENS (the user says nobody ever wins it) may go too, leaving TWENTY-ONE and the CLAW.
+Done (user, 2026-10-29): LUCKY SEVENS went ("nobody ever wins it") and HIGHER OR LOWER came back ("it had some actual
+tension"): the encounters are TWENTY-ONE, the CLAW and HIGHER OR LOWER (rules in HP_GAME.md). Ask outside players
+whether it has the tension the user remembers.
 
 **Gate:** the Coming Soon page is live.
 
@@ -147,8 +149,8 @@ The game's one festival: the demo up, keys to streamers, the page polished. It m
 ## v1.0 scope (signed by the user, 2026-10-29)
 - **Ships:** the 5 Slot Machines (BANKROLL at launch), the 3 acts with THE HOUSE, THE WHEEL and THE DEALER, THE OWNER,
   elites, the Cashier, drafts that only edit your reels, the stake ladder, ENDLESS with TONIGHT'S RULE, OVERTIME and
-  HOLD, the rooms, the payout ladder and the climb, the 50 relics, today's Charms, 3 encounters (LUCKY SEVENS,
-  TWENTY-ONE, the CLAW).
+  HOLD, the rooms, the payout ladder and the climb, the 50 relics, today's Charms, 3 encounters (TWENTY-ONE,
+  the CLAW, HIGHER OR LOWER).
 - **After launch:** THE DAILY RUN, online leaderboards, SCRATCH-OFF, RAT RACE, new relics and Charms, and METER
   COMBAT's best idea (BLOCK against a certain telegraph) as a change inside this game.
 

@@ -258,7 +258,7 @@ export interface RunState {
   chipsEarned?: number;
   /** PUNCH CARD: fights won since the last legendary it paid. */
   punches?: number;
-  /** Plays already made at the current encounter stop (RED OR BLACK's spins). */
+  /** Plays already made at the current encounter stop (TWENTY-ONE's deals and hits, the CLAW's goes, each call). */
   encounterPlays?: number;
   /** A game in progress at this stop (HIGHER OR LOWER's showing card, bet and right calls). */
   encounterState?: Record<string, number | number[]>;
@@ -571,13 +571,17 @@ export function migrateRun(run: RunState): RunState {
   };
   if (run.map?.boss) run.map.boss = fix(run.map.boss)!;
   if (Array.isArray(run.enemies)) run.enemies = run.enemies.map((e) => fix(e)!);
-  // Encounters that are gone become LUCKY SEVENS: the offers (THE BLOOD BANK, PAWN SHOP, LOAN SHARK; 2026-10-14, a debt is
-  // forgiven) and the coin flips (RED OR BLACK, HIGHER OR LOWER, UNDER OR OVER; 2026-10-15). A game in play starts over.
+  // Encounters that are gone become HIGHER OR LOWER: LUCKY SEVENS (2026-10-29), RAT RACE and SCRATCH-OFF (after launch),
+  // the offers (THE BLOOD BANK, PAWN SHOP, LOAN SHARK; 2026-10-14, a debt is forgiven) and the coin flips (RED OR BLACK,
+  // UNDER OR OVER; 2026-10-15). A game in play starts over.
   for (const route of run.map?.routes ?? [])
     for (const st of route)
       if (st.encounter && !ENCOUNTERS[st.encounter]) {
-        if (st === currentStop(run)) run.encounterState = undefined;
-        st.encounter = 'slot';
+        if (st === currentStop(run)) {
+          run.encounterState = undefined;
+          run.encounterPlays = 0;
+        }
+        st.encounter = 'hilo';
       }
   delete (run as { debt?: number }).debt;
   // HOUSE EDGES, THE WEEKLY and CHALLENGES are gone (user, 2026-10-15): a saved one plays on as a normal run.

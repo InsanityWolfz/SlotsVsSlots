@@ -90,16 +90,19 @@ was tuned for feel from two fresh-eyes playtests.
 - **Stops:** FIGHT, ELITE (more HP and hits 25% harder, shown as X1.25 ELITE on its hits; pays a pick of 2 relics, in every act), CASHIER, ENCOUNTER.
 - **Encounters** (`src/core/encounters.ts`) are gambles between fights. On the map they're gold "?" boxes: which one
   it is stays secret until you arrive. Seeded by the stop, so a quit can't re-roll one. All are games now:
-  - **Games:** buy-in cards (chips, HP, or a relic the house picks); a bigger buy-in buys more plays.
-    Mostly chip prizes (~80%), sometimes HP, upgrades or a relic. Each game can pay its own kind of prize.
-  - **v1.0 has three (user, 2026-10-29): LUCKY SEVENS, TWENTY-ONE and the CLAW.** SCRATCH-OFF (a blind pick) and RAT
-    RACE go to after launch (their code is on the `parked-rebuild` branch); a saved stop of either becomes LUCKY SEVENS.
-  - **The five games (2026-10-15: RED OR BLACK, HIGHER OR LOWER and UNDER OR OVER are cut, three near-identical chip
-    coin flips; a saved one becomes LUCKY SEVENS):** LUCKY SEVENS, a 5x3 machine on the fight machines' own reels and bezel. Pay 7 chips / 20% HP /
-    a relic for 3 / 6 / 10 pulls. One payline; it pays 3, 4 or 5 in a row from the left (WILD stands in): sevens and
-    chips pay chips, the first-aid tin HP, the star an upgrade, the relic tile a relic. About 1 pull in 3 pays, about
-    73% of the value is chips, the chip buy-in returns about its cost. Its own art: a heart, an upgrade gem, a 777
-    marquee.
+  - **Games:** chip tables: a chip bet (TWENTY-ONE, HIGHER OR LOWER) or a price a go (the CLAW). Mostly chip prizes;
+    the CLAW also holds 2 Charms and a relic. REGULAR adds plays (hands, goes, games).
+  - **v1.0 has three (user, 2026-10-29): TWENTY-ONE, the CLAW and HIGHER OR LOWER.** LUCKY SEVENS is gone ("nobody
+    ever wins it"); SCRATCH-OFF (a blind pick) and RAT RACE go to after launch (their code is on the `parked-rebuild`
+    branch). A saved stop of any game that's gone becomes HIGHER OR LOWER, and a game in play there starts over.
+  - HIGHER OR LOWER (back, user 2026-10-29: "it had some actual tension"; cut 2026-10-15 with RED OR BLACK and UNDER
+    OR OVER as near-identical coin flips): TWENTY-ONE's chip table. Bet up to 20 and a card is turned (2 to ace, drawn
+    fresh); call the next HIGHER or LOWER. Right: the pot grows x1.35 (rounded down, at least a chip). Wrong: the pot
+    is gone. The same rank is a push (call again). CASH OUT any time after a right call; the 6th right call pays the
+    pot out. One game a visit; HIGHER is off on an ace, LOWER on a 2. The game in play is saved with the run. Sim bot
+    (call the likelier side, cash out at 3 right, or 2 on a 6-10): about +10% on the bet; cashing out blind at a fixed
+    count returns 99-102%. Sim, 300 runs WHITE / GREEN, in for LUCKY SEVENS: no change past noise (KNIGHT 69 / 39 ->
+    69 / 40, TESLA 67 / 53 -> 68 / 54, JUKEBOX 65 / 44 -> 66 / 44, JOKER 59 / 38 -> 58 / 38, MIDAS 61 / 45 -> 61 / 47).
   - TWENTY-ONE: blackjack, hit or stand only (no double or split; the dealer stands on 17). A tie is a push
     (user, 2026-10-14): the bet comes back and the hand is dealt again, without using up one of the 3 (sim, 1000 runs: no change). A chip table (user, 2026-10-13: upgrades from cards felt wrong): bet up to 20, 3 hands a visit; a win
     pays 1 to 1, a two-card 21 pays 2 to 1. Cards drawn in code; the hand in play is saved with the run (sim: run win
@@ -114,7 +117,7 @@ was tuned for feel from two fresh-eyes playtests.
   - Sim (1000 runs WHITE / GREEN, with the three in the encounter pool): KNIGHT 70 / 31 -> 32, TESLA 60 -> 61 / 39 -> 40,
     JUKEBOX 66 -> 67 / 30 -> 34, JOKER 57 -> 60 / 34, BANKROLL 63 -> 64 / 40 -> 41.
   - The offers (THE BLOOD BANK, THE PAWN SHOP, THE LOAN SHARK) are gone (user, 2026-10-14: nobody liked them; a saved
-    stop becomes LUCKY SEVENS, a debt is forgiven). Sim, 1000 runs WHITE / GREEN: KNIGHT 66->69 / 34, TESLA 59->58 / 40,
+    stop becomes HIGHER OR LOWER, a debt is forgiven). Sim, 1000 runs WHITE / GREEN: KNIGHT 66->69 / 34, TESLA 59->58 / 40,
     JUKEBOX 67->68 / 36->35, JOKER 58 / 45->44, BANKROLL 62->60 / 44.
   - Paths: 12 shapes now, two of them with three encounters (fewer fights, more gambles).
   - **Cards and words:** buy-in cards all look alike (no LOW / HIGH labels: the player judges the bet). A buy-in you

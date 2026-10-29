@@ -167,7 +167,7 @@ export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stak
 function walk(run: RunState, policy: DraftPolicy, rng: Rng, log: RunLog): void {
   let enc: RunLog['encounters'][number] | null = null;
   let at = '';
-  for (let guard = 0; guard < 40 && !run.over; guard++) {
+  for (let guard = 0; guard < 80 && !run.over; guard++) {
     if (needsRoute(run)) {
       const i = pickRoute(run, policy, rng);
       const elites = run.map.routes.map((r) => r.filter((s) => s.kind === 'elite').length);

@@ -2,11 +2,11 @@
  * ENCOUNTERS (2026-10-12): the map's non-fight stops, where you gamble between fights (they replace SIDE BETS).
  * Fights stay watch-only; an encounter is a choice: stake chips, HP, relics or upgrades, or walk away.
  *
- * Games: LUCKY SEVENS, RED OR BLACK, HIGHER OR LOWER, TWENTY-ONE, UNDER OR OVER. (The offers, THE BLOOD BANK, THE PAWN
- * SHOP and THE LOAN SHARK, are gone: user, 2026-10-14, nobody liked them.) Each is deterministic per run seed, act and stop,
- * so a quit can't re-roll it.
+ * Games (v1.0, user 2026-10-29): TWENTY-ONE, the CLAW and HIGHER OR LOWER. (LUCKY SEVENS is gone: "nobody ever wins
+ * it". The offers, THE BLOOD BANK, THE PAWN SHOP and THE LOAN SHARK, went on 2026-10-14: nobody liked them.) Each is
+ * deterministic per run seed, act and stop, so a quit can't re-roll it.
  */
-import { UNIT, type RelicId } from './config';
+import type { RelicId } from './config';
 import { Rng } from './rng';
 import { NEW_RELIC, RELICS } from './relics';
 import type { RunState } from './run';
@@ -23,18 +23,6 @@ export interface EncounterChoice {
   /** Can't afford it right now. */
   disabled?: boolean;
 }
-/** One pull of LUCKY SEVENS: where the five reels stopped, the line, and what it paid. */
-export interface SlotPull {
-  /** Each reel's stop on its strip (the middle row is the payline). */
-  stops: number[];
-  line: SlotSym[];
-  /** How many in a row paid (0: nothing), and of what. */
-  count: number;
-  sym: SlotSym;
-  wins: string[];
-  /** What this pull added (the screen counts these up as the pull lands; the run has them already). */
-  gain: { chips: number; hp: number; maxHp: number };
-}
 export interface EncounterResult {
   title: string;
   text: string;
@@ -42,10 +30,6 @@ export interface EncounterResult {
   good: boolean | null;
   /** A pull's three symbols, for the screen to spin. */
   reels?: string[];
-  /** LUCKY SEVENS: every pull you bought, in order (already paid: a quit can't re-roll them). */
-  pulls?: SlotPull[];
-  /** What it all came to, one line each (+12 CHIPS, A LEVEL: GOLD 2, ...). */
-  gains?: string[];
   /** RED OR BLACK: the pocket the ball found (0 is the green zero). */
   pocket?: number;
   /** UNDER OR OVER: the two dice. */
@@ -88,145 +72,9 @@ export interface EncounterDef {
 const WALK: EncounterChoice = { label: 'WALK AWAY', text: 'KEEP WHAT YOU HAVE' };
 const walked = (): EncounterResult => ({ title: 'WALKED AWAY', text: '', good: null });
 
-// ---- LUCKY SEVENS (2026-10-12) -----------------------------------------------------------------------------------
-
-/**
- * LUCKY SEVENS: a 5-reel, 3-row prize machine (one payline, the middle row). It pays like a real slot: 3, 4 or 5 of a
- * kind in a row from the left reel; WILDs stand in for anything. Pay chips for a number of pulls (more pulls for a
- * bigger buy-in, each a little better value). Mostly chips; HP, upgrades and relics on rarer lines.
- * Every number is a first pass, to be tuned with the new sim.
- */
-export type SlotSym = 'chip' | 'seven' | 'heart' | 'star' | 'relic' | 'wild';
-/** How many of each symbol a reel's strip holds (all five reels the same). */
-export const SLOT_STRIP: Record<SlotSym, number> = { chip: 8, seven: 2, heart: 3, star: 2, relic: 1, wild: 4 };
-export const SLOT = {
-  /** The buy-ins: chips, a share of your max HP, or a relic the house picks. */
-  low: { chips: 7, pulls: 3 },
-  mid: { hpShare: 0.2, pulls: 6 },
-  high: { pulls: 10 },
-  /** What 3 / 4 / 5 in a row pays. */
-  chips: { chip: [2, 5, 12], seven: [6, 15, 40] } as Partial<Record<SlotSym, number[]>>,
-  heal: [5 * UNIT, 10 * UNIT],
-  maxHp5: 5 * UNIT,
-  /** STAR: upgrades for 3 / 4 / 5. RELIC: a relic, plus these chips for 4 / 5. */
-  stars: [1, 2, 3],
-  relicChips: [0, 10, 25],
-};
-const SLOT_ORDER: SlotSym[] = ['chip', 'seven', 'heart', 'star', 'relic', 'wild'];
-/** The reel strips: the counts above, dealt in a fixed order (every machine is the same machine). */
-export const SLOT_STRIPS: SlotSym[][] = [0, 1, 2, 3, 4].map((r) => {
-  const cells = SLOT_ORDER.flatMap((k) => Array<SlotSym>(SLOT_STRIP[k]).fill(k));
-  return new Rng(0x5eed + r * 977).shuffle(cells);
-});
-/** The payline (middle row) for these reel stops. */
-export const slotLine = (stops: number[]): SlotSym[] => stops.map((st, r) => SLOT_STRIPS[r][st % SLOT_STRIPS[r].length]);
-/** What the line pays: the symbol and how many in a row from the left (WILDs stand in). 0 = nothing. */
-export function slotRun(line: SlotSym[]): { sym: SlotSym; count: number } {
-  const sym = line.find((c) => c !== 'wild') ?? 'seven';
-  let count = 0;
-  while (count < line.length && (line[count] === sym || line[count] === 'wild')) count++;
-  return count >= 3 ? { sym, count } : { sym, count: 0 };
-}
-const slotHp = (run: RunState) => Math.max(UNIT, Math.round((run.player.maxHp * SLOT.mid.hpShare) / UNIT) * UNIT);
-/** The relic the house wants for the biggest buy-in (fixed for this stop, so the card never changes under you). */
-const slotRelic = (run: RunState, rng: Rng): RelicId | null => (run.player.relics.length ? rng.fork().pick(run.player.relics) : null);
-
-/** One pull: spin the five reels, pay the line, say what it paid. */
-function pullSlot(run: RunState, rng: Rng, ctx: EncounterCtx, tally: Map<string, number>): SlotPull {
-  const stops = SLOT_STRIPS.map((strip) => rng.int(strip.length));
-  const line = slotLine(stops);
-  const { sym, count } = slotRun(line);
-  const p = run.player;
-  const before = { chips: p.chips, hp: p.hp, maxHp: p.maxHp };
-  const wins: string[] = [];
-  const add = (key: string, k = 1) => tally.set(key, (tally.get(key) ?? 0) + k);
-  const chips = (n: number) => {
-    if (n <= 0) return;
-    p.chips += n;
-    add('CHIPS', n);
-    wins.push(`+${n} CHIPS`);
-  };
-  const tier = count - 3;
-  if (count) {
-    const pay = SLOT.chips[sym]?.map((n) => atStakes(run, n));
-    if (pay) chips(pay[tier]);
-    else if (sym === 'heart') {
-      if (count === 5) {
-        p.maxHp += SLOT.maxHp5;
-        p.hp = p.maxHp;
-        add('MAX HP', SLOT.maxHp5);
-        wins.push(`+${SLOT.maxHp5} MAX HP`);
-      } else {
-        const heal = Math.min(p.maxHp - p.hp, SLOT.heal[tier]);
-        p.hp += heal;
-        add('HP', heal);
-        wins.push(`+${heal} HP`);
-      }
-    } else if (sym === 'star') {
-      for (let k = 0; k < SLOT.stars[tier]; k++) {
-        const up = ctx.upgrade();
-        if (up) {
-          add(up);
-          wins.push(up);
-        } else chips(8);
-      }
-    } else if (sym === 'relic') {
-      const pool = ctx.relics.filter((r) => !p.relics.includes(r));
-      const relic = pool.length ? rng.pick(pool) : null;
-      if (relic) {
-        p.relics.push(relic);
-        add(RELICS[relic].name);
-        wins.push(RELICS[relic].name);
-      } else chips(15);
-      chips(SLOT.relicChips[tier]);
-    }
-  }
-  return { stops, line, count, sym, wins, gain: { chips: p.chips - before.chips, hp: p.hp - before.hp, maxHp: p.maxHp - before.maxHp } };
-}
-
-const LUCKY_SEVENS: EncounterDef = {
-  id: 'slot',
-  name: 'LUCKY SEVENS',
-  blurb: '',
-  kind: 'game',
-  choices: (run, rng) => {
-    const hp = slotHp(run);
-    const relic = slotRelic(run, rng);
-    return [
-      { label: 'A', text: '', stake: `${atStakes(run, SLOT.low.chips)} CHIPS`, prize: `${SLOT.low.pulls + extraPlays(run)} PULLS`, disabled: run.player.chips < atStakes(run, SLOT.low.chips) },
-      { label: 'B', text: '', stake: `${hp} HP`, prize: `${SLOT.mid.pulls + extraPlays(run)} PULLS`, disabled: run.player.hp <= hp },
-      { label: 'C', text: '', stake: relic ? RELICS[relic].name : 'A RELIC', prize: `${SLOT.high.pulls + extraPlays(run)} PULLS`, relic: relic ?? undefined, disabled: !relic },
-      WALK,
-    ];
-  },
-  play: (run, i, rng, ctx) => {
-    const p = run.player;
-    let pulls = 0;
-    if (i === 0 && p.chips >= atStakes(run, SLOT.low.chips)) {
-      p.chips -= atStakes(run, SLOT.low.chips);
-      pulls = SLOT.low.pulls;
-    } else if (i === 1 && p.hp > slotHp(run)) {
-      p.hp -= slotHp(run);
-      pulls = SLOT.mid.pulls;
-    } else if (i === 2) {
-      const relic = slotRelic(run, rng);
-      if (!relic) return walked();
-      p.relics = p.relics.filter((r) => r !== relic);
-      pulls = SLOT.high.pulls;
-    }
-    if (!pulls) return walked();
-    pulls += extraPlays(run);
-    // The stake's pick drew from a fork of the stop's stream; the pulls draw from the stream itself.
-    const tally = new Map<string, number>();
-    const out = Array.from({ length: pulls }, () => pullSlot(run, rng, ctx, tally));
-    const gains = [...tally].map(([k, v]) => (k === 'CHIPS' ? `+${v} CHIPS` : k === 'HP' ? `+${v} HP` : k === 'MAX HP' ? `+${v} MAX HP` : v > 1 ? `${k} X${v}` : k));
-    return { title: gains.length ? 'PAID OUT' : 'NO LUCK', text: gains.join('  '), good: gains.length > 0, pulls: out, gains };
-  },
-};
-
 // ---- Table helpers ------------------------------------------------------------------------------------------
 
-/** REGULAR (relic): one more play at every encounter game (a pull, a spin, a roll, a hand). */
+/** REGULAR (relic): one more play at every encounter game (a hand, a go at the claw, a game of HIGHER OR LOWER). */
 export const extraPlays = (run: RunState) => (run.player.relics.includes('regular') ? NEW_RELIC.regularPlays : 0);
 /** ENDLESS raises every table's limit by half again each loop (chips buy more late, so bets must too). */
 /** ENDLESS: encounter stakes grow with the loop (user, 2026-10-14: fixed prices stopped mattering against 100-300 chips). x2 at loop 1, x5 at loop 4. */
@@ -328,10 +176,78 @@ const TWENTY_ONE: EncounterDef = {
   },
 };
 
-// ---- UNDER OR OVER (2026-10-12) -----------------------------------------------------------------------------------
+// ---- HIGHER OR LOWER (back, user 2026-10-29: "it had some actual tension") ------------------------------------------
+
+/**
+ * HIGHER OR LOWER: a chip table like TWENTY-ONE's. Bet, and a card is turned; call the next one HIGHER or LOWER. A
+ * right call grows the pot x1.35 (x1.4 gave an expert +12%), a wrong one loses it; the same rank again is a push (the
+ * pot stays, call again). CASH OUT any time after a right call; the 6th right call pays the pot out. One game a visit
+ * (REGULAR adds games). Cards are drawn fresh each time (2-14, the ace high), like TWENTY-ONE's.
+ */
+export const HILO = { maxBet: 20, grow: 1.35, calls: 6, games: 1 };
+/** The most you can bet right now: the table's limit, or every chip you hold. */
+export const hiloMax = (run: RunState) => Math.min(tableLimit(run, HILO.maxBet), run.player.chips);
+/** The pot after `right` right calls, rounded down (rounded up, the first call paid x1.4), but always a chip a call
+ * more (a 1-chip bet x1.35 is still 1). */
+export const hiloPot = (bet: number, right: number) => Math.max(bet + right, Math.floor(bet * HILO.grow ** right));
+/** A game in play: its bet, the pot, the card showing, the right calls so far, and which game of the visit it is. */
+export type HiloState = { bet: number; pot: number; card: number; right: number; game: number };
+/** HIGHER OR LOWER's game in play (null between games, or a save from the old game: it starts over). */
+export const hiloState = (run: RunState): HiloState | null => {
+  const s = run.encounterState;
+  return s && 'card' in s && 'right' in s && 'game' in s ? (s as unknown as HiloState) : null;
+};
+/** Games played this visit (the count survives between games). */
+const hiloGames = (run: RunState) => Number((run.encounterState as { games?: number } | undefined)?.games ?? 0);
+
+/** A game is over (lost, cashed out or topped out): another one if the visit has one left and you can bet. */
+function hiloEnd(run: RunState, st: HiloState, res: EncounterResult): EncounterResult {
+  run.encounterState = { games: st.game };
+  return { ...res, more: st.game < HILO.games + extraPlays(run) && hiloMax(run) >= 1 };
+}
+
+const HIGHER_OR_LOWER: EncounterDef = {
+  id: 'hilo',
+  name: 'HIGHER OR LOWER',
+  blurb: '',
+  kind: 'game',
+  choices: (run) => {
+    const st = hiloState(run);
+    // (Nothing beats an ace or goes under a 2: that call is off.)
+    if (st) return [{ label: 'HIGHER', text: '', disabled: st.card >= 14 }, { label: 'LOWER', text: '', disabled: st.card <= 2 }, { label: 'CASH OUT', text: '', disabled: st.right < 1 }];
+    return [{ label: 'DEAL', text: '', disabled: hiloMax(run) < 1 }, WALK];
+  },
+  play: (run, i, rng, _ctx, bet = 1) => {
+    const st = hiloState(run);
+    if (!st) {
+      if (i !== 0 || hiloMax(run) < 1) return walked();
+      const stake = Math.max(1, Math.min(hiloMax(run), Math.floor(bet)));
+      run.player.chips -= stake;
+      const first: HiloState = { bet: stake, pot: stake, card: drawCard(rng), right: 0, game: hiloGames(run) + 1 };
+      run.encounterState = first as unknown as Record<string, number>;
+      return { title: '', text: '', good: null, card: first.card, pot: stake, more: true };
+    }
+    if (i === 2) {
+      // CASH OUT: the pot comes back (not before a right call: the bet is still riding).
+      if (st.right < 1) return { title: '', text: '', good: null, card: st.card, pot: st.pot, more: true };
+      run.player.chips += st.pot;
+      return hiloEnd(run, st, { title: 'CASHED OUT', text: `+${st.pot} CHIPS`, good: true, card: st.card, pot: st.pot });
+    }
+    const next = drawCard(rng);
+    if (next === st.card) return { title: 'SAME CARD: PUSH', text: 'CALL AGAIN', good: null, card: st.card, next, pot: st.pot, more: true };
+    if (i === 0 ? next < st.card : next > st.card) return hiloEnd(run, st, { title: 'WRONG', text: `-${st.bet} CHIPS`, good: false, card: st.card, next, pot: 0 });
+    const now: HiloState = { ...st, card: next, right: st.right + 1, pot: hiloPot(st.bet, st.right + 1) };
+    if (now.right >= HILO.calls) {
+      run.player.chips += now.pot;
+      return hiloEnd(run, now, { title: `${HILO.calls} RIGHT!`, text: `+${now.pot} CHIPS`, good: true, card: st.card, next, pot: now.pot });
+    }
+    run.encounterState = now as unknown as Record<string, number>;
+    return { title: 'RIGHT!', text: `POT ${now.pot}`, good: true, card: st.card, next, pot: now.pot, more: true };
+  },
+};
 
 // ---- RAT RACE and SCRATCH-OFF went to after launch (v1.0 scope, user 2026-10-29: SCRATCH-OFF's panels were a blind
-// pick). Their code is on the parked-rebuild branch; a saved stop becomes LUCKY SEVENS (migrateRun).
+// pick). Their code is on the parked-rebuild branch; a saved stop becomes HIGHER OR LOWER (migrateRun).
 
 // ---- CLAW MACHINE (user's pick, 2026-10-14) ------------------------------------------------------------------------
 
@@ -382,12 +298,12 @@ const CLAW_MACHINE: EncounterDef = {
   },
 };
 
-export const ENCOUNTERS: Record<string, EncounterDef> = { slot: LUCKY_SEVENS, bj: TWENTY_ONE, claw: CLAW_MACHINE };
+export const ENCOUNTERS: Record<string, EncounterDef> = { hilo: HIGHER_OR_LOWER, bj: TWENTY_ONE, claw: CLAW_MACHINE };
 /** What the map deals onto ENCOUNTER stops. */
 export const ENCOUNTER_IDS = Object.keys(ENCOUNTERS);
 
 /** The encounter at this stop, or a stand-in if a save names one that's gone. */
-export const encounterOf = (id: string | undefined): EncounterDef => (id && ENCOUNTERS[id]) || LUCKY_SEVENS;
+export const encounterOf = (id: string | undefined): EncounterDef => (id && ENCOUNTERS[id]) || HIGHER_OR_LOWER;
 
 /** Deterministic per run, act, stop and play (a game's 2nd spin draws its own stream): a quit can't re-roll it. */
 export const encounterRng = (run: RunState) =>
