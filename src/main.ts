@@ -142,7 +142,7 @@ const crashContext = () => ({ phase: game.phase, machine: game.run?.cabinet, act
 installCrashHandlers(crashContext);
 
 // Gamepads (STEAM_READINESS S3): the d-pad / left stick move the focus, A presses, B / Start back out or pause,
-// X spins, Y toggles AUTO, the bumpers change speed. Edges only, with a repeat while a direction is held.
+// X spins, Y toggles AUTO, the bumpers change speed; in a fight the d-pad left / up / right HOLDs reels 1 / 2 / 3 (game.ts). Edges only, with a repeat while a direction is held.
 const PAD: Record<number, string> = { 12: 'arrowup', 13: 'arrowdown', 14: 'arrowleft', 15: 'arrowright', 0: 'enter', 1: 'escape', 9: 'escape', 2: ' ', 3: 'a' };
 const padHeld = new Map<string, number>();
 let speedIdx = -1;

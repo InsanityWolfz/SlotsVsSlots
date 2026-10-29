@@ -917,7 +917,7 @@ export class Menus {
       scap('CLICK MASTER (OR PRESS M) TO MUTE. F11: FULLSCREEN', Menus.SET_Y + 6 * Menus.SET_PITCH + 30);
       if (!this.settingsMidRun) scap('ERASES YOUR UNLOCKS, COLLECTION AND SCORES', Menus.SET_Y + 7 * Menus.SET_PITCH + 52, '#ff8a7a');
       // The keys (STEAM_READINESS S29), under the panel.
-      drawText(ctx, 'SPACE SPIN   A AUTO   1-4 SPEED   M MUTE   ESC PAUSE   ARROWS + ENTER: MENUS', W / 2, H - 22, 1.5, COLORS.textDim, { alpha: Math.max(0, Math.min(1, k)) });
+      drawText(ctx, 'SPACE SPIN   Q W E HOLD   A AUTO   1-4 SPEED   M MUTE   ESC PAUSE   ARROWS + ENTER: MENUS', W / 2, H - 22, 1.5, COLORS.textDim, { alpha: Math.max(0, Math.min(1, k)) });
     }
   }
 

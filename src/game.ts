@@ -163,6 +163,8 @@ function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
  * never change names), and a save that fails to parse is set aside under `<key>.corrupt` and the backup loads instead. */
 const BAK = '.bak';
 const NAV_KEYS: Record<string, NavDir> = { arrowup: 'up', arrowdown: 'down', arrowleft: 'left', arrowright: 'right' };
+/** HOLD from the keyboard (Q / W / E) or, in a fight while a HOLD can be made, a pad's d-pad (left / up / right). */
+const HOLD_KEYS: Record<string, number> = { q: 0, w: 1, e: 2, arrowleft: 0, arrowup: 1, arrowright: 2 };
 export type SettingKey = 'master' | 'music' | 'sfx' | 'shake' | 'motion' | 'fullscreen';
 /** Fullscreen through the browser API (the desktop wrapper's window follows it). */
 export function toggleFullscreen(on?: boolean): void {
@@ -1469,14 +1471,7 @@ export class Game {
     if (this.canHold()) {
       const win = reelWindow('player');
       if (x >= win.x && x < win.x + win.w && y >= win.y && y < win.y + win.h) {
-        const r = Math.floor((x - win.x) / PITCH);
-        const was = this.fight.held[r];
-        const now = this.fight.hold(r);
-        if (now !== was) this.sounds.reelStop(r, now ? 1.4 : 0.8);
-        else {
-          this.sounds.fizzle();
-          this.toolNote = { text: this.fight.sides.player.frozen[r] > 0 ? "A FROZEN REEL CAN'T BE HELD" : 'NO HOLDS LEFT THIS FIGHT', at: performance.now() };
-        }
+        this.tapHold(Math.floor((x - win.x) / PITCH));
         return;
       }
     }
@@ -1543,6 +1538,11 @@ export class Game {
       // Any key moves the tutorial on (a pad's A included); S skips it.
       if (k === 's') this.skipTutorial();
       else this.coach.advance();
+      return true;
+    }
+    // HOLD: Q / W / E, or the arrows / d-pad while a HOLD can be made (the fight's buttons all have their own keys).
+    if (HOLD_KEYS[k] !== undefined && this.canHold() && !this.menus.isOpen) {
+      this.tapHold(HOLD_KEYS[k]);
       return true;
     }
     // Keyboard / gamepad focus (STEAM_READINESS S3): arrows move it, Enter presses it.
@@ -1748,6 +1748,17 @@ export class Game {
   }
 
   /** HOLD (experiment): a HELD tag on each held reel, your HOLDs left under your machine, and the HOLD CHANCE call. */
+  /** HOLD: hold reel r, or let it go (a tap, Q / W / E, or the d-pad). */
+  private tapHold(r: number): void {
+    const was = this.fight.held[r];
+    const now = this.fight.hold(r);
+    if (now !== was) this.sounds.reelStop(r, now ? 1.4 : 0.8);
+    else {
+      this.sounds.fizzle();
+      this.toolNote = { text: this.fight.sides.player.frozen[r] > 0 ? "A FROZEN REEL CAN'T BE HELD" : 'NO HOLDS LEFT THIS FIGHT', at: performance.now() };
+    }
+  }
+
   /** HOLD: your reels take a tap now (before your spin, or while the enemy's turn plays), outside THE SCORE RACE. */
   private canHold(): boolean {
     const f = this.fight;
