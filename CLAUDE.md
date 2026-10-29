@@ -6,8 +6,8 @@ Web build: https://insanitywolfz.github.io/SlotsVsSlots/ (deploys on every push 
 ## Where the project stands (2026-10-29)
 The project is back on, aimed at a paid Steam release. **v1.0 is the old game** (HP fights, `docs/legacy/HP_GAME.md`),
 not a rebuild: its fights got OVERTIME and HOLD (live 2026-10-29), its content is frozen and trimmed, and it goes to Steam. The METER
-COMBAT rebuild (2026-10-16/17) and the score race before it are **parked**: their code (`src/meter/`, `src/race/`)
-stays out of PLAY MODES and moves out of the engine in phase 2. The plan and why: `docs/ROADMAP.md`, from an overnight
+COMBAT rebuild (2026-10-16/17) and the score race before it are **parked**: their code is on the `parked-rebuild`
+branch (out of `main` since 2026-10-29). The plan and why: `docs/ROADMAP.md`, from an overnight
 review (the user's doc "Slots vs. Slots: the road to Steam", https://claude.ai/artifact/A7ADak3Vec6oPZEzQbMVgi).
 
 ## Read first, every session

@@ -23,7 +23,8 @@ an encounter, and which Charms and relics to build.
   escalates already). The HUD counts OVERTIME IN 3 / 2 / 1, then OVERTIME XN; a banner when it starts; each pay's climb
   names it. The researcher's precedents (TFT, The Bazaar, Backpack Battles) are in `docs/RESEARCH.md`.
 - **HOLD** (`HOLD` in `src/core/run.ts`): 2 a fight. Tap one of your reels before your spin, or while the enemy's turn
-  plays (the engine is on your turn by then), to keep its symbol for your next spin; tap again to let go. Nothing ever
+  plays (the engine is on your turn by then), to keep its symbol for your next spin; tap again to let go. Keys Q W E;
+  on a pad the d-pad (left, up, right) while a HOLD can be made. Nothing ever
   waits for it: AUTO never stops. Sabotage that lands on a held reel stays on it (the gamble you took); a frozen reel
   can't be held. Shown: HOLD 2: TAP A REEL under your machine while a tap would hold, a gold HELD frame, and PAIR! HOLD
   IT FOR A JACKPOT? after a pair. The tutorial explains both (and its first pair stops on a HOLD callout); the glossary
@@ -86,6 +87,8 @@ was tuned for feel from two fresh-eyes playtests.
   it is stays secret until you arrive. Seeded by the stop, so a quit can't re-roll one. All are games now:
   - **Games:** buy-in cards (chips, HP, or a relic the house picks); a bigger buy-in buys more plays.
     Mostly chip prizes (~80%), sometimes HP, upgrades or a relic. Each game can pay its own kind of prize.
+  - **v1.0 has three (user, 2026-10-29): LUCKY SEVENS, TWENTY-ONE and the CLAW.** SCRATCH-OFF (a blind pick) and RAT
+    RACE go to after launch (their code is on the `parked-rebuild` branch); a saved stop of either becomes LUCKY SEVENS.
   - **The five games (2026-10-15: RED OR BLACK, HIGHER OR LOWER and UNDER OR OVER are cut, three near-identical chip
     coin flips; a saved one becomes LUCKY SEVENS):** LUCKY SEVENS, a 5x3 machine on the fight machines' own reels and bezel. Pay 7 chips / 20% HP /
     a relic for 3 / 6 / 10 pulls. One payline; it pays 3, 4 or 5 in a row from the left (WILD stands in): sevens and
@@ -386,6 +389,8 @@ BANKROLL 17.6K; ENDLESS riders 33-54K. Share of all points: bosses 28%, relics 1
 levels 7%, chips earned 7%, Charms 5%, THE OWNER 4%. (The pot and chips x10 are gone.)
 
 ## THE SCORE RACE (the race act 1 slice, user 2026-10-15)
+> Parked: out of `main` since 2026-10-29 (phase 2); its code is on the `parked-rebuild` branch. Kept here for the record.
+
 The user's idea: HP and uncapped damage compete (your power has no cap, the enemy hits back, and HP never keeps up), so
 fights become **competing scores**, like Balatro's blinds. PLAY MODES > SCORE RACE (TEST) plays **act 1 only** (it ends
 at ACT 1 CLEARED! after THE HOUSE), at WHITE, filed like the tutorial (no stats, XP, achievements, unlocks or boards).

@@ -2,8 +2,8 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress:** nothing. Phase 1 (OVERTIME, HOLD, AUTO off) is live; its gate is the next outside playtest. Phase 2
-(freeze and trim) can start alongside.
+**In progress:** phase 2, splitting the big files (`runScreens.ts`, `fight.ts`, `game.ts`, `run.ts`). Phase 1 (OVERTIME,
+HOLD, AUTO off) is live; its gate is the next outside playtest.
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
 fight changes (OVERTIME and HOLD), frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
@@ -73,12 +73,15 @@ Follow-ups: keyboard and gamepad can't HOLD yet (Steam needs it; a key per reel,
 **Gate:** outside players stop calling the fights slow or watch-only.
 
 ## Phase 2: freeze and trim
-- The user signs the v1.0 scope (below).
-- Encounters down to 3: LUCKY SEVENS, SCRATCH-OFF, the CLAW (TWENTY-ONE and RAT RACE to after launch).
+Done (2026-10-29): the scope is signed (below); the encounters are LUCKY SEVENS, TWENTY-ONE and the CLAW (SCRATCH-OFF
+and RAT RACE went to after launch: SCRATCH-OFF's panels were a blind pick, TWENTY-ONE has real choices); `src/race`,
+`src/meter` and THE SCORE RACE's branches through the engine are on the `parked-rebuild` branch (about 3,100 lines;
+the same sim gives identical results without them); HOLD works from the keyboard (Q W E) and a pad's d-pad.
+Left:
 - THE DAILY RUN and the Supabase leaderboards (`src/net`) to after launch; Steam's achievements and leaderboards
   take their place.
-- `src/race`, `src/meter` and the race branches in `fight.ts` (`cfg.race`) move to a branch, `parked-rebuild`.
-- Split `fight.ts` (2,621 lines), `runScreens.ts` (3,304) and `game.ts` (2,374) as they're touched.
+- Split the files over about 1,000 lines: `runScreens.ts` (2,999), `fight.ts` (2,400), `game.ts` (2,169), `run.ts`
+  (1,579). Check each split with the sim (identical results) and a browser run.
 
 **Gate:** the scope is signed, and everything on it is built.
 
@@ -103,12 +106,13 @@ The game's one festival: the demo up, keys to streamers, the page polished. It m
 - Price $7.99–$9.99, where the slot hits sit.
 - Ratings: answer the content survey honestly (simulated gambling, no real money, no paid randomness).
 
-## v1.0 scope (proposed; the user signs it in phase 2)
-- **Ships:** the 5 Slot Machines (or 4, with BANKROLL as a free update: the user's call), the 3 acts with THE HOUSE,
-  THE WHEEL and THE DEALER, THE OWNER, elites, the Cashier, drafts that only edit your reels, the stake ladder,
-  ENDLESS with TONIGHT'S RULE, the rooms, the payout ladder and the climb, the 50 relics, today's Charms, 3 encounters.
-- **After launch:** THE DAILY RUN, online leaderboards, TWENTY-ONE, RAT RACE, new relics and Charms, and METER COMBAT's
-  best idea (BLOCK against a certain telegraph) as a change inside this game.
+## v1.0 scope (signed by the user, 2026-10-29)
+- **Ships:** the 5 Slot Machines (BANKROLL at launch), the 3 acts with THE HOUSE, THE WHEEL and THE DEALER, THE OWNER,
+  elites, the Cashier, drafts that only edit your reels, the stake ladder, ENDLESS with TONIGHT'S RULE, OVERTIME and
+  HOLD, the rooms, the payout ladder and the climb, the 50 relics, today's Charms, 3 encounters (LUCKY SEVENS,
+  TWENTY-ONE, the CLAW).
+- **After launch:** THE DAILY RUN, online leaderboards, SCRATCH-OFF, RAT RACE, new relics and Charms, and METER
+  COMBAT's best idea (BLOCK against a certain telegraph) as a change inside this game.
 
 ## Parked: the rebuild (2026-10-16/17)
 METER COMBAT (VISION.md) has KNIGHT and TESLA built in `src/meter/`, against one enemy (the slime); JOKER's design
@@ -116,5 +120,5 @@ waits on sign-off and JUKEBOX needs a redesign. It's parked because, read from t
 strips, not sim runs): firing the moment a meter fills is almost always right (a full meter only swaps its weakest
 bar); BLOCK is a coin flip (the slime's warning shows at 6 of 10, when it fills that spin only about 41% of the time);
 a real choice comes up about 1–2 times a fight (TESLA's own sim: 1.6); a strong build still needs about 4 turns to
-fill a meter; and it resets the content to near zero. It comes back only under CLAUDE.md's no-restart rule. The test
-modes stay off PLAY MODES; their code stays until phase 2 moves it out.
+fill a meter; and it resets the content to near zero. It comes back only under CLAUDE.md's no-restart rule. Its code
+(METER COMBAT, THE NEW GAME, THE SCORE RACE) is on the `parked-rebuild` branch since 2026-10-29.
