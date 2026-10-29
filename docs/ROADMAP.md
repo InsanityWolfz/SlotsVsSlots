@@ -2,8 +2,7 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress:** nothing. Phase 2's trim is done; left in it: THE DAILY RUN and online boards to after launch, and the
-other big files split as they're touched. Phase 1 (OVERTIME, HOLD, AUTO off) is live; its gate is the next outside
+**In progress:** nothing. Phase 2 is done but for the big files, split as they're touched. Phase 1 (OVERTIME, HOLD, AUTO off) is live; its gate is the next outside
 playtest.
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
@@ -77,10 +76,10 @@ Follow-ups: keyboard and gamepad can't HOLD yet (Steam needs it; a key per reel,
 Done (2026-10-29): the scope is signed (below); the encounters are LUCKY SEVENS, TWENTY-ONE and the CLAW (SCRATCH-OFF
 and RAT RACE went to after launch: SCRATCH-OFF's panels were a blind pick, TWENTY-ONE has real choices); `src/race`,
 `src/meter` and THE SCORE RACE's branches through the engine are on the `parked-rebuild` branch (about 3,100 lines;
-the same sim gives identical results without them); HOLD works from the keyboard (Q W E) and a pad's d-pad.
+the same sim gives identical results without them); HOLD works from the keyboard (Q W E) and a pad's d-pad; THE DAILY
+RUN, the online leaderboards (Supabase) and the name screen went to after launch (also on `parked-rebuild`; Steam's
+achievements and leaderboards come first), so PLAY MODES is gone and TUTORIAL sits on the main screen.
 Left:
-- THE DAILY RUN and the Supabase leaderboards (`src/net`) to after launch; Steam's achievements and leaderboards
-  take their place.
 - Split the files over about 1,000 lines as they're touched: `runScreens.ts` (2,999), `game.ts` (2,169), `run.ts`
   (1,579). Check each split with the sim (identical results) and a browser run. (`fight.ts` is split: its rules,
   a spin's scoring and the enemies' tricks are their own modules; the class with the turn loop is 1,234 lines.)

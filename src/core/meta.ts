@@ -148,9 +148,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     progress: (c) => [CABINET_ORDER.filter((m) => c.have[`clear_${m}`]).length, CABINET_ORDER.length],
   },
   ...Array.from({ length: MAX_STAKE }, (_, i) => stakeOf(i + 1)),
-  { id: 'daily_play', name: 'DAILY BREAD', text: 'PLAY THE DAILY RUN.', check: (c) => c.daily },
-  { id: 'daily_win', name: 'DAILY DOUBLE', text: 'WIN THE DAILY RUN.', check: (c) => c.daily && c.won },
-  { id: 'daily_7', name: 'CREATURE OF HABIT', text: 'PLAY 7 DAILY RUNS.', check: (c) => c.stats.dailies >= 7, progress: (c) => [c.stats.dailies, 7] },
+  // (THE DAILY RUN's three went to after launch with it, 2026-10-29; earned ones stay in the save.)
   { id: 'endless_1', name: 'LET IT RIDE', text: 'CLEAR AN ENDLESS LOOP.', check: (c) => c.loops >= 1 },
   { id: 'endless_3', name: 'ON A HEATER', text: 'CLEAR 3 ENDLESS LOOPS IN ONE RUN.', check: (c) => c.loops >= 3 },
   { id: 'turbo', name: 'BROKE THE BANK', text: 'BEAT THE TURBO BOSS.', check: (c) => c.loops >= 5 },

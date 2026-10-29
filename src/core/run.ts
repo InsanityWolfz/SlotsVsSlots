@@ -22,7 +22,6 @@ import { CABINETS, type CabinetId } from './cabinets';
 import { ENCOUNTERS, encounterOf, encounterRng, extraPlays, type EncounterChoice, type EncounterResult } from './encounters';
 import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
-import { dailyFightSeed, dailyNight } from './daily';
 import { scoreLine } from './scoring';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
 
@@ -249,9 +248,6 @@ export interface RunState {
   healBought?: boolean;
   /** Cashier heals bought this run (each costs more). */
   healsBought?: number;
-  /** THE DAILY RUN: the day it belongs to (its fights are seeded from the day), and the day's TONIGHT'S RULE. */
-  daily?: string;
-  dailyNight?: NightId;
   /** Relic picks waiting behind the current one (PUNCH CARD's can land on the act's legendary pick). */
   legendQueue?: RelicId[][];
   /** THE LONG GAME (legendary relic): fights won since you got it. */
@@ -367,11 +363,10 @@ export type RelicTier = 'common' | 'uncommon' | 'legendary';
 const DECK_MARKS_CAP = 6;
 
 /** Acts in this run: GREEN stake and up adds act 3 (THE DEALER). */
-/** GREEN and up always go on to ACT 3 (the Dealer). */
-/** Acts in this run: GREEN+ and THE DAILY RUN go on to the Dealer (act 3). */
-/** THE DAILY RUN: fights fixed by the day, base-stake numbers, through the Dealer. */
-export const fixedRun = (run: RunState) => !!run.daily;
-export const runActs = (run: RunState) => (run.stake >= STAKE.act3 || fixedRun(run) ? 3 : ACTS);
+export const runActs = (run: RunState) => (run.stake >= STAKE.act3 ? 3 : ACTS);
+/** A run fight's seed, from the run and the fight: a run resumed after a quit replays the same fight. */
+export const fightSeed = (runSeed: number, act: number, depth: number, loop = 0) =>
+  (runSeed ^ Math.imul(act * 131 + depth * 17 + loop * 7919 + 1, 0x9e3779b1)) >>> 0;
 /** Fights an act holds on a typical route (the opener, 3 on the route, the boss): routes vary, so this is a guide. */
 export const TYPICAL_ACT_FIGHTS = 5;
 /** Fights in this run, bosses included: the acts behind you as fought, this act's as mapped, the rest typical. */
@@ -390,7 +385,7 @@ export function fightLabel(run: RunState): string {
   // (Short: the long form ran across both reel frames. Playtest.)
   if (run.endless) return `LOOP ${run.endless.loop}${isBossNext(run) ? ' BOSS' : ''}${night ? `: ${night.title}` : ''}`;
   if (isBossNext(run)) return 'BOSS';
-  return `${run.daily ? 'DAILY - ' : ''}ACT ${run.act} ${n}`;
+  return `ACT ${run.act} ${n}`;
 }
 /** 1-based fight number across the whole run (the fight you're on, or the one you fell at). */
 export const fightNumber = (run: RunState) => run.records.filter((r) => r.won).length + 1;
@@ -740,7 +735,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     if (run.cabinet === 'knight' && cleared > 0) cfg.player.veteranMul = 1 + LOOP_GROWTH.veteran * cleared;
     if (run.cabinet === 'jukebox') cfg.player.volumeStart = LOOP_GROWTH.warmUp * run.endless.loop;
   }
-  // TONIGHT'S RULE (ENDLESS: the path's; THE DAILY RUN: the day's), for both machines.
+  // TONIGHT'S RULE (ENDLESS: the path's), for both machines.
   const night = nightId(run);
   cfg.night = night;
   if (night === 'lucky') for (const side of [cfg.player, cfg.enemy]) side.strips = side.strips.map((s) => ({ ...s, wild: (s.wild ?? 0) + NIGHT.luckyWilds }));
@@ -748,11 +743,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
     cfg.player.meterMul = (cfg.player.meterMul ?? 1) * NIGHT.fastMeter;
   }
-  // THE DAILY RUN: every fight is fixed by the day, so everyone meets the same fights.
-  // The daily locks its spins too (one try: the purest comparison).
-  // Every run fight is seeded from the run (was: the daily only). A run resumed after a quit replays the same fight,
-  // so quitting can't re-roll a loss (STEAM_READINESS S1). The sim seeds its own fights.
-  cfg.seed = dailyFightSeed(run.daily ? run.seed : (run.spinSeed ?? run.seed), run.act, run.depth, run.endless?.loop ?? 0);
+  // Every run fight is seeded from the run. A run resumed after a quit replays the same fight, so quitting can't
+  // re-roll a loss (STEAM_READINESS S1). The sim seeds its own fights.
+  cfg.seed = fightSeed(run.spinSeed ?? run.seed, run.act, run.depth, run.endless?.loop ?? 0);
   // QUICKENING (legendary relic): enemy abilities charge one spin faster.
   if (quickening(run) && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
   // OVERTIME (user, 2026-10-29): every fight has the clock but THE OWNER's (he escalates every turn already). HOLD:
@@ -772,11 +765,6 @@ export function dealerEvery(run: RunState): number {
 /** Enemy symbols that write on your machine (for the WRITER house edge). */
 
 
-/** Make a fresh run THE DAILY RUN of this day: fights fixed by the day, and the day's TONIGHT'S RULE. */
-export function applyDaily(run: RunState, key: string): void {
-  run.daily = key;
-  run.dailyNight = dailyNight(key);
-}
 
 /** Interest paid after a win on the chips you hold then (chips on the table don't count). */
 export const interestOn = (chips: number) => Math.min(CHIPS.interestCap, Math.floor(chips / CHIPS.interestPer));
@@ -827,7 +815,6 @@ export function scoreParts(run: RunState): [string, number][] {
     ['THE OWNER', Math.round(owner * TURBO.hp) * SCORE.ownerHit + (run.endless?.turbo ? SCORE.ownerBeat : 0)],
     ['CLEARED', run.won || run.endless ? SCORE.clear : 0],
   ];
-  if (run.daily && run.won) parts.push(['HP LEFT', Math.max(0, run.player.hp)]);
   return parts.filter(([, n]) => n > 0);
 }
 /** The run's score: its parts x the stake. */
@@ -871,11 +858,9 @@ export function enemyHp(run: RunState, e: EnemyDef): number {
   const gold = e.isBoss && run.stake >= STAKE.fasterAll ? STAKE.goldBossHp : 1;
   const tutorial = run.tutorial && run.act === 1 && e.depth === 0 ? TUTORIAL_OPENER_MUL : 1;
   const loop = run.endless ? endlessMul(ENDLESS.hp, run.endless.loop) : 1;
-  // THE DAILY RUN plays act 3 at base-stake numbers: its act 3 (the Dealer included) is lighter.
-  const daily = fixedRun(run) && run.act >= 3 && !run.endless ? TUNE.dailyAct3 : 1;
   // TONIGHT'S RULE HIGH LIMIT (playtest: the cards showed the HP without it).
   const limit = nightId(run) === 'limit' ? NIGHT.limitHp : 1;
-  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * daily * limit));
+  return Math.min(ENDLESS.clamp, unitsRound(baseEnemyHp(run, e) * gold * tutorial * loop * limit));
 }
 
 function baseEnemyHp(run: RunState, e: EnemyDef): number {
@@ -883,8 +868,8 @@ function baseEnemyHp(run: RunState, e: EnemyDef): number {
   if (!e.isBoss) return e.hp;
   // ENDLESS: the loop bosses are a multiple of an act 3 regular's HP (then x the loop's growth).
   if (run.endless) return unitsRound(TUNE.endlessBossBase * (e.boss === 'house' ? ENDLESS.houseHp : e.boss === 'dealer' ? ENDLESS.dealerHp : ENDLESS.wheelHp));
-  // GREEN+: THE WHEEL STARTS FAST (3 chips a turn), so it gets less HP. THE DAILY RUN's WHEEL is the eased one too.
-  if (e.boss === 'wheel') return unitsRound(TUNE.wheelHp * (run.stake >= STAKE.wheelFast || fixedRun(run) ? TUNE.greenWheel : 1));
+  // GREEN+: THE WHEEL STARTS FAST (3 chips a turn), so it gets less HP.
+  if (e.boss === 'wheel') return unitsRound(TUNE.wheelHp * (run.stake >= STAKE.wheelFast ? TUNE.greenWheel : 1));
   if (e.boss === 'dealer') return TUNE.dealerHp;
   return e.hp;
 }
@@ -1570,8 +1555,8 @@ export const NIGHTS: Record<NightId, { title: string; text: string }> = {
 };
 export const NIGHT_IDS = Object.keys(NIGHTS) as NightId[];
 /** TONIGHT'S RULE: what the loop plays under, for both machines. */
-/** TONIGHT'S RULE in play: the ENDLESS path's, or THE DAILY RUN's of the day. */
-export const nightId = (run: RunState): NightId | undefined => run.endless?.night ?? run.dailyNight;
+/** TONIGHT'S RULE in play: the ENDLESS path's. */
+export const nightId = (run: RunState): NightId | undefined => run.endless?.night;
 export const nightOf = (run: RunState) => { const n = nightId(run); return n ? NIGHTS[n] : null; };
 /** Each loop cleared grows the pot (the ENDLESS score) by this, on top of x1.5. */
 export const POT_PER_LOOP = 1500;

@@ -76,7 +76,7 @@ export interface Profile {
   achievements: Record<string, number>;
   challenges: Record<string, ChallengeRecord>;
   stats: MetaStats;
-  /** The player's name on the leaderboards (later: the Steam name), and the title they show. */
+  /** The player's name (from the online boards, now after launch; later the Steam name), and the title they show. */
   name?: string;
   /** The name screen was offered after the first run and skipped: don't ask again (no name = no online scores). */
   nameAsked?: boolean;
@@ -117,7 +117,6 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
     maxHp: run.player.maxHp,
     chips: run.player.chips,
     ...(tutorial ? { tutorial: true } : {}),
-    ...(run.daily ? { daily: run.daily, hpLeft: Math.max(0, run.player.hp) } : {}),
     ...(run.endless ? { loops: run.endless.loop - 1 } : {}),
     // THE RUN SCORE (2026-10-14): worked out at the end, with its parts.
     score: runScoreOf(run),
@@ -266,7 +265,7 @@ function achievementCtx(p: Profile, e: RunEntry, collectionTotal = Infinity) {
   };
 }
 
-/** Names the boards refuse (also enforced by supabase/schema.sql's claim_name). */
+/** Names the boards refused (the online boards are after launch: their code is on the parked-rebuild branch). */
 export const NAME_BLOCKLIST = ['FUCK', 'SHIT', 'CUNT', 'NIGG', 'FAGG', 'NAZI', 'HITLER', 'KKK', 'WHORE', 'SLUT', 'PUSSY', 'ASSHOLE', 'BITCH', 'RETARD', 'PENIS', 'VAGINA', 'DILDO', 'TWAT', 'WANK', 'CHINK', 'KIKE', 'TRANNY'];
 export const nameBlocked = (name: string) => NAME_BLOCKLIST.some((w) => name.replace(/-/g, '').includes(w));
 

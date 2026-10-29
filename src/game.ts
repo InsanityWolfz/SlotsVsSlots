@@ -7,7 +7,6 @@ import { OVERTIME, overtimeMul, overtimeRound, TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
 import { allInRange, DEALER_HANDS, DEALER_RULES, Fight, highRollerMul } from './core/fight';
 import { roomFor, type Scene } from './render/rooms';
-import { dailyCabinet, dailyKey, dailySeed, dailySpent } from './core/daily';
 import { turnRow, type TurnRow } from './core/log';
 import { RELICS } from './core/relics';
 import {
@@ -16,8 +15,6 @@ import {
   chooseRoute,
   createRun,
   draftOffers,
-  applyDaily,
-  nightOf,
   fightConfig,
   fightLabel,
   migrateRun,
@@ -72,11 +69,7 @@ import { desktop, steamUnlock, VERSION } from './build';
 const RELIC_TIP_TOP = 232;
 import { Coach, TUTORIAL } from './ui/coach';
 import { collectionTotal, heroSprite, Menus } from './ui/menus';
-import { cleanName, nameBlocked, shownTrim, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, shownTitle, type MetaGain, type Profile, type RunEntry } from './core/profile';
-import { levelOf } from './core/meta';
-import { needsName, playerId, playerName } from './net/identity';
-import { claimName, submitScore } from './net/leaderboard';
-import { online } from './net/config';
+import { shownTrim, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, type MetaGain, type Profile, type RunEntry } from './core/profile';
 
 const CFG_KEY = 'slotvslot.config.v3';
 const PREFS_KEY = 'slotvslot.prefs.v2';
@@ -332,15 +325,6 @@ export class Game {
       onNewRun: () => this.chooseCabinet(),
 
       onTutorial: () => this.startTutorial(),
-      onDaily: () => this.startDaily(),
-      needsName: () => needsName(this.profile),
-      onName: (name) => this.pickName(name),
-      onNameSkip: () => {
-        this.profile.nameAsked = true;
-        this.pendingPost = null;
-        this.saveProfile();
-      },
-      playerName: () => playerName(this.profile),
       setTitle: (title) => {
         this.profile.title = title;
         this.saveProfile();
@@ -385,13 +369,12 @@ export class Game {
         return res;
       },
       onEncounterDone: () => this.advance(),
-      // After the first run: offer the (optional) leaderboard name on the way out of the run-over screen.
       // (CASH OUT / NEW RUN from the run-over screen: the Dealer's saved LET IT RIDE choice is spent.)
       onNewRun: () => {
         if (this.phase === 'over') clearRunSave();
-        this.afterNamePrompt(() => this.chooseCabinet());
+        this.chooseCabinet();
       },
-      onMenu: () => this.afterNamePrompt(() => this.showMenu()),
+      onMenu: () => this.showMenu(),
       onLetItRide: () => this.letItRide(),
       onBuy: (i) => this.buyItem(i),
       onReroll: () => this.rerollShop(),
@@ -507,7 +490,7 @@ export class Game {
     if (ride) {
       const prev = runScore(ride);
       Object.assign(ride, runEntry(run, ride.at, !!run.tutorial), { won: true });
-      this.afterRecord(ride, recordMeta(this.profile, ride, collectionTotal(), prev), true);
+      this.afterRecord(ride, recordMeta(this.profile, ride, collectionTotal(), prev));
       return;
     }
     const entry = runEntry(run, Date.now(), !!run.tutorial);
@@ -521,103 +504,11 @@ export class Game {
     this.afterRecord(entry, recordMeta(this.profile, entry, collectionTotal()));
   }
 
-  /** META: save, show what the run earned, and post it to the leaderboards. */
-  private afterRecord(entry: RunEntry, gain: MetaGain, ride = false): void {
+  /** META: save and show what the run earned. (Online boards went to after launch, 2026-10-29: Steam's come first.) */
+  private afterRecord(_entry: RunEntry, gain: MetaGain): void {
     for (const a of gain.achievements) steamUnlock(a.id);
     this.saveProfile();
     this.screens.setMeta(gain);
-    if (entry.tutorial || !online()) return;
-    // No name yet: the score waits for one (the name is offered as you leave this screen; SKIP drops it).
-    if (!playerName(this.profile)) {
-      this.pendingPost = { entry, ride };
-      return;
-    }
-    this.postScores(entry, ride);
-  }
-
-  /** A finished run's score, waiting for the player to pick a name (null: none). */
-  private pendingPost: { entry: RunEntry; ride: boolean } | null = null;
-
-  /** The run-over screen's way out: the name screen first if it's due (once, after the first run), then `go`. */
-  private afterNamePrompt(go: () => void): void {
-    if (online() && needsName(this.profile)) {
-      this.showMenu();
-      this.menus.showName(go);
-      return;
-    }
-    go();
-  }
-
-  /** Post a finished run to its boards (ALL TIME, the DAILY or the WEEKLY). */
-  private postScores(entry: RunEntry, ride: boolean): void {
-    // ALL TIME takes standard runs (not the daily, weekly or challenges: EXPERT_PLAYTEST_9 D1). Scores post when the run
-    // ends or at the Dealer win, never again from an endless ride (its pot would swamp every board). The daily keeps its one
-    // score; the weekly takes every try (the board shows your best).
-    const standard = !entry.daily && !entry.weekly && !entry.challenge;
-    const boards = ride ? [] : [...(standard ? ['all'] : []), ...(entry.daily ? [`daily:${entry.daily}`] : []), ...(entry.weekly ? [`weekly:${entry.weekly}`] : [])];
-    if (!boards.length) return this.screens.setOnline('');
-    const main = boards[boards.length - 1];
-    this.screens.setOnline('POSTING YOUR SCORE...');
-    void this.claimed().then(async (ok) => {
-      if (!ok) return this.screens.setOnline(this.profile.name ? '' : 'YOUR NAME WAS TAKEN: PICK A NEW ONE AT THE MENU');
-      const ranks = await Promise.all(
-        boards.map((board) =>
-          submitScore({
-            name: playerName(this.profile),
-            title: shownTitle(this.profile),
-            pid: playerId(this.profile),
-            board,
-            score: runScore(entry),
-            cabinet: entry.cabinet,
-            stake: entry.stake,
-            won: entry.won,
-            level: levelOf(this.profile.xp).level,
-          }),
-        ),
-      );
-      const r = ranks[boards.indexOf(main)];
-      const where = main === 'all' ? 'ALL TIME' : main.startsWith('daily') ? 'DAILY' : 'WEEKLY';
-      this.screens.setOnline(r ? `RANK ${r} ${where}` : r === 0 ? 'SCORE POSTED' : "COULDN'T POST YOUR SCORE");
-    });
-  }
-
-  /** The name is claimed on the server (once a session; a name picked offline is claimed when the boards open). */
-  private nameClaimed = false;
-  private async claimed(): Promise<boolean> {
-    if (this.nameClaimed) return true;
-    const r = await claimName(playerName(this.profile), playerId(this.profile));
-    this.saveProfile();
-    if (r.startsWith('have:')) {
-      const mine = cleanName(r.slice(5));
-      if (mine) this.profile.name = mine;
-      this.saveProfile();
-    }
-    this.nameClaimed = r === 'ok' || r.startsWith('have:');
-    // Picked offline and someone got there first (or the boards refuse it): ask again at the menu.
-    if (r === 'taken' || r === 'blocked') {
-      delete this.profile.name;
-      this.saveProfile();
-    }
-    return this.nameClaimed;
-  }
-
-  /** First launch: claim a name (offline keeps it locally and claims it later). */
-  private async pickName(raw: string): Promise<string> {
-    const name = cleanName(raw);
-    if (!name) return 'taken';
-    if (nameBlocked(name)) return 'blocked';
-    const r = await claimName(name, playerId(this.profile));
-    if (r === 'taken' || r === 'blocked') return r;
-    this.profile.name = r.startsWith('have:') ? cleanName(r.slice(5)) || name : name;
-    this.nameClaimed = r !== 'offline';
-    this.saveProfile();
-    // The run that just ended goes up now.
-    if (this.pendingPost) {
-      const { entry, ride } = this.pendingPost;
-      this.pendingPost = null;
-      this.postScores(entry, ride);
-    }
-    return r;
   }
 
   /** RESET SAVE (main menu): unlocks, stakes, collection and hiscores. Settings stay. */
@@ -787,8 +678,8 @@ export class Game {
     const run = s?.run;
     if (!s || s.v !== 1 || !run || typeof run.seed !== 'number' || !run.player || !run.map || !Array.isArray(run.map.routes) || !Array.isArray(run.records)) return null;
     if (!(ALL_CABINETS as string[]).includes(run.cabinet) || (run.over && s.at !== 'ride')) return null;
-    // A SCORE RACE run (the mode left the game in phase 2, 2026-10-29) can't play on: it's dropped.
-    if ((run as { race?: boolean }).race) return null;
+    // A SCORE RACE or DAILY RUN run (both left the game in phase 2, 2026-10-29) can't play on: it's dropped.
+    if ((run as { race?: boolean }).race || (run as { daily?: string }).daily) return null;
     // A game update may have removed a relic or Charm the save still holds (STEAM_QA_1 Q5): drop what no longer exists.
     if (Array.isArray(run.player.relics)) run.player.relics = run.player.relics.filter((r) => r in RELICS);
     if (Array.isArray(run.player.gilded)) run.player.gilded = run.player.gilded.filter((g) => g && g.enh in CHARM_VALUE);
@@ -847,19 +738,6 @@ export class Game {
       this.afterBonus(last);
     } else this.showRunStart();
     this.syncButtons();
-  }
-
-  /** THE DAILY RUN: today's seed and machine, base stake. The try is spent now (quitting doesn't give it back). */
-  startDaily(): void {
-    const key = dailyKey();
-    if (dailySpent(key, this.profile.lastDaily)) return;
-    this.profile.lastDaily = key;
-    this.saveProfile();
-    this.startRun(dailySeed(key), dailyCabinet(key), 0);
-    if (this.run) applyDaily(this.run, key);
-    // The first fight was set up before the run knew it was the daily: rebuild it on the day's seed.
-    this.newFight(false, null, fightConfig(this.run!, this.cfg), true);
-    this.checkpoint('next');
   }
 
   /** Tuning panel "apply": restart with the new base config. */
@@ -928,9 +806,7 @@ export class Game {
       if (run.won && run.act >= 3 && !run.endless) save(RUN_KEY, { v: 1, at: 'ride', version: VERSION, run });
       this.skipTutorial();
       if (run.endless) this.screens.setStakeUnlockedNow('');
-      // The daily is a side road: no unlocks from it.
-      if (run.daily) this.screens.setStakeUnlockedNow('');
-      this.screens.setUnlockedNow(run.endless || run.daily ? [] : this.checkUnlocks(run));
+      this.screens.setUnlockedNow(run.endless ? [] : this.checkUnlocks(run));
       this.screens.showOver(run);
     }
     else this.afterBonus(record);
@@ -1132,8 +1008,6 @@ export class Game {
         pot: this.fight.pot,
         potPunch: 1,
         fightLabel: this.run && inRun ? fightLabel(this.run) : 'SANDBOX',
-        // THE DAILY RUN's TONIGHT'S RULE, shown all run (ENDLESS names its rule in the fight label).
-        twist: this.run && inRun && this.run.daily ? (nightOf(this.run)?.title ?? '') : '',
         allIn: false,
         ...(this.fight.isWheel ? { bets: [...this.fight.bets], betsLeft: (this.fight.sides.enemy.ability?.every ?? 3) - this.fight.sides.enemy.charge, betPer: this.fight.betPer(), betPunch: 1, wheelFast: this.fight.fast, wheelAngle: 0, wheelSpeed: 0.6 } : {}),
         chipsEaten: 0,
@@ -1288,7 +1162,7 @@ export class Game {
     this.syncButtons();
   }
 
-  /** ABANDON RUN: the run is thrown away (the daily try stays spent). */
+  /** ABANDON RUN: the run is thrown away. */
   private abandonRun(): void {
     clearRunSave();
   }
@@ -1451,7 +1325,7 @@ export class Game {
     // The RESULTS card takes Enter / A / Space itself (PRESS TO CONTINUE).
     if ((k === 'enter' || k === ' ') && this.screens.active && !this.menus.isOpen && this.screens.pressResults()) return true;
     // Enter / A with no focus yet: show it (on the screen's first target) instead of doing nothing.
-    if (k === 'enter' && !this.focus.visible && !(this.menus.isOpen && (this.menus.mode === 'loading' || this.menus.mode === 'name'))) {
+    if (k === 'enter' && !this.focus.visible && !(this.menus.isOpen && this.menus.mode === 'loading')) {
       const t = this.focus.move('down', this.navTargets());
       if (t) {
         this.pointerMove(t.x, t.y);
@@ -1877,7 +1751,6 @@ export class Game {
     if (this.phase === 'title') return;
     // Only a boss gets a label here (the map already said FIGHT n OF 5): ROUND and whose turn tell the story.
     if (g.fightLabel.includes('BOSS') || g.fightLabel.startsWith('LOOP') || g.fightLabel === 'SANDBOX') drawText(ctx, g.fightLabel, cx, cy - 112, 2, g.fightLabel === 'SANDBOX' ? COLORS.textDim : g.fightLabel.includes('BOSS') ? '#ff6a5a' : COLORS.goldLight);
-    if (g.twist) drawText(ctx, g.twist, cx, cy - 132, 1.25, '#ff9a3a');
     // OVERTIME: its countdown, then its multiplier, from the turn on screen (the engine runs ahead of it).
     if (this.fight.cfg.overtime && g.turn > 0) {
       const left = OVERTIME.from - overtimeRound(g.turn);

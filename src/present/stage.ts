@@ -59,8 +59,6 @@ export interface Stage {
     pot: number;
     potPunch: number;
     fightLabel: string;
-    /** THE DAILY RUN's TONIGHT'S RULE, shown all run. */
-    twist?: string;
     allIn: boolean;
     /** THE WHEEL (presented): chips on your reels, turns to NO MORE BETS, what one chip hits for, SPINS FASTER, and the
      * topper's spin (angle, and how fast it turns now). */

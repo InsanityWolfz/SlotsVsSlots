@@ -56,8 +56,7 @@ import { runSummary } from '../core/runLog';
 import { VERSION } from '../build';
 import { drawKeywordBoxes, drawRich, keywordsIn } from './keywords';
 import { heroSprite } from './menus';
-import { CHIP_SCORE, runEntry, runScore } from '../core/profile';
-import { dailyShare } from '../core/daily';
+import { CHIP_SCORE } from '../core/profile';
 import { RelicTips } from './relicTip';
 
 
@@ -944,7 +943,6 @@ export class RunScreens {
       ];
       this.rideOffer = true;
     }
-    // THE DAILY RUN: a line to share, and a button that copies it.
     // COPY RUN: the whole run as text, to paste into a chat for balance checks (runLog.ts).
     const copyRun = this.minorBtn('COPY RUN', W - 130, H - 34, 210, 40, () => {
       void navigator.clipboard?.writeText(runSummary(run, VERSION)).then(
@@ -953,23 +951,16 @@ export class RunScreens {
       );
     });
     this.buttons.push(copyRun);
-    this.shareLine = run.daily ? dailyShare(run.daily, CABINETS[run.cabinet].hero, nightOf(run)?.title ?? '-', runScore(runEntry(run, 0)), run.records) : '';
     this.openResults();
   }
-  /** THE DAILY RUN: the finished run's share line. */
-  private shareLine = '';
-  /** META: what the finished run earned (XP, level, achievements, titles), and its leaderboard post. */
+  /** META: what the finished run earned (XP, level, achievements, titles). */
   private meta: MetaGain | null = null;
-  private onlineLine = '';
   setMeta(g: MetaGain): void {
     this.meta = g;
-    this.onlineLine = '';
   }
-  /** THE RESULTS card over the run-over table: XP filling, a level up, achievements, titles, unlocks, the share line. */
+  /** THE RESULTS card over the run-over table: XP filling, a level up, achievements, titles, unlocks. */
   private results: { xp: number; fill: Promise<void> | null; done: boolean; level: number; pop: number } | null = null;
   private resultsHit: Hit | null = null;
-  /** THE DAILY RUN: COPY RESULT, on the RESULTS card under the share line. */
-  private resultsCopy: Btn | null = null;
   /** Enter / A on the RESULTS card: it says PRESS TO CONTINUE, so the first press continues (R13 B4). */
   pressResults(): boolean {
     if (this.mode !== 'over' || !this.results || !this.resultsHit) return false;
@@ -978,7 +969,7 @@ export class RunScreens {
   }
   private openResults(): void {
     const g = this.meta;
-    const worth = g && (g.xp > 0 || g.achievements.length || g.titles.length || g.trims.length || this.unlockedNow.length || this.shareLine);
+    const worth = g && (g.xp > 0 || g.achievements.length || g.titles.length || g.trims.length || this.unlockedNow.length);
     if (!g || !worth) {
       this.results = null;
       return;
@@ -989,17 +980,7 @@ export class RunScreens {
       if (!r.done) return this.finishResults(r);
       this.results = null;
       this.resultsHit = null;
-      this.resultsCopy = null;
     });
-    const copy = this.shareLine
-      ? this.minorBtn('COPY RESULT', W / 2, 584, 240, 40, () => {
-          void navigator.clipboard?.writeText(this.shareLine).then(
-            () => (copy!.label = 'COPIED!'),
-            () => (copy!.label = 'COPY FAILED'),
-          );
-        })
-      : null;
-    this.resultsCopy = copy;
     // The bar fills over ~1.6 s (a click skips it); each level crossed pops a banner.
     r.fill = this.ui
       .tween({
@@ -1032,10 +1013,6 @@ export class RunScreens {
     this.sounds.fanfareJackpot();
     void this.ui.tween({ from: 1, to: 0, dur: 0.9, onUpdate: (v) => (r.pop = v) });
   }
-  setOnline(text: string): void {
-    this.onlineLine = text;
-  }
-
   hide(): void {
     this.mode = 'none';
   }
@@ -1057,7 +1034,7 @@ export class RunScreens {
   private relicRects: { x: number; y: number; w: number; h: number }[] = [];
 
   private all(): Hit[] {
-    if (this.mode === 'over' && this.results && this.resultsHit) return this.resultsCopy ? [this.resultsCopy, this.resultsHit] : [this.resultsHit];
+    if (this.mode === 'over' && this.results && this.resultsHit) return [this.resultsHit];
     return [...this.cards.filter((c) => c.enabled), ...this.buttons, ...this.shopHits.filter((_, i) => !this.shopItems[i]?.sold), ...this.shopTags.filter((_, i) => !this.shopItems[i]?.sold)];
   }
 
@@ -1394,7 +1371,7 @@ export class RunScreens {
     const start = this.draftKind === 'start';
     // ENDLESS: the pick after a loop's boss is the new loop's: say the loop was cleared.
     const loopDone = !!last && !!this.run?.endless && last.loop !== undefined && last.loop < this.run.endless.loop;
-    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? `${last.enemy} DEFEATED!` : start ? (this.run?.daily ? `DAILY ${this.run.daily.slice(5)}${nightOf(this.run) ? `: ${nightOf(this.run)!.title}` : ''}` : 'A NEW RUN') : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
+    drawText(ctx, loopDone ? `LOOP ${last!.loop} CLEARED! SCORE ${fmtNum(endlessScore(this.run!))}` : last ? `${last.enemy} DEFEATED!` : start ? 'A NEW RUN' : 'CHOOSE A REWARD', CX, 30, 4, COLORS.goldLight, { alpha: Math.max(0, (this.fade - 0.6) / 0.4) });
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
       const chips = last.chips ? `  -  +${last.chips} CHIPS` : '';
@@ -2838,8 +2815,6 @@ export class RunScreens {
 
   private drawOver(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
-    // The leaderboard post's result (the rest of the meta is on the RESULTS card).
-    if (this.onlineLine) drawText(ctx, this.onlineLine, CX, 563, 1.5, COLORS.goldLight);
     const trueEnding = run.won && run.act >= 3;
     const busted = !!run.endless;
     drawText(ctx, busted ? (run.endless!.turbo ? `YOU BROKE THE BANK! ${fmtNum(endlessScore(run))}` : `BUSTED ON LOOP ${run.endless!.loop}: SCORE ${fmtNum(endlessScore(run))}`) : trueEnding ? 'THE DEALER FOLDS!' : run.won ? 'THE WHEEL STOPS!' : 'RUN OVER', CX, 44, busted ? 5 : 6, run.won && !busted ? COLORS.goldLight : busted ? '#ffd23f' : COLORS.danger);
@@ -2992,8 +2967,6 @@ export class RunScreens {
       if (g.achievements.length > 4) drawText(ctx, `+${g.achievements.length - 4} MORE ON THE TROPHIES SCREEN`, W / 2, y + 156, 1.5, COLORS.textDim);
       y += 172;
     }
-    if (this.shareLine) drawText(ctx, this.shareLine, W / 2, 548, 1.5, '#7dff7a');
-    if (this.resultsCopy) this.drawButton(ctx, this.resultsCopy, 0);
     drawText(ctx, r.done ? 'PRESS TO CONTINUE' : 'PRESS TO SKIP', W / 2, 620, 2, r.done ? COLORS.text : COLORS.textDim, { alpha: 0.8 + 0.2 * Math.sin(performance.now() / 200) });
   }
 }

@@ -73,10 +73,9 @@ describe('meta: profile save', () => {
 });
 
 describe('meta: EXPERT_PLAYTEST_9 rules', () => {
-  it('the daily never earns a machine clear or the Dealer', () => {
+  it('a daily run (from before it went to after launch) never earns a machine clear or the Dealer', () => {
     const p = emptyProfile();
     const ids = recordMeta(p, entry({ won: true, acts: 3, act: 3, fights: 18, total: 18, daily: '2026-10-02', cabinet: 'tesla' }), 40).achievements.map((a) => a.id);
-    expect(ids).toContain('daily_win');
     expect(ids).not.toContain('dealer');
     expect(ids).not.toContain('clear_tesla');
   });

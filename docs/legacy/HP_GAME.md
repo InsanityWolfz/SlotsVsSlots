@@ -136,14 +136,14 @@ was tuned for feel from two fresh-eyes playtests.
 | 2 | THE WHEEL | Places bet chips on your reels. Your pairs sweep them. At NO MORE BETS, every chip left hits for a share of your max HP. Spins faster at half HP | Rework in progress, untuned |
 | 3 | THE DEALER | Three hands, each with its own HP bar (27/31/42% of its HP). 1 THE DEAL: every 3 turns a BUST (your best reel's payline pays nothing next spin). 2 RAISE: its hits x1.5, still BUSTs. 3 ALL IN: every 2 turns, 25-40% of your max HP through shields | Reworked 2026-10-12; spread by machine is still wide (see ROADMAP) |
 
-Act 3 is played at stake GREEN and up, and always in THE DAILY RUN. **ENDLESS** comes after the Dealer:
+Act 3 is played at stake GREEN and up. **ENDLESS** comes after the Dealer:
 KEEP PLAYING goes on into loops until you bust (user, 2026-10-14: no RIDE AGAIN / CASH OUT); your score is the pot
 (x1.5 + 1500 a loop cleared) plus your chips x10. Sim (GREEN, the bot never stopping, before THE OWNER): loops cleared median 4.
 **TONIGHT'S RULE** (user, 2026-10-14): each loop deals two different rules, one per path (user: the rule is part of the
 route choice; the loop's opener plays without one), for both machines, never last loop's (`NIGHTS` in `src/core/run.ts`): HAPPY HOUR (jackpots pay x2), HIGH LIMIT (wins pay x2 chips, enemies +15% HP),
 LUCKY NIGHT (2 more wilds a reel), SHOWDOWN (every hit x1.5), IRON NIGHT (shields block x2), FAST NIGHT (abilities 1
 turn faster, meters fill x1.5). Shown on the path pick, the side panel and the fight label. TONIGHT'S RULE is ENDLESS's
-only twist now (HOUSE EDGES are cut, 2026-10-15); THE DAILY RUN plays all run under a rule of the day (any but HIGH LIMIT).
+only twist now (HOUSE EDGES are cut, 2026-10-15).
 Sim GREEN: loops cleared median 4 -> 5.
 **THE OWNER, the TURBO boss** (user, 2026-10-14: a new boss, insanely hard; then: make him a fight, not a wall): loop
 5's boss, the man who owns the casino (`OWNER`, `OWNER_RULES`, `TURBO` in `src/core/enemies.ts`; his office in the room's
@@ -382,7 +382,7 @@ Every run, ENDLESS or not, scores the same way (`SCORE`, `scoreParts`, `runScore
 100 a fight won, 300 an elite, 1,000 a boss (act and loop bosses), 2 a chip EARNED (fights and encounters; spending never
 costs score), 100 a level gained (your symbols above their start), 100 a relic (250 a legendary), 25 a
 Charm on your reels, 1,000 for each of THE OWNER's 11 HP you take and 10,000 for beating him, 2,000 for clearing the run
-(the daily adds HP left on a win); all x(1 + 0.5 a stake). The path screen shows the score so far, a cleared loop says
+all x(1 + 0.5 a stake). The path screen shows the score so far, a cleared loop says
 LOOP N CLEARED! SCORE X, and the run-over screen shows it with its biggest parts. Entries saved before it keep the old
 formula. Sim (GREEN, 200 runs a machine, bot riding): medians KNIGHT 13.9K, TESLA 11.7K, JUKEBOX 12.2K, JOKER 14.7K,
 BANKROLL 17.6K; ENDLESS riders 33-54K. Share of all points: bosses 28%, relics 19%, elites 11%, fights 11%, cleared 7%,
@@ -449,10 +449,11 @@ tray), `drawScoreboard`, `useTool`.
   sells +1 HOLD / NUDGE / RESPIN for the run (8 / 10 / 12 chips; `run.raceTools`) instead of HEAL and MAX HP.
 
 ## Modes and meta
-- **Modes:** the normal run, THE DAILY RUN and ENDLESS (THE WEEKLY and CHALLENGES are cut, 2026-10-15; old hiscore
-  entries keep their tags).
-- **Meta:** CONTINUE (saves between fights), unlocks, achievements, collection, hiscores, and online leaderboards
-  (Supabase: `src/net`, `supabase/schema.sql`; Steam leaderboards replace them at the Steam launch).
+- **Modes:** the normal run and ENDLESS. THE DAILY RUN went to after launch (user, 2026-10-29; its code is on the
+  `parked-rebuild` branch; a saved daily run is dropped on load, and its three achievements left the list: earned ones
+  stay in the save). THE WEEKLY and CHALLENGES were cut 2026-10-15. Old hiscore entries keep their tags.
+- **Meta:** CONTINUE (saves between fights), unlocks, achievements, collection, local hiscores. The online leaderboards
+  (Supabase) and the name screen went to after launch with the daily; Steam's leaderboards come first.
 - **Saves:** localStorage keys `slotvslot.prefs.v2` and `slotvslot.profile.v1`. **Never rename them.** Saves are cleaned on load.
 - **Platforms:** the web build deploys to GitHub Pages from `main`. `desktop/` is the Electron + Steamworks wrapper (`npm run build:steam`).
 

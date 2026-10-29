@@ -2,7 +2,7 @@
 // npx tsx tools/sim/fuzz.ts [runsPerCell]
 import { defaultConfig, type Enh, type SymbolId } from '../../src/core/config';
 import { CABINET_ORDER } from '../../src/core/cabinets';
-import { applyDaily, type RunState } from '../../src/core/run';
+import type { RunState } from '../../src/core/run';
 import { levelOf } from '../../src/core/meta';
 import { emptyProfile, recordMeta, runEntry, runScore, sanitizeProfile } from '../../src/core/profile';
 import { playRun } from '../../src/sim/play';
@@ -36,7 +36,6 @@ for (const cab of CABINET_ORDER) {
   modes.push({ tag: `${cab} white`, cab, stake: 0, act3: false });
   modes.push({ tag: `${cab} green`, cab, stake: 2, act3: true });
   modes.push({ tag: `${cab} gold`, cab, stake: 5, act3: true });
-  modes.push({ tag: `${cab} daily`, cab, stake: 0, act3: false, setup: (r) => applyDaily(r, '2026-10-02') });
   // THE SCORE RACE (sandbox).
   modes.push({ tag: `${cab} race`, cab, stake: 2, act3: true, setup: (r) => (r.race = true) });
 }

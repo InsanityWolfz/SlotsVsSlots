@@ -3,9 +3,6 @@ import { CABINETS, CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import type { Enh, RelicId } from '../core/config';
 import { foundCount, runScore, shownTitle, shownTrim, type Profile, type RunEntry } from '../core/profile';
 import { ACHIEVEMENTS, allTitles, TRIMS, levelOf, titlesOwned } from '../core/meta';
-import { online } from '../net/config';
-import { topScores, type ScoreRow } from '../net/leaderboard';
-import { dailyCabinet, dailyKey, dailySpent } from '../core/daily';
 import { LEGENDARY, RELICS, RELIC_TIER } from '../core/relics';
 import { CHARM_SYMBOLS, charmName, charmRuleText } from '../core/charms';
 import { desktop, DESKTOP, STEAM, VERSION } from '../build';
@@ -26,9 +23,7 @@ import { wrap } from './runScreens';
  * Out-of-run screens: LOADING (warms the sprite cache, then asks for a click so audio can start),
  * the MAIN MENU, the COLLECTION log and personal HISCORES.
  */
-export type MenuMode = 'none' | 'loading' | 'name' | 'main' | 'modes' | 'progress' | 'settings' | 'collection' | 'hiscores' | 'trophies';
-/** HISCORES tabs: your own runs, or the online boards. */
-export type ScoreTab = 'mine' | 'daily' | 'all';
+export type MenuMode = 'none' | 'loading' | 'main' | 'progress' | 'settings' | 'collection' | 'hiscores' | 'trophies';
 
 // One value each now (Charms have no levels, user 2026-10-15): the text comes from the rule itself, so it can't drift.
 const who: Record<Enh, string> = {
@@ -78,7 +73,6 @@ const LOAD_MIN = 1.3;
 const TOUCH = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches ?? false);
 const ROWS_PER_PAGE = 7;
 /** Name entry box centre; achievement grid top. */
-const NAME_Y = 360;
 const TR_Y = 384;
 /** TROPHIES: the trim picker row. */
 const TRIM_Y = 302;
@@ -100,13 +94,6 @@ export class Menus {
   private ready = false;
   // hiscores
   private sort: 'best' | 'recent' = 'best';
-  private tab: ScoreTab = 'mine';
-  /** Online board rows by board key (null while loading, 'error' if it failed). */
-  private boards = new Map<string, ScoreRow[] | null | 'error'>();
-  // name entry (a DOM input over the canvas: phones get their keyboard)
-  private nameInput: HTMLInputElement | null = null;
-  private nameStatus = '';
-  private nameBusy = false;
   // trophies: the achievement under the pointer
   private trophyTip = '';
   /** TROPHIES: each title chip's hover line. */
@@ -128,13 +115,6 @@ export class Menus {
     private cb: {
       onNewRun: () => void;
       onTutorial: () => void;
-      /** THE DAILY RUN (one try a day). */
-      onDaily: () => void;
-      /** Name entry: claim the name; resolves to the claim result ('ok', 'taken', 'have:NAME', 'offline'). */
-      needsName: () => boolean;
-      onName: (name: string) => Promise<string>;
-      onNameSkip: () => void;
-      playerName: () => string;
       setTitle: (title: string) => void;
       setTrim: (id: string) => void;
       onReset: () => void;
@@ -154,7 +134,7 @@ export class Menus {
     },
   ) {}
 
-  /** Keyboard / gamepad focus targets (no focus while typing a name). */
+  /** Keyboard / gamepad focus targets. */
   navTargets(): Button[] {
     if (this.mode === 'loading') return [];
     return this.buttons.filter((b) => b.visible && b.enabled);
@@ -171,7 +151,6 @@ export class Menus {
   }
 
   private open(mode: MenuMode): void {
-    if (mode !== 'name') this.dropInput();
     this.mode = mode;
     this.back = null;
     this.icons.clear();
@@ -185,12 +164,6 @@ export class Menus {
   hide(): void {
     this.mode = 'none';
     this.buttons = [];
-    this.dropInput();
-  }
-
-  private dropInput(): void {
-    this.nameInput?.remove();
-    this.nameInput = null;
   }
 
   showLoading(): void {
@@ -201,7 +174,6 @@ export class Menus {
   }
 
   showMain(): void {
-    // No name yet (first launch, or the one picked offline was taken): pick one first.
     this.open('main');
     const x = W / 2;
     const first = !this.cb.tutorialDone();
@@ -234,16 +206,13 @@ export class Menus {
       newRun.opts.primary = true;
       this.icons.set(newRun, 'iconNewRun');
     }
-    // First time here: the TUTORIAL sits right under NEW RUN and breathes (not with a saved run: it's in PLAY MODES).
-    if (first && !saved) {
-      const tut = this.btn('TUTORIAL', x, y, 400, 54, () => this.cb.onTutorial(), 3);
-      tut.opts.idlePulse = true;
-      this.icons.set(tut, 'iconTutorial');
-      y += 66;
-    }
-    this.icons.set(this.btn('PLAY MODES', x, y, 400, 54, () => this.showModes(), 3), 'chip');
+    // TUTORIAL under NEW RUN (PLAY MODES is gone: THE DAILY RUN went to after launch, 2026-10-29); it breathes the first
+    // time here, and asks before it replaces a saved run.
+    const tut = this.btn('TUTORIAL', x, y, 400, 54, () => this.cb.onTutorial(), 3);
+    tut.opts.idlePulse = first && !saved;
+    this.icons.set(tut, 'iconTutorial');
+    this.guardSaved(tut);
     this.icons.set(this.btn('PROFILE', x, y + 66, 400, 54, () => this.showProgress(), 3), 'iconCollection');
-    // HISCORES back on the main screen (user, 2026-10-09: the online boards are a front-door feature).
     this.icons.set(this.btn('HISCORES', x, y + 132, 400, 54, () => this.showHiscores(), 3), 'iconHiscores');
     const settings = this.btn('SETTINGS', W - 90, H - 30, 150, 34, () => this.showSettings(), 1.5);
     settings.opts.quiet = true;
@@ -318,28 +287,6 @@ export class Menus {
   /** Labels that follow live state (the M key mutes; fullscreen can change outside the menu). */
   private liveLabels: (() => void)[] = [];
   private settingsMidRun = false;
-
-  /** PLAY MODES: the daily and the tutorial (WEEKLY and CHALLENGES are gone: user, 2026-10-15). */
-  showModes(): void {
-    this.openSub('modes', () => this.showMain());
-    const x = W / 2;
-    const row = (i: number) => Menus.SUB_Y + i * Menus.SUB_PITCH;
-    // THE DAILY RUN: today's slot machine, one try a day (then its score).
-    const today = dailyKey();
-    const run = this.profile().runs.find((e) => e.daily === today);
-    const done = dailySpent(today, this.profile().lastDaily);
-    // The machine on the button, today's rule in the caption under it.
-    const label = run ? `DAILY: ${runScore(run)}` : done ? 'DAILY: SPENT' : `DAILY: ${CABINETS[dailyCabinet(today)].name}`;
-    const daily = this.btn(label, x, row(0), 440, 54, () => !done && this.cb.onDaily(), label.length > 17 ? 2 : 3);
-    daily.toggled = done;
-    this.icons.set(daily, 'chip');
-    if (!done) this.guardSaved(daily);
-    const tb = this.btn('TUTORIAL', x, row(1), 440, 54, () => this.cb.onTutorial(), 3);
-    this.icons.set(tb, 'iconTutorial');
-    this.guardSaved(tb);
-    // (The parked rebuild's test modes, SCORE RACE / NEW GAME / METERS, are on the parked-rebuild branch: phase 2.)
-    this.slideIn();
-  }
 
   /** PROFILE: the collection and trophies (HISCORES moved to the main screen). */
   showProgress(): void {
@@ -426,36 +373,10 @@ export class Menus {
     this.hiscoreButtons();
   }
 
-  /** The online board a tab shows. */
-  private boardKey(tab: ScoreTab): string {
-    return tab === 'daily' ? `daily:${dailyKey()}` : 'all';
-  }
-
-  private loadBoard(key: string): void {
-    if (!online() || this.boards.get(key) === null) return;
-    this.boards.set(key, null);
-    void topScores(key, ROWS_PER_PAGE + 3).then((rows) => this.boards.set(key, rows ?? 'error'));
-  }
-
   private hiscoreButtons(): void {
     this.buttons = [];
     this.back = () => this.showMain();
     this.btn('BACK', 100, 44, 140, 48, () => this.showMain());
-    (['mine', 'daily', 'all'] as ScoreTab[]).forEach((tab, i) => {
-      const b = this.btn({ mine: 'MY RUNS', daily: 'DAILY', all: 'ALL TIME' }[tab], W / 2 + (i - 1) * 168, 100, 160, 40, () => {
-        this.tab = tab;
-        this.page = 0;
-        if (tab !== 'mine') this.boards.delete(this.boardKey(tab));
-        this.hiscoreButtons();
-      }, 1.5);
-      b.toggled = this.tab === tab;
-    });
-    if (this.tab !== 'mine') {
-      // No name (skipped, or never asked): a way onto the boards.
-      if (online() && !this.profile().name) this.btn('SET YOUR NAME', W - 160, 44, 240, 44, () => this.showName(() => this.showHiscores()), 1.5);
-      this.loadBoard(this.boardKey(this.tab));
-      return;
-    }
     const best = this.btn('BEST', W - 250, 44, 130, 44, () => {
       this.sort = 'best';
       this.page = 0;
@@ -491,118 +412,11 @@ export class Menus {
 
   // ---- player name (first launch) -----------------------------------------------------
 
-  /** Where the name screen goes after OK / SKIP. */
-  private afterName: () => void = () => this.showMain();
-  showName(after?: () => void): void {
-    this.afterName = after ?? (() => this.showMain());
-    this.open('name');
-    this.nameStatus = '';
-    this.nameBusy = false;
-    const stage = document.getElementById('stage');
-    if (stage && !this.nameInput) {
-      const el = document.createElement('input');
-      el.maxLength = 12;
-      el.autocomplete = 'off';
-      el.spellcheck = false;
-      el.setAttribute('autocapitalize', 'characters');
-      el.setAttribute('aria-label', 'Leaderboard name');
-      Object.assign(el.style, {
-        position: 'absolute',
-        left: `${((W / 2 - 200) / W) * 100}%`,
-        top: `${((NAME_Y - 24) / H) * 100}%`,
-        width: `${(400 / W) * 100}%`,
-        height: `${(48 / H) * 100}%`,
-        background: 'transparent',
-        border: 'none',
-        outline: 'none',
-        color: 'transparent',
-        textAlign: 'center',
-        textTransform: 'uppercase',
-        fontFamily: 'ui-monospace, Consolas, monospace',
-        fontWeight: 'bold',
-        letterSpacing: '0.15em',
-        caretColor: 'transparent',
-        userSelect: 'text',
-        webkitUserSelect: 'text',
-        touchAction: 'auto',
-        zIndex: '5',
-      } as Partial<CSSStyleDeclaration>);
-      el.addEventListener('input', () => {
-        el.value = el.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
-        this.nameStatus = '';
-      });
-      el.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') void this.submitName();
-      });
-      stage.appendChild(el);
-      this.nameInput = el;
-      setTimeout(() => el.focus(), 50);
-    }
-    this.btn('OK', W / 2, NAME_Y + 80, 200, 54, () => void this.submitName(), 3);
-    // Optional: SKIP keeps you off the online boards (no name, nothing posted); HISCORES can set one later.
-    this.btn('SKIP', W / 2, NAME_Y + 150, 140, 36, () => this.skipName(), 1.5).opts.quiet = true;
-  }
-
-  private skipName(): void {
-    this.cb.onNameSkip();
-    this.sounds.click();
-    this.afterName();
-  }
-
-  private async submitName(): Promise<void> {
-    if (this.nameBusy || !this.nameInput) return;
-    const name = this.nameInput.value;
-    if (name.length < 3) {
-      this.nameStatus = 'AT LEAST 3 LETTERS OR NUMBERS';
-      this.sounds.fizzle();
-      return;
-    }
-    this.nameBusy = true;
-    this.nameStatus = 'CHECKING...';
-    const r = await this.cb.onName(name);
-    this.nameBusy = false;
-    if (this.mode !== 'name') return;
-    if (r === 'taken' || r === 'blocked') {
-      this.nameStatus = r === 'blocked' ? 'PICK ANOTHER NAME' : `${name} IS TAKEN. TRY ANOTHER`;
-      this.sounds.fizzle();
-      return;
-    }
-    this.sounds.fanfareJackpot();
-    this.afterName();
-  }
-
-  private drawName(ctx: CanvasRenderingContext2D, t: number): void {
-    ctx.fillStyle = '#0a0612';
-    ctx.fillRect(0, 0, W, H);
-    this.logo(ctx, 150, t, 3);
-    drawText(ctx, 'PICK YOUR NAME', W / 2, NAME_Y - 110, 4, COLORS.goldLight);
-    drawText(ctx, online() ? 'IT GOES ON THE LEADERBOARDS: THE DAILY AND ALL TIME' : STEAM ? 'YOUR NAME FOR THE HISCORES' : 'YOUR NAME FOR THE HISCORES (ONLINE BOARDS OPENING SOON)', W / 2, NAME_Y - 66, 1.5, COLORS.textDim);
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(W / 2 - 214, NAME_Y - 32, 428, 64);
-    ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(W / 2 - 210, NAME_Y - 28, 420, 56);
-    ctx.fillStyle = COLORS.panel;
-    ctx.fillRect(W / 2 - 206, NAME_Y - 24, 412, 48);
-    // The typed name in the pixel font (the DOM input underneath only takes the keys), with a blinking caret.
-    const typed = this.nameInput?.value ?? '';
-    if (!typed) drawText(ctx, 'TYPE A NAME', W / 2, NAME_Y, 2.5, COLORS.textDim, { alpha: 0.5 + 0.3 * Math.sin(t * 4) });
-    else drawText(ctx, typed, W / 2, NAME_Y, 3.5, COLORS.text);
-    if (Math.sin(t * 6) > 0 && (document.activeElement === this.nameInput || !typed)) {
-      ctx.fillStyle = COLORS.goldLight;
-      ctx.fillRect(W / 2 + (typed.length * 21) / 2 + 4, NAME_Y - 14, 4, 28);
-    }
-    drawText(ctx, '3-12 LETTERS, NUMBERS OR DASHES', W / 2, NAME_Y + 42, 1.25, COLORS.textDim);
-    if (this.nameStatus) drawText(ctx, this.nameStatus, W / 2, NAME_Y + 130, 2, this.nameBusy ? COLORS.textDim : COLORS.danger);
-    // Keep the input's text in step with the stage size.
-    const stage = this.nameInput?.parentElement;
-    if (this.nameInput && stage) this.nameInput.style.fontSize = `${(stage.clientWidth / W) * 30}px`;
-  }
-
   /** The player's badge: name, level, title and the XP bar. */
   private badge(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     const p = this.profile();
     const lv = levelOf(p.xp);
-    const name = this.cb.playerName() || 'PLAYER';
+    const name = this.profile().name || 'PLAYER';
     drawText(ctx, `${name}  -  LV ${lv.level} ${shownTitle(p)}`, x, y - 6, 2, COLORS.goldLight);
     const bw = 300;
     ctx.fillStyle = COLORS.outline;
@@ -765,12 +579,6 @@ export class Menus {
 
   /** Space / Enter on the loading screen. */
   key(k: string): boolean {
-    if (this.mode === 'name') {
-      if (k === 'enter') void this.submitName();
-      // Gamepad B / Escape: no typing needed (STEAM_QA_1 Q4).
-      else if (k === 'escape') this.skipName();
-      return true;
-    }
     if (this.mode === 'loading') {
       // Any key starts (STEAM_READINESS S23); the press also unlocks audio.
       if (this.ready) this.pointerDown(0, 0);
@@ -805,13 +613,12 @@ export class Menus {
     ctx.globalAlpha = this.fade;
     if (this.mode === 'loading') this.drawLoading(ctx, t);
     else if (this.mode === 'main') this.drawMain(ctx, t);
-    else if (this.mode === 'modes' || this.mode === 'progress' || this.mode === 'settings') this.drawSub(ctx, t);
+    else if (this.mode === 'progress' || this.mode === 'settings') this.drawSub(ctx, t);
     else if (this.mode === 'collection') this.drawCollection(ctx);
     else if (this.mode === 'hiscores') {
       this.relicTips.begin();
       this.drawHiscores(ctx, t);
     }
-    else if (this.mode === 'name') this.drawName(ctx, t);
     else if (this.mode === 'trophies') this.drawTrophies(ctx);
     for (const b of this.buttons) b.draw(ctx, t);
     if (this.mode === 'trophies') this.drawTrimRow(ctx);
@@ -884,7 +691,7 @@ export class Menus {
 
   /** A sub-menu (PLAY MODES, PROFILE, SETTINGS): a small logo, the title, and a panel the rows sit in. */
   private drawSub(ctx: CanvasRenderingContext2D, t: number): void {
-    const title = this.mode === 'modes' ? 'PLAY MODES' : this.mode === 'progress' ? 'PROFILE' : 'SETTINGS';
+    const title = this.mode === 'progress' ? 'PROFILE' : 'SETTINGS';
     if (hasSprite('logo')) drawSprite(ctx, artId('logo'), W / 2, 66 + Math.sin(t * 2) * 2, 2);
     const k = this.panelIn;
     const top = Menus.SUB_Y - 96;
@@ -1001,7 +808,6 @@ export class Menus {
 
   private drawHiscores(ctx: CanvasRenderingContext2D, t: number): void {
     drawText(ctx, 'HISCORES', W / 2, 44, 5, COLORS.goldLight);
-    if (this.tab !== 'mine') return this.drawBoard(ctx, t);
     const list = this.entries();
     if (!list.length) {
       drawText(ctx, 'NO RUNS YET. GO PLAY ONE!', W / 2, H / 2, 3, COLORS.textDim);
@@ -1069,49 +875,4 @@ export class Menus {
     drawText(ctx, 'N: CHARMED CELLS', 60, H - 30, 1.25, COLORS.textDim, { align: 'left' });
   }
 
-  /** An online board: the top players (their best), you highlighted. */
-  private drawBoard(ctx: CanvasRenderingContext2D, t: number): void {
-    const key = this.boardKey(this.tab);
-    const sub = this.tab === 'daily' ? `THE DAILY RUN ${dailyKey().slice(5)} - ONE TRY EACH` : 'REGULAR RUNS, ANY STAKE (NO ENDLESS) - YOUR BEST';
-    drawText(ctx, sub, W / 2, 140, 1.5, COLORS.textDim);
-    if (!online()) {
-      drawText(ctx, STEAM ? 'THE ONLINE BOARDS ARE OFF' : 'THE ONLINE BOARDS ARE NOT OPEN YET', W / 2, H / 2 - 16, 3, COLORS.textDim);
-      drawText(ctx, 'YOUR RUNS ARE STILL SAVED UNDER MY RUNS', W / 2, H / 2 + 24, 1.5, COLORS.textDim);
-      return;
-    }
-    const rows = this.boards.get(key);
-    if (rows === null || rows === undefined) {
-      drawText(ctx, 'LOADING...', W / 2, H / 2, 3, COLORS.textDim, { alpha: 0.6 + 0.4 * Math.sin(t * 5) });
-      return;
-    }
-    if (rows === 'error') {
-      drawText(ctx, "COULDN'T REACH THE BOARDS. TRY AGAIN LATER", W / 2, H / 2, 2.5, COLORS.danger);
-      return;
-    }
-    if (!rows.length) {
-      drawText(ctx, 'NO SCORES YET. BE THE FIRST!', W / 2, H / 2, 3, COLORS.textDim);
-      // The DAILY and WEEKLY boards only take their own mode's runs.
-      const how = key.startsWith('daily') ? 'PLAY THE DAILY (PLAY MODES)' : '';
-      if (how) drawText(ctx, how, W / 2, H / 2 + 40, 1.5, COLORS.textDim);
-      return;
-    }
-    const me = this.cb.playerName();
-    rows.forEach((r, i) => {
-      const y = 186 + i * 50;
-      const mine = r.name === me;
-      ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(140, y - 23, W - 280, 46);
-      ctx.fillStyle = mine ? '#8a6a1c' : i === 0 ? '#5a4a1c' : '#3a2d52';
-      ctx.fillRect(143, y - 20, W - 286, 40);
-      ctx.fillStyle = COLORS.panel;
-      ctx.fillRect(146, y - 17, W - 292, 34);
-      drawText(ctx, String(i + 1), 180, y, 2.5, i === 0 ? '#ffd23f' : COLORS.textDim);
-      if ((CABINET_ORDER as string[]).includes(r.cabinet)) drawSprite(ctx, heroSprite(r.cabinet), 226, y, 1.5);
-      drawText(ctx, r.name, 256, y - 6, 2, mine ? '#ffd23f' : COLORS.goldLight, { align: 'left' });
-      drawText(ctx, `LV ${r.level} ${r.title}`, 256, y + 11, 1.25, COLORS.textDim, { align: 'left' });
-      const st = STAKES[r.stake];
-      drawText(ctx, `${r.won ? 'CLEARED' : 'FELL'}${r.stake ? ` - ${st?.name ?? ''} STAKE` : ''}`, 760, y, 1.5, r.won ? '#ffd23f' : '#ff8a7a', { align: 'left' });
-      drawText(ctx, String(r.score), W - 170, y, 2.5, i === 0 ? '#ffd23f' : COLORS.text, { align: 'right', punch: i === 0 ? 1 + 0.04 * Math.sin(t * 4) : 1 });
-    });
-  }
 }

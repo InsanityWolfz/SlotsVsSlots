@@ -332,7 +332,7 @@ export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
 /** ENDLESS help for the machines with no late multiplier (user, 2026-10-15): KNIGHT's VETERAN (swords and shields pay
  * +veteran for every loop cleared) and JUKEBOX's WARM-UP (each fight starts at volume warmUp x the loop, below THE DROP). */
 export const LOOP_GROWTH = { veteran: 1, warmUp: 3 };
-export const TUNE = { headStart: 2, dailyAct3: 0.45, greenWheel: 0.85, coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, dealerQuietCap: 0.25, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, rampPerTurn: 0.06, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act3Hp: 1.4, act1Swords: 1, enemyShield: 0.5, act3Sevens: 4, bossHp: 100 * UNIT, act2Mul: 1.06, act2Swords: 2, wheelHp: 350 * UNIT, dealerHp: 1300 * UNIT, endlessBossBase: 300 * UNIT, enemyDmg: 1 };
+export const TUNE = { headStart: 2, greenWheel: 0.85, coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, dealerQuietCap: 0.25, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, rampPerTurn: 0.06, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act3Hp: 1.4, act1Swords: 1, enemyShield: 0.5, act3Sevens: 4, bossHp: 100 * UNIT, act2Mul: 1.06, act2Swords: 2, wheelHp: 350 * UNIT, dealerHp: 1300 * UNIT, endlessBossBase: 300 * UNIT, enemyDmg: 1 };
 export const ACTS = 2;
 /**
  * OVERTIME (user, 2026-10-29: roadmap phase 1, live without a test mode): a fight clock in every act. From round `from` (a round is your
