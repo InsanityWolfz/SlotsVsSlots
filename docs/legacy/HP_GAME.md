@@ -1,7 +1,6 @@
-> **LEGACY: reference only, not the design.** This is the OLD game (HP fights, watch-only) plus the SCORE RACE
-> experiment bolted onto it, as of branch `hp-game-final` (2026-10-16). The project is being rebuilt around a new vision
-> (`docs/VISION.md`). Use this file to find how existing code works. Do NOT treat its rules, numbers, sim targets or
-> per-machine designs as requirements for the new game, and don't update it.
+> **The v1.0 base (2026-10-29).** This is the live game (HP fights) that v1.0 is built on; `docs/ROADMAP.md` says
+> what changes. Keep it current as rules change. Its SCORE RACE sections describe a parked experiment, not the game.
+> (From 2026-10-16 to 10-28 this file was marked legacy while a rebuild was tried; the rebuild is parked.)
 
 # Slots vs. Slots: the game as it is today
 

@@ -1,4 +1,8 @@
-# Vision: the new game
+# Vision: the new game (parked)
+
+> **Parked (2026-10-29).** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with three fight changes; see
+> `docs/ROADMAP.md`. Nothing in this file is the v1.0 design. METER COMBAT comes back only under CLAUDE.md's
+> no-restart rule; its best idea (BLOCK against a certain telegraph) is on the after-launch list.
 
 **Status (2026-10-17): the model is METER COMBAT** (below). The score race the user signed off on 2026-10-16 was built
 and played, and dropped: it felt better only because it copied a familiar slot machine (user). Its sections are kept

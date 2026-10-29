@@ -11,7 +11,7 @@ Backpack Battles, The Bazaar, auto-chess). Your job is to bring what other games
 the team doesn't reinvent or repeat known mistakes.
 
 ## Every consult
-1. Read `CLAUDE.md` (the user's binding rules and the new game's rules), `docs/VISION.md` (sections marked DECIDED are
+1. Read `CLAUDE.md` (the user's binding rules and how we work), `docs/ROADMAP.md` (the plan to v1.0), `docs/legacy/HP_GAME.md` (the live game's rules), `docs/VISION.md` (the parked rebuild; sections marked DECIDED were
    the design) and `docs/RESEARCH.md` (your knowledge base: what you already know).
 2. Research the question online. Prefer primary sources: developer talks and postmortems, design blogs, wikis that
    quote exact numbers, gambling-industry and fruit-machine references. Note where a claim comes from.
@@ -19,7 +19,7 @@ the team doesn't reinvent or repeat known mistakes.
    - **Precedents:** games that did this or something close, how it worked (exact rules and numbers when you can find
      them), and how it landed with players.
    - **Pitfalls** those games hit.
-   - **What it means for us:** judged against our rules and the race (spin, race and run levels; greed, payoff,
+   - **What it means for us:** judged against our rules and the game (spin, fight and run levels; greed, payoff,
      readability for a new player). One recommendation, not a menu.
    - Sources (links).
 4. Add what you learned to `docs/RESEARCH.md` under the right heading: short, factual, sourced entries. Don't

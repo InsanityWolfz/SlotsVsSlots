@@ -1,12 +1,11 @@
 # Slots vs. Slots
 
-An 8-bit roguelike where two slot machines face off. The game is being rebuilt (2026-10-16): fights are becoming a
-race for the top score, played one spin at a time, instead of watch-only HP battles. The live build is still the old
-game while the new one is designed.
+An 8-bit roguelike where two slot machines face off, headed for Steam (2026-10-29): v1.0 is the live game with three
+fight changes and a frozen scope. A rebuild tried in October 2026 is parked.
 
 **Play:** https://insanitywolfz.github.io/SlotsVsSlots/
 
-The new game's design: [docs/VISION.md](docs/VISION.md). The old game: [docs/legacy/HP_GAME.md](docs/legacy/HP_GAME.md). What's next: [docs/ROADMAP.md](docs/ROADMAP.md).
+The road to v1.0: [docs/ROADMAP.md](docs/ROADMAP.md). The game's rules: [docs/legacy/HP_GAME.md](docs/legacy/HP_GAME.md). The parked rebuild: [docs/VISION.md](docs/VISION.md).
 
 ## Develop
 

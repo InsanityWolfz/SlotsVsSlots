@@ -3,37 +3,46 @@
 An 8-bit roguelike where two slot machines face off. TypeScript + Vite + Canvas, with no framework.
 Web build: https://insanitywolfz.github.io/SlotsVsSlots/ (deploys on every push to `main`).
 
-## The project is being rebuilt (2026-10-16)
-The old game (HP fights you watch, damage per spin) is being rebuilt as METER COMBAT (symbols fill meters; you choose
-when to FIRE or BLOCK). It's the old chassis with new rules. The live build stays the old game until the new one is
-better; the prototype is PLAY MODES > METERS (TEST). The score race tried on 2026-10-16 was dropped.
+## Where the project stands (2026-10-29)
+The project is back on, aimed at a paid Steam release. **v1.0 is the old game** (HP fights, `docs/legacy/HP_GAME.md`),
+not a rebuild: its fights get three small changes, its content is frozen and trimmed, and it goes to Steam. The METER
+COMBAT rebuild (2026-10-16/17) and the score race before it are **parked**: their code (`src/meter/`, `src/race/`)
+stays out of PLAY MODES and moves out of the engine in phase 2. The plan and why: `docs/ROADMAP.md`, from an overnight
+review (the user's doc "Slots vs. Slots: the road to Steam", https://claude.ai/artifact/A7ADak3Vec6oPZEzQbMVgi).
 
 ## Read first, every session
-1. `docs/ROADMAP.md`: the rebuild's steps and what's in progress.
-2. `docs/VISION.md`: the new game. Only sections marked **DECIDED** are the design; the rest is open.
-3. `docs/JUICE.md`: before any presentation work.
-
-`docs/legacy/HP_GAME.md` describes the old game and the SCORE RACE experiment. Use it to find how existing code
-works. **Its rules, numbers, sim targets and per-machine designs are not requirements for the new game.** Don't
-carry old-game designs into the new one unless the user decides to.
+1. `docs/ROADMAP.md`: the road to Steam, its phases and gates, and what's in progress.
+2. `docs/legacy/HP_GAME.md`: the game v1.0 is built on (its rules and numbers are the live game's again).
+3. `docs/VISION.md`: the parked rebuild, kept for the record. Only its 2026-10-29 status note applies.
+4. `docs/JUICE.md`: before any presentation work.
 
 **If a session stopped mid-task** (a usage limit, a crash): pick up where it left off without being asked. The
 "In progress" line at the top of `docs/ROADMAP.md` says what was being worked on; `git log` and `git status` show how
 far it got. Keep that line current while you work.
 
-## How to work in the rebuild (user, 2026-10-16)
-- **One system at a time.** Design it, get the user's sign-off, build it, play it, judge it on feel. Then the next.
-- **Don't spread a new mechanic.** A change to one Slot Machine or system stays there until the user asks to apply
-  it elsewhere. Don't retune every machine, relic and Charm around it.
-- **No sim balancing until the rules stop changing.** Tuning numbers for a design that's still moving is wasted work.
-- **Think it through before proposing.** Judge an idea on the macro (run), meso (race) and micro (spin) levels, on
-  incentive, feel, greed, payoff and excitement, and on readability for a new player. Bring one recommendation with
-  its reasons, not a menu of half-thought options, and not "want me to build it?".
-- **Every new feature or mechanic goes past the researcher, then the expert playtester (below), before the user signs
-  it off** (user, 2026-10-16). Consult the researcher while designing, so the recommendation already carries what
-  other games learned; the playtester then reviews the design before code.
-- Keep docs current: when something is decided, mark it in VISION.md; when it ships, update ROADMAP.md, in the same
-  commit. Don't add new plan, report or log files (`docs/RESEARCH.md`, the researcher's reference, is the one exception). Scratch work goes in a scratchpad or `tools/out/` (gitignored).
+## How to work (user, 2026-10-29: a middle ground, "it got out of hand, but it needs a little structure")
+- **v1.0 scope is frozen.** `docs/ROADMAP.md` lists what ships. Adding to it means taking something out, and that's
+  the user's call. New ideas go on its "After launch" list.
+- **Two kinds of change.**
+  - A fix or tweak (a bug, a number, a word): straight to `main`; `npm test` must pass (CI blocks a broken deploy).
+  - A rule change (a new mechanic or system): built behind a PLAY MODES (TEST) entry, played by the user and by
+    outside players, and only then made the live rule. A branch only if it takes more than one session.
+- **People decide, sims measure.** Outside players (people who haven't played it) judge the feel: every two weeks,
+  one run each, three questions (the best moment, when you got bored, what confused you), plus their COPY RUN log.
+  The sim measures; it doesn't decide.
+- **Balance in batches.** One sim pass per roadmap phase, once that phase's rules are frozen. No 1,000-run sim per
+  tweak, and no new HP numbers after every change.
+- **No restart without evidence.** Rebuilding the core needs complaints from outside players, a one-page comparison
+  of old against new, and a test mode. The live game is never paused for a rebuild.
+- **One system at a time; don't spread a mechanic** to other machines, relics and Charms until the user asks.
+- **Think it through before proposing:** judge an idea on the run, fight and spin levels, on incentive, feel, greed,
+  payoff and readability for a new player. Bring one recommendation with its reasons, not a menu.
+- **The researcher and the expert playtester are for rule changes,** not every tweak.
+- **Keep the code shippable:** experiments live outside the engine; a file over about 1,000 lines gets split the next
+  time it's touched.
+- Keep docs current: when something is decided or ships, update ROADMAP.md (and HP_GAME.md for live rules) in the
+  same commit. Don't add new plan, report or log files (`docs/RESEARCH.md`, the researcher's reference, is the one
+  exception). Scratch work goes in a scratchpad or `tools/out/` (gitignored).
 
 ## Commands
 - `npm install`, then `npm test` (vitest; keep it green) and `npx tsc --noEmit -p .` (`noUnusedLocals` is on).
@@ -41,7 +50,7 @@ far it got. Keep that line current while you work.
 - `npm run build`: the public build in `dist/`, with no dev tools (check: grep `dist/assets` for `dbg`/`TuningPanel`).
 - `npm run build:steam`: the desktop build (see `desktop/README.md`).
 - Art: `node tools/build-art.mjs` regenerates `src/render/spriteData.ts` (hand-authored pixel grids; 8-bit stays).
-- Sim (old game): `npm run sim -- --runs 500 --stakes 0,2` (`tools/sim/balance.ts`); `tools/sim/fuzz.ts` checks invariants.
+- Sim: `npm run sim -- --runs 500 --stakes 0,2` (`tools/sim/balance.ts`); `tools/sim/fuzz.ts` checks invariants.
 
 ## The user's rules (binding)
 - **User-facing words:** "Slot Machines" (never cabinets) and "Charms" (never gild). Code identifiers may stay.
@@ -52,25 +61,15 @@ far it got. Keep that line current while you work.
   nobody else is playing. Pushing working builds to `main` is fine. Don't push broken or half-finished work there.
 - **Held ideas:** the SLOTS VS. BOTS rename, 16-bit art, the Gambler character.
 - The user is direct and has strong game sense. Push back with reasons when you disagree. Keep summaries short.
-
-## The new game's rules (binding; user, 2026-10-17, see docs/VISION.md "The model: METER COMBAT")
-- **Power builds up over a fight; no flat per-spin damage.** Symbols fill meters; you choose when to spend them.
-- **Two meters a side, SWORD and SHIELD,** filled by every matching symbol in sight. One action a turn after your
-  spin: FIRE or BLOCK (if full), or end the turn. Keep the screen this lean: a new meter or button is the user's call.
-- **Paylines set the worth, not the fill count:** plain / gold (pair) / red-hot (jackpot) sword segments; shields
-  fill faster on a line win. Hearts and coins pay instantly (no meter).
-- **The enemy plays the same meters, visibly,** so its sword meter is the telegraph. Its sabotage is a symbol on its
-  reels whose line win does something to your meters (the slime: gunks your sword meter to 5 bars until you fire).
-- **Machines differ by their ATTACK METER's rule, not by extra meters** (user, 2026-10-17). Everyone shares the
-  SHIELD meter, hearts and coins; each Slot Machine's attack meter works its own way (KNIGHT's SWORD: save it while it
-  upgrades). No third meter a side.
-- The score race (`src/race/`, NEW GAME (TEST)) is dropped; don't build on it. HOLD, NUDGE, BET and CREDITS were its
-  rules, not this game's.
+- **The parked rebuild's rules** (METER COMBAT, 2026-10-17; the score race, 2026-10-16) are not binding on v1.0. They
+  stay in `docs/VISION.md` for the record. HOLD in the roadmap means the old game's HOLD (commit `f7708bb`), not the
+  score race's.
 
 ## Agents
 - **Expert playtester:** a general-purpose subagent briefed as an expert roguelike and slot-machine designer.
-  Give it CLAUDE.md, docs/VISION.md, the binding rules above, and the question. It separates bugs, balance and
-  design opinions, cites exact numbers, screens and text, and doesn't edit `src/`. It reports back in chat.
+  Give it CLAUDE.md, docs/ROADMAP.md, docs/legacy/HP_GAME.md and the question. It separates bugs, balance and
+  design opinions, cites exact numbers, screens and text, and doesn't edit `src/`. It reports back in chat. To play,
+  it drives the dev build (`npm run dev`) through `window.dbg` and screenshots; it never reports a run it didn't play.
 - **Researcher** (`.claude/agents/researcher.md`): researches slot machine, roguelike and battler mechanics online and
   keeps `docs/RESEARCH.md`, the team's knowledge base (it reads it first and adds to it every consult; it edits
   nothing else). It brings precedents, pitfalls and sources; it never decides. If the `researcher` agent type isn't
