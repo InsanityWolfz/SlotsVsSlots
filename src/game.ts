@@ -67,8 +67,6 @@ import { MusicPlayer, SONG_HOME, type SongId } from './audio/music';
 import { CHARM_VALUE } from './core/charms';
 import { Focus, type NavDir, type NavRect } from './ui/focus';
 import { desktop, steamUnlock, VERSION } from './build';
-import { RaceScene } from './race/scene';
-import { MeterScene } from './meter/scene';
 
 /** The fight HUD's relic tooltip starts under the player panel (EXPERT_PLAYTEST_12). */
 const RELIC_TIP_TOP = 232;
@@ -331,7 +329,6 @@ export class Game {
   private muteBtn!: Button;
   toolButtons: { tune: Button; log: Button } | null = null;
   /** THE NEW GAME (the rebuild, step 2): while a race is on, it has the screen and the input. */
-  newRace: RaceScene | MeterScene | null = null;
 
   /** publicBuild: no TUNE panel, no saved tuning overrides, no dev unlocks (the hosted playtest). */
   constructor(readonly publicBuild = false) {
@@ -350,8 +347,6 @@ export class Game {
         this.chooseCabinet();
       },
 
-      onNewGame: () => this.startNewGame(),
-      onMeters: () => this.startMeters(),
       onTutorial: () => this.startTutorial(),
       onDaily: () => this.startDaily(),
       needsName: () => needsName(this.profile),
@@ -666,28 +661,7 @@ export class Game {
   }
 
   /** Back to the main menu (abandons nothing: only reachable between runs). */
-  /** THE NEW GAME (step 2): one race on its own screen; leaving it goes back to the menu. */
-  private startNewGame(): void {
-    this.menus.hide();
-    this.syncButtons();
-    this.newRace = new RaceScene(this.sounds, this.camera, this.ui, () => {
-      this.sounds.click();
-      this.showMenu();
-    });
-  }
-
-  /** THE METERS PROTOTYPE: KNIGHT vs SLIME on its own screen (the same slot as the race scene). */
-  private startMeters(): void {
-    this.menus.hide();
-    this.syncButtons();
-    this.newRace = new MeterScene(this.sounds, this.camera, this.ui, () => {
-      this.sounds.click();
-      this.showMenu();
-    });
-  }
-
   showMenu(): void {
-    this.newRace = null;
     this.token++;
     this.synth.stopLoops();
     this.recap.hide();
@@ -1363,7 +1337,6 @@ export class Game {
   private music: MusicPlayer | null = null;
 
   private musicMood(): SongId {
-    if (this.newRace) return 'act1';
     if (this.menus.isOpen || this.phase === 'title') return 'menu';
     if (this.phase !== 'fighting' && this.phase !== 'quick') return 'lounge';
     // Each boss has its own theme (endless cycles them too): THE HOUSE, THE WHEEL, THE DEALER.
@@ -1441,7 +1414,6 @@ export class Game {
     if (this.coach.active) return this.coach.hitsSkip(x, y) ? this.skipTutorial() : this.coach.advance();
     // PAUSE first: opened over the boss card, its first tap went to the card (playtest C).
     if (this.pause.open && !this.menus.isOpen) return this.pause.pointerDown(x, y);
-    if (this.newRace && !this.menus.isOpen) return this.newRace.pointerDown(x, y);
     // The boss card is open: any tap closes it (the fight was paused under it).
     if (this.bossCard) {
       this.bossCard = false;
@@ -1537,7 +1509,6 @@ export class Game {
     const b = this.active;
     this.active = null;
     b?.up(b.contains(x, y));
-    if (this.newRace && !this.menus.isOpen) return this.newRace.pointerUp(x, y);
     if (this.pause.open && !this.menus.isOpen) return this.pause.pointerUp(x, y);
     if (this.menus.isOpen) {
       const was = this.menus.mode;
@@ -1555,7 +1526,6 @@ export class Game {
 
   pointerMove(x: number, y: number): boolean {
     this.mouse = { x, y };
-    if (this.newRace && !this.menus.isOpen) return this.newRace.pointerMove(x, y);
     if (this.pause.open && !this.menus.isOpen) return this.pause.pointerMove(x, y);
     let any = false;
     for (const b of this.buttons) {
@@ -1569,10 +1539,6 @@ export class Game {
 
   key(k: string): boolean {
     this.startAudio();
-    if (this.newRace && !this.menus.isOpen) {
-      if (k === 'm') return (this.setMuted(!this.prefs.muted), true);
-      return this.newRace.key(k);
-    }
     if (this.coach.active) {
       // Any key moves the tutorial on (a pad's A included); S skips it.
       if (k === 's') this.skipTutorial();
@@ -1699,7 +1665,6 @@ export class Game {
       gw.wheelAngle = ((gw.wheelAngle ?? 0) + gw.wheelSpeed * gdt) % (Math.PI * 2);
     }
     this.background.update(dt);
-    this.newRace?.update(dt);
     for (const b of this.buttons) b.update(dt);
     const by = this.recap.buttonY - 30;
     for (const b of this.recapBtns) b.y = by;
@@ -1723,18 +1688,6 @@ export class Game {
       this.menus.draw(ctx, t);
       if (this.muteBtn.visible) this.muteBtn.draw(ctx, t);
       if (this.focus.visible) this.focus.draw(ctx, this.navTargets(), t);
-      return;
-    }
-    if (this.newRace) {
-      this.newRace.drawWorld(ctx);
-      ctx.restore();
-      if (this.camera.flash > 0) {
-        ctx.globalAlpha = Math.min(1, this.camera.flash);
-        ctx.fillStyle = this.camera.flashColor;
-        ctx.fillRect(0, 0, W, H);
-        ctx.globalAlpha = 1;
-      }
-      this.newRace.drawUi(ctx);
       return;
     }
     this.background.drawMarquee(ctx, t);

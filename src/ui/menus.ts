@@ -131,10 +131,6 @@ export class Menus {
       /** THE DAILY RUN (one try a day). */
       onDaily: () => void;
       onRace: () => void;
-      /** THE NEW GAME (the rebuild's step 2): one race, spin by spin. */
-      onNewGame: () => void;
-      /** THE METERS PROTOTYPE: KNIGHT vs SLIME with a SWORD and a SHIELD meter. */
-      onMeters: () => void;
       /** Name entry: claim the name; resolves to the claim result ('ok', 'taken', 'have:NAME', 'offline'). */
       needsName: () => boolean;
       onName: (name: string) => Promise<string>;
