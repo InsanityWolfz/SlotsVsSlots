@@ -45,3 +45,21 @@ fx.ts, camera.ts) and `src/audio`; this file keeps the WHY, so new features feel
 ## Audio
 - Every sound is synthesized: no sample files. Music and SFX are on separate buses, and stingers duck only the music.
 - Repeated sounds vary: each reel's stop has its own pitch, and dings climb in pitch along the line.
+
+## Art rules (approved by the user, 2026-10-29)
+Character portraits are **32×32**, still 8-bit (a bigger canvas, not a new style); reel symbols stay 16×16, icons
+12×12. The set the rest are matched against: THE COOLER and THE LOAN SHARK.
+1. **One palette:** only `PALETTE` in `tools/build-art.mjs`. A new colour is added there for everything, never slipped
+   into one sprite.
+2. **Light from the top-left:** a lit edge, a mid tone, a shadow edge, shaded by form. No gradients, no anti-aliasing,
+   no pillow shading.
+3. **One outline:** the 1px near-black outline is added by the build, never drawn by hand.
+4. **Portraits are busts:** head in the top two-thirds, shoulders off the bottom edge, one hand and one prop when the
+   character has one. Arms come out of the shoulder through an elbow, as thick as real sleeves, and the hand holds
+   the prop.
+5. **One prop and one accent colour that name the mechanic** (THE BARFLY's amber SPILL, THE COOLER's ice FREEZE, THE
+   LOAN SHARK's gold MARKERS): a player should guess the trick from the portrait.
+6. **Faces read at game size** (×3): eyes with a white and a pupil, one clear expression.
+7. **Casino town only:** suits, hats, chips, cards, drinks, neon. No fantasy creatures, no robots.
+Process: each portrait gets ~15-20 draw, render and critique passes, then goes to the user as an artifact (a gallery
+next to today's sprite); the user approves it or sends notes before it goes into `build-art.mjs`.

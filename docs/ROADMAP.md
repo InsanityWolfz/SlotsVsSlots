@@ -2,8 +2,9 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress:** phase 3, the road to Coming Soon (two weeks from 2026-10-29: the user's Max plan window). Next: the
-theme decision (the art-direction artifact).
+**In progress:** phase 3, the road to Coming Soon (two weeks from 2026-10-29: the user's Max plan window). The casino-town
+theme and roster are approved; the enemy portraits are being drawn at 32×32 (the art-direction artifact:
+https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV).
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
 fight changes (OVERTIME and HOLD), frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
@@ -100,8 +101,10 @@ the user can review to the pixel. Art and UI go to the user as artifacts (galler
    OWNER's office. The fantasy creatures go; their mechanics stay under new names and art.
 2. **Name (after the theme).** SLOTS VS. SLOTS has to change; SLOTS VS. BOTS would force a robot theme. A shortlist
    with a pick, once the theme is set.
-3. **Art bible:** one palette, fixed sprite sizes, outline and light rules, the 8-bit (or 16-bit) call made on a
-   side-by-side of real sprites. Enemies first (they're unchanged since launch), then the machines' heroes.
+3. **Art rules: done** (user, 2026-10-29): 32×32 portraits, still 8-bit; the rules are in `docs/JUICE.md`. The roster
+   is approved; THE COOLER and THE LOAN SHARK are approved art, THE BARFLY is in revision, seven more are being drawn
+   (previews on the `art-wip` branch until approved, then into `build-art.mjs`). Then the kept enemies, the bosses
+   and the machines' heroes at 32×32, and the portrait boxes on the HUD and cards resized once.
 4. **UI kit:** one panel, one button, one number count-up, one banner style, one font scale ladder; Balatro's
    cohesion is the bar. A contact sheet of every screen today shows what doesn't match.
 
