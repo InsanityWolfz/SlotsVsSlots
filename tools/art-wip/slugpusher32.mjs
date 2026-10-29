@@ -1,74 +1,81 @@
-import { canvas, px, span, paint, out } from './sp_tools.mjs';
-// THE SLUG PUSHER, 32x32 bust. outline() adds the outer K.
-// A heavyset small-time cheat in a too-big tan trench coat and a flat cap, five-o'clock shadow,
-// beady eyes sliding sideways, holding up a dull lead slug between finger and thumb. More slugs bulge from his pocket.
+import { stamp, rows } from './helpers.mjs';
+// THE SLUG PUSHER, 32x32 bust. Literal pixels; outline() adds the outer K.
+// Heavyset small-time cheat: porkpie hat, too-big tan trench coat, stubble, beady eyes.
+// His right arm: shoulder -> upper arm down the side -> elbow at the bottom -> forearm rises in front of the chest
+// -> hand beside the face pinching up a lead slug.
 export function slugpusher32() {
-  const g = canvas(32);
-  // --- trench coat: heavy shoulders off the bottom (tan: w lit, B mid, b shadow)
-  [[10, 26], [6, 28], [3, 30], [1, 31], [0, 31]].forEach(([a, b], i) => span(g, 19 + i, a, b, 'B'));
-  for (let y = 24; y < 32; y++) span(g, y, 0, 31, 'B');
-  for (let y = 20; y < 32; y++) { px(g, 31, y, 'b'); if (y > 21) px(g, 30, y, 'b'); }
-  // popped collar: near flap (lit) and far flap (shadow) around the jowls
-  paint(g, 9, 13, [' wB', 'wBb', 'wBb', 'wBBb', 'wBBb', 'wBBb']);
-  paint(g, 26, 12, ['b', 'Bb', 'BBb', 'BBbb', 'BBbb', 'bBBbb', 'bBBb', 'bBb']);
-  // epaulette on the far shoulder
-  paint(g, 26, 20, ['wwww', ' bbwww', '    bb']);
-  // wide lapels framing a grubby shirt and a loose tie
-  paint(g, 12, 19, [
-    'wwBTTTTTTTBbb',
-    ' wBBTTrRTBBb',
-    ' wwBBtRrBBbb',
-    '  wwBbRrbBb',
-    '  wwBbRbBBb',
-    '   wBbRrbBb',
-    '   wBBbRbBb',
-    '    wBbbBb',
-    '    wBBBBb',
+  const base = [
+    '................................', // 0
+    '................tlllllllkk......', // 1
+    '...............tllllllllllkk....', // 2
+    '...............tlllllllllllk....', // 3
+    '...............kkkkkkkkkkkkk....', // 4
+    '............tlllllllllllllllkk..', // 5
+    '.............kkffffffffkkffkk...', // 6
+    '.............kFFkkkFFFkFFFFkf...', // 7
+    '.............kFFFKWFFFKWFFFkFf..', // 8
+    '.............FFFFFFFfFFFFFFfFf..', // 9
+    '.............FFFFFFFFfFFFFfff...', // 10
+    '.............FFFFFFffffFFFFff...', // 11
+    '.............FFFFFFFFFFFFFfff...', // 12
+    '.............FFFFFFFFFFFKffff...', // 13
+    '..............fFFFFKKKKKFffff...', // 14
+    '...............ffffFFFFfff......', // 15
+    '...............fffffffffff......', // 16
+    '..............fFFFFFFFFFfff.....', // 17
+    '...............ffffffffffff.....', // 18
+    '.........wwBB.TTffffffffTT.wBb..', // 19
+    '.....awwwwwBBTTTfffffffTTTbwwBb.', // 20
+    '...aawwwwwwwBBTTTTrRrTTTbbwwwBb.', // 21
+    '.aawwwwwwwwwwBBtTTrRrTTbbwwwwBBb', // 22
+    'awwwwwwwwwwwwwBBtTTrRTbbwwwwwBBb', // 23
+    'wwwwwwwwwwwwwwwBBtTrRbbwwwwwwBBb', // 24
+    'wwwwwwwwwwwwwwwwBBtRrbwwwwwwwBBb', // 25
+    'wwwwwwwwwwwwwwwwwBbrRbwwwwwwwBBb', // 26
+    'wwwwwwwwwwwwwwwwwwBbbwwwwwwwwBBb', // 27
+    'wwwwwwwwwwwwwwwwwwBwbwwwwwwwwBBb', // 28
+    'wwwwwwwwwwwwwwwwwwBwbwwwwwwwwBBb', // 29
+    'wwwwwwwwwwwwwwwwwwBwbwwwwwwwwBBb', // 30
+    'wwwwwwwwwwwwwwwwwwBwbwwwwwwwwBBb', // 31
+  ];
+  base.forEach((r, i) => { if (r.length !== 32) throw new Error(`row ${i}: ${r.length}`); });
+  const g = base.map((r) => r.split(''));
+  // arm: shoulder cap -> upper arm down his side -> elbow folded at the bottom -> forearm back up in front of the chest.
+  // b crease between upper arm and forearm, K seam against the chest, b line under the elbow.
+  stamp(g, 0, 18, [
+    '     wwwwwB',
+    '     wwwwwBK',
+    '     wwwwwBK',
+    '   aabwwwwBK',
+    ' aawwbwwwwBK',
+    'awwwwbwwwwBK',
+    'wwwwBbwwwwBK',
+    'wwwwBbwwwwBK',
+    'wwwwBbwwwwBK',
+    'wwwwBbwwwwBK',
+    'wwwwBbwwwwBK',
+    'wwwwwBbwwwBK',
+    'BwwwwwwwwBBK',
+    'bbbbbbbbbbbK',
+    'BBBBBBBBBBBB',
   ]);
-  px(g, 24, 24, 'b'); px(g, 24, 27, 'b');
-  // bulging pocket on his left (viewer right), slugs spilling over the flap
-  paint(g, 21, 25, ['  IH', ' IHhIH', 'bhhbHhbb', 'wwwwwwwb', 'wBBBBBBb', 'BBBBBBbb', 'bbbbbbb']);
-  // --- head: wide, jowly; stubble = H dither on the lit side, h dither in shadow
-  paint(g, 11, 6, [
-    ' fffffffffffffff ',
-    'fkkkfFFFFFFFFFFff',
-    'FFFFFFFFFFkkkkFff',
-    'FFKWfFFFFFFKWfFff',
-    'FFffFFFFFFFfffFff',
-    ' FFFFFFFFfFFFFff ',
-    ' FFFfFFFFFffFfff ',
-    ' FFFkFFfffffffff ',
-    ' FHFFkTTkkkkkfhf ',
-    ' FFHFHkkFHfhfhfh ',
-    ' FHFHFHFHfhfhfhf ',
-    '  FHFHFHfhfhfhf  ',
-    '   hhhhhhhhhhh   ',
+  // double-breasted buttons; a flap pocket sagging with slugs
+  stamp(g, 25, 23, ['b', ' ', ' ', 'b']);
+  stamp(g, 22, 28, ['bbbbbbb', 'Bwwwwwb', ' BBBBb']);
+  // hand pinching up the slug: a tilted lead coin (flat face, lit rim top-left, shadow rim bottom-right, stamped mark);
+  // thumb sticks out on the left over the coin's front, knuckle lines below; shirt cuff and sleeve edge
+  stamp(g, 3, 7, [
+    '   IIII  ',
+    '  IHHHHh ',
+    ' IHHHHHHh',
+    ' IHHhhHHh',
+    'FFHHHHHhF',
+    'FFfhhhhFf',
+    ' fFFFFFFf',
+    '  FfFfFff',
+    '  fffffff',
+    '  TTTTTTt',
+    '  bbbbbbb',
   ]);
-  paint(g, 28, 8, ['f', 'f', 'b']); // far ear
-  // --- flat cap (charcoal), crown pulled forward over a short brim
-  paint(g, 11, 1, [
-    '   tllllkkkkkk',
-    ' tlllllllkkkkkkk',
-    'tllllllllllkkkkkk',
-    'kkkkkkkkkkkkkkkkkk',
-    ' tlllllllllkkkkkk',
-  ]);
-  // --- raised right hand (viewer left): the sleeve climbs from the elbow below the frame, cuff, hand pinching a slug
-  for (let y = 17; y < 32; y++) paint(g, 1 - Math.floor((y - 16) / 2), y, ['wwwwBBBBbk']);
-  paint(g, 0, 14, [' bbbbbbbb', 'wwwwwwwwB', 'BBBBBBBBb']);
-  paint(g, 1, 2, [
-    '  IIIIH  ',
-    ' IIHHHHh ',
-    'IIHhhhHHh',
-    'IHhHHHhHh',
-    'IHhHHHhHh',
-    'IFFhhhHFf',
-    ' FFFHHFFf',
-    ' FFfhhFFf',
-    'FFFFFFFFf',
-    'FfFfFfFff',
-    ' FFFFFff ',
-    '  FFFff  ',
-  ]);
-  return out(g);
+  return rows(g);
 }

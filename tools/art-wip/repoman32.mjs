@@ -1,71 +1,92 @@
-import { blank, paint, span, px, done } from './cc_tools.mjs';
-// THE REPO MAN, 32x32 bust. Navy trucker cap, bored half-lidded stare, stubble, flat mouth; hi-vis orange vest with a
-// reflective stripe over navy tow-company coveralls; right fist raised, a tow hook swinging from it on a chain.
+import { stamp, rows } from './helpers.mjs';
+// THE REPO MAN, 32x32 bust (round 4). Literal pixels; outline() adds the outer K.
+// Navy tow-company cap, bored stare, full brown beard; hi-vis orange vest over navy coveralls, the vest's reflective
+// straps running over both shoulders. Right arm: shoulder -> upper arm down -> elbow (bottom) -> forearm up in front ->
+// fist holding up a clipboard with a repo notice (red X).
 export function repoman32() {
-  const g = blank();
-  // coveralls under everything
-  for (let y = 21; y < 32; y++) { const x0 = y === 21 ? 2 : y === 22 ? 0 : 0; span(g, y, x0, 24, 'N'); }
-  // vest panels (Y lit, O mid, o shadow), open down the middle over the coveralls
-  for (let y = 22; y < 32; y++) { span(g, y, 0, 8, 'O'); span(g, y, 14, 23, 'O'); }
-  for (let y = 22; y < 32; y++) { px(g, 0, y, 'Y'); px(g, 8, y, 'o'); px(g, 23, y, 'o'); px(g, 14, y, 'Y'); }
-  span(g, 22, 1, 7, 'Y');
-  span(g, 27, 0, 8, 'L'); span(g, 28, 0, 8, 'S'); span(g, 27, 14, 23, 'L'); span(g, 28, 14, 23, 'S');
-  // head: cap
-  paint(g, 3, 1, [
-    '   UUUUUUUNN    ',
-    '  UNNNNNNNNNk   ',
-    ' UNNNNTTTNNNNk  ',
-    ' UNNNNTOTNNNNk  ',
-    ' UNNNNNNNNNNNk  ',
-    'UNNNNNNNNNNNNNk ',
-    'AUUUUUUUUUUUUUNk',
-    'kkkkkkkkkkkkkkkk',
+  const g = Array.from({ length: 32 }, () => Array(32).fill('.'));
+  // body silhouette: coveralls first
+  const sil = { 20: [6, 18], 21: [4, 27], 22: [1, 30] };
+  for (let y = 20; y < 32; y++) { const [a, b] = sil[y] ?? [0, 31]; for (let x = a; x <= b; x++) g[y][x] = 'N'; }
+  // vest panels (over the shoulders, armholes at the sides)
+  const vl = { 20: [6, 9], 21: [4, 9], 22: [1, 10], 23: [0, 10], 24: [1, 10], 25: [2, 10] };
+  const vr = { 20: [15, 18], 21: [15, 27], 22: [14, 30], 23: [14, 31], 24: [14, 30], 25: [14, 29] };
+  for (let y = 20; y < 32; y++) {
+    const [a, b] = vl[y] ?? [3, 10]; for (let x = a; x <= b; x++) g[y][x] = 'O';
+    const [c, d] = vr[y] ?? [14, 28]; for (let x = c; x <= d; x++) g[y][x] = 'O';
+  }
+  // vest shading: lit top/left, shadow right edges
+  for (let y = 20; y < 32; y++) for (let x = 0; x < 32; x++) if (g[y][x] === 'O') {
+    const up = g[y - 1][x], lf = g[y][x - 1];
+    const vest = (c) => 'OYo'.includes(c);
+    if (y === 20 || !vest(up)) g[y][x] = 'Y';
+    else if (x === 10) g[y][x] = 'o';
+    else if (x < 10 && !vest(lf)) g[y][x] = 'Y';
+  }
+  // reflective straps over the shoulders
+  for (let y = 20; y < 32; y++) { g[y][6] = 'L'; g[y][7] = 'S'; g[y][17] = 'L'; g[y][18] = 'S'; }
+  for (let x = 0; x < 32; x++) { if ('OYoLS'.includes(g[28][x])) { g[28][x] = 'L'; g[29][x] = 'S'; } }
+  // neck and the coverall collar points inside the vest's V
+  stamp(g, 10, 20, [
+    'fffff',
+    'UfffN',
+    'NUfNN',
   ]);
-  paint(g, 4, 9, [
-    'ffffffffffffff',
-    'FkkkkFFFFkkkkf',
-    'FWKWFFFFFWKWff',
-    'FffFFFfFFFfFff',
-    'FFFFFFfFFFFFff',
-    'FFFFFffFFFFFff',
-    'FFFFFFFFFFFFff',
-    'FFFkkkkkkkFFff',
-    'FsFFFFFFFFFsff',
-    'FFsFsFsFsFsFf ',
-    ' fFsFsFsFsFf  ',
-    '  ffsFsFsff   ',
+
+  for (let y = 24; y < 32; y++) if (g[y][0] === 'N') g[y][0] = 'U';
+  // head
+  stamp(g, 4, 1, [
+    '   UUUUUUUUUUN   ',
+    '  UNNNNNNNNNNNk  ',
+    ' UNNNNNYYONNNNNk ',
+    ' UNNNNNOOoNNNNNk ',
+    ' UNNNNNNNNNNNNNk ',
+    'AUUUUUUUUUUUUUUUN',
+    ' kkkkkkkkkkkkkkk ',
+    '  Bfffffffffffb  ',
+    '  BFbbbFFFbbbfb  ',
+    ' FBFfffFFFffffbf ',
+    ' fBFWKWFFfWKWfbf ',
+    '  BFFFFFffFFFfb  ',
+    '  BFFFFFFFFFffb  ',
+    '  BBBBBBBBBBBBb  ',
+    '  BBBBkkkkkBBbb  ',
+    '  BBBBBBBBBBBbb  ',
+    '   BBBBBBBBBbb   ',
+    '    BBBBBBBbb    ',
+    '     bbbbbbb     ',
   ]);
-  // neck + work-shirt collar
-  paint(g, 7, 21, [
-    'UUFFFFfNN',
-    'UNNFFfNNk',
-    ' UNNfNNk ',
-    '  UNNNk  ',
+  // arm: upper arm out of the right shoulder, elbow at the bottom, forearm up in front of the chest
+  for (let y = 24; y < 32; y++) { g[y][27] = 'U'; for (let x = 28; x <= 31; x++) g[y][x] = 'N'; }
+  for (let y = 19; y < 32; y++) {
+    const o = y < 25 ? 0 : y < 29 ? 1 : 2;   // forearm leans toward the elbow below the frame
+    g[y][20 + o] = 'k'; g[y][21 + o] = 'U'; for (let x = 22 + o; x <= 25 + o; x++) g[y][x] = 'N';
+    if (y < 29) g[y][26 + o] = 'k';
+  }
+  // clipboard: board, steel clip, paper, red X
+  stamp(g, 22, 3, [
+    '   LLS   ',
+    'wwwLLSwwB',
+    'wTTDDDTTb',
+    'wTtttttTb',
+    'wTTTTTTTb',
+    'wTRTTTRTb',
+    'wTTRTRTTb',
+    'wTTTRTTTb',
+    'wTTRTRTTb',
+    'wTRTTTRTb',
+    'wTTTTTTTb',
+    'wTttttTTb',
+    'wTTTTTTTb',
+    'Bbbbbbbbb',
   ]);
-  // fist (four curled fingers, thumb across), cuff, forearm in front of the shoulder
-  const FISTS = {
-    a: [' FFFFf ', 'FFFFFFf', 'FFFFFff', 'FfFfFff', 'fFFFfff', ' fffff '],
-    b: [' FfFfF ', 'FFFFFFf', 'FFFFFff', 'ffffFff', 'FFFFfff', ' fffff '],
-    c: [' FFFFf ', 'FFFFFFf', 'FfFfFff', 'FFFFFff', 'ffffFff', ' fffff '],
-  };
-  paint(g, 19, 3, FISTS['b']);
-  paint(g, 19, 9, ['UUUUUk', 'NNNNkk']);   // rolled cuff
-  for (let y = 11; y < 28; y++) paint(g, 19, y, [y < 17 ? 'UNNNk' : y < 23 ? 'UNNNNk' : 'UNNNNNk']);
-  // upper arm: from the shoulder down-right behind the forearm to the elbow; the vest shows again below the arm
-  paint(g, 25, 21, ['U', 'NU', 'NNU', 'NNNU', 'NNNNk', 'NNNNk', 'NNNNk', 'NNNk', 'kkk']);
-  paint(g, 19, 28, ['kNNNNNk', ' kkkkk']);
-  // chain from the fist, then the J hook (eye, shank, curve, point)
-  paint(g, 25, 4, ['L', 'DL', ' LS', ' DL', '  LS']);
-  paint(g, 25, 9, [
-    '  LLS',
-    '  L D',
-    '  LSD',
-    '   LSD',
-    'L  LSD',
-    'L  LSD',
-    'LS LSD',
-    ' LSSD',
+  // fist gripping the board's bottom-left corner (thumb on the front, knuckles along the edge), cuff
+  stamp(g, 20, 14, [
+    '  Ff  ',
+    ' FFFFf',
+    ' FfFfF',
+    ' fffff',
+    ' UUUUN',
   ]);
-  paint(g, 3, 24, ['TTT', 'ttt']);   // name patch
-  return done(g).map((r) => r.replace(/s/g, 'h'));
+  return rows(g);
 }
