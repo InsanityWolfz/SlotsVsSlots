@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3 } from '../src/core/config';
 import { Fight } from '../src/core/fight';
 import { OVERTIME, overtimeMul } from '../src/core/enemies';
-import { createRun, fightConfig } from '../src/core/run';
+import { createRun, fightConfig, HOLD } from '../src/core/run';
 
 /** A sword jackpot every spin against a wall: the pays only change with the clock. */
 const fight = (overtime: boolean, act = 1) => {
@@ -27,7 +27,7 @@ function pays(f: Fight, rounds: number): { mine: number[]; theirs: number[]; ban
   return { mine, theirs, banners };
 }
 
-describe('OVERTIME (TEST)', () => {
+describe('OVERTIME', () => {
   it('starts at its round and grows by its step each round', () => {
     const from = OVERTIME.from;
     expect(overtimeMul(2 * from - 2)).toBe(1);
@@ -70,10 +70,38 @@ describe('OVERTIME (TEST)', () => {
     expect(late(true)).toBe(1);
   });
 
-  it('a run flagged OVERTIME puts the clock in every fight', () => {
+  it('every run fight has the clock and two HOLDs; the parked race has neither', () => {
     const run = createRun(defaultConfig(), 5, 'knight', 0);
+    const cfg = fightConfig(run, defaultConfig());
+    expect(cfg.overtime).toBe(true);
+    expect(cfg.player.holds).toBe(HOLD.perFight);
+    run.race = true;
     expect(fightConfig(run, defaultConfig()).overtime).toBeUndefined();
-    run.overtime = true;
-    expect(fightConfig(run, defaultConfig()).overtime).toBe(true);
+  });
+});
+
+describe('OVERTIME grows hits, not charge', () => {
+  it("TESLA's bolts charge the same; its strikes hit harder", () => {
+    const run = (overtime: boolean) => {
+      const c = defaultConfig();
+      c.player = { hp: 9_999_999, strips: reels3({ bolt: 12 }) };
+      c.enemy = { hp: 9_999_999, strips: reels3({ shield: 12 }), act: 1 };
+      c.cabinet = 'tesla';
+      c.overtime = overtime;
+      const f = new Fight(c, 7);
+      const charge: number[] = [];
+      const strikes: number[] = [];
+      while (f.turn < 2 * OVERTIME.from + 2) {
+        for (const e of f.step().events) {
+          if (e.type === 'energyGain' && e.side === 'player') charge.push(e.amount);
+          if (e.type === 'specialFire' && e.from === 'player') strikes.push(e.amount);
+        }
+      }
+      return { charge, strike: strikes[strikes.length - 1] };
+    };
+    const off = run(false);
+    const on = run(true);
+    expect(on.charge).toEqual(off.charge);
+    expect(on.strike).toBeGreaterThan(off.strike);
   });
 });

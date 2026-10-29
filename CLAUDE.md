@@ -5,7 +5,7 @@ Web build: https://insanitywolfz.github.io/SlotsVsSlots/ (deploys on every push 
 
 ## Where the project stands (2026-10-29)
 The project is back on, aimed at a paid Steam release. **v1.0 is the old game** (HP fights, `docs/legacy/HP_GAME.md`),
-not a rebuild: its fights get three small changes, its content is frozen and trimmed, and it goes to Steam. The METER
+not a rebuild: its fights got OVERTIME and HOLD (live 2026-10-29), its content is frozen and trimmed, and it goes to Steam. The METER
 COMBAT rebuild (2026-10-16/17) and the score race before it are **parked**: their code (`src/meter/`, `src/race/`)
 stays out of PLAY MODES and moves out of the engine in phase 2. The plan and why: `docs/ROADMAP.md`, from an overnight
 review (the user's doc "Slots vs. Slots: the road to Steam", https://claude.ai/artifact/A7ADak3Vec6oPZEzQbMVgi).
@@ -25,8 +25,10 @@ far it got. Keep that line current while you work.
   the user's call. New ideas go on its "After launch" list.
 - **Two kinds of change.**
   - A fix or tweak (a bug, a number, a word): straight to `main`; `npm test` must pass (CI blocks a broken deploy).
-  - A rule change (a new mechanic or system): built behind a PLAY MODES (TEST) entry, played by the user and by
-    outside players, and only then made the live rule. A branch only if it takes more than one session.
+  - A rule change (a new mechanic or system): the user decides when it goes live, often without playing it first
+    (2026-10-29: they know the game well enough to judge it on paper). Bring the rules, the sim's numbers and the
+    researcher's precedents; build it live once they say yes, then outside players judge it at the next playtest. A
+    PLAY MODES (TEST) entry only if the user asks for one. A branch only if it takes more than one session.
 - **People decide, sims measure.** Outside players (people who haven't played it) judge the feel: every two weeks,
   one run each, three questions (the best moment, when you got bored, what confused you), plus their COPY RUN log.
   The sim measures; it doesn't decide.

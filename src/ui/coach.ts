@@ -1,3 +1,5 @@
+import { OVERTIME } from '../core/enemies';
+import { HOLD } from '../core/run';
 import { HUD_W } from '../present/hud';
 import { COLORS, H, HUD_TOP, MACHINE_CX, MACHINE_H, MACHINE_TOP, MACHINE_W, W } from '../present/layout';
 import { artId, drawSprite, hasSprite } from '../render/sprites';
@@ -20,9 +22,9 @@ const machine = (side: 'player' | 'enemy'): [number, number, number, number] => 
 const hud = (side: 'player' | 'enemy'): [number, number, number, number] => [MACHINE_CX[side] - HUD_W / 2 - 12, HUD_TOP - 12, HUD_W + 24, 156];
 
 /** The tutorial script, by moment. */
-export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'ability' | 'draft' | 'shop' | 'next', Tip[]> = {
+export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'ability' | 'draft' | 'shop' | 'next', Tip[]> = {
   preview: [
-    { title: 'WELCOME TO SLOTS VS. SLOTS', text: 'TWO SLOT MACHINES FIGHT. YOU DON\'T AIM OR HOLD ANYTHING: THE REELS DECIDE THE FIGHT. YOUR CHOICES COME BETWEEN FIGHTS.' },
+    { title: 'WELCOME TO SLOTS VS. SLOTS', text: 'TWO SLOT MACHINES FIGHT. THE REELS DECIDE MOST OF A FIGHT: YOUR BIG CHOICES COME BETWEEN FIGHTS, AND IN A FIGHT YOU CAN HOLD A REEL.' },
     { title: 'A RUN', text: 'EACH ACT IS 5 FIGHTS AND A BOSS. BEAT THE HOUSE (ACT 1) AND THE WHEEL (ACT 2) TO CLEAR THE RUN. LOSE ONCE AND THE RUN IS OVER.' },
     { title: 'YOUR NEXT OPPONENT', text: 'THIS CARD SHOWS WHO YOU FIGHT NEXT: ITS HP, ITS REELS AND WHAT ITS ABILITY DOES TO YOUR MACHINE. PRESS FIGHT! WHEN READY.' },
   ],
@@ -32,7 +34,10 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'ability' | 'd
     { title: 'YOUR HP', text: 'RED IS HP, BLUE IS SHIELD. THE OTHER SLOT MACHINES ALSO HAVE A METER (LIGHTNING, VOLUME, JACKPOTS OR HIGH ROLLER) THAT PAYS OFF WHEN IT FILLS.', rect: hud('player') },
     { title: 'THE ENEMY', text: 'ENEMIES SPIN TOO. THEIR ABILITY ICON CHARGES EACH SPIN. WHEN IT FIRES THEY WRITE ON YOUR MACHINE: SLIME, FREEZE, ROCKS AND WORSE.', rect: hud('enemy') },
     { title: 'SPIN, AUTO AND SPEED', text: 'PRESS SPIN (OR SPACE) EACH SPIN, OR TURN ON AUTO AND WATCH. THE SPEED BUTTON CYCLES 1X, 2X, 4X AND 8X.', rect: [MACHINE_CX.player - 175, 610, 390, 80] },
+    { title: 'HOLD', text: `${HOLD.perFight} TIMES A FIGHT, TAP ONE OF YOUR REELS TO HOLD IT: IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. TAP BEFORE YOU SPIN OR WHILE THE ENEMY SPINS. NOTHING WAITS FOR IT, NOT EVEN AUTO.`, rect: machine('player') },
+    { title: 'OVERTIME', text: `A FIGHT CAN'T DRAG ON: FROM SPIN ${2 * OVERTIME.from - 1}, EVERY HIT ON BOTH MACHINES GROWS WITH EACH OF YOUR SPINS. THE MIDDLE OF THE SCREEN COUNTS IT DOWN.` },
   ],
+  hold: [{ title: 'A PAIR! HOLD IT?', text: 'TAP THE TWO REELS OF YOUR PAIR TO HOLD THEM. YOUR NEXT SPIN KEEPS THE PAIR AND ROLLS THE LAST REEL: A JACKPOT IF IT MATCHES. HOLD WHILE THE ENEMY SPINS.', rect: machine('player') }],
   firstSpin: [{ title: 'THAT\'S A SPIN', text: 'EVERY GROUP ON THE PAYLINE PAID OUT. THEN THE ENEMY SPINS. TRADE BLOWS UNTIL ONE MACHINE HITS 0 HP.' }],
   ability: [{ title: 'ENEMY ABILITY!', text: 'THAT WAS ITS ABILITY. EVERY ENEMY HAS ITS OWN. THE CARD BEFORE EACH FIGHT TELLS YOU WHAT IT DOES, SO YOU CAN BUILD AGAINST IT.', rect: hud('enemy') }],
   draft: [

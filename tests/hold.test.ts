@@ -38,3 +38,23 @@ describe('HOLD (experiment, 2026-10-15)', () => {
     expect(fight(0).hold(0)).toBe(false);
   });
 });
+
+describe('HOLD in the live game (user, 2026-10-29)', () => {
+  it('every run fight has two HOLDs, and the sim bot uses them', async () => {
+    const { playRun } = await import('../src/sim/play');
+    let held = 0;
+    let spins = 0;
+    for (const seed of [1, 2, 3])
+      playRun(defaultConfig(), seed, 'knight', 0, {
+        onEvents: (events) => {
+          for (const e of events) {
+            if (e.type !== 'spin' || e.side !== 'player') continue;
+            spins++;
+            if (e.held?.some(Boolean)) held++;
+          }
+        },
+      });
+    expect(spins).toBeGreaterThan(0);
+    expect(held).toBeGreaterThan(0);
+  });
+});

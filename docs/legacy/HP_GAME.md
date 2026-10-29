@@ -8,10 +8,30 @@ Read from the code on 2026-10-11. When the code and this file disagree, the code
 Every number here is a starting point: balance is being redone (see `ROADMAP.md`).
 
 ## The pitch
-An 8-bit roguelike where two slot machines fight. Fights are watch-only: the reels decide them. Enemies cheat by
-writing on your machine (slime, rocks, stolen cells, frozen reels, bombs...). Your agency is between fights: which
-path to take through an act, which card to draft, what to buy at the Cashier, what to gamble at an encounter, and
-which Charms and relics to build.
+An 8-bit roguelike where two slot machines fight. The reels decide most of a fight; in it you can HOLD a reel (below).
+Enemies cheat by writing on your machine (slime, rocks, stolen cells, frozen reels, bombs...). Most of your agency is
+between fights: which path to take through an act, which card to draft, what to buy at the Cashier, what to gamble at
+an encounter, and which Charms and relics to build.
+
+## Phase 1: OVERTIME, HOLD and AUTO (user, 2026-10-29)
+- **AUTO is off by default:** a new player presses SPIN (saved prefs keep their choice).
+- **OVERTIME, a fight clock in every act** (`OVERTIME` in `src/core/enemies.ts`): from round 8 (a round is your spin
+  and the enemy's: SPIN 15 on the counter), every hit on both machines pays x1.25, +0.25 a round. Hits are the groups
+  that hit (swords, sevens, aces, notes, chips) and TESLA's strikes; shields don't grow (a clock that grows defence
+  can't break a shield stall), nor does TESLA's charge (growing it grew every storm and its heals). The one-turn caps
+  stay. It replaces act 3's enemy-only ramp (`TUNE.rampPerTurn` now only reaches THE OWNER, who has no OVERTIME: he
+  escalates already). The HUD counts OVERTIME IN 3 / 2 / 1, then OVERTIME XN; a banner when it starts; each pay's climb
+  names it. The researcher's precedents (TFT, The Bazaar, Backpack Battles) are in `docs/RESEARCH.md`.
+- **HOLD** (`HOLD` in `src/core/run.ts`): 2 a fight. Tap one of your reels before your spin, or while the enemy's turn
+  plays (the engine is on your turn by then), to keep its symbol for your next spin; tap again to let go. Nothing ever
+  waits for it: AUTO never stops. Sabotage that lands on a held reel stays on it (the gamble you took); a frozen reel
+  can't be held. Shown: HOLD 2: TAP A REEL under your machine while a tap would hold, a gold HELD frame, and PAIR! HOLD
+  IT FOR A JACKPOT? after a pair. The tutorial explains both (and its first pair stops on a HOLD callout); the glossary
+  has HOLD and OVERTIME. The sim bot holds a paying pair of its attack symbol (a shield pair when low).
+- **Sim, 300 runs, both live** (before -> after): fights past 12 of your spins (regular / boss), attack build, WHITE
+  655 / 95 -> 276 / 33, GREEN 921 / 206 -> 422 / 146. Run win WHITE / GREEN: KNIGHT 72 / 39, TESLA 66 / 54, JUKEBOX 65 /
+  45, JOKER 56 / 41, BANKROLL 60 / 47 (targets 60 / 36): easier, TESLA at GREEN most (THE DEALER 94% when reached).
+  Not tuned: balance is phase 5's pass (ROADMAP).
 
 ## The cut and the act 1 feel pass (user, 2026-10-15)
 The game had too many systems to feel like one game, so it was cut down (the user's picks from a cut list), then act 1

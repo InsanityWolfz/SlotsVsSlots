@@ -413,8 +413,6 @@ export class RunScreens {
   private lastRecord: FightRecord | null = null;
   /** THE SCORE RACE: the machine screen is picking a race run's machine. */
   private raceSelect = false;
-  /** OVERTIME (TEST): the machine picked starts an OVERTIME run (the subtitle says so). */
-  private overtimeSelect = false;
   /** 'spoils' = an elite's relic choice (1 of 2) shown with the draft layout. */
   private draftKind: 'draft' | 'spoils' | 'legend' | 'start' = 'draft';
   private shopItems: ShopItem[] = [];
@@ -464,9 +462,8 @@ export class RunScreens {
   ) {}
 
   /** Pick your starting machine (pre-run). Locked cabinets show how to unlock them. */
-  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0, _act3 = false, _dealerBeaten: CabinetId[] = [], race = false, overtime = false): void {
+  showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0, _act3 = false, _dealerBeaten: CabinetId[] = [], race = false): void {
     this.raceSelect = race;
-    this.overtimeSelect = overtime;
     this.cabinetUnlocked = unlocked;
     this.stakes = stakes;
     this.run = null;
@@ -2548,8 +2545,7 @@ export class RunScreens {
 
   private drawCabinets(ctx: CanvasRenderingContext2D, time: number): void {
     drawText(ctx, 'CHOOSE YOUR MACHINE', W / 2, 60, 5, COLORS.goldLight);
-    if (this.overtimeSelect) drawText(ctx, 'OVERTIME (TEST): EVERY FIGHT HAS THE CLOCK. NO STATS OR UNLOCKS.', W / 2, 104, 2, '#ff9a3a');
-    else drawText(ctx, 'WIN RUNS TO UNLOCK MORE.', W / 2, 104, 2, COLORS.textDim);
+    drawText(ctx, 'WIN RUNS TO UNLOCK MORE.', W / 2, 104, 2, COLORS.textDim);
     this.drawStakePicker(ctx, time);
     const sel = stakeOf(this.stakeSel);
     CABINET_ORDER.forEach((id, i) => {

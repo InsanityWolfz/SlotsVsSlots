@@ -159,7 +159,7 @@ export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stak
     const arch = run.enemies[run.depth]?.archetype ?? '?';
     let lastSpin: Parameters<typeof holdPolicy>[1] = null;
     while (!fight.over && fight.turn < 2000) {
-      if ((opts.holds || cfg.race) && fight.next === 'player') holdPolicy(fight, lastSpin, CABINETS[run.cabinet].attack);
+      if ((cfg.player.holds || cfg.race) && fight.next === 'player') holdPolicy(fight, lastSpin, CABINETS[run.cabinet].attack);
       // THE SCORE RACE: the spin lands, the bot may NUDGE or RESPIN, then it scores.
       if (cfg.race && fight.next === 'player' && fight.land()) landPolicy(fight);
       const { events } = fight.step();

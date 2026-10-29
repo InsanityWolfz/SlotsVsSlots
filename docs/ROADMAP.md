@@ -2,11 +2,11 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress:** phase 1. OVERTIME (TEST) is built and waits on play (the user, then outside players); HOLD waits
-on the user's call on its rules.
+**In progress:** nothing. Phase 1 (OVERTIME, HOLD, AUTO off) is live; its gate is the next outside playtest. Phase 2
+(freeze and trim) can start alongside.
 
-**Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with three
-fight changes, frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
+**Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
+fight changes (OVERTIME and HOLD), frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
 review (their doc "Slots vs. Slots: the road to Steam", https://claude.ai/artifact/A7ADak3Vec6oPZEzQbMVgi). The METER
 COMBAT rebuild is parked (bottom of this file). Each phase ends in a gate; the next phase starts when it's met. No
 dates: the user sets the pace.
@@ -56,21 +56,19 @@ is one of yours; the game's SPINS counter counts both machines, so it reads abou
 **Gate:** met (user, 2026-10-29): OVERTIME yes; AUTO off by default (done); certain intents dropped; HOLD waits on
 its rules (the user's worry: asking every round would annoy players who blast through).
 
-## Phase 1: fix the fights
-Each is a rule change: built behind PLAY MODES (TEST), played by the user and outside players, then made live.
-1. **OVERTIME (built: PLAY MODES > OVERTIME (TEST), filed like the tutorial).** From round 8 (a round is your spin
-   and the enemy's; SPIN 15 on the counter), every hit on both machines pays x1.25, +0.25 each round after; shields
-   don't grow (a clock that grows defence can't break a shield stall: the researcher's TFT and Bazaar precedents, and
-   the sim). The one-turn caps stay; it replaces act 3's enemy-only ramp. The HUD counts OVERTIME IN 3 / 2 / 1, then
-   OVERTIME X1.25..., a banner when it starts, and each pay's climb shows it (`OVERTIME` in `src/core/enemies.ts`).
-   Sim, 300 runs, fights past 12 of your spins (regular / boss), attack build: WHITE 655 / 95 -> 323 / 37, GREEN
-   921 / 206 -> 500 / 138; shield build GREEN 1857 / 569 -> 1034 / 383. Run wins move -8 to +9 points (the balance
-   pass in phase 5 takes it in). It can't fix dry stretches (no pay to grow): those are HOLD's job. To check with players:
-   do heal stalls (TESLA's storms) still happen, and does it read.
-2. **HOLD (proposed rules, the user's call):** 2 HOLDs a fight. Before any spin of yours, tap a reel to keep its
-   symbol for that spin. Nothing ever waits for it: with AUTO on, the fight never stops to offer one (the old HOLD
-   stopped on every pair, which is the user's worry). Its uses: keep a pair and roll for the jackpot, keep a shield
-   on the payline before a countdown lands. The engine part is still in `fight.ts` (`hold`, `holdsLeft`).
+## Phase 1: fix the fights (built and live, 2026-10-29)
+The user approved both on paper (no test mode); the rules are in `docs/legacy/HP_GAME.md` "Phase 1".
+1. **OVERTIME:** from round 8 (SPIN 15), every hit on both machines grows x1.25, +0.25 a round; shields and TESLA's
+   charge don't grow; the caps stay; it replaces act 3's enemy-only ramp. It can't fix dry stretches (no pay to grow).
+2. **HOLD:** 2 a fight; tap a reel before your spin or while the enemy spins; nothing waits for it, AUTO included.
+3. **AUTO off by default.** (Certain intents were dropped: the countdowns already exist.)
+
+Sim, 300 runs, both live: fights past 12 of your spins (regular / boss) WHITE 655 / 95 -> 276 / 33, GREEN 921 / 206 ->
+422 / 146. The game got easier (GREEN: TESLA 54%, BANKROLL 47%, JUKEBOX 45% against a 36 target; WHITE KNIGHT 72%
+against 60): phase 5's balance pass takes it in, unless outside players find it too easy first. Ask them: do they use
+HOLD, do they notice OVERTIME, do heal stalls (TESLA's storms) still happen.
+
+Follow-ups: keyboard and gamepad can't HOLD yet (Steam needs it; a key per reel, before phase 3's demo).
 
 **Gate:** outside players stop calling the fights slow or watch-only.
 

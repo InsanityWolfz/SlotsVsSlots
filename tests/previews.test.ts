@@ -100,12 +100,13 @@ describe('Package P', () => {
 });
 
 describe('on-symbol numbers match the calculation (audit)', () => {
-  it('act 3: an enemy sword group hits for exactly what its banner says (LATE is on the banner, not hidden)', () => {
+  it('an enemy sword group hits for exactly what its banner says (OVERTIME is on the banner, not hidden)', () => {
     const c = fightConfig(createRun(base, 3, 'knight'), base);
-    c.enemy = { hp: 9999, strips: reels3({ sword: 12 }), ability: null, act: 3 };
+    c.enemy = { hp: 999999, strips: reels3({ sword: 12 }), ability: null, act: 3 };
+    c.player.hp = c.player.startHp = 999999;
     const f = new Fight(c, 4);
     let ok = 0;
-    for (let i = 0; i < 16 && !f.over; i++) {
+    for (let i = 0; i < 22 && !f.over; i++) {
       const { side, events } = f.step();
       if (side !== 'enemy') continue;
       const spin = ofType(events, 'spin')[0];
@@ -114,7 +115,7 @@ describe('on-symbol numbers match the calculation (audit)', () => {
       // (The first enemy hit in act 3 splits off a COVER CHARGE that goes through your shield.)
       if (!g || !atk || ofType(events, 'coverCharge').length) continue;
       expect(atk.amount).toBe(g.amount);
-      if (g.notes?.some((n) => n.endsWith('LATE'))) ok++;
+      if (g.notes?.some((n) => n.endsWith('OVERTIME'))) ok++;
     }
     expect(ok).toBeGreaterThan(0);
   });

@@ -265,7 +265,7 @@ export interface GameConfig {
   stake?: number;
   /** ENDLESS: TONIGHT'S RULE, for both machines (run.ts NIGHTS). */
   night?: 'happy' | 'limit' | 'lucky' | 'showdown' | 'iron' | 'fast';
-  /** OVERTIME (TEST, roadmap phase 1): the fight clock, both machines' hits (enemies.ts OVERTIME). */
+  /** OVERTIME: the fight clock, both machines' hits (enemies.ts OVERTIME). */
   overtime?: boolean;
   /** null = new random seed each fight. */
   seed: number | null;

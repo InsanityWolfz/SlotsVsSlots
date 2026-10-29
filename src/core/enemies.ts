@@ -335,7 +335,7 @@ export const LOOP_GROWTH = { veteran: 1, warmUp: 3 };
 export const TUNE = { headStart: 2, dailyAct3: 0.45, greenWheel: 0.85, coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, dealerQuietCap: 0.25, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, rampPerTurn: 0.06, rampMax: 2, regularHp: 1.05, act2Hp: 1.6, act3Hp: 1.4, act1Swords: 1, enemyShield: 0.5, act3Sevens: 4, bossHp: 100 * UNIT, act2Mul: 1.06, act2Swords: 2, wheelHp: 350 * UNIT, dealerHp: 1300 * UNIT, endlessBossBase: 300 * UNIT, enemyDmg: 1 };
 export const ACTS = 2;
 /**
- * OVERTIME (TEST, roadmap phase 1, user 2026-10-29): a fight clock in every act. From round `from` (a round is your
+ * OVERTIME (user, 2026-10-29: roadmap phase 1, live without a test mode): a fight clock in every act. From round `from` (a round is your
  * spin and the enemy's), every pay on both machines but shields is multiplied by 1 + step for each round of overtime
  * so far; the one-turn damage caps still hold. It replaces act 3's enemy-only ramp. `warn`: rounds of OVERTIME IN n
  * before it. (Sim, 300 runs WHITE / GREEN: growing shields too cut the long fights less and lifted GREEN run wins up to

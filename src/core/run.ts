@@ -281,8 +281,6 @@ export interface RunState {
   dailyNight?: NightId;
   /** THE SCORE RACE: every fight is a race; spin tools bought at the Cashier (for the run); PHOENIX spent. */
   race?: boolean;
-  /** OVERTIME (TEST): every fight has the clock (enemies.ts OVERTIME). Filed like the tutorial. */
-  overtime?: boolean;
   raceTools?: { hold?: number; nudge?: number; respin?: number };
   racePhoenix?: boolean;
   /** Relic picks waiting behind the current one (PUNCH CARD's can land on the act's legendary pick). */
@@ -598,6 +596,8 @@ export function passStop(run: RunState): void {
  * Its act 2 boss becomes THE WHEEL (its real HP is sized when the fight starts, so nothing else carries over).
  */
 export function migrateRun(run: RunState): RunState {
+  // OVERTIME (TEST) runs (2026-10-29) are normal runs now: the clock is in every fight.
+  delete (run as { overtime?: boolean }).overtime;
   const fix = (e: EnemyDef | undefined): EnemyDef | undefined => {
     if (!e || ((e.boss as string) !== 'mirror' && e.archetype !== 'mirror')) return e;
     return { ...e, archetype: WHEEL.id, boss: 'wheel', name: WHEEL.name, portrait: WHEEL.portrait, blurb: WHEEL.blurb, strips: [0, 1, 2].map(() => ({ ...WHEEL.strip })), ability: WHEEL.ability ? { ...WHEEL.ability } : null };
@@ -710,6 +710,10 @@ export const isBossNext = (run: RunState) => !needsRoute(run) && !!currentEnemy(
 /** FAST HANDS: abilities come 2 turns sooner per level (never under every 2). */
 export const fastHands = (ab: AbilityDef, level = 1): AbilityDef => ({ ...ab, every: Math.max(2, ab.every - 2 * level) });
 
+/** HOLD (user, 2026-10-29): before your spin, or during the enemy's turn, tap one of your reels to keep it for your next
+ * spin. Nothing waits for it (AUTO never stops). */
+export const HOLD = { perFight: 2 };
+
 export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   const cfg = cloneConfig(base);
   const e = currentEnemy(run);
@@ -767,7 +771,6 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // TONIGHT'S RULE (ENDLESS: the path's; THE DAILY RUN: the day's), for both machines.
   const night = nightId(run);
   cfg.night = night;
-  if (run.overtime) cfg.overtime = true;
   if (night === 'lucky') for (const side of [cfg.player, cfg.enemy]) side.strips = side.strips.map((s) => ({ ...s, wild: (s.wild ?? 0) + NIGHT.luckyWilds }));
   if (night === 'fast') {
     if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
@@ -780,6 +783,10 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   cfg.seed = dailyFightSeed(run.daily ? run.seed : (run.spinSeed ?? run.seed), run.act, run.depth, run.endless?.loop ?? 0);
   // QUICKENING (legendary relic): enemy abilities charge one spin faster.
   if (quickening(run) && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
+  // OVERTIME (user, 2026-10-29): every fight has the clock but THE OWNER's (he escalates every turn already) and the
+  // parked SCORE RACE's. HOLD: two a fight (the race sets its own).
+  if (!run.race && !cfg.enemy.owner) cfg.overtime = true;
+  cfg.player.holds = HOLD.perFight;
   // THE SCORE RACE (sandbox): a fixed number of spins, the higher score wins, and HOLDs to play them with.
   if (run.race) {
     // The enemy's score grows with its HP (HP tracked your power; honest HP keeps it the same on every machine).

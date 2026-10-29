@@ -101,6 +101,8 @@ export const RACE_RULES = { frozenPay: 0.5, thiefShare: 0.25, smashMul: 3, meltd
 const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
 const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'goldbar', 'note']);
+/** The groups OVERTIME grows: the ones that hit. */
+const OVERTIME_HITS: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'seven', 'goldbar', 'note']);
 /** A cell's charm as the WILD wheel shows it (only charms that change a jackpot's pay or heal). */
 export const wheelCharm = (cell: { enh?: Enh; faked?: number }): Enh | undefined =>
   cell.enh && (cell.enh === 'gold' || cell.enh === 'keen' || cell.enh === 'vamp' || cell.enh === 'charged') && !((cell.faked ?? 0) > 0) ? cell.enh : undefined;
@@ -606,7 +608,7 @@ export class Fight {
     // LAST CALL is announced as the enemy's turn begins (its scored hits carry the multiplier on their banner).
     else this.enemyDmgMul(events);
     events.push({ type: 'turnStart', turn: this.turn, side });
-    // OVERTIME (TEST): announced on the first turn of its first round.
+    // OVERTIME: announced on the first turn of its first round.
     if (this.cfg.overtime && overtimeRound(this.turn) === OVERTIME.from && overtimeRound(this.turn - 1) < OVERTIME.from)
       events.push({ type: 'overtime', side, mul: overtimeMul(this.turn) });
     this.playerTurnHp = 0;
@@ -1306,10 +1308,12 @@ export class Fight {
         boost(g, 2);
         notes.push('X2 IRON NIGHT');
       }
-      // OVERTIME (TEST): every paying group on both machines but shields, a true multiplier (never pooled with TESLA's
-      // boosts). Shields don't grow: a clock that grows defence too can't break a shield stall (sim 2026-10-29).
+      // OVERTIME: every group that hits, on both machines, a true multiplier (never pooled with TESLA's boosts).
+      // Shields don't grow (a clock that grows defence can't break a shield stall), and nor do TESLA's bolts: they only
+      // charge, and its strikes grow where they land (growing the charge grew every storm and its heals: TESLA GREEN
+      // run win 57%, sim 2026-10-29).
       const ot = this.cfg.overtime ? overtimeMul(this.turn) : 1;
-      if (ot > 1 && g.base > 0 && g.symbol !== 'shield') {
+      if (ot > 1 && g.base > 0 && OVERTIME_HITS.has(g.symbol)) {
         g.mult *= ot;
         notes.push(`X${ot} OVERTIME`);
       }
@@ -1814,9 +1818,11 @@ export class Fight {
       // CHAIN LIGHTNING (legendary relic): +100%.
       const chain = me.side === 'player' && me.relics.has('chainlightning') ? LEGEND_RELIC.chainAdd : 0;
       // PAY.lightningAdd: the lightning's boosts add up instead of multiplying.
-      const dmg = PAY.lightningAdd
+      let dmg = PAY.lightningAdd
         ? unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0) + (live ? NEW_RELIC.livewireMul : 0) + melt + chain))
         : unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1) * (1 + melt) * (1 + chain));
+      // OVERTIME grows each strike (a hit), not the charge behind it.
+      if (this.cfg.overtime && overtimeMul(this.turn) > 1) dmg = unitsUp(dmg * overtimeMul(this.turn));
       if (over && !overPopped) {
         overPopped = true;
         events.push({ type: 'relic', side: me.side, relic: 'overcharge' });

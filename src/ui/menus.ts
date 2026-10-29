@@ -131,7 +131,6 @@ export class Menus {
       /** THE DAILY RUN (one try a day). */
       onDaily: () => void;
       onRace: () => void;
-      onOvertime: () => void;
       /** THE NEW GAME (the rebuild's step 2): one race, spin by spin. */
       onNewGame: () => void;
       /** THE METERS PROTOTYPE: KNIGHT vs SLIME with a SWORD and a SHIELD meter. */
@@ -343,10 +342,6 @@ export class Menus {
     const tb = this.btn('TUTORIAL', x, row(1), 440, 54, () => this.cb.onTutorial(), 3);
     this.icons.set(tb, 'iconTutorial');
     this.guardSaved(tb);
-    // OVERTIME (TEST, roadmap phase 1): a normal run with the fight clock, filed like the tutorial.
-    const ot = this.btn('OVERTIME (TEST)', x, row(2), 440, 54, () => this.cb.onOvertime(), 2.5);
-    this.icons.set(ot, 'chip');
-    this.guardSaved(ot);
     // (The parked rebuild's test modes, SCORE RACE / NEW GAME / METERS, stay off the menu: user 2026-10-17 and
     // 2026-10-29. Their code stays until phase 2: the callbacks below, src/race/ and src/meter/.)
     this.slideIn();
@@ -899,7 +894,7 @@ export class Menus {
     if (hasSprite('logo')) drawSprite(ctx, artId('logo'), W / 2, 66 + Math.sin(t * 2) * 2, 2);
     const k = this.panelIn;
     const top = Menus.SUB_Y - 96;
-    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 1 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 6 * Menus.SET_PITCH + 48 : 7 * Menus.SET_PITCH + 70) : Menus.SUB_Y + 3 * Menus.SUB_PITCH + 58;
+    const bottom = this.mode === 'progress' ? Menus.SUB_Y + 40 + 1 * Menus.SUB_PITCH + 52 : this.mode === 'settings' ? Menus.SET_Y + (this.settingsMidRun ? 6 * Menus.SET_PITCH + 48 : 7 * Menus.SET_PITCH + 70) : Menus.SUB_Y + 2 * Menus.SUB_PITCH + 58;
     const pw = 540;
     // The panel rises in (no alpha on the layered frame: a half-faded gold rim tints the panel brown).
     ctx.save();

@@ -116,7 +116,7 @@ export type CombatEvent =
   | { type: 'lineCardUsed'; side: SideId; reel: number; card: LineCard }
   /** ALL IN telegraph: the Dealer's next attack is its whole hand. */
   | { type: 'allInArmed'; side: SideId; cap: number; floor: number }
-  /** OVERTIME (TEST): the fight clock starts (every pay on both machines grows each round from now). */
+  /** OVERTIME: the fight clock starts (every pay on both machines grows each round from now). */
   | { type: 'overtime'; side: SideId; mul: number }
   /** ENDLESS: LAST CALL (the fight ran long; the enemy hits harder every turn now). */
   | { type: 'lastCall'; side: SideId; /** THE HOUSE: from now on it skims every turn. */ house?: boolean }

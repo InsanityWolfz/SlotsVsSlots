@@ -277,7 +277,7 @@ export class Game {
   });
   profile: Profile;
   /** TUTORIAL progress: which callouts have been shown (null = not in the tutorial). */
-  private tut: { fight?: boolean; spin?: boolean; ability?: boolean; draft?: boolean; shop?: boolean } | null = null;
+  private tut: { fight?: boolean; spin?: boolean; hold?: boolean; ability?: boolean; draft?: boolean; shop?: boolean } | null = null;
 
   stage!: Stage;
   director!: Director;
@@ -300,8 +300,6 @@ export class Game {
   /** A short note over your machine (a NUDGE on a frozen reel). */
   private toolNote: { text: string; at: number } | null = null;
   private raceNext = false;
-  /** OVERTIME (TEST): the next run picked plays with the fight clock. */
-  private overtimeNext = false;
   private holdPrompt = false;
   rows: TurnRow[] = [];
   fightNo = 0;
@@ -345,18 +343,13 @@ export class Game {
     this.menus = new Menus(this.ui, this.sounds, () => this.profile, () => this.unlockedCabinets(), {
       onNewRun: () => {
         this.raceNext = false;
-        this.overtimeNext = false;
         this.chooseCabinet();
       },
       onRace: () => {
         this.raceNext = true;
         this.chooseCabinet();
       },
-      onOvertime: () => {
-        this.raceNext = false;
-        this.overtimeNext = true;
-        this.chooseCabinet();
-      },
+
       onNewGame: () => this.startNewGame(),
       onMeters: () => this.startMeters(),
       onTutorial: () => this.startTutorial(),
@@ -431,12 +424,6 @@ export class Game {
           // THE SCORE RACE (sandbox): the run is a race run; rebuild its first fight as one.
           this.raceNext = false;
           this.run.race = true;
-          this.newFight(false, null, fightConfig(this.run, this.cfg), true);
-          this.checkpoint('next');
-        }
-        if (this.overtimeNext && this.run) {
-          this.overtimeNext = false;
-          this.run.overtime = true;
           this.newFight(false, null, fightConfig(this.run, this.cfg), true);
           this.checkpoint('next');
         }
@@ -556,8 +543,8 @@ export class Game {
       this.afterRecord(ride, recordMeta(this.profile, ride, collectionTotal(), prev), true);
       return;
     }
-    // THE SCORE RACE slice and OVERTIME (TEST) are filed like the tutorial: no stats, XP, achievements or boards.
-    const entry = runEntry(run, Date.now(), !!run.tutorial || !!run.race || !!run.overtime);
+    // THE SCORE RACE slice is filed like the tutorial: no stats, XP, achievements or boards.
+    const entry = runEntry(run, Date.now(), !!run.tutorial || !!run.race);
     if (run.won && !run.endless) run.rideAt = entry.at;
     this.profile.runs.push(entry);
     while (this.profile.runs.length > MAX_ENTRIES) {
@@ -732,7 +719,7 @@ export class Game {
     this.coach.show(TUTORIAL.preview);
   }
 
-  private tip(key: 'fight' | 'spin' | 'ability' | 'draft' | 'shop', tips: keyof typeof TUTORIAL, done?: () => void): void {
+  private tip(key: 'fight' | 'spin' | 'hold' | 'ability' | 'draft' | 'shop', tips: keyof typeof TUTORIAL, done?: () => void): void {
     if (!this.tut || this.tut[key]) return;
     this.tut[key] = true;
     this.coach.show(TUTORIAL[tips], done);
@@ -776,7 +763,7 @@ export class Game {
     this.synth.stopLoops();
     this.recap.hide();
     this.phase = 'between';
-    this.screens.showCabinets(this.unlockedCabinets(), this.stakesNow(), this.prefs.stakeSel, this.prefs.act3 || this.prefs.unlockAll, this.prefs.dealerBeaten, this.raceNext, this.overtimeNext);
+    this.screens.showCabinets(this.unlockedCabinets(), this.stakesNow(), this.prefs.stakeSel, this.prefs.act3 || this.prefs.unlockAll, this.prefs.dealerBeaten, this.raceNext);
     this.syncButtons();
   }
 
@@ -996,8 +983,8 @@ export class Game {
       if (run.endless) this.screens.setStakeUnlockedNow('');
       // The daily is a side road: no unlocks from it.
       // (The daily and THE SCORE RACE slice are side roads: no unlocks from them.)
-      if (run.daily || run.race || run.overtime) this.screens.setStakeUnlockedNow('');
-      this.screens.setUnlockedNow(run.endless || run.daily || run.race || run.overtime ? [] : this.checkUnlocks(run));
+      if (run.daily || run.race) this.screens.setStakeUnlockedNow('');
+      this.screens.setUnlockedNow(run.endless || run.daily || run.race ? [] : this.checkUnlocks(run));
       this.screens.showOver(run);
     }
     else this.afterBonus(record);
@@ -1247,6 +1234,7 @@ export class Game {
       // HOLD CHANCE: your last spin paid a PAIR and you have HOLDs left: even on AUTO the fight waits for you (tap a
       // reel to hold it, then SPIN). Without AUTO every spin waits, and you can hold before any of them.
       const holdChance = this.race && this.fight.next === 'player' && this.fight.holdsLeft > 0 && this.lastPair;
+      // (A normal fight's HOLD never waits: its taps are taken while the enemy's turn plays or while you wait to spin.)
       if (this.fight.next === 'player' && (!this.prefs.auto || holdChance || this.race)) {
         this.holdPrompt = holdChance;
         this.racePhase = this.race ? 'pre' : null;
@@ -1295,6 +1283,8 @@ export class Game {
         if (result.events.some((e) => e.type === 'ability' && e.side === 'enemy')) this.tip('ability', 'ability');
         else if (result.events.some((e) => e.type === 'spin' && e.side === 'player')) this.tip('spin', 'firstSpin');
       }
+      // HOLD: the tutorial's first PAIR (after the first-spin callout) says what a HOLD can do with it.
+      if (this.tut?.spin && this.lastPair && result.side === 'player' && this.fight.holdsLeft > 0 && !this.coach.active) this.tip('hold', 'hold');
       this.presenting = false;
       if (clock.skipping) {
         clock.endSkip();
@@ -1499,6 +1489,22 @@ export class Game {
         if (now && status) void this.director.freeReel(r, status);
         if (now !== was) this.sounds.reelStop(r, now ? 1.4 : 0.8);
         else this.sounds.fizzle();
+        return;
+      }
+    }
+    // HOLD (user, 2026-10-29): tap one of your reels before your spin, or while the enemy spins (the engine is on your
+    // turn by then), to keep it for your next spin; tap again to let go. Nothing ever waits for it, AUTO included.
+    if (this.canHold()) {
+      const win = reelWindow('player');
+      if (x >= win.x && x < win.x + win.w && y >= win.y && y < win.y + win.h) {
+        const r = Math.floor((x - win.x) / PITCH);
+        const was = this.fight.held[r];
+        const now = this.fight.hold(r);
+        if (now !== was) this.sounds.reelStop(r, now ? 1.4 : 0.8);
+        else {
+          this.sounds.fizzle();
+          this.toolNote = { text: this.fight.sides.player.frozen[r] > 0 ? "A FROZEN REEL CAN'T BE HELD" : 'NO HOLDS LEFT THIS FIGHT', at: performance.now() };
+        }
         return;
       }
     }
@@ -1745,6 +1751,7 @@ export class Game {
     this.particles.draw(ctx);
     s.fx.draw(ctx, s.clock.time, 20, Infinity);
     if (this.race) this.drawHolds(ctx, t);
+    else this.drawHoldBar(ctx, t);
     if (this.drawerT < 0.5) this.drawRelicFeed(ctx);
     if (this.fight.cfg.enemy.boss && !this.screens.active) this.drawBossHint(ctx);
     if (this.bossCard) this.drawBossCard(ctx);
@@ -1788,6 +1795,42 @@ export class Game {
   }
 
   /** HOLD (experiment): a HELD tag on each held reel, your HOLDs left under your machine, and the HOLD CHANCE call. */
+  /** HOLD: your reels take a tap now (before your spin, or while the enemy's turn plays), outside THE SCORE RACE. */
+  private canHold(): boolean {
+    const f = this.fight;
+    return !this.race && this.phase === 'fighting' && !f.over && f.next === 'player' && f.holdsLeft > 0 && !this.screens.active && !this.pause.open && !this.coach.active && !this.bossCard;
+  }
+
+  /**
+   * HOLD (user, 2026-10-29: make it legible): a gold HELD frame on each held reel, the count under your machine (lit
+   * while a tap would hold), and a call above it after a PAIR. Nothing here pauses the fight.
+   */
+  private drawHoldBar(ctx: CanvasRenderingContext2D, t: number): void {
+    const f = this.fight;
+    if (this.phase !== 'fighting' || !f.cfg.player.holds || f.over) return;
+    for (let r = 0; r < 3; r++) {
+      if (!f.held[r]) continue;
+      const c = cellCenter('player', r, 1);
+      ctx.strokeStyle = '#ffe28a';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(c.x - PITCH / 2 + 4, MACHINE_TOP + 4, PITCH - 8, MACHINE_H - 8);
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(c.x - 40, c.y + PITCH / 2 + 4, 80, 26);
+      drawText(ctx, 'HELD', c.x, c.y + PITCH / 2 + 17, 2, '#ffe28a');
+    }
+    const win = reelWindow('player');
+    const left = f.holdsLeft - f.held.filter(Boolean).length;
+    const live = this.canHold();
+    const label = left <= 0 ? 'NO HOLDS LEFT' : live ? `HOLD ${left}: TAP A REEL` : `HOLD ${left}`;
+    drawText(ctx, label, win.x + win.w / 2, win.y + win.h + 20, 2, live && left > 0 ? '#ffe28a' : COLORS.textDim);
+    const pulse = 0.75 + 0.25 * Math.sin(t * 6);
+    let call = '';
+    if (this.toolNote && performance.now() - this.toolNote.at < 1500) call = this.toolNote.text;
+    else if (live && f.held.some(Boolean)) call = 'HELD FOR YOUR NEXT SPIN';
+    else if (live && left > 0 && this.lastPair) call = 'PAIR! HOLD IT FOR A JACKPOT?';
+    if (call) drawText(ctx, call, win.x + win.w / 2, win.y - 28, 2, '#ffe28a', { alpha: pulse });
+  }
+
   /**
    * THE SCORE RACE's spin tools: HELD frames, the tool tray under your machine (HOLD / NUDGE / RESPIN and their counts;
    * tap NUDGE or RESPIN to pick it once your spin has landed) and the prompt over it.
@@ -2099,7 +2142,7 @@ export class Game {
     // Only a boss gets a label here (the map already said FIGHT n OF 5): ROUND and whose turn tell the story.
     if (g.fightLabel.includes('BOSS') || g.fightLabel.startsWith('LOOP') || g.fightLabel === 'SANDBOX') drawText(ctx, g.fightLabel, cx, this.race ? cy - 180 : cy - 112, 2, g.fightLabel === 'SANDBOX' ? COLORS.textDim : g.fightLabel.includes('BOSS') ? '#ff6a5a' : COLORS.goldLight);
     if (g.twist) drawText(ctx, g.twist, cx, cy - 132, 1.25, '#ff9a3a');
-    // OVERTIME (TEST): its countdown, then its multiplier, from the turn on screen (the engine runs ahead of it).
+    // OVERTIME: its countdown, then its multiplier, from the turn on screen (the engine runs ahead of it).
     if (this.fight.cfg.overtime && g.turn > 0 && !this.race) {
       const left = OVERTIME.from - overtimeRound(g.turn);
       const mul = overtimeMul(g.turn);

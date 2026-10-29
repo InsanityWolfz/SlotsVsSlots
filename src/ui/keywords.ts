@@ -1,7 +1,9 @@
 /**
- * KEYWORDS (user, 2026-10-12): the same word for the same thing on every card, each in its own colour. drawRich colours
+ * KEYWORDS (user, 2026-10-12; HOLD and OVERTIME 2026-10-29): the same word for the same thing on every card, each in its own colour. drawRich colours
  * them wherever they appear; the GLOSSARY page (pause menu) lists them; a card shows the keywords it uses beside it.
  */
+import { OVERTIME } from '../core/enemies';
+import { HOLD } from '../core/run';
 import { COLORS } from '../present/layout';
 import { drawText, textWidth, type TextOpts } from '../render/text';
 
@@ -26,6 +28,8 @@ export const KEYWORDS: Keyword[] = [
   { word: 'METER', color: '#ffd23f', text: "YOUR SLOT MACHINE'S BAR: IT FILLS AS YOU SPIN AND PAYS OFF WHEN FULL" },
   { word: 'BUST', forms: ['BUSTS'], color: '#ff8a7a', text: "THE DEALER'S CARD: YOUR BEST REEL'S PAYLINE PAYS NOTHING NEXT SPIN" },
   { word: 'ALL IN', color: '#ff6a5a', text: "THE DEALER'S BIG HIT: A SHARE OF YOUR MAX HP THAT PIERCES SHIELDS" },
+  { word: 'HOLD', forms: ['HELD'], color: '#ffe28a', text: `TAP ONE OF YOUR REELS BEFORE YOUR SPIN OR WHILE THE ENEMY SPINS: IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. ${HOLD.perFight} A FIGHT` },
+  { word: 'OVERTIME', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF A FIGHT, EVERY HIT ON BOTH MACHINES PAYS X${1 + OVERTIME.step}, +${OVERTIME.step} WITH EACH OF YOUR SPINS. SHIELDS DON'T GROW` },
   { word: 'SABOTAGE', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY PUTS ON YOUR REELS: SLIME, ROCKS, BOMBS, FREEZES, JAMS, HEXES, MARKS' },
   // THE SCORE RACE's words.
   { word: 'GUARD', forms: ['GUARDS', 'GUARDED'], color: '#9fd0ff', text: 'EACH SHIELD ON YOUR PAYLINE GIVES ONE (UP TO 3). A GUARD STOPS ONE CHEAT, THEN IT IS GONE' },
