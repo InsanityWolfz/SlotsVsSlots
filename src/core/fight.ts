@@ -329,6 +329,11 @@ export class Fight {
     // LAST CALL is announced as the enemy's turn begins (its scored hits carry the multiplier on their banner).
     else this.enemyDmgMul(events);
     events.push({ type: 'turnStart', turn: this.turn, side });
+    // ONE STORM A TURN (user, 2026-10-29): every charge this turn (CAPACITOR, each bolt group, SECOND PAYLINE, JACKPOT
+    // BELL) is gathered, and the lightning fires once, after them all (two bolt groups fired two storms, each with its
+    // own LIVE WIRE cost and heals).
+    this.stormHold = side;
+    this.stormPending = false;
     // OVERTIME: announced on the first turn of its first round.
     if (this.cfg.overtime && overtimeRound(this.turn) === OVERTIME.from && overtimeRound(this.turn - 1) < OVERTIME.from)
       events.push({ type: 'overtime', side, mul: overtimeMul(this.turn) });
@@ -519,6 +524,10 @@ export class Fight {
       if (this.special || side !== 'player') this.gainEnergy(me, this.cfg.specialCost, [], events);
       else this.fillMeter(me, this.meterCost, [], events);
     }
+    // The turn's charge is all in: the storm fires once (only lightning charge: other meters keep theirs in energy too).
+    this.stormHold = null;
+    if (this.stormPending && !this.over) this.storm(me, events);
+    this.stormPending = false;
     // DECK DRUM: a spin that pays adds a stack (max 5) for the rest of the fight.
     if (!this.over && side === 'player' && me.relics.has('deckdrum') && score.groups.some((g) => g.amount > 0 && PAYING.has(g.symbol))) this.drum = Math.min(NEW_RELIC.drumCap, this.drum + 1);
     // Only a jackpot of your attack symbol (or wilds) steals the pot (2026-10-07: two-symbol reels made jackpots 3x as common).
@@ -1039,10 +1048,20 @@ export class Fight {
   }
 
   private gainEnergy(me: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
-    const foe = this.sides[other(me.side)];
     if (me.side === 'player') amount *= this.cfg.player.meterMul ?? 1;
     me.energy += amount;
     events.push({ type: 'energyGain', side: me.side, reels, amount, total: me.energy });
+    if (this.stormHold === me.side) this.stormPending = true;
+    else this.storm(me, events);
+  }
+
+  /** While a side's turn gathers its charge, its lightning waits (one storm a turn); pending: charge came in. */
+  private stormHold: SideId | null = null;
+  private stormPending = false;
+
+  /** A LIGHTNING STORM: strikes while the charge covers one. */
+  private storm(me: Combatant, events: CombatEvent[]): void {
+    const foe = this.sides[other(me.side)];
     const pierce = this.cfg.specialIgnoresShield;
     // OVERCHARGE (TESLA): every strike hits 30% harder. It used to fire an echo strike after each one, which spammed
     // through a LIGHTNING STORM (user playtest); it pops once per storm now.

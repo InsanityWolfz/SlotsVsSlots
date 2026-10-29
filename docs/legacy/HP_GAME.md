@@ -29,6 +29,11 @@ an encounter, and which Charms and relics to build.
   can't be held. Shown: HOLD 2: TAP A REEL under your machine while a tap would hold, a gold HELD frame, and PAIR! HOLD
   IT FOR A JACKPOT? after a pair. The tutorial explains both (and its first pair stops on a HOLD callout); the glossary
   has HOLD and OVERTIME. The sim bot holds a paying pair of its attack symbol (a shield pair when low).
+- **ONE STORM A TURN (user, 2026-10-29):** TESLA's lightning gathers every charge of a turn (CAPACITOR, each bolt
+  group, SECOND PAYLINE, JACKPOT BELL) and fires once, after them all. Two bolt groups (bolts on reels 1 and 3 are no
+  pair) fired two storms, each with its own LIVE WIRE cost and heals: 11-16% of TESLA's storm turns. Sim: TESLA WHITE
+  66 -> 67, GREEN 53; the other machines unchanged. TESLA's swing (27% of its spins deal nothing; THE DEALER beaten 91-96%
+  when reached) is a rework still to design: its strike count and each strike's damage both scale.
 - **Sim, 300 runs, both live** (before -> after): fights past 12 of your spins (regular / boss), attack build, WHITE
   655 / 95 -> 276 / 33, GREEN 921 / 206 -> 422 / 146. Run win WHITE / GREEN: KNIGHT 72 / 39, TESLA 66 / 54, JUKEBOX 65 /
   45, JOKER 56 / 41, BANKROLL 60 / 47 (targets 60 / 36): easier, TESLA at GREEN most (THE DEALER 94% when reached).
