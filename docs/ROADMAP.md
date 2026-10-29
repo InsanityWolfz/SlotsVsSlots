@@ -2,8 +2,8 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress:** nothing. Phase 2 is done but for the big files, split as they're touched. Phase 1 (OVERTIME, HOLD, AUTO off) is live; its gate is the next outside
-playtest.
+**In progress:** phase 3, the road to Coming Soon (two weeks from 2026-10-29: the user's Max plan window). Next: the
+theme decision (the art-direction artifact).
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
 fight changes (OVERTIME and HOLD), frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
@@ -86,23 +86,60 @@ Left:
 
 **Gate:** the scope is signed, and everything on it is built.
 
-## Phase 3: Steam page and demo
-- A Coming Soon page as early as possible (Steam Direct, $100): a one-screenshot hook ("two slot machines fight"),
-  capsule art, a trailer from the rooms and the payout ladder. Wishlists take months.
-- An act 1 demo build.
-- Playtests with outside players every two weeks carry on.
+## Phase 3: Coming Soon in two weeks (user, 2026-10-29)
+The user's three fears, in order: it **looks AI** (art, animation, menus that don't feel like one asset pack), the
+gameplay feels unfair (less important: players play on feel, not numbers), a launch-breaking bug. Friends enjoy it;
+the page is the cheap test of whether strangers will. No budget for a hired artist, so the art needs a rigid process
+the user can review to the pixel. Art and UI go to the user as artifacts (galleries, before/after), not text.
+
+**Week 1: identity and art direction**
+1. **Theme (the user decides).** Today it mixes fantasy (KNIGHT, goblins, imps, slimes, golems, hexers) with casino
+   (BANKROLL, the Floor, the Dealer). Proposal: a crooked casino town. Real casinos run themed slot machines (knights,
+   mad science, disco), so the player's machines keep their themes as cabinets; the enemies become the town's
+   hustlers and their rigged machines, by place: THE ALLEY (act 1), THE FLOOR (act 2), THE VIP ROOM (act 3), THE
+   OWNER's office. The fantasy creatures go; their mechanics stay under new names and art.
+2. **Name (after the theme).** SLOTS VS. SLOTS has to change; SLOTS VS. BOTS would force a robot theme. A shortlist
+   with a pick, once the theme is set.
+3. **Art bible:** one palette, fixed sprite sizes, outline and light rules, the 8-bit (or 16-bit) call made on a
+   side-by-side of real sprites. Enemies first (they're unchanged since launch), then the machines' heroes.
+4. **UI kit:** one panel, one button, one number count-up, one banner style, one font scale ladder; Balatro's
+   cohesion is the bar. A contact sheet of every screen today shows what doesn't match.
+
+**Week 2: apply it and build the page**
+5. Every screen through the UI kit; the re-themed enemies in; the words pass (enemy names, keywords like SLIME).
+6. Steam page: capsule art at Steam's sizes (made in-house), 5+ screenshots, a 30-60 s trailer captured from the
+   game, the short description in the user's voice, the AI disclosure answered plainly.
+7. **The user, now:** open Steamworks (the $100 fee, identity and tax checks take days) so the page can go up when the
+   art is ready.
+
+Open: LUCKY SEVENS (the user says nobody ever wins it) may go too, leaving TWENTY-ONE and the CLAW.
+
+**Gate:** the Coming Soon page is live.
+
+## Phase 4: the machines, THE OWNER and a demo (after the page)
+- **THE OWNER:** 11 HP, one a hit, feels bad when you hit for millions. Make him a wall: huge HP you chip at, your
+  damage as the score, milestones that pay or change him (Vampire Survivors' reaper, a final boss you're not meant to
+  beat). A rule change: bring a proposal.
+- **TESLA rework:** its strike count and each strike's damage both scale (27% of its spins deal nothing, THE DEALER
+  falls 91-96% when reached). Make it scale one way.
+- **JUKEBOX identity:** its 5 relics all tune the DROP's timing; give it a second way to build.
+- **BANKROLL:** the most confusing machine (the shield build is unexplored). Make it readable, or ship with 4.
+- Builds stay attack or shield: more is a rewrite, and the no-restart rule holds.
+- **No launch-breaking bugs:** the fuzz on every change, a save and crash pass, a Steam Playtest before launch.
+- An act 1 demo build; outside playtests every two weeks carry on.
 
 **Gate:** strangers play the demo start to finish with no help.
 
-## Phase 4: Steam Next Fest
+## Phase 5: Steam Next Fest
 The game's one festival: the demo up, keys to streamers, the page polished. It multiplies the wishlists you bring
 (the median game gained about 800; those entering with 10k+ gained about 5,200).
 
 **Gate:** a wishlist target the user sets beforehand (10k+ is a healthy small launch).
 
-## Phase 5: balance and launch
+## Phase 6: balance and launch
 - The rules frozen: one sim pass across machines and stakes (the targets in HP_GAME.md "Balance").
-- A Steam Playtest; the real app id in `desktop/steam_appid.txt` (480, Valve's test app, today); achievements;
+- A Steam Playtest; the real app id in `desktop/steam_appid.txt` (480, Valve's test app, today); Steam achievements
+  (the game's own move there);
   Steam Cloud on the mirrored save folder.
 - Price $7.99–$9.99, where the slot hits sit.
 - Ratings: answer the content survey honestly (simulated gambling, no real money, no paid randomness).

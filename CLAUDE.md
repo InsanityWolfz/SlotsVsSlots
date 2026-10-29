@@ -61,8 +61,14 @@ far it got. Keep that line current while you work.
 - **Photosensitivity:** no full-screen white flashes. `FLASH_CAP` is 0.2. Keep the LIGHTNING: FULL/SOFT option.
 - **Pushing:** commit freely. `main` is the user's own test build (they play it on their phone via GitHub Pages);
   nobody else is playing. Pushing working builds to `main` is fine. Don't push broken or half-finished work there.
-- **Held ideas:** the SLOTS VS. BOTS rename, 16-bit art, the Gambler character.
+- **Held ideas:** the Gambler character. (The rename and the 8-bit vs 16-bit call are live questions in phase 3.)
 - The user is direct and has strong game sense. Push back with reasons when you disagree. Keep summaries short.
+- **Talk to the user as the CEO and design lead, not a fellow coder** (2026-10-29): no play-by-play of what you're
+  doing, short results and decisions. They can code if a question really needs it.
+- **Art, animation and UI go to the user as artifacts** (galleries, before/after, contact sheets): visuals keep them
+  motivated; walls of text don't. They review art down to the pixel.
+- **Rants:** the user sometimes dictates long voice rants. Extract the decisions and plans into the docs; never save a
+  rant verbatim.
 - **The parked rebuild's rules** (METER COMBAT, 2026-10-17; the score race, 2026-10-16) are not binding on v1.0. They
   stay in `docs/VISION.md` for the record. HOLD in the roadmap means the old game's HOLD (commit `f7708bb`), not the
   score race's.
