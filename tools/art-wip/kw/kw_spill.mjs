@@ -1,17 +1,15 @@
-// A glass tipping over: rim up-right, a grey stem off its lower-left corner on the diagonal, a lit foot, the drink spilling to a puddle.
+// A broken pint glass (the Barfly's beer): a jagged top, half the beer gone, a puddle round its foot, a shard on the floor.
 export const rows = () => [
   '............',
-  '....WW......',
-  '....LWW.....',
-  '....LCWW.Y..',
-  '....LYYYW...',
-  '....LGGGOW..',
-  '....LGGGGOO.',
-  '...SSSSSSOO.',
-  '..S......OO.',
-  '.L......YOO.',
-  '....OOOOOOO.',
+  '..W.........',
+  '..LW........',
+  '..LCW..W....',
+  '..LCCWLCW...',
+  '..LTTTTTW...',
+  '..LYYYYYW...',
+  '...LGGGW....',
+  '...LGGGW..W.',
+  '..OLSSSWOWL.',
+  '.OOGGGOOOO..',
   '............',
 ];
-/** Outline pixels to leave clear after the auto outline (the user: no black under the foot). */
-export const unoutline = [[3, 10]];
