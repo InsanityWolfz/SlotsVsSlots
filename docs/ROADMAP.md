@@ -2,11 +2,14 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress (overnight 2026-10-30, the user asleep):** the UI kit and the screen pass, on the `ui-kit` branch, for the
-user's review in the morning (a before/after artifact; merge to `main` after their look). Everything below is approved
-(the screens artifact https://claude.ai/artifact/M4aXG9XZV9NvJ1bQK8HeKr, collection `ui`: every screen "do your
-suggestion", the kit and the retail list "yes"). Done before: theme, roster, name (REEL BRAWL), 24 portraits, words, enemy
-symbols (art: https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV, words: https://claude.ai/artifact/Bo2uKXGYnFXWRJxTy5Ddcu).
+**In progress (2026-10-30):** the UI kit and the screen pass are built on the `ui-kit` branch, waiting on the user's
+review (before/after: https://claude.ai/artifact/Uo8W6uXQJ4Cmv21tccPF1t, collection `overhaul`); merge to `main` once
+they pass it. Open calls for the user: the combat LOG drawer (a dev tool, still in the public build), FULL showing next
+to an unlit bulb in settings, the keyword icons (drawn, not in the game), fantasy-named relics (VAMPIRE FANG, SKELETON
+KEY, PHOENIX FEATHER, HOLY WATER, DEVIL'S DUE, CRUSADE, QUICKENING, VAMP CHARM), and the ~45 rewritten card faces.
+Done before: theme, roster, name (REEL BRAWL), 24 portraits, words, enemy symbols (art:
+https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV, words: https://claude.ai/artifact/Bo2uKXGYnFXWRJxTy5Ddcu, screens:
+https://claude.ai/artifact/M4aXG9XZV9NvJ1bQK8HeKr).
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
 fight changes (OVERTIME and HOLD), frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
@@ -108,7 +111,7 @@ the user can review to the pixel. Art and UI go to the user as artifacts (galler
    is approved; all 24 portraits are approved and live (2026-10-30): `tools/portraits.mjs` holds them (baked from the
    `art-wip` sources), `drawPortrait` draws them at the old portraits' size. Still 24×24 and pre-theme: the Cashier
    and the room art; they go in the UI kit pass.
-4. **UI kit: approved** (user, 2026-10-30; the screens artifact above). One panel (the fight HUD's dark plum box, 3px
+4. **UI kit: approved** (user, 2026-10-30; the screens artifact above). **Built on `ui-kit`, in review.** One panel (the fight HUD's dark plum box, 3px
    gold frame; felt only on the card tables and wood only on the Cashier's counter, as scenery); three buttons (primary
    red with a gold rim, one per screen; secondary dark with a gold rim; quiet small grey; SPIN keeps its round button);
    four text sizes (title, heading, body, small; nothing smaller); the bulb marquee only on the logo and boss/elite
