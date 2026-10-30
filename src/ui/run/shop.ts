@@ -96,7 +96,7 @@ export abstract class ShopScreen extends EncounterScreen {
     const run = this.run!;
     // The Cashier himself, in a lit well (drawPortrait: his 32x32 art and the old 24x24 fill the same box).
     drawWell(ctx, 334, 18, 116, 116, '#1c1530');
-    spotlight(ctx, 392, 118, 96, '#5ad8e8', 0.12);
+    spotlight(ctx, 392, 118, 96, '#5ad8e8', 0.12, [336, 20, 112, 112]);
     drawPortrait(ctx, 'cashierPortrait', 392, 76 + (this.reduceMotion ? 0 : Math.round(Math.sin(time * 2) * 2)), 4);
     drawTitle(ctx, 'THE CASHIER', 474, 46, KIT.title, { align: 'left' });
     // What he says, in a speech panel.

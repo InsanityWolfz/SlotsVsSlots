@@ -129,7 +129,7 @@ export abstract class NextScreen extends RouteScreen {
     const wy = Math.round((h - ws) / 2) - (boss ? 18 : 0);
     const tint = STAGE_TINT[e.boss ?? e.archetype] ?? COLORS.gold;
     drawWell(ctx, wx, wy, ws, ws, '#1c1530');
-    spotlight(ctx, wx + ws / 2, wy + ws - 18, ws - 20, tint, 0.16);
+    spotlight(ctx, wx + ws / 2, wy + ws - 18, ws - 20, tint, 0.16, [wx + 2, wy + 2, ws - 4, ws - 4]);
     const bob = this.reduceMotion ? 0 : Math.round(Math.sin(time * 2) * 2);
     ctx.save();
     ctx.beginPath();

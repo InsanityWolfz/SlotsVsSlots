@@ -52,6 +52,8 @@ export type Btn = Hit & {
   chip?: string;
   /** Draws the face's content instead of the label (centred at 0, 0). */
   icon?: (ctx: CanvasRenderingContext2D) => void;
+  /** The label's size (default: the heading size when it fits, else body). */
+  textScale?: number;
 };
 
 
@@ -267,8 +269,14 @@ export function stakeDisc(ctx: CanvasRenderingContext2D, x: number, y: number, c
 }
 
 /** A soft pixel spotlight pool (stepped bands, no gradient): the stage under a machine or a portrait. */
-export function spotlight(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, color: string, alpha = 0.18): void {
+export function spotlight(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, color: string, alpha = 0.18, clip?: [number, number, number, number]): void {
   ctx.save();
+  // In a well, the pool stays inside it (it spilled past the well's bottom edge).
+  if (clip) {
+    ctx.beginPath();
+    ctx.rect(clip[0], clip[1], clip[2], clip[3]);
+    ctx.clip();
+  }
   for (let k = 0; k < 3; k++) {
     ctx.globalAlpha *= k === 0 ? alpha : 1.6;
     const ww = Math.round(w * (1 - k * 0.28));
