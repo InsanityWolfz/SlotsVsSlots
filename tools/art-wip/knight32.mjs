@@ -11,7 +11,7 @@ export function knight32() {
   span(g, 20, 13, 18, 'g');
   paint(g, 13, 24, ['Y Y Y', 'YGYGY', 'GGGGg', ' ggg ']);
   // a soft fold in the cloth below the emblem
-  paint(g, 15, 29, ['AN', 'AN', 'AN']);
+  paint(g, 15, 28, ['AN', 'AN']);
   // pauldrons: domes rising toward the neck, two lames each
   paint(g, 0, 19, [
     '     LLLLL',
@@ -50,7 +50,7 @@ export function knight32() {
     'UN',
     'N',
   ]);
-  // --- great helm: crest socket, lit left plane, keel ridge, darker right plane, eye slit split by the keel, breaths
+  // --- great helm: crest socket, lit left plane, keel ridge, darker right plane, a thin dark eye slit, breaths
   paint(g, 15, 1, ['gGg']);
   paint(g, 9, 2, [
     '    WWLLLSS    ',
@@ -61,8 +61,8 @@ export function knight32() {
     'LWLLSLLLLLWSSDD',
     'LLLLSLLLLLWSSDD',
     'SSSSSSSSSSSSSDD',
-    'LSKKKKKKKLKKKKK',
-    'LSSKKKKKKWKKKKK',
+    'LSKKKKKKKKKKKKK',
+    'LLLLSLLLLWSSSDD',
     'LLLLSLLLLWSSSDD',
     'LLLLSLLLLWSKSDD',
     'LLLLSLLLLWSSSDD',
@@ -70,26 +70,7 @@ export function knight32() {
     'SSLLSLLLLWSSSDD',
     ' SSSSSSSSDDDDD ',
   ]);
-  // eyes: two glints in the dark slit
-  paint(g, 15, 10, ['WA', 'KK']); paint(g, 20, 10, ['WA', 'KK']);
-  // --- sword held upright on his right side; forearm rises from the bottom edge (elbow off-frame)
-    for (let y = 8; y <= 21; y++) paint(g, 26, y, ['WS']);
-    paint(g, 26, 7, ['W']);
-    // the pauldron behind the arm loses its lit edges (the arm shades it)
-    for (let y = 22; y <= 31; y++) for (let x = 21; x <= 30; x++) if (g[y][x] === 'L') g[y][x] = 'S';
-    // the blade crossing the pauldron gets its own dark edges
-    for (let y = 19; y <= 21; y++) { px(g, 25, y, 'K'); px(g, 28, y, 'K'); }
-    paint(g, 22, 22, [
-      ' GYYYYYGg ',
-      ' KWLLLSDK ',
-      ' KSSSSDDK ',
-      ' KLLLLSDK ',
-      ' KSSSSDDK ',
-      ' KLLLSSDK ',
-      ' KLLSSDK  ',
-      ' KLLSSDK  ',
-      'KLLSSDK   ',
-      'KLLSSDK   ',
-    ]);
+  // shift the whole bust down 2px: more room above the plume, shoulders fill the bottom
+  g.splice(30, 2); g.unshift(Array(32).fill('.'), Array(32).fill('.'));
   return out(g);
 }

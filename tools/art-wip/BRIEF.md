@@ -2,7 +2,7 @@
 
 You are a pixel artist for the 8-bit game "Slots vs. Slots" (two slot machines fight), being re-themed as a crooked casino town. The director reviews art down to the pixel. They approved the format (32×32 bust portraits), the art rules below and eight portraits as the house standard: THE BARFLY (`barfly32.mjs`), THE COOLER (`cooler32.mjs`), THE LOAN SHARK (`shark32.mjs`), THE PICKPOCKET (`pickpocket32.mjs`), THE LEG BREAKER (`legbreaker32.mjs`), THE REPO MAN (`repoman32.mjs`), THE LEECH (`leech32.mjs`) and THE COPYCAT (`copycat32.mjs`). Make yours as good as those; "the approved four" below means the approved set.
 
-## Process: 20 passes
+## Process: about 5 passes (director, 2026-10-30: their review is what matters; don't burn usage)
 Do 20 iterations of draw → render → view the PNG with the Read tool → write yourself a short, harsh critique → fix. On every pass, check the director's notes one by one and say whether each one is fixed. Every 5 passes, render your portrait beside the approved four (write your own small set script, as in `setview.mjs` or `all.mjs`) and fix anything that breaks the set: head size, shoulder width, shading, how far the outline sits from the frame. Don't stop early: the director asked for 20 passes.
 
 ## Files (work only here; edit nothing in the repo)
@@ -37,3 +37,5 @@ Pass count, the final PNG path, and for each of the director's notes one line on
 
 ## Heroes (the player's five machines)
 The heroes are the player's side: each is the character of one slot machine the player picks. They stay in the same set (same palette, shading, outline, head size, bust framing, art rules) but they are the good guys: confident, likeable, a bit heroic, never sleazy. Their current sprites **face RIGHT** (three-quarter view, looking toward the enemy across the screen); keep that: a three-quarter bust turned to the viewer's right, eyes looking right. They keep their identity from the current 24×24 sprite. "No arm" is allowed (the director accepted it for a boss); if a hand shows, it follows every arm rule above (low, forearm-length, straight on the wrist). Check every pass at x3 beside the approved enemies (e.g. barfly32, pickpocket32, sharp32, leech32) and, every 5 passes, beside the other heroes if their files exist yet (knight32, cassidy32, voltz32, jax32, decibel32).
+
+Hero update (director, 2026-10-30): heroes have NO arm and NO prop. Shades or goggles may cover the eyes. Sit the figure a little lower in the frame (more room above the head, shoulders filling the bottom) and keep the frame from feeling oversized.
