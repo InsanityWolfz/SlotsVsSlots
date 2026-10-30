@@ -4,7 +4,7 @@ import { levelOf } from '../../core/meta';
 import { shownTitle } from '../../core/profile';
 import { COLORS, H, W } from '../../present/layout';
 import { artId, drawPortrait, drawSprite, hasSprite, type SpriteId } from '../../render/sprites';
-import { drawText } from '../../render/text';
+import { drawText, textWidth } from '../../render/text';
 import type { Button } from '../button';
 import { drawChip, drawPanel, drawWell, KIT, T } from '../kit';
 import type { MenuScreen, Menus } from '../menus';
@@ -62,7 +62,9 @@ export class MainScreen implements MenuScreen {
     const saved = cb.savedRun();
     let y = 300;
     if (saved) {
-      const cont = m.btn(`CONTINUE: ${saved}`, PX, y, 330, 66, () => cb.onContinue(), saved.length > 12 ? T.body : T.head, { primary: true, idlePulse: true });
+      // The poster already shows the saved run's machine, so the button only names the act (the long label overflowed).
+      const act = /ACT \d+/.exec(saved)?.[0];
+      const cont = m.btn(act ? `CONTINUE ${act}` : 'CONTINUE', PX, y, 330, 66, () => cb.onContinue(), T.head, { primary: true, idlePulse: true });
       void cont;
       y += 76;
       let armed = 0;
@@ -122,6 +124,8 @@ export class MainScreen implements MenuScreen {
   /** A menu button's icon, at its left (over it, scaled with its press). */
   static buttonIcon(ctx: CanvasRenderingContext2D, b: Button, icon: string): void {
     if (!hasSprite(icon)) return;
+    // A long label (a SURE? confirm) needs the whole button: the icon steps aside.
+    if (textWidth(b.label, b.opts.textScale ?? T.body) > b.w - 110) return;
     drawSprite(ctx, artId(icon), b.x - (b.w / 2 - 36) * b.scale, b.y, 2 * b.scale);
   }
 
