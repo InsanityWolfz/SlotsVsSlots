@@ -33,6 +33,9 @@ export class FightView {
   private chipT = 0;
   private potNum = new CountUp(0, 0.5);
   private potT = 0;
+  /** The turn banner's side, and when it last changed (its drop-in). */
+  private bannerSide: 'player' | 'enemy' | null = null;
+  private bannerAt = 0;
 
   /**
    * HOLD (user, 2026-10-29: make it legible): a gold HELD frame on each held reel, and one chip hanging from your
@@ -241,10 +244,14 @@ export class FightView {
     const decided = huds.enemy.hp <= 0 || huds.player.hp <= 0;
     // THE TURN BANNER (user, 2026-10-30: the floating SPIN n / HERO'S TURN was out of place): a kit ribbon on the top
     // edge of the machine whose spin it is. It drops in as the turn opens (a small pop; none with MOTION reduced).
-    // (Before the first spin it's yours: the banner is up while SPIN waits.)
-    const side = g.side ?? (this.g.awaitingSpin ? 'player' : null);
+    // (While SPIN waits it's yours, before the first spin too: the engine's side lags until your spin starts.)
+    const side = this.g.awaitingSpin ? 'player' : g.side;
+    if (side !== this.bannerSide) {
+      this.bannerSide = side;
+      this.bannerAt = t;
+    }
     if (side && !decided && (this.g.phase === 'fighting' || this.g.phase === 'quick')) {
-      const k = this.g.reducedMotion() ? 0 : g.pulse;
+      const k = this.g.reducedMotion() ? 0 : Math.max(0, 1 - (t - this.bannerAt) / 0.3) ** 2;
       const mine = side === 'player';
       ctx.save();
       ctx.translate(Math.round(MACHINE_CX[side]), Math.round(MACHINE_TOP - BEZEL - 2 - 10 * k));
@@ -420,7 +427,7 @@ export class FightView {
   /** The Dealer's table: green felt behind its machine (scenery: a card table). */
   drawDealerTable(ctx: CanvasRenderingContext2D, t: number): void {
     const cx = MACHINE_CX.enemy;
-    const m = MACHINE_W / 2 + BEZEL + 24;
+    const m = MACHINE_W / 2 + BEZEL + 10;
     const top = MACHINE_TOP - BEZEL - 12;
     const h = MACHINE_H + (BEZEL + 12) * 2;
     ctx.fillStyle = '#0a2416';
@@ -485,7 +492,7 @@ export class FightView {
   /** THE WHEEL's slot machine: a red-and-black cabinet behind its reels, with a green felt apron. */
   drawWheelCabinet(ctx: CanvasRenderingContext2D): void {
     const cx = MACHINE_CX.enemy;
-    const m = MACHINE_W / 2 + BEZEL + 24;
+    const m = MACHINE_W / 2 + BEZEL + 10;
     const x0 = Math.round(cx - m);
     const y0 = Math.round(MACHINE_TOP - BEZEL - 12);
     const w = Math.round(m * 2);

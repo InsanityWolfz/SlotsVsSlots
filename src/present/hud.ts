@@ -147,6 +147,16 @@ export class HudView {
     return { x: b.x + b.w / 2, y: b.y + b.h / 2 };
   }
 
+  /** The name at heading size on one line: a name too long for the panel (DESPERATE COUNTERFEITER) drops its first
+   * words (the adjective) rather than shrinking (the card before the fight has the whole name). Room is kept for a
+   * boss's "?". */
+  get shownName(): string {
+    const room = HUD_W - (BAR_X - 26) - PAD - 34;
+    const words = this.name.split(' ');
+    while (words.length > 1 && textWidth(words.join(' '), T.head) > room) words.shift();
+    return words.join(' ');
+  }
+
   /** THE count-up on the HUD's numbers (HP, shield): they ease, never snap. */
   private hpNum: CountUp | null = null;
   private shNum = new CountUp(0, 0.35);
@@ -174,14 +184,7 @@ export class HudView {
     drawWell(ctx, x + PAD, y + PAD, 76, 76);
     drawPortrait(ctx, this.portrait, x + PAD + 38 + ps, y + PAD + 39, 64 / 24, { flash: this.portraitFlash });
     // The name, heading size.
-    drawText(ctx, this.name, x + BAR_X - 26, y + 24, T.head, this.side === 'player' ? KIT.title : COLORS.slime, { align: 'left' });
-    if (this.ooze > 0) {
-      const pct = this.ooze / Math.max(1, this.oozeTotal);
-      drawText(ctx, `SPILL ${this.ooze}/${this.oozeTotal}`, x + HUD_W - PAD, y + 24, T.body, pct >= 0.5 && Math.sin(time * 8) > 0 ? '#b6ff9a' : COLORS.slime, {
-        align: 'right',
-        punch: this.oozePunch,
-      });
-    }
+    drawText(ctx, this.shownName, x + BAR_X - 26, y + 24, T.head, this.side === 'player' ? KIT.title : COLORS.slime, { align: 'left' });
 
     // HP bar with trailing ghost; the heart sits left of it.
     const hb = this.hpBar();
@@ -230,6 +233,22 @@ export class HudView {
     }
     if (this.ability) this.drawAbility(ctx, time);
     else if (this.hint) drawChip(ctx, this.hint, x + HUD_W / 2, this.chipY, { scale: T.body, color: '#c8f0ff' });
+    // SPILL on your reels: a chip hanging from your panel (the same spot as the enemy's next move), how many of your
+    // cells are spilled; past half it blinks.
+    if (this.ooze > 0) {
+      const pct = this.ooze / Math.max(1, this.oozeTotal);
+      ctx.save();
+      ctx.translate(Math.round(x + HUD_W / 2), Math.round(this.chipY));
+      ctx.scale(this.oozePunch, this.oozePunch);
+      drawChip(ctx, `SPILL ${this.ooze}/${this.oozeTotal}`, 0, 0, {
+        scale: T.body,
+        color: pct >= 0.5 && Math.sin(time * 8) > 0 ? '#b6ff9a' : COLORS.slime,
+        fill: '#14281a',
+        iconW: 22,
+        icon: (ix, iy) => drawSprite(ctx, ABILITY_UI.flood.icon, ix, iy, 2),
+      });
+      ctx.restore();
+    }
   }
 
   /**
