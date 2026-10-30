@@ -1,6 +1,6 @@
 import { UNIT, type AbilityDef, type AbilityKind, type SideId } from '../core/config';
 import type { MeterKind } from '../core/cabinets';
-import { artId, drawSprite, type SpriteId } from '../render/sprites';
+import { artId, drawPortrait, drawSprite, type SpriteId } from '../render/sprites';
 import { drawText, fmtNum } from '../render/text';
 import { COLORS, HUD_TOP, MACHINE_CX } from './layout';
 
@@ -153,7 +153,7 @@ export class HudView {
     const ps = this.portraitShake * (Math.random() * 2 - 1);
     ctx.fillStyle = COLORS.panelLight;
     ctx.fillRect(x + 4, y + 30, 52, 52);
-    drawSprite(ctx, this.portrait, x + 30 + ps, y + 56, 2, { flash: this.portraitFlash });
+    drawPortrait(ctx, this.portrait, x + 30 + ps, y + 56, 2, { flash: this.portraitFlash });
     drawText(ctx, this.name, x + 4, y + 12, 2, this.side === 'player' ? COLORS.goldLight : COLORS.slime, {
       align: 'left',
     });

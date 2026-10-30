@@ -5,6 +5,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { PORTRAITS } from './portraits.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -5537,6 +5538,10 @@ S.relicStarchart = lit(16, 16, [
   '................',
 ]);
 
+// ---------------------------------------------------------------- the casino-town portraits (32x32)
+// They replace the 24x24 enemy and hero portraits above (kept until the new set has shipped a while).
+for (const [id, rows] of Object.entries(PORTRAITS)) S[id] = lit(32, 32, rows);
+
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
   sword: 16, shield: 16, bolt: 16, slime: 16, goo: 16,
@@ -5604,6 +5609,7 @@ const DIMS = {
   enhGlass: 16, ratRacer: 16, ratRacer2: 16, scratchTicket: 24, scratchCoin: 12, clawGrabber: 24, clawGrabberShut: 24,
   prizeBall: 12,
 };
+for (const id of Object.keys(PORTRAITS)) DIMS[id] = 32;
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
 for (const [id, dim] of Object.entries(DIMS)) {

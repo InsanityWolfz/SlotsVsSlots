@@ -82,6 +82,14 @@ export function drawSprite(ctx: CanvasRenderingContext2D, id: SpriteId, cx: numb
   ctx.restore();
 }
 
+/**
+ * A character portrait at the size a 24px portrait had at `scale`: the 32×32 casino-town portraits fill the same
+ * boxes with more detail, so no layout moves.
+ */
+export function drawPortrait(ctx: CanvasRenderingContext2D, id: SpriteId, cx: number, cy: number, scale: number, o: DrawOpts = {}): void {
+  drawSprite(ctx, id, cx, cy, (scale * 24) / spriteSize(id).w, o);
+}
+
 export function spriteSize(id: SpriteId): { w: number; h: number } {
   const rows = SPRITES[id];
   return { w: rows[0].length, h: rows.length };

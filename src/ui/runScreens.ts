@@ -49,7 +49,7 @@ import { backOut, sineOut } from '../present/ease';
 import { ABILITY_UI, abilityName } from '../present/hud';
 import { ENH_SPRITE } from '../present/reel';
 import { COLORS, H, W } from '../present/layout';
-import { artId, drawSprite, hasSprite, spriteSize, type SpriteId } from '../render/sprites';
+import { artId, drawPortrait, drawSprite, hasSprite, spriteSize, type SpriteId } from '../render/sprites';
 import { drawText, fmtNum, textWidth } from '../render/text';
 import { bossRules, type BossRuleContext } from './bossRules';
 import { runSummary } from '../core/runLog';
@@ -1230,7 +1230,7 @@ export class RunScreens {
     ctx.fillRect(x - s + 3, y - s + 3, s * 2 - 6, s * 2 - 6);
     const k = s / 26;
     if (e) {
-      drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, x, y, 2 * k, { dim });
+      drawPortrait(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, x, y, 2 * k, { dim });
       const badge = BADGE[e.archetype];
       if (badge) drawSprite(ctx, badge, x + s - 2, y + s - 4, 2 * k, { alpha: o.faded ? 0.4 : 1 });
       if (e.elite) drawSprite(ctx, 'mapBadgeElite', x - s + 4, y - s + 4, 2 * k, { alpha: o.faded ? 0.4 : 1 });
@@ -1297,7 +1297,7 @@ export class RunScreens {
     rule(y + 58);
     // Who you are and how you're doing.
     const cab = CABINETS[run.cabinet];
-    if (hasSprite(cab.heroSprite)) drawSprite(ctx, cab.heroSprite as SpriteId, x + 30, y + 94, 2);
+    if (hasSprite(cab.heroSprite)) drawPortrait(ctx, cab.heroSprite as SpriteId, x + 30, y + 94, 2);
     drawText(ctx, cab.hero, x + 60, y + 86, 2, COLORS.goldLight, { align: 'left' });
     drawText(ctx, run.endless ? `LOOP ${run.endless.loop}${nightOf(run) ? ` - ${nightOf(run)!.title}` : ''}` : `ACT ${run.act}${run.stake ? `  -  ${stakeOf(run.stake).name}` : ''}`, x + 60, y + 106, 1.5, COLORS.textDim, { align: 'left' });
     this.drawHp(ctx, x + 2, y + 138, w - 44);
@@ -1659,7 +1659,7 @@ export class RunScreens {
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.fillRect(sx + st / 2 - st * 0.3, sy + st - 18, st * 0.6, 8);
     const bob = hover ? Math.sin(time * 5) * 4 : Math.sin(time * 2) * 2;
-    drawSprite(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, sx + st / 2, sy + st / 2 + bob, (fork ? 3 : 4) * this.portraitPop);
+    drawPortrait(ctx, (e.portrait ?? 'enemyPortrait') as SpriteId, sx + st / 2, sy + st / 2 + bob, (fork ? 3 : 4) * this.portraitPop);
     const badge = BADGE[e.archetype];
     if (badge) drawSprite(ctx, badge, sx + st - 8, sy + st - 8, fork ? 2.5 : 3);
     if (e.elite) {
@@ -2244,7 +2244,7 @@ export class RunScreens {
       drawText(ctx, open ? cab.name : '???', 0, 8, open && cab.name.length > 10 ? 2 : 3, open ? COLORS.goldLight : COLORS.textDim);
       if (open) {
         // The hero you play as on this machine.
-        drawSprite(ctx, heroSprite(id), -h.w / 2 + 30, -h.h / 2 + 30, 1.5);
+        drawPortrait(ctx, heroSprite(id), -h.w / 2 + 30, -h.h / 2 + 30, 1.5);
         drawText(ctx, `PLAY AS ${cab.hero}`, 0, 28, 1.25, '#c9a0ff');
         drawText(ctx, cab.blurb, 0, 42, 1, COLORS.textDim);
         // The rule at the big size if it fits 5 lines, else smaller (MIDAS's was cut off: EXPERT_PLAYTEST_10 D2).
@@ -2867,7 +2867,7 @@ export class RunScreens {
       if (compact && i === 0) this.actPlaque(ctx, 1236, y - rowH / 2, 'ACT 1', COLORS.goldLight);
       // Tight rows (a GREEN run has 18) get smaller text, so the act dividers run between rows, not through them.
       const ts = rowH < 18 ? 1.25 : rowH < 22 ? 1.5 : 2;
-      drawSprite(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 350, y, compact ? (rowH < 22 ? 0.65 : 0.9) : 1.4);
+      drawPortrait(ctx, (r.portrait ?? 'enemyPortrait') as SpriteId, 350, y, compact ? (rowH < 22 ? 0.65 : 0.9) : 1.4);
       drawText(ctx, r.enemy, 376, y, ts, r.won ? COLORS.text : COLORS.danger, { align: 'left' });
       drawText(ctx, `${r.turns}`, 715, y, ts, COLORS.text);
       drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, 821, y, ts, r.hpAfter > 0 ? COLORS.text : COLORS.danger);
