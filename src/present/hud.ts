@@ -182,7 +182,7 @@ export class HudView {
     // Portrait in its well (32px art at x2).
     const ps = this.portraitShake * (Math.random() * 2 - 1);
     drawWell(ctx, x + PAD, y + PAD, 76, 76);
-    drawPortrait(ctx, this.portrait, x + PAD + 38 + ps, y + PAD + 39, 64 / 24, { flash: this.portraitFlash });
+    drawPortrait(ctx, this.portrait, x + PAD + 38 + ps, y + PAD + 39, 64 / 24, this.hp > 0 ? { flash: this.portraitFlash } : { dim: 0.7 });
     // The name, heading size.
     drawText(ctx, this.shownName, x + BAR_X - 26, y + 24, T.head, this.side === 'player' ? KIT.title : COLORS.slime, { align: 'left' });
 

@@ -1505,7 +1505,6 @@ export class Game {
     this.view.drawHoldBar(ctx, t);
     if (this.drawerT < 0.5) this.view.drawRelicFeed(ctx);
     if (this.fight.cfg.enemy.boss && !this.screens.active) this.view.drawBossHint(ctx);
-    if (this.bossCard) this.view.drawBossCard(ctx);
     // The BUILD drawer: your whole build slides out over the left side (relics fire inside it), chips stay put on top.
     if (this.drawerLive()) {
       if (this.drawerT > 0.005) {
@@ -1532,6 +1531,8 @@ export class Game {
       ctx.globalAlpha = 1;
     }
     for (const b of this.buttons) if (!this.recapBtns.includes(b)) b.draw(ctx, t);
+    // The boss card covers the whole screen, the bottom bar too (it pauses the fight).
+    if (this.bossCard) this.view.drawBossCard(ctx);
     this.view.drawRelicTooltip(ctx);
     this.screens.draw(ctx, t);
     this.recap.draw(ctx);
