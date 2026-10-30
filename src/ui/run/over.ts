@@ -164,7 +164,7 @@ export abstract class OverScreen extends ShopScreen {
     const k3 = out(ease(B.words, 0.3));
     const tx = px + ps + 44;
     const name = won || turbo ? CABINETS[run.cabinet].hero : (loss?.enemy ?? lastRec?.enemy ?? 'THE HOUSE');
-    const line2 = won || turbo ? (trueEnding ? 'BEAT THE DEALER. TRUE ENDING' : 'BEAT THE HOUSE') : busted ? 'GOT YOU IN ENDLESS' : 'GOT YOU';
+    const line2 = won || turbo ? (trueEnding ? 'BEAT THE DEALER. TRUE ENDING' : turbo ? 'BEAT THE OWNER' : 'CLEARED THE RUN') : busted ? 'GOT YOU IN ENDLESS' : 'GOT YOU';
     const where = busted
       ? `BEAT THE DEALER, THEN ${run.records.filter((r) => r.loop !== undefined).length} ENDLESS FIGHTS`
       : won
