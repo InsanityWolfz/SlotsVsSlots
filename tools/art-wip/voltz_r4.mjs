@@ -33,3 +33,18 @@ export function blob(g, cells, lit, mid, dark) {
     px(g, x, y, !has(x, y - 1) || !has(x - 1, y) ? lit : !has(x, y + 1) || !has(x + 1, y) ? dark : mid);
   }
 }
+/** A tapered hair spike from base (bx,by) to tip (tx,ty): w0 px wide at the base, 1 at the tip.
+ *  The side facing the top-left light is lit, the far side shadowed, the core mid. */
+export function spike(g, bx, by, tx, ty, w0, lit = 'W', mid = 'L', dark = 'S') {
+  const dx = tx - bx, dy = ty - by, L = Math.hypot(dx, dy);
+  let nx = -dy / L, ny = dx / L;
+  if (nx * -1 + ny * -1 < 0) { nx = -nx; ny = -ny; } // n points toward the light
+  for (let y = Math.floor(Math.min(by, ty) - w0); y <= Math.ceil(Math.max(by, ty) + w0); y++)
+    for (let x = Math.floor(Math.min(bx, tx) - w0); x <= Math.ceil(Math.max(bx, tx) + w0); x++) {
+      const t = ((x - bx) * dx + (y - by) * dy) / (L * L);
+      if (t < 0 || t > 1) continue;
+      const d = (x - bx) * nx + (y - by) * ny, w = (w0 * (1 - t) + 0.9 * t) / 2;
+      if (Math.abs(d) > w) continue;
+      px(g, x, y, d > w - 1 ? lit : d < -w + 1 ? dark : mid);
+    }
+}
