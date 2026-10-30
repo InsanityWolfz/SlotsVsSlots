@@ -64,7 +64,7 @@ Character portraits are **32×32**, still 8-bit (a bigger canvas, not a new styl
 7. **Casino town only:** suits, hats, chips, cards, drinks, neon. No fantasy creatures, no robots.
 8. **Anatomy, from the user's notes on the first eleven:** shoulders end the same distance from the head's centre
    line; the hand sits straight on its forearm (no sideways wrist); a forearm with no elbow showing is forearm-length,
-   so a raised hand sits at chin-to-cheek height; no arm bending back on itself like a hose; no arm entering from
+   so a raised hand sits low, at chin height or below, and the prop it holds may sit lower than the head (user, 2026-10-30: "keep the arms lower"); no arm bending back on itself like a hose; no arm entering from
    outside the frame; a slim character gets slim arms; clothes go over the shoulder; anything that can't be named
    goes; check every prop for a rude read.
 Process: each portrait gets 20 draw, render and critique passes, then goes to the user as an artifact (a gallery
