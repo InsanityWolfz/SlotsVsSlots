@@ -115,25 +115,25 @@ export class HudView {
   }
 
   hpBar() {
-    return { x: this.x + BAR_X, y: HUD_TOP + 42, w: HUD_W - BAR_X - PAD, h: 22 };
+    return { x: this.x + BAR_X, y: HUD_TOP + 40, w: HUD_W - BAR_X - PAD, h: 22 };
   }
   shieldBar() {
-    return { x: this.x + BAR_X, y: HUD_TOP + 72, w: HUD_W - BAR_X - PAD, h: 16 };
+    return { x: this.x + BAR_X, y: HUD_TOP + 68, w: HUD_W - BAR_X - PAD, h: 16 };
   }
   get hasSpecial(): boolean {
     return !!this.meter;
   }
   /** The meter bar (TESLA, MIDAS, JAX): one bar with a number, not pips. */
   meterBar() {
-    return { x: this.x + BAR_X, y: HUD_TOP + 98, w: HUD_W - BAR_X - PAD, h: 18 };
+    return { x: this.x + BAR_X, y: HUD_TOP + 92, w: HUD_W - BAR_X - PAD, h: 16 };
   }
-  /** The panel's height: the name, HP and shield; the signature meter adds a row (its note one more). */
+  /** The panel's height: the name, HP and shield; the signature meter adds a row. */
   get panelH(): number {
-    return this.meter ? (this.meter.note ? 144 : 128) : 100;
+    return this.meter ? 116 : 96;
   }
   /** Where the next-move chip hangs: centred on the panel's bottom edge. */
   get chipY(): number {
-    return HUD_TOP + this.panelH + 8;
+    return HUD_TOP + this.panelH + 6;
   }
   /** A point along the meter bar for the i-th 10 of meter (projectiles aim here). */
   pipPos(i: number) {
@@ -228,27 +228,32 @@ export class HudView {
       // THE JUKEBOX counts its volume in levels (4/6), like its cards do.
       const count = m.kind === 'volume' ? `${Math.floor(this.energy + 0.01)}/${this.energyMax}` : `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`;
       drawText(ctx, count, b.x + b.w - 6, b.y + b.h / 2 + 1, T.small, '#ffffff', { align: 'right' });
-      // The HIGH ROLLER bar: your chips and the payoff they make, on a line under the bar.
-      if (m.note) drawText(ctx, m.note(this.chips), b.x + b.w, b.y + b.h + 12, T.small, m.color, { align: 'right' });
     }
     if (this.ability) this.drawAbility(ctx, time);
     else if (this.hint) drawChip(ctx, this.hint, x + HUD_W / 2, this.chipY, { scale: T.body, color: '#c8f0ff' });
-    // SPILL on your reels: a chip hanging from your panel (the same spot as the enemy's next move), how many of your
-    // cells are spilled; past half it blinks.
+    // Your panel's chips hang where the enemy's next move does, side by side: SPILL on your reels (how many of your
+    // cells; past half it blinks) and the HIGH ROLLER's chips in hand and the payoff they make.
+    const chips: { label: string; color: string; fill: string; icon?: SpriteId; punch: number }[] = [];
     if (this.ooze > 0) {
       const pct = this.ooze / Math.max(1, this.oozeTotal);
+      chips.push({ label: `SPILL ${this.ooze}/${this.oozeTotal}`, color: pct >= 0.5 && Math.sin(time * 8) > 0 ? '#b6ff9a' : COLORS.slime, fill: '#14281a', icon: ABILITY_UI.flood.icon, punch: this.oozePunch });
+    }
+    if (m?.note) chips.push({ label: m.note(this.chips), color: m.color, fill: KIT.fill, punch: 1 });
+    const widths = chips.map((c) => Math.round(c.label.length * 6 * T.body + (c.icon ? 22 : 0) + 18));
+    let cx = x + HUD_W / 2 - (widths.reduce((a, w) => a + w, 0) + 10 * (chips.length - 1)) / 2;
+    chips.forEach((c, i) => {
       ctx.save();
-      ctx.translate(Math.round(x + HUD_W / 2), Math.round(this.chipY));
-      ctx.scale(this.oozePunch, this.oozePunch);
-      drawChip(ctx, `SPILL ${this.ooze}/${this.oozeTotal}`, 0, 0, {
+      ctx.translate(Math.round(cx + widths[i] / 2), Math.round(this.chipY));
+      ctx.scale(c.punch, c.punch);
+      drawChip(ctx, c.label, 0, 0, {
         scale: T.body,
-        color: pct >= 0.5 && Math.sin(time * 8) > 0 ? '#b6ff9a' : COLORS.slime,
-        fill: '#14281a',
-        iconW: 22,
-        icon: (ix, iy) => drawSprite(ctx, ABILITY_UI.flood.icon, ix, iy, 2),
+        color: c.color,
+        fill: c.fill,
+        ...(c.icon ? { iconW: 22, icon: (ix: number, iy: number) => drawSprite(ctx, c.icon!, ix, iy, 2) } : {}),
       });
       ctx.restore();
-    }
+      cx += widths[i] + 10;
+    });
   }
 
   /**
