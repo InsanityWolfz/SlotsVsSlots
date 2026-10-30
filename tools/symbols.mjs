@@ -1,23 +1,23 @@
 // The casino-town enemy symbols, cell marks and ability icons (approved by the user, 2026-10-30), as literal fill rows.
 // build-art.mjs adds the 1px outline. Baked from the art-wip branch (tools/art-wip/sym_*.mjs); hand edits go here now.
 export const SYMBOLS = {
-  // THE BARFLY's SPILL: a tipped cocktail glass
+  // THE BARFLY's SPILL: a broken pint glass, beer puddled round it (user, 2026-10-30: it matches the SPILL icon)
   slime: [
     '................',
-    '......W.....Y...',
-    '......LW........',
-    '......LWW..Y..O.',
-    '......LWCW......',
-    '......LCCCW...O.',
-    '......LYYYYW....',
-    '......LGGGGYW...',
-    '......LOGGGGOW..',
-    '.....LSSSSSSSOO.',
-    '....LS.......OO.',
-    '.L.LS........O..',
-    '..LSS...YYYYYOY.',
-    '...LS.GOOOOOOOO.',
-    '....S..oooooooo.',
+    '..W.............',
+    '..SW......W.....',
+    '..SCW....WCW....',
+    '..SCCW..WCCCW...',
+    '..SCCCWWCCCCL...',
+    '..STTTTTTTTTL...',
+    '..SYYYYYYYYYL...',
+    '..SGYGGGGGGGL...',
+    '..SGGGGGGGGGL...',
+    '...SGGGGGGGL....',
+    '...SGGGGGGOL....',
+    '...SGGGGGOOL.W..',
+    '..OSSSSSSSSLOWL.',
+    '.OOOOGGGOOOOOOO.',
     '................',
   ],
   // a spilled cell: amber drips and a puddle
@@ -156,12 +156,12 @@ export const SYMBOLS = {
   // SPILL icon
   icoFlood: [
     '........',
-    '..W.....',
-    '..LW..Y.',
-    '..LYW...',
-    '..LGOW..',
-    '.LSSSOO.',
-    '.S....O.',
+    '.W..W...',
+    '.LCWCW..',
+    '.LTTTW..',
+    '.LYGGW..',
+    '.OSSSO..',
+    '.OOOOOO.',
     '........',
   ],
   // THE SWING icon: a bat
