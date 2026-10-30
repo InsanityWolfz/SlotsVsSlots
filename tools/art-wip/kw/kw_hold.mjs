@@ -1,15 +1,15 @@
-// A map pin: a round gold head on a steel needle (no guard). This stays put.
+// A push pin: a straight gold grip with a small cap, on a steel needle.
 export const rows = () => [
   '............',
   '....YYYY....',
   '...YGGGGY...',
-  '...YGGGGg...',
-  '...YGGGGg...',
+  '....YGGg....',
+  '....YGGg....',
+  '....YGGg....',
   '....Yggg....',
   '.....gg.....',
   '.....LL.....',
   '.....LD.....',
-  '.....L......',
   '.....L......',
   '............',
 ];

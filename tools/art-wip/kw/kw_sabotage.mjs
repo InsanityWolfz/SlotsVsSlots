@@ -1,15 +1,15 @@
-// A spanner on a slant: open jaw up-right, ring end down-left, a purple grip.
+// A wrench thrown in the works: the first purple handle, an open steel jaw.
 export const rows = () => [
   '............',
-  '......LL.L..',
-  '......L..LS.',
-  '......LSSSD.',
-  '.......SSD..',
-  '......VV....',
-  '.....VV.....',
-  '....VV......',
-  '.LSSV.......',
-  '.L..S.......',
-  '.LSSD.......',
+  '.....LL..LL.',
+  '.....LD..LD.',
+  '.....LSLLSD.',
+  '.....LSSSD..',
+  '.....LSDD...',
+  '....LDD.....',
+  '...JJJ......',
+  '..JVv.......',
+  '.JVv........',
+  '.Jv.........',
   '............',
 ];

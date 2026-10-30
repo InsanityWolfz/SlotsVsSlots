@@ -1,15 +1,15 @@
-// The rainbow star: true five points, centred, one colour per point, a white heart.
+// The rainbow star: five legs the same length, a white heart.
 export const rows = () => [
   '............',
   '.....YG.....',
+  '.....YG.....',
   '....YYGG....',
-  '....YYGG....',
-  '.rrrrYGEEEE.',
-  '..RrrWWEEe..',
-  '...RRWWee...',
-  '...VVWWCC...',
-  '..VVJ..cCC..',
-  '..VV....CC..',
-  '.VV......CC.',
+  '.RRRRYGEEEE.',
+  '..RRRWWEEE..',
+  '...RJWWCE...',
+  '...JJJCCC...',
+  '...JJ..CC...',
+  '..JJ....CC..',
+  '..J......C..',
   '............',
 ];
