@@ -983,6 +983,8 @@ export class Game {
           ability: c.ability?.kind === 'owner' ? { ...c.ability, kind: OWNER_TRICKS[0].kind } : c.ability,
           energy: c.energy / UNIT,
         });
+        // The enemy's name in its card's colour: a boss red, an elite orange (it was always green).
+        if (s === 'enemy') hud.nameColor = cfg.enemy.boss ? '#ff8a7a' : this.run && inRun && currentEnemy(this.run)?.elite ? '#ffb060' : COLORS.slime;
         hud.hp = hud.ghost = c.hp;
         if (s === 'player') hud.chips = hud.chipsHeld = cfg.player.chipsHeld ?? 0;
         if (c.ability) hud.charge = c.charge;

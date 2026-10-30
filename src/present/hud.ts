@@ -91,6 +91,8 @@ export class HudView {
   abilityLabel?: string;
   /** A line in the ability slot for an enemy without one. */
   hint = '';
+  /** The name's colour (the player's is gold; an enemy's follows its card: boss, elite, else green). */
+  nameColor?: string;
 
   constructor(
     readonly side: SideId,
@@ -184,7 +186,7 @@ export class HudView {
     drawWell(ctx, x + PAD, y + PAD, 76, 76);
     drawPortrait(ctx, this.portrait, x + PAD + 38 + ps, y + PAD + 39, 64 / 24, this.hp > 0 ? { flash: this.portraitFlash } : { dim: 0.7 });
     // The name, heading size.
-    drawText(ctx, this.shownName, x + BAR_X - 26, y + 24, T.head, this.side === 'player' ? KIT.title : COLORS.slime, { align: 'left' });
+    drawText(ctx, this.shownName, x + BAR_X - 26, y + 24, T.head, this.side === 'player' ? KIT.title : (this.nameColor ?? COLORS.slime), { align: 'left' });
 
     // HP bar with trailing ghost; the heart sits left of it.
     const hb = this.hpBar();
