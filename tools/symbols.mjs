@@ -134,6 +134,25 @@ export const SYMBOLS = {
     '......r.........',
     '................',
   ],
+  // THE PICKPOCKET's STEAL: a gloved hand reaching down
+  claw: [
+    '.......XZZZz....',
+    '.......XZZZz....',
+    '......XXZZZzz...',
+    '......zzzzzzz...',
+    '.......JVVVv....',
+    '...JJJJVVVVVVv..',
+    '..JVvJVVVVVVVVv.',
+    '.FFfJVVVVVVVVVv.',
+    '.FFfVvvVvvVvvVv.',
+    '.ff.FF.FF.FF.FF.',
+    '....FF.FF.FF.FF.',
+    '....FF.FF.FF.FF.',
+    '....FF.FF.FF.FF.',
+    '....Ff.FF.FF.Ff.',
+    '.......Ff.Ff....',
+    '................',
+  ],
   // SPILL icon
   icoFlood: [
     '........',
