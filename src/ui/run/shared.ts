@@ -48,6 +48,8 @@ export type Btn = Hit & {
   ghost?: boolean;
   /** The kit's quiet style: grey until hovered (chrome like MENU). */
   quietStyle?: boolean;
+  /** A casino chip you tap (the card tables' bets): its colour; the button is drawn as the chip, its label on its face. */
+  chip?: string;
   /** Draws the face's content instead of the label (centred at 0, 0). */
   icon?: (ctx: CanvasRenderingContext2D) => void;
 };
@@ -139,8 +141,8 @@ export function drawPlayingCard(ctx: CanvasRenderingContext2D, x: number, y: num
 }
 /** RED OR BLACK: the wheel's centre, its offscreen size (drawn at half size, scaled x2), and the bet column's x. */
 export const RL = { wheelX: CX - 170, wheelY: 300, px: 112, betX: CX + 220 };
-/** CLAW MACHINE: the first prize's x, the step between prizes, the pit's y, the claw's resting x. */
-export const CW = { x0: CX - 300, gap: 130, pitY: 450, home: CX - 170 };
+/** CLAW MACHINE (in the table's place): the first prize's x, the step between prizes, the pit's y, the claw's resting x. */
+export const CW = { x0: 536, gap: 130, pitY: 426, home: 500 };
 /** Your chips: the same spot in the fights (game.ts draws them there too). */
 export const CHIP_SPOT = { x: 44, y: 46 };
 /** The Cashier's shelves: item centers per row (the counter, then the relics behind the glass). */

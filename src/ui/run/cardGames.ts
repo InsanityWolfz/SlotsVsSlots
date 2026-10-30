@@ -1,21 +1,20 @@
-import { bjMax, bjState, bjTotal, BJ, extraPlays, HILO, hiloMax, hiloState, type EncounterResult } from '../../core/encounters';
+import { bjMax, bjState, bjTotal, BJ, extraPlays, HILO, hiloMax, hiloState } from '../../core/encounters';
 import { encounterChoices } from '../../core/run';
 import { backOut } from '../../present/ease';
-import { COLORS } from '../../present/layout';
 import { drawSprite } from '../../render/sprites';
 import { drawText } from '../../render/text';
-import { CX, drawPlayingCard, RL } from './shared';
-import { TableScreens } from './table';
+import { KIT, T } from '../kit';
+import { drawPlayingCard } from './shared';
+import { TableScreens, SX, ROW, TABLE, TCX, FELT_INK } from './table';
 
 export abstract class CardGames extends TableScreens {
   /** TWENTY-ONE mid-hand: HIT and STAND. */
   protected bjButtons(): void {
     this.encChoices = encounterChoices(this.run!);
-    const hit = this.btn('HIT', RL.betX, 300, 260, 56, () => this.playBj(0));
+    const hit = this.btn('HIT', SX, ROW.main, 196, 56, () => this.playBj(0));
     hit.enabled = !this.encChoices[0]?.disabled;
-    const stand = this.btn('STAND', RL.betX, 368, 260, 56, () => this.playBj(1));
-    stand.tint = '#2a2234';
-    this.buttons = [hit, stand];
+    const stand = this.minorBtn('STAND', SX, ROW.second, 196, 52, () => this.playBj(1));
+    this.setTable([hit, stand]);
   }
 
   /** TWENTY-ONE between hands: the bet, DEAL, WALK AWAY (the chip table the other games use). */
@@ -25,10 +24,10 @@ export abstract class CardGames extends TableScreens {
     this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
     this.encChoices = encounterChoices(run);
     const steps = this.betStepper(() => bjMax(this.run!));
-    const deal = this.btn('DEAL', RL.betX, 342, 280, 56, () => this.playBj(0));
-    const walk = this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playBj(1));
+    const deal = this.btn('DEAL', SX, ROW.main, 196, 56, () => this.playBj(0));
+    const walk = this.footBtn('WALK AWAY', () => this.playBj(1));
     for (const b of [...steps, deal]) b.enabled = max >= 1;
-    this.buttons = [...steps, deal, walk];
+    this.setTable([...steps, deal, walk]);
   }
 
   /** A TWENTY-ONE move: the deal, a hit, or a stand. A finished hand stays up while the dealer's cards turn one by one,
@@ -45,7 +44,7 @@ export abstract class CardGames extends TableScreens {
           this.bjMsg = null;
           this.bjButtons();
         } else this.bjDealButtons();
-      } else if (!this.leaveOnWalk(res)) this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+      } else if (!this.leaveOnWalk(res)) this.setTable([this.footBtn('CONTINUE', () => this.cb.onEncounterDone(), true)]);
     };
     if (!res.hand) {
       if (res.more) {
@@ -56,7 +55,7 @@ export abstract class CardGames extends TableScreens {
       } else {
         // Walked away.
         this.bjMsg = res;
-        this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+        this.setTable([this.footBtn('CONTINUE', () => this.cb.onEncounterDone(), true)]);
       }
       return;
     }
@@ -66,7 +65,7 @@ export abstract class CardGames extends TableScreens {
     this.bjShow = hand;
     this.bjMsg = null;
     this.bjDealerUp = 1;
-    this.buttons = [];
+    this.setTable([]);
     let chain: Promise<void> = this.encClock.wait(0.3);
     for (let k = 1; k < hand.d.length && hand.outcome !== 'bust' && hand.outcome !== 'natural'; k++)
       chain = chain.then(() => {
@@ -98,24 +97,25 @@ export abstract class CardGames extends TableScreens {
     this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
     this.encChoices = encounterChoices(run);
     const steps = this.betStepper(() => hiloMax(this.run!));
-    const deal = this.btn('DEAL', RL.betX, 342, 280, 56, () => this.playHilo(0));
-    const walk = this.minorBtn('WALK AWAY', CX, 636, 260, 44, () => this.playHilo(1));
+    const deal = this.btn('DEAL', SX, ROW.main, 196, 56, () => this.playHilo(0));
+    const walk = this.footBtn('WALK AWAY', () => this.playHilo(1));
     for (const b of [...steps, deal]) b.enabled = max >= 1;
-    this.buttons = [...steps, deal, walk];
+    this.setTable([...steps, deal, walk]);
   }
 
   /** HIGHER OR LOWER mid-game: HIGHER, LOWER and CASH OUT (off until a right call; nothing beats an ace). */
   protected hiloButtons(): void {
     this.encChoices = encounterChoices(this.run!);
     const [hi, lo, cash] = this.encChoices;
-    const up = this.btn('HIGHER', RL.betX, 300, 260, 56, () => this.playHilo(0));
+    // HIGHER and LOWER are the same weight (neither is the safe one); CASH OUT is the way out.
+    const up = this.minorBtn('HIGHER', SX, ROW.chips + 4, 196, 56, () => this.playHilo(0));
     up.enabled = !hi?.disabled;
-    const down = this.btn('LOWER', RL.betX, 368, 260, 56, () => this.playHilo(1));
+    const down = this.minorBtn('LOWER', SX, ROW.main + 4, 196, 56, () => this.playHilo(1));
     down.enabled = !lo?.disabled;
-    const out = this.btn('CASH OUT', RL.betX, 448, 260, 56, () => this.playHilo(2));
-    out.tint = '#2a2234';
+    const out = this.minorBtn('CASH OUT', SX, ROW.second + 18, 196, 48, () => this.playHilo(2));
+    out.quietStyle = true;
     out.enabled = !cash?.disabled;
-    this.buttons = [up, down, out];
+    this.setTable([up, down, out]);
   }
 
   /** A HIGHER OR LOWER move: the deal, a call or CASH OUT. A call turns the next card, then its word; a right call or a
@@ -143,7 +143,7 @@ export abstract class CardGames extends TableScreens {
     if (!res.title) return this.hiloButtons();
     // A paid game's chips land with its word.
     this.chipsLanding = run.player.chips - before;
-    this.buttons = [];
+    this.setTable([]);
     this.hlMsg = null;
     const h = this.hl;
     const word = () => {
@@ -180,7 +180,7 @@ export abstract class CardGames extends TableScreens {
           h.game++;
           this.hiloDealButtons();
         });
-      this.buttons = [this.btn('CONTINUE', CX, 636, 300, 52, () => this.cb.onEncounterDone())];
+      this.setTable([this.footBtn('CONTINUE', () => this.cb.onEncounterDone(), true)]);
     };
     if (res.next === undefined) {
       // CASHED OUT: no card to turn.
@@ -197,37 +197,41 @@ export abstract class CardGames extends TableScreens {
       .then(after);
   }
 
+  /** An empty card spot printed on the felt (where your cards will land). */
+  protected cardSpot(ctx: CanvasRenderingContext2D, x: number, y: number, k: number): void {
+    const w = Math.round(112 * k);
+    const h = Math.round(156 * k);
+    ctx.fillStyle = 'rgba(255,210,63,0.3)';
+    for (let d = 0; d < w; d += 10) {
+      ctx.fillRect(Math.round(x - w / 2 + d), Math.round(y - h / 2), 5, 2);
+      ctx.fillRect(Math.round(x - w / 2 + d), Math.round(y + h / 2 - 2), 5, 2);
+    }
+    for (let d = 0; d < h; d += 10) {
+      ctx.fillRect(Math.round(x - w / 2), Math.round(y - h / 2 + d), 2, 5);
+      ctx.fillRect(Math.round(x + w / 2 - 2), Math.round(y - h / 2 + d), 2, 5);
+    }
+  }
+
   /** HIGHER OR LOWER: the card to beat and the deck (the next card turns over on a call), the right calls as chips
-   * under them, the word; the pot, the bet and the calls on the right. Before the deal: the house rules and your bet. */
+   * under them, the word; the pot and the calls on the side. Before the deal: two cards face down and your bet. */
   protected drawHilo(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
     const h = this.hl;
     const m = this.hlMsg;
-    const col = (r: EncounterResult) => (r.good ? COLORS.goldLight : r.good === false ? '#ff8a7a' : COLORS.text);
     const games = HILO.games + extraPlays(run);
-    if (games > 1) drawText(ctx, `GAME ${Math.min(h.game, games)} OF ${games}`, CX, 78, 2, COLORS.textDim);
-    this.felt(ctx);
-    const ax = RL.wheelX - 80;
-    const bx = RL.wheelX + 80;
-    const cy = 250;
-    drawText(ctx, 'THE CARD', ax, 148, 2, COLORS.textDim);
-    drawText(ctx, 'NEXT', bx, 148, 2, COLORS.textDim);
+    drawText(ctx, games > 1 ? `GAME ${Math.min(h.game, games)} OF ${games}` : 'ONE GAME', TCX, 72, T.small, KIT.dim);
+    this.felt(ctx, this.hlLive ? '' : `${HILO.calls} RIGHT CALLS PAY THE POT OUT`);
+    const ax = TCX - 104;
+    const bx = TCX + 104;
+    const cy = TABLE.y + 166;
+    drawText(ctx, 'THE CARD', ax, TABLE.y + 64, T.small, FELT_INK);
+    drawText(ctx, 'NEXT', bx, TABLE.y + 64, T.small, FELT_INK);
     if (!this.hlLive) {
-      // Between games: two face-down cards and the house rules on the left, your bet on the right.
       drawPlayingCard(ctx, ax, cy, 0, 1);
       drawPlayingCard(ctx, bx, cy, 0, 1);
-      drawText(ctx, 'CALL THE NEXT CARD: HIGHER OR LOWER.', RL.wheelX, 380, 1.5, COLORS.goldLight);
-      drawText(ctx, `RIGHT: THE POT GROWS X${HILO.grow}. WRONG: IT'S GONE.`, RL.wheelX, 404, 1.5, COLORS.goldLight);
-      drawText(ctx, 'THE SAME CARD IS A PUSH: CALL AGAIN.', RL.wheelX, 428, 1.5, COLORS.textDim);
-      drawText(ctx, 'CASH OUT ANY TIME AFTER A RIGHT CALL.', RL.wheelX, 452, 1.5, COLORS.textDim);
-      drawText(ctx, `${HILO.calls} RIGHT CALLS PAY THE POT OUT.`, RL.wheelX, 476, 1.5, COLORS.textDim);
-      if (m) {
-        drawText(ctx, m.title, RL.betX, 470, 3, col(m));
-        if (m.text) drawText(ctx, m.text, RL.betX, 506, 2, col(m));
-      }
-      drawText(ctx, `YOUR BET (MAX ${hiloMax(run)})`, RL.betX, 150, 2, COLORS.textDim);
-      drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
-      drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
+      this.side(ctx, 'YOUR BET');
+      this.numberWell(ctx, '', `${this.rlBet}`, { sub: `MAX ${hiloMax(run)}` });
+      if (m) this.tableResult(ctx, m);
       return;
     }
     // The card to beat; the deck, its top card turning (a back that narrows, then the face that widens) and sliding over.
@@ -238,29 +242,24 @@ export abstract class CardGames extends TableScreens {
       if (h.flip < 0.5) drawPlayingCard(ctx, x, cy, 0, 1 - h.flip * 2);
       else drawPlayingCard(ctx, x, cy, h.next, h.flip * 2 - 1, 1, h.turned + 1);
     }
-    // The right calls so far, as chips (lit) against the cap.
+    // The right calls so far, as chips on the felt (lit) against the cap.
     for (let k = 0; k < HILO.calls; k++) {
       ctx.save();
-      if (k >= h.right) ctx.globalAlpha *= 0.25;
-      drawSprite(ctx, 'chip', RL.wheelX + (k - (HILO.calls - 1) / 2) * 36, 372, 2);
+      if (k >= h.right) ctx.globalAlpha *= 0.3;
+      drawSprite(ctx, 'chip', TCX + (k - (HILO.calls - 1) / 2) * 40, TABLE.y + 278, 2.5);
       ctx.restore();
     }
     const left = HILO.calls - h.right;
-    drawText(ctx, `${left} CALL${left === 1 ? '' : 'S'} LEFT`, RL.wheelX, 404, 2, COLORS.textDim);
-    if (m) {
-      drawText(ctx, m.title, RL.wheelX, 456, 3, col(m), { punch: 1 + 0.03 * Math.sin(time * 6) });
-      if (m.text) drawText(ctx, m.text, RL.wheelX, 494, 2, col(m));
-    }
-    // Right column: the pot riding on the next call, and the bet it grew from.
-    drawText(ctx, 'THE POT', RL.betX, 150, 2, COLORS.textDim);
-    drawSprite(ctx, 'chip', RL.betX - 44, 196, 4);
-    drawText(ctx, `${h.pot}`, RL.betX - 14, 196, 5, m?.good === false ? '#ff8a7a' : COLORS.energy, { align: 'left', punch: h.potPop });
-    drawText(ctx, `YOUR BET ${h.bet}`, RL.betX, 240, 1.5, COLORS.textDim);
+    drawText(ctx, `${left} RIGHT CALL${left === 1 ? '' : 'S'} TO PAY OUT`, TCX, TABLE.y + 306, T.small, FELT_INK);
+    this.side(ctx, 'THE POT');
+    this.numberWell(ctx, 'RIDING ON THE NEXT CALL', `${h.pot}`, { color: m?.good === false ? '#ff8a7a' : undefined, punch: h.potPop, sub: `YOUR BET ${h.bet}` });
+    if (m) this.tableResult(ctx, m, TABLE.y + 352);
+    void time;
   }
 
-  /** TWENTY-ONE: the dealer's row and yours with their totals, which hand this is, what you've won. Before the buy-in:
-   * the house rules and the pay cards. */
-  protected drawBj(ctx: CanvasRenderingContext2D, time: number): void {
+  /** TWENTY-ONE: the dealer's row and yours with their totals; the bet on the side. Between hands: the dealer's two cards
+   * face down, your spots empty, your bet. */
+  protected drawBj(ctx: CanvasRenderingContext2D, _time: number): void {
     const run = this.run!;
     const st = bjState(run);
     const show = this.bjShow;
@@ -268,43 +267,42 @@ export abstract class CardGames extends TableScreens {
     // (After the last hand or a walk-away the stop's state is cleared: keep showing the hand you got to, not HAND 1.)
     const dealt = show ? show.no : st ? st.dealt : this.bjMsg ? this.bjNo : Number((run.encounterState as { dealt?: number } | undefined)?.dealt ?? 0) + 1;
     this.bjNo = dealt;
-    drawText(ctx, `HAND ${Math.min(dealt, BJ.hands + extraPlays(run))} OF ${BJ.hands + extraPlays(run)}`, CX, 78, 2, COLORS.textDim);
-    this.felt(ctx);
+    drawText(ctx, `HAND ${Math.min(dealt, BJ.hands + extraPlays(run))} OF ${BJ.hands + extraPlays(run)}`, TCX, 72, T.small, KIT.dim);
+    this.felt(ctx, `THE DEALER STANDS ON ${BJ.standOn}  -  21 OFF THE DEAL PAYS 2 TO 1`);
     const m = this.bjMsg;
+    const x0 = TCX - 110;
+    const dy = TABLE.y + 122;
+    const py = TABLE.y + 286;
+    const k = 0.75;
+    const label = (text: string, y: number, color: string) => drawText(ctx, text, x0 - 62, y, T.body, color, { align: 'right' });
     if (!inPlay) {
-      // Between hands: two face-down cards and the house rules on the left, your bet on the right.
-      drawPlayingCard(ctx, RL.wheelX - 40, 260, 0, 1, 0.8);
-      drawPlayingCard(ctx, RL.wheelX + 40, 260, 0, 1, 0.8);
-      drawText(ctx, 'A WIN PAYS 1 TO 1. 21 OFF THE DEAL PAYS 2 TO 1.', RL.wheelX, 380, 1.5, COLORS.goldLight);
-      drawText(ctx, `THE DEALER STANDS ON ${BJ.standOn}. A TIE IS A PUSH: DEAL AGAIN.`, RL.wheelX, 404, 1.5, COLORS.textDim);
-      if (m) {
-        drawText(ctx, m.title, RL.betX, 470, 3, m.good ? COLORS.goldLight : m.good === false ? '#ff8a7a' : COLORS.text);
-        if (m.text) drawText(ctx, m.text, RL.betX, 506, 2, m.good ? COLORS.goldLight : m.good === false ? '#ff8a7a' : COLORS.text);
+      label('DEALER', dy, FELT_INK);
+      drawPlayingCard(ctx, x0, dy, 0, 1, k);
+      drawPlayingCard(ctx, x0 + 64, dy, 0, 1, k);
+      // Your spots wait empty; after a hand, its word sits there instead.
+      if (!m) {
+        label('YOU', py, FELT_INK);
+        this.cardSpot(ctx, x0, py, k);
+        this.cardSpot(ctx, x0 + 96, py, k);
       }
+      this.side(ctx, 'YOUR BET');
       // Walked away: no more bets (a push keeps the table open).
-      if (m && !m.hand) return;
-      drawText(ctx, `YOUR BET (MAX ${bjMax(run)})`, RL.betX, 150, 2, COLORS.textDim);
-      drawSprite(ctx, 'chip', RL.betX - 44, 200, 4);
-      drawText(ctx, `${this.rlBet}`, RL.betX - 14, 200, 5, COLORS.energy, { align: 'left' });
+      if (!(m && !m.hand)) this.numberWell(ctx, '', `${this.rlBet}`, { sub: `MAX ${bjMax(run)}` });
+      if (m) this.tableResult(ctx, m, py - 30);
       return;
     }
     const p = show ? show.p : st!.p;
     const d = show ? show.d.slice(0, this.bjDealerUp) : st!.d;
-    const x0 = CX - 340;
-    const row = (cards: number[], y: number, label: string, hidden: boolean) => {
-      cards.forEach((c, k) => drawPlayingCard(ctx, x0 + 50 + k * 70, y, c, 1, 0.75, k));
-      if (hidden) drawPlayingCard(ctx, x0 + 50 + cards.length * 70, y, 0, 1, 0.75);
+    const row = (cards: number[], y: number, who: string, hidden: boolean) => {
+      cards.forEach((c, i) => drawPlayingCard(ctx, x0 + i * 64, y, c, 1, k, i));
+      if (hidden) drawPlayingCard(ctx, x0 + cards.length * 64, y, 0, 1, k);
       const t = bjTotal(cards);
-      drawText(ctx, `${label} ${t}`, x0 + 10, y - 76, 2, t > 21 ? '#ff8a7a' : COLORS.text, { align: 'left' });
+      label(`${who} ${t}`, y, t > 21 ? '#ff8a7a' : KIT.text);
     };
-    row(d, 220, 'DEALER', !show);
-    row(p, 420, 'YOU', false);
-    // Right column: the bet riding on this hand, then how it went.
-    drawSprite(ctx, 'chip', RL.betX - 70, 190, 3);
-    drawText(ctx, `${st?.bet ?? this.rlBet} ON THIS HAND`, RL.betX - 46, 190, 2, COLORS.energy, { align: 'left' });
-    if (m && m.title) {
-      drawText(ctx, m.title, RL.betX, 300, 2.5, m.good ? COLORS.goldLight : '#ff8a7a', { punch: 1 + 0.03 * Math.sin(time * 6) });
-      if (m.text) drawText(ctx, m.text, RL.betX, 336, 2, m.good ? COLORS.goldLight : '#ff8a7a');
-    }
+    row(d, dy, 'DEALER', !show);
+    row(p, py, 'YOU', false);
+    this.side(ctx, 'THE BET');
+    this.numberWell(ctx, '', `${st?.bet ?? this.rlBet}`);
+    if (m && m.title) this.tableResult(ctx, m, TABLE.y + TABLE.h - 70);
   }
 }

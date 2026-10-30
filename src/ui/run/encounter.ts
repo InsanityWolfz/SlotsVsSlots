@@ -1,4 +1,6 @@
-import { bjState, clawWon, encounterOf, hiloState } from '../../core/encounters';
+import { atStakes, BJ, bjState, CLAW, clawWon, encounterOf, extraPlays, HILO, hiloState } from '../../core/encounters';
+import { drawTitle, KIT, T } from '../kit';
+import { TCX } from './table';
 import { RELICS } from '../../core/relics';
 import { encounterChoices, currentStop, type RunState } from '../../core/run';
 import { Clock } from '../../present/clock';
@@ -24,6 +26,10 @@ export abstract class EncounterScreen extends ClawScreen {
       this.encClock = new Clock();
       this.ui.add({ update: (dt) => (this.encClock.tick(dt), this.mode !== 'encounter'), finish: () => {} });
     }
+    // The table's rules: one line under it, the full rules behind "?".
+    this.rulesOpen = false;
+    const rules = this.tableRules();
+    this.rulesB = rules ? this.rulesBtn(rules.line) : null;
     if (this.encId === 'claw') {
       this.cwX = CW.home;
       this.cwY = 0;
@@ -66,6 +72,27 @@ export abstract class EncounterScreen extends ClawScreen {
   }
 
 
+  /** Each table's rules: the one line under it, and the full rules behind its "?". */
+  protected tableRules(): { line: string; full: string[] } | null {
+    const run = this.run!;
+    if (this.encId === 'bj')
+      return {
+        line: "BEAT THE DEALER'S HAND WITHOUT GOING OVER 21",
+        full: ['HIT TO TAKE A CARD, STAND TO STOP.', 'A WIN PAYS 1 TO 1.', '21 OFF THE DEAL PAYS 2 TO 1.', `THE DEALER STANDS ON ${BJ.standOn}.`, 'A TIE IS A PUSH: DEAL AGAIN.', `${BJ.hands + extraPlays(run)} HANDS AT THIS TABLE.`],
+      };
+    if (this.encId === 'hilo')
+      return {
+        line: 'CALL THE NEXT CARD: HIGHER OR LOWER',
+        full: [`RIGHT: THE POT GROWS X${HILO.grow}.`, "WRONG: IT'S GONE.", 'THE SAME CARD IS A PUSH: CALL AGAIN.', 'CASH OUT ANY TIME AFTER A RIGHT CALL.', `${HILO.calls} RIGHT CALLS PAY THE POT OUT.`],
+      };
+    if (this.encId === 'claw')
+      return {
+        line: 'PAY FOR A GO, PICK A PRIZE. IF IT HOLDS, IT IS YOURS',
+        full: [`${atStakes(run, CLAW.price)} CHIPS A GO, ${CLAW.tries + extraPlays(run)} GOES.`, 'PICK A PRIZE: THE CLAW DROPS ON IT.', 'EASY GRABS HOLD MORE OFTEN THAN HARD ONES.', 'WHAT THE CLAW HOLDS, YOU KEEP.'],
+      };
+    return null;
+  }
+
   protected playEncounter(i: number): void {
     if (this.encId === 'bj') return this.playBj(i);
     if (this.encId === 'claw') return this.playClaw(i);
@@ -86,13 +113,19 @@ export abstract class EncounterScreen extends ClawScreen {
    * buy-in cards, the plays and how it went. */
   protected drawEncounter(ctx: CanvasRenderingContext2D, time: number): void {
     const def = encounterOf(this.encId);
-    drawText(ctx, def.name, CX, 34, 4, COLORS.goldLight, { punch: 1 + 0.02 * Math.sin(time * 3) });
-    if (def.blurb) drawText(ctx, def.blurb, CX, 80, 2, COLORS.textDim);
+    const rules = this.tableRules();
+    drawTitle(ctx, def.name, rules ? TCX : CX, 36);
+    if (def.blurb) drawText(ctx, def.blurb, CX, 80, T.body, KIT.dim);
     const res = this.encResult;
     if (def.id === 'hilo') this.drawHilo(ctx, time);
     else if (def.id === 'bj') this.drawBj(ctx, time);
     else if (def.id === 'claw') this.drawClaw(ctx, time);
-    else {
+    if (rules) {
+      for (const b of this.buttons) this.drawButton(ctx, b, time);
+      this.drawRules(ctx, rules.line, rules.full);
+      return;
+    }
+    {
       this.panel(ctx, CX - 330, 120, 660, 300, '#7a3aa8');
       if (!res) {
         // Each offer's terms under its own button (WALK AWAY needs none).

@@ -13,7 +13,7 @@ import { drawText, textWidth } from '../../render/text';
 import { drawPanel, KIT, T } from '../kit';
 import { type BossRuleContext } from '../bossRules';
 import { RelicTips } from '../relicTip';
-import { ScreenMode, Hit, Btn, INPUT_GUARD_MS, MapTip, CW, drawBackdrop } from './shared';
+import { ScreenMode, Hit, Btn, INPUT_GUARD_MS, MapTip, CW, drawBackdrop, pixelDisc, stakeDisc } from './shared';
 
 /**
  * Canvas overlays between fights: the draft (pick 1 of 3), the next-fight preview (or a fork:
@@ -328,6 +328,16 @@ export abstract class RunScreensBase {
     ctx.scale(b.scale * pulse, b.scale * pulse);
     const hw = Math.round(b.w / 2);
     const hh = Math.round(b.h / 2);
+    if (b.chip) {
+      // A casino chip: a pixel disc in its colour with white edge notches; its label on the face.
+      const r = Math.min(hw, hh) - 2;
+      stakeDisc(ctx, 0, 0, b.pressed ? '#3a2e52' : b.chip, r);
+      pixelDisc(ctx, 0, 0, Math.round(r * 0.72), b.hover ? '#fff6c8' : '#f4eee0');
+      pixelDisc(ctx, 0, 0, Math.round(r * 0.72) - 2, b.hover ? '#3a2a14' : '#1a1426');
+      drawText(ctx, b.label, 0, 1, T.body, b.hover ? '#fff6c8' : KIT.title);
+      ctx.restore();
+      return;
+    }
     const grey = b.quietStyle && !b.hover;
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(-hw - 3, -hh - 3, hw * 2 + 6, hh * 2 + 6);
