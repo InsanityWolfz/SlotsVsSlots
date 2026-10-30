@@ -1,15 +1,15 @@
-// A hand reaching out of a purple sleeve to snatch a coin (the icoSteal hand, simplified).
+// A purple-sleeved hand plucking one of your reel tiles (a red seven) away: the Pickpocket takes symbols.
 export const rows = () => [
   '............',
-  '......JVVv..',
-  '.....JVVVv..',
-  '....FFFFFf..',
-  '...FFFFFFFf.',
-  '..FFFFFFFFf.',
-  '.Ff.Ff.Ff.f.',
-  '.f..Ff.Ff.f.',
-  '....Ff.Ff...',
-  '...YWYYYGg..',
-  '....GGGgg...',
+  '.........Vv.',
+  '........JVv.',
+  '.......FFVv.',
+  '.TTTTTFFFf..',
+  '.TRRRRFFf...',
+  '.TTTTRFf....',
+  '.TTTRTFf....',
+  '.TTRTTTt....',
+  '.TTRTTTt....',
+  '.tttttt.....',
   '............',
 ];

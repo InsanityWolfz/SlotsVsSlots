@@ -1,6 +1,6 @@
 import { canvas, px, span, paint, out } from './cashier_r4.mjs';
 // THE CASHIER, 32x32 bust. Outline added by outline().
-// Ginger side part, knowing salesman's smirk, pencil behind the ear; green waistcoat, white shirt, dark bow tie.
+// Ginger side part, knowing salesman's smirk; green waistcoat, white shirt, dark bow tie.
 // He stands behind a teller's window: brass grille panels either side of him, a wooden counter across the bottom,
 // a short stack of chips slid forward on the counter (the game's own bet-stack chip).
 export function cashier32() {
@@ -24,7 +24,7 @@ export function cashier32() {
   for (let y = 26; y < 32; y++) px(g, 15, y, 'q');
   px(g, 16, 26, 'G');
   paint(g, 13, 18, ['ffffff']);
-  paint(g, 12, 19, ['kl  lk', 'kklkkk', 'kk  kk']);
+  paint(g, 13, 19, ['kl  lk', 'kklkkk', 'kk  kk']);
   // --- head: auburn hair with a neat side part, raised brow, one-sided grin
   paint(g, 8, 1, [
     '   ooooooooob   ',
@@ -45,9 +45,9 @@ export function cashier32() {
     '   FFFFFFFFFf   ',
     '    ffFFFFff    ',
   ]);
-  // ears, and a pencil tucked behind the right one (pink eraser out the back, sharpened tip at the temple)
+  // ears, 
   paint(g, 7, 9, ['F', 'f']); paint(g, 24, 9, ['f', 'f']);
-  paint(g, 21, 6, ['     M', '    YG', '   YG ', '  YG ', ' wk  ']);
+
   // --- teller's window: two brass grille panels (three bars and a top rail each) standing on the counter
   const counter = 28, top = 13;
   for (const x of [1, 3, 5, 26, 28, 30]) for (let y = top; y < counter; y++) px(g, x, y, 'G');
