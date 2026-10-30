@@ -1,4 +1,4 @@
-// A wrench, drawn fresh: an open-end steel spanner on the diagonal, the jaw up-right, a rounded end down-left.
+// A wrench: an open-end steel spanner on the diagonal, the jaw up-right, a rounded end down-left, a purple grip between.
 export const rows = () => [
   '............',
   '......LLL...',
@@ -6,8 +6,8 @@ export const rows = () => [
   '.....LSS..L.',
   '.....LSSSLD.',
   '.....LSSSDD.',
-  '....LSDDD...',
-  '...LSD......',
+  '....JVvDD...',
+  '...JVv......',
   '.LLSD.......',
   '.LSD........',
   '.LDD........',
