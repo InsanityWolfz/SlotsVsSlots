@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { PORTRAITS } from './portraits.mjs';
 import { SYMBOLS } from './symbols.mjs';
+import { KW_ICONS } from './keywordIcons.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -5542,6 +5543,8 @@ S.relicStarchart = lit(16, 16, [
 for (const [id, rows] of Object.entries(PORTRAITS)) S[id] = lit(32, 32, rows);
 // ...and the enemies' reel symbols, cell marks and ability icons (same sizes as the ones they replace).
 for (const [id, rows] of Object.entries(SYMBOLS)) S[id] = lit(rows[0].length, rows.length, rows);
+// ...and the keyword icons (glossary and card detail boxes).
+for (const [id, rows] of Object.entries(KW_ICONS)) S[id] = lit(12, 12, rows);
 
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
@@ -5611,6 +5614,7 @@ const DIMS = {
   prizeBall: 12,
 };
 for (const id of Object.keys(PORTRAITS)) DIMS[id] = 32;
+for (const id of Object.keys(KW_ICONS)) DIMS[id] = 12;
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
 for (const [id, dim] of Object.entries(DIMS)) {
@@ -5641,6 +5645,8 @@ ${Object.entries(UI_COLORS).map(([k, v]) => `  ${k}: ${q(v)},`).join('\n')}
 };
 
 export type SpriteId =
+  | 'kwPayline' | 'kwPair' | 'kwJackpot' | 'kwWild' | 'kwShield' | 'kwPierce' | 'kwHeal' | 'kwCharm' | 'kwLevel' | 'kwMeter' | 'kwBust'
+  | 'kwAllIn' | 'kwHold' | 'kwOvertime' | 'kwSabotage' | 'kwMark' | 'kwSpill' | 'kwRock' | 'kwIou' | 'kwFrozen' | 'kwJinx' | 'kwSteal' // keyword icons, 12x12
   | 'sword' | 'shield' | 'bolt' | 'slime'          // reel symbols, 16x16
   | 'goo'                                          // slime-over overlay, 16x16
   | 'heart' | 'shieldIcon' | 'boltIcon'            // HUD bar icons, 8x8

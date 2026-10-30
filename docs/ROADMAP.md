@@ -3,8 +3,10 @@
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
 **In progress (2026-10-30):** the UI pass shipped to `main` (user: "ship all the UI stuff"; review:
-https://claude.ai/artifact/Uo8W6uXQJ4Cmv21tccPF1t). Now: the keyword icons, one at a time for love it / change it
-(STEAL redrawn first: "so bad"), and the Cashier touch-up (bow tie off centre, the pencil out of place). Open calls for
+https://claude.ai/artifact/Uo8W6uXQJ4Cmv21tccPF1t). The keyword icons shipped too (22 approved one at a time over 7
+rounds, https://claude.ai/artifact/LriFtZabSxqs3cBJ8nsbsX; in the glossary and the cards' detail boxes; FROZEN, JINX and
+STEAL are drawn but have no keyword entry yet), and the Cashier touch-up. Next call for the user: redraw the SPILL reel
+symbol as the broken pint glass so it matches its icon (it is still the tipped martini glass). Open calls for
 the user: the combat LOG drawer (a dev tool, still in the public build), FULL next to an unlit bulb in settings,
 fantasy-named relics (VAMPIRE FANG, SKELETON KEY, PHOENIX FEATHER, HOLY WATER, DEVIL'S DUE, CRUSADE, QUICKENING, VAMP
 CHARM), the ~45 rewritten card faces.

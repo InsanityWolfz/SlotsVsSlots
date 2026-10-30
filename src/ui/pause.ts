@@ -1,6 +1,7 @@
 import { DESKTOP } from '../build';
 import { Clock } from '../present/clock';
 import { COLORS, H, W } from '../present/layout';
+import { drawSprite } from '../render/sprites';
 import { drawText, textWidth } from '../render/text';
 import { Button } from './button';
 import { KEYWORDS } from './keywords';
@@ -121,7 +122,7 @@ export class Pause {
     drawText(ctx, 'ESC: RESUME    ARROWS + ENTER: CHOOSE', W / 2, last + 50, T.small, KIT.dim);
   }
 
-  /** GLOSSARY (user, 2026-10-12): every keyword in its colour, its meaning beside it, in two columns. */
+  /** GLOSSARY (user, 2026-10-12): every keyword with its icon, in its colour, its meaning beside it, in two columns. */
   private drawGlossary(ctx: CanvasRenderingContext2D): void {
     const pw = 1200;
     const ph = 660;
@@ -130,8 +131,8 @@ export class Pause {
     drawPanel(ctx, px, py, pw, ph);
     drawTitle(ctx, 'GLOSSARY', W / 2, py + 44);
     const colW = (pw - 88) / 2;
-    const wordW = 118;
-    const chars = Math.floor((colW - wordW) / (textWidth('MM', T.small) - textWidth('M', T.small)));
+    const wordW = 146;
+    const chars = Math.floor((colW - wordW + 14) / (textWidth('MM', T.small) - textWidth('M', T.small)));
     const per = Math.ceil(KEYWORDS.length / 2);
     const LINE = 18;
     const GAP = 16;
@@ -142,7 +143,8 @@ export class Pause {
       const x = px + 28 + col * (colW + 32);
       let y = top;
       for (const { k, rows } of entries) {
-        drawText(ctx, k.word, x, y, T.body, k.color, { align: 'left' });
+        drawSprite(ctx, k.icon, x + 12, y, 2);
+        drawText(ctx, k.word, x + 32, y, T.body, k.color, { align: 'left' });
         rows.forEach((r, i) => drawText(ctx, r, x + wordW, y + i * LINE, T.small, COLORS.text, { align: 'left' }));
         y += rows.length * LINE + GAP;
       }

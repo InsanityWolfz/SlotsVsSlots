@@ -276,7 +276,9 @@ export abstract class DraftScreen extends NextScreen {
     if (!rule && !keys.length) return;
     const cols = Math.floor((w - 24) / (6 * T.small));
     const ruleLines = rule ? wrap(rule, cols) : [];
-    const keyLines = keys.map((k) => wrap(`${k.word}: ${k.text}`, cols));
+    // A keyword line opens with its icon; the words hang indented beside it.
+    const ICON = 18;
+    const keyLines = keys.map((k) => wrap(`${k.word}: ${k.text}`, cols - Math.ceil(ICON / (6 * T.small))));
     const lh = 16;
     const h = 16 + ruleLines.length * lh + keyLines.reduce((a, l) => a + l.length * lh + 6, 0) + (rule && keys.length ? 4 : 0);
     const bx = Math.round(Math.max(316, Math.min(W - w - 8, x - w / 2)));
@@ -289,11 +291,13 @@ export abstract class DraftScreen extends NextScreen {
     }
     if (rule && keys.length) yy += 4;
     keys.forEach((k, i) => {
+      drawSprite(ctx, k.icon, bx + 18, yy, 1);
       keyLines[i].forEach((l, j) => {
+        const tx = bx + 12 + ICON;
         if (j === 0) {
-          drawText(ctx, `${k.word}:`, bx + 12, yy, T.small, k.color, { align: 'left' });
-          drawText(ctx, l.slice(k.word.length + 1), bx + 12 + textWidth(`${k.word}:`, T.small), yy, T.small, KIT.dim, { align: 'left' });
-        } else drawText(ctx, l, bx + 12, yy, T.small, KIT.dim, { align: 'left' });
+          drawText(ctx, `${k.word}:`, tx, yy, T.small, k.color, { align: 'left' });
+          drawText(ctx, l.slice(k.word.length + 1), tx + textWidth(`${k.word}:`, T.small), yy, T.small, KIT.dim, { align: 'left' });
+        } else drawText(ctx, l, tx, yy, T.small, KIT.dim, { align: 'left' });
         yy += lh;
       });
       yy += 6;
