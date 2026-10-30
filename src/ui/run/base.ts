@@ -117,6 +117,8 @@ export abstract class RunScreensBase {
   /** THE RESULTS card over the run-over table: XP filling, a level up, achievements, titles, unlocks. */
   protected results: { xp: number; fill: Promise<void> | null; done: boolean; level: number; pop: number } | null = null;
   protected resultsHit: Hit | null = null;
+  /** RUN OVER's reveal: a tap anywhere while it plays skips to its end. */
+  protected overSkipHit: Hit | null = null;
 
   constructor(
     protected ui: Clock,
@@ -210,6 +212,7 @@ export abstract class RunScreensBase {
 
   protected all(): Hit[] {
     if (this.mode === 'over' && this.results && this.resultsHit) return [this.resultsHit];
+    if (this.mode === 'over' && this.overSkipHit) return [this.overSkipHit];
     return [...this.cards.filter((c) => c.enabled), ...this.buttons, ...this.shopHits.filter((_, i) => !this.shopItems[i]?.sold), ...this.shopTags.filter((_, i) => !this.shopItems[i]?.sold)];
   }
 
@@ -297,7 +300,7 @@ export abstract class RunScreensBase {
     else if (this.mode === 'encounter') this.drawEncounter(ctx, time);
     else this.drawOver(ctx, time);
     // YOUR BUILD: one fixed panel at the bottom of every between-fights screen.
-    if (this.run && this.mode !== 'cabinet') this.drawBuild(ctx);
+    if (this.run && this.mode !== 'cabinet' && this.mode !== 'over') this.drawBuild(ctx);
     // THE RESULTS card sits over everything, the build panel too (drawn under it, it hid the card's left side).
     if (this.mode === 'over' && this.results && this.run) this.drawResults(ctx);
     for (const f of this.flyers) {

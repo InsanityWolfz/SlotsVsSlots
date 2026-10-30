@@ -158,6 +158,8 @@ export interface FightRecord {
   elite?: boolean;
   /** A boss paid this symbol a level (shown on the next screen). */
   bossLevel?: SymbolId;
+  /** Your biggest single hit this fight (the run-over screen's BEST HIT; a stat, not a rule). */
+  best?: number;
   /** DEATH RECAP (lost fights): the top sources of HP damage you took, e.g. [['SPIN HITS', 180], ['BOMBS', 60]]. */
   hurt?: [string, number][];
   /** Your spins this fight that had a frozen or jammed reel, of all your spins. */

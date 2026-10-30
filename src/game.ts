@@ -789,6 +789,7 @@ export class Game {
   private afterRunFight(): void {
     const run = this.run!;
     const record = finishFight(run, this.fight);
+    record.best = Math.round(this.tracker.stats.sides.player.biggestHit);
     if (!record.won) {
       // The HP damage each source did (never past 0: no overkill). It isn't scaled to the HP you started with: heals in
       // between made that read low (THE OWNER's one-spin kill from full HP showed as 199: playtest).
