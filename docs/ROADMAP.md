@@ -3,9 +3,9 @@
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
 **In progress:** phase 3, the road to Coming Soon (two weeks from 2026-10-29: the user's Max plan window). The casino-town
-theme and roster are approved; all 19 enemy and boss portraits are approved at 32×32; the five machines' heroes are
-being drawn, then all of it goes into the game at once (the art-direction artifact:
-https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV).
+theme and roster are approved; all 24 portraits (19 enemies and bosses, 5 heroes) are approved and in the game at
+32×32 (2026-10-30). Next: the words pass (enemy names and keywords to the new cast), then the game name and the UI
+kit (the art-direction artifact: https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV).
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
 fight changes (OVERTIME and HOLD), frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
@@ -103,9 +103,9 @@ the user can review to the pixel. Art and UI go to the user as artifacts (galler
 2. **Name (after the theme).** SLOTS VS. SLOTS has to change; SLOTS VS. BOTS would force a robot theme. A shortlist
    with a pick, once the theme is set.
 3. **Art rules: done** (user, 2026-10-29): 32×32 portraits, still 8-bit; the rules are in `docs/JUICE.md`. The roster
-   is approved; all 19 enemy and boss portraits are approved art (2026-10-30, on the `art-wip` branch until they
-   go into `build-art.mjs`). Now the machines' heroes at 32×32, then everything into the game at once, with the
-   portrait boxes on the HUD and cards resized once.
+   is approved; all 24 portraits are approved and live (2026-10-30): `tools/portraits.mjs` holds them (baked from the
+   `art-wip` sources), `drawPortrait` draws them at the old portraits' size. Still 24×24 and pre-theme: the Cashier
+   and the room art; they go in the UI kit pass.
 4. **UI kit:** one panel, one button, one number count-up, one banner style, one font scale ladder; Balatro's
    cohesion is the bar. A contact sheet of every screen today shows what doesn't match.
 

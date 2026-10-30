@@ -96,7 +96,7 @@ export class Fight {
   private fastFromStart = false;
   /** The turn THE WHEEL hit half HP on: it takes no more HP damage that turn (the half-HP gate). */
   private gateTurn = -1;
-  /** THE WHEEL: chips your sweeps won this fight (paid if you win; CASSIDY's go straight into her hand). */
+  /** THE WHEEL: chips your sweeps won this fight (paid if you win; CASSIDY's go straight into his hand). */
   betChips = 0;
   /** THE HOUSE: LAST CALL is on (it skims every turn). */
   houseLastCall = false;

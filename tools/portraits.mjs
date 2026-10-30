@@ -718,7 +718,7 @@ export const PORTRAITS = {
     '........bBbkkkkkPPPPPPPPP.......',
     '........bbFfFFFFPWlkPFPkk.......',
     '........bbFfFFFFFPPPFFF.........',
-    '........bbFfFFFFFFFFFFFFf.......',
+    '........bbFfFFFFFFFFFFFf........',
     '........bBfbFFFFFFFFFFf.........',
     '........bBbbFfFFFbbbbbf.........',
     '.........bb.fFfFKTTGKBBBBO......',

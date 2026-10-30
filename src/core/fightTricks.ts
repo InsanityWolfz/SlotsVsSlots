@@ -561,7 +561,7 @@ export function sweepBets(f: Fight, me: Combatant, score: LineScore, events: Com
   const chips = reels.reduce((a, r) => a + f.bets[r], 0);
   for (const r of reels) f.bets[r] = 0;
   events.push({ type: 'betSwept', side: me.side, reels, chips, bets: [...f.bets], table });
-  // Every chip you sweep is yours (CASSIDY's land in her hand at once: HIGH ROLLER counts them).
+  // Every chip you sweep is yours (CASSIDY's land in his hand at once: HIGH ROLLER counts them).
   const got = chips * WHEEL_RULES.sweepChips;
   if (got > 0) {
     f.betChips += got;
