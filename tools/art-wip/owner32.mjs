@@ -4,24 +4,25 @@ import { grid, put, stamp, shape, rows } from './helpers.mjs';
 export function owner32() {
   const g = grid(32, 32);
   // --- broad shoulders (symmetric about x=15.5), pinstripe suit
-  const body = [[5, 26], [3, 28], [1, 30], [0, 31], [0, 31], [0, 31], [0, 31], [0, 31], [0, 31], [0, 31], [0, 31], [0, 31], [0, 31]];
-  shape(g, 19, body, (x, y, has) => (!has(x, y - 1) || !has(x - 1, y) ? 'l' : !has(x + 1, y) ? 'P' : (x % 4 === 2 && y > 20) ? 'h' : 'k'));
-  const half = (y) => [3, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0][y - 19] ?? 0;
-  for (let y = 19; y < 32; y++) {
+  const T0 = 20; // top of the shoulders, under a heavy neck
+  const body = [[7, 24], [4, 27], [2, 29], [1, 30], [0, 31], [0, 31], [0, 31], [0, 31], [0, 31], [0, 31], [0, 31], [0, 31]];
+  shape(g, T0, body, (x, y, has) => (!has(x, y - 1) || !has(x - 1, y) ? 'l' : !has(x + 1, y) ? 'P' : (x % 4 === 2 && y > T0 + 1) ? 'h' : 'k'));
+  const half = (y) => [3, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0][y - T0] ?? 0;
+  for (let y = T0; y < 32; y++) {
     const h = half(y);
     for (let x = 15 - h; x <= 16 + h; x++) put(g, x, y, x < 16 ? 'T' : 't');
-    if (y >= 19) { put(g, 15, y, 'R'); put(g, 16, y, 'r'); }
-    if (y < 20) continue;
+    put(g, 15, y, 'R'); put(g, 16, y, 'r');
+    if (y < T0 + 1) continue;
     // lapels: 4px wide, silk edge on the V, seam outside; a peak at row 22
-    const w = y === 22 ? 5 : y === 21 ? 4 : y > 26 ? 3 : 4;
+    const w = y === T0 + 3 ? 5 : y > T0 + 7 ? 3 : 4;
     for (let i = 1; i <= w; i++) {
       put(g, 15 - h - i, y, i === 1 ? 'l' : i === w ? 'P' : 'k');
       put(g, 16 + h + i, y, i === 1 ? 'k' : i === w ? 'P' : 'k');
     }
   }
-  put(g, 12, 20, 'T'); put(g, 19, 20, 't'); // collar wings
-  stamp(g, 14, 25, ['YGGg']); // gold tie bar
-  stamp(g, 22, 23, ['kTk', 'TTt', 'PPP']); // pocket square
+  put(g, 12, T0 + 1, 'T'); put(g, 19, T0 + 1, 't'); // collar wings
+  stamp(g, 14, T0 + 6, ['YGGg']); // gold tie bar
+  stamp(g, 22, T0 + 4, ['kTk', 'TTt', 'PPP']); // pocket square
   // --- head
   stamp(g, 8, 1, [
     '    LLWWWLLS    ',
@@ -41,7 +42,8 @@ export function owner32() {
     ' fFFFFfffFbbgbbb',
     '  ffFFFFFFFfff  ',
     '   ffFFFFFFff   ',
-    '     ffffff     ',
+    '    ffffffff    ',
+    '    FFFfffff    ',
   ]);
   stamp(g, 24, 13, ['BBIO', 'bbHR']); // ash and ember
   stamp(g, 27, 5, ['S', ' L', ' L', '  L', '  L', ' L', ' S', ' S']); // smoke

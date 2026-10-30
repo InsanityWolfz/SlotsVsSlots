@@ -47,8 +47,8 @@ export function dealer32() {
   ]);
   // --- forearm rising from the bottom edge in front of the chest, white cuff, hand low (below the chin)
   const A = layer('P');
-  for (let y = 29; y < 32; y++) A.add(22, y, ['lkkkP']);
-  A.add(22, 27, ['TTTTt', 'ttGtt']);
+  for (let y = 30; y < 32; y++) A.add(22, y, ['lkkkP']);
+  A.add(22, 28, ['TTTTt', 'ttGtt']);
   A.done(g);
   // --- fan of three cards from one pivot in the fist: back card leans most, middle less, front card upright.
   // Each card: lit top/left edge, cream face, dim right edge; a dark seam on the card behind where the next one lies.
@@ -67,21 +67,21 @@ export function dealer32() {
     cards.push(cells);
   };
   const lean = (y0, y1, x0, w, step) => { const r = []; for (let y = y0; y <= y1; y++) { const x = x0 + Math.floor((y - y0) / step); r.push([y, x, x + w - 1]); } return r; };
-  card(lean(17, 24, 17, 7, 2));   // back card
-  card(lean(12, 24, 21, 7, 5));   // middle card
-  card(lean(16, 23, 24, 7, 99));  // front card
-  for (let y = 12; y <= 16; y++) if ('Ff'.includes(g[y][20])) px(g, 20, y, 'K'); // the middle card stands in front of the cheek
-  px(g, 18, 18, 'R'); px(g, 18, 19, 'r');   // corner pip on the back card
-  px(g, 22, 13, 'K'); px(g, 22, 14, 'k');   // corner pip on the middle card
-  paint(g, 25, 18, ['RR RR', 'RRRRr', ' RRr ', '  r  ']); // one big heart on the front card
+  card(lean(19, 26, 17, 7, 2));   // back card
+  card(lean(16, 26, 21, 7, 6));   // middle card
+  card(lean(18, 25, 24, 7, 99));  // front card
+  // a dark edge where the back card lies over the shirt and lapel
+  for (const k of cards[0]) { const [x, y] = k.split(',').map(Number); if (!cards[0].has(`${x - 1},${y}`) && 'TtWgGlk'.includes(g[y][x - 1])) px(g, x - 1, y, 'P'); }
+  px(g, 18, 20, 'R'); px(g, 19, 21, 'r');   // corner pip on the back card
+  px(g, 22, 18, 'K'); px(g, 22, 19, 'k');   // corner pip on the middle card
+  paint(g, 25, 20, ['RR RR', 'RRRRr', ' RRr ', '  r  ']); // one big heart on the front card
   // --- fist gripping the base of the fan: fingers curl round the left edge, thumb pressed flat on the front card
-  paint(g, 21, 21, [
+  paint(g, 21, 23, [
     '      Ff',
     'F    FFf',
     'fFFFFFf ',
     'FFFFFFFf',
-    'fFfFfFf ',
-    ' fffff  ',
+    ' fFfFff ',
   ]);
   return out(g);
 }
