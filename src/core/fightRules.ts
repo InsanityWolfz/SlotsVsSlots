@@ -155,7 +155,7 @@ export function effectText(sym: SymbolId, amount: number): string {
     case 'claw':
       return `STEALS ${s(n, 'CELL')}`;
     case 'rock':
-      return pair ? `SELLS ${s(jackpot ? 2 : 1, 'FAKE ROCK')}` : 'FIZZLES';
+      return pair ? `ADDS ${s(jackpot ? 2 : 1, 'ROCK')}` : 'FIZZLES';
     case 'coin':
       return `+${amount} TO THE POT`;
     case 'bomb':

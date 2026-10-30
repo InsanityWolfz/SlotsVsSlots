@@ -249,7 +249,7 @@ function abilityWhat(e: EnemyDef, run?: RunState): string {
     fortify: `GAINS ${p} SHIELD`,
     blizzard: `FREEZES ${p} REEL${p === 1 ? '' : 'S'} FOR 2 TURNS`,
     pilfer: `STEALS ${p} SYMBOL${p > 1 ? 'S' : ''}`,
-    quake: `SELLS YOU ${p} FAKE ROCKS`,
+    quake: `ADDS ${p} ROCKS TO YOUR STRIPS`,
     jam: `JAMS A REEL FOR ${p} TURN${p === 1 ? '' : 'S'}`,
     jackpot: 'SKIMS HALF THE POT AT YOU',
     carpet: `STICKS ${p} IOUS ON YOUR CELLS`,

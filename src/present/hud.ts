@@ -27,7 +27,7 @@ export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> 
   fortify: { icon: 'shieldIcon', label: 'FORTIFY' },
   blizzard: { icon: 'icoFreeze', label: 'COLD STREAK' },
   pilfer: { icon: 'icoSteal', label: 'STEAL' },
-  quake: { icon: 'icoRock', label: 'FAKE ROCKS' },
+  quake: { icon: 'icoRock', label: 'ROCKS' },
   jam: { icon: 'icoLock', label: 'JAM' },
   jackpot: { icon: 'icoCoin', label: 'CASH OUT' },
   carpet: { icon: artId('icoBomb'), label: 'COLLECTION DAY' },

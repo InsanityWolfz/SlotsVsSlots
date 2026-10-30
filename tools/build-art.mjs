@@ -6,6 +6,7 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { PORTRAITS } from './portraits.mjs';
+import { SYMBOLS } from './symbols.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -5541,6 +5542,8 @@ S.relicStarchart = lit(16, 16, [
 // ---------------------------------------------------------------- the casino-town portraits (32x32)
 // They replace the 24x24 enemy and hero portraits above (kept until the new set has shipped a while).
 for (const [id, rows] of Object.entries(PORTRAITS)) S[id] = lit(32, 32, rows);
+// ...and the enemies' reel symbols, cell marks and ability icons (same sizes as the ones they replace).
+for (const [id, rows] of Object.entries(SYMBOLS)) S[id] = lit(rows[0].length, rows.length, rows);
 
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {

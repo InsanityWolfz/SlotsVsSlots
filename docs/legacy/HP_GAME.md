@@ -184,9 +184,9 @@ so that isn't happening in practice (see ROADMAP).
 
 ## Enemies
 The casino-town cast (user, 2026-10-30; code ids keep the old names: slime, brute, frost, thief, golem, gremlin, bomber,
-hexer, vampire). Words: SPILL (was SLIME), IOU (was BOMB), JINX (was HEX), ROCK stays (the Fence's fake rocks).
+hexer, vampire). Words: SPILL (was SLIME), IOU (was BOMB), JINX (was HEX), ROCK stays.
 - **Act 1 (the Alley):** THE BARFLY (SPILL), THE LEG BREAKER (THE SWING), THE COOLER (COLD STREAK), THE PICKPOCKET (STEAL),
-  THE FENCE (FAKE ROCKS), THE MECHANIC (JAM), THE REPO MAN. Every enemy's rocks crumble after the fight, an elite's
+  THE FENCE (ROCKS), THE MECHANIC (JAM), THE REPO MAN. Every enemy's rocks crumble after the fight, an elite's
   too (user, 2026-10-30: an elite's stayed for the run, which confused).
 - **Act 2 adds (the Floor):** THE LOAN SHARK (IOUS), THE JINX (a jinxed reel pays half; user, 2026-10-30: its Charms stay
   lit), THE LEECH, THE COUNTERFEITER (LAUNDER). THE COPYCAT (was MIMIC) is cut (user, 2026-10-30: hard to balance, confusing

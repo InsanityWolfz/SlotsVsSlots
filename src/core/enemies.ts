@@ -79,7 +79,7 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 1.56,
     ability: { kind: 'quake', every: 4, power: 2 },
     minDepth: 2,
-    blurb: 'SELLS YOU FAKE ROCKS: DEAD CELLS ON YOUR STRIP',
+    blurb: 'CLUTTERS YOUR STRIP WITH ROCKS',
     acts: [1, 2],
   },
   {
