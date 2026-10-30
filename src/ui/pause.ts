@@ -1,9 +1,10 @@
 import { DESKTOP } from '../build';
 import { Clock } from '../present/clock';
 import { COLORS, H, W } from '../present/layout';
-import { drawText } from '../render/text';
+import { drawText, textWidth } from '../render/text';
 import { Button } from './button';
 import { KEYWORDS } from './keywords';
+import { drawPanel, drawTitle, KIT, T } from './kit';
 
 export interface PauseCallbacks {
   onResume: () => void;
@@ -31,7 +32,7 @@ export class Pause {
   constructor(ui: Clock, click: () => void, cb: PauseCallbacks) {
     const x = W / 2;
     const mk = (label: string, i: number, fn: () => void, primary = false) => {
-      const b = new Button(label, x, PAUSE_Y0 + i * PAUSE_STEP, 380, 52, fn, ui, click, { textScale: 3, primary });
+      const b = new Button(label, x, PAUSE_Y0 + i * PAUSE_STEP, 380, 52, fn, ui, click, { textScale: T.head, primary });
       this.buttons.push(b);
       return b;
     };
@@ -108,55 +109,64 @@ export class Pause {
     if (!this.open) return;
     ctx.fillStyle = 'rgba(6,2,12,0.78)';
     ctx.fillRect(0, 0, W, H);
-    const pw = 480;
     if (this.glossary) return this.drawGlossary(ctx);
-    const top = PAUSE_Y0 - 100;
-    const bottom = PAUSE_Y0 + (this.buttons.length - 1) * PAUSE_STEP + 50;
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(W / 2 - pw / 2 - 6, top - 6, pw + 12, bottom - top + 12);
-    ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(W / 2 - pw / 2 - 3, top - 3, pw + 6, bottom - top + 6);
-    ctx.fillStyle = COLORS.panel;
-    ctx.fillRect(W / 2 - pw / 2, top, pw, bottom - top);
-    drawText(ctx, 'PAUSED', W / 2, top + 36, 4, COLORS.goldLight);
+    // THE model screen of the kit: one panel, the title, one primary button, the rest secondary, the controls in small.
+    const pw = 480;
+    const top = PAUSE_Y0 - 104;
+    const last = PAUSE_Y0 + (this.buttons.length - 1) * PAUSE_STEP;
+    const bottom = last + 72;
+    drawPanel(ctx, W / 2 - pw / 2, top, pw, bottom - top);
+    drawTitle(ctx, 'PAUSED', W / 2, top + 48);
     for (const b of this.buttons) b.draw(ctx, t);
-    drawText(ctx, 'ESC TO RESUME', W / 2, bottom + 30, 1.5, COLORS.textDim);
+    drawText(ctx, 'ESC: RESUME    ARROWS + ENTER: CHOOSE', W / 2, last + 50, T.small, KIT.dim);
   }
 
-  /** GLOSSARY (user, 2026-10-12): every keyword in its colour, one line each, two columns. */
+  /** GLOSSARY (user, 2026-10-12): every keyword in its colour, its meaning beside it, in two columns. */
   private drawGlossary(ctx: CanvasRenderingContext2D): void {
-    const pw = 1180;
-    const ph = 640;
+    const pw = 1200;
+    const ph = 660;
     const px = W / 2 - pw / 2;
     const py = H / 2 - ph / 2;
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(px - 6, py - 6, pw + 12, ph + 12);
-    ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(px - 3, py - 3, pw + 6, ph + 6);
-    ctx.fillStyle = COLORS.panel;
-    ctx.fillRect(px, py, pw, ph);
-    drawText(ctx, 'GLOSSARY', W / 2, py + 30, 3.5, COLORS.goldLight);
+    drawPanel(ctx, px, py, pw, ph);
+    drawTitle(ctx, 'GLOSSARY', W / 2, py + 44);
+    const colW = (pw - 88) / 2;
+    const wordW = 118;
+    const chars = Math.floor((colW - wordW) / (textWidth('MM', T.small) - textWidth('M', T.small)));
     const per = Math.ceil(KEYWORDS.length / 2);
-    KEYWORDS.forEach((k, i) => {
-      const col = Math.floor(i / per);
-      const x = px + 24 + col * (pw / 2);
-      const y = py + 74 + (i % per) * Math.min(68, (ph - 120) / per);
-      drawText(ctx, k.word, x, y, 2, k.color, { align: 'left' });
-      const words = k.text.split(' ');
-      let line = '';
-      let ly = y + 22;
-      for (const w of words) {
-        if (line && (line + ' ' + w).length > 58) {
-          drawText(ctx, line, x, ly, 1.5, COLORS.text, { align: 'left' });
-          ly += 15;
-          line = w;
-        } else line = line ? `${line} ${w}` : w;
+    const LINE = 18;
+    const GAP = 16;
+    const cols = [KEYWORDS.slice(0, per), KEYWORDS.slice(per)].map((ks) => ks.map((k) => ({ k, rows: wrap(k.text, chars) })));
+    const tallest = Math.max(...cols.map((c) => c.reduce((a, e) => a + e.rows.length * LINE + GAP, -GAP)));
+    const top = py + 96 + Math.max(0, (ph - 150 - tallest) / 2);
+    cols.forEach((entries, col) => {
+      const x = px + 28 + col * (colW + 32);
+      let y = top;
+      for (const { k, rows } of entries) {
+        drawText(ctx, k.word, x, y, T.body, k.color, { align: 'left' });
+        rows.forEach((r, i) => drawText(ctx, r, x + wordW, y + i * LINE, T.small, COLORS.text, { align: 'left' }));
+        y += rows.length * LINE + GAP;
       }
-      if (line) drawText(ctx, line, x, ly, 1.5, COLORS.text, { align: 'left' });
     });
-    drawText(ctx, 'TAP TO GO BACK', W / 2, py + ph - 16, 1.5, COLORS.textDim);
+    // The column divider.
+    ctx.fillStyle = KIT.frameDim;
+    ctx.fillRect(Math.round(W / 2 - 1), py + 84, 2, ph - 136);
+    drawText(ctx, 'TAP OR ESC: BACK', W / 2, py + ph - 24, T.small, KIT.dim);
   }
 }
 
-const PAUSE_Y0 = 250;
-const PAUSE_STEP = 62;
+/** Break a line into rows of at most `n` characters, at spaces. */
+function wrap(text: string, n: number): string[] {
+  const rows: string[] = [];
+  let line = '';
+  for (const w of text.split(' ')) {
+    if (line && (line + ' ' + w).length > n) {
+      rows.push(line);
+      line = w;
+    } else line = line ? `${line} ${w}` : w;
+  }
+  if (line) rows.push(line);
+  return rows;
+}
+
+const PAUSE_Y0 = 252;
+const PAUSE_STEP = 64;

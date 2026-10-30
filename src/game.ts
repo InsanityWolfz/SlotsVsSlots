@@ -1375,6 +1375,12 @@ export class Game {
       this.showMenu();
       return true;
     }
+    // The GLOSSARY: Escape, Enter or Space goes back to the pause menu (a pad had no way back but closing the pause).
+    if (this.pause.open && this.pause.glossary && (k === 'escape' || k === 'enter' || k === ' ')) {
+      this.pause.glossary = false;
+      this.sounds.click();
+      return true;
+    }
     // PAUSE: Escape anywhere in a run (STEAM_READINESS S2).
     if (k === 'escape' && this.pausable()) {
       this.setPaused(!this.pause.open);
