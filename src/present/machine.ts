@@ -12,6 +12,7 @@ import { ReelView, SPIN, type CellView } from './reel';
 import { drawSprite, artId, hasSprite, type SpriteId } from '../render/sprites';
 import type { Trim } from '../core/meta';
 import { drawText } from '../render/text';
+import { T } from '../ui/kit';
 
 /** Numbers on a payline symbol: its value bottom-left (white), its charm's tag top-right (coloured). */
 export interface PayTag {
@@ -372,14 +373,15 @@ export class MachineView {
     // Face-up and gold-rimmed (the Dealer's marks are red card backs): it sits over the whole cell.
     ctx.globalAlpha = 0.92;
     ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(-30, -40, 60, 80);
+    // (Wide enough for its words at the kit's sizes: BUST and NO PAY ran past the face onto the rim.)
+    ctx.fillRect(-38, -42, 76, 84);
     ctx.fillStyle = lc.flip > 0.5 ? '#ffd23f' : '#8e1f3a';
-    ctx.fillRect(-28, -38, 56, 76);
+    ctx.fillRect(-36, -40, 72, 80);
     ctx.fillStyle = lc.flip > 0.5 ? '#f4eee0' : '#5a1020';
-    ctx.fillRect(-24, -34, 48, 68);
+    ctx.fillRect(-32, -36, 64, 72);
     if (lc.flip > 0.5) {
-      drawText(ctx, 'BUST', 0, -6, 2.5, '#8e1f3a');
-      drawText(ctx, 'NO PAY', 0, 22, 1.5, '#8e1f3a');
+      drawText(ctx, 'BUST', 0, -8, T.body, '#8e1f3a');
+      drawText(ctx, 'NO PAY', 0, 18, T.small, '#8e1f3a');
     }
     ctx.restore();
   }
