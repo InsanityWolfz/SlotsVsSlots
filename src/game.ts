@@ -68,6 +68,7 @@ import { desktop, steamUnlock, VERSION } from './build';
 /** The fight HUD's relic tooltip starts under the player panel (EXPERT_PLAYTEST_12). */
 const RELIC_TIP_TOP = 232;
 import { Coach, TUTORIAL } from './ui/coach';
+import { drawFocus } from './ui/kit';
 import { collectionTotal, heroSprite, Menus } from './ui/menus';
 import { shownTrim, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, type MetaGain, type Profile, type RunEntry } from './core/profile';
 
@@ -343,6 +344,7 @@ export class Game {
       muted: () => this.prefs.muted,
       setMuted: (on) => this.setMuted(on),
       savedRun: () => this.savedRunLabel(),
+      savedCabinet: () => this.loadRunSave()?.run.cabinet ?? null,
       lastRun: () => {
         try {
           return localStorage.getItem(LASTRUN_KEY);
@@ -1457,7 +1459,9 @@ export class Game {
       ctx.restore();
       this.menus.draw(ctx, t);
       if (this.muteBtn.visible) this.muteBtn.draw(ctx, t);
-      if (this.focus.visible) this.focus.draw(ctx, this.navTargets(), t);
+      // The kit's focus: gold corner brackets around what the pad or keyboard is on.
+      const f = this.focus.visible ? this.focus.current(this.navTargets()) : null;
+      if (f && f.w <= 900) drawFocus(ctx, f.x - f.w / 2, f.y - f.h / 2, f.w, f.h, t);
       return;
     }
     this.background.drawMarquee(ctx, t);
