@@ -123,7 +123,10 @@ export class HiscoresScreen implements MenuScreen {
       const text = e.acts >= 3 ? (e.loops ? `ENDLESS LOOP ${e.loops}` : 'BEAT THE DEALER') : 'CLEARED';
       return { text, color: COLORS.energy, sub: e.acts >= 3 ? 'TRUE ENDING' : 'THE WHEEL STOPPED' };
     }
-    return { text: `ACT ${e.act}, FIGHT ${e.killerFight ?? e.fights + 1}`, color: COLORS.text, sub: e.killer ? `BY ${e.killer}` : 'RUN OVER' };
+    // A long name drops its first words (the adjective), as the fight HUD does: SPITEFUL COUNTERFEITER was cut mid-word.
+    const words = (e.killer ?? '').split(' ');
+    while (words.length > 1 && words.join(' ').length > 19) words.shift();
+    return { text: `ACT ${e.act}, FIGHT ${e.killerFight ?? e.fights + 1}`, color: COLORS.text, sub: e.killer ? `BY ${words.join(' ')}` : 'RUN OVER' };
   }
 
   private drawRow(ctx: CanvasRenderingContext2D, e: RunEntry, rank: number, y: number, score: number, top: boolean, t: number): void {
