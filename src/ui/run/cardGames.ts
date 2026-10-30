@@ -112,8 +112,8 @@ export abstract class CardGames extends TableScreens {
     up.enabled = !hi?.disabled;
     const down = this.minorBtn('LOWER', SX, ROW.main + 4, 196, 56, () => this.playHilo(1));
     down.enabled = !lo?.disabled;
+    // (A secondary, not the grey quiet style: an enabled CASH OUT read as switched off.)
     const out = this.minorBtn('CASH OUT', SX, ROW.second + 18, 196, 48, () => this.playHilo(2));
-    out.quietStyle = true;
     out.enabled = !cash?.disabled;
     this.setTable([up, down, out]);
   }
