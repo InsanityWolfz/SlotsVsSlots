@@ -10,7 +10,7 @@ street(L.hz + 6);
 glow(Math.round(cx / G), Math.round((by + 62 * f) / G), Math.round(52 * f * 4 / G), '#ffe6aa');
 const P = (id, dx, dy, s, dim) => S(id, Math.round(cx + dx * f * sx), Math.round(by + dy * f * sy), sc(s), dim ? { dim } : undefined);
 const back = [['enemyRepoMan', -386, -80, 4], ['enemyCroupier', -228, -84, 3], ['enemyWheel', 230, -84, 3], ['enemyBoss', 386, -84, 4]];
-const mid = [['enemyGremlin', -310, -12, 5], ['enemyMimic', 310, -12, 5]];
+const mid = [['enemyGremlin', -310, -12, 5], ['heroJukebox', 310, -12, 5]];
 const front = [['heroJoker', -160, 12, 6], ['heroTesla', 160, 12, 6]];
 // tall formats place the cast by hand: [id, x, y, scale, dim] in px
 // L.fade [y0, y1]: once the back row is down, its bust edges sink into the dark crowd
