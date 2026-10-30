@@ -1,7 +1,7 @@
 import { CABINETS, type CabinetId } from '../../core/cabinets';
 import type { Enh, RelicId } from '../../core/config';
 import { CHARM_SYMBOLS, charmName, charmRuleText } from '../../core/charms';
-import { actsOf, ARCHETYPES, BOSS, DEALER, GATEKEEPER, OWNER, REPO_MAN, WHEEL, type Archetype } from '../../core/enemies';
+import { actsOf, ARCHETYPES, BOSS, DEALER, GATEKEEPER, OWNER, REPO_MAN, TURBO, WHEEL, type Archetype } from '../../core/enemies';
 import { ELITE_ONLY, LEGENDARY, RELICS, RELIC_TIER } from '../../core/relics';
 import { STAKES } from '../../core/stakes';
 import { ENH_SPRITE } from '../../present/reel';
@@ -93,10 +93,10 @@ export const CAST: CastEntry[] = [
     .sort((a, b) => Math.min(...actsOf(a)) - Math.min(...actsOf(b)))
     .map((a) => castOf(a, [...new Set(actsOf(a))].map((n) => ROOM[n]).join(', '))),
   castOf(REPO_MAN, ROOM.slice(1, GATEKEEPER.acts + 1).join(', ')),
-  castOf(BOSS, 'BOSS OF THE ALLEY', true),
-  castOf(WHEEL, 'BOSS OF THE FLOOR', true),
-  castOf(DEALER, 'BOSS OF THE VIP ROOM', true),
-  castOf(OWNER, 'ENDLESS. HIS OWN OFFICE', true),
+  castOf(BOSS, "THE ALLEY'S LAST FIGHT", true),
+  castOf(WHEEL, "THE FLOOR'S LAST FIGHT", true),
+  castOf(DEALER, "THE VIP ROOM'S LAST FIGHT", true),
+  castOf(OWNER, `ENDLESS, LOOP ${TURBO.loop}`, true),
 ];
 
 // ---- trophy plaques ---------------------------------------------------------------------------------------------------

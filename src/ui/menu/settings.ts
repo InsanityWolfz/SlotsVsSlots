@@ -202,7 +202,7 @@ export class SettingsScreen implements MenuScreen {
       ['M', 'MUTE'],
       ['ESC', 'PAUSE, BACK'],
       ['F11', 'FULLSCREEN'],
-      ['ARROWS', 'MOVE, ENTER PICKS'],
+      ['ARROWS + ENTER', 'MENUS'],
     ];
     keys.forEach(([k, what], i) => {
       const col = i % 2;
