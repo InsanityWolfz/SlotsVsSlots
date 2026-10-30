@@ -34,3 +34,6 @@ Folder: /tmp/claude-0/-home-user-SlotsVsSlots/252cdece-2912-5253-bff7-70fda570cc
 
 ## Report back briefly
 Pass count, the final PNG path, and for each of the director's notes one line on how you fixed it. Don't paste grids.
+
+## Heroes (the player's five machines)
+The heroes are the player's side: each is the character of one slot machine the player picks. They stay in the same set (same palette, shading, outline, head size, bust framing, art rules) but they are the good guys: confident, likeable, a bit heroic, never sleazy. Their current sprites **face RIGHT** (three-quarter view, looking toward the enemy across the screen); keep that: a three-quarter bust turned to the viewer's right, eyes looking right. They keep their identity from the current 24×24 sprite. "No arm" is allowed (the director accepted it for a boss); if a hand shows, it follows every arm rule above (low, forearm-length, straight on the wrist). Check every pass at x3 beside the approved enemies (e.g. barfly32, pickpocket32, sharp32, leech32) and, every 5 passes, beside the other heroes if their files exist yet (knight32, cassidy32, voltz32, jax32, decibel32).
