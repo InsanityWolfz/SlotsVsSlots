@@ -357,7 +357,7 @@ export abstract class RunScreensBase {
     ctx.fillRect(-hw + 3, -hh + 3, hw * 2 - 6, Math.round((hh * 2 - 6) / 2));
     if (b.icon) b.icon(ctx);
     else {
-      const size = textWidth(b.label, T.head) <= b.w - 28 && b.h >= 44 ? T.head : T.body;
+      const size = b.textScale ?? (textWidth(b.label, T.head) <= b.w - 28 && b.h >= 44 ? T.head : T.body);
       drawText(ctx, b.label, 0, 1, size, primary ? '#fff6c8' : grey ? COLORS.textDim : COLORS.goldLight);
     }
     ctx.restore();

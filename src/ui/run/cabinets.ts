@@ -54,8 +54,9 @@ export abstract class CabinetScreen extends BuildPanel {
       return b;
     });
     this.stakePop = 1;
-    const menu = this.minorBtn('MENU', 86, 40, 132, 44, () => this.cb.onMenu());
-    menu.quietStyle = true;
+    // MENU sits where the menus' BACK sits, in the same size and style.
+    const menu = this.minorBtn('MENU', 100, 44, 140, 48, () => this.cb.onMenu());
+    menu.textScale = T.body;
     const prev = this.minorBtn('', STAGE.x - 44, STAGE.y + STAGE.h / 2, 52, 96, () => this.stepCabinet(-1));
     const next = this.minorBtn('', STAGE.x + STAGE.w + 44, STAGE.y + STAGE.h / 2, 52, 96, () => this.stepCabinet(1));
     prev.icon = (c) => drawSprite(c, 'arrowRight', 0, 0, 3, { flipX: true });
@@ -166,7 +167,7 @@ export abstract class CabinetScreen extends BuildPanel {
     const hx = x + 360;
     const hy = y + 22;
     drawWell(ctx, hx, hy, 140, 140, open ? '#2a2040' : '#140e1e');
-    spotlight(ctx, hx + 70, hy + 118, 120, open ? '#c9a0ff' : '#4a4058', 0.14);
+    spotlight(ctx, hx + 70, hy + 118, 120, open ? '#c9a0ff' : '#4a4058', 0.14, [hx + 2, hy + 2, 136, 136]);
     bigPortrait(ctx, heroSprite(id) as SpriteId, hx + 70 + slide / 2, hy + 72, 4, open ? {} : { variant: 'black', alpha: 0.85 });
     // Name, who you play as, the blurb.
     const tx = hx + 164;
