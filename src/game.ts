@@ -462,6 +462,7 @@ export class Game {
     const j = this.prefs.juice;
     Object.assign(this.camera.enabled, { shake: j.shake, zoom: j.zoom, chroma: j.chroma, flash: j.flash });
     this.particles.enabled = j.particles;
+    if (this.screens) this.screens.reduceMotion = !j.zoom;
     this.synth.setMuted(this.prefs.muted || !j.audio);
     const v = this.prefs.vol;
     this.synth.setVolumes(v.master / 10, v.music / 10, v.sfx / 10);
@@ -792,6 +793,7 @@ export class Game {
   private afterRunFight(): void {
     const run = this.run!;
     const record = finishFight(run, this.fight);
+    record.best = Math.round(this.tracker.stats.sides.player.biggestHit);
     if (!record.won) {
       // The HP damage each source did (never past 0: no overkill). It isn't scaled to the HP you started with: heals in
       // between made that read low (THE OWNER's one-spin kill from full HP showed as 199: playtest).

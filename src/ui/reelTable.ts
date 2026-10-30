@@ -89,7 +89,7 @@ export function drawReelTable(ctx: CanvasRenderingContext2D, x: number, y: numbe
     const fit = Math.floor((opts.maxH - head - lvLine) / most);
     if (fit < opts.rowH) {
       const k = Math.max(0.55, fit / opts.rowH);
-      o = { ...opts, rowH: Math.max(10, fit), scale: opts.scale * k, text: Math.max(1, (opts.text ?? 2) * Math.max(0.7, k)) };
+      o = { ...opts, rowH: Math.max(10, fit), scale: opts.scale * k, text: Math.max(1.6, (opts.text ?? 2) * Math.max(0.7, k)) };
     }
   }
   const ts = o.text ?? 2;

@@ -1,10 +1,11 @@
 import type { CabinetId } from '../core/cabinets';
 import type { RelicId } from '../core/config';
-import { RELICS, relicText } from '../core/relics';
+import { RELICS, RELIC_TIER, relicText } from '../core/relics';
+import { drawPanel, KIT, T } from './kit';
 import { COLORS, H, W } from '../present/layout';
 import { drawText } from '../render/text';
 import { drawRich } from './keywords';
-import { wrap } from './runScreens';
+import { wrap } from './run/shared';
 
 /**
  * Hover tooltips for relic icons, wherever they're drawn: each screen adds a spot as it draws an icon, then draws the
@@ -33,18 +34,17 @@ export class RelicTips {
 /** A name + rule box under the icon (above it near the bottom edge), kept on screen. */
 export function drawRelicTip(ctx: CanvasRenderingContext2D, relic: RelicId, ax: number, top: number, bottom: number, cabinet?: CabinetId | null): void {
   const def = RELICS[relic];
-  const lines = wrap(relicText(relic, cabinet), 26);
+  const lines = wrap(relicText(relic, cabinet), 24);
   const w = 336;
-  const h = 34 + lines.length * 20;
-  const x = Math.max(8, Math.min(W - w - 8, ax - w / 2));
-  const y = bottom + 8 + h > H - 8 ? top - 8 - h : bottom + 8;
+  const h = 46 + lines.length * 22;
+  const x = Math.round(Math.max(8, Math.min(W - w - 8, ax - w / 2)));
+  const y = Math.round(bottom + 10 + h > H - 8 ? top - 10 - h : bottom + 10);
+  const tier = RELIC_TIER.legendary.includes(relic) ? 'legendary' : RELIC_TIER.uncommon.includes(relic) ? 'uncommon' : 'common';
   ctx.save();
   ctx.globalAlpha = 1;
-  ctx.fillStyle = COLORS.outline;
-  ctx.fillRect(x - 4, y - 4, w + 8, h + 8);
-  ctx.fillStyle = COLORS.panel;
-  ctx.fillRect(x, y, w, h);
-  drawText(ctx, def.name, x + 10, y + 14, 2, '#c9a0ff', { align: 'left' });
-  lines.forEach((l, k) => drawRich(ctx, l, x + 10, y + 38 + k * 20, 2, COLORS.text, { align: 'left' }));
+  // The kit panel, framed in the relic's rarity.
+  drawPanel(ctx, x, y, w, h, { frame: KIT.rarity[tier] });
+  drawText(ctx, def.name, x + 14, y + 20, T.body, tier === 'legendary' ? '#ff9ad8' : '#d8b8ff', { align: 'left' });
+  lines.forEach((l, k) => drawRich(ctx, l, x + 14, y + 46 + k * 22, T.body, COLORS.text, { align: 'left' }));
   ctx.restore();
 }
