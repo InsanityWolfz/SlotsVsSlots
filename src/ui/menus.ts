@@ -14,7 +14,7 @@ import { backOut, sineOut } from '../present/ease';
 import { COLORS, H, W } from '../present/layout';
 import { ENH_SPRITE } from '../present/reel';
 import { SPRITES } from '../render/spriteData';
-import { artId, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
+import { artId, drawPortrait, drawSprite, hasSprite, type SpriteId } from '../render/sprites';
 import { drawText } from '../render/text';
 import { Button } from './button';
 import { wrap } from './runScreens';
@@ -677,7 +677,7 @@ export class Menus {
       const local = t % period;
       // Each swap fades in softly (the squash-pop read as unnatural: user 2026-10-07); the idle bob and sway stay.
       const fade = open.length > 1 ? Math.min(1, local / 0.35) : 1;
-      drawSprite(ctx, heroSprite(id), 210, 430 + Math.sin(t * 2) * 3, 5, { alpha: fade });
+      drawPortrait(ctx, heroSprite(id), 210, 430 + Math.sin(t * 2) * 3, 5, { alpha: fade });
       drawText(ctx, CABINETS[id].hero, 210, 520, 2, COLORS.goldLight, { alpha: fade });
       drawText(ctx, CABINETS[id].name, 210, 542, 1.5, COLORS.textDim, { alpha: fade });
       const cab = (hasSprite(CABINETS[id].sprite) ? CABINETS[id].sprite : 'cabinetKnight') as SpriteId;
@@ -828,7 +828,7 @@ export class Menus {
       ctx.fillStyle = COLORS.panel;
       ctx.fillRect(46, y - 24, W - 92, 50);
       drawText(ctx, String(rank), 76, y, 3, top ? '#ffd23f' : COLORS.textDim);
-      drawSprite(ctx, heroSprite(e.cabinet), 130, y, 2);
+      drawPortrait(ctx, heroSprite(e.cabinet), 130, y, 2);
       const stake = STAKES[e.stake];
       drawText(ctx, CABINETS[e.cabinet].hero, 164, y - 12, 2, COLORS.goldLight, { align: 'left' });
       const sub = `${CABINETS[e.cabinet].name}  ${e.stake ? `STAKE ${e.stake} ${stake.name}` : 'BASE GAME'}`;
@@ -846,7 +846,7 @@ export class Menus {
           : 'THE WHEEL STOPS! RUN CLEARED'
         : `KILLED BY ${e.killer ?? '???'}, FIGHT ${e.killerFight ?? e.fights + 1}/${e.total}`;
       drawText(ctx, result, 188, y + 13, 1.5, e.won ? '#ffd23f' : '#ff8a7a', { align: 'left' });
-      if (!e.won && e.killerPortrait) drawSprite(ctx, e.killerPortrait as SpriteId, 188 + result.length * 9 + 22, y + 4, 1.5);
+      if (!e.won && e.killerPortrait) drawPortrait(ctx, e.killerPortrait as SpriteId, 188 + result.length * 9 + 22, y + 4, 1.5);
       // Build: relics then charms.
       const bx = 650;
       e.relics.slice(0, 14).forEach((r, k) => {

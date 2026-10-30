@@ -4,7 +4,7 @@ import type { CombatEvent } from './events';
 import { Rng } from './rng';
 import { buildReel, type Reel } from './strip';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
-// houseSkim 2 -> 0 (BOSS_REDESIGN 2): the House's hidden chip skim drained CASSIDY's rain (her House ran 32 turns).
+// houseSkim 2 -> 0 (BOSS_REDESIGN 2): the House's hidden chip skim drained CASSIDY's rain (his House ran 32 turns).
 export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.5 };
 /**
  * CASH CASSIDY's MAKE IT RAIN!: a chip jackpot with at least `cost` chips held hits for chips (up to `maxChips`, user 2026-10-12) x `perChip` (base: the
