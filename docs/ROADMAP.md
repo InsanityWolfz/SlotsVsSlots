@@ -4,8 +4,9 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
 
 **In progress:** phase 3, the road to Coming Soon (two weeks from 2026-10-29: the user's Max plan window). The casino-town
 theme and roster are approved; all 24 portraits (19 enemies and bosses, 5 heroes) are approved and in the game at
-32×32 (2026-10-30). Next: the words pass (enemy names and keywords to the new cast), then the game name and the UI
-kit (the art-direction artifact: https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV).
+32×32 (2026-10-30), and the words pass is live (names, abilities, keywords; the Copycat cut; the Slug Pusher is THE
+FENCE). Next: the enemies' reel symbols (still slime, bombs, hexes, fangs), then the game name and the UI kit (art:
+https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV, words: https://claude.ai/artifact/Bo2uKXGYnFXWRJxTy5Ddcu).
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
 fight changes (OVERTIME and HOLD), frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight

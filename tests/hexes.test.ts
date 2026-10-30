@@ -29,7 +29,7 @@ describe('charm levels, hexes and level cards (Tuesday rework)', () => {
     expect(single(2)).toBe(20);
   });
 
-  it("a hex darkens its reel's charm and halves the group", () => {
+  it("a jinx halves the group and leaves its reel's charm lit", () => {
     const f = fight((c) => {
       c.player.strips = reels3({ sword: 12 });
       c.player.gilded = [0, 1, 2].map((reel) => ({ reel, symbol: 'sword' as SymbolId, enh: 'gold' as const, n: 12 }));
@@ -37,10 +37,10 @@ describe('charm levels, hexes and level cards (Tuesday rework)', () => {
     f.sides.player.hexed[2] = 2;
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const g = ofType(f.step().events, 'spin')[0].score.groups[0];
-    // 30 x (3 x (2 + 2)) with reel 3's gold dark = 360, then halved.
-    expect(g.notes).toEqual(['X4 GOLD', 'HALF']);
-    expect(g.amount).toBe(180);
-    expect(g.cut).toBe(180);
+    // 30 x 3 x (2 + 2 + 2) = 540 with every gold lit, then halved.
+    expect(g.notes).toEqual(['X6 GOLD', 'HALF']);
+    expect(g.amount).toBe(270);
+    expect(g.cut).toBe(270);
   });
 
   it('level cards: symbol levels live on the TYPE with no cap; an old charm level card does nothing', () => {

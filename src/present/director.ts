@@ -1756,7 +1756,7 @@ export class Director {
     });
     await Promise.all(flights);
     const c = this.machineCenter(e.to);
-    this.bg(this.popText(`HEXED ${e.turns} TURN${e.turns > 1 ? 'S' : ''}: HALF PAY`, c.x, MACHINE_TOP - 4, 2, '#e0a0ff', 16, 0.5));
+    this.bg(this.popText(`JINXED ${e.turns} TURN${e.turns > 1 ? 'S' : ''}: HALF PAY`, c.x, MACHINE_TOP - 4, 2, '#e0a0ff', 16, 0.5));
     if (e.reels.length) this.settle(e.from, e.reels);
     await this.c.wait(0.2);
   }
@@ -1781,7 +1781,7 @@ export class Director {
     });
     await Promise.all(tosses);
     const c = this.machineCenter(e.to);
-    this.bg(this.popText(`+${e.cells.length} BOMB${e.cells.length > 1 ? 'S' : ''}: BOOM IN ${BOMB.fuse}`, c.x, MACHINE_TOP - 30, 2, '#ffb070', 16, 0.5));
+    this.bg(this.popText(`+${e.cells.length} IOU${e.cells.length > 1 ? 'S' : ''}: DUE IN ${BOMB.fuse}`, c.x, MACHINE_TOP - 30, 2, '#ffb070', 16, 0.5));
     if (e.reels.length) this.settle(e.from, e.reels);
     await this.c.wait(0.15);
   }
@@ -1806,7 +1806,7 @@ export class Director {
       this.s.particles.burst({ x: p.x, y: p.y, count: 12, colors: ['#7dff7a', '#ffffff'], speed: [60, 200], gravity: -150, life: [0.3, 0.5], size: [2, 4] });
     }
     const c = this.machineCenter(e.side);
-    await this.popText(`DEFUSED${e.cells.length > 1 ? ` x${e.cells.length}` : ''}!`, c.x, MACHINE_TOP - 4, 3, '#7dff7a', 16, 0.3);
+    await this.popText(`PAID OFF${e.cells.length > 1 ? ` x${e.cells.length}` : ''}!`, c.x, MACHINE_TOP - 4, 3, '#7dff7a', 16, 0.3);
   }
 
   private async blast(e: Ev<'blast'>): Promise<void> {
@@ -1826,7 +1826,7 @@ export class Director {
     this.damageHud(e.side, e.targetHp, e.targetShield, e.hpDamage);
     const c = this.machineCenter(e.side);
     if (e.blocked > 0) this.bg(this.popText(`BLOCK ${e.blocked}`, c.x + 40, MACHINE_TOP + 70, 2, '#9fd0ff', 16, 0.3));
-    this.bg(this.popText(e.hpDamage > 0 ? `BOOM -${e.hpDamage}` : 'BOOM!', c.x, MACHINE_TOP + 40, 4, '#ff8a3a', 50));
+    this.bg(this.popText(e.hpDamage > 0 ? `PAY UP -${e.hpDamage}` : 'PAY UP!', c.x, MACHINE_TOP + 40, 4, '#ff8a3a', 50));
     await this.c.wait(0.35);
   }
 

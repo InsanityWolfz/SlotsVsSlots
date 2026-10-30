@@ -657,7 +657,7 @@ export class Fight {
   /** Charms a WILD's pick brings to its reel this spin (on top of the cell's own). */
   pickEnh = new Map<number, Enh>();
 
-  /** The charm on a reel's payline cell, if it's live (not stolen, slimed, jammed, hexed or counterfeit). */
+  /** The charm on a reel's payline cell, if it's live (not stolen, spilled, jammed or counterfeit; a jinx leaves it lit). */
   /** The live charms on a payline reel this spin: the cell's own, plus what a WILD's pick brought. */
   enhsAt(c: Combatant, r: number): Enh[] {
     const own = this.paylineEnh(c, r);
@@ -667,7 +667,7 @@ export class Fight {
 
   paylineEnh(c: Combatant, r: number): Enh | undefined {
     const cell = c.reels[r].cells[c.reels[r].stop];
-    if (!cell?.enh || cell.stolen || cell.slimed || (cell.faked ?? 0) > 0 || c.locked[r] > 0 || c.hexed[r] > 0) return undefined;
+    if (!cell?.enh || cell.stolen || cell.slimed || (cell.faked ?? 0) > 0 || c.locked[r] > 0) return undefined;
     return cell.enh;
   }
 
@@ -793,7 +793,7 @@ export class Fight {
 
   /**
    * THE DROP: the notes off the payline (rows above and below). What enemies wrote counts: a slimed, stolen or dead-card
-   * cell isn't a note, a jammed reel sits out, a hexed reel pays half with its Charm dark (unless the payline's hex
+   * cell isn't a note, a jammed reel sits out, a jinxed reel pays half (unless the payline's jinx
    * already halves the group), and a counterfeit Charm does nothing. A LUCKY cell rolls: a WILD plays as a note (user, 2026-10-08).
    */
   dropNotes(me: Combatant, groupHexed = false): { cells: { reel: number; row: number; v?: number; wild?: true }[]; base: number; echoes: number; keen: boolean; vamp: number } {
@@ -806,7 +806,7 @@ export class Fight {
         const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
         if (!c) continue;
         const sym = effectiveSymbol(c);
-        const enh = c.enh && !hexed && !((c.faked ?? 0) > 0) ? c.enh : undefined;
+        const enh = c.enh && !((c.faked ?? 0) > 0) ? c.enh : undefined;
         const wild = sym !== 'note' && sym !== 'wild' && PAYING.has(sym) && enh === 'lucky' && this.rng.next() < charmValue('lucky', this.charmLvl(me, 'lucky')) / 100;
         if (sym !== 'note' && sym !== 'wild' && !wild) continue;
         let v = noteV;

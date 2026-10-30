@@ -31,7 +31,7 @@ export function bossRules(boss: string, c: BossRuleContext): BossRules {
   if (boss === 'owner')
     return {
       rules: [
-        { icon: artId('icoGavel'), text: 'EVERY 2 TURNS HE CHEATS. EVERY OTHER TIME IT IS A NEW TRICK (SLIME, THEFT, FREEZE, ROCKS, HEX, BOMBS)' },
+        { icon: artId('icoGavel'), text: 'EVERY 2 TURNS HE CHEATS. EVERY OTHER TIME IT IS A NEW TRICK (SPILL, THEFT, FREEZE, ROCKS, JINX, IOUS)' },
         { icon: artId('icoSmash'), text: `THE REST IS THE HAMMER: ${Math.round(OWNER_RULES.hammer * 100)}% OF YOUR MAX HP THROUGH SHIELDS. NO TURN OF HIS TAKES MORE THAN ${Math.round(OWNER_RULES.capOnYou * 100)}%` },
         { icon: 'shieldIcon', text: `HE HAS ${TURBO.hp} HP: A SPIN THAT HITS HIM TAKES 1, HOWEVER BIG. AT 75 / 50 / 25% OF IT HE HITS ${Math.round(OWNER_RULES.phaseDmg * 100)}% HARDER EACH TIME` },
       ],
@@ -75,7 +75,7 @@ function rulesOf(boss: string, c: BossRuleContext): BossRules {
       { icon: artId('coin'), text: 'COINS ON ITS REELS FILL THE POT' },
       { icon: artId('icoCoin'), text: `EVERY ${c.houseEvery} TURNS IT SKIMS HALF THE POT AT YOU` },
       { icon: artId('potTier4'), text: `AT HALF HP THE POT DOUBLES. FROM TURN ${POT.lastCall}, IT SKIMS EVERY TURN` },
-      ...(dirty ? [{ icon: artId('bomb'), text: 'BLACK: IT BOMBS YOUR PAYLINE' }] : []),
+      ...(dirty ? [{ icon: artId('bomb'), text: 'BLACK: IT STICKS IOUS ON YOUR PAYLINE' }] : []),
     ],
     win: 'YOUR JACKPOTS STEAL ITS POT',
   };

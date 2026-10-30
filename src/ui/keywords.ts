@@ -30,11 +30,11 @@ export const KEYWORDS: Keyword[] = [
   { word: 'ALL IN', color: '#ff6a5a', text: "THE DEALER'S BIG HIT: A SHARE OF YOUR MAX HP THAT PIERCES SHIELDS" },
   { word: 'HOLD', forms: ['HELD'], color: '#ffe28a', text: `TAP ONE OF YOUR REELS BEFORE YOUR SPIN OR WHILE THE ENEMY SPINS: IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. ${HOLD.perFight} A FIGHT` },
   { word: 'OVERTIME', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF A FIGHT, EVERY HIT ON BOTH MACHINES PAYS X${1 + OVERTIME.step}, +${OVERTIME.step} WITH EACH OF YOUR SPINS. SHIELDS DON'T GROW` },
-  { word: 'SABOTAGE', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY PUTS ON YOUR REELS: SLIME, ROCKS, BOMBS, FREEZES, JAMS, HEXES, MARKS' },
+  { word: 'SABOTAGE', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY PUTS ON YOUR REELS: SPILLS, ROCKS, IOUS, FREEZES, JAMS, JINXES, MARKS' },
   { word: 'MARK', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED CELL ON YOUR PAYLINE HITS YOU' },
-  { word: 'SLIME', forms: ['SLIMED', 'SLIMES'], color: COLORS.slime, text: 'A SLIMED CELL PAYS NOTHING. A SLIME PAIR CLEANSES ITS REELS; A JACKPOT CLEANSES IT ALL' },
-  { word: 'ROCK', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD CELL: IT PAYS NOTHING' },
-  { word: 'BOMB', forms: ['BOMBS'], color: '#ff9a3a', text: 'TICKS DOWN, THEN HITS YOU. LAND IT ON YOUR PAYLINE TO DEFUSE IT' },
+  { word: 'SPILL', forms: ['SPILLED', 'SPILLS'], color: COLORS.slime, text: 'A SPILLED CELL PAYS NOTHING. A SPILL PAIR MOPS UP ITS REELS; A JACKPOT MOPS IT ALL UP' },
+  { word: 'ROCK', forms: ['ROCKS'], color: '#c9bba8', text: 'A FAKE ROCK: A DEAD CELL, IT PAYS NOTHING' },
+  { word: 'IOU', forms: ['IOUS'], color: '#ff9a3a', text: 'TICKS DOWN, THEN HITS YOU. LAND IT ON YOUR PAYLINE TO PAY IT OFF' },
 ];
 
 /** Every spelling, longest first (so PIERCES SHIELDS wins over SHIELDS). */

@@ -74,7 +74,7 @@ describe('act 2 writers', () => {
     expect(ofType(events, 'blast').length).toBe(0);
   });
 
-  it('HEXER: a hexed reel pays half and its gilds go dark', () => {
+  it('JINX: a jinxed reel pays half; its Charm stays lit (user, 2026-10-30)', () => {
     const f = fight((c) => {
       c.enemy = { hp: 9999, strips: [{ hex: 12 }, { hex: 12 }, { shield: 12 }] };
       c.player.strips = reels3({ sword: 12 });
@@ -87,8 +87,8 @@ describe('act 2 writers', () => {
     expect(hex.turns).toBe(2);
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const spin = ofType(f.step().events, 'spin')[0];
-    // Jackpot 90, gold is dark while hexed, then halved.
-    expect(spin.score.groups[0].amount).toBe(45);
+    // Jackpot 90, doubled by its gold (still lit), then halved.
+    expect(spin.score.groups[0].amount).toBe(90);
     expect(spin.hexed).toEqual([true, false, false]);
   });
 
@@ -281,10 +281,10 @@ describe('act structure', () => {
   });
 
   it('act 2 archetypes exist with art ids and only appear in act 2', () => {
-    for (const id of ['bomber', 'hexer', 'vampire', 'mimic']) expect(ARCHETYPES.find((a) => a.id === id)?.acts).toEqual([2]);
+    for (const id of ['bomber', 'hexer', 'vampire']) expect(ARCHETYPES.find((a) => a.id === id)?.acts).toEqual([2]);
     const m = generateActMap(new Rng(1), 1);
     const act1 = [m.opener, ...m.routes.flat().map((st) => st.enemy).filter((e) => !!e)].map((e) => e!.archetype);
-    expect(act1.some((a) => ['bomber', 'hexer', 'vampire', 'mimic'].includes(a))).toBe(false);
+    expect(act1.some((a) => ['bomber', 'hexer', 'vampire'].includes(a))).toBe(false);
   });
 });
 

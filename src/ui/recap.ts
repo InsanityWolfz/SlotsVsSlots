@@ -20,10 +20,10 @@ const ROWS: Row[] = [
   ['LONGEST DRY SPELL', n('longestDrySpell'), n('longestDrySpell')],
   ['SPECIALS (DMG)', (s) => `${s.specials} (${s.specialDamage})`, null],
   ['ENERGY GAINED', n('energyGained'), null],
-  ['SYMBOLS SLIMED', null, n('slimeApplied')],
-  ['SLIME WASTED', null, n('slimeWasted')],
+  ['SYMBOLS SPILLED ON', null, n('slimeApplied')],
+  ['SPILLS WASTED', null, n('slimeWasted')],
   ['CLEANSES (SYMBOLS)', (s) => `${s.cleanses} (${s.cellsCleansed})`, null],
-  ['PEAK SLIME ON YOU', (s) => `${Math.round(s.peakSlimePct * 100)}%`, null],
+  ['PEAK SPILL ON YOU', (s) => `${Math.round(s.peakSlimePct * 100)}%`, null],
 ];
 
 /** Scale every integer inside a string by progress, so "3 (30)" ticks up as a whole. */
@@ -94,7 +94,7 @@ export class Recap {
     const colP = x + 150;
     const colE = x + pw - 150;
     drawText(ctx, 'HERO', colP, y + 100, 3, COLORS.goldLight);
-    drawText(ctx, 'SLIME KING', colE, y + 100, 3, COLORS.slime);
+    drawText(ctx, 'THE BARFLY', colE, y + 100, 3, COLORS.slime);
     ROWS.forEach(([label, pf, ef], i) => {
       const ry = y + 132 + i * 25;
       if (i % 2 === 0) {

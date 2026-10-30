@@ -99,18 +99,16 @@ describe('run', () => {
     expect(run.player.strips.reduce((a, s) => a + (s.rock ?? 0), 0)).toBe(0);
   });
 
-  it("an elite's rocks: 2 stay permanently, the rest crumble", () => {
+  it("an elite's rocks crumble after the fight like anyone's (user, 2026-10-30)", () => {
     const run = createRun(base, 8);
     run.enemies[run.depth].elite = true;
     const f = new Fight(fightConfig(run, base), 2);
     for (let i = 0; i < 5; i++) f.sides.player.reels[i % 3].cells.push({ symbol: 'rock', slimed: false });
     f.winner = 'player';
     const rec = finishFight(run, f);
-    expect(rec.rocksAdded).toBe(2);
-    expect(rec.rocksCrumbled).toBe(3);
-    expect(run.player.strips.reduce((a, s) => a + (s.rock ?? 0), 0)).toBe(2);
-    applyOption(run, { kind: 'clear', symbol: 'rock', reel: run.player.strips.findIndex((s) => (s.rock ?? 0) > 0) });
-    expect(run.player.strips.reduce((a, s) => a + (s.rock ?? 0), 0)).toBeLessThan(2);
+    expect(rec.rocksAdded).toBe(0);
+    expect(rec.rocksCrumbled).toBe(5);
+    expect(run.player.strips.reduce((a, s) => a + (s.rock ?? 0), 0)).toBe(0);
   });
 
   it('drafts never offer relics (they are the Cashier\'s and the elites\')', () => {

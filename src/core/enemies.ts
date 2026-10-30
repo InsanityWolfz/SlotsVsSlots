@@ -30,28 +30,28 @@ export interface Archetype {
 export const ARCHETYPES: Archetype[] = [
   {
     id: 'slime',
-    name: 'SLIME',
+    name: 'BARFLY',
     portrait: 'enemyPortrait',
     strip: { sword: 5, shield: 2, slime: 5 },
     hpMul: 1,
     ability: { kind: 'flood', every: 4, power: 3 },
     minDepth: 0,
-    blurb: 'SLIMES YOUR SYMBOLS',
+    blurb: 'SPILLS DRINKS ON YOUR SYMBOLS',
   },
   {
     id: 'brute',
-    name: 'BRUTE',
+    name: 'LEG BREAKER',
     portrait: 'enemyBrute',
     strip: { sword: 5, shield: 7 },
     hpMul: 1.1,
     ability: { kind: 'smash', every: 3, power: 4 * UNIT },
     minDepth: 1,
-    blurb: 'HITS HARD',
+    blurb: 'WINDS UP ONE BIG SWING',
     acts: [1, 2],
   },
   {
     id: 'frost',
-    name: 'FROST IMP',
+    name: 'COOLER',
     portrait: 'enemyFrost',
     strip: { sword: 6, shield: 2, ice: 4 },
     hpMul: 1.1,
@@ -62,29 +62,29 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: 'thief',
-    name: 'RAT THIEF',
+    name: 'PICKPOCKET',
     portrait: 'enemyThief',
     strip: { sword: 5, shield: 4, claw: 3 },
     hpMul: 0.9,
     ability: { kind: 'pilfer', every: 3, power: 1 },
     minDepth: 1,
-    blurb: 'STEALS YOUR BEST SYMBOLS',
+    blurb: 'STEALS YOUR SYMBOLS',
     acts: [1, 2],
   },
   {
     id: 'golem',
-    name: 'ROCK GOLEM',
+    name: 'FENCE',
     portrait: 'enemyGolem',
     strip: { sword: 4, shield: 4, rock: 4 },
     hpMul: 1.56,
     ability: { kind: 'quake', every: 4, power: 2 },
     minDepth: 2,
-    blurb: "CLUTTERS YOUR STRIP WITH ROCKS. AN ELITE'S ROCKS STAY",
+    blurb: 'SELLS YOU FAKE ROCKS: DEAD CELLS ON YOUR STRIP',
     acts: [1, 2],
   },
   {
     id: 'gremlin',
-    name: 'GREMLIN',
+    name: 'MECHANIC',
     portrait: 'enemyGremlin',
     strip: { sword: 5, shield: 3, lock: 4 },
     hpMul: 1.19,
@@ -96,46 +96,35 @@ export const ARCHETYPES: Archetype[] = [
   // ---- act 2 ----
   {
     id: 'bomber',
-    name: 'BOMBER',
+    name: 'LOAN SHARK',
     portrait: 'enemyBomber',
     strip: { sword: 4, shield: 3, bomb: 5 },
     hpMul: 1,
     ability: { kind: 'carpet', every: 4, power: 2 },
     minDepth: 0,
-    blurb: 'STICKS TICKING BOMBS ON YOUR CELLS. A BOMB YOUR PAYLINE LANDS ON IS DEFUSED',
+    blurb: "IOUS YOU DON'T PAY IN TIME HURT YOU",
     acts: [2],
   },
   {
     id: 'hexer',
-    name: 'HEXER',
+    name: 'JINX',
     portrait: 'enemyHexer',
     strip: { sword: 5, shield: 3, hex: 4 },
     hpMul: 1.05,
     ability: { kind: 'curse', every: 4, power: 1 },
     minDepth: 0,
-    blurb: 'HEXES YOUR REELS: HALF PAY, CHARMS GO DARK',
+    blurb: 'JINXES YOUR REELS FOR HALF PAY',
     acts: [2],
   },
   {
     id: 'vampire',
-    name: 'VAMPIRE',
+    name: 'LEECH',
     portrait: 'enemyVampire',
     strip: { sword: 4, shield: 3, fangs: 5 },
     hpMul: 0.95,
     ability: { kind: 'bloodmoon', every: 4, power: 8 * UNIT },
     minDepth: 0,
-    blurb: 'DRAINS YOUR HP TO HEAL ITSELF',
-    acts: [2],
-  },
-  {
-    id: 'mimic',
-    name: 'MIMIC',
-    portrait: 'enemyMimic',
-    strip: { sword: 4, shield: 4, mimicSym: 4 },
-    hpMul: 1.05,
-    ability: { kind: 'gulp', every: 3, power: 2 },
-    minDepth: 0,
-    blurb: 'COPIES YOUR BEST HIT. EATS YOUR CHIPS',
+    blurb: 'DRAINS YOUR HP TO HEAL HIMSELF',
     acts: [2],
   },
   // ---- act 2 counter-enemy: answers a Charm or meter build ----
@@ -147,7 +136,7 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 1.1,
     ability: { kind: 'launder', every: 4, power: 2 },
     minDepth: 1,
-    blurb: 'COUNTERFEITS A CHARM: IT PAYS PLAIN FOR 3 TURNS',
+    blurb: 'REMOVES A CHARM',
     acts: [2],
   },
 ];
@@ -203,16 +192,16 @@ export const REPO_MAN: Archetype = {
   hpMul: 1.3,
   ability: { kind: 'repo', every: 3, power: 1 },
   minDepth: 2,
-  blurb: 'TAKES A CHARM FOR THE FIGHT.',
+  blurb: 'TAKES A CHARM FOR THE FIGHT',
   acts: [],
 };
 /** THE REPO MAN: at most this many takes a fight, his bounty in chips, the turn of his first take, the acts he's in. */
 export const GATEKEEPER = { maxTakes: 2, bounty: 3, firstTurn: 1, acts: 2 };
 
-export const ACT2_NEW: ReadonlySet<string> = new Set(['bomber', 'hexer', 'vampire', 'mimic', 'counterfeiter']);
+export const ACT2_NEW: ReadonlySet<string> = new Set(['bomber', 'hexer', 'vampire', 'counterfeiter']);
 export const ACT3_NEW: ReadonlySet<string> = new Set(['sharp', 'pitboss', 'croupier']);
 /** Act 2's own enemies come back in act 3. */
-const ACT3_VETERANS: ReadonlySet<string> = new Set(['bomber', 'vampire', 'hexer', 'mimic']);
+const ACT3_VETERANS: ReadonlySet<string> = new Set(['bomber', 'vampire', 'hexer']);
 export const actsOf = (a: Archetype) => (ACT3_VETERANS.has(a.id) ? [...(a.acts ?? [1]), 3] : a.acts ?? [1]);
 
 export const BOSS: Archetype = {
@@ -307,7 +296,8 @@ export const OWNER_RULES = { hammer: 0.4, capOnYou: 0.45, phaseDmg: 0.15, phases
 export const BOSSES: Record<number, Archetype> = { 1: BOSS, 2: WHEEL, 3: DEALER };
 
 // (No 'GILDED' or 'WILD': those are mechanic names.)
-const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'FERAL', 'ELDER', 'RABID', 'MANGY', 'CURSED', 'HUNGRY', 'SPITEFUL', 'ANCIENT', 'BITTER', 'GREEDY'];
+// The casino town's (user, 2026-10-30).
+const ADJECTIVES = ['GRUMPY', 'SNEAKY', 'SHADY', 'SLICK', 'CROOKED', 'TWO-BIT', 'BROKE', 'SPITEFUL', 'DESPERATE', 'GREEDY'];
 
 /** HP for a regular fight at each depth (0-based), before the archetype multiplier. */
 /** (+6% in I14 to offset BONUS WHEEL / RELIC RUSH payouts.) */

@@ -155,7 +155,7 @@ only twist now (HOUSE EDGES are cut, 2026-10-15).
 Sim GREEN: loops cleared median 4 -> 5.
 **THE OWNER, the TURBO boss** (user, 2026-10-14: a new boss, insanely hard; then: make him a fight, not a wall): loop
 5's boss, the man who owns the casino (`OWNER`, `OWNER_RULES`, `TURBO` in `src/core/enemies.ts`; his office in the room's
-column). Every 2 turns he cheats: every other time a new trick (slime, a theft, a freeze, rocks, a hex, bombs), the rest
+column). Every 2 turns he cheats: every other time a new trick (a spill, a theft, a freeze, rocks, a jinx, IOUs), the rest
 THE HAMMER, 40% of your max HP through shields, named on his HUD before it lands (THE HAMMER IN 2). No turn of his takes
 more than 45% of your max HP, but every turn he takes raises that cap and his hits by 7%, and at 75 / 50 / 25% of his
 HP he hits 15% harder each time (a banner: HE LOOSENS HIS TIE, HE STANDS UP, HE GOES ALL IN).
@@ -183,10 +183,18 @@ and the multiplier grows every loop, so it gets harder exponentially in theory. 
 so that isn't happening in practice (see ROADMAP).
 
 ## Enemies
-- **Act 1:** SLIME, BRUTE, FROST IMP, RAT THIEF, ROCK GOLEM, GREMLIN, THE REPO MAN. Any enemy's rocks crumble after
-  the fight; only an elite's (up to 2) stay.
-- **Act 2 adds:** BOMBER, HEXER, VAMPIRE, MIMIC, COUNTERFEITER. (The GROUNDER is retired and removed from the code.) BLUE stake puts your counter (the COUNTERFEITER) on every act 2 path.
-- **Act 3 adds:** CARD SHARP, PIT BOSS, CROUPIER. BOMBER, VAMPIRE, HEXER and MIMIC come back.
+The casino-town cast (user, 2026-10-30; code ids keep the old names: slime, brute, frost, thief, golem, gremlin, bomber,
+hexer, vampire). Words: SPILL (was SLIME), IOU (was BOMB), JINX (was HEX), ROCK stays (the Fence's fake rocks).
+- **Act 1 (the Alley):** THE BARFLY (SPILL), THE LEG BREAKER (THE SWING), THE COOLER (COLD STREAK), THE PICKPOCKET (STEAL),
+  THE FENCE (FAKE ROCKS), THE MECHANIC (JAM), THE REPO MAN. Every enemy's rocks crumble after the fight, an elite's
+  too (user, 2026-10-30: an elite's stayed for the run, which confused).
+- **Act 2 adds (the Floor):** THE LOAN SHARK (IOUS), THE JINX (a jinxed reel pays half; user, 2026-10-30: its Charms stay
+  lit), THE LEECH, THE COUNTERFEITER (LAUNDER). THE COPYCAT (was MIMIC) is cut (user, 2026-10-30: hard to balance, confusing
+  when it hit). (The GROUNDER is retired.) BLUE stake puts your counter (the COUNTERFEITER) on every act 2 path.
+- **Act 3 adds (the VIP Room):** THE CARD SHARP, THE PIT BOSS (AUDIT), THE CROUPIER. The Loan Shark, the Leech and the
+  Jinx come back.
+- **Names:** a regular enemy is an adjective plus its name (SHADY BARFLY): GRUMPY, SNEAKY, SHADY, SLICK, CROOKED,
+  TWO-BIT, BROKE, SPITEFUL, DESPERATE, GREEDY.
 - **Enemy HP is honest:** the same enemy has the same HP at the same stop on every machine and every build
   (fixed curves by act and fight; elites x1.25 / x1.3; the House, THE WHEEL and the Dealer have fixed HP). Machines are
   balanced by tuning the machines. Code: `makeEnemy`, `DEPTH_HP*`, `TUNE` and `ENDLESS` in `src/core/enemies.ts`,

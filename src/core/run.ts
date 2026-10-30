@@ -40,8 +40,8 @@ export const RUN = {
   pivotChance: 0.5,
   /** Each Cashier heal bought this run costs this much more than the last. */
   healStep: 3,
-  /** Rocks an ELITE adds during one fight that stay for the rest of the run; the rest (and every normal enemy's) crumble. */
-  permanentRocksPerFight: 2,
+  /** Rocks an ELITE adds during one fight that stay for the rest of the run (user, 2026-10-30: none; they confused). */
+  permanentRocksPerFight: 0,
   swapCount: 3,
   addCount: 2,
   wildCount: 2,

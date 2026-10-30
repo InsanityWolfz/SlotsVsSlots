@@ -22,22 +22,22 @@ export interface HudMeter {
 /** An ability's name on screen. */
 export const abilityName = (kind: AbilityKind): string => ABILITY_UI[kind].label;
 export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> = {
-  flood: { icon: 'icoFlood', label: 'FLOOD' },
-  smash: { icon: 'icoSmash', label: 'SMASH' },
+  flood: { icon: 'icoFlood', label: 'SPILL' },
+  smash: { icon: 'icoSmash', label: 'THE SWING' },
   fortify: { icon: 'shieldIcon', label: 'FORTIFY' },
-  blizzard: { icon: 'icoFreeze', label: 'BLIZZARD' },
-  pilfer: { icon: 'icoSteal', label: 'PILFER' },
-  quake: { icon: 'icoRock', label: 'QUAKE' },
+  blizzard: { icon: 'icoFreeze', label: 'COLD STREAK' },
+  pilfer: { icon: 'icoSteal', label: 'STEAL' },
+  quake: { icon: 'icoRock', label: 'FAKE ROCKS' },
   jam: { icon: 'icoLock', label: 'JAM' },
   jackpot: { icon: 'icoCoin', label: 'CASH OUT' },
-  carpet: { icon: artId('icoBomb'), label: 'CARPET BOMB' },
-  curse: { icon: artId('icoHex'), label: 'CURSE' },
-  bloodmoon: { icon: artId('icoDrain'), label: 'BLOOD MOON' },
+  carpet: { icon: artId('icoBomb'), label: 'COLLECTION DAY' },
+  curse: { icon: artId('icoHex'), label: 'JINX' },
+  bloodmoon: { icon: artId('icoDrain'), label: 'BLEED YOU DRY' },
   gulp: { icon: artId('icoGulp'), label: 'GULP' },
   bets: { icon: artId('icoBets'), label: 'NO MORE BETS' },
   launder: { icon: artId('icoLaunder'), label: 'LAUNDER' },
   mark: { icon: artId('icoMark'), label: 'STACKED DECK' },
-  penalty: { icon: artId('icoGavel'), label: 'PENALTY' },
+  penalty: { icon: artId('icoGavel'), label: 'AUDIT' },
   repo: { icon: artId('icoGavel'), label: 'REPO' },
   houseTake: { icon: artId('icoRake'), label: "HOUSE'S TAKE" },
   deal: { icon: artId('icoShuffle'), label: 'BUST' },
@@ -159,7 +159,7 @@ export class HudView {
     });
     if (this.ooze > 0) {
       const pct = this.ooze / Math.max(1, this.oozeTotal);
-      drawText(ctx, `SLIME ${this.ooze}/${this.oozeTotal}`, x + HUD_W - 4, y + 12, 2, pct >= 0.5 && Math.sin(time * 8) > 0 ? '#b6ff9a' : COLORS.slime, {
+      drawText(ctx, `SPILL ${this.ooze}/${this.oozeTotal}`, x + HUD_W - 4, y + 12, 2, pct >= 0.5 && Math.sin(time * 8) > 0 ? '#b6ff9a' : COLORS.slime, {
         align: 'right',
         punch: this.oozePunch,
       });

@@ -91,7 +91,7 @@ export interface Combatant {
   frozen: number[];
   /** Remaining own-turns each reel is jammed (scores nothing). */
   locked: number[];
-  /** Remaining own-turns each reel is hexed (pays half, charms are dark). */
+  /** Remaining own-turns each reel is jinxed (pays half; user, 2026-10-30: its Charms stay lit). */
   hexed: number[];
   /** The Croupier's rake: remaining own-turns your groups pay less. */
   raked: number;
@@ -147,7 +147,7 @@ export function effectText(sym: SymbolId, amount: number): string {
   const s = (k: number, one: string, many = `${one}S`) => `${k} ${k === 1 ? one : many}`;
   switch (sym) {
     case 'slime':
-      return `SLIMES ${s(Math.round(amount / UNIT), 'CELL')}`;
+      return `SPILLS ON ${s(Math.round(amount / UNIT), 'CELL')}`;
     case 'ice':
       return `FREEZES ${s(pair ? 2 : 1, 'REEL')} FOR ${s(jackpot ? 3 : pair ? 2 : 1, 'TURN')}`;
     case 'lock':
@@ -155,13 +155,13 @@ export function effectText(sym: SymbolId, amount: number): string {
     case 'claw':
       return `STEALS ${s(n, 'CELL')}`;
     case 'rock':
-      return pair ? `ADDS ${s(jackpot ? 2 : 1, 'ROCK')}` : 'FIZZLES';
+      return pair ? `SELLS ${s(jackpot ? 2 : 1, 'FAKE ROCK')}` : 'FIZZLES';
     case 'coin':
       return `+${amount} TO THE POT`;
     case 'bomb':
-      return `PLANTS ${s(n, 'BOMB')}`;
+      return `STICKS ${s(n, 'IOU')}`;
     case 'hex':
-      return pair ? `HEXES ${s(jackpot ? 2 : 1, 'REEL')}` : 'FIZZLES';
+      return pair ? `JINXES ${s(jackpot ? 2 : 1, 'REEL')}` : 'FIZZLES';
     case 'fangs':
       return `DRAINS ${(jackpot ? 7 : pair ? 4 : 2) * UNIT}`;
     case 'card':
