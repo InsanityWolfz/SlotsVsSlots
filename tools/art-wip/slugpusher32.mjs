@@ -1,8 +1,8 @@
 import { stamp, rows } from './helpers.mjs';
-// THE SLUG PUSHER, 32x32 bust. Literal pixels; outline() adds the outer K.
-// Heavyset small-time cheat: porkpie hat, too-big tan trench coat, stubble, beady eyes.
+// THE FENCE (file/export keep the old slugpusher32 name), 32x32 bust. Literal pixels; outline() adds the outer K.
+// Heavyset shady dealer in fake jewellery: porkpie hat, too-big tan trench coat, beady eyes, a paste 'rock'.
 // His right forearm rises straight from the bottom edge (elbow off-frame), shoulder cap where it leaves the body,
-// -> hand beside the face pinching up a lead slug.
+// hand at cheek height holding up a fake diamond.
 export function slugpusher32() {
   const base = [
     '................................', // 0
@@ -58,20 +58,21 @@ export function slugpusher32() {
     '..awwwwBKwww',
     '..awwwwBKwww',
   ]);
-  // double-breasted buttons; a flap pocket sagging with slugs
+  // double-breasted buttons; a flap pocket
   stamp(g, 25, 23, ['b', ' ', ' ', 'b']);
   stamp(g, 22, 28, ['bbbbbbb', 'Bwwwwwb', ' BBBBb']);
-  // hand pinching up the slug: a tilted lead coin (flat face, lit rim top-left, shadow rim bottom-right, stamped mark);
-  // thumb sticks out on the left over the coin's front, knuckle lines below; shirt cuff and sleeve edge
-  stamp(g, 0, 10, [
-    '    IIII  ',
-    '   IHHHHh ',
-    '  IHHHHHHh',
-    '  IHHhhHHh',
-    ' FFHHHHHhh',
-    ' FFfhhhhFf',
+  // hand pinching up a big paste diamond by its point: pale cyan crown with a white glint, dark girdle line,
+  // pavilion narrowing into thumb and finger; a cheap gold ring on one knuckle; shirt cuff and sleeve edge
+  stamp(g, 0, 9, [
+    '   ACCCA  ',
+    '  ACWCCAc ',
+    ' ACWCCCAcc',
+    ' cccccccnn',
+    '  cCCCAcn ',
+    ' FFcCCAnFF',
+    ' FFFcAnFFf',
     '  fFFFFFf',
-    '  FfFfFff',
+    '  FfGfFff',
     '  fffffff',
     '  TTTTTTt',
     '  bbbbbbK',

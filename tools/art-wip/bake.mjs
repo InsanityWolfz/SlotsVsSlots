@@ -2,7 +2,7 @@
 import { writeFileSync } from 'node:fs';
 const MAP = [
   ['barfly', 'enemyPortrait', 'THE BARFLY'], ['legbreaker', 'enemyBrute', 'THE LEG BREAKER'], ['cooler', 'enemyFrost', 'THE COOLER'],
-  ['pickpocket', 'enemyThief', 'THE PICKPOCKET'], ['slugpusher', 'enemyGolem', 'THE SLUG PUSHER'], ['mechanic', 'enemyGremlin', 'THE BENT MECHANIC'],
+  ['pickpocket', 'enemyThief', 'THE PICKPOCKET'], ['slugpusher', 'enemyGolem', 'THE FENCE'], ['mechanic', 'enemyGremlin', 'THE BENT MECHANIC'],
   ['repoman', 'enemyRepoMan', 'THE REPO MAN'], ['shark', 'enemyBomber', 'THE LOAN SHARK'], ['jinx', 'enemyHexer', 'THE JINX'],
   ['leech', 'enemyVampire', 'THE LEECH'], ['copycat', 'enemyMimic', 'THE COPYCAT'], ['counterfeiter', 'enemyCounterfeiter', 'THE COUNTERFEITER'],
   ['sharp', 'enemySharp', 'THE CARD SHARP'], ['pitboss', 'enemyPitBoss', 'THE PIT BOSS'], ['croupier', 'enemyCroupier', 'THE CROUPIER'],
@@ -20,5 +20,5 @@ for (const [file, id, name] of MAP) {
   out += `  // ${name}\n  ${id}: [\n${rows.map((r) => `    '${r}',`).join('\n')}\n  ],\n`;
 }
 out += '};\n';
-writeFileSync(process.argv[2], out); // e.g. node bake.mjs ../portraits.mjs
+writeFileSync(process.argv[2], out);
 console.log('baked', MAP.length);
