@@ -1,6 +1,7 @@
 import { drawSprite, type SpriteId } from '../render/sprites';
 import { drawText, textWidth } from '../render/text';
 import { COLORS, H, W } from './layout';
+import { drawPanel, drawTitle, KIT, T } from '../ui/kit';
 
 export interface FxItem {
   draw(ctx: CanvasRenderingContext2D, time: number): void;
@@ -40,13 +41,20 @@ export class FloatText implements FxItem {
     public color: string,
   ) {}
   draw(ctx: CanvasRenderingContext2D): void {
-    if (this.plate && this.alpha > 0) {
-      const w = this.text.length * 6 * this.scale * this.punch + 24;
-      const h = 10 * this.scale * this.punch + 10;
+    if (this.plate && this.alpha > 0 && this.punch > 0.05) {
+      // The kit's chip as the plate: an outline, a dim frame, the panel's fill.
+      const w = Math.round(this.text.length * 6 * this.scale * this.punch + 24);
+      const h = Math.round(7 * this.scale * this.punch + 16);
+      const x0 = Math.round(this.x - w / 2);
+      const y0 = Math.round(this.y - h / 2);
       ctx.save();
       ctx.globalAlpha *= this.alpha;
-      ctx.fillStyle = 'rgba(20,12,28,0.85)';
-      ctx.fillRect(this.x - w / 2, this.y - h / 2, w, h);
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(x0 - 2, y0 - 2, w + 4, h + 4);
+      ctx.fillStyle = KIT.frameDim;
+      ctx.fillRect(x0, y0, w, h);
+      ctx.fillStyle = KIT.fill;
+      ctx.fillRect(x0 + 2, y0 + 2, w - 4, h - 4);
       ctx.restore();
     }
     drawText(ctx, this.text, this.x, this.y, this.scale, this.color, { alpha: this.alpha, punch: this.punch });
@@ -100,42 +108,59 @@ export class Banner implements FxItem {
     public color: string,
     public x = W / 2,
     public y = H / 2,
+    /** How big the moment is: up to 3 a heading-size banner, 4-4.5 a title-size one; past that the whole banner
+     * zooms (BIG WIN, MEGA WIN, VICTORY), so the kit's text sizes and proportions hold at every tier. */
     public textScale = 7,
   ) {}
   draw(ctx: CanvasRenderingContext2D): void {
     if (this.scale <= 0.01 || this.alpha <= 0) return;
+    // THE UI KIT's banner: a panel band framed in the moment's colour, ribbon tails behind it, the title with its
+    // drop shadow, the sub line under it. The tier reads by colour before the number is read (juice: wins escalate).
+    const ts = this.textScale >= 4 ? T.title : T.head;
+    const zoom = this.textScale > T.title ? this.textScale / T.title : 1;
     ctx.save();
     ctx.globalAlpha = this.alpha;
     ctx.translate(this.x, this.y);
-    ctx.scale(this.scale, this.scale);
-    const tw = textWidth(this.text, this.textScale);
+    ctx.scale(this.scale * zoom, this.scale * zoom);
+    const tw = textWidth(this.text, ts);
     const partsText = this.subParts.map((p) => p.text).join('');
     const hasSub = !!this.sub || this.subParts.length > 0;
     const subText = this.sub || partsText;
-    const subScale = subText && textWidth(subText, 4) <= 520 && this.subParts.length ? 4 : subText && textWidth(subText, 3) > 520 ? 2 : 3;
-    const pw = Math.max(this.minW, Math.max(tw, hasSub ? textWidth(subText, subScale) : 0) + 60);
-    const ph = this.textScale * 7 + (hasSub ? 50 + (subScale - 3) * 7 : 36);
-    // Solid dark panel + border frame that scales with it (juice §3.6).
+    const subScale = subText && textWidth(subText, T.head) <= 560 ? T.head : T.body;
+    const pw = Math.round(Math.max((this.minW * 0.75) / zoom, Math.max(tw, hasSub ? textWidth(subText, subScale) : 0) + 72));
+    const ph = Math.round(7 * ts + (hasSub ? 7 * subScale + 40 : 34));
+    const x0 = -Math.round(pw / 2);
+    const y0 = -Math.round(ph / 2);
+    // Ribbon tails, in a dark shade of the moment's colour.
+    const tail = shade(this.color, 0.45);
     ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(-pw / 2 - 6, -ph / 2 - 6, pw + 12, ph + 12);
-    ctx.fillStyle = this.color;
-    ctx.fillRect(-pw / 2 - 3, -ph / 2 - 3, pw + 6, ph + 6);
-    ctx.fillStyle = COLORS.panel;
-    ctx.fillRect(-pw / 2, -ph / 2, pw, ph);
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    ctx.fillRect(-pw / 2, -ph / 2, pw, ph / 2);
-    drawText(ctx, this.text, 0, hasSub ? -12 - (subScale - 3) * 4 : 0, this.textScale, this.color);
-    if (this.sub) drawText(ctx, this.sub, 0, ph / 2 - 20, subScale, COLORS.text);
+    ctx.fillRect(x0 - 22, y0 + 10, 28, ph);
+    ctx.fillRect(x0 + pw - 6, y0 + 10, 28, ph);
+    ctx.fillStyle = tail;
+    ctx.fillRect(x0 - 19, y0 + 13, 22, ph - 6);
+    ctx.fillRect(x0 + pw - 3, y0 + 13, 22, ph - 6);
+    drawPanel(ctx, x0, y0, pw, ph, { frame: this.color, fill: '#2a1030' });
+    const ty = hasSub ? y0 + 18 + (7 * ts) / 2 : 0;
+    drawTitle(ctx, this.text, 0, ty, this.color);
+    const sy = y0 + ph - 18 - (7 * subScale) / 2;
+    if (this.sub) drawText(ctx, this.sub, 0, sy, subScale, COLORS.text);
     else if (this.subParts.length) {
       // Left-aligned from the full line's start, so parts pop in without the line sliding.
       let x = -textWidth(partsText, subScale) / 2;
       this.subParts.forEach((p, i) => {
-        if (i < this.reveal) drawText(ctx, p.text, x, ph / 2 - 20 - (subScale - 3) * 3, subScale, p.color, { align: 'left' });
+        if (i < this.reveal) drawText(ctx, p.text, x, sy, subScale, p.color, { align: 'left' });
         x += textWidth(p.text, subScale);
       });
     }
     ctx.restore();
   }
+}
+
+/** A #rrggbb colour toward black (k 0 = black, 1 = itself). */
+function shade(hex: string, k: number): string {
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) return '#5a1420';
+  const ch = (i: number) => Math.round(parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16) * k);
+  return `rgb(${ch(0)},${ch(1)},${ch(2)})`;
 }
 
 /** Big sweeping "PLAYER TURN" strip. */

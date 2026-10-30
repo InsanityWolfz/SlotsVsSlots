@@ -6,7 +6,7 @@ import type { LineScore, ScoreGroup, Tier } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
 import { Banner, Bubble, FloatText, Lightning, Projectile, SymbolWheel, TurnCard } from './fx';
-import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, PITCH, reelWindow, RELIC_FEED, W } from './layout';
+import { cellCenter, COLORS, GUTTER_PANEL_Y, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, CELL, reelWindow, RELIC_FEED, W } from './layout';
 import type { Stage } from './stage';
 import { abilityName } from './hud';
 import { stripMapColumn } from './stripMap';
@@ -17,6 +17,7 @@ import { charmLevel, charmName, charmTag, charmValue, CHARM_COLOR, playerSymValu
 import { defaultConfig } from '../core/config';
 import { DEAD } from '../core/strip';
 import { ENH_SPRITE } from './reel';
+import { T } from '../ui/kit';
 
 /** Base symbol values (the payline numbers). */
 const BASE = defaultConfig().base;
@@ -402,7 +403,9 @@ export class Director {
   }
 
   private popText(text: string, x: number, y: number, scale: number, color: string, rise = 50, hold = 0.35, plate = false): Promise<void> {
-    const t = this.s.fx.add(new FloatText(text, x, y, scale, color));
+    // The kit's text sizes (nothing under SMALL); a giant number stays a display number.
+    const size = scale <= 1.8 ? T.small : scale < 2.5 ? T.body : scale <= 3.5 ? T.head : scale <= 5 ? T.title : scale;
+    const t = this.s.fx.add(new FloatText(text, x, y, size, color));
     t.plate = plate;
     t.punch = 0;
     return this.c
@@ -805,11 +808,24 @@ export class Director {
         this.s.sounds.stingerMedium();
         this.s.sounds.coin(3);
       }
-      this.shake(tier === 'triple' ? 5 : 3, 0.18);
+      // THE JACKPOT beat (the retail list): yours gets one strong moment, a heavier kick, a soft gold tint (never a
+      // white flash), a fountain from both sides of your machine and sparks off the payline.
+      const big = tier === 'triple' && mine;
+      this.shake(big ? 8 : tier === 'triple' ? 5 : 3, big ? 0.3 : 0.18);
       this.s.camera.chromaPulse(tier === 'triple' ? 0.3 : 0.15);
+      if (big) {
+        this.s.camera.flashScreen(0.12, '#ffd23f');
+        this.s.camera.punchZoom(0.03, 0.3);
+      }
       if (tier === 'triple') {
         const c = this.machineCenter(side);
-        this.s.particles.burst({ x: c.x, y: c.y - 60, count: 40, colors: ['#ff8a5a', '#ffd23f', '#ffffff'], speed: [180, 420], angle: -Math.PI / 2, spread: Math.PI * 0.9, gravity: 700, drag: 1.2, life: [0.6, 1.1], size: [4, 7], kind: 'confetti' });
+        this.s.particles.burst({ x: c.x, y: c.y - 60, count: big ? 70 : 40, colors: ['#ff8a5a', '#ffd23f', '#ffffff'], speed: [180, 420], angle: -Math.PI / 2, spread: Math.PI * 0.9, gravity: 700, drag: 1.2, life: [0.6, 1.1], size: [4, 7], kind: 'confetti' });
+        if (big) {
+          const w = reelWindow(side);
+          for (const sx of [w.x - 10, w.x + w.w + 10])
+            this.s.particles.burst({ x: sx, y: c.y, count: 36, colors: ['#ffd23f', '#ffe08a', '#ff8a5a'], speed: [260, 560], angle: -Math.PI / 2 + (sx < c.x ? -0.35 : 0.35), spread: Math.PI * 0.35, gravity: 800, drag: 1, life: [0.7, 1.2], size: [4, 7], kind: 'confetti' });
+          this.s.particles.burst({ x: c.x, y: c.y, count: 30, colors: ['#ffffff', '#ffd23f'], speed: [200, 520], angle: 0, spread: Math.PI * 2, gravity: 0, drag: 3, life: [0.25, 0.5], size: [2, 4], kind: 'spark' });
+        }
       }
       const show = this.payBanner(title, color, tier === 'triple' ? 1.25 : 1.15, hold, parts, climb, tier === 'triple' ? 4.5 : 4, 'small');
       if (climb) await show;
@@ -1428,11 +1444,35 @@ export class Director {
         size: [5, 9],
         kind: 'confetti',
       });
-    const b = this.s.fx.add(new Banner(win ? 'VICTORY!' : 'DEFEAT', win ? COLORS.goldLight : COLORS.danger, W / 2, H / 2 - 40, 9));
+    // THE BIG BEATS (the retail list): a boss falling and a run lost each get their own moment, in the kit's banner.
+    const label = this.s.gutter.fightLabel;
+    const boss = win && label.includes('BOSS');
+    const runLost = !win && label !== 'SANDBOX';
+    if (boss) {
+      // BOSS DOWN: the boss's machine bursts in gold and coins, the camera kicks, the room cheers.
+      const c = this.machineCenter('enemy');
+      this.shake(12, 0.7);
+      this.s.camera.punchZoom(0.06, 0.5);
+      this.s.camera.chromaPulse(0.6);
+      this.s.camera.flashScreen(0.15, '#ffd23f');
+      this.s.cheer?.(true);
+      this.s.sounds.fanfareJackpot();
+      this.s.particles.burst({ x: c.x, y: c.y, count: 160, colors: ['#ffd23f', '#ffe08a', '#ffffff', '#d9a640'], speed: [200, 700], angle: -Math.PI / 2, spread: Math.PI * 2, gravity: 500, drag: 1, life: [1, 2], size: [4, 8], kind: 'confetti' });
+      this.s.particles.burst({ x: c.x, y: c.y, count: 40, colors: ['#ffd23f', '#ff9a3a'], speed: [120, 420], angle: -Math.PI / 2, spread: Math.PI * 2, gravity: 300, drag: 1.5, life: [0.5, 1.1], size: [2, 4], kind: 'spark' });
+    } else if (runLost) {
+      // RUN OVER: the room goes dark around your machine, embers fall from it, one heavy shake.
+      const c = this.machineCenter('player');
+      this.shake(10, 0.6);
+      this.s.camera.dimTarget = 0.45;
+      this.s.camera.flashScreen(0.12, '#ff3a2e');
+      this.s.particles.burst({ x: c.x, y: c.y - 120, count: 90, colors: ['#5a4a6a', '#3a3040', '#ff6a5a', '#8a2a2a'], speed: [20, 140], angle: Math.PI / 2, spread: Math.PI * 0.8, gravity: 120, drag: 0.6, life: [1.4, 2.4], size: [2, 5], kind: 'square' });
+    }
+    const b = this.s.fx.add(new Banner(boss ? 'BOSS DOWN!' : win ? 'VICTORY!' : runLost ? 'RUN OVER' : 'DEFEAT', win ? COLORS.goldLight : COLORS.danger, W / 2, H / 2 - 40, 9));
     b.sub = `${e.turns} SPIN${e.turns === 1 ? '' : 'S'}`;
     await this.c.tween({ from: 0, to: 1.4, dur: 0.3, ease: backOut(2), onUpdate: (v) => (b.scale = v) });
     await this.c.tween({ from: 1.4, to: 1, dur: 0.2, ease: sineIn, onUpdate: (v) => (b.scale = v) });
     await this.c.wait(1.6);
+    if (runLost) this.s.camera.dimTarget = 0;
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (b.alpha = v) }).then(() => this.s.fx.remove(b)));
   }
 
@@ -1634,7 +1674,7 @@ export class Director {
   }
 
   private potPos() {
-    return { x: W / 2, y: MACHINE_TOP + MACHINE_H / 2 + 110 };
+    return { x: W / 2, y: GUTTER_PANEL_Y + 54 };
   }
 
   private async pot(e: Ev<'pot'>): Promise<void> {
@@ -1993,7 +2033,7 @@ export class Director {
   /** Where a reel's chip stack sits: on the bottom edge of your reel (screen coordinates). */
   private stackPos(reel: number) {
     const w = reelWindow('player');
-    return { x: w.x + PITCH * (reel + 0.5), y: w.y + MACHINE_H - 6 };
+    return { x: w.x + CELL * (reel + 0.5), y: w.y + MACHINE_H - 6 };
   }
 
   private syncTable(bets: number[], left?: number, per?: number): void {

@@ -100,6 +100,10 @@ export interface ChipOpts {
   icon?: (x: number, y: number) => void;
   /** Width reserved for the icon. */
   iconW?: number;
+  /** Frame colour (default gold). */
+  frame?: string;
+  /** Something drawn after the label (pips, a count): its width and a function that draws it from its left edge. */
+  trail?: { w: number; draw: (x: number, y: number) => void };
 }
 
 /** A chip: a small framed pill with an optional icon and a label (an ability, a keyword, a price, a stake). Centred
@@ -107,18 +111,20 @@ export interface ChipOpts {
 export function drawChip(ctx: CanvasRenderingContext2D, label: string, x: number, y: number, o: ChipOpts = {}): number {
   const s = o.scale ?? T.body;
   const iw = o.icon ? (o.iconW ?? 20) : 0;
-  const w = Math.round(label.length * 6 * s + iw + 18);
-  const h = Math.round(7 * s + 14);
+  const tw = o.trail ? o.trail.w + 10 : 0;
+  const w = Math.round(label.length * 6 * s + iw + tw + 18);
+  const h = Math.round(Math.max(7 * s + 14, o.icon && o.iconW ? o.iconW + 4 : 0));
   const x0 = Math.round(x - w / 2);
   const y0 = Math.round(y - h / 2);
   ctx.fillStyle = COLORS.outline;
   ctx.fillRect(x0 - 2, y0 - 2, w + 4, h + 4);
-  ctx.fillStyle = KIT.frame;
+  ctx.fillStyle = o.frame ?? KIT.frame;
   ctx.fillRect(x0, y0, w, h);
   ctx.fillStyle = o.fill ?? KIT.fillLight;
   ctx.fillRect(x0 + 2, y0 + 2, w - 4, h - 4);
   if (o.icon) o.icon(x0 + 9 + iw / 2 - 2, y);
-  drawText(ctx, label, x0 + 9 + iw + (w - 18 - iw) / 2, y + 1, s, o.color ?? KIT.title);
+  drawText(ctx, label, x0 + 9 + iw + (w - 18 - iw - tw) / 2, y + 1, s, o.color ?? KIT.title);
+  o.trail?.draw(x0 + w - 9 - o.trail.w, y);
   return w;
 }
 

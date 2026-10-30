@@ -1,10 +1,15 @@
 import { UNIT, type AbilityDef, type AbilityKind, type SideId } from '../core/config';
 import type { MeterKind } from '../core/cabinets';
 import { artId, drawPortrait, drawSprite, type SpriteId } from '../render/sprites';
-import { drawText, fmtNum } from '../render/text';
-import { COLORS, HUD_TOP, MACHINE_CX } from './layout';
+import { drawText, fmtNum, textWidth } from '../render/text';
+import { CountUp, drawChip, drawPanel, drawWell, KIT, T } from '../ui/kit';
+import { BEZEL, COLORS, HUD_TOP, MACHINE_CX, MACHINE_W } from './layout';
 
-export const HUD_W = 330;
+/** The HUD panel is as wide as the machine's frame under it (the two read as one column). */
+export const HUD_W = Math.round(MACHINE_W + BEZEL * 2);
+/** Inside the panel: the portrait well on the left, the bars right of it. */
+const BAR_X = 118;
+const PAD = 12;
 export const SHIELD_SOFT_CAP = 200;
 
 /** The signature meter on the player's HUD (none for KNIGHT). */
@@ -106,21 +111,29 @@ export class HudView {
   }
 
   get x(): number {
-    return MACHINE_CX[this.side] - HUD_W / 2;
+    return Math.round(MACHINE_CX[this.side] - HUD_W / 2);
   }
 
   hpBar() {
-    return { x: this.x + 80, y: HUD_TOP + 34, w: HUD_W - 80, h: 22 };
+    return { x: this.x + BAR_X, y: HUD_TOP + 40, w: HUD_W - BAR_X - PAD, h: 22 };
   }
   shieldBar() {
-    return { x: this.x + 80, y: HUD_TOP + 66, w: HUD_W - 80, h: 16 };
+    return { x: this.x + BAR_X, y: HUD_TOP + 68, w: HUD_W - BAR_X - PAD, h: 16 };
   }
   get hasSpecial(): boolean {
     return !!this.meter;
   }
   /** The meter bar (TESLA, MIDAS, JAX): one bar with a number, not pips. */
   meterBar() {
-    return { x: this.x + 80, y: HUD_TOP + 98, w: HUD_W - 86, h: 16 };
+    return { x: this.x + BAR_X, y: HUD_TOP + 92, w: HUD_W - BAR_X - PAD, h: 16 };
+  }
+  /** The panel's height: the name, HP and shield; the signature meter adds a row. */
+  get panelH(): number {
+    return this.meter ? 116 : 96;
+  }
+  /** Where the next-move chip hangs: centred on the panel's bottom edge. */
+  get chipY(): number {
+    return HUD_TOP + this.panelH + 6;
   }
   /** A point along the meter bar for the i-th 10 of meter (projectiles aim here). */
   pipPos(i: number) {
@@ -134,64 +147,70 @@ export class HudView {
     return { x: b.x + b.w / 2, y: b.y + b.h / 2 };
   }
 
+  /** The name at heading size on one line: a name too long for the panel (DESPERATE COUNTERFEITER) drops its first
+   * words (the adjective) rather than shrinking (the card before the fight has the whole name). Room is kept for a
+   * boss's "?". */
+  get shownName(): string {
+    const room = HUD_W - (BAR_X - 26) - PAD - 34;
+    const words = this.name.split(' ');
+    while (words.length > 1 && textWidth(words.join(' '), T.head) > room) words.shift();
+    return words.join(' ');
+  }
+
+  /** THE count-up on the HUD's numbers (HP, shield): they ease, never snap. */
+  private hpNum: CountUp | null = null;
+  private shNum = new CountUp(0, 0.35);
+  private lastT = -1;
+
   draw(ctx: CanvasRenderingContext2D, time: number): void {
     const x = this.x;
     const y = HUD_TOP;
-    const h = this.hasSpecial || this.ability || this.hint ? 128 : 96;
+    const h = this.panelH;
+    // The numbers count to the bars (the bars themselves move with the Director's tweens).
+    const dt = this.lastT < 0 ? 0 : Math.max(0, Math.min(0.1, time - this.lastT));
+    this.lastT = time;
+    this.hpNum ??= new CountUp(Math.max(0, Math.ceil(this.hp)), 0.45);
+    this.hpNum.set(Math.max(0, Math.ceil(this.hp)));
+    this.shNum.set(Math.round(this.shield));
+    this.hpNum.update(dt);
+    this.shNum.update(dt);
 
-    // Panel.
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(x - 8, y - 8, HUD_W + 16, h + 16);
-    // Low HP: your frame pulses red (with the screen's red edges and the heartbeat: feel playtest).
+    // THE panel. Low HP: your frame pulses red (with the screen's red edges and the heartbeat: feel playtest).
     const lowHp = this.side === 'player' && this.hp > 0 && this.hp < this.maxHp * 0.3;
-    ctx.fillStyle = lowHp ? mixHex(COLORS.gold, COLORS.danger, 0.55 + 0.45 * Math.sin(time * Math.PI * 1.8)) : COLORS.gold;
-    ctx.fillRect(x - 5, y - 5, HUD_W + 10, h + 10);
-    ctx.fillStyle = COLORS.panel;
-    ctx.fillRect(x - 2, y - 2, HUD_W + 4, h + 4);
+    drawPanel(ctx, x, y, HUD_W, h, { frame: lowHp ? mixHex(KIT.frame, COLORS.danger, 0.55 + 0.45 * Math.sin(time * Math.PI * 1.8)) : undefined });
 
-    // Portrait.
+    // Portrait in its well (32px art at x2).
     const ps = this.portraitShake * (Math.random() * 2 - 1);
-    ctx.fillStyle = COLORS.panelLight;
-    ctx.fillRect(x + 4, y + 30, 52, 52);
-    drawPortrait(ctx, this.portrait, x + 30 + ps, y + 56, 2, { flash: this.portraitFlash });
-    drawText(ctx, this.name, x + 4, y + 12, 2, this.side === 'player' ? COLORS.goldLight : COLORS.slime, {
-      align: 'left',
-    });
-    if (this.ooze > 0) {
-      const pct = this.ooze / Math.max(1, this.oozeTotal);
-      drawText(ctx, `SPILL ${this.ooze}/${this.oozeTotal}`, x + HUD_W - 4, y + 12, 2, pct >= 0.5 && Math.sin(time * 8) > 0 ? '#b6ff9a' : COLORS.slime, {
-        align: 'right',
-        punch: this.oozePunch,
-      });
-    }
+    drawWell(ctx, x + PAD, y + PAD, 76, 76);
+    drawPortrait(ctx, this.portrait, x + PAD + 38 + ps, y + PAD + 39, 64 / 24, this.hp > 0 ? { flash: this.portraitFlash } : { dim: 0.7 });
+    // The name, heading size.
+    drawText(ctx, this.shownName, x + BAR_X - 26, y + 24, T.head, this.side === 'player' ? KIT.title : COLORS.slime, { align: 'left' });
 
-    // HP bar with trailing ghost.
+    // HP bar with trailing ghost; the heart sits left of it.
     const hb = this.hpBar();
     const sh = this.hpShake * (Math.random() * 2 - 1);
     const hx = hb.x + sh;
-    // Heart and shield sit in one column between the portrait box and the bars.
-    drawSprite(ctx, 'heart', x + 68 + sh, hb.y + hb.h / 2, 2);
-    this.bar(ctx, hx + 6, hb.y, hb.w - 6, hb.h, [
+    drawSprite(ctx, 'heart', hx - 16, hb.y + hb.h / 2, 2);
+    this.bar(ctx, hx, hb.y, hb.w, hb.h, [
       [this.ghost / this.maxHp, COLORS.hpGhost],
       [this.hp / this.maxHp, COLORS.hp],
     ], this.hpFlash);
     const low = this.hp / this.maxHp <= 0.25 && this.hp > 0;
-    drawText(ctx, `${fmtNum(Math.ceil(this.hp))}/${fmtNum(this.maxHp)}`, hx + 6 + (hb.w - 6) / 2, hb.y + hb.h / 2 + 1, 2, low && Math.sin(time * 10) > 0 ? '#ffb0b0' : COLORS.text);
+    drawText(ctx, `${fmtNum(this.hpNum.shown)}/${fmtNum(this.maxHp)}`, hx + hb.w / 2, hb.y + hb.h / 2 + 1, T.body, low && Math.sin(time * 10) > 0 ? '#ffb0b0' : COLORS.text);
 
     // Shield bar (no max; fills to a soft cap).
     const sb = this.shieldBar();
     const ss = this.shieldShake * (Math.random() * 2 - 1);
-    drawSprite(ctx, 'shieldIcon', x + 68 + ss, sb.y + sb.h / 2, 2, { alpha: this.shield > 0 ? 1 : 0.4 });
-    this.bar(ctx, sb.x + 6 + ss, sb.y, sb.w - 6, sb.h, [[Math.min(1, this.shield / SHIELD_SOFT_CAP), COLORS.shield]], this.shieldFlash);
-    if (this.shield > 0.01)
-      drawText(ctx, `${Math.round(this.shield)}`, sb.x + 6 + (sb.w - 6) / 2 + ss, sb.y + sb.h / 2 + 1, 2, COLORS.text);
+    drawSprite(ctx, 'shieldIcon', sb.x - 16 + ss, sb.y + sb.h / 2, 2, { alpha: this.shield > 0 ? 1 : 0.4 });
+    this.bar(ctx, sb.x + ss, sb.y, sb.w, sb.h, [[Math.min(1, this.shield / SHIELD_SOFT_CAP), COLORS.shield]], this.shieldFlash);
+    if (this.shield > 0.01 || this.shNum.shown > 0) drawText(ctx, `${this.shNum.shown}`, sb.x + sb.w / 2 + ss, sb.y + sb.h / 2 + 1, T.small, COLORS.text);
 
     // The signature meter (TESLA, MIDAS, JAX, THE JUKEBOX).
     const m = this.meter;
     if (m) {
-      drawSprite(ctx, m.icon, x + 64, y + 106, m.icon === 'boltIcon' ? 2 : 1.5);
-      // One bar with a number: how much you have / how much it takes.
       const b = this.meterBar();
+      drawSprite(ctx, m.icon, b.x - 16, b.y + b.h / 2, m.icon === 'boltIcon' ? 2 : 1.5);
+      // One bar with a number: how much you have / how much it takes.
       const full = this.energy >= this.energyMax - 0.01;
       const pulse = full ? 0.3 + 0.3 * Math.sin(time * (this.armed ? 10 : 18)) : 0;
       // Fixed size (no punch), and the glow only lights the filled part, so the text always reads.
@@ -205,42 +224,90 @@ export class HudView {
         ctx.globalAlpha = 1;
       }
       const label = this.armed ? (m.kind === 'touch' ? 'TOUCH READY!' : `${m.label} READY!`) : m.label;
-      drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'left' });
+      drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, T.small, '#ffffff', { align: 'left' });
       // THE JUKEBOX counts its volume in levels (4/6), like its cards do.
       const count = m.kind === 'volume' ? `${Math.floor(this.energy + 0.01)}/${this.energyMax}` : `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`;
-      drawText(ctx, count, b.x + b.w - 6, b.y + b.h / 2 + 1, 1.5, '#ffffff', { align: 'right' });
-      // The HIGH ROLLER bar: your chips and the payoff they make, on a line under the bar.
-      if (m.note) drawText(ctx, m.note(this.chips), b.x + b.w - 6, b.y + b.h + 9, 1.25, m.color, { align: 'right' });
+      drawText(ctx, count, b.x + b.w - 6, b.y + b.h / 2 + 1, T.small, '#ffffff', { align: 'right' });
     }
-    if (this.ability) this.drawAbility(ctx, x, y + 106, time);
-    else if (this.hint) drawText(ctx, this.hint, x + HUD_W - 4, y + 106, 1.5, '#c8f0ff', { align: 'right' });
+    if (this.ability) this.drawAbility(ctx, time);
+    else if (this.hint) drawChip(ctx, this.hint, x + HUD_W / 2, this.chipY, { scale: T.body, color: '#c8f0ff' });
+    // Your panel's chips hang where the enemy's next move does, side by side: SPILL on your reels (how many of your
+    // cells; past half it blinks) and the HIGH ROLLER's chips in hand and the payoff they make.
+    const chips: { label: string; color: string; fill: string; icon?: SpriteId; punch: number }[] = [];
+    if (this.ooze > 0) {
+      const pct = this.ooze / Math.max(1, this.oozeTotal);
+      chips.push({ label: `SPILL ${this.ooze}/${this.oozeTotal}`, color: pct >= 0.5 && Math.sin(time * 8) > 0 ? '#b6ff9a' : COLORS.slime, fill: '#14281a', icon: ABILITY_UI.flood.icon, punch: this.oozePunch });
+    }
+    if (m?.note) chips.push({ label: m.note(this.chips), color: m.color, fill: KIT.fill, punch: 1 });
+    const widths = chips.map((c) => Math.round(c.label.length * 6 * T.body + (c.icon ? 22 : 0) + 18));
+    let cx = x + HUD_W / 2 - (widths.reduce((a, w) => a + w, 0) + 10 * (chips.length - 1)) / 2;
+    chips.forEach((c, i) => {
+      ctx.save();
+      ctx.translate(Math.round(cx + widths[i] / 2), Math.round(this.chipY));
+      ctx.scale(c.punch, c.punch);
+      drawChip(ctx, c.label, 0, 0, {
+        scale: T.body,
+        color: c.color,
+        fill: c.fill,
+        ...(c.icon ? { iconW: 22, icon: (ix: number, iy: number) => drawSprite(ctx, c.icon!, ix, iy, 2) } : {}),
+      });
+      ctx.restore();
+      cx += widths[i] + 10;
+    });
   }
 
-  /** Passive telegraph: what the enemy's special does and how many turns until it fires. */
-  private drawAbility(ctx: CanvasRenderingContext2D, x: number, y: number, time: number): void {
+  /**
+   * THE NEXT MOVE: one chip hanging from the panel's bottom edge: the ability's icon, its name and the turns left as
+   * pips (the last pip, outlined red, is where it fires). The turn before, it turns red and says NEXT!
+   */
+  private drawAbility(ctx: CanvasRenderingContext2D, time: number): void {
     const ab = this.ability!;
     const ui = ABILITY_UI[ab.kind];
     // THE HOUSE cashes out on the turn AFTER its bar fills (cashPending), so it's a turn further off than the pips say:
     // the count read IN 3, IN 2, NEXT, NEXT (user playtest). Counting that turn: IN 4, IN 3, IN 2, NEXT.
-    const left = ab.every - this.charge + (ab.kind === 'jackpot' ? 1 : 0);
+    const total = ab.every + (ab.kind === 'jackpot' ? 1 : 0);
+    const left = total - this.charge;
     const imminent = left <= 1 || this.alarm;
     const pulse = imminent ? 0.5 + 0.5 * Math.sin(time * 10) : 0;
-    if (this.alarm) x += Math.sin(time * 40) * 2;
-    drawSprite(ctx, ui.icon, x + 70, y, 2.5 * this.chargePunch, { flash: Math.max(this.abilityFlash, pulse * 0.6) });
-    for (let i = 0; i < ab.every; i++) {
-      const px = x + 92 + i * 14;
-      // The last pip is outlined red: the ability fires there (same as the enemy card before the fight).
-      ctx.fillStyle = i === ab.every - 1 ? '#ff5a4a' : COLORS.outline;
-      ctx.fillRect(px - 6, y - 6, 12, 12);
-      ctx.fillStyle = i < this.charge ? (imminent ? '#ff5a4a' : '#ff9a3a') : '#2a2038';
-      ctx.fillRect(px - 4, y - 4, 8, 8);
-    }
+    let cx = this.x + HUD_W / 2;
+    if (this.alarm) cx += Math.sin(time * 40) * 2;
     const name = this.abilityLabel ?? abilityName(ab.kind);
-    // "ALL IN IN 2" read badly (playtest C): a name ending in IN reads "ALL IN: 2 TURNS".
-    const label = imminent ? `${name} NEXT!` : / IN$/.test(name) ? `${name}: ${left} TURN${left === 1 ? '' : 'S'}` : `${name} IN ${left}`;
-    // A long label (NO MORE BETS NEXT!) steps down a size so it clears the pips.
-    const size = label.length > 14 ? 1.5 : 2;
-    drawText(ctx, label, x + HUD_W - 4, y, size, imminent ? (pulse > 0.5 ? '#ffffff' : '#ff6a5a') : COLORS.textDim, { align: 'right', punch: 1 + this.abilityFlash * 0.3 });
+    const pip = 14;
+    const lit = Math.min(total, Math.round(this.charge));
+    const k = 1 + this.abilityFlash * 0.12;
+    // The pips' slot is as wide as NEXT! so the chip never changes width when it turns.
+    const tw = Math.max(total * pip - 4, textWidth('NEXT!', T.body));
+    ctx.save();
+    ctx.translate(Math.round(cx), Math.round(this.chipY));
+    ctx.scale(k, k);
+    drawChip(ctx, name, 0, 0, {
+      scale: T.head,
+      color: imminent ? (pulse > 0.5 ? '#ffffff' : '#ffb0a0') : KIT.text,
+      fill: imminent ? '#4a1018' : KIT.fillLight,
+      frame: imminent ? (pulse > 0.5 ? '#ff6a5a' : '#c8321f') : KIT.frame,
+      iconW: 30,
+      icon: (ix, iy) => drawSprite(ctx, ui.icon, ix, iy, 2.5 * this.chargePunch, { flash: Math.max(this.abilityFlash, pulse * 0.6) }),
+      trail: {
+        w: tw,
+        draw: (px, py) => {
+          if (imminent) {
+            drawText(ctx, 'NEXT!', px + tw / 2, py + 1, T.body, pulse > 0.5 ? '#ffffff' : '#ff6a5a');
+            return;
+          }
+          const x0 = px + (tw - (total * pip - 4)) / 2;
+          for (let i = 0; i < total; i++) {
+            const bx = Math.round(x0 + i * pip);
+            const by = Math.round(py - 5);
+            // The last pip is outlined red: the ability fires there (same as the enemy card before the fight).
+            ctx.fillStyle = i === total - 1 ? '#ff5a4a' : COLORS.outline;
+            ctx.fillRect(bx, by, 10, 10);
+            ctx.fillStyle = i < lit ? '#ff9a3a' : '#140c1c';
+            ctx.fillRect(bx + 2, by + 2, 6, 6);
+          }
+        },
+      },
+    });
+    ctx.restore();
   }
 
   private bar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, fills: [number, string][], flash: number): void {
