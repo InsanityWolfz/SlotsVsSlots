@@ -4,7 +4,7 @@ import { RELICS, relicText } from '../core/relics';
 import { COLORS, H, W } from '../present/layout';
 import { drawText } from '../render/text';
 import { drawRich } from './keywords';
-import { wrap } from './runScreens';
+import { wrap } from './run/shared';
 
 /**
  * Hover tooltips for relic icons, wherever they're drawn: each screen adds a spot as it draws an icon, then draws the
