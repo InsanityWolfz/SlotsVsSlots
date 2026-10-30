@@ -1,4 +1,4 @@
-import { COLORS } from '../present/layout';
+import { drawFocus } from './kit';
 
 export interface NavRect {
   x: number;
@@ -75,16 +75,8 @@ export class Focus {
     const r = this.current(targets);
     // A whole-screen target ("press to continue") needs no ring.
     if (!r || r.w > 900) return;
-    const pad = 6 + Math.sin(t * 6) * 1.5;
-    const pop = Math.max(0, 1 - (performance.now() - this.shown) / 160);
-    const g = pad + pop * 6;
-    ctx.save();
-    ctx.strokeStyle = COLORS.goldLight;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(Math.round(r.x - r.w / 2 - g), Math.round(r.y - r.h / 2 - g), Math.round(r.w + g * 2), Math.round(r.h + g * 2));
-    ctx.strokeStyle = COLORS.outline;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(Math.round(r.x - r.w / 2 - g - 2), Math.round(r.y - r.h / 2 - g - 2), Math.round(r.w + g * 2 + 4), Math.round(r.h + g * 2 + 4));
-    ctx.restore();
+    // The kit's focus (gold corner brackets) on every screen; it pops out a little when it lands.
+    const pop = Math.round(Math.max(0, 1 - (performance.now() - this.shown) / 160) * 6);
+    drawFocus(ctx, r.x - r.w / 2 - pop, r.y - r.h / 2 - pop, r.w + pop * 2, r.h + pop * 2, t);
   }
 }

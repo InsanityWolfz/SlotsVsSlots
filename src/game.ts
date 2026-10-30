@@ -63,7 +63,6 @@ import { Focus, type NavDir, type NavRect } from './ui/focus';
 import { desktop, steamUnlock, VERSION } from './build';
 
 import { Coach, TUTORIAL } from './ui/coach';
-import { drawFocus } from './ui/kit';
 import { collectionTotal, heroSprite, Menus } from './ui/menus';
 import { shownTrim, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, type MetaGain, type Profile, type RunEntry } from './core/profile';
 
@@ -1492,8 +1491,7 @@ export class Game {
       this.menus.draw(ctx, t);
       if (this.muteBtn.visible) this.muteBtn.draw(ctx, t);
       // The kit's focus: gold corner brackets around what the pad or keyboard is on.
-      const f = this.focus.visible ? this.focus.current(this.navTargets()) : null;
-      if (f && f.w <= 900) drawFocus(ctx, f.x - f.w / 2, f.y - f.h / 2, f.w, f.h, t);
+      if (this.focus.visible) this.focus.draw(ctx, this.navTargets(), t);
       return;
     }
     this.view.drawChips(ctx);
