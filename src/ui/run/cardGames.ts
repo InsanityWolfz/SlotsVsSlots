@@ -252,7 +252,7 @@ export abstract class CardGames extends TableScreens {
     const left = HILO.calls - h.right;
     drawText(ctx, `${left} RIGHT CALL${left === 1 ? '' : 'S'} TO PAY OUT`, TCX, TABLE.y + 306, T.small, FELT_INK);
     this.side(ctx, 'THE POT');
-    this.numberWell(ctx, 'RIDING ON THE NEXT CALL', `${h.pot}`, { color: m?.good === false ? '#ff8a7a' : undefined, punch: h.potPop, sub: `YOUR BET ${h.bet}` });
+    this.numberWell(ctx, hiloState(run) || !m ? 'ON THE NEXT CALL' : m.good === false ? 'LOST' : 'PAID OUT', `${h.pot}`, { color: m?.good === false ? '#ff8a7a' : undefined, punch: h.potPop, sub: `YOUR BET ${h.bet}` });
     if (m) this.tableResult(ctx, m, TABLE.y + 352);
     void time;
   }
