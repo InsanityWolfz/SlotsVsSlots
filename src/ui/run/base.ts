@@ -335,8 +335,9 @@ export abstract class RunScreensBase {
       // A casino chip: a pixel disc in its colour with white edge notches; its label on the face.
       const r = Math.min(hw, hh) - 2;
       stakeDisc(ctx, 0, 0, b.pressed ? '#3a2e52' : b.chip, r);
-      pixelDisc(ctx, 0, 0, Math.round(r * 0.72), b.hover ? '#fff6c8' : '#f4eee0');
-      pixelDisc(ctx, 0, 0, Math.round(r * 0.72) - 2, b.hover ? '#3a2a14' : '#1a1426');
+      // The face is wide enough for a two-character label and its outline (it touched the ring at 0.72).
+      pixelDisc(ctx, 0, 0, Math.round(r * 0.8), b.hover ? '#fff6c8' : '#f4eee0');
+      pixelDisc(ctx, 0, 0, Math.round(r * 0.8) - 2, b.hover ? '#3a2a14' : '#1a1426');
       drawText(ctx, b.label, 0, 1, T.body, b.hover ? '#fff6c8' : KIT.title);
       ctx.restore();
       return;
