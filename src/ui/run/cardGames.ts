@@ -219,7 +219,7 @@ export abstract class CardGames extends TableScreens {
     const h = this.hl;
     const m = this.hlMsg;
     const games = HILO.games + extraPlays(run);
-    drawText(ctx, games > 1 ? `GAME ${Math.min(h.game, games)} OF ${games}` : 'ONE GAME', TCX, 72, T.small, KIT.dim);
+    drawText(ctx, games > 1 ? `GAME ${Math.min(h.game, games)} OF ${games}` : 'ONE GAME AT THIS TABLE', TCX, 72, T.small, KIT.dim);
     this.felt(ctx, this.hlLive ? '' : `${HILO.calls} RIGHT CALLS PAY THE POT OUT`);
     const ax = TCX - 104;
     const bx = TCX + 104;

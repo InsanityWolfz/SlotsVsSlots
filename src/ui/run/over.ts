@@ -192,7 +192,8 @@ export abstract class OverScreen extends ShopScreen {
     this.overScore.update(this.frameDtOver());
     ctx.save();
     ctx.globalAlpha *= k4;
-    const sy = py + 166;
+    // (Up a row when there's no recap line between.)
+    const sy = py + (loss?.hurt?.length || this.rideOffer ? 166 : 140);
     drawText(ctx, 'SCORE', tx, sy + 10, T.small, KIT.dim, { align: 'left' });
     drawWell(ctx, tx, sy + 22, 360, 74, '#120c1c');
     drawSprite(ctx, 'chip', tx + 34, sy + 59, 3);
