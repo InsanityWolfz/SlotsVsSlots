@@ -1,16 +1,15 @@
-import { M } from './lib.mjs';
-// A crosshair.
-export const rows = () => M([
+// A red crosshair: a ring, four ticks, a dot in the middle (dark red only on the ring's lower right, for depth).
+export const rows = () => [
   '............',
-  '...111111...',
-  '..11..1.11..',
-  '.11...1..11.',
-  '.1........1.',
-  '.111.22.111.',
-  '.1...22...1.',
-  '.1........1.',
-  '.11...1..11.',
-  '..11..1.11..',
-  '...111111...',
+  '.....RR.....',
+  '...RRRRRR...',
+  '..R..RR..R..',
+  '..R......R..',
+  '.RRR.RR.RRR.',
+  '.RRR.RR.RRR.',
+  '..R......r..',
+  '..R..RR..r..',
+  '...RRRRrr...',
+  '.....RR.....',
   '............',
-], { 1: ['M', 'x', 's'], 2: 'W' });
+];

@@ -1,15 +1,15 @@
-// A tipped glass, its drink spilling out (the icoFlood glass at 12px).
+// A stemmed cocktail glass, its drink sloshing over the rim and dripping to a puddle.
 export const rows = () => [
   '............',
-  '..WW........',
-  '..LWW.......',
-  '..LCWW..Y...',
-  '..LYYYW.....',
-  '..LGGGOW.O..',
-  '..LGGGGOO...',
-  '.LSSSSSSOO..',
-  '..SS....OO..',
-  '......YYOO..',
-  '...GOOOOOOO.',
+  '............',
+  '.WWWWWWWW...',
+  '.LYYGGGGOO..',
+  '..LGGGGL.OO.',
+  '...LGGL...O.',
+  '....LL......',
+  '.....S....O.',
+  '.....S....O.',
+  '...LSSS.....',
+  '..OOO...OOO.',
   '............',
 ];
