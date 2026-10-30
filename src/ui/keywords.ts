@@ -32,7 +32,7 @@ export const KEYWORDS: Keyword[] = [
   { word: 'OVERTIME', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF A FIGHT, EVERY HIT ON BOTH MACHINES PAYS X${1 + OVERTIME.step}, +${OVERTIME.step} WITH EACH OF YOUR SPINS. SHIELDS DON'T GROW` },
   { word: 'SABOTAGE', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY PUTS ON YOUR REELS: SPILLS, ROCKS, IOUS, FREEZES, JAMS, JINXES, MARKS' },
   { word: 'MARK', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED CELL ON YOUR PAYLINE HITS YOU' },
-  { word: 'SPILL', forms: ['SPILLED', 'SPILLS'], color: COLORS.slime, text: 'A SPILLED CELL PAYS NOTHING. A SPILL PAIR MOPS UP ITS REELS; A JACKPOT MOPS IT ALL UP' },
+  { word: 'SPILL', forms: ['SPILLED', 'SPILLS'], color: COLORS.slime, text: 'A SPILLED CELL PAYS NOTHING. A SPILL PAIR MOPS UP ITS REELS. A JACKPOT MOPS IT ALL UP' },
   { word: 'ROCK', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD CELL: IT PAYS NOTHING' },
   { word: 'IOU', forms: ['IOUS'], color: '#ff9a3a', text: 'TICKS DOWN, THEN HITS YOU. LAND IT ON YOUR PAYLINE TO PAY IT OFF' },
 ];
