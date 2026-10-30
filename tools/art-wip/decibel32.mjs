@@ -5,9 +5,13 @@ export function decibel32() {
   // --- teal satin bomber, symmetric shoulders
   const body = [[10, 21], [7, 24], [5, 26], [3, 28], [2, 29], [1, 30], [0, 31], [0, 31], [0, 31], [0, 31], [0, 31], [0, 31]];
   fill(g, 20, body, (x, y, has) => (!has(x, y - 1) && x < 16 || !has(x - 1, y) ? 'i' : x >= 26 || (!has(x, y - 1) && x >= 16) ? 'n' : 'j'));
-  // satin sheen on the near shoulder, raglan seam from the collar to the armpit
+  // satin sheen on the near shoulder
   [[7, 21], [6, 22], [5, 23], [8, 21]].forEach(([x, y]) => px(g, x, y, 'i'));
-  [[10, 22], [9, 23], [8, 24], [7, 25], [7, 26], [7, 27], [7, 28], [7, 29], [7, 30], [7, 31]].forEach(([x, y]) => px(g, x, y, 'n'));
+  for (let y = 23; y < 32; y++) px(g, 5, y, 'n'); // sleeve seam, mirroring the shadow edge on the far side
+  // decoration: orange racing stripe down each sleeve, an orange record badge on the chest
+  for (let y = 25; y < 32; y++) { px(g, 2, y, 'O'); px(g, 29, y, 'o'); }
+  px(g, 3, 23, 'a'); px(g, 2, 24, 'a'); px(g, 28, 23, 'o'); px(g, 29, 24, 'o');
+  paint(g, 19, 23, [' aOO ', 'aOOOo', 'OOKOo', 'OOOoo', ' ooo ']);
   // white tee in the open front, zip edges
   // white tee in a V above the half-zipped front, zip seam down the middle
   [[13, 18], [14, 17], [15, 16]].forEach(([a, b], i) => { span(g, 20 + i, a, b, 'T'); px(g, b, 20 + i, 't'); px(g, a - 1, 20 + i, 'n'); px(g, b + 1, 20 + i, 'n'); });

@@ -1,6 +1,7 @@
 import { canvas, paint, px, out } from './jax_r4.mjs';
 // JESTER JAX, hero of the JOKER slot machine. 32x32 bust, three-quarter view facing right.
-// Two-tone jester cap with gold bells, harlequin diamond painted over his near eye, sly lopsided grin,
+// Two-tone jester cap with gold bells; jester greasepaint (white face, pink and violet diamonds over the eyes,
+// red nose tip, red lips in a sly lopsided grin);
 // cream pointed ruff, motley tunic counterchanged against the cap. No arm or prop.
 export function jax32() {
   const g = canvas(32);
@@ -41,11 +42,23 @@ export function jax32() {
   ]);
   // the hood's back flap hangs down behind the jaw to the ruff
   paint(g, 8, 17, ['vv', 'vvv']);
-  // sly: far brow cocked down over a narrowed eye; a smile crease at the near corner of the grin
-  paint(g, 17, 9, ['KKF']);
-  paint(g, 11, 14, ['f']);
   // harlequin diamond painted over the near eye
   paint(g, 11, 8, ['  M  ', ' MMm ', 'M   m', ' Mmm ', '  m  ']);
+  // --- jester greasepaint: white face (neck stays skin), violet diamond on the far eye, red nose tip, red lips
+  for (let y = 8; y <= 17; y++) for (let x = 9; x <= 22; x++) {
+    if (g[y][x] === 'F') g[y][x] = 'T';
+    else if (g[y][x] === 'f') g[y][x] = 'u';
+  }
+  paint(g, 13, 18, ['fFFFf']); // neck, skin under the paint
+  paint(g, 17, 9, ['KKV']); // sly: far brow cocked down over a narrowed eye
+  paint(g, 17, 10, ['V']); paint(g, 20, 10, ['v']);
+  paint(g, 18, 11, ['Vv']); paint(g, 18, 12, ['v']);
+  paint(g, 21, 12, ['RR']); paint(g, 21, 13, ['r']); paint(g, 20, 13, ['u']);
+  // painted lips: red upper lip rising to the far corner, closed on the near side, white teeth, red lower lip
+  paint(g, 15, 14, ['RRRRRR']);
+  paint(g, 12, 15, ['RRK']); paint(g, 19, 15, ['KR']);
+  paint(g, 14, 16, ['rKKKK']);
+  paint(g, 15, 17, ['RRr']);
   // ruff: cream, pleated, pointed
   paint(g, 6, 19, [
     '    TTTTTTTTTt     ',

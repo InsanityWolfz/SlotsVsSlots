@@ -50,7 +50,7 @@ export function knight32() {
     'UN',
     'N',
   ]);
-  // --- great helm: crest socket, lit left plane, keel ridge, darker right plane, a thin dark eye slit, breaths
+  // --- great helm: crest socket, lit left plane, keel ridge, darker right plane, two dark eye holes either side of the keel, breaths
   paint(g, 15, 1, ['gGg']);
   paint(g, 9, 2, [
     '    WWLLLSS    ',
@@ -61,8 +61,8 @@ export function knight32() {
     'LWLLSLLLLLWSSDD',
     'LLLLSLLLLLWSSDD',
     'SSSSSSSSSSSSSDD',
-    'LSKKKKKKKKKKKKK',
-    'LLLLSLLLLWSSSDD',
+    'LLLLSKKLLWSSKKD',
+    'LLLLSKKKLWSKKKD',
     'LLLLSLLLLWSSSDD',
     'LLLLSLLLLWSKSDD',
     'LLLLSLLLLWSSSDD',
