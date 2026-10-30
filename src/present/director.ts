@@ -406,7 +406,9 @@ export class Director {
     // The kit's text sizes (nothing under SMALL); a giant number stays a display number.
     const size = scale <= 1.8 ? T.small : scale < 2.5 ? T.body : scale <= 3.5 ? T.head : scale <= 5 ? T.title : scale;
     const t = this.s.fx.add(new FloatText(text, x, y, size, color));
-    t.plate = plate;
+    // A callout along a machine's top edge lands where the turn banner (YOUR SPIN / THEIR SPIN) hangs: on a plate it
+    // reads over the banner instead of tangling with its letters.
+    t.plate = plate || (size <= T.head && y > MACHINE_TOP - 60 && y < MACHINE_TOP + 10);
     t.punch = 0;
     return this.c
       .tween({ from: 0, to: 1, dur: 0.18, ease: backOut(3), onUpdate: (v) => (t.punch = v) })
