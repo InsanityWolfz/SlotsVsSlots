@@ -67,5 +67,8 @@ Character portraits are **32×32**, still 8-bit (a bigger canvas, not a new styl
    so a raised hand sits low, at chin height or below, and the prop it holds may sit lower than the head (user, 2026-10-30: "keep the arms lower"); no arm bending back on itself like a hose; no arm entering from
    outside the frame; a slim character gets slim arms; clothes go over the shoulder; anything that can't be named
    goes; check every prop for a rude read.
-Process: each portrait gets 20 draw, render and critique passes, then goes to the user as an artifact (a gallery
-next to today's sprite); the user approves it or sends notes before it goes into `build-art.mjs`.
+9. **Heroes** (the player's machines, user 2026-10-30): a bust facing right, no arm and no prop; shades or goggles
+   may cover the eyes.
+Process (user, 2026-10-30): about 5 draw, render and critique passes per portrait, then straight to the user as an
+artifact; the user's notes are the real review. Approved art waits on the `art-wip` branch, then goes into
+`build-art.mjs`.
