@@ -135,7 +135,8 @@ export class HudView {
   }
   /** Where the next-move chip hangs: centred on the panel's bottom edge. */
   get chipY(): number {
-    return HUD_TOP + this.panelH + 6;
+    // Under a meter row it hangs a little lower (it clipped the bottom of the meter's label).
+    return HUD_TOP + this.panelH + (this.meter ? 10 : 6);
   }
   /** A point along the meter bar for the i-th 10 of meter (projectiles aim here). */
   pipPos(i: number) {
