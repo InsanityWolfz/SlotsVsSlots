@@ -4,6 +4,7 @@ import { HUD_W } from '../present/hud';
 import { COLORS, H, HUD_TOP, MACHINE_CX, MACHINE_H, MACHINE_TOP, MACHINE_W, W } from '../present/layout';
 import { artId, drawSprite, hasSprite } from '../render/sprites';
 import { drawText } from '../render/text';
+import { drawPanel, KIT, T } from './kit';
 import { wrap } from './runScreens';
 
 /**
@@ -19,14 +20,14 @@ export interface Tip {
 }
 
 const machine = (side: 'player' | 'enemy'): [number, number, number, number] => [MACHINE_CX[side] - MACHINE_W / 2 - 8, MACHINE_TOP - 8, MACHINE_W + 16, MACHINE_H + 16];
-const hud = (side: 'player' | 'enemy'): [number, number, number, number] => [MACHINE_CX[side] - HUD_W / 2 - 12, HUD_TOP - 12, HUD_W + 24, 156];
+const hud = (side: 'player' | 'enemy'): [number, number, number, number] => [MACHINE_CX[side] - HUD_W / 2 - 12, HUD_TOP - 12, HUD_W + 24, 142];
 
 /** The tutorial script, by moment. */
 export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'ability' | 'draft' | 'shop' | 'next', Tip[]> = {
   preview: [
     { title: 'WELCOME TO REEL BRAWL', text: 'TWO SLOT MACHINES FIGHT. THE REELS DECIDE MOST OF A FIGHT: YOUR BIG CHOICES COME BETWEEN FIGHTS, AND IN A FIGHT YOU CAN HOLD A REEL.' },
     { title: 'A RUN', text: 'EACH ACT IS 5 FIGHTS AND A BOSS. BEAT THE HOUSE (ACT 1) AND THE WHEEL (ACT 2) TO CLEAR THE RUN. LOSE ONCE AND THE RUN IS OVER.' },
-    { title: 'YOUR NEXT OPPONENT', text: 'THIS CARD SHOWS WHO YOU FIGHT NEXT: ITS HP, ITS REELS AND WHAT ITS ABILITY DOES TO YOUR MACHINE. PRESS FIGHT! WHEN READY.' },
+    { title: 'YOUR NEXT OPPONENT', text: 'THIS CARD SHOWS WHO YOU FIGHT NEXT: ITS HP AND WHAT ITS ABILITY DOES TO YOUR MACHINE (THE ? TURNS IT OVER: ITS REELS). PRESS FIGHT! WHEN READY.' },
   ],
   fight: [
     { title: 'YOUR SLOT MACHINE', text: 'THIS IS YOU. THE MIDDLE ROW IS THE PAYLINE: EVERY SYMBOL ON IT PAYS. MATCHES PAY MORE: 2 OF A KIND IS A PAIR, 3 IS A JACKPOT.', rect: machine('player') },
@@ -120,30 +121,36 @@ export class Coach {
       else drawText(ctx, 'V', x + w / 2, y - 20 + bob, 3, COLORS.goldLight);
     } else ctx.fillRect(0, 0, W, H);
     // Text box: away from the lit area.
-    const lines = wrap(tip.text, 56);
-    const bh = 82 + lines.length * 22;
-    const bw = 700;
-    const cy = r ? (r[1] + r[3] / 2 > H / 2 ? 150 : H - 60 - bh / 2) : H / 2;
-    const bx = r && r[0] + r[2] / 2 < W / 2 && cy === H / 2 ? W - bw - 40 : W / 2 - bw / 2;
-    const by = cy - bh / 2;
+    // The kit's panel: the title at heading size, the words at body size, the hint and SKIP on a foot row.
+    // A whole machine lit: the box goes beside it, over the other machine (above it, it covered the machine's top row).
+    const beside = !!r && r[3] > 260;
+    const lines = wrap(tip.text, beside ? 42 : 56);
+    const bh = 116 + lines.length * 24;
+    const bw = beside ? 560 : 744;
+    let cy = r ? (r[1] + r[3] / 2 > H / 2 ? 150 : H - 60 - bh / 2) : H / 2;
+    let bx = Math.round(r && r[0] + r[2] / 2 < W / 2 && cy === H / 2 ? W - bw - 40 : W / 2 - bw / 2);
+    if (r && beside) {
+      bx = r[0] + r[2] / 2 < W / 2 ? W - bw - 40 : 40;
+      cy = Math.min(H - bh / 2 - 20, Math.max(bh / 2 + 20, r[1] + r[3] / 2));
+    }
+    const by = Math.round(cy - bh / 2);
+    drawPanel(ctx, bx, by, bw, bh);
+    drawText(ctx, tip.title, bx + bw / 2, by + 32, T.head, KIT.title);
+    lines.forEach((l, k) => drawText(ctx, l, bx + bw / 2, by + 68 + k * 24, T.body, KIT.text));
+    const fy = by + bh - 28;
+    drawText(ctx, `NEXT: CLICK OR ANY KEY (${this.idx + 1}/${this.queue.length})`, bx + 24, fy, T.small, KIT.dim, { align: 'left', alpha: 0.7 + 0.3 * Math.sin(t * 4) });
+    // SKIP: a real button (the kit's quiet style), so touch players can bail out too (S on a keyboard).
+    const sw = 176;
+    const sh = 32;
+    const sx = bx + bw - sw - 20;
+    const sy = fy - sh / 2;
+    this.skipBox = [sx - 4, sy - 4, sw + 8, sh + 8];
     ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(bx - 6, by - 6, bw + 12, bh + 12);
-    ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(bx - 3, by - 3, bw + 6, bh + 6);
-    ctx.fillStyle = COLORS.panel;
-    ctx.fillRect(bx, by, bw, bh);
-    drawText(ctx, tip.title, bx + bw / 2, by + 22, 3, COLORS.goldLight);
-    lines.forEach((l, k) => drawText(ctx, l, bx + bw / 2, by + 52 + k * 22, 2, COLORS.text));
-    drawText(ctx, `NEXT: CLICK OR ANY KEY (${this.idx + 1}/${this.queue.length})`, bx + 20, by + bh - 14, 1.5, COLORS.textDim, { align: 'left', alpha: 0.7 + 0.3 * Math.sin(t * 4) });
-    // SKIP: a real button, so touch players can bail out too (S on a keyboard).
-    const sw = 150;
-    const sx = bx + bw - sw - 12;
-    const sy = by + bh - 30;
-    this.skipBox = [sx - 4, sy - 6, sw + 8, 36];
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(sx, sy, sw, 24);
-    ctx.fillStyle = '#3a2d52';
-    ctx.fillRect(sx + 2, sy + 2, sw - 4, 20);
-    drawText(ctx, 'SKIP TUTORIAL', sx + sw / 2, sy + 12, 1.5, COLORS.text);
+    ctx.fillRect(sx - 2, sy - 2, sw + 4, sh + 4);
+    ctx.fillStyle = KIT.frameDim;
+    ctx.fillRect(sx, sy, sw, sh);
+    ctx.fillStyle = '#1a1426';
+    ctx.fillRect(sx + 2, sy + 2, sw - 4, sh - 4);
+    drawText(ctx, 'SKIP TUTORIAL', sx + sw / 2, fy + 1, T.small, KIT.text);
   }
 }
