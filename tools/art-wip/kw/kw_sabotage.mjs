@@ -1,15 +1,15 @@
-// A wrench thrown in the works: the purple handle, an open jaw whose prongs leave the shaft at 45 degrees (one up, one right).
+// A wrench, drawn fresh: an open-end steel spanner on the diagonal, the jaw up-right, a rounded end down-left.
 export const rows = () => [
   '............',
-  '......LL....',
-  '......LD....',
-  '.....LSD....',
-  '.....LSSLLL.',
-  '.....LSSDDD.',
-  '....LDDD....',
-  '...JJJ......',
-  '..JVv.......',
-  '.JVv........',
-  '.Jv.........',
+  '......LLL...',
+  '......LS....',
+  '.....LSS..L.',
+  '.....LSSSLD.',
+  '.....LSSSDD.',
+  '....LSDDD...',
+  '...LSD......',
+  '.LLSD.......',
+  '.LSD........',
+  '.LDD........',
   '............',
 ];

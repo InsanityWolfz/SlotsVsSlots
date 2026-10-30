@@ -1,4 +1,4 @@
-// A glass tipping over: rim up-right, the stem off its lower-left corner on the diagonal, the drink spilling to a puddle.
+// A glass tipping over: rim up-right, a grey stem off its lower-left corner on the diagonal, a lit foot across its end, the drink spilling to a puddle.
 export const rows = () => [
   '............',
   '....WW......',
@@ -9,7 +9,7 @@ export const rows = () => [
   '....LGGGGOO.',
   '...SSSSSSOO.',
   '..S......OO.',
-  '.LS.....YOO.',
-  '..L.OOOOOOO.',
+  '.L......YOO.',
+  '..S.OOOOOOO.',
   '............',
 ];
