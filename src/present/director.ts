@@ -1995,8 +1995,9 @@ export class Director {
   private repossessed(to: SideId, what: string): void {
     const c = this.machineCenter(to);
     this.s.sounds.stingerMedium();
-    this.bg(this.popText(`REPOSSESSED: ${what}`, c.x, MACHINE_TOP - 34, 2.5, '#ff9a3a', 18, 0.9));
-    this.bg(this.popText('BACK AFTER THE FIGHT', c.x, MACHINE_TOP - 8, 1.5, '#ffd0a0', 10, 0.9));
+    // (Both clear the machine's frame: the small line sat on its top edge.)
+    this.bg(this.popText(`REPOSSESSED: ${what}`, c.x, MACHINE_TOP - 50, 2.5, '#ff9a3a', 18, 0.9));
+    this.bg(this.popText('BACK AFTER THE FIGHT', c.x, MACHINE_TOP - 27, 1.5, '#ffd0a0', 10, 0.9));
   }
 
   private async rake(e: Ev<'rake'>): Promise<void> {
