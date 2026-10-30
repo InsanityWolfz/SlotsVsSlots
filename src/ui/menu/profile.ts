@@ -46,6 +46,7 @@ export class ProfileScreen implements MenuScreen {
   private select(tab: ProfileTab): void {
     if (tab === this.tab) return;
     this.tab = tab;
+    this.m.mode = tab === 'collection' ? 'collection' : tab === 'trophies' ? 'trophies' : 'progress';
     this.onTab(tab);
     this.build();
   }

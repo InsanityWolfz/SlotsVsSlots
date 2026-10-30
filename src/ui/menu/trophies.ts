@@ -9,7 +9,7 @@ import { drawChip, drawPanel, drawWell, KIT, T } from '../kit';
 import type { Menus } from '../menus';
 import { wrap } from '../runScreens';
 import { collectionTotal, plaqueIcon } from './data';
-import { Lifts } from './lift';
+import { Lifts, pressed } from './lift';
 import { TAB_Y, type TabBody } from './profile';
 
 /**
@@ -74,7 +74,7 @@ export class TrophiesTab implements TabBody {
     const p = this.m.profile();
     const got = ACHIEVEMENTS.filter((a) => p.achievements[a.id]).length;
     drawChip(ctx, `${got}/${ACHIEVEMENTS.length}`, W - 104, TAB_Y, { scale: T.body, icon: (x, y) => hasSprite('trophySmall') && drawSprite(ctx, artId('trophySmall'), x, y, 2), iconW: 26 });
-    ACHIEVEMENTS.forEach((a, i) => this.drawPlaque(ctx, a, this.plaques[i]));
+    ACHIEVEMENTS.forEach((a, i) => pressed(ctx, this.plaques[i], () => this.drawPlaque(ctx, a, this.plaques[i])));
   }
 
   private drawPlaque(ctx: CanvasRenderingContext2D, a: AchievementDef, b: Button): void {

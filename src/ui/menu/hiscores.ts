@@ -159,14 +159,14 @@ export class HiscoresScreen implements MenuScreen {
       drawPortrait(ctx, e.killerPortrait as SpriteId, C.relics - 40, y + 3, 4 / 3);
       ctx.restore();
     }
-    // The build: up to 7 relics (they answer the pointer).
-    e.relics.slice(0, 7).forEach((rl, k) => {
+    // The build: up to 6 relics (they answer the pointer).
+    e.relics.slice(0, 6).forEach((rl, k) => {
       if (!RELICS[rl]) return;
       const rx = C.relics + 14 + k * 34;
       drawSprite(ctx, RELICS[rl].sprite as SpriteId, rx, y, 2);
       this.tips.add(rl, rx, y, 16, e.cabinet);
     });
-    if (e.relics.length > 7) drawText(ctx, `+${e.relics.length - 7}`, C.relics + 14 + 7 * 34 - 6, y + 2, T.small, COLORS.textDim, { align: 'left' });
+    if (e.relics.length > 6) drawText(ctx, `+${e.relics.length - 6}`, C.relics + 14 + 6 * 34 - 8, y + 2, T.small, COLORS.textDim, { align: 'left' });
     if (!e.relics.length) drawText(ctx, 'NO RELICS', C.relics, y, T.small, COLORS.textDim, { align: 'left' });
     drawText(ctx, score < 1e7 ? score.toLocaleString('en-US') : fmtNum(score), C.score, y, T.head, top ? COLORS.energy : COLORS.text, { align: 'right', punch: top && !this.m.reduced() ? 1 + 0.03 * Math.sin(t * 4) : 1 });
   }

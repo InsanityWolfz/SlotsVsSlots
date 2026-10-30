@@ -200,13 +200,20 @@ export class MainScreen implements MenuScreen {
         ctx.fillRect(SX - w, cy + y, w * 2, px);
       }
     };
-    // Shadow, front face (two bands down), rim, top face.
-    band(SY + 28, rx + 8, 'rgba(0,0,0,0.45)');
-    band(SY + 16, rx, COLORS.outline);
-    band(SY + 12, rx - 4, '#3a1428');
-    band(SY + 2, rx, COLORS.outline);
-    band(SY, rx - 4, KIT.frame);
-    band(SY - 2, rx - 10, '#2c2140');
-    band(SY - 4, rx - 22, '#352850');
+    // A short drum: its shadow, the front (outline, maroon, a gold trim line), then the top (gold rim, plum face).
+    const top = SY - 4;
+    const foot = SY + 20;
+    band(foot + 12, rx + 12, 'rgba(0,0,0,0.4)');
+    band(foot, rx + 3, COLORS.outline);
+    ctx.fillRect(SX - rx - 3, top, (rx + 3) * 2, foot - top);
+    band(foot, rx, '#3a1428');
+    ctx.fillStyle = '#3a1428';
+    ctx.fillRect(SX - rx, top, rx * 2, foot - top);
+    ctx.fillStyle = '#5a1e34';
+    ctx.fillRect(SX - rx, top + 8, rx * 2, 4);
+    band(top, rx + 3, COLORS.outline);
+    band(top, rx, KIT.frame);
+    band(top - 2, rx - 6, '#2c2140');
+    band(top - 4, rx - 20, '#352850');
   }
 }

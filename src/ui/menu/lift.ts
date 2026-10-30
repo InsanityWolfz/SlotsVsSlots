@@ -33,3 +33,14 @@ export class Lifts {
     this.s.clear();
   }
 }
+
+/** A hit area's press feedback (the Button's squash and pop), applied to whatever the screen draws for it. */
+export function pressed(ctx: CanvasRenderingContext2D, b: Button, draw: () => void): void {
+  if (Math.abs(b.scale - 1) < 0.005) return draw();
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.scale(b.scale, b.scale);
+  ctx.translate(-b.x, -b.y);
+  draw();
+  ctx.restore();
+}

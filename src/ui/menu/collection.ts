@@ -8,7 +8,7 @@ import { drawCard, drawChip, drawMarquee, drawPanel, drawWell, KIT, T } from '..
 import type { Menus } from '../menus';
 import { wrap } from '../runScreens';
 import { CAST, CHARM_INFO, CHARM_ORDER, charmArt, charmWhere, RELIC_ORDER, relicTier, relicWhere, type Tier } from './data';
-import { Lifts } from './lift';
+import { Lifts, pressed } from './lift';
 import { drawPageArrow } from './widgets';
 import type { TabBody } from './profile';
 
@@ -206,7 +206,7 @@ export class CollectionTab implements TabBody {
       drawText(ctx, `${page + 1}/${pages}`, right - 86, SHELF_Y + 1, T.body, COLORS.textDim);
     }
     const per = this.g.cols * this.g.rows;
-    this.tiles.forEach((b, k) => this.drawTile(ctx, b, this.items[page * per + k], page * per + k === this.sel));
+    this.tiles.forEach((b, k) => pressed(ctx, b, () => this.drawTile(ctx, b, this.items[page * per + k], page * per + k === this.sel)));
     this.drawDetail(ctx, t);
     drawText(ctx, CAPTION[this.shelf], GX, 680, T.small, COLORS.textDim, { align: 'left' });
   }
