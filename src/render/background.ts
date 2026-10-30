@@ -1,6 +1,6 @@
 import { COLORS, H, W } from '../present/layout';
 import { Rooms, type Scene } from './rooms';
-import { drawText } from './text';
+import { drawText, textWidth } from './text';
 
 interface Mote {
   x: number;
@@ -88,8 +88,9 @@ export class Background {
       ctx.fillRect(bx - 3, by - 3, 6, 6);
     });
     const wob = Math.sin(time * 3) * 1.5;
-    drawText(ctx, 'SLOTS', W / 2 - 142, y + h / 2 + wob, 4.5, COLORS.goldLight);
-    drawText(ctx, 'VS.', W / 2, y + h / 2 - wob, 4, '#ff6a5a');
-    drawText(ctx, 'SLOTS', W / 2 + 142, y + h / 2 + wob, 4.5, COLORS.slime);
+    // REEL in gold, BRAWL in red, as on the logo.
+    const tx = W / 2 - textWidth('REEL BRAWL', 4.5) / 2;
+    drawText(ctx, 'REEL', tx, y + h / 2 + wob, 4.5, COLORS.goldLight, { align: 'left' });
+    drawText(ctx, 'BRAWL', tx + textWidth('REEL ', 4.5), y + h / 2 - wob, 4.5, '#ff6a5a', { align: 'left' });
   }
 }

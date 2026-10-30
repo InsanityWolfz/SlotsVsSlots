@@ -24,7 +24,7 @@ const hud = (side: 'player' | 'enemy'): [number, number, number, number] => [MAC
 /** The tutorial script, by moment. */
 export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'ability' | 'draft' | 'shop' | 'next', Tip[]> = {
   preview: [
-    { title: 'WELCOME TO SLOTS VS. SLOTS', text: 'TWO SLOT MACHINES FIGHT. THE REELS DECIDE MOST OF A FIGHT: YOUR BIG CHOICES COME BETWEEN FIGHTS, AND IN A FIGHT YOU CAN HOLD A REEL.' },
+    { title: 'WELCOME TO REEL BRAWL', text: 'TWO SLOT MACHINES FIGHT. THE REELS DECIDE MOST OF A FIGHT: YOUR BIG CHOICES COME BETWEEN FIGHTS, AND IN A FIGHT YOU CAN HOLD A REEL.' },
     { title: 'A RUN', text: 'EACH ACT IS 5 FIGHTS AND A BOSS. BEAT THE HOUSE (ACT 1) AND THE WHEEL (ACT 2) TO CLEAR THE RUN. LOSE ONCE AND THE RUN IS OVER.' },
     { title: 'YOUR NEXT OPPONENT', text: 'THIS CARD SHOWS WHO YOU FIGHT NEXT: ITS HP, ITS REELS AND WHAT ITS ABILITY DOES TO YOUR MACHINE. PRESS FIGHT! WHEN READY.' },
   ],

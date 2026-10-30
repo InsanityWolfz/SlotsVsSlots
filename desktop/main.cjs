@@ -1,4 +1,4 @@
-// Slots vs. Slots desktop wrapper (STEAM_READINESS S4). Loads the web build (../dist, built with `npm run build:steam`)
+// Reel Brawl desktop wrapper (STEAM_READINESS S4). Loads the web build (../dist, built with `npm run build:steam`)
 // in one window, and bridges the few native things the game needs: quit, fullscreen, save files (Steam Auto-Cloud
 // syncs the saves folder) and, when Steam is running, the persona name and achievements.
 const { app, BrowserWindow, ipcMain } = require('electron');
@@ -30,7 +30,7 @@ function createWindow() {
     backgroundColor: '#07030d',
     useContentSize: true,
     autoHideMenuBar: true,
-    title: 'Slots vs. Slots',
+    title: 'Reel Brawl',
     icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

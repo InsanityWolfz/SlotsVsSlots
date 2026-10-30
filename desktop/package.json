@@ -2,7 +2,7 @@
   "name": "slots-vs-slots-desktop",
   "private": true,
   "version": "0.1.0",
-  "description": "Desktop (Steam) wrapper for Slots vs. Slots: Electron around the web build, with an optional Steamworks bridge.",
+  "description": "Desktop (Steam) wrapper for Reel Brawl: Electron around the web build, with an optional Steamworks bridge.",
   "main": "main.cjs",
   "scripts": {
     "web": "cd .. && npm run build:steam",

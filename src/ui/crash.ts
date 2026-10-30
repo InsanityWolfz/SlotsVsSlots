@@ -20,7 +20,7 @@ export function reportCrash(err: unknown, context: () => Record<string, unknown>
   } catch {
     /* the context itself broke */
   }
-  const report = [`SLOTS VS. SLOTS ${VERSION}`, new Date().toISOString(), JSON.stringify(ctx), `${e.name}: ${e.message}`, e.stack ?? ''].join('\n');
+  const report = [`REEL BRAWL ${VERSION}`, new Date().toISOString(), JSON.stringify(ctx), `${e.name}: ${e.message}`, e.stack ?? ''].join('\n');
   if (shown) return;
   shown = true;
   const host = document.getElementById('overlay') ?? document.body;

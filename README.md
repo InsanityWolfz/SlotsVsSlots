@@ -1,4 +1,4 @@
-# Slots vs. Slots
+# Reel Brawl (formerly Slots vs. Slots)
 
 An 8-bit roguelike where two slot machines face off, headed for Steam (2026-10-29): v1.0 is the live game with three
 fight changes and a frozen scope. A rebuild tried in October 2026 is parked.

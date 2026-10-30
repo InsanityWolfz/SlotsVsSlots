@@ -1,4 +1,4 @@
-# Slots vs. Slots: guide for Claude sessions
+# Reel Brawl (formerly Slots vs. Slots): guide for Claude sessions
 
 An 8-bit roguelike where two slot machines face off. TypeScript + Vite + Canvas, with no framework.
 Web build: https://insanitywolfz.github.io/SlotsVsSlots/ (deploys on every push to `main`).

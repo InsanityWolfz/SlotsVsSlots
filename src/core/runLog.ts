@@ -21,7 +21,7 @@ export function runSummary(run: RunState, version = ''): string {
       ? 'WON'
       : `LOST IN ACT ${run.act}`;
   const out: string[] = [
-    `SLOTS VS. SLOTS RUN${version ? ` (${version})` : ''}`,
+    `REEL BRAWL RUN${version ? ` (${version})` : ''}`,
     `${CABINETS[run.cabinet].name} | ${stakeOf(run.stake).name} | SEED ${run.seed} | ${end}`,
     '',
     'FIGHTS:',

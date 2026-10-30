@@ -633,9 +633,8 @@ export class Menus {
     const bob = Math.sin(t * 2) * 3;
     if (hasSprite('logo')) drawSprite(ctx, artId('logo'), W / 2, y + bob, scale);
     else {
-      drawText(ctx, 'SLOTS', W / 2 - 230, y + bob, 8, COLORS.goldLight);
-      drawText(ctx, 'VS.', W / 2, y - bob, 6, '#ff6a5a');
-      drawText(ctx, 'SLOTS', W / 2 + 230, y + bob, 8, COLORS.slime);
+      drawText(ctx, 'REEL', W / 2 - 150, y + bob, 8, COLORS.goldLight);
+      drawText(ctx, 'BRAWL', W / 2 + 120, y - bob, 8, '#ff6a5a');
     }
   }
 

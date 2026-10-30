@@ -3,7 +3,7 @@
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
 **In progress:** phase 3, the road to Coming Soon (two weeks from 2026-10-29: the user's Max plan window). The casino-town
-theme and roster are approved; all 24 portraits (19 enemies and bosses, 5 heroes) are approved and in the game at
+theme, roster and name (REEL BRAWL) are approved; all 24 portraits (19 enemies and bosses, 5 heroes) are approved and in the game at
 32×32 (2026-10-30), and the words pass is live (names, abilities, keywords; the Copycat cut; the Slug Pusher is THE
 FENCE), and the enemies' reel symbols are redrawn (spill, IOU, black cat, drain heart, steal hand). Next: the game
 name and the UI kit (art:
@@ -102,8 +102,9 @@ the user can review to the pixel. Art and UI go to the user as artifacts (galler
    mad science, disco), so the player's machines keep their themes as cabinets; the enemies become the town's
    hustlers and their rigged machines, by place: THE ALLEY (act 1), THE FLOOR (act 2), THE VIP ROOM (act 3), THE
    OWNER's office. The fantasy creatures go; their mechanics stay under new names and art.
-2. **Name (after the theme).** SLOTS VS. SLOTS has to change; SLOTS VS. BOTS would force a robot theme. A shortlist
-   with a pick, once the theme is set.
+2. **Name: done** (user, 2026-10-30): **REEL BRAWL**, REEL in gold and BRAWL in red on the marquee logo. Live on the
+   title, the fight banner, the tab and the desktop window. Before the store page: a Steam store and trademark search on
+   the name (a web search found no game by it). The repo, package names and save keys keep the old name.
 3. **Art rules: done** (user, 2026-10-29): 32×32 portraits, still 8-bit; the rules are in `docs/JUICE.md`. The roster
    is approved; all 24 portraits are approved and live (2026-10-30): `tools/portraits.mjs` holds them (baked from the
    `art-wip` sources), `drawPortrait` draws them at the old portraits' size. Still 24×24 and pre-theme: the Cashier
