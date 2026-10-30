@@ -1,12 +1,12 @@
-// A wrench thrown in the works: the first purple handle, an open steel jaw.
+// A wrench thrown in the works: the purple handle, an open jaw whose prongs leave the shaft at 45 degrees (one up, one right).
 export const rows = () => [
   '............',
-  '.....LL..LL.',
-  '.....LD..LD.',
-  '.....LSLLSD.',
-  '.....LSSSD..',
-  '.....LSDD...',
-  '....LDD.....',
+  '......LL....',
+  '......LD....',
+  '.....LSD....',
+  '.....LSSLLL.',
+  '.....LSSDDD.',
+  '....LDDD....',
   '...JJJ......',
   '..JVv.......',
   '.JVv........',
