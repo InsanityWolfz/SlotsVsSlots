@@ -40,6 +40,7 @@ import { ALL_CABINETS, CABINETS, CABINET_ORDER, type CabinetId } from './core/ca
 import { StatsTracker } from './core/stats';
 import { Camera } from './present/camera';
 import { FightView } from './ui/fightView';
+import { Transition } from './ui/transition';
 import { Clock } from './present/clock';
 import { Director } from './present/director';
 import { FxLayer } from './present/fx';
@@ -1452,7 +1453,24 @@ export class Game {
     for (const b of this.recapBtns) b.y = by;
   }
 
+  /** The screen on show (a menu page, a run screen, a fight): a change of it plays the screen transition. */
+  private screenKey(): string {
+    const fight = (this.phase === 'fighting' || this.phase === 'quick') && !this.screens.active;
+    return `${this.menus.isOpen ? this.menus.mode : '-'}|${this.screens.mode}|${fight ? 'fight' : this.phase}`;
+  }
+
   draw(ctx: CanvasRenderingContext2D): void {
+    // SCREEN TRANSITIONS: one place for every switch (transition.ts).
+    this.transition.check(ctx, this.screenKey(), this.reducedMotion());
+    this.drawFrame(ctx);
+    const now = performance.now();
+    this.transition.draw(ctx, this.lastDraw ? (now - this.lastDraw) / 1000 : 0);
+    this.lastDraw = now;
+  }
+  private readonly transition = new Transition();
+  private lastDraw = 0;
+
+  private drawFrame(ctx: CanvasRenderingContext2D): void {
     const t = this.time;
     const s = this.stage;
     this.syncOoze();
