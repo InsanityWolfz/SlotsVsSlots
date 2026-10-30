@@ -44,7 +44,8 @@ import { Clock } from './present/clock';
 import { Director } from './present/director';
 import { FxLayer } from './present/fx';
 import { HUD_W, HudView, type HudMeter } from './present/hud';
-import { COLORS, H, MACHINE_CX, HUD_TOP, PITCH, reelWindow, W } from './present/layout';
+import { BEZEL, COLORS, H, MACHINE_CX, MACHINE_W, HUD_TOP, CELL, reelWindow, W } from './present/layout';
+import { T } from './ui/kit';
 import { MachineView } from './present/machine';
 import { Particles } from './present/particles';
 import { defaultJuice, type JuiceToggles, type Stage } from './present/stage';
@@ -72,6 +73,10 @@ const AUTO_DELAY = 0.35;
 
 /** Speed buttons (keys 1-4). The new 1X is half of the old 1X, so the clock runs at speed / 2. */
 const SPEEDS = [1, 2, 4, 8];
+/** The quiet tool row (LOG, SOUND, PAUSE): its buttons' width, and the i-th one's centre (the row's right edge lines up
+ * with the enemy machine's frame). */
+const QUIET_W = 84;
+const toolX = (i: number) => Math.round(MACHINE_CX.enemy + MACHINE_W / 2 + BEZEL - QUIET_W / 2 - (2 - i) * (QUIET_W + 10));
 const clockSpeed = (s: number) => s / 2;
 
 interface Prefs {
@@ -403,15 +408,17 @@ export class Game {
       textScale: 3,
       ring: () => this.prefs.auto,
     });
-    this.autoBtn = this.btn('AUTO', px - 116, by, 84, 44, () => this.setAuto(!this.prefs.auto));
+    // THE BOTTOM BAR (UI kit): SPIN's round button is the signature; AUTO and SPEED are secondary, the same size, either
+    // side of it; LOG, SOUND and PAUSE are quiet, right-aligned under the enemy's machine. One centre line for all.
+    this.autoBtn = this.btn('AUTO', px - 132, by, 120, 44, () => this.setAuto(!this.prefs.auto));
     // One SPEED button cycles 1X -> 2X -> 4X -> 8X (the keys 1-4 still pick one).
-    this.speedBtns.push(this.btn('2X', px + 130, by, 120, 44, () => this.setSpeed(SPEEDS[(SPEEDS.indexOf(this.prefs.speed) + 1) % SPEEDS.length])));
+    this.speedBtns.push(this.btn('2X', px + 132, by, 120, 44, () => this.setSpeed(SPEEDS[(SPEEDS.indexOf(this.prefs.speed) + 1) % SPEEDS.length])));
     this.startBtn = this.btn('START RUN', W / 2 + 10, by, 196, 56, () => this.newRunPressed(), { idlePulse: true, textScale: 3 });
-    const ex = MACHINE_CX.enemy;
-    const tune = this.btn('TUNE', W / 2, by, 90, 44, () => {}, { quiet: true });
+    // (TUNE is the dev build's tuning panel: never in the public build, see syncButtons.)
+    const tune = this.btn('TUNE', W / 2, by, QUIET_W, 36, () => {}, { quiet: true, textScale: T.small });
     // The tool row: small and dim (it's a watch-only game; the chrome shouldn't compete with the reels).
-    const log = this.btn('LOG', ex + 60, by, 70, 36, () => {}, { quiet: true });
-    this.muteBtn = this.btn('SOUND', ex + 140, by, 70, 36, () => this.setMuted(!this.prefs.muted), { quiet: true });
+    const log = this.btn('LOG', toolX(0), by, QUIET_W, 36, () => {}, { quiet: true, textScale: T.small });
+    this.muteBtn = this.btn('SOUND', toolX(1), by, QUIET_W, 36, () => this.setMuted(!this.prefs.muted), { quiet: true, textScale: T.small });
 
     this.toolButtons = { tune, log };
     this.recapBtns = [
@@ -430,8 +437,8 @@ export class Game {
     const title = this.phase === 'title';
     this.startBtn.label = title ? 'START RUN' : 'PAUSE';
     this.startBtn.opts.idlePulse = title;
-    this.startBtn.opts.textScale = title ? 3 : undefined;
-    Object.assign(this.startBtn, title ? { x: W / 2 + 10, w: 196, h: 56 } : { x: MACHINE_CX.enemy + 220, w: 70, h: 36 });
+    this.startBtn.opts.textScale = title ? 3 : T.small;
+    Object.assign(this.startBtn, title ? { x: W / 2 + 10, w: 196, h: 56 } : { x: toolX(2), w: QUIET_W, h: 36 });
     this.startBtn.opts.quiet = !title;
     this.muteBtn.label = this.prefs.muted ? 'MUTED' : 'SOUND';
     this.muteBtn.toggled = this.prefs.muted;
@@ -443,7 +450,7 @@ export class Game {
     for (const b of this.buttons) if (b.label === 'TUNE' || b.label === 'LOG') b.visible = this.screens.mode !== 'cabinet' && !(b.label === 'TUNE' && this.publicBuild);
     // On the menus SOUND lives in SETTINGS (the main menu stays clear); M still toggles it everywhere.
     this.muteBtn.visible = this.screens.mode !== 'cabinet' && !this.menus.isOpen;
-    Object.assign(this.muteBtn, this.menus.isOpen ? { x: W - 70, y: H - 30 } : { x: MACHINE_CX.enemy + 140, y: 648 });
+    Object.assign(this.muteBtn, this.menus.isOpen ? { x: W - 70, y: H - 30 } : { x: toolX(1), y: 648 });
     if (this.menus.isOpen) this.toolButtons!.tune.visible = this.toolButtons!.log.visible = false;
     this.noteDiscoveries();
   }
@@ -1099,6 +1106,11 @@ export class Game {
   }
 
   /** SETTINGS rows (volumes 0..10, toggles as booleans). */
+  /** MOTION (settings) is on: the screen's own movement (pops, wipes) stays still. */
+  reducedMotion(): boolean {
+    return this.setting('motion') === true;
+  }
+
   setting(k: SettingKey): number | boolean {
     const j = this.prefs.juice;
     if (k === 'master' || k === 'music' || k === 'sfx') return this.prefs.vol[k];
@@ -1235,7 +1247,7 @@ export class Game {
     if (this.canHold()) {
       const win = reelWindow('player');
       if (x >= win.x && x < win.x + win.w && y >= win.y && y < win.y + win.h) {
-        this.tapHold(Math.floor((x - win.x) / PITCH));
+        this.tapHold(Math.floor((x - win.x) / CELL));
         return;
       }
     }
@@ -1454,7 +1466,6 @@ export class Game {
       if (this.focus.visible) this.focus.draw(ctx, this.navTargets(), t);
       return;
     }
-    this.background.drawMarquee(ctx, t);
     this.view.drawChips(ctx);
     s.huds.player.draw(ctx, t);
     s.huds.enemy.draw(ctx, t);

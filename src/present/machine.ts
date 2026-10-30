@@ -3,7 +3,11 @@ import type { Combatant } from '../core/fight';
 import type { Sounds } from '../audio/sounds';
 import type { Clock } from './clock';
 import { sineInOut } from './ease';
-import { COLORS, MACHINE_H, MACHINE_W, PITCH, REELS, reelWindow } from './layout';
+import { COLORS, MACHINE_SCALE, PITCH, REELS, ROWS, reelWindow } from './layout';
+
+/** The reel window inside the machine's own (unscaled) drawing. */
+const MACHINE_W = PITCH * REELS;
+const MACHINE_H = PITCH * ROWS;
 import { ReelView, SPIN, type CellView } from './reel';
 import { drawSprite, artId, hasSprite, type SpriteId } from '../render/sprites';
 import type { Trim } from '../core/meta';
@@ -162,8 +166,9 @@ export class MachineView {
   draw(ctx: CanvasRenderingContext2D, time: number): void {
     const win = reelWindow(this.side);
     ctx.save();
-    ctx.translate(win.x + MACHINE_W / 2 + this.kx, win.y + MACHINE_H / 2 + this.ky + this.drop);
+    ctx.translate(win.x + win.w / 2 + this.kx, win.y + win.h / 2 + this.ky + this.drop);
     ctx.rotate(this.tilt);
+    ctx.scale(MACHINE_SCALE, MACHINE_SCALE);
     ctx.translate(-MACHINE_W / 2, -MACHINE_H / 2);
 
     this.drawBezel(ctx, time);

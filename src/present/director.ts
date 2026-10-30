@@ -6,7 +6,7 @@ import type { LineScore, ScoreGroup, Tier } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
 import { Banner, Bubble, FloatText, Lightning, Projectile, SymbolWheel, TurnCard } from './fx';
-import { cellCenter, COLORS, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, PITCH, reelWindow, RELIC_FEED, W } from './layout';
+import { cellCenter, COLORS, GUTTER_PANEL_Y, H, MACHINE_CX, MACHINE_H, MACHINE_TOP, CELL, reelWindow, RELIC_FEED, W } from './layout';
 import type { Stage } from './stage';
 import { abilityName } from './hud';
 import { stripMapColumn } from './stripMap';
@@ -1634,7 +1634,7 @@ export class Director {
   }
 
   private potPos() {
-    return { x: W / 2, y: MACHINE_TOP + MACHINE_H / 2 + 110 };
+    return { x: W / 2, y: GUTTER_PANEL_Y + 54 };
   }
 
   private async pot(e: Ev<'pot'>): Promise<void> {
@@ -1993,7 +1993,7 @@ export class Director {
   /** Where a reel's chip stack sits: on the bottom edge of your reel (screen coordinates). */
   private stackPos(reel: number) {
     const w = reelWindow('player');
-    return { x: w.x + PITCH * (reel + 0.5), y: w.y + MACHINE_H - 6 };
+    return { x: w.x + CELL * (reel + 0.5), y: w.y + MACHINE_H - 6 };
   }
 
   private syncTable(bets: number[], left?: number, per?: number): void {
