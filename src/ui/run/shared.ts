@@ -3,7 +3,7 @@ import { wheelChipShare, type EnemyDef } from '../../core/enemies';
 import { scaledAbility, type RunState } from '../../core/run';
 import { ABILITY_UI, abilityName } from '../../present/hud';
 import { COLORS, H, W } from '../../present/layout';
-import { artId, type SpriteId } from '../../render/sprites';
+import { artId, drawPortrait, type SpriteId } from '../../render/sprites';
 import { drawText } from '../../render/text';
 
 
@@ -46,6 +46,10 @@ export type Btn = Hit & {
   tint?: string;
   /** Only a hit area (the screen draws what's under it: SCRATCH-OFF's panels). */
   ghost?: boolean;
+  /** The kit's quiet style: grey until hovered (chrome like MENU). */
+  quietStyle?: boolean;
+  /** Draws the face's content instead of the label (centred at 0, 0). */
+  icon?: (ctx: CanvasRenderingContext2D) => void;
 };
 
 
@@ -233,3 +237,50 @@ export const STAGE_TINT: Record<string, string> = {
 };
 /** A shorter line for the front when a boss's blurb won't fit on one line (the full blurb is on the back). */
 export const FRONT_BLURB: Record<string, string> = { dealer: 'THE HOUSE HAS A PARTNER' };
+
+/** A filled pixel disc (rows of rects, no anti-aliasing), centred on x, y. */
+export function pixelDisc(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, px = 2): void {
+  ctx.fillStyle = color;
+  const cx = Math.round(x);
+  const cy = Math.round(y);
+  for (let dy = -r; dy < r; dy += px) {
+    const yy = dy + px / 2;
+    const half = Math.floor(Math.sqrt(Math.max(0, r * r - yy * yy)) / px) * px;
+    if (half > 0) ctx.fillRect(cx - half, cy + dy, half * 2, px);
+  }
+}
+
+/** A stake's casino chip in pixels: outline, its colour, white edge notches and a dark centre (r = outer radius). */
+export function stakeDisc(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, r = 10, lit = true): void {
+  pixelDisc(ctx, x, y, r + 2, COLORS.outline);
+  pixelDisc(ctx, x, y, r, lit ? color : '#2a2238');
+  if (!lit) return;
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  const n = Math.max(2, Math.round(r / 4));
+  ctx.fillRect(Math.round(x) - 1 - n / 2 + 1, Math.round(y) - r, n, 3);
+  ctx.fillRect(Math.round(x) - 1 - n / 2 + 1, Math.round(y) + r - 3, n, 3);
+  ctx.fillRect(Math.round(x) - r, Math.round(y) - 1 - n / 2 + 1, 3, n);
+  ctx.fillRect(Math.round(x) + r - 3, Math.round(y) - 1 - n / 2 + 1, 3, n);
+  pixelDisc(ctx, x, y, Math.round(r * 0.45), 'rgba(0,0,0,0.35)');
+}
+
+/** A soft pixel spotlight pool (stepped bands, no gradient): the stage under a machine or a portrait. */
+export function spotlight(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, color: string, alpha = 0.18): void {
+  ctx.save();
+  for (let k = 0; k < 3; k++) {
+    ctx.globalAlpha *= k === 0 ? alpha : 1.6;
+    const ww = Math.round(w * (1 - k * 0.28));
+    const hh = Math.round(ww * 0.22);
+    ctx.fillStyle = color;
+    for (let dy = -hh; dy < hh; dy += 2) {
+      const half = Math.floor((Math.sqrt(Math.max(0, 1 - (dy / hh) ** 2)) * ww) / 4) * 2;
+      ctx.fillRect(Math.round(x) - half, Math.round(y) + dy, half * 2, 2);
+    }
+  }
+  ctx.restore();
+}
+
+/** Draws a 32×32 character portrait at an integer scale `k` of its own pixels (24px art scales to the same box). */
+export function bigPortrait(ctx: CanvasRenderingContext2D, id: SpriteId, x: number, y: number, k: number, o: { dim?: number; variant?: 'black'; alpha?: number } = {}): void {
+  drawPortrait(ctx, id, x, y, (k * 32) / 24, o);
+}

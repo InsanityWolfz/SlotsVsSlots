@@ -1,7 +1,7 @@
 import type { Sounds } from '../../audio/sounds';
 import { type EncounterChoice, type EncounterResult } from '../../core/encounters';
 import { POT } from '../../core/relics';
-import { needsRoute, type DraftOption, type FightRecord, type RunState, type ShopItem, dealerEvery } from '../../core/run';
+import { type DraftOption, type FightRecord, type RunState, type ShopItem, dealerEvery } from '../../core/run';
 import { type CabinetId } from '../../core/cabinets';
 import { effectiveAbility } from '../../core/stakes';
 import type { RelicId } from '../../core/config';
@@ -9,10 +9,11 @@ import { Clock } from '../../present/clock';
 import { backOut, sineOut } from '../../present/ease';
 import { COLORS, H, W } from '../../present/layout';
 import { drawSprite, type SpriteId } from '../../render/sprites';
-import { drawText } from '../../render/text';
+import { drawText, textWidth } from '../../render/text';
+import { drawPanel, KIT, T } from '../kit';
 import { type BossRuleContext } from '../bossRules';
 import { RelicTips } from '../relicTip';
-import { ScreenMode, Hit, Btn, INPUT_GUARD_MS, MapTip, CX, CW, FLIP_TAB, drawBackdrop } from './shared';
+import { ScreenMode, Hit, Btn, INPUT_GUARD_MS, MapTip, CW, drawBackdrop } from './shared';
 
 /**
  * Canvas overlays between fights: the draft (pick 1 of 3), the next-fight preview (or a fork:
@@ -20,6 +21,8 @@ import { ScreenMode, Hit, Btn, INPUT_GUARD_MS, MapTip, CX, CW, FLIP_TAB, drawBac
  */
 export abstract class RunScreensBase {
   mode: ScreenMode = 'none';
+  /** MOTION: REDUCED (settings): no idle bobbing, sways or slides; entrances still fade. Set by the game. */
+  reduceMotion = false;
   protected run: RunState | null = null;
   protected offers: DraftOption[] = [];
   protected cards: Hit[] = [];
@@ -192,11 +195,14 @@ export abstract class RunScreensBase {
   navTargets(): { x: number; y: number; w: number; h: number }[] {
     if (!this.active || performance.now() - this.openedAt < INPUT_GUARD_MS) return [];
     const out: { x: number; y: number; w: number; h: number }[] = [...this.all().filter((h) => h.enabled), ...(this.mode !== 'cabinet' ? this.relicRects : [])];
-    if (this.mode === 'next' && this.run && !needsRoute(this.run)) {
-      const px = CX - 330;
-      out.push({ x: px + 660 - FLIP_TAB.w / 2 - 8, y: 214 + 260 - FLIP_TAB.h / 2 - 8, w: FLIP_TAB.w + 16, h: FLIP_TAB.h + 16 });
-    }
     return out;
+  }
+
+  /** Where the last press started (a swipe's start), or -1. */
+  protected downAt = { x: -1, y: -1 };
+  /** A sideways swipe that started at (x, y): true if the screen used it. */
+  protected onSwipe(_dx: number, _x: number, _y: number): boolean {
+    return false;
   }
 
   /** The build panel's relic icons (drawn each frame): focus targets, so keyboard and pad players can read them (Q7). */
@@ -233,15 +239,7 @@ export abstract class RunScreensBase {
       if (h) h.pressed = true;
       return this.active;
     }
-    // Only the card's "?" tab flips it (picking is the FIGHT button): one spot per action, so taps never mix them up.
-    if (!h && this.mode === 'next' && this.run && !needsRoute(this.run)) {
-      const px = CX - 330;
-      if (x >= px + 660 - FLIP_TAB.w - 16 && x <= px + 660 && y >= 214 + 260 - FLIP_TAB.h - 16 && y <= 214 + 260) {
-        this.pinned = this.pinned === px ? -1 : px;
-        this.sounds.click();
-        return true;
-      }
-    }
+    this.downAt = { x, y };
     if (!h) return this.active;
     h.pressed = true;
     h.scale = Math.min(h.scale, 0.95);
@@ -249,6 +247,14 @@ export abstract class RunScreensBase {
   }
 
   pointerUp(x: number, y: number): void {
+    // A swipe (a finger dragged sideways): the screen may page with it (the machine select).
+    const dx = x - this.downAt.x;
+    if (this.downAt.x >= 0 && Math.abs(dx) > 60 && Math.abs(y - this.downAt.y) < 80 && this.onSwipe(dx, this.downAt.x, this.downAt.y)) {
+      this.downAt = { x: -1, y: -1 };
+      for (const h of this.all()) if (h.pressed) (h.pressed = false), void this.ui.to(h, 'scale', 1, 0.1);
+      return;
+    }
+    this.downAt = { x: -1, y: -1 };
     for (const h of this.all()) {
       if (!h.pressed) continue;
       h.pressed = false;
@@ -289,7 +295,7 @@ export abstract class RunScreensBase {
     else if (this.mode === 'shop') this.drawShop(ctx, time);
     else if (this.mode === 'cabinet') this.drawCabinets(ctx, time);
     else if (this.mode === 'encounter') this.drawEncounter(ctx, time);
-    else this.drawOver(ctx);
+    else this.drawOver(ctx, time);
     // YOUR BUILD: one fixed panel at the bottom of every between-fights screen.
     if (this.run && this.mode !== 'cabinet') this.drawBuild(ctx);
     // THE RESULTS card sits over everything, the build panel too (drawn under it, it hid the card's left side).
@@ -304,34 +310,43 @@ export abstract class RunScreensBase {
     ctx.restore();
   }
 
-  protected panel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, border = COLORS.gold): void {
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(x - 6, y - 6, w + 12, h + 12);
-    ctx.fillStyle = border;
-    ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
-    ctx.fillStyle = COLORS.panel;
-    ctx.fillRect(x, y, w, h);
+  /** The kit panel around a content rect (x, y, w, h is the inside; the frame sits outside it). */
+  protected panel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, border: string = KIT.frame, title?: string): void {
+    drawPanel(ctx, x - 3, y - 3, w + 6, h + 6, { frame: border, title });
   }
 
+  /** A button in the kit's three styles: primary (red, gold rim, the screen's one next step, it breathes), secondary
+   * (`minor`: dark with a gold rim) and quiet (grey until hovered). Labels take the heading size when they fit. */
   protected drawButton(ctx: CanvasRenderingContext2D, b: Btn, time: number): void {
-    if (b.ghost) return;
-    // Only the screen's next step breathes; secondary buttons sit still.
-    const pulse = b.minor || b.quiet || !b.enabled ? 1 : 1 + 0.02 + 0.02 * Math.sin((time * Math.PI * 2) / 1.6);
+    if (b.ghost || b.scale <= 0.01) return;
+    const primary = !b.minor && !b.tint && !b.quietStyle;
+    const breathe = primary && !b.quiet && b.enabled && !this.reduceMotion;
+    const pulse = breathe ? 1 + 0.02 + 0.02 * Math.sin((time * Math.PI * 2) / 1.6) : 1;
     ctx.save();
-    // A button you can't press looks it (juice: never inert-but-clickable-looking).
-    if (!b.enabled) ctx.globalAlpha *= 0.4;
-    ctx.translate(b.x, b.y);
+    if (!b.enabled) ctx.globalAlpha *= 0.45;
+    ctx.translate(Math.round(b.x), Math.round(b.y + (b.hover && b.enabled && !b.pressed ? -2 : 0)));
     ctx.scale(b.scale * pulse, b.scale * pulse);
+    const hw = Math.round(b.w / 2);
+    const hh = Math.round(b.h / 2);
+    const grey = b.quietStyle && !b.hover;
     ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(-b.w / 2 - 3, -b.h / 2 - 3, b.w + 6, b.h + 6);
-    ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
-    ctx.fillStyle = b.minor ? (b.pressed ? '#1a1428' : b.hover ? '#3a2e52' : COLORS.panelLight) : b.pressed ? '#2a0806' : b.tint ? (b.hover ? '#4a3e5a' : b.tint) : b.hover ? '#e04a2f' : '#c8321f';
-    ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, b.h - 8);
-    ctx.fillStyle = b.minor ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.15)';
-    ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, (b.h - 8) / 2);
-    // The big size whenever the label fits the button (the boss buttons used to drop a size).
-    drawText(ctx, b.label, 0, 1, b.label.length <= 11 || b.label.length * 18 <= b.w - 30 ? 3 : 2, b.minor ? COLORS.goldLight : '#fff6c8');
+    ctx.fillRect(-hw - 3, -hh - 3, hw * 2 + 6, hh * 2 + 6);
+    ctx.fillStyle = !b.enabled ? '#6d6660' : grey ? KIT.frameDim : b.hover ? COLORS.goldLight : COLORS.gold;
+    ctx.fillRect(-hw, -hh, hw * 2, hh * 2);
+    const face = primary
+      ? b.pressed ? '#5a1408' : b.hover ? '#e04a2f' : KIT.primary
+      : b.tint
+        ? b.pressed ? '#0c0a12' : b.hover ? '#3a2e52' : b.tint
+        : b.pressed ? '#0c0a12' : b.hover ? '#2a2238' : '#1a1426';
+    ctx.fillStyle = face;
+    ctx.fillRect(-hw + 3, -hh + 3, hw * 2 - 6, hh * 2 - 6);
+    ctx.fillStyle = primary ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.07)';
+    ctx.fillRect(-hw + 3, -hh + 3, hw * 2 - 6, Math.round((hh * 2 - 6) / 2));
+    if (b.icon) b.icon(ctx);
+    else {
+      const size = textWidth(b.label, T.head) <= b.w - 28 && b.h >= 44 ? T.head : T.body;
+      drawText(ctx, b.label, 0, 1, size, primary ? '#fff6c8' : grey ? COLORS.textDim : COLORS.goldLight);
+    }
     ctx.restore();
   }
 
@@ -341,6 +356,6 @@ export abstract class RunScreensBase {
   protected abstract drawShop(ctx: CanvasRenderingContext2D, time: number): void;
   protected abstract drawCabinets(ctx: CanvasRenderingContext2D, time: number): void;
   protected abstract drawEncounter(ctx: CanvasRenderingContext2D, time: number): void;
-  protected abstract drawOver(ctx: CanvasRenderingContext2D): void;
+  protected abstract drawOver(ctx: CanvasRenderingContext2D, time: number): void;
   protected abstract drawResults(ctx: CanvasRenderingContext2D): void;
 }

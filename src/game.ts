@@ -458,6 +458,7 @@ export class Game {
     const j = this.prefs.juice;
     Object.assign(this.camera.enabled, { shake: j.shake, zoom: j.zoom, chroma: j.chroma, flash: j.flash });
     this.particles.enabled = j.particles;
+    if (this.screens) this.screens.reduceMotion = !j.zoom;
     this.synth.setMuted(this.prefs.muted || !j.audio);
     const v = this.prefs.vol;
     this.synth.setVolumes(v.master / 10, v.music / 10, v.sfx / 10);

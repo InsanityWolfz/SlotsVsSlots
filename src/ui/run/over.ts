@@ -11,7 +11,7 @@ import { drawText, fmtNum, textWidth } from '../../render/text';
 import { runSummary } from '../../core/runLog';
 import { VERSION } from '../../build';
 import { CHIP_SCORE } from '../../core/profile';
-import { wrap, CX } from './shared';
+import { wrap, CX, stakeDisc } from './shared';
 import { ShopScreen } from './shop';
 
 export abstract class OverScreen extends ShopScreen {
@@ -195,7 +195,7 @@ export abstract class OverScreen extends ShopScreen {
     drawText(ctx, (run.stake > 0 ? `${reached}  -  STAKE ${run.stake} ${stakeOf(run.stake).name}` : reached) + chipLine, CX, 88, run.stake > 0 ? 1.5 : 2, COLORS.textDim);
     const unlockRow = !!this.stakeUnlockedNow;
     if (unlockRow) {
-      this.stakeChip(ctx, 340, 116, run.stake + 1, performance.now() / 1000, 14);
+      stakeDisc(ctx, 340, 116, stakeOf(run.stake + 1).color, 12);
       wrap(this.stakeUnlockedNow, 96).slice(0, 3).forEach((l, k) => drawText(ctx, l, 364, 104 + k * 13, 1.25, stakeOf(run.stake + 1).color, { align: 'left' }));
     }
     // The table moves down under an unlock message (QA_1 B5), and ends higher when two lines sit under it.

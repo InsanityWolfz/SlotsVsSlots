@@ -260,7 +260,7 @@ export abstract class ShopScreen extends EncounterScreen {
       drawSprite(ctx, 'minusBadge', 30, iy + 22, 3);
     } else drawSprite(ctx, 'heart', 0, iy, 5);
     // The ribbon sits on the case's top edge (above it, it met the upper shelf's name plates).
-    if (legend) this.legendTag(ctx, 0, -48, time);
+    void time;
     ctx.restore();
     const tag = this.shopTags[this.shopHits.indexOf(h)];
     this.drawPriceTag(ctx, h, tag, item, afford, time);
