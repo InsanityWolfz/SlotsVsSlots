@@ -412,8 +412,10 @@ export abstract class OverScreen extends ShopScreen {
     drawPanel(ctx, x0, 96, w, ph, { title: 'RESULTS' });
     // XP bar.
     const lv = levelOf(r.xp);
-    drawText(ctx, `+${Math.round(r.xp - g.xpBefore)} XP`, x0 + 40, 160, T.head, KIT.text, { align: 'left' });
-    drawText(ctx, `LEVEL ${lv.level}`, x0 + w - 40, 160, T.head, KIT.title, { align: 'right', punch: 1 + 0.5 * r.pop });
+    // A level-up's big word takes the row for its beat (it sat over the RESULTS tab, beside its own LEVEL label).
+    const beat = Math.min(1, r.pop * 2);
+    drawText(ctx, `+${Math.round(r.xp - g.xpBefore)} XP`, x0 + 40, 160, T.head, KIT.text, { align: 'left', alpha: 1 - beat });
+    drawText(ctx, `LEVEL ${lv.level}`, x0 + w - 40, 160, T.head, KIT.title, { align: 'right', alpha: 1 - beat });
     const bx = x0 + 40;
     const bw = w - 80;
     drawWell(ctx, bx - 3, 184, bw + 6, 24, '#120c1c');
@@ -422,13 +424,13 @@ export abstract class OverScreen extends ShopScreen {
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.fillRect(bx, 187, Math.round((bw * lv.into) / Math.max(1, lv.need)), 3);
     drawText(ctx, `${Math.round(lv.into)}/${lv.need} XP TO LEVEL ${lv.level + 1}`, W / 2, 226, T.small, KIT.dim);
-    if (r.pop > 0.01) drawText(ctx, `LEVEL ${r.level}!`, W / 2, 140, T.title, '#ffd23f', { alpha: Math.min(1, r.pop * 2), punch: 1 + 0.4 * r.pop });
+    if (r.pop > 0.01) drawText(ctx, `LEVEL ${r.level}!`, W / 2, 160, T.title, '#ffd23f', { alpha: beat, punch: 1 + 0.25 * r.pop });
     let y = 268;
     // Unlocks, new titles, trims.
     const notes: [string, string][] = [];
     if (this.unlockedNow.length) notes.push([`NEW SLOT MACHINE: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}`, '#7dff7a']);
     for (const t of g.titles) notes.push([`NEW TITLE: ${t}`, '#ffd23f']);
-    for (const t of g.trims) notes.push([`NEW TRIM: ${t} (WEAR IT FROM TROPHIES)`, '#ff9ec8']);
+    for (const t of g.trims) notes.push([`NEW TRIM: ${t} (WEAR IT IN PROFILE)`, '#ff9ec8']);
     for (const [text, color] of notes.slice(0, 3)) {
       drawText(ctx, text, W / 2, y, textWidth(text, T.head) <= w - 60 ? T.head : T.body, color);
       y += 36;
