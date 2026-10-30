@@ -156,6 +156,17 @@ export const SYMBOLS = {
     '.bb.....',
     '........',
   ],
+  // STEAL icon
+  icoSteal: [
+    '...XZz..',
+    '...XZz..',
+    '..JVVVv.',
+    '.JvVVVv.',
+    '.F.FfFf.',
+    '...FfFf.',
+    '...f.F..',
+    '........',
+  ],
   // IOU icon
   icoBomb: [
     '........',
