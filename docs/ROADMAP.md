@@ -2,12 +2,11 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
-**In progress:** phase 3, the road to Coming Soon (two weeks from 2026-10-29: the user's Max plan window). The casino-town
-theme, roster and name (REEL BRAWL) are approved; all 24 portraits (19 enemies and bosses, 5 heroes) are approved and in the game at
-32×32 (2026-10-30), and the words pass is live (names, abilities, keywords; the Copycat cut; the Slug Pusher is THE
-FENCE), and the enemies' reel symbols are redrawn (spill, IOU, black cat, drain heart, steal hand). Next: the game
-name and the UI kit (art:
-https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV, words: https://claude.ai/artifact/Bo2uKXGYnFXWRJxTy5Ddcu).
+**In progress (overnight 2026-10-30, the user asleep):** the UI kit and the screen pass, on the `ui-kit` branch, for the
+user's review in the morning (a before/after artifact; merge to `main` after their look). Everything below is approved
+(the screens artifact https://claude.ai/artifact/M4aXG9XZV9NvJ1bQK8HeKr, collection `ui`: every screen "do your
+suggestion", the kit and the retail list "yes"). Done before: theme, roster, name (REEL BRAWL), 24 portraits, words, enemy
+symbols (art: https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV, words: https://claude.ai/artifact/Bo2uKXGYnFXWRJxTy5Ddcu).
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
 fight changes (OVERTIME and HOLD), frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
@@ -109,8 +108,23 @@ the user can review to the pixel. Art and UI go to the user as artifacts (galler
    is approved; all 24 portraits are approved and live (2026-10-30): `tools/portraits.mjs` holds them (baked from the
    `art-wip` sources), `drawPortrait` draws them at the old portraits' size. Still 24×24 and pre-theme: the Cashier
    and the room art; they go in the UI kit pass.
-4. **UI kit:** one panel, one button, one number count-up, one banner style, one font scale ladder; Balatro's
-   cohesion is the bar. A contact sheet of every screen today shows what doesn't match.
+4. **UI kit: approved** (user, 2026-10-30; the screens artifact above). One panel (the fight HUD's dark plum box, 3px
+   gold frame; felt only on the card tables and wood only on the Cashier's counter, as scenery); three buttons (primary
+   red with a gold rim, one per screen; secondary dark with a gold rim; quiet small grey; SPIN keeps its round button);
+   four text sizes (title, heading, body, small; nothing smaller); the bulb marquee only on the logo and boss/elite
+   cards; one number count-up. The fight screen loses its title marquee (user left it to Claude: it crowded the HUDs).
+   The retail list, all approved: feedback on every touch, screen transitions, pad and Steam Deck focus everywhere,
+   readable at 7 inches, one 12px keyword icon set, a self-teaching first fight, a big beat for jackpot, boss down and
+   run over. Per screen (all approved as suggested): title (the marquee bulbs are the loading bar); main menu (machine
+   and hero staged big, one primary, settings a gear); PROFILE as one tabbed screen (Collection with silhouettes and an
+   Enemies tab, Trophies as plaques with progress bars, Stats); settings (chip sliders, bulb toggles, grouped);
+   hiscores (ghost table, hero portrait rows); machine select (the selected machine big, silhouettes for locked,
+   stakes as chips); cards (two lines max, rarity frame, lift and shine); the enemy card simplified (one ability chip,
+   pips); routes as a street map; the Cashier redrawn at 32×32 (user: "he looks like a mushroom") behind a counter of
+   kit panels; fight (bigger reels, slimmer HUD, the next move as one big chip, a turn banner over the reels); the pot
+   as a meter panel; card tables sharing one layout with chip bet buttons; the claw machine as scenery; RUN OVER as a
+   moment (who got you, the score counting up, best hit; the log behind a button; user: one of the 3 make-or-break
+   screens). Later (user): the vault and the room backgrounds need a pass.
 
 **Week 2: apply it and build the page**
 5. Every screen through the UI kit; the re-themed enemies in; the words pass (enemy names, keywords like SLIME).
