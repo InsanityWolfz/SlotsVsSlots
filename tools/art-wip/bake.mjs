@@ -9,6 +9,7 @@ const MAP = [
   ['house', 'enemyBoss', 'THE HOUSE'], ['wheel', 'enemyWheel', 'THE WHEEL'], ['dealer', 'enemyDealer', 'THE DEALER'], ['owner', 'enemyOwner', 'THE OWNER'],
   ['knight', 'heroKnight', 'SIR REGINALD'], ['cassidy32a', 'heroMidas', 'CASH CASSIDY'], ['voltz32b', 'heroTesla', 'DOC VOLTZ'],
   ['jax', 'heroJoker', 'JESTER JAX'], ['decibel', 'heroJukebox', 'DJ DECIBEL'],
+  ['cashier', 'cashierPortrait', 'THE CASHIER'],
 ];
 let out = `// The casino-town portraits, 32×32 (approved by the user, 2026-10-29/30), as literal fill rows.
 // build-art.mjs adds the 1px outline. Baked from the art-wip branch (tools/art-wip/*32.mjs); hand edits go here now.
