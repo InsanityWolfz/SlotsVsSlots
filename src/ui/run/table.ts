@@ -16,7 +16,7 @@ export const TABLE = { x: 330, y: 92, w: 672, h: 472 };
 export const SIDE = { x: 1026, y: 92, w: 238, h: 472 };
 /** The side panel's centre line, and its rows (the bet well, the chips, the primary, the next button down). */
 export const SX = SIDE.x + SIDE.w / 2;
-export const ROW = { label: 124, well: 170, chips: 246, main: 322, second: 394, third: 466 };
+export const ROW = { label: 124, well: 170, chips: 258, main: 334, second: 404, third: 470 };
 /** The foot: the rules line, WALK AWAY / CONTINUE. */
 export const FOOT = { rules: 596, button: 660 };
 export const TCX = TABLE.x + TABLE.w / 2;

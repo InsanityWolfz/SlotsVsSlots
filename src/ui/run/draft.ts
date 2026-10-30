@@ -17,7 +17,7 @@ import { cardFace, rarityOf } from './cardText';
 import { NextScreen } from './enemyCard';
 
 /** A draft card: its size (three fit beside YOUR BUILD) and the deal's row. */
-const CARD = { w: 290, h: 226, gap: 314, y: 408 };
+const CARD = { w: 290, h: 226, gap: 314, y: 428 };
 
 export abstract class DraftScreen extends NextScreen {
   /** When each draft card finished dealing in (seconds): its one-time shine runs from then. */
@@ -25,6 +25,8 @@ export abstract class DraftScreen extends NextScreen {
   /** THE result title: when it landed (seconds) and its chips counting up under it. */
   protected resultAt = 0;
   protected resultChips = new CountUp(0, 0.8);
+  /** The draft's name size (one for every card). */
+  protected titleSize: number = T.head;
 
   showSpoils(run: RunState, relics: RelicId[], last: FightRecord | null): void {
     this.showDraft(run, relics.map((relic) => ({ kind: 'relic', relic }) as DraftOption), last, 'spoils');
@@ -131,7 +133,7 @@ export abstract class DraftScreen extends NextScreen {
       // A boss pays a level to your attack symbol: say so, as a chip.
       if (last.bossLevel) drawChip(ctx, `${symLabel(last.bossLevel)}S LEVEL UP: LV${symLevel(run.player.levels, last.bossLevel)}`, CX + 330, 84, { scale: T.small, color: '#5ad8e8' });
     } else drawBanner(ctx, start ? 'A NEW RUN' : 'CHOOSE A REWARD', CX, 40, { scale: T.title });
-    this.drawMap(ctx, 162, time);
+    this.drawMap(ctx, 186, time);
     const act3Arrival = !legend && !spoils && run.act >= 3 && run.depth === 0 && run.actIntro;
     // The boss's heal says what it gave (feel playtest: FULLY HEALED read as nothing at 94%).
     const healedBy = last?.won ? Math.max(0, run.player.maxHp - last.hpAfter) : 0;
@@ -146,8 +148,10 @@ export abstract class DraftScreen extends NextScreen {
           : spoils
             ? 'ELITE SPOILS: PICK A RELIC'
             : 'PICK ONE';
-    if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), CX - textWidth(heading, T.head) / 2 - 48, 252, 3);
-    drawText(ctx, heading, CX, 252, textWidth(heading, T.head) <= W - 340 ? T.head : T.body, legend ? KIT.title : spoils ? '#ff9a3a' : KIT.text);
+    if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), CX - textWidth(heading, T.head) / 2 - 48, 268, 3);
+    drawText(ctx, heading, CX, 268, textWidth(heading, T.head) <= W - 340 ? T.head : T.body, legend ? KIT.title : spoils ? '#ff9a3a' : KIT.text);
+    // One name size for the whole deal: the heading size when every name fits its card.
+    this.titleSize = this.cards.every((c, i) => textWidth(cardFace(this.offers[i], run).title, T.head) <= c.w - 24) ? T.head : T.body;
     this.cards.forEach((c, i) => this.drawDraftCard(ctx, c, this.offers[i], i, time));
     // The hovered or focused card: its full rule and its keywords, under it.
     const hov = this.picked < 0 ? this.cards.findIndex((c) => c.hover && c.scale > 0.9) : -1;
@@ -170,7 +174,7 @@ export abstract class DraftScreen extends NextScreen {
     const y0 = drawCard(ctx, x0, c.y - c.h / 2, c.w, c.h, { rarity: rarityOf(o), lift, shineT, dim: dimmed });
     if (!dimmed) {
       this.drawOptionFace(ctx, o, c.x, y0, c.w);
-      drawText(ctx, title, c.x, y0 + 134, textWidth(title, T.head) <= c.w - 24 ? T.head : T.body, this.optionColor(o));
+      drawText(ctx, title, c.x, y0 + 134, this.titleSize, this.optionColor(o));
       const cols = Math.floor((c.w - 24) / (6 * T.body));
       wrap(text, cols)
         .slice(0, 2)
@@ -263,7 +267,8 @@ export abstract class DraftScreen extends NextScreen {
   protected drawCardDetail(ctx: CanvasRenderingContext2D, c: Hit, o: DraftOption): void {
     const face = cardFace(o, this.run ?? undefined);
     const keys = keywordsIn(face.full).slice(0, 2);
-    this.detailBox(ctx, face.full !== face.text ? face.full : '', keys, c.x, c.y + c.h / 2 + 14, c.w + 20);
+    // (A Charm card's full text only adds its reel, which its marker shows.)
+    this.detailBox(ctx, face.full !== face.text && o.kind !== 'gild' ? face.full : '', keys, c.x, c.y + c.h / 2 + 14, c.w + 20);
   }
 
   /** A detail box: a full rule, then keywords (word in its colour, then what it means), centred on x, top at y. */
