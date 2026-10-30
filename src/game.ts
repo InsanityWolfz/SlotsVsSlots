@@ -639,7 +639,8 @@ export class Game {
     if (unlock !== null) {
       this.prefs.stakes[run.cabinet] = unlock;
       const next = STAKES[run.stake + 1];
-      stakeText = `STAKE ${next.level} ${next.name} UNLOCKED FOR ${CABINETS[run.cabinet].name}: ${next.rule}`;
+      // (Its rule shows on CHOOSE YOUR MACHINE: on RUN OVER the whole rule made a chip the width of the screen.)
+      stakeText = `${next.name} STAKE UNLOCKED FOR ${CABINETS[run.cabinet].name}`;
     }
     this.screens.setStakeUnlockedNow(stakeText);
     if (got.length || stakeText) this.savePrefs();
