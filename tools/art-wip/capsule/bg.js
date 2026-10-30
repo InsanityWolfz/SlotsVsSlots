@@ -69,3 +69,26 @@ function glow(cx, cy, r, color) {
   }
   ctx.globalAlpha = 1;
 }
+// searchlights from behind the skyline: narrow at the source, wide in the sky (a premiere)
+function searchlight(xb, yb, xt, yt, color, a = 0.07) {
+  ctx.fillStyle = color; ctx.globalAlpha = a;
+  for (let y = yt; y < yb; y++) {
+    const k = (yb - y) / (yb - yt);
+    const cx = xb + (xt - xb) * k, hw = 1 + 7 * k;
+    ctx.fillRect(Math.round(cx - hw) * G, y * G, Math.round(hw * 2) * G, G);
+  }
+  ctx.globalAlpha = 1;
+}
+// a neon sign from a mask ('#' tube), grid units, with a one-cell halo
+function neonMask(mask, x, y, tube, halo, k = 2) {
+  ctx.globalAlpha = 0.18;
+  mask.forEach((r, j) => [...r].forEach((c, i) => { if (c === '#') R(x + i * k - 1, y + j * k - 1, k + 2, k + 2, halo); }));
+  ctx.globalAlpha = 1;
+  mask.forEach((r, j) => [...r].forEach((c, i) => { if (c === '#') R(x + i * k, y + j * k, k, k, tube); }));
+  // the tube's hot core: the top-left cell of each segment, white
+  mask.forEach((r, j) => [...r].forEach((c, i) => { if (c === '#') R(x + i * k, y + j * k, 1, 1, '#ffffff'); }));
+}
+const CHERRY = ['.....###.', '....##...', '...#..#..', '..#...#..', '.##...##.', '#..#.#..#', '#..#.#..#', '.##...##.'];
+const DIAMOND = ['..#..', '.#.#.', '#...#', '.#.#.', '..#..'];
+const SPADE = ['..#..', '.###.', '#####', '#####', '..#..', '.###.'];
+const SEVEN = ['#####', '....#', '...#.', '..#..', '..#..'];
