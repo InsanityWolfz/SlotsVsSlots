@@ -1,14 +1,21 @@
-import { LEGENDARY, RELICS } from '../../core/relics';
-import { CHARM_COLOR } from '../../core/charms';
-import { describeOption, rerollCost, type RunState, type ShopItem } from '../../core/run';
+import { RELICS } from '../../core/relics';
+import { rerollCost, type RunState, type ShopItem } from '../../core/run';
 import { backOut, sineOut } from '../../present/ease';
 import { ENH_SPRITE } from '../../present/reel';
-import { COLORS, H, W } from '../../present/layout';
-import { drawSprite, type SpriteId } from '../../render/sprites';
-import { drawText } from '../../render/text';
+import { COLORS, W } from '../../present/layout';
+import { drawPortrait, drawSprite, type SpriteId } from '../../render/sprites';
+import { drawText, textWidth } from '../../render/text';
 import { drawRich } from '../keywords';
-import { wrap, Hit, BUILD, CX, SHELF, TAG } from './shared';
+import { drawCard, drawChip, drawPanel, drawTitle, drawWell, KIT, T } from '../kit';
+import { wrap, Hit, BUILD, CX, spotlight } from './shared';
+import { cardFace, rarityOf } from './cardText';
 import { EncounterScreen } from './encounter';
+
+/** THE CASHIER: the shelves' rows (the counter goods, then the relics behind the glass), the spacing, an item card. */
+const SHELF = { y: [232, 446], gap: 168 };
+const ITEM = { w: 124, h: 100 };
+/** The wall behind the shelves (wood, scenery). */
+const WALL = { x: 330, w: 932, y: 150, h: 418 };
 
 export abstract class ShopScreen extends EncounterScreen {
   /** Unaffordable purchase: shake its price tag. */
@@ -18,14 +25,14 @@ export abstract class ShopScreen extends EncounterScreen {
     void this.ui.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (h.lift = Math.sin(v * 30) * 6 * v) });
   }
 
-  /** The Cashier: four priced slots, a reroll and a way out. */
+  /** The Cashier: the goods on two shelves, a reroll and a way out. */
   showShop(run: RunState, items: ShopItem[], reopen = false): void {
     this.run = run;
     this.shopItems = items;
     if (!reopen) this.open('shop');
     this.buttons = [
-      this.minorBtn(`REROLL - ${rerollCost(run)}`, CX - 160, 574, 260, 50, () => this.cb.onReroll()),
-      this.btn('LEAVE', CX + 160, 574, 260, 50, () => this.cb.onLeave()),
+      this.minorBtn(`REROLL - ${rerollCost(run)}`, CX - 170, 640, 280, 52, () => this.cb.onReroll()),
+      this.btn('LEAVE', CX + 170, 640, 280, 56, () => this.cb.onLeave()),
     ];
     // Two shelves: the counter (levels, max HP, the heal) and, behind the glass, the relics and THE BIG ONE.
     const premium = (it: ShopItem) => it.option.kind === 'relic';
@@ -34,10 +41,9 @@ export abstract class ShopScreen extends EncounterScreen {
       const row = premium(it) ? 1 : 0;
       const k = rows[row].indexOf(it);
       const n = rows[row].length;
-      // The item itself: a click or tap pins its card open (hover shows it too); a second click on it buys, like the tag
-      // under it (playtest: clicking the item never bought).
+      // The item: a click or tap pins its card open (hover shows it too); a second click buys, like its price tag.
       const x = CX + (k - (n - 1) / 2) * SHELF.gap;
-      const h = this.hit(x, SHELF.y[row] - 8, 128, 100, () => {
+      const h = this.hit(x, SHELF.y[row] - 20, ITEM.w, ITEM.h, () => {
         if (this.shopSel === i) {
           if (this.mode === 'shop') this.cb.onBuy(i);
         } else this.shopSel = i;
@@ -47,28 +53,36 @@ export abstract class ShopScreen extends EncounterScreen {
     });
     this.shopTags = items.map((_, i) => {
       const it = this.shopHits[i];
-      // (Its size follows the item's entrance; its own scale is only the press bounce.)
-      return { ...this.hit(it.x, it.y + 8 + TAG.y, TAG.w, TAG.h, () => this.mode === 'shop' && this.cb.onBuy(i)), scale: 1 };
+      return { ...this.hit(it.x, it.y + ITEM.h / 2 + 24, 108, 38, () => this.mode === 'shop' && this.cb.onBuy(i)), scale: 1 };
     });
     if (!reopen) this.shopSel = -1;
     else if (this.shopItems[this.shopSel]?.sold) this.shopSel = -1;
     if (!reopen)
       this.shopHits.forEach(
         (c, i) =>
-          void this.ui.wait(0.1 + i * 0.07).then(() => this.ui.tween({ from: 0, to: 1, dur: 0.28, ease: backOut(2), onUpdate: (v) => (c.scale = v) })),
+          void this.ui.wait(0.12 + i * 0.07).then(() => this.ui.tween({ from: 0, to: 1, dur: 0.26, ease: backOut(2), onUpdate: (v) => (c.scale = v) })),
       );
   }
 
   /** Called after a purchase: bounce the chip counter and refresh the shelf. */
   bought(i?: number, item?: ShopItem): void {
     void this.ui.tween({ from: 1.6, to: 1, dur: 0.3, ease: backOut(3), onUpdate: (v) => (this.chipPulse = v) });
-    // What you bought hops in an arc into its spot on YOUR BUILD (relics to the grid, levels to LEVELS, the rest to your reels).
+    // What you bought hops in an arc into its slot on YOUR BUILD (relics to their wells, Charms and levels to theirs).
     const h = i !== undefined ? this.shopHits[i] : undefined;
-    if (h && item) {
+    if (h && item && this.run) {
       const o = item.option;
       const sprite = (o.kind === 'relic' ? RELICS[o.relic].sprite : o.kind === 'gild' ? ENH_SPRITE[o.enh] : o.kind === 'charmLevel' ? ENH_SPRITE[o.enh] : o.kind === 'symLevel' ? o.symbol : o.kind === 'swap' ? o.to : o.kind === 'remove' ? o.symbol : 'heart') as SpriteId;
+      const n = Math.max(0, this.run.player.relics.length - 1);
       const to =
-        o.kind === 'relic' ? { x: BUILD.x + 40, y: BUILD.y + 600 } : o.kind === 'symLevel' || o.kind === 'charmLevel' ? { x: BUILD.x + 60, y: BUILD.y + 432 } : o.kind === 'gild' || o.kind === 'swap' || o.kind === 'remove' ? { x: BUILD.x + 140, y: BUILD.y + 240 } : { x: BUILD.x + 140, y: BUILD.y + 140 };
+        o.kind === 'relic'
+          ? { x: BUILD.x + 33 + (n % 6) * 46, y: BUILD.y + 562 + Math.floor(Math.min(n, 17) / 6) * 44 }
+          : o.kind === 'symLevel'
+            ? { x: BUILD.x + 60, y: BUILD.y + 420 }
+            : o.kind === 'gild' || o.kind === 'charmLevel'
+              ? { x: BUILD.x + 60, y: BUILD.y + 480 }
+              : o.kind === 'swap' || o.kind === 'remove'
+                ? { x: BUILD.x + 140, y: BUILD.y + 260 }
+                : { x: BUILD.x + 140, y: BUILD.y + 154 };
       const f = { sprite, x0: h.x, y0: h.y, x1: to.x, y1: to.y, t: 0 };
       this.flyers.push(f);
       void this.ui.tween({ from: 0, to: 1, dur: 0.35, ease: sineOut, onUpdate: (v) => (f.t = v) }).then(() => {
@@ -80,244 +94,136 @@ export abstract class ShopScreen extends EncounterScreen {
 
   protected drawShop(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
-    ctx.fillStyle = COLORS.panelLight;
-    ctx.fillRect(CX - 450, 20, 96, 96);
-    drawSprite(ctx, 'cashierPortrait', CX - 402, 68 + Math.sin(time * 2) * 2, 3.5);
-    drawText(ctx, 'THE CASHIER', CX - 330, 44, 4, COLORS.goldLight, { align: 'left' });
+    // The Cashier himself, in a lit well (drawPortrait: his 32x32 art and the old 24x24 fill the same box).
+    drawWell(ctx, 334, 18, 116, 116, '#1c1530');
+    spotlight(ctx, 392, 118, 96, '#5ad8e8', 0.12);
+    drawPortrait(ctx, 'cashierPortrait', 392, 76 + (this.reduceMotion ? 0 : Math.round(Math.sin(time * 2) * 2)), 4);
+    drawTitle(ctx, 'THE CASHIER', 474, 46, KIT.title, { align: 'left' });
+    // What he says, in a speech panel.
     const quips = ['PLACE YOUR BETS.', 'EVERYTHING HAS A PRICE, FRIEND.', 'THE HOUSE WILL HEAR ABOUT THIS.', 'CHIPS ARE FOR SPENDING... OR ARE THEY?'];
-    drawText(ctx, quips[(run.depth + run.shopRerolls) % quips.length], CX - 330, 80, 2, COLORS.textDim, { align: 'left' });
-    // (Fights heal in no act now: the old ACT 3 warning is gone. Playtest.)
-    // THE BIG ONE (the draft/Cashier split, 2026-10-15): one legendary a visit, centre stage behind the glass.
-    if (this.shopItems.some((it) => !it.sold && it.showcase)) drawText(ctx, 'THE BIG ONE IS IN THE CASE.', CX, 140, 2.5, COLORS.goldLight);
+    // THE BIG ONE (one legendary a visit, in the case): he says so.
+    const quip = this.shopItems.some((it) => !it.sold && it.showcase) ? 'THE BIG ONE IS IN THE CASE.' : quips[(run.depth + run.shopRerolls) % quips.length];
+    const qw = textWidth(quip, T.body) + 32;
+    drawPanel(ctx, 474, 76, qw, 40, { frame: KIT.frameDim });
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(464, 90, 10, 12);
+    ctx.fillStyle = KIT.frameDim;
+    ctx.fillRect(466, 92, 10, 8);
+    drawText(ctx, quip, 474 + 16, 97, T.body, KIT.text, { align: 'left' });
     this.drawShelves(ctx, time);
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
     for (const b of this.buttons) this.drawButton(ctx, b, time);
-    // What the item under the pointer is: name, rule and price, beside it.
+    // What the item under the pointer (or pinned) is: name, rule and price, beside it.
     const live = (k: number) => this.shopHits[k]?.scale > 0.9 && !this.shopItems[k]?.sold;
     const hov = this.shopHits.findIndex((h, k) => (h.hover || this.shopTags[k]?.hover) && live(k));
     const i = hov >= 0 ? hov : live(this.shopSel) ? this.shopSel : -1;
     if (i >= 0) this.drawShopTip(ctx, this.shopHits[i], this.shopItems[i]);
   }
 
-  /** Two wooden shelves; the lower one sits behind glass under a spotlight (the premium shelf). */
+  /** Scenery: the wood back wall, two shelves, the glass case on the lower one (its sheen sweeps slowly). */
   protected drawShelves(ctx: CanvasRenderingContext2D, time: number): void {
-    const x0 = CX - 440;
-    const w = 880;
-    // The shop's back wall: light wood boards behind both shelves.
-    const wy = SHELF.y[0] - 84;
-    const wh = SHELF.y[1] + 88 - wy;
-    ctx.fillStyle = '#2a170c';
-    ctx.fillRect(x0 - 16, wy - 4, w + 32, wh + 8);
-    for (let k = 0, by = wy; by < wy + wh; k++, by += 28) {
-      ctx.fillStyle = k % 2 ? '#b98a5a' : '#c49464';
-      ctx.fillRect(x0 - 12, by, w + 24, Math.min(28, wy + wh - by));
-      ctx.fillStyle = 'rgba(90,50,20,0.25)';
-      ctx.fillRect(x0 - 12, by + 26, w + 24, 2);
-      ctx.fillStyle = 'rgba(90,50,20,0.12)';
-      for (let g = 0; g < 5; g++) ctx.fillRect(x0 + ((k * 131 + g * 197) % (w - 60)), by + 8 + (g % 3) * 6, 40 + (g * 23) % 50, 1);
+    const { x, w, y, h } = WALL;
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+    for (let k = 0, by = y; by < y + h; k++, by += 24) {
+      ctx.fillStyle = k % 2 ? '#5a3418' : '#64391b';
+      ctx.fillRect(x, by, w, Math.min(24, y + h - by));
+      ctx.fillStyle = '#3a2010';
+      ctx.fillRect(x, by + 22, w, 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      for (let g = 0; g < 6; g++) ctx.fillRect(x + ((k * 131 + g * 197) % (w - 60)), by + 6 + (g % 3) * 5, 30 + ((g * 23) % 50), 2);
     }
-    // The glass case behind the relic shelf.
-    const gy = SHELF.y[1] - 76;
-    const g = ctx.createLinearGradient(0, gy, 0, gy + 150);
-    g.addColorStop(0, 'rgba(255,224,138,0.10)');
-    g.addColorStop(1, 'rgba(120,70,200,0.10)');
-    ctx.fillStyle = g;
-    ctx.fillRect(x0, gy, w, 150);
-    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-    for (let k = 0; k < 6; k++) {
-      const sx = x0 + 40 + k * 160 + ((time * 30) % 160);
-      ctx.beginPath();
-      ctx.moveTo(sx, gy);
-      ctx.lineTo(sx + 24, gy);
-      ctx.lineTo(sx - 36, gy + 150);
-      ctx.lineTo(sx - 60, gy + 150);
-      ctx.fill();
-    }
-    ctx.strokeStyle = 'rgba(255,224,138,0.35)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x0 + 1, gy + 1, w - 2, 148);
-
+    // The glass case behind the relic shelf: a frame, a cool tint and slow pixel sheen bands.
+    const gy = SHELF.y[1] - 96;
+    const gh = 168;
+    ctx.fillStyle = '#2a1408';
+    ctx.fillRect(x + 12, gy - 4, w - 24, gh + 8);
+    ctx.fillStyle = '#1a1030';
+    ctx.fillRect(x + 16, gy, w - 32, gh);
+    ctx.fillStyle = 'rgba(160,200,255,0.06)';
+    ctx.fillRect(x + 16, gy, w - 32, gh);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x + 16, gy, w - 32, gh);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(220,240,255,0.07)';
+    const sweep = this.reduceMotion ? 0 : (time * 26) % 220;
+    for (let k = -1; k < 6; k++)
+      for (let r = 0; r < gh; r += 2) ctx.fillRect(Math.round(x + 40 + k * 220 + sweep + r * 0.4), gy + r, 16, 2);
+    ctx.restore();
+    ctx.fillStyle = COLORS.gold;
+    ctx.fillRect(x + 12, gy - 4, w - 24, 2);
     // The planks.
-    for (const y of SHELF.y) {
-      const py = y + 58;
-      ctx.fillStyle = '#2a170c';
-      ctx.fillRect(x0 - 4, py - 2, w + 8, 18);
-      ctx.fillStyle = '#7a4a26';
-      ctx.fillRect(x0, py, w, 12);
-      ctx.fillStyle = '#a06636';
-      ctx.fillRect(x0, py, w, 3);
+    for (const sy of SHELF.y) {
+      const py = sy + 34;
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(x + 4, py - 2, w - 8, 18);
+      ctx.fillStyle = '#8a5a2e';
+      ctx.fillRect(x + 6, py, w - 12, 12);
+      ctx.fillStyle = '#b07a42';
+      ctx.fillRect(x + 6, py, w - 12, 3);
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.fillRect(x0, py + 14, w, 6);
+      ctx.fillRect(x + 6, py + 14, w - 12, 6);
     }
   }
 
-  /** The hovered item's card: its name, what it does, and the price. */
+  /** The pinned or hovered item: its name, its full rule and the price, in a kit panel beside it. */
   protected drawShopTip(ctx: CanvasRenderingContext2D, h: Hit, item: ShopItem): void {
     const o = item.option;
-    const { title, text } = describeOption(o, this.run ?? undefined);
-    const lines = wrap(text, 26);
-    const legend = o.kind === 'relic' && LEGENDARY.has(o.relic);
+    const face = cardFace(o, this.run ?? undefined);
     const w = 340;
+    const lines = wrap(face.full, Math.floor((w - 28) / (6 * T.body)));
     const pinned = this.shopSel === this.shopHits.indexOf(h);
-    const tall = 46 + lines.length * 20 + (pinned ? 22 : 0);
-    // The top shelf opens its card above the item (a side card covered the neighbours' prices); the relic shelf, to the side.
-    const top = h.y < (SHELF.y[0] + SHELF.y[1]) / 2;
-    const right = h.x + h.w / 2 + 14 + w <= W - 8;
-    const x = top ? Math.max(BUILD.x + BUILD.w + 12, Math.min(W - w - 8, h.x - w / 2)) : right ? h.x + h.w / 2 + 14 : h.x - h.w / 2 - 14 - w;
-    const y = top ? Math.max(8, h.y - h.h / 2 - tall - 14) : Math.max(8, Math.min(H - tall - 8, h.y - tall / 2));
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(x - 4, y - 4, w + 8, tall + 8);
-    ctx.fillStyle = legend ? '#ffd23f' : COLORS.gold;
-    ctx.fillRect(x - 2, y - 2, w + 4, tall + 4);
-    ctx.fillStyle = COLORS.panel;
-    ctx.fillRect(x, y, w, tall);
-    const color = o.kind === 'gild' ? CHARM_COLOR[o.enh] : o.kind === 'relic' ? (legend ? '#ffd23f' : '#c9a0ff') : o.kind === 'symLevel' || o.kind === 'charmLevel' ? '#5ad8e8' : COLORS.goldLight;
-    drawText(ctx, title, x + 12, y + 18, 2.5, color, { align: 'left' });
-    lines.forEach((l, k) => drawRich(ctx, l, x + 12, y + 46 + k * 20, 2, COLORS.text, { align: 'left' }));
-    if (pinned) drawText(ctx, (this.run?.player.chips ?? 0) >= item.price ? 'CLICK AGAIN TO BUY' : 'NOT ENOUGH CHIPS', x + 12, y + 46 + lines.length * 20 + 4, 1.5, COLORS.textDim, { align: 'left' });
+    const tall = 58 + lines.length * 24 + (pinned ? 26 : 0);
+    const right = h.x + h.w / 2 + 18 + w <= W - 8;
+    const x = Math.round(right ? h.x + h.w / 2 + 18 : h.x - h.w / 2 - 18 - w);
+    const y = Math.round(Math.max(8, Math.min(600 - tall, h.y - tall / 2)));
+    drawPanel(ctx, x, y, w, tall, { frame: rarityOf(o) === 'common' ? KIT.frame : KIT.rarity[rarityOf(o)] });
+    drawText(ctx, face.title, x + 14, y + 22, textWidth(face.title, T.head) <= w - 28 ? T.head : T.body, this.optionColor(o), { align: 'left' });
+    lines.forEach((l, k) => drawRich(ctx, l, x + 14, y + 54 + k * 24, T.body, KIT.text, { align: 'left' }));
+    if (pinned) drawText(ctx, (this.run?.player.chips ?? 0) >= item.price ? 'TAP AGAIN TO BUY' : 'NOT ENOUGH CHIPS', x + 14, y + 54 + lines.length * 24 + 4, T.small, KIT.dim, { align: 'left' });
   }
 
-  /** One item on a shelf: just its picture and its chip price (hover it to read it). Relics sit on velvet. */
+  /** One item on a shelf: a kit card with its picture, its price tag (a chip: clicking it buys) and its name. */
   protected drawShopItem(ctx: CanvasRenderingContext2D, h: Hit, item: ShopItem, time: number): void {
     if (!h || h.scale <= 0.01) return;
     const o = item.option;
     const afford = (this.run?.player.chips ?? 0) >= item.price;
-    const relic = o.kind === 'relic';
-    const legend = relic && LEGENDARY.has(o.relic);
-    ctx.save();
-    ctx.globalAlpha *= item.sold ? 0.3 : 1;
-    ctx.translate(h.x, h.y + h.lift - (h.hover && !item.sold ? 6 : 0));
-    ctx.scale(h.scale * (item.showcase ? 1.15 : 1), h.scale * (item.showcase ? 1.15 : 1));
-    if (item.showcase && !item.sold) {
-      // THE BIG ONE: a spotlight beam from the top of the case (soft, slow sway; no flash).
-      const sway = Math.sin(time * 0.8) * 6;
-      const beam = ctx.createLinearGradient(0, -62, 0, 44);
-      beam.addColorStop(0, 'rgba(255,236,150,0.32)');
-      beam.addColorStop(1, 'rgba(255,236,150,0)');
-      ctx.fillStyle = beam;
-      ctx.beginPath();
-      ctx.moveTo(-26 + sway, -62);
-      ctx.lineTo(26 + sway, -62);
-      ctx.lineTo(80, 40);
-      ctx.lineTo(-80, 40);
-      ctx.fill();
-    }
-    if (relic) {
-      // Velvet cushion in a gold frame, under a spotlight; a legendary shimmers.
-      const glow = ctx.createRadialGradient(0, -20, 4, 0, -20, 90);
-      glow.addColorStop(0, legend ? 'rgba(255,210,63,0.45)' : 'rgba(201,160,255,0.30)');
-      glow.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = glow;
-      ctx.fillRect(-90, -110, 180, 180);
-      ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(-52, -50, 104, 96);
-      ctx.fillStyle = legend ? '#ffd23f' : COLORS.gold;
-      ctx.fillRect(-49, -47, 98, 90);
-      ctx.fillStyle = legend ? '#5a1838' : '#3a1530';
-      ctx.fillRect(-45, -43, 90, 82);
-      if (legend) {
-        // One diagonal sheen sweeps the velvet every 2.5s (a pulse read as flicker).
-        const k = (time % 2.5) / 0.6;
-        if (k < 1) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(-45, -43, 90, 82);
-          ctx.clip();
-          ctx.translate(-80 + k * 160, 0);
-          ctx.rotate(0.5);
-          ctx.fillStyle = 'rgba(255,236,150,0.2)';
-          ctx.fillRect(-6, -90, 12, 180);
-          ctx.restore();
-        }
-      }
-    } else {
-      // A soft shadow where it sits on the counter.
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.fillRect(-36, 40, 72, 8);
-    }
-    if (h.hover && !item.sold && afford) {
-      ctx.save();
-      ctx.shadowColor = COLORS.energy;
-      ctx.shadowBlur = 18;
-      ctx.strokeStyle = COLORS.energy;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(-56, -54, 112, 104);
-      ctx.restore();
-    }
-    const iy = -4;
-    if (o.kind === 'relic') drawSprite(ctx, RELICS[o.relic].sprite as SpriteId, 0, iy, 4);
-    else if (o.kind === 'gild') {
-      drawSprite(ctx, o.symbol as SpriteId, 0, iy, 4);
-      drawSprite(ctx, ENH_SPRITE[o.enh], 0, iy, 4);
-      drawText(ctx, `X${o.n}`, 40, iy + 24, 2.5, CHARM_COLOR[o.enh]);
-    } else if (o.kind === 'symLevel' || o.kind === 'charmLevel') this.levelIcon(ctx, o, -10, iy, 3.6);
-    else if (o.kind === 'swap') {
-      drawSprite(ctx, o.from as SpriteId, -34, iy, 2.6);
-      drawSprite(ctx, 'arrowRight', 0, iy, 2.5);
-      drawSprite(ctx, o.to as SpriteId, 34, iy, 2.6);
-    } else if (o.kind === 'remove') {
-      drawSprite(ctx, o.symbol as SpriteId, 0, iy, 4);
-      drawSprite(ctx, 'minusBadge', 30, iy + 22, 3);
-    } else drawSprite(ctx, 'heart', 0, iy, 5);
-    // The ribbon sits on the case's top edge (above it, it met the upper shelf's name plates).
-    void time;
-    ctx.restore();
     const tag = this.shopTags[this.shopHits.indexOf(h)];
-    this.drawPriceTag(ctx, h, tag, item, afford, time);
-    // Its name under the tag, always, on a dark plate (R13: the shelf was icons only until you hovered).
-    if (!item.sold && tag && h.scale > 0.5) {
-      const title = describeOption(o, this.run ?? undefined).title;
-      const color = o.kind === 'gild' || o.kind === 'charmLevel' ? CHARM_COLOR[o.enh] : o.kind === 'symLevel' ? '#5ad8e8' : relic ? (legend ? '#ffd23f' : '#e0c0ff') : COLORS.text;
-      // One line that fits the shelf spacing (the shelf is SHELF.gap wide per item).
-      const max = Math.floor((SHELF.gap - 16) / 7.5);
-      const text = title.length > max ? title.slice(0, max - 1) + '.' : title;
-      const tw = text.length * 7.5 + 10;
-      const ty = tag.y + TAG.h / 2 + 8;
-      ctx.fillStyle = 'rgba(16,10,26,0.88)';
-      ctx.fillRect(tag.x - tw / 2, ty - 7, tw, 14);
-      drawText(ctx, text, tag.x, ty, 1.25, color);
-    }
-  }
-
-  /** The price tag hanging off the shelf edge: a real tag (string, hole, notched end). Clicking it buys. */
-  protected drawPriceTag(ctx: CanvasRenderingContext2D, item: Hit, tag: Hit | undefined, it: ShopItem, afford: boolean, time: number): void {
-    if (!tag) return;
-    const sold = it.sold;
-    const hover = tag.hover && !sold;
+    const sel = this.shopSel === this.shopHits.indexOf(h);
+    const big = !!item.showcase;
     ctx.save();
-    ctx.translate(tag.x + tag.lift, tag.y - (hover && afford ? 3 : 0));
-    ctx.scale(item.scale * tag.scale, item.scale * tag.scale);
-    // A tiny sway on its string.
-    ctx.rotate(sold ? 0.12 : Math.sin(time * 1.6 + tag.x * 0.05) * 0.03);
-    const w = TAG.w;
-    const h = TAG.h;
-    // The string up to the shelf.
-    ctx.fillStyle = '#c9bba8';
-    ctx.fillRect(-1, -h / 2 - 12, 2, 12);
-    // Body: a dark rim, gold edge, green felt, with a notched left end.
-    const shape = (inset: number) => {
-      ctx.beginPath();
-      ctx.moveTo(-w / 2 + 12 + inset, -h / 2 + inset);
-      ctx.lineTo(w / 2 - inset, -h / 2 + inset);
-      ctx.lineTo(w / 2 - inset, h / 2 - inset);
-      ctx.lineTo(-w / 2 + 12 + inset, h / 2 - inset);
-      ctx.lineTo(-w / 2 + inset, 0);
-      ctx.closePath();
-      ctx.fill();
-    };
-    ctx.fillStyle = '#3a2010';
-    shape(-3);
-    ctx.fillStyle = sold ? '#8a7e76' : hover ? COLORS.goldLight : COLORS.gold;
-    shape(0);
-    ctx.fillStyle = sold ? '#554a4c' : hover && afford ? '#2a7a4a' : '#1f5a3a';
-    shape(3);
-    // The punched hole the string goes through.
-    ctx.fillStyle = '#3a2010';
-    ctx.fillRect(-w / 2 + 12, -3, 6, 6);
-    if (sold) drawText(ctx, 'SOLD', 6, 1, 2.5, COLORS.text);
-    else {
-      drawSprite(ctx, 'chip', -10, 1, 2);
-      drawText(ctx, String(it.price), 24, 1, 3, afford ? COLORS.goldLight : '#ff8a7a');
+    ctx.translate(h.x, h.y);
+    ctx.scale(h.scale, h.scale);
+    ctx.translate(-h.x, -h.y);
+    if (big && !item.sold) spotlight(ctx, h.x, h.y + ITEM.h / 2 + 4, 200, '#ffe08a', 0.18);
+    ctx.save();
+    if (item.sold) ctx.globalAlpha *= 0.35;
+    const lift = item.sold ? 0 : h.hover || sel ? 1 : 0;
+    const w = big ? ITEM.w + 16 : ITEM.w;
+    const hh = big ? ITEM.h + 12 : ITEM.h;
+    const y0 = drawCard(ctx, h.x - w / 2, h.y - hh / 2, w, hh, { rarity: rarityOf(o), lift, shineT: big ? (time % 3) - 1 : undefined });
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(h.x - w / 2 + 3, y0 + 3, w - 6, hh - 6);
+    this.optionIcon(ctx, o, h.x, y0 + hh / 2, o.kind === 'swap' ? 2.6 : o.kind === 'symLevel' || o.kind === 'charmLevel' ? 3 : 4);
+    ctx.restore();
+    // The price tag: a kit chip (the chip coin, the price; red when you can't pay; SOLD once bought).
+    if (tag) {
+      const ty = tag.y - (tag.hover && afford && !item.sold ? 2 : 0);
+      drawChip(ctx, item.sold ? 'SOLD' : String(item.price), tag.x + tag.lift, ty, {
+        scale: T.head,
+        color: item.sold ? KIT.dim : afford ? KIT.title : '#ff8a7a',
+        fill: tag.hover && !item.sold ? '#3a2a14' : KIT.fillLight,
+        icon: item.sold ? undefined : (ix, iy) => drawSprite(ctx, 'chip', ix, iy, 2),
+        iconW: 24,
+      });
+      // Its name under the tag, always (R13: the shelf was icons only until you hovered), two lines at most.
+      if (!item.sold) {
+        const title = cardFace(o, this.run ?? undefined).title;
+        wrap(title, Math.floor((SHELF.gap - 12) / (6 * T.small)))
+          .slice(0, 2)
+          .forEach((l, k) => drawText(ctx, l, tag.x, tag.y + 32 + k * 16, T.small, this.optionColor(o)));
+      }
     }
     ctx.restore();
   }
