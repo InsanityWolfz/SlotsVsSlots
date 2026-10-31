@@ -278,10 +278,12 @@ are listed as fact.
   cards already played this ante) is called the easiest. Pattern: hated bosses are random, permanent, or pure
   number checks; tolerated ones change which play is best and can be planned for. [F] [Steam: Worst Boss Blind?](https://steamcommunity.com/app/2379780/discussions/0/4201364759908462013/),
   [Steam: boss complaints](https://steamcommunity.com/app/2379780/discussions/0/4694531145715173333)
-- **Dicey Dungeons status effects** hit your resources, each with a price to clear: Shock locks one of your
-  equipment cards unless you spend a die to unlock it; Freeze turns your highest die into a 1; Burn sets dice on
-  fire (using one costs health; numbers changed in development, verify); a die can't be both locked and burning
-  (v1.11). The cheat becomes a choice of what to pay. [F] [Steam strategy](https://steamcommunity.com/app/861540/discussions/0/3185654583878473735),
+- **Dicey Dungeons status effects** hit your resources, each with a price to clear: Shock disables a random
+  equipment card until you spend a die on it (3 HP instead in the Parallel Universe episode); Freeze turns your
+  highest die into a 1; Burn sets your next die on fire and putting it out costs 2 HP; Lock: you can't use dice;
+  Curse: each equipment use has a 50% chance to fail. A die can't be both locked and burning (v1.11). Most last the
+  turn. The cheat becomes a choice of what to pay. [W] [Dicey wiki: Status Effects](https://diceydungeons.fandom.com/wiki/Status_Effects),
+  [F] [Steam strategy](https://steamcommunity.com/app/861540/discussions/0/3185654583878473735), [TV Tropes](https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/DiceyDungeons),
   [P] [Cavanagh devlog](https://terrycavanagh.itch.io/dicey-dungeons/devlog/50288/dicey-dungeons-v013)
 - **LBAL pressure** is a visible clock (rent due in N spins) plus clutter; answers (removal tokens, rerolls,
   essences) come in bundles each payment, halved on floor 4+. [F] [Twinfinite](https://twinfinite.net/guides/how-remove-symbols-luck-be-a-landlord/)
@@ -291,6 +293,45 @@ are listed as fact.
 - **Fair vs cheap, the shared pattern** (opinion, from the above): shown before the decision it affects; at least
   one answer with the player's normal tools, at a price; changes which play is best rather than only subtracting;
   temporary rather than permanent; on a rhythm the player can learn.
+
+### Answering sabotage that switches your stuff off
+Five families of answer; most games mix two.
+- **(a) It wears off.** StS Dazed is Ethereal (gone at end of turn if unplayed); most Dicey Dungeons statuses last
+  the turn; Hades Chaos curses last a set 2-5 encounters, then the blessing stays for the run (players time gates so
+  the curse misses the boss). [W] [StS wiki: Dazed](https://slaythespire.wiki.gg/wiki/Dazed), [F] [Prima: Chaos](https://primagames.com/gaming/hades-chaos-realm-chaos-blessings),
+  [Switchblade: Chaos gates](https://www.switchbladegaming.com/hades-2/chaos-gates-guide/)
+- **(b) Pay to clean.** StS Slimed is the one playable status: 1 energy, exhausts (gone for the combat); Wound, Dazed,
+  Burn are unplayable (Burn: 2 damage at end of turn, 4 upgraded). Dicey Shock costs a die, Burn 2 HP. Balatro's
+  Verdant Leaf debuffs every card until you sell a Joker: called one of the harshest bosses; defenders say keeping a
+  spare Joker to sell is "a strategic choice". Backpack Battles' Lantern Berry spends mana to cleanse debuffs (and gives
+  Luck and Regeneration if there are none, so it's never dead). [W] [StS wiki: Slimed](https://slaythespire.wiki.gg/wiki/Slimed),
+  [F] [Steam: Verdant Leaf](https://steamcommunity.com/app/2379780/discussions/0/7410182519534621383), [comicbook.com](https://comicbook.com/gaming/news/balatro-boss-blinds-toughest/?nb=1),
+  [W] [BB wiki: Lantern Berry](https://backpackbattles.wiki.gg/wiki/Lantern_Berry)
+- **(c) Cleaned by normal good play.** Candy Crush chocolate breaks when the candy next to it is matched or a special
+  candy reaches it; in Candy Crush Soda brown chocolate multiplies on any move that doesn't break one, so ignoring it
+  costs you. Backpack Battles' Strong Health Potion cleanses 4 poison as part of its heal (cleanse 2 -> 3 -> 4 across
+  patches). [W] [Candy Crush wiki: Chocolate](https://candycrush.fandom.com/wiki/Chocolate), [BB wiki: Health Potion](https://backpackbattles.wiki.gg/wiki/Health_Potion)
+- **(d) Caps and immunity windows.** WoW diminishing returns: a repeat of the same control type within 18 s lasts half
+  as long, the third a quarter, then the target is immune for 18 s (Midnight: 100% -> 50% -> immune, reset times
+  differ by patch). Overwatch 2 cut most stuns from damage and support heroes at launch; its director said chained
+  control "felt like you were in a pinball machine" (some came back in season 5). Dicey: a die can't be locked and
+  burning at once. [W] [Warcraft wiki: Diminishing returns](https://warcraft.wiki.gg/wiki/Diminishing_returns),
+  [P] [Blizzard forum: Midnight DR](https://us.forums.blizzard.com/en/wow/t/crowd-control-diminishing-returns/728550),
+  [P] [Overwatch 2 dev blog](https://overwatch.blizzard.com/en-us/news/23824005/), [F] [PCGamesN: OW2 CC](https://www.pcgamesn.com/overwatch-2/crowd-control)
+- **(e) The sabotage becomes fuel.** StS Evolve (draw when you draw a status) and Fire Breathing (damage when you draw
+  one) turn the enemy's junk into pay; Ironclad's Power Through and Immolate add statuses to your own deck for that
+  reason. Medical Kit (relic) makes statuses playable for 0 and exhausts them, feeding exhaust payoffs; Blue Candle does
+  the same for curses at 1 HP. These are optional cards and relics, not the base rule. Inscryption bones: your own
+  losses become a currency. [W] [StS wiki: Burn](https://slaythespire.wiki.gg/wiki/Burn), [Medical Kit](https://slaythespire.wiki.gg/wiki/Medical_Kit),
+  [F] [Steam: statuses and curses](https://steamcommunity.com/app/646570/discussions/0/3016815718812384358)
+- **Pitfalls players name:** a non-interactive lockout ("bricks any build no matter what", Verdant Leaf in a challenge
+  run); control chained so you can't act ("pinball machine"); a flat tax answer (Slimed's 1 energy) is a cost, not a
+  choice, once the right play is always "pay it"; fuel answers (Evolve) make some enemies easier for builds that
+  want them. Sources above.
+- **The pattern** (opinion, from the above): the base rule makes the lockout end on its own (a timer, a cap, an
+  immunity window), and the interesting answers (pay, fuel) live in optional cards and relics. Paying to clean needs
+  an input and a resource; cleaning by normal play needs the player to still be able to play, so on its own it fails
+  in the worst case (too disabled to win, so never cleaned).
 
 ### Shops, drafts and economy
 - **Balatro win payout:** Small blind $3, Big $4, Boss $5, Ante 8 boss $8; +$1 per unused hand; interest $1 per $5
@@ -307,6 +348,42 @@ are listed as fact.
   [TwoAverageGamers](https://www.twoaveragegamers.com/ultimate-guide-to-super-auto-pets-game-mechanics/)
 - **The shared minimum** (opinion, from the above): a win pays one pick of three (skippable) from a small pool; the
   boss pays a better pick. Currency and shops come on top of that, not instead of it.
+
+### Gamble stops and prize machines (events, claw machines)
+- **Real claw machines are set by the operator:** modern cranes compute a payout percentage from the operator's
+  settings; grip strength is adjustable, and some grip at full strength and then weaken after a short delay (the
+  prize lifts, then drops). Vendors describe one strong grab per N plays. A controller manual describes a payout
+  target. [P] [patent 10957164: setting device](https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/10957164),
+  [Betson E-Claw manual](https://www.betson.com/wp-content/uploads/2020/01/E-Claw-Service-Manual-10.3-Copy.pdf),
+  [F, vendor] [clawmachines.com](https://clawmachines.com/claw-strength-guide), [Futureino](https://futureino.ai/blog/are-claw-machines-rigged)
+- **"Skill" prize games that are chance get sued:** Sega's Key Master (a timing-stop key game) faced a 2021 class
+  action alleging a default of 700 losses before a win can happen, while it was sold as a game of skill; Sega replaced
+  it with Prize Locker, sold as "100% skill-based". Stacker (LAI) is a stop-the-row timing game with an estimated
+  1-in-1500 win ratio on Mega Stacker. [F/P] [Courthouse News](https://courthousenews.com/class-calls-segas-key-master-game-rigged/),
+  [casino.org](https://www.casino.org/news/sega-sued-for-5-million-over-key-master-arcade-games/), [W] [Wikipedia: Stacker](https://en.wikipedia.org/wiki/Stacker_(arcade_game))
+- **Japanese UFO catchers' skill is progress over goes:** the common "bridge" setup (hashiwatashi) rests a box across
+  two bars, and you nudge it a little each go until it falls; staff advise where to aim. Prize values sit around
+  1,000 yen (travel guides, not a legal source). [F] [Japan Handbook](https://japanhandbook.com/?p=8287), [Tokyo Cheapo](https://tokyocheapo.com/entertainment/anime-and-gaming/crane-game-tips/),
+  [Japan Nook](https://japannook.com/articles/japan-arcade-prize-games-guide)
+- **Binding of Isaac crane game (Repentance):** 5 coins a go, about 25% to win the item shown in it, up to 3 prizes
+  before it breaks; bombing it gives pickups, not the prize. Players report it feeling worse than 25% (4 goes = 68%).
+  [F] [Bamboo Gaming](https://www.bamboogaming.net/the-binding-of-isaac/machines/crane-game), [Steam](https://steamcommunity.com/app/250900/discussions/0/597394966009879102)
+- **Balatro Wheel of Fortune:** 1 in 4 to add an edition to a random Joker, else "Nope!". Steam threads ask if it's
+  rigged ("30-40 times, it worked 4-5"); LocalThunk reportedly confirmed it works as stated. A flat 25% reads as lower
+  than it is. [F] [Steam: is it really 1 in 4?](https://steamcommunity.com/app/2379780/discussions/0/4293691221506323823)
+- **StS Scrap Ooze (act 1, push-your-luck):** Reach Inside costs HP (3; more at high Ascension) for a 25% chance at a
+  relic; each miss adds 10% and costs 1 more HP; you can leave any time. Cumulative ~73% by the third reach.
+  [W] [StS archive wiki: Scrap Ooze](https://slaythespire-archive.fandom.com/wiki/Scrap_Ooze)
+- **StS Match and Keep:** 12 face-down cards, 5 attempts to find pairs; every pair you match joins your deck, curses
+  too, so the skill is memory and the decision is which pairs to want. Seeded. [W] [StS wiki: Events List](https://slaythespire.wiki.gg/wiki/Events_List)
+- **StS Dead Adventurer:** search for a relic or gold, with a chance the elite that killed him returns (a rising risk
+  per search, exact steps not verified). [W] [StS wiki: Elite](https://slaythespire.wiki.gg/wiki/Elite)
+- **Slay the Spire 2's events** were redesigned to push "tough choices"; not every option is good, and fighting can be
+  the better pick. [F] [PCGamesN](https://www.pcgamesn.com/slay-the-spire-2/events-redesign)
+- **The pattern** (opinion, from the above): luck stops that last are cheap and quick (Wheel of Fortune, Isaac's
+  crane) or put a decision between goes: when to stop while the odds or the cost climb (Scrap Ooze), or progress you
+  can see across goes (bridge UFO catchers). A "skill" look over pure chance reads as rigged (Key Master), and so does
+  a flat low chance repeated (Wheel of Fortune, Isaac).
 
 ## Battlers
 ### Head-to-head and async races (Super Auto Pets, Backpack Battles, The Bazaar)
@@ -515,3 +592,30 @@ Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP,
   slices, as an add-on to other symbols' pays.
 - **Opinion:** the build-then-cash-in arc is worth keeping; the delivery isn't. A replacement should pay the moment it
   lands, show its value on the symbol, grow inside the race, and not add to every other pay (keeps the ladder).
+
+### Act 1 sabotage's dead stretches (open; 2026-10-31 triage)
+- **How each trick ends today** (read from `src/core/fightTricks.ts`, `fight.ts`): JAM and FREEZE already wear off
+  (a turn count), FREEZE is capped at 2 reels, and a reel that thaws can't be frozen or jammed on the next enemy turn
+  (a one-turn immunity window, the WoW move). SPILL stays on its strip cells until a spill pair (its reels) or jackpot
+  (all) cleanses, and goes for Charmed cells first; stolen cells stay empty until a stolen-cell jackpot or the fight
+  ends; ROCKS are added to the strips (up to 6 a trick, a strip at most 24 cells) until the fight ends.
+- **Precedent:** see Roguelikes > Answering sabotage. Families: (a) wears off, (b) pay to clean, (c) cleaned by normal
+  play, (d) caps and immunity, (e) sabotage as fuel.
+- **Pitfall (ours):** SPILL and STEAL rely on (c) alone, and (c) fails in the worst case: the more of your strip is
+  dead, the less likely the pair or jackpot that cleans it. OVERTIME then multiplies both sides while you can't pay.
+- **Opinion:** (a) plus (d) fits a SPIN-only fight best (no new input, no change to HOLD): the same rule JAM and FREEZE
+  already follow, so "everything done to your machine wears off" is one sentence; (b) needs a button and a resource;
+  (e) belongs on optional relics or Charms (Evolve, Medical Kit), not the base rule.
+
+### The CLAW (open; 2026-10-31 triage)
+- **Today** (`CLAW`, `CLAW_PRIZES` in `src/core/encounters.ts`): 5 chips a go, 3 goes; aim at 10 CHIPS (holds 65%),
+  2 CHARMS (40%) or A RELIC (20%); every miss reads SO CLOSE / IT SLIPPED. Computed: three goes at the relic win it
+  49% of the time; at the Charms, 78%; the chips go is +1.5 chips a go on average. The only decision is the target,
+  made once with odds hidden behind EASY / TRICKY / HARD.
+- **Precedent:** Scrap Ooze (odds rise each miss, cost rises, leave any time), bridge UFO catchers (visible progress
+  across goes), Isaac's crane (flat 25%, felt as rigged), Key Master (chance dressed as skill, sued).
+- **Pitfall:** a miss that always says SO CLOSE is a dressed-up loss, the thing Nevada banned in slots (see Odds,
+  near-misses and feel); a flat chance repeated reads as rigged (Wheel of Fortune, Isaac).
+- **Opinion:** rework before cutting: keep the pick, make each miss move the prize visibly toward the chute (the
+  odds climb, as Scrap Ooze's +10%), and say SO CLOSE only when it was. Then every go is a stop-or-push call, the
+  HIGHER OR LOWER tension in a different shape.
