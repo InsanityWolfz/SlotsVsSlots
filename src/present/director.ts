@@ -209,6 +209,12 @@ export class Director {
         return this.potWin(e);
       case 'relic':
         this.relicPop(e.side, e.relic);
+        for (const ins of e.inserts ?? []) {
+          const cell = { symbol: 'wild' as const, slimed: false, goo: 0, flash: 1, pop: 0 };
+          this.s.machines[e.side].insertCell(ins.reel, ins.index, cell);
+          this.bg(this.c.tween({ from: 0, to: 1, dur: 0.3, ease: backOut(3), onUpdate: (v) => (cell.pop = v) }));
+          this.bg(this.c.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (cell.flash = v) }));
+        }
         return this.c.wait(0.12);
       case 'phase':
         return this.phase(e);

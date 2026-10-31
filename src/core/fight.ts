@@ -915,8 +915,12 @@ export class Fight {
       events.push({ type: 'payoff', side: me.side, kind: 'jackpots' });
       // HOUSE OF CARDS: each payoff adds a WILD to reel 2 for the rest of the fight.
       if (me.side === 'player' && me.relics.has('houseofcards')) {
-        for (const reel of this.rng.shuffle([...me.reels]).slice(0, 2)) insertOffscreen(reel, { symbol: 'wild', slimed: false }, this.rng);
-        events.push({ type: 'relic', side: me.side, relic: 'houseofcards' });
+        // The view mirrors the inserts (it used to miss them, so a later cell index ran past its strip: a crash).
+        const inserts: CellRef[] = this.rng
+          .shuffle(me.reels.map((reel, idx) => ({ reel, idx })))
+          .slice(0, 2)
+          .map(({ reel, idx }) => ({ reel: idx, index: insertOffscreen(reel, { symbol: 'wild', slimed: false }, this.rng) }));
+        events.push({ type: 'relic', side: me.side, relic: 'houseofcards', inserts });
       }
       return;
     }

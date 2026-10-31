@@ -71,6 +71,25 @@ describe('signature meters (one per slot machine)', () => {
     ]);
   });
 
+  it("HOUSE OF CARDS: each payoff's WILDs go on the strips and the event says where (the view mirrors them; it used to crash)", () => {
+    const f = on('joker', (c) => {
+      c.player.strips = reels3({ sword: 4, shield: 4, wild: 4 });
+      c.relics = ['houseofcards'];
+    });
+    const lens = f.sides.player.reels.map((r) => r.cells.length);
+    f.sides.player.energy = f.meterCost;
+    f.sides.player.armed = true;
+    f.forceNext('player', ['sword', 'shield', 'sword']);
+    const ev = f.step().events;
+    expect(ofType(ev, 'payoff')[0].kind).toBe('jackpots');
+    const hoc = ofType(ev, 'relic').find((e) => e.relic === 'houseofcards');
+    expect(hoc?.inserts).toHaveLength(2);
+    for (const ins of hoc!.inserts!) {
+      expect(f.sides.player.reels[ins.reel].cells[ins.index].symbol).toBe('wild');
+      expect(f.sides.player.reels[ins.reel].cells.length).toBe(lens[ins.reel] + 1);
+    }
+  });
+
   it('3 WILDS: a bonus reel picks one of your symbols and the line pays its jackpot', () => {
     const f = on('knight', (c) => (c.player.strips = reels3({ sword: 4, shield: 4, wild: 4 })));
     f.forceNext('player', ['wild', 'wild', 'wild']);

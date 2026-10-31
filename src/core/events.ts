@@ -175,7 +175,8 @@ export type CombatEvent =
   /** Someone takes the progressive pot as damage. */
   | { type: 'potWin'; from: SideId; to: SideId; amount: number; blocked: number; hpDamage: number; targetHp: number; targetShield: number; potLeft: number }
   /** A relic did something (the HUD pops its icon). Pay-changing relics ride on the spin's score instead. */
-  | { type: 'relic'; side: SideId; relic: RelicId }
+  /** inserts: cells the relic added to your strips (HOUSE OF CARDS' WILDs), for the view to mirror. */
+  | { type: 'relic'; side: SideId; relic: RelicId; inserts?: CellRef[] }
   /** Boss phase 2 at half HP: the House DOUBLES DOWN (the pot doubles). */
   | { type: 'phase'; side: SideId; pot: number }
   | { type: 'death'; side: SideId }
