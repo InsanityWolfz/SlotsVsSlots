@@ -4,7 +4,7 @@
  * what killed you. Seeded, so a run can be replayed in the sim.
  */
 import { CABINETS } from './cabinets';
-import { charmLevel, charmName, symLevel } from './charms';
+import { charmName, symLevel } from './charms';
 import { RELICS } from './relics';
 import { symLabel, type SymbolId } from './config';
 import { encounterOf } from './encounters';
@@ -49,7 +49,7 @@ export function runSummary(run: RunState, version = ''): string {
     `START RELIC: ${run.startRelic ? (RELICS[run.startRelic]?.name ?? run.startRelic) : 'NONE'}`,
     `RELICS: ${p.relics.map((r) => RELICS[r]?.name ?? r).join(', ') || 'NONE'}`,
     `SYMBOL LEVELS: ${Object.keys(p.levels.sym).map((s) => `${symLabel(s as SymbolId)} ${symLevel(p.levels, s as never)}`).join(', ') || 'ALL 1'}`,
-    `CHARMS: ${p.gilded.map((g) => `${charmName(g.enh)} LV${charmLevel(p.levels, g.enh)} x${g.n} on reel ${g.reel + 1} ${symLabel(g.symbol)}`).join(', ') || 'NONE'}`,
+    `CHARMS: ${p.gilded.map((g) => `${charmName(g.enh)} x${g.n} on reel ${g.reel + 1} ${symLabel(g.symbol)}`).join(', ') || 'NONE'}`,
     `REELS: ${p.strips.map((s, i) => `${i + 1}: ${Object.entries(s).filter(([, n]) => n).map(([k, n]) => `${symLabel(k as SymbolId)} ${n}`).join(' ')}`).join(' / ')}`,
     // (Old saves only: BIG CHOICES are gone, 2026-10-15. A run that took some still lists them.)
     ...(run.records.some((r) => r.choice) ? [`BIG CHOICES: ${run.records.flatMap((r) => (r.choice ? [r.choice] : [])).join(', ')}`] : []),

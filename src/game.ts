@@ -1056,7 +1056,11 @@ export class Game {
       }
       if (token !== this.token) return;
       const result = this.fight.step();
-      for (const e of result.events) if (e.type === 'spin' && e.side === 'player') this.lastPair = e.score.tier === 'pair';
+      for (const e of result.events) {
+        if (e.type === 'spin' && e.side === 'player') this.lastPair = e.score.tier === 'pair';
+        // A freeze moves and locks your reels: the pair it broke can't be held (the HOLD call went stale: playtest).
+        else if (e.type === 'freeze' && e.to === 'player') this.lastPair = false;
+      }
       this.noteHurt(result.events);
       this.tracker.record(result.events);
       this.rows.push(turnRow(this.fight, result, this.fightNo));

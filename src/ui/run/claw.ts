@@ -86,7 +86,9 @@ export abstract class ClawScreen extends CardGames {
    * gone), the claw; GOES LEFT and the aims on the side. */
   protected drawClaw(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
-    const goes = Math.max(0, CLAW.tries + extraPlays(run) - (run.encounterPlays ?? 0));
+    // The last go moves the run on (its plays reset to 0), so the screen still up on the result reads 0, not a full set.
+    const done = !!this.cwMsg && !this.cwMsg.more;
+    const goes = done ? 0 : Math.max(0, CLAW.tries + extraPlays(run) - (run.encounterPlays ?? 0));
     drawText(ctx, `${atStakes(run, CLAW.price)} CHIPS A GO`, TCX, 72, T.small, KIT.dim);
     const x0 = TCX - 250;
     const w = 500;

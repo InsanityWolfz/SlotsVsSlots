@@ -196,7 +196,8 @@ export abstract class OverScreen extends ShopScreen {
     const sy = py + (loss?.hurt?.length || this.rideOffer ? 166 : 140);
     drawText(ctx, 'SCORE', tx, sy + 10, T.small, KIT.dim, { align: 'left' });
     drawWell(ctx, tx, sy + 22, 360, 74, '#120c1c');
-    drawSprite(ctx, 'chip', tx + 34, sy + 59, 3);
+    // A trophy, not a chip: the score isn't chips (playtest 2026-10-31).
+    drawSprite(ctx, artId('trophySmall'), tx + 34, sy + 59, 3);
     // The count-up lands with a punch.
     if (t > B.score + 0.05 && this.overScore.done && this.scoreLanded < 0) this.scoreLanded = performance.now() / 1000;
     const since = this.scoreLanded < 0 ? 9 : performance.now() / 1000 - this.scoreLanded;

@@ -105,7 +105,7 @@ export function charmShortText(enh: Enh, lvl: number): string {
     case 'keen':
       return `+${v} DAMAGE AND PIERCES SHIELDS`;
     case 'charged':
-      return `+${v} CHARGE ON BOLTS`;
+      return `+${v} CHARGE`;
     case 'vamp':
       return `+${v} HP`;
     case 'lucky':
@@ -119,7 +119,7 @@ export function charmShortText(enh: Enh, lvl: number): string {
     case 'trick':
       return `+${v} TO YOUR JACKPOT METER`;
     case 'echo':
-      return `DROP: HITS X${v}`;
+      return `THE DROP HITS X${v}`;
     case 'glass':
       return `X${v} PAY. 1 IN 4 TO SHATTER`;
   }

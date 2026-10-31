@@ -69,6 +69,13 @@ const emptySide = (): SideStats => ({
 export class StatsTracker {
   readonly stats: FightStats;
   private dry: Record<SideId, number> = { player: 0, enemy: 0 };
+  /** Damage a side has sent since its last spin: BIGGEST HIT is the best spin, not the best single strike (TESLA's
+   * lightning lands as many small strikes, so its 4,000-damage spins read as "170"; playtest 2026-10-31). */
+  private spinDmg: Record<SideId, number> = { player: 0, enemy: 0 };
+  private hit(side: SideId, amount: number): void {
+    this.spinDmg[side] += amount;
+    this.stats.sides[side].biggestHit = Math.max(this.stats.sides[side].biggestHit, this.spinDmg[side]);
+  }
 
   constructor(private fight: Fight) {
     this.stats = { seed: fight.seed, turns: 0, winner: null, sides: { player: emptySide(), enemy: emptySide() } };
@@ -89,6 +96,7 @@ export class StatsTracker {
       case 'spin': {
         const s = S[e.side];
         s.spins++;
+        this.spinDmg[e.side] = 0;
         if (e.score.tier === 'pair') s.pairs++;
         if (e.score.tier === 'triple') s.triples++;
         if (e.nearMiss) {
@@ -102,14 +110,14 @@ export class StatsTracker {
       case 'attack':
         S[e.from].damageDealt += e.hpDamage;
         S[e.to].damageBlocked += e.blocked;
-        S[e.from].biggestHit = Math.max(S[e.from].biggestHit, e.amount);
+        this.hit(e.from, e.amount);
         break;
       case 'specialFire':
         S[e.from].specials++;
         S[e.from].specialDamage += e.hpDamage;
         S[e.from].damageDealt += e.hpDamage;
         S[e.to].damageBlocked += e.blocked;
-        S[e.from].biggestHit = Math.max(S[e.from].biggestHit, e.amount);
+        this.hit(e.from, e.amount);
         break;
       case 'shieldGain':
         S[e.side].shieldGained += e.amount;

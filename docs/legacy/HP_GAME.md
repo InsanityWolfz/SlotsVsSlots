@@ -204,7 +204,7 @@ hexer, vampire). Words: SPILL (was SLIME), IOU (was BOMB), JINX (was HEX), ROCK 
 Each machine except KNIGHT has one signature symbol and a meter.
 | Machine | Hero | Attack symbol | Meter | Unlock |
 |---|---|---|---|---|
-| KNIGHT | SIR REGINALD | sword | none: half swords, half shields, both from level 2 (470 HP) | start |
+| KNIGHT | SIR REGINALD | sword | none: half swords, half shields, both from level 2 (390 HP) | start |
 | TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields | reach the House |
 | JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat the House |
 | JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat the House with wilds |

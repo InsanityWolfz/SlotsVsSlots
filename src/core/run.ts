@@ -158,7 +158,7 @@ export interface FightRecord {
   elite?: boolean;
   /** A boss paid this symbol a level (shown on the next screen). */
   bossLevel?: SymbolId;
-  /** Your biggest single hit this fight (the run-over screen's BEST HIT; a stat, not a rule). */
+  /** Your biggest spin this fight (all its hits) (the run-over screen's BEST HIT; a stat, not a rule). */
   best?: number;
   /** DEATH RECAP (lost fights): the top sources of HP damage you took, e.g. [['SPIN HITS', 180], ['BOMBS', 60]]. */
   hurt?: [string, number][];
@@ -1218,7 +1218,11 @@ export function draftOffers(run: RunState): DraftOption[] {
       for (const from of ['rock', 'shield'] as SymbolId[]) {
         const n = s[from] ?? 0;
         if (n <= 0 || (from === 'shield' && n < 2) || from === sig) continue;
-        options.push({ kind: 'swap', from, to: sig, count: Math.min(RUN.swapCount, n), reel });
+        // Only plain cells convert: a swap never eats a charm you drafted (playtest 2026-10-31: 2 SHIELDS TO BOLTS
+        // took a CHIP-charmed shield).
+        const plain = plainCells(p, reel, from);
+        if (plain <= 0) continue;
+        options.push({ kind: 'swap', from, to: sig, count: Math.min(RUN.swapCount, plain), reel });
       }
     });
     // Rocks-to-something first when you're carrying junk.
