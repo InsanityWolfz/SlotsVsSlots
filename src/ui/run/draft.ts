@@ -8,7 +8,7 @@ import { VOLUME } from '../../core/fight';
 import { backOut } from '../../present/ease';
 import { ENH_SPRITE } from '../../present/reel';
 import { COLORS, H, W } from '../../present/layout';
-import { artId, drawSprite, hasSprite, type SpriteId } from '../../render/sprites';
+import { artId, drawSprite, hasSprite, spriteSize, type SpriteId } from '../../render/sprites';
 import { drawText, fmtNum, textWidth } from '../../render/text';
 import { drawRich, keywordsIn, type Keyword } from '../keywords';
 import { CountUp, drawBanner, drawCard, drawChip, drawPanel, KIT, T } from '../kit';
@@ -148,8 +148,10 @@ export abstract class DraftScreen extends NextScreen {
           : spoils
             ? 'ELITE SPOILS: PICK A RELIC'
             : 'PICK ONE';
-    if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), CX - textWidth(heading, T.head) / 2 - 48, 268, 3);
-    drawText(ctx, heading, CX, 268, textWidth(heading, T.head) <= W - 340 ? T.head : T.body, legend ? KIT.title : spoils ? '#ff9a3a' : KIT.text);
+    const hSize = textWidth(heading, T.head) <= W - 340 ? T.head : T.body;
+    // The act plaque sits clear of the heading at the size it's drawn (it overlapped its first letters: playtest).
+    if (act3Arrival && hasSprite('actPlaque3')) drawSprite(ctx, artId('actPlaque3'), CX - textWidth(heading, hSize) / 2 - (spriteSize(artId('actPlaque3')).w * 3) / 2 - 14, 268, 3);
+    drawText(ctx, heading, CX, 268, hSize, legend ? KIT.title : spoils ? '#ff9a3a' : KIT.text);
     // One name size for the whole deal: the heading size when every name fits its card.
     this.titleSize = this.cards.every((c, i) => textWidth(cardFace(this.offers[i], run).title, T.head) <= c.w - 24) ? T.head : T.body;
     this.cards.forEach((c, i) => this.drawDraftCard(ctx, c, this.offers[i], i, time));

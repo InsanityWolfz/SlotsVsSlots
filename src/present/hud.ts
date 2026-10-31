@@ -227,10 +227,30 @@ export class HudView {
         ctx.globalAlpha = 1;
       }
       const label = this.armed ? (m.kind === 'touch' ? 'TOUCH READY!' : `${m.label} READY!`) : m.label;
-      drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, T.small, '#ffffff', { align: 'left' });
       // THE JUKEBOX counts its volume in levels (4/6), like its cards do.
       const count = m.kind === 'volume' ? `${Math.floor(this.energy + 0.01)}/${this.energyMax}` : `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`;
-      drawText(ctx, count, b.x + b.w - 6, b.y + b.h / 2 + 1, T.small, '#ffffff', { align: 'right' });
+      // White over the empty bar, dark over the fill (white on a pale fill didn't read: playtest 2026-10-31).
+      const words = (color: string, outline?: null) => {
+        drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, T.small, color, { align: 'left', ...(outline === null ? { outline } : {}) });
+        drawText(ctx, count, b.x + b.w - 6, b.y + b.h / 2 + 1, T.small, color, { align: 'right', ...(outline === null ? { outline } : {}) });
+      };
+      words('#ffffff');
+      if (frac > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(b.x, b.y, frac * b.w, b.h);
+        ctx.clip();
+        ctx.fillStyle = m.color;
+        ctx.fillRect(b.x, b.y, frac * b.w, b.h);
+        if (glow > 0) {
+          ctx.globalAlpha = glow;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(b.x, b.y, frac * b.w, b.h);
+          ctx.globalAlpha = 1;
+        }
+        words(COLORS.outline, null);
+        ctx.restore();
+      }
     }
     if (this.ability) this.drawAbility(ctx, time);
     else if (this.hint) drawChip(ctx, this.hint, x + HUD_W / 2, this.chipY, { scale: T.body, color: '#c8f0ff' });

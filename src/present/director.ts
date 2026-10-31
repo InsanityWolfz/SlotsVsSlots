@@ -408,6 +408,11 @@ export class Director {
     });
   }
 
+  /** BLOCK n: small, in the shield bar's right end, no rise (it was HEAD size and rose over the HP number: playtest). */
+  private blockPop(sb: { x: number; y: number; w: number; h: number }, blocked: number): void {
+    this.bg(this.popText(`BLOCK ${blocked}`, sb.x + sb.w - 46, sb.y + sb.h / 2, 1.5, '#9fd0ff', 0, 0.45));
+  }
+
   private popText(text: string, x: number, y: number, scale: number, color: string, rise = 50, hold = 0.35, plate = false): Promise<void> {
     // The kit's text sizes (nothing under SMALL); a giant number stays a display number.
     const size = scale <= 1.8 ? T.small : scale < 2.5 ? T.body : scale <= 3.5 ? T.head : scale <= 5 ? T.title : scale;
@@ -945,7 +950,7 @@ export class Director {
       this.decay(h, 'shieldFlash', 1, 0.25);
       this.decay(h, 'shieldShake', 5, 0.3);
       this.s.particles.burst({ x: sb.x + 30, y: sb.y + 8, count: 20, colors: [COLORS.shield, '#ffffff', '#9fd0ff'], speed: [100, 350], kind: 'spark', gravity: 200, life: [0.2, 0.4] });
-      this.bg(this.popText(`BLOCK ${e.blocked}`, sb.x + sb.w / 2, sb.y + sb.h / 2, 2.5, '#9fd0ff', 16, 0.3));
+      this.blockPop(sb, e.blocked);
     }
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
     if (e.note === 'pierce') this.bg(this.popText('PIERCE!', target.x + 90, MACHINE_TOP - 22, 2, '#bff4ff', 14, 0.35));
@@ -2139,7 +2144,7 @@ export class Director {
       this.s.sounds.block();
       const sb = h.shieldBar();
       this.decay(h, 'shieldFlash', 1, 0.25);
-      this.bg(this.popText(`BLOCK ${e.blocked}`, sb.x + sb.w / 2, sb.y + sb.h / 2, 2.5, '#9fd0ff', 16, 0.3));
+      this.blockPop(sb, e.blocked);
     }
     this.damageHud('player', e.targetHp, e.targetShield, e.hpDamage);
     m.bets = [0, 0, 0];

@@ -294,7 +294,8 @@ export class MachineView {
       const n = this.bets[r];
       if (n <= 0) continue;
       const cx = PITCH * (r + 0.5);
-      const y = MACHINE_H - 8;
+      // Up off the bottom edge: the HOLD chip hangs there (the middle stack covered NO HOLDS LEFT: playtest).
+      const y = MACHINE_H - 26;
       // The reel is on the table: a red rail along its foot.
       ctx.fillStyle = 'rgba(176,32,46,0.55)';
       ctx.fillRect(PITCH * r + 4, MACHINE_H - 6, PITCH - 8, 4);
