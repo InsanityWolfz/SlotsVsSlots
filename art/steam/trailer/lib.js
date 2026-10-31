@@ -11,6 +11,7 @@ const R = await import('/src/core/rng.ts');
 const SONG = window.__song || 'house';
 const LEN = 70, SR = 48000;
 const off = new OfflineAudioContext(2, SR * LEN, SR);
+g.audioStarted = true; // no in-game MusicPlayer: the music bed is rendered apart (musicWav)
 const RealAC = window.AudioContext;
 window.AudioContext = function () { return off; };
 const s = new Syn();
@@ -21,7 +22,11 @@ Object.defineProperty(s, 'tune', { get: () => 2 ** (M.SONG_HOME[SONG] / 12), set
 for (const k of ['tone', 'noise', 'duck', 'startAmbient']) { const f = s[k].bind(s); s[k] = (...a) => (rec ? f(...a) : undefined); }
 { const f = s.loop.bind(s); s.loop = (...a) => (rec ? f(...a) : () => {}); }
 g.synth = s; g.sounds.s = s;
-g.prefs.vol.music = 0; g.applyJuice();
+g.applyJuice();
+// at(t, fn): play a sound effect at an exact time (beat-synced), not the frame's
+const at = (t, fn) => { const keep = vt, was = rec; vt = t; rec = true; fn(); vt = keep; rec = was; };
+// the song's beat (the music bed itself is rendered apart, musicWav, and laid in by mix.sh at 2 bars)
+const BEAT = 60 / M.compose(SONG).bpm;
 const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d');
 let vnow = performance.now() + 1000;
@@ -68,13 +73,16 @@ async function fight(cab, id, act, line, pre, post) {
 const text = (t, x, y, sc, col, o = {}) => TX.drawText(ctx, t, x, y, sc, col, { align: 'center', ...o });
 const dim = (a) => { ctx.fillStyle = `rgba(6,2,12,${a})`; ctx.fillRect(0, 0, 1280, 720); };
 window.trailer = async () => {
-  // A: cold open, the marquee lights up bulb by bulb, then chases
-  await card(150, (i) => {
+  // A: cold open on the song's grid: bulbs light on the eighth notes for a bar, the sign comes on with its fanfare
+  // on the next downbeat, and the song drops in on the bar after, on the cut to the first spin
+  const E8 = BEAT / 2, BAR = 4 * BEAT;
+  for (let k = 0; k < 8; k++) at(k * E8, () => g.sounds.tick((k + 1) / 8));
+  at(BAR, () => g.sounds.fanfareJackpot());
+  await card(Math.round(2 * BAR * 60), (i) => {
+    const t = i / 60;
     ctx.drawImage(BG_OPEN, 0, 0);
-    const lit = Math.min(1, i / 60);
-    if (i % 5 === 0 && i <= 60) g.sounds.tick(lit);
-    if (i === 62) g.sounds.fanfareJackpot();
-    title.drawLogo(ctx, 640, 300, 5, { lit, on: Math.min(1, 0.35 + i / 60), chase: i > 60 ? Math.floor((i - 60) / 5) : 0 });
+    const lit = Math.min(1, (Math.floor(t / E8) + 1) / 8);
+    title.drawLogo(ctx, 640, 300, 5, { lit, on: t < BAR ? 0.35 + 0.4 * lit : 1, chase: t >= BAR ? Math.floor((t - BAR) / E8) : 0 });
   });
   // B: Tesla's mega win
   await fight('tesla', 'croupier', 1, ['bolt', 'bolt', 'bolt'], 20, 240);
