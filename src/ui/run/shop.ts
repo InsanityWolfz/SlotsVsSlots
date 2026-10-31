@@ -93,23 +93,12 @@ export abstract class ShopScreen extends EncounterScreen {
   }
 
   protected drawShop(ctx: CanvasRenderingContext2D, time: number): void {
-    const run = this.run!;
     // The Cashier himself, in a lit well (drawPortrait: his 32x32 art and the old 24x24 fill the same box).
     drawWell(ctx, 334, 18, 116, 116, '#1c1530');
     spotlight(ctx, 392, 118, 96, '#5ad8e8', 0.12, [336, 20, 112, 112]);
     drawPortrait(ctx, 'cashierPortrait', 392, 76 + (this.reduceMotion ? 0 : Math.round(Math.sin(time * 2) * 2)), 4);
-    drawTitle(ctx, 'THE CASHIER', 474, 46, KIT.title, { align: 'left' });
-    // What he says, in a speech panel.
-    const quips = ['PLACE YOUR BETS.', 'EVERYTHING HAS A PRICE, FRIEND.', 'THE HOUSE WILL HEAR ABOUT THIS.', 'CHIPS ARE FOR SPENDING... OR ARE THEY?'];
-    // THE BIG ONE (one legendary a visit, in the case): he says so.
-    const quip = this.shopItems.some((it) => !it.sold && it.showcase) ? 'THE BIG ONE IS IN THE CASE.' : quips[(run.depth + run.shopRerolls) % quips.length];
-    const qw = textWidth(quip, T.body) + 32;
-    drawPanel(ctx, 474, 76, qw, 40, { frame: KIT.frameDim });
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(464, 90, 10, 12);
-    ctx.fillStyle = KIT.frameDim;
-    ctx.fillRect(466, 92, 10, 8);
-    drawText(ctx, quip, 474 + 16, 97, T.body, KIT.text, { align: 'left' });
+    // (No speech line under the name: user, 2026-10-31, it read like AI. The name sits level with his face.)
+    drawTitle(ctx, 'THE CASHIER', 474, 76, KIT.title, { align: 'left' });
     this.drawShelves(ctx, time);
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
     for (const b of this.buttons) this.drawButton(ctx, b, time);

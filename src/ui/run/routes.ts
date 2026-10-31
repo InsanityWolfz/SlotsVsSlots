@@ -72,7 +72,7 @@ export abstract class RouteScreen extends MapScreens {
     const act = run.endless ? `LOOP ${run.endless.loop}` : `ACT ${run.act}`;
     drawText(ctx, 'CHOOSE YOUR PATH', CX, 28, T.head, KIT.title);
     const night = nightOf(run);
-    const line = run.endless?.nights?.length ? "EACH PATH HAS ITS OWN RULE FOR BOTH MACHINES (TONIGHT'S RULE)" : night ? `TONIGHT'S RULE: ${night.title}. ${night.text}` : 'EVERY STOP IS SHOWN. TAP A PATH, THEN TAKE IT';
+    const line = run.endless?.nights?.length ? "EACH PATH HAS ITS OWN RULE FOR BOTH MACHINES (TONIGHT'S RULE)" : night ? `TONIGHT'S RULE: ${night.title}. ${night.text}` : ''; // no instruction line (user, 2026-10-31: it read like AI)
     drawText(ctx, line, CX, 56, T.small, night || run.endless?.nights?.length ? '#ffd23f' : KIT.dim);
     // The map: a panel with the place's name on its tab.
     const place = run.endless ? `${act}` : `${act}: ${PLACE[Math.min(2, run.act - 1)]}`;
