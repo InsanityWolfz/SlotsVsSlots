@@ -311,5 +311,42 @@
   "h": 720,
   "G": 4,
   "raw": "m.title.drawLogo(ctx, W / 2, H / 2, 8, { chase: 1 });"
+ },
+ "tr_end": {
+  "w": 1280,
+  "h": 720,
+  "G": 6,
+  "L": {
+   "hz": 82,
+   "f": 1.43,
+   "by": 618,
+   "logo": null,
+   "fade": [
+    548,
+    608
+   ],
+   "neon": [
+    [
+     "CHERRY",
+     8,
+     30,
+     2,
+     "#ff4fe0"
+    ],
+    [
+     "SEVEN",
+     194,
+     30,
+     2,
+     "#4fe0bf"
+    ]
+   ]
+  }
+ },
+ "tr_open": {
+  "w": 1280,
+  "h": 720,
+  "G": 6,
+  "raw": "sky(78); searchlight(64, 82, 36, 0, '#ffe6aa', 0.06); searchlight(150, 82, 182, 0, '#ffe6aa', 0.06); searchlight(107, 82, 93, 0, '#ffb0c0', 0.04); skyline(82, { seed: 9 }); neonMask(CHERRY, 8, 30, '#ff4fe0', '#ff4fe0'); neonMask(SEVEN, 194, 30, '#4fe0bf', '#4fe0bf'); street(88); glow(107, 104, 50, '#ffe6aa'); vignette();"
  }
 }
