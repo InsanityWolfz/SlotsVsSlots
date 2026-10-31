@@ -117,7 +117,9 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (k === '`' || k === 't') tuning?.toggle();
-  else if (k === 'l') log.toggle();
+  else if (k === 'l') {
+    if (DEV_TOOLS) log.toggle();
+  }
   else if (k === 'escape') {
     tuning?.toggle(false);
     log.toggle(false);

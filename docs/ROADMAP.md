@@ -13,7 +13,7 @@ the map (https://claude.ai/artifact/XG4G8AGpwb3AGEeMRav5o2; 2560x1440, in order,
 Trailer cut 1 (43 s, 1080p60, real gameplay frame-stepped with the game's own sound over THE HOUSE's theme) is in review:
 https://claude.ai/artifact/8hbHvaF1gA6sTfFd5oN4Bo (`art/steam/trailer/`). Drafted, waiting on the user: the short
 description and the AI disclosure. The user hasn't opened Steamworks yet. Open calls for
-the user: the combat LOG drawer (a dev tool, still in the public build), FULL next to an unlit bulb in settings,
+the user: FULL next to an unlit bulb in settings (the combat LOG is now dev-only: user, 2026-10-31),
 fantasy-named relics (VAMPIRE FANG, SKELETON KEY, PHOENIX FEATHER, HOLY WATER, DEVIL'S DUE, CRUSADE, QUICKENING, VAMP
 CHARM), the ~45 rewritten card faces.
 Done before: theme, roster, name (REEL BRAWL), 24 portraits, words, enemy symbols (art:

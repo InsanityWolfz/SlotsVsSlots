@@ -416,7 +416,8 @@ export class Game {
     // One SPEED button cycles 1X -> 2X -> 4X -> 8X (the keys 1-4 still pick one).
     this.speedBtns.push(this.btn('2X', px + 132, by, 120, 44, () => this.setSpeed(SPEEDS[(SPEEDS.indexOf(this.prefs.speed) + 1) % SPEEDS.length])));
     this.startBtn = this.btn('START RUN', W / 2 + 10, by, 196, 56, () => this.newRunPressed(), { idlePulse: true, textScale: 3 });
-    // (TUNE is the dev build's tuning panel: never in the public build, see syncButtons.)
+    // (TUNE and LOG are dev tools, the tuning panel and the combat log: never in the public build, see syncButtons.
+    // User, 2026-10-31: LOG out of the public and Steam builds.)
     const tune = this.btn('TUNE', W / 2, by, QUIET_W, 36, () => {}, { quiet: true, textScale: T.small });
     // The tool row: small and dim (it's a watch-only game; the chrome shouldn't compete with the reels).
     const log = this.btn('LOG', toolX(0), by, QUIET_W, 36, () => {}, { quiet: true, textScale: T.small });
@@ -449,7 +450,7 @@ export class Game {
     // The pulled-out drawer covers AUTO and SPIN: they come back when the drawer closes.
     if (this.buildOpen && this.drawerLive()) this.autoBtn.visible = this.spinBtn.visible = false;
     for (const b of this.recapBtns) b.visible = this.phase === 'recap';
-    for (const b of this.buttons) if (b.label === 'TUNE' || b.label === 'LOG') b.visible = this.screens.mode !== 'cabinet' && !(b.label === 'TUNE' && this.publicBuild);
+    for (const b of this.buttons) if (b.label === 'TUNE' || b.label === 'LOG') b.visible = this.screens.mode !== 'cabinet' && !this.publicBuild;
     // On the menus SOUND lives in SETTINGS (the main menu stays clear); M still toggles it everywhere.
     this.muteBtn.visible = this.screens.mode !== 'cabinet' && !this.menus.isOpen;
     Object.assign(this.muteBtn, this.menus.isOpen ? { x: W - 70, y: H - 30 } : { x: toolX(1), y: 648 });
