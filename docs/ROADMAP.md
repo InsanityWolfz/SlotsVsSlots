@@ -15,7 +15,12 @@ Trailer cut 2 (44 s, 1080p60, real gameplay frame-stepped with the game's own so
 the beat, the music softened (mix 2)) approved (user, 2026-10-31: "looks good"):
 https://claude.ai/artifact/8hbHvaF1gA6sTfFd5oN4Bo (`art/steam/trailer/`). Drafted, waiting on the user: the short
 description and the AI disclosure. Steamworks: opened and the $100 paid (user, 2026-10-31; signed up as a sole
-proprietor, no LLC yet); tax and identity verification pending (ID and selfie sent 2026-10-31; up to 30 business days, can't be hurried). Open calls for
+proprietor, no LLC yet); tax and identity verification pending (ID and selfie sent 2026-10-31; up to 30 business days, can't be hurried).
+Phase 4 started with a triage (2026-10-31; the user is too close to the game to judge its feel): sim 500 runs x 5 machines
+x 6 stakes, plus the expert playtester's 5 real runs. Findings: every machine wins 7-23 points over target; the
+back half of a run is one-spin kills with no damage taken (all danger is in act 1); THE DEALER spread is 40 points
+(TESLA 89-95% vs KNIGHT 47-66%); the payline is hard to read; act 1 sabotage leaves dead stretches; HOLD is one
+obvious call a fight; a run-killing crash (JOKER, HOUSE OF CARDS + LOAN SHARK's IOUs). Fix list with the user. Open calls for
 the user: FULL next to an unlit bulb in settings (the combat LOG is now dev-only: user, 2026-10-31),
 fantasy-named relics (VAMPIRE FANG, SKELETON KEY, PHOENIX FEATHER, HOLY WATER, DEVIL'S DUE, CRUSADE, QUICKENING, VAMP
 CHARM), the ~45 rewritten card faces.
