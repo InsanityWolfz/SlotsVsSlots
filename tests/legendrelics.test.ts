@@ -83,13 +83,13 @@ describe('legendary relics from the big choices (2026-10-15)', () => {
     expect(fightConfig(r, base).player.payMul).toBeCloseTo(0.83);
   });
 
-  it('QUICKENING: the meter starts full; enemy abilities charge a spin faster', () => {
+  it('QUICKENING: the meter starts half full; enemy abilities charge a spin faster', () => {
     const plain = run('tesla', []);
     const r = run('tesla', ['quickening']);
     const every = fightConfig(plain, base).enemy.ability?.every;
     if (every) expect(fightConfig(r, base).enemy.ability?.every).toBe(Math.max(2, every - 1));
     const f = new Fight(fightConfig(r, base), 1);
-    expect(f.sides.player.energy).toBe(f.meterCost - 1);
+    expect(f.sides.player.energy).toBe(Math.floor(f.meterCost / 2));
     // KNIGHT has no meter: it does nothing there (and is never offered).
     const k = run('knight', ['quickening']);
     const kEvery = fightConfig(run('knight', []), base).enemy.ability?.every;

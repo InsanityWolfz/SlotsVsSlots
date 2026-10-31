@@ -129,7 +129,7 @@ was tuned for feel from two fresh-eyes playtests.
   relics, levels or heals in a draft.
 - **The Cashier** is a stop: on some paths, and always right before the boss (plus a visit when a new act opens). It
   is what you save chips for. The counter: two symbol LEVELS (10 chips + 4 a level gained this run; your attack symbol
-  is one of the two most visits), MAX HP +40 (5) and the HEAL (up to 120 HP, 6 chips + 3 a heal bought this run, once a
+  is one of the two most visits), MAX HP +40 (5 chips + 4 a MAX HP bought this run) and the HEAL (up to 120 HP, 6 chips + 3 a heal bought this run, once a
   visit). Behind the glass: two relics (10; the first one of your machine's or your Charms') and **THE BIG ONE**, a
   legendary relic under a spotlight (24 in act 1, 20 after). Rerolls cost 1, then 2, 3... Chips: 6 a win (was 3 before
   the split), elites +2, jackpots +1, interest +1 per 5 banked (max 3). `shopOffers` in `src/core/run.ts`.
@@ -290,6 +290,16 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
 - **Targets for the sim bot** (run win %, every machine within 5 points): WHITE 60, RED 50, GREEN 36, BLACK 28,
   BLUE 20, GOLD 14. Each boss's win rate (of runs that reach it) within 10 points across machines. Rough per-boss
   aims: House about 85, THE WHEEL about 85, the Dealer about 65.
+- **Phase 4 balance batch (2026-10-31, from the triage: every machine 7-23 points over target, the back half of a run
+  one-spin kills):** act 2 regulars x2.2 HP (was 1.6), act 3 x2.0 (was 1.4), act 2-3 enemies +3 swords a reel (was 2);
+  THE HOUSE 1200 HP (was 1000), THE WHEEL 4000 (was 3500; x0.85 from GREEN); JUKEBOX 360 HP (was 395), BANKROLL 310
+  (was 290); QUICKENING starts the meter half full (was one short of full; THE JUKEBOX no longer DROPs on spin 1); MAX
+  HP at the Cashier +4 chips each time. Sim 500 runs, WHITE / RED / GREEN / BLACK / BLUE / GOLD: KNIGHT 64 / 55 / 37 /
+  29 / 18 / 12, TESLA 62 / 53 / 48 / 35 / 28 / 19, JUKEBOX 60 / 54 / 39 / 27 / 15 / 7, JOKER 56 / 49 / 33 / 30 / 18 /
+  13, BANKROLL 55 / 56 / 40 / 28 / 23 / 17. TESLA stays high from GREEN because THE DEALER falls to it 96% of the time:
+  that goes with the TESLA rework (ROADMAP phase 4). The shield build: WHITE 46-64, GREEN 30-35 (BANKROLL 54).
+  Act 2-3 fights run a spin or two longer (KNIGHT's 2-spin kills in act 2: 23% -> 18%). The House and THE WHEEL still
+  fall about 90%.
 - The bot plays like a decent player (`src/sim/bot.ts`): elites when healthy, the best-valued card, sensible encounter
   play (`--style rush`, the attack build, is the default). Real players (playtesters reached endless loop 5) are stronger than it; the targets account for that.
 - **Two builds per machine, no new rules (user, 2026-10-12):** an attack build and a shield build should both be

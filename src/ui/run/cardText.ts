@@ -55,7 +55,7 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   secondline: 'ROW ABOVE PAYS HALF. ENEMIES HIT +15%',
   devilsdue: 'EVERYTHING X1.75. -8% MAX HP PER WIN',
   longgame: 'EVERYTHING -20%, +3% PER FIGHT WON',
-  quickening: (t) => t.replace(/^YOUR (.+) STARTS EVERY FIGHT FULL\..*$/, (_, m: string) => `${m.endsWith('METER') ? 'METER' : m} STARTS FULL. ENEMIES FASTER`),
+  quickening: (t) => t.replace(/^YOUR (.+) STARTS EVERY FIGHT HALF FULL\..*$/, (_, m: string) => `${m.endsWith('METER') ? 'METER' : m} STARTS AT HALF. ENEMIES FASTER`),
   glasscannon: 'WINS PAY X1.5. NO HEALING BETWEEN FIGHTS',
   crusade: (t) => t.replace(' FOR EVERY FIGHT YOU WIN', ' PER FIGHT WON'),
   highcard: 'JACKPOTS X1.5. PAIRS PAY HALF',

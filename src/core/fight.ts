@@ -145,14 +145,11 @@ export class Fight {
     if (this.cabinet?.specialDamage) this.cfg.specialDamage = this.cabinet.specialDamage;
     // MIDAS: the VAULT starts pre-filled by the chips you hold (1 per 2 chips, never full).
     if (this.meter?.kind === 'vault') p.energy = Math.max(p.energy, this.vaultBase());
-    // QUICKENING (legendary relic): your meter starts every fight one short of full.
+    // QUICKENING (legendary relic): your meter starts every fight half full (it was one short of full, and THE
+    // JUKEBOX's DROP on spin 1: 7 of 8 fights after it ended in 1-3 spins, playtest 2026-10-31).
     if (p.relics.has('quickening') && (this.special || this.meter)) {
-      p.energy = this.special ? this.cfg.specialCost - 1 : Math.max(0, this.meterCost - 1);
-      // THE JUKEBOX starts at max volume: the first spin is THE DROP.
-      if (this.meter?.kind === 'volume') {
-        p.energy = this.meterCost;
-        p.armed = true;
-      }
+      const cost = this.special ? this.cfg.specialCost : this.meterCost;
+      p.energy = this.meter?.kind === 'volume' ? Math.floor(cost / 2 / UNIT) * UNIT : Math.floor(cost / 2);
       this.openers.push('quickening');
     }
     // WARM-UP (JUKEBOX, ENDLESS): the volume starts at the loop, never at THE DROP itself.

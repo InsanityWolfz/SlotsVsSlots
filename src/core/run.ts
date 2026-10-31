@@ -40,6 +40,8 @@ export const RUN = {
   pivotChance: 0.5,
   /** Each Cashier heal bought this run costs this much more than the last. */
   healStep: 3,
+  /** +MAX HP costs this much more each time you buy it (it was the best buy at every visit: playtest 2026-10-31). */
+  maxHpStep: 4,
   /** Rocks an ELITE adds during one fight that stay for the rest of the run (user, 2026-10-30: none; they confused). */
   permanentRocksPerFight: 0,
   swapCount: 3,
@@ -250,6 +252,8 @@ export interface RunState {
   healBought?: boolean;
   /** Cashier heals bought this run (each costs more). */
   healsBought?: number;
+  /** Cashier MAX HP bought this run (each costs more). */
+  maxHpBought?: number;
   /** Relic picks waiting behind the current one (PUNCH CARD's can land on the act's legendary pick). */
   legendQueue?: RelicId[][];
   /** THE LONG GAME (legendary relic): fights won since you got it. */
@@ -1392,7 +1396,7 @@ export function shopOffers(run: RunState): ShopItem[] {
     if (items.length >= 2) break;
     add(o, levelPrice);
   }
-  add({ kind: 'maxHp', amount: RUN.maxHpCard }, P.maxHp);
+  add({ kind: 'maxHp', amount: RUN.maxHpCard }, P.maxHp + RUN.maxHpStep * (run.maxHpBought ?? 0));
   // BEHIND THE GLASS: two relics, then THE BIG ONE in the middle.
   const lastShop = run.act === runActs(run) && run.depth >= Math.min(actLength(run.act), RUN.shopAfter[RUN.shopAfter.length - 1]);
   const relics = (Object.keys(RELICS) as RelicId[]).filter(
@@ -1452,6 +1456,7 @@ export function buy(run: RunState, item: ShopItem): boolean {
     run.healBought = true;
     run.healsBought = (run.healsBought ?? 0) + 1;
   }
+  if (item.option.kind === 'maxHp') run.maxHpBought = (run.maxHpBought ?? 0) + 1;
   const last = run.records.at(-1);
   if (last) (last.bought ??= []).push(item.option);
   return true;

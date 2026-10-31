@@ -116,12 +116,13 @@ describe('THE JUKEBOX (DJ DECIBEL)', () => {
     expect(ofType(evs, 'attack').filter((a) => a.from === 'player').length).toBe(1);
   });
 
-  it('QUICKENING starts at max (the first spin drops)', () => {
+  it('QUICKENING starts at half volume (no DROP on the first spin: 2026-10-31)', () => {
     const q = juke((c) => {
       c.player.strips = reels3({ note: 12 });
       c.relics = ['quickening'];
     });
-    expect(ofType(round(q, ['note', 'note', 'note']), 'drop').length).toBe(1);
+    expect(q.sides.player.energy).toBe(3 * UNIT);
+    expect(q.sides.player.armed).toBe(false);
   });
 
   it('the volume meter is full at 6', () => {

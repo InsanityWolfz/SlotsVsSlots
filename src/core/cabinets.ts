@@ -98,7 +98,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'BANKROLL',
     sprite: 'cabinetMidas',
     blurb: 'MAKE IT RAIN.',
-    hp: 29 * UNIT,
+    hp: 31 * UNIT,
     // No swords (2026-10-07): CASSIDY flings his chips. Each chip symbol hits, pays a chip and fills the bar.
     strips: r3({ shield: 6, goldbar: 6 }),
     // No gold-sword start (a leftover from MIDAS): 8 more chips instead (user playtest).
@@ -161,7 +161,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'JUKEBOX',
     sprite: 'cabinetJukebox',
     blurb: 'TURN IT UP',
-    hp: 39.5 * UNIT,
+    hp: 36 * UNIT,
     // Replaces BRIAR (user, 2026-10-08): notes and shields. NOTES turn up the volume; at the max the beat drops.
     strips: r3({ note: 6, shield: 6 }),
     gilded: [],
