@@ -9,8 +9,10 @@ STEAL are drawn but have no keyword entry yet), and the Cashier touch-up. The SP
 pint glass now, matching the icon (user, 2026-10-30). Steam capsules done: concept B "the gang" (the colorful
 cast; the Jukebox in for the cut Mimic), approved at all 7 sizes (https://claude.ai/artifact/7g3xpbXdDfypGju7BUTo2t;
 upload-ready PNGs and sources on the `art-wip` branch, `art/capsule/steam/`). Screenshots: 8 chosen, all fights plus
-the map (https://claude.ai/artifact/XG4G8AGpwb3AGEeMRav5o2; 2560x1440, in order, `art/steam/screenshots/upload/`).
-Trailer cut 1 (43 s, 1080p60, real gameplay frame-stepped with the game's own sound over THE HOUSE's theme) is in review:
+the map (https://claude.ai/artifact/XG4G8AGpwb3AGEeMRav5o2; 2560x1440, in order, retaken without LOG,
+`art/steam/screenshots/upload/`).
+Trailer cut 2 (44 s, 1080p60, real gameplay frame-stepped with the game's own sound over THE HOUSE's theme, the intro on
+the beat, the music softened (mix 2)) is in review:
 https://claude.ai/artifact/8hbHvaF1gA6sTfFd5oN4Bo (`art/steam/trailer/`). Drafted, waiting on the user: the short
 description and the AI disclosure. The user hasn't opened Steamworks yet. Open calls for
 the user: FULL next to an unlit bulb in settings (the combat LOG is now dev-only: user, 2026-10-31),
