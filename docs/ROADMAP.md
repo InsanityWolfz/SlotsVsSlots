@@ -14,7 +14,8 @@ the map (https://claude.ai/artifact/XG4G8AGpwb3AGEeMRav5o2; 2560x1440, in order,
 Trailer cut 2 (44 s, 1080p60, real gameplay frame-stepped with the game's own sound over THE HOUSE's theme, the intro on
 the beat, the music softened (mix 2)) approved (user, 2026-10-31: "looks good"):
 https://claude.ai/artifact/8hbHvaF1gA6sTfFd5oN4Bo (`art/steam/trailer/`). Drafted, waiting on the user: the short
-description and the AI disclosure. The user hasn't opened Steamworks yet. Open calls for
+description and the AI disclosure. Steamworks: opened and the $100 paid (user, 2026-10-31; signed up as a sole
+proprietor, no LLC yet); tax and identity verification pending (up to 30 business days, can't be hurried). Open calls for
 the user: FULL next to an unlit bulb in settings (the combat LOG is now dev-only: user, 2026-10-31),
 fantasy-named relics (VAMPIRE FANG, SKELETON KEY, PHOENIX FEATHER, HOLY WATER, DEVIL'S DUE, CRUSADE, QUICKENING, VAMP
 CHARM), the ~45 rewritten card faces.
