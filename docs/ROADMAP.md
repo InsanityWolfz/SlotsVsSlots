@@ -20,7 +20,10 @@ Phase 4 started with a triage (2026-10-31; the user is too close to the game to 
 x 6 stakes, plus the expert playtester's 5 real runs. Findings: every machine wins 7-23 points over target; the
 back half of a run is one-spin kills with no damage taken (all danger is in act 1); THE DEALER spread is 40 points
 (TESLA 89-95% vs KNIGHT 47-66%); the payline is hard to read; act 1 sabotage leaves dead stretches; HOLD is one
-obvious call a fight; a run-killing crash (JOKER, HOUSE OF CARDS + LOAN SHARK's IOUs). Fix list with the user. Open calls for
+obvious call a fight; a run-killing crash (JOKER, HOUSE OF CARDS + LOAN SHARK's IOUs). The user's calls (2026-10-31):
+fix 1-4 (done: the crash, the balance batch in HP_GAME.md, the HUD overlaps, the small bugs); the payline made readable
+(art first); a proposal for sabotage's dead stretches; a call on the CLAW; HOLD stays as it is (the user: it "scares me
+a little"). Open calls for
 the user: FULL next to an unlit bulb in settings (the combat LOG is now dev-only: user, 2026-10-31),
 fantasy-named relics (VAMPIRE FANG, SKELETON KEY, PHOENIX FEATHER, HOLY WATER, DEVIL'S DUE, CRUSADE, QUICKENING, VAMP
 CHARM), the ~45 rewritten card faces.
