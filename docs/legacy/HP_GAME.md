@@ -164,7 +164,17 @@ column). Every 2 turns he cheats: every other time a new trick (a spill, a theft
 THE HAMMER, 40% of your max HP through shields, named on his HUD before it lands (THE HAMMER IN 2). No turn of his takes
 more than 45% of your max HP, but every turn he takes raises that cap and his hits by 7%, and at 75 / 50 / 25% of his
 HP he hits 15% harder each time (a banner: HE LOOSENS HIS TIE, HE STANDS UP, HE GOES ALL IN).
-**11 HP, a hit each (user, 2026-10-15):** he has 11 HP and a turn that hits him takes exactly 1, however big or many the
+**THE LADDER (user, 2026-11-01, option A, replacing 11 HP a hit: "a really strong build can go all out"):** his HP is
+his fortune, 25M, and every hit takes its full damage (storms too; shields count as for anyone; he never heals). The
+fortune is a ladder of 4 rungs, each x10 the last: 25K, 250K, 2.5M, and the top, 25M (BROKE THE BANK, the run won).
+His HP bar is the ladder (a quarter a rung, log-even, gold notches at the rungs; the number is his fortune left). His
+tells (HE LOOSENS HIS TIE / STANDS UP / GOES ALL IN, +15% to his hits each) come at the first three rungs. Each rung
+climbed scores 2,500 (the top +10,000). A build 10x stronger climbs one more rung, not an instant win. Sim (300
+ENDLESS riders a machine, GREEN, 385 meetings): rungs 1 / 2 / 3 / 4 = 1.6 / 57.1 / 41.0 / 0.3% (KNIGHT and JUKEBOX
+reach rung 3 most; BANKROLL rung 2; TESLA rung 2: its lightning grows in a straight line); no machine over 2% at the
+top. OVERLOAD (TESLA's loop growth, like KNIGHT's VETERAN): bolts, shields and the storm's heal x(1 + loops cleared);
+without it 6% of TESLA's ENDLESS runs reached him (47% before the rework), with it 19% (the others 21-33%).
+**(Before the ladder) 11 HP, a hit each (user, 2026-10-15):** he has 11 HP and a turn that hits him takes exactly 1, however big or many the
 hits (a LIGHTNING STORM is one hit; it stops after it lands and keeps its charge). Shields, multipliers and VETERAN don't
 matter against him and he never heals: the fight is surviving long enough to land 11 hits. Beating him ends the run,
 won (YOU BROKE THE BANK, achievement BROKE THE BANK); every HP you take scores 1,000. (Taken literally, "every hit"
@@ -210,7 +220,7 @@ Each machine except KNIGHT has one signature symbol and a meter.
 | Machine | Hero | Attack symbol | Meter | Unlock |
 |---|---|---|---|---|
 | KNIGHT | SIR REGINALD | sword | none: half swords, half shields, both from level 2 (390 HP) | start |
-| TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields | reach the House |
+| TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields: 20 charge a bolt, 22 a bolt, the storm heals 15 (one axis: every boost adds charge; 310 HP) | reach the House |
 | JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat the House |
 | JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat the House with wilds |
 | BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER; a chip jackpot makes it rain | clear a run |

@@ -1,4 +1,4 @@
-import { OWNER_RULES } from '../core/enemies';
+import { OWNER_RULES, ownerRung } from '../core/enemies';
 import { symLabel, UNIT, type Enh, type SideId, type SymbolId } from '../core/config';
 import type { CombatEvent } from '../core/events';
 import { DEALER_HANDS, DEALER_RULES, effectText, other, WHEEL_SYMBOLS, wheelCharm, WRITERS, type TurnResult } from '../core/fight';
@@ -179,7 +179,7 @@ export class Director {
       case 'glassBreak':
         return this.glassBreak(e);
       case 'ownerPhase':
-        return this.banner(['', 'HE LOOSENS HIS TIE', 'HE STANDS UP', 'HE GOES ALL IN'][e.phase] ?? '', '#ff6a5a', 1.3, 0.35, `THE OWNER AT ${[100, 75, 50, 25][e.phase]}%: HIS HITS ARE ${Math.round(OWNER_RULES.phaseDmg * e.phase * 100)}% HARDER`, BANNER_Y, 3);
+        return this.banner(['', 'HE LOOSENS HIS TIE', 'HE STANDS UP', 'HE GOES ALL IN'][e.phase] ?? '', '#ff6a5a', 1.3, 0.35, `YOU TOOK ${fmtNum(ownerRung(e.phase))} OF HIS FORTUNE: HIS HITS ARE ${Math.round(OWNER_RULES.phaseDmg * e.phase * 100)}% HARDER`, BANNER_Y, 3);
       case 'secondLine':
         return this.secondLine(e);
       case 'death':

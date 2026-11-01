@@ -321,7 +321,7 @@ export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
 /** Fixed boss HP (honest HP, 2026-10-12): the House (bossHp), THE WHEEL, the Dealer, and ENDLESS's loop bosses' base. */
 /** ENDLESS help for the machines with no late multiplier (user, 2026-10-15): KNIGHT's VETERAN (swords and shields pay
  * +veteran for every loop cleared) and JUKEBOX's WARM-UP (each fight starts at volume warmUp x the loop, below THE DROP). */
-export const LOOP_GROWTH = { veteran: 1, warmUp: 3 };
+export const LOOP_GROWTH = { veteran: 1, warmUp: 3, overload: 1 };
 export const TUNE = { headStart: 2, greenWheel: 0.85, coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, dealerQuietCap: 0.25, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, rampPerTurn: 0.06, rampMax: 2, regularHp: 1.05, act2Hp: 2.2, act3Hp: 2, act1Swords: 1, enemyShield: 0.5, act3Sevens: 4, bossHp: 120 * UNIT, act2Mul: 1.06, act2Swords: 3, wheelHp: 400 * UNIT, dealerHp: 1300 * UNIT, endlessBossBase: 300 * UNIT, enemyDmg: 1 };
 export const ACTS = 2;
 /**
@@ -361,7 +361,24 @@ export interface EnemyDef extends SideConfig {
  * multipliers and caps don't matter; he never heals), so the fight is about surviving 11 hits. `dmg` is
  * his hits on top of the loop's.
  */
-export const TURBO = { loop: 5, hp: 11, dmg: 1.2, potMul: 3 };
+/**
+ * THE OWNER's LADDER (user, 2026-11-01, option A: "a really strong build can go all out"): his HP is his fortune and
+ * every hit takes its full damage. The fortune is a ladder of `rungs`, each x10 the last from `base` (25K, 250K, 2.5M,
+ * then the top, 25M: BROKE THE BANK). Rungs 1-3 are his tells (he hits harder); a build 10x stronger climbs one rung.
+ */
+export const OWNER_LADDER = { base: 25_000, rungs: 4 };
+/** A rung's damage (k = 1..rungs). */
+export const ownerRung = (k: number) => OWNER_LADDER.base * 10 ** (k - 1);
+/** Rungs climbed for this much of his fortune taken. */
+export const rungsClimbed = (taken: number) => {
+  let k = 0;
+  while (k < OWNER_LADDER.rungs && taken >= ownerRung(k + 1)) k++;
+  return k;
+};
+/** How far up the ladder (0-1): a quarter a rung, log-even (the HP bar and the score read it). */
+export const ladderFrac = (taken: number) =>
+  taken < OWNER_LADDER.base ? Math.max(0, taken) / OWNER_LADDER.base / OWNER_LADDER.rungs : Math.min(1, (1 + Math.log10(taken / OWNER_LADDER.base)) / OWNER_LADDER.rungs);
+export const TURBO = { loop: 5, hp: ownerRung(OWNER_LADDER.rungs), dmg: 1.2, potMul: 3 };
 
 /** Rough single-fight danger per archetype (playtest ITERATION_2), used to pick the elite at a fork. */
 export const DANGER: Record<string, number> = {

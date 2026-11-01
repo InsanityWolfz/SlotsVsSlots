@@ -1,4 +1,5 @@
 import { UNIT, type AbilityDef, type AbilityKind, type SideId } from '../core/config';
+import { ladderFrac, OWNER_LADDER } from '../core/enemies';
 import type { MeterKind } from '../core/cabinets';
 import { artId, drawPortrait, drawSprite, type SpriteId } from '../render/sprites';
 import { drawText, fmtNum, textWidth } from '../render/text';
@@ -93,6 +94,8 @@ export class HudView {
   hint = '';
   /** The name's colour (the player's is gold; an enemy's follows its card: boss, elite, else green). */
   nameColor?: string;
+  /** THE OWNER: his HP bar is his ladder (log-even rungs, ticks between), his fortune left as the number. */
+  ladder = false;
 
   constructor(
     readonly side: SideId,
@@ -194,12 +197,26 @@ export class HudView {
     const sh = this.hpShake * (Math.random() * 2 - 1);
     const hx = hb.x + sh;
     drawSprite(ctx, 'heart', hx - 16, hb.y + hb.h / 2, 2);
+    // THE OWNER: a 30M fortune on a straight bar would hide every rung but the last, so his bar is his ladder.
+    const left = (v: number) => (this.ladder ? 1 - ladderFrac(this.maxHp - Math.max(0, v)) : v / this.maxHp);
     this.bar(ctx, hx, hb.y, hb.w, hb.h, [
-      [this.ghost / this.maxHp, COLORS.hpGhost],
-      [this.hp / this.maxHp, COLORS.hp],
+      [left(this.ghost), COLORS.hpGhost],
+      [left(this.hp), COLORS.hp],
     ], this.hpFlash);
-    const low = this.hp / this.maxHp <= 0.25 && this.hp > 0;
-    drawText(ctx, `${fmtNum(this.hpNum.shown)}/${fmtNum(this.maxHp)}`, hx + hb.w / 2, hb.y + hb.h / 2 + 1, T.body, low && Math.sin(time * 10) > 0 ? '#ffb0b0' : COLORS.text);
+    if (this.ladder)
+      for (let k = 1; k < OWNER_LADDER.rungs; k++) {
+        // A rung: a gold notch at the bar's top and bottom edges (clear of the number across its middle).
+        const tx = Math.round(hx + (hb.w * k) / OWNER_LADDER.rungs);
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(tx - 2, hb.y, 4, 6);
+        ctx.fillRect(tx - 2, hb.y + hb.h - 6, 4, 6);
+        ctx.fillStyle = KIT.title;
+        ctx.fillRect(tx - 1, hb.y, 2, 5);
+        ctx.fillRect(tx - 1, hb.y + hb.h - 5, 2, 5);
+      }
+    const low = left(this.hp) <= 0.25 && this.hp > 0;
+    const hpText = this.ladder ? `${fmtNum(this.hpNum.shown)} LEFT` : `${fmtNum(this.hpNum.shown)}/${fmtNum(this.maxHp)}`;
+    drawText(ctx, hpText, hx + hb.w / 2, hb.y + hb.h / 2 + 1, T.body, low && Math.sin(time * 10) > 0 ? '#ffb0b0' : COLORS.text);
 
     // Shield bar (no max; fills to a soft cap).
     const sb = this.shieldBar();

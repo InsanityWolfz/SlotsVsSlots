@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, UNIT } from '../src/core/config';
-import { ENDLESS, OWNER_TRICKS, TURBO } from '../src/core/enemies';
+import { ENDLESS, ladderFrac, OWNER_LADDER, OWNER_TRICKS, ownerRung, rungsClimbed, TURBO } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
 import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, enemyHp, runScoreOf, scoreParts, fightConfig, fightLabel, NIGHT, NIGHTS, finishFight, letItRide, skipToBoss } from '../src/core/run';
 import { fmtNum } from '../src/render/text';
@@ -183,8 +183,8 @@ describe('THE OWNER: EVERY TRICK IN THE BOOK', () => {
   });
 });
 
-describe('THE OWNER: 11 HP, a hit each', () => {
-  it('loses at most 1 HP a turn, however big the hits, and never heals', () => {
+describe("THE OWNER's ladder (user, 2026-11-01)", () => {
+  it('every hit counts in full, he never heals, and his tells come at the first three rungs', () => {
     const run = createRun(base, 34, 'knight', 2, true);
     run.over = run.won = true;
     run.act = 3;
@@ -194,13 +194,21 @@ describe('THE OWNER: 11 HP, a hit each', () => {
     cfg.enemy = { ...cfg.enemy, ...run.map.boss, hp: TURBO.hp, ability: null, boss: 'owner', owner: true };
     cfg.player = { ...cfg.player, hp: 1e9, startHp: 1e9 };
     const f = new Fight(cfg, 5);
-    for (let i = 0; i < 400 && !f.over; i++) {
-      const before = f.sides.enemy.hp;
-      const evs = f.step().events;
-      void evs;
-      expect(before - f.sides.enemy.hp).toBeGreaterThanOrEqual(0);
-      expect(before - f.sides.enemy.hp).toBeLessThanOrEqual(1);
-    }
-    expect(f.winner).toBe('player');
+    f.sides.enemy.hp = TURBO.hp - ownerRung(2) + 1;
+    f.forceNext('player', ['sword', 'sword', 'sword']);
+    const evs = f.step().events;
+    const hit = evs.find((e) => e.type === 'attack' && e.from === 'player');
+    expect(hit && hit.type === 'attack' && hit.hpDamage).toBeGreaterThan(1);
+    expect(f.ownerPhase).toBe(2);
+    expect(evs.some((e) => e.type === 'ownerPhase' && e.phase === 2)).toBe(true);
+  });
+
+  it('the ladder: a quarter a rung, log-even; 10x the damage is one more rung', () => {
+    expect(ladderFrac(0)).toBe(0);
+    expect(ladderFrac(ownerRung(1))).toBeCloseTo(0.25);
+    expect(ladderFrac(ownerRung(2))).toBeCloseTo(0.5);
+    expect(ladderFrac(ownerRung(OWNER_LADDER.rungs))).toBe(1);
+    expect(TURBO.hp).toBe(ownerRung(OWNER_LADDER.rungs));
+    expect(rungsClimbed(ownerRung(3) * 5)).toBe(3);
   });
 });

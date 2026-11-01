@@ -990,6 +990,8 @@ export class Game {
         });
         // The enemy's name in its card's colour: a boss red, an elite orange (it was always green).
         if (s === 'enemy') hud.nameColor = cfg.enemy.boss ? '#ff8a7a' : this.run && inRun && currentEnemy(this.run)?.elite ? '#ffb060' : COLORS.slime;
+        // THE OWNER: his HP bar is his fortune's ladder.
+        if (s === 'enemy' && cfg.enemy.owner) hud.ladder = true;
         hud.hp = hud.ghost = c.hp;
         if (s === 'player') hud.chips = hud.chipsHeld = cfg.player.chipsHeld ?? 0;
         if (c.ability) hud.charge = c.charge;

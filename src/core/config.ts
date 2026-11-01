@@ -222,7 +222,7 @@ export interface SideConfig {
   startShield?: number;
   /** SECOND PAYLINE (legendary relic): the enemy's hits are this much harder. */
   lineDmg?: number;
-  /** THE OWNER: TURBO.hp HP, every hit takes 1 (TURBO in enemies.ts). */
+  /** THE OWNER: his fortune (TURBO.hp) is a ladder every hit climbs in full (OWNER_LADDER in enemies.ts). */
   owner?: boolean;
   /** HOUSE EDGE "EARLY BIRD": the enemy spins first. */
   first?: boolean;

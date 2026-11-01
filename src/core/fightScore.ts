@@ -287,7 +287,7 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
     // VETERAN (KNIGHT, ENDLESS): every loop cleared, swords and shields pay more.
     if (player && paying && f.cfg.player.veteranMul) {
       boost(g, f.cfg.player.veteranMul);
-      notes.push(`X${Math.round(f.cfg.player.veteranMul * 100) / 100} VETERAN`);
+      notes.push(`X${Math.round(f.cfg.player.veteranMul * 100) / 100} ${f.cfg.cabinet === 'tesla' ? 'OVERLOAD' : 'VETERAN'}`);
     }
     // TONIGHT'S RULE (ENDLESS), for both machines.
     const night = f.cfg.night;

@@ -5,7 +5,7 @@ import type { CombatEvent, DealCard, HealSource, LineCard } from './events';
 import { MIDAS_TOUCH_CAP, OVERCHARGE_ECHO, OVERCHARGE, FANG_HEAL, FANG_TESLA_HEAL, NEW_RELIC, LEGEND_RELIC, POT } from './relics';
 import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
-import { ENDLESS, GATEKEEPER, OVERTIME, overtimeMul, overtimeRound, OWNER_RULES, TUNE, WHEEL_RULES, wheelChipShare } from './enemies';
+import { ENDLESS, GATEKEEPER, OVERTIME, overtimeMul, overtimeRound, OWNER_RULES, rungsClimbed, TUNE, WHEEL_RULES, wheelChipShare } from './enemies';
 import { isNearMiss, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import { DEAD, effectiveSymbol, insertOffscreen, wrap, paylineSymbols, symbolValue, type CellRef } from './strip';
 // The fight is split in four (2026-10-29): its rules (fightRules), a spin's scoring (fightScore), what enemies do
@@ -57,10 +57,9 @@ export class Fight {
   private coverTaken = false;
   /** HP you've lost this turn (one-turn cap: regular enemies 40% of your max HP, bosses 60%). */
   private playerTurnHp = 0;
-  /** THE TURBO: HP it lost this turn (no turn takes more than its cap). */
   /** THE OWNER: tricks played so far (the next one is OWNER_TRICKS[n % length]). */
   ownerTricks = 0;
-  /** THE OWNER's phase (0, then 1-3 at 75 / 50 / 25% of his HP). */
+  /** THE OWNER's phase (0, then 1-3 at the ladder's first three rungs). */
   ownerPhase = 0;
   /** GLASS: payline reels whose GLASS shattered this spin (the cells lose it once the spin settles). */
   glassBreaks: number[] = [];
@@ -1092,9 +1091,7 @@ export class Fight {
     const live = me.side === 'player' && me.relics.has('livewire');
     let overPopped = false;
     let strikes = 0;
-    // (Against THE OWNER the storm stops once he's been hit this turn, keeping the charge: 0-damage strikes still heal.)
-    const spent = () => foe.side === 'enemy' && !!this.cfg.enemy.owner && this.ownerHitTurn === this.turn;
-    while (me.energy >= this.cfg.specialCost && !this.over && foe.hp > 0 && !spent()) {
+    while (me.energy >= this.cfg.specialCost && !this.over && foe.hp > 0) {
       me.energy -= this.cfg.specialCost;
       const raw = this.cfg.specialDamage + (me.side === 'player' && !this.oneAxis ? this.blaze : 0);
       // MELTDOWN: +1% per 1% of HP you're missing (capped).
@@ -1132,7 +1129,8 @@ export class Fight {
       }
     }
     // TESLA, one axis: the storm heals once (it healed per bolt: 72-bolt storms walked through THE DEALER).
-    if (me.side === 'player' && strikes > 0) this.payoffHeal(me, events, this.oneAxis ? PAY.stormHeal : strikes);
+    // (OVERLOAD, TESLA in ENDLESS: the storm's heal grows with the loop too.)
+    if (me.side === 'player' && strikes > 0) this.payoffHeal(me, events, this.oneAxis ? Math.round(PAY.stormHeal * (this.cfg.player.veteranMul ?? 1)) : strikes);
   }
 
   heal(me: Combatant, amount: number, source: HealSource, events: CombatEvent[], parts?: { label: string; amount: number }[]): void {
@@ -1164,11 +1162,6 @@ export class Fight {
       hpDamage = Math.max(0, Math.min(hpDamage, cap - this.playerTurnHp));
       this.playerTurnHp += hpDamage;
     }
-    // THE OWNER (user, 2026-10-15): a turn that hits him takes exactly 1 of his HP, however big or many the hits; shields don't matter.
-    if (target.side === 'enemy' && this.cfg.enemy.owner) {
-      target.shield += blocked;
-      return { blocked: 0, hpDamage: amount > 0 ? this.ownerHit(target) : 0, targetHp: target.hp, targetShield: target.shield };
-    }
     // THE WHEEL's half-HP gate (the Mirror's old crack gate): it holds at half HP for the rest of the turn it SPINS
     // FASTER on, so both halves of the fight always play. (GREEN starts fast: no phase, no gate.)
     if (target.side === 'enemy' && this.isWheel && !this.fastFromStart) {
@@ -1185,21 +1178,10 @@ export class Fight {
     return { blocked, hpDamage, targetHp: target.hp, targetShield: target.shield };
   }
 
-  /** THE OWNER loses 1 HP a turn that hits him (a storm's 10 strikes are one hit). */
-  private ownerHitTurn = 0;
-  private ownerHit(target: Combatant): number {
-    if (this.ownerHitTurn === this.turn) return 0;
-    this.ownerHitTurn = this.turn;
-    const n = Math.min(1, target.hp);
-    target.hp -= n;
-    if (target.hp <= 0) this.overkill = 0;
-    return n;
-  }
-
   checkDeath(c: Combatant, events: CombatEvent[]): void {
-    // THE OWNER's phases: each threshold he passes, he gets harder (once each).
+    // THE OWNER's phases: each of the ladder's first three rungs you climb, he gets harder (once each).
     if (c.side === 'enemy' && this.cfg.enemy.owner && c.hp > 0) {
-      const phase = OWNER_RULES.phases.filter((t) => c.hp <= c.maxHp * t).length;
+      const phase = Math.min(OWNER_RULES.phases.length, rungsClimbed(c.maxHp - c.hp));
       if (phase > this.ownerPhase) {
         this.ownerPhase = phase;
         events.push({ type: 'ownerPhase', side: 'enemy', phase });

@@ -4,7 +4,8 @@
  * same everywhere.
  */
 import { DEALER_RULES } from '../core/fight';
-import { OWNER_RULES, TURBO, WHEEL_RULES, wheelChipShare } from '../core/enemies';
+import { OWNER_RULES, ownerRung, TURBO, WHEEL_RULES, wheelChipShare } from '../core/enemies';
+import { fmtNum } from '../render/text';
 import { POT } from '../core/relics';
 import { STAKE } from '../core/stakes';
 import type { SpriteId } from '../render/spriteData';
@@ -33,9 +34,9 @@ export function bossRules(boss: string, c: BossRuleContext): BossRules {
       rules: [
         { icon: artId('icoGavel'), text: 'EVERY 2 TURNS HE CHEATS. EVERY OTHER TIME IT IS A NEW TRICK (SPILL, THEFT, FREEZE, ROCKS, JINX, IOUS)' },
         { icon: artId('icoSmash'), text: `THE REST IS THE HAMMER: ${Math.round(OWNER_RULES.hammer * 100)}% OF YOUR MAX HP THROUGH SHIELDS. NO TURN OF HIS TAKES MORE THAN ${Math.round(OWNER_RULES.capOnYou * 100)}%` },
-        { icon: 'shieldIcon', text: `HE HAS ${TURBO.hp} HP: A SPIN THAT HITS HIM TAKES 1, HOWEVER BIG. AT 75 / 50 / 25% OF IT HE HITS ${Math.round(OWNER_RULES.phaseDmg * 100)}% HARDER EACH TIME` },
+        { icon: 'shieldIcon', text: `HIS FORTUNE IS ${fmtNum(TURBO.hp)}, A LADDER: EVERY HIT COUNTS IN FULL. AT ${[1, 2, 3].map((k) => fmtNum(ownerRung(k))).join(' / ')} TAKEN HE HITS ${Math.round(OWNER_RULES.phaseDmg * 100)}% HARDER EACH TIME` },
       ],
-      win: 'EVERY HP YOU TAKE SCORES. BEAT HIM AND THE RUN IS WON',
+      win: `EVERY RUNG YOU CLIMB SCORES. TAKE ALL ${fmtNum(TURBO.hp)} AND YOU BREAK THE BANK`,
     };
   return rulesOf(boss, c);
 }

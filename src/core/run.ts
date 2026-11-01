@@ -1,5 +1,5 @@
 import { BLADES, cloneConfig, symLabel, emptyLevels, UNIT, unitsRound, type AbilityDef, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
-import { ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, GATEKEEPER, generateActMap, makeEnemy, REPO_MAN, TUNE, TURBO, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, ROUTES_PER_LOOP, WHEEL, LOOP_GROWTH } from './enemies';
+import { ACTS, actLength, ARCHETYPES, ELITE_DMG_MUL, GATEKEEPER, generateActMap, ladderFrac, makeEnemy, OWNER_LADDER, REPO_MAN, TUNE, TURBO, type ActMap, type EnemyDef, type Stop, ENDLESS, endlessMul, ROUTES_PER_LOOP, WHEEL, LOOP_GROWTH } from './enemies';
 import { effectiveAbility, MAX_STAKE, STAKE, stakeDmg } from './stakes';
 import type { Fight } from './fight';
 import {
@@ -247,7 +247,7 @@ export interface RunState {
   /** The TUTORIAL run: its first fight is a little softer. */
   tutorial?: boolean;
   /** ENDLESS (LET IT RIDE after the Dealer): the loop you're on and its score pot. */
-  endless?: { loop: number; pot: number; /** THE OWNER: the most of his HP you've taken (0-1). */ ownerTaken?: number; night?: NightId; /** TONIGHT'S RULE per path (user, 2026-10-14): picking a path picks its rule. */ nights?: NightId[]; /** Beat THE TURBO: the run's true end. */ turbo?: boolean };
+  endless?: { loop: number; pot: number; /** THE OWNER: how far up his ladder you climbed (0-1, a quarter a rung). */ ownerTaken?: number; night?: NightId; /** TONIGHT'S RULE per path (user, 2026-10-14): picking a path picks its rule. */ nights?: NightId[]; /** Beat THE TURBO: the run's true end. */ turbo?: boolean };
   /** The Cashier's heal was bought this visit (it's once a visit). */
   healBought?: boolean;
   /** Cashier heals bought this run (each costs more). */
@@ -743,6 +743,10 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // VETERAN (KNIGHT) and WARM-UP (JUKEBOX): machine growth for the machines with no late multiplier (honest HP: enemies don't change).
     const cleared = run.endless.loop - 1;
     if (run.cabinet === 'knight' && cleared > 0) cfg.player.veteranMul = 1 + LOOP_GROWTH.veteran * cleared;
+    // OVERLOAD (TESLA, 2026-11-01): its one-axis lightning grows in a straight line, so it gets KNIGHT's loop growth
+    // (bolts and shields pay more each loop cleared: more charge, longer storms). Without it 6% of TESLA's ENDLESS runs
+    // reached THE OWNER (47% before the rework).
+    if (run.cabinet === 'tesla' && cleared > 0) cfg.player.veteranMul = 1 + LOOP_GROWTH.overload * cleared;
     if (run.cabinet === 'jukebox') cfg.player.volumeStart = LOOP_GROWTH.warmUp * run.endless.loop;
   }
   // TONIGHT'S RULE (ENDLESS: the path's), for both machines.
@@ -804,7 +808,7 @@ export const noHealing = (run: RunState) => run.player.relics.includes('glasscan
  * beaten, chips EARNED (spending never costs score), levels gained, relics and Charms held, THE OWNER's HP taken and
  * beating him, clearing the run; all x(1 + 0.5 a stake). The same formula for every run, ENDLESS or not.
  */
-export const SCORE = { fight: 100, elite: 300, boss: 1000, chip: 2, level: 100, relic: 100, legendary: 250, charm: 25, ownerHit: 1000, ownerBeat: 10000, clear: 2000, stakeStep: 0.5 };
+export const SCORE = { fight: 100, elite: 300, boss: 1000, chip: 2, level: 100, relic: 100, legendary: 250, charm: 25, ownerRung: 2500, ownerBeat: 10000, clear: 2000, stakeStep: 0.5 };
 /** The score's parts (label, points before the stake), in the order the run-over screen lists them. */
 export function scoreParts(run: RunState): [string, number][] {
   const won = run.records.filter((r) => r.won);
@@ -822,7 +826,8 @@ export function scoreParts(run: RunState): [string, number][] {
     ['LEVELS', levelsGained(run) * SCORE.level],
     ['RELICS', (relics - legends) * SCORE.relic + legends * SCORE.legendary],
     ['CHARMS', charms * SCORE.charm],
-    ['THE OWNER', Math.round(owner * TURBO.hp) * SCORE.ownerHit + (run.endless?.turbo ? SCORE.ownerBeat : 0)],
+    // THE OWNER's ladder: each rung climbed scores (ownerTaken is how far up it, 0-1).
+    ['THE OWNER', Math.floor(owner * OWNER_LADDER.rungs + 1e-9) * SCORE.ownerRung + (run.endless?.turbo ? SCORE.ownerBeat : 0)],
     ['CLEARED', run.won || run.endless ? SCORE.clear : 0],
   ];
   return parts.filter(([, n]) => n > 0);
@@ -942,10 +947,10 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     rocksCrumbled: crumbled,
   };
   run.records.push(record);
-  // THE OWNER: how much of him you took (the score counts each 10%).
+  // THE OWNER: how far up his ladder you climbed (the score counts each rung).
   if (run.endless && currentEnemy(run).turbo) {
     const e = fight.sides.enemy;
-    run.endless.ownerTaken = Math.max(run.endless.ownerTaken ?? 0, Math.min(1, 1 - Math.max(0, e.hp) / Math.max(1, e.maxHp)));
+    run.endless.ownerTaken = Math.max(run.endless.ownerTaken ?? 0, ladderFrac(e.maxHp - Math.max(0, e.hp)));
   }
   if (!won) {
     run.player.hp = 0;

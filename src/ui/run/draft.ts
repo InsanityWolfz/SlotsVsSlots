@@ -124,9 +124,9 @@ export abstract class DraftScreen extends NextScreen {
     const loopDone = !!last && !!run.endless && last.loop !== undefined && last.loop < run.endless.loop;
     if (last) {
       const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
-      // VETERAN (KNIGHT) and WARM-UP (JUKEBOX) grow with each loop cleared: say so where the loop ends.
+      // VETERAN (KNIGHT), OVERLOAD (TESLA) and WARM-UP (JUKEBOX) grow with each loop cleared: say so where the loop ends.
       const L = run.endless?.loop ?? 0;
-      const grow = !loopDone ? '' : run.cabinet === 'knight' ? `  -  VETERAN: SWORDS AND SHIELDS X${1 + LOOP_GROWTH.veteran * (L - 1)}` : run.cabinet === 'jukebox' ? `  -  WARM-UP: FIGHTS START AT VOLUME ${Math.min(VOLUME.max - 1, LOOP_GROWTH.warmUp * L)}` : '';
+      const grow = !loopDone ? '' : run.cabinet === 'knight' ? `  -  VETERAN: SWORDS AND SHIELDS X${1 + LOOP_GROWTH.veteran * (L - 1)}` : run.cabinet === 'tesla' ? `  -  OVERLOAD: BOLTS, SHIELDS AND STORM HEALS X${1 + LOOP_GROWTH.overload * (L - 1)}` : run.cabinet === 'jukebox' ? `  -  WARM-UP: FIGHTS START AT VOLUME ${Math.min(VOLUME.max - 1, LOOP_GROWTH.warmUp * L)}` : '';
       const title = loopDone ? `LOOP ${last.loop} CLEARED!` : last.boss ? 'BOSS DOWN!' : `${last.enemy} DEFEATED!`;
       const sub = `${loopDone ? `SCORE ${fmtNum(endlessScore(run))}  -  ` : last.boss ? `${last.enemy}  -  ` : ''}${rounds(last.turns)}${rocks}${grow}`;
       this.drawResultTitle(ctx, title, CX, 40, { chips: last.chips, sub, color: last.boss ? '#ffd23f' : undefined });
