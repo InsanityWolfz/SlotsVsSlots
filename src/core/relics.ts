@@ -90,7 +90,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // CASH CASSIDY's shield build (user, 2026-10-12): relics that scale with the shield you hold.
   armoredcar: { id: 'armoredcar', name: 'ARMORED CAR', text: 'HIGH ROLLER COUNTS 1 CHIP PER 5 SHIELD YOU GAIN THAT SPIN', sprite: 'relicArmoredCar', machine: 'midas' },
   safedeposit: { id: 'safedeposit', name: 'SAFE DEPOSIT', text: 'YOUR CHIPS ALSO HIT FOR THE SHIELD YOU GAIN THAT SPIN', sprite: 'relicSafeDeposit', machine: 'midas' },
-  subwoofer: { id: 'subwoofer', name: 'SUBWOOFER', text: 'THE DROP PIERCES SHIELDS', sprite: 'relicSubwoofer', machine: 'jukebox' },
+  subwoofer: { id: 'subwoofer', name: 'SUBWOOFER', text: 'THE DROP: EVERY SHIELD YOU CAN SEE SHIELDS YOU TOO', sprite: 'relicSubwoofer', machine: 'jukebox' },
   // The user's picks from the content list (2026-10-14).
   dryspell: { id: 'dryspell', name: 'DRY SPELL', text: 'EACH SPIN WITH NO PAIR: YOUR NEXT PAIR OR JACKPOT PAYS +50% (STACKS TO X4)', sprite: 'relicDrySpell' },
   punchcard: { id: 'punchcard', name: 'PUNCH CARD', text: 'EVERY 6TH FIGHT YOU WIN: PICK A LEGENDARY RELIC', sprite: 'relicPunchCard' },
