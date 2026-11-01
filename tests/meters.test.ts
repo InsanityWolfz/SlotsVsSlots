@@ -53,7 +53,7 @@ describe('signature meters (one per slot machine)', () => {
   });
 
   it('JAX: each WILD on the payline fills the meter; full, the next spin pays every cell as a jackpot of itself', () => {
-    // (Exact numbers from the live rules: BUILD-UP, a test-branch rule, is off here.)
+    // (Exact numbers without BUILD-UP: it is off here.)
     BUILD_UP.on = 0;
     onTestFinished(() => void (BUILD_UP.on = 1));
     const f = on('joker', (c) => (c.player.strips = reels3({ sword: 4, shield: 4, wild: 4 })));

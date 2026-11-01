@@ -27,9 +27,7 @@ a little"). Then: the payline look shipped (user, 2026-11-01: "I like the pay li
 payline framed in gold), with what counts off it kept lit "so the player knows they are in play": THE JUKEBOX's armed
 DROP (every note and WILD), IOU countdowns, THE DEALER's ALL IN 3x3, SECOND PAYLINE's row. The screenshots and trailer get
 redone once, when the changes are all in and the page is ready (user, 2026-11-01), not after each change. Sabotage wearing off was simmed and dropped: in act 1, 29% of fights have 3+ spins that pay
-nothing, and sabotage causes about 2% of fights' dead streaks, so the dry stretches are plain luck. Proposed: a BUILD-UP
-(each spin that pays nothing adds +25% to your next pay; DRY SPELL made base, the relic reworked): the user wants to talk
-it through first ("I'm afraid it's too much", it would have to be very readable);
+nothing, and sabotage causes about 2% of fights' dead streaks, so the dry stretches are plain luck. Then a BUILD-UP (dry spins add to your next pair; shipped 2026-11-01, below);
 and the CLAW reworked as push-your-luck: shipped (user, 2026-11-01; rules in HP_GAME.md). Phase 4's TESLA (option 1: every boost
 adds charge, half-size bolts, the storm heals once) and THE OWNER (option A: a 25M fortune on a x10 damage ladder, plus
 OVERLOAD, TESLA's ENDLESS loop growth) shipped (user, 2026-11-01: "we can ship the tesla and the owner re work"; rules in HP_GAME.md). The machines'
@@ -40,7 +38,7 @@ the game (HP_GAME.md). The user's two calls (2026-11-01): MAKE IT RAIN has a flo
 chip jackpot it replaces; it now costs 10 chips, not 5, to keep BANKROLL on target), and GOLD and GLASS are true
 multipliers on TESLA's bolts.
 Left in phase 4: JUKEBOX's second way to build (simmed 2026-11-01: shields last one turn, so no DROP payoff makes a shield JUKEBOX a real build; a Body Slam SUBWOOFER, "THE DROP also hits for all the shield you hold", shipped (user, 2026-11-01: "ship it for now"; the user is testing shield builds); a bigger rework waits on the outside playtest), BANKROLL (readable, or ship with 4), the act 1 demo, the bug / save /
-crash pass; the BUILD-UP idea for dry streaks waits on a mockup (the user: it has to be very readable). Open calls for
+crash pass; BUILD-UP shipped (user, 2026-11-01: "ship it" after a test branch, three expert playtests and a review page, https://claude.ai/artifact/TvT7AdJqCBKp8ZqxpoYRca; rules in HP_GAME.md), and HOLY WATER blocks the first ability on your reels now. Open: the user asked whether a fill meter left of the machine reads better than the plate's notches (mockup sent). Open calls for
 the user: FULL next to an unlit bulb in settings (the combat LOG is now dev-only: user, 2026-10-31),
 fantasy-named relics (VAMPIRE FANG, SKELETON KEY, PHOENIX FEATHER, HOLY WATER, DEVIL'S DUE, CRUSADE, QUICKENING, VAMP
 CHARM), the ~45 rewritten card faces.

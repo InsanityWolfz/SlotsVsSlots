@@ -24,7 +24,7 @@ export function installDebug(game: Game): void {
   };
   const dbg = {
     game,
-    /** BUILD-UP on or off (test branch A/B): dbg.buildUp(false) plays the live rules. Takes effect next spin. */
+    /** BUILD-UP on or off (A/B): dbg.buildUp(false) plays without it. Takes effect next spin. */
     buildUp: (on: boolean) => ((BUILD_UP.on = on ? 1 : 0), on),
     pause,
     resume: () => (game.stage.clock.speed = game.prefs.speed / 2),

@@ -34,7 +34,7 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   deckdrum: '+1 CARD DAMAGE PER SPIN THAT PAYS, MAX +5',
   horseshoe: 'WINS WITH A LUCKY WILD PAY X3',
   underdog: 'EVERYTHING PAYS X1.5 UNDER HALF HP',
-  holywater: 'IGNORE THE FIRST SABOTAGE A FIGHT',
+  holywater: 'BLOCKS THE FIRST ENEMY ABILITY ON YOUR REELS',
   hotstreak: "JACKPOT: NEXT SPIN'S PAIRS AND JACKPOTS X2",
   pitboss: "ENEMY'S FIRST JACKPOT A FIGHT IS VOID",
   rainmaker: 'MAKE IT RAIN COSTS 2 CHIPS',

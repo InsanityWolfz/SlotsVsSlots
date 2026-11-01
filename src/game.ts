@@ -5,7 +5,7 @@ import { Synth } from './audio/synth';
 import { mergeConfig, UNIT, type GameConfig, type SideId, type SymbolId } from './core/config';
 import { TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
-import { DEALER_HANDS, Fight, highRollerMul } from './core/fight';
+import { DEALER_HANDS, Fight, highRollerMul, PAYING } from './core/fight';
 import { roomFor, type Scene } from './render/rooms';
 import { turnRow, type TurnRow } from './core/log';
 import { RELICS } from './core/relics';
@@ -1064,7 +1064,7 @@ export class Game {
       if (token !== this.token) return;
       const result = this.fight.step();
       for (const e of result.events) {
-        if (e.type === 'spin' && e.side === 'player') this.lastPair = e.score.tier === 'pair';
+        if (e.type === 'spin' && e.side === 'player') this.lastPair = e.score.tier === 'pair' && e.score.groups.some((g) => g.matched && g.reels.length === 2 && g.base > 0 && PAYING.has(g.symbol)); // (a SPILL pair pays nothing: no prompt to hold it, playtest 2026-11-01)
         // A freeze moves and locks your reels: the pair it broke can't be held (the HOLD call went stale: playtest).
         else if (e.type === 'freeze' && e.to === 'player') this.lastPair = false;
       }

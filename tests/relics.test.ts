@@ -87,10 +87,9 @@ describe('charm and general relics', () => {
     expect(ofType(u.step().events, 'spin')[0].score.groups[0].notes).toContain(`X${NEW_RELIC.underdogMul} UNDERDOG`);
   });
 
-  it('HOLY WATER washes off the first cheat each fight', () => {
-    const f = on('knight', ['holywater'], (c) => (c.enemy = { hp: 9999, strips: reels3({ slime: 12 }) }));
+  it('HOLY WATER blocks the first enemy ability on your reels each fight (user, 2026-11-01)', () => {
+    const f = on('knight', ['holywater'], (c) => (c.enemy = { hp: 9999, strips: reels3({ shield: 12 }), ability: { kind: 'flood', every: 1, power: 3 } }));
     f.step();
-    f.forceNext('enemy', ['slime', 'slime', 'slime']);
     const ev = f.step().events;
     expect(ofType(ev, 'relic').some((r) => r.relic === 'holywater')).toBe(true);
     expect(f.sides.player.reels.every((r) => r.cells.every((c) => !c.slimed))).toBe(true);

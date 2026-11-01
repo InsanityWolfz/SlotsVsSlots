@@ -333,6 +333,19 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
   now (was 5; RAINMAKER still 2), back to 55 / 36 / 20 (sim 1,000 runs). (HP was a weak lever: 260 HP only took 10 off.)
 - **GOLD and GLASS on TESLA (user, 2026-11-01):** true multipliers on bolts (TESLA's other boosts still add up), so GOLD
   next to HOT STREAK is x4, not x3. TESLA 63 / 43 / 23 (it was 62 / 41 at WHITE / GREEN; the next balance batch checks it).
+- **BUILD-UP (user, 2026-11-01: "ship it", after a test branch and three expert playtests):** every spin of yours without
+  a pair or jackpot of your hit symbol (swords, chips, bolts, cards, notes) adds +25% to your next one, up to x2; that
+  pair or jackpot cashes it in (shield and spill pairs don't spend it). Dry streaks were plain luck: 29% of act 1 fights
+  have 3+ spins in a row with no pair. Shown at the foot of the centre gutter (BUILD-UP, the multiplier, a notch a spin,
+  YOUR NEXT SWORD PAIR), popping off into the hit when it cashes; in the glossary and the tutorial. DRY SPELL is now
+  +50% a spin, up to x4. It made every machine 4-8 points stronger; regular enemies' HP went x1.05 -> x1.25
+  (`TUNE.regularHp`) to pull it back. Sim 1,000 runs, WHITE / GREEN / BLUE: KNIGHT 66 / 36 / 18, TESLA 60 / 37 / 19,
+  JUKEBOX 61 / 43 / 17, JOKER 57 / 38 / 22, BANKROLL 53 / 34 / 20. (A x1.07 enemy damage would have done it too, but it
+  showed on every enemy hit as an ELITE note.)
+- **HOLY WATER (user, 2026-11-01):** the first enemy ability each fight that hits your reels does nothing. It used to
+  wash off the first sabotage of any kind, so a single spill symbol spent it and the enemy's announced ability landed.
+- **The hold prompt** ("PAIR! HOLD IT FOR A JACKPOT?") only fires on a pair that pays (a spill pair doesn't), and the
+  tutorial says pairs read from the left: reels 1 and 2 (playtest 2026-11-01).
 - **Phase 4 balance batch (2026-10-31, from the triage: every machine 7-23 points over target, the back half of a run
   one-spin kills):** act 2 regulars x2.2 HP (was 1.6), act 3 x2.0 (was 1.4), act 2-3 enemies +3 swords a reel (was 2);
   THE HOUSE 1200 HP (was 1000), THE WHEEL 4000 (was 3500; x0.85 from GREEN); JUKEBOX 360 HP (was 395), BANKROLL 310

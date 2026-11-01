@@ -73,7 +73,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   horseshoe: { id: 'horseshoe', name: 'HORSESHOE', text: 'PAIRS AND JACKPOTS MADE WITH A LUCKY WILD PAY X3', sprite: 'relicHorseshoe', charm: 'lucky' },
   // General.
   underdog: { id: 'underdog', name: 'UNDERDOG', text: 'EVERYTHING PAYS X1.5 WHEN YOU ARE UNDER HALF HP', sprite: 'relicUnderdog' },
-  holywater: { id: 'holywater', name: 'HOLY WATER', text: 'IGNORE THE FIRST SABOTAGE EACH FIGHT', sprite: 'relicHolywater' },
+  holywater: { id: 'holywater', name: 'HOLY WATER', text: 'THE FIRST ENEMY ABILITY EACH FIGHT THAT HITS YOUR REELS DOES NOTHING', sprite: 'relicHolywater' },
   // EXPERT_PLAYTEST_10: relics that make a choice (streaky vs steady, turtle-and-counter, keep the liens or pay them).
   hotstreak: { id: 'hotstreak', name: 'HOT STREAK', text: "AFTER A JACKPOT, YOUR NEXT SPIN'S PAIRS AND JACKPOTS PAY X2", sprite: 'relicHotStreak' },
   // CONTENT_13.

@@ -447,9 +447,9 @@ describe('UNDERDOG: EVERYTHING PAYS X1.5 WHEN YOU ARE UNDER HALF HP', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('HOLY WATER (holywater): IGNORE THE FIRST SABOTAGE EACH FIGHT', () => {
+describe('HOLY WATER (holywater): THE FIRST ENEMY ABILITY EACH FIGHT THAT HITS YOUR REELS DOES NOTHING', () => {
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('holywater', cab)).toEqual({ full: 'IGNORE THE FIRST SABOTAGE EACH FIGHT', short: 'IGNORE THE FIRST SABOTAGE A FIGHT' });
+    for (const cab of MACHINES) expect(face('holywater', cab)).toEqual({ full: 'THE FIRST ENEMY ABILITY EACH FIGHT THAT HITS YOUR REELS DOES NOTHING', short: 'BLOCKS THE FIRST ENEMY ABILITY ON YOUR REELS' });
   });
   const slimeFight = (relics: RelicId[], cab: CabinetId = 'knight') =>
     new Fight(machineCfg(cab, relics, (c) => (c.enemy = { hp: 1e7, strips: reels3({ slime: 12 }) })), 7);
@@ -460,19 +460,11 @@ describe('HOLY WATER (holywater): IGNORE THE FIRST SABOTAGE EACH FIGHT', () => {
   };
   const slimed = (f: Fight) => f.sides.player.reels.reduce((a, r) => a + r.cells.filter((c) => c.slimed).length, 0);
   for (const cab of MACHINES)
-    it(`${cab}: the first spill washes off, the second lands`, () => {
+    it(`${cab}: spill symbols on the enemy's reels land and don't use it up (user, 2026-11-01: it's for abilities)`, () => {
       const f = slimeFight(['holywater'], cab);
-      const first = enemySpin(f, ['slime', 'slime', 'slime']);
-      expect(ofType(first, 'relic').some((e) => e.relic === 'holywater')).toBe(true);
-      expect(ofType(first, 'slime')).toHaveLength(0);
-      expect(slimed(f)).toBe(0);
-      const second = enemySpin(f, ['slime', 'slime', 'slime']);
-      expect(ofType(second, 'slime')).toHaveLength(1);
+      enemySpin(f, ['slime', 'slime', 'slime']);
       expect(slimed(f)).toBeGreaterThan(0);
-      // Without it the first lands.
-      const g = slimeFight([], cab);
-      enemySpin(g, ['slime', 'slime', 'slime']);
-      expect(slimed(g)).toBeGreaterThan(0);
+      expect(f.holyWater).toBe(false);
     });
   it('a single jam (it fizzles anyway) does not use it up', () => {
     const f = new Fight(machineCfg('knight', ['holywater'], (c) => (c.enemy = { hp: 1e7, strips: [{ lock: 12 }, { shield: 12 }, { shield: 12 }] })), 7);
@@ -502,8 +494,8 @@ describe('HOLY WATER (holywater): IGNORE THE FIRST SABOTAGE EACH FIGHT', () => {
   });
   it('each fight: a new fight has it again', () => {
     for (let i = 0; i < 2; i++) {
-      const f = slimeFight(['holywater']);
-      enemySpin(f, ['slime', 'slime', 'slime']);
+      const f = abilityFight(['holywater'], 'flood');
+      enemySpin(f, ['shield', 'shield', 'shield']);
       expect(slimed(f)).toBe(0);
     }
   });

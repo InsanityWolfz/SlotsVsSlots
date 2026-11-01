@@ -7,17 +7,13 @@ import { ENDLESS, GATEKEEPER, OWNER_RULES, OWNER_TRICKS, TUNE, WHEEL_RULES } fro
 import { type LineScore } from './scoring';
 import { BONUS_SYMBOLS, cellValue, DEAD, effectiveSymbol, insertOffscreen, symbolValue, visibleCells, type CellRef } from './strip';
 import type { Fight } from './fight';
-import { MIDAS, MARK_DAMAGE, RAKE_CUT, PAIR_PAY, JACKPOT_PAY, allInRange, FAKE_TURNS, REEL_WRITES, FIZZLE_SINGLES, WRITER_ABILITIES, type Combatant, other, statusSize } from './fightRules';
+import { MIDAS, MARK_DAMAGE, RAKE_CUT, PAIR_PAY, JACKPOT_PAY, allInRange, FAKE_TURNS, WRITER_ABILITIES, type Combatant, other, statusSize } from './fightRules';
 
 // ---- writers: what an enemy does to your machine ------------------------------------
 
 export function write(f: Fight, me: Combatant, foe: Combatant, sym: SymbolId, amount: number, reels: number[], events: CombatEvent[]): void {
-  // HOLY WATER: the first cheat on your reels each fight washes off (singles that fizzle anyway don't use it).
-  if (foe.side === 'player' && foe.relics.has('holywater') && !f.holyWater && REEL_WRITES.has(sym) && !(FIZZLE_SINGLES.has(sym) && amount < PAIR_PAY)) {
-    f.holyWater = true;
-    events.push({ type: 'relic', side: 'player', relic: 'holywater' });
-    return f.fizzle(me, sym, reels, events);
-  }
+  // (HOLY WATER blocks the first ability on your reels now, not the first spill symbol: user, 2026-11-01. It was spent
+  // on a single spill, and the enemy's announced ability landed anyway.)
   switch (sym) {
     case 'slime':
       // One slimed cell per UNIT of slime pay (a double slimes 4, a jackpot 9).

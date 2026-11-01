@@ -99,7 +99,7 @@ describe('fight resolution', () => {
   });
 
   it('enemy shield drops at the start of the enemy turn, after absorbing the player attack', () => {
-    // (Exact numbers from the live rules: BUILD-UP, a test-branch rule, is off here.)
+    // (Exact numbers without BUILD-UP: it is off here.)
     BUILD_UP.on = 0;
     onTestFinished(() => void (BUILD_UP.on = 1));
     const f = fight();

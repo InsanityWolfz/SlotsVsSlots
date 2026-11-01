@@ -306,8 +306,26 @@ export class FightView {
       ctx.scale(1 + 0.35 * k, 1 + 0.35 * k);
       drawTitle(ctx, `X${Math.round(bu * 100) / 100}`, 0, 0, p > 0.5 ? '#fff4c0' : '#ffd23a');
       ctx.restore();
+      // The fill bar (user, 2026-11-01: "like the meters on real slot machines that slowly fill"): a notch a spin, up to the cap.
+      const rule = this.g.fight.buildUpRule();
+      const max = Math.round((rule.cap - 1) / Math.max(0.01, rule.step));
+      const lit = Math.min(max, Math.round((bu - 1) / Math.max(0.01, rule.step)));
+      const nw = 22, nh = 8, gap = 5;
+      const x0 = Math.round(cx - (max * nw + (max - 1) * gap) / 2);
+      const ny = Math.round(gy + 58);
+      for (let i = 0; i < max; i++) {
+        const x = x0 + i * (nw + gap);
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(x - 2, ny - 2, nw + 4, nh + 4);
+        ctx.fillStyle = i < lit ? (i === lit - 1 && p > 0.5 ? '#fff4c0' : '#ffd23a') : '#3a2a12';
+        ctx.fillRect(x, ny, nw, nh);
+        if (i < lit) {
+          ctx.fillStyle = 'rgba(255,255,255,0.35)';
+          ctx.fillRect(x, ny, nw, 2);
+        }
+      }
       const cab = this.g.fight.cfg.cabinet;
-      drawText(ctx, `YOUR NEXT ${symLabel(cab ? CABINETS[cab].attack : 'sword')} PAIR`, cx, gy + 66, T.small, KIT.dim);
+      drawText(ctx, `YOUR NEXT ${symLabel(cab ? CABINETS[cab].attack : 'sword')} PAIR`, cx, gy + 84, T.small, KIT.dim);
     }
     if (this.g.fight.isBoss) this.drawPot(ctx, cx, GUTTER_PANEL_Y, t);
     else if (this.g.fight.isDealer) this.drawDeal(ctx, cx, GUTTER_PANEL_Y, t);

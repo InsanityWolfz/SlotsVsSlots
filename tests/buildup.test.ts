@@ -4,7 +4,7 @@ import type { CombatEvent } from '../src/core/events';
 import { BUILD_UP, Fight } from '../src/core/fight';
 import type { LineScore } from '../src/core/scoring';
 
-/** BUILD-UP (test branch, 2026-11-01): each spin with no pair or jackpot adds +25% to your next pair or jackpot, up to x2. */
+/** BUILD-UP (user, 2026-11-01): each spin with no pair or jackpot adds +25% to your next pair or jackpot, up to x2. */
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) => events.filter((e): e is Extract<CombatEvent, { type: T }> => e.type === t);
 function fight(relics: RelicId[] = [], mut?: (c: GameConfig) => void): Fight {
   const c = defaultConfig();
