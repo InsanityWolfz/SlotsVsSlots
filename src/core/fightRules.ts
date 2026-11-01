@@ -26,7 +26,7 @@ export const POT_STEAL = { any: 1 };
  * CHARGE (more bolts) and every bolt hits the same; bolts are half size (half the charge for half the damage, so a bolt
  * pair fires at once); the storm heals once, not per bolt. `stormHeal`: that heal (x the machine's per-bolt heal).
  */
-export const PAY = { additive: 0, lightningAdd: 1, teslaOneAxis: 1, stormHeal: 3 };
+export const PAY = { additive: 0, lightningAdd: 1, teslaOneAxis: 1, stormHeal: 4 };
 /** THE JUKEBOX: +25% note damage per volume level (was +20%, 2026-10-12), max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
 export const VOLUME = { perLevel: 0.32, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5 };
 export const RAIN = { maxChips: 100, perChip: 1.5, cost: 5, rainmakerCost: 2, chipLess: 1 };

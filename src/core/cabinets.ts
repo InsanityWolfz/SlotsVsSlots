@@ -118,7 +118,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'TESLA',
     sprite: 'cabinetTesla',
     blurb: 'IT HUMS WHEN YOU LOOK AT IT',
-    hp: 31 * UNIT,
+    hp: 30 * UNIT,
     // No swords (2026-10-07): bolts are TESLA's weapon, and their damage is the lightning.
     strips: r3({ shield: 6, bolt: 6 }),
     gilded: [{ reel: 0, symbol: 'bolt', enh: 'charged', n: 4 }],
@@ -126,13 +126,14 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: UNIT / 2 },
     symbols: ['bolt', 'shield'],
     attack: 'bolt',
-    rule: 'BOLTS CHARGE LIGHTNING: 22 A BOLT, PIERCES SHIELDS. A STORM HEALS 15. 310 HP.',
+    rule: 'BOLTS CHARGE LIGHTNING: 17 A BOLT, PIERCES SHIELDS. A STORM HEALS 20. 300 HP.',
     unlock: 'REACH THE HOUSE',
     // 40 (2026-10-12): LIGHTNING ROD is gone (97% of TESLA runs took it; it set the cost to 40 and hit 90).
     specialCost: 4 * UNIT,
     // 60 -> 50 (2026-10-12): TESLA turned its pay into damage faster than anyone (sim: 1125 / spin in act 3 vs ~540).
-    // 44 (2026-11-01, the one-axis rework): a bolt is half of it (22) for half the charge (20); the storm heals once.
-    specialDamage: 4.4 * UNIT,
+    // 44 (2026-11-01, the one-axis rework): a bolt is half of it for half the charge (20); the storm heals once.
+    // 34 (2026-11-01, one heal rule: the storm heals 20, was 15): a bolt hits 17.
+    specialDamage: 3.4 * UNIT,
   },
   joker: {
     id: 'joker',
@@ -143,15 +144,16 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     blurb: 'NOTHING IS WHAT IT SEEMS',
     // 2026-10-12 (user): 380 HP and its jackpot payoff no longer heals (its healing grew with its WILDS: GREEN 53).
     // 335 -> 390 with the draft/Cashier split (2026-10-15: it bought WILDS at the Cashier; sim 44 / 26 -> 57 / 35).
-    hp: 39 * UNIT,
+    hp: 31.5 * UNIT,
     // Cards, not swords (2026-10-07): JAX throws playing cards. They hit like swords.
     strips: r3({ ace: 5, shield: 5, wild: 2 }),
     gilded: [],
     // A WILD fills 40 of 100 (was 20: in act 1 the meter rarely filled, so JAX's payoff never showed: feel playtest).
-    meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 0, perWild: 5 * UNIT },
+    // ONE HEAL RULE (2026-11-01): every meter payoff heals 20 (KNIGHT has no meter, so no heal).
+    meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 2 * UNIT, perWild: 5 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
-    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 390 HP.',
+    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS, HEAL 20. 315 HP.',
     unlock: 'BEAT THE HOUSE WITH WILDS',
     jokerWilds: true,
   },
