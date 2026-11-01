@@ -305,6 +305,9 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
 - **Targets for the sim bot** (run win %, every machine within 5 points): WHITE 60, RED 50, GREEN 36, BLACK 28,
   BLUE 20, GOLD 14. Each boss's win rate (of runs that reach it) within 10 points across machines. Rough per-boss
   aims: House about 85, THE WHEEL about 85, the Dealer about 65.
+- **SUBWOOFER (user, 2026-11-01, "ship it for now"):** THE DROP also hits for all the shield you hold (Body Slam's
+  shape; it pierced shields, and banning it raised JUKEBOX's win rate). Shields last one enemy turn, so the gain is small:
+  sim WHITE / GREEN, the attack build 62 / 39 (unchanged), the shield build 47 / 31 -> 49 / 34.
 - **One heal rule (user, 2026-11-01: the machines' heals were five different rules):** every meter payoff heals 15:
   BANKROLL's HIGH ROLLER payoff, THE JUKEBOX's DROP, JOKER's all-jackpot spin (it had none) and TESLA's storm (once a
   storm). KNIGHT has no meter, so no heal (the user: a heal would make KNIGHT too strong; it has the most HP and its boss
