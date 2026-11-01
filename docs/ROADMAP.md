@@ -32,8 +32,8 @@ nothing, and sabotage causes about 2% of fights' dead streaks, so the dry stretc
 it through first ("I'm afraid it's too much", it would have to be very readable);
 and the CLAW reworked as push-your-luck: shipped (user, 2026-11-01; rules in HP_GAME.md). Phase 4's TESLA (option 1: every boost
 adds charge, half-size bolts, the storm heals once) and THE OWNER (option A: a 25M fortune on a x10 damage ladder, plus
-OVERLOAD, TESLA's ENDLESS loop growth) are built and simmed on the branches `tesla-one-axis` and `owner-ladder` (the
-second on the first), waiting on the user's ship. Open calls for
+OVERLOAD, TESLA's ENDLESS loop growth) shipped (user, 2026-11-01: "we can ship the tesla and the owner re work"; rules in HP_GAME.md). Next: the machines'
+heals (today five different rules; KNIGHT and JOKER have none). The user's worry: a heal would make KNIGHT too strong. Open calls for
 the user: FULL next to an unlit bulb in settings (the combat LOG is now dev-only: user, 2026-10-31),
 fantasy-named relics (VAMPIRE FANG, SKELETON KEY, PHOENIX FEATHER, HOLY WATER, DEVIL'S DUE, CRUSADE, QUICKENING, VAMP
 CHARM), the ~45 rewritten card faces.
