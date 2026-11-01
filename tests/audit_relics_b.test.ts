@@ -1,6 +1,7 @@
 /**
  * Pre-launch audit, relic group B: each relic's text (full and card face, per machine) against what the engine does.
- * A claim the code doesn't keep is an `it.skip('MISMATCH: ...')` with what really happens; the file passes.
+ * The claims the code broke were fixed on 2026-11-01 (code or text); a question still open for the user is an
+ * `it.skip('OPEN CALL: ...')`.
  */
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, UNIT, type GameConfig, type RelicId, type SymbolId } from '../src/core/config';
@@ -14,6 +15,7 @@ import {
   chooseRoute,
   createRun,
   currentStop,
+  describeOption,
   encounterChoices,
   fightConfig,
   finishFight,
@@ -88,7 +90,7 @@ describe('audit B: texts per machine', () => {
     expect(RELICS.secondline.text).toContain('15% HARDER');
     expect(RELICS.devilsdue.text).toBe("EVERYTHING PAYS X1.75. -8% MAX HP AFTER EVERY FIGHT YOU WIN");
     expect(RELICS.longgame.text).toBe('EVERYTHING PAYS 20% LESS, +3% FOR EVERY FIGHT YOU WIN');
-    expect(RELICS.glasscannon.text).toBe('PAIRS AND JACKPOTS PAY X1.5. NO HEALING BETWEEN FIGHTS');
+    expect(RELICS.glasscannon.text).toBe("EVERYTHING PAYS X1.5. NO HEALING BETWEEN FIGHTS (BEATING AN ACT'S BOSS STILL HEALS YOU)");
     expect(NEW_RELIC.taxChips).toBe(5);
     expect(NEW_RELIC.punchEvery).toBe(6);
     expect(NEW_RELIC.insuranceShield).toBe(100);
@@ -153,14 +155,9 @@ describe('HOT STREAK', () => {
     f.forceNext('player', PAIR);
     expect(groupOf(f.step().events, 'sword').amount).toBe(2 * groupOf(after([], PAIR, PAIR), 'sword').amount);
   });
-  // MISMATCH: "YOUR NEXT SPIN PAYS X2" — only matched groups (pairs/jackpots) are doubled (fightScore.ts:233
-  // `f.hotStreak && g.matched`). A next spin with no pair pays its singles at x1: 10 per sword, not 20.
-  it.skip('MISMATCH: the whole next spin pays x2 (singles too)', () => {
-    const hot = after(['hotstreak'], JACK, NONE);
-    const cold = after([], JACK, NONE);
-    expect(groupOf(hot, 'sword', 0).amount).toBe(2 * groupOf(cold, 'sword', 0).amount);
-  });
-  it('ACTUAL: singles on the hot spin pay x1', () => {
+  // The text says the next spin's PAIRS AND JACKPOTS (2026-11-01): its singles pay x1.
+  it("the text names the next spin's pairs and jackpots; singles on the hot spin pay x1", () => {
+    expect(RELICS.hotstreak.text).toBe("AFTER A JACKPOT, YOUR NEXT SPIN'S PAIRS AND JACKPOTS PAY X2");
     expect(groupOf(after(['hotstreak'], JACK, NONE), 'sword', 0).amount).toBe(groupOf(after([], JACK, NONE), 'sword', 0).amount);
   });
 });
@@ -209,21 +206,19 @@ describe('PIT BOSS', () => {
     expect(dealt(enemyJackpots(['pitboss'], 'sword', 1).out[0])).toBe(0);
     expect(dealt(enemyJackpots(['pitboss'], 'sword', 1).out[0])).toBe(0);
   });
-  // MISMATCH: a voided jackpot of a WRITER symbol still writes. The group's amount goes to 0 (fightScore.ts:353-363)
-  // but resolveGroup still calls write() (fight.ts:775), and the writers floor at a single's effect: an ICE jackpot
-  // still freezes 1 reel for 1 turn; a CLAW jackpot still steals 1 cell (statusSize(0) = 1); a BOMB jackpot plants 1.
-  it.skip("MISMATCH: a voided ICE jackpot freezes nothing", () => {
+  // A voided jackpot of a WRITER symbol writes nothing either (fixed 2026-11-01: it froze / stole / planted a single's worth).
+  it("a voided ICE jackpot freezes nothing", () => {
     const { f } = enemyJackpots(['pitboss'], 'ice', 1);
     expect(f.sides.player.frozen.reduce((a, b) => a + b, 0)).toBe(0);
   });
-  it('ACTUAL: a voided ICE / CLAW / BOMB jackpot still freezes / steals / plants a single\'s worth', () => {
+  it('a voided ICE / CLAW / BOMB jackpot freezes / steals / plants nothing', () => {
     const ice = enemyJackpots(['pitboss'], 'ice', 1);
     expect(ofType(ice.out[0], 'relic').some((e) => e.relic === 'pitboss')).toBe(true);
-    expect(ice.f.sides.player.frozen.filter((t) => t > 0).length).toBe(1);
+    expect(ice.f.sides.player.frozen.filter((t) => t > 0).length).toBe(0);
     const claw = enemyJackpots(['pitboss'], 'claw', 1).out[0];
-    expect(ofType(claw, 'steal').reduce((a, e) => a + e.cells.length, 0)).toBe(1);
+    expect(ofType(claw, 'steal').reduce((a, e) => a + e.cells.length, 0)).toBe(0);
     const bomb = enemyJackpots(['pitboss'], 'bomb', 1).out[0];
-    expect(ofType(bomb, 'bomb').reduce((a, e) => a + e.cells.length, 0)).toBe(1);
+    expect(ofType(bomb, 'bomb').reduce((a, e) => a + e.cells.length, 0)).toBe(0);
     // (Without PIT BOSS the jackpot writes its full size.)
     expect(ofType(enemyJackpots([], 'claw', 1).out[0], 'steal').reduce((a, e) => a + e.cells.length, 0)).toBe(3);
   });
@@ -457,25 +452,29 @@ describe('INSURANCE POLICY', () => {
     const f = setup(['insurance'], 1);
     expect(gains(enemyPair(f))).toHaveLength(0);
   });
-  // MISMATCH (in effect): the shield lands during the ENEMY's turn (fight.ts:1197, in checkDeath after the hit), and
-  // shields reset at the start of their owner's turn (config shieldReset 'ownTurnStart', fight.ts:350). So the 100
-  // shield is wiped at the start of your next spin, before the enemy spins again: it only blocks what's left of the
-  // turn that dropped you (an ability, a bomb). A player reads "GAIN 100 SHIELD" as protection from the next hit.
-  it.skip('MISMATCH: the 100 shield is still up when the enemy next spins', () => {
+  // The shield lands on the ENEMY's turn, so it skips your next turn-start reset and blocks their next spin (fixed
+  // 2026-11-01: it was wiped before the enemy spun again).
+  it('the 100 shield is still up when the enemy next spins', () => {
     const f = setup(['insurance'], 0.4);
     while (!gains(enemyPair(f)).length);
     f.forceNext('player', ['empty', 'empty', 'empty']);
     f.step();
     expect(f.sides.player.shield).toBeGreaterThanOrEqual(100);
   });
-  it('ACTUAL: the 100 shield resets at the start of your next spin', () => {
+  it('it survives one reset only: the turn after, it resets like any shield', () => {
     const f = setup(['insurance'], 0.4);
     let guard = 0;
     while (!gains(enemyPair(f)).length && guard++ < 5);
     expect(f.sides.player.shield).toBe(100);
     f.forceNext('player', ['empty', 'empty', 'empty']);
     const ev = f.step().events;
-    expect(ofType(ev, 'shieldReset').find((e) => e.side === 'player')?.lost).toBe(100);
+    expect(ofType(ev, 'shieldReset').find((e) => e.side === 'player')?.lost ?? 0).toBe(0);
+    expect(f.sides.player.shield).toBe(100);
+    // The enemy's spin (no hit), then your next turn start: gone.
+    f.forceNext('enemy', ['empty', 'empty', 'empty']);
+    f.step();
+    f.forceNext('player', ['empty', 'empty', 'empty']);
+    f.step();
     expect(f.sides.player.shield).toBe(0);
   });
 });
@@ -715,12 +714,8 @@ describe('pay multipliers', () => {
     expect(ratio(['glasscannon'], PAIR, 'sword')).toBe(1.5);
     expect(ratio(['glasscannon'], JACK, 'sword')).toBe(1.5);
   });
-  // MISMATCH (generous): the text says PAIRS AND JACKPOTS; the code (fightScore.ts:279, one payMul for all three
-  // legendaries) multiplies every paying group, singles and lone shields included.
-  it.skip('MISMATCH: GLASS CANNON leaves singles at x1', () => {
-    expect(ratio(['glasscannon'], NONE, 'sword', 0)).toBe(1);
-  });
-  it('ACTUAL: GLASS CANNON pays singles x1.5 too', () => {
+  // EVERYTHING PAYS X1.5 (the text said pairs and jackpots; 2026-11-01): singles too.
+  it('GLASS CANNON pays singles x1.5 too', () => {
     expect(ratio(['glasscannon'], NONE, 'sword', 0)).toBe(1.5);
   });
   it('GLASS CANNON: no BANDAGE heal after a win, no heal at the Cashier', () => {
@@ -734,16 +729,8 @@ describe('pay multipliers', () => {
     r.player.chips = 999;
     expect(shopOffers(r).some((i) => i.option.kind === 'heal')).toBe(false);
   });
-  // MISMATCH: "NO HEALING BETWEEN FIGHTS", but beating an act's boss still heals you fully (run.ts:406 startNextAct,
-  // and run.ts:859 for each ENDLESS loop): noHealing() is never checked there.
-  it.skip('MISMATCH: GLASS CANNON: beating the act boss does not heal you', () => {
-    const r = run('knight', ['glasscannon'], 6);
-    skipToBoss(r);
-    r.player.hp = 50;
-    win(r);
-    expect(r.player.hp).toBeLessThan(r.player.maxHp);
-  });
-  it('ACTUAL: GLASS CANNON: an act boss still heals you to full', () => {
+  // The text says so (2026-11-01): BEATING AN ACT'S BOSS STILL HEALS YOU.
+  it('GLASS CANNON: an act boss still heals you to full, as the text says', () => {
     const r = run('knight', ['glasscannon'], 6);
     skipToBoss(r);
     r.player.hp = 50;
@@ -751,20 +738,18 @@ describe('pay multipliers', () => {
     expect(r.act).toBe(2);
     expect(r.player.hp).toBe(r.player.maxHp);
   });
-  // MISMATCH (smaller): the Cashier's +MAX HP card ("GAIN 40 MAX HP AND HEAL 40 HP") still heals 40 with GLASS CANNON
-  // (run.ts:1345, applyOption 'maxHp' adds to hp too).
-  it.skip('MISMATCH: GLASS CANNON: the +MAX HP card does not heal', () => {
+  // The Cashier's +MAX HP card doesn't heal under GLASS CANNON (fixed 2026-11-01).
+  it('GLASS CANNON: the +MAX HP card does not heal', () => {
     const r = run('knight', ['glasscannon'], 6);
     r.player.hp = 50;
     applyOption(r, { kind: 'maxHp', amount: 40 }, false);
     expect(r.player.hp).toBe(50);
   });
-  it('ACTUAL: GLASS CANNON: the +MAX HP card heals its amount', () => {
+  it("GLASS CANNON: the +MAX HP card is still sold, and its text drops the heal", () => {
     const r = run('knight', ['glasscannon'], 6);
-    r.player.hp = 50;
-    applyOption(r, { kind: 'maxHp', amount: 40 }, false);
-    expect(r.player.hp).toBe(90);
     expect(shopOffers(r).some((i) => i.option.kind === 'maxHp')).toBe(true);
+    expect(describeOption({ kind: 'maxHp', amount: 40 }, r).text).toBe('GAIN 40 MAX HP');
+    expect(describeOption({ kind: 'maxHp', amount: 40 }, run('knight', [], 6)).text).toBe('GAIN 40 MAX HP AND HEAL 40 HP');
   });
   it('they stack: GLASS CANNON x DEVIL\'S DUE x LONG GAME', () => {
     expect(ratio(['glasscannon', 'devilsdue', 'longgame'], PAIR, 'sword')).toBeCloseTo(1.5 * 1.75 * 0.8, 1);
@@ -795,15 +780,14 @@ describe('QUICKENING', () => {
     const j = opening('joker', ['quickening']).f;
     expect(j.sides.player.energy + (j.meter?.perWild ?? 0)).toBe(j.meterCost);
   });
-  // MISMATCH (MIDAS): CASSIDY's HIGH ROLLER bar already starts filled by the chips he holds (1 pip per 2 chips, up to
-  // 90 of 100: fight.ts:152). QUICKENING then SETS it to 50 (fight.ts:155-158, `p.energy = ...`, not a max), so with
-  // 12+ chips the relic LOWERS his starting bar: 40 chips start it at 90 without QUICKENING, 50 with it.
-  it.skip('MISMATCH: midas: QUICKENING never starts the HIGH ROLLER bar lower than it would be without it', () => {
+  // CASSIDY's HIGH ROLLER bar already starts filled by the chips he holds; QUICKENING never lowers it (fixed 2026-11-01).
+  it('midas: QUICKENING never starts the HIGH ROLLER bar lower than it would be without it', () => {
     expect(opening('midas', ['quickening'], 40).f.sides.player.energy).toBeGreaterThanOrEqual(opening('midas', [], 40).f.sides.player.energy);
   });
-  it('ACTUAL: midas with 40 chips: 90 without QUICKENING, 50 with it', () => {
+  it('midas: 40 chips start the bar at 90 either way; 0 chips start it at half with QUICKENING', () => {
     expect(opening('midas', [], 40).f.sides.player.energy).toBe(90);
-    expect(opening('midas', ['quickening'], 40).f.sides.player.energy).toBe(50);
+    expect(opening('midas', ['quickening'], 40).f.sides.player.energy).toBe(90);
+    expect(opening('midas', ['quickening'], 0).f.sides.player.energy).toBe(50);
   });
   it('knight: never offered, and does nothing if held', () => {
     expect(relicFits(run('knight', []), 'quickening')).toBe(false);
@@ -840,10 +824,8 @@ describe('QUICKENING', () => {
     expect(e.every).toBe(3);
     expect(fightConfig(r, base).enemy.ability!.every).toBe(2);
   });
-  // MISMATCH (edge, in the player's favour): the clock floors at 2, and the stakes take a turn off too, so where the
-  // stakes already made a clock 2 (PURPLE+ regulars: STAKE.fasterAll, stakes.ts:58-60) QUICKENING's cost is 0. The
-  // House at BLACK+ (stake >= houseDirty) has its clock overwritten after QUICKENING (stakes.ts:57).
-  it.skip('MISMATCH: at stake 5, enemy abilities still charge 1 spin faster with QUICKENING', () => {
+  // OPEN CALL (user): the clock floors at 2, so at stake 5+ QUICKENING's cost vanishes (in the player's favour).
+  it.skip('OPEN CALL: at stake 5, enemy abilities still charge 1 spin faster with QUICKENING', () => {
     const at = (relics: RelicId[]) => {
       const r = createRun(base, 3, 'tesla', 5);
       r.pendingStart = null;

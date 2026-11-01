@@ -74,6 +74,8 @@ export class Fight {
   /** INSURANCE POLICY: used this fight; waiting to pay out (the hit landed, the shield comes after). */
   private insuranceUsed = false;
   private insurancePending = false;
+  /** INSURANCE's shield still standing: it survives your next turn-start reset (it landed on the enemy's turn). */
+  private insuranceKeep = 0;
   /** HOUSE TAX: chips the enemy's jackpots paid you (banked after the fight). */
   taxChips = 0;
   /** CERTIFIED HITMAKER: drops played this fight. */
@@ -154,7 +156,9 @@ export class Fight {
     // JUKEBOX's DROP on spin 1: 7 of 8 fights after it ended in 1-3 spins, playtest 2026-10-31).
     if (p.relics.has('quickening') && (this.special || this.meter)) {
       const cost = this.special ? this.cfg.specialCost : this.meterCost;
-      p.energy = this.meter?.kind === 'volume' ? Math.floor(cost / 2 / UNIT) * UNIT : Math.floor(cost / 2);
+      const half = this.meter?.kind === 'volume' ? Math.floor(cost / 2 / UNIT) * UNIT : Math.floor(cost / 2);
+      // (BANKROLL's bar already starts filled by the chips held: QUICKENING never lowers it. Audit 2026-11-01.)
+      p.energy = this.meter?.kind === 'vault' ? Math.max(p.energy, half) : half;
       this.openers.push('quickening');
     }
     // WARM-UP (JUKEBOX, ENDLESS): the volume starts at the loop, never at THE DROP itself.
@@ -455,6 +459,7 @@ export class Fight {
     this.lastScoreShield = score.groups.filter((g) => g.symbol === 'shield').reduce((t, g) => t + g.amount, 0);
     for (const group of score.groups) {
       if (allIn && (group.symbol === 'sword' || group.symbol === 'seven')) continue;
+      if (group.voided) continue;
       this.resolveGroup(me, group, score, events);
       if (!this.over && side === 'player') this.cellCharms(me, group, events);
       if (this.over) break;
@@ -524,6 +529,7 @@ export class Fight {
     if (!this.over && score.tier === 'triple' && me.relics.has('bell') && (side !== 'player' || this.special || this.meter) && !(side === 'player' && score.jackpots) && !(side === 'player' && this.dropNow)) {
       events.push({ type: 'relic', side, relic: 'bell' });
       if (this.special || side !== 'player') this.gainEnergy(me, this.cfg.specialCost, [], events);
+      else if (this.meter?.kind === 'vault') this.fillVault(me, events);
       else this.fillMeter(me, this.meterCost, [], events);
     }
     // The turn's charge is all in: the storm fires once (only lightning charge: other meters keep theirs in energy too).
@@ -674,6 +680,18 @@ export class Fight {
   }
 
   private resetShield(c: Combatant, events: CombatEvent[]): void {
+    // INSURANCE (audit 2026-11-01): its shield lands on the enemy's turn, so it skips one reset and blocks their next spin.
+    const keep = c.side === 'player' ? Math.min(this.insuranceKeep, c.shield) : 0;
+    if (c.side === 'player') this.insuranceKeep = 0;
+    c.shield -= keep;
+    this.resetShieldBody(c, events);
+    if (keep > 0 && !this.over) {
+      c.shield += keep;
+      events.push({ type: 'shieldGain', side: 'player', reels: [], amount: keep, total: c.shield, source: 'insurance' });
+    }
+  }
+
+  private resetShieldBody(c: Combatant, events: CombatEvent[]): void {
     if (c.shield <= 0) return;
     if (c.side === 'player' && !this.over) {
       const held = c.shield;
@@ -687,7 +705,7 @@ export class Fight {
       }
       // CAPACITOR (TESLA): leftover shield charges lightning before it resets.
       if (!this.over && this.special && c.relics.has('capacitor')) {
-        const q = unitsRound(held * NEW_RELIC.capacitorShare);
+        const q = Math.round(held * NEW_RELIC.capacitorShare);
         if (q > 0) {
           events.push({ type: 'relic', side: 'player', relic: 'capacitor' });
           this.gainEnergy(c, q, [], events);
@@ -696,7 +714,7 @@ export class Fight {
       if (this.over) return;
       // TOWER SHIELD (KNIGHT): half the leftover shield stays (capped, since SHIELD BASH reads it again next turn).
       if (c.relics.has('tower')) {
-        const keep = Math.min(unitsRound(held * NEW_RELIC.towerShare), unitsRound(c.maxHp * NEW_RELIC.towerCap));
+        const keep = Math.min(Math.round(held * NEW_RELIC.towerShare), Math.round(c.maxHp * NEW_RELIC.towerCap));
         if (keep > 0) {
           events.push({ type: 'relic', side: 'player', relic: 'tower' });
           events.push({ type: 'shieldReset', side: c.side, lost: c.shield - keep });
@@ -956,7 +974,6 @@ export class Fight {
     if (!this.over && me.relics.has('overcharge') && dealt > 0) {
       events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
       this.hit(me, foe, Math.max(1, Math.round(dealt * OVERCHARGE_ECHO)), [], events, false, 'echo');
-      if (!this.over && me.relics.has('fang')) this.heal(me, this.special ? FANG_TESLA_HEAL : FANG_HEAL, 'fang', events);
     }
   }
 
@@ -971,6 +988,15 @@ export class Fight {
     if (!parts.length) return;
     if (me.relics.has('fang')) events.push({ type: 'relic', side: me.side, relic: 'fang' });
     this.heal(me, parts.reduce((a, x) => a + x.amount, 0), 'payoff', events, parts.length > 1 ? parts : undefined);
+  }
+
+  /** JACKPOT BELL on BANKROLL: the HIGH ROLLER bar fills all the way (audit 2026-11-01: it added one pip). */
+  private fillVault(me: Combatant, events: CombatEvent[]): void {
+    if (me.armed) return;
+    const add = this.meterCost - me.energy;
+    me.energy = this.meterCost;
+    me.armed = true;
+    events.push({ type: 'meter', side: me.side, reels: [], amount: add, total: me.energy, armed: true });
   }
 
   /** MIDAS / JAX: fill the signature meter (a full MIDAS / JAX meter locks until it pays off). */
@@ -1197,6 +1223,7 @@ export class Fight {
     if (this.insurancePending && c.side === 'player' && c.hp > 0) {
       this.insurancePending = false;
       c.shield += NEW_RELIC.insuranceShield;
+      this.insuranceKeep = NEW_RELIC.insuranceShield;
       events.push({ type: 'relic', side: 'player', relic: 'insurance' });
       events.push({ type: 'shieldGain', side: 'player', reels: [], amount: NEW_RELIC.insuranceShield, total: c.shield, source: 'insurance' });
     }
@@ -1241,11 +1268,13 @@ export class Fight {
       return;
     }
     // GOLDEN PARACHUTE (BANKROLL): pay chips to survive at 1 HP, once a fight (with PHOENIX FEATHER: two saves).
-    const held = (this.cfg.player.chipsHeld ?? 0) + this.midasChips - this.parachuteChips;
-    if (c.side === 'player' && c.relics.has('parachute') && !this.parachuteUsed && held >= NEW_RELIC.parachuteCost) {
+    if (c.side === 'player' && c.relics.has('parachute') && !this.parachuteUsed && this.chipsNow() >= NEW_RELIC.parachuteCost) {
       this.parachuteUsed = true;
+      // The chips leave your hand now (audit 2026-11-01: they still counted for HIGH ROLLER and MAKE IT RAIN).
       this.parachuteChips = NEW_RELIC.parachuteCost;
-      c.hp = Math.max(1, unitsRound(c.maxHp * NEW_RELIC.parachuteHp));
+      this.midasChips -= NEW_RELIC.parachuteCost;
+      events.push({ type: 'midasChips', side: c.side, amount: -NEW_RELIC.parachuteCost, total: this.midasChips });
+      c.hp = Math.max(1, Math.round(c.maxHp * NEW_RELIC.parachuteHp));
       events.push({ type: 'relic', side: c.side, relic: 'parachute' });
       events.push({ type: 'phoenix', side: c.side, hp: c.hp });
       return;

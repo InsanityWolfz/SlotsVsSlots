@@ -2,7 +2,7 @@
  * Launch audit, group relics_a: does each relic do exactly what its card says?
  * mirror, fang, bandage, prism, ticket, starchart, bell, phoenix, overcharge, key, sandglass, underdog, holywater.
  * (fang, overcharge and bell: the generic text and KNIGHT here; their other machine texts are another group's.)
- * A claim the code breaks is kept as `it.skip('MISMATCH: ...')`, with what really happens in a comment.
+ * The claims the code broke were fixed on 2026-11-01 (code or text); each test checks the claim as it reads now.
  */
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type Enh, type GameConfig, type RelicId, type SymbolId } from '../src/core/config';
@@ -115,11 +115,8 @@ describe('VAMPIRE FANG (fang): generic text and KNIGHT', () => {
     expect(heal(['fang']) - heal([])).toBe(FANG_HEAL);
   });
 
-  // MISMATCH (interaction): with OVERCHARGE too, FANG heals a second time after the echo (fight.ts:959,
-  // payoffAfter: `if (me.relics.has('fang')) this.heal(..FANG_HEAL..)` inside the OVERCHARGE block), so a JOKER /
-  // BANKROLL payoff heals 30 + 30 from FANG. Measured: FANG alone +30 over no relic; FANG + OVERCHARGE +60 over
-  // OVERCHARGE alone. Neither card says the echo heals.
-  it.skip('MISMATCH: FANG + OVERCHARGE on JOKER: FANG still heals 30 a payoff (it heals 60)', () => {
+  // With OVERCHARGE too, FANG heals once a payoff, not again after the echo (fixed 2026-11-01).
+  it('FANG + OVERCHARGE on JOKER: FANG still heals 30 a payoff', () => {
     const heal = (relics: RelicId[]) => {
       const f = new Fight(machineCfg('joker', relics), 7);
       const p = f.sides.player;
@@ -371,9 +368,9 @@ describe('SKELETON KEY (key): YOUR PAIRS PAY X2', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('GOLDEN HOURGLASS (sandglass): ENEMY ABILITIES CHARGE 1 SPIN SLOWER', () => {
+describe("GOLDEN HOURGLASS (sandglass): ENEMY ABILITIES CHARGE 1 SPIN SLOWER (NOT THE WHEEL'S OR THE DEALER'S)", () => {
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('sandglass', cab)).toEqual({ full: 'ENEMY ABILITIES CHARGE 1 SPIN SLOWER', short: 'ENEMY ABILITIES CHARGE A SPIN SLOWER' });
+    for (const cab of MACHINES) expect(face('sandglass', cab)).toEqual({ full: "ENEMY ABILITIES CHARGE 1 SPIN SLOWER (NOT THE WHEEL'S OR THE DEALER'S)", short: 'SLOWER ENEMY ABILITIES (NOT WHEEL OR DEALER)' });
   });
   /** The enemy turns (1, 2, ...) its ability fires on, over 16 enemy turns. */
   const fires = (relics: RelicId[], kind: 'smash' | 'flood' = 'smash') => {
@@ -406,12 +403,9 @@ describe('GOLDEN HOURGLASS (sandglass): ENEMY ABILITIES CHARGE 1 SPIN SLOWER', (
       expect(effectiveAbility(ab, { stake: 0, act: 1, sandglass: true }).every).toBe(4);
     }
   });
-  // MISMATCH: THE WHEEL's NO MORE BETS ('bets') and THE DEALER's deals ('deal') ignore the Hourglass on purpose
-  // (stakes.ts:56, "ITERATION_12 L6: it disabled the boss mechanic"): every stays 3. The card says ENEMY ABILITIES.
-  it.skip("MISMATCH: THE WHEEL's and THE DEALER's abilities charge 1 spin slower", () => {
-    for (const kind of ['bets', 'deal'] as const) expect(effectiveAbility({ kind, every: 3, power: 1 }, { stake: 0, act: 2, sandglass: true }).every).toBe(4);
-  });
-  it('(what happens: the Wheel and the Dealer keep their clocks)', () => {
+  // THE WHEEL's NO MORE BETS ('bets') and THE DEALER's deals ('deal') ignore the Hourglass on purpose (stakes.ts, it
+  // disabled the boss mechanic); the text says so (2026-11-01).
+  it("THE WHEEL and THE DEALER keep their clocks, as the text says", () => {
     for (const kind of ['bets', 'deal'] as const) expect(effectiveAbility({ kind, every: 3, power: 1 }, { stake: 0, act: 2, sandglass: true }).every).toBe(3);
   });
 });
@@ -519,19 +513,12 @@ describe('HOLY WATER (holywater): IGNORE THE FIRST SABOTAGE EACH FIGHT', () => {
     expect(ofType(ev, 'confiscate')).toHaveLength(0);
     expect(f.holyWater).toBe(true);
   });
-  // MISMATCH: the PIT BOSS's AUDIT ('penalty': confiscates two Charms, then hits) is not in WRITER_ABILITIES
-  // (fightRules.ts:69), so HOLY WATER never stops it, while the same confiscation from THE REPO MAN's ability and from
-  // the PIT BOSS's own gavel pairs (REEL_WRITES) is washed off. Measured: a 'confiscate' event lands, holyWater stays false.
-  it.skip("MISMATCH: the PIT BOSS's AUDIT (it confiscates your Charms) is washed off", () => {
+  // The PIT BOSS's AUDIT ('penalty': confiscates two Charms, then hits) is washed off like THE REPO MAN's (fixed 2026-11-01).
+  it("the PIT BOSS's AUDIT (it confiscates your Charms) is washed off, and that spends it", () => {
     const f = abilityFight(['holywater'], 'penalty');
     const ev = enemySpin(f, ['shield', 'shield', 'shield']);
     expect(ofType(ev, 'confiscate')).toHaveLength(0);
-  });
-  it("(what happens: AUDIT confiscates through HOLY WATER, which stays unspent)", () => {
-    const f = abilityFight(['holywater'], 'penalty');
-    const ev = enemySpin(f, ['shield', 'shield', 'shield']);
-    expect(ofType(ev, 'confiscate')).toHaveLength(1);
-    expect(f.holyWater).toBe(false);
+    expect(f.holyWater).toBe(true);
   });
   // UNCLEAR: an ability that would do nothing still spends it (THE REPO MAN with no Charm to take: his take fizzles anyway,
   // but HOLY WATER is checked first, fightTricks.ts:468). "The first sabotage" reads like the first that would land.

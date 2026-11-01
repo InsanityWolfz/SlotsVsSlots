@@ -56,7 +56,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'SURVIVE LETHAL DAMAGE AT 1 HP ONCE PER FIGHT', sprite: 'relicPhoenix' },
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR METER PAYOFF ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
   key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR PAIRS PAY X2', sprite: 'relicKey' },
-  sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: 'ENEMY ABILITIES CHARGE 1 SPIN SLOWER', sprite: 'relicSandglass' },
+  sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: "ENEMY ABILITIES CHARGE 1 SPIN SLOWER (NOT THE WHEEL'S OR THE DEALER'S)", sprite: 'relicSandglass' },
   // Slot machine relics: each machine gets an identity relic and a heal that feeds off its own mechanic.
   // CONTENT WAVE 1 (2026-10-07, playtest/CONTENT_WAVE1_REVIEW.md): slot machine relics, one hook each.
   tower: { id: 'tower', name: 'TOWER SHIELD', text: 'RETAIN 25% OF YOUR SHIELD EACH SPIN (MAX 10% OF YOUR HP)', sprite: 'relicTower', machine: 'knight' },
@@ -68,14 +68,14 @@ export const RELICS: Record<RelicId, RelicDef> = {
   coup: { id: 'coup', name: 'COUP DE GRACE', text: 'SWORDS PAY X2 WHILE YOU HAVE MORE HP LEFT THAN THE ENEMY', sprite: 'relicCoup', machine: 'knight' },
   compound: { id: 'compound', name: 'COMPOUND', text: 'HIGH ROLLER CAP INCREASES TO X4', sprite: 'relicCompound', machine: 'midas' },
   meltdown: { id: 'meltdown', name: 'MELTDOWN', text: 'LIGHTNING DAMAGE +1% FOR EACH HP YOU ARE MISSING (MAX 50%)', sprite: 'relicMeltdown', machine: 'tesla' },
-  deckdrum: { id: 'deckdrum', name: 'DECK DRUM', text: 'EACH PAIR AND JACKPOT INCREASES CARD DAMAGE BY +1 EACH FIGHT (MAX +5)', sprite: 'relicDeckdrum', machine: 'joker' },
+  deckdrum: { id: 'deckdrum', name: 'DECK DRUM', text: 'EVERY SPIN THAT PAYS: +1 CARD DAMAGE FOR THE REST OF THE FIGHT (MAX +5)', sprite: 'relicDeckdrum', machine: 'joker' },
   // Charm relics.
   horseshoe: { id: 'horseshoe', name: 'HORSESHOE', text: 'PAIRS AND JACKPOTS MADE WITH A LUCKY WILD PAY X3', sprite: 'relicHorseshoe', charm: 'lucky' },
   // General.
   underdog: { id: 'underdog', name: 'UNDERDOG', text: 'EVERYTHING PAYS X1.5 WHEN YOU ARE UNDER HALF HP', sprite: 'relicUnderdog' },
   holywater: { id: 'holywater', name: 'HOLY WATER', text: 'IGNORE THE FIRST SABOTAGE EACH FIGHT', sprite: 'relicHolywater' },
   // EXPERT_PLAYTEST_10: relics that make a choice (streaky vs steady, turtle-and-counter, keep the liens or pay them).
-  hotstreak: { id: 'hotstreak', name: 'HOT STREAK', text: 'AFTER A JACKPOT, YOUR NEXT SPIN PAYS X2', sprite: 'relicHotStreak' },
+  hotstreak: { id: 'hotstreak', name: 'HOT STREAK', text: "AFTER A JACKPOT, YOUR NEXT SPIN'S PAIRS AND JACKPOTS PAY X2", sprite: 'relicHotStreak' },
   // CONTENT_13.
   pitboss: { id: 'pitboss', name: 'PIT BOSS', text: "THE ENEMY'S FIRST JACKPOT EACH FIGHT DOESN'T COUNT", sprite: 'relicPitBoss' },
   // CASH CASSIDY's MAKE IT RAIN relics.
@@ -98,7 +98,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   insurance: { id: 'insurance', name: 'INSURANCE POLICY', text: 'THE FIRST TIME EACH FIGHT YOU DROP UNDER 25% HP: GAIN 100 SHIELD', sprite: 'relicInsurance' },
   housetax: { id: 'housetax', name: 'HOUSE TAX', text: 'EVERY ENEMY JACKPOT PAYS YOU 5 CHIPS', sprite: 'relicHouseTax' },
   regular: { id: 'regular', name: 'REGULAR', text: 'ENCOUNTER GAMES GIVE YOU TWO MORE PLAYS', sprite: 'relicRegular' },
-  hitmaker: { id: 'hitmaker', name: 'CERTIFIED HITMAKER', text: 'EACH DROP IN A FIGHT HITS +60% MORE THAN THE LAST', sprite: 'relicHitmaker', machine: 'jukebox' },
+  hitmaker: { id: 'hitmaker', name: 'CERTIFIED HITMAKER', text: 'EACH DROP HITS +60% MORE FOR EVERY DROP BEFORE IT THIS FIGHT', sprite: 'relicHitmaker', machine: 'jukebox' },
   houseofcards: { id: 'houseofcards', name: 'HOUSE OF CARDS', text: 'EACH JACKPOT METER PAYOFF ADDS A WILD TO 2 REELS FOR THE FIGHT', sprite: 'relicHouseOfCards', machine: 'joker' },
   parachute: { id: 'parachute', name: 'GOLDEN PARACHUTE', text: 'A HIT THAT WOULD KILL YOU: PAY 10 CHIPS, LAND AT 25% HP (ONCE PER FIGHT)', sprite: 'relicParachute', machine: 'midas' },
   // The BIG CHOICES that stayed, as legendary relics (user, 2026-10-15). Each keeps its price, said on the card.
@@ -106,7 +106,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   devilsdue: { id: 'devilsdue', name: "DEVIL'S DUE", text: `EVERYTHING PAYS X${LEGEND_RELIC.devilPay}. -${pct(LEGEND_RELIC.devilDecay)}% MAX HP AFTER EVERY FIGHT YOU WIN`, sprite: 'relicChalice' },
   longgame: { id: 'longgame', name: 'THE LONG GAME', text: `EVERYTHING PAYS ${pct(1 - LEGEND_RELIC.longStart)}% LESS, +${pct(LEGEND_RELIC.longStep)}% FOR EVERY FIGHT YOU WIN`, sprite: 'relicMetronome' },
   quickening: { id: 'quickening', name: 'QUICKENING', text: 'YOUR METER STARTS EVERY FIGHT HALF FULL. ENEMY ABILITIES CHARGE 1 SPIN FASTER', sprite: 'relicBattery' },
-  glasscannon: { id: 'glasscannon', name: 'GLASS CANNON', text: `PAIRS AND JACKPOTS PAY X${LEGEND_RELIC.glassPay}. NO HEALING BETWEEN FIGHTS`, sprite: 'relicFirstblood' },
+  glasscannon: { id: 'glasscannon', name: 'GLASS CANNON', text: `EVERYTHING PAYS X${LEGEND_RELIC.glassPay}. NO HEALING BETWEEN FIGHTS (BEATING AN ACT'S BOSS STILL HEALS YOU)`, sprite: 'relicFirstblood' },
   crusade: { id: 'crusade', name: 'CRUSADE', text: `+${LEGEND_RELIC.crusadeStep} SWORD DAMAGE FOR EVERY FIGHT YOU WIN`, sprite: 'relicDrum', machine: 'knight' },
   chainlightning: { id: 'chainlightning', name: 'CHAIN LIGHTNING', text: `LIGHTNING DAMAGE +${pct(LEGEND_RELIC.chainAdd)}%`, sprite: 'relicCoil', machine: 'tesla' },
   highcard: { id: 'highcard', name: 'HIGH CARD', text: `JACKPOTS AND JACKPOT METER PAYOFFS PAY X${LEGEND_RELIC.highCardMul}. PAIRS PAY HALF`, sprite: 'relicWildcard', machine: 'joker' },
@@ -120,13 +120,13 @@ export const RELICS: Record<RelicId, RelicDef> = {
  */
 const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>> = {
   fang: {
-    tesla: 'EACH LIGHTNING STORM HEALS 15 HP',
-    midas: 'HIGH ROLLER PAYOFFS HEAL 30 HP',
-    joker: 'ALL-JACKPOT SPINS HEAL 30 HP',
-    jukebox: 'THE DROP HEALS 30 HP',
+    tesla: 'EACH LIGHTNING STORM HEALS 15 MORE HP',
+    midas: 'HIGH ROLLER PAYOFFS HEAL 30 MORE HP',
+    joker: 'ALL-JACKPOT SPINS HEAL 30 MORE HP',
+    jukebox: 'THE DROP HEALS 30 MORE HP',
   },
   overcharge: {
-    tesla: 'YOUR LIGHTNING HITS 30% HARDER',
+    tesla: 'LIGHTNING DAMAGE +30%',
     midas: 'YOUR HIGH ROLLER PAYOFF ECHOES FOR 1/3 OF ITS DAMAGE',
     joker: 'YOUR ALL-JACKPOTS SPIN ECHOES FOR 1/3 OF ITS DAMAGE',
   },

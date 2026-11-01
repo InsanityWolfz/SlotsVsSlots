@@ -975,7 +975,6 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   run.player.gilded = run.player.gilded.filter((g) => g.n > 0);
   // HOUSE TAX: the enemy's jackpots paid you. GOLDEN PARACHUTE: its price.
   if (fight.taxChips) run.player.chips += fight.taxChips;
-  if (fight.parachuteChips) run.player.chips = Math.max(0, run.player.chips - fight.parachuteChips);
   // THE LONG GAME / CRUSADE: every win since you got it adds to its pay.
   if (run.player.relics.includes('longgame')) run.longGame = (run.longGame ?? 0) + 1;
   if (run.player.relics.includes('crusade')) run.crusadeWins = (run.crusadeWins ?? 0) + 1;
@@ -1344,7 +1343,8 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
       break;
     case 'maxHp':
       p.maxHp += o.amount;
-      p.hp += o.amount;
+      // GLASS CANNON: no healing between fights, this card's heal included (audit 2026-11-01).
+      if (!noHealing(run)) p.hp += o.amount;
       break;
   }
   // A charm lasts while its cell is on the reel.
@@ -1516,6 +1516,13 @@ export function takenLabel(o: DraftOption): string {
   return describeOption(o).title;
 }
 
+/** A Charm card's full rule, for its detail box (audit 2026-11-01: the box showed the short face, so ONCE PER GROUP,
+ * ON A WIN and FOR GOOD were never seen in a run). */
+export function charmCardFull(o: Extract<DraftOption, { kind: 'gild' }>, run?: RunState): string {
+  const ticket = !!run?.player.relics.includes('ticket');
+  return `REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${charmRuleText(o.enh, charmLevel(run?.player.levels, o.enh, ticket))}`;
+}
+
 export function describeOption(o: DraftOption, run?: RunState): { title: string; text: string } {
   const lv = run?.player.levels;
   const ticket = !!run?.player.relics.includes('ticket');
@@ -1534,7 +1541,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'heal':
       return { title: 'HEAL', text: `RESTORE ${o.amount} HP` };
     case 'maxHp':
-      return { title: `+${o.amount} MAX HP`, text: `GAIN ${o.amount} MAX HP AND HEAL ${o.amount} HP` };
+      return { title: `+${o.amount} MAX HP`, text: run && noHealing(run) ? `GAIN ${o.amount} MAX HP` : `GAIN ${o.amount} MAX HP AND HEAL ${o.amount} HP` };
     case 'gild':
       return {
         title: `${o.n} ${charmName(o.enh)} CHARM${o.n > 1 ? 'S' : ''}`,

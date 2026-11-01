@@ -1,7 +1,7 @@
 /**
  * Launch audit, group relics_c1: KNIGHT, BANKROLL (midas) and TESLA machine relics. Each test forces the exact situation
- * a relic's text describes and checks the number the text promises. A claim the code doesn't keep is an
- * `it.skip('MISMATCH: ...')` with what really happens; the file passes either way.
+ * a relic's text describes and checks the number the text promises. The claims the code broke were fixed on 2026-11-01
+ * (code or text); a question still open for the user is an `it.skip('OPEN CALL: ...')`.
  */
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type Gild, type RelicId, type SymbolId } from '../src/core/config';
@@ -64,32 +64,32 @@ describe('texts: full and card face, on the one machine each can appear on', () 
   });
   it('the texts the player reads (snapshot of what was audited)', () => {
     const faces = Object.fromEntries(Object.entries(machineOf).map(([id, cab]) => [id, [relicText(id as RelicId, cab), shortRelicText(id as RelicId, relicText(id as RelicId, cab))]]));
-    expect(faces.tower).toEqual(['RETAIN 25% OF YOUR SHIELD EACH SPIN (MAX 10% OF YOUR HP)', 'KEEP 25% OF YOUR SHIELD EACH SPIN']);
+    expect(faces.tower).toEqual(['RETAIN 25% OF YOUR SHIELD EACH SPIN (MAX 10% OF YOUR HP)', 'KEEP 25% OF SHIELD, MAX 10% OF YOUR HP']);
     expect(faces.coup).toEqual(['SWORDS PAY X2 WHILE YOU HAVE MORE HP LEFT THAN THE ENEMY', 'SWORDS PAY X2 WHILE YOU LEAD ON HP']);
     expect(faces.greatsword).toEqual(['YOUR SWORDS PAY X1.5', 'YOUR SWORDS PAY X1.5']);
     expect(faces.crusade).toEqual(['+5 SWORD DAMAGE FOR EVERY FIGHT YOU WIN', '+5 SWORD DAMAGE PER FIGHT WON']);
     expect(faces.compound).toEqual(['HIGH ROLLER CAP INCREASES TO X4', 'HIGH ROLLER CAPS AT X4']);
     expect(faces.rainmaker).toEqual(['MAKE IT RAIN COSTS 2 CHIPS INSTEAD OF 5', 'MAKE IT RAIN COSTS 2 CHIPS']);
-    expect(faces.armoredcar).toEqual(["HIGH ROLLER PAYOFFS COUNT THAT SPIN'S SHIELD AS CHIPS: 1 PER 5", 'HIGH ROLLER: SHIELD COUNTS AS CHIPS']);
+    expect(faces.armoredcar).toEqual(["HIGH ROLLER PAYOFFS COUNT THAT SPIN'S SHIELD AS CHIPS: 1 PER 5", 'HIGH ROLLER: 5 SHIELD COUNTS AS 1 CHIP']);
     expect(faces.safedeposit).toEqual(["WHEN CHIPS HIT, THEY ALSO HIT FOR THAT SPIN'S SHIELD", 'CHIPS ALSO HIT FOR YOUR SHIELD']);
-    expect(faces.parachute).toEqual(['A HIT THAT WOULD KILL YOU: PAY 10 CHIPS, LAND AT 25% HP (ONCE PER FIGHT)', 'PAY 10 CHIPS TO SURVIVE A KILLING HIT']);
+    expect(faces.parachute).toEqual(['A HIT THAT WOULD KILL YOU: PAY 10 CHIPS, LAND AT 25% HP (ONCE PER FIGHT)', 'ONCE A FIGHT, PAY 10 CHIPS TO LIVE AT 25%']);
     expect(faces.openbar).toEqual(['MAKE IT RAIN COSTS NOTHING. WINS PAY NO CHIPS', 'MAKE IT RAIN IS FREE. WINS PAY NO CHIPS']);
     expect(faces.capacitor).toEqual(['25% OF LEFTOVER SHIELD CHARGES LIGHTNING', 'LEFTOVER SHIELD CHARGES LIGHTNING']);
     expect(faces.livewire).toEqual(['LIGHTNING DAMAGE +30%. EACH STORM COSTS 1 HP', 'LIGHTNING DAMAGE +30%. STORMS COST 1 HP']);
-    expect(faces.meltdown).toEqual(['LIGHTNING DAMAGE +1% FOR EACH HP YOU ARE MISSING (MAX 50%)', 'LIGHTNING DAMAGE +1% PER MISSING HP']);
+    expect(faces.meltdown).toEqual(['LIGHTNING DAMAGE +1% FOR EACH HP YOU ARE MISSING (MAX 50%)', 'LIGHTNING DAMAGE: +1% PER MISSING HP, TO 50%']);
     expect(faces.chainlightning).toEqual(['LIGHTNING DAMAGE +100%', 'LIGHTNING DAMAGE +100%']);
   });
-  // Card faces that drop a limit the full text has (the face promises more than the game gives).
-  it.skip('MISMATCH (card face): TOWER SHIELD face drops the cap ("KEEP 25%"; a 400 leftover keeps 40, not 100)', () => {
+  // Card faces keep the limits the full text has (fixed 2026-11-01: they promised more than the game gives).
+  it('TOWER SHIELD face names the cap', () => {
     expect(shortRelicText('tower', RELICS.tower.text)).toMatch(/MAX/);
   });
-  it.skip('MISMATCH (card face): MELTDOWN face drops "(MAX 50%)" (200 HP missing is +50%, not +200%)', () => {
-    expect(shortRelicText('meltdown', RELICS.meltdown.text)).toMatch(/MAX/);
+  it('MELTDOWN face names the 50% cap', () => {
+    expect(shortRelicText('meltdown', RELICS.meltdown.text)).toMatch(/50%/);
   });
-  it.skip('MISMATCH (card face): ARMORED CAR face drops "1 PER 5" (reads as 1 shield = 1 chip)', () => {
+  it('ARMORED CAR face names the rate (5 shield = 1 chip)', () => {
     expect(shortRelicText('armoredcar', RELICS.armoredcar.text)).toMatch(/5/);
   });
-  it.skip('MISMATCH (card face): GOLDEN PARACHUTE face drops "ONCE PER FIGHT"', () => {
+  it('GOLDEN PARACHUTE face names ONCE A FIGHT', () => {
     expect(shortRelicText('parachute', RELICS.parachute.text)).toMatch(/ONCE|A FIGHT/);
   });
 });
@@ -102,33 +102,32 @@ describe('KNIGHT', () => {
     const ev = spin(f, ['sword', 'sword', 'sword']); // no shield this spin, so what's left is what was kept
     return { kept: f.sides.player.shield, fired: relicFired(ev, 'tower'), maxHp: f.sides.player.maxHp };
   };
-  it('TOWER SHIELD: retains 25% of the leftover shield (80 -> 20, 160 -> 40)', () => {
+  it('TOWER SHIELD: retains 25% of the leftover shield (80 -> 20, 120 -> 30)', () => {
     expect(towerKeep(80).kept).toBe(20);
-    expect(towerKeep(160).kept).toBe(40);
+    expect(towerKeep(120).kept).toBe(30);
     expect(towerKeep(80, []).kept).toBe(0);
   });
-  it('TOWER SHIELD: capped at 10% of your max HP (390 HP: 400 leftover keeps 40, the 39 rounded to tens)', () => {
+  it('TOWER SHIELD: capped at 10% of your max HP (390 HP: 400 leftover keeps 39)', () => {
     const r = towerKeep(400);
     expect(r.maxHp).toBe(390);
-    expect(r.kept).toBe(40);
-    expect(Math.abs(r.kept - r.maxHp * NEW_RELIC.towerCap)).toBeLessThanOrEqual(5);
+    expect(r.kept).toBe(Math.round(r.maxHp * NEW_RELIC.towerCap));
+    expect(r.kept).toBe(39);
   });
-  it('TOWER SHIELD: it carries on every spin (a kept shield decays 40 -> 10 -> 0 with no new shields)', () => {
+  it('TOWER SHIELD: it carries on every spin (a kept shield decays 39 -> 10 -> 3 with no new shields)', () => {
     const f = mk('knight', ['tower']);
     f.sides.player.shield = 160;
     spin(f, ['sword', 'sword', 'sword']);
-    expect(f.sides.player.shield).toBe(40);
+    expect(f.sides.player.shield).toBe(39);
     spin(f, ['sword', 'sword', 'sword']);
     expect(f.sides.player.shield).toBe(10);
   });
-  it.skip('MISMATCH: TOWER SHIELD: a lone KNIGHT shield left over (16) keeps nothing (25% = 4, rounded to tens = 0)', () => {
-    // What happens: keep = unitsRound(16 * 0.25) = 0, so the relic doesn't fire. 32 keeps 10 (31%), 48 keeps 10 (21%).
+  it('TOWER SHIELD: a lone KNIGHT shield left over (16) keeps 4 (whole HP, not tens)', () => {
     const r = towerKeep(16);
     expect(r.kept).toBe(4);
+    expect(r.fired).toBe(true);
   });
-  it('TOWER SHIELD (rounding, documented): 16 keeps 0, 32 keeps 10, 48 keeps 10', () => {
-    expect([16, 32, 48].map((h) => towerKeep(h).kept)).toEqual([0, 10, 10]);
-    expect(towerKeep(16).fired).toBe(false);
+  it('TOWER SHIELD: 16 keeps 4, 32 keeps 8, 48 keeps 12 (exactly 25%)', () => {
+    expect([16, 32, 48].map((h) => towerKeep(h).kept)).toEqual([4, 8, 12]);
   });
 
   it('COUP DE GRACE: swords pay x2 while your HP is above the enemy\'s', () => {
@@ -301,21 +300,18 @@ describe('BANKROLL', () => {
       spin(f, ['shield', 'shield', 'goldbar']);
       expect(f.chipsNow()).toBe(20 + 1);
     });
-    it.skip("MISMATCH: \"THAT SPIN'S SHIELD\" is the shield before Charms: a GOLD shield pair gains 160 but counts as 40 (8 chips, not 32)", () => {
-      // What happens: fightScore.ts:86 reads the shield groups' base x pair multiplier before GOLD (and every relic,
-      // TONIGHT'S RULE, rake and hex) lands, so a shield pair with two GOLD Charms (x2 + x2 = x4) gains 160 shield but
-      // ARMORED CAR counts 40: HIGH ROLLER x1.5 instead of x2.5. SAFE DEPOSIT, on the same spin, counts the 160.
+    it("\"THAT SPIN'S SHIELD\" is the shield as it lands: a GOLD shield pair gains 160 and counts as 32 chips", () => {
+      // (Fixed 2026-11-01: it read the shield before GOLD and the relics, 40 of the 160.)
       const gilded: Gild[] = [0, 1].map((reel) => ({ reel, symbol: 'shield', enh: 'gold', n: 6 }));
       const r = payoff(['armoredcar'], ['shield', 'shield', 'goldbar'], 0, gilded);
       expect(r.shieldGained).toBe(160);
       expect(r.mul).toBe(highRollerMul(160 / 5));
     });
-    it('(documented) with two GOLD shields: 160 shield gained, HIGH ROLLER counts 40 of it', () => {
+    it('with two GOLD shields: 160 shield gained, HIGH ROLLER pays x2.5 (the cap), as SAFE DEPOSIT would count it', () => {
       const gilded: Gild[] = [0, 1].map((reel) => ({ reel, symbol: 'shield', enh: 'gold', n: 6 }));
       const r = payoff(['armoredcar'], ['shield', 'shield', 'goldbar'], 0, gilded);
       expect(r.shieldGained).toBe(160);
-      expect(r.mul).toBe(highRollerMul(40 / 5));
-      expect(r.mul).toBe(1.5);
+      expect(r.mul).toBe(2.5);
     });
   });
 
@@ -357,16 +353,16 @@ describe('BANKROLL', () => {
   });
 
   describe('GOLDEN PARACHUTE', () => {
-    it('a killing hit: pay 10 chips, land at 25% HP (340 HP: 85, shown 90 after rounding to tens)', () => {
+    it('a killing hit: pay 10 chips, land at 25% HP (340 HP: 85)', () => {
       const f = mk('midas', ['parachute'], { chips: 10, enemy: 'sword' });
       const ev = lethal(f, 5);
       expect(f.over).toBe(false);
       expect(relicFired(ev, 'parachute')).toBe(true);
       expect(f.parachuteChips).toBe(10);
       expect(f.sides.player.maxHp).toBe(340);
-      expect(f.sides.player.hp).toBe(90);
+      expect(f.sides.player.hp).toBe(85);
     });
-    it.skip('MISMATCH: "LAND AT 25% HP" lands at 90 of 340 (26.5%), rounded to tens; 25% is 85', () => {
+    it('"LAND AT 25% HP" is exactly 25%, rounded to a whole HP', () => {
       const f = mk('midas', ['parachute'], { chips: 10, enemy: 'sword' });
       lethal(f, 5);
       expect(f.sides.player.hp).toBe(Math.round(f.sides.player.maxHp * 0.25));
@@ -403,25 +399,25 @@ describe('BANKROLL', () => {
       r.player.relics = ['parachute', 'openbar'];
       r.player.chips = 30;
       const f = new Fight(fightConfig(r, base), 1);
-      f.parachuteChips = 10;
+      f.sides.enemy.reels.forEach((reel) => reel.cells.push({ symbol: 'sword', slimed: false }));
+      expect(relicFired(lethal(f, 5), 'parachute')).toBe(true);
+      expect(f.chipsNow()).toBe(20);
       f.winner = 'player';
       finishFight(r, f);
-      // (OPEN BAR keeps the win's chips out of the sum: 30 - 10, then interest on the 20.)
+      // (OPEN BAR keeps the win's chips out of the sum: 30 - 10 once, then interest on the 20.)
       expect(r.player.chips).toBe(20 + interestOn(20));
     });
-    it.skip('MISMATCH: the 10 chips stay in your hand for the rest of the fight (HIGH ROLLER and MAKE IT RAIN still count them)', () => {
-      // What happens: checkDeath only books parachuteChips; chipsNow() (HIGH ROLLER, MAKE IT RAIN, the HUD's chip count)
-      // never subtracts it, so 10 chips held -> parachute -> a chip jackpot still RAINS on those 10 chips. The run
-      // takes them after the fight (clamped at 0).
+    it('the 10 chips leave your hand when it fires (HIGH ROLLER and MAKE IT RAIN no longer count them)', () => {
+      // (Fixed 2026-11-01: chipsNow() still counted them for the rest of the fight.)
       const f = mk('midas', ['parachute'], { chips: 10, enemy: 'sword' });
       lethal(f, 5);
       expect(f.chipsNow()).toBe(0);
     });
-    it('(documented) after paying, the same 10 chips still make it rain', () => {
+    it('after paying, the same 10 chips can\'t make it rain', () => {
       const f = mk('midas', ['parachute'], { chips: 10, enemy: 'sword' });
       lethal(f, 5);
-      expect(f.chipsNow()).toBe(10);
-      expect(ofType(spin(f, ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')).toHaveLength(1);
+      expect(f.chipsNow()).toBe(0);
+      expect(ofType(spin(f, ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')).toHaveLength(0);
     });
   });
 
@@ -456,7 +452,8 @@ describe('BANKROLL', () => {
       spin(f, ['goldbar', 'goldbar', 'shield']);
       expect(f.midasChips).toBe(1);
     });
-    it.skip('BUG (not in the text): with 0 chips, OPEN BAR turns every chip jackpot into a 0-damage rain', () => {
+    // OPEN CALL (user): should a rain never hit for less than the chip jackpot it replaces?
+    it.skip('OPEN CALL: with 0 chips, OPEN BAR turns every chip jackpot into a 0-damage rain', () => {
       // What happens: rainCost is 0, so a chip jackpot always RAINS, and the rain's base is chips held x1.5 = 0. The
       // same jackpot without OPEN BAR hits for 90. Under 20 chips, OPEN BAR's free rain hits less than no rain at all.
       const f = mk('midas', ['openbar'], { chips: 0 });
@@ -590,13 +587,11 @@ describe('TESLA (one axis: boosts add charge, half-size bolts of 22 for 20 charg
       f.sides.player.shield = 80;
       expect(bolts(spin(f, ['shield', 'shield', 'shield']))).toHaveLength(1);
     });
-    it.skip('MISMATCH: a lone TESLA shield left over (10) charges nothing (25% = 2.5, rounded to tens = 0)', () => {
-      // What happens: q = unitsRound(10 * 0.25) = 0, no charge, the relic doesn't fire. 20 leftover charges 10 (50%),
-      // 30 charges 10 (33%), 60 charges 20 (33%).
+    it('a lone TESLA shield left over (10) charges 3 (whole charge, not tens)', () => {
       expect(cap(['capacitor'], 10).fromCap).toBeGreaterThan(0);
     });
-    it('(documented rounding) 10 -> 0, 20 -> 10, 30 -> 10, 60 -> 20', () => {
-      expect([10, 20, 30, 60].map((h) => cap(['capacitor'], h).fromCap)).toEqual([0, 10, 10, 20]);
+    it('25%, rounded to a whole charge: 10 -> 3, 20 -> 5, 30 -> 8, 60 -> 15', () => {
+      expect([10, 20, 30, 60].map((h) => cap(['capacitor'], h).fromCap)).toEqual([3, 5, 8, 15]);
     });
   });
 });

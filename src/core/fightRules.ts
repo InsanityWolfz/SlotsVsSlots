@@ -67,7 +67,7 @@ export const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', '
 /** HOLY WATER washes off these writes (not coins, drains or the Mimic's hit) and these abilities. */
 export const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'bomb', 'hex', 'card', 'gavel', 'rake', 'fake', 'ball']);
 export const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel', 'ball']);
-export const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake']);
+export const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'gulp', 'launder', 'mark', 'houseTake', 'penalty']);
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
 export const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'goldbar', 'note']);
 /** The groups OVERTIME grows: the ones that hit. */

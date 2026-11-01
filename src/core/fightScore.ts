@@ -77,24 +77,6 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       g.base = Math.round((RAIN.maxChips ? Math.min(RAIN.maxChips, f.chipsNow()) : f.chipsNow()) * RAIN.perChip);
     }
   }
-  let vaultGroup: ScoreGroup | null = null;
-  // CASH CASSIDY: a full HIGH ROLLER bar multiplies your first paying group (MAKE IT RAIN first, then swords), then
-  // resets to its resting level.
-  if (player && f.meter?.kind === 'vault' && me.armed) {
-    // Your best paying group: swords first, then the biggest (never a lone shield if anything better paid).
-    const g0 = s.groups.filter(pays).sort((a, b) => Number(!!b.rain) - Number(!!a.rain) || Number(f.isAttack(b.symbol)) - Number(f.isAttack(a.symbol)) || b.base * b.mult - a.base * a.mult)[0];
-    if (g0) {
-      // (This spin's shield, for ARMORED CAR: the shield groups' pay before the multiplier lands.)
-      const lineShield = s.groups.filter((g) => g.symbol === 'shield').reduce((a, g) => a + g.base * g.mult, 0);
-      const mul = f.vaultMul(lineShield);
-      if (has('compound') && mul > MIDAS.maxMul) fired.add('compound');
-      if (has('armoredcar') && lineShield >= NEW_RELIC.armoredShield) fired.add('armoredcar');
-      boost(g0, mul);
-      vaultGroup = g0;
-      s.raised = true;
-      f.vaultPaid = mul;
-    }
-  }
   const foe = f.sides[other(me.side)];
   // THE DROP: every note off the payline joins your biggest note group (or hits as a group of its own).
   f.dropOff = null;
@@ -123,7 +105,6 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
   for (const g of s.groups) {
     const notes: string[] = [];
     notesOf.set(g, notes);
-    if (g === vaultGroup) notes.push(`HIGH ROLLER X${f.vaultPaid}`);
     if (g.rain) notes.push('MAKE IT RAIN!');
     // A jackpot of one cell counts that cell's charm three times.
     const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
@@ -213,7 +194,7 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       notes.push('X2 PRISM');
     }
     // HORSESHOE: a group with a lucky-born wild.
-    if (has('horseshoe') && paying && g.reels.some((r) => line[r] === 'wild' && cellSym(r) !== 'wild' && f.paylineEnh(me, r) === 'lucky')) {
+    if (has('horseshoe') && paying && g.matched && g.reels.some((r) => line[r] === 'wild' && cellSym(r) !== 'wild' && f.paylineEnh(me, r) === 'lucky')) {
       fired.add('horseshoe');
       boost(g, NEW_RELIC.horseshoeMul);
       notes.push(`X${NEW_RELIC.horseshoeMul} HORSESHOE`);
@@ -324,6 +305,25 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       if (Math.abs(rest - 1) > 1e-9) notes.push(`X${Math.round(rest * 100) / 100} LATE`);
     }
   }
+  // CASH CASSIDY: a full HIGH ROLLER bar multiplies your first paying group (MAKE IT RAIN first, then swords), then
+  // resets to its resting level. After the Charms and relics (audit 2026-11-01): ARMORED CAR counts this spin's shield
+  // as it really lands (it read the shield before GOLD and the relics, a quarter of it on a GOLD x4 pair).
+  if (player && f.meter?.kind === 'vault' && me.armed) {
+    // Your best paying group: swords first, then the biggest (never a lone shield if anything better paid).
+    const g0 = s.groups.filter(pays).sort((a, b) => Number(!!b.rain) - Number(!!a.rain) || Number(f.isAttack(b.symbol)) - Number(f.isAttack(a.symbol)) || b.base * b.mult - a.base * a.mult)[0];
+    if (g0) {
+      const lineShield = s.groups.filter((g) => g.symbol === 'shield').reduce((a, g) => a + g.base * g.mult, 0);
+      const mul = f.vaultMul(lineShield);
+      if (has('compound') && mul > MIDAS.maxMul) fired.add('compound');
+      if (has('armoredcar') && lineShield >= NEW_RELIC.armoredShield) fired.add('armoredcar');
+      boost(g0, mul);
+      s.raised = true;
+      f.vaultPaid = mul;
+      const notes = notesOf.get(g0)!;
+      notes.unshift(`HIGH ROLLER X${mul}`);
+      g0.notes = notes;
+    }
+  }
   for (const g of s.groups) {
     const notes = notesOf.get(g)!;
     const bonus = pool.get(g) ?? 0;
@@ -357,6 +357,8 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       g.base = 0;
       g.amount = 0;
       g.notes = [...(g.notes ?? []), 'PIT BOSS'];
+      // (It doesn't write either: a voided ICE jackpot still froze a reel. Audit 2026-11-01.)
+      g.voided = true;
       s.tier = 'none';
       f.pitJustFired = true;
     }

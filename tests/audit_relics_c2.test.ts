@@ -1,7 +1,7 @@
 /**
  * Launch audit, group relics_c2: JOKER and JUKEBOX machine relics, HORSESHOE, and the per-machine texts of VAMPIRE FANG,
  * OVERCHARGE and JACKPOT BELL. Each test forces the exact situation a relic's text describes and checks the number it
- * promises. A claim the code doesn't keep is an `it.skip('MISMATCH: ...')` with what really happens in a comment.
+ * promises. The claims the code broke were fixed on 2026-11-01 (code or text).
  */
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type RelicId, type StripCounts, type SymbolId } from '../src/core/config';
@@ -85,23 +85,25 @@ describe('texts and card faces, per machine', () => {
   });
 
   it('the machine texts and card faces read as audited', () => {
-    expect(relicText('fang', 'tesla')).toBe('EACH LIGHTNING STORM HEALS 15 HP');
-    expect(relicText('fang', 'midas')).toBe('HIGH ROLLER PAYOFFS HEAL 30 HP');
-    expect(relicText('fang', 'joker')).toBe('ALL-JACKPOT SPINS HEAL 30 HP');
-    expect(relicText('fang', 'jukebox')).toBe('THE DROP HEALS 30 HP');
-    expect(relicText('overcharge', 'tesla')).toBe('YOUR LIGHTNING HITS 30% HARDER');
+    expect(relicText('fang', 'tesla')).toBe('EACH LIGHTNING STORM HEALS 15 MORE HP');
+    expect(relicText('fang', 'midas')).toBe('HIGH ROLLER PAYOFFS HEAL 30 MORE HP');
+    expect(relicText('fang', 'joker')).toBe('ALL-JACKPOT SPINS HEAL 30 MORE HP');
+    expect(relicText('fang', 'jukebox')).toBe('THE DROP HEALS 30 MORE HP');
+    expect(relicText('overcharge', 'tesla')).toBe('LIGHTNING DAMAGE +30%');
     expect(shortRelicText('overcharge', relicText('overcharge', 'midas'))).toBe('HIGH ROLLER PAYOFFS ECHO FOR 1/3');
     expect(shortRelicText('overcharge', relicText('overcharge', 'joker'))).toBe('ALL-JACKPOT SPINS ECHO FOR 1/3');
-    expect(shortRelicText('overcharge', relicText('overcharge', 'tesla'))).toBe('YOUR LIGHTNING HITS 30% HARDER');
+    expect(shortRelicText('overcharge', relicText('overcharge', 'tesla'))).toBe('LIGHTNING DAMAGE +30%');
     const bell = (c: CabinetId) => shortRelicText('bell', relicText('bell', c));
     expect(bell('knight')).toBe('JACKPOTS PAY X2');
     expect(bell('tesla')).toBe('JACKPOTS PAY X2, FULL LIGHTNING');
     expect(bell('midas')).toBe('JACKPOTS PAY X2, FILL HIGH ROLLER');
     expect(bell('joker')).toBe('JACKPOTS PAY X1.25, FILL THE METER');
     expect(bell('jukebox')).toBe('JACKPOTS PAY X2, MAX VOLUME');
-    expect(shortRelicText('deckdrum', relicText('deckdrum', 'joker'))).toBe('+1 CARD DAMAGE PER WIN (MAX +5)');
+    expect(relicText('deckdrum', 'joker')).toBe('EVERY SPIN THAT PAYS: +1 CARD DAMAGE FOR THE REST OF THE FIGHT (MAX +5)');
+    expect(shortRelicText('deckdrum', relicText('deckdrum', 'joker'))).toBe('+1 CARD DAMAGE PER SPIN THAT PAYS, MAX +5');
     expect(shortRelicText('hypeman', relicText('hypeman', 'jukebox'))).toBe('+1 VOLUME EVERY 2ND SPIN. NOTES PAY HALF');
-    expect(shortRelicText('hitmaker', relicText('hitmaker', 'jukebox'))).toBe('EACH DROP HITS 60% MORE THAN THE LAST');
+    expect(relicText('hitmaker', 'jukebox')).toBe('EACH DROP HITS +60% MORE FOR EVERY DROP BEFORE IT THIS FIGHT');
+    expect(shortRelicText('hitmaker', relicText('hitmaker', 'jukebox'))).toBe('EACH DROP: +60% PER DROP BEFORE IT');
   });
 });
 
@@ -160,19 +162,17 @@ describe('DECK DRUM (JOKER): EACH PAIR AND JACKPOT INCREASES CARD DAMAGE BY +1 E
     expect(f.drum).toBe(1);
     expect(on('joker', ['deckdrum']).drum).toBe(0);
   });
-  // MISMATCH: any spin where something pays (a lone card, a lone shield) adds a stack (fight.ts:534, "a spin that pays"),
-  // so the drum hits +5 after five spins of almost anything. This spin has no pair and no jackpot; f.drum is 1.
-  it.skip('MISMATCH: a spin with no pair and no jackpot adds no stack', () => {
+  // EVERY SPIN THAT PAYS (the text said pairs and jackpots; 2026-11-01): a spin with no pair still adds a stack.
+  it('a spin with no pair and no jackpot that pays adds a stack', () => {
     const f = on('joker', ['deckdrum']);
     const ev = round(f, ['ace', 'shield', 'ace']);
     expect(score(ev).tier).toBe('none');
-    expect(f.drum).toBe(0);
+    expect(f.drum).toBe(1);
   });
-  // MISMATCH: even a spin that pays only a lone shield adds a stack (f.drum is 1).
-  it.skip('MISMATCH: a spin of lone shields and no cards adds no stack', () => {
+  it('a spin that pays only lone shields adds a stack too', () => {
     const f = on('joker', ['deckdrum']);
     round(f, ['shield', 'ace', 'shield']);
-    expect(f.drum).toBe(0);
+    expect(f.drum).toBe(1);
   });
 });
 
@@ -276,10 +276,8 @@ describe('HORSESHOE (LUCKY): PAIRS AND JACKPOTS MADE WITH A LUCKY WILD PAY X3', 
     expect(score(ev).tier).toBe('pair');
     expect(score(ev).relics ?? []).not.toContain('horseshoe');
   });
-  // MISMATCH: a LUCKY WILD that completes nothing still pays x3 (fightScore.ts:216 checks `paying`, not `g.matched`).
-  // On every machine but JOKER pairs read left to right, so a LUCKY WILD on reel 3 next to a non-pair is common: here
-  // SWORD SHIELD WILD has no pair, and the lone WILD (paying as a sword) gets X3 HORSESHOE.
-  it.skip('MISMATCH: a LUCKY WILD that makes no pair or jackpot is not tripled', () =>
+  // A LUCKY WILD that completes nothing isn't tripled (fixed 2026-11-01: it paid x3 alone).
+  it('a LUCKY WILD that makes no pair or jackpot is not tripled', () =>
     sureLucky(() => {
       const f = knight(['horseshoe'], [{ sword: 12 }, { shield: 12 }, { shield: 12 }], 2, 'shield');
       const ev = play(f, ['sword', 'shield', 'shield']);
@@ -363,11 +361,11 @@ describe('THE JUKEBOX relics', () => {
     // A new fight starts over.
     expect(drops(['hitmaker'], 1)[0].notes ?? []).not.toContain('X1.6 HIT');
   });
-  // MISMATCH (wording): the bonus grows by +60% of the plain DROP each time (x1, x1.6, x2.2, x2.8), so the 3rd DROP
-  // hits 2.2 / 1.6 = 1.375x the 2nd, not 1.6x as "+60% MORE THAN THE LAST" reads (fightScore.ts:274).
-  it.skip('MISMATCH: each DROP hits 60% more than the one before it (3rd vs 2nd)', () => {
-    const hm = drops(['hitmaker'], 3);
-    expect(hm[2].mult / hm[1].mult).toBeCloseTo(1.6);
+  // +60% FOR EVERY DROP BEFORE IT (2026-11-01; it read as compounding): the 4th DROP is x2.8 of a plain one.
+  it('each DROP gets +60% for every DROP before it (x1, x1.6, x2.2, x2.8)', () => {
+    const hm = drops(['hitmaker'], 4);
+    const no = drops([], 4);
+    hm.forEach((g, i) => expect(g.mult / no[i].mult).toBeCloseTo(1 + 0.6 * i));
   });
 
   it('HYPE MAN: +1 VOLUME BEFORE EVERY OTHER SPIN (spins 1, 3, 5...), before the notes are scored', () => {
@@ -434,16 +432,13 @@ describe('VAMPIRE FANG, per machine (the base rule: every meter payoff heals 15)
     expect(ofType(ev, 'heal').filter((h) => h.side === 'player')).toHaveLength(1);
     expect(healed(ev)).toBe(30);
   });
-  // MISMATCH (wording): the machine texts drop the base text's "MORE". FANG adds the right amount, but each machine
-  // text names a total heal that's wrong: TESLA's storm already heals 15 alone (the machine card says so), so "EACH
-  // LIGHTNING STORM HEALS 15 HP" reads as doing nothing; it heals 30. The others say "HEAL 30 HP"; they heal 45.
-  it.skip('MISMATCH: a FANG payoff heals what the machine text says (TESLA 15, the others 30)', () => {
-    expect(payoffHeal('tesla', ['fang'])).toBe(15);
-    for (const cab of ['midas', 'joker', 'jukebox'] as CabinetId[]) expect(payoffHeal(cab, ['fang'])).toBe(30);
+  // The machine texts say MORE (2026-11-01): FANG heals that much on top of the payoff's own 15.
+  it('a FANG payoff heals the MORE its machine text names (TESLA +15, the others +30)', () => {
+    expect(payoffHeal('tesla', ['fang']) - payoffHeal('tesla', [])).toBe(15);
+    for (const cab of ['midas', 'joker', 'jukebox'] as CabinetId[]) expect(payoffHeal(cab, ['fang']) - payoffHeal(cab, [])).toBe(30);
   });
-  // MISMATCH: with OVERCHARGE too, FANG heals a second time after the echo (fight.ts:959): a BANKROLL or JOKER payoff
-  // heals 15 + 30 + 30 = 75, not 45. Neither text says the echo heals.
-  it.skip('MISMATCH: FANG + OVERCHARGE: the payoff heals 45 (FANG once)', () => {
+  // With OVERCHARGE too, FANG heals once (fixed 2026-11-01: it healed again after the echo).
+  it('FANG + OVERCHARGE: the payoff heals 45 (FANG once)', () => {
     for (const cab of ['midas', 'joker'] as CabinetId[]) expect(payoffHeal(cab, ['fang', 'overcharge'])).toBe(45);
   });
 });
@@ -488,13 +483,12 @@ describe('OVERCHARGE, per machine', () => {
     expect(total(['overcharge']) / total([])).toBeGreaterThan(1.25);
     expect(total(['overcharge']) / total([])).toBeLessThan(1.35);
   });
-  // MISMATCH (wording): "YOUR LIGHTNING HITS 30% HARDER", but every strike hits the same 22; OVERCHARGE adds 30% more
-  // charge instead (TESLA's one-axis rule, fight.ts:1070 and :1078), so a storm sometimes gets an extra strike and
-  // sometimes nothing changes that spin. Here a bolt pair fires the same strikes for the same damage with or without it.
-  it.skip('MISMATCH: TESLA: each lightning strike hits 30% harder', () => {
+  // TESLA's text is LIGHTNING DAMAGE +30% (2026-11-01; it said each strike hits harder): the strikes stay the same size,
+  // the +30% is over a fight (the test above).
+  it('TESLA: each strike stays the same size (the +30% is more strikes)', () => {
     const a = ofType(play(tesla(['overcharge']), ['bolt', 'bolt', 'shield']), 'specialFire')[0].amount;
     const b = ofType(play(tesla([]), ['bolt', 'bolt', 'shield']), 'specialFire')[0].amount;
-    expect(a / b).toBeCloseTo(1.3);
+    expect(a).toBe(b);
   });
 });
 
@@ -521,12 +515,8 @@ describe('JACKPOT BELL, per machine', () => {
   it('BANKROLL: JACKPOTS PAY X2', () => {
     expect(jackpotMul('midas', ['shield', 'shield', 'shield'], 'shield')).toBeCloseTo(2);
   });
-  // MISMATCH: on BANKROLL the Bell adds 1 pip (10 of 100) to the HIGH ROLLER bar, not a full bar: it calls
-  // fillMeter(me, meterCost), but the HIGH ROLLER branch ignores the amount and adds 1 pip per reel, at least 1
-  // (fight.ts:527 -> :983). Here the bar starts empty (no chips held) and ends at 10. It's hidden early in a run: 24
-  // chips start the bar at 90 (one pip short), so the first Bell jackpot happens to fill it. After a payoff the bar
-  // rests lower (70 in a probe at 24 chips) and a Bell jackpot only takes it to 80.
-  it.skip('MISMATCH: BANKROLL: a jackpot fills the HIGH ROLLER bar', () => {
+  // (Fixed 2026-11-01: it added one pip, 10 of 100.)
+  it('BANKROLL: a jackpot fills the HIGH ROLLER bar from empty', () => {
     const f = on('midas', ['bell'], (c) => (c.player.chipsHeld = 0));
     expect(f.sides.player.energy).toBe(0);
     play(f, ['shield', 'shield', 'shield']);

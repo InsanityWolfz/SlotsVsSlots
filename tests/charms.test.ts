@@ -74,7 +74,7 @@ describe('CONTENT_13: relics', () => {
       const f = sword3(relics);
       f.next = 'enemy';
       f.forceNext('enemy', ['sword', 'sword', 'sword']);
-      return ofType(f.step().events, 'attack')[0].amount;
+      return ofType(f.step().events, 'attack')[0]?.amount ?? 0;
     };
     expect(hitBy([])).toBeGreaterThan(0);
     expect(hitBy(['pitboss'])).toBe(0);

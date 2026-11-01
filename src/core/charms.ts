@@ -44,6 +44,10 @@ export const CHARM_VALUE: Record<Enh, number[]> = {
   /** GLASS (user, 2026-10-14): GOLD's big brother, added into the group like GOLD, but 1 in 4 to shatter for good when it pays. */
   glass: [0, 5, 6, 7, 8, 9, 10],
 };
+/** BLAZE as the % of TESLA's lightning it adds: each BLAZE adds its value over a full strike (TESLA's one axis turns it
+ * into charge, so every bolt still hits the same; audit 2026-11-01). The strike is 4.4 UNIT (cabinets.ts, checked by a test). */
+export const TESLA_STRIKE = 4.4 * UNIT;
+export const blazePct = (v: number) => Math.round((v / TESLA_STRIKE) * 100);
 /** GLASS: the chance it shatters each time its group pays. */
 export const GLASS_BREAK = 0.25;
 /** LUCRE: chips each time its group pays (up to its cap). */
@@ -79,7 +83,7 @@ export function charmRuleText(enh: Enh, lvl: number): string {
     case 'lucky':
       return `${v}% TO LAND AS A WILD`;
     case 'blaze':
-      return `YOUR LIGHTNING HITS +${v}`;
+      return `LIGHTNING DAMAGE +${blazePct(v)}% FOR EVERY BLAZE CHARM YOU OWN`;
     case 'spiked':
       return `ALSO HITS FOR ${v}% OF ITS SHIELD`;
     case 'lucre':
@@ -111,7 +115,7 @@ export function charmShortText(enh: Enh, lvl: number): string {
     case 'lucky':
       return `${v}% CHANCE TO BE A WILD`;
     case 'blaze':
-      return `+${v} LIGHTNING DAMAGE`;
+      return `+${blazePct(v)}% LIGHTNING DAMAGE`;
     case 'spiked':
       return `HITS FOR ${v}% OF ITS SHIELD`;
     case 'lucre':
@@ -119,7 +123,7 @@ export function charmShortText(enh: Enh, lvl: number): string {
     case 'trick':
       return `+${v} TO YOUR JACKPOT METER`;
     case 'echo':
-      return `THE DROP HITS X${v}`;
+      return `AT THE DROP, ITS NOTE HITS X${v}`;
     case 'glass':
       return `X${v} PAY. 1 IN 4 TO SHATTER`;
   }

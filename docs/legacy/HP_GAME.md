@@ -235,7 +235,7 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
 - **Symbol levels live on the symbol TYPE, with no cap** (user, 2026-10-15: like Balatro's planets): a symbol is worth
   10 + 6 a level above 1 (`SYM` in `src/core/charms.ts`). Hard to stack: levels are only sold at the Cashier (10 + 4 a level
   gained this run), and each act boss pays your attack symbol one (KNIGHT: three). STAR CHART (uncommon relic) doubles every level you gain. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
-  machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER), ECHO (JUKEBOX) and BULWARK (`spiked`, KNIGHT).
+  machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER) and ECHO (JUKEBOX). (BULWARK, `spiked`, is old saves only.)
   `src/core/charms.ts`.
 - **ENDLESS playtest fixes (2026-10-14):** a side at 0 HP can't be healed (a storm's heals on the enemy's turn revived
   TESLA from 0 HP, 23% of its runs: TESLA GREEN 39 -> 37); a LIGHTNING STORM stops once THE OWNER's turn cap is reached
@@ -314,6 +314,19 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
   levels). To stay on target: BANKROLL 340 HP (was 310), JUKEBOX 385 (was 360), JOKER 330 (was 390). Sim 500 runs,
   WHITE / RED / GREEN / BLACK / BLUE / GOLD: BANKROLL 57 / 53 / 38 / 28 / 20 / 15, JUKEBOX 63 / 54 / 38 / 27 / 15 / 7,
   JOKER 56 / 49 / 38 / 32 / 22 / 16 (KNIGHT and TESLA unchanged).
+- **Text audit (2026-11-01; the user: a relic that doesn't do what it says would break the launch):** every relic and
+  Charm checked against its text on every machine (`tests/audit_*.test.ts`, one test a claim). Bugs fixed to match the
+  text: ARMORED CAR counts the spin's shield after Charms and relics; GOLDEN PARACHUTE's 10 chips leave your hand at once
+  and it lands at exactly 25%; TOWER SHIELD and CAPACITOR round to whole points (a lone shield kept or charged nothing);
+  JACKPOT BELL fills BANKROLL's whole bar (it added one pip); HORSESHOE needs a pair or jackpot; FANG heals once a payoff
+  with OVERCHARGE (it healed again after the echo); HOLY WATER washes off THE PIT BOSS's AUDIT; INSURANCE's 100 shield
+  lasts to the enemy's next spin (it reset before it could block); QUICKENING never lowers BANKROLL's chip-filled bar;
+  PIT BOSS's voided jackpot doesn't freeze, steal or plant either; GLASS CANNON's +MAX HP card doesn't heal; Charm cards'
+  detail box shows the full rule. Texts fixed to match the game: DECK DRUM (every spin that pays), CERTIFIED HITMAKER
+  (+60% for every drop before it), HOT STREAK (the next spin's pairs and jackpots), GLASS CANNON (everything pays x1.5;
+  an act's boss still heals you), GOLDEN HOURGLASS (not THE WHEEL's or THE DEALER's), FANG's machine texts (MORE),
+  OVERCHARGE and BLAZE on TESLA (lightning damage +%, as charge), ECHO's card, and the faces of TOWER SHIELD, MELTDOWN,
+  ARMORED CAR and GOLDEN PARACHUTE (their limits). BULWARK (`spiked`) is no longer offered (old saves only).
 - **Phase 4 balance batch (2026-10-31, from the triage: every machine 7-23 points over target, the back half of a run
   one-spin kills):** act 2 regulars x2.2 HP (was 1.6), act 3 x2.0 (was 1.4), act 2-3 enemies +3 swords a reel (was 2);
   THE HOUSE 1200 HP (was 1000), THE WHEEL 4000 (was 3500; x0.85 from GREEN); JUKEBOX 360 HP (was 395), BANKROLL 310

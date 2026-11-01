@@ -3,14 +3,14 @@
  *
  * Each claim in a Charm's full rule (charmRuleText), its card face (charmShortText via describeOption / cardFace) and its
  * GOLDEN TICKET step gets a behaviour test that forces the exact situation and checks the exact number. A claim the code
- * does NOT keep is an `it.skip('MISMATCH: ...')` with a note of what really happens, so the file stays green.
+ * does NOT keep was fixed (2026-11-01); a question still open for the user is an `it.skip('OPEN CALL: ...')`.
  */
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, UNIT, type Enh, type Gild, type RelicId, type StripCounts, type SymbolId } from '../src/core/config';
 import { CABINETS, type CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { CHARM_SYMBOLS, CHARM_VALUE, GLASS_BREAK, LUCRE_CHIPS, charmLevel, charmRuleText, charmShortText, charmValue } from '../src/core/charms';
+import { CHARM_SYMBOLS, CHARM_VALUE, GLASS_BREAK, LUCRE_CHIPS, TESLA_STRIKE, blazePct, charmLevel, charmRuleText, charmShortText, charmValue } from '../src/core/charms';
 import { RELICS } from '../src/core/relics';
 import { charmOptions, createRun, describeOption, fightConfig, finishFight, gildsFor, interestOn, type DraftOption, type RunState } from '../src/core/run';
 import type { LineScore, ScoreGroup } from '../src/core/scoring';
@@ -177,10 +177,8 @@ describe('AUDIT: GOLD "X2 TO ITS GROUP (GOLD IN A GROUP ADDS UP)" / card "X2 PAY
     expect(g.amount / p.amount).toBeCloseTo(1.5, 5);
   });
 
-  // MISMATCH: on TESLA (PAY.lightningAdd), every multiplier on a bolt group pools additively (fightScore.ts boost()), so
-  // GOLD's "X2" is only x2 when nothing else multiplies the bolts. With HOT STREAK (or KEY, BELL, PRISM, UNDERDOG, GOLDEN
-  // SPIN, GLASS CANNON...) it's x1.5; GLASS's "X5" next to a x2 relic is x3.
-  it.skip('MISMATCH: TESLA GOLD bolt doubles its group even with another multiplier on it (actually x1.5)', () => {
+  // OPEN CALL (user): on TESLA (PAY.lightningAdd) bolt multipliers pool additively, so GOLD next to HOT STREAK is x1.5, not x2.
+  it.skip('OPEN CALL: TESLA GOLD bolt doubles its group even with another multiplier on it (actually x1.5)', () => {
     const f0 = make('tesla', { strips: TESLA() });
     f0.hotStreak = true;
     const f1 = make('tesla', { strips: TESLA(), gilded: [on(0, 'bolt', 'gold')] });
@@ -356,23 +354,23 @@ describe('AUDIT: LUCKY "40% TO LAND AS A WILD" / card "40% CHANCE TO BE A WILD"'
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: BLAZE "YOUR LIGHTNING HITS +5" / card "+5 LIGHTNING DAMAGE" (TESLA)', () => {
+describe('AUDIT: BLAZE "LIGHTNING DAMAGE +11% FOR EVERY BLAZE CHARM YOU OWN" / card "+11% LIGHTNING DAMAGE" (TESLA)', () => {
   const storm = (gilded: Gild[], line: SymbolId[] = BBB, relics: RelicId[] = []) => {
     const ev = spin(make('tesla', { strips: TESLA(), gilded, relics }), line).events;
     return { strikes: ofType(ev, 'specialFire').filter((e) => e.from === 'player').map((e) => e.amount), charge: ofType(ev, 'energyGain')[0]?.amount ?? 0, group: ofType(ev, 'spin')[0].score };
   };
   const fullStrike = CABINETS.tesla.specialDamage!;
 
-  // MISMATCH: TESLA runs on PAY.teslaOneAxis = 1 (fight.ts storm(): `raw = specialDamage + (... && !this.oneAxis ? blaze : 0)`),
-  // so BLAZE never adds to a strike. Every bolt hits the same 22; BLAZE instead adds blaze/44 (+11.4% per BLAZE cell) to
-  // the CHARGE each bolt group gives (fight.ts gainEnergy -> lightningBoost), i.e. more bolts, never bigger ones.
-  it.skip('MISMATCH: each lightning strike hits +5 with one BLAZE cell (actually every strike hits the same)', () => {
-    const p = storm([]);
-    const b = storm([on(1, 'bolt', 'blaze', 1)]);
-    expect(b.strikes[0]).toBe(p.strikes[0] + 5);
+  // TESLA's one axis: BLAZE adds blaze/44 to the CHARGE each bolt group gives (more bolts, never bigger ones), which is
+  // the +11% of lightning damage its text names (blazePct).
+  it('the texts name the % of a full strike: +11% (LV1), +23% (GOLDEN TICKET), and the strike is TESLA\'s own', () => {
+    expect(TESLA_STRIKE).toBe(CABINETS.tesla.specialDamage);
+    expect(blazePct(charmValue('blaze', 1))).toBe(Math.round((5 / fullStrike) * 100));
+    expect(charmShortText('blaze', 1)).toBe('+11% LIGHTNING DAMAGE');
+    expect(charmRuleText('blaze', 1)).toBe('LIGHTNING DAMAGE +11% FOR EVERY BLAZE CHARM YOU OWN');
   });
 
-  it('actual: strikes hit the same with or without BLAZE; BLAZE raises the charge by 5/44 per cell you own', () => {
+  it('strikes hit the same with or without BLAZE; BLAZE raises the charge by 5/44 per cell you own', () => {
     const p = storm([]);
     const b = storm([on(1, 'bolt', 'blaze', 1)]);
     expect(p.strikes.length).toBeGreaterThan(0);
@@ -395,7 +393,7 @@ describe('AUDIT: BLAZE "YOUR LIGHTNING HITS +5" / card "+5 LIGHTNING DAMAGE" (TE
     const p = storm([], BBB, ['ticket']);
     const b = storm([on(1, 'bolt', 'blaze', 1)], BBB, ['ticket']);
     expect(b.charge).toBe(Math.round(group(p.group, 'bolt').amount * (1 + 10 / fullStrike)));
-    expect(charmShortText('blaze', 2)).toBe('+10 LIGHTNING DAMAGE');
+    expect(charmShortText('blaze', 2)).toBe('+23% LIGHTNING DAMAGE');
   });
 });
 
@@ -521,7 +519,7 @@ describe('AUDIT: TRICK "+30 TO YOUR JACKPOT METER WHEN IT LANDS" (JOKER)', () =>
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: ECHO "AT THE DROP, ITS NOTE HITS X2" / card "THE DROP HITS X2" (JUKEBOX)', () => {
+describe('AUDIT: ECHO "AT THE DROP, ITS NOTE HITS X2" / card "AT THE DROP, ITS NOTE HITS X2" (JUKEBOX)', () => {
   // Reel 0 holds a single note (the ECHO one), so no other ECHO note can sit above or below the payline.
   const strips = (): StripCounts[] => [{ note: 1, shield: 6 }, { note: 6, shield: 6 }, { note: 6, shield: 6 }];
   const drop = (gilded: Gild[], relics: RelicId[] = [], armed = true) => {
@@ -554,14 +552,15 @@ describe('AUDIT: ECHO "AT THE DROP, ITS NOTE HITS X2" / card "THE DROP HITS X2" 
     const p = drop([], ['ticket']);
     const e = drop(echo, ['ticket']);
     expect(e.g.mult / p.g.mult).toBeCloseTo(1 + 1.5 / p.notes, 9);
-    expect(charmShortText('echo', 2)).toBe('THE DROP HITS X2.5');
+    expect(charmShortText('echo', 2)).toBe('AT THE DROP, ITS NOTE HITS X2.5');
   });
 
-  // MISMATCH (card face): "THE DROP HITS X2" says the whole DROP doubles. fightScore.ts: boost(g, 1 + (ev - 1) * echoes /
-  // noteCells): one ECHO note doubles only its own share, so a 3-note drop hits x1.33, a 6-note drop x1.17. The full rule
-  // ("ITS NOTE HITS X2") is right; only the card face over-promises, and the card face is all the draft shows.
-  it.skip('MISMATCH: card "THE DROP HITS X2": one ECHO doubles the whole drop (actually x(1 + 1/notes))', () => {
-    expect(drop(echo).g.amount / drop([]).g.amount).toBe(2);
+  // The card face says what the full rule says: only its note's share doubles (a 3-note drop hits x1.33), not the whole DROP.
+  it('the card face names its note, not the whole DROP', () => {
+    expect(charmShortText('echo', 1)).toBe('AT THE DROP, ITS NOTE HITS X2');
+    const ratio = drop(echo).g.amount / drop([]).g.amount;
+    expect(ratio).toBeGreaterThan(1);
+    expect(ratio).toBeLessThan(2);
   });
 });
 
@@ -664,19 +663,17 @@ describe('AUDIT: card face vs full rule', () => {
       '+10 CHARGE',
       '+20 HP',
       '40% CHANCE TO BE A WILD',
-      '+5 LIGHTNING DAMAGE',
+      '+11% LIGHTNING DAMAGE',
       'HITS FOR 100% OF ITS SHIELD',
       '+3 CHIPS (MAX 6 PER FIGHT)',
       '+30 TO YOUR JACKPOT METER',
-      'THE DROP HITS X2',
+      'AT THE DROP, ITS NOTE HITS X2',
       'X5 PAY. 1 IN 4 TO SHATTER',
     ]);
   });
 
-  // MISMATCH (UI promise): cardText.ts says the full wording "shows in the card's detail box on hover, focus or tap". For
-  // a Charm card, `full` is describeOption's text, which is the SHORT text too. The long rule (ONCE PER GROUP, ON A WIN,
-  // ITS NOTE, FOR GOOD) only appears in the COLLECTION, never in a run.
-  it.skip('MISMATCH: a Charm card\'s detail box shows the full rule (it shows the short text)', () => {
+  // The card's detail box (hover, focus or tap) shows the full rule: ONCE PER GROUP, ON A WIN, ITS NOTE, FOR GOOD.
+  it('a Charm card\'s detail box shows the full rule', () => {
     for (const e of ALL) expect(card(e, CHARM_SYMBOLS[e][0]).full).toContain(charmRuleText(e, 1));
   });
 });

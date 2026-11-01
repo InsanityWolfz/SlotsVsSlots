@@ -1,7 +1,7 @@
 import type { RelicId } from '../../core/config';
 import type { CabinetId } from '../../core/cabinets';
 import { RELICS, RELIC_TIER } from '../../core/relics';
-import { describeOption, type DraftOption, type RunState } from '../../core/run';
+import { charmCardFull, describeOption, type DraftOption, type RunState } from '../../core/run';
 
 /**
  * Cards say at most two lines at body size (the UI kit, user 2026-10-30). The rules' full wording stays in the core
@@ -23,26 +23,26 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
     t
       .replace(/^YOUR ALL-JACKPOTS SPIN ECHOES FOR 1\/3 OF ITS DAMAGE$/, 'ALL-JACKPOT SPINS ECHO FOR 1/3')
       .replace(/^YOUR (.+) PAYOFF ECHOES FOR 1\/3( OF ITS)? DAMAGE$/, '$1 PAYOFFS ECHO FOR 1/3'),
-  sandglass: 'ENEMY ABILITIES CHARGE A SPIN SLOWER',
-  tower: 'KEEP 25% OF YOUR SHIELD EACH SPIN',
+  sandglass: 'SLOWER ENEMY ABILITIES (NOT WHEEL OR DEALER)',
+  tower: 'KEEP 25% OF SHIELD, MAX 10% OF YOUR HP',
   capacitor: 'LEFTOVER SHIELD CHARGES LIGHTNING',
   livewire: 'LIGHTNING DAMAGE +30%. STORMS COST 1 HP',
   encore: 'THE JACKPOT METER KEEPS 30 AFTER IT PAYS',
   coup: (t) => t.replace(' WHILE YOU HAVE MORE HP LEFT THAN THE ENEMY', ' WHILE YOU LEAD ON HP'),
   compound: 'HIGH ROLLER CAPS AT X4',
-  meltdown: 'LIGHTNING DAMAGE +1% PER MISSING HP',
-  deckdrum: '+1 CARD DAMAGE PER WIN (MAX +5)',
+  meltdown: 'LIGHTNING DAMAGE: +1% PER MISSING HP, TO 50%',
+  deckdrum: '+1 CARD DAMAGE PER SPIN THAT PAYS, MAX +5',
   horseshoe: 'WINS WITH A LUCKY WILD PAY X3',
   underdog: 'EVERYTHING PAYS X1.5 UNDER HALF HP',
   holywater: 'IGNORE THE FIRST SABOTAGE A FIGHT',
-  hotstreak: 'AFTER A JACKPOT, NEXT SPIN PAYS X2',
+  hotstreak: "JACKPOT: NEXT SPIN'S PAIRS AND JACKPOTS X2",
   pitboss: "ENEMY'S FIRST JACKPOT A FIGHT IS VOID",
   rainmaker: 'MAKE IT RAIN COSTS 2 CHIPS',
   bash: 'LEFTOVER SHIELD HITS THE ENEMY',
   turntable: 'AFTER THE DROP, VOLUME FALLS TO 5',
   mixtape: 'A SPIN WITH NO NOTE KEEPS THE VOLUME',
   subwoofer: 'THE DROP ALSO HITS FOR YOUR SHIELD',
-  armoredcar: 'HIGH ROLLER: SHIELD COUNTS AS CHIPS',
+  armoredcar: 'HIGH ROLLER: 5 SHIELD COUNTS AS 1 CHIP',
   safedeposit: 'CHIPS ALSO HIT FOR YOUR SHIELD',
   dryspell: 'EVERY SPIN WITHOUT A PAIR: NEXT WIN +50%',
   punchcard: 'EVERY 6TH WIN: A LEGENDARY RELIC',
@@ -50,14 +50,14 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   insurance: 'ONCE A FIGHT, UNDER 25% HP: +100 SHIELD',
   housetax: 'ENEMY JACKPOTS PAY YOU 5 CHIPS',
   regular: 'ENCOUNTER GAMES: 2 MORE PLAYS',
-  hitmaker: 'EACH DROP HITS 60% MORE THAN THE LAST',
+  hitmaker: 'EACH DROP: +60% PER DROP BEFORE IT',
   houseofcards: 'METER PAYOFFS ADD WILDS FOR THE FIGHT',
-  parachute: 'PAY 10 CHIPS TO SURVIVE A KILLING HIT',
+  parachute: 'ONCE A FIGHT, PAY 10 CHIPS TO LIVE AT 25%',
   secondline: 'ROW ABOVE PAYS HALF. ENEMIES HIT +15%',
   devilsdue: 'EVERYTHING X1.75. -8% MAX HP PER WIN',
   longgame: 'EVERYTHING -20%, +3% PER FIGHT WON',
   quickening: (t) => t.replace(/^YOUR (.+) STARTS EVERY FIGHT HALF FULL\..*$/, (_, m: string) => `${m.endsWith('METER') ? 'METER' : m} STARTS AT HALF. ENEMIES FASTER`),
-  glasscannon: 'WINS PAY X1.5. NO HEALING BETWEEN FIGHTS',
+  glasscannon: 'EVERYTHING X1.5. NO HEALING BETWEEN FIGHTS',
   crusade: (t) => t.replace(' FOR EVERY FIGHT YOU WIN', ' PER FIGHT WON'),
   highcard: 'JACKPOTS X1.5. PAIRS PAY HALF',
   hypeman: '+1 VOLUME EVERY 2ND SPIN. NOTES PAY HALF',
@@ -83,7 +83,7 @@ export function cardFace(o: DraftOption, run?: RunState): { title: string; text:
   const { title, text } = describeOption(o, run);
   if (o.kind === 'relic' && RELICS[o.relic]) return { title, text: shortRelicText(o.relic, text), full: text };
   // A Charm card's reel is on its marker: the face starts at the symbol.
-  if (o.kind === 'gild') return { title, text: text.replace(/^REEL \d+ /, 'ON '), full: text };
+  if (o.kind === 'gild') return { title, text: text.replace(/^REEL \d+ /, 'ON '), full: charmCardFull(o, run) };
   return { title, text, full: text };
 }
 
