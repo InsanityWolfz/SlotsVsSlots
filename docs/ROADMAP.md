@@ -34,7 +34,7 @@ and the CLAW reworked as push-your-luck: shipped (user, 2026-11-01; rules in HP_
 adds charge, half-size bolts, the storm heals once) and THE OWNER (option A: a 25M fortune on a x10 damage ladder, plus
 OVERLOAD, TESLA's ENDLESS loop growth) shipped (user, 2026-11-01: "we can ship the tesla and the owner re work"; rules in HP_GAME.md). The machines'
 heals are one rule now, shipped (user, 2026-11-01): every meter payoff heals 15; KNIGHT has no meter, no heal (HP_GAME.md).
-Left in phase 4: JUKEBOX's second way to build, BANKROLL (readable, or ship with 4), the act 1 demo, the bug / save /
+Left in phase 4: JUKEBOX's second way to build (simmed 2026-11-01: shields last one turn, so no DROP payoff makes a shield JUKEBOX a real build; a Body Slam SUBWOOFER, "THE DROP also hits for all the shield you hold", on the branch `jukebox-wall`, waits on the user; a bigger rework waits on the outside playtest), BANKROLL (readable, or ship with 4), the act 1 demo, the bug / save /
 crash pass; the BUILD-UP idea for dry streaks waits on a mockup (the user: it has to be very readable). Open calls for
 the user: FULL next to an unlit bulb in settings (the combat LOG is now dev-only: user, 2026-10-31),
 fantasy-named relics (VAMPIRE FANG, SKELETON KEY, PHOENIX FEATHER, HOLY WATER, DEVIL'S DUE, CRUSADE, QUICKENING, VAMP
