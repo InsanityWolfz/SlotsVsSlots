@@ -60,6 +60,9 @@ export interface Stage {
     potPunch: number;
     fightLabel: string;
     allIn: boolean;
+    /** BUILD-UP (presented): your next pair or jackpot's multiplier (1 = none), and its pop when it grows. */
+    buildUp?: number;
+    buildUpPop?: number;
     /** THE WHEEL (presented): chips on your reels, turns to NO MORE BETS, what one chip hits for, SPINS FASTER, and the
      * topper's spin (angle, and how fast it turns now). */
     bets?: number[];

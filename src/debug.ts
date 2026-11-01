@@ -3,6 +3,7 @@ import { ARCHETYPES, BOSS, DEALER, makeEnemy, OWNER, REPO_MAN, TURBO, WHEEL } fr
 import { Rng } from './core/rng';
 import { fightConfig, skipToBoss } from './core/run';
 import type { CombatEvent } from './core/events';
+import { BUILD_UP } from './core/fightRules';
 import type { Game } from './game';
 
 /**
@@ -23,6 +24,8 @@ export function installDebug(game: Game): void {
   };
   const dbg = {
     game,
+    /** BUILD-UP on or off (test branch A/B): dbg.buildUp(false) plays the live rules. Takes effect next spin. */
+    buildUp: (on: boolean) => ((BUILD_UP.on = on ? 1 : 0), on),
     pause,
     resume: () => (game.stage.clock.speed = game.prefs.speed / 2),
     /** Advance game time by `sec` (paused otherwise). */

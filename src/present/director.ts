@@ -294,6 +294,8 @@ export class Director {
         this.s.sounds.coin(8);
         return this.popText(`CHIP CHARM +${e.amount}`, c.x + 80, MACHINE_TOP - 22, 2, '#ffd23f', 14, 0.35);
       }
+      case 'buildUp':
+        return this.buildUp(e);
       case 'overtime':
         this.s.sounds.stingerMedium();
         return this.banner('OVERTIME!', '#ff9a3a', 1.2, 0.3, 'BOTH MACHINES HIT HARDER EVERY ROUND', BANNER_Y, 3);
@@ -548,6 +550,16 @@ export class Director {
   }
 
   // ---- events ------------------------------------------------------------------------
+
+  /** BUILD-UP: the gutter chip grows a step (a rising coin), or the pair that cashed it empties it. */
+  private async buildUp(e: Ev<'buildUp'>): Promise<void> {
+    const g = this.s.gutter;
+    g.buildUp = e.mul;
+    if (e.cashed) return;
+    this.s.sounds.coin(2 + e.stacks * 2);
+    g.buildUpPop = 1;
+    this.bg(this.c.to(g, 'buildUpPop', 0, 0.35));
+  }
 
   private async turnStart(e: Ev<'turnStart'>): Promise<void> {
     const { machines, gutter } = this.s;

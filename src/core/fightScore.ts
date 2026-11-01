@@ -241,11 +241,12 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       notes.push(`X${NEW_RELIC.underdogMul} UNDERDOG`);
     }
     // DRY SPELL: the stacks from dry spins on this pair or jackpot.
-    if (has('dryspell') && f.drySpell > 0 && paying && g.matched && (g.reels.length >= 2 || !!g.jackpot)) {
-      fired.add('dryspell');
-      const k = 1 + NEW_RELIC.dryStep * f.drySpell;
+    // BUILD-UP: the dead spins banked so far, cashed by this pair or jackpot (DRY SPELL makes it bigger).
+    if (player && f.buildUp > 0 && paying && g.matched && (g.reels.length >= 2 || !!g.jackpot)) {
+      if (has('dryspell')) fired.add('dryspell');
+      const k = f.buildUpMul(me);
       boost(g, k);
-      notes.push(`X${Math.round(k * 100) / 100} DRY`);
+      notes.push(`X${Math.round(k * 100) / 100} BUILD-UP`);
     }
     // GOLDEN SPIN: everything pays x3.
     if (player && f.goldenNow && paying) {

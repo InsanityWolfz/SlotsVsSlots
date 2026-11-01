@@ -92,7 +92,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   safedeposit: { id: 'safedeposit', name: 'SAFE DEPOSIT', text: "WHEN CHIPS HIT, THEY ALSO HIT FOR THAT SPIN'S SHIELD", sprite: 'relicSafeDeposit', machine: 'midas' },
   subwoofer: { id: 'subwoofer', name: 'SUBWOOFER', text: 'THE DROP ALSO HITS FOR ALL THE SHIELD YOU HOLD', sprite: 'relicSubwoofer', machine: 'jukebox' },
   // The user's picks from the content list (2026-10-14).
-  dryspell: { id: 'dryspell', name: 'DRY SPELL', text: 'EACH SPIN WITH NO PAIR: YOUR NEXT PAIR OR JACKPOT PAYS +50% (STACKS TO X4)', sprite: 'relicDrySpell' },
+  dryspell: { id: 'dryspell', name: 'DRY SPELL', text: 'YOUR BUILD-UP GROWS +50% A SPIN, NOT +25% (UP TO X4, NOT X2)', sprite: 'relicDrySpell' },
   punchcard: { id: 'punchcard', name: 'PUNCH CARD', text: 'EVERY 6TH FIGHT YOU WIN: PICK A LEGENDARY RELIC', sprite: 'relicPunchCard' },
   goldenspin: { id: 'goldenspin', name: 'GOLDEN SPIN', text: '1 SPIN IN 10 IS GOLDEN: EVERYTHING PAYS X3', sprite: 'relicGoldenSpin' },
   insurance: { id: 'insurance', name: 'INSURANCE POLICY', text: 'THE FIRST TIME EACH FIGHT YOU DROP UNDER 25% HP: GAIN 100 SHIELD', sprite: 'relicInsurance' },

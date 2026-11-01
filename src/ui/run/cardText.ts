@@ -44,7 +44,7 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   subwoofer: 'THE DROP ALSO HITS FOR YOUR SHIELD',
   armoredcar: 'HIGH ROLLER: 5 SHIELD COUNTS AS 1 CHIP',
   safedeposit: 'CHIPS ALSO HIT FOR YOUR SHIELD',
-  dryspell: 'EVERY SPIN WITHOUT A PAIR: NEXT WIN +50%',
+  dryspell: 'BUILD-UP GROWS +50% A SPIN, UP TO X4',
   punchcard: 'EVERY 6TH WIN: A LEGENDARY RELIC',
   goldenspin: '1 SPIN IN 10 PAYS X3',
   insurance: 'ONCE A FIGHT, UNDER 25% HP: +100 SHIELD',

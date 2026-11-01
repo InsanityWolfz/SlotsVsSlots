@@ -118,6 +118,8 @@ export type CombatEvent =
   | { type: 'allInArmed'; side: SideId; cap: number; floor: number }
   /** OVERTIME: the fight clock starts (every pay on both machines grows each round from now). */
   | { type: 'overtime'; side: SideId; mul: number }
+  /** BUILD-UP: your next pair or jackpot's multiplier changed (grew on a dead spin, or `cashed` by a pair or jackpot). */
+  | { type: 'buildUp'; side: SideId; mul: number; stacks: number; cashed?: boolean }
   /** ENDLESS: LAST CALL (the fight ran long; the enemy hits harder every turn now). */
   | { type: 'lastCall'; side: SideId; /** THE HOUSE: from now on it skims every turn. */ house?: boolean }
   /** ENDLESS: the House closes the table in N enemy turns (a stalled fight goes to the House). */

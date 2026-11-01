@@ -29,6 +29,13 @@ export const POT_STEAL = { any: 1 };
 export const PAY = { additive: 0, lightningAdd: 1, teslaOneAxis: 1, stormHeal: 3 };
 /** THE JUKEBOX: +25% note damage per volume level (was +20%, 2026-10-12), max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
 export const VOLUME = { perLevel: 0.32, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5 };
+/**
+ * BUILD-UP (test branch, 2026-11-01: dry streaks are plain luck, 29% of act 1 fights have 3+ spins in a row with no
+ * pair): each of your spins with no pair or jackpot adds `step` to your next pair or jackpot, up to x`cap`; that pair
+ * or jackpot cashes it in. DRY SPELL (relic): it grows by `dryStep`, up to x`dryCap` (the relic's old rule). `on` 0
+ * turns it off (A/B: dbg.buildUp(false)).
+ */
+export const BUILD_UP = { on: 1, step: 0.25, cap: 2, dryStep: 0.5, dryCap: 4 };
 export const RAIN = { maxChips: 100, perChip: 1.5, cost: 10, rainmakerCost: 2, chipLess: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x2.5 (quarter steps). */
 export const highRollerMul = (chips: number, cap = MIDAS.maxMul) => Math.min(cap, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);

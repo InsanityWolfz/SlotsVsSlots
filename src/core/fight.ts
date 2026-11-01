@@ -11,7 +11,7 @@ import { DEAD, effectiveSymbol, insertOffscreen, wrap, paylineSymbols, symbolVal
 // The fight is split in four (2026-10-29): its rules (fightRules), a spin's scoring (fightScore), what enemies do
 // to your machine (fightTricks) and this class. Everything stays importable from here.
 export * from './fightRules';
-import { MIDAS, POT_STEAL, PAY, VOLUME, RAIN, highRollerMul, DEALER_RULES, DEALER_HANDS, allInRange, PAYOFF_WORD, PAYING, wheelCharm, JACKPOTABLE, type Combatant, type TurnResult, other, makeCombatant } from './fightRules';
+import { BUILD_UP, MIDAS, POT_STEAL, PAY, VOLUME, RAIN, highRollerMul, DEALER_RULES, DEALER_HANDS, allInRange, PAYOFF_WORD, PAYING, wheelCharm, JACKPOTABLE, type Combatant, type TurnResult, other, makeCombatant } from './fightRules';
 import { scoreSpin } from './fightScore';
 import { write, markedCards, tickFakes, defuse, burnFuses, tickStatuses, recover, cleanse, chargeAbility, sweepBets, cashPot, winPot } from './fightTricks';
 
@@ -68,7 +68,16 @@ export class Fight {
   /** GLASS Charms shattered this fight, by reel and symbol (the run loses them after). */
   readonly shattered: { reel: number; symbol: SymbolId }[] = [];
   /** DRY SPELL: your spins in a row with no pair or jackpot (each adds +25% to the next one). */
-  drySpell = 0;
+  /** BUILD-UP: dead spins banked toward your next pair or jackpot. */
+  buildUp = 0;
+  /** BUILD-UP's step and cap (DRY SPELL: bigger). */
+  buildUpRule(me: Combatant = this.sides.player): { step: number; cap: number; dry: boolean } {
+    const dry = me.relics.has('dryspell');
+    return dry ? { step: BUILD_UP.dryStep, cap: BUILD_UP.dryCap, dry } : { step: BUILD_UP.on ? BUILD_UP.step : 0, cap: BUILD_UP.cap, dry };
+  }
+  buildUpMul(me: Combatant = this.sides.player): number {
+    return 1 + this.buildUpRule(me).step * this.buildUp;
+  }
   /** GOLDEN SPIN: this spin is golden (everything pays x3). */
   goldenNow = false;
   /** INSURANCE POLICY: used this fight; waiting to pay out (the hit landed, the shield comes after). */
@@ -507,10 +516,14 @@ export class Fight {
     }
     // HOT STREAK: a jackpot makes your next spin pay x2 (any other spin ends it).
     if (side === 'player') this.hotStreak = me.relics.has('hotstreak') && score.tier === 'triple';
-    // DRY SPELL: a spin with no pair or jackpot adds a stack; one that has one spends them.
-    if (side === 'player' && me.relics.has('dryspell')) {
-      const hit = score.groups.some((g) => g.matched && (g.reels.length >= 2 || !!g.jackpot) && g.base > 0);
-      this.drySpell = hit ? 0 : Math.min(NEW_RELIC.dryMax, this.drySpell + 1);
+    // BUILD-UP: a spin with no pair or jackpot adds a stack; a pair or jackpot spends them.
+    const bu = this.buildUpRule(me);
+    if (side === 'player' && bu.step > 0 && !this.over) {
+      const cashed = score.groups.some((g) => g.matched && (g.reels.length >= 2 || !!g.jackpot) && g.base > 0 && PAYING.has(g.symbol));
+      const before = this.buildUp;
+      const max = Math.round((bu.cap - 1) / bu.step);
+      this.buildUp = cashed ? 0 : Math.min(max, this.buildUp + 1);
+      if (this.buildUp !== before) events.push({ type: 'buildUp', side, mul: this.buildUpMul(me), stacks: this.buildUp, ...(cashed ? { cashed: true } : {}) });
     }
     // CERTIFIED HITMAKER: count the drops.
     if (side === 'player' && this.dropNow) this.drops++;

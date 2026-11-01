@@ -33,6 +33,8 @@ export const KEYWORDS: Keyword[] = [
   { word: 'BUST', icon: 'kwBust', forms: ['BUSTS'], color: '#ff8a7a', text: "THE DEALER'S CARD: YOUR BEST REEL'S PAYLINE PAYS NOTHING NEXT SPIN" },
   { word: 'ALL IN', icon: 'kwAllIn', color: '#ff6a5a', text: "THE DEALER'S BIG HIT: A SHARE OF YOUR MAX HP THAT PIERCES SHIELDS" },
   { word: 'HOLD', icon: 'kwHold', forms: ['HELD'], color: '#ffe28a', text: `TAP ONE OF YOUR REELS BEFORE YOUR SPIN OR WHILE THE ENEMY SPINS: IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. ${HOLD.perFight} A FIGHT` },
+  // (Test branch: BUILD-UP borrows the METER icon until it has its own.)
+  { word: 'BUILD-UP', icon: 'kwMeter', color: '#ffd23a', text: 'EACH OF YOUR SPINS WITHOUT A PAIR ADDS +25% TO YOUR NEXT PAIR OR JACKPOT, UP TO X2. THAT PAIR OR JACKPOT CASHES IT IN' },
   { word: 'OVERTIME', icon: 'kwOvertime', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF A FIGHT, EVERY HIT ON BOTH MACHINES PAYS X${1 + OVERTIME.step}, +${OVERTIME.step} WITH EACH OF YOUR SPINS. SHIELDS DON'T GROW` },
   { word: 'SABOTAGE', icon: 'kwSabotage', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY PUTS ON YOUR REELS: SPILLS, ROCKS, IOUS, FREEZES, JAMS, JINXES, MARKS' },
   { word: 'MARK', icon: 'kwMark', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED CELL ON YOUR PAYLINE HITS YOU' },

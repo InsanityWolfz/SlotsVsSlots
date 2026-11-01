@@ -1023,6 +1023,8 @@ export class Game {
         potPunch: 1,
         fightLabel: this.run && inRun ? fightLabel(this.run) : 'SANDBOX',
         allIn: false,
+        buildUp: 1,
+        buildUpPop: 0,
         ...(this.fight.isWheel ? { bets: [...this.fight.bets], betsLeft: (this.fight.sides.enemy.ability?.every ?? 3) - this.fight.sides.enemy.charge, betPer: this.fight.betPer(), betPunch: 1, wheelFast: this.fight.fast, wheelAngle: 0, wheelSpeed: 0.6 } : {}),
         chipsEaten: 0,
       },

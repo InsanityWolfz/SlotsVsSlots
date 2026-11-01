@@ -311,7 +311,7 @@ describe('DRY SPELL', () => {
   });
   it('the pair spends the stacks; singles on a dry spin get nothing', () => {
     const { f, ev } = afterDry(['dryspell'], 3, PAIR);
-    expect(f.drySpell).toBe(0);
+    expect(f.buildUp).toBe(0);
     expect(groupOf(ev, 'sword').amount).toBe(pair0 * 2.5);
     const single = afterDry(['dryspell'], 3, DRY).ev;
     expect(groupOf(single, 'sword', 0).amount).toBe(groupOf(afterDry([], 3, DRY).ev, 'sword', 0).amount);

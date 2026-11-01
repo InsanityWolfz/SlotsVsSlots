@@ -285,7 +285,27 @@ export class FightView {
       if (left <= 0) {
         const p = 0.5 + 0.5 * Math.sin(t * 5);
         drawChip(ctx, `OVERTIME X${mul}`, cx, gy, { scale: T.body, color: p > 0.5 ? '#ffd0a0' : '#ff9a3a', frame: '#ff9a3a', fill: '#3a1a0c' });
-      } else if (left <= OVERTIME.warn) drawChip(ctx, `OVERTIME IN ${left}`, cx, gy, { scale: T.body, color: '#ff9a3a', frame: KIT.frameDim, fill: KIT.fill });
+        gy += 30;
+      } else if (left <= OVERTIME.warn) {
+        drawChip(ctx, `OVERTIME IN ${left}`, cx, gy, { scale: T.body, color: '#ff9a3a', frame: KIT.frameDim, fill: KIT.fill });
+        gy += 30;
+      }
+    }
+    // BUILD-UP: what your next pair or jackpot is worth extra (dead spins bank it). It glows hotter as it grows. At the
+    // gutter's foot, level with the machines' bottom edge (the bosses' panels fill its middle).
+    const bu = g.buildUp ?? 1;
+    if (bu > 1 && !decided) {
+      gy = MACHINE_TOP + MACHINE_H - 30;
+      const k = this.g.reducedMotion() ? 0 : (g.buildUpPop ?? 0);
+      const heat = Math.min(1, (bu - 1) / 1.5);
+      const p = 0.5 + 0.5 * Math.sin(t * (3 + 4 * heat));
+      drawChip(ctx, 'BUILD-UP', cx, gy, { scale: T.small, color: '#ffd23a', frame: heat > 0.6 ? '#ffd23a' : KIT.frame, fill: '#2a1c06' });
+      ctx.save();
+      ctx.translate(cx, gy + 36);
+      ctx.scale(1 + 0.35 * k, 1 + 0.35 * k);
+      drawTitle(ctx, `X${Math.round(bu * 100) / 100}`, 0, 0, p > 0.5 ? '#fff4c0' : '#ffd23a');
+      ctx.restore();
+      drawText(ctx, 'ON YOUR NEXT PAIR', cx, gy + 66, T.small, KIT.dim);
     }
     if (this.g.fight.isBoss) this.drawPot(ctx, cx, GUTTER_PANEL_Y, t);
     else if (this.g.fight.isDealer) this.drawDeal(ctx, cx, GUTTER_PANEL_Y, t);
