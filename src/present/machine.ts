@@ -1,4 +1,4 @@
-import type { SideId } from '../core/config';
+import type { SideId, SymbolId } from '../core/config';
 import type { Combatant } from '../core/fight';
 import type { Sounds } from '../audio/sounds';
 import type { Clock } from './clock';
@@ -13,6 +13,9 @@ import { drawSprite, artId, hasSprite, type SpriteId } from '../render/sprites';
 import type { Trim } from '../core/meta';
 import { drawText } from '../render/text';
 import { T } from '../ui/kit';
+
+/** The payline look (playtest 2026-10-31; user, 2026-11-01: "I like the pay line change"): `focus` dims the rows that don't pay and frames the payline. */
+export const PAYLINE_LOOK = { focus: true, restDim: 0.5 };
 
 /** Numbers on a payline symbol: its value bottom-left (white), its charm's tag top-right (coloured). */
 export interface PayTag {
@@ -47,6 +50,10 @@ export class MachineView {
   drop = 0;
   desat = 0;
   payline = { progress: 0, alpha: 0, color: COLORS.goldLight };
+  /** The rows that pay (1 = the payline; SECOND PAYLINE adds the row above). The others rest dimmed. */
+  payRows: number[] = [1];
+  /** Symbols that count off the payline right now (THE JUKEBOX's armed DROP: every visible note): they stay lit. */
+  offLine: ReadonlySet<SymbolId> = new Set();
   /** Big green wash for slime floods / gold wipe for cleanse: -1 = off, else 0..1 sweep. */
   wash = { t: -1, color: COLORS.slime };
   /** Display-side reel statuses: turns left, and 0..1 overlay strength. */
@@ -182,7 +189,7 @@ export class MachineView {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, MACHINE_W, MACHINE_H);
     // Payline band.
-    ctx.fillStyle = 'rgba(255,224,138,0.06)';
+    ctx.fillStyle = PAYLINE_LOOK.focus ? 'rgba(255,224,138,0.1)' : 'rgba(255,224,138,0.06)';
     ctx.fillRect(0, PITCH, MACHINE_W, PITCH);
 
     ctx.save();
@@ -201,6 +208,7 @@ export class MachineView {
     ctx.fillRect(0, 0, MACHINE_W, MACHINE_H);
 
     if (this.wash.t >= 0) this.drawWash(ctx);
+    if (PAYLINE_LOOK.focus) this.drawPayRows(ctx);
     ctx.restore();
 
     // Thin dividers between reels (gold, or the trim's rim).
@@ -407,6 +415,29 @@ export class MachineView {
       if (t.value) tag(t.value, x - 46, y + 34, '#ffffff', 'left');
       if (t.charm) tag(t.charm, x + 46, y - 34, t.color ?? COLORS.goldLight, 'right');
     });
+  }
+
+  /**
+   * Which symbols pay, at a glance (playtest 2026-10-31: a screen full of matching notes off the payline read as the
+   * game cheating). The rows that don't pay rest dimmed; the payline gets a gold frame (SECOND PAYLINE's row a faint one).
+   */
+  private drawPayRows(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = `rgba(8,2,16,${PAYLINE_LOOK.restDim})`;
+    for (let row = 0; row < 3; row++) {
+      if (this.payRows.includes(row)) continue;
+      this.reels.forEach((reel, r) => {
+        // In play off the payline (user, 2026-11-01: "so the player knows they are in play"): a symbol that counts from
+        // anywhere right now, and an IOU's countdown. Spinning reels dim by row (their cells are moving).
+        const c = reel.spinning ? null : reel.cellAtRow(row);
+        if (c && ((this.offLine.has(c.symbol) && !c.slimed && !c.stolen) || (c.bomb ?? 0) > 0)) return;
+        ctx.fillRect(PITCH * r, PITCH * row, PITCH, PITCH);
+      });
+    }
+    for (const row of this.payRows) {
+      ctx.fillStyle = row === 1 ? 'rgba(255,224,138,0.85)' : 'rgba(255,224,138,0.35)';
+      ctx.fillRect(0, PITCH * row, MACHINE_W, 2);
+      ctx.fillRect(0, PITCH * (row + 1) - 2, MACHINE_W, 2);
+    }
   }
 
   private drawPayline(ctx: CanvasRenderingContext2D): void {

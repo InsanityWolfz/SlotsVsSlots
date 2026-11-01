@@ -2,10 +2,10 @@ import { OWNER_TRICKS } from './core/enemies';
 import { Sounds } from './audio/sounds';
 import type { CombatEvent } from './core/events';
 import { Synth } from './audio/synth';
-import { mergeConfig, UNIT, type GameConfig, type SideId } from './core/config';
+import { mergeConfig, UNIT, type GameConfig, type SideId, type SymbolId } from './core/config';
 import { TUNE } from './core/enemies';
 import { MAX_STAKE, STAKES, stakeUnlock } from './core/stakes';
-import { Fight, highRollerMul } from './core/fight';
+import { DEALER_HANDS, Fight, highRollerMul } from './core/fight';
 import { roomFor, type Scene } from './render/rooms';
 import { turnRow, type TurnRow } from './core/log';
 import { RELICS } from './core/relics';
@@ -79,6 +79,7 @@ const SPEEDS = [1, 2, 4, 8];
 const QUIET_W = 84;
 const toolX = (i: number) => Math.round(MACHINE_CX.enemy + MACHINE_W / 2 + BEZEL - QUIET_W / 2 - (2 - i) * (QUIET_W + 10));
 const clockSpeed = (s: number) => s / 2;
+const IN_PLAY = { none: new Set<SymbolId>(), drop: new Set<SymbolId>(['note', 'wild']), allIn: new Set<SymbolId>(['sword', 'seven']) };
 
 interface Prefs {
   speed: number;
@@ -969,6 +970,8 @@ export class Game {
     clock.speed = clockSpeed(this.prefs.speed);
     const sides: SideId[] = ['player', 'enemy'];
     const machines = Object.fromEntries(sides.map((s) => [s, new MachineView(s, this.fight.sides[s], this.sounds)])) as Stage['machines'];
+    // SECOND PAYLINE: the row above pays too, so it isn't dimmed.
+    if (this.fight.sides.player.relics.has('secondline')) machines.player.payRows = [0, 1];
     // The player's TRIM (cosmetic; CLASSIC draws the stock gold).
     const trim = shownTrim(this.profile);
     machines.player.trim = trim.id === 'classic' ? null : trim;
@@ -1459,9 +1462,19 @@ export class Game {
       gw.wheelAngle = ((gw.wheelAngle ?? 0) + gw.wheelSpeed * gdt) % (Math.PI * 2);
     }
     this.background.update(dt);
+    this.syncInPlay();
     for (const b of this.buttons) b.update(dt);
     const by = this.recap.buttonY - 30;
     for (const b of this.recapBtns) b.y = by;
+  }
+
+  /** What counts off the payline right now stays lit (the payline look dims the rest): THE JUKEBOX's armed DROP hits
+   * with every visible note; THE DEALER's ALL IN (hand 3) counts every sword and seven in its 3x3. */
+  private syncInPlay(): void {
+    const { player, enemy } = this.stage.machines;
+    const drop = this.fight.meter?.kind === 'volume' && this.stage.huds.player.armed;
+    player.offLine = drop ? IN_PLAY.drop : IN_PLAY.none;
+    enemy.offLine = this.fight.isDealer && this.fight.dealerHand >= DEALER_HANDS.length ? IN_PLAY.allIn : IN_PLAY.none;
   }
 
   /** The screen on show (a menu page, a run screen, a fight): a change of it plays the screen transition. */

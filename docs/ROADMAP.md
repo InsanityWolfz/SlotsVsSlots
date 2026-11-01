@@ -23,10 +23,13 @@ back half of a run is one-spin kills with no damage taken (all danger is in act 
 obvious call a fight; a run-killing crash (JOKER, HOUSE OF CARDS + LOAN SHARK's IOUs). The user's calls (2026-10-31):
 fix 1-4 (done: the crash, the balance batch in HP_GAME.md, the HUD overlaps, the small bugs); the payline made readable
 (art first); a proposal for sabotage's dead stretches; a call on the CLAW; HOLD stays as it is (the user: it "scares me
-a little"). Then: the payline look is in review (https://claude.ai/artifact/JtSBYuN17LfCZ8yprYZAC7; the code waits in a
-local stash until approved). Sabotage wearing off was simmed and dropped: in act 1, 29% of fights have 3+ spins that pay
-nothing, and sabotage causes about 2% of fights' dead streaks, so the dry stretches are plain luck. Proposed, waiting on
-the user: a BUILD-UP (each spin that pays nothing adds +25% to your next pay; DRY SPELL made base, the relic reworked),
+a little"). Then: the payline look shipped (user, 2026-11-01: "I like the pay line change"; the rows that don't pay rest dimmed, the
+payline framed in gold), with what counts off it kept lit "so the player knows they are in play": THE JUKEBOX's armed
+DROP (every note and WILD), IOU countdowns, THE DEALER's ALL IN 3x3, SECOND PAYLINE's row. The screenshots and trailer get
+redone once, when the changes are all in and the page is ready (user, 2026-11-01), not after each change. Sabotage wearing off was simmed and dropped: in act 1, 29% of fights have 3+ spins that pay
+nothing, and sabotage causes about 2% of fights' dead streaks, so the dry stretches are plain luck. Proposed: a BUILD-UP
+(each spin that pays nothing adds +25% to your next pay; DRY SPELL made base, the relic reworked): the user wants to talk
+it through first ("I'm afraid it's too much", it would have to be very readable);
 and the CLAW reworked as push-your-luck (each miss drags the prize toward the chute and raises its odds). Open calls for
 the user: FULL next to an unlit bulb in settings (the combat LOG is now dev-only: user, 2026-10-31),
 fantasy-named relics (VAMPIRE FANG, SKELETON KEY, PHOENIX FEATHER, HOLY WATER, DEVIL'S DUE, CRUSADE, QUICKENING, VAMP
