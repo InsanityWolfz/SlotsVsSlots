@@ -30,7 +30,7 @@ redone once, when the changes are all in and the page is ready (user, 2026-11-01
 nothing, and sabotage causes about 2% of fights' dead streaks, so the dry stretches are plain luck. Proposed: a BUILD-UP
 (each spin that pays nothing adds +25% to your next pay; DRY SPELL made base, the relic reworked): the user wants to talk
 it through first ("I'm afraid it's too much", it would have to be very readable);
-and the CLAW reworked as push-your-luck (each miss drags the prize toward the chute and raises its odds). Open calls for
+and the CLAW reworked as push-your-luck: shipped (user, 2026-11-01; rules in HP_GAME.md). Open calls for
 the user: FULL next to an unlit bulb in settings (the combat LOG is now dev-only: user, 2026-10-31),
 fantasy-named relics (VAMPIRE FANG, SKELETON KEY, PHOENIX FEATHER, HOLY WATER, DEVIL'S DUE, CRUSADE, QUICKENING, VAMP
 CHARM), the ~45 rewritten card faces.

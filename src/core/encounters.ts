@@ -43,7 +43,7 @@ export interface EncounterResult {
   /** The game goes on at this stop (more plays left): the stop isn't passed yet. */
   more?: boolean;
   /** CLAW MACHINE: the prize the claw went for, and whether it held on. */
-  claw?: { prize: number; held: boolean };
+  claw?: { prize: number; held: boolean; misses: number[] };
 }
 /** What the run lends an encounter: relics you could win, and an upgrade it can hand out. */
 export interface EncounterCtx {
@@ -253,33 +253,48 @@ const HIGHER_OR_LOWER: EncounterDef = {
 
 /**
  * CLAW MACHINE: three prizes in the pit (shown before you pay): chips, a pair of Charms and a relic. Pay chips for a
- * go and pick one to aim at: the easy grab holds most of the time, the relic rarely. A prize you win leaves the pit.
- * Three goes a visit.
+ * go and pick one to aim at. PUSH YOUR LUCK (user, 2026-11-01): each miss drags that prize toward the drop for the rest
+ * of the visit, so its next grab holds more often (the pit shows it sinking; no odds on screen). A miss says SO CLOSE
+ * only when it nearly held. A prize you win leaves the pit. Three goes a visit.
  */
-export const CLAW = { price: 5, tries: 3, chips: 10 };
+export const CLAW = { price: 5, tries: 3, chips: 10, close: 0.12 };
 export const CLAW_PRIZES = [
-  { id: 'chips', name: 'CHIPS', hold: 0.65, grip: 'EASY GRAB' },
-  { id: 'charm', name: '2 CHARMS', hold: 0.4, grip: 'TRICKY GRAB' },
-  { id: 'relic', name: 'A RELIC', hold: 0.2, grip: 'HARD GRAB' },
+  { id: 'chips', name: 'CHIPS', hold: 0.5, step: 0.25, grip: 'EASY GRAB' },
+  { id: 'charm', name: '2 CHARMS', hold: 0.3, step: 0.2, grip: 'TRICKY GRAB' },
+  { id: 'relic', name: 'A RELIC', hold: 0.1, step: 0.12, grip: 'HARD GRAB' },
 ] as const;
 /** A prize's name at this loop (the chips one says how many). */
 export const clawPrizeName = (run: RunState, k: number) => (CLAW_PRIZES[k].id === 'chips' ? `${atStakes(run, CLAW.chips)} CHIPS` : CLAW_PRIZES[k].name);
+type ClawState = { won?: number[]; misses?: number[] };
+const clawState = (run: RunState): ClawState => (run.encounterState ?? {}) as unknown as ClawState;
 /** Prizes already won at this stop (they're gone from the pit). */
-export const clawWon = (run: RunState): number[] => ((run.encounterState as { won?: number[] } | undefined)?.won ?? []) as number[];
+export const clawWon = (run: RunState): number[] => clawState(run).won ?? [];
+/** How far each prize has been dragged toward the drop this visit (its misses). */
+export const clawMisses = (run: RunState): number[] => clawState(run).misses ?? [0, 0, 0];
+/** The grip a prize shows: its own at first, then how close it's been dragged. */
+export const clawGrip = (run: RunState, k: number, misses = clawMisses(run)): string => {
+  const m = misses[k] ?? 0;
+  return m <= 0 ? CLAW_PRIZES[k].grip : m === 1 ? 'CLOSER' : 'TEETERING';
+};
 const CLAW_MACHINE: EncounterDef = {
   id: 'claw',
   name: 'CLAW MACHINE',
   blurb: '',
   kind: 'game',
   plays: CLAW.tries,
-  choices: (run) => [...CLAW_PRIZES.map((p, k) => ({ label: clawPrizeName(run, k), text: p.grip, disabled: run.player.chips < atStakes(run, CLAW.price) || clawWon(run).includes(k) })), WALK],
+  choices: (run) => [...CLAW_PRIZES.map((_p, k) => ({ label: clawPrizeName(run, k), text: clawGrip(run, k), disabled: run.player.chips < atStakes(run, CLAW.price) || clawWon(run).includes(k) })), WALK],
   play: (run, i, rng, ctx) => {
     const won = clawWon(run);
     if (i >= CLAW_PRIZES.length || run.player.chips < atStakes(run, CLAW.price) || won.includes(i)) return walked();
     run.player.chips -= atStakes(run, CLAW.price);
     const prize = CLAW_PRIZES[i];
-    const held = rng.next() < prize.hold;
-    let text = 'IT SLIPPED';
+    const misses = [...clawMisses(run)];
+    const hold = Math.min(1, prize.hold + prize.step * misses[i]);
+    const roll = rng.next();
+    const held = roll < hold;
+    // The last go's miss has nothing to come closer for.
+    const last = (run.encounterPlays ?? 0) + 1 >= CLAW.tries + extraPlays(run);
+    let text = last ? 'IT SLIPPED' : 'IT MOVED CLOSER';
     if (held) {
       const chips = (c: number) => ((run.player.chips += c), `+${c} CHIPS`);
       if (prize.id === 'chips') text = chips(atStakes(run, CLAW.chips));
@@ -292,9 +307,10 @@ const CLAW_MACHINE: EncounterDef = {
           text = RELICS[got].name;
         } else text = chips(atStakes(run, CLAW.chips * 2));
       }
-      run.encounterState = { won: [...won, i] } as unknown as Record<string, number | number[]>;
-    }
-    return { title: held ? 'GOT IT!' : 'SO CLOSE', text, good: held, claw: { prize: i, held } };
+    } else misses[i]++;
+    run.encounterState = { won: held ? [...won, i] : won, misses } as unknown as Record<string, number | number[]>;
+    // SO CLOSE only when it nearly held (every miss said it: a fake near miss).
+    return { title: held ? 'GOT IT!' : roll < hold + CLAW.close ? 'SO CLOSE' : 'MISSED', text, good: held, claw: { prize: i, held, misses } };
   },
 };
 

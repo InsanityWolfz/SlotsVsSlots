@@ -90,6 +90,8 @@ export abstract class RunScreensBase {
   protected cwMsg: EncounterResult | null = null;
   /** Prizes won at this stop, as the screen shows them (the run's list moves before the claw lands, and clears after the last go). */
   protected cwWon: number[] = [];
+  /** THE CLAW's drags this visit, as the screen shows them (kept on show after the last go ends the stop). */
+  protected cwMisses: number[] = [0, 0, 0];
   /** Shop purchases in flight to YOUR BUILD. */
   protected flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   protected picked = -1;

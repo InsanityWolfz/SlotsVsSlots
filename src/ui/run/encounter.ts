@@ -1,4 +1,4 @@
-import { atStakes, BJ, bjState, CLAW, clawWon, encounterOf, extraPlays, HILO, hiloState } from '../../core/encounters';
+import { atStakes, BJ, bjState, CLAW, clawMisses, clawWon, encounterOf, extraPlays, HILO, hiloState } from '../../core/encounters';
 import { drawTitle, KIT, T } from '../kit';
 import { TCX } from './table';
 import { RELICS } from '../../core/relics';
@@ -35,6 +35,7 @@ export abstract class EncounterScreen extends ClawScreen {
       this.cwY = 0;
       this.cwMsg = null;
       this.cwWon = [...clawWon(run)];
+      this.cwMisses = [...clawMisses(run)];
       return this.clawButtons();
     }
     if (this.encId === 'bj') {
@@ -87,8 +88,8 @@ export abstract class EncounterScreen extends ClawScreen {
       };
     if (this.encId === 'claw')
       return {
-        line: 'PAY FOR A GO, PICK A PRIZE. IF IT HOLDS, IT IS YOURS',
-        full: [`${atStakes(run, CLAW.price)} CHIPS A GO, ${CLAW.tries + extraPlays(run)} GOES.`, 'PICK A PRIZE: THE CLAW DROPS ON IT.', 'EASY GRABS HOLD MORE OFTEN THAN HARD ONES.', 'WHAT THE CLAW HOLDS, YOU KEEP.'],
+        line: 'PICK A PRIZE. A MISS DRAGS IT CLOSER TO THE DROP',
+        full: [`${atStakes(run, CLAW.price)} CHIPS A GO, ${CLAW.tries + extraPlays(run)} GOES.`, 'PICK A PRIZE: THE CLAW DROPS ON IT.', 'EASY GRABS HOLD MORE OFTEN THAN HARD ONES.', 'EVERY MISS DRAGS THAT PRIZE CLOSER: ITS NEXT GRAB HOLDS MORE OFTEN.', 'WHAT THE CLAW HOLDS, YOU KEEP.'],
       };
     return null;
   }

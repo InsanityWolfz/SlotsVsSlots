@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
-import { BJ, bjState, bjTotal, CLAW, ENCOUNTERS, HILO, hiloPot, hiloState } from '../src/core/encounters';
+import { BJ, bjState, bjTotal, CLAW, clawGrip, clawMisses, ENCOUNTERS, HILO, hiloPot, hiloState } from '../src/core/encounters';
 import { chooseRoute, createRun, currentStop, encounterChoices, migrateRun, playEncounter } from '../src/core/run';
 
 const base = defaultConfig();
@@ -257,6 +257,23 @@ describe('CLAW MACHINE (2026-10-14)', () => {
       expect(run.player.chips).toBe(before - CLAW.price + CLAW.chips);
       expect(encounterChoices(run)[0].disabled).toBe(true);
     } else expect(run.player.chips).toBe(before - CLAW.price);
+  });
+
+  it('PUSH YOUR LUCK (2026-11-01): a miss drags that prize closer (its grip says so) and its next grab holds more often', () => {
+    // Over many visits: the relic's second try holds more often than its first.
+    let first = 0, second = 0, n = 0;
+    for (let seed = 1; seed <= 400; seed++) {
+      const run = at('claw', seed);
+      const a = playEncounter(run, 2)!;
+      if (a.claw!.held) { first++; continue; }
+      expect(clawMisses(run)[2]).toBe(1);
+      expect(clawGrip(run, 2)).toBe('CLOSER');
+      expect(a.title === 'SO CLOSE' || a.title === 'MISSED').toBe(true);
+      n++;
+      if (playEncounter(run, 2)!.claw!.held) second++;
+    }
+    expect(first / 400).toBeLessThan(0.17);
+    expect(second / n).toBeGreaterThan(first / 400 + 0.05);
   });
 });
 
