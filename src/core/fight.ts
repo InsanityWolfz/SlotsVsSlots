@@ -75,6 +75,10 @@ export class Fight {
     const dry = me.relics.has('dryspell');
     return dry ? { step: BUILD_UP.dryStep, cap: BUILD_UP.dryCap, dry } : { step: BUILD_UP.on ? BUILD_UP.step : 0, cap: BUILD_UP.cap, dry };
   }
+  /** An attack pair or jackpot (your machine's hit symbol, or MAKE IT RAIN) that pays: it cashes the BUILD-UP. */
+  buildUpCashes(g: ScoreGroup): boolean {
+    return g.matched && (g.reels.length >= 2 || !!g.jackpot) && g.base > 0 && (this.isAttack(g.symbol) || !!g.rain);
+  }
   buildUpMul(me: Combatant = this.sides.player): number {
     return 1 + this.buildUpRule(me).step * this.buildUp;
   }
@@ -455,6 +459,9 @@ export class Fight {
       ...(drumNow ? { symBonus: { sword: drumNow, ace: drumNow } } : {}),
       ...(drop ? { drop } : {}),
     });
+    // BUILD-UP: the attack pair or jackpot cashing it in (the plate empties into the hit, before it lands).
+    if (side === 'player' && this.buildUp > 0 && score.groups.some((g) => g.notes?.some((n) => n.endsWith(' BUILD-UP'))))
+      events.push({ type: 'buildUp', side, mul: 1, stacks: 0, cashed: true, spent: this.buildUpMul(me) });
     if (score.touched?.length) events.push({ type: 'touch', side, cells: score.touched });
     // (The spin carries THE DROP for the show; this event is its record, for the log and the tests.)
     if (drop) events.push({ type: 'drop', side, ...drop });
@@ -516,14 +523,15 @@ export class Fight {
     }
     // HOT STREAK: a jackpot makes your next spin pay x2 (any other spin ends it).
     if (side === 'player') this.hotStreak = me.relics.has('hotstreak') && score.tier === 'triple';
-    // BUILD-UP: a spin with no pair or jackpot adds a stack; a pair or jackpot spends them.
+    // BUILD-UP: a spin with no attack pair or jackpot adds a stack; an attack pair or jackpot spends them (playtest
+    // 2026-11-01: a shield pair spent it on nothing; a spill pair grew it while the plate said "next pair").
     const bu = this.buildUpRule(me);
     if (side === 'player' && bu.step > 0 && !this.over) {
-      const cashed = score.groups.some((g) => g.matched && (g.reels.length >= 2 || !!g.jackpot) && g.base > 0 && PAYING.has(g.symbol));
+      const cashed = score.groups.some((g) => this.buildUpCashes(g));
       const before = this.buildUp;
       const max = Math.round((bu.cap - 1) / bu.step);
       this.buildUp = cashed ? 0 : Math.min(max, this.buildUp + 1);
-      if (this.buildUp !== before) events.push({ type: 'buildUp', side, mul: this.buildUpMul(me), stacks: this.buildUp, ...(cashed ? { cashed: true } : {}) });
+      if (!cashed && this.buildUp !== before) events.push({ type: 'buildUp', side, mul: this.buildUpMul(me), stacks: this.buildUp });
     }
     // CERTIFIED HITMAKER: count the drops.
     if (side === 'player' && this.dropNow) this.drops++;

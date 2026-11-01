@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 import { defaultConfig, type GameConfig, type SymbolId } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
-import { Fight } from '../src/core/fight';
+import { BUILD_UP, Fight } from '../src/core/fight';
 import { isNearMiss, scoreLine } from '../src/core/scoring';
 import { visibleCells } from '../src/core/strip';
 
@@ -99,6 +99,9 @@ describe('fight resolution', () => {
   });
 
   it('enemy shield drops at the start of the enemy turn, after absorbing the player attack', () => {
+    // (Exact numbers from the live rules: BUILD-UP, a test-branch rule, is off here.)
+    BUILD_UP.on = 0;
+    onTestFinished(() => void (BUILD_UP.on = 1));
     const f = fight();
     f.forceNext('player', ['bolt', 'bolt', 'shield']);
     f.step();

@@ -555,7 +555,13 @@ export class Director {
   private async buildUp(e: Ev<'buildUp'>): Promise<void> {
     const g = this.s.gutter;
     g.buildUp = e.mul;
-    if (e.cashed) return;
+    if (e.cashed) {
+      // The plate pours into the hit: its multiplier jumps up off the gutter as it empties.
+      this.s.sounds.coin(6);
+      this.s.sounds.coin(10);
+      this.bg(this.popText(`X${Math.round((e.spent ?? 1) * 100) / 100}!`, W / 2, MACHINE_TOP + MACHINE_H + 6, 4, '#ffd23a', 70, 0.3));
+      return;
+    }
     this.s.sounds.coin(2 + e.stacks * 2);
     g.buildUpPop = 1;
     this.bg(this.c.to(g, 'buildUpPop', 0, 0.35));

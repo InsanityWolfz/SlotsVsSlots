@@ -1,5 +1,6 @@
 import type { Game } from '../game';
-import { UNIT } from '../core/config';
+import { symLabel, UNIT } from '../core/config';
+import { CABINETS } from '../core/cabinets';
 import { OVERTIME, overtimeMul, overtimeRound } from '../core/enemies';
 import { STAKES } from '../core/stakes';
 import { allInRange, DEALER_HANDS, DEALER_RULES } from '../core/fight';
@@ -305,7 +306,8 @@ export class FightView {
       ctx.scale(1 + 0.35 * k, 1 + 0.35 * k);
       drawTitle(ctx, `X${Math.round(bu * 100) / 100}`, 0, 0, p > 0.5 ? '#fff4c0' : '#ffd23a');
       ctx.restore();
-      drawText(ctx, 'ON YOUR NEXT PAIR', cx, gy + 66, T.small, KIT.dim);
+      const cab = this.g.fight.cfg.cabinet;
+      drawText(ctx, `YOUR NEXT ${symLabel(cab ? CABINETS[cab].attack : 'sword')} PAIR`, cx, gy + 66, T.small, KIT.dim);
     }
     if (this.g.fight.isBoss) this.drawPot(ctx, cx, GUTTER_PANEL_Y, t);
     else if (this.g.fight.isDealer) this.drawDeal(ctx, cx, GUTTER_PANEL_Y, t);

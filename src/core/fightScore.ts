@@ -242,7 +242,7 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
     }
     // DRY SPELL: the stacks from dry spins on this pair or jackpot.
     // BUILD-UP: the dead spins banked so far, cashed by this pair or jackpot (DRY SPELL makes it bigger).
-    if (player && f.buildUp > 0 && paying && g.matched && (g.reels.length >= 2 || !!g.jackpot)) {
+    if (player && f.buildUp > 0 && paying && f.buildUpCashes(g)) {
       if (has('dryspell')) fired.add('dryspell');
       const k = f.buildUpMul(me);
       boost(g, k);

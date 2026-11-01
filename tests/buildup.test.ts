@@ -67,6 +67,24 @@ describe('BUILD-UP', () => {
     expect(ofType(events, 'buildUp').at(-1)).toMatchObject({ cashed: true, mul: 1 });
   });
 
+  it('a shield pair neither spends it nor gets it (it grows it, like any spin without a sword pair)', () => {
+    const f = fight();
+    spin(f, DEAD);
+    const plainShield = spin(fight(), ['shield', 'shield', 'empty']).score.groups.find((g) => g.symbol === 'shield')!.amount;
+    const { score } = spin(f, ['shield', 'shield', 'empty']);
+    expect(score.groups.find((g) => g.symbol === 'shield')!.amount).toBe(plainShield);
+    expect(f.buildUp).toBe(2);
+  });
+
+  it('the cash-in tells the screen before the hit lands (the plate empties into it)', () => {
+    const f = fight();
+    spin(f, DEAD);
+    const { events } = spin(f, PAIR);
+    const cash = events.findIndex((e) => e.type === 'buildUp' && e.cashed);
+    expect(events[cash]).toMatchObject({ spent: 1.25 });
+    expect(cash).toBeLessThan(events.findIndex((e) => e.type === 'attack'));
+  });
+
   it('a dead spin tells the screen the new multiplier', () => {
     const f = fight();
     const { events } = spin(f, DEAD);

@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CabinetId } from '../src/core/cabinets';
 import { actLength, generateActMap } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
-import { Fight, RAIN } from '../src/core/fight';
+import { BUILD_UP, Fight, RAIN } from '../src/core/fight';
 import { SANDGLASS_SLOW } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
 import { applyOption, charmOptions, createRun, enemyHp, fightConfig, levelOptions, levelsGained, chooseRoute } from '../src/core/run';
@@ -53,6 +53,9 @@ describe('signature meters (one per slot machine)', () => {
   });
 
   it('JAX: each WILD on the payline fills the meter; full, the next spin pays every cell as a jackpot of itself', () => {
+    // (Exact numbers from the live rules: BUILD-UP, a test-branch rule, is off here.)
+    BUILD_UP.on = 0;
+    onTestFinished(() => void (BUILD_UP.on = 1));
     const f = on('joker', (c) => (c.player.strips = reels3({ sword: 4, shield: 4, wild: 4 })));
     f.sides.player.energy = 60;
     f.forceNext('player', ['wild', 'shield', 'wild']);

@@ -31,8 +31,8 @@ export const PAY = { additive: 0, lightningAdd: 1, teslaOneAxis: 1, stormHeal: 3
 export const VOLUME = { perLevel: 0.32, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5 };
 /**
  * BUILD-UP (test branch, 2026-11-01: dry streaks are plain luck, 29% of act 1 fights have 3+ spins in a row with no
- * pair): each of your spins with no pair or jackpot adds `step` to your next pair or jackpot, up to x`cap`; that pair
- * or jackpot cashes it in. DRY SPELL (relic): it grows by `dryStep`, up to x`dryCap` (the relic's old rule). `on` 0
+ * pair): each of your spins with no pair or jackpot of your hit symbol adds `step` to the next one, up to x`cap`; that
+ * one cashes it in (shield pairs don't: playtest 2026-11-01). DRY SPELL (relic): it grows by `dryStep`, up to x`dryCap` (the relic's old rule). `on` 0
  * turns it off (A/B: dbg.buildUp(false)).
  */
 export const BUILD_UP = { on: 1, step: 0.25, cap: 2, dryStep: 0.5, dryCap: 4 };
