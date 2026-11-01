@@ -107,7 +107,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     startChips: 24,
     symbols: ['goldbar', 'shield'],
     attack: 'goldbar',
-    rule: 'CHIPS HIT AND WIN CHIPS. FULL BAR: HIT HARDER, HEAL 20. JACKPOTS MAKE IT RAIN. 290 HP.',
+    rule: 'CHIPS HIT AND WIN CHIPS. FULL BAR: HIT HARDER, HEAL 20. JACKPOTS MAKE IT RAIN. 310 HP.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },
@@ -168,7 +168,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 2 * UNIT },
     symbols: ['note', 'shield'],
     attack: 'note',
-    rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: NOTES HIT, YOU HEAL 20. 395 HP.',
+    rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: NOTES HIT, YOU HEAL 20. 360 HP.',
     unlock: 'BEAT THE HOUSE',
   },
 };
