@@ -157,10 +157,6 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       echoes += off.echoes;
       noteCells += off.cells.length;
       if (off.keen) g.pierce = true;
-      if (me.relics.has('subwoofer')) {
-        if (!g.pierce && foe.shield > 0) fired.add('subwoofer');
-        g.pierce = true;
-      }
       if (off.cells.length) notes.push(`DROP +${off.cells.length}`);
     }
     // MIDAS TOUCH: each gold touch on a sword or shield counts as a gold charm.

@@ -847,6 +847,13 @@ export class Fight {
       me.energy = (me.relics.has('turntable') ? VOLUME.turntable : VOLUME.after) * UNIT;
       if (me.relics.has('turntable')) events.push({ type: 'relic', side: me.side, relic: 'turntable' });
       events.push({ type: 'payoff', side: me.side, kind: 'volume', left: me.energy });
+      // SUBWOOFER (the shield build's DROP, 2026-11-01 trial, Body Slam's shape): THE DROP also hits for all the shield
+      // you hold (a shield lasts one enemy turn, so a shield DROP did little; this cashes the shield build in).
+      if (me.relics.has('subwoofer') && me.shield > 0 && !this.over) {
+        events.push({ type: 'relic', side: me.side, relic: 'subwoofer' });
+        this.hit(me, this.sides[other(me.side)], me.shield, [], events);
+        if (this.over) return;
+      }
       this.payoffHeal(me, events);
       return;
     }
