@@ -118,7 +118,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'TESLA',
     sprite: 'cabinetTesla',
     blurb: 'IT HUMS WHEN YOU LOOK AT IT',
-    hp: 31.5 * UNIT,
+    hp: 31 * UNIT,
     // No swords (2026-10-07): bolts are TESLA's weapon, and their damage is the lightning.
     strips: r3({ shield: 6, bolt: 6 }),
     gilded: [{ reel: 0, symbol: 'bolt', enh: 'charged', n: 4 }],
@@ -126,12 +126,13 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: UNIT / 2 },
     symbols: ['bolt', 'shield'],
     attack: 'bolt',
-    rule: 'BOLTS CHARGE LIGHTNING: 60 DAMAGE, PIERCES SHIELDS, HEALS 5. 315 HP.',
+    rule: 'BOLTS CHARGE LIGHTNING: 22 A BOLT, PIERCES SHIELDS. A STORM HEALS 15. 310 HP.',
     unlock: 'REACH THE HOUSE',
     // 40 (2026-10-12): LIGHTNING ROD is gone (97% of TESLA runs took it; it set the cost to 40 and hit 90).
     specialCost: 4 * UNIT,
     // 60 -> 50 (2026-10-12): TESLA turned its pay into damage faster than anyone (sim: 1125 / spin in act 3 vs ~540).
-    specialDamage: 6 * UNIT,
+    // 44 (2026-11-01, the one-axis rework): a bolt is half of it (22) for half the charge (20); the storm heals once.
+    specialDamage: 4.4 * UNIT,
   },
   joker: {
     id: 'joker',

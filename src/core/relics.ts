@@ -120,7 +120,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
  */
 const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>> = {
   fang: {
-    tesla: 'LIGHTNING HEALS 5 HP',
+    tesla: 'EACH LIGHTNING STORM HEALS 15 HP',
     midas: 'HIGH ROLLER PAYOFFS HEAL 30 HP',
     joker: 'ALL-JACKPOT SPINS HEAL 30 HP',
     jukebox: 'THE DROP HEALS 30 HP',

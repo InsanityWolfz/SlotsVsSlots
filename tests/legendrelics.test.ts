@@ -121,16 +121,18 @@ describe('legendary relics from the big choices (2026-10-15)', () => {
     expect(holy.notes).toContain('CRUSADE +10');
   });
 
-  it('CHAIN LIGHTNING: lightning damage +100%', () => {
-    const strike = (relics: RelicId[]) => {
+  it('CHAIN LIGHTNING: lightning damage +100% (one axis: twice the bolts, each the same)', () => {
+    const storm = (relics: RelicId[]) => {
       const cfg = fightConfig(run('tesla', relics), base);
       cfg.enemy = { hp: 1e9, strips: reels3({ shield: 12 }) };
       const f = new Fight(cfg, 7);
-      f.sides.player.energy = cfg.specialCost - 1;
       f.forceNext('player', ['bolt', 'bolt', 'bolt']);
-      return ofType(f.step().events, 'specialFire')[0].amount;
+      const bolts = ofType(f.step().events, 'specialFire');
+      return { n: bolts.length, each: bolts[0].amount };
     };
-    expect(strike(['chainlightning'])).toBe(2 * strike([]));
+    const plain = storm([]), chain = storm(['chainlightning']);
+    expect(chain.each).toBe(plain.each);
+    expect(chain.n).toBeGreaterThanOrEqual(2 * plain.n - 1);
   });
 
   it('HIGH CARD: jackpots pay x1.5, pairs pay half', () => {

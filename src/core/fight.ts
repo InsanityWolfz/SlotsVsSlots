@@ -143,6 +143,12 @@ export class Fight {
     this.special = hasSpecial(this.cabinet);
     if (this.cabinet?.specialCost) this.cfg.specialCost = this.cabinet.specialCost;
     if (this.cabinet?.specialDamage) this.cfg.specialDamage = this.cabinet.specialDamage;
+    // TESLA, one axis: half-size bolts (the boosts' base stays the full strike's, `strikeBase`).
+    this.strikeBase = this.cfg.specialDamage;
+    if (this.oneAxis) {
+      this.cfg.specialCost = Math.round(this.cfg.specialCost / 2);
+      this.cfg.specialDamage = Math.round(this.cfg.specialDamage / 2);
+    }
     // MIDAS: the VAULT starts pre-filled by the chips you hold (1 per 2 chips, never full).
     if (this.meter?.kind === 'vault') p.energy = Math.max(p.energy, this.vaultBase());
     // QUICKENING (legendary relic): your meter starts every fight half full (it was one short of full, and THE
@@ -1048,8 +1054,24 @@ export class Fight {
     return h.hpDamage;
   }
 
+  /** TESLA, one axis (PAY.teslaOneAxis): the player's lightning boosts go into its charge, not into each bolt. */
+  private get oneAxis(): boolean {
+    return !!PAY.teslaOneAxis && this.special && !!this.cabinet;
+  }
+  private strikeBase = 0;
+  /** Every lightning boost as a share of a full strike: BLAZE's flat damage, OVERCHARGE, LIVE WIRE, MELTDOWN, CHAIN. */
+  private lightningBoost(me: Combatant): number {
+    const over = me.relics.has('overcharge') ? OVERCHARGE.lightning : 0;
+    const live = me.relics.has('livewire') ? NEW_RELIC.livewireMul : 0;
+    const melt = me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, Math.max(0, me.maxHp - me.hp) * NEW_RELIC.meltdownRate) : 0;
+    const chain = me.relics.has('chainlightning') ? LEGEND_RELIC.chainAdd : 0;
+    return over + live + melt + chain + this.blaze / Math.max(1, this.strikeBase);
+  }
+
   private gainEnergy(me: Combatant, amount: number, reels: number[], events: CombatEvent[]): void {
     if (me.side === 'player') amount *= this.cfg.player.meterMul ?? 1;
+    // TESLA, one axis: the boosts make more bolts (a storm grows longer, never each bolt bigger).
+    if (me.side === 'player' && this.oneAxis) amount = Math.round(amount * (1 + this.lightningBoost(me)));
     me.energy += amount;
     events.push({ type: 'energyGain', side: me.side, reels, amount, total: me.energy });
     if (this.stormHold === me.side) this.stormPending = true;
@@ -1074,13 +1096,15 @@ export class Fight {
     const spent = () => foe.side === 'enemy' && !!this.cfg.enemy.owner && this.ownerHitTurn === this.turn;
     while (me.energy >= this.cfg.specialCost && !this.over && foe.hp > 0 && !spent()) {
       me.energy -= this.cfg.specialCost;
-      const raw = this.cfg.specialDamage + (me.side === 'player' ? this.blaze : 0);
+      const raw = this.cfg.specialDamage + (me.side === 'player' && !this.oneAxis ? this.blaze : 0);
       // MELTDOWN: +1% per 1% of HP you're missing (capped).
       const melt = me.side === 'player' && me.relics.has('meltdown') ? Math.min(NEW_RELIC.meltdownCap, Math.max(0, me.maxHp - me.hp) * NEW_RELIC.meltdownRate) : 0;
       // CHAIN LIGHTNING (legendary relic): +100%.
       const chain = me.side === 'player' && me.relics.has('chainlightning') ? LEGEND_RELIC.chainAdd : 0;
       // PAY.lightningAdd: the lightning's boosts add up instead of multiplying.
-      let dmg = PAY.lightningAdd
+      let dmg = me.side === 'player' && this.oneAxis
+        ? raw
+        : PAY.lightningAdd
         ? unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0) + (live ? NEW_RELIC.livewireMul : 0) + melt + chain))
         : unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1) * (1 + melt) * (1 + chain));
       // OVERTIME grows each strike (a hit), not the charge behind it.
@@ -1107,7 +1131,8 @@ export class Fight {
         events.push({ type: 'hpCost', side: 'player', amount: cost, hp: me.hp });
       }
     }
-    if (me.side === 'player' && strikes > 0) this.payoffHeal(me, events, strikes);
+    // TESLA, one axis: the storm heals once (it healed per bolt: 72-bolt storms walked through THE DEALER).
+    if (me.side === 'player' && strikes > 0) this.payoffHeal(me, events, this.oneAxis ? PAY.stormHeal : strikes);
   }
 
   heal(me: Combatant, amount: number, source: HealSource, events: CombatEvent[], parts?: { label: string; amount: number }[]): void {

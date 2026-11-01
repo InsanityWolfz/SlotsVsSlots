@@ -21,7 +21,12 @@ export const POT_STEAL = { any: 1 };
  * multiplying each other (the pair / jackpot tier still multiplies). lightningAdd 1 (on since 2026-10-12, the user's
  * call): TESLA's bolts pool (their charge), and the lightning's own boosts add up too (+30% and +100% make +130%, not
  * x2.6; CHAIN LIGHTNING is +100%). Slows TESLA's late growth without a cap. */
-export const PAY = { additive: 0, lightningAdd: 1 };
+/**
+ * teslaOneAxis (TESLA rework, user 2026-11-01, option 1: "more action and less sustain"): every lightning boost adds
+ * CHARGE (more bolts) and every bolt hits the same; bolts are half size (half the charge for half the damage, so a bolt
+ * pair fires at once); the storm heals once, not per bolt. `stormHeal`: that heal (x the machine's per-bolt heal).
+ */
+export const PAY = { additive: 0, lightningAdd: 1, teslaOneAxis: 1, stormHeal: 3 };
 /** THE JUKEBOX: +25% note damage per volume level (was +20%, 2026-10-12), max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
 export const VOLUME = { perLevel: 0.32, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5 };
 export const RAIN = { maxChips: 100, perChip: 1.5, cost: 5, rainmakerCost: 2, chipLess: 1 };
