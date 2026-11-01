@@ -305,6 +305,12 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
 - **Targets for the sim bot** (run win %, every machine within 5 points): WHITE 60, RED 50, GREEN 36, BLACK 28,
   BLUE 20, GOLD 14. Each boss's win rate (of runs that reach it) within 10 points across machines. Rough per-boss
   aims: House about 85, THE WHEEL about 85, the Dealer about 65.
+- **One heal rule (user, 2026-11-01: the machines' heals were five different rules):** every meter payoff heals 15:
+  BANKROLL's HIGH ROLLER payoff, THE JUKEBOX's DROP, JOKER's all-jackpot spin (it had none) and TESLA's storm (once a
+  storm). KNIGHT has no meter, so no heal (the user: a heal would make KNIGHT too strong; it has the most HP and its boss
+  levels). To stay on target: BANKROLL 340 HP (was 310), JUKEBOX 385 (was 360), JOKER 330 (was 390). Sim 500 runs,
+  WHITE / RED / GREEN / BLACK / BLUE / GOLD: BANKROLL 57 / 53 / 38 / 28 / 20 / 15, JUKEBOX 63 / 54 / 38 / 27 / 15 / 7,
+  JOKER 56 / 49 / 38 / 32 / 22 / 16 (KNIGHT and TESLA unchanged).
 - **Phase 4 balance batch (2026-10-31, from the triage: every machine 7-23 points over target, the back half of a run
   one-spin kills):** act 2 regulars x2.2 HP (was 1.6), act 3 x2.0 (was 1.4), act 2-3 enemies +3 swords a reel (was 2);
   THE HOUSE 1200 HP (was 1000), THE WHEEL 4000 (was 3500; x0.85 from GREEN); JUKEBOX 360 HP (was 395), BANKROLL 310

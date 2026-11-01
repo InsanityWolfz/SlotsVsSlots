@@ -98,16 +98,17 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'BANKROLL',
     sprite: 'cabinetMidas',
     blurb: 'MAKE IT RAIN.',
-    hp: 31 * UNIT,
+    hp: 34 * UNIT,
     // No swords (2026-10-07): CASSIDY flings his chips. Each chip symbol hits, pays a chip and fills the bar.
     strips: r3({ shield: 6, goldbar: 6 }),
     // No gold-sword start (a leftover from MIDAS): 8 more chips instead (user playtest).
     gilded: [],
-    meter: { kind: 'vault', symbol: 'goldbar', cost: 10 * UNIT, heal: 2 * UNIT },
+    // ONE HEAL RULE (user, 2026-11-01): every meter payoff heals 15 (KNIGHT has no meter, so no heal).
+    meter: { kind: 'vault', symbol: 'goldbar', cost: 10 * UNIT, heal: 1.5 * UNIT },
     startChips: 24,
     symbols: ['goldbar', 'shield'],
     attack: 'goldbar',
-    rule: 'CHIPS HIT AND WIN CHIPS. FULL BAR: HIT HARDER, HEAL 20. JACKPOTS MAKE IT RAIN. 310 HP.',
+    rule: 'CHIPS HIT AND WIN CHIPS. FULL BAR: HIT HARDER, HEAL 15. JACKPOTS MAKE IT RAIN. 340 HP.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },
@@ -143,15 +144,15 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     blurb: 'NOTHING IS WHAT IT SEEMS',
     // 2026-10-12 (user): 380 HP and its jackpot payoff no longer heals (its healing grew with its WILDS: GREEN 53).
     // 335 -> 390 with the draft/Cashier split (2026-10-15: it bought WILDS at the Cashier; sim 44 / 26 -> 57 / 35).
-    hp: 39 * UNIT,
+    hp: 33 * UNIT,
     // Cards, not swords (2026-10-07): JAX throws playing cards. They hit like swords.
     strips: r3({ ace: 5, shield: 5, wild: 2 }),
     gilded: [],
     // A WILD fills 40 of 100 (was 20: in act 1 the meter rarely filled, so JAX's payoff never showed: feel playtest).
-    meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 0, perWild: 5 * UNIT },
+    meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 1.5 * UNIT, perWild: 5 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
-    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS. 390 HP.',
+    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS, HEAL 15. 330 HP.',
     unlock: 'BEAT THE HOUSE WITH WILDS',
     jokerWilds: true,
   },
@@ -162,14 +163,14 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'JUKEBOX',
     sprite: 'cabinetJukebox',
     blurb: 'TURN IT UP',
-    hp: 36 * UNIT,
+    hp: 38.5 * UNIT,
     // Replaces BRIAR (user, 2026-10-08): notes and shields. NOTES turn up the volume; at the max the beat drops.
     strips: r3({ note: 6, shield: 6 }),
     gilded: [],
-    meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 2 * UNIT },
+    meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 1.5 * UNIT },
     symbols: ['note', 'shield'],
     attack: 'note',
-    rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: NOTES HIT, YOU HEAL 20. 360 HP.',
+    rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: NOTES HIT, YOU HEAL 15. 385 HP.',
     unlock: 'BEAT THE HOUSE',
   },
 };
