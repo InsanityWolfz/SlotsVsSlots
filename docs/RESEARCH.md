@@ -385,6 +385,90 @@ Five families of answer; most games mix two.
   can see across goes (bridge UFO catchers). A "skill" look over pure chance reads as rigged (Key Master), and so does
   a flat low chance repeated (Wheel of Fortune, Isaac).
 
+### Hits x damage: keeping two scaling axes from multiplying
+- **Hearthstone Spell Damage on multi-hit spells:** on spells that fire random missiles (Arcane Missiles, Avenging
+  Wrath, Cinderstorm), +Spell Damage adds missiles; each still deals 1. On Greater Arcane Missiles it raises each
+  missile's damage and the count stays. Each card scales on one axis only, so +1 Spell Damage is always worth +1 hit,
+  never +N. [W, via search snippets; wiki not fetchable] [Hearthstone wiki: Spell Damage](https://hearthstone.wiki.gg/wiki/Spell_Damage)
+- **Slay the Spire Lightning orbs:** passive 3 damage at end of turn, Evoke 8; Focus adds to both, per orb, so output is
+  orbs x (base + Focus). The count axis has a hard cap (orb slots, max 10: well-known rule, not quoted). Electrodynamics
+  makes Lightning hit all enemies. The Focus axis is paid for: Biased Cognition gives Focus and drains it every turn
+  ("useless in boss battles" per players); in Slay the Spire 2 most Focus gains last only the turn, per guides.
+  [W] [StS wiki: Focus](https://slaythespire.wiki.gg/wiki/Focus), [Electrodynamics](https://slay-the-spire.fandom.com/wiki/Electrodynamics),
+  [F] [Steam: Biased Cognition](https://steamcommunity.com/app/646570/discussions/0/1697174779855597685), [allthings.how: StS2 Defect](https://allthings.how/mastering-the-defect-in-slay-the-spire-2-best-decks-key-cards-and-what-changed/)
+- **Peglin:** a shot's damage is the sum of per-peg values (crit pegs swap in the crit value), released as one hit.
+  Patch 0.7.34 (June 2022) changed Crit Fleece from compounding to additive stacking "to prevent damage from
+  overflowing". [W] [Peglin wiki: 0.7.34](https://peglin.wiki.gg/wiki/0.7.34), [Critsomallos Fleece](https://peglin.wiki.gg/wiki/Critsomallos_Fleece)
+- **Risk of Rain 2 proc coefficient:** every hit carries a coefficient that scales its chance to trigger on-hit items;
+  Ukulele's chain lightning (25% x coefficient, up to 3 targets, 80% of the hit's damage each) has coefficient 0.2, so
+  a chain can trigger further chains only rarely (AtG Missile from Ukulele: 2%). Stacking Ukulele adds targets (+2) and
+  range, not chance or damage. Damping each generation below 1 is what stops proc loops from running away (opinion;
+  no Hopoo statement found). [W] [RoR2 wiki: Proc Coefficient](https://riskofrain2.wiki.gg/wiki/Proc_Coefficient),
+  [Ukulele](https://riskofrain.wiki.gg/wiki/Ukulele_(Risk_of_Rain_2))
+- **Hades chain lightning:** Zeus's chain effects bounce between foes (Hades II Static Shock: up to 4 bounces, 10
+  damage each); Storm Lightning adds bounces (+2 common, Hades I); Hades II's Conductor duo adds +15% per bounce. Guides
+  agree bounce boons are weak against lone bosses: the count axis needs extra targets to pay. [F] [PC Invasion: Zeus](https://www.pcinvasion.com/hades-guide-olympian-god-boons-skills/10),
+  [Gfinity: Hades II Zeus](https://www.gfinityesports.com/article/hades-2-zeus-breakdown-all-boons-best-weapons-more)
+- **Monster Train multistrike x Rage:** Rage adds attack and multistrike repeats the attack, so the two multiply; players
+  report Branded Warrior "1k per swing, x3". Multistrike counts stay small (1-3) and come from few sources. No
+  official balance statement found. [F] [ProGameGuides](https://progameguides.com/monster-train/combos-in-monster-train-and-how-they-work/),
+  [Steam](https://steamcommunity.com/app/1102190/discussions/0/2284960483090032982)
+- **Balatro keeps two axes on purpose** (Chips x Mult, see Scoring engines) and pays for it with targets that grow
+  ~x2 an ante and run away in endless (see Endgame bosses). The Plasma Deck averages Chips and Mult before multiplying
+  (30 + 2 -> 16 x 16 = 256) and doubles blind size; players say it rewards stacking whichever axis is easier.
+  [F] [SI: Plasma Deck](https://videogames.si.com/guides/balatro-plasma-deck), [Insider Gaming](https://insider-gaming.com/how-to-unlock-plasma-deck-balatro/)
+- **The pattern** (opinion, from the above): designers who want "count x damage" to stay linear do one of four things:
+  (1) give each boost one axis only (Hearthstone); (2) hard-cap the count (orb slots, Ukulele targets, multistrike
+  1-3); (3) damp each extra generation below 1 (proc coefficient, fighting-game proration); (4) make the damage axis
+  temporary or paid for (Biased Cognition, StS2 Focus). Compounding that overflows gets patched to additive (Peglin).
+  Only Balatro keeps the product, and it answers with exponential targets.
+
+### Endgame and endless final bosses (when the player's numbers are absurd)
+- **Vampire Survivors, the Reaper (Death):** at 30:00 on the main stages the Reaper spawns, then one more each minute;
+  each hit deals 65,535 (a one-shot). Its HP is 655,350 x your level when it spawns (Steam math; ~146 million at level
+  223), so it scales to your power. It's the game's "run over" signal, not a boss you're asked to fight; killing it
+  takes a dedicated build (Crimson Shroud caps damage taken, 10 per hit per the wiki, 100 per another guide, and its
+  retaliation adds 1% of the Reaper's max HP), and players treat it as a celebrated feat. [F] [Gfinity](https://www.gfinityesports.com/guides/vampire-survivors-death-how-to-beat-final-boss),
+  [Steam: Reaper HP](https://steamcommunity.com/app/1794680/discussions/0/5675129542144162400), [W] [VS wiki: The Reaper](https://vampire-survivors.fandom.com/wiki/The_Reaper)
+- **Slay the Spire's Corrupt Heart:** 750 HP (800 at Ascension 9+), Invincible 300 (it loses at most 300 HP a turn, so
+  at least 3 turns; guides say 4 at high Ascension), Beat of Death (1 damage to you per card played). The cap is a shown
+  number that counts down inside your turn, so players plan bursts around it ("don't waste resources once the cap is
+  reached"). Invincible blocks HP loss, not damage, per a Steam thread. [F] [HighGround](https://www.highgroundgaming.com/slay-the-spire-corrupt-heart-guide/),
+  [Steam: Invincible](https://steamcommunity.com/app/646570/discussions/0/4111168970109533969)
+- **Binding of Isaac damage scaling:** some bosses (Hush among them) have a soft DPS cap: base HP / an armor value;
+  damage above it is reduced, and a single hit over 4x the cap is reduced up front. Hidden (no number on screen).
+  [W, via search snippets] [Isaac wiki: Damage Scaling](https://bindingofisaacrebirth.wiki.gg/wiki/Damage_Scaling)
+- **Balatro endless and "naneinf":** after ante 8 targets grow much faster (x20 or more an ante, per Balatro
+  University); at ante 39 the required score overflows the double float and becomes NaN, which no score can beat.
+  The community treats the overflow as the absurdist ceiling and "highest ante" as the score. [W] [Wikipedia: Balatro](https://en.wikipedia.org/wiki/Balatro),
+  [F] [Setsideb: Balatro University on naneinf](https://setsideb.com/tag/balatrouniversity/), [Steam](https://steamcommunity.com/app/2379780/discussions/0/4346606879522813524)
+- **Diablo III Greater Rifts:** a 15-minute timer to fill a bar and kill the Rift Guardian; monster HP x1.17 a tier
+  (compounding), tiers to 150; leaderboards rank the tier reached, then time. Exponential HP against exponential power
+  makes the tier roughly the log of your power: a 10x stronger build gains ~15 tiers. [F] [Maxroll: GR mechanics](https://maxroll.gg/d3/resources/greater-rift-explained),
+  [Icy Veins](https://www.icy-veins.com/d3/how-to-run-greater-rifts-efficiently-guide)
+- **Raid: Shadow Legends Clan Boss (damage as reward):** a boss you can't kill; each attempt (a key) is scored by
+  damage dealt, and damage thresholds pay chest tiers (Easy Demon Lord ~286K for the lowest to ~1.1M for Warrior;
+  Ultra-Nightmare tiers in the tens of millions). Players optimise for the next threshold. [F] [ayumilove: Demon Lord](https://ayumilove.net/raid-shadow-legends-champion-ranking-in-clan-boss/),
+  [HellHades](https://hellhades.com/ultimate-clan-boss-guide-everything-you-need-to-know/)
+- **Damage caps as something to break:** Final Fantasy X caps a hit at 9,999; Break Damage Limit (celestial weapons,
+  or 60 Dark Matter) raises it to 99,999, and breaking it is a late-game goal. MapleStory raised its cap in steps
+  (players recall 200K, then 1M, 50M, 10 billion) and Nexon's 2016 5th Job update announced the cap "removed".
+  [W] [FF wiki: Break Damage Limit](https://finalfantasy.fandom.com/wiki/Break_Damage_Limit), [F] [Nexon forum](https://forums.maplestory.nexon.net/discussion/comment/83354),
+  [press release](https://www.media-outreach.vn/news/singapore/2016/11/15/2812/maplestory-launches-5th-job-advancement-after-an-almost-ten-year-long-wait/)
+- **Hades Extreme Measures:** a Pact of Punishment condition (Heat) that gives every boss new attacks rather than more
+  HP; the Pact caps at ~63 Heat and the reported unseeded record clear is 60. [F] [RPG Site](https://rpgsite.net/feature/10287-hades-pact-of-punishment-heat-modifiers-and-how-to-maximize-your-rewards),
+  [Prima](https://primagames.com/gaming/hades-guide-pact-of-punishment-modifiers-heat)
+- **Risk of Rain 2:** Mithrix's last phase takes your items (they return as you damage him); the run's difficulty
+  rises with time and each loop, monster level to 99. **Brotato endless:** after wave 20, every wave is 60 s, 0-3
+  elite waves per 10, boss HP 15,000 + 750 a wave (a beta patch; may be outdated). **LBAL endless:** rent starts at
+  1,000 and grows 500 a payment until you miss one. [F] [PC Gamer: Mithrix](https://www.pcgamer.com/uk/risk-of-rain-2-mithrix-boss-guide),
+  [W] [Brotato wiki: Waves](https://brotato.wiki.spellsandguns.com/Waves), [LBAL wiki: Rent](https://luck-be-a-landlord.fandom.com/wiki/Rent)
+- **The pattern** (opinion, from the above): with absurd numbers, the endgames that land either (a) show a cap as a
+  number the player plays around (the Heart), (b) score how far you got on a log-like ladder (Greater Rift tiers,
+  Clan Boss chests, Balatro's highest ante), or (c) end the run on a clock with a "not meant to win" boss that a few
+  builds can still kill (the Reaper). A cap that ignores the build entirely (hidden, like Isaac's) or a hit that's
+  thrown away reads as the game cheating; caps that you can break are rewards (FFX).
+
 ## Battlers
 ### Head-to-head and async races (Super Auto Pets, Backpack Battles, The Bazaar)
 - **Super Auto Pets (Arena):** 10 wins (trophies) to win, 5 lives (Easy has more); a loss costs a life, a draw
@@ -619,3 +703,33 @@ Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP,
 - **Opinion:** rework before cutting: keep the pick, make each miss move the prize visibly toward the chute (the
   odds climb, as Scrap Ooze's +10%), and say SO CLOSE only when it was. Then every go is a stop-or-push call, the
   HIGHER OR LOWER tension in a different shape.
+
+### TESLA scaling one way (open; phase 4)
+- **Today** (HP_GAME.md): bolt pays become CHARGE; every 40 fires a 60-damage strike (ignores shields, heals 5).
+  Symbol levels raise the charge (strike count); BLAZE, OVERCHARGE, LIVE WIRE, MELTDOWN, CHAIN LIGHTNING raise each
+  strike (added together since 2026-10-12, but still multiplied by the count). Leftover charge carries over, so 27% of
+  its spins deal nothing; THE DEALER falls 89-96% when reached.
+- **Precedent:** see Roguelikes > Hits x damage. Closest fit: Hearthstone's Arcane Missiles (boosts add bolts, each
+  bolt fixed) and Slay the Spire's orb-slot cap; Peglin's patch shows the fix designers reach for when a product
+  overflows.
+- **Pitfalls (opinion, applying the above):** if strikes become the only axis, the heal (5 a strike) grows with it, and
+  phase 0 already found TESLA's storms out-heal act 3; long storms cost animation time (StS caps orbs at 10). If damage
+  per strike becomes the only axis, symbol levels lose their visible pay (fewer things change on screen). The 40-charge
+  threshold, not the axis, is what makes dead spins: a lower threshold with a smaller strike keeps the damage rate and
+  cuts them.
+- **Opinion:** "every boost adds bolts, every bolt hits for the same" (the Hearthstone rule) reads best with SPIN as
+  the input: a storm is counted in bolts, so power shows as a longer storm, not a bigger number on each bolt. The heal
+  would need to be per storm, not per strike.
+
+### THE OWNER as a wall (open; phase 4)
+- **Today** (HP_GAME.md): 11 HP, a turn that hits takes exactly 1; beaten ~1.3% of meetings (the user's bar: under 2%).
+  Shields, multipliers and VETERAN don't matter against him, so the last fight ignores the build's main number.
+- **Precedent:** see Roguelikes > Endgame bosses: the Heart's shown per-turn cap, Greater Rift tiers and Clan Boss
+  chests (damage scored on a ladder), the Reaper (a scaled wall that ends the run; killing it is a feat).
+- **Pitfalls:** today's rule is a hidden-style cap (Isaac) dressed as HP: the shown hit is thrown away. Honest HP with a
+  linear bar can't hold numbers that differ by orders of magnitude between builds; a wall with no win makes BROKE
+  THE BANK meaningless; scaling his HP to your power (the Reaper) is fine as an announced ending, rubber-banding if
+  it's hidden.
+- **Opinion:** damage as the score on a x10 ladder (each milestone a banner that changes him, as 75/50/25% do now), the
+  run still ending when he kills you, and the top milestone as BROKE THE BANK tuned to under 2%. A log ladder makes
+  a 10x stronger build worth one more milestone, not an instant win.
