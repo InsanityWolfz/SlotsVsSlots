@@ -41,7 +41,7 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   bash: 'LEFTOVER SHIELD HITS THE ENEMY',
   turntable: 'AFTER THE DROP, VOLUME FALLS TO 5',
   mixtape: 'A SPIN WITH NO NOTE KEEPS THE VOLUME',
-  subwoofer: 'THE DROP: SHIELDS YOU CAN SEE SHIELD YOU',
+  subwoofer: 'THE DROP ALSO HITS FOR YOUR SHIELD',
   armoredcar: 'SHIELD YOU GAIN FILLS HIGH ROLLER',
   safedeposit: 'CHIPS ALSO HIT FOR SHIELD GAINED',
   dryspell: 'EVERY SPIN WITHOUT A PAIR: NEXT WIN +50%',

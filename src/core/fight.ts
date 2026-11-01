@@ -847,27 +847,12 @@ export class Fight {
       me.energy = (me.relics.has('turntable') ? VOLUME.turntable : VOLUME.after) * UNIT;
       if (me.relics.has('turntable')) events.push({ type: 'relic', side: me.side, relic: 'turntable' });
       events.push({ type: 'payoff', side: me.side, kind: 'volume', left: me.energy });
-      // SUBWOOFER (the shield build's DROP, 2026-11-01 trial): every shield you can see shields you, the way every
-      // note you can see hits (it pierced shields; banning it raised JUKEBOX's win rate).
-      if (me.relics.has('subwoofer')) {
-        const sv = playerSymValue(me.levels, 'shield', this.cfg.base.shield);
-        const reels: number[] = [];
-        let n = 0;
-        me.reels.forEach((reel, r) => {
-          if (me.locked[r] > 0) return;
-          for (const d of [-1, 0, 1]) {
-            const c = reel.cells[(reel.stop + d + reel.cells.length) % reel.cells.length];
-            if (c && effectiveSymbol(c) === 'shield') {
-              n++;
-              if (!reels.includes(r)) reels.push(r);
-            }
-          }
-        });
-        if (n > 0) {
-          me.shield += n * sv;
-          events.push({ type: 'relic', side: me.side, relic: 'subwoofer' });
-          events.push({ type: 'shieldGain', side: me.side, reels, amount: n * sv, total: me.shield });
-        }
+      // SUBWOOFER (the shield build's DROP, 2026-11-01 trial, Body Slam's shape): THE DROP also hits for all the shield
+      // you hold (a shield lasts one enemy turn, so a shield DROP did little; this cashes the shield build in).
+      if (me.relics.has('subwoofer') && me.shield > 0 && !this.over) {
+        events.push({ type: 'relic', side: me.side, relic: 'subwoofer' });
+        this.hit(me, this.sides[other(me.side)], me.shield, [], events);
+        if (this.over) return;
       }
       this.payoffHeal(me, events);
       return;
