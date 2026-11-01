@@ -166,19 +166,8 @@ describe('AUDIT: GOLD "X2 TO ITS GROUP (GOLD IN A GROUP ADDS UP)" / card "X2 PAY
     expect(charmShortText('gold', 2)).toBe('X3 PAY');
   });
 
-  it('TESLA (actual): a GOLD bolt next to another multiplier ADDS into a pool (HOT STREAK x2 + GOLD x2 = x3, not x4)', () => {
-    const run = (gilded: Gild[]) => {
-      const f = make('tesla', { strips: TESLA(), gilded });
-      f.hotStreak = true;
-      return group(spin(f, BBB).score, 'bolt');
-    };
-    const p = run([]);
-    const g = run([on(0, 'bolt', 'gold')]);
-    expect(g.amount / p.amount).toBeCloseTo(1.5, 5);
-  });
-
-  // OPEN CALL (user): on TESLA (PAY.lightningAdd) bolt multipliers pool additively, so GOLD next to HOT STREAK is x1.5, not x2.
-  it.skip('OPEN CALL: TESLA GOLD bolt doubles its group even with another multiplier on it (actually x1.5)', () => {
+  // (user, 2026-11-01: GOLD and GLASS are true multipliers on TESLA's bolts; the other boosts still add up.)
+  it('TESLA: a GOLD bolt doubles its group even with another multiplier on it', () => {
     const f0 = make('tesla', { strips: TESLA() });
     f0.hotStreak = true;
     const f1 = make('tesla', { strips: TESLA(), gilded: [on(0, 'bolt', 'gold')] });

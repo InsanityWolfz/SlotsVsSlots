@@ -327,6 +327,12 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
   an act's boss still heals you), GOLDEN HOURGLASS (not THE WHEEL's or THE DEALER's), FANG's machine texts (MORE),
   OVERCHARGE and BLAZE on TESLA (lightning damage +%, as charge), ECHO's card, and the faces of TOWER SHIELD, MELTDOWN,
   ARMORED CAR and GOLDEN PARACHUTE (their limits). BULWARK (`spiked`) is no longer offered (old saves only).
+- **MAKE IT RAIN's floor (user, 2026-11-01: "it should have a floor"):** a rain never hits for less than the chip
+  jackpot it replaces (under 20 chips it hit for less; OPEN BAR at 0 chips rained for 0). Most rains came at low chips,
+  so the floor alone took BANKROLL from 56 / 37 / 20 (WHITE / GREEN / BLUE) to 66 / 52 / 33; the rain costs 10 chips
+  now (was 5; RAINMAKER still 2), back to 55 / 36 / 20 (sim 1,000 runs). (HP was a weak lever: 260 HP only took 10 off.)
+- **GOLD and GLASS on TESLA (user, 2026-11-01):** true multipliers on bolts (TESLA's other boosts still add up), so GOLD
+  next to HOT STREAK is x4, not x3. TESLA 63 / 43 / 23 (it was 62 / 41 at WHITE / GREEN; the next balance batch checks it).
 - **Phase 4 balance batch (2026-10-31, from the triage: every machine 7-23 points over target, the back half of a run
   one-spin kills):** act 2 regulars x2.2 HP (was 1.6), act 3 x2.0 (was 1.4), act 2-3 enemies +3 swords a reel (was 2);
   THE HOUSE 1200 HP (was 1000), THE WHEEL 4000 (was 3500; x0.85 from GREEN); JUKEBOX 360 HP (was 395), BANKROLL 310

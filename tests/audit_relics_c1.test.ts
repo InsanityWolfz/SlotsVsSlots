@@ -69,7 +69,7 @@ describe('texts: full and card face, on the one machine each can appear on', () 
     expect(faces.greatsword).toEqual(['YOUR SWORDS PAY X1.5', 'YOUR SWORDS PAY X1.5']);
     expect(faces.crusade).toEqual(['+5 SWORD DAMAGE FOR EVERY FIGHT YOU WIN', '+5 SWORD DAMAGE PER FIGHT WON']);
     expect(faces.compound).toEqual(['HIGH ROLLER CAP INCREASES TO X4', 'HIGH ROLLER CAPS AT X4']);
-    expect(faces.rainmaker).toEqual(['MAKE IT RAIN COSTS 2 CHIPS INSTEAD OF 5', 'MAKE IT RAIN COSTS 2 CHIPS']);
+    expect(faces.rainmaker).toEqual(['MAKE IT RAIN COSTS 2 CHIPS INSTEAD OF 10', 'MAKE IT RAIN COSTS 2 CHIPS']);
     expect(faces.armoredcar).toEqual(["HIGH ROLLER PAYOFFS COUNT THAT SPIN'S SHIELD AS CHIPS: 1 PER 5", 'HIGH ROLLER: 5 SHIELD COUNTS AS 1 CHIP']);
     expect(faces.safedeposit).toEqual(["WHEN CHIPS HIT, THEY ALSO HIT FOR THAT SPIN'S SHIELD", 'CHIPS ALSO HIT FOR YOUR SHIELD']);
     expect(faces.parachute).toEqual(['A HIT THAT WOULD KILL YOU: PAY 10 CHIPS, LAND AT 25% HP (ONCE PER FIGHT)', 'ONCE A FIGHT, PAY 10 CHIPS TO LIVE AT 25%']);
@@ -237,24 +237,25 @@ describe('BANKROLL', () => {
   });
 
   describe('RAINMAKER', () => {
-    it('MAKE IT RAIN costs 2 chips instead of 5', () => {
+    it('MAKE IT RAIN costs 2 chips instead of 10', () => {
       const f = mk('midas', ['rainmaker'], { chips: 20 });
       const ev = spin(f, ['goldbar', 'goldbar', 'goldbar']);
       expect(ofType(ev, 'makeItRain')[0].cost).toBe(2);
       expect(f.chipsNow()).toBe(20 + 3 - RAIN.chipLess - 2);
       const g = mk('midas', [], { chips: 20 });
-      expect(ofType(spin(g, ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')[0].cost).toBe(5);
+      expect(ofType(spin(g, ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')[0].cost).toBe(RAIN.cost);
+      expect(RAIN.cost).toBe(10);
     });
-    it('it rains from 2 chips held (not 5)', () => {
+    it('it rains from 2 chips held (not 10)', () => {
       expect(ofType(spin(mk('midas', ['rainmaker'], { chips: 2 }), ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')).toHaveLength(1);
-      expect(ofType(spin(mk('midas', [], { chips: 4 }), ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')).toHaveLength(0);
+      expect(ofType(spin(mk('midas', [], { chips: 9 }), ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')).toHaveLength(0);
       expect(ofType(spin(mk('midas', ['rainmaker'], { chips: 1 }), ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')).toHaveLength(0);
     });
-    it('(side effect, documented) with 2-4 chips the rain hits far less than the plain chip jackpot it replaces', () => {
+    it('with 2-4 chips the rain still hits at least the plain chip jackpot it replaces (the floor)', () => {
       const plain = dealt(spin(mk('midas', [], { chips: 3 }), ['goldbar', 'goldbar', 'goldbar']));
       const rain = dealt(spin(mk('midas', ['rainmaker'], { chips: 3 }), ['goldbar', 'goldbar', 'goldbar']));
       expect(plain).toBe(90);
-      expect(rain).toBe(Math.round(3 * RAIN.perChip) * 3); // 15, and it costs 2 chips
+      expect(rain).toBe(plain);
     });
   });
 
@@ -452,16 +453,10 @@ describe('BANKROLL', () => {
       spin(f, ['goldbar', 'goldbar', 'shield']);
       expect(f.midasChips).toBe(1);
     });
-    // OPEN CALL (user): should a rain never hit for less than the chip jackpot it replaces?
-    it.skip('OPEN CALL: with 0 chips, OPEN BAR turns every chip jackpot into a 0-damage rain', () => {
-      // What happens: rainCost is 0, so a chip jackpot always RAINS, and the rain's base is chips held x1.5 = 0. The
-      // same jackpot without OPEN BAR hits for 90. Under 20 chips, OPEN BAR's free rain hits less than no rain at all.
+    // (user, 2026-11-01: a rain never hits for less than the chip jackpot it replaces.)
+    it('with 0 chips, OPEN BAR\'s free rain still hits at least the plain chip jackpot', () => {
       const f = mk('midas', ['openbar'], { chips: 0 });
       expect(dealt(spin(f, ['goldbar', 'goldbar', 'goldbar']))).toBeGreaterThanOrEqual(90);
-    });
-    it('(documented) OPEN BAR at 0 chips: the chip jackpot rains for 0; without it, 90', () => {
-      expect(dealt(spin(mk('midas', ['openbar'], { chips: 0 }), ['goldbar', 'goldbar', 'goldbar']))).toBe(0);
-      expect(dealt(spin(mk('midas', [], { chips: 0 }), ['goldbar', 'goldbar', 'goldbar']))).toBe(90);
     });
   });
 });

@@ -36,8 +36,9 @@ OVERLOAD, TESLA's ENDLESS loop growth) shipped (user, 2026-11-01: "we can ship t
 heals are one rule now, shipped (user, 2026-11-01): every meter payoff heals 15; KNIGHT has no meter, no heal (HP_GAME.md).
 The text audit (2026-11-01, the user: "a make or break for launch"): every relic and Charm checked against its text on
 every machine, one test a claim (`tests/audit_*.test.ts`); 11 bugs fixed to match the text and 14 texts fixed to match
-the game (HP_GAME.md). Open calls for the user: MAKE IT RAIN hitting for less than the chip jackpot it replaces (OPEN
-BAR, RAINMAKER at few chips), and GOLD and GLASS on TESLA's bolts adding into its boosts instead of multiplying.
+the game (HP_GAME.md). The user's two calls (2026-11-01): MAKE IT RAIN has a floor (never less than the
+chip jackpot it replaces; it now costs 10 chips, not 5, to keep BANKROLL on target), and GOLD and GLASS are true
+multipliers on TESLA's bolts.
 Left in phase 4: JUKEBOX's second way to build (simmed 2026-11-01: shields last one turn, so no DROP payoff makes a shield JUKEBOX a real build; a Body Slam SUBWOOFER, "THE DROP also hits for all the shield you hold", shipped (user, 2026-11-01: "ship it for now"; the user is testing shield builds); a bigger rework waits on the outside playtest), BANKROLL (readable, or ship with 4), the act 1 demo, the bug / save /
 crash pass; the BUILD-UP idea for dry streaks waits on a mockup (the user: it has to be very readable). Open calls for
 the user: FULL next to an unlit bulb in settings (the combat LOG is now dev-only: user, 2026-10-31),

@@ -29,7 +29,7 @@ export const POT_STEAL = { any: 1 };
 export const PAY = { additive: 0, lightningAdd: 1, teslaOneAxis: 1, stormHeal: 3 };
 /** THE JUKEBOX: +25% note damage per volume level (was +20%, 2026-10-12), max 6, a noteless spin skips 2, and THE DROP leaves it at 3 (TURNTABLE: 5). */
 export const VOLUME = { perLevel: 0.32, max: 6, skip: 2, after: 3, turntable: 5, hypePay: 0.5 };
-export const RAIN = { maxChips: 100, perChip: 1.5, cost: 5, rainmakerCost: 2, chipLess: 1 };
+export const RAIN = { maxChips: 100, perChip: 1.5, cost: 10, rainmakerCost: 2, chipLess: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x2.5 (quarter steps). */
 export const highRollerMul = (chips: number, cap = MIDAS.maxMul) => Math.min(cap, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
 

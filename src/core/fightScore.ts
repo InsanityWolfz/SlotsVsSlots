@@ -74,7 +74,9 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
     const g = s.groups.find((x) => x.symbol === 'goldbar' && x.matched && x.reels.length >= 3);
     if (g) {
       g.rain = true;
-      g.base = Math.round((RAIN.maxChips ? Math.min(RAIN.maxChips, f.chipsNow()) : f.chipsNow()) * RAIN.perChip);
+      // A floor (user, 2026-11-01): a rain never hits for less than the chip jackpot it replaces (OPEN BAR at 0 chips
+      // rained for 0).
+      g.base = Math.max(g.base, Math.round((RAIN.maxChips ? Math.min(RAIN.maxChips, f.chipsNow()) : f.chipsNow()) * RAIN.perChip));
     }
   }
   const foe = f.sides[other(me.side)];
@@ -182,7 +184,9 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
     }
     // GOLD charms in a group ADD (x2 + x2 + x2 = x6), then multiply with the double/jackpot.
     if (gold) {
-      boost(g, gold);
+      // A true multiplier, even on TESLA's bolts, where the other boosts add up (user, 2026-11-01: a Charm is what
+      // players plan around; GOLD next to HOT STREAK was x3, not x4).
+      g.mult *= gold;
       // (The climb names it: GOLD, GLASS, or both.)
       notes.push(`X${gold} ${anyGlass ? (anyGold ? 'GOLD+GLASS' : 'GLASS') : 'GOLD'}`);
     }

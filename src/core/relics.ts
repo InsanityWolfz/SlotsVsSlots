@@ -79,7 +79,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // CONTENT_13.
   pitboss: { id: 'pitboss', name: 'PIT BOSS', text: "THE ENEMY'S FIRST JACKPOT EACH FIGHT DOESN'T COUNT", sprite: 'relicPitBoss' },
   // CASH CASSIDY's MAKE IT RAIN relics.
-  rainmaker: { id: 'rainmaker', name: 'RAINMAKER', text: 'MAKE IT RAIN COSTS 2 CHIPS INSTEAD OF 5', sprite: 'relicRainmaker', machine: 'midas', addon: true },
+  rainmaker: { id: 'rainmaker', name: 'RAINMAKER', text: 'MAKE IT RAIN COSTS 2 CHIPS INSTEAD OF 10', sprite: 'relicRainmaker', machine: 'midas', addon: true },
   // SHIELD BASH: KNIGHT's (it replaces the BULWARK charm). Not offered to the others (MACHINE_EXCLUDE).
   bash: { id: 'bash', name: 'SHIELD BASH', text: 'LEFTOVER SHIELD EACH SPIN HITS THE ENEMY', sprite: 'relicBash' },
   // THE JUKEBOX (2026-10-08).
