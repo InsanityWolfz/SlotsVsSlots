@@ -170,6 +170,59 @@ are listed as fact.
   gold), and hated when an edge case triggers them (Obelisk ties). Two-way multipliers (Wrath) make the low-HP edge a
   decision, and low-HP payoffs live in optional relics.
 
+### One meter, two builds (stay high vs cash in, attack vs defend)
+- **Slay the Spire Watcher, three builds on one stance system:** Mantra is a counter; at 10 you lose 10 and enter
+  Divinity (+3 energy on entry, attacks deal triple damage; sources disagree on whether it ends at the end of the turn
+  or the start of the next). Calm gives 2 energy when you leave it. The defensive payoffs are cards that read the
+  same system: Mental Fortress (power, 1 energy) gives 4 Block every stance change (6 upgraded), so the cycle itself
+  defends; Like Water gives Block at the end of your turn if you're in Calm (the one card that rewards *staying*; its
+  number wasn't confirmed). Guides: "the main benefit of Calm is leaving it ... except for Like Water"; one tier list
+  rates Like Water and Mental Fortress S. A Steam post: with Mental Fortress "you almost eliminate the need to use
+  block cards". The stance-dance build is called luck-dependent (needs many Wrath cards). [W/F]
+  [StS wiki: Stance](https://slaythespire.wiki.gg/wiki/Stance), [HighGround: Watcher builds](https://www.highgroundgaming.com/slay-the-spire-watcher-guide-tips-builds/),
+  [TwoAverageGamers](https://www.twoaveragegamers.com/ultimate-slay-the-spire-watcher-guide/),
+  [Steam](https://steamcommunity.com/app/646570/discussions/0/1752399434794999710), [gamertweak tier list](https://gamertweak.com/slay-the-spire-tier-list),
+  [slaythespire.info: archetypes](https://slaythespire.info/en/the-watcher-beginners-guide-strategies-deck-archetypes/)
+- **Guitar Hero Star Power / Rock Band Overdrive (one meter, score and survival in the same activation):** glowing
+  phrases fill it; activating raises the score multiplier and (Guitar Hero 2005) makes each note count much more on
+  the Rock Meter, so players fire it to survive hard sections they'd otherwise fail. Warriors of Rock needs it at
+  least half full. Rock Band: any player's Overdrive revives a failed bandmate, at most twice a song; the multiplier
+  math differs by source (x2 is common). The same button is offence or rescue depending on what the screen shows.
+  [W] [Wikipedia: Guitar Hero](https://en.wikipedia.org/wiki/Guitar_Hero_(video_game)), [Warriors of Rock](https://en.wikipedia.org/wiki/Guitar_Hero:_Warriors_of_Rock),
+  [Rock Band 2](https://en.wikipedia.org/wiki/Rock_Band_2), [Rock Band](https://en.wikipedia.org/wiki/Rock_Band_(video_game))
+- **Monster Train 2 Valor (Banished):** a stacking status that raises attack and also gives armor to a unit in the
+  front (timing differs by source: end of turn vs at resolve, up to its Valor stacks); units gain Valor by moving
+  (Shift). One status feeds both the attack and the shield side. [F] [Deltia's: Banished](https://deltiasgaming.com/?p=237729),
+  [Steam](https://steamcommunity.com/app/2742830/discussions/0/591763667545003730)
+- **NecroDancer, items that profit from keeping the streak:** obsidian weapons' damage rises with the coin
+  multiplier (Cadence of Hyrule guide: 1, then 2 after a kill, 3 at the max multiplier; the original's numbers not
+  confirmed); SYNCHRONY's onyx weapons gain damage on consecutive hits and lose it when you move. The streak meter
+  gets a second payoff (damage now) without a second meter. [F/P] [zeldauniverse](https://zeldauniverse.net/guides/cadence-of-hyrule/strategy/what-is-crypt-of-the-necrodancer/),
+  [Steam](https://steamcommunity.com/app/247080/discussions/0/570371033831310910), [Brace Yourself: SYNCHRONY](https://braceyourselfgames.com/2022/08/04/necrodancer-synchrony-dlc-available-now-v3-1-0/)
+- **Balatro Supernova:** +Mult equal to the times the played hand type has been played this run; no reset, so it's
+  worth the same whenever you buy it. The no-reset counterpart to Ride the Bus (resets) and Green Joker (decays).
+  [F] [Steam](https://steamcommunity.com/app/2379780/discussions/0/4346606879520278803), [PocketGamer](https://www.pocketgamer.com/balatro/joker-tier-list/)
+- **Balatro Splash:** every played card scores, not only the hand's. Rated S by some lists and C by others: strong
+  in High Card, Pair and enhanced-card builds, otherwise little. It widens what counts rather than adding a payoff.
+  [F] [PocketGamer](https://www.pocketgamer.com/balatro/joker-tier-list/), [Steam](https://steamcommunity.com/app/2379780/discussions/0/7410182519536290893)
+- **Peglin bomb vs crit:** a bomb peg is lit by one hit and explodes on the second for 50 to every enemy (before the
+  orb's own damage); crit pegs swap in an orb's crit value. Players advise committing hard to one ("every shot HAS to
+  be a crit") and say bomb items are hard to find twice in a run; guides say bombs fall off late against big HP.
+  [W/F] [speedrun.com guide](https://www.speedrun.com/Peglin/guides/6xu76), [gamepretty](https://gamepretty.com/peglin-guide-basic-gameplay-orbs-relics-and-tricks/),
+  [Peglin wiki: Critical Peg](https://peglin.wiki.gg/wiki/Critical_Peg)
+- **Hi-Fi Rush:** two meters with different jobs: a rhythm meter (on-beat play raises it, getting hit lowers it; it
+  sets the score multiplier) and a Reverb bar spent on specials or Jam Combos. [F] [TheGamer](https://www.thegamer.com/hi-fi-rush-best-attacks-combos-guide/),
+  [Prima review](https://primagames.com/featured/hi-fi-rush-review)
+- **Pick-your-volatility free spins (video slots):** some bonuses let you choose many spins at a low multiplier or
+  few at a high one (e.g. 20 spins at x2-4 vs 5 at x8-15); the return is the same, only the swing differs. Sources are
+  SEO pages; no named game verified. [F] [slotstemple](https://www.slotstemple.com/slots-by-feature/multiplier/)
+- **The pattern** (opinion, from the above): the second build that works reads the *same* meter and the *same*
+  moment and pays in the other currency (Mental Fortress: the cycle gives Block; Valor: one stack gives attack and
+  armor; Star Power: one activation scores or rescues). "Stay high" payoffs need the meter to be able to sit high:
+  Like Water works because Calm doesn't force an exit, and Watcher guides still call leaving Calm the default. Widening
+  what counts (Splash) speeds the same engine; it doesn't make a second one. Two-meter designs (Hi-Fi Rush) give each
+  meter a different job and a different place on screen.
+
 ### Damage over time, ramps and cash-outs (poison, frostbite, hangover)
 - **Slay the Spire poison:** stacks deal their number in damage at the start of the enemy's turn, ignoring block, then
   drop by 1 (well-known rule; wiki not reachable to quote). Bouncing Flask (2 energy) applies 3 poison three times to
@@ -733,3 +786,30 @@ Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP,
 - **Opinion:** damage as the score on a x10 ladder (each milestone a banner that changes him, as 75/50/25% do now), the
   run still ending when he kills you, and the top milestone as BROKE THE BANK tuned to under 2%. A log ladder makes
   a 10x stronger build worth one more milestone, not an instant win.
+
+### THE JUKEBOX's second way to build (open; phase 4)
+- **Today** (`VOLUME` in `src/core/fightRules.ts`, `volumeAfterSpin` / `dropNotes` in `fight.ts`): +1 volume a payline
+  note, +32% note pay a level, max 6 arms THE DROP for the next spin (the payline plus every note in the 6 cells off
+  it), then 3; a spin with no payline note skips -2. Strip: 6 notes and 6 shields on each reel. Its 5 relics and ECHO
+  all tune the DROP. The shield build is the weakest in the sim (WHITE 46 vs a 60 target). The stale comment at the top
+  of `cabinets.ts` still says +10% a level and "falls back to 2".
+- **Numbers (computed by hand from the base strip, binomial, not simulated):** a payline shows 1.5 notes on average and
+  no note 1 spin in 8, so from 3 the bar arms in about 2-3 spins: a DROP every 3-4 spins, 1-2 a median fight. About
+  4.5 of 9 cells are notes at the DROP. The shield build doesn't starve the meter (the strip lands notes either way);
+  what it lacks is a payoff: the DROP pays in notes, which the shield build doesn't level, and heals the flat 15.
+- **Precedent:** see Roguelikes > One meter, two builds. Closest fits: Mental Fortress (the cycle itself defends),
+  Valor (one stack pays attack and armor), Star Power (one activation scores or rescues); Like Water and NecroDancer's
+  obsidian for "stay high"; Splash for counting off the line.
+- **Judging the four patterns (opinion, from the above):**
+  - (a) STAY LOUD: the base rule already pays for staying high (+32% a level), and the forced DROP at 6 means "stay
+    loud" can only mean sitting at 5; TURNTABLE and HYPE MAN already approximate it. A real version has to switch the
+    DROP off (Like Water works because Calm has no forced exit), which changes what the meter means: a reading cost.
+  - (b) A DEFENSIVE DROP (every visible shield shields, as every visible note hits): the Mental Fortress / Valor shape,
+    the same moment and the same 9 lit cells, paying in the shield build's own levelled symbol. Pitfalls: heal 15 plus a
+    big shield burst on a 3-4 spin cycle is the stall TESLA's storms caused in act 3 and the Bazaar's shield mirrors; and
+    HP_GAME.md records that per-machine shield payoffs were measured and dropped once before (2026-10-12).
+  - (c) Notes off the payline count for volume: Splash's shape, it speeds the same engine (both builds DROP sooner), so
+    it's not a second build; it also works against the payline look just shipped (dimmed rows that don't pay).
+  - (d) A remix / second symbol: a new symbol is a new rule; the JUKEBOX already has a second symbol (the shield), so
+    "shields turn the volume up too" is (d) without a new symbol, and it's MIXTAPE's job made stronger (no skip, faster
+    arming), so on its own it's the attack build's relic as much as the shield build's.
