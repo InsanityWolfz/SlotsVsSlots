@@ -98,7 +98,7 @@ describe('texts and card faces, per machine', () => {
     expect(bell('tesla')).toBe('JACKPOTS PAY X2, FULL LIGHTNING');
     expect(bell('midas')).toBe('JACKPOTS PAY X2, FILL HIGH ROLLER');
     expect(bell('joker')).toBe('JACKPOTS PAY X1.25, FILL THE METER');
-    expect(bell('jukebox')).toBe('JACKPOTS PAY X2, MAX VOLUME');
+    expect(bell('jukebox')).toBe('JACKPOTS X2 + MAX VOLUME (NOT AT DROP)');
     expect(relicText('deckdrum', 'joker')).toBe('EVERY SPIN THAT PAYS: +1 CARD DAMAGE FOR THE REST OF THE FIGHT (MAX +5)');
     expect(shortRelicText('deckdrum', relicText('deckdrum', 'joker'))).toBe('+1 CARD DAMAGE PER SPIN THAT PAYS, MAX +5');
     expect(shortRelicText('hypeman', relicText('hypeman', 'jukebox'))).toBe('+1 VOLUME EVERY 2ND SPIN. NOTES PAY HALF');

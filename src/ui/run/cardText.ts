@@ -10,36 +10,36 @@ import { charmCardFull, describeOption, type DraftOption, type RunState } from '
  */
 const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   mirror: 'ANY 2 MATCHING REELS ARE A PAIR',
-  prism: 'WINS THAT USE A WILD PAY X2',
+  prism: 'PAIRS AND JACKPOTS WITH A WILD PAY X2',
   starchart: 'SYMBOL LEVELS YOU GAIN ARE DOUBLED',
   bell: (t) =>
     t
       .replace(' AND FILL YOUR HIGH ROLLER BAR', ', FILL HIGH ROLLER')
       .replace(' AND FULLY CHARGE YOUR LIGHTNING', ', FULL LIGHTNING')
       .replace(' AND FILL YOUR JACKPOT METER', ', FILL THE METER')
-      .replace(' AND MAX YOUR VOLUME (NOT ON THE DROP)', ', MAX VOLUME'),
-  phoenix: 'SURVIVE A KILLING HIT ONCE A FIGHT',
+      .replace(/^JACKPOTS PAY X2 AND MAX YOUR VOLUME \(NOT ON THE DROP\)$/, 'JACKPOTS X2 + MAX VOLUME (NOT AT DROP)'),
+  phoenix: 'SURVIVE A KILLING HIT AT 1 HP, ONCE A FIGHT',
   overcharge: (t) =>
     t
       .replace(/^YOUR ALL-JACKPOTS SPIN ECHOES FOR 1\/3 OF ITS DAMAGE$/, 'ALL-JACKPOT SPINS ECHO FOR 1/3')
       .replace(/^YOUR (.+) PAYOFF ECHOES FOR 1\/3( OF ITS)? DAMAGE$/, '$1 PAYOFFS ECHO FOR 1/3'),
   sandglass: 'SLOWER ENEMY ABILITIES (NOT WHEEL OR DEALER)',
   tower: 'KEEP 25% OF SHIELD, MAX 10% OF YOUR HP',
-  capacitor: 'LEFTOVER SHIELD CHARGES LIGHTNING',
+  capacitor: '25% OF LEFTOVER SHIELD CHARGES LIGHTNING',
   livewire: 'LIGHTNING DAMAGE +30%. STORMS COST 1 HP',
   encore: 'THE JACKPOT METER KEEPS 30 AFTER IT PAYS',
   coup: (t) => t.replace(' WHILE YOU HAVE MORE HP LEFT THAN THE ENEMY', ' WHILE YOU LEAD ON HP'),
   compound: 'HIGH ROLLER CAPS AT X4',
   meltdown: 'LIGHTNING DAMAGE: +1% PER MISSING HP, TO 50%',
   deckdrum: '+1 CARD DAMAGE PER SPIN THAT PAYS, MAX +5',
-  horseshoe: 'WINS WITH A LUCKY WILD PAY X3',
+  horseshoe: 'PAIRS AND JACKPOTS WITH A LUCKY WILD X3',
   underdog: 'EVERYTHING PAYS X1.5 UNDER HALF HP',
   holywater: 'BLOCKS THE FIRST ENEMY ABILITY ON YOUR REELS',
   hotstreak: "JACKPOT: NEXT SPIN'S PAIRS AND JACKPOTS X2",
   pitboss: "ENEMY'S FIRST JACKPOT A FIGHT IS VOID",
-  rainmaker: 'MAKE IT RAIN COSTS 2 CHIPS',
+  rainmaker: 'MAKE IT RAIN COSTS 2 CHIPS, NOT 10',
   bash: 'LEFTOVER SHIELD HITS THE ENEMY',
-  turntable: 'AFTER THE DROP, VOLUME FALLS TO 5',
+  turntable: 'AFTER THE DROP, VOLUME FALLS TO 5, NOT 3',
   mixtape: 'A SPIN WITH NO NOTE KEEPS THE VOLUME',
   subwoofer: 'THE DROP ALSO HITS FOR YOUR SHIELD',
   armoredcar: 'HIGH ROLLER: 5 SHIELD COUNTS AS 1 CHIP',
@@ -51,13 +51,13 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   housetax: 'ENEMY JACKPOTS PAY YOU 5 CHIPS',
   regular: 'ENCOUNTER GAMES: 2 MORE PLAYS',
   hitmaker: 'EACH DROP: +60% PER DROP BEFORE IT',
-  houseofcards: 'METER PAYOFFS ADD WILDS FOR THE FIGHT',
+  houseofcards: 'METER PAYOFFS: A WILD ON 2 REELS ALL FIGHT',
   parachute: 'ONCE A FIGHT, PAY 10 CHIPS TO LIVE AT 25%',
-  secondline: 'ROW ABOVE PAYS HALF. ENEMIES HIT +15%',
+  secondline: 'ROW ABOVE PAYS HALF ON PAIRS. ENEMIES +15%',
   devilsdue: 'EVERYTHING X1.75. -8% MAX HP PER WIN',
   longgame: 'EVERYTHING -20%, +3% PER FIGHT WON',
   quickening: (t) => t.replace(/^YOUR (.+) STARTS EVERY FIGHT HALF FULL\..*$/, (_, m: string) => `${m.endsWith('METER') ? 'METER' : m} STARTS AT HALF. ENEMIES FASTER`),
-  glasscannon: 'EVERYTHING X1.5. NO HEALING BETWEEN FIGHTS',
+  glasscannon: 'EVERYTHING X1.5. ONLY BOSSES HEAL YOU',
   crusade: (t) => t.replace(' FOR EVERY FIGHT YOU WIN', ' PER FIGHT WON'),
   highcard: 'JACKPOTS X1.5. PAIRS PAY HALF',
   hypeman: '+1 VOLUME EVERY 2ND SPIN. NOTES PAY HALF',

@@ -265,13 +265,12 @@ export abstract class DraftScreen extends NextScreen {
     drawChip(ctx, `LV${next}`, x + 10 * scale + 18, y + 6 * scale, { scale: T.body, color: '#5ad8e8' });
   }
 
-  /** The card under the pointer or the focus: its full rule (when the face is the short one) and its keywords, in one
-   * kit panel under the card (or beside it when there's no room). */
+  /** The card under the pointer or the focus: what its keywords mean, in one kit panel under the card (or beside it).
+   * One text per card (user, 2026-11-02: the box repeated the face): the face carries the whole rule, the box never
+   * rewords it; a card with no keywords has no box. */
   protected drawCardDetail(ctx: CanvasRenderingContext2D, c: Hit, o: DraftOption): void {
     const face = cardFace(o, this.run ?? undefined);
-    const keys = keywordsIn(face.full).slice(0, 2);
-    // (A Charm card's full text only adds its reel, which its marker shows.)
-    this.detailBox(ctx, face.full !== face.text && o.kind !== 'gild' ? face.full : '', keys, c.x, c.y + c.h / 2 + 14, c.w + 20);
+    this.detailBox(ctx, '', keywordsIn(face.text).slice(0, 2), c.x, c.y + c.h / 2 + 14, c.w + 20);
   }
 
   /** A detail box: a full rule, then keywords (word in its colour, then what it means), centred on x, top at y. */

@@ -170,7 +170,7 @@ describe('BANDAGE: HEAL 60 HP AFTER EACH FIGHT', () => {
 // ---------------------------------------------------------------------------------------------------------------------
 describe('PRISM: A PAIR OR JACKPOT THAT USES A WILD PAYS X2', () => {
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('prism', cab)).toEqual({ full: 'A PAIR OR JACKPOT THAT USES A WILD PAYS X2', short: 'WINS THAT USE A WILD PAY X2' });
+    for (const cab of MACHINES) expect(face('prism', cab)).toEqual({ full: 'A PAIR OR JACKPOT THAT USES A WILD PAYS X2', short: 'PAIRS AND JACKPOTS WITH A WILD PAY X2' });
   });
   for (const cab of MACHINES) {
     const a = ATTACK[cab];
@@ -299,7 +299,7 @@ describe('JACKPOT BELL (bell) on KNIGHT: JACKPOTS PAY X2', () => {
 // ---------------------------------------------------------------------------------------------------------------------
 describe('PHOENIX FEATHER (phoenix): SURVIVE LETHAL DAMAGE AT 1 HP ONCE PER FIGHT', () => {
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('phoenix', cab)).toEqual({ full: 'SURVIVE LETHAL DAMAGE AT 1 HP ONCE PER FIGHT', short: 'SURVIVE A KILLING HIT ONCE A FIGHT' });
+    for (const cab of MACHINES) expect(face('phoenix', cab)).toEqual({ full: 'SURVIVE LETHAL DAMAGE AT 1 HP ONCE PER FIGHT', short: 'SURVIVE A KILLING HIT AT 1 HP, ONCE A FIGHT' });
   });
   const hitMe = (f: Fight, hp: number) => {
     f.sides.player.hp = hp;

@@ -161,7 +161,8 @@ export abstract class ShopScreen extends EncounterScreen {
     const o = item.option;
     const face = cardFace(o, this.run ?? undefined);
     const w = 340;
-    const lines = wrap(face.full, Math.floor((w - 28) / (6 * T.body)));
+    // A relic's tip says what its card face says (one text per card); a Charm's names its reel and its full rule.
+    const lines = wrap(o.kind === 'gild' ? face.full : face.text, Math.floor((w - 28) / (6 * T.body)));
     const pinned = this.shopSel === this.shopHits.indexOf(h);
     const tall = 58 + lines.length * 24 + (pinned ? 26 : 0);
     const right = h.x + h.w / 2 + 18 + w <= W - 8;

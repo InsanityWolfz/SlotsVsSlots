@@ -69,12 +69,12 @@ describe('texts: full and card face, on the one machine each can appear on', () 
     expect(faces.greatsword).toEqual(['YOUR SWORDS PAY X1.5', 'YOUR SWORDS PAY X1.5']);
     expect(faces.crusade).toEqual(['+5 SWORD DAMAGE FOR EVERY FIGHT YOU WIN', '+5 SWORD DAMAGE PER FIGHT WON']);
     expect(faces.compound).toEqual(['HIGH ROLLER CAP INCREASES TO X4', 'HIGH ROLLER CAPS AT X4']);
-    expect(faces.rainmaker).toEqual(['MAKE IT RAIN COSTS 2 CHIPS INSTEAD OF 10', 'MAKE IT RAIN COSTS 2 CHIPS']);
+    expect(faces.rainmaker).toEqual(['MAKE IT RAIN COSTS 2 CHIPS INSTEAD OF 10', 'MAKE IT RAIN COSTS 2 CHIPS, NOT 10']);
     expect(faces.armoredcar).toEqual(["HIGH ROLLER PAYOFFS COUNT THAT SPIN'S SHIELD AS CHIPS: 1 PER 5", 'HIGH ROLLER: 5 SHIELD COUNTS AS 1 CHIP']);
     expect(faces.safedeposit).toEqual(["WHEN CHIPS HIT, THEY ALSO HIT FOR THAT SPIN'S SHIELD", 'CHIPS ALSO HIT FOR YOUR SHIELD']);
     expect(faces.parachute).toEqual(['A HIT THAT WOULD KILL YOU: PAY 10 CHIPS, LAND AT 25% HP (ONCE PER FIGHT)', 'ONCE A FIGHT, PAY 10 CHIPS TO LIVE AT 25%']);
     expect(faces.openbar).toEqual(['MAKE IT RAIN COSTS NOTHING. WINS PAY NO CHIPS', 'MAKE IT RAIN IS FREE. WINS PAY NO CHIPS']);
-    expect(faces.capacitor).toEqual(['25% OF LEFTOVER SHIELD CHARGES LIGHTNING', 'LEFTOVER SHIELD CHARGES LIGHTNING']);
+    expect(faces.capacitor).toEqual(['25% OF LEFTOVER SHIELD CHARGES LIGHTNING', '25% OF LEFTOVER SHIELD CHARGES LIGHTNING']);
     expect(faces.livewire).toEqual(['LIGHTNING DAMAGE +30%. EACH STORM COSTS 1 HP', 'LIGHTNING DAMAGE +30%. STORMS COST 1 HP']);
     expect(faces.meltdown).toEqual(['LIGHTNING DAMAGE +1% FOR EACH HP YOU ARE MISSING (MAX 50%)', 'LIGHTNING DAMAGE: +1% PER MISSING HP, TO 50%']);
     expect(faces.chainlightning).toEqual(['LIGHTNING DAMAGE +100%', 'LIGHTNING DAMAGE +100%']);
