@@ -50,6 +50,7 @@ export abstract class CardGames extends TableScreens {
       if (res.more) {
         // Dealt: the bet goes down now.
         this.bjMsg = null;
+        this.bjLast = null;
         this.sounds.turnCard(true);
         this.bjButtons();
       } else {
@@ -63,6 +64,7 @@ export abstract class CardGames extends TableScreens {
     this.chipsLanding = (this.run?.player.chips ?? 0) - before;
     const hand = res.hand;
     this.bjShow = hand;
+    this.bjLast = hand;
     this.bjMsg = null;
     this.bjDealerUp = 1;
     this.setTable([]);
@@ -276,9 +278,14 @@ export abstract class CardGames extends TableScreens {
     const k = 0.75;
     const label = (text: string, y: number, color: string) => drawText(ctx, text, x0 - 62, y, T.body, color, { align: 'right' });
     if (!inPlay) {
-      label('DEALER', dy, FELT_INK);
-      drawPlayingCard(ctx, x0, dy, 0, 1, k);
-      drawPlayingCard(ctx, x0 + 64, dy, 0, 1, k);
+      // A finished hand stays face up beside its word (playtest 2026-11-01: "DEALER BUSTS!" over two face-down cards).
+      const last = m && m.hand ? this.bjLast : null;
+      label(last ? `DEALER ${bjTotal(last.d)}` : 'DEALER', dy, last && bjTotal(last.d) > 21 ? '#ff8a7a' : FELT_INK);
+      if (last) last.d.forEach((c, i) => drawPlayingCard(ctx, x0 + i * 64, dy, c, 1, k, i));
+      else {
+        drawPlayingCard(ctx, x0, dy, 0, 1, k);
+        drawPlayingCard(ctx, x0 + 64, dy, 0, 1, k);
+      }
       // Your spots wait empty; after a hand, its word sits there instead.
       if (!m) {
         label('YOU', py, FELT_INK);

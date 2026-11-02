@@ -40,6 +40,7 @@ export abstract class EncounterScreen extends ClawScreen {
     }
     if (this.encId === 'bj') {
       this.bjShow = null;
+      this.bjLast = null;
       this.bjMsg = null;
       return bjState(run) ? this.bjButtons() : this.bjDealButtons();
     }

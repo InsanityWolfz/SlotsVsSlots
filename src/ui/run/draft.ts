@@ -81,7 +81,8 @@ export abstract class DraftScreen extends NextScreen {
   protected startResult(chips: number): void {
     this.resultAt = performance.now() / 1000;
     this.resultChips = new CountUp(0, 0.8);
-    if (chips) void this.ui.wait(0.25).then(() => this.resultChips.set(chips));
+    // (It counts from the moment the line appears: a 0.25 s wait showed "+0 CHIPS" first, playtest 2026-11-01.)
+    if (chips) this.resultChips.set(chips);
   }
 
   /**

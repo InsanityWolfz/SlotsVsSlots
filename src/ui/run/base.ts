@@ -70,6 +70,8 @@ export abstract class RunScreensBase {
   protected chipsLanding = 0;
   /** TWENTY-ONE: a finished hand on show (the dealer's cards turn one by one), how many of them are up, its word. */
   protected bjShow: NonNullable<EncounterResult['hand']> | null = null;
+  /** The last finished hand: it stays face up beside its word until the next deal. */
+  protected bjLast: NonNullable<EncounterResult['hand']> | null = null;
   /** TWENTY-ONE: the hand the counter last showed. */
   protected bjNo = 1;
   protected bjDealerUp = 0;

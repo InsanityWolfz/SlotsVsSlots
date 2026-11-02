@@ -1093,7 +1093,8 @@ export class Director {
     this.s.particles.burst({ x: target.x, y: target.y, count: soft ? 18 : 60, colors: [COLORS.energy, '#ffffff', '#fff6c8'], speed: [200, 700], kind: 'spark', gravity: 400, life: [0.2, 0.6], size: [3, 5] });
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
     h.energyFlash = 0;
-    this.bg(this.popText(`-${fmtNum(e.hpDamage)}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
+    // (No "-0" when the hit lands on a machine already down or all of it is blocked: playtest 2026-11-01.)
+    if (e.hpDamage > 0) this.bg(this.popText(`-${fmtNum(e.hpDamage)}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
     // Full: the bolt crackles (re-strikes 3 times). Soft: it just fades out.
     if (!soft)
       for (let i = 0; i < 3; i++) {
@@ -1761,7 +1762,8 @@ export class Director {
     if (playerWins && e.amount >= 8 * UNIT)
       this.s.particles.burst({ x: target.x, y: target.y - 40, count: 80, colors: ['#ffd23f', '#ffe08a', '#fff6c8'], speed: [200, 600], angle: -Math.PI / 2, spread: Math.PI, gravity: 900, life: [0.8, 1.4], size: [4, 7], kind: 'confetti' });
     this.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
-    this.bg(this.popText(`-${fmtNum(e.hpDamage)}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
+    // (No "-0" when the hit lands on a machine already down or all of it is blocked: playtest 2026-11-01.)
+    if (e.hpDamage > 0) this.bg(this.popText(`-${fmtNum(e.hpDamage)}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
     await this.c.wait(0.5);
   }
 
