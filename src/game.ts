@@ -553,6 +553,8 @@ export class Game {
     this.screens.hide();
     this.coach.skipAll();
     this.tut = null;
+    // (A boss's rules card left open under PAUSE ate the menu's first tap: UI QA 2026-11-02.)
+    this.bossCard = false;
     this.run = null;
     this.newFight(false);
     this.phase = 'title';

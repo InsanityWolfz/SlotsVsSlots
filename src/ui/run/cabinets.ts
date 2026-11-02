@@ -114,7 +114,10 @@ export abstract class CabinetScreen extends BuildPanel {
     this.picked = this.cabSel;
     const id = CABINET_ORDER[this.cabSel];
     this.sounds.stingerMedium();
-    void this.ui.wait(0.3).then(() => this.cb.onCabinet(id));
+    // (Only if the machine screen is still up: MENU or Escape in that 0.3 s still started the run, UI QA 2026-11-02.)
+    void this.ui.wait(0.3).then(() => {
+      if (this.mode === 'cabinet' && this.picked >= 0) this.cb.onCabinet(id);
+    });
   }
 
   /** Swipe the stage to page through the machines. */
