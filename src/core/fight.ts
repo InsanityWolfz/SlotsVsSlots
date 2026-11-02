@@ -1007,7 +1007,7 @@ export class Fight {
     // One heal, its parts named (user, 2026-10-13: "what's healing me 15?"): the meter's own and VAMPIRE FANG.
     const parts = [
       { label: PAYOFF_WORD[this.meter?.kind ?? ''] ?? 'METER', amount: (this.meter?.heal ?? 0) * times },
-      { label: 'FANG', amount: me.relics.has('fang') ? (this.special ? FANG_TESLA_HEAL : FANG_HEAL) * times : 0 },
+      { label: 'ROOM SERVICE', amount: me.relics.has('fang') ? (this.special ? FANG_TESLA_HEAL : FANG_HEAL) * times : 0 },
     ].filter((x) => x.amount > 0);
     if (!parts.length) return;
     if (me.relics.has('fang')) events.push({ type: 'relic', side: me.side, relic: 'fang' });

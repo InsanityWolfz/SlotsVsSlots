@@ -342,6 +342,9 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
   (`TUNE.regularHp`) to pull it back. Sim 1,000 runs, WHITE / GREEN / BLUE: KNIGHT 66 / 36 / 18, TESLA 60 / 37 / 19,
   JUKEBOX 61 / 43 / 17, JOKER 57 / 38 / 22, BANKROLL 53 / 34 / 20. (A x1.07 enemy damage would have done it too, but it
   showed on every enemy hit as an ELITE note.)
+- **Relic names (user, 2026-11-02, casino over fantasy):** VAMPIRE FANG is ROOM SERVICE, SKELETON KEY is LOADED DICE,
+  PHOENIX FEATHER is RABBIT'S FOOT, HOLY WATER is BOUNCER, DEVIL'S DUE is SECOND MORTGAGE, QUICKENING is ESPRESSO SHOT
+  (ids unchanged, so saves keep them). CRUSADE and the VAMP Charm keep their names.
 - **HOLY WATER (user, 2026-11-01):** the first enemy ability each fight that hits your reels does nothing. It used to
   wash off the first sabotage of any kind, so a single spill symbol spent it and the enemy's announced ability landed.
 - **The hold prompt** ("PAIR! HOLD IT FOR A JACKPOT?") only fires on a pair that pays (a spill pair doesn't), and the

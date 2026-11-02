@@ -44,7 +44,7 @@ const pct = (x: number) => Math.round(x * 100);
 /** Passive rule changes. None of them ask for input mid-fight. */
 export const RELICS: Record<RelicId, RelicDef> = {
   mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS COUNT AS A PAIR', sprite: 'relicMirror' },
-  fang: { id: 'fang', name: 'VAMPIRE FANG', text: 'YOUR METER PAYOFFS HEAL 30 MORE', sprite: 'relicFang' },
+  fang: { id: 'fang', name: 'ROOM SERVICE', text: 'YOUR METER PAYOFFS HEAL 30 MORE', sprite: 'relicFang' },
   bandage: { id: 'bandage', name: 'BANDAGE', text: 'HEAL 60 HP AFTER EACH FIGHT', sprite: 'relicBandage' },
   // Build relics: each amplifies one kind of gild, so committing to a build pays a premium.
   prism: { id: 'prism', name: 'PRISM', text: 'A PAIR OR JACKPOT THAT USES A WILD PAYS X2', sprite: 'relicPrism' },
@@ -53,9 +53,9 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // STAR CHART (2026-10-15): the build for uncapped symbol levels (Balatro's Telescope, in spirit).
   starchart: { id: 'starchart', name: 'STAR CHART', text: 'EVERY SYMBOL LEVEL YOU GAIN IS DOUBLED', sprite: 'relicStarchart' },
   bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND FILL YOUR METER', sprite: 'relicBell' },
-  phoenix: { id: 'phoenix', name: 'PHOENIX FEATHER', text: 'SURVIVE LETHAL DAMAGE AT 1 HP ONCE PER FIGHT', sprite: 'relicPhoenix' },
+  phoenix: { id: 'phoenix', name: "RABBIT'S FOOT", text: 'SURVIVE LETHAL DAMAGE AT 1 HP ONCE PER FIGHT', sprite: 'relicPhoenix' },
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'YOUR METER PAYOFF ECHOES FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
-  key: { id: 'key', name: 'SKELETON KEY', text: 'YOUR PAIRS PAY X2', sprite: 'relicKey' },
+  key: { id: 'key', name: 'LOADED DICE', text: 'YOUR PAIRS PAY X2', sprite: 'relicKey' },
   sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: "ENEMY ABILITIES CHARGE 1 SPIN SLOWER (NOT THE WHEEL'S OR THE DEALER'S)", sprite: 'relicSandglass' },
   // Slot machine relics: each machine gets an identity relic and a heal that feeds off its own mechanic.
   // CONTENT WAVE 1 (2026-10-07, playtest/CONTENT_WAVE1_REVIEW.md): slot machine relics, one hook each.
@@ -73,7 +73,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   horseshoe: { id: 'horseshoe', name: 'HORSESHOE', text: 'PAIRS AND JACKPOTS MADE WITH A LUCKY WILD PAY X3', sprite: 'relicHorseshoe', charm: 'lucky' },
   // General.
   underdog: { id: 'underdog', name: 'UNDERDOG', text: 'EVERYTHING PAYS X1.5 WHEN YOU ARE UNDER HALF HP', sprite: 'relicUnderdog' },
-  holywater: { id: 'holywater', name: 'HOLY WATER', text: 'THE FIRST ENEMY ABILITY EACH FIGHT THAT HITS YOUR REELS DOES NOTHING', sprite: 'relicHolywater' },
+  holywater: { id: 'holywater', name: 'BOUNCER', text: 'THE FIRST ENEMY ABILITY EACH FIGHT THAT HITS YOUR REELS DOES NOTHING', sprite: 'relicHolywater' },
   // EXPERT_PLAYTEST_10: relics that make a choice (streaky vs steady, turtle-and-counter, keep the liens or pay them).
   hotstreak: { id: 'hotstreak', name: 'HOT STREAK', text: "AFTER A JACKPOT, YOUR NEXT SPIN'S PAIRS AND JACKPOTS PAY X2", sprite: 'relicHotStreak' },
   // CONTENT_13.
@@ -103,9 +103,9 @@ export const RELICS: Record<RelicId, RelicDef> = {
   parachute: { id: 'parachute', name: 'GOLDEN PARACHUTE', text: 'A HIT THAT WOULD KILL YOU: PAY 10 CHIPS, LAND AT 25% HP (ONCE PER FIGHT)', sprite: 'relicParachute', machine: 'midas' },
   // The BIG CHOICES that stayed, as legendary relics (user, 2026-10-15). Each keeps its price, said on the card.
   secondline: { id: 'secondline', name: 'SECOND PAYLINE', text: `THE ROW ABOVE YOUR PAYLINE PAYS ITS PAIRS AND JACKPOTS AT HALF. ENEMIES HIT ${pct(LEGEND_RELIC.lineDmg - 1)}% HARDER`, sprite: 'relicLoadedreel' },
-  devilsdue: { id: 'devilsdue', name: "DEVIL'S DUE", text: `EVERYTHING PAYS X${LEGEND_RELIC.devilPay}. -${pct(LEGEND_RELIC.devilDecay)}% MAX HP AFTER EVERY FIGHT YOU WIN`, sprite: 'relicChalice' },
+  devilsdue: { id: 'devilsdue', name: 'SECOND MORTGAGE', text: `EVERYTHING PAYS X${LEGEND_RELIC.devilPay}. -${pct(LEGEND_RELIC.devilDecay)}% MAX HP AFTER EVERY FIGHT YOU WIN`, sprite: 'relicChalice' },
   longgame: { id: 'longgame', name: 'THE LONG GAME', text: `EVERYTHING PAYS ${pct(1 - LEGEND_RELIC.longStart)}% LESS, +${pct(LEGEND_RELIC.longStep)}% FOR EVERY FIGHT YOU WIN`, sprite: 'relicMetronome' },
-  quickening: { id: 'quickening', name: 'QUICKENING', text: 'YOUR METER STARTS EVERY FIGHT HALF FULL. ENEMY ABILITIES CHARGE 1 SPIN FASTER', sprite: 'relicBattery' },
+  quickening: { id: 'quickening', name: 'ESPRESSO SHOT', text: 'YOUR METER STARTS EVERY FIGHT HALF FULL. ENEMY ABILITIES CHARGE 1 SPIN FASTER', sprite: 'relicBattery' },
   glasscannon: { id: 'glasscannon', name: 'GLASS CANNON', text: `EVERYTHING PAYS X${LEGEND_RELIC.glassPay}. NO HEALING BETWEEN FIGHTS (BEATING AN ACT'S BOSS STILL HEALS YOU)`, sprite: 'relicFirstblood' },
   crusade: { id: 'crusade', name: 'CRUSADE', text: `+${LEGEND_RELIC.crusadeStep} SWORD DAMAGE FOR EVERY FIGHT YOU WIN`, sprite: 'relicDrum', machine: 'knight' },
   chainlightning: { id: 'chainlightning', name: 'CHAIN LIGHTNING', text: `LIGHTNING DAMAGE +${pct(LEGEND_RELIC.chainAdd)}%`, sprite: 'relicCoil', machine: 'tesla' },

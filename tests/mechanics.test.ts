@@ -229,7 +229,7 @@ describe('step A quick fixes', () => {
     f.sides.player.hp = 5;
     f.forceNext('player', ['bolt', 'bolt', 'bolt']);
     const [h] = ofType(f.step().events, 'heal').filter((e) => e.source === 'payoff');
-    expect(h.parts?.map((p) => p.label)).toEqual(['LIGHTNING', 'FANG']);
+    expect(h.parts?.map((p) => p.label)).toEqual(['LIGHTNING', 'ROOM SERVICE']);
     expect(h.parts!.reduce((a, p) => a + p.amount, 0)).toBe(h.amount);
   });
 });

@@ -266,7 +266,7 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
     if (player && paying && f.cfg.player.payMul) {
       boost(g, f.cfg.player.payMul);
       const who = (['glasscannon', 'devilsdue', 'longgame'] as const).filter((r) => me.relics.has(r));
-      const name = who.length === 1 ? { glasscannon: 'GLASS CANNON', devilsdue: "DEVIL'S DUE", longgame: 'LONG GAME' }[who[0]] : 'RELICS';
+      const name = who.length === 1 ? { glasscannon: 'GLASS CANNON', devilsdue: 'SECOND MORTGAGE', longgame: 'LONG GAME' }[who[0]] : 'RELICS';
       notes.push(`X${Math.round(f.cfg.player.payMul * 100) / 100} ${name}`);
     }
     // VETERAN (KNIGHT, ENDLESS): every loop cleared, swords and shields pay more.
