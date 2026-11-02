@@ -522,6 +522,84 @@ Five families of answer; most games mix two.
   builds can still kill (the Reaper). A cap that ignores the build entirely (hidden, like Isaac's) or a hit that's
   thrown away reads as the game cheating; caps that you can break are rewards (FFX).
 
+### Late-game threat when the build snowballs (keeping the back half dangerous)
+- **Front-loaded difficulty is common, even in Slay the Spire:** a Steam player reports losing 50% of runs in act 1
+  and 17% in acts 2-3 ("act 1 is the most dependant on luck"); a beginners' guide notes the first three hallway fights
+  of act 1 (two in acts 2-3) draw from an easier pool. For Slay the Spire 2, coverage of the v0.103 beta says it
+  smoothed act 1's spikes and nerfed Living Fog (called one of act 1's most run-threatening normal enemies), and
+  reports a stated long-term plan to shift difficulty from act 1 to act 3; a PC Gamer editor asked for the same. The
+  Mega Crit wording wasn't read directly. [F] [Steam: act 1 hardest](https://steamcommunity.com/app/646570/discussions/0/1779387743942133058/?ctp=2),
+  [untapped: v0.103.0](https://sts2.untapped.gg/en/articles/patch-v01030), [sts2.gg: April 2026 patches](https://sts2.gg/guides/april-2026-patch-guide),
+  [PC Gamer: 12 opinions](https://www.pcgamer.com/games/card-games/slay-the-spire-2-opinions/)
+- **Slay the Spire Ascension's late-game levers:** A1 about 60% more elites on the map; A2 normal enemies deadlier;
+  A5 the boss heals 75% of missing HP instead of 100%; A20 two act 3 bosses (sourced). From the well-known list, not
+  re-verified: A3/A4 elites/bosses deadlier, A7-A9 tougher (HP), A14 lower max HP, A17-A19 smarter move sets. Slay the Spire 2 folds 20 into 10 (its A2: the Ancients heal 80%). Most of the climb is more
+  elites, harder elites and less healing, not bigger normal fights. [W] [StS wiki: Bosses](https://slay-the-spire.fandom.com/wiki/Bosses),
+  [F] [HighGround: Ascension](https://www.highgroundgaming.com/slay-the-spire-ascension-guide/), [PCGamesN: StS2 Ascension](https://www.pcgamesn.com/slay-the-spire-2/ascension-levels)
+- **Slay the Spire anti-burst enemies (the build-specific check):** Spheric Guardian starts every fight with Barricade
+  (its Block doesn't expire) and Artifact 3; Shelled Parasite starts with Plated Armor 14 and is stunned when it's
+  broken (guides: open with one big hit). Nemesis (act 3 elite) turns Intangible (all damage to it is 1) before
+  attacking and loses it after; players: "you hit him for 1, he gets to hit you for 40 ... multiple times", "not being
+  able to attack for two whole rounds is ... unfun"; called most frustrating for burst decks. Giant Head starts with
+  Slow and a countdown to a growing hit ("basically death" for slow decks, a free setup turn for others). Reptomancer
+  summons daggers (a player reports 93 damage on turn 2), which needs area damage. [W/F] [slaythespire.gg: Spheric Guardian](https://slaythespire.gg/monsters/Spheric_Guardian),
+  [fandom: Plated Armor](https://slay-the-spire.fandom.com/wiki/Plated_Armor?oldid=3719), [fandom: Nemesis](https://slay-the-spire.fandom.com/wiki/Nemesis?oldid=8414),
+  [Steam: Nemesis](https://steamcommunity.com/app/646570/discussions/0/1692659769963403954), [slaythespire.gg: Nemesis](https://slaythespire.gg/elites/Nemesis),
+  [fandom: Giant Head](https://slay-the-spire.fandom.com/wiki/Giant_Head), [Steam: act 3 elites](https://steamcommunity.com/app/646570/discussions/0/3667553846824629673)
+- **Slay the Spire Surrounded (act 4 elites, Spire Shield and Spear):** the one behind you deals 50% more; no rest
+  between them and the Heart. [F] [HighGround: Heart](https://www.highgroundgaming.com/slay-the-spire-corrupt-heart-guide/), [slaythespire.gg: Spire Shield](https://slaythespire.gg/elites/Spire_Shield)
+- **Hades Heat conditions that target the late build:** Damage Control: each rank (max 2) gives foes a shield that
+  absorbs one hit. Guides: one rank "can cancel out huge amounts of damage" for big-hit weapons (Arthur, Beowulf);
+  fast weapons barely notice; players add it as cheap Heat. Benefits Package: armored foes (elites) get 1 random perk
+  a rank (max 2; examples range from slowing you to regenerating). Lasting Consequences: -25% healing a rank (sources
+  disagree on the max rank). Extreme Measures gives bosses new attacks (see Endgame bosses). [F] [Prima: Pact](https://primagames.com/gaming/hades-guide-pact-of-punishment-modifiers-heat),
+  [RPG Site](https://www.rpgsite.net/feature/10287-hades-pact-of-punishment-heat-modifiers-and-how-to-maximize-your-rewards),
+  [Steam: Damage Control by weapon](https://steamcommunity.com/app/1145360/discussions/0/6960928795829130328), [Looper: 32 Heat](https://www.looper.com/331042/how-to-beat-hades-with-32-heat)
+- **Balatro's late threat is rules aimed at the engine, not a cap:** ante 1 draws from only the 8 mildest boss blinds;
+  the ante 8 finishers are Crimson Heart (a random Joker disabled each hand), Verdant Leaf (all cards debuffed until
+  you sell a Joker), Amber Acorn (Jokers flipped and shuffled), Cerulean Bell (one random card forced into every
+  hand) and Violet Vessel (a huge blind). Your score is never capped; the finisher asks whether the engine survives
+  losing a piece. One base-stake player: "Antes 1-6 were super easy", then lost to the ante 8 boss. [F]
+  [Steam: finishers](https://steamcommunity.com/app/2379780/discussions/0/4346607305581387321), [Dot Esports: antes and blinds](https://dotesports.com/indies/news/balatro-antes-blinds-explained),
+  [Steam: easy then ante 8](https://steamcommunity.com/app/2379780/discussions/0/4293690852344929651)
+- **Darkest Dungeon surprise (ambush):** a random roll (darker light raises the odds) gives the enemies the first
+  turn and shuffles your party's ranks; players report wipes of fully upgraded parties, and the fixed-map final
+  dungeon has no ambushes. Random first-turn ambush is a known frustration. [F] [Steam](https://steamcommunity.com/app/262060/discussions/0/1733216261950541723),
+  [LP Archive](https://lparchive.org/Darkest-Dungeon/Update%2021)
+- **Super Auto Pets start of battle (acting first, but planned):** Dolphin deals 4 to the lowest-HP enemy, Mosquito 1
+  to a random one, before anyone attacks; a 2022 tier list: "it doesn't matter if you have 50 attack if you can be
+  one-shotted by a mosquito". The first strike belongs to a build you can see, not to chance. [W/F]
+  [SAP wiki: Dolphin](https://superautopets.wiki.gg/wiki/Dolphin), [SAP wiki: Mosquito](https://superautopets.wiki.gg/wiki/Mosquito),
+  [TwoAverageGamers tier 3](https://www.twoaveragegamers.com/ultimate-super-auto-pets-tier-list-all-tier-3-pets)
+- **Battlers keep late danger by matching builds:** Backpack Battles and The Bazaar pit you against ghosts of other
+  players' builds from the same round or day (Backpack Battles also by rank), so the opponent has snowballed too; a
+  Bazaar PvP loss costs Prestige equal to the day. [W/F] [Wikipedia: Backpack Battles](https://en.wikipedia.org/wiki/Backpack_Battles),
+  [Mobalytics: Prestige](https://mobalytics.gg/the-bazaar/guides/prestige)
+- **Inscryption's queue:** the opponent places cards in a back row that move to the front at the start of its turn,
+  so its next move is shown a turn early; players call it an advantage. [F] [Steam](https://steamcommunity.com/app/1092790/discussions/0/3882725766418978069),
+  [Gigazine](https://gigazine.net/gsc_news/en/20220213-inscryption)
+- **Monster Train relentless bosses:** the boss fights on until it or your units on that floor die, climbing toward
+  the Pyre (your run's HP); the threat is on its own track, not your turn. [F] [Rogueliker](https://rogueliker.com/monster-train-review/),
+  [Steam: MT2 boss](https://steamcommunity.com/app/2742830/discussions/0/591764116171932268)
+- **Peglin, the failure case:** a review says that by the late areas "you're either too under-powered to defeat the
+  beefy enemies or too over-powered to feel like your input on the ball even matters"; players call the base game
+  "ludicrously easy" and Cruciball (20 stacked levels) a jump to an "RNG fest". [F] [gamepressure](https://www.gamepressure.com/games/peglin/z362e6),
+  [Steam](https://steamcommunity.com/app/1296610/discussions/0/7336985071474236410)
+- **Slot roguelikes:** Slots & Daggers players say the bomb and magic builds make it "too easy and monotonous once
+  discovered" (a review summary); a CloverPit review says late runs feel like "fighting RNG" (the opposite complaint).
+  [F] [VaporLens: Slots & Daggers](https://vaporlens.app/app/3631290/slots_daggers), [TrendingNow: CloverPit](https://trendingnow.games/reviews/cloverpit-review)
+- **Inverse difficulty curves** (Josh Bycer): games that start hard and get easier as the player grows; he argues they
+  work best in skill-based games. [F] [Game Developer](https://www.gamedeveloper.com/design/reversing-the-difficulty-curve-in-game-design-),
+  [Game Wisdom](https://game-wisdom.com/critical/inverse-difficulty-curves-game-design)
+- **The pattern** (opinion, from the above): in deckbuilders the late hallway fights are allowed to be a payoff; the
+  late danger lives in elites and bosses, and those threaten through rules aimed at the build (a disabled piece,
+  Surrounded, a forced card, an armored-elite perk) or through more and harder elites (Ascension 1-4), not through
+  caps on your hit. Caps that blank a big hit (Nemesis, Damage Control on heavy weapons) are what burst players hate
+  most. Growth inside a fight (Giant Head, Ritual) only threatens builds that are slow, so a one-turn kill skips it;
+  less healing only bites if damage is being taken. Acting first is accepted when it's planned and visible (SAP,
+  Inscryption's queue, a boss shown ahead) and hated when it's a random ambush (Darkest Dungeon). Battlers get late
+  danger for free because the opponent snowballed too.
+
 ## Battlers
 ### Head-to-head and async races (Super Auto Pets, Backpack Battles, The Bazaar)
 - **Super Auto Pets (Arena):** 10 wins (trophies) to win, 5 lives (Easy has more); a loss costs a life, a draw
@@ -813,3 +891,20 @@ Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP,
   - (d) A remix / second symbol: a new symbol is a new rule; the JUKEBOX already has a second symbol (the shield), so
     "shields turn the volume up too" is (d) without a new symbol, and it's MIXTAPE's job made stronger (no skip, faster
     arming), so on its own it's the attack build's relic as much as the shield build's.
+
+### The back half without danger (open; phase 4)
+- **Today** (HP_GAME.md, the phase 4 triage and playtests): in acts 2-3 regulars and elites mostly die in 1-2 of your
+  spins, so the enemy rarely spins and its ability countdown rarely fires; HP carries, but little is lost, so the
+  Cashier's HEAL and less healing have nothing to bite on. Danger sits in act 1 and the bosses. Act 2-3 HP was raised
+  already (x2.2 / x2.0); the user rules out shrinking big hits ("one-spin kills aren't the problem", 2026-10-15).
+- **Precedent:** see Roguelikes > Late-game threat. Levers by family: (1) caps on the hit (Nemesis, Damage Control,
+  the Heart); (2) more HP (Balatro's blind curve); (3) growth inside the fight (Giant Head, OVERTIME); (4) less healing
+  (StS A5, Lasting Consequences); (5) rules aimed at the build at elites and bosses (Balatro finishers, Benefits
+  Package, Surrounded) and more elites (StS A1); (6) the enemy acts first (SAP start of battle, Inscryption's queue;
+  random: Darkest Dungeon).
+- **Judged against our rules (opinion):** (1) works against the stated payoff and is what burst players hate; (2)
+  trims one-spin kills, the payoff again; (3) and (4) never trigger when the enemy dies before its first spin; (5)
+  adds threat but only where it's placed, and the act 2-3 elites already die in 1-2 spins; (6) is the only family
+  that gives the enemy a turn whatever your build does, and leaves your hit untouched. Its pitfalls: random (DD's
+  ambush) reads as unfair; a flat damage tax with no answer is a watch-only tax the Cashier's HEAL erases; it must
+  be shown before you commit (our map already shows every enemy up front, as Balatro shows the next boss).
