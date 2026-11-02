@@ -41,7 +41,7 @@ Left in phase 4: JUKEBOX's second way to build (simmed 2026-11-01: shields last 
 crash pass; BUILD-UP shipped (user, 2026-11-01: "ship it" after a test branch, three expert playtests and a review page, https://claude.ai/artifact/TvT7AdJqCBKp8ZqxpoYRca; rules in HP_GAME.md), and HOLY WATER blocks the first ability on your reels now. Its look: the plate with fill notches, not a meter left of the machine (user, 2026-11-02: "definitely plate"; https://claude.ai/artifact/4Yq8ehrHCEzNqkL3RqxzNb). Decided 2026-11-02 (https://claude.ai/artifact/Ss9BNMCxw51YzcHcsFfhyG): settings show both words (SOFT FULL, REDUCED
 FULL) instead of FULL by an unlit bulb; the fantasy relic names went casino: VAMPIRE FANG is ROOM SERVICE, SKELETON KEY
 LOADED DICE, PHOENIX FEATHER RABBIT'S FOOT, HOLY WATER BOUNCER, DEVIL'S DUE SECOND MORTGAGE, QUICKENING ESPRESSO SHOT;
-CRUSADE and the VAMP Charm keep theirs. Their icons get redrawn to match (art review first). Open call for the user:
+CRUSADE and the VAMP Charm keep theirs. Their icons were redrawn to match and approved (user, 2026-11-02: "new icons look good"; https://claude.ai/artifact/QtY3u2gPYHhCdFu4accg6B). Open call for the user:
 the ~45 rewritten card faces.
 Done before: theme, roster, name (REEL BRAWL), 24 portraits, words, enemy symbols (art:
 https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV, words: https://claude.ai/artifact/Bo2uKXGYnFXWRJxTy5Ddcu, screens:
