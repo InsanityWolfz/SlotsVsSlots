@@ -633,22 +633,22 @@ S.bar = lit(16, 16, [
   put(g, 8, 10, 'Q'); put(g, 8, 11, 'Q'); put(g, 8, 12, 'Q'); put(g, 9, 13, 'Q'); put(g, 10, 14, 'q');
   S.relicClover = toRows(outline(g));
 }
+// relicBattery (16x16): ESPRESSO SHOT, a little white espresso cup of crema on a saucer, two wavy steam wisps rising
 S.relicBattery = lit(16, 16, [
+  '.....W..........',
+  '.....LL...W.....',
+  '......L...LL....',
+  '.....LS....L....',
+  '.....S....LS....',
+  '..........S.....',
   '................',
-  '......WLS.......',
-  '....LLLLLLSD....',
-  '....LSDDDDDN....',
-  '....LSDDDYDN....',
-  '....LSDDYYDN....',
-  '....LSDYYDDN....',
-  '....LSYWYYDN....',
-  '....LSDDYYDN....',
-  '....LSDDYDDN....',
-  '....LSDYDDDN....',
-  '....YYYYYYOO....',
-  '....YWYYYYOo....',
-  '....YYYYYYOo....',
-  '....OOOOOOoo....',
+  '...WTTTTTTt.....',
+  '...TBwwwwBtTt...',
+  '...WTTTTTTt.t...',
+  '...TTTTTTTtTt...',
+  '....TTTTTt......',
+  '.WTTTTTTTTTTTt..',
+  '..tttttttttttt..',
 ]);
 {
   const g = grid(16, 16);
@@ -677,23 +677,21 @@ S.relicBattery = lit(16, 16, [
   ]);
   S.relicMirror = toRows(outline(g));
 }
+// relicFang (16x16): ROOM SERVICE, a silver cloche (domed cover) on a tray, a little red heart floating up off it
 S.relicFang = lit(16, 16, [
   '................',
-  '......WTTTt.....',
-  '.....WTTTTTt....',
-  '.....WTTTTTt....',
-  '......WTTTTt....',
-  '.......TTTTt....',
-  '.......TTTTt....',
-  '.......TTTt.....',
-  '.......TTTt.....',
-  '......TTTt......',
-  '......RRr.......',
-  '.....RRr........',
-  '.....Rr.........',
-  '....R.......R...',
-  '...........RRr..',
-  '...........Rr...',
+  '..........MR.Rr.',
+  '..........RRRRr.',
+  '.......LS..RRr..',
+  '.......SD...r...',
+  '......LLSS......',
+  '....WLLLLLSD....',
+  '...WLLLLLLLSD...',
+  '..LWLLLLLLLSSD..',
+  '..LLLLLLLLLSSD..',
+  '..SSSSSSSSSDDD..',
+  '.WLLLLLLLLLLLLS.',
+  '..SSDDDDDDDDDD..',
 ]);
 S.relicBandage = lit(16, 16, [
   '................',
@@ -2576,23 +2574,37 @@ S.relicBell = lit(16, 16, [
   '.......SD.......',
   '.......DD.......',
 ]);
-S.relicPhoenix = lit(16, 16, [
-  '..............Y.',
-  '...........YOYW.',
-  '..........YOOYY.',
-  '.........ROYYO..',
-  '........RROYO...',
-  '.......RRROYO...',
-  '......rRRROO....',
-  '.....rrRRROo....',
-  '....rrRRRRo.....',
-  '...rrRRRRo......',
-  '...rRRROo.......',
-  '....RRoo........',
-  '...Tt...........',
-  '..Tt............',
-  '.Tt.............',
-]);
+// relicPhoenix (16x16): RABBIT'S FOOT, a fluffy cream lucky foot on a gold cap, hanging off a steel key ring and chain
+{
+  const g = grid(16, 16);
+  // fur: a plump foot lying on the diagonal, thin at the cap and fat at the paw, its rim ragged with tufts
+  const halfW = [2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2, 1]; // half-width across the axis, for x+y = 14..27
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const s = x + y, d = x - y;
+    if (s < 14 || s > 27) continue;
+    const tuft = (s % 3 === 0) ? 1 : 0;
+    if (Math.abs(d) <= halfW[s - 14] + tuft) put(g, x, y, 'T');
+  }
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if (g[y][x] !== 'T') continue;
+    if (get(g, x + 1, y) === '.' || get(g, x, y + 1) === '.') g[y][x] = 't';
+    else if (get(g, x - 1, y) === '.' || get(g, x, y - 1) === '.') g[y][x] = 'W';
+  }
+  // fur strokes down the length, and the toes parted at the paw
+  plot(g, [[8, 9, 'u'], [9, 10, 'u'], [10, 8, 'u'], [11, 9, 'u'], [11, 13, 't'], [12, 14, 't'], [13, 11, 't'], [14, 12, 't']]);
+  // gold cap across the top of the fur
+  plot(g, [[5, 7, 'Y'], [6, 6, 'Y'], [7, 5, 'Y'], [4, 8, 'G'], [5, 8, 'G'], [6, 7, 'G'], [7, 6, 'G'], [8, 5, 'G'], [8, 4, 'g'],
+    [4, 9, 'g'], [6, 8, 'g'], [7, 7, 'g'], [8, 6, 'g'], [5, 9, 'g'], [9, 5, 'g']]);
+  // chain link and key ring, top-left
+  plot(g, [[5, 5, 'S'], [4, 4, 'D']]);
+  stamp(g, 1, 0, [
+    ' LLS',
+    'L  D',
+    'L  D',
+    ' SD ',
+  ]);
+  S.relicPhoenix = toRows(outline(g));
+}
 S.relicOvercharge = lit(16, 16, [
   '..Y.....W....Y..',
   '...YW..YY...W...',
@@ -2610,23 +2622,24 @@ S.relicOvercharge = lit(16, 16, [
   '....YWYYYYOo....',
   '....OOOOOOoo....',
 ]);
-S.relicKey = lit(16, 16, [
-  '................',
-  '..YYYGg.........',
-  '.YWGGGGg........',
-  '.YGgRgGg........',
-  '.YGRWRGg........',
-  '.YGgRgGg........',
-  '..GGGGg.........',
-  '....YGg.........',
-  '.....YGg........',
-  '......YGg.......',
-  '.......YGg......',
-  '........YGgGg...',
-  '.........YGgg...',
-  '..........YGGg..',
-  '...........Ggg..',
-]);
+// relicKey (16x16): LOADED DICE, a matched pair of chunky violet dice both showing five, the back one set higher
+{
+  const g = grid(16, 16);
+  /** 7x7 violet die face showing five, lit top-left, with a dark 1px base under it for depth. */
+  const die = (x0, y0) => stamp(g, x0, y0, [
+    ' JJJJJ ',
+    'JWVVVWv',
+    'JVVVVVv',
+    'JVVWVVv',
+    'JVVVVVv',
+    'JWVVVWv',
+    'VVVVVVv',
+    ' vvvvv ',
+  ]);
+  die(8, 2); die(1, 6);
+  for (let y = 6; y <= 9; y++) put(g, 8, y, 'K'); // seam: the front die's edge over the back one
+  S.relicKey = toRows(outline(g));
+}
 S.relicSandglass = lit(16, 16, [
   '................',
   '..YWYYYYYYYYYg..',
@@ -3314,23 +3327,31 @@ S.thorn = lit(16, 16, [
   '.QQ.............',
   '................',
 ]);
-// relicChalice (16x16): BLOOD CHALICE, a gold goblet brimming red (overheal becomes shield)
+// relicChalice (16x16): SECOND MORTGAGE, a little cream house with a blue roof, its window a red heart, a crack
+// split clean down through roof, wall and heart (borrowing against your life)
 S.relicChalice = lit(16, 16, [
-  '................',
-  '...WYYYYYYYYG...',
-  '...YRRRRRRRRG...',
-  '...GrRRMRRRrg...',
-  '....GrRRRRrg....',
-  '.....GrrrrG.....',
-  '......GYGg......',
-  '.......Yg.......',
-  '.......Gg.......',
-  '.......Gg.......',
-  '......YGGg......',
-  '.....YGGGGg.....',
-  '....GGGGGGgg....',
-  '................',
+  '.......AN.......',
+  '......AUUN.Ih...',
+  '.....AUUUUNIh...',
+  '....AUUUUUUNh...',
+  '...AUUUUUUUUN...',
+  '..AUUUUUUUUUUN..',
+  '.ANNNNNNNNNNNNN.',
+  '...WTTTTTTTTt...',
+  '...TRRTRRTBbt...',
+  '...TRMRRrTBbt...',
+  '...TRRRRrTBbt...',
+  '...TTRRrTTBYt...',
+  '...TTTrTTTBbt...',
+  '...tttttttBbt...',
 ]);
+{
+  // the crack, zigzagging from the roof peak down through the heart to the ground
+  const g = S.relicChalice.map((r) => [...r]);
+  plot(g, [[8, 1, 'K'], [7, 2, 'K'], [7, 3, 'K'], [8, 4, 'K'], [7, 5, 'K'], [7, 6, 'K'], [6, 7, 'K'], [6, 8, 'K'], [7, 9, 'K'],
+    [6, 10, 'K'], [6, 11, 'K'], [7, 12, 'K'], [6, 13, 'K']]);
+  S.relicChalice = toRows(g);
+}
 // ---------------------------------------------------------------- charm-rework relics (16x16)
 // relicDrum (16x16): WAR DRUM, crossed sticks over a cream head, red rims, gold lacing
 S.relicDrum = lit(16, 16, [
@@ -3625,22 +3646,22 @@ S.relicTrophy = lit(16, 16, [
   '....GGGGGGgg....',
   '....gggggggg....',
 ]);
-// relicHolywater (16x16): HOLY WATER, a corked blue flask marked with a white cross
+// relicHolywater (16x16): BOUNCER, the casino door's red velvet rope, clipped on and swagged low between two brass stanchions
 S.relicHolywater = lit(16, 16, [
   '................',
-  '......wBBb......',
-  '......wBBb......',
-  '.....AAAAAN.....',
-  '......AUUN......',
-  '.....AUUUUN.....',
-  '....ACUUUUUN....',
-  '...ACUUWWUUUN...',
-  '...AUWWWWWWUN...',
-  '...AUUUWWUUUN...',
-  '...UUUUWWUUNN...',
-  '...UUUUWWUNNN...',
-  '....NUUUUNNN....',
-  '.....NNNNNN.....',
+  '................',
+  '..YG........YG..',
+  '.YWGg......YWGg.',
+  '.GGGg......GGGg.',
+  '..GgY......YGg..',
+  '..YgMR....RRYg..',
+  '..YgrRR..RRrYg..',
+  '..Yg.rRMRRr.Yg..',
+  '..Yg..rrrr..Yg..',
+  '..Yg........Yg..',
+  '..Yg........Yg..',
+  '.YGGg......YGGg.',
+  '.gggg......gggg.',
 ]);
 // relicBash (16x16): SHIELD BASH, a round shield with a centre spike, speed lines trailing
 {
