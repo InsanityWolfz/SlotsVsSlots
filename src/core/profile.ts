@@ -11,7 +11,7 @@ import { ACHIEVEMENT_XP, levelOf, TRIMS, trimById, trimsOwned, newAchievements, 
  * history of finished runs for HISCORES. Pure data + helpers; the game owns persistence.
  */
 
-export const ALL_CHARMS: Enh[] = ['gold', 'keen', 'charged', 'vamp', 'lucky', 'blaze', 'lucre', 'trick', 'echo'];
+export const ALL_CHARMS: Enh[] = ['gold', 'keen', 'charged', 'vamp', 'lucky', 'blaze', 'lucre', 'trick', 'echo', 'glass'];
 /** Charms no longer in the game (BULWARK went with the KNIGHT rework): kept in old saves, not counted. */
 const RETIRED_CHARMS: ReadonlySet<Enh> = new Set<Enh>(['spiked']);
 /** What the player has found that still counts toward the COLLECTION. */

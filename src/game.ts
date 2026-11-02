@@ -177,8 +177,10 @@ export const RUN_KEY = 'slotvslot.run.v1';
 export function clearRunSave(): void {
   try {
     // The backups too: a cleared run must never come back through CONTINUE (STEAM_QA_1 Q1).
-    for (const k of [RUN_KEY, RUN_KEY + BAK, RUN_KEY + '.corrupt']) localStorage.removeItem(k);
-    desktop()?.saveRemove(RUN_KEY);
+    for (const k of [RUN_KEY, RUN_KEY + BAK, RUN_KEY + '.corrupt']) {
+      localStorage.removeItem(k);
+      desktop()?.saveRemove(k);
+    }
   } catch {
     /* no storage */
   }
@@ -195,17 +197,23 @@ function parse<T>(raw: string | null): T | null {
 
 function load<T>(key: string): T | null {
   try {
-    // Desktop: a save missing from localStorage (a reinstall, a new PC via Steam Cloud) comes back from its file.
-    if (localStorage.getItem(key) === null) {
-      const file = desktop()?.saveRead(key);
-      if (file) localStorage.setItem(key, file);
-    }
+    // Desktop: the save files are the record (Steam Cloud syncs them); localStorage is only their cache. Every save
+    // writes both, so on one PC the file is never older; on a second PC it's the newer one (save QA 2026-11-02: an old
+    // local save on PC A beat the newer cloud file, then overwrote it). The backup comes from its file too.
+    const d = desktop();
+    if (d)
+      for (const k of [key, key + BAK]) {
+        const file = d.saveRead(k);
+        if (file === null) localStorage.removeItem(k);
+        else localStorage.setItem(k, file);
+      }
     const raw = localStorage.getItem(key);
     const v = parse<T>(raw);
     // Missing is missing (a cleared save stays cleared); only a save that fails to parse falls back to its backup.
     if (v !== null || !raw) return v;
     // Corrupt: keep the bytes for a manual rescue, then fall back to the backup.
     localStorage.setItem(key + '.corrupt', raw);
+    desktop()?.saveWrite(key + '.corrupt', raw);
     return parse<T>(localStorage.getItem(key + BAK));
   } catch {
     return null;
@@ -216,12 +224,21 @@ function load<T>(key: string): T | null {
 const LASTRUN_KEY = 'slotvslot.lastrun.v1';
 
 function save(key: string, v: unknown): void {
+  const json = JSON.stringify(v);
+  // Desktop: the files first, in their own try (a full or blocked localStorage wrote no files at all: save QA).
+  const d = desktop();
+  if (d)
+    try {
+      const prev = d.saveRead(key);
+      if (prev && parse(prev) !== null) d.saveWrite(key + BAK, prev);
+      d.saveWrite(key, json);
+    } catch {
+      /* the cache below still tries */
+    }
   try {
     const prev = localStorage.getItem(key);
     if (prev && parse(prev) !== null) localStorage.setItem(key + BAK, prev);
-    const json = JSON.stringify(v);
     localStorage.setItem(key, json);
-    desktop()?.saveWrite(key, json);
   } catch {
     /* storage unavailable or full: prefs just won't persist */
   }
@@ -903,12 +920,13 @@ export class Game {
     this.newFight(false, null, fightConfig(this.run, this.cfg), true);
     this.phase = 'between';
     this.screens.showNext(this.run);
-    this.checkpoint('next');
-    // The tutorial's last word, then the run is all yours.
+    // The tutorial's last word, then the run is all yours (and saved from here: it was skipped while the tutorial was
+    // on, so a reload at this route pick lost the run, save QA 2026-11-02).
     if (this.tut && this.run.depth >= 1) {
       this.coach.show(TUTORIAL.next);
       this.tut = null;
     }
+    this.checkpoint('next');
     this.syncButtons();
   }
 
@@ -1063,6 +1081,9 @@ export class Game {
       }
       if (token !== this.token) return;
       const result = this.fight.step();
+      // A lost fight is final at once: the save went on offering CONTINUE into it until the run-over screen (about 1.5 s
+      // after the killing blow), so a quick reload undid the loss (save QA 2026-11-02).
+      if (this.fight.over && this.fight.winner === 'enemy' && this.run && !this.tut) clearRunSave();
       for (const e of result.events) {
         if (e.type === 'spin' && e.side === 'player') this.lastPair = e.score.tier === 'pair' && e.score.groups.some((g) => g.matched && g.reels.length === 2 && g.base > 0 && PAYING.has(g.symbol)); // (a SPILL pair pays nothing: no prompt to hold it, playtest 2026-11-01)
         // A freeze moves and locks your reels: the pair it broke can't be held (the HOLD call went stale: playtest).

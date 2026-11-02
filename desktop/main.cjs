@@ -73,12 +73,19 @@ ipcMain.on('desktop:saveRead', (e, key) => {
   }
 });
 ipcMain.on('desktop:saveRemove', (e, key) => {
+  const file = path.join(savesDir(), `${safeKey(key)}.json`);
   try {
-    fs.rmSync(path.join(savesDir(), `${safeKey(key)}.json`), { force: true });
+    fs.rmSync(file, { force: true });
+    e.returnValue = true;
   } catch {
-    /* already gone */
+    // Can't delete it: blank it instead, so a cleared run never comes back through CONTINUE (save QA 2026-11-02).
+    try {
+      fs.writeFileSync(file, '');
+      e.returnValue = true;
+    } catch {
+      e.returnValue = false;
+    }
   }
-  e.returnValue = true;
 });
 ipcMain.on('steam:info', (e) => {
   e.returnValue = steam ? { name: steam.localplayer.getName(), id: String(steam.localplayer.getSteamId().steamId64) } : null;
@@ -88,6 +95,16 @@ ipcMain.on('steam:unlock', (_e, id) => {
     if (steam && !steam.achievement.isActivated(id)) steam.achievement.activate(id);
   } catch (err) {
     console.warn('[steam] achievement', id, err && err.message);
+  }
+});
+
+// One copy at a time: two windows on one save folder would overwrite each other's saves (save QA 2026-11-02).
+if (!app.requestSingleInstanceLock()) app.quit();
+app.on('second-instance', () => {
+  const w = BrowserWindow.getAllWindows()[0];
+  if (w) {
+    if (w.isMinimized()) w.restore();
+    w.focus();
   }
 });
 
