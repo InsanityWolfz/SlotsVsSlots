@@ -2,7 +2,7 @@ import { STEAM, VERSION } from '../../build';
 import type { SettingKey } from '../../game';
 import { COLORS } from '../../present/layout';
 import { artId, drawSprite, hasSprite } from '../../render/sprites';
-import { drawText } from '../../render/text';
+import { drawText, textWidth } from '../../render/text';
 import type { Button } from '../button';
 import { drawChip, drawPanel, KIT, T } from '../kit';
 import type { MenuScreen, Menus } from '../menus';
@@ -188,6 +188,24 @@ export class SettingsScreen implements MenuScreen {
     }
     drawText(ctx, tg.label, b.x - b.w / 2 + 12, b.y, T.body, COLORS.text, { align: 'left' });
     const right = b.x + b.w / 2 - 12;
+    // A choice between two named settings (LIGHTNING: SOFT / FULL, MOTION: REDUCED / FULL) shows both words, the chosen
+    // one lit and underlined: "FULL" beside an unlit bulb read as off (user, 2026-11-02). ON / OFF rows keep the bulb.
+    if (tg.on !== 'ON') {
+      const gap = 22;
+      const offW = textWidth(tg.off, T.body);
+      const words: [string, boolean, number][] = [
+        [tg.off, !lit, right - offW],
+        [tg.on, lit, right - offW - gap - textWidth(tg.on, T.body)],
+      ];
+      for (const [w, on, x] of words) {
+        drawText(ctx, w, x, b.y, T.body, on ? KIT.title : COLORS.textDim, { align: 'left' });
+        if (on) {
+          ctx.fillStyle = KIT.title;
+          ctx.fillRect(Math.round(x), Math.round(b.y + 10), Math.round(textWidth(w, T.body)), 2);
+        }
+      }
+      return;
+    }
     drawText(ctx, lit ? tg.on : tg.off, right - 40, b.y, T.body, lit ? KIT.title : COLORS.textDim, { align: 'right' });
     drawBulb(ctx, right - 12, b.y - 2, 3, lit);
   }
