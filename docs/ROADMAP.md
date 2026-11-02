@@ -38,7 +38,7 @@ the game (HP_GAME.md). The user's two calls (2026-11-01): MAKE IT RAIN has a flo
 chip jackpot it replaces; it now costs 10 chips, not 5, to keep BANKROLL on target), and GOLD and GLASS are true
 multipliers on TESLA's bolts.
 Left in phase 4: JUKEBOX's second way to build (simmed 2026-11-01: shields last one turn, so no DROP payoff makes a shield JUKEBOX a real build; a Body Slam SUBWOOFER, "THE DROP also hits for all the shield you hold", shipped (user, 2026-11-01: "ship it for now"; the user is testing shield builds); a bigger rework waits on the outside playtest), BANKROLL (readable, or ship with 4), the act 1 demo, the bug / save /
-crash pass; BUILD-UP shipped (user, 2026-11-01: "ship it" after a test branch, three expert playtests and a review page, https://claude.ai/artifact/TvT7AdJqCBKp8ZqxpoYRca; rules in HP_GAME.md), and HOLY WATER blocks the first ability on your reels now. Open: the user asked whether a fill meter left of the machine reads better than the plate's notches (mockup sent). Open calls for
+crash pass; BUILD-UP shipped (user, 2026-11-01: "ship it" after a test branch, three expert playtests and a review page, https://claude.ai/artifact/TvT7AdJqCBKp8ZqxpoYRca; rules in HP_GAME.md), and HOLY WATER blocks the first ability on your reels now. Its look: the plate with fill notches, not a meter left of the machine (user, 2026-11-02: "definitely plate"; https://claude.ai/artifact/4Yq8ehrHCEzNqkL3RqxzNb). Open calls for
 the user: FULL next to an unlit bulb in settings (the combat LOG is now dev-only: user, 2026-10-31),
 fantasy-named relics (VAMPIRE FANG, SKELETON KEY, PHOENIX FEATHER, HOLY WATER, DEVIL'S DUE, CRUSADE, QUICKENING, VAMP
 CHARM), the ~45 rewritten card faces.
