@@ -235,3 +235,17 @@ describe('fight resolution', () => {
     expect(run()).toBe(run());
   });
 });
+
+describe('a double knock-out (stress test 2026-11-02)', () => {
+  it('your own IOU does not go off after your spin kills the enemy: you never win at 0 HP', () => {
+    const cfg = defaultConfig();
+    cfg.player = { ...cfg.player, hp: 200, startHp: 10, strips: [{ sword: 11, shield: 1 }, { sword: 12 }, { sword: 12 }] };
+    cfg.enemy = { ...cfg.enemy, hp: 10, strips: [{ shield: 12 }, { shield: 12 }, { shield: 12 }] };
+    const f = new Fight(cfg, 1);
+    f.sides.player.reels[0].cells.find((c) => c.symbol === 'shield')!.bomb = 1;
+    f.forceNext('player', ['sword', 'sword', 'sword']);
+    f.step();
+    expect(f.winner).toBe('player');
+    expect(f.sides.player.hp).toBeGreaterThan(0);
+  });
+});

@@ -996,7 +996,9 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   run.player.chips += earned;
   // (THE WHEEL: the chips your sweeps won came in with the fight's mid-fight chips; the line counts them.)
   record.chips = earned + fight.lucreChips + fight.betChips + fight.taxChips - fight.parachuteChips;
-  run.chipsEarned = (run.chipsEarned ?? 0) + Math.max(0, record.chips) + Math.max(0, fight.midasChips);
+  // (THE WHEEL's sweeps and GOLDEN PARACHUTE's price are already in the fight's mid-fight chips: count them once.
+  // Stress test 2026-11-02: sweeps counted twice, the parachute's price taken twice.)
+  run.chipsEarned = (run.chipsEarned ?? 0) + Math.max(0, record.chips - fight.betChips + fight.parachuteChips) + Math.max(0, fight.midasChips);
   // THE REPO MAN fell: his bounty.
   if (beaten.archetype === REPO_MAN.id) {
     // His bounty (the fork he replaced could have paid an elite's spoils).
@@ -1022,7 +1024,8 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   if (run.player.relics.includes('devilsdue')) {
     run.player.maxHp = Math.max(UNIT, run.player.maxHp - unitsRound(run.player.maxHp * LEGEND_RELIC.devilDecay));
   }
-  run.player.hp = Math.min(run.player.maxHp, hp);
+  // (A win never leaves you at 0 HP: a backstop for any double knock-out.)
+  run.player.hp = Math.max(1, Math.min(run.player.maxHp, hp));
   run.depth++;
   run.stop++;
   if (beaten.isBoss) {

@@ -261,10 +261,13 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       boost(g, k);
       notes.push(`X${Math.round(k * 100) / 100} HIT`);
     }
-    // GLASS CANNON: every paying group pays x1.5.
+    // GLASS CANNON, DEVIL'S DUE, THE LONG GAME: every paying group, one multiplier. Named and rounded on the climb (it
+    // read "X2.33625" with no name: stress test 2026-11-02).
     if (player && paying && f.cfg.player.payMul) {
       boost(g, f.cfg.player.payMul);
-      notes.push(`X${f.cfg.player.payMul}`);
+      const who = (['glasscannon', 'devilsdue', 'longgame'] as const).filter((r) => me.relics.has(r));
+      const name = who.length === 1 ? { glasscannon: 'GLASS CANNON', devilsdue: "DEVIL'S DUE", longgame: 'LONG GAME' }[who[0]] : 'RELICS';
+      notes.push(`X${Math.round(f.cfg.player.payMul * 100) / 100} ${name}`);
     }
     // VETERAN (KNIGHT, ENDLESS): every loop cleared, swords and shields pay more.
     if (player && paying && f.cfg.player.veteranMul) {

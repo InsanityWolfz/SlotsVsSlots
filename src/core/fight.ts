@@ -581,8 +581,11 @@ export class Fight {
         events.slice(sentBefore).reduce((a, e) => a + ((e.type === 'attack' || e.type === 'specialFire') && e.from === side ? e.amount : 0), 0),
     };
     if (!this.over) defuse(this, me, events);
-    if (!this.over && side === 'player') markedCards(this, me, events);
-    if (!this.over) burnFuses(this, me, events);
+    // A spin that knocked the other machine out ends it: your own IOUs and marked cards don't go off after the kill
+    // (stress test 2026-11-02: they took you to 0 HP and you "won" at 0, then lost the next fight unspun).
+    const foeDown = this.sides[other(side)].hp <= 0;
+    if (!this.over && !foeDown && side === 'player') markedCards(this, me, events);
+    if (!this.over && !foeDown) burnFuses(this, me, events);
     if (!this.over) tickFakes(this, me, events);
     if (!this.over) tickStatuses(this, me, events);
     if (!this.over && me.ability) chargeAbility(this, me, events);
