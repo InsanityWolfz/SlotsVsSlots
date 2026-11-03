@@ -13,8 +13,6 @@ import { drawChip, drawMarquee, drawPanel, drawTitle, drawWell, KIT, T } from '.
 import { wrap, CX, KILL_RATE, abilityWhat, abilityText, STAGE_TINT, spotlight, bigPortrait, type Btn } from './shared';
 import { RouteScreen } from './routes';
 
-/** Bosses whose blurb is flavour, not their rules again (the rules rows say the rest). */
-const FLAVOUR_BLURB = new Set(['house', 'owner']);
 /** Words every player knows by the first fight (the tutorial teaches them): the card explains the enemies' own words. */
 const BASIC_WORDS = new Set(['PAIR', 'JACKPOT', 'PAYLINE', 'WILD', 'HEAL', 'SHIELD', 'CHARM', 'LEVEL', 'METER', 'HOLD']);
 /** What an enemy's own symbols do when it's something its ability line doesn't say (card text pass, 2026-11-03). */
@@ -226,9 +224,7 @@ export abstract class NextScreen extends RouteScreen {
     const run = this.run!;
     const out: { text: string; color: string; size: number; icon?: SpriteId; rich?: boolean; indent?: boolean }[] = [];
     const cols = (k: number, inset = 0) => Math.floor((w - 48 - inset) / (6 * k));
-    // The blurb only where it isn't the rules again (playtest 2026-11-03: "STEALS YOUR SYMBOLS" over "EVERY 3 TURNS: STEALS
-    // 1 SYMBOL"): THE HOUSE's and THE OWNER's lines are flavour; everyone else's restated their ability.
-    if (e.isBoss && FLAVOUR_BLURB.has(e.boss ?? 'house')) for (const l of wrap(e.blurb, cols(T.small))) out.push({ text: l, color: KIT.dim, size: T.small });
+    // No blurb on the back, bosses included (user, 2026-11-03: "just the white text and the how to win").
     if (e.ability && !e.isBoss) {
       // When, then what; then what its own symbols do, where that's something else; then the words it uses, explained.
       const line = abilityText(e, this.everyOf(e), run);
