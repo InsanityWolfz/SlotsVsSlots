@@ -1,7 +1,6 @@
 import { UNIT, unitsRound } from '../../core/config';
 import { wheelChipShare, type EnemyDef } from '../../core/enemies';
 import { scaledAbility, type RunState } from '../../core/run';
-import { ABILITY_UI, abilityName } from '../../present/hud';
 import { COLORS, H, W } from '../../present/layout';
 import { artId, drawPortrait, type SpriteId } from '../../render/sprites';
 import { drawText } from '../../render/text';
@@ -199,23 +198,23 @@ export function abilityWhat(e: EnemyDef, run?: RunState): string {
   // THE WHEEL: what one chip left on your reels hits for at NO MORE BETS (as the fight does it).
   const per = run ? Math.max(UNIT, unitsRound(run.player.maxHp * wheelChipShare(run.cabinet))) : 0;
   const what: Record<string, string> = {
-    flood: `SPILLS ON ${p} OF YOUR SYMBOLS`,
+    flood: `SPILLS ${p} OF YOUR SYMBOLS`,
     smash: `SWINGS FOR ${p}`,
     fortify: `GAINS ${p} SHIELD`,
     blizzard: `FREEZES ${p} REEL${p === 1 ? '' : 'S'} FOR 2 TURNS`,
     pilfer: `STEALS ${p} SYMBOL${p > 1 ? 'S' : ''}`,
-    quake: `ADDS ${p} ROCKS TO YOUR STRIPS`,
-    jam: `JAMS A REEL FOR ${p} TURN${p === 1 ? '' : 'S'}`,
+    quake: `ADDS ${p} ROCKS TO YOUR REELS`,
+    jam: `JAMS 1 REEL FOR ${p} TURN${p === 1 ? '' : 'S'}`,
     jackpot: 'SKIMS HALF THE POT AT YOU',
-    carpet: `STICKS ${p} IOUS ON YOUR CELLS`,
+    carpet: `STICKS ${p} IOUS ON YOUR SYMBOLS`,
     curse: `JINXES ${p} REEL${p > 1 ? 'S' : ''} FOR 3 TURNS`,
     bloodmoon: `HEALS ${p} HP`,
     gulp: `EATS ${p} OF YOUR CHIPS`,
     bets: per ? `EACH CHIP LEFT ON YOUR REELS HITS ${per}` : 'EACH CHIP LEFT ON YOUR REELS HITS 5% OF YOUR HP',
-    launder: `TAKES ${p} CHIPS, HEALS ${p * 3 * UNIT}`,
-    mark: `MARKS ${p} OF YOUR CELLS`,
-    penalty: `HITS FOR ${p}`,
-    repo: 'TAKES A CHARM',
+    launder: `TAKES ${p} OF YOUR CHIPS, HEALS ${p * 3 * UNIT}`,
+    mark: `MARKS ${p} OF YOUR SYMBOLS`,
+    penalty: `TAKES 2 OF YOUR CHARMS FOR THE FIGHT, THEN HITS FOR ${p}`,
+    repo: 'TAKES A CHARM FOR THE FIGHT',
     houseTake: `RAKES YOUR GROUPS FOR ${p} TURN${p === 1 ? '' : 'S'}`,
     deal: 'DEALS A BUST',
     owner: 'CHEATS A NEW WAY EACH TIME',
@@ -226,11 +225,11 @@ export function abilityWhat(e: EnemyDef, run?: RunState): string {
 
 export function abilityText(e: EnemyDef, every: number, run?: RunState): string {
   if (!e.ability) return '';
-  const ui = { ...ABILITY_UI[e.ability.kind], label: abilityName(e.ability.kind) };
+  // One shape for every enemy (playtest 2026-11-03: "STEAL EVERY 3 TURNS: STEALS 1 SYMBOL" said it twice): when, then what.
   // THE REPO MAN takes on his first turn, then every few.
-  if (e.ability.kind === 'repo') return `${ui.label} FROM TURN 1, THEN EVERY ${every}: TAKES ONE OF YOUR CHARMS. YOU GET IT BACK AFTER THE FIGHT`;
+  if (e.ability.kind === 'repo') return `TURN 1, THEN EVERY ${every}: TAKES A CHARM FOR THE FIGHT`;
   if (e.ability.kind === 'deal') return `EVERY ${every} TURNS: BUST. THREE HANDS, EACH HARDER`;
-  return `${ui.label} EVERY ${every} TURNS: ${abilityWhat(e, run)}`;
+  return `EVERY ${every} TURNS: ${abilityWhat(e, run)}`;
 }
 
 /** The stage light behind each enemy's portrait (the panel's front). */

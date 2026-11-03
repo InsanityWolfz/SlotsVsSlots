@@ -29,6 +29,8 @@ export const KEYWORDS: Keyword[] = [
   { word: 'HEAL', icon: 'kwHeal', forms: ['HEALS', 'HEALED', 'HEALING'], color: '#7dff7a', text: 'HP BACK, UP TO YOUR MAX HP' },
   { word: 'CHARM', icon: 'kwCharm', forms: ['CHARMS'], color: '#c9a0ff', text: 'A PERK ON ONE CELL OF A REEL' },
   { word: 'LEVEL', icon: 'kwLevel', forms: ['LEVELS', 'LV'], color: '#5ad8e8', text: 'A SYMBOL PAYS MORE PER LEVEL, ON EVERY CELL OF IT YOU OWN. NO CAP' },
+  // (VOLUME borrows the METER icon. MIXTAPE confused new players who hadn't seen the bar: playtest 2026-11-03.)
+  { word: 'VOLUME', icon: 'kwMeter', color: '#ff9ad8', text: "THE JUKEBOX'S BAR: EACH NOTE ON YOUR PAYLINE ADDS 1, A SPIN WITH NO NOTE LOSES 2. AT 6, THE DROP: EVERY NOTE ON SCREEN HITS" },
   { word: 'METER', icon: 'kwMeter', color: '#ffd23f', text: "YOUR SLOT MACHINE'S BAR: IT FILLS AS YOU SPIN AND PAYS OFF WHEN FULL" },
   { word: 'BUST', icon: 'kwBust', forms: ['BUSTS'], color: '#ff8a7a', text: "THE DEALER'S CARD: YOUR BEST REEL'S PAYLINE PAYS NOTHING NEXT SPIN" },
   { word: 'ALL IN', icon: 'kwAllIn', color: '#ff6a5a', text: "THE DEALER'S BIG HIT: A SHARE OF YOUR MAX HP THAT PIERCES SHIELDS" },
@@ -36,8 +38,16 @@ export const KEYWORDS: Keyword[] = [
   // (BUILD-UP borrows the METER icon until it has its own.)
   { word: 'BUILD-UP', icon: 'kwMeter', color: '#ffd23a', text: 'EACH OF YOUR SPINS WITHOUT A PAIR OR JACKPOT OF YOUR HIT SYMBOL (SWORDS, CHIPS, BOLTS, CARDS OR NOTES) ADDS +25% TO THE NEXT ONE, UP TO X2. THAT ONE CASHES IT IN' },
   { word: 'OVERTIME', icon: 'kwOvertime', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF A FIGHT, EVERY HIT ON BOTH MACHINES PAYS X${1 + OVERTIME.step}, +${OVERTIME.step} WITH EACH OF YOUR SPINS. SHIELDS DON'T GROW` },
-  { word: 'SABOTAGE', icon: 'kwSabotage', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY PUTS ON YOUR REELS: SPILLS, ROCKS, IOUS, FREEZES, JAMS, JINXES, MARKS' },
-  { word: 'MARK', icon: 'kwMark', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED CELL ON YOUR PAYLINE HITS YOU' },
+  { word: 'SABOTAGE', icon: 'kwSabotage', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY DOES TO YOUR REELS: SPILLS, STEALS, ROCKS, IOUS, FREEZES, JAMS, JINXES, MARKS' },
+  { word: 'MARK', icon: 'kwMark', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED SYMBOL ON YOUR PAYLINE HITS YOU FOR 20' },
+  // (Card text pass, 2026-11-03: the enemies' own words, so their cards can explain them.)
+  { word: 'STEAL', icon: 'kwSteal', forms: ['STEALS', 'STOLEN'], color: '#c9a0ff', text: 'A STOLEN SYMBOL LEAVES AN EMPTY CELL THAT PAYS NOTHING TILL THE FIGHT ENDS. 3 EMPTIES ON YOUR PAYLINE GET THEM ALL BACK' },
+  { word: 'FREEZE', icon: 'kwFrozen', forms: ['FREEZES', 'FROZEN'], color: '#9fe8ff', text: "A FROZEN REEL DOESN'T SPIN: IT KEEPS WHAT IT SHOWS" },
+  // (JAM has no icon of its own: it borrows FROZEN's, the other reel that won't play.)
+  { word: 'JAM', icon: 'kwFrozen', forms: ['JAMS', 'JAMMED'], color: '#c9bba8', text: 'A JAMMED REEL PAYS NOTHING ON THE PAYLINE' },
+  { word: 'JINX', icon: 'kwJinx', forms: ['JINXES', 'JINXED'], color: '#c9a0ff', text: 'ANY GROUP ON A JINXED REEL PAYS HALF' },
+  // (RAKE has no icon of its own: it borrows SABOTAGE's.)
+  { word: 'RAKE', icon: 'kwSabotage', forms: ['RAKES', 'RAKED'], color: '#ffd23f', text: 'WHILE RAKED, EACH OF YOUR GROUPS PAYS 10 LESS' },
   { word: 'SPILL', icon: 'kwSpill', forms: ['SPILLED', 'SPILLS'], color: COLORS.slime, text: 'A SPILLED CELL PAYS NOTHING. A SPILL PAIR MOPS UP ITS REELS. A JACKPOT MOPS IT ALL UP' },
   { word: 'ROCK', icon: 'kwRock', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD CELL: IT PAYS NOTHING' },
   { word: 'IOU', icon: 'kwIou', forms: ['IOUS'], color: '#ff9a3a', text: 'TICKS DOWN, THEN HITS YOU. LAND IT ON YOUR PAYLINE TO PAY IT OFF' },

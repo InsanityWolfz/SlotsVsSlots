@@ -32,9 +32,9 @@ export function bossRules(boss: string, c: BossRuleContext): BossRules {
   if (boss === 'owner')
     return {
       rules: [
-        { icon: artId('icoGavel'), text: 'EVERY 2 TURNS HE CHEATS. EVERY OTHER TIME IT IS A NEW TRICK (SPILL, THEFT, FREEZE, ROCKS, JINX, IOUS)' },
-        { icon: artId('icoSmash'), text: `THE REST IS THE HAMMER: ${Math.round(OWNER_RULES.hammer * 100)}% OF YOUR MAX HP THROUGH SHIELDS. NO TURN OF HIS TAKES MORE THAN ${Math.round(OWNER_RULES.capOnYou * 100)}%` },
-        { icon: 'shieldIcon', text: `HIS FORTUNE IS ${fmtNum(TURBO.hp)}, A LADDER: EVERY HIT COUNTS IN FULL. AT ${[1, 2, 3].map((k) => fmtNum(ownerRung(k))).join(' / ')} TAKEN HE HITS ${Math.round(OWNER_RULES.phaseDmg * 100)}% HARDER EACH TIME` },
+        { icon: artId('icoGavel'), text: 'EVERY 2 TURNS HE CHEATS, TAKING TURNS: A NEW TRICK (SPILL, STEAL, FREEZE, ROCKS, JINX, IOUS), THEN THE HAMMER' },
+        { icon: artId('icoSmash'), text: `THE HAMMER: ${Math.round(OWNER_RULES.hammer * 100)}% OF YOUR MAX HP, IT PIERCES SHIELDS. NO TURN OF HIS TAKES MORE THAN ${Math.round(OWNER_RULES.capOnYou * 100)}%` },
+        { icon: 'shieldIcon', text: `HIS FORTUNE: ${fmtNum(TURBO.hp)}, A LADDER. EVERY HIT COUNTS IN FULL. AT ${[1, 2, 3].map((k) => fmtNum(ownerRung(k))).join(' / ')} TAKEN HE HITS ${Math.round(OWNER_RULES.phaseDmg * 100)}% HARDER` },
       ],
       win: `EVERY RUNG YOU CLIMB SCORES. TAKE ALL ${fmtNum(TURBO.hp)} AND YOU BREAK THE BANK`,
     };
@@ -52,9 +52,9 @@ function rulesOf(boss: string, c: BossRuleContext): BossRules {
     const hi = pct(DEALER_RULES.allInCap);
     return {
       rules: [
-        { icon: artId('dealCut'), text: `HAND 1: EVERY ${bust} TURNS A BUST. YOUR BEST REEL PAYS NOTHING NEXT SPIN` },
-        { icon: artId('dealRaise'), text: `HAND 2: ITS HITS ARE X${DEALER_RULES.raiseMul}. STILL BUSTS` },
-        { icon: artId('dealShuffle'), text: `HAND 3: EVERY ${allIn} TURNS ALL IN, ${lo === hi ? lo : `${lo}-${hi}`}% OF YOUR MAX HP. IT PIERCES SHIELDS` },
+        { icon: artId('dealCut'), text: `HAND 1: EVERY ${bust} TURNS, A BUST: YOUR BEST REEL PAYS NOTHING NEXT SPIN` },
+        { icon: artId('dealRaise'), text: `HAND 2: THE BUSTS GO ON, AND ITS HITS PAY X${DEALER_RULES.raiseMul}` },
+        { icon: artId('dealShuffle'), text: `HAND 3: EVERY ${allIn} TURNS, ALL IN: ${lo === hi ? lo : `${lo}-${hi}`}% OF YOUR MAX HP. IT PIERCES SHIELDS` },
       ],
       win: 'EACH HAND HAS ITS OWN HP BAR. BEAT ALL THREE',
     };
@@ -63,8 +63,8 @@ function rulesOf(boss: string, c: BossRuleContext): BossRules {
     const fast = c.stake >= STAKE.wheelFast;
     return {
       rules: [
-        { icon: artId('betChip'), text: `EACH TURN IT PUTS ${fast ? WHEEL_RULES.fast : WHEEL_RULES.place} CHIPS ON YOUR REELS` },
-        { icon: artId('icoBets'), text: `EVERY 3RD TURN, EACH CHIP LEFT HITS ${Math.round(wheelChipShare(c.cabinet, (c.loop ?? 0) > 0) * 100)}% OF YOUR MAX HP` },
+        { icon: artId('betChip'), text: `EVERY TURN: ${fast ? WHEEL_RULES.fast : WHEEL_RULES.place} CHIPS ON YOUR REELS` },
+        { icon: artId('icoBets'), text: `EVERY 3RD TURN, NO MORE BETS: EACH CHIP LEFT HITS ${Math.round(wheelChipShare(c.cabinet, (c.loop ?? 0) > 0) * 100)}% OF YOUR MAX HP` },
         { icon: artId('ball'), text: fast ? 'GREEN: IT STARTS FAST' : `AT HALF HP: ${WHEEL_RULES.fast} CHIPS A TURN` },
       ],
       win: 'YOUR PAIRS CLEAR THEIR REELS. A JACKPOT CLEARS THEM ALL',
@@ -74,10 +74,10 @@ function rulesOf(boss: string, c: BossRuleContext): BossRules {
   return {
     rules: [
       { icon: artId('coin'), text: 'COINS ON ITS REELS FILL THE POT' },
-      { icon: artId('icoCoin'), text: `EVERY ${c.houseEvery} TURNS IT SKIMS HALF THE POT AT YOU` },
+      { icon: artId('icoCoin'), text: `EVERY ${c.houseEvery} TURNS: IT SKIMS HALF THE POT AT YOU` },
       { icon: artId('potTier4'), text: `AT HALF HP THE POT DOUBLES. FROM TURN ${POT.lastCall}, IT SKIMS EVERY TURN` },
       ...(dirty ? [{ icon: artId('bomb'), text: 'BLACK: IT STICKS IOUS ON YOUR PAYLINE' }] : []),
     ],
-    win: 'YOUR JACKPOTS STEAL ITS POT',
+    win: 'YOUR JACKPOTS WIN ITS POT',
   };
 }

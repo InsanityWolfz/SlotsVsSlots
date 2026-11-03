@@ -8,10 +8,21 @@ import { COLORS } from '../../present/layout';
 import { drawSprite, spriteSize, type SpriteId } from '../../render/sprites';
 import { drawText, fmtNum, textWidth } from '../../render/text';
 import { bossRules } from '../bossRules';
-import { drawRich } from '../keywords';
+import { drawRich, keywordsIn } from '../keywords';
 import { drawChip, drawMarquee, drawPanel, drawTitle, drawWell, KIT, T } from '../kit';
 import { wrap, CX, KILL_RATE, abilityWhat, abilityText, STAGE_TINT, spotlight, bigPortrait, type Btn } from './shared';
 import { RouteScreen } from './routes';
+
+/** Bosses whose blurb is flavour, not their rules again (the rules rows say the rest). */
+const FLAVOUR_BLURB = new Set(['house', 'owner']);
+/** Words every player knows by the first fight (the tutorial teaches them): the card explains the enemies' own words. */
+const BASIC_WORDS = new Set(['PAIR', 'JACKPOT', 'PAYLINE', 'WILD', 'HEAL', 'SHIELD', 'CHARM', 'LEVEL', 'METER', 'HOLD']);
+/** What an enemy's own symbols do when it's something its ability line doesn't say (card text pass, 2026-11-03). */
+const SYMBOL_LINE: Record<string, string> = {
+  vampire: 'ITS FANGS DRAIN YOU: WHAT GETS THROUGH HEALS IT',
+  counterfeiter: 'ITS FAKE COINS SWITCH YOUR CHARMS OFF FOR 3 TURNS',
+  pitboss: 'ITS GAVEL PAIRS TAKE YOUR CHARMS FOR THE FIGHT TOO',
+};
 
 /** The enemy card's box: a fight's, and a boss's (bigger, behind the bulb marquee). */
 const CARD = { w: 640, h: 236, y: 206 };
@@ -197,7 +208,7 @@ export abstract class NextScreen extends RouteScreen {
       // One line of what it does (two, rarely, when it can't be said shorter).
       const what = abilityWhat(e, run);
       const lines = wrap(what, Math.floor(room / (6 * T.body)));
-      lines.slice(0, 2).forEach((l, i) => drawText(ctx, l, tx, ay + 40 + i * 24, T.body, KIT.text, { align: 'left' }));
+      lines.slice(0, 2).forEach((l, i) => drawRich(ctx, l, tx, ay + 40 + i * 24, T.body, KIT.text, { align: 'left' }));
     }
     // A boss's one rule: how to beat it, along the foot.
     if (boss) {
@@ -211,12 +222,22 @@ export abstract class NextScreen extends RouteScreen {
   }
 
   /** The back's content, laid out (the card grows to fit it). */
-  protected backLines(e: EnemyDef, w: number): { text: string; color: string; size: number; icon?: SpriteId; rich?: boolean }[] {
+  protected backLines(e: EnemyDef, w: number): { text: string; color: string; size: number; icon?: SpriteId; rich?: boolean; indent?: boolean }[] {
     const run = this.run!;
-    const out: { text: string; color: string; size: number; icon?: SpriteId; rich?: boolean }[] = [];
+    const out: { text: string; color: string; size: number; icon?: SpriteId; rich?: boolean; indent?: boolean }[] = [];
     const cols = (k: number, inset = 0) => Math.floor((w - 48 - inset) / (6 * k));
-    for (const l of wrap(e.blurb, cols(T.small))) out.push({ text: l, color: KIT.dim, size: T.small });
-    if (e.ability && !e.isBoss) for (const l of wrap(abilityText(e, this.everyOf(e), run), cols(T.body))) out.push({ text: l, color: '#ffb060', size: T.body });
+    // The blurb only where it isn't the rules again (playtest 2026-11-03: "STEALS YOUR SYMBOLS" over "EVERY 3 TURNS: STEALS
+    // 1 SYMBOL"): THE HOUSE's and THE OWNER's lines are flavour; everyone else's restated their ability.
+    if (e.isBoss && FLAVOUR_BLURB.has(e.boss ?? 'house')) for (const l of wrap(e.blurb, cols(T.small))) out.push({ text: l, color: KIT.dim, size: T.small });
+    if (e.ability && !e.isBoss) {
+      // When, then what; then what its own symbols do, where that's something else; then the words it uses, explained.
+      const line = abilityText(e, this.everyOf(e), run);
+      for (const l of wrap(line, cols(T.body))) out.push({ text: l, color: '#ffb060', size: T.body, rich: true });
+      const extra = SYMBOL_LINE[e.archetype] ?? '';
+      for (const l of extra ? wrap(extra, cols(T.small)) : []) out.push({ text: l, color: KIT.text, size: T.small, rich: true });
+      for (const k of keywordsIn(`${line} ${extra}`).filter((k) => !BASIC_WORDS.has(k.word)).slice(0, 2))
+        wrap(`${k.word}: ${k.text}`, cols(T.small, 30)).forEach((l, i) => out.push({ text: l, color: KIT.dim, size: T.small, rich: true, ...(i === 0 ? { icon: k.icon } : { indent: true }) }));
+    }
     if (e.elite)
       for (const l of wrap(`ELITE: +${(e.act ?? 1) > 1 ? Math.round((ELITE_HP_MUL_2 - 1) * 100) : e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP, HITS ${Math.round((ELITE_DMG_MUL - 1) * 100)}% HARDER. RELIC PICK, +${CHIPS.eliteBonus} CHIPS`, cols(T.small)))
         out.push({ text: l, color: '#ffb060', size: T.small });
@@ -242,7 +263,7 @@ export abstract class NextScreen extends RouteScreen {
         const isz = spriteSize(l.icon);
         drawSprite(ctx, l.icon, 34, y, 14 / Math.max(isz.w, isz.h));
       }
-      const x = l.icon || (l.rich && e.isBoss) ? 54 : 24;
+      const x = l.icon || l.indent || (l.rich && e.isBoss) ? 54 : 24;
       if (l.rich) drawRich(ctx, l.text, x, y, l.size, l.color, { align: 'left' });
       else drawText(ctx, l.text, x, y, l.size, l.color, { align: 'left' });
       y += l.size * 10 + 2;
