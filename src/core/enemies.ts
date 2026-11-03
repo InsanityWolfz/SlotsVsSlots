@@ -476,7 +476,9 @@ export interface ActMap {
  */
 // (2026-10-12: two shapes with three encounters, the casino path: fewer fights, more gambles.)
 /** (User, 2026-10-12: a Cashier sits at stop 3 or earlier, never 4 or 5: one at the end ran into the pre-boss Cashier.) */
-export const ROUTE_SHAPES = ['FE?FE', 'F?SF?', 'FES?F', '?FSEF', 'FF?E?', 'EFSF?', 'FS?FE', '?FFEF', 'FS?EF', 'F?E?F', '?F?E?', 'E?F??'];
+// Every path has at least 3 fights (playtest 2026-11-03: the 2-fight casino paths were almost never picked, "not enough
+// fights"); the casino path keeps its 2 gambles.
+export const ROUTE_SHAPES = ['FE?FE', 'F?SFE', 'FES?F', '?FSEF', 'FF?E?', 'EFSF?', 'FS?FE', '?FFEF', 'FS?EF', 'F?E?F', '?FE?F', 'EF?F?'];
 /** ENDLESS loops pick from 2 paths shaped like the acts' (user, 2026-10-14: they had one short route and no encounters). */
 export const ROUTES_PER_ACT = 3;
 export const ROUTES_PER_LOOP = 2;

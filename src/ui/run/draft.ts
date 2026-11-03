@@ -134,7 +134,9 @@ export abstract class DraftScreen extends NextScreen {
       // A boss pays a level to your attack symbol: say so, as a chip.
       if (last.bossLevel) drawChip(ctx, `${symLabel(last.bossLevel)}S LEVEL UP: LV${symLevel(run.player.levels, last.bossLevel)}`, CX + 330, 84, { scale: T.small, color: '#5ad8e8' });
     } else drawBanner(ctx, start ? 'A NEW RUN' : 'CHOOSE A REWARD', CX, 40, { scale: T.title });
-    this.drawMap(ctx, 186, time);
+    // (Not at the run's start: a fork sign, a Cashier and a boss before your first fight confused new players, playtest
+    // 2026-11-03. The map shows from the first win on.)
+    if (!start) this.drawMap(ctx, 186, time);
     const act3Arrival = !legend && !spoils && run.act >= 3 && run.depth === 0 && run.actIntro;
     // The boss's heal says what it gave (feel playtest: FULLY HEALED read as nothing at 94%).
     const healedBy = last?.won ? Math.max(0, run.player.maxHp - last.hpAfter) : 0;
