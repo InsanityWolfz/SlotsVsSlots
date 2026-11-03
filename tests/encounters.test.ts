@@ -161,7 +161,9 @@ describe('TWENTY-ONE', () => {
   /** Play a visit out: deal (bet 5), hit below 17, stand, until the table lets you go. Returns the finished hands. */
   const playOut = (run: ReturnType<typeof atTable>) => {
     const hands = [];
-    for (let guard = 0; guard < 80 && currentStop(run)?.encounter === 'bj'; guard++) {
+    // One visit: stop when the run moves on (the next stop can be another table).
+    const at = run.stop;
+    for (let guard = 0; guard < 80 && run.stop === at && currentStop(run)?.encounter === 'bj'; guard++) {
       const st = bjState(run);
       const res = playEncounter(run, st ? (bjTotal(st.p) < 17 ? 0 : 1) : 0, 5)!;
       if (res.hand) hands.push(res);
