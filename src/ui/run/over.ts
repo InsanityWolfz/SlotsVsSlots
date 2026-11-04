@@ -178,7 +178,7 @@ export abstract class OverScreen extends ShopScreen {
     // The death recap, as chips: what hurt you most.
     if (loss?.hurt?.length) {
       let cx = tx;
-      const parts = [...loss.hurt.map(([k, n]) => `${k} ${fmtNum(n)}`), ...(loss.stuck ? [`FROZEN ${loss.stuck[0]} OF ${loss.stuck[1]} SPINS`] : [])];
+      const parts = [...loss.hurt.map(([k, n]) => `${k} ${fmtNum(n)}`), ...(loss.stuck ? [`STUCK ${loss.stuck[0]} OF ${loss.stuck[1]} SPINS`] : [])];
       for (const p of parts) {
         const w = textWidth(p, T.small) + 18;
         if (cx + w > W - 30) break;

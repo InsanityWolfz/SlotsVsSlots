@@ -85,12 +85,12 @@ export abstract class EncounterScreen extends ClawScreen {
     if (this.encId === 'hilo')
       return {
         line: 'CALL THE NEXT CARD: HIGHER OR LOWER',
-        full: [`RIGHT: THE POT GROWS X${HILO.grow}.`, "WRONG: IT'S GONE.", 'THE SAME CARD IS A PUSH: CALL AGAIN.', 'CASH OUT ANY TIME AFTER A RIGHT CALL.', `${HILO.calls} RIGHT CALLS PAY THE POT OUT.`],
+        full: ['ACES ARE HIGH.', `RIGHT: THE POT GROWS X${HILO.grow}.`, "WRONG: IT'S GONE.", 'THE SAME CARD IS A PUSH: CALL AGAIN.', 'CASH OUT ANY TIME AFTER A RIGHT CALL.', `${HILO.calls} RIGHT CALLS PAY THE POT OUT.`],
       };
     if (this.encId === 'claw')
       return {
         line: 'PICK A PRIZE. A MISS DRAGS IT CLOSER TO THE DROP',
-        full: [`${atStakes(run, CLAW.price)} CHIPS A GO, ${CLAW.tries + extraPlays(run)} GOES.`, 'PICK A PRIZE: THE CLAW DROPS ON IT.', 'EASY GRABS HOLD MORE OFTEN THAN HARD ONES.', 'EVERY MISS DRAGS THAT PRIZE CLOSER: ITS NEXT GRAB HOLDS MORE OFTEN.', 'WHAT THE CLAW HOLDS, YOU KEEP.'],
+        full: [`${atStakes(run, CLAW.price)} CHIPS A GO, ${CLAW.tries + extraPlays(run)} GOES.`, 'EASY GRABS HOLD MORE OFTEN THAN HARD ONES.', "A MISS MAKES THAT PRIZE'S NEXT GRAB HOLD MORE OFTEN.", 'A PRIZE YOU WIN LEAVES THE PIT.'],
       };
     return null;
   }

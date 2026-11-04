@@ -187,7 +187,7 @@ export class Menus {
       if (armed && performance.now() - armed > 400) return go();
       if (armed) return;
       armed = performance.now();
-      b.label = b.w >= 300 ? 'ENDS YOUR SAVED RUN. AGAIN?' : 'SURE?';
+      b.label = b.w >= 300 ? 'THE SAVED RUN ENDS. SURE?' : 'SURE?';
       b.opts.textScale = Math.min(scale ?? T.body, T.body);
       this.sounds.fizzle();
       setTimeout(() => {

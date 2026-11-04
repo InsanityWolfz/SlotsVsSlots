@@ -805,7 +805,7 @@ export class Game {
       if (e.type === 'attack' && e.to === 'player')
         add(e.note === 'drain' ? 'DRAIN' : e.note === 'mimic' ? 'COPYCAT' : e.reels.length ? 'SPIN HITS' : this.fight.isBoss ? 'THE POT' : 'ABILITY', e.hpDamage);
       else if (e.type === 'specialFire' && e.to === 'player') add('SPECIAL', e.hpDamage);
-      else if (e.type === 'markedHit' && e.side === 'player') add(this.fight.isDealer ? "THE DEALER'S MARK" : this.run && currentEnemy(this.run).archetype === 'sharp' ? "THE SHARP'S MARK" : 'MARKED DECK', e.hpDamage);
+      else if (e.type === 'markedHit' && e.side === 'player') add('MARKS', e.hpDamage);
       else if (e.type === 'blast' && e.side === 'player') add('IOUS', e.hpDamage);
     }
   }

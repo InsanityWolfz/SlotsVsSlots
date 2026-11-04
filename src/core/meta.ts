@@ -137,8 +137,8 @@ const stakeOf = (lvl: number): AchievementDef => ({
 export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'first_win', name: 'FIRST BLOOD', text: 'WIN A FIGHT.', check: (c) => c.act > 1 || c.won || c.score > 0 },
   { id: 'house', name: 'HOUSE CALL', text: 'BEAT THE HOUSE.', check: (c) => c.act >= 2 || c.won },
-  { id: 'clear', name: 'NO MORE BETS', text: 'CLEAR A RUN: STOP THE WHEEL.', check: (c) => c.won },
-  { id: 'dealer', name: 'THE HOUSE ALWAYS LOSES', text: 'BEAT THE DEALER (NOT IN THE DAILY).', check: (c) => c.won && c.acts >= 3 && !c.daily },
+  { id: 'clear', name: 'NO MORE BETS', text: 'CLEAR A RUN.', check: (c) => c.won },
+  { id: 'dealer', name: 'THE HOUSE ALWAYS LOSES', text: 'BEAT THE DEALER.', check: (c) => c.won && c.acts >= 3 && !c.daily },
   ...CABINET_ORDER.map(clearOf),
   {
     id: 'all_machines',
@@ -151,7 +151,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   // (THE DAILY RUN's three went to after launch with it, 2026-10-29; earned ones stay in the save.)
   { id: 'endless_1', name: 'LET IT RIDE', text: 'CLEAR AN ENDLESS LOOP.', check: (c) => c.loops >= 1 },
   { id: 'endless_3', name: 'ON A HEATER', text: 'CLEAR 3 ENDLESS LOOPS IN ONE RUN.', check: (c) => c.loops >= 3 },
-  { id: 'turbo', name: 'BROKE THE BANK', text: 'BEAT THE TURBO BOSS.', check: (c) => c.loops >= 5 },
+  { id: 'turbo', name: 'BROKE THE BANK', text: 'BEAT THE OWNER.', check: (c) => c.loops >= 5 },
   { id: 'chips_50', name: 'MONEYBAGS', text: 'WIN A RUN HOLDING 50 CHIPS OR MORE.', check: (c) => c.won && c.chips >= 50 },
   { id: 'relics_12', name: 'MAGPIE', text: 'FINISH A RUN WITH 12 RELICS OR MORE.', check: (c) => c.relics >= 12 },
   { id: 'score_5k', name: 'BIG WINNER', text: 'SCORE 5,000 IN ONE RUN.', check: (c) => c.score >= 5000 },

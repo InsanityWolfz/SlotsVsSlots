@@ -36,7 +36,7 @@ export const KEYWORDS: Keyword[] = [
   { word: 'ALL IN', icon: 'kwAllIn', color: '#ff6a5a', text: "THE DEALER'S BIG HIT: A SHARE OF YOUR MAX HP THAT PIERCES SHIELDS" },
   { word: 'HOLD', icon: 'kwHold', forms: ['HELD'], color: '#ffe28a', text: `TAP ONE OF YOUR REELS BEFORE YOUR SPIN OR WHILE THE ENEMY SPINS: IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. ${HOLD.perFight} A FIGHT` },
   // (BUILD-UP borrows the METER icon until it has its own.)
-  { word: 'BUILD-UP', icon: 'kwMeter', color: '#ffd23a', text: 'EACH OF YOUR SPINS WITHOUT A PAIR OR JACKPOT OF YOUR HIT SYMBOL (SWORDS, CHIPS, BOLTS, CARDS OR NOTES) ADDS +25% TO THE NEXT ONE, UP TO X2. THAT ONE CASHES IT IN' },
+  { word: 'BUILD-UP', icon: 'kwMeter', color: '#ffd23a', text: 'EACH SPIN WITHOUT A PAIR OR JACKPOT OF YOUR ATTACK SYMBOL (SWORD, CHIP, BOLT, CARD OR NOTE) ADDS +25% TO YOUR NEXT ONE, UP TO X2' },
   { word: 'OVERTIME', icon: 'kwOvertime', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF A FIGHT, EVERY HIT ON BOTH MACHINES PAYS X${1 + OVERTIME.step}, +${OVERTIME.step} WITH EACH OF YOUR SPINS. SHIELDS DON'T GROW` },
   { word: 'SABOTAGE', icon: 'kwSabotage', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY DOES TO YOUR REELS: SPILLS, STEALS, ROCKS, IOUS, FREEZES, JAMS, JINXES, MARKS' },
   { word: 'MARK', icon: 'kwMark', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED SYMBOL ON YOUR PAYLINE HITS YOU FOR 20' },
@@ -48,7 +48,7 @@ export const KEYWORDS: Keyword[] = [
   { word: 'JINX', icon: 'kwJinx', forms: ['JINXES', 'JINXED'], color: '#c9a0ff', text: 'ANY GROUP ON A JINXED REEL PAYS HALF' },
   // (RAKE has no icon of its own: it borrows SABOTAGE's.)
   { word: 'RAKE', icon: 'kwSabotage', forms: ['RAKES', 'RAKED'], color: '#ffd23f', text: 'WHILE RAKED, EACH OF YOUR GROUPS PAYS 10 LESS' },
-  { word: 'SPILL', icon: 'kwSpill', forms: ['SPILLED', 'SPILLS'], color: COLORS.slime, text: 'A SPILLED CELL PAYS NOTHING. A SPILL PAIR MOPS UP ITS REELS. A JACKPOT MOPS IT ALL UP' },
+  { word: 'SPILL', icon: 'kwSpill', forms: ['SPILLED', 'SPILLS'], color: COLORS.slime, text: 'A SPILLED CELL PAYS NOTHING. A SPILL PAIR MOPS UP ITS REELS, A SPILL JACKPOT MOPS UP THEM ALL' },
   { word: 'ROCK', icon: 'kwRock', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD CELL: IT PAYS NOTHING' },
   { word: 'IOU', icon: 'kwIou', forms: ['IOUS'], color: '#ff9a3a', text: 'TICKS DOWN, THEN HITS YOU. LAND IT ON YOUR PAYLINE TO PAY IT OFF' },
 ];

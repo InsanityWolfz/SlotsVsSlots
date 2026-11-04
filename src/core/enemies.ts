@@ -79,7 +79,7 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 1.56,
     ability: { kind: 'quake', every: 4, power: 2 },
     minDepth: 2,
-    blurb: 'CLUTTERS YOUR STRIP WITH ROCKS',
+    blurb: 'ADDS ROCKS TO YOUR REELS',
     acts: [1, 2],
   },
   {
@@ -136,7 +136,7 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 1.1,
     ability: { kind: 'launder', every: 4, power: 2 },
     minDepth: 1,
-    blurb: 'REMOVES A CHARM',
+    blurb: 'TAKES YOUR CHIPS. ITS FAKE COINS SWITCH YOUR CHARMS OFF',
     acts: [2],
   },
 ];
@@ -151,7 +151,7 @@ ARCHETYPES.push(
     hpMul: 1,
     ability: { kind: 'mark', every: 4, power: 3 },
     minDepth: 0,
-    blurb: 'MARKS YOUR CELLS: A MARKED CARD ON YOUR PAYLINE HITS YOU FOR 20',
+    blurb: 'MARKS YOUR SYMBOLS: A MARKED ONE ON YOUR PAYLINE HITS YOU FOR 20',
     acts: [3],
   },
   {
@@ -162,7 +162,7 @@ ARCHETYPES.push(
     hpMul: 1.1,
     ability: { kind: 'penalty', every: 4, power: 4 * UNIT },
     minDepth: 0,
-    blurb: 'CONFISCATES YOUR CHARMS FOR THE FIGHT (ITS AUDIT TAKES ONE EVERY FEW TURNS)',
+    blurb: 'TAKES YOUR CHARMS FOR THE FIGHT',
     acts: [3],
   },
   {
@@ -212,7 +212,7 @@ export const BOSS: Archetype = {
   hpMul: 1,
   ability: { kind: 'jackpot', every: POT.cashEvery, power: 1 },
   minDepth: 5,
-  blurb: 'THE HOUSE ALWAYS WINS... RIGHT?',
+  blurb: 'A GROWING POT: IT SKIMS HALF AT YOU. JACKPOTS WIN IT',
 };
 
 /**

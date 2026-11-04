@@ -420,7 +420,7 @@ export class FightView {
     const lo = allInRange(hp, 0, loop);
     const hi = allInRange(hp, Infinity, loop);
     const range = lo === hi ? fmtNum(hi) : `${fmtNum(lo)}-${fmtNum(hi)}`;
-    const [name, ...rule] = card === 'allin' ? ['ALL IN', range, 'PIERCES'] : ['BUST', 'BEST REEL', 'PAYS NONE'];
+    const [name, ...rule] = card === 'allin' ? ['ALL IN', range, 'PIERCES'] : ['BUST', 'BEST REEL', 'NO PAY'];
     drawText(ctx, name, x0 + 66, y + 62, T.head, card === 'allin' ? '#ff6a5a' : '#ffffff', { align: 'left' });
     rule.forEach((l, k) => drawText(ctx, l, x0 + 66, y + 88 + k * 18, T.small, COLORS.text, { align: 'left' }));
     // When it comes, one line under the panel.

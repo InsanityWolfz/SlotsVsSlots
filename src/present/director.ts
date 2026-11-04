@@ -267,11 +267,11 @@ export class Director {
       case 'closing': {
         const c = this.machineCenter('enemy');
         this.s.sounds.click();
-        return this.popText(`THE HOUSE CLOSES IN ${e.left}`, c.x, MACHINE_TOP - 22, 2, '#ff6a5a', 12, 0.6);
+        return this.popText(`CLOSING TIME IN ${e.left}`, c.x, MACHINE_TOP - 22, 2, '#ff6a5a', 12, 0.6);
       }
       case 'closingTime':
         this.s.sounds.stingerMedium();
-        return this.banner('CLOSING TIME!', '#ff6a5a', 1.2, 0.4, 'A STALLED TABLE GOES TO THE HOUSE', BANNER_Y, 3);
+        return this.banner('CLOSING TIME!', '#ff6a5a', 1.2, 0.4, 'THE FIGHT RAN TOO LONG. YOU LOSE', BANNER_Y, 3);
       case 'makeItRain': {
         // MAKE IT RAIN!: a callout, a shower of coins (sound), and the HUD's chip count follows.
         const c = this.machineCenter(e.side);
@@ -298,10 +298,10 @@ export class Director {
         return this.buildUp(e);
       case 'overtime':
         this.s.sounds.stingerMedium();
-        return this.banner('OVERTIME!', '#ff9a3a', 1.2, 0.3, 'BOTH MACHINES HIT HARDER EVERY ROUND', BANNER_Y, 3);
+        return this.banner('OVERTIME!', '#ff9a3a', 1.2, 0.3, 'BOTH MACHINES HIT HARDER WITH EACH OF YOUR SPINS', BANNER_Y, 3);
       case 'lastCall':
         this.s.sounds.stingerMedium();
-        return this.banner('LAST CALL!', '#ff6a5a', 1.2, 0.3, e.house ? 'THE HOUSE SKIMS EVERY TURN NOW' : 'THE HOUSE HITS HARDER EVERY TURN NOW', BANNER_Y, 3);
+        return this.banner('LAST CALL!', '#ff6a5a', 1.2, 0.3, e.house ? 'THE HOUSE SKIMS EVERY TURN NOW' : 'ITS HITS GROW EVERY TURN NOW', BANNER_Y, 3);
       case 'hpCost': {
         // LIVE WIRE: the storm's price comes off your own HP bar.
         const h = this.s.huds[e.side];
@@ -314,7 +314,7 @@ export class Director {
       case 'coverCharge': {
         const c = this.machineCenter(e.side);
         this.s.sounds.coin(1);
-        return this.popText(`COVER CHARGE -${e.amount}`, c.x, MACHINE_TOP - 22, 2, '#ff8a7a', 12, 0.5);
+        return this.popText(`COVER CHARGE: -${e.amount} THROUGH YOUR SHIELD`, c.x, MACHINE_TOP - 22, 2, '#ff8a7a', 12, 0.5);
       }
       case 'allInHit':
         return this.allInHit(e);
@@ -1955,7 +1955,7 @@ export class Director {
     });
     await Promise.all(hits);
     const c = this.machineCenter(e.to);
-    this.bg(this.popText(`FAKED: ALL YOUR ${e.enhs.map((x) => x.toUpperCase()).join(' + ')} PAYS PLAIN ${e.turns} TURNS`, c.x, MACHINE_TOP - 30, 2, '#c0c0c0', 16, 0.6));
+    this.bg(this.popText(`FAKED: ${e.enhs.map((x) => charmName(x)).join(' + ')} CHARM${e.enhs.length > 1 ? 'S' : ''} OFF FOR ${e.turns} TURNS`, c.x, MACHINE_TOP - 30, 2, '#c0c0c0', 16, 0.6));
     if (e.reels.length) this.settle(e.from, e.reels);
     await this.c.wait(0.15);
   }
@@ -2019,7 +2019,7 @@ export class Director {
     }
     const c = this.machineCenter(e.to);
     if (e.repo) this.repossessed(e.to, `${e.enhs.map((x) => charmName(x)).join(' + ')} CHARM`);
-    else this.bg(this.popText(`CONFISCATED: ${e.enhs.map((x) => x.toUpperCase()).join(' + ')}`, c.x, MACHINE_TOP - 30, 2, '#e0c090', 16, 0.6));
+    else this.bg(this.popText(`CONFISCATED: ${e.enhs.map((x) => charmName(x)).join(' + ')} CHARM${e.enhs.length > 1 ? 'S' : ''}`, c.x, MACHINE_TOP - 30, 2, '#e0c090', 16, 0.6));
     if (e.reels.length) this.settle(e.from, e.reels);
     await this.c.wait(0.3);
   }
