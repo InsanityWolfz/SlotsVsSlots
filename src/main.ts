@@ -1,4 +1,4 @@
-import { Game, toggleFullscreen } from './game';
+import { Game, SPEEDS, toggleFullscreen } from './game';
 import { DESKTOP } from './build';
 import { installCrashHandlers, reportCrash } from './ui/crash';
 import { H, W } from './present/layout';
@@ -125,7 +125,7 @@ window.addEventListener('keydown', (e) => {
     log.toggle(false);
     // The menus: one screen back.
     if (game.key(k)) e.preventDefault();
-  } else if (game.key(k)) e.preventDefault();
+  } else if (game.key(k, e.repeat)) e.preventDefault();
 });
 
 document.addEventListener('visibilitychange', () => game.setHidden(document.hidden));
@@ -147,7 +147,6 @@ installCrashHandlers(crashContext);
 // X spins, Y toggles AUTO, the bumpers change speed; in a fight the d-pad left / up / right HOLDs reels 1 / 2 / 3 (game.ts). Edges only, with a repeat while a direction is held.
 const PAD: Record<number, string> = { 12: 'arrowup', 13: 'arrowdown', 14: 'arrowleft', 15: 'arrowright', 0: 'enter', 1: 'escape', 9: 'escape', 2: ' ', 3: 'a' };
 const padHeld = new Map<string, number>();
-let speedIdx = -1;
 function pollPads(now: number): void {
   const pads = navigator.getGamepads?.() ?? [];
   const down = new Set<string>();
@@ -168,9 +167,10 @@ function pollPads(now: number): void {
     if (t === undefined || repeat) {
       padHeld.set(k, repeat ? now - 260 : now);
       if (k === 'lb' || k === 'rb') {
-        speedIdx = Math.max(0, Math.min(3, (speedIdx < 0 ? 1 : speedIdx) + (k === 'rb' ? 1 : -1)));
-        game.key(String(speedIdx + 1));
-      } else game.key(k);
+        // (From the speed you're on: it started at 2X whatever the saved speed was.)
+        const now = Math.max(0, SPEEDS.indexOf(game.prefs.speed));
+        game.key(String(Math.max(0, Math.min(SPEEDS.length - 1, now + (k === 'rb' ? 1 : -1))) + 1));
+      } else game.key(k, repeat);
     }
   }
   for (const k of [...padHeld.keys()]) if (!down.has(k)) padHeld.delete(k);

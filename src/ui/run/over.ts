@@ -88,6 +88,13 @@ export abstract class OverScreen extends ShopScreen {
     this.openResults();
   }
 
+  /** B / Escape on the RUN LOG: back to the run-over screen (it went to the menu). */
+  closeLog(): boolean {
+    if (!this.logOpen) return false;
+    this.openLog(false);
+    return true;
+  }
+
   protected openLog(open: boolean): void {
     this.logOpen = open;
     this.buttons = open ? this.logButtons : this.overMain;

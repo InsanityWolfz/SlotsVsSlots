@@ -200,7 +200,7 @@ export abstract class RunScreensBase {
   /** Keyboard / gamepad focus targets (STEAM_READINESS S3): everything clickable, plus the cards' "?" flip tabs. */
   navTargets(): { x: number; y: number; w: number; h: number }[] {
     if (!this.active || performance.now() - this.openedAt < INPUT_GUARD_MS) return [];
-    const out: { x: number; y: number; w: number; h: number }[] = [...this.all().filter((h) => h.enabled), ...(this.mode !== 'cabinet' ? this.relicRects : [])];
+    const out: { x: number; y: number; w: number; h: number }[] = [...this.all().filter((h) => h.enabled), ...(this.mode !== 'cabinet' && this.mode !== 'over' ? this.relicRects : [])];
     return out;
   }
 

@@ -133,11 +133,18 @@ export class Pause {
     const colW = (pw - 88) / 2;
     const wordW = 146;
     const chars = Math.floor((colW - wordW + 14) / (textWidth('MM', T.small) - textWidth('M', T.small)));
-    const per = Math.ceil(KEYWORDS.length / 2);
     const LINE = 18;
-    const GAP = 16;
-    const cols = [KEYWORDS.slice(0, per), KEYWORDS.slice(per)].map((ks) => ks.map((k) => ({ k, rows: wrap(k.text, chars) })));
-    const tallest = Math.max(...cols.map((c) => c.reduce((a, e) => a + e.rows.length * LINE + GAP, -GAP)));
+    // The columns split by height, not count, and the gaps close up to fit (QA 2026-11-04: 7 new keywords ran SPILL,
+    // ROCK and IOU off the bottom).
+    const all = KEYWORDS.map((k) => ({ k, rows: wrap(k.text, chars) }));
+    const room = ph - 150;
+    const height = (es: typeof all, gap: number) => es.reduce((a, e) => a + e.rows.length * LINE + gap, -gap);
+    let per = 1;
+    for (let i = 1; i < all.length; i++) if (Math.max(height(all.slice(0, i), 0), height(all.slice(i), 0)) < Math.max(height(all.slice(0, per), 0), height(all.slice(per), 0))) per = i;
+    const cols = [all.slice(0, per), all.slice(per)];
+    const most = Math.max(...cols.map((c) => c.length));
+    const GAP = Math.max(4, Math.min(16, Math.floor((room - Math.max(...cols.map((c) => height(c, 0)))) / Math.max(1, most - 1))));
+    const tallest = Math.max(...cols.map((c) => height(c, GAP)));
     const top = py + 96 + Math.max(0, (ph - 150 - tallest) / 2);
     cols.forEach((entries, col) => {
       const x = px + 28 + col * (colW + 32);

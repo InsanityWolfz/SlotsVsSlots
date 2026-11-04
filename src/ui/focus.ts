@@ -18,10 +18,33 @@ export class Focus {
   at: { x: number; y: number } | null = null;
   visible = false;
   private shown = 0;
+  /** The screen the focus is on (game.ts names it). A new screen puts the focus on its main button, not the spot the
+   * last screen's focus happened to be (QA 2026-11-04: it landed on WALK AWAY, QUIT TO MENU, the card's "?"). */
+  private screen = '';
+  private land = false;
+
+  /** A new screen: while the pad is in use, the focus lands on that screen's main button as soon as it has targets. */
+  sync(screen: string): void {
+    if (screen === this.screen) return;
+    this.screen = screen;
+    this.at = null;
+    this.land = this.visible;
+  }
+
+  /** The thing you pressed is gone (a DEAL, a bought item): no guess at its neighbour; the next press shows the focus. */
+  lost(): void {
+    this.at = null;
+    this.land = false;
+    this.visible = false;
+  }
 
   /** The focused rect in the current list (or the nearest one, after a screen change). */
   current(targets: NavRect[]): NavRect | null {
     if (!targets.length) return null;
+    if (!this.at && this.land) {
+      this.land = false;
+      return this.set(this.first(targets));
+    }
     if (!this.at) return null;
     const at = this.at;
     let best: NavRect | null = null;
@@ -33,13 +56,22 @@ export class Focus {
     return best;
   }
 
-  /** First press on a screen: the topmost, then leftmost target (most screens lead with their main choice). */
+  /** First press on a screen: its main button (the kit's red one), else the topmost, then leftmost target. */
   private first(targets: NavRect[]): NavRect {
-    return [...targets].sort((a, b) => a.y - b.y || a.x - b.x)[0];
+    const main = (t: NavRect) => {
+      const b = t as NavRect & { label?: string; minor?: boolean; tint?: string; quietStyle?: boolean; ghost?: boolean; chip?: string; quiet?: boolean; opts?: { primary?: boolean; idlePulse?: boolean } };
+      // (The fight's and menus' buttons: SPIN and the red ones, not AUTO.)
+      if (b.opts) return !!(b.opts.primary || b.opts.idlePulse);
+      return typeof b.label === 'string' && !!b.label && !b.minor && !b.tint && !b.quietStyle && !b.ghost && !b.chip && !b.quiet;
+    };
+    const order = (a: NavRect, b: NavRect) => a.y - b.y || a.x - b.x;
+    return [...targets.filter(main)].sort(order)[0] ?? [...targets].sort(order)[0];
   }
 
   move(dir: NavDir, targets: NavRect[]): NavRect | null {
     if (!targets.length) return null;
+    // (A new screen's first press only shows where the focus is: on its main button.)
+    if (this.visible && !this.at) return this.set(this.first(targets));
     const cur = this.visible ? this.current(targets) : null;
     if (!cur) return this.set(this.first(targets));
     const dx = dir === 'left' ? -1 : dir === 'right' ? 1 : 0;

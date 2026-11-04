@@ -73,7 +73,7 @@ const AUTO_DELAY = 0.35;
 /** HOLD (experiment): HOLDs a fight. */
 
 /** Speed buttons (keys 1-4). The new 1X is half of the old 1X, so the clock runs at speed / 2. */
-const SPEEDS = [1, 2, 4, 8];
+export const SPEEDS = [1, 2, 4, 8];
 /** The quiet tool row (LOG, SOUND, PAUSE): its buttons' width, and the i-th one's centre (the row's right edge lines up
  * with the enemy machine's frame). */
 const QUIET_W = 84;
@@ -1178,7 +1178,8 @@ export class Game {
     if (this.coach.active) return [];
     if (this.pause.open && !this.menus.isOpen) return this.pause.navTargets();
     if (this.menus.isOpen) return [...this.menus.navTargets(), ...(this.muteBtn.visible ? [this.muteBtn] : [])];
-    const own = this.buttons.filter((b) => b.visible && b.enabled && !this.recapBtns.includes(b));
+    // (SPIN stays a target while it waits on the enemy's spin: the focus slid onto AUTO, and the next A turned it on.)
+    const own = this.buttons.filter((b) => b.visible && (b.enabled || b === this.spinBtn) && !this.recapBtns.includes(b));
     // Run screens draw over the fight's buttons: only their own targets count.
     if (this.screens.active) return this.screens.navTargets();
     return [...own, ...this.recapBtns.filter((b) => b.visible && b.enabled)];
@@ -1350,7 +1351,14 @@ export class Game {
     return any;
   }
 
-  key(k: string): boolean {
+  /** Which screen the focus is on (a new one puts it on that screen's main button). */
+  private focusKey(): string {
+    return [this.phase, this.screens.active ? this.screens.mode : '', this.menus.isOpen ? this.menus.mode : '', this.pause.open ? (this.pause.glossary ? 'glossary' : 'pause') : '', this.bossCard ? 'boss' : ''].join('|');
+  }
+
+  /** A key, or a pad button. `repeat`: a held arrow or d-pad direction repeating (it moves the focus, never a HOLD). */
+  key(k: string, repeat = false): boolean {
+    this.focus.sync(this.focusKey());
     this.startAudio();
     if (this.coach.active) {
       // Any key moves the tutorial on (a pad's A included); S skips it.
@@ -1360,7 +1368,8 @@ export class Game {
     }
     // HOLD: Q / W / E, or the arrows / d-pad while a HOLD can be made (the fight's buttons all have their own keys).
     if (HOLD_KEYS[k] !== undefined && this.canHold() && !this.menus.isOpen) {
-      this.tapHold(HOLD_KEYS[k]);
+      // (One press, one HOLD: a held d-pad flipped the reel on and off every repeat.)
+      if (!repeat) this.tapHold(HOLD_KEYS[k]);
       return true;
     }
     // Keyboard / gamepad focus (STEAM_READINESS S3): arrows move it, Enter presses it.
@@ -1393,8 +1402,12 @@ export class Game {
       if (t) {
         this.pointerDown(t.x, t.y);
         this.pointerUp(t.x, t.y);
-        // The screen may have changed under the press: re-hover what's under the focus now.
-        const n = this.focus.current(this.navTargets());
+        // The screen may have changed under the press: a new screen puts the focus on its main button; a button
+        // that's gone (a DEAL, a bought item) hides it, so the next A can't land on a neighbour (LOWER, +40 MAX HP).
+        this.focus.sync(this.focusKey());
+        const after = this.navTargets();
+        if (this.focus.at && !after.some((b) => Math.abs(b.x - t.x) < 2 && Math.abs(b.y - t.y) < 2)) this.focus.lost();
+        const n = this.focus.current(after);
         if (n) this.pointerMove(n.x, n.y);
         return true;
       }
@@ -1411,7 +1424,11 @@ export class Game {
       this.showMenu();
       return true;
     }
-    // RUN OVER: Escape is the way back to the menu.
+    // RUN OVER: Escape is the way back to the menu (from the RUN LOG, back to the run-over screen first).
+    if (k === 'escape' && this.phase === 'over' && !this.menus.isOpen && this.screens.closeLog()) {
+      this.sounds.click();
+      return true;
+    }
     if (k === 'escape' && this.phase === 'over' && !this.menus.isOpen) {
       this.sounds.click();
       this.showMenu();
@@ -1539,6 +1556,7 @@ export class Game {
       this.menus.draw(ctx, t);
       if (this.muteBtn.visible) this.muteBtn.draw(ctx, t);
       // The kit's focus: gold corner brackets around what the pad or keyboard is on.
+      this.focus.sync(this.focusKey());
       if (this.focus.visible) this.focus.draw(ctx, this.navTargets(), t);
       return;
     }
@@ -1591,6 +1609,7 @@ export class Game {
     for (const b of this.recapBtns) b.draw(ctx, t);
     this.coach.draw(ctx, t);
     this.pause.draw(ctx, t);
+    this.focus.sync(this.focusKey());
     if (this.focus.visible) this.focus.draw(ctx, this.navTargets(), t);
   }
 
