@@ -1140,6 +1140,7 @@ export class Fight {
 
   /** A LIGHTNING STORM: strikes while the charge covers one. */
   private storm(me: Combatant, events: CombatEvent[]): void {
+    const STORM_ROLL = 64;
     const foe = this.sides[other(me.side)];
     const pierce = this.cfg.specialIgnoresShield;
     // OVERCHARGE (TESLA): every strike hits 30% harder. It used to fire an echo strike after each one, which spammed
@@ -1169,10 +1170,17 @@ export class Fight {
       }
       if (melt > 0 && strikes === 0) events.push({ type: 'relic', side: me.side, relic: 'meltdown' });
       if (chain && strikes === 0) events.push({ type: 'relic', side: me.side, relic: 'chainlightning' });
-      const h = this.damage(foe, dmg, pierce);
-      events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg, ...h, energyLeft: me.energy });
+      // Past STORM_ROLL strikes, the rest of the charge lands as one hit of the same total (stress test 2026-11-02: a
+      // late ENDLESS TESLA fired 8,500-45,000 strikes in one turn, seconds of work for the same result).
+      let n = 1;
+      if (strikes >= STORM_ROLL) {
+        n += Math.floor(me.energy / this.cfg.specialCost);
+        me.energy -= (n - 1) * this.cfg.specialCost;
+      }
+      const h = this.damage(foe, dmg * n, pierce);
+      events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg * n, ...h, energyLeft: me.energy, ...(n > 1 ? { strikes: n } : {}) });
       this.checkDeath(foe, events);
-      strikes++;
+      strikes += n;
     }
     // Every strike heals a little (TESLA's payoff heal), plus Vampire Fang: once per storm, for all its strikes (one heal
     // after each strike spammed through a LIGHTNING STORM: user playtest).

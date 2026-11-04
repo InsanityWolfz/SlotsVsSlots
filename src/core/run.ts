@@ -1267,7 +1267,10 @@ export function draftOffers(run: RunState): DraftOption[] {
     const pool = gildsFor(run);
     // Act 2: the new charms show up half the time.
     const act2 = pool.filter((e) => ACT2_GILDS.includes(e));
-    const enh = act2.length && rng.next() < 0.5 ? rng.pick(act2) : rng.pick(pool.filter((e) => !ACT2_GILDS.includes(e)));
+    const base = pool.filter((e) => !ACT2_GILDS.includes(e));
+    // (No Charm fits anything on your reels: no card, instead of a crash. Stress test 2026-11-02.)
+    if (!act2.length && !base.length) return null;
+    const enh = act2.length && (!base.length || rng.next() < 0.5) ? rng.pick(act2) : rng.pick(base);
     const options = charmOptions(run, n, [enh]).filter((o) => !taken(o));
     return options.length ? rng.pick(options) : null;
   };
@@ -1322,7 +1325,8 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
       break;
     }
     case 'clear':
-      p.strips[o.reel].rock = 0;
+      // (A reel never ends up empty: an all-rock reel keeps one, stress test 2026-11-02.)
+      p.strips[o.reel].rock = Object.entries(p.strips[o.reel]).some(([k, v]) => k !== 'rock' && (v ?? 0) > 0) ? 0 : 1;
       break;
     case 'relic':
       if (!p.relics.includes(o.relic)) p.relics.push(o.relic);

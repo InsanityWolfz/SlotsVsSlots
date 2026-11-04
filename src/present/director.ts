@@ -1125,9 +1125,9 @@ export class Director {
    */
   private async storm(group: CombatEvent[]): Promise<void> {
     const strikes = group.filter((x): x is Ev<'specialFire'> => x.type === 'specialFire');
-    const n = strikes.length;
+    const n = strikes.reduce((a, x) => a + (x.strikes ?? 1), 0);
     const first = strikes[0];
-    const last = strikes[n - 1];
+    const last = strikes[strikes.length - 1];
     const dur = Math.min(4, 1.2 + (1.3 * Math.log(n / 2)) / Math.log(5));
     const total = strikes.reduce((a, x) => a + x.hpDamage, 0);
     const h = this.s.huds[first.from];

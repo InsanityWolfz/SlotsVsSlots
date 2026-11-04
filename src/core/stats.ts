@@ -113,7 +113,7 @@ export class StatsTracker {
         this.hit(e.from, e.amount);
         break;
       case 'specialFire':
-        S[e.from].specials++;
+        S[e.from].specials += e.strikes ?? 1;
         S[e.from].specialDamage += e.hpDamage;
         S[e.from].damageDealt += e.hpDamage;
         S[e.to].damageBlocked += e.blocked;

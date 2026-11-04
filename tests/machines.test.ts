@@ -110,3 +110,21 @@ describe('build-aware offers & the heal service', () => {
     expect(rerollCost(run)).toBe(1);
   });
 });
+
+describe('a huge lightning storm (stress test 2026-11-02)', () => {
+  it('rolls its tail into one hit: the same strikes and damage, far fewer events', () => {
+    const c = defaultConfig();
+    c.cabinet = 'tesla';
+    c.enemy = { hp: 1e9, strips: reels3({ empty: 12 }) };
+    const f = new Fight(c, 3);
+    const p = f.sides.player;
+    const per = f.cfg.specialCost;
+    p.energy = per * 5000;
+    f.forceNext('player', ['empty', 'empty', 'empty']);
+    (f as unknown as { stormPending: boolean }).stormPending = true;
+    const ev = f.step().events.filter((e) => e.type === 'specialFire') as Extract<CombatEvent, { type: 'specialFire' }>[];
+    expect(ev.length).toBeLessThan(100);
+    expect(ev.reduce((a, e) => a + (e.strikes ?? 1), 0)).toBe(5000);
+    expect(ev.reduce((a, e) => a + e.amount, 0)).toBe(5000 * ev[0].amount);
+  });
+});

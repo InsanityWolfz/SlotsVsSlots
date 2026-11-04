@@ -69,6 +69,8 @@ export type CombatEvent =
       targetHp: number;
       targetShield: number;
       energyLeft: number;
+      /** A storm's tail, rolled into one hit (`strikes` strikes' worth): a huge ENDLESS storm ran tens of thousands. */
+      strikes?: number;
     }
   /** `parts`: a payoff heal made of several (the meter's own, VAMPIRE FANG, GROUND WIRE), each named for the popup. */
   | { type: 'heal'; side: SideId; amount: number; hp: number; source: HealSource; parts?: { label: string; amount: number }[] }

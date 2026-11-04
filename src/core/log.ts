@@ -117,7 +117,7 @@ export function turnRow(fight: Fight, r: TurnResult, fightNo: number): TurnRow {
         row.energyGain += e.amount;
         break;
       case 'specialFire':
-        row.specials++;
+        row.specials += e.strikes ?? 1;
         row.specialDamage += e.hpDamage;
         row.blocked += e.blocked;
         row.hpDamage += e.hpDamage;
