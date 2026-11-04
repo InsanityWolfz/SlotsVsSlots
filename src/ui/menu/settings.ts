@@ -173,7 +173,7 @@ export class SettingsScreen implements MenuScreen {
     this.drawControls(ctx);
     // The version line and RESET SAVE.
     drawText(ctx, STEAM ? `REEL BRAWL V${VERSION.toUpperCase()}` : `PLAYTEST BUILD V${VERSION.toUpperCase()}`, LX + 28, SAVE_Y + 46, T.small, COLORS.textDim, { align: 'left' });
-    if (this.reset) drawText(ctx, 'RESET ERASES YOUR UNLOCKS, COLLECTION AND SCORES', LX + 28, SAVE_Y + 90, T.small, '#ff8a7a', { align: 'left', alpha: this.resetArmed ? 1 : 0.75 });
+    if (this.reset) drawText(ctx, 'RESET ERASES ALL YOUR PROGRESS', LX + 28, SAVE_Y + 90, T.small, '#ff8a7a', { align: 'left', alpha: this.resetArmed ? 1 : 0.75 });
     else drawText(ctx, 'PROGRESS SAVES AS YOU PLAY', LX + 28, SAVE_Y + 90, T.small, COLORS.textDim, { align: 'left' });
     void t;
   }

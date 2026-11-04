@@ -108,7 +108,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     startChips: 24,
     symbols: ['goldbar', 'shield'],
     attack: 'goldbar',
-    rule: 'CHIPS HIT AND WIN CHIPS. FULL BAR: HIT HARDER, HEAL 15. JACKPOTS MAKE IT RAIN. 340 HP.',
+    rule: 'CHIPS HIT AND WIN CHIPS. FULL METER: HIT HARDER, HEAL 15. CHIP JACKPOTS MAKE IT RAIN. 340 HP.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },
@@ -152,8 +152,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 1.5 * UNIT, perWild: 5 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
-    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS, HEAL 15. 330 HP.',
-    unlock: 'BEAT THE HOUSE WITH WILDS',
+    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS, HEAL 15. A WILD LETS ANY 2 REELS PAIR. 330 HP.',
+    unlock: 'BEAT THE HOUSE WITH A WILD ON YOUR REELS',
     jokerWilds: true,
   },
   jukebox: {
@@ -170,7 +170,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 1.5 * UNIT },
     symbols: ['note', 'shield'],
     attack: 'note',
-    rule: 'NOTES RAISE THE VOLUME. AT MAX THE BEAT DROPS: NOTES HIT, YOU HEAL 15. 385 HP.',
+    rule: 'NOTES RAISE THE VOLUME: EACH LEVEL, NOTES HIT HARDER. AT 6, THE DROP: EVERY NOTE ON SCREEN HITS, HEAL 15. 385 HP.',
     unlock: 'BEAT THE HOUSE',
   },
 };

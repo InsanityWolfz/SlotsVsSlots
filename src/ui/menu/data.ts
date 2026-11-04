@@ -16,14 +16,14 @@ import { artId, hasSprite, type SpriteId } from '../../render/sprites';
 const who: Record<Enh, string> = {
   gold: 'YOUR ATTACK SYMBOLS AND SHIELDS',
   keen: 'SWORDS, CARDS AND NOTES',
-  charged: "DOC VOLTZ'S BOLTS",
+  charged: "TESLA'S BOLTS",
   spiked: 'KNIGHT. SHIELDS',
   vamp: 'SWORDS, CARDS AND NOTES',
-  lucky: 'YOUR ATTACK SYMBOLS AND SHIELDS',
-  blaze: "DOC VOLTZ'S BOLTS",
+  lucky: 'BOLTS, CARDS, NOTES AND SHIELDS',
+  blaze: "TESLA'S BOLTS",
   lucre: 'YOUR ATTACK SYMBOLS AND SHIELDS',
-  trick: "JAX'S CARDS AND SHIELDS",
-  echo: "DJ DECIBEL'S NOTES",
+  trick: "JOKER'S CARDS AND SHIELDS",
+  echo: "JUKEBOX'S NOTES",
   glass: 'YOUR ATTACK SYMBOLS AND SHIELDS',
 };
 export const CHARM_INFO: Record<Enh, { name: string; text: string }> = Object.fromEntries(
@@ -35,7 +35,9 @@ export const CHARM_ORDER: Enh[] = ['gold', 'glass', 'keen', 'vamp', 'charged', '
 const CHARM_MACHINE: Partial<Record<Enh, CabinetId>> = { charged: 'tesla', blaze: 'tesla', trick: 'joker', echo: 'jukebox' };
 export const charmWhere = (e: Enh): string => {
   const m = CHARM_MACHINE[e];
-  return m ? `${CABINETS[m].name} DRAFTS ONLY` : 'THE DRAFTS AFTER A FIGHT';
+  // (LUCKY turns up on three machines; the CLAW's 2 CHARMS prize deals Charms too.)
+  if (e === 'lucky') return 'TESLA, JOKER AND JUKEBOX ONLY';
+  return m ? `${CABINETS[m].name} ONLY` : 'DRAFTS AND THE CLAW';
 };
 /** A Charm's tile art: the symbol it sits on, with the Charm over it. */
 export const charmArt = (e: Enh): [SpriteId, SpriteId] => [(CHARM_SYMBOLS[e][0] ?? 'shield') as SpriteId, ENH_SPRITE[e]];

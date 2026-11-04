@@ -32,11 +32,11 @@ export function bossRules(boss: string, c: BossRuleContext): BossRules {
   if (boss === 'owner')
     return {
       rules: [
-        { icon: artId('icoGavel'), text: 'EVERY 2 TURNS HE CHEATS, TAKING TURNS: A NEW TRICK (SPILL, STEAL, FREEZE, ROCKS, JINX, IOUS), THEN THE HAMMER' },
-        { icon: artId('icoSmash'), text: `THE HAMMER: ${Math.round(OWNER_RULES.hammer * 100)}% OF YOUR MAX HP, IT PIERCES SHIELDS. NO TURN OF HIS TAKES MORE THAN ${Math.round(OWNER_RULES.capOnYou * 100)}%` },
-        { icon: 'shieldIcon', text: `HIS FORTUNE: ${fmtNum(TURBO.hp)}, A LADDER. EVERY HIT COUNTS IN FULL. AT ${[1, 2, 3].map((k) => fmtNum(ownerRung(k))).join(' / ')} TAKEN HE HITS ${Math.round(OWNER_RULES.phaseDmg * 100)}% HARDER` },
+        { icon: artId('icoGavel'), text: 'EVERY 2 TURNS: A TRICK (SPILL, STEAL, FREEZE, ROCKS, JINX, IOUS) OR THE HAMMER. THEY ALTERNATE' },
+        { icon: artId('icoSmash'), text: `THE HAMMER: ${Math.round(OWNER_RULES.hammer * 100)}% OF YOUR MAX HP. IT PIERCES SHIELDS. HIS HITS GROW ${Math.round(OWNER_RULES.rise * 100)}% EVERY TURN` },
+        { icon: 'shieldIcon', text: `HIS HP IS HIS FORTUNE: ${fmtNum(TURBO.hp)}. AT ${[1, 2, 3].map((k) => fmtNum(ownerRung(k))).join(' / ')} TAKEN, HE HITS ${Math.round(OWNER_RULES.phaseDmg * 100)}% HARDER` },
       ],
-      win: `EVERY RUNG YOU CLIMB SCORES. TAKE ALL ${fmtNum(TURBO.hp)} AND YOU BREAK THE BANK`,
+      win: `EACH OF THOSE MARKS SCORES. TAKE ALL ${fmtNum(TURBO.hp)} TO BREAK THE BANK`,
     };
   return rulesOf(boss, c);
 }
@@ -64,8 +64,9 @@ function rulesOf(boss: string, c: BossRuleContext): BossRules {
     return {
       rules: [
         { icon: artId('betChip'), text: `EVERY TURN: ${fast ? WHEEL_RULES.fast : WHEEL_RULES.place} CHIPS ON YOUR REELS` },
-        { icon: artId('icoBets'), text: `EVERY 3RD TURN, NO MORE BETS: EACH CHIP LEFT HITS ${Math.round(wheelChipShare(c.cabinet, (c.loop ?? 0) > 0) * 100)}% OF YOUR MAX HP` },
-        { icon: artId('ball'), text: fast ? 'GREEN: IT STARTS FAST' : `AT HALF HP: ${WHEEL_RULES.fast} CHIPS A TURN` },
+        { icon: artId('icoBets'), text: `EVERY 3 TURNS: NO MORE BETS. EACH CHIP LEFT HITS ${Math.round(wheelChipShare(c.cabinet, (c.loop ?? 0) > 0) * 100)}% OF YOUR MAX HP` },
+        // (At GREEN it bets the fast amount from the start: row 1 says so.)
+        ...(fast ? [] : [{ icon: artId('ball'), text: `AT HALF HP: ${WHEEL_RULES.fast} CHIPS A TURN` }]),
       ],
       win: 'YOUR PAIRS CLEAR THEIR REELS. A JACKPOT CLEARS THEM ALL',
     };
@@ -75,7 +76,7 @@ function rulesOf(boss: string, c: BossRuleContext): BossRules {
     rules: [
       { icon: artId('coin'), text: 'COINS ON ITS REELS FILL THE POT' },
       { icon: artId('icoCoin'), text: `EVERY ${c.houseEvery} TURNS: IT SKIMS HALF THE POT AT YOU` },
-      { icon: artId('potTier4'), text: `AT HALF HP THE POT DOUBLES. FROM TURN ${POT.lastCall}, IT SKIMS EVERY TURN` },
+      { icon: artId('potTier4'), text: `AT HALF HP THE POT DOUBLES. FROM SPIN ${POT.lastCall - 2}, LAST CALL: IT SKIMS EVERY TURN` },
       ...(dirty ? [{ icon: artId('bomb'), text: 'BLACK: IT STICKS IOUS ON YOUR PAYLINE' }] : []),
     ],
     win: 'YOUR JACKPOTS WIN ITS POT',

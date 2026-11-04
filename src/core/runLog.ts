@@ -18,8 +18,8 @@ export function runSummary(run: RunState, version = ''): string {
       ? `BEAT THE OWNER (SCORE ${runScoreOf(run)})`
       : `BUSTED ON LOOP ${run.endless.loop} (SCORE ${runScoreOf(run)})`
     : run.won
-      ? 'WON'
-      : `LOST IN ACT ${run.act}`;
+      ? `WON (SCORE ${runScoreOf(run)})`
+      : `LOST IN ACT ${run.act} (SCORE ${runScoreOf(run)})`;
   const out: string[] = [
     `REEL BRAWL RUN${version ? ` (${version})` : ''}`,
     `${CABINETS[run.cabinet].name} | ${stakeOf(run.stake).name} | SEED ${run.seed} | ${end}`,
@@ -38,7 +38,7 @@ export function runSummary(run: RunState, version = ''): string {
       r.chips ? `+${r.chips} CHIPS` : '',
     ].filter(Boolean);
     out.push(
-      `${String(i + 1).padStart(2)}. ${where} ${r.boss ? 'BOSS ' : ''}${r.enemy}: ${r.won ? 'WON' : 'LOST'} in ${r.turns} ${r.turns === 1 ? 'spin' : 'spins'}, HP ${r.hpBefore} -> ${r.hpAfter}${what.length ? ` | ${what.join(' | ')}` : ''}`,
+      `${String(i + 1).padStart(2)}. ${where} ${r.boss ? 'BOSS ' : ''}${r.enemy}: ${r.won ? 'WON' : 'LOST'} IN ${r.turns} ${r.turns === 1 ? 'SPIN' : 'SPINS'}, HP ${r.hpBefore} -> ${r.hpAfter}${what.length ? ` | ${what.join(' | ')}` : ''}`,
     );
   });
   const last = run.records[run.records.length - 1];
@@ -49,7 +49,7 @@ export function runSummary(run: RunState, version = ''): string {
     `START RELIC: ${run.startRelic ? (RELICS[run.startRelic]?.name ?? run.startRelic) : 'NONE'}`,
     `RELICS: ${p.relics.map((r) => RELICS[r]?.name ?? r).join(', ') || 'NONE'}`,
     `SYMBOL LEVELS: ${Object.keys(p.levels.sym).map((s) => `${symLabel(s as SymbolId)} ${symLevel(p.levels, s as never)}`).join(', ') || 'ALL 1'}`,
-    `CHARMS: ${p.gilded.map((g) => `${charmName(g.enh)} x${g.n} on reel ${g.reel + 1} ${symLabel(g.symbol)}`).join(', ') || 'NONE'}`,
+    `CHARMS: ${p.gilded.map((g) => `${charmName(g.enh)} X${g.n} ON REEL ${g.reel + 1} ${symLabel(g.symbol)}`).join(', ') || 'NONE'}`,
     `REELS: ${p.strips.map((s, i) => `${i + 1}: ${Object.entries(s).filter(([, n]) => n).map(([k, n]) => `${symLabel(k as SymbolId)} ${n}`).join(' ')}`).join(' / ')}`,
     // (Old saves only: BIG CHOICES are gone, 2026-10-15. A run that took some still lists them.)
     ...(run.records.some((r) => r.choice) ? [`BIG CHOICES: ${run.records.flatMap((r) => (r.choice ? [r.choice] : [])).join(', ')}`] : []),
