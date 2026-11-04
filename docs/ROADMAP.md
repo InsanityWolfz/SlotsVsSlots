@@ -115,7 +115,7 @@ Sim, 300 runs, both live: fights past 12 of your spins (regular / boss) WHITE 65
 against 60): phase 5's balance pass takes it in, unless outside players find it too easy first. Ask them: do they use
 HOLD, do they notice OVERTIME, do heal stalls (TESLA's storms) still happen.
 
-Follow-ups: keyboard and gamepad can't HOLD yet (Steam needs it; a key per reel, before phase 3's demo).
+Follow-ups: keyboard and gamepad HOLD done (Q / W / E, or the d-pad left / up / right in a fight).
 
 **Gate:** outside players stop calling the fights slow or watch-only.
 
