@@ -447,7 +447,9 @@ export class FightView {
     ctx.fillRect(0, 0, W, H);
     const w = 720;
     const lines = br.rules.map((r) => ({ icon: r.icon, rows: wrap(r.text, 46) }));
-    const h = 64 + lines.reduce((a, l) => a + l.rows.length * 24 + 14, 0) + 84;
+    // (HOW TO WIN wraps too: THE OWNER's and THE WHEEL's ran past both sides of the panel.)
+    const win = wrap(`HOW TO WIN: ${br.win}`, 50);
+    const h = 64 + lines.reduce((a, l) => a + l.rows.length * 24 + 14, 0) + 84 + (win.length - 1) * 24;
     const x = Math.round(W / 2 - w / 2);
     const y = Math.round(H / 2 - h / 2);
     drawPanel(ctx, x, y, w, h, { frame: '#ff6a5a' });
@@ -460,7 +462,7 @@ export class FightView {
       l.rows.forEach((row, k) => drawRich(ctx, row, x + 72, ry + k * 24, T.body, COLORS.text, { align: 'left' }));
       ry += l.rows.length * 24 + 14;
     }
-    drawChip(ctx, `HOW TO WIN: ${br.win}`, W / 2, ry + 14, { scale: T.body, color: '#7dff7a', fill: KIT.fill });
+    win.forEach((row, k) => drawChip(ctx, row, W / 2, ry + 14 + k * 24, { scale: T.body, color: '#7dff7a', fill: KIT.fill }));
     drawText(ctx, 'TAP TO CLOSE', W / 2, y + h - 18, T.small, KIT.dim);
   }
 

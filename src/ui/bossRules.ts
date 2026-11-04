@@ -36,7 +36,7 @@ export function bossRules(boss: string, c: BossRuleContext): BossRules {
         { icon: artId('icoSmash'), text: `THE HAMMER: ${Math.round(OWNER_RULES.hammer * 100)}% OF YOUR MAX HP. IT PIERCES SHIELDS. HIS HITS GROW ${Math.round(OWNER_RULES.rise * 100)}% EVERY TURN` },
         { icon: 'shieldIcon', text: `HIS HP IS HIS FORTUNE: ${fmtNum(TURBO.hp)}. AT ${[1, 2, 3].map((k) => fmtNum(ownerRung(k))).join(' / ')} TAKEN, HE HITS ${Math.round(OWNER_RULES.phaseDmg * 100)}% HARDER` },
       ],
-      win: `EACH OF THOSE MARKS SCORES. TAKE ALL ${fmtNum(TURBO.hp)} TO BREAK THE BANK`,
+      win: `THE MORE OF HIS ${fmtNum(TURBO.hp)} YOU TAKE, THE MORE YOU SCORE. TAKE IT ALL TO BREAK THE BANK`,
     };
   return rulesOf(boss, c);
 }

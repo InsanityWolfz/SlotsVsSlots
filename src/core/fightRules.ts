@@ -60,7 +60,10 @@ export const DEALER_HANDS = ['THE DEAL', 'RAISE', 'ALL IN'];
 export const allInRange = (maxHp: number, hand: number, loop = 0): number => {
   const k = 1 + DEALER_RULES.loopStep * loop;
   const share = (x: number) => Math.min(DEALER_RULES.loopMax, x * k);
-  return Math.max(UNIT, Math.round((maxHp * share(DEALER_RULES.allInFloor)) / UNIT) * UNIT, Math.min(hand, Math.round((maxHp * share(DEALER_RULES.allInCap)) / UNIT) * UNIT));
+  // (At the one-turn cap, round down: rounding up showed 70 for a hit the cap holds to 66.)
+  const capShare = share(DEALER_RULES.allInCap);
+  const cap = (capShare >= DEALER_RULES.loopMax ? Math.floor : Math.round)((maxHp * capShare) / UNIT) * UNIT;
+  return Math.max(UNIT, Math.min(cap, Math.round((maxHp * share(DEALER_RULES.allInFloor)) / UNIT) * UNIT), Math.min(hand, cap));
 };
 
 /** A meter payoff's heal, named for the popup. */

@@ -223,7 +223,7 @@ export class HudView {
     const ss = this.shieldShake * (Math.random() * 2 - 1);
     drawSprite(ctx, 'shieldIcon', sb.x - 16 + ss, sb.y + sb.h / 2, 2, { alpha: this.shield > 0 ? 1 : 0.4 });
     this.bar(ctx, sb.x + ss, sb.y, sb.w, sb.h, [[Math.min(1, this.shield / SHIELD_SOFT_CAP), COLORS.shield]], this.shieldFlash);
-    if (this.shield > 0.01 || this.shNum.shown > 0) drawText(ctx, `${this.shNum.shown}`, sb.x + sb.w / 2 + ss, sb.y + sb.h / 2 + 1, T.small, COLORS.text);
+    if (this.shield > 0.01 || this.shNum.shown > 0) drawText(ctx, fmtNum(this.shNum.shown), sb.x + sb.w / 2 + ss, sb.y + sb.h / 2 + 1, T.small, COLORS.text);
 
     // The signature meter (TESLA, MIDAS, JAX, THE JUKEBOX).
     const m = this.meter;

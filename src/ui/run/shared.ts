@@ -19,6 +19,17 @@ export function wrap(text: string, maxChars: number): string[] {
     } else line = (line + ' ' + word).trim();
   }
   if (line) lines.push(line);
+  // No lone last word ("HEALS / 60", "THE HOUSE ALWAYS WINS... / IT"): the line above hands its last word down when
+  // it keeps two and the pair still fits.
+  const n = lines.length;
+  if (n >= 2 && !lines[n - 1].includes(' ')) {
+    const prev = lines[n - 2].split(' ');
+    const moved = `${prev[prev.length - 1]} ${lines[n - 1]}`;
+    if (prev.length >= 3 && moved.length <= maxChars) {
+      lines[n - 2] = prev.slice(0, -1).join(' ');
+      lines[n - 1] = moved;
+    }
+  }
   return lines;
 }
 

@@ -62,6 +62,10 @@ describe('ENDLESS (LET IT RIDE)', () => {
     expect(hp).toBeLessThanOrEqual(ENDLESS.clamp);
     expect(fmtNum(12400)).toBe('12.4K');
     expect(fmtNum(3_100_000)).toBe('3.1M');
+    // (Rounding never reads 1000K or 1000M: it goes up a unit.)
+    expect(fmtNum(999_500)).toBe('1M');
+    expect(fmtNum(999_600_000)).toBe('1B');
+    expect(fmtNum(999_400)).toBe('999K');
     expect(fmtNum(950)).toBe('950');
     expect(UNIT).toBe(10);
   });

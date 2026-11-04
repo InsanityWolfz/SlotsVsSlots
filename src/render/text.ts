@@ -85,7 +85,8 @@ export function textWidth(text: string, scale: number): number {
 export function fmtNum(n: number): string {
   const a = Math.abs(n);
   const f = (x: number, s: string) => `${(n < 0 ? -x : x).toFixed(x < 100 ? 1 : 0).replace(/\.0$/, '')}${s}`;
-  return a >= 1e9 ? f(a / 1e9, 'B') : a >= 1e6 ? f(a / 1e6, 'M') : a >= 1e4 ? f(a / 1e3, 'K') : String(Math.round(n));
+  // (Up a unit where rounding would reach 1000: 999,500 read "1000K", not "1M".)
+  return a >= 999.5e6 ? f(a / 1e9, 'B') : a >= 999.5e3 ? f(a / 1e6, 'M') : a >= 1e4 ? f(a / 1e3, 'K') : String(Math.round(n));
 }
 
 export function drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, scale: number, color: string, o: TextOpts = {}): void {

@@ -282,10 +282,14 @@ export class Director {
       }
       case 'midasChips': {
         if (e.side === 'player') this.s.huds.player.chips = this.s.huds.player.chipsHeld + e.total;
+        // (A cost you pay, MAKE IT RAIN's or GOLDEN PARACHUTE's: it read "THE HOUSE SKIMS 10 CHIPS", and "0 CHIPS"
+        // with OPEN BAR. Nothing pops when nothing moved.)
+        if (e.amount === 0) return Promise.resolve();
         const c = this.machineCenter(e.side);
         this.s.sounds.coin(6);
         this.s.sounds.coin(10);
-        return this.popText(e.amount > 0 ? `+${e.amount} CHIP${e.amount > 1 ? 'S' : ''}` : `THE HOUSE SKIMS ${-e.amount} CHIPS`, c.x - 80, MACHINE_TOP - 22, 2, e.amount > 0 ? '#ffd23f' : '#ff8a7a', 14, 0.35);
+        const n = Math.abs(e.amount);
+        return this.popText(`${e.amount > 0 ? '+' : '-'}${n} CHIP${n > 1 ? 'S' : ''}`, c.x - 80, MACHINE_TOP - 22, 2, e.amount > 0 ? '#ffd23f' : '#ff8a7a', 14, 0.35);
       }
       case 'lucreChips': {
         if (e.side === 'player') this.s.huds.player.lucre = e.total;
@@ -706,7 +710,7 @@ export class Director {
       value = g.reels.length === 1 && !g.drop ? g.amount : denom > 0 ? Math.round((g.amount * mine) / denom) : Math.round(g.amount / g.reels.length);
     } else value = (lv ? playerSymValue(lv, cell.symbol, base) : !player && cell.symbol === 'shield' ? Math.round(base * this.s.enemyShield) : base) + bonus;
     if (!value && !charm) return;
-    const tag = { value: value ? String(value) : '', ...(charm ? { charm: charmTag(charm, lvl), color: CHARM_COLOR[charm] } : {}), pop: 0, alpha: 1 };
+    const tag = { value: value ? fmtNum(value) : '', ...(charm ? { charm: charmTag(charm, lvl), color: CHARM_COLOR[charm] } : {}), pop: 0, alpha: 1 };
     m.tags[r] = tag;
     this.bg(this.c.tween({ from: 0, to: 1, dur: 0.18, ease: backOut(3), onUpdate: (v) => (tag.pop = v) }));
   }
@@ -1277,7 +1281,7 @@ export class Director {
       const p = cellCenter(e.side, ref.reel, ref.row);
       this.s.particles.burst({ x: p.x, y: p.y, count: 10, colors: ['#5ad8e8', '#ff9ec8', '#ffe45c'], speed: [60, 180], gravity: 0, life: [0.25, 0.45], size: [2, 4], kind: 'spark' });
       // A note off the payline shows what it hits for: its share of the drop's final pay (the payline's tags do the same).
-      if (ref.row !== 1 && ref.v && g && g.base > 0) this.bg(this.popText(String(Math.round((g.amount * ref.v) / g.base)), p.x - 22, p.y + 22, 2, '#5ad8e8', 0, 0.9));
+      if (ref.row !== 1 && ref.v && g && g.base > 0) this.bg(this.popText(fmtNum(Math.round((g.amount * ref.v) / g.base)), p.x - 22, p.y + 22, 2, '#5ad8e8', 0, 0.9));
     });
     await Promise.all(lights);
     await this.c.wait(0.15);

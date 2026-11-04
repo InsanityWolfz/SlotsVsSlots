@@ -251,7 +251,9 @@ export abstract class CabinetScreen extends BuildPanel {
     const rule = locked ? `LOCKED: ${s.rule}` : s.rule;
     const lines = textWidth(rule, T.body) <= W - 80 ? [rule] : wrap(rule, Math.floor((W - 80) / (6 * T.body)));
     lines.slice(0, 2).forEach((l, i) => drawText(ctx, l, W / 2, y + 46 + i * 24, T.body, locked ? KIT.dim : KIT.text));
-    if (show >= STAKE.act3 && lines.length < 2) drawText(ctx, show > STAKE.act3 ? '+ ACT 3, AND EVERY STAKE BELOW IT' : '+ ACT 3: THE DEALER', W / 2, y + 74, T.small, locked ? KIT.dim : '#7dff7a');
-    else if (show > 0 && lines.length < 2) drawText(ctx, 'ON TOP OF THE BASE GAME', W / 2, y + 74, T.small, KIT.dim);
+    // (Under a two-line rule too: BLUE's dropped its ACT 3 line once its rule grew a COUNTERFEITER.)
+    const ey = y + 74 + (Math.min(2, lines.length) - 1) * 24;
+    if (show >= STAKE.act3) drawText(ctx, show > STAKE.act3 ? '+ ACT 3, AND EVERY STAKE BELOW IT' : '+ ACT 3: THE DEALER', W / 2, ey, T.small, locked ? KIT.dim : '#7dff7a');
+    else if (show > 0) drawText(ctx, 'ON TOP OF THE BASE GAME', W / 2, ey, T.small, KIT.dim);
   }
 }

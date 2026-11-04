@@ -205,7 +205,8 @@ export abstract class NextScreen extends RouteScreen {
       }
       // One line of what it does (two, rarely, when it can't be said shorter).
       const what = abilityWhat(e, run);
-      const lines = wrap(what, Math.floor(room / (6 * T.body)));
+      // (Clear of the "?" flip button in the corner: it covered COUNTERFEITER's "HEALS 60" as "HEALS 6".)
+      const lines = wrap(what, Math.floor((room - 56) / (6 * T.body)));
       lines.slice(0, 2).forEach((l, i) => drawRich(ctx, l, tx, ay + 40 + i * 24, T.body, KIT.text, { align: 'left' }));
     }
     // A boss's one rule: how to beat it, along the foot.

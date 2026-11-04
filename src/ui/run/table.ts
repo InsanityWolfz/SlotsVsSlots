@@ -146,10 +146,12 @@ export abstract class TableScreens extends DraftScreen {
     drawText(ctx, line, CX, FOOT.rules, T.body, KIT.text);
     if (!this.rulesOpen) return;
     const w = 560;
-    const h = 60 + full.length * 30;
+    // (Each rule wraps to the panel: about 42 letters a row. A long one ran off the right edge.)
+    const rows = full.flatMap((l) => wrap(l, 42));
+    const h = 60 + rows.length * 30;
     const x = Math.round(TCX - w / 2);
     const y = Math.round(TABLE.y + TABLE.h / 2 - h / 2);
     drawPanel(ctx, x, y, w, h, { title: 'HOUSE RULES' });
-    full.forEach((l, i) => drawText(ctx, l, x + 28, y + 40 + i * 30, T.body, KIT.text, { align: 'left' }));
+    rows.forEach((l, i) => drawText(ctx, l, x + 28, y + 40 + i * 30, T.body, KIT.text, { align: 'left' }));
   }
 }

@@ -23,6 +23,29 @@ body {
   transform: translate(-50%, -50%);
 }
 
+/* Phones held upright: the game is a thin strip there, so ask for landscape (iPhone Safari can't lock it). */
+#rotate {
+  display: none;
+}
+@media (orientation: portrait) and (pointer: coarse) {
+  #rotate {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: #07030d;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    color: #f4ead2;
+    text-align: center;
+  }
+}
+
 #game {
   display: block;
   image-rendering: pixelated;
