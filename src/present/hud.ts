@@ -35,7 +35,7 @@ export const ABILITY_UI: Record<AbilityKind, { icon: SpriteId; label: string }> 
   pilfer: { icon: 'icoSteal', label: 'STEAL' },
   quake: { icon: 'icoRock', label: 'ROCKS' },
   jam: { icon: 'icoLock', label: 'JAM' },
-  jackpot: { icon: 'icoCoin', label: 'CASH OUT' },
+  jackpot: { icon: 'icoCoin', label: 'SKIM' },
   carpet: { icon: artId('icoBomb'), label: 'COLLECTION DAY' },
   curse: { icon: artId('icoHex'), label: 'JINX' },
   bloodmoon: { icon: artId('icoDrain'), label: 'BLEED YOU DRY' },

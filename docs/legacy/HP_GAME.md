@@ -145,7 +145,7 @@ was tuned for feel from two fresh-eyes playtests.
 ## Acts and bosses
 | Act | Boss | Mechanic | State |
 |---|---|---|---|
-| 1 | THE HOUSE | A growing pot. Every 3 turns it skims half the pot as a hit. Doubles down at half HP; LAST CALL skims every turn | Done |
+| 1 | THE HOUSE | A growing pot. Every 3 turns it SKIMS half the pot as a hit. Doubles down at half HP; LAST CALL skims every turn | Done |
 | 2 | THE WHEEL | Places bet chips on your reels. Your pairs sweep them. At NO MORE BETS, every chip left hits for a share of your max HP. Spins faster at half HP | Rework in progress, untuned |
 | 3 | THE DEALER | Three hands, each with its own HP bar (27/31/42% of its HP). 1 THE DEAL: every 3 turns a BUST (your best reel's payline pays nothing next spin). 2 RAISE: its hits x1.5, still BUSTs. 3 ALL IN: every 2 turns, 25-40% of your max HP through shields | Reworked 2026-10-12; spread by machine is still wide (see ROADMAP) |
 
