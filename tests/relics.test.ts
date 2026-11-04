@@ -221,3 +221,12 @@ describe('the relic cut (2026-10-15)', () => {
     expect(run.pendingStart!.length).toBeGreaterThan(0);
   });
 });
+
+describe('BOUNCER only blocks abilities on your reels (QA 2026-11-04)', () => {
+  it("the COUNTERFEITER's LAUNDER (it takes chips) doesn't use it up", () => {
+    const f = on('knight', ['holywater'], (c) => (c.enemy = { hp: 9999, strips: reels3({ shield: 12 }), ability: { kind: 'launder', every: 1, power: 2 } }));
+    f.step();
+    const ev = f.step().events;
+    expect(ofType(ev, 'relic').some((r) => r.relic === 'holywater')).toBe(false);
+  });
+});

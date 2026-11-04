@@ -1929,7 +1929,7 @@ export class Director {
     this.s.particles.burst({ x: c.x, y: c.y, count: 80, colors: ['#ff6a2a', '#ffd23f', '#ffffff'], speed: [150, 500], angle: -Math.PI / 2, spread: Math.PI, gravity: -250, life: [0.5, 1.1], size: [3, 6] });
     this.bg(this.c.to(h, 'hp', e.hp, 0.3));
     this.bg(this.c.to(h, 'ghost', e.hp, 0.3));
-    await this.banner('PHOENIX!', '#ff8a3a', 1.4, 0.5, 'BACK AT 1 HP', BANNER_Y, 4);
+    await this.banner("RABBIT'S FOOT!", '#ff8a3a', 1.4, 0.5, 'BACK AT 1 HP', BANNER_Y, 4);
     this.bg(this.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (icon.alpha = v) }).then(() => this.s.fx.remove(icon)));
   }
 
