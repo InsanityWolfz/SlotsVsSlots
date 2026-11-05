@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type RelicId } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { buy, CHIPS, createRun, fightConfig, finishFight, isShopNow, reroll, rerollCost, shopOffers, takeSpoils, skipToBoss, currentEnemy } from '../src/core/run';
+import { CHIPS, createRun, finishFight, skipToBoss, currentEnemy } from '../src/core/run';
+import { buy, isShopNow, reroll, rerollCost, shopOffers, takeSpoils } from '../src/core/shop';
+import { fightConfig } from '../src/core/fightSetup';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>

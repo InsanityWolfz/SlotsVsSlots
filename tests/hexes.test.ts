@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type SymbolId } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { applyOption, createRun, levelOptions, shopOffers } from '../src/core/run';
+import { createRun } from '../src/core/run';
+import { applyOption, levelOptions } from '../src/core/draft';
+import { shopOffers } from '../src/core/shop';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>

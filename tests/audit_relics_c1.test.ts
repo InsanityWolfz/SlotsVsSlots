@@ -8,7 +8,8 @@ import { defaultConfig, reels3, type GameConfig, type Gild, type RelicId, type S
 import type { CombatEvent } from '../src/core/events';
 import { Fight, MIDAS, RAIN, highRollerMul } from '../src/core/fight';
 import { LEGEND_RELIC, NEW_RELIC, RELICS, relicText } from '../src/core/relics';
-import { createRun, fightConfig, finishFight, interestOn, type RunState } from '../src/core/run';
+import { createRun, finishFight, interestOn, type RunState } from '../src/core/run';
+import { fightConfig } from '../src/core/fightSetup';
 import type { CabinetId } from '../src/core/cabinets';
 import { shortRelicText } from '../src/ui/run/cardText';
 

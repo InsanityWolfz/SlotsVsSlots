@@ -1,6 +1,8 @@
 import { type SymbolId } from '../../core/config';
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../../core/enemies';
-import { CHIPS, nightId, enemyHp, needsRoute, currentEnemy, isBossNext, runActs, type RunState } from '../../core/run';
+import { CHIPS, needsRoute, currentEnemy, isBossNext, runActs, type RunState } from '../../core/run';
+import { nightId } from '../../core/endless';
+import { enemyHp } from '../../core/fightSetup';
 import { effectiveAbility, STAKE } from '../../core/stakes';
 import { backOut, sineOut } from '../../present/ease';
 import { ABILITY_UI, abilityName } from '../../present/hud';

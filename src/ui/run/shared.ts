@@ -1,6 +1,7 @@
 import { UNIT, unitsRound } from '../../core/config';
 import { wheelChipShare, type EnemyDef } from '../../core/enemies';
-import { scaledAbility, type RunState } from '../../core/run';
+import { type RunState } from '../../core/run';
+import { scaledAbility } from '../../core/fightSetup';
 import { COLORS, H, W } from '../../present/layout';
 import { artId, drawPortrait, type SpriteId } from '../../render/sprites';
 import { drawText } from '../../render/text';

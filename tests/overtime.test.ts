@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3 } from '../src/core/config';
 import { Fight } from '../src/core/fight';
 import { OVERTIME, overtimeMul } from '../src/core/enemies';
-import { createRun, fightConfig, HOLD } from '../src/core/run';
+import { createRun } from '../src/core/run';
+import { fightConfig, HOLD } from '../src/core/fightSetup';
 
 /** A sword jackpot every spin against a wall: the pays only change with the clock. */
 const fight = (overtime: boolean, act = 1) => {

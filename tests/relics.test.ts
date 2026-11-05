@@ -4,7 +4,11 @@ import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { LEGENDARY, NEW_RELIC, RELICS } from '../src/core/relics';
-import { charmOptions, createRun, draftOffers, fightConfig, gildsFor, isIdentityRelic, migrateRun, shopOffers, relicFits, startRelics, takeStart } from '../src/core/run';
+import { createRun, gildsFor, startRelics, takeStart } from '../src/core/run';
+import { charmOptions, draftOffers } from '../src/core/draft';
+import { fightConfig } from '../src/core/fightSetup';
+import { isIdentityRelic, shopOffers, relicFits } from '../src/core/shop';
+import { migrateRun } from '../src/core/runMigrate';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>

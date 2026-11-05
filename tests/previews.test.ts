@@ -3,16 +3,10 @@ import { defaultConfig, reels3, type GameConfig, type SymbolId } from '../src/co
 import { ARCHETYPES } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import {
-  createRun,
-  describeOption,
-  enemyHp,
-  fightConfig,
-  levelOptions,
-  shopOffers,
-  stripsAfter,
-  skipToBoss,
-} from '../src/core/run';
+import { createRun, skipToBoss } from '../src/core/run';
+import { describeOption, levelOptions, stripsAfter } from '../src/core/draft';
+import { enemyHp, fightConfig } from '../src/core/fightSetup';
+import { shopOffers } from '../src/core/shop';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>

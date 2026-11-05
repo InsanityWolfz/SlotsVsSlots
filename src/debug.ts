@@ -1,7 +1,8 @@
 import type { RelicId, SideId, SymbolId } from './core/config';
 import { ARCHETYPES, BOSS, DEALER, makeEnemy, OWNER, REPO_MAN, TURBO, WHEEL } from './core/enemies';
 import { Rng } from './core/rng';
-import { fightConfig, skipToBoss } from './core/run';
+import { skipToBoss } from './core/run';
+import { fightConfig } from './core/fightSetup';
 import type { CombatEvent } from './core/events';
 import { BUILD_UP } from './core/fightRules';
 import type { Game } from './game';

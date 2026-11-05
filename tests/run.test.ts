@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
 import { ELITE_DMG_MUL, ROUTE_SHAPES } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
-import { actStops, applyOption, chooseRoute, createRun, currentStop, draftOffers, fightConfig, finishFight, isEncounterNow, isShopNow, leaveShop, needsRoute, playEncounter, RUN, type RunState } from '../src/core/run';
+import { actStops, chooseRoute, createRun, currentStop, finishFight, isEncounterNow, needsRoute, playEncounter, RUN, type RunState } from '../src/core/run';
+import { applyOption, draftOffers } from '../src/core/draft';
+import { fightConfig } from '../src/core/fightSetup';
+import { isShopNow, leaveShop } from '../src/core/shop';
 
 const base = defaultConfig();
 

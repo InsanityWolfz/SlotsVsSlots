@@ -3,7 +3,8 @@ import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { NEW_RELIC } from '../src/core/relics';
-import { chooseRoute, createRun, currentStop, encounterChoices, finishFight, fightConfig, playEncounter } from '../src/core/run';
+import { chooseRoute, createRun, currentStop, encounterChoices, finishFight, playEncounter } from '../src/core/run';
+import { fightConfig } from '../src/core/fightSetup';
 import { CLAW } from '../src/core/encounters';
 
 /** The user's relic picks from the content list (2026-10-14). */

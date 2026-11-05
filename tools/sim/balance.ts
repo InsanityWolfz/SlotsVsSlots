@@ -20,6 +20,10 @@ import { fileURLToPath } from 'node:url';
 import { defaultConfig, type GameConfig } from '../../src/core/config';
 import * as cabinets from '../../src/core/cabinets';
 import * as runMod from '../../src/core/run';
+import * as draftMod from '../../src/core/draft';
+import * as shopMod from '../../src/core/shop';
+import * as fightSetup from '../../src/core/fightSetup';
+import * as endless from '../../src/core/endless';
 import * as stakes from '../../src/core/stakes';
 import * as relics from '../../src/core/relics';
 import * as enemies from '../../src/core/enemies';
@@ -53,7 +57,7 @@ function applyEdits(edits: string, base: GameConfig, ban = ''): void {
     if (!(r in relics.RELICS)) throw new Error(`no relic ${r}`);
     (relics.MACHINE_EXCLUDE as Record<string, string[]>)[r] = [...cabinets.ALL_CABINETS];
   }
-  const roots: Record<string, unknown> = { ...cabinets, ...runMod, ...relics, ...enemies, ...fight, ...charms, ...bot, ...stakes, BASE: base };
+  const roots: Record<string, unknown> = { ...cabinets, ...runMod, ...draftMod, ...shopMod, ...fightSetup, ...endless, ...relics, ...enemies, ...fight, ...charms, ...bot, ...stakes, BASE: base };
   for (const e of edits.split(';').filter(Boolean)) {
     const [path, val] = e.split('=');
     const keys = path.trim().split('.');

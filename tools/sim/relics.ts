@@ -3,7 +3,9 @@
 import { defaultConfig, type Enh, type RelicId } from '../../src/core/config';
 import { CABINET_ORDER, CABINETS, type CabinetId } from '../../src/core/cabinets';
 import { RELICS } from '../../src/core/relics';
-import { chooseRoute, createRun, fightConfig, relicFits, skipToBoss, type RunState } from '../../src/core/run';
+import { chooseRoute, createRun, skipToBoss, type RunState } from '../../src/core/run';
+import { fightConfig } from '../../src/core/fightSetup';
+import { relicFits } from '../../src/core/shop';
 import { generateActMap } from '../../src/core/enemies';
 import { Rng } from '../../src/core/rng';
 import { CHARM_SYMBOLS } from '../../src/core/charms';

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CABINET_ORDER, CABINETS } from '../src/core/cabinets';
 import { defaultConfig } from '../src/core/config';
-import { currentEnemy, createRun, enemyHp, runActs, TUTORIAL_OPENER_MUL } from '../src/core/run';
+import { currentEnemy, createRun, runActs } from '../src/core/run';
+import { enemyHp, TUTORIAL_OPENER_MUL } from '../src/core/fightSetup';
 import { discover, emptyProfile, runEntry, runScore, sanitizeProfile } from '../src/core/profile';
 import { MAX_STAKE, stakeUnlock } from '../src/core/stakes';
 import { FLASH_CAP } from '../src/present/camera';
@@ -84,7 +85,7 @@ describe('relic activations are visible', () => {
     const { Fight } = await import('../src/core/fight');
     const run = createRun(base, 11, 'tesla');
     run.player.relics.push('quickening', 'key', 'bell', 'prism');
-    const { fightConfig } = await import('../src/core/run');
+    const { fightConfig } = await import('../src/core/fightSetup');
     const cfg = fightConfig(run, base);
     cfg.enemy.hp = 99999;
     cfg.player.hp = cfg.player.startHp = 99999;
@@ -102,7 +103,7 @@ describe('relic activations are visible', () => {
 describe('relic audit fixes', () => {
   it('DECK DRUM adds to EACH card and the spin reports it so the card numbers can show it', async () => {
     const { Fight } = await import('../src/core/fight');
-    const { fightConfig } = await import('../src/core/run');
+    const { fightConfig } = await import('../src/core/fightSetup');
     const run = createRun(base, 11, 'joker');
     run.player.relics.push('deckdrum');
     const cfg = fightConfig(run, base);

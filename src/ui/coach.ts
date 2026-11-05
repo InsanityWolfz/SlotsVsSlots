@@ -1,5 +1,5 @@
 import { OVERTIME } from '../core/enemies';
-import { HOLD } from '../core/run';
+import { HOLD } from '../core/fightSetup';
 import { HUD_W } from '../present/hud';
 import { COLORS, H, HUD_TOP, MACHINE_CX, MACHINE_H, MACHINE_TOP, MACHINE_W, W } from '../present/layout';
 import { artId, drawSprite, hasSprite } from '../render/sprites';

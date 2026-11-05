@@ -10,18 +10,14 @@ import { Rng } from '../src/core/rng';
 import {
   CHIPS,
   createRun,
-  draftOffers,
-  enemyHp,
-  fightConfig,
   finishFight,
-  isShopNow,
-  leaveShop,
-  shopOffers,
-  stripStats,
   takeLegend,
   skipToBoss,
   currentEnemy,
 } from '../src/core/run';
+import { draftOffers, stripStats } from '../src/core/draft';
+import { enemyHp, fightConfig } from '../src/core/fightSetup';
+import { isShopNow, leaveShop, shopOffers } from '../src/core/shop';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>

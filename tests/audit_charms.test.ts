@@ -12,7 +12,9 @@ import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { CHARM_SYMBOLS, CHARM_VALUE, GLASS_BREAK, LUCRE_CHIPS, TESLA_STRIKE, blazePct, charmLevel, charmRuleText, charmShortText, charmValue } from '../src/core/charms';
 import { RELICS } from '../src/core/relics';
-import { charmOptions, createRun, describeOption, fightConfig, finishFight, gildsFor, interestOn, type DraftOption, type RunState } from '../src/core/run';
+import { createRun, finishFight, gildsFor, interestOn, type DraftOption, type RunState } from '../src/core/run';
+import { charmOptions, describeOption } from '../src/core/draft';
+import { fightConfig } from '../src/core/fightSetup';
 import type { LineScore, ScoreGroup } from '../src/core/scoring';
 import { cardFace } from '../src/ui/run/cardText';
 

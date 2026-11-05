@@ -11,20 +11,18 @@ import { Fight } from '../src/core/fight';
 import { LEGEND_RELIC, LEGENDARY, NEW_RELIC, relicText, RELICS } from '../src/core/relics';
 import { ALL_CABINETS, shortRelicText } from '../src/ui/run/cardText';
 import {
-  applyOption,
   chooseRoute,
   createRun,
   currentStop,
-  describeOption,
   encounterChoices,
-  fightConfig,
   finishFight,
   playEncounter,
-  relicFits,
-  shopOffers,
   skipToBoss,
   type RunState,
 } from '../src/core/run';
+import { applyOption, describeOption } from '../src/core/draft';
+import { fightConfig } from '../src/core/fightSetup';
+import { relicFits, shopOffers } from '../src/core/shop';
 import { bjState, BJ, CLAW, HILO, hiloState } from '../src/core/encounters';
 import { STAKE } from '../src/core/stakes';
 

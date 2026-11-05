@@ -1,7 +1,8 @@
 import { symLabel, UNIT } from '../../core/config';
 import { LEGENDARY, RELICS } from '../../core/relics';
 import { CHARM_COLOR, symLevel } from '../../core/charms';
-import { endlessScore, type DraftOption, type FightRecord, type RunState, levelStep } from '../../core/run';
+import { endlessScore, type DraftOption, type FightRecord, type RunState } from '../../core/run';
+import { levelStep } from '../../core/draft';
 import type { RelicId } from '../../core/config';
 import { LOOP_GROWTH } from '../../core/enemies';
 import { VOLUME } from '../../core/fight';

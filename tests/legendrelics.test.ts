@@ -3,7 +3,10 @@ import { defaultConfig, reels3, type GameConfig, type RelicId, type SymbolId } f
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { BIG_LEGENDS, LEGEND_RELIC, LEGENDARY, RELIC_TIER, RELICS } from '../src/core/relics';
-import { createRun, fightConfig, finishFight, migrateRun, relicFits, type RunState } from '../src/core/run';
+import { createRun, finishFight, type RunState } from '../src/core/run';
+import { fightConfig } from '../src/core/fightSetup';
+import { migrateRun } from '../src/core/runMigrate';
+import { relicFits } from '../src/core/shop';
 import type { CabinetId } from '../src/core/cabinets';
 
 /** The ten BIG CHOICES that became legendary relics (user, 2026-10-15). */

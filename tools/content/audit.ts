@@ -5,7 +5,8 @@ import { CABINETS, CABINET_ORDER, type CabinetId } from '../../src/core/cabinets
 import { RELICS, RELIC_TIER, LEGENDARY, MACHINE_EXCLUDE, WAVE1, BUILD_ENABLER, relicText } from '../../src/core/relics';
 import { CHARM_SYMBOLS, charmName, charmRuleText } from '../../src/core/charms';
 import { ALL_CHARMS } from '../../src/core/profile';
-import { createRun, describeOption, type DraftOption } from '../../src/core/run';
+import { createRun, type DraftOption } from '../../src/core/run';
+import { describeOption } from '../../src/core/draft';
 import { CHARM_INFO } from '../../src/ui/menus';
 
 const base = defaultConfig();

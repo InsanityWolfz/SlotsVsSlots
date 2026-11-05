@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, UNIT } from '../src/core/config';
 import { ENDLESS, ladderFrac, OWNER_LADDER, OWNER_TRICKS, ownerRung, rungsClimbed, TURBO } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
-import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, enemyHp, runScoreOf, scoreParts, fightConfig, fightLabel, NIGHT, NIGHTS, finishFight, letItRide, skipToBoss } from '../src/core/run';
+import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, runScoreOf, scoreParts, fightLabel, finishFight, skipToBoss } from '../src/core/run';
+import { enemyHp, fightConfig } from '../src/core/fightSetup';
+import { NIGHT, NIGHTS, letItRide } from '../src/core/endless';
 import { fmtNum } from '../src/render/text';
 
 const base = defaultConfig();

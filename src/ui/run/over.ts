@@ -1,7 +1,8 @@
 import type { MetaGain } from '../../core/profile';
 import { levelOf } from '../../core/meta';
 import { RELICS } from '../../core/relics';
-import { takenLabel, endlessScore, runScoreOf, scoreParts, SCORE, totalFights, type FightRecord, type RunState } from '../../core/run';
+import { endlessScore, runScoreOf, scoreParts, SCORE, totalFights, type FightRecord, type RunState } from '../../core/run';
+import { takenLabel } from '../../core/draft';
 import { CABINETS, type CabinetId } from '../../core/cabinets';
 import { stakeOf } from '../../core/stakes';
 import { backOut, sineOut } from '../../present/ease';

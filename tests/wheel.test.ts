@@ -5,7 +5,9 @@ import type { CombatEvent } from '../src/core/events';
 import { Fight, MIDAS } from '../src/core/fight';
 import { POT } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
-import { createRun, enemyHp, fightConfig, migrateRun, skipToBoss, currentEnemy } from '../src/core/run';
+import { createRun, skipToBoss, currentEnemy } from '../src/core/run';
+import { enemyHp, fightConfig } from '../src/core/fightSetup';
+import { migrateRun } from '../src/core/runMigrate';
 import { STAKE, STAKES } from '../src/core/stakes';
 
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>

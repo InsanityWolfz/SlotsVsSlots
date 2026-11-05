@@ -9,24 +9,22 @@ import { Fight } from '../core/fight';
 import type { CombatEvent } from '../core/events';
 import { Rng } from '../core/rng';
 import {
-  applyOption,
   createRun,
   chooseRoute,
   currentStop,
-  draftOffers,
   finishFight,
-  fightConfig,
   isBossNext,
   isEncounterNow,
-  isShopNow,
-  letItRide,
   needsRoute,
   playEncounter,
   takeLegend,
-  takeSpoils,
   takeStart,
   type RunState,
 } from '../core/run';
+import { applyOption, draftOffers } from '../core/draft';
+import { fightConfig } from '../core/fightSetup';
+import { isShopNow, takeSpoils } from '../core/shop';
+import { letItRide } from '../core/endless';
 import { greedyValue, pickEncounter, pickRoute, RELIC_VALUE, shop, SIM_BIAS, type DraftPolicy } from './bot';
 
 export interface FightLog {

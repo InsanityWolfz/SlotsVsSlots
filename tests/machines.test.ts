@@ -4,7 +4,10 @@ import { CABINETS, CABINET_ORDER } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { BUILD_ENABLER } from '../src/core/relics';
-import { CHIPS, createRun, draftOffers, fightConfig, relicFits, rerollCost, shopOffers } from '../src/core/run';
+import { CHIPS, createRun } from '../src/core/run';
+import { draftOffers } from '../src/core/draft';
+import { fightConfig } from '../src/core/fightSetup';
+import { relicFits, rerollCost, shopOffers } from '../src/core/shop';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>

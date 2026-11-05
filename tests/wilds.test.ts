@@ -3,7 +3,8 @@ import { defaultConfig, reels3, type SymbolId } from '../src/core/config';
 import { scoreLine } from '../src/core/scoring';
 import { ELITE_HP_MUL } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
-import { applyOption, createRun, RUN } from '../src/core/run';
+import { createRun, RUN } from '../src/core/run';
+import { applyOption } from '../src/core/draft';
 import { effectiveSymbol } from '../src/core/strip';
 
 const base = defaultConfig();

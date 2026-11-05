@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, UNIT, type GameConfig } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { createRun, fightConfig } from '../src/core/run';
+import { createRun } from '../src/core/run';
+import { fightConfig } from '../src/core/fightSetup';
 import { CHARM_VALUE } from '../src/core/charms';
 
 const base = defaultConfig();

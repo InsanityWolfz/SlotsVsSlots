@@ -2,7 +2,8 @@ import { ALL_CABINETS, type CabinetId } from './cabinets';
 import type { Enh, RelicId } from './config';
 import { RELICS } from './relics';
 import { MAX_STAKE } from './stakes';
-import { charmCount, fightNumber, runActs, runScoreOf, scoreParts, totalFights, type RunState } from './run';
+import { fightNumber, runActs, runScoreOf, scoreParts, totalFights, type RunState } from './run';
+import { charmCount } from './draft';
 import { charmLevel } from './charms';
 import { ACHIEVEMENT_XP, levelOf, TRIMS, trimById, trimsOwned, newAchievements, titlesOwned, WEEK_KEY, type AchievementDef, type ChallengeRecord, type MetaStats } from './meta';
 

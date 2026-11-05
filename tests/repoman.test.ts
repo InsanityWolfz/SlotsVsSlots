@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { faceRepoMan } from './helpers';
 import { defaultConfig } from '../src/core/config';
 import { Fight } from '../src/core/fight';
-import { createRun, fightConfig, finishFight } from '../src/core/run';
+import { createRun, finishFight } from '../src/core/run';
+import { fightConfig } from '../src/core/fightSetup';
 
 describe('THE GATEKEEPER: the REPO MAN', () => {
   it('takes a charm for the fight only: it is back after', () => {

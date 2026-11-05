@@ -1,5 +1,6 @@
 import { RELICS } from '../../core/relics';
-import { rerollCost, type RunState, type ShopItem } from '../../core/run';
+import { type RunState, type ShopItem } from '../../core/run';
+import { rerollCost } from '../../core/shop';
 import { backOut, sineOut } from '../../present/ease';
 import { ENH_SPRITE } from '../../present/reel';
 import { COLORS, W } from '../../present/layout';

@@ -1,7 +1,8 @@
 import type { Sounds } from '../../audio/sounds';
 import { type EncounterChoice, type EncounterResult } from '../../core/encounters';
 import { POT } from '../../core/relics';
-import { type DraftOption, type FightRecord, type RunState, type ShopItem, dealerEvery } from '../../core/run';
+import { type DraftOption, type FightRecord, type RunState, type ShopItem } from '../../core/run';
+import { dealerEvery } from '../../core/fightSetup';
 import { type CabinetId } from '../../core/cabinets';
 import { effectiveAbility } from '../../core/stakes';
 import type { RelicId } from '../../core/config';

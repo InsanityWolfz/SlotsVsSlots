@@ -1,5 +1,6 @@
 import { type Stop } from '../../core/enemies';
-import { endlessScore, NIGHTS, nightOf, type RunState } from '../../core/run';
+import { endlessScore, type RunState } from '../../core/run';
+import { NIGHTS, nightOf } from '../../core/endless';
 import { COLORS } from '../../present/layout';
 import { drawSprite } from '../../render/sprites';
 import { drawText, fmtNum, textWidth } from '../../render/text';

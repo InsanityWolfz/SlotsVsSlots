@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3 } from '../src/core/config';
 import { Fight } from '../src/core/fight';
 import { POT } from '../src/core/relics';
-import { counterFor, createRun, fightConfig, finishFight, scarReel, skipToBoss, takeLegend } from '../src/core/run';
+import { counterFor, createRun, finishFight, scarReel, skipToBoss, takeLegend } from '../src/core/run';
+import { fightConfig } from '../src/core/fightSetup';
 import { MAX_STAKE, STAKE, STAKES } from '../src/core/stakes';
 
 const base = defaultConfig();

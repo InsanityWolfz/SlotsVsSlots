@@ -8,7 +8,8 @@ import { charmName, symLevel } from './charms';
 import { RELICS } from './relics';
 import { symLabel, type SymbolId } from './config';
 import { encounterOf } from './encounters';
-import { runScoreOf, takenLabel, type RunState } from './run';
+import { runScoreOf, type RunState } from './run';
+import { takenLabel } from './draft';
 import { stakeOf } from './stakes';
 
 export function runSummary(run: RunState, version = ''): string {

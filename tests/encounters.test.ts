@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
 import { BJ, bjState, bjTotal, CLAW, clawGrip, clawMisses, ENCOUNTERS, HILO, hiloPot, hiloState } from '../src/core/encounters';
-import { chooseRoute, createRun, currentStop, encounterChoices, migrateRun, playEncounter } from '../src/core/run';
+import { chooseRoute, createRun, currentStop, encounterChoices, playEncounter } from '../src/core/run';
+import { migrateRun } from '../src/core/runMigrate';
 
 const base = defaultConfig();
 

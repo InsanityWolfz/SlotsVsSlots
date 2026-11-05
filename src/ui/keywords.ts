@@ -4,7 +4,7 @@
  * with its icon.
  */
 import { OVERTIME } from '../core/enemies';
-import { HOLD } from '../core/run';
+import { HOLD } from '../core/fightSetup';
 import { COLORS } from '../present/layout';
 import type { SpriteId } from '../render/spriteData';
 import { drawText, textWidth, type TextOpts } from '../render/text';

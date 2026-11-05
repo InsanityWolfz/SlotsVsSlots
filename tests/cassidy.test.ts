@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
 import { Fight, MIDAS, RAIN, highRollerMul } from '../src/core/fight';
-import { charmOptions, createRun, fightConfig, RUN } from '../src/core/run';
+import { createRun, RUN } from '../src/core/run';
+import { charmOptions } from '../src/core/draft';
+import { fightConfig } from '../src/core/fightSetup';
 import { CABINETS } from '../src/core/cabinets';
 
 const base = defaultConfig();

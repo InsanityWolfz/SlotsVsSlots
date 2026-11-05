@@ -10,31 +10,32 @@ import { roomFor, type Scene } from './render/rooms';
 import { turnRow, type TurnRow } from './core/log';
 import { RELICS } from './core/relics';
 import {
-  applyOption,
-  buy,
   chooseRoute,
   createRun,
-  draftOffers,
-  fightConfig,
   fightLabel,
-  migrateRun,
   finishFight,
-  isShopNow,
   takeLegend,
-  letItRide,
   currentEnemy,
-  leaveShop,
   isEncounterNow,
   playEncounter,
-  reroll,
-  shopOffers,
-  takeSpoils,
   takeStart,
   type DraftOption,
   type FightRecord,
   type RunState,
   type ShopItem,
 } from './core/run';
+import { applyOption, draftOffers } from './core/draft';
+import {
+  buy,
+  isShopNow,
+  leaveShop,
+  reroll,
+  shopOffers,
+  takeSpoils,
+} from './core/shop';
+import { fightConfig } from './core/fightSetup';
+import { migrateRun } from './core/runMigrate';
+import { letItRide } from './core/endless';
 import type { RelicId } from './core/config';
 import { ALL_CABINETS, CABINETS, CABINET_ORDER, type CabinetId } from './core/cabinets';
 import { StatsTracker } from './core/stats';

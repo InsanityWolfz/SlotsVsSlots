@@ -4,7 +4,8 @@ import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { charmLevel } from '../src/core/charms';
-import { createRun, fightConfig, finishFight, gildsFor } from '../src/core/run';
+import { createRun, finishFight, gildsFor } from '../src/core/run';
+import { fightConfig } from '../src/core/fightSetup';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>

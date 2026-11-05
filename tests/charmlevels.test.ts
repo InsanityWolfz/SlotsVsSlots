@@ -3,7 +3,8 @@ import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { createRun, fightConfig } from '../src/core/run';
+import { createRun } from '../src/core/run';
+import { fightConfig } from '../src/core/fightSetup';
 
 const base = defaultConfig();
 const ofType = <T extends CombatEvent['type']>(events: CombatEvent[], t: T) =>

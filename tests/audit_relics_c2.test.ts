@@ -11,7 +11,9 @@ import { Fight } from '../src/core/fight';
 import { CHARM_VALUE } from '../src/core/charms';
 import { relicText, RELICS, NEW_RELIC } from '../src/core/relics';
 import { shortRelicText } from '../src/ui/run/cardText';
-import { createRun, fightConfig, relicFits } from '../src/core/run';
+import { createRun } from '../src/core/run';
+import { fightConfig } from '../src/core/fightSetup';
+import { relicFits } from '../src/core/shop';
 import type { ScoreGroup } from '../src/core/scoring';
 
 const base = defaultConfig();

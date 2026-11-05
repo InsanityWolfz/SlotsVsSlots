@@ -1,7 +1,8 @@
 import type { RelicId } from '../../core/config';
 import type { CabinetId } from '../../core/cabinets';
 import { RELICS, RELIC_TIER } from '../../core/relics';
-import { charmCardFull, describeOption, type DraftOption, type RunState } from '../../core/run';
+import { type DraftOption, type RunState } from '../../core/run';
+import { charmCardFull, describeOption } from '../../core/draft';
 
 /**
  * Cards say at most two lines at body size (the UI kit, user 2026-10-30). The rules' full wording stays in the core

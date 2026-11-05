@@ -4,7 +4,8 @@ import { generateActMap } from '../src/core/enemies';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { Rng } from '../src/core/rng';
-import { createRun, currentEnemy, enemyHp, fightConfig, finishFight, runActs, skipToBoss, totalFights, TYPICAL_ACT_FIGHTS } from '../src/core/run';
+import { createRun, currentEnemy, finishFight, runActs, skipToBoss, totalFights, TYPICAL_ACT_FIGHTS } from '../src/core/run';
+import { enemyHp, fightConfig } from '../src/core/fightSetup';
 import { STAKE } from '../src/core/stakes';
 
 const base = defaultConfig();

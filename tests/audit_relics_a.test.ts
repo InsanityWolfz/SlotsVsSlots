@@ -12,7 +12,10 @@ import { CHARM_VALUE, charmShortText, symLevel } from '../src/core/charms';
 import { BANDAGE_HEAL, FANG_HEAL, MACHINE_EXCLUDE, NEW_RELIC, RELICS, relicText } from '../src/core/relics';
 import { effectiveAbility } from '../src/core/stakes';
 import { CABINETS, type CabinetId } from '../src/core/cabinets';
-import { applyOption, createRun, describeOption, fightConfig, finishFight, levelsGained, relicFits, takenLabel, type RunState } from '../src/core/run';
+import { createRun, finishFight, type RunState } from '../src/core/run';
+import { applyOption, describeOption, levelsGained, takenLabel } from '../src/core/draft';
+import { fightConfig } from '../src/core/fightSetup';
+import { relicFits } from '../src/core/shop';
 import { shortRelicText } from '../src/ui/run/cardText';
 
 const base = defaultConfig();

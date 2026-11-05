@@ -6,7 +6,9 @@ import type { CombatEvent } from '../src/core/events';
 import { BUILD_UP, Fight, RAIN } from '../src/core/fight';
 import { SANDGLASS_SLOW } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
-import { applyOption, charmOptions, createRun, enemyHp, fightConfig, levelOptions, levelsGained, chooseRoute } from '../src/core/run';
+import { createRun, chooseRoute } from '../src/core/run';
+import { applyOption, charmOptions, levelOptions, levelsGained } from '../src/core/draft';
+import { enemyHp, fightConfig } from '../src/core/fightSetup';
 import { symValue } from '../src/core/charms';
 import { STAKE } from '../src/core/stakes';
 

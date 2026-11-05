@@ -9,20 +9,22 @@ import { DANGER, type Stop } from '../core/enemies';
 import { bjState, bjTotal, hiloState } from '../core/encounters';
 import type { Rng } from '../core/rng';
 import {
-  buy,
   chooseRoute,
   CHIPS,
   encounterChoices,
   isBossNext,
   isEncounterNow,
-  isShopNow,
   needsRoute,
   playEncounter,
   type DraftOption,
-  leaveShop,
   type RunState,
-  shopOffers,
 } from '../core/run';
+import {
+  buy,
+  isShopNow,
+  leaveShop,
+  shopOffers,
+} from '../core/shop';
 
 export type DraftPolicy = 'greedy' | 'random' | 'relic';
 

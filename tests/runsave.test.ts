@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/core/config';
 import { Fight } from '../src/core/fight';
-import { applyOption, createRun, draftOffers, fightConfig, finishFight, shopOffers, type RunState } from '../src/core/run';
+import { createRun, finishFight, type RunState } from '../src/core/run';
+import { applyOption, draftOffers } from '../src/core/draft';
+import { fightConfig } from '../src/core/fightSetup';
+import { shopOffers } from '../src/core/shop';
 
 /** STEAM_READINESS S1: a saved run is plain JSON and plays on exactly as the live one would. */
 describe('saved runs', () => {
