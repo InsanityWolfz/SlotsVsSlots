@@ -4,7 +4,7 @@ import { rerollCost } from '../../core/shop';
 import { backOut, sineOut } from '../../present/ease';
 import { ENH_SPRITE } from '../../present/reel';
 import { COLORS, W } from '../../present/layout';
-import { drawPortrait, drawSprite, type SpriteId } from '../../render/sprites';
+import { artId, drawPortrait, drawSprite, type SpriteId } from '../../render/sprites';
 import { drawText, textWidth } from '../../render/text';
 import { drawRich } from '../keywords';
 import { drawCard, drawChip, drawPanel, drawTitle, drawWell, KIT, T } from '../kit';
@@ -172,6 +172,10 @@ export abstract class ShopScreen extends EncounterScreen {
     const y = Math.round(Math.max(8, Math.min(600 - tall, h.y - tall / 2)));
     drawPanel(ctx, x, y, w, tall, { frame: rarityOf(o) === 'common' ? KIT.frame : KIT.rarity[rarityOf(o)] });
     drawText(ctx, face.title, x + 14, y + 22, textWidth(face.title, T.head) <= w - 28 ? T.head : T.body, this.optionColor(o), { align: 'left' });
+    if (o.kind === 'relic') {
+      const tier = rarityOf(o);
+      drawSprite(ctx, artId(tier === 'legendary' ? 'tierLegendary' : tier === 'uncommon' ? 'tierUncommon' : 'tierCommon'), x + w - 22, y + 22, 2);
+    }
     lines.forEach((l, k) => drawRich(ctx, l, x + 14, y + 54 + k * 24, T.body, KIT.text, { align: 'left' }));
     if (pinned) drawPrompt(ctx, (this.run?.player.chips ?? 0) >= item.price ? by({ touch: 'TAP AGAIN TO BUY', mouse: 'CLICK AGAIN TO BUY', keys: 'ENTER AGAIN TO BUY', pad: '[A] AGAIN TO BUY' }) : 'NOT ENOUGH CHIPS', x + 14, y + 54 + lines.length * 24 + 4, T.small, KIT.dim, { align: 'left' });
   }
@@ -198,6 +202,12 @@ export abstract class ShopScreen extends EncounterScreen {
     ctx.fillStyle = 'rgba(0,0,0,0.22)';
     ctx.fillRect(h.x - w / 2 + 3, y0 + 3, w - 6, hh - 6);
     this.optionIcon(ctx, o, h.x, y0 + hh / 2, o.kind === 'swap' ? 2.6 : o.kind === 'symLevel' || o.kind === 'charmLevel' ? 3 : 4);
+    // A relic's rarity gem in its corner, as on the draft's cards: the frame colour alone collapsed for red-green
+    // colour-blind players (uncommon and legendary read the same: CVD audit 2026-11-05).
+    if (o.kind === 'relic') {
+      const tier = rarityOf(o);
+      drawSprite(ctx, artId(tier === 'legendary' ? 'tierLegendary' : tier === 'uncommon' ? 'tierUncommon' : 'tierCommon'), h.x + w / 2 - 16, y0 + 16, 2);
+    }
     ctx.restore();
     // The price tag: a kit chip (the chip coin, the price; red when you can't pay; SOLD once bought).
     if (tag) {

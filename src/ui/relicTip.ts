@@ -6,6 +6,7 @@ import { COLORS, H, W } from '../present/layout';
 import { drawText } from '../render/text';
 import { drawRich } from './keywords';
 import { wrap } from './run/shared';
+import { artId, drawSprite } from '../render/sprites';
 
 /**
  * Hover tooltips for relic icons, wherever they're drawn: each screen adds a spot as it draws an icon, then draws the
@@ -45,6 +46,8 @@ export function drawRelicTip(ctx: CanvasRenderingContext2D, relic: RelicId, ax: 
   // The kit panel, framed in the relic's rarity.
   drawPanel(ctx, x, y, w, h, { frame: KIT.rarity[tier] });
   drawText(ctx, def.name, x + 14, y + 20, T.body, tier === 'legendary' ? '#ff9ad8' : '#d8b8ff', { align: 'left' });
+  // Its rarity gem too (the frame colour alone collapsed for red-green colour-blind players: CVD audit 2026-11-05).
+  drawSprite(ctx, artId(tier === 'legendary' ? 'tierLegendary' : tier === 'uncommon' ? 'tierUncommon' : 'tierCommon'), x + w - 22, y + 20, 2);
   lines.forEach((l, k) => drawRich(ctx, l, x + 14, y + 46 + k * 22, T.body, COLORS.text, { align: 'left' }));
   ctx.restore();
 }

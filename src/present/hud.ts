@@ -183,7 +183,9 @@ export class HudView {
 
     // THE panel. Low HP: your frame pulses red (with the screen's red edges and the heartbeat: feel playtest).
     const lowHp = this.side === 'player' && this.hp > 0 && this.hp < this.maxHp * 0.3;
-    drawPanel(ctx, x, y, HUD_W, h, { frame: lowHp ? mixHex(KIT.frame, COLORS.danger, 0.55 + 0.45 * Math.sin(time * Math.PI * 1.8)) : undefined });
+    // (Toward a dark red: gold to bright red was the same lightness, and red-green colour-blind players saw no pulse at
+    // all. Gold to dark red is a brightness blink everyone sees, and still reads red: CVD audit 2026-11-05.)
+    drawPanel(ctx, x, y, HUD_W, h, { frame: lowHp ? mixHex(KIT.frame, LOW_HP_PULSE, 0.55 + 0.45 * Math.sin(time * Math.PI * 1.8)) : undefined });
 
     // Portrait in its well (32px art at x2).
     const ps = this.portraitShake * (Math.random() * 2 - 1);
@@ -381,3 +383,6 @@ function mixHex(a: string, b: string, k: number): string {
   const ch = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
   return `rgb(${[0, 1, 2].map((i) => Math.round(ch(a, i) + (ch(b, i) - ch(a, i)) * t)).join(',')})`;
 }
+
+/** Your HUD frame's low-HP pulse goes toward this (the palette's dark red). */
+const LOW_HP_PULSE = '#8e1f3a';
