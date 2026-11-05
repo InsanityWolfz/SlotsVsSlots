@@ -14,6 +14,7 @@ import { CountUp, drawCard, drawChip, drawMarquee, drawPanel, drawTitle, drawWel
 import { heroSprite } from '../menus';
 import { wrap, stakeDisc, spotlight, bigPortrait, type Btn } from './shared';
 import { ShopScreen } from './shop';
+import { by, drawPrompt } from '../input';
 
 /** RUN OVER's reveal, in seconds: the title lands, the portrait slides in, the words, the score counts up, the wells,
  * then the buttons (a tap skips to the end). */
@@ -247,7 +248,7 @@ export abstract class OverScreen extends ShopScreen {
         nx += w + 12;
       });
     }
-    if (this.overT0 >= 0 && t > 0.4) drawText(ctx, 'TAP TO SKIP', W / 2, 650, T.small, KIT.dim, { alpha: 0.6 + 0.3 * Math.sin(time * 4) });
+    if (this.overT0 >= 0 && t > 0.4) drawPrompt(ctx, by({ touch: 'TAP TO SKIP', mouse: 'CLICK TO SKIP', keys: 'ANY KEY: SKIP', pad: '[A] SKIP' }), W / 2, 650, T.small, KIT.dim, { alpha: 0.6 + 0.3 * Math.sin(time * 4) });
     if (this.logOpen) this.drawRunLog(ctx);
     for (const b of this.buttons) this.drawButton(ctx, b, time);
   }

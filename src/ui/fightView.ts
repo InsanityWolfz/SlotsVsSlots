@@ -16,6 +16,7 @@ import { drawRich } from './keywords';
 import { drawText, fmtNum, textWidth } from '../render/text';
 import { CHIP_SPOT, wrap } from './runScreens';
 import { drawRelicTip } from './relicTip';
+import { by, drawPrompt, inputMode } from './input';
 
 /** Under this share of your max HP the screen's edges breathe red and a heartbeat opens the enemy's turns. */
 const DANGER_HP = 0.3;
@@ -67,7 +68,7 @@ export class FightView {
     if (this.g.toolNote && performance.now() - this.g.toolNote.at < 1500) call = this.g.toolNote.text;
     else if (live && f.held.some(Boolean)) call = 'HELD FOR YOUR NEXT SPIN';
     else if (live && left > 0 && this.g.lastPair) call = 'PAIR! HOLD IT FOR A JACKPOT?';
-    const label = call || (left <= 0 ? 'NO HOLDS LEFT' : live ? `HOLD ${left}: TAP A REEL` : `HOLD ${left}`);
+    const label = call || (left <= 0 ? 'NO HOLDS LEFT' : live ? `HOLD ${left}: ${by({ touch: 'TAP A REEL', mouse: 'CLICK A REEL', keys: 'Q W E', pad: '[DPAD]' })}` : `HOLD ${left}`);
     const lit = !!call || (live && left > 0);
     const pulse = call ? 0.5 + 0.5 * Math.sin(t * 6) : 0;
     drawChip(ctx, label, win.x + win.w / 2, win.y + win.h + BEZEL - 1, {
@@ -113,6 +114,8 @@ export class FightView {
     ctx.lineTo(cx - 5 * dir, cy + 9);
     ctx.closePath();
     ctx.fill();
+    // A pad pulls it with VIEW: the badge under the handle.
+    if (inputMode() === 'pad') drawPrompt(ctx, '[VIEW]', r.x + 2, r.y + r.h + 18, T.small, KIT.title, { align: 'left' });
   }
 
   /** Your chips (live in a fight), top-left: the same spot as on every run screen. */
@@ -430,6 +433,8 @@ export class FightView {
   /** A small "?" on a boss's HUD: tap it for the rules. */
   drawBossHint(ctx: CanvasRenderingContext2D): void {
     const hx = this.g.stage.huds.enemy.x + HUD_W - 26;
+    // (A pad opens it with a trigger: its badge, where the "?" would be.)
+    if (inputMode() === 'pad') return drawPrompt(ctx, '[LT]', hx - 2, HUD_TOP + 23, T.small, KIT.title);
     drawWell(ctx, hx - 12, HUD_TOP + 10, 26, 26);
     drawText(ctx, '?', hx + 1, HUD_TOP + 24, T.body, KIT.title);
   }
@@ -463,7 +468,7 @@ export class FightView {
       ry += l.rows.length * 24 + 14;
     }
     win.forEach((row, k) => drawChip(ctx, row, W / 2, ry + 14 + k * 24, { scale: T.body, color: '#7dff7a', fill: KIT.fill }));
-    drawText(ctx, 'TAP TO CLOSE', W / 2, y + h - 18, T.small, KIT.dim);
+    drawPrompt(ctx, by({ touch: 'TAP TO CLOSE', mouse: 'CLICK TO CLOSE', keys: 'ESC: CLOSE', pad: '[B] CLOSE' }), W / 2, y + h - 18, T.small, KIT.dim);
   }
 
   /** The Dealer's table: green felt behind its machine (scenery: a card table). */

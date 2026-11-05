@@ -1,4 +1,5 @@
-import { Game, SPEEDS, toggleFullscreen } from './game';
+import { Game, toggleFullscreen } from './game';
+import { setInputMode } from './ui/input';
 import { DESKTOP } from './build';
 import { installCrashHandlers, reportCrash } from './ui/crash';
 import { H, W } from './present/layout';
@@ -86,6 +87,7 @@ canvas.addEventListener('pointerdown', (e) => {
   canvas.setPointerCapture(e.pointerId);
   // Touch has no hover: a tap first "hovers" where it lands (tooltips, collection tiles).
   game.setTouch(e.pointerType !== 'mouse');
+  setInputMode(e.pointerType === 'mouse' ? 'mouse' : 'touch');
   game.focus.hide();
   if (e.pointerType !== 'mouse') game.pointerMove(...toLogical(e));
   game.pointerDown(...toLogical(e));
@@ -100,7 +102,10 @@ canvas.addEventListener('pointermove', (e) => {
   if (e.pointerType === 'mouse') game.setTouch(false);
   // A real mouse move hands control back from the keyboard / gamepad focus.
   if (Math.hypot(e.clientX - lastMouse.x, e.clientY - lastMouse.y) > 6) {
-    if (lastMouse.x >= 0) game.focus.hide();
+    if (lastMouse.x >= 0) {
+      game.focus.hide();
+      if (e.pointerType === 'mouse') setInputMode('mouse');
+    }
     lastMouse = { x: e.clientX, y: e.clientY };
   }
   canvas.style.cursor = game.pointerMove(...toLogical(e)) ? 'pointer' : 'default';
@@ -108,6 +113,7 @@ canvas.addEventListener('pointermove', (e) => {
 window.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return;
   const k = e.key.toLowerCase();
+  setInputMode('keys');
   // Held arrows repeat (menu navigation); nothing else does.
   if (e.repeat && !k.startsWith('arrow')) return;
   // Fullscreen: F11 or Alt+Enter (desktop habit).
@@ -143,39 +149,39 @@ document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: fals
 const crashContext = () => ({ phase: game.phase, machine: game.run?.cabinet, act: game.run?.act, seed: game.run?.seed, stake: game.run?.stake });
 installCrashHandlers(crashContext);
 
-// Gamepads (STEAM_READINESS S3): the d-pad / left stick move the focus, A presses, B / Start back out or pause,
-// X spins, Y toggles AUTO, the bumpers change speed; in a fight the d-pad left / up / right HOLDs reels 1 / 2 / 3 (game.ts). Edges only, with a repeat while a direction is held.
-const PAD: Record<number, string> = { 12: 'arrowup', 13: 'arrowdown', 14: 'arrowleft', 15: 'arrowright', 0: 'enter', 1: 'escape', 9: 'escape', 2: ' ', 3: 'a' };
+// Gamepads (STEAM_READINESS S3): the d-pad / left stick move the focus, A presses, B backs out, START pauses (and skips
+// the tutorial), X spins, Y toggles AUTO, the bumpers change speed (PROFILE's tabs in the menus), VIEW pulls the BUILD
+// drawer, a trigger opens the boss's rules; in a fight the d-pad left / up / right HOLDs reels 1 / 2 / 3 (game.ts).
+// Edges only, with a repeat while a direction is held.
+const PAD: Record<number, string> = { 12: 'arrowup', 13: 'arrowdown', 14: 'arrowleft', 15: 'arrowright', 0: 'enter', 1: 'escape', 9: 'start', 2: ' ', 3: 'a', 4: 'lb', 5: 'rb', 6: 'trigger', 7: 'trigger', 8: 'view' };
 const padHeld = new Map<string, number>();
 function pollPads(now: number): void {
   const pads = navigator.getGamepads?.() ?? [];
   const down = new Set<string>();
   for (const pad of pads) {
     if (!pad) continue;
-    pad.buttons.forEach((b, i) => b.pressed && PAD[i] && down.add(PAD[i]));
+    pad.buttons.forEach((b, i) => (b.pressed || (i === 6 || i === 7 ? b.value > 0.5 : false)) && PAD[i] && down.add(PAD[i]));
     const [ax, ay] = pad.axes;
     if (ax < -0.5) down.add('arrowleft');
     if (ax > 0.5) down.add('arrowright');
     if (ay < -0.5) down.add('arrowup');
     if (ay > 0.5) down.add('arrowdown');
-    if (pad.buttons[4]?.pressed) down.add('lb');
-    if (pad.buttons[5]?.pressed) down.add('rb');
   }
   for (const k of down) {
     const t = padHeld.get(k);
     const repeat = k.startsWith('arrow') && t !== undefined && now - t > 380;
     if (t === undefined || repeat) {
       padHeld.set(k, repeat ? now - 260 : now);
-      if (k === 'lb' || k === 'rb') {
-        // (From the speed you're on: it started at 2X whatever the saved speed was.)
-        const now = Math.max(0, SPEEDS.indexOf(game.prefs.speed));
-        game.key(String(Math.max(0, Math.min(SPEEDS.length - 1, now + (k === 'rb' ? 1 : -1))) + 1));
-      } else game.key(k, repeat);
+      setInputMode('pad');
+      game.key(k, repeat);
     }
   }
   for (const k of [...padHeld.keys()]) if (!down.has(k)) padHeld.delete(k);
 }
-window.addEventListener('gamepadconnected', () => game.focus.hide());
+window.addEventListener('gamepadconnected', () => {
+  game.focus.hide();
+  setInputMode('pad');
+});
 
 let last = performance.now();
 function frame(now: number): void {

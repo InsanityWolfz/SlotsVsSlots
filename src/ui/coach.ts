@@ -3,7 +3,8 @@ import { HOLD } from '../core/run';
 import { HUD_W } from '../present/hud';
 import { COLORS, H, HUD_TOP, MACHINE_CX, MACHINE_H, MACHINE_TOP, MACHINE_W, W } from '../present/layout';
 import { artId, drawSprite, hasSprite } from '../render/sprites';
-import { drawText } from '../render/text';
+import { drawText, textWidth } from '../render/text';
+import { by as forInput, drawPrompt } from './input';
 import { drawPanel, KIT, T } from './kit';
 import { wrap } from './runScreens';
 
@@ -17,7 +18,17 @@ export interface Tip {
   text: string;
   /** Area to light up: x, y, w, h. */
   rect?: [number, number, number, number];
+  /** The words for a mouse, a keyboard or a pad, where they differ from the touch words (`text`). */
+  mouse?: string;
+  keys?: string;
+  pad?: string;
 }
+
+/** A tip's words for the device in hand. */
+export const tipText = (tip: Tip): string => forInput({ touch: tip.text, mouse: tip.mouse, keys: tip.keys, pad: tip.pad ?? tip.keys ?? tip.mouse ?? tip.text });
+
+const HOLD_TAIL = 'IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. HOLD BEFORE YOU SPIN OR WHILE THE ENEMY SPINS. NOTHING WAITS FOR IT, NOT EVEN AUTO.';
+const PAIR_TAIL = 'YOUR NEXT SPIN KEEPS THE PAIR AND ROLLS THE LAST REEL: A JACKPOT IF IT MATCHES. HOLD WHILE THE ENEMY SPINS.';
 
 const machine = (side: 'player' | 'enemy'): [number, number, number, number] => [MACHINE_CX[side] - MACHINE_W / 2 - 8, MACHINE_TOP - 8, MACHINE_W + 16, MACHINE_H + 16];
 const hud = (side: 'player' | 'enemy'): [number, number, number, number] => [MACHINE_CX[side] - HUD_W / 2 - 12, HUD_TOP - 12, HUD_W + 24, 142];
@@ -27,19 +38,47 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'abil
   preview: [
     { title: 'WELCOME TO REEL BRAWL', text: 'TWO SLOT MACHINES FIGHT. THE REELS DECIDE MOST OF A FIGHT: YOUR BIG CHOICES COME BETWEEN FIGHTS, AND IN A FIGHT YOU CAN HOLD A REEL.' },
     { title: 'A RUN', text: 'EACH ACT IS A MAP: FIGHTS, GAMBLES AND THE CASHIER, THEN A BOSS. BEAT THE HOUSE (ACT 1) AND THE WHEEL (ACT 2) TO CLEAR THE RUN. LOSE ONCE AND IT\'S OVER.' },
-    { title: 'YOUR NEXT OPPONENT', text: 'WHO YOU FIGHT NEXT: ITS HP AND ITS ABILITY. TAP ? FOR ITS FULL RULES AND REELS. PRESS FIGHT! WHEN READY.' },
+    {
+      title: 'YOUR NEXT OPPONENT',
+      text: 'WHO YOU FIGHT NEXT: ITS HP AND ITS ABILITY. TAP ? FOR ITS FULL RULES AND REELS. PRESS FIGHT! WHEN READY.',
+      mouse: 'WHO YOU FIGHT NEXT: ITS HP AND ITS ABILITY. CLICK ? FOR ITS FULL RULES AND REELS. PRESS FIGHT! WHEN READY.',
+      keys: 'WHO YOU FIGHT NEXT: ITS HP AND ITS ABILITY. PRESS ? FOR ITS FULL RULES AND REELS. PRESS FIGHT! WHEN READY.',
+    },
   ],
   fight: [
     { title: 'YOUR SLOT MACHINE', text: 'THIS IS YOU. THE MIDDLE ROW IS THE PAYLINE: EVERY SYMBOL ON IT PAYS. MATCHES PAY MORE, READ FROM THE LEFT: REELS 1 AND 2 THE SAME IS A PAIR, ALL 3 IS A JACKPOT.', rect: machine('player') },
     { title: 'THE SYMBOLS', text: 'SWORDS HIT THE ENEMY. SHIELDS BLOCK THE NEXT HIT. THE NUMBER ON A SYMBOL IS WHAT IT PAYS: A PAIR PAYS X2, A JACKPOT X3. ROCKS AND JUNK PAY NOTHING.', rect: [MACHINE_CX.player - MACHINE_W / 2 - 8, MACHINE_TOP + MACHINE_H / 3 - 8, MACHINE_W + 16, MACHINE_H / 3 + 16] },
     { title: 'YOUR HP', text: 'RED IS HP, BLUE IS SHIELD. OTHER SLOT MACHINES HAVE A METER (LIGHTNING, VOLUME, JACKPOTS OR HIGH ROLLER) THAT PAYS OFF WHEN FULL.', rect: hud('player') },
     { title: 'THE ENEMY', text: 'ENEMIES SPIN TOO. THEIR ABILITY ICON CHARGES EACH SPIN. WHEN IT FIRES THEY WRITE ON YOUR MACHINE: SPILLS, FREEZES, ROCKS AND WORSE.', rect: hud('enemy') },
-    { title: 'SPIN, AUTO AND SPEED', text: 'PRESS SPIN (OR SPACE) EACH SPIN, OR TURN ON AUTO AND WATCH. THE SPEED BUTTON CYCLES 1X, 2X, 4X AND 8X.', rect: [MACHINE_CX.player - 200, 610, 400, 80] },
-    { title: 'HOLD', text: `${HOLD.perFight} TIMES A FIGHT, TAP ONE OF YOUR REELS TO HOLD IT: IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. TAP BEFORE YOU SPIN OR WHILE THE ENEMY SPINS (KEYS Q W E, OR THE D-PAD). NOTHING WAITS FOR IT, NOT EVEN AUTO.`, rect: machine('player') },
+    {
+      title: 'SPIN, AUTO AND SPEED',
+      text: 'PRESS SPIN EACH SPIN, OR TURN ON AUTO AND WATCH. THE SPEED BUTTON CYCLES 1X, 2X, 4X AND 8X.',
+      mouse: 'PRESS SPIN (OR SPACE) EACH SPIN, OR TURN ON AUTO AND WATCH. THE SPEED BUTTON CYCLES 1X, 2X, 4X AND 8X.',
+      keys: 'PRESS SPIN (SPACE) EACH SPIN, OR TURN ON AUTO (A) AND WATCH. KEYS 1 TO 4 SET THE SPEED: 1X, 2X, 4X OR 8X.',
+      pad: 'PRESS SPIN ([X]) EACH SPIN, OR TURN ON AUTO ([Y]) AND WATCH. [LB] AND [RB] CHANGE THE SPEED: 1X, 2X, 4X AND 8X.',
+      rect: [MACHINE_CX.player - 200, 610, 400, 80],
+    },
+    {
+      title: 'HOLD',
+      text: `${HOLD.perFight} TIMES A FIGHT, TAP ONE OF YOUR REELS TO HOLD IT: ${HOLD_TAIL}`,
+      mouse: `${HOLD.perFight} TIMES A FIGHT, CLICK ONE OF YOUR REELS TO HOLD IT: ${HOLD_TAIL}`,
+      keys: `${HOLD.perFight} TIMES A FIGHT, PRESS Q, W OR E TO HOLD REEL 1, 2 OR 3: ${HOLD_TAIL}`,
+      pad: `${HOLD.perFight} TIMES A FIGHT, HOLD A REEL WITH [DPAD] LEFT, UP OR RIGHT (REEL 1, 2 OR 3): ${HOLD_TAIL}`,
+      rect: machine('player'),
+    },
     { title: 'BUILD-UP', text: 'A SPIN WITHOUT A SWORD PAIR ISN\'T WASTED: EACH ONE ADDS +25% TO YOUR NEXT SWORD PAIR OR JACKPOT, UP TO X2. THE GOLD PLATE BETWEEN THE MACHINES SHOWS IT.' },
     { title: 'OVERTIME', text: `A FIGHT CAN'T DRAG ON: FROM SPIN ${2 * OVERTIME.from - 1}, EVERY HIT ON BOTH MACHINES GROWS WITH EACH OF YOUR SPINS. THE MIDDLE OF THE SCREEN COUNTS IT DOWN.` },
   ],
-  hold: [{ title: 'A PAIR! HOLD IT?', text: 'TAP THE TWO REELS OF YOUR PAIR TO HOLD THEM. YOUR NEXT SPIN KEEPS THE PAIR AND ROLLS THE LAST REEL: A JACKPOT IF IT MATCHES. HOLD WHILE THE ENEMY SPINS.', rect: machine('player') }],
+  hold: [
+    {
+      title: 'A PAIR! HOLD IT?',
+      text: `TAP THE TWO REELS OF YOUR PAIR TO HOLD THEM. ${PAIR_TAIL}`,
+      mouse: `CLICK THE TWO REELS OF YOUR PAIR TO HOLD THEM. ${PAIR_TAIL}`,
+      keys: `PRESS Q AND W TO HOLD THE TWO REELS OF YOUR PAIR. ${PAIR_TAIL}`,
+      pad: `HOLD THE TWO REELS OF YOUR PAIR: [DPAD] LEFT, THEN UP. ${PAIR_TAIL}`,
+      rect: machine('player'),
+    },
+  ],
   firstSpin: [{ title: 'THAT\'S A SPIN', text: 'EVERY GROUP ON THE PAYLINE PAID OUT. THEN THE ENEMY SPINS. TRADE BLOWS UNTIL ONE MACHINE HITS 0 HP.' }],
   ability: [{ title: 'ENEMY ABILITY!', text: 'THAT WAS ITS ABILITY. EVERY ENEMY HAS ITS OWN. THE CARD BEFORE EACH FIGHT TELLS YOU WHAT IT DOES, SO YOU CAN BUILD AGAINST IT.', rect: hud('enemy') }],
   draft: [
@@ -125,7 +164,7 @@ export class Coach {
     // The kit's panel: the title at heading size, the words at body size, the hint and SKIP on a foot row.
     // A whole machine lit: the box goes beside it, over the other machine (above it, it covered the machine's top row).
     const beside = !!r && r[3] > 260;
-    const lines = wrap(tip.text, beside ? 42 : 56);
+    const lines = wrap(tipText(tip), beside ? 42 : 56);
     const bh = 116 + lines.length * 24;
     const bw = beside ? 560 : 744;
     let cy = r ? (r[1] + r[3] / 2 > H / 2 ? 150 : H - 60 - bh / 2) : H / 2;
@@ -137,11 +176,13 @@ export class Coach {
     const by = Math.round(cy - bh / 2);
     drawPanel(ctx, bx, by, bw, bh);
     drawText(ctx, tip.title, bx + bw / 2, by + 32, T.head, KIT.title);
-    lines.forEach((l, k) => drawText(ctx, l, bx + bw / 2, by + 68 + k * 24, T.body, KIT.text));
+    lines.forEach((l, k) => drawPrompt(ctx, l, bx + bw / 2, by + 68 + k * 24, T.body, KIT.text));
     const fy = by + bh - 28;
-    drawText(ctx, `NEXT: CLICK OR ANY KEY (${this.idx + 1}/${this.queue.length})`, bx + 24, fy, T.small, KIT.dim, { align: 'left', alpha: 0.7 + 0.3 * Math.sin(t * 4) });
-    // SKIP: a real button (the kit's quiet style), so touch players can bail out too (S on a keyboard).
-    const sw = 176;
+    const next = forInput({ touch: 'NEXT: TAP', mouse: 'NEXT: CLICK OR ANY KEY', keys: 'NEXT: ANY KEY', pad: 'NEXT: [A]' });
+    drawPrompt(ctx, `${next} (${this.idx + 1}/${this.queue.length})`, bx + 24, fy, T.small, KIT.dim, { align: 'left', alpha: 0.7 + 0.3 * Math.sin(t * 4) });
+    // SKIP: a real button (the kit's quiet style), so touch players can bail out too (S on a keyboard, START on a pad).
+    const skip = forInput({ touch: 'SKIP TUTORIAL', keys: 'S: SKIP TUTORIAL', pad: '[START] SKIP TUTORIAL' });
+    const sw = Math.max(176, textWidth(skip, T.small) + 28);
     const sh = 32;
     const sx = bx + bw - sw - 20;
     const sy = fy - sh / 2;
@@ -152,6 +193,6 @@ export class Coach {
     ctx.fillRect(sx, sy, sw, sh);
     ctx.fillStyle = '#1a1426';
     ctx.fillRect(sx + 2, sy + 2, sw - 4, sh - 4);
-    drawText(ctx, 'SKIP TUTORIAL', sx + sw / 2, fy + 1, T.small, KIT.text);
+    drawPrompt(ctx, skip, sx + sw / 2, fy + 1, T.small, KIT.text);
   }
 }

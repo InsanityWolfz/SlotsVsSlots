@@ -1361,9 +1361,32 @@ export class Game {
     this.focus.sync(this.focusKey());
     this.startAudio();
     if (this.coach.active) {
-      // Any key moves the tutorial on (a pad's A included); S skips it.
-      if (k === 's') this.skipTutorial();
+      // Any key moves the tutorial on (a pad's A included); S or a pad's START skips it.
+      if (k === 's' || k === 'start') this.skipTutorial();
       else this.coach.advance();
+      return true;
+    }
+    // A pad's START is Escape everywhere else (pause, back).
+    if (k === 'start') k = 'escape';
+    // The bumpers: PROFILE's tabs in the menus, the speed everywhere else (from the speed you're on).
+    if (k === 'lb' || k === 'rb') {
+      if (this.menus.isOpen) return this.menus.key(k === 'lb' ? '[' : ']');
+      const at = Math.max(0, SPEEDS.indexOf(this.prefs.speed));
+      this.setSpeed(SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, at + (k === 'rb' ? 1 : -1)))]);
+      return true;
+    }
+    // VIEW (or B): the BUILD drawer, in or out (it was a mouse-only handle).
+    if ((k === 'view' || k === 'b') && this.drawerLive() && !this.pause.open && !this.bossCard) {
+      this.buildOpen = !this.buildOpen;
+      this.drawerUsed = true;
+      this.sounds.click();
+      this.syncButtons();
+      return true;
+    }
+    // A trigger (or I): the boss's rules card (it opened only by tapping the boss's panel).
+    if ((k === 'trigger' || k === 'i') && !this.pause.open && this.bossInfo()) {
+      this.bossCard = !this.bossCard;
+      this.sounds.click();
       return true;
     }
     // HOLD: Q / W / E, or the arrows / d-pad while a HOLD can be made (the fight's buttons all have their own keys).
@@ -1374,7 +1397,8 @@ export class Game {
     }
     // Keyboard / gamepad focus (STEAM_READINESS S3): arrows move it, Enter presses it.
     const dir = NAV_KEYS[k];
-    if (dir) {
+    // (The title's PRESS ANY KEY: the d-pad counts too. It has nothing to focus, so arrows went nowhere.)
+    if (dir && !(this.menus.isOpen && this.menus.mode === 'loading')) {
       const t = this.focus.move(dir, this.navTargets());
       if (t) this.pointerMove(t.x, t.y);
       return !!t;
@@ -1679,6 +1703,11 @@ export class Game {
   /** The Dealer's table: green felt behind its machine, and the ALL IN warning over it. */
   /** The boss card is open (it pauses the fight). */
   bossCard = false;
+
+  /** A boss fight is on screen (its rules card can open). */
+  bossInfo(): boolean {
+    return !!this.fight.cfg.enemy.boss && !this.screens.active && !this.fight.over && !this.menus.isOpen && (this.phase === 'fighting' || this.phase === 'quick');
+  }
 
   private onBossHud(x: number, y: number): boolean {
     if (!this.fight.cfg.enemy.boss || this.screens.active || this.fight.over) return false;

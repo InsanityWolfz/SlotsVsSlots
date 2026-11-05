@@ -1,5 +1,6 @@
 import { COLORS } from '../present/layout';
 import { drawText, type TextOpts } from '../render/text';
+import { drawPrompt, promptWidth } from './input';
 
 /**
  * THE UI KIT (user, 2026-10-30): every screen draws its boxes, cards, chips and banners from here, so the game reads
@@ -112,7 +113,7 @@ export function drawChip(ctx: CanvasRenderingContext2D, label: string, x: number
   const s = o.scale ?? T.body;
   const iw = o.icon ? (o.iconW ?? 20) : 0;
   const tw = o.trail ? o.trail.w + 10 : 0;
-  const w = Math.round(label.length * 6 * s + iw + tw + 18);
+  const w = Math.round((label.includes('[') ? promptWidth(label, s) : label.length * 6 * s) + iw + tw + 18);
   const h = Math.round(Math.max(7 * s + 14, o.icon && o.iconW ? o.iconW + 4 : 0));
   const x0 = Math.round(x - w / 2);
   const y0 = Math.round(y - h / 2);
@@ -123,7 +124,8 @@ export function drawChip(ctx: CanvasRenderingContext2D, label: string, x: number
   ctx.fillStyle = o.fill ?? KIT.fillLight;
   ctx.fillRect(x0 + 2, y0 + 2, w - 4, h - 4);
   if (o.icon) o.icon(x0 + 9 + iw / 2 - 2, y);
-  drawText(ctx, label, x0 + 9 + iw + (w - 18 - iw - tw) / 2, y + 1, s, o.color ?? KIT.title);
+  // (drawPrompt: a chip can carry a pad badge, HOLD 2: [DPAD].)
+  drawPrompt(ctx, label, x0 + 9 + iw + (w - 18 - iw - tw) / 2, y + 1, s, o.color ?? KIT.title);
   o.trail?.draw(x0 + w - 9 - o.trail.w, y);
   return w;
 }
@@ -134,7 +136,7 @@ export function drawChip(ctx: CanvasRenderingContext2D, label: string, x: number
  */
 export function drawBanner(ctx: CanvasRenderingContext2D, label: string, x: number, y: number, o: { scale?: number; color?: string; frame?: string; alpha?: number } = {}): void {
   const s = o.scale ?? T.head;
-  const w = Math.round(label.length * 6 * s + 48);
+  const w = Math.round((label.includes('[') ? promptWidth(label, s) : label.length * 6 * s) + 48);
   const h = Math.round(7 * s + 18);
   ctx.save();
   ctx.globalAlpha *= o.alpha ?? 1;
@@ -148,7 +150,7 @@ export function drawBanner(ctx: CanvasRenderingContext2D, label: string, x: numb
   ctx.fillRect(x0 - 15, y0 + 9, 18, h - 6);
   ctx.fillRect(x0 + w - 3, y0 + 9, 18, h - 6);
   drawPanel(ctx, x0, y0, w, h, { frame: o.frame, fill: '#3a1428' });
-  drawText(ctx, label, x, y + 1, s, o.color ?? KIT.title);
+  drawPrompt(ctx, label, x, y + 1, s, o.color ?? KIT.title);
   ctx.restore();
 }
 

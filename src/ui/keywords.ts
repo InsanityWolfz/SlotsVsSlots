@@ -34,7 +34,7 @@ export const KEYWORDS: Keyword[] = [
   { word: 'METER', icon: 'kwMeter', color: '#ffd23f', text: "YOUR SLOT MACHINE'S BAR: IT FILLS AS YOU SPIN AND PAYS OFF WHEN FULL" },
   { word: 'BUST', icon: 'kwBust', forms: ['BUSTS'], color: '#ff8a7a', text: "THE DEALER'S CARD: YOUR BEST REEL'S PAYLINE PAYS NOTHING NEXT SPIN" },
   { word: 'ALL IN', icon: 'kwAllIn', color: '#ff6a5a', text: "THE DEALER'S BIG HIT: A SHARE OF YOUR MAX HP THAT PIERCES SHIELDS" },
-  { word: 'HOLD', icon: 'kwHold', forms: ['HELD'], color: '#ffe28a', text: `TAP ONE OF YOUR REELS BEFORE YOUR SPIN OR WHILE THE ENEMY SPINS: IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. ${HOLD.perFight} A FIGHT` },
+  { word: 'HOLD', icon: 'kwHold', forms: ['HELD'], color: '#ffe28a', text: `PICK ONE OF YOUR REELS BEFORE YOUR SPIN OR WHILE THE ENEMY SPINS: IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. ${HOLD.perFight} A FIGHT` },
   // (BUILD-UP borrows the METER icon until it has its own.)
   { word: 'BUILD-UP', icon: 'kwMeter', color: '#ffd23a', text: 'EACH SPIN WITHOUT A PAIR OR JACKPOT OF YOUR ATTACK SYMBOL (SWORD, CHIP, BOLT, CARD OR NOTE) ADDS +25% TO YOUR NEXT ONE, UP TO X2' },
   { word: 'OVERTIME', icon: 'kwOvertime', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF A FIGHT, EVERY HIT ON BOTH MACHINES PAYS X${1 + OVERTIME.step}, +${OVERTIME.step} WITH EACH OF YOUR SPINS. SHIELDS DON'T GROW` },

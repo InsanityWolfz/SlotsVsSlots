@@ -10,6 +10,7 @@ import { drawCard, drawChip, drawPanel, drawTitle, drawWell, KIT, T } from '../k
 import { wrap, Hit, BUILD, CX, spotlight } from './shared';
 import { cardFace, rarityOf } from './cardText';
 import { EncounterScreen } from './encounter';
+import { by, drawPrompt } from '../input';
 
 /** THE CASHIER: the shelves' rows (the counter goods, then the relics behind the glass), the spacing, an item card. */
 const SHELF = { y: [232, 446], gap: 168 };
@@ -171,7 +172,7 @@ export abstract class ShopScreen extends EncounterScreen {
     drawPanel(ctx, x, y, w, tall, { frame: rarityOf(o) === 'common' ? KIT.frame : KIT.rarity[rarityOf(o)] });
     drawText(ctx, face.title, x + 14, y + 22, textWidth(face.title, T.head) <= w - 28 ? T.head : T.body, this.optionColor(o), { align: 'left' });
     lines.forEach((l, k) => drawRich(ctx, l, x + 14, y + 54 + k * 24, T.body, KIT.text, { align: 'left' }));
-    if (pinned) drawText(ctx, (this.run?.player.chips ?? 0) >= item.price ? 'TAP AGAIN TO BUY' : 'NOT ENOUGH CHIPS', x + 14, y + 54 + lines.length * 24 + 4, T.small, KIT.dim, { align: 'left' });
+    if (pinned) drawPrompt(ctx, (this.run?.player.chips ?? 0) >= item.price ? by({ touch: 'TAP AGAIN TO BUY', mouse: 'CLICK AGAIN TO BUY', keys: 'ENTER AGAIN TO BUY', pad: '[A] AGAIN TO BUY' }) : 'NOT ENOUGH CHIPS', x + 14, y + 54 + lines.length * 24 + 4, T.small, KIT.dim, { align: 'left' });
   }
 
   /** One item on a shelf: a kit card with its picture, its price tag (a chip: clicking it buys) and its name. */

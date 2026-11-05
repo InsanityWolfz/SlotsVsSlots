@@ -6,6 +6,7 @@ import { drawText, textWidth } from '../../render/text';
 import type { Button } from '../button';
 import { drawChip, drawPanel, KIT, T } from '../kit';
 import type { MenuScreen, Menus } from '../menus';
+import { drawPrompt, inputMode, promptWidth } from '../input';
 import { Lifts } from './lift';
 
 /**
@@ -210,23 +211,39 @@ export class SettingsScreen implements MenuScreen {
     drawBulb(ctx, right - 12, b.y - 2, 3, lit);
   }
 
-  /** The keys, as chips with what they do. */
+  /** The keys, as chips with what they do (a pad's buttons, as badges, while a pad is in hand). */
   private drawControls(ctx: CanvasRenderingContext2D): void {
-    const keys: [string, string][] = [
-      ['SPACE', 'SPIN'],
-      ['Q W E', 'HOLD A REEL'],
-      ['A', 'AUTO'],
-      ['1-4', 'SPEED'],
-      ['M', 'MUTE'],
-      ['ESC', 'PAUSE, BACK'],
-      ['F11', 'FULLSCREEN'],
-      ['ARROWS + ENTER', 'MENUS'],
-    ];
+    const pad = inputMode() === 'pad';
+    const keys: [string, string][] = pad
+      ? [
+          ['[X]', 'SPIN'],
+          ['[Y]', 'AUTO'],
+          ['[DPAD]', 'MOVE, HOLD A REEL'],
+          ['[LB] [RB]', 'SPEED, TABS'],
+          ['[A]', 'CHOOSE'],
+          ['[B]', 'BACK'],
+          ['[VIEW]', 'YOUR BUILD'],
+          ['[LT]', 'BOSS RULES'],
+          ['[START]', 'PAUSE'],
+        ]
+      : [
+          ['SPACE', 'SPIN'],
+          ['Q W E', 'HOLD A REEL'],
+          ['A', 'AUTO'],
+          ['1-4', 'SPEED'],
+          ['B', 'YOUR BUILD'],
+          ['I', 'BOSS RULES'],
+          ['M', 'MUTE'],
+          ['ESC', 'PAUSE, BACK'],
+          ['F11', 'FULLSCREEN'],
+          ['ARROWS + ENTER', 'MENUS'],
+        ];
+    const step = keys.length > 8 ? 48 : 64;
     keys.forEach(([k, what], i) => {
       const col = i % 2;
       const x = RX + 28 + col * 268;
-      const y = CONTROLS_Y + 56 + Math.floor(i / 2) * 64;
-      const w = drawChip(ctx, k, x + (k.length * 6 * T.small + 18) / 2, y, { scale: T.small });
+      const y = CONTROLS_Y + 56 + Math.floor(i / 2) * step;
+      const w = pad ? (drawPrompt(ctx, k, x, y, T.small, COLORS.text, { align: 'left' }), promptWidth(k, T.small)) : drawChip(ctx, k, x + (k.length * 6 * T.small + 18) / 2, y, { scale: T.small });
       drawText(ctx, what, x + w + 10, y, T.small, COLORS.text, { align: 'left' });
     });
   }

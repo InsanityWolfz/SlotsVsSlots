@@ -4,6 +4,7 @@ import { SPRITES } from '../../render/spriteData';
 import { artId, drawSprite, hasSprite, type SpriteId } from '../../render/sprites';
 import { drawText } from '../../render/text';
 import { drawBanner, T } from '../kit';
+import { by, promptWidth } from '../input';
 import type { MenuScreen, Menus } from '../menus';
 
 /**
@@ -13,7 +14,6 @@ import type { MenuScreen, Menus } from '../menus';
  */
 
 const LOAD_MIN = 1.6;
-const TOUCH = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches ?? false);
 /** The logo sprite (160x44) and where its 2x2 bulbs sit, walked clockwise (the art's own loop: build-art.mjs). */
 const LOGO_W = 160;
 const LOGO_H = 44;
@@ -126,11 +126,11 @@ export class TitleScreen implements MenuScreen {
     drawText(ctx, 'A SLOT MACHINE ROGUELIKE', W / 2, cy + 120, T.body, COLORS.textDim, { alpha: 0.4 + 0.6 * on });
     if (this.ready) {
       // The banner fades in with the sign, then its words breathe (2.4 s): a veil over the band, never see-through.
-      const label = TOUCH ? 'TAP TO PLAY' : 'PRESS ANY KEY';
+      const label = by({ touch: 'TAP TO PLAY', mouse: 'PRESS ANY KEY', pad: 'PRESS [A]' });
       drawBanner(ctx, label, W / 2, 520, { scale: T.head, alpha: on });
       const veil = still ? 0 : 0.42 * (0.5 - 0.5 * Math.cos(this.onT * 2.6));
       if (veil > 0.01) {
-        const bw = Math.round(label.length * 6 * T.head + 48);
+        const bw = Math.round((label.includes('[') ? promptWidth(label, T.head) : label.length * 6 * T.head) + 48);
         const bh = Math.round(7 * T.head + 18);
         ctx.fillStyle = `rgba(58,20,40,${(veil * on).toFixed(3)})`;
         ctx.fillRect(Math.round(W / 2 - bw / 2) + 3, Math.round(520 - bh / 2) + 3, bw - 6, bh - 6);

@@ -6,6 +6,7 @@ import { drawText, textWidth } from '../render/text';
 import { Button } from './button';
 import { KEYWORDS } from './keywords';
 import { drawPanel, drawTitle, KIT, T } from './kit';
+import { by, drawPrompt } from './input';
 
 export interface PauseCallbacks {
   onResume: () => void;
@@ -119,7 +120,7 @@ export class Pause {
     drawPanel(ctx, W / 2 - pw / 2, top, pw, bottom - top);
     drawTitle(ctx, 'PAUSED', W / 2, top + 48);
     for (const b of this.buttons) b.draw(ctx, t);
-    drawText(ctx, 'ESC: RESUME    ARROWS + ENTER: CHOOSE', W / 2, last + 50, T.small, KIT.dim);
+    drawPrompt(ctx, by({ touch: 'TAP RESUME TO PLAY ON', mouse: 'ESC: RESUME', keys: 'ESC: RESUME    ARROWS + ENTER: CHOOSE', pad: '[B] RESUME    [A] CHOOSE' }), W / 2, last + 50, T.small, KIT.dim);
   }
 
   /** GLOSSARY (user, 2026-10-12): every keyword with its icon, in its colour, its meaning beside it, in two columns. */
@@ -159,7 +160,7 @@ export class Pause {
     // The column divider.
     ctx.fillStyle = KIT.frameDim;
     ctx.fillRect(Math.round(W / 2 - 1), py + 84, 2, ph - 136);
-    drawText(ctx, 'TAP OR ESC: BACK', W / 2, py + ph - 24, T.small, KIT.dim);
+    drawPrompt(ctx, by({ touch: 'TAP: BACK', mouse: 'CLICK OR ESC: BACK', keys: 'ESC: BACK', pad: '[B] BACK' }), W / 2, py + ph - 24, T.small, KIT.dim);
   }
 }
 

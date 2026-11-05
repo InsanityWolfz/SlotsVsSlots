@@ -5,6 +5,7 @@ import { fightConfig, skipToBoss } from './core/run';
 import type { CombatEvent } from './core/events';
 import { BUILD_UP } from './core/fightRules';
 import type { Game } from './game';
+import { setInputMode, type InputMode } from './ui/input';
 
 /**
  * Dev-only console helpers (window.dbg) for frame-stepping the presentation and forcing
@@ -26,6 +27,8 @@ export function installDebug(game: Game): void {
     game,
     /** BUILD-UP on or off (A/B): dbg.buildUp(false) plays without it. Takes effect next spin. */
     buildUp: (on: boolean) => ((BUILD_UP.on = on ? 1 : 0), on),
+    /** The prompts for a device: dbg.input('pad') shows the button badges. */
+    input: (m: InputMode) => (setInputMode(m), m),
     pause,
     resume: () => (game.stage.clock.speed = game.prefs.speed / 2),
     /** Advance game time by `sec` (paused otherwise). */

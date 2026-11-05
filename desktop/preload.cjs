@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('desktop', {
   saveWrite: (key, json) => ipcRenderer.sendSync('desktop:saveWrite', key, json),
   saveRead: (key) => ipcRenderer.sendSync('desktop:saveRead', key),
   saveRemove: (key) => ipcRenderer.sendSync('desktop:saveRemove', key),
+  // Steam sets SteamDeck=1 on a Deck: the button prompts say L1 / R1 / L2, not LB / RB / LT.
+  steamDeck: () => process.env.SteamDeck === '1',
 });
 
 const info = ipcRenderer.sendSync('steam:info');
