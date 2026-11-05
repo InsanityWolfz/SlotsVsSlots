@@ -129,7 +129,7 @@ achievements and leaderboards come first), so PLAY MODES is gone and TUTORIAL si
 Left:
 - Split the files over about 1,000 lines as they're touched: `runScreens.ts` (2,999), `game.ts` (2,169), `run.ts`
   (1,579). Check each split with the sim (identical results) and a browser run. (`fight.ts` is split: its rules,
-  a spin's scoring and the enemies' tricks are their own modules; the class with the turn loop is 1,234 lines.)
+  a spin's scoring and the enemies' tricks are their own modules; the class with the turn loop is 717 lines since 2026-11-05, with a spin's payouts (fightPayout.ts) and hits, heals and deaths (fightDamage.ts) split out too.)
 
 **Gate:** the scope is signed, and everything on it is built.
 
