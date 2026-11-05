@@ -137,7 +137,8 @@ export class FightView {
       this.chipT = now;
       const n = this.chipNum.shown;
       // (Four digits step down to heading size so the count never runs under your HUD panel.)
-      drawText(ctx, `${n}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, n >= 1000 ? T.head : T.title, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
+      // (Past 9,999: 12.3K, so it never clips; ENDLESS banks can get there.)
+      drawText(ctx, n >= 10000 ? fmtNum(n) : `${n}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, n >= 1000 ? T.head : T.title, eaten ? '#ff9a3a' : COLORS.energy, { align: 'left' });
       // The column under your chips (left of your HUD): the stake, and the boss fights' stacked shield.
       let ly = CHIP_SPOT.y + 36;
       if (this.g.run.stake > 0 && !(this.g.drawerLive() && this.g.drawerT > 0.05)) {

@@ -224,6 +224,20 @@ export abstract class RunScreensBase {
     return h.enabled && x >= h.x - h.w / 2 && x <= h.x + h.w / 2 && y >= h.y - h.h / 2 && y <= h.y + h.h / 2;
   }
 
+  /** A finger's reach: on touch a small button answers a little outside its edges (the card's "?" was 22 x 20 points
+   * on a phone held sideways: QA 2026-11-04). Only when nothing is under the finger itself, and the nearest wins. */
+  private reach(x: number, y: number): Hit | undefined {
+    if (!this.touch) return undefined;
+    let best: Hit | undefined;
+    let bd = Infinity;
+    for (const h of this.all()) {
+      if (!h.enabled || !touchNear(h, x, y)) continue;
+      const d = Math.hypot(h.x - x, h.y - y);
+      if (d < bd) (bd = d), (best = h);
+    }
+    return best;
+  }
+
   pointerMove(x: number, y: number): boolean {
     this.mouse = { x, y };
     let any = false;
@@ -241,7 +255,7 @@ export abstract class RunScreensBase {
     // A fresh screen ignores clicks for a moment, so a double-click can't buy on arrival (ITERATION_9 H8). A press that
     // starts in that moment still counts if it's released after it (playtest: draft clicks during the deal were dropped).
     // (A card still being dealt in, too small to see, can't be picked.)
-    const h = this.all().find((h) => this.inside(h, x, y) && !(this.cards.includes(h) && h.scale < 0.3));
+    const h = this.all().find((h) => this.inside(h, x, y) && !(this.cards.includes(h) && h.scale < 0.3)) ?? this.reach(x, y);
     if (performance.now() - this.openedAt < INPUT_GUARD_MS) {
       if (h) h.pressed = true;
       return this.active;
@@ -265,7 +279,7 @@ export abstract class RunScreensBase {
     for (const h of this.all()) {
       if (!h.pressed) continue;
       h.pressed = false;
-      if (!this.inside(h, x, y) || performance.now() - this.openedAt < INPUT_GUARD_MS) {
+      if (!(this.inside(h, x, y) || (this.touch && h.enabled && touchNear(h, x, y))) || performance.now() - this.openedAt < INPUT_GUARD_MS) {
         void this.ui.to(h, 'scale', 1, 0.1);
         continue;
       }
@@ -376,4 +390,13 @@ export abstract class RunScreensBase {
   protected abstract drawEncounter(ctx: CanvasRenderingContext2D, time: number): void;
   protected abstract drawOver(ctx: CanvasRenderingContext2D, time: number): void;
   protected abstract drawResults(ctx: CanvasRenderingContext2D): void;
+}
+
+/** The smallest a touch target acts (logical px): about 40 points on a phone held sideways. */
+export const TOUCH_MIN = { w: 76, h: 64 };
+/** Inside a small target's touch reach: its rect grown to TOUCH_MIN around its centre. */
+export function touchNear(h: { x: number; y: number; w: number; h: number }, x: number, y: number): boolean {
+  const w = Math.max(h.w, TOUCH_MIN.w);
+  const hh = Math.max(h.h, TOUCH_MIN.h);
+  return Math.abs(x - h.x) <= w / 2 && Math.abs(y - h.y) <= hh / 2;
 }

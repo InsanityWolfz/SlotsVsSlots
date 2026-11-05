@@ -65,6 +65,7 @@ import { desktop, steamUnlock, VERSION } from './build';
 import { Coach, TUTORIAL } from './ui/coach';
 import { collectionTotal, heroSprite, Menus } from './ui/menus';
 import { shownTrim, discover, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, sanitizeProfile, type MetaGain, type Profile, type RunEntry } from './core/profile';
+import { touchNear } from './ui/run/base';
 
 const CFG_KEY = 'slotvslot.config.v3';
 const PREFS_KEY = 'slotvslot.prefs.v2';
@@ -1302,7 +1303,8 @@ export class Game {
       this.syncButtons();
       return;
     }
-    const b = this.buttons.find((b) => b.visible && b.contains(x, y));
+    // (On touch, a small button answers a little outside its edges when nothing is under the finger: LOG, SOUND, PAUSE.)
+    const b = this.buttons.find((b) => b.visible && b.contains(x, y)) ?? (this.screens.touch ? this.buttons.filter((b) => b.visible && b.enabled && touchNear(b, x, y)).sort((a, c) => Math.hypot(a.x - x, a.y - y) - Math.hypot(c.x - x, c.y - y))[0] : undefined);
     if (b) {
       this.active = b;
       b.down();
@@ -1322,7 +1324,7 @@ export class Game {
   pointerUp(x: number, y: number): void {
     const b = this.active;
     this.active = null;
-    b?.up(b.contains(x, y));
+    b?.up(b.contains(x, y) || (this.screens.touch && touchNear(b, x, y)));
     if (this.pause.open && !this.menus.isOpen) return this.pause.pointerUp(x, y);
     if (this.menus.isOpen) {
       const was = this.menus.mode;

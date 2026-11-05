@@ -126,7 +126,8 @@ export class Banner implements FxItem {
     const partsText = this.subParts.map((p) => p.text).join('');
     const hasSub = !!this.sub || this.subParts.length > 0;
     const subText = this.sub || partsText;
-    const subScale = subText && textWidth(subText, T.head) <= 560 ? T.head : T.body;
+    // (A heading-size banner's sub line goes a size down, so the title still leads.)
+    const subScale = ts === T.title && subText && textWidth(subText, T.head) <= 560 ? T.head : T.body;
     const pw = Math.round(Math.max((this.minW * 0.75) / zoom, Math.max(tw, hasSub ? textWidth(subText, subScale) : 0) + 72));
     const ph = Math.round(7 * ts + (hasSub ? 7 * subScale + 40 : 34));
     const x0 = -Math.round(pw / 2);
@@ -141,7 +142,12 @@ export class Banner implements FxItem {
     ctx.fillRect(x0 + pw - 3, y0 + 13, 22, ph - 6);
     drawPanel(ctx, x0, y0, pw, ph, { frame: this.color, fill: '#2a1030' });
     const ty = hasSub ? y0 + 18 + (7 * ts) / 2 : 0;
-    drawTitle(ctx, this.text, 0, ty, this.color);
+    // (At heading size the title is drawn at heading size too: a title-size word overflowed the smaller band's top.)
+    if (ts === T.title) drawTitle(ctx, this.text, 0, ty, this.color);
+    else {
+      drawText(ctx, this.text, 2, ty + 3, ts, '#000000', { alpha: 0.45, outline: null });
+      drawText(ctx, this.text, 0, ty, ts, this.color);
+    }
     const sy = y0 + ph - 18 - (7 * subScale) / 2;
     if (this.sub) drawText(ctx, this.sub, 0, sy, subScale, COLORS.text);
     else if (this.subParts.length) {

@@ -215,8 +215,16 @@ export abstract class NextScreen extends RouteScreen {
       ctx.fillStyle = '#2a2140';
       ctx.fillRect(18, h - 52, w - 36, 2);
       const lines = wrap(win, Math.floor((w - 120) / (6 * T.body)));
-      lines.slice(0, 2).forEach((l, i) => drawText(ctx, l, 24, h - 30 + i * 22 - (lines.length > 1 ? 10 : 0), T.body, '#7dff7a', { align: 'left' }));
-      if (e.boss === 'wheel' && run.stake >= STAKE.wheelFast) drawChip(ctx, 'STARTS FAST', w - 160, wy + 14, { scale: T.small, color: '#ff8a7a' });
+      // (Two lines sit higher: the second one touched the bulb frame.)
+      lines.slice(0, 2).forEach((l, i) => drawText(ctx, l, 24, lines.length > 1 ? h - 42 + i * 20 : h - 30, T.body, '#7dff7a', { align: 'left' }));
+      // STARTS FAST: a band across the portrait's foot, like ELITE's (as a chip it ran into THE WHEEL's name).
+      if (e.boss === 'wheel' && run.stake >= STAKE.wheelFast) {
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(wx, wy + ws - 22, ws, 22);
+        ctx.fillStyle = '#8a2420';
+        ctx.fillRect(wx + 2, wy + ws - 20, ws - 4, 18);
+        drawText(ctx, 'STARTS FAST', wx + ws / 2, wy + ws - 11, T.small, '#ffd0c8');
+      }
     }
   }
 

@@ -179,7 +179,9 @@ export abstract class CabinetScreen extends BuildPanel {
       drawText(ctx, `PLAY AS ${cab.hero}`, tx, hy + 74, T.body, '#c9a0ff', { align: 'left' });
       drawText(ctx, cab.blurb, tx, hy + 102, T.small, KIT.dim, { align: 'left' });
       // The pitch: three lines at body size.
-      wrap(cab.rule, Math.floor((x + w - 36 - hx) / (6 * T.body))).slice(0, 3).forEach((l, i) => drawText(ctx, l, hx, hy + 172 + i * 26, T.body, KIT.text, { align: 'left' }));
+      // (Three lines close up a little: JUKEBOX's third sat 3px over BEST STAKE.)
+      const pitch = wrap(cab.rule, Math.floor((x + w - 36 - hx) / (6 * T.body))).slice(0, 3);
+      pitch.forEach((l, i) => drawText(ctx, l, hx, hy + 170 + i * (pitch.length > 2 ? 23 : 26), T.body, KIT.text, { align: 'left' }));
       // Its best stake so far, as its chip.
       const best = stakeOf(this.stakeFor(id));
       drawText(ctx, 'BEST STAKE', hx, y + h - 46, T.small, KIT.dim, { align: 'left' });

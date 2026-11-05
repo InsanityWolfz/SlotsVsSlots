@@ -1959,7 +1959,7 @@ export class Director {
     });
     await Promise.all(hits);
     const c = this.machineCenter(e.to);
-    this.bg(this.popText(`FAKED: ${e.enhs.map((x) => charmName(x)).join(' + ')} CHARM${e.enhs.length > 1 ? 'S' : ''} OFF FOR ${e.turns} TURNS`, c.x, MACHINE_TOP - 30, 2, '#c0c0c0', 16, 0.6));
+    this.bg(this.popText(`FAKED: ${charmList(e.enhs)} OFF FOR ${e.turns} TURNS`, c.x, MACHINE_TOP - 30, 2, '#c0c0c0', 16, 0.6));
     if (e.reels.length) this.settle(e.from, e.reels);
     await this.c.wait(0.15);
   }
@@ -2023,7 +2023,7 @@ export class Director {
     }
     const c = this.machineCenter(e.to);
     if (e.repo) this.repossessed(e.to, `${e.enhs.map((x) => charmName(x)).join(' + ')} CHARM`);
-    else this.bg(this.popText(`CONFISCATED: ${e.enhs.map((x) => charmName(x)).join(' + ')} CHARM${e.enhs.length > 1 ? 'S' : ''}`, c.x, MACHINE_TOP - 30, 2, '#e0c090', 16, 0.6));
+    else this.bg(this.popText(`CONFISCATED: ${charmList(e.enhs)}`, c.x, MACHINE_TOP - 30, 2, '#e0c090', 16, 0.6));
     if (e.reels.length) this.settle(e.from, e.reels);
     await this.c.wait(0.3);
   }
@@ -2209,4 +2209,10 @@ export class Director {
     for (const t of m.tags) if (t) this.bg(this.c.tween({ from: 1, to: 0, dur: 0.25, onUpdate: (v) => (t.alpha = v) }));
     await this.c.wait(0.05);
   }
+}
+
+/** The Charms an ability hit, for its popup: named up to two ("GOLD + KEEN CHARMS"), counted past that ("4 CHARMS"),
+ * so a wide fake never runs off the screen (QA 2026-11-04). */
+function charmList(enhs: Parameters<typeof charmName>[0][]): string {
+  return enhs.length > 2 ? `${enhs.length} CHARMS` : `${enhs.map((x) => charmName(x)).join(' + ')} CHARM${enhs.length > 1 ? 'S' : ''}`;
 }

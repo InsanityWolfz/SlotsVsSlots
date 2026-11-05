@@ -8,7 +8,7 @@ import { stakeOf } from '../../core/stakes';
 import { ENH_SPRITE } from '../../present/reel';
 import { COLORS } from '../../present/layout';
 import { drawSprite, hasSprite, type SpriteId } from '../../render/sprites';
-import { drawText } from '../../render/text';
+import { drawText, fmtNum } from '../../render/text';
 import { drawPanel, drawWell, KIT, T } from '../kit';
 import { defaultConfig } from '../../core/config';
 import { BUILD, CHIP_SPOT } from './shared';
@@ -42,7 +42,7 @@ export abstract class BuildPanel extends RunScreensBase {
     // CHIPS: big, always in the same spot (the fights show them there too).
     if (!inFight) {
       drawSprite(ctx, 'chip', CHIP_SPOT.x, CHIP_SPOT.y, 3);
-      drawText(ctx, `${this.shown().chips}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, COLORS.energy, { align: 'left', punch: this.chipPulse });
+      drawText(ctx, this.shown().chips >= 10000 ? fmtNum(this.shown().chips) : `${this.shown().chips}`, CHIP_SPOT.x + 24, CHIP_SPOT.y, 4, COLORS.energy, { align: 'left', punch: this.chipPulse });
       drawText(ctx, 'CHIPS', x + w - 14, CHIP_SPOT.y + 4, T.small, KIT.dim, { align: 'right' });
     }
     rule(y + 60);
@@ -164,6 +164,6 @@ export abstract class BuildPanel extends RunScreensBase {
     ctx.fillRect(x + 24, y - 9, w, 18);
     ctx.fillStyle = COLORS.hp;
     ctx.fillRect(x + 24, y - 9, (w * p.hp) / p.maxHp, 18);
-    drawText(ctx, `${p.hp}/${p.maxHp}`, x + 24 + w / 2, y + 1, T.body, COLORS.text);
+    drawText(ctx, `${fmtNum(p.hp)}/${fmtNum(p.maxHp)}`, x + 24 + w / 2, y + 1, T.body, COLORS.text);
   }
 }
