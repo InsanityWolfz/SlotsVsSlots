@@ -18,7 +18,7 @@ import {
   type FightRecord,
   type RunState,
 } from './core/run';
-import { applyOption, draftOffers } from './core/draft';
+import { draftOffers, takeDraft } from './core/draft';
 import { buy, isShopNow, leaveShop, reroll, shopOffers, takeSpoils } from './core/shop';
 import { fightConfig } from './core/fightSetup';
 import { CABINETS, CABINET_ORDER, type CabinetId } from './core/cabinets';
@@ -36,7 +36,7 @@ import { steamUnlock, VERSION } from './build';
 import { TUTORIAL } from './ui/coach';
 import { collectionTotal, heroSprite } from './ui/menus';
 import { shownTrim, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, type MetaGain, type RunEntry } from './core/profile';
-import { clearRunSave, LASTRUN_KEY, loadRunSave, RUN_KEY, sanitizePrefs, save } from './saves';
+import { clearRunSave, LASTRUN_KEY, loadRunSave, PAYLINE_HINTS, RUN_KEY, sanitizePrefs, save } from './saves';
 import type { Game } from './game';
 
 const AUTO_DELAY = 0.35;
@@ -116,7 +116,7 @@ export function startTutorial(g: Game): void {
   g.coach.show(TUTORIAL.preview);
 }
 
-export function tip(g: Game, key: 'fight' | 'spin' | 'hold' | 'ability' | 'draft' | 'shop', tips: keyof typeof TUTORIAL, done?: () => void): void {
+export function tip(g: Game, key: 'fight' | 'spin' | 'hold' | 'buildUp' | 'ability' | 'draft' | 'shop', tips: keyof typeof TUTORIAL, done?: () => void): void {
   if (!g.tut || g.tut[key]) return;
   g.tut[key] = true;
   g.coach.show(TUTORIAL[tips], done);
@@ -170,7 +170,6 @@ export function checkUnlocks(g: Game, run: RunState): CabinetId[] {
       got.push(id);
     }
   }
-  // Winning at GREEN or higher opens THE DEALER (act 3) for GREEN+ runs.
   // TRUE ENDING: this slot machine beat the Dealer.
   if (run.won && run.act >= 3 && !g.prefs.dealerBeaten.includes(run.cabinet)) {
     g.prefs.dealerBeaten.push(run.cabinet);
@@ -417,7 +416,7 @@ export function showNextFight(g: Game): void {
 
 export function pickReward(g: Game, o: DraftOption): void {
   if (!g.run) return;
-  applyOption(g.run, o);
+  takeDraft(g.run, o);
   advance(g);
 }
 
@@ -569,7 +568,14 @@ export async function runFight(g: Game, token: number): Promise<void> {
     // A lost fight is final at once: the save went on offering CONTINUE into it until the run-over screen (about 1.5 s
     // after the killing blow), so a quick reload undid the loss (save QA 2026-11-02).
     if (g.fight.over && g.fight.winner === 'enemy' && g.run && !g.tut) clearRunSave();
+    // PAIRS START ON REEL 1: reels 2 and 3 matched and paid as singles (a shield, sword, sword line looked like a pair:
+    // expert playtest 2026-11-06). Said on the HOLD chip under your reels, the first few times ever.
+    let offPair = false;
     for (const e of result.events) {
+      if (e.type === 'spin' && e.side === 'player' && e.score.tier === 'none') {
+        const l = e.score.line;
+        offPair = l[1] === l[2] && PAYING.has(l[1]) && l[0] !== l[1];
+      }
       // (a SPILL pair pays nothing: no prompt to hold it, playtest 2026-11-01; a pair on a frozen reel can't be held, so
       // no prompt either: the tutorial said PRESS Q AND W and the game answered A FROZEN REEL CAN'T BE HELD, playtest 2026-11-06)
       if (e.type === 'spin' && e.side === 'player') g.lastPair = e.score.tier === 'pair' && e.score.groups.some((p) => p.matched && p.reels.length === 2 && p.base > 0 && PAYING.has(p.symbol) && p.reels.every((r) => !(g.fight.sides.player.frozen[r] > 0)));
@@ -583,12 +589,19 @@ export async function runFight(g: Game, token: number): Promise<void> {
     g.presenting = true;
     await g.director.playTurn(result);
     if (token !== g.token) return;
+    if (offPair && g.prefs.paylineHints < PAYLINE_HINTS) {
+      g.prefs.paylineHints++;
+      g.savePrefs();
+      g.toolNote = { text: 'PAIRS START ON REEL 1', at: performance.now(), ms: 2500 };
+    }
     if (g.tut && g.run?.depth === 0) {
       if (result.events.some((e) => e.type === 'ability' && e.side === 'enemy')) tip(g, 'ability', 'ability');
       else if (result.events.some((e) => e.type === 'spin' && e.side === 'player')) tip(g, 'spin', 'firstSpin');
     }
     // HOLD: the tutorial's first PAIR (after the first-spin callout) says what a HOLD can do with it.
     if (g.tut?.spin && g.lastPair && result.side === 'player' && g.fight.holdsLeft > 0 && !g.coach.active) tip(g, 'hold', 'hold');
+    // BUILD-UP: the first dry spin after the first-spin callout says what it was good for (it was a callout before the first SPIN).
+    else if (g.tut?.spin && result.side === 'player' && g.fight.buildUpMul() > 1 && !g.coach.active) tip(g, 'buildUp', 'buildUp');
     g.presenting = false;
     if (clock.skipping) {
       clock.endSkip();

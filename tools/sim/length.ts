@@ -1,6 +1,7 @@
 // Fight length (roadmap phase 0, 2026-10-29): spins a fight by act and kind, the long fights (who and what build), the
 // biggest enemy turn as a share of your max HP, and spins a decision. A "spin" is one of yours (fight.turn counts both).
 //   npx tsx tools/sim/length.ts [runs] [stakes] [rush|turtle] [overtime]
+import { STAKE } from '../../src/core/stakes';
 import { defaultConfig } from '../../src/core/config';
 import { CABINET_ORDER } from '../../src/core/cabinets';
 import { playRun } from '../../src/sim/play';
@@ -18,7 +19,7 @@ for (const cab of CABINET_ORDER) for (const stake of stakes) for (let i = 0; i <
   let prevHp = 0, side = 'player';
   const mine: F[] = [];
   const log = playRun(base, 10_000 + i, cab, stake, {
-    act3: stake >= 2,
+    act3: stake >= STAKE.act3,
     style,
     setup: overtime ? (run) => (run.overtime = true) : undefined,
     onFight: (run) => {

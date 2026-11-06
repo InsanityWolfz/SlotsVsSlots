@@ -103,7 +103,7 @@ export class Game {
   });
   profile: Profile;
   /** TUTORIAL progress: which callouts have been shown (null = not in the tutorial). */
-  tut: { fight?: boolean; spin?: boolean; hold?: boolean; ability?: boolean; draft?: boolean; shop?: boolean } | null = null;
+  tut: { fight?: boolean; spin?: boolean; hold?: boolean; buildUp?: boolean; ability?: boolean; draft?: boolean; shop?: boolean } | null = null;
 
   stage!: Stage;
   director!: Director;
@@ -116,7 +116,7 @@ export class Game {
   /** HOLD: your last spin paid a PAIR (the call over your machine offers a HOLD). */
   lastPair = false;
   /** A short note over your machine (a HOLD on a frozen reel). */
-  toolNote: { text: string; at: number } | null = null;
+  toolNote: { text: string; at: number; ms?: number } | null = null;
   rows: TurnRow[] = [];
   fightNo = 0;
   /** Seed to replay on Rematch (quick fights). */

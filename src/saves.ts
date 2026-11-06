@@ -29,15 +29,20 @@ export interface Prefs {
   /** HIGH STAKES: best unlocked stake per cabinet, and the stake picked on the cabinet screen. */
   stakes: Partial<Record<CabinetId, number>>;
   stakeSel: number;
-  /** THE DEALER unlocked: a run was won at GREEN or higher. */
+  /** THE DEALER unlocked (old saves: act 3 now follows the stake, RED and up). */
   act3: boolean;
   /** Slot machines that have beaten the Dealer (TRUE ENDING). */
   dealerBeaten: CabinetId[];
   /** The TUTORIAL has been started once (the menu stops nudging toward it). */
   tutorialDone: boolean;
+  /** PAIRS START ON REEL 1: how many times the payline hint has shown (it shows the first 3 times). */
+  paylineHints: number;
   /** SETTINGS volumes, 0..10 each (10 = the designed mix). */
   vol: { master: number; music: number; sfx: number };
 }
+
+/** The payline hint (PAIRS START ON REEL 1) shows this many times, ever. */
+export const PAYLINE_HINTS = 3;
 
 export const clampVol = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.min(10, Math.round(n))) : 10);
 const clampStake = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.min(MAX_STAKE, Math.floor(n))) : 0);
@@ -71,6 +76,7 @@ export function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
     act3: p.act3 === true,
     dealerBeaten: machineIds(p.dealerBeaten),
     tutorialDone: p.tutorialDone === true,
+    paylineHints: typeof p.paylineHints === 'number' && Number.isFinite(p.paylineHints) ? Math.max(0, Math.min(PAYLINE_HINTS, Math.floor(p.paylineHints))) : 0,
     vol: { master: clampVol(vol.master), music: clampVol(vol.music), sfx: clampVol(vol.sfx) },
   };
 }

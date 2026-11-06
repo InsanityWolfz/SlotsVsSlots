@@ -5,7 +5,7 @@ import { CABINETS, type CabinetId } from './cabinets';
 import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
 import { scoreLine } from './scoring';
-import { ACT2_GILDS, cloneLevels, gildsFor, RUN, sigSymbol, swappable, wildFrom, type DraftOption, type RunPlayer, type RunState } from './run';
+import { ACT2_GILDS, cloneLevels, gildsFor, passedThisAct, passOn, RUN, sigSymbol, swappable, wildFrom, type DraftOption, type RunPlayer, type RunState } from './run';
 import { noHealing } from './fightSetup';
 
 // ---- charms on cells -------------------------------------------------------------------
@@ -202,8 +202,12 @@ export function draftOffers(run: RunState): DraftOption[] {
   const rng = new Rng((run.seed ^ Math.imul(run.depth + 1 + (run.act - 1) * 50, 0x9e3779b1)) >>> 0);
   const p = run.player;
   const out: DraftOption[] = [];
+  // A card turned down this act isn't dealt again this act (2 SHIELDS TO SWORDS came up 5 times in two runs: expert
+  // playtest 2026-11-06), unless nothing else fills the deal.
+  const passed = passedThisAct(run);
+  let strict = true;
   const push = (o: DraftOption | null) => {
-    if (o && out.length < size && !out.some((x) => keyOf(x) === keyOf(o) || similarKey(x) === similarKey(o))) out.push(o);
+    if (o && out.length < size && !(strict && passed.has(similarKey(o))) && !out.some((x) => keyOf(x) === keyOf(o) || similarKey(x) === similarKey(o))) out.push(o);
   };
   const size = RUN.draftSize;
   const sig = sigSymbol(run);
@@ -293,7 +297,16 @@ export function draftOffers(run: RunState): DraftOption[] {
   push((rng.next() < 0.6 ? anySwapCard() : null) ?? gildCard() ?? addCard());
   let guard = 0;
   while (out.length < RUN.draftSize && guard++ < 30) push(guard % 3 === 0 ? addCard() : guard % 3 === 1 ? swapCard() : anySwapCard());
+  strict = false;
+  while (out.length < RUN.draftSize && guard++ < 60) push(guard % 3 === 0 ? addCard() : guard % 3 === 1 ? swapCard() : anySwapCard());
   return out;
+}
+
+/** Take a draft card: the other cards dealt with it are turned down for the rest of the act. */
+export function takeDraft(run: RunState, o: DraftOption): void {
+  const others = draftOffers(run).filter((x) => keyOf(x) !== keyOf(o));
+  passOn(run, others.map(similarKey));
+  applyOption(run, o);
 }
 
 export function applyOption(run: RunState, o: DraftOption, asPick = true): void {

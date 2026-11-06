@@ -4,7 +4,7 @@ import { actLength } from './enemies';
 import { BUILD_ENABLER, ELITE_ONLY, LEGENDARY, MACHINE_EXCLUDE, RELICS, type Enabler } from './relics';
 import { CABINETS } from './cabinets';
 import { Rng } from './rng';
-import { CHIPS, currentStop, legendShown, passStop, RUN, runActs, type DraftOption, type RunState, type ShopItem } from './run';
+import { CHIPS, currentStop, legendShown, passOn, passStop, RUN, runActs, type DraftOption, type RunState, type ShopItem } from './run';
 import { applyOption, charmCount, levelOptions, levelsGained } from './draft';
 import { noHealing } from './fightSetup';
 
@@ -12,6 +12,7 @@ import { noHealing } from './fightSetup';
 
 export function takeSpoils(run: RunState, relic: RelicId): void {
   if (!run.pendingSpoils?.includes(relic)) return;
+  passOn(run, run.pendingSpoils.filter((r) => r !== relic).map((r) => `relic:${r}`));
   if (!run.player.relics.includes(relic)) run.player.relics.push(relic);
   const last = run.records.at(-1);
   if (last) last.eliteRelic = relic;

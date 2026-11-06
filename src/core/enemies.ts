@@ -141,7 +141,7 @@ export const ARCHETYPES: Archetype[] = [
   },
 ];
 
-// ---- act 3 (a short true ending, GREEN stake and up) ----
+// ---- act 3 (a short true ending, RED stake and up) ----
 ARCHETYPES.push(
   {
     id: 'sharp',

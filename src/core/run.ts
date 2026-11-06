@@ -218,6 +218,8 @@ export interface RunState {
   won: boolean;
   /** An elite was beaten: choose 1 of these relics before the draft. */
   pendingSpoils: RelicId[] | null;
+  /** Cards and relics turned down this act (draft cards by kind, `relic:<id>`): not offered again this act. */
+  passed?: { act: number; keys: string[] };
   /** A new run: pick 1 of 3 starting relics (your machine's two, plus a general one). */
   pendingStart?: RelicId[] | null;
   /** Rerolls used at the current Cashier visit. */
@@ -236,7 +238,7 @@ export interface RunState {
   actIntro: boolean;
   /** HIGH STAKES level (0 = base game). */
   stake: number;
-  /** THE DEALER is unlocked (someone has beaten GREEN): runs at GREEN+ continue into act 3. */
+  /** THE DEALER is unlocked (old saves; act 3 now follows the stake: RED and up). */
   act3: boolean;
   /** THE DECK REMEMBERS: marked cards the Card Sharp placed this act (they follow you to the Dealer). */
   deckMarks?: number;
@@ -315,6 +317,16 @@ export function startRelics(run: RunState): RelicId[] {
   return [...mine, ...rng.shuffle(general)].slice(0, 3);
 }
 
+/** What's been turned down this act (a new act starts a clean list). */
+export function passedThisAct(run: RunState): Set<string> {
+  return new Set(run.passed?.act === run.act ? run.passed.keys : []);
+}
+/** Note offers turned down this act. */
+export function passOn(run: RunState, keys: string[]): void {
+  const keep = run.passed?.act === run.act ? run.passed.keys : [];
+  run.passed = { act: run.act, keys: [...new Set([...keep, ...keys])] };
+}
+
 export function takeStart(run: RunState, relic: RelicId): void {
   if (!run.pendingStart?.includes(relic)) return;
   if (!run.player.relics.includes(relic)) run.player.relics.push(relic);
@@ -330,7 +342,7 @@ export type RelicTier = 'common' | 'uncommon' | 'legendary';
 /** The deck can't remember more marks than this. */
 const DECK_MARKS_CAP = 6;
 
-/** Acts in this run: GREEN stake and up adds act 3 (THE DEALER). */
+/** Acts in this run: RED stake and up adds act 3 (THE DEALER). */
 export const runActs = (run: RunState) => (run.stake >= STAKE.act3 ? 3 : ACTS);
 /** A run fight's seed, from the run and the fight: a run resumed after a quit replays the same fight. */
 export const fightSeed = (runSeed: number, act: number, depth: number, loop = 0) =>
@@ -699,7 +711,11 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   }
   // Elites offer their spoils in every act: choose 1 of 2 relics (map rework 2026-10-12; act 2 elites paid chips).
   if (beaten.elite) {
-    const pool = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && !LEGENDARY.has(r));
+    const fits = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && !LEGENDARY.has(r));
+    // A relic turned down this act isn't offered again this act (TOWER SHIELD came up 3 times: expert playtest 2026-11-06).
+    const passed = passedThisAct(run);
+    const fresh = fits.filter((r) => !passed.has(`relic:${r}`));
+    const pool = fresh.length >= 2 ? fresh : fits;
     const rng = new Rng((run.seed ^ Math.imul(run.depth + 7 + run.act * 100, 0x85ebca6b)) >>> 0);
     const spoils = pickRelics(pool, 2, rng);
     if (spoils.length) run.pendingSpoils = spoils;

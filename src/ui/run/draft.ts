@@ -130,9 +130,14 @@ export abstract class DraftScreen extends NextScreen {
       const L = run.endless?.loop ?? 0;
       const grow = !loopDone ? '' : run.cabinet === 'knight' ? `  -  VETERAN: SWORDS AND SHIELDS X${1 + LOOP_GROWTH.veteran * (L - 1)}` : run.cabinet === 'tesla' ? `  -  OVERLOAD: BOLTS, SHIELDS AND STORM HEALS X${1 + LOOP_GROWTH.overload * (L - 1)}` : run.cabinet === 'jukebox' ? `  -  WARM-UP: FIGHTS START AT VOLUME ${Math.min(VOLUME.max - 1, LOOP_GROWTH.warmUp * L)}` : '';
       const title = loopDone ? `LOOP ${last.loop} CLEARED!` : last.boss ? 'BOSS DOWN!' : `${last.enemy} DEFEATED!`;
+      // What the fight cost: HP carries from fight to fight, so a long fight's price shows when you pay it, not three
+      // fights later (expert playtest 2026-11-06).
+      const net = last.hpBefore - last.hpAfter;
       const sub = `${loopDone ? `SCORE ${fmtNum(endlessScore(run))}  -  ` : last.boss ? `${last.enemy}  -  ` : ''}${rounds(last.turns)}${rocks}${grow}`;
       this.drawResultTitle(ctx, title, CX, 40, { chips: last.chips, sub, color: last.boss ? '#ffd23f' : undefined });
       // A boss pays a level to your attack symbol: say so, as a chip.
+      // (On the left, opposite the boss's level chip.)
+      drawChip(ctx, net > 0 ? `LOST ${fmtNum(net)} HP` : net < 0 ? `HEALED ${fmtNum(-net)} HP` : 'NO HP LOST', CX - 330, 84, { scale: T.small, color: net > 0 ? '#ff8a7a' : '#7dff7a' });
       if (last.bossLevel) drawChip(ctx, `${symLabel(last.bossLevel)}S LEVEL UP: LV${symLevel(run.player.levels, last.bossLevel)}`, CX + 330, 84, { scale: T.small, color: '#5ad8e8' });
     } else drawBanner(ctx, start ? 'A NEW RUN' : 'CHOOSE A REWARD', CX, 40, { scale: T.title });
     // (Not at the run's start: a fork sign, a Cashier and a boss before your first fight confused new players, playtest

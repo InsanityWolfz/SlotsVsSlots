@@ -3,6 +3,7 @@
  * runs thousands of these in parallel and reports win rates against the targets in docs/legacy/HP_GAME.md (the old game). Deterministic per
  * seed: fights draw from their own per-run stream, so a change in one run never desyncs another (paired ladders).
  */
+import { STAKE } from '../core/stakes';
 import type { GameConfig, RelicId } from '../core/config';
 import { CABINETS, type CabinetId } from '../core/cabinets';
 import { Fight } from '../core/fight';
@@ -21,7 +22,7 @@ import {
   takeStart,
   type RunState,
 } from '../core/run';
-import { applyOption, draftOffers } from '../core/draft';
+import { draftOffers, takeDraft } from '../core/draft';
 import { fightConfig } from '../core/fightSetup';
 import { isShopNow, takeSpoils } from '../core/shop';
 import { letItRide } from '../core/endless';
@@ -95,7 +96,7 @@ const best = <T>(xs: T[], v: (x: T) => number): T => xs.reduce((a, b) => (v(b) >
 export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stake: number, opts: PlayOpts = {}): RunLog {
   const policy = opts.policy ?? 'greedy';
   SIM_BIAS.style = opts.style;
-  const run = createRun(base, seed, cabinet, stake, opts.act3 ?? stake >= 2);
+  const run = createRun(base, seed, cabinet, stake, opts.act3 ?? stake >= STAKE.act3);
   opts.setup?.(run);
   const pick = new Rng((seed ^ 0x5eed) >>> 0);
   const fightSeeds = new Rng((seed ^ 0x5f3759df) >>> 0);
@@ -146,7 +147,7 @@ export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stak
     }
     if (!run.over) {
       const offers = draftOffers(run);
-      if (offers.length) applyOption(run, policy === 'random' ? pick.pick(offers) : best(offers, (o) => greedyValue(run, o)));
+      if (offers.length) takeDraft(run, policy === 'random' ? pick.pick(offers) : best(offers, (o) => greedyValue(run, o)));
     }
   }
   if (!log.won) {

@@ -57,6 +57,8 @@ export function migrateRun(run: RunState): RunState {
     if (!run.pendingStart.length) run.pendingStart = startRelics(run);
   }
   if (run.startRelic && !real(run.startRelic)) delete run.startRelic;
+  // Turned-down offers: a bad list is dropped (it only steers the deal).
+  if (run.passed && !(typeof run.passed.act === 'number' && Array.isArray(run.passed.keys) && run.passed.keys.every((k) => typeof k === 'string'))) delete run.passed;
   return run;
 }
 

@@ -149,7 +149,8 @@ was tuned for feel from two fresh-eyes playtests.
 | 2 | THE WHEEL | Places bet chips on your reels. Your pairs sweep them. At NO MORE BETS, every chip left hits for a share of your max HP. Spins faster at half HP | Rework in progress, untuned |
 | 3 | THE DEALER | Three hands, each with its own HP bar (27/31/42% of its HP). 1 THE DEAL: every 3 turns a BUST (your best reel's payline pays nothing next spin). 2 RAISE: its hits x1.5, still BUSTs. 3 ALL IN: every 2 turns, 25-40% of your max HP through shields | Reworked 2026-10-12; spread by machine is still wide (see ROADMAP) |
 
-Act 3 is played at stake GREEN and up. **ENDLESS** comes after the Dealer:
+Act 3 is played at stake RED and up (user, 2026-11-06; it was GREEN, so a new player's first runs never met THE
+DEALER or THE OWNER). **ENDLESS** comes after the Dealer:
 KEEP PLAYING goes on into loops until you bust (user, 2026-10-14: no RIDE AGAIN / CASH OUT); your score is the pot
 (x1.5 + 1500 a loop cleared) plus your chips x10. Sim (GREEN, the bot never stopping, before THE OWNER): loops cleared median 4.
 **TONIGHT'S RULE** (user, 2026-10-14): each loop deals two different rules, one per path (user: the rule is part of the
@@ -297,11 +298,14 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
 
 ## HIGH STAKES (`src/core/stakes.ts`)
 Each machine has its own ladder. Winning a run at your best stake unlocks the next one.
-WHITE (base) → RED (scar rocks) → GREEN (the Wheel starts fast, **Act 3 on**) → BLACK (the House cheats) →
+WHITE (base) → RED (scar rocks, **Act 3 on**) → GREEN (the Wheel starts fast) → BLACK (the House cheats) →
 BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP). From BLACK, enemies also hit 7% harder a
 stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
 
 ## Balance (`tools/sim/balance.ts`)
+- **Act 3 at RED (2026-11-06):** sim 400 runs a machine, RED run win before -> after: KNIGHT 60 -> 43, TESLA 62 -> 46,
+  JUKEBOX 54 -> 45, JOKER 53 -> 44, BANKROLL 50 -> 37 (target 50). RED's target assumed two acts; the phase 6 balance
+  pass sets RED's new target (or eases it) with the rest.
 - **Targets for the sim bot** (run win %, every machine within 5 points): WHITE 60, RED 50, GREEN 36, BLACK 28,
   BLUE 20, GOLD 14. Each boss's win rate (of runs that reach it) within 10 points across machines. Rough per-boss
   aims: House about 85, THE WHEEL about 85, the Dealer about 65.

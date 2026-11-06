@@ -40,8 +40,9 @@ export const STAKE = {
   fasterAll: 5,
   /** GOLD: bosses have this much more HP. */
   goldBossHp: 1.08,
-  /** ACT 3 (THE DEALER): runs at GREEN or higher continue after THE WHEEL. */
-  act3: 2,
+  /** ACT 3 (THE DEALER): runs at RED or higher continue after THE WHEEL (user, 2026-11-06: it was GREEN, so a new
+   * player's first runs never met THE DEALER or THE OWNER). */
+  act3: 1,
   /** BLACK and up: enemy damage +7% a stake. */
   dmgFrom: 3,
   dmgStep: 0.07,
@@ -68,7 +69,7 @@ export const stakeDmg = (stake: number) => 1 + STAKE.dmgStep * Math.max(0, stake
 export const stakeOf = (level: number): Stake => STAKES[Math.max(0, Math.min(MAX_STAKE, level))];
 
 /**
- * HIGH STAKES ladder, per slot machine: only a WON run (the whole run you played, so at GREEN+ with
+ * HIGH STAKES ladder, per slot machine: only a WON run (the whole run you played, so at RED+ with
  * act 3 on that means beating the Dealer) at this machine's best stake unlocks the next one.
  * Returns the new best stake, or null if nothing unlocks.
  */

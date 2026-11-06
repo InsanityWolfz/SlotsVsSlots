@@ -65,7 +65,7 @@ export class FightView {
     const left = f.holdsLeft - f.held.filter(Boolean).length;
     const live = this.g.canHold();
     let call = '';
-    if (this.g.toolNote && performance.now() - this.g.toolNote.at < 1500) call = this.g.toolNote.text;
+    if (this.g.toolNote && performance.now() - this.g.toolNote.at < (this.g.toolNote.ms ?? 1500)) call = this.g.toolNote.text;
     else if (live && f.held.some(Boolean)) call = 'HELD FOR YOUR NEXT SPIN';
     else if (live && left > 0 && this.g.lastPair) call = 'PAIR! HOLD IT FOR A JACKPOT?';
     const label = call || (left <= 0 ? 'NO HOLDS LEFT' : live ? `HOLD ${left}: ${by({ touch: 'TAP A REEL', mouse: 'CLICK A REEL', keys: 'Q W E', pad: '[DPAD]' })}` : `HOLD ${left}`);
