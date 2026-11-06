@@ -45,6 +45,15 @@ are listed as fact.
   [F] [arcade-history](https://www.arcade-history.com/game/15667/), [Gladiators (Maygay)](https://www.spin-raiders.com/post/gladiators-maygay-fruit-machine)
 - **Gamble after a win:** hi-lo or red/black ladders to double a win are a standard post-win feature. [F]
   [westyorkshire SEO page, consistent with others](https://westyorkshireknowledgeexchange.co.uk/free-fruit-machine-games-with-nudges-and-holds-uk-2026-play-today/)
+- **Gamble is always "collect or gamble":** the win is shown and banked first, and COLLECT takes it at any step of
+  the ladder (Rocky Horror, Crystal Maze and Peachy Bums fruit machine recreations). In a hi-lo gamble the odds are
+  read off the number shown, with no percentage: on 9 only LO can win, on 1 only HI, a middle number is a coin flip.
+  [F] [Peachy Bums guide](https://gamepretty.com/landlords-super-how-to-get-rich-with-peachy-bums-quickly/),
+  [Rocky Horror](https://microsoft.com/en-us/p/rocky-horror-the-fruit-machine/9njqtw82xqpm),
+  [Crystal Maze](https://www.microsoft.com/en-us/p/crystal-maze-the-fruit-machine/9nblggh4vq51)
+- **Gamble pays no premium:** online slot gambles are double or nothing at 50% (colour) or x4 at 25% (suit), so at
+  best EV-neutral; one source says they lower a slot's total return (96% to about 93-94% in its example). No source
+  found that lists a 100%-return gamble. [F, affiliate pages] [casinos.com: gamble feature](https://www.casinos.com/slot-features/gamble-feature)
 - **Return:** UK AWPs typically set 78-84% by venue and DIP switch. [F] [spin-raiders](https://www.spin-raiders.com/post/verify-classic-fruit-machine-sighting-before-travel)
 - **How real machines kept HOLD/NUDGE from being too strong:** (1) the machine, not the player, chose when they
   were available (compensator); (2) counts were small and often expired; (3) reel strips were laid out so the
@@ -101,6 +110,41 @@ are listed as fact.
   [Palmer et al. 2024](https://www.researchgate.net/publication/380373533_The_near-miss_effect_in_online_slot_machine_gambling_A_series_of_conceptual_replications)
 - **Honest near misses are fine:** what regulators banned was faking them (a fixed outcome dressed up). Showing the
   real cell above the line, as a NUDGE target, is what fruit machines always did. Opinion, from the above.
+
+### Push your luck: bank or bet
+- **Video poker breaks a sure pair for a premium:** 9/6 Jacks or Better pays a royal flush 250 a coin at 1-4 coins and
+  4,000 at 5 coins (800 a coin, vs 1,250 if proportional), and the strategy charts rank "4 to a royal" above a paying
+  high pair, which you throw away (a guide puts 4 to a royal at 19+ coins on average, 4 to a straight flush at about
+  3.5; a kept high pair pays 1 a coin at least). The premium on the top hand is what makes giving up a sure pay
+  right. Return 99.5% with perfect play.
+  [F, strategy guides agree] [hardrock.bet strategy](https://www.hardrock.bet/casino/how-to-play-video-poker/jacks-or-better-strategies/),
+  [esports.gg](https://esports.gg/guides/betting/jacks-or-better-strategy), [Las Vegas Advisor: 9/6](https://www.lasvegasadvisor.com/blog/9-5-better-9-6/)
+- **Let It Ride:** three equal bets; after seeing cards you may pull back the first, then the second; the third always
+  rides. Pays 1:1 on tens or better up to 1000:1 on a royal; house edge 3.51% with best play. The decision is "take
+  money off the table", a bank, on cards you can see. [P] [NJ Admin. Code 13:47-20.27](https://www.law.cornell.edu/regulations/new-jersey/N-J-A-C-13-47-20-27),
+  [W] [Wikipedia](https://en.wikipedia.com/wiki/Let_It_Ride_(card_game))
+- **Can't Stop (Sackson):** roll as long as you like; STOP turns this turn's progress into permanent markers; a roll
+  that can't move loses all of this turn's progress. [W/P] [Yucata rules](https://www.yucata.de/en/Rules/CantStop),
+  [Parker rules transcription](https://goblins.net/files/downloads/Can%20stop%20Eng.pdf)
+- **Quacks of Quedlinburg softens the bust:** a pot explodes when white chips pass 7; an exploded player still scores,
+  but picks points or shop money, not both. The loss is half, not all, so pushing stays attractive. [W]
+  [Wikipedia](https://en.wikipedia.org/wiki/The_Quacks_of_Quedlinburg), [Meeple Mountain](https://www.meeplemountain.com/reviews/the-quacks-of-quedlinburg/)
+- **Loss aversion:** losses weigh about 2.25x equal gains (Tversky & Kahneman 1992, small sample); a 2024
+  meta-analysis puts the mean near 1.96. It depends on the reference point: the same outcome framed as a missed bonus
+  or a lost sure thing is felt differently. [P via summary] [Healthcare Economist: estimates](https://healthcare-economist.com/2024/06/26/empirical-estimates-of-loss-aversion)
+- **Odds without a percentage:** hi-lo shows the number (above); Balatro prints "1 in 4" / "1 in 6" on cards and adds a
+  deck view (a talk transcript says playtest builds lacked it), so players count outs themselves. LocalThunk confirmed
+  Wheel of Fortune really is 1 in 4 after "rigged" threads. [F] [GamesRadar](https://gamesradar.com/games/roguelike/balatro-maker-promises-that-the-dodgiest-odds-in-the-hit-roguelike-arent-deceiving-you),
+  [Balatro design video transcript](https://amara.org/videos/qZaMrU6iDy4J/en/4529388)
+- **Design lore** (secondary, weak): the tension needs a bank worth taking and a risk that can win; if the safe play is
+  always right, or the risk never is, players learn it and the choice dies. [F] [I Slay the Dragon: pressing your luck](https://islaythedragon.com/guides/a-guide-to-pressing-your-luck)
+- **No slot roguelike found with a risky hold:** Slots & Daggers' stops lock reels and nudges cost chips; CloverPit
+  changes values and odds; LBAL has no hold. (Searched, not exhaustive.) [F] [Slots & Daggers review](https://www.useapotion.com/2025/11/slots-daggers-review-a-clever-spin-on-roguelites/),
+  [GamesAsylum: CloverPit](https://www.gamesasylum.com/?p=63153)
+- **The pattern** (opinion, from the above): every lasting push-your-luck puts a sure, visible amount (a banked win,
+  a pat pair, progress this turn) against a gamble at the moment you choose, and either pays a premium for the
+  gamble (video poker's royal) or softens the bust (Quacks). Pure double or nothing pays no premium and is the
+  feature players skip.
 
 ## Roguelikes
 ### Scoring engines (Balatro, Luck be a Landlord)
@@ -1011,6 +1055,26 @@ Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP,
   - (d) A remix / second symbol: a new symbol is a new rule; the JUKEBOX already has a second symbol (the shield), so
     "shields turn the volume up too" is (d) without a new symbol, and it's MIXTAPE's job made stronger (no skip, faster
     arming), so on its own it's the attack build's relic as much as the shield build's.
+
+### HOLD as a bet: JACKPOT OR NOTHING (open; expert playtest 2026-11-06)
+- **Today** (HP_GAME.md phase 1): 2 HOLDs a fight; hold a paying pair (reels 1-2) and the next spin rolls reel 3.
+  Base pays (`config.ts`, `scoring.ts`, before relics and multipliers): a single 10, a pair 2 x 10 x2 = 40, a jackpot
+  3 x 10 x3 = 90. A held pair's floor is 40 (plus reel 3), its ceiling 90: no downside, so it's always right.
+- **Proposal:** a miss pays only reel 3's own symbol. Against keeping the pair, the jackpot is a 2.25x premium; it
+  beats the pair's 40 only when more than about 44% of reel 3 is your attack symbol (40 / 90; multipliers scale
+  both). Against a fresh spin (the real alternative under the proposal), the answer depends on the build's whole
+  spin, which the player can't read. Computed here, not simmed.
+- **Precedent:** see Odds > Push your luck. Video poker breaks a sure pair only for a large premium (royal 800 a
+  coin); fruit-machine gambles and Let It Ride bank the win first and let you take it; Quacks halves the bust.
+- **Pitfalls:** (1) loss aversion (~2x) if the UI frames a miss as losing the pair; (2) the odds come mostly from a
+  static count (reel 3's attack symbols), so experts solve it once per build: always hold above ~44%, never below,
+  a dead or automatic button again; (3) the proposal has no sure option on screen, two gambles compared, which a new
+  player can't read, and "does a sure pair kill?" has no answer when no pair is sure; (4) holding fixes reels 1-2 on
+  attack, so that spin can't make a shield pair (a real cost when low, under either rule).
+- **Opinion:** the precedents that last put a sure, visible amount against the bet when you choose. The cue that
+  makes it situational is the HP race (a variance play is right when behind, wrong when ahead), which only reads if
+  the sure option is on screen. A sim pass should report how often holding is right by build; near 0% or 100% means
+  the choice is dead.
 
 ### The back half without danger (open; phase 4)
 - **Today** (HP_GAME.md, the phase 4 triage and playtests): in acts 2-3 regulars and elites mostly die in 1-2 of your
