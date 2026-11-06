@@ -1,4 +1,5 @@
 /** The run flow (tutorial, machine pick, saved runs, the screens between fights, the map) and the fight flow (split from game.ts, 2026-11-05). */
+import { applyPlay, dealPlays, playCard, PLAYS, type Play } from './core/plays';
 import { OWNER_TRICKS, TUNE } from './core/enemies';
 import type { CombatEvent } from './core/events';
 import { UNIT, type GameConfig, type RelicId, type SideId } from './core/config';
@@ -564,6 +565,36 @@ export async function runFight(g: Game, token: number): Promise<void> {
       await clock.wait(AUTO_DELAY);
     }
     if (token !== g.token) return;
+    // SPIN CHOICES (experiment): your reels land first; three plays are dealt; a tap plays one, SPIN (or AUTO) takes
+    // the line as it landed. Then the spin pays.
+    if (PLAYS.on && g.fight.next === 'player' && !g.fight.over) {
+      const landed = g.fight.land();
+      if (landed) {
+        const m = g.stage.machines.player;
+        m.clearRowFx();
+        await m.spin(landed.stops, false, clock, {}, g.fight.sides.player.frozen.map((t) => t > 0));
+        if (token !== g.token) return;
+        const offers = g.prefs.auto ? [] : dealPlays(g.fight, g.playRng);
+        if (offers.length) {
+          g.playOffers = offers;
+          g.awaitingSpin = true;
+          g.syncButtons();
+          const pick = await new Promise<Play | null>((r) => {
+            g.playResolve = r;
+            g.spinResolve = () => g.pickPlay(-1);
+          });
+          g.playOffers = null;
+          g.playHover = -1;
+          g.awaitingSpin = false;
+          g.syncButtons();
+          if (token !== g.token) return;
+          if (pick) {
+            applyPlay(g.fight, pick);
+            g.toolNote = { text: `${playCard(pick).title}!`, at: performance.now(), ms: 1800 };
+          }
+        }
+      }
+    }
     const result = g.fight.step();
     // A lost fight is final at once: the save went on offering CONTINUE into it until the run-over screen (about 1.5 s
     // after the killing blow), so a quick reload undid the loss (save QA 2026-11-02).

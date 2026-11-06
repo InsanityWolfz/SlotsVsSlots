@@ -395,6 +395,7 @@ export function storm(f: Fight, me: Combatant, events: CombatEvent[]): void {
       : unitsUp(raw * (1 + (over ? OVERCHARGE.lightning : 0)) * (live ? 1 + NEW_RELIC.livewireMul : 1) * (1 + melt) * (1 + chain));
     // OVERTIME grows each strike (a hit), not the charge behind it.
     if (f.cfg.overtime && overtimeMul(f.turn) > 1) dmg = unitsUp(dmg * overtimeMul(f.turn));
+    if (f.playMul(me.side) !== 1) dmg = unitsUp(dmg * f.playMul(me.side));
     if (over && !overPopped) {
       overPopped = true;
       events.push({ type: 'relic', side: me.side, relic: 'overcharge' });

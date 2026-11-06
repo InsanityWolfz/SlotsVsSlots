@@ -295,6 +295,12 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       g.mult *= ot;
       notes.push(`X${ot} OVERTIME`);
     }
+    // SPIN CHOICES: DOUBLE DOWN (both ways) and LET IT RIDE's payoff.
+    const pm = f.playMul(me.side);
+    if (pm !== 1 && g.base > 0 && OVERTIME_HITS.has(g.symbol)) {
+      g.mult *= pm;
+      notes.push(`X${pm} ${player ? (f.carry.player > 1 ? 'RIDE' : 'DOUBLE DOWN') : 'DOUBLE DOWN'}`);
+    }
     // Late in act 3 / an endless loop, enemy swords and sevens hit harder: on the banner, not a hidden multiplier.
     if (!player && (g.symbol === 'sword' || g.symbol === 'seven') && g.base > 0) {
       const all = f.enemyDmgMul();

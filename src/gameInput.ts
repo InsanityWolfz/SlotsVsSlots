@@ -1,4 +1,5 @@
 /** Keyboard, gamepad and pointer input: taps, keys, the focus, HOLD taps (split from game.ts, 2026-11-05). */
+import { playAt } from './ui/playCards';
 import { HUD_W } from './present/hud';
 import { HUD_TOP, CELL, reelWindow } from './present/layout';
 import type { NavDir } from './ui/focus';
@@ -38,6 +39,12 @@ export function pointerDown(g: Game, x: number, y: number): void {
   if (g.screens.active && g.screens.pointerDown(x, y)) return;
   // HOLD (user, 2026-10-29): tap one of your reels before your spin, or while the enemy spins (the engine is on your
   // turn by then), to keep it for your next spin; tap again to let go. Nothing ever waits for it, AUTO included.
+  // SPIN CHOICES: a tap on a dealt play.
+  const play = playAt(g, x, y);
+  if (play >= 0) {
+    g.pickPlay(play);
+    return;
+  }
   if (g.canHold()) {
     const win = reelWindow('player');
     if (x >= win.x && x < win.x + win.w && y >= win.y && y < win.y + win.h) {
@@ -89,6 +96,8 @@ export function pointerMove(g: Game, x: number, y: number): boolean {
   g.mouse = { x, y };
   if (g.pause.open && !g.menus.isOpen) return g.pause.pointerMove(x, y);
   let any = false;
+  g.playHover = playAt(g, x, y);
+  any ||= g.playHover >= 0;
   for (const b of g.buttons) {
     b.hover = b.visible && b.contains(x, y);
     any ||= b.hover && b.enabled;
@@ -139,6 +148,11 @@ export function key(g: Game, k: string, repeat = false): boolean {
     return true;
   }
   // HOLD: Q / W / E, or the arrows / d-pad while a HOLD can be made (the fight's buttons all have their own keys).
+  // SPIN CHOICES: Q / W / E (or the d-pad) play the dealt cards.
+  if (HOLD_KEYS[k] !== undefined && g.playOffers && !g.menus.isOpen && !g.pause.open) {
+    if (!repeat) g.pickPlay(HOLD_KEYS[k]);
+    return true;
+  }
   if (HOLD_KEYS[k] !== undefined && g.canHold() && !g.menus.isOpen) {
     // (One press, one HOLD: a held d-pad flipped the reel on and off every repeat.)
     if (!repeat) tapHold(g, HOLD_KEYS[k]);

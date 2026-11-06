@@ -1,5 +1,6 @@
 import { BLADES, cloneConfig, UNIT, unitsRound, unitsUp, type Enh, type GameConfig, type RelicId, type SideId, type SymbolId } from './config';
 import { CABINETS, hasSpecial, type Cabinet, type Meter } from './cabinets';
+import { PLAYS, type PlayNow } from './plays';
 import { charmLevel, charmValue } from './charms';
 import type { CombatEvent, DealCard, HealSource, LineCard } from './events';
 import { NEW_RELIC, POT } from './relics';
@@ -301,6 +302,28 @@ export class Fight {
   /** THE DROP this spin: the notes off the payline that join the note group (vamp heals after). */
   dropOff: { cells: { reel: number; row: number; v?: number; wild?: true }[]; vamp: number } | null = null;
 
+  /** SPIN CHOICES (plays.ts): your reels landed, waiting to pay (the play picked can move them first). */
+  landed: { stops: number[]; orig: number[] } | null = null;
+  /** SPIN CHOICES: the play picked for this spin, and what carries to the next spins (LET IT RIDE, DOUBLE DOWN). */
+  playNow: PlayNow = { mul: 1, ride: false, shieldUp: false };
+  carry = { player: 1, enemy: 1 };
+  /** SPIN CHOICES: a side's hit multiplier from plays this spin. */
+  playMul(side: SideId): number {
+    return side === 'player' ? this.playNow.mul * this.carry.player : this.carry.enemy;
+  }
+  /** SPIN CHOICES: land your reels for your next spin (they pay when that spin plays). */
+  land(): { stops: number[]; orig: number[] } | null {
+    if (this.over || this.next !== 'player') return null;
+    if (this.landed) return this.landed;
+    const me = this.sides.player;
+    const frozen = me.frozen.map((t) => t > 0);
+    const held = this.held.map((h, r) => h && !frozen[r]);
+    const stops = this.rollStops(me, frozen.map((z, r) => z || held[r]), this.forced.player);
+    delete this.forced.player;
+    this.landed = { stops: [...stops], orig: [...stops] };
+    return this.landed;
+  }
+
   /** HOLD: your HOLDs left this fight, and the reels you've held for your next spin. */
   holdsLeft = 0;
   held: boolean[] = [false, false, false];
@@ -333,6 +356,12 @@ export class Fight {
     if (this.over) throw new Error('Fight is over');
     this.resolving = false;
     const res = this.turnBody();
+    // SPIN CHOICES: what a play carries on (LET IT RIDE to your next spin, DOUBLE DOWN to the enemy's next).
+    if (res.side === 'player') {
+      this.carry.player = this.playNow.ride ? PLAYS.ride : 1;
+      if (this.playNow.mul > 1) this.carry.enemy = PLAYS.double;
+      this.playNow = { mul: 1, ride: false, shieldUp: false };
+    } else this.carry.enemy = 1;
     this.resolving = true;
     const first = res.side === 'player' ? this.sides.enemy : this.sides.player;
     for (const c of [first, this.sides[res.side]]) this.checkDeath(c, res.events);
@@ -345,6 +374,8 @@ export class Fight {
   private turnBody(): TurnResult {
     const side = this.next;
     const me = this.sides[side];
+    const landed = side === 'player' ? this.landed : null;
+    this.landed = null;
     const events: CombatEvent[] = [];
     this.turn++;
     if (side === 'player') this.playerSpins++;
@@ -406,10 +437,15 @@ export class Fight {
       this.holdsLeft -= held.filter(Boolean).length;
       this.held = [false, false, false];
     }
-    const stops = this.rollStops(me, frozen.map((z, r) => z || held[r]), forcedLine);
+    const stops = landed ? landed.stops : this.rollStops(me, frozen.map((z, r) => z || held[r]), forcedLine);
+    // (Landed reels already show where they stopped: only the ones a play moved spin again.)
+    const still = landed ? landed.stops.map((s, r) => s === landed.orig[r]) : held;
     delete this.forced[side];
     me.reels.forEach((reel, i) => (reel.stop = stops[i]));
     const line = paylineSymbols(me.reels).map((s, i) => (locked[i] ? 'lock' : s));
+    // SPIN CHOICES: SHIELD UP pays your attack symbol as shields; LET IT RIDE pays nothing this spin.
+    if (side === 'player' && this.playNow.shieldUp) line.forEach((s, i) => s === (this.cabinet?.attack ?? 'sword') && (line[i] = 'shield'));
+    if (side === 'player' && this.playNow.ride) line.fill('empty');
     // The Dealer's BUST on your payline: that cell pays nothing this spin.
     const laid = side === 'player' ? this.lineCard : null;
     if (laid) {
@@ -456,7 +492,7 @@ export class Fight {
       nearMiss,
       frozen,
       locked,
-      ...(held.some(Boolean) ? { held } : {}),
+      ...(still.some(Boolean) ? { held: still } : {}),
       ...(luckyWilds.length ? { luckyWilds } : {}),
       ...(hexed.some(Boolean) ? { hexed } : {}),
       ...(drumNow ? { symBonus: { sword: drumNow, ace: drumNow } } : {}),

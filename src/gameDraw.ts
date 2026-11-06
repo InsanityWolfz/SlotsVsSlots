@@ -1,4 +1,7 @@
 /** The frame: update, the screen transition, drawing a frame, and the scene behind it (split from game.ts, 2026-11-05). */
+import { PLAYS } from './core/plays';
+import { drawText } from './render/text';
+import { drawPlays } from './ui/playCards';
 import type { SymbolId } from './core/config';
 import { DEALER_HANDS } from './core/fight';
 import { roomFor, type Scene } from './render/rooms';
@@ -71,6 +74,8 @@ export function draw(g: Game, ctx: CanvasRenderingContext2D): void {
   const now = performance.now();
   g.transition.draw(ctx, g.lastDraw ? (now - g.lastDraw) / 1000 : 0);
   g.lastDraw = now;
+  // The test build says so, on every screen.
+  if (PLAYS.on) drawText(ctx, 'SPIN CHOICES TEST', W / 2, H - 8, 1.6, '#ffe28a', { alpha: 0.75 });
 }
 
 export function drawFrame(g: Game, ctx: CanvasRenderingContext2D): void {
@@ -108,6 +113,7 @@ export function drawFrame(g: Game, ctx: CanvasRenderingContext2D): void {
   g.particles.draw(ctx);
   s.fx.draw(ctx, s.clock.time, 20, Infinity);
   g.view.drawHoldBar(ctx, t);
+  drawPlays(ctx, g, t);
   if (g.drawerT < 0.5) g.view.drawRelicFeed(ctx);
   if (g.fight.cfg.enemy.boss && !g.screens.active) g.view.drawBossHint(ctx);
   // The BUILD drawer: your whole build slides out over the left side (relics fire inside it), chips stay put on top.

@@ -4,6 +4,8 @@
  * seed: fights draw from their own per-run stream, so a change in one run never desyncs another (paired ladders).
  */
 import { STAKE } from '../core/stakes';
+import { PLAYS, type Play } from '../core/plays';
+import { botPlay, type PlayPolicy } from './playPolicy';
 import type { GameConfig, RelicId } from '../core/config';
 import { CABINETS, type CabinetId } from '../core/cabinets';
 import { Fight } from '../core/fight';
@@ -76,6 +78,9 @@ export interface PlayOpts {
   onEvents?: (events: CombatEvent[], run: RunState, fight: Fight) => void;
   /** HOLDs a fight, if not the live game's (run.ts HOLD); played by holdPolicy. */
   holds?: number;
+  /** SPIN CHOICES (experiment): how the bot picks plays (default smart), and each pick (null: took the line). */
+  playPolicy?: PlayPolicy;
+  onPlay?: (p: Play | null) => void;
 }
 
 /**
@@ -120,8 +125,10 @@ export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stak
     const act = run.act;
     const arch = run.enemies[run.depth]?.archetype ?? '?';
     let lastSpin: Parameters<typeof holdPolicy>[1] = null;
+    const playRng = new Rng((fightSeeds.int(0xffffffff) ^ 0x51a7) >>> 0);
     while (!fight.over && fight.turn < 2000) {
       if (cfg.player.holds && fight.next === 'player') holdPolicy(fight, lastSpin, CABINETS[run.cabinet].attack);
+      if (PLAYS.on && fight.next === 'player') opts.onPlay?.(botPlay(fight, opts.playPolicy ?? 'smart', playRng));
       const { events } = fight.step();
       for (const e of events) if (e.type === 'spin' && e.side === 'player') lastSpin = e.score;
       opts.onEvents?.(events, run, fight);

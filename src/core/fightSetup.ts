@@ -1,4 +1,5 @@
 /** A run fight's setup: its GameConfig, the enemy's real HP and the relics that scale your pay (split from run.ts, 2026-11-05). */
+import { PLAYS } from './plays';
 import { cloneConfig, UNIT, unitsRound, type AbilityDef, type GameConfig } from './config';
 import { ELITE_DMG_MUL, ENDLESS, endlessMul, LOOP_GROWTH, TUNE, TURBO, type EnemyDef } from './enemies';
 import { effectiveAbility, STAKE, stakeDmg } from './stakes';
@@ -89,7 +90,8 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // OVERTIME (user, 2026-10-29): every fight has the clock but THE OWNER's (he escalates every turn already). HOLD:
   // two a fight.
   if (!cfg.enemy.owner) cfg.overtime = true;
-  cfg.player.holds = HOLD.perFight;
+  // SPIN CHOICES: the plays replace HOLD (HOLD & RESPIN is a play).
+  cfg.player.holds = PLAYS.on ? 0 : HOLD.perFight;
   return cfg;
 }
 

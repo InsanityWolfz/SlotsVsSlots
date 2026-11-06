@@ -4,6 +4,7 @@ import { Fight } from '../src/core/fight';
 import { OVERTIME, overtimeMul } from '../src/core/enemies';
 import { createRun } from '../src/core/run';
 import { fightConfig, HOLD } from '../src/core/fightSetup';
+import { PLAYS } from '../src/core/plays';
 
 /** A sword jackpot every spin against a wall: the pays only change with the clock. */
 const fight = (overtime: boolean, act = 1) => {
@@ -75,7 +76,8 @@ describe('OVERTIME', () => {
     const run = createRun(defaultConfig(), 5, 'knight', 0);
     const cfg = fightConfig(run, defaultConfig());
     expect(cfg.overtime).toBe(true);
-    expect(cfg.player.holds).toBe(HOLD.perFight);
+    // (SPIN CHOICES build: the plays replace HOLD.)
+    expect(cfg.player.holds).toBe(PLAYS.on ? 0 : HOLD.perFight);
   });
 });
 

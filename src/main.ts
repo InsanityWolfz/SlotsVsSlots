@@ -1,3 +1,4 @@
+import './testSaves';
 import { Game, toggleFullscreen } from './game';
 import { setInputMode } from './ui/input';
 import { DESKTOP } from './build';

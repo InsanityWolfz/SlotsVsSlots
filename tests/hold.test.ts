@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3 } from '../src/core/config';
 import { Fight } from '../src/core/fight';
+import { PLAYS } from '../src/core/plays';
 
 const fight = (holds: number) => {
   const c = defaultConfig();
@@ -40,7 +41,8 @@ describe('HOLD (experiment, 2026-10-15)', () => {
 });
 
 describe('HOLD in the live game (user, 2026-10-29)', () => {
-  it('every run fight has two HOLDs, and the sim bot uses them', async () => {
+  // (SPIN CHOICES build: the plays replace HOLD.)
+  it.skipIf(PLAYS.on)('every run fight has two HOLDs, and the sim bot uses them', async () => {
     const { playRun } = await import('../src/sim/play');
     let held = 0;
     let spins = 0;

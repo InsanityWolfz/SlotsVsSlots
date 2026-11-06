@@ -1,3 +1,5 @@
+import type { Play } from './core/plays';
+import { Rng } from './core/rng';
 import { Sounds } from './audio/sounds';
 import { Synth } from './audio/synth';
 import { mergeConfig, type GameConfig } from './core/config';
@@ -128,6 +130,22 @@ export class Game {
 
   token = 0;
   spinResolve: (() => void) | null = null;
+  /** SPIN CHOICES (experiment): the plays dealt for your landed reels, the card under the pointer, and the pick. */
+  playOffers: Play[] | null = null;
+  playHover = -1;
+  playResolve: ((p: Play | null) => void) | null = null;
+  playRng = new Rng(Rng.randomSeed());
+  /** SPIN CHOICES: play card i (or take the line: -1). */
+  pickPlay(i: number): void {
+    const r = this.playResolve;
+    if (!r || !this.playOffers) return;
+    const p = i >= 0 ? this.playOffers[i] ?? null : null;
+    if (i >= 0 && !p) return;
+    this.playResolve = null;
+    this.spinResolve = null;
+    this.sounds.click();
+    r(p);
+  }
   private audioStarted = false;
   mouse = { x: -1, y: -1 };
   buttons: Button[] = [];
