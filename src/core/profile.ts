@@ -304,7 +304,9 @@ export function recordMeta(p: Profile, e: RunEntry, collectionTotal: number, pre
   }
   const got = newAchievements(achievementCtx(p, e, collectionTotal));
   for (const a of got) p.achievements[a.id] = e.at || Date.now();
-  const xp = e.tutorial ? 0 : Math.max(0, score - (prevScore ?? 0)) + got.length * ACHIEVEMENT_XP;
+  // The tutorial run earns XP too: after its guided first fight it's a full run (+0 XP after 4 wins felt bad: playtest
+  // 2026-11-06). It still stays out of the run stats.
+  const xp = Math.max(0, score - (prevScore ?? 0)) + got.length * ACHIEVEMENT_XP;
   p.xp += xp;
   const after = levelOf(p.xp).level;
   const titles = titlesOwned(after).filter((t) => !titlesBefore.has(t));

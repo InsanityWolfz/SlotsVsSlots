@@ -1,4 +1,6 @@
 import { atStakes, CLAW, CLAW_PRIZES, clawGrip, clawPrizeName, extraPlays } from '../../core/encounters';
+import { RELICS, relicText } from '../../core/relics';
+import { shortRelicText } from './cardText';
 import { encounterChoices, type RunState } from '../../core/run';
 import { COLORS } from '../../present/layout';
 import { artId, drawSprite, type SpriteId } from '../../render/sprites';
@@ -83,7 +85,12 @@ export abstract class ClawScreen extends CardGames {
         this.heldBuild = null;
         this.landChips();
         if (this.mode !== 'encounter') return;
-        this.cwMsg = res;
+        // A relic won names itself and says what it does (it said INSURANCE POLICY and nothing else: playtest 2026-11-06).
+        const got = this.run?.player.relics.at(-1);
+        const run = this.run;
+        this.cwMsg = claw.held && CLAW_PRIZES[claw.prize].id === 'relic' && run && got && RELICS[got]?.name === res.text
+          ? { ...res, text: `${res.text}: ${shortRelicText(got, relicText(got, run.cabinet))}` }
+          : res;
         this.encOutcomeSound(res);
         if (res.more) this.clawButtons();
         else this.setTable([this.footBtn('CONTINUE', () => this.cb.onEncounterDone(), true)]);

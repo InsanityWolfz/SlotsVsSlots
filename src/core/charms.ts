@@ -135,8 +135,9 @@ export const charmName = (enh: Enh): string => (enh === 'spiked' ? 'BULWARK' : e
 /** The number shown on a charmed cell's top-right tag (coloured by charm). */
 export function charmTag(enh: Enh, lvl: number): string {
   const v = charmValue(enh, lvl);
-  // LUCRE's number is its cap; its tag shows what a hit pays.
-  return enh === 'gold' || enh === 'echo' || enh === 'glass' ? `X${v}` : enh === 'lucky' || enh === 'spiked' ? `${v}%` : enh === 'lucre' ? `+${LUCRE_CHIPS}` : `+${v}`;
+  // LUCRE's number is its cap; its tag shows what a hit pays. BLAZE's is the % its card says (it read +5 against the
+  // card's +11% LIGHTNING DAMAGE: playtest 2026-11-06).
+  return enh === 'gold' || enh === 'echo' || enh === 'glass' ? `X${v}` : enh === 'lucky' || enh === 'spiked' ? `${v}%` : enh === 'lucre' ? `+${LUCRE_CHIPS}` : enh === 'blaze' ? `+${blazePct(v)}%` : `+${v}`;
 }
 
 export const CHARM_COLOR: Record<Enh, string> = {

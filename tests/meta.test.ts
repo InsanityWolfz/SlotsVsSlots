@@ -35,11 +35,14 @@ describe('meta: levels, achievements, titles', () => {
     expect(p.stats).toEqual({ runs: 1, wins: 1, dailies: 0 });
     expect(recordMeta(p, e, 40).achievements.map((a) => a.id)).not.toContain('clear');
   });
-  it('tutorial runs earn nothing', () => {
+  it('tutorial runs earn their score in XP, but no achievements and no run stats', () => {
     const p = emptyProfile();
-    const g = recordMeta(p, entry({ won: true, tutorial: true }), 40);
-    expect(g.xp).toBe(0);
+    const e = entry({ won: true, tutorial: true });
+    const g = recordMeta(p, e, 40);
+    expect(g.xp).toBe(runScore(e));
+    expect(g.xp).toBeGreaterThan(0);
     expect(g.achievements).toEqual([]);
+    expect(p.stats.runs).toBe(0);
   });
   it('achievement ids are unique', () => {
     expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length);
