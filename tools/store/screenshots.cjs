@@ -50,7 +50,10 @@ mkdirSync(OUT, { recursive: true });
   // 3. THE HOUSE: its pot.
   await run(12, 'tesla', 0);
   await toBoss();
-  await ev(`${wait} for (let i=0;i<2;i++){ dbg.force('enemy',['coin','coin','sword']); dbg.game.key(' '); await w(4200); }`);
+  // (Two turns: the second one's lightning storm, shot while its banner is up.)
+  await ev(`${wait} dbg.force('enemy',['coin','coin','sword']); dbg.game.key(' '); await w(4200); dbg.force('enemy',['coin','coin','sword']); dbg.game.key(' ');
+    const up = () => dbg.game.stage.fx.items.some((x) => typeof x.text === 'string' && x.text.includes('STORM') && x.scale >= 0.95);
+    for (let i = 0; i < 80 && !up(); i++) await w(50);`);
   await shot('shot3_house');
 
   // 4. THE WHEEL (act 2): chips bet on your reels. Beat THE HOUSE first.
