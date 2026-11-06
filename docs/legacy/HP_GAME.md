@@ -15,8 +15,8 @@ an encounter, and which Charms and relics to build.
 
 ## Phase 1: OVERTIME, HOLD and AUTO (user, 2026-10-29)
 - **AUTO is off by default:** a new player presses SPIN (saved prefs keep their choice).
-- **OVERTIME, a fight clock in every act** (`OVERTIME` in `src/core/enemies.ts`): from round 8 (a round is your spin
-  and the enemy's: SPIN 15 on the counter), every hit on both machines pays x1.25, +0.25 a round. Hits are the groups
+- **OVERTIME, a fight clock in every act** (`OVERTIME` in `src/core/enemies.ts`): from round 6 (round 8 until 2026-11-06; a round is your spin
+  and the enemy's: SPIN 11 on the counter), every hit on both machines pays x1.25, +0.25 a round. Hits are the groups
   that hit (swords, sevens, aces, notes, chips) and TESLA's strikes; shields don't grow (a clock that grows defence
   can't break a shield stall), nor does TESLA's charge (growing it grew every storm and its heals). The one-turn caps
   stay. It replaces act 3's enemy-only ramp (`TUNE.rampPerTurn` now only reaches THE OWNER, who has no OVERTIME: he
@@ -303,6 +303,10 @@ BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP). Fr
 stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
 
 ## Balance (`tools/sim/balance.ts`)
+- **OVERTIME from round 6 (2026-11-06, user: "let's try"):** sim, 300 runs a machine at WHITE / RED / GREEN: regular and
+  elite fights past 12 of your spins 470 / 721 / 740 -> 259 / 422 / 437 (about -40%); a run's longest fight -1 spin;
+  TESLA's act 2 elites past 12 spins 14% / 20% -> 9% / 12% (WHITE / GREEN). Run win (500 runs) falls 0-7 points:
+  BANKROLL RED 38 -> 31 and JOKER WHITE 56 -> 51 are the outliers; the rest move 0-3.
 - **Act 3 at RED (2026-11-06):** sim 400 runs a machine, RED run win before -> after: KNIGHT 60 -> 43, TESLA 62 -> 46,
   JUKEBOX 54 -> 45, JOKER 53 -> 44, BANKROLL 50 -> 37. The user kept it harder (2026-11-06: "might make people play
   longer than the refund window"): RED's target is 43 now (was 50), not RED eased. BANKROLL's 37 is the outlier.

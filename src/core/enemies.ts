@@ -331,7 +331,8 @@ export const ACTS = 2;
  * before it. (Sim, 300 runs WHITE / GREEN: growing shields too cut the long fights less and lifted GREEN run wins up to
  * +26; hits only, up to +9.)
  */
-export const OVERTIME = { from: 8, step: 0.25, warn: 3 };
+// From round 6 (user, 2026-11-06; was 8): the act 2 elites dragged (a 17-spin COUNTERFEITER at full HP, expert playtest).
+export const OVERTIME = { from: 6, step: 0.25, warn: 3 };
 /** The round a fight turn is in (fight.turn counts both machines' spins). */
 export const overtimeRound = (turn: number) => Math.ceil(turn / 2);
 /** OVERTIME's multiplier on this turn's pays (1 before it starts). */
