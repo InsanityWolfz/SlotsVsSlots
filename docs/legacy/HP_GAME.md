@@ -304,8 +304,8 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
 
 ## Balance (`tools/sim/balance.ts`)
 - **Act 3 at RED (2026-11-06):** sim 400 runs a machine, RED run win before -> after: KNIGHT 60 -> 43, TESLA 62 -> 46,
-  JUKEBOX 54 -> 45, JOKER 53 -> 44, BANKROLL 50 -> 37 (target 50). RED's target assumed two acts; the phase 6 balance
-  pass sets RED's new target (or eases it) with the rest.
+  JUKEBOX 54 -> 45, JOKER 53 -> 44, BANKROLL 50 -> 37. The user kept it harder (2026-11-06: "might make people play
+  longer than the refund window"): RED's target is 43 now (was 50), not RED eased. BANKROLL's 37 is the outlier.
 - **Targets for the sim bot** (run win %, every machine within 5 points): WHITE 60, RED 50, GREEN 36, BLACK 28,
   BLUE 20, GOLD 14. Each boss's win rate (of runs that reach it) within 10 points across machines. Rough per-boss
   aims: House about 85, THE WHEEL about 85, the Dealer about 65.

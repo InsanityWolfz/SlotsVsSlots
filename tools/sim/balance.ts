@@ -37,7 +37,9 @@ import { playRun, type RunLog } from '../../src/sim/play';
 
 /** Target run win rates per stake for the sim bot (a decent player, not a perfect one). Every machine should land
  * within TOLERANCE of its stake's target, and each boss's win rate within BOSS_SPREAD across machines. */
-export const TARGETS = [60, 50, 36, 28, 20, 14];
+// RED 50 -> 43 (user, 2026-11-06): act 3 came to RED and the user kept it harder ("might make people play longer than
+// the refund window"); 43 is where the five machines landed.
+export const TARGETS = [60, 43, 36, 28, 20, 14];
 export const TOLERANCE = 5;
 export const BOSS_SPREAD = 10;
 
