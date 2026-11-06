@@ -3480,9 +3480,9 @@ export const SPRITES: Record<SpriteId, string[]> = {
     '............',
   ],
   tierUncommon: [
-    '............',
-    '...KKKKKK...',
-    '..KWiiiicK..',
+    '..........W.',
+    '...KKKKKKWWW',
+    '..KWiiiicKW.',
     '.KWiiccicNK.',
     'KWWiiccccNNK',
     'KiiiccccNNNK',

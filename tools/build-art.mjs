@@ -4361,7 +4361,13 @@ function tierGem(pal, girdle) {
   return lit(12, 12, rows);
 }
 S.tierCommon = tierGem({ a: 'W', b: 'L', c: 'S', d: 'D' });
-S.tierUncommon = tierGem({ a: 'W', b: 'i', c: 'c', d: 'N' });
+{
+  // A white twinkle off the crown's top-right corner: common, uncommon and legendary read plain / twinkle / gold rays
+  // without their colours (CVD audit 2026-11-05: the common and uncommon gems differed by colour alone).
+  const g = tierGem({ a: 'W', b: 'i', c: 'c', d: 'N' }).map((r) => [...r]);
+  plot(g, [[10, 0, 'W'], [9, 1, 'W'], [10, 1, 'W'], [11, 1, 'W'], [10, 2, 'W']]);
+  S.tierUncommon = toRows(g);
+}
 {
   const g = tierGem({ a: 'W', b: 'J', c: 'V', d: 'v' }, 'YYYGGGGGGg').map((r) => [...r]);
   // radiant gold rays in the free corners / above the crown
