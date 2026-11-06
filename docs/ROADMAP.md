@@ -8,9 +8,10 @@ rounds, https://claude.ai/artifact/LriFtZabSxqs3cBJ8nsbsX; in the glossary and t
 STEAL are drawn but have no keyword entry yet), and the Cashier touch-up. The SPILL reel symbol and ability icon are the broken
 pint glass now, matching the icon (user, 2026-10-30). Steam capsules done: concept B "the gang" (the colorful
 cast; the Jukebox in for the cut Mimic), approved at all 7 sizes (https://claude.ai/artifact/7g3xpbXdDfypGju7BUTo2t;
-upload-ready PNGs and sources on the `art-wip` branch, `art/capsule/steam/`). Screenshots: 8 chosen, all fights plus
-the map (https://claude.ai/artifact/XG4G8AGpwb3AGEeMRav5o2; 2560x1440, in order, retaken without LOG,
-`art/steam/screenshots/upload/`).
+upload-ready PNGs and sources on the `art-wip` branch, `art/capsule/steam/`). Screenshots: 7, retaken on the current build
+(user, 2026-11-06: "keep the original capsule art but use the new screenshots"; https://claude.ai/artifact/1ixT2D72fGc493oFgiiFGF):
+a MEGA WIN, THE HOUSE's lightning storm, THE WHEEL's chips, the draft, the next fight, the Cashier, the machine select
+(2560x1440, in order, `art/steam/screenshots/upload/` on `art-wip`; `node tools/store/screenshots.cjs` retakes them).
 Trailer cut 2 (44 s, 1080p60, real gameplay frame-stepped with the game's own sound over THE HOUSE's theme, the intro on
 the beat, the music softened (mix 2)) approved (user, 2026-10-31: "looks good"):
 https://claude.ai/artifact/8hbHvaF1gA6sTfFd5oN4Bo (`art/steam/trailer/`). Drafted, waiting on the user: the short
