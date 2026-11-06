@@ -1,4 +1,4 @@
-// Steam store screenshots (2026-11-05): the game's real screens at 2560x1440 (2x, whole pixels), set up through
+// Steam store screenshots (2026-11-05; the approved capsules are on art-wip, art/capsule/steam/): the game's real screens at 2560x1440 (2x, whole pixels), set up through
 // window.dbg so each one lands on its moment. The dev build's TUNE button is hidden; nothing else is staged.
 // Needs a dev server:   npx vite --port 5190 &   then   node tools/store/screenshots.cjs [outDir] [port]
 const { chromium } = require('playwright');
