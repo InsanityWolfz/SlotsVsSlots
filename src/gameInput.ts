@@ -118,6 +118,8 @@ export function key(g: Game, k: string, repeat = false): boolean {
   // The bumpers: PROFILE's tabs in the menus, the speed everywhere else (from the speed you're on).
   if (k === 'lb' || k === 'rb') {
     if (g.menus.isOpen) return g.menus.key(k === 'lb' ? '[' : ']');
+    // (Not on a screen between fights: it changed the next fight's speed with nothing on screen to say so.)
+    if (g.screens.active) return false;
     const at = Math.max(0, SPEEDS.indexOf(g.prefs.speed));
     g.setSpeed(SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, at + (k === 'rb' ? 1 : -1)))]);
     return true;
@@ -198,6 +200,8 @@ export function key(g: Game, k: string, repeat = false): boolean {
   // RUN OVER: Escape is the way back to the menu (from the RUN LOG, back to the run-over screen first).
   if (k === 'escape' && g.phase === 'over' && !g.menus.isOpen && g.screens.closeLog()) {
     g.sounds.click();
+    // (The focus was on the log's buttons: the next A shows it on NEW RUN, not whichever of MENU / NEW RUN was nearer.)
+    g.focus.lost();
     return true;
   }
   if (k === 'escape' && g.phase === 'over' && !g.menus.isOpen) {
@@ -211,6 +215,8 @@ export function key(g: Game, k: string, repeat = false): boolean {
     g.sounds.click();
     return true;
   }
+  // HOUSE RULES open over a table: B / Escape closes it first.
+  if (k === 'escape' && g.screens.active && !g.pause.open && !g.menus.isOpen && g.screens.closeRules()) return true;
   // PAUSE: Escape anywhere in a run (STEAM_READINESS S2).
   if (k === 'escape' && g.pausable()) {
     g.setPaused(!g.pause.open);

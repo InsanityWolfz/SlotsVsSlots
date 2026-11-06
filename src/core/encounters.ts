@@ -231,7 +231,8 @@ const HIGHER_OR_LOWER: EncounterDef = {
       // CASH OUT: the pot comes back (not before a right call: the bet is still riding).
       if (st.right < 1) return { title: '', text: '', good: null, card: st.card, pot: st.pot, more: true };
       run.player.chips += st.pot;
-      return hiloEnd(run, st, { title: 'CASHED OUT', text: `+${st.pot} CHIPS`, good: true, card: st.card, pot: st.pot });
+      // (Your winnings, net of the bet, as TWENTY-ONE counts them: it read the whole pot, +13 on a 10 bet: QA 2026-11-06.)
+      return hiloEnd(run, st, { title: 'CASHED OUT', text: `+${st.pot - st.bet} CHIPS`, good: true, card: st.card, pot: st.pot });
     }
     const next = drawCard(rng);
     if (next === st.card) return { title: 'SAME CARD: PUSH', text: 'CALL AGAIN', good: null, card: st.card, next, pot: st.pot, more: true };
@@ -239,7 +240,7 @@ const HIGHER_OR_LOWER: EncounterDef = {
     const now: HiloState = { ...st, card: next, right: st.right + 1, pot: hiloPot(st.bet, st.right + 1) };
     if (now.right >= HILO.calls) {
       run.player.chips += now.pot;
-      return hiloEnd(run, now, { title: `${HILO.calls} RIGHT!`, text: `+${now.pot} CHIPS`, good: true, card: st.card, next, pot: now.pot });
+      return hiloEnd(run, now, { title: `${HILO.calls} RIGHT!`, text: `+${now.pot - now.bet} CHIPS`, good: true, card: st.card, next, pot: now.pot });
     }
     run.encounterState = now as unknown as Record<string, number>;
     return { title: 'RIGHT!', text: `POT ${now.pot}`, good: true, card: st.card, next, pot: now.pot, more: true };

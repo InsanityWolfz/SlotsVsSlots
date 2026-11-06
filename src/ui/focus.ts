@@ -65,7 +65,10 @@ export class Focus {
       return typeof b.label === 'string' && !!b.label && !b.minor && !b.tint && !b.quietStyle && !b.ghost && !b.chip && !b.quiet;
     };
     const order = (a: NavRect, b: NavRect) => a.y - b.y || a.x - b.x;
-    return [...targets.filter(main)].sort(order)[0] ?? [...targets].sort(order)[0];
+    // (No main button live, as with DEAL off at 0 chips or mid-grab at the CLAW: a button still beats the build panel's
+    // relic icons, where the focus landed and A did nothing: QA 2026-11-06.)
+    const button = (t: NavRect) => typeof (t as NavRect & { label?: string }).label === 'string';
+    return [...targets.filter(main)].sort(order)[0] ?? [...targets.filter(button)].sort(order)[0] ?? [...targets].sort(order)[0];
   }
 
   move(dir: NavDir, targets: NavRect[]): NavRect | null {

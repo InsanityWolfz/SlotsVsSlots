@@ -252,7 +252,8 @@ export abstract class CardGames extends TableScreens {
       ctx.restore();
     }
     const left = HILO.calls - h.right;
-    drawText(ctx, `${left} RIGHT CALL${left === 1 ? '' : 'S'} TO PAY OUT`, TCX, TABLE.y + 306, T.small, FELT_INK);
+    // (Only while the game's on: it read 0 after a payout, and a stale count after CASH OUT.)
+    if (hiloState(run)) drawText(ctx, `${left} RIGHT CALL${left === 1 ? '' : 'S'} TO PAY OUT`, TCX, TABLE.y + 306, T.small, FELT_INK);
     this.side(ctx, 'THE POT');
     this.numberWell(ctx, hiloState(run) || !m ? 'ON THE NEXT CALL' : m.good === false ? 'LOST' : 'PAID OUT', `${h.pot}`, { color: m?.good === false ? '#ff8a7a' : undefined, punch: h.potPop, sub: `YOUR BET ${h.bet}` });
     if (m) this.tableResult(ctx, m, TABLE.y + 352);
@@ -270,39 +271,48 @@ export abstract class CardGames extends TableScreens {
     const dealt = show ? show.no : st ? st.dealt : this.bjMsg ? this.bjNo : Number((run.encounterState as { dealt?: number } | undefined)?.dealt ?? 0) + 1;
     this.bjNo = dealt;
     drawText(ctx, `HAND ${Math.min(dealt, BJ.hands + extraPlays(run))} OF ${BJ.hands + extraPlays(run)}`, TCX, 72, T.small, KIT.dim);
-    this.felt(ctx, `THE DEALER STANDS ON ${BJ.standOn}  -  21 OFF THE DEAL PAYS 2 TO 1`);
     const m = this.bjMsg;
+    // (A result takes the felt's printed rule line's place: it was drawn over it, and jumped up between hands.)
+    this.felt(ctx, m && m.title ? '' : `THE DEALER STANDS ON ${BJ.standOn}  -  21 OFF THE DEAL PAYS 2 TO 1`);
     const x0 = TCX - 110;
     const dy = TABLE.y + 122;
     const py = TABLE.y + 286;
     const k = 0.75;
+    const resultY = TABLE.y + TABLE.h - 96;
+    // (Seven cards fit at 64 apart; an eighth, rare, ran over the table's edge: a long hand closes up.)
+    const at = (i: number, n: number) => x0 + i * (n > 7 ? Math.floor(448 / (n - 1)) : 64);
     const label = (text: string, y: number, color: string) => drawText(ctx, text, x0 - 62, y, T.body, color, { align: 'right' });
     if (!inPlay) {
       // A finished hand stays face up beside its word (playtest 2026-11-01: "DEALER BUSTS!" over two face-down cards).
       const last = m && m.hand ? this.bjLast : null;
       label(last ? `DEALER ${bjTotal(last.d)}` : 'DEALER', dy, last && bjTotal(last.d) > 21 ? '#ff8a7a' : FELT_INK);
-      if (last) last.d.forEach((c, i) => drawPlayingCard(ctx, x0 + i * 64, dy, c, 1, k, i));
+      if (last) last.d.forEach((c, i) => drawPlayingCard(ctx, at(i, last.d.length), dy, c, 1, k, i));
       else {
         drawPlayingCard(ctx, x0, dy, 0, 1, k);
         drawPlayingCard(ctx, x0 + 64, dy, 0, 1, k);
       }
-      // Your spots wait empty; after a hand, its word sits there instead.
-      if (!m) {
+      // Your spots wait empty; after a hand, your cards stay up too (you saw the dealer's 18, never your own total).
+      if (last) {
+        label(`YOU ${bjTotal(last.p)}`, py, bjTotal(last.p) > 21 ? '#ff8a7a' : FELT_INK);
+        last.p.forEach((c, i) => drawPlayingCard(ctx, at(i, last.p.length), py, c, 1, k, i));
+      } else if (!m) {
         label('YOU', py, FELT_INK);
         this.cardSpot(ctx, x0, py, k);
         this.cardSpot(ctx, x0 + 96, py, k);
       }
       this.side(ctx, 'YOUR BET');
       // Walked away: no more bets (a push keeps the table open).
-      if (!(m && !m.hand)) this.numberWell(ctx, '', `${this.rlBet}`, { sub: `MAX ${bjMax(run)}` });
-      if (m) this.tableResult(ctx, m, py - 30);
+      // (Broke: the well says why DEAL is off; it read 1 over MAX 0.)
+      if (!(m && !m.hand)) this.numberWell(ctx, '', `${bjMax(run) < 1 ? 0 : this.rlBet}`, { sub: bjMax(run) < 1 ? 'NO CHIPS TO BET' : `MAX ${bjMax(run)}` });
+      // The word sits at the foot of the felt, the same place as the moment it lands.
+      if (m) this.tableResult(ctx, m, resultY);
       return;
     }
     const p = show ? show.p : st!.p;
     const d = show ? show.d.slice(0, this.bjDealerUp) : st!.d;
     const row = (cards: number[], y: number, who: string, hidden: boolean) => {
-      cards.forEach((c, i) => drawPlayingCard(ctx, x0 + i * 64, y, c, 1, k, i));
-      if (hidden) drawPlayingCard(ctx, x0 + cards.length * 64, y, 0, 1, k);
+      cards.forEach((c, i) => drawPlayingCard(ctx, at(i, cards.length + (hidden ? 1 : 0)), y, c, 1, k, i));
+      if (hidden) drawPlayingCard(ctx, at(cards.length, cards.length + 1), y, 0, 1, k);
       const t = bjTotal(cards);
       label(`${who} ${t}`, y, t > 21 ? '#ff8a7a' : KIT.text);
     };
@@ -310,6 +320,6 @@ export abstract class CardGames extends TableScreens {
     row(p, py, 'YOU', false);
     this.side(ctx, 'THE BET');
     this.numberWell(ctx, '', `${st?.bet ?? this.rlBet}`);
-    if (m && m.title) this.tableResult(ctx, m, TABLE.y + TABLE.h - 70);
+    if (m && m.title) this.tableResult(ctx, m, resultY);
   }
 }

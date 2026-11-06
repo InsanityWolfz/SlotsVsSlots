@@ -69,6 +69,11 @@ export abstract class RunScreensBase {
   /** RED OR BLACK / DICE: the bet's win or loss, paid at the call (a quit can't re-roll it) but shown when the ball or
    * dice land (it counted up while the wheel still spun, so the landing looked unpaid: user playtest). */
   protected chipsLanding = 0;
+  /** The run as it was before a CLAW go: the build panel shows it until the claw lands (the prize went into the run at
+   * the pick, so a quit can't re-roll it, and the panel gave the result away mid-grab: QA 2026-11-06). */
+  protected heldBuild: RunState | null = null;
+  /** The CLAW's last go is under way (GOES LEFT reads 0 while it plays; it read a full set). */
+  protected cwFinal = false;
   /** TWENTY-ONE: a finished hand on show (the dealer's cards turn one by one), how many of them are up, its word. */
   protected bjShow: NonNullable<EncounterResult['hand']> | null = null;
   /** The last finished hand: it stays face up beside its word until the next deal. */

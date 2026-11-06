@@ -1,5 +1,5 @@
 import { atStakes, CLAW, CLAW_PRIZES, clawGrip, clawPrizeName, extraPlays } from '../../core/encounters';
-import { encounterChoices } from '../../core/run';
+import { encounterChoices, type RunState } from '../../core/run';
 import { COLORS } from '../../present/layout';
 import { artId, drawSprite, type SpriteId } from '../../render/sprites';
 import { drawText } from '../../render/text';
@@ -14,6 +14,8 @@ export abstract class ClawScreen extends CardGames {
 
   /** CLAW MACHINE: a button per prize still in the pit (its grip under it), WALK AWAY. */
   protected clawButtons(): void {
+    this.cwFinal = false;
+    this.heldBuild = null;
     const run = this.run!;
     this.encChoices = encounterChoices(run);
     const aims = CLAW_PRIZES.map((_p, k) => {
@@ -27,6 +29,7 @@ export abstract class ClawScreen extends CardGames {
   /** One go: the claw slides over, drops, shuts and lifts; the prize rides up, and holds or slips. */
   protected playClaw(i: number): void {
     const before = this.run?.player.chips ?? 0;
+    const was = this.run ? (JSON.parse(JSON.stringify(this.run)) as RunState) : null;
     const res = this.cb.onEncounter(i);
     if (!res) return;
     this.chipsLanding = (this.run?.player.chips ?? 0) - before;
@@ -38,6 +41,8 @@ export abstract class ClawScreen extends CardGames {
     }
     const claw = res.claw;
     this.cwMsg = null;
+    this.heldBuild = was;
+    this.cwFinal = !res.more;
     this.cwTarget = claw.prize;
     const skip = this.footBtn('SKIP', () => this.encClock.skip());
     skip.quietStyle = true;
@@ -75,6 +80,7 @@ export abstract class ClawScreen extends CardGames {
         this.cwCarry = false;
         if (claw.held) this.cwWon.push(claw.prize);
         this.cwMisses = [...claw.misses];
+        this.heldBuild = null;
         this.landChips();
         if (this.mode !== 'encounter') return;
         this.cwMsg = res;
@@ -89,9 +95,11 @@ export abstract class ClawScreen extends CardGames {
   protected drawClaw(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
     // The last go moves the run on (its plays reset to 0), so the screen still up on the result reads 0, not a full set.
-    const done = !!this.cwMsg && !this.cwMsg.more;
+    const done = (!!this.cwMsg && !this.cwMsg.more) || this.cwFinal;
     const goes = done ? 0 : Math.max(0, CLAW.tries + extraPlays(run) - (run.encounterPlays ?? 0));
-    drawText(ctx, `${atStakes(run, CLAW.price)} CHIPS A GO`, TCX, 72, T.small, KIT.dim);
+    // (Short of a go: say so, or every GO button was off with no word why.)
+    const price = atStakes(run, CLAW.price);
+    drawText(ctx, run.player.chips < price && !this.cwMsg && !this.heldBuild ? `${price} CHIPS A GO: YOU HAVE ${run.player.chips}` : `${price} CHIPS A GO`, TCX, 72, T.small, run.player.chips < price && !this.cwMsg && !this.heldBuild ? '#ff8a7a' : KIT.dim);
     const x0 = TCX - 250;
     const w = 500;
     const y0 = TABLE.y + 2;

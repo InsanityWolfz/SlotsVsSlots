@@ -96,7 +96,8 @@ describe('HIGHER OR LOWER (back, user 2026-10-29)', () => {
         const st = hiloState(run)!;
         if (seed % 2 === 0 && st.right === 2) {
           const res = playEncounter(run, 2)!;
-          expect(res.text).toBe(`+${hiloPot(5, 2)} CHIPS`);
+          // (The word says what you won, net of the 5 bet, as TWENTY-ONE does; the pot comes back in full.)
+          expect(res.text).toBe(`+${hiloPot(5, 2) - 5} CHIPS`);
           expect(run.player.chips).toBe(35 + hiloPot(5, 2));
           cashed++;
         } else {

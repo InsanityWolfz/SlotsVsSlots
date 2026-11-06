@@ -99,7 +99,8 @@ export class MainScreen implements MenuScreen {
     // COPY LAST RUN: the finished run's text, for a balance check in a chat (it survives a refresh).
     const last = cb.lastRun();
     if (last) {
-      const copy = m.btn('COPY LAST RUN', W - 200, H - 40, 220, 44, () => {
+      // (Bottom left, beside QUIT: by the gear it covered NEW HERE? TRY THE TUTORIAL: QA 2026-11-06.)
+      const copy = m.btn('COPY LAST RUN', 274, H - 40, 220, 44, () => {
         void navigator.clipboard?.writeText(last).then(
           () => (copy.label = 'COPIED!'),
           () => (copy.label = 'COPY FAILED'),

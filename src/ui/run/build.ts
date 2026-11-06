@@ -30,6 +30,23 @@ export abstract class BuildPanel extends RunScreensBase {
   }
 
   protected drawBuild(ctx: CanvasRenderingContext2D, inFight = false): void {
+    // A CLAW go in the air: the panel shows the run before it (its chips too: the landing is already taken off).
+    if (this.heldBuild && !inFight && this.mode === 'encounter') {
+      const keep = this.run;
+      const landing = this.chipsLanding;
+      const held = this.heldBuild;
+      this.run = held;
+      this.chipsLanding = 0;
+      this.heldBuild = null;
+      try {
+        this.drawBuild(ctx, inFight);
+      } finally {
+        this.run = keep;
+        this.chipsLanding = landing;
+        this.heldBuild = held;
+      }
+      return;
+    }
     const run = this.run!;
     const p = run.player;
     const { x, y, w, h } = BUILD;

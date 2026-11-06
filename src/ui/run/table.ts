@@ -59,7 +59,30 @@ export abstract class TableScreens extends DraftScreen {
   protected rulesBtn(line: string): Btn {
     const x = CX + textWidth(line, T.body) / 2 + 30;
     const b = this.minorBtn('?', x, FOOT.rules, 36, 32, () => (this.rulesOpen = !this.rulesOpen));
+    this.rulesHit = b;
     return b;
+  }
+
+  /** The "?" itself (a tap on it toggles the rules; any other tap while they're up closes them). */
+  private rulesHit: Btn | null = null;
+
+  /** B / Escape closes HOUSE RULES first (it opened PAUSE under them: QA 2026-11-06). */
+  closeRules(): boolean {
+    if (this.mode !== 'encounter' || !this.rulesOpen) return false;
+    this.rulesOpen = false;
+    this.sounds.click();
+    return true;
+  }
+
+  /** HOUSE RULES is a panel over the table: a tap anywhere but its "?" closes it, and plays nothing under it (DEAL and
+   * HIT still played through it, under the panel). */
+  pointerDown(x: number, y: number): boolean {
+    if (this.mode === 'encounter' && this.rulesOpen && !(this.rulesHit && this.inside(this.rulesHit, x, y))) {
+      this.rulesOpen = false;
+      this.sounds.click();
+      return true;
+    }
+    return super.pointerDown(x, y);
   }
 
   /** The foot's button (WALK AWAY, CONTINUE, SKIP). */

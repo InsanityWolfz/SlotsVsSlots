@@ -175,7 +175,7 @@ export abstract class OverScreen extends ShopScreen {
     const name = won || turbo ? CABINETS[run.cabinet].hero : (loss?.enemy ?? lastRec?.enemy ?? 'THE HOUSE');
     const line2 = won || turbo ? (turbo ? 'BEAT THE OWNER' : trueEnding ? 'BEAT THE DEALER. TRUE ENDING' : 'CLEARED THE RUN') : busted ? 'GOT YOU IN ENDLESS' : 'GOT YOU';
     const where = busted
-      ? `BEAT THE DEALER, THEN ${run.records.filter((r) => r.loop !== undefined).length} ENDLESS FIGHTS`
+      ? ((n) => `BEAT THE DEALER, THEN ${n} ENDLESS FIGHT${n === 1 ? '' : 'S'}`)(run.records.filter((r) => r.loop !== undefined).length)
       : won
         ? `ALL ${totalFights(run)} FIGHTS WON ON ${CABINETS[run.cabinet].name}`
         : `FIGHT ${run.records.length} OF ${totalFights(run)}, ACT ${run.act}, ON ${CABINETS[run.cabinet].name}`;
@@ -249,7 +249,7 @@ export abstract class OverScreen extends ShopScreen {
         nx += w + 12;
       });
     }
-    if (this.overT0 >= 0 && t > 0.4) drawPrompt(ctx, by({ touch: 'TAP TO SKIP', mouse: 'CLICK TO SKIP', keys: 'ANY KEY: SKIP', pad: '[A] SKIP' }), W / 2, 650, T.small, KIT.dim, { alpha: 0.6 + 0.3 * Math.sin(time * 4) });
+    if (this.overT0 >= 0 && t > 0.4) drawPrompt(ctx, by({ touch: 'TAP TO SKIP', mouse: 'CLICK TO SKIP', keys: 'ENTER: SKIP', pad: '[A] SKIP' }), W / 2, 650, T.small, KIT.dim, { alpha: 0.6 + 0.3 * Math.sin(time * 4) });
     if (this.logOpen) this.drawRunLog(ctx);
     for (const b of this.buttons) this.drawButton(ctx, b, time);
   }
@@ -424,7 +424,7 @@ export abstract class OverScreen extends ShopScreen {
     const lv = levelOf(r.xp);
     // A level-up's big word takes the row for its beat (it sat over the RESULTS tab, beside its own LEVEL label).
     const beat = Math.min(1, r.pop * 2);
-    drawText(ctx, `+${Math.round(r.xp - g.xpBefore)} XP`, x0 + 40, 160, T.head, KIT.text, { align: 'left', alpha: 1 - beat });
+    drawText(ctx, `+${fmtNum(Math.round(r.xp - g.xpBefore))} XP`, x0 + 40, 160, T.head, KIT.text, { align: 'left', alpha: 1 - beat });
     drawText(ctx, `LEVEL ${lv.level}`, x0 + w - 40, 160, T.head, KIT.title, { align: 'right', alpha: 1 - beat });
     const bx = x0 + 40;
     const bw = w - 80;
@@ -462,7 +462,7 @@ export abstract class OverScreen extends ShopScreen {
       });
       if (g.achievements.length > 4) drawText(ctx, `+${g.achievements.length - 4} MORE ON THE TROPHIES SCREEN`, W / 2, y + 164, T.small, KIT.dim);
     }
-    drawText(ctx, r.done ? 'PRESS TO CONTINUE' : 'PRESS TO SKIP', W / 2, 96 + ph - 28, T.body, r.done ? KIT.text : KIT.dim, { alpha: 0.8 + 0.2 * Math.sin(performance.now() / 200) });
+    drawPrompt(ctx, r.done ? by({ touch: 'TAP TO CONTINUE', mouse: 'CLICK TO CONTINUE', keys: 'ENTER: CONTINUE', pad: '[A] CONTINUE' }) : by({ touch: 'TAP TO SKIP', mouse: 'CLICK TO SKIP', keys: 'ENTER: SKIP', pad: '[A] SKIP' }), W / 2, 96 + ph - 28, T.body, r.done ? KIT.text : KIT.dim, { alpha: 0.8 + 0.2 * Math.sin(performance.now() / 200) });
     ctx.restore();
   }
 }
