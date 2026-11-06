@@ -685,6 +685,126 @@ Five families of answer; most games mix two.
   change (night falls, "x2 Elixir"), and the long tail gets a hard stop or tiebreaker (Clash), since a ramp alone
   makes draws rarer, not impossible (TFT).
 
+## Market (Steam, the slot and gambling roguelike niche)
+Sales are developer or publisher statements unless marked "est." (Boxleiter estimate: Steam reviews x 30-60;
+GameDiscoverCo's "NB number" from 237 games' real data is a median 58, mean 63 sales a review, falling for newer
+releases; SEO calculator sites claim ~30). Third-party trackers (Raijin, SteamPulse, VaporLens, steamdata.ai) often
+disagree by 3x; treat them as a range, not a number. [P] [GameDiscoverCo: NB number](https://newsletter.gamediscover.co/p/how-that-game-sold-on-steam-using),
+[F] [Steam Page Analyzer](https://www.steampageanalyzer.com/blog/steam-review-to-sales-multiplier)
+
+### Who sold, who didn't
+- **CloverPit** (Panik Arcade, publisher Future Friends; $9.99; Sept 2025): 100k copies day one, 500k in 8 days,
+  750k in 2 weeks, 1M+ by Nov 2025 (developer). ~21-25k Steam reviews, ~90% Very Positive (snapshots vary), so ~40
+  sales a review. Before launch: demo out with the reveal (April 2025), 100k wishlists in the first week after it,
+  ~150k wishlists and 200k+ demo activations; 680k demo downloads by Next Fest. Publisher: all marketing organic, no
+  paid ads or influencers; "works really well for streamers"; luck "played a big role". Hook: a first-person horror
+  cell where you feed a slot machine to pay a debt. [P] [Game Developer: 500k](https://gamedeveloper.com/business/cloverpit-has-sold-500-000-units-in-eight-days),
+  [PC Gamer: 1M](https://www.pcgamer.com/games/roguelike/slot-machine-roguelike-cloverpit-sells-1-million-copies-and-its-developer-celebrates-the-payout-by-adding-its-most-requested-feature-yet),
+  [GameDiscoverCo: 100k wishlists](https://newsletter.gamediscover.co/p/how-cloverpit-added-100k-steam-wishlists),
+  [W] [Wikipedia](https://en.wikipedia.org/wiki/CloverPit)
+- **Slots & Daggers** (solo dev Friedemann Allmenröder, publisher Future Friends; $7.99 list, 30% launch discount;
+  Oct 2025): 100k in 10 days ("a surreal number for a solo dev"); 300k on Steam per its mobile-launch press release.
+  ~4,600 English reviews, 93%. Release date announced at Next Fest with a demo the press singled out. Hook: a dungeon
+  crawl inside a slot machine on a pub table. [P] [GamesRadar](https://www.gamesradar.com/games/roguelike/another-roguelike-success-story-has-hit-steam-d-and-d-flavored-slot-machine-slots-and-daggers-sells-100-000-copies-in-10-days-a-surreal-number-for-a-solo-dev-like-me),
+  [GamesPress](https://www.gamespress.com/de/Slots-Daggers-out-now-on-mobile-Slot-machine-roguelite-hit),
+  [F] [Dekudeals](https://www.dekudeals.com/items/slots-and-daggers)
+- **Luck be a Landlord** (solo, self-published, $9.99, 1.0 in 2023): no official total found; steamdata.ai est.
+  ~920k copies, $5.6M gross. [F] [steamdata.ai](https://steamdata.ai/game/1404850)
+- **Dungeons & Degenerate Gamblers** (blackjack duels, publisher Yogscast, Aug 2024): publisher says $1M+ gross in
+  the first month; ~3,400 reviews, 82%; critics "mixed or average", Siliconera: in "Balatro's shadow". Est. 100-200k.
+  [W] [Wikipedia](https://en.wikipedia.org/wiki/Dungeons_%26_Degenerate_Gamblers), [F] [Siliconera](https://www.siliconera.com/?p=1046146)
+- **Ballionaire** (pachinko, publisher Raw Fury, Dec 2024): ~2,550 reviews, 86%; critics favourable (PC Gamer 80).
+  Est. 75-150k (trackers range 63k-343k). Complaints: balance, RNG. [W] [Wikipedia](https://en.wikipedia.org/wiki/Ballionaire),
+  [F] [VaporLens](https://vaporlens.app/app/2667120/ballionaire/stats/details)
+- **The middle and the bottom:** Spin Hero (slot deckbuilder, publisher Goblinz, Oct 2024, ~7.99 EUR): ~1,050
+  reviews, 72% Mostly Positive, est. 30-65k; complaints "repetitive quickly", RNG. Slot & Dungeons (MUC Games, 1.0
+  July 2026): ~300 reviews, ~82-86%, est. 9-18k (trackers 8.6k-24k), recent reviews Mixed. Runeborn (rune reels,
+  March 2026): ~290 reviews, 80%. Rogue Slots (free, Dec 2025): 56 reviews, 64%, "basic and low effort". Slot or Die
+  (June 2026): a handful of reviews. Slotbound (3x3 slot auto-battler) launches 2026-11-09. [F] [VaporLens: Spin Hero](https://vaporlens.app/app/2917350/spin_hero/stats/details),
+  [Raijin: Slot & Dungeons](https://raijin.gg/app/3160090/Slot_Dungeons), [datahumble: Rogue Slots](https://datahumble.com/rogue-slots-2462430),
+  [Steam: Rogue Slots reviews](https://steamcommunity.com/app/2462430/reviews?l=english&browsefilter=toprated)
+- **Crowding:** PC Gamer (Feb 2026) called Next Fest "full of Balatro-likes" (chess, coin pusher, minesweeper,
+  word games); RPS: indie genres "converged into grimdark Balatro". No count of slot roguelikes on Steam found. No
+  released Steam game found where your slot machine fights enemy slot machines. [F] [PC Gamer: Next Fest](https://www.pcgamer.com/games/roguelike/steam-next-fest-is-full-of-balatro-likes-heres-7-demos-i-think-you-should-try/),
+  [W] [Wikipedia: Slots & Daggers](https://en.wikipedia.org/wiki/Slots_%26_Daggers)
+- **The whole store:** ~20,000 releases in 2025; nearly half never reached 10 reviews; ~66% earned under $1,000 (est.
+  from Gamalytic). [F] [GamesRadar](https://gamesradar.com/games/over-5-000-games-released-on-steam-this-year-didnt-make-enough-money-to-recover-the-usd100-fee-to-put-a-game-on-valves-store-research-estimates),
+  [Steam Page Analyzer](https://www.steampageanalyzer.com/blog/median-steam-game-2026)
+- **Pattern** (opinion, from the above): every hit had a free demo out months before launch and a hook that puts the
+  slot machine inside another fantasy (a debt cell, a dungeon, a landlord); the two 2025 hits share a publisher
+  (Future Friends). Games that sold tens of thousands rather than hundreds of thousands sat at 72-86% with
+  "repetitive" and "RNG" complaints; the bottom tier had no visible pre-launch presence. Price ($8-10) didn't separate
+  them.
+
+### Common negative-review complaints in the genre
+- Repetitive after a few runs; "too much RNG, not enough skill" (CloverPit; the developer answered that items steer
+  the RNG); late runs "fighting RNG" (CloverPit); "too easy and monotonous once discovered" builds (Slots & Daggers);
+  balance and RNG (Ballionaire, Spin Hero); "in Balatro's shadow" (D&DG). See also Late-game threat > Slot roguelikes.
+  [F] [Steam: CloverPit RNG](https://steamcommunity.com/app/3314790/discussions/0/506200271931572835),
+  [TrendingNow](https://trendingnow.games/reviews/cloverpit-review), [VaporLens: Slots & Daggers](https://vaporlens.app/app/3631290/slots_daggers)
+
+### Wishlists to money
+- **First week:** median 0.15x launch wishlists for games with 25k+ wishlists (Sept 2024-Sept 2025 launches); 0.10x
+  for games over $10; 0.17x in the 2024 survey (10k+ wishlists). Older study of ~420 games: median 10.5%, 25th
+  percentile 4.8%. GameDiscoverCo sees no decline in conversion, only harder-to-get wishlists. [P] [GameDiscoverCo via gamedevreports](https://gamedevreports.substack.com/p/gamediscoverco-the-state-of-steam),
+  [GameDiscoverCo: new expectations](https://newsletter.gamediscover.co/p/steam-the-new-wishlists-to-first)
+- **First month:** median ~27% (first week ~22%) in a ~700-game set (5k+ wishlists, 500+ sales); 10th-90th
+  percentile 0.06x-1.34x; 95%+ rated games median 0.51x; full releases ~30% vs Early Access ~20%. [P]
+  [GameDiscoverCo: conversion benchmarks](https://gamedevreports.substack.com/p/gamediscoverco-conversion-benchmarks)
+- **Launch-day wishlists still predict month-one sales** (R^2 0.77 for 2020-22, 0.72 for 2023-25), though one
+  wishlist is worth less than it was (hover-wishlisting, more Next Fests). [F] [Inven Global on Zukowski](https://www.invenglobal.com/articles/27273/steam-wishlist-inflation-value-of-1-wishlist-cut-in-half-but-predictive-power-remains-unchanged)
+- **Wishlist floors:** a secondary source quotes Zukowski's tiers as 5k bronze, 8k silver, 50k gold, 90k diamond, and
+  7k as the usual floor to launch; not checked against his own page. [F] [Steam Page Analyzer](https://www.steampageanalyzer.com/blog/how-many-wishlists-before-launch)
+- **First year vs first week (revenue):** median 2.64x for 2023 releases (3.6x for 10k-50k week-one copies);
+  GameDiscoverCo's earlier range 2-5x; Jake Birkett's survey 2-12x, plan on 3x. [P] [GameDiscoverCo: long tail](https://gamedevreports.substack.com/p/gamediscoverco-games-long-tail-revenue),
+  [Grey Alien Games](https://greyaliengames.com/blog/steam-week-1-vs-year-1-revenue/)
+- **Net per copy:** Valve takes 30% (25% past $10M, 20% past $50M) after VAT/sales tax and refunds; calculators put
+  the developer's take at ~40-55% of the US list price once regional pricing (~15% less), refunds (~5%) and discounts
+  are in; before income tax. [F] [impress.games](https://impress.games/blog/calculate-estimate-steam-game-sales-revenue-profit),
+  [Unity forum](https://discussions.unity.com/t/estimating-net-revenue-from-steam-game-sales-minus-returns-regional-pricings-discounts-vat-etc/917825)
+- **Worked example** (opinion, arithmetic from the medians above, not a forecast): at $8.99, ~$4.25 net a copy before
+  income tax; first year ~ 0.15 x 2.7 = ~0.4 full-price copies per launch wishlist. Net $5k needs ~1,200 copies,
+  ~3,000 launch wishlists; $20k ~4,700 copies, ~12,000 wishlists; $50k ~11,800 copies, ~30,000 wishlists. The
+  spread (10th-90th percentile) is 20x either way, so these are midpoints only.
+- **Next Fest:** Feb 2027 runs Feb 22-Mar 1, registration closes 2027-01-10; June 2027 registration closes
+  2027-04-25. Survey medians for wishlists gained during a fest: ~806 (HTMAG, 182 devs) or ~460 (presskit.gg, Feb
+  2026); fest wishlists track pre-fest wishlists (r = 0.825), with a takeoff above ~2,000 pre-fest; demos released
+  months before the fest gained ~2.5x the median of demos launched at the fest; 68-88% of fest wishlists came from
+  people who never played the demo. [P] [Steamworks: Feb 2027](https://partner.steamgames.com/doc/marketing/upcoming_events/nextfest/feb_2027),
+  [F] [cinevva summary](https://app.cinevva.com/guides/steam-next-fest-strategy.html), [presskit.gg](https://presskit.gg/field-guides/steam-next-fest-guide)
+
+### Gambling themes: ratings, stores, platforms
+- **PEGI:** Balatro went PEGI 3 -> 18 ("prominent gambling imagery") -> 12 on appeal (Feb 2025, "mitigating
+  fantastical elements"); Luck be a Landlord 18 -> 12 ("no specific transferable gambling skills"). PEGI said its rule
+  had been "any promotion or education of simulated gambling results in an 18+ rating", promised more granular
+  criteria, and kept 18 for casino and betting-hall simulations. From June 2026 PEGI rates paid random items (loot
+  boxes, packs, prize wheels for real money) 16 and social casino 18; reports conflict on whether older games are
+  re-rated. [P/W] [PC Gamer](https://www.pcgamer.com/games/card-games/balatro-finally-escapes-its-silly-18-age-rating-pegi-promises-a-more-granular-set-of-classification-criteria-for-gambling-themed-games-in-the-future),
+  [Game Developer](https://gamedeveloper.com/business/balatro-s-contentious-pegi-18-rating-has-been-amended-thanks-to-mitigating-fantastical-elements-),
+  [KitGuru: June 2026](https://www.kitguru.net/gaming/matthew-wilson/pegi-ratings-board-to-finally-crack-down-on-loot-boxes-in-games/)
+- **ESRB:** Balatro is E10+. ESRB's "Simulated Gambling" descriptor means gambling without real money. [F] [PCGamesN](https://www.pcgamesn.com/balatro/age-rating-change)
+- **Australia:** since September 2024, games with interactive simulated gambling are R18+ (paid loot boxes M);
+  Balatro got M ("simulated gambling") in Dec 2024 per Stevivor, which conflicts with the rule (grandfathering is
+  claimed, unverified). [F] [Checkpoint Gaming](https://checkpointgaming.net/news/2024/09/australia-implements-new-regulations-classifying-new-games-with-gambling-like-content-as-adults-only),
+  [Stevivor](https://stevivor.com/news/balatros-localthunk-lashes-out-at-pegi-over-18-rating/)
+- **South Korea:** gambling elements mean 15+ at least; a refused rating means it can't be sold. GRAC rated Luck be a
+  Landlord 12+, then 19+ in May 2024 (appeals rejected); Apple then forced a 17+ rating worldwide. [W] [Wikipedia: GRAC](https://en.wikipedia.org/wiki/Game_Rating_and_Administration_Committee),
+  [P] [TrampolineTales blog](https://blog.trampolinetales.com/luck-be-a-landlord-is-banned-in-south-korea-again/)
+- **Google Play** blocked Luck be a Landlord in 13 countries (UAE, Algeria, Iran, Jordan, South Korea, Libya, Oman,
+  Palestine, Qatar, Saudi Arabia, Syria, Tunisia, Yemen) in Aug 2023 under its simulated-gambling policy; appeals got
+  a screenshot and "this is gambling". Mobile stores, not Steam. [P] [Game Developer](https://gamedeveloper.com/business/-i-luck-be-a-landlord-i-gets-evicted-from-13-countries-on-google-play-store),
+  [W] [Wikipedia](https://en.wikipedia.org/wiki/Luck_Be_a_Landlord)
+- **YouTube:** March 2025 rules age-restrict depictions of online casino sites; in April 2025 Balatro videos were
+  age-restricted by mistake (Balatro University: 119 of 606 videos), and YouTube said Balatro gameplay "should not be"
+  restricted. From 2025-11-17 content depicting social casino games (virtual slots, roulette, poker with nothing of
+  real value) is age-restricted. [P/F] [PC Gamer: review](https://www.pcgamer.com/games/youtube-is-conducting-a-platform-wide-review-after-mistakenly-hitting-balatro-videos-with-an-age-restriction-for-gambling-content),
+  [Mondaq](https://www.mondaq.com/unitedstates/gaming/1700392/youtube-tightens-age-restrictions-on-violent-and-gambling-related-gaming-content)
+- **Twitch** (Oct 2022, widened Aug 2023) bans streaming unlicensed real-money slots, roulette and dice sites and their
+  links; it targets sites, not games. [F] [Mishcon de Reya](https://www.mishcon.com/news/twitch-announces-revised-gambling-policy)
+- **Pattern** (opinion, from the above): the risk scales with how much the game looks like a casino (real card games,
+  casino tables, chips) and how little fantasy covers it; the winners all had a fantastical frame. Mobile stores and
+  automated video moderation are where it bites, not Steam.
+
 ## Our mechanics, cross-checked
 Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP, PAYTABLE), no tools used.
 
