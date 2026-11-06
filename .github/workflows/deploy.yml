@@ -28,6 +28,24 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      # The SPIN CHOICES test build (user, 2026-11-06): the experiment branch, built into /spin-choices/ beside the main
+      # game. Its own saves; a failure there never stops the main game's deploy. The branch's push asks for this run.
+      - uses: actions/checkout@v4
+        continue-on-error: true
+        id: spin
+        with:
+          ref: claude/awesome-fermat-gmik8d
+          path: spin-choices-src
+      - name: Build the spin choices test build
+        if: steps.spin.outcome == 'success'
+        continue-on-error: true
+        run: |
+          cd spin-choices-src
+          npm ci
+          npm test
+          npm run build
+          mkdir -p ../dist/spin-choices
+          cp -r dist/. ../dist/spin-choices/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
