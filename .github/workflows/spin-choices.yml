@@ -1,0 +1,18 @@
+# SPIN CHOICES test build (user, 2026-11-06): a push to this branch asks main's deploy to run, and that deploy builds
+# this branch into /spin-choices/ beside the main game. (Pages deploys only from main.)
+name: Redeploy the spin choices test build
+
+on:
+  push:
+    branches: [claude/awesome-fermat-gmik8d]
+
+permissions:
+  actions: write
+
+jobs:
+  redeploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh workflow run deploy.yml --ref main --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
