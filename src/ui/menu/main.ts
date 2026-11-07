@@ -99,8 +99,9 @@ export class MainScreen implements MenuScreen {
     // COPY LAST RUN: the finished run's text, for a balance check in a chat (it survives a refresh).
     const last = cb.lastRun();
     if (last) {
-      // (Bottom left, beside QUIT: by the gear it covered NEW HERE? TRY THE TUTORIAL: QA 2026-11-06.)
-      const copy = m.btn('COPY LAST RUN', 274, H - 40, 220, 44, () => {
+      // (Bottom, between the nameplate and the menu panel: by the gear it covered NEW HERE? TRY THE TUTORIAL, QA
+      // 2026-11-06; bottom left it covered THE KNIGHT SLOT MACHINE on the nameplate, demo playtest 2026-11-07.)
+      const copy = m.btn('COPY LAST RUN', 730, H - 40, 200, 44, () => {
         void navigator.clipboard?.writeText(last).then(
           () => (copy.label = 'COPIED!'),
           () => (copy.label = 'COPY FAILED'),

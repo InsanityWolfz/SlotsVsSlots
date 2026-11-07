@@ -1,4 +1,6 @@
+import { CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import { OVERTIME } from '../core/enemies';
+import { demo } from '../demo';
 import { HOLD } from '../core/fightSetup';
 import { HUD_W } from '../present/hud';
 import { COLORS, H, HUD_TOP, MACHINE_CX, MACHINE_H, MACHINE_TOP, MACHINE_W, W } from '../present/layout';
@@ -82,8 +84,28 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'buil
   next: [
     { title: 'A RUN', text: 'EACH ACT IS A MAP: FIGHTS, GAMBLES AND THE CASHIER, THEN A BOSS. PICK 1 OF 3 PATHS: YOU SEE EVERY STOP BEFORE YOU GO. ELITES ARE TOUGHER BUT PAY A RELIC. LOSE ONCE AND THE RUN IS OVER.' },
     { title: 'OVERTIME', text: `A FIGHT CAN'T DRAG ON: FROM SPIN ${2 * OVERTIME.from - 1}, EVERY HIT ON BOTH MACHINES GROWS WITH EACH OF YOUR SPINS. THE MIDDLE OF THE SCREEN COUNTS IT DOWN.` },
-    { title: 'YOU\'RE ON YOUR OWN', text: 'THAT\'S EVERYTHING. WIN RUNS TO UNLOCK NEW SLOT MACHINES AND HIGHER STAKES. GOOD LUCK!' },
+    {
+      title: 'YOU\'RE ON YOUR OWN',
+      // The demo unlocks nothing: it says what the full game has (demo playtest 2026-11-07).
+      get text() {
+        const d = demo();
+        return d.on
+          ? `THAT'S EVERYTHING. THE FULL GAME UNLOCKS ${CABINET_ORDER.length - (d.machines?.length ?? 0)} MORE SLOT MACHINES AND HIGHER STAKES. GOOD LUCK!`
+          : 'THAT\'S EVERYTHING. WIN RUNS TO UNLOCK NEW SLOT MACHINES AND HIGHER STAKES. GOOD LUCK!';
+      },
+    },
   ],
+};
+
+/**
+ * A machine's meter, explained once, ever: the first fight a player starts on that Slot Machine (TESLA is half the
+ * demo and the tutorial is KNIGHT only: demo playtest 2026-11-07). From each meter's real rules (core/cabinets.ts).
+ */
+export const METER_TIPS: Partial<Record<CabinetId, Tip>> = {
+  tesla: { title: 'LIGHTNING', text: 'EACH BOLT ON YOUR PAYLINE CHARGES LIGHTNING. A FULL METER FIRES A STORM: IT STRIKES THE ENEMY THROUGH ITS SHIELD AND HEALS YOU 15.', rect: hud('player') },
+  jukebox: { title: 'VOLUME', text: 'EACH NOTE ON YOUR PAYLINE TURNS IT UP 1, AND NOTES HIT HARDER EACH LEVEL. A SPIN WITH NO NOTE LOSES 2. AT 6, THE DROP: EVERY NOTE ON SCREEN HITS AND YOU HEAL 15.', rect: hud('player') },
+  joker: { title: 'JACKPOTS', text: 'EACH WILD ON YOUR PAYLINE FILLS HALF THE METER. FULL, YOUR NEXT SPIN PAYS ALL 3 PAYLINE CELLS AS JACKPOTS AND HEALS YOU 15.', rect: hud('player') },
+  midas: { title: 'HIGH ROLLER', text: 'CHIPS ON YOUR PAYLINE AND CHIPS IN HAND FILL IT. FULL, YOUR NEXT BEST HIT IS MULTIPLIED (MORE CHIPS HELD, BIGGER: UP TO X2.5) AND YOU HEAL 15.', rect: hud('player') },
 };
 
 export class Coach {
@@ -91,6 +113,8 @@ export class Coach {
   private idx = 0;
   private shownAt = 0;
   private done: (() => void) | null = null;
+  /** The skip button's word: SKIP TUTORIAL, or SKIP for a callout outside the tutorial. */
+  private skipWord = 'SKIP TUTORIAL';
   /** Where the SKIP TUTORIAL link was drawn (tap target). */
   private skipBox: [number, number, number, number] | null = null;
 
@@ -104,7 +128,8 @@ export class Coach {
     return this.idx < this.queue.length;
   }
 
-  show(tips: Tip[], done?: () => void): void {
+  show(tips: Tip[], done?: () => void, skipWord = 'SKIP TUTORIAL'): void {
+    this.skipWord = skipWord;
     this.queue = tips;
     this.idx = 0;
     this.shownAt = performance.now();
@@ -172,7 +197,8 @@ export class Coach {
     const next = forInput({ touch: 'NEXT: TAP', mouse: 'NEXT: CLICK OR ANY KEY', keys: 'NEXT: ANY KEY', pad: 'NEXT: [A]' });
     drawPrompt(ctx, `${next} (${this.idx + 1}/${this.queue.length})`, bx + 24, fy, T.small, KIT.dim, { align: 'left', alpha: 0.7 + 0.3 * Math.sin(t * 4) });
     // SKIP: a real button (the kit's quiet style), so touch players can bail out too (S on a keyboard, START on a pad).
-    const skip = forInput({ touch: 'SKIP TUTORIAL', keys: 'S: SKIP TUTORIAL', pad: '[START] SKIP TUTORIAL' });
+    const w = this.skipWord;
+    const skip = forInput({ touch: w, keys: `S: ${w}`, pad: `[START] ${w}` });
     const sw = Math.max(176, textWidth(skip, T.small) + 28);
     const sh = 32;
     const sx = bx + bw - sw - 20;

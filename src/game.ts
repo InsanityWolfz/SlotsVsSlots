@@ -586,7 +586,7 @@ export class Game {
   /** HOLD: your reels take a tap now (before your spin, or while the enemy's turn plays). */
   canHold(): boolean {
     const f = this.fight;
-    return this.phase === 'fighting' && !f.over && f.next === 'player' && f.holdsLeft > 0 && !this.screens.active && !this.pause.open && !this.coach.active && !this.bossCard;
+    return this.phase === 'fighting' && !f.over && f.next === 'player' && f.playerSpins > 0 && f.holdsLeft > 0 && !this.screens.active && !this.pause.open && !this.coach.active && !this.bossCard;
   }
 
   /** The drawer exists in a run, between no run screens (they always show the build). */

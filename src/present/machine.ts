@@ -362,11 +362,13 @@ export class MachineView {
             : this.hexed[r] > 0
               ? { n: this.hexed[r], c: '#e0a0ff', icon: artId('icoHex') }
               : null;
+      // Just inside the reel's top edge: on the edge, the turn plate (YOUR SPIN / THEIR SPIN) covered reels 2 and 3's
+      // (demo playtest 2026-11-07).
       if (badge && Math.max(fz, lk, hx) > 0.5) {
         ctx.fillStyle = COLORS.outline;
-        ctx.fillRect(cx - 22, -12, 44, 22);
-        drawSprite(ctx, badge.icon, cx - 10, -1, 2);
-        drawText(ctx, String(badge.n), cx + 10, -1, 2, badge.c);
+        ctx.fillRect(cx - 22, 4, 44, 22);
+        drawSprite(ctx, badge.icon, cx - 10, 15, 2);
+        drawText(ctx, String(badge.n), cx + 10, 15, 2, badge.c);
       }
     }
   }

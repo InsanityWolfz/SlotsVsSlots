@@ -69,7 +69,7 @@ export abstract class CardGames extends TableScreens {
     this.bjDealerUp = 1;
     this.setTable([]);
     let chain: Promise<void> = this.encClock.wait(0.3);
-    for (let k = 1; k < hand.d.length && hand.outcome !== 'bust' && hand.outcome !== 'natural'; k++)
+    for (let k = 1; k < hand.d.length && hand.outcome !== 'natural'; k++)
       chain = chain.then(() => {
         this.bjDealerUp = k + 1;
         this.sounds.turnCard(false);
@@ -268,9 +268,11 @@ export abstract class CardGames extends TableScreens {
     const show = this.bjShow;
     const inPlay = !!st || !!show;
     // (After the last hand or a walk-away the stop's state is cleared: keep showing the hand you got to, not HAND 1.)
-    const dealt = show ? show.no : st ? st.dealt : this.bjMsg ? this.bjNo : Number((run.encounterState as { dealt?: number } | undefined)?.dealt ?? 0) + 1;
+    // Between hands, with one to come, it counts the next (it still said HAND 1 OF 3: demo playtest 2026-11-07).
+    const next = !show && !st && !!this.bjMsg?.more;
+    const dealt = show ? show.no : st ? st.dealt : this.bjMsg && !next ? this.bjNo : Number((run.encounterState as { dealt?: number } | undefined)?.dealt ?? 0) + 1;
     this.bjNo = dealt;
-    drawText(ctx, `HAND ${Math.min(dealt, BJ.hands + extraPlays(run))} OF ${BJ.hands + extraPlays(run)}`, TCX, 72, T.small, KIT.dim);
+    drawText(ctx, `${next ? 'NEXT: ' : ''}HAND ${Math.min(dealt, BJ.hands + extraPlays(run))} OF ${BJ.hands + extraPlays(run)}`, TCX, 72, T.small, KIT.dim);
     const m = this.bjMsg;
     // (A result takes the felt's printed rule line's place: it was drawn over it, and jumped up between hands.)
     this.felt(ctx, m && m.title ? '' : `THE DEALER STANDS ON ${BJ.standOn}  -  21 OFF THE DEAL PAYS 2 TO 1`);
@@ -316,7 +318,8 @@ export abstract class CardGames extends TableScreens {
       const t = bjTotal(cards);
       label(`${who} ${t}`, y, t > 21 ? '#ff8a7a' : KIT.text);
     };
-    row(d, dy, 'DEALER', !show);
+    // (The face-down card stays down until it turns: it vanished for a moment, and for good after a bust.)
+    row(d, dy, 'DEALER', !show || (d.length < show.d.length && d.length === 1));
     row(p, py, 'YOU', false);
     this.side(ctx, 'THE BET');
     this.numberWell(ctx, '', `${st?.bet ?? this.rlBet}`);

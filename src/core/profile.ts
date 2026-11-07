@@ -234,7 +234,6 @@ export function sanitizeProfile(raw: unknown): Profile {
 
 function backfillAchievements(p: Profile): void {
   for (const e of [...p.runs].sort((a, b) => a.at - b.at)) {
-    if (e.tutorial) continue;
     const got = newAchievements({
       ...achievementCtx(p, e),
       stats: p.stats,
@@ -304,8 +303,8 @@ export function recordMeta(p: Profile, e: RunEntry, collectionTotal: number, pre
   }
   const got = newAchievements(achievementCtx(p, e, collectionTotal));
   for (const a of got) p.achievements[a.id] = e.at || Date.now();
-  // The tutorial run earns XP too: after its guided first fight it's a full run (+0 XP after 4 wins felt bad: playtest
-  // 2026-11-06). It still stays out of the run stats.
+  // The tutorial run earns XP and achievements too: after its guided first fight it's a full run (+0 XP after 4 wins
+  // felt bad: playtest 2026-11-06; in the demo it's the whole demo, 2026-11-07). It still stays out of the run stats.
   const xp = Math.max(0, score - (prevScore ?? 0)) + got.length * ACHIEVEMENT_XP;
   p.xp += xp;
   const after = levelOf(p.xp).level;

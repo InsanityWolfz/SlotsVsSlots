@@ -26,8 +26,21 @@ describe('HOLD (experiment, 2026-10-15)', () => {
     expect(f.holdsLeft).toBe(0);
     expect(f.held).toEqual([false, false, false]);
   });
+  it('no HOLD before your first spin of a fight: the opening line is not a spin (demo playtest 2026-11-07)', () => {
+    const f = fight(2);
+    expect(f.next).toBe('player');
+    expect(f.hold(0)).toBe(false);
+    expect(f.hold(1)).toBe(false);
+    expect(f.held).toEqual([false, false, false]);
+    f.step();
+    f.step();
+    expect(f.next).toBe('player');
+    expect(f.hold(0)).toBe(true);
+  });
   it('no more holds than you have, only before your own spin, and a second tap lets go', () => {
     const f = fight(1);
+    f.step();
+    f.step();
     expect(f.hold(0)).toBe(true);
     expect(f.hold(1)).toBe(false);
     expect(f.hold(0)).toBe(false);

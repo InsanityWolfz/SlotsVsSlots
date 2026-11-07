@@ -166,8 +166,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 ];
 
 /** The achievements this run newly earns (ids, in list order). */
+/** A tutorial run earns them like any run (in the demo it's the whole demo: playtest 2026-11-07); it stays out of the run stats. */
 export function newAchievements(c: AchievementCtx): AchievementDef[] {
-  if (c.tutorial) return [];
   const out: AchievementDef[] = [];
   for (const a of ACHIEVEMENTS) {
     if (c.have[a.id]) continue;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACHIEVEMENTS, levelOf, xpForLevel } from '../src/core/meta';
+import { ACHIEVEMENT_XP, ACHIEVEMENTS, levelOf, xpForLevel } from '../src/core/meta';
 import { cleanName, nameBlocked, shownTrim, emptyProfile, recordMeta, runScore, sanitizeProfile, shownTitle, type RunEntry } from '../src/core/profile';
 
 const entry = (over: Partial<RunEntry> = {}): RunEntry => ({
@@ -35,14 +35,15 @@ describe('meta: levels, achievements, titles', () => {
     expect(p.stats).toEqual({ runs: 1, wins: 1, dailies: 0 });
     expect(recordMeta(p, e, 40).achievements.map((a) => a.id)).not.toContain('clear');
   });
-  it('tutorial runs earn their score in XP, but no achievements and no run stats', () => {
+  it('tutorial runs earn XP and achievements like any run, but stay out of the run stats', () => {
     const p = emptyProfile();
     const e = entry({ won: true, tutorial: true });
     const g = recordMeta(p, e, 40);
-    expect(g.xp).toBe(runScore(e));
-    expect(g.xp).toBeGreaterThan(0);
-    expect(g.achievements).toEqual([]);
+    expect(g.achievements.map((a) => a.id)).toContain('first_win');
+    expect(g.xp).toBe(runScore(e) + ACHIEVEMENT_XP * g.achievements.length);
+    expect(p.achievements.first_win).toBeDefined();
     expect(p.stats.runs).toBe(0);
+    expect(p.stats.wins).toBe(0);
   });
   it('achievement ids are unique', () => {
     expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length);

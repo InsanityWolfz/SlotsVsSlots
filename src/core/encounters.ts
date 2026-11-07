@@ -125,6 +125,8 @@ function bjSettle(run: RunState, st: BjState, rng: Rng): EncounterResult {
   const natural = st.p.length === 2 && me === 21;
   const d = [...st.d];
   if (me <= 21 && !natural) while (bjTotal(d) < BJ.standOn) d.push(drawCard(rng));
+  // You bust: the dealer still turns its face-down card (it vanished: demo playtest 2026-11-07). It decides nothing.
+  else if (me > 21 && d.length < 2) d.push(drawCard(rng));
   const dealer = bjTotal(d);
   const outcome: 'win' | 'natural' | 'lose' | 'bust' | 'push' =
     me > 21 ? 'bust' : natural ? 'natural' : dealer > 21 || me > dealer ? 'win' : dealer === me ? 'push' : 'lose';

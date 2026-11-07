@@ -173,6 +173,18 @@ describe('TWENTY-ONE', () => {
     return hands;
   };
 
+  it('after a bust the dealer turns its face-down card (it shows two cards; the bust still loses)', () => {
+    let busts = 0;
+    for (let seed = 0; seed < 100; seed++)
+      for (const h of playOut(atTable(seed)))
+        if (h.hand!.outcome === 'bust') {
+          busts++;
+          expect(h.hand!.d).toHaveLength(2);
+          expect(h.text).toBe('-5 CHIPS');
+        }
+    expect(busts).toBeGreaterThan(0);
+  });
+
   it('totals hands with aces as 11 or 1', () => {
     expect(bjTotal([14, 13])).toBe(21);
     expect(bjTotal([14, 14, 9])).toBe(21);

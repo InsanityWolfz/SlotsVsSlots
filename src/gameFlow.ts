@@ -34,7 +34,7 @@ import { type SpriteId, artId } from './render/sprites';
 import { runSummary } from './core/runLog';
 import { steamUnlock, VERSION } from './build';
 import { demo } from './demo';
-import { TUTORIAL } from './ui/coach';
+import { METER_TIPS, TUTORIAL } from './ui/coach';
 import { collectionTotal, heroSprite } from './ui/menus';
 import { shownTrim, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, type MetaGain, type RunEntry } from './core/profile';
 import { clearRunSave, LASTRUN_KEY, loadRunSave, PAYLINE_HINTS, RUN_KEY, sanitizePrefs, save } from './saves';
@@ -288,6 +288,17 @@ export function startRunFight(g: Game): void {
   g.focus.hide();
   newFight(g, true, null, fightConfig(g.run, g.cfg), true);
   if (g.run.depth === 0 && g.run.act === 1) tip(g, 'fight', 'fight');
+  meterTip(g);
+}
+
+/** A Slot Machine's meter, explained the first fight a player ever starts on it (never over the tutorial's callouts). */
+export function meterTip(g: Game): void {
+  const id = g.run?.cabinet;
+  const t = id && METER_TIPS[id];
+  if (!t || g.tut || g.coach.active || g.prefs.metersExplained.includes(id)) return;
+  g.prefs.metersExplained.push(id);
+  g.savePrefs();
+  g.coach.show([t], undefined, 'SKIP');
 }
 
 export function noteHurt(g: Game, events: CombatEvent[]): void {

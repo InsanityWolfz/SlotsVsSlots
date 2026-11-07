@@ -37,6 +37,8 @@ export interface Prefs {
   tutorialDone: boolean;
   /** PAIRS START ON REEL 1: how many times the payline hint has shown (it shows the first 3 times). */
   paylineHints: number;
+  /** The Slot Machines whose meter has had its one-time callout (the first fight on each). */
+  metersExplained: CabinetId[];
   /** SETTINGS volumes, 0..10 each (10 = the designed mix). */
   vol: { master: number; music: number; sfx: number };
 }
@@ -77,6 +79,7 @@ export function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
     dealerBeaten: machineIds(p.dealerBeaten),
     tutorialDone: p.tutorialDone === true,
     paylineHints: typeof p.paylineHints === 'number' && Number.isFinite(p.paylineHints) ? Math.max(0, Math.min(PAYLINE_HINTS, Math.floor(p.paylineHints))) : 0,
+    metersExplained: machineIds(p.metersExplained),
     vol: { master: clampVol(vol.master), music: clampVol(vol.music), sfx: clampVol(vol.sfx) },
   };
 }

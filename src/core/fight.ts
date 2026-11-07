@@ -258,8 +258,8 @@ export class Fight {
   midasChips = 0;
   /** LUCRE: chips its groups paid this fight (paid on a win, up to its cap). */
   lucreChips = 0;
-  /** Your spins this fight (HYPE MAN). */
-  private playerSpins = 0;
+  /** Your spins this fight (HYPE MAN; HOLD opens after the first). */
+  playerSpins = 0;
   /** PIT BOSS: the enemy's first jackpot was already cut. */
   pitUsed = false;
   pitJustFired = false;
@@ -307,10 +307,12 @@ export class Fight {
   /**
    * HOLD a reel (or let it go) for your next spin: a held reel keeps its symbol for that spin. Only while it's your
    * spin next (the game takes taps during the enemy's turn too: the engine is on your turn by then); each held reel
-   * costs a HOLD when you spin. A frozen reel can't be held. Returns whether it's held now.
+   * costs a HOLD when you spin. A frozen reel can't be held, and nothing before your first spin of a fight: the
+   * opening line isn't a spin (holding a pair on it made spin 1 a sure pair, demo playtest 2026-11-07). Returns
+   * whether it's held now.
    */
   hold(reel: number): boolean {
-    if (this.over || this.next !== 'player' || reel < 0 || reel > 2) return false;
+    if (this.over || this.next !== 'player' || this.playerSpins === 0 || reel < 0 || reel > 2) return false;
     if (this.held[reel]) {
       this.held[reel] = false;
       return false;

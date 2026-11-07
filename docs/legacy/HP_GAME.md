@@ -23,7 +23,8 @@ an encounter, and which Charms and relics to build.
   escalates already). The HUD counts OVERTIME IN 3 / 2 / 1, then OVERTIME XN; a banner when it starts; each pay's climb
   names it. The researcher's precedents (TFT, The Bazaar, Backpack Battles) are in `docs/RESEARCH.md`.
 - **HOLD** (`HOLD` in `src/core/run.ts`): 2 a fight. Tap one of your reels before your spin, or while the enemy's turn
-  plays (the engine is on your turn by then), to keep its symbol for your next spin; tap again to let go. Keys Q W E;
+  plays (the engine is on your turn by then), to keep its symbol for your next spin; tap again to let go. Not before
+  your first spin of a fight (2026-11-07: the opening line isn't a spin; a pair held on it made spin 1 a sure pair). Keys Q W E;
   on a pad the d-pad (left, up, right) while a HOLD can be made. Nothing ever
   waits for it: AUTO never stops. Sabotage that lands on a held reel stays on it (the gamble you took); a frozen reel
   can't be held. Shown: HOLD 2: TAP A REEL under your machine while a tap would hold, a gold HELD frame, and PAIR! HOLD
