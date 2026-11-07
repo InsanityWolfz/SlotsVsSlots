@@ -5,6 +5,8 @@ import { Fight } from '../src/core/fight';
 import { fightConfig } from '../src/core/fightSetup';
 import { createRun, currentEnemy, finishFight, runActs, skipToBoss } from '../src/core/run';
 import { demoKey, demoMachines, demoRules, demoStakes, setDemo } from '../src/demo';
+import { demoClearedHooks, fullGameMachines, HOOK_COLS, STAKES_LINE } from '../src/ui/run/demoCleared';
+import { wrap } from '../src/ui/run/shared';
 
 const base = defaultConfig();
 
@@ -72,5 +74,17 @@ describe('the act 1 demo', () => {
     expect(runActs(createRun(base, 5, 'tesla', 1))).toBe(1);
     setDemo(false);
     expect(runActs(createRun(base, 5, 'tesla', 1))).toBe(3);
+  });
+
+  it('DEMO CLEARED shows the three machines the demo leaves out, each line in two rows at most', () => {
+    setDemo(true);
+    expect(fullGameMachines()).toEqual(['jukebox', 'joker', 'midas']);
+    const hooks = demoClearedHooks();
+    expect(hooks).toHaveLength(6);
+    for (const h of hooks) {
+      expect(h).not.toBe('');
+      expect(wrap(h, HOOK_COLS).length).toBeLessThanOrEqual(2);
+    }
+    expect(STAKES_LINE).toBe('6 STAKES, WHITE TO GOLD. ENDLESS: PLAY ON UNTIL YOU BUST');
   });
 });

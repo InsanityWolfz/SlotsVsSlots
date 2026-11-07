@@ -201,7 +201,11 @@ whether it has the tension the user remembers.
   no unlocks, no Steam achievements; its own saves (`demo.slotvslot.*` keys). `npm run build:demo` (web, `dist-demo/`)
   and `npm run build:demo:steam` (desktop, `dist/`). The deploy puts the web demo at
   https://insanitywolfz.github.io/SlotsVsSlots/demo/ for outside playtesters. Set `STORE_URL` in `src/demo.ts` once the
-  store page has its app id. With the flag off the game is unchanged (seeded sim identical).
+  store page has its app id. With the flag off the game is unchanged (seeded sim identical). Sales pass (2026-11-07):
+  the machine select shows the other three Slot Machines for real, dimmed, under one IN THE FULL GAME tag (their pitch
+  on the stage, IN THE FULL GAME in place of PLAY), and DEMO CLEARED is a sales page: the result, then IN THE FULL GAME
+  with the three Slot Machines and three bosses the demo lacks (art and one line from their rules) and the stakes and
+  ENDLESS (`src/ui/run/demoCleared.ts`).
 
 **Gate:** strangers play the demo start to finish with no help.
 
