@@ -1,7 +1,7 @@
 /** What enemies do to your machine: writers, statuses, abilities, THE WHEEL's bets, THE HOUSE's pot (split from fight.ts, 2026-10-29). */
 import { UNIT, unitsRound, unitsUp, type AbilityDef, type Enh, type SymbolId } from './config';
 import type { CombatEvent, LineCard } from './events';
-import { BOMB, POT } from './relics';
+import { BOMB, CONTENT_1107, POT } from './relics';
 import { STAKE } from './stakes';
 import { ENDLESS, GATEKEEPER, OWNER_RULES, OWNER_TRICKS, TUNE, WHEEL_RULES } from './enemies';
 import { type LineScore } from './scoring';
@@ -76,6 +76,47 @@ export function write(f: Fight, me: Combatant, foe: Combatant, sym: SymbolId, am
       return;
     }
   }
+}
+
+/**
+ * STICKY FINGERS: how many of your cells (or reels) an enemy event spoiled. What counts, each cell or reel once:
+ * SPILL (slime), STEAL, ROCKS (each rock added), IOUS (bombs), MARKS (the Card Sharp's cards), FAKES (counterfeit
+ * coins), CONFISCATIONS (THE REPO MAN's too), and per reel FREEZE, JAM and JINX (hex). Not: the RAKE (no cell), THE
+ * DEALER's BUST card, THE WHEEL's bets, chips eaten, plain hits.
+ */
+export function spoiledCells(e: CombatEvent): number {
+  if (!('to' in e) || e.to !== 'player' || !('from' in e) || e.from !== 'enemy') return 0;
+  switch (e.type) {
+    case 'slime':
+    case 'steal':
+    case 'bomb':
+    case 'mark':
+    case 'fake':
+    case 'confiscate':
+      return e.cells.length;
+    case 'junk':
+      return e.inserts.length;
+    case 'freeze':
+    case 'lock':
+    case 'hex':
+      return e.targets.length;
+    default:
+      return 0;
+  }
+}
+
+/** STICKY FINGERS: a chip event after each spoiling event, up to the fight's cap. */
+export function stickyFingers(f: Fight, events: CombatEvent[]): CombatEvent[] {
+  const out: CombatEvent[] = [];
+  for (const e of events) {
+    out.push(e);
+    const n = spoiledCells(e);
+    const got = Math.min(n * CONTENT_1107.stickyChips, CONTENT_1107.stickyMax - f.stickyChips);
+    if (got <= 0) continue;
+    f.stickyChips += got;
+    out.push({ type: 'relic', side: 'player', relic: 'sticky' }, { type: 'stickyChips', side: 'player', amount: got, total: f.stickyChips });
+  }
+  return out;
 }
 
 // ---- act 2 writers --------------------------------------------------------------------

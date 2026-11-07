@@ -1,7 +1,7 @@
 /** Scoring a spin's payline: groups, Charms, relic boosts, OVERTIME (split from fight.ts, 2026-10-29). */
 import { BLADES, type Enh, type GameConfig, type RelicId, type SymbolId } from './config';
 import { charmValue, GLASS_BREAK, playerSymValue } from './charms';
-import { BELL_MULT, BELL_MULT_JOKER, KEY_MULT, NEW_RELIC, LEGEND_RELIC } from './relics';
+import { BELL_MULT, BELL_MULT_JOKER, CONTENT_1107, KEY_MULT, NEW_RELIC, LEGEND_RELIC } from './relics';
 import { stakeOf } from './stakes';
 import { overtimeMul, TUNE } from './enemies';
 import { multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
@@ -108,6 +108,15 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
     const notes: string[] = [];
     notesOf.set(g, notes);
     if (g.rain) notes.push('MAKE IT RAIN!');
+    // LEAN MACHINE: the cells on a lean reel are worth x1.5 (a group across lean and full reels: its share of them).
+    // A true multiplier on the group's worth, before its Charms add in (a MAKE IT RAIN hits for chips, not symbols).
+    const lean = has('lean') && pays(g) && !g.rain ? g.reels.filter((r) => f.leanReels[r]).length : 0;
+    if (lean) {
+      const k = 1 + ((CONTENT_1107.leanMul - 1) * lean) / g.reels.length;
+      g.mult *= k;
+      fired.add('lean');
+      notes.push(`X${Math.round(k * 100) / 100} LEAN`);
+    }
     // A jackpot of one cell counts that cell's charm three times.
     const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
     let gold = 0;
@@ -219,6 +228,19 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       fired.add('hotstreak');
       boost(g, 2);
       notes.push('HOT X2');
+    }
+    // STEADY HANDS: a jackpot on a spin you held a reel for.
+    if (has('steadyhands') && paying && g.matched && g.reels.length >= 3 && f.heldNow.some(Boolean)) {
+      fired.add('steadyhands');
+      boost(g, CONTENT_1107.steadyMul);
+      notes.push(`X${CONTENT_1107.steadyMul} STEADY HANDS`);
+    }
+    // PAIR STREAK: each attack pair or jackpot in a row pays +50% more than the last (up to x2.5).
+    if (has('pairstreak') && f.pairStreak > 0 && f.buildUpCashes(g)) {
+      const k = Math.min(CONTENT_1107.streakCap, 1 + CONTENT_1107.streakStep * f.pairStreak);
+      fired.add('pairstreak');
+      boost(g, k);
+      notes.push(`X${Math.round(k * 100) / 100} PAIR STREAK`);
     }
     // GREATSWORD (KNIGHT): sword groups pay x1.5.
     if (has('greatsword') && g.symbol === 'sword' && g.base > 0) {

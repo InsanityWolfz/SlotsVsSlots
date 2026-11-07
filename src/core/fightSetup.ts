@@ -2,7 +2,7 @@
 import { cloneConfig, UNIT, unitsRound, type AbilityDef, type GameConfig } from './config';
 import { ELITE_DMG_MUL, ENDLESS, endlessMul, LOOP_GROWTH, TUNE, TURBO, type EnemyDef } from './enemies';
 import { effectiveAbility, STAKE, stakeDmg } from './stakes';
-import { LEGEND_RELIC } from './relics';
+import { CONTENT_1107, LEGEND_RELIC } from './relics';
 import { CABINETS } from './cabinets';
 import { cloneLevels, currentEnemy, fightSeed, type RunState } from './run';
 import { NIGHT, nightId } from './endless';
@@ -87,9 +87,9 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // QUICKENING (legendary relic): enemy abilities charge one spin faster.
   if (quickening(run) && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
   // OVERTIME (user, 2026-10-29): every fight has the clock but THE OWNER's (he escalates every turn already). HOLD:
-  // two a fight.
+  // two a fight (STEADY HANDS: one more).
   if (!cfg.enemy.owner) cfg.overtime = true;
-  cfg.player.holds = HOLD.perFight;
+  cfg.player.holds = HOLD.perFight + (run.player.relics.includes('steadyhands') ? CONTENT_1107.steadyHolds : 0);
   return cfg;
 }
 

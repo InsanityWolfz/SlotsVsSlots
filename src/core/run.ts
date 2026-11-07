@@ -682,6 +682,8 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   run.player.gilded = run.player.gilded.filter((g) => g.n > 0);
   // HOUSE TAX: the enemy's jackpots paid you. GOLDEN PARACHUTE: its price.
   if (fight.taxChips) run.player.chips += fight.taxChips;
+  // STICKY FINGERS: the chips the spoiled cells paid.
+  if (fight.stickyChips) run.player.chips += fight.stickyChips;
   // THE LONG GAME / CRUSADE: every win since you got it adds to its pay.
   if (run.player.relics.includes('longgame')) run.longGame = (run.longGame ?? 0) + 1;
   if (run.player.relics.includes('crusade')) run.crusadeWins = (run.crusadeWins ?? 0) + 1;
@@ -702,7 +704,7 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
   const earned = interest + winChips;
   run.player.chips += earned;
   // (THE WHEEL: the chips your sweeps won came in with the fight's mid-fight chips; the line counts them.)
-  record.chips = earned + fight.lucreChips + fight.betChips + fight.taxChips - fight.parachuteChips;
+  record.chips = earned + fight.lucreChips + fight.betChips + fight.taxChips + fight.stickyChips - fight.parachuteChips;
   // (THE WHEEL's sweeps and GOLDEN PARACHUTE's price are already in the fight's mid-fight chips: count them once.
   // Stress test 2026-11-02: sweeps counted twice, the parachute's price taken twice.)
   run.chipsEarned = (run.chipsEarned ?? 0) + Math.max(0, record.chips - fight.betChips + fight.parachuteChips) + Math.max(0, fight.midasChips);
