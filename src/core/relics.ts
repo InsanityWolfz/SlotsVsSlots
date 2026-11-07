@@ -131,15 +131,11 @@ export const RELICS: Record<RelicId, RelicDef> = {
   highcard: { id: 'highcard', name: 'HIGH CARD', text: `JACKPOTS AND JACKPOT METER PAYOFFS PAY X${LEGEND_RELIC.highCardMul}. PAIRS PAY HALF`, sprite: 'relicWildcard', machine: 'joker' },
   hypeman: { id: 'hypeman', name: 'HYPE MAN', text: "+1 VOLUME BEFORE EVERY OTHER SPIN. NOTES PAY HALF WHEN IT ISN'T THE DROP", sprite: 'relicPulse', machine: 'jukebox' },
   openbar: { id: 'openbar', name: 'OPEN BAR', text: 'MAKE IT RAIN COSTS NOTHING. WINS PAY NO CHIPS', sprite: 'relicTipJar', machine: 'midas' },
-  // The content batch (user, 2026-11-07). Their icons are placeholders (sprites of cut relics) until the art step.
-  // TODO icon
-  lean: { id: 'lean', name: 'LEAN MACHINE', text: `A REEL WITH ${CONTENT_1107.leanCells} CELLS OR FEWER: ITS SYMBOLS ARE WORTH X${CONTENT_1107.leanMul}`, sprite: 'relicBelt' },
-  // TODO icon
-  steadyhands: { id: 'steadyhands', name: 'STEADY HANDS', text: `+${CONTENT_1107.steadyHolds} HOLD A FIGHT. A JACKPOT YOU HELD FOR PAYS X${CONTENT_1107.steadyMul}`, sprite: 'relicLockpick' },
-  // TODO icon
-  pairstreak: { id: 'pairstreak', name: 'PAIR STREAK', text: `EACH PAIR IN A ROW PAYS +${pct(CONTENT_1107.streakStep)}% MORE THAN THE LAST, UP TO X${CONTENT_1107.streakCap}. A SPIN WITHOUT A PAIR RESETS IT`, sprite: 'relicSnakeEyes' },
-  // TODO icon
-  sticky: { id: 'sticky', name: 'STICKY FINGERS', text: `EACH CELL AN ENEMY SPOILS ON YOUR REELS: +${CONTENT_1107.stickyChips} CHIP (MAX ${CONTENT_1107.stickyMax} A FIGHT)`, sprite: 'relicPiggy' },
+  // The content batch (user, 2026-11-07).
+  lean: { id: 'lean', name: 'LEAN MACHINE', text: `A REEL WITH ${CONTENT_1107.leanCells} CELLS OR FEWER: ITS SYMBOLS ARE WORTH X${CONTENT_1107.leanMul}`, sprite: 'relicLean' },
+  steadyhands: { id: 'steadyhands', name: 'STEADY HANDS', text: `+${CONTENT_1107.steadyHolds} HOLD A FIGHT. A JACKPOT YOU HELD FOR PAYS X${CONTENT_1107.steadyMul}`, sprite: 'relicSteady' },
+  pairstreak: { id: 'pairstreak', name: 'PAIR STREAK', text: `EACH PAIR IN A ROW PAYS +${pct(CONTENT_1107.streakStep)}% MORE THAN THE LAST, UP TO X${CONTENT_1107.streakCap}. A SPIN WITHOUT A PAIR RESETS IT`, sprite: 'relicPairStreak' },
+  sticky: { id: 'sticky', name: 'STICKY FINGERS', text: `EACH CELL AN ENEMY SPOILS ON YOUR REELS: +${CONTENT_1107.stickyChips} CHIP (MAX ${CONTENT_1107.stickyMax} A FIGHT)`, sprite: 'relicSticky' },
 };
 
 /**
