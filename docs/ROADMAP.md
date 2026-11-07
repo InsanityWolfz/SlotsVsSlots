@@ -195,6 +195,13 @@ whether it has the tension the user remembers.
 - Builds stay attack or shield: more is a rewrite, and the no-restart rule holds.
 - **No launch-breaking bugs:** the fuzz on every change, a save and crash pass, a Steam Playtest before launch.
 - An act 1 demo build; outside playtests every two weeks carry on.
+- **The demo (built 2026-11-07):** one codebase, a build flag (`src/demo.ts`). Act 1 only, ending at THE HOUSE (beating
+  it ends the run as DEMO CLEARED!, with what the full game has and WISHLIST ON STEAM); KNIGHT and TESLA at WHITE, the
+  other three Slot Machines and the stakes above WHITE shown locked, IN THE FULL GAME; the tutorial stays; no ENDLESS,
+  no unlocks, no Steam achievements; its own saves (`demo.slotvslot.*` keys). `npm run build:demo` (web, `dist-demo/`)
+  and `npm run build:demo:steam` (desktop, `dist/`). The deploy puts the web demo at
+  https://insanitywolfz.github.io/SlotsVsSlots/demo/ for outside playtesters. Set `STORE_URL` in `src/demo.ts` once the
+  store page has its app id. With the flag off the game is unchanged (seeded sim identical).
 
 **Gate:** strangers play the demo start to finish with no help.
 

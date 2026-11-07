@@ -33,6 +33,7 @@ import type { Stage } from './present/stage';
 import { type SpriteId, artId } from './render/sprites';
 import { runSummary } from './core/runLog';
 import { steamUnlock, VERSION } from './build';
+import { demo } from './demo';
 import { TUTORIAL } from './ui/coach';
 import { collectionTotal, heroSprite } from './ui/menus';
 import { shownTrim, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, type MetaGain, type RunEntry } from './core/profile';
@@ -153,6 +154,11 @@ export function chooseCabinet(g: Game): void {
 
 /** Meta progression: check the finished run against each cabinet's unlock condition. */
 export function checkUnlocks(g: Game, run: RunState): CabinetId[] {
+  // The demo unlocks nothing: its machines and stake are open from the start, the rest are IN THE FULL GAME.
+  if (demo().on) {
+    g.screens.setStakeUnlockedNow('');
+    return [];
+  }
   const got: CabinetId[] = [];
   const reachedBoss = run.records.some((r) => r.archetype === 'house') || run.act > 1 || run.won;
   const beatHouse = run.act > 1 || run.won;

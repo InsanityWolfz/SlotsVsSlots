@@ -1,4 +1,4 @@
-import { STEAM, VERSION } from '../../build';
+import { DEMO, STEAM, VERSION } from '../../build';
 import type { SettingKey } from '../../game';
 import { COLORS } from '../../present/layout';
 import { artId, drawSprite, hasSprite } from '../../render/sprites';
@@ -173,7 +173,7 @@ export class SettingsScreen implements MenuScreen {
     for (const tg of this.toggles) this.drawToggle(ctx, tg);
     this.drawControls(ctx);
     // The version line and RESET SAVE.
-    drawText(ctx, STEAM ? `REEL BRAWL V${VERSION.toUpperCase()}` : `PLAYTEST BUILD V${VERSION.toUpperCase()}`, LX + 28, SAVE_Y + 46, T.small, COLORS.textDim, { align: 'left' });
+    drawText(ctx, DEMO ? `REEL BRAWL DEMO V${VERSION.toUpperCase()}` : STEAM ? `REEL BRAWL V${VERSION.toUpperCase()}` : `PLAYTEST BUILD V${VERSION.toUpperCase()}`, LX + 28, SAVE_Y + 46, T.small, COLORS.textDim, { align: 'left' });
     if (this.reset) drawText(ctx, 'RESET ERASES ALL YOUR PROGRESS', LX + 28, SAVE_Y + 90, T.small, '#ff8a7a', { align: 'left', alpha: this.resetArmed ? 1 : 0.75 });
     else drawText(ctx, 'PROGRESS SAVES AS YOU PLAY', LX + 28, SAVE_Y + 90, T.small, COLORS.textDim, { align: 'left' });
     void t;

@@ -10,6 +10,8 @@ npm run dev            # builds the game with VITE_STEAM (../dist) and opens it
 ```
 
 - `steam_appid.txt` holds 480 (Valve's Spacewar test app). Put the real app id there before shipping.
+- The demo (`npm run build:demo:steam` from the repo root) is its own Steam app with its own app id (Steamworks makes
+  one for a game's demo): its package's `steam_appid.txt` holds the demo's id, not the full game's.
 - The game sees `globalThis.desktop` (quit, fullscreen, save files) and, with Steam running, `globalThis.steam`
   (persona name, id, achievements). Without Steam it runs as a plain desktop game.
 - Saves: the game keeps using localStorage and mirrors every save key to `<userData>/saves/<key>.json`. Point Steam

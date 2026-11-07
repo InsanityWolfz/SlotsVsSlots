@@ -19,7 +19,8 @@ const steamCsp = {
     mode = c.mode;
   },
   transformIndexHtml(html: string) {
-    return mode === 'steam' ? html.replace('<meta charset="UTF-8" />', `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`) : html;
+    // (steam and steam-demo: the Steam demo is a desktop build too.)
+    return mode === 'steam' || mode === 'steam-demo' ? html.replace('<meta charset="UTF-8" />', `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`) : html;
   },
 };
 

@@ -12,7 +12,9 @@
     "sim": "tsx tools/sim/balance.ts",
     "build:playtest": "vite build --mode playtest --outDir playtest-build --emptyOutDir",
     "serve:playtest": "vite preview --outDir playtest-build --port 4173 --strictPort",
-    "build:steam": "tsc --noEmit && vite build --mode steam"
+    "build:steam": "tsc --noEmit && vite build --mode steam",
+    "build:demo": "tsc --noEmit && vite build --mode demo --outDir dist-demo --emptyOutDir",
+    "build:demo:steam": "tsc --noEmit && vite build --mode steam-demo"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

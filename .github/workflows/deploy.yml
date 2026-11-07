@@ -28,6 +28,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      # The act 1 demo, for outside playtesters, at /demo/ (its own saves: src/demo.ts).
+      - run: npm run build:demo
+      - run: cp -r dist-demo dist/demo
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

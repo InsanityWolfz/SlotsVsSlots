@@ -43,8 +43,9 @@ function createWindow() {
   const dist = app.isPackaged ? path.join(process.resourcesPath, 'web', 'index.html') : path.join(__dirname, '..', 'dist', 'index.html');
   win.loadFile(dist);
   // Links (the credits, the feedback form) open in the browser, never inside the game window.
+  // (https only: the demo's WISHLIST ON STEAM comes this way.)
   win.webContents.setWindowOpenHandler(({ url }) => {
-    require('electron').shell.openExternal(url);
+    if (/^https:\/\//i.test(url)) require('electron').shell.openExternal(url);
     return { action: 'deny' };
   });
   return win;

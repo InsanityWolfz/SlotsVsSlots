@@ -1,9 +1,9 @@
-import { STEAM } from '../../build';
+import { DEMO, STEAM } from '../../build';
 import { COLORS, H, W } from '../../present/layout';
 import { SPRITES } from '../../render/spriteData';
 import { artId, drawSprite, hasSprite, type SpriteId } from '../../render/sprites';
 import { drawText } from '../../render/text';
-import { drawBanner, T } from '../kit';
+import { drawBanner, drawChip, KIT, T } from '../kit';
 import { by, promptWidth } from '../input';
 import type { MenuScreen, Menus } from '../menus';
 
@@ -124,6 +124,13 @@ export class TitleScreen implements MenuScreen {
     drawLogo(ctx, W / 2, cy, scale, { lit: this.ready ? 1 : this.progress(), on, chase });
     // The tag line, then the call to start.
     drawText(ctx, 'A SLOT MACHINE ROGUELIKE', W / 2, cy + 120, T.body, COLORS.textDim, { alpha: 0.4 + 0.6 * on });
+    // The demo build says so, under the logo, as it comes on.
+    if (DEMO && on > 0) {
+      ctx.save();
+      ctx.globalAlpha *= on;
+      drawChip(ctx, 'DEMO', W / 2, cy + 164, { scale: T.body, color: KIT.title });
+      ctx.restore();
+    }
     if (this.ready) {
       // The banner fades in with the sign, then its words breathe (2.4 s): a veil over the band, never see-through.
       const label = by({ touch: 'TAP TO PLAY', mouse: 'PRESS ANY KEY', pad: 'PRESS [A]' });
@@ -136,7 +143,7 @@ export class TitleScreen implements MenuScreen {
         ctx.fillRect(Math.round(W / 2 - bw / 2) + 3, Math.round(520 - bh / 2) + 3, bw - 6, bh - 6);
       }
     }
-    if (!STEAM) drawText(ctx, 'PLAYTEST BUILD. PROGRESS SAVES IN THIS BROWSER.', W / 2, H - 30, T.small, COLORS.textDim);
+    if (!STEAM) drawText(ctx, DEMO ? 'DEMO. PROGRESS SAVES IN THIS BROWSER.' : 'PLAYTEST BUILD. PROGRESS SAVES IN THIS BROWSER.', W / 2, H - 30, T.small, COLORS.textDim);
   }
 
   /** Seven reel columns of symbols drifting down behind the logo: a shimmer, not a show (alpha 0.09). */

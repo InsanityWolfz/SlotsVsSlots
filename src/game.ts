@@ -8,6 +8,7 @@ import { playEncounter, type FightRecord, type RunState, type ShopItem } from '.
 import { fightConfig } from './core/fightSetup';
 import { letItRide } from './core/endless';
 import { CABINET_ORDER, type CabinetId } from './core/cabinets';
+import { demoMachines, demoStakes } from './demo';
 import { StatsTracker } from './core/stats';
 import { Camera } from './present/camera';
 import { FightView } from './ui/fightView';
@@ -353,11 +354,12 @@ export class Game {
 
   /** Best stake per cabinet (dev "unlock all" opens every stake). */
   stakesNow(): Partial<Record<CabinetId, number>> {
-    return this.prefs.unlockAll ? Object.fromEntries(CABINET_ORDER.map((c) => [c, MAX_STAKE])) : this.prefs.stakes;
+    return demoStakes(this.prefs.unlockAll ? Object.fromEntries(CABINET_ORDER.map((c) => [c, MAX_STAKE])) : this.prefs.stakes);
   }
 
+  /** (The demo's machines are its own: src/demo.ts.) */
   unlockedCabinets(): Set<CabinetId> {
-    return new Set(this.prefs.unlockAll ? CABINET_ORDER : this.prefs.unlocked);
+    return demoMachines(this.prefs.unlockAll ? CABINET_ORDER : this.prefs.unlocked);
   }
 
   /** START RUN: pick a starting machine first. */

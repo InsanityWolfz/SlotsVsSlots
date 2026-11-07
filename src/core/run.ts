@@ -1,4 +1,5 @@
 import { emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
+import { demo } from '../demo';
 import { ACTS, ARCHETYPES, GATEKEEPER, generateActMap, ladderFrac, makeEnemy, OWNER_LADDER, REPO_MAN, TURBO, type ActMap, type EnemyDef, type Stop } from './enemies';
 import { MAX_STAKE, STAKE } from './stakes';
 import type { Fight } from './fight';
@@ -342,8 +343,8 @@ export type RelicTier = 'common' | 'uncommon' | 'legendary';
 /** The deck can't remember more marks than this. */
 const DECK_MARKS_CAP = 6;
 
-/** Acts in this run: RED stake and up adds act 3 (THE DEALER). */
-export const runActs = (run: RunState) => (run.stake >= STAKE.act3 ? 3 : ACTS);
+/** Acts in this run: RED stake and up adds act 3 (THE DEALER). The demo ends at act 1's boss (src/demo.ts). */
+export const runActs = (run: RunState) => Math.min(demo().acts, run.stake >= STAKE.act3 ? 3 : ACTS);
 /** A run fight's seed, from the run and the fight: a run resumed after a quit replays the same fight. */
 export const fightSeed = (runSeed: number, act: number, depth: number, loop = 0) =>
   (runSeed ^ Math.imul(act * 131 + depth * 17 + loop * 7919 + 1, 0x9e3779b1)) >>> 0;

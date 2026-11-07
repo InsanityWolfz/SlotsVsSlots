@@ -1,3 +1,5 @@
+// The demo's save keys, before anything reads a save (a no-op in the full game).
+import './demoStorage';
 import { Game, toggleFullscreen } from './game';
 import { setInputMode } from './ui/input';
 import { DESKTOP } from './build';

@@ -11,6 +11,7 @@ import { artId, drawSprite, hasSprite, type SpriteId } from '../../render/sprite
 import { drawText, fmtNum, textWidth } from '../../render/text';
 import { runSummary } from '../../core/runLog';
 import { VERSION } from '../../build';
+import { demo, FULL_GAME_LINE, openStore } from '../../demo';
 import { CountUp, drawCard, drawChip, drawMarquee, drawPanel, drawTitle, drawWell, KIT, T } from '../kit';
 import { heroSprite } from '../menus';
 import { wrap, stakeDisc, spotlight, bigPortrait, type Btn } from './shared';
@@ -56,7 +57,7 @@ export abstract class OverScreen extends ShopScreen {
     this.rideOffer = ride;
     const menu = this.minorBtn('MENU', W / 2 - 300, 650, 200, 52, () => this.cb.onMenu());
     const log = this.minorBtn('RUN LOG', W / 2 + 300, 650, 220, 52, () => this.openLog(true));
-    this.overMain = [menu, main, log];
+    this.overMain = demo().on ? this.demoButtons(run) : [menu, main, log];
     // COPY RUN (inside the log): the whole run as text, to paste into a chat for balance checks (runLog.ts).
     const copyRun = this.minorBtn('COPY RUN', W / 2 - 150, 652, 240, 50, () => {
       void navigator.clipboard?.writeText(runSummary(run, VERSION)).then(
@@ -74,6 +75,16 @@ export abstract class OverScreen extends ShopScreen {
     this.sounds.stingerMedium();
     void this.ui.wait(BEAT.score).then(() => this.mode === 'over' && this.overScore.set(this.scoreOf(run)));
     void this.ui.wait(BEAT.buttons).then(() => this.mode === 'over' && this.overSkipHit && this.endReveal());
+  }
+
+  /** The demo's row: WISHLIST ON STEAM leads a cleared demo (PLAY AGAIN beside it) and sits beside NEW RUN on a lost
+   * one; MENU goes top left, where the other screens keep it, so the row keeps RUN LOG (the playtest's COPY RUN). */
+  protected demoButtons(run: RunState): Btn[] {
+    const menu = this.minorBtn('MENU', 100, 44, 140, 48, () => this.cb.onMenu());
+    menu.textScale = T.body;
+    const log = this.minorBtn('RUN LOG', W / 2 - 330, 650, 220, 52, () => this.openLog(true));
+    if (run.won) return [menu, log, this.btn('WISHLIST ON STEAM', W / 2, 650, 400, 60, openStore), this.minorBtn('PLAY AGAIN', W / 2 + 330, 650, 220, 52, () => this.cb.onNewRun())];
+    return [menu, log, this.btn('NEW RUN', W / 2, 650, 300, 60, () => this.cb.onNewRun()), this.minorBtn('WISHLIST ON STEAM', W / 2 + 350, 650, 300, 52, openStore)];
   }
 
   /** The reveal's end: everything shown, the buttons pop in, then THE RESULTS card (XP, unlocks) if the run earned any. */
@@ -139,7 +150,9 @@ export abstract class OverScreen extends ShopScreen {
     ctx.fillStyle = 'rgba(6,3,12,0.62)';
     ctx.fillRect(0, 0, W, H);
     // 1. The title lands, in the bulb marquee (the kit's big moment).
-    const title = turbo ? 'YOU BROKE THE BANK!' : busted ? `BUSTED ON LOOP ${run.endless!.loop}` : trueEnding ? 'THE DEALER FOLDS!' : won ? 'THE WHEEL STOPS!' : 'RUN OVER';
+    // The demo ends at THE HOUSE: a win there clears the demo.
+    const cleared = won && demo().on;
+    const title = turbo ? 'YOU BROKE THE BANK!' : busted ? `BUSTED ON LOOP ${run.endless!.loop}` : trueEnding ? 'THE DEALER FOLDS!' : cleared ? 'DEMO CLEARED!' : won ? 'THE WHEEL STOPS!' : 'RUN OVER';
     const good = won || turbo;
     const tw = textWidth(title, T.title) + 96;
     const k1 = out(ease(0, 0.28));
@@ -173,7 +186,7 @@ export abstract class OverScreen extends ShopScreen {
     const k3 = out(ease(B.words, 0.3));
     const tx = px + ps + 44;
     const name = won || turbo ? CABINETS[run.cabinet].hero : (loss?.enemy ?? lastRec?.enemy ?? 'THE HOUSE');
-    const line2 = won || turbo ? (turbo ? 'BEAT THE OWNER' : trueEnding ? 'BEAT THE DEALER. TRUE ENDING' : 'CLEARED THE RUN') : busted ? 'GOT YOU IN ENDLESS' : 'GOT YOU';
+    const line2 = won || turbo ? (turbo ? 'BEAT THE OWNER' : trueEnding ? 'BEAT THE DEALER. TRUE ENDING' : cleared ? 'BEAT THE HOUSE' : 'CLEARED THE RUN') : busted ? 'GOT YOU IN ENDLESS' : 'GOT YOU';
     const where = busted
       ? ((n) => `BEAT THE DEALER, THEN ${n} ENDLESS FIGHT${n === 1 ? '' : 'S'}`)(run.records.filter((r) => r.loop !== undefined).length)
       : won
@@ -241,6 +254,8 @@ export abstract class OverScreen extends ShopScreen {
     });
     // What the run unlocked: a new Slot Machine, a stake.
     const notes = [...(this.unlockedNow.length ? [`NEW SLOT MACHINE: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}`] : []), ...(this.stakeUnlockedNow ? [this.stakeUnlockedNow] : [])];
+    // DEMO CLEARED: what the full game has, under the run's numbers (the demo has no unlock notes to show there).
+    if (cleared && t >= B.wells + 0.4) drawText(ctx, FULL_GAME_LINE, W / 2, 590, T.body, KIT.title);
     if (notes.length && t >= B.wells + 0.4) {
       let nx = W / 2 - notes.slice(0, 2).reduce((a, n) => a + textWidth(n, T.small) + 30, -12) / 2;
       notes.slice(0, 2).forEach((n, i) => {

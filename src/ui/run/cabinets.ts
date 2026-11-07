@@ -8,6 +8,7 @@ import { drawCard, drawChip, drawPanel, drawTitle, drawWell, KIT, T } from '../k
 import { heroSprite } from '../menus';
 import { wrap, stakeDisc, spotlight, bigPortrait, type Btn } from './shared';
 import { BuildPanel } from './build';
+import { demo, IN_FULL_GAME } from '../../demo';
 
 /** CHOOSE YOUR MACHINE: the stage (the selected machine big), the row of machines, the stake chips. */
 const STAGE = { x: 150, y: 88, w: 980, h: 316 };
@@ -189,7 +190,8 @@ export abstract class CabinetScreen extends BuildPanel {
       if (barred) drawText(ctx, `${stakeOf(this.stakeSel).name} LOCKED: WIN AT ${stakeOf(this.stakeFor(id)).name} WITH IT`, hx, y + h - 16, T.small, '#ff8a7a', { align: 'left' });
     } else {
       drawChip(ctx, 'LOCKED', tx + 60, hy + 76, { color: '#ff8a7a', icon: (ix, iy) => drawSprite(ctx, 'icoLock', ix, iy, 2), iconW: 18 });
-      wrap(`${cab.unlock} TO UNLOCK`, Math.floor((x + w - 36 - hx) / (6 * T.body))).slice(0, 2).forEach((l, i) => drawText(ctx, l, hx, hy + 172 + i * 26, T.body, KIT.text, { align: 'left' }));
+      // (The demo's other machines are the full game's, not an unlock.)
+      wrap(demo().on ? IN_FULL_GAME : `${cab.unlock} TO UNLOCK`, Math.floor((x + w - 36 - hx) / (6 * T.body))).slice(0, 2).forEach((l, i) => drawText(ctx, l, hx, hy + 172 + i * 26, T.body, KIT.text, { align: 'left' }));
     }
     ctx.restore();
   }
@@ -250,7 +252,7 @@ export abstract class CabinetScreen extends BuildPanel {
     const show = hov >= 0 ? hov : this.stakeSel;
     const s = STAKES[show];
     const locked = show > max;
-    const rule = locked ? `LOCKED: ${s.rule}` : s.rule;
+    const rule = locked ? `${demo().on ? IN_FULL_GAME : 'LOCKED'}: ${s.rule}` : s.rule;
     const lines = textWidth(rule, T.body) <= W - 80 ? [rule] : wrap(rule, Math.floor((W - 80) / (6 * T.body)));
     lines.slice(0, 2).forEach((l, i) => drawText(ctx, l, W / 2, y + 46 + i * 24, T.body, locked ? KIT.dim : KIT.text));
     // (Under a two-line rule too: BLUE's dropped its ACT 3 line once its rule grew a COUNTERFEITER.)
