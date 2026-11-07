@@ -53,6 +53,8 @@ Done before: theme, roster, name (REEL BRAWL), 24 portraits, words, enemy symbol
 https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV, words: https://claude.ai/artifact/Bo2uKXGYnFXWRJxTy5Ddcu, screens:
 https://claude.ai/artifact/M4aXG9XZV9NvJ1bQK8HeKr).
 
+**The last Max week (2026-11-07), the user's calls:** the demo shows the three locked Slot Machines for real and DEMO CLEARED becomes a sales page (in progress); the Cashier's HEAL and +MAX HP cost more at base and per buy (done, HP_GAME.md "Balance"); AUTO stays the player's (no turning it off at elites); a content batch is previewed before anything is built (https://claude.ai/artifact/QzZ5EoCoNwXtjCLwB5Vnnd: CUT and MOVE draft cards, LEAN MACHINE, PAYBACK, STEADY HANDS, HOT STREAK, STICKY FINGERS, MARKER), then the balance pass.
+
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
 fight changes (OVERTIME and HOLD), frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
 review (their doc "Slots vs. Slots: the road to Steam", https://claude.ai/artifact/A7ADak3Vec6oPZEzQbMVgi). The METER
