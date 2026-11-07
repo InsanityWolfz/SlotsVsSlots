@@ -175,7 +175,12 @@ export type RelicId =
   | 'chainlightning'
   | 'highcard'
   | 'hypeman'
-  | 'openbar';
+  | 'openbar'
+  // The content batch (user, 2026-11-07).
+  | 'lean'
+  | 'steadyhands'
+  | 'pairstreak'
+  | 'sticky';
 
 export interface SideConfig {
   hp: number;

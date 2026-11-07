@@ -2,7 +2,7 @@ import { BLADES, cloneConfig, UNIT, unitsRound, unitsUp, type Enh, type GameConf
 import { CABINETS, hasSpecial, type Cabinet, type Meter } from './cabinets';
 import { charmLevel, charmValue } from './charms';
 import type { CombatEvent, DealCard, HealSource, LineCard } from './events';
-import { NEW_RELIC, POT } from './relics';
+import { CONTENT_1107, NEW_RELIC, POT } from './relics';
 import { Rng } from './rng';
 import { effectiveAbility, STAKE } from './stakes';
 import { ENDLESS, GATEKEEPER, OVERTIME, overtimeMul, overtimeRound, TUNE, wheelChipShare } from './enemies';
@@ -14,7 +14,7 @@ import { DEAD, effectiveSymbol, paylineSymbols, symbolValue, type CellRef } from
 export * from './fightRules';
 import { BUILD_UP, MIDAS, POT_STEAL, PAY, VOLUME, RAIN, highRollerMul, DEALER_RULES, allInRange, PAYING, wheelCharm, JACKPOTABLE, type Combatant, type TurnResult, other, makeCombatant } from './fightRules';
 import { scoreSpin } from './fightScore';
-import { markedCards, tickFakes, defuse, burnFuses, tickStatuses, chargeAbility, sweepBets, cashPot, winPot } from './fightTricks';
+import { markedCards, tickFakes, defuse, burnFuses, tickStatuses, chargeAbility, sweepBets, cashPot, winPot, stickyFingers } from './fightTricks';
 import { secondLine, resolveGroup, midasTouch, dropNotes, turnUp, volumeAfterSpin, payoff, payoffAfter, cellCharms, fillVault, fillMeter, gainEnergy, storm } from './fightPayout';
 import { resetShield, enemyDmgMul, hit, heal, damage, checkDeath } from './fightDamage';
 
@@ -94,6 +94,15 @@ export class Fight {
   insuranceKeep = 0;
   /** HOUSE TAX: chips the enemy's jackpots paid you (banked after the fight). */
   taxChips = 0;
+  /** STICKY FINGERS: chips the cells enemies spoiled paid you this fight (banked on a win, up to its cap). */
+  stickyChips = 0;
+  /** PAIR STREAK: your spins in a row with an attack pair or jackpot (the next one pays more). */
+  pairStreak = 0;
+  /** STEADY HANDS: the reels you held for this spin. */
+  heldNow: boolean[] = [false, false, false];
+  /** LEAN MACHINE: your reels with few enough cells, as built (counted at the fight's start: rocks an enemy adds
+   * mid-fight don't switch it off; they stay for the run, so the next fight counts them). */
+  leanReels: boolean[] = [false, false, false];
   /** CERTIFIED HITMAKER: drops played this fight. */
   drops = 0;
   /** GOLDEN PARACHUTE: used this fight (its chips come off after). */
@@ -181,6 +190,7 @@ export class Fight {
     if (this.meter?.kind === 'volume' && this.cfg.player.volumeStart && !p.armed) p.energy = Math.max(p.energy, Math.min(this.meterCost - UNIT, this.cfg.player.volumeStart * UNIT));
     // HOLD: this fight's HOLDs.
     this.holdsLeft = this.cfg.player.holds ?? 0;
+    if (p.relics.has('lean')) this.leanReels = this.cfg.player.strips.map((st) => Object.values(st).reduce((a, n) => a + (n ?? 0), 0) <= CONTENT_1107.leanCells);
     const e = this.sides.enemy;
     // BLAZE: every blaze cell you own adds to your special.
     const blazeCells = p.reels.reduce((a, reel) => a + reel.cells.filter((c) => c.enh === 'blaze').length, 0);
@@ -335,6 +345,8 @@ export class Fight {
     if (this.over) throw new Error('Fight is over');
     this.resolving = false;
     const res = this.turnBody();
+    // STICKY FINGERS: each cell an enemy spoiled this turn pays a chip, shown as it lands.
+    if (this.sides.player.relics.has('sticky')) res.events = stickyFingers(this, res.events);
     this.resolving = true;
     const first = res.side === 'player' ? this.sides.enemy : this.sides.player;
     for (const c of [first, this.sides[res.side]]) this.checkDeath(c, res.events);
@@ -407,6 +419,7 @@ export class Fight {
     if (side === 'player') {
       this.holdsLeft -= held.filter(Boolean).length;
       this.held = [false, false, false];
+      this.heldNow = held;
     }
     const stops = this.rollStops(me, frozen.map((z, r) => z || held[r]), forcedLine);
     delete this.forced[side];
@@ -528,6 +541,8 @@ export class Fight {
     }
     // HOT STREAK: a jackpot makes your next spin pay x2 (any other spin ends it).
     if (side === 'player') this.hotStreak = me.relics.has('hotstreak') && score.tier === 'triple';
+    // PAIR STREAK: an attack pair or jackpot adds to the streak; a spin without one ends it.
+    if (side === 'player' && me.relics.has('pairstreak')) this.pairStreak = score.groups.some((g) => this.buildUpCashes(g)) ? this.pairStreak + 1 : 0;
     // BUILD-UP: a spin with no attack pair or jackpot adds a stack; an attack pair or jackpot spends them (playtest
     // 2026-11-01: a shield pair spent it on nothing; a spill pair grew it while the plate said "next pair").
     const bu = this.buildUpRule(me);

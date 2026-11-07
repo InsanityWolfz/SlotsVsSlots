@@ -5,6 +5,8 @@
  */
 import type { Enh, RelicId, SymbolId } from '../core/config';
 import { CABINETS } from '../core/cabinets';
+import { CONTENT_1107 } from '../core/relics';
+import { reelCells } from '../core/draft';
 import { DANGER, type Stop } from '../core/enemies';
 import { bjState, bjTotal, hiloState } from '../core/encounters';
 import type { Rng } from '../core/rng';
@@ -87,6 +89,13 @@ export const RELIC_VALUE: Record<RelicId, number> = {
   highcard: 8,
   hypeman: 7.5,
   openbar: 7,
+  // The content batch (2026-11-07), set from the sim (each given free at the start, run win vs none: LEAN MACHINE +0,
+  // STEADY HANDS +4, PAIR STREAK +8, STICKY FINGERS +14; HOT STREAK +6, GOLDEN SPIN +10, UNDERDOG +15 for scale).
+  // LEAN MACHINE is worth more with each reel at 10 cells or fewer (leanValue).
+  lean: 4,
+  steadyhands: 5,
+  pairstreak: 6.5,
+  sticky: 7,
 };
 const BUILD: Partial<Record<RelicId, (run: RunState) => boolean>> = {
   prism: (r) => r.player.strips.some((s) => (s.wild ?? 0) > 0),
@@ -132,6 +141,7 @@ function baseValue(run: RunState, o: DraftOption): number {
   switch (o.kind) {
     case 'relic': {
       if (BUILD[o.relic]?.(run)) return 10;
+      if (o.relic === 'lean') return leanValue(run);
       return RELIC_VALUE[o.relic];
     }
     case 'heal':
@@ -155,10 +165,29 @@ function baseValue(run: RunState, o: DraftOption): number {
     case 'clear':
       return 3 + (p.strips[o.reel].rock ?? 0) * 2;
     case 'add':
+      // (LEAN MACHINE: never fatten a lean reel past its line.)
+      if (p.relics.includes('lean') && reelCells(p.strips[o.reel]) <= CONTENT_1107.leanCells && reelCells(p.strips[o.reel]) + (o.count ?? 1) > CONTENT_1107.leanCells) return 0;
       return plainAttack(run, o.symbol) ? 3 : 4;
-    case 'remove':
-      return o.symbol === 'rock' ? 5 : o.symbol === 'shield' ? 3 : 0;
+    case 'remove': {
+      // CUT: a shield thins the reel toward your attack symbol. With LEAN MACHINE, the cut that takes your smallest
+      // fat reel toward 10 cells is the plan.
+      const shield = o.symbol === 'shield';
+      if (p.relics.includes('lean')) {
+        const n = reelCells(p.strips[o.reel]);
+        const fat = p.strips.map(reelCells).filter((c) => c > CONTENT_1107.leanCells);
+        if (n > CONTENT_1107.leanCells && n === Math.min(...fat)) return (shield ? 7 : 5) + (n === CONTENT_1107.leanCells + 1 ? 1.5 : 0);
+      }
+      return o.symbol === 'rock' ? 5 : shield ? 3 : 0;
+    }
   }
+}
+
+/** LEAN MACHINE: worth more for each reel at 10 cells or fewer (and a little for one a CUT away). */
+function leanValue(run: RunState): number {
+  const cells = run.player.strips.map(reelCells);
+  const lean = cells.filter((c) => c <= CONTENT_1107.leanCells).length;
+  const near = cells.some((c) => c === CONTENT_1107.leanCells + 1) ? 1 : 0;
+  return Math.min(9.5, RELIC_VALUE.lean + 2 * lean + near);
 }
 
 /** Route policy: random picks any route; greedy weighs elites by how healthy you are, then danger, Cashiers, gambles. */

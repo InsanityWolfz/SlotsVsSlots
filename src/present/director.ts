@@ -238,6 +238,12 @@ export class Director {
         const n = Math.abs(e.amount);
         return this.popText(`${e.amount > 0 ? '+' : '-'}${n} CHIP${n > 1 ? 'S' : ''}`, c.x - 80, MACHINE_TOP - 22, 2, e.amount > 0 ? '#ffd23f' : '#ff8a7a', 14, 0.35);
       }
+      case 'stickyChips': {
+        // STICKY FINGERS: banked on a win (the RESULTS line counts them); its relic already popped.
+        const c = this.machineCenter(e.side);
+        this.s.sounds.coin(9);
+        return this.popText(`+${e.amount} CHIP${e.amount > 1 ? 'S' : ''}`, c.x - 80, MACHINE_TOP - 22, 2, '#ffd23f', 14, 0.35);
+      }
       case 'lucreChips': {
         if (e.side === 'player') this.s.huds.player.lucre = e.total;
         // LUCRE: banked on a win (the RESULTS line counts them).

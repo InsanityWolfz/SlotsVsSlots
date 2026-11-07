@@ -41,6 +41,25 @@ export const LEGEND_RELIC = {
 };
 const pct = (x: number) => Math.round(x * 100);
 
+/** The content batch's numbers (user, 2026-11-07: CUT, LEAN MACHINE, STEADY HANDS, PAIR STREAK, STICKY FINGERS). */
+export const CONTENT_1107 = {
+  /** LEAN MACHINE: a reel this many cells or fewer (reels start at 12)... */
+  leanCells: 10,
+  /** ...pays its symbols at this much. */
+  leanMul: 1.5,
+  /** STEADY HANDS: more HOLDs a fight, and a jackpot on a spin with a held reel pays this much. */
+  steadyHolds: 1,
+  steadyMul: 2,
+  /** PAIR STREAK: each attack pair or jackpot in a row pays this much more than the last, up to the cap. */
+  streakStep: 0.5,
+  streakCap: 2.5,
+  /** STICKY FINGERS: chips per cell an enemy spoils, at most this many a fight. */
+  stickyChips: 1,
+  stickyMax: 5,
+  /** CUT: a reel never goes below this many cells. */
+  cutFloor: 6,
+};
+
 /** Passive rule changes. None of them ask for input mid-fight. */
 export const RELICS: Record<RelicId, RelicDef> = {
   mirror: { id: 'mirror', name: 'TWIN REELS', text: 'ANY TWO MATCHING REELS COUNT AS A PAIR', sprite: 'relicMirror' },
@@ -112,6 +131,15 @@ export const RELICS: Record<RelicId, RelicDef> = {
   highcard: { id: 'highcard', name: 'HIGH CARD', text: `JACKPOTS AND JACKPOT METER PAYOFFS PAY X${LEGEND_RELIC.highCardMul}. PAIRS PAY HALF`, sprite: 'relicWildcard', machine: 'joker' },
   hypeman: { id: 'hypeman', name: 'HYPE MAN', text: "+1 VOLUME BEFORE EVERY OTHER SPIN. NOTES PAY HALF WHEN IT ISN'T THE DROP", sprite: 'relicPulse', machine: 'jukebox' },
   openbar: { id: 'openbar', name: 'OPEN BAR', text: 'MAKE IT RAIN COSTS NOTHING. WINS PAY NO CHIPS', sprite: 'relicTipJar', machine: 'midas' },
+  // The content batch (user, 2026-11-07). Their icons are placeholders (sprites of cut relics) until the art step.
+  // TODO icon
+  lean: { id: 'lean', name: 'LEAN MACHINE', text: `A REEL WITH ${CONTENT_1107.leanCells} CELLS OR FEWER: ITS SYMBOLS ARE WORTH X${CONTENT_1107.leanMul}`, sprite: 'relicBelt' },
+  // TODO icon
+  steadyhands: { id: 'steadyhands', name: 'STEADY HANDS', text: `+${CONTENT_1107.steadyHolds} HOLD A FIGHT. A JACKPOT YOU HELD FOR PAYS X${CONTENT_1107.steadyMul}`, sprite: 'relicLockpick' },
+  // TODO icon
+  pairstreak: { id: 'pairstreak', name: 'PAIR STREAK', text: `EACH PAIR IN A ROW PAYS +${pct(CONTENT_1107.streakStep)}% MORE THAN THE LAST, UP TO X${CONTENT_1107.streakCap}. A SPIN WITHOUT A PAIR RESETS IT`, sprite: 'relicSnakeEyes' },
+  // TODO icon
+  sticky: { id: 'sticky', name: 'STICKY FINGERS', text: `EACH CELL AN ENEMY SPOILS ON YOUR REELS: +${CONTENT_1107.stickyChips} CHIP (MAX ${CONTENT_1107.stickyMax} A FIGHT)`, sprite: 'relicPiggy' },
 };
 
 /**
@@ -154,7 +182,7 @@ export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
  * relic you start with (2026-10-14). (Content wave 1's machine relics were kept out too, to leave room for each
  * machine's signature relics; those were cut on 2026-10-15, so wave 1's are the start picks now.)
  */
-export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['regular', 'housetax', 'punchcard', 'starchart']);
+export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['regular', 'housetax', 'punchcard', 'starchart', 'sticky']);
 /** Relics that make no sense on a machine even reworded (never offered there). */
 export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['jukebox'], bash: ['tesla', 'joker'] };
 
@@ -210,8 +238,8 @@ export const NEW_RELIC = {
 export const BIG_LEGENDS: RelicId[] = ['secondline', 'devilsdue', 'longgame', 'quickening', 'glasscannon', 'crusade', 'chainlightning', 'highcard', 'hypeman', 'openbar'];
 /** Relic rarity. */
 export const RELIC_TIER: Record<'common' | 'uncommon' | 'legendary', RelicId[]> = {
-  common: ['fang', 'bandage', 'bash', 'hotstreak', 'housetax', 'regular', 'punchcard', 'dryspell'],
-  uncommon: ['starchart', 'greatsword', 'armoredcar', 'safedeposit', 'prism', 'mirror', 'horseshoe', 'underdog', 'holywater', 'rainmaker', 'tower', 'capacitor', 'livewire', 'encore', 'coup', 'compound', 'meltdown', 'deckdrum', 'turntable', 'mixtape', 'subwoofer', 'goldenspin', 'insurance', 'hitmaker', 'houseofcards', 'parachute'],
+  common: ['fang', 'bandage', 'bash', 'hotstreak', 'housetax', 'regular', 'punchcard', 'dryspell', 'sticky'],
+  uncommon: ['starchart', 'greatsword', 'armoredcar', 'safedeposit', 'prism', 'mirror', 'horseshoe', 'underdog', 'holywater', 'rainmaker', 'tower', 'capacitor', 'livewire', 'encore', 'coup', 'compound', 'meltdown', 'deckdrum', 'turntable', 'mixtape', 'subwoofer', 'goldenspin', 'insurance', 'hitmaker', 'houseofcards', 'parachute', 'lean', 'steadyhands', 'pairstreak'],
   legendary: ['ticket', 'bell', 'phoenix', 'overcharge', 'key', 'sandglass', 'pitboss', ...BIG_LEGENDS],
 };
 

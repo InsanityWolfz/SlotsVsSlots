@@ -129,7 +129,8 @@ describe('relic pools, the starting pick and lucky', () => {
   });
 
   it('the draft only edits reels; the Cashier sells levels, relics, max HP, a heal and THE BIG ONE', () => {
-    const edits = new Set(['add', 'swap', 'clear', 'gild']);
+    // (CUT, 2026-11-07, is the 'remove' kind.)
+    const edits = new Set(['add', 'swap', 'clear', 'gild', 'remove']);
     for (let seed = 0; seed < 40; seed++) {
       const run = createRun(base, seed, (['knight', 'tesla', 'joker', 'jukebox', 'midas'] as const)[seed % 5]);
       run.pendingStart = null;
@@ -193,9 +194,9 @@ describe('playtest bugs (2026-09-29)', () => {
 describe('the relic cut (2026-10-15)', () => {
   const CUT = ['clover', 'battery', 'chalice', 'hone', 'wildcard', 'loadedreel', 'metronome', 'firstblood', 'snakeeyes', 'bracelet', 'drum', 'chainmail', 'headsman', 'faraday', 'static', 'coil', 'capbells', 'downpour', 'slushfund', 'tipjar', 'piggy', 'belt', 'pulse', 'trophy'];
 
-  it('the cut relics are gone, and ~50 are left', () => {
+  it('the cut relics are gone, and ~50 are left (+4 from the content batch, user 2026-11-07)', () => {
     for (const r of CUT) expect(r in RELICS).toBe(false);
-    expect(Object.keys(RELICS).length).toBeLessThanOrEqual(52);
+    expect(Object.keys(RELICS).length).toBeLessThanOrEqual(55);
   });
 
   it('every machine still starts with a pick of 3, two of them its own relics', () => {

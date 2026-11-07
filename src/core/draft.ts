@@ -1,6 +1,6 @@
 /** The draft: charms on cells, the strip math, the reward cards and their labels (split from run.ts, 2026-11-05). */
 import { BLADES, symLabel, emptyLevels, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
-import { BELL_MULT, KEY_MULT, relicText, RELICS } from './relics';
+import { BELL_MULT, CONTENT_1107, KEY_MULT, relicText, RELICS } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
 import { CHARM_SYMBOLS, charmLevel, charmRuleText, charmShortText, charmTag, charmValue, playerSymValue, symLevel, symValue, charmName } from './charms';
 import { Rng } from './rng';
@@ -157,6 +157,7 @@ function similarKey(o: DraftOption): string {
   if (o.kind === 'gild') return `gild:${o.enh}:${o.symbol}`;
   if (o.kind === 'swap') return `swap:${o.from}:${o.to}`;
   if (o.kind === 'add') return `add:${o.symbol}`;
+  if (o.kind === 'remove') return `cut:${o.symbol}`;
   return keyOf(o);
 }
 
@@ -184,6 +185,21 @@ export function levelOptions(run: RunState): DraftOption[] {
   const p = run.player;
   const owned = new Set(p.strips.flatMap((s) => Object.keys(s).filter((k) => (s[k as SymbolId] ?? 0) > 0)));
   return CABINETS[run.cabinet].symbols.filter((symbol) => owned.has(symbol)).map((symbol): DraftOption => ({ kind: 'symLevel', symbol }));
+}
+
+/** A reel's cells. */
+export const reelCells = (s: StripCounts) => Object.values(s).reduce((a, n) => a + (n ?? 0), 0);
+
+/** Every CUT card you could be offered: 1 of your machine's symbols off a reel, a plain cell only (never a charmed
+ * one), and never taking a reel under CONTENT_1107.cutFloor cells (user, 2026-11-07). */
+export function cutOptions(run: RunState): DraftOption[] {
+  const p = run.player;
+  const out: DraftOption[] = [];
+  p.strips.forEach((s, reel) => {
+    if (reelCells(s) <= CONTENT_1107.cutFloor) return;
+    for (const symbol of CABINETS[run.cabinet].symbols) if (plainCells(p, reel, symbol) > 0) out.push({ kind: 'remove', symbol, reel });
+  });
+  return out;
 }
 
 /** Levels a symbol card gives: 1, or 2 with STAR CHART. */
@@ -236,6 +252,11 @@ export function draftOffers(run: RunState): DraftOption[] {
     return { kind: 'clear', symbol: 'rock', reel: rocky[0].reel };
   };
   const addCard = (): DraftOption => ({ kind: 'add', symbol: sig, reel: rng.int(3), count: RUN.addCount });
+  /** CUT: 1 of your symbols off a reel (plain cells, never under the floor). */
+  const cutCard = (): DraftOption | null => {
+    const options = cutOptions(run);
+    return options.length ? rng.pick(options) : null;
+  };
   /** CHARM: N charms on plain cells of one symbol on one reel. */
   const gildCard = (): DraftOption | null => {
     const n = RUN.charmCells;
@@ -293,7 +314,8 @@ export function draftOffers(run: RunState): DraftOption[] {
   // Cashier did the same job). Levels, relics and heals are the Cashier's.
   push(gildCard() ?? swapCard());
   const r = rng.next();
-  push((r < 0.35 ? wildCard() : r < 0.7 ? swapCard() : null) ?? clearCard() ?? gildCard() ?? addCard());
+  // (CUT, user 2026-11-07: the second card's last 30%, after CLEAR ROCKS: about as often as a WILD card.)
+  push((r < 0.35 ? wildCard() : r < 0.7 ? swapCard() : null) ?? clearCard() ?? cutCard() ?? gildCard() ?? addCard());
   push((rng.next() < 0.6 ? anySwapCard() : null) ?? gildCard() ?? addCard());
   let guard = 0;
   while (out.length < RUN.draftSize && guard++ < 30) push(guard % 3 === 0 ? addCard() : guard % 3 === 1 ? swapCard() : anySwapCard());
@@ -338,11 +360,10 @@ export function applyOption(run: RunState, o: DraftOption, asPick = true): void 
     case 'charmLevel':
       // (Charms have no levels now: an old save's charm level card does nothing.)
       break;
-    case 'remove': {
-      const n = p.strips[o.reel][o.symbol] ?? 0;
-      if (n > 0) p.strips[o.reel][o.symbol] = n - 1;
+    case 'remove':
+      // CUT: a plain cell only, and never under the floor (a stale card does nothing).
+      if (plainCells(p, o.reel, o.symbol) > 0 && reelCells(p.strips[o.reel]) > CONTENT_1107.cutFloor) p.strips[o.reel][o.symbol] = (p.strips[o.reel][o.symbol] ?? 0) - 1;
       break;
-    }
     case 'heal':
       p.hp = Math.min(p.maxHp, p.hp + o.amount);
       break;
@@ -386,6 +407,7 @@ export const charmRule = charmRuleText;
 export function takenLabel(o: DraftOption): string {
   if (o.kind === 'charmLevel') return `${charmName(o.enh)} CHARM +1 LEVEL`;
   if (o.kind === 'symLevel') return `${symLabel(o.symbol)} +1 LEVEL`;
+  if (o.kind === 'remove') return `CUT 1 ${symLabel(o.symbol)} (REEL ${o.reel + 1})`;
   return describeOption(o).title;
 }
 
@@ -430,7 +452,7 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'charmLevel':
       return { title: `${charmName(o.enh)} CHARM`, text: 'CHARMS HAVE NO LEVELS NOW' };
     case 'remove':
-      return { title: `-1 ${symLabel(o.symbol)}`, text: `REMOVE A ${symLabel(o.symbol)} FROM REEL ${o.reel + 1}` };
+      return { title: 'CUT', text: `REMOVE 1 ${symLabel(o.symbol)} FROM REEL ${o.reel + 1}` };
   }
 }
 

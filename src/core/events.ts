@@ -85,6 +85,8 @@ export type CombatEvent =
   | { type: 'drop'; side: SideId; cells: { reel: number; row: number; v?: number; wild?: true }[]; amount: number }
   /** MIDAS: gold bars paid chips mid-fight (they're yours if you win). */
   | { type: 'midasChips'; side: SideId; amount: number; total: number }
+  /** STICKY FINGERS: cells an enemy spoiled paid you chips (banked on a win); `total` is this fight's so far. */
+  | { type: 'stickyChips'; side: SideId; amount: number; total: number }
   /** LUCRE: chips its group paid (banked on a win). */
   | { type: 'lucreChips'; side: SideId; reels: number[]; amount: number; total: number }
   /** CASH CASSIDY: MAKE IT RAIN! (a chip jackpot hits for the chips held, then costs `cost` chips). */

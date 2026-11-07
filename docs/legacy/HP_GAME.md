@@ -131,8 +131,8 @@ was tuned for feel from two fresh-eyes playtests.
 - **THE REPO MAN** is a regular in acts 1-2 (he takes a Charm for his fight; it comes back after).
 - **After every win:** no heal (user, 2026-10-12: HP carries from fight to fight, so survivability and VAMP matter;
   the act's boss heals you fully). Then a **draft** (pick 1 of 3 cards). **The draft only edits your reels** (user,
-  2026-10-15, cut list #8: the draft and the Cashier did the same job): add, swap or clear symbols, WILDS, Charms. No
-  relics, levels or heals in a draft.
+  2026-10-15, cut list #8: the draft and the Cashier did the same job): add, swap, cut or clear symbols, WILDS, Charms.
+  No relics, levels or heals in a draft. (CUT, 2026-11-07: see THE CONTENT BATCH below.)
 - **The Cashier** is a stop: on some paths, and always right before the boss (plus a visit when a new act opens). It
   is what you save chips for. The counter: two symbol LEVELS (10 chips + 4 a level gained this run; your attack symbol
   is one of the two most visits), MAX HP +40 (5 chips + 4 a MAX HP bought this run) and the HEAL (up to 120 HP, 6 chips + 3 a heal bought this run, once a
@@ -292,10 +292,39 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   KNIGHT 69 -> 64 / 34 -> 32, TESLA 58 -> 54 / 40 -> 36, JUKEBOX 68 -> 62 / 35 -> 30, JOKER 58 -> 56 / 44 -> 37,
   BANKROLL 60 -> 58 / 44 -> 41. Alone each costs 0-3 (noise); together they thin the stronger relics out of the offers.
   It moved WHITE onto its 60 target; GREEN JUKEBOX (30) is now the low one.
-- **Relics:** 65, in common, uncommon and legendary tiers; some are machine identity relics. `src/core/relics.ts`.
+- **Relics:** 55 (9 common, 29 uncommon, 17 legendary); some are machine identity relics. `src/core/relics.ts`.
   To list exactly what players read: `npx tsx tools/content/audit.ts`. Every machine should have a shield build:
   BANKROLL's is ARMORED CAR (shield counts as chips for HIGH ROLLER), SAFE DEPOSIT (chips also hit for the shield
   gained that spin) and SHIELD BASH (KNIGHT's, open to BANKROLL too).
+- **THE CONTENT BATCH (user, 2026-11-07; MOVE, PAYBACK and MARKER dropped):** numbers in `CONTENT_1107`
+  (`src/core/relics.ts`); icons are placeholders (sprites of cut relics) until the art step; tests in
+  `tests/audit_content.test.ts`.
+  - **CUT** (draft card, the `remove` kind): REMOVE 1 [SYMBOL] FROM REEL [N]. Any of your machine's own symbols, any
+    reel; a plain cell only (never a charmed one), and never takes a reel under 6 cells (no CUT offered there). Dealt
+    as the draft's second card's last 30%, after CLEAR ROCKS: in 30% of a fresh run's drafts (a WILD card 34%).
+  - **LEAN MACHINE** (uncommon, always offered: it's the plan you draft toward): A REEL WITH 10 CELLS OR FEWER: ITS
+    SYMBOLS ARE WORTH X1.5. A true multiplier on each of your paying groups, for its share of cells on lean reels (a
+    pair across a lean reel and a full one: X1.25 LEAN; MAKE IT RAIN isn't symbols). The reel is counted as built, at
+    the fight's start: rocks an enemy adds mid-fight don't switch it off (they stay for the run, so the next fight
+    counts them).
+  - **STEADY HANDS** (uncommon): +1 HOLD A FIGHT (3). A JACKPOT YOU HELD FOR PAYS X2: a jackpot (3 reels) on a spin
+    with a held reel (X2 STEADY HANDS); not JOKER's one-cell meter jackpots.
+  - **PAIR STREAK** (uncommon; HOT STREAK is a different relic): EACH PAIR IN A ROW PAYS +50% MORE THAN THE LAST, UP TO
+    X2.5. A SPIN WITHOUT A PAIR RESETS IT. A pair or jackpot of your attack symbol (BUILD-UP's test) counts; the first
+    pays as usual, then X1.5 / X2 / X2.5 PAIR STREAK; per fight. Its feed row counts up as it fires.
+  - **STICKY FINGERS** (common; never a starting pick, like HOUSE TAX): EACH CELL AN ENEMY SPOILS ON YOUR REELS: +1
+    CHIP (MAX 5 A FIGHT). Counts each cell SPILLED, STOLEN, ROCKED, IOU'D (bombs), MARKED, FAKED or CONFISCATED (THE
+    REPO MAN's too), and each reel FROZEN, JAMMED or JINXED; not the RAKE, THE DEALER's BUST, THE WHEEL's bets or chips
+    eaten. A +N CHIPS pop as each lands; banked on a win (on the RESULTS line).
+  - **Sim** (400 runs a machine, WHITE / RED / GREEN, before -> after): KNIGHT 64 -> 62 / 41 -> 34 / 41 -> 31, TESLA
+    61 -> 61 / 43 -> 36 / 46 -> 36, JUKEBOX 55 -> 51 / 39 -> 33 / 42 -> 37, JOKER 48 -> 51 / 40 -> 34 / 34 -> 34,
+    BANKROLL 53 -> 51 / 30 -> 30 / 33 -> 28. Banning the four puts every number back (CUT alone moves nothing): like the
+    2026-10-14 wave, they thin the stronger relics out of the offers, and the long runs (act 3 at RED and GREEN) feel it.
+    Each given free at the start (6000 runs, run win 40% without): LEAN MACHINE +1 (it switches on 0.02 times a fight:
+    a reel needs two CUTs), STEADY HANDS +5, PAIR STREAK +8, STICKY FINGERS +15 (1.8 chips a fight; HOUSE TAX 2.9);
+    for scale HOT STREAK +7, GOLDEN SPIN +10, UNDERDOG +15, HOUSE TAX +17. The bot takes them 3% (LEAN MACHINE) / 53% /
+    68% / 71% of the times they're offered (the average relic 47%), and CUT 1% (a shield cut is a quarter of a swap).
+    Open: LEAN MACHINE at 11 cells (one CUT) switches on 0.66 times a fight, +3 free (the user's call).
 
 ## HIGH STAKES (`src/core/stakes.ts`)
 Each machine has its own ladder. Winning a run at your best stake unlocks the next one.

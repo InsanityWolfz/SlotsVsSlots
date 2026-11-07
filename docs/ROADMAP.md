@@ -53,7 +53,7 @@ Done before: theme, roster, name (REEL BRAWL), 24 portraits, words, enemy symbol
 https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV, words: https://claude.ai/artifact/Bo2uKXGYnFXWRJxTy5Ddcu, screens:
 https://claude.ai/artifact/M4aXG9XZV9NvJ1bQK8HeKr).
 
-**The last Max week (2026-11-07), the user's calls:** the demo shows the three locked Slot Machines for real and DEMO CLEARED becomes a sales page (in progress); the Cashier's HEAL and +MAX HP cost more at base and per buy (done, HP_GAME.md "Balance"); AUTO stays the player's (no turning it off at elites); a content batch is previewed before anything is built (https://claude.ai/artifact/QzZ5EoCoNwXtjCLwB5Vnnd: CUT and MOVE draft cards, LEAN MACHINE, PAYBACK, STEADY HANDS, HOT STREAK, STICKY FINGERS, MARKER), then the balance pass.
+**The last Max week (2026-11-07), the user's calls:** the demo shows the three locked Slot Machines for real and DEMO CLEARED becomes a sales page (in progress); the Cashier's HEAL and +MAX HP cost more at base and per buy (done, HP_GAME.md "Balance"); AUTO stays the player's (no turning it off at elites); a content batch is previewed before anything is built (https://claude.ai/artifact/QzZ5EoCoNwXtjCLwB5Vnnd: CUT and MOVE draft cards, LEAN MACHINE, PAYBACK, STEADY HANDS, HOT STREAK, STICKY FINGERS, MARKER), then the balance pass. Content batch built (2026-11-07; rules and sim in HP_GAME.md "Charms and relics"): the CUT draft card and four relics, LEAN MACHINE, STEADY HANDS, PAIR STREAK and STICKY FINGERS (MOVE, PAYBACK and MARKER dropped by the user).
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
 fight changes (OVERTIME and HOLD), frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
@@ -228,7 +228,8 @@ The game's one festival: the demo up, keys to streamers, the page polished. It m
 ## v1.0 scope (signed by the user, 2026-10-29)
 - **Ships:** the 5 Slot Machines (BANKROLL at launch), the 3 acts with THE HOUSE, THE WHEEL and THE DEALER, THE OWNER,
   elites, the Cashier, drafts that only edit your reels, the stake ladder, ENDLESS with TONIGHT'S RULE, OVERTIME and
-  HOLD, the rooms, the payout ladder and the climb, the 50 relics, today's Charms, 3 encounters (TWENTY-ONE,
+  HOLD, the rooms, the payout ladder and the climb, the 55 relics (51 at sign-off; the user added LEAN MACHINE, STEADY
+  HANDS, PAIR STREAK and STICKY FINGERS on 2026-11-07, with the CUT draft card), today's Charms, 3 encounters (TWENTY-ONE,
   the CLAW, HIGHER OR LOWER).
 - **After launch:** THE DAILY RUN, online leaderboards, SCRATCH-OFF, RAT RACE, new relics and Charms, and METER
   COMBAT's best idea (BLOCK against a certain telegraph) as a change inside this game.

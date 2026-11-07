@@ -241,8 +241,10 @@ export abstract class DraftScreen extends NextScreen {
       drawSprite(ctx, o.symbol as SpriteId, x, y, k);
       drawSprite(ctx, 'plusBadge', x + 32 * d, y + 24 * d, 3 * d);
     } else if (o.kind === 'remove') {
-      drawSprite(ctx, o.symbol as SpriteId, x, y, k);
-      drawSprite(ctx, 'minusBadge', x + 32 * d, y + 24 * d, 3 * d);
+      // CUT (2026-11-07): CLEAR ROCKS' broom on one of your symbols, -1. A placeholder: a new icon comes with the art step.
+      drawSprite(ctx, 'cardClear', x - 22 * d, y, 3 * d);
+      drawSprite(ctx, o.symbol as SpriteId, x + 26 * d, y + 8 * d, 2 * d);
+      drawText(ctx, '-1', x + 54 * d, y - 10 * d, T.head * d, '#ff9ab0');
     } else if (o.kind === 'gild') {
       drawSprite(ctx, o.symbol as SpriteId, x, y, k);
       drawSprite(ctx, ENH_SPRITE[o.enh], x, y, k);

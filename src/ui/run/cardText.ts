@@ -63,6 +63,10 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   highcard: 'JACKPOTS X1.5. PAIRS PAY HALF',
   hypeman: '+1 VOLUME EVERY 2ND SPIN. NOTES PAY HALF',
   openbar: 'MAKE IT RAIN IS FREE. WINS PAY NO CHIPS',
+  lean: 'REELS OF 10 CELLS OR FEWER: SYMBOLS X1.5',
+  steadyhands: '+1 HOLD A FIGHT. HELD JACKPOTS PAY X2',
+  pairstreak: 'PAIRS IN A ROW: +50% EACH, UP TO X2.5',
+  sticky: 'EACH CELL SPOILED: +1 CHIP (MAX 5 A FIGHT)',
 };
 
 /** A card face's short text for a relic (the full rule if it already fits). */
