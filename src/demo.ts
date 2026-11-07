@@ -11,9 +11,6 @@ export const DEMO: boolean = !!(import.meta as { env?: Record<string, string | u
 /** The full game's store page (the WISHLIST button). Set the real app id once Steamworks gives one. */
 export const STORE_URL = 'https://store.steampowered.com/app/APPID';
 
-/** What the full game has, said plainly (DEMO CLEARED). */
-export const FULL_GAME_LINE = 'THE FULL GAME: 5 SLOT MACHINES, 3 ACTS AND THE OWNER, 6 STAKES, ENDLESS';
-
 /** Locked content in the demo says this instead of its unlock condition. */
 export const IN_FULL_GAME = 'IN THE FULL GAME';
 

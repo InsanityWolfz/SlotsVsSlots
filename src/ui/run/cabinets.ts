@@ -86,8 +86,18 @@ export abstract class CabinetScreen extends BuildPanel {
     return this.cabinetUnlocked.has(id) && this.stakeFor(id) >= this.stakeSel;
   }
 
+  /** The demo shows the full game's other machines for real (dimmed), not as "???": they can't be played here. */
+  protected cabPreview(i = this.cabSel): boolean {
+    return demo().on && !this.cabinetUnlocked.has(CABINET_ORDER[i]);
+  }
+
   protected syncPlay(): void {
-    if (this.playBtn) this.playBtn.enabled = this.cabPlayable();
+    if (!this.playBtn) return;
+    this.playBtn.enabled = this.cabPlayable();
+    // (In the demo the full game's machines say so on a quiet button, not a greyed PLAY.)
+    const preview = this.cabPreview();
+    this.playBtn.label = preview ? IN_FULL_GAME : 'PLAY';
+    this.playBtn.quietStyle = preview;
   }
 
   protected selectCabinet(i: number, dir: number): void {
@@ -154,35 +164,43 @@ export abstract class CabinetScreen extends BuildPanel {
     const id = CABINET_ORDER[this.cabSel];
     const cab = CABINETS[id];
     const open = this.cabinetUnlocked.has(id);
+    // The demo: the full game's machines shown for real, dimmed (the full game keeps its silhouettes).
+    const preview = this.cabPreview();
+    const shown = open || preview;
     const barred = open && this.stakeFor(id) < this.stakeSel;
     drawPanel(ctx, x, y, w, h, { frame: open ? KIT.frame : KIT.frameDim });
     // The stage: a darker floor with a spotlight pool under the machine.
     const fx = x + 170;
-    spotlight(ctx, fx, y + h - 58, 260, open ? '#ffe08a' : '#8a7aa8', open ? 0.12 : 0.06);
+    spotlight(ctx, fx, y + h - 58, 260, shown ? '#ffe08a' : '#8a7aa8', open ? 0.12 : 0.06);
     // The machine slides in from the side it was paged from (a fade only with MOTION: REDUCED).
     const k = this.cabIn;
     const slide = this.reduceMotion ? 0 : Math.round((1 - k) * 40 * this.cabDir);
     const bob = open && !this.reduceMotion && this.picked < 0 ? Math.round(Math.sin(time * 2) * 2) : 0;
     ctx.save();
     ctx.globalAlpha *= k;
-    const sprite = (open ? cab.sprite : 'cabinetLocked') as SpriteId;
-    drawSprite(ctx, sprite, fx + slide, y + h / 2 - 8 + bob, 4, open ? { dim: barred ? 0.55 : 0 } : { variant: 'black', alpha: 0.9 });
+    const sprite = (shown ? cab.sprite : 'cabinetLocked') as SpriteId;
+    drawSprite(ctx, sprite, fx + slide, y + h / 2 - 8 + bob, 4, open ? { dim: barred ? 0.55 : 0 } : preview ? { dim: 0.45 } : { variant: 'black', alpha: 0.9 });
     // The hero you play as on this machine, in a well (a silhouette while it's locked).
     const hx = x + 360;
     const hy = y + 22;
-    drawWell(ctx, hx, hy, 140, 140, open ? '#2a2040' : '#140e1e');
-    spotlight(ctx, hx + 70, hy + 118, 120, open ? '#c9a0ff' : '#4a4058', 0.14, [hx + 2, hy + 2, 136, 136]);
-    bigPortrait(ctx, heroSprite(id) as SpriteId, hx + 70 + slide / 2, hy + 72, 4, open ? {} : { variant: 'black', alpha: 0.85 });
+    drawWell(ctx, hx, hy, 140, 140, shown ? '#2a2040' : '#140e1e');
+    spotlight(ctx, hx + 70, hy + 118, 120, shown ? '#c9a0ff' : '#4a4058', preview ? 0.08 : 0.14, [hx + 2, hy + 2, 136, 136]);
+    bigPortrait(ctx, heroSprite(id) as SpriteId, hx + 70 + slide / 2, hy + 72, 4, open ? {} : preview ? { dim: 0.45 } : { variant: 'black', alpha: 0.85 });
     // Name, who you play as, the blurb.
     const tx = hx + 164;
-    drawText(ctx, open ? cab.name : '???', tx, hy + 30, T.title, open ? KIT.title : KIT.dim, { align: 'left' });
-    if (open) {
+    drawText(ctx, shown ? cab.name : '???', tx, hy + 30, T.title, shown ? KIT.title : KIT.dim, { align: 'left' });
+    if (shown) {
       drawText(ctx, `PLAY AS ${cab.hero}`, tx, hy + 74, T.body, '#c9a0ff', { align: 'left' });
       drawText(ctx, cab.blurb, tx, hy + 102, T.small, KIT.dim, { align: 'left' });
       // The pitch: three lines at body size.
       // (Three lines close up a little: JUKEBOX's third sat 3px over BEST STAKE.)
       const pitch = wrap(cab.rule, Math.floor((x + w - 36 - hx) / (6 * T.body))).slice(0, 3);
       pitch.forEach((l, i) => drawText(ctx, l, hx, hy + 170 + i * (pitch.length > 2 ? 23 : 26), T.body, KIT.text, { align: 'left' }));
+      // (The demo's preview has no stake: its button says IN THE FULL GAME.)
+      if (preview) {
+        ctx.restore();
+        return;
+      }
       // Its best stake so far, as its chip.
       const best = stakeOf(this.stakeFor(id));
       drawText(ctx, 'BEST STAKE', hx, y + h - 46, T.small, KIT.dim, { align: 'left' });
@@ -190,18 +208,19 @@ export abstract class CabinetScreen extends BuildPanel {
       if (barred) drawText(ctx, `${stakeOf(this.stakeSel).name} LOCKED: WIN AT ${stakeOf(this.stakeFor(id)).name} WITH IT`, hx, y + h - 16, T.small, '#ff8a7a', { align: 'left' });
     } else {
       drawChip(ctx, 'LOCKED', tx + 60, hy + 76, { color: '#ff8a7a', icon: (ix, iy) => drawSprite(ctx, 'icoLock', ix, iy, 2), iconW: 18 });
-      // (The demo's other machines are the full game's, not an unlock.)
-      wrap(demo().on ? IN_FULL_GAME : `${cab.unlock} TO UNLOCK`, Math.floor((x + w - 36 - hx) / (6 * T.body))).slice(0, 2).forEach((l, i) => drawText(ctx, l, hx, hy + 172 + i * 26, T.body, KIT.text, { align: 'left' }));
+      wrap(`${cab.unlock} TO UNLOCK`, Math.floor((x + w - 36 - hx) / (6 * T.body))).slice(0, 2).forEach((l, i) => drawText(ctx, l, hx, hy + 172 + i * 26, T.body, KIT.text, { align: 'left' }));
     }
     ctx.restore();
   }
 
-  /** The row of machines: the one on the stage is lifted and lit; locked ones are silhouettes. */
+  /** The row of machines: the one on the stage is lifted and lit; locked ones are silhouettes (in the demo, the full
+   * game's machines dimmed, under one IN THE FULL GAME tag). */
   protected drawThumbs(ctx: CanvasRenderingContext2D, _time: number): void {
     CABINET_ORDER.forEach((id, i) => {
       const h = this.cards[i];
       if (!h || h.scale <= 0.01) return;
       const open = this.cabinetUnlocked.has(id);
+      const shown = open || this.cabPreview(i);
       const sel = i === this.cabSel;
       const lift = sel ? 1 : h.hover ? 0.6 : 0;
       ctx.save();
@@ -209,11 +228,39 @@ export abstract class CabinetScreen extends BuildPanel {
       ctx.scale(h.scale, h.scale);
       ctx.translate(-h.x, -h.y);
       const yy = open || sel ? drawCard(ctx, h.x - h.w / 2, h.y - h.h / 2, h.w, h.h, { lift }) : (drawPanel(ctx, h.x - h.w / 2, h.y - h.h / 2 - Math.round(6 * lift), h.w, h.h, { frame: KIT.frameDim, fill: '#140e1e' }), h.y - h.h / 2 - Math.round(6 * lift));
-      const sprite = (open ? CABINETS[id].sprite : 'cabinetLocked') as SpriteId;
-      drawSprite(ctx, sprite, h.x, yy + h.h / 2, 1.125, open ? { dim: this.cabPlayable(i) ? 0 : 0.5 } : { variant: 'black', alpha: 0.9 });
-      drawText(ctx, open ? CABINETS[id].name : '???', h.x, h.y + h.h / 2 + 18, T.small, sel ? KIT.title : KIT.dim);
+      const sprite = (shown ? CABINETS[id].sprite : 'cabinetLocked') as SpriteId;
+      drawSprite(ctx, sprite, h.x, yy + h.h / 2, 1.125, open ? { dim: this.cabPlayable(i) ? 0 : 0.5 } : shown ? { dim: 0.5 } : { variant: 'black', alpha: 0.9 });
+      drawText(ctx, shown ? CABINETS[id].name : '???', h.x, h.y + h.h / 2 + 18, T.small, sel ? KIT.title : KIT.dim);
       ctx.restore();
     });
+    this.drawPreviewTag(ctx);
+  }
+
+  /** The demo: one IN THE FULL GAME tag under the machines it doesn't have, a bracket spanning them (one tag per
+   * machine didn't fit: it's wider than a thumb). */
+  protected drawPreviewTag(ctx: CanvasRenderingContext2D): void {
+    const row = CABINET_ORDER.map((_, i) => i).filter((i) => this.cabPreview(i) && this.cards[i]);
+    if (!row.length) return;
+    const first = this.cards[row[0]];
+    const last = this.cards[row[row.length - 1]];
+    const k = Math.min(...row.map((i) => this.cards[i].scale));
+    if (k <= 0.01) return;
+    const x0 = Math.round(first.x - first.w / 2);
+    const x1 = Math.round(last.x + last.w / 2);
+    const y = Math.round(first.y + first.h / 2 + 40);
+    ctx.save();
+    ctx.globalAlpha *= Math.min(1, k);
+    // The bracket: a rule with its ends turned up, in the dim frame colour, behind the tag.
+    ctx.fillStyle = COLORS.outline;
+    ctx.fillRect(x0 - 1, y - 1, x1 - x0 + 2, 4);
+    ctx.fillRect(x0 - 1, y - 9, 4, 10);
+    ctx.fillRect(x1 - 3, y - 9, 4, 10);
+    ctx.fillStyle = KIT.frameDim;
+    ctx.fillRect(x0, y, x1 - x0, 2);
+    ctx.fillRect(x0, y - 8, 2, 8);
+    ctx.fillRect(x1 - 2, y - 8, 2, 8);
+    drawChip(ctx, IN_FULL_GAME, (x0 + x1) / 2, y + 1, { scale: T.small, color: KIT.title, frame: KIT.frameDim, fill: KIT.fill });
+    ctx.restore();
   }
 
   /** HIGH STAKES: a row of chips (name and colour; locked ones padlocked), and the hovered or chosen stake's rule. */

@@ -11,7 +11,8 @@ import { artId, drawSprite, hasSprite, type SpriteId } from '../../render/sprite
 import { drawText, fmtNum, textWidth } from '../../render/text';
 import { runSummary } from '../../core/runLog';
 import { VERSION } from '../../build';
-import { demo, FULL_GAME_LINE, openStore } from '../../demo';
+import { demo, openStore } from '../../demo';
+import { drawDemoCleared } from './demoCleared';
 import { CountUp, drawCard, drawChip, drawMarquee, drawPanel, drawTitle, drawWell, KIT, T } from '../kit';
 import { heroSprite } from '../menus';
 import { wrap, stakeDisc, spotlight, bigPortrait, type Btn } from './shared';
@@ -164,6 +165,15 @@ export abstract class OverScreen extends ShopScreen {
     drawMarquee(ctx, -tw / 2, -36, tw, 72, this.reduceMotion ? 0 : time, { frame: good ? '#c8901a' : '#a8202a', fill: good ? '#2a1a0a' : '#2a0a14' });
     drawTitle(ctx, title, 0, 1, good ? '#ffd23f' : '#ff6a5a');
     ctx.restore();
+    // DEMO CLEARED: the result, compact, then what the full game has (demoCleared.ts).
+    if (cleared) {
+      this.overScore.update(this.frameDtOver());
+      if (t > B.score + 0.05 && this.overScore.done && this.scoreLanded < 0) this.scoreLanded = performance.now() / 1000;
+      const since = this.scoreLanded < 0 ? 9 : performance.now() / 1000 - this.scoreLanded;
+      drawDemoCleared(ctx, { run, t, time, reduceMotion: this.reduceMotion, score: this.overScore.shown, punch: since < 0.25 && !this.reduceMotion ? 1 + 0.25 * (1 - since / 0.25) : 1 });
+      this.drawOverFoot(ctx, t, time);
+      return;
+    }
     // 2. Who got you (or who won): the portrait big, sliding in.
     const k2 = out(ease(B.portrait, 0.3));
     const slide = this.reduceMotion ? 0 : Math.round((1 - k2) * -80);
@@ -254,8 +264,6 @@ export abstract class OverScreen extends ShopScreen {
     });
     // What the run unlocked: a new Slot Machine, a stake.
     const notes = [...(this.unlockedNow.length ? [`NEW SLOT MACHINE: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}`] : []), ...(this.stakeUnlockedNow ? [this.stakeUnlockedNow] : [])];
-    // DEMO CLEARED: what the full game has, under the run's numbers (the demo has no unlock notes to show there).
-    if (cleared && t >= B.wells + 0.4) drawText(ctx, FULL_GAME_LINE, W / 2, 590, T.body, KIT.title);
     if (notes.length && t >= B.wells + 0.4) {
       let nx = W / 2 - notes.slice(0, 2).reduce((a, n) => a + textWidth(n, T.small) + 30, -12) / 2;
       notes.slice(0, 2).forEach((n, i) => {
@@ -264,6 +272,11 @@ export abstract class OverScreen extends ShopScreen {
         nx += w + 12;
       });
     }
+    this.drawOverFoot(ctx, t, time);
+  }
+
+  /** The skip prompt while the reveal plays, the RUN LOG when open, the buttons. */
+  protected drawOverFoot(ctx: CanvasRenderingContext2D, t: number, time: number): void {
     if (this.overT0 >= 0 && t > 0.4) drawPrompt(ctx, by({ touch: 'TAP TO SKIP', mouse: 'CLICK TO SKIP', keys: 'ENTER: SKIP', pad: '[A] SKIP' }), W / 2, 650, T.small, KIT.dim, { alpha: 0.6 + 0.3 * Math.sin(time * 4) });
     if (this.logOpen) this.drawRunLog(ctx);
     for (const b of this.buttons) this.drawButton(ctx, b, time);

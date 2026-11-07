@@ -350,7 +350,8 @@ export abstract class RunScreensBase {
     const breathe = primary && !b.quiet && b.enabled && !this.reduceMotion;
     const pulse = breathe ? 1 + 0.02 + 0.02 * Math.sin((time * Math.PI * 2) / 1.6) : 1;
     ctx.save();
-    if (!b.enabled) ctx.globalAlpha *= 0.45;
+    // (A quiet button that can't be pressed still reads: the demo's IN THE FULL GAME in place of PLAY.)
+    if (!b.enabled) ctx.globalAlpha *= b.quietStyle ? 0.75 : 0.45;
     ctx.translate(Math.round(b.x), Math.round(b.y + (b.hover && b.enabled && !b.pressed ? -2 : 0)));
     ctx.scale(b.scale * pulse, b.scale * pulse);
     const hw = Math.round(b.w / 2);
