@@ -5565,6 +5565,123 @@ S.relicStarchart = lit(16, 16, [
   '................',
 ]);
 
+// ---------------------------------------------------------------- build-panel relics and the CUT card (16x16)
+// relicLean (16x16): LEAN MACHINE, a slim one-reel slot machine (a single window showing a red 7), gold marquee,
+// a lever down its side
+S.relicLean = lit(16, 16, [
+  '................',
+  '.....YYYYg...MR.',
+  '....YWYYYGg..Rr.',
+  '....MRRRRRr...S.',
+  '....Mtttttr...S.',
+  '....MTRRRTr...S.',
+  '....MTTRrTr...S.',
+  '....MTTRrTrhhSS.',
+  '....MTRrTTr.....',
+  '....MTRrTTr.....',
+  '....MTTTTTr.....',
+  '....MRRRRRr.....',
+  '....MRkkkRr.....',
+  '....rrrrrrr.....',
+  '...YGGGGGGGg....',
+  '................',
+]);
+// relicSteady (16x16): STEADY HANDS, a steady hand (black suit cuff, gold cufflink) gripping a reel in its gold
+// HELD frame, a red 7 showing above the grip
+S.relicSteady = lit(16, 16, [
+  '.YYYYYYYYg......',
+  '.YWTTTTTtg......',
+  '.YTRRRRrtg......',
+  '.YTTTTRrtg......',
+  '.YTTTRrTtg.aFlkk',
+  '.YTTaFFFFFFFFlkk',
+  '.YTTffffFFFFflkk',
+  '.Y.aFFFFFFFFflYk',
+  '.Y.fffffffFFflkk',
+  '.YaFFFFFFFFFflkk',
+  '.Yffffffffffflkk',
+  '.Y.aFFFFFFFFflkk',
+  '.Y.ffffffffffl..',
+  '.YTRRRRrtg......',
+  '.YTTTTTTtg......',
+  '.Ygggggggg......',
+]);
+// relicPairStreak (16x16): PAIR STREAK, a matched pair of cards (red diamonds) flying right, cyan speed streaks
+S.relicPairStreak = lit(16, 16, [
+  '................',
+  '........WTTTTTt.',
+  '....CAA.WTTRTTt.',
+  '........WTRRRTt.',
+  '...CAAA.WTRRRrt.',
+  '....WTTTTTtRrTt.',
+  '....WTTRTTtTTTt.',
+  '.CAAWTRRRTtTTTt.',
+  '....WTRRRrttttt.',
+  '..CAWTTRrTt.....',
+  '....WTTTTTt.....',
+  '.CAAWTTTTTt.....',
+  '....ttttttt.....',
+  '................',
+]);
+// relicSticky (16x16): STICKY FINGERS, an open hand with a red casino chip stuck to its palm, honey dripping off it
+{
+  const g = grid(16, 16);
+  stamp(g, 4, 0, [
+    ' a  a  a ',
+    'aFf FF Ff',
+    'FFf FF Ff',
+    'FFf Ff Ff',
+    'FFf Ff Ff',
+  ]);
+  stamp(g, 2, 3, [
+    '....RWWR....',
+    '..RRRWWRRr..',
+    '.RRrrrrrrrr.',
+    '.RRrRYGRrrr.',
+    '.WWrYWYGrtt.',
+    '.WWrRYGRrtt.',
+    '.RRrYRRgrrr.',
+    '.RRrrrrrrrr.',
+    '..Rrrttrrr..',
+    '....rttr....',
+  ].map((r) => r.replace(/\./g, ' ')));
+  stamp(g, 13, 6, ['aF', 'FF', 'Ff', 'f ']);                                  // thumb
+  stamp(g, 6, 13, ['FFFf', 'UUUN', 'UUUN']);                                   // wrist and cuff
+  plot(g, [[2, 9, 'Y'], [2, 10, 'G'], [2, 11, 'G'], [2, 12, 'Y'], [1, 13, 'Y'], [2, 13, 'G'], [1, 14, 'G'], [2, 14, 'g'],
+    [3, 4, 'Y'], [4, 3, 'Y'], [12, 5, 'Y']]);                                 // honey: a drip off the left, dabs at the top
+  S.relicSticky = toRows(outline(g));
+}
+// cardCut (16x16): the CUT card, a pair of open steel scissors with red handles (blades up-right)
+{
+  const g = grid(16, 16);
+  const near = (px, py, ax, ay, bx, by) => {
+    const vx = bx - ax, vy = by - ay, t = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy)));
+    return [Math.hypot(px - ax - t * vx, py - ay - t * vy), t];
+  };
+  const cells = (fn) => {
+    const set = new Set();
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if (fn(x, y)) set.add(`${x},${y}`);
+    return set;
+  };
+  const paint = (set, hi, mid, lo) => {
+    const has = (x, y) => set.has(`${x},${y}`);
+    for (const p of set) { const [x, y] = p.split(',').map(Number); put(g, x, y, edgeShade(hi, mid, lo)(x, y, has)); }
+  };
+  const PX = 8, PY = 7.5;
+  /** One half of the scissors: a red finger ring and shank up to the pivot, then a steel blade tapering to its tip. */
+  const half = (rx, ry, k, hi) => {
+    const tx = PX + (PX - rx) * k, ty = PY + (PY - ry) * k;
+    const red = cells((x, y) => { const r = Math.hypot(x - rx, y - ry); return (r >= 0.9 && r <= 2.1) || near(x, y, rx, ry, PX, PY)[0] <= 0.75; });
+    const steel = cells((x, y) => { const [d, t] = near(x, y, PX, PY, tx, ty); return d <= 1.45 - 0.9 * t; });
+    paint(red, 'M', 'R', 'r');
+    paint(steel, ...hi);
+  };
+  half(2.5, 9.5, 1.3, ['L', 'S', 'D']);
+  half(5.5, 12.5, 1.5, ['W', 'L', 'S']);
+  put(g, PX, 7, 'Y');
+  S.cardCut = toRows(outline(g));
+}
+
 // ---------------------------------------------------------------- the casino-town portraits (32x32)
 // They replace the 24x24 enemy and hero portraits above (kept until the new set has shipped a while).
 for (const [id, rows] of Object.entries(PORTRAITS)) S[id] = lit(32, 32, rows);
@@ -5639,6 +5756,7 @@ const DIMS = {
   relicHouseTax: 16, relicRegular: 16, relicHitmaker: 16, relicHouseOfCards: 16, relicParachute: 16, relicStarchart: 16,
   enhGlass: 16, ratRacer: 16, ratRacer2: 16, scratchTicket: 24, scratchCoin: 12, clawGrabber: 24, clawGrabberShut: 24,
   prizeBall: 12,
+  relicLean: 16, relicSteady: 16, relicPairStreak: 16, relicSticky: 16, cardCut: 16,
 };
 for (const id of Object.keys(PORTRAITS)) DIMS[id] = 32;
 for (const id of Object.keys(KW_ICONS)) DIMS[id] = 12;
@@ -5796,7 +5914,9 @@ export type SpriteId =
   | 'ratRacer' | 'ratRacer2'                     // RAT RACE runner, two gallop frames (faces RIGHT), 16x16
   | 'scratchTicket' | 'scratchCoin'              // SCRATCH-OFF ticket 24x24, scratching coin 12x12
   | 'clawGrabber' | 'clawGrabberShut'            // CLAW game claw, open / closed, 24x24
-  | 'prizeBall';                                 // CLAW game prize capsule, 12x12
+  | 'prizeBall'                                  // CLAW game prize capsule, 12x12
+  | 'relicLean' | 'relicSteady' | 'relicPairStreak' | 'relicSticky' // build-panel relics, 16x16
+  | 'cardCut';                                   // CUT draft card icon, 16x16
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;
