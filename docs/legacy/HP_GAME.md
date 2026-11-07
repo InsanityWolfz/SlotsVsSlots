@@ -297,7 +297,7 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   BANKROLL's is ARMORED CAR (shield counts as chips for HIGH ROLLER), SAFE DEPOSIT (chips also hit for the shield
   gained that spin) and SHIELD BASH (KNIGHT's, open to BANKROLL too).
 - **THE CONTENT BATCH (user, 2026-11-07; MOVE, PAYBACK and MARKER dropped):** numbers in `CONTENT_1107`
-  (`src/core/relics.ts`); icons are placeholders (sprites of cut relics) until the art step; tests in
+  (`src/core/relics.ts`); own icons (approved 2026-11-07: relicLean, relicSteady, relicPairStreak, relicSticky, cardCut); tests in
   `tests/audit_content.test.ts`.
   - **CUT** (draft card, the `remove` kind): REMOVE 1 [SYMBOL] FROM REEL [N]. Any of your machine's own symbols, any
     reel; a plain cell only (never a charmed one), and never takes a reel under 6 cells (no CUT offered there). Dealt

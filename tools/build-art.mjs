@@ -5623,17 +5623,11 @@ S.relicPairStreak = lit(16, 16, [
   '....ttttttt.....',
   '................',
 ]);
-// relicSticky (16x16): STICKY FINGERS, an open hand with a red casino chip stuck to its palm, honey dripping off it
+// relicSticky (16x16): STICKY FINGERS, the game's red casino chip, a gold glob of honey on its top edge and honey
+// dripping off its bottom in two runs (the long one ending in a drop)
 {
   const g = grid(16, 16);
-  stamp(g, 4, 0, [
-    ' a  a  a ',
-    'aFf FF Ff',
-    'FFf FF Ff',
-    'FFf Ff Ff',
-    'FFf Ff Ff',
-  ]);
-  stamp(g, 2, 3, [
+  stamp(g, 2, 1, [
     '....RWWR....',
     '..RRRWWRRr..',
     '.RRrrrrrrrr.',
@@ -5645,13 +5639,16 @@ S.relicPairStreak = lit(16, 16, [
     '..Rrrttrrr..',
     '....rttr....',
   ].map((r) => r.replace(/\./g, ' ')));
-  stamp(g, 13, 6, ['aF', 'FF', 'Ff', 'f ']);                                  // thumb
-  stamp(g, 6, 13, ['FFFf', 'UUUN', 'UUUN']);                                   // wrist and cuff
-  plot(g, [[2, 9, 'Y'], [2, 10, 'G'], [2, 11, 'G'], [2, 12, 'Y'], [1, 13, 'Y'], [2, 13, 'G'], [1, 14, 'G'], [2, 14, 'g'],
-    [3, 4, 'Y'], [4, 3, 'Y'], [12, 5, 'Y']]);                                 // honey: a drip off the left, dabs at the top
+  // a glob of honey over the top-right rim, running a little way down the side
+  plot(g, [[9, 1, 'Y'], [10, 1, 'Y'], [9, 2, 'Y'], [10, 2, 'W'], [11, 2, 'Y'], [12, 2, 'G'],
+    [10, 3, 'G'], [11, 3, 'G'], [12, 3, 'g'], [12, 4, 'G'], [12, 5, 'g']]);
+  // drips off the bottom rim: a long run ending in a drop (left), a short one (right)
+  plot(g, [[5, 9, 'Y'], [6, 9, 'G'], [5, 10, 'Y'], [6, 10, 'G'], [5, 11, 'Y'], [6, 11, 'g'], [5, 12, 'Y'], [6, 12, 'G'],
+    [4, 13, 'Y'], [5, 13, 'W'], [6, 13, 'G'], [7, 13, 'g'], [5, 14, 'G'], [6, 14, 'g'],
+    [9, 10, 'Y'], [10, 10, 'G'], [9, 11, 'Y'], [10, 11, 'g'], [9, 12, 'G']]);
   S.relicSticky = toRows(outline(g));
 }
-// cardCut (16x16): the CUT card, a pair of open steel scissors with red handles (blades up-right)
+// cardCut (16x16): the CUT card, a pair of open steel scissors (blades up-right), black finger loops with dark holes
 {
   const g = grid(16, 16);
   const near = (px, py, ax, ay, bx, by) => {
@@ -5668,12 +5665,13 @@ S.relicPairStreak = lit(16, 16, [
     for (const p of set) { const [x, y] = p.split(',').map(Number); put(g, x, y, edgeShade(hi, mid, lo)(x, y, has)); }
   };
   const PX = 8, PY = 7.5;
-  /** One half of the scissors: a red finger ring and shank up to the pivot, then a steel blade tapering to its tip. */
+  /** One half of the scissors: a black finger loop and shank up to the pivot, then a steel blade tapering to its tip. */
   const half = (rx, ry, k, hi) => {
     const tx = PX + (PX - rx) * k, ty = PY + (PY - ry) * k;
-    const red = cells((x, y) => { const r = Math.hypot(x - rx, y - ry); return (r >= 0.9 && r <= 2.1) || near(x, y, rx, ry, PX, PY)[0] <= 0.75; });
+    const loop = cells((x, y) => { const r = Math.hypot(x - rx, y - ry); return (r >= 0.9 && r <= 2.1) || near(x, y, rx, ry, PX, PY)[0] <= 0.75; });
     const steel = cells((x, y) => { const [d, t] = near(x, y, PX, PY, tx, ty); return d <= 1.45 - 0.9 * t; });
-    paint(red, 'M', 'R', 'r');
+    paint(loop, 'l', 'l', 'k');
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if (Math.hypot(x - rx, y - ry) < 0.9) put(g, x, y, 'K'); // the hole
     paint(steel, ...hi);
   };
   half(2.5, 9.5, 1.3, ['L', 'S', 'D']);
