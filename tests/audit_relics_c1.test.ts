@@ -108,17 +108,17 @@ describe('KNIGHT', () => {
     expect(towerKeep(120).kept).toBe(30);
     expect(towerKeep(80, []).kept).toBe(0);
   });
-  it('TOWER SHIELD: capped at 10% of your max HP (390 HP: 400 leftover keeps 39)', () => {
+  it('TOWER SHIELD: capped at 10% of your max HP (400 HP: 400 leftover keeps 40)', () => {
     const r = towerKeep(400);
-    expect(r.maxHp).toBe(390);
+    expect(r.maxHp).toBe(400);
     expect(r.kept).toBe(Math.round(r.maxHp * NEW_RELIC.towerCap));
-    expect(r.kept).toBe(39);
+    expect(r.kept).toBe(40);
   });
-  it('TOWER SHIELD: it carries on every spin (a kept shield decays 39 -> 10 -> 3 with no new shields)', () => {
+  it('TOWER SHIELD: it carries on every spin (a kept shield decays 40 -> 10 -> 3 with no new shields)', () => {
     const f = mk('knight', ['tower']);
     f.sides.player.shield = 160;
     spin(f, ['sword', 'sword', 'sword']);
-    expect(f.sides.player.shield).toBe(39);
+    expect(f.sides.player.shield).toBe(40);
     spin(f, ['sword', 'sword', 'sword']);
     expect(f.sides.player.shield).toBe(10);
   });
@@ -145,8 +145,8 @@ describe('KNIGHT', () => {
     const pair: SymbolId[] = ['sword', 'sword', 'shield'];
     const plain = grp(spin(mk('knight', [], { enemyHp: 1e6 }), pair), 'sword').amount;
     expect(grp(spin(mk('knight', ['coup'], { enemyHp: 1e6 }), pair), 'sword').amount).toBe(plain);
-    const eq = mk('knight', ['coup'], { enemyHp: 390 });
-    expect(eq.sides.player.hp).toBe(390);
+    const eq = mk('knight', ['coup'], { enemyHp: 400 });
+    expect(eq.sides.player.hp).toBe(400);
     expect(grp(spin(eq, pair), 'sword').amount).toBe(plain);
     const lead = spin(mk('knight', ['coup'], { enemyHp: 100 }), pair);
     expect(grp(lead, 'shield').amount).toBe(grp(spin(mk('knight', [], { enemyHp: 100 }), pair), 'shield').amount);
@@ -355,14 +355,14 @@ describe('BANKROLL', () => {
   });
 
   describe('GOLDEN PARACHUTE', () => {
-    it('a killing hit: pay 10 chips, land at 25% HP (340 HP: 85)', () => {
+    it('a killing hit: pay 10 chips, land at 25% HP (480 HP: 120)', () => {
       const f = mk('midas', ['parachute'], { chips: 10, enemy: 'sword' });
       const ev = lethal(f, 5);
       expect(f.over).toBe(false);
       expect(relicFired(ev, 'parachute')).toBe(true);
       expect(f.parachuteChips).toBe(10);
-      expect(f.sides.player.maxHp).toBe(340);
-      expect(f.sides.player.hp).toBe(85);
+      expect(f.sides.player.maxHp).toBe(480);
+      expect(f.sides.player.hp).toBe(120);
     });
     it('"LAND AT 25% HP" is exactly 25%, rounded to a whole HP', () => {
       const f = mk('midas', ['parachute'], { chips: 10, enemy: 'sword' });

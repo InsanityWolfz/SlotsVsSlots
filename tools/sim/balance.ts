@@ -31,7 +31,7 @@ import * as fight from '../../src/core/fight';
 import * as charms from '../../src/core/charms';
 import * as bot from '../../src/sim/bot';
 import { CABINET_ORDER, type CabinetId } from '../../src/core/cabinets';
-import { STAKES } from '../../src/core/stakes';
+import { STAKE, STAKES } from '../../src/core/stakes';
 import { Rng } from '../../src/core/rng';
 import { playRun, type RunLog } from '../../src/sim/play';
 
@@ -142,7 +142,9 @@ const pad = (s: string, n: number) => s.padEnd(n);
 
 function bossWin(ls: RunLog[], act: number) {
   const fs = ls.flatMap((l) => l.fights.filter((f) => f.kind === 'boss' && f.act === act && !(l.loops !== undefined && f.act > 3)));
-  return { n: fs.length, win: pct(fs.filter((f) => f.won).length, fs.length) };
+  // Your spins in the fights you won (fight.turn counts both machines' spins; you spin first).
+  const spins = median(fs.filter((f) => f.won).map((f) => Math.ceil(f.turns / 2)));
+  return { n: fs.length, win: pct(fs.filter((f) => f.won).length, fs.length), spins, hpIn: median(fs.map((f) => Math.round(100 * f.hpIn))) };
 }
 
 function summary(logs: RunLog[], machines: CabinetId[], stakes: number[]) {
@@ -171,13 +173,13 @@ function report(logs: RunLog[], machines: CabinetId[], stakes: number[], detail:
   }
   // 2. Each boss's win rate (of the runs that reached it), per machine; the spread across machines.
   for (const s of stakes) {
-    out.push(`\n${STAKES[s].name}: boss win % when reached (spread target ${BOSS_SPREAD}); act clears; deaths by stop`);
-    const acts = s >= 2 ? [1, 2, 3] : [1, 2];
+    out.push(`\n${STAKES[s].name}: boss win % when reached (n reached, median spins to win); deaths by stop; HP% into THE HOUSE`);
+    const acts = s >= STAKE.act3 ? [1, 2, 3] : [1, 2];
     const spread = acts.map((a) => {
       const ws = machines.map((m) => bossWin(logs.filter((l) => l.stake === s && l.cabinet === m), a).win);
       return Math.max(...ws) - Math.min(...ws);
     });
-    out.push(`${pad('', 9)}${acts.map((a, i) => pad(`${['HOUSE', 'WHEEL', 'DEALER'][a - 1]} (${spread[i].toFixed(0)})`, 14)).join('')}  deaths: fight / elite / boss per act`);
+    out.push(`${pad('', 9)}${acts.map((a, i) => pad(`${['HOUSE', 'WHEEL', 'DEALER'][a - 1]} (spread ${spread[i].toFixed(0)})`, 18)).join('')}  deaths: fight / elite / boss per act`);
     for (const m of machines) {
       const ls = logs.filter((l) => l.stake === s && l.cabinet === m);
       const deaths = acts.map((a) => {
@@ -185,7 +187,7 @@ function report(logs: RunLog[], machines: CabinetId[], stakes: number[], detail:
         const k = (kind: string) => f0(pct(lost.filter((f) => f.kind === kind).length, ls.length));
         return `${k('fight')}/${k('elite')}/${k('boss')}`;
       });
-      out.push(`${pad(m, 9)}${acts.map((a) => pad(`${f0(bossWin(ls, a).win)} (${bossWin(ls, a).n})`, 14)).join('')}  ${deaths.join('  ')}`);
+      out.push(`${pad(m, 9)}${acts.map((a) => pad(`${f0(bossWin(ls, a).win)} (${bossWin(ls, a).n}, ${bossWin(ls, a).spins})`, 18)).join('')}  ${deaths.join('  ')}  HP in ${bossWin(ls, 1).hpIn}%`);
     }
   }
   if (!detail) return out.join('\n');

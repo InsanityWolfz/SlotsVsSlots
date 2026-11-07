@@ -221,8 +221,8 @@ hexer, vampire). Words: SPILL (was SLIME), IOU (was BOMB), JINX (was HEX), ROCK 
 Each machine except KNIGHT has one signature symbol and a meter.
 | Machine | Hero | Attack symbol | Meter | Unlock |
 |---|---|---|---|---|
-| KNIGHT | SIR REGINALD | sword | none: half swords, half shields, both from level 2 (390 HP) | start |
-| TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields: 20 charge a bolt, 22 a bolt, the storm heals 15 (one axis: every boost adds charge; 310 HP) | reach the House |
+| KNIGHT | SIR REGINALD | sword | none: half swords, half shields, both from level 2; each boss pays 4 sword levels (400 HP) | start |
+| TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields: 20 charge a bolt, 22 a bolt, the storm heals 15 (one axis: every boost adds charge; 360 HP) | reach the House |
 | JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat the House |
 | JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat the House with wilds |
 | BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER; a chip jackpot makes it rain | clear a run |
@@ -334,6 +334,43 @@ BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP). Fr
 stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
 
 ## Balance (`tools/sim/balance.ts`)
+- **Balance pass (2026-11-07; ROADMAP phase 6's sim pass, numbers only).** Measured first at 500 runs a machine a
+  stake: every machine was under target at RED (-8 to -16) and BANKROLL at every stake (-7 to -16); JUKEBOX and JOKER
+  low at WHITE (-7, -10); THE HOUSE fell 89-95% when reached at WHITE, in a median 5-6 of your spins (28-49% of the
+  kills in 4 or fewer). TESLA at GREEN / BLACK (37 / 27) and KNIGHT at WHITE (61) had already come back to target.
+  Changed:
+  - THE HOUSE 1200 -> 2000 HP (`TUNE.bossHp`): its pot is a weak lever (any jackpot of yours steals it: stolen pots did
+    19-28% of the House's HP, and a bigger seed or cut only fed that), so HP it is. WHITE, won fights, median spins to kill
+    (500 runs): KNIGHT 5 -> 7, TESLA 6 -> 8, JUKEBOX 5 -> 6, JOKER 5 -> 7, BANKROLL 6 -> 8; kills in 4 spins or fewer
+    KNIGHT 38% -> 14%, TESLA 28% -> 7%.
+  - KNIGHT 390 -> 400 HP, its boss levels 3 -> 4: it lost the most from WHITE to RED (scars and act 3: -29), and the
+    levels only pay after the House, so they lift RED +8 for WHITE +3.
+  - TESLA 310 -> 360, JUKEBOX 385 -> 430, JOKER 330 -> 365 (weak in act 1, strong from GREEN, so less), BANKROLL 340
+    -> 480 (about +1 point a 10 HP, where the others get 1.5-2; the rain's cost stays the user's 10).
+  Run win %, 500 runs a machine a stake, before -> after (noise about ±2-3; a second seed set of 1,000
+  runs lands within 5 of these, with JOKER GREEN +8 and BANKROLL GREEN +6 there, BANKROLL RED 41):
+
+  | | WHITE 60 | RED 43 | GREEN 36 | BLACK 28 | BLUE 20 | GOLD 14 |
+  |---|---|---|---|---|---|---|
+  | KNIGHT | 61 -> 61 | 32 -> 40 | 29 -> 38 | 27 -> 31 | 14 -> 19 | 9 -> 13 |
+  | TESLA | 59 -> 62 | 33 -> 38 | 37 -> 42 | 27 -> 30 | 15 -> 17 | 10 -> 12 |
+  | JUKEBOX | 53 -> 59 | 35 -> 44 | 36 -> 42 | 21 -> 30 | 15 -> 16 | 6 -> 9 |
+  | JOKER | 50 -> 56 | 34 -> 40 | 33 -> 39 | 27 -> 29 | 18 -> 25 | 13 -> 15 |
+  | BANKROLL | 48 -> 61 | 27 -> 37 | 27 -> 38 | 19 -> 31 | 13 -> 22 | 7 -> 14 |
+
+  Boss win % when reached (KNIGHT / TESLA / JUKEBOX / JOKER / BANKROLL), before -> after. WHITE: THE HOUSE 93 / 95 /
+  89 / 95 / 95 -> 84 / 88 / 86 / 92 / 93; THE WHEEL 90 / 93 / 92 / 93 / 88 -> 91 / 95 / 93 / 95 / 91. RED: THE HOUSE
+  89 / 93 / 89 / 93 / 94 -> 81 / 88 / 87 / 91 / 88; THE WHEEL 81 / 84 / 85 / 90 / 84 -> 83 / 89 / 93 / 93 / 88; THE
+  DEALER 77 / 87 / 83 / 87 / 78 -> 82 / 87 / 85 / 89 / 83. THE DEALER's spread across machines GREEN / BLACK / BLUE /
+  GOLD 17 / 19 / 31 / 41 -> 10 / 7 / 24 / 27. Still off: TESLA RED -5, BANKROLL RED -6, TESLA and JUKEBOX GREEN +6,
+  JUKEBOX GOLD -5. RED and GREEN play the same (on two seed sets RED is within 2 points of GREEN, or under it: THE
+  WHEEL STARTS FAST costs nothing, and x1 instead of x0.85 WHEEL HP moved GREEN 1 point), so a machine can't sit at
+  43 and 36 at once; the pass lands them between, about 40. THE HOUSE's spread grew (WHITE / GOLD 6 / 14 -> 9 / 16):
+  JOKER and BANKROLL steal its pot with jackpots, KNIGHT has no heal (BLACK up, KNIGHT 62-75% when reached). THE
+  DEALER is 82-89% at RED, over its rough 65. The shield build (`--style turtle`, WHITE / GREEN) moved 0 to +13
+  (BANKROLL 50 / 37 -> 63 / 50; KNIGHT 42 / 17 and JUKEBOX 34 / 24 unchanged and still weak). `tools/sim/balance.ts`
+  now shows act 3 from RED (it showed it from GREEN), the median spins of each boss win and the HP taken into THE
+  HOUSE. Fuzz: no invariant breaks.
 - **Cashier HEAL and +MAX HP pricier (2026-11-07, user):** HEAL 6 (+3 a buy) -> 10 (+5), +MAX HP 5 (+4) -> 8 (+6).
   Sim 400 runs a machine, WHITE / RED / GREEN: run win falls 0-5 points (KNIGHT WHITE 69 -> 64); THE HOUSE when reached
   barely moves (89-97 -> 87-96). Pricier heals alone don't give THE HOUSE teeth: that's the balance pass.
@@ -344,8 +381,8 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
 - **Act 3 at RED (2026-11-06):** sim 400 runs a machine, RED run win before -> after: KNIGHT 60 -> 43, TESLA 62 -> 46,
   JUKEBOX 54 -> 45, JOKER 53 -> 44, BANKROLL 50 -> 37. The user kept it harder (2026-11-06: "might make people play
   longer than the refund window"): RED's target is 43 now (was 50), not RED eased. BANKROLL's 37 is the outlier.
-- **Targets for the sim bot** (run win %, every machine within 5 points): WHITE 60, RED 50, GREEN 36, BLACK 28,
-  BLUE 20, GOLD 14. Each boss's win rate (of runs that reach it) within 10 points across machines. Rough per-boss
+- **Targets for the sim bot** (run win %, every machine within 5 points): WHITE 60, RED 43 (was 50 until act 3 came to
+  RED, 2026-11-06), GREEN 36, BLACK 28, BLUE 20, GOLD 14. Each boss's win rate (of runs that reach it) within 10 points across machines. Rough per-boss
   aims: House about 85, THE WHEEL about 85, the Dealer about 65.
 - **SUBWOOFER (user, 2026-11-01, "ship it for now"):** THE DROP also hits for all the shield you hold (Body Slam's
   shape; it pierced shields, and banning it raised JUKEBOX's win rate). Shields last one enemy turn, so the gain is small:

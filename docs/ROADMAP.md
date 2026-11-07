@@ -53,7 +53,9 @@ Done before: theme, roster, name (REEL BRAWL), 24 portraits, words, enemy symbol
 https://claude.ai/artifact/9fZP62QFQ7ffp9tMYkUztV, words: https://claude.ai/artifact/Bo2uKXGYnFXWRJxTy5Ddcu, screens:
 https://claude.ai/artifact/M4aXG9XZV9NvJ1bQK8HeKr).
 
-**The last Max week (2026-11-07), the user's calls:** the demo shows the three locked Slot Machines for real and DEMO CLEARED becomes a sales page (in progress); the Cashier's HEAL and +MAX HP cost more at base and per buy (done, HP_GAME.md "Balance"); AUTO stays the player's (no turning it off at elites); a content batch is previewed before anything is built (https://claude.ai/artifact/QzZ5EoCoNwXtjCLwB5Vnnd: CUT and MOVE draft cards, LEAN MACHINE, PAYBACK, STEADY HANDS, HOT STREAK, STICKY FINGERS, MARKER), then the balance pass. Content batch built (2026-11-07; rules and sim in HP_GAME.md "Charms and relics"): the CUT draft card and four relics, LEAN MACHINE, STEADY HANDS, PAIR STREAK and STICKY FINGERS (MOVE, PAYBACK and MARKER dropped by the user). HOLD relics and a LATCH Charm were proposed and dropped (user, 2026-11-07: "it's too much"); STEADY HANDS stays HOLD's one relic.
+**The last Max week (2026-11-07), the user's calls:** the demo shows the three locked Slot Machines for real and DEMO CLEARED becomes a sales page (in progress); the Cashier's HEAL and +MAX HP cost more at base and per buy (done, HP_GAME.md "Balance"); AUTO stays the player's (no turning it off at elites); a content batch is previewed before anything is built (https://claude.ai/artifact/QzZ5EoCoNwXtjCLwB5Vnnd: CUT and MOVE draft cards, LEAN MACHINE, PAYBACK, STEADY HANDS, HOT STREAK, STICKY FINGERS, MARKER), then the balance pass. Content batch built (2026-11-07; rules and sim in HP_GAME.md "Charms and relics"): the CUT draft card and four relics, LEAN MACHINE, STEADY HANDS, PAIR STREAK and STICKY FINGERS (MOVE, PAYBACK and MARKER dropped by the user). HOLD relics and a LATCH Charm were proposed and dropped (user, 2026-11-07: "it's too much"); STEADY HANDS stays HOLD's one relic. The balance pass (2026-11-07; numbers only, HP_GAME.md "Balance"): THE HOUSE
+2000 HP (was 1200; 84-93% when reached at WHITE, 7-8 spins to kill), every machine's HP up, KNIGHT's boss levels 3 -> 4;
+run win on target at 25 of 30 machine-stakes (was 14). Open for the user: RED and GREEN play the same (GREEN's rule costs nothing).
 
 **Resumed (2026-10-29), aimed at a paid Steam release.** v1.0 is the old game (`docs/legacy/HP_GAME.md`) with two
 fight changes (OVERTIME and HOLD), frozen and trimmed content, and a Steam page early. The user approved this plan from an overnight
@@ -218,7 +220,8 @@ The game's one festival: the demo up, keys to streamers, the page polished. It m
 **Gate:** a wishlist target the user sets beforehand (10k+ is a healthy small launch).
 
 ## Phase 6: balance and launch
-- The rules frozen: one sim pass across machines and stakes (the targets in HP_GAME.md "Balance").
+- The rules frozen: one sim pass across machines and stakes (the targets in HP_GAME.md "Balance"). Done 2026-11-07;
+  rerun it only if a rule changes before launch.
 - A Steam Playtest; the real app id in `desktop/steam_appid.txt` (480, Valve's test app, today); Steam achievements
   (the game's own move there);
   Steam Cloud on the mirrored save folder.

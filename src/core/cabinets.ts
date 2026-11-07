@@ -77,18 +77,19 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'KNIGHT',
     sprite: 'cabinetKnight',
     blurb: 'THE DEPENDABLE ONE',
-    hp: 39 * UNIT,
+    // 390 -> 400 and 3 -> 4 boss levels (balance pass 2026-11-07): KNIGHT fell furthest from WHITE to RED (scars and act 3).
+    hp: 40 * UNIT,
     // FORGED STEEL: half swords, half shields, both from level 2 (2026-10-15: levels have no cap).
     strips: r3({ sword: 6, shield: 6 }),
     // No meter, so KNIGHT's late game is levels: each act boss pays its swords 3 (draft/Cashier split, 2026-10-15:
     // 470 HP and 1 level was 73 / 20 WHITE / GREEN, 390 HP and 3 levels 69 / 30).
-    bossLevels: 3,
+    bossLevels: 4,
     gilded: [],
     meter: null,
     symbols: ['sword', 'shield'],
     attack: 'sword',
     levels: { sym: { sword: 2, shield: 2 }, charm: {} },
-    rule: 'HALF SWORDS, HALF SHIELDS. NO METER: EACH BOSS PAYS 3 SWORD LEVELS. 390 HP.',
+    rule: 'HALF SWORDS, HALF SHIELDS. NO METER: EACH BOSS PAYS 4 SWORD LEVELS. 400 HP.',
     unlock: '',
   },
   midas: {
@@ -98,7 +99,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'BANKROLL',
     sprite: 'cabinetMidas',
     blurb: 'MAKE IT RAIN.',
-    hp: 34 * UNIT,
+    // 340 -> 480 (balance pass 2026-11-07): it was the lowest machine at every stake (HP is a weak lever on it).
+    hp: 48 * UNIT,
     // No swords (2026-10-07): CASSIDY flings his chips. Each chip symbol hits, pays a chip and fills the bar.
     strips: r3({ shield: 6, goldbar: 6 }),
     // No gold-sword start (a leftover from MIDAS): 8 more chips instead (user playtest).
@@ -108,7 +110,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     startChips: 24,
     symbols: ['goldbar', 'shield'],
     attack: 'goldbar',
-    rule: 'CHIPS HIT AND WIN CHIPS. FULL METER: HIT HARDER, HEAL 15. CHIP JACKPOTS MAKE IT RAIN. 340 HP.',
+    rule: 'CHIPS HIT AND WIN CHIPS. FULL METER: HIT HARDER, HEAL 15. CHIP JACKPOTS MAKE IT RAIN. 480 HP.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },
@@ -119,7 +121,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'TESLA',
     sprite: 'cabinetTesla',
     blurb: 'IT HUMS WHEN YOU LOOK AT IT',
-    hp: 31 * UNIT,
+    // 310 -> 360 (balance pass 2026-11-07).
+    hp: 36 * UNIT,
     // No swords (2026-10-07): bolts are TESLA's weapon, and their damage is the lightning.
     strips: r3({ shield: 6, bolt: 6 }),
     gilded: [{ reel: 0, symbol: 'bolt', enh: 'charged', n: 4 }],
@@ -127,7 +130,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: UNIT / 2 },
     symbols: ['bolt', 'shield'],
     attack: 'bolt',
-    rule: 'BOLTS CHARGE LIGHTNING: 22 A BOLT, PIERCES SHIELDS. A STORM HEALS 15. 310 HP.',
+    rule: 'BOLTS CHARGE LIGHTNING: 22 A BOLT, PIERCES SHIELDS. A STORM HEALS 15. 360 HP.',
     unlock: 'REACH THE HOUSE',
     // 40 (2026-10-12): LIGHTNING ROD is gone (97% of TESLA runs took it; it set the cost to 40 and hit 90).
     specialCost: 4 * UNIT,
@@ -144,7 +147,8 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     blurb: 'NOTHING IS WHAT IT SEEMS',
     // 2026-10-12 (user): 380 HP and its jackpot payoff no longer heals (its healing grew with its WILDS: GREEN 53).
     // 335 -> 390 with the draft/Cashier split (2026-10-15: it bought WILDS at the Cashier; sim 44 / 26 -> 57 / 35).
-    hp: 33 * UNIT,
+    // 330 -> 365 (balance pass 2026-11-07): weak in act 1, strong from GREEN, so a small raise.
+    hp: 36.5 * UNIT,
     // Cards, not swords (2026-10-07): JAX throws playing cards. They hit like swords.
     strips: r3({ ace: 5, shield: 5, wild: 2 }),
     gilded: [],
@@ -152,7 +156,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 1.5 * UNIT, perWild: 5 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
-    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS, HEAL 15. A WILD LETS ANY 2 REELS PAIR. 330 HP.',
+    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS, HEAL 15. A WILD LETS ANY 2 REELS PAIR. 365 HP.',
     unlock: 'BEAT THE HOUSE WITH A WILD ON YOUR REELS',
     jokerWilds: true,
   },
@@ -163,14 +167,15 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'JUKEBOX',
     sprite: 'cabinetJukebox',
     blurb: 'TURN IT UP',
-    hp: 38.5 * UNIT,
+    // 385 -> 430 (balance pass 2026-11-07).
+    hp: 43 * UNIT,
     // Replaces BRIAR (user, 2026-10-08): notes and shields. NOTES turn up the volume; at the max the beat drops.
     strips: r3({ note: 6, shield: 6 }),
     gilded: [],
     meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 1.5 * UNIT },
     symbols: ['note', 'shield'],
     attack: 'note',
-    rule: 'NOTES RAISE THE VOLUME: EACH LEVEL, NOTES HIT HARDER. AT 6, THE DROP: EVERY NOTE ON SCREEN HITS, HEAL 15. 385 HP.',
+    rule: 'NOTES RAISE THE VOLUME: EACH LEVEL, NOTES HIT HARDER. AT 6, THE DROP: EVERY NOTE ON SCREEN HITS, HEAL 15. 430 HP.',
     unlock: 'BEAT THE HOUSE',
   },
 };
