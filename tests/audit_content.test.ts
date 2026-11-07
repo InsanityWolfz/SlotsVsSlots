@@ -55,7 +55,7 @@ describe('the four relics: tiers, faces and offers', () => {
     for (const r of NEW) expect(LEGENDARY.has(r)).toBe(false);
   });
   it('their full texts, the same on every machine, and card faces of two lines', () => {
-    expect(RELICS.lean.text).toBe('A REEL WITH 10 CELLS OR FEWER: ITS SYMBOLS ARE WORTH X1.5');
+    expect(RELICS.lean.text).toBe('A REEL WITH 11 CELLS OR FEWER: ITS SYMBOLS ARE WORTH X1.5');
     expect(RELICS.steadyhands.text).toBe('+1 HOLD A FIGHT. A JACKPOT YOU HELD FOR PAYS X2');
     expect(RELICS.pairstreak.text).toBe('EACH PAIR IN A ROW PAYS +50% MORE THAN THE LAST, UP TO X2.5. A SPIN WITHOUT A PAIR RESETS IT');
     expect(RELICS.sticky.text).toBe('EACH CELL AN ENEMY SPOILS ON YOUR REELS: +1 CHIP (MAX 5 A FIGHT)');
@@ -160,7 +160,7 @@ describe('CUT', () => {
   });
 });
 
-// ---- LEAN MACHINE: A REEL WITH 10 CELLS OR FEWER: ITS SYMBOLS ARE WORTH X1.5 ----------------------------------------
+// ---- LEAN MACHINE: A REEL WITH 11 CELLS OR FEWER: ITS SYMBOLS ARE WORTH X1.5 ----------------------------------------
 
 describe('LEAN MACHINE', () => {
   const lean = (strips: GameConfig['player']['strips'], relics: RelicId[] = ['lean']) => fight(relics, (c) => (c.player.strips = strips));
@@ -174,10 +174,12 @@ describe('LEAN MACHINE', () => {
     expect(notes(on, 'sword')).toContain('X1.5 LEAN');
     expect(fired(on, 'lean')).toBe(true);
   });
-  it('10 OR FEWER: a reel of 11 cells pays as usual, a reel of 7 is lean', () => {
+  it('11 OR FEWER: a reel of 12 cells pays as usual, reels of 11 and 7 are lean', () => {
+    const at12 = round(lean([r12, r12, r12]), ['sword', 'sword', 'shield']);
+    expect(notes(at12, 'sword').some((n) => n.endsWith('LEAN'))).toBe(false);
+    expect(fired(at12, 'lean')).toBe(false);
     const at11 = round(lean([r11, r11, r12]), ['sword', 'sword', 'shield']);
-    expect(notes(at11, 'sword').some((n) => n.endsWith('LEAN'))).toBe(false);
-    expect(fired(at11, 'lean')).toBe(false);
+    expect(notes(at11, 'sword')).toContain('X1.5 LEAN');
     const at7 = round(lean([{ sword: 4, shield: 3 }, { sword: 4, shield: 3 }, r12]), ['sword', 'sword', 'shield']);
     expect(notes(at7, 'sword')).toContain('X1.5 LEAN');
   });

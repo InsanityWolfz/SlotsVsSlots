@@ -44,7 +44,7 @@ const pct = (x: number) => Math.round(x * 100);
 /** The content batch's numbers (user, 2026-11-07: CUT, LEAN MACHINE, STEADY HANDS, PAIR STREAK, STICKY FINGERS). */
 export const CONTENT_1107 = {
   /** LEAN MACHINE: a reel this many cells or fewer (reels start at 12)... */
-  leanCells: 10,
+  leanCells: 11,
   /** ...pays its symbols at this much. */
   leanMul: 1.5,
   /** STEADY HANDS: more HOLDs a fight, and a jackpot on a spin with a held reel pays this much. */

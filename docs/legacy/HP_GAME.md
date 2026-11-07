@@ -302,7 +302,8 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   - **CUT** (draft card, the `remove` kind): REMOVE 1 [SYMBOL] FROM REEL [N]. Any of your machine's own symbols, any
     reel; a plain cell only (never a charmed one), and never takes a reel under 6 cells (no CUT offered there). Dealt
     as the draft's second card's last 30%, after CLEAR ROCKS: in 30% of a fresh run's drafts (a WILD card 34%).
-  - **LEAN MACHINE** (uncommon, always offered: it's the plan you draft toward): A REEL WITH 10 CELLS OR FEWER: ITS
+  - **LEAN MACHINE** (uncommon, always offered: it's the plan you draft toward; 10 -> 11 cells, user 2026-11-07, because at 10 it
+    switched on 0.02 times a fight in the sim, at 11 (one CUT) 0.66): A REEL WITH 10 CELLS OR FEWER: ITS
     SYMBOLS ARE WORTH X1.5. A true multiplier on each of your paying groups, for its share of cells on lean reels (a
     pair across a lean reel and a full one: X1.25 LEAN; MAKE IT RAIN isn't symbols). The reel is counted as built, at
     the fight's start: rocks an enemy adds mid-fight don't switch it off (they stay for the run, so the next fight
