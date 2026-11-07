@@ -304,6 +304,9 @@ BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP). Fr
 stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
 
 ## Balance (`tools/sim/balance.ts`)
+- **Cashier HEAL and +MAX HP pricier (2026-11-07, user):** HEAL 6 (+3 a buy) -> 10 (+5), +MAX HP 5 (+4) -> 8 (+6).
+  Sim 400 runs a machine, WHITE / RED / GREEN: run win falls 0-5 points (KNIGHT WHITE 69 -> 64); THE HOUSE when reached
+  barely moves (89-97 -> 87-96). Pricier heals alone don't give THE HOUSE teeth: that's the balance pass.
 - **OVERTIME from round 6 (2026-11-06, user: "let's try"):** sim, 300 runs a machine at WHITE / RED / GREEN: regular and
   elite fights past 12 of your spins 470 / 721 / 740 -> 259 / 422 / 437 (about -40%); a run's longest fight -1 spin;
   TESLA's act 2 elites past 12 spins 14% / 20% -> 9% / 12% (WHITE / GREEN). Run win (500 runs) falls 0-7 points:

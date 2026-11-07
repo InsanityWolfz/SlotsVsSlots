@@ -36,9 +36,11 @@ export const RUN = {
   /** Drafts: chance a charm card is a charm type you DON'T own yet (a pivot), when you own some. */
   pivotChance: 0.5,
   /** Each Cashier heal bought this run costs this much more than the last. */
-  healStep: 3,
+  healStep: 5,
   /** +MAX HP costs this much more each time you buy it (it was the best buy at every visit: playtest 2026-10-31). */
-  maxHpStep: 4,
+  // (Heal 6 +3 and MAX HP 5 +4 -> 10 +5 and 8 +6, user 2026-11-07: HEAL and +MAX HP were the best buys, so THE HOUSE
+  // fell in 4 spins in a stranger's demo runs.)
+  maxHpStep: 6,
   /** Rocks an ELITE adds during one fight that stay for the rest of the run (user, 2026-10-30: none; they confused). */
   permanentRocksPerFight: 0,
   swapCount: 3,
@@ -108,7 +110,7 @@ export const CHIPS = {
   /** Every run starts with a little float so shop 1 is a real visit. */
   start: 8,
   // heal 5 -> 12, once a visit (2026-10-12: no heal after fights now, so HP is worth more; user).
-  prices: { relic: 10, heal: 6, maxHp: 5, legend: 20, showcase: 24, level: 10 },
+  prices: { relic: 10, heal: 10, maxHp: 8, legend: 20, showcase: 24, level: 10 },
   /** Each level gained this run adds this to the Cashier's level price. */
   levelStep: 4,
   /** First reroll per visit costs 1, then +1 each time. */
