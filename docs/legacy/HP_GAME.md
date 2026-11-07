@@ -303,18 +303,18 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
     reel; a plain cell only (never a charmed one), and never takes a reel under 6 cells (no CUT offered there). Dealt
     as the draft's second card's last 30%, after CLEAR ROCKS: in 30% of a fresh run's drafts (a WILD card 34%).
   - **LEAN MACHINE** (uncommon, always offered: it's the plan you draft toward; 10 -> 11 cells, user 2026-11-07, because at 10 it
-    switched on 0.02 times a fight in the sim, at 11 (one CUT) 0.66): A REEL WITH 10 CELLS OR FEWER: ITS
-    SYMBOLS ARE WORTH X1.5. A true multiplier on each of your paying groups, for its share of cells on lean reels (a
+    switched on 0.02 times a fight in the sim, at 11 (one CUT) 0.66): A REEL WITH 11 SYMBOLS OR FEWER: EACH OF
+    ITS SYMBOLS IS WORTH X1.5. A true multiplier on each of your paying groups, for its share of cells on lean reels (a
     pair across a lean reel and a full one: X1.25 LEAN; MAKE IT RAIN isn't symbols). The reel is counted as built, at
     the fight's start: rocks an enemy adds mid-fight don't switch it off (they stay for the run, so the next fight
     counts them).
   - **STEADY HANDS** (uncommon): +1 HOLD A FIGHT (3). A JACKPOT YOU HELD FOR PAYS X2: a jackpot (3 reels) on a spin
     with a held reel (X2 STEADY HANDS); not JOKER's one-cell meter jackpots.
-  - **PAIR STREAK** (uncommon; HOT STREAK is a different relic): EACH PAIR IN A ROW PAYS +50% MORE THAN THE LAST, UP TO
-    X2.5. A SPIN WITHOUT A PAIR RESETS IT. A pair or jackpot of your attack symbol (BUILD-UP's test) counts; the first
+  - **PAIR STREAK** (uncommon; HOT STREAK is a different relic): EACH PAIR OF YOUR ATTACK SYMBOL IN A ROW PAYS +50% MORE
+    THAN THE LAST, UP TO X2.5. A SPIN WITHOUT ONE RESETS IT (a jackpot has reels 1 and 2 matching, so it's a PAIR too). A pair or jackpot of your attack symbol (BUILD-UP's test) counts; the first
     pays as usual, then X1.5 / X2 / X2.5 PAIR STREAK; per fight. Its feed row counts up as it fires.
-  - **STICKY FINGERS** (common; never a starting pick, like HOUSE TAX): EACH CELL AN ENEMY SPOILS ON YOUR REELS: +1
-    CHIP (MAX 5 A FIGHT). Counts each cell SPILLED, STOLEN, ROCKED, IOU'D (bombs), MARKED, FAKED or CONFISCATED (THE
+  - **STICKY FINGERS** (common; never a starting pick, like HOUSE TAX): EACH SYMBOL OR REEL AN ENEMY SABOTAGES: +1
+    CHIP (MAX 5 A FIGHT) (the SABOTAGE keyword; words pass 2026-11-07: symbols, not cells). Counts each cell SPILLED, STOLEN, ROCKED, IOU'D (bombs), MARKED, FAKED or CONFISCATED (THE
     REPO MAN's too), and each reel FROZEN, JAMMED or JINXED; not the RAKE, THE DEALER's BUST, THE WHEEL's bets or chips
     eaten. A +N CHIPS pop as each lands; banked on a win (on the RESULTS line).
   - **Sim** (400 runs a machine, WHITE / RED / GREEN, before -> after): KNIGHT 64 -> 62 / 41 -> 34 / 41 -> 31, TESLA

@@ -55,10 +55,10 @@ describe('the four relics: tiers, faces and offers', () => {
     for (const r of NEW) expect(LEGENDARY.has(r)).toBe(false);
   });
   it('their full texts, the same on every machine, and card faces of two lines', () => {
-    expect(RELICS.lean.text).toBe('A REEL WITH 11 CELLS OR FEWER: ITS SYMBOLS ARE WORTH X1.5');
+    expect(RELICS.lean.text).toBe('A REEL WITH 11 SYMBOLS OR FEWER: EACH OF ITS SYMBOLS IS WORTH X1.5');
     expect(RELICS.steadyhands.text).toBe('+1 HOLD A FIGHT. A JACKPOT YOU HELD FOR PAYS X2');
-    expect(RELICS.pairstreak.text).toBe('EACH PAIR IN A ROW PAYS +50% MORE THAN THE LAST, UP TO X2.5. A SPIN WITHOUT A PAIR RESETS IT');
-    expect(RELICS.sticky.text).toBe('EACH CELL AN ENEMY SPOILS ON YOUR REELS: +1 CHIP (MAX 5 A FIGHT)');
+    expect(RELICS.pairstreak.text).toBe('EACH PAIR OF YOUR ATTACK SYMBOL IN A ROW PAYS +50% MORE THAN THE LAST, UP TO X2.5. A SPIN WITHOUT ONE RESETS IT');
+    expect(RELICS.sticky.text).toBe('EACH SYMBOL OR REEL AN ENEMY SABOTAGES: +1 CHIP (MAX 5 A FIGHT)');
     for (const r of NEW)
       for (const cab of ALL_CABINETS) {
         expect(relicText(r, cab)).toBe(RELICS[r].text);
@@ -160,7 +160,7 @@ describe('CUT', () => {
   });
 });
 
-// ---- LEAN MACHINE: A REEL WITH 11 CELLS OR FEWER: ITS SYMBOLS ARE WORTH X1.5 ----------------------------------------
+// ---- LEAN MACHINE: A REEL WITH 11 SYMBOLS OR FEWER: EACH OF ITS SYMBOLS IS WORTH X1.5 ----------------------------------------
 
 describe('LEAN MACHINE', () => {
   const lean = (strips: GameConfig['player']['strips'], relics: RelicId[] = ['lean']) => fight(relics, (c) => (c.player.strips = strips));
@@ -234,7 +234,7 @@ describe('STEADY HANDS', () => {
   });
 });
 
-// ---- PAIR STREAK: EACH PAIR IN A ROW PAYS +50% MORE THAN THE LAST, UP TO X2.5. A SPIN WITHOUT A PAIR RESETS IT ------
+// ---- PAIR STREAK: EACH PAIR OF YOUR ATTACK SYMBOL IN A ROW PAYS +50% MORE THAN THE LAST, UP TO X2.5. A SPIN WITHOUT ONE RESETS IT ------
 
 describe('PAIR STREAK', () => {
   const P: SymbolId[] = ['sword', 'sword', 'shield'];
@@ -272,7 +272,7 @@ describe('PAIR STREAK', () => {
   });
 });
 
-// ---- STICKY FINGERS: EACH CELL AN ENEMY SPOILS ON YOUR REELS: +1 CHIP (MAX 5 A FIGHT) -------------------------------
+// ---- STICKY FINGERS: EACH SYMBOL OR REEL AN ENEMY SABOTAGES: +1 CHIP (MAX 5 A FIGHT) -------------------------------
 
 describe('STICKY FINGERS', () => {
   /** The enemy spins this line once (a slime pair slimes 4 of your cells, a jackpot 9). */
@@ -286,7 +286,7 @@ describe('STICKY FINGERS', () => {
     }
     return { f, evs };
   };
-  it('EACH CELL AN ENEMY SPOILS: +1 CHIP (a slime pair spoils 4 cells: 4 chips), shown as it lands', () => {
+  it('EACH SYMBOL AN ENEMY SABOTAGES: +1 CHIP (a slime pair spoils 4 cells: 4 chips), shown as it lands', () => {
     const { f, evs } = slimed(['sticky'], [['slime', 'slime', 'empty']]);
     const cells = ofType(evs, 'slime')[0].cells.length;
     expect(cells).toBe(4);

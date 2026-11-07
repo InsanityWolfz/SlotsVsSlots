@@ -132,10 +132,10 @@ export const RELICS: Record<RelicId, RelicDef> = {
   hypeman: { id: 'hypeman', name: 'HYPE MAN', text: "+1 VOLUME BEFORE EVERY OTHER SPIN. NOTES PAY HALF WHEN IT ISN'T THE DROP", sprite: 'relicPulse', machine: 'jukebox' },
   openbar: { id: 'openbar', name: 'OPEN BAR', text: 'MAKE IT RAIN COSTS NOTHING. WINS PAY NO CHIPS', sprite: 'relicTipJar', machine: 'midas' },
   // The content batch (user, 2026-11-07).
-  lean: { id: 'lean', name: 'LEAN MACHINE', text: `A REEL WITH ${CONTENT_1107.leanCells} CELLS OR FEWER: ITS SYMBOLS ARE WORTH X${CONTENT_1107.leanMul}`, sprite: 'relicLean' },
+  lean: { id: 'lean', name: 'LEAN MACHINE', text: `A REEL WITH ${CONTENT_1107.leanCells} SYMBOLS OR FEWER: EACH OF ITS SYMBOLS IS WORTH X${CONTENT_1107.leanMul}`, sprite: 'relicLean' },
   steadyhands: { id: 'steadyhands', name: 'STEADY HANDS', text: `+${CONTENT_1107.steadyHolds} HOLD A FIGHT. A JACKPOT YOU HELD FOR PAYS X${CONTENT_1107.steadyMul}`, sprite: 'relicSteady' },
-  pairstreak: { id: 'pairstreak', name: 'PAIR STREAK', text: `EACH PAIR IN A ROW PAYS +${pct(CONTENT_1107.streakStep)}% MORE THAN THE LAST, UP TO X${CONTENT_1107.streakCap}. A SPIN WITHOUT A PAIR RESETS IT`, sprite: 'relicPairStreak' },
-  sticky: { id: 'sticky', name: 'STICKY FINGERS', text: `EACH CELL AN ENEMY SPOILS ON YOUR REELS: +${CONTENT_1107.stickyChips} CHIP (MAX ${CONTENT_1107.stickyMax} A FIGHT)`, sprite: 'relicSticky' },
+  pairstreak: { id: 'pairstreak', name: 'PAIR STREAK', text: `EACH PAIR OF YOUR ATTACK SYMBOL IN A ROW PAYS +${pct(CONTENT_1107.streakStep)}% MORE THAN THE LAST, UP TO X${CONTENT_1107.streakCap}. A SPIN WITHOUT ONE RESETS IT`, sprite: 'relicPairStreak' },
+  sticky: { id: 'sticky', name: 'STICKY FINGERS', text: `EACH SYMBOL OR REEL AN ENEMY SABOTAGES: +${CONTENT_1107.stickyChips} CHIP (MAX ${CONTENT_1107.stickyMax} A FIGHT)`, sprite: 'relicSticky' },
 };
 
 /**
