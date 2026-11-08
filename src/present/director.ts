@@ -49,8 +49,12 @@ export class Director {
 
   constructor(public s: Stage) {}
 
+  /** This turn's events: a pay can say what its writing really did (a freeze the caps cut short: playtest 2026-11-08). */
+  turnEvents: CombatEvent[] = [];
+
   async playTurn(result: TurnResult): Promise<void> {
     const evs = result.events;
+    this.turnEvents = evs;
     // A quiet turn (no jackpot, ability, special, bonus or death, and little damage) plays 1.5x faster.
     const loud = new Set<CombatEvent['type']>(['ability', 'specialFire', 'death', 'fightEnd', 'noMoreBets', 'wheelFast', 'phoenix', 'potWin', 'payoff' as CombatEvent['type']]);
     const dealt = evs.reduce((a, e) => a + (e.type === 'attack' ? e.amount : 0), 0);

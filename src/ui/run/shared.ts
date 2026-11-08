@@ -227,7 +227,7 @@ export function abilityWhat(e: EnemyDef, run?: RunState): string {
     mark: `MARKS ${p} OF YOUR SYMBOLS`,
     penalty: `TAKES 2 OF YOUR CHARMS FOR THE FIGHT, THEN HITS FOR ${p}`,
     repo: 'TAKES A CHARM FOR THE FIGHT',
-    houseTake: `RAKES YOUR GROUPS FOR ${p} TURN${p === 1 ? '' : 'S'}`,
+    houseTake: `RAKES YOUR PAYS FOR ${p} TURN${p === 1 ? '' : 'S'}`,
     deal: 'DEALS A BUST',
     owner: 'CHEATS A NEW WAY EACH TIME',
     hammer: 'HITS 40% OF YOUR MAX HP THROUGH SHIELDS',

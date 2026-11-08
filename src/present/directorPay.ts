@@ -1,6 +1,7 @@
 /** The spin's payoff on screen: the payline numbers, THE CLIMB, PAIR! / JACKPOT! / BIG WIN banners, the WILDS bonus reel and LUCKY WILDs (split from director.ts, 2026-11-05). */
 import { defaultConfig, symLabel, type Enh, type SideId, type SymbolId } from '../core/config';
 import { effectText, other, WHEEL_SYMBOLS, wheelCharm, WRITERS } from '../core/fight';
+import { PAIR_PAY } from '../core/fightRules';
 import type { LineScore, ScoreGroup, Tier } from '../core/scoring';
 import { backOut, cubicIn, cubicOut, sineIn } from './ease';
 import { Banner, Projectile, SymbolWheel } from './fx';
@@ -217,7 +218,12 @@ export async function winPresentation(d: Director, side: SideId, score: LineScor
   const gross = Math.round(g.base * g.mult);
   // One decimal unless it makes the sum read wrong (39 x 11.3 = 439): then two.
   const fmt = (x: number) => (Number.isInteger(x) ? String(x) : Math.round(g.base * Number(x.toFixed(1))) === gross ? x.toFixed(1) : String(Number(x.toFixed(2))));
-  const effect = side === 'enemy' && WRITERS.has(sym) ? effectText(sym, g.amount) : '';
+  // A freeze or jam says what it really did: the caps (2 frozen reels at most, no frozen pair, a thaw's shield) can
+  // cut it short, and FREEZES 2 REELS FOR 3 TURNS over one frozen reel read as a bug (playtest 2026-11-08).
+  const status = side === 'enemy' && (sym === 'ice' || sym === 'lock') ? d.turnEvents.find((e) => (e.type === 'freeze' || e.type === 'lock') && e.from === 'enemy') : undefined;
+  const n = (k: number, one: string) => `${k} ${one}${k === 1 ? '' : 'S'}`;
+  const actual = status && (status.type === 'freeze' || status.type === 'lock') ? `${status.type === 'freeze' ? 'FREEZES' : 'JAMS'} ${n(status.targets.length, 'REEL')} FOR ${n(status.turns, 'TURN')}` : sym === 'ice' || (sym === 'lock' && g.amount >= PAIR_PAY) ? 'FIZZLES' : '';
+  const effect = side === 'enemy' && WRITERS.has(sym) ? actual || effectText(sym, g.amount) : '';
   // THE PAYOUT LADDER (feel playtest, 2026-10-15: "JACKPOT!" every two spins meant nothing). A pay is sized by the HP
   // bar it lands on: a hit by the enemy's (a block by your own), so a small jackpot stays small and BIG WIN / MEGA WIN
   // are earned. PAIR and JACKPOT still name the line; the size names the moment.

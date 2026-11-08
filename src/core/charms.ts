@@ -73,13 +73,13 @@ export function charmRuleText(enh: Enh, lvl: number): string {
   const v = charmValue(enh, lvl);
   switch (enh) {
     case 'gold':
-      return `X${v} TO ITS GROUP (GOLD IN A GROUP ADDS UP)`;
+      return `X${v} TO ITS PAY (GOLD ON THE SAME PAY ADDS UP)`;
     case 'keen':
-      return `+${v} TO EACH ONE IN ITS GROUP, WHICH PIERCES SHIELDS`;
+      return `+${v} TO EACH SYMBOL IN ITS PAY, WHICH PIERCES SHIELDS`;
     case 'charged':
-      return `+${v} TO ITS GROUP`;
+      return `+${v} TO ITS PAY`;
     case 'vamp':
-      return `HEALS ${v} WHEN ITS GROUP HITS (ONCE PER GROUP)`;
+      return `HEALS ${v} WHEN ITS PAY HITS (ONCE PER PAY)`;
     case 'lucky':
       return `${v}% TO LAND AS A WILD`;
     case 'blaze':
@@ -87,13 +87,13 @@ export function charmRuleText(enh: Enh, lvl: number): string {
     case 'spiked':
       return `ALSO HITS FOR ${v}% OF ITS SHIELD`;
     case 'lucre':
-      return `+${LUCRE_CHIPS} CHIPS WHEN ITS GROUP PAYS (MAX ${v} A FIGHT, ON A WIN)`;
+      return `+${LUCRE_CHIPS} CHIPS WHEN IT PAYS (MAX ${v} A FIGHT, ON A WIN)`;
     case 'trick':
       return `+${v} TO YOUR JACKPOT METER WHEN IT LANDS`;
     case 'echo':
       return `AT THE DROP, ITS NOTE HITS X${v}`;
     case 'glass':
-      return `X${v} TO ITS GROUP (ADDS UP LIKE GOLD). 1 IN 4 TO SHATTER FOR GOOD WHEN IT PAYS`;
+      return `X${v} TO ITS PAY (ADDS UP LIKE GOLD). 1 IN 4 TO SHATTER FOR GOOD WHEN IT PAYS`;
   }
 }
 

@@ -45,9 +45,9 @@ export const KEYWORDS: Keyword[] = [
   { word: 'FREEZE', icon: 'kwFrozen', forms: ['FREEZES', 'FROZEN'], color: '#9fe8ff', text: "A FROZEN REEL DOESN'T SPIN: IT KEEPS WHAT IT SHOWS" },
   // (JAM has no icon of its own: it borrows FROZEN's, the other reel that won't play.)
   { word: 'JAM', icon: 'kwFrozen', forms: ['JAMS', 'JAMMED'], color: '#c9bba8', text: 'A JAMMED REEL PAYS NOTHING ON THE PAYLINE' },
-  { word: 'JINX', icon: 'kwJinx', forms: ['JINXES', 'JINXED'], color: '#c9a0ff', text: 'ANY GROUP ON A JINXED REEL PAYS HALF' },
+  { word: 'JINX', icon: 'kwJinx', forms: ['JINXES', 'JINXED'], color: '#c9a0ff', text: 'ANY PAY THAT USES A JINXED REEL IS HALVED' },
   // (RAKE has no icon of its own: it borrows SABOTAGE's.)
-  { word: 'RAKE', icon: 'kwSabotage', forms: ['RAKES', 'RAKED'], color: '#ffd23f', text: 'WHILE RAKED, EACH OF YOUR GROUPS PAYS 10 LESS' },
+  { word: 'RAKE', icon: 'kwSabotage', forms: ['RAKES', 'RAKED'], color: '#ffd23f', text: 'WHILE RAKED, EACH OF YOUR PAYS IS 10 LESS' },
   { word: 'SPILL', icon: 'kwSpill', forms: ['SPILLED', 'SPILLS'], color: COLORS.slime, text: 'A SPILLED CELL PAYS NOTHING. A SPILL PAIR MOPS UP ITS REELS, A SPILL JACKPOT MOPS UP THEM ALL' },
   { word: 'ROCK', icon: 'kwRock', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD CELL: IT PAYS NOTHING' },
   { word: 'IOU', icon: 'kwIou', forms: ['IOUS'], color: '#ff9a3a', text: 'TICKS DOWN, THEN HITS YOU. LAND IT ON YOUR PAYLINE TO PAY IT OFF' },

@@ -2,7 +2,7 @@
 import { symLabel, UNIT, type SideId } from '../core/config';
 import { backOut, cubicIn, cubicOut, sineIn, sineInOut } from './ease';
 import { Projectile } from './fx';
-import { cellCenter, COLORS, MACHINE_TOP } from './layout';
+import { cellCenter, COLORS, MACHINE_H, MACHINE_TOP } from './layout';
 import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
 import { BOMB } from '../core/relics';
@@ -164,7 +164,8 @@ export async function status(d: Director, e: Ev<'freeze'> | Ev<'lock'>, kind: 'f
   await Promise.all(flights);
   const c = d.machineCenter(e.to);
   const label = ice ? `FROZEN ${e.turns} TURN${e.turns > 1 ? 'S' : ''}` : 'JAMMED!';
-  d.bg(d.popText(label, c.x, MACHINE_TOP - 4, 3, ice ? '#9fe8ff' : '#ffb070', 16, 0.4));
+  // (Over the reels: on the machine's top edge it sat under the YOUR SPIN banner: playtest 2026-11-08.)
+  d.bg(d.popText(label, c.x, MACHINE_TOP + MACHINE_H / 2, 3, ice ? '#9fe8ff' : '#ffb070', 16, 0.4));
   if (e.reels.length) d.settle(e.from, e.reels);
   await d.c.wait(0.2);
 }
@@ -173,7 +174,7 @@ export async function thaw(d: Director, e: Ev<'thaw'>): Promise<void> {
   const m = d.s.machines[e.side];
   if (e.status === 'raked') {
     const c = d.machineCenter(e.side);
-    d.bg(d.popText('RAKE LIFTED', c.x, MACHINE_TOP - 30, 2, '#7dff7a', 16, 0.3));
+    d.bg(d.popText('RAKE LIFTED', c.x, MACHINE_TOP + MACHINE_H / 2, 2, '#7dff7a', 16, 0.3));
     await d.c.wait(0.05);
     return;
   }
@@ -288,7 +289,7 @@ export async function hex(d: Director, e: Ev<'hex'>): Promise<void> {
   });
   await Promise.all(flights);
   const c = d.machineCenter(e.to);
-  d.bg(d.popText(`JINXED ${e.turns} TURN${e.turns > 1 ? 'S' : ''}: HALF PAY`, c.x, MACHINE_TOP - 4, 2, '#e0a0ff', 16, 0.5));
+  d.bg(d.popText(`JINXED ${e.turns} TURN${e.turns > 1 ? 'S' : ''}: HALF PAY`, c.x, MACHINE_TOP + MACHINE_H / 2, 2, '#e0a0ff', 16, 0.5));
   if (e.reels.length) d.settle(e.from, e.reels);
   await d.c.wait(0.2);
 }
@@ -399,7 +400,7 @@ export async function fake(d: Director, e: Ev<'fake'>): Promise<void> {
   });
   await Promise.all(hits);
   const c = d.machineCenter(e.to);
-  d.bg(d.popText(`FAKED: ${charmList(e.enhs)} OFF FOR ${e.turns} TURNS`, c.x, MACHINE_TOP - 30, 2, '#c0c0c0', 16, 0.6));
+  d.bg(d.popText(`FAKED: ${charmList(e.enhs)} OFF FOR ${e.turns} TURNS`, c.x, MACHINE_TOP + MACHINE_H / 2, 2, '#c0c0c0', 16, 0.6));
   if (e.reels.length) d.settle(e.from, e.reels);
   await d.c.wait(0.15);
 }
@@ -481,7 +482,7 @@ export async function rake(d: Director, e: Ev<'rake'>): Promise<void> {
   if (e.reels.length) await d.activate(e.from, e.reels, '#c87a3a');
   d.s.sounds.coin(1);
   const c = d.machineCenter(e.to);
-  await d.popText(`RAKED: GROUPS PAY -${e.cut} FOR ${e.turns} TURN${e.turns > 1 ? 'S' : ''}`, c.x, MACHINE_TOP - 30, 2, '#e0a070', 16, 0.5);
+  await d.popText(`RAKED: PAYS -${e.cut} FOR ${e.turns} TURN${e.turns > 1 ? 'S' : ''}`, c.x, MACHINE_TOP + MACHINE_H / 2, 2, '#e0a070', 16, 0.5);
   if (e.reels.length) d.settle(e.from, e.reels);
 }
 

@@ -173,7 +173,7 @@ ARCHETYPES.push(
     hpMul: 0.95,
     ability: { kind: 'houseTake', every: 4, power: 3 },
     minDepth: 0,
-    blurb: 'RAKES YOUR WINNINGS: YOUR GROUPS PAY LESS FOR A FEW TURNS',
+    blurb: 'RAKES YOUR WINNINGS: YOUR PAYS ARE SMALLER FOR A FEW TURNS',
     acts: [3],
   },
 );
