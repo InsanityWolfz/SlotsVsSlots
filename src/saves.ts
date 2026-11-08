@@ -1,4 +1,5 @@
 /** Saves and prefs: the save keys, the Prefs type and its sanitising, crash-safe load / save with the desktop file sync, the saved run (split from game.ts, 2026-11-05). */
+import { DEMO } from './demo';
 import { desktop } from './build';
 import { ALL_CABINETS, type CabinetId } from './core/cabinets';
 import { CHARM_VALUE } from './core/charms';
@@ -46,6 +47,10 @@ export interface Prefs {
 /** The payline hint (PAIRS START ON REEL 1) shows this many times, ever. */
 export const PAYLINE_HINTS = 3;
 
+/** New saves' speed and master volume (the demo: 1X and 5 of 10). */
+const DEFAULT_SPEED = DEMO ? 1 : 2;
+const DEFAULT_MASTER = DEMO ? 5 : 10;
+
 export const clampVol = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.min(10, Math.round(n))) : 10);
 const clampStake = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.min(MAX_STAKE, Math.floor(n))) : 0);
 const machineIds = (v: unknown): CabinetId[] => (Array.isArray(v) ? (v.filter((x) => (ALL_CABINETS as string[]).includes(x)) as CabinetId[]) : []);
@@ -66,7 +71,8 @@ export function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
   const vol = p.vol && typeof p.vol === 'object' ? (p.vol as Partial<Prefs['vol']>) : {};
   return {
     // Old saves: 1/2/4 on the old scale become 2/4/8 (the same real speed).
-    speed: p.speedV === 2 ? (SPEEDS.includes(p.speed as number) ? (p.speed as number) : 2) : [1, 2, 4].includes(p.speed as number) ? (p.speed as number) * 2 : 2,
+    // (The demo starts new players at 1X and half volume: user, 2026-11-08.)
+    speed: p.speedV === 2 ? (SPEEDS.includes(p.speed as number) ? (p.speed as number) : DEFAULT_SPEED) : [1, 2, 4].includes(p.speed as number) ? (p.speed as number) * 2 : DEFAULT_SPEED,
     speedV: 2,
     auto: typeof p.auto === 'boolean' ? p.auto : false,
     juice: { ...defaultJuice(), ...juice },
@@ -80,7 +86,7 @@ export function sanitizePrefs(raw: unknown, publicBuild: boolean): Prefs {
     tutorialDone: p.tutorialDone === true,
     paylineHints: typeof p.paylineHints === 'number' && Number.isFinite(p.paylineHints) ? Math.max(0, Math.min(PAYLINE_HINTS, Math.floor(p.paylineHints))) : 0,
     metersExplained: machineIds(p.metersExplained),
-    vol: { master: clampVol(vol.master), music: clampVol(vol.music), sfx: clampVol(vol.sfx) },
+    vol: { master: vol.master === undefined ? DEFAULT_MASTER : clampVol(vol.master), music: clampVol(vol.music), sfx: clampVol(vol.sfx) },
   };
 }
 
