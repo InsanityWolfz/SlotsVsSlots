@@ -330,8 +330,9 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
 ## HIGH STAKES (`src/core/stakes.ts`)
 Each machine has its own ladder. Winning a run at your best stake unlocks the next one.
 WHITE (base) → RED (scar rocks, **Act 3 on**) → GREEN (the Wheel starts fast) → BLACK (the House cheats) →
-BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP). From BLACK, enemies also hit 7% harder a
-stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
+BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP). From GREEN, enemies also hit 5% harder a
+stake (GREEN +5%, BLACK +10%, BLUE +15%, GOLD +20%; shown as X1.05 GREEN on their hits). (User, 2026-11-08; it was from
+BLACK, +7% a stake: GREEN's own rule cost nothing, so RED and GREEN played the same.)
 
 ## Balance (`tools/sim/balance.ts`)
 - **Balance pass (2026-11-07; ROADMAP phase 6's sim pass, numbers only).** Measured first at 500 runs a machine a
@@ -371,6 +372,13 @@ stake (BLACK +7%, BLUE +14%, GOLD +21%; shown as X1.07 BLACK on their hits).
   (BANKROLL 50 / 37 -> 63 / 50; KNIGHT 42 / 17 and JUKEBOX 34 / 24 unchanged and still weak). `tools/sim/balance.ts`
   now shows act 3 from RED (it showed it from GREEN), the median spins of each boss win and the HP taken into THE
   HOUSE. Fuzz: no invariant breaks.
+- **Enemy damage from GREEN, +5% a stake (2026-11-08, user):** was from BLACK, +7%. Sim 500 runs a machine, run win
+  GREEN / BLACK / BLUE / GOLD (target 36 / 28 / 20 / 14): KNIGHT 34 / 27 / 18 / 13, TESLA 36 / 27 / 16 / 13, JUKEBOX
+  36 / 24 / 14 / 9, JOKER 34 / 26 / 23 / 15, BANKROLL 36 / 28 / 22 / 14 (only JUKEBOX BLUE off, -6; before: TESLA and
+  JUKEBOX GREEN +6, JUKEBOX GOLD -5). RED is unchanged (TESLA -5, BANKROLL -6 there: scars plus act 3, left as the user's
+  harder RED). Tried and dropped: +7% from GREEN (BLACK to GOLD fell 4-11 too far), +4% (JOKER BLUE +6).
+- **Settings for new players (2026-11-08, user):** SPEED 1X and master volume 5 of 10, in the game and the demo (were 2X
+  and 10). Saved settings are kept.
 - **Cashier HEAL and +MAX HP pricier (2026-11-07, user):** HEAL 6 (+3 a buy) -> 10 (+5), +MAX HP 5 (+4) -> 8 (+6).
   Sim 400 runs a machine, WHITE / RED / GREEN: run win falls 0-5 points (KNIGHT WHITE 69 -> 64); THE HOUSE when reached
   barely moves (89-97 -> 87-96). Pricier heals alone don't give THE HOUSE teeth: that's the balance pass.

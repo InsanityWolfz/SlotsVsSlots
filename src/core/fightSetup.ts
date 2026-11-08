@@ -46,7 +46,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   if (e.boss === 'dealer') {
     cfg.player.stackShield = Math.min(BOSS_CHIP_SHIELD_CAP, cfg.player.stackShield ?? 0);
   }
-  // BLACK and up: enemies hit harder (stakes.ts stakeDmg).
+  // GREEN and up: enemies hit harder (stakes.ts stakeDmg).
   if (stakeDmg(run.stake) !== 1) cfg.enemy.stakeDmg = stakeDmg(run.stake);
   // SECOND PAYLINE (legendary relic): its price, on the enemy's hits (its own note on the banner).
   if (run.player.relics.includes('secondline')) cfg.enemy.lineDmg = LEGEND_RELIC.lineDmg;
