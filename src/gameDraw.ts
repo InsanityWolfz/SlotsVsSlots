@@ -201,5 +201,6 @@ export function sceneNow(g: Game): Scene {
     turn: fight ? g.stage.gutter.side : null,
     fight,
     turbo: fight && !!g.fight.cfg.enemy.owner,
+    pot: fight && boss === 'house' ? (g.stage?.gutter?.pot ?? 0) : 0,
   };
 }

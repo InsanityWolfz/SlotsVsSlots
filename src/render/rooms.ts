@@ -31,7 +31,11 @@ import { alley, buildAlley } from './roomAlley';
 import { dealer, owner, vault, wheel } from './roomBosses';
 import { buildFloor, floor } from './roomFloor';
 import { canvas, FLOOR_Y, hexA, LH, LW, MID, NEON, rect, seeded, type RoomArt } from './roomKit';
+import { drawEntrance, entranceCheer, entranceUpdate } from './roomEntrance';
 import { buildVip, vip } from './roomVip';
+
+/** Rooms v2 (the style key, 2026-11-09): THE HOUSE's room is the casino entrance. Off: the old alley and vault. */
+export const ROOM_V2 = { on: true };
 
 export { LH, LW } from './roomKit';
 
@@ -53,6 +57,8 @@ export interface Scene {
   fight: boolean;
   /** ENDLESS loop 5: THE TURBO is in the room (red beacons, the crowd backs off). */
   turbo?: boolean;
+  /** THE HOUSE's pot (rooms v2: the entrance's lights grow with it). */
+  pot?: number;
 }
 
 // ---- the still layers --------------------------------------------------------------------------------------------
@@ -147,6 +153,7 @@ export class Rooms {
 
   /** A jackpot landed: yours cheers the room, theirs makes it wince. */
   cheer(ours: boolean): void {
+    entranceCheer(ours);
     if (!ours) {
       this.groanT = 1;
       return;
@@ -171,6 +178,7 @@ export class Rooms {
 
   update(dt: number): void {
     this.time += dt;
+    entranceUpdate(dt);
     // ENDLESS: loose bills drift down the side strips, more each loop.
     if (this.loopNow >= 2 && Math.random() < dt * Math.min(3, 0.4 * this.loopNow)) {
       const left = Math.random() < 0.5;
@@ -197,6 +205,11 @@ export class Rooms {
   }
 
   draw(ctx: CanvasRenderingContext2D, s: Scene, time: number): void {
+    if (ROOM_V2.on && s.boss === 'house') {
+      drawEntrance(ctx, { pot: s.pot ?? 0, foeHp: s.foeHp, turn: s.turn, time });
+      this.overlays(ctx, s, time, this.cheerT);
+      return;
+    }
     const art = room(s.room);
     this.loopNow = s.loop;
     if (this.lastRoom !== s.room) {
@@ -244,6 +257,11 @@ export class Rooms {
     ctx.drawImage(art.still, 0, 0, LW * 4, LH * 4);
     ctx.drawImage(this.live, 0, 0, LW * 4, LH * 4);
     ctx.restore();
+    this.overlays(ctx, s, time, cheer);
+  }
+
+  /** The tints over the room: ENDLESS's darkening, THE TURBO's red, a jackpot's glow, the low-HP pulse. */
+  private overlays(ctx: CanvasRenderingContext2D, s: Scene, time: number, cheer: number): void {
     const full = (c: string) => {
       ctx.fillStyle = c;
       ctx.fillRect(-40, -40, LW * 4 + 80, LH * 4 + 80);

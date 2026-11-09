@@ -7,6 +7,7 @@ import type { CombatEvent } from './core/events';
 import { BUILD_UP } from './core/fightRules';
 import type { Game } from './game';
 import { setInputMode, type InputMode } from './ui/input';
+import { ROOM_V2 } from './render/rooms';
 
 /**
  * Dev-only console helpers (window.dbg) for frame-stepping the presentation and forcing
@@ -34,6 +35,8 @@ export function installDebug(game: Game): void {
     resume: () => (game.stage.clock.speed = game.prefs.speed / 2),
     /** Advance game time by `sec` (paused otherwise). */
     adv: (sec: number) => step(sec),
+    /** Rooms v2 (the style key): dbg.roomV2(false) shows the old rooms. */
+    roomV2: (on: boolean) => ((ROOM_V2.on = on), on),
     /** Advance until the director starts playing an event of this type. */
     async until(type: CombatEvent['type'], maxSec = 30): Promise<boolean> {
       let hit = false;
@@ -47,6 +50,15 @@ export function installDebug(game: Game): void {
       return hit;
     },
     force: (side: SideId, line: SymbolId[]) => game.fight.forceNext(side, line),
+    /** Set the enemy's HP as a share of its max (and on its HUD), e.g. to see THE HOUSE's doors open (rooms v2). */
+    foeHp: (share: number) => {
+      const e = game.fight.sides.enemy;
+      e.hp = Math.round(e.maxHp * share);
+      game.stage.huds.enemy.hp = e.hp;
+      return e.hp;
+    },
+    /** Set THE HOUSE's pot (the gutter panel's number), e.g. to see the entrance light up with it (rooms v2). */
+    pot: (n: number) => (game.stage.gutter.pot = n),
     /** Set your HP in the current fight (and on the HUD), e.g. to see the low-HP warning. */
     hp: (n: number) => {
       game.fight.sides.player.hp = n;
