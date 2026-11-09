@@ -18,7 +18,8 @@
  * a hand falls, flinches when hit. Three brass markers on the rail count his hands (HAND 1/3). Nothing flashes.
  * ENDLESS hook: `late` (0 early, 1 closing) empties the tables, puts the chairs up and turns lamps off; not wired yet.
  */
-import { mk, outlined, pool, px, RH, RW } from './roomEntrance';
+import { mk, outlined, px, RH, RW } from './roomEntrance';
+import { chairSilhouette, drawPatron, type PatronPose } from './patrons';
 import { drawText } from './text';
 
 // ---- the projection (act 1's: roomStreet.ts) ----------------------------------------------------------------------
@@ -33,7 +34,7 @@ const xAt = (lat: number, z: number) => CX + lat / z;
 const yAt = (h: number, z: number) => HOR + (EYE - h) / z;
 
 /** The room's back wall (where THE DEALER's table stands) at each station: far down the aisle, then nearer. */
-const Z_FAR = [9, 6, 4.3, 3.1];
+const Z_FAR = [20, 16, 13, 10.5];
 export const HR_STATIONS = Z_FAR.length;
 
 /** Which station an act 3 fight sits at (as `streetStation`: the regulars spread over the four, the last one always
@@ -75,6 +76,13 @@ const CEIL_L = '#1c1220';
 // ---- the stations -------------------------------------------------------------------------------------------------
 
 type TableKind = 'blackjack' | 'baccarat' | 'craps' | 'poker';
+/** A seat taken: 'back' and 'lean' on our side of the table (seen from behind, on a high-backed chair), 'cards' and
+ * 'chips' across it; `at` from -1 (the table's left end) to 1; `pal` the patron's palette. */
+interface Seat {
+  pose: 'back' | 'lean' | 'cards' | 'chips';
+  at: number;
+  pal: number;
+}
 interface Table {
   lat: number;
   /** The near edge's depth, and how deep the table is. */
@@ -82,59 +90,74 @@ interface Table {
   dz: number;
   w: number;
   kind: TableKind;
-  /** Seats taken: near side (backs to us) and far side (facing us), by slot. */
-  near: number[];
-  far: number[];
+  seats: Seat[];
 }
 interface Station {
   tables: Table[];
   /** Chandeliers (lateral, depth). */
   chandeliers: [number, number][];
+  /** Onlookers standing with a drink (lateral, depth, palette, facing left). */
+  standing?: [number, number, number, boolean][];
   /** The velvet rope along the aisle (station 0: the way in). */
   rope?: boolean;
   /** HIGH LIMIT, hanging over the aisle. */
   sign?: boolean;
+  /** Dark chair backs in the near corners (the room's foreground, no people). */
+  foreground?: boolean;
 }
 
+/** The patrons are hand-drawn at a fixed size (patrons.ts), so each is placed where that size is right: the mid-size
+ * (M) between depths 7 and 12, the far size (S) beyond. Nearer tables stand empty, out of the way of the reels. */
 const STATIONS: Station[] = [
   // (a) The way in: velvet ropes along the aisle, HIGH LIMIT over it, the first tables; his lamp far down the room.
   {
     rope: true,
     sign: true,
-    chandeliers: [[0, 4.6], [0, 7.2]],
+    chandeliers: [[0, 6], [0, 11], [0, 16]],
+    standing: [[-250, 10, 17, false]],
     tables: [
-      { lat: -430, z: 2.6, dz: 0.5, w: 260, kind: 'baccarat', near: [], far: [0, 2] },
-      { lat: 430, z: 2.9, dz: 0.5, w: 260, kind: 'blackjack', near: [1], far: [1] },
-      { lat: -420, z: 4.6, dz: 0.5, w: 240, kind: 'poker', near: [], far: [0, 1, 2] },
-      { lat: 420, z: 5.0, dz: 0.5, w: 240, kind: 'craps', near: [0], far: [1, 2] },
+      { lat: -430, z: 8.4, dz: 0.8, w: 300, kind: 'baccarat', seats: [{ pose: 'back', at: -0.4, pal: 1 }, { pose: 'cards', at: 0.45, pal: 37 }] },
+      { lat: 440, z: 9.4, dz: 0.8, w: 300, kind: 'craps', seats: [{ pose: 'cards', at: -0.4, pal: 12 }, { pose: 'chips', at: 0.4, pal: 50 }, { pose: 'lean', at: 0, pal: 33 }] },
+      { lat: -420, z: 13.5, dz: 0.8, w: 280, kind: 'poker', seats: [{ pose: 'cards', at: -0.3, pal: 5 }, { pose: 'cards', at: 0.4, pal: 44 }] },
+      { lat: 420, z: 15, dz: 0.8, w: 280, kind: 'blackjack', seats: [{ pose: 'back', at: 0, pal: 9 }, { pose: 'cards', at: 0.35, pal: 60 }] },
     ],
   },
   // (b) Between the card and craps tables, people playing on both sides.
   {
-    chandeliers: [[0, 2.8], [0, 4.8]],
+    foreground: true,
+    chandeliers: [[0, 3.6], [0, 8], [0, 13]],
+    standing: [[260, 10.4, 19, true]],
     tables: [
-      { lat: -440, z: 1.25, dz: 0.45, w: 300, kind: 'baccarat', near: [0, 2], far: [1] },
-      { lat: 450, z: 1.3, dz: 0.45, w: 300, kind: 'craps', near: [1], far: [0, 1, 2] },
-      { lat: -420, z: 2.6, dz: 0.45, w: 260, kind: 'blackjack', near: [1], far: [0, 2] },
-      { lat: 420, z: 2.9, dz: 0.45, w: 260, kind: 'poker', near: [0, 2], far: [1] },
+      { lat: -480, z: 1.35, dz: 0.5, w: 320, kind: 'blackjack', seats: [] },
+      { lat: 490, z: 1.4, dz: 0.5, w: 320, kind: 'baccarat', seats: [] },
+      { lat: -430, z: 8, dz: 0.8, w: 300, kind: 'blackjack', seats: [{ pose: 'back', at: -0.45, pal: 2 }, { pose: 'lean', at: 0.35, pal: 38 }, { pose: 'cards', at: 0, pal: 21 }] },
+      { lat: 440, z: 8.8, dz: 0.8, w: 300, kind: 'poker', seats: [{ pose: 'cards', at: -0.4, pal: 11 }, { pose: 'chips', at: 0.4, pal: 55 }, { pose: 'back', at: 0, pal: 4 }] },
+      { lat: -410, z: 12.6, dz: 0.8, w: 280, kind: 'craps', seats: [{ pose: 'cards', at: -0.3, pal: 16 }, { pose: 'cards', at: 0.35, pal: 28 }] },
+      { lat: 420, z: 13.4, dz: 0.8, w: 280, kind: 'baccarat', seats: [{ pose: 'back', at: 0, pal: 13 }, { pose: 'cards', at: -0.4, pal: 63 }] },
     ],
   },
-  // (c) Deeper in: blackjack and poker, the room quieter, a chandelier right overhead.
+  // (c) Deeper in: craps and blackjack, the room quieter, a chandelier right overhead.
   {
-    chandeliers: [[0, 2.2], [0, 3.6]],
+    foreground: true,
+    chandeliers: [[0, 3], [0, 7.5], [0, 11.5]],
+    standing: [[-250, 9.6, 24, false]],
     tables: [
-      { lat: -450, z: 1.2, dz: 0.45, w: 300, kind: 'poker', near: [1], far: [0, 1, 2] },
-      { lat: 440, z: 1.3, dz: 0.45, w: 300, kind: 'blackjack', near: [0, 2], far: [1] },
-      { lat: -420, z: 2.4, dz: 0.4, w: 260, kind: 'craps', near: [], far: [0, 2] },
-      { lat: 430, z: 2.7, dz: 0.4, w: 260, kind: 'baccarat', near: [1], far: [2] },
+      { lat: -490, z: 1.4, dz: 0.5, w: 320, kind: 'poker', seats: [] },
+      { lat: 490, z: 1.45, dz: 0.5, w: 320, kind: 'blackjack', seats: [] },
+      { lat: -440, z: 7.6, dz: 0.8, w: 300, kind: 'craps', seats: [{ pose: 'lean', at: -0.3, pal: 6 }, { pose: 'cards', at: 0.35, pal: 22 }] },
+      { lat: 450, z: 8.2, dz: 0.8, w: 300, kind: 'blackjack', seats: [{ pose: 'back', at: 0.35, pal: 10 }, { pose: 'chips', at: -0.3, pal: 57 }] },
+      { lat: -420, z: 10.6, dz: 0.8, w: 280, kind: 'baccarat', seats: [{ pose: 'cards', at: 0, pal: 15 }] },
     ],
   },
-  // (d) The last tables before his, empty seats now; his table big at the aisle's end.
+  // (d) The last tables before his, the seats emptying; his table at the aisle's end.
   {
-    chandeliers: [[0, 2.0]],
+    foreground: true,
+    chandeliers: [[0, 3.2], [0, 8]],
     tables: [
-      { lat: -460, z: 1.2, dz: 0.45, w: 300, kind: 'blackjack', near: [], far: [1] },
-      { lat: 460, z: 1.25, dz: 0.45, w: 300, kind: 'baccarat', near: [2], far: [] },
+      { lat: -490, z: 1.4, dz: 0.5, w: 320, kind: 'blackjack', seats: [] },
+      { lat: 490, z: 1.45, dz: 0.5, w: 320, kind: 'baccarat', seats: [] },
+      { lat: -440, z: 7.2, dz: 0.8, w: 300, kind: 'blackjack', seats: [{ pose: 'back', at: 0, pal: 3 }] },
+      { lat: 450, z: 7.6, dz: 0.8, w: 300, kind: 'baccarat', seats: [{ pose: 'cards', at: 0.2, pal: 41 }] },
     ],
   },
 ];
@@ -152,16 +175,40 @@ function box(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: nu
     px(g, X, Yy, W, H, c);
   } else px(g, X, Yy, W, H, c);
 }
+/** Stepped light, the entrance's way: `steps` nested ellipses, each lifting what's already drawn under it by the same
+ * warm amount (so a curtain's folds and a wall's panels still show through), crisp-edged, no gradient. A negative
+ * `warm` is a stepped shadow. */
+function light(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, steps: number, warm: [number, number, number] = [22, 10, 6]): void {
+  const x0 = Math.max(0, Math.floor(cx - rx));
+  const y0 = Math.max(0, Math.floor(cy - ry));
+  const x1 = Math.min(g.canvas.width, Math.ceil(cx + rx));
+  const y1 = Math.min(g.canvas.height, Math.ceil(cy + ry));
+  if (x1 <= x0 || y1 <= y0 || rx < 1 || ry < 1) return;
+  const img = g.getImageData(x0, y0, x1 - x0, y1 - y0);
+  const d = img.data;
+  for (let y = y0; y < y1; y++)
+    for (let x = x0; x < x1; x++) {
+      const u = Math.sqrt(((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2);
+      if (u >= 1) continue;
+      const level = Math.min(steps, Math.floor((1 - u) * steps) + 1);
+      const i = ((y - y0) * (x1 - x0) + (x - x0)) * 4;
+      if (d[i + 3] === 0) continue;
+      for (let c = 0; c < 3; c++) d[i + c] = Math.max(0, Math.min(255, d[i + c] + warm[c] * level));
+    }
+  g.putImageData(img, x0, y0);
+}
 const hash = (a: number, b: number) => ((((a * 73856093) ^ (b * 19349663)) >>> 0) % 1000) / 1000;
-const SUITS = ['#2a2238', '#332c40', '#1f2a44', '#3a1428', '#22302a', '#33261a'];
-const SKINS = [F, f, '#a8704c', '#7a4a30'];
-const HAIR = [K, '#5a311c', l, '#c8bddb', '#2a1a10'];
 const FELT: Record<TableKind, [string, string]> = {
   blackjack: ['#174a2c', '#1f5a36'],
   baccarat: ['#1d2f5a', '#253a6a'],
   craps: ['#1a4a30', '#225a3a'],
   poker: ['#3a1424', '#4a1a2e'],
 };
+/** The patron size for a depth: mid-size nearer than 12, far beyond. */
+function sized(pose: PatronPose, z: number): PatronPose {
+  if (z < 12) return pose;
+  return pose === 'back' || pose === 'lean' ? 'sback' : pose === 'drink' ? 'sdrink' : 'scards';
+}
 
 // ---- the still layer: ceiling, walls, floor, the back wall, his table, the tables -----------------------------------
 
@@ -178,7 +225,7 @@ function drawCeiling(g: CanvasRenderingContext2D, zFar: number, late: number): v
     if (Math.floor(z * 2) !== Math.floor(zn * 2)) px(g, wl, y, wr - wl, 1, CEIL_L);
     px(g, xAt(-240, z), y, 1, 1, CEIL_L);
     px(g, xAt(240, z), y, 1, 1, CEIL_L);
-    // The cove's warm strip along each wall's top (dimmer when it's late).
+    // The cove's warm strip along each wall's top (dark when it's late).
     if (late < 0.5) {
       px(g, wl, y, Math.max(1, 18 / z), 1, '#3a2214');
       px(g, wr - Math.max(1, 18 / z), y, Math.max(1, 18 / z), 1, '#3a2214');
@@ -186,7 +233,11 @@ function drawCeiling(g: CanvasRenderingContext2D, zFar: number, late: number): v
   }
 }
 
-/** One side wall, column by column: wood wainscot, velvet panels framed in brass, a sconce in each, the cornice. */
+/** The paintings on each wall (depth ranges): gilt frames round dark old canvases. */
+const PAINTINGS: Record<number, [number, number][]> = { [-1]: [[3, 3.6], [5.6, 6.3], [9, 9.8]], [1]: [[4.2, 4.8], [7.2, 8]] };
+
+/** One side wall, column by column: the wainscot's panels under a brass rail, velvet panels framed in dark brass, a
+ * painting or two, a sconce on each panel, the cornice. Low contrast: it sits behind the reels. */
 function drawWall(g: CanvasRenderingContext2D, side: -1 | 1, zFar: number, late: number): void {
   const xEnd = Math.round(xAt(side * WALL, zFar));
   const cols = side < 0 ? [0, xEnd] : [xEnd, RW];
@@ -197,27 +248,44 @@ function drawWall(g: CanvasRenderingContext2D, side: -1 | 1, zFar: number, late:
     const top = Math.max(0, yAt(CEIL, z));
     const ground = yAt(0, z);
     px(g, x, top, 1, ground - top, '#1c1020');
-    // Velvet between 140 and 600; the wainscot below, the cornice above.
-    px(g, x, yAt(600, z), 1, (460) / z, VELVET);
+    // Velvet between 140 and 600, the cornice above.
+    px(g, x, yAt(600, z), 1, 460 / z, VELVET);
     for (let h = 160; h < 600; h += 60) px(g, x, yAt(h, z), 1, 1, VELVET_D);
-    px(g, x, yAt(140, z), 1, 140 / z, WOOD);
-    px(g, x, yAt(140, z), 1, Math.max(1, 6 / z), G);
-    px(g, x, yAt(70, z), 1, 1, WOOD_L);
     px(g, x, yAt(640, z), 1, Math.max(1, 40 / z), g8);
     px(g, x, yAt(640, z), 1, 1, G);
+    // The wainscot: wood, its panels (a lighter inset line at 20 and 116, stiles every 0.6), a brass rail on top.
+    px(g, x, yAt(140, z), 1, 140 / z, WOOD);
+    px(g, x, yAt(116, z), 1, 1, WOOD_L);
+    px(g, x, yAt(20, z), 1, 1, WOOD_L);
+    const panel = (z % 0.6) / 0.6;
+    if (panel < 0.06 || panel > 0.94) px(g, x, yAt(116, z), 1, 96 / z, WOOD_L);
+    px(g, x, yAt(140, z), 1, Math.max(1, 5 / z), g8);
+    px(g, x, yAt(140, z), 1, 1, G);
     // Brass frames: a pilaster every 0.6 of depth.
-    if (Math.floor(z / 0.6) !== Math.floor(prevZ / 0.6)) {
-      px(g, x, yAt(600, z), 1, 460 / z, '#5a3a1a');
+    if (Math.floor(z / 0.6) !== Math.floor(prevZ / 0.6)) px(g, x, yAt(600, z), 1, 460 / z, '#4a2e18');
+    // A painting, if this column crosses one: a gilt frame, a dark sky over a dark field, a horizon.
+    for (const [z0, z1] of PAINTINGS[side]) {
+      if (z < z0 || z >= z1) continue;
+      const edge = z - z0 < 0.04 || z1 - z < 0.04;
+      if (edge) px(g, x, yAt(480, z), 1, 220 / z, g8);
+      else {
+        px(g, x, yAt(480, z), 1, Math.max(1, 6 / z), g8);
+        px(g, x, yAt(266, z), 1, Math.max(1, 6 / z), g8);
+        px(g, x, yAt(474, z), 1, 110 / z, '#241a30');
+        px(g, x, yAt(364, z), 1, 98 / z, '#2a2018');
+        px(g, x, yAt(364, z), 1, 1, '#3a2c22');
+      }
     }
     prevZ = z;
   }
-  // The sconces, one per panel, and their light on the velvet (off when it's late).
+  // The sconces, one per panel, their light in two flat steps on the velvet (off when it's late).
   for (let z = 0.6 * Math.ceil(WALL / 320 / 0.6) + 0.3; z < zFar; z += 0.6) {
+    if (PAINTINGS[side].some(([z0, z1]) => z > z0 - 0.2 && z < z1 + 0.2)) continue;
     const x = xAt(side * WALL, z);
     const y = yAt(420, z);
     const s = 1 / z;
     const on = hash(Math.round(z * 10), side) >= late * 0.85;
-    if (on) pool(g, x, y + 10 * s, 30 * s, 50 * s, '#f0a040', 0.16);
+    if (on) light(g, x, y + 4 * s, 26 * s, 44 * s, 2);
     box(g, x - 4 * s, y, 8 * s, 18 * s, g8);
     px(g, x - 3 * s, y - 10 * s, 6 * s, 10 * s, on ? Yl : '#5a3a1a');
   }
@@ -252,7 +320,7 @@ function drawBackWall(g: CanvasRenderingContext2D, zFar: number): void {
   px(g, x0, yTop, x1 - x0, yBot - yTop, VELVET_D);
   for (let x = x0; x < x1; x++) {
     const lat = (x + 0.5 - CX) * zFar;
-    const fold = Math.floor((lat + 2000) / 40) % 3;
+    const fold = Math.floor((lat + 4000) / 40) % 3;
     px(g, x, yAt(700, zFar), 1, yBot - yAt(700, zFar), fold === 0 ? '#36122a' : fold === 1 ? VELVET : VELVET_D);
   }
   px(g, x0, yAt(760, zFar), x1 - x0, 60 / zFar, g8);
@@ -261,16 +329,19 @@ function drawBackWall(g: CanvasRenderingContext2D, zFar: number): void {
   px(g, x0, yAt(140, zFar), x1 - x0, Math.max(1, 6 / zFar), G);
 }
 
-/** A table: its seated players behind it, the felt top in perspective, the rail, the apron and pedestal, the players in
- * front. `late`: nobody there, chairs up on the felt. */
-function drawTable(g: CanvasRenderingContext2D, tb: Table, late: number, seedBase: number): void {
+/** A table: the players across it (drawn first: its felt hides them from the table down), the felt in perspective,
+ * the rail, the apron and pedestal, then the players on our side on their chairs. `late`: nobody, chairs up. */
+function drawTable(g: CanvasRenderingContext2D, tb: Table, late: number): void {
   const H = tb.kind === 'craps' ? 120 : 110;
   const zN = tb.z;
   const zF = tb.z + tb.dz;
   const [felt, feltL] = FELT[tb.kind];
   const empty = late > 0.5;
-  // The far side's players, facing us (their laps hidden by the felt).
-  if (!empty) for (const slot of tb.far) person(g, tb.lat + (slot - 1) * (tb.w / 3.2), zF + 0.12, H, true, seedBase + slot);
+  const seatX = (st: Seat, z: number) => xAt(tb.lat + st.at * tb.w * 0.36, z);
+  // Across the table: they face it (and so, roughly, us), looking down at their cards and chips.
+  if (!empty)
+    for (const st of tb.seats)
+      if (st.pose === 'cards' || st.pose === 'chips') drawPatron(g, sized(st.pose, zF), seatX(st, zF + 0.2), yAt(H, zF) + 3, st.pal, st.at > 0);
   // The felt, row by row from its far edge to its near edge.
   const yF = Math.round(yAt(H, zF));
   const yN = Math.round(yAt(H, zN));
@@ -292,17 +363,16 @@ function drawTable(g: CanvasRenderingContext2D, tb: Table, late: number, seedBas
     for (const o of [-0.3, 0, 0.3]) {
       const cx = xc + o * tb.w * s;
       box(g, cx - 10 * s, ym - 36 * s, 20 * s, 4 * s, WOOD_L);
-      px(g, cx - 9 * s, ym - 32 * s, 2, 28 * s, WOOD);
-      px(g, cx + 7 * s, ym - 32 * s, 2, 28 * s, WOOD);
+      px(g, cx - 9 * s, ym - 32 * s, Math.max(1, 2 * s), 28 * s, WOOD);
+      px(g, cx + 7 * s, ym - 32 * s, Math.max(1, 2 * s), 28 * s, WOOD);
     }
   } else if (tb.kind === 'craps') {
     px(g, xc - tb.w * s * 0.35, ym, tb.w * s * 0.7, 1, T);
     px(g, xc + tb.w * s * 0.2, ym - 2 * s, Math.max(1, 6 * s), Math.max(1, 6 * s), T);
-  } else {
+  } else if (tb.seats.length) {
     for (let i = 0; i < 3; i++) {
       const cx = xc + (i - 1) * tb.w * s * 0.28;
       px(g, cx - 5 * s, ym, Math.max(1, 9 * s), Math.max(1, 4 * s), T);
-      if (s > 0.5) px(g, cx - 1 * s, ym, 1, 1, i % 2 ? R : K);
       px(g, cx + 6 * s, ym - 2 * s, Math.max(1, 6 * s), Math.max(1, 4 * s), i === 1 ? R : i ? '#3474e0' : G);
     }
   }
@@ -315,78 +385,21 @@ function drawTable(g: CanvasRenderingContext2D, tb: Table, late: number, seedBas
   px(g, xl, ya, xr - xl, 1, G);
   const pw = (tb.w * 0.4) / zN;
   box(g, xAt(tb.lat, zN) - pw / 2, yb, pw, yAt(0, zN) - yb, '#1a0e12');
-  // The near side's players, backs to us.
-  if (!empty) for (const slot of tb.near) person(g, tb.lat + (slot - 1) * (tb.w / 3.2), zN - 0.08, H, false, seedBase + 10 + slot);
+  // Our side: seen from behind on their high-backed chairs (seat, back and legs), elbows on the felt.
+  if (!empty)
+    for (const st of tb.seats)
+      if (st.pose === 'back' || st.pose === 'lean') drawPatron(g, sized(st.pose, zN), seatX(st, zN - 0.3), yAt(0, zN - 0.3), st.pal, st.at > 0);
 }
 
-/** A seated player at the portraits' scale: a stool, shoulders, a head; facing us (a face) or not (hair). */
-function person(g: CanvasRenderingContext2D, lat: number, z: number, tableH: number, facing: boolean, seed: number): void {
-  const s = 1 / z;
-  const yS = yAt(tableH + 96, z);
-  const yB = yAt(facing ? tableH - 10 : 72, z);
-  if (!facing) {
-    // The stool under them: a brass post, a red seat.
-    px(g, xAt(lat, z) - 2 * s, yB, Math.max(1, 5 * s), yAt(0, z) - yB, g8);
-    box(g, xAt(lat, z) - 16 * s, yB - 2, 32 * s, Math.max(2, 6 * s), r);
-  }
-  figure(g, xAt(lat, z), yS, yB, s, facing, seed);
-}
-
-/** A seated figure (shoulders at `yS`, cut at `yB`, scale `s`): sloped shoulders tapering to the waist, a neck, a
- * rounded head, all inside the portraits' 1px outline. Facing: a face, a shirt front and tie; else hair and a collar. */
-function figure(g: CanvasRenderingContext2D, x: number, yS: number, yB: number, s: number, facing: boolean, seed: number): void {
-  const suit = SUITS[Math.floor(hash(seed, 3) * SUITS.length)];
-  const skin = SKINS[Math.floor(hash(seed, 5) * SKINS.length)];
-  const hair = HAIR[Math.floor(hash(seed, 7) * HAIR.length)];
-  const rows: [number, number, number, string][] = [];
-  const Y0 = Math.round(yS);
-  const Y1 = Math.round(yB);
-  const slope = Math.max(1, Math.round(5 * s));
-  for (let y = Y0; y < Y1; y++) {
-    const u = (y - Y0) / Math.max(1, Y1 - Y0);
-    const w = y - Y0 < slope ? 30 * s + (18 * s * (y - Y0)) / slope : 48 * s - 6 * s * u;
-    rows.push([y, x - w / 2, w, suit]);
-  }
-  const hw = Math.max(2, 22 * s);
-  const hh = Math.max(3, 28 * s);
-  const hy = Math.round(yS - 4 * s - hh);
-  const neck = Math.max(1, Math.round(4 * s));
-  for (let y = Y0 - neck; y < Y0; y++) rows.push([y, x - 5 * s, Math.max(1, 10 * s), facing ? skin : hair]);
-  for (let y = hy; y < hy + hh; y++) {
-    const cut = y === hy || y === Math.round(hy + hh - 1) ? Math.max(1, 2 * s) : 0;
-    rows.push([y, x - hw / 2 + cut, hw - cut * 2, facing ? skin : hair]);
-  }
-  // The outline first (each row widened by a pixel, and the rows above and below it), then the fill.
-  for (const [y, x0, w] of rows) px(g, x0 - 1, y - 1, w + 2, 3, K);
-  for (const [y, x0, w, c] of rows) px(g, x0, y, w, 1, c);
-  if (facing) {
-    // Hair over the brow, the eyes once they'd show, a shirt front and a tie, hands on the felt's edge.
-    px(g, x - hw / 2, hy, hw, Math.max(1, hh * 0.3), hair);
-    if (s > 0.45) {
-      px(g, x - 5 * s, hy + hh * 0.5, Math.max(1, 2 * s), Math.max(1, 2 * s), K);
-      px(g, x + 3 * s, hy + hh * 0.5, Math.max(1, 2 * s), Math.max(1, 2 * s), K);
-    }
-    if (s > 0.3) {
-      px(g, x - 5 * s, Y0, Math.max(1, 10 * s), Math.max(1, 26 * s), T);
-      px(g, x - 1 * s, Y0 + 2 * s, Math.max(1, 3 * s), Math.max(1, 18 * s), hash(seed, 9) > 0.5 ? R : K);
-      px(g, x - 22 * s, Y1 - Math.max(2, 5 * s), Math.max(2, 8 * s), Math.max(2, 5 * s), skin);
-      px(g, x + 14 * s, Y1 - Math.max(2, 5 * s), Math.max(2, 8 * s), Math.max(2, 5 * s), skin);
-    }
-  } else if (s > 0.3) {
-    // The back of a jacket: a white collar, a seam.
-    px(g, x - 6 * s, Y0, Math.max(2, 12 * s), Math.max(1, 3 * s), T);
-    px(g, x, Y0 + 4 * s, 1, Math.max(1, (Y1 - Y0) * 0.6), '#1a1426');
-  }
-}
-
-/** A chandelier hung over the aisle: a chain, gold tiers, candle bulbs (their glints are live). */
+/** A chandelier hung over the aisle: a chain, gold tiers, candle bulbs (their glints are live), its light in two flat
+ * steps on the ceiling. */
 function chandelier(g: CanvasRenderingContext2D, lat: number, z: number, late: number): void {
   const s = 1 / z;
   const x = xAt(lat, z);
   const yc = Math.max(0, yAt(CEIL, z));
   const yb = yAt(640, z);
+  if (late < 0.5) light(g, x, yc + 2, 110 * s, 22 * s, 2, [12, 8, 4]);
   px(g, x, yc, 1, yb - yc, g8);
-  if (late < 0.5) pool(g, x, yb + 30 * s, 120 * s, 60 * s, '#f0b050', 0.22);
   box(g, x - 60 * s, yb, 120 * s, 10 * s, G);
   box(g, x - 40 * s, yb + 14 * s, 80 * s, 8 * s, G);
   px(g, x - 2 * s, yb + 24 * s, Math.max(1, 4 * s), 16 * s, g8);
@@ -394,34 +407,34 @@ function chandelier(g: CanvasRenderingContext2D, lat: number, z: number, late: n
   for (let i = -2; i <= 2; i++) px(g, x + i * 16 * s, yb + 22 * s, Math.max(1, 2 * s), Math.max(1, 6 * s), late < 0.5 ? T : l);
 }
 
-/** THE DEALER's table at the aisle's end, under his hanging lamp, the man himself behind it (small, far off). */
+/** THE DEALER's table at the aisle's end, under his hanging lamp, the man himself behind it (his own sprite: the
+ * full one once he's near enough, the small one far off). */
 function distantDealer(g: CanvasRenderingContext2D, zFar: number, late: number): void {
-  const z = zFar - 0.5;
+  const z = zFar - 0.8;
   const s = 1 / z;
   const x = xAt(0, z);
-  // The lamp: a cord, a green shade with a gold rim, and its stepped light on the table.
+  // The lamp: a cord, a green shade with a gold rim, its light in flat steps on the curtain behind him.
   const yc = Math.max(0, yAt(CEIL, z));
   const yl = yAt(470, z);
+  if (late < 0.9) light(g, x, yAt(230, z), 90 * s, 120 * s, 2, [16, 12, 6]);
   px(g, x, yc, 1, yl - yc, K);
-  pool(g, x, yAt(112, z), 160 * s, 50 * s, '#ffe08a', late < 0.9 ? 0.35 : 0.12);
   box(g, x - 40 * s, yl, 80 * s, 22 * s, Q);
   px(g, x - 40 * s, yl + 20 * s, 80 * s, Math.max(1, 3 * s), G);
   px(g, x - 30 * s, yl + 22 * s, 60 * s, Math.max(1, 3 * s), Yl);
-  // Him: the eyeshade, a face, a white shirt, a dark vest, a red bow tie.
+  // Him behind it (his table's felt hides him from the waist down).
+  const tableTop = yAt(110, z - 0.1);
   if (late < 0.9) {
-    // Standing behind his table: the seated players' figure, a little taller, his green eyeshade over the brow.
-    const yS = yAt(212, z);
-    figure(g, x, yS, yAt(112, z), s, true, 4);
-    const hy = Math.round(yS - 4 * s - Math.max(3, 28 * s));
-    px(g, x - 15 * s, hy, 30 * s, Math.max(1, 4 * s), e);
-    px(g, x - 15 * s, hy + Math.max(1, 4 * s), 30 * s, Math.max(1, 2 * s), q);
+    const sprite = z < 10 ? dealerFrames()[0] : dealerSmall();
+    g.drawImage(sprite, Math.round(x - sprite.width / 2), Math.round(tableTop + 3 - sprite.height));
   }
-  // The semicircle table (felt toward us), his rail of chips.
-  const tb: Table = { lat: 0, z: z - 0.35, dz: 0.3, w: 300, kind: 'blackjack', near: [], far: [] };
-  drawTable(g, tb, Math.min(late, 0.4), 99);
+  // The semicircle table (felt toward us), lit by the lamp in a flat step.
+  const tb: Table = { lat: 0, z: z - 0.4, dz: 0.3, w: 300, kind: 'blackjack', seats: [] };
+  drawTable(g, tb, Math.min(late, 0.4));
+  if (late < 0.9) light(g, x, yAt(110, z - 0.25), 70 * s, Math.max(1, 8 * s), 2, [12, 16, 6]);
 }
 
 const stills = new Map<string, HTMLCanvasElement>();
+let chairs: HTMLCanvasElement | null = null;
 function still(i: number, late: number): HTMLCanvasElement {
   const key = `${i}:${late.toFixed(2)}`;
   const c = stills.get(key);
@@ -436,10 +449,11 @@ function still(i: number, late: number): HTMLCanvasElement {
   drawWall(g, -1, zFar, late);
   drawWall(g, 1, zFar, late);
   distantDealer(g, zFar, late);
-  // Far to near: chandeliers and tables by depth.
+  // Far to near: chandeliers, tables, onlookers, the rope's posts, by depth.
   const things: { z: number; draw: () => void }[] = [];
   st.chandeliers.forEach(([lat, z]) => z < zFar && things.push({ z, draw: () => chandelier(g, lat, z, late) }));
-  st.tables.forEach((tb, j) => tb.z < zFar - 0.6 && things.push({ z: tb.z, draw: () => drawTable(g, tb, late, i * 40 + j * 7) }));
+  st.tables.forEach((tb) => tb.z < zFar - 1 && things.push({ z: tb.z, draw: () => drawTable(g, tb, late) }));
+  if (late < 0.5) for (const [lat, z, pal, left] of st.standing ?? []) things.push({ z, draw: () => drawPatron(g, sized('drink', z), xAt(lat, z), yAt(0, z), pal, left) });
   if (st.rope) {
     for (const side of [-1, 1] as const) {
       const posts = [1.15, 1.6, 2.2];
@@ -481,6 +495,12 @@ function still(i: number, late: number): HTMLCanvasElement {
     box(g, x - 130 * s, y, 260 * s, 60 * s, d);
     px(g, x - 130 * s, y, 260 * s, 1, G);
     px(g, x - 130 * s, y + 60 * s - 1, 260 * s, 1, G);
+  }
+  // The near corners: dark chair backs (a silhouette, the room's foreground; nobody in them).
+  if (st.foreground) {
+    chairs ??= chairSilhouette(64, 104);
+    g.drawImage(chairs, -14, RH - 92);
+    g.drawImage(chairs, RW - 50, RH - 92);
   }
   stills.set(key, cv);
   return cv;
@@ -526,7 +546,7 @@ export function drawHighRoller(ctx: CanvasRenderingContext2D, o: HighRollerScene
       px(g, xAt(lat, z) + (j - 3) * 18 * s, yAt(640, z) - 9 * s, Math.max(1, 3 * s), Math.max(1, 3 * s), '#fffbe6');
     }
   // A card turned at a far table now and then.
-  const tb = st.tables.find((x) => x.z > 2 && x.z < zFar - 0.6);
+  const tb = st.tables.find((x) => x.seats.length && x.z < zFar - 1);
   if (tb && late < 0.5) {
     const phase = (t * 0.25 + i * 0.3) % 1;
     if (phase < 0.12) {
@@ -543,7 +563,7 @@ export function drawHighRoller(ctx: CanvasRenderingContext2D, o: HighRollerScene
     drawText(g, 'HIGH LIMIT', CX, y, 1, Math.floor(t * 1.5) % 6 === 0 ? Yl : G, { outline: K });
   }
   // His lamp breathes a little.
-  const zd = zFar - 0.5;
+  const zd = zFar - 0.8;
   const sway = Math.round(Math.sin(t * 0.7) * 1);
   if (late < 0.9) px(g, xAt(0, zd) - 30 / zd + sway, yAt(470, zd) + 22 / zd, 60 / zd, 1, Math.sin(t * 2) > 0.6 ? '#fffbe6' : Yl);
 
@@ -596,6 +616,31 @@ const DEALER = [
 const DEALER_EYES = ['........HFWKFFFFFFFFWKFH........', '........HFKWFFFFFFFFKWFH........', '........HFKKFFFFFFFFKKFH........'];
 const DEALER_INK: Record<string, string> = { k, l, e, E, q, H: '#8a7e76', F, f, W: '#ffffff', K, Y, T, R, r, G, g: g8 };
 
+/** THE DEALER far off (stations 0-1): the same man in 13x15 (eyeshade, grin, bow tie, vest and chain). */
+const DEALER_SMALL = [
+  '....kkkkk....',
+  '...kkllkkk...',
+  '..eeeeeeeee..',
+  '.EEeeeeeeeEE.',
+  '...qqqqqqq...',
+  '...FFFFFFF...',
+  '...FKFFFKF...',
+  '...FFFfFFF...',
+  '...fFWYWFf...',
+  '....fffff....',
+  '....TRRRT....',
+  '.kkkkTTTkkkk.',
+  'kkkkkkGkkkkkk',
+  'TkkkkkGkkkkkT',
+  'FkkkkkkkkkkkF',
+];
+let dealerSm: HTMLCanvasElement | null = null;
+function dealerSmall(): HTMLCanvasElement {
+  return (dealerSm ??= outlined(DEALER_SMALL[0].length, DEALER_SMALL.length, (c) =>
+    DEALER_SMALL.forEach((row, y) => [...row].forEach((ch, x) => ch !== '.' && px(c, x, y, 1, 1, DEALER_INK[ch]))),
+  ));
+}
+
 let dealerSprites: HTMLCanvasElement[] | null = null;
 function dealerFrames(): HTMLCanvasElement[] {
   if (dealerSprites) return dealerSprites;
@@ -617,8 +662,9 @@ const T_RX = 92;
 /** The felt's near (curved) edge at x. */
 const nearEdge = (x: number) => T_FAR + (T_NEAR - T_FAR) * Math.sqrt(Math.max(0, 1 - ((x - CX) / T_RX) ** 2));
 
-let roomStill: HTMLCanvasElement | null = null;
-function buildDealerStill(): HTMLCanvasElement {
+const roomStills = new Map<boolean, HTMLCanvasElement>();
+/** His room's still; `late` (ENDLESS's closing time): the sconces off, nobody at the other tables. */
+function buildDealerStill(late: boolean): HTMLCanvasElement {
   const [cv, g] = mk(RW, RH);
   // The back wall: velvet curtains in stepped folds behind him, a gold valance, the wainscot.
   px(g, 0, 0, RW, FLOOR, VELVET_D);
@@ -642,29 +688,29 @@ function buildDealerStill(): HTMLCanvasElement {
   }
   // Brass sconces either side, their stepped light on the velvet; a far table with its players in each corner.
   for (const x of [44, 596]) {
-    pool(g, x, 66, 34, 52, '#f0a040', 0.22);
+    if (!late) light(g, x, 62, 30, 46, 2);
     box(g, x - 4, 62, 8, 20, g8);
-    px(g, x - 3, 50, 6, 12, Yl);
-    px(g, x - 2, 51, 2, 6, '#fffbe6');
+    px(g, x - 3, 50, 6, 12, late ? '#5a3a1a' : Yl);
+    if (!late) px(g, x - 2, 51, 2, 6, '#fffbe6');
   }
-  for (const [x, flip] of [[40, false], [600, true]] as const) {
-    // A neighbouring table's end, players at it (dim, backs to us).
-    box(g, x - 52, 236, 104, 10, WOOD_L);
-    px(g, x - 50, 236, 100, 4, flip ? FELT.baccarat[0] : FELT.poker[0]);
-    box(g, x - 50, 246, 100, 18, WOOD);
-    px(g, x - 50, 246, 100, 1, G);
-    for (const dx of [-30, 18]) {
-      const sx = x + (flip ? -dx : dx);
-      figure(g, sx, 214, 238, 0.55, false, sx);
-    }
+  for (const [x, flip] of late ? [] : ([[40, false], [600, true]] as const)) {
+    // A neighbouring table's end, its players across it and one on our side, on a high-backed chair.
+    drawPatron(g, 'cards', x + (flip ? 14 : -14), 214, flip ? 29 : 8, !flip);
+    box(g, x - 52, 210, 104, 8, WOOD_L);
+    px(g, x - 50, 210, 100, 5, flip ? FELT.baccarat[0] : FELT.poker[0]);
+    box(g, x - 50, 218, 100, 16, WOOD);
+    px(g, x - 50, 218, 100, 1, G);
+    drawPatron(g, 'back', x + (flip ? -12 : 12), 262, flip ? 14 : 47, flip);
   }
   // The lamp's cord from the ceiling.
   px(g, CX, 0, 1, 12, K);
   // Under his table: its pedestal, in shadow down to the floor (THE DEALER's BOSS tag sits on it).
   px(g, CX - 40, T_NEAR + 3, 80, FLOOR - T_NEAR - 3, '#160a12');
   box(g, CX - 18, T_NEAR + 10, 36, FLOOR - T_NEAR - 10, '#1a0e12');
-  pool(g, CX, FLOOR + 4, 70, 6, K, 0.6);
-  roomStill = cv;
+  light(g, CX, FLOOR + 4, 70, 6, 2, [-8, -4, -6]);
+  // His lamp's light in flat steps on the curtain behind him (drawn before him).
+  if (!late) light(g, CX, T_FAR - 26, 48, 42, 3, [16, 12, 6]);
+  roomStills.set(late, cv);
   return cv;
 }
 
@@ -694,6 +740,8 @@ function drawFelt(g: CanvasRenderingContext2D, handsLeft: number): void {
     px(g, x, y + 3, 1, 5, WOOD);
     px(g, x, y + 8, 1, 1, K);
   }
+  // The lamp's light on the felt, a flat lighter step.
+  light(g, CX, T_FAR + 8, 70, 7, 2, [10, 16, 6]);
   // The printed arc on the felt (BLACKJACK PAYS 3 TO 2's line), in gold.
   for (let x = CX - 60; x <= CX + 60; x++) {
     const v = (x - CX) / 60;
@@ -806,8 +854,6 @@ export function drawDealerRoom(ctx: CanvasRenderingContext2D, o: HighRollerScene
   // The lamp, swaying a pixel, its stepped light down over him and the felt.
   const sway = Math.round(Math.sin(t * 0.6));
   const lx = CX + sway;
-  pool(g, lx, T_FAR + 8, 84, 14, '#ffe08a', late < 0.9 ? 0.3 : 0.1);
-  pool(g, lx, T_FAR - 24, 34, 34, '#ffe08a', late < 0.9 ? 0.12 : 0.05);
   // Him (cut at the felt), with his frame: at you; sly on your spin; squinting a moment when hit.
   const hit = dr.flinch >= 0 && t - dr.flinch < 0.45;
   const frame = hit ? 2 : o.turn === 'player' ? 1 : 0;
@@ -857,7 +903,7 @@ export function drawDealerRoom(ctx: CanvasRenderingContext2D, o: HighRollerScene
   }
   ctx.save();
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(roomStill ?? buildDealerStill(), 0, 0, RW * 2, RH * 2);
+  ctx.drawImage(roomStills.get(late > 0.5) ?? buildDealerStill(late > 0.5), 0, 0, RW * 2, RH * 2);
   ctx.drawImage(liveC, 0, 0, RW * 2, RH * 2);
   // The lamp itself over everything (its shade in the open column, its bulb's lip lit).
   const lamp = lampShade();
