@@ -70,9 +70,9 @@ describe('legendary relics from the big choices (2026-10-15)', () => {
     expect(fightConfig(run('knight', []), base).enemy.lineDmg).toBeUndefined();
   });
 
-  it("DEVIL'S DUE: everything pays x1.75; -8% max HP after every win", () => {
+  it("DEVIL'S DUE: everything pays x1.5; -8% max HP after every win", () => {
     const r = run('knight', ['devilsdue']);
-    expect(fightConfig(r, base).player.payMul).toBe(1.75);
+    expect(fightConfig(r, base).player.payMul).toBe(1.5);
     const max = r.player.maxHp;
     win(r);
     expect(r.player.maxHp).toBe(max - Math.round((max * 0.08) / 10) * 10);

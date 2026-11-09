@@ -43,9 +43,9 @@ describe('TESLA and BANKROLL start with more attack (act 1 pacing)', () => {
     ]);
     expect(CABINETS.tesla.rule).toContain('340 HP');
   });
-  it('BANKROLL: 420 HP, 7 chips and 5 shields a reel; the pitch says 420', () => {
-    expect(CABINETS.midas.hp).toBe(420);
-    for (const s of CABINETS.midas.strips) expect(s).toEqual({ shield: 5, goldbar: 7 });
-    expect(CABINETS.midas.rule).toContain('420 HP');
+  it('BANKROLL: 400 HP, 6 chips and 6 shields a reel (7 / 5 was reverted with free floor rains); the pitch says 400', () => {
+    expect(CABINETS.midas.hp).toBe(400);
+    for (const s of CABINETS.midas.strips) expect(s).toEqual({ shield: 6, goldbar: 6 });
+    expect(CABINETS.midas.rule).toContain('400 HP');
   });
 });

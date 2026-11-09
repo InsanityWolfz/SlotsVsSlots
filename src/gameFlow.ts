@@ -19,7 +19,7 @@ import {
   type FightRecord,
   type RunState,
 } from './core/run';
-import { draftOffers, takeDraft } from './core/draft';
+import { draftOffers, skipDraft, takeDraft } from './core/draft';
 import { buy, isShopNow, leaveShop, reroll, shopOffers, takeSpoils } from './core/shop';
 import { fightConfig } from './core/fightSetup';
 import { CABINETS, CABINET_ORDER, type CabinetId } from './core/cabinets';
@@ -403,7 +403,7 @@ export function afterBonus(g: Game, record: FightRecord): void {
   }
   if (run.pendingLegend) g.screens.showLegend(run, run.pendingLegend, record);
   else if (run.pendingSpoils) g.screens.showSpoils(run, run.pendingSpoils, record);
-  else g.screens.showDraft(run, draftOffers(run), record);
+  else g.screens.showDraft(run, draftOffers(run), record, 'draft', !g.tut);
   if (g.screens.mode === 'draft') tip(g, 'draft', 'draft');
   g.syncButtons();
 }
@@ -425,7 +425,7 @@ export function pickSpoils(g: Game, relic: RelicId): void {
   takeSpoils(g.run, relic);
   // Saved at once: a reload offered the same spoils again, after the next draft had been seen (QA FUNC-06).
   checkpoint(g, 'after');
-  g.screens.showDraft(g.run, draftOffers(g.run), g.lastRecord);
+  g.screens.showDraft(g.run, draftOffers(g.run), g.lastRecord, 'draft', !g.tut);
 }
 
 export function buyItem(g: Game, i: number): void {
@@ -482,6 +482,13 @@ export function showNextFight(g: Game): void {
 export function pickReward(g: Game, o: DraftOption): void {
   if (!g.run) return;
   takeDraft(g.run, o);
+  advance(g);
+}
+
+/** SKIP: the draft turned down for a few chips (QA call 3). */
+export function skipReward(g: Game): void {
+  if (!g.run) return;
+  skipDraft(g.run);
   advance(g);
 }
 

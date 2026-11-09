@@ -1,7 +1,7 @@
 import { symLabel, UNIT } from '../../core/config';
 import { LEGENDARY, RELICS } from '../../core/relics';
 import { CHARM_COLOR, symLevel } from '../../core/charms';
-import { endlessScore, type DraftOption, type FightRecord, type RunState } from '../../core/run';
+import { endlessScore, RUN, type DraftOption, type FightRecord, type RunState } from '../../core/run';
 import { levelStep } from '../../core/draft';
 import type { RelicId } from '../../core/config';
 import { LOOP_GROWTH } from '../../core/enemies';
@@ -19,6 +19,9 @@ import { NextScreen } from './enemyCard';
 
 /** A draft card: its size (three fit beside YOUR BUILD) and the deal's row. */
 const CARD = { w: 290, h: 226, gap: 314, y: 428 };
+/** SKIP's button (QA call 3) and the `picked` value that means the draft was skipped (every card dims). */
+const SKIP_BTN = { x: CX, y: 590, w: 220, h: 40 };
+const SKIPPED = 99;
 
 export abstract class DraftScreen extends NextScreen {
   /** When each draft card finished dealing in (seconds): its one-time shine runs from then. */
@@ -39,7 +42,8 @@ export abstract class DraftScreen extends NextScreen {
     this.sounds.fanfareJackpot();
   }
 
-  showDraft(run: RunState, offers: DraftOption[], last: FightRecord | null, kind: 'draft' | 'spoils' | 'legend' | 'start' = 'draft'): void {
+  /** `skip`: offer SKIP beside the cards (reel-edit drafts only, not the tutorial's: QA call 3). */
+  showDraft(run: RunState, offers: DraftOption[], last: FightRecord | null, kind: 'draft' | 'spoils' | 'legend' | 'start' = 'draft', skip = false): void {
     this.draftKind = kind;
     this.run = run;
     this.offers = offers;
@@ -65,6 +69,16 @@ export abstract class DraftScreen extends NextScreen {
           );
       }),
     );
+    // SKIP: no card, a few chips (quiet: the cards are the screen's point; it's the way out when none of them fits).
+    if (kind === 'draft' && skip && n) {
+      const b = this.btn(`SKIP: +${RUN.skipChips} CHIPS`, SKIP_BTN.x, SKIP_BTN.y, SKIP_BTN.w, SKIP_BTN.h, () => {
+        if (this.picked >= 0) return;
+        this.picked = SKIPPED;
+        this.sounds.click();
+        void this.ui.wait(0.25).then(() => this.cb.onSkip());
+      });
+      this.buttons.push({ ...b, quietStyle: true, textScale: T.body });
+    }
     // Deal the cards in; each shines once as it lands (the director: "I bet the shine would look good").
     this.cards.forEach(
       (c, i) =>
@@ -166,6 +180,8 @@ export abstract class DraftScreen extends NextScreen {
     this.cards.forEach((c, i) => this.drawDraftCard(ctx, c, this.offers[i], i, time));
     // The hovered or focused card: its full rule and its keywords, under it.
     const hov = this.picked < 0 ? this.cards.findIndex((c) => c.hover && c.scale > 0.9) : -1;
+    // SKIP, under the cards; the hovered card's keyword box draws over it (the box is what the pointer is reading).
+    if (this.picked < 0 || this.picked === SKIPPED) for (const b of this.buttons) this.drawButton(ctx, b, time);
     if (hov >= 0) this.drawCardDetail(ctx, this.cards[hov], this.offers[hov]);
   }
 

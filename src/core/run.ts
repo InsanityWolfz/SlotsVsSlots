@@ -31,6 +31,8 @@ export const RUN = {
   /** A strip can't be thinned below this many cells. */
   minStrip: 6,
   draftSize: 3,
+  /** SKIP (user, 2026-11-09, QA call 3): turn the whole draft down for this many chips. */
+  skipChips: 2,
   /** Drafts: chance a charm card is MORE of a charm you own (the rest lean to new charm types). */
   extendChance: 0.3,
   /** Drafts: chance a charm card is a charm type you DON'T own yet (a pivot), when you own some. */
@@ -192,6 +194,8 @@ export interface FightRecord {
   /** Chips earned from this fight (including interest). */
   chips?: number;
   pick?: DraftOption;
+  /** The draft after this fight was skipped (SKIP: no card, +RUN.skipChips chips). */
+  skipped?: boolean;
   /** What was bought at the Cashier after this fight. */
   bought?: DraftOption[];
   /** Old saves only: the BIG CHOICES taken after this fight (big choices are gone; COPY RUN still shows them). */

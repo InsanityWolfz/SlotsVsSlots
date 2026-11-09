@@ -87,7 +87,7 @@ describe('audit B: texts per machine', () => {
     expect(face('quickening', 'jukebox')).toBe('VOLUME STARTS AT HALF. ENEMIES FASTER');
     // The numbers the texts print are the engine's.
     expect(RELICS.secondline.text).toContain('15% HARDER');
-    expect(RELICS.devilsdue.text).toBe("EVERYTHING PAYS X1.75. -8% MAX HP AFTER EVERY FIGHT YOU WIN");
+    expect(RELICS.devilsdue.text).toBe("EVERYTHING PAYS X1.5. -8% MAX HP AFTER EVERY FIGHT YOU WIN");
     expect(RELICS.longgame.text).toBe('EVERYTHING PAYS 20% LESS, +3% FOR EVERY FIGHT YOU WIN');
     expect(RELICS.glasscannon.text).toBe("EVERYTHING PAYS X1.5. NO HEALING BETWEEN FIGHTS (BEATING AN ACT'S BOSS STILL HEALS YOU)");
     expect(NEW_RELIC.taxChips).toBe(5);
@@ -672,11 +672,11 @@ describe('pay multipliers', () => {
     return groupOf(pay(a, line), sym, reel).amount / groupOf(pay(run('knight', []), line), sym, reel).amount;
   };
 
-  it("DEVIL'S DUE: everything pays x1.75 (pairs, jackpots, singles, shields)", () => {
-    expect(ratio(['devilsdue'], PAIR, 'sword')).toBe(1.75);
-    expect(ratio(['devilsdue'], JACK, 'sword')).toBe(1.75);
-    expect(ratio(['devilsdue'], NONE, 'sword', 0)).toBe(1.75);
-    expect(ratio(['devilsdue'], PAIR, 'shield')).toBe(1.75);
+  it("DEVIL'S DUE: everything pays x1.5 (pairs, jackpots, singles, shields)", () => {
+    expect(ratio(['devilsdue'], PAIR, 'sword')).toBe(1.5);
+    expect(ratio(['devilsdue'], JACK, 'sword')).toBe(1.5);
+    expect(ratio(['devilsdue'], NONE, 'sword', 0)).toBe(1.5);
+    expect(ratio(['devilsdue'], PAIR, 'shield')).toBe(1.5);
   });
   it("DEVIL'S DUE: every win takes 8% of max HP (rounded to 10s), compounding; a loss doesn't", () => {
     const r = run('knight', ['devilsdue']);
@@ -751,7 +751,7 @@ describe('pay multipliers', () => {
     expect(describeOption({ kind: 'maxHp', amount: 40 }, run('knight', [], 6)).text).toBe('GAIN 40 MAX HP AND HEAL 40 HP');
   });
   it('they stack: GLASS CANNON x DEVIL\'S DUE x LONG GAME', () => {
-    expect(ratio(['glasscannon', 'devilsdue', 'longgame'], PAIR, 'sword')).toBeCloseTo(1.5 * 1.75 * 0.8, 1);
+    expect(ratio(['glasscannon', 'devilsdue', 'longgame'], PAIR, 'sword')).toBeCloseTo(1.5 * 1.5 * 0.8, 1);
   });
 });
 

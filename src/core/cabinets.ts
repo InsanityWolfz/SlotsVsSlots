@@ -99,11 +99,12 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'BANKROLL',
     sprite: 'cabinetMidas',
     blurb: 'MAKE IT RAIN.',
-    // 340 -> 480 (balance pass 2026-11-07): it was the lowest machine at every stake (HP is a weak lever on it). 420 with
-    // 7 chips a reel, not 6 (act 1 pacing, 2026-11-09: its act 1 fights were the longest, p90 11 of your spins).
-    hp: 42 * UNIT,
+    // 340 -> 480 (balance pass 2026-11-07): it was the lowest machine at every stake (HP is a weak lever on it).
+    // 480 -> 400 (2026-11-09): a rain at the floor is free now, so BANKROLL keeps ~60 chips a run (QA call 6). Act 1
+    // pacing tried 7 chips a reel: with free floor rains that won 74% at WHITE even at 420 HP (target 60), so 6 / 6 stays.
+    hp: 40 * UNIT,
     // No swords (2026-10-07): CASSIDY flings his chips. Each chip symbol hits, pays a chip and fills the bar.
-    strips: r3({ shield: 5, goldbar: 7 }),
+    strips: r3({ shield: 6, goldbar: 6 }),
     // No gold-sword start (a leftover from MIDAS): 8 more chips instead (user playtest).
     gilded: [],
     // ONE HEAL RULE (user, 2026-11-01): every meter payoff heals 15 (KNIGHT has no meter, so no heal).
@@ -111,7 +112,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     startChips: 24,
     symbols: ['goldbar', 'shield'],
     attack: 'goldbar',
-    rule: 'CHIPS HIT AND WIN CHIPS. FULL METER: HIT HARDER, HEAL 15. CHIP JACKPOTS MAKE IT RAIN. 420 HP.',
+    rule: 'CHIPS HIT AND WIN CHIPS. FULL METER: HIT HARDER, HEAL 15. CHIP JACKPOTS MAKE IT RAIN. 400 HP.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },

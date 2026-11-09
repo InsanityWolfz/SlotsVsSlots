@@ -1,7 +1,7 @@
 import type { MetaGain } from '../../core/profile';
 import { levelOf } from '../../core/meta';
 import { RELICS } from '../../core/relics';
-import { endlessScore, runScoreOf, scoreParts, SCORE, totalFights, type FightRecord, type RunState } from '../../core/run';
+import { endlessScore, RUN, runScoreOf, scoreParts, SCORE, totalFights, type FightRecord, type RunState } from '../../core/run';
 import { takenLabel } from '../../core/draft';
 import { CABINETS, type CabinetId } from '../../core/cabinets';
 import { stakeOf } from '../../core/stakes';
@@ -342,7 +342,7 @@ export abstract class OverScreen extends ShopScreen {
       drawText(ctx, r.enemy, cols.fight + 34, ry, ts, r.won ? KIT.text : COLORS.danger, { align: 'left' });
       drawText(ctx, `${r.turns}`, cols.spins, ry, ts, KIT.text);
       drawText(ctx, `${r.hpBefore}-${r.hpAfter}`, cols.hp, ry, ts, r.hpAfter > 0 ? KIT.text : COLORS.danger);
-      const what = [r.pick ? takenLabel(r.pick) : '', ...(r.bonuses ?? []), r.eliteRelic ? (RELICS[r.eliteRelic]?.name ?? r.eliteRelic) : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', ...(r.bought ?? []).map((b) => `BUY ${takenLabel(b)}`), r.chips ? `+${r.chips} CHIPS` : '']
+      const what = [r.pick ? takenLabel(r.pick) : '', r.skipped ? `SKIP +${RUN.skipChips} CHIPS` : '', ...(r.bonuses ?? []), r.eliteRelic ? (RELICS[r.eliteRelic]?.name ?? r.eliteRelic) : '', r.eliteChips ? `ELITE +${r.eliteChips} CHIPS` : '', ...(r.bought ?? []).map((b) => `BUY ${takenLabel(b)}`), r.chips ? `+${r.chips} CHIPS` : '']
         .filter(Boolean)
         .join(', ');
       const shown = what || (r.won ? '' : 'DEFEATED');

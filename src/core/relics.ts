@@ -1,5 +1,6 @@
 import { UNIT, type Enh, type RelicId } from './config';
 import type { CabinetId } from './cabinets';
+import { RAIN } from './fightRules';
 
 export interface RelicDef {
   id: RelicId;
@@ -29,7 +30,7 @@ export const LEGEND_RELIC = {
   /** GLASS CANNON: paying groups pay this much (and no healing between fights). */
   glassPay: 1.5,
   /** DEVIL'S DUE: everything pays this much; every win takes devilDecay of your max HP. */
-  devilPay: 1.75,
+  devilPay: 1.5,
   devilDecay: 0.08,
   /** CRUSADE: sword damage per fight won after you get it. */
   crusadeStep: 5,
@@ -98,7 +99,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // CONTENT_13.
   pitboss: { id: 'pitboss', name: 'PIT BOSS', text: "THE ENEMY'S FIRST JACKPOT EACH FIGHT DOESN'T COUNT", sprite: 'relicPitBoss' },
   // CASH CASSIDY's MAKE IT RAIN relics.
-  rainmaker: { id: 'rainmaker', name: 'RAINMAKER', text: 'MAKE IT RAIN COSTS 2 CHIPS INSTEAD OF 10', sprite: 'relicRainmaker', machine: 'midas', addon: true },
+  rainmaker: { id: 'rainmaker', name: 'RAINMAKER', text: `MAKE IT RAIN COSTS ${RAIN.rainmakerCost} CHIPS INSTEAD OF ${RAIN.cost}`, sprite: 'relicRainmaker', machine: 'midas', addon: true },
   // SHIELD BASH: KNIGHT's (it replaces the BULWARK charm). Not offered to the others (MACHINE_EXCLUDE).
   bash: { id: 'bash', name: 'SHIELD BASH', text: 'LEFTOVER SHIELD EACH SPIN HITS THE ENEMY', sprite: 'relicBash' },
   // THE JUKEBOX (2026-10-08).

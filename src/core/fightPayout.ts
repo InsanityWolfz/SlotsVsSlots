@@ -223,10 +223,12 @@ export function depositOnce(f: Fight, me: Combatant, events: CombatEvent[]): num
 
 export function makeItRain(f: Fight, me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
   const foe = f.sides[other(me.side)];
-  const cost = f.rainCost(me);
-  events.push({ type: 'makeItRain', side: me.side, reels: g.reels, chips: f.chipsNow(), cost, total: f.midasChips - cost });
-  // (No pop under OPEN BAR: the rain is free there, so RAINMAKER saved nothing. QA COMBOS-06.)
-  if (me.relics.has('rainmaker') && !me.relics.has('openbar')) events.push({ type: 'relic', side: me.side, relic: 'rainmaker' });
+  // A rain that hits no harder than the chip jackpot it replaced is on the house (QA call 6).
+  const free = !!g.rainFree;
+  const cost = free ? 0 : f.rainCost(me);
+  events.push({ type: 'makeItRain', side: me.side, reels: g.reels, chips: f.chipsNow(), cost, total: f.midasChips - cost, free });
+  // (No pop under OPEN BAR, or on a free rain: RAINMAKER saved nothing. QA COMBOS-06.)
+  if (me.relics.has('rainmaker') && !me.relics.has('openbar') && !free) events.push({ type: 'relic', side: me.side, relic: 'rainmaker' });
   f.hit(me, foe, g.amount + depositOnce(f, me, events), g.reels, events);
   f.midasChips -= cost;
   events.push({ type: 'midasChips', side: me.side, amount: -cost, total: f.midasChips });

@@ -79,7 +79,11 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       rainJackpotBase = g.base;
       // A floor (user, 2026-11-01): a rain never hits for less than the chip jackpot it replaces (OPEN BAR at 0 chips
       // rained for 0).
-      g.base = Math.max(g.base, Math.round((RAIN.maxChips ? Math.min(RAIN.maxChips, f.chipsNow()) : f.chipsNow()) * RAIN.perChip));
+      const chipHit = Math.round((RAIN.maxChips ? Math.min(RAIN.maxChips, f.chipsNow()) : f.chipsNow()) * RAIN.perChip);
+      g.base = Math.max(g.base, chipHit);
+      // No better than the jackpot it replaces: THE HOUSE PAYS, the rain costs nothing (user, 2026-11-09: 71-81% of rains
+      // only hit the floor and still cost 10 chips, QA COMBOS-03).
+      g.rainFree = !!RAIN.freeAtFloor && chipHit <= rainJackpotBase;
     }
   }
   const foe = f.sides[other(me.side)];
@@ -119,7 +123,10 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       // A rain hits for chips, not symbols, so LEAN doesn't grow it; but its floor is the chip jackpot it replaces,
       // LEAN's x1.5 in (it rained for 252 where the jackpot hit 378: QA COMBOS-04). The bigger of the two hits.
       if (!g.rain || rainJackpotBase * k > g.base) {
-        if (g.rain) g.base = rainJackpotBase;
+        if (g.rain) {
+          g.base = rainJackpotBase;
+          g.rainFree = !!RAIN.freeAtFloor;
+        }
         g.mult *= k;
         fired.add('lean');
         notes.push(`X${Math.round(k * 100) / 100} LEAN`);

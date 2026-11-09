@@ -22,7 +22,10 @@ import {
   takeStart,
   type RunState,
 } from '../core/run';
-import { draftOffers, takeDraft } from '../core/draft';
+import { draftOffers, skipDraft, takeDraft } from '../core/draft';
+
+/** The greedy bot SKIPs a draft whose best card scores under this (a relic is ~6-9, a plain add 3-4). */
+const SKIP_VALUE = 2;
 import { fightConfig } from '../core/fightSetup';
 import { isShopNow, takeSpoils } from '../core/shop';
 import { letItRide } from '../core/endless';
@@ -57,6 +60,8 @@ export interface RunLog {
   routes: { elites: number; options: number[] }[];
   /** ENDLESS: loops cleared when the bot lets it ride (only with `ride`). */
   loops?: number;
+  /** Drafts the bot SKIPped. */
+  skips?: number;
   chipsEnd: number;
 }
 
@@ -147,7 +152,15 @@ export function playRun(base: GameConfig, seed: number, cabinet: CabinetId, stak
     }
     if (!run.over) {
       const offers = draftOffers(run);
-      if (offers.length) takeDraft(run, policy === 'random' ? pick.pick(offers) : best(offers, (o) => greedyValue(run, o)));
+      if (offers.length) {
+        const o = policy === 'random' ? pick.pick(offers) : best(offers, (x) => greedyValue(run, x));
+        // SKIP (QA call 3): the greedy bot passes when no card is worth SKIP's chips on its own 0-10 scale (cards that
+        // undo the build score 0-1: a CUT of the attack symbol, an add past LEAN's line, a swap away from the attack).
+        if (policy !== 'random' && greedyValue(run, o) < SKIP_VALUE) {
+          skipDraft(run);
+          log.skips = (log.skips ?? 0) + 1;
+        } else takeDraft(run, o);
+      }
     }
   }
   if (!log.won) {

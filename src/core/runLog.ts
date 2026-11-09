@@ -8,7 +8,7 @@ import { charmName, symLevel } from './charms';
 import { RELICS } from './relics';
 import { symLabel, type SymbolId } from './config';
 import { encounterOf } from './encounters';
-import { runScoreOf, type RunState } from './run';
+import { RUN, runScoreOf, type RunState } from './run';
 import { takenLabel } from './draft';
 import { stakeOf } from './stakes';
 
@@ -31,6 +31,7 @@ export function runSummary(run: RunState, version = ''): string {
     const where = r.loop !== undefined ? `L${r.loop}` : `A${r.act ?? 1}`;
     const what = [
       r.pick ? `PICK ${takenLabel(r.pick)}` : '',
+      r.skipped ? `SKIPPED THE DRAFT (+${RUN.skipChips} CHIPS)` : '',
       r.eliteRelic ? `RELIC ${RELICS[r.eliteRelic]?.name ?? r.eliteRelic}` : '',
       r.bought?.length ? `BOUGHT ${r.bought.map((o) => takenLabel(o)).join(', ')}` : '',
       r.choice ? `CHOICE ${r.choice}` : '',

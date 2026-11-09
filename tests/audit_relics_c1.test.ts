@@ -70,7 +70,7 @@ describe('texts: full and card face, on the one machine each can appear on', () 
     expect(faces.greatsword).toEqual(['YOUR SWORDS PAY X1.5', 'YOUR SWORDS PAY X1.5']);
     expect(faces.crusade).toEqual(['+5 SWORD DAMAGE FOR EVERY FIGHT YOU WIN', '+5 SWORD DAMAGE PER FIGHT WON']);
     expect(faces.compound).toEqual(['HIGH ROLLER CAP INCREASES TO X4', 'HIGH ROLLER CAPS AT X4']);
-    expect(faces.rainmaker).toEqual(['MAKE IT RAIN COSTS 2 CHIPS INSTEAD OF 10', 'MAKE IT RAIN COSTS 2 CHIPS, NOT 10']);
+    expect(faces.rainmaker).toEqual(['MAKE IT RAIN COSTS 2 CHIPS INSTEAD OF 20', 'MAKE IT RAIN COSTS 2 CHIPS, NOT 20']);
     expect(faces.armoredcar).toEqual(["HIGH ROLLER PAYOFFS COUNT THAT SPIN'S SHIELD AS CHIPS: 1 PER 5", 'HIGH ROLLER: 5 SHIELD COUNTS AS 1 CHIP']);
     expect(faces.safedeposit).toEqual(["WHEN CHIPS HIT, THEY ALSO HIT FOR THAT SPIN'S SHIELD", 'CHIPS ALSO HIT FOR YOUR SHIELD']);
     expect(faces.parachute).toEqual(['A HIT THAT WOULD KILL YOU: PAY 10 CHIPS, LAND AT 25% HP (ONCE PER FIGHT)', 'ONCE A FIGHT, PAY 10 CHIPS TO LIVE AT 25%']);
@@ -238,18 +238,19 @@ describe('BANKROLL', () => {
   });
 
   describe('RAINMAKER', () => {
-    it('MAKE IT RAIN costs 2 chips instead of 10', () => {
-      const f = mk('midas', ['rainmaker'], { chips: 20 });
+    it('MAKE IT RAIN costs 2 chips instead of 20', () => {
+      // (40 chips: a rain that beats the plain chip jackpot. At or under it, the rain is free: THE HOUSE PAYS, QA call 6.)
+      const f = mk('midas', ['rainmaker'], { chips: 40 });
       const ev = spin(f, ['goldbar', 'goldbar', 'goldbar']);
       expect(ofType(ev, 'makeItRain')[0].cost).toBe(2);
-      expect(f.chipsNow()).toBe(20 + 3 - RAIN.chipLess - 2);
-      const g = mk('midas', [], { chips: 20 });
+      expect(f.chipsNow()).toBe(40 + 3 - RAIN.chipLess - 2);
+      const g = mk('midas', [], { chips: 40 });
       expect(ofType(spin(g, ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')[0].cost).toBe(RAIN.cost);
-      expect(RAIN.cost).toBe(10);
+      expect(RAIN.cost).toBe(20);
     });
-    it('it rains from 2 chips held (not 10)', () => {
+    it('it rains from 2 chips held (not 20)', () => {
       expect(ofType(spin(mk('midas', ['rainmaker'], { chips: 2 }), ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')).toHaveLength(1);
-      expect(ofType(spin(mk('midas', [], { chips: 9 }), ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')).toHaveLength(0);
+      expect(ofType(spin(mk('midas', [], { chips: 19 }), ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')).toHaveLength(0);
       expect(ofType(spin(mk('midas', ['rainmaker'], { chips: 1 }), ['goldbar', 'goldbar', 'goldbar']), 'makeItRain')).toHaveLength(0);
     });
     it('with 2-4 chips the rain still hits at least the plain chip jackpot it replaces (the floor)', () => {
@@ -355,14 +356,14 @@ describe('BANKROLL', () => {
   });
 
   describe('GOLDEN PARACHUTE', () => {
-    it('a killing hit: pay 10 chips, land at 25% HP (420 HP: 105)', () => {
+    it('a killing hit: pay 10 chips, land at 25% HP (400 HP: 100)', () => {
       const f = mk('midas', ['parachute'], { chips: 10, enemy: 'sword' });
       const ev = lethal(f, 5);
       expect(f.over).toBe(false);
       expect(relicFired(ev, 'parachute')).toBe(true);
       expect(f.parachuteChips).toBe(10);
-      expect(f.sides.player.maxHp).toBe(420);
-      expect(f.sides.player.hp).toBe(105);
+      expect(f.sides.player.maxHp).toBe(400);
+      expect(f.sides.player.hp).toBe(100);
     });
     it('"LAND AT 25% HP" is exactly 25%, rounded to a whole HP', () => {
       const f = mk('midas', ['parachute'], { chips: 10, enemy: 'sword' });
