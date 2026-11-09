@@ -32,8 +32,8 @@ export async function attack(d: Director, e: Ev<'attack'>): Promise<void> {
     d.bg(d.c.tween({ from: p.rot, to: 0, dur: 0.3, onUpdate: (v) => (p.rot = v) }));
     await d.arc(p, tx, ty, 0.3, 70, cubicIn);
     d.s.fx.remove(p);
-    // Per-projectile impact.
-    d.flashMachine(e.to, 0.8, 0.12);
+    // Per-projectile impact. One white flash a hit, on the first sword (each sword flashing strobed: QA UI-04).
+    if (i === 0) d.flashMachine(e.to, 0.8, 0.12);
     d.knockback(e.to, 4 + Math.min(10, e.amount / UNIT));
     d.s.particles.burst({ x: tx, y: ty, count: 16, colors: ['#ffffff', '#ffe08a', '#dfe6f0'], speed: [150, 500], kind: 'spark', gravity: 300, life: [0.15, 0.35], size: [2, 4] });
     d.s.sounds.hit(e.amount / UNIT / Math.max(1, srcReels.length));

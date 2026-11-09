@@ -101,8 +101,21 @@ export function drawText(ctx: CanvasRenderingContext2D, text: string, x: number,
   const ay = o.valign === 'top' ? 0 : o.valign === 'bottom' ? h : h / 2;
   ctx.save();
   ctx.globalAlpha *= alpha;
-  ctx.translate(x, y);
-  if (o.rot) ctx.rotate(o.rot);
-  ctx.drawImage(img, -ax, -ay, w, h);
+  if (o.rot) {
+    ctx.translate(x, y);
+    ctx.rotate(o.rot);
+    ctx.drawImage(img, -ax, -ay, w, h);
+  } else {
+    // The string's top-left lands on a whole screen pixel (QA UI-06: centred text half a pixel off drew its font
+    // pixels 1 and 2, or 2 and 3, screen pixels wide). Unrotated, unskewed transforms only; sizes don't change.
+    const m = ctx.getTransform();
+    let left = x - ax;
+    let top = y - ay;
+    if (m.b === 0 && m.c === 0 && m.a > 0 && m.d > 0) {
+      left = (Math.round(m.a * left + m.e) - m.e) / m.a;
+      top = (Math.round(m.d * top + m.f) - m.f) / m.d;
+    }
+    ctx.drawImage(img, left, top, w, h);
+  }
   ctx.restore();
 }

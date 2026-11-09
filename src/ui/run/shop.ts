@@ -33,7 +33,7 @@ export abstract class ShopScreen extends EncounterScreen {
     this.shopItems = items;
     if (!reopen) this.open('shop');
     this.buttons = [
-      this.minorBtn(`REROLL - ${rerollCost(run)}`, CX - 170, 640, 280, 52, () => this.cb.onReroll()),
+      this.minorBtn(`REROLL: ${rerollCost(run)} CHIP${rerollCost(run) === 1 ? '' : 'S'}`, CX - 170, 640, 280, 52, () => this.cb.onReroll()),
       this.btn('LEAVE', CX + 170, 640, 280, 56, () => this.cb.onLeave()),
     ];
     // Two shelves: the counter (levels, max HP, the heal) and, behind the glass, the relics and THE BIG ONE.

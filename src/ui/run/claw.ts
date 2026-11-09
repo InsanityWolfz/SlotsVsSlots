@@ -128,7 +128,7 @@ export abstract class ClawScreen extends CardGames {
     ctx.fillRect(x0 + 40, y0 + 10, w - 80, 46);
     ctx.fillStyle = '#1a0a18';
     ctx.fillRect(x0 + 43, y0 + 13, w - 86, 40);
-    drawText(ctx, 'GRAB-A-PRIZE', TCX, y0 + 34, T.head, '#ff9ad8');
+    drawText(ctx, 'THE CLAW', TCX, y0 + 34, T.head, '#ff9ad8');
     // Little sign bulbs, lit in turn (scenery, slow).
     for (let k = 0; k < 12; k++) {
       const bx = x0 + 52 + k * ((w - 104) / 11);

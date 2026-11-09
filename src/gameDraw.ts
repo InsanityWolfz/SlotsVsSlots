@@ -119,7 +119,8 @@ export function drawFrame(g: Game, ctx: CanvasRenderingContext2D): void {
       ctx.fillRect(edge, 0, W - edge, H);
       ctx.save();
       ctx.translate(-(1 - g.drawerT) * (BUILD.x + BUILD.w + 8), 0);
-      g.screens.drawBuildFor(ctx, g.run!);
+      const hud = s.huds.player;
+      g.screens.drawBuildFor(ctx, g.run!, { hp: Math.max(0, Math.round(hud.hp)), maxHp: hud.maxHp });
       if (g.drawerT >= 0.5) g.view.drawRelics(ctx);
       ctx.restore();
       g.view.drawChips(ctx);

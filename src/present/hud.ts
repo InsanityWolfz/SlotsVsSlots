@@ -248,28 +248,17 @@ export class HudView {
       const label = this.armed ? (m.kind === 'touch' ? 'TOUCH READY!' : `${m.label} READY!`) : m.label;
       // THE JUKEBOX counts its volume in levels (4/6), like its cards do.
       const count = m.kind === 'volume' ? `${Math.floor(this.energy + 0.01)}/${this.energyMax}` : `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`;
-      // White over the empty bar, dark over the fill (white on a pale fill didn't read: playtest 2026-10-31).
-      const words = (color: string, outline?: null) => {
-        drawText(ctx, label, b.x + 6, b.y + b.h / 2 + 1, T.small, color, { align: 'left', ...(outline === null ? { outline } : {}) });
-        drawText(ctx, count, b.x + b.w - 6, b.y + b.h / 2 + 1, T.small, color, { align: 'right', ...(outline === null ? { outline } : {}) });
+      // The words: dark on the fill once it covers a whole word (white on a pale fill didn't read: playtest
+      // 2026-10-31), white with its outline otherwise. A word never changes colour partway (QA UI-08: the HIGH ROLLER
+      // count read "90/1" dark and "00" white).
+      const fillEnd = b.x + frac * b.w;
+      const word = (text: string, x: number, align: 'left' | 'right') => {
+        const right = align === 'left' ? x + textWidth(text, T.small) : x;
+        const covered = fillEnd >= right + 1;
+        drawText(ctx, text, x, b.y + b.h / 2 + 1, T.small, covered ? COLORS.outline : '#ffffff', { align, ...(covered ? { outline: null } : {}) });
       };
-      words('#ffffff');
-      if (frac > 0) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(b.x, b.y, frac * b.w, b.h);
-        ctx.clip();
-        ctx.fillStyle = m.color;
-        ctx.fillRect(b.x, b.y, frac * b.w, b.h);
-        if (glow > 0) {
-          ctx.globalAlpha = glow;
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(b.x, b.y, frac * b.w, b.h);
-          ctx.globalAlpha = 1;
-        }
-        words(COLORS.outline, null);
-        ctx.restore();
-      }
+      word(label, b.x + 6, 'left');
+      word(count, b.x + b.w - 6, 'right');
     }
     if (this.ability) this.drawAbility(ctx, time);
     else if (this.hint) drawChip(ctx, this.hint, x + HUD_W / 2, this.chipY, { scale: T.body, color: '#c8f0ff' });

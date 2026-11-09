@@ -16,10 +16,15 @@ import type { Director } from './director';
 /** Base symbol values (the payline numbers). */
 const BASE = defaultConfig().base;
 
-/** Banners sit in the top gutter between the HUD panels, never over the reels. */
-export const BANNER_Y = 172;
-/** PAIR! / JACKPOT!: mid-machine, like BUST! and ALL IN (at BANNER_Y they covered both HP bars as the hit landed). */
-const PAY_BANNER_Y = MACHINE_TOP + MACHINE_H / 2;
+/** Turn banners (an ability, OVERTIME!, LIGHTNING STORM) hang on the machines' top edge, where the YOUR SPIN / THEIR
+ * SPIN plates are: the plates and the gutter's chips step aside while one is up (fightView), and pops in this band draw
+ * over it. Low enough to clear the enemy's ability chip under its HUD (QA UI-01: at 172 a banner with a sub line cut it,
+ * and the plates read "R SPIN", "VOUR"). */
+export const BANNER_Y = 182;
+/** PAIR! / JACKPOT! / MEGA WIN!: over the machines' bottom row, the one that doesn't pay. At BANNER_Y they covered both
+ * HP bars as the hit landed; mid-machine a MEGA WIN sat on the winning payline (its third symbol and its pay number)
+ * for 1.4 s (QA UI-07). */
+const PAY_BANNER_Y = MACHINE_TOP + (MACHINE_H * 5) / 6;
 /** THE PAYOUT LADDER: a pay this share of the HP bar it lands on is a BIG WIN, this much a MEGA WIN. */
 export const LADDER = { big: 0.3, mega: 0.65 };
 const TIER_MUL = { pair: defaultConfig().pairMult, triple: defaultConfig().tripleMult };

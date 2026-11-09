@@ -38,6 +38,6 @@ describe('COPY RUN encounters', () => {
         text = runSummary(run, 'v');
       },
     });
-    expect(text).toContain('A2 TWENTY-ONE: DEALER WINS, A2 CLAW MACHINE: WALKED AWAY');
+    expect(text).toContain('A2 TWENTY-ONE: DEALER WINS, A2 THE CLAW: WALKED AWAY');
   });
 });
