@@ -197,7 +197,13 @@ whether it has the tension the user remembers.
 - **JUKEBOX identity:** its 5 relics all tune the DROP's timing; give it a second way to build.
 - **BANKROLL:** the most confusing machine (the shield build is unexplored). Make it readable, or ship with 4.
 - Builds stay attack or shield: more is a rewrite, and the no-restart rule holds.
-- **No launch-breaking bugs:** the fuzz on every change, a save and crash pass, a Steam Playtest before launch.
+- **No launch-breaking bugs:** the fuzz on every change, a save and crash pass, a Steam Playtest before launch. Functional QA
+  fixes (2026-11-09, FUNC): a lost run is recorded at the killing blow (a quit during the last turn lost it from
+  HISCORES, stats, XP and COPY LAST RUN); ABANDON RUN counts as a loss (HISCORES: ABANDONED); RESET SAVE clears the run
+  and COPY LAST RUN; Cashier buys and elite spoils are saved at once; the saved run is cleaned on load (stake, HP, chips
+  clamped; a made-up place on the map drops it; garbage table state starts the game over); the crash panel works by
+  keyboard and pad; keys 1-4 / A / pad Y do nothing between fights; an unplugged pad pauses; the machine already on the
+  stage needs two taps, like the rest.
 - An act 1 demo build; outside playtests every two weeks carry on.
 - **The demo (built 2026-11-07):** one codebase, a build flag (`src/demo.ts`). Act 1 only, ending at THE HOUSE (beating
   it ends the run as DEMO CLEARED!, with what the full game has and WISHLIST ON STEAM); KNIGHT and TESLA at WHITE, the

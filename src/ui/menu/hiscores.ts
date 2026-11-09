@@ -123,6 +123,7 @@ export class HiscoresScreen implements MenuScreen {
       const text = e.acts >= 3 ? (e.loops ? `ENDLESS LOOP ${e.loops}` : 'BEAT THE DEALER') : 'CLEARED';
       return { text, color: COLORS.energy, sub: e.acts >= 3 ? (e.loops ? 'BEAT THE DEALER' : 'RUN CLEARED') : 'THE WHEEL STOPPED' };
     }
+    if (e.abandoned) return { text: `ACT ${e.act}, FIGHT ${e.fights + 1}`, color: COLORS.text, sub: 'ABANDONED' };
     // A long name drops its first words (the adjective), as the fight HUD does: SPITEFUL COUNTERFEITER was cut mid-word.
     const words = (e.killer ?? '').split(' ');
     while (words.length > 1 && words.join(' ').length > 19) words.shift();
@@ -153,7 +154,7 @@ export class HiscoresScreen implements MenuScreen {
     const r = this.reached(e);
     drawText(ctx, r.text, C.reached, y - 12, T.body, r.color, { align: 'left' });
     drawText(ctx, r.sub.length > 22 ? `${r.sub.slice(0, 21)}.` : r.sub, C.reached, y + 14, T.small, COLORS.textDim, { align: 'left' });
-    if (!e.won && e.killerPortrait) {
+    if (!e.won && !e.abandoned && e.killerPortrait) {
       drawWell(ctx, C.relics - 62, y - 22, 44, 44, '#3a1428');
       ctx.save();
       ctx.beginPath();

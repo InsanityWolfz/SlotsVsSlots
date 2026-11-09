@@ -3,7 +3,7 @@ import { desktop } from './build';
 import { ALL_CABINETS, type CabinetId } from './core/cabinets';
 import { CHARM_VALUE } from './core/charms';
 import { RELICS } from './core/relics';
-import { type RunState } from './core/run';
+import { actStops, runActs, type RunState } from './core/run';
 import { migrateRun } from './core/runMigrate';
 import { MAX_STAKE } from './core/stakes';
 import { defaultJuice, type JuiceToggles } from './present/stage';
@@ -165,6 +165,57 @@ export function save(key: string, v: unknown): void {
 }
 
 
+const isInt = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n);
+const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
+const knownRelics = (ids: unknown) => (Array.isArray(ids) ? ids.filter((r): r is RunState['player']['relics'][number] => typeof r === 'string' && r in RELICS) : []);
+
+/**
+ * The saved run's numbers, cleaned (QA FUNC-07; CLAUDE.md: "Saves are cleaned on load"). Values a player could live
+ * with are clamped (stake, HP, chips); a run whose place on its map makes no sense (act, depth, stop, route) is dropped,
+ * since playing on from a made-up place is worse than starting over. A game in play at an encounter whose state is
+ * garbage starts that game over. Returns false to drop the save.
+ */
+function cleanRun(run: RunState, at: string | undefined): boolean {
+  const p = run.player;
+  if (!Array.isArray(p.strips) || !p.strips.length || !p.strips.every((x) => x && typeof x === 'object')) return false;
+  if (!Array.isArray(run.enemies) || !run.enemies.length || !run.enemies.every((e) => e && typeof e === 'object')) return false;
+  if (at === 'ride' && !(run.over && run.won)) return false;
+  run.stake = finite(run.stake) ? Math.max(0, Math.min(MAX_STAKE, Math.floor(run.stake))) : 0;
+  if (!isInt(run.act) || (run.endless ? run.act !== 4 : run.act < 1 || run.act > runActs(run))) return false;
+  if (run.route !== null && (!isInt(run.route) || run.route < 0 || run.route >= run.map.routes.length)) return false;
+  // (The fights behind you and the stop you're at never run past the act's stops; between fights they can sit one past
+  // the last enemy dealt so far, before a route is picked.)
+  const stops = actStops(run).length;
+  if (!isInt(run.depth) || run.depth < 0 || run.depth > stops) return false;
+  if (!isInt(run.stop) || run.stop < 0 || run.stop > stops) return false;
+  p.maxHp = finite(p.maxHp) && p.maxHp > 0 ? Math.round(p.maxHp) : 0;
+  if (!p.maxHp) return false;
+  // HP at or under 0 between fights can't be (a lost run is never saved): 1 HP plays on, a missing number is full.
+  p.hp = finite(p.hp) ? Math.max(1, Math.min(p.maxHp, Math.round(p.hp))) : p.maxHp;
+  p.chips = finite(p.chips) ? Math.max(0, Math.floor(p.chips)) : 0;
+  run.shopRerolls = isInt(run.shopRerolls) && run.shopRerolls >= 0 ? run.shopRerolls : 0;
+  if (run.pendingSpoils) run.pendingSpoils = knownRelics(run.pendingSpoils).length ? knownRelics(run.pendingSpoils) : null;
+  if (run.pendingLegend) run.pendingLegend = knownRelics(run.pendingLegend).length ? knownRelics(run.pendingLegend) : null;
+  if (run.pendingStart) run.pendingStart = knownRelics(run.pendingStart).length ? knownRelics(run.pendingStart) : null;
+  if (run.encounterState !== undefined && !cleanEncounter(run.encounterState)) run.encounterState = undefined;
+  // The Cashier's saved shelf (FUNC-05): a broken one is dealt again.
+  if (run.shelf !== undefined && !(Array.isArray(run.shelf) && run.shelf.every((i) => i && typeof i === 'object' && i.option && typeof i.option === 'object' && finite(i.price) && i.price >= 0 && typeof i.sold === 'boolean'))) delete run.shelf;
+  return true;
+}
+
+/** An encounter's game in play: plain counts and card lists only, and each game's state whole (TWENTY-ONE, HIGHER OR
+ * LOWER, the CLAW), or it starts over. */
+function cleanEncounter(st: unknown): boolean {
+  if (!st || typeof st !== 'object' || Array.isArray(st)) return false;
+  const o = st as Record<string, unknown>;
+  const count = (v: unknown) => isInt(v) && v >= 0;
+  for (const v of Object.values(o)) if (!(count(v) || (Array.isArray(v) && v.every(count)))) return false;
+  if ('p' in o || 'd' in o) return Array.isArray(o.p) && Array.isArray(o.d) && count(o.bet) && count(o.dealt);
+  if ('card' in o) return ['bet', 'pot', 'card', 'right', 'game'].every((k) => count(o[k]));
+  if ('won' in o || 'misses' in o) return Array.isArray(o.won) && Array.isArray(o.misses);
+  return true;
+}
+
 export function loadRunSave(): { at: 'next' | 'after' | 'fight' | 'ride'; run: RunState } | null {
   const s = load<{ v?: number; at?: string; run?: RunState }>(RUN_KEY);
   const run = s?.run;
@@ -182,5 +233,6 @@ export function loadRunSave(): { at: 'next' | 'after' | 'fight' | 'ride'; run: R
   delete old.bets;
   // THE WHEEL replaced THE MIRROR (2026-10-09): a save holding the old act 2 boss meets the new one.
   migrateRun(run);
+  if (!cleanRun(run, s.at)) return null;
   return { at: s.at === 'after' ? 'after' : s.at === 'fight' ? 'fight' : s.at === 'ride' ? 'ride' : 'next', run };
 }

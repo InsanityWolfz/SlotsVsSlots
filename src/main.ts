@@ -1,9 +1,9 @@
 // The demo's save keys, before anything reads a save (a no-op in the full game).
 import './demoStorage';
 import { Game, toggleFullscreen } from './game';
-import { setInputMode } from './ui/input';
+import { inputMode, setInputMode } from './ui/input';
 import { DESKTOP } from './build';
-import { installCrashHandlers, reportCrash } from './ui/crash';
+import { crashKey, installCrashHandlers, reportCrash } from './ui/crash';
 import { H, W } from './present/layout';
 import { CombatLog } from './ui/combatLog';
 import { TuningPanel } from './ui/tuningPanel';
@@ -118,6 +118,11 @@ window.addEventListener('keydown', (e) => {
   setInputMode('keys');
   // Held arrows repeat (menu navigation); nothing else does.
   if (e.repeat && !k.startsWith('arrow')) return;
+  // The crash panel takes the keys while it's up (QA FUNC-02).
+  if (!e.altKey && k !== 'f11' && crashKey(k)) {
+    e.preventDefault();
+    return;
+  }
   // Fullscreen: F11 or Alt+Enter (desktop habit).
   if (k === 'f11' || (k === 'enter' && e.altKey)) {
     e.preventDefault();
@@ -178,7 +183,7 @@ function pollPads(now: number): void {
     if (t === undefined || repeat) {
       padHeld.set(k, repeat ? now - 260 : now);
       setInputMode('pad');
-      game.key(k, repeat);
+      if (!crashKey(k)) game.key(k, repeat);
     }
   }
   for (const k of [...padHeld.keys()]) if (!down.has(k)) padHeld.delete(k);
@@ -186,6 +191,10 @@ function pollPads(now: number): void {
 window.addEventListener('gamepadconnected', () => {
   game.focus.hide();
   setInputMode('pad');
+});
+// A pad unplugged (or out of battery) mid-run pauses it, when the pad was what you were playing with (QA FUNC-10).
+window.addEventListener('gamepaddisconnected', () => {
+  if (inputMode() === 'pad' && game.pausable() && !game.pause.open) game.setPaused(true);
 });
 
 let last = performance.now();
