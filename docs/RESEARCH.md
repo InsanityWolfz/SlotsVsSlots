@@ -747,9 +747,9 @@ disagree by 3x; treat them as a range, not a number. [P] [GameDiscoverCo: NB num
   [GameDiscoverCo: 100k wishlists](https://newsletter.gamediscover.co/p/how-cloverpit-added-100k-steam-wishlists),
   [W] [Wikipedia](https://en.wikipedia.org/wiki/CloverPit)
 - **Slots & Daggers** (solo dev Friedemann Allmenröder, publisher Future Friends; $7.99 list, 30% launch discount;
-  Oct 2025): 100k in 10 days ("a surreal number for a solo dev"); 300k on Steam per its mobile-launch press release.
-  ~4,600 English reviews, 93%. Release date announced at Next Fest with a demo the press singled out. Hook: a dungeon
-  crawl inside a slot machine on a pub table. [P] [GamesRadar](https://www.gamesradar.com/games/roguelike/another-roguelike-success-story-has-hit-steam-d-and-d-flavored-slot-machine-slots-and-daggers-sells-100-000-copies-in-10-days-a-surreal-number-for-a-solo-dev-like-me),
+  Oct 2025): 100k in 10 days ("a surreal number for a solo dev"); 300k per its mobile-launch press release (Raijin
+  est. ~176k on Steam, 7,323 reviews, 94%, July 2026). Release date announced at Next Fest with a demo the press
+  singled out. Hook: a dungeon crawl inside a slot machine on a pub table. Xbox / Switch May 2026. [P] [GamesRadar](https://www.gamesradar.com/games/roguelike/another-roguelike-success-story-has-hit-steam-d-and-d-flavored-slot-machine-slots-and-daggers-sells-100-000-copies-in-10-days-a-surreal-number-for-a-solo-dev-like-me),
   [GamesPress](https://www.gamespress.com/de/Slots-Daggers-out-now-on-mobile-Slot-machine-roguelite-hit),
   [F] [Dekudeals](https://www.dekudeals.com/items/slots-and-daggers)
 - **Luck be a Landlord** (solo, self-published, $9.99, 1.0 in 2023): no official total found; steamdata.ai est.
@@ -769,7 +769,8 @@ disagree by 3x; treat them as a range, not a number. [P] [GameDiscoverCo: NB num
   [Steam: Rogue Slots reviews](https://steamcommunity.com/app/2462430/reviews?l=english&browsefilter=toprated)
 - **Crowding:** PC Gamer (Feb 2026) called Next Fest "full of Balatro-likes" (chess, coin pusher, minesweeper,
   word games); RPS: indie genres "converged into grimdark Balatro". No count of slot roguelikes on Steam found. No
-  released Steam game found where your slot machine fights enemy slot machines. [F] [PC Gamer: Next Fest](https://www.pcgamer.com/games/roguelike/steam-next-fest-is-full-of-balatro-likes-heres-7-demos-i-think-you-should-try/),
+  released Steam game found where your slot machine fights enemy slot machines with HP, but slot duels are coming:
+  DEAD SPIN (late 2026) and Slotomancer (Early Access) fight opponents (see Launch appeal review below). [F] [PC Gamer: Next Fest](https://www.pcgamer.com/games/roguelike/steam-next-fest-is-full-of-balatro-likes-heres-7-demos-i-think-you-should-try/),
   [W] [Wikipedia: Slots & Daggers](https://en.wikipedia.org/wiki/Slots_%26_Daggers)
 - **The whole store:** ~20,000 releases in 2025; nearly half never reached 10 reviews; ~66% earned under $1,000 (est.
   from Gamalytic). [F] [GamesRadar](https://gamesradar.com/games/over-5-000-games-released-on-steam-this-year-didnt-make-enough-money-to-recover-the-usd100-fee-to-put-a-game-on-valves-store-research-estimates),
@@ -848,6 +849,101 @@ disagree by 3x; treat them as a range, not a number. [P] [GameDiscoverCo: NB num
 - **Pattern** (opinion, from the above): the risk scales with how much the game looks like a casino (real card games,
   casino tables, chips) and how little fantasy covers it; the winners all had a fantastical frame. Mobile stores and
   automated video moderation are where it bites, not Steam.
+- **Steam's own survey:** the built-in content survey sets Steam's ratings (Germany since 2024-11-15, Indonesia's IGRS
+  too); Valve added questions for games that simulate gambling, and a bug gave Umamusume a wrong 18+ in Indonesia
+  (shown April 2-5; the report gives no year). [P/F] [Steamworks: Germany](https://partner.steamgames.com/doc/gettingstarted/contentsurvey/germany),
+  [Automaton](https://automaton-media.com/en/news/steam-apologizes-for-technical-bug-that-gave-umamusume-pretty-derby-an-18-age-rating-in-indonesia-while-adult-japanese-games-like-saya-no-uta-got-rated-3/)
+- **CloverPit** is ESRB T ("simulated gambling" among its descriptors), per a retailer listing. [F] [Gamers Unchained](https://www.gamersunchained.com/game/nintendo/cloverpit)
+
+### Launch appeal review 2026-11-09
+Full answer: `tools/out/qa/MARKET.md` (gitignored). Store pages could not be fetched; figures are from search results
+and trackers.
+- **2026 slot roguelikes (none found with a 100k milestone):**
+  - Runeborn (~290 reviews, 80%); Slot or Die; Slot & Dungeons 1.0 (~300).
+  - Spinny Dungeon (Apr 2026, 74-93 reviews; complaints "low replayability, few builds").
+  - Slotomancer (EA Jan 2026, $9.99, slot-battler vs 15 rival wizards, 115-325 cards, single-digit reviews; a reviewer
+    asked it to "remove all AI assets").
+  - Slots & Skulls (2026-11-04, slot machine as weapon, 112 symbol options).
+  - Slotbound (2026-11-09, 3x3 slot auto-battler; demo Very Positive, 342 reviews; #97 on one Oct 2026 Next Fest chart,
+    314 peak).
+  - Amazing Slot Survivor (LINE Games, 2026-11-13); Spin to Breathe (Q4 2026).
+  - **DEAD SPIN** (Strong Monkey Games, late 2026): "slot-machine duels against lunatic gamblers", 8+ opponents with
+    their own decks, 250+ items, endless, VHS horror; demo 93% of 33; Automaton: you beat the opponent's score.
+  [F] [Worthplaying](https://worthplaying.com/article/2026/7/8/news/150397-dead-spin-is-a-horror-slot-machine-roguelike-deckbuilder-coming-to-pc-in-late-2026-playtest-soon-screens-trailer/),
+  [Automaton JP](https://automaton-media.com/articles/newsjp/20260709-454127/), [Adventure Gamers](https://adventuregamers.com/article/slotomancer-explained),
+  [GamingOnLinux](https://www.gamingonlinux.com/2026/11/a-slot-machine-is-your-weapon-in-the-new-release-of-slots-skulls/),
+  [VaporLens: Spinny Dungeon](https://vaporlens.app/app/2837790/spinny_dungeon), [Outputlag](https://outputlag.com/next-fest/)
+- **Content at launch:**
+  - Balatro: 150 Jokers, 15 decks, 8 stakes, $14.99.
+  - LBaL: 152 symbols, 227 items.
+  - CloverPit: 150+ charms (~40 "worth getting" per a tier list).
+  - Dungeon Clawler: 165k Steam + 80k mobile; 185-200k pre-launch wishlists; long tail from Japanese streamers.
+  - CloverPit's $2.99 DLC: est. 129k.
+  [P/W] [Playstack](https://www.playstack.com/games/balatro), [TrampolineTales press kit](https://www.trampolinetales.com/lbal/presskit),
+  [GameDiscoverCo: Dungeon Clawler](https://newsletter.gamediscover.co/p/how-dungeon-clawler-grabbed-200k),
+  [Alinea](https://alineaanalytics.substack.com/p/steam-dlc-data-high-attach-rates)
+- **Agency complaints:**
+  - Siliconera on CloverPit: "more like a horror slot machine simulation than an actual experience where your choices
+    change things".
+  - The Outer Haven on Slots & Daggers: "over reliance on pure slot randomness strips away the satisfying tactical
+    agency".
+  - Rogueliker on Slots & Daggers: enjoyment "drops dramatically" after ~10 runs.
+  [F] [OpenCritic: CloverPit](https://opencritic.com/game/19389/cloverpit/reviews),
+  [The Outer Haven](https://www.theouterhaven.net/game-review-slots-and-daggers-pc/), [Rogueliker](https://rogueliker.com/slots-and-daggers-review)
+- **Streamers in the niche:**
+  - Northernlion (LBaL, which inspired Balatro; CloverPit); RTGame and Blitz (CloverPit); Aliensrock (LBaL his
+    favorite roguelike).
+  - VTubers: WolesVT ranked #2 on CloverPit's Twitch per a tracker; GameDiscoverCo's CloverPit piece says VTubers were
+    involved.
+  - Zukowski picks Splattercat and Wanderbots as the Steam-indie bellwethers; a good stream brings "hundreds even
+    thousands" of wishlists.
+  - A better capsule got Clanfolk a Splattercat video with +230% views.
+  [F/P] [GamingOnLinux](https://www.gamingonlinux.com/2025/10/cloverpit-is-another-big-hit-on-steam-hitting-500000-sales/),
+  [OpenCritic](https://opencritic.com/news/13608/balatros-creator-was-inspired-by-northernlions-stream-of-luck-be-a-landlord),
+  [Twitchmetrics](https://www.twitchmetrics.net/c/51936193-wolesvt),
+  [Zukowski](https://howtomarketagame.com/2023/01/04/what-splattercat-and-wanderbot-think-about-the-games-of-2022/),
+  [Zukowski: capsules](https://howtomarketagame.com/2022/07/18/how-do-you-get-streamers-to-cover-your-game-get-a-better-capsule/)
+- **Hook and trailer:**
+  - Zukowski: the anchor (familiar genre) sells, the hook gets the look.
+  - Derek Lieu's trailer order: genre, hook, content (scope).
+  - Steam autoplays the trailer muted and cuts short clips from its opening.
+  [F] [Game Developer](https://www.gamedeveloper.com/business/indie-insights-hooks-and-anchors),
+  [GameDiscoverCo](https://newsletter.gamediscover.co/p/how-to-get-to-your-games-hook-quick),
+  [Steam Page Analyzer](https://www.steampageanalyzer.com/blog/steam-trailer-best-practices)
+- **Next Fest 2026:**
+  - October 2026: 7,240 games (Zukowski; +65% on June's 4,382). No October survey yet.
+  - February 2026 survey: median ~806 gained (GameDiscoverCo's all-demo estimate ~200), 70th percentile 1,839, 95th
+    13,461; 0-999 pre-fest -> median 322 gained.
+  - June beat February in every bucket above 1,000.
+  [P] [Zukowski: Oct 2026](https://howtomarketagame.com/2026/10/21/how-sloppy-is-the-october-2026-steam-next-fest/),
+  [Zukowski: Feb 2026](https://howtomarketagame.com/2026/04/13/making-sense-of-the-february-2026-steam-next-fest/)
+- **Popular Upcoming:** after the 2026-06-04 home page redesign, one analysis found ~80k wishlists on the list's lowest
+  game (was ~7k). Single source, unverified. [F] [tech-insider](https://tech-insider.org/steam-store-redesign-2026/)
+- **Review labels** (third-party reading; Valve doesn't publish them):
+  - A score shows at 10 reviews.
+  - Positive: 80%+ at 10-49 reviews. Very Positive: 80%+ at 50-499. Overwhelmingly Positive: 95%+ at 500+. Mostly
+    Positive: 70-79%.
+  [F] [Steam Page Analyzer](https://www.steampageanalyzer.com/blog/steam-review-score-thresholds)
+- **AI disclosure:**
+  - Game Oracle (Ross Burton): 9,879 games from Jan-Oct 2025, controlled for publisher, experience and genre.
+    Disclosing games got ~53% fewer first-month reviews (4 vs 7) and a median rating of 84.6% vs 88.3% at 100+
+    reviews. Correlational; established studios were hit harder.
+  - Sulka Haro: disclosures were 10.9% of releases in 2024, 19.9% in 2025 and ~31% in 2026, but only 10-27% of
+    estimated sales.
+  - October 2026 Next Fest: ~35% of entries disclosed AI, but only 2 of the 25 most-played demos.
+  - Valve's January 2026 rewrite covers content players consume, not "efficiency" tools such as code assistants.
+  [F/P] [PC Gamer](https://www.pcgamer.com/software/ai/data-analyst-finds-ai-stigma-on-steam-can-reduce-the-number-of-reviews-a-game-gets-by-around-53-percent-and-the-reviews-it-does-get-are-more-negative/),
+  [cinevva: Haro](https://app.cinevva.com/news/2026-07-20-steam-ai-disclosure-study),
+  [Capital & Compute](https://capitalandcompute.net/blog/do-ai-games-sell-on-steam/),
+  [PC Gamer: Valve's rewrite](https://www.pcgamer.com/software/ai/steam-updates-ai-disclosure-form-to-specify-that-its-focused-on-ai-generated-content-that-is-consumed-by-players-not-efficiency-tools-used-behind-the-scenes/)
+- **The name:** no game, app or US trademark by the exact name REEL BRAWL found (Justia search, not a legal clearance);
+  "reel" and "brawl" are crowded search words (fishing games, Brawl Stars). [F] [Justia](https://trademarks.justia.com/989/00/reel-98900989.html)
+- **Pattern** (opinion, from the above):
+  - Supply of slot roguelikes is rising fast, and 2026's entries land in the hundreds of reviews. The demand went to
+    the 2025 hits.
+  - What's left is for a hook that reads at a glance as different. "Two machines fight" is that, until DEAD SPIN's
+    "slot duels" ships.
+  - Lo-fi art is the niche's norm; reading as AI is the art risk, not reading as 8-bit.
 
 ## Our mechanics, cross-checked
 Our numbers below are computed from `src/race/race.ts` (YOUR_STRIP, RIVAL_STRIP, PAYTABLE), no tools used.
