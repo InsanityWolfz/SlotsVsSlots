@@ -448,6 +448,7 @@ export class FightView {
       houseEvery: this.g.fight.sides.enemy.ability?.every ?? 3,
       loop: e.loop,
       dealerEvery: DEALER_RULES.bustEvery - this.g.fight.dealerCut,
+      wheelEvery: e.boss === 'wheel' ? this.g.fight.sides.enemy.ability?.every : undefined,
     });
     ctx.fillStyle = 'rgba(6,2,12,0.75)';
     ctx.fillRect(0, 0, W, H);

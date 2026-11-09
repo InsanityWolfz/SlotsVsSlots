@@ -81,6 +81,8 @@ export interface AchievementCtx {
   cabinet: CabinetId;
   stake: number;
   score: number;
+  /** Fights won in the run (FIRST BLOOD). */
+  fightsWon?: number;
   chips: number;
   relics: number;
   loops: number;
@@ -135,7 +137,8 @@ const stakeOf = (lvl: number): AchievementDef => ({
 });
 
 export const ACHIEVEMENTS: AchievementDef[] = [
-  { id: 'first_win', name: 'FIRST BLOOD', text: 'WIN A FIGHT.', check: (c) => c.act > 1 || c.won || c.score > 0 },
+  // (A won fight, not a score: the starting relic alone scores 100, so a run lost in fight 1 earned it: QA RULES-06.)
+  { id: 'first_win', name: 'FIRST BLOOD', text: 'WIN A FIGHT.', check: (c) => c.act > 1 || c.won || (c.fightsWon ?? 0) > 0 },
   { id: 'house', name: 'HOUSE CALL', text: 'BEAT THE HOUSE.', check: (c) => c.act >= 2 || c.won },
   { id: 'clear', name: 'NO MORE BETS', text: 'CLEAR A RUN.', check: (c) => c.won },
   { id: 'dealer', name: 'THE HOUSE ALWAYS LOSES', text: 'BEAT THE DEALER.', check: (c) => c.won && c.acts >= 3 && !c.daily },

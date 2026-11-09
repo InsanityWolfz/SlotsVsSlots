@@ -83,7 +83,7 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'buil
   ],
   next: [
     { title: 'A RUN', text: 'EACH ACT IS A MAP: FIGHTS, GAMBLES AND THE CASHIER, THEN A BOSS. PICK 1 OF 3 PATHS: YOU SEE EVERY STOP BEFORE YOU GO. ELITES ARE TOUGHER BUT PAY A RELIC. LOSE ONCE AND THE RUN IS OVER.' },
-    { title: 'OVERTIME', text: `A FIGHT CAN'T DRAG ON: FROM SPIN ${2 * OVERTIME.from - 1}, EVERY HIT ON BOTH MACHINES GROWS WITH EACH OF YOUR SPINS. THE MIDDLE OF THE SCREEN COUNTS IT DOWN.` },
+    { title: 'OVERTIME', text: `A FIGHT CAN'T DRAG ON: FROM SPIN ${2 * OVERTIME.from - 1}, EVERY HIT FROM THE REELS ON BOTH MACHINES GROWS WITH EACH OF YOUR SPINS. THE MIDDLE OF THE SCREEN COUNTS IT DOWN.` },
     {
       title: 'YOU\'RE ON YOUR OWN',
       // The demo unlocks nothing: it says what the full game has (demo playtest 2026-11-07).

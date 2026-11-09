@@ -1,5 +1,6 @@
 import { UNIT, unitsRound } from '../../core/config';
-import { wheelChipShare, type EnemyDef } from '../../core/enemies';
+import { GATEKEEPER, wheelChipShare, type EnemyDef } from '../../core/enemies';
+import { startCharge } from '../../core/fight';
 import { type RunState } from '../../core/run';
 import { scaledAbility } from '../../core/fightSetup';
 import { COLORS, H, W } from '../../present/layout';
@@ -208,7 +209,7 @@ export function abilityWhat(e: EnemyDef, run?: RunState): string {
   // (ENDLESS grows the flat numbers with the loop: the card says what the fight will do.)
   const p = (run ? scaledAbility(run, e.ability, true) : e.ability)?.power ?? e.ability.power;
   // THE WHEEL: what one chip left on your reels hits for at NO MORE BETS (as the fight does it).
-  const per = run ? Math.max(UNIT, unitsRound(run.player.maxHp * wheelChipShare(run.cabinet))) : 0;
+  const per = run ? Math.max(UNIT, unitsRound(run.player.maxHp * wheelChipShare(run.cabinet, !!run.endless))) : 0;
   const what: Record<string, string> = {
     flood: `SPILLS ${p} OF YOUR SYMBOLS`,
     smash: `SWINGS FOR ${p}`,
@@ -238,9 +239,15 @@ export function abilityWhat(e: EnemyDef, run?: RunState): string {
 export function abilityText(e: EnemyDef, every: number, run?: RunState): string {
   if (!e.ability) return '';
   // One shape for every enemy (playtest 2026-11-03: "STEAL EVERY 3 TURNS: STEALS 1 SYMBOL" said it twice): when, then what.
-  // THE REPO MAN takes on his first turn, then every few.
-  if (e.ability.kind === 'repo') return `TURN 1, THEN EVERY ${every}: TAKES A CHARM FOR THE FIGHT`;
   if (e.ability.kind === 'deal') return `EVERY ${every} TURNS: BUST. THREE HANDS, EACH HARDER`;
+  // The first turn it fires, from the fight's own head start (QA RULES-15: regulars fire on turn 1, the card said EVERY 3).
+  const first = every - startCharge({ ...e.ability, every }, { regular: !e.isBoss, act: e.act ?? run?.act ?? 1, endless: !!run?.endless });
+  // THE REPO MAN takes on his first turn and once more, then he's done (QA RULES-03).
+  if (e.ability.kind === 'repo') {
+    const turns = Array.from({ length: GATEKEEPER.maxTakes }, (_, i) => `TURN ${first + i * every}`);
+    return `${turns.slice(0, -1).join(', ')} AND ${turns[turns.length - 1]}: TAKES A CHARM FOR THE FIGHT`;
+  }
+  if (first < every) return `TURN ${first}, THEN EVERY ${every}: ${abilityWhat(e, run)}`;
   return `EVERY ${every} TURNS: ${abilityWhat(e, run)}`;
 }
 

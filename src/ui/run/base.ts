@@ -1,10 +1,10 @@
 import type { Sounds } from '../../audio/sounds';
 import { type EncounterChoice, type EncounterResult } from '../../core/encounters';
 import { POT } from '../../core/relics';
+import { WHEEL } from '../../core/enemies';
 import { type DraftOption, type FightRecord, type RunState, type ShopItem } from '../../core/run';
-import { dealerEvery } from '../../core/fightSetup';
+import { dealerEvery, shownAbility } from '../../core/fightSetup';
 import { type CabinetId } from '../../core/cabinets';
-import { effectiveAbility } from '../../core/stakes';
 import type { RelicId } from '../../core/config';
 import { Clock } from '../../present/clock';
 import { backOut, sineOut } from '../../present/ease';
@@ -161,12 +161,19 @@ export abstract class RunScreensBase {
   /** What a boss's rules depend on (bossRules.ts). */
   protected bossCtx(): BossRuleContext {
     const run = this.run;
-    return { stake: run?.stake ?? 0, cabinet: run?.cabinet, houseEvery: this.houseEvery(), loop: run?.endless?.loop, dealerEvery: run ? dealerEvery(run) : undefined };
+    return {
+      stake: run?.stake ?? 0,
+      cabinet: run?.cabinet,
+      houseEvery: this.houseEvery(),
+      loop: run?.endless?.loop,
+      dealerEvery: run ? dealerEvery(run) : undefined,
+      wheelEvery: run ? shownAbility(run, WHEEL.ability!, 'wheel').every : undefined,
+    };
   }
 
   protected houseEvery(): number {
     const run = this.run;
-    return run ? effectiveAbility({ kind: 'jackpot', every: POT.cashEvery, power: 1 }, { stake: run.stake, act: 1, sandglass: run.player.relics.includes('sandglass') }).every : 4;
+    return run ? shownAbility(run, { kind: 'jackpot', every: POT.cashEvery, power: 1 }, 'house').every : POT.cashEvery;
   }
 
   get active(): boolean {

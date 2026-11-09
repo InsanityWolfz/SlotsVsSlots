@@ -527,7 +527,7 @@ export function generateActMap(rng: Rng, act = 1, loop = 1, cabinet?: CabinetId)
       enemy.elite = true;
       // The elite thief is already the deadliest regular: a lighter bump.
       enemy.hp = unitsRound(enemy.hp * (act > 1 ? ELITE_HP_MUL_2 : a.id === 'thief' ? 1.15 : ELITE_HP_MUL));
-      enemy.name = `ELITE ${enemy.name}`.replace(/^ELITE (\w+) /, 'ELITE ');
+      enemy.name = `ELITE ${enemy.name}`.replace(/^ELITE \S+ /, 'ELITE ');
       return { kind: 'elite', enemy };
     });
   });

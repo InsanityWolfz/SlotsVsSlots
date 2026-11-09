@@ -5,6 +5,7 @@
  */
 import { OVERTIME } from '../core/enemies';
 import { HOLD } from '../core/fightSetup';
+import { CONTENT_1107 } from '../core/relics';
 import { COLORS } from '../present/layout';
 import type { SpriteId } from '../render/spriteData';
 import { drawText, textWidth, type TextOpts } from '../render/text';
@@ -34,15 +35,15 @@ export const KEYWORDS: Keyword[] = [
   { word: 'METER', icon: 'kwMeter', color: '#ffd23f', text: "YOUR SLOT MACHINE'S BAR: IT FILLS AS YOU SPIN AND PAYS OFF WHEN FULL" },
   { word: 'BUST', icon: 'kwBust', forms: ['BUSTS'], color: '#ff8a7a', text: "THE DEALER'S CARD: YOUR BEST REEL'S PAYLINE PAYS NOTHING NEXT SPIN" },
   { word: 'ALL IN', icon: 'kwAllIn', color: '#ff6a5a', text: "THE DEALER'S BIG HIT: A SHARE OF YOUR MAX HP THAT PIERCES SHIELDS" },
-  { word: 'HOLD', icon: 'kwHold', forms: ['HELD'], color: '#ffe28a', text: `PICK ONE OF YOUR REELS BEFORE YOUR SPIN OR WHILE THE ENEMY SPINS: IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. ${HOLD.perFight} A FIGHT` },
+  { word: 'HOLD', icon: 'kwHold', forms: ['HELD'], color: '#ffe28a', text: `PICK ONE OF YOUR REELS BEFORE YOUR SPIN OR WHILE THE ENEMY SPINS: IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. ${HOLD.perFight} A FIGHT (${HOLD.perFight + CONTENT_1107.steadyHolds} WITH STEADY HANDS)` },
   // (BUILD-UP borrows the METER icon until it has its own.)
   { word: 'BUILD-UP', icon: 'kwMeter', color: '#ffd23a', text: 'EACH SPIN WITHOUT A PAIR OR JACKPOT OF YOUR ATTACK SYMBOL (SWORD, CHIP, BOLT, CARD OR NOTE) ADDS +25% TO YOUR NEXT ONE, UP TO X2' },
-  { word: 'OVERTIME', icon: 'kwOvertime', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF A FIGHT, EVERY HIT ON BOTH MACHINES PAYS X${1 + OVERTIME.step}, +${OVERTIME.step} WITH EACH OF YOUR SPINS. SHIELDS DON'T GROW` },
-  { word: 'SABOTAGE', icon: 'kwSabotage', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY DOES TO YOUR REELS: SPILLS, STEALS, ROCKS, IOUS, FREEZES, JAMS, JINXES, MARKS' },
+  { word: 'OVERTIME', icon: 'kwOvertime', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF A FIGHT, EVERY HIT FROM THE REELS ON BOTH MACHINES PAYS X${1 + OVERTIME.step}, +${OVERTIME.step} WITH EACH OF YOUR SPINS. ABILITIES AND SHIELDS DON'T GROW` },
+  { word: 'SABOTAGE', icon: 'kwSabotage', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY DOES TO YOUR REELS: SPILLS, STEALS, ROCKS, IOUS, FREEZES, JAMS, JINXES, MARKS, FAKES, CONFISCATIONS' },
   { word: 'MARK', icon: 'kwMark', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED SYMBOL ON YOUR PAYLINE HITS YOU FOR 20' },
   // (Card text pass, 2026-11-03: the enemies' own words, so their cards can explain them.)
   { word: 'STEAL', icon: 'kwSteal', forms: ['STEALS', 'STOLEN'], color: '#c9a0ff', text: 'A STOLEN SYMBOL LEAVES AN EMPTY CELL THAT PAYS NOTHING TILL THE FIGHT ENDS. 3 EMPTIES ON YOUR PAYLINE GET THEM ALL BACK' },
-  { word: 'FREEZE', icon: 'kwFrozen', forms: ['FREEZES', 'FROZEN'], color: '#9fe8ff', text: "A FROZEN REEL DOESN'T SPIN: IT KEEPS WHAT IT SHOWS" },
+  { word: 'FREEZE', icon: 'kwFrozen', forms: ['FREEZES', 'FROZEN'], color: '#9fe8ff', text: "A FROZEN REEL DOESN'T SPIN. AS IT FREEZES IT CAN SLIP ONE CELL, TO THE WORSE SYMBOL" },
   // (JAM has no icon of its own: it borrows FROZEN's, the other reel that won't play.)
   { word: 'JAM', icon: 'kwFrozen', forms: ['JAMS', 'JAMMED'], color: '#c9bba8', text: 'A JAMMED REEL PAYS NOTHING ON THE PAYLINE' },
   { word: 'JINX', icon: 'kwJinx', forms: ['JINXES', 'JINXED'], color: '#c9a0ff', text: 'ANY PAY THAT USES A JINXED REEL IS HALVED' },

@@ -53,8 +53,6 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // (HIGH LIMIT is in enemyHp, so the cards show the HP the fight has.)
   // ENDLESS: damage grows per loop.
   if (run.endless) {
-    // The loop House is a race: it cashes its pot every 2 turns.
-    if (e.boss === 'house' && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: ENDLESS.houseEvery };
     cfg.enemy.endless = true;
     cfg.enemy.loop = run.endless.loop;
     cfg.enemy.dmgMul = (cfg.enemy.dmgMul ?? 1) * endlessMul(ENDLESS.dmg, run.endless.loop);
@@ -77,15 +75,12 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   const night = nightId(run);
   cfg.night = night;
   if (night === 'lucky') for (const side of [cfg.player, cfg.enemy]) side.strips = side.strips.map((s) => ({ ...s, wild: (s.wild ?? 0) + NIGHT.luckyWilds }));
-  if (night === 'fast') {
-    if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
-    cfg.player.meterMul = (cfg.player.meterMul ?? 1) * NIGHT.fastMeter;
-  }
+  if (night === 'fast') cfg.player.meterMul = (cfg.player.meterMul ?? 1) * NIGHT.fastMeter;
   // Every run fight is seeded from the run. A run resumed after a quit replays the same fight, so quitting can't
   // re-roll a loss (STEAM_READINESS S1). The sim seeds its own fights.
   cfg.seed = fightSeed(run.spinSeed ?? run.seed, run.act, run.depth, run.endless?.loop ?? 0);
-  // QUICKENING (legendary relic): enemy abilities charge one spin faster.
-  if (quickening(run) && cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
+  // The loop House's race, FAST NIGHT and ESPRESSO SHOT (the stakes and the Hourglass come in the Fight).
+  if (cfg.enemy.ability) cfg.enemy.ability = preFightAbility(run, cfg.enemy.ability, e.boss);
   // OVERTIME (user, 2026-10-29): every fight has the clock but THE OWNER's (he escalates every turn already). HOLD:
   // two a fight (STEADY HANDS: one more).
   if (!cfg.enemy.owner) cfg.overtime = true;
@@ -93,11 +88,30 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   return cfg;
 }
 
-/** THE DEALER's BUST clock (turns) in this run, as fightConfig and the fight set it: QUICKENING, the stakes. */
+/**
+ * An enemy ability before the Fight's own changes: the loop House's race (it cashes every 2 turns), FAST NIGHT and
+ * ESPRESSO SHOT (QUICKENING: one spin faster). fightConfig and every card that shows a clock use it.
+ */
+export function preFightAbility(run: RunState, ab: AbilityDef, boss?: string | null): AbilityDef {
+  let a = ab;
+  if (run.endless && boss === 'house') a = { ...a, every: ENDLESS.houseEvery };
+  if (nightId(run) === 'fast') a = { ...a, every: Math.max(2, a.every - 1) };
+  if (quickening(run)) a = { ...a, every: Math.max(2, a.every - 1) };
+  return a;
+}
+
+/**
+ * An enemy ability's clock as its fight in this run will really play it: preFightAbility, then the stakes and the
+ * Hourglass (stakes.ts effectiveAbility, which the Fight applies). The one source for the cards (QA RULES-02: the cards
+ * missed ESPRESSO SHOT, FAST NIGHT and the loop House).
+ */
+export function shownAbility(run: RunState, ab: AbilityDef, boss?: string | null, act = run.act): AbilityDef {
+  return effectiveAbility(preFightAbility(run, ab, boss), { stake: run.stake, act, sandglass: run.player.relics.includes('sandglass') });
+}
+
+/** THE DEALER's BUST clock (turns) in this run, as fightConfig and the fight set it. */
 export function dealerEvery(run: RunState): number {
-  let ab: AbilityDef = { kind: 'deal', every: 3, power: 0 };
-  if (quickening(run)) ab = { ...ab, every: Math.max(2, ab.every - 1) };
-  return effectiveAbility(ab, { stake: run.stake, act: 3, sandglass: run.player.relics.includes('sandglass') }).every;
+  return shownAbility(run, { kind: 'deal', every: 3, power: 0 }, 'dealer', 3).every;
 }
 
 /**

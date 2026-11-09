@@ -128,7 +128,8 @@ was tuned for feel from two fresh-eyes playtests.
   - Paths: 12 shapes now, two of them with three encounters (fewer fights, more gambles).
   - **Cards and words:** buy-in cards all look alike (no LOW / HIGH labels: the player judges the bet). A buy-in you
     can't win back says PAY, not STAKE. No flavour-text subtitles.
-- **THE REPO MAN** is a regular in acts 1-2 (he takes a Charm for his fight; it comes back after).
+- **THE REPO MAN** is a regular in acts 1-2 (he takes a Charm for his fight; it comes back after): on his turn 1 and
+  turn 4 (two takes a fight, `GATEKEEPER.maxTakes`), then his countdown goes from the HUD.
 - **After every win:** no heal (user, 2026-10-12: HP carries from fight to fight, so survivability and VAMP matter;
   the act's boss heals you fully). Then a **draft** (pick 1 of 3 cards). **The draft only edits your reels** (user,
   2026-10-15, cut list #8: the draft and the Cashier did the same job): add, swap, cut or clear symbols, WILDS, Charms.
@@ -146,8 +147,8 @@ was tuned for feel from two fresh-eyes playtests.
 ## Acts and bosses
 | Act | Boss | Mechanic | State |
 |---|---|---|---|
-| 1 | THE HOUSE | A growing pot. Every 3 turns it SKIMS half the pot as a hit. Doubles down at half HP; LAST CALL skims every turn | Done |
-| 2 | THE WHEEL | Places bet chips on your reels. Your pairs sweep them. At NO MORE BETS, every chip left hits for a share of your max HP. Spins faster at half HP | Rework in progress, untuned |
+| 1 | THE HOUSE | A growing pot (+30 every one of its turns, more from coins on its reels). Every 3 turns it SKIMS half the pot as a hit. Doubles down at half HP; from SPIN 20 LAST CALL skims every turn | Done |
+| 2 | THE WHEEL | Places bet chips on your reels. Your pairs sweep them. At NO MORE BETS, every chip left hits for a share of your max HP. At half HP it holds for the rest of that turn (no hit takes it past half), then bets 3 chips a turn (not at GREEN+, which starts fast) | Rework in progress, untuned |
 | 3 | THE DEALER | Three hands, each with its own HP bar (27/31/42% of its HP). 1 THE DEAL: every 3 turns a BUST (your best reel's payline pays nothing next spin). 2 RAISE: its hits x1.5, still BUSTs. 3 ALL IN: every 2 turns, 25-40% of your max HP through shields | Reworked 2026-10-12; spread by machine is still wide (see ROADMAP) |
 
 Act 3 is played at stake RED and up (user, 2026-11-06; it was GREEN, so a new player's first runs never met THE
@@ -205,6 +206,12 @@ hexer, vampire). Words: SPILL (was SLIME), IOU (was BOMB), JINX (was HEX), ROCK 
 - **Act 1 (the Alley):** THE BARFLY (SPILL), THE LEG BREAKER (THE SWING), THE COOLER (COLD STREAK), THE PICKPOCKET (STEAL),
   THE FENCE (ROCKS), THE MECHANIC (JAM), THE REPO MAN. Every enemy's rocks crumble after the fight, an elite's
   too (user, 2026-10-30: an elite's stayed for the run, which confused).
+- **Head start:** act 1-2 regulars and elites fire their ability on their turn 1, then every 3 (act 3 regulars too);
+  their cards say TURN 1, THEN EVERY 3 (QA 2026-11-09: they said EVERY 3). Every card's clock comes from the fight's own
+  setup (`shownAbility` in `src/core/fightSetup.ts`: ESPRESSO SHOT, FAST NIGHT, the loop House, the stakes, the Hourglass).
+- **Act 3 COVER CHARGE:** a regular's first hit each fight goes past your shield for up to 10% of your max HP
+  (`TUNE.coverCharge`; on the act 3 card backs). THE DEALER's quiet turns (no ALL IN) can take at most 25% of your
+  max HP (`TUNE.dealerQuietCap`).
 - **Act 2 adds (the Floor):** THE LOAN SHARK (IOUS), THE JINX (a jinxed reel pays half; user, 2026-10-30: its Charms stay
   lit), THE LEECH, THE COUNTERFEITER (LAUNDER). THE COPYCAT (was MIMIC) is cut (user, 2026-10-30: hard to balance, confusing
   when it hit). (The GROUNDER is retired.) BLUE stake puts your counter (the COUNTERFEITER) on every act 2 path.
@@ -225,7 +232,7 @@ Each machine except KNIGHT has one signature symbol and a meter.
 | TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields: 20 charge a bolt, 22 a bolt, the storm heals 15 (one axis: every boost adds charge; 360 HP) | reach the House |
 | JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat the House |
 | JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat the House with wilds |
-| BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER; a chip jackpot makes it rain | clear a run |
+| BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER; a chip jackpot makes it rain; +1 chip a win and 20% off the Cashier's shelf (not the HEAL) | clear a run |
 
 BRIAR / THORN is retired and removed from the code (the JUKEBOX replaced her). Old saves map her unlock and stakes to
 the JUKEBOX; a saved BRIAR run or hiscore entry is dropped on load.
@@ -306,8 +313,7 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
     switched on 0.02 times a fight in the sim, at 11 (one CUT) 0.66): A REEL WITH 11 SYMBOLS OR FEWER: EACH OF
     ITS SYMBOLS IS WORTH X1.5. A true multiplier on each of your paying groups, for its share of cells on lean reels (a
     pair across a lean reel and a full one: X1.25 LEAN; MAKE IT RAIN isn't symbols). The reel is counted as built, at
-    the fight's start: rocks an enemy adds mid-fight don't switch it off (they stay for the run, so the next fight
-    counts them).
+    the fight's start: rocks an enemy adds mid-fight don't switch it off (they crumble after the fight).
   - **STEADY HANDS** (uncommon): +1 HOLD A FIGHT (3). A JACKPOT YOU HELD FOR PAYS X2: a jackpot (3 reels) on a spin
     with a held reel (X2 STEADY HANDS); not JOKER's one-cell meter jackpots.
   - **PAIR STREAK** (uncommon; HOT STREAK is a different relic): EACH PAIR OF YOUR ATTACK SYMBOL IN A ROW PAYS +50% MORE
@@ -330,9 +336,14 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
 ## HIGH STAKES (`src/core/stakes.ts`)
 Each machine has its own ladder. Winning a run at your best stake unlocks the next one.
 WHITE (base) → RED (scar rocks, **Act 3 on**) → GREEN (the Wheel starts fast) → BLACK (the House cheats) →
-BLUE (act 2 abilities faster) → GOLD (every ability faster, bosses +8% HP). From GREEN, enemies also hit 5% harder a
-stake (GREEN +5%, BLACK +10%, BLUE +15%, GOLD +20%; shown as X1.05 GREEN on their hits). (User, 2026-11-08; it was from
-BLACK, +7% a stake: GREEN's own rule cost nothing, so RED and GREEN played the same.)
+BLUE (from act 2, abilities charge faster, not THE WHEEL's) → GOLD (act 1's too, not THE HOUSE's; bosses +8% HP). From
+GREEN, enemy reels also hit 5% harder a stake (GREEN +5%, BLACK +10%, BLUE +15%, GOLD +20%; shown as X1.05 GREEN on
+their hits). (User, 2026-11-08; it was from BLACK, +7% a stake: GREEN's own rule cost nothing, so RED and GREEN played
+the same.) What it scales: enemy swords and sevens (and the stake rounds into ability hits like THE SWING, to tens),
+not THE HOUSE's SKIM, THE WHEEL's NO MORE BETS, ALL IN, IOUs or marks; the texts say ENEMY REELS (QA 2026-11-09).
+Elites' +25% is the same, minus IOUs and marks (an elite LOAN SHARK or CARD SHARP says ITS REELS HIT 25% HARDER).
+OVERTIME grows the reels' hits, not ability hits. BOUNCER blocks the first ability that lands on your reels (THE
+DEALER's BUST included), not the CROUPIER's RAKE.
 
 ## Balance (`tools/sim/balance.ts`)
 - **Balance pass (2026-11-07; ROADMAP phase 6's sim pass, numbers only).** Measured first at 500 runs a machine a
@@ -553,7 +564,7 @@ JOKER); JOKER 380 -> 360 HP, BANKROLL 330 -> 290 HP (both rose 6-12 on GREEN onc
 Every run, ENDLESS or not, scores the same way (`SCORE`, `scoreParts`, `runScoreOf` in `src/core/run.ts`):
 100 a fight won, 300 an elite, 1,000 a boss (act and loop bosses), 2 a chip EARNED (fights and encounters; spending never
 costs score), 100 a level gained (your symbols above their start), 100 a relic (250 a legendary), 25 a
-Charm on your reels, 1,000 for each of THE OWNER's 11 HP you take and 10,000 for beating him, 2,000 for clearing the run
+Charm on your reels, 2,500 for each rung of THE OWNER's fortune you climb (4 rungs) and 10,000 for beating him, 2,000 for clearing the run
 all x(1 + 0.5 a stake). The path screen shows the score so far, a cleared loop says
 LOOP N CLEARED! SCORE X, and the run-over screen shows it with its biggest parts. Entries saved before it keep the old
 formula. Sim (GREEN, 200 runs a machine, bot riding): medians KNIGHT 13.9K, TESLA 11.7K, JUKEBOX 12.2K, JOKER 14.7K,
