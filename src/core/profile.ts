@@ -252,6 +252,7 @@ function achievementCtx(p: Profile, e: RunEntry, collectionTotal = Infinity) {
     cabinet: e.cabinet,
     stake: e.stake,
     score: runScore(e),
+    fightsWon: e.fights,
     chips: e.chips,
     relics: e.relics.length,
     loops: e.loops ?? 0,

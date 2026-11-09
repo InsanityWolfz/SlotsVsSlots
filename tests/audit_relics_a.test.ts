@@ -452,7 +452,7 @@ describe('UNDERDOG: EVERYTHING PAYS X1.5 WHEN YOU ARE UNDER HALF HP', () => {
 // ---------------------------------------------------------------------------------------------------------------------
 describe('HOLY WATER (holywater): THE FIRST ENEMY ABILITY EACH FIGHT THAT HITS YOUR REELS DOES NOTHING', () => {
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('holywater', cab)).toEqual({ full: 'THE FIRST ENEMY ABILITY EACH FIGHT THAT HITS YOUR REELS DOES NOTHING', short: 'BLOCKS THE FIRST ENEMY ABILITY ON YOUR REELS' });
+    for (const cab of MACHINES) expect(face('holywater', cab)).toEqual({ full: 'THE FIRST ENEMY ABILITY EACH FIGHT THAT HITS YOUR REELS DOES NOTHING', short: 'EACH FIGHT: BLOCKS 1ST ABILITY ON YOUR REELS' });
   });
   const slimeFight = (relics: RelicId[], cab: CabinetId = 'knight') =>
     new Fight(machineCfg(cab, relics, (c) => (c.enemy = { hp: 1e7, strips: reels3({ slime: 12 }) })), 7);

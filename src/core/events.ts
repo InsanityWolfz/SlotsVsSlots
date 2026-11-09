@@ -174,7 +174,8 @@ export type CombatEvent =
   /** Enemy special meter after this turn: `charge` of `every`. */
   /** THE OWNER passed 75 / 50 / 25% of his HP (phase 1 / 2 / 3): his hits are harder from here. */
   | { type: 'ownerPhase'; side: SideId; phase: number }
-  | { type: 'abilityCharge'; side: SideId; charge: number; every: number; kind: AbilityKind }
+  /** `done`: the ability won't fire again this fight (THE REPO MAN after his takes): the HUD drops its countdown. */
+  | { type: 'abilityCharge'; side: SideId; charge: number; every: number; kind: AbilityKind; done?: boolean }
   /** Header for an ability firing; its effects follow as regular events. */
   | { type: 'ability'; side: SideId; kind: AbilityKind; power: number }
   | { type: 'pot'; side: SideId; reels: number[]; amount: number; total: number }

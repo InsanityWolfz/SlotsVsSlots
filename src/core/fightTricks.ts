@@ -452,6 +452,8 @@ export function cleanse(_f: Fight, me: Combatant, reels: number[], events: Comba
 
 export function chargeAbility(f: Fight, me: Combatant, events: CombatEvent[]): void {
   const ab = me.ability!;
+  // THE REPO MAN is done after his takes: no more countdown, no more fizzles.
+  if (ab.kind === 'repo' && f.repoTaken >= GATEKEEPER.maxTakes) return;
   me.charge++;
   // THE WHEEL: PLACE YOUR BETS on its turns; NO MORE BETS when the countdown runs out (its last bets go down first).
   if (ab.kind === 'bets') {
@@ -492,7 +494,9 @@ export function chargeAbility(f: Fight, me: Combatant, events: CombatEvent[]): v
     fireAbility(f, me, fire, events);
     if (f.over) return;
   }
-  events.push({ type: 'abilityCharge', side: me.side, charge: me.charge, every: ab.every, kind: shownKind(f, ab) });
+  // THE REPO MAN's last take: the HUD drops his countdown (QA RULES-03: it counted down to nothing after his 2nd).
+  const done = ab.kind === 'repo' && f.repoTaken >= GATEKEEPER.maxTakes;
+  events.push({ type: 'abilityCharge', side: me.side, charge: me.charge, every: ab.every, kind: shownKind(f, ab), ...(done ? { done } : {}) });
 }
 
 /** The ability as its HUD shows it: THE OWNER's is his next trick (THE HAMMER is telegraphed this way). */

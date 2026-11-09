@@ -1,4 +1,4 @@
-import { BLADES, cloneConfig, UNIT, unitsRound, unitsUp, type Enh, type GameConfig, type RelicId, type SideId, type SymbolId } from './config';
+import { BLADES, cloneConfig, UNIT, unitsRound, unitsUp, type AbilityDef, type Enh, type GameConfig, type RelicId, type SideId, type SymbolId } from './config';
 import { CABINETS, hasSpecial, type Cabinet, type Meter } from './cabinets';
 import { charmLevel, charmValue } from './charms';
 import type { CombatEvent, DealCard, HealSource, LineCard } from './events';
@@ -17,6 +17,22 @@ import { scoreSpin } from './fightScore';
 import { markedCards, tickFakes, defuse, burnFuses, tickStatuses, chargeAbility, sweepBets, cashPot, winPot, stickyFingers } from './fightTricks';
 import { secondLine, resolveGroup, midasTouch, dropNotes, turnUp, volumeAfterSpin, payoff, payoffAfter, cellCharms, fillVault, fillMeter, gainEnergy, storm } from './fightPayout';
 import { resetShield, enemyDmgMul, hit, heal, damage, checkDeath } from './fightDamage';
+
+/**
+ * An enemy ability's head start (its charge when the fight begins), as the Fight sets it. The enemy card says "TURN N,
+ * THEN EVERY M" from it (QA RULES-15: the card said EVERY 3 while the ability fired on turn 1). Bosses start at 0
+ * (THE DEALER sets its own).
+ */
+export function startCharge(ab: AbilityDef, o: { regular: boolean; act: number; endless: boolean }): number {
+  // ACT 3 regulars open with their ability on their first turn (it never fired in 38% of act 3 fights: EXPERT_PLAYTEST_3 C3).
+  if (o.regular && o.act >= 3) return Math.max(0, ab.every - 1);
+  // THE REPO MAN takes on his first turn, then every 3 (half of MIDAS's fights ended before his 3rd: EXPERT_PLAYTEST_9 D3).
+  if (ab.kind === 'repo') return Math.max(0, ab.every - GATEKEEPER.firstTurn);
+  // ACT 1-2 regulars and elites get a head start: the enemy's trick (writing on your machine) shows in nearly every
+  // fight, not only the long ones (the feel playtest: BLIZZARD and PILFER never fired before the enemy died).
+  if (o.regular && !o.endless) return Math.min(ab.every - 1, TUNE.headStart);
+  return 0;
+}
 
 /**
  * The whole fight as a pure state machine. Each step() is one combatant's turn: the full
@@ -207,13 +223,8 @@ export class Fight {
     if (this.cfg.enemy.startShield) this.sides.enemy.shield = this.cfg.enemy.startShield;
     if (this.cfg.player.startShield) this.sides.player.shield = this.cfg.player.startShield;
     if (this.cfg.enemy.first) this.next = 'enemy';
-    // ACT 3 regulars open with their ability on their first turn (it never fired in 38% of act 3 fights: EXPERT_PLAYTEST_3 C3).
-    if (this.act3Regular && this.sides.enemy.ability) this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - 1);
-    // THE REPO MAN takes on his first turn, then every 3 (half of MIDAS's fights ended before his 3rd: EXPERT_PLAYTEST_9 D3).
-    else if (this.sides.enemy.ability?.kind === 'repo') this.sides.enemy.charge = Math.max(0, this.sides.enemy.ability.every - GATEKEEPER.firstTurn);
-    // ACT 1-2 regulars and elites get a head start: the enemy's trick (writing on your machine) shows in nearly every
-    // fight, not only the long ones (the feel playtest: BLIZZARD and PILFER never fired before the enemy died).
-    else if (this.sides.enemy.ability && !this.isBoss && !this.isWheel && !this.isDealer && !this.cfg.enemy.endless) this.sides.enemy.charge = Math.min(this.sides.enemy.ability.every - 1, TUNE.headStart);
+    const regular = !this.isBoss && !this.isWheel && !this.isDealer;
+    if (this.sides.enemy.ability) this.sides.enemy.charge = startCharge(this.sides.enemy.ability, { regular, act: this.cfg.enemy.act ?? 1, endless: !!this.cfg.enemy.endless });
     // THE DEALER deals first on its 2nd turn, then every 3.
     if (this.isDealer) {
       // Its first hand's bar: a share of its total HP.

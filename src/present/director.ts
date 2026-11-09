@@ -621,6 +621,11 @@ export class Director {
 
   private async abilityCharge(e: Ev<'abilityCharge'>): Promise<void> {
     const h = this.s.huds[e.side];
+    // THE REPO MAN after his last take: the countdown goes.
+    if (e.done) {
+      h.ability = null;
+      return;
+    }
     // THE OWNER: his HUD names his next trick (THE HAMMER IN 2).
     if (h.ability && h.ability.kind !== e.kind) h.ability = { ...h.ability, kind: e.kind };
     // The pace can change mid-fight (the Dealer's hands): keep the HUD's countdown honest.

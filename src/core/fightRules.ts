@@ -77,8 +77,9 @@ export const WRITERS: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', '
 /** HOLY WATER washes off these writes (not coins, drains or the Mimic's hit) and these abilities. */
 export const REEL_WRITES: ReadonlySet<SymbolId> = new Set(['slime', 'ice', 'claw', 'rock', 'lock', 'bomb', 'hex', 'card', 'gavel', 'rake', 'fake', 'ball']);
 export const FIZZLE_SINGLES: ReadonlySet<SymbolId> = new Set(['lock', 'rock', 'hex', 'gavel', 'ball']);
-export const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'mark', 'houseTake', 'penalty']);
-// (Not 'launder' or 'gulp': they take chips, not your reels, and BOUNCER blocks abilities on your reels. QA 2026-11-04.)
+export const WRITER_ABILITIES: ReadonlySet<string> = new Set(['repo', 'flood', 'blizzard', 'jam', 'pilfer', 'quake', 'carpet', 'curse', 'mark', 'penalty', 'deal']);
+// (Not 'launder' or 'gulp': they take chips, not your reels, and BOUNCER blocks abilities on your reels. QA 2026-11-04.
+// THE DEALER's BUST lands a card on your reel; the CROUPIER's RAKE cuts your pays, not your reels: QA RULES-10.)
 /** Groups that "pay" for RAISE and MIDAS's x4 (the ones that hit, shield or charge). */
 export const PAYING: ReadonlySet<SymbolId> = new Set(['sword', 'ace', 'shield', 'bolt', 'seven', 'goldbar', 'note']);
 /** The groups OVERTIME grows: the ones that hit. */

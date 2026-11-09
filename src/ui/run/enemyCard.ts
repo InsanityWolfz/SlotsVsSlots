@@ -1,9 +1,8 @@
 import { type SymbolId } from '../../core/config';
-import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, type EnemyDef } from '../../core/enemies';
+import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, TUNE, type EnemyDef } from '../../core/enemies';
 import { CHIPS, needsRoute, currentEnemy, isBossNext, runActs, type RunState } from '../../core/run';
-import { nightId } from '../../core/endless';
-import { enemyHp } from '../../core/fightSetup';
-import { effectiveAbility, STAKE } from '../../core/stakes';
+import { enemyHp, shownAbility } from '../../core/fightSetup';
+import { STAKE } from '../../core/stakes';
 import { backOut, sineOut } from '../../present/ease';
 import { ABILITY_UI, abilityName } from '../../present/hud';
 import { COLORS } from '../../present/layout';
@@ -81,11 +80,11 @@ export abstract class NextScreen extends RouteScreen {
     return d >= 5 ? 3 : d >= 2.5 ? 2 : 1;
   }
 
-  /** How often its ability fires in this run (stakes, the hourglass, FAST NIGHT). */
+  /** How often its ability fires in this run (stakes, the hourglass, FAST NIGHT, ESPRESSO SHOT, the loop House). */
   protected everyOf(e: EnemyDef): number {
     const run = this.run!;
     if (!e.ability) return 0;
-    return effectiveAbility(nightId(run) === 'fast' ? { ...e.ability, every: Math.max(2, e.ability.every - 1) } : e.ability, { stake: run.stake, act: run.act, sandglass: run.player.relics.includes('sandglass') }).every;
+    return shownAbility(run, e.ability, e.boss).every;
   }
 
   protected drawNext(ctx: CanvasRenderingContext2D, time: number): void {
@@ -246,8 +245,13 @@ export abstract class NextScreen extends RouteScreen {
         wrap(`${k.word}: ${k.text}`, cols(T.small, 30)).forEach((l, i) => out.push({ text: l, color: KIT.dim, size: T.small, rich: true, ...(i === 0 ? { icon: k.icon } : { indent: true }) }));
     }
     if (e.elite)
-      for (const l of wrap(`ELITE: +${(e.act ?? 1) > 1 ? Math.round((ELITE_HP_MUL_2 - 1) * 100) : e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP, HITS ${Math.round((ELITE_DMG_MUL - 1) * 100)}% HARDER. RELIC PICK, +${CHIPS.eliteBonus} CHIPS`, cols(T.small)))
+      // (Its IOUs and marks keep their numbers: those elites say their reels, QA RULES-01.)
+      for (const l of wrap(`ELITE: +${(e.act ?? 1) > 1 ? Math.round((ELITE_HP_MUL_2 - 1) * 100) : e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP, ${e.ability?.kind === 'carpet' || e.ability?.kind === 'mark' ? 'ITS REELS HIT' : 'HITS'} ${Math.round((ELITE_DMG_MUL - 1) * 100)}% HARDER. RELIC PICK, +${CHIPS.eliteBonus} CHIPS`, cols(T.small)))
         out.push({ text: l, color: '#ffb060', size: T.small });
+    // ACT 3's COVER CHARGE (QA RULES-09: it was named only by a pop when it fired).
+    if (!e.isBoss && (e.act ?? run.act) >= 3)
+      for (const l of wrap(`COVER CHARGE: ITS FIRST HIT EACH FIGHT GOES PAST YOUR SHIELD, UP TO ${Math.round(TUNE.coverCharge * 100)}% OF YOUR MAX HP`, cols(T.small)))
+        out.push({ text: l, color: KIT.text, size: T.small });
     if (e.isBoss) {
       const br = bossRules(e.boss ?? 'house', this.bossCtx());
       for (const r of br.rules) wrap(r.text, cols(T.small, 30)).forEach((l, i) => out.push({ text: l, color: KIT.text, size: T.small, icon: i === 0 ? r.icon : undefined, rich: true }));
@@ -278,9 +282,12 @@ export abstract class NextScreen extends RouteScreen {
     // THEIR REELS with counts, along the foot.
     ctx.fillStyle = '#2a2140';
     ctx.fillRect(18, h - 76, w - 36, 2);
-    drawText(ctx, 'THEIR REELS', 24, h - 58, T.small, KIT.dim, { align: 'left' });
+    // (All three reels counted: a regular's reels differ a little, and reel 1 alone misled: QA RULES-20.)
+    drawText(ctx, 'THEIR 3 REELS', 24, h - 58, T.small, KIT.dim, { align: 'left' });
     const dirty = e.boss === 'house' && run.stake >= STAKE.houseDirty;
-    const shown = dirty ? { ...e.strips[0], bomb: STAKE.houseBombsPerReel } : e.strips[0];
+    const shown: Partial<Record<SymbolId, number>> = {};
+    for (const strip of e.strips) for (const [sym, n] of Object.entries(strip) as [SymbolId, number][]) shown[sym] = (shown[sym] ?? 0) + (n ?? 0);
+    if (dirty) shown.bomb = (shown.bomb ?? 0) + STAKE.houseBombsPerReel * e.strips.length;
     let cx = 38;
     for (const [sym, n] of Object.entries(shown) as [SymbolId, number][]) {
       if (n <= 0) continue;

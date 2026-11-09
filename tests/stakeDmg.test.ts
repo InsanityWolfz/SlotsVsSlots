@@ -9,7 +9,7 @@ describe('stake damage ladder', () => {
   it("each stake's rule names its own number", () => {
     for (const s of STAKES) {
       const pct = Math.round((stakeDmg(s.level) - 1) * 100);
-      if (pct > 0) expect(s.rule).toContain(`ENEMIES HIT ${pct}% HARDER`);
+      if (pct > 0) expect(s.rule).toContain(`ENEMY REELS HIT ${pct}% HARDER`);
       else expect(s.rule).not.toContain('HARDER');
     }
   });

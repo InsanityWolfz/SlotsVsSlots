@@ -7,6 +7,8 @@ import { Button } from './button';
 import { KEYWORDS } from './keywords';
 import { drawPanel, drawTitle, KIT, T } from './kit';
 import { by, drawPrompt } from './input';
+// (The shared wrap: no lone last word, "HITS YOU FOR / 20": QA RULES-24.)
+import { wrap } from './run/shared';
 
 export interface PauseCallbacks {
   onResume: () => void;
@@ -162,20 +164,6 @@ export class Pause {
     ctx.fillRect(Math.round(W / 2 - 1), py + 84, 2, ph - 136);
     drawPrompt(ctx, by({ touch: 'TAP: BACK', mouse: 'CLICK OR ESC: BACK', keys: 'ESC: BACK', pad: '[B] BACK' }), W / 2, py + ph - 24, T.small, KIT.dim);
   }
-}
-
-/** Break a line into rows of at most `n` characters, at spaces. */
-function wrap(text: string, n: number): string[] {
-  const rows: string[] = [];
-  let line = '';
-  for (const w of text.split(' ')) {
-    if (line && (line + ' ' + w).length > n) {
-      rows.push(line);
-      line = w;
-    } else line = line ? `${line} ${w}` : w;
-  }
-  if (line) rows.push(line);
-  return rows;
 }
 
 const PAUSE_Y0 = 252;
