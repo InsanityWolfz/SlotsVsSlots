@@ -17,9 +17,9 @@ export const STAKES: Stake[] = [
   { level: 0, name: 'WHITE', color: '#e8e0f0', rule: 'THE BASE GAME' },
   { level: 1, name: 'RED', color: '#e04a3a', rule: 'SCARS: EVERY 4TH FIGHT YOU WIN LEAVES A PERMANENT ROCK ON YOUR MACHINE' },
   { level: 2, name: 'GREEN', color: '#5ed15a', rule: 'THE WHEEL STARTS FAST: 3 CHIPS A TURN, RIGHT AWAY. ENEMY REELS HIT 5% HARDER' },
-  { level: 3, name: 'BLACK', color: '#8a7aa8', rule: 'THE HOUSE SKIMS EVERY 2 TURNS AND STICKS IOUS ON YOUR PAYLINE. ENEMY REELS HIT 10% HARDER' },
+  { level: 3, name: 'BLACK', color: '#8a7aa8', rule: 'THE DOORMAN SKIMS EVERY 2 TURNS AND STICKS IOUS ON YOUR PAYLINE. ENEMY REELS HIT 10% HARDER' },
   { level: 4, name: 'BLUE', color: '#3b8ef0', rule: "FROM ACT 2, ENEMY ABILITIES CHARGE FASTER (NOT THE WHEEL'S). METER OR 4+ CHARM BUILDS MEET A COUNTERFEITER. ENEMY REELS HIT 15% HARDER" },
-  { level: 5, name: 'GOLD', color: '#ffd23f', rule: "ACT 1'S ABILITIES CHARGE FASTER TOO (NOT THE HOUSE'S). BOSSES HAVE +8% HP. ENEMY REELS HIT 20% HARDER" },
+  { level: 5, name: 'GOLD', color: '#ffd23f', rule: "ACT 1'S ABILITIES CHARGE FASTER TOO (NOT THE DOORMAN'S). BOSSES HAVE +8% HP. ENEMY REELS HIT 20% HARDER" },
 ];
 export const MAX_STAKE = STAKES.length - 1;
 

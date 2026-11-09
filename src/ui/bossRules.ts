@@ -76,11 +76,11 @@ function rulesOf(boss: string, c: BossRuleContext): BossRules {
   const dirty = c.stake >= STAKE.houseDirty;
   return {
     rules: [
-      { icon: artId('coin'), text: (c.loop ?? 0) > 0 ? 'IT ADDS TO THE POT EVERY TURN. COINS ON ITS REELS ADD MORE' : `IT ADDS ${fmtNum(POT.houseCut)} TO THE POT EVERY TURN. COINS ON ITS REELS ADD MORE` },
-      { icon: artId('icoCoin'), text: `EVERY ${c.houseEvery} TURNS: IT SKIMS HALF THE POT AT YOU` },
-      { icon: artId('potTier4'), text: `AT HALF HP THE POT DOUBLES. FROM SPIN ${POT.lastCall}, LAST CALL: IT SKIMS EVERY TURN` },
-      ...(dirty ? [{ icon: artId('bomb'), text: 'BLACK: IT STICKS IOUS ON YOUR PAYLINE' }] : []),
+      { icon: artId('coin'), text: (c.loop ?? 0) > 0 ? 'HE ADDS TO THE POT EVERY TURN. COINS ON HIS REELS ADD MORE' : `HE ADDS ${fmtNum(POT.houseCut)} TO THE POT EVERY TURN. COINS ON HIS REELS ADD MORE` },
+      { icon: artId('icoCoin'), text: `EVERY ${c.houseEvery} TURNS: HE SKIMS HALF THE POT AT YOU` },
+      { icon: artId('potTier4'), text: `AT HALF HP THE POT DOUBLES. FROM SPIN ${POT.lastCall}, LAST CALL: HE SKIMS EVERY TURN` },
+      ...(dirty ? [{ icon: artId('bomb'), text: 'BLACK: HE STICKS IOUS ON YOUR PAYLINE' }] : []),
     ],
-    win: 'YOUR JACKPOTS WIN ITS POT',
+    win: 'YOUR JACKPOTS WIN HIS POT',
   };
 }

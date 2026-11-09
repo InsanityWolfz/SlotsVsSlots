@@ -2,7 +2,7 @@
  * A BOSS'S ENTRANCE (QA UI-10, user call 10, 2026-11-09: FACE THE HOUSE cut straight to an ordinary fight frame). About
  * 2 s at SPEED 1X, on the fight's clock (so SPEED scales it, and any input skips it through the clock's skip): the room
  * dims, the boss's Slot Machine drops in and lands with a slam, its name plate lands in the HUDs' band with its portrait
- * and one line, the boss does its one thing (THE HOUSE's pot lights up, THE WHEEL spins, THE DEALER deals a card, THE
+ * and one line, the boss does its one thing (THE DOORMAN holds up a hand, ID PLEASE, before his machine drops, then his pot lights up; THE WHEEL spins, THE DEALER deals a card, THE
  * OWNER's lightning), then the plate leaves and the HUDs drop into place. A repeat (a boss met before this run, or a
  * fight restarted after a quit) plays a short version: no drop, a quicker plate.
  * Presentation only: nothing here touches the fight.
@@ -19,7 +19,7 @@ export const PLATE = { cx: W / 2, cy: 96, h: 140 };
 /** The plate fits its words (the font's glyphs are 6 px a scale), plus room on the right for THE WHEEL's wheel or THE
  * DEALER's card. */
 export const plateWidth = (en: Pick<EntranceView, 'boss' | 'name' | 'line' | 'eyebrow'>): number =>
-  2 * Math.round((150 + Math.max(en.name.length * 6 * 4.5, en.line.length * 6 * 2, en.eyebrow.length * 6 * 1.6) + 36 + (en.boss === 'dealer' || en.boss === 'wheel' ? 100 : 0)) / 2);
+  2 * Math.round((150 + Math.max(en.name.length * 6 * 4.5, en.line.length * 6 * 2, en.eyebrow.length * 6 * 1.6) + 36 + (en.boss === 'dealer' || en.boss === 'wheel' || en.boss === 'house' ? 100 : 0)) / 2);
 /** Where a prop lands on the plate (its right end). */
 const propAt = (en: EntranceView) => ({ x: PLATE.cx + plateWidth(en) / 2 - 64, y: PLATE.cy + 2 });
 
@@ -33,7 +33,7 @@ export interface EntranceOpts {
 
 /** Each boss's one line under its name (flavour, never a rule: the rules are on its card). */
 export const BOSS_LINES: Record<EntranceView['boss'], string> = {
-  house: 'THE HOUSE ALWAYS WINS',
+  house: 'ID, PLEASE',
   wheel: 'PLACE YOUR BETS',
   dealer: 'THREE HANDS. ONE TABLE',
   owner: 'HE OWNS THIS TOWN',
@@ -53,22 +53,38 @@ export async function bossEntrance(d: Director, o: EntranceOpts): Promise<void> 
     // The room dims and your side steps back.
     cam.dimTarget = full ? 0.7 : 0.5;
     d.bg(c.to(player, 'dim', 0.55, 0.25));
+    // THE DOORMAN (act 1; the `house` id since 2026-11-09) comes first: he steps up on the plate and holds up a hand
+    // (ID, PLEASE), and only then does his Slot Machine drop in behind him.
+    const doorman = o.boss === 'house';
+    // (His machine is off stage while he checks your ID: it showed in place, then jumped up to drop.)
+    if (doorman && full) enemy.drop = -(MACHINE_TOP + MACHINE_H + 140);
+    if (doorman) {
+      await c.wait(full ? 0.1 : 0.05);
+      d.bg(c.tween({ from: 0, to: 1, dur: full ? 0.26 : 0.16, ease: backOut(1.8), onUpdate: (v) => (en.plate = v) }));
+      if (!c.skipping) s.sounds.stingerMedium();
+      await c.wait(full ? 0.12 : 0.06);
+      if (!c.skipping) s.sounds.whoosh();
+      await c.tween({ from: 0, to: 1, dur: full ? 0.22 : 0.14, ease: backOut(2.2), onUpdate: (v) => (en.hand = v) });
+      await c.wait(full ? 0.22 : 0.1);
+    }
     if (full) {
       // The boss's Slot Machine drops in from above and lands.
       enemy.drop = -(MACHINE_TOP + MACHINE_H + 140);
-      await c.wait(0.12);
+      await c.wait(doorman ? 0.04 : 0.12);
       if (!c.skipping) s.sounds.whoosh();
       await c.tween({ from: enemy.drop, to: 0, dur: 0.36, ease: cubicIn, onUpdate: (v) => (enemy.drop = v) });
       land(d);
       await c.wait(0.06);
     } else await c.wait(0.1);
-    // The name plate.
-    d.bg(c.tween({ from: 0, to: 1, dur: full ? 0.26 : 0.16, ease: backOut(1.8), onUpdate: (v) => (en.plate = v) }));
-    if (!c.skipping) s.sounds.stingerMedium();
-    await c.wait(full ? 0.14 : 0.08);
+    // The name plate (THE DOORMAN's is already up).
+    if (!doorman) {
+      d.bg(c.tween({ from: 0, to: 1, dur: full ? 0.26 : 0.16, ease: backOut(1.8), onUpdate: (v) => (en.plate = v) }));
+      if (!c.skipping) s.sounds.stingerMedium();
+      await c.wait(full ? 0.14 : 0.08);
+    }
     // The boss's own moment.
     await signature(d, en, full);
-    await c.wait(full ? 0.5 : 0.18);
+    await c.wait(full ? (doorman ? 0.28 : 0.5) : 0.18); // (THE DOORMAN spent his on the hand: about the same 2.2 s)
     // Out: the plate lifts away, the room comes back and the HUDs drop into place.
     d.bg(c.tween({ from: 0, to: 1, dur: 0.18, ease: cubicIn, onUpdate: (v) => (en.out = v) }));
     cam.dimTarget = 0;
