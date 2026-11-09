@@ -4,7 +4,7 @@ import { backOut } from '../../present/ease';
 import { drawSprite } from '../../render/sprites';
 import { drawText } from '../../render/text';
 import { KIT, T } from '../kit';
-import { drawPlayingCard } from './shared';
+import { drawPlayingCard } from './playingCards';
 import { TableScreens, SX, ROW, TABLE, TCX, FELT_INK } from './table';
 
 export abstract class CardGames extends TableScreens {

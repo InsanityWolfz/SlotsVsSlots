@@ -8,6 +8,7 @@ import { dirname, join } from 'node:path';
 import { PORTRAITS } from './portraits.mjs';
 import { SYMBOLS } from './symbols.mjs';
 import { KW_ICONS } from './keywordIcons.mjs';
+import { CARD_PIPS, CARD_COURT, CARD_BACK } from './cards.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -5687,6 +5688,11 @@ for (const [id, rows] of Object.entries(PORTRAITS)) S[id] = lit(32, 32, rows);
 for (const [id, rows] of Object.entries(SYMBOLS)) S[id] = lit(rows[0].length, rows.length, rows);
 // ...and the keyword icons (glossary and card detail boxes).
 for (const [id, rows] of Object.entries(KW_ICONS)) S[id] = lit(12, 12, rows);
+// ...and the playing cards (TWENTY-ONE, HIGHER OR LOWER): pips and the back unoutlined (they sit on the card), the
+// court outlined.
+for (const [id, rows] of Object.entries(CARD_PIPS)) S[id] = lit(rows[0].length, rows.length, rows, false);
+for (const [id, rows] of Object.entries(CARD_COURT)) S[id] = lit(22, 30, rows);
+for (const [id, rows] of Object.entries(CARD_BACK)) S[id] = lit(rows[0].length, rows.length, rows, false);
 
 // ---------------------------------------------------------------- emit + self-check
 const DIMS = {
@@ -5758,6 +5764,7 @@ const DIMS = {
 };
 for (const id of Object.keys(PORTRAITS)) DIMS[id] = 32;
 for (const id of Object.keys(KW_ICONS)) DIMS[id] = 12;
+for (const [id, rows] of Object.entries({ ...CARD_PIPS, ...CARD_COURT, ...CARD_BACK })) DIMS[id] = { w: rows[0].length, h: rows.length };
 const errors = [];
 // DIMS entries: a number for square sprites, or { w, h } for non-square ones
 for (const [id, dim] of Object.entries(DIMS)) {
@@ -5914,7 +5921,11 @@ export type SpriteId =
   | 'clawGrabber' | 'clawGrabberShut'            // CLAW game claw, open / closed, 24x24
   | 'prizeBall'                                  // CLAW game prize capsule, 12x12
   | 'relicLean' | 'relicSteady' | 'relicPairStreak' | 'relicSticky' // build-panel relics, 16x16
-  | 'cardCut';                                   // CUT draft card icon, 16x16
+  | 'cardCut'                                    // CUT draft card icon, 16x16
+  | 'pipHeartS' | 'pipDiamondS' | 'pipClubS' | 'pipSpadeS' // playing card index pips, 9x9
+  | 'pipHeartL' | 'pipDiamondL' | 'pipClubL' | 'pipSpadeL' // playing card centre pips, 13x13
+  | 'faceJack' | 'faceQueen' | 'faceKing'        // playing card court figures, 22x30
+  | 'cardBackDeck';                              // playing card back, 37x52
 
 export const SPRITES: Record<SpriteId, string[]> = {
 `;
