@@ -135,6 +135,8 @@ export abstract class RunScreensBase {
     protected sounds: Sounds,
     protected cb: {
       onPick: (o: DraftOption) => void;
+      /** SKIP the draft (no card, a few chips). */
+      onSkip: () => void;
       onSpoils: (relic: RelicId) => void;
       onLegend: (relic: RelicId) => void;
       onFight: () => void;

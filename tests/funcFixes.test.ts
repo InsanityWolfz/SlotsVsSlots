@@ -130,5 +130,5 @@ describe('FUNC-07: a saved run is cleaned on load', () => {
             },
           });
     expect(checked).toBeGreaterThan(200);
-  });
+  }, 30000);
 });

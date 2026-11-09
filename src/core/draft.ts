@@ -331,6 +331,14 @@ export function takeDraft(run: RunState, o: DraftOption): void {
   applyOption(run, o);
 }
 
+/** SKIP the draft: no card, a few chips, and all three cards are turned down for the rest of the act (QA call 3). */
+export function skipDraft(run: RunState): void {
+  passOn(run, draftOffers(run).map(similarKey));
+  run.player.chips += RUN.skipChips;
+  const last = run.records.at(-1);
+  if (last) last.skipped = true;
+}
+
 export function applyOption(run: RunState, o: DraftOption, asPick = true): void {
   const p = run.player;
   switch (o.kind) {

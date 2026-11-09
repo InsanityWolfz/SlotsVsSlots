@@ -33,15 +33,30 @@ describe('CASH CASSIDY / THE BANKROLL', () => {
     expect(highRollerMul(100)).toBe(MIDAS.maxMul);
   });
 
-  it('MAKE IT RAIN!: a chip jackpot with 5+ chips hits for chips x RAIN.perChip (x the jackpot), counted before it costs 5', () => {
-    const f = cassidy(20);
+  it('MAKE IT RAIN!: a chip jackpot with 10+ chips hits for chips x RAIN.perChip (x the jackpot), counted before it costs 10', () => {
+    const f = cassidy(40);
     const { rain, hit } = rainHit(f);
     expect(rain).toBeDefined();
     expect(rain.cost).toBe(RAIN.cost);
-    // The 20 chips held when it lands (its own chips come after): base 20 x RAIN.perChip, x3 for the jackpot.
-    expect(hit).toBe(20 * RAIN.perChip * 3);
+    expect(rain.free).toBe(false);
+    // The 40 chips held when it lands (its own chips come after): base 40 x RAIN.perChip, x3 for the jackpot.
+    expect(hit).toBe(40 * RAIN.perChip * 3);
     // A chip jackpot pays 3 - RAIN.chipLess chips.
-    expect(f.chipsNow()).toBe(20 + 3 - RAIN.chipLess - RAIN.cost);
+    expect(f.chipsNow()).toBe(40 + 3 - RAIN.chipLess - RAIN.cost);
+  });
+
+  it('THE HOUSE PAYS (QA call 6): a rain no harder than the chip jackpot it replaces costs nothing', () => {
+    // 20 chips x 1.5 = 30, the plain chip jackpot's own base: the rain only hits the floor.
+    const f = cassidy(20);
+    const { rain, hit } = rainHit(f);
+    expect(rain.free).toBe(true);
+    expect(rain.cost).toBe(0);
+    expect(hit).toBe(20 * RAIN.perChip * 3);
+    expect(f.chipsNow()).toBe(20 + 3 - RAIN.chipLess);
+    // RAINMAKER saved nothing: no pop.
+    const r = cassidy(20, (c) => (c.relics = ['rainmaker']));
+    const ev = rainHit(r).ev;
+    expect(ev.some((e) => e.type === 'relic' && e.relic === 'rainmaker')).toBe(false);
   });
 
   it('under 5 chips a chip jackpot is a plain hit (chips are his weapon) and pays its chips', () => {
@@ -61,9 +76,9 @@ describe('CASH CASSIDY / THE BANKROLL', () => {
   });
 
   it('relics: RAINMAKER costs 2; gold fits chips without LOADED CHIPS (retired)', () => {
-    const r = cassidy(20, (c) => (c.relics = ['rainmaker']));
+    const r = cassidy(40, (c) => (c.relics = ['rainmaker']));
     rainHit(r);
-    expect(r.chipsNow()).toBe(20 + 3 - RAIN.chipLess - RAIN.rainmakerCost);
+    expect(r.chipsNow()).toBe(40 + 3 - RAIN.chipLess - RAIN.rainmakerCost);
     const run = createRun(base, 3, 'midas');
     expect(charmOptions(run, RUN.charmCells, ['gold']).some((o) => o.kind === 'gild' && o.symbol === 'goldbar')).toBe(true);
   });

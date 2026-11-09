@@ -233,6 +233,8 @@ export class Director {
         this.s.sounds.coin(4);
         this.s.sounds.coin(8);
         this.s.sounds.coin(12);
+        // On the house (it hit no harder than the jackpot it replaced): say why no chips left.
+        if (e.free && !e.cost) void this.popText('THE HOUSE PAYS', c.x, MACHINE_TOP + 74, 2, '#ffd23f', 14, 0.5);
         return this.popText('MAKE IT RAIN!', c.x, MACHINE_TOP + 30, 4, '#7dff7a', 30, 0.5);
       }
       case 'midasChips': {

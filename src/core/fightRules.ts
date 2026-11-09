@@ -36,7 +36,7 @@ export const VOLUME = { perLevel: 0.32, max: 6, skip: 2, after: 3, turntable: 5,
  * turns it off (A/B: dbg.buildUp(false)).
  */
 export const BUILD_UP = { on: 1, step: 0.25, cap: 2, dryStep: 0.5, dryCap: 4 };
-export const RAIN = { maxChips: 100, perChip: 1.5, cost: 10, rainmakerCost: 2, chipLess: 1 };
+export const RAIN = { maxChips: 100, perChip: 1.5, /** 10 -> 20 (2026-11-09): floor rains are free now (QA call 6). */ cost: 20, rainmakerCost: 2, chipLess: 1, /** A rain no harder than the jackpot it replaces is free (1; QA call 6). */ freeAtFloor: 1 };
 /** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x2.5 (quarter steps). */
 export const highRollerMul = (chips: number, cap = MIDAS.maxMul) => Math.min(cap, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
 

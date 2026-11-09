@@ -3,6 +3,7 @@ import type { CabinetId } from '../../core/cabinets';
 import { RELICS, RELIC_TIER } from '../../core/relics';
 import { type DraftOption, type RunState } from '../../core/run';
 import { charmCardFull, describeOption } from '../../core/draft';
+import { RAIN } from '../../core/fightRules';
 
 /**
  * Cards say at most two lines at body size (the UI kit, user 2026-10-30). The rules' full wording stays in the core
@@ -38,7 +39,7 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   holywater: 'EACH FIGHT: BLOCKS 1ST ABILITY ON YOUR REELS',
   hotstreak: "JACKPOT: NEXT SPIN'S PAIRS AND JACKPOTS X2",
   pitboss: "ENEMY'S FIRST JACKPOT A FIGHT IS VOID",
-  rainmaker: 'MAKE IT RAIN COSTS 2 CHIPS, NOT 10',
+  rainmaker: `MAKE IT RAIN COSTS ${RAIN.rainmakerCost} CHIPS, NOT ${RAIN.cost}`,
   bash: 'LEFTOVER SHIELD HITS THE ENEMY',
   turntable: 'AFTER THE DROP, VOLUME FALLS TO 5, NOT 3',
   mixtape: 'A SPIN WITH NO NOTE KEEPS THE VOLUME',
@@ -55,7 +56,7 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   houseofcards: 'METER PAYOFFS: A WILD ON 2 REELS ALL FIGHT',
   parachute: 'ONCE A FIGHT, PAY 10 CHIPS TO LIVE AT 25%',
   secondline: 'ROW ABOVE PAYS HALF. ENEMIES HIT +15%',
-  devilsdue: 'EVERYTHING X1.75. -8% MAX HP PER WIN',
+  devilsdue: 'EVERYTHING X1.5. -8% MAX HP PER WIN',
   longgame: 'EVERYTHING -20%, +3% PER FIGHT WON',
   quickening: (t) => t.replace(/^YOUR (.+) STARTS EVERY FIGHT HALF FULL\..*$/, (_, m: string) => `${m.endsWith('METER') ? 'METER' : m} STARTS AT HALF. ENEMIES FASTER`),
   glasscannon: 'EVERYTHING X1.5. NO HEALS BETWEEN FIGHTS',

@@ -24,6 +24,8 @@ export interface ScoreGroup {
   voided?: boolean;
   /** CASH CASSIDY: a chip jackpot that MAKES IT RAIN (it hits for the chips you hold, then costs some). */
   rain?: boolean;
+  /** MAKE IT RAIN hit no harder than the chip jackpot it replaced: it costs nothing (QA call 6, 2026-11-09). */
+  rainFree?: boolean;
   /** Taken off by an enemy (the Croupier's rake, a hex): shown as a red -N. */
   cut?: number;
   /** Why it paid what it did (X2 GOLD, RAISE X2, HALF...). */

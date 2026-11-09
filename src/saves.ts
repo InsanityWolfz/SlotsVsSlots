@@ -46,8 +46,9 @@ export interface Prefs {
 /** The payline hint (PAIRS START ON REEL 1) shows this many times, ever. */
 export const PAYLINE_HINTS = 3;
 
-/** New saves' speed and master volume: 1X and 5 of 10 (user, 2026-11-08; the full game was 2X and 10). */
-const DEFAULT_SPEED = 1;
+/** New saves' speed and master volume: 2X and 5 of 10 (user, 2026-11-09: 1X was 15-18 s a round, QA call 1; master 5
+ * since 2026-11-08). Existing saves keep their speed. */
+const DEFAULT_SPEED = 2;
 const DEFAULT_MASTER = 5;
 
 export const clampVol = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.min(10, Math.round(n))) : 10);

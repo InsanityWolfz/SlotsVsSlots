@@ -133,7 +133,9 @@ was tuned for feel from two fresh-eyes playtests.
 - **After every win:** no heal (user, 2026-10-12: HP carries from fight to fight, so survivability and VAMP matter;
   the act's boss heals you fully). Then a **draft** (pick 1 of 3 cards). **The draft only edits your reels** (user,
   2026-10-15, cut list #8: the draft and the Cashier did the same job): add, swap, cut or clear symbols, WILDS, Charms.
-  No relics, levels or heals in a draft. (CUT, 2026-11-07: see THE CONTENT BATCH below.)
+  No relics, levels or heals in a draft. (CUT, 2026-11-07: see THE CONTENT BATCH below.) **SKIP** (user, 2026-11-09,
+  QA call 3): take no card for 2 chips (`RUN.skipChips`); the three cards count as turned down for the act. Not in the
+  tutorial's first draft. The RUN LOG says SKIPPED THE DRAFT (+2 CHIPS).
 - **The Cashier** is a stop: on some paths, and always right before the boss (plus a visit when a new act opens). It
   is what you save chips for. The counter: two symbol LEVELS (10 chips + 4 a level gained this run; your attack symbol
   is one of the two most visits), MAX HP +40 (5 chips + 4 a MAX HP bought this run) and the HEAL (up to 120 HP, 6 chips + 3 a heal bought this run, once a
@@ -232,7 +234,7 @@ Each machine except KNIGHT has one signature symbol and a meter.
 | TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields: 20 charge a bolt, 22 a bolt, the storm heals 15 (one axis: every boost adds charge; 360 HP) | reach the House |
 | JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat the House |
 | JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat the House with wilds |
-| BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER; a chip jackpot makes it rain; +1 chip a win and 20% off the Cashier's shelf (not the HEAL) | clear a run |
+| BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER; a chip jackpot makes it rain (20 chips; free when it hits no harder than the jackpot; 400 HP); +1 chip a win and 20% off the Cashier's shelf (not the HEAL) | clear a run |
 
 BRIAR / THORN is retired and removed from the code (the JUKEBOX replaced her). Old saves map her unlock and stakes to
 the JUKEBOX; a saved BRIAR run or hiscore entry is dropped on load.
@@ -388,8 +390,19 @@ DEALER's BUST included), not the CROUPIER's RAKE.
   36 / 24 / 14 / 9, JOKER 34 / 26 / 23 / 15, BANKROLL 36 / 28 / 22 / 14 (only JUKEBOX BLUE off, -6; before: TESLA and
   JUKEBOX GREEN +6, JUKEBOX GOLD -5). RED is unchanged (TESLA -5, BANKROLL -6 there: scars plus act 3, left as the user's
   harder RED). Tried and dropped: +7% from GREEN (BLACK to GOLD fell 4-11 too far), +4% (JOKER BLUE +6).
-- **Settings for new players (2026-11-08, user):** SPEED 1X and master volume 5 of 10, in the game and the demo (were 2X
-  and 10). Saved settings are kept.
+- **Settings for new players (2026-11-08, user):** master volume 5 of 10, in the game and the demo (was 10). SPEED went
+  to 1X that day and back to **2X** on 2026-11-09 (user, QA call 1: a round took 15-18 s at 1X; three QA testers
+  flagged it). Saved settings are kept.
+- **QA calls 3, 5, 6 (2026-11-09, user):** the draft's SKIP (+2 chips); SECOND MORTGAGE pays x1.5 (was x1.75: at GOLD,
+  taken at act 2, it lifted a run's win from 31-41% to 58-70%); MAKE IT RAIN is free when it hits no harder than the
+  chip jackpot it replaces (THE HOUSE PAYS; 71-81% of rains only hit that floor and still cost the chips). Free floor
+  rains alone took BANKROLL from 60 / 40 / 16 to 81 / 62 / 38 (WHITE / GREEN / GOLD: the chips kept fed HIGH ROLLER and
+  the next rain), so a rain that beats the floor costs 20 chips (was 10; RAINMAKER still 2) and BANKROLL has 400 HP
+  (was 480). Tried: 20 chips alone 69 / 48 / 21, 30 chips 65 / 42 / 18, 380 HP alone 71 / 50 / 25, no +1 chip a win
+  78 / 61 / 31. Sim 500 runs a machine, WHITE / GREEN / GOLD, before -> after: KNIGHT 60 / 35 / 15 -> 60 / 34 / 12,
+  TESLA 62 / 36 / 12 -> 61 / 35 / 11, JUKEBOX 58 / 35 / 10 -> 58 / 34 / 10, JOKER 56 / 34 / 15 -> 55 / 33 / 15,
+  BANKROLL 60 / 40 / 16 -> 59 / 39 / 16 (all 15 on target). The sim bot SKIPs only a draft whose best card scores under 2
+  on its scale, which never happens, so SKIP is not in these numbers.
 - **Cashier HEAL and +MAX HP pricier (2026-11-07, user):** HEAL 6 (+3 a buy) -> 10 (+5), +MAX HP 5 (+4) -> 8 (+6).
   Sim 400 runs a machine, WHITE / RED / GREEN: run win falls 0-5 points (KNIGHT WHITE 69 -> 64); THE HOUSE when reached
   barely moves (89-97 -> 87-96). Pricier heals alone don't give THE HOUSE teeth: that's the balance pass.
@@ -429,6 +442,7 @@ DEALER's BUST included), not the CROUPIER's RAKE.
   jackpot it replaces (under 20 chips it hit for less; OPEN BAR at 0 chips rained for 0). Most rains came at low chips,
   so the floor alone took BANKROLL from 56 / 37 / 20 (WHITE / GREEN / BLUE) to 66 / 52 / 33; the rain costs 10 chips
   now (was 5; RAINMAKER still 2), back to 55 / 36 / 20 (sim 1,000 runs). (HP was a weak lever: 260 HP only took 10 off.)
+  Since 2026-11-09 a rain at the floor is free and a rain above it costs 20 (QA call 6, above).
 - **Combination fixes (QA, 2026-11-09; bugs only, no numbers changed):** ESPRESSO SHOT isn't offered to BANKROLL (its
   HIGH ROLLER bar already starts at half from 10 chips held, 89% of its fights, so only the cost was left). A relic
   another one you hold switches off is never offered with it: RAINMAKER with OPEN BAR, BANDAGE with GLASS CANNON

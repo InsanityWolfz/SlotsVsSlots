@@ -213,6 +213,7 @@ export class Game {
     this.recap = new Recap(this.ui, (prog) => this.sounds.tick(prog));
     this.screens = new RunScreens(this.ui, this.sounds, {
       onPick: (o) => flow.pickReward(this, o),
+      onSkip: () => flow.skipReward(this),
       onSpoils: (r) => flow.pickSpoils(this, r),
       onLegend: (r) => flow.pickLegend(this, r),
       onFight: () => this.beginRunFight(),
