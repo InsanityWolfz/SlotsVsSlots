@@ -29,7 +29,20 @@ every other boss (THE HOUSE was the only machine), and the room's bouncer become
 rules, numbers, the pot, SKIM and "your jackpots win his pot" stay; his Slot Machine stays THE HOUSE's gold one. THE
 HOUSE stays as the casino itself, the thing the run beats ("break the house"). Not THE BOUNCER (a relic). Next: portrait
 candidates (branch `doorman-v1`), then the text sweep (achievement ids stay) and his entrance beat, shipping with the
-new rooms. **Capsule and trailer on hold** until the new rooms are done (user: "so we can get some really good art"); the
+new rooms. **The run as a journey (user, 2026-11-09, a dictated rant; decisions only):** the room style is approved (the street
+and the casino entrance); next, every act is a strip you move along, each fight a step closer to the act's boss, who
+is in view from the first fight ("I wish I knew what was behind that door"). Act 1: the city street toward the
+casino, past a bar (THE BARFLY), an alley (the thieves), the cold corner: shady characters, no crowd; the casino's
+door at the end, where THE DOORMAN checks your ID; beat him and he lets you in. Act 2: inside, down an aisle between
+rows of slot machines toward the table games, the casino's regulars (hexers, scammers); at the aisle's end the
+roulette wheel and THE WHEEL, its attendant. Act 3: past the roulette into the high-roller table games, people
+playing; at the end THE DEALER at a card table. ENDLESS: each loop replays an earlier strip later in the night,
+thinner and darker as the casino closes (THE DOORMAN's loop: the lobby seen from inside, him at the doors to show
+you out); at the end nobody's left and THE OWNER comes to put you down for winning too much. Tone: light and fun,
+not the genre's dark horror look (DEAD SPIN, CloverPit); the felt progress through places is the difference. No
+more content for the demo or launch (55 relics are enough; "if the core is good" more horizontal content won't move
+wishlists): polish the art and the UI. Process: every step as an artifact with screenshots for the user to approve.
+**Capsule and trailer on hold** until the new rooms are done (user: "so we can get some really good art"); the
 directions so far: https://claude.ai/artifact/DWvxNB3zHD8zf96xZA3FJX (branch `call9-art`, from `art-wip`: duel
 variants, trailer cut 3, store text) and https://claude.ai/artifact/PM1uuVfPi6LEJButEJTHv8 (branch `capsule-v2`: VS
 screen, fight night, the payline). Reports in
