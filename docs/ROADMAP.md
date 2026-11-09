@@ -42,6 +42,13 @@ you out); at the end nobody's left and THE OWNER comes to put you down for winni
 not the genre's dark horror look (DEAD SPIN, CloverPit); the felt progress through places is the difference. No
 more content for the demo or launch (55 relics are enough; "if the core is good" more horizontal content won't move
 wishlists): polish the art and the UI. Process: every step as an artifact with screenshots for the user to approve.
+**Act 1 approved (user, 2026-11-09: "act 1 is good"; https://claude.ai/artifact/RHK4Zdw9duxaG2yD9y4XUm, branch
+`journey-v1`):** four street stations by depth (a dive bar, an alley's mouth with a pawn shop, a cold corner, the
+block before the casino), the street ending in a T-junction with the casino set back across it (forecourt, carpet,
+rope posts, gilded double doors), THE DOORMAN standing beside the doors from the first fight, then his entrance room.
+Acts 2 and 3 in rework (act 2: slot banks facing the player with stools and players, a bigger wheel; act 3: patrons at
+the portraits' standard, stepped light, walls dressed). They ship together with THE DOORMAN's rename (branch
+`doorman-rename`; the two merge cleanly with `main`, 796 tests).
 **Capsule and trailer on hold** until the new rooms are done (user: "so we can get some really good art"); the
 directions so far: https://claude.ai/artifact/DWvxNB3zHD8zf96xZA3FJX (branch `call9-art`, from `art-wip`: duel
 variants, trailer cut 3, store text) and https://claude.ai/artifact/PM1uuVfPi6LEJButEJTHv8 (branch `capsule-v2`: VS
