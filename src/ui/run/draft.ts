@@ -227,7 +227,7 @@ export abstract class DraftScreen extends NextScreen {
   }
 
   /** An option's icon at scale `k` (4: a card; the Cashier's shelf uses it too). */
-  protected optionIcon(ctx: CanvasRenderingContext2D, o: DraftOption, x: number, y: number, k: number): void {
+  protected optionIcon(ctx: CanvasRenderingContext2D, o: DraftOption, x: number, y: number, k: number, bought = false): void {
     const d = k / 4;
     if (o.kind === 'relic') drawSprite(ctx, RELICS[o.relic].sprite as SpriteId, x, y, k);
     else if (o.kind === 'swap') {
@@ -249,7 +249,7 @@ export abstract class DraftScreen extends NextScreen {
       drawSprite(ctx, o.symbol as SpriteId, x, y, k);
       drawSprite(ctx, ENH_SPRITE[o.enh], x, y, k);
       drawText(ctx, `X${o.n}`, x + 48 * d, y + 20 * d, T.head * d, CHARM_COLOR[o.enh]);
-    } else if (o.kind === 'symLevel' || o.kind === 'charmLevel') this.levelIcon(ctx, o, x, y, k);
+    } else if (o.kind === 'symLevel' || o.kind === 'charmLevel') this.levelIcon(ctx, o, x, y, k, bought);
     else {
       drawSprite(ctx, 'heart', x, y, 5 * d);
       if (o.kind === 'maxHp') drawSprite(ctx, 'plusBadge', x + 30 * d, y + 22 * d, 3 * d);
@@ -257,7 +257,7 @@ export abstract class DraftScreen extends NextScreen {
   }
 
   /** A LEVEL card's icon: the symbol (or the Charm on its own tile) with its new level. */
-  protected levelIcon(ctx: CanvasRenderingContext2D, o: Extract<DraftOption, { kind: 'symLevel' | 'charmLevel' }>, x: number, y: number, scale: number): void {
+  protected levelIcon(ctx: CanvasRenderingContext2D, o: Extract<DraftOption, { kind: 'symLevel' | 'charmLevel' }>, x: number, y: number, scale: number, bought = false): void {
     const lv = this.run?.player.levels;
     if (o.kind === 'symLevel') drawSprite(ctx, o.symbol as SpriteId, x, y, scale);
     else {
@@ -271,7 +271,8 @@ export abstract class DraftScreen extends NextScreen {
       ctx.fillRect(x - half + 2, y - half + 2, half * 2 - 4, half * 2 - 4);
       drawSprite(ctx, ENH_SPRITE[o.enh], x, y, scale);
     }
-    const next = o.kind === 'symLevel' ? symLevel(lv, o.symbol) + (this.run ? levelStep(this.run) : 1) : 1;
+    // Bought (SOLD on the Cashier's shelf): the level it gave you, not the one after it (it read LV4 under SOLD: QA PLAY-U6).
+    const next = o.kind === 'symLevel' ? symLevel(lv, o.symbol) + (bought ? 0 : this.run ? levelStep(this.run) : 1) : 1;
     drawChip(ctx, `LV${next}`, x + 10 * scale + 18, y + 6 * scale, { scale: T.body, color: '#5ad8e8' });
   }
 

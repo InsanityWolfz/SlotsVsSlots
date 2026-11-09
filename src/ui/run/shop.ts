@@ -201,7 +201,7 @@ export abstract class ShopScreen extends EncounterScreen {
     const y0 = drawCard(ctx, h.x - w / 2, h.y - hh / 2, w, hh, { rarity: rarityOf(o), lift, shineT: big ? (time % 3) - 1 : undefined });
     ctx.fillStyle = 'rgba(0,0,0,0.22)';
     ctx.fillRect(h.x - w / 2 + 3, y0 + 3, w - 6, hh - 6);
-    this.optionIcon(ctx, o, h.x, y0 + hh / 2, o.kind === 'swap' ? 2.6 : o.kind === 'symLevel' || o.kind === 'charmLevel' ? 3 : 4);
+    this.optionIcon(ctx, o, h.x, y0 + hh / 2, o.kind === 'swap' ? 2.6 : o.kind === 'symLevel' || o.kind === 'charmLevel' ? 3 : 4, !!item.sold);
     // A relic's rarity gem in its corner, as on the draft's cards: the frame colour alone collapsed for red-green
     // colour-blind players (uncommon and legendary read the same: CVD audit 2026-11-05).
     if (o.kind === 'relic') {

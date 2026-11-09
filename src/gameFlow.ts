@@ -213,8 +213,12 @@ export function startRun(g: Game, seed?: number, cabinet: CabinetId = 'knight', 
 
 export function showRunStart(g: Game): void {
   if (!g.run) return;
-  if (g.run.pendingStart?.length) g.screens.showDraft(g.run, g.run.pendingStart.map((relic) => ({ kind: 'relic', relic }) as DraftOption), null, 'start');
-  else advance(g);
+  if (g.run.pendingStart?.length) {
+    g.screens.showDraft(g.run, g.run.pendingStart.map((relic) => ({ kind: 'relic', relic }) as DraftOption), null, 'start');
+    // The starting relics talk about the meter (MIXTAPE, TURNTABLE: VOLUME), so a machine's first run explains it here,
+    // before the pick, not in fight 1 after it (QA PLAY-U7). No HUD behind the cards: the callout sits in the middle.
+    meterTip(g, false);
+  } else advance(g);
 }
 
 // ---- saved runs (STEAM_READINESS S1) ------------------------------------------------
@@ -293,13 +297,13 @@ export function startRunFight(g: Game): void {
 }
 
 /** A Slot Machine's meter, explained the first fight a player ever starts on it (never over the tutorial's callouts). */
-export function meterTip(g: Game): void {
+export function meterTip(g: Game, onHud = true): void {
   const id = g.run?.cabinet;
   const t = id && METER_TIPS[id];
   if (!t || g.tut || g.coach.active || g.prefs.metersExplained.includes(id)) return;
   g.prefs.metersExplained.push(id);
   g.savePrefs();
-  g.coach.show([t], undefined, 'SKIP');
+  g.coach.show([onHud ? t : { ...t, rect: undefined }], undefined, 'SKIP');
 }
 
 export function noteHurt(g: Game, events: CombatEvent[]): void {
@@ -480,7 +484,7 @@ export function newFight(g: Game, start: boolean, seed: number | null = null, cf
   g.synth.stopLoops();
   g.synth.enabled = true;
   g.camera.dimTarget = 0;
-  g.lastPair = false;
+  g.lastPair = null;
   g.fight = new Fight(cfg, seed ?? cfg.seed ?? undefined);
   g.hurt.clear();
   g.spins = [0, 0];
@@ -596,9 +600,11 @@ export async function runFight(g: Game, token: number): Promise<void> {
       }
       // (a SPILL pair pays nothing: no prompt to hold it, playtest 2026-11-01; a pair on a frozen reel can't be held, so
       // no prompt either: the tutorial said PRESS Q AND W and the game answered A FROZEN REEL CAN'T BE HELD, playtest 2026-11-06)
-      if (e.type === 'spin' && e.side === 'player') g.lastPair = e.score.tier === 'pair' && e.score.groups.some((p) => p.matched && p.reels.length === 2 && p.base > 0 && PAYING.has(p.symbol) && p.reels.every((r) => !(g.fight.sides.player.frozen[r] > 0) && !(g.fight.sides.player.locked[r] > 0)));
-      // A freeze moves and locks your reels: the pair it broke can't be held (the HOLD call went stale: playtest).
-      else if (e.type === 'freeze' && e.to === 'player') g.lastPair = false;
+      if (e.type === 'spin' && e.side === 'player') {
+        const p = e.score.tier === 'pair' ? e.score.groups.find((q) => q.matched && q.reels.length === 2 && q.base > 0 && PAYING.has(q.symbol)) : undefined;
+        g.lastPair = p ? { symbol: p.symbol, reels: [...p.reels] } : null;
+      }
+      // (A freeze, steal, spill, rock or fake since then takes the call back: Game.pairToHold reads the reels as they stand.)
     }
     noteHurt(g, result.events);
     g.tracker.record(result.events);
@@ -617,7 +623,7 @@ export async function runFight(g: Game, token: number): Promise<void> {
       else if (result.events.some((e) => e.type === 'spin' && e.side === 'player')) tip(g, 'spin', 'firstSpin');
     }
     // HOLD: the tutorial's first PAIR (after the first-spin callout) says what a HOLD can do with it.
-    if (g.tut?.spin && g.lastPair && result.side === 'player' && g.fight.holdsLeft > 0 && !g.coach.active) tip(g, 'hold', 'hold');
+    if (g.tut?.spin && g.pairToHold() && result.side === 'player' && g.fight.holdsLeft > 0 && !g.coach.active) tip(g, 'hold', 'hold');
     // BUILD-UP: the first dry spin after the first-spin callout says what it was good for (it was a callout before the first SPIN).
     else if (g.tut?.spin && result.side === 'player' && g.fight.buildUpMul() > 1 && !g.coach.active) tip(g, 'buildUp', 'buildUp');
     g.presenting = false;

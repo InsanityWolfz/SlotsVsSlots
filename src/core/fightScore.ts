@@ -220,11 +220,11 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       boost(g, NEW_RELIC.horseshoeMul);
       notes.push(`X${NEW_RELIC.horseshoeMul} HORSESHOE`);
     }
-    // Legendaries: Skeleton Key (doubles) and Jackpot Bell (jackpots).
+    // Legendaries: LOADED DICE (doubles) and Jackpot Bell (jackpots).
     if (me.relics.has('key') && g.matched && g.reels.length === 2) {
       fired.add('key');
       boost(g, KEY_MULT);
-      notes.push(`X${KEY_MULT} KEY`);
+      notes.push(`X${KEY_MULT} LOADED DICE`);
     }
     if (me.relics.has('bell') && g.matched && (g.reels.length === 3 || g.jackpot)) {
       fired.add('bell');
@@ -328,7 +328,7 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
     // Late in act 3 / an endless loop, enemy swords and sevens hit harder: on the banner, not a hidden multiplier.
     if (!player && (g.symbol === 'sword' || g.symbol === 'seven') && g.base > 0) {
       const all = f.enemyDmgMul();
-      // An elite's x1.25 is its own note; endless loops and act 3's ramp are LATE.
+      // An elite's x1.25 is its own note; an endless loop's growth reads LOOP N, act 3's ramp ACT 3.
       const elite = f.cfg.enemy.endless ? 1 : (f.cfg.enemy.dmgMul ?? 1);
       const stake = f.cfg.enemy.stakeDmg ?? 1;
       const line2 = f.cfg.enemy.lineDmg ?? 1;
@@ -340,7 +340,9 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       if (line2 !== 1) notes.push(`X${Math.round(line2 * 100) / 100} 2ND LINE`);
       if (raise !== 1) notes.push(`X${raise} RAISE`);
       const rest = late / raise;
-      if (Math.abs(rest - 1) > 1e-9) notes.push(`X${Math.round(rest * 100) / 100} LATE`);
+      // (Named for what grows it: the ENDLESS loop (its growth, LAST CALL, THE OWNER), else act 3's ramp. "LATE" said
+      // nothing: QA PLAY-U4.)
+      if (Math.abs(rest - 1) > 1e-9) notes.push(`X${Math.round(rest * 100) / 100} ${f.cfg.enemy.endless ? `LOOP ${f.cfg.enemy.loop ?? 1}` : 'ACT 3'}`);
     }
   }
   // CASH CASSIDY: a full HIGH ROLLER bar multiplies your first paying group (MAKE IT RAIN first, then swords), then

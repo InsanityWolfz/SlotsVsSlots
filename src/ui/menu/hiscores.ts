@@ -121,7 +121,7 @@ export class HiscoresScreen implements MenuScreen {
   private reached(e: RunEntry): { text: string; color: string; sub: string } {
     if (e.won) {
       const text = e.acts >= 3 ? (e.loops ? `ENDLESS LOOP ${e.loops}` : 'BEAT THE DEALER') : 'CLEARED';
-      return { text, color: COLORS.energy, sub: e.acts >= 3 ? 'TRUE ENDING' : 'THE WHEEL STOPPED' };
+      return { text, color: COLORS.energy, sub: e.acts >= 3 ? (e.loops ? 'BEAT THE DEALER' : 'RUN CLEARED') : 'THE WHEEL STOPPED' };
     }
     // A long name drops its first words (the adjective), as the fight HUD does: SPITEFUL COUNTERFEITER was cut mid-word.
     const words = (e.killer ?? '').split(' ');
