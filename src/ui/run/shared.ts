@@ -5,7 +5,6 @@ import { type RunState } from '../../core/run';
 import { scaledAbility } from '../../core/fightSetup';
 import { COLORS, H, W } from '../../present/layout';
 import { artId, drawPortrait, type SpriteId } from '../../render/sprites';
-import { drawText } from '../../render/text';
 
 
 export type ScreenMode = 'none' | 'draft' | 'next' | 'over' | 'shop' | 'cabinet' | 'encounter';
@@ -108,51 +107,6 @@ export const OFFER = { y: 480, w: 270, gap: 296 };
 export type MapTip = { e?: EnemyDef; title?: string; sub?: string; x: number; y: number };
 /** The middle of the space right of YOUR BUILD: run screens center on it. */
 export const CX = (BUILD.x + BUILD.w + 12 + W) / 2;
-/** Pixel suits (5x5): hearts, diamonds, clubs, spades. */
-export const SUITS = [
-  ['.X.X.', 'XXXXX', 'XXXXX', '.XXX.', '..X..'],
-  ['..X..', '.XXX.', 'XXXXX', '.XXX.', '..X..'],
-  ['..X..', '.XXX.', 'XX.XX', '..X..', '.XXX.'],
-  ['..X..', '.XXX.', 'XXXXX', '..X..', '.XXX.'],
-];
-export const RANK = (n: number) => (n === 14 ? 'A' : n === 13 ? 'K' : n === 12 ? 'Q' : n === 11 ? 'J' : `${n}`);
-export function drawSuit(ctx: CanvasRenderingContext2D, suit: number, x: number, y: number, px: number): void {
-  ctx.fillStyle = suit < 2 ? '#e8374b' : '#1a1426';
-  SUITS[suit].forEach((row, r) => [...row].forEach((ch, c) => ch === 'X' && ctx.fillRect(Math.round(x + (c - 2.5) * px), Math.round(y + (r - 2.5) * px), px, px)));
-}
-/** A playing card (rank 2-14; 0 = its back), `sx` its width scale (for the flip). The suit is cosmetic: `slot` (the card's
- * place on the table) shifts it, so two cards of one rank never look identical (playtest: a tie read as a rigged deck). */
-export function drawPlayingCard(ctx: CanvasRenderingContext2D, x: number, y: number, rank: number, sx: number, k = 1, slot = 0): void {
-  const w = 112 * k * Math.max(0.04, sx);
-  const h = 156 * k;
-  ctx.fillStyle = COLORS.outline;
-  ctx.fillRect(x - w / 2 - 3, y - h / 2 - 3, w + 6, h + 6);
-  if (!rank) {
-    // The back: the house's red with a gold lattice.
-    ctx.fillStyle = '#8e1f3a';
-    ctx.fillRect(x - w / 2, y - h / 2, w, h);
-    ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(x - w / 2 + 6, y - h / 2 + 6, Math.max(0, w - 12), 2);
-    ctx.fillRect(x - w / 2 + 6, y + h / 2 - 8, Math.max(0, w - 12), 2);
-    for (let j = -3; j <= 3 && sx > 0.3; j++) ctx.fillRect(x + j * 12 * k * sx - 1, y - h / 2 + 12, 2, h - 24);
-    return;
-  }
-  ctx.fillStyle = '#f4eee0';
-  ctx.fillRect(x - w / 2, y - h / 2, w, h);
-  if (sx < 0.35) return;
-  const suit = (rank * 7 + slot) % 4;
-  const col = suit < 2 ? '#e8374b' : '#1a1426';
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(sx * k, k);
-  // (Outlined in the card's own colour: the usual dark outline swallowed the black ranks.)
-  // (A two-digit 10 at full size ran off the card's edge.)
-  const r = RANK(rank);
-  drawText(ctx, r, r.length > 1 ? -34 : -38, -56, r.length > 1 ? 2.5 : 3, col, { outline: '#f4eee0' });
-  drawSuit(ctx, suit, -38, -30, 3);
-  drawSuit(ctx, suit, 10, 16, 8);
-  ctx.restore();
-}
 /** RED OR BLACK: the wheel's centre, its offscreen size (drawn at half size, scaled x2), and the bet column's x. */
 export const RL = { wheelX: CX - 170, wheelY: 300, px: 112, betX: CX + 220 };
 /** CLAW MACHINE (in the table's place): the first prize's x, the step between prizes, the pit's y, the claw's resting x. */
