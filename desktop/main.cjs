@@ -1,12 +1,21 @@
 // Reel Brawl desktop wrapper (STEAM_READINESS S4). Loads the web build (../dist, built with `npm run build:steam`)
 // in one window, and bridges the few native things the game needs: quit, fullscreen, save files (Steam Auto-Cloud
 // syncs the saves folder) and, when Steam is running, the persona name and achievements.
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 
-// The Steam app id. 480 (Spacewar) is Valve's test app; replace it with the real id (and in steam_appid.txt).
-const APP_ID = Number(process.env.STEAM_APP_ID || fs.readFileSync(path.join(__dirname, 'steam_appid.txt'), 'utf8').trim() || 480);
+// The Steam app id. Launched by Steam, the client sets SteamAppId (the real id, demo or full game). Outside Steam (a dev
+// run) it comes from STEAM_APP_ID or steam_appid.txt; 480 (Spacewar) is Valve's test app. The file must not ship in a
+// depot (Valve), so a missing file is normal and never stops the game (QA STEAM-01: it crashed on launch).
+const readAppIdFile = () => {
+  try {
+    return fs.readFileSync(path.join(__dirname, 'steam_appid.txt'), 'utf8').trim();
+  } catch {
+    return '';
+  }
+};
+const APP_ID = Number(process.env.SteamAppId || process.env.STEAM_APP_ID || readAppIdFile() || 480);
 
 // The game starts its sound on the first key press anyway; on desktop there's no autoplay gate to wait for.
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
@@ -19,12 +28,37 @@ try {
 }
 
 const savesDir = () => path.join(app.getPath('userData'), 'saves');
+
+// Window prefs (fullscreen) live beside the saves, not in them: the game's saves never learn about the window.
+const windowFile = () => path.join(app.getPath('userData'), 'window.json');
+const readWindowPrefs = () => {
+  try {
+    return JSON.parse(fs.readFileSync(windowFile(), 'utf8')) || {};
+  } catch {
+    return {};
+  }
+};
+const writeWindowPrefs = (prefs) => {
+  try {
+    fs.writeFileSync(windowFile(), JSON.stringify(prefs));
+  } catch {
+    /* read-only disk: the window just opens windowed next time */
+  }
+};
+// 1280x720 unless the screen's work area is smaller (a 1366x768 laptop, 1080p at 150% scaling): then the biggest
+// 16:9 that fits in 90% of it (QA STEAM-14).
+const startSize = () => {
+  const { width: aw, height: ah } = screen.getPrimaryDisplay().workAreaSize;
+  const k = Math.min(1, (aw * 0.9) / 1280, (ah * 0.9) / 720);
+  return { width: Math.round(1280 * k), height: Math.round(720 * k) };
+};
 const safeKey = (k) => String(k).replace(/[^a-z0-9._-]/gi, '_');
 
 function createWindow() {
+  const prefs = readWindowPrefs();
   const win = new BrowserWindow({
-    width: 1280,
-    height: 720,
+    ...startSize(),
+    fullscreen: !!prefs.fullscreen,
     minWidth: 640,
     minHeight: 360,
     backgroundColor: '#07030d',
@@ -40,6 +74,22 @@ function createWindow() {
     },
   });
   win.removeMenu();
+  // Fullscreen is remembered between launches (F11, Alt+Enter or the setting).
+  win.on('enter-full-screen', () => writeWindowPrefs({ ...readWindowPrefs(), fullscreen: true }));
+  win.on('leave-full-screen', () => writeWindowPrefs({ ...readWindowPrefs(), fullscreen: false }));
+  // backgroundThrottling is off (the music would stutter), which also turns off the page's visibility events: tell the
+  // game itself when the window is minimised or hidden, so the music and the clock stop (QA STEAM-07).
+  const hidden = (on) => !win.isDestroyed() && win.webContents.send('desktop:hidden', on);
+  win.on('minimize', () => hidden(true));
+  win.on('hide', () => hidden(true));
+  win.on('restore', () => hidden(false));
+  win.on('show', () => hidden(false));
+  // A file dropped on the window would replace the game with it; a crashed page would leave a dead window (QA STEAM-15).
+  win.webContents.on('will-navigate', (e) => e.preventDefault());
+  win.webContents.on('render-process-gone', (_e, details) => {
+    console.warn('[desktop] page gone:', details && details.reason);
+    if (details && details.reason !== 'clean-exit' && !win.isDestroyed()) win.webContents.reload();
+  });
   const dist = app.isPackaged ? path.join(process.resourcesPath, 'web', 'index.html') : path.join(__dirname, '..', 'dist', 'index.html');
   win.loadFile(dist);
   // Links (the credits, the feedback form) open in the browser, never inside the game window.

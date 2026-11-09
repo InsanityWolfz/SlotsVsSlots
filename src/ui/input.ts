@@ -7,20 +7,22 @@ import { drawText, textWidth } from '../render/text';
  */
 export type InputMode = 'touch' | 'mouse' | 'keys' | 'pad';
 
-let mode: InputMode = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches ?? false) ? 'touch' : 'mouse';
+// A Steam Deck starts on the pad's prompts (PRESS [A], not PRESS ANY KEY: QA STEAM-05); a phone on touch's.
+const onDeck = (): boolean => {
+  try {
+    return !!(typeof window !== 'undefined' && (window as unknown as { desktop?: { steamDeck?: () => boolean } }).desktop?.steamDeck?.());
+  } catch {
+    return false;
+  }
+};
+let mode: InputMode = onDeck() ? 'pad' : typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches ?? false) ? 'touch' : 'mouse';
 export const inputMode = (): InputMode => mode;
 export function setInputMode(m: InputMode): void {
   mode = m;
 }
 
 /** On a Steam Deck the shoulders read L1 / R1 and the triggers L2 / R2 (Valve's names); elsewhere LB / RB, LT / RT. */
-const deck = (): boolean => {
-  try {
-    return !!(window as unknown as { desktop?: { steamDeck?: () => boolean } }).desktop?.steamDeck?.();
-  } catch {
-    return false;
-  }
-};
+const deck = onDeck;
 
 /** The words for the device in hand. A mouse falls back to the touch words, keys to the mouse's. */
 export function by(o: { touch: string; mouse?: string; keys?: string; pad: string }): string {

@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('desktop', {
   saveRemove: (key) => ipcRenderer.sendSync('desktop:saveRemove', key),
   // Steam sets SteamDeck=1 on a Deck: the button prompts say L1 / R1 / L2, not LB / RB / LT.
   steamDeck: () => process.env.SteamDeck === '1',
+  // The window was minimised / hidden (true) or brought back (false): the page's own visibility events are off.
+  onHidden: (cb) => ipcRenderer.on('desktop:hidden', (_e, on) => cb(!!on)),
 });
 
 const info = ipcRenderer.sendSync('steam:info');

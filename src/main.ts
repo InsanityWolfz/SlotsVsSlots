@@ -137,9 +137,12 @@ window.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('visibilitychange', () => game.setHidden(document.hidden));
+// The desktop wrapper keeps the page "visible" when minimised (no background throttling), so it says so itself.
+(globalThis as { desktop?: { onHidden?: (cb: (on: boolean) => void) => void } }).desktop?.onHidden?.((on) => game.setHidden(on));
 // Back in focus: wake the audio (some platforms leave it 'interrupted' after a sleep: S31).
 window.addEventListener('focus', () => !document.hidden && game.setHidden(false));
-// Losing focus mid-fight (alt-tab, the Steam overlay) pauses it, on the desktop build only (STEAM_READINESS S14).
+// Losing focus mid-fight (alt-tab) pauses it, on the desktop build only (STEAM_READINESS S14). The Steam overlay draws
+// over the window without taking focus, so it doesn't pause a fight (steamworks.js 0.4 has no overlay callback).
 // In a browser a click elsewhere on the page blurred it too (user playtest); a hidden tab already stops the clock.
 window.addEventListener('blur', () => {
   if (DESKTOP && game.phase === 'fighting' && game.pausable()) game.setPaused(true);
