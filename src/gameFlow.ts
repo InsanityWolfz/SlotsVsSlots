@@ -595,7 +595,7 @@ export async function runFight(g: Game, token: number): Promise<void> {
       }
       // (a SPILL pair pays nothing: no prompt to hold it, playtest 2026-11-01; a pair on a frozen reel can't be held, so
       // no prompt either: the tutorial said PRESS Q AND W and the game answered A FROZEN REEL CAN'T BE HELD, playtest 2026-11-06)
-      if (e.type === 'spin' && e.side === 'player') g.lastPair = e.score.tier === 'pair' && e.score.groups.some((p) => p.matched && p.reels.length === 2 && p.base > 0 && PAYING.has(p.symbol) && p.reels.every((r) => !(g.fight.sides.player.frozen[r] > 0)));
+      if (e.type === 'spin' && e.side === 'player') g.lastPair = e.score.tier === 'pair' && e.score.groups.some((p) => p.matched && p.reels.length === 2 && p.base > 0 && PAYING.has(p.symbol) && p.reels.every((r) => !(g.fight.sides.player.frozen[r] > 0) && !(g.fight.sides.player.locked[r] > 0)));
       // A freeze moves and locks your reels: the pair it broke can't be held (the HOLD call went stale: playtest).
       else if (e.type === 'freeze' && e.to === 'player') g.lastPair = false;
     }

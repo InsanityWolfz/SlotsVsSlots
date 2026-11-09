@@ -257,7 +257,8 @@ export function tapHold(g: Game, r: number): void {
   if (now !== was) g.sounds.reelStop(r, now ? 1.4 : 0.8);
   else {
     g.sounds.fizzle();
-    g.toolNote = { text: g.fight.sides.player.frozen[r] > 0 ? "A FROZEN REEL CAN'T BE HELD" : 'NO HOLDS LEFT THIS FIGHT', at: performance.now() };
+    const me = g.fight.sides.player;
+    g.toolNote = { text: me.frozen[r] > 0 ? "A FROZEN REEL CAN'T BE HELD" : me.locked[r] > 0 ? "A JAMMED REEL CAN'T BE HELD" : 'NO HOLDS LEFT THIS FIGHT', at: performance.now() };
   }
 }
 

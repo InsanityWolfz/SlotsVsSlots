@@ -207,6 +207,8 @@ export interface SideConfig {
   veteranMul?: number;
   /** ENDLESS, JUKEBOX's WARM-UP: the volume each fight starts at. */
   volumeStart?: number;
+  /** TONIGHT'S RULE LUCKY NIGHT: the WILDs it added to each reel for this fight (LEAN MACHINE doesn't count them). */
+  nightWilds?: number;
   /** FAST NIGHT: your meter fills this many times faster. */
   meterMul?: number;
   /** Boss fight: chips carried in grant this much shield at the start of each House turn. */

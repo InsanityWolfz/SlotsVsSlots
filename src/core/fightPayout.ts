@@ -191,7 +191,9 @@ export function volumeAfterSpin(f: Fight, me: Combatant, line: SymbolId[], score
     events.push({ type: 'payoff', side: me.side, kind: 'volume', left: me.energy });
     // SUBWOOFER (the shield build's DROP, 2026-11-01 trial, Body Slam's shape): THE DROP also hits for all the shield
     // you hold (a shield lasts one enemy turn, so a shield DROP did little; this cashes the shield build in).
-    if (me.relics.has('subwoofer') && me.shield > 0 && !f.over) {
+    // (Not on an enemy already down this spin: deaths resolve at the turn's end, and the icon popped for a hit that
+    // never landed: QA COMBOS-11.)
+    if (me.relics.has('subwoofer') && me.shield > 0 && !f.over && f.sides[other(me.side)].hp > 0) {
       events.push({ type: 'relic', side: me.side, relic: 'subwoofer' });
       f.hit(me, f.sides[other(me.side)], me.shield, [], events);
       if (f.over) return;
@@ -223,7 +225,8 @@ export function makeItRain(f: Fight, me: Combatant, g: ScoreGroup, events: Comba
   const foe = f.sides[other(me.side)];
   const cost = f.rainCost(me);
   events.push({ type: 'makeItRain', side: me.side, reels: g.reels, chips: f.chipsNow(), cost, total: f.midasChips - cost });
-  if (me.relics.has('rainmaker')) events.push({ type: 'relic', side: me.side, relic: 'rainmaker' });
+  // (No pop under OPEN BAR: the rain is free there, so RAINMAKER saved nothing. QA COMBOS-06.)
+  if (me.relics.has('rainmaker') && !me.relics.has('openbar')) events.push({ type: 'relic', side: me.side, relic: 'rainmaker' });
   f.hit(me, foe, g.amount + depositOnce(f, me, events), g.reels, events);
   f.midasChips -= cost;
   events.push({ type: 'midasChips', side: me.side, amount: -cost, total: f.midasChips });
@@ -293,19 +296,19 @@ export function payoffAfter(f: Fight, me: Combatant, _score: LineScore, events: 
   const foe = f.sides[other(me.side)];
   const dealt = events.slice(from).reduce((a, e) => a + (e.type === 'attack' && e.from === me.side ? e.amount : 0), 0);
   payoffHeal(f, me, events);
-  if (!f.over && me.relics.has('overcharge') && dealt > 0) {
+  if (!f.over && me.relics.has('overcharge') && dealt > 0 && foe.hp > 0) {
     events.push({ type: 'relic', side: me.side, relic: 'overcharge' });
     f.hit(me, foe, Math.max(1, Math.round(dealt * OVERCHARGE_ECHO)), [], events, false, 'echo');
   }
 }
 
 /** Every meter payoff heals (the machine's own heal, plus Vampire Fang). */
-export function payoffHeal(f: Fight, me: Combatant, events: CombatEvent[], times = 1): void {
+export function payoffHeal(f: Fight, me: Combatant, events: CombatEvent[], times = 1, fangTimes = times): void {
   if (me.side !== 'player' || f.over) return;
   // One heal, its parts named (user, 2026-10-13: "what's healing me 15?"): the meter's own and VAMPIRE FANG.
   const parts = [
     { label: PAYOFF_WORD[f.meter?.kind ?? ''] ?? 'METER', amount: (f.meter?.heal ?? 0) * times },
-    { label: 'ROOM SERVICE', amount: me.relics.has('fang') ? (f.special ? FANG_TESLA_HEAL : FANG_HEAL) * times : 0 },
+    { label: 'ROOM SERVICE', amount: me.relics.has('fang') ? (f.special ? FANG_TESLA_HEAL : FANG_HEAL) * fangTimes : 0 },
   ].filter((x) => x.amount > 0);
   if (!parts.length) return;
   if (me.relics.has('fang')) events.push({ type: 'relic', side: me.side, relic: 'fang' });
@@ -426,5 +429,7 @@ export function storm(f: Fight, me: Combatant, events: CombatEvent[]): void {
   }
   // TESLA, one axis: the storm heals once (it healed per bolt: 72-bolt storms walked through THE DEALER).
   // (OVERLOAD, TESLA in ENDLESS: the storm's heal grows with the loop too.)
-  if (me.side === 'player' && strikes > 0) payoffHeal(f, me, events, f.oneAxis ? Math.round(PAY.stormHeal * (f.cfg.player.veteranMul ?? 1)) : strikes);
+  // OVERLOAD (ENDLESS) grows the storm's own heal; ROOM SERVICE's "15 MORE" stays 15 a storm (it grew x the loop:
+  // QA COMBOS-13).
+  if (me.side === 'player' && strikes > 0) payoffHeal(f, me, events, f.oneAxis ? Math.round(PAY.stormHeal * (f.cfg.player.veteranMul ?? 1)) : strikes, f.oneAxis ? PAY.stormHeal : strikes);
 }

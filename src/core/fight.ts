@@ -190,7 +190,9 @@ export class Fight {
     if (this.meter?.kind === 'volume' && this.cfg.player.volumeStart && !p.armed) p.energy = Math.max(p.energy, Math.min(this.meterCost - UNIT, this.cfg.player.volumeStart * UNIT));
     // HOLD: this fight's HOLDs.
     this.holdsLeft = this.cfg.player.holds ?? 0;
-    if (p.relics.has('lean')) this.leanReels = this.cfg.player.strips.map((st) => Object.values(st).reduce((a, n) => a + (n ?? 0), 0) <= CONTENT_1107.leanCells);
+    // (LUCKY NIGHT's WILDs are the night's, not your reels': they don't switch LEAN off. QA COMBOS-08.)
+    const nightWilds = this.cfg.player.nightWilds ?? 0;
+    if (p.relics.has('lean')) this.leanReels = this.cfg.player.strips.map((st) => Object.values(st).reduce((a, n) => a + (n ?? 0), 0) - nightWilds <= CONTENT_1107.leanCells);
     const e = this.sides.enemy;
     // BLAZE: every blaze cell you own adds to your special.
     const blazeCells = p.reels.reduce((a, reel) => a + reel.cells.filter((c) => c.enh === 'blaze').length, 0);
@@ -327,7 +329,8 @@ export class Fight {
       this.held[reel] = false;
       return false;
     }
-    if (this.held.filter(Boolean).length >= this.holdsLeft || this.sides.player.frozen[reel] > 0) return false;
+    // A frozen or JAMMED reel can't be held (a jammed one scores nothing this spin: the hold would be wasted, QA COMBOS-09).
+    if (this.held.filter(Boolean).length >= this.holdsLeft || this.sides.player.frozen[reel] > 0 || this.sides.player.locked[reel] > 0) return false;
     this.held[reel] = true;
     return true;
   }
@@ -415,7 +418,8 @@ export class Fight {
     const locked = me.locked.map((t) => t > 0);
     const forcedLine = this.forced[side];
     // HOLD: your held reels keep their stop this spin (like ice, but yours), then the holds are spent.
-    const held = side === 'player' ? this.held.map((h, r) => h && !frozen[r]) : [false, false, false];
+    // (A hold made while the enemy spun, on a reel it then froze or jammed, is handed back, not spent.)
+    const held = side === 'player' ? this.held.map((h, r) => h && !frozen[r] && !locked[r]) : [false, false, false];
     if (side === 'player') {
       this.holdsLeft -= held.filter(Boolean).length;
       this.held = [false, false, false];

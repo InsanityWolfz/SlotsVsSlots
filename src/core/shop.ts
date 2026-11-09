@@ -1,7 +1,7 @@
 /** Elite spoils and the Cashier: its shelf, buying, rerolls and which relics fit (split from run.ts, 2026-11-05). */
 import { UNIT, type RelicId } from './config';
 import { actLength } from './enemies';
-import { BUILD_ENABLER, ELITE_ONLY, LEGENDARY, MACHINE_EXCLUDE, RELICS, type Enabler } from './relics';
+import { BUILD_ENABLER, DEAD_WITH, ELITE_ONLY, LEGENDARY, MACHINE_EXCLUDE, RELICS, type Enabler } from './relics';
 import { CABINETS } from './cabinets';
 import { Rng } from './rng';
 import { CHIPS, currentStop, legendShown, passOn, passStop, RUN, runActs, type DraftOption, type RunState, type ShopItem } from './run';
@@ -95,6 +95,7 @@ export function relicFits(run: RunState, r: RelicId): boolean {
   const def = RELICS[r];
   // Slot machine relics only on their machine; charm relics once you own the charm (or your machine favours it).
   if (MACHINE_EXCLUDE[r]?.includes(run.cabinet)) return false;
+  if (DEAD_WITH[r]?.some((x) => run.player.relics.includes(x))) return false;
   if (def.machine && def.machine !== run.cabinet) return false;
   if (def.charm && charmCount(run.player, def.charm) === 0) return false;
   const need = BUILD_ENABLER[r];

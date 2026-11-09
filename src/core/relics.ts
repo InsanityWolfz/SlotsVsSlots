@@ -180,7 +180,16 @@ export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
  */
 export const WAVE1: ReadonlySet<RelicId> = new Set<RelicId>(['regular', 'housetax', 'punchcard', 'starchart', 'sticky']);
 /** Relics that make no sense on a machine even reworded (never offered there). */
-export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['jukebox'], bash: ['tesla', 'joker'] };
+// ESPRESSO SHOT on BANKROLL: the HIGH ROLLER bar already starts at half or more from 10 chips held (89% of its fights),
+// so only the cost was left (QA COMBOS-02).
+export const MACHINE_EXCLUDE: Partial<Record<RelicId, CabinetId[]>> = { overcharge: ['jukebox'], bash: ['tesla', 'joker'], quickening: ['midas'] };
+/** Relics a relic you hold switches off entirely (never offered with it: QA COMBOS-06). */
+export const DEAD_WITH: Partial<Record<RelicId, RelicId[]>> = {
+  // OPEN BAR's rain is free: RAINMAKER's cheaper rain saves nothing.
+  rainmaker: ['openbar'],
+  // GLASS CANNON: no healing between fights, and that is all BANDAGE does.
+  bandage: ['glasscannon'],
+};
 
 /** New-relic numbers (playtest/RELIC_PROPOSALS.md, tuned in the engine). */
 export const NEW_RELIC = {

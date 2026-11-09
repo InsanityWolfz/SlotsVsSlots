@@ -26,8 +26,8 @@ an encounter, and which Charms and relics to build.
   plays (the engine is on your turn by then), to keep its symbol for your next spin; tap again to let go. Not before
   your first spin of a fight (2026-11-07: the opening line isn't a spin; a pair held on it made spin 1 a sure pair). Keys Q W E;
   on a pad the d-pad (left, up, right) while a HOLD can be made. Nothing ever
-  waits for it: AUTO never stops. Sabotage that lands on a held reel stays on it (the gamble you took); a frozen reel
-  can't be held. Shown: HOLD 2: TAP A REEL under your machine while a tap would hold, a gold HELD frame, and PAIR! HOLD
+  waits for it: AUTO never stops. Sabotage that lands on a held reel stays on it (the gamble you took); a frozen or
+  jammed reel can't be held (a jammed one scores nothing; a hold made before the jam lands is handed back). Shown: HOLD 2: TAP A REEL under your machine while a tap would hold, a gold HELD frame, and PAIR! HOLD
   IT FOR A JACKPOT? after a pair. The tutorial explains both (and its first pair stops on a HOLD callout); the glossary
   has HOLD and OVERTIME. The sim bot holds a paying pair of its attack symbol (a shield pair when low).
 - **ONE STORM A TURN (user, 2026-10-29):** TESLA's lightning gathers every charge of a turn (CAPACITOR, each bolt
@@ -418,6 +418,16 @@ BLACK, +7% a stake: GREEN's own rule cost nothing, so RED and GREEN played the s
   jackpot it replaces (under 20 chips it hit for less; OPEN BAR at 0 chips rained for 0). Most rains came at low chips,
   so the floor alone took BANKROLL from 56 / 37 / 20 (WHITE / GREEN / BLUE) to 66 / 52 / 33; the rain costs 10 chips
   now (was 5; RAINMAKER still 2), back to 55 / 36 / 20 (sim 1,000 runs). (HP was a weak lever: 260 HP only took 10 off.)
+- **Combination fixes (QA, 2026-11-09; bugs only, no numbers changed):** ESPRESSO SHOT isn't offered to BANKROLL (its
+  HIGH ROLLER bar already starts at half from 10 chips held, 89% of its fights, so only the cost was left). A relic
+  another one you hold switches off is never offered with it: RAINMAKER with OPEN BAR, BANDAGE with GLASS CANNON
+  (`DEAD_WITH`, `relics.ts`); RAINMAKER doesn't pop under OPEN BAR. MAKE IT RAIN's floor counts LEAN MACHINE's x1.5 (a
+  rain on lean reels hit 252 where the chip jackpot hit 378); the chips' part still doesn't grow with LEAN. LUCKY NIGHT's
+  2 WILDs a reel don't count against LEAN MACHINE. ARMORED CAR doesn't pop when HIGH ROLLER is already at its cap.
+  OVERCHARGE's echo and SUBWOOFER's hit don't pop on an enemy already down that spin. On TESLA in ENDLESS, OVERLOAD
+  grows the storm's own heal but not ROOM SERVICE's (15 a storm, as its card says; it was 15 x the loop). Left as is:
+  ESPRESSO on JUKEBOX in ENDLESS adds nothing past WARM-UP (the volume can't start at THE DROP), and SECOND PAYLINE's
+  row pays in-order pairs only (TWIN REELS and JOKER's any-2 rule stay the main line's).
 - **GOLD and GLASS on TESLA (user, 2026-11-01):** true multipliers on bolts (TESLA's other boosts still add up), so GOLD
   next to HOT STREAK is x4, not x3. TESLA 63 / 43 / 23 (it was 62 / 41 at WHITE / GREEN; the next balance batch checks it).
 - **BUILD-UP (user, 2026-11-01: "ship it", after a test branch and three expert playtests):** every spin of yours without

@@ -76,7 +76,10 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
   // TONIGHT'S RULE (ENDLESS: the path's), for both machines.
   const night = nightId(run);
   cfg.night = night;
-  if (night === 'lucky') for (const side of [cfg.player, cfg.enemy]) side.strips = side.strips.map((s) => ({ ...s, wild: (s.wild ?? 0) + NIGHT.luckyWilds }));
+  if (night === 'lucky') {
+    for (const side of [cfg.player, cfg.enemy]) side.strips = side.strips.map((s) => ({ ...s, wild: (s.wild ?? 0) + NIGHT.luckyWilds }));
+    cfg.player.nightWilds = NIGHT.luckyWilds;
+  }
   if (night === 'fast') {
     if (cfg.enemy.ability) cfg.enemy.ability = { ...cfg.enemy.ability, every: Math.max(2, cfg.enemy.ability.every - 1) };
     cfg.player.meterMul = (cfg.player.meterMul ?? 1) * NIGHT.fastMeter;

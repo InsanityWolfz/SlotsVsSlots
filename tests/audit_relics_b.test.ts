@@ -71,7 +71,8 @@ describe('audit B: texts per machine', () => {
     const where: Record<string, CabinetId[]> = {};
     for (const id of LIST) where[id] = machinesFor(id);
     expect(where.bash).toEqual(['knight', 'midas', 'jukebox']);
-    expect(where.quickening).toEqual(['midas', 'tesla', 'joker', 'jukebox']);
+    // (Not on BANKROLL since 2026-11-09: its bar already starts at half from 10 chips held, QA COMBOS-02.)
+    expect(where.quickening).toEqual(['tesla', 'joker', 'jukebox']);
     for (const id of LIST.filter((x) => x !== 'bash' && x !== 'quickening')) expect(where[id]).toEqual(ALL_CABINETS);
     // Only QUICKENING has a machine-specific wording in this group (YOUR METER); the rest read the same everywhere.
     for (const id of LIST.filter((x) => x !== 'quickening')) for (const cab of where[id]) expect(relicText(id, cab)).toBe(RELICS[id].text);

@@ -70,10 +70,13 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
   }
   // CASH CASSIDY: MAKE IT RAIN! A chip jackpot with enough chips held
   // hits for the chips in hand x2, counted before it costs them.
+  // The chip jackpot a rain replaces (its base, before the rain): the floor is checked again under LEAN MACHINE below.
+  let rainJackpotBase = 0;
   if (player && f.meter?.kind === 'vault' && f.chipsNow() >= f.rainCost(me)) {
     const g = s.groups.find((x) => x.symbol === 'goldbar' && x.matched && x.reels.length >= 3);
     if (g) {
       g.rain = true;
+      rainJackpotBase = g.base;
       // A floor (user, 2026-11-01): a rain never hits for less than the chip jackpot it replaces (OPEN BAR at 0 chips
       // rained for 0).
       g.base = Math.max(g.base, Math.round((RAIN.maxChips ? Math.min(RAIN.maxChips, f.chipsNow()) : f.chipsNow()) * RAIN.perChip));
@@ -110,12 +113,17 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
     if (g.rain) notes.push('MAKE IT RAIN!');
     // LEAN MACHINE: the cells on a lean reel are worth x1.5 (a group across lean and full reels: its share of them).
     // A true multiplier on the group's worth, before its Charms add in (a MAKE IT RAIN hits for chips, not symbols).
-    const lean = has('lean') && pays(g) && !g.rain ? g.reels.filter((r) => f.leanReels[r]).length : 0;
+    const lean = has('lean') && pays(g) ? g.reels.filter((r) => f.leanReels[r]).length : 0;
     if (lean) {
       const k = 1 + ((CONTENT_1107.leanMul - 1) * lean) / g.reels.length;
-      g.mult *= k;
-      fired.add('lean');
-      notes.push(`X${Math.round(k * 100) / 100} LEAN`);
+      // A rain hits for chips, not symbols, so LEAN doesn't grow it; but its floor is the chip jackpot it replaces,
+      // LEAN's x1.5 in (it rained for 252 where the jackpot hit 378: QA COMBOS-04). The bigger of the two hits.
+      if (!g.rain || rainJackpotBase * k > g.base) {
+        if (g.rain) g.base = rainJackpotBase;
+        g.mult *= k;
+        fired.add('lean');
+        notes.push(`X${Math.round(k * 100) / 100} LEAN`);
+      }
     }
     // A jackpot of one cell counts that cell's charm three times.
     const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
@@ -345,7 +353,8 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       const lineShield = s.groups.filter((g) => g.symbol === 'shield').reduce((a, g) => a + g.base * g.mult, 0);
       const mul = f.vaultMul(lineShield);
       if (has('compound') && mul > MIDAS.maxMul) fired.add('compound');
-      if (has('armoredcar') && lineShield >= NEW_RELIC.armoredShield) fired.add('armoredcar');
+      // (No pop when the bar is already at its cap: the shield's chips added nothing. QA COMBOS-05.)
+      if (has('armoredcar') && lineShield >= NEW_RELIC.armoredShield && mul > f.vaultMul(0)) fired.add('armoredcar');
       boost(g0, mul);
       s.raised = true;
       f.vaultPaid = mul;
