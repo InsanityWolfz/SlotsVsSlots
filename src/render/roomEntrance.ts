@@ -21,6 +21,10 @@ export const RW = 640;
 export const RH = 360;
 /** The pavement line (the machines' bezels end here). */
 const FLOOR = 284;
+/** Eye level: the pavement's joints and the carpet's edges run to (CX, HORIZON). */
+const HORIZON = 200;
+/** The style key's options (the walls' texture is shown before and after, for the user to veto separately). */
+export const ENTRANCE = { walls: true };
 /** The open column between the HUDs (and the machines). */
 const CX = 320;
 
@@ -185,47 +189,82 @@ function buildStill(): HTMLCanvasElement {
   SKY.forEach((col, i) => px(g, 0, i * 6, RW, 6, col));
   for (let x = 0; x < RW; x += 2) px(g, x + ((x / 2) % 2), 6, 1, 1, SKY[1]);
   for (const [x, y] of [[14, 3], [52, 9], [301, 4], [344, 2], [610, 6], [588, 12], [120, 5], [470, 10]]) px(g, x, y, 1, 1, '#9a8fb0');
-  // The casino's front: stone courses, pilasters with gold capitals, a gold cornice.
+  // The casino's front: dressed stone (or plain, for the before/after), pilasters with gold capitals, a gold cornice,
+  // a stone base course the whole front stands on.
   px(g, 0, 16, RW, FLOOR - 16, WALL);
-  for (let y = 40; y < FLOOR; y += 22) px(g, 0, y, RW, 1, WALL_D);
-  for (let y = 40; y < FLOOR; y += 22) for (let x = (y / 22) % 2 ? 0 : 20; x < RW; x += 40) px(g, x, y - 21, 1, 21, WALL_D);
+  if (ENTRANCE.walls) {
+    // Ashlar: blocks 22x11, staggered, mortar a shade darker, every other block's top edge catching a little light.
+    for (let y = 19, row = 0; y < FLOOR - 14; y += 11, row++) {
+      px(g, 0, y, RW, 1, WALL_D);
+      for (let x = row % 2 ? -11 : 0, n = 0; x < RW; x += 22, n++) {
+        px(g, x, y, 1, 11, WALL_D);
+        if ((n + row) % 2) px(g, x + 1, y + 1, 20, 1, '#262039');
+        if ((n * 7 + row * 3) % 11 === 0) px(g, x + 1, y + 2, 20, 9, '#1e172e');
+      }
+    }
+  } else {
+    for (let y = 40; y < FLOOR; y += 22) px(g, 0, y, RW, 1, WALL_D);
+    for (let y = 40; y < FLOOR; y += 22) for (let x = (y / 22) % 2 ? 0 : 20; x < RW; x += 40) px(g, x, y - 21, 1, 21, WALL_D);
+  }
   px(g, 0, 14, RW, 3, g8);
   px(g, 0, 14, RW, 1, G);
   px(g, 0, 17, RW, 2, K);
+  // The base course: every ground contact (the doors' steps, the pilasters, the lamp, the rope, the bouncer) meets the
+  // pavement on this one line (FLOOR).
+  px(g, 0, FLOOR - 14, RW, 14, '#2a2140');
+  px(g, 0, FLOOR - 14, RW, 1, '#3a2d52');
+  px(g, 0, FLOOR - 13, RW, 1, WALL_D);
+  for (let x = 0; x < RW; x += 44) px(g, x, FLOOR - 13, 1, 13, WALL_D);
   for (const x of [64, 252, 376, 562]) {
-    px(g, x, 19, 14, FLOOR - 19, WALL_L);
-    px(g, x, 19, 2, FLOOR - 19, '#33284a');
-    px(g, x + 12, 19, 2, FLOOR - 19, WALL_D);
+    px(g, x, 19, 14, FLOOR - 33, WALL_L);
+    px(g, x, 19, 2, FLOOR - 33, '#33284a');
+    px(g, x + 12, 19, 2, FLOOR - 33, WALL_D);
     px(g, x - 2, 19, 18, 4, g8);
     px(g, x - 2, 19, 18, 1, G);
-    px(g, x - 2, FLOOR - 6, 18, 6, '#2e2444');
+    px(g, x - 2, FLOOR - 20, 18, 20, '#2e2444');
+    px(g, x - 2, FLOOR - 20, 18, 1, '#3a2d52');
   }
-  // The entrance's stone surround: a tall arch frame, darker inside, gold keystone.
-  px(g, 274, 52, 92, 92, WALL_D);
-  px(g, 278, 54, 84, 88, '#120c1e');
-  // Marble steps (three), widening out to the pavement.
-  const steps: [number, number, number][] = [[126, 286, 354], [132, 280, 360], [138, 272, 368]];
-  for (const [y, x0, x1] of steps) {
+  // Windows (with the walls' texture): an arched one low on the street side, one high on the casino side, dim and warm.
+  if (ENTRANCE.walls) {
+    for (const [wx, wy, ww, wh, lit] of [[18, 168, 34, 66, 1], [578, 24, 52, 46, 0]] as const) {
+      px(g, wx - 2, wy - 2, ww + 4, wh + 4, K);
+      px(g, wx, wy, ww, wh, '#2a1a26');
+      px(g, wx + 2, wy + 2, ww - 4, wh - 4, '#3a2026');
+      const lw = (ww - 6) / 2;
+      px(g, wx + 2, wy + 2 + (wh - 4) / 2, lw, (wh - 4) / 2, lit ? '#6a3a24' : '#4a2a26');
+      px(g, wx + 4 + lw, wy + 2, lw, (wh - 4) / 2, '#4a2a26');
+      px(g, wx + ww / 2 - 1, wy, 2, wh, '#1a1020');
+      px(g, wx, wy + wh / 2 - 1, ww, 2, '#1a1020');
+      px(g, wx - 3, wy + wh, ww + 6, 3, '#3a2d52');
+      px(g, wx - 3, wy + wh + 3, ww + 6, 1, K);
+    }
+  }
+  // The entrance: a deep recess in the stone, from the canopy down to the base course.
+  px(g, 272, 54, 96, FLOOR - 70, WALL_D);
+  px(g, 276, 56, 88, FLOOR - 72, '#120c1e');
+  // Two marble steps up from the pavement to the threshold, on the base line.
+  for (const [y, x0, x1] of [[FLOOR - 16, 274, 366], [FLOOR - 8, 268, 372]] as const) {
     px(g, x0, y, x1 - x0, 2, '#5a4d72');
-    px(g, x0, y + 2, x1 - x0, 4, '#2e2444');
-    px(g, x0, y + 6, x1 - x0, 1, K);
+    px(g, x0, y + 2, x1 - x0, 5, '#2e2444');
+    px(g, x0, y + 7, x1 - x0, 1, K);
   }
-  // The pavement: wet slabs, a kerb line at the front.
+  // The pavement: wet slabs seen from a standing eye (eye level y HORIZON): the rows close up toward the wall and
+  // the joints run to the vanishing point over the doors.
   px(g, 0, FLOOR, RW, RH - FLOOR, PAVE);
-  for (let y = FLOOR + 10; y < RH; y += 14) px(g, 0, y, RW, 1, PAVE_L);
-  for (let y = FLOOR; y < RH; y += 14) for (let x = (y / 14) % 2 ? 8 : 34; x < RW; x += 52) px(g, x, y + 1, 1, 13, PAVE_L);
+  for (const y of [FLOOR + 5, FLOOR + 12, FLOOR + 22, FLOOR + 36, FLOOR + 56]) px(g, 0, y, RW, 1, PAVE_L);
+  for (let x0 = CX - 26 * 13; x0 <= CX + 26 * 13; x0 += 26)
+    for (let y = FLOOR + 1; y < RH; y++) px(g, CX + ((x0 - CX) * (y - HORIZON)) / (FLOOR - HORIZON), y, 1, 1, PAVE_L);
   px(g, 0, FLOOR, RW, 2, K);
-  // The red carpet: from the steps to the front, in perspective, gold-edged; dark (it lies under the fight), lit only
-  // where the doors' light falls on it.
-  for (let y = 145; y < RH; y++) {
-    const t = (y - 145) / (RH - 145);
-    const hw = Math.round(20 + t * 30);
+  // The red carpet: from the bottom step toward us across the pavement, in the same perspective; dark (it lies under the
+  // fight), warmed only near the doors.
+  for (let y = FLOOR; y < RH; y++) {
+    const hw = Math.round((34 * (y - HORIZON)) / (FLOOR - HORIZON));
     px(g, CX - hw, y, hw * 2, 1, (y >> 1) % 2 ? '#5e1626' : '#661a2b');
     px(g, CX - hw, y, 1, 1, g8);
     px(g, CX + hw - 1, y, 1, 1, g8);
     px(g, CX - hw + 1, y, 2, 1, '#3e0e1c');
   }
-  for (let y = 150; y < RH; y += 16) px(g, CX - 1, y, 2, 6, '#7a2234');
+  for (const y of [FLOOR + 4, FLOOR + 13, FLOOR + 26, FLOOR + 44]) px(g, CX - 1, y, 2, 2 + (y - FLOOR) / 8, '#7a2234');
   // Left: THE HOUSE's bill on the wall (its own portrait), framed in gold.
   const py = 62;
   px(g, 12, py, 46, 82, G);
@@ -252,6 +291,9 @@ interface Bit {
   life: number;
   kind: 'coin' | 'spark' | 'confetti' | 'drip';
   c: string;
+  /** A coin's resting row on the pavement (it rolls toward us, in perspective), and the step it's bouncing on. */
+  gy?: number;
+  lv?: number;
 }
 interface State {
   t: number;
@@ -295,13 +337,17 @@ export function entranceUpdate(dt: number): void {
     b.y += b.vy * dt;
     b.vy += (b.kind === 'confetti' ? 60 : 260) * dt;
     if (b.kind === 'confetti') b.vx *= 0.98;
-    // Coins bounce down the steps.
+    // Coins bounce down the two steps, then out onto the pavement toward us (their resting row, gy).
     if (b.kind === 'coin') {
-      const stepY = b.y > 126 && b.y < 140 ? (b.y < 132 ? 126 : b.y < 138 ? 132 : 138) : b.y >= 140 ? FLOOR : 999;
-      if (b.vy > 0 && b.y >= stepY && b.y < stepY + 6) {
-        b.y = stepY;
-        b.vy *= -0.45;
-        b.vx *= 0.8;
+      const levels = [FLOOR - 16, FLOOR - 8, b.gy ?? FLOOR + 6];
+      const lv = b.lv ?? 0;
+      if (b.vy > 0 && b.y >= levels[lv]) {
+        b.y = levels[lv];
+        b.vy = -Math.abs(b.vy) * 0.5;
+        if (lv < 2) {
+          b.lv = lv + 1;
+          b.vy = Math.min(b.vy, -25);
+        } else b.vx *= 0.7;
       }
     }
     b.life -= dt;
@@ -320,7 +366,7 @@ function read(pot: number, foeHp: number): void {
   if (pot < st.pot - 0.5 && st.pot - pot >= Math.max(10, st.pot * 0.2)) {
     st.skimT = 1;
     const n = Math.min(14, 4 + Math.round((st.pot - pot) / 20));
-    for (let i = 0; i < n; i++) st.bits.push({ x: CX + (Math.random() - 0.5) * 40, y: 120, vx: (Math.random() - 0.5) * 70, vy: -30 - Math.random() * 40, life: 2.2, kind: 'coin', c: Y });
+    for (let i = 0; i < n; i++) st.bits.push({ x: CX + (Math.random() - 0.5) * 40, y: FLOOR - 22, vx: (Math.random() - 0.5) * 70, vy: -40 - Math.random() * 40, life: 2.4, kind: 'coin', c: Y, gy: FLOOR + 4 + Math.random() * 40 });
   }
   st.pot = pot;
   st.foeHp = foeHp;
@@ -365,71 +411,89 @@ export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; fo
     for (let i = 0; i < rays; i++) if ((i + Math.floor(t * 8)) % 4 !== 0) px(gg, CX + ax * (22 + i), 13 + ay * (2 + i * 0.6), 1, 1, i < rays / 2 ? Y : G);
   gg.drawImage(P2.crest, CX - 21 + jolt, 3);
 
-  // The doors: two gilded doors with lit glass; they swing open as THE HOUSE falls, onto the casino floor.
+  // The doors: tall gilded double doors standing on the threshold (the top step), a lit fanlight over them under the
+  // canopy. The fight's POT panel covers their middle; their tops read above it, their kick plates and the steps below.
   const dx = 286;
-  const dy = 58;
   const dw = 68;
-  const dh = 68;
+  const dy = 124;
+  const sill = FLOOR - 16;
+  const dh = sill - dy;
   const open = st.open;
-  // Beyond the doors: the casino floor. A warm back wall, a chandelier, two rows of machines with lit screens, a
-  // patterned carpet running back.
+  // The fanlight: a gold sunburst over lit glass, brighter with THE POT.
+  const fan = 60;
+  px(gg, dx, fan, dw, dy - fan - 6, potK > 0.5 || st.skimT > 0 ? '#a8642a' : '#6e3c1c');
+  for (let i = 0; i <= 8; i++) {
+    const ang = Math.PI + (i / 8) * Math.PI;
+    for (let rr = 6; rr < 30; rr++) px(gg, CX + Math.cos(ang) * rr * 1.1, dy - 8 + Math.sin(ang) * rr * 1.6, 1, 1, G);
+  }
+  px(gg, CX - 6, dy - 14, 12, 6, G);
+  px(gg, CX - 4, dy - 13, 8, 4, Yl);
+  // Beyond the doors: the casino floor. A chandelier under the ceiling (above THE POT), rows of lit machines and the
+  // carpet running back (below it).
   if (open > 0.02) {
-    px(gg, dx, dy, dw, 30, '#3a1626');
-    for (let x = dx; x < dx + dw; x += 8) px(gg, x, dy, 1, 30, '#4a1c30');
-    px(gg, dx, dy + 30, dw, dh - 30, '#6a1a2a');
-    for (let y = dy + 32; y < dy + dh; y += 4) for (let x = dx + ((y >> 2) % 2) * 3; x < dx + dw; x += 6) px(gg, x, y, 2, 1, '#8a2a3a');
-    // the chandelier
-    px(gg, CX - 1, dy, 2, 6, G);
-    px(gg, CX - 10, dy + 6, 20, 2, G);
-    for (let i = 0; i < 6; i++) px(gg, CX - 9 + i * 3 + 1, dy + 8 + (i % 2), 1, 2, (i + Math.floor(t * 3)) % 3 ? Yl : T);
-    // two rows of machines, the near one bigger
-    for (const [row, y0, w, h] of [[0, dy + 18, 6, 12], [1, dy + 30, 9, 18]] as const)
+    px(gg, dx, dy, dw, dh, '#3a1626');
+    for (let x = dx; x < dx + dw; x += 8) px(gg, x, dy, 1, 60, '#4a1c30');
+    px(gg, dx, dy + 94, dw, dh - 94, '#6a1a2a');
+    for (let y = dy + 96; y < sill; y += 4) for (let x = dx + ((y >> 2) % 2) * 3; x < dx + dw; x += 6) px(gg, x, y, 2, 1, '#8a2a3a');
+    px(gg, CX - 1, dy, 2, 8, G);
+    px(gg, CX - 14, dy + 8, 28, 2, G);
+    for (let i = 0; i < 9; i++) px(gg, CX - 13 + i * 3, dy + 10 + (i % 2), 1, 3, (i + Math.floor(t * 3)) % 3 ? Yl : T);
+    for (const [row, y0, w, h] of [[0, dy + 70, 6, 14], [1, dy + 98, 9, 24]] as const)
       for (let x = dx + 1 + row * 2; x < dx + dw - w; x += w + 3) {
         px(gg, x, y0, w, h, K);
         px(gg, x + 1, y0 + 1, w - 2, h - 2, row ? '#3a2d52' : '#2a2040');
-        px(gg, x + 2, y0 + 3, w - 4, row ? 5 : 3, (Math.floor(t * 2 + x * 0.3) % 4 === 0 ? Y : row ? '#7cc4ff' : '#4fe0bf'));
+        px(gg, x + 2, y0 + 3, w - 4, row ? 6 : 4, Math.floor(t * 2 + x * 0.3) % 4 === 0 ? Y : row ? '#7cc4ff' : '#4fe0bf');
         px(gg, x + 1, y0 + 1, w - 2, 1, G);
       }
   }
   const leaf = Math.round((dw / 2) * (1 - open * 0.86));
+  const lit = potK > 0.5 || st.skimT > 0 ? 1 : 0;
   for (const side of [-1, 1]) {
     const x0 = side < 0 ? dx : dx + dw - leaf;
     px(gg, x0, dy, leaf, dh, g8);
     px(gg, x0 + 1, dy + 1, leaf - 2, dh - 2, '#4a2612');
     if (leaf > 10) {
-      // the glass: amber, lit from inside, brighter low down (warmer with THE POT), an etched crown in each pane
-      const lit = potK > 0.5 || st.skimT > 0 ? 1 : 0;
-      px(gg, x0 + 4, dy + 5, leaf - 8, 38, '#3a1c0c');
-      px(gg, x0 + 5, dy + 6, leaf - 10, 12, lit ? '#a8642a' : '#7a4420');
-      px(gg, x0 + 5, dy + 18, leaf - 10, 12, lit ? '#c97a38' : '#94522a');
-      px(gg, x0 + 5, dy + 30, leaf - 10, 12, lit ? '#e8a050' : '#b8692e');
-      px(gg, x0 + 5, dy + 6, 1, 36, '#e8b070');
+      // a tall pane of amber glass, lit from inside, warmer low down, an etched crown near the top
+      px(gg, x0 + 4, dy + 6, leaf - 8, dh - 34, '#3a1c0c');
+      const bands = [lit ? '#94522a' : '#5e3218', lit ? '#a8642a' : '#6e3c1c', lit ? '#c97a38' : '#844824'];
+      const bh = Math.floor((dh - 36) / 3);
+      bands.forEach((c, i) => px(gg, x0 + 5, dy + 7 + i * bh, leaf - 10, bh, c));
+      px(gg, x0 + 5, dy + 7, 1, bh * 3, lit ? '#e8b070' : '#a8642a');
       const cx2 = x0 + Math.floor(leaf / 2);
-      px(gg, cx2 - 4, dy + 22, 9, 3, G);
-      for (const k2 of [-4, 0, 4]) px(gg, cx2 + k2, dy + 19, 1, 3, G);
-      // the push bar
-      px(gg, side < 0 ? x0 + leaf - 7 : x0 + 3, dy + 48, 4, 10, G);
-      px(gg, side < 0 ? x0 + leaf - 7 : x0 + 3, dy + 48, 1, 10, Yl);
+      px(gg, cx2 - 4, dy + 15, 9, 3, G);
+      for (const k2 of [-4, 0, 4]) px(gg, cx2 + k2, dy + 12, 1, 3, G);
+      // the push bar (behind THE POT) and the gold kick plate (below it)
+      px(gg, side < 0 ? x0 + leaf - 7 : x0 + 3, dy + 70, 4, 14, G);
+      px(gg, x0 + 3, sill - 20, leaf - 6, 16, G);
+      px(gg, x0 + 3, sill - 20, leaf - 6, 1, Yl);
+      px(gg, x0 + 3, sill - 6, leaf - 6, 2, g8);
     }
   }
   // The light down the seam: it brightens with THE POT, and a SKIM widens it (the house opening its doors to take).
   if (open <= 0.02) {
     const seamW = st.skimT > 0.3 ? 4 : 2;
-    px(gg, CX - seamW / 2, dy + 2, seamW, dh - 4, potK > 0.5 || st.skimT > 0 ? Yl : '#c97a38');
+    px(gg, CX - seamW / 2, dy + 2, seamW, dh - 4, lit ? Yl : '#c97a38');
   }
-  // The doors' light on the steps: the step tops warm up (stepped, no blur).
+  // The doors' light on the steps and the first rows of the carpet (stepped, no blur).
   const warm = Math.min(1, 0.25 + 0.5 * potK + 0.5 * st.skimT + open);
-  for (const [y, x0, x1] of [[126, 286, 354], [132, 280, 360], [138, 272, 368]] as const) {
+  for (const [y, x0, x1] of [[sill, 274, 366], [sill + 8, 268, 372]] as const) {
     const w = Math.round((x1 - x0) * (0.4 + 0.4 * warm));
     px(gg, CX - w / 2, y, w, 2, warm > 0.6 ? '#c99a6a' : '#8a6a72');
     px(gg, CX - w / 4, y, w / 2, 1, warm > 0.6 ? Yl : '#b08a7a');
   }
-  // The frame and the fanlight over the doors.
-  px(gg, dx - 4, dy - 4, dw + 8, 4, G);
-  px(gg, dx - 4, dy - 4, dw + 8, 1, Yl);
-  px(gg, dx - 4, dy, 4, dh, G);
-  px(gg, dx + dw, dy, 4, dh, G);
-  px(gg, dx - 4, dy, 1, dh, Yl);
+  gg.globalAlpha = 0.25 + 0.35 * warm;
+  for (let y = FLOOR + 1; y < FLOOR + 14; y += 2) px(gg, CX - 20 + (y - FLOOR), y, 40 - 2 * (y - FLOOR), 1, '#a8343f');
+  gg.globalAlpha = 1;
+  // The frame: gold posts down to the threshold, a lintel between the fanlight and the doors, a head over the fanlight.
+  px(gg, dx - 4, fan - 4, dw + 8, 4, G);
+  px(gg, dx - 4, fan - 4, dw + 8, 1, Yl);
+  px(gg, dx - 4, dy - 6, dw + 8, 6, G);
+  px(gg, dx - 4, dy - 6, dw + 8, 1, Yl);
+  px(gg, dx - 4, dy - 1, dw + 8, 1, g8);
+  px(gg, dx - 4, fan, 4, sill - fan, G);
+  px(gg, dx + dw, fan, 4, sill - fan, G);
+  px(gg, dx - 4, fan, 1, sill - fan, Yl);
+  px(gg, dx + dw + 3, fan, 1, sill - fan, g8);
 
   // The canopy: a deep red marquee, CASINO in gold, bulbs along both edges.
   const cy0 = 32 + (st.hitT > 0.7 ? 1 : 0);
@@ -463,16 +527,16 @@ export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; fo
 
   // The street lamp (left) and its pool on the pavement; it flickers once in a while.
   const flick = Math.sin(t * 13) > 0.97 ? 0.5 : 1;
-  pool(gg, 65, 112, 14, 12, O, 0.22 * flick);
-  gg.drawImage(P2.lamp, 59, 104);
+  pool(gg, 65, FLOOR - 166, 14, 12, O, 0.22 * flick);
+  gg.drawImage(P2.lamp, 59, FLOOR - 178);
   pool(gg, 65, FLOOR + 12, 24, 5, O, 0.18 * flick);
 
   // The bouncer (right) by the velvet rope: he watches whoever's spinning; your jackpot makes him nod.
   const fr = o.turn === 'player' ? 1 : o.turn === 'enemy' ? 2 : 0;
   const nod = st.cheerT > 0.4 && Math.floor(t * 8) % 2 ? 1 : 0;
-  gg.drawImage(P2.stanchion, 572, FLOOR - 26);
-  px(gg, 578, FLOOR - 20, 12, 2, r);
-  gg.drawImage(P2.bouncer[fr], 596, FLOOR - 59 + nod);
+  gg.drawImage(P2.stanchion, 572, FLOOR - 28);
+  px(gg, 578, FLOOR - 22, 12, 2, r);
+  gg.drawImage(P2.bouncer[fr], 596, FLOOR - 60 + nod);
   // Reflections on the wet pavement: the doors' light, the blade sign, the lamp.
   for (const [x, w, c, a] of [[CX - 14, 28, Yl, 0.08 + 0.1 * potK], [bx + 4, 16, R, 0.09], [61, 8, Yl, 0.07]] as const) {
     gg.globalAlpha = a;
@@ -484,7 +548,7 @@ export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; fo
   gg.fillStyle = '#7f8fc0';
   gg.globalAlpha = 0.35;
   for (const rd of st.rain) {
-    if (rd.x > 250 && rd.x < 390 && rd.y > 52 && rd.y < 146) continue;
+    if (rd.x > 250 && rd.x < 390 && rd.y > 54 && rd.y < FLOOR - 16) continue;
     gg.fillRect(Math.round(rd.x), Math.round(rd.y), 1, 4);
   }
   gg.globalAlpha = 1;
@@ -510,4 +574,9 @@ export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; fo
 /** For the gallery and dbg: reset the fight state (a new fight starts with the doors shut and the pot empty). */
 export function entranceReset(): void {
   Object.assign(st, { pot: 0, potShown: 0, foeHp: 1, hitT: 0, skimT: 0, cheerT: 0, open: 0, bits: [] });
+}
+
+/** For the gallery: redraw the still layer (after changing ENTRANCE.walls). */
+export function entranceRebuild(): void {
+  still = null;
 }
