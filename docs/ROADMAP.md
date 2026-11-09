@@ -11,7 +11,9 @@ run's starting relic, NEW RUN teaching a first-timer, the hit strobe, M and W, 2
 dead relic offers, HOLD on jammed or stolen pairs, saves (a run recorded at the killing blow, the Cashier and spoils
 kept over a reload, saved runs cleaned on load). The report and the user's 10 calls (SPEED 2X default, act 1 pacing,
 a draft SKIP, payoffs on the best hit, SECOND MORTGAGE x1.5, MAKE IT RAIN free at the floor, Windows-first, the Next
-Fest date, the capsule/trailer hook against DEAD SPIN, card art and a boss entrance): https://claude.ai/artifact/JvWfuPk7WavCPFFd6av9gM. Reports in
+Fest date, the capsule/trailer hook against DEAD SPIN, card art and a boss entrance): https://claude.ai/artifact/JvWfuPk7WavCPFFd6av9gM.
+The user's answer (2026-11-09): all but 4 (payoffs stay as they are). 7 and 8 are decided below (phases 5 and 6);
+1, 2, 3, 5, 6 being built; 9 and 10 (art) come back as galleries before they ship. Reports in
 `tools/out/qa/` (not committed).
 
 **In progress (2026-10-30):** the UI pass shipped to `main` (user: "ship all the UI stuff"; review:
@@ -237,6 +239,10 @@ whether it has the tension the user remembers.
 **Gate:** strangers play the demo start to finish with no help.
 
 ## Phase 5: Steam Next Fest
+**Decided (user, 2026-11-09):** the page and the demo go up the day Steamworks gives the app id; on 2027-01-10 (February
+registration closes) enter February only with ~2,000+ wishlists, otherwise June 2027 (registration closes 2027-04-25).
+Feb 2027 runs 2027-02-22 to 03-01. (Market: entering with under ~1,000 gained a median 322; a demo out months early
+gains ~2.5x; RESEARCH.md "Market".)
 The game's one festival: the demo up, keys to streamers, the page polished. It multiplies the wishlists you bring
 (the median game gained about 800; those entering with 10k+ gained about 5,200).
 
@@ -249,6 +255,8 @@ The game's one festival: the demo up, keys to streamers, the page polished. It m
   (the game's own move there);
   Steam Cloud on the mirrored save folder.
 - Price $7.99–$9.99, where the slot hits sit.
+- **Windows first (user, 2026-11-09):** the Deck plays it through Proton; a native Linux build waits until it's tested
+  in the Steam Linux Runtime (Electron's sandbox). Packaging: `desktop/package.cjs` (desktop/README.md).
 - Ratings: answer the content survey honestly (simulated gambling, no real money, no paid randomness).
 
 ## v1.0 scope (signed by the user, 2026-10-29)
