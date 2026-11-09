@@ -113,7 +113,7 @@ was tuned for feel from two fresh-eyes playtests.
   - SCRATCH-OFF: a ticket costs 6 chips; scratch 3 of its 9 panels (you pick which). Three of a kind wins: 12 or 25
     chips, a heal of a quarter of your max HP (chips at full HP), an upgrade or a relic; about 1 ticket in 2 wins. The
     ticket is printed when bought (a quit can't re-roll it). Two tickets a visit.
-  - CLAW MACHINE: 5 chips a go, three goes. The pit shows its three prizes up front: 10 CHIPS (EASY GRAB), 2 CHARMS
+  - THE CLAW: 5 chips a go, three goes. The pit shows its three prizes up front: 10 CHIPS (EASY GRAB), 2 CHARMS
     (TRICKY), A RELIC (HARD); pick one to go for. A won prize leaves the pit. **PUSH YOUR LUCK (user, 2026-11-01; the
     playtest: pure luck with an animation):** a grab holds 50% / 30% / 10% at first, and each miss on a prize drags it
     toward the drop for the rest of the visit (+25 / +20 / +12 points on its next grab): it sinks a notch into its gap
