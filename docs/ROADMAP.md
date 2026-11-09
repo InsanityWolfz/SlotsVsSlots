@@ -24,7 +24,12 @@ alley), act 2 on the casino floor with THE WHEEL its centrepiece, act 3 the VIP 
 after hours, then THE OWNER himself. Regular rooms dark, calm and low-contrast under the reels; boss rooms come alive,
 matching the bosses' UI; one style (the portraits' pixel scale and palette, the UI kit's plum and gold). In progress:
 the style key (THE HOUSE's casino entrance at final quality plus thumbnails of all 8 stages), then the user decides.
-**Capsule and trailer on hold** until the new rooms are done (user: "so we can get some really good art"); the
+**THE HOUSE becomes THE DOORMAN (user, 2026-11-09: "Yes"):** act 1's boss is the man at the casino's door, a person like
+every other boss (THE HOUSE was the only machine), and the room's bouncer becomes him. A reskin, not a new boss: his
+rules, numbers, the pot, SKIM and "your jackpots win his pot" stay; his Slot Machine stays THE HOUSE's gold one. THE
+HOUSE stays as the casino itself, the thing the run beats ("break the house"). Not THE BOUNCER (a relic). Next: portrait
+candidates (branch `doorman-v1`), then the text sweep (achievement ids stay) and his entrance beat, shipping with the
+new rooms. **Capsule and trailer on hold** until the new rooms are done (user: "so we can get some really good art"); the
 directions so far: https://claude.ai/artifact/DWvxNB3zHD8zf96xZA3FJX (branch `call9-art`, from `art-wip`: duel
 variants, trailer cut 3, store text) and https://claude.ai/artifact/PM1uuVfPi6LEJButEJTHv8 (branch `capsule-v2`: VS
 screen, fight night, the payline). Reports in
