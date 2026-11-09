@@ -191,16 +191,16 @@ describe('OVERTIME (glossary: "EVERY HIT FROM THE REELS ON BOTH MACHINES PAYS X1
   });
 });
 
-describe('GOLD: "ACT 1\'S ABILITIES CHARGE FASTER TOO (NOT THE HOUSE\'S)"; BLUE: "FROM ACT 2 ... (NOT THE WHEEL\'S)"', () => {
+describe('GOLD: "ACT 1\'S ABILITIES CHARGE FASTER TOO (NOT THE DOORMAN\'S)"; BLUE: "FROM ACT 2 ... (NOT THE WHEEL\'S)"', () => {
   const at = (kind: AbilityDef['kind'], every: number, stake: number, act = 1) => effectiveAbility({ kind, every, power: 1 }, { stake, act, sandglass: false }).every;
   it('regulars (3 -> 2), THE REPO MAN (3 -> 2) and THE DEALER\'s BUST (3 -> 2) do', () => {
     expect(at('flood', 3, 5)).toBe(2);
     expect(at('repo', 3, 5)).toBe(2);
     expect(at('deal', 3, 5, 3)).toBe(2);
   });
-  it("THE HOUSE's SKIM keeps BLACK's every 2 at GOLD (the text: NOT THE HOUSE'S)", () => {
+  it("THE DOORMAN's SKIM keeps BLACK's every 2 at GOLD (the text: NOT THE DOORMAN'S)", () => {
     expect(at('jackpot', 3, 5)).toBe(at('jackpot', 3, 3));
-    expect(STAKES[5].rule).toContain("NOT THE HOUSE'S");
+    expect(STAKES[5].rule).toContain("NOT THE DOORMAN'S");
   });
   it("THE WHEEL's NO MORE BETS keeps its clock at BLUE and GOLD (the text: NOT THE WHEEL'S)", () => {
     expect(at('bets', 3, 5, 2)).toBe(at('bets', 3, 0, 2));

@@ -149,7 +149,7 @@ was tuned for feel from two fresh-eyes playtests.
 ## Acts and bosses
 | Act | Boss | Mechanic | State |
 |---|---|---|---|
-| 1 | THE HOUSE | A growing pot (+30 every one of its turns, more from coins on its reels). Every 3 turns it SKIMS half the pot as a hit. Doubles down at half HP; from SPIN 20 LAST CALL skims every turn | Done |
+| 1 | THE DOORMAN (was THE HOUSE until 2026-11-09: a reskin, the same rules; THE HOUSE is the casino's name now) | A growing pot (+30 every one of his turns, more from coins on his reels). Every 3 turns he SKIMS half the pot as a hit. Doubles down at half HP; from SPIN 20 LAST CALL skims every turn | Done |
 | 2 | THE WHEEL | Places bet chips on your reels. Your pairs sweep them. At NO MORE BETS, every chip left hits for a share of your max HP. At half HP it holds for the rest of that turn (no hit takes it past half), then bets 3 chips a turn (not at GREEN+, which starts fast) | Rework in progress, untuned |
 | 3 | THE DEALER | Three hands, each with its own HP bar (27/31/42% of its HP). 1 THE DEAL: every 3 turns a BUST (your best reel's payline pays nothing next spin). 2 RAISE: its hits x1.5, still BUSTs. 3 ALL IN: every 2 turns, 25-40% of your max HP through shields | Reworked 2026-10-12; spread by machine is still wide (see ROADMAP) |
 
@@ -234,8 +234,8 @@ Each machine except KNIGHT has one signature symbol and a meter.
 |---|---|---|---|---|
 | KNIGHT | SIR REGINALD | sword | none: half swords, half shields, both from level 2; each boss pays 4 sword levels (400 HP) | start |
 | TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields: 20 charge a bolt, 22 a bolt, the storm heals 15 (one axis: every boost adds charge); 4 CHARGED bolts on reel 1 and 1 on reel 2 (340 HP) | reach the House |
-| JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat the House |
-| JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat the House with wilds |
+| JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat THE DOORMAN |
+| JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat THE DOORMAN with wilds |
 | BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER; a chip jackpot makes it rain (20 chips; free when it hits no harder than the jackpot); +1 chip a win and 20% off the Cashier's shelf (not the HEAL); 6 chips and 6 shields a reel (400 HP) | clear a run |
 
 BRIAR / THORN is retired and removed from the code (the JUKEBOX replaced her). Old saves map her unlock and stakes to
@@ -339,12 +339,12 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
 
 ## HIGH STAKES (`src/core/stakes.ts`)
 Each machine has its own ladder. Winning a run at your best stake unlocks the next one.
-WHITE (base) → RED (scar rocks, **Act 3 on**) → GREEN (the Wheel starts fast) → BLACK (the House cheats) →
-BLUE (from act 2, abilities charge faster, not THE WHEEL's) → GOLD (act 1's too, not THE HOUSE's; bosses +8% HP). From
+WHITE (base) → RED (scar rocks, **Act 3 on**) → GREEN (the Wheel starts fast) → BLACK (THE DOORMAN cheats) →
+BLUE (from act 2, abilities charge faster, not THE WHEEL's) → GOLD (act 1's too, not THE DOORMAN's; bosses +8% HP). From
 GREEN, enemy reels also hit 5% harder a stake (GREEN +5%, BLACK +10%, BLUE +15%, GOLD +20%; shown as X1.05 GREEN on
 their hits). (User, 2026-11-08; it was from BLACK, +7% a stake: GREEN's own rule cost nothing, so RED and GREEN played
 the same.) What it scales: enemy swords and sevens (and the stake rounds into ability hits like THE SWING, to tens),
-not THE HOUSE's SKIM, THE WHEEL's NO MORE BETS, ALL IN, IOUs or marks; the texts say ENEMY REELS (QA 2026-11-09).
+not THE DOORMAN's SKIM, THE WHEEL's NO MORE BETS, ALL IN, IOUs or marks; the texts say ENEMY REELS (QA 2026-11-09).
 Elites' +25% is the same, minus IOUs and marks (an elite LOAN SHARK or CARD SHARP says ITS REELS HIT 25% HARDER).
 OVERTIME grows the reels' hits, not ability hits. BOUNCER blocks the first ability that lands on your reels (THE
 DEALER's BUST included), not the CROUPIER's RAKE.

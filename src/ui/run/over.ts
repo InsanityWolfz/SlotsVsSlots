@@ -207,8 +207,8 @@ export abstract class OverScreen extends ShopScreen {
     // 3. The words: the name, big; what happened.
     const k3 = out(ease(B.words, 0.3));
     const tx = px + ps + 44;
-    const name = won || turbo ? CABINETS[run.cabinet].hero : (loss?.enemy ?? lastRec?.enemy ?? 'THE HOUSE');
-    const line2 = won || turbo ? (turbo ? 'BEAT THE OWNER' : trueEnding ? 'BEAT THE DEALER. RUN CLEARED' : cleared ? 'BEAT THE HOUSE' : 'CLEARED THE RUN') : busted ? 'GOT YOU IN ENDLESS' : 'GOT YOU';
+    const name = won || turbo ? CABINETS[run.cabinet].hero : (loss?.enemy ?? lastRec?.enemy ?? 'THE DOORMAN');
+    const line2 = won || turbo ? (turbo ? 'BEAT THE OWNER' : trueEnding ? 'BEAT THE DEALER. RUN CLEARED' : cleared ? 'BEAT THE DOORMAN' : 'CLEARED THE RUN') : busted ? 'GOT YOU IN ENDLESS' : 'GOT YOU';
     const where = busted
       ? ((n) => `BEAT THE DEALER, THEN ${n} ENDLESS FIGHT${n === 1 ? '' : 'S'}`)(run.records.filter((r) => r.loop !== undefined).length)
       : won

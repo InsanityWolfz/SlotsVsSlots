@@ -206,13 +206,13 @@ export const actsOf = (a: Archetype) => (ACT3_VETERANS.has(a.id) ? [...(a.acts ?
 
 export const BOSS: Archetype = {
   id: 'house',
-  name: 'THE HOUSE',
+  name: 'THE DOORMAN',
   portrait: 'enemyBoss',
   strip: { sword: 4, shield: 3, coin: 3, seven: 2 },
   hpMul: 1,
   ability: { kind: 'jackpot', every: POT.cashEvery, power: 1 },
   minDepth: 5,
-  blurb: 'A GROWING POT: IT SKIMS HALF AT YOU. JACKPOTS WIN IT',
+  blurb: 'A GROWING POT: HE SKIMS HALF AT YOU. JACKPOTS WIN IT',
 };
 
 /**
