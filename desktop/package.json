@@ -7,12 +7,16 @@
   "scripts": {
     "web": "cd .. && npm run build:steam",
     "start": "electron .",
-    "dev": "npm run web && electron ."
+    "dev": "npm run web && electron .",
+    "package:full": "node package.cjs full",
+    "package:demo": "node package.cjs demo"
   },
   "devDependencies": {
-    "electron": "^44.0.0"
+    "electron": "^44.0.0",
+    "electron-builder": "^26.18.0"
   },
   "optionalDependencies": {
     "steamworks.js": "^0.4.0"
-  }
+  },
+  "productName": "Reel Brawl"
 }

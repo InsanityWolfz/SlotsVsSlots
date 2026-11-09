@@ -15,7 +15,15 @@ const readAppIdFile = () => {
     return '';
   }
 };
-const APP_ID = Number(process.env.SteamAppId || process.env.STEAM_APP_ID || readAppIdFile() || 480);
+// A packaged build carries its own id (resources/appid.json, written by package.cjs for the full game or the demo).
+const readPackagedAppId = () => {
+  try {
+    return app.isPackaged ? String(JSON.parse(fs.readFileSync(path.join(process.resourcesPath, 'appid.json'), 'utf8')).appId || '') : '';
+  } catch {
+    return '';
+  }
+};
+const APP_ID = Number(process.env.SteamAppId || process.env.STEAM_APP_ID || readPackagedAppId() || readAppIdFile() || 480);
 
 // The game starts its sound on the first key press anyway; on desktop there's no autoplay gate to wait for.
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
@@ -25,6 +33,16 @@ try {
   steam = require('steamworks.js').init(APP_ID);
 } catch (err) {
   console.warn('[steam] not available, running without it:', err && err.message);
+  // Launched by Steam but Steamworks failed (a native module left inside the asar, a missing steam_api): no achievements
+  // and no overlay, silently. Leave a note where a bug report can find it (QA STEAM-03).
+  if (process.env.SteamAppId) {
+    try {
+      fs.mkdirSync(app.getPath('userData'), { recursive: true });
+      fs.appendFileSync(path.join(app.getPath('userData'), 'steam.log'), `${new Date().toISOString()} app ${APP_ID}: ${err && err.message}\n`);
+    } catch {
+      /* nowhere to write */
+    }
+  }
 }
 
 const savesDir = () => path.join(app.getPath('userData'), 'saves');

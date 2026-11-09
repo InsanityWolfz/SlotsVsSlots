@@ -10,3 +10,4 @@ desktop/node_modules
 tools/out/music/
 music-previews/
 .claude/worktrees/
+release/
