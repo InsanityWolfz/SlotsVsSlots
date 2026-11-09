@@ -27,9 +27,25 @@ const CURB = 268;
 const xAt = (lat: number, z: number) => CX + lat / z;
 const yAt = (h: number, z: number) => HOR + (EYE - h) / z;
 
-/** The street's end (the casino's front) at each station: far down the street, then nearer each fight. */
-const Z_FAR = [9.5, 6.2, 4.3, 3.0];
-export const STREET_STATIONS = Z_FAR.length;
+/** Our street ends in a T (the user: the casino can't stand in the middle of the road). At each station, the depth
+ * where our street's buildings end (the corner); the cross street runs left to right beyond it, and the casino faces
+ * it from the far side, set back behind its forecourt. Nearer each fight; the last station is at the corner. */
+const Z_END = [7.0, 4.6, 3.1, 1.9];
+export const STREET_STATIONS = Z_END.length;
+/** The T beyond the corner, in depth: the near sidewalk round the corners, the cross street's road, its far sidewalk,
+ * then the casino's forecourt (the carpet, rope posts and steps) up to its front. */
+const T_NEAR = 0.35;
+const T_ROAD = 1.3;
+const T_FAR = 0.35;
+const T_FORE = 0.6;
+const zRoad0 = (zEnd: number) => zEnd + T_NEAR;
+const zRoad1 = (zEnd: number) => zEnd + T_NEAR + T_ROAD;
+const zFront = (zEnd: number) => zEnd + T_NEAR + T_ROAD + T_FAR;
+const zCasino = (zEnd: number) => zFront(zEnd) + T_FORE;
+/** The carpet's and the forecourt's half widths (the carpet runs from the steps to the cross street's far kerb, as in
+ * the entrance room). */
+const CARPET = 40;
+const FORE_W = 230;
 
 // The portraits' palette (as roomEntrance.ts) plus the street's darks.
 const K = '#140c1c';
@@ -183,15 +199,15 @@ function drawSky(g: CanvasRenderingContext2D, late: number): void {
 }
 
 /** One side's walls, column by column (`side` -1 left, 1 right), out to the street's end. */
-function drawWalls(g: CanvasRenderingContext2D, st: Station, side: -1 | 1, zFar: number, late: number): void {
+function drawWalls(g: CanvasRenderingContext2D, st: Station, side: -1 | 1, zEnd: number, late: number): void {
   const bldgs = side < 0 ? st.left : st.right;
-  const xEnd = Math.round(xAt(side * WALL, zFar));
+  const xEnd = Math.round(xAt(side * WALL, zEnd));
   const cols = side < 0 ? [0, xEnd] : [xEnd, RW];
   let prevB: Bldg | null = null;
   let prevZ = 0;
   for (let x = cols[0]; x < cols[1]; x++) {
     const z = WALL / Math.abs(x + 0.5 - CX);
-    if (z > zFar) continue;
+    if (z > zEnd) continue;
     const b = bldgs.find((bb) => z >= bb.z0 && z < bb.z1);
     if (!b) continue;
     const gap = b.feats.find((f) => f.kind === 'gap');
@@ -281,52 +297,136 @@ function drawWalls(g: CanvasRenderingContext2D, st: Station, side: -1 | 1, zFar:
   }
 }
 
-/** The sidewalks, curbs and road, row by row out to the street's end. */
-function drawGround(g: CanvasRenderingContext2D, zFar: number): void {
-  for (let y = Math.ceil(yAt(0, zFar)); y < RH; y++) {
+/** One row of pavement between two screen x's, with slab joints every 0.25 of depth. */
+function paveRow(g: CanvasRenderingContext2D, x0: number, x1: number, y: number, z: number, zn: number): void {
+  if (x1 <= x0) return;
+  px(g, x0, y, x1 - x0, 1, PAVE);
+  if (Math.floor(z * 4) !== Math.floor(zn * 4)) px(g, x0, y, x1 - x0, 1, PAVE_L);
+}
+
+/** The ground, row by row: our street's sidewalks, curbs and road up to the corner; then the T: the corners' sidewalks
+ * round our street's mouth, the cross street's road (its middle line, a crosswalk straight ahead), its far kerb and
+ * sidewalk, and the casino's forecourt with the carpet running from its steps to the kerb. */
+function drawGround(g: CanvasRenderingContext2D, zEnd: number): void {
+  const zc = zCasino(zEnd);
+  for (let y = Math.ceil(yAt(0, zc)); y < RH; y++) {
     const z = EYE / (y + 0.5 - HOR);
     const zn = EYE / (y + 1.5 - HOR);
-    const wl = xAt(-WALL, z);
+    const zp = EYE / (y - 0.5 - HOR);
     const cl = xAt(-CURB, z);
     const cr = xAt(CURB, z);
-    const wr = xAt(WALL, z);
-    px(g, wl, y, cl - wl, 1, PAVE);
-    px(g, cr, y, wr - cr, 1, PAVE);
-    px(g, cl, y, cr - cl, 1, ROAD);
-    // Slab joints across the sidewalks, every 0.25 of depth; one lengthwise joint down each.
-    if (Math.floor(z * 4) !== Math.floor(zn * 4)) {
-      px(g, wl, y, cl - wl, 1, PAVE_L);
-      px(g, cr, y, wr - cr, 1, PAVE_L);
+    if (z <= zEnd) {
+      const wl = xAt(-WALL, z);
+      const wr = xAt(WALL, z);
+      paveRow(g, wl, cl, y, z, zn);
+      paveRow(g, cr, wr, y, z, zn);
+      px(g, cl, y, cr - cl, 1, ROAD);
+      px(g, xAt(-WALL + 36, z), y, 1, 1, PAVE_L);
+      px(g, xAt(WALL - 36, z), y, 1, 1, PAVE_L);
+      // The curbs: a lit edge and a face.
+      const cw = Math.max(1, Math.round(10 / z));
+      px(g, cl - cw, y, cw, 1, '#3a2d52');
+      px(g, cr, y, cw, 1, '#3a2d52');
+      px(g, cl, y, 1, 1, '#4a3d62');
+      px(g, cr + cw - 1, y, 1, 1, '#4a3d62');
+      // The road's middle line (dashes every 0.6 of depth), stopping short of the corner, and a stop line there.
+      if (Math.floor(z / 0.6) % 2 === 0 && z < zEnd - 0.35) px(g, CX - Math.max(1, 3 / z) / 2, y, Math.max(1, 3 / z), 1, '#3a3346');
+      if (z >= zEnd - 0.16 && z <= zEnd - 0.09) px(g, CX + 2, y, cr - CX - 4, 1, '#4a4458');
+      if ((y * 7) % 5 === 0) px(g, cl + (((y * 37) % 1000) / 1000) * (cr - cl), y, 1, 1, '#1a1428');
+    } else if (z <= zRoad0(zEnd)) {
+      // Round the corners: sidewalk either side of our street's mouth, which runs on into the cross street.
+      paveRow(g, 0, cl, y, z, zn);
+      paveRow(g, cr, RW, y, z, zn);
+      px(g, cl, y, cr - cl, 1, ROAD);
+      if (zn > zRoad0(zEnd)) {
+        // the cross street's near kerb, either side of the mouth
+        px(g, 0, y, cl, 1, '#3a2d52');
+        px(g, cr, y, RW - cr, 1, '#3a2d52');
+      }
+    } else if (z <= zRoad1(zEnd)) {
+      // The cross street: asphalt across the whole view, its dashed middle line running left to right, a crosswalk
+      // straight ahead from our corner to the casino's side (bars across the road, one after another).
+      px(g, 0, y, RW, 1, ROAD);
+      const mid = (zRoad0(zEnd) + zRoad1(zEnd)) / 2;
+      if (zp >= mid && z < mid) for (let lat = -4000; lat < 4000; lat += 200) if (Math.abs(lat) > 200) px(g, xAt(lat, z), y, Math.max(1, 100 / z), 1, '#3a3346');
+      const band = Math.floor(((z - zRoad0(zEnd)) / T_ROAD) * 9);
+      if (band % 2 === 1) px(g, xAt(-150, z), y, 300 / z, 1, '#3e3850');
+      if ((y * 11) % 7 === 0) px(g, (((y * 53) % 997) / 997) * RW, y, 1, 1, '#1a1428');
+    } else if (z <= zFront(zEnd)) {
+      // The far kerb, then the far sidewalk (the casino's side of the cross street), the carpet already on it.
+      paveRow(g, 0, RW, y, z, zn);
+      if (zp > zRoad1(zEnd) - 0.001 && z <= zRoad1(zEnd) + 0.1) px(g, 0, y, RW, 1, '#3a2d52');
+      px(g, xAt(-CARPET, z), y, (2 * CARPET) / z, 1, (y >> 1) % 2 ? '#5e1626' : '#661a2b');
+    } else {
+      // The forecourt: dark stone in front of the casino, the carpet up its middle to the steps.
+      px(g, 0, y, RW, 1, '#1d1630');
+      px(g, xAt(-FORE_W, z), y, (2 * FORE_W) / z, 1, '#221a38');
+      px(g, xAt(-CARPET, z), y, (2 * CARPET) / z, 1, (y >> 1) % 2 ? '#5e1626' : '#661a2b');
+      px(g, xAt(-CARPET, z), y, 1, 1, g8);
+      px(g, xAt(CARPET, z) - 1, y, 1, 1, g8);
     }
-    px(g, xAt(-WALL + 36, z), y, 1, 1, PAVE_L);
-    px(g, xAt(WALL - 36, z), y, 1, 1, PAVE_L);
-    // The curbs: a lit edge and a face.
-    const cw = Math.max(1, Math.round(10 / z));
-    px(g, cl - cw, y, cw, 1, '#3a2d52');
-    px(g, cr, y, cw, 1, '#3a2d52');
-    px(g, cl, y, 1, 1, '#4a3d62');
-    px(g, cr + cw - 1, y, 1, 1, '#4a3d62');
-    // The road's middle line: dashes every 0.6 of depth.
-    if (Math.floor(z / 0.6) % 2 === 0) px(g, CX - Math.max(1, 3 / z) / 2, y, Math.max(1, 3 / z), 1, '#3a3346');
-    // Wet asphalt.
-    if ((y * 7) % 5 === 0) px(g, cl + (((y * 37) % 1000) / 1000) * (cr - cl), y, 1, 1, '#1a1428');
   }
 }
 
-/** The casino across the street's end, facing us (its front lit; the bulbs and its sign's glow are live). */
-function drawCasino(g: CanvasRenderingContext2D, zFar: number): void {
-  const s = 1 / zFar;
+/** The forecourt's things standing up: brass rope posts either side of the carpet with a red rope between, and a
+ * streetlight on the far kerb each side (only once they're big enough to read). */
+function drawForecourt(g: CanvasRenderingContext2D, zEnd: number): void {
+  const zc = zCasino(zEnd);
+  if (1 / zc >= 0.14) {
+    for (const zp of [zc - 0.12, zc - 0.48])
+      for (const side of [-1, 1]) {
+        const x = Math.round(xAt(side * 70, zp));
+        const top = Math.round(yAt(100, zp));
+        const bot = Math.round(yAt(0, zp));
+        px(g, x - 1, top - 1, Math.max(3, 12 / zp), bot - top + 1, K);
+        px(g, x, top, Math.max(1, 6 / zp), bot - top, G);
+      }
+    // the ropes, sagging between each pair of posts
+    for (const side of [-1, 1]) {
+      const a = zc - 0.12;
+      const b = zc - 0.48;
+      for (let i = 0; i <= 16; i++) {
+        const zz = a + ((b - a) * i) / 16;
+        const sag = Math.sin((i / 16) * Math.PI) * 22;
+        px(g, xAt(side * 72, zz), yAt(86 - sag, zz), 1, Math.max(1, 5 / zz), r);
+      }
+    }
+  }
+  // streetlights on the far kerb, either side of the forecourt
+  if (1 / zc >= 0.1)
+    for (const lat of [-460, 460]) {
+      const zl = zRoad1(zEnd) + 0.08;
+      const x = Math.round(xAt(lat, zl));
+      const top = Math.round(yAt(560, zl));
+      const bot = Math.round(yAt(0, zl));
+      const w = Math.max(1, Math.round(8 / zl));
+      const lw = Math.max(3, Math.round(30 / zl));
+      const lh = Math.max(3, Math.round(26 / zl));
+      px(g, x, top, w, bot - top, k);
+      px(g, x + w / 2 - lw / 2 - 1, top - lh - 1, lw + 2, lh + 2, K);
+      px(g, x + w / 2 - lw / 2, top - lh, lw, lh, Yl);
+    }
+}
+
+/** The casino on the far side of the cross street, facing it (and us), much wider than our street's opening: our
+ * street's corner buildings frame it. The bulbs and its sign's letters are live. */
+function drawCasino(g: CanvasRenderingContext2D, zEnd: number): void {
+  const zc = zCasino(zEnd);
+  const s = 1 / zc;
   const X = (lat: number) => Math.round(CX + lat * s);
-  const Yh = (h: number) => Math.round(yAt(h, zFar));
+  const Yh = (h: number) => Math.round(yAt(h, zc));
   const wall = (lat0: number, lat1: number, h0: number, h1: number, c: string) => px(g, X(lat0), Yh(h1), X(lat1) - X(lat0), Yh(h0) - Yh(h1), c);
-  // The front, wider than the street (the walls hide its ends), stone-dark with gold pilasters.
-  wall(-WALL - 10, WALL + 10, 0, 1040, '#2b2140');
-  wall(-WALL - 10, WALL + 10, 1000, 1040, g8);
-  for (const lat of [-250, -180, 160, 230]) wall(lat, lat + 20, 0, 1000, '#33284a');
-  // Upper windows, warm.
-  for (const lat of [-300, -130, 80, 250]) for (const h of [700, 840]) wall(lat, lat + 50, h, h + 80, (lat + h) % 3 ? '#8a5428' : '#5e3218');
-  // The doors and their light, three steps, a short red carpet toward us.
-  wall(-100, 100, 0, 30, '#5a4d72');
+  // The front: the casino's whole width along the cross street, stone-dark with gold pilasters and a gold cornice.
+  wall(-1600, 1600, 0, 1040, '#2b2140');
+  wall(-1600, 1600, 1000, 1040, g8);
+  for (let lat = -1560; lat <= 1560; lat += 260) if (Math.abs(lat + 12) > 170) wall(lat, lat + 24, 0, 1000, '#33284a');
+  wall(-1600, 1600, 0, 40, '#241c36');
+  // Upper windows, warm, along the front.
+  for (let lat = -1500; lat <= 1450; lat += 170) if (Math.abs(lat + 25) > 150) for (const h of [700, 840]) wall(lat, lat + 50, h, h + 80, (lat + h) % 3 ? '#8a5428' : '#5e3218');
+  // The doors and their light, up three steps from the forecourt.
+  wall(-120, 120, 0, 10, '#2e2444');
+  wall(-110, 110, 10, 20, '#3a2d52');
+  wall(-100, 100, 20, 30, '#5a4d72');
   wall(-74, 74, 30, 340, G);
   wall(-68, 68, 34, 334, '#3a1c0c');
   wall(-62, 62, 150, 320, '#5e3218');
@@ -348,12 +448,13 @@ function still(i: number, late: number): HTMLCanvasElement {
   let c = stills.get(key);
   if (c) return c;
   const [cv, g] = mk(RW, RH);
-  const zFar = Z_FAR[i];
+  const zEnd = Z_END[i];
   drawSky(g, late);
-  drawCasino(g, zFar);
-  drawGround(g, zFar);
-  drawWalls(g, STATIONS[i], -1, zFar, late);
-  drawWalls(g, STATIONS[i], 1, zFar, late);
+  drawCasino(g, zEnd);
+  drawGround(g, zEnd);
+  drawForecourt(g, zEnd);
+  drawWalls(g, STATIONS[i], -1, zEnd, late);
+  drawWalls(g, STATIONS[i], 1, zEnd, late);
   stills.set(key, cv);
   c = cv;
   return c;
@@ -446,7 +547,8 @@ export interface StreetScene {
 }
 
 /** The casino's canopy bulbs and sign letters down the street (sized by its depth). */
-function casinoLive(g: CanvasRenderingContext2D, zFar: number, t: number): void {
+function casinoLive(g: CanvasRenderingContext2D, zEnd: number, t: number): void {
+  const zFar = zCasino(zEnd);
   const s = 1 / zFar;
   const X = (lat: number) => CX + lat * s;
   const Yh = (h: number) => yAt(h, zFar);
@@ -496,11 +598,11 @@ export function drawStreet(ctx: CanvasRenderingContext2D, o: StreetScene): void 
   const t = o.time;
   const dt = Math.min(0.1, Math.max(0, t - tLast));
   tLast = t;
-  const zFar = Z_FAR[i];
+  const zEnd = Z_END[i];
   const S = sprites;
   const g = lg;
   g.clearRect(0, 0, RW, RH);
-  casinoLive(g, zFar, t);
+  casinoLive(g, zEnd, t);
 
   if (i === 0) {
     // THE BARFLY's bar: BAR in pink neon down the blade sign, its O buzzing (more when he's the one you're fighting),
