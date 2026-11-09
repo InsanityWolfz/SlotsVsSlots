@@ -44,7 +44,7 @@ const zFront = (zEnd: number) => zEnd + T_NEAR + T_ROAD + T_FAR;
 const zCasino = (zEnd: number) => zFront(zEnd) + T_FORE;
 /** The carpet's and the forecourt's half widths (the carpet runs from the steps to the cross street's far kerb, as in
  * the entrance room). */
-const CARPET = 40;
+const CARPET = 50;
 const FORE_W = 230;
 
 // The portraits' palette (as roomEntrance.ts) plus the street's darks.
@@ -375,7 +375,7 @@ function drawForecourt(g: CanvasRenderingContext2D, zEnd: number): void {
   if (1 / zc >= 0.14) {
     for (const zp of [zc - 0.12, zc - 0.48])
       for (const side of [-1, 1]) {
-        const x = Math.round(xAt(side * 70, zp));
+        const x = Math.round(xAt(side * 92, zp));
         const top = Math.round(yAt(100, zp));
         const bot = Math.round(yAt(0, zp));
         px(g, x - 1, top - 1, Math.max(3, 12 / zp), bot - top + 1, K);
@@ -388,7 +388,7 @@ function drawForecourt(g: CanvasRenderingContext2D, zEnd: number): void {
       for (let i = 0; i <= 16; i++) {
         const zz = a + ((b - a) * i) / 16;
         const sag = Math.sin((i / 16) * Math.PI) * 22;
-        px(g, xAt(side * 72, zz), yAt(86 - sag, zz), 1, Math.max(1, 5 / zz), r);
+        px(g, xAt(side * 94, zz), yAt(86 - sag, zz), 1, Math.max(1, 5 / zz), r);
       }
     }
   }
@@ -408,6 +408,60 @@ function drawForecourt(g: CanvasRenderingContext2D, zEnd: number): void {
     }
 }
 
+/** The casino's doors, as in the entrance room (two gilded leaves in a gold frame, amber glass, an etched crown in each
+ * pane, brass push bars by the centre seam; about as wide as they're tall), scaled for distance. However far, they read
+ * as two leaves: the centre seam and a handle each side are always at least a pixel. */
+function drawDoubleDoors(g: CanvasRenderingContext2D, zc: number): void {
+  const X = (lat: number) => Math.round(CX + lat / zc);
+  const Yh = (h: number) => Math.round(yAt(h, zc));
+  const x0 = X(-124);
+  const x1 = X(124);
+  const top = Yh(280);
+  const bot = Yh(30);
+  // The gold frame round both leaves.
+  px(g, x0, top, x1 - x0, bot - top, G);
+  px(g, x0, top, x1 - x0, 1, Yl);
+  const ix0 = X(-118);
+  const ix1 = X(118);
+  const it = Yh(274);
+  // Each leaf: a dark gilt edge, amber glass in three steps (warmer low down), an etched crown in the glass.
+  const seam = Math.round((ix0 + ix1) / 2);
+  for (const [a, b] of [[ix0, seam], [seam, ix1]] as const) {
+    if (b - a < 1) continue;
+    // a gilt edge round a dark leaf (as at the door), the glass pane inset in its upper part
+    px(g, a, it, b - a, bot - it, g8);
+    if (b - a >= 3) px(g, a + 1, it + 1, b - a - 2, bot - it - 2, '#4a2612');
+    const ga = a + Math.max(1, Math.round(18 / zc));
+    const gb = b - Math.max(1, Math.round(18 / zc));
+    const gt = Math.max(it + 1, Yh(258));
+    const gbot = Yh(124);
+    if (gb > ga && gbot > gt) {
+      const bands = ['#5e3218', '#6e3c1c', '#844824'];
+      const hb = (gbot - gt) / 3;
+      bands.forEach((c, i) => px(g, ga, gt + Math.round(i * hb), gb - ga, Math.ceil(hb), c));
+      // the etched crown, once the pane is big enough to hold one
+      const cx = Math.round((ga + gb) / 2);
+      const cy = gt + Math.round((gbot - gt) * 0.45);
+      if (gb - ga >= 7) {
+        px(g, cx - 3, cy, 7, 2, G);
+        for (const k2 of [-3, 0, 3]) px(g, cx + k2, cy - 2, 1, 2, G);
+      } else if (gb - ga >= 3) px(g, cx, cy, 1, 1, G);
+    }
+  }
+  // The centre seam (a lit line where the leaves meet) and a brass push bar either side of it: always visible.
+  px(g, seam, it, 1, bot - it, '#c97a38');
+  const hy = Yh(105);
+  const hh = Math.max(1, Yh(65) - Yh(105));
+  const hw = Math.max(1, Math.round(16 / zc));
+  const off = Math.max(1, Math.round(12 / zc));
+  px(g, seam - off - hw, hy, hw, hh, G);
+  px(g, seam + off + 1, hy, hw, hh, G);
+  if (hw >= 2) {
+    px(g, seam - off - hw, hy, 1, hh, Yl);
+    px(g, seam + off + 1, hy, 1, hh, Yl);
+  }
+}
+
 /** The casino on the far side of the cross street, facing it (and us), much wider than our street's opening: our
  * street's corner buildings frame it. The bulbs and its sign's letters are live. */
 function drawCasino(g: CanvasRenderingContext2D, zEnd: number): void {
@@ -423,18 +477,14 @@ function drawCasino(g: CanvasRenderingContext2D, zEnd: number): void {
   wall(-1600, 1600, 0, 40, '#241c36');
   // Upper windows, warm, along the front.
   for (let lat = -1500; lat <= 1450; lat += 170) if (Math.abs(lat + 25) > 150) for (const h of [700, 840]) wall(lat, lat + 50, h, h + 80, (lat + h) % 3 ? '#8a5428' : '#5e3218');
-  // The doors and their light, up three steps from the forecourt.
-  wall(-120, 120, 0, 10, '#2e2444');
-  wall(-110, 110, 10, 20, '#3a2d52');
-  wall(-100, 100, 20, 30, '#5a4d72');
-  wall(-74, 74, 30, 340, G);
-  wall(-68, 68, 34, 334, '#3a1c0c');
-  wall(-62, 62, 150, 320, '#5e3218');
-  wall(-62, 62, 250, 320, '#7a4a24');
-  wall(-2, 2, 34, 334, g8);
-  // The canopy (its bulbs are live), and the sign above it (its letters are live).
-  wall(-150, 150, 360, 440, d);
-  wall(-150, 150, 360, 372, K);
+  // Three steps up from the forecourt, as wide as the doors' frame and a little more.
+  wall(-150, 150, 0, 10, '#2e2444');
+  wall(-140, 140, 10, 20, '#3a2d52');
+  wall(-130, 130, 20, 30, '#5a4d72');
+  drawDoubleDoors(g, zc);
+  // The canopy over the doors (its bulbs are live), and the sign above it (its letters are live).
+  wall(-190, 190, 284, 364, d);
+  wall(-190, 190, 284, 296, K);
   wall(-140, 140, 500, 640, K);
   wall(-136, 136, 504, 636, r);
   // The crown on top.
@@ -552,16 +602,16 @@ function casinoLive(g: CanvasRenderingContext2D, zEnd: number, t: number): void 
   const s = 1 / zFar;
   const X = (lat: number) => CX + lat * s;
   const Yh = (h: number) => yAt(h, zFar);
-  const n = Math.max(4, Math.round(300 * s / 6));
+  const n = Math.max(4, Math.round((380 * s) / 6));
   for (let i = 0; i < n; i++) {
     const on = (i + Math.floor(t * 6)) % 3 === 0 ? 1 : 0;
-    const x = X(-150) + (i * (300 * s)) / n;
+    const x = X(-190) + (i * (380 * s)) / n;
     if (s > 0.2) {
-      bulb(g, x, Yh(440) - 1, on);
-      bulb(g, x, Yh(372) - 2, (n - i + Math.floor(t * 6)) % 3 === 0 ? 1 : 0);
+      bulb(g, x, Yh(364) - 1, on);
+      bulb(g, x, Yh(296) - 2, (n - i + Math.floor(t * 6)) % 3 === 0 ? 1 : 0);
     } else {
-      px(g, x, Yh(440), 1, 1, on ? Y : g8);
-      px(g, x, Yh(372) - 1, 1, 1, on ? g8 : Y);
+      px(g, x, Yh(364), 1, 1, on ? Y : g8);
+      px(g, x, Yh(296) - 1, 1, 1, on ? g8 : Y);
     }
   }
   // CASINO on the sign: real letters once it's near enough, a lit band of gold before that.
@@ -572,7 +622,7 @@ function casinoLive(g: CanvasRenderingContext2D, zEnd: number, t: number): void 
   else for (let i = 0; i < 6; i++) px(g, X(-110) + (i * 220 * s) / 5, ys - Math.max(1, h / 4), Math.max(1, 20 * s), Math.max(1, h / 2), (i + Math.floor(t * 3)) % 6 ? G : Yl);
   // Its blade sign, CASINO down the right of the front (as at the door), once it's near enough to read.
   if (s >= 0.2) {
-    const bx = Math.round(X(176));
+    const bx = Math.round(X(212));
     const top = Math.max(4, Math.round(Yh(650)));
     const bot = Math.round(Yh(380));
     px(g, bx - 1, top - 1, Math.round(26 * s) + 2, bot - top + 2, K);
