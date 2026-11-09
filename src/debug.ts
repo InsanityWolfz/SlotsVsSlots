@@ -1,13 +1,13 @@
 import type { RelicId, SideId, SymbolId } from './core/config';
-import { ARCHETYPES, BOSS, DEALER, makeEnemy, OWNER, REPO_MAN, TURBO, WHEEL } from './core/enemies';
+import { ARCHETYPES, BOSS, DEALER, generateActMap, makeEnemy, OWNER, REPO_MAN, TURBO, WHEEL } from './core/enemies';
 import { Rng } from './core/rng';
-import { skipToBoss } from './core/run';
+import { setMap, skipToBoss } from './core/run';
 import { fightConfig } from './core/fightSetup';
 import type { CombatEvent } from './core/events';
 import { BUILD_UP } from './core/fightRules';
 import type { Game } from './game';
 import { setInputMode, type InputMode } from './ui/input';
-import { ROOM_V2, streetPlace } from './render/rooms';
+import { hrPlace, ROOM_V2, streetPlace } from './render/rooms';
 import { devSwapSprite } from './render/sprites';
 
 /**
@@ -40,8 +40,9 @@ export function installDebug(game: Game): void {
     roomV2: (on: boolean) => ((ROOM_V2.on = on), on),
     /** Act 1's street (rooms v2's journey): show station 0-3 whatever the depth; dbg.station(null) goes by depth. */
     station: (n: number | null) => ((ROOM_V2.station = n), n),
-    /** Where the backdrop is now: a street station (0-3), 'door', or null (not act 1's street). */
-    place: () => streetPlace(game.background.scene),
+    /** Where the backdrop is now: a street station (0-3) or 'door' (act 1), a high-roller station (0-3) or 'table'
+     * (act 3), or null (another room). dbg.station(n) forces act 3's station too. */
+    place: () => streetPlace(game.background.scene) ?? hrPlace(game.background.scene),
     /** Swap a sprite's rows (outlined), e.g. a portrait candidate: dbg.sprite('enemyBoss', rows). */
     sprite: (id: string, rows: string[]) => devSwapSprite(id as import('./render/sprites').SpriteId, rows),
     /** Advance until the director starts playing an event of this type. */
@@ -102,6 +103,15 @@ export function installDebug(game: Game): void {
     toBoss() {
       if (!game.run) return;
       skipToBoss(game.run);
+      game.newFight(false, null, fightConfig(game.run, game.cfg), true);
+      game.screens.showNext(game.run);
+    },
+    /** Jump the run to the start of act `n` (its first fight, a fresh map; for checking an act's rooms). */
+    toAct(n: number) {
+      if (!game.run) return;
+      game.run.act = n;
+      setMap(game.run, generateActMap(new Rng((game.run.seed ^ Math.imul(n, 0x3c6ef372)) >>> 0), n, 1, game.run.cabinet));
+      game.run.actIntro = false;
       game.newFight(false, null, fightConfig(game.run, game.cfg), true);
       game.screens.showNext(game.run);
     },

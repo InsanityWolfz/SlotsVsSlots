@@ -34,6 +34,7 @@ import { canvas, FLOOR_Y, hexA, LH, LW, MID, NEON, rect, seeded, type RoomArt } 
 import { drawEntrance, entranceCheer, entranceUpdate } from './roomEntrance';
 import { buildVip, vip } from './roomVip';
 import { drawStreet, streetStation } from './roomStreet';
+import { drawHighRoller, hrStation, HR_STATIONS, type DealerState } from './roomHighRoller';
 
 /** Rooms v2 (the style key, 2026-11-09): THE HOUSE's room is the casino entrance, and act 1 is the street toward it
  * (roomStreet.ts). Off: the old alley and vault. `station` forces act 1's station (dbg, the gallery); null: by depth. */
@@ -48,8 +49,17 @@ export function streetPlace(s: Scene): number | 'door' | null {
   if (ROOM_V2.station !== null) return ROOM_V2.station;
   return streetStation(s.fightIndex ?? 0, s.regulars ?? 4);
 }
+/** Act 3 in the v2 high-roller room (roomHighRoller.ts): a station down the aisle, or 'table' (THE DEALER's own, his
+ * fight and the screens just before it), or null when the scene isn't act 3's room. */
+export function hrPlace(s: Scene): number | 'table' | null {
+  if (!ROOM_V2.on || s.room !== 'vip' || s.loop > 0) return null;
+  if (s.boss === 'dealer' || (!s.boss && s.atBoss)) return 'table';
+  if (s.boss) return null;
+  if (ROOM_V2.station !== null) return Math.min(ROOM_V2.station, HR_STATIONS - 1);
+  return hrStation(s.fightIndex ?? 0, s.regulars ?? 4);
+}
 /** The room draws its own air (rain), so the drifting motes stay off (they're another pixel size). */
-export const roomV2Air = (s: Scene) => (ROOM_V2.on && s.boss === 'house') || streetPlace(s) !== null;
+export const roomV2Air = (s: Scene) => (ROOM_V2.on && s.boss === 'house') || streetPlace(s) !== null || hrPlace(s) !== null;
 
 export { LH, LW } from './roomKit';
 
@@ -80,6 +90,8 @@ export interface Scene {
   atBoss?: boolean;
   /** This fight's enemy archetype (a station's small per-enemy touch). */
   enemy?: string | null;
+  /** THE DEALER's fight (rooms v2's high-roller room): his hand, ALL IN armed, his trick's charge. */
+  dealer?: DealerState;
 }
 
 // ---- the still layers --------------------------------------------------------------------------------------------
@@ -234,6 +246,12 @@ export class Rooms {
     }
     if (place !== null) {
       drawStreet(ctx, { station: place, time, enemy: s.enemy });
+      this.overlays(ctx, s, time, this.cheerT);
+      return;
+    }
+    const hr = hrPlace(s);
+    if (hr !== null) {
+      drawHighRoller(ctx, { place: hr, time, foeHp: s.boss === 'dealer' ? s.foeHp : 1, turn: s.turn, dealer: s.dealer, fight: s.fight && s.boss === 'dealer' });
       this.overlays(ctx, s, time, this.cheerT);
       return;
     }

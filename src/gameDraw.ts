@@ -203,6 +203,7 @@ export function sceneNow(g: Game): Scene {
     fight,
     turbo: fight && !!g.fight.cfg.enemy.owner,
     pot: fight && boss === 'house' ? (g.stage?.gutter?.pot ?? 0) : 0,
+    dealer: fight && boss === 'dealer' ? { hand: g.stage.gutter.dealerHand ?? 1, allIn: !!g.stage.gutter.allInArmed, charge: g.stage.huds.enemy.charge ?? 0 } : undefined,
     ...journey(g),
   };
 }
