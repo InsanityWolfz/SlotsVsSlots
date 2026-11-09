@@ -68,7 +68,15 @@ export class Focus {
     // (No main button live, as with DEAL off at 0 chips or mid-grab at the CLAW: a button still beats the build panel's
     // relic icons, where the focus landed and A did nothing: QA 2026-11-06.)
     const button = (t: NavRect) => typeof (t as NavRect & { label?: string }).label === 'string';
-    return [...targets.filter(main)].sort(order)[0] ?? [...targets.filter(button)].sort(order)[0] ?? [...targets].sort(order)[0];
+    // (And a real button beats the rules' "?": broke at TWENTY-ONE or the CLAW, the pad's first A opened HOUSE RULES
+    // instead of landing on WALK AWAY: QA FUNC-08.)
+    const help = (t: NavRect) => (t as NavRect & { label?: string }).label === '?';
+    return (
+      [...targets.filter(main)].sort(order)[0] ??
+      [...targets.filter((t) => button(t) && !help(t))].sort(order)[0] ??
+      [...targets.filter(button)].sort(order)[0] ??
+      [...targets].sort(order)[0]
+    );
   }
 
   move(dir: NavDir, targets: NavRect[]): NavRect | null {

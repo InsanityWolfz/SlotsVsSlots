@@ -149,6 +149,8 @@ export class Game {
   toolButtons: { tune: Button; log: Button } | null = null;
 
   lastRecord: FightRecord | null = null;
+  /** The run whose loss was recorded at the killing blow (QA FUNC-01): the run-over screen doesn't record it again. */
+  lossRecorded: RunState | null = null;
   /** DEATH RECAP: HP damage the player took this fight, by source. */
   hurt = new Map<string, number>();
   spins = [0, 0];
@@ -469,6 +471,8 @@ export class Game {
   /** Everything the keyboard / gamepad focus can land on right now. */
   navTargets(): NavRect[] {
     if (this.coach.active) return [];
+    // The boss's rules card is modal: the d-pad moved the focus around under it (QA FUNC-11). A / B close it.
+    if (this.bossCard && !this.pause.open) return [];
     if (this.pause.open && !this.menus.isOpen) return this.pause.navTargets();
     if (this.menus.isOpen) return [...this.menus.navTargets(), ...(this.muteBtn.visible ? [this.muteBtn] : [])];
     // (SPIN stays a target while it waits on the enemy's spin: the focus slid onto AUTO, and the next A turned it on.)
@@ -505,6 +509,7 @@ export class Game {
   /** ABANDON RUN: the run is thrown away. */
   private abandonRun(): void {
     clearRunSave();
+    flow.recordAbandon(this);
   }
 
   setMuted(m: boolean): void {

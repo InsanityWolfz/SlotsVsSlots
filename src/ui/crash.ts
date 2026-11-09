@@ -40,6 +40,31 @@ export function reportCrash(err: unknown, context: () => Record<string, unknown>
     } else if (a === 'reload') location.reload();
   });
   host.appendChild(box);
+  // Keyboard and pad (QA FUNC-02: Enter on KEEP PLAYING was eaten by the game's keys, and a pad couldn't reach it):
+  // the focus starts on KEEP PLAYING; crashKey() moves and presses it.
+  box.querySelector<HTMLButtonElement>('button[data-a="close"]')?.focus({ preventScroll: true });
+}
+
+/**
+ * A key or pad button while the crash panel is up: arrows move between its buttons, Enter / Space / A press the focused
+ * one, Escape / B (and START) keep playing. Returns false when there's no panel, so the game gets the key.
+ */
+export function crashKey(k: string): boolean {
+  const box = document.querySelector<HTMLDivElement>('.crash');
+  if (!box) return false;
+  const buttons = [...box.querySelectorAll<HTMLButtonElement>('button')];
+  const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
+  if (k === 'escape' || k === 'start') {
+    buttons.find((b) => b.dataset.a === 'close')?.click();
+  } else if (k === 'arrowleft' || k === 'arrowright' || k === 'arrowup' || k === 'arrowdown' || k === 'tab') {
+    const step = k === 'arrowleft' || k === 'arrowup' ? -1 : 1;
+    const from = at < 0 ? buttons.findIndex((b) => b.dataset.a === 'close') : at;
+    buttons[(from + step + buttons.length) % buttons.length]?.focus({ preventScroll: true });
+  } else if (k === 'enter' || k === ' ') {
+    (at >= 0 ? buttons[at] : buttons.find((b) => b.dataset.a === 'close'))?.click();
+  }
+  // Every other key is swallowed while the panel is up (the game plays on underneath, but it's the panel's turn).
+  return true;
 }
 
 export function installCrashHandlers(context: () => Record<string, unknown>): void {

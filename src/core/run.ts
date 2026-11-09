@@ -229,6 +229,8 @@ export interface RunState {
   shopRerolls: number;
   /** The Cashier's current shelf (a reroll deals none of these again). */
   shelfKeys?: string[];
+  /** The Cashier's shelf this visit, as dealt (sold flags included): a reload keeps what was bought (QA FUNC-05). */
+  shelf?: ShopItem[];
   /** The starting machine. */
   cabinet: CabinetId;
   /** Current act (1 = the House, 2 = THE WHEEL, 3 = the Dealer, 4+ endless). */

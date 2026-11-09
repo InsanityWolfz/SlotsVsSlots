@@ -232,9 +232,13 @@ export function key(g: Game, k: string, repeat = false): boolean {
     case '2':
     case '3':
     case '4':
+      // Not on a screen between fights, like the bumpers: SPEED and AUTO aren't shown there, so the next fight changed
+      // with nothing on screen to say so (AUTO turned on unseen plays the next fight by itself: QA FUNC-04).
+      if (g.screens.active) return false;
       g.setSpeed(SPEEDS[Number(k) - 1]);
       return true;
     case 'a':
+      if (g.screens.active) return false;
       g.setAuto(!g.prefs.auto);
       return true;
     case 'r':

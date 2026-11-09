@@ -135,6 +135,7 @@ export function reroll(run: RunState): ShopItem[] | null {
 
 export function leaveShop(run: RunState): void {
   run.shopRerolls = 0;
+  delete run.shelf;
   run.healBought = false;
   // The act's intro visit isn't a stop on the map; a Cashier stop is.
   if (run.actIntro) run.actIntro = false;

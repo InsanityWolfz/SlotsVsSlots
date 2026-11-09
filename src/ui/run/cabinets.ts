@@ -21,6 +21,8 @@ export abstract class CabinetScreen extends BuildPanel {
   protected cabDir = 1;
   protected cabIn = 1;
   protected playBtn: Btn | null = null;
+  /** The machine the player has tapped on this visit (-1: none yet). A tap on it again plays it. */
+  protected cabTapped = -1;
 
   /** Pick your starting machine (pre-run). Locked machines show as silhouettes with how to unlock them. */
   showCabinets(unlocked: Set<CabinetId>, stakes: Partial<Record<CabinetId, number>> = {}, stakeSel = 0, _act3 = false, _dealerBeaten: CabinetId[] = []): void {
@@ -28,6 +30,7 @@ export abstract class CabinetScreen extends BuildPanel {
     this.stakes = stakes;
     this.run = null;
     this.open('cabinet');
+    this.cabTapped = -1;
     this.stakeSel = Math.min(stakeSel, this.maxStake());
     if (!this.cabinetUnlocked.has(CABINET_ORDER[this.cabSel])) this.cabSel = 0;
     // HIGH STAKES: a row of 6 chips, always shown (new players see the whole ladder, locked). Hovering or focusing one
@@ -65,12 +68,16 @@ export abstract class CabinetScreen extends BuildPanel {
     // (In the demo, on a full-game machine, the same button is WISHLIST: QA DEMO-04.)
     this.playBtn = this.btn('PLAY', STAGE.x + STAGE.w - 132, STAGE.y + STAGE.h - 46, 220, 56, () => (this.cabPreview() ? openStore() : this.startCabinet()));
     this.buttons = [...this.stakeHits, menu, prev, next, this.playBtn];
-    // The row of machines: a click shows one on the stage; a click on the one already there plays it.
+    // The row of machines: a click shows one on the stage; a second click on it plays it. (The machine already on the
+    // stage when the screen opens needs both too: a new player's first tap on KNIGHT, just to look, started the run:
+    // QA FUNC-12.)
     const n = CABINET_ORDER.length;
     this.cards = CABINET_ORDER.map((_, i) => {
       const h = this.hit(W / 2 + (i - (n - 1) / 2) * THUMB.gap, THUMB.y, THUMB.w, THUMB.h, () => {
         if (this.picked >= 0) return;
-        if (i === this.cabSel) return this.startCabinet();
+        if (i === this.cabSel && this.cabTapped === i) return this.startCabinet();
+        if (i === this.cabSel) this.sounds.click();
+        this.cabTapped = i;
         this.selectCabinet(i, i > this.cabSel ? 1 : -1);
       });
       void this.ui.wait(0.08 + i * 0.05).then(() => this.ui.tween({ from: 0, to: 1, dur: 0.25, ease: backOut(2), onUpdate: (v) => (h.scale = v) }));

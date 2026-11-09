@@ -50,6 +50,8 @@ export interface RunEntry {
   maxHp: number;
   chips: number;
   tutorial?: boolean;
+  /** ABANDON RUN (PAUSE): the player threw the run away; it counts as a loss with what it scored (QA FUNC-13). */
+  abandoned?: boolean;
   /** THE DAILY RUN: its day, and the HP it finished with (a won daily scores it). */
   daily?: string;
   hpLeft?: number;
@@ -190,6 +192,7 @@ export function sanitizeProfile(raw: unknown): Profile {
         maxHp: num(e.maxHp, 0, 99999),
         chips: num(e.chips, 0, 9999),
         ...(e.tutorial === true ? { tutorial: true } : {}),
+        ...(e.abandoned === true ? { abandoned: true } : {}),
         ...(typeof e.daily === 'string' && DATE_KEY.test(e.daily) ? { daily: e.daily, hpLeft: num(e.hpLeft, 0, 99999) } : {}),
         ...(typeof e.loops === 'number' ? { loops: num(e.loops, 0, 999) } : {}),
         ...(typeof e.pot === 'number' ? { pot: num(e.pot, 0, 1e9) } : {}),

@@ -56,7 +56,7 @@ function hudMeter(f: Fight): HudMeter | null {
 }
 
 /** HISCORES: log the finished run (keeps the newest entries, but never drops a top-10 score). */
-export function recordRun(g: Game, run: RunState): void {
+export function recordRun(g: Game, run: RunState, abandoned = false): void {
   // COPY LAST RUN (main menu): the finished run's text survives a refresh.
   try {
     localStorage.setItem(LASTRUN_KEY, runSummary(run, VERSION));
@@ -72,6 +72,13 @@ export function recordRun(g: Game, run: RunState): void {
     return;
   }
   const entry = runEntry(run, Date.now(), !!run.tutorial);
+  if (abandoned) {
+    // Nobody beat it: the last record is a won fight (or none), not who ended the run.
+    delete entry.killer;
+    delete entry.killerPortrait;
+    delete entry.killerFight;
+    entry.abandoned = true;
+  }
   if (run.won && !run.endless) run.rideAt = entry.at;
   g.profile.runs.push(entry);
   while (g.profile.runs.length > MAX_ENTRIES) {
@@ -89,6 +96,18 @@ export function afterRecord(g: Game, _entry: RunEntry, gain: MetaGain): void {
   g.screens.setMeta(gain);
 }
 
+/** ABANDON RUN (PAUSE): the run counts as a loss with what it scored, as Slay the Spire counts it (QA FUNC-13: it
+ * left no trace: no hiscore, no run in the stats, no XP). A run already over (THE DEALER's LET IT RIDE) is recorded. */
+export function recordAbandon(g: Game): void {
+  const run = g.run;
+  if (!run || run.over || g.tut || g.lossRecorded === run) return;
+  const copy = structuredClone(run);
+  copy.over = true;
+  copy.won = false;
+  g.noteDiscoveries();
+  recordRun(g, copy, true);
+}
+
 /** RESET SAVE (main menu): unlocks, stakes, collection and hiscores. Settings stay. */
 export function resetSave(g: Game): void {
   const { speed, auto, juice, muted, vol } = g.prefs;
@@ -98,6 +117,13 @@ export function resetSave(g: Game): void {
   g.profile = { ...emptyProfile(), ...(name ? { name } : {}), ...(pid ? { pid } : {}) };
   g.savePrefs();
   g.saveProfile();
+  // The run in progress and COPY LAST RUN go too: CONTINUE played a TESLA RED run the reset had just locked (QA FUNC-03).
+  clearRunSave();
+  try {
+    localStorage.removeItem(LASTRUN_KEY);
+  } catch {
+    /* storage blocked: nothing was saved there either */
+  }
 }
 
 // ---- tutorial ----------------------------------------------------------------------
@@ -321,8 +347,8 @@ export function noteHurt(g: Game, events: CombatEvent[]): void {
   }
 }
 
-export function afterRunFight(g: Game): void {
-  const run = g.run!;
+/** The fight's record on the run (finishFight), with the run-over screen's extras: best hit, what hurt, stuck spins. */
+function sealRecord(g: Game, run: RunState): FightRecord {
   const record = finishFight(run, g.fight);
   record.best = Math.round(g.tracker.stats.sides.player.biggestHit);
   if (!record.won) {
@@ -331,6 +357,12 @@ export function afterRunFight(g: Game): void {
     record.hurt = [...g.hurt].map(([s, n]) => [s, Math.round(n)] as [string, number]).filter(([, n]) => n >= UNIT).sort((a, b) => b[1] - a[1]).slice(0, 3);
     if (g.spins[0] >= 2) record.stuck = [g.spins[0], g.spins[1]];
   }
+  return record;
+}
+
+export function afterRunFight(g: Game): void {
+  const run = g.run!;
+  const record = sealRecord(g, run);
   g.hurt.clear();
   g.spins = [0, 0];
   g.lastRecord = record;
@@ -338,8 +370,12 @@ export function afterRunFight(g: Game): void {
   if (run.over) {
     clearRunSave();
     // Beat the Dealer: the LET IT RIDE / CASH OUT choice is saved, so a refresh there comes back to it (playtest).
-    g.noteDiscoveries();
-    recordRun(g, run);
+    // (A loss was recorded at the killing blow: runFight.)
+    if (g.lossRecorded !== run) {
+      g.noteDiscoveries();
+      recordRun(g, run);
+    }
+    g.lossRecorded = null;
     if (run.won && run.act >= 3 && !run.endless) save(RUN_KEY, { v: 1, at: 'ride', version: VERSION, run });
     skipTutorial(g);
     if (run.endless) g.screens.setStakeUnlockedNow('');
@@ -383,6 +419,8 @@ export function pickSpoils(g: Game, relic: RelicId): void {
     return;
   }
   takeSpoils(g.run, relic);
+  // Saved at once: a reload offered the same spoils again, after the next draft had been seen (QA FUNC-06).
+  checkpoint(g, 'after');
   g.screens.showDraft(g.run, draftOffers(g.run), g.lastRecord);
 }
 
@@ -395,6 +433,9 @@ export function buyItem(g: Game, i: number): void {
     g.sounds.coin(4);
     g.sounds.coin(9);
     g.screens.bought(i, item);
+    // Saved at once: quitting in the Cashier undid every purchase of the visit (QA FUNC-05).
+    g.run.shelf = g.shelf;
+    checkpoint(g, 'next');
   } else {
     g.sounds.fizzle();
     g.screens.deny(i);
@@ -407,6 +448,8 @@ export function rerollShop(g: Game): void {
   if (!next) return g.sounds.fizzle();
   g.sounds.coin(2);
   g.shelf = next;
+  g.run.shelf = next;
+  checkpoint(g, 'next');
   g.screens.showShop(g.run, g.shelf, true);
 }
 
@@ -443,7 +486,9 @@ export function advance(g: Game): void {
   const run = g.run;
   if (!run) return;
   if (isShopNow(run)) {
-    g.shelf = shopOffers(run);
+    // A reload mid-visit gets the same shelf back, bought items still sold (QA FUNC-05).
+    g.shelf = run.shelf ?? shopOffers(run);
+    run.shelf = g.shelf;
     g.screens.showShop(run, g.shelf);
     tip(g, 'shop', 'shop');
     checkpoint(g, 'next');
@@ -583,9 +628,6 @@ export async function runFight(g: Game, token: number): Promise<void> {
     }
     if (token !== g.token) return;
     const result = g.fight.step();
-    // A lost fight is final at once: the save went on offering CONTINUE into it until the run-over screen (about 1.5 s
-    // after the killing blow), so a quick reload undid the loss (save QA 2026-11-02).
-    if (g.fight.over && g.fight.winner === 'enemy' && g.run && !g.tut) clearRunSave();
     // PAIRS START ON REEL 1: reels 2 and 3 matched and paid as singles (a shield, sword, sword line looked like a pair:
     // expert playtest 2026-11-06). Said on the HOLD chip under your reels, the first few times ever.
     let offPair = false;
@@ -602,6 +644,18 @@ export async function runFight(g: Game, token: number): Promise<void> {
     }
     noteHurt(g, result.events);
     g.tracker.record(result.events);
+    // A lost fight is final at once: the save went on offering CONTINUE into it until the run-over screen (about 1.5 s
+    // after the killing blow), so a quick reload undid the loss (save QA 2026-11-02). It's recorded at the same moment:
+    // a reload during the last turn's playback (11.7 s at 1X) lost the run from HISCORES, the stats, XP and COPY LAST
+    // RUN (QA FUNC-01). The record is taken on a copy, so the screens keep the live run until the turn has played.
+    if (g.fight.over && g.fight.winner === 'enemy' && g.run && !g.tut) {
+      clearRunSave();
+      const copy = structuredClone(g.run);
+      sealRecord(g, copy);
+      g.noteDiscoveries();
+      recordRun(g, copy);
+      g.lossRecorded = g.run;
+    }
     g.rows.push(turnRow(g.fight, result, g.fightNo));
     g.onRows.forEach((f) => f());
     g.presenting = true;
