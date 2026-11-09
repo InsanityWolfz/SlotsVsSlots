@@ -14,10 +14,11 @@ a draft SKIP, payoffs on the best hit, SECOND MORTGAGE x1.5, MAKE IT RAIN free a
 Fest date, the capsule/trailer hook against DEAD SPIN, card art and a boss entrance): https://claude.ai/artifact/JvWfuPk7WavCPFFd6av9gM.
 The user's answer (2026-11-09): all but 4 (payoffs stay as they are). 7 and 8 are decided below (phases 5 and 6);
 1, 2, 3, 5, 6 are live (2026-11-09; numbers in HP_GAME.md "Balance": combined sim 28 of 30 machine-stakes on target;
-BANKROLL keeps 6 / 6 reels at 400 HP, since 7 chips a reel plus free floor rains won 74% at WHITE). Waiting on the user's
-review, not on `main`: the playing cards (https://claude.ai/artifact/YFAq8n2jpH9uYhUtu7WDWi, branch
-`worktree-agent-a93764eca10a59cb9`), the boss entrance (https://claude.ai/artifact/3UMPmTnDNMQJZtmvELqrvJ, branch
-`worktree-agent-a9859ec0bfbb0438f`), the duel capsules, trailer cut 3 and the store text
+BANKROLL keeps 6 / 6 reels at 400 HP, since 7 chips a reel plus free floor rains won 74% at WHITE). The boss entrance is live
+(user, 2026-11-09: "I love the boss entrances"; https://claude.ai/artifact/3UMPmTnDNMQJZtmvELqrvJ): about 2 s at 1X,
+any input skips it, 1 s on a repeat, each boss's one beat, round marquee bulbs on every marquee. Waiting on the
+user's review, not on `main`: the playing cards (https://claude.ai/artifact/YFAq8n2jpH9uYhUtu7WDWi, branch
+`worktree-agent-a93764eca10a59cb9`), the duel capsules, trailer cut 3 and the store text
 (https://claude.ai/artifact/DWvxNB3zHD8zf96xZA3FJX, branch `call9-art` from `art-wip`). Reports in
 `tools/out/qa/` (not committed).
 
