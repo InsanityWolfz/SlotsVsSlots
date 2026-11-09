@@ -71,7 +71,7 @@ export class FightView {
     let call = '';
     if (this.g.toolNote && performance.now() - this.g.toolNote.at < (this.g.toolNote.ms ?? 1500)) call = this.g.toolNote.text;
     else if (live && f.held.some(Boolean)) call = 'HELD FOR YOUR NEXT SPIN';
-    else if (live && left > 0 && this.g.lastPair) call = 'PAIR! HOLD IT FOR A JACKPOT?';
+    else if (live && left > 0 && this.g.pairToHold()) call = 'PAIR! HOLD IT FOR A JACKPOT?';
     const label = call || (left <= 0 ? 'NO HOLDS LEFT' : live ? `HOLD ${left}: ${by({ touch: 'TAP A REEL', mouse: 'CLICK A REEL', keys: 'Q W E', pad: '[DPAD]' })}` : `HOLD ${left}`);
     const lit = !!call || (live && left > 0);
     const pulse = call ? 0.5 + 0.5 * Math.sin(t * 6) : 0;

@@ -41,6 +41,22 @@ export abstract class TableScreens extends DraftScreen {
   }
 
   /** The bet: four chips you tap (-5 -1 +1 +5), shared by the games that take a chip bet. */
+  /** Which table the bet was set at (a new table starts from a fresh bet). */
+  private betTable = '';
+  /**
+   * The bet on a new hand. A new table starts at 5; a bet that's more than you hold drops to a fresh one, never more
+   * than half your chips (the stepper used to carry 12 from an earlier table and clamp it to the 8 you held, so DEAL bet
+   * them all without a touch: QA PLAY-U3). A bet you set at this table and can still cover stays.
+   */
+  protected settleBet(max: number): void {
+    const run = this.run!;
+    const table = `${run.seed}:${run.act}:${run.depth}`;
+    const fresh = Math.max(1, Math.min(5, Math.floor(max / 2)));
+    if (table !== this.betTable || this.rlBet > max) this.rlBet = fresh;
+    this.betTable = table;
+    this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
+  }
+
   protected betStepper(max: () => number): Btn[] {
     const step = (d: number) => {
       const next = Math.max(1, Math.min(max(), this.rlBet + d));

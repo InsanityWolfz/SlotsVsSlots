@@ -346,6 +346,22 @@ export class Fight {
     return true;
   }
 
+  /**
+   * HOLD's PAIR! call: is this pair still on your payline, holdable and paying? Read from the reels as they stand now,
+   * so anything the enemy did since (a STEAL, a SPILL, a ROCK, a fake, a freeze, a jam) takes the call back (the call
+   * offered a pair the PICKPOCKET had just stolen: QA PLAY-01).
+   */
+  pairHoldable(symbol: SymbolId, reels: readonly number[]): boolean {
+    const me = this.sides.player;
+    return reels.every((r) => {
+      const reel = me.reels[r];
+      const cell = reel?.cells[reel.stop];
+      if (!cell || me.frozen[r] > 0 || me.locked[r] > 0 || (cell.faked ?? 0) > 0) return false;
+      const sym = effectiveSymbol(cell);
+      return sym === symbol || sym === 'wild';
+    });
+  }
+
   /** Debug: make the next spin of `side` land these payline symbols where the strip allows. */
   forceNext(side: SideId, line: SymbolId[]): void {
     this.forced[side] = line;

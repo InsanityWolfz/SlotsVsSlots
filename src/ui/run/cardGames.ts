@@ -21,7 +21,7 @@ export abstract class CardGames extends TableScreens {
   protected bjDealButtons(): void {
     const run = this.run!;
     const max = bjMax(run);
-    this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
+    this.settleBet(max);
     this.encChoices = encounterChoices(run);
     const steps = this.betStepper(() => bjMax(this.run!));
     const deal = this.btn('DEAL', SX, ROW.main, 196, 56, () => this.playBj(0));
@@ -96,7 +96,7 @@ export abstract class CardGames extends TableScreens {
   protected hiloDealButtons(): void {
     const run = this.run!;
     const max = hiloMax(run);
-    this.rlBet = Math.max(1, Math.min(this.rlBet, Math.max(1, max)));
+    this.settleBet(max);
     this.encChoices = encounterChoices(run);
     const steps = this.betStepper(() => hiloMax(this.run!));
     const deal = this.btn('DEAL', SX, ROW.main, 196, 56, () => this.playHilo(0));

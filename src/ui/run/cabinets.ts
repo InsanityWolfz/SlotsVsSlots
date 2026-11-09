@@ -33,7 +33,7 @@ export abstract class CabinetScreen extends BuildPanel {
     // HIGH STAKES: a row of 6 chips, always shown (new players see the whole ladder, locked). Hovering or focusing one
     // previews its rule; clicking an earned one selects it.
     const pick = (level: number) => {
-      if (level > this.maxStake()) {
+      if (level > this.ladderMax()) {
         this.sounds.fizzle();
         this.stakeDeny = { level, at: performance.now() };
         return;
@@ -145,6 +145,12 @@ export abstract class CabinetScreen extends BuildPanel {
     return Math.max(0, ...Object.values(this.stakes).map((n) => n ?? 0));
   }
 
+  /** The stakes the chosen Slot Machine has earned (the padlocks follow it: a stake won on KNIGHT showed open on a
+   * TESLA that hadn't won WHITE, QA PLAY-U1). */
+  protected ladderMax(): number {
+    return this.stakeFor(CABINET_ORDER[this.cabSel]);
+  }
+
   protected stakeFor(id: CabinetId): number {
     return this.stakes[id] ?? 0;
   }
@@ -196,7 +202,7 @@ export abstract class CabinetScreen extends BuildPanel {
       drawText(ctx, `PLAY AS ${cab.hero}`, tx, hy + 74, T.body, '#c9a0ff', { align: 'left' });
       drawText(ctx, cab.blurb, tx, hy + 102, T.small, KIT.dim, { align: 'left' });
       // The pitch: three lines at body size.
-      // (Three lines close up a little: JUKEBOX's third sat 3px over BEST STAKE.)
+      // (Three lines close up a little: JUKEBOX's third sat 3px over its stake line.)
       const pitch = wrap(cab.rule, Math.floor((x + w - 36 - hx) / (6 * T.body))).slice(0, 3);
       pitch.forEach((l, i) => drawText(ctx, l, hx, hy + 170 + i * (pitch.length > 2 ? 23 : 26), T.body, KIT.text, { align: 'left' }));
       // (The demo's preview has no stake: its button says IN THE FULL GAME.)
@@ -204,9 +210,9 @@ export abstract class CabinetScreen extends BuildPanel {
         ctx.restore();
         return;
       }
-      // Its best stake so far, as its chip.
+      // The highest stake it plays, as its chip ("BEST STAKE: WHITE" read as a record on a profile with no runs: QA PLAY-U2).
       const best = stakeOf(this.stakeFor(id));
-      drawText(ctx, 'BEST STAKE', hx, y + h - 46, T.small, KIT.dim, { align: 'left' });
+      drawText(ctx, 'PLAYS UP TO', hx, y + h - 46, T.small, KIT.dim, { align: 'left' });
       drawChip(ctx, best.name, hx + 128 + this.stakeChipW(best.name) / 2, y + h - 46, { icon: (ix, iy) => stakeDisc(ctx, ix, iy, best.color, 7), iconW: 18 });
       if (barred) drawText(ctx, `${stakeOf(this.stakeSel).name} LOCKED: WIN AT ${stakeOf(this.stakeFor(id)).name} WITH IT`, hx, y + h - 16, T.small, '#ff8a7a', { align: 'left' });
     } else {
@@ -268,7 +274,7 @@ export abstract class CabinetScreen extends BuildPanel {
 
   /** HIGH STAKES: a row of chips (name and colour; locked ones padlocked), and the hovered or chosen stake's rule. */
   protected drawStakePicker(ctx: CanvasRenderingContext2D, _time: number): void {
-    const max = this.maxStake();
+    const max = this.ladderMax();
     const y = STAKE_ROW.y;
     const first = this.stakeHits[0];
     if (first) drawText(ctx, 'HIGH STAKES', first.x - first.w / 2 - 16, y, T.small, KIT.dim, { align: 'right' });

@@ -114,8 +114,12 @@ export class Game {
   phase: Phase = 'title';
   presenting = false;
   awaitingSpin = false;
-  /** HOLD: your last spin paid a PAIR (the call over your machine offers a HOLD). */
-  lastPair = false;
+  /** HOLD: the PAIR your last spin paid (the call over your machine offers a HOLD while it's still on the payline). */
+  lastPair: { symbol: import('./core/config').SymbolId; reels: number[] } | null = null;
+  /** The PAIR! HOLD IT call: your last spin's pair, if nothing the enemy did since took it off your payline. */
+  pairToHold(): boolean {
+    return !!this.lastPair && this.fight.pairHoldable(this.lastPair.symbol, this.lastPair.reels);
+  }
   /** A short note over your machine (a HOLD on a frozen reel). */
   toolNote: { text: string; at: number; ms?: number } | null = null;
   rows: TurnRow[] = [];
