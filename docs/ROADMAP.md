@@ -4,8 +4,8 @@ The one list of what's next. Keep it short: when an item ships, delete it (git h
 
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
 text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about
-140 findings, no crash, softlock or save loss in ~1M sim fights, 77k runs and 14 played. Fixed on branch
-`claude/modest-newton-oaxk5f` (not yet on `main`): the Steam wrapper's blockers (no crash without steam_appid.txt, one
+140 findings, no crash, softlock or save loss in ~1M sim fights, 77k runs and 14 played. Fixed and on `main`
+(user, 2026-11-09: "yes"): the Steam wrapper's blockers (no crash without steam_appid.txt, one
 packaging command per Steam app in `desktop/package.cjs`), the demo's dead WISHLIST link (VITE_STORE_APP_ID), the tutorial
 run's starting relic, NEW RUN teaching a first-timer, the hit strobe, M and W, 24 card texts that didn't match the game,
 dead relic offers, HOLD on jammed or stolen pairs, saves (a run recorded at the killing blow, the Cashier and spoils
