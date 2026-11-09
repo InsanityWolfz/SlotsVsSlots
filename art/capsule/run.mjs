@@ -14,7 +14,7 @@ const c = document.createElement('canvas'); c.width = W; c.height = H;
 const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = false;
 await (async (ctx, m, W, H) => { ${body} })(ctx, m, W, H);
 return c.toDataURL('image/png');`;
-const r = await fetch('http://localhost:5301/eval', { method: 'POST', body: code });
+const r = await fetch('http://localhost:' + (process.env.EVAL_PORT || 5301) + '/eval', { method: 'POST', body: code });
 const j = await r.json();
 if (typeof j !== 'string') { console.error(j); process.exit(1); }
 writeFileSync(out, Buffer.from(j.split(',')[1], 'base64'));

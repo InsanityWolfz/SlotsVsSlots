@@ -23,5 +23,5 @@ const PORT = process.argv[2] || '5331';
         }
       });
     })
-    .listen(5301, () => console.log('eval server on :5301, game on :' + PORT));
+    .listen(+(process.env.EVAL_PORT || 5301), () => console.log('eval server on :5301, game on :' + PORT));
 })();
