@@ -38,8 +38,31 @@ export const defaultJuice = (): JuiceToggles => ({
   audio: true,
 });
 
+/** A boss's entrance (directorEntrance.ts), as drawn over the fight (ui/entranceView.ts). */
+export interface EntranceView {
+  boss: 'house' | 'wheel' | 'dealer' | 'owner';
+  name: string;
+  /** One line under the name, and the small line above it (ACT 1 BOSS, ENDLESS: LOOP 2). */
+  line: string;
+  eyebrow: string;
+  portrait: string;
+  /** The name plate: 0 hidden, 1 in place (it scales and fades in), then `out` 0..1 as it leaves. */
+  plate: number;
+  out: number;
+  /** The fight HUDs and chips slide down from here (px above their place) once the boss is in. */
+  hudY: number;
+  /** THE DEALER deals a card onto the plate: where it is, its turn and how far it has flipped face-up. */
+  card?: { x: number; y: number; rot: number; flip: number };
+  /** THE WHEEL's wheel on the plate: its turn (radians). */
+  wheel?: number;
+  /** THE HOUSE's pot glows behind the plate. */
+  glow: number;
+}
+
 /** Everything the director animates. */
 export interface Stage {
+  /** A boss's entrance is playing (the fight starts when it ends; any input skips it). */
+  entrance?: EntranceView;
   clock: Clock;
   camera: Camera;
   particles: Particles;

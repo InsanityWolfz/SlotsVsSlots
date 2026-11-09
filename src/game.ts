@@ -155,6 +155,8 @@ export class Game {
   lastRecord: FightRecord | null = null;
   /** The run whose loss was recorded at the killing blow (QA FUNC-01): the run-over screen doesn't record it again. */
   lossRecorded: RunState | null = null;
+  /** The next boss entrance plays short: the fight is being restarted after a quit (directorEntrance.ts). */
+  shortEntrance = false;
   /** DEATH RECAP: HP damage the player took this fight, by source. */
   hurt = new Map<string, number>();
   spins = [0, 0];
@@ -424,6 +426,16 @@ export class Game {
     const r = this.spinResolve;
     this.spinResolve = null;
     r();
+  }
+
+  /** Any input during a boss's entrance skips the rest of it (the fight starts at once). */
+  skipEntrance(): boolean {
+    if (!this.stage?.entrance) return false;
+    if (!this.stage.clock.skipping) {
+      this.synth.enabled = false;
+      this.stage.clock.skip();
+    }
+    return true;
   }
 
   skip(): void {

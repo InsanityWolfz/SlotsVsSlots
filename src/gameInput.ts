@@ -16,6 +16,8 @@ export function pointerDown(g: Game, x: number, y: number): void {
   if (g.coach.active) return g.coach.hitsSkip(x, y) ? skipTutorial(g) : g.coach.advance();
   // PAUSE first: opened over the boss card, its first tap went to the card (playtest C).
   if (g.pause.open && !g.menus.isOpen) return g.pause.pointerDown(x, y);
+  // A boss's entrance: a tap anywhere but a button (PAUSE, SPEED, SOUND) skips the rest of it.
+  if (g.stage?.entrance && !g.menus.isOpen && !g.screens.active && !g.buttons.some((b) => b.visible && b.enabled && b.contains(x, y)) && g.skipEntrance()) return;
   // The boss card is open: any tap closes it (the fight was paused under it).
   if (g.bossCard) {
     g.bossCard = false;
@@ -115,6 +117,8 @@ export function key(g: Game, k: string, repeat = false): boolean {
   }
   // A pad's START is Escape everywhere else (pause, back).
   if (k === 'start') k = 'escape';
+  // A boss's entrance: any key but Escape (pause) skips the rest of it.
+  if (k !== 'escape' && g.stage?.entrance && !g.pause.open && !g.menus.isOpen && !g.screens.active && g.skipEntrance()) return true;
   // The bumpers: PROFILE's tabs in the menus, the speed everywhere else (from the speed you're on).
   if (k === 'lb' || k === 'rb') {
     if (g.menus.isOpen) return g.menus.key(k === 'lb' ? '[' : ']');
