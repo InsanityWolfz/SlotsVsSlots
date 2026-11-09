@@ -27,7 +27,8 @@ const KERB = 300;
 /** Eye level (a standing person's): the sidewalk's joints and the carpet's edges run to (CX, HORIZON). */
 const HORIZON = 100;
 /** The style key's options (the walls' texture is shown before and after, for the user to veto separately). */
-export const ENTRANCE = { walls: true };
+/** `figure`: who stands at the door (DOORMAN portrait candidates, branch doorman-v1: 'doorman' is candidate A). */
+export const ENTRANCE = { walls: true, figure: 'bouncer' as 'bouncer' | 'doorman' };
 /** The open column between the HUDs (and the machines). */
 const CX = 320;
 
@@ -110,7 +111,7 @@ function bulb(g: CanvasRenderingContext2D, x: number, y: number, on: number): vo
 
 // ---- THE HOUSE's crest, the bouncer, the poster, the lamp: outlined props ---------------------------------------
 
-let props: { crest: HTMLCanvasElement; bouncer: HTMLCanvasElement[]; lamp: HTMLCanvasElement } | null = null;
+let props: { crest: HTMLCanvasElement; bouncer: HTMLCanvasElement[]; doorman: HTMLCanvasElement[]; lamp: HTMLCanvasElement } | null = null;
 function makeProps() {
   // THE HOUSE's crown crest over the canopy (its icon wears the same crown).
   const crest = outlined(40, 18, (c) => {
@@ -161,6 +162,66 @@ function makeProps() {
       px(c, 10, 16, 4, 2, f);
     }),
   );
+  // THE DOORMAN (candidate A, full figure): braided peaked cap, a handlebar moustache, a long burgundy coat with gold
+  // buttons, epaulettes and the aiguillette, white gloves; three frames like the bouncer's (straight, left, right).
+  const doorman = [0, -1, 1].map((look) =>
+    outlined(24, 58, (c) => {
+      // trousers and shoes under the coat's hem
+      px(c, 6, 47, 5, 9, P);
+      px(c, 13, 47, 5, 9, P);
+      px(c, 5, 55, 7, 3, K);
+      px(c, 12, 55, 7, 3, K);
+      // the long coat: burgundy, its lit left edge, flared to the knee
+      px(c, 2, 17, 20, 31, r);
+      px(c, 1, 22, 22, 26, r);
+      px(c, 2, 18, 2, 29, R);
+      px(c, 11, 18, 2, 30, G);
+      px(c, 12, 18, 1, 30, g8);
+      for (const y of [21, 26, 31, 36, 41]) {
+        px(c, 8, y, 2, 2, Y);
+        px(c, 14, y, 2, 2, Y);
+      }
+      px(c, 1, 46, 22, 1, G);
+      // epaulettes with their fringe
+      px(c, 0, 16, 7, 3, G);
+      px(c, 17, 16, 7, 3, G);
+      for (let x = 0; x < 7; x += 2) {
+        px(c, x, 19, 1, 2, Y);
+        px(c, 17 + x, 19, 1, 2, Y);
+      }
+      // the aiguillette: a gold cord from the right shoulder across the chest
+      for (let i = 0; i < 6; i++) px(c, 18 - i, 20 + i, 1, 1, Y);
+      for (let i = 0; i < 5; i++) px(c, 19 - i, 21 + i, 1, 1, G);
+      // arms at his sides, white gloves
+      px(c, 0, 21, 3, 17, r);
+      px(c, 21, 21, 3, 17, d);
+      px(c, 0, 37, 3, 4, T);
+      px(c, 21, 37, 3, 4, T);
+      // the stand collar and the shirt
+      px(c, 8, 15, 8, 2, G);
+      px(c, 10, 15, 4, 2, T);
+      // head: heavy jaw, the moustache
+      px(c, 7, 6, 10, 9, F);
+      px(c, 14, 6, 3, 9, f);
+      px(c, 6, 8, 1, 3, F);
+      px(c, 17, 8, 1, 3, f);
+      px(c, 8 + look, 8, 2, 1, K);
+      px(c, 14 + look, 8, 2, 1, K);
+      px(c, 8, 7, 3, 1, '#5a311c');
+      px(c, 13, 7, 3, 1, '#5a311c');
+      px(c, 7, 11, 10, 2, '#5a311c');
+      px(c, 6, 12, 2, 1, '#5a311c');
+      px(c, 16, 12, 2, 1, '#5a311c');
+      px(c, 9, 13, 6, 1, f);
+      // the peaked cap: plum crown, gold band and badge, black visor
+      px(c, 6, 1, 12, 4, p);
+      px(c, 7, 0, 10, 1, p);
+      px(c, 6, 4, 12, 1, G);
+      px(c, 11, 3, 2, 2, Y);
+      px(c, 5, 5, 14, 1, K);
+      px(c, 6, 5, 3, 1, l);
+    }),
+  );
   // The street lamp: an iron post with a lantern head.
   const lamp = outlined(14, 176, (c) => {
     px(c, 5, 22, 4, 150, k);
@@ -174,7 +235,7 @@ function makeProps() {
     px(c, 3, 0, 8, 2, k);
     px(c, 6, 0, 2, 1, G);
   });
-  props = { crest, bouncer, lamp };
+  props = { crest, bouncer, doorman, lamp };
 }
 
 // ---- the still layer --------------------------------------------------------------------------------------------
@@ -506,7 +567,7 @@ export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; fo
   const nod = st.cheerT > 0.4 && Math.floor(t * 8) % 2 ? 1 : 0;
 
 
-  gg.drawImage(P2.bouncer[fr], 570, GROUND - 60 + nod);
+  gg.drawImage((ENTRANCE.figure === 'doorman' ? P2.doorman : P2.bouncer)[fr], 570, GROUND - 60 + nod);
   // Reflections on the wet pavement: the doors' light, the blade sign, the lamp.
   for (const [x, y0, w, c, a] of [[CX - 14, GROUND, 28, Yl, 0.08 + 0.1 * potK], [bx + 4, GROUND, 16, R, 0.09], [61, KERB + 7, 8, Yl, 0.07]] as const) {
     gg.globalAlpha = a;

@@ -4,6 +4,11 @@ export type SpriteVariant = 'normal' | 'white' | 'black';
 export type { SpriteId };
 
 const cache = new Map<string, HTMLCanvasElement>();
+/** Dev: swap a sprite's rows (art candidates in the live game) and forget the cached canvases. */
+export function devSwapSprite(id: SpriteId, rows: string[]): void {
+  (SPRITES as Record<string, string[]>)[id] = rows;
+  cache.clear();
+}
 
 /** Refer to art that may not be generated yet (it falls back to a placeholder until it is). */
 export const artId = (id: string): SpriteId => id as SpriteId;
