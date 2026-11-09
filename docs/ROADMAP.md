@@ -2,6 +2,18 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
+**In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
+text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about
+140 findings, no crash, softlock or save loss in ~1M sim fights, 77k runs and 14 played. Fixed on branch
+`claude/modest-newton-oaxk5f` (not yet on `main`): the Steam wrapper's blockers (no crash without steam_appid.txt, one
+packaging command per Steam app in `desktop/package.cjs`), the demo's dead WISHLIST link (VITE_STORE_APP_ID), the tutorial
+run's starting relic, NEW RUN teaching a first-timer, the hit strobe, M and W, 24 card texts that didn't match the game,
+dead relic offers, HOLD on jammed or stolen pairs, saves (a run recorded at the killing blow, the Cashier and spoils
+kept over a reload, saved runs cleaned on load). The report and the user's 10 calls (SPEED 2X default, act 1 pacing,
+a draft SKIP, payoffs on the best hit, SECOND MORTGAGE x1.5, MAKE IT RAIN free at the floor, Windows-first, the Next
+Fest date, the capsule/trailer hook against DEAD SPIN, card art and a boss entrance): REPORT_URL. Reports in
+`tools/out/qa/` (not committed).
+
 **In progress (2026-10-30):** the UI pass shipped to `main` (user: "ship all the UI stuff"; review:
 https://claude.ai/artifact/Uo8W6uXQJ4Cmv21tccPF1t). The keyword icons shipped too (22 approved one at a time over 7
 rounds, https://claude.ai/artifact/LriFtZabSxqs3cBJ8nsbsX; in the glossary and the cards' detail boxes; FROZEN, JINX and
