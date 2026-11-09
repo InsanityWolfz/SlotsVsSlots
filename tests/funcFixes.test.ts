@@ -130,5 +130,5 @@ describe('FUNC-07: a saved run is cleaned on load', () => {
             },
           });
     expect(checked).toBeGreaterThan(200);
-  });
+  }, 30_000); // ~200 real runs: slow on a loaded machine (5 s default flaked at 6 s)
 });
