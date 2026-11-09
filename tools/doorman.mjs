@@ -1,41 +1,44 @@
-// THE DOORMAN portrait candidates (32x32, branch doorman-v1; the user picks one, then it replaces enemyBoss in
-// portraits.mjs). Literal fill rows in the portraits' format: build-art.mjs adds the 1px outline. Not wired into the build.
-export const DOORMAN_CANDIDATES = {
-  // A, THE COAT: braided peaked cap, handlebar moustache, burgundy coat, epaulettes, the gold aiguillette
-  A: [
-    '................................',
-    '..........pppppppppppp..........',
-    '........ppPPPPPPPPPPPPpp........',
-    '.......pPPPPPPPPPPPPPPPPk.......',
-    '.......PPPPPPPPPPPPPPPPPk.......',
-    '.......GGGGGGGYYGGGGGGGGg.......',
-    '.......gGGGGGYWYYGGGGGGgg.......',
-    '.......gggggggYYggggggggg.......',
-    '......kkllkkkkkkkkkkkkkkkk......',
-    '........kkkkkkkkkkkkkkkk........',
-    '.........ffffffffffffff.........',
-    '........FFbbbbFFFFbbbbFf........',
-    '........FFFWKFFFFFFKWfFf........',
-    '........FFffffFFfFffffFf........',
-    '........FFFFFFFffFFFffFf........',
-    '.........FBbbbbbbbbbbBF.........',
-    '........bB.bBbrrrrrrb.Bb........',
-    '........bFFFFffffffFffFb........',
-    '.........fFFFFFFFFFFFff.........',
-    '.........FffffffffffffF.........',
-    '............ffffffff............',
-    '.GGGGGGG..GGTTTTTTTTGG..GGGGGGG.',
-    'gGGGGGGGgrrkkTTTTkkrrrrgGGGGGGGg',
-    'Y.Y.Y.Y.YrrrkTTTTkrrrrrY.Y.Y.Y.Y',
-    'g.g.g.g.grrrrkTGgrrrrrrgYg.g.g.g',
-    '.rRRRrdrrrrYgrkGgrrrYgrYrGrrrrr.',
-    '.rRRRrdrrrrrrrrGgrrrrrYrGdrrrrr.',
-    '.rRRRrdrrrrrrrrGgrrrrYrGrdrrrrr.',
-    '.rRRRrdrrrrYgrrGgGYYYgGrrdrrrrr.',
-    '.rRRRrdrrrrrrrrGggGGGGrrrdrrrrr.',
-    '.rRRRrdrrrrrrrrGgrrrrrrrrdrrrrr.',
-    '.rRRRrdrrrrYgrrGgrrrYgrrrdrrrrr.',
-  ],
+// THE DOORMAN, the act 1 boss's portrait (32x32): candidate A, THE COAT, picked by the user 2026-11-09 and tidied to
+// match his full figure at the casino door (one fringe row on the epaulettes, a short aiguillette clear of the buttons).
+// Literal fill rows in the portraits' format (build-art.mjs adds the 1px outline). It replaces enemyBoss in portraits.mjs
+// with the rename. Not wired into the build yet.
+export const DOORMAN = [
+  '................................',
+  '..........pppppppppppp..........',
+  '........ppPPPPPPPPPPPPpp........',
+  '.......pPPPPPPPPPPPPPPPPk.......',
+  '.......PPPPPPPPPPPPPPPPPk.......',
+  '.......GGGGGGGYYGGGGGGGGg.......',
+  '.......gGGGGGYWYYGGGGGGgg.......',
+  '.......gggggggYYggggggggg.......',
+  '......kkllkkkkkkkkkkkkkkkk......',
+  '........kkkkkkkkkkkkkkkk........',
+  '.........ffffffffffffff.........',
+  '........FFbbbbFFFFbbbbFf........',
+  '........FFFWKFFFFFFKWfFf........',
+  '........FFffffFFfFffffFf........',
+  '........FFFFFFFffFFFffFf........',
+  '.........FBbbbbbbbbbbBF.........',
+  '........bB.bBbrrrrrrb.Bb........',
+  '........bFFFFffffffFffFb........',
+  '.........fFFFFFFFFFFFff.........',
+  '.........FffffffffffffF.........',
+  '............ffffffff............',
+  '.GGGGGGG..GGTTTTTTTTGG..GGGGGGG.',
+  'gGGGGGGGgrrkkTTTTkkrrrrgGGGGGGGg',
+  'YgYgYgYgYrrrkTTTTkrrrrrYgYgYgYgY',
+  '.rRRRrrrrrrrrkTGgrrrrrrrYrrrrrr.',
+  '.rRRRrdrrrrYgrkGgrrrYgrYgdrrrrr.',
+  '.rRRRrdrrrrrrrrGgrrrrrYgrdrrrrr.',
+  '.rRRRrdrrrrrrrrGgrrrrrgrrdrrrrr.',
+  '.rRRRrdrrrrYgrrGgrrrYgrrrdrrrrr.',
+  '.rRRRrdrrrrrrrrGgrrrrrrrrdrrrrr.',
+  '.rRRRrdrrrrrrrrGgrrrrrrrrdrrrrr.',
+  '.rRRRrdrrrrYgrrGgrrrYgrrrdrrrrr.',
+];
+
+// The candidates that lost (2026-11-09), kept as history.
+export const DOORMAN_HISTORY = {
   // B, THE SHADES: bald, shades, earpiece, black suit, a white-gloved palm out (NOT TONIGHT)
   B: [
     '................................',

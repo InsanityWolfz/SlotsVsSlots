@@ -8,7 +8,6 @@ import { BUILD_UP } from './core/fightRules';
 import type { Game } from './game';
 import { setInputMode, type InputMode } from './ui/input';
 import { ROOM_V2 } from './render/rooms';
-import { ENTRANCE } from './render/roomEntrance';
 import { devSwapSprite } from './render/sprites';
 
 /**
@@ -39,8 +38,6 @@ export function installDebug(game: Game): void {
     adv: (sec: number) => step(sec),
     /** Rooms v2 (the style key): dbg.roomV2(false) shows the old rooms. */
     roomV2: (on: boolean) => ((ROOM_V2.on = on), on),
-    /** Who stands at the casino door (the DOORMAN candidates, branch doorman-v1): 'bouncer' or 'doorman'. */
-    figure: (f: 'bouncer' | 'doorman') => ((ENTRANCE.figure = f), f),
     /** Swap a sprite's rows (outlined), e.g. a portrait candidate: dbg.sprite('enemyBoss', rows). */
     sprite: (id: string, rows: string[]) => devSwapSprite(id as import('./render/sprites').SpriteId, rows),
     /** Advance until the director starts playing an event of this type. */

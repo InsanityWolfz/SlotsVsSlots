@@ -2,7 +2,7 @@
  * THE CASINO ENTRANCE (rooms v2 style key, 2026-11-09; the user: the rooms read as "a third art style", and "the House
  * fight is when you enter the casino and it's the first machine you encounter"). THE HOUSE's room: the casino's front at
  * night, its canopy and doors in the open column between the HUDs, the red carpet down the middle, a street lamp and
- * THE HOUSE's bill poster on the street side (left), the blade sign and the bouncer on the casino side (right).
+ * THE HOUSE's bill poster on the street side (left), the blade sign and THE DOORMAN on the casino side (right).
  *
  * The style, one rule for every v2 room:
  * - Drawn on a 640x360 grid, 2 screen pixels an art pixel: the HUD portraits' scale (32x32 art in a 64px box).
@@ -27,8 +27,7 @@ const KERB = 300;
 /** Eye level (a standing person's): the sidewalk's joints and the carpet's edges run to (CX, HORIZON). */
 const HORIZON = 100;
 /** The style key's options (the walls' texture is shown before and after, for the user to veto separately). */
-/** `figure`: who stands at the door (DOORMAN portrait candidates, branch doorman-v1: 'doorman' is candidate A). */
-export const ENTRANCE = { walls: true, figure: 'bouncer' as 'bouncer' | 'doorman' };
+export const ENTRANCE = { walls: true };
 /** The open column between the HUDs (and the machines). */
 const CX = 320;
 
@@ -109,9 +108,76 @@ function bulb(g: CanvasRenderingContext2D, x: number, y: number, on: number): vo
   }
 }
 
-// ---- THE HOUSE's crest, the bouncer, the poster, the lamp: outlined props ---------------------------------------
+/** THE DOORMAN's full figure, 22x58 at the room's 2px scale (the portraits' palette; outlined like them). */
+const DOORMAN = [
+  '......pppppppppp......',
+  '.....plpppppppppp.....',
+  '.....plppppppppPP.....',
+  '.....GGGGGYYGGGGg.....',
+  '.....gggggGgggggg.....',
+  '.....PlPPPPPPPPPP.....',
+  '......ffffffffff......',
+  '......FbbFFFFbbf......',
+  '.....FFWKFFFKWf.f.....',
+  '.....fFFFFfFFFFff.....',
+  '......FbBbbbbBbf......',
+  '.....bFFbrrbFFfb......',
+  '......FFFFFFFFff......',
+  '.......ffffffff.......',
+  '........ffffff........',
+  '.......GGTTTTGG.......',
+  '..YYYY.gGTTTTGg.YYYY..',
+  '..GGGGrrrrGgrrrrrrGGGG',
+  '..gYRrrrrrGgrrrrddYg..',
+  '..RrRrrrrrGgrrrrYddd..',
+  '..RrRrrYrrGgrrYYgddd..',
+  '..RrRrrrrrGgrrYgdddd..',
+  '..RrRrrrrrGgrYgrdddd..',
+  '..RrRrrrrrGgrrrrdddd..',
+  '..RrRrrYrrGgrrYrdddd..',
+  '..RrRrrrrrGgrrrrdddd..',
+  '..Rr.RrrrrGgrrrdd.dd..',
+  '..Rr.RrrrrGgrrrdd.dd..',
+  '..Rr.RrYrrGgrrYdd.dd..',
+  '..Rr.RrrrrGgrrrdd.dd..',
+  '..Rr.RrrrrGgrrrdd.dd..',
+  '..Rr.RrrrrGgrrrdd.dd..',
+  '..Rr.RrYrrGgrrYdd.dd..',
+  '..Rr.RrrrrGgrrrdd.dd..',
+  '..TT.RrrrrGgrrrdd.TT..',
+  '..Tt.RrrrrGgrrrdd.Tt..',
+  '..tt.RrrrrGgrrrdd.tt..',
+  '.....RrrrrGgrrrdd.....',
+  '....RrrrrrGgrrrrdd....',
+  '....RrrrrrGgrrrrdd....',
+  '....RrrrrrGgrrrrdd....',
+  '....RrrrrrGgrrrrdd....',
+  '....RrrrrrGgrrrrdd....',
+  '...RrrrrrrGgrrrrrdd...',
+  '...RrrrrrrGgrrrrrdd...',
+  '...RrrrrrrGgrrrrrdd...',
+  '...gGGGGGGgGGGGGGGg...',
+  '......lkkk..lkkk......',
+  '......lkkk..lkkk......',
+  '......lkkk..lkkk......',
+  '......lkkk..lkkk......',
+  '......lkkk..lkkk......',
+  '......lkkk..lkkk......',
+  '......lkkk..lkkk......',
+  '......lkkk..lkkk......',
+  '.....KlKKK..KlKKK.....',
+  '.....KKKKK..KKKKK.....',
+  '......................',
+];
+/** Row 8 (his eyes) for each frame: at you, at them (left), ahead (right). */
+const DOORMAN_EYES = ['.....FFWKFFFKWf.f.....', '.....FFKWFFFKWf.f.....', '.....FFWKFFFWKf.f.....'];
+const DOORMAN_INK: Record<string, string> = {
+  p, l, P, K, W: '#ffffff', T, t: '#9a8fb0', k, G, Y, g: g8, F, f, b: '#5a311c', B: '#9a5a30', R, r, d,
+};
 
-let props: { crest: HTMLCanvasElement; bouncer: HTMLCanvasElement[]; doorman: HTMLCanvasElement[]; lamp: HTMLCanvasElement } | null = null;
+// ---- THE HOUSE's crest, THE DOORMAN, the poster, the lamp: outlined props ---------------------------------------
+
+let props: { crest: HTMLCanvasElement; doorman: HTMLCanvasElement[]; lamp: HTMLCanvasElement } | null = null;
 function makeProps() {
   // THE HOUSE's crown crest over the canopy (its icon wears the same crown).
   const crest = outlined(40, 18, (c) => {
@@ -128,99 +194,13 @@ function makeProps() {
       px(c, x, 11, 2, 2, T);
     }
   });
-  // The bouncer: black suit, shades, an earpiece; three frames (straight, glancing left, glancing right).
-  const bouncer = [0, -1, 1].map((look) =>
-    outlined(24, 58, (c) => {
-      // legs and shoes
-      px(c, 5, 40, 6, 16, P);
-      px(c, 13, 40, 6, 16, P);
-      px(c, 4, 55, 8, 3, K);
-      px(c, 12, 55, 8, 3, K);
-      // the suit: broad shoulders, the jacket's light edge
-      px(c, 1, 17, 22, 25, P);
-      px(c, 1, 17, 2, 22, p);
-      px(c, 0, 19, 3, 18, P);
-      px(c, 21, 19, 3, 18, P);
-      px(c, 9, 17, 6, 12, T);
-      px(c, 11, 18, 2, 9, R);
-      px(c, 7, 17, 2, 12, '#2a2040');
-      px(c, 15, 17, 2, 12, '#2a2040');
-      // hands, folded in front
-      px(c, 6, 34, 12, 4, F);
-      px(c, 6, 37, 12, 1, f);
-      // head: bald, shades
-      px(c, 7, 4, 10, 12, F);
-      px(c, 7, 13, 10, 3, f);
-      px(c, 8, 2, 8, 3, F);
-      px(c, 6 + look, 8, 12, 3, K);
-      px(c, 7 + look, 8, 3, 1, l);
-      px(c, 13 + look, 8, 3, 1, l);
-      px(c, 9, 13, 6, 1, f);
-      px(c, 4, 9, 2, 3, F);
-      px(c, 18, 9, 2, 3, F);
-      px(c, 18, 10, 2, 6, k);
-      px(c, 10, 16, 4, 2, f);
-    }),
-  );
-  // THE DOORMAN (candidate A, full figure): braided peaked cap, a handlebar moustache, a long burgundy coat with gold
-  // buttons, epaulettes and the aiguillette, white gloves; three frames like the bouncer's (straight, left, right).
-  const doorman = [0, -1, 1].map((look) =>
-    outlined(24, 58, (c) => {
-      // trousers and shoes under the coat's hem
-      px(c, 6, 47, 5, 9, P);
-      px(c, 13, 47, 5, 9, P);
-      px(c, 5, 55, 7, 3, K);
-      px(c, 12, 55, 7, 3, K);
-      // the long coat: burgundy, its lit left edge, flared to the knee
-      px(c, 2, 17, 20, 31, r);
-      px(c, 1, 22, 22, 26, r);
-      px(c, 2, 18, 2, 29, R);
-      px(c, 11, 18, 2, 30, G);
-      px(c, 12, 18, 1, 30, g8);
-      for (const y of [21, 26, 31, 36, 41]) {
-        px(c, 8, y, 2, 2, Y);
-        px(c, 14, y, 2, 2, Y);
-      }
-      px(c, 1, 46, 22, 1, G);
-      // epaulettes with their fringe
-      px(c, 0, 16, 7, 3, G);
-      px(c, 17, 16, 7, 3, G);
-      for (let x = 0; x < 7; x += 2) {
-        px(c, x, 19, 1, 2, Y);
-        px(c, 17 + x, 19, 1, 2, Y);
-      }
-      // the aiguillette: a gold cord from the right shoulder across the chest
-      for (let i = 0; i < 6; i++) px(c, 18 - i, 20 + i, 1, 1, Y);
-      for (let i = 0; i < 5; i++) px(c, 19 - i, 21 + i, 1, 1, G);
-      // arms at his sides, white gloves
-      px(c, 0, 21, 3, 17, r);
-      px(c, 21, 21, 3, 17, d);
-      px(c, 0, 37, 3, 4, T);
-      px(c, 21, 37, 3, 4, T);
-      // the stand collar and the shirt
-      px(c, 8, 15, 8, 2, G);
-      px(c, 10, 15, 4, 2, T);
-      // head: heavy jaw, the moustache
-      px(c, 7, 6, 10, 9, F);
-      px(c, 14, 6, 3, 9, f);
-      px(c, 6, 8, 1, 3, F);
-      px(c, 17, 8, 1, 3, f);
-      px(c, 8 + look, 8, 2, 1, K);
-      px(c, 14 + look, 8, 2, 1, K);
-      px(c, 8, 7, 3, 1, '#5a311c');
-      px(c, 13, 7, 3, 1, '#5a311c');
-      px(c, 7, 11, 10, 2, '#5a311c');
-      px(c, 6, 12, 2, 1, '#5a311c');
-      px(c, 16, 12, 2, 1, '#5a311c');
-      px(c, 9, 13, 6, 1, f);
-      // the peaked cap: plum crown, gold band and badge, black visor
-      px(c, 6, 1, 12, 4, p);
-      px(c, 7, 0, 10, 1, p);
-      px(c, 6, 4, 12, 1, G);
-      px(c, 11, 3, 2, 2, Y);
-      px(c, 5, 5, 14, 1, K);
-      px(c, 6, 5, 3, 1, l);
-    }),
+  // THE DOORMAN at the door (the act 1 boss; portrait A, user 2026-11-09): braided peaked cap, a handlebar moustache, a
+  // tailored burgundy frock coat (shoulders wider than the hips, flared to below the knee), epaulettes, two rows of gold
+  // buttons, the gold braid and a short aiguillette, white gloves. Three frames: at you, at them, ahead (row 8, the eyes).
+  const doorman = [DOORMAN_EYES[0], DOORMAN_EYES[1], DOORMAN_EYES[2]].map((eyes) =>
+    outlined(DOORMAN[0].length, DOORMAN.length, (c) =>
+      DOORMAN.forEach((row, y) => [...(y === 8 ? eyes : row)].forEach((ch, x) => ch !== '.' && px(c, x, y, 1, 1, DOORMAN_INK[ch]))),
+    ),
   );
   // The street lamp: an iron post with a lantern head.
   const lamp = outlined(14, 176, (c) => {
@@ -235,7 +215,7 @@ function makeProps() {
     px(c, 3, 0, 8, 2, k);
     px(c, 6, 0, 2, 1, G);
   });
-  props = { crest, bouncer, doorman, lamp };
+  props = { crest, doorman, lamp };
 }
 
 // ---- the still layer --------------------------------------------------------------------------------------------
@@ -267,7 +247,7 @@ function buildStill(): HTMLCanvasElement {
   px(g, 0, 14, RW, 3, g8);
   px(g, 0, 14, RW, 1, G);
   px(g, 0, 17, RW, 2, K);
-  // The base course: the doors' steps, the pilasters, the bouncer and his rope all meet the sidewalk on this line.
+  // The base course: the doors' steps, the pilasters and THE DOORMAN all meet the sidewalk on this line.
   px(g, 0, GROUND - 12, RW, 12, '#2a2140');
   px(g, 0, GROUND - 12, RW, 1, '#3a2d52');
   px(g, 0, GROUND - 11, RW, 1, WALL_D);
@@ -562,12 +542,12 @@ export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; fo
   gg.drawImage(P2.lamp, 59, KERB - 178);
   pool(gg, 65, KERB - 6, 26, 6, O, 0.18 * flick);
 
-  // The bouncer (right), at the base line: he watches whoever's spinning; your jackpot makes him nod.
+  // THE DOORMAN (right), at the base line: he watches whoever's spinning; your jackpot makes him nod.
   const fr = o.turn === 'player' ? 1 : o.turn === 'enemy' ? 2 : 0;
   const nod = st.cheerT > 0.4 && Math.floor(t * 8) % 2 ? 1 : 0;
 
 
-  gg.drawImage((ENTRANCE.figure === 'doorman' ? P2.doorman : P2.bouncer)[fr], 570, GROUND - 60 + nod);
+  gg.drawImage(P2.doorman[fr], 572, GROUND - 60 + nod);
   // Reflections on the wet pavement: the doors' light, the blade sign, the lamp.
   for (const [x, y0, w, c, a] of [[CX - 14, GROUND, 28, Yl, 0.08 + 0.1 * potK], [bx + 4, GROUND, 16, R, 0.09], [61, KERB + 7, 8, Yl, 0.07]] as const) {
     gg.globalAlpha = a;
