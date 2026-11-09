@@ -14,6 +14,7 @@ import {
   currentEnemy,
   isEncounterNow,
   takeStart,
+  tutorialStart,
   type DraftOption,
   type FightRecord,
   type RunState,
@@ -110,8 +111,8 @@ export function startTutorial(g: Game): void {
   g.run.tutorial = true;
   // The guided fight isn't saved; the run is, once the callouts are done.
   clearRunSave();
-  // The guided first fight skips the starting relic pick (callouts first, choices later).
-  g.run.pendingStart = null;
+  // The guided first fight skips the starting relic pick (callouts first, choices later): it gets the first offered.
+  tutorialStart(g.run);
   g.screens.showNext(g.run);
   g.tut = {};
   g.coach.show(TUTORIAL.preview);

@@ -68,6 +68,13 @@ export abstract class TableScreens extends DraftScreen {
 
   /** B / Escape closes HOUSE RULES first (it opened PAUSE under them: QA 2026-11-06). */
   closeRules(): boolean {
+    // The next fight's card turned to its rules (the "?"): B / Escape turns it back first; it opened PAUSE over the
+    // card, which was still up after RESUME (QA DEMO-13).
+    if (this.mode === 'next' && this.pinned > 0 && this.flipBtn) {
+      this.flipBtn.onClick();
+      this.sounds.click();
+      return true;
+    }
     if (this.mode !== 'encounter' || !this.rulesOpen) return false;
     this.rulesOpen = false;
     this.sounds.click();

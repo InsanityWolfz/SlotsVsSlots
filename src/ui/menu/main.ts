@@ -1,6 +1,7 @@
 import { desktop, DESKTOP } from '../../build';
 import { CABINETS, CABINET_ORDER, type CabinetId } from '../../core/cabinets';
 import { levelOf } from '../../core/meta';
+import { demo, openStore, STORE_URL, wishlistLabel } from '../../demo';
 import { shownTitle } from '../../core/profile';
 import { COLORS, H, W } from '../../present/layout';
 import { artId, drawPortrait, drawSprite, hasSprite, type SpriteId } from '../../render/sprites';
@@ -94,6 +95,12 @@ export class MainScreen implements MenuScreen {
     m.guardSaved(tut);
     m.icons.set(m.btn('PROFILE', PX, y + 64, 330, 54, () => m.showProgress(), T.head), 'iconCollection');
     m.icons.set(m.btn('HISCORES', PX, y + 128, 330, 54, () => m.showHiscores(), T.head), 'iconHiscores');
+    // The demo: WISHLIST between runs, where the urge rises too, not only on the run-over screens (QA DEMO-04). Greyed,
+    // COMING SOON TO STEAM, until the store page exists.
+    if (demo().on) {
+      const wish = m.btn(wishlistLabel(), PX, y + 190, 330, 46, openStore, T.body);
+      wish.enabled = STORE_URL !== null;
+    }
     // SETTINGS: a quiet gear in the corner (bottom right: the pad's first press lands on the red button, not here).
     this.gear = m.btn('', W - 44, H - 40, 52, 52, () => m.showSettings(), T.body, { quiet: true });
     // COPY LAST RUN: the finished run's text, for a balance check in a chat (it survives a refresh).

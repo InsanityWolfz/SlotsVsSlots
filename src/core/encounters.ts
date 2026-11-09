@@ -295,8 +295,9 @@ const CLAW_MACHINE: EncounterDef = {
     const hold = Math.min(1, prize.hold + prize.step * misses[i]);
     const roll = rng.next();
     const held = roll < hold;
-    // The last go's miss has nothing to come closer for.
-    const last = (run.encounterPlays ?? 0) + 1 >= CLAW.tries + extraPlays(run);
+    // The last go's miss has nothing to come closer for: out of goes, or out of chips for another (QA DEMO-18: a broke
+    // player's last go said IT MOVED CLOSER).
+    const last = (run.encounterPlays ?? 0) + 1 >= CLAW.tries + extraPlays(run) || run.player.chips < atStakes(run, CLAW.price);
     let text = last ? 'IT SLIPPED' : 'IT MOVED CLOSER';
     if (held) {
       const chips = (c: number) => ((run.player.chips += c), `+${c} CHIPS`);

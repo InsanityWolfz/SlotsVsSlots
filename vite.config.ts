@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { storeIdProblem } from './src/storeId.ts';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
 let commit = '';
@@ -15,8 +16,11 @@ const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inl
 let mode = '';
 const steamCsp = {
   name: 'steam-csp',
-  configResolved(c: { mode: string }) {
+  configResolved(c: { mode: string; command: string; env: Record<string, string | undefined> }) {
     mode = c.mode;
+    // The Steam demo can't build without its WISHLIST target (the web demo can: it's for playtests).
+    const problem = c.command === 'build' ? storeIdProblem(c.mode, c.env.VITE_STORE_APP_ID ?? process.env.VITE_STORE_APP_ID) : null;
+    if (problem) throw new Error(problem);
   },
   transformIndexHtml(html: string) {
     // (steam and steam-demo: the Steam demo is a desktop build too.)

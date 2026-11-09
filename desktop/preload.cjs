@@ -21,5 +21,6 @@ if (info) {
     personaName: () => info.name,
     steamId: () => info.id,
     unlock: (id) => ipcRenderer.send('steam:unlock', id),
+    openStore: (appId) => ipcRenderer.send('steam:openStore', appId),
   });
 }

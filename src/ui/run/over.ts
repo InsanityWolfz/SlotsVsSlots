@@ -11,7 +11,7 @@ import { artId, drawSprite, hasSprite, type SpriteId } from '../../render/sprite
 import { drawText, fmtNum, textWidth } from '../../render/text';
 import { runSummary } from '../../core/runLog';
 import { VERSION } from '../../build';
-import { demo, openStore } from '../../demo';
+import { demo, openStore, STORE_URL, wishlistLabel } from '../../demo';
 import { drawDemoCleared } from './demoCleared';
 import { CountUp, drawCard, drawChip, drawMarquee, drawPanel, drawTitle, drawWell, KIT, T } from '../kit';
 import { heroSprite } from '../menus';
@@ -73,6 +73,7 @@ export abstract class OverScreen extends ShopScreen {
     this.overScore = new CountUp(0, 1.2);
     this.scoreLanded = -1;
     this.overSkipHit = this.hit(W / 2, H / 2, W, H, () => this.endReveal());
+    this.salesAt = -1;
     this.sounds.stingerMedium();
     void this.ui.wait(BEAT.score).then(() => this.mode === 'over' && this.overScore.set(this.scoreOf(run)));
     void this.ui.wait(BEAT.buttons).then(() => this.mode === 'over' && this.overSkipHit && this.endReveal());
@@ -84,8 +85,16 @@ export abstract class OverScreen extends ShopScreen {
     const menu = this.minorBtn('MENU', 100, 44, 140, 48, () => this.cb.onMenu());
     menu.textScale = T.body;
     const log = this.minorBtn('RUN LOG', W / 2 - 330, 650, 220, 52, () => this.openLog(true));
-    if (run.won) return [menu, log, this.btn('WISHLIST ON STEAM', W / 2, 650, 400, 60, openStore), this.minorBtn('PLAY AGAIN', W / 2 + 330, 650, 220, 52, () => this.cb.onNewRun())];
-    return [menu, log, this.btn('NEW RUN', W / 2, 650, 300, 60, () => this.cb.onNewRun()), this.minorBtn('WISHLIST ON STEAM', W / 2 + 350, 650, 300, 52, openStore)];
+    // Until the store page exists the button says COMING SOON TO STEAM and is greyed: no dead link (QA DEMO-01).
+    const store = STORE_URL !== null;
+    if (run.won) {
+      const wish = this.btn(wishlistLabel(), W / 2, 650, 400, 60, openStore);
+      wish.enabled = store;
+      return [menu, log, wish, this.minorBtn('PLAY AGAIN', W / 2 + 330, 650, 220, 52, () => this.cb.onNewRun())];
+    }
+    const wish = this.minorBtn(wishlistLabel(), W / 2 + 350, 650, 300, 52, openStore);
+    wish.enabled = store;
+    return [menu, log, this.btn('NEW RUN', W / 2, 650, 300, 60, () => this.cb.onNewRun()), wish];
   }
 
   /** The reveal's end: everything shown, the buttons pop in, then THE RESULTS card (XP, unlocks) if the run earned any. */
@@ -170,7 +179,10 @@ export abstract class OverScreen extends ShopScreen {
       this.overScore.update(this.frameDtOver());
       if (t > B.score + 0.05 && this.overScore.done && this.scoreLanded < 0) this.scoreLanded = performance.now() / 1000;
       const since = this.scoreLanded < 0 ? 9 : performance.now() / 1000 - this.scoreLanded;
-      drawDemoCleared(ctx, { run, t, time, reduceMotion: this.reduceMotion, score: this.overScore.shown, punch: since < 0.25 && !this.reduceMotion ? 1 + 0.25 * (1 - since / 0.25) : 1 });
+      // THE RESULTS card (XP, a level, trophies) comes first; the IN THE FULL GAME panel plays in once it's closed.
+      const waits = this.resultsWorth() && this.salesAt < 0;
+      const salesT = waits ? 0 : this.salesAt < 0 ? t : performance.now() / 1000 - this.salesAt + 1.2;
+      drawDemoCleared(ctx, { run, t, time, reduceMotion: this.reduceMotion, score: this.overScore.shown, punch: since < 0.25 && !this.reduceMotion ? 1 + 0.25 * (1 - since / 0.25) : 1, salesT });
       this.drawOverFoot(ctx, t, time);
       return;
     }
@@ -302,7 +314,7 @@ export abstract class OverScreen extends ShopScreen {
     const h = 548;
     drawPanel(ctx, x, y, w, h, { title: 'RUN LOG' });
     const parts = scoreParts(run).sort((a, b) => b[1] - a[1]);
-    const scoreLine = `SCORE ${fmtNum(runScoreOf(run))} = ${parts.slice(0, 4).map(([k, n]) => `${k} ${fmtNum(n)}`).join(' + ')}${parts.length > 4 ? ' + MORE' : ''}${run.stake ? `, X${1 + SCORE.stakeStep * run.stake}` : ''}`;
+    const scoreLine = `SCORE ${fmtNum(runScoreOf(run))} = ${parts.slice(0, 4).map(([k, n]) => `${fmtNum(n)} FOR ${k}`).join(' + ')}${parts.length > 4 ? ' + MORE' : ''}${run.stake ? `, X${1 + SCORE.stakeStep * run.stake}` : ''}`;
     drawText(ctx, scoreLine, x + w / 2, y + 36, T.small, KIT.title);
     const cols = { fight: x + 28, spins: x + 420, hp: x + 530, pick: x + 640 };
     const hy = y + 66;
@@ -343,10 +355,16 @@ export abstract class OverScreen extends ShopScreen {
   setMeta(g: MetaGain): void {
     this.meta = g;
   }
+  /** When THE RESULTS card was closed (the demo's sales panel plays in then); -1: not yet. */
+  protected salesAt = -1;
+  /** The run earned something THE RESULTS card shows. */
+  protected resultsWorth(): boolean {
+    const g = this.meta;
+    return !!g && !!(g.xp > 0 || g.achievements.length || g.titles.length || g.trims.length || this.unlockedNow.length);
+  }
   protected openResults(): void {
     const g = this.meta;
-    const worth = g && (g.xp > 0 || g.achievements.length || g.titles.length || g.trims.length || this.unlockedNow.length);
-    if (!g || !worth) {
+    if (!g || !this.resultsWorth()) {
       this.results = null;
       return;
     }
@@ -356,6 +374,7 @@ export abstract class OverScreen extends ShopScreen {
       if (!r.done) return this.finishResults(r);
       this.results = null;
       this.resultsHit = null;
+      this.salesAt = performance.now() / 1000;
     });
     // The bar fills over ~1.6 s (a click skips it); each level crossed pops a banner.
     r.fill = this.ui

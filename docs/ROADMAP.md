@@ -204,8 +204,13 @@ whether it has the tension the user remembers.
   other three Slot Machines and the stakes above WHITE shown locked, IN THE FULL GAME; the tutorial stays; no ENDLESS,
   no unlocks, no Steam achievements; its own saves (`demo.slotvslot.*` keys). `npm run build:demo` (web, `dist-demo/`)
   and `npm run build:demo:steam` (desktop, `dist/`). The deploy puts the web demo at
-  https://insanitywolfz.github.io/SlotsVsSlots/demo/ for outside playtesters. Set `STORE_URL` in `src/demo.ts` once the
-  store page has its app id. With the flag off the game is unchanged (seeded sim identical). Sales pass (2026-11-07):
+  https://insanitywolfz.github.io/SlotsVsSlots/demo/ for outside playtesters. Once the store page has its app id, build with
+  `VITE_STORE_APP_ID=<id>` (`src/storeId.ts`); until then every WISHLIST button reads COMING SOON TO STEAM, greyed, and
+  `build:demo:steam` refuses to build (QA DEMO-01). Demo QA fixes (2026-11-09): WISHLIST on the demo's main menu and on a
+  full-game machine's button; in the desktop build it opens Steam's overlay store page; the tutorial run starts with its
+  machine's first offered relic (it had none: 22% vs 40% demo clears for a newcomer-like bot); a fresh profile's NEW RUN
+  starts the tutorial; RESULTS shows before DEMO CLEARED's IN THE FULL GAME panel, which adds 2 MORE ACTS AND 55 RELICS;
+  trophies the demo can't give say FULL GAME. With the flag off the game is unchanged (seeded sim identical). Sales pass (2026-11-07):
   the machine select shows the other three Slot Machines for real, dimmed, under one IN THE FULL GAME tag (their pitch
   on the stage, IN THE FULL GAME in place of PLAY), and DEMO CLEARED is a sales page: the result, then IN THE FULL GAME
   with the three Slot Machines and three bosses the demo lacks (art and one line from their rules) and the stakes and

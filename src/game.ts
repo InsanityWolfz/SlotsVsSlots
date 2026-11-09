@@ -169,7 +169,9 @@ export class Game {
     // Steam: re-grant everything already earned (players who started before the Steam build get credit).
     for (const id of Object.keys(this.profile.achievements)) steamUnlock(id);
     this.menus = new Menus(this.ui, this.sounds, () => this.profile, () => this.unlockedCabinets(), {
-      onNewRun: () => this.chooseCabinet(),
+      // A fresh profile's NEW RUN (the red button, the one strangers press) starts the tutorial (QA DEMO-03).
+      // (Only a true first timer: a player with runs behind them who never opened TUTORIAL goes straight to the pick.)
+      onNewRun: () => (this.prefs.tutorialDone || this.profile.stats.runs > 0 ? this.chooseCabinet() : flow.startTutorial(this)),
 
       onTutorial: () => flow.startTutorial(this),
       setTitle: (title) => {

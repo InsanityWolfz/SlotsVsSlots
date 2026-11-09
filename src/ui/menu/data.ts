@@ -4,6 +4,7 @@ import { CHARM_SYMBOLS, charmName, charmRuleText } from '../../core/charms';
 import { actsOf, ARCHETYPES, BOSS, DEALER, GATEKEEPER, OWNER, REPO_MAN, TURBO, WHEEL, type Archetype } from '../../core/enemies';
 import { ELITE_ONLY, LEGENDARY, RELICS, RELIC_TIER } from '../../core/relics';
 import { STAKES } from '../../core/stakes';
+import { demo, IN_FULL_GAME } from '../../demo';
 import { ENH_SPRITE } from '../../present/reel';
 import { artId, hasSprite, type SpriteId } from '../../render/sprites';
 
@@ -62,6 +63,8 @@ export function relicWhere(r: RelicId): string {
   if (LEGENDARY.has(r)) return "A BOSS'S PRIZE OR THE CASHIER";
   if (ELITE_ONLY.has(r)) return "ONLY IN AN ELITE'S SPOILS";
   const m = RELICS[r].machine;
+  // The demo: another machine's relics can't drop (QA DEMO-10).
+  if (m && demo().on && !(demo().machines ?? []).includes(m)) return `${IN_FULL_GAME}: ${CABINETS[m].name} ONLY`;
   return m ? `${CABINETS[m].name} ONLY. ELITES, THE CASHIER` : 'ELITES, ENCOUNTERS, THE CASHIER';
 }
 
@@ -127,6 +130,8 @@ const ICON: Record<string, PlaqueIcon> = {
   collect_all: { sprite: 'relicTrophy' },
 };
 export function plaqueIcon(id: string): PlaqueIcon {
+  // The demo's run clears at THE HOUSE, so its NO MORE BETS shows the boss you beat, not THE WHEEL (QA DEMO-11).
+  if (id === 'clear' && demo().on) return { sprite: 'enemyBoss', portrait: true };
   if (HERO[id]) return { sprite: artId(CABINETS[HERO[id]].heroSprite), portrait: true };
   const st = /^stake_(\d)$/.exec(id);
   if (st) return { stake: Math.min(STAKES.length - 1, +st[1]) };

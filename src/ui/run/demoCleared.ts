@@ -8,6 +8,7 @@ import { drawText, fmtNum } from '../../render/text';
 import { demo, IN_FULL_GAME } from '../../demo';
 import { drawPanel, drawTitle, drawWell, KIT, T } from '../kit';
 import { heroSprite } from '../menus';
+import { RELIC_ORDER } from '../menu/data';
 import { bigPortrait, spotlight, stakeDisc, wrap } from './shared';
 
 /**
@@ -31,6 +32,9 @@ const BOSSES: { name: string; portrait: string; where: string; hook: string }[] 
   { name: OWNER.name, portrait: OWNER.portrait, where: 'ENDLESS: LOOP 5 BOSS', hook: 'HE CHEATS EVERY 2 TURNS' },
 ];
 
+/** The size of the rest: the demo is act 1 of 3 (act 3 from the RED stake) and a share of the relics (QA DEMO-16). */
+export const SIZE_LINE = `2 MORE ACTS AND ${RELIC_ORDER.length} RELICS`;
+
 /** The stakes and ENDLESS, as one line. */
 export const STAKES_LINE = `${STAKES.length} STAKES, ${STAKES[0].name} TO ${STAKES[STAKES.length - 1].name}. ENDLESS: PLAY ON UNTIL YOU BUST`;
 
@@ -41,7 +45,7 @@ export function fullGameMachines() {
 }
 
 /** The page's layout: the result row, the strip panel, its two rows of cells, the stakes line. */
-const L = { resultY: 112, strip: { x: 70, y: 244, w: W - 140, h: 318 }, rowY: [268, 382], well: 96, stakesY: 524 };
+const L = { resultY: 112, strip: { x: 70, y: 244, w: W - 140, h: 318 }, rowY: [268, 382], well: 96, stakesY: 510, sizeY: 540 };
 /** A cell's column: its art well, then its words; a hook wraps to two lines this wide (tests hold every hook to it). */
 const COL_W = L.strip.w / 3;
 const TEXT_X = 20 + L.well + 16;
@@ -59,6 +63,9 @@ export interface ClearedView {
   /** The score's count-up as shown, and its landing punch (1: none). */
   score: number;
   punch: number;
+  /** Seconds into the IN THE FULL GAME panel's reveal, on the same clock as t (it waits for THE RESULTS card: the sales
+   * page is the last thing shown, not the thing a card covers, QA DEMO-15). Omitted: t. */
+  salesT?: number;
 }
 
 export function drawDemoCleared(ctx: CanvasRenderingContext2D, v: ClearedView): void {
@@ -92,7 +99,12 @@ export function drawDemoCleared(ctx: CanvasRenderingContext2D, v: ClearedView): 
   ctx.restore();
 
   // 2. IN THE FULL GAME: one panel, the machines on top, the bosses under them, the stakes and ENDLESS at its foot.
-  const k2 = fade(1.2, 0.25);
+  const ts = v.salesT ?? t;
+  const fadeS = (from: number, dur = 0.3) => {
+    const k = Math.max(0, Math.min(1, (ts - from) / dur));
+    return 1 - (1 - k) * (1 - k) * (1 - k);
+  };
+  const k2 = fadeS(1.2, 0.25);
   if (k2 <= 0) return;
   const S = L.strip;
   ctx.save();
@@ -101,7 +113,7 @@ export function drawDemoCleared(ctx: CanvasRenderingContext2D, v: ClearedView): 
   ctx.restore();
   const colW = COL_W;
   const cell = (i: number, row: number, from: number, art: (cx: number, cy: number) => void, name: string, sub: string, hook: string) => {
-    const k = fade(from, 0.22);
+    const k = fadeS(from, 0.22);
     if (k <= 0) return;
     const cx = Math.round(S.x + i * colW + 20);
     const cy = L.rowY[row] + (v.reduceMotion ? 0 : Math.round((1 - k) * 10));
@@ -123,7 +135,7 @@ export function drawDemoCleared(ctx: CanvasRenderingContext2D, v: ClearedView): 
   });
   BOSSES.forEach((b, i) => cell(i, 1, 1.6 + i * 0.08, (x, y) => bigPortrait(ctx, b.portrait as SpriteId, x, y + 2, 2.75), b.name, b.where, b.hook));
   // The stakes, as their chips, and ENDLESS.
-  const k3 = fade(1.9, 0.25);
+  const k3 = fadeS(1.9, 0.25);
   if (k3 <= 0) return;
   ctx.save();
   ctx.globalAlpha *= k3;
@@ -137,5 +149,7 @@ export function drawDemoCleared(ctx: CanvasRenderingContext2D, v: ClearedView): 
     dx += 22;
   }
   drawText(ctx, STAKES_LINE, dx + 3, L.stakesY + 1, T.body, KIT.text, { align: 'left' });
+  // How much more there is: two more acts, every relic.
+  drawText(ctx, SIZE_LINE, W / 2, L.sizeY, T.body, '#7dff7a');
   ctx.restore();
 }

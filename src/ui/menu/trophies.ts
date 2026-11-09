@@ -1,4 +1,5 @@
-import { ACHIEVEMENTS, ACHIEVEMENT_XP, type AchievementDef } from '../../core/meta';
+import { ACHIEVEMENTS, ACHIEVEMENT_XP, FULL_GAME_ONLY, type AchievementDef } from '../../core/meta';
+import { demo, IN_FULL_GAME } from '../../demo';
 import { foundCount } from '../../core/profile';
 import { STAKES } from '../../core/stakes';
 import { COLORS, W } from '../../present/layout';
@@ -60,9 +61,14 @@ export class TrophiesTab implements TabBody {
     });
   }
 
+  /** In the demo, one it can't give (and you don't have): tagged IN THE FULL GAME, no progress bar. */
+  private fullGameOnly(a: AchievementDef): boolean {
+    return demo().on && FULL_GAME_ONLY.has(a.id) && !this.m.profile().achievements[a.id];
+  }
+
   private progress(a: AchievementDef): [number, number] | null {
     const p = this.m.profile();
-    if (!a.progress) return null;
+    if (!a.progress || this.fullGameOnly(a)) return null;
     return a.progress({ stats: p.stats, have: p.achievements, found: foundCount(p), collection: collectionTotal() });
   }
 
@@ -120,8 +126,11 @@ export class TrophiesTab implements TabBody {
     // The name, two lines at most.
     const lines = wrap(secret ? '???' : a.name, 15).slice(0, 2);
     const prog = !have ? this.progress(a) : null;
-    const ny = prog ? y + 92 : y + 98;
+    const full = this.fullGameOnly(a);
+    const ny = full ? y + 86 : prog ? y + 92 : y + 98;
     lines.forEach((l, k) => drawText(ctx, l, b.x, ny + (k - (lines.length - 1) / 2) * 15 - (prog && lines.length > 1 ? 4 : 0), T.small, have ? KIT.title : COLORS.textDim));
+    // (FULL GAME on the plaque: IN THE FULL GAME ran past its edges; the card beside it says it in full.)
+    if (full) drawText(ctx, 'FULL GAME', b.x, y + PH - 11, T.small, KIT.title);
     if (prog) {
       const bw = PW - 28;
       const by = y + PH - 16;
@@ -156,6 +165,6 @@ export class TrophiesTab implements TabBody {
       drawText(ctx, `${Math.min(prog[0], prog[1])} OF ${prog[1]}`, x + w / 2, yy + 6, T.body, COLORS.energy);
       yy += 28;
     }
-    drawText(ctx, have ? `EARNED. +${ACHIEVEMENT_XP} XP` : `WORTH ${ACHIEVEMENT_XP} XP`, x + w / 2, yy + 8, T.small, have ? KIT.title : COLORS.textDim);
+    drawText(ctx, have ? `EARNED. +${ACHIEVEMENT_XP} XP` : this.fullGameOnly(a) ? IN_FULL_GAME : `WORTH ${ACHIEVEMENT_XP} XP`, x + w / 2, yy + 8, T.small, have || this.fullGameOnly(a) ? KIT.title : COLORS.textDim);
   }
 }

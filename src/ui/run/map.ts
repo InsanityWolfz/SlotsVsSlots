@@ -1,7 +1,7 @@
 import { type Stop } from '../../core/enemies';
 import { needsRoute, actStops } from '../../core/run';
 import { ABILITY_UI, abilityName } from '../../present/hud';
-import { COLORS, W } from '../../present/layout';
+import { COLORS, H, W } from '../../present/layout';
 import { drawPortrait, drawSprite, type SpriteId } from '../../render/sprites';
 import { drawText, textWidth } from '../../render/text';
 import { drawChip, drawPanel, KIT, T } from '../kit';
@@ -144,7 +144,8 @@ export abstract class MapScreens extends CabinetScreen {
     const w = Math.round(Math.max(textWidth(name, T.body), ab ? textWidth(label, T.small) + 60 : 0, sub ? textWidth(sub, T.small) : 0) + 32);
     const h = ab || sub ? 66 : 40;
     const x = Math.round(Math.max(BUILD.x + BUILD.w + 12, Math.min(W - w - 8, t.x - w / 2)));
-    const y = Math.round(t.y + 12);
+    // Under the stops' own labels (CASHIER, GAMBLE): at +12 it covered the next stop's, which read HIER (QA DEMO-14).
+    const y = Math.round(Math.min(H - h - 8, t.y + 24));
     drawPanel(ctx, x, y, w, h, { frame: t.e?.isBoss ? '#e04a3a' : t.e?.elite ? '#ff9a3a' : KIT.frame });
     drawText(ctx, name, x + 16, y + 20, T.body, t.e?.isBoss ? '#ff8a7a' : t.e ? COLORS.slime : KIT.title, { align: 'left' });
     if (ab) drawChip(ctx, label, x + 16 + (textWidth(label, T.small) + 40) / 2, y + 46, { scale: T.small, color: '#ffb060', icon: (ix, iy) => drawSprite(ctx, ab.icon, ix, iy, 2), iconW: 20 });

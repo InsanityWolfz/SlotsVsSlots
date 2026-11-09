@@ -141,6 +141,16 @@ ipcMain.on('desktop:saveRemove', (e, key) => {
 ipcMain.on('steam:info', (e) => {
   e.returnValue = steam ? { name: steam.localplayer.getName(), id: String(steam.localplayer.getSteamId().steamId64) } : null;
 });
+// WISHLIST ON STEAM: the overlay's store page (the player stays in Steam); the browser if the overlay can't.
+ipcMain.on('steam:openStore', (_e, appId) => {
+  const id = Number(appId);
+  if (!Number.isInteger(id) || id <= 0) return;
+  try {
+    steam.overlay.activateToStore(id, 0);
+  } catch {
+    require('electron').shell.openExternal(`https://store.steampowered.com/app/${id}`);
+  }
+});
 ipcMain.on('steam:unlock', (_e, id) => {
   try {
     if (steam && !steam.achievement.isActivated(id)) steam.achievement.activate(id);

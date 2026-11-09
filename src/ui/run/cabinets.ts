@@ -8,7 +8,7 @@ import { drawCard, drawChip, drawPanel, drawTitle, drawWell, KIT, T } from '../k
 import { heroSprite } from '../menus';
 import { wrap, stakeDisc, spotlight, bigPortrait, type Btn } from './shared';
 import { BuildPanel } from './build';
-import { demo, IN_FULL_GAME } from '../../demo';
+import { demo, IN_FULL_GAME, openStore, STORE_URL } from '../../demo';
 
 /** CHOOSE YOUR MACHINE: the stage (the selected machine big), the row of machines, the stake chips. */
 const STAGE = { x: 150, y: 88, w: 980, h: 316 };
@@ -62,7 +62,8 @@ export abstract class CabinetScreen extends BuildPanel {
     const next = this.minorBtn('', STAGE.x + STAGE.w + 44, STAGE.y + STAGE.h / 2, 52, 96, () => this.stepCabinet(1));
     prev.icon = (c) => drawSprite(c, 'arrowRight', 0, 0, 3, { flipX: true });
     next.icon = (c) => drawSprite(c, 'arrowRight', 0, 0, 3);
-    this.playBtn = this.btn('PLAY', STAGE.x + STAGE.w - 132, STAGE.y + STAGE.h - 46, 220, 56, () => this.startCabinet());
+    // (In the demo, on a full-game machine, the same button is WISHLIST: QA DEMO-04.)
+    this.playBtn = this.btn('PLAY', STAGE.x + STAGE.w - 132, STAGE.y + STAGE.h - 46, 220, 56, () => (this.cabPreview() ? openStore() : this.startCabinet()));
     this.buttons = [...this.stakeHits, menu, prev, next, this.playBtn];
     // The row of machines: a click shows one on the stage; a click on the one already there plays it.
     const n = CABINET_ORDER.length;
@@ -93,10 +94,12 @@ export abstract class CabinetScreen extends BuildPanel {
 
   protected syncPlay(): void {
     if (!this.playBtn) return;
-    this.playBtn.enabled = this.cabPlayable();
-    // (In the demo the full game's machines say so on a quiet button, not a greyed PLAY.)
+    // In the demo the full game's machines say so on a quiet button, not a greyed PLAY. With a store page it's
+    // WISHLIST and opens it (the stage's IN THE FULL GAME tag already says why it can't be played: QA DEMO-04).
     const preview = this.cabPreview();
-    this.playBtn.label = preview ? IN_FULL_GAME : 'PLAY';
+    const wish = preview && STORE_URL !== null;
+    this.playBtn.enabled = this.cabPlayable() || wish;
+    this.playBtn.label = wish ? 'WISHLIST' : preview ? IN_FULL_GAME : 'PLAY';
     this.playBtn.quietStyle = preview;
   }
 

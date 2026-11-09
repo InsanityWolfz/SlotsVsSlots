@@ -232,7 +232,9 @@ export abstract class CardGames extends TableScreens {
       drawPlayingCard(ctx, ax, cy, 0, 1);
       drawPlayingCard(ctx, bx, cy, 0, 1);
       this.side(ctx, 'YOUR BET');
-      this.numberWell(ctx, '', `${this.rlBet}`, { sub: `MAX ${hiloMax(run)}` });
+      // (Broke: the well says why DEAL is off, as TWENTY-ONE's does; it read 1 over MAX 0: QA DEMO-08.)
+      const broke = hiloMax(run) < 1;
+      this.numberWell(ctx, '', `${broke ? 0 : this.rlBet}`, { sub: broke ? 'NO CHIPS TO BET' : `MAX ${hiloMax(run)}` });
       if (m) this.tableResult(ctx, m);
       return;
     }

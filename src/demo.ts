@@ -1,4 +1,5 @@
 import type { CabinetId } from './core/cabinets';
+import { parseStoreAppId, storeUrl } from './storeId';
 
 /**
  * THE DEMO (ROADMAP phase 4: "an act 1 demo build"). One codebase: `vite build --mode demo` (web) or
@@ -8,8 +9,12 @@ import type { CabinetId } from './core/cabinets';
  */
 export const DEMO: boolean = !!(import.meta as { env?: Record<string, string | undefined> }).env?.VITE_DEMO;
 
-/** The full game's store page (the WISHLIST button). Set the real app id once Steamworks gives one. */
-export const STORE_URL = 'https://store.steampowered.com/app/APPID';
+/** The full game's Steam app id (VITE_STORE_APP_ID, src/storeId.ts), or null until Steamworks gives one. */
+export const STORE_APP_ID: number | null = parseStoreAppId((import.meta as { env?: Record<string, string | undefined> }).env?.VITE_STORE_APP_ID);
+/** The full game's store page (the WISHLIST buttons), or null while there's none: no dead link (QA DEMO-01). */
+export const STORE_URL: string | null = STORE_APP_ID === null ? null : storeUrl(STORE_APP_ID);
+/** The WISHLIST buttons' words: until the page exists they say so, and do nothing. */
+export const wishlistLabel = (url: string | null = STORE_URL): string => (url ? 'WISHLIST ON STEAM' : 'COMING SOON TO STEAM');
 
 /** Locked content in the demo says this instead of its unlock condition. */
 export const IN_FULL_GAME = 'IN THE FULL GAME';
@@ -55,10 +60,14 @@ export function demoKey(key: string, on: boolean = DEMO): string {
   return on && key.startsWith('slotvslot.') ? `demo.${key}` : key;
 }
 
-/** WISHLIST ON STEAM. In a browser a new tab; in the desktop wrapper its window-open handler hands it to the system
- * browser (desktop/main.cjs). */
+/** WISHLIST ON STEAM. Inside Steam (the desktop wrapper with Steam running) the overlay's store page, so the player
+ * stays in Steam (a Deck in Game Mode has no browser to speak of: QA DEMO-05); otherwise a new browser tab. Nothing
+ * while the store page has no id. */
 export function openStore(): void {
+  if (STORE_APP_ID === null || STORE_URL === null) return;
   try {
+    const steam = (globalThis as { steam?: { openStore?: (id: number) => void } }).steam;
+    if (steam?.openStore) return steam.openStore(STORE_APP_ID);
     window.open(STORE_URL, '_blank', 'noopener');
   } catch {
     /* blocked: nothing to do */

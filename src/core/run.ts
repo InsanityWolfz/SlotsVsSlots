@@ -337,7 +337,16 @@ export function takeStart(run: RunState, relic: RelicId): void {
   run.pendingStart = null;
 }
 
-export const cloneLevels = (l: Levels): Levels => ({ sym: { ...l.sym }, charm: { ...l.charm } });
+/** The tutorial run's starting relic: it skips the pick (callouts first, choices later), so it gets the first one offered
+ * (your machine's own) instead of none. Without one, the run most new players start on cleared the demo 18 points less
+ * often than a NEW RUN (QA DEMO-02, sim). */
+export function tutorialStart(run: RunState): void {
+  const first = run.pendingStart?.[0];
+  if (first) takeStart(run, first);
+  else run.pendingStart = null;
+}
+
+export const cloneLevels =(l: Levels): Levels => ({ sym: { ...l.sym }, charm: { ...l.charm } });
 
 
 export type RelicTier = 'common' | 'uncommon' | 'legendary';
@@ -583,7 +592,7 @@ export function scoreParts(run: RunState): [string, number][] {
     ['FIGHTS', (won.length - bosses - elites) * SCORE.fight],
     ['ELITES', elites * SCORE.elite],
     ['BOSSES', bosses * SCORE.boss],
-    ['CHIPS EARNED', (run.chipsEarned ?? 0) * SCORE.chip],
+    ['CHIPS', (run.chipsEarned ?? 0) * SCORE.chip],
     ['LEVELS', levelsGained(run) * SCORE.level],
     ['RELICS', (relics - legends) * SCORE.relic + legends * SCORE.legendary],
     ['CHARMS', charms * SCORE.charm],

@@ -136,6 +136,10 @@ const stakeOf = (lvl: number): AchievementDef => ({
   check: (c) => c.won && c.stake >= lvl && !c.daily,
 });
 
+/** The achievements the act 1 demo can't give (KNIGHT and TESLA at WHITE, no act 2 or 3, no ENDLESS, part of the
+ * collection): its TROPHIES tab marks them IN THE FULL GAME, a tease, not a dead end (QA DEMO-10). */
+export const FULL_GAME_ONLY: ReadonlySet<string> = new Set(['dealer', 'clear_jukebox', 'clear_joker', 'clear_midas', 'all_machines', 'stake_1', 'stake_2', 'stake_3', 'stake_4', 'stake_5', 'endless_1', 'endless_3', 'turbo', 'collect_all']);
+
 export const ACHIEVEMENTS: AchievementDef[] = [
   // (A won fight, not a score: the starting relic alone scores 100, so a run lost in fight 1 earned it: QA RULES-06.)
   { id: 'first_win', name: 'FIRST BLOOD', text: 'WIN A FIGHT.', check: (c) => c.act > 1 || c.won || (c.fightsWon ?? 0) > 0 },
