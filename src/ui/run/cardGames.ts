@@ -283,8 +283,9 @@ export abstract class CardGames extends TableScreens {
     const py = TABLE.y + 286;
     const k = 0.75;
     const resultY = TABLE.y + TABLE.h - 96;
-    // (Seven cards fit at 64 apart; an eighth, rare, ran over the table's edge: a long hand closes up.)
-    const at = (i: number, n: number) => x0 + i * (n > 7 ? Math.floor(448 / (n - 1)) : 64);
+    // (Seven cards fit at 64 apart, the 7th's edge at the felt's; a longer hand, rare, closes up into the same span. It
+    // divided 448 by n - 1, which is still 64 at 8 cards, so an 8th ran over the table's edge: card QA 2026-11-09.)
+    const at = (i: number, n: number) => x0 + i * (n > 7 ? Math.floor((6 * 64) / (n - 1)) : 64);
     const label = (text: string, y: number, color: string) => drawText(ctx, text, x0 - 62, y, T.body, color, { align: 'right' });
     if (!inPlay) {
       // A finished hand stays face up beside its word (playtest 2026-11-01: "DEALER BUSTS!" over two face-down cards).
