@@ -9,6 +9,7 @@ import { CONTENT_1107 } from '../core/relics';
 import { COLORS } from '../present/layout';
 import type { SpriteId } from '../render/spriteData';
 import { drawText, textWidth, type TextOpts } from '../render/text';
+import { T } from './kit';
 
 export interface Keyword {
   word: string;
@@ -96,14 +97,14 @@ export function drawRich(ctx: CanvasRenderingContext2D, text: string, x: number,
 export function drawKeywordBoxes(ctx: CanvasRenderingContext2D, keys: Keyword[], x: number, y: number, w: number): number {
   let yy = y;
   for (const k of keys) {
-    const lines = wrapWords(k.text, Math.floor((w - 16) / (textWidth('MM', 1.5) - textWidth('M', 1.5))));
-    const h = 26 + lines.length * 14;
+    const lines = wrapWords(k.text, Math.floor((w - 16) / (textWidth('MM', T.small) - textWidth('M', T.small))));
+    const h = 26 + lines.length * 15;
     ctx.fillStyle = COLORS.outline;
     ctx.fillRect(x - 2, yy - 2, w + 4, h + 4);
     ctx.fillStyle = COLORS.panel;
     ctx.fillRect(x, yy, w, h);
     drawText(ctx, k.word, x + 8, yy + 12, 2, k.color, { align: 'left' });
-    lines.forEach((l, i) => drawText(ctx, l, x + 8, yy + 30 + i * 14, 1.5, COLORS.text, { align: 'left' }));
+    lines.forEach((l, i) => drawText(ctx, l, x + 8, yy + 30 + i * 15, T.small, COLORS.text, { align: 'left' }));
     yy += h + 6;
   }
   return yy - y;

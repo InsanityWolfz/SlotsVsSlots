@@ -12,6 +12,10 @@ import { abilityName } from './hud';
 import { fmtNum } from '../render/text';
 import { RELICS } from '../core/relics';
 import { T } from '../ui/kit';
+import { FLASH_CAP } from './camera';
+
+/** The shortest real-time gap between two white flashes on one Slot Machine (about 3 a second at most: UI-04). */
+const MACHINE_FLASH_GAP = 0.34;
 import { BANNER_Y, bonusReel, luckyWilds, missedTriple, setTag, winPresentation } from './directorPay';
 import { drop, energyGain, meter, payoff, specialFire, storm, touch } from './directorMeter';
 import { blast, bomb, cleanse, confiscate, defuse, fake, fakeTick, fizzle, fuse, gulp, hex, junk, markCells, markedHit, rake, recover, slime, status, steal, thaw } from './directorTricks';
@@ -357,6 +361,8 @@ export class Director {
     // A callout along a machine's top edge lands where the turn banner (YOUR SPIN / THEIR SPIN) hangs: on a plate it
     // reads over the banner instead of tangling with its letters.
     t.plate = plate || (size <= T.head && y > MACHINE_TOP - 60 && y < MACHINE_TOP + 10);
+    // In (or rising into) the turn banners' band, a pop draws over the banner: BLOCKED!, a strike's -15 (QA UI-01).
+    if (y < MACHINE_TOP + 60) t.z = 31;
     t.punch = 0;
     return this.c
       .tween({ from: 0, to: 1, dur: 0.18, ease: backOut(3), onUpdate: (v) => (t.punch = v) })
@@ -397,10 +403,21 @@ export class Director {
     this.s.fx.remove(b);
   }
 
+  /** A white flash over one Slot Machine (about 18% of the screen). Photosensitivity (QA UI-04: a sword jackpot strobed
+   * it 3 times in 0.17 s, 6-25 Hz with SPEED): its alpha never passes FLASH_CAP (half that with LIGHTNING SOFT), and a
+   * machine flashes at most about 3 times a real second at any speed; a flash asked for sooner is skipped. */
   flashMachine(side: SideId, amount = 1, dur = 0.14): void {
+    if (!this.s.juice.flash) return;
     const m = this.s.machines[side];
-    this.bg(this.c.tween({ from: amount, to: 0, dur, onUpdate: (v) => (m.flash = v) }));
+    const now = this.c.time;
+    // Game time runs SPEED (x boost) times faster than real time: the gap is a third of a real second.
+    const gap = MACHINE_FLASH_GAP * this.c.speed * this.c.boost;
+    if (now - (this.lastFlash[side] ?? -Infinity) < gap) return;
+    this.lastFlash[side] = now;
+    const cap = this.s.juice.softLightning ? FLASH_CAP / 2 : FLASH_CAP;
+    this.bg(this.c.tween({ from: Math.min(cap, amount), to: 0, dur, onUpdate: (v) => (m.flash = v) }));
   }
+  private lastFlash: Partial<Record<SideId, number>> = {};
 
   knockback(side: SideId, px: number): void {
     const m = this.s.machines[side];
@@ -648,7 +665,7 @@ export class Director {
     this.decay(h, 'abilityFlash', 1, 0.6);
     this.shake(4, 0.25);
     m.payline.alpha = 0;
-    this.bg(this.c.tween({ from: 0.8, to: 0, dur: 0.5, onUpdate: (v) => (m.flash = v * 0.5) }));
+    this.flashMachine(e.side, 0.4, 0.5);
     const dealt = e.kind === 'deal' ? this.s.gutter.nextDeal : undefined;
     // THE WHEEL: the ball drops, the wheel on its topper races.
     if (e.kind === 'bets') this.s.gutter.wheelSpeed = 16;

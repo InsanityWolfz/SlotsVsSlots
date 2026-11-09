@@ -22,12 +22,21 @@ export abstract class BuildPanel extends RunScreensBase {
   /** YOUR BUILD: a fixed column on the left of every run screen. Chips (top-left, where the fights show them too), you,
    * your reels as a tall table (a row per symbol and charm), your relics. */
   /** The BUILD pane popped out over a fight: chips and relic icons are drawn live by the fight itself. */
-  drawBuildFor(ctx: CanvasRenderingContext2D, run: RunState): void {
+  drawBuildFor(ctx: CanvasRenderingContext2D, run: RunState, live?: { hp: number; maxHp: number }): void {
     const keep = this.run;
     this.run = run;
+    // Mid-fight the run's HP is from before the fight: the drawer shows the fight's (QA UI-02: 400/400 by a 326 HUD).
+    this.liveHp = live ?? null;
     this.drawBuild(ctx, true);
+    this.liveHp = null;
     this.run = keep;
   }
+  /** The fight's HP while the BUILD drawer is out over it (null: the run's). */
+  private liveHp: { hp: number; maxHp: number } | null = null;
+  /** Where each shown relic's well is (its centre), in panel order: the fight draws its relics there, popping as they
+   * fire, so the drawer lays them out exactly as between fights (QA UI-03). `relicMore` is the +N well's count. */
+  relicSpots: { x: number; y: number }[] = [];
+  relicMore = 0;
 
   protected drawBuild(ctx: CanvasRenderingContext2D, inFight = false): void {
     // A CLAW go in the air: the panel shows the run before it (its chips too: the landing is already taken off).
@@ -136,12 +145,16 @@ export abstract class BuildPanel extends RunScreensBase {
     const cols = 6;
     const slots = cols * Math.max(2, Math.min(3, Math.floor((y + h - 8 - (ry + 14)) / 44)));
     const shownR = relics.length > slots ? relics.slice(0, slots - 1) : relics;
+    this.relicSpots = [];
+    this.relicMore = relics.length - shownR.length;
     for (let i = 0; i < slots; i++) {
       const wx = Math.round(x + 12 + (i % cols) * (SW + gap));
       const wy = ry + 14 + Math.floor(i / cols) * 44;
       drawWell(ctx, wx, wy, SW, 40, '#1e1830');
-      if (inFight) continue;
       const r = shownR[i];
+      if (r) this.relicSpots.push({ x: wx + SW / 2, y: wy + 20 });
+      // In a fight the fight draws the icons in these wells (they pop as they fire); the +N well is the panel's.
+      if (inFight && r) continue;
       if (r) {
         const rx = wx + SW / 2;
         const rcy = wy + 20;
@@ -169,6 +182,7 @@ export abstract class BuildPanel extends RunScreensBase {
    */
   protected shown(): { chips: number; hp: number; maxHp: number } {
     const p = this.run!.player;
+    if (this.liveHp) return { chips: p.chips, hp: this.liveHp.hp, maxHp: this.liveHp.maxHp };
     const landing = this.mode === 'encounter' ? this.chipsLanding : 0;
     return landing ? { chips: p.chips - landing, hp: p.hp, maxHp: p.maxHp } : p;
   }

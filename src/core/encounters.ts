@@ -281,7 +281,7 @@ export const clawGrip = (run: RunState, k: number, misses = clawMisses(run)): st
 };
 const CLAW_MACHINE: EncounterDef = {
   id: 'claw',
-  name: 'CLAW MACHINE',
+  name: 'THE CLAW',
   blurb: '',
   kind: 'game',
   plays: CLAW.tries,

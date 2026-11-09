@@ -103,14 +103,13 @@ export async function potWin(d: Director, e: Ev<'potWin'>): Promise<void> {
 /** Boss phase 2: the House DOUBLES DOWN (the pot doubles). (ALL IN is the Dealer's word only.) */
 export async function phase(d: Director, e: Ev<'phase'>): Promise<void> {
   const g = d.s.gutter;
-  const m = d.s.machines[e.side];
   d.s.sounds.abilityFire();
   d.s.sounds.fanfareJackpot();
   d.hitstop(4);
   d.shake(8, 0.5);
   d.s.camera.chromaPulse(0.8);
   d.s.camera.flashScreen(0.4, '#ff6a5a');
-  d.bg(d.c.tween({ from: 1, to: 0, dur: 0.6, onUpdate: (v) => (m.flash = v * 0.6) }));
+  d.flashMachine(e.side, 0.6, 0.6);
   g.allIn = true;
   d.bg(d.banner('DOUBLE DOWN!', '#ff3a2e', 1.2, 0.5, 'THE POT DOUBLES', BANNER_Y, 4));
   const from = g.pot;

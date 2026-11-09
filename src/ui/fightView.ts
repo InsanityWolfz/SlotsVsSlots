@@ -8,7 +8,8 @@ import { RELICS } from '../core/relics';
 import type { RelicId } from '../core/config';
 import { FLASH_CAP } from '../present/camera';
 import { HUD_W } from '../present/hud';
-import { BEZEL, cellCenter, COLORS, CELL, GUTTER_PANEL_W, GUTTER_PANEL_Y, H, HUD_TOP, MACHINE_CX, MACHINE_H, MACHINE_TOP, MACHINE_W, reelWindow, RELIC_FEED, RELIC_SHOWN, RELIC_X, RELIC_Y, relicSlot, W } from '../present/layout';
+import { BEZEL, cellCenter, COLORS, CELL, GUTTER_PANEL_W, GUTTER_PANEL_Y, H, HUD_TOP, MACHINE_CX, MACHINE_H, MACHINE_TOP, MACHINE_W, reelWindow, RELIC_FEED, RELIC_SHOWN, RELIC_X, relicSlot, W } from '../present/layout';
+import { Banner } from '../present/fx';
 import { CountUp, drawBanner, drawChip, drawPanel, drawTitle, drawWell, KIT, T } from './kit';
 import { drawSprite, spriteSize, type SpriteId, artId } from '../render/sprites';
 import { bossRules } from './bossRules';
@@ -38,6 +39,9 @@ export class FightView {
   /** The turn banner's side, and when it last changed (its drop-in). */
   private bannerSide: 'player' | 'enemy' | null = null;
   private bannerAt = 0;
+  /** The plates and gutter chips' alpha: 0 while a turn banner hangs over them (UI-01), back to 1 after it. */
+  private plateAlpha = 1;
+  private plateT = 0;
 
   /**
    * HOLD (user, 2026-10-29: make it legible): a gold HELD frame on each held reel, and one chip hanging from your
@@ -154,17 +158,36 @@ export class FightView {
   }
 
   /** Your relics in a fight, as the whole grid in the BUILD pane (a relic that fires hops there too). */
+  /** Your relics in the BUILD drawer's wells (the build panel's own layout: QA UI-03), popping as they fire. */
   drawRelics(ctx: CanvasRenderingContext2D): void {
     const relics = this.g.relicList();
+    const spots = this.relicSpots();
     relics.forEach((r, i) => {
-      if (i >= RELIC_SHOWN) return;
-      const { x, y: y0 } = relicSlot(i);
+      const spot = spots[i];
+      if (!spot) return;
       // A relic that just fired pops: it grows, hops up, wiggles and flashes gold.
       const pop = this.g.stage.relicPops[r] ?? 0;
-      const y = y0 - Math.sin(pop * Math.PI) * 8;
+      const y = spot.y - Math.sin(pop * Math.PI) * 8;
       const k = 1 + 0.55 * pop;
-      this.relicBox(ctx, r, x, y, k, pop);
+      if (pop > 0) {
+        ctx.save();
+        ctx.globalAlpha *= pop * 0.8;
+        ctx.shadowColor = COLORS.goldLight;
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = COLORS.goldLight;
+        ctx.fillRect(spot.x - 19 * k, y - 18 * k, 38 * k, 36 * k);
+        ctx.restore();
+      }
+      // The icon at the panel's size (2), as between fights.
+      drawSprite(ctx, RELICS[r as RelicId].sprite as SpriteId, spot.x, y, 2 * k, { rot: Math.sin(pop * Math.PI * 3) * 0.25 * pop, flash: pop * 0.6 });
     });
+  }
+
+  /** The drawer's relic wells (centres), from the build panel as it last drew; the old strip before it has drawn. */
+  private relicSpots(): { x: number; y: number }[] {
+    const spots = this.g.screens.relicSpots;
+    if (spots.length) return spots;
+    return this.g.relicList().slice(0, RELIC_SHOWN).map((_, i) => relicSlot(i));
   }
 
   /** A relic's icon in its frame (k: scale, pop: the gold flash of one that just fired). */
@@ -226,13 +249,15 @@ export class FightView {
   drawRelicTooltip(ctx: CanvasRenderingContext2D): void {
     if (this.g.screens.active || this.g.drawerT < 0.98) return;
     const relics = this.g.relicList();
+    const spots = this.relicSpots();
     const i = relics.findIndex((_, i) => {
-      const { x, y } = relicSlot(i);
-      return Math.abs(this.g.mouse.x - x) < 19 && Math.abs(this.g.mouse.y - y) < 19;
+      const s = spots[i];
+      return !!s && Math.abs(this.g.mouse.x - s.x) < 21 && Math.abs(this.g.mouse.y - s.y) < 20;
     });
     if (i >= 0) {
-      // Below your machine's panel, over the YOUR REELS box: beside the icon it covered your HP bar.
-      drawRelicTip(ctx, relics[i], RELIC_X + 168, RELIC_Y - 19, Math.max(relicSlot(relics.length - 1).y + 19, RELIC_TIP_TOP), this.g.run?.cabinet);
+      // Above or below the relic rows, beside the drawer's middle: beside the icon it covered your HP bar.
+      const last = spots[Math.min(spots.length, relics.length) - 1];
+      drawRelicTip(ctx, relics[i], RELIC_X + 168, spots[0].y - 20, Math.max(last.y + 20, RELIC_TIP_TOP), this.g.run?.cabinet);
       return;
     }
   }
@@ -250,6 +275,14 @@ export class FightView {
     // THE TURN BANNER (user, 2026-10-30: the floating SPIN n / HERO'S TURN was out of place): a kit ribbon on the top
     // edge of the machine whose spin it is. It drops in as the turn opens (a small pop; none with MOTION reduced).
     // (While SPIN waits it's yours, before the first spin too: the engine's side lags until your spin starts.)
+    // A turn banner (an ability, OVERTIME!, LIGHTNING STORM) hangs where the plates and the gutter's top chips are:
+    // they step aside while it's up, so neither is cut in half (QA UI-01: "R SPIN", "VOUR", OVERTIME X1.25 under it).
+    const bannerUp = this.g.stage.fx.items.some((i) => i instanceof Banner && i.y < MACHINE_TOP && i.alpha > 0.05 && i.scale > 0.05);
+    const dt = Math.max(0, Math.min(0.1, t - this.plateT));
+    this.plateT = t;
+    this.plateAlpha = bannerUp ? 0 : this.g.reducedMotion() ? 1 : Math.min(1, this.plateAlpha + dt * 6);
+    ctx.save();
+    ctx.globalAlpha = this.plateAlpha;
     const side = this.g.awaitingSpin ? 'player' : g.side;
     if (side !== this.bannerSide) {
       this.bannerSide = side;
@@ -266,6 +299,7 @@ export class FightView {
     }
     // The spin count, small, between the two banners' spots.
     if (g.turn > 0) drawChip(ctx, `SPIN ${g.turn}`, cx, MACHINE_TOP - BEZEL - 2, { scale: T.small, color: KIT.dim, frame: KIT.frameDim, fill: KIT.fill });
+    ctx.restore();
     // The fight's label (a boss, a loop, the sandbox: the map already said FIGHT n OF 5), top of the gutter.
     let gy = MACHINE_TOP + 16;
     const label = g.fightLabel;
@@ -285,6 +319,9 @@ export class FightView {
     }
     // OVERTIME: its countdown, then its multiplier, from the turn on screen (the engine runs ahead of it).
     if (this.g.fight.cfg.overtime && g.turn > 0) {
+      ctx.save();
+      // (Under a turn banner's band only when no boss label pushed it down: the banner then hides it.)
+      if (gy < MACHINE_TOP + 40) ctx.globalAlpha = this.plateAlpha;
       const left = OVERTIME.from - overtimeRound(g.turn);
       const mul = overtimeMul(g.turn);
       if (left <= 0) {
@@ -295,6 +332,7 @@ export class FightView {
         drawChip(ctx, `OVERTIME IN ${left}`, cx, gy, { scale: T.body, color: '#ff9a3a', frame: KIT.frameDim, fill: KIT.fill });
         gy += 30;
       }
+      ctx.restore();
     }
     // BUILD-UP: what your next pair or jackpot is worth extra (dead spins bank it). It glows hotter as it grows. At the
     // gutter's foot, level with the machines' bottom edge (the bosses' panels fill its middle).
