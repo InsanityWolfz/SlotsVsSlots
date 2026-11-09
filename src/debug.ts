@@ -7,7 +7,7 @@ import type { CombatEvent } from './core/events';
 import { BUILD_UP } from './core/fightRules';
 import type { Game } from './game';
 import { setInputMode, type InputMode } from './ui/input';
-import { ROOM_V2 } from './render/rooms';
+import { ROOM_V2, streetPlace } from './render/rooms';
 import { devSwapSprite } from './render/sprites';
 
 /**
@@ -38,6 +38,10 @@ export function installDebug(game: Game): void {
     adv: (sec: number) => step(sec),
     /** Rooms v2 (the style key): dbg.roomV2(false) shows the old rooms. */
     roomV2: (on: boolean) => ((ROOM_V2.on = on), on),
+    /** Act 1's street (rooms v2's journey): show station 0-3 whatever the depth; dbg.station(null) goes by depth. */
+    station: (n: number | null) => ((ROOM_V2.station = n), n),
+    /** Where the backdrop is now: a street station (0-3), 'door', or null (not act 1's street). */
+    place: () => streetPlace(game.background.scene),
     /** Swap a sprite's rows (outlined), e.g. a portrait candidate: dbg.sprite('enemyBoss', rows). */
     sprite: (id: string, rows: string[]) => devSwapSprite(id as import('./render/sprites').SpriteId, rows),
     /** Advance until the director starts playing an event of this type. */

@@ -1,5 +1,5 @@
 import { COLORS, H, W } from '../present/layout';
-import { ROOM_V2, Rooms, type Scene } from './rooms';
+import { roomV2Air, Rooms, type Scene } from './rooms';
 
 interface Mote {
   x: number;
@@ -50,8 +50,8 @@ export class Background {
     ctx.fillRect(-pad, -pad, W + pad * 2, H + pad * 2);
     this.rooms.draw(ctx, this.scene, time);
 
-    // (Rooms v2 draw their own air: the drifting motes are another pixel size, so the entrance has rain instead.)
-    const v2 = ROOM_V2.on && this.scene.boss === 'house';
+    // (Rooms v2 draw their own air: the drifting motes are another pixel size, so the street and the entrance have rain.)
+    const v2 = roomV2Air(this.scene);
     for (const m of v2 ? [] : this.motes) {
       ctx.globalAlpha = m.a * (0.6 + 0.4 * Math.sin(time * 2 + m.x));
       ctx.fillStyle = '#e8d8ff';

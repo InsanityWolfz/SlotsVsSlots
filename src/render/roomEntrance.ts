@@ -55,11 +55,11 @@ const WALL_L = '#2b2140';
 const PAVE = '#17122a';
 const PAVE_L = '#221b38';
 
-const px = (g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, c: string) => {
+export const px = (g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, c: string) => {
   g.fillStyle = c;
   g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
 };
-function mk(w: number, h: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
+export function mk(w: number, h: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
@@ -68,7 +68,7 @@ function mk(w: number, h: number): [HTMLCanvasElement, CanvasRenderingContext2D]
   return [c, g];
 }
 /** Draw flat shapes, then add the portraits' 1px outline round everything drawn. */
-function outlined(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void): HTMLCanvasElement {
+export function outlined(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void): HTMLCanvasElement {
   const [art, ag] = mk(w, h);
   draw(ag);
   const [out, og] = mk(w + 2, h + 2);
@@ -80,7 +80,7 @@ function outlined(w: number, h: number, draw: (g: CanvasRenderingContext2D) => v
   return out;
 }
 /** A stepped pool of light: three nested ellipses, crisp-edged, each a little stronger (pixel art, no gradient). */
-function pool(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, c: string, a: number): void {
+export function pool(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, c: string, a: number): void {
   if (a <= 0) return;
   g.fillStyle = c;
   for (const [k2, a2] of [[1, 0.35], [0.72, 0.35], [0.45, 0.3]] as const) {
@@ -95,7 +95,7 @@ function pool(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number, r
   g.globalAlpha = 1;
 }
 /** A marquee bulb: 3x3 with a socket; lit, a warm core and a 1px halo. */
-function bulb(g: CanvasRenderingContext2D, x: number, y: number, on: number): void {
+export function bulb(g: CanvasRenderingContext2D, x: number, y: number, on: number): void {
   if (on > 0.5) {
     g.globalAlpha = 0.35 * on;
     px(g, x - 1, y - 1, 5, 5, G);

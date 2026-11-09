@@ -33,9 +33,23 @@ import { buildFloor, floor } from './roomFloor';
 import { canvas, FLOOR_Y, hexA, LH, LW, MID, NEON, rect, seeded, type RoomArt } from './roomKit';
 import { drawEntrance, entranceCheer, entranceUpdate } from './roomEntrance';
 import { buildVip, vip } from './roomVip';
+import { drawStreet, streetStation } from './roomStreet';
 
-/** Rooms v2 (the style key, 2026-11-09): THE HOUSE's room is the casino entrance. Off: the old alley and vault. */
-export const ROOM_V2 = { on: true };
+/** Rooms v2 (the style key, 2026-11-09): THE HOUSE's room is the casino entrance, and act 1 is the street toward it
+ * (roomStreet.ts). Off: the old alley and vault. `station` forces act 1's station (dbg, the gallery); null: by depth. */
+export const ROOM_V2 = { on: true, station: null as number | null };
+
+/** Act 1 on the v2 street: which place this scene is at (a street station, or the casino's door), or null when the
+ * scene isn't act 1's street (another act, ENDLESS, a menu). */
+export function streetPlace(s: Scene): number | 'door' | null {
+  if (!ROOM_V2.on || s.room !== 'alley' || s.loop > 0) return null;
+  if (s.boss === 'house' || (!s.boss && s.atBoss)) return 'door';
+  if (s.boss) return null;
+  if (ROOM_V2.station !== null) return ROOM_V2.station;
+  return streetStation(s.fightIndex ?? 0, s.regulars ?? 4);
+}
+/** The room draws its own air (rain), so the drifting motes stay off (they're another pixel size). */
+export const roomV2Air = (s: Scene) => (ROOM_V2.on && s.boss === 'house') || streetPlace(s) !== null;
 
 export { LH, LW } from './roomKit';
 
@@ -59,6 +73,13 @@ export interface Scene {
   turbo?: boolean;
   /** THE HOUSE's pot (rooms v2: the entrance's lights grow with it). */
   pot?: number;
+  /** The journey (rooms v2): this fight's index among the act's regular fights, how many there are, and whether the
+   * act's boss is the next stop (the street's end: the casino's door). */
+  fightIndex?: number;
+  regulars?: number;
+  atBoss?: boolean;
+  /** This fight's enemy archetype (a station's small per-enemy touch). */
+  enemy?: string | null;
 }
 
 // ---- the still layers --------------------------------------------------------------------------------------------
@@ -205,8 +226,14 @@ export class Rooms {
   }
 
   draw(ctx: CanvasRenderingContext2D, s: Scene, time: number): void {
-    if (ROOM_V2.on && s.boss === 'house') {
-      drawEntrance(ctx, { pot: s.pot ?? 0, foeHp: s.foeHp, turn: s.turn, time });
+    const place = streetPlace(s);
+    if ((ROOM_V2.on && s.boss === 'house') || place === 'door') {
+      drawEntrance(ctx, { pot: s.pot ?? 0, foeHp: s.boss === 'house' ? s.foeHp : 1, turn: s.turn, time });
+      this.overlays(ctx, s, time, this.cheerT);
+      return;
+    }
+    if (place !== null) {
+      drawStreet(ctx, { station: place, time, enemy: s.enemy });
       this.overlays(ctx, s, time, this.cheerT);
       return;
     }

@@ -1,6 +1,7 @@
 /** The frame: update, the screen transition, drawing a frame, and the scene behind it (split from game.ts, 2026-11-05). */
 import type { SymbolId } from './core/config';
 import { DEALER_HANDS } from './core/fight';
+import { TYPICAL_ACT_FIGHTS } from './core/run';
 import { roomFor, type Scene } from './render/rooms';
 import { H, W } from './present/layout';
 import { BUILD } from './ui/runScreens';
@@ -202,5 +203,23 @@ export function sceneNow(g: Game): Scene {
     fight,
     turbo: fight && !!g.fight.cfg.enemy.owner,
     pot: fight && boss === 'house' ? (g.stage?.gutter?.pot ?? 0) : 0,
+    ...journey(g),
+  };
+}
+
+/** Where the run stands in its act (rooms v2's journey): this fight among the act's regulars, and the boss next. Before
+ * a route is picked the act's length is a guess (TYPICAL_ACT_FIGHTS); between fights `depth` is already the next one,
+ * so the backdrop walks forward as you win. */
+function journey(g: Game): Pick<Scene, 'fightIndex' | 'regulars' | 'atBoss' | 'enemy'> {
+  const run = g.run;
+  if (!run) return {};
+  const routed = !(run.route === null && run.map.routes.length > 1);
+  const regulars = routed ? Math.max(1, run.enemies.length - 1) : TYPICAL_ACT_FIGHTS - 1;
+  const fighting = g.phase === 'fighting' || g.phase === 'recap';
+  return {
+    fightIndex: Math.min(run.depth, regulars - 1),
+    regulars,
+    atBoss: routed && run.depth >= run.enemies.length - 1,
+    enemy: fighting ? (run.enemies[run.depth]?.archetype ?? null) : null,
   };
 }
