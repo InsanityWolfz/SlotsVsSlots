@@ -11,7 +11,7 @@ run's starting relic, NEW RUN teaching a first-timer, the hit strobe, M and W, 2
 dead relic offers, HOLD on jammed or stolen pairs, saves (a run recorded at the killing blow, the Cashier and spoils
 kept over a reload, saved runs cleaned on load). The report and the user's 10 calls (SPEED 2X default, act 1 pacing,
 a draft SKIP, payoffs on the best hit, SECOND MORTGAGE x1.5, MAKE IT RAIN free at the floor, Windows-first, the Next
-Fest date, the capsule/trailer hook against DEAD SPIN, card art and a boss entrance): REPORT_URL. Reports in
+Fest date, the capsule/trailer hook against DEAD SPIN, card art and a boss entrance): https://claude.ai/artifact/JvWfuPk7WavCPFFd6av9gM. Reports in
 `tools/out/qa/` (not committed).
 
 **In progress (2026-10-30):** the UI pass shipped to `main` (user: "ship all the UI stuff"; review:
