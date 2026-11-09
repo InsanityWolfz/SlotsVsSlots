@@ -109,7 +109,7 @@ export function bulb(g: CanvasRenderingContext2D, x: number, y: number, on: numb
 }
 
 /** THE DOORMAN's full figure, 22x58 at the room's 2px scale (the portraits' palette; outlined like them). */
-const DOORMAN = [
+export const DOORMAN = [
   '......pppppppppp......',
   '.....plpppppppppp.....',
   '.....plppppppppPP.....',
@@ -170,8 +170,8 @@ const DOORMAN = [
   '......................',
 ];
 /** Row 8 (his eyes) for each frame: at you, at them (left), ahead (right). */
-const DOORMAN_EYES = ['.....FFWKFFFKWf.f.....', '.....FFKWFFFKWf.f.....', '.....FFWKFFFWKf.f.....'];
-const DOORMAN_INK: Record<string, string> = {
+export const DOORMAN_EYES = ['.....FFWKFFFKWf.f.....', '.....FFKWFFFKWf.f.....', '.....FFWKFFFWKf.f.....'];
+export const DOORMAN_INK: Record<string, string> = {
   p, l, P, K, W: '#ffffff', T, t: '#9a8fb0', k, G, Y, g: g8, F, f, b: '#5a311c', B: '#9a5a30', R, r, d,
 };
 

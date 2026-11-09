@@ -12,7 +12,7 @@
  * Flat things facing us (blade signs, the steam) are outlined sprites at their depth. Behind the reels it stays dark.
  * ENDLESS hook: `late` (0 early, 1 closing) switches lights off and darkens; nothing draws it yet.
  */
-import { bulb, mk, outlined, pool, px, RH, RW } from './roomEntrance';
+import { bulb, DOORMAN, DOORMAN_EYES, DOORMAN_INK, mk, outlined, pool, px, RH, RW } from './roomEntrance';
 import { drawText } from './text';
 
 // ---- the projection ---------------------------------------------------------------------------------------------
@@ -640,6 +640,75 @@ function casinoLive(g: CanvasRenderingContext2D, zEnd: number, t: number): void 
   g.globalAlpha = 1;
 }
 
+// ---- THE DOORMAN at the casino's door, down the street ------------------------------------------------------------
+
+/** He stands on the forecourt just right of the doors, a little in front of the casino's front (lat, depth before it). */
+const DOORMAN_LAT = 172;
+const DOORMAN_Z = 0.22;
+/** His height in world units (the doors are 250; at the entrance he's about 0.85 of them). */
+const DOORMAN_H = 212;
+/** Downsampling favours his reads: gold (cap band, epaulettes, buttons) and his dark cap win a pixel over the coat. */
+const PICK: Record<string, number> = { '.': 0.8, Y: 2.6, G: 2.2, g: 1.4, p: 1.6, P: 1.4, l: 1.3, K: 1.2 };
+
+const doormen = new Map<string, HTMLCanvasElement>();
+/** THE DOORMAN `ht` art pixels tall: the approved figure (roomEntrance.ts), resampled block by block with each block's
+ * most telling colour, outlined as the portraits are, with the canopy's warm light along his door side (no gradient: one
+ * colour on his outline). */
+function doormanAt(ht: number, eyes: number): HTMLCanvasElement {
+  const key = `${ht}:${eyes}`;
+  const hit = doormen.get(key);
+  if (hit) return hit;
+  const src = DOORMAN.map((row, y) => (y === 8 ? DOORMAN_EYES[eyes] : row));
+  const h0 = src.length - 1;
+  const w0 = src[0].length;
+  const wt = Math.max(5, Math.round((w0 * ht) / h0));
+  const rows: string[] = [];
+  for (let ty = 0; ty < ht; ty++) {
+    let row = '';
+    for (let tx = 0; tx < wt; tx++) {
+      const y0 = Math.floor((ty * h0) / ht);
+      const y1 = Math.max(y0 + 1, Math.floor(((ty + 1) * h0) / ht));
+      const x0 = Math.floor((tx * w0) / wt);
+      const x1 = Math.max(x0 + 1, Math.floor(((tx + 1) * w0) / wt));
+      const score: Record<string, number> = {};
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+        const ch = src[y][x];
+        score[ch] = (score[ch] ?? 0) + (PICK[ch] ?? 1);
+      }
+      row += Object.entries(score).sort((a, b) => b[1] - a[1])[0][0];
+    }
+    rows.push(row);
+  }
+  const fig = outlined(wt, ht, (c) => rows.forEach((row, y) => [...row].forEach((ch, x) => ch !== '.' && px(c, x, y, 1, 1, DOORMAN_INK[ch]))));
+  // The canopy's light on his door side (left): his outline there turns warm, from the cap down to the coat's hem.
+  const g = fig.getContext('2d')!;
+  const data = g.getImageData(0, 0, fig.width, fig.height).data;
+  for (let y = 1; y < Math.round(fig.height * 0.8); y++)
+    for (let x = 0; x < fig.width; x++)
+      if (data[(y * fig.width + x) * 4 + 3] > 0) {
+        px(g, x, y, 1, 1, '#a8642a');
+        break;
+      }
+  doormen.set(key, fig);
+  return fig;
+}
+
+/** THE DOORMAN by the doors at a station: small far off, clearer each step; from station 3 he glances and shifts his
+ * weight now and then. */
+function drawDoorman(g: CanvasRenderingContext2D, zEnd: number, station: number, t: number): void {
+  const zd = zCasino(zEnd) - DOORMAN_Z;
+  const ht = Math.max(12, Math.round(DOORMAN_H / zd));
+  const near = station >= 2;
+  const glance = near ? (Math.floor(t / 3.1) % 4 === 1 ? 1 : Math.floor(t / 3.1) % 4 === 3 ? 2 : 0) : 0;
+  const shift = near && (t % 5.3) < 0.4 ? 1 : 0;
+  const fig = doormanAt(ht, glance);
+  const fx = Math.round(xAt(DOORMAN_LAT, zd) - fig.width / 2) + shift;
+  const fy = Math.round(yAt(0, zd)) - fig.height + 1;
+  // his shadow on the forecourt stone, then him
+  px(g, fx + 1, fy + fig.height - 1, fig.width - 2, 1, '#120c1e');
+  g.drawImage(fig, fx, fy);
+}
+
 /** Draw the street at a station (the still layer cached; the lights, signs, steam and rain live). */
 export function drawStreet(ctx: CanvasRenderingContext2D, o: StreetScene): void {
   if (!sprites) sprites = makeSprites();
@@ -653,6 +722,7 @@ export function drawStreet(ctx: CanvasRenderingContext2D, o: StreetScene): void 
   const g = lg;
   g.clearRect(0, 0, RW, RH);
   casinoLive(g, zEnd, t);
+  drawDoorman(g, zEnd, i, t);
 
   if (i === 0) {
     // THE BARFLY's bar: BAR in pink neon down the blade sign, its O buzzing (more when he's the one you're fighting),
