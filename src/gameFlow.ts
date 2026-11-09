@@ -26,6 +26,7 @@ import { CABINETS, CABINET_ORDER, type CabinetId } from './core/cabinets';
 import { StatsTracker } from './core/stats';
 import { Clock } from './present/clock';
 import { Director } from './present/director';
+import { bossEntrance } from './present/directorEntrance';
 import { FxLayer } from './present/fx';
 import { HudView, type HudMeter } from './present/hud';
 import { COLORS } from './present/layout';
@@ -297,7 +298,11 @@ export function resumeRun(g: Game): void {
   newFight(g, false, null, fightConfig(g.run, g.cfg), true);
   g.phase = 'between';
   const last = g.run.records[g.run.records.length - 1];
-  if (s.at === 'fight') startRunFight(g);
+  if (s.at === 'fight') {
+    // A fight restarted after a quit: a boss's entrance plays short.
+    g.shortEntrance = true;
+    startRunFight(g);
+  }
   else if (s.at === 'after' && last) {
     g.lastRecord = last;
     afterBonus(g, last);
@@ -320,6 +325,28 @@ export function startRunFight(g: Game): void {
   newFight(g, true, null, fightConfig(g.run, g.cfg), true);
   if (g.run.depth === 0 && g.run.act === 1) tip(g, 'fight', 'fight');
   meterTip(g);
+}
+
+/**
+ * A boss's entrance before its first spin (directorEntrance.ts). Short when this boss was already met this run (ENDLESS
+ * loops) or the fight was restarted after a quit. Any input skips it (Game.skipEntrance).
+ */
+async function playEntrance(g: Game, boss: NonNullable<GameConfig['enemy']['boss']>, token: number, restarted: boolean): Promise<void> {
+  const run = g.phase === 'fighting' ? g.run : null;
+  const met = !!run && run.records.some((r) => r.boss && r.archetype === currentEnemy(run)?.archetype);
+  const short = restarted || met;
+  const eyebrow = !run ? 'BOSS FIGHT' : run.endless ? `ENDLESS: LOOP ${run.endless.loop}` : `ACT ${run.act} BOSS`;
+  const cfg = g.fight.cfg.enemy;
+  g.presenting = true;
+  await bossEntrance(g.director, { boss, name: cfg.name ?? 'THE BOSS', portrait: cfg.portrait ?? 'enemyPortrait', eyebrow, short });
+  if (token !== g.token) return;
+  g.presenting = false;
+  // A skip fast-forwarded the clock (Game.skipEntrance): back to normal for the fight.
+  if (g.stage.clock.skipping) {
+    g.stage.clock.endSkip();
+    g.synth.enabled = true;
+  }
+  await g.stage.clock.wait(0.1);
 }
 
 /** A Slot Machine's meter, explained the first fight a player ever starts on it (never over the tutorial's callouts). */
@@ -623,7 +650,11 @@ export function newFight(g: Game, start: boolean, seed: number | null = null, cf
 
 export async function runFight(g: Game, token: number): Promise<void> {
   const clock = g.stage.clock;
-  await clock.wait(0.3);
+  const boss = g.fight.cfg.enemy.boss;
+  const restarted = g.shortEntrance;
+  g.shortEntrance = false;
+  if (boss) await playEntrance(g, boss, token, restarted);
+  else await clock.wait(0.3);
   while (!g.fight.over) {
     if (token !== g.token) return;
     // Without AUTO every spin of yours waits on SPIN. HOLD never waits: its taps are taken while the enemy's turn plays

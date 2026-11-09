@@ -83,12 +83,37 @@ export function drawMarquee(ctx: CanvasRenderingContext2D, x: number, y: number,
   const head = (time * 14) % pts.length;
   pts.forEach(([bx, by], i) => {
     const d = (head - i + pts.length) % pts.length;
-    const lit = d < 5 ? 1 : i % 3 === 2 ? 0 : 0.5;
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(bx - 4, by - 4, 8, 8);
-    ctx.fillStyle = lit === 1 ? KIT.bulbOn : lit > 0 ? KIT.bulbMid : KIT.bulbOff;
-    ctx.fillRect(bx - 3, by - 3, 6, 6);
+    drawBulb(ctx, Math.round(bx), Math.round(by), d < 5 ? 1 : i % 3 === 2 ? 0 : 0.5);
   });
+}
+
+/**
+ * One marquee bulb (QA UI-10: 6px squares on the 3px frame read as a dashed line at 1x): a round 8px glass in a dark
+ * 10px socket, a white-hot centre and a soft halo when lit. `lit` 1 = on, 0.5 = resting, 0 = off.
+ */
+export function drawBulb(ctx: CanvasRenderingContext2D, cx: number, cy: number, lit: number): void {
+  if (lit >= 1) {
+    ctx.fillStyle = 'rgba(255,214,110,0.22)';
+    ctx.fillRect(cx - 7, cy - 5, 14, 10);
+    ctx.fillRect(cx - 5, cy - 7, 10, 14);
+  }
+  // The socket: a 10px circle in pixels (corners cut).
+  ctx.fillStyle = COLORS.outline;
+  ctx.fillRect(cx - 5, cy - 3, 10, 6);
+  ctx.fillRect(cx - 3, cy - 5, 6, 10);
+  ctx.fillRect(cx - 4, cy - 4, 8, 8);
+  // The glass: an 8px circle.
+  ctx.fillStyle = lit >= 1 ? KIT.bulbMid : lit > 0 ? '#c8892a' : KIT.bulbOff;
+  ctx.fillRect(cx - 4, cy - 2, 8, 4);
+  ctx.fillRect(cx - 2, cy - 4, 4, 8);
+  ctx.fillRect(cx - 3, cy - 3, 6, 6);
+  // The hot centre and a glint.
+  ctx.fillStyle = lit >= 1 ? KIT.bulbOn : lit > 0 ? KIT.bulbMid : '#7f5a24';
+  ctx.fillRect(cx - 2, cy - 2, 3, 3);
+  if (lit > 0) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(cx - 2, cy - 2, 1, 1);
+  }
 }
 
 export interface ChipOpts {

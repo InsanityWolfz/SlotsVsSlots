@@ -223,6 +223,14 @@ export class Sounds {
     this.s.tone({ type: 'square', freq: 1600, freqEnd: 1200, dur: 0.08, gain: 0.05, at: 0.22 });
   }
 
+  /** A boss lands (the entrance): a sub-bass slam under a low square stab and a burst of dust. */
+  bossSlam(): void {
+    this.s.tone({ type: 'sine', freq: 95, freqEnd: 30, dur: 0.6, gain: 0.6 });
+    this.s.tone({ type: 'square', freq: 55, freqEnd: 41, dur: 0.3, gain: 0.12 });
+    this.s.noise({ dur: 0.3, filter: 'lowpass', freq: 1200, freqEnd: 120, gain: 0.4 });
+    this.s.duck(0.4, 0.8);
+  }
+
   rockThud(): void {
     this.s.tone({ type: 'sine', freq: 110, freqEnd: 45, dur: 0.25, gain: 0.45 });
     this.s.noise({ dur: 0.15, filter: 'lowpass', freq: 900, freqEnd: 150, gain: 0.35 });

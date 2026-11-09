@@ -6,6 +6,7 @@ import { H, W } from './present/layout';
 import { BUILD } from './ui/runScreens';
 import { focusKey } from './gameInput';
 import type { Game } from './game';
+import { drawEntrance } from './ui/entranceView';
 
 const IN_PLAY = { none: new Set<SymbolId>(), drop: new Set<SymbolId>(['note', 'wild']), allIn: new Set<SymbolId>(['sword', 'seven']) };
 
@@ -95,21 +96,35 @@ export function drawFrame(g: Game, ctx: CanvasRenderingContext2D): void {
     if (g.focus.visible) g.focus.draw(ctx, g.navTargets(), t);
     return;
   }
+  // A boss's entrance (directorEntrance.ts): the HUDs and chips wait above the screen and drop in at its end.
+  const en = s.entrance;
+  ctx.save();
+  if (en) ctx.translate(0, Math.round(en.hudY));
   g.view.drawChips(ctx);
   s.huds.player.draw(ctx, t);
   s.huds.enemy.draw(ctx, t);
+  ctx.restore();
   s.machines.player.draw(ctx, s.clock.time);
   if (g.fight.isDealer) g.view.drawDealerTable(ctx, t);
+  // THE WHEEL's cabinet and topper drop in with its machine.
+  const drop = s.machines.enemy.drop;
+  ctx.save();
+  if (g.fight.isWheel && drop) ctx.translate(0, Math.round(drop));
   if (g.fight.isWheel) g.view.drawWheelCabinet(ctx);
+  ctx.restore();
   s.machines.enemy.draw(ctx, s.clock.time);
+  ctx.save();
+  if (g.fight.isWheel && drop) ctx.translate(0, Math.round(drop));
   if (g.fight.isWheel) g.view.drawWheelTopper(ctx);
+  ctx.restore();
   s.fx.draw(ctx, s.clock.time, -Infinity, 20);
   g.view.drawGutter(ctx, t);
   g.particles.draw(ctx);
   s.fx.draw(ctx, s.clock.time, 20, Infinity);
+  if (en) drawEntrance(ctx, en, t);
   g.view.drawHoldBar(ctx, t);
   if (g.drawerT < 0.5) g.view.drawRelicFeed(ctx);
-  if (g.fight.cfg.enemy.boss && !g.screens.active) g.view.drawBossHint(ctx);
+  if (g.fight.cfg.enemy.boss && !g.screens.active && !en) g.view.drawBossHint(ctx);
   // The BUILD drawer: your whole build slides out over the left side (relics fire inside it), chips stay put on top.
   if (g.drawerLive()) {
     if (g.drawerT > 0.005) {
