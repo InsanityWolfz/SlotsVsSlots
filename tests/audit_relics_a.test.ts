@@ -69,14 +69,14 @@ describe('TWIN REELS (mirror): ANY TWO MATCHING REELS COUNT AS A PAIR', () => {
   for (const cab of MACHINES) {
     const a = ATTACK[cab];
     it(`${cab}: reels 1+3 and reels 2+3 pair (they don't without it), and pay a full pair`, () => {
-      const plain = groupOn(spin(cab, [], [a, a, 'shield']).events, [0, 1]).amount;
+      // (TESLA's reels 1 and 2 hold CHARGED bolts, so each pair is checked against its own two singles: x2 them.)
       const ends = spin(cab, ['mirror'], [a, 'shield', a]).events;
       expect(scoreOf(ends).tier).toBe('pair');
-      expect(groupOn(ends, [0, 2]).amount).toBe(plain);
+      const endSingles = spin(cab, [], [a, 'shield', a]).events;
+      expect(groupOn(ends, [0, 2]).amount).toBe(2 * (groupOn(endSingles, [0]).amount + groupOn(endSingles, [2]).amount));
       expect(scoreOf(ends).relics).toContain('mirror');
       const right = spin(cab, ['mirror'], ['shield', a, a]).events;
       expect(scoreOf(right).tier).toBe('pair');
-      // (TESLA's reel 1 holds a CHARGED bolt, so reels 2+3 are worth less: a full pair is x2 their two singles.)
       const singles = spin(cab, [], ['shield', a, a]).events;
       expect(groupOn(right, [1, 2]).amount).toBe(2 * (groupOn(singles, [1]).amount + groupOn(singles, [2]).amount));
       // Without it neither is a pair.

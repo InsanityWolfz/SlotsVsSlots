@@ -50,7 +50,7 @@ export const KEYWORDS: Keyword[] = [
   { word: 'JINX', icon: 'kwJinx', forms: ['JINXES', 'JINXED'], color: '#c9a0ff', text: 'ANY PAY THAT USES A JINXED REEL IS HALVED' },
   // (RAKE has no icon of its own: it borrows SABOTAGE's.)
   { word: 'RAKE', icon: 'kwSabotage', forms: ['RAKES', 'RAKED'], color: '#ffd23f', text: 'WHILE RAKED, EACH OF YOUR PAYS IS 10 LESS' },
-  { word: 'SPILL', icon: 'kwSpill', forms: ['SPILLED', 'SPILLS'], color: COLORS.slime, text: 'A SPILLED CELL PAYS NOTHING. A SPILL PAIR MOPS UP ITS REELS, A SPILL JACKPOT MOPS UP THEM ALL' },
+  { word: 'SPILL', icon: 'kwSpill', forms: ['SPILLED', 'SPILLS'], color: COLORS.slime, text: 'A SPILLED CELL PAYS NOTHING. NEVER MORE THAN A THIRD OF YOUR SYMBOLS AT ONCE. A SPILL PAIR MOPS UP ITS REELS, A SPILL JACKPOT MOPS UP THEM ALL' },
   { word: 'ROCK', icon: 'kwRock', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD CELL: IT PAYS NOTHING' },
   { word: 'IOU', icon: 'kwIou', forms: ['IOUS'], color: '#ff9a3a', text: 'TICKS DOWN, THEN HITS YOU. LAND IT ON YOUR PAYLINE TO PAY IT OFF' },
 ];

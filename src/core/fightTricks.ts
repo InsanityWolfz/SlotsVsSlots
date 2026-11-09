@@ -318,7 +318,12 @@ export function applySlime(f: Fight, me: Combatant, foe: Combatant, amount: numb
   // Slime goes for gilded cells first.
   const gilded = f.rng.shuffle(clean.filter((ref) => foe.reels[ref.reel].cells[ref.index].enh));
   const plain = f.rng.shuffle(clean.filter((ref) => !foe.reels[ref.reel].cells[ref.index].enh));
-  const cells: CellRef[] = [...gilded, ...plain].slice(0, amount);
+  // THE SPILL CAP (act 1 pacing, 2026-11-09): never more than a third of a machine's symbols spilled at once (a BARFLY
+  // fight ran 19 turns with 26 of 36 cells spilled). A spill past it lands nowhere.
+  const all = foe.reels.reduce((a, r) => a + r.cells.length, 0);
+  const spilled = foe.reels.reduce((a, r) => a + r.cells.filter((c) => c.slimed).length, 0);
+  const room = Math.max(0, Math.floor(all * TUNE.spillCap) - spilled);
+  const cells: CellRef[] = [...gilded, ...plain].slice(0, Math.min(amount, room));
   for (const ref of cells) foe.reels[ref.reel].cells[ref.index].slimed = true;
   events.push({ type: 'slime', from: me.side, to: foe.side, reels, amount, cells, wasted: amount - cells.length });
 }
