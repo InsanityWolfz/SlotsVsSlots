@@ -31,11 +31,16 @@ const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d');
 let vnow = performance.now() + 1000;
 let frames = 0;
+// overlay(i): drawn over the game's own frame before it's saved (cut 3's cold-open caption); i counts recorded frames
+let overlay = null;
 async function frame(record) {
   vnow += 1000 / 60;
   rec = record;
   window.__rafCb(vnow);
-  if (record) { vt += 1 / 60; frames++; await window.saveFrame(canvas.toDataURL('image/png')); }
+  if (record) {
+    if (overlay) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false; overlay(frames); ctx.restore(); }
+    vt += 1 / 60; frames++; await window.saveFrame(canvas.toDataURL('image/png'));
+  }
 }
 const idle = async (n) => { for (let i = 0; i < n; i++) await frame(false); };
 const recf = async (n, each) => { for (let i = 0; i < n; i++) { each?.(i); await frame(true); } };
@@ -72,12 +77,52 @@ async function fight(cab, id, act, line, pre, post) {
 }
 const text = (t, x, y, sc, col, o = {}) => TX.drawText(ctx, t, x, y, sc, col, { align: 'center', ...o });
 const dim = (a) => { ctx.fillStyle = `rgba(6,2,12,${a})`; ctx.fillRect(0, 0, 1280, 720); };
+// cut 3 (call 9, 2026-11-09): 3 s of the duel before anything else, readable with the sound off (Steam autoplays
+// muted). Both Slot Machines on screen, your sword jackpot flying into theirs, and a caption that says what it is.
+// window.__cold = false records cut 2's opening instead.
+// The spin is pulled before recording starts (window.__coldPre frames earlier), so the 3 s run from the reels landing to
+// the swords hitting their machine. The game frame sits 76 px lower, losing only the AUTO / SPIN / SPEED row, so the
+// caption has a band of its own and covers nothing.
+const COLD_DROP = 76;
+const shift = document.createElement('canvas'); shift.width = 1280; shift.height = 720;
+const sctx = shift.getContext('2d'); sctx.imageSmoothingEnabled = false;
+async function coldOpen() {
+  scene('knight', 'brute', 1);
+  await idleUntil(() => g.awaitingSpin && !g.bossCard);
+  await idle(20);
+  g.fight.forceNext('player', ['sword', 'sword', 'sword']); g.key(' ');
+  // the spin-up isn't recorded (nor its sounds): at 2X, 170 frames in, the video opens as MEGA WIN punches in, the
+  // swords fly at ~2.2 s and the -144 lands on their machine at ~2.4 s (the whole spin is ~3.4 s too long for 3 s)
+  await idle(window.__coldPre ?? 170);
+  const first = frames, N = 180;
+  overlay = (n) => {
+    const i = n - first;
+    sctx.clearRect(0, 0, 1280, 720); sctx.drawImage(canvas, 0, 0);
+    ctx.fillStyle = '#120a1a'; ctx.fillRect(0, 0, 1280, 720);
+    ctx.drawImage(shift, 0, 0, 1280, 720 - COLD_DROP, 0, COLD_DROP, 1280, 720 - COLD_DROP);
+    // the band: the game's panel plum with a gold rim, the words in the game's font
+    ctx.fillStyle = '#1a1426'; ctx.fillRect(0, 0, 1280, COLD_DROP - 4);
+    ctx.fillStyle = '#c9a24a'; ctx.fillRect(0, COLD_DROP - 4, 1280, 4);
+    const a = Math.min(1, (i + 1) / 8);
+    text('YOUR SLOT MACHINE', 322, COLD_DROP / 2, 4, '#ffd23f', { alpha: a });
+    text('VS', 640, COLD_DROP / 2, 4, '#ffffff', { alpha: a });
+    text('THEIRS', 958, COLD_DROP / 2, 4, '#ff6a5a', { alpha: a });
+  };
+  await recf(N);
+  overlay = null;
+  s.stopLoops();
+  return vt;
+}
+// a quick take of the cold open alone (rec.cjs COLD_ONLY=1), to set __coldPre
+window.coldOnly = async () => { await coldOpen(); return frames; };
 window.trailer = async () => {
-  // A: cold open on the song's grid: bulbs light on the eighth notes for a bar, the sign comes on with its fanfare
-  // on the next downbeat, and the song drops in on the bar after, on the cut to the first spin
+  const T0 = window.__cold === false ? 0 : await coldOpen();
+  // A: the intro on the song's grid: bulbs light on the eighth notes for a bar, the sign comes on with its fanfare
+  // on the next downbeat, and the song drops in on the bar after, on the cut to the first spin (mix.sh starts the
+  // music T0 later in cut 3)
   const E8 = BEAT / 2, BAR = 4 * BEAT;
-  for (let k = 0; k < 8; k++) at(k * E8, () => g.sounds.tick((k + 1) / 8));
-  at(BAR, () => g.sounds.fanfareJackpot());
+  for (let k = 0; k < 8; k++) at(T0 + k * E8, () => g.sounds.tick((k + 1) / 8));
+  at(T0 + BAR, () => g.sounds.fanfareJackpot());
   await card(Math.round(2 * BAR * 60), (i) => {
     const t = i / 60;
     ctx.drawImage(BG_OPEN, 0, 0);
