@@ -99,10 +99,11 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'BANKROLL',
     sprite: 'cabinetMidas',
     blurb: 'MAKE IT RAIN.',
-    // 340 -> 480 (balance pass 2026-11-07): it was the lowest machine at every stake (HP is a weak lever on it).
-    hp: 48 * UNIT,
+    // 340 -> 480 (balance pass 2026-11-07): it was the lowest machine at every stake (HP is a weak lever on it). 420 with
+    // 7 chips a reel, not 6 (act 1 pacing, 2026-11-09: its act 1 fights were the longest, p90 11 of your spins).
+    hp: 42 * UNIT,
     // No swords (2026-10-07): CASSIDY flings his chips. Each chip symbol hits, pays a chip and fills the bar.
-    strips: r3({ shield: 6, goldbar: 6 }),
+    strips: r3({ shield: 5, goldbar: 7 }),
     // No gold-sword start (a leftover from MIDAS): 8 more chips instead (user playtest).
     gilded: [],
     // ONE HEAL RULE (user, 2026-11-01): every meter payoff heals 15 (KNIGHT has no meter, so no heal).
@@ -110,7 +111,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     startChips: 24,
     symbols: ['goldbar', 'shield'],
     attack: 'goldbar',
-    rule: 'CHIPS HIT AND WIN CHIPS. FULL METER: HIT HARDER, HEAL 15. CHIP JACKPOTS MAKE IT RAIN. 480 HP.',
+    rule: 'CHIPS HIT AND WIN CHIPS. FULL METER: HIT HARDER, HEAL 15. CHIP JACKPOTS MAKE IT RAIN. 420 HP.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },
@@ -121,16 +122,16 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     name: 'TESLA',
     sprite: 'cabinetTesla',
     blurb: 'IT HUMS WHEN YOU LOOK AT IT',
-    // 310 -> 360 (balance pass 2026-11-07).
-    hp: 36 * UNIT,
+    // 310 -> 360 (balance pass 2026-11-07); 340 with a 2nd CHARGED reel (act 1 pacing, 2026-11-09).
+    hp: 34 * UNIT,
     // No swords (2026-10-07): bolts are TESLA's weapon, and their damage is the lightning.
     strips: r3({ shield: 6, bolt: 6 }),
-    gilded: [{ reel: 0, symbol: 'bolt', enh: 'charged', n: 4 }],
+    gilded: [{ reel: 0, symbol: 'bolt', enh: 'charged', n: 4 }, { reel: 1, symbol: 'bolt', enh: 'charged', n: 1 }],
     // Heal per strike 20 -> 5: with 6 bolts a reel lightning fires far more often, and 20 a strike made TESLA unkillable (94% WHITE).
     meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: UNIT / 2 },
     symbols: ['bolt', 'shield'],
     attack: 'bolt',
-    rule: 'BOLTS CHARGE LIGHTNING: 22 A BOLT, PIERCES SHIELDS. A STORM HEALS 15. 360 HP.',
+    rule: 'BOLTS CHARGE LIGHTNING: 22 A BOLT, PIERCES SHIELDS. A STORM HEALS 15. 340 HP.',
     unlock: 'REACH THE HOUSE',
     // 40 (2026-10-12): LIGHTNING ROD is gone (97% of TESLA runs took it; it set the cost to 40 and hit 90).
     specialCost: 4 * UNIT,

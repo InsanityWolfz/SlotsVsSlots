@@ -203,6 +203,8 @@ so that isn't happening in practice (see ROADMAP).
 ## Enemies
 The casino-town cast (user, 2026-10-30; code ids keep the old names: slime, brute, frost, thief, golem, gremlin, bomber,
 hexer, vampire). Words: SPILL (was SLIME), IOU (was BOMB), JINX (was HEX), ROCK stays.
+- **The spill cap (2026-11-09):** never more than a third of a machine's symbols spilled at once (`TUNE.spillCap`); a spill
+  past it lands nowhere. Said in the SPILL keyword, so the BARFLY's card back shows it.
 - **Act 1 (the Alley):** THE BARFLY (SPILL), THE LEG BREAKER (THE SWING), THE COOLER (COLD STREAK), THE PICKPOCKET (STEAL),
   THE FENCE (ROCKS), THE MECHANIC (JAM), THE REPO MAN. Every enemy's rocks crumble after the fight, an elite's
   too (user, 2026-10-30: an elite's stayed for the run, which confused).
@@ -229,10 +231,10 @@ Each machine except KNIGHT has one signature symbol and a meter.
 | Machine | Hero | Attack symbol | Meter | Unlock |
 |---|---|---|---|---|
 | KNIGHT | SIR REGINALD | sword | none: half swords, half shields, both from level 2; each boss pays 4 sword levels (400 HP) | start |
-| TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields: 20 charge a bolt, 22 a bolt, the storm heals 15 (one axis: every boost adds charge; 360 HP) | reach the House |
+| TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields: 20 charge a bolt, 22 a bolt, the storm heals 15 (one axis: every boost adds charge); 4 CHARGED bolts on reel 1 and 1 on reel 2 (340 HP) | reach the House |
 | JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat the House |
 | JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat the House with wilds |
-| BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER; a chip jackpot makes it rain; +1 chip a win and 20% off the Cashier's shelf (not the HEAL) | clear a run |
+| BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER; a chip jackpot makes it rain; +1 chip a win and 20% off the Cashier's shelf (not the HEAL); 7 chips and 5 shields a reel (420 HP) | clear a run |
 
 BRIAR / THORN is retired and removed from the code (the JUKEBOX replaced her). Old saves map her unlock and stakes to
 the JUKEBOX; a saved BRIAR run or hiscore entry is dropped on load.
@@ -388,6 +390,21 @@ DEALER's BUST included), not the CROUPIER's RAKE.
   36 / 24 / 14 / 9, JOKER 34 / 26 / 23 / 15, BANKROLL 36 / 28 / 22 / 14 (only JUKEBOX BLUE off, -6; before: TESLA and
   JUKEBOX GREEN +6, JUKEBOX GOLD -5). RED is unchanged (TESLA -5, BANKROLL -6 there: scars plus act 3, left as the user's
   harder RED). Tried and dropped: +7% from GREEN (BLACK to GOLD fell 4-11 too far), +4% (JOKER BLUE +6).
+- **Act 1 pacing (2026-11-09, the user's call 2 from the launch QA):** the playtest saw TESLA take 8-10 spins against a
+  180-HP COOLER (KNIGHT 3-5) and a BARFLY fight run 19 turns with 26 of 36 cells spilled. Target: act 1 regular fights at
+  a median of 6 or fewer of your spins and p90 9 or fewer on every machine, with run win and act 1 deaths near today's.
+  Changed: the spill cap (above); TESLA a 2nd CHARGED reel (1 bolt on reel 2) and 360 -> 340 HP; BANKROLL 7 chips and 5
+  shields a reel (was 6 / 6) and 480 -> 420 HP. The extra attack is flat, so it counts most in act 1 and fades as levels
+  grow; the HP keeps run win where it was (shorter fights cost less HP). Tried and dropped: TESLA / BANKROLL symbols from
+  level 2 (+20 run win at WHITE), 2-4 extra CHARGED bolts on TESLA (+5 to +8 at 360 HP), BANKROLL 7 / 5 at 480 HP
+  (+5 to +11 from GREEN up). Act 1 regulars at WHITE, 500 runs, your spins median / p90 (act 1 deaths): KNIGHT 4 / 8 ->
+  4 / 8 (28% -> 28%), TESLA 6 / 10 -> 6 / 9 (24% -> 20%), JUKEBOX 5 / 8 -> 5 / 8 (26% -> 24%), JOKER 5 / 9 -> 5 / 8 (30%
+  -> 29%), BANKROLL 6 / 11 -> 5 / 9 (21% -> 16%). BARFLY fights, the most of your symbols spilled at once, p90: 50-61% ->
+  33%. Run win %, 500 runs a machine a stake, before -> after (WHITE / RED / GREEN / BLACK / BLUE / GOLD; targets 60 /
+  43 / 36 / 28 / 20 / 14): KNIGHT 60 / 38 / 35 / 30 / 18 / 15 -> 60 / 39 / 36 / 31 / 19 / 15; TESLA 62 / 38 / 36 / 27 /
+  16 / 12 -> 64 / 38 / 38 / 30 / 17 / 13; JUKEBOX 58 / 45 / 35 / 26 / 15 / 10 -> 59 / 45 / 36 / 25 / 17 / 10; JOKER 56 /
+  39 / 34 / 26 / 23 / 15 -> 58 / 40 / 35 / 29 / 23 / 16; BANKROLL 60 / 43 / 40 / 31 / 18 / 16 -> 61 / 39 / 36 / 31 / 21
+  / 19. Fuzz: no invariant breaks. (The measure: `tools/out/pacing/measure.ts`, not committed.)
 - **Settings for new players (2026-11-08, user):** SPEED 1X and master volume 5 of 10, in the game and the demo (were 2X
   and 10). Saved settings are kept.
 - **Cashier HEAL and +MAX HP pricier (2026-11-07, user):** HEAL 6 (+3 a buy) -> 10 (+5), +MAX HP 5 (+4) -> 8 (+6).

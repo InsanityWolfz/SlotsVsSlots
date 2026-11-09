@@ -355,14 +355,14 @@ describe('BANKROLL', () => {
   });
 
   describe('GOLDEN PARACHUTE', () => {
-    it('a killing hit: pay 10 chips, land at 25% HP (480 HP: 120)', () => {
+    it('a killing hit: pay 10 chips, land at 25% HP (420 HP: 105)', () => {
       const f = mk('midas', ['parachute'], { chips: 10, enemy: 'sword' });
       const ev = lethal(f, 5);
       expect(f.over).toBe(false);
       expect(relicFired(ev, 'parachute')).toBe(true);
       expect(f.parachuteChips).toBe(10);
-      expect(f.sides.player.maxHp).toBe(480);
-      expect(f.sides.player.hp).toBe(120);
+      expect(f.sides.player.maxHp).toBe(420);
+      expect(f.sides.player.hp).toBe(105);
     });
     it('"LAND AT 25% HP" is exactly 25%, rounded to a whole HP', () => {
       const f = mk('midas', ['parachute'], { chips: 10, enemy: 'sword' });
