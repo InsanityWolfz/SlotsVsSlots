@@ -3,9 +3,10 @@ import { type RunState, type ShopItem } from '../../core/run';
 import { rerollCost } from '../../core/shop';
 import { backOut, sineOut } from '../../present/ease';
 import { ENH_SPRITE } from '../../present/reel';
-import { COLORS, W } from '../../present/layout';
+import { W } from '../../present/layout';
 import { artId, drawPortrait, drawSprite, type SpriteId } from '../../render/sprites';
 import { drawText, textWidth } from '../../render/text';
+import { drawCashierRoom } from '../../render/roomCashier';
 import { drawRich } from '../keywords';
 import { drawCard, drawChip, drawPanel, drawTitle, drawWell, KIT, T } from '../kit';
 import { wrap, Hit, BUILD, CX, spotlight } from './shared';
@@ -16,8 +17,6 @@ import { by, drawPrompt } from '../input';
 /** THE CASHIER: the shelves' rows (the counter goods, then the relics behind the glass), the spacing, an item card. */
 const SHELF = { y: [232, 446], gap: 168 };
 const ITEM = { w: 124, h: 100 };
-/** The wall behind the shelves (wood, scenery). */
-const WALL = { x: 330, w: 932, y: 150, h: 418 };
 
 export abstract class ShopScreen extends EncounterScreen {
   /** Unaffordable purchase: shake its price tag. */
@@ -95,13 +94,15 @@ export abstract class ShopScreen extends EncounterScreen {
   }
 
   protected drawShop(ctx: CanvasRenderingContext2D, time: number): void {
+    // His counter for this act (roomCashier.ts: the pawn shop, the cage, the high-limit cage, the cage at closing),
+    // over the whole screen; the shelves' wall, planks and glass case are part of it, laid out as before.
+    if (this.run) drawCashierRoom(ctx, this.run, time, this.reduceMotion);
     // The Cashier himself, in a lit well (drawPortrait: his 32x32 art and the old 24x24 fill the same box).
     drawWell(ctx, 334, 18, 116, 116, '#1c1530');
     spotlight(ctx, 392, 118, 96, '#5ad8e8', 0.12, [336, 20, 112, 112]);
     drawPortrait(ctx, 'cashierPortrait', 392, 76 + (this.reduceMotion ? 0 : Math.round(Math.sin(time * 2) * 2)), 4);
     // (No speech line under the name: user, 2026-10-31, it read like AI. The name sits level with his face.)
     drawTitle(ctx, 'THE CASHIER', 474, 76, KIT.title, { align: 'left' });
-    this.drawShelves(ctx, time);
     this.shopItems.forEach((item, i) => this.drawShopItem(ctx, this.shopHits[i], item, time));
     for (const b of this.buttons) this.drawButton(ctx, b, time);
     // What the item under the pointer (or pinned) is: name, rule and price, beside it.
@@ -109,53 +110,6 @@ export abstract class ShopScreen extends EncounterScreen {
     const hov = this.shopHits.findIndex((h, k) => (h.hover || this.shopTags[k]?.hover) && live(k));
     const i = hov >= 0 ? hov : live(this.shopSel) ? this.shopSel : -1;
     if (i >= 0) this.drawShopTip(ctx, this.shopHits[i], this.shopItems[i]);
-  }
-
-  /** Scenery: the wood back wall, two shelves, the glass case on the lower one (its sheen sweeps slowly). */
-  protected drawShelves(ctx: CanvasRenderingContext2D, time: number): void {
-    const { x, w, y, h } = WALL;
-    ctx.fillStyle = COLORS.outline;
-    ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
-    for (let k = 0, by = y; by < y + h; k++, by += 24) {
-      ctx.fillStyle = k % 2 ? '#5a3418' : '#64391b';
-      ctx.fillRect(x, by, w, Math.min(24, y + h - by));
-      ctx.fillStyle = '#3a2010';
-      ctx.fillRect(x, by + 22, w, 2);
-      ctx.fillStyle = 'rgba(0,0,0,0.12)';
-      for (let g = 0; g < 6; g++) ctx.fillRect(x + ((k * 131 + g * 197) % (w - 60)), by + 6 + (g % 3) * 5, 30 + ((g * 23) % 50), 2);
-    }
-    // The glass case behind the relic shelf: a frame, a cool tint and slow pixel sheen bands.
-    const gy = SHELF.y[1] - 96;
-    const gh = 168;
-    ctx.fillStyle = '#2a1408';
-    ctx.fillRect(x + 12, gy - 4, w - 24, gh + 8);
-    ctx.fillStyle = '#1a1030';
-    ctx.fillRect(x + 16, gy, w - 32, gh);
-    ctx.fillStyle = 'rgba(160,200,255,0.06)';
-    ctx.fillRect(x + 16, gy, w - 32, gh);
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x + 16, gy, w - 32, gh);
-    ctx.clip();
-    ctx.fillStyle = 'rgba(220,240,255,0.07)';
-    const sweep = this.reduceMotion ? 0 : (time * 26) % 220;
-    for (let k = -1; k < 6; k++)
-      for (let r = 0; r < gh; r += 2) ctx.fillRect(Math.round(x + 40 + k * 220 + sweep + r * 0.4), gy + r, 16, 2);
-    ctx.restore();
-    ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(x + 12, gy - 4, w - 24, 2);
-    // The planks.
-    for (const sy of SHELF.y) {
-      const py = sy + 34;
-      ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(x + 4, py - 2, w - 8, 18);
-      ctx.fillStyle = '#8a5a2e';
-      ctx.fillRect(x + 6, py, w - 12, 12);
-      ctx.fillStyle = '#b07a42';
-      ctx.fillRect(x + 6, py, w - 12, 3);
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.fillRect(x + 6, py + 14, w - 12, 6);
-    }
   }
 
   /** The pinned or hovered item: its name, its full rule and the price, in a kit panel beside it. */
