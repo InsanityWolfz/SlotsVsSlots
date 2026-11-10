@@ -158,7 +158,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 1.5 * UNIT, perWild: 5 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
-    rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS, HEAL 15. A WILD LETS ANY 2 REELS PAIR. 365 HP.',
+    rule: 'WILDS FILL A METER: THEN ALL 3 SYMBOLS PAY JACKPOTS, HEAL 15. A WILD LETS ANY 2 REELS PAIR. 365 HP.',
     unlock: 'BEAT THE DOORMAN WITH A WILD ON YOUR REELS',
     jokerWilds: true,
   },

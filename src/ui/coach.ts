@@ -107,8 +107,8 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'buil
 export const METER_TIPS: Partial<Record<CabinetId, Tip>> = {
   tesla: { title: 'LIGHTNING', text: 'BOLTS CHARGE IT. WHEN IT FILLS A STORM HITS THROUGH SHIELDS AND HEALS 15.', rect: hud('player') },
   jukebox: { title: 'VOLUME', text: 'NOTES TURN IT UP. A SPIN WITH NO NOTE TURNS IT DOWN. AT 6 THE DROP HITS WITH EVERY NOTE AND HEALS 15.', rect: hud('player') },
-  joker: { title: 'JACKPOTS', text: 'WILDS FILL IT. WHEN IT FILLS ALL 3 PAYLINE CELLS PAY JACKPOTS AND YOU HEAL 15.', rect: hud('player') },
-  midas: { title: 'HIGH ROLLER', text: 'CHIPS FILL IT. WHEN IT FILLS YOUR BEST HIT PAYS UP TO X2.5 AND YOU HEAL 15.', rect: hud('player') },
+  joker: { title: 'JACKPOTS', text: 'WILDS FILL IT. WHEN IT FILLS ALL 3 PAYLINE SYMBOLS PAY JACKPOTS AND YOU HEAL 15.', rect: hud('player') },
+  midas: { title: 'HIGH ROLLER', text: 'CHIPS FILL IT. WHEN IT FILLS YOUR NEXT HIT IS MULTIPLIED UP TO X2.5 AND YOU HEAL 15.', rect: hud('player') },
 };
 
 export class Coach {
