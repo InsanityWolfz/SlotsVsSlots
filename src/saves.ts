@@ -95,6 +95,21 @@ const BAK = '.bak';
 
 /** The saved run (S1). */
 export const RUN_KEY = 'slotvslot.run.v1';
+/**
+ * A saved run this build couldn't play (a failed CONTINUE, or a save the loader rejected) is kept here, never deleted:
+ * a player lost a deep run on 2026-11-10 with no CONTINUE and nothing in HISCORES. The next NEW RUN still writes a
+ * fresh save; this copy is only for recovery and bug reports (dbg / the crash report).
+ */
+export const RUN_FAILED_KEY = RUN_KEY + '.failed';
+export function keepFailedRun(why: string): void {
+  try {
+    const raw = localStorage.getItem(RUN_KEY);
+    if (raw) localStorage.setItem(RUN_FAILED_KEY, JSON.stringify({ at: Date.now(), why, raw }));
+  } catch {
+    /* no storage */
+  }
+}
+
 export function clearRunSave(): void {
   try {
     // The backups too: a cleared run must never come back through CONTINUE (STEAM_QA_1 Q1).
@@ -234,6 +249,11 @@ export function loadRunSave(): { at: 'next' | 'after' | 'fight' | 'ride'; run: R
   delete old.bets;
   // THE WHEEL replaced THE MIRROR (2026-10-09): a save holding the old act 2 boss meets the new one.
   migrateRun(run);
-  if (!cleanRun(run, s.at)) return null;
+  if (!cleanRun(run, s.at)) {
+    // Kept for recovery, and said out loud (it used to vanish without a word).
+    console.warn('[save] the saved run was rejected by the loader; kept as', RUN_FAILED_KEY);
+    keepFailedRun('rejected by cleanRun');
+    return null;
+  }
   return { at: s.at === 'after' ? 'after' : s.at === 'fight' ? 'fight' : s.at === 'ride' ? 'ride' : 'next', run };
 }

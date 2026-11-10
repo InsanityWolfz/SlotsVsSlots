@@ -39,7 +39,8 @@ import { demo } from './demo';
 import { METER_TIPS, TUTORIAL } from './ui/coach';
 import { collectionTotal, heroSprite } from './ui/menus';
 import { shownTrim, emptyProfile, MAX_ENTRIES, recordMeta, runEntry, runScore, type MetaGain, type RunEntry } from './core/profile';
-import { clearRunSave, LASTRUN_KEY, loadRunSave, PAYLINE_HINTS, RUN_KEY, sanitizePrefs, save } from './saves';
+import { clearRunSave, keepFailedRun, LASTRUN_KEY, loadRunSave, PAYLINE_HINTS, RUN_KEY, sanitizePrefs, save } from './saves';
+import { reportCrash } from './ui/crash';
 import type { Game } from './game';
 
 const AUTO_DELAY = 0.35;
@@ -272,8 +273,10 @@ export function continueRun(g: Game): void {
   try {
     resumeRun(g);
   } catch (err) {
-    // A save this build can't play: drop it rather than crash on every CONTINUE.
-    console.error(err);
+    // A save this build can't play: keep a copy (RUN_FAILED_KEY) and show the crash report, then drop it so CONTINUE
+    // doesn't fail again. It used to vanish silently: a player lost a deep run with no word (2026-11-10).
+    keepFailedRun(`CONTINUE failed: ${err instanceof Error ? err.message : String(err)}`);
+    reportCrash(err, () => ({ where: 'CONTINUE', phase: g.phase }));
     clearRunSave();
     g.showMenu();
   }
