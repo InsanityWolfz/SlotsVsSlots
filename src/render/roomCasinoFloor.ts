@@ -29,17 +29,16 @@ import { drawPatron, LOOKS } from './patrons';
 const CX = 320;
 const HOR = 140;
 const EYE = 250;
-/** The pit's half width (its back wall and floor), and the low ceiling. */
-const ROW = 340;
+/** The low ceiling. */
 const CEIL = 560;
 const xAt = (lat: number, z: number) => CX + lat / z;
 const yAt = (h: number, z: number) => HOR + (EYE - h) / z;
 
 /** The roulette pit's front (where the rows end) at each station: far down the aisle, then nearer each fight. */
-const Z_FAR = [9.0, 6.2, 4.3, 3.0];
+const Z_FAR = [4.7, 3.9, 3.3, 2.7];
 export const FLOOR_STATIONS = Z_FAR.length;
 /** The pit's depth: past the last machines, the table games before the back wall. */
-const PIT = 1.1;
+const PIT = 0.8;
 
 // The portraits' palette (as roomEntrance.ts) plus the casino's darks.
 const K = '#140c1c';
@@ -83,24 +82,22 @@ const MDEPTH = 0.3;
 const STOOL = 0.2;
 
 interface Station {
-  /** The nearest bank's depth (the banks repeat every BANK_STEP out to the pit). */
+  /** The nearest bank's depth (the banks repeat every BANK_STEP out to the pit: two or three a side). */
   firstBank: number;
-  /** The cashier's cage: a booth standing in a bank's place on one side. */
-  cage: { side: -1 | 1; z: number } | null;
   /** The overhead sign facing us, hanging over the aisle at this depth (null: none). */
   sign: { z: number; kind: 'slots' | 'jackpot' } | null;
   /** A side aisle someone crosses (its depth; 0: nobody). */
   walkZ: number;
 }
 const STATIONS: Station[] = [
-  // (a) Just inside the doors: the floor opens up, banks ahead either side, SLOTS hangs over the aisle.
-  { firstBank: 2.0, cage: null, sign: { z: 2.7, kind: 'slots' }, walkZ: 3.3 },
-  // (b) Among the banks, the cashier's cage on the right.
-  { firstBank: 1.45, cage: { side: 1, z: 1.32 }, sign: null, walkZ: 2.72 },
+  // (a) Just inside the doors: three banks a side ahead, SLOTS over the aisle, the table games across the end.
+  { firstBank: 1.35, sign: { z: 2.3, kind: 'slots' }, walkZ: 2.62 },
+  // (b) Among the banks: two a side, the pit nearer.
+  { firstBank: 1.35, sign: null, walkZ: 1.77 },
   // (c) Under the progressive jackpot's board.
-  { firstBank: 1.45, cage: null, sign: { z: 2.3, kind: 'jackpot' }, walkZ: 2.72 },
+  { firstBank: 1.35, sign: { z: 2.0, kind: 'jackpot' }, walkZ: 1.77 },
   // (d) The last bank, the table games and THE WHEEL big ahead.
-  { firstBank: 1.45, cage: null, sign: null, walkZ: 0 },
+  { firstBank: 1.35, sign: null, walkZ: 0 },
 ];
 
 /** Which station an act 2 fight sits at: the act's regular fights spread over the four, the last one always the end of
@@ -116,7 +113,6 @@ function bankDepths(st: Station, zFar: number): number[] {
   for (let z = st.firstBank; z < zFar - PIT - 0.2; z += BANK_STEP) out.push(z);
   return out;
 }
-const caged = (st: Station, side: number, z: number) => !!st.cage && st.cage.side === side && z < st.cage.z + 0.75;
 
 // ---- the still layer: ceiling, carpet, the banks, the pit -------------------------------------------------------
 
@@ -236,9 +232,8 @@ function stool(g: CanvasRenderingContext2D, lat: number, z: number): void {
 }
 
 /** One bank (both sides at depth z): its machines, the side of its aisle end, the stools, the players on some of them. */
-function drawBank(g: CanvasRenderingContext2D, st: Station, z: number, b: number, late: number): void {
+function drawBank(g: CanvasRenderingContext2D, _st: Station, z: number, b: number, late: number): void {
   for (const side of [-1, 1] as const) {
-    if (caged(st, side, z)) continue;
     // The bank's aisle end: the end machine's side, in perspective from its front back to MDEPTH.
     const xa = xAt(side * INNER, z);
     const xb = xAt(side * INNER, z + MDEPTH);
@@ -266,30 +261,6 @@ function drawBank(g: CanvasRenderingContext2D, st: Station, z: number, b: number
       drawPatron(g, xAt(c, zs), yAt(76, zs), h, LOOKS[Math.floor(hash(n, 7) * LOOKS.length)], pose, hash(n, 9) < 0.5);
     }
   }
-}
-
-/** The cashier's cage: a booth standing in the banks' place, barred windows over a counter, CASHIER on its frieze (the
- * letters are live). */
-function drawCage(g: CanvasRenderingContext2D, cage: NonNullable<Station['cage']>): void {
-  const z = cage.z;
-  const s0 = cage.side * INNER;
-  const s1 = cage.side * (INNER + PER_BANK * MACH);
-  const [l0, l1] = s0 < s1 ? [s0, s1] : [s1, s0];
-  const C = (a: number, b: number, h0: number, h1: number, c: string, grow = 0) => face(g, z, a, b, h0, h1, c, grow);
-  C(l0, l1, 0, 262, K, 1);
-  C(l0, l1, 0, 262, '#1e120e');
-  C(l0, l1, 0, 92, '#2a1a10');
-  C(l0, l1, 86, 92, g8);
-  C(l0, l1, 91, 92, G);
-  for (let lat = l0 + 20; lat < l1 - 60; lat += 110) {
-    C(lat, lat + 90, 100, 206, K);
-    C(lat + 2, lat + 88, 102, 204, '#20120a');
-    C(lat + 2, lat + 88, 102, 116, '#2e1a0e');
-    for (let b2 = lat + 10; b2 < lat + 88; b2 += 14) C(b2, b2 + 2, 102, 204, '#6a4416');
-  }
-  C(l0, l1, 214, 254, d);
-  C(l0, l1, 252, 254, G);
-  C(l0, l1, 214, 216, G);
 }
 
 /** A figure at depth (world units: its feet on the floor at `lat`, `z`): a dim player, a dealer. Rects, so its pixels
@@ -338,30 +309,42 @@ function drawPit(g: CanvasRenderingContext2D, zFar: number, late: number): void 
   const Yh = (h: number, z = zw) => Math.round(yAt(h, z));
   const wall = (lat0: number, lat1: number, h0: number, h1: number, c: string, z = zw) => px(g, X(lat0, z), Yh(h1, z), X(lat1, z) - X(lat0, z), Yh(h0, z) - Yh(h1, z), c);
   // The back wall: panelled, a gold frieze, TABLE GAMES in gold (live), velvet drapes either side.
-  wall(-ROW * 3, ROW * 3, 0, CEIL, '#1c1228');
-  for (let lat = -ROW * 3; lat < ROW * 3; lat += 120) wall(lat, lat + 4, 0, CEIL, '#160e22');
-  wall(-ROW * 3, ROW * 3, 470, 480, g8);
+  wall(-4000, 4000, 0, CEIL, '#1c1228');
+  for (let lat = -3960; lat < 4000; lat += 120) wall(lat, lat + 4, 0, CEIL, '#160e22');
+  wall(-4000, 4000, 470, 480, g8);
+  for (let lat = -3900; lat < 4000; lat += 580) if (Math.abs(lat) > 400) wall(lat, lat + 60, 0, 470, '#3e1226');
   wall(-200, 200, 380, 460, K);
   wall(-196, 196, 384, 456, d);
   for (const side of [-1, 1]) wall(side < 0 ? -320 : 250, side < 0 ? -250 : 320, 0, 470, r);
   // The floor of the pit: the carpet stops at a brass strip, the pit's floor a shade lighter.
   const zt = zFar + 0.25;
-  for (let y = Yh(0, zw); y < Yh(0, zFar); y++) {
-    const z = EYE / (y + 0.5 - HOR);
-    px(g, xAt(-ROW, z), y, (2 * ROW) / z, 1, '#32162a');
-  }
-  px(g, xAt(-ROW, zFar), Yh(0, zFar), (2 * ROW) / zFar, 1, g8);
-  // A blackjack table either side in the pit (low, felt, its players on stools; fewer late at night).
+  for (let y = Yh(0, zw); y < Yh(0, zFar); y++) px(g, 0, y, RW, 1, '#32162a');
+  px(g, 0, Yh(0, zFar), RW, 1, g8);
+  // A row of blackjack tables either side of the roulette, across the pit's whole width: each under its lamp, a dealer
+  // behind, players on stools (fewer late at night); BLACKJACK on the wall over each side.
   for (const side of [-1, 1]) {
-    const lat = side * 230;
-    const z1 = zFar + 0.35;
-    // The dealer behind the table (drawn first: the table hides the legs).
-    person(g, lat, z1 + 0.2, '#1e1a26', '#2a1a14');
-    wall(lat - 70, lat + 70, 0, 95, WOOD_D, z1);
-    wall(lat - 70, lat + 70, 95, 110, WOOD, z1);
-    wall(lat - 64, lat + 64, 102, 108, FELT, z1);
-    if (hash(side, 7) >= late) person(g, lat - 40, z1 - 0.12, side < 0 ? '#3a4a7a' : '#6a3a5a', side < 0 ? '#2a1a14' : '#c8c0d0', true);
-    if (hash(side, 9) >= late * 1.2) person(g, lat + 40, z1 - 0.12, side < 0 ? '#5a2a2a' : '#2a4a3a', '#3a2a1a', true);
+    for (let n = 0; n < 7; n++) {
+      const lat = side * (240 + n * 300);
+      const z1 = zFar + 0.35;
+      if (xAt(lat + 80, z1) < -10 || xAt(lat - 80, z1) > RW + 10) continue;
+      person(g, lat, z1 + 0.2, '#1e1a26', '#2a1a14');
+      wall(lat - 2, lat + 2, 330, CEIL, k, z1);
+      wall(lat - 36, lat + 36, 300, 318, K, z1);
+      wall(lat - 34, lat + 34, 302, 316, g8, z1);
+      wall(lat - 34, lat + 34, 302, 304, G, z1);
+      wall(lat - 24, lat + 24, 296, 300, '#ffe08a', z1);
+      wall(lat - 70, lat + 70, 0, 95, WOOD_D, z1);
+      wall(lat - 70, lat + 70, 95, 110, WOOD, z1);
+      wall(lat - 64, lat + 64, 102, 108, FELT, z1);
+      const n2 = n * 2 + (side < 0 ? 0 : 20);
+      const looks = [['#3a4a7a', '#2a1a14'], ['#6a3a5a', '#c8c0d0'], ['#5a2a2a', '#3a2a1a'], ['#2a4a3a', '#8a3418']];
+      if (hash(n2, 7) >= late) person(g, lat - 40, z1 - 0.12, looks[n2 % 4][0], looks[n2 % 4][1], true);
+      if (hash(n2 + 1, 9) >= late * 1.2) person(g, lat + 40, z1 - 0.12, looks[(n2 + 1) % 4][0], looks[(n2 + 1) % 4][1], true);
+    }
+  }
+  for (const side of [-1, 1]) {
+    const lat = side * 620;
+    if (xAt(lat, zw) > 20 && xAt(lat, zw) < RW - 20) drawText(g, 'BLACKJACK', xAt(lat, zw), yAt(420, zw), 1, G, { outline: K });
   }
   // THE WHEEL behind it (her red hair, the green eyeshade, the green jacket with its white shirt front).
   const zh = zt + 0.45;
@@ -437,11 +420,7 @@ function still(i: number, late: number): HTMLCanvasElement {
   drawCarpet(g, zFar);
   // The banks, far to near (each hides what's below its top behind it), the cage among them, the sign overhead.
   const banks = bankDepths(st, zFar);
-  for (let b = banks.length - 1; b >= 0; b--) {
-    drawBank(g, st, banks[b], b, late);
-    if (st.cage && st.cage.z > banks[b] - BANK_STEP && st.cage.z <= banks[b]) drawCage(g, st.cage);
-  }
-  if (st.cage && st.cage.z < banks[0]) drawCage(g, st.cage);
+  for (let b = banks.length - 1; b >= 0; b--) drawBank(g, st, banks[b], b, late);
   drawSign(g, st.sign);
   stills.set(key, cv);
   return cv;
@@ -519,7 +498,6 @@ export function drawFloorStation(ctx: CanvasRenderingContext2D, o: FloorScene): 
   // The toppers' bulbs: three on each lit topper, blinking slowly out of step (none on dark machines).
   banks.forEach((z, b) => {
     for (const side of [-1, 1] as const) {
-      if (caged(st, side, z) || (st.cage && st.cage.side === side && z > st.cage.z)) continue;
       for (let j = 0; j < PER_BANK; j++) {
         const lat0 = side < 0 ? -INNER - (j + 1) * MACH : INNER + j * MACH;
         const m = j + b * PER_BANK;
@@ -540,7 +518,7 @@ export function drawFloorStation(ctx: CanvasRenderingContext2D, o: FloorScene): 
     }
   });
 
-  // The overhead sign's letters, the jackpot board's number climbing, the cage's CASHIER.
+  // The overhead sign's letters, the jackpot board's number climbing.
   if (st.sign) {
     const z = st.sign.z;
     if (st.sign.kind === 'slots') drawText(g, 'SLOTS', CX, yAt(455, z), 2, Math.floor(t * 1.5) % 6 === 0 ? Yl : G, { outline: K });
@@ -551,12 +529,6 @@ export function drawFloorStation(ctx: CanvasRenderingContext2D, o: FloorScene): 
       for (let j = 0; j < 12; j++) bulb(g, xAt(-160 + (j * 320) / 11, z) - 1, yAt(500, z) - 1, (j + Math.floor(t * 4)) % 3 === 0 ? 1 : 0);
     }
   }
-  if (st.cage) {
-    const z = st.cage.z;
-    const lat = st.cage.side * (INNER + 222);
-    drawText(g, 'CASHIER', xAt(lat, z), yAt(234, z), 1, Math.floor(t * 1.2) % 7 === 0 ? Yl : G, { outline: K });
-  }
-
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(still(i, late), 0, 0, RW * 2, RH * 2);
