@@ -29,7 +29,7 @@ export interface Tip {
 /** A tip's words for the device in hand. */
 export const tipText = (tip: Tip): string => forInput({ touch: tip.text, mouse: tip.mouse, keys: tip.keys, pad: tip.pad ?? tip.keys ?? tip.mouse ?? tip.text });
 
-// (The tutorial's words: short plain sentences, no commas, semicolons or colons. User, 2026-11-10: "this is a video
+// (The tutorial's words: short plain sentences, no semicolons or colons, a comma only in a list. User, 2026-11-10: "this is a video
 // game not a memo".)
 const PAIR_TAIL = 'YOUR NEXT SPIN KEEPS THEM AND ROLLS THE LAST REEL FOR A JACKPOT. HOLD WHILE THE ENEMY SPINS.';
 
@@ -49,7 +49,7 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'buil
     },
   ],
   fight: [
-    { title: 'YOUR SLOT MACHINE', text: 'THE MIDDLE ROW IS THE PAYLINE. SWORDS HIT. SHIELDS BLOCK. TWO THE SAME FROM THE LEFT IS A PAIR. THREE IS A JACKPOT.', rect: machine('player') },
+    { title: 'YOUR SLOT MACHINE', text: 'THE MIDDLE ROW IS THE PAYLINE. SWORDS HIT. SHIELDS BLOCK. MATCHING SYMBOLS FROM THE LEFT IS A PAIR. THREE IS A JACKPOT.', rect: machine('player') },
     {
       title: 'SPIN AND AUTO',
       text: 'PRESS SPIN TO SPIN. AUTO SPINS FOR YOU. SPEED GOES UP TO 8X.',
@@ -61,7 +61,7 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'buil
   ],
   firstSpin: [
     { title: 'THAT\'S A SPIN', text: 'EACH SYMBOL ON THE PAYLINE PAID ITS NUMBER. A PAIR PAYS X2. A JACKPOT PAYS X3. NOW THE ENEMY SPINS. FIRST TO 0 HP LOSES.' },
-    { title: 'YOUR HP', text: 'RED IS HP. BLUE IS SHIELD AND BLOCKS THE NEXT HIT. YOUR HP CARRIES INTO THE NEXT FIGHT.', rect: hud('player') },
+    { title: 'YOUR HP', text: 'RED IS HP. BLUE IS SHIELD AND BLOCKS THE NEXT HIT.', rect: hud('player') },
   ],
   hold: [
     {
@@ -80,7 +80,7 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'buil
     { title: 'CHARMS', text: 'A CHARM SITS ON ONE SYMBOL AND WORKS WHEN IT PAYS. GOLD MULTIPLIES THE PAY. KEEN PIERCES SHIELDS. VAMP HEALS YOU.' },
   ],
   shop: [
-    { title: 'THE CASHIER', text: 'WINS EARN CHIPS. SPEND THEM HERE ON LEVELS AND RELICS AND A HEAL.' },
+    { title: 'THE CASHIER', text: 'WINS EARN CHIPS. SPEND THEM HERE ON LEVELS, RELICS AND HEALS.' },
     { title: 'THE BIG ONE', text: 'THE CASE ALWAYS HOLDS ONE LEGENDARY RELIC AT A HIGH PRICE. SAVED CHIPS EARN INTEREST AFTER EACH WIN.' },
   ],
   next: [
