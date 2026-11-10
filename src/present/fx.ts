@@ -1,5 +1,5 @@
 import { drawSprite, type SpriteId } from '../render/sprites';
-import { drawText, textWidth } from '../render/text';
+import { drawText, PROBE, textWidth } from '../render/text';
 import { COLORS, H, W } from './layout';
 import { drawPanel, drawTitle, KIT, T } from '../ui/kit';
 
@@ -49,6 +49,7 @@ export class FloatText implements FxItem {
       const y0 = Math.round(this.y - h / 2);
       ctx.save();
       ctx.globalAlpha *= this.alpha;
+      if (import.meta.env.DEV && PROBE.see) PROBE.see('plate', `float:${this.text}`, ctx, x0 - 2, y0 - 2, w + 4, h + 4);
       ctx.fillStyle = COLORS.outline;
       ctx.fillRect(x0 - 2, y0 - 2, w + 4, h + 4);
       ctx.fillStyle = KIT.frameDim;

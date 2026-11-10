@@ -12,6 +12,7 @@ import { setInputMode, type InputMode } from './ui/input';
 import { RUNOVER } from './render/roomRunOver';
 import { endlessPlace, ROOM_V2, roomPlace } from './render/rooms';
 import { devSwapSprite } from './render/sprites';
+import { PROBE, type ProbeFn } from './render/text';
 
 /**
  * Dev-only console helpers (window.dbg) for frame-stepping the presentation and forcing
@@ -36,6 +37,9 @@ export function installDebug(game: Game): void {
     /** The prompts for a device: dbg.input('pad') shows the button badges. */
     input: (m: InputMode) => (setInputMode(m), m),
     pause,
+    /** The layout probe: dbg.probe(fn) is told every string and kit plate as it's drawn (null: off). For the fight-UI
+     * stress harness, which looks for words that overlap. */
+    probe: (fn: ProbeFn | null) => ((PROBE.see = fn), !!fn),
     /** RUN OVER's thrown-out scenes on or off (off: the screen as it was). */
     runOver: (on: boolean) => ((RUNOVER.on = on), on),
     resume: () => (game.stage.clock.speed = game.prefs.speed / 2),

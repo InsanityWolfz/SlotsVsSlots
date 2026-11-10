@@ -1,5 +1,5 @@
 import { COLORS } from '../present/layout';
-import { drawText, type TextOpts } from '../render/text';
+import { drawText, PROBE, type TextOpts } from '../render/text';
 import { drawPrompt, promptWidth } from './input';
 
 /**
@@ -43,6 +43,7 @@ export interface PanelOpts {
 
 /** THE panel: near-black outline, 3px frame, dark plum fill with a faint top sheen. x/y is the top-left corner. */
 export function drawPanel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, o: PanelOpts = {}): void {
+  if (import.meta.env.DEV && PROBE.see) PROBE.see('plate', `panel:${o.title ?? ''}`, ctx, x - 3, y - 3, w + 6, h + 6);
   ctx.fillStyle = COLORS.outline;
   ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
   ctx.fillStyle = o.lit ? COLORS.goldLight : (o.frame ?? KIT.frame);
@@ -142,6 +143,7 @@ export function drawChip(ctx: CanvasRenderingContext2D, label: string, x: number
   const h = Math.round(Math.max(7 * s + 14, o.icon && o.iconW ? o.iconW + 4 : 0));
   const x0 = Math.round(x - w / 2);
   const y0 = Math.round(y - h / 2);
+  if (import.meta.env.DEV && PROBE.see) PROBE.see('plate', `chip:${label}`, ctx, x0 - 2, y0 - 2, w + 4, h + 4);
   ctx.fillStyle = COLORS.outline;
   ctx.fillRect(x0 - 2, y0 - 2, w + 4, h + 4);
   ctx.fillStyle = o.frame ?? KIT.frame;
