@@ -276,9 +276,10 @@ export class Game {
     this.startBtn = this.btn('START RUN', W / 2 + 10, by, 196, 56, () => flow.newRunPressed(this), { idlePulse: true, textScale: 3 });
     // (TUNE and LOG are dev tools, the tuning panel and the combat log: never in the public build, see syncButtons.
     // User, 2026-10-31: LOG out of the public and Steam builds.)
-    const tune = this.btn('TUNE', W / 2, by, QUIET_W, 36, () => {}, { quiet: true, textScale: T.small });
+    // (Under SOUND and PAUSE: the bar's middle is the fight's own line, fightView.drawStatus.)
+    const tune = this.btn('TUNE', toolX(1), by + 42, QUIET_W, 36, () => {}, { quiet: true, textScale: T.small });
     // The tool row: small and dim (it's a watch-only game; the chrome shouldn't compete with the reels).
-    const log = this.btn('LOG', toolX(0), by, QUIET_W, 36, () => {}, { quiet: true, textScale: T.small });
+    const log = this.btn('LOG', toolX(2), by + 42, QUIET_W, 36, () => {}, { quiet: true, textScale: T.small });
     this.muteBtn = this.btn('SOUND', toolX(1), by, QUIET_W, 36, () => this.setMuted(!this.prefs.muted), { quiet: true, textScale: T.small });
 
     this.toolButtons = { tune, log };
