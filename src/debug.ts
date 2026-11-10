@@ -40,7 +40,8 @@ export function installDebug(game: Game): void {
     roomV2: (on: boolean) => ((ROOM_V2.on = on), on),
     /** The journey (rooms v2): show station 0-3 of act 1's street or act 2's floor whatever the depth; null: by depth. */
     station: (n: number | null) => ((ROOM_V2.station = n), n),
-    /** Where the backdrop is now: a station (0-3), 'door' (act 1), 'wheel' (act 2), or null (an old room). */
+    /** Where the backdrop is now: act 1's street (0-3, 'door'), act 2's floor (0-3, 'wheel'), act 3's high-roller room
+     * (0-3, 'table'), or null (an old room). dbg.station(n) forces the station in every act. */
     place: () => roomPlace(game.background.scene),
     /** Swap a sprite's rows (outlined), e.g. a portrait candidate: dbg.sprite('enemyBoss', rows). */
     sprite: (id: string, rows: string[]) => devSwapSprite(id as import('./render/sprites').SpriteId, rows),
@@ -115,6 +116,15 @@ export function installDebug(game: Game): void {
     toBoss() {
       if (!game.run) return;
       skipToBoss(game.run);
+      game.newFight(false, null, fightConfig(game.run, game.cfg), true);
+      game.screens.showNext(game.run);
+    },
+    /** Jump the run to the start of act `n` (its first fight, a fresh map; for checking an act's rooms). */
+    toAct(n: number) {
+      if (!game.run) return;
+      game.run.act = n;
+      setMap(game.run, generateActMap(new Rng((game.run.seed ^ Math.imul(n, 0x3c6ef372)) >>> 0), n, 1, game.run.cabinet));
+      game.run.actIntro = false;
       game.newFight(false, null, fightConfig(game.run, game.cfg), true);
       game.screens.showNext(game.run);
     },

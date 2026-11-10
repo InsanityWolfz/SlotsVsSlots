@@ -1,7 +1,9 @@
 /**
  * THE CASINO'S PATRONS (rooms v2; the user, 2026-11-09: the floor needs "seats or people"). Players at the machines and
- * tables, seen from behind or three-quarter as they play (a hand on the button, leaning in, a cup of coins), and people
- * walking the side aisles. Shared by the casino's rooms (act 2's floor, act 3's high-roller room).
+ * tables, seen from behind or three-quarter as they play (a hand on the button, leaning in, a cup of coins; at a card
+ * table, cards held up or a hand on their chips), and people walking the side aisles. Shared by the casino's rooms
+ * (act 2's floor, act 3's high-roller room: one kit; act 3 adds the card-table poses and `dim`; one serving pose,
+ * `tray`, for both acts' waitresses).
  *
  * The portraits' standard at any size: each figure is rasterized on the room's 2px grid (one art pixel a grid pixel,
  * never scaled after), from a few shapes (head, hair, torso, arms, hands, legs), shaded in steps from the upper left
@@ -19,11 +21,13 @@ export interface PatronLook {
   coat: string;
   /** The trousers or skirt (a walker's legs). */
   legs?: string;
-  hairStyle: 'short' | 'long' | 'bun' | 'bald' | 'cap';
+  hairStyle: 'short' | 'long' | 'bun' | 'bald' | 'cap' | 'visor';
+  /** Sleeves of their own colour (a dealer's white shirtsleeves); otherwise the coat's, a shade darker. */
+  sleeve?: string;
 }
 /** At a machine: from behind with a hand on the button, from behind leaning in, three-quarter holding a cup of coins.
- * Walking the aisles: a profile, two steps. Serving: standing three-quarter, a tray of drinks held up on one hand. */
-export type PatronPose = 'button' | 'lean' | 'cup' | 'walk0' | 'walk1' | 'tray';
+ * Walking the aisles: a profile, two steps. */
+export type PatronPose = 'button' | 'lean' | 'cup' | 'walk0' | 'walk1' | 'cards' | 'chips' | 'deal' | 'tray';
 
 /** A few looks for the casino's crowd (the portraits' skin tones and hair, muted coats: they sit behind the HUD). */
 export const LOOKS: PatronLook[] = [
@@ -52,7 +56,7 @@ function steps(c: string): string[] {
 // units (`hu`), so a head stays round whatever the sprite's width: A is the sprite's width over its height.
 let A = 0.62;
 
-type Part = 'hair' | 'skin' | 'coat' | 'sleeve' | 'legs' | 'shoe' | 'cup' | 'coin' | 'shirt' | 'glass';
+type Part = 'hair' | 'skin' | 'coat' | 'sleeve' | 'legs' | 'shoe' | 'cup' | 'coin' | 'shirt' | 'card' | 'chip' | 'eye' | 'visor' | 'glass';
 interface Shape {
   part: Part;
   hit: (x: number, y: number) => boolean;
@@ -121,6 +125,11 @@ function head(look: PatronLook, cx: number, cy: number, r: number, face: number)
   const hair: Shape[] = [{ part: 'hair', cx, cy, rx: r, ry: r, hu: true, hit: hairBack }];
   if (st === 'long') hair.unshift(box('hair', cx - rw * 0.86, cy, cx + rw * 0.86, cy + r * 2.1));
   if (st === 'bun') hair.push(ell('hair', cx + rw * 0.1, cy - r * 0.95, r * 0.42, r * 0.36));
+  if (st === 'visor') {
+    // A card dealer's green eyeshade: a band round the brow, its brim out over the eyes.
+    hair.push(box('visor', cx - rw * 0.98, cy - r * 0.62, cx + rw * 0.98, cy - r * 0.3));
+    hair.push(box('visor', cx - rw * 1.22, cy - r * 0.34, cx + rw * 1.22, cy - r * 0.2));
+  }
   if (st === 'cap') {
     hair.push(box('sleeve', cx - rw * 0.98, cy - r * 1.0, cx + rw * 0.98, cy - r * 0.3));
     hair.push(box('sleeve', face ? cx - rw * 1.5 : cx - rw * 0.3, cy - r * 0.42, face ? cx - rw * 0.5 : cx + rw * 0.3, cy - r * 0.28));
@@ -131,28 +140,8 @@ function head(look: PatronLook, cx: number, cy: number, r: number, face: number)
 }
 
 function shapes(look: PatronLook, pose: PatronPose): Shape[] {
-  if (pose === 'walk0' || pose === 'walk1') {
-    // A profile walking to the right: the legs in a stride (walk0 open, walk1 passing), the near arm swinging against
-    // the near leg, a collar at the neck, the face (cheek, nose) on the right.
-    const open = pose === 'walk0';
-    const st = open ? 0.24 : 0.06;
-    const r = 0.11;
-    return [
-      limb('legs', -0.02, 0.6, -st, 0.94, 0.06),
-      box('shoe', -st - 0.12, 0.93, -st + 0.1, 1.0),
-      torso('coat', 0.2, 0.63, 0.16, 0.14),
-      box('shirt', -0.06, 0.18, 0.08, 0.23),
-      limb('legs', 0.02, 0.6, st, 0.94, 0.06),
-      box('shoe', st - 0.08, 0.93, st + 0.16, 1.0),
-      limb('sleeve', 0.0, 0.27, open ? -0.16 : 0.06, 0.5, 0.055),
-      ell('skin', open ? -0.16 : 0.06, 0.53, 0.05, 0.04),
-      box('skin', -0.03, 0.15, 0.05, 0.2),
-      ...head(look, 0.02, 0.1, r, 0),
-      ell('skin', 0.15, 0.11, 0.03, 0.03),
-    ];
-  }
   if (pose === 'tray') {
-    // Standing, turned three-quarter: the legs, a short jacket over a white shirt, the far arm down, the near arm up
+    // A drinks server (act 2's waitress, act 3's cocktail waitress: one pose). Standing, turned three-quarter: the legs, a short jacket over a white shirt, the far arm down, the near arm up
     // under a round tray at shoulder height with two glasses and a bottle on it.
     const r = 0.1;
     return [
@@ -174,6 +163,71 @@ function shapes(look: PatronLook, pose: PatronPose): Shape[] {
       box('skin', -0.04, 0.2, 0.04, 0.26),
       ...head(look, 0, 0.16, r, 1),
     ];
+  }
+  if (pose === 'walk0' || pose === 'walk1') {
+    // A profile walking to the right: the legs in a stride (walk0 open, walk1 passing), the near arm swinging against
+    // the near leg, a collar at the neck, the face (cheek, nose) on the right.
+    const open = pose === 'walk0';
+    const st = open ? 0.24 : 0.06;
+    const r = 0.11;
+    return [
+      limb('legs', -0.02, 0.6, -st, 0.94, 0.06),
+      box('shoe', -st - 0.12, 0.93, -st + 0.1, 1.0),
+      torso('coat', 0.2, 0.63, 0.16, 0.14),
+      box('shirt', -0.06, 0.18, 0.08, 0.23),
+      limb('legs', 0.02, 0.6, st, 0.94, 0.06),
+      box('shoe', st - 0.08, 0.93, st + 0.16, 1.0),
+      limb('sleeve', 0.0, 0.27, open ? -0.16 : 0.06, 0.5, 0.055),
+      ell('skin', open ? -0.16 : 0.06, 0.53, 0.05, 0.04),
+      box('skin', -0.03, 0.15, 0.05, 0.2),
+      ...head(look, 0.02, 0.1, r, 0),
+      ell('skin', 0.15, 0.11, 0.03, 0.03),
+    ];
+  }
+  if (pose === 'deal') {
+    // A dealer behind his table facing us (the felt hides him from the waist): white shirtsleeves, a dark vest, a red
+    // bow tie, one hand dealing a card across the felt, the other on the shoe.
+    const r = 0.14;
+    return [
+      torso('coat', 0.26, 0.98, 0.36, 0.3),
+      box('shirt', -0.08, 0.25, 0.08, 0.7),
+      box('chip', -0.06, 0.26, 0.06, 0.31),
+      box('skin', -0.05, 0.12 + r * 0.8, 0.05, 0.27),
+      limb('sleeve', -0.33, 0.34, -0.26, 0.72, 0.08),
+      limb('sleeve', 0.33, 0.34, 0.2, 0.7, 0.08),
+      box('card', 0.12, 0.68, 0.28, 0.76),
+      ell('skin', 0.17, 0.74, 0.06, 0.045),
+      ell('skin', -0.27, 0.77, 0.06, 0.045),
+      ...head(look, 0, 0.12, r, 1),
+      ell('eye', -0.12, 0.14, 0.022, 0.012),
+      ell('eye', 0.05, 0.14, 0.022, 0.012),
+    ];
+  }
+  if (pose === 'cards' || pose === 'chips') {
+    // Across a card table, three-quarter toward us (the felt hides them from the table down): shoulders, a shirt front,
+    // both forearms on the felt; cards held up in a fan, or one hand on a stack of chips.
+    const r = 0.155;
+    const out: Shape[] = [
+      torso('coat', 0.27, 0.98, 0.38, 0.32),
+      box('shirt', -0.09, 0.26, 0.07, 0.5),
+      box('skin', -0.05, 0.13 + r * 0.8, 0.05, 0.3),
+      limb('sleeve', -0.32, 0.36, -0.2, 0.66, 0.075),
+      limb('sleeve', 0.32, 0.36, 0.2, 0.66, 0.075),
+    ];
+    if (pose === 'cards') {
+      out.push(box('card', -0.16, 0.54, 0.02, 0.68));
+      out.push(box('card', -0.02, 0.53, 0.16, 0.67));
+      out.push(ell('skin', -0.14, 0.68, 0.06, 0.045));
+      out.push(ell('skin', 0.14, 0.68, 0.06, 0.045));
+    } else {
+      out.push(box('chip', 0.16, 0.6, 0.34, 0.72));
+      out.push(ell('skin', 0.24, 0.6, 0.065, 0.05));
+      out.push(ell('skin', -0.2, 0.69, 0.06, 0.045));
+    }
+    out.push(...head(look, 0, 0.13, r, 1));
+    // Their eyes, down on the play (a dark dash each; they show from about 40px tall).
+    out.push(ell('eye', -0.13, 0.15, 0.022, 0.012), ell('eye', 0.04, 0.15, 0.022, 0.012));
+    return out;
   }
   const lean = pose === 'lean' ? 0.08 : 0;
   const hy = pose === 'lean' ? 0.17 : 0.13;
@@ -215,11 +269,12 @@ const cache = new Map<string, HTMLCanvasElement>();
 
 /** A patron's sprite, `h` grid pixels tall (seated: from the stool's seat to the top of the head; walking: the whole
  * figure), its 1px outline included. Draw it with its bottom centre on the seat (or the floor). */
-export function patronSprite(h: number, look: PatronLook, pose: PatronPose): HTMLCanvasElement {
+/** `dim` darkens every shade (a near figure behind the reels stays calm, still readable). */
+export function patronSprite(h: number, look: PatronLook, pose: PatronPose, dim = 1): HTMLCanvasElement {
   h = Math.max(12, Math.round(h));
   const walk = pose === 'walk0' || pose === 'walk1' || pose === 'tray';
   const w = Math.max(8, Math.round(h * (walk ? 0.48 : 0.62)));
-  const key = `${h}:${pose}:${look.skin}${look.hair}${look.coat}${look.hairStyle}`;
+  const key = `${h}:${pose}:${dim}:${look.skin}${look.hair}${look.coat}${look.hairStyle}${look.sleeve ?? ''}${look.legs ?? ''}`;
   const hit = cache.get(key);
   if (hit) return hit;
   A = w / h;
@@ -228,14 +283,19 @@ export function patronSprite(h: number, look: PatronLook, pose: PatronPose): HTM
     hair: steps(look.hair),
     skin: steps(look.skin),
     coat: steps(look.coat),
-    sleeve: steps(toHex(hex(look.coat).map((n) => n * 0.88))),
+    sleeve: steps(look.sleeve ?? toHex(hex(look.coat).map((n) => n * 0.88))),
     legs: steps(look.legs ?? '#24202e'),
     shoe: steps('#1a1418'),
     cup: steps('#9a9aa8'),
     coin: steps('#ffd23f'),
     shirt: steps('#d8d0c0'),
+    card: steps('#f0ece6'),
+    chip: steps('#c83a3a'),
+    eye: ['#140c1c', '#140c1c', '#140c1c', '#140c1c'],
+    visor: steps('#4cc234'),
     glass: steps('#a8d8f0'),
   };
+  if (dim < 1) for (const k of Object.keys(ink) as Part[]) ink[k] = ink[k].map((c) => toHex(hex(c).map((n) => n * dim)));
   // The cap is the coat's colour turned darker (its "sleeve" ink): fine for a look; a crown of hair under it.
   const [art, ag] = mk(w, h);
   for (let py = 0; py < h; py++)
@@ -265,8 +325,8 @@ export function patronSprite(h: number, look: PatronLook, pose: PatronPose): HTM
 }
 
 /** Draw a patron with its bottom centre at (x, y) on the grid (the seat, or the floor). */
-export function drawPatron(g: CanvasRenderingContext2D, x: number, y: number, h: number, look: PatronLook, pose: PatronPose, mirror = false): void {
-  const s = patronSprite(h, look, pose);
+export function drawPatron(g: CanvasRenderingContext2D, x: number, y: number, h: number, look: PatronLook, pose: PatronPose, mirror = false, dim = 1): void {
+  const s = patronSprite(h, look, pose, dim);
   const dx = Math.round(x - s.width / 2);
   const dy = Math.round(y - s.height + 1);
   if (!mirror) {

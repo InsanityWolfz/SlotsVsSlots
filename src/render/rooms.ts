@@ -35,6 +35,7 @@ import { drawEntrance, entranceCheer, entranceUpdate } from './roomEntrance';
 import { buildVip, vip } from './roomVip';
 import { drawStreet, streetStation } from './roomStreet';
 import { drawFloorStation, drawWheelRoom, FLOOR_STATIONS, floorStation, wheelRoomUpdate } from './roomCasinoFloor';
+import { drawHighRoller, hrStation, HR_STATIONS, type DealerState } from './roomHighRoller';
 
 /** Rooms v2 (the style key, 2026-11-09): THE HOUSE's room is the casino entrance, and act 1 is the street toward it
  * (roomStreet.ts). Off: the old alley and vault. `station` forces act 1's station (dbg, the gallery); null: by depth. */
@@ -59,10 +60,20 @@ export function floorPlace(s: Scene): number | 'wheel' | null {
   if (ROOM_V2.station !== null) return Math.max(0, Math.min(FLOOR_STATIONS - 1, ROOM_V2.station));
   return floorStation(s.fightIndex ?? 0, s.regulars);
 }
-/** Where a v2 journey scene is: act 1's street (0-3, 'door') or act 2's floor (0-3, 'wheel'); null for the old rooms. */
-export const roomPlace = (s: Scene) => streetPlace(s) ?? floorPlace(s);
+/** Act 3 in the v2 high-roller room (roomHighRoller.ts): a station down the aisle, or 'table' (THE DEALER's own, his
+ * fight and the screens just before it), or null when the scene isn't act 3's room. */
+export function hrPlace(s: Scene): number | 'table' | null {
+  if (!ROOM_V2.on || s.room !== 'vip' || s.loop > 0) return null;
+  if (s.boss === 'dealer' || (!s.boss && s.atBoss)) return 'table';
+  if (s.boss) return null;
+  if (ROOM_V2.station !== null) return Math.min(ROOM_V2.station, HR_STATIONS - 1);
+  return hrStation(s.fightIndex ?? 0, s.regulars ?? 4);
+}
+/** Where a v2 journey scene is: act 1's street (0-3, 'door'), act 2's floor (0-3, 'wheel') or act 3's high-roller room
+ * (0-3, 'table'); null for the old rooms. */
+export const roomPlace = (s: Scene) => streetPlace(s) ?? floorPlace(s) ?? hrPlace(s);
 /** The room draws its own air (rain), so the drifting motes stay off (they're another pixel size). */
-export const roomV2Air = (s: Scene) => (ROOM_V2.on && s.boss === 'house') || streetPlace(s) !== null || floorPlace(s) !== null;
+export const roomV2Air = (s: Scene) => (ROOM_V2.on && s.boss === 'house') || roomPlace(s) !== null;
 
 export { LH, LW } from './roomKit';
 
@@ -96,6 +107,8 @@ export interface Scene {
   /** THE WHEEL's table (rooms v2: her room reads it): chips on your reels, turns to NO MORE BETS, SPINS FASTER, and the
    * gutter wheel's angle (the table's wheel turns with it). */
   wheel?: { bets: number; left: number; fast: boolean; angle: number };
+  /** THE DEALER's fight (rooms v2's high-roller room): his hand, ALL IN armed, his trick's charge. */
+  dealer?: DealerState;
 }
 
 // ---- the still layers --------------------------------------------------------------------------------------------
@@ -263,6 +276,12 @@ export class Rooms {
     }
     if (fp !== null) {
       drawFloorStation(ctx, { station: fp, time });
+      this.overlays(ctx, s, time, this.cheerT);
+      return;
+    }
+    const hr = hrPlace(s);
+    if (hr !== null) {
+      drawHighRoller(ctx, { place: hr, time, foeHp: s.boss === 'dealer' ? s.foeHp : 1, turn: s.turn, dealer: s.dealer, fight: s.fight && s.boss === 'dealer' });
       this.overlays(ctx, s, time, this.cheerT);
       return;
     }
