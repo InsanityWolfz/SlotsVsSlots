@@ -15,7 +15,7 @@ const AVE = { left: 436, right: 986 };
 const STOPS = { x0: 494, gap: 108 };
 const ENDS = { opener: 372, shop: 1066, boss: 1186 };
 /** Each act is a place in the casino town. */
-const PLACE = ['THE ALLEY', 'THE FLOOR', 'THE VIP ROOM'];
+const PLACE = ['THE STREET', 'THE FLOOR', 'THE VIP ROOM'];
 
 const laneOf = (i: number, n: number) => (n === 2 ? LANES[i * 2] : LANES[i]);
 
