@@ -65,6 +65,8 @@ export const TOP_ROW_Y = MACHINE_TOP + 64;
  * room for one line of words under the badges. A third callout waits its turn: Director.popText.) */
 export const CALLOUT_ROWS = [CALLOUT_Y, TOP_ROW_Y];
 export const PAY_BANNER_Y = MACHINE_TOP + 283;
+/** A pay banner's pop stays over this line: the bottom bar's buttons start right under it. */
+export const PAY_FLOOR = 594;
 /** THE PAY STACK: never wider than this (it hangs between your HOLD chip and the enemy's reels), and never lower than
  * `bottom` (the SPEED button starts under it). */
 export const PAY_STACK = { maxW: 300, bottom: 622 };

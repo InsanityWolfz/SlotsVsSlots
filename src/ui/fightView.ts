@@ -413,7 +413,7 @@ export class FightView {
     // the machines (GOLDEN SPIN!, HAND 2: RAISE, a zoomed MEGA WIN) or the WILDS wheel takes the spot meanwhile.
     const f = this.g.fight;
     const boss = f.isBoss || f.isDealer || f.isWheel;
-    const panel = boss ? { x: cx - GUTTER_PANEL_W / 2 - 4, y: GUTTER_PANEL_Y - 20, w: GUTTER_PANEL_W + 8, h: GUTTER_PANEL_H + 20 + 30 } : { x: cx - 40, y: cy, w: 80, h: 48 };
+    const panel = boss ? { x: cx - GUTTER_PANEL_W / 2 - 4, y: GUTTER_PANEL_Y - 20, w: GUTTER_PANEL_W + 8, h: GUTTER_PANEL_H + 20 + GUTTER_PANEL_LINE + 8 } : { x: cx - 40, y: cy, w: 80, h: 48 };
     this.at(ctx, this.show('panel', panel), () => {
       if (f.isBoss) this.drawPot(ctx, cx, GUTTER_PANEL_Y, t);
       else if (f.isDealer) this.drawDeal(ctx, cx, GUTTER_PANEL_Y, t);

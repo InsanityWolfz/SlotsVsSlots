@@ -1,6 +1,6 @@
 import { drawSprite, type SpriteId } from '../render/sprites';
 import { drawText, PROBE, TEXT_MIN, textWidth } from '../render/text';
-import { COLORS, H, W } from './layout';
+import { COLORS, H, PAY_FLOOR, W } from './layout';
 import { drawPanel, drawTitle, KIT, T } from '../ui/kit';
 
 export interface Rect {
@@ -154,6 +154,15 @@ export class Banner implements FxItem {
    * down from that edge, never up over the payline's numbers. Unset, it scales about `y`.
    */
   pinTop: number | null = null;
+  /** A pinned banner's pop never grows past this line (the bottom bar starts under it): a MEGA WIN's entrance, 1.7
+   * times its size, ran down over SPIN and off the screen. */
+  pinFloor = PAY_FLOOR;
+  /** The pop's scale as drawn: a pinned banner's is held to what fits between its top edge and its floor. */
+  private pop(): number {
+    if (this.pinTop === null) return this.scale;
+    const { zoom, ph } = this.layout();
+    return Math.min(this.scale, Math.max(1, (this.pinFloor - this.pinTop - 6) / (ph * zoom)));
+  }
   /** The centre it is drawn at for the pop's scale `k`. */
   private centreY(k: number): number {
     if (this.pinTop === null) return this.y;
@@ -184,8 +193,9 @@ export class Banner implements FxItem {
     const { ts, zoom, partsText, hasSub, subScale, pw, ph } = this.layout();
     ctx.save();
     ctx.globalAlpha = this.alpha;
-    ctx.translate(this.x, this.centreY(this.scale));
-    ctx.scale(this.scale * zoom, this.scale * zoom);
+    const k = this.pop();
+    ctx.translate(this.x, this.centreY(k));
+    ctx.scale(k * zoom, k * zoom);
     const x0 = -Math.round(pw / 2);
     const y0 = -Math.round(ph / 2);
     // Ribbon tails, in a dark shade of the moment's colour.

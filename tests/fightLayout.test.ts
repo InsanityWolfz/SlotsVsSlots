@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Banner, FloatText, overlaps } from '../src/present/fx';
 import { HUD_W, HudView } from '../src/present/hud';
-import { BEZEL, CALLOUT_ROW, CALLOUT_ROWS, CALLOUT_Y, GUTTER_PANEL_H, GUTTER_PANEL_LINE, GUTTER_PANEL_W, GUTTER_PANEL_Y, HIT_Y, MACHINE_CX, MACHINE_H, MACHINE_TOP, MACHINE_W, PAY_BANNER_Y, PAY_STACK, STATUS, TOP_ROW_Y, TURN_BANNER_Y, W } from '../src/present/layout';
+import { BEZEL, CALLOUT_ROW, CALLOUT_ROWS, CALLOUT_Y, GUTTER_PANEL_H, GUTTER_PANEL_LINE, GUTTER_PANEL_W, GUTTER_PANEL_Y, HIT_Y, MACHINE_CX, MACHINE_H, MACHINE_TOP, MACHINE_W, PAY_BANNER_Y, PAY_FLOOR, PAY_STACK, STATUS, TOP_ROW_Y, TURN_BANNER_Y, W } from '../src/present/layout';
 import { climbPace, PayStack, STACK } from '../src/present/payStack';
 import { PAY_TOP } from '../src/present/directorPay';
 
@@ -49,12 +49,35 @@ describe("the fight screen's homes (user, 2026-11-10: nothing overlaps)", () => 
     // (The line is body size: 14 px tall, with its outline; the banner's panel has a 3 px outline.)
     const footer = GUTTER_PANEL_Y + GUTTER_PANEL_H + GUTTER_PANEL_LINE + 8;
     expect(footer).toBeLessThanOrEqual(PAY_TOP - 3);
+    // (So the panel stays up while a pay banner is: their boxes, with the 3 px of air fightView keeps, don't touch.)
+    const pay = banner('PAIR!', PAY_BANNER_Y, 4, '×2 PAIR  64');
+    pay.pinTop = PAY_TOP;
+    expect(overlaps({ x: W / 2 - GUTTER_PANEL_W / 2 - 4, y: GUTTER_PANEL_Y - 20, w: GUTTER_PANEL_W + 8, h: GUTTER_PANEL_H + 20 + GUTTER_PANEL_LINE + 8 }, pay.rect()!, 3)).toBe(false);
     expect(GUTTER_PANEL_W).toBeLessThanOrEqual(gutter.w);
     for (const [title, scale] of [['PAIR!', 4], ['JACKPOT!', 4.5], ['BIG WIN!', 5], ['MEGA WIN!', 6]] as const) {
       const b = banner(title, PAY_BANNER_Y, scale, '123');
       b.pinTop = PAY_TOP;
       expect(b.rect()!.y).toBeGreaterThanOrEqual(PAY_TOP - 1);
       expect(b.rect()!.y).toBeGreaterThanOrEqual(MACHINE_TOP + (MACHINE_H * 2) / 3);
+    }
+  });
+
+  it("a pay banner's entrance, however big, stays between the payline and the bottom bar", () => {
+    for (const [title, scale, over] of [['PAIR!', 4, 1.15], ['JACKPOT!', 4.5, 1.25], ['BIG WIN!', 5, 1.5], ['MEGA WIN!', 6, 1.7]] as const) {
+      const b = banner(title, PAY_BANNER_Y, scale, '×2.5 HIGH ROLLER  123.4K');
+      b.pinTop = PAY_TOP;
+      b.scale = over;
+      const seen: number[] = [];
+      const ctx = new Proxy({}, { get: (_, k) => (k === 'translate' ? (_x: number, y: number) => seen.push(y) : k === 'scale' ? (kx: number) => seen.push(kx) : () => {}) }) as unknown as CanvasRenderingContext2D;
+      try {
+        b.draw(ctx);
+      } catch {
+        /* no canvas here: the transform is set before anything is drawn */
+      }
+      // translate(x, centre) then scale(k): the panel is 93 px tall before the scale.
+      const [centre, k] = seen;
+      expect(centre - (93 / 2) * k).toBeGreaterThanOrEqual(PAY_TOP - 1);
+      expect(centre + (93 / 2) * k).toBeLessThanOrEqual(PAY_FLOOR);
     }
   });
 
