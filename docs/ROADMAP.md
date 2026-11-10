@@ -37,9 +37,10 @@ browser check. If usage runs out mid-task, schedule a check-in to resume after t
 off"; https://claude.ai/artifact/SWK4wbqpMzJY47TPtmonc6; still drawn by code, hand-drawn sprites if the user wants
 portrait quality), unnatural motion fixed (user: "background motion is ok, I just didn't want anything that didn't feel
 natural"), `roomCasinoFloor.ts` split (THE WHEEL's room is `roomWheel.ts`); JOKER's meter jackpot counts a cell's Charm
-three times and every VAMP cell in a pay heals (HP_GAME.md). Being built (branch `ui-declutter`): the fight screen with
-every label on at once, so nothing overlaps, and the win text slowed into a stacked column you can read; then
-playtests on the new art. The capsule, trailer and screenshots wait (user, 2026-11-10: "ignore that... for now").
+three times and every VAMP cell in a pay heals (HP_GAME.md). Waiting on the user's yes (on `claude/modest-rubin-95g3ha`, not `main`; https://claude.ai/artifact/APj82gjYYxpPBYEYyi8HB2): the fight
+screen with every label on at once (20 stress scenes, `tools/shots/fight`: 422 collisions before, 24 after; the spin
+count, OVERTIME and the BOSS / LOOP label live in the bottom bar now) and THE PAY STACK (a win's steps drop into a
+list under the banner and stay about a second; `docs/JUICE.md`). Then playtests on the new art. The capsule, trailer and screenshots wait (user, 2026-11-10: "ignore that... for now").
 
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
 text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about
