@@ -257,13 +257,14 @@ export function cellCharms(f: Fight, me: Combatant, g: ScoreGroup, events: Comba
  */
 export const charmCopies = (g: ScoreGroup): number => (g.jackpot && g.reels.length === 1 ? 3 : 1);
 
-/** VAMP: vamp cells in a group that pays heal you (once per group; a one-cell jackpot heals three times). */
+/** VAMP: every vamp cell in a group that pays heals you (a one-cell jackpot counts its cell three times). */
 export function vampHeal(f: Fight, me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
   if (f.over || g.amount <= 0 || f.lineTwo) return;
-  // Once per group, however many vamp cells it holds (stacked vamp was the auto-pick: EXPERT_PLAYTEST_10 D1).
-  const any = g.reels.some((r) => f.enhsAt(me, r).includes('vamp'));
-  const vamp = any ? charmValue('vamp', f.charmLvl(me, 'vamp')) : 0;
-  for (let i = 0; vamp && i < charmCopies(g) && !f.over; i++) f.heal(me, vamp, 'vamp', events);
+  // Once per VAMP cell (user, 2026-11-10: "make three vamps in a normal jackpot heal three times too"; it was once per
+  // group since EXPERT_PLAYTEST_10 D1, when stacked vamp was the auto-pick).
+  const cells = g.reels.filter((r) => f.enhsAt(me, r).includes('vamp')).length * charmCopies(g);
+  const vamp = charmValue('vamp', f.charmLvl(me, 'vamp'));
+  for (let i = 0; i < cells && !f.over; i++) f.heal(me, vamp, 'vamp', events);
 }
 
 /** MIDAS / JAX: the full meter pays off this spin — it empties, and you heal. */

@@ -252,6 +252,8 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   `src/core/charms.ts`.
   JOKER's meter jackpot counts each cell's Charm three times, as if it had landed on all three reels (user, 2026-11-10):
   GOLD and KEEN already did; VAMP heals three times and TRICK fills three times now (CHIP pays three lots, up to its cap).
+  VAMP heals once for every VAMP cell in a pay (user, 2026-11-10: three VAMPs in a jackpot heal three times; it was once a pay).
+  THE DROP's VAMP notes off the payline still heal once.
 - **ENDLESS playtest fixes (2026-10-14):** a side at 0 HP can't be healed (a storm's heals on the enemy's turn revived
   TESLA from 0 HP, 23% of its runs: TESLA GREEN 39 -> 37); a LIGHTNING STORM stops once THE OWNER's turn cap is reached
   (it fired thousands of 0-damage strikes, each healing); PUNCH CARD tops up with normal relics once the legendaries

@@ -270,7 +270,7 @@ describe('AUDIT: CHARGED "+10 TO ITS GROUP" / card "+10 CHARGE" (TESLA)', () => 
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: VAMP "HEALS 20 WHEN ITS GROUP HITS (ONCE PER GROUP)" / card "+20 HP"', () => {
+describe('AUDIT: VAMP "HEALS 20 WHEN ITS PAY HITS (EACH VAMP IN THE PAY HEALS)" / card "+20 HP"', () => {
   const vampHeals = (cab: CabinetId, s: Setup, line: SymbolId[], prep?: (f: Fight) => void) => {
     const f = make(cab, s);
     f.sides.player.hp -= 150;
@@ -285,8 +285,9 @@ describe('AUDIT: VAMP "HEALS 20 WHEN ITS GROUP HITS (ONCE PER GROUP)" / card "+2
     expect(vampHeals('knight', { strips: KNIGHT(), gilded: [on(0, 'sword', 'vamp')] }, ['sword', 'shield', 'shield'])).toEqual([20]);
   });
 
-  it('ONCE PER GROUP: three VAMP swords in one jackpot heal 20, not 60', () => {
-    expect(vampHeals('knight', { strips: KNIGHT(), gilded: [0, 1, 2].map((r) => on(r, 'sword', 'vamp')) }, SSS)).toEqual([20]);
+  it('EACH VAMP HEALS: three VAMP swords in one jackpot heal 20 three times, two in a pair twice (user, 2026-11-10)', () => {
+    expect(vampHeals('knight', { strips: KNIGHT(), gilded: [0, 1, 2].map((r) => on(r, 'sword', 'vamp')) }, SSS)).toEqual([20, 20, 20]);
+    expect(vampHeals('knight', { strips: KNIGHT(), gilded: [0, 1].map((r) => on(r, 'sword', 'vamp')) }, ['sword', 'sword', 'shield'])).toEqual([20, 20]);
   });
 
   it("JOKER's meter jackpot counts the cell's Charm three times: one VAMP ace heals 20 three times (user, 2026-11-10)", () => {

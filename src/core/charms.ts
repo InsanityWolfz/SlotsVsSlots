@@ -79,7 +79,7 @@ export function charmRuleText(enh: Enh, lvl: number): string {
     case 'charged':
       return `+${v} TO ITS PAY`;
     case 'vamp':
-      return `HEALS ${v} WHEN ITS PAY HITS (ONCE PER PAY)`;
+      return `HEALS ${v} WHEN ITS PAY HITS (EACH VAMP IN THE PAY HEALS)`;
     case 'lucky':
       return `${v}% TO LAND AS A WILD`;
     case 'blaze':

@@ -18,7 +18,7 @@ function on(cabinet: CabinetId, mut?: (c: GameConfig) => void, seed = 7): Fight 
 }
 
 describe('EXPERT_PLAYTEST_10: charms', () => {
-  it('KEEN adds to every sword in its group; VAMP heals once per group', () => {
+  it('KEEN adds to every sword in its group; VAMP heals once per VAMP cell', () => {
     const plain = on('knight', (c) => (c.player.strips = reels3({ sword: 6, shield: 6 })));
     plain.forceNext('player', ['sword', 'sword', 'sword']);
     const p = ofType(plain.step().events, 'attack')[0].amount;
@@ -36,7 +36,7 @@ describe('EXPERT_PLAYTEST_10: charms', () => {
     vamp.sides.player.hp -= 100;
     vamp.forceNext('player', ['sword', 'sword', 'sword']);
     const heals = ofType(vamp.step().events, 'heal').filter((e) => e.source === 'vamp');
-    expect(heals.map((h) => h.amount)).toEqual([20]);
+    expect(heals.map((h) => h.amount)).toEqual([20, 20, 20]);
   });
 });
 

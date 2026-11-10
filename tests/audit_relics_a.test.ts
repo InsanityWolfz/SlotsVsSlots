@@ -223,8 +223,9 @@ describe('GOLDEN TICKET (ticket): EVERY CHARM IS ONE STEP STRONGER', () => {
     expect(withCharm(['ticket'], 'gold').g.amount / withCharm([], 'gold').g.amount).toBeCloseTo(6 / 4);
     // (Each KEEN cell adds to each sword in its group: 2 cells x 2 swords.)
     expect(withCharm(['ticket'], 'keen').g.base - withCharm([], 'keen').g.base).toBe(2 * 2 * (CHARM_VALUE.keen[2] - CHARM_VALUE.keen[1]));
-    expect(withCharm(['ticket'], 'vamp').hp - 100).toBe(CHARM_VALUE.vamp[2]);
-    expect(withCharm([], 'vamp').hp - 100).toBe(CHARM_VALUE.vamp[1]);
+    // (Two VAMP cells in the pair: each heals.)
+    expect(withCharm(['ticket'], 'vamp').hp - 100).toBe(2 * CHARM_VALUE.vamp[2]);
+    expect(withCharm([], 'vamp').hp - 100).toBe(2 * CHARM_VALUE.vamp[1]);
   });
   it('the Charm cards a TICKET holder is offered show the stronger number', () => {
     const r = run('knight', ['ticket']);
