@@ -286,8 +286,9 @@ export class Director {
         this.s.sounds.stingerMedium();
         return this.banner('OVERTIME!', '#ff9a3a', 1.2, 0.3, 'BOTH MACHINES HIT HARDER WITH EACH OF YOUR SPINS', BANNER_Y, 3);
       case 'lastCall':
-        this.s.sounds.stingerMedium();
-        return this.banner('LAST CALL!', '#ff6a5a', 1.2, 0.3, e.house ? 'THE DOORMAN SKIMS EVERY TURN NOW' : 'ITS HITS GROW EVERY TURN NOW', BANNER_Y, 3);
+        // No banner (user, 2026-11-10: "by then the player should know what overtime is"): the rule still starts, and
+        // THE DOORMAN's card and his NEXT SKIM line say it.
+        return Promise.resolve();
       case 'hpCost': {
         // LIVE WIRE: the storm's price comes off your own HP bar.
         const h = this.s.huds[e.side];

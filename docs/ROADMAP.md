@@ -40,7 +40,8 @@ natural"), `roomCasinoFloor.ts` split (THE WHEEL's room is `roomWheel.ts`); JOKE
 three times and every VAMP cell in a pay heals (HP_GAME.md). Also live (user, 2026-11-10: "Fight screen stuff looks good... push everything to main"; https://claude.ai/artifact/APj82gjYYxpPBYEYyi8HB2): the fight
 screen with every label on at once (20 stress scenes, `tools/shots/fight`: 422 collisions before, 24 after; the spin
 count, OVERTIME and the BOSS / LOOP label live in the bottom bar now) and THE PAY STACK (a win's steps drop into a
-list under the banner and stay about a second; `docs/JUICE.md`); THE DEALER's announcements say HIS and HE, not ITS.
+list under the banner and stay about a second; `docs/JUICE.md`); THE DEALER's announcements say HIS and HE, not ITS. The LAST CALL!
+banner is gone (THE DOORMAN's and ENDLESS's; user: "by then the player should know what overtime is"); the rule stays.
 In progress: playtests on the new art. The capsule, trailer and screenshots wait (user, 2026-11-10: "ignore that... for now").
 
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
