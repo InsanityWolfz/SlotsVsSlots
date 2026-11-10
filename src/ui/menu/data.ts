@@ -75,7 +75,7 @@ export const heroSprite = (id: CabinetId): SpriteId => (hasSprite(CABINETS[id].h
 
 // ---- the cast -------------------------------------------------------------------------------------------------------
 
-const ROOM = ['', 'THE ALLEY', 'THE FLOOR', 'THE VIP ROOM'];
+const ROOM = ['', 'THE STREET', 'THE FLOOR', 'THE VIP ROOM'];
 export interface CastEntry {
   id: string;
   name: string;
@@ -98,7 +98,7 @@ export const CAST: CastEntry[] = [
     .sort((a, b) => Math.min(...actsOf(a)) - Math.min(...actsOf(b)))
     .map((a) => castOf(a, [...new Set(actsOf(a))].map((n) => ROOM[n]).join(', '))),
   castOf(REPO_MAN, ROOM.slice(1, GATEKEEPER.acts + 1).join(', ')),
-  castOf(BOSS, "THE ALLEY'S LAST FIGHT", true),
+  castOf(BOSS, "THE STREET'S LAST FIGHT", true),
   castOf(WHEEL, "THE FLOOR'S LAST FIGHT", true),
   castOf(DEALER, "THE VIP ROOM'S LAST FIGHT", true),
   castOf(OWNER, `ENDLESS, LOOP ${TURBO.loop}`, true),

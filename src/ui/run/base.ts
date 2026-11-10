@@ -10,6 +10,7 @@ import { Clock } from '../../present/clock';
 import { backOut, sineOut } from '../../present/ease';
 import { COLORS, H, W } from '../../present/layout';
 import { drawSprite, type SpriteId } from '../../render/sprites';
+import { drawEncounterRoom, encounterRoomOf } from '../../render/roomEncounters';
 import { drawText, textWidth } from '../../render/text';
 import { drawPanel, KIT, T } from '../kit';
 import { type BossRuleContext } from '../bossRules';
@@ -317,7 +318,14 @@ export abstract class RunScreensBase {
     // way it's solid: the fight scene never shows through.
     ctx.save();
     ctx.globalAlpha = this.fade;
-    if (this.roomBackdrop && this.mode !== 'cabinet') {
+    // Act 1's gambles have their own places on the street (the alley's crate, the dive bar's back table, the
+    // laundromat's claw: roomEncounters.ts); acts 2-3 and ENDLESS play them in front of the act's room.
+    const gamble = this.mode === 'encounter' && this.run && this.run.act === 1 && !this.run.endless ? encounterRoomOf(this.encId) : null;
+    if (gamble) {
+      drawEncounterRoom(ctx, gamble, time);
+      ctx.fillStyle = 'rgba(6,3,12,0.3)';
+      ctx.fillRect(0, 0, W, H);
+    } else if (this.roomBackdrop && this.mode !== 'cabinet') {
       drawBackdrop(ctx);
       this.roomBackdrop(ctx, time);
       ctx.fillStyle = 'rgba(6,3,12,0.58)';

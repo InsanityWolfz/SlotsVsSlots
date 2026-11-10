@@ -2,6 +2,7 @@ import type { RelicId, SideId, SymbolId } from './core/config';
 import { ARCHETYPES, BOSS, DEALER, generateActMap, makeEnemy, OWNER, REPO_MAN, TURBO, WHEEL } from './core/enemies';
 import { Rng } from './core/rng';
 import { chooseRoute, setMap, skipToBoss } from './core/run';
+import { draftOffers } from './core/draft';
 import { fightConfig } from './core/fightSetup';
 import { startEndlessLoop } from './core/endless';
 import type { CombatEvent } from './core/events';
@@ -144,6 +145,25 @@ export function installDebug(game: Game): void {
       game.run.actIntro = false;
       game.newFight(false, null, fightConfig(game.run, game.cfg), true);
       game.screens.showNext(game.run);
+    },
+    /** The in-run screens of act `n` (for checking the rooms behind them): 'draft', 'map' (CHOOSE YOUR PATH), or an
+     * encounter's table ('bj', 'hilo', 'claw') as the route's first stop. */
+    screenAt(kind: 'draft' | 'map' | 'bj' | 'hilo' | 'claw', n = 1) {
+      dbg.toAct(n);
+      const run = game.run;
+      if (!run) return;
+      if (kind === 'map') {
+        run.route = null;
+        run.stop = 1;
+        run.depth = 1;
+        return game.screens.showNext(run);
+      }
+      if (run.route === null) chooseRoute(run, 0);
+      run.stop = 1;
+      run.depth = 1;
+      if (kind === 'draft') return game.screens.showDraft(run, draftOffers(run), null, 'draft');
+      run.map.routes[run.route!][0] = { kind: 'encounter', encounter: kind };
+      game.screens.showEncounter(run);
     },
     /** The run's act map, as text: one line per route (F fight, E elite, S Cashier, ? encounter). */
     map: () => game.run?.map.routes.map((r, i) => `PATH ${i + 1}: ${r.map((st) => (st.kind === 'fight' ? 'F' : st.kind === 'elite' ? 'E' : st.kind === 'shop' ? 'S' : '?') + (st.enemy ? `:${st.enemy.archetype}` : st.encounter ? `:${st.encounter}` : '')).join(' ')}`).join('\n'),

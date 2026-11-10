@@ -10,6 +10,21 @@ import { CabinetScreen } from './cabinets';
 
 /** The street map's colours: asphalt, its curbs, the centre line (dim, travelled, the picked path). */
 export const STREET = { asphalt: '#221b30', curb: '#3a3250', dash: '#4e4430', lit: '#ffd23f', w: 26 };
+/** Where the act's map is (the user, 2026-11-10: every screen shows where you are): act 1's city blocks to the casino,
+ * act 2's casino floor (its aisles are carpet runners between the slot banks), act 3's high-roller rooms (velvet
+ * runners between the card tables). ENDLESS walks the casino's: the floor, or the high-roller rooms on THE DEALER's
+ * loops, after hours. */
+export type MapGround = 'street' | 'floor' | 'hr';
+export const GROUND: Record<MapGround, { asphalt: string; curb: string; dash: string; fill: string }> = {
+  street: { asphalt: STREET.asphalt, curb: STREET.curb, dash: STREET.dash, fill: '#100b1c' },
+  floor: { asphalt: '#3a1426', curb: '#6a4a24', dash: '#5a2a3a', fill: '#170a16' },
+  hr: { asphalt: '#4a0e1e', curb: '#7a5a26', dash: '#6a2232', fill: '#130810' },
+};
+export function mapGround(run: { act: number; endless?: unknown; map: { boss: { boss?: string | null } } } | null): MapGround {
+  if (!run) return 'street';
+  if (run.endless) return run.map.boss.boss === 'dealer' ? 'hr' : 'floor';
+  return run.act <= 1 ? 'street' : run.act === 2 ? 'floor' : 'hr';
+}
 
 /** An encounter's table icon (16x10 pixels): green felt on a gold rim, two cards dealt, wooden legs. */
 const TABLE_ICON = [
@@ -34,13 +49,14 @@ export abstract class MapScreens extends CabinetScreen {
     const ax = Math.round(Math.min(x1, x2));
     const ay = Math.round(Math.min(y1, y2));
     const len = Math.round(horiz ? Math.abs(x2 - x1) : Math.abs(y2 - y1));
-    ctx.fillStyle = STREET.curb;
+    const gr = GROUND[mapGround(this.run)];
+    ctx.fillStyle = gr.curb;
     if (horiz) ctx.fillRect(ax - w / 2, ay - w / 2 - 2, len + w, w + 4);
     else ctx.fillRect(ax - w / 2 - 2, ay - w / 2, w + 4, len + w);
-    ctx.fillStyle = STREET.asphalt;
+    ctx.fillStyle = gr.asphalt;
     if (horiz) ctx.fillRect(ax - w / 2, ay - w / 2, len + w, w);
     else ctx.fillRect(ax - w / 2, ay - w / 2, w, len + w);
-    ctx.fillStyle = o.lit ? STREET.lit : STREET.dash;
+    ctx.fillStyle = o.lit ? STREET.lit : gr.dash;
     if (o.dim) ctx.globalAlpha *= 0.6;
     const off = Math.round(o.scroll ?? 0) % 16;
     for (let d = -off; d < len; d += 16) {

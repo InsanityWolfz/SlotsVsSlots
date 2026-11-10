@@ -20,8 +20,21 @@ export const ROW = { label: 124, well: 170, chips: 258, main: 334, second: 404, 
 /** The foot: the rules line, WALK AWAY / CONTINUE. */
 export const FOOT = { rules: 596, button: 660 };
 export const TCX = TABLE.x + TABLE.w / 2;
-/** Words printed on the felt (a muted gold, as if stamped into it). */
-export const FELT_INK = '#b8a45a';
+/** Words printed on the felt (a muted gold, as if stamped into it; chalk on act 1's crate). Set by `felt` for the
+ * table it draws, before the game's labels are drawn on it (a live binding, so cardGames.ts reads the table's ink). */
+export let FELT_INK = '#b8a45a';
+/** The table you play on, by where you are (the user, 2026-11-10: every screen shows where you are): act 1's
+ * TWENTY-ONE on an upturned crate in the alley, its HIGHER OR LOWER on the dive bar's back table (a worn felt mat),
+ * act 2's casino felt, act 3's high-limit table (velvet rail, brass edge), ENDLESS's felt after hours. */
+export type TableStyle = 'crate' | 'bar' | 'casino' | 'vip' | 'night';
+/** The rail's layers from the outside in, the surface, the ink, the pin lines' colour and the corner's radius. */
+const TABLES: Record<TableStyle, { layers: [number, string][]; surface: string; ink: string; pin: string; r: number }> = {
+  crate: { layers: [[-3, '#140c1c'], [0, '#3a2414'], [3, '#6a4626'], [9, '#4a2e18']], surface: '#5e3e22', ink: '#e0d4b4', pin: 'rgba(240,232,214,0.2)', r: 0 },
+  bar: { layers: [[-3, '#140c1c'], [0, '#1e0e08'], [3, '#4a2614'], [9, '#2a160c']], surface: '#2e4a26', ink: '#c8b878', pin: 'rgba(200,184,120,0.18)', r: 12 },
+  casino: { layers: [[-3, '#140c1c'], [0, '#4a2a14'], [3, '#7a4a26'], [9, '#3a2010']], surface: '#125232', ink: '#b8a45a', pin: 'rgba(255,210,63,0.22)', r: 18 },
+  vip: { layers: [[-3, '#140c1c'], [0, '#d9a640'], [2, '#4a0e1e'], [4, '#7a1a30'], [7, '#5a1224'], [10, '#d9a640'], [11, '#2a0c14']], surface: '#0f4a2e', ink: '#d9c070', pin: 'rgba(255,210,63,0.3)', r: 18 },
+  night: { layers: [[-3, '#140c1c'], [0, '#3a2210'], [3, '#5a3a1e'], [9, '#2a180c']], surface: '#0d3e26', ink: '#988a4c', pin: 'rgba(255,210,63,0.14)', r: 18 },
+};
 
 export abstract class TableScreens extends DraftScreen {
   /** The full rules over the table ("?"), and its button (it stays on the table whatever else changes). */
@@ -128,13 +141,26 @@ export abstract class TableScreens extends DraftScreen {
     this.chipsLanding = 0;
   }
 
-  /** The card table: a padded wooden rail round green felt, a printed pin line and the house's line on the felt. */
+  /** The table this encounter is dealt on (by where you are: see TABLES). */
+  protected tableStyle(): TableStyle {
+    const run = this.run;
+    if (!run) return 'casino';
+    if (run.endless) return 'night';
+    if (run.act === 1) return this.encId === 'bj' ? 'crate' : 'bar';
+    return run.act >= 3 ? 'vip' : 'casino';
+  }
+
+  /** The card table: a rail round its surface (stepped corners, no anti-aliased curves), the surface's grain, a printed
+   * pin line and the house's line on it. Act 1 is a crate's planks or a bar table's worn mat; the casino, its felt. */
   protected felt(ctx: CanvasRenderingContext2D, printed = ''): void {
     const { x, y, w, h } = TABLE;
-    const r = 18;
-    // The rail: dark wood with a lit top edge, its corners stepped (no anti-aliased curves).
+    const style = this.tableStyle();
+    const st = TABLES[style];
+    FELT_INK = st.ink;
+    const r = st.r;
     const steps = (inset: number, color: string) => {
       ctx.fillStyle = color;
+      if (r === 0) return ctx.fillRect(x + inset, y + inset, w - 2 * inset, h - 2 * inset);
       ctx.fillRect(x + inset + r, y + inset, w - 2 * inset - 2 * r, h - 2 * inset);
       ctx.fillRect(x + inset, y + inset + r, w - 2 * inset, h - 2 * inset - 2 * r);
       for (let k = 0; k < r; k += 3) {
@@ -143,21 +169,81 @@ export abstract class TableScreens extends DraftScreen {
         ctx.fillRect(x + inset + d, y + h - inset - k - 3, w - 2 * inset - 2 * d, 3);
       }
     };
-    steps(-3, COLORS.outline);
-    steps(0, '#4a2a14');
-    steps(3, '#7a4a26');
-    steps(9, '#3a2010');
-    steps(12, '#125232');
-    // The felt's weave: a sparse pixel dither.
-    ctx.fillStyle = 'rgba(0,0,0,0.16)';
-    for (let yy = y + 16; yy < y + h - 16; yy += 4) for (let xx = x + 16 + ((yy / 4) % 2) * 2; xx < x + w - 16; xx += 4) ctx.fillRect(xx, yy, 1, 1);
-    // The printed pin line and the house's line, faded into the felt.
-    ctx.fillStyle = 'rgba(255,210,63,0.22)';
+    for (const [inset, color] of st.layers) steps(inset, color);
+    steps(12, st.surface);
+    const ix = x + 12;
+    const iy = y + 12;
+    const iw = w - 24;
+    const ih = h - 24;
+    if (style === 'crate') {
+      // The crate's frame: its corner posts and nails; the top's slats (2px seams), the grain, a knot a slat.
+      ctx.fillStyle = '#2a180c';
+      for (const [cx, cy] of [[x, y], [x + w - 12, y], [x, y + h - 12], [x + w - 12, y + h - 12]]) ctx.fillRect(cx, cy, 12, 12);
+      ctx.fillStyle = '#c8b898';
+      for (const [cx, cy] of [[x + 4, y + 4], [x + w - 8, y + 4], [x + 4, y + h - 8], [x + w - 8, y + h - 8]]) ctx.fillRect(cx, cy, 4, 4);
+      for (let sy = iy, k = 0; sy < iy + ih; sy += 48, k++) {
+        ctx.fillStyle = k % 2 ? '#5a3a20' : '#644426';
+        ctx.fillRect(ix, sy, iw, Math.min(46, iy + ih - sy));
+        ctx.fillStyle = '#2a180c';
+        if (sy + 46 < iy + ih) ctx.fillRect(ix, sy + 46, iw, 2);
+        ctx.fillStyle = '#7a5432';
+        ctx.fillRect(ix, sy, iw, 2);
+        ctx.fillStyle = '#4a2e18';
+        for (let gx = ix + ((k * 53) % 40); gx < ix + iw - 40; gx += 70) ctx.fillRect(gx, sy + 14 + ((gx * 7) % 18), 28, 2);
+        ctx.fillRect(ix + ((k * 211) % (iw - 40)) + 10, sy + 20, 6, 6);
+      }
+      // The bulb's light on the crate's top: stepped rings, warm, under the cards.
+      this.stepPool(ctx, x + w / 2, y + 40, 300, 150, '#ffd8a0', 0.12);
+    } else {
+      // Felt's weave (the bar's mat worn thin in the middle, with glass rings; the casino's even).
+      ctx.fillStyle = 'rgba(0,0,0,0.16)';
+      for (let yy = y + 16; yy < y + h - 16; yy += 4) for (let xx = x + 16 + ((yy / 4) % 2) * 2; xx < x + w - 16; xx += 4) ctx.fillRect(xx, yy, 1, 1);
+      if (style === 'bar') {
+        this.stepPool(ctx, x + w / 2, y + h / 2, 220, 140, '#7a8a50', 0.16);
+        ctx.fillStyle = 'rgba(20,12,8,0.35)';
+        for (const [rx, ry] of [[x + 70, y + 70], [x + w - 92, y + h - 110]]) {
+          for (let a = 0; a < 24; a++) {
+            const t = (a / 24) * Math.PI * 2;
+            ctx.fillRect(Math.round(rx + Math.cos(t) * 18), Math.round(ry + Math.sin(t) * 18), 2, 2);
+          }
+        }
+        this.stepPool(ctx, x + w / 2, y + 40, 280, 120, '#ffe0a0', 0.1);
+      }
+    }
+    // The printed pin line and the house's line (a gold border on the casino's felt, chalk on the crate).
+    ctx.fillStyle = st.pin;
     ctx.fillRect(x + 34, y + 34, w - 68, 2);
     ctx.fillRect(x + 34, y + h - 36, w - 68, 2);
     ctx.fillRect(x + 34, y + 34, 2, h - 68);
     ctx.fillRect(x + w - 36, y + 34, 2, h - 68);
+    if (style === 'vip') {
+      // The high-limit table's second pinstripe.
+      ctx.fillRect(x + 40, y + 40, w - 80, 2);
+      ctx.fillRect(x + 40, y + h - 42, w - 80, 2);
+      ctx.fillRect(x + 40, y + 40, 2, h - 80);
+      ctx.fillRect(x + w - 42, y + 40, 2, h - 80);
+    }
     if (printed) drawText(ctx, printed, x + w / 2, y + h - 56, T.small, FELT_INK, { outline: null });
+  }
+
+  /** A pool of light in crisp steps (2px rows, three rings): never a gradient. Kept to the table's surface. */
+  protected stepPool(ctx: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, color: string, a: number): void {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = a;
+    for (const k of [1, 0.7, 0.45]) {
+      const ex = rx * k;
+      const ey = ry * k;
+      for (let yy = -ey; yy <= ey; yy += 2) {
+        const hw = Math.floor((ex * Math.sqrt(Math.max(0, 1 - (yy * yy) / (ey * ey)))) / 2) * 2;
+        const ty = Math.round((cy + yy) / 2) * 2;
+        if (ty < TABLE.y + 12 || ty >= TABLE.y + TABLE.h - 12) continue;
+        const x0 = Math.max(TABLE.x + 12, Math.round(cx - hw));
+        const x1 = Math.min(TABLE.x + TABLE.w - 12, Math.round(cx + hw));
+        if (x1 > x0) ctx.fillRect(x0, ty, x1 - x0, 2);
+      }
+    }
+    ctx.restore();
   }
 
   /** The side panel: the game's controls on the kit panel (`title` on its tab). */
