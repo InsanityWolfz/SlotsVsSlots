@@ -140,8 +140,8 @@ export class MainScreen implements MenuScreen {
 
   draw(ctx: CanvasRenderingContext2D, t: number): void {
     const still = this.m.reduced();
-    // The floor shows through, darkened so the poster reads.
-    ctx.fillStyle = 'rgba(6,2,12,0.6)';
+    // The street shows through (rooms v2: the menus stand on act 1's street, roomMenu.ts), darkened so the poster reads.
+    ctx.fillStyle = 'rgba(6,2,12,0.42)';
     ctx.fillRect(0, 0, W, H);
     this.drawStage(ctx, still ? 0 : t);
     drawLogo(ctx, SX, 98, 3, { chase: still ? 0 : Math.floor(t * 7) });
@@ -176,18 +176,11 @@ export class MainScreen implements MenuScreen {
     if (!this.m.cb.tutorialDone()) drawText(ctx, 'NEW HERE? TRY THE TUTORIAL', PX, bottom + 30, T.small, KIT.title, { alpha: 0.65 + 0.35 * Math.sin(t * 4) });
   }
 
-  /** The poster: a spotlight on a podium, the Slot Machine on it and its hero in front, the nameplate under them. */
+  /** The poster: your Slot Machine and its hero on the sidewalk under a streetlamp, the nameplate under them. */
   private drawStage(ctx: CanvasRenderingContext2D, t: number): void {
     const id = this.hero;
     const cab = CABINETS[id];
-    // The spotlight: a cone of 4px bands from above, widening (stepped, no smooth gradient).
-    for (let y = 0; y < SY + 10; y += 4) {
-      const k = y / (SY + 10);
-      const hw = Math.round((70 + 240 * k) / 4) * 4;
-      ctx.fillStyle = `rgba(255,230,170,${(0.04 + 0.07 * k).toFixed(3)})`;
-      ctx.fillRect(SX - hw, y, hw * 2, 4);
-    }
-    this.drawPodium(ctx);
+    this.drawLamp(ctx, t);
     // The machine on the podium, slightly right; the hero in front, left.
     const mx = SX + 70;
     const msprite = (hasSprite(cab.sprite) ? cab.sprite : 'cabinetKnight') as SpriteId;
@@ -201,32 +194,58 @@ export class MainScreen implements MenuScreen {
     drawText(ctx, `THE ${cab.name} SLOT MACHINE`, SX, SY + 68, T.small, COLORS.textDim);
   }
 
-  /** A round display podium in 4px steps: a lit top face with a gold rim, a dark front. */
-  private drawPodium(ctx: CanvasRenderingContext2D): void {
-    const rx = 236;
-    const ry = 30;
-    const px = 4;
-    const band = (cy: number, rr: number, color: string) => {
-      for (let y = -ry; y < ry; y += px) {
-        const w = Math.round((rr * Math.sqrt(1 - Math.pow((y + px / 2) / ry, 2))) / px) * px;
-        ctx.fillStyle = color;
-        ctx.fillRect(SX - w, cy + y, w * 2, px);
-      }
+  /** The streetlamp at the stage's left (rooms v2: on the street, no podium): its post on the sidewalk, the lantern
+   * over the stage, its light falling in 4px stepped bands (no gradient) to a stepped pool where the machine stands,
+   * and the rain caught in it. Drawn on the 2px grid with the portraits' outline. */
+  private drawLamp(ctx: CanvasRenderingContext2D, t: number): void {
+    const p = 2;
+    const r = (x: number, y: number, w: number, h: number, c: string) => {
+      ctx.fillStyle = c;
+      ctx.fillRect(x, y, w, h);
     };
-    // A short drum: its shadow, the front (outline, maroon, a gold trim line), then the top (gold rim, plum face).
-    const top = SY - 4;
-    const foot = SY + 20;
-    band(foot + 12, rx + 12, 'rgba(0,0,0,0.4)');
-    band(foot, rx + 3, COLORS.outline);
-    ctx.fillRect(SX - rx - 3, top, (rx + 3) * 2, foot - top);
-    band(foot, rx, '#3a1428');
-    ctx.fillStyle = '#3a1428';
-    ctx.fillRect(SX - rx, top, rx * 2, foot - top);
-    ctx.fillStyle = '#5a1e34';
-    ctx.fillRect(SX - rx, top + 8, rx * 2, 4);
-    band(top, rx + 3, COLORS.outline);
-    band(top, rx, KIT.frame);
-    band(top - 2, rx - 6, '#2c2140');
-    band(top - 4, rx - 20, '#352850');
+    const lx = 92;
+    const ly = 236;
+    const foot = SY + 18;
+    // the light: a cone from the lantern down to the pool, widening in 4px bands
+    const top = ly + 24;
+    for (let y = top; y < SY + 4; y += 4) {
+      const k = (y - top) / (SY + 4 - top);
+      const cx = Math.round((lx + 120 + (SX - lx - 120) * k) / 2) * 2;
+      const hw = Math.round((30 + 230 * k) / 4) * 4;
+      r(cx - hw, y, hw * 2, 4, `rgba(255,224,150,${(0.03 + 0.06 * k).toFixed(3)})`);
+    }
+    // the pool on the sidewalk: three stepped ellipses, then the stage's contact shadow
+    for (const [rx, a] of [[300, 0.07], [230, 0.07], [150, 0.08]] as const) {
+      for (let y = -32; y < 32; y += 4) {
+        const ry = 32;
+        const w = Math.round((rx * Math.sqrt(Math.max(0, 1 - Math.pow((y + 2) / ry, 2)))) / 4) * 4;
+        r(SX - w, SY + y, w * 2, 4, `rgba(255,224,150,${a})`);
+      }
+    }
+    r(SX - 200, SY + 2, 400, 4, 'rgba(0,0,0,0.25)');
+    // rain in the light: a few streaks inside the cone (still with MOTION: REDUCED)
+    ctx.fillStyle = 'rgba(200,210,240,0.28)';
+    for (let i = 0; i < 18; i++) {
+      const fy = (i * 97 + t * 260) % (SY - top);
+      const k = fy / (SY - top);
+      const cx = lx + 120 + (SX - lx - 120) * k;
+      const x = Math.round((cx + ((i * 61) % 200) - 100 - fy * 0.1) / 2) * 2;
+      ctx.fillRect(x, Math.round((top + fy) / 2) * 2, p, 8);
+    }
+    // the post: an outlined iron pole with a base, an arm out to the lantern
+    r(lx - 8, ly, 16, foot - ly, COLORS.outline);
+    r(lx - 4, ly + 2, 8, foot - ly - 2, '#3b3347');
+    r(lx - 4, ly + 2, 2, foot - ly - 2, '#5a5068');
+    r(lx - 14, foot - 26, 28, 26, COLORS.outline);
+    r(lx - 12, foot - 24, 24, 24, '#2a2436');
+    r(lx - 12, foot - 24, 24, 4, '#4a4058');
+    // the arm and the lantern over the stage
+    r(lx - 4, ly - 4, 124, 10, COLORS.outline);
+    r(lx, ly - 2, 118, 6, '#3b3347');
+    r(lx, ly - 2, 118, 2, '#5a5068');
+    r(lx + 96, ly + 4, 48, 24, COLORS.outline);
+    r(lx + 100, ly + 6, 40, 8, '#3b3347');
+    r(lx + 102, ly + 14, 36, 8, '#ffe08a');
+    r(lx + 106, ly + 14, 28, 4, '#fff6c8');
   }
 }

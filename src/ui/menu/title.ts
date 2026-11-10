@@ -10,7 +10,7 @@ import type { MenuScreen, Menus } from '../menus';
 /**
  * THE TITLE: the logo's own marquee bulbs are the loading bar. They light one by one, clockwise from the top left,
  * while every sprite is built once (so the first fight doesn't hitch); then the sign comes on (a soft warm glow, well
- * under FLASH_CAP) and the bulbs start their chase. Behind it, slow reels drift on the dimmed casino floor.
+ * under FLASH_CAP) and the bulbs start their chase. Behind it, the street before the night starts, dimmed.
  */
 
 const LOAD_MIN = 1.6;
@@ -29,8 +29,6 @@ const BULBS: [number, number][] = (() => {
 const BULB_ON = ['#ffffff', '#ffe45c', '#ffe45c', '#d9a640'];
 const BULB_OFF = ['#f07c1c', '#a8401a', '#a8401a', '#a8401a'];
 const BULB_DEAD = ['#3b3347', '#140c1c', '#140c1c', '#140c1c'];
-/** The reels behind the logo: symbols that scroll down, very faint. */
-const REEL_SYMS = ['seven', 'cherry', 'bar', 'double', 'wild', 'coin', 'sword', 'shield', 'bolt', 'note', 'ace', 'goldbar'];
 
 /**
  * Draw the REEL BRAWL marquee at an integer scale, centred on x/y. `lit` 0..1: how many bulbs are powered (the
@@ -103,10 +101,9 @@ export class TitleScreen implements MenuScreen {
 
   draw(ctx: CanvasRenderingContext2D, t: number): void {
     const still = this.m.reduced();
-    // The casino floor, nearly dark, under slow reels.
-    ctx.fillStyle = 'rgba(10,6,18,0.9)';
+    // The street before the night starts (rooms v2: the menus' street, roomMenu.ts), dimmer than the main menu's.
+    ctx.fillStyle = 'rgba(8,4,14,0.62)';
     ctx.fillRect(0, 0, W, H);
-    this.drawReels(ctx, still ? 0 : t);
     const cy = 268;
     const scale = 4;
     // The sign coming on: a warm halo in three stepped rings that fades (alpha 0.18 at most, under FLASH_CAP 0.2).
@@ -144,29 +141,5 @@ export class TitleScreen implements MenuScreen {
       }
     }
     if (!STEAM) drawText(ctx, DEMO ? 'DEMO. PROGRESS SAVES IN THIS BROWSER.' : 'PLAYTEST BUILD. PROGRESS SAVES IN THIS BROWSER.', W / 2, H - 30, T.small, COLORS.textDim);
-  }
-
-  /** Seven reel columns of symbols drifting down behind the logo: a shimmer, not a show (alpha 0.09). */
-  private drawReels(ctx: CanvasRenderingContext2D, t: number): void {
-    const cols = 7;
-    const pitch = 96;
-    const s = 4;
-    ctx.save();
-    for (let c = 0; c < cols; c++) {
-      const cx = Math.round(W / 2 + (c - (cols - 1) / 2) * 170);
-      // A reel window: a darker band, edged.
-      ctx.globalAlpha = 0.3;
-      ctx.fillStyle = '#05020a';
-      ctx.fillRect(cx - 54, 0, 108, H);
-      ctx.globalAlpha = 1;
-      const speed = 14 + ((c * 7) % 5) * 3;
-      const off = (t * speed + c * 37) % pitch;
-      for (let k = -1; k <= H / pitch + 1; k++) {
-        const sym = REEL_SYMS[(((c * 5 + k - Math.floor((t * speed + c * 37) / pitch)) % REEL_SYMS.length) + REEL_SYMS.length) % REEL_SYMS.length];
-        if (!hasSprite(sym)) continue;
-        drawSprite(ctx, artId(sym), cx, Math.round(k * pitch + off), s, { alpha: 0.1 });
-      }
-    }
-    ctx.restore();
   }
 }

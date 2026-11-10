@@ -261,9 +261,9 @@ export class Menus {
 
   draw(ctx: CanvasRenderingContext2D, t: number): void {
     if (!this.isOpen) return;
-    // Everything but the main menu and the title sits on the dimmed floor.
+    // Everything but the main menu and the title sits on the dimmed street (rooms v2: roomMenu.ts).
     if (this.mode !== 'main' && this.mode !== 'loading') {
-      ctx.fillStyle = 'rgba(6,2,12,0.86)';
+      ctx.fillStyle = 'rgba(6,2,12,0.78)';
       ctx.fillRect(0, 0, W, H);
     }
     ctx.save();
