@@ -13,7 +13,8 @@ export function devSwapSprite(id: SpriteId, rows: string[]): void {
 /** Refer to art that may not be generated yet (it falls back to a placeholder until it is). */
 export const artId = (id: string): SpriteId => id as SpriteId;
 /** Whether a sprite has been generated (for optional art that has no sensible placeholder). */
-export const hasSprite = (id: string): boolean => id in SPRITES;
+// Own keys only: save data can name a sprite from another version, or 'toString'.
+export const hasSprite = (id: string): id is SpriteId => Object.prototype.hasOwnProperty.call(SPRITES, id);
 
 function build(id: SpriteId, variant: SpriteVariant): HTMLCanvasElement {
   // Missing art (not generated yet) draws as a placeholder rather than crashing.
@@ -92,6 +93,9 @@ export function drawSprite(ctx: CanvasRenderingContext2D, id: SpriteId, cx: numb
  * boxes with more detail, so no layout moves.
  */
 export function drawPortrait(ctx: CanvasRenderingContext2D, id: SpriteId, cx: number, cy: number, scale: number, o: DrawOpts = {}): void {
+  // Portrait ids come from saves too (HISCORES' killer): an id this build doesn't know draws nothing rather than
+  // crashing the screen (QA, 2026-11-10: an unknown killerPortrait opened the crash panel on HISCORES).
+  if (!hasSprite(id)) return;
   drawSprite(ctx, id, cx, cy, (scale * 24) / spriteSize(id).w, o);
 }
 
