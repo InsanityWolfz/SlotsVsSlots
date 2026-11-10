@@ -31,7 +31,66 @@ import { alley, buildAlley } from './roomAlley';
 import { dealer, owner, vault, wheel } from './roomBosses';
 import { buildFloor, floor } from './roomFloor';
 import { canvas, FLOOR_Y, hexA, LH, LW, MID, NEON, rect, seeded, type RoomArt } from './roomKit';
+import { drawEntrance, entranceCheer, entranceUpdate } from './roomEntrance';
 import { buildVip, vip } from './roomVip';
+import { drawStreet, streetStation } from './roomStreet';
+import { drawFloorStation, drawWheelRoom, FLOOR_STATIONS, floorStation, wheelRoomUpdate } from './roomCasinoFloor';
+import { drawHighRoller, hrStation, HR_STATIONS, type DealerState } from './roomHighRoller';
+import { drawLobby, drawNightCrew, drawOwnerRoom, endlessLate, lobbyUpdate, ownerUpdate } from './roomEndless';
+
+/** Rooms v2 (the style key, 2026-11-09): THE HOUSE's room is the casino entrance, and act 1 is the street toward it
+ * (roomStreet.ts). Off: the old alley and vault. `station` forces act 1's station (dbg, the gallery); null: by depth. */
+export const ROOM_V2 = { on: true, station: null as number | null };
+
+/** Act 1 on the v2 street: which place this scene is at (a street station, or the casino's door), or null when the
+ * scene isn't act 1's street (another act, ENDLESS, a menu). */
+export function streetPlace(s: Scene): number | 'door' | null {
+  if (!ROOM_V2.on || s.room !== 'alley' || s.loop > 0) return null;
+  if (s.boss === 'house' || (!s.boss && s.atBoss)) return 'door';
+  if (s.boss) return null;
+  if (ROOM_V2.station !== null) return ROOM_V2.station;
+  return streetStation(s.fightIndex ?? 0, s.regulars ?? 4);
+}
+/** Act 2 on the v2 casino floor (roomCasinoFloor.ts): a station down the aisle, or THE WHEEL's table at its end (her
+ * fight, and the screens just before it); null when the scene isn't a run's act 2 floor (the menus keep their floor). */
+export function floorPlace(s: Scene): number | 'wheel' | null {
+  if (!ROOM_V2.on || s.room !== 'floor' || s.loop > 0) return null;
+  if (s.boss === 'wheel') return 'wheel';
+  if (s.boss || s.regulars === undefined) return null;
+  if (s.atBoss) return 'wheel';
+  if (ROOM_V2.station !== null) return Math.max(0, Math.min(FLOOR_STATIONS - 1, ROOM_V2.station));
+  return floorStation(s.fightIndex ?? 0, s.regulars);
+}
+/** Act 3 in the v2 high-roller room (roomHighRoller.ts): a station down the aisle, or 'table' (THE DEALER's own, his
+ * fight and the screens just before it), or null when the scene isn't act 3's room. */
+export function hrPlace(s: Scene): number | 'table' | null {
+  if (!ROOM_V2.on || s.room !== 'vip' || s.loop > 0) return null;
+  if (s.boss === 'dealer' || (!s.boss && s.atBoss)) return 'table';
+  if (s.boss) return null;
+  if (ROOM_V2.station !== null) return Math.min(ROOM_V2.station, HR_STATIONS - 1);
+  return hrStation(s.fightIndex ?? 0, s.regulars ?? 4);
+}
+/** ENDLESS on the v2 journey (roomEndless.ts): each loop replays the strip toward its boss later in the night. THE
+ * DOORMAN's loop walks back through the floor to the casino's doors ('lobby' his room, seen from inside), THE WHEEL's
+ * down the floor to her table, THE DEALER's through the high-roller room to his, THE OWNER's down the emptied floor to
+ * him ('owner'). Null outside ENDLESS (or with rooms v2 off). */
+export type EndlessPlace = { kind: 'floor'; station: number; exit: boolean } | { kind: 'hr'; station: number } | { kind: 'lobby' | 'wheel' | 'table' | 'owner' };
+export function endlessPlace(s: Scene): EndlessPlace | null {
+  if (!ROOM_V2.on || s.loop <= 0) return null;
+  const lb = s.boss ?? s.loopBoss ?? null;
+  if (!lb) return null;
+  if (s.boss || s.atBoss) return { kind: lb === 'house' ? 'lobby' : lb === 'wheel' ? 'wheel' : lb === 'dealer' ? 'table' : 'owner' };
+  const n = s.regulars ?? 4;
+  const i = s.fightIndex ?? 0;
+  if (lb === 'dealer') return { kind: 'hr', station: ROOM_V2.station ?? hrStation(i, n) };
+  return { kind: 'floor', station: ROOM_V2.station ?? floorStation(i, n), exit: lb === 'house' };
+}
+
+/** Where a v2 journey scene is: act 1's street (0-3, 'door'), act 2's floor (0-3, 'wheel') or act 3's high-roller room
+ * (0-3, 'table'); null for the old rooms. */
+export const roomPlace = (s: Scene) => streetPlace(s) ?? floorPlace(s) ?? hrPlace(s);
+/** The room draws its own air (rain), so the drifting motes stay off (they're another pixel size). */
+export const roomV2Air = (s: Scene) => (ROOM_V2.on && s.boss === 'house') || roomPlace(s) !== null || endlessPlace(s) !== null;
 
 export { LH, LW } from './roomKit';
 
@@ -53,6 +112,27 @@ export interface Scene {
   fight: boolean;
   /** ENDLESS loop 5: THE TURBO is in the room (red beacons, the crowd backs off). */
   turbo?: boolean;
+  /** THE HOUSE's pot (rooms v2: the entrance's lights grow with it). */
+  pot?: number;
+  /** The journey (rooms v2): this fight's index among the act's regular fights, how many there are, and whether the
+   * act's boss is the next stop (the street's end: the casino's door). */
+  fightIndex?: number;
+  regulars?: number;
+  atBoss?: boolean;
+  /** This fight's enemy archetype (a station's small per-enemy touch). */
+  enemy?: string | null;
+  /** THE WHEEL's table (rooms v2: her room reads it): chips on your reels, turns to NO MORE BETS, SPINS FASTER, and the
+   * gutter wheel's angle (the table's wheel turns with it). */
+  wheel?: { bets: number; left: number; fast: boolean; angle: number };
+  /** THE DEALER's fight (rooms v2's high-roller room): his hand, ALL IN armed, his trick's charge. */
+  dealer?: DealerState;
+  /** ENDLESS: this loop's boss (its strip leads to them; rooms v2). */
+  loopBoss?: BossSet;
+  /** THE OWNER's fight: rungs of his ladder climbed (0-4). */
+  owner?: { rungs: number };
+  /** The player's juice settings the boss rooms honour: LIGHTNING SOFT, and flashes off. */
+  soft?: boolean;
+  flash?: boolean;
 }
 
 // ---- the still layers --------------------------------------------------------------------------------------------
@@ -147,6 +227,7 @@ export class Rooms {
 
   /** A jackpot landed: yours cheers the room, theirs makes it wince. */
   cheer(ours: boolean): void {
+    entranceCheer(ours);
     if (!ours) {
       this.groanT = 1;
       return;
@@ -171,6 +252,10 @@ export class Rooms {
 
   update(dt: number): void {
     this.time += dt;
+    entranceUpdate(dt);
+    wheelRoomUpdate(dt);
+    lobbyUpdate(dt);
+    ownerUpdate(dt);
     // ENDLESS: loose bills drift down the side strips, more each loop.
     if (this.loopNow >= 2 && Math.random() < dt * Math.min(3, 0.4 * this.loopNow)) {
       const left = Math.random() < 0.5;
@@ -197,6 +282,41 @@ export class Rooms {
   }
 
   draw(ctx: CanvasRenderingContext2D, s: Scene, time: number): void {
+    const ep = endlessPlace(s);
+    if (ep) {
+      this.drawEndless(ctx, s, ep, time);
+      this.overlays(ctx, s, time, this.cheerT, true);
+      return;
+    }
+    const place = streetPlace(s);
+    if ((ROOM_V2.on && s.boss === 'house') || place === 'door') {
+      drawEntrance(ctx, { pot: s.pot ?? 0, foeHp: s.boss === 'house' ? s.foeHp : 1, turn: s.turn, time });
+      this.overlays(ctx, s, time, this.cheerT);
+      return;
+    }
+    if (place !== null) {
+      drawStreet(ctx, { station: place, time, enemy: s.enemy });
+      this.overlays(ctx, s, time, this.cheerT);
+      return;
+    }
+    const fp = floorPlace(s);
+    if (fp === 'wheel') {
+      const w = s.wheel ?? { bets: 0, left: 3, fast: false, angle: time * 0.6 };
+      drawWheelRoom(ctx, { time, foeHp: s.boss === 'wheel' ? s.foeHp : 1, ...w });
+      this.overlays(ctx, s, time, this.cheerT);
+      return;
+    }
+    if (fp !== null) {
+      drawFloorStation(ctx, { station: fp, time });
+      this.overlays(ctx, s, time, this.cheerT);
+      return;
+    }
+    const hr = hrPlace(s);
+    if (hr !== null) {
+      drawHighRoller(ctx, { place: hr, time, foeHp: s.boss === 'dealer' ? s.foeHp : 1, turn: s.turn, dealer: s.dealer, fight: s.fight && s.boss === 'dealer' });
+      this.overlays(ctx, s, time, this.cheerT);
+      return;
+    }
     const art = room(s.room);
     this.loopNow = s.loop;
     if (this.lastRoom !== s.room) {
@@ -244,15 +364,44 @@ export class Rooms {
     ctx.drawImage(art.still, 0, 0, LW * 4, LH * 4);
     ctx.drawImage(this.live, 0, 0, LW * 4, LH * 4);
     ctx.restore();
+    this.overlays(ctx, s, time, cheer);
+  }
+
+  /** ENDLESS on the v2 journey: the loop's strip later in the night, the closing shift, the boss rooms. */
+  private drawEndless(ctx: CanvasRenderingContext2D, s: Scene, ep: EndlessPlace, time: number): void {
+    const late = endlessLate(s.loop);
+    if (ep.kind === 'floor') {
+      drawFloorStation(ctx, { station: ep.station, time, late, exit: ep.exit });
+      drawNightCrew(ctx, 'floor', late, time);
+    } else if (ep.kind === 'hr') {
+      drawHighRoller(ctx, { place: ep.station, time, late });
+      drawNightCrew(ctx, 'hr', late, time);
+    } else if (ep.kind === 'lobby') {
+      drawLobby(ctx, { pot: s.pot ?? 0, foeHp: s.boss === 'house' ? s.foeHp : 1, turn: s.turn, time });
+    } else if (ep.kind === 'wheel') {
+      const w = s.wheel ?? { bets: 0, left: 3, fast: false, angle: time * 0.6 };
+      drawWheelRoom(ctx, { time, foeHp: s.boss === 'wheel' ? s.foeHp : 1, ...w, late });
+    } else if (ep.kind === 'table') {
+      drawHighRoller(ctx, { place: 'table', time, late, foeHp: s.boss === 'dealer' ? s.foeHp : 1, turn: s.turn, dealer: s.dealer, fight: s.fight && s.boss === 'dealer' });
+    } else {
+      // THE OWNER: the floor emptied (act 2's last station, closing time), then him under the spotlight.
+      drawFloorStation(ctx, { station: FLOOR_STATIONS - 1, time, late: 1, bare: true });
+      drawOwnerRoom(ctx, { time, foeHp: s.boss === 'owner' ? s.foeHp : 1, rungs: s.owner?.rungs ?? 0, turn: s.turn, fight: s.fight && s.boss === 'owner', soft: !!s.soft, flash: s.flash !== false });
+    }
+  }
+
+  /** The tints over the room: ENDLESS's darkening, THE TURBO's red, a jackpot's glow, the low-HP pulse. (`v2`: the
+   * journey's rooms darken themselves by the loop, so the loop's own tint stays off.) */
+  private overlays(ctx: CanvasRenderingContext2D, s: Scene, time: number, cheer: number, v2 = false): void {
     const full = (c: string) => {
       ctx.fillStyle = c;
       ctx.fillRect(-40, -40, LW * 4 + 80, LH * 4 + 80);
     };
-    if (s.loop > 0) {
+    if (s.loop > 0 && !v2) {
       full(`rgba(4,2,8,${Math.min(0.4, 0.08 * s.loop)})`);
       full(`rgba(201,162,39,${Math.min(0.08, 0.02 * s.loop)})`);
     }
-    if (s.turbo) full(`rgba(255,30,30,${0.04 + 0.02 * Math.sin(time * 5)})`);
+    if (s.turbo && !v2) full(`rgba(255,30,30,${0.04 + 0.02 * Math.sin(time * 5)})`);
     if (cheer > 0) full(hexA('#ffd23f', 0.05 * cheer));
     if (this.groanT > 0) full(hexA('#ff4a3a', 0.07 * this.groanT));
     if (s.fight && s.hp < 0.3) {

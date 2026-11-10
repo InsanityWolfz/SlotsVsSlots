@@ -1,6 +1,8 @@
 /** The frame: update, the screen transition, drawing a frame, and the scene behind it (split from game.ts, 2026-11-05). */
 import type { SymbolId } from './core/config';
 import { DEALER_HANDS } from './core/fight';
+import { rungsClimbed } from './core/enemies';
+import { TYPICAL_ACT_FIGHTS } from './core/run';
 import { roomFor, type Scene } from './render/rooms';
 import { H, W } from './present/layout';
 import { BUILD } from './ui/runScreens';
@@ -201,5 +203,38 @@ export function sceneNow(g: Game): Scene {
     turn: fight ? g.stage.gutter.side : null,
     fight,
     turbo: fight && !!g.fight.cfg.enemy.owner,
+    pot: fight && boss === 'house' ? (g.stage?.gutter?.pot ?? 0) : 0,
+    wheel: fight && boss === 'wheel' ? wheelNow(g) : undefined,
+    dealer: fight && boss === 'dealer' ? { hand: g.stage.gutter.dealerHand ?? 1, allIn: !!g.stage.gutter.allInArmed, charge: g.stage.huds.enemy.charge ?? 0 } : undefined,
+    // ENDLESS (rooms v2): the loop's boss (its strip leads to them), THE OWNER's ladder, the player's flash settings.
+    loopBoss: inRun && run!.endless ? (run!.map.boss.boss ?? null) : null,
+    owner: fight && boss === 'owner' ? { rungs: rungsClimbed(e.maxHp - Math.max(0, e.hp)) } : undefined,
+    soft: g.prefs.juice.softLightning,
+    flash: g.prefs.juice.flash,
+    ...journey(g),
+  };
+}
+
+/** THE WHEEL's table as presented (the gutter's chips, turns to NO MORE BETS, SPINS FASTER, the wheel's turn). */
+function wheelNow(g: Game): Scene['wheel'] {
+  const gw = g.stage?.gutter;
+  const bets = (gw?.bets ?? [0, 0, 0]).reduce((a, b) => a + b, 0);
+  return { bets, left: gw?.betsLeft ?? 3, fast: !!gw?.wheelFast, angle: gw?.wheelAngle ?? 0 };
+}
+
+/** Where the run stands in its act (rooms v2's journey): this fight among the act's regulars, and the boss next. Before
+ * a route is picked the act's length is a guess (TYPICAL_ACT_FIGHTS); between fights `depth` is already the next one,
+ * so the backdrop walks forward as you win. */
+function journey(g: Game): Pick<Scene, 'fightIndex' | 'regulars' | 'atBoss' | 'enemy'> {
+  const run = g.run;
+  if (!run) return {};
+  const routed = !(run.route === null && run.map.routes.length > 1);
+  const regulars = routed ? Math.max(1, run.enemies.length - 1) : TYPICAL_ACT_FIGHTS - 1;
+  const fighting = g.phase === 'fighting' || g.phase === 'recap';
+  return {
+    fightIndex: Math.min(run.depth, regulars - 1),
+    regulars,
+    atBoss: routed && run.depth >= run.enemies.length - 1,
+    enemy: fighting ? (run.enemies[run.depth]?.archetype ?? null) : null,
   };
 }

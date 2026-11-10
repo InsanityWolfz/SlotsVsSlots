@@ -268,7 +268,7 @@ export class Director {
         return this.banner('OVERTIME!', '#ff9a3a', 1.2, 0.3, 'BOTH MACHINES HIT HARDER WITH EACH OF YOUR SPINS', BANNER_Y, 3);
       case 'lastCall':
         this.s.sounds.stingerMedium();
-        return this.banner('LAST CALL!', '#ff6a5a', 1.2, 0.3, e.house ? 'THE HOUSE SKIMS EVERY TURN NOW' : 'ITS HITS GROW EVERY TURN NOW', BANNER_Y, 3);
+        return this.banner('LAST CALL!', '#ff6a5a', 1.2, 0.3, e.house ? 'THE DOORMAN SKIMS EVERY TURN NOW' : 'ITS HITS GROW EVERY TURN NOW', BANNER_Y, 3);
       case 'hpCost': {
         // LIVE WIRE: the storm's price comes off your own HP bar.
         const h = this.s.huds[e.side];

@@ -8,7 +8,7 @@ console.log('api_name,display_name,description,hidden');
 // The game's text is all caps. On Steam: titles in title case, descriptions in sentence case, with the game's own names
 // (Slot Machines, bosses, stakes, ENDLESS) kept in caps as the game writes them (QA STEAM-08: "Dj Decibel",
 // "with knight.", "the repo man").
-const NAMES = ['THE HOUSE', 'THE DEALER', 'THE OWNER', 'THE REPO MAN', 'KNIGHT', 'TESLA', 'JUKEBOX', 'JOKER', 'BANKROLL', 'RED', 'GREEN', 'BLACK', 'BLUE', 'GOLD', 'ENDLESS'];
+const NAMES = ['THE DOORMAN', 'THE HOUSE', 'THE DEALER', 'THE OWNER', 'THE REPO MAN', 'KNIGHT', 'TESLA', 'JUKEBOX', 'JOKER', 'BANKROLL', 'RED', 'GREEN', 'BLACK', 'BLUE', 'GOLD', 'ENDLESS'];
 const SMALL = new Set(['a', 'an', 'the', 'of', 'on', 'to', 'and', 'or', 'with']);
 const title = (s: string) =>
   s

@@ -55,7 +55,9 @@ export interface EntranceView {
   card?: { x: number; y: number; rot: number; flip: number };
   /** THE WHEEL's wheel on the plate: its turn (radians). */
   wheel?: number;
-  /** THE HOUSE's pot glows behind the plate. */
+  /** THE DOORMAN's raised hand on the plate (ID, PLEASE): 0 down, 1 up. */
+  hand?: number;
+  /** THE DOORMAN's (act 1) pot glows behind the plate. */
   glow: number;
 }
 

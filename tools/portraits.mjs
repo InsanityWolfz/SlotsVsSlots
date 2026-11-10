@@ -1,5 +1,7 @@
 // The casino-town portraits, 32×32 (approved by the user, 2026-10-29/30), as literal fill rows.
 // build-art.mjs adds the 1px outline. Baked from the art-wip branch (tools/art-wip/*32.mjs); hand edits go here now.
+import { DOORMAN } from './doorman.mjs';
+
 export const PORTRAITS = {
   // THE BARFLY
   enemyPortrait: [
@@ -526,8 +528,10 @@ export const PORTRAITS = {
     'TTTTIrRRRRRRRRRGRRRRRRRRrKWTTIKt',
     'TTTTIrRRRRRRRRRrRRRRRRRRrrKWTTIK',
   ],
-  // THE HOUSE
-  enemyBoss: [
+  // THE DOORMAN (act 1's boss, 2026-11-09: candidate A, tools/doorman.mjs)
+  enemyBoss: DOORMAN,
+  // THE HOUSE's gold Slot Machine (the casino's own; the act 1 boss's face until THE DOORMAN, 2026-11-09)
+  houseMachine: [
     '................................',
     '............W...................',
     '...W....W..YGg..W....W.....RRRr.',

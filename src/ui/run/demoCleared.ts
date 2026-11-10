@@ -89,7 +89,7 @@ export function drawDemoCleared(ctx: CanvasRenderingContext2D, v: ClearedView): 
   bigPortrait(ctx, heroSprite(run.cabinet) as SpriteId, x0 + ps / 2, y0 + ps / 2 + 4, 2.5);
   const tx = x0 + ps + 20;
   drawText(ctx, cab.hero, tx, y0 + 18, T.head, KIT.title, { align: 'left' });
-  drawText(ctx, 'BEAT THE HOUSE', tx, y0 + 50, T.body, '#7dff7a', { align: 'left' });
+  drawText(ctx, 'BEAT THE DOORMAN', tx, y0 + 50, T.body, '#7dff7a', { align: 'left' });
   drawText(ctx, `ALL ${totalFights(run)} FIGHTS WON ON ${cab.name}`, tx, y0 + 76, T.small, KIT.dim, { align: 'left' });
   const sx = x0 + rowW - scoreW;
   drawText(ctx, 'SCORE', sx, y0 + 10, T.small, KIT.dim, { align: 'left' });

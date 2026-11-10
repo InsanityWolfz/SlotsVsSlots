@@ -133,7 +133,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     symbols: ['bolt', 'shield'],
     attack: 'bolt',
     rule: 'BOLTS CHARGE LIGHTNING: 22 A BOLT, PIERCES SHIELDS. A STORM HEALS 15. 340 HP.',
-    unlock: 'REACH THE HOUSE',
+    unlock: 'REACH THE DOORMAN',
     // 40 (2026-10-12): LIGHTNING ROD is gone (97% of TESLA runs took it; it set the cost to 40 and hit 90).
     specialCost: 4 * UNIT,
     // 60 -> 50 (2026-10-12): TESLA turned its pay into damage faster than anyone (sim: 1125 / spin in act 3 vs ~540).
@@ -159,7 +159,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     symbols: ['ace', 'shield'],
     attack: 'ace',
     rule: 'WILDS FILL A METER: THEN ALL 3 CELLS PAY JACKPOTS, HEAL 15. A WILD LETS ANY 2 REELS PAIR. 365 HP.',
-    unlock: 'BEAT THE HOUSE WITH A WILD ON YOUR REELS',
+    unlock: 'BEAT THE DOORMAN WITH A WILD ON YOUR REELS',
     jokerWilds: true,
   },
   jukebox: {
@@ -178,7 +178,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     symbols: ['note', 'shield'],
     attack: 'note',
     rule: 'NOTES RAISE THE VOLUME: EACH LEVEL, NOTES HIT HARDER. AT 6, THE DROP: EVERY NOTE ON SCREEN HITS, HEAL 15. 430 HP.',
-    unlock: 'BEAT THE HOUSE',
+    unlock: 'BEAT THE DOORMAN',
   },
 };
 

@@ -1,12 +1,15 @@
 import type { RelicId, SideId, SymbolId } from './core/config';
-import { ARCHETYPES, BOSS, DEALER, makeEnemy, OWNER, REPO_MAN, TURBO, WHEEL } from './core/enemies';
+import { ARCHETYPES, BOSS, DEALER, generateActMap, makeEnemy, OWNER, REPO_MAN, TURBO, WHEEL } from './core/enemies';
 import { Rng } from './core/rng';
-import { skipToBoss } from './core/run';
+import { chooseRoute, setMap, skipToBoss } from './core/run';
 import { fightConfig } from './core/fightSetup';
+import { startEndlessLoop } from './core/endless';
 import type { CombatEvent } from './core/events';
 import { BUILD_UP } from './core/fightRules';
 import type { Game } from './game';
 import { setInputMode, type InputMode } from './ui/input';
+import { endlessPlace, ROOM_V2, roomPlace } from './render/rooms';
+import { devSwapSprite } from './render/sprites';
 
 /**
  * Dev-only console helpers (window.dbg) for frame-stepping the presentation and forcing
@@ -34,6 +37,17 @@ export function installDebug(game: Game): void {
     resume: () => (game.stage.clock.speed = game.prefs.speed / 2),
     /** Advance game time by `sec` (paused otherwise). */
     adv: (sec: number) => step(sec),
+    /** Rooms v2 (the style key): dbg.roomV2(false) shows the old rooms. */
+    roomV2: (on: boolean) => ((ROOM_V2.on = on), on),
+    /** The journey (rooms v2): show station 0-3 of act 1's street or act 2's floor whatever the depth; null: by depth. */
+    station: (n: number | null) => ((ROOM_V2.station = n), n),
+    /** Where the backdrop is now: act 1's street (0-3, 'door'), act 2's floor (0-3, 'wheel'), act 3's high-roller room
+     * (0-3, 'table'), or null (an old room). dbg.station(n) forces the station in every act. */
+    place: () => roomPlace(game.background.scene),
+    /** ENDLESS (rooms v2): where the loop's backdrop is (its strip's station, or the boss room), or null. */
+    endlessPlace: () => endlessPlace(game.background.scene),
+    /** Swap a sprite's rows (outlined), e.g. a portrait candidate: dbg.sprite('enemyBoss', rows). */
+    sprite: (id: string, rows: string[]) => devSwapSprite(id as import('./render/sprites').SpriteId, rows),
     /** Advance until the director starts playing an event of this type. */
     async until(type: CombatEvent['type'], maxSec = 30): Promise<boolean> {
       let hit = false;
@@ -47,6 +61,15 @@ export function installDebug(game: Game): void {
       return hit;
     },
     force: (side: SideId, line: SymbolId[]) => game.fight.forceNext(side, line),
+    /** Set the enemy's HP as a share of its max (and on its HUD), e.g. to see THE HOUSE's doors open (rooms v2). */
+    foeHp: (share: number) => {
+      const e = game.fight.sides.enemy;
+      e.hp = Math.round(e.maxHp * share);
+      game.stage.huds.enemy.hp = e.hp;
+      return e.hp;
+    },
+    /** Set THE HOUSE's pot (the gutter panel's number), e.g. to see the entrance light up with it (rooms v2). */
+    pot: (n: number) => (game.stage.gutter.pot = n),
     /** Set your HP in the current fight (and on the HUD), e.g. to see the low-HP warning. */
     hp: (n: number) => {
       game.fight.sides.player.hp = n;
@@ -79,10 +102,46 @@ export function installDebug(game: Game): void {
       if (act3) game.prefs.act3 = true;
       game.startRun(seed, cabinet, stake);
     },
+    /** Jump the run to act `n`'s first fight (its first route), for looking at an act's rooms. */
+    act(n: number) {
+      const run = game.run;
+      if (!run) return;
+      run.act = n;
+      setMap(run, generateActMap(new Rng((run.seed ^ Math.imul(n, 0x3c6ef372)) >>> 0), n, 1, run.cabinet));
+      if (run.route === null) chooseRoute(run, 0);
+      run.depth = 0;
+      run.stop = 0;
+      run.actIntro = false;
+      game.newFight(false, null, fightConfig(run, game.cfg), true);
+      game.screens.showNext(run);
+    },
+    /** Jump the run into ENDLESS loop `n` (its first fight, its route picked), for looking at the late-night rooms. */
+    endless(n: number) {
+      const run = game.run;
+      if (!run) return;
+      run.won = true;
+      run.over = false;
+      run.endless = { loop: n, pot: 0 };
+      startEndlessLoop(run);
+      if (run.route === null) chooseRoute(run, 0);
+      run.depth = 0;
+      run.stop = 0;
+      game.newFight(false, null, fightConfig(run, game.cfg), true);
+      game.screens.showNext(run);
+    },
     /** Jump the run to this act's boss (the first route if none is picked). */
     toBoss() {
       if (!game.run) return;
       skipToBoss(game.run);
+      game.newFight(false, null, fightConfig(game.run, game.cfg), true);
+      game.screens.showNext(game.run);
+    },
+    /** Jump the run to the start of act `n` (its first fight, a fresh map; for checking an act's rooms). */
+    toAct(n: number) {
+      if (!game.run) return;
+      game.run.act = n;
+      setMap(game.run, generateActMap(new Rng((game.run.seed ^ Math.imul(n, 0x3c6ef372)) >>> 0), n, 1, game.run.cabinet));
+      game.run.actIntro = false;
       game.newFight(false, null, fightConfig(game.run, game.cfg), true);
       game.screens.showNext(game.run);
     },

@@ -5806,6 +5806,7 @@ export type SpriteId =
   | 'playerPortrait' | 'enemyPortrait'             // 24x24
   | 'enemyBrute' | 'enemyFrost' | 'enemyThief'     // enemy portraits, 24x24
   | 'enemyGolem' | 'enemyGremlin' | 'enemyBoss'
+  | 'houseMachine'                                 // THE HOUSE's gold Slot Machine, 32x32 (the casino's; THE DOORMAN's face is enemyBoss)
   | 'ice' | 'claw' | 'rock' | 'lock'               // enemy reel symbols, 16x16
   | 'coin' | 'seven' | 'ball'                     // boss reel symbols, 16x16 (ball: THE WHEEL's BALL)
   | 'cherry' | 'double' | 'bar'                  // CHERRY scatter and X2 multiplier reel symbols, 16x16

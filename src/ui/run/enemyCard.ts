@@ -40,7 +40,7 @@ export abstract class NextScreen extends RouteScreen {
     const e = currentEnemy(run);
     const box = e.isBoss ? BOSS_CARD : CARD;
     const bossId = e?.boss;
-    const label = isBossNext(run) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'wheel' ? 'FACE THE WHEEL' : bossId === 'owner' ? 'FACE THE OWNER' : 'FACE THE HOUSE') : 'FIGHT!';
+    const label = isBossNext(run) ? (bossId === 'dealer' ? 'FACE THE DEALER' : bossId === 'wheel' ? 'FACE THE WHEEL' : bossId === 'owner' ? 'FACE THE OWNER' : 'FACE THE DOORMAN') : 'FIGHT!';
     const y = box.y + box.h + 76;
     this.flipT = 0;
     this.pinned = -1;
