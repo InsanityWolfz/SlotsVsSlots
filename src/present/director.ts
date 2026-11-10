@@ -56,6 +56,8 @@ export class Director {
 
   /** THE PAY STACK on screen (payStack.ts): the next pay, or the fight's end, clears it. */
   payStack: PayStack | null = null;
+  /** The heal number up beside each HP bar (directorHits healPop): later heals add into it. */
+  healPops: Partial<Record<SideId, { t: FloatText; total: number; gen: number }>> = {};
   clearStack(): void {
     const st = this.payStack;
     if (!st) return;

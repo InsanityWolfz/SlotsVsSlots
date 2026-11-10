@@ -2,8 +2,10 @@
  * THE PAY STACK (user, 2026-11-10: "the text changes really fast and it's hard to see it all... it fades out and goes
  * down a line, so you can see it all in a line for a second"). The pay banner still shows the step that's counting,
  * large; each step it finishes drops a line into this list under the banner: newest on top, older ones a step dimmer,
- * at most `rows` of them (a longer chain's oldest lines fade out at the bottom). When the banner closes, its total
- * drops in as the top line, and the list stays readable for STACK.linger real seconds while the hit flies, then fades.
+ * at most `rows` of them while it counts (a longer chain's oldest lines wait out of sight). When the banner closes,
+ * its total drops in as the top line and the list grows up into the banner's place to show the WHOLE chain, base
+ * line included (playtest, 2026-11-10: a MEGA WIN rested on its last two multipliers); it stays readable for
+ * STACK.linger real seconds while the hit flies, then fades.
  * Its home is the band under the pay banner (layout.ts PAY_STACK), which nothing else uses while it's up.
  */
 import { drawText, textWidth } from '../render/text';
@@ -13,7 +15,7 @@ import type { FxItem, Rect } from './fx';
 import { COLORS, PAY_STACK } from './layout';
 
 export const STACK = {
-  /** Lines shown at most. */
+  /** Lines shown at most while the banner counts (at rest: as many as its home holds, `restRows`). */
   rows: 4,
   /** Row heights: a step's line, and the total's (a size up). */
   pitch: 19,
@@ -24,8 +26,8 @@ export const STACK = {
   /** How long the list stays after the banner closes (REAL seconds, whatever the SPEED), and its fade (game seconds). */
   linger: 1.1,
   fade: 0.25,
-  /** Each older line a step dimmer. */
-  dim: [1, 0.9, 0.78, 0.66],
+  /** Each older line a step dimmer (at rest none goes under the last step here: the base line must read). */
+  dim: [1, 0.9, 0.8, 0.72],
   minW: 176,
 } as const;
 
@@ -66,6 +68,8 @@ export class PayStack implements FxItem {
   private scroll = 0;
   /** Where its top edge is heading (it slides up when a zoomed banner over it closes). */
   private goal: number;
+  /** The banner has closed: every line shows, as far as the home holds. */
+  private resting = false;
   constructor(
     /** Centre x, the list's top edge and its width. */
     public x: number,
@@ -74,14 +78,20 @@ export class PayStack implements FxItem {
   ) {
     this.goal = top;
   }
-  /** Lines it can show: fewer under a zoomed banner (BIG WIN, MEGA WIN), whose bottom edge is lower. */
+  /** Lines it can show: fewer under a zoomed banner (BIG WIN, MEGA WIN), whose bottom edge is lower; at rest, all
+   * its home holds. */
   get rows(): number {
     const room = PAY_STACK.bottom - this.goal - STACK.pad * 2 - (STACK.headPitch - STACK.pitch);
-    return Math.max(2, Math.min(STACK.rows, Math.floor(room / STACK.pitch)));
+    return Math.max(2, Math.min(this.resting ? Infinity : STACK.rows, Math.floor(room / STACK.pitch)));
   }
-  /** Slide the list's top edge to `top` (the banner it hung from has closed). */
-  moveTo(top: number): void {
+  /** The top edge a resting list of `lines` lines (the total's among them) needs to end at its home's bottom. */
+  static restTop(lines: number): number {
+    return PAY_STACK.bottom - (STACK.pad * 2 + STACK.headPitch + Math.max(0, lines - 1) * STACK.pitch);
+  }
+  /** The banner it hung from has closed: slide its top edge to `top` and show every line there's room for. */
+  rest(top: number): void {
     this.goal = top;
+    this.resting = true;
   }
 
   /** The width a chain needs: its widest line, within the home's limits. */
@@ -122,12 +132,11 @@ export class PayStack implements FxItem {
       if (l.born > time) l.born = time;
       const k = cubicOut(Math.min(1, (time - l.born) / STACK.drop));
       at.push(y + hgt / 2 - this.scroll);
-      const a = shown ? (STACK.dim[i] ?? 0.6) : 0;
+      const a = shown ? (STACK.dim[i] ?? STACK.dim[STACK.dim.length - 1]) : 0;
       l.alpha = k < 1 ? Math.max(l.alpha, a * k) : l.alpha + (a - l.alpha) * Math.min(1, dt * 12);
       y += hgt;
       if (shown) want += hgt;
     });
-    this.lines = this.lines.filter((l, i) => i < this.rows || l.alpha > 0.04);
     this.h = this.h <= 0 ? want : this.h + (want - this.h) * ease;
     if (this.alpha <= 0.01 || !this.lines.length) return;
     const r = this.rect();

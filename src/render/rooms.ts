@@ -112,6 +112,8 @@ export interface Scene {
   turn: 'player' | 'enemy' | null;
   /** In a fight (the crowd only shows there; between fights the room is a backdrop under the screens). */
   fight: boolean;
+  /** The draft is up: THE DOORMAN steps out of view at his doors (the route track's boss stop sat on his head). */
+  draft?: boolean;
   /** ENDLESS loop 5: THE TURBO is in the room (red beacons, the crowd backs off). */
   turbo?: boolean;
   /** THE HOUSE's pot (rooms v2: the entrance's lights grow with it). */
@@ -300,7 +302,7 @@ export class Rooms {
     }
     const place = streetPlace(s);
     if ((ROOM_V2.on && s.boss === 'house') || place === 'door') {
-      drawEntrance(ctx, { pot: s.pot ?? 0, foeHp: s.boss === 'house' ? s.foeHp : 1, turn: s.turn, time });
+      drawEntrance(ctx, { pot: s.pot ?? 0, foeHp: s.boss === 'house' ? s.foeHp : 1, turn: s.turn, time, away: !!s.draft });
       this.overlays(ctx, s, time, this.cheerT);
       return;
     }

@@ -208,6 +208,7 @@ export function sceneNow(g: Game): Scene {
     foeHp: fight && e.maxHp > 0 ? Math.max(0, e.hp) / e.maxHp : 1,
     turn: fight ? g.stage.gutter.side : null,
     fight,
+    draft: !fight && g.screens.active && g.screens.mode === 'draft',
     turbo: fight && !!g.fight.cfg.enemy.owner,
     pot: fight && boss === 'house' ? (g.stage?.gutter?.pot ?? 0) : 0,
     wheel: fight && boss === 'wheel' ? wheelNow(g) : undefined,

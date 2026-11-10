@@ -1,7 +1,8 @@
 /** Hits, blocks and heals, RABBIT'S FOOT, a machine going down and the fight's end banner (split from director.ts, 2026-11-05). */
 import { UNIT } from '../core/config';
 import { backOut, cubicIn, sineIn, sineInOut, sineOut } from './ease';
-import { Banner, Bubble, Projectile } from './fx';
+import { Banner, Bubble, FloatText, Projectile } from './fx';
+import { HUD_W } from './hud';
 import { CALLOUT_Y, cellCenter, COLORS, H, HIT_Y, MACHINE_CX, MACHINE_TOP, W } from './layout';
 import { artId, type SpriteId } from '../render/sprites';
 import { fmtNum } from '../render/text';
@@ -190,11 +191,67 @@ export async function heal(d: Director, e: Ev<'heal'>): Promise<void> {
   d.s.sounds.heal();
   const b = h.hpBar();
   d.s.particles.burst({ x: b.x + b.w * (e.hp / h.maxHp), y: b.y + b.h / 2, count: 16, colors: ['#7dff7a', '#ffffff'], speed: [40, 160], gravity: -200, life: [0.4, 0.7], size: [2, 4] });
-  d.bg(d.popText(`+${e.amount}`, b.x + b.w - 30, b.y - 4, 3, '#7dff7a', 20, 0.3));
-  // A heal made of several: what each part was, small, under the number.
-  if (e.parts) d.bg(d.popText(e.parts.map((p) => `+${p.amount} ${p.label}`).join('  '), b.x + b.w / 2, b.y + b.h + 16, 1.5, '#c8f0c8', 12, 0.6));
+  healPop(d, e);
   d.bg(d.c.to(h, 'ghost', e.hp, 0.3));
   await d.c.to(h, 'hp', e.hp, 0.3, sineOut);
+}
+
+/**
+ * A heal's number: beside the HP bar, in the gutter between the two HUD panels, never on the panel (playtest,
+ * 2026-11-10: VAMP's +20s sat on the name and the HP number, a payoff's parts on the shield bar). Heals that land
+ * while one is up add into it (three VAMPs: +20, +40, +60; each cell still shows its own +20), so there is one number
+ * a side. A heal made of several names its parts on a line each under it.
+ */
+function healPop(d: Director, e: Ev<'heal'>): void {
+  const h = d.s.huds[e.side];
+  const b = h.hpBar();
+  const out = e.side === 'player' ? 1 : -1;
+  const edge = e.side === 'player' ? h.x + HUD_W : h.x;
+  const put = (t: FloatText) => (t.x = Math.round(edge + out * (12 + t.rect().w / 2)));
+  const live = d.healPops[e.side];
+  if (live && d.s.fx.items.includes(live.t) && !live.t.off) {
+    live.total += e.amount;
+    live.gen++;
+    live.t.text = `+${live.total}`;
+    put(live.t);
+    d.bg(d.c.tween({ from: 1.25, to: 1, dur: 0.14, onUpdate: (v) => (live.t.punch = v) }));
+  } else {
+    const t = new FloatText(`+${e.amount}`, 0, b.y + b.h / 2, 3, '#7dff7a');
+    t.plate = true;
+    t.z = 31;
+    put(t);
+    t.restY = t.y;
+    const st = { t, total: e.amount, gen: 0 };
+    d.healPops[e.side] = st;
+    d.s.fx.add(t);
+    d.bg(
+      (async () => {
+        await d.c.tween({ from: 0, to: 1, dur: 0.18, ease: backOut(1.2), onUpdate: (v) => (t.punch = v) });
+        // (It stays while heals keep adding into it.)
+        for (let g = -1; g !== st.gen; ) {
+          g = st.gen;
+          await d.c.wait(0.45);
+        }
+        if (d.healPops[e.side] === st) delete d.healPops[e.side];
+        await d.c.tween({ dur: 0.35, ease: sineIn, onUpdate: (v) => (t.alpha = 1 - v) });
+        d.s.fx.remove(t);
+      })(),
+    );
+  }
+  (e.parts ?? []).slice(0, 2).forEach((p, i) => {
+    const t = new FloatText(`+${p.amount} ${p.label}`, 0, b.y + b.h / 2 + 30 + i * 24, 1.6, '#c8f0c8');
+    t.plate = true;
+    t.z = 31;
+    put(t);
+    d.s.fx.add(t);
+    d.bg(
+      d.c
+        .tween({ from: 0, to: 1, dur: 0.18, ease: backOut(1.2), onUpdate: (v) => (t.punch = v) })
+        .then(() => d.c.wait(0.9))
+        .then(() => d.c.tween({ dur: 0.35, ease: sineIn, onUpdate: (v) => (t.alpha = 1 - v) }))
+        .then(() => d.s.fx.remove(t)),
+    );
+  });
 }
 
 export async function phoenix(d: Director, e: Ev<'phoenix'>): Promise<void> {

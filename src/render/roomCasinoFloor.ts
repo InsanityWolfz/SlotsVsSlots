@@ -225,7 +225,8 @@ function boardLive(g: CanvasRenderingContext2D, zp: number, value: number, t: nu
  * wheel and lamp light, which are behind him (in the still they showed through his arm). */
 function drawWaiter(g: CanvasRenderingContext2D): void {
   const z = 2.6;
-  drawPatron(g, xAt(-78, z), yAt(0, z), 270 / z, WAITRESS, 'tray', true);
+  // (Wholly inside the open column between the two machines, his tray on the inner hand: the frame cut it off.)
+  drawPatron(g, xAt(-74, z), yAt(0, z), 270 / z, WAITRESS, 'tray', false);
 }
 const WAITRESS: PatronLook = { skin: '#c07a5c', hair: '#1a1014', coat: '#2a2436', legs: '#1e1a26', hairStyle: 'bun', tie: 'bow' };
 function drawMark(g: CanvasRenderingContext2D, st: Station, zFar: number): void {

@@ -372,10 +372,10 @@ export async function payBanner(d: Director, title: string, color: string, overs
   d.s.sounds.coin(5);
   d.bg(d.c.tween({ from: 1.2, to: 1, dur: 0.18, ease: backOut(3), onUpdate: (v) => (b.scale = v) }));
   await d.c.wait(hold);
-  // The banner closes into the stack: its total is the top line now (under a zoomed banner the stack hung lower, with
-  // fewer lines: it slides up to its usual place and shows them all).
+  // The banner closes into the stack: its total is the top line now, and the list grows up into the banner's place
+  // as far as it needs to show the whole chain, base line included (never over the payline: PAY_TOP).
   stack.push(head, color, true);
-  stack.moveTo(top);
+  stack.rest(Math.max(PAY_TOP, Math.min(top, PayStack.restTop(stack.lines.length))));
   await d.c.tween({ from: 1, to: 0, dur: 0.15, ease: cubicIn, onUpdate: (v) => ((b.scale = 0.6 + 0.4 * v), (b.alpha = v)) });
   d.s.fx.remove(b);
   // It stays readable while the hit flies (real seconds: the clock's speed is taken out), then fades. Nothing waits

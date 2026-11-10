@@ -47,9 +47,12 @@ fx.ts, camera.ts) and `src/audio`; this file keeps the WHY, so new features feel
 - **A float is placed, not dropped** (`Director.popText`): as wide as the reels at most, on the next free row if
   another float or a banner is already there, never on the payline's numbers.
 - **A count that goes by fast leaves a trail** (THE PAY STACK, `payStack.ts`): the pay banner shows the step that's
-  counting, large; each finished step drops a line under it (newest on top, older ones dimmer, four at most); the
-  list outlives the banner by about a second of real time. A long chain climbs faster (one time budget), it doesn't
+  counting, large; each finished step drops a line under it (newest on top, older ones dimmer, four at most while it counts);
+  when the banner closes the list grows up into its place and shows the whole chain, base line included, for about a
+  second of real time. A long chain climbs faster (one time budget), it doesn't
   add seconds.
+- **A heal's number has its own spot:** beside the HP bar in the gutter between the HUD panels, on a plate, never on
+  the panel; heals that land together add into one number (each cell still shows its own).
 - The stress harness is `tools/shots/fight/` (it needs the dev build: `dbg.probe`): it plays long fights on every
   machine against every boss and trick and lists the words that overlap, and captures the scripted stress scenes.
 

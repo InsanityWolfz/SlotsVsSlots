@@ -247,7 +247,7 @@ Code ids differ from display names: `midas` is BANKROLL and `joker` is JOKER.
   stronger). Pay = BASE × MULT, and gold Charms in a group ADD.
 - **Symbol levels live on the symbol TYPE, with no cap** (user, 2026-10-15: like Balatro's planets): a symbol is worth
   10 + 6 a level above 1 (`SYM` in `src/core/charms.ts`). Hard to stack: levels are only sold at the Cashier (10 + 4 a level
-  gained this run), and each act boss pays your attack symbol one (KNIGHT: three). STAR CHART (uncommon relic) doubles every level you gain. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
+  gained this run), and each act boss pays your attack symbol one (KNIGHT: four). STAR CHART (uncommon relic) doubles every level you gain. Charms: GOLD, KEEN, VAMP, LUCKY, CHIP (`lucre`), plus
   machine-locked CHARGED and BLAZE (TESLA), TRICK (JOKER) and ECHO (JUKEBOX). (BULWARK, `spiked`, is old saves only.)
   `src/core/charms.ts`.
   JOKER's meter jackpot counts each cell's Charm three times, as if it had landed on all three reels (user, 2026-11-10):

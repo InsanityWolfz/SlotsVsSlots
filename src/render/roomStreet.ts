@@ -566,16 +566,7 @@ function makeSprites(): Record<string, HTMLCanvasElement> {
     px(c, 0, 0, 44, 26, d);
     px(c, 2, 2, 40, 22, r);
   });
-  // A newspaper box and trash bags on the bar's corner.
-  const bags = outlined(40, 22, (c) => {
-    px(c, 0, 6, 18, 16, '#1e1e26');
-    px(c, 3, 2, 10, 6, '#1e1e26');
-    px(c, 16, 8, 22, 14, '#26242e');
-    px(c, 22, 4, 8, 6, '#26242e');
-    px(c, 4, 10, 6, 1, '#3a3846');
-    px(c, 22, 12, 8, 1, '#3a3846');
-  });
-  return { barSign, pawn, escape, bin, busStop, valet, bags };
+  return { barSign, pawn, escape, bin, busStop, valet };
 }
 
 // ---- the live layer ---------------------------------------------------------------------------------------------
@@ -745,7 +736,7 @@ export function drawStreet(ctx: CanvasRenderingContext2D, o: StreetScene): void 
     px(g, sx + 24, sy + 81, 3, 7, Yl);
     pool(g, 46, 318, 40, 10, '#e8a860', 0.18);
     pool(g, 30, 200 + (o.barDrop ?? 0), 26, 40, '#ff4fa3', 0.08);
-    g.drawImage(S.bags, 586, 312);
+    // (No trash bags in the right corner: two dark boxes beside PAUSE and LOG read as dim buttons. Playtest 2026-11-10.)
   } else if (i === 1) {
     // The alley's mouth: a fire escape on the wall beside it, a dumpster just inside; the pawn shop's sign across.
     g.drawImage(S.escape, 6, 20);

@@ -95,7 +95,8 @@ export abstract class NextScreen extends RouteScreen {
     const e = currentEnemy(run);
     const act = run.endless ? `LOOP ${run.endless.loop}` : `ACT ${run.act}`;
     const title = e.isBoss ? (run.act >= runActs(run) && !run.endless ? 'FINAL FIGHT' : `${act}: BOSS FIGHT`) : run.route === null && run.map.routes.length > 1 ? `${act}: FIGHT ${run.depth + 1}` : `${act}: FIGHT ${run.depth + 1} OF ${run.enemies.length}`;
-    drawText(ctx, title, CX, 28, T.head, e.isBoss ? '#ff8a7a' : KIT.title);
+    // (On a plate: the rooms hang their signs up here, and FINAL FIGHT ran into ROULETTE.)
+    drawChip(ctx, title, CX, 30, { scale: T.head, color: e.isBoss ? '#ff8a7a' : KIT.title, frame: KIT.frameDim });
     // (Not before the run's first fight: nobody is choosing a path yet, and the fork sign confused new players.)
     if (!(run.act === 1 && run.depth === 0 && !run.endless)) this.drawMap(ctx, 116, time);
     this.drawEnemyCard(ctx, e, time);

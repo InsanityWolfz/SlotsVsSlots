@@ -1,5 +1,5 @@
 import { atStakes, BJ, bjState, CLAW, clawMisses, clawWon, encounterOf, extraPlays, HILO, hiloState } from '../../core/encounters';
-import { drawTitle, KIT, T } from '../kit';
+import { drawPanel, drawTitle, KIT, T } from '../kit';
 import { TCX } from './table';
 import { RELICS } from '../../core/relics';
 import { encounterChoices, currentStop, type RunState } from '../../core/run';
@@ -116,7 +116,11 @@ export abstract class EncounterScreen extends ClawScreen {
   protected drawEncounter(ctx: CanvasRenderingContext2D, time: number): void {
     const def = encounterOf(this.encId);
     const rules = this.tableRules();
-    drawTitle(ctx, def.name, rules ? TCX : CX, 36);
+    // (On a plate: the rooms hang their signs up here, and HIGHER OR LOWER ran into the bar's BEER neon.)
+    const tx = rules ? TCX : CX;
+    const tw = Math.round(def.name.length * 6 * T.title + 28);
+    drawPanel(ctx, Math.round(tx - tw / 2), 10, tw, 52, { frame: KIT.frameDim });
+    drawTitle(ctx, def.name, tx, 36);
     if (def.blurb) drawText(ctx, def.blurb, CX, 80, T.body, KIT.dim);
     const res = this.encResult;
     if (def.id === 'hilo') this.drawHilo(ctx, time);

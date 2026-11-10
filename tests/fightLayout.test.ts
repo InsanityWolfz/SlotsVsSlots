@@ -109,6 +109,19 @@ describe("the fight screen's homes (user, 2026-11-10: nothing overlaps)", () => 
     expect(mega.restBottom() + STACK.pad * 2 + STACK.headPitch + (low.rows - 1) * STACK.pitch).toBeLessThanOrEqual(PAY_STACK.bottom);
   });
 
+  it('at rest THE PAY STACK shows the whole chain, base line included (playtest 2026-11-10: a MEGA WIN kept two of five)', () => {
+    // The longest usual chain: the base, the line, GOLD, three relics, BUILD-UP and OVERTIME, plus the total.
+    const st = new PayStack(W / 2, PAY_BANNER_Y + 49, 240);
+    for (let i = 0; i < 8; i++) st.push({ label: `×2 STEP ${i}`, value: '100' }, '#fff');
+    expect(st.rows).toBeLessThanOrEqual(STACK.rows);
+    st.push({ label: 'MEGA WIN!', value: '100' }, '#fff', true);
+    const top = Math.max(PAY_TOP, PayStack.restTop(st.lines.length));
+    st.rest(top);
+    expect(st.rows).toBeGreaterThanOrEqual(st.lines.length);
+    expect(top).toBeGreaterThanOrEqual(PAY_TOP);
+    expect(top + STACK.pad * 2 + STACK.headPitch + (st.lines.length - 1) * STACK.pitch).toBeLessThanOrEqual(PAY_STACK.bottom);
+  });
+
   it('a HUD panel is as wide as its machine (callouts are held to that width)', () => {
     expect(HUD_W).toBe(Math.round(MACHINE_W + BEZEL * 2));
   });

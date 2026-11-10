@@ -445,7 +445,7 @@ function bulbsOn(i: number, n: number, t: number): number {
 
 /** `dawn` (0-1, RUN OVER's CLOSING TIME): the sky greys, the bulbs switch off one by one, the lamp goes out. `dust`:
  * THE DOORMAN dusts off his gloves (RUN OVER: you've just been thrown out). */
-export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; foeHp: number; turn: 'player' | 'enemy' | null; time: number; dim?: number; dawn?: number; dust?: boolean }): void {
+export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; foeHp: number; turn: 'player' | 'enemy' | null; time: number; dim?: number; dawn?: number; dust?: boolean; away?: boolean }): void {
   dawnNow = o.dawn ?? 0;
   if (!props) makeProps();
   if (!still) still = buildStill();
@@ -572,7 +572,9 @@ export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; fo
   const nod = st.cheerT > 0.4 && Math.floor(t * 8) % 2 ? 1 : 0;
 
 
-  if (o.dust) gg.drawImage(P2.dust[Math.floor(t * 7) % 2], 572, GROUND - 60);
+  if (o.away) {
+    // (Under the draft: he isn't drawn, the route track's boss stop is where his head would be.)
+  } else if (o.dust) gg.drawImage(P2.dust[Math.floor(t * 7) % 2], 572, GROUND - 60);
   else gg.drawImage(P2.doorman[fr], 572, GROUND - 60 + nod);
   // Reflections on the wet pavement: the doors' light, the blade sign, the lamp.
   for (const [x, y0, w, c, a] of [[CX - 14, GROUND, 28, Yl, 0.08 + 0.1 * potK], [bx + 4, GROUND, 16, R, 0.09], [61, KERB + 7, 8, Yl, 0.07]] as const) {

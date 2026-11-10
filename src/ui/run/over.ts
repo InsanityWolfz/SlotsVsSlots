@@ -313,7 +313,7 @@ export abstract class OverScreen extends ShopScreen {
       ctx.restore();
     });
     // What the run unlocked: a new Slot Machine, a stake.
-    const notes = [...(this.unlockedNow.length ? [`NEW SLOT MACHINE: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}`] : []), ...(this.stakeUnlockedNow ? [this.stakeUnlockedNow] : [])];
+    const notes = [...(this.unlockedNow.length ? [`NEW SLOT MACHINE${this.unlockedNow.length > 1 ? "S" : ""}: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}`] : []), ...(this.stakeUnlockedNow ? [this.stakeUnlockedNow] : [])];
     if (notes.length && t >= B.wells + 0.4) {
       let nx = W / 2 - notes.slice(0, 2).reduce((a, n) => a + textWidth(n, T.small) + 30, -12) / 2;
       notes.slice(0, 2).forEach((n, i) => {
@@ -523,7 +523,7 @@ export abstract class OverScreen extends ShopScreen {
     let y = 268;
     // Unlocks, new titles, trims.
     const notes: [string, string][] = [];
-    if (this.unlockedNow.length) notes.push([`NEW SLOT MACHINE: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}`, '#7dff7a']);
+    if (this.unlockedNow.length) notes.push([`NEW SLOT MACHINE${this.unlockedNow.length > 1 ? "S" : ""}: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}`, '#7dff7a']);
     for (const t of g.titles) notes.push([`NEW TITLE: ${t}`, '#ffd23f']);
     for (const t of g.trims) notes.push([`NEW TRIM: ${t} (WEAR IT IN PROFILE)`, '#ff9ec8']);
     for (const [text, color] of notes.slice(0, 3)) {

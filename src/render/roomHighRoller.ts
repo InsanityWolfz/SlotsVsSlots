@@ -150,7 +150,8 @@ function drawLandmark(g: CanvasRenderingContext2D, kind: Station['landmark'], la
     // The pit boss at his podium, watching the tables (the podium's lamp lit).
     const z = 3;
     const s = 1 / z;
-    const x = xAt(-110, z);
+    // (Wholly inside the open column between the two machines: at -110 the frame cut him in half.)
+    const x = xAt(-78, z);
     if (!nobody) drawPatron(g, x - 6 * s, yAt(0, z), 290 / z, PIT_BOSS_LOOK, 'stand');
     box(g, x - 34 * s, yAt(118, z), 68 * s, yAt(0, z) - yAt(118, z), WOOD);
     px(g, x - 34 * s, yAt(118, z), 68 * s, Math.max(1, 6 * s), G);
@@ -159,7 +160,7 @@ function drawLandmark(g: CanvasRenderingContext2D, kind: Station['landmark'], la
     px(g, x + 12 * s, yAt(158, z), 14 * s, Math.max(1, 6 * s), nobody ? '#5a3a1a' : Yl);
   } else if (kind === 'waitress') {
     // A cocktail waitress by the tables, a tray of drinks held high on her outer hand (clear of THE DEALER's table).
-    if (!nobody) drawPatron(g, xAt(112, 2.8), yAt(0, 2.8), 290 / 2.8, WAITRESS_LOOK, 'tray');
+    if (!nobody) drawPatron(g, xAt(104, 2.8), yAt(0, 2.8), 290 / 2.8, WAITRESS_LOOK, 'tray', true);
   } else if (kind === 'lounge') {
     // The cigar lounge's wingback: oxblood leather, buttoned, a smoker's head over its back; a side table, an ashtray.
     const z = 2.6;

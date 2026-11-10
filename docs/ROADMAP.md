@@ -42,7 +42,16 @@ screen with every label on at once (20 stress scenes, `tools/shots/fight`: 422 c
 count, OVERTIME and the BOSS / LOOP label live in the bottom bar now) and THE PAY STACK (a win's steps drop into a
 list under the banner and stay about a second; `docs/JUICE.md`); THE DEALER's announcements say HIS and HE, not ITS. The LAST CALL!
 banner is gone (THE DOORMAN's and ENDLESS's; user: "by then the player should know what overtime is"); the rule stays.
-In progress: playtests on the new art. The capsule, trailer and screenshots wait (user, 2026-11-10: "ignore that... for now").
+The expert playtest of all this (2026-11-10: KNIGHT into act 2, JOKER with VAMP and TRICK through act 1, a short TESLA
+run, every room and boss visited; no crash, error or softlock) and its fixes, live (user: "everything else should be
+fixed"): THE PAY STACK at rest shows the whole chain (it kept four lines, so a MEGA WIN lost its base); a heal's number
+sits beside the HP bar in the gutter, on a plate, and heals add into one number (VAMP's +20s sat on the name and the HP
+number); the next fight's title and an encounter's name are on plates (they ran into the rooms' signs); THE DOORMAN
+steps out of view under the draft (the route track's boss stop sat on his head); the act 2 waiter, the pit boss and
+the waitress stand wholly between the two machines; the full stop is a square dot (X1.5 read X1_5); NEW SLOT MACHINES;
+no trash bags beside PAUSE. Left as they are (user): the Charm numbers, and JOKER's meter jackpot has no banner. For
+the next balance batch: one TRICK cell in a meter jackpot fills 90 of 100, and with ENCORE the meter re-arms at once;
+OVERTIME is hard on slow act 1 fights (TESLA 23 spins on AUTO); "BIG WIN! 50" in fight 1 (the ladder is by HP share). The capsule, trailer and screenshots wait (user, 2026-11-10: "ignore that... for now").
 
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
 text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about
