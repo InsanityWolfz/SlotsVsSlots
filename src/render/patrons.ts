@@ -20,11 +20,13 @@ export interface PatronLook {
   coat: string;
   /** The trousers or skirt (a walker's legs). */
   legs?: string;
-  hairStyle: 'short' | 'long' | 'bun' | 'bald' | 'cap';
+  hairStyle: 'short' | 'long' | 'bun' | 'bald' | 'cap' | 'visor';
+  /** Sleeves of their own colour (a dealer's white shirtsleeves); otherwise the coat's, a shade darker. */
+  sleeve?: string;
 }
 /** At a machine: from behind with a hand on the button, from behind leaning in, three-quarter holding a cup of coins.
  * Walking the aisles: a profile, two steps. */
-export type PatronPose = 'button' | 'lean' | 'cup' | 'walk0' | 'walk1' | 'cards' | 'chips';
+export type PatronPose = 'button' | 'lean' | 'cup' | 'walk0' | 'walk1' | 'cards' | 'chips' | 'deal' | 'tray';
 
 /** A few looks for the casino's crowd (the portraits' skin tones and hair, muted coats: they sit behind the HUD). */
 export const LOOKS: PatronLook[] = [
@@ -53,7 +55,7 @@ function steps(c: string): string[] {
 // units (`hu`), so a head stays round whatever the sprite's width: A is the sprite's width over its height.
 let A = 0.62;
 
-type Part = 'hair' | 'skin' | 'coat' | 'sleeve' | 'legs' | 'shoe' | 'cup' | 'coin' | 'shirt' | 'card' | 'chip' | 'eye';
+type Part = 'hair' | 'skin' | 'coat' | 'sleeve' | 'legs' | 'shoe' | 'cup' | 'coin' | 'shirt' | 'card' | 'chip' | 'eye' | 'visor';
 interface Shape {
   part: Part;
   hit: (x: number, y: number) => boolean;
@@ -122,6 +124,11 @@ function head(look: PatronLook, cx: number, cy: number, r: number, face: number)
   const hair: Shape[] = [{ part: 'hair', cx, cy, rx: r, ry: r, hu: true, hit: hairBack }];
   if (st === 'long') hair.unshift(box('hair', cx - rw * 0.86, cy, cx + rw * 0.86, cy + r * 2.1));
   if (st === 'bun') hair.push(ell('hair', cx + rw * 0.1, cy - r * 0.95, r * 0.42, r * 0.36));
+  if (st === 'visor') {
+    // A card dealer's green eyeshade: a band round the brow, its brim out over the eyes.
+    hair.push(box('visor', cx - rw * 0.98, cy - r * 0.62, cx + rw * 0.98, cy - r * 0.3));
+    hair.push(box('visor', cx - rw * 1.22, cy - r * 0.34, cx + rw * 1.22, cy - r * 0.2));
+  }
   if (st === 'cap') {
     hair.push(box('sleeve', cx - rw * 0.98, cy - r * 1.0, cx + rw * 0.98, cy - r * 0.3));
     hair.push(box('sleeve', face ? cx - rw * 1.5 : cx - rw * 0.3, cy - r * 0.42, face ? cx - rw * 0.5 : cx + rw * 0.3, cy - r * 0.28));
@@ -132,6 +139,28 @@ function head(look: PatronLook, cx: number, cy: number, r: number, face: number)
 }
 
 function shapes(look: PatronLook, pose: PatronPose): Shape[] {
+  if (pose === 'tray') {
+    // A cocktail waitress walking the aisle (a profile to the right), her near arm up holding a tray of drinks.
+    const r = 0.11;
+    return [
+      limb('legs', -0.02, 0.6, -0.14, 0.94, 0.05),
+      box('shoe', -0.24, 0.93, -0.06, 1.0),
+      limb('legs', 0.02, 0.6, 0.14, 0.94, 0.05),
+      box('shoe', 0.06, 0.93, 0.24, 1.0),
+      torso('coat', 0.2, 0.64, 0.15, 0.17),
+      box('shirt', -0.05, 0.18, 0.07, 0.3),
+      limb('sleeve', 0.02, 0.27, 0.22, 0.2, 0.05),
+      limb('sleeve', 0.22, 0.2, 0.24, 0.1, 0.045),
+      ell('skin', 0.24, 0.085, 0.045, 0.03),
+      box('cup', 0.02, 0.055, 0.46, 0.07),
+      box('card', 0.07, 0.0, 0.13, 0.055),
+      box('coin', 0.2, 0.01, 0.27, 0.055),
+      box('chip', 0.34, 0.0, 0.4, 0.055),
+      box('skin', -0.03, 0.15, 0.05, 0.2),
+      ...head(look, 0.02, 0.1, r, 0),
+      ell('skin', 0.15, 0.11, 0.03, 0.03),
+    ];
+  }
   if (pose === 'walk0' || pose === 'walk1') {
     // A profile walking to the right: the legs in a stride (walk0 open, walk1 passing), the near arm swinging against
     // the near leg, a collar at the neck, the face (cheek, nose) on the right.
@@ -150,6 +179,25 @@ function shapes(look: PatronLook, pose: PatronPose): Shape[] {
       box('skin', -0.03, 0.15, 0.05, 0.2),
       ...head(look, 0.02, 0.1, r, 0),
       ell('skin', 0.15, 0.11, 0.03, 0.03),
+    ];
+  }
+  if (pose === 'deal') {
+    // A dealer behind his table facing us (the felt hides him from the waist): white shirtsleeves, a dark vest, a red
+    // bow tie, one hand dealing a card across the felt, the other on the shoe.
+    const r = 0.14;
+    return [
+      torso('coat', 0.26, 0.98, 0.36, 0.3),
+      box('shirt', -0.08, 0.25, 0.08, 0.7),
+      box('chip', -0.06, 0.26, 0.06, 0.31),
+      box('skin', -0.05, 0.12 + r * 0.8, 0.05, 0.27),
+      limb('sleeve', -0.33, 0.34, -0.26, 0.72, 0.08),
+      limb('sleeve', 0.33, 0.34, 0.2, 0.7, 0.08),
+      box('card', 0.12, 0.68, 0.28, 0.76),
+      ell('skin', 0.17, 0.74, 0.06, 0.045),
+      ell('skin', -0.27, 0.77, 0.06, 0.045),
+      ...head(look, 0, 0.12, r, 1),
+      ell('eye', -0.12, 0.14, 0.022, 0.012),
+      ell('eye', 0.05, 0.14, 0.022, 0.012),
     ];
   }
   if (pose === 'cards' || pose === 'chips') {
@@ -221,9 +269,9 @@ const cache = new Map<string, HTMLCanvasElement>();
 /** `dim` darkens every shade (a near figure behind the reels stays calm, still readable). */
 export function patronSprite(h: number, look: PatronLook, pose: PatronPose, dim = 1): HTMLCanvasElement {
   h = Math.max(12, Math.round(h));
-  const walk = pose === 'walk0' || pose === 'walk1';
+  const walk = pose === 'walk0' || pose === 'walk1' || pose === 'tray';
   const w = Math.max(8, Math.round(h * (walk ? 0.48 : 0.62)));
-  const key = `${h}:${pose}:${dim}:${look.skin}${look.hair}${look.coat}${look.hairStyle}`;
+  const key = `${h}:${pose}:${dim}:${look.skin}${look.hair}${look.coat}${look.hairStyle}${look.sleeve ?? ''}${look.legs ?? ''}`;
   const hit = cache.get(key);
   if (hit) return hit;
   A = w / h;
@@ -232,7 +280,7 @@ export function patronSprite(h: number, look: PatronLook, pose: PatronPose, dim 
     hair: steps(look.hair),
     skin: steps(look.skin),
     coat: steps(look.coat),
-    sleeve: steps(toHex(hex(look.coat).map((n) => n * 0.88))),
+    sleeve: steps(look.sleeve ?? toHex(hex(look.coat).map((n) => n * 0.88))),
     legs: steps(look.legs ?? '#24202e'),
     shoe: steps('#1a1418'),
     cup: steps('#9a9aa8'),
@@ -241,6 +289,7 @@ export function patronSprite(h: number, look: PatronLook, pose: PatronPose, dim 
     card: steps('#f0ece6'),
     chip: steps('#c83a3a'),
     eye: ['#140c1c', '#140c1c', '#140c1c', '#140c1c'],
+    visor: steps('#4cc234'),
   };
   if (dim < 1) for (const k of Object.keys(ink) as Part[]) ink[k] = ink[k].map((c) => toHex(hex(c).map((n) => n * dim)));
   // The cap is the coat's colour turned darker (its "sleeve" ink): fine for a look; a crown of hair under it.

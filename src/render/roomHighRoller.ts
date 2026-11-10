@@ -19,7 +19,7 @@
  * ENDLESS hook: `late` (0 early, 1 closing) empties the tables, puts the chairs up and turns lamps off; not wired yet.
  */
 import { mk, outlined, px, RH, RW } from './roomEntrance';
-import { drawPatron, LOOKS } from './patrons';
+import { drawPatron, LOOKS, type PatronLook } from './patrons';
 import { drawText } from './text';
 
 // ---- the projection (act 1's: roomStreet.ts) ----------------------------------------------------------------------
@@ -40,6 +40,7 @@ const g8 = '#8f5a1f';
 const Y = '#ffe45c';
 const Yl = '#ffe08a';
 const T = '#f4eee0';
+const O = '#f07c1c';
 const t9 = '#9a8fb0';
 const R = '#e8374b';
 const r = '#8e1f3a';
@@ -89,13 +90,16 @@ interface Station {
   rope?: boolean;
   /** HIGH LIMIT, hanging over the aisle. */
   sign?: boolean;
+  /** The one thing you pass at this station: the pit boss at his podium, a cocktail waitress, the cigar lounge's
+   * leather chair, a chip cart. */
+  landmark: 'pit' | 'waitress' | 'lounge' | 'cart';
 }
 
 /** The room is one aisle lined with tables on both sides, all the way from the door to THE DEALER's table; each station
  * is the camera a step further down it (the user, 2026-11-10: "it should feel like they are passing the people at the
  * tables"). Room depths: tables every 0.9 on each side (staggered), his table's near edge at D_END. */
-const DC = [0, 1.1, 2.2, 3.3];
-const D_END = 7.2;
+const DC = [0, 2.4, 4.6, 6.2];
+const D_END = 9;
 const KINDS: TableKind[] = ['baccarat', 'craps', 'blackjack', 'poker'];
 const ROW_STEP = 0.9;
 
@@ -115,8 +119,8 @@ function buildStation(i: number): Station {
       tables.push({ lat: side * 440, z, dz: 0.5, w: 300, kind: KINDS[(k + (side > 0 ? 2 : 0)) % KINDS.length], seats: [...far, ...near] });
     }
   }
-  const chandeliers = [2, 4.3, 6.6].map((D) => [0, D - DC[i]] as [number, number]).filter(([, z]) => z > 1.2);
-  return { tables, chandeliers, rope: i === 0, sign: i === 0 };
+  const chandeliers = [2, 4.3, 6.6, 8.4].map((D) => [0, D - DC[i]] as [number, number]).filter(([, z]) => z > 1.2);
+  return { tables, chandeliers, rope: i === 0, sign: i === 0, landmark: (['pit', 'waitress', 'lounge', 'cart'] as const)[i] };
 }
 
 /** The room's back wall (where THE DEALER's table stands) at each station, from the camera. */
@@ -131,6 +135,65 @@ const stationAt = (i: number): Station => (stationsBuilt ??= DC.map((_, j) => bu
 export function hrStation(i: number, n: number): number {
   if (n <= 1) return 0;
   return Math.max(0, Math.min(HR_STATIONS - 1, Math.round((i * (HR_STATIONS - 1)) / (n - 1))));
+}
+
+/** THE DEALER from the patron kit (his portrait's eyeshade, dark vest, white shirtsleeves), a cocktail waitress, the
+ * pit boss. */
+const DEALER_LOOK: PatronLook = { skin: '#f4c09a', hair: '#3b3347', coat: '#2a2238', sleeve: '#e8e0d0', hairStyle: 'visor' };
+const WAITRESS_LOOK: PatronLook = { skin: '#c07a5c', hair: '#1a1014', coat: '#1a1418', legs: '#c07a5c', hairStyle: 'bun' };
+const PIT_BOSS_LOOK: PatronLook = { skin: '#e0a07a', hair: '#c8c0d0', coat: '#24202e', legs: '#1a1620', hairStyle: 'short' };
+
+/** The station's one landmark, beside the aisle where the open column shows it. */
+function drawLandmark(g: CanvasRenderingContext2D, kind: Station['landmark'], late: number): void {
+  const nobody = late > 0.5;
+  if (kind === 'pit') {
+    // The pit boss at his podium, watching the tables (the podium's lamp lit).
+    const z = 3;
+    const s = 1 / z;
+    const x = xAt(-110, z);
+    if (!nobody) drawPatron(g, x - 6 * s, yAt(0, z), 290 / z, PIT_BOSS_LOOK, 'walk1');
+    box(g, x - 34 * s, yAt(118, z), 68 * s, yAt(0, z) - yAt(118, z), WOOD);
+    px(g, x - 34 * s, yAt(118, z), 68 * s, Math.max(1, 6 * s), G);
+    px(g, x - 26 * s, yAt(96, z), 52 * s, Math.max(1, 40 * s), WOOD_L);
+    box(g, x + 14 * s, yAt(150, z), 10 * s, 30 * s, g8);
+    px(g, x + 12 * s, yAt(158, z), 14 * s, Math.max(1, 6 * s), nobody ? '#5a3a1a' : Yl);
+  } else if (kind === 'waitress') {
+    // A cocktail waitress crossing toward the tables, a tray of drinks held high.
+    if (!nobody) drawPatron(g, xAt(95, 2.8), yAt(0, 2.8), 290 / 2.8, WAITRESS_LOOK, 'tray', true);
+  } else if (kind === 'lounge') {
+    // The cigar lounge's wingback: oxblood leather, buttoned, a smoker's head over its back; a side table, an ashtray.
+    const z = 2.6;
+    const s = 1 / z;
+    const x = xAt(-120, z);
+    if (!nobody) drawPatron(g, x, yAt(66, z), 170 / z, LOOKS[5], 'lean', false);
+    const top = yAt(200, z);
+    const seat = yAt(60, z);
+    box(g, x - 46 * s, top + 10 * s, 92 * s, seat - top, '#4a1a12');
+    box(g, x - 40 * s, top, 80 * s, seat - top, '#6a2a1a');
+    px(g, x - 40 * s, top, 80 * s, Math.max(1, (seat - top) * 0.2), '#8a3a24');
+    px(g, x + 24 * s, top, 16 * s, seat - top, '#4a1a12');
+    for (const [u, v] of [[-0.25, 0.35], [0.05, 0.35], [-0.1, 0.6], [0.2, 0.6]] as const) px(g, x + u * 80 * s, top + v * (seat - top), Math.max(1, 3 * s), Math.max(1, 3 * s), '#2a0e0a');
+    for (const lx of [x - 38 * s, x + 30 * s]) box(g, lx, seat, Math.max(1, 6 * s), yAt(0, z) - seat, '#2a160f');
+    box(g, x + 60 * s, yAt(70, z), 40 * s, yAt(0, z) - yAt(70, z), WOOD);
+    box(g, x + 70 * s, yAt(80, z), 18 * s, 6 * s, '#8a7e76');
+    px(g, x + 76 * s, yAt(80, z), Math.max(1, 4 * s), Math.max(1, 3 * s), nobody ? '#5a3a1a' : O);
+  } else {
+    // A chip cart rolled out for the high-limit tables: racks of chips on a brass-trimmed cart.
+    const z = 2.1;
+    const s = 1 / z;
+    const x = xAt(120, z);
+    const top = yAt(120, z);
+    box(g, x - 50 * s, top, 100 * s, yAt(30, z) - top, WOOD);
+    px(g, x - 50 * s, top, 100 * s, Math.max(1, 6 * s), G);
+    px(g, x - 50 * s, yAt(70, z), 100 * s, Math.max(1, 4 * s), g8);
+    const cols = [R, '#3474e0', K, G, '#4cc234'];
+    cols.forEach((c, j) => {
+      const cx = x - 44 * s + j * 18 * s;
+      box(g, cx, top - 26 * s, 14 * s, 26 * s, c);
+      for (let h = 4; h < 26; h += 6) px(g, cx, top - h * s, 14 * s, 1, j === 2 ? '#3b3347' : T);
+    });
+    for (const wx of [x - 40 * s, x + 30 * s]) box(g, wx, yAt(30, z), 10 * s, 10 * s, '#1a1426');
+  }
 }
 
 // ---- drawing helpers ----------------------------------------------------------------------------------------------
@@ -411,11 +474,8 @@ function distantDealer(g: CanvasRenderingContext2D, zFar: number, late: number):
   box(g, x - 40 * s, yl, 80 * s, 22 * s, Q);
   px(g, x - 40 * s, yl + 20 * s, 80 * s, Math.max(1, 3 * s), G);
   px(g, x - 30 * s, yl + 22 * s, 60 * s, Math.max(1, 3 * s), Yl);
-  const tableTop = yAt(110, z - 0.1);
-  if (late < 0.9) {
-    const sprite = z < 10 ? dealerFrames()[0] : dealerSmall();
-    g.drawImage(sprite, Math.round(x - sprite.width / 2), Math.round(tableTop + 3 - sprite.height));
-  }
+  // Him behind it, at his real size for the distance (so he grows, station by station, as you close in).
+  if (late < 0.9) drawPatron(g, x, yAt(40, z), 230 / z, DEALER_LOOK, 'deal');
   const tb: Table = { lat: 0, z: z - 0.4, dz: 0.3, w: 300, kind: 'blackjack', seats: [] };
   drawTable(g, tb, Math.min(late, 0.4));
   if (late < 0.9) light(g, x, yAt(110, z - 0.25), 70 * s, Math.max(1, 8 * s), 2, [12, 16, 6]);
@@ -470,16 +530,18 @@ function still(i: number, late: number): HTMLCanvasElement {
   }
   things.sort((a, b) => b.z - a.z).forEach((o) => o.draw());
   if (st.sign) {
+    // HIGH LIMIT, hung over the aisle the way the casino floor's signs hang (act 2: one sign system).
     const z = 2.4;
-    const s = 1 / z;
-    const x = xAt(0, z);
-    const y = yAt(560, z);
-    px(g, x - 40 * s, Math.max(0, yAt(CEIL, z)), 1, y - Math.max(0, yAt(CEIL, z)), g8);
-    px(g, x + 40 * s, Math.max(0, yAt(CEIL, z)), 1, y - Math.max(0, yAt(CEIL, z)), g8);
-    box(g, x - 130 * s, y, 260 * s, 60 * s, d);
-    px(g, x - 130 * s, y, 260 * s, 1, G);
-    px(g, x - 130 * s, y + 60 * s - 1, 260 * s, 1, G);
+    const X = (lat: number) => Math.round(xAt(lat, z));
+    const Yh = (h: number) => Math.round(yAt(h, z));
+    const wall = (lat0: number, lat1: number, h0: number, h1: number, c: string) => px(g, X(lat0), Yh(h1), X(lat1) - X(lat0), Yh(h0) - Yh(h1), c);
+    for (const lat of [-90, 90]) wall(lat - 1, lat + 1, 500, CEIL, k);
+    wall(-130, 130, 410, 500, K);
+    wall(-126, 126, 414, 496, d);
+    wall(-126, 126, 414, 418, G);
+    wall(-126, 126, 492, 496, G);
   }
+  drawLandmark(g, st.landmark, late);
   stills.set(key, cv);
   return cv;
 }
@@ -535,10 +597,16 @@ export function drawHighRoller(ctx: CanvasRenderingContext2D, o: HighRollerScene
     }
   }
   // HIGH LIMIT's letters, a slow shimmer.
-  if (st.sign) {
-    const z = 2.4;
-    const y = yAt(560, z) + 60 / z / 2;
-    drawText(g, 'HIGH LIMIT', CX, y, 1, Math.floor(t * 1.5) % 6 === 0 ? Yl : G, { outline: K });
+  if (st.sign) drawText(g, 'HIGH LIMIT', CX, yAt(455, 2.4), 1, Math.floor(t * 1.5) % 6 === 0 ? Yl : G, { outline: K });
+  // His game named on the curtain over his lamp (the casino floor's table signs: gold letters on the wall).
+  drawText(g, 'BLACKJACK', CX, Math.max(10, yAt(640, zFar - 0.75)), 1, G, { outline: K });
+  // The cigar lounge: smoke curling up off the chair, in a few stepped puffs.
+  if (st.landmark === 'lounge' && late < 0.5) {
+    const z = 2.6;
+    for (let j = 0; j < 4; j++) {
+      const p = (t * 0.2 + j / 4) % 1;
+      px(g, xAt(-120, z) + Math.sin(p * 6 + j) * 3, yAt(250, z) - p * 30, 2 + Math.floor(p * 3), 2, p < 0.6 ? '#8a7e88' : '#5a5060');
+    }
   }
   // His lamp breathes a little.
   const zd = zFar - 0.8;
@@ -593,31 +661,6 @@ const DEALER = [
 /** Row 7 (his eyes): at you, sly (at your machine), squinting (hit). */
 const DEALER_EYES = ['........HFWKFFFFFFFFWKFH........', '........HFKWFFFFFFFFKWFH........', '........HFKKFFFFFFFFKKFH........'];
 const DEALER_INK: Record<string, string> = { k, l, e, E, q, H: '#8a7e76', F, f, W: '#ffffff', K, Y, T, R, r, G, g: g8 };
-
-/** THE DEALER far off (stations 0-1): the same man in 13x15 (eyeshade, grin, bow tie, vest and chain). */
-const DEALER_SMALL = [
-  '....kkkkk....',
-  '...kkllkkk...',
-  '..eeeeeeeee..',
-  '.EEeeeeeeeEE.',
-  '...qqqqqqq...',
-  '...FFFFFFF...',
-  '...FKFFFKF...',
-  '...FFFfFFF...',
-  '...fFWYWFf...',
-  '....fffff....',
-  '....TRRRT....',
-  '.kkkkTTTkkkk.',
-  'kkkkkkGkkkkkk',
-  'TkkkkkGkkkkkT',
-  'FkkkkkkkkkkkF',
-];
-let dealerSm: HTMLCanvasElement | null = null;
-function dealerSmall(): HTMLCanvasElement {
-  return (dealerSm ??= outlined(DEALER_SMALL[0].length, DEALER_SMALL.length, (c) =>
-    DEALER_SMALL.forEach((row, y) => [...row].forEach((ch, x) => ch !== '.' && px(c, x, y, 1, 1, DEALER_INK[ch]))),
-  ));
-}
 
 let dealerSprites: HTMLCanvasElement[] | null = null;
 function dealerFrames(): HTMLCanvasElement[] {
