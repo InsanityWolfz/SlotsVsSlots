@@ -3,11 +3,12 @@ import { ARCHETYPES, BOSS, DEALER, generateActMap, makeEnemy, OWNER, REPO_MAN, T
 import { Rng } from './core/rng';
 import { chooseRoute, setMap, skipToBoss } from './core/run';
 import { fightConfig } from './core/fightSetup';
+import { startEndlessLoop } from './core/endless';
 import type { CombatEvent } from './core/events';
 import { BUILD_UP } from './core/fightRules';
 import type { Game } from './game';
 import { setInputMode, type InputMode } from './ui/input';
-import { ROOM_V2, roomPlace } from './render/rooms';
+import { endlessPlace, ROOM_V2, roomPlace } from './render/rooms';
 import { devSwapSprite } from './render/sprites';
 
 /**
@@ -43,6 +44,8 @@ export function installDebug(game: Game): void {
     /** Where the backdrop is now: act 1's street (0-3, 'door'), act 2's floor (0-3, 'wheel'), act 3's high-roller room
      * (0-3, 'table'), or null (an old room). dbg.station(n) forces the station in every act. */
     place: () => roomPlace(game.background.scene),
+    /** ENDLESS (rooms v2): where the loop's backdrop is (its strip's station, or the boss room), or null. */
+    endlessPlace: () => endlessPlace(game.background.scene),
     /** Swap a sprite's rows (outlined), e.g. a portrait candidate: dbg.sprite('enemyBoss', rows). */
     sprite: (id: string, rows: string[]) => devSwapSprite(id as import('./render/sprites').SpriteId, rows),
     /** Advance until the director starts playing an event of this type. */
@@ -109,6 +112,20 @@ export function installDebug(game: Game): void {
       run.depth = 0;
       run.stop = 0;
       run.actIntro = false;
+      game.newFight(false, null, fightConfig(run, game.cfg), true);
+      game.screens.showNext(run);
+    },
+    /** Jump the run into ENDLESS loop `n` (its first fight, its route picked), for looking at the late-night rooms. */
+    endless(n: number) {
+      const run = game.run;
+      if (!run) return;
+      run.won = true;
+      run.over = false;
+      run.endless = { loop: n, pot: 0 };
+      startEndlessLoop(run);
+      if (run.route === null) chooseRoute(run, 0);
+      run.depth = 0;
+      run.stop = 0;
       game.newFight(false, null, fightConfig(run, game.cfg), true);
       game.screens.showNext(run);
     },

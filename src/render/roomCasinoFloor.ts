@@ -45,6 +45,7 @@ const G = '#d9a640';
 const g8 = '#8f5a1f';
 const Y = '#ffe45c';
 const Yl = '#ffe08a';
+const O = '#f07c1c';
 const T = '#f4eee0';
 const R = '#e8374b';
 const r = '#8e1f3a';
@@ -481,7 +482,7 @@ const shade = (c: string) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(c.sl
 
 /** The roulette pit at the aisle's end, facing us: the back wall and TABLE GAMES, the roulette table under its lamp, the
  * wheel at the table's head and THE WHEEL behind it (still: the wheel's pockets and her lamp are live). */
-function drawPit(g: CanvasRenderingContext2D, zFar: number, late: number): void {
+function drawPit(g: CanvasRenderingContext2D, zFar: number, late: number, bare = false): void {
   const zw = zFar + 0.9;
   const s = 1 / zw;
   const X = (lat: number, z = zw) => Math.round(xAt(lat, z));
@@ -492,8 +493,10 @@ function drawPit(g: CanvasRenderingContext2D, zFar: number, late: number): void 
   for (let lat = -3960; lat < 4000; lat += 120) wall(lat, lat + 4, 0, CEIL, '#160e22');
   wall(-4000, 4000, 470, 480, g8);
   for (let lat = -3900; lat < 4000; lat += 580) if (Math.abs(lat) > 400) wall(lat, lat + 60, 0, 470, '#3e1226');
-  areaPanel(g, zw, 0, 'TABLE GAMES');
-  for (const lat of [-760, 760, -1960, 1960]) areaPanel(g, zw, lat, 'BLACKJACK');
+  if (!bare) {
+    areaPanel(g, zw, 0, 'TABLE GAMES');
+    for (const lat of [-760, 760, -1960, 1960]) areaPanel(g, zw, lat, 'BLACKJACK');
+  }
   for (const side of [-1, 1]) wall(side < 0 ? -320 : 250, side < 0 ? -250 : 320, 0, 470, r);
   // The floor of the pit: the carpet stops at a brass strip, the pit's floor a shade lighter.
   const zt = zFar + 0.25;
@@ -524,11 +527,14 @@ function drawPit(g: CanvasRenderingContext2D, zFar: number, late: number): void 
   // THE WHEEL behind it (her red hair, the green eyeshade, the green jacket with its white shirt front).
   const zh = zt + 0.45;
   const zp = zh + 0.3;
-  person(g, 0, zp, '#2a7a3a', '#c0502a');
+  const here = late < 0.9;
+  if (here) person(g, 0, zp, '#2a7a3a', '#c0502a');
   const P = (dx0: number, dx1: number, h0: number, h1: number, c: string) => px(g, X(dx0, zp), Yh(h1, zp), Math.max(1, X(dx1, zp) - X(dx0, zp)), Math.max(1, Yh(h0, zp) - Yh(h1, zp)), c);
-  P(-4, 4, 196, 232, T);
-  P(-16, 16, 258, 266, '#5ad65a');
-  P(-18, 18, 256, 259, '#2a8a3a');
+  if (here) {
+    P(-4, 4, 196, 232, T);
+    P(-16, 16, 258, 266, '#5ad65a');
+    P(-18, 18, 256, 259, '#2a8a3a');
+  }
   // The roulette table, end-on: the wheel's housing at its head, the felt layout toward us.
   wall(-110, 110, 0, 100, WOOD_D, zt);
   wall(-110, 110, 100, 116, WOOD, zt);
@@ -559,19 +565,55 @@ function ellipse(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number
   }
 }
 
+/** ENDLESS, THE DOORMAN's loop: the aisle's end is the casino's way out, not the pit. The lobby's back wall across the
+ * view, the gilded double doors in it (the night street through their glass), EXIT over them (its letters are live),
+ * a brass rail either side. */
+function drawExit(g: CanvasRenderingContext2D, zFar: number): void {
+  const zw = zFar + 0.9;
+  const X = (lat: number, z = zw) => Math.round(xAt(lat, z));
+  const Yh = (h: number, z = zw) => Math.round(yAt(h, z));
+  const wall = (lat0: number, lat1: number, h0: number, h1: number, c: string, z = zw) => px(g, X(lat0, z), Yh(h1, z), X(lat1, z) - X(lat0, z), Yh(h0, z) - Yh(h1, z), c);
+  wall(-4000, 4000, 0, CEIL, '#1c1220');
+  for (let lat = -3960; lat < 4000; lat += 160) wall(lat, lat + 6, 0, CEIL, '#160e1a');
+  wall(-4000, 4000, 470, 480, g8);
+  wall(-4000, 4000, 90, 96, g8);
+  for (let y = Yh(0, zw); y < Yh(0, zFar); y++) px(g, 0, y, RW, 1, '#262236');
+  px(g, 0, Yh(0, zFar), RW, 1, g8);
+  // The doors: a gold frame, two leaves of clear glass on the night (a lamp's orange through them), the push bars.
+  wall(-140, 140, 0, 330, G);
+  wall(-132, 132, 0, 322, '#0d0519');
+  wall(-132, 132, 0, 110, '#17122a');
+  wall(-96, -84, 110, 250, '#2a2238');
+  wall(-100, -80, 250, 270, O);
+  for (const side of [-1, 1]) {
+    const a = side < 0 ? -132 : 2;
+    wall(a, a + 130, 300, 322, g8);
+    wall(a, a + 130, 0, 30, g8);
+    wall(a, a + 8, 0, 322, g8);
+    wall(a + 122, a + 130, 0, 322, g8);
+    wall(side < 0 ? a + 104 : a + 14, side < 0 ? a + 114 : a + 24, 130, 190, G);
+  }
+  wall(-2, 2, 0, 330, G);
+  // EXIT over them (the sign system's panel; the letters are live).
+  areaPanel(g, zw, 0, 'EXIT');
+  // Brass rails and velvet ropes leading to the doors.
+  for (const side of [-1, 1]) for (let lat = 180; lat < 900; lat += 180) wall(side * lat - 6, side * lat + 6, 0, 100, G, zFar + 0.5);
+}
+
 const stills = new Map<string, HTMLCanvasElement>();
-function still(i: number, late: number): HTMLCanvasElement {
-  const key = `${i}:${late.toFixed(2)}`;
+function still(i: number, late: number, exit = false, bare = false): HTMLCanvasElement {
+  const key = `${i}:${late.toFixed(2)}:${exit ? 'x' : 'p'}:${bare ? 'b' : ''}`;
   const hit = stills.get(key);
   if (hit) return hit;
   const [cv, g] = mk(RW, RH);
   const zFar = Z_FAR[i];
   const st = STATIONS[i];
   px(g, 0, 0, RW, RH, '#0e0916');
-  drawPit(g, zFar, late);
+  if (exit) drawExit(g, zFar);
+  else drawPit(g, zFar, late, bare);
   drawCeiling(g, zFar + 0.9);
   // (The board hangs from the ceiling, in front of it: drawn after it, or the ceiling hid its top rows.)
-  boardPanel(g, zFar + 0.45);
+  if (!exit && !bare) boardPanel(g, zFar + 0.45);
   drawCarpet(g, zFar);
   // The banks, far to near (each hides what's below its top behind it), the cage among them, the sign overhead.
   const banks = bankDepths(st, zFar);
@@ -592,6 +634,10 @@ export interface FloorScene {
   time: number;
   /** ENDLESS hook: 0 early in the night, 1 closing time (machines dark, seats empty, darker). */
   late?: number;
+  /** ENDLESS, THE DOORMAN's loop: the aisle leads to the casino's doors (EXIT), not the pit. */
+  exit?: boolean;
+  /** ENDLESS, THE OWNER's room: the floor with its signs and board dark (his own board hangs over him). */
+  bare?: boolean;
 }
 
 /** The roulette wheel's pockets turning (a ring of red and black on the bowl, a green zero), and the ball. */
@@ -626,17 +672,25 @@ export function drawFloorStation(ctx: CanvasRenderingContext2D, o: FloorScene): 
   g.clearRect(0, 0, RW, RH);
   const banks = bankDepths(st, zFar);
 
-  // TABLE GAMES over the pit, the roulette wheel turning slowly, the lamp's stepped light on its felt.
+  // TABLE GAMES over the pit, the roulette wheel turning slowly, the lamp's stepped light on its felt (ENDLESS,
+  // THE DOORMAN's loop: EXIT over the casino's doors instead).
   const zw = zFar + 0.9;
-  areaLive(g, zw, 0, 'TABLE GAMES', t, true);
-  for (const lat of [-760, 760, -1960, 1960]) if (xAt(lat, zw) > -60 && xAt(lat, zw) < RW + 60) areaLive(g, zw, lat, 'BLACKJACK', t, false);
-  boardLive(g, zFar + 0.45, 1048200 + i * 1375 + Math.floor(t * 3), t);
-  if (st.sign) areaLive(g, st.sign.z, 0, st.sign.text, t, false);
-  const zh = zFar + 0.7;
-  const rx = Math.max(3, Math.round(70 / zh));
-  const ry = Math.max(1, Math.round(rx * 0.3));
-  wheelPockets(g, CX, yAt(118, zh), rx, ry, t * 0.6, null);
-  pool(g, CX, yAt(116, zFar + 0.45), 110 / zh, 30 / zh, Yl, 0.16);
+  if (o.bare) {
+    // (THE OWNER's room: the floor's signs and board are dark tonight.)
+  } else if (o.exit) {
+    areaLive(g, zw, 0, 'EXIT', t, true);
+    if (st.sign) areaLive(g, st.sign.z, 0, st.sign.text, t, false);
+  } else {
+    areaLive(g, zw, 0, 'TABLE GAMES', t, true);
+    for (const lat of [-760, 760, -1960, 1960]) if (xAt(lat, zw) > -60 && xAt(lat, zw) < RW + 60) areaLive(g, zw, lat, 'BLACKJACK', t, false);
+    boardLive(g, zFar + 0.45, 1048200 + i * 1375 + Math.floor(t * 3), t);
+    if (st.sign) areaLive(g, st.sign.z, 0, st.sign.text, t, false);
+    const zh = zFar + 0.7;
+    const rx = Math.max(3, Math.round(70 / zh));
+    const ry = Math.max(1, Math.round(rx * 0.3));
+    wheelPockets(g, CX, yAt(118, zh), rx, ry, t * 0.6, null);
+    if (late < 0.9) pool(g, CX, yAt(116, zFar + 0.45), 110 / zh, 30 / zh, Yl, 0.16);
+  }
 
   // Someone crossing a side aisle (behind the bank in front of it: only what shows over its toppers).
   if (st.walkZ > 0 && late < 0.9) {
@@ -679,7 +733,7 @@ export function drawFloorStation(ctx: CanvasRenderingContext2D, o: FloorScene): 
 
   ctx.save();
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(still(i, late), 0, 0, RW * 2, RH * 2);
+  ctx.drawImage(still(i, late, !!o.exit, !!o.bare), 0, 0, RW * 2, RH * 2);
   ctx.drawImage(liveC, 0, 0, RW * 2, RH * 2);
   if (late > 0) {
     ctx.fillStyle = `rgba(4,2,8,${0.35 * late})`;
@@ -911,6 +965,8 @@ export interface WheelRoomScene {
   left: number;
   fast: boolean;
   angle: number;
+  /** ENDLESS: how late the night is (her room darker, the floor behind her emptier). */
+  late?: number;
 }
 
 /** THE WHEEL's room: her table straight on, the wheel at its head, her behind it; alive in her fight. */
@@ -1004,6 +1060,13 @@ export function drawWheelRoom(ctx: CanvasRenderingContext2D, o: WheelRoomScene):
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(wheelStill!, 0, 0, RW * 2, RH * 2);
   ctx.drawImage(liveC, 0, 0, RW * 2, RH * 2);
+  // ENDLESS: later in the night, a flat darker step over the room (not over her: she's still at work).
+  if ((o.late ?? 0) > 0) {
+    ctx.fillStyle = `rgba(4,2,8,${0.3 * (o.late ?? 0)})`;
+    ctx.fillRect(0, 0, RW * 2, Math.round((TABLE - 50) * 2));
+    ctx.fillRect(0, Math.round((TABLE - 50) * 2), Math.round(236 * 2), RH * 2);
+    ctx.fillRect(Math.round(404 * 2), Math.round((TABLE - 50) * 2), RW * 2, RH * 2);
+  }
   ctx.restore();
 }
 

@@ -1,6 +1,7 @@
 /** The frame: update, the screen transition, drawing a frame, and the scene behind it (split from game.ts, 2026-11-05). */
 import type { SymbolId } from './core/config';
 import { DEALER_HANDS } from './core/fight';
+import { rungsClimbed } from './core/enemies';
 import { TYPICAL_ACT_FIGHTS } from './core/run';
 import { roomFor, type Scene } from './render/rooms';
 import { H, W } from './present/layout';
@@ -205,6 +206,11 @@ export function sceneNow(g: Game): Scene {
     pot: fight && boss === 'house' ? (g.stage?.gutter?.pot ?? 0) : 0,
     wheel: fight && boss === 'wheel' ? wheelNow(g) : undefined,
     dealer: fight && boss === 'dealer' ? { hand: g.stage.gutter.dealerHand ?? 1, allIn: !!g.stage.gutter.allInArmed, charge: g.stage.huds.enemy.charge ?? 0 } : undefined,
+    // ENDLESS (rooms v2): the loop's boss (its strip leads to them), THE OWNER's ladder, the player's flash settings.
+    loopBoss: inRun && run!.endless ? (run!.map.boss.boss ?? null) : null,
+    owner: fight && boss === 'owner' ? { rungs: rungsClimbed(e.maxHp - Math.max(0, e.hp)) } : undefined,
+    soft: g.prefs.juice.softLightning,
+    flash: g.prefs.juice.flash,
     ...journey(g),
   };
 }
