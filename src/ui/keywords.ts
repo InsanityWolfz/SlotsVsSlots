@@ -29,8 +29,8 @@ export const KEYWORDS: Keyword[] = [
   { word: 'SHIELD', icon: 'kwShield', forms: ['SHIELDS'], color: '#6ab4ff', text: 'BLOCKS HITS BEFORE THEY REACH YOUR HP' },
   { word: 'PIERCE', icon: 'kwPierce', forms: ['PIERCES', 'PIERCING', 'PIERCES SHIELDS', 'PIERCE SHIELDS'], color: '#bff4ff', text: 'GOES PAST SHIELDS, STRAIGHT TO HP' },
   { word: 'HEAL', icon: 'kwHeal', forms: ['HEALS', 'HEALED', 'HEALING'], color: '#7dff7a', text: 'HP BACK, UP TO YOUR MAX HP' },
-  { word: 'CHARM', icon: 'kwCharm', forms: ['CHARMS'], color: '#c9a0ff', text: 'A PERK ON ONE CELL OF A REEL' },
-  { word: 'LEVEL', icon: 'kwLevel', forms: ['LEVELS', 'LV'], color: '#5ad8e8', text: 'A SYMBOL PAYS MORE PER LEVEL, ON EVERY CELL OF IT YOU OWN. NO CAP' },
+  { word: 'CHARM', icon: 'kwCharm', forms: ['CHARMS'], color: '#c9a0ff', text: 'A PERK ON ONE SYMBOL ON A REEL' },
+  { word: 'LEVEL', icon: 'kwLevel', forms: ['LEVELS', 'LV'], color: '#5ad8e8', text: 'A SYMBOL PAYS MORE PER LEVEL, ON EVERY COPY OF IT YOU OWN. NO CAP' },
   // (VOLUME borrows the METER icon. MIXTAPE confused new players who hadn't seen the bar: playtest 2026-11-03.)
   { word: 'VOLUME', icon: 'kwMeter', color: '#ff9ad8', text: "THE JUKEBOX'S BAR: EACH NOTE ON YOUR PAYLINE ADDS 1, A SPIN WITH NO NOTE LOSES 2. AT 6, THE DROP: EVERY NOTE ON SCREEN HITS" },
   { word: 'METER', icon: 'kwMeter', color: '#ffd23f', text: "YOUR SLOT MACHINE'S BAR: IT FILLS AS YOU SPIN AND PAYS OFF WHEN FULL" },
@@ -43,15 +43,15 @@ export const KEYWORDS: Keyword[] = [
   { word: 'SABOTAGE', icon: 'kwSabotage', forms: ['SABOTAGES'], color: '#d0a0ff', text: 'ANYTHING AN ENEMY DOES TO YOUR REELS: SPILLS, STEALS, ROCKS, IOUS, FREEZES, JAMS, JINXES, MARKS, FAKES, CONFISCATIONS' },
   { word: 'MARK', icon: 'kwMark', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: 'A MARKED SYMBOL ON YOUR PAYLINE HITS YOU FOR 20' },
   // (Card text pass, 2026-11-03: the enemies' own words, so their cards can explain them.)
-  { word: 'STEAL', icon: 'kwSteal', forms: ['STEALS', 'STOLEN'], color: '#c9a0ff', text: 'A STOLEN SYMBOL LEAVES AN EMPTY CELL THAT PAYS NOTHING TILL THE FIGHT ENDS. 3 EMPTIES ON YOUR PAYLINE GET THEM ALL BACK' },
-  { word: 'FREEZE', icon: 'kwFrozen', forms: ['FREEZES', 'FROZEN'], color: '#9fe8ff', text: "A FROZEN REEL DOESN'T SPIN. AS IT FREEZES IT CAN SLIP ONE CELL, TO THE WORSE SYMBOL" },
+  { word: 'STEAL', icon: 'kwSteal', forms: ['STEALS', 'STOLEN'], color: '#c9a0ff', text: 'A STOLEN SYMBOL LEAVES AN EMPTY SPOT THAT PAYS NOTHING TILL THE FIGHT ENDS. 3 EMPTIES ON YOUR PAYLINE GET THEM ALL BACK' },
+  { word: 'FREEZE', icon: 'kwFrozen', forms: ['FREEZES', 'FROZEN'], color: '#9fe8ff', text: "A FROZEN REEL DOESN'T SPIN. AS IT FREEZES IT CAN SLIP ONE SPOT, TO THE WORSE SYMBOL" },
   // (JAM has no icon of its own: it borrows FROZEN's, the other reel that won't play.)
   { word: 'JAM', icon: 'kwFrozen', forms: ['JAMS', 'JAMMED'], color: '#c9bba8', text: 'A JAMMED REEL PAYS NOTHING ON THE PAYLINE' },
   { word: 'JINX', icon: 'kwJinx', forms: ['JINXES', 'JINXED'], color: '#c9a0ff', text: 'ANY PAY THAT USES A JINXED REEL IS HALVED' },
   // (RAKE has no icon of its own: it borrows SABOTAGE's.)
   { word: 'RAKE', icon: 'kwSabotage', forms: ['RAKES', 'RAKED'], color: '#ffd23f', text: 'WHILE RAKED, EACH OF YOUR PAYS IS 10 LESS' },
-  { word: 'SPILL', icon: 'kwSpill', forms: ['SPILLED', 'SPILLS'], color: COLORS.slime, text: 'A SPILLED CELL PAYS NOTHING. NEVER MORE THAN A THIRD OF YOUR SYMBOLS AT ONCE. A SPILL PAIR MOPS UP ITS REELS, A SPILL JACKPOT MOPS UP THEM ALL' },
-  { word: 'ROCK', icon: 'kwRock', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD CELL: IT PAYS NOTHING' },
+  { word: 'SPILL', icon: 'kwSpill', forms: ['SPILLED', 'SPILLS'], color: COLORS.slime, text: 'A SPILLED SYMBOL PAYS NOTHING. NEVER MORE THAN A THIRD OF YOUR SYMBOLS AT ONCE. A SPILL PAIR MOPS UP ITS REELS, A SPILL JACKPOT MOPS UP THEM ALL' },
+  { word: 'ROCK', icon: 'kwRock', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD SYMBOL: IT PAYS NOTHING' },
   { word: 'IOU', icon: 'kwIou', forms: ['IOUS'], color: '#ff9a3a', text: 'TICKS DOWN, THEN HITS YOU. LAND IT ON YOUR PAYLINE TO PAY IT OFF' },
 ];
 

@@ -36,7 +36,7 @@ const SHELF_Y = 178;
 
 /** One line under each shelf. */
 const CAPTION: Record<Shelf, string> = {
-  charms: 'A CHARM SITS ON ONE CELL OF YOUR REELS',
+  charms: 'A CHARM SITS ON ONE SYMBOL ON YOUR REELS',
   relics: 'YOU KEEP A RELIC FOR THE WHOLE RUN',
   enemies: "THE CASINO TOWN'S CAST, AND HOW EACH ONE CHEATS",
 };

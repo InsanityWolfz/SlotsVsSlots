@@ -55,7 +55,8 @@ far it got. Keep that line current while you work.
 - Sim: `npm run sim -- --runs 500 --stakes 0,2` (`tools/sim/balance.ts`); `tools/sim/fuzz.ts` checks invariants.
 
 ## The user's rules (binding)
-- **User-facing words:** "Slot Machines" (never cabinets) and "Charms" (never gild). Code identifiers may stay.
+- **User-facing words:** "Slot Machines" (never cabinets), "Charms" (never gild) and "symbols" (never cells; an empty
+  place on a reel is a "spot"). Code identifiers may stay.
 - **No decision hints** on cards: no "FITS" tags, no expected-value or stat-delta numbers.
 - **Saves:** never rename the localStorage keys `slotvslot.prefs.v2` / `slotvslot.profile.v1`. Saves are cleaned on load.
 - **Photosensitivity:** no full-screen white flashes. `FLASH_CAP` is 0.2. Keep the LIGHTNING: FULL/SOFT option.

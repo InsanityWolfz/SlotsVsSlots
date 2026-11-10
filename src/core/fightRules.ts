@@ -164,13 +164,13 @@ export function effectText(sym: SymbolId, amount: number): string {
   const s = (k: number, one: string, many = `${one}S`) => `${k} ${k === 1 ? one : many}`;
   switch (sym) {
     case 'slime':
-      return `SPILLS ON ${s(Math.round(amount / UNIT), 'CELL')}`;
+      return `SPILLS ON ${s(Math.round(amount / UNIT), 'SYMBOL')}`;
     case 'ice':
       return `FREEZES ${s(pair ? 2 : 1, 'REEL')} FOR ${s(jackpot ? 3 : pair ? 2 : 1, 'TURN')}`;
     case 'lock':
       return pair ? `JAMS ${s(jackpot ? 2 : 1, 'REEL')}` : 'FIZZLES';
     case 'claw':
-      return `STEALS ${s(n, 'CELL')}`;
+      return `STEALS ${s(n, 'SYMBOL')}`;
     case 'rock':
       return pair ? `ADDS ${s(jackpot ? 2 : 1, 'ROCK')}` : 'FIZZLES';
     case 'coin':
@@ -182,7 +182,7 @@ export function effectText(sym: SymbolId, amount: number): string {
     case 'fangs':
       return `DRAINS ${(jackpot ? 7 : pair ? 4 : 2) * UNIT}`;
     case 'card':
-      return `MARKS ${s(n, 'CELL')}`;
+      return `MARKS ${s(n, 'SYMBOL')}`;
     case 'gavel':
       return pair ? `SEIZES ${jackpot ? 4 : 2} CHARMS` : 'FIZZLES';
     case 'rake':

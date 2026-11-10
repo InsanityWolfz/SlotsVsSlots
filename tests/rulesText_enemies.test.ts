@@ -309,7 +309,7 @@ describe('BOUNCER: "THE FIRST ENEMY ABILITY EACH FIGHT THAT HITS YOUR REELS DOES
   });
 });
 
-describe('FREEZE (glossary): "A FROZEN REEL DOESN\'T SPIN. AS IT FREEZES IT CAN SLIP ONE CELL, TO THE WORSE SYMBOL"', () => {
+describe('FREEZE (glossary): "A FROZEN REEL DOESN\'T SPIN. AS IT FREEZES IT CAN SLIP ONE SPOT, TO THE WORSE SYMBOL"', () => {
   it('a COLD STREAK sometimes slips the frozen reel one cell (the glossary says so)', () => {
     // Your reels: swords with a few empties; the freeze picks your weakest-looking reel and may shift it a cell.
     const c = defaultConfig();
@@ -329,7 +329,7 @@ describe('FREEZE (glossary): "A FROZEN REEL DOESN\'T SPIN. AS IT FREEZES IT CAN 
     }
     expect(frozen).toBeGreaterThan(0);
     expect(moved).toBeGreaterThan(0);
-    expect(KEYWORDS.find((k) => k.word === 'FREEZE')!.text).toContain('SLIP ONE CELL');
+    expect(KEYWORDS.find((k) => k.word === 'FREEZE')!.text).toContain('SLIP ONE SPOT');
   });
 });
 
