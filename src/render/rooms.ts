@@ -37,6 +37,7 @@ import { drawStreet, streetStation } from './roomStreet';
 import { drawFloorStation, drawWheelRoom, FLOOR_STATIONS, floorStation, wheelRoomUpdate } from './roomCasinoFloor';
 import { drawHighRoller, hrStation, HR_STATIONS, type DealerState } from './roomHighRoller';
 import { drawLobby, drawNightCrew, drawOwnerRoom, endlessLate, lobbyUpdate, ownerUpdate } from './roomEndless';
+import { drawMenuStreet, drawPawnShop, type MenuPlace } from './roomMenu';
 
 /** Rooms v2 (the style key, 2026-11-09): THE HOUSE's room is the casino entrance, and act 1 is the street toward it
  * (roomStreet.ts). Off: the old alley and vault. `station` forces act 1's station (dbg, the gallery); null: by depth. */
@@ -90,7 +91,7 @@ export function endlessPlace(s: Scene): EndlessPlace | null {
  * (0-3, 'table'); null for the old rooms. */
 export const roomPlace = (s: Scene) => streetPlace(s) ?? floorPlace(s) ?? hrPlace(s);
 /** The room draws its own air (rain), so the drifting motes stay off (they're another pixel size). */
-export const roomV2Air = (s: Scene) => (ROOM_V2.on && s.boss === 'house') || roomPlace(s) !== null || endlessPlace(s) !== null;
+export const roomV2Air = (s: Scene) => (ROOM_V2.on && (s.boss === 'house' || !!s.menu)) || roomPlace(s) !== null || endlessPlace(s) !== null;
 
 export { LH, LW } from './roomKit';
 
@@ -133,6 +134,9 @@ export interface Scene {
   /** The player's juice settings the boss rooms honour: LIGHTNING SOFT, and flashes off. */
   soft?: boolean;
   flash?: boolean;
+  /** Outside a run (rooms v2, roomMenu.ts): the menus stand on the street ('street'), CHOOSE YOUR MACHINE at the pawn
+   * shop ('pawn'). */
+  menu?: MenuPlace;
 }
 
 // ---- the still layers --------------------------------------------------------------------------------------------
@@ -282,6 +286,11 @@ export class Rooms {
   }
 
   draw(ctx: CanvasRenderingContext2D, s: Scene, time: number): void {
+    if (ROOM_V2.on && s.menu) {
+      if (s.menu === 'pawn') drawPawnShop(ctx, time);
+      else drawMenuStreet(ctx, time);
+      return;
+    }
     const ep = endlessPlace(s);
     if (ep) {
       this.drawEndless(ctx, s, ep, time);

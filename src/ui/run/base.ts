@@ -313,7 +313,7 @@ export abstract class RunScreensBase {
     if (!this.active || (!this.run && this.mode !== 'cabinet')) return;
     this.tips.begin();
     // The act's room stays behind every screen of the run (playtesters: the Cashier and the encounters should be in the
-    // same place as the fights), dimmed so the cards read; the machine select keeps the plain casino carpet. Either
+    // same place as the fights), dimmed so the cards read; the machine select is the pawn shop on the street. Either
     // way it's solid: the fight scene never shows through.
     ctx.save();
     ctx.globalAlpha = this.fade;
@@ -322,6 +322,10 @@ export abstract class RunScreensBase {
       this.roomBackdrop(ctx, time);
       ctx.fillStyle = 'rgba(6,3,12,0.58)';
       ctx.fillRect(0, 0, W, H);
+    } else if (this.roomBackdrop) {
+      // CHOOSE YOUR MACHINE: the pawn shop on the street (rooms v2, roomMenu.ts), undimmed: its window is the stage.
+      drawBackdrop(ctx);
+      this.roomBackdrop(ctx, time);
     } else drawBackdrop(ctx);
     ctx.restore();
     ctx.save();

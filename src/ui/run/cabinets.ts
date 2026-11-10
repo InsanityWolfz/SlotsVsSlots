@@ -9,6 +9,7 @@ import { heroSprite } from '../menus';
 import { wrap, stakeDisc, spotlight, bigPortrait, type Btn } from './shared';
 import { BuildPanel } from './build';
 import { demo, IN_FULL_GAME, openStore, STORE_URL } from '../../demo';
+import { drawShopGlass } from '../../render/roomMenu';
 
 /** CHOOSE YOUR MACHINE: the stage (the selected machine big), the row of machines, the stake chips. */
 const STAGE = { x: 150, y: 88, w: 980, h: 316 };
@@ -184,7 +185,8 @@ export abstract class CabinetScreen extends BuildPanel {
     const preview = this.cabPreview();
     const shown = open || preview;
     const barred = open && this.stakeFor(id) < this.stakeSel;
-    drawPanel(ctx, x, y, w, h, { frame: open ? KIT.frame : KIT.frameDim });
+    // The stage is the pawn shop's window (rooms v2: the machine select is the pawn shop on the street, roomMenu.ts).
+    drawShopGlass(ctx, x, y, w, h, shown, time);
     // The stage: a darker floor with a spotlight pool under the machine.
     const fx = x + 170;
     spotlight(ctx, fx, y + h - 58, 260, shown ? '#ffe08a' : '#8a7aa8', open ? 0.12 : 0.06);
@@ -246,6 +248,9 @@ export abstract class CabinetScreen extends BuildPanel {
       const yy = open || sel ? drawCard(ctx, h.x - h.w / 2, h.y - h.h / 2, h.w, h.h, { lift }) : (drawPanel(ctx, h.x - h.w / 2, h.y - h.h / 2 - Math.round(6 * lift), h.w, h.h, { frame: KIT.frameDim, fill: '#140e1e' }), h.y - h.h / 2 - Math.round(6 * lift));
       const sprite = (shown ? CABINETS[id].sprite : 'cabinetLocked') as SpriteId;
       drawSprite(ctx, sprite, h.x, yy + h.h / 2, 1.125, open ? { dim: this.cabPlayable(i) ? 0 : 0.5 } : shown ? { dim: 0.5 } : { variant: 'black', alpha: 0.9 });
+      // A machine you don't have yet waits behind the pawn shop's shutter, pulled half down (the demo's full-game
+      // machines too, under their IN THE FULL GAME tag).
+      if (!open) shutter(ctx, h.x - h.w / 2, yy, h.w, Math.round(h.h * 0.55));
       drawText(ctx, shown ? CABINETS[id].name : '???', h.x, h.y + h.h / 2 + 18, T.small, sel ? KIT.title : KIT.dim);
       ctx.restore();
     });
@@ -323,4 +328,28 @@ export abstract class CabinetScreen extends BuildPanel {
     if (show >= STAKE.act3) drawText(ctx, show > STAKE.act3 ? '+ ACT 3, AND EVERY STAKE BELOW IT' : '+ ACT 3: THE DEALER', W / 2, ey, T.small, locked ? KIT.dim : '#7dff7a');
     else if (show > 0) drawText(ctx, 'ON TOP OF THE BASE GAME', W / 2, ey, T.small, KIT.dim);
   }
+}
+
+/** A roll-up shutter pulled part way down over a thumb: ribbed steel slats (2px art pixels, outlined), a bottom rail
+ * with its handle. */
+function shutter(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+  const x0 = Math.round(x) + 4;
+  const y0 = Math.round(y) + 4;
+  const ww = Math.round(w) - 8;
+  const hh = Math.max(8, Math.round(h) - 4);
+  ctx.fillStyle = COLORS.outline;
+  ctx.fillRect(x0 - 2, y0 - 2, ww + 4, hh + 6);
+  for (let yy = 0; yy < hh; yy += 6) {
+    ctx.fillStyle = '#4a4058';
+    ctx.fillRect(x0, y0 + yy, ww, 4);
+    ctx.fillStyle = '#6a6078';
+    ctx.fillRect(x0, y0 + yy, ww, 2);
+    ctx.fillStyle = '#2a2436';
+    ctx.fillRect(x0, y0 + yy + 4, ww, 2);
+  }
+  // the bottom rail and its handle
+  ctx.fillStyle = '#3b3347';
+  ctx.fillRect(x0, y0 + hh, ww, 4);
+  ctx.fillStyle = '#8a8098';
+  ctx.fillRect(x0 + ww / 2 - 8, y0 + hh + 1, 16, 2);
 }

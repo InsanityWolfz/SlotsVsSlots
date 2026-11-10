@@ -1,3 +1,4 @@
+import { drawWallOfFame } from '../../render/roomMenu';
 import { CABINETS } from '../../core/cabinets';
 import { runScore, type RunEntry } from '../../core/profile';
 import { RELICS } from '../../core/relics';
@@ -91,6 +92,8 @@ export class HiscoresScreen implements MenuScreen {
   }
 
   draw(ctx: CanvasRenderingContext2D, t: number): void {
+    // The WALL OF FAME poster pasted on the street's wall, top left by BACK, low contrast (rooms v2: roomMenu.ts).
+    drawWallOfFame(ctx, 206, 6);
     this.m.drawHeader(ctx, 'HISCORES');
     const list = this.entries();
     if (!list.length) return this.drawEmpty(ctx);

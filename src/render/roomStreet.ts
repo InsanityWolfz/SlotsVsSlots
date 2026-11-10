@@ -594,6 +594,9 @@ export interface StreetScene {
   late?: number;
   /** This fight's enemy (a cheap per-enemy touch: THE BARFLY's (archetype 'slime') bar sign buzzes when he's the one). */
   enemy?: string | null;
+  /** The menus (roomMenu.ts): the bar's blade sign hangs this many art pixels lower, so the main menu's logo doesn't
+   * cover its B. 0 in the run. */
+  barDrop?: number;
 }
 
 /** The casino's canopy bulbs and sign letters down the street (sized by its depth). */
@@ -728,7 +731,7 @@ export function drawStreet(ctx: CanvasRenderingContext2D, o: StreetScene): void 
     // THE BARFLY's bar: BAR in pink neon down the blade sign, its O buzzing (more when he's the one you're fighting),
     // the bar's window glow on the sidewalk, trash bags by the door.
     const sx = 18;
-    const sy = 58;
+    const sy = 58 + (o.barDrop ?? 0);
     g.drawImage(S.barSign, sx, sy);
     const buzz = o.enemy === 'slime' ? 0.82 : 0.95;
     const letters = ['B', 'A', 'R'];
@@ -741,7 +744,7 @@ export function drawStreet(ctx: CanvasRenderingContext2D, o: StreetScene): void 
     px(g, sx + 14, sy + 78, 10, 3, T);
     px(g, sx + 24, sy + 81, 3, 7, Yl);
     pool(g, 46, 318, 40, 10, '#e8a860', 0.18);
-    pool(g, 30, 200, 26, 40, '#ff4fa3', 0.08);
+    pool(g, 30, 200 + (o.barDrop ?? 0), 26, 40, '#ff4fa3', 0.08);
     g.drawImage(S.bags, 586, 312);
   } else if (i === 1) {
     // The alley's mouth: a fire escape on the wall beside it, a dumpster just inside; the pawn shop's sign across.

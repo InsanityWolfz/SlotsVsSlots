@@ -212,7 +212,16 @@ export function sceneNow(g: Game): Scene {
     soft: g.prefs.juice.softLightning,
     flash: g.prefs.juice.flash,
     ...journey(g),
+    ...menuPlace(g),
   };
+}
+
+/** Outside a run (rooms v2): the menus on the street, CHOOSE YOUR MACHINE at the pawn shop. */
+function menuPlace(g: Game): Pick<Scene, 'menu'> {
+  if (g.screens.active && g.screens.mode === 'cabinet') return { menu: 'pawn' };
+  // (SETTINGS from a run's pause menu is mid-run: it keeps the run's room.)
+  if (!g.run && (g.menus.isOpen || g.phase === 'title')) return { menu: 'street' };
+  return {};
 }
 
 /** THE WHEEL's table as presented (the gutter's chips, turns to NO MORE BETS, SPINS FASTER, the wheel's turn). */
