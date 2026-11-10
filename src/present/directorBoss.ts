@@ -3,7 +3,7 @@ import { UNIT } from '../core/config';
 import { DEALER_HANDS, DEALER_RULES } from '../core/fight';
 import { backOut, sineIn, sineInOut, sineOut } from './ease';
 import { Projectile } from './fx';
-import { cellCenter, COLORS, GUTTER_PANEL_Y, MACHINE_CX, MACHINE_H, MACHINE_TOP, CELL, reelWindow, W } from './layout';
+import { cellCenter, COLORS, GUTTER_PANEL_H, GUTTER_PANEL_LINE, GUTTER_PANEL_Y, HIT_Y, MACHINE_CX, MACHINE_H, MACHINE_TOP, CELL, reelWindow, W } from './layout';
 import { artId } from '../render/sprites';
 import { fmtNum } from '../render/text';
 import type { Director, Ev } from './director';
@@ -67,7 +67,8 @@ export async function potWin(d: Director, e: Ev<'potWin'>): Promise<void> {
   const target = d.machineCenter(e.to);
   const playerWins = e.from === 'player';
   if (e.amount <= 0) {
-    await d.popText('POT EMPTY', src.x, src.y - 30, 2, COLORS.textDim, 16, 0.2);
+    // (Under the panel and its rule line: over the pot it crossed the panel's title.)
+    await d.popText('POT EMPTY', src.x, GUTTER_PANEL_Y + GUTTER_PANEL_H + GUTTER_PANEL_LINE + 34, 2, COLORS.textDim, 6, 0.3, true);
     return;
   }
   g.pot = e.amount + e.potLeft;
@@ -96,7 +97,7 @@ export async function potWin(d: Director, e: Ev<'potWin'>): Promise<void> {
     d.s.particles.burst({ x: target.x, y: target.y - 40, count: 80, colors: ['#ffd23f', '#ffe08a', '#fff6c8'], speed: [200, 600], angle: -Math.PI / 2, spread: Math.PI, gravity: 900, life: [0.8, 1.4], size: [4, 7], kind: 'confetti' });
   d.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
   // (No "-0" when the hit lands on a machine already down or all of it is blocked: playtest 2026-11-01.)
-  if (e.hpDamage > 0) d.bg(d.popText(`-${fmtNum(e.hpDamage)}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
+  if (e.hpDamage > 0) d.bg(d.popText(`-${fmtNum(e.hpDamage)}`, target.x, HIT_Y, 8, COLORS.energy, 70, 0.5));
   await d.c.wait(0.5);
 }
 

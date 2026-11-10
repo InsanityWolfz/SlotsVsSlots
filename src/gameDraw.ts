@@ -106,6 +106,8 @@ export function drawFrame(g: Game, ctx: CanvasRenderingContext2D): void {
   s.huds.player.draw(ctx, t);
   s.huds.enemy.draw(ctx, t);
   ctx.restore();
+  // (What a banner covers this frame, before the machines draw: THE WHEEL's bet stacks step aside with the rest.)
+  g.view.syncCovers();
   s.machines.player.draw(ctx, s.clock.time);
   if (g.fight.isDealer) g.view.drawDealerTable(ctx, t);
   // THE WHEEL's cabinet and topper drop in with its machine.
@@ -121,10 +123,11 @@ export function drawFrame(g: Game, ctx: CanvasRenderingContext2D): void {
   ctx.restore();
   s.fx.draw(ctx, s.clock.time, -Infinity, 20);
   g.view.drawGutter(ctx, t);
+  // (HOLD's gold frames and chips go under the banners and callouts: over them, a HELD frame crossed a BIG HIT.)
+  g.view.drawHoldBar(ctx, t);
   g.particles.draw(ctx);
   s.fx.draw(ctx, s.clock.time, 20, Infinity);
   if (en) drawEntrance(ctx, en, t);
-  g.view.drawHoldBar(ctx, t);
   if (g.drawerT < 0.5) g.view.drawRelicFeed(ctx);
   if (g.fight.cfg.enemy.boss && !g.screens.active && !en) g.view.drawBossHint(ctx);
   // The BUILD drawer: your whole build slides out over the left side (relics fire inside it), chips stay put on top.
@@ -153,6 +156,8 @@ export function drawFrame(g: Game, ctx: CanvasRenderingContext2D): void {
     ctx.fillRect(0, 0, W, H);
     ctx.globalAlpha = 1;
   }
+  // The fight's line in the bottom bar (the spin count, OVERTIME, a boss or loop label), with the buttons it sits beside.
+  if (!g.screens.active && !g.menus.isOpen) g.view.drawStatus(ctx, t);
   for (const b of g.buttons) if (!g.recapBtns.includes(b)) b.draw(ctx, t);
   // The boss card covers the whole screen, the bottom bar too (it pauses the fight).
   if (g.bossCard) g.view.drawBossCard(ctx);
@@ -179,7 +184,8 @@ export function syncOoze(g: Game): void {
       if (c.slimed) n++;
     }
   }
-  if (n !== hud.ooze) hud.oozePunch = 1.5;
+  // (A small pop: at 1.5 the SPILL chip swelled over the chip beside it and the meter over it.)
+  if (n !== hud.ooze) hud.oozePunch = 1.08;
   hud.oozePunch += (1 - hud.oozePunch) * 0.15;
   hud.ooze = n;
   hud.oozeTotal = total;

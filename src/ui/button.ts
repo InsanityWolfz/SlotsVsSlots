@@ -1,7 +1,7 @@
 import { Clock } from '../present/clock';
 import { backOut, sineOut } from '../present/ease';
 import { COLORS } from '../present/layout';
-import { drawText } from '../render/text';
+import { drawText, PROBE } from '../render/text';
 
 export interface ButtonOpts {
   circle?: boolean;
@@ -90,6 +90,7 @@ export class Button {
     const text = d > 0.5 ? '#8f8a96' : this.toggled ? '#fff6c8' : quiet ? COLORS.textDim : COLORS.goldLight;
     const hw = this.w / 2;
     const hh = this.h / 2;
+    if (import.meta.env.DEV && PROBE.see) PROBE.see('plate', `button:${this.label}`, ctx, -hw - 3, -hh - 3, this.w + 6, this.h + 6);
 
     if (this.opts.circle) {
       ctx.fillStyle = COLORS.outline;

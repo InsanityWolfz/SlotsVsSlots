@@ -2,7 +2,7 @@
 import { symLabel, UNIT, type SideId } from '../core/config';
 import { backOut, cubicIn, cubicOut, sineIn, sineInOut } from './ease';
 import { Projectile } from './fx';
-import { cellCenter, COLORS, MACHINE_H, MACHINE_TOP } from './layout';
+import { HIT_Y, cellCenter, COLORS, MACHINE_H, MACHINE_TOP, TOP_ROW_Y } from './layout';
 import { stripMapColumn } from './stripMap';
 import { artId, type SpriteId } from '../render/sprites';
 import { BOMB } from '../core/relics';
@@ -25,7 +25,7 @@ export async function slime(d: Director, e: Ev<'slime'>): Promise<void> {
 
   if (e.cells.length === 0) {
     const c = d.machineCenter(e.to);
-    await d.popText('NO TARGET', c.x, MACHINE_TOP + 40, 3, COLORS.textDim, 30, 0.2);
+    await d.popText('NO TARGET', c.x, HIT_Y, 3, COLORS.textDim, 30, 0.2);
     return;
   }
   const flood = e.cells.length >= 9;
@@ -59,7 +59,7 @@ export async function slime(d: Director, e: Ev<'slime'>): Promise<void> {
   }
   if (e.wasted > 0) {
     const c = d.machineCenter(e.to);
-    d.bg(d.popText(`${e.wasted} WASTED`, c.x, MACHINE_TOP + 40, 2, COLORS.textDim, 20, 0.2));
+    d.bg(d.popText(`${e.wasted} WASTED`, c.x, HIT_Y, 2, COLORS.textDim, 20, 0.2));
   }
   d.settle(e.from, e.reels);
   await d.c.wait(0.2);
@@ -359,7 +359,7 @@ export async function blast(d: Director, e: Ev<'blast'>): Promise<void> {
   d.damageHud(e.side, e.targetHp, e.targetShield, e.hpDamage);
   const c = d.machineCenter(e.side);
   if (e.blocked > 0) d.bg(d.popText(`BLOCK ${e.blocked}`, c.x + 40, MACHINE_TOP + 70, 2, '#9fd0ff', 16, 0.3));
-  d.bg(d.popText(e.hpDamage > 0 ? `PAY UP -${e.hpDamage}` : 'PAY UP!', c.x, MACHINE_TOP + 40, 4, '#ff8a3a', 50));
+  d.bg(d.popText(e.hpDamage > 0 ? `PAY UP -${e.hpDamage}` : 'PAY UP!', c.x, HIT_Y, 4, '#ff8a3a', 50));
   await d.c.wait(0.35);
 }
 
@@ -431,7 +431,7 @@ export async function markCells(d: Director, e: Ev<'mark'>): Promise<void> {
   });
   await Promise.all(flicks);
   const c = d.machineCenter(e.to);
-  d.bg(d.popText(`MARKED x${e.cells.length}: THEY BITE ON YOUR PAYLINE`, c.x, MACHINE_TOP + 24, 2, '#ff8aa0', 16, 0.5));
+  d.bg(d.popText(`MARKED x${e.cells.length}: THEY BITE ON YOUR PAYLINE`, c.x, TOP_ROW_Y, 2, '#ff8aa0', 16, 0.5));
   if (e.reels.length) d.settle(e.from, e.reels);
   await d.c.wait(0.1);
 }
@@ -448,7 +448,7 @@ export async function markedHit(d: Director, e: Ev<'markedHit'>): Promise<void> 
   d.damageHud(e.side, e.targetHp, e.targetShield, e.hpDamage);
   // Credit the Dealer (its marks are most of its damage).
   const who = d.s.gutter.nextDeal ? "THE DEALER'S MARK" : 'MARKED!';
-  await d.popText(e.hpDamage > 0 ? `${who} -${e.hpDamage}` : `${who} BLOCKED`, c.x, MACHINE_TOP + 40, 3, '#ff8aa0', 30, 0.3);
+  await d.popText(e.hpDamage > 0 ? `${who} -${e.hpDamage}` : `${who} BLOCKED`, c.x, HIT_Y, 3, '#ff8aa0', 30, 0.3);
 }
 
 /** The Pit Boss bangs the gavel: gilds are taken for the fight. */

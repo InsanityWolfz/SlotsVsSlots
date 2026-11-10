@@ -5,8 +5,9 @@ import { other, type TurnResult } from '../core/fight';
 import type { LineScore } from '../core/scoring';
 import type { CellRef } from '../core/strip';
 import { backOut, cubicIn, cubicOut, quadOut, sineIn, sineInOut, sineOut } from './ease';
-import { Banner, FloatText, TurnCard } from './fx';
-import { cellCenter, COLORS, MACHINE_CX, MACHINE_H, MACHINE_TOP, RELIC_FEED, W } from './layout';
+import { Banner, FloatText, overlaps, TurnCard, type Rect } from './fx';
+import type { PayStack } from './payStack';
+import { BEZEL, CALLOUT_ROW, CALLOUT_ROWS, CALLOUT_Y, cellCenter, COLORS, HUD_TOP, MACHINE_CX, MACHINE_H, MACHINE_TOP, MACHINE_W, PAY_BANNER_Y, RELIC_FEED, TOP_ROW_Y, W } from './layout';
 import type { Stage } from './stage';
 import { abilityName } from './hud';
 import { fmtNum } from '../render/text';
@@ -16,7 +17,7 @@ import { FLASH_CAP } from './camera';
 
 /** The shortest real-time gap between two white flashes on one Slot Machine (about 3 a second at most: UI-04). */
 const MACHINE_FLASH_GAP = 0.34;
-import { BANNER_Y, bonusReel, luckyWilds, missedTriple, setTag, winPresentation } from './directorPay';
+import { BANNER_Y, bonusReel, luckyWilds, missedTriple, PAY_TOP, setTag, winPresentation } from './directorPay';
 import { drop, energyGain, meter, payoff, specialFire, storm, touch } from './directorMeter';
 import { blast, bomb, cleanse, confiscate, defuse, fake, fakeTick, fizzle, fuse, gulp, hex, junk, markCells, markedHit, rake, recover, slime, status, steal, thaw } from './directorTricks';
 import { allInHit, betPlaced, betSwept, dealerHand, lineCard, noMoreBets, phase, pot, potWin, wheelFast } from './directorBoss';
@@ -52,6 +53,24 @@ export class Director {
   private lastSpin: Partial<Record<SideId, { frozen: boolean[]; locked: boolean[]; hexed: boolean[] }>> = {};
 
   constructor(public s: Stage) {}
+
+  /** THE PAY STACK on screen (payStack.ts): the next pay, or the fight's end, clears it. */
+  payStack: PayStack | null = null;
+  clearStack(): void {
+    const st = this.payStack;
+    if (!st) return;
+    this.payStack = null;
+    this.bg(this.c.tween({ from: st.alpha, to: 0, dur: 0.1, onUpdate: (v) => (st.alpha = v) }).then(() => this.s.fx.remove(st)));
+  }
+
+  /** BUILD-UP's plate empties into the pay (its step of THE CLIMB, or its own event when no climb showed it). */
+  cashBuildUp(): void {
+    const g = this.s.gutter;
+    if ((g.buildUp ?? 1) <= 1) return;
+    g.buildUp = 1;
+    this.s.sounds.coin(6);
+    this.s.sounds.coin(10);
+  }
 
   /** This turn's events: a pay can say what its writing really did (a freeze the caps cut short: playtest 2026-11-08). */
   turnEvents: CombatEvent[] = [];
@@ -234,8 +253,8 @@ export class Director {
         this.s.sounds.coin(8);
         this.s.sounds.coin(12);
         // On the house (it hit no harder than the jackpot it replaced): say why no chips left.
-        if (e.free && !e.cost) void this.popText('THE HOUSE PAYS', c.x, MACHINE_TOP + 74, 2, '#ffd23f', 14, 0.5);
-        return this.popText('MAKE IT RAIN!', c.x, MACHINE_TOP + 30, 4, '#7dff7a', 30, 0.5);
+        if (e.free && !e.cost) void this.popText('THE HOUSE PAYS', c.x, TOP_ROW_Y + 34, 2, '#ffd23f', 14, 0.5);
+        return this.popText('MAKE IT RAIN!', c.x, TOP_ROW_Y, 4, '#7dff7a', 30, 0.5);
       }
       case 'midasChips': {
         if (e.side === 'player') this.s.huds.player.chips = this.s.huds.player.chipsHeld + e.total;
@@ -356,25 +375,61 @@ export class Director {
     this.bg(this.popText(`BLOCK ${blocked}`, sb.x + sb.w - 46, sb.y + sb.h / 2, 1.5, '#9fd0ff', 0, 0.45));
   }
 
-  popText(text: string, x: number, y: number, scale: number, color: string, rise = 50, hold = 0.35, plate = false): Promise<void> {
+  /**
+   * A floating callout. Floats used to pick a spot and drift, so several at once piled up, or landed on a plate
+   * (JUICE.md: callouts never collide). Now each one is given a home before it shows:
+   * - over a machine it's as wide as the reels at most (a size down until it fits) and stays over them;
+   * - along a machine's top edge it sits on the callout row (layout.ts CALLOUT_Y), on a plate; the turn ribbon steps
+   *   aside for it (fightView);
+   * - and it never lands on another float or a banner: it takes the next free row (place); a banner that opens over
+   *   it moves it the same way (clearUnder).
+   */
+  popText(text: string, x: number, y: number, scale: number, color: string, rise = 50, hold = 0.35, plate = false, waited = 0): Promise<void> {
+    const asked = { x, y, rise };
     // The kit's text sizes (nothing under SMALL); a giant number stays a display number.
-    const size = scale <= 1.8 ? T.small : scale < 2.5 ? T.body : scale <= 3.5 ? T.head : scale <= 5 ? T.title : scale;
-    const t = this.s.fx.add(new FloatText(text, x, y, size, color));
-    // A callout along a machine's top edge lands where the turn banner (YOUR SPIN / THEIR SPIN) hangs: on a plate it
-    // reads over the banner instead of tangling with its letters.
-    t.plate = plate || (size <= T.head && y > MACHINE_TOP - 60 && y < MACHINE_TOP + 10);
-    // In (or rising into) the turn banners' band, a pop draws over the banner: BLOCKED!, a strike's -15 (QA UI-01).
-    if (y < MACHINE_TOP + 60) t.z = 31;
+    let size: number = scale <= 1.8 ? T.small : scale < 2.5 ? T.body : scale <= 3.5 ? T.head : scale <= 5 ? T.title : scale;
+    const side: SideId | null = Math.abs(x - MACHINE_CX.player) <= MACHINE_W / 2 + BEZEL ? 'player' : Math.abs(x - MACHINE_CX.enemy) <= MACHINE_W / 2 + BEZEL ? 'enemy' : null;
+    const inHud = y < HUD_TOP + 120;
+    const edge = !inHud && size <= T.head && y > MACHINE_TOP - 60 && y < MACHINE_TOP + 10;
+    if (edge) {
+      y = CALLOUT_Y;
+      rise = Math.min(rise, 10);
+    }
+    plate = plate || edge;
+    // (Over a machine a float rises 40 px at most: a hit's number used to drift up into the turn ribbon as it faded.)
+    if (side && !inHud && !edge) rise = Math.min(rise, 40);
+    if (side && !inHud) {
+      // As wide as its reels at most (your RELIC FEED sits left of them).
+      const room = MACHINE_W;
+      const width = (k: number) => text.length * 6 * k + (plate ? 28 : 0);
+      for (const smaller of [T.title, T.head, T.body, T.small]) if (width(size) > room && smaller < size) size = smaller;
+      const half = Math.min(room, width(size)) / 2;
+      x = Math.max(MACHINE_CX[side] - room / 2 + half, Math.min(MACHINE_CX[side] + room / 2 - half, x));
+    }
+    const t = new FloatText(text, x, y, size, color);
+    t.plate = plate;
+    // Clear of every float and banner already up (place). With no free spot: the same words twice say nothing new
+    // (BLOCKED! BLOCKED!), so the second is dropped; other words wait a moment for a row to clear (twice at most).
+    if (!this.place(t, inHud) && !this.c.skipping) {
+      if (this.s.fx.items.some((it) => it instanceof FloatText && !it.off && it.alpha > 0.25 && it.text === text)) return Promise.resolve();
+      if (waited < 2) return this.c.wait(0.25).then(() => this.popText(text, asked.x, asked.y, scale, color, asked.rise, hold, plate, waited + 1));
+    }
+    // (On the edge row it's on a plate, wherever it was first meant to go: the turn ribbon is under it.)
+    if (!inHud && t.y === CALLOUT_Y && t.scale <= T.head) t.plate = true;
+    t.restY = t.y;
+    this.s.fx.add(t);
+    // Along a machine's top edge a pop draws over the turn ribbon (QA UI-01).
+    if (t.y < MACHINE_TOP + 60) t.z = 31;
     t.punch = 0;
     return this.c
-      .tween({ from: 0, to: 1, dur: 0.18, ease: backOut(3), onUpdate: (v) => (t.punch = v) })
+      .tween({ from: 0, to: 1, dur: 0.18, ease: backOut(plate ? 1.2 : 3), onUpdate: (v) => (t.punch = v) })
       .then(() => this.c.wait(hold))
       .then(() =>
         this.c.tween({
           dur: 0.45,
           ease: sineIn,
           onUpdate: (v) => {
-            t.y = y - rise * v;
+            t.y = t.restY - rise * v;
             t.alpha = 1 - v;
           },
         }),
@@ -389,6 +444,8 @@ export class Director {
     else {
       // The equation builds up part by part.
       b.subParts = sub;
+      // (A pay banner: it pops and zooms down from its top edge, off the payline's numbers.)
+      if (y === PAY_BANNER_Y) b.pinTop = PAY_TOP;
       b.reveal = 0;
       void (async () => {
         for (let i = 1; i <= sub.length; i++) {
@@ -398,11 +455,64 @@ export class Director {
         }
       })();
     }
+    this.clearUnder(b);
     await this.c.tween({ from: 0, to: overshoot, dur: 0.25, ease: backOut(2), onUpdate: (v) => (b.scale = v) });
     await this.c.tween({ from: overshoot, to: 1, dur: 0.15, ease: sineIn, onUpdate: (v) => (b.scale = v) });
     await this.c.wait(hold);
     await this.c.tween({ from: 1, to: 0, dur: 0.15, ease: cubicIn, onUpdate: (v) => ((b.scale = 0.6 + 0.4 * v), (b.alpha = v)) });
     this.s.fx.remove(b);
+  }
+
+  /**
+   * Find a float a free spot: where it is, if nothing's there; else the next free row. Words (a callout, a label) over
+   * a machine's top have two rows, CALLOUT_ROWS: the edge, and one inside the top reel row under the status badges;
+   * they never drop onto the payline (its numbers are being read). A hit's number takes the next row down.
+   * In a HUD: the bar over it, then the spot to its left. False if there's no free spot (it stays put).
+   */
+  private place(t: FloatText, inHud: boolean, also: Rect[] = []): boolean {
+    const busy: Rect[] = [...also];
+    for (const it of this.s.fx.items) {
+      if (it === t) continue;
+      if (it instanceof FloatText && it.alpha > 0.25 && !it.off) busy.push(it.rect());
+      else if (it instanceof Banner) {
+        const r = it.rect();
+        if (r) busy.push(r);
+      }
+    }
+    const free = () => !busy.some((r) => overlaps(r, t.rect(), 2));
+    if (free()) return true;
+    const { x, y } = t;
+    const r0 = t.rect();
+    const row = Math.max(CALLOUT_ROW, r0.h + 8);
+    const payline = { x: 0, y: MACHINE_TOP + MACHINE_H / 3 + 2, w: W, h: MACHINE_H / 3 - 4 };
+    const words = t.plate || t.scale <= T.head;
+    // (In a HUD: the bar over it, at the same end, then left along its own bar. Under it is the next bar's number.)
+    const spots = inHud
+      ? [{ x, y: y - r0.h - 2 }, { x: x - r0.w - 6, y }]
+      : words && y < payline.y
+        ? [...CALLOUT_ROWS.filter((v) => v > y), ...CALLOUT_ROWS.filter((v) => v < y)].map((v) => ({ x, y: v }))
+        : [1, 2, 3, -1, 4].map((k) => ({ x, y: y + k * row }));
+    for (const sp of spots) {
+      t.x = sp.x;
+      t.y = sp.y;
+      const r = t.rect();
+      if ((inHud || (r.y >= CALLOUT_Y - 16 && !(words && overlaps(r, payline)))) && free()) return true;
+    }
+    t.x = x;
+    t.y = y;
+    return false;
+  }
+
+  /** A banner is opening: a callout or a hit's number where it lands moves to the next free row (place); one with
+   * nowhere to go (under a pay banner there's only the HOLD chip) goes instead: its moment is nearly over. */
+  clearUnder(b: Banner): void {
+    const r = b.rect();
+    if (!r) return;
+    for (const it of this.s.fx.items) {
+      if (!(it instanceof FloatText) || it.off || !overlaps(it.rect(), r, 2)) continue;
+      if (it.y < MACHINE_TOP + (MACHINE_H * 2) / 3 && this.place(it, false, [r])) it.restY = it.y;
+      else it.off = true;
+    }
   }
 
   /** A white flash over one Slot Machine (about 18% of the screen). Photosensitivity (QA UI-04: a sword jackpot strobed
@@ -508,14 +618,14 @@ export class Director {
   /** BUILD-UP: the gutter chip grows a step (a rising coin), or the pair that cashed it empties it. */
   private async buildUp(e: Ev<'buildUp'>): Promise<void> {
     const g = this.s.gutter;
-    g.buildUp = e.mul;
     if (e.cashed) {
-      // The plate pours into the hit: its multiplier jumps up off the gutter as it empties.
-      this.s.sounds.coin(6);
-      this.s.sounds.coin(10);
-      this.bg(this.popText(`X${Math.round((e.spent ?? 1) * 100) / 100}!`, W / 2, MACHINE_TOP + MACHINE_H + 6, 4, '#ffd23a', 70, 0.3));
+      // The plate poured into the hit as its step of THE CLIMB counted (directorPay); here only if no climb showed it.
+      // (Its X1.5! used to jump off the gutter's foot here, into the pay banner and the HOLD chip.)
+      this.cashBuildUp();
+      g.buildUp = e.mul;
       return;
     }
+    g.buildUp = e.mul;
     this.s.sounds.coin(2 + e.stacks * 2);
     g.buildUpPop = 1;
     this.bg(this.c.to(g, 'buildUpPop', 0, 0.35));
@@ -617,7 +727,8 @@ export class Director {
       }
     this.s.sounds.coin(4);
     const c = cellCenter(e.side, 1, 0);
-    await this.popText(`2ND LINE +${e.groups.reduce((a, g) => a + g.amount, 0)}`, c.x, c.y - 40, 2.5, COLORS.goldLight, 30, 0.3, true);
+    // (On the machine's callout row: over the top row it covered that row's own numbers.)
+    await this.popText(`2ND LINE +${e.groups.reduce((a, g) => a + g.amount, 0)}`, c.x, CALLOUT_Y, 2.5, COLORS.goldLight, 30, 0.3, true);
   }
 
   /** GLASS shattered: the charm leaves the cell for good, with a crack and shards. */

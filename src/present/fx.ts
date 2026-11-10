@@ -1,7 +1,16 @@
 import { drawSprite, type SpriteId } from '../render/sprites';
-import { drawText, textWidth } from '../render/text';
-import { COLORS, H, W } from './layout';
+import { drawText, PROBE, TEXT_MIN, textWidth } from '../render/text';
+import { COLORS, H, PAY_FLOOR, W } from './layout';
 import { drawPanel, drawTitle, KIT, T } from '../ui/kit';
+
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+/** Two boxes share pixels (with `gap` of air kept between them). */
+export const overlaps = (a: Rect, b: Rect, gap = 0): boolean => a.x < b.x + b.w + gap && b.x < a.x + a.w + gap && a.y < b.y + b.h + gap && b.y < a.y + a.h + gap;
 
 export interface FxItem {
   draw(ctx: CanvasRenderingContext2D, time: number): void;
@@ -40,7 +49,20 @@ export class FloatText implements FxItem {
     public scale: number,
     public color: string,
   ) {}
+  /** Where it rests (it rises from here as it fades): the Director moves this when a banner opens over it. */
+  restY = 0;
+  /** Taken off early (a banner opened over it and there was nowhere to move it): it draws nothing more. */
+  off = false;
+  /** Its box on screen at rest, outline and all (the plate's, when it has one): what the Director keeps other
+   * callouts clear of. */
+  rect(): Rect {
+    const k = this.scale === 1 || this.scale === 1.25 ? TEXT_MIN : this.scale;
+    const w = (this.text.length * 6 + 1) * k + (this.plate ? 28 : 0);
+    const h = 9 * k + (this.plate ? 18 : 0);
+    return { x: this.x - w / 2, y: this.y - h / 2, w, h };
+  }
   draw(ctx: CanvasRenderingContext2D): void {
+    if (this.off) return;
     if (this.plate && this.alpha > 0 && this.punch > 0.05) {
       // The kit's chip as the plate: an outline, a dim frame, the panel's fill.
       const w = Math.round(this.text.length * 6 * this.scale * this.punch + 24);
@@ -49,6 +71,7 @@ export class FloatText implements FxItem {
       const y0 = Math.round(this.y - h / 2);
       ctx.save();
       ctx.globalAlpha *= this.alpha;
+      if (import.meta.env.DEV && PROBE.see) PROBE.see('plate', `float:${this.text}`, ctx, x0 - 2, y0 - 2, w + 4, h + 4);
       ctx.fillStyle = COLORS.outline;
       ctx.fillRect(x0 - 2, y0 - 2, w + 4, h + 4);
       ctx.fillStyle = KIT.frameDim;
@@ -112,16 +135,10 @@ export class Banner implements FxItem {
      * zooms (BIG WIN, MEGA WIN, VICTORY), so the kit's text sizes and proportions hold at every tier. */
     public textScale = 7,
   ) {}
-  draw(ctx: CanvasRenderingContext2D): void {
-    if (this.scale <= 0.01 || this.alpha <= 0) return;
-    // THE UI KIT's banner: a panel band framed in the moment's colour, ribbon tails behind it, the title with its
-    // drop shadow, the sub line under it. The tier reads by colour before the number is read (juice: wins escalate).
+  /** The banner's own layout: its text sizes, its zoom and its panel (before the pop's scale). */
+  private layout() {
     const ts = this.textScale >= 4 ? T.title : T.head;
     const zoom = this.textScale > T.title ? this.textScale / T.title : 1;
-    ctx.save();
-    ctx.globalAlpha = this.alpha;
-    ctx.translate(this.x, this.y);
-    ctx.scale(this.scale * zoom, this.scale * zoom);
     const tw = textWidth(this.text, ts);
     const partsText = this.subParts.map((p) => p.text).join('');
     const hasSub = !!this.sub || this.subParts.length > 0;
@@ -130,6 +147,55 @@ export class Banner implements FxItem {
     const subScale = ts === T.title && subText && textWidth(subText, T.head) <= 560 ? T.head : T.body;
     const pw = Math.round(Math.max((this.minW * 0.75) / zoom, Math.max(tw, hasSub ? textWidth(subText, subScale) : 0) + 72));
     const ph = Math.round(7 * ts + (hasSub ? 7 * subScale + 40 : 34));
+    return { ts, zoom, partsText, hasSub, subScale, pw, ph };
+  }
+  /**
+   * Its panel's top edge, held in place (a pay banner): the pop, each step's punch and a BIG WIN's zoom then grow it
+   * down from that edge, never up over the payline's numbers. Unset, it scales about `y`.
+   */
+  pinTop: number | null = null;
+  /** A pinned banner's pop never grows past this line (the bottom bar starts under it): a MEGA WIN's entrance, 1.7
+   * times its size, ran down over SPIN and off the screen. */
+  pinFloor = PAY_FLOOR;
+  /** The pop's scale as drawn: a pinned banner's is held to what fits between its top edge and its floor. */
+  private pop(): number {
+    if (this.pinTop === null) return this.scale;
+    const { zoom, ph } = this.layout();
+    return Math.min(this.scale, Math.max(1, (this.pinFloor - this.pinTop - 6) / (ph * zoom)));
+  }
+  /** The centre it is drawn at for the pop's scale `k`. */
+  private centreY(k: number): number {
+    if (this.pinTop === null) return this.y;
+    const { zoom, ph } = this.layout();
+    return this.pinTop + 3 + (ph / 2) * zoom * k;
+  }
+  /** The banner's box once its pop has settled, tails and all (null while it's hidden): what stands under it steps
+   * aside, and a callout keeps clear of it. (At rest, so a pop's overshoot doesn't blink its neighbours.) */
+  rect(): Rect | null {
+    // (From its first frame, before its pop has grown: what opens the same frame already keeps clear.)
+    if (this.alpha <= 0.05) return null;
+    const { zoom, pw, ph } = this.layout();
+    return { x: this.x - (pw / 2 + 22) * zoom, y: this.centreY(1) - (ph / 2) * zoom, w: (pw + 44) * zoom, h: (ph + 10) * zoom };
+  }
+  /** Its panel's bottom edge once the pop has settled (THE PAY STACK hangs from it). */
+  restBottom(): number {
+    const { zoom, ph } = this.layout();
+    return this.centreY(1) + (ph / 2) * zoom + 3;
+  }
+  /** It is mid-pop (opening, punching on a step, or closing): its neighbours may be under its edge for a moment. */
+  get popping(): boolean {
+    return Math.abs(this.scale - 1) > 0.03 || this.alpha < 0.97;
+  }
+  draw(ctx: CanvasRenderingContext2D): void {
+    if (this.scale <= 0.01 || this.alpha <= 0) return;
+    // THE UI KIT's banner: a panel band framed in the moment's colour, ribbon tails behind it, the title with its
+    // drop shadow, the sub line under it. The tier reads by colour before the number is read (juice: wins escalate).
+    const { ts, zoom, partsText, hasSub, subScale, pw, ph } = this.layout();
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    const k = this.pop();
+    ctx.translate(this.x, this.centreY(k));
+    ctx.scale(k * zoom, k * zoom);
     const x0 = -Math.round(pw / 2);
     const y0 = -Math.round(ph / 2);
     // Ribbon tails, in a dark shade of the moment's colour.

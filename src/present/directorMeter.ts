@@ -3,7 +3,7 @@ import { UNIT } from '../core/config';
 import type { CombatEvent } from '../core/events';
 import { backOut, cubicIn, sineIn } from './ease';
 import { FloatText, Lightning, Projectile } from './fx';
-import { cellCenter, COLORS, MACHINE_CX, MACHINE_H, MACHINE_TOP } from './layout';
+import { CALLOUT_Y, cellCenter, COLORS, HIT_Y, MACHINE_CX, MACHINE_TOP, TOP_ROW_Y } from './layout';
 import { fmtNum } from '../render/text';
 import type { Director, Ev } from './director';
 import { BANNER_Y, luckyWilds } from './directorPay';
@@ -32,7 +32,8 @@ export async function energyGain(d: Director, e: Ev<'energyGain'>): Promise<void
     await d.c.wait(0.07);
   }
   const p0 = h.pipPos(0);
-  d.bg(d.popText(`+${e.amount}`, p0.x - 44, p0.y - 22, 3, COLORS.energy, 24, 0.2));
+  // (In the meter bar's middle, between its label and its count: over the bar it sat on the shield bar.)
+  d.bg(d.popText(`+${e.amount}`, h.meterBar().x + h.meterBar().w / 2 + 14, p0.y, 2, COLORS.energy, 0, 0.3));
   d.settle(e.side, e.reels);
   await d.c.wait(0.15);
 }
@@ -68,7 +69,7 @@ export async function specialFire(d: Director, e: Ev<'specialFire'>): Promise<vo
   d.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
   h.energyFlash = 0;
   // (No "-0" when the hit lands on a machine already down or all of it is blocked: playtest 2026-11-01.)
-  if (e.hpDamage > 0) d.bg(d.popText(`-${fmtNum(e.hpDamage)}`, target.x, MACHINE_TOP + 40, 8, COLORS.energy, 70, 0.5));
+  if (e.hpDamage > 0) d.bg(d.popText(`-${fmtNum(e.hpDamage)}`, target.x, HIT_Y, 8, COLORS.energy, 70, 0.5));
   // Full: the bolt crackles (re-strikes 3 times). Soft: it just fades out.
   if (!soft)
     for (let i = 0; i < 3; i++) {
@@ -115,7 +116,7 @@ export async function storm(d: Director, group: CombatEvent[]): Promise<void> {
   const target = d.machineCenter(first.to);
   const bolt = d.s.fx.add(new Lightning(target.x, -20, target.x, target.y));
   bolt.alpha = soft ? 0.6 : 0.95;
-  const counter = d.s.fx.add(new FloatText('-0', target.x, MACHINE_TOP + 40, 7, COLORS.energy));
+  const counter = d.s.fx.add(new FloatText('-0', target.x, HIT_Y, 7, COLORS.energy));
   counter.z = 31;
   d.s.sounds.thunder();
   d.shake(soft ? 2 : 5, 0.3);
@@ -168,13 +169,13 @@ export async function meter(d: Director, e: Ev<'meter'>): Promise<void> {
     const p0 = h.pipPos(Math.max(0, Math.floor(h.energy) - 1));
     d.s.sounds.fizzle();
     // Under the meter (above it sits the shield bar and its number).
-    d.bg(d.popText('SKIP!', p0.x, p0.y + 22, 2, COLORS.textDim, 6, 0.3));
+    d.bg(d.popText('SKIP!', h.meterBar().x + h.meterBar().w / 2 + 14, p0.y, 1.6, '#ffffff', 0, 0.4));
     await d.c.to(h, 'energy', e.total / UNIT, 0.2, sineIn);
     return;
   }
   if (e.wasted) {
     const p0 = h.pipPos(h.energyMax - 1);
-    await d.popText('FULL!', p0.x, p0.y - 24, 2, COLORS.textDim, 16, 0.2);
+    await d.popText('FULL!', h.meterBar().x + h.meterBar().w / 2 + 14, p0.y, 1.6, '#ffffff', 0, 0.3);
     return;
   }
   if (e.reels.length) await d.activate(e.side, e.reels, m.color);
@@ -201,9 +202,10 @@ export async function meter(d: Director, e: Ev<'meter'>): Promise<void> {
   if (e.armed && !h.armed) {
     h.armed = true;
     d.s.sounds.lucky();
-    // Over the machine's top, on a plate: it used to land on the HP and meter bars.
+    // On the machine's callout row (its top edge): under the machine it landed on the HOLD chip, before that on the
+    // HP and meter bars.
     // HYPE MAN can max the volume right before the spin it drops on: no "next spin" then.
-    if (!e.dropsNow) d.bg(d.popText(m.kind === 'touch' ? 'NEXT SPIN TURNS GOLD!' : m.kind === 'vault' ? 'HIGH ROLLER! NEXT PAY MULTIPLIES!' : m.kind === 'volume' ? 'MAX VOLUME! DROP NEXT SPIN!' : 'NEXT SPIN: ALL JACKPOTS!', MACHINE_CX[e.side], MACHINE_TOP + MACHINE_H + 14, 2, m.color, 12, 0.6, true));
+    if (!e.dropsNow) d.bg(d.popText(m.kind === 'touch' ? 'NEXT SPIN TURNS GOLD!' : m.kind === 'vault' ? 'HIGH ROLLER! NEXT PAY MULTIPLIES!' : m.kind === 'volume' ? 'MAX VOLUME! DROP NEXT SPIN!' : 'NEXT SPIN: ALL JACKPOTS!', MACHINE_CX[e.side], CALLOUT_Y, 2, m.color, 12, 0.6, true));
   }
   if (e.reels.length) d.settle(e.side, e.reels);
 }
@@ -220,7 +222,7 @@ export async function payoff(d: Director, e: Ev<'payoff'>): Promise<void> {
   // A callout over the machine, not a second banner (the PAIR!/JACKPOT! banner carries the math).
   const c = d.machineCenter(e.side);
   if (e.kind === 'volume') return;
-  await d.popText(e.kind === 'touch' ? 'MIDAS TOUCH!' : e.kind === 'vault' ? `HIGH ROLLER X${e.mul ?? 1}!` : 'ALL JACKPOTS!', c.x, MACHINE_TOP + 30, 4, color, 30, 0.45);
+  await d.popText(e.kind === 'touch' ? 'MIDAS TOUCH!' : e.kind === 'vault' ? `HIGH ROLLER X${e.mul ?? 1}!` : 'ALL JACKPOTS!', c.x, TOP_ROW_Y, 4, color, 30, 0.45);
 }
 
 /** THE JUKEBOX: THE DROP. A bass hit, every note in the window lights up, then they all hit (the attack follows). */

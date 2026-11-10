@@ -27,9 +27,52 @@ export const BEZEL = 18 * MACHINE_SCALE;
 export const MACHINE_CX: Record<SideId, number> = { player: 342, enemy: 938 };
 
 /** The boss's panel in the gutter between the machines (THE POT, the Dealer's hand, THE WHEEL's table): its width,
- * and its top edge (its title tab sits above it). */
+ * its top edge (its title tab sits 18 px above it), its height, and how far under it its one rule line sits. From the
+ * tab's top to that line's foot it fits between the turn banners' band and the pay banner (tests/fightLayout). */
 export const GUTTER_PANEL_W = 188;
-export const GUTTER_PANEL_Y = MACHINE_TOP + 124;
+export const GUTTER_PANEL_Y = MACHINE_TOP + 87;
+export const GUTTER_PANEL_H = 120;
+export const GUTTER_PANEL_LINE = 16;
+
+/**
+ * THE FIGHT SCREEN'S HOMES (user, 2026-11-10: labels piled on each other "when certain things trigger at the same
+ * time"). Everything that can show in a fight has one of these, and no two homes share pixels:
+ * - the HUD row (top): your chips and stake, the two HUD panels, each with its chips hanging from its bottom edge;
+ * - TURN_BANNER_Y: the band between the HUDs and the reels, for turn banners (an ability, OVERTIME!, LIGHTNING STORM);
+ * - CALLOUT_Y: a machine's top edge, for the small callouts about that machine (BLOCKED!, +2 CHIPS, THE DROP!); the
+ *   YOUR SPIN / THEIR SPIN ribbon hangs there too and steps aside for them; a second callout goes inside the top
+ *   reel row (TOP_ROW_Y), a third waits its turn;
+ * - HIT_Y: the big numbers of a hit, over the struck machine's top row (under the banner band); TOP_ROW_Y: a
+ *   machine's own big callout (MAKE IT RAIN!), in the same row under the reels' status badges;
+ * - the gutter between the machines: the boss's panel (GUTTER_PANEL_Y) or VS, then BUILD-UP at its foot. Its top
+ *   stays empty: the rooms hang their signs there;
+ * - PAY_BANNER_Y: the pay banner, over the machines' bottom row (the row that never pays), and THE PAY STACK hanging
+ *   under it (PAY_STACK); BUILD-UP's plate steps aside while they're up (it is what's being paid out);
+ * - a machine's bottom edge: your HOLD chip;
+ * - the bottom bar: AUTO, SPIN, SPEED; then the fight's own line (STATUS: SPIN n, OVERTIME, the boss or loop label);
+ *   then SOUND and PAUSE;
+ * - the left edge: the BUILD handle and the RELIC FEED.
+ */
+export const TURN_BANNER_Y = 205;
+export const CALLOUT_Y = MACHINE_TOP - 18;
+/** The least a float moves to get clear of another (a hit's second number goes this far down, or its own height). */
+export const CALLOUT_ROW = 32;
+export const HIT_Y = MACHINE_TOP + 84;
+/** A machine's own big callout (MAKE IT RAIN!, HIGH ROLLER X2!, MARKED): inside its top row, under the reels' status
+ * badges (FROZEN, JAM, JINX counts sit in the row's top 42 px) and over the payline. */
+export const TOP_ROW_Y = MACHINE_TOP + 64;
+/** Where words over a machine's top may sit: its edge, or inside the top reel row. (Two rows: the top reel row has
+ * room for one line of words under the badges. A third callout waits its turn: Director.popText.) */
+export const CALLOUT_ROWS = [CALLOUT_Y, TOP_ROW_Y];
+export const PAY_BANNER_Y = MACHINE_TOP + 283;
+/** A pay banner's pop stays over this line: the bottom bar's buttons start right under it. */
+export const PAY_FLOOR = 594;
+/** THE PAY STACK: never wider than this (it hangs between your HOLD chip and the enemy's reels), and never lower than
+ * `bottom` (the SPEED button starts under it). */
+export const PAY_STACK = { maxW: 300, bottom: 622 };
+/** The fight's own line in the bottom bar: its left edge (right of SPEED) and the bar's centre line; the boss or loop
+ * label sits on a second row under it. */
+export const STATUS = { x: 552, y: 648, row2: 684 };
 
 /** Screen rect of a machine's reel window. */
 export function reelWindow(side: SideId) {

@@ -89,6 +89,14 @@ export function fmtNum(n: number): string {
   return a >= 999.5e6 ? f(a / 1e9, 'B') : a >= 999.5e3 ? f(a / 1e6, 'M') : a >= 1e4 ? f(a / 1e3, 'K') : String(Math.round(n));
 }
 
+/**
+ * The layout probe (dev only: `dbg.probe`, used by the fight-UI stress harness): told every string and every kit plate
+ * (panel, chip, button) as it's drawn, in the context's own coordinates, so a tool can find words that overlap or sit
+ * half under a plate. Compiled out of the public build (`import.meta.env.DEV`).
+ */
+export type ProbeFn = (kind: 'text' | 'plate', label: string, ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => void;
+export const PROBE: { see: ProbeFn | null } = { see: null };
+
 export function drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, scale: number, color: string, o: TextOpts = {}): void {
   if (!text) return;
   const alpha = o.alpha ?? 1;
@@ -105,6 +113,7 @@ export function drawText(ctx: CanvasRenderingContext2D, text: string, x: number,
     ctx.translate(x, y);
     ctx.rotate(o.rot);
     ctx.drawImage(img, -ax, -ay, w, h);
+    if (import.meta.env.DEV && PROBE.see) PROBE.see('text', text, ctx, -ax, -ay, w, h);
   } else {
     // The string's top-left lands on a whole screen pixel (QA UI-06: centred text half a pixel off drew its font
     // pixels 1 and 2, or 2 and 3, screen pixels wide). Unrotated, unskewed transforms only; sizes don't change.
@@ -116,6 +125,7 @@ export function drawText(ctx: CanvasRenderingContext2D, text: string, x: number,
       top = (Math.round(m.d * top + m.f) - m.f) / m.d;
     }
     ctx.drawImage(img, left, top, w, h);
+    if (import.meta.env.DEV && PROBE.see) PROBE.see('text', text, ctx, left, top, w, h);
   }
   ctx.restore();
 }

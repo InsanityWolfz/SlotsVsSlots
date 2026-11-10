@@ -5,7 +5,8 @@ import { PAIR_PAY } from '../core/fightRules';
 import type { LineScore, ScoreGroup, Tier } from '../core/scoring';
 import { backOut, cubicIn, cubicOut, sineIn } from './ease';
 import { Banner, Projectile, SymbolWheel } from './fx';
-import { cellCenter, COLORS, MACHINE_H, MACHINE_TOP, reelWindow, W } from './layout';
+import { CALLOUT_Y, cellCenter, COLORS, MACHINE_H, MACHINE_TOP, PAY_BANNER_Y, reelWindow, TOP_ROW_Y, TURN_BANNER_Y, W } from './layout';
+import { climbPace, PayStack, STACK, type StackText } from './payStack';
 import type { SpriteId } from '../render/sprites';
 import { fmtNum, textWidth } from '../render/text';
 import { charmLevel, charmTag, charmValue, CHARM_COLOR, playerSymValue } from '../core/charms';
@@ -16,15 +17,15 @@ import type { Director } from './director';
 /** Base symbol values (the payline numbers). */
 const BASE = defaultConfig().base;
 
-/** Turn banners (an ability, OVERTIME!, LIGHTNING STORM) hang on the machines' top edge, where the YOUR SPIN / THEIR
- * SPIN plates are: the plates and the gutter's chips step aside while one is up (fightView), and pops in this band draw
- * over it. Low enough to clear the enemy's ability chip under its HUD (QA UI-01: at 172 a banner with a sub line cut it,
- * and the plates read "R SPIN", "VOUR"). */
-export const BANNER_Y = 182;
-/** PAIR! / JACKPOT! / MEGA WIN!: over the machines' bottom row, the one that doesn't pay. At BANNER_Y they covered both
- * HP bars as the hit landed; mid-machine a MEGA WIN sat on the winning payline (its third symbol and its pay number)
- * for 1.4 s (QA UI-07). */
-const PAY_BANNER_Y = MACHINE_TOP + (MACHINE_H * 5) / 6;
+/** Turn banners (an ability, OVERTIME!, LIGHTNING STORM) hang in the band between the HUDs and the reels (layout.ts
+ * TURN_BANNER_Y: under the HUDs' hanging chips, over the gutter's empty top). The YOUR SPIN / THEIR SPIN ribbons step
+ * aside while one is up (fightView). */
+export const BANNER_Y = TURN_BANNER_Y;
+// PAIR! / JACKPOT! / MEGA WIN! (layout.ts PAY_BANNER_Y): over the machines' bottom row, the one that doesn't pay. In the
+// turn banners' band they covered both HP bars as the hit landed; mid-machine a MEGA WIN sat on the winning payline (its
+// third symbol and its pay number) for 1.4 s (QA UI-07).
+/** A pay banner's top edge, zoomed or not: just under the payline row (its numbers stay readable). */
+export const PAY_TOP = MACHINE_TOP + (MACHINE_H * 2) / 3 + 4;
 /** THE PAYOUT LADDER: a pay this share of the HP bar it lands on is a BIG WIN, this much a MEGA WIN. */
 export const LADDER = { big: 0.3, mega: 0.65 };
 const TIER_MUL = { pair: defaultConfig().pairMult, triple: defaultConfig().tripleMult };
@@ -85,7 +86,9 @@ export function missedTriple(d: Director, side: SideId, want: SymbolId): void {
     d.bg(d.c.tween({ from: 0.9, to: 0, dur: 0.7, onUpdate: (v) => (fx.glow = v) }));
     d.bg(d.c.tween({ from: 1, to: 0, dur: 0.4, onUpdate: (v) => (fx.wobble = v) }));
     const p = cellCenter(side, 2, row);
-    d.bg(d.popText('SO CLOSE!', p.x - 20, row === 0 ? p.y - 30 : p.y + 30, 2, '#ff8a7a', 10, 0.4));
+    // On the machine's callout row, over reel 3 (the cell itself glows): beside the cell it sat under the pair's
+    // banner (the bottom row) or on a status badge (the top row).
+    d.bg(d.popText('SO CLOSE!', p.x, CALLOUT_Y, 2, '#ff8a7a', 10, 0.4));
     d.s.sounds.nearMissAww();
     return;
   }
@@ -196,7 +199,7 @@ export async function winPresentation(d: Director, side: SideId, score: LineScor
     const [a, b, c] = score.line;
     if (b === c && a !== b) {
       const p = cellCenter(side, 1.5, 0);
-      d.bg(d.popText('NO PAIR', p.x, p.y - 20, 2, COLORS.textDim, 12, 0.3));
+      d.bg(d.popText('NO PAIR', p.x, TOP_ROW_Y, 2, COLORS.textDim, 12, 0.3));
     }
     await d.c.wait(0.08);
     return;
@@ -256,6 +259,8 @@ export async function winPresentation(d: Director, side: SideId, score: LineScor
     { text: `${gross}!`, color: tier === 'triple' ? '#ff8a5a' : COLORS.goldLight },
     ...(g.cut ? [{ text: ` -${g.cut}`, color: '#ff5a5a' }] : []),
   ];
+  // The stack's first line: what paid (3 SWORDS).
+  const baseLabel = `${g.reels.length} ${symLabel(sym)}${g.reels.length === 1 ? '' : 'S'}`;
   const hold = size === 'mega' ? 1.3 : size === 'big' ? 0.9 : tier === 'triple' ? 0.45 : 0.3;
   if (size === 'small') {
     // A small pay: quick and light (a small jackpot still glows orange, without the confetti storm).
@@ -283,7 +288,7 @@ export async function winPresentation(d: Director, side: SideId, score: LineScor
         d.s.particles.burst({ x: c.x, y: c.y, count: 30, colors: ['#ffffff', '#ffd23f'], speed: [200, 520], angle: 0, spread: Math.PI * 2, gravity: 0, drag: 3, life: [0.25, 0.5], size: [2, 4], kind: 'spark' });
       }
     }
-    const show = payBanner(d, title, color, tier === 'triple' ? 1.25 : 1.15, hold, parts, climb, tier === 'triple' ? 4.5 : 4, 'small');
+    const show = payBanner(d, title, color, tier === 'triple' ? 1.25 : 1.15, hold, parts, climb, tier === 'triple' ? 4.5 : 4, 'small', baseLabel);
     if (climb) await show;
     else {
       d.bg(show);
@@ -311,16 +316,19 @@ export async function winPresentation(d: Director, side: SideId, score: LineScor
       size: [5, 9],
       kind: 'confetti',
     });
-    await payBanner(d, title, color, size === 'mega' ? 1.7 : 1.5, hold, parts, climb, size === 'mega' ? 6 : 5, size);
+    await payBanner(d, title, color, size === 'mega' ? 1.7 : 1.5, hold, parts, climb, size === 'mega' ? 6 : 5, size, baseLabel);
     d.s.camera.dimTarget = 0;
   }
 }
 
 /**
  * The pay banner. With a climb, the sub line counts up through each step (LABEL VALUE), a rising ding a step, then
- * slams on the total; without one it builds the short sum part by part.
+ * slams on the total; without one it builds the short sum part by part. Each step the count leaves drops into THE PAY
+ * STACK under the banner (payStack.ts), so the whole chain can be read after the count has gone by; the banner's hold
+ * is as long as it was, and the stack stays a second longer while the fight goes on.
  */
-export async function payBanner(d: Director, title: string, color: string, overshoot: number, hold: number, parts: { text: string; color: string }[], climb: ClimbStep[] | null, textScale: number, size: 'small' | 'big' | 'mega'): Promise<void> {
+export async function payBanner(d: Director, title: string, color: string, overshoot: number, hold: number, parts: { text: string; color: string }[], climb: ClimbStep[] | null, textScale: number, size: 'small' | 'big' | 'mega', base = ''): Promise<void> {
+  d.clearStack();
   if (!climb) return d.banner(title, color, overshoot, hold, parts, PAY_BANNER_Y, textScale);
   if (!d.s.juice.banners) return;
   const b = d.s.fx.add(new Banner(title, color, W / 2, PAY_BANNER_Y, textScale));
@@ -332,25 +340,55 @@ export async function payBanner(d: Director, title: string, color: string, overs
       { text: `${fmtNum(Math.round(value))}${end ? '!' : ''}`, color: end ? color : '#ffffff' },
     ]);
   show(climb[0].label, climb[0].value);
+  // (Its pop, each step's punch and a BIG WIN's zoom grow down from its top edge, off the payline's numbers.)
+  b.pinTop = PAY_TOP;
+  d.clearUnder(b);
+  // THE PAY STACK: one line per step, and the total's line when the banner closes.
+  const line = (i: number): StackText => ({ label: climb[i].label || base, value: fmtNum(Math.round(climb[i].value)) });
+  const total = climb[climb.length - 1].value;
+  const head: StackText = { label: title, value: fmtNum(Math.round(total)) };
+  const stack = d.s.fx.add(new PayStack(W / 2, b.restBottom(), PayStack.width(climb.map((_, i) => line(i)), head)));
+  // (Where it hangs under a banner that isn't zoomed: its usual place.)
+  const top = Math.min(stack.top, PAY_TOP + 99);
+  d.payStack = stack;
   await d.c.tween({ from: 0, to: overshoot, dur: 0.22, ease: backOut(2), onUpdate: (v) => (b.scale = v) });
   await d.c.tween({ from: overshoot, to: 1, dur: 0.12, ease: sineIn, onUpdate: (v) => (b.scale = v) });
-  // Each step: count from the last value to this one; bigger moments climb slower.
-  const per = size === 'mega' ? 0.24 : size === 'big' ? 0.18 : 0.11;
+  // Each step: the last one drops into the stack, and the count runs from its value to this one. A long chain shares
+  // one time budget (climbPace), so it climbs faster instead of adding seconds.
+  const per = climbPace(climb.length - 1, size);
   for (let i = 1; i < climb.length; i++) {
     const from = climb[i - 1].value;
     const st = climb[i];
     d.s.sounds.ding(i + 1);
+    stack.push(line(i - 1), COLORS.goldLight);
+    // BUILD-UP's plate pours into the pay as its step counts (the gutter plate empties here, not after the banner).
+    if (/ BUILD-UP$/.test(st.label)) d.cashBuildUp();
     await d.c.tween({ from, to: st.value, dur: per, ease: cubicOut, onUpdate: (v) => show(st.label, v) });
     d.bg(d.c.tween({ from: 1.08, to: 1, dur: 0.12, onUpdate: (v) => (b.scale = v) }));
   }
-  // The slam: the total, in the banner's colour.
-  const total = climb[climb.length - 1].value;
+  // The slam: the total, in the banner's colour (the last step joins the stack).
+  stack.push(line(climb.length - 1), COLORS.goldLight);
   show('', total, true);
   d.s.sounds.coin(5);
   d.bg(d.c.tween({ from: 1.2, to: 1, dur: 0.18, ease: backOut(3), onUpdate: (v) => (b.scale = v) }));
   await d.c.wait(hold);
+  // The banner closes into the stack: its total is the top line now (under a zoomed banner the stack hung lower, with
+  // fewer lines: it slides up to its usual place and shows them all).
+  stack.push(head, color, true);
+  stack.moveTo(top);
   await d.c.tween({ from: 1, to: 0, dur: 0.15, ease: cubicIn, onUpdate: (v) => ((b.scale = 0.6 + 0.4 * v), (b.alpha = v)) });
   d.s.fx.remove(b);
+  // It stays readable while the hit flies (real seconds: the clock's speed is taken out), then fades. Nothing waits
+  // for it, and the next pay (or a skip) clears it at once.
+  d.bg(
+    d.c
+      .wait(STACK.linger * d.c.speed)
+      .then(() => (d.payStack === stack ? d.c.tween({ from: 1, to: 0, dur: STACK.fade, onUpdate: (v) => (stack.alpha = v) }) : undefined))
+      .then(() => {
+        d.s.fx.remove(stack);
+        if (d.payStack === stack) d.payStack = null;
+      }),
+  );
 }
 
 /** LUCKY gilds that turned WILD on this spin. */

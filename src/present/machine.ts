@@ -69,6 +69,8 @@ export class MachineView {
   betGlow = [0, 0, 0];
   /** Payline numbers, one per reel (null = none shown). */
   tags: (PayTag | null)[] = [null, null, null];
+  /** THE WHEEL's bet stacks, per reel: 0 while a banner is open over that reel's foot (fightView), 1 otherwise. */
+  betsShow = [1, 1, 1];
   /** The Dealer's face-up card on a payline cell (flip 0..1). */
   lineCard: { reel: number; card: 'bust'; flip: number } | null = null;
   private spun = false;
@@ -300,7 +302,9 @@ export class MachineView {
   private drawBets(ctx: CanvasRenderingContext2D, time: number): void {
     for (let r = 0; r < REELS; r++) {
       const n = this.bets[r];
-      if (n <= 0) continue;
+      if (n <= 0 || this.betsShow[r] < 0.02) continue;
+      ctx.save();
+      ctx.globalAlpha *= this.betsShow[r];
       const cx = PITCH * (r + 0.5);
       // Up off the bottom edge: the HOLD chip hangs there (the middle stack covered NO HOLDS LEFT: playtest).
       const y = MACHINE_H - 26;
@@ -321,6 +325,7 @@ export class MachineView {
       ctx.fillStyle = COLORS.outline;
       ctx.fillRect(cx + 12, y - 6, 26, 20);
       drawText(ctx, `X${n}`, cx + 25, y + 4, 2, '#ffe08a');
+      ctx.restore();
     }
   }
 

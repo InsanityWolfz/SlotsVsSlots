@@ -2,7 +2,7 @@
 import { UNIT } from '../core/config';
 import { backOut, cubicIn, sineIn, sineInOut, sineOut } from './ease';
 import { Banner, Bubble, Projectile } from './fx';
-import { cellCenter, COLORS, H, MACHINE_TOP, W } from './layout';
+import { CALLOUT_Y, cellCenter, COLORS, H, HIT_Y, MACHINE_CX, MACHINE_TOP, W } from './layout';
 import { artId, type SpriteId } from '../render/sprites';
 import { fmtNum } from '../render/text';
 import { RELICS } from '../core/relics';
@@ -56,7 +56,7 @@ export async function attack(d: Director, e: Ev<'attack'>): Promise<void> {
   if (e.note === 'drain') d.bg(d.popText('DRAIN!', target.x - 90, MACHINE_TOP - 22, 2, '#ff5a7a', 14, 0.35));
   if (e.note === 'mimic') d.bg(d.popText('COPYCAT!', target.x - 90, MACHINE_TOP - 22, 2, '#ffb0ff', 14, 0.35));
   if (e.note === 'echo') d.bg(d.popText('ECHO!', target.x + 90, MACHINE_TOP - 22, 2, '#fff27a', 14, 0.35));
-  if (e.hpDamage > 0) d.bg(d.popText(`-${fmtNum(e.hpDamage)}`, target.x, MACHINE_TOP + 40, d.tierScale(), color, 60));
+  if (e.hpDamage > 0) d.bg(d.popText(`-${fmtNum(e.hpDamage)}`, target.x, HIT_Y, d.tierScale(), color, 60));
   // (Higher than the damage numbers: a blocked hit then a landed one in the same spin read BLC-10D!.)
   else d.bg(d.popText('BLOCKED!', target.x, MACHINE_TOP + 2, 3, '#9fd0ff', 40));
   d.settle(e.from, e.reels);
@@ -68,11 +68,13 @@ export async function shieldGain(d: Director, e: Ev<'shieldGain'>): Promise<void
     // Saved chips paying out as shield vs the House.
     const h = d.s.huds.player;
     const sb = h.shieldBar();
-    const chip = d.s.fx.add(new Projectile('chipShield', sb.x + 20, sb.y - 30, 0));
+    // The chip lands on the shield icon; the words go on your machine's callout row (over the HUD they covered your
+    // name and HP). INSURANCE POLICY's shield isn't chips: it says so.
+    const chip = d.s.fx.add(new Projectile('chipShield', sb.x - 14, sb.y + sb.h / 2, 0));
     d.s.sounds.coin(5);
     d.s.sounds.shieldGain(e.amount / UNIT);
-    await d.c.tween({ from: 0, to: 3, dur: 0.2, ease: backOut(3), onUpdate: (v) => (chip.scale = v) });
-    d.bg(d.popText(`CHIPS +${e.amount} SHIELD`, sb.x + sb.w / 2 + 20, sb.y - 30, 2, '#9fd0ff', 12, 0.4));
+    await d.c.tween({ from: 0, to: 2.5, dur: 0.2, ease: backOut(3), onUpdate: (v) => (chip.scale = v) });
+    d.bg(d.popText(e.source === 'insurance' ? `+${e.amount} SHIELD` : `CHIPS +${e.amount} SHIELD`, MACHINE_CX.player, CALLOUT_Y, 2, '#9fd0ff', 12, 0.4));
     d.decay(h, 'shieldFlash', 1, 0.3);
     await d.c.to(h, 'shield', e.total, 0.25, sineOut);
     d.bg(d.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (chip.alpha = v) }).then(() => d.s.fx.remove(chip)));
@@ -133,6 +135,7 @@ export async function death(d: Director, e: Ev<'death'>): Promise<void> {
 }
 
 export async function fightEnd(d: Director, e: Ev<'fightEnd'>): Promise<void> {
+  d.clearStack();
   const win = e.winner === 'player';
   if (win) d.s.sounds.victory();
   else d.s.sounds.defeat();

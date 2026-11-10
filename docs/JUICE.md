@@ -35,6 +35,23 @@ fx.ts, camera.ts) and `src/audio`; this file keeps the WHY, so new features feel
 - A callout that can fire in bursts gets a fixed home, not a floating text: relics that fire show in the RELIC FEED,
   rows left of your machine drawn over everything, newest on top; the same relic again counts up (X2) instead of
   adding a row. Floating texts pick a spot once and drift, so several at once pile up or hide behind panels.
+- **Every fight label has one home** (user, 2026-11-10: labels piled up "when certain things trigger at the same
+  time"). The homes are listed in `src/present/layout.ts` (THE FIGHT SCREEN'S HOMES) and `tests/fightLayout.test.ts`
+  checks they share no pixels: the HUD row; the turn banners' band under it; each machine's callout row on its top
+  edge; the hit numbers' row; the gutter (the boss's panel or VS, BUILD-UP at its foot; its top stays empty for the
+  rooms' signs); the pay banner over the bottom reel row with THE PAY STACK under it; the HOLD chip; the bottom bar
+  (AUTO, SPIN, SPEED, then the fight's own line: SPIN n, OVERTIME, the boss or loop label).
+- **Whatever opens on a home takes it; what lived there steps aside** (fades out, comes back after): a turn ribbon
+  for a callout on its edge, the boss's panel for a banner over the reels' middle, BUILD-UP and the HOLD chip for the
+  pay banner. Nothing is ever half under something else.
+- **A float is placed, not dropped** (`Director.popText`): as wide as the reels at most, on the next free row if
+  another float or a banner is already there, never on the payline's numbers.
+- **A count that goes by fast leaves a trail** (THE PAY STACK, `payStack.ts`): the pay banner shows the step that's
+  counting, large; each finished step drops a line under it (newest on top, older ones dimmer, four at most); the
+  list outlives the banner by about a second of real time. A long chain climbs faster (one time budget), it doesn't
+  add seconds.
+- The stress harness is `tools/shots/fight/` (it needs the dev build: `dbg.probe`): it plays long fights on every
+  machine against every boss and trick and lists the words that overlap, and captures the scripted stress scenes.
 
 ## Skip and safety
 - **Every presentation can be skipped** (a wait that polls a skip flag), jumping straight to its end state.
