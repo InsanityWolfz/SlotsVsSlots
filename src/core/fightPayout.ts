@@ -241,22 +241,29 @@ export function cellCharms(f: Fight, me: Combatant, g: ScoreGroup, events: Comba
   const n = (e: Enh) => g.reels.filter((r) => f.enhsAt(me, r).includes(e)).length;
   const v = (e: Enh) => charmValue(e, f.charmLvl(me, e));
   const kind = f.meter?.kind;
-  if (kind === 'jackpots' && n('trick')) fillMeter(f, me, n('trick') * v('trick'), g.reels, events);
+  const copies = charmCopies(g);
+  if (kind === 'jackpots' && n('trick')) fillMeter(f, me, n('trick') * v('trick') * copies, g.reels, events);
   const pays = g.amount > 0 && (PAYING.has(g.symbol) || g.symbol === 'goldbar');
   if (pays && n('lucre') && f.lucreChips < v('lucre')) {
-    const got = Math.min(LUCRE_CHIPS, v('lucre') - f.lucreChips);
+    const got = Math.min(LUCRE_CHIPS * copies, v('lucre') - f.lucreChips);
     f.lucreChips += got;
     events.push({ type: 'lucreChips', side: me.side, reels: g.reels, amount: got, total: f.lucreChips });
   }
 }
 
-/** VAMP: vamp cells in a group that pays heal you (once per group). */
+/**
+ * A jackpot of one cell (JOKER's meter payoff) counts that cell's Charm three times, as if it had landed on all three
+ * reels (user, 2026-11-10: "that's a jackpot for the vamp charm... that's how all the charms should be").
+ */
+export const charmCopies = (g: ScoreGroup): number => (g.jackpot && g.reels.length === 1 ? 3 : 1);
+
+/** VAMP: vamp cells in a group that pays heal you (once per group; a one-cell jackpot heals three times). */
 export function vampHeal(f: Fight, me: Combatant, g: ScoreGroup, events: CombatEvent[]): void {
   if (f.over || g.amount <= 0 || f.lineTwo) return;
-  // Once per group (a one-cell jackpot too: JOKER's payoff cells healed x3, EXPERT_PLAYTEST_11 D2), however many vamp cells it holds (stacked vamp was the auto-pick: EXPERT_PLAYTEST_10 D1).
+  // Once per group, however many vamp cells it holds (stacked vamp was the auto-pick: EXPERT_PLAYTEST_10 D1).
   const any = g.reels.some((r) => f.enhsAt(me, r).includes('vamp'));
   const vamp = any ? charmValue('vamp', f.charmLvl(me, 'vamp')) : 0;
-  if (vamp) f.heal(me, vamp, 'vamp', events);
+  for (let i = 0; vamp && i < charmCopies(g) && !f.over; i++) f.heal(me, vamp, 'vamp', events);
 }
 
 /** MIDAS / JAX: the full meter pays off this spin — it empties, and you heal. */

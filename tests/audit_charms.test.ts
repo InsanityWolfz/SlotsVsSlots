@@ -289,6 +289,16 @@ describe('AUDIT: VAMP "HEALS 20 WHEN ITS GROUP HITS (ONCE PER GROUP)" / card "+2
     expect(vampHeals('knight', { strips: KNIGHT(), gilded: [0, 1, 2].map((r) => on(r, 'sword', 'vamp')) }, SSS)).toEqual([20]);
   });
 
+  it("JOKER's meter jackpot counts the cell's Charm three times: one VAMP ace heals 20 three times (user, 2026-11-10)", () => {
+    const arm = (f: Fight) => {
+      f.sides.player.armed = true;
+      f.sides.player.energy = f.meterCost;
+    };
+    expect(vampHeals('joker', { strips: JOKER(), gilded: [on(0, 'ace', 'vamp')] }, ['ace', 'shield', 'shield'], arm)).toEqual([20, 20, 20]);
+    // Without the meter it is one cell in a plain pay: one heal.
+    expect(vampHeals('joker', { strips: JOKER(), gilded: [on(0, 'ace', 'vamp')] }, ['ace', 'shield', 'shield'])).toEqual([20]);
+  });
+
   it('two separate groups with VAMP heal twice', () => {
     // inOrder: [sword, shield, sword] is three lone groups.
     expect(vampHeals('knight', { strips: KNIGHT(), gilded: [on(0, 'sword', 'vamp'), on(2, 'sword', 'vamp')] }, ['sword', 'shield', 'sword'])).toEqual([20, 20]);
@@ -495,6 +505,17 @@ describe('AUDIT: TRICK "+30 TO YOUR JACKPOT METER WHEN IT LANDS" (JOKER)', () =>
   it('two TRICK cells landing: +60 (per cell)', () => {
     const line: SymbolId[] = ['ace', 'ace', 'shield'];
     expect(meterAfter([on(0, 'ace', 'trick'), on(1, 'ace', 'trick')], line) - meterAfter([], line)).toBe(60);
+  });
+
+  it("on JOKER's meter jackpot it counts three times: +90 (user, 2026-11-10)", () => {
+    const after = (gilded: Gild[]) => {
+      const f = make('joker', { strips: JOKER(), gilded });
+      f.sides.player.armed = true;
+      f.sides.player.energy = f.meterCost;
+      spin(f, ['ace', 'shield', 'shield']);
+      return f.sides.player.energy;
+    };
+    expect(after([on(0, 'ace', 'trick')]) - after([])).toBe(90);
   });
 
   it('on a shield too', () => {

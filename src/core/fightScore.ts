@@ -6,6 +6,7 @@ import { stakeOf } from './stakes';
 import { overtimeMul, TUNE } from './enemies';
 import { multFor, scoreLine, type LineScore, type ScoreGroup } from './scoring';
 import type { Fight } from './fight';
+import { charmCopies } from './fightPayout';
 import { MIDAS, PAY, VOLUME, RAIN, RAKE_CUT, DEALER_RULES, PAYING, OVERTIME_HITS, type Combatant, other } from './fightRules';
 
 export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore {
@@ -133,7 +134,7 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       }
     }
     // A jackpot of one cell counts that cell's charm three times.
-    const copies = g.jackpot && g.reels.length === 1 ? 3 : 1;
+    const copies = charmCopies(g);
     let gold = 0;
     let anyGold = false;
     let anyGlass = false;
