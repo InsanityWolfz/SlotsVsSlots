@@ -49,8 +49,8 @@ sits beside the HP bar in the gutter, on a plate, and heals add into one number 
 number); the next fight's title and an encounter's name are on plates (they ran into the rooms' signs); THE DOORMAN
 steps out of view under the draft (the route track's boss stop sat on his head); the act 2 waiter, the pit boss and
 the waitress stand wholly between the two machines; the full stop is a square dot (X1.5 read X1_5); NEW SLOT MACHINES;
-no trash bags beside PAUSE. Also (user, 2026-11-10): the four machines' first-fight tips are one short line each (they were
-"too wordy... scream ai generated"), and the pay names GOLD as a Charm (X2 GOLD CHARM, X6 GOLD CHARMS). Left as they are (user): the Charm numbers, and JOKER's meter jackpot has no banner. For
+no trash bags beside PAUSE. Also (user, 2026-11-10): every tutorial box and the four machines' first-fight tips are short plain sentences with no
+commas, semicolons or colons (they were "too wordy... scream ai generated"; "this is a video game not a memo"), and the pay names GOLD as a Charm (X2 GOLD CHARM, X6 GOLD CHARMS). Left as they are (user): the Charm numbers, and JOKER's meter jackpot has no banner. For
 the next balance batch: one TRICK cell in a meter jackpot fills 90 of 100, and with ENCORE the meter re-arms at once;
 OVERTIME is hard on slow act 1 fights (TESLA 23 spins on AUTO); "BIG WIN! 50" in fight 1 (the ladder is by HP share). The capsule, trailer and screenshots wait (user, 2026-11-10: "ignore that... for now").
 
