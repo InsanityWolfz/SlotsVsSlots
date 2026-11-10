@@ -49,6 +49,13 @@ rope posts, gilded double doors), THE DOORMAN standing beside the doors from the
 Act 3 approved (user, 2026-11-10: "Act 3 looks good"; https://claude.ai/artifact/UxGxsoovHS5z2K8QBZznXK, branch `journey-act3`: tables and players lining the aisle to THE DEALER's table, one patron kit shared with act 2); a last pass makes his table grow more per station and its signs match act 2's. Act 2 approved (user, 2026-11-10: "Act 2 looks good"; https://claude.ai/artifact/SLrhWxy2wEX9BfhXtP16LB, branch `journey-act2`: 2-3 slot banks a side facing you with stools and players, the table games pit across the full width growing station by station, a landmark a station, one sign system, the progressive board over the roulette). In progress: merging the three acts (branch `journey-all`), then ENDLESS (the night closing down) and THE OWNER's room. Was: act 2 in rework (act 2: slot banks facing the player with stools and players, a bigger wheel; act 3: patrons at
 the portraits' standard, stepped light, walls dressed). They ship together with THE DOORMAN's rename (branch
 `doorman-rename`; the two merge cleanly with `main`, 796 tests).
+**The journey shipped (user, 2026-11-10: "Looks good for endless and the owner. Now we can push everything to main and
+to the demo"):** the three acts' journeys, THE DOORMAN (rename, portrait, figure, entrance), ENDLESS after hours (each
+loop later in the night; THE DOORMAN's lobby from inside) and THE OWNER under the last spotlight on the empty floor
+(https://claude.ai/artifact/8AK5u3YLGWbD3vA6BJzAmN). 801 tests, fuzz clean. Follow-ups: the lobby's LOOP chip covers
+THE DOORMAN's legs; THE OWNER's torso sits under the enemy-turn SPIN plate; split `src/render/roomCasinoFloor.ts`
+(1,078 lines) next time it's touched; the menus still show the old floor. Now unblocked: the capsule, trailer and
+screenshots in the new world.
 **Capsule and trailer on hold** until the new rooms are done (user: "so we can get some really good art"); the
 directions so far: https://claude.ai/artifact/DWvxNB3zHD8zf96xZA3FJX (branch `call9-art`, from `art-wip`: duel
 variants, trailer cut 3, store text) and https://claude.ai/artifact/PM1uuVfPi6LEJButEJTHv8 (branch `capsule-v2`: VS
