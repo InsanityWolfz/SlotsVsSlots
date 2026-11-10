@@ -35,7 +35,8 @@ export function drawMenuStreet(ctx: CanvasRenderingContext2D, time: number): voi
   if (!streetC) [streetC, streetG] = mk(RW * 2, RH * 2);
   const sg = streetG!;
   sg.clearRect(0, 0, RW * 2, RH * 2);
-  drawStreet(sg, { station: 0, time, enemy: null });
+  // (The bar's sign hangs lower here, below the logo and the streetlamp's arm, so the whole word BAR reads.)
+  drawStreet(sg, { station: 0, time, enemy: null, barDrop: 60 });
   const s = MENU_STREET_SHIFT;
   ctx.save();
   ctx.imageSmoothingEnabled = false;
