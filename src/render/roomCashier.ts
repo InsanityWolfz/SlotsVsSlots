@@ -150,14 +150,13 @@ const radio = () =>
     px(g, 22, 14, 3, 3, l);
     px(g, 27, 14, 3, 3, l);
   });
-/** A paper price tag on its string (the string runs up to its peg), its price legible. */
-function tag(g: CanvasRenderingContext2D, x: number, y: number, price: string): void {
-  const w = textWidth(price, ONE) + 6;
+/** A paper tag on its string (the string runs up to its peg), a pencil scribble on it, no number (the user: numbers on
+ * the scenery read like the shelf's real prices). */
+function tag(g: CanvasRenderingContext2D, x: number, y: number, w: number): void {
   px(g, x + 2, y - 4, 1, 4, R);
-  px(g, x, y, w + 2, 11, K);
-  px(g, x + 1, y + 1, w, 9, T);
-  px(g, x + 1, y + 1, w, 1, '#ffffff');
-  drawText(g, price, x + 1 + w / 2 + 1, y + 6, ONE, K, { outline: null });
+  px(g, x, y, w + 2, 9, K);
+  px(g, x + 1, y + 1, w, 7, '#b8ad9a');
+  for (let i = 0; i < w - 6; i += 2) px(g, x + 4 + i, y + 4 + (i % 4 === 0 ? 0 : 1), 2, 1, '#6d6482');
 }
 /** The case's pawned jewellery: a velvet bust wearing a gold chain, an open ring box, a wristwatch on its cushion. */
 const bust = () =>
@@ -397,18 +396,18 @@ function drawWall(g: CanvasRenderingContext2D, v: CashierVenue, s: Style, late: 
     // Left: the guitar on its peg, its tag. Right: the trumpet and the pocket watch, their tags; the radio, the sign.
     px(g, 199, 76, 2, 3, l);
     g.drawImage(guitar(), 184, 78);
-    tag(g, 218, 98, '40');
+    tag(g, 218, 98, 14);
     px(g, 574, 84, 2, 3, l);
     px(g, 612, 84, 2, 3, l);
     g.drawImage(trumpet(), 570, 87);
-    tag(g, 592, 106, '85');
+    tag(g, 592, 106, 14);
     px(g, 578, 106, 2, 3, l);
     g.drawImage(watch(), 572, 108);
-    tag(g, 592, 121, '9');
+    tag(g, 592, 121, 10);
     // Under the counter shelf, beside the names: NO REFUNDS on the left, the radio on its bracket on the right.
     px(g, 169, 150, 62, 16, K);
-    px(g, 170, 151, 60, 14, T);
-    drawText(g, 'NO REFUNDS', 200, 158, ONE, R, { outline: null });
+    px(g, 170, 151, 60, 14, '#5a4c44');
+    drawText(g, 'NO REFUNDS', 200, 158, ONE, '#2a1418', { outline: null });
     px(g, 575, 168, 40, 2, '#5e3a22');
     g.drawImage(radio(), 579, 146);
   } else if (v === 'cage' || v === 'closing') {
