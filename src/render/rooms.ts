@@ -382,7 +382,7 @@ export class Rooms {
     const late = endlessLate(s.loop);
     if (ep.kind === 'floor') {
       drawFloorStation(ctx, { station: ep.station, time, late, exit: ep.exit });
-      drawNightCrew(ctx, 'floor', late, time);
+      drawNightCrew(ctx, 'floor', late, time, ep.station);
     } else if (ep.kind === 'hr') {
       drawHighRoller(ctx, { place: ep.station, time, late });
       drawNightCrew(ctx, 'hr', late, time);

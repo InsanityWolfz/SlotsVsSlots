@@ -55,7 +55,7 @@ const PORTER = { skin: '#f4c09a', hair: '#1a1014', coat: '#5a1a2a', legs: '#1a14
 
 /** The closing shift over a station (from late 0.6): a cleaner mopping by the aisle; later (0.8) a porter beside
  * his stack of chairs. `where`: the floor's aisle or the high-roller room's. Drawn over the station, under the HUD. */
-export function drawNightCrew(ctx: CanvasRenderingContext2D, where: 'floor' | 'hr', late: number, t: number): void {
+export function drawNightCrew(ctx: CanvasRenderingContext2D, where: 'floor' | 'hr', late: number, t: number, station = 0): void {
   if (late < 0.6) return;
   const g = cg;
   g.clearRect(0, 0, RW, RH);
@@ -63,7 +63,8 @@ export function drawNightCrew(ctx: CanvasRenderingContext2D, where: 'floor' | 'h
   // aisle): both hands on the pole, the mop's head drawn slowly back and forth over the carpet in front of them.
   const z = where === 'floor' ? 2.9 : 2.7;
   const h = Math.round(270 / z);
-  const fx = Math.round(xAt(-84, z));
+  // (At the floor's station 1 they stand clear of the CHANGE machine at the aisle's left edge.)
+  const fx = Math.round(xAt(where === 'floor' && station === 1 ? -40 : -84, z));
   const fy = Math.round(yAt(0, z));
   drawPatron(g, fx, fy, h, CLEANER, 'mop', false, 0.8);
   const sweep = Math.round(Math.sin(t * 1.5) * h * 0.07);

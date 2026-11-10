@@ -712,7 +712,8 @@ export function drawFloorStation(ctx: CanvasRenderingContext2D, o: FloorScene): 
     if (late < 0.9) pool(g, CX, yAt(116, zFar + 0.45), 110 / zh, 30 / zh, Yl, 0.16);
   }
 
-  if (st.mark === 'waitress') drawWaiter(g);
+  // (The drinks waiter has gone home by the time the closing shift mops his patch of the aisle.)
+  if (st.mark === 'waitress' && late < 0.6) drawWaiter(g);
 
   // The toppers' bulbs: three on each lit topper, blinking slowly out of step (none on dark machines; none through
   // the head of a player sitting in front of them).

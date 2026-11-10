@@ -21,7 +21,7 @@ and the demo). Done in the last two days, details in the paragraphs below:
   `slotvslot.run.v1.failed` (or the report) from the user's browser; a reload-at-every-save-point test
   (`tools/out/qa/func/06all.cjs`, not committed) found nothing: 174 reload + CONTINUE checks over whole runs on KNIGHT,
   TESLA, BANKROLL and JOKER (WHITE to GREEN, into ENDLESS), 0 failures.
-Open, in order: (1) the capsule, trailer and screenshots in the new world (on hold until now; the old directions are
+Open, in order: (1) the capsule, trailer and screenshots in the new world (on hold again, user 2026-11-10; the old directions are
 on branches `call9-art` (duel capsule variants the user called "sloppy... pasted on", trailer cut 3, the store text
 draft `art/steam/store_text.md`) and `capsule-v2` (VS screen / fight night / payline sketches); the user wants it
 built from the new rooms, e.g. the duel at the casino's door); (2) small follow-ups: split
@@ -31,6 +31,15 @@ bunch of storage units, but I don't hate it" (kept); (3) Steamworks still needs 
 How the user works now: every art step goes to them as an artifact gallery with screenshots to approve; agents build
 in worktrees on branches, and approved work merges to `main` with `npm test`, `npx tsc --noEmit -p .`, both builds and a
 browser check. If usage runs out mid-task, schedule a check-in to resume after the reset.
+
+**In progress (2026-11-10, after the user's playtest of the new rooms):** live on `main`: nobody walks across the aisles
+(the crossers had no legs), the staff and card players face you with real faces (the side profiles "looked really
+off"; https://claude.ai/artifact/SWK4wbqpMzJY47TPtmonc6; still drawn by code, hand-drawn sprites if the user wants
+portrait quality), unnatural motion fixed (user: "background motion is ok, I just didn't want anything that didn't feel
+natural"), `roomCasinoFloor.ts` split (THE WHEEL's room is `roomWheel.ts`); JOKER's meter jackpot counts a cell's Charm
+three times and every VAMP cell in a pay heals (HP_GAME.md). Being built (branch `ui-declutter`): the fight screen with
+every label on at once, so nothing overlaps, and the win text slowed into a stacked column you can read; then
+playtests on the new art. The capsule, trailer and screenshots wait (user, 2026-11-10: "ignore that... for now").
 
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
 text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about
