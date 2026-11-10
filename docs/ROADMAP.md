@@ -52,8 +52,8 @@ the portraits' standard, stepped light, walls dressed). They ship together with 
 **The journey shipped (user, 2026-11-10: "Looks good for endless and the owner. Now we can push everything to main and
 to the demo"):** the three acts' journeys, THE DOORMAN (rename, portrait, figure, entrance), ENDLESS after hours (each
 loop later in the night; THE DOORMAN's lobby from inside) and THE OWNER under the last spotlight on the empty floor
-(https://claude.ai/artifact/8AK5u3YLGWbD3vA6BJzAmN). 801 tests, fuzz clean. Follow-ups: the lobby's LOOP chip covers
-THE DOORMAN's legs; THE OWNER's torso sits under the enemy-turn SPIN plate; split `src/render/roomCasinoFloor.ts`
+(https://claude.ai/artifact/8AK5u3YLGWbD3vA6BJzAmN). 801 tests, fuzz clean. Fixed (2026-11-10): THE DOORMAN's lobby
+raised clear of the LOOP chip, THE OWNER raised clear of the turn plates. Follow-ups: split `src/render/roomCasinoFloor.ts`
 (1,078 lines) next time it's touched; the menus still show the old floor. Now unblocked: the capsule, trailer and
 screenshots in the new world.
 **Menus and the Cashier in the new world (user, 2026-11-10: "I love everything except the run over screen... everything
