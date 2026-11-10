@@ -69,6 +69,12 @@ https://claude.ai/artifact/344CX2maFTUro3WV53wTTh, the in-run screens https://cl
 with act 1 renamed THE STREET (was THE ALLEY), the pawn shop's tags without numbers and NO REFUNDS dimmed, and the
 menus' BAR sign clear of the logo. The machine select's pawn shop "reads more like a bunch of storage units, but I
 don't hate it" (user): kept for now.
+**RUN OVER: you get thrown out (user, 2026-11-10: "I like the run over art plan, let's build it"):** no death, no
+blackout. Your Slot Machine gets thrown out, landing dented and sparking. Act 1: KNOCKED OUT, in the gutter at the
+station where you fell. Acts 2-3: THROWN OUT!, tumbling out of the casino's doors onto the carpet, THE DOORMAN dusting
+off his gloves. ENDLESS: CLOSING TIME, the doors at dawn with the marquee switching off. Wins unchanged. The screen's
+content (who got you, the score count-up, best hit, RUN LOG) stays; only the scene and a landing beat change. In
+progress on branch runover-v1.
 **Capsule and trailer on hold** until the new rooms are done (user: "so we can get some really good art"); the
 directions so far: https://claude.ai/artifact/DWvxNB3zHD8zf96xZA3FJX (branch `call9-art`, from `art-wip`: duel
 variants, trailer cut 3, store text) and https://claude.ai/artifact/PM1uuVfPi6LEJButEJTHv8 (branch `capsule-v2`: VS
