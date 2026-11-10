@@ -178,24 +178,43 @@ function label(g: CanvasRenderingContext2D, z: number, l0: number, l1: number, h
 }
 
 /** The progressive board: hung over the roulette (zp), a gold frame, black inside; its letters and digits are live. */
-const BOARD = { l: 250, h0: 460, h1: 552 };
+const BOARD = { l: 250, h0: 448, h1: 556 };
+/** The board's frame: the gold rim, a brass band, then the black face (world units in from the edge). */
+const BOARD_RIM = 2;
+const BOARD_IN = 4;
 function boardPanel(g: CanvasRenderingContext2D, zp: number): void {
   for (const lat of [-170, 170]) face(g, zp, lat - 2, lat + 2, BOARD.h1, CEIL, k);
   face(g, zp, -BOARD.l, BOARD.l, BOARD.h0, BOARD.h1, K, 1);
   face(g, zp, -BOARD.l, BOARD.l, BOARD.h0, BOARD.h1, G);
-  face(g, zp, -BOARD.l + 8, BOARD.l - 8, BOARD.h0 + 8, BOARD.h1 - 8, g8);
-  face(g, zp, -BOARD.l + 12, BOARD.l - 12, BOARD.h0 + 12, BOARD.h1 - 12, '#0a0612');
+  face(g, zp, -BOARD.l + BOARD_RIM, BOARD.l - BOARD_RIM, BOARD.h0 + BOARD_RIM, BOARD.h1 - BOARD_RIM, g8);
+  face(g, zp, -BOARD.l + BOARD_IN, BOARD.l - BOARD_IN, BOARD.h0 + BOARD_IN, BOARD.h1 - BOARD_IN, '#0a0612');
 }
+/** The font's letter heights on the room's grid (7px glyphs: x1.3 at size 1, x2 at size 2), and their outline's. */
+const TXT_H = { 1: 9.1, 2: 14 } as const;
+const TXT_O = { 1: 1.3, 2: 2 } as const;
+/** The board's rows: PROGRESSIVE on its own row and the number on its own, an equal gap above, between and below,
+ * whenever the black face is tall enough for both; otherwise the number alone, centred. */
 function boardLive(g: CanvasRenderingContext2D, zp: number, value: number, t: number): void {
   const hPx = (BOARD.h1 - BOARD.h0) / zp;
   const w = (2 * BOARD.l) / zp;
   const digits = `$${value.toLocaleString('en-US')}`;
-  // (Big digits only when they fit the open column between the HUDs too.)
-  const big = hPx >= 34 && textWidth(digits, 2) <= Math.min(w - 16, 100);
-  const head = hPx >= 26;
-  const yD = head ? yAt(BOARD.h0 + 34, zp) : yAt((BOARD.h0 + BOARD.h1) / 2, zp);
-  if (head) drawText(g, 'PROGRESSIVE', CX, yAt(BOARD.h1 - 22, zp), 1, G, { outline: K });
-  if (textWidth(digits, big ? 2 : 1) <= w - 8) drawText(g, digits, CX, yD, big ? 2 : 1, Math.floor(t * 2) % 6 === 0 ? '#ff8a7a' : R, { outline: K });
+  const yT = yAt(BOARD.h1 - BOARD_IN, zp);
+  const yB = yAt(BOARD.h0 + BOARD_IN, zp);
+  const face2 = yB - yT;
+  // The same gap (at least 2px) above the label, between the rows (plus the two rows' outlines) and below the number.
+  const PAD = 2;
+  const need = (dSize: 1 | 2) => TXT_H[1] + TXT_H[dSize] + TXT_O[1] + TXT_O[dSize] + 3 * PAD;
+  // (Big digits only when they and the label fit with the padding, and fit the open column between the HUDs too.)
+  const big = face2 >= need(2) && textWidth(digits, 2) <= Math.min(w - 16, 100);
+  const dSize = big ? 2 : 1;
+  const dh = TXT_H[dSize];
+  const head = face2 >= need(dSize);
+  const col = Math.floor(t * 2) % 6 === 0 ? '#ff8a7a' : R;
+  if (head) {
+    const pad = (face2 - TXT_H[1] - dh - TXT_O[1] - TXT_O[dSize]) / 3;
+    drawText(g, 'PROGRESSIVE', CX, yT + pad + TXT_H[1] / 2, 1, G, { outline: K });
+    if (textWidth(digits, dSize) <= w - 8) drawText(g, digits, CX, yB - pad - dh / 2, dSize, col, { outline: K });
+  } else if (textWidth(digits, 1) <= w - 8) drawText(g, digits, CX, (yT + yB) / 2, 1, col, { outline: K });
   // Its rim's bulbs (it's the casino's big prize), chasing.
   const n = Math.max(6, Math.floor(w / 8));
   for (let j = 0; j <= n; j++) {
@@ -550,8 +569,9 @@ function still(i: number, late: number): HTMLCanvasElement {
   const st = STATIONS[i];
   px(g, 0, 0, RW, RH, '#0e0916');
   drawPit(g, zFar, late);
-  boardPanel(g, zFar + 0.45);
   drawCeiling(g, zFar + 0.9);
+  // (The board hangs from the ceiling, in front of it: drawn after it, or the ceiling hid its top rows.)
+  boardPanel(g, zFar + 0.45);
   drawCarpet(g, zFar);
   // The banks, far to near (each hides what's below its top behind it), the cage among them, the sign overhead.
   const banks = bankDepths(st, zFar);
