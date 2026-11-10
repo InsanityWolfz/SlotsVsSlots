@@ -19,7 +19,8 @@ and the demo). Done in the last two days, details in the paragraphs below:
   rejected save is kept in `slotvslot.run.v1.failed` and shows the crash report; in a browser a fight pauses when the
   page hides, or on losing focus with AUTO on. Root cause not found yet. Next: if it happens again, read
   `slotvslot.run.v1.failed` (or the report) from the user's browser; a reload-at-every-save-point test
-  (`tools/out/qa/func/06all.cjs`, not committed) was running at handoff.
+  (`tools/out/qa/func/06all.cjs`, not committed) found nothing: 174 reload + CONTINUE checks over whole runs on KNIGHT,
+  TESLA, BANKROLL and JOKER (WHITE to GREEN, into ENDLESS), 0 failures.
 Open, in order: (1) the capsule, trailer and screenshots in the new world (on hold until now; the old directions are
 on branches `call9-art` (duel capsule variants the user called "sloppy... pasted on", trailer cut 3, the store text
 draft `art/steam/store_text.md`) and `capsule-v2` (VS screen / fight night / payline sketches); the user wants it
