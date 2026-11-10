@@ -46,7 +46,7 @@ wishlists): polish the art and the UI. Process: every step as an artifact with s
 `journey-v1`):** four street stations by depth (a dive bar, an alley's mouth with a pawn shop, a cold corner, the
 block before the casino), the street ending in a T-junction with the casino set back across it (forecourt, carpet,
 rope posts, gilded double doors), THE DOORMAN standing beside the doors from the first fight, then his entrance room.
-Acts 2 and 3 in rework (act 2: slot banks facing the player with stools and players, a bigger wheel; act 3: patrons at
+Act 3 approved (user, 2026-11-10: "Act 3 looks good"; https://claude.ai/artifact/UxGxsoovHS5z2K8QBZznXK, branch `journey-act3`: tables and players lining the aisle to THE DEALER's table, one patron kit shared with act 2); a last pass makes his table grow more per station and its signs match act 2's. Act 2 in rework (act 2: slot banks facing the player with stools and players, a bigger wheel; act 3: patrons at
 the portraits' standard, stepped light, walls dressed). They ship together with THE DOORMAN's rename (branch
 `doorman-rename`; the two merge cleanly with `main`, 796 tests).
 **Capsule and trailer on hold** until the new rooms are done (user: "so we can get some really good art"); the
