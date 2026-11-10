@@ -63,8 +63,12 @@ settings, HISCORES: the street dimmed, HISCORES a wall of fame poster). Inside a
 the draft over the current station dimmed; the route map as the act's own map (city blocks, the floor plan, the
 high-roller rooms); the encounters by act (act 1: TWENTY-ONE on an alley crate, HIGHER OR LOWER at the dive bar's
 back table, THE CLAW in an all-night laundromat; acts 2-3 casino felt). The Cashier: one character, a counter an act
-(the pawn shop, the casino's cage, the high-limit cage, the cage at closing in ENDLESS). RUN OVER stays as it is. In
-progress on branches menus-v1, cashier-v1 and inrun-v1, each as a gallery.
+(the pawn shop, the casino's cage, the high-limit cage, the cage at closing in ENDLESS). RUN OVER stays as it is. Shipped
+(user, 2026-11-10: "All three approved"; menus https://claude.ai/artifact/23DYnMAEnSWZ12ckKcV56g, the Cashier
+https://claude.ai/artifact/344CX2maFTUro3WV53wTTh, the in-run screens https://claude.ai/artifact/B66NMRP2WE1U3rfCczSuXQ),
+with act 1 renamed THE STREET (was THE ALLEY), the pawn shop's tags without numbers and NO REFUNDS dimmed, and the
+menus' BAR sign clear of the logo. The machine select's pawn shop "reads more like a bunch of storage units, but I
+don't hate it" (user): kept for now.
 **Capsule and trailer on hold** until the new rooms are done (user: "so we can get some really good art"); the
 directions so far: https://claude.ai/artifact/DWvxNB3zHD8zf96xZA3FJX (branch `call9-art`, from `art-wip`: duel
 variants, trailer cut 3, store text) and https://claude.ai/artifact/PM1uuVfPi6LEJButEJTHv8 (branch `capsule-v2`: VS
