@@ -21,8 +21,8 @@
  * ENDLESS hook: `late` (0 early, 1 closing) dims machines, empties seats and darkens; nothing draws it yet.
  */
 import { bulb, mk, outlined, pool, px, RH, RW } from './roomEntrance';
-import { drawText } from './text';
-import { drawPatron, LOOKS } from './patrons';
+import { drawText, textWidth } from './text';
+import { drawPatron, LOOKS, type PatronLook } from './patrons';
 
 // ---- the projection (the street's: same eye level, same vanishing point) -------------------------------------------
 
@@ -34,11 +34,10 @@ const CEIL = 560;
 const xAt = (lat: number, z: number) => CX + lat / z;
 const yAt = (h: number, z: number) => HOR + (EYE - h) / z;
 
-/** The roulette pit's front (where the rows end) at each station: far down the aisle, then nearer each fight. */
-const Z_FAR = [4.7, 3.9, 3.3, 2.7];
+/** The roulette pit's front at each station: the roulette table about a third of the open column wide at the first, the
+ * whole column at the last (nearer each fight). */
+const Z_FAR = [5.6, 4.2, 3.0, 1.9];
 export const FLOOR_STATIONS = Z_FAR.length;
-/** The pit's depth: past the last machines, the table games before the back wall. */
-const PIT = 0.8;
 
 // The portraits' palette (as roomEntrance.ts) plus the casino's darks.
 const K = '#140c1c';
@@ -75,29 +74,31 @@ const hash = (a: number, b: number) => (((a * 73856093) ^ (b * 19349663)) >>> 0)
 const INNER = 150;
 const MACH = 74;
 const PER_BANK = 8;
-const BANK_STEP = 0.85;
 /** A machine's depth (its side shows at the bank's aisle end). */
 const MDEPTH = 0.3;
 /** The stools stand this far in front of their machines. */
 const STOOL = 0.2;
 
 interface Station {
-  /** The nearest bank's depth (the banks repeat every BANK_STEP out to the pit: two or three a side). */
-  firstBank: number;
-  /** The overhead sign facing us, hanging over the aisle at this depth (null: none). */
-  sign: { z: number; kind: 'slots' | 'jackpot' } | null;
+  /** The banks' depths, nearest first: two or three a side, out to the pit. */
+  banks: number[];
+  /** The area sign hanging over the aisle (null: none). */
+  sign: { z: number; text: string } | null;
   /** A side aisle someone crosses (its depth; 0: nobody). */
   walkZ: number;
+  /** The one thing you pass at this station: the velvet rope, the change machine, the drinks waitress, the pillars at
+   * the pit's mouth. */
+  mark: 'rope' | 'change' | 'waitress' | 'pillars';
 }
 const STATIONS: Station[] = [
-  // (a) Just inside the doors: three banks a side ahead, SLOTS over the aisle, the table games across the end.
-  { firstBank: 1.35, sign: { z: 2.3, kind: 'slots' }, walkZ: 2.62 },
-  // (b) Among the banks: two a side, the pit nearer.
-  { firstBank: 1.35, sign: null, walkZ: 1.77 },
-  // (c) Under the progressive jackpot's board.
-  { firstBank: 1.35, sign: { z: 2.0, kind: 'jackpot' }, walkZ: 1.77 },
-  // (d) The last bank, the table games and THE WHEEL big ahead.
-  { firstBank: 1.35, sign: null, walkZ: 0 },
+  // (a) Just inside the doors: a velvet rope lines the aisle, SLOTS overhead, the table games small at its end.
+  { banks: [1.4, 2.5, 3.6], sign: { z: 2.2, text: 'SLOTS' }, walkZ: 1.95, mark: 'rope' },
+  // (b) Among the banks: a change machine at the aisle's edge.
+  { banks: [1.3, 2.3, 3.2], sign: null, walkZ: 1.8, mark: 'change' },
+  // (c) A drinks waitress in the aisle, the pit near.
+  { banks: [1.25, 2.1], sign: null, walkZ: 1.68, mark: 'waitress' },
+  // (d) The last banks, the pillars at the pit's mouth, the table games and THE WHEEL filling the view.
+  { banks: [1.2, 1.6], sign: null, walkZ: 0, mark: 'pillars' },
 ];
 
 /** Which station an act 2 fight sits at: the act's regular fights spread over the four, the last one always the end of
@@ -108,10 +109,169 @@ export function floorStation(i: number, n: number): number {
 }
 
 /** The banks' depths at a station, out to the pit. */
-function bankDepths(st: Station, zFar: number): number[] {
-  const out: number[] = [];
-  for (let z = st.firstBank; z < zFar - PIT - 0.2; z += BANK_STEP) out.push(z);
-  return out;
+const bankDepths = (st: Station, _zFar: number) => st.banks;
+
+// ---- the sign system ----------------------------------------------------------------------------------------------
+/** One sign system for the casino, taken from act 1's casino marquee (roomEntrance.ts):
+ * - Area signs (SLOTS, TABLE GAMES, BLACKJACK, ROULETTE): the marquee's dark red panel in the 1px outline, a one-pixel
+ *   gold rim, gold letters outlined; all mounted with their panels between AREA_H0 and AREA_H1 and sized in world
+ *   units, so they scale with the perspective (the letters step 1 -> 2 when the panel is tall enough). Bulbs chase round
+ *   the important ones only (TABLE GAMES, ROULETTE: where you're going).
+ * - Secondary labels (CHANGE, the pillar's plaque, the table limits): a dark plum panel, a dull brass rim, cream letters.
+ * - The progressive jackpot: one board (a gold frame, black inside, PROGRESSIVE in gold, red LED digits) hanging over the
+ *   roulette, so it grows with depth like everything else; its number ticks up a little each station. */
+const AREA_H0 = 390;
+const AREA_H1 = 470;
+const areaW = (text: string) => text.length * 46 + 60;
+const LABEL_BG = '#1a0e24';
+
+/** An area sign's panel on a plane facing us at depth z, centred at lat (its letters and bulbs are live: areaLive). */
+function areaPanel(g: CanvasRenderingContext2D, z: number, lat: number, text: string): void {
+  const w = areaW(text);
+  face(g, z, lat - w / 2, lat + w / 2, AREA_H0, AREA_H1, K, 1);
+  face(g, z, lat - w / 2, lat + w / 2, AREA_H0, AREA_H1, d);
+  rim(g, z, lat - w / 2, lat + w / 2, AREA_H0, AREA_H1, G);
+}
+/** A one-pixel rim round a panel facing us. */
+function rim(g: CanvasRenderingContext2D, z: number, l0: number, l1: number, h0: number, h1: number, c: string): void {
+  const x0 = Math.round(xAt(l0, z));
+  const x1 = Math.round(xAt(l1, z));
+  const y0 = Math.round(yAt(h1, z));
+  const y1 = Math.round(yAt(h0, z));
+  px(g, x0, y0, x1 - x0, 1, c);
+  px(g, x0, y1 - 1, x1 - x0, 1, c);
+  px(g, x0, y0, 1, y1 - y0, c);
+  px(g, x1 - 1, y0, 1, y1 - y0, c);
+}
+/** An area sign's letters (gold; size 2 once the panel is tall enough) and, on the important ones, bulbs chasing round
+ * its rim. Letters that wouldn't fit the panel read as a lit band of gold (too far to read, as a real sign). */
+function areaLive(g: CanvasRenderingContext2D, z: number, lat: number, text: string, t: number, bulbs: boolean): void {
+  const w = areaW(text) / z;
+  const hPx = (AREA_H1 - AREA_H0) / z;
+  const size = hPx >= 24 && textWidth(text, 2) <= w - 12 ? 2 : 1;
+  const y = yAt((AREA_H0 + AREA_H1) / 2, z);
+  const col = bulbs && Math.floor(t * 1.5) % 5 === 0 ? Yl : G;
+  if (textWidth(text, size) <= w - 6) drawText(g, text, xAt(lat, z), y, size, col, { outline: K });
+  else px(g, xAt(lat, z) - w * 0.36, y - Math.max(1, hPx * 0.18), w * 0.72, Math.max(1, hPx * 0.36), col);
+  if (!bulbs) return;
+  const x0 = xAt(lat - areaW(text) / 2, z);
+  const n = Math.max(4, Math.floor(w / 7));
+  for (let j = 0; j <= n; j++) {
+    const x = x0 + (j * w) / n;
+    const on = (j + Math.floor(t * 5)) % 3 === 0 ? 1 : 0;
+    const on2 = (n - j + Math.floor(t * 5)) % 3 === 0 ? 1 : 0;
+    if (hPx >= 14) {
+      bulb(g, x - 1, yAt(AREA_H1, z) - 1, on);
+      bulb(g, x - 1, yAt(AREA_H0, z) - 2, on2);
+    } else {
+      px(g, x, yAt(AREA_H1, z), 1, 1, on ? Y : g8);
+      px(g, x, yAt(AREA_H0, z) - 1, 1, 1, on2 ? Y : g8);
+    }
+  }
+}
+/** A secondary label facing us: a dark panel, a brass rim, cream letters (if they fit). */
+function label(g: CanvasRenderingContext2D, z: number, l0: number, l1: number, h0: number, h1: number, text: string): void {
+  face(g, z, l0, l1, h0, h1, K, 1);
+  face(g, z, l0, l1, h0, h1, LABEL_BG);
+  rim(g, z, l0, l1, h0, h1, g8);
+  if (textWidth(text, 1) <= (l1 - l0) / z - 4 && (h1 - h0) / z >= 10) drawText(g, text, xAt((l0 + l1) / 2, z), yAt((h0 + h1) / 2, z), 1, T, { outline: K });
+}
+
+/** The progressive board: hung over the roulette (zp), a gold frame, black inside; its letters and digits are live. */
+const BOARD = { l: 250, h0: 460, h1: 552 };
+function boardPanel(g: CanvasRenderingContext2D, zp: number): void {
+  for (const lat of [-170, 170]) face(g, zp, lat - 2, lat + 2, BOARD.h1, CEIL, k);
+  face(g, zp, -BOARD.l, BOARD.l, BOARD.h0, BOARD.h1, K, 1);
+  face(g, zp, -BOARD.l, BOARD.l, BOARD.h0, BOARD.h1, G);
+  face(g, zp, -BOARD.l + 8, BOARD.l - 8, BOARD.h0 + 8, BOARD.h1 - 8, g8);
+  face(g, zp, -BOARD.l + 12, BOARD.l - 12, BOARD.h0 + 12, BOARD.h1 - 12, '#0a0612');
+}
+function boardLive(g: CanvasRenderingContext2D, zp: number, value: number, t: number): void {
+  const hPx = (BOARD.h1 - BOARD.h0) / zp;
+  const w = (2 * BOARD.l) / zp;
+  const digits = `$${value.toLocaleString('en-US')}`;
+  // (Big digits only when they fit the open column between the HUDs too.)
+  const big = hPx >= 34 && textWidth(digits, 2) <= Math.min(w - 16, 100);
+  const head = hPx >= 26;
+  const yD = head ? yAt(BOARD.h0 + 34, zp) : yAt((BOARD.h0 + BOARD.h1) / 2, zp);
+  if (head) drawText(g, 'PROGRESSIVE', CX, yAt(BOARD.h1 - 22, zp), 1, G, { outline: K });
+  if (textWidth(digits, big ? 2 : 1) <= w - 8) drawText(g, digits, CX, yD, big ? 2 : 1, Math.floor(t * 2) % 6 === 0 ? '#ff8a7a' : R, { outline: K });
+  // Its rim's bulbs (it's the casino's big prize), chasing.
+  const n = Math.max(6, Math.floor(w / 8));
+  for (let j = 0; j <= n; j++) {
+    const x = xAt(-BOARD.l, zp) + (j * w) / n;
+    const on = (j + Math.floor(t * 4)) % 3 === 0;
+    if (hPx >= 20) bulb(g, x - 1, yAt(BOARD.h1, zp) - 1, on ? 1 : 0);
+    else px(g, x, yAt(BOARD.h1, zp), 1, 1, on ? Y : g8);
+  }
+}
+
+// ---- the landmarks you pass (one a station) -----------------------------------------------------------------------
+
+const WAITRESS: PatronLook = { skin: '#c07a5c', hair: '#1a1014', coat: '#1e1a26', legs: '#1e1a26', hairStyle: 'bun' };
+function drawMark(g: CanvasRenderingContext2D, st: Station, zFar: number): void {
+  if (st.mark === 'rope') {
+    // A velvet rope lines the aisle's first stretch: brass posts with ball tops, the red rope sagging between them.
+    const posts = [1.15, 1.5, 1.85, 2.2];
+    for (const side of [-1, 1]) {
+      const lat = side * 112;
+      for (let q = posts.length - 1; q >= 0; q--) {
+        const z = posts[q];
+        if (q < posts.length - 1) {
+          const z2 = posts[q + 1];
+          for (let n = 0; n <= 24; n++) {
+            const u = n / 24;
+            const zz = z + (z2 - z) * u;
+            const hh = 82 - 16 * Math.sin(Math.PI * u);
+            const w = Math.max(1, Math.round(5 / zz));
+            px(g, xAt(lat, zz) - w / 2, yAt(hh, zz), w, Math.max(1, Math.round(7 / zz)), r);
+            px(g, xAt(lat, zz) - w / 2, yAt(hh, zz) + Math.max(1, Math.round(7 / zz)), w, 1, '#3a0e20');
+          }
+        }
+        face(g, z, lat - 4, lat + 4, 0, 90, K, 1);
+        face(g, z, lat - 4, lat + 4, 0, 90, g8);
+        face(g, z, lat - 4, lat - 1, 0, 90, G);
+        face(g, z, lat - 12, lat + 12, 0, 6, g8);
+        face(g, z, lat - 7, lat + 7, 88, 102, K, 1);
+        face(g, z, lat - 7, lat + 7, 88, 102, G);
+        face(g, z, lat - 6, lat - 1, 96, 101, Yl);
+      }
+    }
+  } else if (st.mark === 'change') {
+    // A change machine at the aisle's edge: a steel cabinet, a bill slot lit green, a brass coin tray, CHANGE over it.
+    const z = 2.0;
+    const l0 = -186;
+    const l1 = -100;
+    face(g, z, l0, l1, 0, 210, K, 1);
+    face(g, z, l0, l1, 0, 210, '#2a2a3a');
+    face(g, z, l0, l0 + 6, 0, 210, '#3e3e52');
+    face(g, z, l1 - 8, l1, 0, 210, '#1e1e2a');
+    face(g, z, l0 + 10, l1 - 10, 110, 150, '#0e0a18');
+    face(g, z, l0 + 16, l1 - 16, 126, 132, '#3aa04a');
+    face(g, z, l0 + 10, l1 - 10, 36, 56, g8);
+    face(g, z, l0 + 10, l1 - 10, 54, 56, G);
+    label(g, z, l0 - 8, l1 + 8, 166, 202, 'CHANGE');
+  } else if (st.mark === 'waitress') {
+    // A drinks waitress in the aisle with her tray (the patrons' standard).
+    const z = 2.6;
+    drawPatron(g, xAt(-62, z), yAt(0, z), 270 / z, WAITRESS, 'tray');
+  } else {
+    // Two marble pillars at the pit's mouth, brass bands, a plaque on the left one.
+    const z = zFar - 0.04;
+    for (const side of [-1, 1]) {
+      const lat = side * 218;
+      face(g, z, lat - 20, lat + 20, 0, CEIL, K, 1);
+      face(g, z, lat - 20, lat + 20, 0, CEIL, '#3a3448');
+      face(g, z, lat - 20, lat - 14, 0, CEIL, '#5a5468');
+      face(g, z, lat + 12, lat + 20, 0, CEIL, '#2a2436');
+      for (const h of [140, 260, 380]) face(g, z, lat - 14, lat + 8, h, h + 4, '#4a4458');
+      for (const [h0, h1] of [[0, 16], [520, 540]]) {
+        face(g, z, lat - 22, lat + 22, h0, h1, g8);
+        face(g, z, lat - 22, lat + 22, h1 - 3, h1, G);
+      }
+    }
+    label(g, z, -218 - 30, -218 + 30, 170, 214, 'PIT');
+  }
 }
 
 // ---- the still layer: ceiling, carpet, the banks, the pit -------------------------------------------------------
@@ -232,7 +392,7 @@ function stool(g: CanvasRenderingContext2D, lat: number, z: number): void {
 }
 
 /** One bank (both sides at depth z): its machines, the side of its aisle end, the stools, the players on some of them. */
-function drawBank(g: CanvasRenderingContext2D, _st: Station, z: number, b: number, late: number): void {
+function drawBank(g: CanvasRenderingContext2D, si: number, z: number, b: number, late: number): void {
   for (const side of [-1, 1] as const) {
     // The bank's aisle end: the end machine's side, in perspective from its front back to MDEPTH.
     const xa = xAt(side * INNER, z);
@@ -246,7 +406,7 @@ function drawBank(g: CanvasRenderingContext2D, _st: Station, z: number, b: numbe
     for (let j = 0; j < PER_BANK; j++) {
       const lat0 = side < 0 ? -INNER - (j + 1) * MACH : INNER + j * MACH;
       if (xAt(lat0 + MACH, z) < -4 || xAt(lat0, z) > RW + 4) continue;
-      machine(g, lat0, z, j + b * PER_BANK, side, late);
+      machine(g, lat0, z, j + b * PER_BANK + si * 5, side, late);
     }
     // The stools, and a player on some (backs to us: they face their machines), mid-distance only.
     const zs = z - STOOL;
@@ -255,7 +415,7 @@ function drawBank(g: CanvasRenderingContext2D, _st: Station, z: number, b: numbe
       if (xAt(c, zs) < -20 || xAt(c, zs) > RW + 20) continue;
       stool(g, c, zs);
       const h = 150 / zs;
-      const n = j + b * 11 + (side < 0 ? 0 : 5);
+      const n = j + b * 11 + (side < 0 ? 0 : 5) + si * 31;
       if (h < 20 || h > 80 || hash(n, 3) >= 0.5 * (1 - late)) continue;
       const pose = (['button', 'lean', 'cup'] as const)[Math.floor(hash(n, 5) * 3)];
       drawPatron(g, xAt(c, zs), yAt(76, zs), h, LOOKS[Math.floor(hash(n, 7) * LOOKS.length)], pose, hash(n, 9) < 0.5);
@@ -313,8 +473,8 @@ function drawPit(g: CanvasRenderingContext2D, zFar: number, late: number): void 
   for (let lat = -3960; lat < 4000; lat += 120) wall(lat, lat + 4, 0, CEIL, '#160e22');
   wall(-4000, 4000, 470, 480, g8);
   for (let lat = -3900; lat < 4000; lat += 580) if (Math.abs(lat) > 400) wall(lat, lat + 60, 0, 470, '#3e1226');
-  wall(-200, 200, 380, 460, K);
-  wall(-196, 196, 384, 456, d);
+  areaPanel(g, zw, 0, 'TABLE GAMES');
+  for (const lat of [-760, 760, -1960, 1960]) areaPanel(g, zw, lat, 'BLACKJACK');
   for (const side of [-1, 1]) wall(side < 0 ? -320 : 250, side < 0 ? -250 : 320, 0, 470, r);
   // The floor of the pit: the carpet stops at a brass strip, the pit's floor a shade lighter.
   const zt = zFar + 0.25;
@@ -342,10 +502,6 @@ function drawPit(g: CanvasRenderingContext2D, zFar: number, late: number): void 
       if (hash(n2 + 1, 9) >= late * 1.2) person(g, lat + 40, z1 - 0.12, looks[(n2 + 1) % 4][0], looks[(n2 + 1) % 4][1], true);
     }
   }
-  for (const side of [-1, 1]) {
-    const lat = side * 620;
-    if (xAt(lat, zw) > 20 && xAt(lat, zw) < RW - 20) drawText(g, 'BLACKJACK', xAt(lat, zw), yAt(420, zw), 1, G, { outline: K });
-  }
   // THE WHEEL behind it (her red hair, the green eyeshade, the green jacket with its white shirt front).
   const zh = zt + 0.45;
   const zp = zh + 0.3;
@@ -369,7 +525,7 @@ function drawPit(g: CanvasRenderingContext2D, zFar: number, late: number): void 
   const ry = Math.max(1, Math.round(rx * 0.3));
   ellipse(g, CX, wy, rx + 2, ry + 1, WOOD_D);
   ellipse(g, CX, wy, rx, ry, WOOD);
-  // The pit's lamp over the roulette table (its light is live).
+  // The pit's lamp over the roulette table (its light is live), and the progressive board hanging in front of it.
   wall(-2, 2, 360, CEIL, k, zh);
   wall(-40, 40, 330, 362, g8, zh);
   wall(-30, 30, 324, 332, Yl, zh);
@@ -384,28 +540,6 @@ function ellipse(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number
   }
 }
 
-/** The overhead sign hanging over the aisle, facing us (its letters are live). */
-function drawSign(g: CanvasRenderingContext2D, sign: Station['sign']): void {
-  if (!sign) return;
-  const z = sign.z;
-  const X = (lat: number) => Math.round(xAt(lat, z));
-  const Yh = (h: number) => Math.round(yAt(h, z));
-  const wall = (lat0: number, lat1: number, h0: number, h1: number, c: string) => px(g, X(lat0), Yh(h1), X(lat1) - X(lat0), Yh(h0) - Yh(h1), c);
-  for (const lat of [-90, 90]) wall(lat - 1, lat + 1, 500, CEIL, k);
-  if (sign.kind === 'slots') {
-    wall(-130, 130, 410, 500, K);
-    wall(-126, 126, 414, 496, d);
-    wall(-126, 126, 414, 418, G);
-    wall(-126, 126, 492, 496, G);
-  } else {
-    wall(-170, 170, 380, 500, K);
-    wall(-166, 166, 384, 496, '#1a0e24');
-    wall(-166, 166, 384, 388, G);
-    wall(-166, 166, 492, 496, G);
-    wall(-120, 120, 396, 430, '#0a0612');
-  }
-}
-
 const stills = new Map<string, HTMLCanvasElement>();
 function still(i: number, late: number): HTMLCanvasElement {
   const key = `${i}:${late.toFixed(2)}`;
@@ -416,12 +550,14 @@ function still(i: number, late: number): HTMLCanvasElement {
   const st = STATIONS[i];
   px(g, 0, 0, RW, RH, '#0e0916');
   drawPit(g, zFar, late);
+  boardPanel(g, zFar + 0.45);
   drawCeiling(g, zFar + 0.9);
   drawCarpet(g, zFar);
   // The banks, far to near (each hides what's below its top behind it), the cage among them, the sign overhead.
   const banks = bankDepths(st, zFar);
-  for (let b = banks.length - 1; b >= 0; b--) drawBank(g, st, banks[b], b, late);
-  drawSign(g, st.sign);
+  for (let b = banks.length - 1; b >= 0; b--) drawBank(g, i, banks[b], b, late);
+  drawMark(g, st, zFar);
+  if (st.sign) areaPanel(g, st.sign.z, 0, st.sign.text);
   stills.set(key, cv);
   return cv;
 }
@@ -472,7 +608,10 @@ export function drawFloorStation(ctx: CanvasRenderingContext2D, o: FloorScene): 
 
   // TABLE GAMES over the pit, the roulette wheel turning slowly, the lamp's stepped light on its felt.
   const zw = zFar + 0.9;
-  drawText(g, 'TABLE GAMES', CX, yAt(420, zw), 80 / zw >= 26 ? 2 : 1, Math.floor(t * 1.5) % 5 === 0 ? Yl : G, { outline: K });
+  areaLive(g, zw, 0, 'TABLE GAMES', t, true);
+  for (const lat of [-760, 760, -1960, 1960]) if (xAt(lat, zw) > -60 && xAt(lat, zw) < RW + 60) areaLive(g, zw, lat, 'BLACKJACK', t, false);
+  boardLive(g, zFar + 0.45, 1048200 + i * 1375 + Math.floor(t * 3), t);
+  if (st.sign) areaLive(g, st.sign.z, 0, st.sign.text, t, false);
   const zh = zFar + 0.7;
   const rx = Math.max(3, Math.round(70 / zh));
   const ry = Math.max(1, Math.round(rx * 0.3));
@@ -500,7 +639,7 @@ export function drawFloorStation(ctx: CanvasRenderingContext2D, o: FloorScene): 
     for (const side of [-1, 1] as const) {
       for (let j = 0; j < PER_BANK; j++) {
         const lat0 = side < 0 ? -INNER - (j + 1) * MACH : INNER + j * MACH;
-        const m = j + b * PER_BANK;
+        const m = j + b * PER_BANK + i * 5;
         if (hash(m * 13 + Math.round(z * 10), side) < late * 0.8) continue;
         for (let q = 0; q < 3; q++) {
           const x = Math.round(xAt(lat0 + 18 + q * ((MACH - 36) / 2), z));
@@ -518,17 +657,6 @@ export function drawFloorStation(ctx: CanvasRenderingContext2D, o: FloorScene): 
     }
   });
 
-  // The overhead sign's letters, the jackpot board's number climbing.
-  if (st.sign) {
-    const z = st.sign.z;
-    if (st.sign.kind === 'slots') drawText(g, 'SLOTS', CX, yAt(455, z), 2, Math.floor(t * 1.5) % 6 === 0 ? Yl : G, { outline: K });
-    else {
-      drawText(g, 'PROGRESSIVE', CX, yAt(470, z), 1, G, { outline: K });
-      const n = 1000000 + Math.floor((t * 37) % 900000);
-      drawText(g, `$${n.toLocaleString('en-US')}`, CX, yAt(413, z), 1, Math.floor(t * 2) % 4 === 0 ? Yl : R, { outline: K });
-      for (let j = 0; j < 12; j++) bulb(g, xAt(-160 + (j * 320) / 11, z) - 1, yAt(500, z) - 1, (j + Math.floor(t * 4)) % 3 === 0 ? 1 : 0);
-    }
-  }
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(still(i, late), 0, 0, RW * 2, RH * 2);
@@ -611,12 +739,12 @@ function makeFigs() {
       }),
     );
   // The table-limit placard on its brass stand (its words are live: the limits, then NO LIMIT at half HP).
-  const sign = outlined(58, 120, (c) => {
-    px(c, 27, 52, 4, 64, g8);
-    px(c, 27, 52, 1, 64, G);
-    px(c, 19, 114, 20, 6, g8);
-    px(c, 0, 0, 58, 52, G);
-    px(c, 2, 2, 54, 48, '#1a0e24');
+  const sign = outlined(64, 120, (c) => {
+    px(c, 30, 52, 4, 64, g8);
+    px(c, 30, 52, 1, 64, G);
+    px(c, 22, 114, 20, 6, g8);
+    px(c, 0, 0, 64, 52, g8);
+    px(c, 1, 1, 62, 50, '#1a0e24');
   });
   figs = { idle: fig(false), deal: fig(true), sign };
 }
@@ -711,10 +839,12 @@ function buildWheelStill(): HTMLCanvasElement {
     px(g, x + 21, top, 1, TABLE - top, K);
   }
   // ROULETTE over her, a gold-framed sign (the letters are live).
-  px(g, 252, 2, 136, 22, K);
-  px(g, 254, 4, 132, 18, d);
-  px(g, 254, 4, 132, 1, G);
-  px(g, 254, 21, 132, 1, G);
+  px(g, 251, 1, 138, 26, K);
+  px(g, 252, 2, 136, 24, d);
+  px(g, 252, 2, 136, 1, G);
+  px(g, 252, 25, 136, 1, G);
+  px(g, 252, 2, 1, 24, G);
+  px(g, 387, 2, 1, 24, G);
   // The pit's floor (carpet, in perspective toward us), around the table.
   px(g, 0, TABLE, RW, RH - TABLE, CARPET);
   for (const y of [TABLE + 4, TABLE + 10, TABLE + 18, TABLE + 30, TABLE + 46, TABLE + 68, TABLE + 98, TABLE + 140, TABLE + 196]) if (y < RH) px(g, 0, y, RW, 1, CARPET_L);
@@ -778,7 +908,11 @@ export function drawWheelRoom(ctx: CanvasRenderingContext2D, o: WheelRoomScene):
     const on = Math.sin(t * 1.2 + i * 1.9) > 0.5;
     px(g, x + 10, TABLE - 50, 2, 2, on ? Y : g8);
   }
-  drawText(g, 'ROULETTE', CX, 13, 1, Math.floor(t * 1.5) % 6 === 0 ? Yl : G, { outline: K });
+  drawText(g, 'ROULETTE', CX, 14, 1, Math.floor(t * 1.5) % 5 === 0 ? Yl : G, { outline: K });
+  for (let j = 0; j <= 16; j++) {
+    bulb(g, 252 + j * 8.3 - 1, 1, (j + Math.floor(t * 5)) % 3 === 0 ? 1 : 0);
+    bulb(g, 252 + j * 8.3 - 1, 24, (16 - j + Math.floor(t * 5)) % 3 === 0 ? 1 : 0);
+  }
   // The two lamps over the table (they swing when she's hit), their stepped light on the felt.
   const swing = ws.hitT > 0 ? Math.sin(t * 9) * 4 * ws.hitT : Math.sin(t * 0.8) * 0.6;
   for (const lx of [214, 426]) {
@@ -835,11 +969,11 @@ export function drawWheelRoom(ctx: CanvasRenderingContext2D, o: WheelRoomScene):
   const sy = 128;
   g.drawImage(F2.sign, sx, sy);
   if (ws.fast) {
-    drawText(g, 'NO', sx + 30, sy + 15, 1, R, { outline: K });
-    drawText(g, 'LIMIT', sx + 30, sy + 33, 1, Math.floor(t * 3) % 2 ? R : '#ff8a7a', { outline: K });
+    drawText(g, 'NO', sx + 33, sy + 15, 1, R, { outline: K });
+    drawText(g, 'LIMIT', sx + 33, sy + 33, 1, Math.floor(t * 3) % 2 ? R : '#ff8a7a', { outline: K });
   } else {
-    drawText(g, 'MIN 5', sx + 30, sy + 15, 1, G, { outline: K });
-    drawText(g, 'MAX 500', sx + 30, sy + 33, 1, T, { outline: K });
+    drawText(g, 'MIN 5', sx + 33, sy + 15, 1, T, { outline: K });
+    drawText(g, 'MAX 500', sx + 33, sy + 33, 1, T, { outline: K });
   }
   // A high stool and a player at the table's side, right (a regular watching her table).
   px(g, 586, TABLE + 60, 26, 6, d);

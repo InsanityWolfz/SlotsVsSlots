@@ -22,8 +22,8 @@ export interface PatronLook {
   hairStyle: 'short' | 'long' | 'bun' | 'bald' | 'cap';
 }
 /** At a machine: from behind with a hand on the button, from behind leaning in, three-quarter holding a cup of coins.
- * Walking the aisles: a profile, two steps. */
-export type PatronPose = 'button' | 'lean' | 'cup' | 'walk0' | 'walk1';
+ * Walking the aisles: a profile, two steps. Serving: standing three-quarter, a tray of drinks held up on one hand. */
+export type PatronPose = 'button' | 'lean' | 'cup' | 'walk0' | 'walk1' | 'tray';
 
 /** A few looks for the casino's crowd (the portraits' skin tones and hair, muted coats: they sit behind the HUD). */
 export const LOOKS: PatronLook[] = [
@@ -52,7 +52,7 @@ function steps(c: string): string[] {
 // units (`hu`), so a head stays round whatever the sprite's width: A is the sprite's width over its height.
 let A = 0.62;
 
-type Part = 'hair' | 'skin' | 'coat' | 'sleeve' | 'legs' | 'shoe' | 'cup' | 'coin' | 'shirt';
+type Part = 'hair' | 'skin' | 'coat' | 'sleeve' | 'legs' | 'shoe' | 'cup' | 'coin' | 'shirt' | 'glass';
 interface Shape {
   part: Part;
   hit: (x: number, y: number) => boolean;
@@ -151,6 +151,30 @@ function shapes(look: PatronLook, pose: PatronPose): Shape[] {
       ell('skin', 0.15, 0.11, 0.03, 0.03),
     ];
   }
+  if (pose === 'tray') {
+    // Standing, turned three-quarter: the legs, a short jacket over a white shirt, the far arm down, the near arm up
+    // under a round tray at shoulder height with two glasses and a bottle on it.
+    const r = 0.1;
+    return [
+      limb('legs', -0.08, 0.6, -0.1, 0.95, 0.07),
+      limb('legs', 0.08, 0.6, 0.1, 0.95, 0.07),
+      box('shoe', -0.2, 0.94, -0.02, 1.0),
+      box('shoe', 0.02, 0.94, 0.2, 1.0),
+      torso('coat', 0.26, 0.63, 0.24, 0.18),
+      box('shirt', -0.06, 0.26, 0.06, 0.5),
+      limb('sleeve', -0.22, 0.31, -0.27, 0.54, 0.055),
+      ell('skin', -0.27, 0.57, 0.05, 0.04),
+      limb('sleeve', 0.22, 0.31, 0.36, 0.24, 0.055),
+      limb('sleeve', 0.36, 0.24, 0.34, 0.12, 0.05),
+      ell('skin', 0.34, 0.11, 0.05, 0.035),
+      box('cup', 0.1, 0.075, 0.5, 0.1),
+      box('glass', 0.16, 0.01, 0.22, 0.075),
+      box('glass', 0.3, 0.02, 0.36, 0.075),
+      box('coin', 0.42, 0.0, 0.46, 0.075),
+      box('skin', -0.04, 0.2, 0.04, 0.26),
+      ...head(look, 0, 0.16, r, 1),
+    ];
+  }
   const lean = pose === 'lean' ? 0.08 : 0;
   const hy = pose === 'lean' ? 0.17 : 0.13;
   const r = 0.155;
@@ -193,7 +217,7 @@ const cache = new Map<string, HTMLCanvasElement>();
  * figure), its 1px outline included. Draw it with its bottom centre on the seat (or the floor). */
 export function patronSprite(h: number, look: PatronLook, pose: PatronPose): HTMLCanvasElement {
   h = Math.max(12, Math.round(h));
-  const walk = pose === 'walk0' || pose === 'walk1';
+  const walk = pose === 'walk0' || pose === 'walk1' || pose === 'tray';
   const w = Math.max(8, Math.round(h * (walk ? 0.48 : 0.62)));
   const key = `${h}:${pose}:${look.skin}${look.hair}${look.coat}${look.hairStyle}`;
   const hit = cache.get(key);
@@ -210,6 +234,7 @@ export function patronSprite(h: number, look: PatronLook, pose: PatronPose): HTM
     cup: steps('#9a9aa8'),
     coin: steps('#ffd23f'),
     shirt: steps('#d8d0c0'),
+    glass: steps('#a8d8f0'),
   };
   // The cap is the coat's colour turned darker (its "sleeve" ink): fine for a look; a crown of hair under it.
   const [art, ag] = mk(w, h);
