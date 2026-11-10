@@ -34,6 +34,7 @@ import { canvas, FLOOR_Y, hexA, LH, LW, MID, NEON, rect, seeded, type RoomArt } 
 import { drawEntrance, entranceCheer, entranceUpdate } from './roomEntrance';
 import { buildVip, vip } from './roomVip';
 import { drawStreet, streetStation } from './roomStreet';
+import { drawFloorStation, drawWheelRoom, FLOOR_STATIONS, floorStation, wheelRoomUpdate } from './roomCasinoFloor';
 
 /** Rooms v2 (the style key, 2026-11-09): THE HOUSE's room is the casino entrance, and act 1 is the street toward it
  * (roomStreet.ts). Off: the old alley and vault. `station` forces act 1's station (dbg, the gallery); null: by depth. */
@@ -48,8 +49,20 @@ export function streetPlace(s: Scene): number | 'door' | null {
   if (ROOM_V2.station !== null) return ROOM_V2.station;
   return streetStation(s.fightIndex ?? 0, s.regulars ?? 4);
 }
+/** Act 2 on the v2 casino floor (roomCasinoFloor.ts): a station down the aisle, or THE WHEEL's table at its end (her
+ * fight, and the screens just before it); null when the scene isn't a run's act 2 floor (the menus keep their floor). */
+export function floorPlace(s: Scene): number | 'wheel' | null {
+  if (!ROOM_V2.on || s.room !== 'floor' || s.loop > 0) return null;
+  if (s.boss === 'wheel') return 'wheel';
+  if (s.boss || s.regulars === undefined) return null;
+  if (s.atBoss) return 'wheel';
+  if (ROOM_V2.station !== null) return Math.max(0, Math.min(FLOOR_STATIONS - 1, ROOM_V2.station));
+  return floorStation(s.fightIndex ?? 0, s.regulars);
+}
+/** Where a v2 journey scene is: act 1's street (0-3, 'door') or act 2's floor (0-3, 'wheel'); null for the old rooms. */
+export const roomPlace = (s: Scene) => streetPlace(s) ?? floorPlace(s);
 /** The room draws its own air (rain), so the drifting motes stay off (they're another pixel size). */
-export const roomV2Air = (s: Scene) => (ROOM_V2.on && s.boss === 'house') || streetPlace(s) !== null;
+export const roomV2Air = (s: Scene) => (ROOM_V2.on && s.boss === 'house') || streetPlace(s) !== null || floorPlace(s) !== null;
 
 export { LH, LW } from './roomKit';
 
@@ -80,6 +93,9 @@ export interface Scene {
   atBoss?: boolean;
   /** This fight's enemy archetype (a station's small per-enemy touch). */
   enemy?: string | null;
+  /** THE WHEEL's table (rooms v2: her room reads it): chips on your reels, turns to NO MORE BETS, SPINS FASTER, and the
+   * gutter wheel's angle (the table's wheel turns with it). */
+  wheel?: { bets: number; left: number; fast: boolean; angle: number };
 }
 
 // ---- the still layers --------------------------------------------------------------------------------------------
@@ -200,6 +216,7 @@ export class Rooms {
   update(dt: number): void {
     this.time += dt;
     entranceUpdate(dt);
+    wheelRoomUpdate(dt);
     // ENDLESS: loose bills drift down the side strips, more each loop.
     if (this.loopNow >= 2 && Math.random() < dt * Math.min(3, 0.4 * this.loopNow)) {
       const left = Math.random() < 0.5;
@@ -234,6 +251,18 @@ export class Rooms {
     }
     if (place !== null) {
       drawStreet(ctx, { station: place, time, enemy: s.enemy });
+      this.overlays(ctx, s, time, this.cheerT);
+      return;
+    }
+    const fp = floorPlace(s);
+    if (fp === 'wheel') {
+      const w = s.wheel ?? { bets: 0, left: 3, fast: false, angle: time * 0.6 };
+      drawWheelRoom(ctx, { time, foeHp: s.boss === 'wheel' ? s.foeHp : 1, ...w });
+      this.overlays(ctx, s, time, this.cheerT);
+      return;
+    }
+    if (fp !== null) {
+      drawFloorStation(ctx, { station: fp, time });
       this.overlays(ctx, s, time, this.cheerT);
       return;
     }

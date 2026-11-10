@@ -203,8 +203,16 @@ export function sceneNow(g: Game): Scene {
     fight,
     turbo: fight && !!g.fight.cfg.enemy.owner,
     pot: fight && boss === 'house' ? (g.stage?.gutter?.pot ?? 0) : 0,
+    wheel: fight && boss === 'wheel' ? wheelNow(g) : undefined,
     ...journey(g),
   };
+}
+
+/** THE WHEEL's table as presented (the gutter's chips, turns to NO MORE BETS, SPINS FASTER, the wheel's turn). */
+function wheelNow(g: Game): Scene['wheel'] {
+  const gw = g.stage?.gutter;
+  const bets = (gw?.bets ?? [0, 0, 0]).reduce((a, b) => a + b, 0);
+  return { bets, left: gw?.betsLeft ?? 3, fast: !!gw?.wheelFast, angle: gw?.wheelAngle ?? 0 };
 }
 
 /** Where the run stands in its act (rooms v2's journey): this fight among the act's regulars, and the boss next. Before
