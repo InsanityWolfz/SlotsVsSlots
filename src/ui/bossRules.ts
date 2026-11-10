@@ -55,7 +55,7 @@ function rulesOf(boss: string, c: BossRuleContext): BossRules {
     return {
       rules: [
         { icon: artId('dealCut'), text: `HAND 1: EVERY ${bust} TURNS, A BUST: YOUR BEST REEL PAYS NOTHING NEXT SPIN` },
-        { icon: artId('dealRaise'), text: `HAND 2: THE BUSTS GO ON, AND ITS HITS PAY X${DEALER_RULES.raiseMul}` },
+        { icon: artId('dealRaise'), text: `HAND 2: THE BUSTS GO ON, AND HIS HITS PAY X${DEALER_RULES.raiseMul}` },
         { icon: artId('dealShuffle'), text: `HAND 3: EVERY ${allIn} TURNS, ALL IN: ${lo === hi ? lo : `${lo}-${hi}`}% OF YOUR MAX HP. IT PIERCES SHIELDS` },
       ],
       win: 'EACH HAND HAS ITS OWN HP BAR. BEAT ALL THREE',

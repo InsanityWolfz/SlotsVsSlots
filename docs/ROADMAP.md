@@ -32,15 +32,16 @@ How the user works now: every art step goes to them as an artifact gallery with 
 in worktrees on branches, and approved work merges to `main` with `npm test`, `npx tsc --noEmit -p .`, both builds and a
 browser check. If usage runs out mid-task, schedule a check-in to resume after the reset.
 
-**In progress (2026-11-10, after the user's playtest of the new rooms):** live on `main`: nobody walks across the aisles
+**In progress (2026-11-10, after the user's playtest of the new rooms):** live on `main` (the user approved the rooms: "the new background stuff looks good"): nobody walks across the aisles
 (the crossers had no legs), the staff and card players face you with real faces (the side profiles "looked really
 off"; https://claude.ai/artifact/SWK4wbqpMzJY47TPtmonc6; still drawn by code, hand-drawn sprites if the user wants
 portrait quality), unnatural motion fixed (user: "background motion is ok, I just didn't want anything that didn't feel
 natural"), `roomCasinoFloor.ts` split (THE WHEEL's room is `roomWheel.ts`); JOKER's meter jackpot counts a cell's Charm
-three times and every VAMP cell in a pay heals (HP_GAME.md). Waiting on the user's yes (on `claude/modest-rubin-95g3ha`, not `main`; https://claude.ai/artifact/APj82gjYYxpPBYEYyi8HB2): the fight
+three times and every VAMP cell in a pay heals (HP_GAME.md). Also live (user, 2026-11-10: "Fight screen stuff looks good... push everything to main"; https://claude.ai/artifact/APj82gjYYxpPBYEYyi8HB2): the fight
 screen with every label on at once (20 stress scenes, `tools/shots/fight`: 422 collisions before, 24 after; the spin
 count, OVERTIME and the BOSS / LOOP label live in the bottom bar now) and THE PAY STACK (a win's steps drop into a
-list under the banner and stay about a second; `docs/JUICE.md`). Then playtests on the new art. The capsule, trailer and screenshots wait (user, 2026-11-10: "ignore that... for now").
+list under the banner and stay about a second; `docs/JUICE.md`); THE DEALER's announcements say HIS and HE, not ITS.
+In progress: playtests on the new art. The capsule, trailer and screenshots wait (user, 2026-11-10: "ignore that... for now").
 
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
 text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about

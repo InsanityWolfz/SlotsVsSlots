@@ -136,7 +136,7 @@ export async function dealerHand(d: Director, e: Ev<'dealerHand'>): Promise<void
   }
   d.s.sounds.abilityFire();
   d.s.camera.chromaPulse(0.6);
-  const rule = e.hand >= 3 ? `EVERY ${e.every} TURNS IT GOES ALL IN. IT PIERCES SHIELDS` : `ITS HITS ARE X${DEALER_RULES.raiseMul} FROM NOW ON`;
+  const rule = e.hand >= 3 ? `EVERY ${e.every} TURNS HE GOES ALL IN. IT PIERCES SHIELDS` : `HIS HITS ARE X${DEALER_RULES.raiseMul} FROM NOW ON`;
   await d.banner(`HAND ${e.hand}: ${DEALER_HANDS[e.hand - 1]}`, '#ff6a5a', 1.3, 0.6, rule, MACHINE_TOP + MACHINE_H / 2, 4);
 }
 
