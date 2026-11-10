@@ -136,6 +136,8 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
     // A jackpot of one cell counts that cell's charm three times.
     const copies = charmCopies(g);
     let gold = 0;
+    // (How many cells' Charms are in it: the climb says GOLD CHARM, or GOLD CHARMS.)
+    let goldCells = 0;
     let anyGold = false;
     let anyGlass = false;
     for (const r of g.reels)
@@ -149,11 +151,13 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       if (enh === 'charged' && g.symbol === 'bolt') g.base += v;
       if (enh === 'gold') {
         gold += v;
+        goldCells++;
         anyGold = true;
       }
       // GLASS: adds in like GOLD; when its group pays, 1 in 4 it shatters (the cell loses it after this spin).
       if (enh === 'glass') {
         gold += v;
+        goldCells++;
         anyGlass = true;
         if (pays(g) && f.rng.next() < GLASS_BREAK) f.glassBreaks.push(r);
       }
@@ -212,8 +216,9 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       // A true multiplier, even on TESLA's bolts, where the other boosts add up (user, 2026-11-01: a Charm is what
       // players plan around; GOLD next to HOT STREAK was x3, not x4).
       g.mult *= gold;
-      // (The climb names it: GOLD, GLASS, or both.)
-      notes.push(`X${gold} ${anyGlass ? (anyGold ? 'GOLD+GLASS' : 'GLASS') : 'GOLD'}`);
+      // (The climb names it as a Charm: GOLD CHARM, GLASS CHARM, or both. User, 2026-11-10: "say gold charm not just
+      // gold".)
+      notes.push(`X${gold} ${anyGlass ? (anyGold ? 'GOLD+GLASS' : 'GLASS') : 'GOLD'} CHARM${goldCells > 1 ? 'S' : ''}`);
     }
     const paying = pays(g);
     // Prism: a match that used a WILD pays double.

@@ -44,7 +44,7 @@ describe('counter-enemies', () => {
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const { events } = f.step();
     // Reel 1's gold is faked: only 2 + 2 gold on the line = x4 (not x6).
-    expect(ofType(events, 'spin')[0].score.groups[0].notes).toContain('X4 GOLD');
+    expect(ofType(events, 'spin')[0].score.groups[0].notes).toContain('X4 GOLD CHARMS');
     expect(ofType(events, 'fakeTick')[0].left.every((x) => x === 0)).toBe(true);
     expect(f.sides.player.reels[0].cells.some((c) => c.faked)).toBe(false);
   });

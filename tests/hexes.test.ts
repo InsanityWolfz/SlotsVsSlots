@@ -40,7 +40,7 @@ describe('charm levels, hexes and level cards (Tuesday rework)', () => {
     f.forceNext('player', ['sword', 'sword', 'sword']);
     const g = ofType(f.step().events, 'spin')[0].score.groups[0];
     // 30 x 3 x (2 + 2 + 2) = 540 with every gold lit, then halved.
-    expect(g.notes).toEqual(['X6 GOLD', 'HALF']);
+    expect(g.notes).toEqual(['X6 GOLD CHARMS', 'HALF']);
     expect(g.amount).toBe(270);
     expect(g.cut).toBe(270);
   });

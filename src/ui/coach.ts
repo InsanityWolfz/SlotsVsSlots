@@ -99,13 +99,14 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'buil
 
 /**
  * A machine's meter, explained once, ever: the first fight a player starts on that Slot Machine (TESLA is half the
- * demo and the tutorial is KNIGHT only: demo playtest 2026-11-07). From each meter's real rules (core/cabinets.ts).
+ * demo and the tutorial is KNIGHT only: demo playtest 2026-11-07). From each meter's real rules (core/cabinets.ts),
+ * in a few plain words (user, 2026-11-10: the long ones were "too wordy and descriptive").
  */
 export const METER_TIPS: Partial<Record<CabinetId, Tip>> = {
-  tesla: { title: 'LIGHTNING', text: 'EACH BOLT ON YOUR PAYLINE CHARGES LIGHTNING. A FULL METER FIRES A STORM: IT STRIKES THE ENEMY THROUGH ITS SHIELD AND HEALS YOU 15.', rect: hud('player') },
-  jukebox: { title: 'VOLUME', text: 'EACH NOTE ON YOUR PAYLINE TURNS IT UP 1, AND NOTES HIT HARDER EACH LEVEL. A SPIN WITH NO NOTE LOSES 2. AT 6, THE DROP: EVERY NOTE ON SCREEN HITS AND YOU HEAL 15.', rect: hud('player') },
-  joker: { title: 'JACKPOTS', text: 'EACH WILD ON YOUR PAYLINE FILLS HALF THE METER. FULL, YOUR NEXT SPIN PAYS ALL 3 PAYLINE CELLS AS JACKPOTS AND HEALS YOU 15.', rect: hud('player') },
-  midas: { title: 'HIGH ROLLER', text: 'CHIPS ON YOUR PAYLINE AND CHIPS IN HAND FILL IT. FULL, YOUR NEXT BEST HIT IS MULTIPLIED (MORE CHIPS HELD, BIGGER: UP TO X2.5) AND YOU HEAL 15.', rect: hud('player') },
+  tesla: { title: 'LIGHTNING', text: 'BOLTS CHARGE IT. FULL: A STORM HITS THROUGH SHIELDS. HEAL 15.', rect: hud('player') },
+  jukebox: { title: 'VOLUME', text: 'NOTES TURN IT UP. NO NOTE TURNS IT DOWN. AT 6, THE DROP: EVERY NOTE HITS. HEAL 15.', rect: hud('player') },
+  joker: { title: 'JACKPOTS', text: 'WILDS FILL IT. FULL: ALL 3 PAYLINE CELLS PAY JACKPOTS. HEAL 15.', rect: hud('player') },
+  midas: { title: 'HIGH ROLLER', text: 'CHIPS FILL IT. FULL: YOUR BEST HIT PAYS UP TO X2.5. HEAL 15.', rect: hud('player') },
 };
 
 export class Coach {
