@@ -2,6 +2,35 @@
 
 The one list of what's next. Keep it short: when an item ships, delete it (git history is the record).
 
+**HANDOFF (2026-11-10, for the next session): start here.** Everything that ships is on `main` (the live phone build
+and the demo). Done in the last two days, details in the paragraphs below:
+- The launch QA campaign and its fixes (QA report https://claude.ai/artifact/JvWfuPk7WavCPFFd6av9gM); the user's calls 1-3,
+  5-8 live (SPEED 2X, act 1 pacing and the spill cap, draft SKIP, SECOND MORTGAGE x1.5, MAKE IT RAIN free at the
+  floor, Windows first, the Next Fest rule); call 4 dropped.
+- The new world, all live: THE DOORMAN replaces THE HOUSE as act 1's boss (THE HOUSE is the casino); the run is a
+  journey (act 1 THE STREET to the casino's door, act 2 the floor to THE WHEEL, act 3 the high-roller room to THE
+  DEALER, ENDLESS the casino closing down, THE OWNER under the last spotlight); boss entrances; new playing cards;
+  the menus on the street and machine select in the pawn shop; the Cashier's counter by act; the act maps and
+  encounters by act; RUN OVER as KNOCKED OUT / THROWN OUT! / CLOSING TIME with THE DOORMAN's lines (no wrecked machine:
+  user, "just remove it"); the casino's poster reads LIVE SLOTS.
+- A lost run (user, PC, full game, AUTO on, tabbed out of fullscreen): no CONTINUE and not in HISCORES. Reload and
+  CONTINUE were checked at many points and across builds, all fine; the only path that deletes a save without
+  recording the run is a failed CONTINUE, which deleted it silently. Fixed on `main` (0c52e02): a failed CONTINUE or a
+  rejected save is kept in `slotvslot.run.v1.failed` and shows the crash report; in a browser a fight pauses when the
+  page hides, or on losing focus with AUTO on. Root cause not found yet. Next: if it happens again, read
+  `slotvslot.run.v1.failed` (or the report) from the user's browser; a reload-at-every-save-point test
+  (`tools/out/qa/func/06all.cjs`, not committed) was running at handoff.
+Open, in order: (1) the capsule, trailer and screenshots in the new world (on hold until now; the old directions are
+on branches `call9-art` (duel capsule variants the user called "sloppy... pasted on", trailer cut 3, the store text
+draft `art/steam/store_text.md`) and `capsule-v2` (VS screen / fight night / payline sketches); the user wants it
+built from the new rooms, e.g. the duel at the casino's door); (2) small follow-ups: split
+`src/render/roomCasinoFloor.ts` (1,078 lines) next time it's touched; the machine select's pawn shop "reads more like a
+bunch of storage units, but I don't hate it" (kept); (3) Steamworks still needs the user: app ids
+(`VITE_STORE_APP_ID`, `desktop/package.cjs`), Auto-Cloud, achievement icons, the AI disclosure; (4) outside playtests.
+How the user works now: every art step goes to them as an artifact gallery with screenshots to approve; agents build
+in worktrees on branches, and approved work merges to `main` with `npm test`, `npx tsc --noEmit -p .`, both builds and a
+browser check. If usage runs out mid-task, schedule a check-in to resume after the reset.
+
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
 text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about
 140 findings, no crash, softlock or save loss in ~1M sim fights, 77k runs and 14 played. Fixed and on `main`
