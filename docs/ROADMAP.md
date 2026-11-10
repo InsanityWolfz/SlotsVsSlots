@@ -56,6 +56,15 @@ loop later in the night; THE DOORMAN's lobby from inside) and THE OWNER under th
 THE DOORMAN's legs; THE OWNER's torso sits under the enemy-turn SPIN plate; split `src/render/roomCasinoFloor.ts`
 (1,078 lines) next time it's touched; the menus still show the old floor. Now unblocked: the capsule, trailer and
 screenshots in the new world.
+**Menus and the Cashier in the new world (user, 2026-11-10: "I love everything except the run over screen... everything
+else is a go"):** outside a run you're on the street before the night starts (title and main menu: act 1's first stop,
+your machine under a streetlamp; machine select: the pawn shop's window, locked machines behind its shutter; PROFILE,
+settings, HISCORES: the street dimmed, HISCORES a wall of fame poster). Inside a run every screen shows where you are:
+the draft over the current station dimmed; the route map as the act's own map (city blocks, the floor plan, the
+high-roller rooms); the encounters by act (act 1: TWENTY-ONE on an alley crate, HIGHER OR LOWER at the dive bar's
+back table, THE CLAW in an all-night laundromat; acts 2-3 casino felt). The Cashier: one character, a counter an act
+(the pawn shop, the casino's cage, the high-limit cage, the cage at closing in ENDLESS). RUN OVER stays as it is. In
+progress on branches menus-v1, cashier-v1 and inrun-v1, each as a gallery.
 **Capsule and trailer on hold** until the new rooms are done (user: "so we can get some really good art"); the
 directions so far: https://claude.ai/artifact/DWvxNB3zHD8zf96xZA3FJX (branch `call9-art`, from `art-wip`: duel
 variants, trailer cut 3, store text) and https://claude.ai/artifact/PM1uuVfPi6LEJButEJTHv8 (branch `capsule-v2`: VS
