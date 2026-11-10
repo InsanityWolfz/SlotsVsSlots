@@ -384,7 +384,8 @@ export class Director {
    * - and it never lands on another float or a banner: it takes the next free row (place); a banner that opens over
    *   it moves it the same way (clearUnder).
    */
-  popText(text: string, x: number, y: number, scale: number, color: string, rise = 50, hold = 0.35, plate = false): Promise<void> {
+  popText(text: string, x: number, y: number, scale: number, color: string, rise = 50, hold = 0.35, plate = false, waited = 0): Promise<void> {
+    const asked = { x, y, rise };
     // The kit's text sizes (nothing under SMALL); a giant number stays a display number.
     let size: number = scale <= 1.8 ? T.small : scale < 2.5 ? T.body : scale <= 3.5 ? T.head : scale <= 5 ? T.title : scale;
     const side: SideId | null = Math.abs(x - MACHINE_CX.player) <= MACHINE_W / 2 + BEZEL ? 'player' : Math.abs(x - MACHINE_CX.enemy) <= MACHINE_W / 2 + BEZEL ? 'enemy' : null;
@@ -407,8 +408,14 @@ export class Director {
     }
     const t = new FloatText(text, x, y, size, color);
     t.plate = plate;
-    // Clear of every float and banner already up (place): the next free row, or in a HUD the next spot left.
-    this.place(t, inHud);
+    // Clear of every float and banner already up (place). With no free spot: the same words twice say nothing new
+    // (BLOCKED! BLOCKED!), so the second is dropped; other words wait a moment for a row to clear (twice at most).
+    if (!this.place(t, inHud) && !this.c.skipping) {
+      if (this.s.fx.items.some((it) => it instanceof FloatText && !it.off && it.alpha > 0.25 && it.text === text)) return Promise.resolve();
+      if (waited < 2) return this.c.wait(0.25).then(() => this.popText(text, asked.x, asked.y, scale, color, asked.rise, hold, plate, waited + 1));
+    }
+    // (On the edge row it's on a plate, wherever it was first meant to go: the turn ribbon is under it.)
+    if (!inHud && t.y === CALLOUT_Y && t.scale <= T.head) t.plate = true;
     t.restY = t.y;
     this.s.fx.add(t);
     // Along a machine's top edge a pop draws over the turn ribbon (QA UI-01).
@@ -458,9 +465,9 @@ export class Director {
 
   /**
    * Find a float a free spot: where it is, if nothing's there; else the next free row. Words (a callout, a label) over
-   * a machine's top have three rows, CALLOUT_ROWS: the edge, and two inside the top reel row under the status
-   * badges; they never drop onto the payline (its numbers are being read). A hit's number takes the next row down.
-   * In a HUD: the next spot left. False if there's no free spot (it stays where it was).
+   * a machine's top have two rows, CALLOUT_ROWS: the edge, and one inside the top reel row under the status badges;
+   * they never drop onto the payline (its numbers are being read). A hit's number takes the next row down.
+   * In a HUD: the bar over it, then the spot to its left. False if there's no free spot (it stays put).
    */
   private place(t: FloatText, inHud: boolean, also: Rect[] = []): boolean {
     const busy: Rect[] = [...also];
@@ -479,10 +486,11 @@ export class Director {
     const row = Math.max(CALLOUT_ROW, r0.h + 8);
     const payline = { x: 0, y: MACHINE_TOP + MACHINE_H / 3 + 2, w: W, h: MACHINE_H / 3 - 4 };
     const words = t.plate || t.scale <= T.head;
+    // (In a HUD: the bar over it, at the same end, then left along its own bar. Under it is the next bar's number.)
     const spots = inHud
-      ? [1, 2, 3].map((k) => ({ x: x - k * (r0.w + 6), y }))
+      ? [{ x, y: y - r0.h - 2 }, { x: x - r0.w - 6, y }]
       : words && y < payline.y
-        ? CALLOUT_ROWS.filter((v) => v !== y).map((v) => ({ x, y: v }))
+        ? [...CALLOUT_ROWS.filter((v) => v > y), ...CALLOUT_ROWS.filter((v) => v < y)].map((v) => ({ x, y: v }))
         : [1, 2, 3, -1, 4].map((k) => ({ x, y: y + k * row }));
     for (const sp of spots) {
       t.x = sp.x;
@@ -498,9 +506,7 @@ export class Director {
   /** A banner is opening: a callout or a hit's number where it lands moves to the next free row (place); one with
    * nowhere to go (under a pay banner there's only the HOLD chip) goes instead: its moment is nearly over. */
   clearUnder(b: Banner): void {
-    b.scale = 1;
     const r = b.rect();
-    b.scale = 0;
     if (!r) return;
     for (const it of this.s.fx.items) {
       if (!(it instanceof FloatText) || it.off || !overlaps(it.rect(), r, 2)) continue;

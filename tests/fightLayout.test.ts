@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Banner, FloatText, overlaps } from '../src/present/fx';
 import { HUD_W, HudView } from '../src/present/hud';
-import { BEZEL, CALLOUT_ROW, CALLOUT_Y, GUTTER_PANEL_H, GUTTER_PANEL_LINE, GUTTER_PANEL_W, GUTTER_PANEL_Y, HIT_Y, MACHINE_CX, MACHINE_H, MACHINE_TOP, MACHINE_W, PAY_BANNER_Y, PAY_STACK, STATUS, TURN_BANNER_Y, W } from '../src/present/layout';
+import { BEZEL, CALLOUT_ROW, CALLOUT_ROWS, CALLOUT_Y, GUTTER_PANEL_H, GUTTER_PANEL_LINE, GUTTER_PANEL_W, GUTTER_PANEL_Y, HIT_Y, MACHINE_CX, MACHINE_H, MACHINE_TOP, MACHINE_W, PAY_BANNER_Y, PAY_STACK, STATUS, TOP_ROW_Y, TURN_BANNER_Y, W } from '../src/present/layout';
 import { climbPace, PayStack, STACK } from '../src/present/payStack';
 import { PAY_TOP } from '../src/present/directorPay';
 
@@ -32,12 +32,17 @@ describe("the fight screen's homes (user, 2026-11-10: nothing overlaps)", () => 
     expect(HIT_Y + 28).toBeLessThanOrEqual(MACHINE_TOP + MACHINE_H / 3);
   });
 
-  it('the callout row sits on the machine edge, under the HUD chips; a second row stays in the top reel row', () => {
+  it('the callout row sits on the machine edge, under the HUD chips; the second row stays in the top reel row', () => {
     const t = new FloatText('BLOCKED!', MACHINE_CX.player, CALLOUT_Y, 3, '#fff');
     t.plate = true;
     const player = new HudView('player', 100, { kind: 'vault', pips: 10, label: 'HIGH ROLLER', color: '#fff', icon: 'chip' as never, note: () => '' });
     expect(t.rect().y).toBeGreaterThanOrEqual(player.chipY + 14 + 2);
-    expect(CALLOUT_Y + CALLOUT_ROW * 2 + 20).toBeLessThan(MACHINE_TOP + MACHINE_H / 3);
+    expect(CALLOUT_ROWS).toEqual([CALLOUT_Y, TOP_ROW_Y]);
+    // The inner row: a heading-size callout on a plate (45 px tall) sits under the status badges (the reels' top
+    // 42 px) and over the payline; so does a title-size one without a plate (MAKE IT RAIN!).
+    expect(TOP_ROW_Y - 23).toBeGreaterThanOrEqual(MACHINE_TOP + 40);
+    expect(TOP_ROW_Y + 23).toBeLessThanOrEqual(MACHINE_TOP + MACHINE_H / 3);
+    expect(CALLOUT_ROW).toBeGreaterThanOrEqual(30);
   });
 
   it("the boss's panel and its one line end over the pay banner; the pay banner starts under the payline", () => {

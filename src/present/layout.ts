@@ -40,7 +40,8 @@ export const GUTTER_PANEL_LINE = 16;
  * - the HUD row (top): your chips and stake, the two HUD panels, each with its chips hanging from its bottom edge;
  * - TURN_BANNER_Y: the band between the HUDs and the reels, for turn banners (an ability, OVERTIME!, LIGHTNING STORM);
  * - CALLOUT_Y: a machine's top edge, for the small callouts about that machine (BLOCKED!, +2 CHIPS, THE DROP!); the
- *   YOUR SPIN / THEIR SPIN ribbon hangs there too and steps aside for them; a second callout takes the next row down;
+ *   YOUR SPIN / THEIR SPIN ribbon hangs there too and steps aside for them; a second callout goes inside the top
+ *   reel row (TOP_ROW_Y), a third waits its turn;
  * - HIT_Y: the big numbers of a hit, over the struck machine's top row (under the banner band); TOP_ROW_Y: a
  *   machine's own big callout (MAKE IT RAIN!), in the same row under the reels' status badges;
  * - the gutter between the machines: the boss's panel (GUTTER_PANEL_Y) or VS, then BUILD-UP at its foot. Its top
@@ -54,14 +55,15 @@ export const GUTTER_PANEL_LINE = 16;
  */
 export const TURN_BANNER_Y = 205;
 export const CALLOUT_Y = MACHINE_TOP - 18;
-/** A callout row's height (a second callout on the same edge takes the next row down, inside the top reel row). */
+/** The least a float moves to get clear of another (a hit's second number goes this far down, or its own height). */
 export const CALLOUT_ROW = 32;
 export const HIT_Y = MACHINE_TOP + 84;
 /** A machine's own big callout (MAKE IT RAIN!, HIGH ROLLER X2!, MARKED): inside its top row, under the reels' status
- * badges (FROZEN, JAM, JINX counts sit in the row's top 30 px). */
-export const TOP_ROW_Y = MACHINE_TOP + 52;
-/** Where words over a machine's top may sit, in order: its edge, then two rows inside the top reel row. */
-export const CALLOUT_ROWS = [CALLOUT_Y, TOP_ROW_Y, TOP_ROW_Y + CALLOUT_ROW];
+ * badges (FROZEN, JAM, JINX counts sit in the row's top 42 px) and over the payline. */
+export const TOP_ROW_Y = MACHINE_TOP + 64;
+/** Where words over a machine's top may sit: its edge, or inside the top reel row. (Two rows: the top reel row has
+ * room for one line of words under the badges. A third callout waits its turn: Director.popText.) */
+export const CALLOUT_ROWS = [CALLOUT_Y, TOP_ROW_Y];
 export const PAY_BANNER_Y = MACHINE_TOP + 283;
 /** THE PAY STACK: never wider than this (it hangs between your HOLD chip and the enemy's reels), and never lower than
  * `bottom` (the SPEED button starts under it). */

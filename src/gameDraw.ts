@@ -185,7 +185,7 @@ export function syncOoze(g: Game): void {
     }
   }
   // (A small pop: at 1.5 the SPILL chip swelled over the chip beside it and the meter over it.)
-  if (n !== hud.ooze) hud.oozePunch = 1.15;
+  if (n !== hud.ooze) hud.oozePunch = 1.08;
   hud.oozePunch += (1 - hud.oozePunch) * 0.15;
   hud.ooze = n;
   hud.oozeTotal = total;

@@ -163,7 +163,8 @@ export class Banner implements FxItem {
   /** The banner's box once its pop has settled, tails and all (null while it's hidden): what stands under it steps
    * aside, and a callout keeps clear of it. (At rest, so a pop's overshoot doesn't blink its neighbours.) */
   rect(): Rect | null {
-    if (this.scale <= 0.05 || this.alpha <= 0.05) return null;
+    // (From its first frame, before its pop has grown: what opens the same frame already keeps clear.)
+    if (this.alpha <= 0.05) return null;
     const { zoom, pw, ph } = this.layout();
     return { x: this.x - (pw / 2 + 22) * zoom, y: this.centreY(1) - (ph / 2) * zoom, w: (pw + 44) * zoom, h: (ph + 10) * zoom };
   }

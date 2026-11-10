@@ -215,6 +215,10 @@ export class FightView {
       // The column under your chips (left of your HUD): the stake, and the boss fights' stacked shield.
       let ly = CHIP_SPOT.y + 36;
       if (this.g.run.stake > 0 && !(this.g.drawerLive() && this.g.drawerT > 0.05)) {
+        // (On a plate: act 1's VALET and LIVE SLOTS signs hang right behind it.)
+        const sw = Math.max(textWidth(`STAKE ${this.g.run.stake}`, T.small), textWidth(STAKES[this.g.run.stake].name, T.small));
+        ctx.fillStyle = 'rgba(20,12,28,0.82)';
+        ctx.fillRect(18, ly - 10, Math.round(sw) + 12, 36);
         drawText(ctx, `STAKE ${this.g.run.stake}`, 24, ly, T.small, STAKES[this.g.run.stake].color, { align: 'left' });
         drawText(ctx, STAKES[this.g.run.stake].name, 24, ly + 16, T.small, STAKES[this.g.run.stake].color, { align: 'left' });
         ly += 40;
@@ -358,10 +362,10 @@ export class FightView {
       const mine = side === 'player';
       const label = mine ? 'YOUR SPIN' : 'THEIR SPIN';
       const rw = label.length * 6 * T.head + 90;
-      // (On the frame's top edge, clear of the chips hanging from your HUD: 6 px higher it sat on a meter's chip.)
-      const ry = MACHINE_TOP - BEZEL + 4;
+      // (On the frame's top edge, between the chips hanging from your HUD and the reels' status badges.)
+      const ry = MACHINE_TOP - BEZEL + 2;
       this.at(ctx, this.show(`ribbon:${side}`, { x: MACHINE_CX[side] - rw / 2, y: ry - 21, w: rw, h: 46 }, true), () => {
-        ctx.translate(Math.round(MACHINE_CX[side]), Math.round(ry + 6 * k));
+        ctx.translate(Math.round(MACHINE_CX[side]), Math.round(ry + 3 * k));
         ctx.scale(1 + 0.1 * k, 1 + 0.1 * k);
         drawBanner(ctx, label, 0, 0, { scale: T.head, color: mine ? KIT.title : COLORS.slime, alpha: 1 - 0.5 * k });
       });

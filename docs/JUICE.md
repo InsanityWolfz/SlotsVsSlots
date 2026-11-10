@@ -50,8 +50,8 @@ fx.ts, camera.ts) and `src/audio`; this file keeps the WHY, so new features feel
   counting, large; each finished step drops a line under it (newest on top, older ones dimmer, four at most); the
   list outlives the banner by about a second of real time. A long chain climbs faster (one time budget), it doesn't
   add seconds.
-- The stress harness lives in `tools/out/ui/` (gitignored; see `dbg.probe`): it plays long fights on every machine
-  against every boss and trick and lists the words that overlap.
+- The stress harness is `tools/shots/fight/` (it needs the dev build: `dbg.probe`): it plays long fights on every
+  machine against every boss and trick and lists the words that overlap, and captures the scripted stress scenes.
 
 ## Skip and safety
 - **Every presentation can be skipped** (a wait that polls a skip flag), jumping straight to its end state.
