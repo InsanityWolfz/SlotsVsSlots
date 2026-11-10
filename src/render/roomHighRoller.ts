@@ -140,8 +140,8 @@ export function hrStation(i: number, n: number): number {
 /** THE DEALER from the patron kit (his portrait's eyeshade, dark vest, white shirtsleeves), a cocktail waitress, the
  * pit boss. */
 const DEALER_LOOK: PatronLook = { skin: '#f4c09a', hair: '#3b3347', coat: '#2a2238', sleeve: '#e8e0d0', hairStyle: 'visor' };
-const WAITRESS_LOOK: PatronLook = { skin: '#c07a5c', hair: '#1a1014', coat: '#1a1418', legs: '#c07a5c', hairStyle: 'bun' };
-const PIT_BOSS_LOOK: PatronLook = { skin: '#e0a07a', hair: '#c8c0d0', coat: '#24202e', legs: '#1a1620', hairStyle: 'short' };
+const WAITRESS_LOOK: PatronLook = { skin: '#c07a5c', hair: '#1a1014', coat: '#2a1c2e', hairStyle: 'bun', skirt: true, tie: 'bow', lips: '#a8304a' };
+const PIT_BOSS_LOOK: PatronLook = { skin: '#e0a07a', hair: '#c8c0d0', coat: '#2c2638', legs: '#1a1620', hairStyle: 'short', tie: 'long' };
 
 /** The station's one landmark, beside the aisle where the open column shows it. */
 function drawLandmark(g: CanvasRenderingContext2D, kind: Station['landmark'], late: number): void {
@@ -151,15 +151,15 @@ function drawLandmark(g: CanvasRenderingContext2D, kind: Station['landmark'], la
     const z = 3;
     const s = 1 / z;
     const x = xAt(-110, z);
-    if (!nobody) drawPatron(g, x - 6 * s, yAt(0, z), 290 / z, PIT_BOSS_LOOK, 'walk1');
+    if (!nobody) drawPatron(g, x - 6 * s, yAt(0, z), 290 / z, PIT_BOSS_LOOK, 'stand');
     box(g, x - 34 * s, yAt(118, z), 68 * s, yAt(0, z) - yAt(118, z), WOOD);
     px(g, x - 34 * s, yAt(118, z), 68 * s, Math.max(1, 6 * s), G);
     px(g, x - 26 * s, yAt(96, z), 52 * s, Math.max(1, 40 * s), WOOD_L);
     box(g, x + 14 * s, yAt(150, z), 10 * s, 30 * s, g8);
     px(g, x + 12 * s, yAt(158, z), 14 * s, Math.max(1, 6 * s), nobody ? '#5a3a1a' : Yl);
   } else if (kind === 'waitress') {
-    // A cocktail waitress crossing toward the tables, a tray of drinks held high.
-    if (!nobody) drawPatron(g, xAt(95, 2.8), yAt(0, 2.8), 290 / 2.8, WAITRESS_LOOK, 'tray', true);
+    // A cocktail waitress by the tables, a tray of drinks held high on her outer hand (clear of THE DEALER's table).
+    if (!nobody) drawPatron(g, xAt(112, 2.8), yAt(0, 2.8), 290 / 2.8, WAITRESS_LOOK, 'tray');
   } else if (kind === 'lounge') {
     // The cigar lounge's wingback: oxblood leather, buttoned, a smoker's head over its back; a side table, an ashtray.
     const z = 2.6;
@@ -605,7 +605,10 @@ export function drawHighRoller(ctx: CanvasRenderingContext2D, o: HighRollerScene
     const z = 2.6;
     for (let j = 0; j < 4; j++) {
       const p = (t * 0.2 + j / 4) % 1;
+      // (A puff thins out as it rises and is gone before it loops: none pops out at the top.)
+      g.globalAlpha = Math.min(1, p * 8, (1 - p) * 2.5);
       px(g, xAt(-120, z) + Math.sin(p * 6 + j) * 3, yAt(250, z) - p * 30, 2 + Math.floor(p * 3), 2, p < 0.6 ? '#8a7e88' : '#5a5060');
+      g.globalAlpha = 1;
     }
   }
   // His lamp breathes a little.

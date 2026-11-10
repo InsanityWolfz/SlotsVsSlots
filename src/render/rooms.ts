@@ -34,7 +34,8 @@ import { canvas, FLOOR_Y, hexA, LH, LW, MID, NEON, rect, seeded, type RoomArt } 
 import { drawEntrance, entranceCheer, entranceUpdate } from './roomEntrance';
 import { buildVip, vip } from './roomVip';
 import { drawStreet, streetStation } from './roomStreet';
-import { drawFloorStation, drawWheelRoom, FLOOR_STATIONS, floorStation, wheelRoomUpdate } from './roomCasinoFloor';
+import { drawFloorStation, FLOOR_STATIONS, floorStation } from './roomCasinoFloor';
+import { drawWheelRoom, wheelRoomUpdate } from './roomWheel';
 import { drawHighRoller, hrStation, HR_STATIONS, type DealerState } from './roomHighRoller';
 import { drawLobby, drawNightCrew, drawOwnerRoom, endlessLate, lobbyUpdate, ownerUpdate } from './roomEndless';
 import { drawMenuStreet, drawPawnShop, type MenuPlace } from './roomMenu';

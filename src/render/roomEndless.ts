@@ -20,7 +20,7 @@
  */
 import { bulb, DOORMAN, DOORMAN_EYES, DOORMAN_INK, mk, outlined, pool, px, RH, RW } from './roomEntrance';
 import { drawText } from './text';
-import { drawPatron } from './patrons';
+import { drawPatron, MOP_HANDS } from './patrons';
 
 /** FLASH_CAP (present/fx.ts): no flash over 0.2 of white, ever (photosensitivity, binding). */
 const CAP = 0.2;
@@ -51,34 +51,34 @@ export const endlessLate = (loop: number) => (loop <= 0 ? 0 : Math.min(1, 0.3 + 
 
 const [crewC, cg] = typeof document !== 'undefined' ? mk(RW, RH) : ([null, null] as unknown as [HTMLCanvasElement, CanvasRenderingContext2D]);
 const CLEANER = { skin: '#c07a5c', hair: '#3a2416', coat: '#3a5a6a', legs: '#24202e', hairStyle: 'cap' as const };
-const PORTER = { skin: '#f4c09a', hair: '#1a1014', coat: '#5a1a2a', legs: '#1a1420', hairStyle: 'short' as const, sleeve: '#f4eee0' };
+const PORTER = { skin: '#f4c09a', hair: '#1a1014', coat: '#5a1a2a', legs: '#1a1420', hairStyle: 'short' as const, tie: 'bow' as const };
 
-/** The closing shift over a station (from late 0.6): a cleaner mopping across the aisle; later (0.8) a porter
- * stacking chairs. `where`: the floor's aisle or the high-roller room's. Drawn over the station, under the HUD. */
+/** The closing shift over a station (from late 0.6): a cleaner mopping by the aisle; later (0.8) a porter beside
+ * his stack of chairs. `where`: the floor's aisle or the high-roller room's. Drawn over the station, under the HUD. */
 export function drawNightCrew(ctx: CanvasRenderingContext2D, where: 'floor' | 'hr', late: number, t: number): void {
   if (late < 0.6) return;
   const g = cg;
   g.clearRect(0, 0, RW, RH);
-  // The cleaner: across the aisle and back, slowly, the mop's head swinging ahead of them.
+  // The cleaner, standing by the aisle's edge and mopping one patch (the user, 2026-11-10: nobody walks across the
+  // aisle): both hands on the pole, the mop's head drawn slowly back and forth over the carpet in front of them.
   const z = where === 'floor' ? 2.9 : 2.7;
-  const lat = Math.sin(t * 0.18) * 90;
-  const dir = Math.cos(t * 0.18) >= 0 ? 1 : -1;
-  const h = 270 / z;
-  const fx = xAt(lat, z);
-  const fy = yAt(0, z);
-  drawPatron(g, fx, fy, h, CLEANER, Math.floor(t * 2.4) % 2 ? 'walk0' : 'walk1', dir < 0, 0.8);
-  // The mop: a pole from the hands down to the floor ahead, a grey head that sweeps.
-  const sweep = Math.sin(t * 3) * 3;
-  const hx = fx + dir * h * 0.16;
-  const hy = fy - h * 0.48;
-  const mx = fx + dir * h * 0.42 + sweep;
-  for (let i = 0; i <= 10; i++) px(g, hx + ((mx - hx) * i) / 10, hy + ((fy - 2 - hy) * i) / 10, 1, 1, '#8f5a1f');
-  px(g, mx - 4, fy - 3, 9, 3, '#9a8fb0');
-  px(g, mx - 4, fy - 1, 9, 1, '#6d6482');
-  // The wet floor behind the mop: a band a shade lighter (stepped, gone after a while).
+  const h = Math.round(270 / z);
+  const fx = Math.round(xAt(-84, z));
+  const fy = Math.round(yAt(0, z));
+  drawPatron(g, fx, fy, h, CLEANER, 'mop', false, 0.8);
+  const sweep = Math.round(Math.sin(t * 1.5) * h * 0.07);
+  const hx = fx + Math.round(MOP_HANDS.x * h);
+  const mx = hx + Math.round(h * 0.13) + sweep;
+  const top = fy - Math.round(h * 0.68);
+  const my = fy + 3;
+  // The wet patch it has covered (a band a shade lighter, steady), the pole through the hands, the mop's grey head.
   g.globalAlpha = 0.25;
-  px(g, Math.min(fx, mx) - 10, fy - 1, Math.abs(mx - fx) + 20, 2, '#4a4060');
+  px(g, hx + Math.round(h * 0.03), my - 1, Math.round(h * 0.22), 2, '#4a4060');
   g.globalAlpha = 1;
+  for (let y = top; y < my - 2; y++) px(g, Math.round(hx - 1 + ((mx - hx + 1) * (y - top)) / (my - 2 - top)), y, 1, 1, y < top + 2 ? '#c89a4a' : '#8f5a1f');
+  px(g, mx - 5, my - 3, 11, 4, K);
+  px(g, mx - 4, my - 2, 9, 2, '#9a8fb0');
+  px(g, mx - 4, my, 9, 1, '#6d6482');
   // A yellow WET FLOOR sign by the aisle.
   const sz = z + 0.4;
   const sx = xAt(-140, sz);
@@ -94,7 +94,7 @@ export function drawNightCrew(ctx: CanvasRenderingContext2D, where: 'floor' | 'h
     const ph = 270 / pz;
     const px0 = xAt(plat, pz);
     const py0 = yAt(0, pz);
-    const n = Math.min(5, 2 + Math.floor((late - 0.8) * 15 + ((t * 0.05) % 2)));
+    const n = Math.min(5, 2 + Math.floor((late - 0.8) * 15));
     for (let i = 0; i < n; i++) {
       const cy = py0 - i * Math.max(2, ph * 0.09);
       px(g, px0 + ph * 0.25, cy - ph * 0.22, ph * 0.28, Math.max(1, ph * 0.03), '#5a311c');
@@ -102,7 +102,7 @@ export function drawNightCrew(ctx: CanvasRenderingContext2D, where: 'floor' | 'h
       px(g, px0 + ph * 0.5, cy - ph * 0.22, Math.max(1, ph * 0.03), ph * 0.22, '#3a1e10');
       px(g, px0 + ph * 0.25, cy - ph * 0.42, ph * 0.28, ph * 0.2, i % 2 ? '#6a1a2a' : '#5a1626');
     }
-    drawPatron(g, px0, py0, ph, PORTER, 'walk0', true, 0.8);
+    drawPatron(g, px0, py0, ph, PORTER, 'standL', false, 0.8);
   }
   ctx.save();
   ctx.imageSmoothingEnabled = false;

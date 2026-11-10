@@ -85,6 +85,7 @@ function alleyStill(): HTMLCanvasElement {
   return c;
 }
 
+const LOOKOUT = { ...LOOKS[4], coat: '#3a3a30', legs: '#221e1a' };
 function drawAlley(g: CanvasRenderingContext2D, t: number): void {
   g.drawImage(alley ??= alleyStill(), 0, 0);
   // The caged work light on its bracket, right of the title: it lights the wall and the crate's top (stepped, never a
@@ -98,8 +99,8 @@ function drawAlley(g: CanvasRenderingContext2D, t: number): void {
   px(g, lx - 4, ly, 9, 8, Y);
   px(g, lx - 2, ly + 1, 3, 3, T);
   for (let k = -4; k <= 4; k += 3) px(g, lx + k, ly, 1, 8, '#4a4258');
-  // A lookout by the dumpster, keeping an eye on the street (a glance now and then).
-  drawPatron(g, 610, 352, 46, LOOKS[4], Math.floor(t / 2.6) % 3 === 0 ? 'walk1' : 'walk0', Math.floor(t / 5) % 2 === 0, 0.8);
+  // A lookout by the dumpster, keeping an eye on the street (he stands still; a glance up the alley now and then).
+  drawPatron(g, 610, 352, 46, LOOKOUT, t % 9 > 6.5 ? 'standL' : 'stand', false, 0.8);
   rain(g, t, 0.35);
 }
 
@@ -167,8 +168,8 @@ function drawBar(g: CanvasRenderingContext2D, t: number): void {
   const dead = Math.sin(t * 13 + Math.sin(t * 2.3) * 5) > 0.93;
   ['B', 'E', 'E', 'R'].forEach((ch, j) => drawText(g, ch, nx + 9 + j * 13, ny + 9, 2, dead && j === 2 ? '#4a1a34' : '#e06aa8', { outline: K }));
   pool(g, nx + 28, ny + 9, 44, 16, '#ff4fa3', 0.12);
-  // A regular nursing a drink at the next table, bottom right.
-  drawPatron(g, 590, 340, 38, LOOKS[1], Math.floor(t / 4) % 2 === 0 ? 'cup' : 'lean', true, 0.8);
+  // A regular nursing a drink at the next table, bottom right (seen from behind, still).
+  drawPatron(g, 590, 340, 38, LOOKS[1], 'lean', true, 0.8);
 }
 
 // ---- the laundromat (THE CLAW) ------------------------------------------------------------------------------------------
@@ -260,9 +261,7 @@ function drawLaundry(g: CanvasRenderingContext2D, t: number): void {
   px(g, 594, 27, 40, 2, '#ff4a5a');
   px(g, 594, 32, 26, 2, '#ff4a5a');
   pool(g, 614, 30, 30, 10, '#ff4a5a', 0.1);
-  // The attendant with a basket, crossing now and then on the right; someone waiting on the bench, bottom left.
-  const cross = (t % 14) / 14;
-  if (cross < 0.5) drawPatron(g, 520 + cross * 220, 352, 44, LOOKS[3], Math.floor(t * 3) % 2 ? 'walk0' : 'walk1', false, 0.8);
+  // Someone waiting on the bench, bottom left (nobody crosses the floor: the user, 2026-11-10).
   drawPatron(g, 250, 352, 34, LOOKS[2], 'lean', false, 0.75);
 }
 

@@ -582,7 +582,7 @@ function makeSprites(): Record<string, HTMLCanvasElement> {
 
 const rain: { x: number; y: number; v: number }[] = [];
 for (let i = 0; i < 80; i++) rain.push({ x: Math.random() * RW, y: Math.random() * RH, v: 150 + Math.random() * 60 });
-const steam: { x: number; y: number; life: number; w: number }[] = [];
+const steam: { x: number; y: number; life: number; w: number; age?: number }[] = [];
 let tLast = 0;
 const [liveC, lg] = typeof document !== 'undefined' ? mk(RW, RH) : ([null, null] as unknown as [HTMLCanvasElement, CanvasRenderingContext2D]);
 
@@ -768,7 +768,9 @@ export function drawStreet(ctx: CanvasRenderingContext2D, o: StreetScene): void 
       p.x += Math.sin(t * 1.3 + p.y * 0.05) * 6 * dt;
       p.w += 3 * dt;
       p.life -= dt;
-      g.globalAlpha = Math.min(0.22, p.life * 0.08);
+      // (Each puff fades in over its first half second and out at the end: none pops in or out.)
+      p.age = (p.age ?? 0) + dt;
+      g.globalAlpha = Math.min(0.22, p.life * 0.08, p.age * 0.44);
       px(g, p.x - p.w / 2, p.y, p.w, Math.max(2, p.w / 2), '#b8b0d0');
     }
     g.globalAlpha = 1;
