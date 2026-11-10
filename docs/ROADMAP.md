@@ -73,8 +73,10 @@ don't hate it" (user): kept for now.
 blackout. Your Slot Machine gets thrown out, landing dented and sparking. Act 1: KNOCKED OUT, in the gutter at the
 station where you fell. Acts 2-3: THROWN OUT!, tumbling out of the casino's doors onto the carpet, THE DOORMAN dusting
 off his gloves. ENDLESS: CLOSING TIME, the doors at dawn with the marquee switching off. Wins unchanged. The screen's
-content (who got you, the score count-up, best hit, RUN LOG) stays; only the scene and a landing beat change. In
-progress on branch runover-v1.
+content (who got you, the score count-up, best hit, RUN LOG) stays; only the scene and a landing beat change. Shipped as
+built (user, 2026-11-10: "the screens look good as they are"; https://claude.ai/artifact/Gd721U7dBNUgKmKhxH1WXk), with
+THE DOORMAN's lines (NOT ON THE LIST, BETTER LUCK NEXT TIME, THE HOUSE THANKS YOU, WE'RE CLOSED). The casino's wall
+poster reads LIVE / SLOTS (was LIVE / THE HOUSE, which read as a boss billing).
 **Capsule and trailer on hold** until the new rooms are done (user: "so we can get some really good art"); the
 directions so far: https://claude.ai/artifact/DWvxNB3zHD8zf96xZA3FJX (branch `call9-art`, from `art-wip`: duel
 variants, trailer cut 3, store text) and https://claude.ai/artifact/PM1uuVfPi6LEJButEJTHv8 (branch `capsule-v2`: VS

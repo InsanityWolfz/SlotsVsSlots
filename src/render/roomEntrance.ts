@@ -312,16 +312,15 @@ function buildStill(): HTMLCanvasElement {
     px(g, CX - hw + 1, y, 2, 1, '#3e0e1c');
   }
   for (const y of [GROUND + 4, GROUND + 14, GROUND + 30, GROUND + 56, GROUND + 98]) px(g, CX - 1, y, 2, 2 + (y - GROUND) / 10, '#7a2234');
-  // Left: the casino's own bill on the wall (THE HOUSE is the casino's name; its gold Slot Machine), framed in gold.
-  // (Its boss is THE DOORMAN since 2026-11-09; the bill drew the boss's face, which is his now.)
+  // Left: the casino's own bill on the wall, an ad for its slots (its gold Slot Machine), framed in gold. It read
+  // LIVE / THE HOUSE, which read as a boss billing once THE DOORMAN took the door (user, 2026-11-10: fix it).
   const py = 50;
   px(g, 12, py, 46, 82, G);
   px(g, 13, py + 1, 44, 80, g8);
   px(g, 14, py + 2, 42, 78, '#2a1430');
   drawText(g, 'LIVE', 35, py + 10, 1, Y, { outline: K });
   drawSprite(g, 'houseMachine' as SpriteId, 35, py + 36, 1);
-  drawText(g, 'THE', 35, py + 59, 1, T, { outline: K });
-  drawText(g, 'HOUSE', 35, py + 69, 1, R, { outline: K });
+  drawText(g, 'SLOTS', 35, py + 64, 1, R, { outline: K });
   px(g, 11, py + 80, 48, 2, K);
   // Right: the blade sign's bracket (the letters and bulbs are live).
   px(g, 606, 20, 12, 6, k);
