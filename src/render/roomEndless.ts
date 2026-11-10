@@ -112,14 +112,14 @@ export function drawNightCrew(ctx: CanvasRenderingContext2D, where: 'floor' | 'h
 
 // ---- THE DOORMAN's lobby (his ENDLESS room) -----------------------------------------------------------------------
 
-/** The lobby's floor line: the doors' threshold (the same height as the outside room's, so his doors sit where the
- * player saw them open, above THE POT). */
-const GROUND = 145;
-const HORIZON = 100;
+/** The lobby's floor line: the foot of the doors' steps. High in the open column, so the doors and THE DOORMAN read
+ * clear of the gutter's chips (SPIN n at art y 82-92, the LOOP n BOSS label and TONIGHT'S RULE from 100 to ~135). */
+const GROUND = 84;
+const HORIZON = 40;
 const DX = 286;
-const DY = 58;
 const DW = 68;
-const DH = 68;
+const DH = 46;
+const DY = GROUND - 13 - DH;
 
 interface Bit {
   x: number;
@@ -151,18 +151,18 @@ function buildLobby(): HTMLCanvasElement {
   // The walls: dark walnut panels with brass rails, marble pilasters either side of the doors.
   px(g, 0, 0, RW, GROUND, '#1c1220');
   for (let x = 0; x < RW; x += 64) {
-    px(g, x + 6, 20, 52, GROUND - 40, '#22161f');
-    px(g, x + 6, 20, 52, 1, '#3a2620');
+    px(g, x + 6, 22, 52, GROUND - 36, '#22161f');
+    px(g, x + 6, 22, 52, 1, '#3a2620');
     px(g, x + 6, GROUND - 21, 52, 1, '#120a12');
   }
-  px(g, 0, 14, RW, 3, g8);
-  px(g, 0, 14, RW, 1, G);
+  px(g, 0, 18, RW, 3, g8);
+  px(g, 0, 18, RW, 1, G);
   px(g, 0, GROUND - 14, RW, 2, g8);
   for (const x of [246, 368]) {
-    px(g, x, 10, 26, GROUND - 10, '#2c2434');
-    px(g, x + 2, 10, 2, GROUND - 10, '#3a3046');
-    for (let y = 20; y < GROUND; y += 23) px(g, x + 6, y, 14, 1, '#241c2c');
-    px(g, x - 2, 8, 30, 4, g8);
+    px(g, x, 4, 26, GROUND - 4, '#2c2434');
+    px(g, x + 2, 4, 2, GROUND - 4, '#3a3046');
+    for (let y = 14; y < GROUND; y += 23) px(g, x + 6, y, 14, 1, '#241c2c');
+    px(g, x - 2, 2, 30, 4, g8);
     px(g, x - 2, GROUND - 6, 30, 6, '#1c1626');
   }
   // The doors' surround: a gold frame and a dark recess (the doors and the street through them are live).
@@ -191,21 +191,25 @@ function buildLobby(): HTMLCanvasElement {
   px(g, DX - 4, GROUND - 12, DW + 8, 6, '#34293e');
   px(g, DX - 4, GROUND - 12, DW + 8, 1, '#4a4060');
   // A velvet bench (left) and the coat check's dark counter (right), calm behind the reels.
-  px(g, 40, GROUND - 18, 120, 10, '#4a1626');
-  px(g, 40, GROUND - 18, 120, 2, '#6a1a2a');
-  px(g, 44, GROUND - 8, 4, 8, g8);
-  px(g, 152, GROUND - 8, 4, 8, g8);
-  px(g, 470, GROUND - 44, 140, 44, '#2a1a14');
-  px(g, 470, GROUND - 44, 140, 3, '#5a311c');
-  px(g, 470, GROUND - 41, 140, 1, G);
-  drawText(g, 'COAT CHECK', 540, GROUND - 58, 1, '#8f5a1f', { outline: K });
-  // EXIT over the doors: the casino's sign system (a dark red panel, a gold rim); its bulbs are live.
-  px(g, CX - 34, 26, 68, 22, K);
-  px(g, CX - 33, 27, 66, 20, d);
-  px(g, CX - 33, 27, 66, 2, G);
-  px(g, CX - 33, 45, 66, 2, G);
-  // The chandelier's chain.
-  px(g, CX - 1, 0, 2, 8, k);
+  px(g, 40, GROUND - 14, 120, 8, '#4a1626');
+  px(g, 40, GROUND - 14, 120, 2, '#6a1a2a');
+  px(g, 44, GROUND - 6, 4, 6, g8);
+  px(g, 152, GROUND - 6, 4, 6, g8);
+  px(g, 470, GROUND - 34, 140, 34, '#2a1a14');
+  px(g, 470, GROUND - 34, 140, 3, '#5a311c');
+  px(g, 470, GROUND - 31, 140, 1, G);
+  drawText(g, 'COAT CHECK', 540, GROUND - 44, 1, '#8f5a1f', { outline: K });
+  // EXIT over the doors: the casino's sign system (a dark red panel, a gold rim); its bulbs (on the doors' frame) are
+  // live.
+  px(g, CX - 27, 2, 54, 18, K);
+  px(g, CX - 26, 3, 52, 16, d);
+  px(g, CX - 26, 3, 52, 1, G);
+  px(g, CX - 26, 17, 52, 2, G);
+  // Two brass sconces either side of the doors (their light is live).
+  for (const x of [262, 374]) {
+    px(g, x, 30, 4, 8, g8);
+    px(g, x - 2, 28, 8, 2, G);
+  }
   return c;
 }
 
@@ -250,7 +254,7 @@ function lobbyRead(pot: number, foeHp: number): void {
   if (foeHp > ls.foeHp + 0.3) lobbyReset();
   if (foeHp < ls.foeHp - 0.002) {
     ls.hitT = 1;
-    for (let i = 0; i < 8; i++) ls.bits.push({ x: CX - 30 + Math.random() * 60, y: 30, vx: (Math.random() - 0.5) * 30, vy: Math.random() * 20, life: 0.9, kind: 'spark', c: Math.random() < 0.5 ? Y : O, gy: RH });
+    for (let i = 0; i < 8; i++) ls.bits.push({ x: CX - 26 + Math.random() * 52, y: 10, vx: (Math.random() - 0.5) * 30, vy: Math.random() * 20, life: 0.9, kind: 'spark', c: Math.random() < 0.5 ? Y : O, gy: RH });
   }
   if (pot < ls.pot - 0.5 && ls.pot - pot >= Math.max(10, ls.pot * 0.2)) {
     ls.skimT = 1;
@@ -272,10 +276,10 @@ export function drawLobby(ctx: CanvasRenderingContext2D, o: { pot: number; foeHp
   const potK = Math.min(1, ls.potShown / 400);
   // Through the doors' glass: the night street (the kerb, a lamp's orange, the rain), the casino's own light on it.
   px(g, DX, DY, DW, DH, '#0d0519');
-  px(g, DX, DY + 44, DW, DH - 44, '#17122a');
-  px(g, DX, DY + 44, DW, 1, '#2b2140');
-  pool(g, DX + 14, DY + 30, 4, 4, O, 0.6);
-  px(g, DX + 13, DY + 30, 2, 18, '#2a2238');
+  px(g, DX, DY + 32, DW, DH - 32, '#17122a');
+  px(g, DX, DY + 32, DW, 1, '#2b2140');
+  pool(g, DX + 14, DY + 18, 4, 4, O, 0.6);
+  px(g, DX + 13, DY + 18, 2, 14, '#2a2238');
   g.fillStyle = '#7f8fc0';
   g.globalAlpha = 0.4;
   for (const rd of ls.rain) g.fillRect(Math.round(rd.x), Math.round(rd.y), 1, 3);
@@ -288,32 +292,33 @@ export function drawLobby(ctx: CanvasRenderingContext2D, o: { pot: number; foeHp
     px(g, x0, DY, 3, DH, g8);
     px(g, x0 + DW / 2 - 3, DY, 3, DH, g8);
     px(g, x0 + 1, DY + 1, DW / 2 - 2, 1, G);
-    px(g, side < 0 ? x0 + DW / 2 - 9 : x0 + 5, DY + 40, 4, 12, G);
-    px(g, side < 0 ? x0 + DW / 2 - 9 : x0 + 5, DY + 40, 1, 12, Yl);
+    px(g, side < 0 ? x0 + DW / 2 - 9 : x0 + 5, DY + 22, 4, 10, G);
+    px(g, side < 0 ? x0 + DW / 2 - 9 : x0 + 5, DY + 22, 1, 10, Yl);
   }
   // EXIT: its letters (shorted by a hit), its bulbs (more lit as THE POT grows, racing at a SKIM).
   const shorted = ls.hitT > 0.25 && Math.floor(t * 14) % 3 !== 0;
-  drawText(g, 'EXIT', CX, 37, 2, shorted ? '#5a2a1a' : potK > 0.6 ? Yl : G, { outline: K });
+  drawText(g, 'EXIT', CX, 11, 2, shorted ? '#5a2a1a' : potK > 0.6 ? Yl : G, { outline: K });
   const race = ls.skimT > 0 ? 1 + 4 * ls.skimT : 1;
   for (let i = 0; i < 11; i++) {
     const step = Math.floor(t * 5 * race);
     let on = (i + step) % 3 === 0 ? 1 : 0;
     if (!on && (i * 7 + step) % 10 < potK * 6) on = 1;
     if (ls.hitT > 0.4) on = 0;
-    bulb(g, CX - 32 + i * 6, 23, on);
+    bulb(g, CX - 32 + i * 6, DY - 4, on);
   }
-  // The chandelier (late at night: half its candles out), brighter with THE POT, swinging at a hit.
-  const sway = ls.hitT > 0 ? Math.round(Math.sin(t * 18) * 3 * ls.hitT) : 0;
-  px(g, CX - 18 + sway, 8, 36, 3, g8);
-  px(g, CX - 18 + sway, 8, 36, 1, G);
-  for (let i = 0; i < 7; i++) px(g, CX - 16 + sway + i * 5, 4, 1, 4, i % 2 || potK > 0.5 ? Yl : '#5a3a1a');
-  pool(g, CX, GROUND + 30, 90, 16, Yl, 0.08 + 0.12 * potK + 0.1 * ls.skimT);
+  // The sconces (late at night: one bulb each), brighter with THE POT, flickering at a hit.
+  const lampOn = ls.hitT > 0.3 && Math.floor(t * 18) % 2 ? 0 : 1;
+  for (const x of [262, 374]) {
+    px(g, x, 24, 4, 4, lampOn ? (potK > 0.5 ? Yl : '#c97a38') : '#5a3a1a');
+    if (lampOn) pool(g, x + 2, 26, 8 + 6 * potK, 6 + 4 * potK, Yl, 0.18 + 0.2 * potK);
+  }
+  pool(g, CX, GROUND + 20, 80, 12, Yl, 0.06 + 0.1 * potK + 0.1 * ls.skimT);
   // The light under the doors, from the street: a thin line, wider at a SKIM (the house taking at the door).
   px(g, DX + 2, GROUND - 13, DW - 4, ls.skimT > 0.3 ? 2 : 1, potK > 0.5 ? Yl : '#c97a38');
   // THE DOORMAN, in front of the doors (to show you out): he watches whoever's spinning.
   const fr = o.turn === 'player' ? 0 : o.turn === 'enemy' ? 1 : 2;
   const jolt = ls.hitT > 0.6 ? (Math.floor(t * 30) % 2 ? 1 : -1) : 0;
-  g.drawImage(doormanFrames[fr], 330 + jolt, GROUND - 13 - 59);
+  g.drawImage(doormanFrames[fr], 342 + jolt, GROUND - 59);
   // Coins on the marble, sparks off the chandelier.
   for (const b of ls.bits) {
     g.globalAlpha = Math.min(1, b.life * 2);
@@ -450,7 +455,7 @@ export function ownerReset(): void {
 /** The fortune's ladder (OWNER_LADDER: 25K x10 a rung, 4 rungs). */
 const RUNGS = ['25K', '250K', '2.5M', '25M'];
 /** Where he stands: in the aisle, under the spotlight, the open column between the HUDs. */
-const OWN_FEET = 118;
+const OWN_FEET = 80;
 
 export interface OwnerScene {
   time: number;
@@ -479,15 +484,15 @@ export function drawOwnerRoom(ctx: CanvasRenderingContext2D, o: OwnerScene): voi
   if (o.rungs > os.rungs) {
     os.rungT = 1;
     for (let i = 0; i < 16; i++)
-      os.bits.push({ x: CX - 24 + ((o.rungs - 1) % 2) * 48 + (Math.random() - 0.5) * 12, y: 26, vx: (Math.random() - 0.5) * 60, vy: -30 - Math.random() * 30, life: 2.4, kind: 'chip', c: i % 3 ? R : T, gy: OWN_FEET - 2 + Math.random() * 8 });
+      os.bits.push({ x: CX - 24 + ((o.rungs - 1) % 2) * 48 + (Math.random() - 0.5) * 12, y: 156, vx: (Math.random() - 0.5) * 60, vy: -30 - Math.random() * 30, life: 2.4, kind: 'chip', c: i % 3 ? R : T, gy: 178 + Math.random() * 6 });
   }
   os.rungs = o.rungs;
   const g = lg;
   g.clearRect(0, 0, RW, RH);
-  // His fortune: the progressive board, repurposed (the casino's sign system), at the top of the open column: a lamp a
-  // rung, two by two (25K 250K / 2.5M 25M), each going dark as you climb it.
+  // His fortune: the progressive board, repurposed (the casino's sign system), under the gutter's LOOP label and over
+  // VS: a lamp a rung, two by two (25K 250K / 2.5M 25M), each going dark as you climb it.
   const bx = CX - 50;
-  const by = 4;
+  const by = 138;
   px(g, bx - 2, by - 2, 104, 40, K);
   px(g, bx, by, 100, 36, '#1a0e24');
   px(g, bx, by, 100, 2, G);
@@ -503,7 +508,7 @@ export function drawOwnerRoom(ctx: CanvasRenderingContext2D, o: OwnerScene): voi
   // The spotlight: a stepped cone from under the board (three nested bands, crisp), a pool round his feet. It dims a
   // step each rung you climb (the house's lights going out), and stutters at a rung.
   const k2 = Math.max(0.45, 1 - 0.12 * o.rungs) * (os.rungT > 0.5 && Math.floor(t * 16) % 2 ? 0.6 : 1);
-  const top = by + 38;
+  const top = 6;
   g.fillStyle = '#fff1c8';
   for (const [w0, w1, a] of [[10, 40, 0.06], [7, 28, 0.06], [4, 18, 0.07]] as const) {
     g.globalAlpha = a * k2;
@@ -514,6 +519,10 @@ export function drawOwnerRoom(ctx: CanvasRenderingContext2D, o: OwnerScene): voi
   }
   g.globalAlpha = 1;
   pool(g, CX, OWN_FEET + 1, 36, 6, '#fff1c8', 0.5 * k2);
+  // The rig: a black can at the top of the column.
+  px(g, CX - 6, 0, 12, 4, K);
+  px(g, CX - 4, 4, 8, 2, k);
+  px(g, CX - 3, 5, 6, 1, Yl);
   // THE OWNER: arm raised while his trick fires.
   const raised = os.boltT > 0.2 ? 1 : 0;
   const fig = ownerFrames[raised];
