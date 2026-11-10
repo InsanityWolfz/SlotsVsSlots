@@ -9,6 +9,7 @@ import type { CombatEvent } from './core/events';
 import { BUILD_UP } from './core/fightRules';
 import type { Game } from './game';
 import { setInputMode, type InputMode } from './ui/input';
+import { RUNOVER } from './render/roomRunOver';
 import { endlessPlace, ROOM_V2, roomPlace } from './render/rooms';
 import { devSwapSprite } from './render/sprites';
 
@@ -35,6 +36,8 @@ export function installDebug(game: Game): void {
     /** The prompts for a device: dbg.input('pad') shows the button badges. */
     input: (m: InputMode) => (setInputMode(m), m),
     pause,
+    /** RUN OVER's thrown-out scenes on or off (off: the screen as it was). */
+    runOver: (on: boolean) => ((RUNOVER.on = on), on),
     resume: () => (game.stage.clock.speed = game.prefs.speed / 2),
     /** Advance game time by `sec` (paused otherwise). */
     adv: (sec: number) => step(sec),

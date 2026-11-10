@@ -1,7 +1,7 @@
 import type { MetaGain } from '../../core/profile';
 import { levelOf } from '../../core/meta';
 import { RELICS } from '../../core/relics';
-import { endlessScore, RUN, runScoreOf, scoreParts, SCORE, totalFights, type FightRecord, type RunState } from '../../core/run';
+import { endlessScore, RUN, runScoreOf, scoreParts, SCORE, totalFights, TYPICAL_ACT_FIGHTS, type FightRecord, type RunState } from '../../core/run';
 import { takenLabel } from '../../core/draft';
 import { CABINETS, type CabinetId } from '../../core/cabinets';
 import { stakeOf } from '../../core/stakes';
@@ -18,6 +18,8 @@ import { heroSprite } from '../menus';
 import { wrap, stakeDisc, spotlight, bigPortrait, type Btn } from './shared';
 import { ShopScreen } from './shop';
 import { by, drawPrompt } from '../input';
+import { drawRunOver, RUNOVER, RUNOVER_LAND, type RunOverKind } from '../../render/roomRunOver';
+import { streetStation } from '../../render/roomStreet';
 
 /** RUN OVER's reveal, in seconds: the title lands, the portrait slides in, the words, the score counts up, the wells,
  * then the buttons (a tap skips to the end). */
@@ -45,6 +47,9 @@ export abstract class OverScreen extends ShopScreen {
   protected scoreLanded = -1;
   protected logOpen = false;
   protected overMain: Btn[] = [];
+  /** RUN OVER's scene (user, 2026-11-10: you get thrown out): a loss's (null: a win, THE OWNER beaten, the demo
+   * cleared: those keep their screen). */
+  protected overScene: { kind: RunOverKind; station: number | 'door'; title: string; line: string | null } | null = null;
   protected logButtons: Btn[] = [];
 
   showOver(run: RunState): void {
@@ -74,9 +79,28 @@ export abstract class OverScreen extends ShopScreen {
     this.scoreLanded = -1;
     this.overSkipHit = this.hit(W / 2, H / 2, W, H, () => this.endReveal());
     this.salesAt = -1;
-    this.sounds.stingerMedium();
-    void this.ui.wait(BEAT.score).then(() => this.mode === 'over' && this.overScore.set(this.scoreOf(run)));
-    void this.ui.wait(BEAT.buttons).then(() => this.mode === 'over' && this.overSkipHit && this.endReveal());
+    this.overScene = this.sceneOf(run);
+    // A loss: the machine lands first (a thud), then the screen plays as before.
+    const off = this.overScene ? RUNOVER_LAND : 0;
+    if (this.overScene) void this.ui.wait(RUNOVER_LAND).then(() => this.mode === 'over' && this.overSkipHit && this.sounds.bossSlam());
+    else this.sounds.stingerMedium();
+    void this.ui.wait(BEAT.score + off).then(() => this.mode === 'over' && this.overScore.set(this.scoreOf(run)));
+    void this.ui.wait(BEAT.buttons + off).then(() => this.mode === 'over' && this.overSkipHit && this.endReveal());
+  }
+
+  /** Where a lost run ends up: KNOCKED OUT on the street in act 1 (at THE DOORMAN's door if he beat you), THROWN OUT!
+   * of the casino in acts 2-3, CLOSING TIME at dawn in ENDLESS; THE DOORMAN's one line by how far you got. */
+  protected sceneOf(run: RunState): OverScreen['overScene'] {
+    const last = run.records[run.records.length - 1];
+    if (!RUNOVER.on || (run.won && !run.endless)) return null;
+    if (run.endless?.turbo) return null;
+    if (run.endless) return { kind: 'closing', station: 'door', title: 'CLOSING TIME', line: "WE'RE CLOSED" };
+    if (run.act >= 2) return { kind: 'thrown', station: 'door', title: 'THROWN OUT!', line: run.act >= 3 ? 'THE HOUSE THANKS YOU' : 'BETTER LUCK NEXT TIME' };
+    // (As the journey places it, gameDraw.ts: before a route is picked the act's length is a guess.)
+    const routed = !(run.route === null && run.map.routes.length > 1);
+    const regulars = routed ? Math.max(1, run.enemies.length - 1) : TYPICAL_ACT_FIGHTS - 1;
+    const atDoor = !!last?.boss;
+    return { kind: 'ko', station: atDoor ? 'door' : streetStation(Math.min(run.depth, regulars - 1), regulars), title: 'KNOCKED OUT', line: atDoor ? 'NOT ON THE LIST' : null };
   }
 
   /** The demo's row: WISHLIST ON STEAM leads a cleared demo (PLAY AGAIN beside it) and sits beside NEW RUN on a lost
@@ -146,7 +170,10 @@ export abstract class OverScreen extends ShopScreen {
 
   protected drawOver(ctx: CanvasRenderingContext2D, time: number): void {
     const run = this.run!;
-    const t = this.overT();
+    const t0 = this.overT();
+    const scene = this.overScene;
+    // A loss plays its landing first: the rest of the reveal waits for the thud.
+    const t = scene && t0 < 99 ? t0 - RUNOVER_LAND : t0;
     const B = BEAT;
     const ease = (from: number, dur = 0.3) => Math.max(0, Math.min(1, (t - from) / dur));
     const out = (k: number) => 1 - (1 - k) * (1 - k) * (1 - k);
@@ -156,13 +183,24 @@ export abstract class OverScreen extends ShopScreen {
     const won = run.won && !busted;
     const trueEnding = run.won && run.act >= 3;
     const turbo = busted && run.endless!.turbo;
+    // A loss: where you got thrown out, behind everything (a lighter veil: the scene is the point).
+    if (scene) drawRunOver(ctx, { kind: scene.kind, sprite: CABINETS[run.cabinet].sprite, station: scene.station, t: t0, time, reduceMotion: this.reduceMotion });
     // A darker room: this is the moment.
-    ctx.fillStyle = 'rgba(6,3,12,0.62)';
+    ctx.fillStyle = scene ? 'rgba(6,3,12,0.4)' : 'rgba(6,3,12,0.62)';
     ctx.fillRect(0, 0, W, H);
+    // THE DOORMAN's line, a small speech plate over his head once you've landed.
+    if (scene?.line && scene.station === 'door' && t0 >= RUNOVER_LAND + 0.3) {
+      const w = textWidth(scene.line, T.small) + 20;
+      const k = this.reduceMotion ? 1 : Math.min(1, (t0 - RUNOVER_LAND - 0.3) / 0.15);
+      ctx.save();
+      ctx.globalAlpha *= k;
+      drawChip(ctx, scene.line, Math.min(1166, W - 12 - w / 2), 150, { scale: T.small, color: KIT.title, fill: '#1a0e24' });
+      ctx.restore();
+    }
     // 1. The title lands, in the bulb marquee (the kit's big moment).
     // The demo ends at THE HOUSE: a win there clears the demo.
     const cleared = won && demo().on;
-    const title = turbo ? 'YOU BROKE THE BANK!' : busted ? `BUSTED ON LOOP ${run.endless!.loop}` : trueEnding ? 'THE DEALER FOLDS!' : cleared ? 'DEMO CLEARED!' : won ? 'THE WHEEL STOPS!' : 'RUN OVER';
+    const title = scene ? scene.title : turbo ? 'YOU BROKE THE BANK!' : busted ? `BUSTED ON LOOP ${run.endless!.loop}` : trueEnding ? 'THE DEALER FOLDS!' : cleared ? 'DEMO CLEARED!' : won ? 'THE WHEEL STOPS!' : 'RUN OVER';
     const good = won || turbo;
     const tw = textWidth(title, T.title) + 96;
     const k1 = out(ease(0, 0.28));

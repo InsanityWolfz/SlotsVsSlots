@@ -177,7 +177,7 @@ export const DOORMAN_INK: Record<string, string> = {
 
 // ---- THE HOUSE's crest, THE DOORMAN, the poster, the lamp: outlined props ---------------------------------------
 
-let props: { crest: HTMLCanvasElement; doorman: HTMLCanvasElement[]; lamp: HTMLCanvasElement } | null = null;
+let props: { crest: HTMLCanvasElement; doorman: HTMLCanvasElement[]; dust: HTMLCanvasElement[]; lamp: HTMLCanvasElement } | null = null;
 function makeProps() {
   // THE HOUSE's crown crest over the canopy (its icon wears the same crown).
   const crest = outlined(40, 18, (c) => {
@@ -215,7 +215,26 @@ function makeProps() {
     px(c, 3, 0, 8, 2, k);
     px(c, 6, 0, 2, 1, G);
   });
-  props = { crest, doorman, lamp };
+  // RUN OVER (THROWN OUT!, CLOSING TIME): dusting off his gloves. His hands come off his sides (rows 34-36) to his
+  // chest, one over the other, two frames.
+  const dust = [0, 1].map((f) =>
+    outlined(DOORMAN[0].length, DOORMAN.length, (c) => {
+      DOORMAN.forEach((row, y) =>
+        [...(y === 8 ? DOORMAN_EYES[0] : row)].forEach((ch, x) => {
+          if (y >= 34 && y <= 36 && (x <= 3 || x >= 18)) return;
+          if (ch !== '.') px(c, x, y, 1, 1, DOORMAN_INK[ch]);
+        }),
+      );
+      // the forearms across, the gloves at the chest (white, a grey shade), the top hand brushing
+      px(c, 4, 25 + f, 5, 2, DOORMAN_INK.R);
+      px(c, 13, 26 - f, 5, 2, DOORMAN_INK.d);
+      px(c, 8, 24 + f, 3, 3, DOORMAN_INK.T);
+      px(c, 8, 26 + f, 3, 1, DOORMAN_INK.t);
+      px(c, 11, 25 - f, 3, 3, DOORMAN_INK.T);
+      px(c, 11, 27 - f, 3, 1, DOORMAN_INK.t);
+    }),
+  );
+  props = { crest, doorman, dust, lamp };
 }
 
 // ---- the still layer --------------------------------------------------------------------------------------------
@@ -407,7 +426,10 @@ function read(pot: number, foeHp: number): void {
 const [liveC, lg] = typeof document !== 'undefined' ? mk(RW, RH) : ([null, null] as unknown as [HTMLCanvasElement, CanvasRenderingContext2D]);
 
 /** The canopy's and the blade sign's bulbs, in chase order: a ripple of dark bulbs after a hit, a race at a SKIM. */
+let dawnNow = 0;
 function bulbsOn(i: number, n: number, t: number): number {
+  // CLOSING TIME (RUN OVER in ENDLESS): dawn switches the bulbs off one by one.
+  if (dawnNow > 0 && i < Math.floor(dawnNow * (n + 1))) return 0;
   const race = st.skimT > 0 ? 1 + 4 * st.skimT : 1;
   const step = Math.floor(t * 6 * race);
   let on = (i + step) % 3 === 0 ? 1 : 0;
@@ -422,7 +444,10 @@ function bulbsOn(i: number, n: number, t: number): number {
   return on;
 }
 
-export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; foeHp: number; turn: 'player' | 'enemy' | null; time: number; dim?: number }): void {
+/** `dawn` (0-1, RUN OVER's CLOSING TIME): the sky greys, the bulbs switch off one by one, the lamp goes out. `dust`:
+ * THE DOORMAN dusts off his gloves (RUN OVER: you've just been thrown out). */
+export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; foeHp: number; turn: 'player' | 'enemy' | null; time: number; dim?: number; dawn?: number; dust?: boolean }): void {
+  dawnNow = o.dawn ?? 0;
   if (!props) makeProps();
   if (!still) still = buildStill();
   read(o.pot, o.foeHp);
@@ -538,7 +563,7 @@ export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; fo
   }
 
   // The street lamp (left) and its pool on the pavement; it flickers once in a while.
-  const flick = Math.sin(t * 13) > 0.97 ? 0.5 : 1;
+  const flick = (Math.sin(t * 13) > 0.97 ? 0.5 : 1) * (dawnNow > 0.6 ? 0 : 1);
   pool(gg, 65, KERB - 166, 14, 12, O, 0.22 * flick);
   gg.drawImage(P2.lamp, 59, KERB - 178);
   pool(gg, 65, KERB - 6, 26, 6, O, 0.18 * flick);
@@ -548,7 +573,8 @@ export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; fo
   const nod = st.cheerT > 0.4 && Math.floor(t * 8) % 2 ? 1 : 0;
 
 
-  gg.drawImage(P2.doorman[fr], 572, GROUND - 60 + nod);
+  if (o.dust) gg.drawImage(P2.dust[Math.floor(t * 7) % 2], 572, GROUND - 60);
+  else gg.drawImage(P2.doorman[fr], 572, GROUND - 60 + nod);
   // Reflections on the wet pavement: the doors' light, the blade sign, the lamp.
   for (const [x, y0, w, c, a] of [[CX - 14, GROUND, 28, Yl, 0.08 + 0.1 * potK], [bx + 4, GROUND, 16, R, 0.09], [61, KERB + 7, 8, Yl, 0.07]] as const) {
     gg.globalAlpha = a;
@@ -575,6 +601,14 @@ export function drawEntrance(ctx: CanvasRenderingContext2D, o: { pot: number; fo
     else px(gg, b.x, b.y, 1, 1, b.c);
   }
   gg.globalAlpha = 1;
+  // Dawn: the sky over the roofline greys in flat steps (no gradient), palest low down.
+  if (dawnNow > 0) {
+    for (const [y0, y1, c, a] of [[0, 5, '#4a4a6a', 0.55], [5, 10, '#6a6a88', 0.55], [10, 14, '#9a8aa6', 0.5]] as const) {
+      gg.globalAlpha = a * dawnNow;
+      px(gg, 0, y0, RW, y1 - y0, c);
+    }
+    gg.globalAlpha = 1;
+  }
 
   ctx.save();
   ctx.imageSmoothingEnabled = false;
