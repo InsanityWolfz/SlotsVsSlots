@@ -66,7 +66,10 @@ the machines put them off (none from now on). Round 3, with the characters (http
 `make.mjs cast`): the two corners, the gang vs the house, at the levers. Then the user's own idea: the sign as the
 whole capsule, over "the background we had once at the title screen with all the symbols flowing on reels" (round 4,
 https://claude.ai/artifact/M3nQW9D3yvfcSJxYNmV5JE; `make.mjs sign`: sign over the reels, sign only, and four with
-machines or faces). Waiting on the user.
+machines or faces). **The capsule is the sign over the reels (user, 2026-11-11: "its sign over the reels all day").**
+Polished and built at all 7 Steam sizes (https://claude.ai/artifact/SaC8c7y8v8WE1E8mAicNKT; upload-ready in
+`art/capsule/steam/`, `node art/capsule/v3/make.mjs steam`). Waiting on the user: the stacked sign for the two portrait
+sizes (in `alt/`, recommended) and the big-sign small capsule (the default) against the smaller sign with symbols.
 
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
 text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about
