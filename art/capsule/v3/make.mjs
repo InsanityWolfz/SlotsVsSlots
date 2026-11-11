@@ -20,8 +20,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../../..');
 const args = process.argv.slice(2);
 const oi = args.indexOf('--out');
-const out = oi >= 0 ? resolve(args.splice(oi, 2)[1]) : resolve(here, 'out');
+const outArg = oi >= 0 ? resolve(args.splice(oi, 2)[1]) : null;
 const names = args.length ? args : ['a', 'b', 'c'];
+// (the final capsule's files go straight to art/capsule/steam)
+const out = outArg ?? (names[0] === 'steam' ? resolve(here, '../steam') : resolve(here, 'out'));
 const SIZES = { main: [1232, 706], small: [462, 174] };
 
 const server = await createServer({ root, logLevel: 'error', server: { port: 5187, strictPort: false } });
@@ -62,6 +64,32 @@ try {
           g.drawImage(art, -sx * k, -sy * k, art.width * k, art.height * k);
           return c.toDataURL('image/png');
         };
+        // The final capsule (steam.js): `outputs()` lists every file with its exact size; `details` are crops of one
+        // of them (600x400, k screen pixels an art pixel) and `shrinks` are smooth reductions, as a browser would show
+        // it. Alternatives and comparisons go in alt/.
+        if (mod.outputs) {
+          const by = {};
+          for (const o of await mod.outputs()) {
+            if (o.canvas.width * o.px < o.w || o.canvas.height * o.px < o.h) throw new Error(`${o.name}: art too small for ${o.w}x${o.h}`);
+            const url = png(o.canvas, o.px, o.w, o.h, Math.floor((o.canvas.width * o.px - o.w) / 2) / o.px, Math.floor((o.canvas.height * o.px - o.h) / 2) / o.px);
+            res[(o.alt ? 'alt/' : '') + o.name] = url;
+            by[o.name] = { o, url };
+          }
+          for (const [key, from, x, y, k] of mod.details ?? []) res[`alt/${key}`] = png(by[from].o.canvas, k, 600, 400, x, y);
+          for (const [key, from, w2, h2] of mod.shrinks ?? []) {
+            const img = new Image();
+            img.src = by[from].url;
+            await img.decode();
+            const d = document.createElement('canvas');
+            d.width = w2;
+            d.height = h2;
+            const dg = d.getContext('2d');
+            dg.imageSmoothingQuality = 'high';
+            dg.drawImage(img, 0, 0, w2, h2);
+            res[`alt/${key}`] = d.toDataURL('image/png');
+          }
+          return res;
+        }
         // A sketch sheet (rough.js): `sketches` maps a name to a main capsule only. Each gets x_main.png and x_half.png:
         // a band of the main (full width, 1232x464) shrunk to 231x87, to see whether the idea survives small. That one
         // is a smoothed shrink of the main, not a composed small capsule.
@@ -114,6 +142,7 @@ try {
       { name, SIZES },
     );
     for (const [k, v] of Object.entries(shots)) {
+      mkdirSync(dirname(`${out}/${k}.png`), { recursive: true });
       writeFileSync(`${out}/${k}.png`, Buffer.from(v.split(',')[1], 'base64'));
       console.log(`${out}/${k}.png`);
     }
