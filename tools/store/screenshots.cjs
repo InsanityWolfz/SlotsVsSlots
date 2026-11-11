@@ -2,7 +2,7 @@
 // Each fight is a real run fight with a build a run could have, stepped frame by frame (the fight harness's clock), so
 // a shot lands on the same moment every time. The dev build's TUNE button is hidden; nothing else is staged.
 //   npx vite --port 5190 --strictPort &
-//   PORT=5190 node tools/store/screenshots.cjs [outDir]            the 8 shots
+//   PORT=5190 node tools/store/screenshots.cjs [outDir]            the 9 shots
 //   PORT=5190 CAND=1 node tools/store/screenshots.cjs [outDir]     every candidate frame of the fight shots (to pick from)
 process.env.PORT = process.env.PORT || '5190';
 const fs = require('node:fs');
@@ -17,7 +17,7 @@ const FIGHTS = [
   {
     // A jackpot on the casino floor: the pay climbs and its chain stays readable under the banner.
     name: '01_jackpot',
-    sc: { cab: 'knight', act: 2, station: 1, seed: 21, chips: 23, speed: 2, relics: ['greatsword', 'key', 'bell', 'hotstreak'], gilded: gold('sword', [0, 1]), levels: { sword: 3 }, enemy: 'bomber', foeHp: 1700 },
+    sc: { cab: 'knight', act: 2, station: 1, seed: 21, chips: 23, speed: 2, relics: ['greatsword', 'key', 'bell', 'hotstreak'], gilded: gold('sword', [0, 1]), levels: { sword: 3 }, enemy: 'vampire', foeHp: 1700 },
     turns: [{ player: ['sword', 'sword', 'shield'], enemy: ['sword', 'shield', 'shield'] }, { player: ['sword', 'sword', 'sword'] }],
     at: 4.9,
     cand: [3.6, 4.0, 4.3, 4.6, 4.9, 5.2, 5.6, 6.0],
@@ -43,8 +43,9 @@ const FIGHTS = [
     name: '04_dealer',
     sc: { cab: 'joker', act: 3, boss: true, seed: 9, chips: 42, speed: 2, relics: ['highcard', 'encore', 'bell', 'underdog'], gilded: gold('ace', [0, 2]), levels: { ace: 3 } },
     turns: [{ player: ['wild', 'ace', 'wild'], enemy: ['seven', 'sword', 'shield'] }, { player: ['ace', 'ace', 'ace'] }],
-    at: 4.0,
-    cand: [4.0],
+    // (4.15 s: the hit's number is up and his portrait is past its white hit flash.)
+    at: 4.15,
+    cand: [4.0, 4.15, 4.3, 4.45, 4.6, 4.8],
   },
 ];
 
@@ -90,21 +91,37 @@ const FIGHTS = [
   }
   await game(page, 'dbg.station(null)');
 
+  // THE CLAW in act 1's all-night laundromat, mid-grab (a table game, and the run's street act).
+  await game(page, `g.menus.hide(); g.startRun(52, 'knight', 0); const r = g.run; r.pendingStart = null; r.tutorial = false; r.player.chips = 19; r.player.relics = ['greatsword']; dbg.screenAt('claw', 1);`);
+  await step(page, 1.2);
+  await game(page, 'g.screens.playClaw(1)');
+  if (CAND) {
+    let t = 0;
+    for (const c of [1.0, 1.5, 1.9, 2.3]) {
+      await step(page, c - t);
+      t = c;
+      await shot(`cand_05_claw_${String(c).replace('.', '_')}`);
+    }
+  } else {
+    await step(page, 1.9);
+    await shot('05_claw');
+  }
+
   if (!CAND) {
     // The screens between fights: a run in act 2 with a build, then the draft, the map and the Cashier; then the pawn shop.
     const build = `const r = g.run; r.pendingStart = null; r.tutorial = false; r.player.chips = 34; r.player.relics = ['greatsword', 'key', 'bandage'];`;
     await game(page, `g.menus.hide(); g.startRun(31, 'knight', 0); ${build} dbg.screenAt('draft', 2);`);
     await step(page, 1.5);
-    await shot('05_draft');
+    await shot('06_draft');
     await game(page, `g.startRun(33, 'jukebox', 0); ${build.replace("'greatsword', 'key', 'bandage'", "'subwoofer', 'turntable'")} dbg.screenAt('map', 2);`);
     await step(page, 1.5);
-    await shot('06_map');
+    await shot('07_map');
     await game(page, `g.startRun(41, 'tesla', 0); ${build.replace("'greatsword', 'key', 'bandage'", "'livewire'")} dbg.act(2); dbg.shop();`);
     await step(page, 1.8);
-    await shot('07_cashier');
+    await shot('08_cashier');
     await game(page, `g.chooseCabinet();`);
     await step(page, 1.5);
-    await shot('08_machines');
+    await shot('09_machines');
   }
 
   if (errs.length) {

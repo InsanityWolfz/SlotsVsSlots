@@ -53,7 +53,9 @@ no trash bags beside PAUSE. Also (user, 2026-11-10): every tutorial box and the 
 commas, semicolons or colons (they were "too wordy... scream ai generated"; "this is a video game not a memo"), and the pay names GOLD as a Charm (X2 GOLD CHARM, X6 GOLD CHARMS). Left as they are (user): the Charm numbers, and JOKER's meter jackpot has no banner. For
 the next balance batch: one TRICK cell in a meter jackpot fills 90 of 100, and with ENCORE the meter re-arms at once;
 OVERTIME is hard on slow act 1 fights (TESLA 23 spins on AUTO); "BIG WIN! 50" in fight 1 (the ladder is by HP share). The capsule and screenshots are on again (user, 2026-11-11: "finally ready for the capsule art and the screenshots. no
-trailer yet"): 8 screenshots retaken in the new rooms wait on the user (https://claude.ai/artifact/E6tQP6S2D1zCvYdwFe9Tg2;
+trailer yet"): 9 screenshots in the new rooms (user: "Screenshots look good except...": no IOUs on the MEGA WIN shot, THE DEALER
+past his white hit flash, THE CLAW added as the table game; upload-ready in `art/steam/screenshots/upload/`;
+https://claude.ai/artifact/E6tQP6S2D1zCvYdwFe9Tg2;
 `tools/store/screenshots.cjs`, stepped frame by frame so each lands on the same moment); three capsule directions from
 the new rooms wait on the user's pick (https://claude.ai/artifact/JjLkj6eXwCLTFmCQh3SemA; `art/capsule/v3/`,
 `node art/capsule/v3/make.mjs`: A the duel at the casino's door, B on the floor, C the house falls; REEL BRAWL is the
