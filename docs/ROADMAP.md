@@ -57,7 +57,10 @@ trailer yet"): 8 screenshots retaken in the new rooms wait on the user (https://
 `tools/store/screenshots.cjs`, stepped frame by frame so each lands on the same moment); three capsule directions from
 the new rooms wait on the user's pick (https://claude.ai/artifact/JjLkj6eXwCLTFmCQh3SemA; `art/capsule/v3/`,
 `node art/capsule/v3/make.mjs`: A the duel at the casino's door, B on the floor, C the house falls; REEL BRAWL is the
-casino's marquee in all three). Then the other Steam sizes from the one picked.
+casino's marquee in all three). The user (2026-11-11): "I don't hate them but I don't love
+them"; the swords shot across a lane bother them and the floor is too busy for the main art. Round 2, six rough ideas
+with no projectiles (https://claude.ai/artifact/3yVnYTpYyAnkZmPc7V2Ugx; `node art/capsule/v3/make.mjs rough`): nose to
+nose, the lever punch, the brawl cloud, high noon, the tale of the tape, a VS card. Waiting on the user's reaction.
 
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
 text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about
