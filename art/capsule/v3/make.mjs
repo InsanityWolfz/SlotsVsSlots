@@ -62,7 +62,34 @@ try {
           g.drawImage(art, -sx * k, -sy * k, art.width * k, art.height * k);
           return c.toDataURL('image/png');
         };
-        for (const kind of ['main', 'small']) {
+        // A sketch sheet (rough.js): `sketches` maps a name to a main capsule only. Each gets x_main.png and x_half.png:
+        // a band of the main (full width, 1232x464) shrunk to 231x87, to see whether the idea survives small. That one
+        // is a smoothed shrink of the main, not a composed small capsule.
+        for (const [key, fn] of Object.entries(mod.sketches ?? {})) {
+          const r = await fn();
+          const [w, h] = SIZES.main;
+          if (r.canvas.width * r.px < w || r.canvas.height * r.px < h) throw new Error(`${key}: art too small`);
+          const url = png(r.canvas, r.px, w, h, Math.floor((r.canvas.width * r.px - w) / 2) / r.px, Math.floor((r.canvas.height * r.px - h) / 2) / r.px);
+          res[`${key}_main`] = url;
+          const img = new Image();
+          img.src = url;
+          await img.decode();
+          let c = document.createElement('canvas');
+          c.width = 1232;
+          c.height = 464;
+          c.getContext('2d').drawImage(img, 0, -Math.round((706 - 464) * (r.band ?? 0.5)));
+          for (const [w2, h2] of [[616, 232], [308, 116], [231, 87]]) {
+            const d = document.createElement('canvas');
+            d.width = w2;
+            d.height = h2;
+            const dg = d.getContext('2d');
+            dg.imageSmoothingQuality = 'high';
+            dg.drawImage(c, 0, 0, w2, h2);
+            c = d;
+          }
+          res[`${key}_half`] = c.toDataURL('image/png');
+        }
+        for (const kind of mod.sketches ? [] : ['main', 'small']) {
           const r = await mod[kind]();
           const [w, h] = SIZES[kind];
           if (r.canvas.width * r.px < w || r.canvas.height * r.px < h) throw new Error(`${name}.${kind}: art ${r.canvas.width}x${r.canvas.height} at ${r.px}px is smaller than ${w}x${h}`);
