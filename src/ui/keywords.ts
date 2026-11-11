@@ -30,7 +30,7 @@ export const KEYWORDS: Keyword[] = [
   { word: 'PIERCE', icon: 'kwPierce', forms: ['PIERCES', 'PIERCING', 'PIERCES SHIELDS', 'PIERCE SHIELDS'], color: '#bff4ff', text: 'GOES PAST SHIELDS, STRAIGHT TO HP' },
   { word: 'HEAL', icon: 'kwHeal', forms: ['HEALS', 'HEALED', 'HEALING'], color: '#7dff7a', text: 'HP BACK, UP TO YOUR MAX HP' },
   { word: 'CHARM', icon: 'kwCharm', forms: ['CHARMS'], color: '#c9a0ff', text: 'A PERK ON ONE SYMBOL ON A REEL' },
-  { word: 'LEVEL', icon: 'kwLevel', forms: ['LEVELS', 'LV'], color: '#5ad8e8', text: 'A SYMBOL PAYS MORE PER LEVEL, ON EVERY COPY OF IT YOU OWN. NO CAP' },
+  { word: 'LEVEL', icon: 'kwLevel', forms: ['LEVELS', 'LV'], color: '#5ad8e8', text: 'A SYMBOL PAYS MORE PER LEVEL' },
   // (VOLUME borrows the METER icon. MIXTAPE confused new players who hadn't seen the bar: playtest 2026-11-03.)
   { word: 'VOLUME', icon: 'kwMeter', color: '#ff9ad8', text: "THE JUKEBOX'S BAR: EACH NOTE ON YOUR PAYLINE ADDS 1, A SPIN WITH NO NOTE LOSES 2. AT 6, THE DROP: EVERY NOTE ON SCREEN HITS" },
   { word: 'METER', icon: 'kwMeter', color: '#ffd23f', text: "YOUR SLOT MACHINE'S BAR: IT FILLS AS YOU SPIN AND PAYS OFF WHEN FULL" },
