@@ -130,7 +130,7 @@ export function rain(s, n = 26, seed = 21) {
   for (let i = 0; i < n; i++) {
     const x = Math.floor(rr() * W);
     const y = Math.floor(rr() * H);
-    if (x > LX - 4 && x < LX + 164 && y > LY + 40 && y < GROUND - 10) continue;
+    if (x > LX - 4 && x < LX + 164 && y > LY - 5 && y < GROUND - 10) continue;
     g.fillRect(x, y, 1, 4);
   }
   g.globalAlpha = 1;

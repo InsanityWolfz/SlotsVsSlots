@@ -236,7 +236,7 @@ export async function main() {
       [-395, Z_HERO * 1.86, L(0), 'standR'], [-560, Z_HERO * 1.9, L(3), 'stand'], [-760, Z_HERO * 1.84, WAITER, 'tray'], [-250, Z_HERO * 1.92, L(4), 'standR'],
       [270, Z_HERO * 1.9, PITBOSS, 'standL'], [430, Z_HERO * 1.86, L(1), 'standL'], [600, Z_HERO * 1.92, L(2), 'stand'], [770, Z_HERO * 1.85, L(6), 'standL'],
     ],
-    seats: {}, veil: 0.16 };
+    seats: {}, veil: 0.1 };
   const s = floorScene(o);
   const { g, CX } = s;
   // the sign over the aisle, on its two rods from the ceiling
@@ -244,7 +244,7 @@ export async function main() {
   const LY = 2;
   for (const x of [LX + 30, LX + 128]) px(g, x, 0, 2, LY + 2, '#3b3347');
   K.marquee(g, LX, LY, 1);
-  duel(s, { FOOT: o.FOOT, knightX: 6, houseX: 192, swords: [[60, -2], [86, 2]], coins: [[146, 2, 1], [170, -3, 0]], burst: 23,
+  duel(s, { FOOT: o.FOOT, knightX: 6, houseX: 192, swords: [[57, -5], [90, 2]], coins: [[146, 3, 1], [171, -4, 0]], burst: 23,
     bits: [[-12, -24, 0], [10, -30, 1], [22, -18, 0], [-26, -12, 1], [4, 24, 0], [-18, 20, 1], [30, 14, 0]], glints: [[-34, -20], [36, -26], [-8, 30]] });
   return { canvas: s.art, px: 5, detail: [93, 66] };
 }
