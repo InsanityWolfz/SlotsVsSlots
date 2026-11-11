@@ -63,7 +63,10 @@ with no projectiles (https://claude.ai/artifact/3yVnYTpYyAnkZmPc7V2Ugx; `node ar
 nose, the lever punch, the brawl cloud, high noon, the tale of the tape, a VS card. The user's scores out of 10: tale of the tape 7 ("my favorite because it shows some of the
 characters"), nose to nose 6, lever punch 5, VS card 5, high noon 2, brawl cloud 1; "the little yellow squiggly" between
 the machines put them off (none from now on). Round 3, with the characters (https://claude.ai/artifact/1LwK8mDAoTSgUGfmkDEk6Q;
-`make.mjs cast`): the two corners, the gang vs the house, at the levers. Waiting on the user.
+`make.mjs cast`): the two corners, the gang vs the house, at the levers. Then the user's own idea: the sign as the
+whole capsule, over "the background we had once at the title screen with all the symbols flowing on reels" (round 4,
+https://claude.ai/artifact/M3nQW9D3yvfcSJxYNmV5JE; `make.mjs sign`: sign over the reels, sign only, and four with
+machines or faces). Waiting on the user.
 
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
 text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about
