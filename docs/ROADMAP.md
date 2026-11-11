@@ -60,7 +60,10 @@ the new rooms wait on the user's pick (https://claude.ai/artifact/JjLkj6eXwCLTFm
 casino's marquee in all three). The user (2026-11-11): "I don't hate them but I don't love
 them"; the swords shot across a lane bother them and the floor is too busy for the main art. Round 2, six rough ideas
 with no projectiles (https://claude.ai/artifact/3yVnYTpYyAnkZmPc7V2Ugx; `node art/capsule/v3/make.mjs rough`): nose to
-nose, the lever punch, the brawl cloud, high noon, the tale of the tape, a VS card. Waiting on the user's reaction.
+nose, the lever punch, the brawl cloud, high noon, the tale of the tape, a VS card. The user's scores out of 10: tale of the tape 7 ("my favorite because it shows some of the
+characters"), nose to nose 6, lever punch 5, VS card 5, high noon 2, brawl cloud 1; "the little yellow squiggly" between
+the machines put them off (none from now on). Round 3, with the characters (https://claude.ai/artifact/1LwK8mDAoTSgUGfmkDEk6Q;
+`make.mjs cast`): the two corners, the gang vs the house, at the levers. Waiting on the user.
 
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
 text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about
