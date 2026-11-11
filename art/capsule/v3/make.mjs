@@ -89,22 +89,26 @@ try {
           }
           res[`${key}_half`] = c.toDataURL('image/png');
         }
-        for (const kind of mod.sketches ? [] : ['main', 'small']) {
-          const r = await mod[kind]();
-          const [w, h] = SIZES[kind];
-          if (r.canvas.width * r.px < w || r.canvas.height * r.px < h) throw new Error(`${name}.${kind}: art ${r.canvas.width}x${r.canvas.height} at ${r.px}px is smaller than ${w}x${h}`);
-          // (art a few screen pixels larger than Steam's size is centre-cropped: the edge art pixels lose a sliver)
-          res[`${name}_${kind}`] = png(r.canvas, r.px, w, h, Math.floor((r.canvas.width * r.px - w) / 2) / r.px, Math.floor((r.canvas.height * r.px - h) / 2) / r.px);
-          if (kind === 'small') res[`${name}_small_half`] = png(r.canvas, r.px / 2, w / 2, h / 2);
-          // the detail: an art-pixel window of the main capsule at twice its size
-          if (kind === 'main') {
-            const k = r.px * 2;
-            const dw = Math.round(600 / k);
-            const dh = Math.round(400 / k);
-            const [dx, dy] = r.detail ?? [Math.round((r.canvas.width - dw) / 2), Math.round((r.canvas.height - dh) / 2)];
-            res[`${name}_detail`] = png(r.canvas, k, dw * k, dh * k, dx, dy);
+        // A direction file exports main() and small(); a file of several (round 3: cast.js) exports `variants`,
+        // { v1: { main, small }, ... }. `detail` is [x, y] in art pixels, with an optional third number: screen pixels
+        // an art pixel in the crop (default: twice the capsule's).
+        const sets = mod.sketches ? {} : mod.variants ?? { [name]: mod };
+        for (const [key, set] of Object.entries(sets))
+          for (const kind of ['main', 'small']) {
+            const r = await set[kind]();
+            const [w, h] = SIZES[kind];
+            if (r.canvas.width * r.px < w || r.canvas.height * r.px < h) throw new Error(`${key}.${kind}: art ${r.canvas.width}x${r.canvas.height} at ${r.px}px is smaller than ${w}x${h}`);
+            // (art a few screen pixels larger than Steam's size is centre-cropped: the edge art pixels lose a sliver)
+            res[`${key}_${kind}`] = png(r.canvas, r.px, w, h, Math.floor((r.canvas.width * r.px - w) / 2) / r.px, Math.floor((r.canvas.height * r.px - h) / 2) / r.px);
+            if (kind === 'small') res[`${key}_small_half`] = png(r.canvas, r.px / 2, w / 2, h / 2);
+            if (kind === 'main') {
+              const k = r.detail?.[2] ?? r.px * 2;
+              const dw = Math.round(600 / k);
+              const dh = Math.round(400 / k);
+              const [dx, dy] = r.detail ?? [Math.round((r.canvas.width - dw) / 2), Math.round((r.canvas.height - dh) / 2)];
+              res[`${key}_detail`] = png(r.canvas, k, dw * k, dh * k, dx, dy);
+            }
           }
-        }
         return res;
       },
       { name, SIZES },

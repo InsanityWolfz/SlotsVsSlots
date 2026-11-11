@@ -114,10 +114,13 @@ export function doorScene(o) {
   g.globalAlpha = 1;
 
   // the marquee, and its shadow on the wall and the doors' head
-  g.globalAlpha = 0.6;
-  px(g, LX + 2, LY + 44, 156, 3, C.K);
-  g.globalAlpha = 1;
-  K.marquee(g, LX, LY, 1);
+  // (`sign: false`: the caller hangs its own, e.g. the narrower one a coarse grid needs)
+  if (o.sign !== false) {
+    g.globalAlpha = 0.6;
+    px(g, LX + 2, LY + 44, 156, 3, C.K);
+    g.globalAlpha = 1;
+    K.marquee(g, LX, LY, 1);
+  }
   return { art, g, W, H, CX, GROUND, STEP, LX, LY };
 }
 
