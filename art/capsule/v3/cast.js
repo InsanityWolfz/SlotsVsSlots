@@ -52,6 +52,8 @@ function doorman(ext = 0) {
   g[11][17] = 'b';
   return carried(g, ext, [29, 30, 31]);
 }
+/** The two posed busts, for the other rounds' files. */
+export const posed = { sir, doorman };
 /** A raised fist on its forearm (`h` rows in all): a steel gauntlet, or a white glove on a red cuff. */
 function fist(kind, h) {
   const rows = ['.KKKKKKK.', 'KLLLLLLLK', 'KLSLSLSDK', 'KLLLLLSDK', 'KSLLLSSDK', '.KSSSSDK.'];
