@@ -55,7 +55,9 @@ the next balance batch: one TRICK cell in a meter jackpot fills 90 of 100, and w
 OVERTIME is hard on slow act 1 fights (TESLA 23 spins on AUTO); "BIG WIN! 50" in fight 1 (the ladder is by HP share). The capsule and screenshots are on again (user, 2026-11-11: "finally ready for the capsule art and the screenshots. no
 trailer yet"): 8 screenshots retaken in the new rooms wait on the user (https://claude.ai/artifact/E6tQP6S2D1zCvYdwFe9Tg2;
 `tools/store/screenshots.cjs`, stepped frame by frame so each lands on the same moment); three capsule directions from
-the new rooms are being drawn (branch `capsule-v3`).
+the new rooms wait on the user's pick (https://claude.ai/artifact/JjLkj6eXwCLTFmCQh3SemA; `art/capsule/v3/`,
+`node art/capsule/v3/make.mjs`: A the duel at the casino's door, B on the floor, C the house falls; REEL BRAWL is the
+casino's marquee in all three). Then the other Steam sizes from the one picked.
 
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
 text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about
