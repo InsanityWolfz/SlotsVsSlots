@@ -52,7 +52,10 @@ the waitress stand wholly between the two machines; the full stop is a square do
 no trash bags beside PAUSE. Also (user, 2026-11-10): every tutorial box and the four machines' first-fight tips are short plain sentences with no
 commas, semicolons or colons (they were "too wordy... scream ai generated"; "this is a video game not a memo"), and the pay names GOLD as a Charm (X2 GOLD CHARM, X6 GOLD CHARMS). Left as they are (user): the Charm numbers, and JOKER's meter jackpot has no banner. For
 the next balance batch: one TRICK cell in a meter jackpot fills 90 of 100, and with ENCORE the meter re-arms at once;
-OVERTIME is hard on slow act 1 fights (TESLA 23 spins on AUTO); "BIG WIN! 50" in fight 1 (the ladder is by HP share). The capsule, trailer and screenshots wait (user, 2026-11-10: "ignore that... for now").
+OVERTIME is hard on slow act 1 fights (TESLA 23 spins on AUTO); "BIG WIN! 50" in fight 1 (the ladder is by HP share). The capsule and screenshots are on again (user, 2026-11-11: "finally ready for the capsule art and the screenshots. no
+trailer yet"): 8 screenshots retaken in the new rooms wait on the user (https://claude.ai/artifact/E6tQP6S2D1zCvYdwFe9Tg2;
+`tools/store/screenshots.cjs`, stepped frame by frame so each lands on the same moment); three capsule directions from
+the new rooms are being drawn (branch `capsule-v3`).
 
 **In progress (2026-11-09): the launch QA campaign** (user: "really granular check everything"). Eight testers (rules vs
 text, combinations, functionality, UI, an 8-run playtest, the demo as a stranger, Steam readiness, the market); about
