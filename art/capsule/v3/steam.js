@@ -155,8 +155,9 @@ function reelWall(W, H, o) {
       let id = null;
       for (let tries = 0; tries < 40 && (id === null || id === last || beside.includes(id)); tries++) id = POOL[Math.floor(rnd() * POOL.length)];
       last = id;
-      // an empty spot where the sign's end would cut a symbol in half, and in a column the frame's edge cuts
-      const cut = (side > 0 && side < 13 && hidden(y) > 3) || x0 + 3 < 0 || x0 + 19 > W;
+      // an empty spot where the sign's end would cut a symbol in half. (A column the frame's edge cuts keeps its
+      // symbols: empty strips at the far left and right read as missing symbols. User, 2026-11-11.)
+      const cut = side > 0 && side < 13 && hidden(y) > 3;
       mine.push([y, cut ? null : id]);
     }
     cols.push({ x0, mine, smear: (o.smear ?? []).includes(c), hidden });
