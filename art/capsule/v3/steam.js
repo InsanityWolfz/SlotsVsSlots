@@ -157,7 +157,9 @@ function reelWall(W, H, o) {
       last = id;
       // an empty spot where the sign's end would cut a symbol in half. (A column the frame's edge cuts keeps its
       // symbols: empty strips at the far left and right read as missing symbols. User, 2026-11-11.)
-      const cut = side > 0 && side < 13 && hidden(y) > 3;
+      // (Nor beside the sign's ends: a symbol runs behind the sign there, as anything behind a sign would. An empty
+      // strip beside the sign read as missing symbols too.)
+      const cut = false;
       mine.push([y, cut ? null : id]);
     }
     cols.push({ x0, mine, smear: (o.smear ?? []).includes(c), hidden });
