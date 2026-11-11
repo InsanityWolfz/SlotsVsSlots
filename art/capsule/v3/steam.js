@@ -254,10 +254,12 @@ export async function outputs() {
   add('small', 462, 174, 3, capsule({ W: 154, H: 58, sw: 136, sy: 7, symbols: false, reach: 0.8 }));
   add('small_2px', 462, 174, 2, capsule({ W: 231, H: 87, sw: 160, sy: 21, smear: [3, 8], seed: 5 }), true);
   // the portraits: one line as long as the width takes, in the upper third; and REEL over BRAWL, far bigger
-  add('vertical', 748, 896, 5, capsule({ W: 150, H: 180, sw: 136, sy: 34, smear: [2, 5], reach: 1.5, seed: 21 }));
-  add('library', 600, 900, 4, capsule({ W: 150, H: 225, sw: 136, sy: 44, smear: [2, 5], reach: 1.8, seed: 33 }));
-  add('vertical_stacked', 748, 896, 8, capsule({ W: 94, H: 112, sw: 80, sy: 12, stacked: true, smear: [1], seed: 41 }), true);
-  add('library_stacked', 600, 900, 6, capsule({ W: 100, H: 150, sw: 80, sy: 16, stacked: true, smear: [1], reach: 1.3, seed: 44 }), true);
+  // The portrait sizes carry the stacked sign (user, 2026-11-11: "I like it let's keep it", on the recommended set); the
+  // one-line versions stay in alt/.
+  add('vertical', 748, 896, 8, capsule({ W: 94, H: 112, sw: 80, sy: 12, stacked: true, smear: [1], seed: 41 }));
+  add('library', 600, 900, 6, capsule({ W: 100, H: 150, sw: 80, sy: 16, stacked: true, smear: [1], reach: 1.3, seed: 44 }));
+  add('vertical_oneline', 748, 896, 5, capsule({ W: 150, H: 180, sw: 136, sy: 34, smear: [2, 5], reach: 1.5, seed: 21 }), true);
+  add('library_oneline', 600, 900, 4, capsule({ W: 150, H: 225, sw: 136, sy: 44, smear: [2, 5], reach: 1.8, seed: 33 }), true);
   // library hero, 20px: the wall alone, lit from the middle where Steam lays the logo; the edges fall to plum
   {
     const W = 192;
