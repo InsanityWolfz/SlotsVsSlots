@@ -374,7 +374,7 @@ export function noteHurt(g: Game, events: CombatEvent[]): void {
     if (e.type === 'noMoreBets' && e.to === 'player') add('NO MORE BETS', e.hpDamage);
     if (e.type === 'closingTime') add('CLOSING TIME', e.hp);
     if (e.type === 'attack' && e.to === 'player')
-      add(e.note === 'drain' ? 'DRAIN' : e.note === 'mimic' ? 'COPYCAT' : e.reels.length ? 'SPIN HITS' : g.fight.isBoss ? 'THE POT' : 'ABILITY', e.hpDamage);
+      add(e.note === 'drain' ? 'DRAIN' : e.reels.length ? 'SPIN HITS' : g.fight.isBoss ? 'THE POT' : 'ABILITY', e.hpDamage);
     else if (e.type === 'specialFire' && e.to === 'player') add('SPECIAL', e.hpDamage);
     else if (e.type === 'markedHit' && e.side === 'player') add('MARKS', e.hpDamage);
     else if (e.type === 'blast' && e.side === 'player') add('IOUS', e.hpDamage);

@@ -55,7 +55,6 @@ export async function attack(d: Director, e: Ev<'attack'>): Promise<void> {
   d.damageHud(e.to, e.targetHp, e.targetShield, e.hpDamage);
   if (e.note === 'pierce') d.bg(d.popText('PIERCE!', target.x + 90, MACHINE_TOP - 22, 2, '#bff4ff', 14, 0.35));
   if (e.note === 'drain') d.bg(d.popText('DRAIN!', target.x - 90, MACHINE_TOP - 22, 2, '#ff5a7a', 14, 0.35));
-  if (e.note === 'mimic') d.bg(d.popText('COPYCAT!', target.x - 90, MACHINE_TOP - 22, 2, '#ffb0ff', 14, 0.35));
   if (e.note === 'echo') d.bg(d.popText('ECHO!', target.x + 90, MACHINE_TOP - 22, 2, '#fff27a', 14, 0.35));
   if (e.hpDamage > 0) d.bg(d.popText(`-${fmtNum(e.hpDamage)}`, target.x, HIT_Y, d.tierScale(), color, 60));
   // (Higher than the damage numbers: a blocked hit then a landed one in the same spin read BLC-10D!.)

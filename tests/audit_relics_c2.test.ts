@@ -100,7 +100,7 @@ describe('texts and card faces, per machine', () => {
     expect(bell('tesla')).toBe('JACKPOTS PAY X2 AND FULLY CHARGE LIGHTNING');
     expect(bell('midas')).toBe('JACKPOTS PAY X2 AND FILL HIGH ROLLER');
     expect(bell('joker')).toBe('JACKPOTS PAY X1.25 AND FILL THE METER');
-    expect(bell('jukebox')).toBe('JACKPOTS X2 AND FILL THE VOLUME');
+    expect(bell('jukebox')).toBe('JACKPOTS PAY X2 AND FILL THE VOLUME');
     expect(relicText('deckdrum', 'joker')).toBe('SPINS THAT PAY ADD 1 CARD DAMAGE FOR THE REST OF THE FIGHT, UP TO 5');
     expect(shortRelicText('deckdrum', relicText('deckdrum', 'joker'))).toBe('SPINS THAT PAY ADD 1 CARD DAMAGE, UP TO 5');
     expect(shortRelicText('hypeman', relicText('hypeman', 'jukebox'))).toBe('VOLUME RISES 1 EVERY 2 SPINS. NOTES PAY HALF EXCEPT ON THE DROP');

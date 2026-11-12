@@ -223,10 +223,6 @@ export class FightView {
         drawText(ctx, STAKES[this.g.run.stake].name, 24, ly + 16, T.small, STAKES[this.g.run.stake].color, { align: 'left' });
         ly += 40;
       }
-      if ((this.g.fight.isBoss || this.g.fight.isWheel || this.g.fight.isDealer) && (this.g.fight.cfg.player.stackShield ?? 0) > 0) {
-        drawSprite(ctx, 'chipShield', 34, ly, 2);
-        drawText(ctx, `+${this.g.fight.cfg.player.stackShield ?? 0} EACH SPIN`, 50, ly, T.small, '#9fd0ff', { align: 'left' });
-      }
     }
   }
 

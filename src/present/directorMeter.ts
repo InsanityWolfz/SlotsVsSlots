@@ -205,7 +205,7 @@ export async function meter(d: Director, e: Ev<'meter'>): Promise<void> {
     // On the machine's callout row (its top edge): under the machine it landed on the HOLD chip, before that on the
     // HP and meter bars.
     // HYPE MAN can max the volume right before the spin it drops on: no "next spin" then.
-    if (!e.dropsNow) d.bg(d.popText(m.kind === 'touch' ? 'NEXT SPIN TURNS GOLD!' : m.kind === 'vault' ? 'YOUR NEXT HIT IS MULTIPLIED!' : m.kind === 'volume' ? 'FULL VOLUME! THE DROP IS NEXT!' : 'YOUR NEXT SPIN IS ALL JACKPOTS!', MACHINE_CX[e.side], CALLOUT_Y, 2, m.color, 12, 0.6, true));
+    if (!e.dropsNow) d.bg(d.popText(m.kind === 'vault' ? 'YOUR NEXT HIT IS MULTIPLIED!' : m.kind === 'volume' ? 'FULL VOLUME! THE DROP IS NEXT!' : 'YOUR NEXT SPIN IS ALL JACKPOTS!', MACHINE_CX[e.side], CALLOUT_Y, 2, m.color, 12, 0.6, true));
   }
   if (e.reels.length) d.settle(e.side, e.reels);
 }
@@ -222,7 +222,7 @@ export async function payoff(d: Director, e: Ev<'payoff'>): Promise<void> {
   // A callout over the machine, not a second banner (the PAIR!/JACKPOT! banner carries the math).
   const c = d.machineCenter(e.side);
   if (e.kind === 'volume') return;
-  await d.popText(e.kind === 'touch' ? 'MIDAS TOUCH!' : e.kind === 'vault' ? `HIGH ROLLER X${e.mul ?? 1}!` : 'ALL JACKPOTS!', c.x, TOP_ROW_Y, 4, color, 30, 0.45);
+  await d.popText(e.kind === 'vault' ? `HIGH ROLLER X${e.mul ?? 1}!` : 'ALL JACKPOTS!', c.x, TOP_ROW_Y, 4, color, 30, 0.45);
 }
 
 /** THE JUKEBOX: THE DROP. A bass hit, every note in the window lights up, then they all hit (the attack follows). */

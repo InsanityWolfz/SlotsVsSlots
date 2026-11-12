@@ -192,7 +192,8 @@ export function effectText(sym: SymbolId, amount: number): string {
     case 'fake':
       return `SWITCHES OFF ${s(2 * n, 'CHARM')}`;
     case 'mimicSym':
-      return jackpot ? 'COPIES YOUR BEST HIT X2' : pair ? 'COPIES YOUR BEST HIT' : 'COPIES HALF YOUR BEST HIT';
+      // (The COPYCAT is not in the game: no player ever reads this.)
+      return '';
     case 'ball':
       return pair ? `PLACES ${s(jackpot ? 2 : 1, 'MORE BET')}` : 'FIZZLES';
     default:

@@ -58,7 +58,7 @@ describe('a relic card face is its full rule with words left out', () => {
   });
   it("the user's own lines are word for word", () => {
     expect(shortRelicText('holywater', relicText('holywater', 'knight'))).toBe('FIRST ENEMY SABOTAGE IS BLOCKED EACH FIGHT');
-    expect(shortRelicText('bell', relicText('bell', 'jukebox'))).toBe('JACKPOTS X2 AND FILL THE VOLUME');
+    expect(shortRelicText('bell', relicText('bell', 'jukebox'))).toBe('JACKPOTS PAY X2 AND FILL THE VOLUME');
     expect(shortRelicText('quickening', relicText('quickening', 'tesla'))).toBe('LIGHTNING STARTS HALF CHARGED EACH FIGHT');
     expect(shortRelicText('hotstreak', relicText('hotstreak', 'knight'))).toBe('JACKPOTS MAKE YOUR NEXT SPIN PAY X2');
     expect(shortRelicText('houseofcards', relicText('houseofcards', 'joker'))).toBe('EACH METER PAYOFF GIVES YOUR REELS 2 TEMPORARY WILDS');

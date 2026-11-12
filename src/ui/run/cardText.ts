@@ -14,9 +14,9 @@ import { charmCardFull, describeOption } from '../../core/draft';
 const LEAVE_OUT: Partial<Record<RelicId, (string | RegExp)[]>> = {
   // (Its example.)
   ticket: [/\. GOLD PAYS .*$/],
-  // (JOKER's and THE JUKEBOX's own sentences. THE JUKEBOX's face is the user's line, 2026-11-12: JACKPOTS X2 AND FILL
-  // THE VOLUME; the other machines' faces keep PAY.)
-  bell: [/\. ALL JACKPOTS .*$/, /\. A JACKPOT ON THE DROP .*$/, /PAY (?=X2 AND FILL THE VOLUME)/],
+  // (JOKER's and THE JUKEBOX's own sentences. THE JUKEBOX's face: JACKPOTS PAY X2 AND FILL THE VOLUME, the user's
+  // line with PAY put back, 2026-11-12.)
+  bell: [/\. ALL JACKPOTS .*$/, /\. A JACKPOT ON THE DROP .*$/],
   sandglass: [/\. THE WHEEL .*$/],
   tower: [' YOUR LEFTOVER', ' EACH SPIN', ' YOUR'],
   livewire: [' DAMAGE', /LIGHTNING (?=STORMS)/, / EACH$/],

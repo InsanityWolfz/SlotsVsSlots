@@ -447,7 +447,7 @@ export async function markedHit(d: Director, e: Ev<'markedHit'>): Promise<void> 
   }
   d.damageHud(e.side, e.targetHp, e.targetShield, e.hpDamage);
   // Credit the Dealer (its marks are most of its damage).
-  const who = d.s.gutter.nextDeal ? "THE DEALER'S MARK" : 'MARKED!';
+  const who = 'MARKED!';
   await d.popText(e.hpDamage > 0 ? `${who} -${e.hpDamage}` : `${who} BLOCKED`, c.x, HIT_Y, 3, '#ff8aa0', 30, 0.3);
 }
 

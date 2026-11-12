@@ -246,7 +246,7 @@ export class HudView {
         ctx.fillRect(b.x, b.y, frac * b.w, b.h);
         ctx.globalAlpha = 1;
       }
-      const label = this.armed ? (m.kind === 'touch' ? 'TOUCH READY!' : `${m.label} READY!`) : m.label;
+      const label = this.armed ? `${m.label} READY!` : m.label;
       // THE JUKEBOX counts its volume in levels (4/6), like its cards do.
       const count = m.kind === 'volume' ? `${Math.floor(this.energy + 0.01)}/${this.energyMax}` : `${Math.round(this.energy * UNIT)}/${this.energyMax * UNIT}`;
       // The words: dark on the fill once it covers a whole word (white on a pale fill didn't read: playtest
