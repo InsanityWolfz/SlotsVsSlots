@@ -69,7 +69,8 @@ describe('meter callouts (metersExplained) and machine pitches: "HEAL 15" on eve
   it('every pitch names its real HP', () => {
     for (const id of CABINET_ORDER) expect(CABINETS[id].rule).toContain(`${CABINETS[id].hp} HP`);
   });
-  it('KNIGHT: "EACH BOSS PAYS 4 SWORD LEVELS"', () => {
+  it('KNIGHT: "EACH BOSS YOU BEAT GIVES YOUR SWORDS 4 LEVELS"', () => {
+    expect(CABINETS.knight.rule).toContain('EACH BOSS YOU BEAT GIVES YOUR SWORDS 4 LEVELS');
     expect(CABINETS.knight.bossLevels).toBe(4);
   });
   it('JOKER: "EACH WILD ON YOUR PAYLINE FILLS HALF THE METER"', () => {
@@ -94,8 +95,8 @@ describe('tutorial: "THAT\'S A SPIN": "EVERY SYMBOL ON THE PAYLINE PAID THE NUMB
 });
 
 describe('relic card faces vs the full rule', () => {
-  it('GLASS CANNON\'s face "NO HEALS BETWEEN FIGHTS": a VAMP sword pair still heals in a fight', () => {
-    expect(cardFace({ kind: 'relic', relic: 'glasscannon' }).text).toBe('EVERYTHING X1.5. NO HEALS BETWEEN FIGHTS');
+  it('GLASS CANNON\'s face "NO HEALING BETWEEN FIGHTS": a VAMP sword pair still heals in a fight', () => {
+    expect(cardFace({ kind: 'relic', relic: 'glasscannon' }).text).toBe('EVERYTHING PAYS X1.5. NO HEALING BETWEEN FIGHTS');
     const c = defaultConfig();
     c.seed = 2;
     c.relics = ['glasscannon'];

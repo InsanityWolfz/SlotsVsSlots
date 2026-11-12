@@ -26,7 +26,7 @@ describe('the Cashier', () => {
     const heal = find(shopOffers(r), 'heal');
     expect(heal.price).toBe(10);
     expect(heal.option).toEqual({ kind: 'heal', amount: 12 * UNIT });
-    expect(cardFace(heal.option, r).text).toBe('RESTORE 120 HP');
+    expect(cardFace(heal.option, r).text).toBe('HEAL 120 HP');
     const hp = r.player.hp;
     buy(r, heal);
     expect(r.player.hp).toBe(hp + 120);

@@ -65,24 +65,24 @@ describe('texts: full and card face, on the one machine each can appear on', () 
   });
   it('the texts the player reads (snapshot of what was audited)', () => {
     const faces = Object.fromEntries(Object.entries(machineOf).map(([id, cab]) => [id, [relicText(id as RelicId, cab), shortRelicText(id as RelicId, relicText(id as RelicId, cab))]]));
-    expect(faces.tower).toEqual(['RETAIN 25% OF YOUR SHIELD EACH SPIN (MAX 10% OF YOUR HP)', 'KEEP 25% OF SHIELD, MAX 10% OF YOUR HP']);
-    expect(faces.coup).toEqual(['SWORDS PAY X2 WHILE YOU HAVE MORE HP LEFT THAN THE ENEMY', 'SWORDS PAY X2 WHILE YOU LEAD ON HP']);
+    expect(faces.tower).toEqual(['KEEP 25% OF YOUR LEFTOVER SHIELD EACH SPIN, UP TO 10% OF YOUR MAX HP', 'KEEP 25% OF SHIELD, UP TO 10% OF MAX HP']);
+    expect(faces.coup).toEqual(['SWORDS PAY X2 WHILE YOU HAVE MORE HP LEFT THAN THE ENEMY', 'SWORDS PAY X2 WHILE YOU HAVE MORE HP']);
     expect(faces.greatsword).toEqual(['YOUR SWORDS PAY X1.5', 'YOUR SWORDS PAY X1.5']);
-    expect(faces.crusade).toEqual(['+5 SWORD DAMAGE FOR EVERY FIGHT YOU WIN', '+5 SWORD DAMAGE PER FIGHT WON']);
-    expect(faces.compound).toEqual(['HIGH ROLLER CAP INCREASES TO X4', 'HIGH ROLLER CAPS AT X4']);
-    expect(faces.rainmaker).toEqual(['MAKE IT RAIN COSTS 2 CHIPS INSTEAD OF 20', 'MAKE IT RAIN COSTS 2 CHIPS, NOT 20']);
-    expect(faces.armoredcar).toEqual(["HIGH ROLLER PAYOFFS COUNT THAT SPIN'S SHIELD AS CHIPS: 1 PER 5", 'HIGH ROLLER: 5 SHIELD COUNTS AS 1 CHIP']);
-    expect(faces.safedeposit).toEqual(["WHEN CHIPS HIT, THEY ALSO HIT FOR THAT SPIN'S SHIELD", 'CHIPS ALSO HIT FOR YOUR SHIELD']);
-    expect(faces.parachute).toEqual(['A HIT THAT WOULD KILL YOU: PAY 10 CHIPS, LAND AT 25% HP (ONCE PER FIGHT)', 'ONCE A FIGHT, PAY 10 CHIPS TO LIVE AT 25%']);
-    expect(faces.openbar).toEqual(['MAKE IT RAIN COSTS NOTHING. WINS PAY NO CHIPS', 'MAKE IT RAIN IS FREE. WINS PAY NO CHIPS']);
+    expect(faces.crusade).toEqual(['SWORDS HIT 5 HARDER FOR EACH FIGHT YOU WIN', 'SWORDS HIT 5 HARDER FOR EACH FIGHT YOU WIN']);
+    expect(faces.compound).toEqual(['HIGH ROLLER GOES UP TO X4, NOT X2.5', 'HIGH ROLLER GOES UP TO X4, NOT X2.5']);
+    expect(faces.rainmaker).toEqual(['MAKE IT RAIN COSTS 2 CHIPS, NOT 20', 'MAKE IT RAIN COSTS 2 CHIPS, NOT 20']);
+    expect(faces.armoredcar).toEqual(['HIGH ROLLER COUNTS EVERY 5 SHIELD FROM THAT SPIN AS 1 CHIP. MORE CHIPS MAKE IT HIT HARDER', 'HIGH ROLLER COUNTS 5 SHIELD AS 1 CHIP']);
+    expect(faces.safedeposit).toEqual(['ONCE EACH SPIN A CHIP SYMBOL HIT ADDS THE SHIELD YOU GAIN THAT SPIN', 'A CHIP SYMBOL HIT ADDS THE SHIELD YOU GAIN']);
+    expect(faces.parachute).toEqual(['FOR 10 CHIPS SURVIVE 1 KILLING HIT AT 25% HP EACH FIGHT', 'FOR 10 CHIPS SURVIVE 1 KILLING HIT EACH FIGHT']);
+    expect(faces.openbar).toEqual(['MAKE IT RAIN IS FREE. WINS PAY NO CHIPS', 'MAKE IT RAIN IS FREE. WINS PAY NO CHIPS']);
     expect(faces.capacitor).toEqual(['25% OF LEFTOVER SHIELD CHARGES LIGHTNING', '25% OF LEFTOVER SHIELD CHARGES LIGHTNING']);
-    expect(faces.livewire).toEqual(['LIGHTNING DAMAGE +30%. EACH STORM COSTS 1 HP', 'LIGHTNING DAMAGE +30%. STORMS COST 1 HP']);
-    expect(faces.meltdown).toEqual(['LIGHTNING DAMAGE +1% FOR EACH HP YOU ARE MISSING (MAX 50%)', 'LIGHTNING DAMAGE: +1% PER MISSING HP, TO 50%']);
-    expect(faces.chainlightning).toEqual(['LIGHTNING DAMAGE +100%', 'LIGHTNING DAMAGE +100%']);
+    expect(faces.livewire).toEqual(['LIGHTNING DEALS 30% MORE DAMAGE. LIGHTNING STORMS COST 1 HP EACH', 'LIGHTNING DEALS 30% MORE. STORMS COST 1 HP']);
+    expect(faces.meltdown).toEqual(['LIGHTNING DEALS 1% MORE DAMAGE FOR EACH MISSING HP, UP TO 50%', 'LIGHTNING DEALS 1% MORE DAMAGE FOR EACH MISSING HP, UP TO 50%']);
+    expect(faces.chainlightning).toEqual(['LIGHTNING DEALS 100% MORE DAMAGE', 'LIGHTNING DEALS 100% MORE DAMAGE']);
   });
   // Card faces keep the limits the full text has (fixed 2026-11-01: they promised more than the game gives).
   it('TOWER SHIELD face names the cap', () => {
-    expect(shortRelicText('tower', RELICS.tower.text)).toMatch(/MAX/);
+    expect(shortRelicText('tower', RELICS.tower.text)).toMatch(/UP TO 10% OF MAX HP/);
   });
   it('MELTDOWN face names the 50% cap', () => {
     expect(shortRelicText('meltdown', RELICS.meltdown.text)).toMatch(/50%/);
@@ -90,8 +90,8 @@ describe('texts: full and card face, on the one machine each can appear on', () 
   it('ARMORED CAR face names the rate (5 shield = 1 chip)', () => {
     expect(shortRelicText('armoredcar', RELICS.armoredcar.text)).toMatch(/5/);
   });
-  it('GOLDEN PARACHUTE face names ONCE A FIGHT', () => {
-    expect(shortRelicText('parachute', RELICS.parachute.text)).toMatch(/ONCE|A FIGHT/);
+  it('GOLDEN PARACHUTE face names its once: 1 KILLING HIT EACH FIGHT', () => {
+    expect(shortRelicText('parachute', RELICS.parachute.text)).toMatch(/1 KILLING HIT EACH FIGHT/);
   });
 });
 

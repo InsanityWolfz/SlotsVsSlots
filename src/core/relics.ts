@@ -173,7 +173,7 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
   },
 };
 /** Machines that attack with something other than swords: relic texts name their symbol instead. */
-const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP SYMBOL', tesla: 'BOLT', jukebox: 'NOTE' };
+const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP', tesla: 'BOLT', jukebox: 'NOTE' };
 const METER_WORD: Partial<Record<CabinetId, string>> = { tesla: 'LIGHTNING', midas: 'HIGH ROLLER', joker: 'JACKPOT METER', jukebox: 'VOLUME' };
 export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
   const t = (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;

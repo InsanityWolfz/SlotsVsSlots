@@ -74,22 +74,23 @@ describe('audit B: texts per machine', () => {
     // (Not on BANKROLL since 2026-11-09: its bar already starts at half from 10 chips held, QA COMBOS-02.)
     expect(where.quickening).toEqual(['tesla', 'joker', 'jukebox']);
     for (const id of LIST.filter((x) => x !== 'bash' && x !== 'quickening')) expect(where[id]).toEqual(ALL_CABINETS);
-    // Only QUICKENING has a machine-specific wording in this group (YOUR METER); the rest read the same everywhere.
+    // Only ESPRESSO SHOT has a machine-specific wording in this group; the rest read the same everywhere. Its face is
+    // its full rule on every machine (one wording).
     for (const id of LIST.filter((x) => x !== 'quickening')) for (const cab of where[id]) expect(relicText(id, cab)).toBe(RELICS[id].text);
-    expect(relicText('quickening', 'tesla')).toBe('YOUR LIGHTNING STARTS EVERY FIGHT HALF FULL');
-    expect(relicText('quickening', 'midas')).toBe('YOUR HIGH ROLLER STARTS EVERY FIGHT HALF FULL');
-    expect(relicText('quickening', 'joker')).toBe('YOUR JACKPOT METER STARTS EVERY FIGHT HALF FULL');
-    expect(relicText('quickening', 'jukebox')).toBe('YOUR VOLUME STARTS EVERY FIGHT HALF FULL');
+    expect(relicText('quickening', 'tesla')).toBe('LIGHTNING STARTS HALF CHARGED EACH FIGHT');
+    expect(relicText('quickening', 'midas')).toBe('HIGH ROLLER STARTS HALF FULL EACH FIGHT');
+    expect(relicText('quickening', 'joker')).toBe('JACKPOT METER STARTS HALF FULL EACH FIGHT');
+    expect(relicText('quickening', 'jukebox')).toBe('THE VOLUME STARTS AT 3 EACH FIGHT');
     const face = (id: RelicId, cab: CabinetId) => shortRelicText(id, relicText(id, cab));
     expect(face('quickening', 'tesla')).toBe('LIGHTNING STARTS HALF CHARGED EACH FIGHT');
     expect(face('quickening', 'midas')).toBe('HIGH ROLLER STARTS HALF FULL EACH FIGHT');
-    expect(face('quickening', 'joker')).toBe('METER STARTS HALF FULL EACH FIGHT');
-    expect(face('quickening', 'jukebox')).toBe('VOLUME STARTS HALF FULL EACH FIGHT');
+    expect(face('quickening', 'joker')).toBe('JACKPOT METER STARTS HALF FULL EACH FIGHT');
+    expect(face('quickening', 'jukebox')).toBe('THE VOLUME STARTS AT 3 EACH FIGHT');
     // The numbers the texts print are the engine's.
     expect(RELICS.secondline.text).toContain('15% HARDER');
-    expect(RELICS.devilsdue.text).toBe("EVERYTHING PAYS X1.5. -8% MAX HP AFTER EVERY FIGHT YOU WIN");
-    expect(RELICS.longgame.text).toBe('EVERYTHING PAYS 20% LESS, +3% FOR EVERY FIGHT YOU WIN');
-    expect(RELICS.glasscannon.text).toBe("EVERYTHING PAYS X1.5. NO HEALING BETWEEN FIGHTS (BEATING AN ACT'S BOSS STILL HEALS YOU)");
+    expect(RELICS.devilsdue.text).toBe('EVERYTHING PAYS X1.5. WINS COST 8% OF YOUR MAX HP EACH');
+    expect(RELICS.longgame.text).toBe('EVERYTHING PAYS 20% LESS. EACH WIN ADDS 3% WITH NO LIMIT');
+    expect(RELICS.glasscannon.text).toBe("EVERYTHING PAYS X1.5. NO HEALING BETWEEN FIGHTS. BEATING AN ACT'S BOSS STILL HEALS YOU");
     expect(NEW_RELIC.taxChips).toBe(5);
     expect(NEW_RELIC.punchEvery).toBe(6);
     expect(NEW_RELIC.insuranceShield).toBe(100);
