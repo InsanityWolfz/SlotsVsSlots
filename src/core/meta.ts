@@ -142,7 +142,7 @@ export const FULL_GAME_ONLY: ReadonlySet<string> = new Set(['dealer', 'clear_juk
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   // (A won fight, not a score: the starting relic alone scores 100, so a run lost in fight 1 earned it: QA RULES-06.)
-  { id: 'first_win', name: 'FIRST BLOOD', text: 'WIN A FIGHT.', check: (c) => c.act > 1 || c.won || (c.fightsWon ?? 0) > 0 },
+  { id: 'first_win', name: 'FIRST BLOOD', text: 'WIN YOUR FIRST FIGHT.', check: (c) => c.act > 1 || c.won || (c.fightsWon ?? 0) > 0 },
   { id: 'house', name: 'ON THE LIST', text: 'BEAT THE DOORMAN.', check: (c) => c.act >= 2 || c.won },
   { id: 'clear', name: 'NO MORE BETS', text: 'CLEAR A RUN.', check: (c) => c.won },
   { id: 'dealer', name: 'THE HOUSE ALWAYS LOSES', text: 'BEAT THE DEALER.', check: (c) => c.won && c.acts >= 3 && !c.daily },

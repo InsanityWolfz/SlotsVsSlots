@@ -30,7 +30,7 @@ export class Pause {
   private active: Button | null = null;
   private armed = 0;
   private abandon: Button;
-  /** The GLOSSARY is up (a tap on a tab turns the page; a tap anywhere else goes back to the menu). */
+  /** The GLOSSARY is up (a tap on a tab changes the page; a tap anywhere else goes back to the menu). */
   glossary = false;
   /** The GLOSSARY's page, and its tabs (one a page: with the machines' payoffs and the Charms the list outgrew one screen). */
   private page: GlossaryTab = GLOSSARY_TABS[0];
@@ -186,7 +186,7 @@ export class Pause {
     // The column divider.
     ctx.fillStyle = KIT.frameDim;
     ctx.fillRect(Math.round(W / 2 - 1), listTop, 2, room);
-    drawPrompt(ctx, by({ touch: 'TAP A TAB TO TURN THE PAGE. TAP ANYWHERE ELSE TO GO BACK', mouse: 'CLICK A TAB TO TURN THE PAGE. CLICK ANYWHERE ELSE TO GO BACK', keys: 'ARROWS AND ENTER TURN THE PAGE. ESC GOES BACK', pad: '[DPAD] AND [A] TURN THE PAGE. [B] GOES BACK' }), W / 2, py + ph - 24, T.small, KIT.dim);
+    drawPrompt(ctx, by({ touch: 'TAP A TAB TO CHANGE THE PAGE. TAP ANYWHERE ELSE TO GO BACK', mouse: 'CLICK A TAB TO CHANGE THE PAGE. CLICK ANYWHERE ELSE TO GO BACK', keys: 'ARROWS AND ENTER CHANGE THE PAGE. ESC GOES BACK', pad: '[DPAD] AND [A] CHANGE THE PAGE. [B] GOES BACK' }), W / 2, py + ph - 24, T.small, KIT.dim);
   }
 }
 

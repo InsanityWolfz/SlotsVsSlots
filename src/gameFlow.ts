@@ -338,7 +338,7 @@ async function playEntrance(g: Game, boss: NonNullable<GameConfig['enemy']['boss
   const run = g.phase === 'fighting' ? g.run : null;
   const met = !!run && run.records.some((r) => r.boss && r.archetype === currentEnemy(run)?.archetype);
   const short = restarted || met;
-  const eyebrow = !run ? 'BOSS FIGHT' : run.endless ? `ENDLESS: LOOP ${run.endless.loop}` : `ACT ${run.act} BOSS`;
+  const eyebrow = !run ? 'BOSS FIGHT' : run.endless ? `ENDLESS LOOP ${run.endless.loop}` : `ACT ${run.act} BOSS`;
   const cfg = g.fight.cfg.enemy;
   g.presenting = true;
   await bossEntrance(g.director, { boss, name: cfg.name ?? 'THE BOSS', portrait: cfg.portrait ?? 'enemyPortrait', eyebrow, short });
