@@ -57,6 +57,28 @@ far it got. Keep that line current while you work.
 ## The user's rules (binding)
 - **User-facing words:** "Slot Machines" (never cabinets), "Charms" (never gild) and "symbols" (never cells; an empty
   place on a reel is a "spot"). Code identifiers may stay.
+- **The term sheet (user, 2026-11-12; https://claude.ai/artifact/ATrwX1UidP7Qekw8AFFtAt): one word for one thing in
+  every line a player reads.** `tests/terms.test.ts` fails when a retired word comes back; `npx tsx tools/text/dump.ts`
+  lists every line.
+  1. SPIN, never TURN: one pull of one machine's reels. Where it matters whose: YOUR SPINS, HIS / HER / THEIR SPINS.
+  2. ABILITY is an enemy's special move (the icon that charges); SABOTAGE is an ability that changes your reels. No
+     TRICK or CHEAT in rules text (flavour lines may keep them).
+  3. EACH (EACH FIGHT, EACH SPIN, EACH WIN), never A FIGHT / PER FIGHT / EVERY FIGHT.
+  4. UP TO for every limit; MAX only in MAX HP.
+  5. A multiplier has its verb: PAYS X2, HITS X2. Never a bare X2, X2 PAY, or a colon in place of the verb.
+  6. HEAL 20 / HEALS 20, never +20 HP.
+  7. PAYOFF is what a full meter does; each machine keeps its name for it (LIGHTNING STORM, THE DROP, ALL JACKPOTS, HIGH
+     ROLLER), each with a glossary entry, as MAKE IT RAIN has.
+  8. Meters FILL (LIGHTNING may CHARGE); enemy abilities CHARGE.
+  9. Enemies and bosses are people: HE, SHE, THEY or THE ENEMY'S. ITS is for a machine.
+  10. Player words: REWARD (not draft), TABLE GAME (not encounter), HP BAR (not HUD), YOUR REELS (not build).
+  11. Whole sentences: one or two short ones with a verb, a comma only in a list. No label-colon-fragment, no brackets,
+      no semicolons, no plus or minus sign standing in for a verb.
+  12. Numbers as digits; FIRST, SECOND as words.
+  13. A card's face and its detail box say the same thing; the box may add, never rephrase.
+  14. CHIPS are money; BANKROLL's reel symbol is a CHIP SYMBOL; THE WHEEL's are BETS.
+  Every text must also be true (a test per claim) and fit its box: a card face is two lines of 22 letters, three where a
+  clear line needs it (`THREE_LINES`). Write it the way a game writer would: short, plain, not a memo.
 - **No decision hints** on cards: no "FITS" tags, no expected-value or stat-delta numbers.
 - **Saves:** never rename the localStorage keys `slotvslot.prefs.v2` / `slotvslot.profile.v1`. Saves are cleaned on load.
 - **Photosensitivity:** no full-screen white flashes. `FLASH_CAP` is 0.2. Keep the LIGHTNING: FULL/SOFT option.
