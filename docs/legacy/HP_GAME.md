@@ -470,6 +470,8 @@ DEALER's BUST included), not the CROUPIER's RAKE.
   so the floor alone took BANKROLL from 56 / 37 / 20 (WHITE / GREEN / BLUE) to 66 / 52 / 33; the rain costs 10 chips
   now (was 5; RAINMAKER still 2), back to 55 / 36 / 20 (sim 1,000 runs). (HP was a weak lever: 260 HP only took 10 off.)
   Since 2026-11-09 a rain at the floor is free and a rain above it costs 20 (QA call 6, above).
+- **ESPRESSO SHOT has no downside (user, 2026-11-12: "remove the downside... I'm sure it will be fine"):** the meter
+  starts every fight half full; enemy abilities keep their clock (they charged 1 spin faster).
 - **Combination fixes (QA, 2026-11-09; bugs only, no numbers changed):** ESPRESSO SHOT isn't offered to BANKROLL (its
   HIGH ROLLER bar already starts at half from 10 chips held, 89% of its fights, so only the cost was left). A relic
   another one you hold switches off is never offered with it: RAINMAKER with OPEN BAR, BANDAGE with GLASS CANNON

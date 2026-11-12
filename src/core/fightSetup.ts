@@ -3,7 +3,6 @@ import { cloneConfig, UNIT, unitsRound, type AbilityDef, type GameConfig } from 
 import { ELITE_DMG_MUL, ENDLESS, endlessMul, LOOP_GROWTH, TUNE, TURBO, type EnemyDef } from './enemies';
 import { effectiveAbility, STAKE, stakeDmg } from './stakes';
 import { CONTENT_1107, LEGEND_RELIC } from './relics';
-import { CABINETS } from './cabinets';
 import { cloneLevels, currentEnemy, fightSeed, type RunState } from './run';
 import { NIGHT, nightId } from './endless';
 
@@ -93,13 +92,13 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
 
 /**
  * An enemy ability before the Fight's own changes: the loop House's race (it cashes every 2 turns), FAST NIGHT and
- * ESPRESSO SHOT (QUICKENING: one spin faster). fightConfig and every card that shows a clock use it.
+ * (ESPRESSO SHOT was one spin faster until 2026-11-12). fightConfig and every card that shows a clock use it.
  */
 export function preFightAbility(run: RunState, ab: AbilityDef, boss?: string | null): AbilityDef {
   let a = ab;
   if (run.endless && boss === 'house') a = { ...a, every: ENDLESS.houseEvery };
   if (nightId(run) === 'fast') a = { ...a, every: Math.max(2, a.every - 1) };
-  if (quickening(run)) a = { ...a, every: Math.max(2, a.every - 1) };
+  // (ESPRESSO SHOT no longer speeds enemy abilities up: its downside was removed. User, 2026-11-12.)
   return a;
 }
 
@@ -133,8 +132,6 @@ export const longGameMul = (run: RunState) => (run.player.relics.includes('longg
 /** The legendary relics that scale all your pay: GLASS CANNON, DEVIL'S DUE, THE LONG GAME. */
 export const legendPayMul = (run: RunState) =>
   (run.player.relics.includes('glasscannon') ? LEGEND_RELIC.glassPay : 1) * (run.player.relics.includes('devilsdue') ? LEGEND_RELIC.devilPay : 1) * longGameMul(run);
-/** QUICKENING: a machine with a meter (not KNIGHT) holding it. */
-export const quickening = (run: RunState) => run.player.relics.includes('quickening') && !!CABINETS[run.cabinet].meter;
 /** GLASS CANNON: no healing between fights. */
 export const noHealing = (run: RunState) => run.player.relics.includes('glasscannon');
 

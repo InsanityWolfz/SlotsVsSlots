@@ -125,7 +125,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   secondline: { id: 'secondline', name: 'SECOND PAYLINE', text: `THE ROW ABOVE YOUR PAYLINE PAYS ITS PAIRS AND JACKPOTS AT HALF. ENEMIES HIT ${pct(LEGEND_RELIC.lineDmg - 1)}% HARDER`, sprite: 'relicLoadedreel' },
   devilsdue: { id: 'devilsdue', name: 'SECOND MORTGAGE', text: `EVERYTHING PAYS X${LEGEND_RELIC.devilPay}. -${pct(LEGEND_RELIC.devilDecay)}% MAX HP AFTER EVERY FIGHT YOU WIN`, sprite: 'relicChalice' },
   longgame: { id: 'longgame', name: 'THE LONG GAME', text: `EVERYTHING PAYS ${pct(1 - LEGEND_RELIC.longStart)}% LESS, +${pct(LEGEND_RELIC.longStep)}% FOR EVERY FIGHT YOU WIN`, sprite: 'relicMetronome' },
-  quickening: { id: 'quickening', name: 'ESPRESSO SHOT', text: 'YOUR METER STARTS EVERY FIGHT HALF FULL. ENEMY ABILITIES CHARGE 1 SPIN FASTER', sprite: 'relicBattery' },
+  quickening: { id: 'quickening', name: 'ESPRESSO SHOT', text: 'YOUR METER STARTS EVERY FIGHT HALF FULL', sprite: 'relicBattery' },
   glasscannon: { id: 'glasscannon', name: 'GLASS CANNON', text: `EVERYTHING PAYS X${LEGEND_RELIC.glassPay}. NO HEALING BETWEEN FIGHTS (BEATING AN ACT'S BOSS STILL HEALS YOU)`, sprite: 'relicFirstblood' },
   crusade: { id: 'crusade', name: 'CRUSADE', text: `+${LEGEND_RELIC.crusadeStep} SWORD DAMAGE FOR EVERY FIGHT YOU WIN`, sprite: 'relicDrum', machine: 'knight' },
   chainlightning: { id: 'chainlightning', name: 'CHAIN LIGHTNING', text: `LIGHTNING DAMAGE +${pct(LEGEND_RELIC.chainAdd)}%`, sprite: 'relicCoil', machine: 'tesla' },

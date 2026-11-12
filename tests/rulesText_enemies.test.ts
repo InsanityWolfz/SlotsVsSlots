@@ -226,12 +226,12 @@ describe('boss rules vs the fight', () => {
     skipToBoss(r);
     return r;
   };
-  it("THE WHEEL with ESPRESSO SHOT: its rules' NO MORE BETS clock is the fight's (2)", () => {
+  it("THE WHEEL with ESPRESSO SHOT: its rules' NO MORE BETS clock is the fight's (3: the relic no longer speeds it up)", () => {
     const r = bossRun(2, { relics: ['quickening'] });
     const every = shownAbility(r, WHEEL.ability!, 'wheel').every;
     const text = bossRules('wheel', { stake: 0, cabinet: 'tesla', houseEvery: 3, wheelEvery: every }).rules[1].text;
     expect(text.startsWith(`EVERY ${longFight(r).sides.enemy.ability!.every} TURNS: NO MORE BETS`)).toBe(true);
-    expect(every).toBe(2);
+    expect(every).toBe(3);
   });
   it("THE HOUSE with ESPRESSO SHOT: the pre-fight card's EVERY N (houseEvery) matches the fight's skim clock", () => {
     const r = bossRun(1, { relics: ['quickening'] });

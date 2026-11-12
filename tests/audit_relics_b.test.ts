@@ -76,15 +76,15 @@ describe('audit B: texts per machine', () => {
     for (const id of LIST.filter((x) => x !== 'bash' && x !== 'quickening')) expect(where[id]).toEqual(ALL_CABINETS);
     // Only QUICKENING has a machine-specific wording in this group (YOUR METER); the rest read the same everywhere.
     for (const id of LIST.filter((x) => x !== 'quickening')) for (const cab of where[id]) expect(relicText(id, cab)).toBe(RELICS[id].text);
-    expect(relicText('quickening', 'tesla')).toBe('YOUR LIGHTNING STARTS EVERY FIGHT HALF FULL. ENEMY ABILITIES CHARGE 1 SPIN FASTER');
-    expect(relicText('quickening', 'midas')).toBe('YOUR HIGH ROLLER STARTS EVERY FIGHT HALF FULL. ENEMY ABILITIES CHARGE 1 SPIN FASTER');
-    expect(relicText('quickening', 'joker')).toBe('YOUR JACKPOT METER STARTS EVERY FIGHT HALF FULL. ENEMY ABILITIES CHARGE 1 SPIN FASTER');
-    expect(relicText('quickening', 'jukebox')).toBe('YOUR VOLUME STARTS EVERY FIGHT HALF FULL. ENEMY ABILITIES CHARGE 1 SPIN FASTER');
+    expect(relicText('quickening', 'tesla')).toBe('YOUR LIGHTNING STARTS EVERY FIGHT HALF FULL');
+    expect(relicText('quickening', 'midas')).toBe('YOUR HIGH ROLLER STARTS EVERY FIGHT HALF FULL');
+    expect(relicText('quickening', 'joker')).toBe('YOUR JACKPOT METER STARTS EVERY FIGHT HALF FULL');
+    expect(relicText('quickening', 'jukebox')).toBe('YOUR VOLUME STARTS EVERY FIGHT HALF FULL');
     const face = (id: RelicId, cab: CabinetId) => shortRelicText(id, relicText(id, cab));
-    expect(face('quickening', 'tesla')).toBe('LIGHTNING STARTS HALF. ENEMY ABILITIES SOONER');
-    expect(face('quickening', 'midas')).toBe('HIGH ROLLER HALF FULL. ENEMY ABILITIES SOONER');
-    expect(face('quickening', 'joker')).toBe('METER STARTS HALF. ENEMY ABILITIES SOONER');
-    expect(face('quickening', 'jukebox')).toBe('VOLUME STARTS HALF. ENEMY ABILITIES SOONER');
+    expect(face('quickening', 'tesla')).toBe('LIGHTNING STARTS HALF CHARGED EACH FIGHT');
+    expect(face('quickening', 'midas')).toBe('HIGH ROLLER STARTS HALF FULL EACH FIGHT');
+    expect(face('quickening', 'joker')).toBe('METER STARTS HALF FULL EACH FIGHT');
+    expect(face('quickening', 'jukebox')).toBe('VOLUME STARTS HALF FULL EACH FIGHT');
     // The numbers the texts print are the engine's.
     expect(RELICS.secondline.text).toContain('15% HARDER');
     expect(RELICS.devilsdue.text).toBe("EVERYTHING PAYS X1.5. -8% MAX HP AFTER EVERY FIGHT YOU WIN");
@@ -793,47 +793,12 @@ describe('QUICKENING', () => {
     const k = opening('knight', ['quickening']);
     expect(fightConfig(k.r, base).enemy.ability?.every).toBe(fightConfig(run('knight', []), base).enemy.ability?.every);
   });
+  // (Its downside, enemy abilities one spin faster, was removed: user, 2026-11-12.)
   for (const cab of ['tesla', 'midas', 'joker', 'jukebox'] as CabinetId[]) {
-    it(`${cab}: the run's enemy ability fires 1 enemy turn sooner each time (every n-1, floor 2)`, () => {
-      const fired = (relics: RelicId[]) => {
-        const r = run(cab, relics);
-        const cfg = fightConfig(r, base);
-        cfg.enemy = { ...cfg.enemy, hp: 1e6, strips: reels3({ empty: 12 }) };
-        const f = new Fight(cfg, 1);
-        const at: number[] = [];
-        for (let t = 0; t < 30 && !f.over; t++) {
-          f.sides.player.hp = f.sides.player.maxHp;
-          const { side, events } = f.step();
-          if (side === 'enemy' && ofType(events, 'ability').length) at.push(Math.ceil(f.turn / 2));
-        }
-        return { at, every: f.sides.enemy.ability!.every };
-      };
-      const plain = fired([]);
-      const quick = fired(['quickening']);
-      expect(quick.every).toBe(Math.max(2, plain.every - 1));
-      const gaps = (xs: number[]) => [...new Set(xs.slice(1).map((x, i) => x - xs[i]))];
-      expect(gaps(plain.at)).toEqual([plain.every]);
-      expect(gaps(quick.at)).toEqual([quick.every]);
-      expect(quick.at.length).toBeGreaterThan(plain.at.length);
+    it(`${cab}: the run's enemy ability keeps its clock`, () => {
+      expect(fightConfig(run(cab, ['quickening']), base).enemy.ability!.every).toBe(fightConfig(run(cab, []), base).enemy.ability!.every);
     });
   }
-  it('the act 1-3 regular clock is 3: QUICKENING makes it 2', () => {
-    const r = run('tesla', ['quickening']);
-    const e = fightConfig(run('tesla', []), base).enemy.ability!;
-    expect(e.every).toBe(3);
-    expect(fightConfig(r, base).enemy.ability!.every).toBe(2);
-  });
-  // OPEN CALL (user): the clock floors at 2, so at stake 5+ QUICKENING's cost vanishes (in the player's favour).
-  it.skip('OPEN CALL: at stake 5, enemy abilities still charge 1 spin faster with QUICKENING', () => {
-    const at = (relics: RelicId[]) => {
-      const r = createRun(base, 3, 'tesla', 5);
-      r.pendingStart = null;
-      r.player.relics = relics;
-      const f = new Fight(fightConfig(r, base), 1);
-      return f.sides.enemy.ability!.every;
-    };
-    expect(at(['quickening'])).toBe(at([]) - 1);
-  });
   it('ACTUAL: at stake 5 the regulars charge every 2 either way', () => {
     const at = (relics: RelicId[]) => {
       const r = createRun(base, 3, 'tesla', 5);

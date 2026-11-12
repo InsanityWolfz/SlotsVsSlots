@@ -19,7 +19,7 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
       .replace(' AND FILL YOUR HIGH ROLLER BAR', ', FILL HIGH ROLLER')
       .replace(' AND FULLY CHARGE YOUR LIGHTNING', ', FULL LIGHTNING')
       .replace(' AND FILL YOUR JACKPOT METER', ', FILL THE METER')
-      .replace(/^JACKPOTS PAY X2 AND MAX YOUR VOLUME \(NOT ON THE DROP\)$/, 'JACKPOTS X2 + MAX VOLUME (NOT AT DROP)'),
+      .replace(/^JACKPOTS PAY X2 AND MAX YOUR VOLUME \(NOT ON THE DROP\)$/, 'JACKPOTS X2 AND FILL THE VOLUME'),
   phoenix: 'SURVIVE A KILLING HIT AT 1 HP, ONCE A FIGHT',
   overcharge: (t) =>
     t
@@ -36,7 +36,7 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   deckdrum: '+1 CARD DAMAGE PER SPIN THAT PAYS, MAX +5',
   horseshoe: 'PAIRS AND JACKPOTS WITH A LUCKY WILD X3',
   underdog: 'EVERYTHING PAYS X1.5 UNDER HALF HP',
-  holywater: 'EACH FIGHT: BLOCKS 1ST ABILITY ON YOUR REELS',
+  holywater: 'FIRST ENEMY SABOTAGE IS BLOCKED EACH FIGHT',
   hotstreak: "JACKPOT: NEXT SPIN'S PAIRS AND JACKPOTS X2",
   pitboss: "ENEMY'S FIRST JACKPOT A FIGHT IS VOID",
   rainmaker: `MAKE IT RAIN COSTS ${RAIN.rainmakerCost} CHIPS, NOT ${RAIN.cost}`,
@@ -58,9 +58,8 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   secondline: 'ROW ABOVE PAYS HALF. ENEMIES HIT +15%',
   devilsdue: 'EVERYTHING X1.5. -8% MAX HP PER WIN',
   longgame: 'EVERYTHING -20%, +3% PER FIGHT WON',
-  // (It said ENEMIES FASTER, which says nothing: faster at what? User, 2026-11-12. Each sentence fills one line.)
-  quickening: (t) =>
-    t.replace(/^YOUR (.+) STARTS EVERY FIGHT HALF FULL\..*$/, (_, m: string) => `${m.endsWith('METER') ? 'METER STARTS HALF' : m === 'HIGH ROLLER' ? 'HIGH ROLLER HALF FULL' : `${m} STARTS HALF`}. ENEMY ABILITIES SOONER`),
+  // (The user's line, 2026-11-12: LIGHTNING STARTS HALF CHARGED EACH FIGHT. The other meters fill, they don't charge.)
+  quickening: (t) => t.replace(/^YOUR (.+) STARTS EVERY FIGHT HALF FULL$/, (_, m: string) => (m === 'LIGHTNING' ? 'LIGHTNING STARTS HALF CHARGED EACH FIGHT' : `${m.endsWith('METER') ? 'METER' : m} STARTS HALF FULL EACH FIGHT`)),
   glasscannon: 'EVERYTHING X1.5. NO HEALS BETWEEN FIGHTS',
   crusade: (t) => t.replace(' FOR EVERY FIGHT YOU WIN', ' PER FIGHT WON'),
   highcard: 'JACKPOTS X1.5. PAIRS PAY HALF',
