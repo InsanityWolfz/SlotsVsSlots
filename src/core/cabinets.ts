@@ -89,7 +89,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     symbols: ['sword', 'shield'],
     attack: 'sword',
     levels: { sym: { sword: 2, shield: 2 }, charm: {} },
-    rule: 'HALF SWORDS, HALF SHIELDS. NO METER: EACH BOSS PAYS 4 SWORD LEVELS. 400 HP.',
+    rule: 'HALF SWORDS, HALF SHIELDS. NO METER. EACH BOSS YOU BEAT GIVES YOUR SWORDS 4 LEVELS. 400 HP.',
     unlock: '',
   },
   midas: {
@@ -98,7 +98,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     heroSprite: 'heroMidas',
     name: 'BANKROLL',
     sprite: 'cabinetMidas',
-    blurb: 'MAKE IT RAIN.',
+    blurb: 'MAKE IT RAIN',
     // 340 -> 480 (balance pass 2026-11-07): it was the lowest machine at every stake (HP is a weak lever on it).
     // 480 -> 400 (2026-11-09): a rain at the floor is free now, so BANKROLL keeps ~60 chips a run (QA call 6). Act 1
     // pacing tried 7 chips a reel: with free floor rains that won 74% at WHITE even at 420 HP (target 60), so 6 / 6 stays.
@@ -112,7 +112,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     startChips: 24,
     symbols: ['goldbar', 'shield'],
     attack: 'goldbar',
-    rule: 'CHIPS HIT AND WIN CHIPS. FULL METER: HIT HARDER, HEAL 15. CHIP JACKPOTS MAKE IT RAIN. 400 HP.',
+    rule: 'YOUR CHIP SYMBOLS HIT AND WIN CHIPS. HIGH ROLLER MULTIPLIES YOUR NEXT HIT AND HEALS 15 WHEN FULL. A CHIP SYMBOL JACKPOT MAKES IT RAIN. 400 HP.',
     unlock: 'CLEAR A RUN',
     chipsPerWin: 1,
   },
@@ -132,7 +132,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'special', symbol: 'bolt', cost: 4 * UNIT, heal: UNIT / 2 },
     symbols: ['bolt', 'shield'],
     attack: 'bolt',
-    rule: 'BOLTS CHARGE LIGHTNING: 22 A BOLT, PIERCES SHIELDS. A STORM HEALS 15. 340 HP.',
+    rule: 'BOLTS CHARGE A LIGHTNING STORM. IT PIERCES SHIELDS AND HEALS 15. 340 HP.',
     unlock: 'REACH THE DOORMAN',
     // 40 (2026-10-12): LIGHTNING ROD is gone (97% of TESLA runs took it; it set the cost to 40 and hit 90).
     specialCost: 4 * UNIT,
@@ -158,7 +158,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 1.5 * UNIT, perWild: 5 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
-    rule: 'WILDS FILL A METER: THEN ALL 3 SYMBOLS PAY JACKPOTS, HEAL 15. A WILD LETS ANY 2 REELS PAIR. 365 HP.',
+    rule: 'WILDS FILL YOUR JACKPOT METER. A FULL METER MAKES ALL 3 PAYLINE SYMBOLS PAY JACKPOTS AND HEALS 15. A WILD LETS ANY 2 REELS PAIR. 365 HP.',
     unlock: 'BEAT THE DOORMAN WITH A WILD ON YOUR REELS',
     jokerWilds: true,
   },
@@ -177,7 +177,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'volume', symbol: 'note', cost: 6 * UNIT, heal: 1.5 * UNIT },
     symbols: ['note', 'shield'],
     attack: 'note',
-    rule: 'NOTES RAISE THE VOLUME: EACH LEVEL, NOTES HIT HARDER. AT 6, THE DROP: EVERY NOTE ON SCREEN HITS, HEAL 15. 430 HP.',
+    rule: 'NOTES RAISE THE VOLUME. THE LOUDER IT IS THE HARDER THEY HIT. AT 6 THE DROP HITS WITH EVERY NOTE ON SCREEN AND HEALS 15. 430 HP.',
     unlock: 'BEAT THE DOORMAN',
   },
 };

@@ -68,64 +68,68 @@ export const CHARM_SYMBOLS: Record<Enh, SymbolId[]> = {
   glass: ['sword', 'ace', 'goldbar', 'shield', 'bolt', 'note'],
 };
 
-/** One charm's rule at a level, as plain card text (never an expected value). */
+/**
+ * One charm's full rule at a level, as plain text (never an expected value). The charm's symbol is the subject: it
+ * PAYS X2, it HEALS 20. Each rule is the card face's own words (charmShortText) with detail added, never reworded
+ * (term sheet rule 13, user 2026-11-12).
+ */
 export function charmRuleText(enh: Enh, lvl: number): string {
   const v = charmValue(enh, lvl);
   switch (enh) {
     case 'gold':
-      return `X${v} TO ITS PAY (GOLD ON THE SAME PAY ADDS UP)`;
+      return `PAYS X${v}. SO DOES ITS WHOLE PAIR OR JACKPOT. 2 GOLD CHARMS IN IT PAY X${2 * v}`;
     case 'keen':
-      return `+${v} TO EACH SYMBOL IN ITS PAY, WHICH PIERCES SHIELDS`;
+      return `HITS FOR ${v} MORE AND PIERCES SHIELDS. SO DOES EVERY SYMBOL IN ITS PAIR OR JACKPOT`;
     case 'charged':
-      return `+${v} TO ITS PAY`;
+      return `CHARGES ${v} MORE LIGHTNING`;
     case 'vamp':
-      return `HEALS ${v} WHEN ITS PAY HITS (EACH VAMP IN THE PAY HEALS)`;
+      return `HEALS ${v} WHEN IT PAYS`;
     case 'lucky':
-      return `${v}% TO LAND AS A WILD`;
+      return `${v}% CHANCE TO LAND AS A WILD`;
     case 'blaze':
-      return `LIGHTNING DAMAGE +${blazePct(v)}% FOR EVERY BLAZE CHARM YOU OWN`;
+      return `LIGHTNING DEALS ${blazePct(v)}% MORE DAMAGE FOR EACH BLAZE CHARM ON YOUR REELS`;
     case 'spiked':
-      return `ALSO HITS FOR ${v}% OF ITS SHIELD`;
+      return `ALSO HITS FOR ${v}% OF THE SHIELD IT GIVES`;
     case 'lucre':
-      return `+${LUCRE_CHIPS} CHIPS WHEN IT PAYS (MAX ${v} A FIGHT, ON A WIN)`;
+      return `GIVES ${LUCRE_CHIPS} CHIPS WHEN IT PAYS, UP TO ${v} EACH FIGHT. YOU COLLECT THEM WHEN YOU WIN`;
     case 'trick':
-      return `+${v} TO YOUR JACKPOT METER WHEN IT LANDS`;
+      return `FILLS YOUR JACKPOT METER BY ${v} WHEN IT LANDS ON YOUR PAYLINE`;
     case 'echo':
-      return `AT THE DROP, ITS NOTE HITS X${v}`;
+      return `HITS X${v} AT THE DROP`;
     case 'glass':
-      return `X${v} TO ITS PAY (ADDS UP LIKE GOLD). 1 IN 4 TO SHATTER FOR GOOD WHEN IT PAYS`;
+      return `PAYS X${v}. SO DOES ITS WHOLE PAIR OR JACKPOT. SHATTERS FOR GOOD 1 TIME IN ${Math.round(1 / GLASS_BREAK)} THAT IT PAYS`;
   }
 }
 
 /**
- * The same rule in a few words, for shop and draft cards (the collection and tooltips keep the long form). The user's
- * words from the content audit (Claude Doc, Charms "codex text" and the upgrade cards: "REEL 1 SWORDS: X2 PAY").
+ * The same rule in a few words, for the reward cards (the COLLECTION keeps the long form): the rule with its detail
+ * left out. A card reads ON SWORDS: PAYS X2.
  */
 export function charmShortText(enh: Enh, lvl: number): string {
   const v = charmValue(enh, lvl);
   switch (enh) {
     case 'gold':
-      return `X${v} PAY`;
+      return `PAYS X${v}`;
     case 'keen':
-      return `+${v} DAMAGE AND PIERCES SHIELDS`;
+      return `HITS FOR ${v} MORE AND PIERCES SHIELDS`;
     case 'charged':
-      return `+${v} CHARGE`;
+      return `CHARGES ${v} MORE LIGHTNING`;
     case 'vamp':
-      return `+${v} HP`;
+      return `HEALS ${v} WHEN IT PAYS`;
     case 'lucky':
-      return `${v}% CHANCE TO BE A WILD`;
+      return `${v}% CHANCE TO LAND AS A WILD`;
     case 'blaze':
-      return `+${blazePct(v)}% LIGHTNING DAMAGE`;
+      return `LIGHTNING DEALS ${blazePct(v)}% MORE DAMAGE`;
     case 'spiked':
-      return `HITS FOR ${v}% OF ITS SHIELD`;
+      return `ALSO HITS FOR ${v}% OF THE SHIELD IT GIVES`;
     case 'lucre':
-      return `+${LUCRE_CHIPS} CHIPS (MAX ${v} PER FIGHT)`;
+      return `GIVES ${LUCRE_CHIPS} CHIPS WHEN IT PAYS, UP TO ${v} EACH FIGHT`;
     case 'trick':
-      return `+${v} TO YOUR JACKPOT METER`;
+      return `FILLS YOUR JACKPOT METER BY ${v}`;
     case 'echo':
-      return `AT THE DROP, ITS NOTE HITS X${v}`;
+      return `HITS X${v} AT THE DROP`;
     case 'glass':
-      return `X${v} PAY. 1 IN 4 TO SHATTER`;
+      return `PAYS X${v}. SHATTERS 1 TIME IN ${Math.round(1 / GLASS_BREAK)}`;
   }
 }
 
