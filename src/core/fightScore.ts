@@ -245,7 +245,8 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       boost(g, bell);
       notes.push(`X${bell} BELL`);
     }
-    if (player && f.hotStreak && g.matched) {
+    // (The whole spin, singles too: the card says YOUR NEXT SPIN PAYS X2. User, 2026-11-12; it was pairs and jackpots.)
+    if (player && f.hotStreak) {
       fired.add('hotstreak');
       boost(g, 2);
       notes.push('HOT X2');

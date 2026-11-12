@@ -6,7 +6,8 @@ import { charmCardFull, describeOption } from '../../core/draft';
 import { RAIN } from '../../core/fightRules';
 
 /**
- * Cards say at most two lines at body size (the UI kit, user 2026-10-30). The rules' full wording stays in the core
+ * Cards say at most two lines at body size (the UI kit, user 2026-10-30; a card may run to three where the user's own
+ * words need them: THREE_LINES). The rules' full wording stays in the core
  * (relicText, describeOption) and shows in the card's detail box on hover, focus or tap; these are the card faces'
  * short versions, for the texts that run past two lines. A function gets the full text (some vary by machine).
  */
@@ -37,7 +38,6 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   horseshoe: 'PAIRS AND JACKPOTS WITH A LUCKY WILD X3',
   underdog: 'EVERYTHING PAYS X1.5 UNDER HALF HP',
   holywater: 'FIRST ENEMY SABOTAGE IS BLOCKED EACH FIGHT',
-  hotstreak: "JACKPOT: NEXT SPIN'S PAIRS AND JACKPOTS X2",
   pitboss: "ENEMY'S FIRST JACKPOT A FIGHT IS VOID",
   rainmaker: `MAKE IT RAIN COSTS ${RAIN.rainmakerCost} CHIPS, NOT ${RAIN.cost}`,
   bash: 'LEFTOVER SHIELD HITS THE ENEMY',
@@ -53,7 +53,8 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   housetax: 'ENEMY JACKPOTS PAY YOU 5 CHIPS',
   regular: 'ENCOUNTER GAMES: 2 MORE PLAYS',
   hitmaker: 'EACH DROP: +60% PER DROP BEFORE IT',
-  houseofcards: 'METER PAYOFFS: A WILD ON 2 REELS ALL FIGHT',
+  // (The user's line, 2026-11-12. Three lines: the one card face that runs past two.)
+  houseofcards: 'EACH METER PAYOFF GIVES YOUR REELS 2 TEMPORARY WILDS',
   parachute: 'ONCE A FIGHT, PAY 10 CHIPS TO LIVE AT 25%',
   secondline: 'ROW ABOVE PAYS HALF. ENEMIES HIT +15%',
   devilsdue: 'EVERYTHING X1.5. -8% MAX HP PER WIN',
@@ -96,6 +97,9 @@ export function cardFace(o: DraftOption, run?: RunState): { title: string; text:
 
 /** Every machine, for checking the short texts. */
 export const ALL_CABINETS: CabinetId[] = ['knight', 'midas', 'tesla', 'joker', 'jukebox'];
+
+/** The card faces allowed a third line (the card draws three lines tighter). */
+export const THREE_LINES: RelicId[] = ['houseofcards'];
 
 /** Characters per line on a card face (a three-card draft card at body size). */
 export const CARD_COLS = 22;

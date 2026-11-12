@@ -203,9 +203,10 @@ export abstract class DraftScreen extends NextScreen {
       this.drawOptionFace(ctx, o, c.x, y0, c.w);
       drawText(ctx, title, c.x, y0 + 134, this.titleSize, this.optionColor(o));
       const cols = Math.floor((c.w - 24) / (6 * T.body));
-      wrap(text, cols)
-        .slice(0, 2)
-        .forEach((line, k) => drawRich(ctx, line, c.x, y0 + 170 + k * 26, T.body, KIT.text));
+      // (Two lines; a third, where a card's words need it, sits tighter so all three stay inside the card.)
+      const lines = wrap(text, cols).slice(0, 3);
+      const [ly, pitch] = lines.length > 2 ? [162, 22] : [170, 26];
+      lines.forEach((line, k) => drawRich(ctx, line, c.x, y0 + ly + k * pitch, T.body, KIT.text));
     }
     ctx.restore();
   }

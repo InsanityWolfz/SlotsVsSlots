@@ -154,10 +154,10 @@ describe('HOT STREAK', () => {
     f.forceNext('player', PAIR);
     expect(groupOf(f.step().events, 'sword').amount).toBe(2 * groupOf(after([], PAIR, PAIR), 'sword').amount);
   });
-  // The text says the next spin's PAIRS AND JACKPOTS (2026-11-01): its singles pay x1.
-  it("the text names the next spin's pairs and jackpots; singles on the hot spin pay x1", () => {
-    expect(RELICS.hotstreak.text).toBe("AFTER A JACKPOT, YOUR NEXT SPIN'S PAIRS AND JACKPOTS PAY X2");
-    expect(groupOf(after(['hotstreak'], JACK, NONE), 'sword', 0).amount).toBe(groupOf(after([], JACK, NONE), 'sword', 0).amount);
+  // The card says YOUR NEXT SPIN PAYS X2 (user, 2026-11-12): the whole spin, singles too.
+  it('the text says the next spin pays x2, and singles on the hot spin pay x2 too', () => {
+    expect(RELICS.hotstreak.text).toBe('JACKPOTS MAKE YOUR NEXT SPIN PAY X2');
+    expect(groupOf(after(['hotstreak'], JACK, NONE), 'sword', 0).amount).toBe(2 * groupOf(after([], JACK, NONE), 'sword', 0).amount);
   });
 });
 

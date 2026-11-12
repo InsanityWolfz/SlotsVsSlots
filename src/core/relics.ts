@@ -95,7 +95,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   underdog: { id: 'underdog', name: 'UNDERDOG', text: 'EVERYTHING PAYS X1.5 WHEN YOU ARE UNDER HALF HP', sprite: 'relicUnderdog' },
   holywater: { id: 'holywater', name: 'BOUNCER', text: 'THE FIRST ENEMY ABILITY EACH FIGHT THAT HITS YOUR REELS DOES NOTHING', sprite: 'relicHolywater' },
   // EXPERT_PLAYTEST_10: relics that make a choice (streaky vs steady, turtle-and-counter, keep the liens or pay them).
-  hotstreak: { id: 'hotstreak', name: 'HOT STREAK', text: "AFTER A JACKPOT, YOUR NEXT SPIN'S PAIRS AND JACKPOTS PAY X2", sprite: 'relicHotStreak' },
+  hotstreak: { id: 'hotstreak', name: 'HOT STREAK', text: 'JACKPOTS MAKE YOUR NEXT SPIN PAY X2', sprite: 'relicHotStreak' },
   // CONTENT_13.
   pitboss: { id: 'pitboss', name: 'PIT BOSS', text: "THE ENEMY'S FIRST JACKPOT EACH FIGHT DOESN'T COUNT", sprite: 'relicPitBoss' },
   // CASH CASSIDY's MAKE IT RAIN relics.
