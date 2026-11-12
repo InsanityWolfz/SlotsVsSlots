@@ -71,7 +71,7 @@ export abstract class DraftScreen extends NextScreen {
     );
     // SKIP: no card, a few chips (quiet: the cards are the screen's point; it's the way out when none of them fits).
     if (kind === 'draft' && skip && n) {
-      const b = this.btn(`SKIP: +${RUN.skipChips} CHIPS`, SKIP_BTN.x, SKIP_BTN.y, SKIP_BTN.w, SKIP_BTN.h, () => {
+      const b = this.btn(`SKIP FOR ${RUN.skipChips} CHIPS`, SKIP_BTN.x, SKIP_BTN.y, SKIP_BTN.w, SKIP_BTN.h, () => {
         if (this.picked >= 0) return;
         this.picked = SKIPPED;
         this.sounds.click();
@@ -139,37 +139,38 @@ export abstract class DraftScreen extends NextScreen {
     // ENDLESS: the pick after a loop's boss is the new loop's: say the loop was cleared.
     const loopDone = !!last && !!run.endless && last.loop !== undefined && last.loop < run.endless.loop;
     if (last) {
-      const rocks = last.rocksCrumbled ? `  -  ${last.rocksCrumbled} ROCKS CRUMBLED` : '';
+      const rocks = last.rocksCrumbled ? `${last.rocksCrumbled} ROCK${last.rocksCrumbled === 1 ? '' : 'S'} CRUMBLED` : '';
       // VETERAN (KNIGHT), OVERLOAD (TESLA) and WARM-UP (JUKEBOX) grow with each loop cleared: say so where the loop ends.
       const L = run.endless?.loop ?? 0;
-      const grow = !loopDone ? '' : run.cabinet === 'knight' ? `  -  VETERAN: SWORDS AND SHIELDS X${1 + LOOP_GROWTH.veteran * (L - 1)}` : run.cabinet === 'tesla' ? `  -  OVERLOAD: BOLTS, SHIELDS AND STORM HEALS X${1 + LOOP_GROWTH.overload * (L - 1)}` : run.cabinet === 'jukebox' ? `  -  WARM-UP: FIGHTS START AT VOLUME ${Math.min(VOLUME.max - 1, LOOP_GROWTH.warmUp * L)}` : '';
+      const grow = !loopDone ? '' : run.cabinet === 'knight' ? `VETERAN MAKES SWORDS AND SHIELDS PAY X${1 + LOOP_GROWTH.veteran * (L - 1)}` : run.cabinet === 'tesla' ? `OVERLOAD MAKES BOLTS, SHIELDS AND STORM HEALS PAY X${1 + LOOP_GROWTH.overload * (L - 1)}` : run.cabinet === 'jukebox' ? `WARM-UP STARTS EACH FIGHT AT VOLUME ${Math.min(VOLUME.max - 1, LOOP_GROWTH.warmUp * L)}` : '';
       const title = loopDone ? `LOOP ${last.loop} CLEARED!` : last.boss ? 'BOSS DOWN!' : `${last.enemy} DEFEATED!`;
       // What the fight cost: HP carries from fight to fight, so a long fight's price shows when you pay it, not three
       // fights later (expert playtest 2026-11-06).
       const net = last.hpBefore - last.hpAfter;
-      const sub = `${loopDone ? `SCORE ${fmtNum(endlessScore(run))}  -  ` : last.boss ? `${last.enemy}  -  ` : ''}${rounds(last.turns)}${rocks}${grow}`;
+      // One short sentence a fact (it was a row of dashes and labels: the text pass, 2026-11-12).
+      const sub = [loopDone ? `SCORE ${fmtNum(endlessScore(run))}` : '', last.boss && !loopDone ? `${last.enemy} FELL IN ${rounds(last.turns)}` : rounds(last.turns), rocks, grow].filter(Boolean).join('. ');
       this.drawResultTitle(ctx, title, CX, 40, { chips: last.chips, sub, color: last.boss ? '#ffd23f' : undefined });
       // A boss pays a level to your attack symbol: say so, as a chip.
       // (On the left, opposite the boss's level chip.)
       drawChip(ctx, net > 0 ? `LOST ${fmtNum(net)} HP` : net < 0 ? `HEALED ${fmtNum(-net)} HP` : 'NO HP LOST', CX - 330, 84, { scale: T.small, color: net > 0 ? '#ff8a7a' : '#7dff7a' });
-      if (last.bossLevel) drawChip(ctx, `${symLabel(last.bossLevel)}S LEVEL UP: LV${symLevel(run.player.levels, last.bossLevel)}`, CX + 330, 84, { scale: T.small, color: '#5ad8e8' });
-    } else drawBanner(ctx, start ? 'A NEW RUN' : 'CHOOSE A REWARD', CX, 40, { scale: T.title });
+      if (last.bossLevel) drawChip(ctx, `${last.bossLevel === 'goldbar' ? 'CHIP SYMBOLS' : `${symLabel(last.bossLevel)}S`} LEVEL UP TO LV${symLevel(run.player.levels, last.bossLevel)}`, CX + 330, 84, { scale: T.small, color: '#5ad8e8' });
+    } else drawBanner(ctx, start ? 'A NEW RUN' : 'PICK A REWARD', CX, 40, { scale: T.title });
     // (Not at the run's start: a fork sign, a Cashier and a boss before your first fight confused new players, playtest
     // 2026-11-03. The map shows from the first win on.)
     if (!start) this.drawMap(ctx, 186, time);
     const act3Arrival = !legend && !spoils && run.act >= 3 && run.depth === 0 && run.actIntro;
     // The boss's heal says what it gave (feel playtest: FULLY HEALED read as nothing at 94%).
     const healedBy = last?.won ? Math.max(0, run.player.maxHp - last.hpAfter) : 0;
-    const healed = healedBy >= UNIT ? `HEALED +${fmtNum(healedBy)} HP.` : 'FULL HP.';
+    const healed = healedBy >= UNIT ? `HEALED ${fmtNum(healedBy)} HP.` : 'FULL HP.';
     const allLegend = this.offers.every((o) => o.kind === 'relic' && LEGENDARY.has(o.relic));
     const heading = act3Arrival
-      ? `ACT 3: THE HOUSE HAS A PARTNER. ${healed}`
+      ? `ACT 3. THE HOUSE HAS A PARTNER. ${healed}`
       : legend
-        ? run.endless ? `LOOP ${run.endless.loop}: ${allLegend ? 'A LEGENDARY RELIC' : 'PICK A RELIC'}` : `${last?.boss ? `ACT ${run.act}: ${healed}` : 'PUNCH CARD:'} ${allLegend ? 'A LEGENDARY RELIC.' : 'PICK A RELIC.'}`
+        ? run.endless ? `LOOP ${run.endless.loop}. ${allLegend ? 'PICK A LEGENDARY RELIC' : 'PICK A RELIC'}` : `${last?.boss ? `ACT ${run.act}. ${healed}` : 'PUNCH CARD PAYS OUT.'} ${allLegend ? 'PICK A LEGENDARY RELIC.' : 'PICK A RELIC.'}`
         : start
           ? 'PICK A STARTING RELIC'
           : spoils
-            ? 'ELITE SPOILS: PICK A RELIC'
+            ? "PICK A RELIC FROM THE ELITE'S SPOILS"
             : 'PICK ONE';
     const hSize = textWidth(heading, T.head) <= W - 340 ? T.head : T.body;
     // The act plaque sits clear of the heading at the size it's drawn (it overlapped its first letters: playtest).

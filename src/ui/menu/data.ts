@@ -4,7 +4,7 @@ import { CHARM_SYMBOLS, charmName, charmRuleText } from '../../core/charms';
 import { actsOf, ARCHETYPES, BOSS, DEALER, GATEKEEPER, OWNER, REPO_MAN, TURBO, WHEEL, type Archetype } from '../../core/enemies';
 import { ELITE_ONLY, LEGENDARY, RELICS, RELIC_TIER } from '../../core/relics';
 import { STAKES } from '../../core/stakes';
-import { demo, IN_FULL_GAME } from '../../demo';
+import { demo } from '../../demo';
 import { ENH_SPRITE } from '../../present/reel';
 import { artId, hasSprite, type SpriteId } from '../../render/sprites';
 
@@ -14,11 +14,12 @@ import { artId, hasSprite, type SpriteId } from '../../render/sprites';
  */
 
 // One value each now (Charms have no levels, user 2026-10-15): the text comes from the rule itself, so it can't drift.
+// (What each one sits on, after the shelf's own line: A CHARM SITS ON ONE SYMBOL ON YOUR REELS.)
 const who: Record<Enh, string> = {
   gold: 'YOUR ATTACK SYMBOLS AND SHIELDS',
   keen: 'SWORDS, CARDS AND NOTES',
   charged: "TESLA'S BOLTS",
-  spiked: 'KNIGHT. SHIELDS',
+  spiked: "KNIGHT'S SHIELDS",
   vamp: 'SWORDS, CARDS AND NOTES',
   lucky: 'BOLTS, CARDS, NOTES AND SHIELDS',
   blaze: "TESLA'S BOLTS",
@@ -28,7 +29,7 @@ const who: Record<Enh, string> = {
   glass: 'YOUR ATTACK SYMBOLS AND SHIELDS',
 };
 export const CHARM_INFO: Record<Enh, { name: string; text: string }> = Object.fromEntries(
-  (Object.keys(who) as Enh[]).map((e) => [e, { name: charmName(e), text: `${who[e]}. ${charmRuleText(e, 1)}.` }]),
+  (Object.keys(who) as Enh[]).map((e) => [e, { name: charmName(e), text: `SITS ON ${who[e]}. ${charmRuleText(e, 1)}.` }]),
 ) as Record<Enh, { name: string; text: string }>;
 /** Charms in the COLLECTION (SPIKED retired). */
 export const CHARM_ORDER: Enh[] = ['gold', 'glass', 'keen', 'vamp', 'charged', 'lucky', 'blaze', 'lucre', 'trick', 'echo'];
@@ -38,7 +39,7 @@ export const charmWhere = (e: Enh): string => {
   const m = CHARM_MACHINE[e];
   // (LUCKY turns up on three machines; the CLAW's 2 CHARMS prize deals Charms too.)
   if (e === 'lucky') return 'TESLA, JOKER AND JUKEBOX ONLY';
-  return m ? `${CABINETS[m].name} ONLY` : 'DRAFTS AND THE CLAW';
+  return m ? `${CABINETS[m].name} ONLY` : 'FIGHT REWARDS AND THE CLAW';
 };
 /** A Charm's tile art: the symbol it sits on, with the Charm over it. */
 export const charmArt = (e: Enh): [SpriteId, SpriteId] => [(CHARM_SYMBOLS[e][0] ?? 'shield') as SpriteId, ENH_SPRITE[e]];
@@ -64,8 +65,8 @@ export function relicWhere(r: RelicId): string {
   if (ELITE_ONLY.has(r)) return "ONLY IN AN ELITE'S SPOILS";
   const m = RELICS[r].machine;
   // The demo: another machine's relics can't drop (QA DEMO-10).
-  if (m && demo().on && !(demo().machines ?? []).includes(m)) return `${IN_FULL_GAME}: ${CABINETS[m].name} ONLY`;
-  return m ? `${CABINETS[m].name} ONLY. ELITES, THE CASHIER` : 'ELITES, ENCOUNTERS, THE CASHIER';
+  if (m && demo().on && !(demo().machines ?? []).includes(m)) return `THE FULL GAME. ${CABINETS[m].name} ONLY`;
+  return m ? `${CABINETS[m].name} ONLY. ELITES AND THE CASHIER` : 'ELITES, TABLE GAMES AND THE CASHIER';
 }
 
 /** Collection size (relics + charms), for the COLLECTOR achievements. */

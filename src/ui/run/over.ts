@@ -248,7 +248,7 @@ export abstract class OverScreen extends ShopScreen {
     const name = won || turbo ? CABINETS[run.cabinet].hero : (loss?.enemy ?? lastRec?.enemy ?? 'THE DOORMAN');
     const line2 = won || turbo ? (turbo ? 'BEAT THE OWNER' : trueEnding ? 'BEAT THE DEALER. RUN CLEARED' : cleared ? 'BEAT THE DOORMAN' : 'CLEARED THE RUN') : busted ? 'GOT YOU IN ENDLESS' : 'GOT YOU';
     const where = busted
-      ? ((n) => `BEAT THE DEALER, THEN ${n} ENDLESS FIGHT${n === 1 ? '' : 'S'}`)(run.records.filter((r) => r.loop !== undefined).length)
+      ? ((n) => `BEAT THE DEALER AND PLAYED ${n} ENDLESS FIGHT${n === 1 ? '' : 'S'}`)(run.records.filter((r) => r.loop !== undefined).length)
       : won
         ? `ALL ${totalFights(run)} FIGHTS WON ON ${CABINETS[run.cabinet].name}`
         : `FIGHT ${run.records.length} OF ${totalFights(run)}, ACT ${run.act}, ON ${CABINETS[run.cabinet].name}`;
@@ -260,7 +260,7 @@ export abstract class OverScreen extends ShopScreen {
     // The death recap, as chips: what hurt you most.
     if (loss?.hurt?.length) {
       let cx = tx;
-      const parts = [...loss.hurt.map(([k, n]) => `${k} ${fmtNum(n)}`), ...(loss.stuck ? [`STUCK ${loss.stuck[0]} OF ${loss.stuck[1]} SPINS`] : [])];
+      const parts = [...loss.hurt.map(([k, n]) => `${k} ${fmtNum(n)}`), ...(loss.stuck ? [`FROZEN OR JAMMED ${loss.stuck[0]} OF ${loss.stuck[1]} SPINS`] : [])];
       for (const p of parts) {
         const w = textWidth(p, T.small) + 18;
         if (cx + w > W - 30) break;
@@ -313,7 +313,7 @@ export abstract class OverScreen extends ShopScreen {
       ctx.restore();
     });
     // What the run unlocked: a new Slot Machine, a stake.
-    const notes = [...(this.unlockedNow.length ? [`NEW SLOT MACHINE${this.unlockedNow.length > 1 ? "S" : ""}: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}`] : []), ...(this.stakeUnlockedNow ? [this.stakeUnlockedNow] : [])];
+    const notes = [...(this.unlockedNow.length ? [this.unlockLine()] : []), ...(this.stakeUnlockedNow ? [this.stakeUnlockedNow] : [])];
     if (notes.length && t >= B.wells + 0.4) {
       let nx = W / 2 - notes.slice(0, 2).reduce((a, n) => a + textWidth(n, T.small) + 30, -12) / 2;
       notes.slice(0, 2).forEach((n, i) => {
@@ -323,6 +323,13 @@ export abstract class OverScreen extends ShopScreen {
       });
     }
     this.drawOverFoot(ctx, t, time);
+  }
+
+  /** What the run unlocked, as a sentence: TESLA SLOT MACHINE UNLOCKED, JUKEBOX AND JOKER SLOT MACHINES UNLOCKED. */
+  protected unlockLine(): string {
+    const names = this.unlockedNow.map((c) => CABINETS[c].name);
+    const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} AND ${names[names.length - 1]}` : names[0];
+    return `${list} SLOT MACHINE${names.length > 1 ? 'S' : ''} UNLOCKED`;
   }
 
   /** The skip prompt while the reveal plays, the RUN LOG when open, the buttons. */
@@ -523,9 +530,9 @@ export abstract class OverScreen extends ShopScreen {
     let y = 268;
     // Unlocks, new titles, trims.
     const notes: [string, string][] = [];
-    if (this.unlockedNow.length) notes.push([`NEW SLOT MACHINE${this.unlockedNow.length > 1 ? "S" : ""}: ${this.unlockedNow.map((c) => CABINETS[c].name).join(', ')}`, '#7dff7a']);
-    for (const t of g.titles) notes.push([`NEW TITLE: ${t}`, '#ffd23f']);
-    for (const t of g.trims) notes.push([`NEW TRIM: ${t} (WEAR IT IN PROFILE)`, '#ff9ec8']);
+    if (this.unlockedNow.length) notes.push([this.unlockLine(), '#7dff7a']);
+    for (const t of g.titles) notes.push([`YOU EARNED THE TITLE ${t}`, '#ffd23f']);
+    for (const t of g.trims) notes.push([`YOU EARNED THE ${t} TRIM. WEAR IT IN PROFILE`, '#ff9ec8']);
     for (const [text, color] of notes.slice(0, 3)) {
       drawText(ctx, text, W / 2, y, textWidth(text, T.head) <= w - 60 ? T.head : T.body, color);
       y += 36;
@@ -545,7 +552,7 @@ export abstract class OverScreen extends ShopScreen {
         wrap(a.name, Math.floor((cw - 20) / (6 * T.small))).slice(0, 2).forEach((l, k) => drawText(ctx, l, cx + cw / 2, cy + 50 + k * 16, T.small, KIT.title));
         wrap(a.text, Math.floor((cw - 20) / (6 * T.small))).slice(0, 3).forEach((l, k) => drawText(ctx, l, cx + cw / 2, cy + 84 + k * 14, T.small, KIT.dim));
       });
-      if (g.achievements.length > 4) drawText(ctx, `+${g.achievements.length - 4} MORE ON THE TROPHIES SCREEN`, W / 2, y + 164, T.small, KIT.dim);
+      if (g.achievements.length > 4) drawText(ctx, `${g.achievements.length - 4} MORE ON THE TROPHIES SCREEN`, W / 2, y + 164, T.small, KIT.dim);
     }
     drawPrompt(ctx, r.done ? by({ touch: 'TAP TO CONTINUE', mouse: 'CLICK TO CONTINUE', keys: 'ENTER: CONTINUE', pad: '[A] CONTINUE' }) : by({ touch: 'TAP TO SKIP', mouse: 'CLICK TO SKIP', keys: 'ENTER: SKIP', pad: '[A] SKIP' }), W / 2, 96 + ph - 28, T.body, r.done ? KIT.text : KIT.dim, { alpha: 0.8 + 0.2 * Math.sin(performance.now() / 200) });
     ctx.restore();

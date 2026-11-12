@@ -106,7 +106,7 @@ export abstract class ClawScreen extends CardGames {
     const goes = done ? 0 : Math.max(0, CLAW.tries + extraPlays(run) - (run.encounterPlays ?? 0));
     // (Short of a go: say so, or every GO button was off with no word why.)
     const price = atStakes(run, CLAW.price);
-    drawText(ctx, run.player.chips < price && !this.cwMsg && !this.heldBuild ? `${price} CHIPS A GO: YOU HAVE ${run.player.chips}` : `${price} CHIPS A GO`, TCX, 72, T.small, run.player.chips < price && !this.cwMsg && !this.heldBuild ? '#ff8a7a' : KIT.dim);
+    drawText(ctx, run.player.chips < price && !this.cwMsg && !this.heldBuild ? `${price} CHIPS A TRY. YOU HAVE ${run.player.chips}` : `${price} CHIPS A TRY`, TCX, 72, T.small, run.player.chips < price && !this.cwMsg && !this.heldBuild ? '#ff8a7a' : KIT.dim);
     const x0 = TCX - 250;
     const w = 500;
     const y0 = TABLE.y + 2;
@@ -212,7 +212,7 @@ export abstract class ClawScreen extends CardGames {
     drawText(ctx, 'PUSH', x0 + w - 42, y0 + h - 27, T.small, KIT.dim);
     // The side: goes left, the aims.
     this.side(ctx, 'THE CLAW');
-    this.numberWell(ctx, 'GOES LEFT', `${goes}`, { chip: false, color: KIT.title, sub: `${atStakes(run, CLAW.price)} CHIPS EACH` });
+    this.numberWell(ctx, 'TRIES LEFT', `${goes}`, { chip: false, color: KIT.title, sub: `${atStakes(run, CLAW.price)} CHIPS EACH` });
     const m = this.cwMsg;
     if (m) this.tableResult(ctx, m, TABLE.y + 200);
   }

@@ -165,6 +165,6 @@ export class TrophiesTab implements TabBody {
       drawText(ctx, `${Math.min(prog[0], prog[1])} OF ${prog[1]}`, x + w / 2, yy + 6, T.body, COLORS.energy);
       yy += 28;
     }
-    drawText(ctx, have ? `EARNED. +${ACHIEVEMENT_XP} XP` : this.fullGameOnly(a) ? IN_FULL_GAME : `WORTH ${ACHIEVEMENT_XP} XP`, x + w / 2, yy + 8, T.small, have || this.fullGameOnly(a) ? KIT.title : COLORS.textDim);
+    drawText(ctx, have ? `EARNED ${ACHIEVEMENT_XP} XP` : this.fullGameOnly(a) ? IN_FULL_GAME : `WORTH ${ACHIEVEMENT_XP} XP`, x + w / 2, yy + 8, T.small, have || this.fullGameOnly(a) ? KIT.title : COLORS.textDim);
   }
 }

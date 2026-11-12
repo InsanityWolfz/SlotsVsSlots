@@ -234,7 +234,7 @@ export abstract class CardGames extends TableScreens {
       this.side(ctx, 'YOUR BET');
       // (Broke: the well says why DEAL is off, as TWENTY-ONE's does; it read 1 over MAX 0: QA DEMO-08.)
       const broke = hiloMax(run) < 1;
-      this.numberWell(ctx, '', `${broke ? 0 : this.rlBet}`, { sub: broke ? 'NO CHIPS TO BET' : `MAX ${hiloMax(run)}` });
+      this.numberWell(ctx, '', `${broke ? 0 : this.rlBet}`, { sub: broke ? 'NO CHIPS TO BET' : `UP TO ${hiloMax(run)}` });
       if (m) this.tableResult(ctx, m);
       return;
     }
@@ -274,10 +274,10 @@ export abstract class CardGames extends TableScreens {
     const next = !show && !st && !!this.bjMsg?.more;
     const dealt = show ? show.no : st ? st.dealt : this.bjMsg && !next ? this.bjNo : Number((run.encounterState as { dealt?: number } | undefined)?.dealt ?? 0) + 1;
     this.bjNo = dealt;
-    drawText(ctx, `${next ? 'NEXT: ' : ''}HAND ${Math.min(dealt, BJ.hands + extraPlays(run))} OF ${BJ.hands + extraPlays(run)}`, TCX, 72, T.small, KIT.dim);
+    drawText(ctx, `HAND ${Math.min(dealt, BJ.hands + extraPlays(run))} OF ${BJ.hands + extraPlays(run)}${next ? ' IS NEXT' : ''}`, TCX, 72, T.small, KIT.dim);
     const m = this.bjMsg;
     // (A result takes the felt's printed rule line's place: it was drawn over it, and jumped up between hands.)
-    this.felt(ctx, m && m.title ? '' : `THE DEALER STANDS ON ${BJ.standOn}  -  21 OFF THE DEAL PAYS 2 TO 1`);
+    this.felt(ctx, m && m.title ? '' : `21 OFF THE DEAL PAYS 2 TO 1. THE DEALER STANDS ON ${BJ.standOn}`);
     const x0 = TCX - 110;
     const dy = TABLE.y + 122;
     const py = TABLE.y + 286;
@@ -308,7 +308,7 @@ export abstract class CardGames extends TableScreens {
       this.side(ctx, 'YOUR BET');
       // Walked away: no more bets (a push keeps the table open).
       // (Broke: the well says why DEAL is off; it read 1 over MAX 0.)
-      if (!(m && !m.hand)) this.numberWell(ctx, '', `${bjMax(run) < 1 ? 0 : this.rlBet}`, { sub: bjMax(run) < 1 ? 'NO CHIPS TO BET' : `MAX ${bjMax(run)}` });
+      if (!(m && !m.hand)) this.numberWell(ctx, '', `${bjMax(run) < 1 ? 0 : this.rlBet}`, { sub: bjMax(run) < 1 ? 'NO CHIPS TO BET' : `UP TO ${bjMax(run)}` });
       // The word sits at the foot of the felt, the same place as the moment it lands.
       if (m) this.tableResult(ctx, m, resultY);
       return;

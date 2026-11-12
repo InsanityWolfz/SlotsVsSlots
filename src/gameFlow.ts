@@ -52,7 +52,7 @@ function hudMeter(f: Fight): HudMeter | null {
   const m = f.meter;
   if (!m) return null;
   if (m.kind === 'touch') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'GOLD', color: '#ffd23f', icon: 'goldbar' as SpriteId };
-  if (m.kind === 'vault') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'HIGH ROLLER', color: '#7dff7a', icon: 'goldbar' as SpriteId, note: (chips) => `${chips} CHIPS X${highRollerMul(chips)}` };
+  if (m.kind === 'vault') return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'HIGH ROLLER', color: '#7dff7a', icon: 'goldbar' as SpriteId, note: (chips) => `${chips} CHIPS HIT X${highRollerMul(chips)}` };
   if (m.kind === 'volume') return { kind: m.kind, pips: Math.round(f.meterCost / UNIT), label: 'VOLUME', color: '#5ad8e8', icon: artId('volumeIcon') as SpriteId };
   return { kind: m.kind, pips: Math.round(m.cost / UNIT), label: 'JACKPOTS', color: '#ff6ad5', icon: 'wild' };
 }

@@ -31,7 +31,7 @@ export function runSummary(run: RunState, version = ''): string {
     const where = r.loop !== undefined ? `L${r.loop}` : `A${r.act ?? 1}`;
     const what = [
       r.pick ? `PICK ${takenLabel(r.pick)}` : '',
-      r.skipped ? `SKIPPED THE DRAFT (+${RUN.skipChips} CHIPS)` : '',
+      r.skipped ? `SKIPPED THE REWARD (+${RUN.skipChips} CHIPS)` : '',
       r.eliteRelic ? `RELIC ${RELICS[r.eliteRelic]?.name ?? r.eliteRelic}` : '',
       r.bought?.length ? `BOUGHT ${r.bought.map((o) => takenLabel(o)).join(', ')}` : '',
       r.choice ? `CHOICE ${r.choice}` : '',
@@ -55,7 +55,7 @@ export function runSummary(run: RunState, version = ''): string {
     `REELS: ${p.strips.map((s, i) => `${i + 1}: ${Object.entries(s).filter(([, n]) => n).map(([k, n]) => `${symLabel(k as SymbolId)} ${n}`).join(' ')}`).join(' / ')}`,
     // (Old saves only: BIG CHOICES are gone, 2026-10-15. A run that took some still lists them.)
     ...(run.records.some((r) => r.choice) ? [`BIG CHOICES: ${run.records.flatMap((r) => (r.choice ? [r.choice] : [])).join(', ')}`] : []),
-    `ENCOUNTERS: ${encounterLines(run) || 'NONE'}`,
+    `TABLE GAMES: ${encounterLines(run) || 'NONE'}`,
   );
   return out.join('\n');
 }

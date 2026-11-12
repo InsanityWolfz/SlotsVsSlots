@@ -186,9 +186,9 @@ export abstract class RouteScreen extends MapScreens {
     const m = run.map;
     const n = m.routes.length;
     const act = run.endless ? `LOOP ${run.endless.loop}` : `ACT ${run.act}`;
-    drawText(ctx, 'CHOOSE YOUR PATH', CX, 28, T.head, KIT.title);
+    drawText(ctx, 'PICK YOUR PATH', CX, 28, T.head, KIT.title);
     const night = nightOf(run);
-    const line = run.endless?.nights?.length ? "EACH PATH HAS ITS OWN RULE FOR BOTH MACHINES (TONIGHT'S RULE)" : night ? `TONIGHT'S RULE: ${night.title}. ${night.text}` : ''; // no instruction line (user, 2026-10-31: it read like AI)
+    const line = run.endless?.nights?.length ? "TONIGHT'S RULE COMES WITH THE PATH YOU PICK. IT APPLIES TO BOTH MACHINES" : night ? `TONIGHT'S RULE IS ${night.title}. ${night.text}` : ''; // no instruction line (user, 2026-10-31: it read like AI)
     drawText(ctx, line, CX, 56, T.small, night || run.endless?.nights?.length ? '#ffd23f' : KIT.dim);
     // The map: a panel with the place's name on its tab.
     const place = run.endless ? `${act}` : `${act}: ${PLACE[Math.min(2, run.act - 1)]}`;
@@ -241,7 +241,7 @@ export abstract class RouteScreen extends MapScreens {
       const faded = sel >= 0 && !picked;
       const hot = picked || (sel < 0 && !!this.cards[i]?.hover);
       const pn = run.endless?.nights?.[i];
-      const name = pn ? `PATH ${i + 1}: ${NIGHTS[pn].title} - ${NIGHTS[pn].text}` : `PATH ${i + 1}`;
+      const name = pn ? `PATH ${i + 1} IS ${NIGHTS[pn].title}. ${NIGHTS[pn].text}` : `PATH ${i + 1}`;
       drawChip(ctx, name, STOPS.x0 - 36 + (textWidth(name, T.small) + 18) / 2, y - 58, { scale: T.small, color: hot ? '#fff6c8' : faded ? KIT.dim : KIT.title, fill: hot ? '#3a2a14' : KIT.fillLight });
       route.forEach((st, k) => {
         const x = STOPS.x0 + k * STOPS.gap;

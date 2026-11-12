@@ -125,14 +125,14 @@ export interface ProgressCtx {
 const clearOf = (cab: CabinetId): AchievementDef => ({
   id: `clear_${cab}`,
   name: `${CABINETS[cab].hero} CASHES IN`,
-  text: `CLEAR A RUN WITH ${CABINETS[cab].name}.`,
+  text: `CLEAR A RUN WITH THE ${CABINETS[cab].name} SLOT MACHINE.`,
   // Full numbers only: THE DAILY eases act 3 and lends you machines you haven't unlocked (EXPERT_PLAYTEST_9 D5).
   check: (c) => c.won && c.cabinet === cab && !c.daily,
 });
 const stakeOf = (lvl: number): AchievementDef => ({
   id: `stake_${lvl}`,
   name: `${STAKES[lvl].name} STAKE`,
-  text: `CLEAR A RUN ON STAKE ${lvl} (${STAKES[lvl].name}) OR HIGHER.`,
+  text: `CLEAR A RUN ON THE ${STAKES[lvl].name} STAKE OR HIGHER.`,
   check: (c) => c.won && c.stake >= lvl && !c.daily,
 });
 
@@ -159,8 +159,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'endless_1', name: 'LET IT RIDE', text: 'CLEAR AN ENDLESS LOOP.', check: (c) => c.loops >= 1 },
   { id: 'endless_3', name: 'ON A HEATER', text: 'CLEAR 3 ENDLESS LOOPS IN ONE RUN.', check: (c) => c.loops >= 3 },
   { id: 'turbo', name: 'BROKE THE BANK', text: 'BEAT THE OWNER.', check: (c) => c.loops >= 5 },
-  { id: 'chips_50', name: 'MONEYBAGS', text: 'WIN A RUN HOLDING 50 CHIPS OR MORE.', check: (c) => c.won && c.chips >= 50 },
-  { id: 'relics_12', name: 'MAGPIE', text: 'FINISH A RUN WITH 12 RELICS OR MORE.', check: (c) => c.relics >= 12 },
+  { id: 'chips_50', name: 'MONEYBAGS', text: 'CLEAR A RUN HOLDING 50 CHIPS OR MORE.', check: (c) => c.won && c.chips >= 50 },
+  { id: 'relics_12', name: 'MAGPIE', text: 'HOLD 12 RELICS OR MORE IN ONE RUN.', check: (c) => c.relics >= 12 },
   { id: 'score_5k', name: 'BIG WINNER', text: 'SCORE 5,000 IN ONE RUN.', check: (c) => c.score >= 5000 },
   { id: 'score_10k', name: 'JACKPOT', text: 'SCORE 10,000 IN ONE RUN.', check: (c) => c.score >= 10000 },
   { id: 'score_20k', name: 'WHALE WATCHING', text: 'SCORE 20,000 IN ONE RUN.', check: (c) => c.score >= 20000 },

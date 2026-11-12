@@ -80,17 +80,17 @@ export abstract class EncounterScreen extends ClawScreen {
     if (this.encId === 'bj')
       return {
         line: "BEAT THE DEALER'S HAND WITHOUT GOING OVER 21",
-        full: ['HIT TO TAKE A CARD, STAND TO STOP.', 'A WIN PAYS 1 TO 1.', '21 OFF THE DEAL PAYS 2 TO 1.', `THE DEALER STANDS ON ${BJ.standOn}.`, 'A TIE IS A PUSH: DEAL AGAIN.', `${BJ.hands + extraPlays(run)} HANDS AT THIS TABLE.`],
+        full: ['HIT TAKES A CARD. STAND KEEPS YOUR HAND.', 'A WIN PAYS 1 TO 1.', '21 OFF THE DEAL PAYS 2 TO 1.', `THE DEALER STANDS ON ${BJ.standOn}.`, 'A TIE IS A PUSH. YOU GET YOUR BET BACK AND DEAL AGAIN.', `${BJ.hands + extraPlays(run)} HANDS AT THIS TABLE.`],
       };
     if (this.encId === 'hilo')
       return {
-        line: 'CALL THE NEXT CARD: HIGHER OR LOWER',
-        full: ['ACES ARE HIGH.', `RIGHT: THE POT GROWS X${HILO.grow}.`, "WRONG: IT'S GONE.", 'THE SAME CARD IS A PUSH: CALL AGAIN.', 'CASH OUT ANY TIME AFTER A RIGHT CALL.', `${HILO.calls} RIGHT CALLS PAY THE POT OUT.`],
+        line: 'CALL THE NEXT CARD HIGHER OR LOWER',
+        full: ['ACES ARE HIGH.', `A RIGHT CALL GROWS THE POT X${HILO.grow}.`, 'A WRONG CALL LOSES THE POT.', 'THE SAME CARD IS A PUSH. CALL AGAIN.', 'CASH OUT ANY TIME AFTER A RIGHT CALL.', `${HILO.calls} RIGHT CALLS PAY THE POT OUT.`],
       };
     if (this.encId === 'claw')
       return {
-        line: 'PICK A PRIZE. A MISS DRAGS IT CLOSER TO THE DROP',
-        full: [`${atStakes(run, CLAW.price)} CHIPS A GO, ${CLAW.tries + extraPlays(run)} GOES.`, 'EASY GRABS HOLD MORE OFTEN THAN HARD ONES.', "A MISS MAKES THAT PRIZE'S NEXT GRAB HOLD MORE OFTEN.", 'A PRIZE YOU WIN LEAVES THE PIT.'],
+        line: 'PICK A PRIZE. A MISS DRAGS IT CLOSER TO THE CHUTE',
+        full: [`EACH TRY COSTS ${atStakes(run, CLAW.price)} CHIPS. YOU GET ${CLAW.tries + extraPlays(run)} TRIES.`, 'EASY GRABS HOLD MORE OFTEN THAN HARD ONES.', 'A MISS MAKES THAT PRIZE EASIER TO GRAB NEXT TIME.', 'A PRIZE YOU WIN LEAVES THE PIT.'],
       };
     return null;
   }

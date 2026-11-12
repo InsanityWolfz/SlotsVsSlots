@@ -1,5 +1,5 @@
 import { UNIT, unitsRound } from '../../core/config';
-import { GATEKEEPER, wheelChipShare, type EnemyDef } from '../../core/enemies';
+import { GATEKEEPER, OWNER_RULES, wheelChipShare, type EnemyDef } from '../../core/enemies';
 import { startCharge } from '../../core/fight';
 import { type RunState } from '../../core/run';
 import { scaledAbility } from '../../core/fightSetup';
@@ -168,41 +168,48 @@ export function abilityWhat(e: EnemyDef, run?: RunState): string {
     flood: `SPILLS ${p} OF YOUR SYMBOLS`,
     smash: `SWINGS FOR ${p}`,
     fortify: `GAINS ${p} SHIELD`,
-    blizzard: `FREEZES ${p} REEL${p === 1 ? '' : 'S'} FOR 2 TURNS`,
+    blizzard: `FREEZES ${p} REEL${p === 1 ? '' : 'S'} FOR 2 OF YOUR SPINS`,
     pilfer: `STEALS ${p} SYMBOL${p > 1 ? 'S' : ''}`,
     quake: `ADDS ${p} ROCKS TO YOUR REELS`,
-    jam: `JAMS 1 REEL FOR ${p} TURN${p === 1 ? '' : 'S'}`,
-    jackpot: 'SKIMS HALF THE POT AT YOU',
+    jam: `JAMS 1 REEL FOR ${p} OF YOUR SPINS`,
+    jackpot: 'SKIMS HALF THE POT AND HITS YOU WITH IT',
     carpet: `STICKS ${p} IOUS ON YOUR SYMBOLS`,
-    curse: `JINXES ${p} REEL${p > 1 ? 'S' : ''} FOR 3 TURNS`,
+    curse: `JINXES ${p} REEL${p > 1 ? 'S' : ''} FOR 3 OF YOUR SPINS`,
     bloodmoon: `HEALS ${p} HP`,
     gulp: `EATS ${p} OF YOUR CHIPS`,
-    bets: per ? `EACH CHIP LEFT ON YOUR REELS HITS ${per}` : 'EACH CHIP LEFT ON YOUR REELS HITS 5% OF YOUR HP',
-    launder: `TAKES ${p} OF YOUR CHIPS, HEALS ${p * 3 * UNIT}`,
+    bets: per ? `EACH BET LEFT ON YOUR REELS HITS FOR ${per}` : `EACH BET LEFT ON YOUR REELS HITS FOR ${Math.round(wheelChipShare(undefined) * 100)}% OF YOUR MAX HP`,
+    launder: `TAKES ${p} OF YOUR CHIPS AND HEALS ${p * 3 * UNIT}`,
     mark: `MARKS ${p} OF YOUR SYMBOLS`,
-    penalty: `TAKES 2 OF YOUR CHARMS FOR THE FIGHT, THEN HITS FOR ${p}`,
+    penalty: `TAKES 2 OF YOUR CHARMS FOR THE FIGHT AND HITS FOR ${p}`,
     repo: 'TAKES A CHARM FOR THE FIGHT',
-    houseTake: `RAKES YOUR PAYS FOR ${p} TURN${p === 1 ? '' : 'S'}`,
+    houseTake: `RAKES YOUR PAYS FOR ${p} OF YOUR SPINS`,
     deal: 'DEALS A BUST',
-    owner: 'CHEATS A NEW WAY EACH TIME',
-    hammer: 'HITS 40% OF YOUR MAX HP THROUGH SHIELDS',
+    owner: 'SWAPS BETWEEN A NEW SABOTAGE AND THE HAMMER',
+    hammer: `HITS FOR ${Math.round(OWNER_RULES.hammer * 100)}% OF YOUR MAX HP AND PIERCES SHIELDS`,
   };
   return what[e.ability.kind] ?? '';
 }
 
+/** FIRST, SECOND... (the term sheet: a count is digits, an order is a word). */
+const ORDINAL = ['', 'FIRST', 'SECOND', 'THIRD', 'FOURTH', 'FIFTH', 'SIXTH', 'SEVENTH', 'EIGHTH', 'NINTH', 'TENTH'];
+const nth = (n: number) => ORDINAL[n] ?? `${n}TH`;
+
 export function abilityText(e: EnemyDef, every: number, run?: RunState): string {
   if (!e.ability) return '';
-  // One shape for every enemy (playtest 2026-11-03: "STEAL EVERY 3 TURNS: STEALS 1 SYMBOL" said it twice): when, then what.
-  if (e.ability.kind === 'deal') return `EVERY ${every} TURNS: BUST. THREE HANDS, EACH HARDER`;
-  // The first turn it fires, from the fight's own head start (QA RULES-15: regulars fire on turn 1, the card said EVERY 3).
+  // One shape for every enemy (playtest 2026-11-03: "STEAL EVERY 3 TURNS: STEALS 1 SYMBOL" said it twice): what, then when,
+  // as one sentence. The clock counts the enemy's own spins (the term sheet, 2026-11-12: SPIN, never TURN; THEIR SPINS,
+  // or HIS where the game names a man).
+  if (e.ability.kind === 'deal') return `DEALS A BUST EVERY ${every} OF HIS SPINS. HE PLAYS 3 HANDS AND EACH IS HARDER`;
+  // The first spin it fires on, from the fight's own head start (QA RULES-15: regulars fire on their first spin, the card said EVERY 3).
   const first = every - startCharge({ ...e.ability, every }, { regular: !e.isBoss, act: e.act ?? run?.act ?? 1, endless: !!run?.endless });
-  // THE REPO MAN takes on his first turn and once more, then he's done (QA RULES-03).
+  // THE REPO MAN takes on his first spin and once more, then he's done (QA RULES-03).
   if (e.ability.kind === 'repo') {
-    const turns = Array.from({ length: GATEKEEPER.maxTakes }, (_, i) => `TURN ${first + i * every}`);
-    return `${turns.slice(0, -1).join(', ')} AND ${turns[turns.length - 1]}: TAKES A CHARM FOR THE FIGHT`;
+    const spins = Array.from({ length: GATEKEEPER.maxTakes }, (_, i) => nth(first + i * every));
+    if (spins.length < 2) return `TAKES A CHARM FOR THE FIGHT ON HIS ${spins[0]} SPIN`;
+    return `TAKES A CHARM FOR THE FIGHT ON HIS ${spins.slice(0, -1).join(', ')} AND ${spins[spins.length - 1]} SPINS`;
   }
-  if (first < every) return `TURN ${first}, THEN EVERY ${every}: ${abilityWhat(e, run)}`;
-  return `EVERY ${every} TURNS: ${abilityWhat(e, run)}`;
+  if (first < every) return `${abilityWhat(e, run)} ON THEIR ${nth(first)} SPIN AND THEN EVERY ${every} OF THEIR SPINS`;
+  return `${abilityWhat(e, run)} EVERY ${every} OF THEIR SPINS`;
 }
 
 /** The stage light behind each enemy's portrait (the panel's front). */

@@ -139,7 +139,7 @@ function bjSettle(run: RunState, st: BjState, rng: Rng): EncounterResult {
   run.encounterState = { dealt };
   const more = dealt < BJ.hands + extraPlays(run) && bjMax(run) >= 1;
   const hand = { p: [...st.p], d, outcome, no: st.dealt, of: BJ.hands + extraPlays(run) };
-  const title = outcome === 'natural' ? 'TWENTY-ONE!' : outcome === 'win' ? (dealer > 21 ? 'DEALER BUSTS!' : 'YOU WIN!') : outcome === 'bust' ? 'BUST' : outcome === 'push' ? 'PUSH: DEAL AGAIN' : 'THE DEALER WINS';
+  const title = outcome === 'natural' ? 'TWENTY-ONE!' : outcome === 'win' ? (dealer > 21 ? 'DEALER BUSTS!' : 'YOU WIN!') : outcome === 'bust' ? 'BUST' : outcome === 'push' ? 'PUSH. DEAL AGAIN' : 'THE DEALER WINS';
   const text = won ? `+${won} CHIPS` : outcome === 'push' ? 'BET BACK' : `-${st.bet} CHIPS`;
   return { title, text, good: won > 0 ? true : outcome === 'push' ? null : false, hand, more };
 }
@@ -237,7 +237,7 @@ const HIGHER_OR_LOWER: EncounterDef = {
       return hiloEnd(run, st, { title: 'CASHED OUT', text: `+${st.pot - st.bet} CHIPS`, good: true, card: st.card, pot: st.pot });
     }
     const next = drawCard(rng);
-    if (next === st.card) return { title: 'SAME CARD: PUSH', text: 'CALL AGAIN', good: null, card: st.card, next, pot: st.pot, more: true };
+    if (next === st.card) return { title: 'SAME CARD. PUSH', text: 'CALL AGAIN', good: null, card: st.card, next, pot: st.pot, more: true };
     if (i === 0 ? next < st.card : next > st.card) return hiloEnd(run, st, { title: 'WRONG', text: `-${st.bet} CHIPS`, good: false, card: st.card, next, pot: 0 });
     const now: HiloState = { ...st, card: next, right: st.right + 1, pot: hiloPot(st.bet, st.right + 1) };
     if (now.right >= HILO.calls) {

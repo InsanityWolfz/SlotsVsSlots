@@ -1,5 +1,6 @@
 import { CABINET_ORDER, type CabinetId } from '../core/cabinets';
 import { OVERTIME } from '../core/enemies';
+import { BUILD_UP, VOLUME } from '../core/fightRules';
 import { demo } from '../demo';
 import { HOLD } from '../core/fightSetup';
 import { HUD_W } from '../present/hud';
@@ -31,7 +32,7 @@ export const tipText = (tip: Tip): string => forInput({ touch: tip.text, mouse: 
 
 // (The tutorial's words: short plain sentences, no semicolons or colons, a comma only in a list. User, 2026-11-10: "this is a video
 // game not a memo".)
-const PAIR_TAIL = 'YOUR NEXT SPIN KEEPS THEM AND ROLLS THE LAST REEL FOR A JACKPOT. HOLD WHILE THE ENEMY SPINS.';
+const PAIR_TAIL = 'YOUR NEXT SPIN KEEPS THEM AND THE LAST REEL SPINS FOR A JACKPOT. YOU CAN HOLD WHILE THE ENEMY SPINS.';
 
 const machine = (side: 'player' | 'enemy'): [number, number, number, number] => [MACHINE_CX[side] - MACHINE_W / 2 - 8, MACHINE_TOP - 8, MACHINE_W + 16, MACHINE_H + 16];
 const hud = (side: 'player' | 'enemy'): [number, number, number, number] => [MACHINE_CX[side] - HUD_W / 2 - 12, HUD_TOP - 12, HUD_W + 24, 142];
@@ -43,9 +44,9 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'buil
   preview: [
     {
       title: 'WELCOME TO REEL BRAWL',
-      text: 'TWO SLOT MACHINES FIGHT. THIS CARD SHOWS WHO YOU FIGHT NEXT. TAP ? FOR ITS RULES. PRESS FIGHT! TO START.',
-      mouse: 'TWO SLOT MACHINES FIGHT. THIS CARD SHOWS WHO YOU FIGHT NEXT. CLICK ? FOR ITS RULES. PRESS FIGHT! TO START.',
-      keys: 'TWO SLOT MACHINES FIGHT. THIS CARD SHOWS WHO YOU FIGHT NEXT. PRESS ? FOR ITS RULES. PRESS FIGHT! TO START.',
+      text: 'TWO SLOT MACHINES FIGHT. THIS CARD SHOWS WHO YOU FIGHT NEXT. TAP ? FOR THEIR RULES. PRESS FIGHT! TO START.',
+      mouse: 'TWO SLOT MACHINES FIGHT. THIS CARD SHOWS WHO YOU FIGHT NEXT. CLICK ? FOR THEIR RULES. PRESS FIGHT! TO START.',
+      keys: 'TWO SLOT MACHINES FIGHT. THIS CARD SHOWS WHO YOU FIGHT NEXT. PRESS ? FOR THEIR RULES. PRESS FIGHT! TO START.',
     },
   ],
   fight: [
@@ -66,17 +67,17 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'buil
   hold: [
     {
       title: 'A PAIR! HOLD IT?',
-      text: `${HOLD.perFight} HOLDS A FIGHT. TAP BOTH REELS OF YOUR PAIR TO HOLD THEM. ${PAIR_TAIL}`,
-      mouse: `${HOLD.perFight} HOLDS A FIGHT. CLICK BOTH REELS OF YOUR PAIR TO HOLD THEM. ${PAIR_TAIL}`,
-      keys: `${HOLD.perFight} HOLDS A FIGHT. PRESS Q AND W TO HOLD YOUR PAIR. ${PAIR_TAIL}`,
-      pad: `${HOLD.perFight} HOLDS A FIGHT. HOLD YOUR PAIR WITH [DPAD] LEFT THEN UP. ${PAIR_TAIL}`,
+      text: `${HOLD.perFight} HOLDS EACH FIGHT. TAP BOTH REELS OF YOUR PAIR TO HOLD THEM. ${PAIR_TAIL}`,
+      mouse: `${HOLD.perFight} HOLDS EACH FIGHT. CLICK BOTH REELS OF YOUR PAIR TO HOLD THEM. ${PAIR_TAIL}`,
+      keys: `${HOLD.perFight} HOLDS EACH FIGHT. PRESS Q AND W TO HOLD YOUR PAIR. ${PAIR_TAIL}`,
+      pad: `${HOLD.perFight} HOLDS EACH FIGHT. HOLD YOUR PAIR WITH [DPAD] LEFT THEN UP. ${PAIR_TAIL}`,
       rect: machine('player'),
     },
   ],
-  buildUp: [{ title: 'BUILD-UP', text: 'A SPIN WITH NO SWORD PAIR ADDS +25% TO YOUR NEXT ONE. IT GROWS UP TO X2. THE GOLD PLATE BETWEEN THE MACHINES SHOWS IT.' }],
-  ability: [{ title: 'ENEMY ABILITY!', text: 'THAT WAS ITS ABILITY. THE ICON ON ITS HUD CHARGES EVERY SPIN. THE CARD BEFORE EACH FIGHT SAYS WHAT IT DOES.', rect: hud('enemy') }],
+  buildUp: [{ title: 'BUILD-UP', text: `A SPIN WITH NO SWORD PAIR MAKES YOUR NEXT ONE PAY ${Math.round(BUILD_UP.step * 100)}% MORE. IT GROWS UP TO X${BUILD_UP.cap}. THE GOLD PLATE BETWEEN THE MACHINES SHOWS IT.` }],
+  ability: [{ title: 'ENEMY ABILITY!', text: "THAT WAS THE ENEMY'S ABILITY. THE ICON UNDER THEIR HP BAR CHARGES AS THEY SPIN. THE CARD BEFORE EACH FIGHT SAYS WHAT IT DOES.", rect: hud('enemy') }],
   draft: [
-    { title: 'YOU WON! PICK A REWARD', text: 'PICK 1 CARD AFTER EVERY WIN. CARDS CHANGE THE SYMBOLS ON A REEL OR ADD A CHARM.' },
+    { title: 'YOU WON! PICK A REWARD', text: 'PICK 1 CARD AFTER EACH WIN. CARDS CHANGE THE SYMBOLS ON A REEL OR ADD A CHARM.' },
     { title: 'CHARMS', text: 'A CHARM SITS ON ONE SYMBOL AND WORKS WHEN IT PAYS. GOLD MULTIPLIES THE PAY. KEEN PIERCES SHIELDS. VAMP HEALS YOU.' },
   ],
   shop: [
@@ -105,9 +106,9 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'buil
  * in a few plain words (user, 2026-11-10: the long ones were "too wordy and descriptive").
  */
 export const METER_TIPS: Partial<Record<CabinetId, Tip>> = {
-  tesla: { title: 'LIGHTNING', text: 'BOLTS CHARGE IT. WHEN IT FILLS A STORM HITS THROUGH SHIELDS AND HEALS 15.', rect: hud('player') },
-  jukebox: { title: 'VOLUME', text: 'NOTES TURN IT UP. A SPIN WITH NO NOTE TURNS IT DOWN. AT 6 THE DROP HITS WITH EVERY NOTE AND HEALS 15.', rect: hud('player') },
-  joker: { title: 'JACKPOTS', text: 'WILDS FILL IT. WHEN IT FILLS ALL 3 PAYLINE SYMBOLS PAY JACKPOTS AND YOU HEAL 15.', rect: hud('player') },
+  tesla: { title: 'LIGHTNING', text: 'BOLTS CHARGE IT. A FULL CHARGE FIRES A LIGHTNING STORM THAT PIERCES SHIELDS AND HEALS 15.', rect: hud('player') },
+  jukebox: { title: 'VOLUME', text: `NOTES TURN IT UP AND A SPIN WITH NO NOTE TURNS IT DOWN. THE DROP AT VOLUME ${VOLUME.max} HITS WITH EVERY NOTE ON SCREEN AND HEALS 15.`, rect: hud('player') },
+  joker: { title: 'JACKPOTS', text: 'WILDS FILL IT. A FULL METER MAKES ALL 3 PAYLINE SYMBOLS PAY JACKPOTS AND HEALS 15.', rect: hud('player') },
   midas: { title: 'HIGH ROLLER', text: 'CHIPS FILL IT. WHEN IT FILLS YOUR NEXT HIT IS MULTIPLIED UP TO X2.5 AND YOU HEAL 15.', rect: hud('player') },
 };
 
