@@ -32,6 +32,15 @@ How the user works now: every art step goes to them as an artifact gallery with 
 in worktrees on branches, and approved work merges to `main` with `npm test`, `npx tsc --noEmit -p .`, both builds and a
 browser check. If usage runs out mid-task, schedule a check-in to resume after the reset.
 
+**In progress (2026-11-12): the cold read before the demo.** A card read "ENEMIES FASTER" and nothing caught it (user: "one
+thing like that and the player goes, oh this was vibe coded"): the tests check that a text is true and fits, not that it
+reads. Every word a player can read (1,129 lines, `npx tsx tools/text/dump.ts`) was read by someone who knows nothing
+about the game: 172 flagged (unclear, clipped, robotic, inconsistent, wrong), 41 of them unreadable, each with a
+proposed line (https://claude.ai/artifact/5rmtVwDnrDK7enp7o1HhR4). Waiting on the user's pass over it; every proposed
+line is checked against the game before it goes in. Next, the same once for visuals (every screen in one sheet). Live
+today in the user's words: ESPRESSO SHOT (no downside now), HOT STREAK (the whole next spin pays X2 now), BOUNCER,
+JACKPOT BELL on JUKEBOX, HOUSE OF CARDS (a card may run to three lines).
+
 **In progress (2026-11-10, after the user's playtest of the new rooms):** live on `main` (the user approved the rooms: "the new background stuff looks good"): nobody walks across the aisles
 (the crossers had no legs), the staff and card players face you with real faces (the side profiles "looked really
 off"; https://claude.ai/artifact/SWK4wbqpMzJY47TPtmonc6; still drawn by code, hand-drawn sprites if the user wants
