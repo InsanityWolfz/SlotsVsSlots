@@ -41,7 +41,9 @@ thing; user: "yes do this across the whole game") applied across the game by thr
 about 300 lines, every rule line checked against the code, no rule or number changed; the glossary is 49 entries on 4
 tabs; `tests/terms.test.ts` fails when a retired word comes back. Live. Before and after, and the user's calls (THE WHEEL
 is SHE, dead TOUCH banners, BOUNCER's and JACKPOT BELL's lines, four three-line cards):
-https://claude.ai/artifact/YG1y5TFnZbY6xx5oqxG2Uq. Not done: a second cold read of the result. Next, the same once for visuals (every screen in one sheet). Live
+https://claude.ai/artifact/YG1y5TFnZbY6xx5oqxG2Uq. The second cold read (1,087 lines): 52 flagged, "reads like one writer now"; its fixes are live
+(round 2: whose spin only where a line is ambiguous, CHIP SYMBOLS on BANKROLL's cards, the unclear and wordy lines; dead
+text deleted). The store screenshots were retaken with the new text. Open for the user: PIT BOSS names a relic and an enemy. Next, the same once for visuals (every screen in one sheet). Live
 today in the user's words: ESPRESSO SHOT (no downside now), HOT STREAK (the whole next spin pays X2 now), BOUNCER,
 JACKPOT BELL on JUKEBOX, HOUSE OF CARDS (a card may run to three lines).
 
