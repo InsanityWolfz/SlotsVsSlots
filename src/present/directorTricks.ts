@@ -482,7 +482,7 @@ export async function rake(d: Director, e: Ev<'rake'>): Promise<void> {
   if (e.reels.length) await d.activate(e.from, e.reels, '#c87a3a');
   d.s.sounds.coin(1);
   const c = d.machineCenter(e.to);
-  await d.popText(`RAKED! PAYS ${e.cut} LESS FOR ${count(e.turns, 'SPIN')}`, c.x, MACHINE_TOP + MACHINE_H / 2, 2, '#e0a070', 16, 0.5);
+  await d.popText(`RAKED! ${e.cut} LESS FOR ${count(e.turns, 'SPIN')}`, c.x, MACHINE_TOP + MACHINE_H / 2, 2, '#e0a070', 16, 0.5);
   if (e.reels.length) d.settle(e.from, e.reels);
 }
 
