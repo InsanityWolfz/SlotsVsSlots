@@ -81,10 +81,10 @@ describe('audit B: texts per machine', () => {
     expect(relicText('quickening', 'joker')).toBe('YOUR JACKPOT METER STARTS EVERY FIGHT HALF FULL. ENEMY ABILITIES CHARGE 1 SPIN FASTER');
     expect(relicText('quickening', 'jukebox')).toBe('YOUR VOLUME STARTS EVERY FIGHT HALF FULL. ENEMY ABILITIES CHARGE 1 SPIN FASTER');
     const face = (id: RelicId, cab: CabinetId) => shortRelicText(id, relicText(id, cab));
-    expect(face('quickening', 'tesla')).toBe('LIGHTNING STARTS AT HALF. ENEMIES FASTER');
-    expect(face('quickening', 'midas')).toBe('HIGH ROLLER STARTS AT HALF. ENEMIES FASTER');
-    expect(face('quickening', 'joker')).toBe('METER STARTS AT HALF. ENEMIES FASTER');
-    expect(face('quickening', 'jukebox')).toBe('VOLUME STARTS AT HALF. ENEMIES FASTER');
+    expect(face('quickening', 'tesla')).toBe('LIGHTNING STARTS HALF. ENEMY ABILITIES SOONER');
+    expect(face('quickening', 'midas')).toBe('HIGH ROLLER HALF FULL. ENEMY ABILITIES SOONER');
+    expect(face('quickening', 'joker')).toBe('METER STARTS HALF. ENEMY ABILITIES SOONER');
+    expect(face('quickening', 'jukebox')).toBe('VOLUME STARTS HALF. ENEMY ABILITIES SOONER');
     // The numbers the texts print are the engine's.
     expect(RELICS.secondline.text).toContain('15% HARDER');
     expect(RELICS.devilsdue.text).toBe("EVERYTHING PAYS X1.5. -8% MAX HP AFTER EVERY FIGHT YOU WIN");

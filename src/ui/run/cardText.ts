@@ -58,7 +58,9 @@ const SHORT: Partial<Record<RelicId, string | ((full: string) => string)>> = {
   secondline: 'ROW ABOVE PAYS HALF. ENEMIES HIT +15%',
   devilsdue: 'EVERYTHING X1.5. -8% MAX HP PER WIN',
   longgame: 'EVERYTHING -20%, +3% PER FIGHT WON',
-  quickening: (t) => t.replace(/^YOUR (.+) STARTS EVERY FIGHT HALF FULL\..*$/, (_, m: string) => `${m.endsWith('METER') ? 'METER' : m} STARTS AT HALF. ENEMIES FASTER`),
+  // (It said ENEMIES FASTER, which says nothing: faster at what? User, 2026-11-12. Each sentence fills one line.)
+  quickening: (t) =>
+    t.replace(/^YOUR (.+) STARTS EVERY FIGHT HALF FULL\..*$/, (_, m: string) => `${m.endsWith('METER') ? 'METER STARTS HALF' : m === 'HIGH ROLLER' ? 'HIGH ROLLER HALF FULL' : `${m} STARTS HALF`}. ENEMY ABILITIES SOONER`),
   glasscannon: 'EVERYTHING X1.5. NO HEALS BETWEEN FIGHTS',
   crusade: (t) => t.replace(' FOR EVERY FIGHT YOU WIN', ' PER FIGHT WON'),
   highcard: 'JACKPOTS X1.5. PAIRS PAY HALF',
