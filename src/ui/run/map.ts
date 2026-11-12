@@ -148,7 +148,7 @@ export abstract class MapScreens extends CabinetScreen {
     if (e) return { e, x, y: y + s };
     if (st?.kind === 'shop') return { title: 'THE CASHIER', sub: 'SPEND YOUR CHIPS', x, y: y + s };
     if (st?.kind === 'encounter') return { title: 'A TABLE GAME', sub: 'WHICH GAME? YOU FIND OUT AT THE TABLE', x, y: y + s };
-    return { title: 'PICK YOUR PATH', sub: 'AFTER THIS FIGHT', x, y: y + s };
+    return { title: 'CHOOSE YOUR PATH', sub: 'AFTER THIS FIGHT', x, y: y + s };
   }
 
   /** A stop's tip: the name, then its ability as a chip (or the stop's line), in a kit panel. */

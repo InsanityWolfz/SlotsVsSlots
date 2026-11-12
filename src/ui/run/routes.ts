@@ -186,7 +186,7 @@ export abstract class RouteScreen extends MapScreens {
     const m = run.map;
     const n = m.routes.length;
     const act = run.endless ? `LOOP ${run.endless.loop}` : `ACT ${run.act}`;
-    drawText(ctx, 'PICK YOUR PATH', CX, 28, T.head, KIT.title);
+    drawText(ctx, 'CHOOSE YOUR PATH', CX, 28, T.head, KIT.title);
     const night = nightOf(run);
     const line = run.endless?.nights?.length ? "TONIGHT'S RULE COMES WITH THE PATH YOU PICK. IT APPLIES TO BOTH MACHINES" : night ? `TONIGHT'S RULE IS ${night.title}. ${night.text}` : ''; // no instruction line (user, 2026-10-31: it read like AI)
     drawText(ctx, line, CX, 56, T.small, night || run.endless?.nights?.length ? '#ffd23f' : KIT.dim);

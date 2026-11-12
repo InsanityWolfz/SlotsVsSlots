@@ -168,7 +168,7 @@ export abstract class CabinetScreen extends BuildPanel {
   }
 
   protected drawCabinets(ctx: CanvasRenderingContext2D, time: number): void {
-    drawTitle(ctx, 'PICK YOUR SLOT MACHINE', W / 2, 40);
+    drawTitle(ctx, 'CHOOSE YOUR SLOT MACHINE', W / 2, 40);
     this.drawStage(ctx, time);
     this.drawThumbs(ctx, time);
     this.drawStakePicker(ctx, time);

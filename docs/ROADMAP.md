@@ -36,8 +36,12 @@ browser check. If usage runs out mid-task, schedule a check-in to resume after t
 thing like that and the player goes, oh this was vibe coded"): the tests check that a text is true and fits, not that it
 reads. Every word a player can read (1,129 lines, `npx tsx tools/text/dump.ts`) was read by someone who knows nothing
 about the game: 172 flagged (unclear, clipped, robotic, inconsistent, wrong), 41 of them unreadable, each with a
-proposed line (https://claude.ai/artifact/5rmtVwDnrDK7enp7o1HhR4). Waiting on the user's pass over it; every proposed
-line is checked against the game before it goes in. Next, the same once for visuals (every screen in one sheet). Live
+proposed line (https://claude.ai/artifact/5rmtVwDnrDK7enp7o1HhR4). Then the term sheet (CLAUDE.md, 14 rules: one word for one
+thing; user: "yes do this across the whole game") applied across the game by three writers with the cold-read fixes:
+about 300 lines, every rule line checked against the code, no rule or number changed; the glossary is 49 entries on 4
+tabs; `tests/terms.test.ts` fails when a retired word comes back. Live. Before and after, and the user's calls (THE WHEEL
+is SHE, dead TOUCH banners, BOUNCER's and JACKPOT BELL's lines, four three-line cards):
+https://claude.ai/artifact/YG1y5TFnZbY6xx5oqxG2Uq. Not done: a second cold read of the result. Next, the same once for visuals (every screen in one sheet). Live
 today in the user's words: ESPRESSO SHOT (no downside now), HOT STREAK (the whole next spin pays X2 now), BOUNCER,
 JACKPOT BELL on JUKEBOX, HOUSE OF CARDS (a card may run to three lines).
 

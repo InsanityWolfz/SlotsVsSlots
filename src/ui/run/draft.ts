@@ -154,7 +154,7 @@ export abstract class DraftScreen extends NextScreen {
       // (On the left, opposite the boss's level chip.)
       drawChip(ctx, net > 0 ? `LOST ${fmtNum(net)} HP` : net < 0 ? `HEALED ${fmtNum(-net)} HP` : 'NO HP LOST', CX - 330, 84, { scale: T.small, color: net > 0 ? '#ff8a7a' : '#7dff7a' });
       if (last.bossLevel) drawChip(ctx, `${last.bossLevel === 'goldbar' ? 'CHIP SYMBOLS' : `${symLabel(last.bossLevel)}S`} LEVEL UP TO LV${symLevel(run.player.levels, last.bossLevel)}`, CX + 330, 84, { scale: T.small, color: '#5ad8e8' });
-    } else drawBanner(ctx, start ? 'A NEW RUN' : 'PICK A REWARD', CX, 40, { scale: T.title });
+    } else drawBanner(ctx, start ? 'A NEW RUN' : 'CHOOSE A REWARD', CX, 40, { scale: T.title });
     // (Not at the run's start: a fork sign, a Cashier and a boss before your first fight confused new players, playtest
     // 2026-11-03. The map shows from the first win on.)
     if (!start) this.drawMap(ctx, 186, time);
