@@ -405,17 +405,20 @@ export function stripsAfter(run: RunState, o: DraftOption): StripCounts[] {
   return copy.player.strips;
 }
 
-const plural = (s: SymbolId, n: number) => `${symLabel(s)}${n > 1 ? 'S' : ''}`;
+/** A symbol's name on a reward card. BANKROLL's reel symbol is a CHIP SYMBOL there: CHIPS are money (term sheet rule
+ * 14; a card called +2 CHIPS read as a payout). */
+const cardLabel = (s: SymbolId): string => (s === 'goldbar' ? 'CHIP SYMBOL' : symLabel(s));
+const plural = (s: SymbolId, n: number) => `${cardLabel(s)}${n > 1 ? 'S' : ''}`;
 
 export const charmRule = charmRuleText;
 /** LV2, or MAX at the cap. */
 
-/** A pick or buy already taken, for the run-over table and COPY RUN: a level card says +1 LEVEL (describeOption names
- * the NEXT level, which after the pick is one too high). */
+/** A pick or buy already taken, for the run-over table and COPY RUN: a level card says LEVEL UP (describeOption names
+ * the NEXT level, which after the pick is one too high; and no number, since STAR CHART makes it two levels). */
 export function takenLabel(o: DraftOption): string {
-  if (o.kind === 'charmLevel') return `${charmName(o.enh)} CHARM +1 LEVEL`;
-  if (o.kind === 'symLevel') return `${symLabel(o.symbol)} +1 LEVEL`;
-  if (o.kind === 'remove') return `CUT 1 ${symLabel(o.symbol)} (REEL ${o.reel + 1})`;
+  if (o.kind === 'charmLevel') return `${charmName(o.enh)} CHARM LEVEL UP`;
+  if (o.kind === 'symLevel') return `${cardLabel(o.symbol)} LEVEL UP`;
+  if (o.kind === 'remove') return `CUT 1 ${cardLabel(o.symbol)} FROM REEL ${o.reel + 1}`;
   return describeOption(o).title;
 }
 
@@ -423,7 +426,7 @@ export function takenLabel(o: DraftOption): string {
  * ON A WIN and FOR GOOD were never seen in a run). */
 export function charmCardFull(o: Extract<DraftOption, { kind: 'gild' }>, run?: RunState): string {
   const ticket = !!run?.player.relics.includes('ticket');
-  return `REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${charmRuleText(o.enh, charmLevel(run?.player.levels, o.enh, ticket))}`;
+  return `ON REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${charmRuleText(o.enh, charmLevel(run?.player.levels, o.enh, ticket))}`;
 }
 
 export function describeOption(o: DraftOption, run?: RunState): { title: string; text: string } {
@@ -435,20 +438,20 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
       return { title: `+${n} ${plural(o.symbol, n)}`, text: `ADD ${n} ${plural(o.symbol, n)} TO REEL ${o.reel + 1}` };
     }
     case 'swap':
-      return { title: `${o.count} ${plural(o.from, o.count)} TO ${plural(o.to, o.count)}`, text: `ON REEL ${o.reel + 1}` };
+      return { title: `${o.count} ${plural(o.from, o.count)} TO ${plural(o.to, o.count)}`, text: `TURN ${o.count} ${plural(o.from, o.count)} INTO ${o.count === 1 ? 'A ' : ''}${plural(o.to, o.count)} ON REEL ${o.reel + 1}` };
     case 'clear':
-      return { title: 'CLEAR ROCKS', text: `REMOVE ROCKS ON REEL ${o.reel + 1}` };
+      return { title: 'CLEAR ROCKS', text: `CLEAR THE ROCKS FROM REEL ${o.reel + 1}` };
     case 'relic':
       // (An old save's record can name a relic that was cut: its id stands in.)
       return RELICS[o.relic] ? { title: RELICS[o.relic].name, text: relicText(o.relic, run?.cabinet) } : { title: String(o.relic).toUpperCase(), text: '' };
     case 'heal':
-      return { title: 'HEAL', text: `RESTORE ${o.amount} HP` };
+      return { title: 'HEAL', text: `HEAL ${o.amount} HP` };
     case 'maxHp':
       return { title: `+${o.amount} MAX HP`, text: run && noHealing(run) ? `GAIN ${o.amount} MAX HP` : `GAIN ${o.amount} MAX HP AND HEAL ${o.amount} HP` };
     case 'gild':
       return {
         title: `${o.n} ${charmName(o.enh)} CHARM${o.n > 1 ? 'S' : ''}`,
-        text: `REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${charmShortText(o.enh, charmLevel(lv, o.enh, ticket))}`,
+        text: `ON REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${charmShortText(o.enh, charmLevel(lv, o.enh, ticket))}`,
       };
     case 'symLevel': {
       const now = symLevel(lv, o.symbol);
@@ -458,9 +461,9 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
       return { title: `${plural(o.symbol, 2)} LV${next}`, text: `${symValue(now)} -> ${symValue(next)} ${word}` };
     }
     case 'charmLevel':
-      return { title: `${charmName(o.enh)} CHARM`, text: 'CHARMS HAVE NO LEVELS NOW' };
+      return { title: `${charmName(o.enh)} CHARM`, text: 'CHARMS HAVE NO LEVELS. THIS CARD DOES NOTHING' };
     case 'remove':
-      return { title: 'CUT', text: `REMOVE 1 ${symLabel(o.symbol)} FROM REEL ${o.reel + 1}` };
+      return { title: 'CUT', text: `CUT 1 ${cardLabel(o.symbol)} FROM REEL ${o.reel + 1}` };
   }
 }
 

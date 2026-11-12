@@ -59,10 +59,10 @@ const face = (id: RelicId, cab: CabinetId) => {
 };
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('TWIN REELS (mirror): ANY TWO MATCHING REELS COUNT AS A PAIR', () => {
+describe('TWIN REELS (mirror): ANY 2 MATCHING REELS ARE A PAIR', () => {
   it('texts: the same on every machine, and the card face says the same thing', () => {
     for (const cab of MACHINES) {
-      expect(face('mirror', cab).full).toBe('ANY TWO MATCHING REELS COUNT AS A PAIR');
+      expect(face('mirror', cab).full).toBe('ANY 2 MATCHING REELS ARE A PAIR');
       expect(face('mirror', cab).short).toBe('ANY 2 MATCHING REELS ARE A PAIR');
     }
   });
@@ -171,9 +171,9 @@ describe('BANDAGE: HEAL 60 HP AFTER EACH FIGHT', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('PRISM: A PAIR OR JACKPOT THAT USES A WILD PAYS X2', () => {
+describe('PRISM: A PAIR OR JACKPOT WITH A WILD PAYS X2', () => {
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('prism', cab)).toEqual({ full: 'A PAIR OR JACKPOT THAT USES A WILD PAYS X2', short: 'PAIRS AND JACKPOTS WITH A WILD PAY X2' });
+    for (const cab of MACHINES) expect(face('prism', cab)).toEqual({ full: 'A PAIR OR JACKPOT WITH A WILD PAYS X2', short: 'A PAIR OR JACKPOT WITH A WILD PAYS X2' });
   });
   for (const cab of MACHINES) {
     const a = ATTACK[cab];
@@ -192,10 +192,10 @@ describe('PRISM: A PAIR OR JACKPOT THAT USES A WILD PAYS X2', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('GOLDEN TICKET (ticket): EVERY CHARM IS ONE STEP STRONGER', () => {
+describe('GOLDEN TICKET (ticket): EVERY CHARM IS STRONGER. GOLD PAYS X3, NOT X2', () => {
   const ENHS = Object.keys(CHARM_VALUE) as Enh[];
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('ticket', cab)).toEqual({ full: 'EVERY CHARM IS ONE STEP STRONGER', short: 'EVERY CHARM IS ONE STEP STRONGER' });
+    for (const cab of MACHINES) expect(face('ticket', cab)).toEqual({ full: 'EVERY CHARM IS STRONGER. GOLD PAYS X3, NOT X2', short: 'EVERY CHARM IS STRONGER' });
   });
   it('every Charm reads its step-2 value in a fight, and every step 2 is stronger than step 1', () => {
     const f = new Fight(machineCfg('knight', ['ticket']), 7);
@@ -229,15 +229,15 @@ describe('GOLDEN TICKET (ticket): EVERY CHARM IS ONE STEP STRONGER', () => {
   });
   it('the Charm cards a TICKET holder is offered show the stronger number', () => {
     const r = run('knight', ['ticket']);
-    expect(describeOption({ kind: 'gild', enh: 'gold', symbol: 'sword', reel: 0, n: 2 }, r).text).toBe('REEL 1 SWORDS: X3 PAY');
-    expect(describeOption({ kind: 'gild', enh: 'gold', symbol: 'sword', reel: 0, n: 2 }, run('knight')).text).toBe('REEL 1 SWORDS: X2 PAY');
+    expect(describeOption({ kind: 'gild', enh: 'gold', symbol: 'sword', reel: 0, n: 2 }, r).text).toBe('ON REEL 1 SWORDS: PAYS X3');
+    expect(describeOption({ kind: 'gild', enh: 'gold', symbol: 'sword', reel: 0, n: 2 }, run('knight')).text).toBe('ON REEL 1 SWORDS: PAYS X2');
   });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('STAR CHART (starchart): EVERY SYMBOL LEVEL YOU GAIN IS DOUBLED', () => {
+describe('STAR CHART (starchart): SYMBOL LEVELS YOU GAIN ARE DOUBLED', () => {
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('starchart', cab)).toEqual({ full: 'EVERY SYMBOL LEVEL YOU GAIN IS DOUBLED', short: 'SYMBOL LEVELS YOU GAIN ARE DOUBLED' });
+    for (const cab of MACHINES) expect(face('starchart', cab)).toEqual({ full: 'SYMBOL LEVELS YOU GAIN ARE DOUBLED', short: 'SYMBOL LEVELS YOU GAIN ARE DOUBLED' });
   });
   for (const cab of MACHINES)
     it(`${cab}: a level card gives 2 (1 without), and the card says the right LV`, () => {
@@ -272,8 +272,8 @@ describe('STAR CHART (starchart): EVERY SYMBOL LEVEL YOU GAIN IS DOUBLED', () =>
     applyOption(r, { kind: 'symLevel', symbol: 'sword' });
     expect(levelsGained(r)).toBe(2);
   });
-  it('UNCLEAR: the run log calls a STAR CHART level card +1 LEVEL', () => {
-    expect(takenLabel({ kind: 'symLevel', symbol: 'sword' })).toBe('SWORD +1 LEVEL');
+  it('the run log calls a level card LEVEL UP, with no number (STAR CHART makes it two levels)', () => {
+    expect(takenLabel({ kind: 'symLevel', symbol: 'sword' })).toBe('SWORD LEVEL UP');
   });
 });
 
@@ -301,9 +301,9 @@ describe('JACKPOT BELL (bell) on KNIGHT: JACKPOTS PAY X2', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('PHOENIX FEATHER (phoenix): SURVIVE LETHAL DAMAGE AT 1 HP ONCE PER FIGHT', () => {
+describe('RABBIT\'S FOOT (phoenix): SURVIVE 1 KILLING HIT AT 1 HP EACH FIGHT', () => {
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('phoenix', cab)).toEqual({ full: 'SURVIVE LETHAL DAMAGE AT 1 HP ONCE PER FIGHT', short: 'SURVIVE A KILLING HIT AT 1 HP, ONCE A FIGHT' });
+    for (const cab of MACHINES) expect(face('phoenix', cab)).toEqual({ full: 'SURVIVE 1 KILLING HIT AT 1 HP EACH FIGHT', short: 'SURVIVE 1 KILLING HIT AT 1 HP EACH FIGHT' });
   });
   const hitMe = (f: Fight, hp: number) => {
     f.sides.player.hp = hp;
@@ -372,9 +372,9 @@ describe('SKELETON KEY (key): YOUR PAIRS PAY X2', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe("GOLDEN HOURGLASS (sandglass): ENEMY ABILITIES CHARGE 1 SPIN SLOWER (NOT THE WHEEL'S OR THE DEALER'S)", () => {
+describe('GOLDEN HOURGLASS (sandglass): ENEMY ABILITIES TAKE 1 MORE SPIN TO CHARGE. THE WHEEL AND THE DEALER ARE NOT SLOWED', () => {
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('sandglass', cab)).toEqual({ full: "ENEMY ABILITIES CHARGE 1 SPIN SLOWER (NOT THE WHEEL'S OR THE DEALER'S)", short: 'SLOWER ENEMY ABILITIES (NOT WHEEL OR DEALER)' });
+    for (const cab of MACHINES) expect(face('sandglass', cab)).toEqual({ full: 'ENEMY ABILITIES TAKE 1 MORE SPIN TO CHARGE. THE WHEEL AND THE DEALER ARE NOT SLOWED', short: 'ENEMY ABILITIES TAKE 1 MORE SPIN TO CHARGE' });
   });
   /** The enemy turns (1, 2, ...) its ability fires on, over 16 enemy turns. */
   const fires = (relics: RelicId[], kind: 'smash' | 'flood' = 'smash') => {
@@ -415,9 +415,9 @@ describe("GOLDEN HOURGLASS (sandglass): ENEMY ABILITIES CHARGE 1 SPIN SLOWER (NO
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('UNDERDOG: EVERYTHING PAYS X1.5 WHEN YOU ARE UNDER HALF HP', () => {
+describe('UNDERDOG: EVERYTHING PAYS X1.5 UNDER HALF HP', () => {
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('underdog', cab)).toEqual({ full: 'EVERYTHING PAYS X1.5 WHEN YOU ARE UNDER HALF HP', short: 'EVERYTHING PAYS X1.5 UNDER HALF HP' });
+    for (const cab of MACHINES) expect(face('underdog', cab)).toEqual({ full: 'EVERYTHING PAYS X1.5 UNDER HALF HP', short: 'EVERYTHING PAYS X1.5 UNDER HALF HP' });
     expect(NEW_RELIC.underdogMul).toBe(1.5);
   });
   for (const cab of MACHINES) {
@@ -451,9 +451,9 @@ describe('UNDERDOG: EVERYTHING PAYS X1.5 WHEN YOU ARE UNDER HALF HP', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('HOLY WATER (holywater): THE FIRST ENEMY ABILITY EACH FIGHT THAT HITS YOUR REELS DOES NOTHING', () => {
+describe('BOUNCER (holywater): THE FIRST ENEMY ABILITY THAT SABOTAGES YOUR REELS IS BLOCKED EACH FIGHT', () => {
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('holywater', cab)).toEqual({ full: 'THE FIRST ENEMY ABILITY EACH FIGHT THAT HITS YOUR REELS DOES NOTHING', short: 'FIRST ENEMY SABOTAGE IS BLOCKED EACH FIGHT' });
+    for (const cab of MACHINES) expect(face('holywater', cab)).toEqual({ full: 'THE FIRST ENEMY ABILITY THAT SABOTAGES YOUR REELS IS BLOCKED EACH FIGHT', short: 'FIRST ENEMY SABOTAGE IS BLOCKED EACH FIGHT' });
   });
   const slimeFight = (relics: RelicId[], cab: CabinetId = 'knight') =>
     new Fight(machineCfg(cab, relics, (c) => (c.enemy = { hp: 1e7, strips: reels3({ slime: 12 }) })), 7);

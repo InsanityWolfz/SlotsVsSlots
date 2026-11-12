@@ -88,28 +88,28 @@ describe('texts and card faces, per machine', () => {
 
   it('the machine texts and card faces read as audited', () => {
     expect(relicText('fang', 'tesla')).toBe('EACH LIGHTNING STORM HEALS 15 MORE HP');
-    expect(relicText('fang', 'midas')).toBe('HIGH ROLLER PAYOFFS HEAL 30 MORE HP');
-    expect(relicText('fang', 'joker')).toBe('ALL-JACKPOT SPINS HEAL 30 MORE HP');
+    expect(relicText('fang', 'midas')).toBe('HIGH ROLLER HEALS 30 MORE HP');
+    expect(relicText('fang', 'joker')).toBe('ALL JACKPOTS HEALS 30 MORE HP');
     expect(relicText('fang', 'jukebox')).toBe('THE DROP HEALS 30 MORE HP');
-    expect(relicText('overcharge', 'tesla')).toBe('LIGHTNING DAMAGE +30%');
-    expect(shortRelicText('overcharge', relicText('overcharge', 'midas'))).toBe('HIGH ROLLER PAYOFFS ECHO FOR 1/3');
-    expect(shortRelicText('overcharge', relicText('overcharge', 'joker'))).toBe('ALL-JACKPOT SPINS ECHO FOR 1/3');
-    expect(shortRelicText('overcharge', relicText('overcharge', 'tesla'))).toBe('LIGHTNING DAMAGE +30%');
+    expect(relicText('overcharge', 'tesla')).toBe('LIGHTNING DEALS 30% MORE DAMAGE');
+    expect(shortRelicText('overcharge', relicText('overcharge', 'midas'))).toBe('HIGH ROLLER HITS AGAIN FOR 1/3 DAMAGE');
+    expect(shortRelicText('overcharge', relicText('overcharge', 'joker'))).toBe('ALL JACKPOTS HITS AGAIN FOR 1/3 DAMAGE');
+    expect(shortRelicText('overcharge', relicText('overcharge', 'tesla'))).toBe('LIGHTNING DEALS 30% MORE DAMAGE');
     const bell = (c: CabinetId) => shortRelicText('bell', relicText('bell', c));
     expect(bell('knight')).toBe('JACKPOTS PAY X2');
-    expect(bell('tesla')).toBe('JACKPOTS PAY X2, FULL LIGHTNING');
-    expect(bell('midas')).toBe('JACKPOTS PAY X2, FILL HIGH ROLLER');
-    expect(bell('joker')).toBe('JACKPOTS PAY X1.25, FILL THE METER');
+    expect(bell('tesla')).toBe('JACKPOTS PAY X2 AND FULLY CHARGE LIGHTNING');
+    expect(bell('midas')).toBe('JACKPOTS PAY X2 AND FILL HIGH ROLLER');
+    expect(bell('joker')).toBe('JACKPOTS PAY X1.25 AND FILL THE METER');
     expect(bell('jukebox')).toBe('JACKPOTS X2 AND FILL THE VOLUME');
-    expect(relicText('deckdrum', 'joker')).toBe('EVERY SPIN THAT PAYS: +1 CARD DAMAGE FOR THE REST OF THE FIGHT (MAX +5)');
-    expect(shortRelicText('deckdrum', relicText('deckdrum', 'joker'))).toBe('+1 CARD DAMAGE PER SPIN THAT PAYS, MAX +5');
-    expect(shortRelicText('hypeman', relicText('hypeman', 'jukebox'))).toBe('+1 VOLUME EVERY 2ND SPIN. NOTES PAY HALF');
-    expect(relicText('hitmaker', 'jukebox')).toBe('EACH DROP HITS +60% MORE FOR EVERY DROP BEFORE IT THIS FIGHT');
-    expect(shortRelicText('hitmaker', relicText('hitmaker', 'jukebox'))).toBe('EACH DROP: +60% PER DROP BEFORE IT');
+    expect(relicText('deckdrum', 'joker')).toBe('SPINS THAT PAY ADD 1 CARD DAMAGE FOR THE REST OF THE FIGHT, UP TO 5');
+    expect(shortRelicText('deckdrum', relicText('deckdrum', 'joker'))).toBe('SPINS THAT PAY ADD 1 CARD DAMAGE, UP TO 5');
+    expect(shortRelicText('hypeman', relicText('hypeman', 'jukebox'))).toBe('VOLUME RISES 1 EVERY 2 SPINS. NOTES PAY HALF EXCEPT ON THE DROP');
+    expect(relicText('hitmaker', 'jukebox')).toBe('EACH DROP HITS 60% HARDER PER DROP SO FAR THIS FIGHT');
+    expect(shortRelicText('hitmaker', relicText('hitmaker', 'jukebox'))).toBe('EACH DROP HITS 60% HARDER PER DROP SO FAR');
   });
 });
 
-describe('ENCORE (JOKER): REFUND 30 TO YOUR JACKPOT METER AFTER IT PAYS', () => {
+describe('ENCORE (JOKER): YOUR JACKPOT METER KEEPS 30 AFTER IT PAYS', () => {
   it('after the payoff the meter holds 30 (0 without ENCORE)', () => {
     for (const [relics, want] of [[['encore'], 30], [[], 0]] as const) {
       const f = on('joker', [...relics]);

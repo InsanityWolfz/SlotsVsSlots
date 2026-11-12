@@ -130,7 +130,7 @@ describe('AUDIT: where each Charm is offered (draft, Cashier-free; CLAW uses the
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: GOLD "X2 TO ITS GROUP (GOLD IN A GROUP ADDS UP)" / card "X2 PAY"', () => {
+describe('AUDIT: GOLD "PAYS X2. SO DOES ITS WHOLE PAIR OR JACKPOT. 2 GOLD CHARMS IN IT PAY X4" / card "PAYS X2"', () => {
   const plain = groupAfter('knight', { strips: KNIGHT() }, SSS, 'sword');
 
   it('X2: the same forced jackpot pays exactly twice as much with one GOLD cell in it', () => {
@@ -165,7 +165,7 @@ describe('AUDIT: GOLD "X2 TO ITS GROUP (GOLD IN A GROUP ADDS UP)" / card "X2 PAY
     const p = groupAfter('knight', { strips: KNIGHT(), relics: ['ticket'] }, SSS, 'sword');
     const g = groupAfter('knight', { strips: KNIGHT(), gilded: [on(0, 'sword', 'gold')], relics: ['ticket'] }, SSS, 'sword');
     expect(g.amount / p.amount).toBe(3);
-    expect(charmShortText('gold', 2)).toBe('X3 PAY');
+    expect(charmShortText('gold', 2)).toBe('PAYS X3');
   });
 
   // (user, 2026-11-01: GOLD and GLASS are true multipliers on TESLA's bolts; the other boosts still add up.)
@@ -179,7 +179,7 @@ describe('AUDIT: GOLD "X2 TO ITS GROUP (GOLD IN A GROUP ADDS UP)" / card "X2 PAY
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: KEEN "+40 TO EACH ONE IN ITS GROUP, WHICH PIERCES SHIELDS" / card "+40 DAMAGE AND PIERCES SHIELDS"', () => {
+describe('AUDIT: KEEN "HITS FOR 40 MORE AND PIERCES SHIELDS. SO DOES EVERY SYMBOL IN ITS PAIR OR JACKPOT" / card "HITS FOR 40 MORE AND PIERCES SHIELDS"', () => {
   const plain = groupAfter('knight', { strips: KNIGHT() }, SSS, 'sword');
 
   it('+40 to EACH sword in its group: a 3-sword jackpot gets +120 BASE (x3 jackpot = +360 damage)', () => {
@@ -228,7 +228,7 @@ describe('AUDIT: KEEN "+40 TO EACH ONE IN ITS GROUP, WHICH PIERCES SHIELDS" / ca
     const p = groupAfter('knight', { strips: KNIGHT(), relics: ['ticket'] }, SSS, 'sword');
     const g = groupAfter('knight', { strips: KNIGHT(), gilded: [on(0, 'sword', 'keen')], relics: ['ticket'] }, SSS, 'sword');
     expect(g.base - p.base).toBe(50 * 3);
-    expect(charmShortText('keen', 2)).toBe('+50 DAMAGE AND PIERCES SHIELDS');
+    expect(charmShortText('keen', 2)).toBe('HITS FOR 50 MORE AND PIERCES SHIELDS');
   });
 
   // UNCLEAR (card face): "+40 DAMAGE" undersells it: +40 per sword in the group, then x the pair/jackpot multiplier and
@@ -240,7 +240,7 @@ describe('AUDIT: KEEN "+40 TO EACH ONE IN ITS GROUP, WHICH PIERCES SHIELDS" / ca
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: CHARGED "+10 TO ITS GROUP" / card "+10 CHARGE" (TESLA)', () => {
+describe('AUDIT: CHARGED "CHARGES 10 MORE LIGHTNING", the card the same (TESLA)', () => {
   const plain = groupAfter('tesla', { strips: TESLA() }, BBB, 'bolt');
 
   it('+10 to the bolt group BASE (once per charged cell, not per bolt)', () => {
@@ -259,7 +259,7 @@ describe('AUDIT: CHARGED "+10 TO ITS GROUP" / card "+10 CHARGE" (TESLA)', () => 
     const p = groupAfter('tesla', { strips: TESLA(), relics: ['ticket'] }, BBB, 'bolt');
     const g = groupAfter('tesla', { strips: TESLA(), gilded: [on(0, 'bolt', 'charged')], relics: ['ticket'] }, BBB, 'bolt');
     expect(g.base - p.base).toBe(20);
-    expect(charmShortText('charged', 2)).toBe('+20 CHARGE');
+    expect(charmShortText('charged', 2)).toBe('CHARGES 20 MORE LIGHTNING');
   });
 
   // UNCLEAR: the +10 is BASE, so a jackpot multiplies it (+30 charge before TESLA's own boosts): "+10 CHARGE" undersells.
@@ -270,7 +270,7 @@ describe('AUDIT: CHARGED "+10 TO ITS GROUP" / card "+10 CHARGE" (TESLA)', () => 
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: VAMP "HEALS 20 WHEN ITS PAY HITS (EACH VAMP IN THE PAY HEALS)" / card "+20 HP"', () => {
+describe('AUDIT: VAMP "HEALS 20 WHEN IT PAYS", the card the same (each VAMP that pays heals)', () => {
   const vampHeals = (cab: CabinetId, s: Setup, line: SymbolId[], prep?: (f: Fight) => void) => {
     const f = make(cab, s);
     f.sides.player.hp -= 150;
@@ -315,12 +315,12 @@ describe('AUDIT: VAMP "HEALS 20 WHEN ITS PAY HITS (EACH VAMP IN THE PAY HEALS)" 
 
   it('GOLDEN TICKET: heals 30 (card says +30 HP)', () => {
     expect(vampHeals('knight', { strips: KNIGHT(), gilded: [on(0, 'sword', 'vamp')], relics: ['ticket'] }, SSS)).toEqual([30]);
-    expect(charmShortText('vamp', 2)).toBe('+30 HP');
+    expect(charmShortText('vamp', 2)).toBe('HEALS 30 WHEN IT PAYS');
   });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: LUCKY "40% TO LAND AS A WILD" / card "40% CHANCE TO BE A WILD"', () => {
+describe('AUDIT: LUCKY "40% CHANCE TO LAND AS A WILD", the card the same', () => {
   const rate = (relics: RelicId[], n = 1500) => {
     let wild = 0;
     for (let seed = 1; seed <= n; seed++) {
@@ -336,7 +336,7 @@ describe('AUDIT: LUCKY "40% TO LAND AS A WILD" / card "40% CHANCE TO BE A WILD"'
 
   it('GOLDEN TICKET: about 55%', () => {
     expect(Math.abs(rate(['ticket']) - 0.55)).toBeLessThan(0.04);
-    expect(charmShortText('lucky', 2)).toBe('55% CHANCE TO BE A WILD');
+    expect(charmShortText('lucky', 2)).toBe('55% CHANCE TO LAND AS A WILD');
   });
 
   it('a plain cell never does', () => {
@@ -356,7 +356,7 @@ describe('AUDIT: LUCKY "40% TO LAND AS A WILD" / card "40% CHANCE TO BE A WILD"'
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: BLAZE "LIGHTNING DAMAGE +11% FOR EVERY BLAZE CHARM YOU OWN" / card "+11% LIGHTNING DAMAGE" (TESLA)', () => {
+describe('AUDIT: BLAZE "LIGHTNING DEALS 11% MORE DAMAGE FOR EACH BLAZE CHARM ON YOUR REELS" / card "LIGHTNING DEALS 11% MORE DAMAGE" (TESLA)', () => {
   const storm = (gilded: Gild[], line: SymbolId[] = BBB, relics: RelicId[] = []) => {
     const ev = spin(make('tesla', { strips: TESLA(), gilded, relics }), line).events;
     return { strikes: ofType(ev, 'specialFire').filter((e) => e.from === 'player').map((e) => e.amount), charge: ofType(ev, 'energyGain')[0]?.amount ?? 0, group: ofType(ev, 'spin')[0].score };
@@ -368,8 +368,8 @@ describe('AUDIT: BLAZE "LIGHTNING DAMAGE +11% FOR EVERY BLAZE CHARM YOU OWN" / c
   it('the texts name the % of a full strike: +11% (LV1), +23% (GOLDEN TICKET), and the strike is TESLA\'s own', () => {
     expect(TESLA_STRIKE).toBe(CABINETS.tesla.specialDamage);
     expect(blazePct(charmValue('blaze', 1))).toBe(Math.round((5 / fullStrike) * 100));
-    expect(charmShortText('blaze', 1)).toBe('+11% LIGHTNING DAMAGE');
-    expect(charmRuleText('blaze', 1)).toBe('LIGHTNING DAMAGE +11% FOR EVERY BLAZE CHARM YOU OWN');
+    expect(charmShortText('blaze', 1)).toBe('LIGHTNING DEALS 11% MORE DAMAGE');
+    expect(charmRuleText('blaze', 1)).toBe('LIGHTNING DEALS 11% MORE DAMAGE FOR EACH BLAZE CHARM ON YOUR REELS');
   });
 
   it('strikes hit the same with or without BLAZE; BLAZE raises the charge by 5/44 per cell you own', () => {
@@ -395,12 +395,12 @@ describe('AUDIT: BLAZE "LIGHTNING DAMAGE +11% FOR EVERY BLAZE CHARM YOU OWN" / c
     const p = storm([], BBB, ['ticket']);
     const b = storm([on(1, 'bolt', 'blaze', 1)], BBB, ['ticket']);
     expect(b.charge).toBe(Math.round(group(p.group, 'bolt').amount * (1 + 10 / fullStrike)));
-    expect(charmShortText('blaze', 2)).toBe('+23% LIGHTNING DAMAGE');
+    expect(charmShortText('blaze', 2)).toBe('LIGHTNING DEALS 23% MORE DAMAGE');
   });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: BULWARK (spiked) "ALSO HITS FOR 100% OF ITS SHIELD" (retired: old saves only)', () => {
+describe('AUDIT: BULWARK (spiked) "ALSO HITS FOR 100% OF THE SHIELD IT GIVES" (retired: old saves only)', () => {
   it('a BULWARK shield in a pair also hits for its share of the pair\'s shield (rounded to 10)', () => {
     const f = make('knight', { strips: KNIGHT(), gilded: [on(0, 'shield', 'spiked')] });
     const { events, score } = spin(f, ['shield', 'shield', 'sword']);
@@ -419,7 +419,7 @@ describe('AUDIT: BULWARK (spiked) "ALSO HITS FOR 100% OF ITS SHIELD" (retired: o
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: CHIP (lucre) "+3 CHIPS WHEN ITS GROUP PAYS (MAX 6 A FIGHT, ON A WIN)" / card "+3 CHIPS (MAX 6 PER FIGHT)"', () => {
+describe('AUDIT: CHIP (lucre) "GIVES 3 CHIPS WHEN IT PAYS, UP TO 6 EACH FIGHT. YOU COLLECT THEM WHEN YOU WIN" / card "GIVES 3 CHIPS WHEN IT PAYS, UP TO 6 EACH FIGHT"', () => {
   const lucreRun = (gilded: Gild[], relics: RelicId[] = []) => {
     const run = createRun(base, 5, 'knight');
     run.player.strips = KNIGHT();
@@ -476,10 +476,10 @@ describe('AUDIT: CHIP (lucre) "+3 CHIPS WHEN ITS GROUP PAYS (MAX 6 A FIGHT, ON A
     expect(l.run.player.chips).toBe(before);
   });
 
-  it('GOLDEN TICKET: the cap is 9 (card "+3 CHIPS (MAX 9 PER FIGHT)")', () => {
+  it('GOLDEN TICKET: the cap is 9 (card "... UP TO 9 EACH FIGHT")', () => {
     const { f } = lucreRun([on(0, 'sword', 'lucre')], ['ticket']);
     expect(chipEvents(f, 5)).toEqual([3, 3, 3]);
-    expect(charmShortText('lucre', 2)).toBe('+3 CHIPS (MAX 9 PER FIGHT)');
+    expect(charmShortText('lucre', 2)).toBe('GIVES 3 CHIPS WHEN IT PAYS, UP TO 9 EACH FIGHT');
   });
 
   // UNCLEAR: two CHIP Charms in the same group pay +3 once (fight.ts cellCharms: `n('lucre') > 0`), and the cap is one
@@ -491,7 +491,7 @@ describe('AUDIT: CHIP (lucre) "+3 CHIPS WHEN ITS GROUP PAYS (MAX 6 A FIGHT, ON A
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: TRICK "+30 TO YOUR JACKPOT METER WHEN IT LANDS" (JOKER)', () => {
+describe('AUDIT: TRICK "FILLS YOUR JACKPOT METER BY 30 WHEN IT LANDS ON YOUR PAYLINE" (JOKER)', () => {
   const meterAfter = (gilded: Gild[], line: SymbolId[], relics: RelicId[] = []) => {
     const f = make('joker', { strips: JOKER(), gilded, relics });
     spin(f, line);
@@ -527,12 +527,12 @@ describe('AUDIT: TRICK "+30 TO YOUR JACKPOT METER WHEN IT LANDS" (JOKER)', () =>
   it('GOLDEN TICKET: +40', () => {
     const line: SymbolId[] = ['ace', 'shield', 'shield'];
     expect(meterAfter([on(0, 'ace', 'trick')], line, ['ticket']) - meterAfter([], line, ['ticket'])).toBe(40);
-    expect(charmShortText('trick', 2)).toBe('+40 TO YOUR JACKPOT METER');
+    expect(charmShortText('trick', 2)).toBe('FILLS YOUR JACKPOT METER BY 40');
   });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: ECHO "AT THE DROP, ITS NOTE HITS X2" / card "AT THE DROP, ITS NOTE HITS X2" (JUKEBOX)', () => {
+describe('AUDIT: ECHO "HITS X2 AT THE DROP", the card the same (JUKEBOX)', () => {
   // Reel 0 holds a single note (the ECHO one), so no other ECHO note can sit above or below the payline.
   const strips = (): StripCounts[] => [{ note: 1, shield: 6 }, { note: 6, shield: 6 }, { note: 6, shield: 6 }];
   const drop = (gilded: Gild[], relics: RelicId[] = [], armed = true) => {
@@ -565,12 +565,12 @@ describe('AUDIT: ECHO "AT THE DROP, ITS NOTE HITS X2" / card "AT THE DROP, ITS N
     const p = drop([], ['ticket']);
     const e = drop(echo, ['ticket']);
     expect(e.g.mult / p.g.mult).toBeCloseTo(1 + 1.5 / p.notes, 9);
-    expect(charmShortText('echo', 2)).toBe('AT THE DROP, ITS NOTE HITS X2.5');
+    expect(charmShortText('echo', 2)).toBe('HITS X2.5 AT THE DROP');
   });
 
   // The card face says what the full rule says: only its note's share doubles (a 3-note drop hits x1.33), not the whole DROP.
   it('the card face names its note, not the whole DROP', () => {
-    expect(charmShortText('echo', 1)).toBe('AT THE DROP, ITS NOTE HITS X2');
+    expect(charmShortText('echo', 1)).toBe('HITS X2 AT THE DROP');
     const ratio = drop(echo).g.amount / drop([]).g.amount;
     expect(ratio).toBeGreaterThan(1);
     expect(ratio).toBeLessThan(2);
@@ -578,7 +578,7 @@ describe('AUDIT: ECHO "AT THE DROP, ITS NOTE HITS X2" / card "AT THE DROP, ITS N
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: GLASS "X5 TO ITS GROUP (ADDS UP LIKE GOLD). 1 IN 4 TO SHATTER FOR GOOD WHEN IT PAYS" / card "X5 PAY. 1 IN 4 TO SHATTER"', () => {
+describe('AUDIT: GLASS "PAYS X5. SO DOES ITS WHOLE PAIR OR JACKPOT. SHATTERS FOR GOOD 1 TIME IN 4 THAT IT PAYS" / card "PAYS X5. SHATTERS 1 TIME IN 4"', () => {
   const plain = groupAfter('knight', { strips: KNIGHT() }, SSS, 'sword');
 
   it('X5 to its group', () => {
@@ -625,18 +625,19 @@ describe('AUDIT: GLASS "X5 TO ITS GROUP (ADDS UP LIKE GOLD). 1 IN 4 TO SHATTER F
     throw new Error('no shatter in 100 seeds');
   });
 
-  it('GOLDEN TICKET: X6 (card "X6 PAY. 1 IN 4 TO SHATTER")', () => {
+  it('GOLDEN TICKET: X6 (card "PAYS X6. SHATTERS 1 TIME IN 4")', () => {
     const p = groupAfter('knight', { strips: KNIGHT(), relics: ['ticket'] }, SSS, 'sword');
     const g = groupAfter('knight', { strips: KNIGHT(), gilded: [on(0, 'sword', 'glass')], relics: ['ticket'] }, SSS, 'sword');
     expect(g.amount / p.amount).toBe(6);
-    expect(charmShortText('glass', 2)).toBe('X6 PAY. 1 IN 4 TO SHATTER');
+    expect(charmShortText('glass', 2)).toBe('PAYS X6. SHATTERS 1 TIME IN 4');
   });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: GOLDEN TICKET "EVERY CHARM IS ONE STEP STRONGER"', () => {
+describe('AUDIT: GOLDEN TICKET "EVERY CHARM IS STRONGER. GOLD PAYS X3, NOT X2"', () => {
   it('the relic says so', () => {
-    expect(RELICS.ticket.text).toBe('EVERY CHARM IS ONE STEP STRONGER');
+    expect(RELICS.ticket.text).toBe('EVERY CHARM IS STRONGER. GOLD PAYS X3, NOT X2');
+    expect([charmValue('gold', 1), charmValue('gold', 2)]).toEqual([2, 3]);
   });
 
   it('every Charm reads its index-2 value with the ticket, and it is stronger than index 1', () => {
@@ -671,18 +672,32 @@ describe('AUDIT: card face vs full rule', () => {
 
   it('the card faces at LV1', () => {
     expect(ALL.map((e) => charmShortText(e, 1))).toEqual([
-      'X2 PAY',
-      '+40 DAMAGE AND PIERCES SHIELDS',
-      '+10 CHARGE',
-      '+20 HP',
-      '40% CHANCE TO BE A WILD',
-      '+11% LIGHTNING DAMAGE',
-      'HITS FOR 100% OF ITS SHIELD',
-      '+3 CHIPS (MAX 6 PER FIGHT)',
-      '+30 TO YOUR JACKPOT METER',
-      'AT THE DROP, ITS NOTE HITS X2',
-      'X5 PAY. 1 IN 4 TO SHATTER',
+      'PAYS X2',
+      'HITS FOR 40 MORE AND PIERCES SHIELDS',
+      'CHARGES 10 MORE LIGHTNING',
+      'HEALS 20 WHEN IT PAYS',
+      '40% CHANCE TO LAND AS A WILD',
+      'LIGHTNING DEALS 11% MORE DAMAGE',
+      'ALSO HITS FOR 100% OF THE SHIELD IT GIVES',
+      'GIVES 3 CHIPS WHEN IT PAYS, UP TO 6 EACH FIGHT',
+      'FILLS YOUR JACKPOT METER BY 30',
+      'HITS X2 AT THE DROP',
+      'PAYS X5. SHATTERS 1 TIME IN 4',
     ]);
+  });
+
+  // Term sheet rule 13: the full rule is the card face's own words with detail added, never a rewording.
+  it('every full rule holds its card face word for word, in order', () => {
+    const words = (t: string) => t.replace(/[.,]/g, '').split(' ');
+    for (const lvl of [1, 2])
+      for (const e of ALL) {
+        const full = words(charmRuleText(e, lvl));
+        let at = 0;
+        for (const w of words(charmShortText(e, lvl))) {
+          at = full.indexOf(w, at) + 1;
+          expect(at, `${e}: ${w}`).toBeGreaterThan(0);
+        }
+      }
   });
 
   // The card's detail box (hover, focus or tap) shows the full rule: ONCE PER GROUP, ON A WIN, ITS NOTE, FOR GOOD.

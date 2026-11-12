@@ -55,10 +55,10 @@ describe('the four relics: tiers, faces and offers', () => {
     for (const r of NEW) expect(LEGENDARY.has(r)).toBe(false);
   });
   it('their full texts, the same on every machine, and card faces of two lines', () => {
-    expect(RELICS.lean.text).toBe('A REEL WITH 11 SYMBOLS OR FEWER: EACH OF ITS SYMBOLS IS WORTH X1.5');
-    expect(RELICS.steadyhands.text).toBe('+1 HOLD A FIGHT. A JACKPOT YOU HELD FOR PAYS X2');
-    expect(RELICS.pairstreak.text).toBe('EACH PAIR OF YOUR ATTACK SYMBOL IN A ROW PAYS +50% MORE THAN THE LAST, UP TO X2.5. A SPIN WITHOUT ONE RESETS IT');
-    expect(RELICS.sticky.text).toBe('EACH SYMBOL OR REEL AN ENEMY SABOTAGES: +1 CHIP (MAX 5 A FIGHT)');
+    expect(RELICS.lean.text).toBe('SYMBOLS ON A REEL OF 11 OR FEWER PAY X1.5');
+    expect(RELICS.steadyhands.text).toBe('HELD JACKPOTS PAY X2. GAIN 1 HOLD EACH FIGHT');
+    expect(RELICS.pairstreak.text).toBe('ATTACK PAIRS IN A ROW PAY X1.5, THEN X2, THEN X2.5. A SPIN WITHOUT ONE RESETS IT');
+    expect(RELICS.sticky.text).toBe('SABOTAGE PAYS YOU UP TO 5 CHIPS EACH FIGHT. YOU GET 1 FOR EACH SYMBOL OR REEL SABOTAGED');
     for (const r of NEW)
       for (const cab of ALL_CABINETS) {
         expect(relicText(r, cab)).toBe(RELICS[r].text);
@@ -77,12 +77,12 @@ describe('the four relics: tiers, faces and offers', () => {
 // ---- CUT: REMOVE 1 [SYMBOL] FROM REEL [N] -------------------------------------------------------------------------
 
 describe('CUT', () => {
-  it('its face: CUT, REMOVE 1 SHIELD FROM REEL 2 (two lines at most)', () => {
+  it('its face: CUT, CUT 1 SHIELD FROM REEL 2 (two lines at most)', () => {
     const o = { kind: 'remove', symbol: 'shield', reel: 1 } as const;
-    expect(describeOption(o)).toEqual({ title: 'CUT', text: 'REMOVE 1 SHIELD FROM REEL 2' });
-    expect(describeOption({ kind: 'remove', symbol: 'goldbar', reel: 0 }).text).toBe('REMOVE 1 CHIP FROM REEL 1');
+    expect(describeOption(o)).toEqual({ title: 'CUT', text: 'CUT 1 SHIELD FROM REEL 2' });
+    expect(describeOption({ kind: 'remove', symbol: 'goldbar', reel: 0 }).text).toBe('CUT 1 CHIP SYMBOL FROM REEL 1');
     for (const cab of ALL_CABINETS) for (const symbol of CABINETS[cab].symbols) expect(fits2(cardFace({ kind: 'remove', symbol, reel: 2 }).text)).toBe(true);
-    expect(takenLabel(o)).toBe('CUT 1 SHIELD (REEL 2)');
+    expect(takenLabel(o)).toBe('CUT 1 SHIELD FROM REEL 2');
   });
   it('REMOVE 1: exactly one cell of that symbol leaves that reel, nothing else changes', () => {
     const r = run('knight');
