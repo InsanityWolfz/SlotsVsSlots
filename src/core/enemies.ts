@@ -229,7 +229,7 @@ export const WHEEL: Archetype = {
   hpMul: 1,
   ability: { kind: 'bets', every: 3, power: 2 },
   minDepth: 5,
-  blurb: 'SHE PLACES BETS ON YOUR REELS. YOUR PAIRS CLEAR THEM. AT NO MORE BETS EVERY BET LEFT HITS YOU.',
+  blurb: 'SHE PLACES BETS ON YOUR REELS. YOUR PAIRS CLEAR THEM. WHEN SHE CALLS NO MORE BETS EVERY BET LEFT HITS YOU',
   acts: [2],
 };
 /**
@@ -252,7 +252,7 @@ export const DEALER: Archetype = {
   hpMul: 1,
   ability: { kind: 'deal', every: 3, power: 0 },
   minDepth: 3,
-  blurb: 'HE PLAYS 3 HANDS, EACH WITH ITS OWN HP BAR. EACH HAND IS HARDER THAN THE LAST.',
+  blurb: 'HE PLAYS 3 HANDS, EACH WITH ITS OWN HP BAR. EACH HAND IS HARDER THAN THE LAST',
   acts: [3],
 };
 /**
@@ -267,7 +267,7 @@ export const OWNER: Archetype = {
   hpMul: 1,
   ability: { kind: 'owner', every: 2, power: 0 },
   minDepth: 5,
-  blurb: 'HE OWNS THE PLACE. EVERY TRICK IN THE BOOK.',
+  blurb: 'HE OWNS THE PLACE. EVERY TRICK IN THE BOOK',
   acts: [4],
 };
 /** THE OWNER's tricks, in the order he plays them (each at this power). */

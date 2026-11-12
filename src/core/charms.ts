@@ -81,7 +81,7 @@ export function charmRuleText(enh: Enh, lvl: number): string {
     case 'keen':
       return `HITS FOR ${v} MORE AND PIERCES SHIELDS. SO DOES EVERY SYMBOL IN ITS PAIR OR JACKPOT`;
     case 'charged':
-      return `CHARGES ${v} MORE LIGHTNING`;
+      return `CHARGES LIGHTNING BY ${v} MORE`;
     case 'vamp':
       return `HEALS ${v} WHEN IT PAYS`;
     case 'lucky':
@@ -93,9 +93,9 @@ export function charmRuleText(enh: Enh, lvl: number): string {
     case 'lucre':
       return `GIVES ${LUCRE_CHIPS} CHIPS WHEN IT PAYS, UP TO ${v} EACH FIGHT. YOU COLLECT THEM WHEN YOU WIN`;
     case 'trick':
-      return `FILLS YOUR JACKPOT METER BY ${v} WHEN IT LANDS ON YOUR PAYLINE`;
+      return `FILLS YOUR JACKPOT METER BY ${v}% WHEN IT LANDS ON YOUR PAYLINE`;
     case 'echo':
-      return `HITS X${v} AT THE DROP`;
+      return `HITS X${v} ON THE DROP`;
     case 'glass':
       return `PAYS X${v}. SO DOES ITS WHOLE PAIR OR JACKPOT. SHATTERS FOR GOOD 1 TIME IN ${Math.round(1 / GLASS_BREAK)} THAT IT PAYS`;
   }
@@ -113,7 +113,7 @@ export function charmShortText(enh: Enh, lvl: number): string {
     case 'keen':
       return `HITS FOR ${v} MORE AND PIERCES SHIELDS`;
     case 'charged':
-      return `CHARGES ${v} MORE LIGHTNING`;
+      return `CHARGES LIGHTNING BY ${v} MORE`;
     case 'vamp':
       return `HEALS ${v} WHEN IT PAYS`;
     case 'lucky':
@@ -125,9 +125,9 @@ export function charmShortText(enh: Enh, lvl: number): string {
     case 'lucre':
       return `GIVES ${LUCRE_CHIPS} CHIPS WHEN IT PAYS, UP TO ${v} EACH FIGHT`;
     case 'trick':
-      return `FILLS YOUR JACKPOT METER BY ${v}`;
+      return `FILLS YOUR JACKPOT METER BY ${v}%`;
     case 'echo':
-      return `HITS X${v} AT THE DROP`;
+      return `HITS X${v} ON THE DROP`;
     case 'glass':
       return `PAYS X${v}. SHATTERS 1 TIME IN ${Math.round(1 / GLASS_BREAK)}`;
   }

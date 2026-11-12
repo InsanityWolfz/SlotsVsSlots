@@ -30,7 +30,7 @@ const MACHINE_HOOK: Record<string, string> = {
 const BOSSES: { name: string; portrait: string; where: string; hook: string }[] = [
   { name: WHEEL.name, portrait: WHEEL.portrait, where: 'ACT 2 BOSS', hook: 'PAIRS CLEAR THE BETS ON YOUR REELS' },
   { name: DEALER.name, portrait: DEALER.portrait, where: 'ACT 3 BOSS', hook: `HIS ${DEALER_RULES.hands.length} HANDS EACH HAVE AN HP BAR` },
-  { name: OWNER.name, portrait: OWNER.portrait, where: `ENDLESS LOOP ${TURBO.loop} BOSS`, hook: 'HE HITS HARDER WITH EACH OF HIS SPINS' },
+  { name: OWNER.name, portrait: OWNER.portrait, where: `ENDLESS LOOP ${TURBO.loop} BOSS`, hook: 'HE HITS HARDER EVERY SPIN' },
 ];
 
 /** The size of the rest: the demo is act 1 of 3 (act 3 from the RED stake) and a share of the relics (QA DEMO-16). */

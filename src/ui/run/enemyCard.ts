@@ -20,7 +20,7 @@ const BASIC_WORDS = new Set(['PAIR', 'JACKPOT', 'PAYLINE', 'WILD', 'HEAL', 'SHIE
 /** What an enemy's own symbols do when it's something its ability line doesn't say (card text pass, 2026-11-03). */
 const SYMBOL_LINE: Record<string, string> = {
   vampire: 'THEIR FANGS DRAIN YOU. DAMAGE THAT GETS PAST YOUR SHIELD HEALS THEM',
-  counterfeiter: `THEIR FAKE COINS SWITCH YOUR CHARMS OFF FOR ${FAKE_TURNS} OF YOUR SPINS`,
+  counterfeiter: `THEIR FAKE COINS SWITCH YOUR CHARMS OFF FOR ${FAKE_TURNS} SPINS`,
   pitboss: 'A PAIR OF GAVELS ON THEIR REELS TAKES 2 MORE CHARMS FOR THE FIGHT. A JACKPOT TAKES 4',
 };
 
@@ -252,7 +252,7 @@ export abstract class NextScreen extends RouteScreen {
         out.push({ text: l, color: '#ffb060', size: T.small });
     // ACT 3's COVER CHARGE (QA RULES-09: it was named only by a pop when it fired).
     if (!e.isBoss && (e.act ?? run.act) >= 3)
-      for (const l of wrap(`THEIR FIRST HIT EACH FIGHT IS A COVER CHARGE. UP TO ${Math.round(TUNE.coverCharge * 100)}% OF YOUR MAX HP PIERCES YOUR SHIELD`, cols(T.small)))
+      for (const l of wrap(`THEIR FIRST HIT EACH FIGHT IS A COVER CHARGE. IT PIERCES YOUR SHIELD FOR UP TO ${Math.round(TUNE.coverCharge * 100)}% OF YOUR MAX HP`, cols(T.small)))
         out.push({ text: l, color: KIT.text, size: T.small });
     if (e.isBoss) {
       const br = bossRules(e.boss ?? 'house', this.bossCtx());

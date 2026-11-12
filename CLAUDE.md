@@ -60,7 +60,9 @@ far it got. Keep that line current while you work.
 - **The term sheet (user, 2026-11-12; https://claude.ai/artifact/ATrwX1UidP7Qekw8AFFtAt): one word for one thing in
   every line a player reads.** `tests/terms.test.ts` fails when a retired word comes back; `npx tsx tools/text/dump.ts`
   lists every line.
-  1. SPIN, never TURN: one pull of one machine's reels. Where it matters whose: YOUR SPINS, HIS / HER / THEIR SPINS.
+  1. SPIN, never TURN: one pull of one machine's reels. Say whose (YOUR, HIS, HER, THEIR) only where a line could mean
+     either machine's spins. On an enemy's own card EVERY 3 SPINS is theirs. Something that lasts on your reels is FOR 2
+     SPINS. Never EVERY 3 OF HIS SPINS or FOR 2 OF YOUR SPINS.
   2. ABILITY is an enemy's special move (the icon that charges); SABOTAGE is an ability that changes your reels. No
      TRICK or CHEAT in rules text (flavour lines may keep them).
   3. EACH (EACH FIGHT, EACH SPIN, EACH WIN), never A FIGHT / PER FIGHT / EVERY FIGHT.

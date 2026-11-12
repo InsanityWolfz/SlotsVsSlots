@@ -162,8 +162,8 @@ export function effectText(sym: SymbolId, amount: number): string {
   const jackpot = amount >= JACKPOT_PAY;
   const n = statusSize(amount);
   const s = (k: number, one: string, many = `${one}S`) => `${k} ${k === 1 ? one : many}`;
-  // (A status on your reels lasts through your own spins: FOR 2 OF YOUR SPINS.)
-  const yours = (k: number) => `${k} OF YOUR SPINS`;
+  // (A status on your reels lasts through your own spins. The line is about your reels, so FOR 2 SPINS says it.)
+  const yours = (k: number) => s(k, 'SPIN');
   switch (sym) {
     case 'slime':
       return `SPILLS ON ${s(Math.round(amount / UNIT), 'SYMBOL')}`;

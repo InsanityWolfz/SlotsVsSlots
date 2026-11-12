@@ -301,9 +301,9 @@ describe('JACKPOT BELL (bell) on KNIGHT: JACKPOTS PAY X2', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('RABBIT\'S FOOT (phoenix): SURVIVE 1 KILLING HIT AT 1 HP EACH FIGHT', () => {
+describe('RABBIT\'S FOOT (phoenix): SURVIVE 1 KILLING HIT EACH FIGHT WITH 1 HP', () => {
   it('texts', () => {
-    for (const cab of MACHINES) expect(face('phoenix', cab)).toEqual({ full: 'SURVIVE 1 KILLING HIT AT 1 HP EACH FIGHT', short: 'SURVIVE 1 KILLING HIT AT 1 HP EACH FIGHT' });
+    for (const cab of MACHINES) expect(face('phoenix', cab)).toEqual({ full: 'SURVIVE 1 KILLING HIT EACH FIGHT WITH 1 HP', short: 'SURVIVE 1 KILLING HIT EACH FIGHT WITH 1 HP' });
   });
   const hitMe = (f: Fight, hp: number) => {
     f.sides.player.hp = hp;

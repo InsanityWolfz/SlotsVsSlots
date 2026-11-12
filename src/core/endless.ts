@@ -40,7 +40,7 @@ export const NIGHTS: Record<NightId, { title: string; text: string }> = {
   happy: { title: 'HAPPY HOUR', text: 'JACKPOTS PAY X2' },
   limit: { title: 'HIGH LIMIT', text: 'WINS PAY X2 CHIPS. ENEMIES HAVE 15% MORE HP' },
   lucky: { title: 'LUCKY NIGHT', text: 'EVERY REEL HAS 2 MORE WILDS' },
-  showdown: { title: 'SHOWDOWN', text: 'EVERY HIT PAYS X1.5' },
+  showdown: { title: 'SHOWDOWN', text: 'BOTH MACHINES HIT X1.5' },
   iron: { title: 'IRON NIGHT', text: 'SHIELDS BLOCK X2' },
   fast: { title: 'FAST NIGHT', text: 'ABILITIES CHARGE 1 SPIN FASTER. METERS FILL 50% FASTER' },
 };

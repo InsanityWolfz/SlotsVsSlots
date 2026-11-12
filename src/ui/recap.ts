@@ -22,9 +22,9 @@ const ROWS: Row[] = [
   ['LIGHTNING DAMAGE', n('specialDamage'), null],
   ['LIGHTNING CHARGED', n('energyGained'), null],
   ['SYMBOLS SPILLED ON', null, n('slimeApplied')],
-  ['SPILLS WITH NO ROOM', null, n('slimeWasted')],
+  ['SPILLS THAT FOUND NO ROOM', null, n('slimeWasted')],
   ['SYMBOLS MOPPED UP', n('cellsCleansed'), null],
-  ['MOST OF YOUR REELS SPILLED', (s) => `${Math.round(s.peakSlimePct * 100)}%`, null],
+  ['MOST SYMBOLS SPILLED AT ONCE', (s) => `${Math.round(s.peakSlimePct * 100)}%`, null],
 ];
 
 /** Scale every integer inside a string by progress, so "3 (30)" ticks up as a whole. */

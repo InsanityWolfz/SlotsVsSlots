@@ -75,7 +75,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // STAR CHART (2026-10-15): the build for uncapped symbol levels (Balatro's Telescope, in spirit).
   starchart: { id: 'starchart', name: 'STAR CHART', text: 'SYMBOL LEVELS YOU GAIN ARE DOUBLED', sprite: 'relicStarchart' },
   bell: { id: 'bell', name: 'JACKPOT BELL', text: 'JACKPOTS PAY X2 AND FILL YOUR METER', sprite: 'relicBell' },
-  phoenix: { id: 'phoenix', name: "RABBIT'S FOOT", text: 'SURVIVE 1 KILLING HIT AT 1 HP EACH FIGHT', sprite: 'relicPhoenix' },
+  phoenix: { id: 'phoenix', name: "RABBIT'S FOOT", text: 'SURVIVE 1 KILLING HIT EACH FIGHT WITH 1 HP', sprite: 'relicPhoenix' },
   overcharge: { id: 'overcharge', name: 'OVERCHARGE', text: 'EACH METER PAYOFF HITS AGAIN FOR 1/3 DAMAGE', sprite: 'relicOvercharge' },
   key: { id: 'key', name: 'LOADED DICE', text: 'YOUR PAIRS PAY X2', sprite: 'relicKey' },
   sandglass: { id: 'sandglass', name: 'GOLDEN HOURGLASS', text: 'ENEMY ABILITIES TAKE 1 MORE SPIN TO CHARGE. THE WHEEL AND THE DEALER ARE NOT SLOWED', sprite: 'relicSandglass' },
@@ -84,13 +84,13 @@ export const RELICS: Record<RelicId, RelicDef> = {
   tower: { id: 'tower', name: 'TOWER SHIELD', text: 'KEEP 25% OF YOUR LEFTOVER SHIELD EACH SPIN, UP TO 10% OF YOUR MAX HP', sprite: 'relicTower', machine: 'knight' },
   capacitor: { id: 'capacitor', name: 'CAPACITOR', text: '25% OF LEFTOVER SHIELD CHARGES LIGHTNING', sprite: 'relicCapacitor', machine: 'tesla' },
   livewire: { id: 'livewire', name: 'LIVE WIRE', text: 'LIGHTNING DEALS 30% MORE DAMAGE. LIGHTNING STORMS COST 1 HP EACH', sprite: 'relicLivewire', machine: 'tesla' },
-  encore: { id: 'encore', name: 'ENCORE', text: 'YOUR JACKPOT METER KEEPS 30 AFTER IT PAYS', sprite: 'relicEncore', machine: 'joker' },
+  encore: { id: 'encore', name: 'ENCORE', text: 'YOUR JACKPOT METER KEEPS 30% WHEN IT PAYS', sprite: 'relicEncore', machine: 'joker' },
   // (WILD WHEEL is gone, user 2026-10-14: "the better result" was a judgement call, not a rule.)
   // CONTENT WAVE 1, part 2.
-  coup: { id: 'coup', name: 'COUP DE GRACE', text: 'SWORDS PAY X2 WHILE YOU HAVE MORE HP LEFT THAN THE ENEMY', sprite: 'relicCoup', machine: 'knight' },
+  coup: { id: 'coup', name: 'COUP DE GRACE', text: 'SWORDS PAY X2 WHILE THE ENEMY HAS LESS HP THAN YOU', sprite: 'relicCoup', machine: 'knight' },
   compound: { id: 'compound', name: 'COMPOUND', text: `HIGH ROLLER GOES UP TO X4, NOT X${MIDAS.maxMul}`, sprite: 'relicCompound', machine: 'midas' },
   meltdown: { id: 'meltdown', name: 'MELTDOWN', text: 'LIGHTNING DEALS 1% MORE DAMAGE FOR EACH MISSING HP, UP TO 50%', sprite: 'relicMeltdown', machine: 'tesla' },
-  deckdrum: { id: 'deckdrum', name: 'DECK DRUM', text: 'SPINS THAT PAY ADD 1 CARD DAMAGE FOR THE REST OF THE FIGHT, UP TO 5', sprite: 'relicDeckdrum', machine: 'joker' },
+  deckdrum: { id: 'deckdrum', name: 'DECK DRUM', text: 'EACH SPIN THAT PAYS MAKES CARDS HIT 1 HARDER FOR THE REST OF THE FIGHT, UP TO 5', sprite: 'relicDeckdrum', machine: 'joker' },
   // Charm relics.
   horseshoe: { id: 'horseshoe', name: 'HORSESHOE', text: 'A PAIR OR JACKPOT WITH A LUCKY WILD PAYS X3', sprite: 'relicHorseshoe', charm: 'lucky' },
   // General.
@@ -110,19 +110,19 @@ export const RELICS: Record<RelicId, RelicDef> = {
   // KNIGHT has no meter, so this is its multiplier (2026-10-12: KNIGHT had the lowest multiplier of any machine).
   greatsword: { id: 'greatsword', name: 'GREATSWORD', text: 'YOUR SWORDS PAY X1.5', sprite: 'relicGreatsword', machine: 'knight' },
   // CASH CASSIDY's shield build (user, 2026-10-12): relics that scale with the shield you hold.
-  armoredcar: { id: 'armoredcar', name: 'ARMORED CAR', text: 'HIGH ROLLER COUNTS EVERY 5 SHIELD FROM THAT SPIN AS 1 CHIP. MORE CHIPS MAKE IT HIT HARDER', sprite: 'relicArmoredCar', machine: 'midas' },
-  safedeposit: { id: 'safedeposit', name: 'SAFE DEPOSIT', text: 'ONCE EACH SPIN A CHIP SYMBOL HIT ADDS THE SHIELD YOU GAIN THAT SPIN', sprite: 'relicSafeDeposit', machine: 'midas' },
+  armoredcar: { id: 'armoredcar', name: 'ARMORED CAR', text: 'HIGH ROLLER COUNTS EVERY 5 SHIELD YOU GAIN ON THE SAME SPIN AS 1 CHIP. MORE CHIPS MAKE IT HIT HARDER', sprite: 'relicArmoredCar', machine: 'midas' },
+  safedeposit: { id: 'safedeposit', name: 'SAFE DEPOSIT', text: 'ONCE EACH SPIN A CHIP SYMBOL HIT ALSO HITS FOR THE SHIELD YOU GAIN THAT SPIN', sprite: 'relicSafeDeposit', machine: 'midas' },
   subwoofer: { id: 'subwoofer', name: 'SUBWOOFER', text: 'THE DROP ALSO DEALS YOUR SHIELD AS DAMAGE', sprite: 'relicSubwoofer', machine: 'jukebox' },
   // The user's picks from the content list (2026-10-14).
-  dryspell: { id: 'dryspell', name: 'DRY SPELL', text: 'BUILD-UP GROWS 50% EACH SPIN UP TO X4', sprite: 'relicDrySpell' },
+  dryspell: { id: 'dryspell', name: 'DRY SPELL', text: 'BUILD-UP GROWS 50% EACH SPIN, UP TO X4', sprite: 'relicDrySpell' },
   punchcard: { id: 'punchcard', name: 'PUNCH CARD', text: 'PICK A LEGENDARY RELIC EVERY 6 FIGHTS YOU WIN', sprite: 'relicPunchCard' },
   goldenspin: { id: 'goldenspin', name: 'GOLDEN SPIN', text: 'EACH SPIN HAS A 10% CHANCE TO PAY X3', sprite: 'relicGoldenSpin' },
   insurance: { id: 'insurance', name: 'INSURANCE POLICY', text: 'GAIN 100 SHIELD UNDER 25% HP ONCE EACH FIGHT', sprite: 'relicInsurance' },
   housetax: { id: 'housetax', name: 'HOUSE TAX', text: 'EACH ENEMY JACKPOT PAYS YOU 5 CHIPS', sprite: 'relicHouseTax' },
   regular: { id: 'regular', name: 'REGULAR', text: 'TABLE GAMES GIVE YOU 2 MORE PLAYS', sprite: 'relicRegular' },
-  hitmaker: { id: 'hitmaker', name: 'CERTIFIED HITMAKER', text: 'EACH DROP HITS 60% HARDER PER DROP SO FAR THIS FIGHT', sprite: 'relicHitmaker', machine: 'jukebox' },
+  hitmaker: { id: 'hitmaker', name: 'CERTIFIED HITMAKER', text: 'EACH DROP MAKES LATER DROPS HIT 60% HARDER THIS FIGHT', sprite: 'relicHitmaker', machine: 'jukebox' },
   houseofcards: { id: 'houseofcards', name: 'HOUSE OF CARDS', text: 'EACH METER PAYOFF GIVES YOUR REELS 2 TEMPORARY WILDS. THEY LAST UNTIL THE FIGHT ENDS', sprite: 'relicHouseOfCards', machine: 'joker' },
-  parachute: { id: 'parachute', name: 'GOLDEN PARACHUTE', text: 'FOR 10 CHIPS SURVIVE 1 KILLING HIT AT 25% HP EACH FIGHT', sprite: 'relicParachute', machine: 'midas' },
+  parachute: { id: 'parachute', name: 'GOLDEN PARACHUTE', text: 'FOR 10 CHIPS SURVIVE 1 KILLING HIT EACH FIGHT WITH 25% HP', sprite: 'relicParachute', machine: 'midas' },
   // The BIG CHOICES that stayed, as legendary relics (user, 2026-10-15). Each keeps its price, said on the card.
   secondline: { id: 'secondline', name: 'SECOND PAYLINE', text: `THE ROW ABOVE YOUR PAYLINE PAYS HALF, FOR PAIRS AND JACKPOTS ONLY. ENEMIES HIT ${pct(LEGEND_RELIC.lineDmg - 1)}% HARDER`, sprite: 'relicLoadedreel' },
   devilsdue: { id: 'devilsdue', name: 'SECOND MORTGAGE', text: `EVERYTHING PAYS X${LEGEND_RELIC.devilPay}. WINS COST ${pct(LEGEND_RELIC.devilDecay)}% OF YOUR MAX HP EACH`, sprite: 'relicChalice' },
@@ -135,7 +135,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   hypeman: { id: 'hypeman', name: 'HYPE MAN', text: 'VOLUME RISES 1 EVERY 2 SPINS. NOTES PAY HALF EXCEPT ON THE DROP', sprite: 'relicPulse', machine: 'jukebox' },
   openbar: { id: 'openbar', name: 'OPEN BAR', text: 'MAKE IT RAIN IS FREE. WINS PAY NO CHIPS', sprite: 'relicTipJar', machine: 'midas' },
   // The content batch (user, 2026-11-07).
-  lean: { id: 'lean', name: 'LEAN MACHINE', text: `SYMBOLS ON A REEL OF ${CONTENT_1107.leanCells} OR FEWER PAY X${CONTENT_1107.leanMul}`, sprite: 'relicLean' },
+  lean: { id: 'lean', name: 'LEAN MACHINE', text: `A REEL WITH ${CONTENT_1107.leanCells} SYMBOLS OR FEWER PAYS X${CONTENT_1107.leanMul}`, sprite: 'relicLean' },
   steadyhands: { id: 'steadyhands', name: 'STEADY HANDS', text: `HELD JACKPOTS PAY X${CONTENT_1107.steadyMul}. GAIN ${CONTENT_1107.steadyHolds} HOLD EACH FIGHT`, sprite: 'relicSteady' },
   pairstreak: { id: 'pairstreak', name: 'PAIR STREAK', text: `ATTACK PAIRS IN A ROW PAY X${1 + CONTENT_1107.streakStep}, THEN X${1 + 2 * CONTENT_1107.streakStep}, THEN X${CONTENT_1107.streakCap}. A SPIN WITHOUT ONE RESETS IT`, sprite: 'relicPairStreak' },
   sticky: { id: 'sticky', name: 'STICKY FINGERS', text: `SABOTAGE PAYS YOU UP TO ${CONTENT_1107.stickyMax} CHIPS EACH FIGHT. YOU GET ${CONTENT_1107.stickyChips} FOR EACH SYMBOL OR REEL SABOTAGED`, sprite: 'relicSticky' },
@@ -149,19 +149,19 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
   fang: {
     tesla: 'EACH LIGHTNING STORM HEALS 15 MORE HP',
     midas: 'HIGH ROLLER HEALS 30 MORE HP',
-    joker: 'ALL JACKPOTS HEALS 30 MORE HP',
+    joker: 'ALL JACKPOTS SPINS HEAL 30 MORE HP',
     jukebox: 'THE DROP HEALS 30 MORE HP',
   },
   overcharge: {
     tesla: 'LIGHTNING DEALS 30% MORE DAMAGE',
     midas: 'HIGH ROLLER HITS AGAIN FOR 1/3 DAMAGE',
-    joker: 'ALL JACKPOTS HITS AGAIN FOR 1/3 DAMAGE',
+    joker: 'ALL JACKPOTS SPINS HIT AGAIN FOR 1/3 DAMAGE',
   },
   bell: {
     knight: 'JACKPOTS PAY X2',
     tesla: 'JACKPOTS PAY X2 AND FULLY CHARGE LIGHTNING',
     midas: 'JACKPOTS PAY X2 AND FILL HIGH ROLLER',
-    joker: "JACKPOTS PAY X1.25 AND FILL THE METER. ALL JACKPOTS DOESN'T REFILL IT",
+    joker: "JACKPOTS PAY X1.25 AND FILL THE METER. A JACKPOT ON AN ALL JACKPOTS SPIN DOESN'T FILL IT",
     jukebox: "JACKPOTS PAY X2 AND FILL THE VOLUME. A JACKPOT ON THE DROP DOESN'T FILL IT",
   },
   // (TESLA's is the user's line, 2026-11-12: LIGHTNING charges, the other meters fill. THE JUKEBOX's volume is a number.)
@@ -173,7 +173,8 @@ const MACHINE_TEXT: Partial<Record<RelicId, Partial<Record<CabinetId, string>>>>
   },
 };
 /** Machines that attack with something other than swords: relic texts name their symbol instead. */
-const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP', tesla: 'BOLT', jukebox: 'NOTE' };
+// (BANKROLL's reel symbol is a CHIP SYMBOL: CHIPS alone are money. Term sheet rule 14.)
+const ATTACK_WORD: Partial<Record<CabinetId, string>> = { joker: 'CARD', midas: 'CHIP SYMBOL', tesla: 'BOLT', jukebox: 'NOTE' };
 const METER_WORD: Partial<Record<CabinetId, string>> = { tesla: 'LIGHTNING', midas: 'HIGH ROLLER', joker: 'JACKPOT METER', jukebox: 'VOLUME' };
 export const relicText = (r: RelicId, cabinet?: CabinetId | null) => {
   const t = (cabinet && MACHINE_TEXT[r]?.[cabinet]) ?? RELICS[r].text;

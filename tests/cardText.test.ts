@@ -12,6 +12,8 @@ describe('card faces fit two lines', () => {
     const over: string[] = [];
     for (const id of Object.keys(RELICS) as RelicId[])
       for (const cab of ALL_CABINETS) {
+        // (A machine's own relic is only offered on that machine: nobody reads CRUSADE's text on BANKROLL.)
+        if (RELICS[id].machine && RELICS[id].machine !== cab) continue;
         const t = shortRelicText(id, relicText(id, cab));
         if (wrap(t, CARD_COLS).length > (THREE_LINES.includes(id) ? 3 : 2)) over.push(`${id}/${cab}: ${t}`);
       }

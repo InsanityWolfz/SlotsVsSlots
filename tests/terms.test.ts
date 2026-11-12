@@ -16,6 +16,9 @@ const RETIRED: [string, RegExp][] = [
   ['cabinet, gild, cell', /\bCABINETS?\b|\bGILD(ED|S)?\b|\bCELLS?\b/],
   ['memo words (rule 11)', /\bRETAINS?\b|\bREFUNDS?\b|\bVOID\b|\bINCREASES TO\b/],
   ['a semicolon (rule 11)', /;/],
+  // Rule 1 (user, 2026-11-12): EVERY 3 OF HIS SPINS and FOR 2 OF YOUR SPINS read as a template. An enemy's own card
+  // says EVERY 3 SPINS, a status on your reels FOR 2 SPINS. A line that must name the owner goes in ALLOW with why.
+  ['OF HIS / HER / THEIR / YOUR SPINS (rule 1: EVERY 3 SPINS, FOR 2 SPINS)', /\bOF (HIS|HER|THEIR|YOUR) SPINS?\b/],
 ];
 /** Exact lines that keep a retired word on purpose. */
 const ALLOW = new Set<string>([

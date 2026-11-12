@@ -55,7 +55,7 @@ describe('the four relics: tiers, faces and offers', () => {
     for (const r of NEW) expect(LEGENDARY.has(r)).toBe(false);
   });
   it('their full texts, the same on every machine, and card faces of two lines', () => {
-    expect(RELICS.lean.text).toBe('SYMBOLS ON A REEL OF 11 OR FEWER PAY X1.5');
+    expect(RELICS.lean.text).toBe('A REEL WITH 11 SYMBOLS OR FEWER PAYS X1.5');
     expect(RELICS.steadyhands.text).toBe('HELD JACKPOTS PAY X2. GAIN 1 HOLD EACH FIGHT');
     expect(RELICS.pairstreak.text).toBe('ATTACK PAIRS IN A ROW PAY X1.5, THEN X2, THEN X2.5. A SPIN WITHOUT ONE RESETS IT');
     expect(RELICS.sticky.text).toBe('SABOTAGE PAYS YOU UP TO 5 CHIPS EACH FIGHT. YOU GET 1 FOR EACH SYMBOL OR REEL SABOTAGED');

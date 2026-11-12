@@ -90,7 +90,7 @@ export abstract class EncounterScreen extends ClawScreen {
     if (this.encId === 'claw')
       return {
         line: 'PICK A PRIZE. A MISS DRAGS IT CLOSER TO THE CHUTE',
-        full: [`EACH TRY COSTS ${atStakes(run, CLAW.price)} CHIPS. YOU GET ${CLAW.tries + extraPlays(run)} TRIES.`, 'EASY GRABS HOLD MORE OFTEN THAN HARD ONES.', 'A MISS MAKES THAT PRIZE EASIER TO GRAB NEXT TIME.', 'A PRIZE YOU WIN LEAVES THE PIT.'],
+        full: [`EACH TRY COSTS ${atStakes(run, CLAW.price)} CHIPS. YOU GET ${CLAW.tries + extraPlays(run)} TRIES.`, 'EASY GRABS HOLD MORE OFTEN THAN HARD ONES.', 'A PRIZE CLOSER TO THE CHUTE IS EASIER TO GRAB.', 'A PRIZE YOU WIN LEAVES THE PIT.'],
       };
     return null;
   }

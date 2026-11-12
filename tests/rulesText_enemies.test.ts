@@ -1,6 +1,6 @@
 /**
  * Rules text (QA RULES stream, 2026-11-09): every enemy card's ability line (front: abilityWhat, back: abilityText
- * "... ON THEIR FIRST SPIN AND THEN EVERY N OF THEIR SPINS") and the bosses' rules against the engine, in a real run fight (fightConfig) where the
+ * "... STARTS ON THEIR FIRST SPIN AND REPEATS EVERY N") and the bosses' rules against the engine, in a real run fight (fightConfig) where the
  * cadence matters. The cards now read their clocks from the fight's own setup (fightSetup shownAbility).
  */
 import { describe, expect, it } from 'vitest';
@@ -61,19 +61,19 @@ function longFight(r: RunState): Fight {
 
 describe('enemy card fronts: one line of what the ability does (WHITE, act of the enemy)', () => {
   const want: Record<string, string> = {
-    slime: 'SPILLS 3 OF YOUR SYMBOLS',
+    slime: 'SPILLS ON 3 OF YOUR SYMBOLS',
     brute: 'SWINGS FOR 40',
-    frost: 'FREEZES 1 REEL FOR 2 OF YOUR SPINS',
+    frost: 'FREEZES 1 REEL FOR 2 SPINS',
     thief: 'STEALS 1 SYMBOL',
     golem: 'ADDS 2 ROCKS TO YOUR REELS',
-    gremlin: 'JAMS 1 REEL FOR 1 OF YOUR SPINS',
+    gremlin: 'JAMS 1 REEL FOR 1 SPIN',
     bomber: 'STICKS 2 IOUS ON YOUR SYMBOLS',
-    hexer: 'JINXES 1 REEL FOR 3 OF YOUR SPINS',
+    hexer: 'JINXES 1 REEL FOR 3 SPINS',
     vampire: 'HEALS 80 HP',
     counterfeiter: 'TAKES 2 OF YOUR CHIPS AND HEALS 60',
     sharp: 'MARKS 3 OF YOUR SYMBOLS',
     pitboss: 'TAKES 2 OF YOUR CHARMS FOR THE FIGHT AND HITS FOR 40',
-    croupier: 'RAKES YOUR PAYS FOR 3 OF YOUR SPINS',
+    croupier: 'RAKES YOUR PAYS FOR 3 SPINS',
     repo: 'TAKES A CHARM FOR THE FIGHT',
   };
   for (const [id, text] of Object.entries(want)) it(`${id}: ${text}`, () => expect(abilityWhat(runVs(id).enemies[runVs(id).depth], runVs(id))).toBe(text));
@@ -192,17 +192,17 @@ describe('the ability does what the card says (a real run fight, WHITE)', () => 
   });
 });
 
-/** The spin an enemy card's back says its ability first fires on, and how often after ("ON THEIR SECOND SPIN AND THEN EVERY 4 OF THEIR SPINS"). */
+/** The spin an enemy card's back says its ability first fires on, and how often after ("STARTS ON THEIR SECOND SPIN AND REPEATS EVERY 4"). */
 const ORDINALS = ['', 'FIRST', 'SECOND', 'THIRD', 'FOURTH', 'FIFTH', 'SIXTH'];
 function cardClock(text: string): [number, number] {
-  const m = / ON THEIR (\w+) SPIN AND THEN EVERY (\d+) OF THEIR SPINS$/.exec(text)!;
+  const m = /\. STARTS ON THEIR (\w+) SPIN AND REPEATS EVERY (\d+)$/.exec(text)!;
   return [ORDINALS.indexOf(m[1]), Number(m[2])];
 }
 
-describe('enemy card backs: "EVERY N OF THEIR SPINS" against the fight\'s clock', () => {
-  it('act 1 regulars: the card says ON THEIR FIRST SPIN AND THEN EVERY 3 OF THEIR SPINS, and the ability fires on the enemy\'s spin 1, then every 3', () => {
+describe('enemy card backs: "STARTS ON THEIR FIRST SPIN AND REPEATS EVERY N" against the fight\'s clock', () => {
+  it('act 1 regulars: the card says STARTS ON THEIR FIRST SPIN AND REPEATS EVERY 3, and the ability fires on the enemy\'s spin 1, then every 3', () => {
     const r = runVs('slime');
-    expect(abilityText(r.enemies[r.depth], cardEvery(r), r)).toBe('SPILLS 3 OF YOUR SYMBOLS ON THEIR FIRST SPIN AND THEN EVERY 3 OF THEIR SPINS');
+    expect(abilityText(r.enemies[r.depth], cardEvery(r), r)).toBe('SPILLS ON 3 OF YOUR SYMBOLS. STARTS ON THEIR FIRST SPIN AND REPEATS EVERY 3');
     expect(fireTurns(longFight(r), 16)).toEqual([1, 4, 7]);
   });
   for (const id of ['slime', 'gremlin', 'bomber', 'sharp'])
@@ -215,7 +215,7 @@ describe('enemy card backs: "EVERY N OF THEIR SPINS" against the fight\'s clock'
     const r = runVs('slime', { relics: ['sandglass'] });
     expect(cardEvery(r)).toBe(longFight(r).sides.enemy.ability!.every);
   });
-  it('the card\'s first spin is the spin the fight fires first (the Hourglass: ON THEIR SECOND SPIN AND THEN EVERY 4 OF THEIR SPINS)', () => {
+  it('the card\'s first spin is the spin the fight fires first (the Hourglass: STARTS ON THEIR SECOND SPIN AND REPEATS EVERY 4)', () => {
     const r = runVs('slime', { relics: ['sandglass'] });
     const text = abilityText(r.enemies[r.depth], cardEvery(r), r);
     const [first, every] = cardClock(text);
@@ -238,7 +238,7 @@ describe('boss rules vs the fight', () => {
     const r = bossRun(2, { relics: ['quickening'] });
     const every = shownAbility(r, WHEEL.ability!, 'wheel').every;
     const text = bossRules('wheel', { stake: 0, cabinet: 'tesla', houseEvery: 3, wheelEvery: every }).rules[1].text;
-    expect(text.startsWith(`EVERY ${longFight(r).sides.enemy.ability!.every} OF HER SPINS SHE CALLS NO MORE BETS`)).toBe(true);
+    expect(text.startsWith(`EVERY ${longFight(r).sides.enemy.ability!.every} SPINS SHE CALLS NO MORE BETS`)).toBe(true);
     expect(every).toBe(3);
   });
   it("THE HOUSE with ESPRESSO SHOT: the pre-fight card's EVERY N (houseEvery) matches the fight's skim clock", () => {
@@ -246,11 +246,11 @@ describe('boss rules vs the fight', () => {
     const shown = shownAbility(r, { kind: 'jackpot', every: POT.cashEvery, power: 1 }, 'house').every;
     expect(shown).toBe(longFight(r).sides.enemy.ability!.every);
   });
-  it('THE HOUSE: "EVERY 3 OF HIS SPINS HE SKIMS" - its first skim lands on its 4th turn, then every 3', () => {
+  it('THE HOUSE: "EVERY 3 SPINS HE SKIMS" - its first skim lands on its 4th turn, then every 3', () => {
     const r = bossRun(1);
     expect(fireTurns(longFight(r), 18)).toEqual([4, 7]);
   });
-  it('THE HOUSE: "FROM SPIN 20 HE SKIMS ON EACH OF HIS SPINS" - it skims on spins 20, 22, 24...', () => {
+  it('THE HOUSE: "FROM SPIN 20 HE SKIMS EVERY TIME HE SPINS" - it skims on spins 20, 22, 24...', () => {
     const r = bossRun(1);
     const f = longFight(r);
     const spins: number[] = [];
@@ -260,7 +260,7 @@ describe('boss rules vs the fight', () => {
     }
     const late = spins.filter((t) => t >= 18);
     expect(late.slice(0, 3)).toEqual([20, 22, 24]);
-    expect(bossRules('house', { stake: 0, houseEvery: 3 }).rules.map((x) => x.text).join(' ')).toContain('FROM SPIN 20 HE SKIMS ON EACH OF HIS SPINS');
+    expect(bossRules('house', { stake: 0, houseEvery: 3 }).rules.map((x) => x.text).join(' ')).toContain('FROM SPIN 20 HE SKIMS EVERY TIME HE SPINS');
   });
   it('THE HOUSE: "YOUR JACKPOTS WIN HIS POT AND HIT HIM WITH IT" - a jackpot empties the pot onto him, past his shield', () => {
     const f = longFight(bossRun(1, { cab: 'knight' }));
@@ -290,7 +290,7 @@ describe('ENDLESS: the boss cards against the loop fights', () => {
     const f = new Fight(fightConfig(r, defaultConfig()), 3);
     expect(n).toBe(f.betPer());
   });
-  it("the loop HOUSE's card (houseEvery: 'EVERY N OF HIS SPINS HE SKIMS') says the N the fight plays", () => {
+  it("the loop HOUSE's card (houseEvery: 'EVERY N SPINS HE SKIMS') says the N the fight plays", () => {
     const r = loopRun('house');
     const shown = shownAbility(r, { kind: 'jackpot', every: POT.cashEvery, power: 1 }, 'house').every;
     const f = new Fight(fightConfig(r, defaultConfig()), 3);
@@ -378,7 +378,7 @@ describe('FREEZE (glossary): "A FROZEN REEL DOESN\'T SPIN. AS IT FREEZES IT CAN 
 });
 
 describe("THE WHEEL's rules card names every rule that changes how you beat it", () => {
-  it('a hit big enough to kill THE WHEEL from full HP stops at half HP, as her rules say (THE SPIN ... STOPS THERE)', () => {
+  it('a hit big enough to kill THE WHEEL from full HP stops at half HP, as her rules say (THE SPIN ... CAN NOT HURT HER MORE)', () => {
     const c = defaultConfig();
     c.seed = 4;
     c.player = { hp: 400, strips: reels3({ sword: 12 }) };
@@ -388,7 +388,7 @@ describe("THE WHEEL's rules card names every rule that changes how you beat it",
     f.forceNext('player', ['sword', 'sword', 'sword']);
     f.step();
     const text = bossRules('wheel', { stake: 0, cabinet: 'knight', houseEvery: 3 }).rules.map((r) => r.text).join(' ');
-    expect(text).toMatch(/THE SPIN THAT TAKES HER TO HALF HP STOPS THERE/);
+    expect(text).toMatch(/THE SPIN THAT TAKES HER TO HALF HP CAN'T HURT HER MORE/);
     expect(f.sides.enemy.hp).toBe(2000);
   });
 });

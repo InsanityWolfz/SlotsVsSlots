@@ -240,7 +240,7 @@ describe('AUDIT: KEEN "HITS FOR 40 MORE AND PIERCES SHIELDS. SO DOES EVERY SYMBO
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: CHARGED "CHARGES 10 MORE LIGHTNING", the card the same (TESLA)', () => {
+describe('AUDIT: CHARGED "CHARGES LIGHTNING BY 10 MORE", the card the same (TESLA)', () => {
   const plain = groupAfter('tesla', { strips: TESLA() }, BBB, 'bolt');
 
   it('+10 to the bolt group BASE (once per charged cell, not per bolt)', () => {
@@ -259,7 +259,7 @@ describe('AUDIT: CHARGED "CHARGES 10 MORE LIGHTNING", the card the same (TESLA)'
     const p = groupAfter('tesla', { strips: TESLA(), relics: ['ticket'] }, BBB, 'bolt');
     const g = groupAfter('tesla', { strips: TESLA(), gilded: [on(0, 'bolt', 'charged')], relics: ['ticket'] }, BBB, 'bolt');
     expect(g.base - p.base).toBe(20);
-    expect(charmShortText('charged', 2)).toBe('CHARGES 20 MORE LIGHTNING');
+    expect(charmShortText('charged', 2)).toBe('CHARGES LIGHTNING BY 20 MORE');
   });
 
   // UNCLEAR: the +10 is BASE, so a jackpot multiplies it (+30 charge before TESLA's own boosts): "+10 CHARGE" undersells.
@@ -491,7 +491,7 @@ describe('AUDIT: CHIP (lucre) "GIVES 3 CHIPS WHEN IT PAYS, UP TO 6 EACH FIGHT. Y
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: TRICK "FILLS YOUR JACKPOT METER BY 30 WHEN IT LANDS ON YOUR PAYLINE" (JOKER)', () => {
+describe('AUDIT: TRICK "FILLS YOUR JACKPOT METER BY 30% WHEN IT LANDS ON YOUR PAYLINE" (JOKER)', () => {
   const meterAfter = (gilded: Gild[], line: SymbolId[], relics: RelicId[] = []) => {
     const f = make('joker', { strips: JOKER(), gilded, relics });
     spin(f, line);
@@ -527,12 +527,12 @@ describe('AUDIT: TRICK "FILLS YOUR JACKPOT METER BY 30 WHEN IT LANDS ON YOUR PAY
   it('GOLDEN TICKET: +40', () => {
     const line: SymbolId[] = ['ace', 'shield', 'shield'];
     expect(meterAfter([on(0, 'ace', 'trick')], line, ['ticket']) - meterAfter([], line, ['ticket'])).toBe(40);
-    expect(charmShortText('trick', 2)).toBe('FILLS YOUR JACKPOT METER BY 40');
+    expect(charmShortText('trick', 2)).toBe('FILLS YOUR JACKPOT METER BY 40%');
   });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: ECHO "HITS X2 AT THE DROP", the card the same (JUKEBOX)', () => {
+describe('AUDIT: ECHO "HITS X2 ON THE DROP", the card the same (JUKEBOX)', () => {
   // Reel 0 holds a single note (the ECHO one), so no other ECHO note can sit above or below the payline.
   const strips = (): StripCounts[] => [{ note: 1, shield: 6 }, { note: 6, shield: 6 }, { note: 6, shield: 6 }];
   const drop = (gilded: Gild[], relics: RelicId[] = [], armed = true) => {
@@ -557,7 +557,7 @@ describe('AUDIT: ECHO "HITS X2 AT THE DROP", the card the same (JUKEBOX)', () =>
     expect(Math.abs(e.g.amount - p.g.amount - p.g.amount / p.notes)).toBeLessThanOrEqual(1);
   });
 
-  it('AT THE DROP only: no drop, no echo', () => {
+  it('ON THE DROP only: no drop, no echo', () => {
     expect(drop(echo, [], false).g.amount).toBe(drop([], [], false).g.amount);
   });
 
@@ -565,12 +565,12 @@ describe('AUDIT: ECHO "HITS X2 AT THE DROP", the card the same (JUKEBOX)', () =>
     const p = drop([], ['ticket']);
     const e = drop(echo, ['ticket']);
     expect(e.g.mult / p.g.mult).toBeCloseTo(1 + 1.5 / p.notes, 9);
-    expect(charmShortText('echo', 2)).toBe('HITS X2.5 AT THE DROP');
+    expect(charmShortText('echo', 2)).toBe('HITS X2.5 ON THE DROP');
   });
 
   // The card face says what the full rule says: only its note's share doubles (a 3-note drop hits x1.33), not the whole DROP.
   it('the card face names its note, not the whole DROP', () => {
-    expect(charmShortText('echo', 1)).toBe('HITS X2 AT THE DROP');
+    expect(charmShortText('echo', 1)).toBe('HITS X2 ON THE DROP');
     const ratio = drop(echo).g.amount / drop([]).g.amount;
     expect(ratio).toBeGreaterThan(1);
     expect(ratio).toBeLessThan(2);
@@ -674,14 +674,14 @@ describe('AUDIT: card face vs full rule', () => {
     expect(ALL.map((e) => charmShortText(e, 1))).toEqual([
       'PAYS X2',
       'HITS FOR 40 MORE AND PIERCES SHIELDS',
-      'CHARGES 10 MORE LIGHTNING',
+      'CHARGES LIGHTNING BY 10 MORE',
       'HEALS 20 WHEN IT PAYS',
       '40% CHANCE TO LAND AS A WILD',
       'LIGHTNING DEALS 11% MORE DAMAGE',
       'ALSO HITS FOR 100% OF THE SHIELD IT GIVES',
       'GIVES 3 CHIPS WHEN IT PAYS, UP TO 6 EACH FIGHT',
-      'FILLS YOUR JACKPOT METER BY 30',
-      'HITS X2 AT THE DROP',
+      'FILLS YOUR JACKPOT METER BY 30%',
+      'HITS X2 ON THE DROP',
       'PAYS X5. SHATTERS 1 TIME IN 4',
     ]);
   });

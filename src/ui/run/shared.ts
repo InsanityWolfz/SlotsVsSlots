@@ -165,16 +165,16 @@ export function abilityWhat(e: EnemyDef, run?: RunState): string {
   // THE WHEEL: what one chip left on your reels hits for at NO MORE BETS (as the fight does it).
   const per = run ? Math.max(UNIT, unitsRound(run.player.maxHp * wheelChipShare(run.cabinet, !!run.endless))) : 0;
   const what: Record<string, string> = {
-    flood: `SPILLS ${p} OF YOUR SYMBOLS`,
+    flood: `SPILLS ON ${p} OF YOUR SYMBOLS`,
     smash: `SWINGS FOR ${p}`,
     fortify: `GAINS ${p} SHIELD`,
-    blizzard: `FREEZES ${p} REEL${p === 1 ? '' : 'S'} FOR 2 OF YOUR SPINS`,
+    blizzard: `FREEZES ${p} REEL${p === 1 ? '' : 'S'} FOR 2 SPINS`,
     pilfer: `STEALS ${p} SYMBOL${p > 1 ? 'S' : ''}`,
     quake: `ADDS ${p} ROCKS TO YOUR REELS`,
-    jam: `JAMS 1 REEL FOR ${p} OF YOUR SPINS`,
+    jam: `JAMS 1 REEL FOR ${p} SPIN${p === 1 ? '' : 'S'}`,
     jackpot: 'SKIMS HALF THE POT AND HITS YOU WITH IT',
     carpet: `STICKS ${p} IOUS ON YOUR SYMBOLS`,
-    curse: `JINXES ${p} REEL${p > 1 ? 'S' : ''} FOR 3 OF YOUR SPINS`,
+    curse: `JINXES ${p} REEL${p > 1 ? 'S' : ''} FOR 3 SPINS`,
     bloodmoon: `HEALS ${p} HP`,
     gulp: `EATS ${p} OF YOUR CHIPS`,
     bets: per ? `EACH BET LEFT ON YOUR REELS HITS FOR ${per}` : `EACH BET LEFT ON YOUR REELS HITS FOR ${Math.round(wheelChipShare(undefined) * 100)}% OF YOUR MAX HP`,
@@ -182,7 +182,7 @@ export function abilityWhat(e: EnemyDef, run?: RunState): string {
     mark: `MARKS ${p} OF YOUR SYMBOLS`,
     penalty: `TAKES 2 OF YOUR CHARMS FOR THE FIGHT AND HITS FOR ${p}`,
     repo: 'TAKES A CHARM FOR THE FIGHT',
-    houseTake: `RAKES YOUR PAYS FOR ${p} OF YOUR SPINS`,
+    houseTake: `RAKES YOUR PAYS FOR ${p} SPIN${p === 1 ? '' : 'S'}`,
     deal: 'DEALS A BUST',
     owner: 'SWAPS BETWEEN A NEW SABOTAGE AND THE HAMMER',
     hammer: `HITS FOR ${Math.round(OWNER_RULES.hammer * 100)}% OF YOUR MAX HP AND PIERCES SHIELDS`,
@@ -196,10 +196,11 @@ const nth = (n: number) => ORDINAL[n] ?? `${n}TH`;
 
 export function abilityText(e: EnemyDef, every: number, run?: RunState): string {
   if (!e.ability) return '';
-  // One shape for every enemy (playtest 2026-11-03: "STEAL EVERY 3 TURNS: STEALS 1 SYMBOL" said it twice): what, then when,
-  // as one sentence. The clock counts the enemy's own spins (the term sheet, 2026-11-12: SPIN, never TURN; THEIR SPINS,
-  // or HIS where the game names a man).
-  if (e.ability.kind === 'deal') return `DEALS A BUST EVERY ${every} OF HIS SPINS. HE PLAYS 3 HANDS AND EACH IS HARDER`;
+  // One shape for every enemy (playtest 2026-11-03: "STEAL EVERY 3 TURNS: STEALS 1 SYMBOL" said it twice): what, then
+  // when, in two short sentences. On an enemy's own card the clock is theirs, so EVERY 3 SPINS needs no owner (the term
+  // sheet's rule 1, user 2026-11-12: "EVERY 3 OF THEIR SPINS" read as a template). The first spin keeps THEIR: the
+  // fight's own SPIN n counter counts both machines, so a bare SPIN 2 would point at the wrong spin.
+  if (e.ability.kind === 'deal') return `DEALS A BUST EVERY ${every} SPINS. HE PLAYS 3 HANDS AND EACH IS HARDER`;
   // The first spin it fires on, from the fight's own head start (QA RULES-15: regulars fire on their first spin, the card said EVERY 3).
   const first = every - startCharge({ ...e.ability, every }, { regular: !e.isBoss, act: e.act ?? run?.act ?? 1, endless: !!run?.endless });
   // THE REPO MAN takes on his first spin and once more, then he's done (QA RULES-03).
@@ -208,8 +209,10 @@ export function abilityText(e: EnemyDef, every: number, run?: RunState): string 
     if (spins.length < 2) return `TAKES A CHARM FOR THE FIGHT ON HIS ${spins[0]} SPIN`;
     return `TAKES A CHARM FOR THE FIGHT ON HIS ${spins.slice(0, -1).join(', ')} AND ${spins[spins.length - 1]} SPINS`;
   }
-  if (first < every) return `${abilityWhat(e, run)} ON THEIR ${nth(first)} SPIN AND THEN EVERY ${every} OF THEIR SPINS`;
-  return `${abilityWhat(e, run)} EVERY ${every} OF THEIR SPINS`;
+  const what = abilityWhat(e, run);
+  if (first < every) return `${what}. STARTS ON THEIR ${nth(first)} SPIN AND REPEATS EVERY ${every}`;
+  // (FREEZES 1 REEL FOR 2 SPINS EVERY 3 SPINS would say SPINS twice.)
+  return / SPINS?$/.test(what) ? `${what}. REPEATS EVERY ${every} SPINS` : `${what} EVERY ${every} SPINS`;
 }
 
 /** The stage light behind each enemy's portrait (the panel's front). */

@@ -126,7 +126,7 @@ export async function storm(d: Director, group: CombatEvent[]): Promise<void> {
   const e0 = h.energy;
   let forks = 0;
   let crackles = 0;
-  d.bg(d.banner(`LIGHTNING STORM X${n}`, COLORS.energy, 1.2, Math.max(0.2, dur - 0.6), '', BANNER_Y, 4));
+  d.bg(d.banner('LIGHTNING STORM!', COLORS.energy, 1.2, Math.max(0.2, dur - 0.6), `${n} STRIKE${n === 1 ? '' : 'S'}`, BANNER_Y, 4));
   await d.c.tween({
     dur,
     onUpdate: (v) => {

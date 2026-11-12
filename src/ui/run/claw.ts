@@ -106,7 +106,7 @@ export abstract class ClawScreen extends CardGames {
     const goes = done ? 0 : Math.max(0, CLAW.tries + extraPlays(run) - (run.encounterPlays ?? 0));
     // (Short of a go: say so, or every GO button was off with no word why.)
     const price = atStakes(run, CLAW.price);
-    drawText(ctx, run.player.chips < price && !this.cwMsg && !this.heldBuild ? `${price} CHIPS A TRY. YOU HAVE ${run.player.chips}` : `${price} CHIPS A TRY`, TCX, 72, T.small, run.player.chips < price && !this.cwMsg && !this.heldBuild ? '#ff8a7a' : KIT.dim);
+    drawText(ctx, run.player.chips < price && !this.cwMsg && !this.heldBuild ? `${price} CHIPS EACH TRY. YOU HAVE ${run.player.chips}` : `${price} CHIPS EACH TRY`, TCX, 72, T.small, run.player.chips < price && !this.cwMsg && !this.heldBuild ? '#ff8a7a' : KIT.dim);
     const x0 = TCX - 250;
     const w = 500;
     const y0 = TABLE.y + 2;

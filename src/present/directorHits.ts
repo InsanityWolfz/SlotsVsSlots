@@ -74,7 +74,7 @@ export async function shieldGain(d: Director, e: Ev<'shieldGain'>): Promise<void
     d.s.sounds.coin(5);
     d.s.sounds.shieldGain(e.amount / UNIT);
     await d.c.tween({ from: 0, to: 2.5, dur: 0.2, ease: backOut(3), onUpdate: (v) => (chip.scale = v) });
-    d.bg(d.popText(e.source === 'insurance' ? `+${e.amount} SHIELD` : `CHIPS +${e.amount} SHIELD`, MACHINE_CX.player, CALLOUT_Y, 2, '#9fd0ff', 12, 0.4));
+    d.bg(d.popText(e.source === 'insurance' ? `+${e.amount} SHIELD` : `CHIPS GIVE ${e.amount} SHIELD`, MACHINE_CX.player, CALLOUT_Y, 2, '#9fd0ff', 12, 0.4));
     d.decay(h, 'shieldFlash', 1, 0.3);
     await d.c.to(h, 'shield', e.total, 0.25, sineOut);
     d.bg(d.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (chip.alpha = v) }).then(() => d.s.fx.remove(chip)));

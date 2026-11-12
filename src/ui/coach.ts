@@ -74,7 +74,7 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'buil
       rect: machine('player'),
     },
   ],
-  buildUp: [{ title: 'BUILD-UP', text: `A SPIN WITH NO SWORD PAIR MAKES YOUR NEXT ONE PAY ${Math.round(BUILD_UP.step * 100)}% MORE. IT GROWS UP TO X${BUILD_UP.cap}. THE GOLD PLATE BETWEEN THE MACHINES SHOWS IT.` }],
+  buildUp: [{ title: 'BUILD-UP', text: `YOUR NEXT SWORD PAIR PAYS ${Math.round(BUILD_UP.step * 100)}% MORE FOR EACH SPIN WITHOUT ONE. IT GROWS UP TO X${BUILD_UP.cap}. THE GOLD PLATE BETWEEN THE MACHINES SHOWS IT.` }],
   ability: [{ title: 'ENEMY ABILITY!', text: "THAT WAS THE ENEMY'S ABILITY. THE ICON UNDER THEIR HP BAR CHARGES AS THEY SPIN. THE CARD BEFORE EACH FIGHT SAYS WHAT IT DOES.", rect: hud('enemy') }],
   draft: [
     { title: 'YOU WON! PICK A REWARD', text: 'PICK 1 CARD AFTER EACH WIN. CARDS CHANGE THE SYMBOLS ON A REEL OR ADD A CHARM.' },
@@ -86,7 +86,7 @@ export const TUTORIAL: Record<'preview' | 'fight' | 'firstSpin' | 'hold' | 'buil
   ],
   next: [
     { title: 'A RUN', text: 'EACH ACT IS A MAP WITH A BOSS AT THE END. PICK 1 OF 3 PATHS. ELITES ARE TOUGHER BUT PAY A RELIC. LOSE ONCE AND THE RUN IS OVER.' },
-    { title: 'OVERTIME', text: `FIGHTS CAN'T DRAG ON. FROM SPIN ${2 * OVERTIME.from - 1} EVERY HIT GROWS WITH EACH OF YOUR SPINS. THE BOTTOM BAR SHOWS IT.` },
+    { title: 'OVERTIME', text: `FIGHTS CAN'T DRAG ON. FROM SPIN ${2 * OVERTIME.from - 1} EVERY HIT GROWS EACH TIME YOU SPIN. THE BOTTOM BAR SHOWS IT.` },
     {
       title: 'YOU\'RE ON YOUR OWN',
       // The demo unlocks nothing: it says what the full game has (demo playtest 2026-11-07).

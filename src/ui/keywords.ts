@@ -57,8 +57,8 @@ export const KEYWORDS: Keyword[] = [
   { word: 'LEVEL', tab: 'THE BASICS', icon: 'kwLevel', forms: ['LEVELS', 'LV'], color: '#5ad8e8', text: 'A SYMBOL PAYS MORE PER LEVEL' },
   { word: 'HOLD', tab: 'THE BASICS', icon: 'kwHold', forms: ['HELD'], color: '#ffe28a', text: `PICK A REEL AFTER YOUR SPIN. IT KEEPS ITS SYMBOL FOR YOUR NEXT SPIN. EACH HELD REEL USES 1 HOLD. YOU GET ${HOLD.perFight} HOLDS EACH FIGHT AND ${HOLD.perFight + CONTENT_1107.steadyHolds} WITH STEADY HANDS` },
   // (BUILD-UP borrows the METER icon until it has its own.)
-  { word: 'BUILD-UP', tab: 'THE BASICS', icon: 'kwMeter', color: '#ffd23a', text: `EACH SPIN WITHOUT A PAIR OR JACKPOT OF YOUR ATTACK SYMBOL MAKES THE NEXT ONE PAY ${Math.round(BUILD_UP.step * 100)}% MORE, UP TO X${BUILD_UP.cap}` },
-  { word: 'OVERTIME', tab: 'THE BASICS', icon: 'kwOvertime', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF EACH FIGHT BOTH MACHINES' REELS HIT X${1 + OVERTIME.step}. IT GROWS BY ${OVERTIME.step} WITH EACH OF YOUR SPINS. ABILITIES AND SHIELDS DON'T GROW` },
+  { word: 'BUILD-UP', tab: 'THE BASICS', icon: 'kwMeter', color: '#ffd23a', text: `YOUR NEXT ATTACK PAIR OR JACKPOT PAYS ${Math.round(BUILD_UP.step * 100)}% MORE FOR EACH SPIN WITHOUT ONE, UP TO X${BUILD_UP.cap}` },
+  { word: 'OVERTIME', tab: 'THE BASICS', icon: 'kwOvertime', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF EACH FIGHT BOTH MACHINES' REELS HIT X${1 + OVERTIME.step}. IT GROWS BY ${OVERTIME.step} EACH TIME YOU SPIN. ABILITIES AND SHIELDS DON'T GROW` },
   // (ELITE wears its own map badge.)
   { word: 'ELITE', tab: 'THE BASICS', icon: 'mapBadgeElite', forms: ['ELITES'], color: '#ffb060', text: 'A TOUGHER ENEMY WITH MORE HP AND HARDER HITS. BEAT ONE TO PICK A RELIC AND WIN MORE CHIPS' },
   // (CHIPS shows the chip itself.)
@@ -74,7 +74,7 @@ export const KEYWORDS: Keyword[] = [
   { word: 'THE DROP', tab: 'METERS', icon: 'kwMeter', color: '#5ad8e8', text: `THE JUKEBOX'S PAYOFF AT VOLUME ${VOLUME.max}. EVERY NOTE ON SCREEN HITS AND YOU HEAL ${PAYOFF_HEAL}. THEN THE VOLUME FALLS TO ${VOLUME.after}` },
   { word: 'ALL JACKPOTS', tab: 'METERS', icon: 'kwJackpot', color: '#ff6ad5', text: `JOKER'S PAYOFF. EACH WILD ON YOUR PAYLINE FILLS HALF THE METER. A FULL METER MAKES ALL 3 PAYLINE SYMBOLS PAY JACKPOTS ON YOUR NEXT SPIN AND HEALS ${PAYOFF_HEAL}` },
   { word: 'HIGH ROLLER', tab: 'METERS', icon: 'kwMeter', color: '#7dff7a', text: `BANKROLL'S METER AND ITS PAYOFF. CHIPS FILL IT. A FULL METER MULTIPLIES YOUR NEXT HIT AND HEALS ${PAYOFF_HEAL}. THE MORE CHIPS YOU HOLD THE BIGGER THE HIT, UP TO X${MIDAS.maxMul} AT ${ROLLER_TOP} CHIPS` },
-  { word: 'MAKE IT RAIN', tab: 'METERS', icon: 'chip', color: '#7dff7a', text: `BANKROLL'S CHIP JACKPOT WHEN YOU HOLD ${RAIN.cost} CHIPS OR MORE. IT HITS FOR ${RAIN.perChip} PER CHIP YOU HOLD, UP TO ${RAIN.maxChips} CHIPS, AND COSTS ${RAIN.cost} CHIPS. IT NEVER HITS FOR LESS THAN THE JACKPOT, AND WHEN IT HITS NO HARDER IT IS FREE` },
+  { word: 'MAKE IT RAIN', tab: 'METERS', icon: 'chip', color: '#7dff7a', text: `BANKROLL'S CHIP SYMBOL JACKPOT WHILE YOU HOLD ${RAIN.cost} CHIPS OR MORE. IT COSTS ${RAIN.cost} CHIPS AND HITS FOR ${RAIN.perChip} FOR EACH CHIP YOU HOLD, UP TO ${RAIN.maxChips} CHIPS. IF THE JACKPOT ALONE HITS AS HARD YOU KEEP YOUR CHIPS` },
 
   // ---- CHARMS: the word, then each Charm from its own rule (the COLLECTION's words, so the two can't drift) ----
   { word: 'CHARM', tab: 'CHARMS', icon: 'kwCharm', forms: ['CHARMS'], color: '#c9a0ff', text: 'A PERK ON ONE SYMBOL ON A REEL' },
@@ -88,14 +88,14 @@ export const KEYWORDS: Keyword[] = [
   // (Card text pass, 2026-11-03: the enemies' own words, so their cards can explain them.)
   { word: 'STEAL', tab: 'ENEMIES', icon: 'kwSteal', forms: ['STEALS', 'STOLEN'], color: '#c9a0ff', text: 'A STOLEN SYMBOL LEAVES AN EMPTY SPOT THAT PAYS NOTHING TILL THE FIGHT ENDS. 3 EMPTIES ON YOUR PAYLINE GET THEM ALL BACK' },
   { word: 'ROCK', tab: 'ENEMIES', icon: 'kwRock', forms: ['ROCKS'], color: '#c9bba8', text: 'A DEAD SYMBOL: IT PAYS NOTHING' },
-  { word: 'IOU', tab: 'ENEMIES', icon: 'kwIou', forms: ['IOUS'], color: '#ff9a3a', text: 'AN IOU TICKS DOWN WITH EACH OF YOUR SPINS AND THEN HITS YOU. LAND IT ON YOUR PAYLINE TO PAY IT OFF' },
+  { word: 'IOU', tab: 'ENEMIES', icon: 'kwIou', forms: ['IOUS'], color: '#ff9a3a', text: 'AN IOU TICKS DOWN EACH TIME YOU SPIN AND THEN HITS YOU. LAND IT ON YOUR PAYLINE TO PAY IT OFF' },
   { word: 'FREEZE', tab: 'ENEMIES', icon: 'kwFrozen', forms: ['FREEZES', 'FROZEN'], color: '#9fe8ff', text: "A FROZEN REEL DOESN'T SPIN. AS IT FREEZES IT CAN SLIP ONE SPOT, TO THE WORSE SYMBOL" },
   // (JAM has no icon of its own: it borrows FROZEN's, the other reel that won't play.)
   { word: 'JAM', tab: 'ENEMIES', icon: 'kwFrozen', forms: ['JAMS', 'JAMMED'], color: '#c9bba8', text: 'A JAMMED REEL PAYS NOTHING ON THE PAYLINE' },
   { word: 'JINX', tab: 'ENEMIES', icon: 'kwJinx', forms: ['JINXES', 'JINXED'], color: '#c9a0ff', text: 'ANY PAY THAT USES A JINXED REEL IS HALVED' },
   { word: 'MARK', tab: 'ENEMIES', icon: 'kwMark', forms: ['MARKS', 'MARKED'], color: '#ffb0ff', text: `A MARKED SYMBOL ON YOUR PAYLINE HITS YOU FOR ${MARK_DAMAGE}` },
   // (RAKE has no icon of its own: it borrows SABOTAGE's.)
-  { word: 'RAKE', tab: 'ENEMIES', icon: 'kwSabotage', forms: ['RAKES', 'RAKED'], color: '#ffd23f', text: `WHILE RAKED, EACH OF YOUR PAYS IS ${RAKE_CUT} LESS` },
+  { word: 'RAKE', tab: 'ENEMIES', icon: 'kwSabotage', forms: ['RAKES', 'RAKED'], color: '#ffd23f', text: `WHILE YOU ARE RAKED EVERY PAY IS ${RAKE_CUT} LESS` },
   // (COVER CHARGE borrows the PIERCE icon: it goes past your shield.)
   { word: 'COVER CHARGE', tab: 'ENEMIES', icon: 'kwPierce', color: '#ff8a7a', text: `FROM ACT 3 EVERY ENEMY BUT A BOSS HAS ONE. THEIR FIRST HIT EACH FIGHT PIERCES YOUR SHIELD FOR UP TO ${Math.round(TUNE.coverCharge * 100)}% OF YOUR MAX HP` },
   { word: 'BUST', tab: 'ENEMIES', icon: 'kwBust', forms: ['BUSTS'], color: '#ff8a7a', text: "THE DEALER'S CARD LANDS ON YOUR BEST REEL, THE ONE WORTH THE MOST. THAT REEL PAYS NOTHING ON YOUR NEXT SPIN" },

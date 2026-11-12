@@ -23,6 +23,8 @@ export function collect(): Line[] {
   for (const id of Object.keys(RELICS) as RelicId[]) {
     const seen = new Set<string>();
     for (const cab of CABINET_ORDER as CabinetId[]) {
+      // (A machine's own relic is only ever offered on that machine: no player reads GREATSWORD on BANKROLL.)
+      if (RELICS[id].machine && RELICS[id].machine !== cab) continue;
       const full = relicText(id, cab);
       const face = shortRelicText(id, full);
       const key = `${face}|${full}`;

@@ -230,7 +230,7 @@ export async function winPresentation(d: Director, side: SideId, score: LineScor
   // cut it short, and FREEZES 2 REELS FOR 3 TURNS over one frozen reel read as a bug (playtest 2026-11-08).
   const status = side === 'enemy' && (sym === 'ice' || sym === 'lock') ? d.turnEvents.find((e) => (e.type === 'freeze' || e.type === 'lock') && e.from === 'enemy') : undefined;
   const n = (k: number, one: string) => `${k} ${one}${k === 1 ? '' : 'S'}`;
-  const actual = status && (status.type === 'freeze' || status.type === 'lock') ? `${status.type === 'freeze' ? 'FREEZES' : 'JAMS'} ${n(status.targets.length, 'REEL')} FOR ${status.turns} OF YOUR SPINS` : sym === 'ice' || (sym === 'lock' && g.amount >= PAIR_PAY) ? 'FIZZLES' : '';
+  const actual = status && (status.type === 'freeze' || status.type === 'lock') ? `${status.type === 'freeze' ? 'FREEZES' : 'JAMS'} ${n(status.targets.length, 'REEL')} FOR ${n(status.turns, 'SPIN')}` : sym === 'ice' || (sym === 'lock' && g.amount >= PAIR_PAY) ? 'FIZZLES' : '';
   const effect = side === 'enemy' && WRITERS.has(sym) ? actual || effectText(sym, g.amount) : '';
   // THE PAYOUT LADDER (feel playtest, 2026-10-15: "JACKPOT!" every two spins meant nothing). A pay is sized by the HP
   // bar it lands on: a hit by the enemy's (a block by your own), so a small jackpot stays small and BIG WIN / MEGA WIN

@@ -243,7 +243,7 @@ export class Director {
       case 'closing': {
         const c = this.machineCenter('enemy');
         this.s.sounds.click();
-        return this.popText(`CLOSING TIME IN ${e.left} OF YOUR SPINS`, c.x, MACHINE_TOP - 22, 2, '#ff6a5a', 12, 0.6);
+        return this.popText(`CLOSING TIME IN ${e.left} SPIN${e.left === 1 ? '' : 'S'}`, c.x, MACHINE_TOP - 22, 2, '#ff6a5a', 12, 0.6);
       }
       case 'closingTime':
         this.s.sounds.stingerMedium();
@@ -280,13 +280,13 @@ export class Director {
         // LUCRE: banked on a win (the RESULTS line counts them).
         const c = this.machineCenter(e.side);
         this.s.sounds.coin(8);
-        return this.popText(`CHIP CHARM PAYS ${e.amount} CHIP${e.amount === 1 ? '' : 'S'}`, c.x + 80, MACHINE_TOP - 22, 2, '#ffd23f', 14, 0.35);
+        return this.popText(`CHIP CHARM GIVES ${e.amount} CHIP${e.amount === 1 ? '' : 'S'}`, c.x + 80, MACHINE_TOP - 22, 2, '#ffd23f', 14, 0.35);
       }
       case 'buildUp':
         return this.buildUp(e);
       case 'overtime':
         this.s.sounds.stingerMedium();
-        return this.banner('OVERTIME!', '#ff9a3a', 1.2, 0.3, 'BOTH MACHINES HIT HARDER WITH EACH OF YOUR SPINS', BANNER_Y, 3);
+        return this.banner('OVERTIME!', '#ff9a3a', 1.2, 0.3, 'BOTH MACHINES HIT HARDER EACH TIME YOU SPIN', BANNER_Y, 3);
       case 'lastCall':
         // No banner (user, 2026-11-10: "by then the player should know what overtime is"): the rule still starts, and
         // THE DOORMAN's card and his NEXT SKIM line say it.
@@ -785,7 +785,7 @@ export class Director {
     const dealt = e.kind === 'deal' ? this.s.gutter.nextDeal : undefined;
     // THE WHEEL: the ball drops, the wheel on its topper races.
     if (e.kind === 'bets') this.s.gutter.wheelSpeed = 16;
-    await this.banner(dealt ? `HE DEALS ${dealt === 'allin' ? 'ALL IN' : 'A BUST'}!` : `${abilityName(e.kind)}!`, '#ff6a5a', 1.35, 0.25);
+    await this.banner(dealt ? (dealt === 'allin' ? 'HE GOES ALL IN!' : 'HE DEALS A BUST!') : `${abilityName(e.kind)}!`, '#ff6a5a', 1.35, 0.25);
   }
 
   private async endTurn(side: SideId): Promise<void> {

@@ -166,13 +166,13 @@ describe('enemy effect symbols say what they do', () => {
     const { effectText } = await import('../src/core/fight');
     expect(effectText('slime', 90)).toBe('SPILLS ON 9 SYMBOLS');
     expect(effectText('slime', 10)).toBe('SPILLS ON 1 SYMBOL');
-    expect(effectText('ice', 90)).toBe('FREEZES 2 REELS FOR 3 OF YOUR SPINS');
+    expect(effectText('ice', 90)).toBe('FREEZES 2 REELS FOR 3 SPINS');
     expect(effectText('lock', 10)).toBe('FIZZLES');
     expect(effectText('claw', 40)).toBe('STEALS 2 SYMBOLS');
     // (The enemy card's line for the PIT BOSS's gavels quotes these: a pair takes 2 Charms, a jackpot 4.)
     expect(effectText('gavel', 40)).toBe('TAKES 2 CHARMS');
     expect(effectText('gavel', 90)).toBe('TAKES 4 CHARMS');
-    expect(effectText('rake', 40)).toBe('RAKES YOUR PAYS FOR 2 OF YOUR SPINS');
+    expect(effectText('rake', 40)).toBe('RAKES YOUR PAYS FOR 2 SPINS');
     expect(effectText('fake', 10)).toBe('SWITCHES OFF 2 CHARMS');
     expect(effectText('ball', 90)).toBe('PLACES 2 MORE BETS');
     expect(effectText('coin', 40)).toBe('ADDS 40 TO THE POT');

@@ -16,20 +16,20 @@ const LEAVE_OUT: Partial<Record<RelicId, (string | RegExp)[]>> = {
   ticket: [/\. GOLD PAYS .*$/],
   // (JOKER's and THE JUKEBOX's own sentences. THE JUKEBOX's face: JACKPOTS PAY X2 AND FILL THE VOLUME, the user's
   // line with PAY put back, 2026-11-12.)
-  bell: [/\. ALL JACKPOTS .*$/, /\. A JACKPOT ON THE DROP .*$/],
+  bell: [/\. A JACKPOT ON AN ALL JACKPOTS SPIN .*$/, /\. A JACKPOT ON THE DROP .*$/],
   sandglass: [/\. THE WHEEL .*$/],
   tower: [' YOUR LEFTOVER', ' EACH SPIN', ' YOUR'],
   livewire: [' DAMAGE', /LIGHTNING (?=STORMS)/, / EACH$/],
-  coup: [' LEFT THAN THE ENEMY'],
+  coup: [' THAN YOU'],
   deckdrum: [' FOR THE REST OF THE FIGHT'],
   // (The user's line, 2026-11-12: FIRST ENEMY SABOTAGE IS BLOCKED EACH FIGHT.)
   holywater: [/^THE /, ' ABILITY THAT', /(?<=SABOTAGE)S YOUR REELS/],
-  armoredcar: [' EVERY', ' FROM THAT SPIN', /\. MORE CHIPS .*$/],
+  armoredcar: [' EVERY', ' YOU GAIN ON THE SAME SPIN', /\. MORE CHIPS .*$/],
   safedeposit: [/^ONCE EACH SPIN /, / THAT SPIN$/],
   hitmaker: [' THIS FIGHT'],
   // (The user's line, 2026-11-12: EACH METER PAYOFF GIVES YOUR REELS 2 TEMPORARY WILDS. Three lines.)
   houseofcards: [/\. THEY LAST .*$/],
-  parachute: [' AT 25% HP'],
+  parachute: [' WITH 25% HP'],
   secondline: [/^THE /, ' YOUR PAYLINE', ', FOR PAIRS AND JACKPOTS ONLY'],
   devilsdue: [' OF YOUR', / EACH$/],
   longgame: [' WITH NO LIMIT'],
@@ -64,7 +64,9 @@ export function cardFace(o: DraftOption, run?: RunState): { title: string; text:
 export const ALL_CABINETS: CabinetId[] = ['knight', 'midas', 'tesla', 'joker', 'jukebox'];
 
 /** The card faces allowed a third line (the card draws three lines tighter). */
-export const THREE_LINES: RelicId[] = ['houseofcards', 'meltdown', 'glasscannon', 'hypeman'];
+// (DECK DRUM and SAFE DEPOSIT, 2026-11-12: their two-line faces could not be understood. A cold reader asked what
+// 1 CARD DAMAGE was and what the shield was added to.)
+export const THREE_LINES: RelicId[] = ['houseofcards', 'meltdown', 'glasscannon', 'hypeman', 'deckdrum', 'safedeposit'];
 
 /** Characters per line on a card face (a three-card draft card at body size). */
 export const CARD_COLS = 22;

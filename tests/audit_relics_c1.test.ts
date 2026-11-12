@@ -66,14 +66,14 @@ describe('texts: full and card face, on the one machine each can appear on', () 
   it('the texts the player reads (snapshot of what was audited)', () => {
     const faces = Object.fromEntries(Object.entries(machineOf).map(([id, cab]) => [id, [relicText(id as RelicId, cab), shortRelicText(id as RelicId, relicText(id as RelicId, cab))]]));
     expect(faces.tower).toEqual(['KEEP 25% OF YOUR LEFTOVER SHIELD EACH SPIN, UP TO 10% OF YOUR MAX HP', 'KEEP 25% OF SHIELD, UP TO 10% OF MAX HP']);
-    expect(faces.coup).toEqual(['SWORDS PAY X2 WHILE YOU HAVE MORE HP LEFT THAN THE ENEMY', 'SWORDS PAY X2 WHILE YOU HAVE MORE HP']);
+    expect(faces.coup).toEqual(['SWORDS PAY X2 WHILE THE ENEMY HAS LESS HP THAN YOU', 'SWORDS PAY X2 WHILE THE ENEMY HAS LESS HP']);
     expect(faces.greatsword).toEqual(['YOUR SWORDS PAY X1.5', 'YOUR SWORDS PAY X1.5']);
     expect(faces.crusade).toEqual(['SWORDS HIT 5 HARDER FOR EACH FIGHT YOU WIN', 'SWORDS HIT 5 HARDER FOR EACH FIGHT YOU WIN']);
     expect(faces.compound).toEqual(['HIGH ROLLER GOES UP TO X4, NOT X2.5', 'HIGH ROLLER GOES UP TO X4, NOT X2.5']);
     expect(faces.rainmaker).toEqual(['MAKE IT RAIN COSTS 2 CHIPS, NOT 20', 'MAKE IT RAIN COSTS 2 CHIPS, NOT 20']);
-    expect(faces.armoredcar).toEqual(['HIGH ROLLER COUNTS EVERY 5 SHIELD FROM THAT SPIN AS 1 CHIP. MORE CHIPS MAKE IT HIT HARDER', 'HIGH ROLLER COUNTS 5 SHIELD AS 1 CHIP']);
-    expect(faces.safedeposit).toEqual(['ONCE EACH SPIN A CHIP SYMBOL HIT ADDS THE SHIELD YOU GAIN THAT SPIN', 'A CHIP SYMBOL HIT ADDS THE SHIELD YOU GAIN']);
-    expect(faces.parachute).toEqual(['FOR 10 CHIPS SURVIVE 1 KILLING HIT AT 25% HP EACH FIGHT', 'FOR 10 CHIPS SURVIVE 1 KILLING HIT EACH FIGHT']);
+    expect(faces.armoredcar).toEqual(['HIGH ROLLER COUNTS EVERY 5 SHIELD YOU GAIN ON THE SAME SPIN AS 1 CHIP. MORE CHIPS MAKE IT HIT HARDER', 'HIGH ROLLER COUNTS 5 SHIELD AS 1 CHIP']);
+    expect(faces.safedeposit).toEqual(['ONCE EACH SPIN A CHIP SYMBOL HIT ALSO HITS FOR THE SHIELD YOU GAIN THAT SPIN', 'A CHIP SYMBOL HIT ALSO HITS FOR THE SHIELD YOU GAIN']);
+    expect(faces.parachute).toEqual(['FOR 10 CHIPS SURVIVE 1 KILLING HIT EACH FIGHT WITH 25% HP', 'FOR 10 CHIPS SURVIVE 1 KILLING HIT EACH FIGHT']);
     expect(faces.openbar).toEqual(['MAKE IT RAIN IS FREE. WINS PAY NO CHIPS', 'MAKE IT RAIN IS FREE. WINS PAY NO CHIPS']);
     expect(faces.capacitor).toEqual(['25% OF LEFTOVER SHIELD CHARGES LIGHTNING', '25% OF LEFTOVER SHIELD CHARGES LIGHTNING']);
     expect(faces.livewire).toEqual(['LIGHTNING DEALS 30% MORE DAMAGE. LIGHTNING STORMS COST 1 HP EACH', 'LIGHTNING DEALS 30% MORE. STORMS COST 1 HP']);
