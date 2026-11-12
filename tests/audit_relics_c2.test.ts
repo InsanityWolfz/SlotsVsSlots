@@ -359,9 +359,9 @@ describe('THE JUKEBOX relics', () => {
     expect(hm[0].mult / no[0].mult).toBeCloseTo(1);
     expect(hm[1].mult / no[1].mult).toBeCloseTo(1.6);
     expect(hm[2].mult / no[2].mult).toBeCloseTo(2.2);
-    expect(hm[1].notes).toContain('X1.6 HIT');
+    expect(hm[1].notes).toContain('X1.6 HITMAKER');
     // A new fight starts over.
-    expect(drops(['hitmaker'], 1)[0].notes ?? []).not.toContain('X1.6 HIT');
+    expect(drops(['hitmaker'], 1)[0].notes ?? []).not.toContain('X1.6 HITMAKER');
   });
   // +60% FOR EVERY DROP BEFORE IT (2026-11-01; it read as compounding): the 4th DROP is x2.8 of a plain one.
   it('each DROP gets +60% for every DROP before it (x1, x1.6, x2.2, x2.8)', () => {
@@ -376,7 +376,7 @@ describe('THE JUKEBOX relics', () => {
     const a1 = round(f, ['note', 'shield', 'shield']);
     round(g, ['note', 'shield', 'shield']);
     expect(relicFired(a1, 'hypeman')).toBe(true);
-    expect(group(a1, 'note', false).notes).toContain('VOL +32%');
+    expect(group(a1, 'note', false).notes).toContain('VOLUME +32%');
     expect(f.volume).toBe(2);
     expect(g.volume).toBe(1);
     const a2 = round(f, ['note', 'shield', 'shield']);
@@ -535,7 +535,7 @@ describe('JACKPOT BELL, per machine', () => {
     const g = on('joker', ['bell']);
     arm(g);
     const ev = play(g, ['ace', 'shield', 'ace']);
-    expect(score(ev).groups[0].notes).toContain('X1.25 BELL');
+    expect(score(ev).groups[0].notes).toContain('X1.25 JACKPOT BELL');
     expect(g.sides.player.armed).toBe(false);
     expect(g.sides.player.energy).toBe(0);
   });

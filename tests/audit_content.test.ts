@@ -167,11 +167,11 @@ describe('LEAN MACHINE', () => {
   const r10 = { sword: 5, shield: 5 };
   const r11 = { sword: 6, shield: 5 };
   const r12 = { sword: 6, shield: 6 };
-  it('a pair on two reels of 10 cells pays x1.5, and names itself (X1.5 LEAN)', () => {
+  it('a pair on two reels of 10 cells pays x1.5, and names itself (X1.5 LEAN MACHINE)', () => {
     const on = round(lean([r10, r10, r12]), ['sword', 'sword', 'shield']);
     const off = round(lean([r10, r10, r12], []), ['sword', 'sword', 'shield']);
     expect(group(on, 'sword').amount).toBe(group(off, 'sword').amount * 1.5);
-    expect(notes(on, 'sword')).toContain('X1.5 LEAN');
+    expect(notes(on, 'sword')).toContain('X1.5 LEAN MACHINE');
     expect(fired(on, 'lean')).toBe(true);
   });
   it('11 OR FEWER: a reel of 12 cells pays as usual, reels of 11 and 7 are lean', () => {
@@ -179,15 +179,15 @@ describe('LEAN MACHINE', () => {
     expect(notes(at12, 'sword').some((n) => n.endsWith('LEAN'))).toBe(false);
     expect(fired(at12, 'lean')).toBe(false);
     const at11 = round(lean([r11, r11, r12]), ['sword', 'sword', 'shield']);
-    expect(notes(at11, 'sword')).toContain('X1.5 LEAN');
+    expect(notes(at11, 'sword')).toContain('X1.5 LEAN MACHINE');
     const at7 = round(lean([{ sword: 4, shield: 3 }, { sword: 4, shield: 3 }, r12]), ['sword', 'sword', 'shield']);
-    expect(notes(at7, 'sword')).toContain('X1.5 LEAN');
+    expect(notes(at7, 'sword')).toContain('X1.5 LEAN MACHINE');
   });
-  it('ITS SYMBOLS: a pair across a lean reel and a full one pays for the lean cell only (X1.25 LEAN)', () => {
+  it('ITS SYMBOLS: a pair across a lean reel and a full one pays for the lean cell only (X1.25 LEAN MACHINE)', () => {
     const on = round(lean([r10, r12, r12]), ['sword', 'sword', 'shield']);
     const off = round(lean([r10, r12, r12], []), ['sword', 'sword', 'shield']);
     expect(group(on, 'sword').amount).toBe(group(off, 'sword').amount * 1.25);
-    expect(notes(on, 'sword')).toContain('X1.25 LEAN');
+    expect(notes(on, 'sword')).toContain('X1.25 LEAN MACHINE');
   });
   it('ITS SYMBOLS: shields on a lean reel are worth x1.5 too, and a lone cell there', () => {
     const on = round(lean([r12, r12, r10]), ['sword', 'shield', 'shield']);
@@ -199,7 +199,7 @@ describe('LEAN MACHINE', () => {
   it('counted as you built the reel: rocks an enemy adds mid-fight do not switch it off', () => {
     const f = lean([r10, r10, r12]);
     f.sides.player.reels[0].cells.push({ symbol: 'rock', slimed: false }, { symbol: 'rock', slimed: false });
-    expect(notes(round(f, ['sword', 'sword', 'shield']), 'sword')).toContain('X1.5 LEAN');
+    expect(notes(round(f, ['sword', 'sword', 'shield']), 'sword')).toContain('X1.5 LEAN MACHINE');
   });
 });
 

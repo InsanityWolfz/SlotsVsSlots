@@ -128,12 +128,12 @@ describe('THE WHEEL: PLACE YOUR BETS', () => {
     expect([...placed.reels].sort()).toEqual([0, 1, 2]);
   });
 
-  it('GREEN: THE WHEEL STARTS FAST (3 chips from its first turn, no half-HP gate) and is sized x0.85', () => {
+  it('GREEN: THE WHEEL PLACES 3 BETS EACH SPIN FROM THE START (no half-HP gate) and is sized x0.85', () => {
     const f = wheel((c) => (c.stake = STAKE.wheelFast));
     expect(f.fast).toBe(true);
     f.step();
     expect(ofType(f.step().events, 'betPlaced')[0].reels).toHaveLength(3);
-    expect(STAKES[STAKE.wheelFast].rule).toContain('THE WHEEL STARTS FAST');
+    expect(STAKES[STAKE.wheelFast].rule).toContain('THE WHEEL PLACES 3 BETS EACH SPIN FROM THE START');
     expect(STAKES.map((s) => s.rule).join(' ')).not.toMatch(/MIRROR|ZERO/);
     // The same run at WHITE and GREEN: GREEN's WHEEL has 85% of the HP (the flat and per-relic parts too).
     const at = (stake: number) => {

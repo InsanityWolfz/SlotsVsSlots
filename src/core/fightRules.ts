@@ -67,7 +67,7 @@ export const allInRange = (maxHp: number, hand: number, loop = 0): number => {
 };
 
 /** A meter payoff's heal, named for the popup. */
-export const PAYOFF_WORD: Record<string, string> = { special: 'LIGHTNING', vault: 'HIGH ROLLER', volume: 'THE DROP', jackpots: 'JACKPOT' };
+export const PAYOFF_WORD: Record<string, string> = { special: 'LIGHTNING', vault: 'HIGH ROLLER', volume: 'THE DROP', jackpots: 'ALL JACKPOTS' };
 
 /** Counterfeit coins last this many of your turns. */
 export const FAKE_TURNS = 3;
@@ -162,11 +162,13 @@ export function effectText(sym: SymbolId, amount: number): string {
   const jackpot = amount >= JACKPOT_PAY;
   const n = statusSize(amount);
   const s = (k: number, one: string, many = `${one}S`) => `${k} ${k === 1 ? one : many}`;
+  // (A status on your reels lasts through your own spins: FOR 2 OF YOUR SPINS.)
+  const yours = (k: number) => `${k} OF YOUR SPINS`;
   switch (sym) {
     case 'slime':
       return `SPILLS ON ${s(Math.round(amount / UNIT), 'SYMBOL')}`;
     case 'ice':
-      return `FREEZES ${s(pair ? 2 : 1, 'REEL')} FOR ${s(jackpot ? 3 : pair ? 2 : 1, 'TURN')}`;
+      return `FREEZES ${s(pair ? 2 : 1, 'REEL')} FOR ${yours(jackpot ? 3 : pair ? 2 : 1)}`;
     case 'lock':
       return pair ? `JAMS ${s(jackpot ? 2 : 1, 'REEL')}` : 'FIZZLES';
     case 'claw':
@@ -174,7 +176,7 @@ export function effectText(sym: SymbolId, amount: number): string {
     case 'rock':
       return pair ? `ADDS ${s(jackpot ? 2 : 1, 'ROCK')}` : 'FIZZLES';
     case 'coin':
-      return `+${amount} TO THE POT`;
+      return `ADDS ${amount} TO THE POT`;
     case 'bomb':
       return `STICKS ${s(n, 'IOU')}`;
     case 'hex':
@@ -184,15 +186,15 @@ export function effectText(sym: SymbolId, amount: number): string {
     case 'card':
       return `MARKS ${s(n, 'SYMBOL')}`;
     case 'gavel':
-      return pair ? `SEIZES ${jackpot ? 4 : 2} CHARMS` : 'FIZZLES';
+      return pair ? `TAKES ${jackpot ? 4 : 2} CHARMS` : 'FIZZLES';
     case 'rake':
-      return `RAKES YOUR PAY FOR ${s(n, 'TURN')}`;
+      return `RAKES YOUR PAYS FOR ${yours(n)}`;
     case 'fake':
-      return `FAKES ${s(2 * n, 'CHARM')}`;
+      return `SWITCHES OFF ${s(2 * n, 'CHARM')}`;
     case 'mimicSym':
       return jackpot ? 'COPIES YOUR BEST HIT X2' : pair ? 'COPIES YOUR BEST HIT' : 'COPIES HALF YOUR BEST HIT';
     case 'ball':
-      return pair ? `BETS ${s(jackpot ? 2 : 1, 'MORE CHIP', 'MORE CHIPS')}` : 'FIZZLES';
+      return pair ? `PLACES ${s(jackpot ? 2 : 1, 'MORE BET')}` : 'FIZZLES';
     default:
       return '';
   }

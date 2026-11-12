@@ -130,7 +130,7 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
         }
         g.mult *= k;
         fired.add('lean');
-        notes.push(`X${Math.round(k * 100) / 100} LEAN`);
+        notes.push(`X${Math.round(k * 100) / 100} LEAN MACHINE`);
       }
     }
     // A jackpot of one cell counts that cell's charm three times.
@@ -185,7 +185,7 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       const vol = f.volume;
       if (vol > 0) {
         boost(g, 1 + VOLUME.perLevel * vol);
-        notes.push(`VOL +${Math.round(VOLUME.perLevel * vol * 100)}%`);
+        notes.push(`VOLUME +${Math.round(VOLUME.perLevel * vol * 100)}%`);
       }
       if (f.dropNow) {
         if (echoes && noteCells) {
@@ -243,13 +243,13 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       fired.add('bell');
       const bell = f.meter?.kind === 'jackpots' ? BELL_MULT_JOKER : BELL_MULT;
       boost(g, bell);
-      notes.push(`X${bell} BELL`);
+      notes.push(`X${bell} JACKPOT BELL`);
     }
     // (The whole spin, singles too: the card says YOUR NEXT SPIN PAYS X2. User, 2026-11-12; it was pairs and jackpots.)
     if (player && f.hotStreak) {
       fired.add('hotstreak');
       boost(g, 2);
-      notes.push('HOT X2');
+      notes.push('X2 HOT STREAK');
     }
     // STEADY HANDS: a jackpot on a spin you held a reel for.
     if (has('steadyhands') && paying && g.matched && g.reels.length >= 3 && f.heldNow.some(Boolean)) {
@@ -276,7 +276,7 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
     if (has('coup') && g.symbol === 'sword' && g.base > 0 && me.hp > foe.hp) {
       fired.add('coup');
       boost(g, NEW_RELIC.coupBossMul);
-      notes.push(`X${NEW_RELIC.coupBossMul} COUP`);
+      notes.push(`X${NEW_RELIC.coupBossMul} COUP DE GRACE`);
     }
     // UNDERDOG: under half HP, every paying group.
     if (has('underdog') && paying && me.hp < me.maxHp / 2) {
@@ -296,21 +296,21 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
     if (player && f.goldenNow && paying) {
       fired.add('goldenspin');
       boost(g, NEW_RELIC.goldenMul);
-      notes.push(`X${NEW_RELIC.goldenMul} GOLDEN`);
+      notes.push(`X${NEW_RELIC.goldenMul} GOLDEN SPIN`);
     }
     // CERTIFIED HITMAKER: each drop this fight hits harder than the last.
     if (has('hitmaker') && f.dropNow && f.drops > 0 && g.symbol === 'note' && g.base > 0) {
       fired.add('hitmaker');
       const k = 1 + NEW_RELIC.hitmakerStep * f.drops;
       boost(g, k);
-      notes.push(`X${Math.round(k * 100) / 100} HIT`);
+      notes.push(`X${Math.round(k * 100) / 100} HITMAKER`);
     }
     // GLASS CANNON, DEVIL'S DUE, THE LONG GAME: every paying group, one multiplier. Named and rounded on the climb (it
     // read "X2.33625" with no name: stress test 2026-11-02).
     if (player && paying && f.cfg.player.payMul) {
       boost(g, f.cfg.player.payMul);
       const who = (['glasscannon', 'devilsdue', 'longgame'] as const).filter((r) => me.relics.has(r));
-      const name = who.length === 1 ? { glasscannon: 'GLASS CANNON', devilsdue: 'SECOND MORTGAGE', longgame: 'LONG GAME' }[who[0]] : 'RELICS';
+      const name = who.length === 1 ? { glasscannon: 'GLASS CANNON', devilsdue: 'SECOND MORTGAGE', longgame: 'THE LONG GAME' }[who[0]] : 'RELICS';
       notes.push(`X${Math.round(f.cfg.player.payMul * 100) / 100} ${name}`);
     }
     // VETERAN (KNIGHT, ENDLESS): every loop cleared, swords and shields pay more.
@@ -351,7 +351,7 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       const raise = f.isDealer && f.dealerHand >= 2 ? DEALER_RULES.raiseMul : 1;
       if (elite !== 1) notes.push(`X${Math.round(elite * 100) / 100} ELITE`);
       if (stake !== 1) notes.push(`X${Math.round(stake * 100) / 100} ${stakeOf(f.cfg.stake ?? 0).name}`);
-      if (line2 !== 1) notes.push(`X${Math.round(line2 * 100) / 100} 2ND LINE`);
+      if (line2 !== 1) notes.push(`X${Math.round(line2 * 100) / 100} SECOND PAYLINE`);
       if (raise !== 1) notes.push(`X${raise} RAISE`);
       const rest = late / raise;
       // (Named for what grows it: the ENDLESS loop (its growth, LAST CALL, THE OWNER), else act 3's ramp. "LATE" said

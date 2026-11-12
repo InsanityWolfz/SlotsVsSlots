@@ -1,7 +1,7 @@
 import type { Game } from '../game';
 import { symLabel, UNIT } from '../core/config';
 import { CABINETS } from '../core/cabinets';
-import { OVERTIME, overtimeMul, overtimeRound } from '../core/enemies';
+import { OVERTIME, overtimeMul, overtimeRound, WHEEL_RULES } from '../core/enemies';
 import { STAKES } from '../core/stakes';
 import { allInRange, DEALER_HANDS, DEALER_RULES } from '../core/fight';
 import { RELICS } from '../core/relics';
@@ -225,7 +225,7 @@ export class FightView {
       }
       if ((this.g.fight.isBoss || this.g.fight.isWheel || this.g.fight.isDealer) && (this.g.fight.cfg.player.stackShield ?? 0) > 0) {
         drawSprite(ctx, 'chipShield', 34, ly, 2);
-        drawText(ctx, `+${this.g.fight.cfg.player.stackShield ?? 0}/TURN`, 50, ly, T.small, '#9fd0ff', { align: 'left' });
+        drawText(ctx, `+${this.g.fight.cfg.player.stackShield ?? 0} EACH SPIN`, 50, ly, T.small, '#9fd0ff', { align: 'left' });
       }
     }
   }
@@ -549,7 +549,7 @@ export class FightView {
     drawText(ctx, name, x0 + 66, y + 62, T.head, card === 'allin' ? '#ff6a5a' : '#ffffff', { align: 'left' });
     rule.forEach((l, k) => drawText(ctx, l, x0 + 66, y + 86 + k * 17, T.small, COLORS.text, { align: 'left' }));
     // When it comes, one line under the panel.
-    drawText(ctx, soon ? 'NEXT TURN!' : `NEXT CARD IN ${left}`, x, y + h + GUTTER_PANEL_LINE, T.body, soon ? (Math.sin(t * 12) > 0 ? '#ffffff' : '#ff6a5a') : '#c8f0c8');
+    drawText(ctx, soon ? 'HIS NEXT SPIN!' : `NEXT CARD IN ${left}`, x, y + h + GUTTER_PANEL_LINE, T.body, soon ? (Math.sin(t * 12) > 0 ? '#ffffff' : '#ff6a5a') : '#c8f0c8');
   }
 
   /** A small "?" on a boss's HUD: tap it for the rules. */
@@ -648,15 +648,15 @@ export class FightView {
     }
     // Felt in THE panel's frame (a card table's scenery).
     drawPanel(ctx, x0, y, w, h, { title: 'THE TABLE', frame: soon ? '#ff6a5a' : undefined, fill: '#0f3a22' });
-    drawText(ctx, `${chips} ON YOU`, x, y + 30, T.body, chips ? '#ffe08a' : '#c8f0c8', { punch: g.betPunch ?? 1 });
+    drawText(ctx, `${chips} BET${chips === 1 ? '' : 'S'} ON YOU`, x, y + 30, T.body, chips ? '#ffe08a' : '#c8f0c8', { punch: g.betPunch ?? 1 });
     // What the wheel would take right now: the chips, then their hit.
     drawSprite(ctx, artId(chips >= 3 ? 'betStack3' : chips === 2 ? 'betStack2' : 'betStack1'), x0 + 34, y + 66, 2.5, { alpha: chips ? 1 : 0.35 });
     drawText(ctx, `X${chips}`, x0 + 56, y + 68, T.head, chips ? '#ffffff' : COLORS.textDim, { align: 'left' });
     drawText(ctx, hit ? `-${hit}` : '0', x0 + w - 14, y + 68, T.head, lethal ? '#ff3a2e' : hit ? '#ff8a7a' : COLORS.textDim, { align: 'right', punch: g.betPunch ?? 1 });
-    if (soon) drawText(ctx, 'NO MORE BETS NEXT!', x, y + 102, T.small, Math.sin(t * 10) > 0 ? '#ffffff' : '#ff6a5a');
-    else if (per) drawText(ctx, `EACH CHIP HITS ${per}`, x, y + 102, T.small, '#c8f0c8');
+    if (soon) drawText(ctx, 'HER NEXT SPIN HITS', x, y + 102, T.small, Math.sin(t * 10) > 0 ? '#ffffff' : '#ff6a5a');
+    else if (per) drawText(ctx, `EACH BET HITS ${per}`, x, y + 102, T.small, '#c8f0c8');
     // Its one rule, where players look (like the House's pot), and the phase.
-    drawText(ctx, g.wheelFast ? '3 CHIPS A TURN' : 'PAIRS CLEAR BETS', x, y + h + GUTTER_PANEL_LINE, T.body, g.wheelFast ? '#ff8a7a' : KIT.title);
+    drawText(ctx, g.wheelFast ? `${WHEEL_RULES.fast} BETS EACH SPIN` : 'PAIRS CLEAR BETS', x, y + h + GUTTER_PANEL_LINE, T.body, g.wheelFast ? '#ff8a7a' : KIT.title);
   }
 
   /** THE WHEEL's slot machine: a red-and-black cabinet behind its reels, with a green felt apron. */

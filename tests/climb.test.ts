@@ -7,17 +7,17 @@ const group = (over: Partial<ScoreGroup>): ScoreGroup => ({ symbol: 'sword', ree
 describe('THE CLIMB (feel pass, 2026-10-15)', () => {
   it('reads the engine notes as steps', () => {
     expect(noteStep('X1.5 DRY')).toEqual({ f: 1.5, text: '×1.5 DRY' });
-    expect(noteStep('HOT X2')).toEqual({ f: 2, text: '×2 HOT' });
+    expect(noteStep('X2 HOT STREAK')).toEqual({ f: 2, text: '×2 HOT STREAK' });
     expect(noteStep('HIGH ROLLER X2.5')).toEqual({ f: 2.5, text: '×2.5 HIGH ROLLER' });
-    expect(noteStep('VOL +32%')?.f).toBeCloseTo(1.32);
+    expect(noteStep('VOLUME +32%')?.f).toBeCloseTo(1.32);
     expect(noteStep('X2')).toEqual({ f: 2, text: '×2' });
     for (const flat of ['DROP +3', 'ECHO', '-5 RAKE', 'HALF', 'CRUSADE +5', 'MAKE IT RAIN!']) expect(noteStep(flat)).toBeNull();
   });
   it('starts at the base, climbs, and always ends on the exact total', () => {
     const cases: Partial<ScoreGroup>[] = [
       { base: 39, mult: 3 },
-      { base: 39, mult: 3 * 1.5 * 2, notes: ['X1.5 DRY', 'X2 GOLDEN'] },
-      { base: 52, mult: 2 * 1.32, reels: [0, 1], notes: ['VOL +32%'] },
+      { base: 39, mult: 3 * 1.5 * 2, notes: ['X1.5 DRY', 'X2 GOLDEN SPIN'] },
+      { base: 52, mult: 2 * 1.32, reels: [0, 1], notes: ['VOLUME +32%'] },
       // Notes that don't multiply out exactly (pooled lightning): still ends on the engine's total.
       { base: 40, mult: 4.1, notes: ['X1.5', 'X1.3'] },
       { base: 30, mult: 1, matched: false, reels: [2] },

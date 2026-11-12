@@ -113,7 +113,7 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 1.05,
     ability: { kind: 'curse', every: 4, power: 1 },
     minDepth: 0,
-    blurb: 'JINXES YOUR REELS FOR HALF PAY',
+    blurb: 'JINXES YOUR REELS. A JINXED REEL PAYS HALF',
     acts: [2],
   },
   {
@@ -124,7 +124,7 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 0.95,
     ability: { kind: 'bloodmoon', every: 4, power: 8 * UNIT },
     minDepth: 0,
-    blurb: 'DRAINS YOUR HP TO HEAL HIMSELF',
+    blurb: 'DRAINS YOUR HP TO HEAL',
     acts: [2],
   },
   // ---- act 2 counter-enemy: answers a Charm or meter build ----
@@ -136,7 +136,7 @@ export const ARCHETYPES: Archetype[] = [
     hpMul: 1.1,
     ability: { kind: 'launder', every: 4, power: 2 },
     minDepth: 1,
-    blurb: 'TAKES YOUR CHIPS. ITS FAKE COINS SWITCH YOUR CHARMS OFF',
+    blurb: 'TAKES YOUR CHIPS AND SWITCHES YOUR CHARMS OFF WITH FAKE COINS',
     acts: [2],
   },
 ];
@@ -151,7 +151,7 @@ ARCHETYPES.push(
     hpMul: 1,
     ability: { kind: 'mark', every: 4, power: 3 },
     minDepth: 0,
-    blurb: 'MARKS YOUR SYMBOLS: A MARKED ONE ON YOUR PAYLINE HITS YOU FOR 20',
+    blurb: 'MARKS YOUR SYMBOLS. A MARKED SYMBOL ON YOUR PAYLINE HITS YOU FOR 20',
     acts: [3],
   },
   {
@@ -173,7 +173,7 @@ ARCHETYPES.push(
     hpMul: 0.95,
     ability: { kind: 'houseTake', every: 4, power: 3 },
     minDepth: 0,
-    blurb: 'RAKES YOUR WINNINGS: YOUR PAYS ARE SMALLER FOR A FEW TURNS',
+    blurb: 'RAKES YOUR WINNINGS. YOUR PAYS ARE SMALLER FOR A FEW SPINS',
     acts: [3],
   },
 );
@@ -212,7 +212,7 @@ export const BOSS: Archetype = {
   hpMul: 1,
   ability: { kind: 'jackpot', every: POT.cashEvery, power: 1 },
   minDepth: 5,
-  blurb: 'A GROWING POT: HE SKIMS HALF AT YOU. JACKPOTS WIN IT',
+  blurb: 'HE BUILDS A POT AND HITS YOU WITH HALF OF IT. YOUR JACKPOTS WIN THE POT AND HIT HIM WITH IT',
 };
 
 /**
@@ -229,7 +229,7 @@ export const WHEEL: Archetype = {
   hpMul: 1,
   ability: { kind: 'bets', every: 3, power: 2 },
   minDepth: 5,
-  blurb: 'PLACES BETS ON YOUR REELS. PAIRS CLEAR THEM. NO MORE BETS: EVERY CHIP LEFT HITS.',
+  blurb: 'SHE PLACES BETS ON YOUR REELS. YOUR PAIRS CLEAR THEM. AT NO MORE BETS EVERY BET LEFT HITS YOU.',
   acts: [2],
 };
 /**
@@ -252,7 +252,7 @@ export const DEALER: Archetype = {
   hpMul: 1,
   ability: { kind: 'deal', every: 3, power: 0 },
   minDepth: 3,
-  blurb: 'THREE HANDS, THREE HP BARS. EACH HAND IS HARDER: BUST, RAISE, ALL IN.',
+  blurb: 'HE PLAYS 3 HANDS, EACH WITH ITS OWN HP BAR. EACH HAND IS HARDER THAN THE LAST.',
   acts: [3],
 };
 /**

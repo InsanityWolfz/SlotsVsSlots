@@ -66,7 +66,7 @@ describe('HIGH STAKES', () => {
     expect(new Fight(fightConfig(plain, base), 1).sides.enemy.ability!.every).toBe(POT.cashEvery);
   });
 
-  it('GREEN: THE WHEEL STARTS FAST (no relic copy); BLUE (act 2) / GOLD (all): abilities charge faster, not the boss clocks', () => {
+  it('GREEN: THE WHEEL PLACES 3 BETS EACH SPIN FROM THE START (no relic copy); BLUE (act 2) / GOLD (all): abilities charge faster, not the boss clocks', () => {
     const run = toAct2('knight', STAKE.wheelFast);
     run.player.relics = ['bandage', 'key'];
     skipToBoss(run);

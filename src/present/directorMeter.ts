@@ -205,7 +205,7 @@ export async function meter(d: Director, e: Ev<'meter'>): Promise<void> {
     // On the machine's callout row (its top edge): under the machine it landed on the HOLD chip, before that on the
     // HP and meter bars.
     // HYPE MAN can max the volume right before the spin it drops on: no "next spin" then.
-    if (!e.dropsNow) d.bg(d.popText(m.kind === 'touch' ? 'NEXT SPIN TURNS GOLD!' : m.kind === 'vault' ? 'HIGH ROLLER! NEXT PAY MULTIPLIES!' : m.kind === 'volume' ? 'MAX VOLUME! DROP NEXT SPIN!' : 'NEXT SPIN: ALL JACKPOTS!', MACHINE_CX[e.side], CALLOUT_Y, 2, m.color, 12, 0.6, true));
+    if (!e.dropsNow) d.bg(d.popText(m.kind === 'touch' ? 'NEXT SPIN TURNS GOLD!' : m.kind === 'vault' ? 'YOUR NEXT HIT IS MULTIPLIED!' : m.kind === 'volume' ? 'FULL VOLUME! THE DROP IS NEXT!' : 'YOUR NEXT SPIN IS ALL JACKPOTS!', MACHINE_CX[e.side], CALLOUT_Y, 2, m.color, 12, 0.6, true));
   }
   if (e.reels.length) d.settle(e.side, e.reels);
 }

@@ -1,5 +1,6 @@
 import { type SymbolId } from '../../core/config';
-import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, TUNE, type EnemyDef } from '../../core/enemies';
+import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, TUNE, WHEEL_RULES, type EnemyDef } from '../../core/enemies';
+import { FAKE_TURNS } from '../../core/fight';
 import { CHIPS, needsRoute, currentEnemy, isBossNext, runActs, type RunState } from '../../core/run';
 import { enemyHp, shownAbility } from '../../core/fightSetup';
 import { STAKE } from '../../core/stakes';
@@ -18,9 +19,9 @@ import { RouteScreen } from './routes';
 const BASIC_WORDS = new Set(['PAIR', 'JACKPOT', 'PAYLINE', 'WILD', 'HEAL', 'SHIELD', 'CHARM', 'LEVEL', 'METER', 'HOLD']);
 /** What an enemy's own symbols do when it's something its ability line doesn't say (card text pass, 2026-11-03). */
 const SYMBOL_LINE: Record<string, string> = {
-  vampire: 'ITS FANGS DRAIN YOU: WHAT GETS THROUGH HEALS IT',
-  counterfeiter: 'ITS FAKE COINS SWITCH YOUR CHARMS OFF FOR 3 TURNS',
-  pitboss: 'ITS GAVEL PAIRS TAKE YOUR CHARMS FOR THE FIGHT TOO',
+  vampire: 'THEIR FANGS DRAIN YOU. DAMAGE THAT GETS PAST YOUR SHIELD HEALS THEM',
+  counterfeiter: `THEIR FAKE COINS SWITCH YOUR CHARMS OFF FOR ${FAKE_TURNS} OF YOUR SPINS`,
+  pitboss: 'A PAIR OF GAVELS ON THEIR REELS TAKES 2 MORE CHARMS FOR THE FIGHT. A JACKPOT TAKES 4',
 };
 
 /** The enemy card's box: a fight's, and a boss's (bigger, behind the bulb marquee). */
@@ -157,7 +158,7 @@ export abstract class NextScreen extends RouteScreen {
       ctx.fillRect(wx, wy + ws - 22, ws, 22);
       ctx.fillStyle = '#8a3a10';
       ctx.fillRect(wx + 2, wy + ws - 20, ws - 4, 18);
-      drawText(ctx, 'ELITE: RELIC PICK', wx + ws / 2, wy + ws - 11, T.small, KIT.title);
+      drawText(ctx, 'PAYS A RELIC', wx + ws / 2, wy + ws - 11, T.small, KIT.title);
     }
     // The right column: name, HP, the ability chip with its pips, one line of what it does.
     const tx = wx + ws + 26;
@@ -219,13 +220,13 @@ export abstract class NextScreen extends RouteScreen {
       const lines = wrap(win, Math.floor((w - 120) / (6 * T.body)));
       // (Two lines sit higher: the second one touched the bulb frame.)
       lines.slice(0, 2).forEach((l, i) => drawText(ctx, l, 24, lines.length > 1 ? h - 42 + i * 20 : h - 30, T.body, '#7dff7a', { align: 'left' }));
-      // STARTS FAST: a band across the portrait's foot, like ELITE's (as a chip it ran into THE WHEEL's name).
+      // GREEN and up, she starts fast: a band across the portrait's foot, like an elite's (as a chip it ran into THE WHEEL's name).
       if (e.boss === 'wheel' && run.stake >= STAKE.wheelFast) {
         ctx.fillStyle = COLORS.outline;
         ctx.fillRect(wx, wy + ws - 22, ws, 22);
         ctx.fillStyle = '#8a2420';
         ctx.fillRect(wx + 2, wy + ws - 20, ws - 4, 18);
-        drawText(ctx, 'STARTS FAST', wx + ws / 2, wy + ws - 11, T.small, '#ffd0c8');
+        drawText(ctx, `${WHEEL_RULES.fast} BETS EACH SPIN`, wx + ws / 2, wy + ws - 11, T.small, '#ffd0c8');
       }
     }
   }
@@ -247,11 +248,11 @@ export abstract class NextScreen extends RouteScreen {
     }
     if (e.elite)
       // (Its IOUs and marks keep their numbers: those elites say their reels, QA RULES-01.)
-      for (const l of wrap(`ELITE: +${(e.act ?? 1) > 1 ? Math.round((ELITE_HP_MUL_2 - 1) * 100) : e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% HP, ${e.ability?.kind === 'carpet' || e.ability?.kind === 'mark' ? 'ITS REELS HIT' : 'HITS'} ${Math.round((ELITE_DMG_MUL - 1) * 100)}% HARDER. RELIC PICK, +${CHIPS.eliteBonus} CHIPS`, cols(T.small)))
+      for (const l of wrap(`THIS ELITE HAS ${(e.act ?? 1) > 1 ? Math.round((ELITE_HP_MUL_2 - 1) * 100) : e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% MORE HP AND ${e.ability?.kind === 'carpet' || e.ability?.kind === 'mark' ? 'THEIR REELS HIT' : 'HITS'} ${Math.round((ELITE_DMG_MUL - 1) * 100)}% HARDER. BEAT THEM FOR A RELIC AND ${CHIPS.eliteBonus} MORE CHIPS`, cols(T.small)))
         out.push({ text: l, color: '#ffb060', size: T.small });
     // ACT 3's COVER CHARGE (QA RULES-09: it was named only by a pop when it fired).
     if (!e.isBoss && (e.act ?? run.act) >= 3)
-      for (const l of wrap(`COVER CHARGE: ITS FIRST HIT EACH FIGHT GOES PAST YOUR SHIELD, UP TO ${Math.round(TUNE.coverCharge * 100)}% OF YOUR MAX HP`, cols(T.small)))
+      for (const l of wrap(`THEIR FIRST HIT EACH FIGHT IS A COVER CHARGE. UP TO ${Math.round(TUNE.coverCharge * 100)}% OF YOUR MAX HP PIERCES YOUR SHIELD`, cols(T.small)))
         out.push({ text: l, color: KIT.text, size: T.small });
     if (e.isBoss) {
       const br = bossRules(e.boss ?? 'house', this.bossCtx());

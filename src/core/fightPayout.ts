@@ -21,7 +21,7 @@ export function secondLine(f: Fight, me: Combatant, events: CombatEvent[]): void
   if (!groups.length) return;
   for (const g of groups) {
     g.amount = Math.max(UNIT, unitsRound(g.amount / 2));
-    g.notes = [...(g.notes ?? []), 'X0.5 2ND LINE'];
+    g.notes = [...(g.notes ?? []), 'X0.5 SECOND PAYLINE'];
   }
   events.push({ type: 'secondLine', side: me.side, line, groups: groups.map((g) => ({ symbol: g.symbol, reels: g.reels, amount: g.amount })) });
   // The second line hits, blocks and fills your meter; it pays no chips and heals nothing.

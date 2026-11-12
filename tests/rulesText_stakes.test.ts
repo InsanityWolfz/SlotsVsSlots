@@ -105,7 +105,7 @@ describe('GREEN+: ENEMY REELS HIT 5% HARDER (10% BLACK, 15% BLUE, 20% GOLD)', ()
       )[0];
     const w = drop(0);
     const g = drop(5);
-    // (Same chips on both: GOLD's 3-a-turn start comes from GREEN's STARTS FAST in the run; the bare fight places 2.)
+    // (Same bets on both: GOLD's 3-a-spin start comes from GREEN's rule in the run; the bare fight places 2.)
     expect(g.amount / g.chips).toBe(w.amount / w.chips);
   });
   it("an IOU's blast (LOAN SHARK) is the same at GREEN (not a reel hit)", () => {
@@ -124,7 +124,7 @@ describe('GREEN+: ENEMY REELS HIT 5% HARDER (10% BLACK, 15% BLUE, 20% GOLD)', ()
   });
 });
 
-describe('ELITE: "HITS 25% HARDER" (the elite card back; LOAN SHARK and CARD SHARP elites say "ITS REELS HIT")', () => {
+describe('ELITE: "HITS 25% HARDER" (the elite card back; LOAN SHARK and CARD SHARP elites say "THEIR REELS HIT")', () => {
   it("an elite's sword pair is x1.25 (named X1.25 ELITE)", () => {
     const f = bare({ kind: 'flood', every: 99, power: 0 }, (c) => {
       c.enemy.dmgMul = 1.25;
@@ -136,7 +136,7 @@ describe('ELITE: "HITS 25% HARDER" (the elite card back; LOAN SHARK and CARD SHA
     const g = ofType(f.step().events, 'spin')[0].score.groups.find((x) => x.symbol === 'sword' && x.matched)!;
     expect(g.notes).toContain('X1.25 ELITE');
   });
-  it("an elite LOAN SHARK's IOU blast is the same as a regular one's (its card says ITS REELS HIT)", () => {
+  it("an elite LOAN SHARK's IOU blast is the same as a regular one's (its card says THEIR REELS HIT)", () => {
     const blast = (mul: number) =>
       ofType(
         play(
@@ -147,7 +147,7 @@ describe('ELITE: "HITS 25% HARDER" (the elite card back; LOAN SHARK and CARD SHA
       )[0].amount;
     expect(blast(1.25)).toBe(blast(1));
   });
-  it("an elite CARD SHARP's marked cards bite the same as a regular one's (its card says ITS REELS HIT)", () => {
+  it("an elite CARD SHARP's marked cards bite the same as a regular one's (its card says THEIR REELS HIT)", () => {
     const bite = (mul: number) =>
       ofType(
         play(
@@ -191,27 +191,27 @@ describe('OVERTIME (glossary: "EVERY HIT FROM THE REELS ON BOTH MACHINES PAYS X1
   });
 });
 
-describe('GOLD: "ACT 1\'S ABILITIES CHARGE FASTER TOO (NOT THE DOORMAN\'S)"; BLUE: "FROM ACT 2 ... (NOT THE WHEEL\'S)"', () => {
+describe('GOLD: "ENEMY ABILITIES CHARGE 1 SPIN FASTER IN ACT 1 TOO, EXCEPT THE DOORMAN\'S"; BLUE: "FROM ACT 2 ..., EXCEPT THE WHEEL\'S"', () => {
   const at = (kind: AbilityDef['kind'], every: number, stake: number, act = 1) => effectiveAbility({ kind, every, power: 1 }, { stake, act, sandglass: false }).every;
   it('regulars (3 -> 2), THE REPO MAN (3 -> 2) and THE DEALER\'s BUST (3 -> 2) do', () => {
     expect(at('flood', 3, 5)).toBe(2);
     expect(at('repo', 3, 5)).toBe(2);
     expect(at('deal', 3, 5, 3)).toBe(2);
   });
-  it("THE DOORMAN's SKIM keeps BLACK's every 2 at GOLD (the text: NOT THE DOORMAN'S)", () => {
+  it("THE DOORMAN's SKIM keeps BLACK's every 2 at GOLD (the text: EXCEPT THE DOORMAN'S)", () => {
     expect(at('jackpot', 3, 5)).toBe(at('jackpot', 3, 3));
-    expect(STAKES[5].rule).toContain("NOT THE DOORMAN'S");
+    expect(STAKES[5].rule).toContain("EXCEPT THE DOORMAN'S");
   });
-  it("THE WHEEL's NO MORE BETS keeps its clock at BLUE and GOLD (the text: NOT THE WHEEL'S)", () => {
+  it("THE WHEEL's NO MORE BETS keeps its clock at BLUE and GOLD (the text: EXCEPT THE WHEEL'S)", () => {
     expect(at('bets', 3, 5, 2)).toBe(at('bets', 3, 0, 2));
-    expect(STAKES[4].rule).toContain("NOT THE WHEEL'S");
+    expect(STAKES[4].rule).toContain("EXCEPT THE WHEEL'S");
   });
   it('no ability charges faster than every 2 (THE OWNER is already there)', () => {
     expect(at('owner', 2, 5, 4)).toBe(2);
   });
 });
 
-describe('BLUE: "FROM ACT 2, ENEMY ABILITIES CHARGE FASTER"', () => {
+describe('BLUE: "FROM ACT 2 ENEMY ABILITIES CHARGE 1 SPIN FASTER"', () => {
   it('act 2 regulars charge faster (3 -> 2)', () => {
     expect(effectiveAbility({ kind: 'carpet', every: 3, power: 2 }, { stake: 4, act: 2, sandglass: false }).every).toBe(2);
   });
@@ -224,7 +224,7 @@ describe('BLUE: "FROM ACT 2, ENEMY ABILITIES CHARGE FASTER"', () => {
   });
 });
 
-describe('GOLD: "BOSSES HAVE +8% HP"', () => {
+describe('GOLD: "BOSSES HAVE 8% MORE HP"', () => {
   const hpAt = (stake: number, boss: 'house' | 'wheel' | 'dealer') => {
     const r = createRun(defaultConfig(), 3, 'knight', stake);
     r.pendingStart = null;
@@ -244,7 +244,7 @@ describe('GOLD: "BOSSES HAVE +8% HP"', () => {
   });
 });
 
-describe('RED: "SCARS: EVERY 4TH FIGHT YOU WIN LEAVES A PERMANENT ROCK ON YOUR MACHINE"', () => {
+describe('RED: "EVERY FOURTH FIGHT YOU WIN LEAVES A PERMANENT ROCK ON ONE OF YOUR REELS"', () => {
   const winOnce = (r: RunState) => {
     const f = new Fight(fightConfig(r, defaultConfig()), 1);
     f.winner = 'player';

@@ -25,7 +25,7 @@ export async function slime(d: Director, e: Ev<'slime'>): Promise<void> {
 
   if (e.cells.length === 0) {
     const c = d.machineCenter(e.to);
-    await d.popText('NO TARGET', c.x, HIT_Y, 3, COLORS.textDim, 30, 0.2);
+    await d.popText('NOTHING TO SPILL ON', c.x, HIT_Y, 3, COLORS.textDim, 30, 0.2);
     return;
   }
   const flood = e.cells.length >= 9;
@@ -59,7 +59,7 @@ export async function slime(d: Director, e: Ev<'slime'>): Promise<void> {
   }
   if (e.wasted > 0) {
     const c = d.machineCenter(e.to);
-    d.bg(d.popText(`${e.wasted} WASTED`, c.x, HIT_Y, 2, COLORS.textDim, 20, 0.2));
+    d.bg(d.popText(`NO ROOM FOR ${e.wasted} MORE`, c.x, HIT_Y, 2, COLORS.textDim, 20, 0.2));
   }
   d.settle(e.from, e.reels);
   await d.c.wait(0.2);
@@ -83,7 +83,7 @@ export async function cleanse(d: Director, e: Ev<'cleanse'>): Promise<void> {
     d.s.particles.burst({ x: pos.x, y: pos.y, count: 12, colors: ['#ffffff', '#fff6c8', COLORS.slime], speed: [60, 220], gravity: -300, life: [0.4, 0.8], size: [2, 4] });
     await d.c.wait(0.05);
   }
-  await d.banner(`CLEANSED x${e.cells.length}!`, COLORS.goldLight, 1.3, 0.4, '', BANNER_Y, 3);
+  await d.banner(`${count(e.cells.length, 'SYMBOL')} MOPPED UP!`, COLORS.goldLight, 1.3, 0.4, '', BANNER_Y, 3);
 }
 
 /** A jackpot of stolen cells: every stolen symbol comes home. */
@@ -101,7 +101,7 @@ export async function recover(d: Director, e: Ev<'recover'>): Promise<void> {
     d.s.particles.burst({ x: pos.x, y: pos.y, count: 12, colors: ['#ffffff', '#c9a0ff'], speed: [60, 220], gravity: -300, life: [0.4, 0.8], size: [2, 4] });
     await d.c.wait(0.05);
   }
-  await d.banner(e.cells.length ? `RECOVERED x${e.cells.length}!` : 'NOTHING STOLEN', COLORS.goldLight, 1.3, 0.4, '', BANNER_Y, 3);
+  await d.banner(e.cells.length ? `${count(e.cells.length, 'SYMBOL')} BACK!` : 'NOTHING STOLEN', COLORS.goldLight, 1.3, 0.4, '', BANNER_Y, 3);
 }
 
 export async function fizzle(d: Director, e: Ev<'fizzle'>): Promise<void> {
@@ -163,7 +163,7 @@ export async function status(d: Director, e: Ev<'freeze'> | Ev<'lock'>, kind: 'f
   });
   await Promise.all(flights);
   const c = d.machineCenter(e.to);
-  const label = ice ? `FROZEN ${e.turns} TURN${e.turns > 1 ? 'S' : ''}` : 'JAMMED!';
+  const label = ice ? `FROZEN FOR ${count(e.turns, 'SPIN')}` : 'JAMMED!';
   // (Over the reels: on the machine's top edge it sat under the YOUR SPIN banner: playtest 2026-11-08.)
   d.bg(d.popText(label, c.x, MACHINE_TOP + MACHINE_H / 2, 3, ice ? '#9fe8ff' : '#ffb070', 16, 0.4));
   if (e.reels.length) d.settle(e.from, e.reels);
@@ -237,7 +237,7 @@ export async function steal(d: Director, e: Ev<'steal'>): Promise<void> {
   await Promise.all(grabs);
   const c = d.machineCenter(e.to);
   if (e.repo) repossessed(d, e.to, e.symbols.map((s) => symLabel(s)).join(' + '));
-  else d.bg(d.popText(`STOLEN x${e.cells.length}`, c.x, MACHINE_TOP - 4, 3, '#c9a0ff', 16, 0.3));
+  else d.bg(d.popText(`${count(e.cells.length, 'SYMBOL')} STOLEN`, c.x, MACHINE_TOP - 4, 3, '#c9a0ff', 16, 0.3));
   if (e.reels.length) d.settle(e.from, e.reels);
   await d.c.wait(0.15);
 }
@@ -289,7 +289,7 @@ export async function hex(d: Director, e: Ev<'hex'>): Promise<void> {
   });
   await Promise.all(flights);
   const c = d.machineCenter(e.to);
-  d.bg(d.popText(`JINXED ${e.turns} TURN${e.turns > 1 ? 'S' : ''}: HALF PAY`, c.x, MACHINE_TOP + MACHINE_H / 2, 2, '#e0a0ff', 16, 0.5));
+  d.bg(d.popText(`JINX! PAYS HALF FOR ${count(e.turns, 'SPIN')}`, c.x, MACHINE_TOP + MACHINE_H / 2, 2, '#e0a0ff', 16, 0.5));
   if (e.reels.length) d.settle(e.from, e.reels);
   await d.c.wait(0.2);
 }
@@ -314,7 +314,7 @@ export async function bomb(d: Director, e: Ev<'bomb'>): Promise<void> {
   });
   await Promise.all(tosses);
   const c = d.machineCenter(e.to);
-  d.bg(d.popText(`+${e.cells.length} IOU${e.cells.length > 1 ? 'S' : ''}: DUE IN ${BOMB.fuse}`, c.x, MACHINE_TOP - 30, 2, '#ffb070', 16, 0.5));
+  d.bg(d.popText(`${count(e.cells.length, 'IOU')} DUE IN ${count(BOMB.fuse, 'SPIN')}`, c.x, MACHINE_TOP - 30, 2, '#ffb070', 16, 0.5));
   if (e.reels.length) d.settle(e.from, e.reels);
   await d.c.wait(0.15);
 }
@@ -339,7 +339,7 @@ export async function defuse(d: Director, e: Ev<'defuse'>): Promise<void> {
     d.s.particles.burst({ x: p.x, y: p.y, count: 12, colors: ['#7dff7a', '#ffffff'], speed: [60, 200], gravity: -150, life: [0.3, 0.5], size: [2, 4] });
   }
   const c = d.machineCenter(e.side);
-  await d.popText(`PAID OFF${e.cells.length > 1 ? ` x${e.cells.length}` : ''}!`, c.x, MACHINE_TOP - 4, 3, '#7dff7a', 16, 0.3);
+  await d.popText(e.cells.length > 1 ? `${e.cells.length} IOUS PAID OFF!` : 'PAID OFF!', c.x, MACHINE_TOP - 4, 3, '#7dff7a', 16, 0.3);
 }
 
 export async function blast(d: Director, e: Ev<'blast'>): Promise<void> {
@@ -375,7 +375,7 @@ export async function gulp(d: Director, e: Ev<'gulp'>): Promise<void> {
   });
   await Promise.all(chips);
   d.s.gutter.chipsEaten = (d.s.gutter.chipsEaten ?? 0) + e.chips;
-  await d.popText(`ATE ${e.chips} CHIP${e.chips > 1 ? 'S' : ''}!`, c.x, MACHINE_TOP - 4, 3, '#ffd23f', 16, 0.3);
+  await d.popText(`TOOK ${count(e.chips, 'CHIP')}!`, c.x, MACHINE_TOP - 4, 3, '#ffd23f', 16, 0.3);
 }
 
 /** The Counterfeiter slaps fake coins over your gilds. */
@@ -400,7 +400,7 @@ export async function fake(d: Director, e: Ev<'fake'>): Promise<void> {
   });
   await Promise.all(hits);
   const c = d.machineCenter(e.to);
-  d.bg(d.popText(`FAKED: ${charmList(e.enhs)} OFF FOR ${e.turns} TURNS`, c.x, MACHINE_TOP + MACHINE_H / 2, 2, '#c0c0c0', 16, 0.6));
+  d.bg(d.popText(`${charmList(e.enhs)} OFF FOR ${count(e.turns, 'SPIN')}`, c.x, MACHINE_TOP + MACHINE_H / 2, 2, '#c0c0c0', 16, 0.6));
   if (e.reels.length) d.settle(e.from, e.reels);
   await d.c.wait(0.15);
 }
@@ -431,7 +431,7 @@ export async function markCells(d: Director, e: Ev<'mark'>): Promise<void> {
   });
   await Promise.all(flicks);
   const c = d.machineCenter(e.to);
-  d.bg(d.popText(`MARKED x${e.cells.length}: THEY BITE ON YOUR PAYLINE`, c.x, TOP_ROW_Y, 2, '#ff8aa0', 16, 0.5));
+  d.bg(d.popText('MARKED! ON YOUR PAYLINE THEY HIT YOU', c.x, TOP_ROW_Y, 2, '#ff8aa0', 16, 0.5));
   if (e.reels.length) d.settle(e.from, e.reels);
   await d.c.wait(0.1);
 }
@@ -464,7 +464,7 @@ export async function confiscate(d: Director, e: Ev<'confiscate'>): Promise<void
   }
   const c = d.machineCenter(e.to);
   if (e.repo) repossessed(d, e.to, `${e.enhs.map((x) => charmName(x)).join(' + ')} CHARM`);
-  else d.bg(d.popText(`CONFISCATED: ${charmList(e.enhs)}`, c.x, MACHINE_TOP - 30, 2, '#e0c090', 16, 0.6));
+  else d.bg(d.popText(`${charmList(e.enhs)} TAKEN`, c.x, MACHINE_TOP - 30, 2, '#e0c090', 16, 0.6));
   if (e.reels.length) d.settle(e.from, e.reels);
   await d.c.wait(0.3);
 }
@@ -474,17 +474,20 @@ export function repossessed(d: Director, to: SideId, what: string): void {
   const c = d.machineCenter(to);
   d.s.sounds.stingerMedium();
   // (Both clear the machine's frame: the small line sat on its top edge.)
-  d.bg(d.popText(`REPOSSESSED: ${what}`, c.x, MACHINE_TOP - 50, 2.5, '#ff9a3a', 18, 0.9));
-  d.bg(d.popText('BACK AFTER THE FIGHT', c.x, MACHINE_TOP - 27, 1.5, '#ffd0a0', 10, 0.9));
+  d.bg(d.popText(`${what} REPOSSESSED`, c.x, MACHINE_TOP - 50, 2.5, '#ff9a3a', 18, 0.9));
+  d.bg(d.popText('IT COMES BACK AFTER THE FIGHT', c.x, MACHINE_TOP - 27, 1.5, '#ffd0a0', 10, 0.9));
 }
 
 export async function rake(d: Director, e: Ev<'rake'>): Promise<void> {
   if (e.reels.length) await d.activate(e.from, e.reels, '#c87a3a');
   d.s.sounds.coin(1);
   const c = d.machineCenter(e.to);
-  await d.popText(`RAKED: PAYS -${e.cut} FOR ${e.turns} TURN${e.turns > 1 ? 'S' : ''}`, c.x, MACHINE_TOP + MACHINE_H / 2, 2, '#e0a070', 16, 0.5);
+  await d.popText(`RAKED! PAYS ${e.cut} LESS FOR ${count(e.turns, 'SPIN')}`, c.x, MACHINE_TOP + MACHINE_H / 2, 2, '#e0a070', 16, 0.5);
   if (e.reels.length) d.settle(e.from, e.reels);
 }
+
+/** A count and its noun: 1 SYMBOL, 3 SYMBOLS. */
+const count = (n: number, one: string): string => `${n} ${one}${n === 1 ? '' : 'S'}`;
 
 /** The Charms an ability hit, for its popup: named up to two ("GOLD + KEEN CHARMS"), counted past that ("4 CHARMS"),
  * so a wide fake never runs off the screen (QA 2026-11-04). */

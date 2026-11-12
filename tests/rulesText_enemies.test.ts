@@ -8,7 +8,7 @@ import { defaultConfig, reels3, UNIT, type RelicId } from '../src/core/config';
 import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { ARCHETYPES, makeEnemy, REPO_MAN, WHEEL, BOSS, DEALER, type Archetype } from '../src/core/enemies';
+import { ARCHETYPES, ENDLESS, makeEnemy, REPO_MAN, WHEEL, BOSS, DEALER, type Archetype } from '../src/core/enemies';
 import { Rng } from '../src/core/rng';
 import { createRun, skipToBoss, type RunState } from '../src/core/run';
 import { fightConfig, shownAbility } from '../src/core/fightSetup';
@@ -230,7 +230,7 @@ describe('boss rules vs the fight', () => {
     const r = bossRun(2, { relics: ['quickening'] });
     const every = shownAbility(r, WHEEL.ability!, 'wheel').every;
     const text = bossRules('wheel', { stake: 0, cabinet: 'tesla', houseEvery: 3, wheelEvery: every }).rules[1].text;
-    expect(text.startsWith(`EVERY ${longFight(r).sides.enemy.ability!.every} TURNS: NO MORE BETS`)).toBe(true);
+    expect(text.startsWith(`EVERY ${longFight(r).sides.enemy.ability!.every} OF HER SPINS SHE CALLS NO MORE BETS`)).toBe(true);
     expect(every).toBe(3);
   });
   it("THE HOUSE with ESPRESSO SHOT: the pre-fight card's EVERY N (houseEvery) matches the fight's skim clock", () => {
@@ -238,11 +238,11 @@ describe('boss rules vs the fight', () => {
     const shown = shownAbility(r, { kind: 'jackpot', every: POT.cashEvery, power: 1 }, 'house').every;
     expect(shown).toBe(longFight(r).sides.enemy.ability!.every);
   });
-  it('THE HOUSE: "EVERY 3 TURNS: IT SKIMS" - its first skim lands on its 4th turn, then every 3', () => {
+  it('THE HOUSE: "EVERY 3 OF HIS SPINS HE SKIMS" - its first skim lands on its 4th turn, then every 3', () => {
     const r = bossRun(1);
     expect(fireTurns(longFight(r), 18)).toEqual([4, 7]);
   });
-  it('THE HOUSE: "FROM SPIN 20, LAST CALL: IT SKIMS EVERY TURN" - it skims on spins 20, 22, 24...', () => {
+  it('THE HOUSE: "FROM SPIN 20 HE SKIMS ON EACH OF HIS SPINS" - it skims on spins 20, 22, 24...', () => {
     const r = bossRun(1);
     const f = longFight(r);
     const spins: number[] = [];
@@ -252,7 +252,16 @@ describe('boss rules vs the fight', () => {
     }
     const late = spins.filter((t) => t >= 18);
     expect(late.slice(0, 3)).toEqual([20, 22, 24]);
-    expect(bossRules('house', { stake: 0, houseEvery: 3 }).rules.map((x) => x.text).join(' ')).toContain('FROM SPIN 20, LAST CALL');
+    expect(bossRules('house', { stake: 0, houseEvery: 3 }).rules.map((x) => x.text).join(' ')).toContain('FROM SPIN 20 HE SKIMS ON EACH OF HIS SPINS');
+  });
+  it('THE HOUSE: "YOUR JACKPOTS WIN HIS POT AND HIT HIM WITH IT" - a jackpot empties the pot onto him, past his shield', () => {
+    const f = longFight(bossRun(1, { cab: 'knight' }));
+    f.forceNext('player', ['sword', 'sword', 'sword']);
+    const won = ofType(f.step().events, 'potWin')[0];
+    expect([won.from, won.to, won.potLeft]).toEqual(['player', 'enemy', 0]);
+    expect(won.amount).toBe(POT.seed);
+    expect(won.hpDamage).toBe(POT.seed);
+    expect(bossRules('house', { stake: 0, houseEvery: 3 }).win).toBe('YOUR JACKPOTS WIN HIS POT AND HIT HIM WITH IT');
   });
 });
 
@@ -273,11 +282,38 @@ describe('ENDLESS: the boss cards against the loop fights', () => {
     const f = new Fight(fightConfig(r, defaultConfig()), 3);
     expect(n).toBe(f.betPer());
   });
-  it("the loop HOUSE's card (houseEvery: 'EVERY N TURNS: IT SKIMS') says the N the fight plays", () => {
+  it("the loop HOUSE's card (houseEvery: 'EVERY N OF HIS SPINS HE SKIMS') says the N the fight plays", () => {
     const r = loopRun('house');
     const shown = shownAbility(r, { kind: 'jackpot', every: POT.cashEvery, power: 1 }, 'house').every;
     const f = new Fight(fightConfig(r, defaultConfig()), 3);
     expect(shown).toBe(f.sides.enemy.ability!.every);
+  });
+  it("the loop HOUSE's rules say what the loop fight does: no skim on each spin from spin 20, and a jackpot wins A THIRD OF HIS POT", () => {
+    const br = bossRules('house', { stake: 2, houseEvery: ENDLESS.houseEvery, loop: 1 });
+    expect(br.rules.map((x) => x.text).join(' ')).not.toContain('FROM SPIN');
+    expect(br.win).toBe('YOUR JACKPOTS WIN A THIRD OF HIS POT AND HIT HIM WITH IT');
+    // The fight: his skims stay 2 of his spins apart past spin 20 (act 1's DOORMAN skims on 20, 22, 24).
+    // (The loop's pot is sized to your HP when the fight is built: the HP that keeps both machines up is set after.)
+    const f = new Fight(fightConfig(loopRun('house'), defaultConfig()), 4);
+    f.sides.player.maxHp = f.sides.player.hp = 1e9;
+    f.sides.enemy.maxHp = f.sides.enemy.hp = 1e12;
+    const spins: number[] = [];
+    for (let i = 0; i < 30 && !f.over; i++) {
+      const res = f.step();
+      if (res.events.some((e) => e.type === 'potWin' && e.from === 'enemy')) spins.push(res.turn);
+    }
+    const late = spins.filter((t) => t >= 18);
+    expect(late.length).toBeGreaterThan(1);
+    for (let i = 1; i < late.length; i++) expect(late[i] - late[i - 1]).toBe(2 * ENDLESS.houseEvery);
+    // A jackpot of yours: a third of the pot (ENDLESS.potSteal), the rest stays.
+    const g = new Fight(fightConfig(loopRun('house'), defaultConfig()), 4);
+    g.forceNext('player', ['sword', 'sword', 'sword']);
+    const won = ofType(g.step().events, 'potWin')[0];
+    expect(won.from).toBe('player');
+    // (34% of it, rounded up to a whole 10: 50 of a 120 pot.)
+    expect(won.amount).toBe(Math.ceil(((won.amount + won.potLeft) * ENDLESS.potSteal) / UNIT) * UNIT);
+    expect(ENDLESS.potSteal).toBeCloseTo(1 / 3, 1);
+    expect(won.potLeft).toBeGreaterThan(won.amount);
   });
 });
 
@@ -334,7 +370,7 @@ describe('FREEZE (glossary): "A FROZEN REEL DOESN\'T SPIN. AS IT FREEZES IT CAN 
 });
 
 describe("THE WHEEL's rules card names every rule that changes how you beat it", () => {
-  it('a hit big enough to kill THE WHEEL from full HP stops at half HP, as its rules say (IT HOLDS)', () => {
+  it('a hit big enough to kill THE WHEEL from full HP stops at half HP, as her rules say (THE SPIN ... STOPS THERE)', () => {
     const c = defaultConfig();
     c.seed = 4;
     c.player = { hp: 400, strips: reels3({ sword: 12 }) };
@@ -344,7 +380,7 @@ describe("THE WHEEL's rules card names every rule that changes how you beat it",
     f.forceNext('player', ['sword', 'sword', 'sword']);
     f.step();
     const text = bossRules('wheel', { stake: 0, cabinet: 'knight', houseEvery: 3 }).rules.map((r) => r.text).join(' ');
-    expect(text).toMatch(/AT HALF HP IT HOLDS FOR THE REST OF THAT TURN/);
+    expect(text).toMatch(/THE SPIN THAT TAKES HER TO HALF HP STOPS THERE/);
     expect(f.sides.enemy.hp).toBe(2000);
   });
 });

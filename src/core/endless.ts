@@ -38,11 +38,11 @@ export type NightId = NonNullable<GameConfig['night']>;
 export const NIGHT = { limitHp: 1.15, luckyWilds: 2, fastMeter: 1.5 };
 export const NIGHTS: Record<NightId, { title: string; text: string }> = {
   happy: { title: 'HAPPY HOUR', text: 'JACKPOTS PAY X2' },
-  limit: { title: 'HIGH LIMIT', text: 'WINS PAY X2 CHIPS. ENEMIES HAVE +15% HP' },
+  limit: { title: 'HIGH LIMIT', text: 'WINS PAY X2 CHIPS. ENEMIES HAVE 15% MORE HP' },
   lucky: { title: 'LUCKY NIGHT', text: 'EVERY REEL HAS 2 MORE WILDS' },
   showdown: { title: 'SHOWDOWN', text: 'EVERY HIT PAYS X1.5' },
   iron: { title: 'IRON NIGHT', text: 'SHIELDS BLOCK X2' },
-  fast: { title: 'FAST NIGHT', text: 'ABILITIES CHARGE 1 TURN FASTER. METERS FILL X1.5' },
+  fast: { title: 'FAST NIGHT', text: 'ABILITIES CHARGE 1 SPIN FASTER. METERS FILL 50% FASTER' },
 };
 export const NIGHT_IDS = Object.keys(NIGHTS) as NightId[];
 /** TONIGHT'S RULE: what the loop plays under, for both machines. */

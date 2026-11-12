@@ -76,7 +76,7 @@ export async function potWin(d: Director, e: Ev<'potWin'>): Promise<void> {
   const big = Math.min(1, e.amount / (15 * UNIT));
   if (e.amount >= 8 * UNIT || playerWins) d.s.sounds.fanfareJackpot();
   else d.s.sounds.stingerMedium();
-  d.bg(d.banner(playerWins ? 'POT STOLEN!' : 'SKIM!', playerWins ? COLORS.goldLight : '#ff6a5a', 1.2 + 0.3 * big, 0.4, `${e.amount} DAMAGE`, BANNER_Y, 4));
+  d.bg(d.banner(playerWins ? 'POT WON!' : 'SKIM!', playerWins ? COLORS.goldLight : '#ff6a5a', 1.2 + 0.3 * big, 0.4, `${e.amount} DAMAGE`, BANNER_Y, 4));
   const n = Math.min(24, 6 + Math.round(e.amount / UNIT));
   const coins = Array.from({ length: n }, async (_, i) => {
     await d.c.wait(i * 0.03);
@@ -136,7 +136,7 @@ export async function dealerHand(d: Director, e: Ev<'dealerHand'>): Promise<void
   }
   d.s.sounds.abilityFire();
   d.s.camera.chromaPulse(0.6);
-  const rule = e.hand >= 3 ? `EVERY ${e.every} TURNS HE GOES ALL IN. IT PIERCES SHIELDS` : `HIS HITS ARE X${DEALER_RULES.raiseMul} FROM NOW ON`;
+  const rule = e.hand >= 3 ? `HE GOES ALL IN EVERY ${e.every} OF HIS SPINS. IT PIERCES SHIELDS` : `HE HITS X${DEALER_RULES.raiseMul} FROM NOW ON`;
   await d.banner(`HAND ${e.hand}: ${DEALER_HANDS[e.hand - 1]}`, '#ff6a5a', 1.3, 0.6, rule, MACHINE_TOP + MACHINE_H / 2, 4);
 }
 
@@ -162,7 +162,7 @@ export async function betPlaced(d: Director, e: Ev<'betPlaced'>): Promise<void> 
   const from = { x: MACHINE_CX.enemy, y: MACHINE_TOP - 22 };
   if (e.ball) {
     const c = d.machineCenter('enemy');
-    d.bg(d.popText(`THE BALL: +${e.reels.length} BET${e.reels.length > 1 ? 'S' : ''}`, c.x, MACHINE_TOP - 22, 2, '#ff8a7a', 16, 0.4));
+    d.bg(d.popText(`THE BALL ADDS ${e.reels.length} BET${e.reels.length > 1 ? 'S' : ''}`, c.x, MACHINE_TOP - 22, 2, '#ff8a7a', 16, 0.4));
   }
   const flights = e.reels.map(async (r, i) => {
     await d.c.wait(i * 0.1);
@@ -219,7 +219,7 @@ export async function noMoreBets(d: Director, e: Ev<'noMoreBets'>): Promise<void
   }
   if (e.chips <= 0) {
     const c = d.machineCenter('player');
-    await d.popText('NO MORE BETS: THE TABLE IS CLEAN!', c.x, MACHINE_TOP - 22, 2, COLORS.goldLight, 16, 0.5);
+    await d.popText('NO MORE BETS! NO BETS LEFT', c.x, MACHINE_TOP - 22, 2, COLORS.goldLight, 16, 0.5);
     syncTable(d, [0, 0, 0]);
     return;
   }
@@ -264,5 +264,5 @@ export async function wheelFast(d: Director, e: Ev<'wheelFast'>): Promise<void> 
   d.flashMachine(e.side, 0.5, 0.4);
   const c = d.machineCenter(e.side);
   d.s.particles.burst({ x: c.x, y: MACHINE_TOP - 22, count: 50, colors: ['#ff3a2e', '#1a1018', '#ffe08a'], speed: [150, 500], kind: 'spark', gravity: 400, life: [0.4, 0.8], size: [2, 5] });
-  await d.banner('THE WHEEL SPINS FASTER!', '#ff6a5a', 1.25, 0.5, `${e.per} CHIPS A TURN NOW`, BANNER_Y, 4);
+  await d.banner('THE WHEEL SPINS FASTER!', '#ff6a5a', 1.25, 0.5, `${e.per} BETS EACH SPIN NOW`, BANNER_Y, 4);
 }

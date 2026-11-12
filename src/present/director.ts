@@ -155,7 +155,7 @@ export class Director {
       case 'glassBreak':
         return this.glassBreak(e);
       case 'ownerPhase':
-        return this.banner(['', 'HE LOOSENS HIS TIE', 'HE STANDS UP', 'HE GOES ALL IN'][e.phase] ?? '', '#ff6a5a', 1.3, 0.35, `YOU TOOK ${fmtNum(ownerRung(e.phase))} OF HIS FORTUNE: HIS HITS ARE ${Math.round(OWNER_RULES.phaseDmg * e.phase * 100)}% HARDER`, BANNER_Y, 3);
+        return this.banner(['', 'HE LOOSENS HIS TIE', 'HE STANDS UP', 'HE ROLLS UP HIS SLEEVES'][e.phase] ?? '', '#ff6a5a', 1.3, 0.35, `YOU TOOK ${fmtNum(ownerRung(e.phase))} OF HIS FORTUNE. HE HITS ${Math.round(OWNER_RULES.phaseDmg * e.phase * 100)}% HARDER`, BANNER_Y, 3);
       case 'secondLine':
         return this.secondLine(e);
       case 'death':
@@ -239,11 +239,11 @@ export class Director {
         this.s.sounds.stingerMedium();
         this.s.gutter.allInCap = e.cap;
         this.s.gutter.allInFloor = e.floor;
-        return this.banner('ALL IN NEXT TURN!', '#ff6a5a', 1.2, 0.3, `${e.floor === e.cap ? fmtNum(e.cap) : `${fmtNum(e.floor)} TO ${fmtNum(e.cap)}`}. IT PIERCES SHIELDS`, MACHINE_TOP + MACHINE_H / 2, 3);
+        return this.banner('HE GOES ALL IN NEXT SPIN!', '#ff6a5a', 1.2, 0.3, `FOR ${e.floor === e.cap ? fmtNum(e.cap) : `${fmtNum(e.floor)} TO ${fmtNum(e.cap)}`}. IT PIERCES SHIELDS`, MACHINE_TOP + MACHINE_H / 2, 3);
       case 'closing': {
         const c = this.machineCenter('enemy');
         this.s.sounds.click();
-        return this.popText(`CLOSING TIME IN ${e.left}`, c.x, MACHINE_TOP - 22, 2, '#ff6a5a', 12, 0.6);
+        return this.popText(`CLOSING TIME IN ${e.left} OF YOUR SPINS`, c.x, MACHINE_TOP - 22, 2, '#ff6a5a', 12, 0.6);
       }
       case 'closingTime':
         this.s.sounds.stingerMedium();
@@ -280,7 +280,7 @@ export class Director {
         // LUCRE: banked on a win (the RESULTS line counts them).
         const c = this.machineCenter(e.side);
         this.s.sounds.coin(8);
-        return this.popText(`CHIP CHARM +${e.amount}`, c.x + 80, MACHINE_TOP - 22, 2, '#ffd23f', 14, 0.35);
+        return this.popText(`CHIP CHARM PAYS ${e.amount} CHIP${e.amount === 1 ? '' : 'S'}`, c.x + 80, MACHINE_TOP - 22, 2, '#ffd23f', 14, 0.35);
       }
       case 'buildUp':
         return this.buildUp(e);
@@ -303,7 +303,7 @@ export class Director {
       case 'coverCharge': {
         const c = this.machineCenter(e.side);
         this.s.sounds.coin(1);
-        return this.popText(`COVER CHARGE: -${e.amount} THROUGH YOUR SHIELD`, c.x, MACHINE_TOP - 22, 2, '#ff8a7a', 12, 0.5);
+        return this.popText(`COVER CHARGE PIERCES FOR ${e.amount}`, c.x, MACHINE_TOP - 22, 2, '#ff8a7a', 12, 0.5);
       }
       case 'allInHit':
         return allInHit(this, e);
@@ -650,7 +650,7 @@ export class Director {
     if (!this.s.juice.turnCards) return;
     const player = e.side === 'player';
     this.s.sounds.turnCard(player);
-    const card = this.s.fx.add(new TurnCard(player ? 'PLAYER TURN' : 'ENEMY TURN', player ? COLORS.goldLight : COLORS.slime, BANNER_Y));
+    const card = this.s.fx.add(new TurnCard(player ? 'YOUR SPIN' : 'THEIR SPIN', player ? COLORS.goldLight : COLORS.slime, BANNER_Y));
     card.x = player ? -W : W;
     await this.c.tween({ from: card.x, to: 0, dur: 0.18, ease: cubicOut, onUpdate: (v) => (card.x = v) });
     this.bg(
@@ -731,7 +731,7 @@ export class Director {
     this.s.sounds.coin(4);
     const c = cellCenter(e.side, 1, 0);
     // (On the machine's callout row: over the top row it covered that row's own numbers.)
-    await this.popText(`2ND LINE +${e.groups.reduce((a, g) => a + g.amount, 0)}`, c.x, CALLOUT_Y, 2.5, COLORS.goldLight, 30, 0.3, true);
+    await this.popText(`SECOND PAYLINE PAYS ${e.groups.reduce((a, g) => a + g.amount, 0)}`, c.x, CALLOUT_Y, 2.5, COLORS.goldLight, 30, 0.3, true);
   }
 
   /** GLASS shattered: the charm leaves the cell for good, with a crack and shards. */
@@ -785,7 +785,7 @@ export class Director {
     const dealt = e.kind === 'deal' ? this.s.gutter.nextDeal : undefined;
     // THE WHEEL: the ball drops, the wheel on its topper races.
     if (e.kind === 'bets') this.s.gutter.wheelSpeed = 16;
-    await this.banner(dealt ? `THE DEAL: ${dealt === 'allin' ? 'ALL IN' : 'BUST'}!` : `${abilityName(e.kind)}!`, '#ff6a5a', 1.35, 0.25);
+    await this.banner(dealt ? `HE DEALS ${dealt === 'allin' ? 'ALL IN' : 'A BUST'}!` : `${abilityName(e.kind)}!`, '#ff6a5a', 1.35, 0.25);
   }
 
   private async endTurn(side: SideId): Promise<void> {

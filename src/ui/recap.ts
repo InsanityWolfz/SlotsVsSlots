@@ -15,15 +15,16 @@ const ROWS: Row[] = [
   ['SHIELD GAINED', n('shieldGained'), n('shieldGained')],
   ['PAIRS', n('pairs'), n('pairs')],
   ['JACKPOTS', n('triples'), n('triples')],
-  ['NEAR-MISS HIT/ALL', (s) => `${s.nearMissHits}/${s.nearMisses}`, (s) => `${s.nearMissHits}/${s.nearMisses}`],
+  ['PAIRS THAT MADE A JACKPOT', (s) => `${s.nearMissHits} OF ${s.nearMisses}`, (s) => `${s.nearMissHits} OF ${s.nearMisses}`],
   ['BIGGEST HIT', n('biggestHit'), n('biggestHit')],
   ['LONGEST DRY SPELL', n('longestDrySpell'), n('longestDrySpell')],
-  ['SPECIALS (DMG)', (s) => `${s.specials} (${s.specialDamage})`, null],
-  ['ENERGY GAINED', n('energyGained'), null],
+  ['LIGHTNING BOLTS', n('specials'), null],
+  ['LIGHTNING DAMAGE', n('specialDamage'), null],
+  ['LIGHTNING CHARGED', n('energyGained'), null],
   ['SYMBOLS SPILLED ON', null, n('slimeApplied')],
-  ['SPILLS WASTED', null, n('slimeWasted')],
-  ['CLEANSES (SYMBOLS)', (s) => `${s.cleanses} (${s.cellsCleansed})`, null],
-  ['PEAK SPILL ON YOU', (s) => `${Math.round(s.peakSlimePct * 100)}%`, null],
+  ['SPILLS WITH NO ROOM', null, n('slimeWasted')],
+  ['SYMBOLS MOPPED UP', n('cellsCleansed'), null],
+  ['MOST OF YOUR REELS SPILLED', (s) => `${Math.round(s.peakSlimePct * 100)}%`, null],
 ];
 
 /** Scale every integer inside a string by progress, so "3 (30)" ticks up as a whole. */
