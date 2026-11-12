@@ -168,7 +168,7 @@ export abstract class CabinetScreen extends BuildPanel {
   }
 
   protected drawCabinets(ctx: CanvasRenderingContext2D, time: number): void {
-    drawTitle(ctx, 'CHOOSE YOUR MACHINE', W / 2, 40);
+    drawTitle(ctx, 'PICK YOUR SLOT MACHINE', W / 2, 40);
     this.drawStage(ctx, time);
     this.drawThumbs(ctx, time);
     this.drawStakePicker(ctx, time);
@@ -223,7 +223,7 @@ export abstract class CabinetScreen extends BuildPanel {
       const best = stakeOf(this.stakeFor(id));
       drawText(ctx, 'PLAYS UP TO', hx, y + h - 46, T.small, KIT.dim, { align: 'left' });
       drawChip(ctx, best.name, hx + 128 + this.stakeChipW(best.name) / 2, y + h - 46, { icon: (ix, iy) => stakeDisc(ctx, ix, iy, best.color, 7), iconW: 18 });
-      if (barred) drawText(ctx, `${stakeOf(this.stakeSel).name} LOCKED: WIN AT ${stakeOf(this.stakeFor(id)).name} WITH IT`, hx, y + h - 16, T.small, '#ff8a7a', { align: 'left' });
+      if (barred) drawText(ctx, `${stakeOf(this.stakeSel).name} IS LOCKED. WIN ON ${stakeOf(this.stakeFor(id)).name} WITH ${cab.name} FIRST`, hx, y + h - 16, T.small, '#ff8a7a', { align: 'left' });
     } else {
       drawChip(ctx, 'LOCKED', tx + 60, hy + 76, { color: '#ff8a7a', icon: (ix, iy) => drawSprite(ctx, 'icoLock', ix, iy, 2), iconW: 18 });
       wrap(`${cab.unlock} TO UNLOCK`, Math.floor((x + w - 36 - hx) / (6 * T.body))).slice(0, 2).forEach((l, i) => drawText(ctx, l, hx, hy + 172 + i * 26, T.body, KIT.text, { align: 'left' }));
@@ -320,12 +320,12 @@ export abstract class CabinetScreen extends BuildPanel {
     const show = hov >= 0 ? hov : this.stakeSel;
     const s = STAKES[show];
     const locked = show > max;
-    const rule = locked ? `${demo().on ? IN_FULL_GAME : 'LOCKED'}: ${s.rule}` : s.rule;
+    const rule = locked ? `${demo().on ? IN_FULL_GAME : 'LOCKED'}. ${s.rule}` : s.rule;
     const lines = textWidth(rule, T.body) <= W - 80 ? [rule] : wrap(rule, Math.floor((W - 80) / (6 * T.body)));
     lines.slice(0, 2).forEach((l, i) => drawText(ctx, l, W / 2, y + 46 + i * 24, T.body, locked ? KIT.dim : KIT.text));
     // (Under a two-line rule too: BLUE's dropped its ACT 3 line once its rule grew a COUNTERFEITER.)
     const ey = y + 74 + (Math.min(2, lines.length) - 1) * 24;
-    if (show >= STAKE.act3) drawText(ctx, show > STAKE.act3 ? '+ ACT 3, AND EVERY STAKE BELOW IT' : '+ ACT 3: THE DEALER', W / 2, ey, T.small, locked ? KIT.dim : '#7dff7a');
+    if (show >= STAKE.act3) drawText(ctx, show > STAKE.act3 ? 'ACT 3 AND EVERY STAKE BELOW IT ALSO APPLY' : 'THIS STAKE ADDS ACT 3 AND THE DEALER', W / 2, ey, T.small, locked ? KIT.dim : '#7dff7a');
     else if (show > 0) drawText(ctx, 'ON TOP OF THE BASE GAME', W / 2, ey, T.small, KIT.dim);
   }
 }

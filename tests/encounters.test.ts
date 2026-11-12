@@ -58,7 +58,7 @@ describe('HIGHER OR LOWER (back, user 2026-10-29)', () => {
         const res = playEncounter(run, call(st.card))!;
         expect(res.card).toBe(st.card);
         if (res.next === st.card) {
-          expect(res.title).toBe('SAME CARD: PUSH');
+          expect(res.title).toBe('SAME CARD. PUSH');
           expect(hiloState(run)).toMatchObject({ pot: st.pot, right: st.right, bet: 10 });
           seen.push++;
         } else if (res.good) {

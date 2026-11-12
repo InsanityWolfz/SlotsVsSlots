@@ -144,7 +144,7 @@ export class StatsTab implements TabBody {
     const r = this.trims.find((x) => x.b.hover);
     if (r) {
       const tr = TRIMS[r.i];
-      return lvl >= tr.level ? `${tr.name}${shownTrim(this.m.profile()).id === tr.id ? ': WORN' : ': PICK IT'}` : `${tr.name}: REACH LEVEL ${tr.level}`;
+      return lvl >= tr.level ? (shownTrim(this.m.profile()).id === tr.id ? `YOU WEAR THE ${tr.name} TRIM` : `PICK THE ${tr.name} TRIM TO WEAR IT`) : `REACH LEVEL ${tr.level} FOR THE ${tr.name} TRIM`;
     }
     return '';
   }

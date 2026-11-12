@@ -125,14 +125,14 @@ export interface ProgressCtx {
 const clearOf = (cab: CabinetId): AchievementDef => ({
   id: `clear_${cab}`,
   name: `${CABINETS[cab].hero} CASHES IN`,
-  text: `CLEAR A RUN WITH ${CABINETS[cab].name}.`,
+  text: `CLEAR A RUN WITH THE ${CABINETS[cab].name} SLOT MACHINE.`,
   // Full numbers only: THE DAILY eases act 3 and lends you machines you haven't unlocked (EXPERT_PLAYTEST_9 D5).
   check: (c) => c.won && c.cabinet === cab && !c.daily,
 });
 const stakeOf = (lvl: number): AchievementDef => ({
   id: `stake_${lvl}`,
   name: `${STAKES[lvl].name} STAKE`,
-  text: `CLEAR A RUN ON STAKE ${lvl} (${STAKES[lvl].name}) OR HIGHER.`,
+  text: `CLEAR A RUN ON THE ${STAKES[lvl].name} STAKE OR HIGHER.`,
   check: (c) => c.won && c.stake >= lvl && !c.daily,
 });
 
@@ -142,7 +142,7 @@ export const FULL_GAME_ONLY: ReadonlySet<string> = new Set(['dealer', 'clear_juk
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   // (A won fight, not a score: the starting relic alone scores 100, so a run lost in fight 1 earned it: QA RULES-06.)
-  { id: 'first_win', name: 'FIRST BLOOD', text: 'WIN A FIGHT.', check: (c) => c.act > 1 || c.won || (c.fightsWon ?? 0) > 0 },
+  { id: 'first_win', name: 'FIRST BLOOD', text: 'WIN YOUR FIRST FIGHT.', check: (c) => c.act > 1 || c.won || (c.fightsWon ?? 0) > 0 },
   { id: 'house', name: 'ON THE LIST', text: 'BEAT THE DOORMAN.', check: (c) => c.act >= 2 || c.won },
   { id: 'clear', name: 'NO MORE BETS', text: 'CLEAR A RUN.', check: (c) => c.won },
   { id: 'dealer', name: 'THE HOUSE ALWAYS LOSES', text: 'BEAT THE DEALER.', check: (c) => c.won && c.acts >= 3 && !c.daily },
@@ -159,8 +159,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'endless_1', name: 'LET IT RIDE', text: 'CLEAR AN ENDLESS LOOP.', check: (c) => c.loops >= 1 },
   { id: 'endless_3', name: 'ON A HEATER', text: 'CLEAR 3 ENDLESS LOOPS IN ONE RUN.', check: (c) => c.loops >= 3 },
   { id: 'turbo', name: 'BROKE THE BANK', text: 'BEAT THE OWNER.', check: (c) => c.loops >= 5 },
-  { id: 'chips_50', name: 'MONEYBAGS', text: 'WIN A RUN HOLDING 50 CHIPS OR MORE.', check: (c) => c.won && c.chips >= 50 },
-  { id: 'relics_12', name: 'MAGPIE', text: 'FINISH A RUN WITH 12 RELICS OR MORE.', check: (c) => c.relics >= 12 },
+  { id: 'chips_50', name: 'MONEYBAGS', text: 'CLEAR A RUN HOLDING 50 CHIPS OR MORE.', check: (c) => c.won && c.chips >= 50 },
+  { id: 'relics_12', name: 'MAGPIE', text: 'HOLD 12 RELICS OR MORE IN ONE RUN.', check: (c) => c.relics >= 12 },
   { id: 'score_5k', name: 'BIG WINNER', text: 'SCORE 5,000 IN ONE RUN.', check: (c) => c.score >= 5000 },
   { id: 'score_10k', name: 'JACKPOT', text: 'SCORE 10,000 IN ONE RUN.', check: (c) => c.score >= 10000 },
   { id: 'score_20k', name: 'WHALE WATCHING', text: 'SCORE 20,000 IN ONE RUN.', check: (c) => c.score >= 20000 },

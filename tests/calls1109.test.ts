@@ -30,7 +30,7 @@ describe('QA calls 2026-11-09', () => {
       expect(passedThisAct(run).size).toBe(offers.length);
       expect(run.records.at(-1)!.skipped).toBe(true);
       expect(run.records.at(-1)!.pick).toBeUndefined();
-      expect(runSummary(run)).toContain('SKIPPED THE DRAFT (+2 CHIPS)');
+      expect(runSummary(run)).toContain('SKIPPED THE REWARD (+2 CHIPS)');
     }
   });
 

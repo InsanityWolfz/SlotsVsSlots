@@ -222,7 +222,7 @@ export class SettingsScreen implements MenuScreen {
           ['[LB] [RB]', 'SPEED, TABS'],
           ['[A]', 'CHOOSE'],
           ['[B]', 'BACK'],
-          ['[VIEW]', 'YOUR BUILD'],
+          ['[VIEW]', 'YOUR REELS'],
           ['[LT]', 'BOSS RULES'],
           ['[START]', 'PAUSE'],
         ]
@@ -231,7 +231,7 @@ export class SettingsScreen implements MenuScreen {
           ['Q W E', 'HOLD A REEL'],
           ['A', 'AUTO'],
           ['1-4', 'SPEED'],
-          ['B', 'YOUR BUILD'],
+          ['B', 'YOUR REELS'],
           ['I', 'BOSS RULES'],
           ['M', 'MUTE'],
           ['ESC', 'PAUSE, BACK'],

@@ -141,14 +141,14 @@ export abstract class MapScreens extends CabinetScreen {
     ctx.restore();
     if (e?.elite) drawSprite(ctx, 'mapBadgeElite', x - s + 2 + 4 * k, y - s + 2 + 4 * k, 2 * Math.min(k, 1.5));
     if (o.done && st) drawSprite(ctx, 'nodeDone', x + s - 6 * k, y + s - 6 * k, 2 * Math.min(k, 1.5));
-    if (o.label && st?.kind === 'encounter') drawText(ctx, 'GAMBLE', x, y + s + 14, T.small, '#7dff7a');
+    if (o.label && st?.kind === 'encounter') drawText(ctx, 'TABLE GAME', x, y + s + 14, T.small, '#7dff7a');
     else if (o.label && st?.kind === 'shop') drawText(ctx, 'CASHIER', x, y + s + 14, T.small, '#5ad8e8');
     ctx.restore();
     if (Math.abs(this.mouse.x - x) > s || Math.abs(this.mouse.y - y) > s) return null;
     if (e) return { e, x, y: y + s };
     if (st?.kind === 'shop') return { title: 'THE CASHIER', sub: 'SPEND YOUR CHIPS', x, y: y + s };
-    if (st?.kind === 'encounter') return { title: 'A GAMBLE', sub: 'WHICH GAME? YOU FIND OUT AT THE TABLE', x, y: y + s };
-    return { title: 'CHOOSE YOUR PATH', sub: 'AFTER THIS FIGHT', x, y: y + s };
+    if (st?.kind === 'encounter') return { title: 'A TABLE GAME', sub: 'WHICH GAME? YOU FIND OUT AT THE TABLE', x, y: y + s };
+    return { title: 'PICK YOUR PATH', sub: 'AFTER THIS FIGHT', x, y: y + s };
   }
 
   /** A stop's tip: the name, then its ability as a chip (or the stop's line), in a kit panel. */

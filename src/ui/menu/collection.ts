@@ -38,7 +38,7 @@ const SHELF_Y = 178;
 const CAPTION: Record<Shelf, string> = {
   charms: 'A CHARM SITS ON ONE SYMBOL ON YOUR REELS',
   relics: 'YOU KEEP A RELIC FOR THE WHOLE RUN',
-  enemies: "THE CASINO TOWN'S CAST, AND HOW EACH ONE CHEATS",
+  enemies: "THE CASINO TOWN'S CAST AND HOW EACH ONE CHEATS",
 };
 
 interface Item {

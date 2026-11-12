@@ -85,6 +85,6 @@ describe('the act 1 demo', () => {
       expect(h).not.toBe('');
       expect(wrap(h, HOOK_COLS).length).toBeLessThanOrEqual(2);
     }
-    expect(STAKES_LINE).toBe('6 STAKES, WHITE TO GOLD. ENDLESS: PLAY ON UNTIL YOU BUST');
+    expect(STAKES_LINE).toBe('6 STAKES FROM WHITE TO GOLD. IN ENDLESS YOU PLAY ON UNTIL YOU BUST');
   });
 });

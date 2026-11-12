@@ -1,5 +1,6 @@
 import { CABINETS, CABINET_ORDER } from '../../core/cabinets';
-import { DEALER, OWNER, WHEEL } from '../../core/enemies';
+import { DEALER, OWNER, TURBO, WHEEL } from '../../core/enemies';
+import { DEALER_RULES } from '../../core/fightRules';
 import { totalFights, type RunState } from '../../core/run';
 import { STAKES } from '../../core/stakes';
 import { W } from '../../present/layout';
@@ -22,21 +23,21 @@ import { bigPortrait, spotlight, stakeDisc, wrap } from './shared';
 const MACHINE_HOOK: Record<string, string> = {
   jukebox: 'NOTES BUILD UP TO THE DROP',
   joker: 'WILDS LET ANY 2 REELS PAIR',
-  midas: 'CHIPS HIT AND WIN CHIPS',
+  midas: 'CHIP SYMBOLS HIT AND WIN CHIPS',
 };
 
 /** The bosses the demo never meets (act 1 ends at THE HOUSE), each with where you meet it and one line of its rules. */
 const BOSSES: { name: string; portrait: string; where: string; hook: string }[] = [
-  { name: WHEEL.name, portrait: WHEEL.portrait, where: 'ACT 2 BOSS', hook: 'BETS ON YOUR REELS. PAIRS CLEAR THEM' },
-  { name: DEALER.name, portrait: DEALER.portrait, where: 'ACT 3 BOSS', hook: 'THREE HANDS, EACH WITH ITS OWN HP BAR' },
-  { name: OWNER.name, portrait: OWNER.portrait, where: 'ENDLESS: LOOP 5 BOSS', hook: 'HE CHEATS EVERY 2 TURNS' },
+  { name: WHEEL.name, portrait: WHEEL.portrait, where: 'ACT 2 BOSS', hook: 'PAIRS CLEAR THE BETS ON YOUR REELS' },
+  { name: DEALER.name, portrait: DEALER.portrait, where: 'ACT 3 BOSS', hook: `HIS ${DEALER_RULES.hands.length} HANDS EACH HAVE AN HP BAR` },
+  { name: OWNER.name, portrait: OWNER.portrait, where: `ENDLESS LOOP ${TURBO.loop} BOSS`, hook: 'HE HITS HARDER WITH EACH OF HIS SPINS' },
 ];
 
 /** The size of the rest: the demo is act 1 of 3 (act 3 from the RED stake) and a share of the relics (QA DEMO-16). */
 export const SIZE_LINE = `2 MORE ACTS AND ${RELIC_ORDER.length} RELICS`;
 
 /** The stakes and ENDLESS, as one line. */
-export const STAKES_LINE = `${STAKES.length} STAKES, ${STAKES[0].name} TO ${STAKES[STAKES.length - 1].name}. ENDLESS: PLAY ON UNTIL YOU BUST`;
+export const STAKES_LINE = `${STAKES.length} STAKES FROM ${STAKES[0].name} TO ${STAKES[STAKES.length - 1].name}. IN ENDLESS YOU PLAY ON UNTIL YOU BUST`;
 
 /** The Slot Machines the demo leaves out, in the machine select's order. */
 export function fullGameMachines() {
