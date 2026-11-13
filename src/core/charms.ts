@@ -91,13 +91,13 @@ export function charmRuleText(enh: Enh, lvl: number): string {
     case 'spiked':
       return `ALSO HITS FOR ${v}% OF THE SHIELD IT GIVES`;
     case 'lucre':
-      return `ALSO PAYS ${LUCRE_CHIPS} CHIPS. UP TO ${v} EACH FIGHT. YOU COLLECT THEM WHEN YOU WIN`;
+      return `PAYS ${LUCRE_CHIPS} CHIPS. UP TO ${v} EACH FIGHT. YOU COLLECT THEM WHEN YOU WIN`;
     case 'trick':
       return `FILLS YOUR JACKPOT METER BY ${v}% WHEN IT LANDS ON YOUR PAYLINE`;
     case 'echo':
       return `HITS X${v} ON THE DROP`;
     case 'glass':
-      return `PAYS X${v}. SO DOES ITS WHOLE PAIR OR JACKPOT. SHATTERS FOR GOOD 1 TIME IN ${Math.round(1 / GLASS_BREAK)} THAT IT PAYS`;
+      return `PAYS X${v}. SO DOES ITS WHOLE PAIR OR JACKPOT. ${Math.round(GLASS_BREAK * 100)}% CHANCE TO SHATTER FOR GOOD WHEN IT PAYS`;
   }
 }
 
@@ -123,13 +123,13 @@ export function charmShortText(enh: Enh, lvl: number): string {
     case 'spiked':
       return `ALSO HITS FOR ${v}% OF THE SHIELD IT GIVES`;
     case 'lucre':
-      return `ALSO PAYS ${LUCRE_CHIPS} CHIPS. UP TO ${v} EACH FIGHT`;
+      return `PAYS ${LUCRE_CHIPS} CHIPS. UP TO ${v} EACH FIGHT`;
     case 'trick':
       return `FILLS YOUR JACKPOT METER BY ${v}%`;
     case 'echo':
       return `HITS X${v} ON THE DROP`;
     case 'glass':
-      return `PAYS X${v}. SHATTERS 1 TIME IN ${Math.round(1 / GLASS_BREAK)}`;
+      return `PAYS X${v}. ${Math.round(GLASS_BREAK * 100)}% CHANCE TO SHATTER`;
   }
 }
 

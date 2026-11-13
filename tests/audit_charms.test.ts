@@ -419,7 +419,7 @@ describe('AUDIT: BULWARK (spiked) "ALSO HITS FOR 100% OF THE SHIELD IT GIVES" (r
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: CHIP (lucre) "ALSO PAYS 3 CHIPS. UP TO 6 EACH FIGHT. YOU COLLECT THEM WHEN YOU WIN" / card "ALSO PAYS 3 CHIPS. UP TO 6 EACH FIGHT"', () => {
+describe('AUDIT: CHIP (lucre) "PAYS 3 CHIPS. UP TO 6 EACH FIGHT. YOU COLLECT THEM WHEN YOU WIN" / card "PAYS 3 CHIPS. UP TO 6 EACH FIGHT"', () => {
   const lucreRun = (gilded: Gild[], relics: RelicId[] = []) => {
     const run = createRun(base, 5, 'knight');
     run.player.strips = KNIGHT();
@@ -479,7 +479,7 @@ describe('AUDIT: CHIP (lucre) "ALSO PAYS 3 CHIPS. UP TO 6 EACH FIGHT. YOU COLLEC
   it('GOLDEN TICKET: the cap is 9 (card "... UP TO 9 EACH FIGHT")', () => {
     const { f } = lucreRun([on(0, 'sword', 'lucre')], ['ticket']);
     expect(chipEvents(f, 5)).toEqual([3, 3, 3]);
-    expect(charmShortText('lucre', 2)).toBe('ALSO PAYS 3 CHIPS. UP TO 9 EACH FIGHT');
+    expect(charmShortText('lucre', 2)).toBe('PAYS 3 CHIPS. UP TO 9 EACH FIGHT');
   });
 
   // UNCLEAR: two CHIP Charms in the same group pay +3 once (fight.ts cellCharms: `n('lucre') > 0`), and the cap is one
@@ -578,7 +578,7 @@ describe('AUDIT: ECHO "HITS X2 ON THE DROP", the card the same (JUKEBOX)', () =>
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: GLASS "PAYS X5. SO DOES ITS WHOLE PAIR OR JACKPOT. SHATTERS FOR GOOD 1 TIME IN 4 THAT IT PAYS" / card "PAYS X5. SHATTERS 1 TIME IN 4"', () => {
+describe('AUDIT: GLASS "PAYS X5. SO DOES ITS WHOLE PAIR OR JACKPOT. 25% CHANCE TO SHATTER FOR GOOD WHEN IT PAYS" / card "PAYS X5. 25% CHANCE TO SHATTER"', () => {
   const plain = groupAfter('knight', { strips: KNIGHT() }, SSS, 'sword');
 
   it('X5 to its group', () => {
@@ -625,11 +625,11 @@ describe('AUDIT: GLASS "PAYS X5. SO DOES ITS WHOLE PAIR OR JACKPOT. SHATTERS FOR
     throw new Error('no shatter in 100 seeds');
   });
 
-  it('GOLDEN TICKET: X6 (card "PAYS X6. SHATTERS 1 TIME IN 4")', () => {
+  it('GOLDEN TICKET: X6 (card "PAYS X6. 25% CHANCE TO SHATTER")', () => {
     const p = groupAfter('knight', { strips: KNIGHT(), relics: ['ticket'] }, SSS, 'sword');
     const g = groupAfter('knight', { strips: KNIGHT(), gilded: [on(0, 'sword', 'glass')], relics: ['ticket'] }, SSS, 'sword');
     expect(g.amount / p.amount).toBe(6);
-    expect(charmShortText('glass', 2)).toBe('PAYS X6. SHATTERS 1 TIME IN 4');
+    expect(charmShortText('glass', 2)).toBe('PAYS X6. 25% CHANCE TO SHATTER');
   });
 });
 
@@ -679,10 +679,10 @@ describe('AUDIT: card face vs full rule', () => {
       '40% CHANCE TO LAND AS A WILD',
       'LIGHTNING DEALS 11% MORE DAMAGE',
       'ALSO HITS FOR 100% OF THE SHIELD IT GIVES',
-      'ALSO PAYS 3 CHIPS. UP TO 6 EACH FIGHT',
+      'PAYS 3 CHIPS. UP TO 6 EACH FIGHT',
       'FILLS YOUR JACKPOT METER BY 30%',
       'HITS X2 ON THE DROP',
-      'PAYS X5. SHATTERS 1 TIME IN 4',
+      'PAYS X5. 25% CHANCE TO SHATTER',
     ]);
   });
 
