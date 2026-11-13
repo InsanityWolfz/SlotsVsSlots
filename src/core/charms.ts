@@ -91,7 +91,7 @@ export function charmRuleText(enh: Enh, lvl: number): string {
     case 'spiked':
       return `ALSO HITS FOR ${v}% OF THE SHIELD IT GIVES`;
     case 'lucre':
-      return `GIVES ${LUCRE_CHIPS} CHIPS WHEN IT PAYS, UP TO ${v} EACH FIGHT. YOU COLLECT THEM WHEN YOU WIN`;
+      return `ALSO PAYS ${LUCRE_CHIPS} CHIPS. UP TO ${v} EACH FIGHT. YOU COLLECT THEM WHEN YOU WIN`;
     case 'trick':
       return `FILLS YOUR JACKPOT METER BY ${v}% WHEN IT LANDS ON YOUR PAYLINE`;
     case 'echo':
@@ -123,7 +123,7 @@ export function charmShortText(enh: Enh, lvl: number): string {
     case 'spiked':
       return `ALSO HITS FOR ${v}% OF THE SHIELD IT GIVES`;
     case 'lucre':
-      return `GIVES ${LUCRE_CHIPS} CHIPS WHEN IT PAYS, UP TO ${v} EACH FIGHT`;
+      return `ALSO PAYS ${LUCRE_CHIPS} CHIPS. UP TO ${v} EACH FIGHT`;
     case 'trick':
       return `FILLS YOUR JACKPOT METER BY ${v}%`;
     case 'echo':

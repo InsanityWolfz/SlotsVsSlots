@@ -20,19 +20,15 @@ describe('card faces fit two lines', () => {
     expect(over).toEqual([]);
   });
 
-  // A Charm card names its symbol (ON SWORDS: ...), so three Charms' whole sentences run to a third line: KEEN and
-  // CHIP on every symbol, GLASS on BANKROLL's CHIP SYMBOLS. Every other Charm card is two lines.
-  it('every Charm card, on every symbol it goes on: two lines, three for KEEN, CHIP and GLASS on CHIP SYMBOLS', () => {
-    const three: string[] = [];
+  // A Charm card says only what the Charm does (its corner names the reel, its icon the symbol: user, 2026-11-13).
+  it('every Charm card, on every symbol it goes on: two lines', () => {
     for (const enh of ACT1_GILDS as Enh[])
       for (const symbol of CHARM_SYMBOLS[enh])
         for (const n of [1, 2]) {
           const f = cardFace({ kind: 'gild', enh, n, reel: 2, symbol } as never);
-          const lines = wrap(f.text, CARD_COLS).length;
-          expect(lines, `${enh}: ${f.text} (${charmShortText(enh, 1)})`).toBeLessThanOrEqual(3);
-          if (lines > 2) three.push(`${enh}/${symbol}`);
+          expect(f.text).toBe(charmShortText(enh, 1));
+          expect(wrap(f.text, CARD_COLS).length, `${enh}: ${f.text}`).toBeLessThanOrEqual(2);
         }
-    expect([...new Set(three)].filter((x) => !x.startsWith('keen/') && !x.startsWith('lucre/'))).toEqual(['glass/goldbar']);
   });
 });
 

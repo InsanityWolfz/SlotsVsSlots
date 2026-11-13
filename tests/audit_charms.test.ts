@@ -419,7 +419,7 @@ describe('AUDIT: BULWARK (spiked) "ALSO HITS FOR 100% OF THE SHIELD IT GIVES" (r
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-describe('AUDIT: CHIP (lucre) "GIVES 3 CHIPS WHEN IT PAYS, UP TO 6 EACH FIGHT. YOU COLLECT THEM WHEN YOU WIN" / card "GIVES 3 CHIPS WHEN IT PAYS, UP TO 6 EACH FIGHT"', () => {
+describe('AUDIT: CHIP (lucre) "ALSO PAYS 3 CHIPS. UP TO 6 EACH FIGHT. YOU COLLECT THEM WHEN YOU WIN" / card "ALSO PAYS 3 CHIPS. UP TO 6 EACH FIGHT"', () => {
   const lucreRun = (gilded: Gild[], relics: RelicId[] = []) => {
     const run = createRun(base, 5, 'knight');
     run.player.strips = KNIGHT();
@@ -479,7 +479,7 @@ describe('AUDIT: CHIP (lucre) "GIVES 3 CHIPS WHEN IT PAYS, UP TO 6 EACH FIGHT. Y
   it('GOLDEN TICKET: the cap is 9 (card "... UP TO 9 EACH FIGHT")', () => {
     const { f } = lucreRun([on(0, 'sword', 'lucre')], ['ticket']);
     expect(chipEvents(f, 5)).toEqual([3, 3, 3]);
-    expect(charmShortText('lucre', 2)).toBe('GIVES 3 CHIPS WHEN IT PAYS, UP TO 9 EACH FIGHT');
+    expect(charmShortText('lucre', 2)).toBe('ALSO PAYS 3 CHIPS. UP TO 9 EACH FIGHT');
   });
 
   // UNCLEAR: two CHIP Charms in the same group pay +3 once (fight.ts cellCharms: `n('lucre') > 0`), and the cap is one
@@ -679,7 +679,7 @@ describe('AUDIT: card face vs full rule', () => {
       '40% CHANCE TO LAND AS A WILD',
       'LIGHTNING DEALS 11% MORE DAMAGE',
       'ALSO HITS FOR 100% OF THE SHIELD IT GIVES',
-      'GIVES 3 CHIPS WHEN IT PAYS, UP TO 6 EACH FIGHT',
+      'ALSO PAYS 3 CHIPS. UP TO 6 EACH FIGHT',
       'FILLS YOUR JACKPOT METER BY 30%',
       'HITS X2 ON THE DROP',
       'PAYS X5. SHATTERS 1 TIME IN 4',

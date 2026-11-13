@@ -56,7 +56,7 @@ export function cardFace(o: DraftOption, run?: RunState): { title: string; text:
   const { title, text } = describeOption(o, run);
   if (o.kind === 'relic' && RELICS[o.relic]) return { title, text: shortRelicText(o.relic, text), full: text };
   // A Charm card's reel is on its marker: the face starts at the symbol.
-  if (o.kind === 'gild') return { title, text: text.replace(/^ON REEL \d+ /, 'ON '), full: charmCardFull(o, run) };
+  if (o.kind === 'gild') return { title, text, full: charmCardFull(o, run) };
   return { title, text, full: text };
 }
 

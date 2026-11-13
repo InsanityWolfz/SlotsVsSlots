@@ -229,8 +229,8 @@ describe('GOLDEN TICKET (ticket): EVERY CHARM IS STRONGER. GOLD PAYS X3, NOT X2'
   });
   it('the Charm cards a TICKET holder is offered show the stronger number', () => {
     const r = run('knight', ['ticket']);
-    expect(describeOption({ kind: 'gild', enh: 'gold', symbol: 'sword', reel: 0, n: 2 }, r).text).toBe('ON REEL 1 SWORDS: PAYS X3');
-    expect(describeOption({ kind: 'gild', enh: 'gold', symbol: 'sword', reel: 0, n: 2 }, run('knight')).text).toBe('ON REEL 1 SWORDS: PAYS X2');
+    expect(describeOption({ kind: 'gild', enh: 'gold', symbol: 'sword', reel: 0, n: 2 }, r).text).toBe('PAYS X3');
+    expect(describeOption({ kind: 'gild', enh: 'gold', symbol: 'sword', reel: 0, n: 2 }, run('knight')).text).toBe('PAYS X2');
   });
 });
 

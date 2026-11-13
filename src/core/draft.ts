@@ -426,7 +426,7 @@ export function takenLabel(o: DraftOption): string {
  * ON A WIN and FOR GOOD were never seen in a run). */
 export function charmCardFull(o: Extract<DraftOption, { kind: 'gild' }>, run?: RunState): string {
   const ticket = !!run?.player.relics.includes('ticket');
-  return `ON REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${charmRuleText(o.enh, charmLevel(run?.player.levels, o.enh, ticket))}`;
+  return `GOES ON ${o.n} ${plural(o.symbol, o.n)} ON REEL ${o.reel + 1}. ${charmRuleText(o.enh, charmLevel(run?.player.levels, o.enh, ticket))}`;
 }
 
 export function describeOption(o: DraftOption, run?: RunState): { title: string; text: string } {
@@ -451,7 +451,8 @@ export function describeOption(o: DraftOption, run?: RunState): { title: string;
     case 'gild':
       return {
         title: `${o.n} ${charmName(o.enh)} CHARM${o.n > 1 ? 'S' : ''}`,
-        text: `ON REEL ${o.reel + 1} ${plural(o.symbol, o.n)}: ${charmShortText(o.enh, charmLevel(lv, o.enh, ticket))}`,
+        // (Just what the Charm does: the card's corner names the reel and its icon shows the symbol. User, 2026-11-13.)
+        text: charmShortText(o.enh, charmLevel(lv, o.enh, ticket)),
       };
     case 'symLevel': {
       const now = symLevel(lv, o.symbol);
