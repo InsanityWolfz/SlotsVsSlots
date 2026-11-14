@@ -196,6 +196,13 @@ Sim (400 runs, GREEN riders, reach THE OWNER): KNIGHT 10% -> 56% (loops 1-4 79/9
 (82/87/85/72). WARM-UP is weaker than it sounds: JUKEBOX's ENDLESS deaths are attrition (it walks into fights at
 14-40% HP, often with max HP sold) and the loop 1 HOUSE, not a slow start; even volume 5 every fight only made 48%.
 The main game is untouched (1000 runs WHITE / GREEN identical).
+**Loops fall off (user, 2026-11-14: "the clear rate should go down each loop on the way to the owner"):** the ramp is
+0.35 (was 0.1): enemy HP x2 / x5.4 / x19.7 / x96.9 and damage x1.35 / x2.5 / x6.1 / x20.1 in loops 1-4 (loop 1 unchanged).
+Before, a fight took 2-3 rounds and 10% of your HP in every loop. Sim (`tools/sim/endless.ts`, 4,000 runs a machine,
+GREEN riders; loops 1-4 cleared when reached, then meeting THE OWNER): JOKER 92/89/74/60, 28% (was 62%); JUKEBOX
+96/94/67/58, 28% (69%); KNIGHT 93/99/88/80, 25% (90%); TESLA 78/92/82/81, 47% (70%); BANKROLL 97/96/88/84, 57% (91%).
+VETERAN, OVERLOAD and WARM-UP are unchanged. Open: BANKROLL and TESLA sit high, and at the top of THE OWNER's ladder
+KNIGHT is at 14-24% of meetings, BANKROLL and JUKEBOX about 8% (the bar is 2%).
 **Loops get harder (user, 2026-10-14):** ENDLESS growth ramps faster (ramp 0.05 -> 0.1) and the loop HOUSE and WHEEL are
 as big as the loop Dealer (5 / 5 / 6 loop bosses' base). Loops cleared (GREEN riders, L1-4): KNIGHT 80/79/31/60, TESLA
 91/95/99/98, JUKEBOX 81/79/77/64, JOKER 94/91/93/82, BANKROLL 97/98/96/94 (was ~90/90/82/91 overall). Each loop multiplies enemy HP and damage,

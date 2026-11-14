@@ -310,7 +310,9 @@ export const DEPTH_HP_2 = [52, 62, 73, 85, 97].map((h) => h * UNIT);
 export const DEPTH_HP_3 = [240, 270, 300, 330, 360].map((h) => h * UNIT);
 export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5, 4: 3 };
 /** ENDLESS (act 4) tuning: per loop, enemy HP x hp^loop and damage x dmg^loop (EXPERT_PLAYTEST_3 D). */
-export const ENDLESS = { ramp: 0.1, hp: 2, dmg: 1.35, houseHp: 5, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, wheelHp: 5, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
+// ramp 0.1 -> 0.35 (user, 2026-11-14): every loop cleared 87-100% of the time, so beating THE DEALER all but
+// promised THE OWNER. Loop 1 is unchanged; sim (4,000 runs a machine, GREEN) JOKER's loops 92/89/74/60.
+export const ENDLESS = { ramp: 0.35, hp: 2, dmg: 1.35, houseHp: 5, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, wheelHp: 5, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
 /**
  * ENDLESS: each loop multiplies enemy HP (and damage) by its base, and the step itself grows by RAMP every loop,
  * so the climb accelerates: loop L totals base^L x (1 + ramp)^(L(L-1)/2). Only broken builds should see loop 5.

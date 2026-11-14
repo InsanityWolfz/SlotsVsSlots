@@ -32,13 +32,12 @@ How the user works now: every art step goes to them as an artifact gallery with 
 in worktrees on branches, and approved work merges to `main` with `npm test`, `npx tsc --noEmit -p .`, both builds and a
 browser check. If usage runs out mid-task, schedule a check-in to resume after the reset.
 
-**For the user to decide (2026-11-13): the ENDLESS boosts.** A sim pass (`tools/sim/endless.ts`, 4,000 runs a machine a
-stake, the boosts on, halved and off; https://claude.ai/artifact/Jm9VF9NxvdX5HdeRwAyqpk): VETERAN is too strong (KNIGHT
-reaches THE OWNER 84-91% of rides and breaks the bank in 16-22% of meetings; off 27-37%; at +30% a loop 64-73% and about
-2%), OVERLOAD is needed (TESLA 59-70% with it, 17-26% without, never past the 2.5M rung), WARM-UP is worth about 10 points
-(JUKEBOX 64-69% with, 46-56% without). JOKER (57-65%) and BANKROLL (85-92%) have no boost. The 2% bar at the top of the
-ladder is broken by KNIGHT, and BANKROLL and JUKEBOX sit at 4-7%. BANKROLL also wins 5-7 points over target from GREEN to
-GOLD. Nothing changed yet.
+**In progress (2026-11-14): the ENDLESS balance pass.** Live: the loops fall off (ramp 0.1 -> 0.35, `HP_GAME.md`; before,
+every loop cleared 87-100% and KNIGHT and BANKROLL met THE OWNER 9 rides in 10; https://claude.ai/artifact/Jm9VF9NxvdX5HdeRwAyqpk
+has the numbers from before). VETERAN, OVERLOAD and WARM-UP stay (with the new ramp KNIGHT, JUKEBOX and JOKER all meet THE
+OWNER about 1 ride in 4). Next, for the user: BANKROLL (57%) and TESLA (47%, dies in loop 1, then barely takes damage) in
+ENDLESS; then THE OWNER's 2% bar (KNIGHT breaks the bank in 14-24% of meetings). BANKROLL also wins runs 5-7 points
+over target from GREEN to GOLD. WHITE has no ENDLESS, so its numbers in the sim don't count.
 
 **In progress (2026-11-12): the cold read before the demo.** A card read "ENEMIES FASTER" and nothing caught it (user: "one
 thing like that and the player goes, oh this was vibe coded"): the tests check that a text is true and fits, not that it
