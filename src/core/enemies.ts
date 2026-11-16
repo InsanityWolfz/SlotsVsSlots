@@ -327,7 +327,9 @@ export const actLength = (act: number) => ACT_LENGTH[act] ?? 5;
  * +veteran for every loop cleared) and JUKEBOX's WARM-UP (each fight starts at volume warmUp x the loop, below THE DROP). */
 // overloadHeal (user, 2026-11-16): OVERLOAD's storm heal grows 0.4 a loop, not 1 (storms healed about 3 times TESLA's
 // max HP each fight in late loops).
-export const LOOP_GROWTH = { veteran: 1, warmUp: 3, overload: 1, overloadHeal: 0.4 };
+// warmUpShield (user, 2026-11-16): WARM-UP also makes JUKEBOX's shields pay +200% a loop cleared (x3 / x5 / x7). It
+// blocked a fifth of the damage aimed at it in loop 3 (JOKER half); the volume alone did nothing measurable.
+export const LOOP_GROWTH = { veteran: 1, warmUp: 3, overload: 1, overloadHeal: 0.4, warmUpShield: 2 };
 // bossHp 1200 -> 2000 (balance pass 2026-11-07): THE HOUSE fell 89-96% when reached, in 5-6 spins (the demo's last fight).
 export const TUNE = { headStart: 2, spillCap: 1 / 3, greenWheel: 0.85, coverCharge: 0.1, turnCap: 0.4, bossTurnCap: 0.6, dealerQuietCap: 0.25, marksPerReel: 2, act1Hp: 0.7, act1Every: 3, rampPerTurn: 0.06, rampMax: 2, regularHp: 1.25, act2Hp: 2.2, act3Hp: 2, act1Swords: 1, enemyShield: 0.5, act3Sevens: 4, bossHp: 200 * UNIT, act2Mul: 1.06, act2Swords: 3, wheelHp: 400 * UNIT, dealerHp: 1300 * UNIT, endlessBossBase: 300 * UNIT, enemyDmg: 1 };
 export const ACTS = 2;

@@ -199,6 +199,34 @@ describe('MAKE IT RAIN\'s floor (user, 2026-11-01: "never less than the chip jac
   it('on LEAN reels the rain never hits less than the chip jackpot it replaces, LEAN\'s x1.5 in', () => {
     expect(chipJackpot(['lean'], 20)).toBeGreaterThanOrEqual(chipJackpot(['lean'], 0));
   });
+  it('OPEN BAR: MAKE IT RAIN IS FREE AND PAYS X2 (user, 2026-11-16)', () => {
+    expect(chipJackpot(['openbar'], 60) / chipJackpot([], 60)).toBeCloseTo(2, 1);
+  });
+});
+
+describe('WARM-UP on JUKEBOX in ENDLESS: SHIELDS PAY X3 / X5 / X7 in loops 2-4 (user, 2026-11-16)', () => {
+  const shieldGain = (loop: number) => {
+    const r = runAt('jukebox', []);
+    r.act = 4;
+    r.endless = { loop, pot: 0 };
+    r.map = generateActMap(new Rng(4), 4, loop, 'jukebox');
+    r.route = null;
+    chooseRoute(r, 0);
+    r.depth = 1;
+    r.player.gilded = [];
+    const cfg = fightConfig(r, base);
+    cfg.night = undefined;
+    const f = new Fight(cfg, 1);
+    f.forceNext('player', ['shield', 'shield', 'shield']);
+    const e = f.step().events.find((x): x is Extract<CombatEvent, { type: 'shieldGain' }> => x.type === 'shieldGain' && x.side === 'player');
+    return { mul: cfg.player.shieldMul ?? 1, gain: e?.amount ?? 0 };
+  };
+  it('what LOOP CLEARED says, and what the shields pay', () => {
+    expect([2, 3, 4].map((L) => 1 + LOOP_GROWTH.warmUpShield * (L - 1))).toEqual([3, 5, 7]);
+    expect(shieldGain(1).mul).toBe(1);
+    expect(shieldGain(3).mul).toBe(5);
+    expect(shieldGain(3).gain / shieldGain(1).gain).toBeCloseTo(5, 1);
+  });
 });
 
 describe('ESPRESSO SHOT on JUKEBOX in ENDLESS (WARM-UP already starts the volume at 3 x the loop)', () => {

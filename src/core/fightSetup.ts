@@ -72,6 +72,7 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
       cfg.player.stormHealMul = 1 + LOOP_GROWTH.overloadHeal * cleared;
     }
     if (run.cabinet === 'jukebox') cfg.player.volumeStart = LOOP_GROWTH.warmUp * run.endless.loop;
+    if (run.cabinet === 'jukebox' && cleared > 0) cfg.player.shieldMul = 1 + LOOP_GROWTH.warmUpShield * cleared;
   }
   // TONIGHT'S RULE (ENDLESS: the path's), for both machines.
   const night = nightId(run);

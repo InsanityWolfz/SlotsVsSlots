@@ -144,7 +144,7 @@ export abstract class DraftScreen extends NextScreen {
       const rocks = last.rocksCrumbled ? `${last.rocksCrumbled} ROCK${last.rocksCrumbled === 1 ? '' : 'S'} CRUMBLED` : '';
       // VETERAN (KNIGHT), OVERLOAD (TESLA) and WARM-UP (JUKEBOX) grow with each loop cleared: say so where the loop ends.
       const L = run.endless?.loop ?? 0;
-      const grow = !loopDone ? '' : run.cabinet === 'knight' ? `VETERAN MAKES SWORDS AND SHIELDS PAY X${1 + LOOP_GROWTH.veteran * (L - 1)}` : run.cabinet === 'tesla' ? `OVERLOAD MAKES BOLTS AND SHIELDS PAY X${1 + LOOP_GROWTH.overload * (L - 1)}. STORMS HEAL ${stormHealHp(CABINETS.tesla.meter!.heal, 1 + LOOP_GROWTH.overloadHeal * (L - 1))}` : run.cabinet === 'jukebox' ? `WARM-UP STARTS EACH FIGHT AT VOLUME ${Math.min(VOLUME.max - 1, LOOP_GROWTH.warmUp * L)}` : '';
+      const grow = !loopDone ? '' : run.cabinet === 'knight' ? `VETERAN MAKES SWORDS AND SHIELDS PAY X${1 + LOOP_GROWTH.veteran * (L - 1)}` : run.cabinet === 'tesla' ? `OVERLOAD MAKES BOLTS AND SHIELDS PAY X${1 + LOOP_GROWTH.overload * (L - 1)}. STORMS HEAL ${stormHealHp(CABINETS.tesla.meter!.heal, 1 + LOOP_GROWTH.overloadHeal * (L - 1))}` : run.cabinet === 'jukebox' ? `WARM-UP STARTS EACH FIGHT AT VOLUME ${Math.min(VOLUME.max - 1, LOOP_GROWTH.warmUp * L)}. SHIELDS PAY X${1 + LOOP_GROWTH.warmUpShield * (L - 1)}` : '';
       const title = loopDone ? `LOOP ${last.loop} CLEARED!` : last.boss ? 'BOSS DOWN!' : `${last.enemy} DEFEATED!`;
       // What the fight cost: HP carries from fight to fight, so a long fight's price shows when you pay it, not three
       // fights later (expert playtest 2026-11-06).

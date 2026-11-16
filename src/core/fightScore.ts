@@ -116,6 +116,12 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
     const notes: string[] = [];
     notesOf.set(g, notes);
     if (g.rain) notes.push('MAKE IT RAIN!');
+    // OPEN BAR (legendary): the rain pays more (user, 2026-11-16).
+    if (g.rain && has('openbar')) {
+      fired.add('openbar');
+      boost(g, LEGEND_RELIC.openBarRain);
+      notes.push(`X${LEGEND_RELIC.openBarRain} OPEN BAR`);
+    }
     // LEAN MACHINE: the cells on a lean reel are worth x1.5 (a group across lean and full reels: its share of them).
     // A true multiplier on the group's worth, before its Charms add in (a MAKE IT RAIN hits for chips, not symbols).
     const lean = has('lean') && pays(g) ? g.reels.filter((r) => f.leanReels[r]).length : 0;
@@ -312,6 +318,11 @@ export function scoreSpin(f: Fight, me: Combatant, line: SymbolId[]): LineScore 
       const who = (['glasscannon', 'devilsdue', 'longgame'] as const).filter((r) => me.relics.has(r));
       const name = who.length === 1 ? { glasscannon: 'GLASS CANNON', devilsdue: 'SECOND MORTGAGE', longgame: 'THE LONG GAME' }[who[0]] : 'RELICS';
       notes.push(`X${Math.round(f.cfg.player.payMul * 100) / 100} ${name}`);
+    }
+    // WARM-UP (JUKEBOX, ENDLESS): every loop cleared, shields pay more too (user, 2026-11-16).
+    if (player && paying && g.symbol === 'shield' && f.cfg.player.shieldMul) {
+      boost(g, f.cfg.player.shieldMul);
+      notes.push(`X${Math.round(f.cfg.player.shieldMul * 100) / 100} WARM-UP`);
     }
     // VETERAN (KNIGHT, ENDLESS): every loop cleared, swords and shields pay more.
     if (player && paying && f.cfg.player.veteranMul) {

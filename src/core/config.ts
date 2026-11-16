@@ -207,6 +207,8 @@ export interface SideConfig {
   veteranMul?: number;
   /** ENDLESS, TESLA's OVERLOAD: the storm's heal pays this much more (LOOP_GROWTH.overloadHeal a loop cleared). */
   stormHealMul?: number;
+  /** ENDLESS, JUKEBOX's WARM-UP: shields pay this much more (LOOP_GROWTH.warmUpShield a loop cleared). */
+  shieldMul?: number;
   /** ENDLESS, JUKEBOX's WARM-UP: the volume each fight starts at. */
   volumeStart?: number;
   /** TONIGHT'S RULE LUCKY NIGHT: the WILDs it added to each reel for this fight (LEAN MACHINE doesn't count them). */

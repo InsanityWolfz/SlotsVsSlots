@@ -39,8 +39,8 @@ GREEN, meets THE OWNER: JUKEBOX 25%, JOKER 31%, TESLA 43%, BANKROLL 44%, KNIGHT 
 four loops). THE OWNER's ladder is 20K-20M (was 25K-25M): KNIGHT breaks the bank in 1.9% of meetings, JUKEBOX 1.0%, the
 others about 0%. Live (2026-11-16, the machine pass, `HP_GAME.md`): HIGH CARD X3.5, CHAIN LIGHTNING's build-up, OVERLOAD's slower
 heal: GREEN meets THE OWNER JUKEBOX 25%, JOKER 36%, TESLA 40%, BANKROLL 44%, KNIGHT 46%; breaks the bank KNIGHT 1.9%,
-JOKER 1.4%, TESLA 1.3%, JUKEBOX 1.0%, BANKROLL 0%. Next: JUKEBOX's reach (WARM-UP at its most did nothing: it dies to
-wear) and BANKROLL at THE OWNER. Still open: (1) the name (ENDLESS isn't endless;
+JOKER 1.4%, TESLA 1.3%, JUKEBOX 1.0%, BANKROLL 0%. Then WARM-UP grows JUKEBOX's shields and OPEN BAR's rains pay X2:
+JUKEBOX 28-33%, BANKROLL 46-51%, every machine breaks the bank 1.0-1.9%. Next (in progress): the main-run pass for JOKER and BANKROLL. Still open: (1) the name (ENDLESS isn't endless;
 AFTER HOURS was offered); (2) TESLA still loses loop 1 a quarter of the time; (3) the main run: BANKROLL wins 5-7 and
 JOKER 5-7 points over target from BLACK to GOLD; riders beat THE DEALER holding about 18 of the 31-35 relics a machine
 can get. WHITE has no ENDLESS.

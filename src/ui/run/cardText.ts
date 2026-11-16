@@ -68,8 +68,8 @@ export const ALL_CABINETS: CabinetId[] = ['knight', 'midas', 'tesla', 'joker', '
 /** The card faces allowed a third line (the card draws three lines tighter). */
 // (DECK DRUM and SAFE DEPOSIT, 2026-11-12: their two-line faces could not be understood. A cold reader asked what
 // 1 CARD DAMAGE was and what the shield was added to.)
-// (CHAIN LIGHTNING, 2026-11-16: LONG STORMS HIT HARDER.)
-export const THREE_LINES: RelicId[] = ['houseofcards', 'meltdown', 'glasscannon', 'hypeman', 'deckdrum', 'safedeposit', 'chainlightning'];
+// (CHAIN LIGHTNING, 2026-11-16: LONG STORMS HIT HARDER. OPEN BAR, 2026-11-16: AND PAYS X2.)
+export const THREE_LINES: RelicId[] = ['houseofcards', 'meltdown', 'glasscannon', 'hypeman', 'deckdrum', 'safedeposit', 'chainlightning', 'openbar'];
 
 /** Characters per line on a card face (a three-card draft card at body size). */
 export const CARD_COLS = 22;

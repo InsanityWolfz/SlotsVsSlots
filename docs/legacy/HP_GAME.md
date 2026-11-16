@@ -195,6 +195,11 @@ x800 in multipliers, JOKER's x170 and TESLA's x40-56 (TESLA's lightning boosts a
 Charm buffs (CHARGED 30, BLAZE 15, TRICK 60, LUCKY 70) lifted the main run 5-15 points and did nothing there. Sim (3,000
 runs a machine a stake, RED to GOLD): JOKER meets THE OWNER 33-40% (was 24-31), breaks the bank 1.4% of meetings (0);
 TESLA 38-41% (38-44), 1.3% (0); main run JOKER +1 to +2 (it was already 4-5 over at BLACK to GOLD), TESLA unchanged.
+**JUKEBOX and BANKROLL (user, 2026-11-16):** WARM-UP also makes JUKEBOX's shields pay X3 / X5 / X7 in loops 2-4 (it
+blocked a fifth of the damage aimed at it in loop 3, JOKER half; HYPE MAN raising the volume every spin overshot to 15%
+at the top). OPEN BAR's rains pay X2 (it lowered its riders' damage at THE OWNER; HIGH ROLLER's cap at X8 only helped
+BANKROLL survive). Sim (3,000 runs a stake, RED to GOLD): JUKEBOX meets THE OWNER 28-33% (was 19-25), breaks the bank
+1.0%; BANKROLL 46-51% (41-44), 1.2% (0); BANKROLL's main run +1 to +2 (now 5-8 over from RED to GOLD: the main-run pass).
 His HP bar is the ladder (a quarter a rung, log-even, gold notches at the rungs; the number is his fortune left). His
 tells (HE LOOSENS HIS TIE / STANDS UP / GOES ALL IN, +15% to his hits each) come at the first three rungs. Each rung
 climbed scores 2,500 (the top +10,000). A build 10x stronger climbs one more rung, not an instant win. Sim (300
