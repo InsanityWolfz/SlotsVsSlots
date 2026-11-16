@@ -11,14 +11,17 @@ import { ENDLESS, LOOP_GROWTH, OWNER_LADDER, ownerRung, OVERTIME, TUNE, TURBO } 
 import { Rng } from '../../src/core/rng';
 import { playRun } from '../../src/sim/play';
 import { ALL_CABINETS, CABINETS, type CabinetId } from '../../src/core/cabinets';
-import { LEGEND_RELIC, MACHINE_EXCLUDE, NEW_RELIC } from '../../src/core/relics';
+import { LEGEND_RELIC, MACHINE_EXCLUDE, NEW_RELIC, OVERCHARGE } from '../../src/core/relics';
 import { MIDAS, RAIN } from '../../src/core/fightRules';
+import { CHARM_VALUE } from '../../src/core/charms';
 const [machine, stakeS, variant, runsS] = process.argv.slice(2);
 const stake = Number(stakeS), runs = Number(runsS);
-const ROOTS: Record<string, Record<string, number>> = { ENDLESS, TUNE, OVERTIME, LOOP_GROWTH, TURBO, OWNER_LADDER, NEW_RELIC, LEGEND_RELIC, MIDAS, RAIN, VAULT: CABINETS.midas.meter } as never;
+const ROOTS: Record<string, Record<string, number>> = { ENDLESS, TUNE, OVERTIME, LOOP_GROWTH, TURBO, OWNER_LADDER, OVERCHARGE, NEW_RELIC, LEGEND_RELIC, MIDAS, RAIN, VAULT: CABINETS.midas.meter } as never;
 for (const kv of variant.includes('=') ? variant.split(',') : []) {
   const [k, v] = kv.split('=');
   if (k === 'ban') { for (const r of v.split('+')) (MACHINE_EXCLUDE as Record<string, string[]>)[r] = [...ALL_CABINETS]; continue; }
+  // A Charm's number: CHARM.charged=20 sets its value (CHARM_VALUE[charm][1]).
+  if (k.startsWith('CHARM.')) { (CHARM_VALUE as Record<string, number[]>)[k.slice(6)][1] = Number(v); continue; }
   const [root, key] = k.includes('.') ? k.split('.') : ['LOOP_GROWTH', k];
   if (!(key in ROOTS[root])) throw new Error(`no knob ${k}`);
   ROOTS[root][key] = Number(v);

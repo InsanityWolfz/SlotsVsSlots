@@ -37,7 +37,11 @@ ENDLESS is three hard loops then THE OWNER with only legendary relics on offer, 
 `HP_GAME.md` has the rules and numbers; the numbers from before: https://claude.ai/artifact/Jm9VF9NxvdX5HdeRwAyqpk).
 GREEN, meets THE OWNER: JUKEBOX 25%, JOKER 31%, TESLA 43%, BANKROLL 44%, KNIGHT 46% (were 28 / 28 / 47 / 57 / 25 with
 four loops). THE OWNER's ladder is 20K-20M (was 25K-25M): KNIGHT breaks the bank in 1.9% of meetings, JUKEBOX 1.0%, the
-others about 0%. Still open, for the user: (1) the name (ENDLESS isn't endless;
+others about 0%. For the user (2026-11-16, the machine pass): HIGH CARD jackpots pay
+X3.5 (was X1.5): JOKER meets THE OWNER 33-40% (was 24-31), breaks the bank 1.4% (was 0), main run +1 to +2 (already 4-5
+over at BLACK to GOLD). CHAIN LIGHTNING keeps +100% and each strike in a storm hits 0.1% harder than the last; OVERLOAD's
+storm heal grows half as fast: TESLA 38-41% (was 38-44), 1.3% (was 0), main run unchanged. Charm buffs (CHARGED, BLAZE,
+TRICK, LUCKY) lift the main run 5-15 points and do nothing at THE OWNER. Still open: (1) the name (ENDLESS isn't endless;
 AFTER HOURS was offered); (2) one machine pass in ENDLESS now that its rules are set: TESLA still loses loop 1 a
 quarter of the time, JUKEBOX is lowest (loop 3 47%), KNIGHT, TESLA and BANKROLL sit 12-21 points over JOKER; the
 BANKROLL and TESLA proposals of 2026-11-15 were measured on four loops and need measuring again; (3) the main run:
