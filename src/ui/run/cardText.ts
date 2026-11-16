@@ -36,6 +36,8 @@ const LEAVE_OUT: Partial<Record<RelicId, (string | RegExp)[]>> = {
   glasscannon: [/\. BEATING .*$/],
   pairstreak: [' THEN', ' THEN', /\. A SPIN WITHOUT .*$/],
   sticky: [/\. YOU GET .*$/],
+  // (The build-up's number, 2026-11-16.)
+  chainlightning: [/\. STRIKES HIT .*$/],
 };
 
 /** A card face's text for a relic: its full rule, less the detail the face has no room for. */
@@ -66,7 +68,8 @@ export const ALL_CABINETS: CabinetId[] = ['knight', 'midas', 'tesla', 'joker', '
 /** The card faces allowed a third line (the card draws three lines tighter). */
 // (DECK DRUM and SAFE DEPOSIT, 2026-11-12: their two-line faces could not be understood. A cold reader asked what
 // 1 CARD DAMAGE was and what the shield was added to.)
-export const THREE_LINES: RelicId[] = ['houseofcards', 'meltdown', 'glasscannon', 'hypeman', 'deckdrum', 'safedeposit'];
+// (CHAIN LIGHTNING, 2026-11-16: LONG STORMS HIT HARDER.)
+export const THREE_LINES: RelicId[] = ['houseofcards', 'meltdown', 'glasscannon', 'hypeman', 'deckdrum', 'safedeposit', 'chainlightning'];
 
 /** Characters per line on a card face (a three-card draft card at body size). */
 export const CARD_COLS = 22;

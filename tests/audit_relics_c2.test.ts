@@ -9,7 +9,7 @@ import type { CabinetId } from '../src/core/cabinets';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
 import { CHARM_VALUE } from '../src/core/charms';
-import { relicText, RELICS, NEW_RELIC } from '../src/core/relics';
+import { relicText, RELICS, NEW_RELIC, LEGEND_RELIC } from '../src/core/relics';
 import { shortRelicText } from '../src/ui/run/cardText';
 import { createRun } from '../src/core/run';
 import { fightConfig } from '../src/core/fightSetup';
@@ -219,19 +219,21 @@ describe('HOUSE OF CARDS (JOKER): EACH JACKPOT METER PAYOFF ADDS A WILD TO 2 REE
   });
 });
 
-describe('HIGH CARD (JOKER): JACKPOTS AND JACKPOT METER PAYOFFS PAY X1.5. PAIRS PAY HALF', () => {
+describe('HIGH CARD (JOKER): JACKPOTS AND JACKPOT METER PAYOFFS PAY X3.5. PAIRS PAY HALF', () => {
+  const K = LEGEND_RELIC.highCardMul;
+  it('the card says X3.5', () => expect(RELICS.highcard.text).toBe('JACKPOTS PAY X3.5. PAIRS PAY HALF'));
   const pair = (relics: RelicId[], line: SymbolId[], sym: SymbolId) => group(round(on('joker', relics), line), sym);
-  it('a jackpot pays x1.5', () => {
+  it('a jackpot pays x3.5', () => {
     const hc = pair(['highcard'], ['ace', 'ace', 'ace'], 'ace');
     const no = pair([], ['ace', 'ace', 'ace'], 'ace');
-    expect(hc.mult / no.mult).toBeCloseTo(1.5);
-    expect(Math.abs(hc.amount - no.amount * 1.5)).toBeLessThanOrEqual(1);
+    expect(hc.mult / no.mult).toBeCloseTo(K);
+    expect(Math.abs(hc.amount - no.amount * K)).toBeLessThanOrEqual(1);
   });
   it('a pair pays half (cards and shields)', () => {
     expect(pair(['highcard'], ['ace', 'ace', 'shield'], 'ace').mult / pair([], ['ace', 'ace', 'shield'], 'ace').mult).toBeCloseTo(0.5);
     expect(pair(['highcard'], ['shield', 'shield', 'ace'], 'shield').mult / pair([], ['shield', 'shield', 'ace'], 'shield').mult).toBeCloseTo(0.5);
   });
-  it('the jackpot meter payoff: every cell pays x1.5', () => {
+  it('the jackpot meter payoff: every cell pays x3.5', () => {
     const run = (relics: RelicId[]) => {
       const f = on('joker', relics);
       arm(f);
@@ -240,7 +242,7 @@ describe('HIGH CARD (JOKER): JACKPOTS AND JACKPOT METER PAYOFFS PAY X1.5. PAIRS 
     const hc = run(['highcard']);
     const no = run([]);
     expect(hc).toHaveLength(3);
-    hc.forEach((g, i) => expect(g.mult / no[i].mult).toBeCloseTo(1.5));
+    hc.forEach((g, i) => expect(g.mult / no[i].mult).toBeCloseTo(K));
   });
   it('singles are untouched', () => {
     const hc = round(on('joker', ['highcard']), ['ace', 'shield', 'ace']);

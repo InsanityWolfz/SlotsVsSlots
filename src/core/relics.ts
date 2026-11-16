@@ -38,8 +38,13 @@ export const LEGEND_RELIC = {
   crusadeStep: 5,
   /** CHAIN LIGHTNING: lightning damage +this (adds with the other lightning boosts). */
   chainAdd: 1,
-  /** HIGH CARD: jackpots (and jackpot meter payoffs) pay this much; pairs pay pairMul. */
-  highCardMul: 1.5,
+  /** CHAIN LIGHTNING (user, 2026-11-16): a storm's strikes hit this much harder for each strike before them in it (a
+   * share of the strike, not compounding). A 20-strike storm gains about 1%; THE OWNER's storms of thousands, several
+   * times over: TESLA's lightning grew in a straight line, so it never broke the bank (sim: 0% -> 1.3% of meetings). */
+  chainStep: 0.001,
+  /** HIGH CARD: jackpots (and jackpot meter payoffs) pay this much; pairs pay pairMul. 1.5 -> 3.5 (user, 2026-11-16):
+   * JOKER never broke THE OWNER's bank (sim: 0% -> 1.4% of meetings; main run +1 to +2). */
+  highCardMul: 3.5,
   highCardPairMul: 0.5,
 };
 const pct = (x: number) => Math.round(x * 100);
@@ -130,7 +135,7 @@ export const RELICS: Record<RelicId, RelicDef> = {
   quickening: { id: 'quickening', name: 'ESPRESSO SHOT', text: 'YOUR METER STARTS HALF FULL EACH FIGHT', sprite: 'relicBattery' },
   glasscannon: { id: 'glasscannon', name: 'GLASS CANNON', text: `EVERYTHING PAYS X${LEGEND_RELIC.glassPay}. NO HEALING BETWEEN FIGHTS. BEATING AN ACT'S BOSS STILL HEALS YOU`, sprite: 'relicFirstblood' },
   crusade: { id: 'crusade', name: 'CRUSADE', text: `SWORDS HIT ${LEGEND_RELIC.crusadeStep} HARDER FOR EACH FIGHT YOU WIN`, sprite: 'relicDrum', machine: 'knight' },
-  chainlightning: { id: 'chainlightning', name: 'CHAIN LIGHTNING', text: `LIGHTNING DEALS ${pct(LEGEND_RELIC.chainAdd)}% MORE DAMAGE`, sprite: 'relicCoil', machine: 'tesla' },
+  chainlightning: { id: 'chainlightning', name: 'CHAIN LIGHTNING', text: `LIGHTNING DEALS ${pct(LEGEND_RELIC.chainAdd)}% MORE DAMAGE. LONG STORMS HIT HARDER. STRIKES HIT ${Math.round(LEGEND_RELIC.chainStep * 1000) / 10}% HARDER FOR EACH STRIKE BEFORE THEM IN THE STORM`, sprite: 'relicCoil', machine: 'tesla' },
   highcard: { id: 'highcard', name: 'HIGH CARD', text: `JACKPOTS PAY X${LEGEND_RELIC.highCardMul}. PAIRS PAY HALF`, sprite: 'relicWildcard', machine: 'joker' },
   hypeman: { id: 'hypeman', name: 'HYPE MAN', text: 'VOLUME RISES 1 EVERY 2 SPINS. NOTES PAY HALF EXCEPT ON THE DROP', sprite: 'relicPulse', machine: 'jukebox' },
   openbar: { id: 'openbar', name: 'OPEN BAR', text: 'MAKE IT RAIN IS FREE. WINS PAY NO CHIPS', sprite: 'relicTipJar', machine: 'midas' },

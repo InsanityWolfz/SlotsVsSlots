@@ -6,6 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig, type Gild, type RelicId, type SymbolId } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
+import { storm } from '../src/core/fightPayout';
 import { Fight, MIDAS, RAIN, highRollerMul } from '../src/core/fight';
 import { LEGEND_RELIC, NEW_RELIC, RELICS, relicText } from '../src/core/relics';
 import { createRun, finishFight, interestOn, type RunState } from '../src/core/run';
@@ -78,7 +79,7 @@ describe('texts: full and card face, on the one machine each can appear on', () 
     expect(faces.capacitor).toEqual(['25% OF LEFTOVER SHIELD CHARGES LIGHTNING', '25% OF LEFTOVER SHIELD CHARGES LIGHTNING']);
     expect(faces.livewire).toEqual(['LIGHTNING DEALS 30% MORE DAMAGE. LIGHTNING STORMS COST 1 HP EACH', 'LIGHTNING DEALS 30% MORE. STORMS COST 1 HP']);
     expect(faces.meltdown).toEqual(['LIGHTNING DEALS 1% MORE DAMAGE FOR EACH MISSING HP, UP TO 50%', 'LIGHTNING DEALS 1% MORE DAMAGE FOR EACH MISSING HP, UP TO 50%']);
-    expect(faces.chainlightning).toEqual(['LIGHTNING DEALS 100% MORE DAMAGE', 'LIGHTNING DEALS 100% MORE DAMAGE']);
+    expect(faces.chainlightning).toEqual(['LIGHTNING DEALS 100% MORE DAMAGE. LONG STORMS HIT HARDER. STRIKES HIT 0.1% HARDER FOR EACH STRIKE BEFORE THEM IN THE STORM', 'LIGHTNING DEALS 100% MORE DAMAGE. LONG STORMS HIT HARDER']);
   });
   // Card faces keep the limits the full text has (fixed 2026-11-01: they promised more than the game gives).
   it('TOWER SHIELD face names the cap', () => {
@@ -554,6 +555,20 @@ describe('TESLA (one axis: boosts add charge, half-size bolts of 22 for 20 charg
       const ev = spin(f, ['bolt', 'bolt', 'shield']);
       expect(bolts(ev).map((b) => b.amount)).toEqual([22, 22, 22, 22]);
       expect(lightning(['chainlightning'], 20).total / lightning([], 20).total).toBeCloseTo(2, 5);
+    });
+    it('STRIKES HIT 0.1% HARDER FOR EACH STRIKE BEFORE THEM IN THE STORM (LONG STORMS HIT HARDER)', () => {
+      // One storm of 1,000 strikes (the charge set by hand, past CHAIN's +100%): strike k hits 22 x (1 + 0.001k).
+      const storm1000 = (relics: RelicId[]) => {
+        const f = mk('tesla', relics, { mut: (c) => (c.overtime = false) });
+        f.sides.enemy.hp = f.sides.enemy.maxHp = 1e9;
+        f.sides.player.energy = 1000 * f.cfg.specialCost;
+        const ev: CombatEvent[] = [];
+        storm(f, f.sides.player, ev);
+        return ev.filter((e): e is Extract<CombatEvent, { type: 'specialFire' }> => e.type === 'specialFire').reduce((a, e) => a + e.amount, 0);
+      };
+      expect(storm1000([])).toBe(22 * 1000);
+      expect(storm1000(['chainlightning']) / (22 * 1000)).toBeCloseTo(1 + 0.001 * 999 / 2, 3);
+      // A 4-strike storm: the build-up is under 1 damage a strike, so each still hits 22 (above).
     });
     it('the boosts add (LIVE WIRE + CHAIN = +130%, not x2.6)', () => {
       expect(lightning(['chainlightning', 'livewire'], 20).total / lightning([], 20).total).toBeCloseTo(2.3, 5);

@@ -67,7 +67,10 @@ export function fightConfig(run: RunState, base: GameConfig): GameConfig {
     // OVERLOAD (TESLA, 2026-11-01): its one-axis lightning grows in a straight line, so it gets KNIGHT's loop growth
     // (bolts and shields pay more each loop cleared: more charge, longer storms). Without it 6% of TESLA's ENDLESS runs
     // reached THE OWNER (47% before the rework).
-    if (run.cabinet === 'tesla' && cleared > 0) cfg.player.veteranMul = 1 + LOOP_GROWTH.overload * cleared;
+    if (run.cabinet === 'tesla' && cleared > 0) {
+      cfg.player.veteranMul = 1 + LOOP_GROWTH.overload * cleared;
+      cfg.player.stormHealMul = 1 + LOOP_GROWTH.overloadHeal * cleared;
+    }
     if (run.cabinet === 'jukebox') cfg.player.volumeStart = LOOP_GROWTH.warmUp * run.endless.loop;
   }
   // TONIGHT'S RULE (ENDLESS: the path's), for both machines.

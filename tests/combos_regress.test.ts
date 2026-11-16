@@ -11,7 +11,8 @@ import { fightConfig } from '../src/core/fightSetup';
 import { relicFits, shopOffers } from '../src/core/shop';
 import { MACHINE_EXCLUDE } from '../src/core/relics';
 import { playRun } from '../src/sim/play';
-import { generateActMap } from '../src/core/enemies';
+import { generateActMap, LOOP_GROWTH } from '../src/core/enemies';
+import { stormHealHp } from '../src/core/fightPayout';
 import { Rng } from '../src/core/rng';
 import type { CabinetId } from '../src/core/cabinets';
 
@@ -173,6 +174,10 @@ describe('ROOM SERVICE on TESLA in ENDLESS: "EACH LIGHTNING STORM HEALS 15 MORE 
       return 0;
     };
     expect(heal(['fang']) - heal([])).toBe(15);
+    // OVERLOAD's own heal grows 0.4 a loop cleared (user, 2026-11-16): 35 at loop 4 (it heals in 5s), what LOOP CLEARED says.
+    expect(heal([])).toBe(stormHealHp(5, 1 + LOOP_GROWTH.overloadHeal * 3));
+    expect(heal([])).toBe(35);
+    expect([1, 2, 3].map((c) => stormHealHp(5, 1 + LOOP_GROWTH.overloadHeal * c))).toEqual([20, 25, 35]);
   });
 });
 

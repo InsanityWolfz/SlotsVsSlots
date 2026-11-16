@@ -187,6 +187,14 @@ fortune is a ladder of 4 rungs, each x10 the last: 20K, 200K, 2M, and the top, 2
 bank in 0.4% of meetings at GREEN. At 20K (3,000 runs a machine a stake, RED to GOLD): KNIGHT 1.9%, JUKEBOX 1.0%, BANKROLL
 0%, JOKER and TESLA 0% (JOKER peaks at the 2M rung, TESLA at 200K; at 10K they still never broke it while KNIGHT did 8%).
 At 15K KNIGHT was 3.4%. Only a machine pass can bring JOKER and TESLA up.
+**The ENDLESS machine pass (user, 2026-11-16):** HIGH CARD jackpots pay X3.5 (was X1.5; pairs still pay half). CHAIN
+LIGHTNING keeps its +100% and a storm's strikes hit 0.1% harder for each strike before them in it (not compounding; its
+face adds LONG STORMS HIT HARDER, three lines). OVERLOAD's storm heal grows 0.4 a loop cleared, not 1 (it heals in 5s:
+20 / 25 / 35 in loops 2-4, was 30 / 45 / 60; LOOP CLEARED says it). Why: at THE OWNER KNIGHT's jackpots carried about
+x800 in multipliers, JOKER's x170 and TESLA's x40-56 (TESLA's lightning boosts add), so neither ever broke the bank;
+Charm buffs (CHARGED 30, BLAZE 15, TRICK 60, LUCKY 70) lifted the main run 5-15 points and did nothing there. Sim (3,000
+runs a machine a stake, RED to GOLD): JOKER meets THE OWNER 33-40% (was 24-31), breaks the bank 1.4% of meetings (0);
+TESLA 38-41% (38-44), 1.3% (0); main run JOKER +1 to +2 (it was already 4-5 over at BLACK to GOLD), TESLA unchanged.
 His HP bar is the ladder (a quarter a rung, log-even, gold notches at the rungs; the number is his fortune left). His
 tells (HE LOOSENS HIS TIE / STANDS UP / GOES ALL IN, +15% to his hits each) come at the first three rungs. Each rung
 climbed scores 2,500 (the top +10,000). A build 10x stronger climbs one more rung, not an instant win. Sim (300

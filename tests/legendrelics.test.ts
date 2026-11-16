@@ -138,12 +138,12 @@ describe('legendary relics from the big choices (2026-10-15)', () => {
     expect(chain.n).toBeGreaterThanOrEqual(2 * plain.n - 1);
   });
 
-  it('HIGH CARD: jackpots pay x1.5, pairs pay half', () => {
+  it('HIGH CARD: jackpots pay x3.5, pairs pay half', () => {
     const jack: SymbolId[] = ['sword', 'sword', 'sword'];
     const pair: SymbolId[] = ['sword', 'sword', 'shield'];
     const j0 = group(spin(() => {}, jack), 'sword').amount;
     const j1 = group(spin((c) => (c.relics = ['highcard']), jack), 'sword').amount;
-    expect(Math.abs(j1 - j0 * 1.5)).toBeLessThanOrEqual(5);
+    expect(Math.abs(j1 - j0 * LEGEND_RELIC.highCardMul)).toBeLessThanOrEqual(5);
     const p0 = group(spin(() => {}, pair), 'sword').amount;
     const p1 = group(spin((c) => (c.relics = ['highcard']), pair), 'sword').amount;
     expect(Math.abs(p1 - p0 / 2)).toBeLessThanOrEqual(5);

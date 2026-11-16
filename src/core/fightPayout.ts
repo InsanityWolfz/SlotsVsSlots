@@ -313,6 +313,9 @@ export function payoffAfter(f: Fight, me: Combatant, _score: LineScore, events: 
 }
 
 /** Every meter payoff heals (the machine's own heal, plus Vampire Fang). */
+/** TESLA's storm heal (one axis), in HP: the meter's heal x the storm's share, grown by OVERLOAD (LOOP CLEARED says it). */
+export const stormHealHp = (heal: number, mul = 1) => heal * Math.round(PAY.stormHeal * mul);
+
 export function payoffHeal(f: Fight, me: Combatant, events: CombatEvent[], times = 1, fangTimes = times): void {
   if (me.side !== 'player' || f.over) return;
   // One heal, its parts named (user, 2026-10-13: "what's healing me 15?"): the meter's own and VAMPIRE FANG.
@@ -421,8 +424,12 @@ export function storm(f: Fight, me: Combatant, events: CombatEvent[]): void {
       n += Math.floor(me.energy / f.cfg.specialCost);
       me.energy -= (n - 1) * f.cfg.specialCost;
     }
-    const h = f.damage(foe, dmg * n, pierce);
-    events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: dmg * n, ...h, energyLeft: me.energy, ...(n > 1 ? { strikes: n } : {}) });
+    // CHAIN LIGHTNING: each strike hits chainStep harder for each strike before it in this storm (the rolled tail in one
+    // sum: strikes s .. s + n - 1).
+    let total = dmg * n;
+    if (me.side === 'player' && me.relics.has('chainlightning')) total = Math.round(dmg * (n + LEGEND_RELIC.chainStep * (n * strikes + (n * (n - 1)) / 2)));
+    const h = f.damage(foe, total, pierce);
+    events.push({ type: 'specialFire', from: me.side, to: foe.side, amount: total, ...h, energyLeft: me.energy, ...(n > 1 ? { strikes: n } : {}) });
     f.checkDeath(foe, events);
     strikes += n;
   }
@@ -438,8 +445,8 @@ export function storm(f: Fight, me: Combatant, events: CombatEvent[]): void {
     }
   }
   // TESLA, one axis: the storm heals once (it healed per bolt: 72-bolt storms walked through THE DEALER).
-  // (OVERLOAD, TESLA in ENDLESS: the storm's heal grows with the loop too.)
+  // (OVERLOAD, TESLA in ENDLESS: the storm's heal grows with the loop too, slower than its bolts: LOOP_GROWTH.overloadHeal.)
   // OVERLOAD (ENDLESS) grows the storm's own heal; ROOM SERVICE's "15 MORE" stays 15 a storm (it grew x the loop:
   // QA COMBOS-13).
-  if (me.side === 'player' && strikes > 0) payoffHeal(f, me, events, f.oneAxis ? Math.round(PAY.stormHeal * (f.cfg.player.veteranMul ?? 1)) : strikes, f.oneAxis ? PAY.stormHeal : strikes);
+  if (me.side === 'player' && strikes > 0) payoffHeal(f, me, events, f.oneAxis ? Math.round(PAY.stormHeal * (f.cfg.player.stormHealMul ?? 1)) : strikes, f.oneAxis ? PAY.stormHeal : strikes);
 }
