@@ -35,7 +35,12 @@ browser check. If usage runs out mid-task, schedule a check-in to resume after t
 **In progress (2026-11-14): the ENDLESS balance pass.** Live: the loops fall off (ramp 0.1 -> 0.35, `HP_GAME.md`; before,
 every loop cleared 87-100% and KNIGHT and BANKROLL met THE OWNER 9 rides in 10; https://claude.ai/artifact/Jm9VF9NxvdX5HdeRwAyqpk
 has the numbers from before). VETERAN, OVERLOAD and WARM-UP stay (with the new ramp KNIGHT, JUKEBOX and JOKER all meet THE
-OWNER about 1 ride in 4). Next, for the user: BANKROLL (57%) and TESLA (47%, dies in loop 1, then barely takes damage) in
+OWNER about 1 ride in 4). For the user (2026-11-16): ENDLESS as three hard loops then THE OWNER (it is four now), and
+the loops deal only the bosses' legendaries, not regular relics. Riders meet THE OWNER with 31-34 of the 31-35 relics a
+machine can get; with this, 22-25. Sim (2,000 runs, GREEN, ramp 0.35): JOKER loops 93/82/60, meets THE OWNER 30%;
+JUKEBOX 22%, KNIGHT 46%, TESLA 42%, BANKROLL 40%; breaks the bank 0.6% or less (the 2% bar holds). Shorter alone keeps
+29-31 relics; shorter at ramp 0.1 clears 89-98% again. If yes, BANKROLL's and TESLA's fixes are re-measured after.
+Before that, for the user: BANKROLL (57%) and TESLA (47%, dies in loop 1, then barely takes damage) in
 ENDLESS; then THE OWNER's 2% bar (KNIGHT breaks the bank in 14-24% of meetings). BANKROLL also wins runs 5-7 points
 over target from GREEN to GOLD. WHITE has no ENDLESS, so its numbers in the sim don't count.
 

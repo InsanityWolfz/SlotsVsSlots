@@ -7,7 +7,7 @@
  *   npx tsx tools/sim/endless.ts knight 2 veteran=0.3 4000   one knob
  */
 import { defaultConfig } from '../../src/core/config';
-import { ENDLESS, LOOP_GROWTH, OWNER_LADDER, OVERTIME, TUNE } from '../../src/core/enemies';
+import { ENDLESS, LOOP_GROWTH, OWNER_LADDER, OVERTIME, TUNE, TURBO } from '../../src/core/enemies';
 import { Rng } from '../../src/core/rng';
 import { playRun } from '../../src/sim/play';
 import { ALL_CABINETS, CABINETS, type CabinetId } from '../../src/core/cabinets';
@@ -15,7 +15,7 @@ import { LEGEND_RELIC, MACHINE_EXCLUDE, NEW_RELIC } from '../../src/core/relics'
 import { MIDAS, RAIN } from '../../src/core/fightRules';
 const [machine, stakeS, variant, runsS] = process.argv.slice(2);
 const stake = Number(stakeS), runs = Number(runsS);
-const ROOTS: Record<string, Record<string, number>> = { ENDLESS, TUNE, OVERTIME, LOOP_GROWTH, NEW_RELIC, LEGEND_RELIC, MIDAS, RAIN, VAULT: CABINETS.midas.meter } as never;
+const ROOTS: Record<string, Record<string, number>> = { ENDLESS, TUNE, OVERTIME, LOOP_GROWTH, TURBO, NEW_RELIC, LEGEND_RELIC, MIDAS, RAIN, VAULT: CABINETS.midas.meter } as never;
 for (const kv of variant.includes('=') ? variant.split(',') : []) {
   const [k, v] = kv.split('=');
   if (k === 'ban') { for (const r of v.split('+')) (MACHINE_EXCLUDE as Record<string, string[]>)[r] = [...ALL_CABINETS]; continue; }
