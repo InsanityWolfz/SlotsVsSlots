@@ -369,10 +369,12 @@ export interface EnemyDef extends SideConfig {
  */
 /**
  * THE OWNER's LADDER (user, 2026-11-01, option A: "a really strong build can go all out"): his HP is his fortune and
- * every hit takes its full damage. The fortune is a ladder of `rungs`, each x10 the last from `base` (25K, 250K, 2.5M,
- * then the top, 25M: BROKE THE BANK). Rungs 1-3 are his tells (he hits harder); a build 10x stronger climbs one rung.
+ * every hit takes its full damage. The fortune is a ladder of `rungs`, each x10 the last from `base` (20K, 200K, 2M,
+ * then the top, 20M: BROKE THE BANK). Rungs 1-3 are his tells (he hits harder); a build 10x stronger climbs one rung.
  */
-export const OWNER_LADDER = { base: 25_000, rungs: 4 };
+// 25K -> 20K (user, 2026-11-16: closer to the 2% bar; three loops left builds weaker): KNIGHT breaks the bank in 1.9% of
+// his meetings at RED to GOLD (was 0.4% at GREEN), JUKEBOX 1.0%, BANKROLL 0%, JOKER and TESLA 0% (at 15K KNIGHT 3.4%).
+export const OWNER_LADDER = { base: 20_000, rungs: 4 };
 /** A rung's damage (k = 1..rungs). */
 export const ownerRung = (k: number) => OWNER_LADDER.base * 10 ** (k - 1);
 /** Rungs climbed for this much of his fortune taken. */

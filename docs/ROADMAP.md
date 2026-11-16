@@ -36,7 +36,8 @@ browser check. If usage runs out mid-task, schedule a check-in to resume after t
 ENDLESS is three hard loops then THE OWNER with only legendary relics on offer, its elites paying chips (2026-11-16;
 `HP_GAME.md` has the rules and numbers; the numbers from before: https://claude.ai/artifact/Jm9VF9NxvdX5HdeRwAyqpk).
 GREEN, meets THE OWNER: JUKEBOX 25%, JOKER 31%, TESLA 43%, BANKROLL 44%, KNIGHT 46% (were 28 / 28 / 47 / 57 / 25 with
-four loops); nobody over 1.5% at the top of his ladder. Still open, for the user: (1) the name (ENDLESS isn't endless;
+four loops). THE OWNER's ladder is 20K-20M (was 25K-25M): KNIGHT breaks the bank in 1.9% of meetings, JUKEBOX 1.0%, the
+others about 0%. Still open, for the user: (1) the name (ENDLESS isn't endless;
 AFTER HOURS was offered); (2) one machine pass in ENDLESS now that its rules are set: TESLA still loses loop 1 a
 quarter of the time, JUKEBOX is lowest (loop 3 47%), KNIGHT, TESLA and BANKROLL sit 12-21 points over JOKER; the
 BANKROLL and TESLA proposals of 2026-11-15 were measured on four loops and need measuring again; (3) the main run:

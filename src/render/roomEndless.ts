@@ -10,7 +10,7 @@
  *   glass, EXIT over them, him in front of them to show you out. Alive like his outside room: THE POT warms the
  *   chandelier and EXIT's bulbs, a SKIM spills coins across the marble, a hit shorts EXIT and drops sparks.
  * - `drawOwnerRoom`: THE OWNER's. The casino floor emptied (act 2's last station, every light out), one spotlight down
- *   the aisle and him in it, his fortune's ladder on the progressive board over him (25K / 250K / 2.5M / 25M, a lamp a
+ *   the aisle and him in it, his fortune's ladder on the progressive board over him (20K / 200K / 2M / 20M, a lamp a
  *   rung; each rung you climb goes dark with a shower of chips). His tricks crackle lightning from his raised hand up
  *   into the spotlight's rig: on him only (a small area, never the screen), capped at FLASH_CAP, half that and a single
  *   fade with LIGHTNING SOFT.
@@ -18,9 +18,9 @@
  * Same grid and rules as the other rooms: 640x360, 2 screen pixels an art pixel, the portraits' palette and 1px
  * outline, stepped light (no gradients), dark and calm behind the reels.
  */
-import { TURBO } from '../core/enemies';
+import { OWNER_LADDER, ownerRung, TURBO } from '../core/enemies';
 import { bulb, DOORMAN, DOORMAN_EYES, DOORMAN_INK, mk, outlined, pool, px, RH, RW } from './roomEntrance';
-import { drawText } from './text';
+import { drawText, fmtNum } from './text';
 import { drawPatron, MOP_HANDS } from './patrons';
 
 /** FLASH_CAP (present/fx.ts): no flash over 0.2 of white, ever (photosensitivity, binding). */
@@ -454,8 +454,8 @@ export function ownerReset(): void {
   Object.assign(os, { rungs: 0, foeHp: 1, boltT: 0, rungT: 0, turn: null, bits: [] });
 }
 
-/** The fortune's ladder (OWNER_LADDER: 25K x10 a rung, 4 rungs). */
-const RUNGS = ['25K', '250K', '2.5M', '25M'];
+/** The fortune's ladder (OWNER_LADDER: 20K x10 a rung, 4 rungs). */
+const RUNGS = Array.from({ length: OWNER_LADDER.rungs }, (_, i) => fmtNum(ownerRung(i + 1)));
 /** Where he stands: in the aisle, under the spotlight, the open column between the HUDs. */
 const OWN_FEET = 80;
 
@@ -492,7 +492,7 @@ export function drawOwnerRoom(ctx: CanvasRenderingContext2D, o: OwnerScene): voi
   const g = lg;
   g.clearRect(0, 0, RW, RH);
   // His fortune: the progressive board, repurposed (the casino's sign system), under the gutter's LOOP label and over
-  // VS: a lamp a rung, two by two (25K 250K / 2.5M 25M), each going dark as you climb it.
+  // VS: a lamp a rung, two by two (20K 200K / 2M 20M), each going dark as you climb it.
   const bx = CX - 50;
   const by = 138;
   px(g, bx - 2, by - 2, 104, 40, K);

@@ -164,7 +164,7 @@ LEGENDARY. BROKE THE BANK is a flag on the run entry now (`turbo`; old entries: 
 OWNER holding 31-34 of the 31-35 relics a machine can get, and he was met by up to 9 riders in 10. Sim (3,000 runs a
 machine a stake, `tools/sim/endless.ts`; GREEN; loops 1-3 cleared when reached, meets THE OWNER, breaks the bank):
 JOKER 92/84/60, 31%, 0%; JUKEBOX 96/84/47, 25%, 0.4%; KNIGHT 90/95/75, 46%, 0.4%; TESLA 76/84/78, 43%, 0%; BANKROLL
-97/89/71, 44%, 0.2%. RED to GOLD: 19-48% meet him, no machine over 1.5% at the top (the bar is 2%). Relics going into
+97/89/71, 44%, 0.2% (at the 25K ladder; 20K since, below). RED to GOLD: 19-48% meet him. Relics going into
 THE OWNER's loop: 22-25 (were 31-34). VETERAN is X4 at THE OWNER now.
 KEEP PLAYING goes on into the loops (user, 2026-10-14: no RIDE AGAIN / CASH OUT); your score is the pot
 (x1.5 + 1500 a loop cleared) plus your chips x10. Sim (GREEN, the bot never stopping, before THE OWNER): loops cleared median 4.
@@ -181,8 +181,12 @@ THE HAMMER, 40% of your max HP through shields, named on his HUD before it lands
 more than 45% of your max HP, but every turn he takes raises that cap and his hits by 7%, and at 75 / 50 / 25% of his
 HP he hits 15% harder each time (a banner: HE LOOSENS HIS TIE, HE STANDS UP, HE GOES ALL IN).
 **THE LADDER (user, 2026-11-01, option A, replacing 11 HP a hit: "a really strong build can go all out"):** his HP is
-his fortune, 25M, and every hit takes its full damage (storms too; shields count as for anyone; he never heals). The
-fortune is a ladder of 4 rungs, each x10 the last: 25K, 250K, 2.5M, and the top, 25M (BROKE THE BANK, the run won).
+his fortune, 20M (25M until 2026-11-16), and every hit takes its full damage (storms too; shields count as for anyone; he never heals). The
+fortune is a ladder of 4 rungs, each x10 the last: 20K, 200K, 2M, and the top, 20M (BROKE THE BANK, the run won).
+**20K (user, 2026-11-16: closer to the 2% bar):** with three loops builds reach him weaker, and at 25K KNIGHT broke the
+bank in 0.4% of meetings at GREEN. At 20K (3,000 runs a machine a stake, RED to GOLD): KNIGHT 1.9%, JUKEBOX 1.0%, BANKROLL
+0%, JOKER and TESLA 0% (JOKER peaks at the 2M rung, TESLA at 200K; at 10K they still never broke it while KNIGHT did 8%).
+At 15K KNIGHT was 3.4%. Only a machine pass can bring JOKER and TESLA up.
 His HP bar is the ladder (a quarter a rung, log-even, gold notches at the rungs; the number is his fortune left). His
 tells (HE LOOSENS HIS TIE / STANDS UP / GOES ALL IN, +15% to his hits each) come at the first three rungs. Each rung
 climbed scores 2,500 (the top +10,000). A build 10x stronger climbs one more rung, not an instant win. Sim (300
