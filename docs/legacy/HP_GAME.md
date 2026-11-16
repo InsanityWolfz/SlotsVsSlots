@@ -200,6 +200,12 @@ blocked a fifth of the damage aimed at it in loop 3, JOKER half; HYPE MAN raisin
 at the top). OPEN BAR's rains pay X2 (it lowered its riders' damage at THE OWNER; HIGH ROLLER's cap at X8 only helped
 BANKROLL survive). Sim (3,000 runs a stake, RED to GOLD): JUKEBOX meets THE OWNER 28-33% (was 19-25), breaks the bank
 1.0%; BANKROLL 46-51% (41-44), 1.2% (0); BANKROLL's main run +1 to +2 (now 5-8 over from RED to GOLD: the main-run pass).
+**The main-run pass (user, 2026-11-16):** HIGH ROLLER needs 30 chips a step, not 20 (BANKROLL was 7-9 over from GREEN to
+GOLD: it won THE WHEEL 95-98% and THE DEALER 91-94% when reached; 360 HP instead took WHITE to -5). JOKER 365 -> 355 HP
+(5-6 over from BLACK to GOLD; 345 took WHITE to -6). Sim (1,500 runs a stake), WHITE / RED / GREEN / BLACK / BLUE / GOLD
+(targets 60 / 43 / 36 / 28 / 20 / 14): KNIGHT 62 / 41 / 35 / 30 / 21 / 14, TESLA 63 / 39 / 36 / 29 / 19 / 13, JUKEBOX
+60 / 44 / 38 / 28 / 19 / 10, JOKER 56 / 43 / 38 / 31 / 25 / 17, BANKROLL 57 / 42 / 37 / 29 / 22 / 17: all 30 within 5.
+ENDLESS after it (RED to GOLD): JOKER meets THE OWNER 35-41%, breaks the bank 1.3%; BANKROLL 47-52%, 1.0%.
 His HP bar is the ladder (a quarter a rung, log-even, gold notches at the rungs; the number is his fortune left). His
 tells (HE LOOSENS HIS TIE / STANDS UP / GOES ALL IN, +15% to his hits each) come at the first three rungs. Each rung
 climbed scores 2,500 (the top +10,000). A build 10x stronger climbs one more rung, not an instant win. Sim (300
@@ -270,8 +276,8 @@ Each machine except KNIGHT has one signature symbol and a meter.
 | KNIGHT | SIR REGINALD | sword | none: half swords, half shields, both from level 2; each boss pays 4 sword levels (400 HP) | start |
 | TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields: 20 charge a bolt, 22 a bolt, the storm heals 15 (one axis: every boost adds charge); 4 CHARGED bolts on reel 1 and 1 on reel 2 (340 HP) | reach the House |
 | JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat THE DOORMAN |
-| JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots | beat THE DOORMAN with wilds |
-| BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER; a chip jackpot makes it rain (20 chips; free when it hits no harder than the jackpot); +1 chip a win and 20% off the Cashier's shelf (not the HEAL); 6 chips and 6 shields a reel (400 HP) | clear a run |
+| JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots (355 HP since 2026-11-16) | beat THE DOORMAN with wilds |
+| BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER (x1 + chips / 30, up to x2.5 at 45 chips; / 20 until 2026-11-16); a chip jackpot makes it rain (20 chips; free when it hits no harder than the jackpot); +1 chip a win and 20% off the Cashier's shelf (not the HEAL); 6 chips and 6 shields a reel (400 HP) | clear a run |
 
 BRIAR / THORN is retired and removed from the code (the JUKEBOX replaced her). Old saves map her unlock and stakes to
 the JUKEBOX; a saved BRIAR run or hiscore entry is dropped on load.

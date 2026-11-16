@@ -149,8 +149,9 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     blurb: 'NOTHING IS WHAT IT SEEMS',
     // 2026-10-12 (user): 380 HP and its jackpot payoff no longer heals (its healing grew with its WILDS: GREEN 53).
     // 335 -> 390 with the draft/Cashier split (2026-10-15: it bought WILDS at the Cashier; sim 44 / 26 -> 57 / 35).
-    // 330 -> 365 (balance pass 2026-11-07): weak in act 1, strong from GREEN, so a small raise.
-    hp: 36.5 * UNIT,
+    // 330 -> 365 (balance pass 2026-11-07): weak in act 1, strong from GREEN, so a small raise. 365 -> 355 (user,
+    // 2026-11-16, the main-run pass): 5-6 points over target from BLACK to GOLD (sim 1,500 runs a stake).
+    hp: 35.5 * UNIT,
     // Cards, not swords (2026-10-07): JAX throws playing cards. They hit like swords.
     strips: r3({ ace: 5, shield: 5, wild: 2 }),
     gilded: [],
@@ -158,7 +159,7 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
     meter: { kind: 'jackpots', symbol: 'wild', cost: 10 * UNIT, heal: 1.5 * UNIT, perWild: 5 * UNIT },
     symbols: ['ace', 'shield'],
     attack: 'ace',
-    rule: 'WILDS FILL YOUR JACKPOT METER. A FULL METER MAKES ALL 3 PAYLINE SYMBOLS PAY JACKPOTS AND HEALS 15. A WILD LETS ANY 2 REELS PAIR. 365 HP.',
+    rule: 'WILDS FILL YOUR JACKPOT METER. A FULL METER MAKES ALL 3 PAYLINE SYMBOLS PAY JACKPOTS AND HEALS 15. A WILD LETS ANY 2 REELS PAIR. 355 HP.',
     unlock: 'BEAT THE DOORMAN WITH A WILD ON YOUR REELS',
     jokerWilds: true,
   },

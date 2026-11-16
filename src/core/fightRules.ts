@@ -5,7 +5,9 @@ import { Rng } from './rng';
 import { buildReel, type Reel } from './strip';
 /** MIDAS (the economy machine): VAULT pips per chips held, payoff scale and cap, chips from gold bars. */
 // houseSkim 2 -> 0 (BOSS_REDESIGN 2): the House's hidden chip skim drained CASSIDY's rain (his House ran 32 turns).
-export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 20, maxMul: 2.5 };
+// chipsPerMul 20 -> 30 (user, 2026-11-16, the main-run pass): BANKROLL won 7-9 points over target from GREEN to GOLD (it
+// won THE WHEEL 95-98% and THE DEALER 91-94% when reached); at 30 it is within 3 everywhere (sim 1,500 runs a stake).
+export const MIDAS = { houseSkim: 0, chipsPerPip: 2, chipsPerMul: 30, maxMul: 2.5 };
 /**
  * CASH CASSIDY's MAKE IT RAIN!: a chip jackpot with at least `cost` chips held hits for chips (up to `maxChips`, user 2026-10-12) x `perChip` (base: the
  * jackpot, charms, relics and a full HIGH ROLLER bar multiply it), counted before it costs `cost` chips.
@@ -37,7 +39,7 @@ export const VOLUME = { perLevel: 0.32, max: 6, skip: 2, after: 3, turntable: 5,
  */
 export const BUILD_UP = { on: 1, step: 0.25, cap: 2, dryStep: 0.5, dryCap: 4 };
 export const RAIN = { maxChips: 100, perChip: 1.5, /** 10 -> 20 (2026-11-09): floor rains are free now (QA call 6). */ cost: 20, rainmakerCost: 2, chipLess: 1, /** A rain no harder than the jackpot it replaces is free (1; QA call 6). */ freeAtFloor: 1 };
-/** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 20, max x2.5 (quarter steps). */
+/** The HIGH ROLLER bar's payoff multiplier for a chip count: 1 + chips / 30, max x2.5 (quarter steps). */
 export const highRollerMul = (chips: number, cap = MIDAS.maxMul) => Math.min(cap, Math.round((1 + Math.max(0, chips) / MIDAS.chipsPerMul) * 4) / 4);
 
 /** Act 3: marked-card bite, the Croupier's rake, and the Dealer's shuffle size. */

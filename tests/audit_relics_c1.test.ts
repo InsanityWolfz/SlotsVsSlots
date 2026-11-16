@@ -222,7 +222,7 @@ describe('KNIGHT', () => {
 });
 
 describe('BANKROLL', () => {
-  it('COMPOUND: the HIGH ROLLER cap goes from x2.5 to x4 (60+ chips)', () => {
+  it('COMPOUND: the HIGH ROLLER cap goes from x2.5 to x4 (90+ chips at 30 a step)', () => {
     const pay = (relics: RelicId[], chips: number) => {
       const f = mk('midas', relics, { chips });
       arm(f);
@@ -230,7 +230,8 @@ describe('BANKROLL', () => {
       return { mul: f.vaultPaid || ofType(ev, 'payoff')[0]?.mul, amt: grp(ev, 'goldbar').amount, fired: relicFired(ev, 'compound') };
     };
     expect(pay([], 100).mul).toBe(MIDAS.maxMul);
-    expect(pay(['compound'], 60).mul).toBe(4);
+    expect(pay(['compound'], 90).mul).toBe(4);
+    expect(pay(['compound'], 60).mul).toBe(3);
     expect(pay(['compound'], 100).mul).toBe(4);
     expect(pay(['compound'], 100).amt).toBe(pay([], 100).amt * (4 / 2.5));
     // Under the old cap it changes nothing.
@@ -263,7 +264,7 @@ describe('BANKROLL', () => {
   });
 
   describe('ARMORED CAR', () => {
-    // HIGH ROLLER's multiplier for a chip count is highRollerMul(chips): 1 + chips / 20 in quarter steps, max x2.5.
+    // HIGH ROLLER's multiplier for a chip count is highRollerMul(chips): 1 + chips / 30 in quarter steps, max x2.5.
     const payoff = (relics: RelicId[], line: SymbolId[], chips: number, gilded: Gild[] = []) => {
       const f = mk('midas', relics, { chips, gilded });
       arm(f);
@@ -273,11 +274,11 @@ describe('BANKROLL', () => {
     };
     it('a HIGH ROLLER payoff counts that spin\'s shield as chips, 1 per 5 (40 shield = 8 chips)', () => {
       const line: SymbolId[] = ['shield', 'shield', 'goldbar'];
-      const on = payoff(['armoredcar'], line, 20);
+      const on = payoff(['armoredcar'], line, 35);
       expect(on.shieldGained).toBe(40);
-      expect(on.mul).toBe(highRollerMul(20 + 40 / 5));
+      expect(on.mul).toBe(highRollerMul(35 + 40 / 5));
       expect(on.mul).toBe(2.5);
-      expect(payoff([], line, 20).mul).toBe(2);
+      expect(payoff([], line, 35).mul).toBe(2.25);
       expect(on.fired).toBe(true);
       // From 0 chips: 40 shield = 8 chips = x1.4, shown in quarter steps as x1.5.
       expect(payoff(['armoredcar'], line, 0).mul).toBe(highRollerMul(8));
@@ -313,7 +314,8 @@ describe('BANKROLL', () => {
     });
     it('with two GOLD shields: 160 shield gained, HIGH ROLLER pays x2.5 (the cap), as SAFE DEPOSIT would count it', () => {
       const gilded: Gild[] = [0, 1].map((reel) => ({ reel, symbol: 'shield', enh: 'gold', n: 6 }));
-      const r = payoff(['armoredcar'], ['shield', 'shield', 'goldbar'], 0, gilded);
+      // (15 chips held + 32 counted: past the cap's 45.)
+      const r = payoff(['armoredcar'], ['shield', 'shield', 'goldbar'], 15, gilded);
       expect(r.shieldGained).toBe(160);
       expect(r.mul).toBe(2.5);
     });

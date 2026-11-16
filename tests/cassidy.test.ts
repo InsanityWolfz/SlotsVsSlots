@@ -29,7 +29,9 @@ describe('CASH CASSIDY / THE BANKROLL', () => {
   it('names and the HIGH ROLLER multiplier', () => {
     expect(CABINETS.midas.hero).toBe('CASH CASSIDY');
     expect(CABINETS.midas.name).toBe('BANKROLL');
-    expect(highRollerMul(10)).toBe(1.5);
+    // 1 + chips / 30 in quarter steps (2026-11-16; was / 20).
+    expect(highRollerMul(15)).toBe(1.5);
+    expect(highRollerMul(45)).toBe(2.5);
     expect(highRollerMul(100)).toBe(MIDAS.maxMul);
   });
 
