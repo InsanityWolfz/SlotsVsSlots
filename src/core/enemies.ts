@@ -256,7 +256,7 @@ export const DEALER: Archetype = {
   acts: [3],
 };
 /**
- * THE OWNER (user, 2026-10-14): the man who owns the casino, met at ENDLESS loop 5 (TURBO below). EVERY TRICK IN THE
+ * THE OWNER (user, 2026-10-14): the man who owns the casino, met at ENDLESS loop 4 (TURBO below). EVERY TRICK IN THE
  * BOOK: every 2 turns he cheats, a different enemy's trick each time (slime, a theft, a freeze, rocks, a hex, bombs).
  */
 export const OWNER: Archetype = {
@@ -312,10 +312,12 @@ export const ACT_LENGTH: Record<number, number> = { 1: 5, 2: 5, 3: 5, 4: 3 };
 /** ENDLESS (act 4) tuning: per loop, enemy HP x hp^loop and damage x dmg^loop (EXPERT_PLAYTEST_3 D). */
 // ramp 0.1 -> 0.35 (user, 2026-11-14): every loop cleared 87-100% of the time, so beating THE DEALER all but
 // promised THE OWNER. Loop 1 is unchanged; sim (4,000 runs a machine, GREEN) JOKER's loops 92/89/74/60.
-export const ENDLESS = { ramp: 0.35, hp: 2, dmg: 1.35, houseHp: 5, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, wheelHp: 5, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
+// legendsOnly (user, 2026-11-16): ENDLESS offers only legendary relics (the Cashier's case, the CLAW MACHINE's relic,
+// PUNCH CARD); its elites pay chips (run.ts CHIPS.endlessEliteChips). Riders met THE OWNER holding 31-34 of the 31-35 relics a machine can get.
+export const ENDLESS = { ramp: 0.35, legendsOnly: 1, hp: 2, dmg: 1.35, houseHp: 5, housePot: 1.5, potSeed: 0.3, potCut: 0.15, potSteal: 0.34, houseEvery: 2, potGrowth: 1.5, wheelHp: 5, dealerHp: 6, lastCall: 25, lastCallStep: 0.1, maxTurns: 80, closingWarn: 5, clamp: 1e12, edgeChips: 8 };
 /**
  * ENDLESS: each loop multiplies enemy HP (and damage) by its base, and the step itself grows by RAMP every loop,
- * so the climb accelerates: loop L totals base^L x (1 + ramp)^(L(L-1)/2). Only broken builds should see loop 5.
+ * so the climb accelerates: loop L totals base^L x (1 + ramp)^(L(L-1)/2). THE OWNER is loop 4's boss.
  * 2026-10-12 (pacing): base 2, ramp 0.05 (was 1.45 / 0.15): loops 1-3 were 1-3-spin fights, then a cliff.
  */
 export const endlessMul = (base: number, loop: number) => Math.pow(base, loop) * Math.pow(1 + ENDLESS.ramp, (loop * (loop - 1)) / 2);
@@ -354,12 +356,12 @@ export interface EnemyDef extends SideConfig {
   act?: number;
   /** HIGH STAKES BLUE: this fork option was placed as the counter to your build. */
   counter?: boolean;
-  /** ENDLESS loop 5: THE OWNER, the TURBO boss (TURBO below). */
+  /** ENDLESS loop 4: THE OWNER, the TURBO boss (TURBO below). */
   turbo?: boolean;
 }
 
 /**
- * THE TURBO boss (user, 2026-10-14): THE OWNER at loop 5, built to be all but unbeatable (aim: ~0.1% of the runs that
+ * THE TURBO boss (user, 2026-10-14): THE OWNER at loop 4 (loop 5 until 2026-11-16), built to be all but unbeatable (aim: ~0.1% of the runs that
  * reach it). Beating him ends the run, so a broken build or a bug can't go on forever. `hp` is his HP in loop bosses'
  * `hp` is his real HP (user, 2026-10-15): every hit of yours takes exactly 1, whatever it would have done (shields,
  * multipliers and caps don't matter; he never heals), so the fight is about surviving 11 hits. `dmg` is
@@ -382,7 +384,8 @@ export const rungsClimbed = (taken: number) => {
 /** How far up the ladder (0-1): a quarter a rung, log-even (the HP bar and the score read it). */
 export const ladderFrac = (taken: number) =>
   taken < OWNER_LADDER.base ? Math.max(0, taken) / OWNER_LADDER.base / OWNER_LADDER.rungs : Math.min(1, (1 + Math.log10(taken / OWNER_LADDER.base)) / OWNER_LADDER.rungs);
-export const TURBO = { loop: 5, hp: ownerRung(OWNER_LADDER.rungs), dmg: 1.2, potMul: 3 };
+// loop 5 -> 4 (user, 2026-11-16): ENDLESS is three hard loops (THE DOORMAN, THE WHEEL, THE DEALER again), then THE OWNER.
+export const TURBO = { loop: 4, hp: ownerRung(OWNER_LADDER.rungs), dmg: 1.2, potMul: 3 };
 
 /** Rough single-fight danger per archetype (playtest ITERATION_2), used to pick the elite at a fork. */
 export const DANGER: Record<string, number> = {
@@ -535,7 +538,8 @@ export function generateActMap(rng: Rng, act = 1, loop = 1, cabinet?: CabinetId)
   });
   // ENDLESS: the boss cycles THE HOUSE -> THE WHEEL -> THE DEALER.
   // Loop 5: THE OWNER.
-  const owner = act >= 4 && loop === TURBO.loop;
+  // (From TURBO.loop on: a save from when he was loop 5's boss finishes its loop 4, then meets him.)
+  const owner = act >= 4 && loop >= TURBO.loop;
   const bossArch = owner ? OWNER : act >= 4 ? [BOSS, WHEEL, DEALER][(Math.max(1, loop) - 1) % 3] : (BOSSES[act] ?? BOSS);
   const boss = makeEnemy(bossArch, actLength(act), rng, true, act);
   if (owner) boss.turbo = true;

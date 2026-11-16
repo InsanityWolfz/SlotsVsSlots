@@ -37,7 +37,7 @@ const BOSSES: { name: string; portrait: string; where: string; hook: string }[] 
 export const SIZE_LINE = `2 MORE ACTS AND ${RELIC_ORDER.length} RELICS`;
 
 /** The stakes and ENDLESS, as one line. */
-export const STAKES_LINE = `${STAKES.length} STAKES FROM ${STAKES[0].name} TO ${STAKES[STAKES.length - 1].name}. IN ENDLESS YOU PLAY ON UNTIL YOU BUST`;
+export const STAKES_LINE = `${STAKES.length} STAKES FROM ${STAKES[0].name} TO ${STAKES[STAKES.length - 1].name}. ENDLESS LEADS TO THE OWNER`;
 
 /** The Slot Machines the demo leaves out, in the machine select's order. */
 export function fullGameMachines() {

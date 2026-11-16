@@ -32,17 +32,16 @@ How the user works now: every art step goes to them as an artifact gallery with 
 in worktrees on branches, and approved work merges to `main` with `npm test`, `npx tsc --noEmit -p .`, both builds and a
 browser check. If usage runs out mid-task, schedule a check-in to resume after the reset.
 
-**In progress (2026-11-14): the ENDLESS balance pass.** Live: the loops fall off (ramp 0.1 -> 0.35, `HP_GAME.md`; before,
-every loop cleared 87-100% and KNIGHT and BANKROLL met THE OWNER 9 rides in 10; https://claude.ai/artifact/Jm9VF9NxvdX5HdeRwAyqpk
-has the numbers from before). VETERAN, OVERLOAD and WARM-UP stay (with the new ramp KNIGHT, JUKEBOX and JOKER all meet THE
-OWNER about 1 ride in 4). For the user (2026-11-16): ENDLESS as three hard loops then THE OWNER (it is four now), and
-the loops deal only the bosses' legendaries, not regular relics. Riders meet THE OWNER with 31-34 of the 31-35 relics a
-machine can get; with this, 22-25. Sim (2,000 runs, GREEN, ramp 0.35): JOKER loops 93/82/60, meets THE OWNER 30%;
-JUKEBOX 22%, KNIGHT 46%, TESLA 42%, BANKROLL 40%; breaks the bank 0.6% or less (the 2% bar holds). Shorter alone keeps
-29-31 relics; shorter at ramp 0.1 clears 89-98% again. If yes, BANKROLL's and TESLA's fixes are re-measured after.
-Before that, for the user: BANKROLL (57%) and TESLA (47%, dies in loop 1, then barely takes damage) in
-ENDLESS; then THE OWNER's 2% bar (KNIGHT breaks the bank in 14-24% of meetings). BANKROLL also wins runs 5-7 points
-over target from GREEN to GOLD. WHITE has no ENDLESS, so its numbers in the sim don't count.
+**In progress (2026-11-16): the ENDLESS balance pass.** Live: the loops fall off (ramp 0.1 -> 0.35, 2026-11-14), and
+ENDLESS is three hard loops then THE OWNER with only legendary relics on offer, its elites paying chips (2026-11-16;
+`HP_GAME.md` has the rules and numbers; the numbers from before: https://claude.ai/artifact/Jm9VF9NxvdX5HdeRwAyqpk).
+GREEN, meets THE OWNER: JUKEBOX 25%, JOKER 31%, TESLA 43%, BANKROLL 44%, KNIGHT 46% (were 28 / 28 / 47 / 57 / 25 with
+four loops); nobody over 1.5% at the top of his ladder. Still open, for the user: (1) the name (ENDLESS isn't endless;
+AFTER HOURS was offered); (2) one machine pass in ENDLESS now that its rules are set: TESLA still loses loop 1 a
+quarter of the time, JUKEBOX is lowest (loop 3 47%), KNIGHT, TESLA and BANKROLL sit 12-21 points over JOKER; the
+BANKROLL and TESLA proposals of 2026-11-15 were measured on four loops and need measuring again; (3) the main run:
+BANKROLL wins 5-7 points over target from GREEN to GOLD; riders beat THE DEALER holding about 18 of the 31-35 relics a
+machine can get. WHITE has no ENDLESS.
 
 **In progress (2026-11-12): the cold read before the demo.** A card read "ENEMIES FASTER" and nothing caught it (user: "one
 thing like that and the player goes, oh this was vibe coded"): the tests check that a text is true and fits, not that it

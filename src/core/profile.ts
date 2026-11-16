@@ -57,6 +57,8 @@ export interface RunEntry {
   hpLeft?: number;
   /** ENDLESS: loops cleared after LET IT RIDE (and, on entries from before the run score, the points banked). */
   loops?: number;
+  /** ENDLESS: THE OWNER was beaten (BROKE THE BANK). Entries from before 2026-11-16 show it as 5 loops cleared. */
+  turbo?: boolean;
   pot?: number;
   /** THE RUN SCORE (2026-10-14 on) and its parts before the stake; older entries score by the old formula. */
   score?: number;
@@ -121,6 +123,7 @@ export function runEntry(run: RunState, at = Date.now(), tutorial = false): RunE
     chips: run.player.chips,
     ...(tutorial ? { tutorial: true } : {}),
     ...(run.endless ? { loops: run.endless.loop - 1 } : {}),
+    ...(run.endless?.turbo ? { turbo: true } : {}),
     // THE RUN SCORE (2026-10-14): worked out at the end, with its parts.
     score: runScoreOf(run),
     parts: scoreParts(run),
@@ -195,6 +198,7 @@ export function sanitizeProfile(raw: unknown): Profile {
         ...(e.abandoned === true ? { abandoned: true } : {}),
         ...(typeof e.daily === 'string' && DATE_KEY.test(e.daily) ? { daily: e.daily, hpLeft: num(e.hpLeft, 0, 99999) } : {}),
         ...(typeof e.loops === 'number' ? { loops: num(e.loops, 0, 999) } : {}),
+        ...(e.turbo === true ? { turbo: true } : {}),
         ...(typeof e.pot === 'number' ? { pot: num(e.pot, 0, 1e9) } : {}),
         ...(typeof e.score === 'number' ? { score: num(e.score, 0, 1e12) } : {}),
         ...(Array.isArray(e.parts) ? { parts: (e.parts as unknown[]).filter((x): x is [string, number] => Array.isArray(x) && typeof x[0] === 'string' && typeof x[1] === 'number').slice(0, 12).map(([k, n]) => [k.slice(0, 16), num(n, 0, 1e12)] as [string, number]) } : {}),
@@ -259,6 +263,7 @@ function achievementCtx(p: Profile, e: RunEntry, collectionTotal = Infinity) {
     chips: e.chips,
     relics: e.relics.length,
     loops: e.loops ?? 0,
+    turbo: !!e.turbo,
     killer: e.killer,
     daily: !!e.daily,
     tutorial: !!e.tutorial,

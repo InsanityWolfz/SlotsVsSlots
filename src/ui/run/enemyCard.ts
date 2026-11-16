@@ -1,7 +1,7 @@
 import { type SymbolId } from '../../core/config';
 import { ELITE_DMG_MUL, ELITE_HP_MUL, ELITE_HP_MUL_2, TUNE, WHEEL_RULES, type EnemyDef } from '../../core/enemies';
 import { FAKE_TURNS } from '../../core/fight';
-import { CHIPS, needsRoute, currentEnemy, isBossNext, runActs, type RunState } from '../../core/run';
+import { CHIPS, endlessEliteChips, legendsNow, needsRoute, currentEnemy, isBossNext, runActs, type RunState } from '../../core/run';
 import { enemyHp, shownAbility } from '../../core/fightSetup';
 import { STAKE } from '../../core/stakes';
 import { backOut, sineOut } from '../../present/ease';
@@ -158,7 +158,7 @@ export abstract class NextScreen extends RouteScreen {
       ctx.fillRect(wx, wy + ws - 22, ws, 22);
       ctx.fillStyle = '#8a3a10';
       ctx.fillRect(wx + 2, wy + ws - 20, ws - 4, 18);
-      drawText(ctx, 'PAYS A RELIC', wx + ws / 2, wy + ws - 11, T.small, KIT.title);
+      drawText(ctx, legendsNow(run) ? `PAYS ${endlessEliteChips(run) + CHIPS.eliteBonus} CHIPS` : 'PAYS A RELIC', wx + ws / 2, wy + ws - 11, T.small, KIT.title);
     }
     // The right column: name, HP, the ability chip with its pips, one line of what it does.
     const tx = wx + ws + 26;
@@ -248,7 +248,7 @@ export abstract class NextScreen extends RouteScreen {
     }
     if (e.elite)
       // (Its IOUs and marks keep their numbers: those elites say their reels, QA RULES-01.)
-      for (const l of wrap(`THIS ELITE HAS ${(e.act ?? 1) > 1 ? Math.round((ELITE_HP_MUL_2 - 1) * 100) : e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% MORE HP AND ${e.ability?.kind === 'carpet' || e.ability?.kind === 'mark' ? 'THEIR REELS HIT' : 'HITS'} ${Math.round((ELITE_DMG_MUL - 1) * 100)}% HARDER. BEAT THEM FOR A RELIC AND ${CHIPS.eliteBonus} MORE CHIPS`, cols(T.small)))
+      for (const l of wrap(`THIS ELITE HAS ${(e.act ?? 1) > 1 ? Math.round((ELITE_HP_MUL_2 - 1) * 100) : e.archetype === 'thief' ? 15 : Math.round((ELITE_HP_MUL - 1) * 100)}% MORE HP AND ${e.ability?.kind === 'carpet' || e.ability?.kind === 'mark' ? 'THEIR REELS HIT' : 'HITS'} ${Math.round((ELITE_DMG_MUL - 1) * 100)}% HARDER. BEAT THEM FOR ${legendsNow(run) ? `${endlessEliteChips(run) + CHIPS.eliteBonus} MORE CHIPS` : `A RELIC AND ${CHIPS.eliteBonus} MORE CHIPS`}`, cols(T.small)))
         out.push({ text: l, color: '#ffb060', size: T.small });
     // ACT 3's COVER CHARGE (QA RULES-09: it was named only by a pop when it fired).
     if (!e.isBoss && (e.act ?? run.act) >= 3)

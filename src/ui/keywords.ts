@@ -60,7 +60,7 @@ export const KEYWORDS: Keyword[] = [
   { word: 'BUILD-UP', tab: 'THE BASICS', icon: 'kwMeter', color: '#ffd23a', text: `YOUR NEXT ATTACK PAIR OR JACKPOT PAYS ${Math.round(BUILD_UP.step * 100)}% MORE FOR EACH SPIN WITHOUT ONE, UP TO X${BUILD_UP.cap}` },
   { word: 'OVERTIME', tab: 'THE BASICS', icon: 'kwOvertime', color: '#ff9a3a', text: `FROM SPIN ${2 * OVERTIME.from - 1} OF EACH FIGHT BOTH MACHINES' REELS HIT X${1 + OVERTIME.step}. IT GROWS BY ${OVERTIME.step} EACH TIME YOU SPIN. ABILITIES AND SHIELDS DON'T GROW` },
   // (ELITE wears its own map badge.)
-  { word: 'ELITE', tab: 'THE BASICS', icon: 'mapBadgeElite', forms: ['ELITES'], color: '#ffb060', text: 'A TOUGHER ENEMY WITH MORE HP AND HARDER HITS. BEAT ONE TO PICK A RELIC AND WIN MORE CHIPS' },
+  { word: 'ELITE', tab: 'THE BASICS', icon: 'mapBadgeElite', forms: ['ELITES'], color: '#ffb060', text: 'A TOUGHER ENEMY WITH MORE HP AND HARDER HITS. BEAT ONE TO PICK A RELIC AND WIN MORE CHIPS. IN ENDLESS ELITES PAY CHIPS INSTEAD' },
   // (CHIPS shows the chip itself.)
   { word: 'CHIPS', quiet: true, tab: 'THE BASICS', icon: 'chip', color: '#ffd23f', text: 'CHIPS ARE MONEY. YOU WIN THEM IN FIGHTS AND SPEND THEM AT THE CASHIER AND AT TABLE GAMES' },
 

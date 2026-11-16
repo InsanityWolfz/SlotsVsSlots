@@ -1,6 +1,6 @@
 import { emptyLevels, UNIT, unitsRound, type Enh, type GameConfig, type Gild, type Levels, type RelicId, type StripCounts, type SymbolId } from './config';
 import { demo } from '../demo';
-import { ACTS, ARCHETYPES, GATEKEEPER, generateActMap, ladderFrac, makeEnemy, OWNER_LADDER, REPO_MAN, TURBO, type ActMap, type EnemyDef, type Stop } from './enemies';
+import { ACTS, ARCHETYPES, ENDLESS, GATEKEEPER, generateActMap, ladderFrac, makeEnemy, OWNER_LADDER, REPO_MAN, TURBO, type ActMap, type EnemyDef, type Stop } from './enemies';
 import { MAX_STAKE, STAKE } from './stakes';
 import type { Fight } from './fight';
 import {
@@ -14,7 +14,7 @@ import {
   RELICS,
 } from './relics';
 import { CABINETS, type CabinetId } from './cabinets';
-import { encounterOf, encounterRng, extraPlays, type EncounterChoice, type EncounterResult } from './encounters';
+import { atStakes, encounterOf, encounterRng, extraPlays, type EncounterChoice, type EncounterResult } from './encounters';
 import { symLevel } from './charms';
 import { Rng } from './rng';
 import { BONUS_SYMBOLS, stripCounts } from './strip';
@@ -101,8 +101,9 @@ export const CHIPS = {
   // 3 -> 6 with the draft/Cashier split (2026-10-15): relics, levels and heals left the free draft for the Cashier.
   win: 6,
   eliteBonus: 2,
-  /** Act 2 elites pay these chips instead of a relic. */
-  act2EliteChips: 6,
+  /** ENDLESS elites pay these chips (x the loop's table stakes) instead of a relic (user, 2026-11-16: only legendaries in
+   * ENDLESS; legendary spoils emptied the pool by loop 3). */
+  endlessEliteChips: 6,
   perJackpot: 1,
   /** +1 interest per this many banked chips, capped. */
   interestPer: 5,
@@ -403,6 +404,11 @@ function startNextAct(run: RunState): void {
   queueLegendPick(run, legendPick(run, rng, pool));
 }
 
+/** ENDLESS offers only legendary relics (user, 2026-11-16): the Cashier's case, the CLAW MACHINE's relic, PUNCH CARD.
+ * Its elites pay chips instead of spoils. */
+export const legendsNow = (run: RunState) => !!run.endless && !!ENDLESS.legendsOnly;
+/** What an ENDLESS elite pays on top of a win's chips (with the elite bonus, the card's MORE CHIPS). */
+export const endlessEliteChips = (run: RunState) => atStakes(run, CHIPS.endlessEliteChips);
 const legendsFor = (run: RunState) => [...LEGENDARY].filter((r) => !run.player.relics.includes(r) && relicFits(run, r));
 const relicsFor = (run: RunState) => (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r) && relicFits(run, r));
 
@@ -499,7 +505,8 @@ export const isEncounterNow = (run: RunState) => !run.over && !run.actIntro && c
 export function playEncounter(run: RunState, i: number, bet?: number): EncounterResult | null {
   const st = currentStop(run);
   if (!isEncounterNow(run) || !st) return null;
-  const relics = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && !LEGENDARY.has(r) && !ELITE_ONLY.has(r));
+  // (In ENDLESS the CLAW MACHINE's relic is a legendary: relicFits offers only those there.)
+  const relics = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && (legendsNow(run) || !LEGENDARY.has(r)) && !ELITE_ONLY.has(r));
   // An upgrade: a level for a symbol or Charm you own (the same cards the drafts deal), picked from the stop's stream.
   const upRng = encounterRng(run).fork().fork();
   const upgrade = (): string | null => {
@@ -729,8 +736,16 @@ export function finishFight(run: RunState, fight: Fight): FightRecord {
     run.player.chips += GATEKEEPER.bounty;
     record.chips = (record.chips ?? 0) + GATEKEEPER.bounty;
   }
+  // ENDLESS elites pay chips instead (user, 2026-11-16).
+  if (beaten.elite && legendsNow(run)) {
+    const c = endlessEliteChips(run);
+    run.player.chips += c;
+    record.chips = (record.chips ?? 0) + c;
+    record.eliteChips = c;
+    run.chipsEarned = (run.chipsEarned ?? 0) + c;
+  }
   // Elites offer their spoils in every act: choose 1 of 2 relics (map rework 2026-10-12; act 2 elites paid chips).
-  if (beaten.elite) {
+  else if (beaten.elite) {
     const fits = (Object.keys(RELICS) as RelicId[]).filter((r) => !run.player.relics.includes(r) && relicFits(run, r) && !LEGENDARY.has(r));
     // A relic turned down this act isn't offered again this act (TOWER SHIELD came up 3 times: expert playtest 2026-11-06).
     const passed = passedThisAct(run);

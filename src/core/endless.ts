@@ -1,8 +1,11 @@
 /** ENDLESS: LET IT RIDE, its loops, TONIGHT'S RULE and the pot (split from run.ts, 2026-11-05). */
 import type { GameConfig } from './config';
-import { ENDLESS, generateActMap, ROUTES_PER_LOOP } from './enemies';
+import { ENDLESS, generateActMap, ROUTES_PER_LOOP, TURBO } from './enemies';
 import { Rng } from './rng';
 import { setMap, type RunState } from './run';
+
+/** LET IT RIDE's offer, under the win (user, 2026-11-16: three loops, then THE OWNER; only legendaries on the way). */
+export const RIDE_LINES = [`YOUR WIN IS BANKED. CLEAR ${TURBO.loop - 1} LOOPS TO FACE THE OWNER.`, 'IN ENDLESS EVERY RELIC IS LEGENDARY.'] as const;
 
 /** LET IT RIDE: after beating the Dealer, keep going (the win is already recorded). */
 export function letItRide(run: RunState): void {

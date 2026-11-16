@@ -18,6 +18,7 @@
  * Same grid and rules as the other rooms: 640x360, 2 screen pixels an art pixel, the portraits' palette and 1px
  * outline, stepped light (no gradients), dark and calm behind the reels.
  */
+import { TURBO } from '../core/enemies';
 import { bulb, DOORMAN, DOORMAN_EYES, DOORMAN_INK, mk, outlined, pool, px, RH, RW } from './roomEntrance';
 import { drawText } from './text';
 import { drawPatron, MOP_HANDS } from './patrons';
@@ -44,8 +45,8 @@ const d = '#561530';
 const k = '#3b3347';
 const O = '#f07c1c';
 
-/** How late the night is in this ENDLESS loop (0 early .. 1 closing time): 0.3 at loop 1, 1 by loop 5 (THE OWNER). */
-export const endlessLate = (loop: number) => (loop <= 0 ? 0 : Math.min(1, 0.3 + 0.175 * (loop - 1)));
+/** How late the night is in this ENDLESS loop (0 early .. 1 closing time): 0.3 at loop 1, 1 by THE OWNER's loop. */
+export const endlessLate = (loop: number) => (loop <= 0 ? 0 : loop >= TURBO.loop ? 1 : 0.3 + (0.7 * (loop - 1)) / (TURBO.loop - 1));
 
 // ---- the closing shift ------------------------------------------------------------------------------------------
 

@@ -2,9 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, UNIT } from '../src/core/config';
 import { ENDLESS, ladderFrac, OWNER_LADDER, OWNER_TRICKS, ownerRung, rungsClimbed, TURBO } from '../src/core/enemies';
 import { Fight } from '../src/core/fight';
-import { actStops, chooseRoute, createRun, currentEnemy, endlessScore, runScoreOf, scoreParts, fightLabel, finishFight, skipToBoss } from '../src/core/run';
+import { actStops, CHIPS, chooseRoute, createRun, endlessEliteChips, currentEnemy, endlessScore, runScoreOf, scoreParts, fightLabel, finishFight, skipToBoss } from '../src/core/run';
 import { enemyHp, fightConfig } from '../src/core/fightSetup';
-import { NIGHT, NIGHTS, letItRide } from '../src/core/endless';
+import { NIGHT, NIGHTS, letItRide, RIDE_LINES } from '../src/core/endless';
+import { generateActMap } from '../src/core/enemies';
+import { LEGENDARY } from '../src/core/relics';
+import { relicFits, shopOffers } from '../src/core/shop';
+import { recordMeta, runEntry, sanitizeProfile } from '../src/core/profile';
+import { Rng } from '../src/core/rng';
 import { fmtNum } from '../src/render/text';
 
 const base = defaultConfig();
@@ -136,7 +141,7 @@ describe("ENDLESS: TONIGHT'S RULE", () => {
 });
 
 describe('ENDLESS: THE OWNER (the TURBO boss)', () => {
-  it("loop 5's boss is THE OWNER (a turn cap on his HP, a new trick each time); beating him ends the run, won", () => {
+  it("loop 4's boss is THE OWNER (a turn cap on his HP, a new trick each time); beating him ends the run, won", () => {
     const run = createRun(base, 33, 'knight', 2, true);
     run.over = run.won = true;
     run.act = 3;
@@ -216,5 +221,78 @@ describe("THE OWNER's ladder (user, 2026-11-01)", () => {
     expect(ladderFrac(ownerRung(OWNER_LADDER.rungs))).toBe(1);
     expect(TURBO.hp).toBe(ownerRung(OWNER_LADDER.rungs));
     expect(rungsClimbed(ownerRung(3) * 5)).toBe(3);
+  });
+});
+
+// Three hard loops, then THE OWNER, and only legendaries on the way (user, 2026-11-16).
+describe('ENDLESS: three loops, then THE OWNER', () => {
+  const rider = (seed: number) => {
+    const run = createRun(base, seed, 'joker', 2, true);
+    run.over = run.won = true;
+    run.act = 3;
+    letItRide(run);
+    return run;
+  };
+  const winBoss = (run: ReturnType<typeof rider>, seed: number) => {
+    run.pendingLegend = null;
+    run.pendingSpoils = null;
+    chooseRoute(run, 0);
+    skipToBoss(run);
+    const f = new Fight(fightConfig(run, base), seed);
+    f.winner = 'player';
+    finishFight(run, f);
+  };
+
+  it('the loops replay THE DOORMAN, THE WHEEL and THE DEALER, then THE OWNER (what the ride offer says)', () => {
+    expect(TURBO.loop).toBe(4);
+    expect(RIDE_LINES[0]).toBe('YOUR WIN IS BANKED. CLEAR 3 LOOPS TO FACE THE OWNER.');
+    const run = rider(51);
+    const bosses: string[] = [];
+    for (let loop = 1; loop <= TURBO.loop; loop++) {
+      bosses.push(run.map.boss.boss!);
+      if (loop < TURBO.loop) winBoss(run, loop);
+    }
+    expect(bosses).toEqual(['house', 'wheel', 'dealer', 'owner']);
+  });
+
+  it('a save from when THE OWNER was loop 5 meets him after its loop 4', () => {
+    expect(generateActMap(new Rng(5), 4, 5, 'knight').boss.boss).toBe('owner');
+    expect(generateActMap(new Rng(5), 4, 3, 'knight').boss.boss).toBe('dealer');
+  });
+
+  it('every relic ENDLESS offers is legendary, and its elites pay chips instead of spoils (what the ride offer says)', () => {
+    expect(RIDE_LINES[1]).toBe('IN ENDLESS EVERY RELIC IS LEGENDARY.');
+    const run = rider(52);
+    expect(relicFits(run, 'fang')).toBe(false);
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      run.seed = seed;
+      const relics = shopOffers(run).flatMap((it) => (it.option.kind === 'relic' ? [it.option.relic] : []));
+      for (const r of relics) expect(LEGENDARY.has(r)).toBe(true);
+    }
+    chooseRoute(run, 0);
+    currentEnemy(run).elite = true;
+    const f = new Fight(fightConfig(run, base), 3);
+    f.winner = 'player';
+    const chips = run.player.chips;
+    const rec = finishFight(run, f);
+    expect(run.pendingSpoils).toBeFalsy();
+    expect(rec.eliteChips).toBe(endlessEliteChips(run));
+    expect(endlessEliteChips(run)).toBe(CHIPS.endlessEliteChips * 2);
+    expect(run.player.chips - chips).toBeGreaterThanOrEqual(endlessEliteChips(run) + CHIPS.eliteBonus);
+    // Before ENDLESS the elites' spoils and the Cashier's two relics are regular ones.
+    const main = createRun(base, 52, 'joker', 2, true);
+    expect(relicFits(main, 'fang')).toBe(true);
+  });
+
+  it('beating THE OWNER earns BROKE THE BANK; dying to him on an old save (4 loops cleared) does not', () => {
+    const run = rider(53);
+    for (let loop = 1; loop <= TURBO.loop; loop++) winBoss(run, loop);
+    expect(run.endless!.turbo).toBe(true);
+    const e = runEntry(run, 1);
+    expect(e.turbo).toBe(true);
+    expect(recordMeta(sanitizeProfile({}), e, 100).achievements.map((a) => a.id)).toContain('turbo');
+    const old = { ...e, turbo: undefined, loops: 4 };
+    expect(recordMeta(sanitizeProfile({}), old, 100).achievements.map((a) => a.id)).not.toContain('turbo');
+    expect(sanitizeProfile({ runs: [e] }).runs[0]?.turbo).toBe(true);
   });
 });

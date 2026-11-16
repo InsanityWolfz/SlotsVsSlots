@@ -114,7 +114,7 @@ export interface Scene {
   fight: boolean;
   /** The draft is up: THE DOORMAN steps out of view at his doors (the route track's boss stop sat on his head). */
   draft?: boolean;
-  /** ENDLESS loop 5: THE TURBO is in the room (red beacons, the crowd backs off). */
+  /** ENDLESS loop 4: THE TURBO is in the room (red beacons, the crowd backs off). */
   turbo?: boolean;
   /** THE HOUSE's pot (rooms v2: the entrance's lights grow with it). */
   pot?: number;

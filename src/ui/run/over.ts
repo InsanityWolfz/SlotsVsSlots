@@ -1,6 +1,7 @@
 import type { MetaGain } from '../../core/profile';
 import { levelOf } from '../../core/meta';
 import { RELICS } from '../../core/relics';
+import { RIDE_LINES } from '../../core/endless';
 import { endlessScore, RUN, runScoreOf, scoreParts, SCORE, totalFights, TYPICAL_ACT_FIGHTS, type FightRecord, type RunState } from '../../core/run';
 import { takenLabel } from '../../core/draft';
 import { CABINETS, type CabinetId } from '../../core/cabinets';
@@ -267,7 +268,10 @@ export abstract class OverScreen extends ShopScreen {
         drawChip(ctx, p, cx + w / 2, py + 132, { scale: T.small, color: '#ff8a7a', fill: '#2a0a14' });
         cx += w + 12;
       }
-    } else if (this.rideOffer) drawText(ctx, 'YOUR WIN IS BANKED. ENDLESS GOES ON UNTIL YOU BUST.', tx, py + 132, T.small, KIT.title, { align: 'left' });
+    } else if (this.rideOffer) {
+      drawText(ctx, RIDE_LINES[0], tx, py + 132, T.small, KIT.title, { align: 'left' });
+      drawText(ctx, RIDE_LINES[1], tx, py + 150, T.small, KIT.title, { align: 'left' });
+    }
     ctx.restore();
     // 4. The score, counting up, big, in its own well.
     const k4 = out(ease(B.score - 0.1, 0.25));

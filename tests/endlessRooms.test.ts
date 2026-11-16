@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { endlessPlace, ROOM_V2, type Scene } from '../src/render/rooms';
 import { endlessLate } from '../src/render/roomEndless';
+import { TURBO } from '../src/core/enemies';
 
 // ENDLESS on the rooms v2 journey (user, 2026-11-09): each loop replays the strip toward its boss later in the night.
 const scene = (o: Partial<Scene>): Scene => ({ room: 'floor', boss: null, loop: 1, hp: 1, foeHp: 1, turn: null, fight: true, fightIndex: 0, regulars: 4, ...o });
 
 describe('ENDLESS rooms (v2)', () => {
-  it('the night gets later each loop, closing time by THE OWNER (loop 5)', () => {
+  it("the night gets later each loop, closing time by THE OWNER's loop", () => {
     expect(endlessLate(0)).toBe(0);
     expect(endlessLate(1)).toBeCloseTo(0.3);
-    for (let L = 2; L <= 5; L++) expect(endlessLate(L)).toBeGreaterThan(endlessLate(L - 1));
-    expect(endlessLate(5)).toBe(1);
+    for (let L = 2; L <= TURBO.loop; L++) expect(endlessLate(L)).toBeGreaterThan(endlessLate(L - 1));
+    expect(endlessLate(TURBO.loop)).toBe(1);
     expect(endlessLate(9)).toBe(1);
   });
 

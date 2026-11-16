@@ -30,7 +30,7 @@ export interface BossRuleContext {
 }
 
 export function bossRules(boss: string, c: BossRuleContext): BossRules {
-  // THE OWNER (ENDLESS loop 5): the TURBO boss.
+  // THE OWNER (ENDLESS loop 4): the TURBO boss.
   if (boss === 'owner')
     return {
       rules: [

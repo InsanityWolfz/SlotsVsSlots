@@ -1,6 +1,6 @@
 /** Elite spoils and the Cashier: its shelf, buying, rerolls and which relics fit (split from run.ts, 2026-11-05). */
 import { UNIT, type RelicId } from './config';
-import { actLength } from './enemies';
+import { actLength, ENDLESS } from './enemies';
 import { BUILD_ENABLER, DEAD_WITH, ELITE_ONLY, LEGENDARY, MACHINE_EXCLUDE, RELICS, type Enabler } from './relics';
 import { CABINETS } from './cabinets';
 import { Rng } from './rng';
@@ -93,6 +93,8 @@ export function pickRelics(pool: RelicId[], n: number, rng: Rng): RelicId[] {
 
 export function relicFits(run: RunState, r: RelicId): boolean {
   const def = RELICS[r];
+  // ENDLESS offers only legendaries (user, 2026-11-16).
+  if (run.endless && ENDLESS.legendsOnly && !LEGENDARY.has(r)) return false;
   // Slot machine relics only on their machine; charm relics once you own the charm (or your machine favours it).
   if (MACHINE_EXCLUDE[r]?.includes(run.cabinet)) return false;
   if (DEAD_WITH[r]?.some((x) => run.player.relics.includes(x))) return false;

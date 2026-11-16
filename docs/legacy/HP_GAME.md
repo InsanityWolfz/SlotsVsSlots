@@ -155,7 +155,18 @@ was tuned for feel from two fresh-eyes playtests.
 
 Act 3 is played at stake RED and up (user, 2026-11-06; it was GREEN, so a new player's first runs never met THE
 DEALER or THE OWNER). **ENDLESS** comes after the Dealer:
-KEEP PLAYING goes on into loops until you bust (user, 2026-10-14: no RIDE AGAIN / CASH OUT); your score is the pot
+**Three loops, then THE OWNER (user, 2026-11-16):** ENDLESS is three hard loops (THE DOORMAN, THE WHEEL, THE DEALER
+again), then THE OWNER as loop 4's boss (he was loop 5's; a save from then finishes its loop 4, then meets him). It offers
+only legendary relics: the Cashier's case, the CLAW MACHINE's relic and PUNCH CARD (the Cashier's two relics are gone);
+its elites pay 6 chips x the loop's table stakes (x2 in loop 1) on top of the elite bonus instead of spoils (legendary
+spoils emptied the pool by loop 3). The ride offer says both: CLEAR 3 LOOPS TO FACE THE OWNER, IN ENDLESS EVERY RELIC IS
+LEGENDARY. BROKE THE BANK is a flag on the run entry now (`turbo`; old entries: 5 loops cleared). Why: riders met THE
+OWNER holding 31-34 of the 31-35 relics a machine can get, and he was met by up to 9 riders in 10. Sim (3,000 runs a
+machine a stake, `tools/sim/endless.ts`; GREEN; loops 1-3 cleared when reached, meets THE OWNER, breaks the bank):
+JOKER 92/84/60, 31%, 0%; JUKEBOX 96/84/47, 25%, 0.4%; KNIGHT 90/95/75, 46%, 0.4%; TESLA 76/84/78, 43%, 0%; BANKROLL
+97/89/71, 44%, 0.2%. RED to GOLD: 19-48% meet him, no machine over 1.5% at the top (the bar is 2%). Relics going into
+THE OWNER's loop: 22-25 (were 31-34). VETERAN is X4 at THE OWNER now.
+KEEP PLAYING goes on into the loops (user, 2026-10-14: no RIDE AGAIN / CASH OUT); your score is the pot
 (x1.5 + 1500 a loop cleared) plus your chips x10. Sim (GREEN, the bot never stopping, before THE OWNER): loops cleared median 4.
 **TONIGHT'S RULE** (user, 2026-10-14): each loop deals two different rules, one per path (user: the rule is part of the
 route choice; the loop's opener plays without one), for both machines, never last loop's (`NIGHTS` in `src/core/run.ts`): HAPPY HOUR (jackpots pay x2), HIGH LIMIT (wins pay x2 chips, enemies +15% HP),
@@ -189,7 +200,7 @@ beaten 1.3% (BANKROLL 1.5%, TESLA 1.3%, KNIGHT 1.2%, JOKER 0.9%, JUKEBOX 0%), fi
 left median. Reach him: KNIGHT 51%, JUKEBOX 40%, JOKER 60%, TESLA 80%, BANKROLL 84%.
 **VETERAN and WARM-UP (user, 2026-10-15):** KNIGHT and JUKEBOX had no late growth in ENDLESS (making the loop 3 Dealer
 easier only moved KNIGHT's death to loop 4: his HP 6 -> 3 took loop 3 from 30% to 52% and loop 4 from 56% to 43%).
-VETERAN: in ENDLESS, KNIGHT's swords and shields pay +100% for every loop cleared (X2 in loop 2, X5 at THE OWNER).
+VETERAN: in ENDLESS, KNIGHT's swords and shields pay +100% for every loop cleared (X2 in loop 2, X4 at THE OWNER since 2026-11-16; X5 before).
 WARM-UP: in ENDLESS, every JUKEBOX fight starts at volume 3 x the loop, never past 5 (one note short of THE DROP).
 Both are named on the LOOP CLEARED screen, and VETERAN on every payout it boosts. Enemies don't change (honest HP).
 Sim (400 runs, GREEN riders, reach THE OWNER): KNIGHT 10% -> 56% (loops 1-4 79/98/84/85), JUKEBOX 33% -> 44%
