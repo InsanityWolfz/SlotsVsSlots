@@ -41,7 +41,11 @@ others about 0%. Live (2026-11-16, the machine pass, `HP_GAME.md`): HIGH CARD X3
 heal: GREEN meets THE OWNER JUKEBOX 25%, JOKER 36%, TESLA 40%, BANKROLL 44%, KNIGHT 46%; breaks the bank KNIGHT 1.9%,
 JOKER 1.4%, TESLA 1.3%, JUKEBOX 1.0%, BANKROLL 0%. Then WARM-UP grows JUKEBOX's shields and OPEN BAR's rains pay X2:
 JUKEBOX 28-33%, BANKROLL 46-51%, every machine breaks the bank 1.0-1.9%. Then the main-run pass (HIGH ROLLER 30 chips a step,
-JOKER 355 HP): all five machines within 5 of target at every stake. BANKROLL still meets THE OWNER most (47-52%). Still open: (1) the name (ENDLESS isn't endless;
+JOKER 355 HP): all five machines within 5 of target at every stake. BANKROLL still meets THE OWNER most (47-52%), so it is
+OUT OF ORDER (user, 2026-11-17: "until we figure out what to do with it"): the machine select shows it dimmed behind the
+shutter with the sign and won't start a new run on it (`OUT_OF_ORDER` in `src/core/cabinets.ts`); a saved run on it
+still continues; its unlock is recorded, not announced. Meanwhile CLEAR A RUN WITH BANKROLL and every-machine
+achievements can't be earned. The fix offered: GOLDEN PARACHUTE's price grows with the loop. Still open: (1) the name (ENDLESS isn't endless;
 AFTER HOURS was offered); (2) TESLA still loses loop 1 a quarter of the time; (3) riders beat THE DEALER holding about 18 of the
 31-35 relics a machine can get. WHITE has no ENDLESS.
 

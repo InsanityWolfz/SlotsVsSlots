@@ -185,6 +185,16 @@ export const CABINETS: Record<CabinetId, Cabinet> = {
 
 /** The playable lineup, in unlock order. MIDAS is shelved for a rework (2026-09-28): hidden, but kept in saves. */
 export const CABINET_ORDER: CabinetId[] = ['knight', 'tesla', 'jukebox', 'joker', 'midas'];
+/**
+ * OUT OF ORDER (user, 2026-11-17): Slot Machines a new run can't be started on until the user decides what to do with
+ * them. They show on the machine select, dimmed, with the sign; a saved run on one still continues, and unlocking one is
+ * still recorded (not announced). BANKROLL: it reaches THE OWNER most in ENDLESS (47-52%) and its fix isn't decided.
+ */
+export const OUT_OF_ORDER: ReadonlySet<CabinetId> = new Set<CabinetId>(['midas']);
+/** A new run can start on this machine: unlocked and not OUT OF ORDER. */
+export const canPick = (id: CabinetId, unlocked: ReadonlySet<CabinetId>) => unlocked.has(id) && !OUT_OF_ORDER.has(id);
+/** What the machine select says about an OUT OF ORDER machine. */
+export const OUT_OF_ORDER_LINE = 'THIS SLOT MACHINE IS OUT OF ORDER FOR NOW.';
 /** Every machine id a save may hold (shelved ones included), so loading a save never drops an unlock. */
 export const ALL_CABINETS: CabinetId[] = ['knight', 'midas', 'tesla', 'joker', 'jukebox'];
 

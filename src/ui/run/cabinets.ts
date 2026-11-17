@@ -1,4 +1,4 @@
-import { CABINETS, CABINET_ORDER, type CabinetId } from '../../core/cabinets';
+import { CABINETS, CABINET_ORDER, canPick, OUT_OF_ORDER, OUT_OF_ORDER_LINE, type CabinetId } from '../../core/cabinets';
 import { STAKE, STAKES, stakeOf } from '../../core/stakes';
 import { backOut, sineOut } from '../../present/ease';
 import { COLORS, W } from '../../present/layout';
@@ -33,7 +33,7 @@ export abstract class CabinetScreen extends BuildPanel {
     this.open('cabinet');
     this.cabTapped = -1;
     this.stakeSel = Math.min(stakeSel, this.maxStake());
-    if (!this.cabinetUnlocked.has(CABINET_ORDER[this.cabSel])) this.cabSel = 0;
+    if (!canPick(CABINET_ORDER[this.cabSel], this.cabinetUnlocked)) this.cabSel = 0;
     // HIGH STAKES: a row of 6 chips, always shown (new players see the whole ladder, locked). Hovering or focusing one
     // previews its rule; clicking an earned one selects it.
     const pick = (level: number) => {
@@ -92,7 +92,13 @@ export abstract class CabinetScreen extends BuildPanel {
   /** The selected machine can be played at the chosen stake. */
   protected cabPlayable(i = this.cabSel): boolean {
     const id = CABINET_ORDER[i];
-    return this.cabinetUnlocked.has(id) && this.stakeFor(id) >= this.stakeSel;
+    return canPick(id, this.cabinetUnlocked) && this.stakeFor(id) >= this.stakeSel;
+  }
+
+  /** OUT OF ORDER (user, 2026-11-17): shown for real, dimmed, behind the shutter; it can't be picked. (The demo keeps
+   * its own IN THE FULL GAME preview.) */
+  protected cabBroken(i = this.cabSel): boolean {
+    return !demo().on && OUT_OF_ORDER.has(CABINET_ORDER[i]);
   }
 
   /** The demo shows the full game's other machines for real (dimmed), not as "???": they can't be played here. */
@@ -106,9 +112,10 @@ export abstract class CabinetScreen extends BuildPanel {
     // WISHLIST and opens it (the stage's IN THE FULL GAME tag already says why it can't be played: QA DEMO-04).
     const preview = this.cabPreview();
     const wish = preview && STORE_URL !== null;
+    const broken = this.cabBroken();
     this.playBtn.enabled = this.cabPlayable() || wish;
-    this.playBtn.label = wish ? 'WISHLIST' : preview ? IN_FULL_GAME : 'PLAY';
-    this.playBtn.quietStyle = preview;
+    this.playBtn.label = wish ? 'WISHLIST' : preview ? IN_FULL_GAME : broken ? 'OUT OF ORDER' : 'PLAY';
+    this.playBtn.quietStyle = preview || broken;
   }
 
   protected selectCabinet(i: number, dir: number): void {
@@ -180,9 +187,11 @@ export abstract class CabinetScreen extends BuildPanel {
     const { x, y, w, h } = STAGE;
     const id = CABINET_ORDER[this.cabSel];
     const cab = CABINETS[id];
-    const open = this.cabinetUnlocked.has(id);
+    // (OUT OF ORDER: shown for real, dimmed, like the demo's preview.)
+    const broken = this.cabBroken();
+    const open = this.cabinetUnlocked.has(id) && !broken;
     // The demo: the full game's machines shown for real, dimmed (the full game keeps its silhouettes).
-    const preview = this.cabPreview();
+    const preview = this.cabPreview() || broken;
     const shown = open || preview;
     const barred = open && this.stakeFor(id) < this.stakeSel;
     // The stage is the pawn shop's window (rooms v2: the machine select is the pawn shop on the street, roomMenu.ts).
@@ -207,6 +216,12 @@ export abstract class CabinetScreen extends BuildPanel {
     // Name, who you play as, the blurb.
     const tx = hx + 164;
     drawText(ctx, shown ? cab.name : '???', tx, hy + 30, T.title, shown ? KIT.title : KIT.dim, { align: 'left' });
+    if (broken) {
+      drawChip(ctx, 'OUT OF ORDER', tx + 84, hy + 76, { color: '#ff8a7a', icon: (ix, iy) => drawSprite(ctx, 'icoLock', ix, iy, 2), iconW: 18 });
+      wrap(OUT_OF_ORDER_LINE, Math.floor((x + w - 36 - hx) / (6 * T.body))).slice(0, 2).forEach((l, i) => drawText(ctx, l, hx, hy + 172 + i * 26, T.body, KIT.text, { align: 'left' }));
+      ctx.restore();
+      return;
+    }
     if (shown) {
       drawText(ctx, `PLAY AS ${cab.hero}`, tx, hy + 74, T.body, '#c9a0ff', { align: 'left' });
       drawText(ctx, cab.blurb, tx, hy + 102, T.small, KIT.dim, { align: 'left' });
@@ -237,8 +252,8 @@ export abstract class CabinetScreen extends BuildPanel {
     CABINET_ORDER.forEach((id, i) => {
       const h = this.cards[i];
       if (!h || h.scale <= 0.01) return;
-      const open = this.cabinetUnlocked.has(id);
-      const shown = open || this.cabPreview(i);
+      const open = this.cabinetUnlocked.has(id) && !this.cabBroken(i);
+      const shown = open || this.cabPreview(i) || this.cabBroken(i);
       const sel = i === this.cabSel;
       const lift = sel ? 1 : h.hover ? 0.6 : 0;
       ctx.save();

@@ -1,5 +1,5 @@
 import { desktop, DESKTOP } from '../../build';
-import { CABINETS, CABINET_ORDER, type CabinetId } from '../../core/cabinets';
+import { CABINETS, CABINET_ORDER, canPick, type CabinetId } from '../../core/cabinets';
 import { levelOf } from '../../core/meta';
 import { demo, openStore, STORE_URL, wishlistLabel } from '../../demo';
 import { shownTitle } from '../../core/profile';
@@ -126,8 +126,8 @@ export class MainScreen implements MenuScreen {
     const saved = this.m.cb.savedCabinet?.();
     if (saved && CABINETS[saved]) return saved;
     const last = [...this.m.profile().runs].sort((a, b) => b.at - a.at)[0]?.cabinet;
-    if (last && CABINETS[last] && open.has(last)) return last;
-    return CABINET_ORDER.find((id) => open.has(id)) ?? 'knight';
+    if (last && CABINETS[last] && canPick(last, open)) return last;
+    return CABINET_ORDER.find((id) => canPick(id, open)) ?? 'knight';
   }
 
   /** A menu button's icon, at its left (over it, scaled with its press). */

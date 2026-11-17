@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, reels3, type GameConfig } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
 import { Fight, MIDAS, RAIN, highRollerMul } from '../src/core/fight';
+import { CABINET_ORDER, canPick, OUT_OF_ORDER_LINE } from '../src/core/cabinets';
 import { createRun, RUN } from '../src/core/run';
 import { charmOptions } from '../src/core/draft';
 import { fightConfig } from '../src/core/fightSetup';
@@ -24,6 +25,16 @@ const rainHit = (f: Fight) => {
   const ev = f.step().events;
   return { rain: ofType(ev, 'makeItRain')[0], hit: ofType(ev, 'attack')[0]?.amount ?? 0, ev };
 };
+
+describe('BANKROLL is OUT OF ORDER (user, 2026-11-17)', () => {
+  it('a new run cannot start on it, unlocked or not; the others still can', () => {
+    const all = new Set(CABINET_ORDER);
+    expect(canPick('midas', all)).toBe(false);
+    for (const id of CABINET_ORDER.filter((c) => c !== 'midas')) expect(canPick(id, all)).toBe(true);
+    expect(canPick('tesla', new Set(['knight']))).toBe(false);
+    expect(OUT_OF_ORDER_LINE).toBe('THIS SLOT MACHINE IS OUT OF ORDER FOR NOW.');
+  });
+});
 
 describe('CASH CASSIDY / THE BANKROLL', () => {
   it('names and the HIGH ROLLER multiplier', () => {

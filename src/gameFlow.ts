@@ -22,7 +22,7 @@ import {
 import { draftOffers, skipDraft, takeDraft } from './core/draft';
 import { buy, isShopNow, leaveShop, reroll, shopOffers, takeSpoils } from './core/shop';
 import { fightConfig } from './core/fightSetup';
-import { CABINETS, CABINET_ORDER, type CabinetId } from './core/cabinets';
+import { CABINETS, CABINET_ORDER, OUT_OF_ORDER, type CabinetId } from './core/cabinets';
 import { StatsTracker } from './core/stats';
 import { Clock } from './present/clock';
 import { Director } from './present/director';
@@ -199,10 +199,13 @@ export function checkUnlocks(g: Game, run: RunState): CabinetId[] {
     jukebox: beatHouse,
     joker: beatHouse && run.player.strips.some((s) => (s.wild ?? 0) > 0),
   };
+  // (An OUT OF ORDER machine's unlock is kept, not announced: it can't be played yet.)
+  let unlockedOne = false;
   for (const id of CABINET_ORDER) {
     if (cond[id] && !g.prefs.unlocked.includes(id)) {
       g.prefs.unlocked.push(id);
-      got.push(id);
+      unlockedOne = true;
+      if (!OUT_OF_ORDER.has(id)) got.push(id);
     }
   }
   // TRUE ENDING: this slot machine beat the Dealer.
@@ -221,7 +224,7 @@ export function checkUnlocks(g: Game, run: RunState): CabinetId[] {
     stakeText = `${next.name} STAKE UNLOCKED FOR ${CABINETS[run.cabinet].name}`;
   }
   g.screens.setStakeUnlockedNow(stakeText);
-  if (got.length || stakeText) g.savePrefs();
+  if (unlockedOne || got.length || stakeText) g.savePrefs();
   return got;
 }
 

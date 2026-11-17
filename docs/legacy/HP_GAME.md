@@ -277,7 +277,7 @@ Each machine except KNIGHT has one signature symbol and a meter.
 | TESLA | DOC VOLTZ | bolt | bolts charge lightning that ignores shields: 20 charge a bolt, 22 a bolt, the storm heals 15 (one axis: every boost adds charge); 4 CHARGED bolts on reel 1 and 1 on reel 2 (340 HP) | reach the House |
 | JUKEBOX | DJ DECIBEL | note | notes raise the volume; at max THE DROP makes every visible note hit | beat THE DOORMAN |
 | JOKER | JESTER JAX | ace | wilds fill a meter; then all 3 payline cells pay as jackpots (355 HP since 2026-11-16) | beat THE DOORMAN with wilds |
-| BANKROLL | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER (x1 + chips / 30, up to x2.5 at 45 chips; / 20 until 2026-11-16); a chip jackpot makes it rain (20 chips; free when it hits no harder than the jackpot); +1 chip a win and 20% off the Cashier's shelf (not the HEAL); 6 chips and 6 shields a reel (400 HP) | clear a run |
+| BANKROLL (OUT OF ORDER since 2026-11-17: no new runs) | CASH CASSIDY | chip (`goldbar`) | chips hit, pay chips and fill HIGH ROLLER (x1 + chips / 30, up to x2.5 at 45 chips; / 20 until 2026-11-16); a chip jackpot makes it rain (20 chips; free when it hits no harder than the jackpot); +1 chip a win and 20% off the Cashier's shelf (not the HEAL); 6 chips and 6 shields a reel (400 HP) | clear a run |
 
 BRIAR / THORN is retired and removed from the code (the JUKEBOX replaced her). Old saves map her unlock and stakes to
 the JUKEBOX; a saved BRIAR run or hiscore entry is dropped on load.
