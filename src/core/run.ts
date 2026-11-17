@@ -113,9 +113,11 @@ export const CHIPS = {
   /** Every run starts with a little float so shop 1 is a real visit. */
   start: 8,
   // heal 5 -> 12, once a visit (2026-10-12: no heal after fights now, so HP is worth more; user).
-  prices: { relic: 10, heal: 10, maxHp: 8, legend: 20, showcase: 24, level: 10 },
+  // level 10 -> 12 and levelStep 4 -> 8 (user, 2026-11-17): a level's price counts only its own symbol's levels now,
+  // which made the other symbol's levels cheap (+3 to +7 run win); this put it back (sim 1,500 runs a stake).
+  prices: { relic: 10, heal: 10, maxHp: 8, legend: 20, showcase: 24, level: 12 },
   /** Each level gained this run adds this to the Cashier's level price. */
-  levelStep: 4,
+  levelStep: 8,
   /** First reroll per visit costs 1, then +1 each time. */
   rerollBase: 1,
 };

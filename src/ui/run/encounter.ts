@@ -36,6 +36,7 @@ export abstract class EncounterScreen extends ClawScreen {
       this.cwMsg = null;
       this.cwWon = [...clawWon(run)];
       this.cwMisses = [...clawMisses(run)];
+      this.cwShown = [...this.cwMisses];
       return this.clawButtons();
     }
     if (this.encId === 'bj') {

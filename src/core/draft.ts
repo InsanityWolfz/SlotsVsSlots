@@ -206,8 +206,13 @@ export function cutOptions(run: RunState): DraftOption[] {
 export const levelStep = (run: RunState) => (run.player.relics.includes('starchart') ? 2 : 1);
 /** Levels gained this run over the machine's starting levels (the Cashier's level price climbs with them). */
 export function levelsGained(run: RunState): number {
+  return CABINETS[run.cabinet].symbols.reduce((a, s) => a + symLevelsGained(run, s), 0);
+}
+
+/** The levels one symbol has gained this run (bought, drafted or a boss's), over the machine's start. */
+export function symLevelsGained(run: RunState, s: SymbolId): number {
   const start = CABINETS[run.cabinet].levels?.sym ?? {};
-  return CABINETS[run.cabinet].symbols.reduce((a, s) => a + Math.max(0, symLevel(run.player.levels, s) - (start[s] ?? 1)), 0);
+  return Math.max(0, symLevel(run.player.levels, s) - (start[s] ?? 1));
 }
 
 /**

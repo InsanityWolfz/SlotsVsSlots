@@ -110,7 +110,13 @@ export const CX = (BUILD.x + BUILD.w + 12 + W) / 2;
 /** RED OR BLACK: the wheel's centre, its offscreen size (drawn at half size, scaled x2), and the bet column's x. */
 export const RL = { wheelX: CX - 170, wheelY: 300, px: 112, betX: CX + 220 };
 /** CLAW MACHINE (in the table's place): the first prize's x, the step between prizes, the pit's y, the claw's resting x. */
-export const CW = { x0: 536, gap: 130, pitY: 426, home: 500 };
+// pitY 426 -> 404 (user, 2026-11-17): the floor sits higher so each prize's chute shows as a hole under it.
+export const CW = { x0: 536, gap: 130, pitY: 404, home: 500 };
+/** THE CLAW's pit (user, 2026-11-17: "actually show it"): each prize has its own chute left of it; a miss slides the
+ * capsule `slide` px toward it and it tips into the lip (sag x m²) until it hangs half over the hole at 2 misses. */
+export const CW_PIT = { chuteOff: 58, chuteW: 46, slide: 16, sag: 2.5, floor: 28 };
+/** Where a prize's capsule sits after `m` misses (m may be fractional while it slides). */
+export const clawPrizeX = (k: number, m: number) => CW.x0 + k * CW.gap - CW_PIT.slide * Math.min(2, m);
 /** Your chips: the same spot in the fights (game.ts draws them there too). */
 export const CHIP_SPOT = { x: 44, y: 46 };
 /** The Cashier's shelves: item centers per row (the counter, then the relics behind the glass). */

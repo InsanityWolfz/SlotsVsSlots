@@ -45,7 +45,14 @@ JOKER 355 HP): all five machines within 5 of target at every stake. BANKROLL sti
 OUT OF ORDER (user, 2026-11-17: "until we figure out what to do with it"): the machine select shows it dimmed behind the
 shutter with the sign and won't start a new run on it (`OUT_OF_ORDER` in `src/core/cabinets.ts`); a saved run on it
 still continues; its unlock is recorded, not announced. Meanwhile CLEAR A RUN WITH BANKROLL and every-machine
-achievements can't be earned. The fix offered: GOLDEN PARACHUTE's price grows with the loop. Still open: (1) the name (ENDLESS isn't endless;
+achievements can't be earned. The fix offered: GOLDEN PARACHUTE's price grows with the loop.
+Also live (2026-11-17): a level's price at the Cashier counts its own symbol's levels only (user: buying swords raised
+the shield's price), 12 chips +8 a level (was 10 +4 a level of any symbol; per-symbol at the old numbers was +3 to +7 run
+win): main run within 5 everywhere but JOKER WHITE 54 (-6) and BANKROLL WHITE (locked); ENDLESS moved (GREEN: KNIGHT
+meets THE OWNER 54%, breaks the bank 2.2%; JUKEBOX 0.3%), for the next ENDLESS pass. THE CLAW's pit shows each prize's
+chute and slides the capsule toward it a miss (teetering at 2); its price shows the chip. RABBIT'S FOOT: 4,500 saves
+in the sim and the browser, every heal after a save landed; GOLDEN PARACHUTE's save said RABBIT'S FOOT! BACK AT 1 HP
+(fixed: it names itself and its HP). Still open: (1) the name (ENDLESS isn't endless;
 AFTER HOURS was offered); (2) TESLA still loses loop 1 a quarter of the time; (3) riders beat THE DEALER holding about 18 of the
 31-35 relics a machine can get. WHITE has no ENDLESS.
 

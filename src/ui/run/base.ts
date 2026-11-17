@@ -101,6 +101,8 @@ export abstract class RunScreensBase {
   protected cwWon: number[] = [];
   /** THE CLAW's drags this visit, as the screen shows them (kept on show after the last go ends the stop). */
   protected cwMisses: number[] = [0, 0, 0];
+  /** THE CLAW's drags as drawn (each slides to cwMisses when the claw is home). */
+  protected cwShown: number[] = [0, 0, 0];
   /** Shop purchases in flight to YOUR BUILD. */
   protected flyers: { sprite: SpriteId; x0: number; y0: number; x1: number; y1: number; t: number }[] = [];
   protected picked = -1;

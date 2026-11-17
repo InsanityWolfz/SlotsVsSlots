@@ -224,7 +224,7 @@ export function checkDeath(f: Fight, c: Combatant, events: CombatEvent[]): void 
     events.push({ type: 'midasChips', side: c.side, amount: -NEW_RELIC.parachuteCost, total: f.midasChips });
     c.hp = Math.max(1, Math.round(c.maxHp * NEW_RELIC.parachuteHp));
     events.push({ type: 'relic', side: c.side, relic: 'parachute' });
-    events.push({ type: 'phoenix', side: c.side, hp: c.hp });
+    events.push({ type: 'phoenix', side: c.side, hp: c.hp, relic: 'parachute' });
     return;
   }
   f.winner = other(c.side);

@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig, type RelicId, type SymbolId } from '../src/core/config';
 import type { CombatEvent } from '../src/core/events';
 import { Fight } from '../src/core/fight';
-import { createRun, chooseRoute, skipToBoss, type RunState } from '../src/core/run';
+import { CHIPS, createRun, chooseRoute, skipToBoss, type RunState } from '../src/core/run';
 import { fightConfig } from '../src/core/fightSetup';
 import { relicFits, shopOffers } from '../src/core/shop';
 import { MACHINE_EXCLUDE } from '../src/core/relics';
@@ -299,3 +299,49 @@ describe('relic icons only pop for an effect that lands', () => {
 });
 
 void skipToBoss;
+
+describe("RABBIT'S FOOT: SURVIVE 1 KILLING HIT EACH FIGHT WITH 1 HP (user, 2026-11-17: heals after it)", () => {
+  const saved = (cab: 'tesla' | 'midas', relics: RelicId[], atk: SymbolId) => {
+    const r = runAt(cab, relics, 60);
+    r.enemies[1].hp = 1e5;
+    r.enemies[1].strips = [0, 1, 2].map(() => ({ sword: 12 }));
+    r.enemies[1].ability = null;
+    const f = new Fight(fightConfig(r, base), 3);
+    f.sides.player.hp = 3;
+    const turns: CombatEvent[][] = [];
+    for (let i = 0; i < 6 && !f.over; i++) {
+      f.forceNext(f.next, f.next === 'enemy' ? ['sword', 'sword', 'sword'] : [atk, atk, atk]);
+      turns.push(f.step().events);
+    }
+    return { f, turns };
+  };
+  it('saves you at 1 HP once, and the next storm still heals', () => {
+    const { turns } = saved('tesla', ['phoenix'], 'bolt');
+    const all = turns.flat();
+    const save = all.findIndex((e) => e.type === 'phoenix');
+    expect(save).toBeGreaterThan(-1);
+    expect(all[save]).toMatchObject({ hp: 1 });
+    expect(all.slice(save).some((e) => e.type === 'heal' && e.side === 'player' && e.amount === 15)).toBe(true);
+    expect(all.filter((e) => e.type === 'phoenix')).toHaveLength(1);
+  });
+  it("GOLDEN PARACHUTE's save names the parachute, not RABBIT'S FOOT", () => {
+    const { turns } = saved('midas', ['parachute'], 'goldbar');
+    const e = turns.flat().find((x): x is Extract<CombatEvent, { type: 'phoenix' }> => x.type === 'phoenix');
+    expect(e?.relic).toBe('parachute');
+    expect(e!.hp).toBeGreaterThan(1);
+  });
+});
+
+describe('The Cashier: a level costs more for its own levels only (user, 2026-11-17)', () => {
+  it("swords gained don't raise the shield's price", () => {
+    const r = runAt('knight', []);
+    r.player.levels.sym.sword = (r.player.levels.sym.sword ?? 1) + 4;
+    const price: Record<string, number> = {};
+    for (let seed = 1; seed < 40 && Object.keys(price).length < 2; seed++) {
+      r.seed = seed;
+      for (const it of shopOffers(r)) if (it.option.kind === 'symLevel') price[it.option.symbol] = it.price;
+    }
+    expect(price.shield).toBe(CHIPS.prices.level);
+    expect(price.sword).toBe(CHIPS.prices.level + CHIPS.levelStep * 4);
+  });
+});

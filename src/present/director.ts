@@ -207,7 +207,8 @@ export class Director {
       case 'gulp':
         return gulp(this, e);
       case 'phoenix':
-        this.relicPop(e.side, 'phoenix');
+        // (GOLDEN PARACHUTE pops its own relic: its save said RABBIT'S FOOT, 2026-11-17.)
+        if (!e.relic) this.relicPop(e.side, 'phoenix');
         return phoenix(this, e);
       case 'betPlaced':
         return betPlaced(this, e);

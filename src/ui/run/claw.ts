@@ -5,9 +5,11 @@ import { encounterChoices, type RunState } from '../../core/run';
 import { COLORS } from '../../present/layout';
 import { artId, drawSprite, type SpriteId } from '../../render/sprites';
 import { drawText } from '../../render/text';
-import { CW } from './shared';
+import { clawPrizeX, CW, CW_PIT } from './shared';
 import { SX, ROW, TABLE, TCX } from './table';
 import { drawChip, KIT, T } from '../kit';
+import { backOut } from '../../present/ease';
+import { textWidth } from '../../render/text';
 import { CardGames } from './cardGames';
 
 export abstract class ClawScreen extends CardGames {
@@ -49,7 +51,8 @@ export abstract class ClawScreen extends CardGames {
     const skip = this.footBtn('SKIP', () => this.encClock.skip());
     skip.quietStyle = true;
     this.setTable([skip]);
-    const targetX = CW.x0 + claw.prize * CW.gap;
+    // (Where the capsule sits now: a dragged one is nearer its chute.)
+    const targetX = clawPrizeX(claw.prize, this.cwShown[claw.prize] ?? 0);
     void this.encClock
       .tween({
         from: 0,
@@ -81,7 +84,14 @@ export abstract class ClawScreen extends CardGames {
         this.cwShut = false;
         this.cwCarry = false;
         if (claw.held) this.cwWon.push(claw.prize);
+        // A miss drags the capsule toward its chute where you can see it (user, 2026-11-17: the text alone confused).
+        const from = [...this.cwShown];
         this.cwMisses = [...claw.misses];
+        const k = claw.prize;
+        if (!claw.held && claw.misses[k] > from[k]) {
+          this.sounds.rockThud();
+          void this.encClock.tween({ from: from[k], to: claw.misses[k], dur: this.reduceMotion ? 0.01 : 0.5, ease: backOut(2), onUpdate: (v) => (this.cwShown[k] = v) });
+        } else this.cwShown = [...claw.misses];
         this.heldBuild = null;
         this.landChips();
         if (this.mode !== 'encounter') return;
@@ -106,7 +116,12 @@ export abstract class ClawScreen extends CardGames {
     const goes = done ? 0 : Math.max(0, CLAW.tries + extraPlays(run) - (run.encounterPlays ?? 0));
     // (Short of a go: say so, or every GO button was off with no word why.)
     const price = atStakes(run, CLAW.price);
-    drawText(ctx, run.player.chips < price && !this.cwMsg && !this.heldBuild ? `${price} CHIPS EACH TRY. YOU HAVE ${run.player.chips}` : `${price} CHIPS EACH TRY`, TCX, 72, T.small, run.player.chips < price && !this.cwMsg && !this.heldBuild ? '#ff8a7a' : KIT.dim);
+    const short = run.player.chips < price && !this.cwMsg && !this.heldBuild;
+    const priceLine = short ? `${price} CHIPS EACH TRY. YOU HAVE ${run.player.chips}` : `${price} CHIPS EACH TRY`;
+    // (The chip symbol beside the price, as the other tables show their bets: user, 2026-11-17.)
+    const plw = textWidth(priceLine, T.small);
+    drawSprite(ctx, 'chip', TCX - plw / 2 - 12, 72, 1.5);
+    drawText(ctx, priceLine, TCX + 8, 72, T.small, short ? '#ff8a7a' : KIT.dim);
     const x0 = TCX - 250;
     const w = 500;
     const y0 = TABLE.y + 2;
@@ -147,8 +162,46 @@ export abstract class ClawScreen extends CardGames {
     ctx.fillRect(gx - 4, gy - 4, gw + 8, gh + 8);
     ctx.fillStyle = '#140c24';
     ctx.fillRect(gx, gy, gw, gh);
-    // A heap of spare prizes at the back of the pit (dim).
-    for (let k = 0; k < 16; k++) drawSprite(ctx, artId('prizeBall'), gx + 20 + k * 28 + (k % 2) * 6, gy + gh - 16 - (k % 3) * 8, 2.5, { alpha: 0.35 });
+    // The floor the prizes stand on, with a chute left of each prize (dark holes under it, hazard-striped edges).
+    const floorY = CW.pitY + CW_PIT.floor;
+    // A heap of spare prizes at the back of the pit (dim), resting on the floor.
+    for (let k = 0; k < 16; k++) drawSprite(ctx, artId('prizeBall'), gx + 20 + k * 28 + (k % 2) * 6, floorY - 10 - (k % 3) * 8, 2.5, { alpha: 0.3 });
+    ctx.fillStyle = '#0c0814';
+    ctx.fillRect(gx, floorY, gw, gy + gh - floorY);
+    // The floor's ledge, in pieces between the chutes (a chute is a gap in it, not a mark on it).
+    const holes = CLAW_PRIZES.map((_p, k) => CW.x0 + k * CW.gap - CW_PIT.chuteOff);
+    let lx = gx;
+    for (const hx of [...holes, gx + gw + CW_PIT.chuteW / 2]) {
+      const rx = Math.min(gx + gw, hx - CW_PIT.chuteW / 2);
+      ctx.fillStyle = COLORS.outline;
+      ctx.fillRect(lx, floorY, rx - lx, 8);
+      ctx.fillStyle = '#9a9aaa';
+      ctx.fillRect(lx, floorY + 2, rx - lx, 4);
+      lx = hx + CW_PIT.chuteW / 2;
+    }
+    CLAW_PRIZES.forEach((_p, k) => {
+      const cx = CW.x0 + k * CW.gap - CW_PIT.chuteOff;
+      const hw = CW_PIT.chuteW / 2;
+      // The hole: cut through the floor down to the glass, its walls lit at the top and black below.
+      const depth = gy + gh - floorY;
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(cx - hw, floorY, CW_PIT.chuteW, depth);
+      ctx.fillStyle = '#1a1424';
+      ctx.fillRect(cx - hw, floorY + 8, 3, depth - 8);
+      ctx.fillRect(cx + hw - 3, floorY + 8, 3, depth - 8);
+      // Hazard stripes on both lips.
+      for (const ex of [cx - hw - 6, cx + hw]) {
+        ctx.fillStyle = COLORS.outline;
+        ctx.fillRect(ex, floorY - 2, 6, 12);
+        for (let s = 0; s < 3; s++) {
+          ctx.fillStyle = s % 2 ? '#1a1024' : '#ffd23f';
+          ctx.fillRect(ex + 1, floorY - 1 + s * 3, 4, 3);
+        }
+      }
+      // A small arrow down into it.
+      ctx.fillStyle = 'rgba(255,210,63,0.55)';
+      for (let r = 0; r < 4; r++) ctx.fillRect(cx - 7 + r * 2, floorY + 16 + r * 2, 14 - r * 4, 2);
+    });
     // The rail and the claw.
     const railY = gy + 14;
     ctx.fillStyle = '#8a8a9a';
@@ -162,19 +215,15 @@ export abstract class ClawScreen extends CardGames {
     const art: SpriteId[] = ['chip', artId('enhGold'), artId('relicSym')];
     const misses = this.cwMisses;
     CLAW_PRIZES.forEach((_p, k) => {
-      const x = CW.x0 + k * CW.gap;
-      // PUSH YOUR LUCK: each prize sits on two bars over a gap and sinks into it a notch a miss (the go in flight
-      // doesn't show its own miss until the claw is home).
-      const sink = misses[k];
-      ctx.fillStyle = COLORS.outline;
-      ctx.fillRect(x - 44, CW.pitY + 24, 32, 10);
-      ctx.fillRect(x + 12, CW.pitY + 24, 32, 10);
-      ctx.fillStyle = '#9a9aaa';
-      ctx.fillRect(x - 42, CW.pitY + 26, 28, 6);
-      ctx.fillRect(x + 14, CW.pitY + 26, 28, 6);
+      // PUSH YOUR LUCK: each miss slides the capsule toward its chute and it sags over the lip; at 2 it teeters on the
+      // edge (the go in flight doesn't show its own miss until the claw is home).
+      const m = this.cwShown[k] ?? misses[k];
       const carried = this.cwCarry && this.cwTarget === k;
       if (won.includes(k) && !carried) return;
-      const y = carried ? clawY + 46 : CW.pitY + Math.min(2, sink) * 10;
+      const teeter = m >= 1.95 && !carried && !this.reduceMotion ? Math.round(Math.sin(time * 7 + k) * 1.2) : 0;
+      const x = carried ? Math.round(this.cwX) : Math.round(clawPrizeX(k, m)) + teeter;
+      const mm = Math.min(2, Math.max(0, m));
+      const y = carried ? clawY + 46 : CW.pitY + Math.round(CW_PIT.sag * mm * mm) + Math.abs(teeter);
       drawSprite(ctx, artId('prizeBall'), x, y, 5);
       drawSprite(ctx, art[k], x, y - 4, 2);
     });
@@ -212,7 +261,7 @@ export abstract class ClawScreen extends CardGames {
     drawText(ctx, 'PUSH', x0 + w - 42, y0 + h - 27, T.small, KIT.dim);
     // The side: goes left, the aims.
     this.side(ctx, 'THE CLAW');
-    this.numberWell(ctx, 'TRIES LEFT', `${goes}`, { chip: false, color: KIT.title, sub: `${atStakes(run, CLAW.price)} CHIPS EACH` });
+    this.numberWell(ctx, 'EACH TRY', `${price}`, { sub: goes === 1 ? '1 TRY LEFT' : `${goes} TRIES LEFT` });
     const m = this.cwMsg;
     if (m) this.tableResult(ctx, m, TABLE.y + 200);
   }

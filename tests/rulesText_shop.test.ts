@@ -45,12 +45,19 @@ describe('the Cashier', () => {
     expect([r.player.maxHp - max, r.player.hp - hp]).toEqual([40, 40]);
     expect(find(shopOffers(r), 'maxHp').price).toBe(14);
   });
-  it('levels: 10 chips, +4 for every level gained this run', () => {
+  it('levels: 12 chips, +8 for every level that symbol gained this run (user, 2026-11-17: its own levels only)', () => {
     const r = shopRun();
     const lv = find(shopOffers(r), 'symLevel');
-    expect(lv.price).toBe(10);
+    expect(lv.price).toBe(12);
     buy(r, lv);
-    expect(find(shopOffers(r), 'symLevel').price).toBe(14);
+    const bought = lv.option.kind === 'symLevel' ? lv.option.symbol : '';
+    const price: Record<string, number> = {};
+    for (let seed = 1; seed < 60 && Object.keys(price).length < 2; seed++) {
+      r.seed = seed;
+      for (const it of shopOffers(r)) if (it.option.kind === 'symLevel' && !it.sold) price[it.option.symbol] = it.price;
+    }
+    for (const [sym, p] of Object.entries(price)) expect(p).toBe(sym === bought ? 20 : 12);
+    expect(Object.keys(price)).toHaveLength(2);
   });
   it('relics 10; THE BIG ONE (a legendary) 24 in act 1, 20 after', () => {
     const r = shopRun();

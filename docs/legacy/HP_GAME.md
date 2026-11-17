@@ -200,6 +200,8 @@ blocked a fifth of the damage aimed at it in loop 3, JOKER half; HYPE MAN raisin
 at the top). OPEN BAR's rains pay X2 (it lowered its riders' damage at THE OWNER; HIGH ROLLER's cap at X8 only helped
 BANKROLL survive). Sim (3,000 runs a stake, RED to GOLD): JUKEBOX meets THE OWNER 28-33% (was 19-25), breaks the bank
 1.0%; BANKROLL 46-51% (41-44), 1.2% (0); BANKROLL's main run +1 to +2 (now 5-8 over from RED to GOLD: the main-run pass).
+**Level prices (user, 2026-11-17):** a level at the Cashier costs 12 chips +8 for each level THAT symbol has gained this
+run (bought, drafted or a boss's); it counted every symbol's levels (10 +4), so swords bought raised the shield's price.
 **The main-run pass (user, 2026-11-16):** HIGH ROLLER needs 30 chips a step, not 20 (BANKROLL was 7-9 over from GREEN to
 GOLD: it won THE WHEEL 95-98% and THE DEALER 91-94% when reached; 360 HP instead took WHITE to -5). JOKER 365 -> 355 HP
 (5-6 over from BLACK to GOLD; 345 took WHITE to -6). Sim (1,500 runs a stake), WHITE / RED / GREEN / BLACK / BLUE / GOLD

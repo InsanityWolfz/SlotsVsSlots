@@ -5,7 +5,7 @@ import { BUILD_ENABLER, DEAD_WITH, ELITE_ONLY, LEGENDARY, MACHINE_EXCLUDE, RELIC
 import { CABINETS } from './cabinets';
 import { Rng } from './rng';
 import { CHIPS, currentStop, legendShown, passOn, passStop, RUN, runActs, type DraftOption, type RunState, type ShopItem } from './run';
-import { applyOption, charmCount, levelOptions, levelsGained } from './draft';
+import { applyOption, charmCount, levelOptions, symLevelsGained } from './draft';
 import { noHealing } from './fightSetup';
 
 // ---- elite spoils & the Cashier --------------------------------------------------------
@@ -48,14 +48,15 @@ export function shopOffers(run: RunState): ShopItem[] {
       items.push({ option, price: run.cabinet === 'midas' ? Math.max(1, Math.ceil(price * 0.8)) : price, sold: false, ...(showcase ? { showcase } : {}) });
   };
   // THE COUNTER. Levels cost more the more you've gained (user, 2026-10-15: planets with no cap, hard to stack unless
-  // you build for it). Your attack symbol is one of the two most visits.
-  const levelPrice = P.level + CHIPS.levelStep * levelsGained(run);
+  // you build for it). Your attack symbol is one of the two most visits. Each symbol's price counts its own levels only
+  // (user, 2026-11-17: buying sword levels raised the shield's price too).
+  const levelPrice = (o: DraftOption) => P.level + CHIPS.levelStep * (o.kind === 'symLevel' ? symLevelsGained(run, o.symbol) : 0);
   const levels = fresh(levelOptions(run));
   const atk = levels.find((o) => o.kind === 'symLevel' && o.symbol === CABINETS[run.cabinet].attack);
-  if (atk && rng.next() < 0.6) add(atk, levelPrice);
+  if (atk && rng.next() < 0.6) add(atk, levelPrice(atk));
   for (const o of rng.shuffle(levels)) {
     if (items.length >= 2) break;
-    add(o, levelPrice);
+    add(o, levelPrice(o));
   }
   add({ kind: 'maxHp', amount: RUN.maxHpCard }, P.maxHp + RUN.maxHpStep * (run.maxHpBought ?? 0));
   // BEHIND THE GLASS: two relics, then THE BIG ONE in the middle.

@@ -259,11 +259,12 @@ export async function phoenix(d: Director, e: Ev<'phoenix'>): Promise<void> {
   d.s.sounds.fanfareJackpot();
   d.hitstop(6);
   d.s.camera.flashScreen(0.7, '#ffb040');
-  const icon = d.s.fx.add(new Projectile(RELICS.phoenix.sprite as SpriteId, c.x, c.y, 0));
+  const relic = RELICS[e.relic ?? 'phoenix'];
+  const icon = d.s.fx.add(new Projectile(relic.sprite as SpriteId, c.x, c.y, 0));
   d.bg(d.c.tween({ from: 0, to: 6, dur: 0.3, ease: backOut(3), onUpdate: (v) => (icon.scale = v) }));
   d.s.particles.burst({ x: c.x, y: c.y, count: 80, colors: ['#ff6a2a', '#ffd23f', '#ffffff'], speed: [150, 500], angle: -Math.PI / 2, spread: Math.PI, gravity: -250, life: [0.5, 1.1], size: [3, 6] });
   d.bg(d.c.to(h, 'hp', e.hp, 0.3));
   d.bg(d.c.to(h, 'ghost', e.hp, 0.3));
-  await d.banner("RABBIT'S FOOT!", '#ff8a3a', 1.4, 0.5, 'BACK AT 1 HP', BANNER_Y, 4);
+  await d.banner(`${relic.name}!`, '#ff8a3a', 1.4, 0.5, `BACK AT ${e.hp} HP`, BANNER_Y, 4);
   d.bg(d.c.tween({ from: 1, to: 0, dur: 0.3, onUpdate: (v) => (icon.alpha = v) }).then(() => d.s.fx.remove(icon)));
 }

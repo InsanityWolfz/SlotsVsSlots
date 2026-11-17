@@ -154,7 +154,8 @@ export type CombatEvent =
   /** The Mimic ate some of your chips. */
   | { type: 'gulp'; from: SideId; chips: number }
   /** Phoenix Feather saved you from a lethal hit. */
-  | { type: 'phoenix'; side: SideId; hp: number }
+  /** A killing hit survived: RABBIT'S FOOT (at 1 HP), or GOLDEN PARACHUTE (`relic`, at its share of max HP). */
+  | { type: 'phoenix'; side: SideId; hp: number; relic?: 'parachute' }
   /**
    * THE WHEEL places chips (bets) on your reels: `reels` got one chip each (a reel can be listed twice), `bets` is
    * every reel's stack after, `left` its turns to NO MORE BETS (1 = next turn), `per` what one chip will hit for.
